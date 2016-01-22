@@ -37,6 +37,7 @@ class DefExpr;
 class NamedExpr;
 class SymExpr;
 class UnresolvedSymExpr;
+class UseExpr;
 
 class BlockStmt;
 class WhileDoStmt;
@@ -110,6 +111,8 @@ public:
   virtual void   visitSymExpr     (SymExpr*           node) = 0;
 
   virtual void   visitUsymExpr    (UnresolvedSymExpr* node) = 0;
+
+  virtual void   visitUseExpr     (UseExpr*           node) = 0;
 
   //
   // The sub-classes of Stmt

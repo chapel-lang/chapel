@@ -269,6 +269,43 @@ void AstDump::visitUsymExpr(UnresolvedSymExpr* node) {
   write(node->unresolved);
 }
 
+//
+// UseExpr
+//
+void AstDump::visitUseExpr(UseExpr* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    newline();
+  }
+
+  if (fLogIds) {
+    fprintf(mFP, "(%d ", node->id);
+    mNeedSpace = false;
+  } else {
+    write(true, "(", false);
+  }
+
+  if (mNeedSpace)
+    fputc(' ', mFP);
+
+  fprintf(mFP, "'use'");
+
+  mNeedSpace = true;
+
+  node->mod->accept(this);
+
+  if (node->includes.size() > 0) {
+    fprintf(mFP, " 'only' ");
+    outputVector(mFP, node->includes);
+  }
+
+  if (node->excludes.size() > 0) {
+    fprintf(mFP, " 'except' ");
+    outputVector(mFP, node->excludes);
+  }
+
+  write(false, ")", true);
+}
+
 
 //
 // BlockStmt

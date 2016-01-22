@@ -35,6 +35,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 
+#include <algorithm>
 #include <map>
 #include <set>
 
@@ -76,8 +77,8 @@ static SymbolTable symbolTable;
 // Note that this caching is not enabled until after use expression
 // have been resolved.
 //
-static std::map<BlockStmt*,Vec<ModuleSymbol*>*> moduleUsesCache;
-static bool                                     enableModuleUsesCache = false;
+static std::map<BlockStmt*,Vec<UseExpr*>*> moduleUsesCache;
+static bool                                enableModuleUsesCache = false;
 
 //
 // The aliasFieldSet is a set of names of fields for which arrays may
@@ -300,26 +301,59 @@ static void addOneToSymbolTable(DefExpr* def)
 ************************************* | ************************************/
 
 static ModuleSymbol* getUsedModule(Expr* expr);
-static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall);
+static ModuleSymbol* getUsedModule(Expr* expr, UseExpr* useCall);
+
+static void validateExceptOnlyElem(UseExpr* use, const char* name, bool except);
+static void addImpactedSymbols(UseExpr* use, Symbol* maybeType);
 
 static void processImportExprs() {
   // handle "use mod;" where mod is a module
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_USE)) {
-      SET_LINENO(call);
+  forv_Vec(UseExpr, use, gUseExprs) {
+    SET_LINENO(use);
 
-      ModuleSymbol* mod = getUsedModule(call);
+    ModuleSymbol* mod = getUsedModule(use);
 
-      if (!mod)
-        USR_FATAL(call, "Cannot find module");
+    if (!mod)
+      USR_FATAL(use, "Cannot find module");
 
-      ModuleSymbol* enclosingModule = call->getModule();
+    // We don't need to perform any resolution on the default use of the
+    // rootModule, so don't add it to the current module's use list or that
+    // of its block (it should already be in the latter).
+    if (mod == rootModule)
+      continue;
 
-      enclosingModule->moduleUseAdd(mod);
+    if (!use->parentExpr) {
+      // This happens for the uses I create when traversing use chains which
+      // contain excepts, so that the excepted keywords are skipped down all
+      // paths from that chain head (see buildBreadthFirstModuleList).  In
+      // that case, we don't need to do any further work here beyond make
+      // sure the mod is a SymExpr
+      use->mod = new SymExpr(mod);
+      continue;
+    }
 
-      getVisibilityBlock(call)->moduleUseAdd(mod);
+    use->mod->replace(new SymExpr(mod));
+    // Need to update the use now that we've found what it refers to
 
-      call->getStmtExpr()->remove();
+    ModuleSymbol* enclosingModule = use->getModule();
+
+    enclosingModule->moduleUseAdd(mod);
+
+    BlockStmt* useParent = getVisibilityBlock(use);
+    use->getStmtExpr()->remove();
+
+    useParent->moduleUseAdd(use);
+
+    // Verifies that all the symbols in the include and exclude lists of use
+    // statements refer to symbols that are visible from that module.
+    if (use->excludes.size() > 0) {
+      for_vector(const char, toExclude, use->excludes) {
+        validateExceptOnlyElem(use, toExclude, true);
+      }
+    } else if (use->includes.size() > 0) {
+      for_vector(const char, toInclude, use->includes) {
+        validateExceptOnlyElem(use, toInclude, false);
+      }
     }
   }
 }
@@ -329,22 +363,19 @@ static void processImportExprs() {
 // nested: e.g. "use outermost.middle.innermost;"
 //
 static ModuleSymbol* getUsedModule(Expr* expr) {
-  CallExpr* call = toCallExpr(expr);
+  UseExpr* use = toUseExpr(expr);
 
-  if (!call)
-    INT_FATAL(call, "Bad use statement in getUsedModule");
+  if (!use)
+    INT_FATAL(use, "Bad use statement in getUsedModule");
 
-  if (!call->isPrimitive(PRIM_USE))
-    INT_FATAL(call, "Bad use statement in getUsedModule");
-
-  return getUsedModule(call->get(1), call);
+  return getUsedModule(use->mod, use);
 }
 
 
 //
 // Helper routine to factor some 'use' error messages into a single place
 //
-static void printModuleUseError(CallExpr* useExpr, 
+static void printModuleUseError(UseExpr* useExpr, 
                                 Symbol* sym = NULL) {
   if (sym && !sym->isImmediate()) {
     if (sym->name) {
@@ -364,7 +395,7 @@ static void printModuleUseError(CallExpr* useExpr,
 // if the symbol in question is a module symbol return it; otherwise,
 // generate an error.
 //
-static ModuleSymbol* getUsedModuleSymbol(CallExpr* useExpr, Symbol* symbol) {
+static ModuleSymbol* getUsedModuleSymbol(UseExpr* useExpr, Symbol* symbol) {
   if (ModuleSymbol* mod = toModuleSymbol(symbol)) {
     return mod;
   } else {
@@ -377,7 +408,7 @@ static ModuleSymbol* getUsedModuleSymbol(CallExpr* useExpr, Symbol* symbol) {
 // Return the module imported by a use call.  The module returned could be
 // nested: e.g. "use outermost.middle.innermost;"
 //
-static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
+static ModuleSymbol* getUsedModule(Expr* expr, UseExpr* useCall) {
   //
   // This handles the simple case of 'use <symbol>' (as well as error
   // cases that try to use non-module symbols)
@@ -402,7 +433,7 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
       return NULL;
     }
 
-  }  else if (CallExpr* call = toCallExpr(expr)) {
+  } else if (CallExpr* call = toCallExpr(expr)) {
     //
     // This handles the case of 'use <symbol>.<symbol>' (as well as
     // error cases in which other expressions than '.' are used)
@@ -439,6 +470,44 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
     //
     printModuleUseError(useCall);
     return NULL;
+  }
+}
+
+// Ensures that the symbol we're searching for can be found in the scope
+// indicated by this use.  It is an error if not.  If it is found and is a type,
+// will add the type's methods (and fields if applicable) to the use's list
+// of impacted symbols.
+static void validateExceptOnlyElem(UseExpr* use, const char* name, bool except) {
+  SymExpr* se = toSymExpr(use->mod);
+  INT_ASSERT(se);
+  ModuleSymbol* mod = toModuleSymbol(se->var);
+  INT_ASSERT(mod);
+
+  Symbol* sym = lookup(mod->block, name);
+
+  const char* listName = except ? "except" : "only";
+  if (!sym) {
+    USR_FATAL_CONT(use, "Bad identifier in '%s' clause, no known '%s'", listName, name);
+  } else if (!sym->isVisible(use)) {
+    USR_FATAL_CONT(use, "Bad identifier in '%s' clause, '%s' is private", listName, name);
+  }
+  addImpactedSymbols(use, sym);
+}
+
+// If maybeType refers to a type symbol, add all methods on that type
+// to the list of other impacted symbols in a module.  If the type is
+// also an AggregateType, add all its fields
+static void addImpactedSymbols(UseExpr* use, Symbol* maybeType) {
+  if (TypeSymbol* ts = toTypeSymbol(maybeType)) {
+    Type* type = ts->type;
+    forv_Vec(FnSymbol, method, type->methods) {
+      use->impactedSymbols.push_back(method->name);
+    }
+    if (AggregateType* at = toAggregateType(type)) {
+      for_fields(sym, at) {
+        use->impactedSymbols.push_back(sym->name);
+      }
+    }
   }
 }
 
@@ -1692,7 +1761,7 @@ static void destroyTable() {
 // delete the module uses cache
 //
 static void destroyModuleUsesCaches() {
-  std::map<BlockStmt*,Vec<ModuleSymbol*>*>::iterator use;
+  std::map<BlockStmt*,Vec<UseExpr*>*>::iterator use;
 
   for (use = moduleUsesCache.begin(); use != moduleUsesCache.end(); use++) {
     delete use->second;
@@ -1738,11 +1807,11 @@ static void lookup(BaseAST* scope, const char * name,
 
 
 
-static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules);
+static void    buildBreadthFirstModuleList(Vec<UseExpr*>* modules);
 
-static void    buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
-                                           Vec<ModuleSymbol*>* current,
-                                           Vec<ModuleSymbol*>* alreadySeen);
+static void    buildBreadthFirstModuleList(Vec<UseExpr*>* modules,
+                                           Vec<UseExpr*>* current,
+                                           std::map<ModuleSymbol*, std::vector<UseExpr*> >* alreadySeen);
 
 // Given a name and a scope, determine the symbol referred by that name in the
 // context of that scope.
@@ -1948,33 +2017,49 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
     // Nothing found so far, look into the uses.
     if (BlockStmt* block = toBlockStmt(scope)) {
       if (block->modUses) {
-        Vec<ModuleSymbol*>* modules = NULL;
+        Vec<UseExpr*>* moduleUses = NULL;
 
         if (moduleUsesCache.count(block) == 0) {
-          modules = new Vec<ModuleSymbol*>();
+          moduleUses = new Vec<UseExpr*>();
 
           for_actuals(expr, block->modUses) {
-            SymExpr* se = toSymExpr(expr);
-            INT_ASSERT(se);
+            UseExpr* use = toUseExpr(expr);
+            INT_ASSERT(use);
 
-            ModuleSymbol* mod = toModuleSymbol(se->var);
-            INT_ASSERT(mod);
-
-            modules->add(mod);
+            moduleUses->add(use);
           }
 
-          INT_ASSERT(modules->n);
+          INT_ASSERT(moduleUses->n);
 
-          buildBreadthFirstModuleList(modules);
+          buildBreadthFirstModuleList(moduleUses);
 
           if (enableModuleUsesCache)
-            moduleUsesCache[block] = modules;
+            moduleUsesCache[block] = moduleUses;
         } else {
-          modules = moduleUsesCache[block];
+          moduleUses = moduleUsesCache[block];
         }
 
-        forv_Vec(ModuleSymbol, mod, *modules) {
-          if (mod) {
+        forv_Vec(UseExpr, use, *moduleUses) {
+          if (use) {
+            // Make sure we skip the symbols we should skip
+            if (use->excludes.size() > 0) {
+              std::vector<const char*>::iterator matched;
+              matched = std::find(use->excludes.begin(), use->excludes.end(), name);
+              // If we had a match, move on to the next use statement instead
+              // of checking for the match.
+              if (matched != use->excludes.end())
+                continue;
+            } else if (use->includes.size() > 0) {
+              if (std::find(use->includes.begin(), use->includes.end(), name) == use->includes.end())
+                continue;
+              // If we had a match in the only list, we can safely check for
+              // that symbol in this scope.  Otherwise, we should continue
+            }
+
+            SymExpr* se = toSymExpr(use->mod);
+            INT_ASSERT(se);
+            ModuleSymbol* mod = toModuleSymbol(se->var);
+            INT_ASSERT(mod);
             if (Symbol* sym = inSymbolTable(mod->block, name)) {
               if (sym->hasFlag(FLAG_PRIVATE)) {
                 if (rejectedPrivateIds.find(sym->id) ==
@@ -2082,44 +2167,188 @@ static void lookup(BaseAST* scope, const char * name,
   }
 }
 
-static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules) {
-  Vec<ModuleSymbol*> seen;
+static void buildBreadthFirstModuleList(Vec<UseExpr*>* modules) {
+  std::map<ModuleSymbol*, std::vector<UseExpr* > > seen;
 
   return buildBreadthFirstModuleList(modules, modules, &seen);
 }
 
+static bool skipMod(ModuleSymbol* mod,
+                    std::map<ModuleSymbol*, std::vector<UseExpr*> >* seen,
+                    std::vector<const char*> limitations,
+                    bool except);
+
 // If the uses of a particular module are considered its level 1 uses, then
 // this function will only add level 2 and lower uses to the modules vector
 // argument.
-static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
-                                        Vec<ModuleSymbol*>* current,
-                                        Vec<ModuleSymbol*>* alreadySeen) {
+static void buildBreadthFirstModuleList(Vec<UseExpr*>* modules,
+                                        Vec<UseExpr*>* current,
+                                        std::map<ModuleSymbol*, std::vector<UseExpr*> >* alreadySeen) {
   modules->add(NULL); // use NULL sentinel to identify modules of equal depth
 
-  Vec<ModuleSymbol*> next;
+  Vec<UseExpr*> next;
 
-  forv_Vec(ModuleSymbol, module, *current) {
+  forv_Vec(UseExpr, module, *current) {
     if (!module) {
       break;
-    } else if (module->block->modUses) {
-      for_actuals(expr, module->block->modUses) {
-        SymExpr*      se  = toSymExpr(expr);
-        INT_ASSERT(se);
+    } else {
+      SymExpr* se = toSymExpr(module->mod);
+      INT_ASSERT(se);
+      ModuleSymbol* mod = toModuleSymbol(se->var);
+      INT_ASSERT(mod);
+      if (mod->block->modUses) {
+        for_actuals(expr, mod->block->modUses) {
+          UseExpr*      use = toUseExpr(expr);
+          INT_ASSERT(use);
 
-        ModuleSymbol* mod = toModuleSymbol(se->var);
-        INT_ASSERT(mod);
+          SymExpr* useSE = toSymExpr(use->mod);
+          INT_ASSERT(useSE);
 
-        if (!alreadySeen->set_in(mod)) {
-          if (!mod->hasFlag(FLAG_PRIVATE)) {
-            // Uses of private modules are not transitive - the symbols in the
-            // private modules are only visible to itself and its immediate
-            // parent.  Therefore, if the symbol is private, we will not
-            // traverse it further and will merely add it to the alreadySeen
-            // vector.
-            next.add(mod);
-            modules->add(mod);
+          ModuleSymbol* useMod = toModuleSymbol(useSE->var);
+          INT_ASSERT(useMod);
+
+          std::vector<const char*> limitations; // size is 0
+          bool except = false;
+          if (module->includes.size() > 0) {
+            limitations = module->includes;
+          } else if (module->excludes.size() > 0) {
+            limitations = module->excludes;
+            except = true;
           }
-          alreadySeen->set_add(mod);
+
+          if (!skipMod(useMod, alreadySeen, limitations, except)) {
+            UseExpr* newUse = NULL;
+            if (!useMod->hasFlag(FLAG_PRIVATE)) {
+              // Uses of private modules are not transitive - the symbols in the
+              // private modules are only visible to itself and its immediate
+              // parent.  Therefore, if the symbol is private, we will not
+              // traverse it further and will merely add it to the alreadySeen
+              // vector.
+
+              if (module->excludes.size() > 0) {
+                // In order to properly block except'ed identifiers from being
+                // in scope, we need to propogate them to later uses.  This
+                // should only affect the starting module's use chain.
+
+                // Things become more complicated if the use we are propogating
+                // these 'except'ed symbols to specifies an 'only' list.
+                if (use->includes.size() > 0) {
+                  // In that case, we want to check if any of the identifiers
+                  // in the 'except' list are specified by the 'only' list, and
+                  // not place them in the new 'only' list.
+                  std::vector<const char*>* newOnlyList = new std::vector<const char*>();
+                  for_vector(const char, includeMe, use->includes) {
+                    if (std::find(module->excludes.begin(), module->excludes.end(), includeMe) == module->excludes.end()) {
+                      // We didn't find this symbol in the list to exclude, so
+                      // add it.
+                      newOnlyList->push_back(includeMe);
+                    }
+                  }
+                  if (newOnlyList->size() == use->includes.size()) {
+                    // The except list didn't cut down on our include list.
+                    // No need to create a new UseExpr, just use the current one
+                    next.add(use);
+                    modules->add(use);
+                  } else {
+                    SET_LINENO(use);
+                    newUse = new UseExpr(use->mod, newOnlyList, false);
+                    next.add(newUse);
+                    modules->add(newUse);
+                    limitations = *newOnlyList;
+                  }
+                } else {
+                  // Handles case where inner use has an 'except' list, or is
+                  // just a plain use.
+                  newUse = use->copy();
+
+                  for_vector(const char, toExclude, module->excludes) {
+                    newUse->excludes.push_back(toExclude);
+                  }
+                  next.add(newUse);
+                  modules->add(newUse);
+                  limitations = newUse->excludes;
+                  except = true;
+                }
+              } else if (module->includes.size() > 0) {
+                // In order to properly narrow the scope drawn in with an 'only'
+                // clause, we need to propogate its contents to later uses.
+                // This should only affect the starting module's use chain.
+
+                // Things become more complicated if we are propogating these
+                // 'only'ed symbols to a use which specifies an 'except' or
+                // 'only' list.
+                if (use->excludes.size() > 0) {
+                  std::vector<const char*>* newOnlyList = new std::vector<const char*>();
+                  for_vector(const char, includeMe, module->includes) {
+                    if (std::find(use->excludes.begin(), use->excludes.end(), includeMe) == use->excludes.end()) {
+                      // We didn't find this symbol in the list to exclude, so
+                      // add it.
+                      newOnlyList->push_back(includeMe);
+                    }
+                  }
+                  if (newOnlyList->size() > 0) {
+                    // At least some of the identifiers in the 'only' list
+                    // weren't in the inner 'except' list.  Modify the use to
+                    // 'only' include those from the original 'only' list which
+                    // weren't in the inner 'except' list (could be all of the
+                    // outer 'only' list)
+                    SET_LINENO(use);
+                    newUse = new UseExpr(use->mod, newOnlyList, false);
+                    next.add(newUse);
+                    modules->add(newUse);
+                    limitations = *newOnlyList;
+                  } // else, all the 'only' identifiers were in the 'except'
+                  // list so this module use will give us nothing.
+
+                } else if (use->includes.size() > 0) {
+                  SET_LINENO(use);
+                  std::vector<const char*>* newOnlyList = new std::vector<const char*>();
+                  for_vector(const char, includeMe, module->includes) {
+                    if (std::find(use->includes.begin(), use->includes.end(), includeMe) != use->includes.end()) {
+                      // We found this symbol in both 'only' lists, so add it
+                      // to the union of them.
+                      newOnlyList->push_back(includeMe);
+                    }
+                  }
+                  if (newOnlyList->size() > 0) {
+                    // There were symbols that were in both 'only' lists, so
+                    // this module use is still interesting.
+                    SET_LINENO(use);
+                    newUse = new UseExpr(use->mod, newOnlyList, false);
+                    next.add(newUse);
+                    modules->add(newUse);
+                    limitations = *newOnlyList;
+                  } // else, all of the 'only' identifiers in the outer use
+                  // were missing from the inner use's 'only' list, so this
+                  // module use will give us nothing.
+
+                } else {
+                  // The inner use did not specify an 'except' or 'only' list,
+                  // so propogate our 'only' list to it.
+                  newUse = use->copy();
+                  for_vector(const char, toInclude, module->includes) {
+                    newUse->includes.push_back(toInclude);
+                  }
+                  next.add(newUse);
+                  modules->add(newUse);
+                  limitations = newUse->includes;
+                }
+              } else {
+                // There wasn't any additional work to perform, just add the
+                // use as is.
+                next.add(use);
+                modules->add(use);
+              }
+            }
+
+            // Store in alreadySeen the most accurate portrayal of the use
+            // as it occured in this call chain.
+            if (newUse != NULL) {
+              (*alreadySeen)[toModuleSymbol(useMod)].push_back(newUse);
+            } else {
+              (*alreadySeen)[toModuleSymbol(useMod)].push_back(use);
+            }
+          }
         }
       }
     }
@@ -2128,6 +2357,125 @@ static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
   if (next.n) {
     buildBreadthFirstModuleList(modules, &next, alreadySeen);
   }
+}
+
+// Determine whether prior 'use's of a module have been thorough enough to
+// warrant skipping the current 'use'.  For instance, if we saw a 'use' of
+// this module without an 'except' or 'only' list, then we don't need to look
+// at it again because all the symbols it contains have been looked at.
+// However, if we saw a 'use' that was limited to only a subsection of the
+// symbols in the module, we need to check if the current 'use' would look for
+// symbols that were ignored in the previous 'use's.
+//
+// 'mod' is the module whose use we are interested in
+// 'seen' is a map of modules to the uses of them we've seen
+// 'limitations' is the 'except'/'only' list of the use we are currently in
+// 'except' indicates whether limitations refers to an 'except' list or an
+//          'only' list
+static bool skipMod(ModuleSymbol* mod,
+                    std::map<ModuleSymbol*, std::vector<UseExpr*> >* seen,
+                    std::vector<const char*> limitations,
+                    bool except) {
+  std::vector<UseExpr*> vec = (*seen)[mod];
+  if (vec.size() > 0) {
+    // We've already seen at least one use of this module, but it might not be
+    // thorough enough to justify skipping the newest 'use'.
+    for_vector(UseExpr, use, vec) {
+      if (use->includes.size() == 0 && use->excludes.size() == 0) {
+        // The use we saw covered the entire module.  No need to look at it
+        // again
+        return true;
+      }
+      if (limitations.size() > 0) {
+        // Limitations helps determine whether this prior use or the new use is
+        // more specific.  If the new use generates a subset of the symbols
+        // this prior use covers, then we don't need to go into it again.
+        // If the new use would include a symbol that the prior use does
+        // not, then we must traverse it.
+        // As an example, `use Foo except A, B` is a subset of
+        // `use Foo except A` and `use Foo except B`, but not of
+        // `use Foo except C`.
+        //
+        // `use Foo only C` is a subset of
+        // `use Foo except A` and `use Foo only A, C`, but not of
+        // `use Foo only A`.
+
+        if (except) {
+          // New use has 'except' list.  This may be more general than the prior
+          // use, so we might want to dive into it.
+          if (use->excludes.size() > 0) {
+            // Prior use has 'except' list.
+            if (use->excludes.size() <= limitations.size()) {
+              // We are excluding more symbols than the prior use, or the
+              // same number of symbols.
+              uint numSame = 0;
+              for_vector(const char, exclude, use->excludes) {
+                if (std::find(limitations.begin(), limitations.end(), exclude) != limitations.end()) {
+                  numSame++;
+                }
+              }
+              // If all of the prior use's excludes are in the new use's
+              // list, no new symbols would be found so the new use should be
+              // skipped.
+              if (numSame == use->excludes.size()) {
+                return true;
+              }
+            } else {
+              // We are excluding less symbols than this prior use.  We are
+              // more general. Keep looking for a more general use.
+              continue;
+            }
+          } else if (use->includes.size() > 0) {
+            // prior use has 'only' list.  'Only' lists are usually more
+            // restrictive than 'except' lists, and determining whether a
+            // long 'only' list is less restrictive than a long 'except' list
+            // doesn't seem beneficial in the long run, so continue looking for
+            // a more general use.
+            continue;
+          }
+        } else {
+          // New use has 'only' list.  This is likely more specific than the
+          // prior use, so we might not need to dive into it.
+          if (use->excludes.size() > 0) {
+            int numSame = 0;
+            for_vector(const char, include, limitations) {
+              if (std::find(use->excludes.begin(), use->excludes.end(), include) != use->excludes.end()) {
+                numSame++;
+              }
+            }
+            if (numSame > 0) {
+              // Some of the names in the 'only' list were present in the
+              // 'except' list, so keep looking for a more general use
+              continue;
+            } else {
+              // None of the 'only' names were excluded, so the new use was
+              // covered by this prior use.
+              return true;
+            }
+          } else if (use->includes.size() < limitations.size()) {
+            // We know the prior use has an 'only' list.  Since it is smaller
+            // than the new 'only' list, the new one must include more symbols.
+            // Keep searching for a more general use.
+            continue;
+          } else {
+            uint numSame = 0;
+            for_vector(const char, include, limitations) {
+              if (std::find(use->includes.begin(), use->includes.end(), include) != use->includes.end()) {
+                numSame++;
+              }
+            }
+            if (numSame == limitations.size()) {
+              // The new use has an 'only' list that is completely covered by
+              // the prior use, so the prior is more general.
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+  // We didn't find a more general use.
+  return false;
 }
 
 // Returns true if this module is capable of being used or traversed as part of

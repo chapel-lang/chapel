@@ -466,19 +466,29 @@ BlockStmt::length() const {
   return body.length;
 }
 
-
 void
-BlockStmt::moduleUseAdd(ModuleSymbol* mod) {
+BlockStmt::createModUses() {
   if (modUses == NULL) {
     modUses = new CallExpr(PRIM_USED_MODULES_LIST);
 
     if (parentSymbol)
       insert_help(modUses, this, parentSymbol);
   }
-
-  modUses->insertAtTail(mod);
 }
 
+void
+BlockStmt::moduleUseAdd(ModuleSymbol* mod) {
+  createModUses();
+
+  modUses->insertAtTail(new UseExpr(mod));
+}
+
+void
+BlockStmt::moduleUseAdd(UseExpr* use) {
+  createModUses();
+
+  modUses->insertAtTail(use);
+}
 
 // Remove a module from the list of modules used by the module this block
 // statement belongs to. The list of used modules is stored in modUses

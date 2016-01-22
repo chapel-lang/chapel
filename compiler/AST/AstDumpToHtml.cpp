@@ -383,6 +383,36 @@ void AstDumpToHtml::visitUsymExpr(UnresolvedSymExpr* node) {
 
 
 //
+// UseExpr
+//
+void AstDumpToHtml::visitUseExpr(UseExpr* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "<DL>\n");
+  }
+
+  fprintf(mFP, " (%d 'use' ", node->id);
+
+  node->mod->accept(this);
+
+  if (node->includes.size() > 0) {
+    fprintf(mFP, " 'only' ");
+    outputVector(mFP, node->includes);
+  }
+
+  if (node->excludes.size() > 0) {
+    fprintf(mFP, " 'except' ");
+    outputVector(mFP, node->excludes);
+  }
+
+  fprintf(mFP, ")");
+
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "</DL>\n");
+  }
+}
+
+
+//
 // BlockStmt
 //
 bool AstDumpToHtml::enterBlockStmt(BlockStmt* node) {

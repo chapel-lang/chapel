@@ -237,6 +237,33 @@ class NamedExpr : public Expr {
   virtual Expr*   getFirstExpr();
 };
 
+class UseExpr: public Expr {
+ public:
+  std::vector<const char *> includes;
+  std::vector<const char *> excludes;
+  std::vector<const char *> impactedSymbols;
+  // impactedSymbols are the fields or methods on an excluded or included
+  // type, so that they can be treated as if they, too, were listed in the
+  // 'except' or 'only' list of this 'use' statement.
+
+  Expr* mod; // Can be either an UnresolvedSymExpr, SymExpr, or CallExpr to
+  // specify an explicit module name.
+
+  UseExpr(BaseAST* module);
+  UseExpr(BaseAST* module, std::vector<const char*>* args, bool exclude);
+
+  virtual void    verify();
+
+  DECLARE_COPY(UseExpr);
+
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual GenRet  codegen();
+  virtual void    accept(AstVisitor* visitor);
+  virtual Expr*   getFirstExpr();
+
+  virtual Expr*   getFirstChild();
+};
+
 
 // Determines whether a node is in the AST (vs. has been removed
 // from the AST). Used e.g. by cleanAst().

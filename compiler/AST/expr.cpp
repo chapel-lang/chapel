@@ -32,6 +32,7 @@
 #include "insertLineNumbers.h"
 #include "misc.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
@@ -44,6 +45,7 @@
 #include <inttypes.h>
 #include <ostream>
 #include <stack>
+#include <vector>
 
 class FnSymbol;
 
@@ -5830,6 +5832,116 @@ void NamedExpr::accept(AstVisitor* visitor) {
 
     visitor->exitNamedExpr(this);
   }
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+UseExpr::UseExpr(BaseAST* module):
+  Expr(E_UseExpr),
+  includes(),
+  excludes(),
+  impactedSymbols(),
+  mod(NULL)
+{
+  if (Symbol* b = toSymbol(module)) {
+    mod = new SymExpr(b);
+  } else if (Expr* b = toExpr(module)) {
+    mod = b;
+  } else {
+    INT_FATAL(this, "Bad mod in UseExpr constructor");
+  }
+  gUseExprs.add(this);
+}
+
+//
+UseExpr::UseExpr(BaseAST* module, std::vector<const char*>* args, bool exclude) :
+  Expr(E_UseExpr),
+  includes(),
+  excludes(),
+  impactedSymbols(),
+  mod(NULL)
+{
+  if (Symbol* b = toSymbol(module)) {
+    mod = new SymExpr(b);
+  } else if (Expr* b = toExpr(module)) {
+    mod = b;
+  } else {
+    INT_FATAL(this, "Bad mod in UseExpr constructor");
+  }
+
+  if (exclude) {
+    // Symbols to exclude when searching this module's scope from an outside
+    // scope
+    if (args->size() == 0) {
+      INT_FATAL(this, "In UseExpr constructor, exclude should not be true without names to exclude!");
+    }
+    for_vector(const char, str, *args) {
+      excludes.push_back(str);
+    }
+  } else if (args->size() > 0) {
+    // Symbols to search when going through this module's scope from an outside
+    // scope
+    for_vector(const char, str, *args) {
+      includes.push_back(str);
+    }
+  }
+  gUseExprs.add(this);
+}
+
+UseExpr* UseExpr::copyInner(SymbolMap* map) {
+  UseExpr *_this = 0;
+  if (excludes.size() > 0) {
+    _this = new UseExpr(COPY_INT(mod), &excludes, true);
+  } else if (includes.size() > 0) {
+    _this = new UseExpr(COPY_INT(mod), &includes, false);
+  } else {
+    _this = new UseExpr(COPY_INT(mod));
+  }
+  for_vector(const char, sym, impactedSymbols) {
+    _this->impactedSymbols.push_back(sym);
+  }
+  return _this;
+}
+
+void UseExpr::verify() {
+  Expr::verify();
+  if (astTag != E_UseExpr) {
+    INT_FATAL(this, "Bad NamedExpr::astTag");
+  }
+  if (mod == NULL) {
+    INT_FATAL(this, "Bad UseExpr::mod");
+  }
+  if (excludes.size() > 0 && includes.size() > 0) {
+    INT_FATAL(this, "UseExprs shouldn't have both includes and excludes");
+  }
+}
+
+void UseExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
+  if (old_ast == mod) {
+    mod = new_ast;
+  } else {
+    INT_FATAL(this, "Unexpected case in UseExpr::replaceChild");
+  }
+}
+
+GenRet UseExpr::codegen() {
+  GenRet ret;
+  INT_FATAL(this, "UseExpr::codegen not implemented");
+  return ret;
+}
+
+Expr* UseExpr::getFirstExpr() {
+  return this;
+}
+
+Expr* UseExpr::getFirstChild() {
+  return NULL;
+}
+
+void UseExpr::accept(AstVisitor* visitor) {
+  visitor->visitUseExpr(this);
 }
 
 /************************************ | *************************************

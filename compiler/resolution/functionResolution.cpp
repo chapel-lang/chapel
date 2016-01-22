@@ -46,6 +46,7 @@
 #include "../ifa/prim_data.h"
 #include "view.h"
 
+#include <algorithm>
 #include <inttypes.h>
 #include <map>
 #include <sstream>
@@ -1977,7 +1978,9 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
   //
   if (block && block->modUses) {
     for_actuals(expr, block->modUses) {
-      SymExpr* se = toSymExpr(expr);
+      UseExpr* use = toUseExpr(expr);
+      INT_ASSERT(use);
+      SymExpr* se = toSymExpr(use->mod);
       INT_ASSERT(se);
       ModuleSymbol* mod = toModuleSymbol(se->var);
       INT_ASSERT(mod);
@@ -2766,6 +2769,8 @@ static void buildVisibleFunctionMap() {
   nVisibleFunctions = gFnSymbols.n;
 }
 
+static bool matchedNameOrConstructor(const char* name, std::vector<const char*> vec);
+
 static BlockStmt*
 getVisibleFunctions(BlockStmt* block,
                     const char* name,
@@ -2808,7 +2813,35 @@ getVisibleFunctions(BlockStmt* block,
 
   if (block->modUses) {
     for_actuals(expr, block->modUses) {
-      SymExpr* se = toSymExpr(expr);
+      UseExpr* use = toUseExpr(expr);
+      INT_ASSERT(use);
+      if (use->excludes.size() > 0) {
+        // If the name we're searching for is in the exclude list of this
+        // use statement, don't go into this module to look for the name.
+        if (matchedNameOrConstructor(name, use->excludes))
+          continue;
+
+        if (use->impactedSymbols.size() > 0) {
+          // Check to see if the name we're looking for is one related to a
+          // type in our except list and if so, skip this use.
+          if (std::find(use->impactedSymbols.begin(), use->impactedSymbols.end(), name) != use->impactedSymbols.end())
+            continue;
+        }
+      } else if (use->includes.size() > 0) {
+        // If we had a match in the only list, or if the name we're looking
+        // for is one related to a type in our only list, we can safely check
+        // for that symbol in this scope.  Otherwise, we should continue
+        if (!matchedNameOrConstructor(name, use->includes)) {
+          if (use->impactedSymbols.size() > 0) {
+            if (std::find(use->impactedSymbols.begin(), use->impactedSymbols.end(), name) == use->impactedSymbols.end())
+              continue;
+          } else {
+            continue;
+          }
+        }
+      }
+
+      SymExpr* se = toSymExpr(use->mod);
       INT_ASSERT(se);
       ModuleSymbol* mod = toModuleSymbol(se->var);
       INT_ASSERT(mod);
@@ -2836,6 +2869,29 @@ getVisibleFunctions(BlockStmt* block,
   }
 
   return NULL;
+}
+
+// Determine if the provided name we're looking for is either in the vector
+// provided, or is a (type) constructor on a name in the vector.
+static bool matchedNameOrConstructor(const char* name, std::vector<const char*> vec) {
+  for_vector(const char, toCheck, vec) {
+    uint constructorLen = strlen(toCheck) + strlen("_construct_");
+    char constructorName[constructorLen];
+    strcpy(constructorName, "_construct_");
+    strcat(constructorName, toCheck);
+    uint typeConstLen = constructorLen + strlen("_type");
+    char typeConstructorName[typeConstLen];
+    strcpy(typeConstructorName, "_type_construct_");
+    strcat(typeConstructorName, toCheck);
+    if (!strcmp(name, toCheck) || !strcmp(constructorName, name) ||
+        !strcmp(typeConstructorName, name)) {
+      // Matches the name we're searching for, or the name we're
+      // searching for is a constructor or type constructor on this
+      // type
+      return true;
+    }
+  }
+  return false;
 }
 
 // Ensure 'parent' is the block before which we want to do the capturing.
@@ -7371,13 +7427,15 @@ computeStandardModuleSet() {
   while (ModuleSymbol* mod = stack.pop()) {
     if (mod->block->modUses) {
       for_actuals(expr, mod->block->modUses) {
-        SymExpr* se = toSymExpr(expr);
-        INT_ASSERT(se);
-        ModuleSymbol* use = toModuleSymbol(se->var);
+        UseExpr* use = toUseExpr(expr);
         INT_ASSERT(use);
-        if (!standardModuleSet.set_in(use->block)) {
-          stack.add(use);
-          standardModuleSet.set_add(use->block);
+        SymExpr* se = toSymExpr(use->mod);
+        INT_ASSERT(se);
+        ModuleSymbol* mod = toModuleSymbol(se->var);
+        INT_ASSERT(mod);
+        if (!standardModuleSet.set_in(mod->block)) {
+          stack.add(mod);
+          standardModuleSet.set_add(mod->block);
         }
       }
     }

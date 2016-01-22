@@ -148,6 +148,11 @@ void AstVisitorTraverse::visitUsymExpr(UnresolvedSymExpr* node)
 
 }
 
+void AstVisitorTraverse::visitUseExpr(UseExpr* node)
+{
+
+}
+
 bool AstVisitorTraverse::enterBlockStmt(BlockStmt* node)
 {
   return true;

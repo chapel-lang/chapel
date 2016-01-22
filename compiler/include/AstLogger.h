@@ -20,6 +20,9 @@
 #ifndef _AST_LOGGER_H_
 #define _AST_LOGGER_H_
 
+#include <cstdio>
+#include <vector>
+
 #include "AstVisitor.h"
 
 class AstLogger : public AstVisitor {
@@ -75,6 +78,8 @@ public:
 
   virtual void   visitUsymExpr    (UnresolvedSymExpr* node);
 
+  virtual void   visitUseExpr     (UseExpr*           node);
+
   //
   // The sub-classes of Stmt
   //
@@ -103,6 +108,9 @@ public:
 
   virtual bool   enterGotoStmt    (GotoStmt*          node);
   virtual void   exitGotoStmt     (GotoStmt*          node);
+
+ protected:
+  void outputVector (FILE* mFP, std::vector<const char *> vec);
 };
 
 #endif

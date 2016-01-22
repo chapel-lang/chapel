@@ -1672,8 +1672,8 @@ void initChplProgram(DefExpr* objectDef) {
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
 
-  CallExpr* base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
-  CallExpr* std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
+  UseExpr* base = new UseExpr(new UnresolvedSymExpr("ChapelBase"));
+  UseExpr* std  = new UseExpr(new UnresolvedSymExpr("ChapelStandard"));
 
   theProgram->block->insertAtTail(base);
 

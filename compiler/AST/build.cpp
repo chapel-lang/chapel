@@ -361,7 +361,7 @@ BlockStmt* buildChapelStmt(Expr* expr) {
 }
 
 
-static void addModuleToSearchList(CallExpr* newUse, BaseAST* module) {
+static void addModuleToSearchList(UseExpr* newUse, BaseAST* module) {
   UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
   if (modNameExpr) {
     addModuleToParseList(modNameExpr->unresolved, newUse);
@@ -372,7 +372,7 @@ static void addModuleToSearchList(CallExpr* newUse, BaseAST* module) {
 
 
 static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
-  CallExpr* newUse = new CallExpr(PRIM_USE, module);
+  UseExpr* newUse = new UseExpr(module);
   addModuleToSearchList(newUse, module);
   if (list == NULL) {
     return buildChapelStmt(newUse);
@@ -401,6 +401,31 @@ static void processStringInRequireStmt(const char* str) {
   }
 }
 
+//
+// Build a 'use' statement with an 'except' list
+//
+BlockStmt* buildUseStmt(Expr* mod, CallExpr* names, bool except) {
+  std::vector<const char*> namesList;
+
+  // Iterate through the list of names to exclude when using mod
+  for_actuals(expr, names) {
+    if (UnresolvedSymExpr* name = toUnresolvedSymExpr(expr)) {
+      namesList.push_back(name->unresolved);
+      name->remove();
+    } else {
+      // Currently we expect only unresolved sym exprs
+      if (except) {
+        USR_FATAL(expr, "incorrect expression in 'except' list, identifier expected");
+      } else {
+        USR_FATAL(expr, "incorrect expression in 'only' list, identifier expected");
+      }
+    }
+  }
+
+  UseExpr* newUse = new UseExpr(mod, &namesList, except);
+
+  return buildChapelStmt(newUse);
+}
 
 //
 // Build a 'use' statement

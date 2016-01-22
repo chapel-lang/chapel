@@ -75,8 +75,8 @@ void printStatistics(const char* pass) {
 
   int nStmt = nCondStmt + nBlockStmt + nGotoStmt;
   int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kExternBlockStmt;
-  int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
-  int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
+  int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr + nNamedExpr + nUseExpr;
+  int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr + kNamedExpr + kUseExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
   int nType = nPrimitiveType+nEnumType+nAggregateType;
@@ -404,6 +404,10 @@ const char* BaseAST::astTagAsString() const {
 
     case E_NamedExpr:
       retval = "NamedExpr";
+      break;
+
+    case E_UseExpr:
+      retval = "UseExpr";
       break;
 
     case E_BlockStmt:
