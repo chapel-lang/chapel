@@ -1,0 +1,143 @@
+Error Handling in Chapel
+========================
+
+Status:
+  Draft
+
+Authors:
+  Greg Titus
+  Kyle Brady
+  Michael Ferguson
+
+TODO:
+  Add an example of a forall loop and how we would catch an error coming out of
+  it.  The try label is not needed for this category of error, and if not
+  handled by users, would halt
+
+  reasons why try is placed onto statements
+
+
+Abstract
+--------
+
+A proposal for how error handling should work in Chapel.
+
+
+Rationale
+---------
+
+Chapel currently lacks a general strategy for errors. The standard library
+currently primarily uses two approaches: `halt()` and optional `out` arguments
+(`out error: sys err`, if argument provided, assumes user will handle it; else
+call `halt()` ). Each of these approaches has serious drawbacks.
+
+  * Halting the program is not appropriate in library code
+  * The output argument approach only returns error codes and doesn't permit
+    users to add new error codes or new types of errors.
+
+A more general strategy is desired. A good strategy would support the ability
+to write bulletproof code, ideally in a way that supports propagation of
+errors, and also the ability to get useful messages when errors are not
+handled.
+
+Description
+-----------
+
+Blah blah... see Swift:
+
+https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ErrorHandling.html
+
+Why Decorate Statements That Throw
+++++++++++++++++++++++++++++++++++
+
+The Swift error handling approach includes the use of 'try' to mark statements
+that can throw. This design addresses the most serious criticism of exceptions
+as a language feature - that they make the control flow possibilities hard to
+reason about. By marking each statement that can throw, the control flow
+possibilities can again be reasoned about with local information only.
+
+
+Examples
+--------
+
+Ex 1. Simple Errors
+
+As an example, this is a function currently (Jan 2016) on our Timer record in
+the standard modules:
+
+.. code-block:: chapel
+
+    proc start() : void {
+      if !running {
+        running = true;
+        time    = chpl_now_timevalue();
+      } else {
+        halt("start called on a timer that has not been stopped");
+      }
+    }
+
+It calls `halt` when the timer is already running, which is not very friendly.
+With our proposal this would instead be:
+
+.. code-block:: chapel
+
+    proc start() throws : void {
+      if !running {
+        running = true;
+        time    = chpl_now_timevalue();
+      } else {
+        raise Error("start called on a timer that has not been stopped");
+      }
+    }
+
+This function can now be used as follows:
+
+.. code-block:: chapel
+
+    var my_timer: Timer;
+    try! my_timer.start();
+    do {
+      my_timer.start();
+    } catch e: Error {
+      writeln(Error.message);
+    }
+    try! my_timer.start(); // Will halt the program!
+
+Ex 2. File IO
+
+A common place for errors is interactions with the filesystem, we currently
+handle these with two strategies, out arguments and halting.
+
+.. code-block:: chapel
+  var err: syserr;
+  var file = open("my_data.dat", error=err);
+  if !err {
+    var channel = file.writer(err);
+    if !err {
+      channel.write(1, 2, 4, 8, err);
+      if err {
+        halt("Failed to write out data");
+      }
+    } else {
+      halt("Failed to open channel");
+    }
+  } else {
+   halt("Failed to open file");
+  }
+
+.. code-block:: chapel
+  do {
+    var file = try open("my_data.dat");
+    var channel = try file.writer(err);
+    try channel.write(1, 2, 4, 8, err);
+  } catch  e: IOError {
+    halt(e.message());
+  }
+
+  // Equivalent to:
+
+  var file = try! open("my_data.dat");
+  var channel = try! file.writer(err);
+  try! channel.write(1, 2, 4, 8, err);
+
+
