@@ -36,12 +36,12 @@ DESCRIPTION
   --save-sphinx <directory>  Save generated Sphinx project in directory.
 
   --text-only       Generate text-based documentation instead of HTML. Takes
-		    precedence over --[no-]html
+                    precedence over --[no-]html
 
   --[no-]html       [Don't] generate HTML-based documentation (on by default)
 
   --[no-]print-commands  Prints the system commands that chpldoc executes
-  		    in order to create the documentation.
+                         in order to create the documentation.
 
 
   Information Options
@@ -52,7 +52,7 @@ DESCRIPTION
 
   --help-env        Print the command line option help message, listing
                     the environment variable equivalent for each flag, if
-		    applicable (see ENVIRONMENT), and its current value.
+                    applicable (see ENVIRONMENT), and its current value.
 
   --help-settings   Print the command line option help message, listing
                     the current setting of each option as specified by
@@ -99,4 +99,4 @@ SEE ALSO
 AUTHORS
   See $CHPL_HOME/CONTRIBUTORS for a list of contributors to Chapel.
 COPYRIGHT
-  Copyright (c) 2004-2015 Cray Inc. (See $CHPL_HOME/LICENSE for more details.)
+  Copyright (c) 2004-2016 Cray Inc. (See $CHPL_HOME/LICENSE for more details.)

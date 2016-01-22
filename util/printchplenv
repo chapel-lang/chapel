@@ -32,7 +32,7 @@ def print_mode(mode='list'):
     elif chpl_home and m == 'shell':
         print_var('CHPL_HOME', chpl_home, mode)
 
-    if m != 'runtime':
+    if m != 'runtime' and m != 'list':
         host_platform = chpl_platform.get('host')
         host_compiler = chpl_compiler.get('host')
         #host_arch = arch.get('host')
@@ -109,8 +109,9 @@ def print_mode(mode='list'):
         wide_pointer_defines = chpl_wide_pointers.get('define')
         print_var('CHPL_WIDE_POINTERS_DEFINES', wide_pointer_defines, mode, 'widedef')
 
-    llvm = chpl_llvm.get()
-    print_var('CHPL_LLVM', llvm, mode, 'llvm', ('compiler',))
+    if mode != 'list':
+        llvm = chpl_llvm.get()
+        print_var('CHPL_LLVM', llvm, mode, 'llvm', ('compiler',))
 
     aux_filesys = chpl_aux_filesys.get()
     if mode == 'make' or mode == 'runtime':

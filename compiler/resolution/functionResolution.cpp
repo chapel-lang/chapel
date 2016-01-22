@@ -5284,7 +5284,7 @@ preFold(Expr* expr) {
 
       // Check if string is in envMap, and replace result with mapped value
       if (envMap.find(envKey) != envMap.end()) {
-        result = new SymExpr(new_CStringSymbol(envMap[envKey]));
+        result = new SymExpr(new_StringSymbol(envMap[envKey]));
         call->replace(result);
       } else {
         USR_FATAL(call, "primitive string does not match any environment variable");
@@ -5624,7 +5624,7 @@ preFold(Expr* expr) {
         // specified.  This is the user's error.
         USR_FATAL(call, "'%d' is not a valid field number", fieldnum);
       }
-      result = new SymExpr(new_CStringSymbol(name));
+      result = new SymExpr(new_StringSymbol(name));
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NUM)) {
       AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());

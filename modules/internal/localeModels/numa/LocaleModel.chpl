@@ -237,13 +237,12 @@ module LocaleModel {
       numSublocales = chpl_task_getNumSublocales();
 
       extern proc chpl_task_getMaxPar(): uint(32);
-      maxTaskPar = if numSublocales==0 then chpl_task_getMaxPar()
-                                       else numSublocales;
+      maxTaskPar = chpl_task_getMaxPar();
 
       if numSublocales >= 1 {
         childSpace = {0..#numSublocales};
         // These nPUs* values are estimates only; better values await
-        // full hwloc support.
+        // full hwloc support. In particular it assumes a homogeneous node
         const nPUsPhysAccPerSubloc = nPUsPhysAcc/numSublocales;
         const nPUsPhysAllPerSubloc = nPUsPhysAll/numSublocales;
         const nPUsLogAccPerSubloc = nPUsLogAcc/numSublocales;

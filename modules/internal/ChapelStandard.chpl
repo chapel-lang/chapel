@@ -24,11 +24,11 @@ module ChapelStandard {
   use startInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 
   // Internal modules.
-  use ChapelEnv;
-  use ChapelBase;
   use CPtr;
   use CString;
   use String;
+  use ChapelEnv;
+  use ChapelBase;
   use MemConsistency;
   use Atomics;
   use NetworkAtomics;
