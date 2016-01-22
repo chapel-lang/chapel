@@ -695,22 +695,19 @@ module DefaultRectangular {
         if !dom.stridable {
           // Ideally we would like to be able to do something like
           // "for i in first..last by step". However, right now that would
-          // results in a strided iterator which isn't as optimized. It also
-          // introduces another range creation which in tight loops is
-          // unfortunately expensive. Ideally we don't want to be using C for
-          // loops outside of ChapelRange. However, since most other array data
-          // types are implemented in terms of DefaultRectangular, we think
-          // that this will serve as a second base case rather than the
-          // beginning of every iterator invoking a primitive C for loop
-          var i: idxType;
+          // result in a strided iterator which isn't as optimized. It would
+          // also add a range constructor, which in tight loops is pretty
+          // expensive. Instead we use a direct range iterator that is
+          // optimized for positively strided ranges. It should be just as fast
+          // as directly using a "c for loop", but it contains code check for
+          // overflow and invalid strides as well as the ability to use a less
+          // optimized iteration method if users are concerned about range
+          // overflow.
           const first = getDataIndex(dom.dsiLow);
           const second = getDataIndex(dom.dsiLow+1);
           const step = (second-first);
           const last = first + (dom.dsiNumIndices-1) * step;
-          while __primitive("C for loop",
-                            __primitive( "=", i, first),
-                            __primitive("<=", i, last),
-                            __primitive("+=", i, step)) {
+          for i in chpl_direct_pos_stride_range_iter(first, last, step) {
             yield theData(i);
           }
 
