@@ -300,7 +300,7 @@ static void addOneToSymbolTable(DefExpr* def)
 *                                                                           *
 ************************************* | ************************************/
 
-static ModuleSymbol* getUsedModule(Expr* expr);
+static ModuleSymbol* getUsedModule(UseExpr* use);
 static ModuleSymbol* getUsedModule(Expr* expr, UseExpr* useCall);
 
 static void validateExceptOnlyElem(UseExpr* use, const char* name, bool except);
@@ -362,12 +362,7 @@ static void processImportExprs() {
 // Return the module imported by a use call.  The module returned could be
 // nested: e.g. "use outermost.middle.innermost;"
 //
-static ModuleSymbol* getUsedModule(Expr* expr) {
-  UseExpr* use = toUseExpr(expr);
-
-  if (!use)
-    INT_FATAL(use, "Bad use statement in getUsedModule");
-
+static ModuleSymbol* getUsedModule(UseExpr* use) {
   return getUsedModule(use->mod, use);
 }
 

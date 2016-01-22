@@ -129,8 +129,6 @@ public:
   CallExpr*           byrefVars; //ref-clause in begin/cobegin/coforall/forall
 
 private:
-  void                createModUses();
-
   bool                canFlattenChapelStmt(const BlockStmt* stmt)  const;
 
   CallExpr*           blockInfo;

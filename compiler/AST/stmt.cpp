@@ -467,25 +467,18 @@ BlockStmt::length() const {
 }
 
 void
-BlockStmt::createModUses() {
+BlockStmt::moduleUseAdd(ModuleSymbol* mod) {
+  moduleUseAdd(new UseExpr(mod));
+}
+
+void
+BlockStmt::moduleUseAdd(UseExpr* use) {
   if (modUses == NULL) {
     modUses = new CallExpr(PRIM_USED_MODULES_LIST);
 
     if (parentSymbol)
       insert_help(modUses, this, parentSymbol);
   }
-}
-
-void
-BlockStmt::moduleUseAdd(ModuleSymbol* mod) {
-  createModUses();
-
-  modUses->insertAtTail(new UseExpr(mod));
-}
-
-void
-BlockStmt::moduleUseAdd(UseExpr* use) {
-  createModUses();
 
   modUses->insertAtTail(use);
 }
