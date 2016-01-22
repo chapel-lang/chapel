@@ -43,18 +43,68 @@ handled.
 Description
 -----------
 
-Blah blah... see Swift:
+This error handling proposal is inspired by the Swift error handling strategy.
+See
 
 https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ErrorHandling.html
+
+
+
+This strategy is appealing because it represents a middle ground arguably
+acceptable to devotees of both exceptions and error codes; it is easier to
+implement than stack-unwinding since it re-uses the existing return mechanisms;
+and it fits well with existing task parallelism.
+
+Summary of the Swift Error Handling Strategy
+++++++++++++++++++++++++++++++++++++++++++++
+
+Functions that can raise an error are declared with throws:
+
+::
+
+  func canThrowErrors() throws { … }
+  func cannotThrowErrors() { … }
+
+Calls that throw must be decorated with `try` or `try!`
+
+`try` propagates the error to an enclosing `do`/`catch` block or out of a
+throwing function `try!` halts if an error occurred
+
+Programs can respond to errors with `do`/`catch` statements:
+
+::
+
+  do {
+    try canThrowErrors()
+    try! canThrowErrors() // will halt on failure
+  } catch {
+    writeln("The first call failed!")
+  }
+
 
 Why Decorate Statements That Throw
 ++++++++++++++++++++++++++++++++++
 
-The Swift error handling approach includes the use of 'try' to mark statements
+The Swift error handling approach includes the use of `try` to mark statements
 that can throw. This design addresses the most serious criticism of exceptions
 as a language feature - that they make the control flow possibilities hard to
 reason about. By marking each statement that can throw, the control flow
 possibilities can again be reasoned about with local information only.
+
+Expected Additions for Chapel
++++++++++++++++++++++++++++++
+
+* Throwing errors from iterators
+* Ability to catch errors generated in runtime layers:
+
+  * Communication
+  * Memory allocation
+  * Task creation
+  * Not mandatory to check for these
+
+* Task joins propagate errors to parent tasks:
+
+  * Occurs at end the of sync/coforall/cobegin blocks
 
 
 Examples
@@ -97,7 +147,7 @@ This function can now be used as follows:
     var my_timer: Timer;
     try! my_timer.start();
     do {
-      my_timer.start();
+      try my_timer.start();
     } catch e: Error {
       writeln(Error.message);
     }
@@ -109,6 +159,7 @@ A common place for errors is interactions with the filesystem, we currently
 handle these with two strategies, out arguments and halting.
 
 .. code-block:: chapel
+
   var err: syserr;
   var file = open("my_data.dat", error=err);
   if !err {
@@ -126,6 +177,7 @@ handle these with two strategies, out arguments and halting.
   }
 
 .. code-block:: chapel
+
   do {
     var file = try open("my_data.dat");
     var channel = try file.writer(err);
