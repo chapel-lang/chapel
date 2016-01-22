@@ -1271,10 +1271,10 @@ module ChapelRange {
 
   // cases for when stride is a uint (we know the stride is must be positive)
   iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: uint(w)) {
-    for i in chpl_direct_uint_stride_range_iter(low, high, stride) do yield i;
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: uint(w)) {
-    for i in chpl_direct_uint_stride_range_iter(low, high, stride) do yield i;
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
 
 
@@ -1302,10 +1302,10 @@ module ChapelRange {
 
 
   // These are the "actual" direct range iterators. Note that they do not do
-  // any checks on the arguments, and rely on the above functions to
-  // check/coerce types (assumes args are of legal types, low/high are the same
-  // same type, and stride is valid.)
-  iter chpl_direct_uint_stride_range_iter(low: ?t, high, stride) {
+  // any checks on the arguments, and rely on the above functions/expert user
+  // to check/coerce types (i.e. they assume args are of legal types, low/high
+  // are the same same type, stride is valid, etc.)
+  iter chpl_direct_pos_stride_range_iter(low: ?t, high, stride) {
     if (useOptimizedRangeIterators) {
       chpl_range_check_stride(stride, t);
 
