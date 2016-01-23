@@ -1,1 +1,1 @@
-promoteRange.chpl:1: error: Bounds of '..' must be integers of compatible types, when specified.
+promoteRange.chpl:1: error: Bounds of 'low..high' must be integers of compatible types.
