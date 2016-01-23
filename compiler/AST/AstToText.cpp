@@ -880,6 +880,18 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         appendExpr(expr->get(1), printingType);
       }
 
+      else if (strcmp(fnName, "chpl__buildDomainExpr")        == 0)
+      {
+        mText += "{";
+        appendExpr(expr->get(1), printingType);
+        for (int index = 2; index <= expr->numActuals(); index++)
+        {
+          mText += ", ";
+          appendExpr(expr->get(index), printingType);
+        }
+        mText += "}";
+      }
+
       else if (strcmp(fnName, "chpl__ensureDomainExpr")       == 0)
       {
         appendExpr(expr->get(1), printingType);
