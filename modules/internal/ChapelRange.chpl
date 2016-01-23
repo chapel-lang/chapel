@@ -208,25 +208,30 @@ module ChapelRange {
 
   // Range builders for fully bounded ranges
   proc chpl_build_bounded_range(low: int(?w), high: int(w))
-    return new range(idxType = int(w), _low = low, _high = high);
+    return new range(int(w), _low=low, _high=high);
   proc chpl_build_bounded_range(low: uint(?w), high: uint(w))
-    return new range(uint(w), _low = low, _high = high);
+    return new range(uint(w), _low=low, _high=high);
   proc chpl_build_bounded_range(low, high) {
-    compilerError("Bounds of '..' must be integers of compatible types, when specified.");
+    compilerError("Bounds of 'low..high' must be integers of compatible types.");
   }
 
-  // Range builders for partially bounded ranges
-  proc chpl_build_partially_bounded_range(param bt: BoundedRangeType, bound: int(?w))
-    return new range(int(w), bt, false, bound, bound);
-  proc chpl_build_partially_bounded_range(param bt: BoundedRangeType, bound: uint(?w))
-    return new range(uint(w), bt, false, bound, bound);
-  proc chpl_build_partially_bounded_range(param bt: BoundedRangeType, bound) {
-    compilerError("Bounds of '..' must be integers of compatible types, when specified.");
+  // Range builders for low bounded ranges
+  proc chpl_build_low_bounded_range(low: integral)
+    return new range(low.type, BoundedRangeType.boundedLow, _low=low);
+  proc chpl_build_low_bounded_range(low) {
+    compilerError("Bound of 'low..' must be an integer");
+  }
+
+  // Range builders for high bounded ranges
+  proc chpl_build_high_bounded_range(high: integral)
+    return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
+  proc chpl_build_high_bounded_range(high) {
+    compilerError("Bound of '..high' must be an integer.");
   }
 
   // Range builder for unbounded ranges
-  proc chpl_build_unbounded_range(param bt: BoundedRangeType)
-    return new range(int, bt);
+  proc chpl_build_unbounded_range()
+    return new range(int, BoundedRangeType.boundedNone);
   
   
   //################################################################################
