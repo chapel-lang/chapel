@@ -334,9 +334,11 @@ static void deadStringLiteralElimination() {
         CallExpr*      ret_to_arg_assign = toCallExpr(stringUse->getStmtExpr());
         SymExpr*       ret_to_arg        = toSymExpr(ret_to_arg_assign->get(1));
         Vec<SymExpr*>* ret_to_arg_uses   = useMap.get(ret_to_arg->var);
+        INT_ASSERT(ret_to_arg_uses && ret_to_arg_uses->n == 1);
         CallExpr*      stringCtor        = toCallExpr(ret_to_arg_uses->v[0]->parentExpr);
         SymExpr*       call_tmp          = toSymExpr(stringCtor->get(1));
         Vec<SymExpr*>* call_tmp_defs     = defMap.get(call_tmp->var);
+        INT_ASSERT(call_tmp_defs && call_tmp_defs->n == 1);
         CallExpr*      call_tmp_assign   = toCallExpr(call_tmp_defs->v[0]->parentExpr);
 
         // remove all the AST, in the order listed in the function comment
