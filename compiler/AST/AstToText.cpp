@@ -996,11 +996,28 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       else if (strcmp(fnName, "range")                       == 0)
         appendExpr(expr, "range", printingType);
 
-      else if (strcmp(fnName, "chpl_build_bounded_range")    == 0)
+      else if (strcmp(fnName, "chpl_build_bounded_range") == 0)
       {
         appendExpr(expr->get(1), printingType);
         mText += "..";
         appendExpr(expr->get(2), printingType);
+      }
+
+      else if (strcmp(fnName, "chpl_build_low_bounded_range") == 0)
+      {
+        appendExpr(expr->get(1), printingType);
+        mText += "..";
+      }
+
+      else if (strcmp(fnName, "chpl_build_high_bounded_range") == 0)
+      {
+        mText += "..";
+        appendExpr(expr->get(1), printingType);
+      }
+
+      else if (strcmp(fnName, "chpl_build_unbounded_range") == 0)
+      {
+        mText += "..";
       }
 
       else if (strcmp(fnName, ".")                           == 0)

@@ -2,9 +2,9 @@ rangesAndDomains.doc
    Record: R
       var isRange: range
       var boundedRange = 1..10
-      var lowBoundedRange = BoundedRangeType.boundedLowchpl_build_partially_bounded_range1
-      var highBoundedRange = BoundedRangeType.boundedHighchpl_build_partially_bounded_range10
-      var unboundedRange = chpl_build_unbounded_range(BoundedRangeType.boundedNone)
+      var lowBoundedRange = 1..
+      var highBoundedRange = ..10
+      var unboundedRange = ..
    Record: D
       var is1DDomain: domain(1)
       var is2DDomain: domain(2)
