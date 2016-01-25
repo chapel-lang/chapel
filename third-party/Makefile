@@ -66,7 +66,7 @@ $(CHPL_VENV_TEST_REQS): $(CHPL_VENV_TEST_REQUIREMENTS_FILE)
 	cd chpl-venv && $(MAKE) test-venv
 
 chpldoc-venv: $(CHPL_VENV_SPHINX_BUILD)
-$(CHPL_VENV_SPHINX_BUILD):
+$(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE)
 	cd chpl-venv && $(MAKE) chpldoc-venv
 
 dlmalloc: $(DLMALLOC_INSTALL_DIR)
