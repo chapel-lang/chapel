@@ -57,7 +57,7 @@ package.
 Generating documentation
 ------------------------
 
-The easiest way to build the module documentation is to use the top level make
+The easiest way to build the Chapel documentation is to use the top level make
 target::
 
    [g]make module-docs
