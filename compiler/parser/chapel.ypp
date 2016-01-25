@@ -1433,11 +1433,11 @@ expr:
 | expr TDOTDOT expr
     { $$ = new CallExpr("chpl_build_bounded_range", $1, $3); }
 | expr TDOTDOT
-    { $$ = new CallExpr("chpl_build_partially_bounded_range", buildDotExpr("BoundedRangeType", "boundedLow"), $1); }
+    { $$ = new CallExpr("chpl_build_low_bounded_range", $1); }
 | TDOTDOT expr
-    { $$ = new CallExpr("chpl_build_partially_bounded_range", buildDotExpr("BoundedRangeType", "boundedHigh"), $2); }
+    { $$ = new CallExpr("chpl_build_high_bounded_range", $2); }
 | TDOTDOT
-    { $$ = new CallExpr("chpl_build_unbounded_range", buildDotExpr("BoundedRangeType", "boundedNone")); }
+    { $$ = new CallExpr("chpl_build_unbounded_range"); }
 ;
 
 lhs_expr:
