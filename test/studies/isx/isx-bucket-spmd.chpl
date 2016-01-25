@@ -105,7 +105,7 @@ config const isoBucketWidth = if mode == scaling.weakISO then 8192 else 0;
 // (Issue a warning if this has been set in modes other than weakISO)
 //
 if !quiet && mode != scaling.weakISO && isoBucketWidth != 0 then
-  warning("Note that isoBucketWidth has no effect for weakISO scaling mode");
+  warning("Note that 'isoBucketWidth' only impacts weakISO scaling mode");
 
 //
 // The maximum key value to use.  When debugging, use a small size.
