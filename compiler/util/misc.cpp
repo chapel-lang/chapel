@@ -63,14 +63,14 @@ static FnSymbol* err_fn = NULL;
 
 //
 // Chances are that all non-flat locale models will require wide
-// pointers.  Ultimately, we'd like to make such decisions be made by
+// pointers.  Ultimately, we'd like to have such decisions be made by
 // param fields/methods within the locale models themselves, but that
 // would require a fairly large refactoring, so for now, we
 // special-case 'flat' with the expectation that most other locale
-// models will not be.
+// models will not be flat.
 //
-bool forceWidePtrs() {
-  return strcmp(CHPL_LOCALE_MODEL, "flat");
+static bool forceWidePtrs() {
+  return (strcmp(CHPL_LOCALE_MODEL, "flat") != 0);
 }
 
 bool forceWidePtrsForLocal() {
