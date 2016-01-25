@@ -72,9 +72,7 @@
 /* Tasks */
 static aligned_t profile_task_yield = 0;
 static aligned_t profile_task_addToTaskList = 0;
-static aligned_t profile_task_processTaskList = 0;
 static aligned_t profile_task_executeTasksInList = 0;
-static aligned_t profile_task_freeTaskList = 0;
 static aligned_t profile_task_startMovedTask = 0;
 static aligned_t profile_task_getId = 0;
 static aligned_t profile_task_sleep = 0;
@@ -97,9 +95,7 @@ static void profile_print(void)
     /* Tasks */
     fprintf(stderr, "task yield: %lu\n", (unsigned long)profile_task_yield);
     fprintf(stderr, "task addToTaskList: %lu\n", (unsigned long)profile_task_addToTaskList);
-    fprintf(stderr, "task processTaskList: %lu\n", (unsigned long)profile_task_processTaskList);
     fprintf(stderr, "task executeTasksInList: %lu\n", (unsigned long)profile_task_executeTasksInList);
-    fprintf(stderr, "task freeTaskList: %lu\n", (unsigned long)profile_task_freeTaskList);
     fprintf(stderr, "task startMovedTask: %lu\n", (unsigned long)profile_task_startMovedTask);
     fprintf(stderr, "task getId: %lu\n", (unsigned long)profile_task_getId);
     fprintf(stderr, "task sleep: %lu\n", (unsigned long)profile_task_sleep);
@@ -798,11 +794,11 @@ int chpl_task_createCommTask(chpl_fn_p fn,
 void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                              void             *arg,
                              c_sublocid_t      subloc,
-                             chpl_task_list_p *task_list,
+                             void            **task_list,
                              int32_t           task_list_locale,
                              chpl_bool         is_begin_stmt,
                              int               lineno,
-                             int32_t          filename)
+                             int32_t           filename)
 {
     chpl_bool serial_state = chpl_task_getSerial();
 
@@ -833,19 +829,9 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
     }
 }
 
-void chpl_task_processTaskList(chpl_task_list_p task_list)
-{
-    PROFILE_INCR(profile_task_processTaskList,1);
-}
-
-void chpl_task_executeTasksInList(chpl_task_list_p task_list)
+void chpl_task_executeTasksInList(void **task_list)
 {
     PROFILE_INCR(profile_task_executeTasksInList,1);
-}
-
-void chpl_task_freeTaskList(chpl_task_list_p task_list)
-{
-    PROFILE_INCR(profile_task_freeTaskList,1);
 }
 
 void chpl_task_startMovedTask(chpl_fn_p      fp,

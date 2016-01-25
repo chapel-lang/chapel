@@ -375,7 +375,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
     // Now get the taskList field out of the end count.
 
-    taskList = newTemp(astr("_taskList", fn->name), dtTaskList->refType);
+    taskList = newTemp(astr("_taskList", fn->name), dtCVoidPtr);
 
     // If the end count is a reference, dereference it.
     // EndCount is a class.
@@ -457,7 +457,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   } else {
     // create a task list argument.
     ArgSymbol *taskListArg = new ArgSymbol( INTENT_IN, "dummy_taskList", 
-                                            dtTaskList->refType );
+                                            dtCVoidPtr );
     taskListArg->addFlag(FLAG_NO_CODEGEN);
     wrap_fn->insertFormalAtTail(taskListArg);
     ArgSymbol *taskListNode = new ArgSymbol( INTENT_IN, "dummy_taskListNode", 

@@ -540,7 +540,7 @@ void dequeue_task(task_pool_p ptask) {
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
                              c_sublocid_t subloc,
-                             chpl_task_list_p* p_task_list,
+                             void** p_task_list_void,
                              int32_t task_list_locale,
                              chpl_bool is_begin_stmt,
                              int lineno,
@@ -562,7 +562,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
 
   if (task_list_locale == chpl_nodeID) {
     (void) add_to_task_pool(chpl_ftable[fid], arg, false, chpl_data,
-                            (task_pool_p*) p_task_list, is_begin_stmt,
+                            (task_pool_p*) p_task_list_void, is_begin_stmt,
                             lineno, filename);
 
   }
@@ -582,12 +582,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
 }
 
 
-void chpl_task_processTaskList(chpl_task_list_p task_list) {
-}
-
-
-void chpl_task_executeTasksInList(chpl_task_list_p* p_task_list) {
-  task_pool_p* p_task_list_head = (task_pool_p*) p_task_list;
+void chpl_task_executeTasksInList(void** p_task_list_void) {
+  task_pool_p* p_task_list_head = (task_pool_p*) p_task_list_void;
   task_pool_p curr_ptask;
   task_pool_p child_ptask;
 
@@ -669,10 +665,6 @@ void chpl_task_executeTasksInList(chpl_task_list_p* p_task_list) {
     chpl_mem_free(child_ptask, 0, 0);
 
   }
-}
-
-
-void chpl_task_freeTaskList(chpl_task_list_p task_list) {
 }
 
 

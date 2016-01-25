@@ -1387,7 +1387,6 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     BlockStmt* block = ForLoop::buildForLoop(indices, iterator, beginBlk, true, zippered);
     block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gTrue)));
     block->insertAtHead(new DefExpr(coforallCount));
-    block->insertAtTail(new CallExpr(PRIM_PROCESS_TASK_LIST, coforallCount));
     beginBlk->insertBefore(new CallExpr("_upEndCount", coforallCount));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
     block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
@@ -2174,7 +2173,6 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
 
   block->insertAtHead(new CallExpr(PRIM_MOVE, cobeginCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gTrue)));
   block->insertAtHead(new DefExpr(cobeginCount));
-  block->insertAtTail(new CallExpr(PRIM_PROCESS_TASK_LIST, cobeginCount));
   block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount));
   block->insertAtTail(new CallExpr("_endCountFree", cobeginCount));
 

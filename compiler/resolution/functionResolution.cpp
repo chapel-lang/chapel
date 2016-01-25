@@ -6267,8 +6267,6 @@ postFold(Expr* expr) {
                call->isPrimitive(PRIM_SINGLE_READFF) ||
                call->isPrimitive(PRIM_SINGLE_READXX) ||
                call->isPrimitive(PRIM_SINGLE_IS_FULL) ||
-               call->isPrimitive(PRIM_EXECUTE_TASKS_IN_LIST) ||
-               call->isPrimitive(PRIM_FREE_TASK_LIST) ||
                (call->primitive &&
                 (!strncmp("_fscan", call->primitive->name, 6) ||
                  !strcmp("_readToEndOfLine", call->primitive->name) ||
