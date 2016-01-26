@@ -5313,7 +5313,7 @@ yyreduce:
 
   case 165:
 #line 882 "chapel.ypp" /* yacc.c:1661  */
-    { (yyval.pch) = "align"; }
+    { (yyval.pch) = "chpl_align"; }
 #line 5318 "bison-chapel.cpp" /* yacc.c:1661  */
     break;
 
@@ -6652,7 +6652,7 @@ yyreduce:
 
   case 406:
 #line 1524 "chapel.ypp" /* yacc.c:1661  */
-    { (yyval.pexpr) = new CallExpr("align", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+    { (yyval.pexpr) = new CallExpr("chpl_align", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
 #line 6657 "bison-chapel.cpp" /* yacc.c:1661  */
     break;
 
