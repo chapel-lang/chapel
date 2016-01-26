@@ -5,17 +5,7 @@ Status:
   Draft
 
 Authors:
-  Greg Titus
-  Kyle Brady
-  Michael Ferguson
-
-TODO:
-  Add an example of a forall loop and how we would catch an error coming out of
-  it.  The try label is not needed for this category of error, and if not
-  handled by users, would halt
-
-  reasons why try is placed onto statements
-
+  Greg Titus, Kyle Brady, Michael Ferguson
 
 Abstract
 --------
@@ -28,7 +18,7 @@ Rationale
 
 Chapel currently lacks a general strategy for errors. The standard library
 currently primarily uses two approaches: `halt()` and optional `out` arguments
-(`out error: sys err`, if argument provided, assumes user will handle it; else
+(`out error: syserr`, if argument provided, assumes user will handle it; else
 call `halt()` ). Each of these approaches has serious drawbacks.
 
   * Halting the program is not appropriate in library code
@@ -47,7 +37,6 @@ This error handling proposal is inspired by the Swift error handling strategy.
 See
 
 https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ErrorHandling.html
-
 
 
 This strategy is appealing because it represents a middle ground arguably
@@ -110,7 +99,8 @@ Expected Additions for Chapel
 Examples
 --------
 
-Ex 1. Simple Errors
+Example 1: Simple Errors
+++++++++++++++++++++++++
 
 As an example, this is a function currently (Jan 2016) on our Timer record in
 the standard modules:
@@ -136,7 +126,7 @@ With our proposal this would instead be:
         running = true;
         time    = chpl_now_timevalue();
       } else {
-        raise Error("start called on a timer that has not been stopped");
+        throw new Error("start called on a timer that has not been stopped");
       }
     }
 
@@ -153,7 +143,8 @@ This function can now be used as follows:
     }
     try! my_timer.start(); // Will halt the program!
 
-Ex 2. File IO
+Example 2: File IO
+++++++++++++++++++
 
 A common place for errors is interactions with the filesystem, we currently
 handle these with two strategies, out arguments and halting.
@@ -192,4 +183,101 @@ handle these with two strategies, out arguments and halting.
   var channel = try! file.writer(err);
   try! channel.write(1, 2, 4, 8, err);
 
+Example 3: Errors In cobegins
++++++++++++++++++++++++++++++
 
+`cobegin`, and other task parallel constructs create tasks which could have
+errors. These errors will be provided at task join.
+
+.. code-block:: chapel
+
+  proc encounterError() throws { throw new Error(); }
+  proc noError() throws { return; }
+  do {
+    try cobegin {
+      try encounterError();
+      try noError();
+      try encounterError();
+    }
+  } catch errors: CobeginErrors { // could use a better name
+    for e in errors {
+      writeln(e); // Would print out two lines
+    }
+  }
+
+Example 4: Errors In Iterators
+++++++++++++++++++++++++++++++
+This is the current `glob` iterator in the `FileSystem` module:
+
+.. code-block:: chapel
+
+  iter glob(pattern: string = "*"): string {
+    use chpl_glob_c_interface;
+    var glb : glob_t;
+
+    const err = chpl_glob(pattern.localize().c_str(), 0, glb);
+    if (err != 0 && err != GLOB_NOMATCH) then
+      __primitive("chpl_error", c"unhandled error in glob()");
+    const num = chpl_glob_num(glb).safeCast(int);
+    for i in 0..num-1 do
+      yield chpl_glob_index(glb, i.safeCast(size_t)): string;
+
+    globfree(glb);
+  }
+
+The new version would look like:
+
+.. code-block:: chapel
+
+  iter glob(pattern: string = "*"): string {
+    ...
+    if (err != 0 && err != GLOB_NOMATCH) then
+      throw new Error("unhandled error in glob()");
+    ...
+  }
+
+Which can then be used like this:
+
+.. code-block:: chapel
+
+    do {
+      try for x in glob() {
+        writeln(x);
+      }
+    } catch e: Error {
+      writeln("Error in glob");
+    }
+
+Raising an error will halt the execution of the iterator. Errors in follower
+iterations in `coforall` and `forall` loops may still allow some iteration to
+occur. All errors will be reported at task join, as in example 3.
+
+
+Example 5: Errors In Runtime Operations
++++++++++++++++++++++++++++++++++++++++
+
+Many kinds of runtime operations in Chapel have the potential to fail (say if
+you are out of memory). This class of errors will not be mandatory to check
+for. But, if one is encountered at runtime and you do not check for it, your
+program will halt.
+
+.. code-block:: chapel
+
+    do {
+      try on Locales[0] {
+        writeln("Hello!");
+      }
+    } catch e: OutOfMemoryError {
+      free_large_object();
+      // This on statement does not have a try, and will halt execution if it fails
+      on Locales[0] {
+        writeln("Hello!");
+      }
+    }
+
+
+Implementaion Notes
+-------------------
+
+Since this error handling strategy is based off returning either the value or
+an error, better support for union types in chapel may be necessary.
