@@ -91,9 +91,9 @@ void checkPrimitives()
      case PRIM_TO_LEADER:
      case PRIM_TO_FOLLOWER:
      case PRIM_FIELD_NUM_TO_NAME:
+     case PRIM_FIELD_NAME_TO_NUM:
      case PRIM_FIELD_VALUE_BY_NUM:
      case PRIM_FIELD_ID_BY_NUM:
-     case PRIM_FIELD_VALUE_BY_NAME:
      case PRIM_ENUM_MIN_BITS:
      case PRIM_ENUM_IS_SIGNED:
      case PRIM_IS_UNION_TYPE:

@@ -5568,6 +5568,7 @@ preFold(Expr* expr) {
       result = new SymExpr(new_CStringSymbol(name));
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NUM)) {
+      // if call->get(1) is a reference type, dereference it
       AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
       INT_ASSERT( classtype != NULL );
       classtype = toAggregateType(classtype->getValType());
@@ -5592,6 +5593,7 @@ preFold(Expr* expr) {
       }
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_ID_BY_NUM)) {
+      /* this is really for unions */
       AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
       INT_ASSERT( classtype != NULL );
       classtype = toAggregateType(classtype->getValType());
@@ -5613,8 +5615,8 @@ preFold(Expr* expr) {
         }
       }
       call->replace(result);
-    } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NAME)) {
-      AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
+    } else if (call->isPrimitive(PRIM_FIELD_NAME_TO_NUM)) {
+      AggregateType* classtype = toAggregateType(toSymExpr(call->get(1))->var->type);
       INT_ASSERT( classtype != NULL );
       classtype = toAggregateType(classtype->getValType());
       INT_ASSERT( classtype != NULL );
@@ -5630,16 +5632,18 @@ preFold(Expr* expr) {
 
       const char* fieldname = imm->v_string;
       int fieldcount = 0;
+      int num = 0;  // return 0 if the field is not found.
       for_fields(field, classtype) {
         if( ! isNormalField(field) ) continue;
 
         fieldcount++;
         if ( 0 == strcmp(field->name,  fieldname) ) {
-          result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(),
-                                new_CStringSymbol(field->name));
+          num = fieldcount;
           break;
         }
       }
+      result = new SymExpr(new_IntSymbol(num));
+
       call->replace(result);
     } else if (call->isPrimitive(PRIM_CALL_RESOLVES) ||
                call->isPrimitive(PRIM_METHOD_CALL_RESOLVES)) {
