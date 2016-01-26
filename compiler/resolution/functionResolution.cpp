@@ -3567,6 +3567,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
       }
     }
   } else {
+    INT_ASSERT(best->fn);
     best->fn = defaultWrap(best->fn, &best->alignedFormals, &info);
     reorderActuals(best->fn, &best->alignedFormals, &info);
     coerceActuals(best->fn, &info);
