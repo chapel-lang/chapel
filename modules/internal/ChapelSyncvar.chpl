@@ -48,9 +48,22 @@ module ChapelSyncvar {
   inline proc chpl__readXX(x) return x;
 
   proc chpl_ensureFEType(type t) {
-    if !(isVoidType(t) || isBoolType(t) || isIntegralType(t) ||
-         isRealType(t) || isStringType(t) || isClassType(t)) {
-      compilerError("sync/single types cannot be of type ", t:string);
+    //
+    // The following types are OK for full empty types (sync/single)
+    // because they represent a single logical value.  (Note that for
+    // the class it's the referenece to the object that has full/empty
+    // semantics.  Note that this includes the internal type
+    // chpl_taskID_t in order to keep parallel/taskPar/sungeun/private.chpl
+    // working, but this does not seem to be more broadly necessary.
+    //
+    if !(isVoidType(t) || isBoolType(t) || isIntegralType(t) || 
+         isEnumType(t) || isFloatType(t) || isStringType(t) || 
+         isClassType(t) || t == chpl_taskID_t) {
+      //
+      // TODO: compilerError() does not seem to be propagating up to
+      // the user-level modules... it should, shouldn't it?
+      //
+      compilerError("sync/single types cannot be of type '", t:string, "'");
     }
   }
 

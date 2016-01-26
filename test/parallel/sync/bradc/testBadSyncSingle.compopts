@@ -1,0 +1,8 @@
+-st=complex(64)                      # testBadSyncSingle-complex64
+-st=complex(128)                     # testBadSyncSingle-complex128
+-st=range                            # testBadSyncSingle-range
+-st=R                                # testBadSyncSingle-R
+-st=complex(64) -stestSingle=true    # testBadSyncSingle-complex64
+-st=complex(128) -stestSingle=true   # testBadSyncSingle-complex128
+-st=range -stestSingle=true          # testBadSyncSingle-range
+-st=R -stestSingle=true              # testBadSyncSingle-R
