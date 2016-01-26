@@ -374,6 +374,12 @@ static bool isDeadModule(ModuleSymbol* mod) {
 
   // if there is only one thing in the module
   if (mod->block->body.length == 1) {
+    if (!mod->initFn) {
+      // Prevents a segfault experienced when cleaning up a module which has
+      // only an inner module defined in it (and neither have an init function)
+      INT_FATAL("Expected initFn for module '%s', but was null", mod->name);
+    }
+
     // and that thing is the init function
     if (mod->block->body.only() == mod->initFn->defPoint) {
       // and the init function is empty (only has a return)
