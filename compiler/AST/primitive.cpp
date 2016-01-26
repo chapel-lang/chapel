@@ -512,7 +512,6 @@ initPrimitive() {
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false, true);
   prim_def(PRIM_TYPEOF, "typeof", returnInfoFirstDeref);
-  prim_def(PRIM_USE, "use", returnInfoVoid, true);
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);
   prim_def(PRIM_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
   prim_def(PRIM_TUPLE_AND_EXPAND, "and_expand_tuple", returnInfoVoid);

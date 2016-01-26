@@ -299,28 +299,36 @@ static void addOneToSymbolTable(DefExpr* def)
 *                                                                           *
 ************************************* | ************************************/
 
-static ModuleSymbol* getUsedModule(Expr* expr);
-static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall);
+static ModuleSymbol* getUsedModule(UseStmt* use);
+static ModuleSymbol* getUsedModule(Expr* expr, UseStmt* useCall);
 
 static void processImportExprs() {
   // handle "use mod;" where mod is a module
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_USE)) {
-      SET_LINENO(call);
+  forv_Vec(UseStmt, use, gUseStmts) {
+    SET_LINENO(use);
 
-      ModuleSymbol* mod = getUsedModule(call);
+    ModuleSymbol* mod = getUsedModule(use);
 
-      if (!mod)
-        USR_FATAL(call, "Cannot find module");
+    if (!mod)
+      USR_FATAL(use, "Cannot find module");
 
-      ModuleSymbol* enclosingModule = call->getModule();
+    // We don't need to perform any resolution on the default use of the
+    // rootModule, so don't add it to the current module's use list or that
+    // of its block (it should already be in the latter).
+    if (mod == rootModule)
+      continue;
 
-      enclosingModule->moduleUseAdd(mod);
+    use->mod->replace(new SymExpr(mod));
+    // Need to update the use now that we've found what it refers to
 
-      getVisibilityBlock(call)->moduleUseAdd(mod);
+    ModuleSymbol* enclosingModule = use->getModule();
 
-      call->getStmtExpr()->remove();
-    }
+    enclosingModule->moduleUseAdd(mod);
+
+    BlockStmt* useParent = getVisibilityBlock(use);
+    use->getStmtExpr()->remove();
+
+    useParent->moduleUseAdd(use);
   }
 }
 
@@ -328,23 +336,15 @@ static void processImportExprs() {
 // Return the module imported by a use call.  The module returned could be
 // nested: e.g. "use outermost.middle.innermost;"
 //
-static ModuleSymbol* getUsedModule(Expr* expr) {
-  CallExpr* call = toCallExpr(expr);
-
-  if (!call)
-    INT_FATAL(call, "Bad use statement in getUsedModule");
-
-  if (!call->isPrimitive(PRIM_USE))
-    INT_FATAL(call, "Bad use statement in getUsedModule");
-
-  return getUsedModule(call->get(1), call);
+static ModuleSymbol* getUsedModule(UseStmt* use) {
+  return getUsedModule(use->mod, use);
 }
 
 
 //
 // Helper routine to factor some 'use' error messages into a single place
 //
-static void printModuleUseError(CallExpr* useExpr, 
+static void printModuleUseError(UseStmt* useExpr,
                                 Symbol* sym = NULL) {
   if (sym && !sym->isImmediate()) {
     if (sym->name) {
@@ -364,7 +364,7 @@ static void printModuleUseError(CallExpr* useExpr,
 // if the symbol in question is a module symbol return it; otherwise,
 // generate an error.
 //
-static ModuleSymbol* getUsedModuleSymbol(CallExpr* useExpr, Symbol* symbol) {
+static ModuleSymbol* getUsedModuleSymbol(UseStmt* useExpr, Symbol* symbol) {
   if (ModuleSymbol* mod = toModuleSymbol(symbol)) {
     return mod;
   } else {
@@ -377,7 +377,7 @@ static ModuleSymbol* getUsedModuleSymbol(CallExpr* useExpr, Symbol* symbol) {
 // Return the module imported by a use call.  The module returned could be
 // nested: e.g. "use outermost.middle.innermost;"
 //
-static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
+static ModuleSymbol* getUsedModule(Expr* expr, UseStmt* useCall) {
   //
   // This handles the simple case of 'use <symbol>' (as well as error
   // cases that try to use non-module symbols)
@@ -402,7 +402,7 @@ static ModuleSymbol* getUsedModule(Expr* expr, CallExpr* useCall) {
       return NULL;
     }
 
-  }  else if (CallExpr* call = toCallExpr(expr)) {
+  } else if (CallExpr* call = toCallExpr(expr)) {
     //
     // This handles the case of 'use <symbol>.<symbol>' (as well as
     // error cases in which other expressions than '.' are used)
@@ -1954,7 +1954,10 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
           modules = new Vec<ModuleSymbol*>();
 
           for_actuals(expr, block->modUses) {
-            SymExpr* se = toSymExpr(expr);
+            UseStmt* use = toUseStmt(expr);
+            INT_ASSERT(use);
+
+            SymExpr* se = toSymExpr(use->mod);
             INT_ASSERT(se);
 
             ModuleSymbol* mod = toModuleSymbol(se->var);
@@ -2103,10 +2106,13 @@ static void buildBreadthFirstModuleList(Vec<ModuleSymbol*>* modules,
       break;
     } else if (module->block->modUses) {
       for_actuals(expr, module->block->modUses) {
-        SymExpr*      se  = toSymExpr(expr);
-        INT_ASSERT(se);
+        UseStmt*     use  = toUseStmt(expr);
+        INT_ASSERT(use);
 
-        ModuleSymbol* mod = toModuleSymbol(se->var);
+        SymExpr* useSE = toSymExpr(use->mod);
+        INT_ASSERT(useSE);
+
+        ModuleSymbol* mod = toModuleSymbol(useSE->var);
         INT_ASSERT(mod);
 
         if (!alreadySeen->set_in(mod)) {

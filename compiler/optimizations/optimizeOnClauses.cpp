@@ -266,7 +266,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_ACTUALS_LIST:
   case PRIM_YIELD:
 
-  case PRIM_USE:
   case PRIM_USED_MODULES_LIST:
 
   case PRIM_WHEN:

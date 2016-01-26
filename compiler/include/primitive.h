@@ -144,7 +144,6 @@ enum PrimitiveTag {
   PRIM_CAST,
   PRIM_DYNAMIC_CAST,
   PRIM_TYPEOF,
-  PRIM_USE,
   PRIM_USED_MODULES_LIST,       // used modules in BlockStmt::modUses
   PRIM_TUPLE_EXPAND,
   PRIM_TUPLE_AND_EXPAND,

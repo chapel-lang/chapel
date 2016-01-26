@@ -2842,7 +2842,7 @@ void ModuleSymbol::addDefaultUses() {
     SET_LINENO(this);
 
     modRef = new UnresolvedSymExpr("ChapelStandard");
-    block->insertAtHead(new CallExpr(PRIM_USE, modRef));
+    block->insertAtHead(new UseStmt(modRef));
 
   // We don't currently have a good way to fetch the root module by name.
   // Insert it directly rather than by name
@@ -2852,7 +2852,7 @@ void ModuleSymbol::addDefaultUses() {
     block->moduleUseAdd(rootModule);
 
     UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStringLiterals");
-    block->insertAtHead(new CallExpr(PRIM_USE, modRef));
+    block->insertAtHead(new UseStmt(modRef));
   }
 }
 
