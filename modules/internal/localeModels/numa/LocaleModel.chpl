@@ -332,7 +332,7 @@ module LocaleModel {
 
     proc getChild(idx:int) return this.myLocales[idx];
 
-    iter getChlidren() : locale  {
+    iter getChildren() : locale  {
       for loc in this.myLocales do
         yield loc;
     }
