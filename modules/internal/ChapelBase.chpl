@@ -1529,7 +1529,6 @@ module ChapelBase {
   pragma "no doc"
   inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
   pragma "no doc"
-  inline proc _defaultOf(type t) where t == c_void_ptr return _nullVoidPtr;
 
   pragma "no doc"
   inline proc _defaultOf(type t) where t: _ddata
