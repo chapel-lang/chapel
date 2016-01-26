@@ -17,15 +17,16 @@ following command::
 
     brew install chapel
 
-  .. note::
 
-     The Homebrew installation provides a minimal installation of Chapel for
-     users to explore and test the language.
-     Of the omitted features, :ref:`multilocale <readme-multilocale>` support
-     is most notable.
-     Users interested in utilizing all of the
-     language's rich features should clone the repository_ or
-     download a release_, and :ref:`build Chapel from source <readme-building>`.
+.. note::
+
+   The Homebrew installation provides a minimal installation of Chapel for
+   users to explore and test the language.
+   Of the omitted features, :ref:`multilocale <readme-multilocale>` support
+   is most notable.
+   Users interested in utilizing all of the
+   language's rich features should clone the repository_ or
+   download a release_, and :ref:`build Chapel from source <readme-building>`.
 
 .. _Homebrew: https://github.com/Homebrew/homebrew
 .. _repository: https://github.com/chapel-lang/chapel
