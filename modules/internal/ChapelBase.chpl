@@ -1425,23 +1425,6 @@ module ChapelBase {
     if a == 0 then return true; else return __primitive("<=", a, b);
   }
 
-  proc numFields(type t) param {
-    return __primitive("num fields", t);
-  }
-
-  proc fieldNumToName(type t, param i) param {
-    return __primitive("field num to name", t, i);
-  }
-
-  proc fieldValueByNum(x, param i) {
-    return __primitive("field value by num", x, i);
-  }
-
-  proc fieldValueByName(x, param name) {
-    compilerError("Not yet implemented");
-    return __primitive("field value by name", x, name);
-  }
-
   proc isClassType(type t) param where t:object return true;
   proc isClassType(type t) param return false;
 
