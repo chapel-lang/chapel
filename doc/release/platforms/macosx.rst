@@ -13,9 +13,9 @@ Homebrew
 --------
 
 A minimal installation of Chapel can be obtained through Homebrew_ with the
-following command:
+following command::
 
-``brew install chapel``
+    brew install chapel
 
   .. note::
 

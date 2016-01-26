@@ -1,38 +1,38 @@
 .. _readme-chpldoc:
 
-Documenting Chapel
-==================
+chpldoc
+=======
 
-The Chapel standard libraries are documented using ``chpldoc``, which
-generates HTML-based documentation for Chapel code from comments embedded
-within the code.
+``chpldoc`` is a tool for generating HTML based documentation from Chapel
+source code and embedded comments. It is similar in spirit to Godoc, Javadoc,
+and Pydoc. ``chpldoc`` is used to produce Chapel's web documentation for the
+:ref:`Standard Library <modules>` and
+:ref:`Built-in-Types and Functions <built-in-types>`.
 
-.. FIXME: Add link to web documentation, when it becomes available (thomasvandoren, 2015-03-10)
 
 **Contents**:
 
-#. chpldoc_
+#. buildchpldoc_
 #. Prerequisites_
-#. `Generating documentation`_
 #. `Documenting Chapel code`_
+#. `Documenting Modules`_
 #. `reStructuredText primer`_
 #. `Advanced chpldoc options`_
 #. `How chpldoc works`_
 #. `Future directions`_
 
-.. _chpldoc:
 
-chpldoc
--------
+.. _buildchpldoc:
 
-``chpldoc`` is a tool for generating HTML based documentation from Chapel
-source code and embedded comments. It is similar in spirit to Javadoc and
-Pydoc. To build ``chpldoc``, use::
+Building chpldoc
+----------------
+
+To build ``chpldoc``, use::
 
     [g]make chpldoc
 
-This will downloads the required Python package dependencies and creates the
-``chpldoc`` program in the same location as the ``chpl`` compiler.
+This downloads the required Python package dependencies and creates the
+``chpldoc`` program in the same directory as the ``chpl`` compiler.
 
 To ensure chpldoc is installed properly, optionally run the automatic sanity
 check::
@@ -51,19 +51,23 @@ package.
 
 .. _$CHPL_HOME/third-party/chpl-venv/README.md: https://github.com/chapel-lang/chapel/blob/master/third-party/chpl-venv/README.md
 
+.. _Documenting Chapel code:
 
-.. _Generating documentation:
+Documenting Chapel code
+-----------------------
 
-Generating documentation
-------------------------
+To document Chapel code, place a multi-line comment just prior to the
+definition of the symbol --- module, class, function, method, global variable,
+etc. --- that you wish to comment. All multi-line comments are considered
+potential documentation. Documentation is output in the same order that it
+exists in the source. Documentation text within comments is parsed as
+ReStructed Text.
 
-The easiest way to build the Chapel documentation is to use the top level make
-target::
 
-   [g]make module-docs
+.. _Documenting Modules:
 
-This will create HTML documentation for the standard modules and place it in
-``$CHPL_HOME/modules/docs/``. Open the index.html file in a browser to view it.
+Documenting Modules
+-------------------
 
 To document individual modules, inside the Chapel standard library or
 elsewhere, use the chpldoc command directory. For example::
@@ -83,19 +87,6 @@ As an example, there is a primer on the chpldoc capability in
 The output documentation will be located in::
 
    $CHPL_HOME/examples/primers/docs/chpldoc.html
-
-
-.. _Documenting Chapel code:
-
-Documenting Chapel code
------------------------
-
-To document Chapel code, place a multi-line comment just prior to the
-definition of the symbol --- module, class, function, method, global variable,
-etc. --- that you wish to comment. All multi-line comments are considered
-potential documentation. Documentation is output in the same order that it
-exists in the source. Documentation text within comments is parsed as
-ReStructed Text.
 
 
 Comment style
@@ -510,13 +501,13 @@ For example, when documenting a Chapel proc:
 
    /*
     * Calculates number of pipes and returns fooy.
-    * 
+    *
     * :arg bars: Number of bars. Must be more than 1 and less than 1000.
     * :type bars: int
-    * 
+    *
     * :arg hours: Hours available. Default is 1.0.
     * :type hours: real
-    * 
+    *
     * :returns: Amount of fooy available.
     * :rtype: Foo
     */
