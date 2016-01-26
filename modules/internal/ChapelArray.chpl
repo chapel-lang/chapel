@@ -2819,6 +2819,7 @@ module ChapelArray {
    *
   inline proc chpl_by(a:domain, b) { ... }
    *
+   * because the parser renames the routine since 'by' is a keyword.
    */
   proc by(a: domain, b) {
     var r: a.rank*range(a._value.idxType,

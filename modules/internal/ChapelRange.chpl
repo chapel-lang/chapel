@@ -921,6 +921,7 @@ module ChapelRange {
    *
   inline proc chpl_by(r, step) { ... }
    *
+   * because the parser renames the routine since 'by' is a keyword.
    */
   inline proc by(r, step) {
     if !isRange(r) then
@@ -934,6 +935,7 @@ module ChapelRange {
    *
   inline proc chpl_by(r: range(?), param step) { ... }
    *
+   * because the parser renames the routine since 'by' is a keyword.
    */
   // We want to warn the user at compiler time if they had an invalid param
   // stride rather than waiting until runtime.
@@ -948,6 +950,7 @@ module ChapelRange {
    *
   inline proc chpl_align(r: range(?i, ?b, ?s), algn: i) { ... }
    *
+   * because the parser renames the routine since 'align' is a keyword.
    */
   // This is the definition of the 'align' operator for ranges.
   // It produces a new range with the specified alignment.
@@ -967,6 +970,7 @@ module ChapelRange {
    *
   inline proc chpl_align(r: range(?i, ?b, ?s), algn) { ... }
    *
+   * because the parser renames the routine since 'align' is a keyword.
    */
   pragma "no doc"
   inline proc align(r : range(?i, ?b, ?s), algn) {
