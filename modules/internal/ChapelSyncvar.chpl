@@ -47,6 +47,13 @@ module ChapelSyncvar {
   pragma "no doc"
   inline proc chpl__readXX(x) return x;
 
+  proc chpl_ensureFEType(type t) {
+    if !(isVoidType(t) || isBoolType(t) || isIntegralType(t) ||
+         isRealType(t) || isStringType(t) || isClassType(t)) {
+      compilerError("sync/single types cannot be of type ", t:string);
+    }
+  }
+
   pragma "sync"
     pragma "no object" // Optimize out the object base pointer.
     pragma "no default functions"
@@ -63,6 +70,7 @@ module ChapelSyncvar {
       proc ~_syncvar() { __primitive("sync_destroy", this); }
 
       proc initialize() {
+        chpl_ensureFEType(base_type);
         __primitive("sync_init", this);
       }
     }
@@ -263,6 +271,7 @@ module ChapelSyncvar {
       proc ~_singlevar() { __primitive("single_destroy", this); }
 
       proc initialize() {
+        chpl_ensureFEType(base_type);
         __primitive("single_init", this);
       }
     }
