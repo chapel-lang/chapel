@@ -1151,12 +1151,15 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
 // At present, params cannot be passed to 'const ref'.
 static bool
 isLegalConstRefActualArg(ArgSymbol* formal, Expr* actual) {
+  bool retval = true;
+
   if (SymExpr* se = toSymExpr(actual))
-    if (se->var->isParameter())
-      if (okToConvertFormalToRefType(formal->type))
-        return false;
-  // Perhaps more checks are needed.
-  return true;
+    if (se->var->isParameter()                   ==  true &&
+        okToConvertFormalToRefType(formal->type) ==  true &&
+        isString(se->var)                        == false)
+      retval = false;
+
+  return retval;
 }
 
 
@@ -3564,6 +3567,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
       }
     }
   } else {
+    INT_ASSERT(best->fn);
     best->fn = defaultWrap(best->fn, &best->alignedFormals, &info);
     reorderActuals(best->fn, &best->alignedFormals, &info);
     coerceActuals(best->fn, &info);
@@ -5225,7 +5229,7 @@ preFold(Expr* expr) {
 
       // Check if string is in envMap, and replace result with mapped value
       if (envMap.find(envKey) != envMap.end()) {
-        result = new SymExpr(new_CStringSymbol(envMap[envKey]));
+        result = new SymExpr(new_StringSymbol(envMap[envKey]));
         call->replace(result);
       } else {
         USR_FATAL(call, "primitive string does not match any environment variable");
@@ -5565,7 +5569,7 @@ preFold(Expr* expr) {
         // specified.  This is the user's error.
         USR_FATAL(call, "'%d' is not a valid field number", fieldnum);
       }
-      result = new SymExpr(new_CStringSymbol(name));
+      result = new SymExpr(new_StringSymbol(name));
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NUM)) {
       // if call->get(1) is a reference type, dereference it

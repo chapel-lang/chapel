@@ -3785,9 +3785,10 @@ void CallExpr::prettyPrint(std::ostream *o) {
         *o << "*(";
         argList.last()->prettyPrint(o);
         *o << ")";
-      } else if (strcmp(expr->unresolved, "chpl_build_bounded_range") == 0 ||
-                 strcmp(expr->unresolved, "chpl_build_partially_bounded_range") == 0 ||
-                 strcmp(expr->unresolved, "chpl_build_unbounded_range") == 0) {
+      } else if (strcmp(expr->unresolved, "chpl_build_bounded_range") == 0) {
+        // Note that this code path is only used by chpldoc to create function
+        // return signatures and the only place a range will show up is in a
+        // fully specified array, in which case the range must be fully bounded
         argList.first()->prettyPrint(o);
         *o << "..";
         argList.last()->prettyPrint(o);
@@ -4006,6 +4007,9 @@ GenRet CallExpr::codegen() {
     }
     case PRIM_ARRAY_ALLOC:
     {
+      // get(1): return symbol
+      // get(2): element type
+      // get(3): number of elements
       GenRet dst = get(1);
       GenRet alloced;
       INT_ASSERT(dst.isLVPtr);

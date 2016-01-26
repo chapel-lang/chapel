@@ -317,7 +317,7 @@ tags
 /test/modules/standard/FileSystem/lydia/symlink/bar.txt
 /test/modules/standard/Path/lydia/realpath/blahblahblah.txt
 /test/modules/standard/Time/stonea/getCurrentDayOfWeek.good
-/test/modules/standard/machine/numCores.good
+/test/modules/standard/machine/numPUs.good
 /test/modules/standard/memory/countMemory/countMemory.*.good
 
 /test/multilocale/deitz/needMultiLocales/test_remote_file_read_class.txt

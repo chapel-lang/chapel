@@ -142,6 +142,12 @@ module String {
       }
     }
 
+    proc string(cs: c_string, owned: bool = true, needToCopy:  bool = true) {
+      this.owned = owned;
+      const cs_len = cs.length;
+      this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
+    }
+
     // This constructor can cause a leak if owned = false and needToCopy = true
     proc string(buff: bufferType, length: int, size: int,
                 owned: bool = true, needToCopy: bool = true) {
@@ -1134,7 +1140,7 @@ module String {
   //
   // Append
   //
-  proc +=(ref lhs: string, rhs: string) : void {
+  proc +=(ref lhs: string, const ref rhs: string) : void {
     // if rhs is empty, nothing to do
     if rhs.len == 0 then return;
 

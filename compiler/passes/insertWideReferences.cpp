@@ -235,6 +235,7 @@ static void derefWideRefsToWideClasses();
 static void widenGetPrivClass();
 static void moveAddressSourcesToTemp();
 static void fixAST();
+static void handleIsWidePointer();
 
 //
 // Miscellaneous utility functions to help manage the AST
@@ -658,7 +659,7 @@ static void widenSubAggregateTypes(Type* parent) {
 //
 static void addKnownWides() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ON_BLOCK)) {
+    if (fn->hasFlag(FLAG_ON_BLOCK) && !fn->hasFlag(FLAG_LOCAL_ON)) {
       // Get the arg bundle type for an on-stmt. Testing against a name like
       // "_class_localson_fn" is NOT enough, because sometimes the name is
       // a bit more complicated. Recursive iterators may introduce this.
@@ -1841,6 +1842,21 @@ static void buildTupleDefsUses() {
   }
 }
 
+void handleIsWidePointer() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_IS_WIDE_PTR)) {
+      SET_LINENO(call->getStmtExpr());
+      VarSymbol* isWide;
+      if (hasSomeWideness(call->get(1))) {
+        isWide = gTrue;
+      } else {
+        isWide = gFalse;
+      }
+      call->replace(new SymExpr(isWide));
+    }
+  }
+}
+
 //
 // Widen variables that may be remote.
 //
@@ -1848,8 +1864,10 @@ void
 insertWideReferences(void) {
   FnSymbol* heapAllocateGlobals = heapAllocateGlobalsHead();
 
-  if (!requireWideReferences())
+  if (!requireWideReferences()) {
+    handleIsWidePointer();
     return;
+  }
 
   Vec<Symbol*> heapVars;
   getHeapVars(heapVars);
@@ -1882,7 +1900,7 @@ insertWideReferences(void) {
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (FnSymbol* fn = call->isResolved()) {
-      if (fn->hasFlag(FLAG_ON_BLOCK)) { // wrapon_fn
+      if (fn->hasFlag(FLAG_ON_BLOCK) && !fn->hasFlag(FLAG_LOCAL_ON)) { // wrapon_fn
         std::set<FnSymbol*> downstream;
         collectUsedFnSymbols(call, downstream);
         for_set(FnSymbol, on, downstream) {
@@ -1951,6 +1969,8 @@ insertWideReferences(void) {
   // NWR
   fixAST();
   moveAddressSourcesToTemp();
+
+  handleIsWidePointer();
 
 #ifdef PRINT_WIDEN_SUMMARY
   printf("Spent %2.3f seconds propagating vars\n", debugTimer.elapsedSecs());

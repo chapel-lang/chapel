@@ -242,7 +242,6 @@ module Sys {
   extern proc sys_strerror(error:err_t, ref string_out:c_string):err_t;
 
   extern proc sys_readlink(path:c_string, ref string_out:c_string):err_t;
-  extern proc sys_readlink(path:c_string, ref string_out:c_string):err_t;
   extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
   extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):err_t;
   extern proc sys_close(fd:fd_t):err_t;

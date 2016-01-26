@@ -3,5 +3,5 @@ config param ac_string: c_string = "hello";
 
 proc main() {
   writeln(areal);
-  writeln(ac_string);
+  writeln(ac_string:string);
 }

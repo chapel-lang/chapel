@@ -567,7 +567,7 @@ module ChapelBase {
   }
 
   config param parallelInitElts=true;
-  proc init_elts(x, s, type t) {
+  proc init_elts(x, s, type t) : void {
     //
     // Q: why is the declaration of 'y' in the following loops?
     //
@@ -1459,6 +1459,7 @@ module ChapelBase {
   extern const QIO_STYLE_ELEMENT_TUPLE:int;
   extern const QIO_STYLE_ELEMENT_BYTE_ORDER:int;
   extern const QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER:int;
+  extern const QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS:int;
 
   extern const QIO_ARRAY_FORMAT_SPACE:int;
   extern const QIO_ARRAY_FORMAT_CHPL:int;

@@ -431,6 +431,10 @@ static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
         addCharString('\\');
       }
 
+      // \ escape ? to avoid C trigraphs
+      if (c == '?')
+        addCharString('\\');
+
       addCharString(c);
     }
 
@@ -440,6 +444,12 @@ static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
       if (c == '\n') {
         processNewline(scanner);
         addCharString('n');
+      } else if (c == 'u' || c == 'U') {
+        ParserContext context(scanner);
+        yyerror(yyLloc, &context, "universal character name not yet supported in string literal");
+      } else if ('0' <= c && c <= '7' ) {
+        ParserContext context(scanner);
+        yyerror(yyLloc, &context, "octal escape not supported in string literal");
       } else if (c != 0) {
         addCharString(c);
       }
