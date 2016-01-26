@@ -46,6 +46,7 @@ config const printall = false;
 config var seed = 0;
 config const maxiter = 20;
 config const output = true;
+config const parallel = true;
 
 use FileSystem;
 use Spawn;
@@ -404,7 +405,7 @@ proc create_and_analyze_graph()
 
     // TODO:  -> forall, but handle races in vertex labels?
     // iterate over G.vertices in a random order
-    forall vid in reorder {
+    serial !parallel { forall vid in reorder {
     //for vid in G.vertices {
 
       if printall then
@@ -459,7 +460,7 @@ proc create_and_analyze_graph()
         labels[vid].write(maxlabel, memory_order_relaxed);
     }
     i += 1;
-  }
+  } }
   
   if output {
     for vid in G.vertices {
