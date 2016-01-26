@@ -12,8 +12,8 @@ and Pydoc. ``chpldoc`` is used to produce Chapel's web documentation for the
 
 **Contents**:
 
-#. buildchpldoc_
-#. Prerequisites_
+#. `Building chpldoc`_
+#. `Prerequisites`_
 #. `Documenting Chapel code`_
 #. `Documenting Modules`_
 #. `reStructuredText primer`_
@@ -22,7 +22,7 @@ and Pydoc. ``chpldoc`` is used to produce Chapel's web documentation for the
 #. `Future directions`_
 
 
-.. _buildchpldoc:
+.. _Building chpldoc:
 
 Building chpldoc
 ----------------
