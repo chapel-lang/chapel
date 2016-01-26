@@ -916,6 +916,13 @@ module ChapelRange {
     return new range(i, b, true,  lw, hh, st, alt, ald);
   }
 
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_by(r, step) { ... }
+   *
+   * because the parser renames the routine since 'by' is a keyword.
+   */
   inline proc by(r, step) {
     if !isRange(r) then
       compilerError("the first argument of the 'by' operator is not a range");
@@ -923,6 +930,13 @@ module ChapelRange {
     return chpl_by_help(r, step);
   }
   
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_by(r: range(?), param step) { ... }
+   *
+   * because the parser renames the routine since 'by' is a keyword.
+   */
   // We want to warn the user at compiler time if they had an invalid param
   // stride rather than waiting until runtime.
   inline proc by(r : range(?), param step) {
@@ -931,7 +945,14 @@ module ChapelRange {
   }
   
   
-  // This is the syntax processing routine for the "align" keyword.
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_align(r: range(?i, ?b, ?s), algn: i) { ... }
+   *
+   * because the parser renames the routine since 'align' is a keyword.
+   */
+  // This is the definition of the 'align' operator for ranges.
   // It produces a new range with the specified alignment.
   // By definition, alignment is relative to the low bound of the range.
   pragma "no doc"
@@ -943,6 +964,14 @@ module ChapelRange {
                      r._low, r._high, r.stride, algn, true);
   }
 
+  
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_align(r: range(?i, ?b, ?s), algn) { ... }
+   *
+   * because the parser renames the routine since 'align' is a keyword.
+   */
   pragma "no doc"
   inline proc align(r : range(?i, ?b, ?s), algn) {
     compilerError("can't align a range with idxType ", i:string, 
