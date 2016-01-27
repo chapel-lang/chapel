@@ -50,6 +50,29 @@ public:
 *                                                                           *
 *                                                                           *
 ************************************* | ************************************/
+class UseStmt : public Stmt {
+ public:
+  Expr* mod; // Can be either an UnresolvedSymExpr, SymExpr, or CallExpr to
+  // specify an explicit module name.
+
+  UseStmt(BaseAST* module);
+
+  virtual void    verify();
+
+  DECLARE_COPY(UseStmt);
+
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual GenRet  codegen();
+  virtual void    accept(AstVisitor* visitor);
+  virtual Expr*   getFirstExpr();
+
+  virtual Expr*   getFirstChild();
+};
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
 
 enum BlockTag {
 // Bits:
@@ -115,6 +138,7 @@ public:
   int                 length()                                     const;
 
   void                moduleUseAdd(ModuleSymbol* mod);
+  void                moduleUseAdd(UseStmt* use);
   bool                moduleUseRemove(ModuleSymbol* mod);
   void                moduleUseClear();
 
@@ -123,7 +147,7 @@ public:
 
   BlockTag            blockTag;
   AList               body;
-  CallExpr*           modUses;       // module uses via PRIM_USE
+  CallExpr*           modUses;       // module uses
   const char*         userLabel;
   CallExpr*           byrefVars; //ref-clause in begin/cobegin/coforall/forall
 

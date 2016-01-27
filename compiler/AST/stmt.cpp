@@ -84,6 +84,66 @@ bool Stmt::isStmt() const {
 *                                                                   *
 *                                                                   *
 ********************************* | ********************************/
+UseStmt::UseStmt(BaseAST* module):
+  Stmt(E_UseStmt),
+  mod(NULL)
+{
+  if (Symbol* b = toSymbol(module)) {
+    mod = new SymExpr(b);
+  } else if (Expr* b = toExpr(module)) {
+    mod = b;
+  } else {
+    INT_FATAL(this, "Bad mod in UseStmt constructor");
+  }
+  gUseStmts.add(this);
+}
+
+UseStmt* UseStmt::copyInner(SymbolMap* map) {
+  UseStmt *_this = 0;
+  _this = new UseStmt(COPY_INT(mod));
+  return _this;
+}
+
+void UseStmt::verify() {
+  Expr::verify();
+  if (astTag != E_UseStmt) {
+    INT_FATAL(this, "Bad NamedExpr::astTag");
+  }
+  if (mod == NULL) {
+    INT_FATAL(this, "Bad UseStmt::mod");
+  }
+}
+
+void UseStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
+  if (old_ast == mod) {
+    mod = new_ast;
+  } else {
+    INT_FATAL(this, "Unexpected case in UseStmt::replaceChild");
+  }
+}
+
+GenRet UseStmt::codegen() {
+  GenRet ret;
+  INT_FATAL(this, "UseStmt::codegen not implemented");
+  return ret;
+}
+
+Expr* UseStmt::getFirstExpr() {
+  return this;
+}
+
+Expr* UseStmt::getFirstChild() {
+  return NULL;
+}
+
+void UseStmt::accept(AstVisitor* visitor) {
+  visitor->visitUseStmt(this);
+}
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
 
 BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
   Stmt(E_BlockStmt),
@@ -469,6 +529,11 @@ BlockStmt::length() const {
 
 void
 BlockStmt::moduleUseAdd(ModuleSymbol* mod) {
+  moduleUseAdd(new UseStmt(mod));
+}
+
+void
+BlockStmt::moduleUseAdd(UseStmt* use) {
   if (modUses == NULL) {
     modUses = new CallExpr(PRIM_USED_MODULES_LIST);
 
@@ -476,7 +541,7 @@ BlockStmt::moduleUseAdd(ModuleSymbol* mod) {
       insert_help(modUses, this, parentSymbol);
   }
 
-  modUses->insertAtTail(mod);
+  modUses->insertAtTail(use);
 }
 
 

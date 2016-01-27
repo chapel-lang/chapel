@@ -271,6 +271,35 @@ void AstDump::visitUsymExpr(UnresolvedSymExpr* node) {
 
 
 //
+// UseStmt
+//
+void AstDump::visitUseStmt(UseStmt* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    newline();
+  }
+
+  if (fLogIds) {
+    fprintf(mFP, "(%d ", node->id);
+    mNeedSpace = false;
+  } else {
+    write(true, "(", false);
+  }
+
+  if (mNeedSpace)
+    fputc(' ', mFP);
+
+  fprintf(mFP, "'use'");
+
+  mNeedSpace = true;
+
+  node->mod->accept(this);
+
+  write(false, ")", true);
+}
+
+
+
+//
 // BlockStmt
 //
 bool AstDump::enterBlockStmt(BlockStmt* node) {

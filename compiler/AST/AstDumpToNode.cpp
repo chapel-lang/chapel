@@ -969,6 +969,26 @@ void AstDumpToNode::visitUsymExpr(UnresolvedSymExpr* node)
   exitNode(node);
 }
 
+
+void AstDumpToNode::visitUseStmt(UseStmt* node)
+{
+  enterNode(node);
+
+  mOffset = mOffset + 2;
+
+  if (compact)
+  {
+    mNeedSpace = true;
+    fprintf(mFP, " 'use'");
+  }
+
+  newline();
+  node->mod->accept(this);
+  mOffset = mOffset - 2;
+  newline();
+  exitNode(node);
+}
+
 //
 //
 //
