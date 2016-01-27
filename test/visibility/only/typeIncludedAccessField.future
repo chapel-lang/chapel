@@ -1,5 +1,0 @@
-feature request: error when calling constructor of type named in only list
-
-At the moment, you can name a type in your 'only' list, but calling the
-constructor for that type generates an error.  That's really weird.  I can see
-methods on the type failing, but the constructor shares the same name!

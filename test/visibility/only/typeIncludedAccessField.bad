@@ -1,2 +1,0 @@
-typeIncludedAccessField.chpl:5: In function 'main':
-typeIncludedAccessField.chpl:7: error: unresolved call 'foo.fieldA'
