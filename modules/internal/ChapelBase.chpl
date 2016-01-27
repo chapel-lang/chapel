@@ -1529,7 +1529,6 @@ module ChapelBase {
   inline proc _defaultOf(type t) where t: chpl_taskID_t return chpl_nullTaskID;
   pragma "no doc"
   inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
-  pragma "no doc"
 
   pragma "no doc"
   inline proc _defaultOf(type t) where t: _ddata
