@@ -80,7 +80,6 @@ Symbol *gTimer = NULL;
 Symbol *gTaskID = NULL;
 Symbol *gSyncVarAuxFields = NULL;
 Symbol *gSingleVarAuxFields = NULL;
-Symbol *gTaskList = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;

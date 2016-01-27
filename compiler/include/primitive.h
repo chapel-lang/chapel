@@ -128,10 +128,6 @@ enum PrimitiveTag {
   PRIM_GET_END_COUNT,
   PRIM_SET_END_COUNT,
 
-  PRIM_PROCESS_TASK_LIST,
-  PRIM_EXECUTE_TASKS_IN_LIST,
-  PRIM_FREE_TASK_LIST,
-
   PRIM_GET_SERIAL,              // get serial state
   PRIM_SET_SERIAL,              // set serial state to true or false
 

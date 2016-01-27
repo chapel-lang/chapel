@@ -385,7 +385,7 @@ void chpl_task_stdModulesInitialized(void) {
 }
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg, c_sublocid_t subLoc,
-    chpl_task_list_p *task_list, int32_t task_list_locale,
+    void **task_list, int32_t task_list_locale,
     chpl_bool is_begin_stmt, int lineno, c_string filename) {
   //Create a new task directly
   myth_thread_option opt;
@@ -410,15 +410,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg, c_sublocid_t subLoc,
   myth_detach(th);
 }
 
-void chpl_task_processTaskList(chpl_task_list_p task_list) {
-  //Nothing to do because chpl_task_list is actually not used.
-}
-
-void chpl_task_executeTasksInList(chpl_task_list_p task_list) {
-  //Nothing to do because chpl_task_list is actually not used.
-}
-
-void chpl_task_freeTaskList(chpl_task_list_p task_list) {
+void chpl_task_executeTasksInList(void** task_list) {
   //Nothing to do because chpl_task_list is actually not used.
 }
 
