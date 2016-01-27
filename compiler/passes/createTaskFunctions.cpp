@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -359,6 +359,32 @@ void createTaskFunctions(void) {
                  info->isPrimitive(PRIM_BLOCK_COFORALL_ON)) {
         fn = new FnSymbol("on_fn");
         fn->addFlag(FLAG_ON);
+
+        // Remove the param arg that distinguishes a local-on
+        SymExpr* isLocalOn = toSymExpr(info->argList.head->remove());
+        if (isLocalOn->var == gTrue) {
+          fn->addFlag(FLAG_LOCAL_ON);
+
+          // Insert runtime check
+          if (!fNoLocalChecks) {
+            SymExpr* curNodeID = new SymExpr(gNodeID);
+
+            // Copy call that gets target nodeID
+            VarSymbol* targetNodeID = newTemp("local_on_tmp", NODE_ID_TYPE);
+            block->insertBefore(new DefExpr(targetNodeID));
+            block->insertBefore(new CallExpr(PRIM_MOVE, targetNodeID, new CallExpr("chpl_nodeFromLocaleID", info->argList.head->copy())));
+
+            // Build comparison
+            CallExpr* neq = new CallExpr(PRIM_NOTEQUAL, curNodeID, targetNodeID);
+
+            // Build error
+            CallExpr* err = new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("Local-on is not local")); 
+
+            CondStmt* cond = new CondStmt(neq, err);
+            block->insertBefore(cond);
+          }
+        }
+
         if (info->isPrimitive(PRIM_BLOCK_BEGIN_ON)) {
           fn->addFlag(FLAG_NON_BLOCKING);
           fn->addFlag(FLAG_BEGIN);

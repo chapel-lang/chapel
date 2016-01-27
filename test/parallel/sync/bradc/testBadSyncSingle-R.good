@@ -1,0 +1,1 @@
+testBadSyncSingle.chpl:4: error: sync/single types cannot be of type 'R'

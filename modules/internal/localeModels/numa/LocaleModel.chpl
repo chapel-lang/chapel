@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -110,8 +110,8 @@ module LocaleModel {
       parent = _parent;
     }
 
-    proc readWriteThis(f) {
-      parent.readWriteThis(f);
+    proc writeThis(f) {
+      parent.writeThis(f);
       f <~> '.'+name;
     }
 
@@ -171,7 +171,7 @@ module LocaleModel {
     proc chpl_name() return local_name;
 
 
-    proc readWriteThis(f) {
+    proc writeThis(f) {
       // Most classes will define it like this:
 //      f <~> name;
       // but here it is defined thus for backward compatibility.
@@ -225,27 +225,39 @@ module LocaleModel {
       extern proc chpl_task_getCallStackSize(): size_t;
       callStackSize = chpl_task_getCallStackSize();
 
+      extern proc chpl_getNumPhysicalCpus(accessible_only: bool): c_int;
+      nPUsPhysAcc = chpl_getNumPhysicalCpus(true);
+      nPUsPhysAll = chpl_getNumPhysicalCpus(false);
+
       extern proc chpl_getNumLogicalCpus(accessible_only: bool): c_int;
-      numCores = chpl_getNumLogicalCpus(true);
+      nPUsLogAcc = chpl_getNumLogicalCpus(true);
+      nPUsLogAll = chpl_getNumLogicalCpus(false);
 
       extern proc chpl_task_getNumSublocales(): int(32);
       numSublocales = chpl_task_getNumSublocales();
 
       extern proc chpl_task_getMaxPar(): uint(32);
-      maxTaskPar = if numSublocales==0 then chpl_task_getMaxPar()
-                                       else numSublocales;
+      maxTaskPar = chpl_task_getMaxPar();
 
       if numSublocales >= 1 {
         childSpace = {0..#numSublocales};
-        const numCoresPerNumaDomain = numCores/numSublocales;
-        const maxTaskParPerNumaDomain = chpl_task_getMaxPar()/numSublocales;
+        // These nPUs* values are estimates only; better values await
+        // full hwloc support. In particular it assumes a homogeneous node
+        const nPUsPhysAccPerSubloc = nPUsPhysAcc/numSublocales;
+        const nPUsPhysAllPerSubloc = nPUsPhysAll/numSublocales;
+        const nPUsLogAccPerSubloc = nPUsLogAcc/numSublocales;
+        const nPUsLogAllPerSubloc = nPUsLogAll/numSublocales;
+        const maxTaskParPerSubloc = chpl_task_getMaxPar()/numSublocales;
         const origSubloc = chpl_task_getRequestedSubloc(); // this should be any
         for i in childSpace {
           // allocate the structure on the proper sublocale
           chpl_task_setSubloc(i:chpl_sublocID_t);
           childLocales[i] = new NumaDomain(i:chpl_sublocID_t, this);
-          childLocales[i].numCores = numCoresPerNumaDomain;
-          childLocales[i].maxTaskPar = maxTaskParPerNumaDomain;
+          childLocales[i].nPUsPhysAcc = nPUsPhysAccPerSubloc;
+          childLocales[i].nPUsPhysAll = nPUsPhysAllPerSubloc;
+          childLocales[i].nPUsLogAcc = nPUsLogAccPerSubloc;
+          childLocales[i].nPUsLogAll = nPUsLogAllPerSubloc;
+          childLocales[i].maxTaskPar = maxTaskParPerSubloc;
         }
         chpl_task_setSubloc(origSubloc);
       }
@@ -269,7 +281,10 @@ module LocaleModel {
 
     proc RootLocale() {
       parent = nil;
-      numCores = 0;
+      nPUsPhysAcc = 0;
+      nPUsPhysAll = 0;
+      nPUsLogAcc = 0;
+      nPUsLogAll = 0;
       maxTaskPar = 0;
     }
 
@@ -281,7 +296,10 @@ module LocaleModel {
         chpl_task_setSubloc(c_sublocid_any);
         const node = new LocaleModel(this);
         myLocales[locIdx] = node;
-        numCores += node.numCores;
+        nPUsPhysAcc += node.nPUsPhysAcc;
+        nPUsPhysAll += node.nPUsPhysAll;
+        nPUsLogAcc += node.nPUsLogAcc;
+        nPUsLogAll += node.nPUsLogAll;
         maxTaskPar += node.maxTaskPar;
       }
 
@@ -299,7 +317,7 @@ module LocaleModel {
     proc chpl_name() return local_name();
     proc local_name() return "rootLocale":string;
 
-    proc readWriteThis(f) {
+    proc writeThis(f) {
       f <~> name;
     }
 
@@ -314,7 +332,7 @@ module LocaleModel {
 
     proc getChild(idx:int) return this.myLocales[idx];
 
-    iter getChlidren() : locale  {
+    iter getChildren() : locale  {
       for loc in this.myLocales do
         yield loc;
     }
@@ -387,12 +405,12 @@ module LocaleModel {
   //
   // runtime interface
   //
-  extern proc chpl_comm_fork(loc_id: int, subloc_id: int,
-                             fn: int, args: c_void_ptr, arg_size: int(32));
-  extern proc chpl_comm_fork_fast(loc_id: int, subloc_id: int,
-                                  fn: int, args: c_void_ptr, args_size: int(32));
-  extern proc chpl_comm_fork_nb(loc_id: int, subloc_id: int,
-                                fn: int, args: c_void_ptr, args_size: int(32));
+  extern proc chpl_comm_execute_on(loc_id: int, subloc_id: int, fn: int,
+                                   args: c_void_ptr, arg_size: size_t);
+  extern proc chpl_comm_execute_on_fast(loc_id: int, subloc_id: int, fn: int,
+                                        args: c_void_ptr, args_size: size_t);
+  extern proc chpl_comm_execute_on_nb(loc_id: int, subloc_id: int, fn: int,
+                                      args: c_void_ptr, args_size: size_t);
   extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
   extern proc chpl_task_setSubloc(subloc: int(32));
 
@@ -404,12 +422,12 @@ module LocaleModel {
   proc chpl_executeOn(loc: chpl_localeID_t, // target locale
                       fn: int,              // on-body function idx
                       args: c_void_ptr,     // function args
-                      args_size: int(32)    // args size
+                      args_size: size_t     // args size
                      ) {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
     if dnode != chpl_nodeID {
-      chpl_comm_fork(dnode, dsubloc, fn, args, args_size);
+      chpl_comm_execute_on(dnode, dsubloc, fn, args, args_size);
     } else {
       // run directly on this node
       var origSubloc = chpl_task_getRequestedSubloc();
@@ -433,12 +451,12 @@ module LocaleModel {
   proc chpl_executeOnFast(loc: chpl_localeID_t, // target locale
                           fn: int,              // on-body function idx
                           args: c_void_ptr,     // function args
-                          args_size: int(32)    // args size
+                          args_size: size_t     // args size
                          ) {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
     if dnode != chpl_nodeID {
-      chpl_comm_fork_fast(dnode, dsubloc, fn, args, args_size);
+      chpl_comm_execute_on_fast(dnode, dsubloc, fn, args, args_size);
     } else {
       var origSubloc = chpl_task_getRequestedSubloc();
       if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
@@ -470,19 +488,19 @@ module LocaleModel {
   proc chpl_executeOnNB(loc: chpl_localeID_t, // target locale
                         fn: int,              // on-body function idx
                         args: c_void_ptr,     // function args
-                        args_size: int(32)    // args size
+                        args_size: size_t     // args size
                        ) {
     //
     // If we're in serial mode, we should use blocking rather than
-    // non-blocking "on" in order to serialize the forks.
+    // non-blocking "on" in order to serialize the execute_ons.
     //
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
     if dnode != chpl_nodeID {
       if __primitive("task_get_serial") then
-        chpl_comm_fork(dnode, dsubloc, fn, args, args_size);
+        chpl_comm_execute_on(dnode, dsubloc, fn, args, args_size);
       else
-        chpl_comm_fork_nb(dnode, dsubloc, fn, args, args_size);
+        chpl_comm_execute_on_nb(dnode, dsubloc, fn, args, args_size);
     } else {
       var origSubloc = chpl_task_getRequestedSubloc();
       // We'd like to call chpl_executeOnNBaux() here, but the begin
@@ -496,7 +514,7 @@ module LocaleModel {
             chpl_ftable_call(fn, args);
           else
             // begin chpl_ftable_call(fn, args);
-            chpl_comm_fork_nb(dnode, dsubloc, fn, args, args_size);
+            chpl_comm_execute_on_nb(dnode, dsubloc, fn, args, args_size);
         }
       } else {
         // move to a different sublocale
@@ -508,7 +526,7 @@ module LocaleModel {
             chpl_ftable_call(fn, args);
           else
             // begin chpl_ftable_call(fn, args);
-            chpl_comm_fork_nb(dnode, dsubloc, fn, args, args_size);
+            chpl_comm_execute_on_nb(dnode, dsubloc, fn, args, args_size);
         }
         chpl_task_setSubloc(origSubloc);
       }
@@ -525,11 +543,9 @@ module LocaleModel {
   //
   pragma "insert line file info"
   extern proc chpl_task_addToTaskList(fn: int, args: c_void_ptr, subloc_id: int,
-                                      ref tlist: _task_list, tlist_node_id: int,
+                                      ref tlist: c_void_ptr, tlist_node_id: int,
                                       is_begin: bool);
-  extern proc chpl_task_processTaskList(tlist: _task_list);
-  extern proc chpl_task_executeTasksInList(tlist: _task_list);
-  extern proc chpl_task_freeTaskList(tlist: _task_list);
+  extern proc chpl_task_executeTasksInList(ref tlist: c_void_ptr);
 
   //
   // add a task to a list of tasks being built for a begin statement
@@ -539,7 +555,7 @@ module LocaleModel {
   proc chpl_taskListAddBegin(subloc_id: int,        // target sublocale
                              fn: int,               // task body function idx
                              args: c_void_ptr,      // function args
-                             ref tlist: _task_list, // task list
+                             ref tlist: c_void_ptr, // task list
                              tlist_node_id: int     // task list owner node
                             ) {
     chpl_task_addToTaskList(fn, args, subloc_id, tlist, tlist_node_id, true);
@@ -554,19 +570,10 @@ module LocaleModel {
   proc chpl_taskListAddCoStmt(subloc_id: int,        // target sublocale
                               fn: int,               // task body function idx
                               args: c_void_ptr,      // function args
-                              ref tlist: _task_list, // task list
+                              ref tlist: c_void_ptr, // task list
                               tlist_node_id: int     // task list owner node
                              ) {
     chpl_task_addToTaskList(fn, args, subloc_id, tlist, tlist_node_id, false);
-  }
-
-  //
-  // make sure all tasks in a list are known to the tasking layer
-  //
-  pragma "insert line file info"
-  export
-  proc chpl_taskListProcess(task_list: _task_list) {
-    chpl_task_processTaskList(task_list);
   }
 
   //
@@ -574,16 +581,7 @@ module LocaleModel {
   //
   pragma "insert line file info"
   export
-  proc chpl_taskListExecute(task_list: _task_list) {
+  proc chpl_taskListExecute(ref task_list: c_void_ptr) {
     chpl_task_executeTasksInList(task_list);
-  }
-
-  //
-  // do final cleanup for a task list
-  //
-  pragma "insert line file info"
-  export
-  proc chpl_taskListFree(task_list: _task_list) {
-    chpl_task_freeTaskList(task_list);
   }
 }

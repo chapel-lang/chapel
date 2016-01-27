@@ -29,10 +29,10 @@ module LCALSDataTypes {
   class LoopSuiteRunInfo {
     var host_name: string;
 
-    var num_loops: int;
+    var loop_kernel_dom: domain(LoopKernelID);
     var loop_names = new vector(string);
 
-    var num_loop_lengths: int;
+    var loop_length_dom: domain(LoopLength);
     var run_loop_length = new vector(bool);
     var loop_length_names = new vector(string);
 
@@ -313,7 +313,6 @@ module LCALSDataTypes {
     const s_num_Real_scalars = 10;
 
     // pointer based versions of arrays
-    var scalar_Real: [0..#s_num_Real_scalars] real;
 
     var RealArray_1D: [0..#s_num_1D_Real_arrays][0..#aligned_chunksize] real;
     var RealArray_1D_Nx4: [0..#s_num_1D_Nx4_Real_arrays][0..#4*aligned_chunksize] real;

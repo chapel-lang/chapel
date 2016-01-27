@@ -1,0 +1,1 @@
+testBadSyncSingle.chpl:4: error: sync/single types cannot be of type 'range(int(64),bounded,false)'

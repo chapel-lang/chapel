@@ -9,15 +9,15 @@ var x6: index(A2D.domain);
 var x7: index(A3D.domain);
 var x8: index(A4D.domain);
 
-writeln(x1, " ", typeToString(x1.type));
-writeln(x2, " ", typeToString(x2.type));
-writeln(x3, " ", typeToString(x3.type));
-writeln(x4, " ", typeToString(x4.type));
-writeln(x5, " ", typeToString(x5.type));
-writeln(x6, " ", typeToString(x6.type));
-writeln(x7, " ", typeToString(x7.type));
-writeln(x8, " ", typeToString(x8.type));
+writeln(x1, " ", x1.type:string);
+writeln(x2, " ", x2.type:string);
+writeln(x3, " ", x3.type:string);
+writeln(x4, " ", x4.type:string);
+writeln(x5, " ", x5.type:string);
+writeln(x6, " ", x6.type:string);
+writeln(x7, " ", x7.type:string);
+writeln(x8, " ", x8.type:string);
 
 var x9: index(Dom2D32);
 
-writeln(x9, " ", typeToString(x9.type));
+writeln(x9, " ", x9.type:string);

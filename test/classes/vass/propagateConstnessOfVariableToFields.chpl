@@ -9,12 +9,12 @@ record R {
 }
 
 var c1 = new C();
-writeln(typeToString(c1.field1.type));  // string
+writeln(c1.field1.type:string);  // string
 c1.field2.field4 = 5;
 c1.field3 = 6;
 
 const c2 = new C();
-writeln(typeToString(c2.field1.type));  // int
+writeln(c2.field1.type:string);  // int
 c2.field2.field4 = 7;                   // compiler error - assigning to 'const'
 c2.field3 = 8;                          // ditto
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -375,7 +375,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
     // Now get the taskList field out of the end count.
 
-    taskList = newTemp(astr("_taskList", fn->name), dtTaskList->refType);
+    taskList = newTemp(astr("_taskList", fn->name), dtCVoidPtr);
 
     // If the end count is a reference, dereference it.
     // EndCount is a class.
@@ -428,6 +428,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   if (fn->hasFlag(FLAG_NON_BLOCKING))           wrap_fn->addFlag(FLAG_NON_BLOCKING);
   if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))    wrap_fn->addFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK);
   if (fn->hasFlag(FLAG_BEGIN))                  wrap_fn->addFlag(FLAG_BEGIN_BLOCK);
+  if (fn->hasFlag(FLAG_LOCAL_ON))               wrap_fn->addFlag(FLAG_LOCAL_ON);
 
   if (fn->hasFlag(FLAG_ON)) {
     // The wrapper function for 'on' block has an additional argument, which
@@ -457,7 +458,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   } else {
     // create a task list argument.
     ArgSymbol *taskListArg = new ArgSymbol( INTENT_IN, "dummy_taskList", 
-                                            dtTaskList->refType );
+                                            dtCVoidPtr );
     taskListArg->addFlag(FLAG_NO_CODEGEN);
     wrap_fn->insertFormalAtTail(taskListArg);
     ArgSymbol *taskListNode = new ArgSymbol( INTENT_IN, "dummy_taskListNode", 
@@ -709,7 +710,9 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
             if (CallExpr* call = toCallExpr(se->parentExpr)) {
               if (call->isPrimitive(PRIM_ADDR_OF) ||
                   call->isPrimitive(PRIM_GET_MEMBER) ||
+                  call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                   call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+                  // TODO - should this handle PRIM_GET_SVEC_MEMBER_VALUE?
                   call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
                   call->isPrimitive(PRIM_WIDE_GET_NODE))
                 // Treat the use of these primitives as a use of their arguments.
@@ -822,7 +825,7 @@ needHeapVars() {
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ON) && needHeapVars()) {
+    if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_LOCAL_ON) && needHeapVars()) {
       for_formals(formal, fn) {
         if (formal->type->symbol->hasFlag(FLAG_REF)) {
           refSet.set_add(formal);
@@ -1029,6 +1032,11 @@ makeHeapAllocations() {
         // don't heap-allocate globals
         continue;
       }
+    }
+
+    if (isString(var) && var->isImmediate()) {
+      // String immediates are privatized; do not widen them
+      continue;
     }
 
     SET_LINENO(var);

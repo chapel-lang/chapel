@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -56,8 +56,6 @@ static WellKnownType sWellKnownTypes[] = {
   {"BaseArr",            &dtBaseArr,       true},
   {"BaseDom",            &dtBaseDom,       true},
   {"BaseDist",           &dtDist,          true},
-  {"Writer",             &dtWriter,        true},
-  {"Reader",             &dtReader,        true},
   {"chpl_main_argument", &dtMainArgument, false}
 };
 

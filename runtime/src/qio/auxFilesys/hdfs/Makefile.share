@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -15,10 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+ifneq (,$(findstring hdfs3,$(CHPL_MAKE_AUXFS)))
+  RUNTIME_INCLS += -DHDFS3
+  AUXFS_SRCS = qio_plugin_hdfs.c
+else
+
 ifneq (,$(findstring hdfs,$(CHPL_MAKE_AUXFS)))
   AUXFS_SRCS = qio_plugin_hdfs.c
 else
   AUXFS_SRCS = qio_plugin_hdfs_stubs.c
+endif
+
 endif
 
 SVN_SRCS = $(AUXFS_SRCS)

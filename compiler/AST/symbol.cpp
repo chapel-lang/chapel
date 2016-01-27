@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -80,7 +80,6 @@ Symbol *gTimer = NULL;
 Symbol *gTaskID = NULL;
 Symbol *gSyncVarAuxFields = NULL;
 Symbol *gSingleVarAuxFields = NULL;
-Symbol *gTaskList = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
@@ -94,8 +93,6 @@ VarSymbol *gModuleInitIndentLevel = NULL;
 FnSymbol *gPrintModuleInitFn = NULL;
 FnSymbol* gChplHereAlloc = NULL;
 FnSymbol* gChplHereFree = NULL;
-Symbol *gCLine = NULL;
-Symbol *gCFile = NULL;
 
 std::map<FnSymbol*,int> ftableMap;
 Vec<FnSymbol*> ftableVec;
@@ -2852,7 +2849,7 @@ void ModuleSymbol::addDefaultUses() {
     SET_LINENO(this);
 
     modRef = new UnresolvedSymExpr("ChapelStandard");
-    block->insertAtHead(new CallExpr(PRIM_USE, modRef));
+    block->insertAtHead(new UseStmt(modRef));
 
   // We don't currently have a good way to fetch the root module by name.
   // Insert it directly rather than by name
@@ -2862,7 +2859,7 @@ void ModuleSymbol::addDefaultUses() {
     block->moduleUseAdd(rootModule);
 
     UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStringLiterals");
-    block->insertAtHead(new CallExpr(PRIM_USE, modRef));
+    block->insertAtHead(new UseStmt(modRef));
   }
 }
 
@@ -2998,6 +2995,7 @@ std::string unescapeString(const char* const str) {
       continue;
     }
 
+    // handle \ ecapes
     nextChar = str[pos++];
     switch(nextChar) {
       case '\'':
@@ -3102,6 +3100,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   s->addFlag(FLAG_NO_AUTO_DESTROY);
   s->addFlag(FLAG_CONST);
   s->addFlag(FLAG_LOCALE_PRIVATE);
+  s->addFlag(FLAG_CHAPEL_STRING_LITERAL);
 
   DefExpr* stringLitDef = new DefExpr(s);
   // DefExpr(s) always goes into the module scope to make it a global

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -187,9 +187,6 @@ void checkPrimitives()
      case PRIM_SINGLE_IS_FULL:
      case PRIM_GET_END_COUNT:
      case PRIM_SET_END_COUNT:
-     case PRIM_PROCESS_TASK_LIST:
-     case PRIM_EXECUTE_TASKS_IN_LIST:
-     case PRIM_FREE_TASK_LIST:
      case PRIM_GET_SERIAL:              // get serial state
      case PRIM_SET_SERIAL:              // set serial state to true or false
      case PRIM_SIZEOF:
@@ -200,7 +197,6 @@ void checkPrimitives()
      case PRIM_CAST:
      case PRIM_DYNAMIC_CAST:
      case PRIM_TYPEOF:
-     case PRIM_USE:
      case PRIM_USED_MODULES_LIST:       // used modules in BlockStmt::modUses
      case PRIM_TUPLE_EXPAND:
      case PRIM_TUPLE_AND_EXPAND:

@@ -15,7 +15,7 @@ for i in D {
   DomRealType += myIdx:realType;
   if doString {
     var s: string;
-    s.write(myIdx);
+    s = myIdx:string;
     ArithStringRef(i) = s;
     DomStringType += s;
   }
@@ -82,7 +82,7 @@ proc testSerial(AAssoc, D, Arr, ArrRef) {
       break;
     }
   }
-  writeln("Serial array iteration (", typeToString(idxType), ") : ",
+  writeln("Serial array iteration (", idxType:string, ") : ",
           if success then "SUCCESS" else "FAILED");
 }
 
@@ -108,7 +108,7 @@ proc testParallel(AAssoc, D, Arr, ArrRef) {
       break;
     }
   }
-  writeln("Serial array iteration (", typeToString(idxType), ") : ",
+  writeln("Serial array iteration (", idxType:string, ") : ",
           if success then "SUCCESS" else "FAILED");
 }
 

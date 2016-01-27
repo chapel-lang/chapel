@@ -5,4 +5,4 @@ record R {
 
 var r = new R(2, "hello world");
 
-writeln(r);
+writeln("(p = ", r.p, ", x = ", r.x, ")");

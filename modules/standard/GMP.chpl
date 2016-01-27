@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -1526,7 +1526,7 @@ module GMP {
   }
 
 
-  proc BigInt.writeThis(writer:Writer) {
+  proc BigInt.writeThis(writer) {
     var (acopy,a_) = this.maybeCopy();
     var s:string = a_.get_str();
     //gmp_asprintf(s, "%Zd", a_.mpz);

@@ -1,15 +1,15 @@
 
 - main program:0 is suspended
-- reports.chpl:6 is active
-- reports.chpl:7 is active
-- reports.chpl:8
-- reports.chpl:8 is pending
-- reports.chpl:9
-- reports.chpl:9 is pending
+- reports.chpl:N
+- reports.chpl:N
+- reports.chpl:N is active
+- reports.chpl:N is active
+- reports.chpl:N is pending
+- reports.chpl:N is pending
 --------------------------------
 Known tasks:
 Pending tasks:
 Program is deadlocked!
 Task report
-Waiting at: reports.chpl:6
-Waiting at: reports.chpl:7
+Waiting at: reports.chpl:N
+Waiting at: reports.chpl:N

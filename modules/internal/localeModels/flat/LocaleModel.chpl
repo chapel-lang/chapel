@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -120,7 +120,7 @@ module LocaleModel {
     proc chpl_name() return local_name;
 
 
-    proc readWriteThis(f) {
+    proc writeThis(f) {
       // Most classes will define it like this:
 //      f <~> name;
       // but here it is defined thus for backward compatibility.
@@ -173,8 +173,13 @@ module LocaleModel {
       extern proc chpl_task_getCallStackSize(): size_t;
       callStackSize = chpl_task_getCallStackSize();
 
+      extern proc chpl_getNumPhysicalCpus(accessible_only: bool): c_int;
+      nPUsPhysAcc = chpl_getNumPhysicalCpus(true);
+      nPUsPhysAll = chpl_getNumPhysicalCpus(false);
+
       extern proc chpl_getNumLogicalCpus(accessible_only: bool): c_int;
-      numCores = chpl_getNumLogicalCpus(true);
+      nPUsLogAcc = chpl_getNumLogicalCpus(true);
+      nPUsLogAll = chpl_getNumLogicalCpus(false);
 
       extern proc chpl_task_getMaxPar(): uint(32);
       maxTaskPar = chpl_task_getMaxPar();
@@ -196,7 +201,10 @@ module LocaleModel {
 
     proc RootLocale() {
       parent = nil;
-      numCores = 0;
+      nPUsPhysAcc = 0;
+      nPUsPhysAll = 0;
+      nPUsLogAcc = 0;
+      nPUsLogAll = 0;
       maxTaskPar = 0;
     }
 
@@ -207,7 +215,10 @@ module LocaleModel {
       forall locIdx in chpl_initOnLocales() {
         const node = new LocaleModel(this);
         myLocales[locIdx] = node;
-        numCores += node.numCores;
+        nPUsPhysAcc += node.nPUsPhysAcc;
+        nPUsPhysAll += node.nPUsPhysAll;
+        nPUsLogAcc += node.nPUsLogAcc;
+        nPUsLogAll += node.nPUsLogAll;
         maxTaskPar += node.maxTaskPar;
       }
 
@@ -225,7 +236,7 @@ module LocaleModel {
     proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
 
-    proc readWriteThis(f) {
+    proc writeThis(f) {
       f <~> name;
     }
 
@@ -312,12 +323,12 @@ module LocaleModel {
   //
   // runtime interface
   //
-  extern proc chpl_comm_fork(loc_id: int, subloc_id: int,
-                             fn: int, args: c_void_ptr, arg_size: size_t);
-  extern proc chpl_comm_fork_fast(loc_id: int, subloc_id: int,
-                                  fn: int, args: c_void_ptr, args_size: size_t);
-  extern proc chpl_comm_fork_nb(loc_id: int, subloc_id: int,
-                                fn: int, args: c_void_ptr, args_size: size_t);
+  extern proc chpl_comm_execute_on(loc_id: int, subloc_id: int, fn: int,
+                                   args: c_void_ptr, arg_size: size_t);
+  extern proc chpl_comm_execute_on_fast(loc_id: int, subloc_id: int, fn: int,
+                                        args: c_void_ptr, args_size: size_t);
+  extern proc chpl_comm_execute_on_nb(loc_id: int, subloc_id: int, fn: int,
+                                      args: c_void_ptr, args_size: size_t);
   extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
   //
   // regular "on"
@@ -331,10 +342,10 @@ module LocaleModel {
                      ) {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
-      // don't call the runtime fork function if we can stay local
+      // don't call the runtime execute_on function if we can stay local
       chpl_ftable_call(fn, args);
     } else {
-      chpl_comm_fork(node, chpl_sublocFromLocaleID(loc),
+      chpl_comm_execute_on(node, chpl_sublocFromLocaleID(loc),
                      fn, args, args_size);
     }
   }
@@ -352,10 +363,10 @@ module LocaleModel {
                          ) {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
-      // don't call the runtime fast fork function if we can stay local
+      // don't call the runtime fast execute_on function if we can stay local
       chpl_ftable_call(fn, args);
     } else {
-      chpl_comm_fork_fast(node, chpl_sublocFromLocaleID(loc),
+      chpl_comm_execute_on_fast(node, chpl_sublocFromLocaleID(loc),
                           fn, args, args_size);
     }
   }
@@ -372,25 +383,25 @@ module LocaleModel {
                        ) {
     //
     // If we're in serial mode, we should use blocking rather than
-    // non-blocking "on" in order to serialize the forks.
+    // non-blocking "on" in order to serialize the execute_ons.
     //
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
       if __primitive("task_get_serial") then
-        // don't call the runtime nb fork function if we can stay local
+        // don't call the runtime nb execute_on function if we can stay local
         chpl_ftable_call(fn, args);
       else
         // We'd like to use a begin, but unfortunately doing so as
         // follows does not compile for --no-local:
         // begin chpl_ftable_call(fn, args);
-        chpl_comm_fork_nb(node, chpl_sublocFromLocaleID(loc),
+        chpl_comm_execute_on_nb(node, chpl_sublocFromLocaleID(loc),
                           fn, args, args_size);
     } else {
       const subloc = chpl_sublocFromLocaleID(loc);
       if __primitive("task_get_serial") then
-        chpl_comm_fork(node, subloc, fn, args, args_size);
+        chpl_comm_execute_on(node, subloc, fn, args, args_size);
       else
-        chpl_comm_fork_nb(node, subloc, fn, args, args_size);
+        chpl_comm_execute_on_nb(node, subloc, fn, args, args_size);
     }
   }
 
@@ -404,11 +415,9 @@ module LocaleModel {
   //
   pragma "insert line file info"
   extern proc chpl_task_addToTaskList(fn: int, args: c_void_ptr, subloc_id: int,
-                                      ref tlist: _task_list, tlist_node_id: int,
+                                      ref tlist: c_void_ptr, tlist_node_id: int,
                                       is_begin: bool);
-  extern proc chpl_task_processTaskList(tlist: _task_list);
-  extern proc chpl_task_executeTasksInList(tlist: _task_list);
-  extern proc chpl_task_freeTaskList(tlist: _task_list);
+  extern proc chpl_task_executeTasksInList(ref tlist: c_void_ptr);
 
   //
   // add a task to a list of tasks being built for a begin statement
@@ -417,8 +426,8 @@ module LocaleModel {
   export
   proc chpl_taskListAddBegin(subloc_id: int,        // target sublocale
                              fn: int,               // task body function idx
-                             args: c_void_ptr,           // function args
-                             ref tlist: _task_list, // task list
+                             args: c_void_ptr,      // function args
+                             ref tlist: c_void_ptr, // task list
                              tlist_node_id: int     // task list owner node
                             ) {
     chpl_task_addToTaskList(fn, args, subloc_id, tlist, tlist_node_id, true);
@@ -432,20 +441,11 @@ module LocaleModel {
   export
   proc chpl_taskListAddCoStmt(subloc_id: int,        // target sublocale
                               fn: int,               // task body function idx
-                              args: c_void_ptr,           // function args
-                              ref tlist: _task_list, // task list
+                              args: c_void_ptr,      // function args
+                              ref tlist: c_void_ptr, // task list
                               tlist_node_id: int     // task list owner node
                              ) {
     chpl_task_addToTaskList(fn, args, subloc_id, tlist, tlist_node_id, false);
-  }
-
-  //
-  // make sure all tasks in a list are known to the tasking layer
-  //
-  pragma "insert line file info"
-  export
-  proc chpl_taskListProcess(task_list: _task_list) {
-    chpl_task_processTaskList(task_list);
   }
 
   //
@@ -453,16 +453,7 @@ module LocaleModel {
   //
   pragma "insert line file info"
   export
-  proc chpl_taskListExecute(task_list: _task_list) {
+  proc chpl_taskListExecute(ref task_list: c_void_ptr) {
     chpl_task_executeTasksInList(task_list);
-  }
-
-  //
-  // do final cleanup for a task list
-  //
-  pragma "insert line file info"
-  export
-  proc chpl_taskListFree(task_list: _task_list) {
-    chpl_task_freeTaskList(task_list);
   }
 }

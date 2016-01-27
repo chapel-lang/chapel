@@ -370,14 +370,14 @@ class CMOArr:BaseArr {
   }
 }
 
-proc CMODom.dsiSerialWrite(f: Writer) {
+proc CMODom.dsiSerialWrite(f) {
   f.write("[", this(1));
   for i in 2..rank do
     f.write(", ", this(i));
   f.write("]");
 }
 
-proc CMOArr.dsiSerialWrite(f: Writer) {
+proc CMOArr.dsiSerialWrite(f) {
   var i : rank*idxType;
   for dim in 1..rank do
     i(dim) = dom.dsiDim(dim).low;

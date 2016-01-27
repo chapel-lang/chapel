@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -68,7 +68,7 @@ module ChapelIteratorSupport {
     return i.type;
   }
 
-  proc _iteratorRecord.writeThis(f: Writer) {
+  proc _iteratorRecord.writeThis(f) {
     var first: bool = true;
     for e in this {
       if !first then

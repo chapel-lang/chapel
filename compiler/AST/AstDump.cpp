@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -268,6 +268,35 @@ void AstDump::visitUsymExpr(UnresolvedSymExpr* node) {
 
   write(node->unresolved);
 }
+
+
+//
+// UseStmt
+//
+void AstDump::visitUseStmt(UseStmt* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    newline();
+  }
+
+  if (fLogIds) {
+    fprintf(mFP, "(%d ", node->id);
+    mNeedSpace = false;
+  } else {
+    write(true, "(", false);
+  }
+
+  if (mNeedSpace)
+    fputc(' ', mFP);
+
+  fprintf(mFP, "'use'");
+
+  mNeedSpace = true;
+
+  node->mod->accept(this);
+
+  write(false, ")", true);
+}
+
 
 
 //

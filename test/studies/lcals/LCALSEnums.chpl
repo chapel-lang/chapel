@@ -3,7 +3,6 @@ module LCALSEnums {
     LONG = 0,
     MEDIUM,
     SHORT,
-    NUM_LENGTHS
   }
 
   enum LoopKernelID {
@@ -58,9 +57,7 @@ module LCALSEnums {
     MAT_X_MAT,
     PLANCKIAN,
     IMP_HYDRO_2D,
-    FIND_FIRST_MIN,
-
-    NUM_LOOP_KERNELS // Keep this one last and NEVER comment out (!!)
+    FIND_FIRST_MIN
   }
 
   enum LoopVariantID {

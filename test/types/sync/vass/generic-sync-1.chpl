@@ -5,13 +5,13 @@ test(d);
 test2(d);
 
 proc test(s) {
-  compilerWarning(typeToString(s.type), 0);  // see also ./sync-type-1.future
+  compilerWarning(s.type:string, 0);  // see also ./sync-type-1.future
   s = 1;
   writeln("got lock");
 }
 
 proc test2(s) {
-  compilerWarning(typeToString(s.type));
+  compilerWarning(s.type:string);
   writeln("isFull = ", s.isFull);
   s;
   writeln("released lock");

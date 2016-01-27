@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,6 +32,9 @@ module BaseStringType {
   // TODO: figure out why I cant move this defintion into `module String`
   type bufferType = c_ptr(uint(8));
 }
+
+// Note - the I/O module has
+// :proc:`string.format` and :proc:`stringify`.
 
 // Chapel Strings
 module String {
@@ -137,6 +140,12 @@ module String {
           }
         }
       }
+    }
+
+    proc string(cs: c_string, owned: bool = true, needToCopy:  bool = true) {
+      this.owned = owned;
+      const cs_len = cs.length;
+      this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
     }
 
     // This constructor can cause a leak if owned = false and needToCopy = true
@@ -337,11 +346,11 @@ module String {
 
     // These should never be called (but are default functions for records)
     pragma "no doc"
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       compilerError("not implemented: writeThis");
     }
     pragma "no doc"
-    proc readThis(f: Reader) {
+    proc readThis(f) {
       compilerError("not implemented: readThis");
     }
 
@@ -1065,10 +1074,12 @@ module String {
   // Param procs
   //
   proc typeToString(type t) param {
+    compilerWarning("typeToString() has been deprecated.  Please use a cast instead: '(type-expression):string'");
     return __primitive("typeToString", t);
   }
 
   proc typeToString(x) param {
+    compilerWarning("typeToString() has been deprecated.  Please use a cast instead: '(type-expression):string'");
     compilerError("typeToString()'s argument must be a type, not a value");
   }
 
@@ -1129,7 +1140,7 @@ module String {
   //
   // Append
   //
-  proc +=(ref lhs: string, rhs: string) : void {
+  proc +=(ref lhs: string, const ref rhs: string) : void {
     // if rhs is empty, nothing to do
     if rhs.len == 0 then return;
 
@@ -1300,13 +1311,6 @@ module String {
   //
   // Casts (casts to & from other primitive types are in StringCasts)
   //
-
-  // TODO: remove this and fix the folding out of string casts
-  // Yes this is invoked sometimes. In the long run, however,
-  // we'd like the compiler to eliminate casts to the same type instead.
-  inline proc _cast(type t, x: c_string) where t == c_string {
-    return x;
-  }
 
   inline proc _cast(type t, cs: c_string) where t == bufferType {
     return __primitive("cast", t, cs);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -880,6 +880,18 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         appendExpr(expr->get(1), printingType);
       }
 
+      else if (strcmp(fnName, "chpl__buildDomainExpr")        == 0)
+      {
+        mText += "{";
+        appendExpr(expr->get(1), printingType);
+        for (int index = 2; index <= expr->numActuals(); index++)
+        {
+          mText += ", ";
+          appendExpr(expr->get(index), printingType);
+        }
+        mText += "}";
+      }
+
       else if (strcmp(fnName, "chpl__ensureDomainExpr")       == 0)
       {
         appendExpr(expr->get(1), printingType);
@@ -996,11 +1008,28 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       else if (strcmp(fnName, "range")                       == 0)
         appendExpr(expr, "range", printingType);
 
-      else if (strcmp(fnName, "chpl_build_bounded_range")    == 0)
+      else if (strcmp(fnName, "chpl_build_bounded_range") == 0)
       {
         appendExpr(expr->get(1), printingType);
         mText += "..";
         appendExpr(expr->get(2), printingType);
+      }
+
+      else if (strcmp(fnName, "chpl_build_low_bounded_range") == 0)
+      {
+        appendExpr(expr->get(1), printingType);
+        mText += "..";
+      }
+
+      else if (strcmp(fnName, "chpl_build_high_bounded_range") == 0)
+      {
+        mText += "..";
+        appendExpr(expr->get(1), printingType);
+      }
+
+      else if (strcmp(fnName, "chpl_build_unbounded_range") == 0)
+      {
+        mText += "..";
       }
 
       else if (strcmp(fnName, ".")                           == 0)

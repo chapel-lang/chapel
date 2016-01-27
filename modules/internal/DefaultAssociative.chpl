@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -83,7 +83,7 @@ module DefaultAssociative {
                                dist: DefaultDist) {
       if !chpl__validDefaultAssocDomIdxType(idxType) then
         compilerError("Default Associative domains with idxType=",
-                      typeToString(idxType), " are not allowed", 2);
+                      idxType:string, " are not allowed", 2);
       this.dist = dist;
     }
   
@@ -107,8 +107,8 @@ module DefaultAssociative {
       }
       f <~> new ioLiteral("}");
     }
-    proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
   
     //
     // Standard user domain interface
@@ -621,8 +621,8 @@ module DefaultAssociative {
         f <~> val;
       }
     }
-    proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
   
   
     //

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -375,6 +375,26 @@ void AstDumpToHtml::visitUsymExpr(UnresolvedSymExpr* node) {
   }
 
   fprintf(mFP, " <FONT COLOR=\"red\">%s</FONT>", node->unresolved);
+
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "</DL>\n");
+  }
+}
+
+
+//
+// UseStmt
+//
+void AstDumpToHtml::visitUseStmt(UseStmt* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "<DL>\n");
+  }
+
+  fprintf(mFP, " (%d 'use' ", node->id);
+
+  node->mod->accept(this);
+
+  fprintf(mFP, ")");
 
   if (isBlockStmt(node->parentExpr)) {
     fprintf(mFP, "</DL>\n");

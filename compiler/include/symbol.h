@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -322,7 +322,7 @@ class TypeSymbol : public Symbol {
 
 class FnSymbol : public Symbol {
  public:
-  AList formals;
+  AList formals; // each formal is an ArgSymbol
   DefExpr* setter; // implicit setter argument to var functions
   Type* retType; // The return type of the function.  This field is not
                  // fully established until resolution, and could be NULL
@@ -620,12 +620,9 @@ extern VarSymbol *gModuleInitIndentLevel;
 extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gChplHereAlloc;
 extern FnSymbol *gChplHereFree;
-extern Symbol *gCLine, *gCFile;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
-
-extern Symbol *gTaskList;
 
 extern std::map<FnSymbol*,int> ftableMap;
 extern Vec<FnSymbol*> ftableVec;

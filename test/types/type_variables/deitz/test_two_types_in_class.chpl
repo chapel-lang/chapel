@@ -6,4 +6,4 @@ class C {
 var c = new C(imag, complex, int, real);
 
 writeln(c);
-writeln(typeToString(c.type));
+writeln(c.type:string);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -809,10 +809,13 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
     }
 
     // ignore EOF when looking for whitespace.
-    if( qio_err_to_int(err) == EEOF ) err = 0;
     // ignore EILSEQ (illegal unicode sequence) when
     // looking for whitespace (that just means it wasn't whitespace)
-    if( qio_err_to_int(err) == EILSEQ ) err = 0;
+    if( qio_err_to_int(err) == EEOF ||
+        qio_err_to_int(err) == EILSEQ ) {
+      err = 0;
+      qio_channel_clear_error(ch);
+    }
 
     qio_channel_revert_unlocked(ch);
 
@@ -1509,6 +1512,330 @@ error:
   if( out ) *out = NULL;
   return err;
 #undef WRITEC
+}
+
+static inline bool is_json_whitespace(int32_t c)
+{
+  return ( c == ' ' || c == '\b' ||
+           c == '\f' || c == '\n' || c == '\r' || c == '\t' );
+}
+
+// Read and skip an arbitrary JSON object, assuming the leading '{'
+// has already been read. Returns 0 on success or a negative error code.
+int32_t qio_skip_json_object_unlocked(qio_channel_t* restrict ch)
+{
+  int32_t c;
+
+  while( true ) {
+    // Read a field.
+    c = qio_skip_json_field_unlocked(ch);
+    if( c < 0 ) return c;
+
+    // Read whitespace followed by , or '}'
+    if( c == 0 || is_json_whitespace(c) ) {
+      while( true ) {
+        c = qio_channel_read_byte(false, ch);
+        if( c < 0 ) return c;
+        if( is_json_whitespace(c) ) {
+          // continue reading whitespace.
+        } else {
+          break;
+        }
+      }
+    }
+
+    if( c == ',' ) {
+      // OK, move on to the next value.
+    } else if( c == '}' ) {
+      // we've reached the end.
+      return 0;
+    } else {
+      return -EFORMAT;
+    }
+  }
+}
+
+// Read and skip an arbitrary JSON array, assuming the leading '['
+// has already been read. Returns 0 on success or a negative error code.
+int32_t qio_skip_json_array_unlocked(qio_channel_t* restrict ch)
+{
+  int32_t c;
+
+  while( true ) {
+    // Read a value.
+    c = qio_skip_json_value_unlocked(ch);
+    if( c < 0 ) return c;
+
+    // Read a whitespace followed by , or ']'
+    if( c == 0 || is_json_whitespace(c) ) {
+      while( true ) {
+        c = qio_channel_read_byte(false, ch);
+        if( c < 0 ) return c;
+        if( is_json_whitespace(c) ) {
+          // continue reading whitespace.
+        } else {
+          break;
+        }
+      }
+    }
+
+    if( c == ',' ) {
+      // OK, move on to the next value.
+    } else if( c == ']' ) {
+      // we've reached the end.
+      return 0;
+    } else {
+      return -EFORMAT;
+    }
+  }
+}
+
+// Read and skip an arbitrary JSON value.
+// Returns any unhandled character, 0 if all characters
+// were handled, or a negative error code.
+// unhandled characters could easily be , ] }
+int32_t qio_skip_json_value_unlocked(qio_channel_t* restrict ch)
+{
+  int32_t c;
+
+  // Read whitespace and then a value.
+  while( true ) {
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( is_json_whitespace(c) ) {
+      // continue reading whitespace.
+    } else {
+      break;
+    }
+  }
+
+  if( c == '"' ) {
+    // read string until matching '"'
+    return qio_skip_json_string_unlocked(ch);
+  } else if( c == '-' || ('0' <= c && c <= '9') ) {
+    // read digits before .
+    while( true ) {
+      c = qio_channel_read_byte(false, ch);
+      if( c < 0 ) return c;
+      if( '0' <= c && c <= '9' ) {
+        // continue reading digits.
+      } else {
+        break;
+      }
+    }
+
+    // now c is the first non-digit.
+
+    if( c == '.' ) {
+      // read some more digits after .
+      while( true ) {
+        c = qio_channel_read_byte(false, ch);
+        if( c < 0 ) return c;
+        if( '0' <= c && c <= '9' ) {
+          // continue reading digits.
+        } else {
+          break;
+        }
+      }
+    }
+
+    // now read e or E followed by + - and exponent digits
+    if( c == 'e' || c == 'E' ) {
+      // read +, -, or a digit
+      c = qio_channel_read_byte(false, ch);
+      if( c < 0 ) return c;
+      if( c == '+' || c == '-' || ('0' <= c && c <= '9') ) {
+        // OK
+      } else {
+        return -EFORMAT;
+      }
+      // read some more digits
+      while( true ) {
+        c = qio_channel_read_byte(false, ch);
+        if( c < 0 ) return c;
+        if( '0' <= c && c <= '9' ) {
+          // continue reading digits.
+        } else {
+          break;
+        }
+      }
+    }
+
+    // Returns the next non-digit (could be , for example)
+    return c;
+  } else if( c == '{' ) {
+    // read object until matching '}'
+    return qio_skip_json_object_unlocked(ch);
+  } else if( c == '[' ) {
+    // read array until matching ']'
+    return qio_skip_json_array_unlocked(ch);
+  } else if( c == 't' ) {
+    // read true
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'r' ) return -EFORMAT;
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'u' ) return -EFORMAT;
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'e' ) return -EFORMAT;
+    return 0;
+  } else if( c == 'f' ) {
+    // read false
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'a' ) return -EFORMAT;
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'l' ) return -EFORMAT;
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0  ) return c;
+    if( c != 's' ) return -EFORMAT;
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'e' ) return -EFORMAT;
+    return 0;
+  } else if( c == 'n' ) {
+    // read null
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'u' ) return -EFORMAT;
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'l' ) return -EFORMAT;
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'l' ) return -EFORMAT;
+    return 0;
+  } else {
+    // some other character - it could be ] } , after a value.
+    return c;
+  }
+}
+
+// Read and skip an arbitrary JSON string, assuming the leading "
+// has already been read. Returns 0 on success, or a negative
+// error code.
+int32_t qio_skip_json_string_unlocked(qio_channel_t* restrict ch)
+{
+  int32_t c;
+
+  while( true ) {
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+
+    // quote: end of string.
+    if( c == '\"' ) return 0;
+
+    // backslash: handle quoting.
+    if( c == '\\' ) {
+      c = qio_channel_read_byte(false, ch);
+      if( c < 0 ) return c;
+
+      // As long as we handle \" correctly, there is
+      // no need to validate the JSON in the string.
+      // Furthermore, since we are just skipping over it,
+      // there is no need to take special action for
+      // particular backslash-escapes.
+    }
+  }
+}
+
+// Read and skip an abitrary JSON field, not counting a following ,
+// Returns the last character read, or
+// negative for a negative error code.
+int32_t qio_skip_json_field_unlocked(qio_channel_t* restrict ch)
+{
+  int32_t c;
+
+  // Read a whitespace followed by " or '}'
+  while( true ) {
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( is_json_whitespace(c) ) {
+      // continue reading whitespace.
+    } else {
+      break;
+    }
+  }
+
+  if( c == '"' ) {
+    // OK, move on to reading the value.
+  } else if( c == '}' ) {
+    return c;
+  } else {
+    return -EFORMAT;
+  }
+
+  c = qio_skip_json_string_unlocked(ch);
+  if( c < 0 ) return c;
+
+  // Read a whitespace followed by :
+  while( true ) {
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( is_json_whitespace(c) ) {
+      // continue reading whitespace.
+    } else {
+      break;
+    }
+  }
+
+  if( c == ':' ) {
+    // OK, move on to reading the value.
+  } else {
+    return -EFORMAT;
+  }
+
+  c = qio_skip_json_value_unlocked(ch);
+  return c;
+}
+
+qioerr qio_channel_skip_json_field(const int threadsafe, qio_channel_t* ch)
+{
+  qioerr err;
+  int32_t got;
+  int64_t start_offset;
+  int64_t offset;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) return err;
+  }
+
+  start_offset = qio_channel_offset_unlocked(ch);
+
+  err = qio_channel_mark(false, ch);
+  if( err ) goto unlock;
+
+  got = qio_skip_json_field_unlocked(ch);
+  if( got < 0 ) {
+    err = qio_int_to_err(-got);
+    qio_channel_revert_unlocked(ch);
+  } else {
+    offset = qio_channel_offset_unlocked(ch);
+    // if there was a last character, we need to un-get it.
+    if( got > 0 ) {
+      if( offset > start_offset ) {
+        offset--;
+      }
+    }
+
+    // now actually commit the skip.
+    qio_channel_revert_unlocked(ch);
+
+    qio_channel_advance_unlocked(ch, offset - start_offset);
+  }
+
+
+unlock:
+  _qio_channel_set_error_unlocked(ch, err);
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+  return err;
+
 }
 
 // only support floating point numbers in
@@ -3630,6 +3957,7 @@ qioerr qio_conv_parse(c_string fmt,
   int minus_flag = 0;
   int space_flag = 0;
   int plus_flag = 0;
+  int sloppy_flag = 0;
   char base_flag = 0;
   char specifier = 0;
   char binary = 0;
@@ -3739,6 +4067,10 @@ qioerr qio_conv_parse(c_string fmt,
         space_flag = 1;
       } else if( fmt[i] == '+' ) {
         plus_flag = 1;
+      } else if( fmt[i] == '~' ) {
+        // ~ might one day mean allow non-quoted JSON field names
+        // but it also means to skip JSON fields not in use.
+        sloppy_flag = 1;
       } else {
         break;
       }
@@ -4119,6 +4451,10 @@ qioerr qio_conv_parse(c_string fmt,
       style_out->pad_char = ' ';
       style_out->realfmt = 2;
       style_out->string_format = QIO_STRING_FORMAT_CHPL;
+
+      if( sloppy_flag ) {
+        style_out->skip_unknown_fields = 1;
+      }
 
       if( base_flag == 'j' ) {
         style_out->realfmt = 2;

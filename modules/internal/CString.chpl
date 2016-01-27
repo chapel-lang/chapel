@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -71,14 +71,6 @@ module CString {
   inline proc chpl__autoCopy(x: c_string_copy) : c_string_copy {
     return x;
   }
-
-  //proc typeToString(type t) param {
-  //  return __primitive("typeToString", t);
-  //}
-
-  //proc typeToString(x) param {
-  //  compilerError("typeToString()'s argument must be a type, not a value");
-  //}
 
   inline proc ==(param s0: c_string, param s1: c_string) param {
     return __primitive("string_compare", s0, s1) == 0;
@@ -381,16 +373,6 @@ module CString {
   }
   */
 
-  proc c_string.writeThis(x: Writer) {
-    x.write(this);
-  }
-  // The c_string_copy version is required, since apparently coercions are not
-  // applied to "this".
-  proc c_string_copy.writeThis(x: Writer) {
-    x.write(this:c_string);
-  }
-
-
   //
   // primitive c_string functions and methods
   //
@@ -426,6 +408,22 @@ module CString {
     extern proc chpl_rt_free_c_string(ref cs: c_string_copy);
     if (cs != _nullString) then chpl_rt_free_c_string(cs);
     // cs = _nullString;
+  }
+
+  proc c_string.writeThis(x) {
+    compilerError("Cannot write a c_string, cast to a string first.");
+  }
+  // The c_string_copy version is required, since apparently coercions are not
+  // applied to "this".
+  proc c_string_copy.writeThis(x) {
+    compilerError("Cannot write a c_string_copy, cast to a string first.");
+  }
+
+  proc c_string.readThis(x) {
+    compilerError("Cannot read a c_string, use string.");
+  }
+  proc c_string_copy.readThis(x) {
+    compilerError("Cannot read a c_string_copy, use string.");
   }
 
 }

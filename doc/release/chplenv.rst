@@ -518,7 +518,8 @@ CHPL_AUX_FILESYS
        Value  Description
        ====== =================================================
        none   only support traditional Linux filesystems
-       hdfs   also support HDFS filesystems
+       hdfs   also support HDFS filesystems using Apache Hadoop libhdfs
+       hdfs3  support for HDFS filesystems using Pivotal libhdfs3
        curl   also support CURL as a filesystem interface
        ====== =================================================
 

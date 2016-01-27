@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -73,8 +73,8 @@ void printStatistics(const char* pass) {
 
   foreach_ast(decl_counters);
 
-  int nStmt = nCondStmt + nBlockStmt + nGotoStmt;
-  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kExternBlockStmt;
+  int nStmt = nCondStmt + nBlockStmt + nGotoStmt + nUseStmt;
+  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kUseStmt + kExternBlockStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
@@ -404,6 +404,10 @@ const char* BaseAST::astTagAsString() const {
 
     case E_NamedExpr:
       retval = "NamedExpr";
+      break;
+
+    case E_UseStmt:
+      retval = "UseStmt";
       break;
 
     case E_BlockStmt:

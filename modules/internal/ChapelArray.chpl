@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -229,7 +229,7 @@ module ChapelArray {
         t(i) = val;
       return t;
     } else {
-      compilerWarning(typeToString(val.type));
+      compilerWarning(val.type:string);
       compilerError("index rank must match domain rank");
       return val;
     }
@@ -365,8 +365,8 @@ module ChapelArray {
 
       if currType != elemType {
         compilerError( "Array literal element " + i +
-                       " expected to be of type " + typeToString(elemType) +
-                       " but is of type " + typeToString(currType) );
+                       " expected to be of type " + elemType:string +
+                       " but is of type " + currType:string );
       }
 
       A(i) = elems(i);
@@ -393,14 +393,14 @@ module ChapelArray {
 
       if elemKeyType != keyType {
          compilerError("Associative array key element " + (i+2)/2 +
-                       " expected to be of type " + typeToString(keyType) +
-                       " but is of type " + typeToString(elemKeyType));
+                       " expected to be of type " + keyType:string +
+                       " but is of type " + elemKeyType:string);
       }
 
       if elemValType != valType {
         compilerError("Associative array value element " + (i+1)/2
-                      + " expected to be of type " + typeToString(valType)
-                      + " but is of type " + typeToString(elemValType));
+                      + " expected to be of type " + valType:string
+                      + " but is of type " + elemValType:string);
       }
 
       D += elemKey;
@@ -510,9 +510,9 @@ module ChapelArray {
     for param i in 2..count do
       if keyType != _getLiteralType(keys(i).type) {
         compilerError("Associative domain element " + i +
-                      " expected to be of type " + typeToString(keyType) +
+                      " expected to be of type " + keyType:string +
                       " but is of type " +
-                      typeToString(_getLiteralType(keys(i).type)));
+                      _getLiteralType(keys(i).type):string);
       }
 
     //Initialize the domain with a size appropriate for the number of keys.
@@ -567,7 +567,7 @@ module ChapelArray {
   proc chpl__distributed(d: _distribution, type domainType) type {
     if !isDomainType(domainType) then
       compilerError("cannot apply 'dmapped' to the non-domain type ",
-                    typeToString(domainType));
+                    domainType:string);
     if chpl__isRectangularDomType(domainType) {
       var dom: domainType;
       return chpl__buildDomainRuntimeType(d, dom._value.rank, dom._value.idxType,
@@ -1340,12 +1340,12 @@ module ChapelArray {
       return _value.dsiGetIndices();
 
     pragma "no doc"
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       _value.dsiSerialWrite(f);
     }
 
     pragma "no doc"
-    proc readThis(f: Reader) {
+    proc readThis(f) {
       _value.dsiSerialRead(f);
     }
 
@@ -1860,12 +1860,12 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       _value.dsiSerialWrite(f);
     }
 
     pragma "no doc"
-    proc readThis(f: Reader) {
+    proc readThis(f) {
       _value.dsiSerialRead(f);
     }
 
@@ -2814,6 +2814,13 @@ module ChapelArray {
     }
   }
 
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_by(a:domain, b) { ... }
+   *
+   * because the parser renames the routine since 'by' is a keyword.
+   */
   proc by(a: domain, b) {
     var r: a.rank*range(a._value.idxType,
                       BoundedRangeType.bounded,
@@ -2849,7 +2856,7 @@ module ChapelArray {
      default iteration orders over both arrays.  */
   proc reshape(A: [], D: domain) {
     if !isRectangularDom(D) then
-      compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", typeToString(D.type));
+      compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", D.type:string);
     if A.size != D.size then
       halt("reshape(A,D) is invoked when A has ", A.size,
            " elements, but D has ", D.size, " indices");

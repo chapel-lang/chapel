@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1303,6 +1303,8 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         if (!fcopy) {
           // Clone the function. Just once per 'body' should suffice.
           fcopy = cfn->copy();
+          if (!preserveInlinedLineNumbers)
+            reset_ast_loc(fcopy, call);
 
           // Note that 'fcopy' will likely get a copy of 'body',
           // so we need to preserve correct scoping of its SymExprs.

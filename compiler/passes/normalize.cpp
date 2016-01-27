@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -381,7 +381,8 @@ checkUseBeforeDefs() {
 
             if (toModuleSymbol(sym->var)) {
               if (!toFnSymbol(fn->defPoint->parentSymbol)) {
-                if (!call || !call->isPrimitive(PRIM_USED_MODULES_LIST)) {
+                UseStmt* use = toUseStmt(sym->parentExpr);
+                if (!use) {
                   SymExpr* prev = toSymExpr(sym->prev);
                   if (!prev || prev->var != gModuleToken)
                     USR_FATAL_CONT(sym, "illegal use of module '%s'", sym->var->name);

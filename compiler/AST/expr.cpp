@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,6 +29,7 @@
 #include "codegen.h"
 #include "ForLoop.h"
 #include "genret.h"
+#include "insertLineNumbers.h"
 #include "misc.h"
 #include "passes.h"
 #include "stmt.h"
@@ -1315,7 +1316,9 @@ static GenRet codegenRnode(GenRet wide){
 
   if( widePointersStruct ) {
     ret = codegenCallExpr("chpl_nodeFromLocaleID",
-                          codegenAddrOf(codegenValuePtr(codegenWideThingField(wide,WIDE_GEP_LOC))), codegenZero(), codegenNullPointer());
+                          codegenAddrOf(codegenValuePtr(
+                              codegenWideThingField(wide, WIDE_GEP_LOC))),
+                          codegenZero(), codegenZero());
   } else {
     if( fLLVMWideOpt ) {
 #ifdef HAVE_LLVM
@@ -3425,7 +3428,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
                       codegenRaddr(from),
                       codegenSizeof(type),
                       genTypeStructureIndex(type->symbol),
-                      info->lineno, info->filename );
+                      info->lineno, gFilenameLookupCache[info->filename] );
         }
       }
     } else { // PUT
@@ -3447,7 +3450,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
                       codegenRaddr(to_ptr),
                       codegenSizeof(type),
                       genTypeStructureIndex(type->symbol),
-                      info->lineno, info->filename);
+                      info->lineno, gFilenameLookupCache[info->filename]);
         }
       }
     }
@@ -3782,9 +3785,10 @@ void CallExpr::prettyPrint(std::ostream *o) {
         *o << "*(";
         argList.last()->prettyPrint(o);
         *o << ")";
-      } else if (strcmp(expr->unresolved, "chpl_build_bounded_range") == 0 ||
-                 strcmp(expr->unresolved, "chpl_build_partially_bounded_range") == 0 ||
-                 strcmp(expr->unresolved, "chpl_build_unbounded_range") == 0) {
+      } else if (strcmp(expr->unresolved, "chpl_build_bounded_range") == 0) {
+        // Note that this code path is only used by chpldoc to create function
+        // return signatures and the only place a range will show up is in a
+        // fully specified array, in which case the range must be fully bounded
         argList.first()->prettyPrint(o);
         *o << "..";
         argList.last()->prettyPrint(o);
@@ -4003,6 +4007,9 @@ GenRet CallExpr::codegen() {
     }
     case PRIM_ARRAY_ALLOC:
     {
+      // get(1): return symbol
+      // get(2): element type
+      // get(3): number of elements
       GenRet dst = get(1);
       GenRet alloced;
       INT_ASSERT(dst.isLVPtr);
@@ -4893,7 +4900,8 @@ GenRet CallExpr::codegen() {
       GenRet ptr = get(1);
       if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
         ptr = codegenRaddr(ptr);
-      codegenCall("chpl_check_nil", ptr, info->lineno, info->filename); 
+      codegenCall("chpl_check_nil", ptr, info->lineno,
+                  gFilenameLookupCache[info->filename]);
       break; }
     case PRIM_LOCAL_CHECK:
     {
@@ -5056,21 +5064,6 @@ GenRet CallExpr::codegen() {
       ret = codegenCallExpr("chpl_single_isFull",
                             val_ptr, aux);
       break; 
-    }
-    case PRIM_PROCESS_TASK_LIST: {
-      GenRet taskListPtr = codegenFieldPtr(get(1), "taskList");
-      codegenCall("chpl_taskListProcess", codegenValue(taskListPtr), get(2), get(3));
-      break;
-    }
-    case PRIM_EXECUTE_TASKS_IN_LIST:
-      codegenCall("chpl_taskListExecute", get(1), get(2), get(3));
-      break;
-    case PRIM_FREE_TASK_LIST:
-    {
-      if (fNoMemoryFrees)
-        break;
-      codegenCall("chpl_taskListFree", get(1), get(2), get(3));
-      break;
     }
     case PRIM_GET_SERIAL:
       ret = codegenCallExpr("chpl_task_getSerial");
@@ -5575,7 +5568,6 @@ GenRet CallExpr::codegen() {
       ret = codegenCallExpr(fngen, args, fn, true);
       break;
     }
-    case PRIM_FIND_FILENAME_IDX:
     case PRIM_LOOKUP_FILENAME:
       ret = codegenBasicPrimitiveExpr(this);
       break;
@@ -5634,7 +5626,7 @@ GenRet CallExpr::codegen() {
     args[3] = taskList;
     args[4] = codegenValue(taskListNode);
     args[5] = fn->linenum();
-    args[6] = fn->fname();
+    args[6] = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
 
     genComment(fn->cname, true);
     codegenCall(genFnName, args);
@@ -5661,7 +5653,7 @@ GenRet CallExpr::codegen() {
     args[2] = get(2);
     args[3] = get(3);
     args[4] = fn->linenum();
-    args[5] = fn->fname();
+    args[5] = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
 
     genComment(fn->cname, true);
     codegenCall(fname, args);

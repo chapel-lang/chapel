@@ -5313,7 +5313,7 @@ yyreduce:
 
   case 165:
 #line 882 "chapel.ypp" /* yacc.c:1661  */
-    { (yyval.pch) = "align"; }
+    { (yyval.pch) = "chpl_align"; }
 #line 5318 "bison-chapel.cpp" /* yacc.c:1661  */
     break;
 
@@ -6398,19 +6398,19 @@ yyreduce:
 
   case 358:
 #line 1436 "chapel.ypp" /* yacc.c:1661  */
-    { (yyval.pexpr) = new CallExpr("chpl_build_partially_bounded_range", buildDotExpr("BoundedRangeType", "boundedLow"), (yyvsp[-1].pexpr)); }
+    { (yyval.pexpr) = new CallExpr("chpl_build_low_bounded_range", (yyvsp[-1].pexpr)); }
 #line 6403 "bison-chapel.cpp" /* yacc.c:1661  */
     break;
 
   case 359:
 #line 1438 "chapel.ypp" /* yacc.c:1661  */
-    { (yyval.pexpr) = new CallExpr("chpl_build_partially_bounded_range", buildDotExpr("BoundedRangeType", "boundedHigh"), (yyvsp[0].pexpr)); }
+    { (yyval.pexpr) = new CallExpr("chpl_build_high_bounded_range", (yyvsp[0].pexpr)); }
 #line 6409 "bison-chapel.cpp" /* yacc.c:1661  */
     break;
 
   case 360:
 #line 1440 "chapel.ypp" /* yacc.c:1661  */
-    { (yyval.pexpr) = new CallExpr("chpl_build_unbounded_range", buildDotExpr("BoundedRangeType", "boundedNone")); }
+    { (yyval.pexpr) = new CallExpr("chpl_build_unbounded_range"); }
 #line 6415 "bison-chapel.cpp" /* yacc.c:1661  */
     break;
 
@@ -6652,7 +6652,7 @@ yyreduce:
 
   case 406:
 #line 1524 "chapel.ypp" /* yacc.c:1661  */
-    { (yyval.pexpr) = new CallExpr("align", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
+    { (yyval.pexpr) = new CallExpr("chpl_align", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
 #line 6657 "bison-chapel.cpp" /* yacc.c:1661  */
     break;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,6 +38,7 @@ class NamedExpr;
 class SymExpr;
 class UnresolvedSymExpr;
 
+class UseStmt;
 class BlockStmt;
 class WhileDoStmt;
 class DoWhileStmt;
@@ -114,6 +115,8 @@ public:
   //
   // The sub-classes of Stmt
   //
+  virtual void   visitUseStmt     (UseStmt*           node) = 0;
+
   virtual bool   enterBlockStmt   (BlockStmt*         node) = 0;
   virtual void   exitBlockStmt    (BlockStmt*         node) = 0;
 

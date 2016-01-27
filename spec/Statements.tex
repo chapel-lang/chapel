@@ -271,7 +271,7 @@ I/O statement.
 \begin{example}
 In the example below,
 \begin{chapel}
-var w: Writer;
+var w = opentmp().writer(); // a channel
 var a: real;
 var b: int;
 

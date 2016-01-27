@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -242,13 +242,10 @@ TYPE_EXTERN PrimitiveType* dtOpaque;
 TYPE_EXTERN PrimitiveType* dtTaskID;
 TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
-TYPE_EXTERN PrimitiveType* dtTaskList;
 
 // Well-known types
 TYPE_EXTERN AggregateType* dtString;
 TYPE_EXTERN AggregateType* dtArray;
-TYPE_EXTERN AggregateType* dtReader;
-TYPE_EXTERN AggregateType* dtWriter;
 TYPE_EXTERN AggregateType* dtBaseArr;
 TYPE_EXTERN AggregateType* dtBaseDom;
 TYPE_EXTERN AggregateType* dtDist;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,13 @@ module StringCasts {
   // TODO: I want to break all of these casts from string to T out into
   // T.parse(string), but we dont support methods on types yet. Ideally they
   // would use a tagged union return val as well.
+
+  //
+  // Type -- Foo.type:string
+  //
+  proc _cast(type t, type x)  param : string where t == string {
+    return __primitive("typeToString", x);
+  }
 
   //
   // Bool
@@ -201,20 +208,7 @@ module StringCasts {
       otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
     }
   }
-
-  //
-  // Catch all
-  //
-  // Convert 'x' to a string just the way it would be written out.
-  // Includes Writer.write, with modifications (for simplicity; to avoid 'on').
-  //
-  // This is marked as compiler generated so it doesn't take precedence over
-  // genereated casts for types like enums
-  pragma "compiler generated"
-  proc _cast(type t, x) where t == string {
-    var ret: string;
-    ret.write(x);
-    return ret;
-  }
+ 
+  // Catch all cast anything -> string is in ChapelIO
 
 }

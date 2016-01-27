@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -57,6 +57,7 @@ comprt: FORCE
 	@$(MAKE) compiler
 	@$(MAKE) third-party-try-opt
 	@$(MAKE) always-build-test-venv
+	@$(MAKE) always-build-chpldoc
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
@@ -114,6 +115,11 @@ chpldoc: compiler third-party-chpldoc-venv
 always-build-test-venv: FORCE
 	-@if [ -n "$$CHPL_ALWAYS_BUILD_TEST_VENV" ]; then \
 	$(MAKE) test-venv; \
+	fi
+
+always-build-chpldoc: FORCE
+	-@if [ -n "$$CHPL_ALWAYS_BUILD_CHPLDOC" ]; then \
+	$(MAKE) chpldoc; \
 	fi
 
 clean-module-docs:

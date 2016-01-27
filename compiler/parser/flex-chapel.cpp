@@ -682,7 +682,7 @@ static yyconst flex_int16_t yy_chk[588] =
 #define YY_RESTORE_YY_MORE_OFFSET
 #line 1 "chapel.lex"
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -3119,6 +3119,10 @@ static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
         addCharString('\\');
       }
 
+      // \ escape ? to avoid C trigraphs
+      if (c == '?')
+        addCharString('\\');
+
       addCharString(c);
     }
 
@@ -3128,6 +3132,12 @@ static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
       if (c == '\n') {
         processNewline(scanner);
         addCharString('n');
+      } else if (c == 'u' || c == 'U') {
+        ParserContext context(scanner);
+        yyerror(yyLloc, &context, "universal character name not yet supported in string literal");
+      } else if ('0' <= c && c <= '7' ) {
+        ParserContext context(scanner);
+        yyerror(yyLloc, &context, "octal escape not supported in string literal");
       } else if (c != 0) {
         addCharString(c);
       }

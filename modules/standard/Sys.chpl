@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -241,7 +241,6 @@ module Sys {
   extern proc sys_init_sys_sockaddr(ref addr:sys_sockaddr_t);
   extern proc sys_strerror(error:err_t, ref string_out:c_string):err_t;
 
-  extern proc sys_readlink(path:c_string, ref string_out:c_string):err_t;
   extern proc sys_readlink(path:c_string, ref string_out:c_string):err_t;
   extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
   extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):err_t;
