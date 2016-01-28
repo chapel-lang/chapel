@@ -264,7 +264,7 @@ module DefaultSparse {
 
       // lookup the index and return the data or IRV
       const (found, loc) = dom.find(ind);
-      if setter && !found then
+      if false /*TODO*/ && !found then
         halt("attempting to assign a 'zero' value in a sparse array: ", ind);
       if found then
         return data(loc);
@@ -280,7 +280,7 @@ module DefaultSparse {
 
       // lookup the index and return the data or IRV
       const (found, loc) = dom.find(ind);
-      if setter && !found then
+      if false /*TODO*/ && !found then
         halt("attempting to assign a 'zero' value in a sparse array: ", ind);
       if found then
         return data(loc);

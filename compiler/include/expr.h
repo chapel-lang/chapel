@@ -166,12 +166,21 @@ class CallExpr : public Expr {
   Expr* baseExpr;         // function expression
   AList argList;          // function actuals
   PrimitiveOp* primitive; // primitive expression (baseExpr == NULL)
+
+  //Expr* baseExprValue; // if this call is to a ref-return and rvalue-return
+                       // pair, baseExpr will point to the ref-return version,
+                       // and cullOverReferences will swap in valueFn
+                       // if the ref version is not necessary (ie the
+                       // call was used in a value context). Resolution
+                       // will fully resolve both versions.
+
   bool partialTag;
   bool methodTag; ///< Set to true if the call is a method call.
   // It is used in gatherCandidates to filter out method field extraction
   // (partials).
   // TODO: Maybe use a new primitive to represent partials, and get rid of this tag.
   bool square; // true if call made with square brackets
+
 
   CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);

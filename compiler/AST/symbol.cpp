@@ -1424,7 +1424,6 @@ void TypeSymbol::accept(AstVisitor* visitor) {
 FnSymbol::FnSymbol(const char* initName) :
   Symbol(E_FnSymbol, initName),
   formals(),
-  setter(NULL),
   retType(dtUnknown),
   where(NULL),
   retExprType(NULL),
@@ -1495,7 +1494,6 @@ FnSymbol::copyInner(SymbolMap* map) {
   FnSymbol* copy = this->copyInnerCore(map);
 
   // Copy members that weren't set by copyInnerCore.
-  copy->setter      = COPY_INT(this->setter);
   copy->where       = COPY_INT(this->where);
   copy->body        = COPY_INT(this->body);
   copy->retExprType = COPY_INT(this->retExprType);
@@ -1654,8 +1652,6 @@ void FnSymbol::finalizeCopy(void) {
     // Retrieve our old/new symbol map from the partial copy process.
     SymbolMap* map = &(this->partialCopyMap);
 
-    this->setter = COPY_INT(this->partialCopySource->setter);
-
     /*
      * When we reach this point we will be in one of three scenarios:
      *  1) The function's body is empty and needs to be copied over from the
@@ -1770,8 +1766,6 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     body = toBlockStmt(new_ast);
   } else if (old_ast == where) {
     where = toBlockStmt(new_ast);
-  } else if (old_ast == setter) {
-    setter = toDefExpr(new_ast);
   } else if (old_ast == retExprType) {
     retExprType = toBlockStmt(new_ast);
   } else {
@@ -2326,9 +2320,6 @@ void FnSymbol::accept(AstVisitor* visitor) {
     for_alist(next_ast, formals) {
       next_ast->accept(visitor);
     }
-
-    if (setter)
-      setter->accept(visitor);
 
     if (body)
       body->accept(visitor);

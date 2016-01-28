@@ -104,9 +104,8 @@ refNecessary(SymExpr*                      se,
                  call->isPrimitive(PRIM_YIELD)) {
         FnSymbol* inFn = toFnSymbol(call->parentSymbol);
         // Return true only for ref-return functions
-        // but not const-ref-return functions (which are
-        // the "value" versions).
-        if (inFn->retTag == RET_CONST_REF) return false;
+        // TODO -- almost certainly needs updating.
+        if (inFn->retTag != RET_REF) return false;
         return true;
 
       } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
@@ -214,7 +213,7 @@ void cullOverReferences() {
             // Adjust code to use value return version.
             // The other option is that retTag is RET_CONST_REF,
             // in which case no further adjustment is necessary.
-            if (copy->retTag == RET_VALUE) {
+            if (valueFn->retTag == RET_VALUE) {
               // Generate a value temp to receive the value
               VarSymbol* tmp  = newTemp(valueFn->retType);
               move->insertBefore(new DefExpr(tmp));

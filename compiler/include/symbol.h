@@ -323,7 +323,6 @@ class TypeSymbol : public Symbol {
 class FnSymbol : public Symbol {
  public:
   AList formals; // each formal is an ArgSymbol
-  DefExpr* setter; // implicit setter argument to var functions
   Type* retType; // The return type of the function.  This field is not
                  // fully established until resolution, and could be NULL
                  // before then.  Up to that point, return type information is

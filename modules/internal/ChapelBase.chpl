@@ -513,29 +513,27 @@ module ChapelBase {
   // complex component methods re and im
   //
   inline proc ref chpl_anycomplex.re ref {
-    if setter {
-      return __primitive("complex_get_real", this);
+    return __primitive("complex_get_real", this);
+  }
+  inline proc chpl_anycomplex.re {
+    if this.type == complex(128) {
+      extern proc creal(x:complex(128)): real(64);
+      return creal(this);
     } else {
-      if this.type == complex(128) {
-        extern proc creal(x:complex(128)): real(64);
-        return creal(this);
-      } else {
-        extern proc crealf(x:complex(64)): real(32);
-        return crealf(this);
-      }
+      extern proc crealf(x:complex(64)): real(32);
+      return crealf(this);
     }
   }
   inline proc ref chpl_anycomplex.im ref {
-    if setter {
-      return __primitive("complex_get_imag", this);
+    return __primitive("complex_get_imag", this);
+  }
+  inline proc chpl_anycomplex.im {
+    if this.type == complex(128) {
+      extern proc cimag(x:complex(128)): real(64);
+      return cimag(this);
     } else {
-      if this.type == complex(128) {
-        extern proc cimag(x:complex(128)): real(64);
-        return cimag(this);
-      } else {
-        extern proc cimagf(x:complex(64)): real(32);
-        return cimagf(this);
-      }
+      extern proc cimagf(x:complex(64)): real(32);
+      return cimagf(this);
     }
   }
   

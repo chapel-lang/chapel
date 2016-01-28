@@ -274,10 +274,10 @@ static void build_getter(AggregateType* ct, Symbol *field) {
   } else {
     // TODO -- handle const ref
     fn->retTag = RET_REF;
-    fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
   }
 
-  if (isUnion(ct))
+  // TODO -- build default union getter/setter
+  /*if (isUnion(ct))
     fn->insertAtTail(
       new CondStmt(
         new SymExpr(fn->setter->sym),
@@ -287,7 +287,7 @@ static void build_getter(AggregateType* ct, Symbol *field) {
             new CallExpr(PRIM_GET_UNION_ID, _this),
               new_IntSymbol(field->id)),
           new CallExpr("halt", new_CStringSymbol("illegal union access")))));
-
+  */
   if (isTypeSymbol(field) && isEnumType(field->type)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, field));
     // better flatten enumerated types now

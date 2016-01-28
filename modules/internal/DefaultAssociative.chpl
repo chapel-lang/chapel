@@ -529,7 +529,7 @@ module DefaultAssociative {
         if shouldLock then dom.unlockTable();
         return data(slotNum);
       }
-      else if setter && slotNum != -1 { // do an insert using the slot we found
+      else if true /*TODO*/ && slotNum != -1 { // do an insert using the slot we found
         if dom._arrs.length != 1 {
           halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
           return data(0);

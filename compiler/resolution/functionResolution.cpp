@@ -347,13 +347,14 @@ computeReturnTypeParamVectors(BaseAST* ast,
                               Symbol* retSymbol,
                               Vec<Type*>& retTypes,
                               Vec<Symbol*>& retParams);
-static void
-replaceSetterArgWithTrue(BaseAST* ast, FnSymbol* fn);
-static void
-replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret);
+//static void
+//replaceSetterArgWithTrue(BaseAST* ast, FnSymbol* fn);
+//static void
+//replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret);
 static void
 insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts);
-static void buildValueFunction(FnSymbol* fn);
+static bool fnsHaveSameSignature(FnSymbol* fn, FnSymbol* candidate);
+static void findValueFunction(FnSymbol* fn);
 static bool
 possible_signature_match(FnSymbol* fn, FnSymbol* gn);
 static bool signature_match(FnSymbol* fn, FnSymbol* gn);
@@ -2346,7 +2347,9 @@ static bool isBetterMatch(ResolutionCandidate* candidate1,
  * \return The result of the disambiguation process.
  */
 static ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>& candidates, DisambiguationContext DC) {
+disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
+                    DisambiguationContext DC /*,
+                    bool refReturn*/) {
 
   // If index i is set then we can skip testing function F_i because we already
   // know it can not be the best match.
@@ -2360,6 +2363,11 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates, DisambiguationContext
 
     ResolutionCandidate* candidate1 = candidates.v[i];
     bool best = true; // is fn1 the best candidate?
+
+    /*
+    // Only consider ref return fns in ref return part
+    if ((candidate1->fn->retTag == RET_REF) != refReturn ) continue;
+    */
 
     TRACE_DISAMBIGUATE_BY_MATCH("%s\n\n", toString(candidate1->fn));
 
@@ -2375,6 +2383,11 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates, DisambiguationContext
       TRACE_DISAMBIGUATE_BY_MATCH("-----------------------\n");
 
       ResolutionCandidate* candidate2 = candidates.v[j];
+
+      /*
+      // Only consider ref return fns in ref return part
+      if ((candidate2->fn->retTag == RET_REF) != refReturn ) continue;
+      */
 
       TRACE_DISAMBIGUATE_BY_MATCH("%s\n", toString(candidate2->fn));
 
@@ -3522,7 +3535,56 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
      info.call->id == explainCallID);
   DisambiguationContext DC(&info.actuals, scope, explain);
 
-  ResolutionCandidate* best = disambiguateByMatch(candidates, DC);
+  ResolutionCandidate* best = NULL;
+  // Check for ambiguity between ref and non-ref return intent.
+  // If the functions have the same signature, one will be
+  // the valueFunction for the other, and we'll sort it out
+  // in cullOverReferences. Use the ref version for now in that case.
+  if (candidates.n == 2) {
+    ResolutionCandidate* candidate1 = candidates.v[0];
+    ResolutionCandidate* candidate2 = candidates.v[1];
+    if (fnsHaveSameSignature(candidate1->fn, candidate2->fn)) {
+      // Is one of them ret ref and one of them not?
+      ResolutionCandidate* refReturn = NULL;
+      ResolutionCandidate* other = NULL;
+
+      if (candidate1->fn->retTag == RET_REF) {
+        refReturn = candidate1;
+        other = candidate2;
+      } else if (candidate2->fn->retTag == RET_REF) {
+        refReturn = candidate2;
+        other = candidate1;
+      }
+
+      if (refReturn && other && other->fn->retTag != RET_REF)
+        best = refReturn;
+    }
+  }
+
+  if (!best) {
+    best = disambiguateByMatch(candidates, DC);
+  }
+
+
+  // Find best ref-return and value/const-ref-return intent match
+  /*ResolutionCandidate* bestRef = disambiguateByMatch(candidates, DC, true);
+  ResolutionCandidate* bestValue = disambiguateByMatch(candidates, DC, false);
+
+  // Let best be the ref-return version if available.
+  ResolutionCandidate* best = bestRef;
+  if (!best) best = bestValue;
+  */
+
+  /*
+  if (best && best->fn && (best->fn->id == 150287 || best->fn->id == 150297))
+    gdbShouldBreakHere();
+    */
+
+  /*
+  bool refPair = false;
+  if (bestRef != NULL && bestValue != NULL)
+    refPair = true;
+    */
 
   if (best && best->fn) {
     /*
@@ -3531,6 +3593,11 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
      */
 
     instantiateBody(best->fn);
+    /*if (refPair) {
+      // If we're resolving a ref and non-ref pair,
+      // also instantiate the value version. best is the ref version.
+      instantiateBody(bestValue->fn);
+    }*/
 
     if (explainCallLine && explainCallMatch(call)) {
       USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
@@ -3576,6 +3643,18 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     reorderActuals(best->fn, &best->alignedFormals, &info);
     coerceActuals(best->fn, &info);
     best->fn = promotionWrap(best->fn, &info);
+    /*
+    if (refPair) {
+      // If we're resolving a ref and non-ref pair,
+      // also handle the value version. best is the ref version.
+      INT_ASSERT(bestValue->fn);
+      bestValue->fn = defaultWrap(bestValue->fn, &bestValue->alignedFormals, &info);
+      // We can't reorder or coerce the actuals since there is only one call.
+      //reorderActuals(bestValue->fn, &bestValue->alignedFormals, &info);
+      //coerceActuals(bestValue->fn, &info);
+      bestValue->fn = promotionWrap(bestValue->fn, &info);
+    }
+    */
   }
 
   FnSymbol* resolvedFn = best != NULL ? best->fn : NULL;
@@ -3609,6 +3688,14 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if (resolvedFn && call->parentSymbol) {
     SET_LINENO(call);
     call->baseExpr->replace(new SymExpr(resolvedFn));
+    /*if (refPair && bestValue && bestValue->fn && bestRef && bestRef->fn) {
+      call->baseExprValue = new SymExpr(bestValue->fn);
+      printf("ref %i value %i\n", call->baseExpr->id, call->baseExprValue->id);
+      print_view(resolvedFn);
+      print_view(bestValue->fn);
+      INT_ASSERT(!bestRef->fn->valueFunction);
+      bestRef->fn->valueFunction = bestValue->fn;
+    }*/
   }
 
   if( ! checkonly ) {
@@ -3619,7 +3706,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
           )
         USR_FATAL_CONT(call, "illegal call to %s() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor on the object being constructed", resolvedFn->name);
 
-    lvalueCheck(call);
+    if (false ) lvalueCheck(call); // TODO
     checkForStoringIntoTuple(call, resolvedFn);
 
     if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
@@ -6559,7 +6646,7 @@ computeReturnTypeParamVectors(BaseAST* ast,
   AST_CHILDREN_CALL(ast, computeReturnTypeParamVectors, retSymbol, retTypes, retParams);
 }
 
-
+/*
 static void
 replaceSetterArgWithTrue(BaseAST* ast, FnSymbol* fn) {
   if (SymExpr* se = toSymExpr(ast)) {
@@ -6594,6 +6681,7 @@ replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret) {
   AST_CHILDREN_CALL(ast, replaceSetterArgWithFalse, fn, ret);
 }
 
+*/
 
 static void
 insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
@@ -6736,7 +6824,7 @@ static void instantiate_default_constructor(FnSymbol* fn) {
   }
 }
 
-
+/*
 static FnSymbol* doBuildValueFunction(FnSymbol* fn, bool retConstRef)
 {
   FnSymbol* copy;
@@ -6763,40 +6851,79 @@ static FnSymbol* doBuildValueFunction(FnSymbol* fn, bool retConstRef)
   resolveFns(copy);
   return copy;
 }
+*/
+static bool fnsHaveSameSignature(FnSymbol* fn, FnSymbol* candidate) {
 
-static void buildValueFunction(FnSymbol* fn) {
+  // Do they have the same number of formals?
+  if (candidate->numFormals() != fn->numFormals())
+    return false;
+
+  // Are they both generic or neither generic?
+  if (candidate->hasFlag(FLAG_GENERIC) != fn->hasFlag(FLAG_GENERIC))
+    return false;
+
+  if (fn->numFormals() == 0) {
+    return true;
+  }
+
+  // Do the formals have the same names and types?
+  ArgSymbol* candidateFormal = candidate->getFormal(1);
+  ArgSymbol* fnFormal = fn->getFormal(1);
+
+  int n = fn->numFormals();
+  for (int i = 0; i < n; i++ ) {
+    if (candidateFormal->type != fnFormal->type ||
+        candidateFormal->name != fnFormal->name) {
+      return false;
+    }
+
+    candidateFormal = next_formal(candidateFormal);
+    fnFormal = next_formal(fnFormal);
+  }
+
+  return true;
+}
+
+static void findValueFunction(FnSymbol* fn) {
   if (!fn->isIterator()) {
     FnSymbol* copy;
     bool valueFunctionExists = fn->valueFunction;
     if (!valueFunctionExists) {
-      // Resolve the value version of the function so that we
-      // can know the return type. We might not use the value
-      // function if the return type is not POD.
-      FnSymbol* valueFn = doBuildValueFunction(fn, false);
-      Type* retType = valueFn->retType;
-      INT_ASSERT(retType && retType != dtUnknown);
-      // Select the value or const ref version depending on
-      // whether or not the return type is POD
-      bool notPOD = propagateNotPOD(retType);
-      if (notPOD) {
-        // Build and use the const ref version of the value function
-        copy = doBuildValueFunction(fn, true);
-      } else {
-        // Use the value-return version
-        copy = valueFn;
-      }
-      replaceSetterArgWithTrue(fn, fn);
+      FnSymbol* valueFn = NULL;
+      // Resolve the value version of the function.
+      forv_Vec(FnSymbol, candidate, gFnSymbols) {
+        // Don't find same function
+        if (candidate == fn)
+          continue;
 
-      fn->valueFunction = copy;
+        // Name must match
+        if (candidate->name != fn->name)
+          continue;
+
+        // Looking for a value function
+        if (candidate->retTag == RET_REF)
+          continue;
+
+
+        if (fnsHaveSameSignature(candidate, fn)) {
+          valueFn = candidate;
+          break;
+        }
+      }
+
+      if (valueFn) {
+        fn->valueFunction = valueFn;
+        
+        printf("ref %i value %i\n", fn->id, valueFn->id);
+        print_view(fn);
+        print_view(valueFn);
+      }
     } else {
       copy = fn->valueFunction;
       resolveFns(copy);
     }
-  } else {
-    replaceSetterArgWithTrue(fn, fn);
   }
 }
-
 
 static void resolveReturnType(FnSymbol* fn)
 {
@@ -6931,9 +7058,7 @@ resolveFns(FnSymbol* fn) {
 
   // Does this function return by ref-intent?
   if (fn->retTag == RET_REF) {
-    // Value function returns const ref (RET_CONST_REF);
-    // if it returned RET_REF, we would loop here
-    buildValueFunction(fn);
+    findValueFunction(fn);
   }
 
   insertFormalTemps(fn);

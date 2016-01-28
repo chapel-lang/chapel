@@ -416,6 +416,7 @@ static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a)
   case E_CallExpr:                                                      \
     AST_CALL_CHILD(_a, CallExpr, baseExpr, call, __VA_ARGS__);          \
     AST_CALL_LIST(_a, CallExpr, argList, call, __VA_ARGS__);            \
+    /*AST_CALL_CHILD(_a, CallExpr, baseExprValue, call, __VA_ARGS__);*/  \
     break;                                                              \
   case E_NamedExpr:                                                     \
     AST_CALL_CHILD(_a, NamedExpr, actual, call, __VA_ARGS__);           \
@@ -490,7 +491,6 @@ static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a)
     break;                                                              \
   case E_FnSymbol:                                                      \
     AST_CALL_LIST(_a, FnSymbol, formals, call, __VA_ARGS__);            \
-    AST_CALL_CHILD(_a, FnSymbol, setter, call, __VA_ARGS__);            \
     AST_CALL_CHILD(_a, FnSymbol, body, call, __VA_ARGS__);              \
     AST_CALL_CHILD(_a, FnSymbol, where, call, __VA_ARGS__);             \
     AST_CALL_CHILD(_a, FnSymbol, retExprType, call, __VA_ARGS__);       \

@@ -811,16 +811,6 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
     mOffset = mOffset - 13;
   }
 
-  if (node->setter)
-  {
-    newline();
-    write(false, "Setter:      ", false);
-
-    mOffset = mOffset + 13;
-    node->setter->accept(this);
-    mOffset = mOffset - 13;
-  }
-
   if (node->body)
   {
     newline();

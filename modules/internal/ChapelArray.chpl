@@ -1610,10 +1610,16 @@ module ChapelArray {
         return _value.dsiAccess(i(1));
     }
 
-    pragma "no doc"
+    pragma "no doc" // ref version
     pragma "reference to const when const this"
     inline proc this(i: _value.dom.idxType ...rank) ref
       return this(i);
+
+    pragma "no doc" // value version
+    pragma "reference to const when const this"
+    inline proc this(i: _value.dom.idxType ...rank)
+      return this(i);
+
 
     pragma "no doc"
     pragma "reference to const when const this"
@@ -1671,7 +1677,7 @@ module ChapelArray {
       return _newArray(a);
     }
 
-    pragma "no doc"
+    pragma "no doc" // value version
     pragma "reference to const when const this"
     proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
       if boundsChecking then
@@ -2395,6 +2401,9 @@ module ChapelArray {
   // integers and ranges; that is, it is a valid argument list for rank
   // change
   proc _validRankChangeArgs(args, type idxType) param {
+    proc _isRange(type idxType, r: range(?)) param return true;
+    proc _isRange(type idxType, x) param return false;
+
     proc _validRankChangeArg(type idxType, r: range(?)) param return true;
     proc _validRankChangeArg(type idxType, i: idxType) param return true;
     proc _validRankChangeArg(type idxType, x) param return false;
@@ -2408,7 +2417,23 @@ module ChapelArray {
         return true;
     }
 
-    return help(1);
+    proc allValid() param {
+      for param dim in 1.. args.size {
+        if !_validRankChangeArg(idxType, args(dim)) then
+          return false;
+      }
+      return true;
+    }
+    proc oneRange() param {
+      for param dim in 1.. args.size {
+        if _isRange(idxType, args(dim)) then
+          return true;
+      }
+      return false;
+    }
+
+    return allValid() && oneRange();
+    //return help(1);
   }
 
   proc _getRankChangeRanges(args) {
