@@ -3,5 +3,5 @@
 # sizes for all configurations. 2M should be high enough for all configurations
 # It can't be any higher because  cygwin currently only support 2M max. 16K is
 # the lowest we can go because fifo's min limit is 16K.
--ECHPL_RT_CALL_STACK_SIZE=16K  #cobegin-stacksize-failure.good
--ECHPL_RT_CALL_STACK_SIZE=2M  #cobegin-stacksize-success.good
+--depth=10000 -ECHPL_RT_CALL_STACK_SIZE=16K  #cobegin-stacksize-failure.good
+--depth=10000 -ECHPL_RT_CALL_STACK_SIZE=2M  #cobegin-stacksize-success.good
