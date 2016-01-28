@@ -5567,7 +5567,8 @@ preFold(Expr* expr) {
       if (!name) {
         // In this case, we ran out of fields without finding the number
         // specified.  This is the user's error.
-        USR_FATAL(call, "'%d' is not a valid field number", fieldnum);
+        USR_FATAL(call, "'%d' is not a valid field number for %s", fieldnum,
+            toString(classtype));
       }
       result = new SymExpr(new_StringSymbol(name));
       call->replace(result);
@@ -5584,17 +5585,23 @@ preFold(Expr* expr) {
 
       int fieldnum = var->immediate->int_value();
       int fieldcount = 0;
+      const char* name = NULL;
 
       for_fields(field, classtype) {
         if( ! isNormalField(field) ) continue;
 
         fieldcount++;
         if (fieldcount == fieldnum) {
-          result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(),
-                                new_CStringSymbol(field->name));
+          name = field->name;
           break;
         }
       }
+      if (!name) {
+        USR_FATAL(call, "'%d' is not a valid field number for %s", fieldnum,
+                  toString(classtype));
+      }
+      result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(),
+                            new_CStringSymbol(name));
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_ID_BY_NUM)) {
       /* this is really for unions */
