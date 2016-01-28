@@ -30,6 +30,6 @@ git clean -fd .
 
 # checkout and test after
 git checkout $afterSimplifyFifo
-perf_args="-performance-description afterFifo -performance-configs default:v,fifo:v:afterFifo:v -sync-dir-suffix fifo"
+perf_args="-performance-description afterFifo -performance-configs default:v,fifo:v,afterFifo:v -sync-dir-suffix fifo"
 perf_args="${perf_args} -performance -numtrials 1 -startdate 01/26/16"
 $CWD/nightly -cron ${nightly_args} ${perf_args}
