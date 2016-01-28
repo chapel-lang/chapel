@@ -1,0 +1,2 @@
+# compilation error ITE0227 with baseline
+COMPOPTS <= --baseline
