@@ -6886,10 +6886,9 @@ static bool fnsHaveSameSignature(FnSymbol* fn, FnSymbol* candidate) {
 
 static void findValueFunction(FnSymbol* fn) {
   if (!fn->isIterator()) {
-    FnSymbol* copy;
+    FnSymbol* valueFn = NULL;
     bool valueFunctionExists = fn->valueFunction;
     if (!valueFunctionExists) {
-      FnSymbol* valueFn = NULL;
       // Resolve the value version of the function.
       forv_Vec(FnSymbol, candidate, gFnSymbols) {
         // Don't find same function
@@ -6914,14 +6913,18 @@ static void findValueFunction(FnSymbol* fn) {
       if (valueFn) {
         fn->valueFunction = valueFn;
         
+        printf("found value function %p\n", valueFn);
         printf("ref %i value %i\n", fn->id, valueFn->id);
+        printf(" ref version:\n");
         print_view(fn);
+        printf(" value version:\n");
         print_view(valueFn);
       }
     } else {
-      copy = fn->valueFunction;
-      resolveFns(copy);
+      valueFn = fn->valueFunction;
     }
+    if (valueFn)
+      resolveFns(valueFn);
   }
 }
 

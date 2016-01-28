@@ -25,6 +25,8 @@
 #include "stmt.h"
 #include "symbol.h"
 
+#include "view.h" // TODO remove
+
 static bool
 refNecessary(SymExpr*                      se,
              Map<Symbol*, Vec<SymExpr*>*>& defMap,
@@ -194,6 +196,12 @@ void cullOverReferences() {
     if (FnSymbol* fn = call->isResolved()) {
       // Does that function have a "value" counter part?
       if (FnSymbol* valueFn = fn->valueFunction) {
+        printf("Working with valueFn %i %p\n", valueFn->id, valueFn);
+        print_view(valueFn);
+
+        
+        INT_ASSERT(isVarSymbol(fn->getReturnSymbol()));
+
         if (CallExpr* move = toCallExpr(call->parentExpr)) {
           INT_ASSERT(move->isPrimitive(PRIM_MOVE));
 

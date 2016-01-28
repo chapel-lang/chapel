@@ -494,6 +494,7 @@ static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a)
     AST_CALL_CHILD(_a, FnSymbol, body, call, __VA_ARGS__);              \
     AST_CALL_CHILD(_a, FnSymbol, where, call, __VA_ARGS__);             \
     AST_CALL_CHILD(_a, FnSymbol, retExprType, call, __VA_ARGS__);       \
+    AST_CALL_CHILD(_a, FnSymbol, valueFunction, call, __VA_ARGS__);       \
     break;                                                              \
   case E_EnumType:                                                      \
     AST_CALL_LIST(_a, EnumType, constants, call, __VA_ARGS__);          \
