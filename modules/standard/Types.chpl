@@ -715,17 +715,17 @@ inline proc _bxor_id(type t) return 0:t;
 /* Return the number of fields in a class or record as a param.
    The count of fields includes types and param fields.
  */
-proc numFields(type t) param
+proc numFields(type t) param : int
   return __primitive("num fields", t);
 
 /* Get the name of the `i`th field in a class or record.
-   `i` should be in 1..numFields(t).
+   Causes a compilation error if `i` is not in 1..numFields(t).
 
    :arg t: a class or record type
    :arg i: which field to get the name of
    :returns: the name of the field, as a param string
  */
-proc getFieldName(type t, param i:int) param
+proc getFieldName(type t, param i:int) param : string
   return __primitive("field num to name", t, i);
 
 pragma "no doc"
@@ -734,7 +734,7 @@ proc fieldNumToName(type t, param i:int) param {
 }
 
 /* Get the `i`th field in a class or record.
-   `i` should be in 1..numFields(t).
+   Causes a compilation error if `i` is not in 1..numFields(t).
 
    :arg x: a class or record
    :arg i: which field to get
@@ -746,6 +746,7 @@ proc getField(x:?t, param i:int)
 
 // TODO ref return version of getField(x, int)
 
+pragma "no doc"
 proc fieldValueByNum(x, param i:int) {
   compilerError("fieldValueByNum deprecated. Use getField");
 }
@@ -767,15 +768,14 @@ proc getField(x:?t, param s:string) {
 
 // TODO ref return version of getField(x, string)
 
-/* Get a field index in a class or record.
-   Will not generate a compilation error if the field
-   is not found.
+/* Get a field index in a class or record, or 0 if
+   the field is not found.
 
    :arg t: a class or record type
    :arg s: the name of a field
    :returns: an index `i` usable in getField, or 0 if the field was not found.
  */
-proc getFieldIndex(type t, param s:string) param
+proc getFieldIndex(type t, param s:string) param : int
   return __primitive("field name to num", t, s);
 
 /* Returns `true` if a class or record has a field named `s`,
@@ -786,19 +786,19 @@ proc getFieldIndex(type t, param s:string) param
    :returns: `true` if the field is present.
  */
 
-proc hasField(type t, param s:string) param
+proc hasField(type t, param s:string) param : bool
   return getFieldIndex(t, s) > 0;
 
 /* Returns true if a function named `fname` taking in no arguments
    is available in the current scope.
    */
-proc canResolve(param fname) param
+proc canResolve(param fname : string) param : bool
   return __primitive("call resolves", fname);
 
 /* Returns true if a function named `fname` taking the arguments in args
    is available in the current scope.
    */
-proc canResolve(param fname, args ...?k) param
+proc canResolve(param fname : string, args ...) param : bool
   return __primitive("call resolves", fname, (...args));
 
 // TODO -- how can this work with by-name argument passing?
@@ -806,13 +806,13 @@ proc canResolve(param fname, args ...?k) param
 /* Returns true if a method on x named `fname` taking in no arguments
    is available in the current scope.
    */
-proc canResolveMethod(x, param fname) param
+proc canResolveMethod(x, param fname : string) param : bool
   return __primitive("method call resolves", x, fname);
 
 /* Returns true if a method on x named `fname` taking the arguments in args
    is available in the current scope.
    */
-proc canResolveMethod(x, param fname, args ...?k) param
+proc canResolveMethod(x, param fname : string, args ...) param : bool
   return __primitive("method call resolves", x, fname, (...args));
 
 // TODO -- do we need a different version of can resolve with ref this?
