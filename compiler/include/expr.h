@@ -224,6 +224,31 @@ class CallExpr : public Expr {
   bool            isPrimitive(const char*  primitiveName)                const;
 };
 
+// For storing several call expressions, where
+// choosing between them depends on context
+// (and that choice might need to be done later in resolution).
+// These should only exist during resolution.
+class ContextCallExpr : public Expr {
+ public:
+  AList options;
+
+  ContextCallExpr();
+
+  DECLARE_COPY(ContextCallExpr);
+
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual void    verify();
+  virtual void    accept(AstVisitor* visitor);
+  virtual Type*   typeInfo();
+  virtual GenRet  codegen();
+  virtual void    prettyPrint(std::ostream *o);
+
+  virtual Expr*   getFirstChild();
+
+  virtual Expr*   getFirstExpr();
+};
+
+
 class NamedExpr : public Expr {
  public:
   const char*     name;

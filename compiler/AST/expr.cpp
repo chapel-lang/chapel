@@ -5766,6 +5766,78 @@ bool CallExpr::isPrimitive(const char* primitiveName) const {
 *                                                                           *
 ************************************* | ************************************/
 
+ContextCallExpr::ContextCallExpr() :
+  Expr(E_ContextCallExpr),
+  options()
+{
+  gContextCallExprs.add(this);
+}
+
+void
+ContextCallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
+  INT_FATAL(this, "unexpected case in UnresolvedSymExpr::replaceChild");
+}
+
+
+Expr* ContextCallExpr::getFirstChild() {
+  return options.head;
+}
+
+Expr* ContextCallExpr::getFirstExpr() {
+  return options.head->getFirstExpr();
+}
+
+void
+ContextCallExpr::verify() {
+  Expr::verify();
+  if (astTag != E_ContextCallExpr)
+    INT_FATAL(this, "bad ContextCallExpr::astTag");
+}
+
+
+ContextCallExpr*
+ContextCallExpr::copyInner(SymbolMap* map) {
+  ContextCallExpr* _this = 0;
+  _this = new ContextCallExpr();
+  for_alist(expr, options)
+    _this->options.insertAtTail(COPY_INT(expr));
+  return _this;
+}
+
+
+Type* ContextCallExpr::typeInfo(void) {
+  if (options.head)
+    return options.head->typeInfo();
+  return dtUnknown;
+}
+
+
+GenRet ContextCallExpr::codegen() {
+  GenRet ret;
+  INT_FATAL(this, "ContextCallExpr::codegen called");
+  return ret;
+}
+
+void ContextCallExpr::prettyPrint(std::ostream *o) {
+  *o << "(options";
+  for_alist(expr, options) {
+    *o << " ";
+    expr->prettyPrint(o);
+  }
+  *o << " )";
+}
+
+void ContextCallExpr::accept(AstVisitor* visitor) {
+  for_alist(expr, options)
+    expr->accept(visitor);
+}
+
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
   Expr(E_NamedExpr),
   name(init_name),
@@ -6222,4 +6294,8 @@ new_Expr(const char* format, va_list vl) {
 
   INT_ASSERT(stack.size() == 1);
   return stack.top();
+}
+
+CallExpr* getMainCall(ContextCallExpr* a) {
+  return (CallExpr*) a->options.tail;
 }
