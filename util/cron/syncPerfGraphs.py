@@ -60,6 +60,12 @@ def syncToSourceForge(dirToSync, destDir, logFile):
     sfPerfBaseDir = '/home/project-web/chapel/htdocs/perf/'
     sfPerfDir = posixpath.join(sfPerfBaseDir, destDir)
 
+    # create an interactive shell on sourceforge and immediately exit, which
+    # allows us to do regular ssh commands (SF security thing)
+    getShellCommand = 'ssh chapeladmin,chapel@{0} create '.format(sfShellHost)
+    getShellDesc = 'create interactive sourceforge shell'
+    executeCommand(getShellCommand, getShellDesc, logFile)
+
     # Delete files older than 10 days. Don't just use `rsync --del` because
     # there might be subdirectories we don't want to delete, ignore errors
     delOldCommand = 'ssh {0} "find {1} -ctime +10 | xargs rm -rf "'.format(sfShellHost, sfPerfDir)
