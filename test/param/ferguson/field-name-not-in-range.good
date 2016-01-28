@@ -1,0 +1,2 @@
+$CHPL_HOME/modules/standard/Types.chpl:728: In function 'getFieldName':
+$CHPL_HOME/modules/standard/Types.chpl:729: error: '2' is not a valid field number for R
