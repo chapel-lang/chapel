@@ -25,12 +25,14 @@
 #include "files.h"
 #include "misc.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stringutil.h"
 
 #include "AstVisitor.h"
 
 #include <cstring>
 #include <algorithm>
+#include <vector>
 
 // remember these so we can update their labels' iterResumeGoto
 Map<GotoStmt*,GotoStmt*> copiedIterResumeGotos;
@@ -86,7 +88,9 @@ bool Stmt::isStmt() const {
 ********************************* | ********************************/
 UseStmt::UseStmt(BaseAST* module):
   Stmt(E_UseStmt),
-  mod(NULL)
+  mod(NULL),
+  named(),
+  relatedNames()
 {
   if (Symbol* b = toSymbol(module)) {
     mod = new SymExpr(b);
@@ -98,9 +102,42 @@ UseStmt::UseStmt(BaseAST* module):
   gUseStmts.add(this);
 }
 
+//
+UseStmt::UseStmt(BaseAST* module, std::vector<const char*>* args, bool exclude) :
+  Stmt(E_UseStmt),
+  mod(NULL),
+  named(),
+  relatedNames()
+{
+  if (Symbol* b = toSymbol(module)) {
+    mod = new SymExpr(b);
+  } else if (Expr* b = toExpr(module)) {
+    mod = b;
+  } else {
+    INT_FATAL(this, "Bad mod in UseStmt constructor");
+  }
+  except = exclude;
+  if (args->size() > 0) {
+    // Symbols to search when going through this module's scope from an outside
+    // scope
+    for_vector(const char, str, *args) {
+      named.push_back(str);
+    }
+  }
+  gUseStmts.add(this);
+}
+
+
 UseStmt* UseStmt::copyInner(SymbolMap* map) {
   UseStmt *_this = 0;
-  _this = new UseStmt(COPY_INT(mod));
+  if (named.size() > 0) {
+    _this = new UseStmt(COPY_INT(mod), &named, except);
+  } else {
+    _this = new UseStmt(COPY_INT(mod));
+  }
+  for_vector(const char, sym, relatedNames) {
+    _this->relatedNames.push_back(sym);
+  }
   return _this;
 }
 
@@ -111,6 +148,9 @@ void UseStmt::verify() {
   }
   if (mod == NULL) {
     INT_FATAL(this, "Bad UseStmt::mod");
+  }
+  if (relatedNames.size() != 0 && named.size() == 0) {
+    INT_FATAL(this, "Have names to avoid, but nothing was listed in the use to begin with");
   }
 }
 

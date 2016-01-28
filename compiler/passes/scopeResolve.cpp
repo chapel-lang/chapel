@@ -329,6 +329,8 @@ static void processImportExprs() {
     use->getStmtExpr()->remove();
 
     useParent->moduleUseAdd(use);
+
+    use->validateList();
   }
 }
 
@@ -439,6 +441,47 @@ static ModuleSymbol* getUsedModule(Expr* expr, UseStmt* useCall) {
     //
     printModuleUseError(useCall);
     return NULL;
+  }
+}
+
+// Verifies that all the symbols in the include and exclude lists of use
+// statements refer to symbols that are visible from that module.
+void UseStmt::validateList() {
+  if (named.size() == 0) {
+    // Trivially, if we have no symbols in our 'except' or 'only' list, then it
+    // must be valid!
+    return;
+  }
+  SymExpr* se = toSymExpr(mod);
+  INT_ASSERT(se);
+  ModuleSymbol* module = toModuleSymbol(se->var);
+  INT_ASSERT(module);
+
+  const char* listName = except ? "except" : "only";
+  for_vector(const char, name, named) {
+    Symbol* sym = lookup(module->block, name);
+
+    if (!sym) {
+      USR_FATAL_CONT(this, "Bad identifier in '%s' clause, no known '%s'", listName, name);
+    } else if (!sym->isVisible(this)) {
+      USR_FATAL_CONT(this, "Bad identifier in '%s' clause, '%s' is private", listName, name);
+    }
+
+    createRelatedNames(sym);
+  }
+}
+
+void UseStmt::createRelatedNames(Symbol* maybeType) {
+  if (TypeSymbol* ts = toTypeSymbol(maybeType)) {
+    Type* type = ts->type;
+    forv_Vec(FnSymbol, method, type->methods) {
+      relatedNames.push_back(method->name);
+    }
+    if (AggregateType* at = toAggregateType(type)) {
+      for_fields(sym, at) {
+        relatedNames.push_back(sym->name);
+      }
+    }
   }
 }
 

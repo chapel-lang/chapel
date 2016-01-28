@@ -56,6 +56,7 @@ class UseStmt : public Stmt {
   // specify an explicit module name.
 
   UseStmt(BaseAST* module);
+  UseStmt(BaseAST* module, std::vector<const char*>* args, bool exclude);
 
   virtual void    verify();
 
@@ -67,6 +68,18 @@ class UseStmt : public Stmt {
   virtual Expr*   getFirstExpr();
 
   virtual Expr*   getFirstChild();
+
+  void validateList();
+
+ private:
+  bool except; // Used to determine if the use contains an 'except' or 'only'
+  // list (but only if 'named' has any contents)
+  std::vector<const char *> named; // The names of symbols from an 'except' or
+  // 'only' list
+  std::vector<const char *> relatedNames; // The names of fields or methods
+  // related to a type specified in an 'except' or 'only' list.
+
+  void createRelatedNames(Symbol* maybeType);
 };
 
 /************************************ | *************************************
