@@ -8,8 +8,6 @@
 // different configurations and worrying about it changing in the future.
 //
 
-use Time;
-
 //
 // First, run some tasks whose only purpose is to encourage the tasking
 // layer to start threads to run them.  What we're trying to do here is
