@@ -71,6 +71,9 @@ class UseStmt : public Stmt {
 
   void validateList();
 
+  bool isPlainUse();
+  bool skipSymbolSearch(const char* name);
+
  private:
   bool except; // Used to determine if the use contains an 'except' or 'only'
   // list (but only if 'named' has any contents)
@@ -80,6 +83,9 @@ class UseStmt : public Stmt {
   // related to a type specified in an 'except' or 'only' list.
 
   void createRelatedNames(Symbol* maybeType);
+
+  bool matchedNameOrConstructor(const char* name);
+  bool inRelatedNames(const char* name);
 };
 
 /************************************ | *************************************

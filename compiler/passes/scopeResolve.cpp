@@ -447,9 +447,9 @@ static ModuleSymbol* getUsedModule(Expr* expr, UseStmt* useCall) {
 // Verifies that all the symbols in the include and exclude lists of use
 // statements refer to symbols that are visible from that module.
 void UseStmt::validateList() {
-  if (named.size() == 0) {
-    // Trivially, if we have no symbols in our 'except' or 'only' list, then it
-    // must be valid!
+  if (isPlainUse()) {
+    // Trivially, if we don't have a list (are a plain use), then it must be
+    // valid!
     return;
   }
   SymExpr* se = toSymExpr(mod);

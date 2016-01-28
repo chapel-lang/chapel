@@ -2812,6 +2812,9 @@ getVisibleFunctions(BlockStmt* block,
     for_actuals(expr, block->modUses) {
       UseStmt* use = toUseStmt(expr);
       INT_ASSERT(use);
+      if (use->skipSymbolSearch(name)) {
+        continue;
+      }
       SymExpr* se = toSymExpr(use->mod);
       INT_ASSERT(se);
       ModuleSymbol* mod = toModuleSymbol(se->var);
