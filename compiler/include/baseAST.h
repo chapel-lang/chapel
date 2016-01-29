@@ -442,6 +442,9 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_CHILD(_a, CallExpr, baseExpr, call, __VA_ARGS__);          \
     AST_CALL_LIST(_a, CallExpr, argList, call, __VA_ARGS__);            \
     break;                                                              \
+  case E_ContextCallExpr:                                               \
+    AST_CALL_LIST(_a, ContextCallExpr, options, call, __VA_ARGS__);     \
+    break;                                                              \
   case E_NamedExpr:                                                     \
     AST_CALL_CHILD(_a, NamedExpr, actual, call, __VA_ARGS__);           \
     break;                                                              \
