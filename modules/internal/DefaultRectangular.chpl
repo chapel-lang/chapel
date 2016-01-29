@@ -869,13 +869,13 @@ module DefaultRectangular {
   
     // only need second version because wrapper record can pass a 1-tuple
     inline proc dsiAccess(ind: idxType ...1) ref
-      where rank == 1
+    where rank == 1
       return dsiAccess(ind);
     inline proc dsiAccess(ind: idxType ...1)
-      where rank == 1 && isPODType(eltType)
+    where rank == 1 && isPODType(eltType)
       return dsiAccess(ind);
     inline proc dsiAccess(ind: idxType ...1) const ref
-      where rank == 1 && !isPODType(eltType)
+    where rank == 1 && !isPODType(eltType)
       return dsiAccess(ind);
 
     inline proc dsiAccess(ind : rank*idxType) ref {

@@ -256,6 +256,7 @@ module DefaultSparse {
 
     proc dsiGetBaseDom() return dom;
 
+    // ref version
     proc dsiAccess(ind: idxType) ref where rank == 1 {
       // make sure we're in the dense bounding box
       if boundsChecking then
@@ -264,14 +265,28 @@ module DefaultSparse {
 
       // lookup the index and return the data or IRV
       const (found, loc) = dom.find(ind);
-      if false /*TODO*/ && !found then
+      if found then
+        return data(loc);
+      else
         halt("attempting to assign a 'zero' value in a sparse array: ", ind);
+    }
+    // value version
+    proc dsiAccess(ind: idxType) const ref where rank == 1 {
+      // make sure we're in the dense bounding box
+      if boundsChecking then
+        if !(dom.parentDom.member(ind)) then
+          halt("array index out of bounds: ", ind);
+
+      // lookup the index and return the data or IRV
+      const (found, loc) = dom.find(ind);
       if found then
         return data(loc);
       else
         return irv;
     }
 
+
+    // ref version
     proc dsiAccess(ind: rank*idxType) ref {
       // make sure we're in the dense bounding box
       if boundsChecking then
@@ -280,8 +295,20 @@ module DefaultSparse {
 
       // lookup the index and return the data or IRV
       const (found, loc) = dom.find(ind);
-      if false /*TODO*/ && !found then
+      if found then
+        return data(loc);
+      else
         halt("attempting to assign a 'zero' value in a sparse array: ", ind);
+    }
+    // value version
+    proc dsiAccess(ind: rank*idxType) const ref {
+      // make sure we're in the dense bounding box
+      if boundsChecking then
+        if !(dom.parentDom.member(ind)) then
+          halt("array index out of bounds: ", ind);
+
+      // lookup the index and return the data or IRV
+      const (found, loc) = dom.find(ind);
       if found then
         return data(loc);
       else

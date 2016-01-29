@@ -347,14 +347,8 @@ computeReturnTypeParamVectors(BaseAST* ast,
                               Symbol* retSymbol,
                               Vec<Type*>& retTypes,
                               Vec<Symbol*>& retParams);
-//static void
-//replaceSetterArgWithTrue(BaseAST* ast, FnSymbol* fn);
-//static void
-//replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret);
 static void
 insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts);
-//static bool fnsHaveSameSignature(FnSymbol* fn, FnSymbol* candidate);
-//static void findValueFunction(FnSymbol* fn);
 static bool
 possible_signature_match(FnSymbol* fn, FnSymbol* gn);
 static bool signature_match(FnSymbol* fn, FnSymbol* gn);
@@ -3530,40 +3524,6 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
      info.call->id == explainCallID);
   DisambiguationContext DC(&info.actuals, scope, explain);
 
-  /*
-  ResolutionCandidate* best = NULL;
-  // Check for ambiguity between ref and non-ref return intent.
-  // If the functions have the same signature, one will be
-  // the valueFunction for the other, and we'll sort it out
-  // in cullOverReferences. Use the ref version for now in that case.
-  if (candidates.n == 2) {
-    ResolutionCandidate* candidate1 = candidates.v[0];
-    ResolutionCandidate* candidate2 = candidates.v[1];
-    if (fnsHaveSameSignature(candidate1->fn, candidate2->fn)) {
-      // Is one of them ret ref and one of them not?
-      ResolutionCandidate* refReturn = NULL;
-      ResolutionCandidate* other = NULL;
-
-      if (candidate1->fn->retTag == RET_REF) {
-        refReturn = candidate1;
-        other = candidate2;
-      } else if (candidate2->fn->retTag == RET_REF) {
-        refReturn = candidate2;
-        other = candidate1;
-      }
-
-      if (refReturn && other && other->fn->retTag != RET_REF) {
-        best = refReturn;
-        resolveFns(valueFn);
-      }
-    }
-  }
-
-  if (!best) {
-    best = disambiguateByMatch(candidates, DC);
-  }*/
-
-
   // Find best ref-return and value/const-ref-return intent match
   ResolutionCandidate* bestRef = disambiguateByMatch(candidates, DC, true);
   ResolutionCandidate* bestValue = disambiguateByMatch(candidates, DC, false);
@@ -3571,11 +3531,6 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   // Let best be the ref-return version if available.
   ResolutionCandidate* best = bestRef;
   if (!best) best = bestValue;
-
-  /*
-  if (best && best->fn && (best->fn->id == 150287 || best->fn->id == 150297))
-    gdbShouldBreakHere();
-    */
 
   CallExpr* valueCall = NULL;
 
@@ -3593,9 +3548,10 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
      */
 
     instantiateBody(best->fn);
-    if (bestValue && bestValue->fn) {
+    if (valueCall) {
       // If we're resolving a ref and non-ref pair,
       // also instantiate the value version. best is the ref version.
+      INT_ASSERT(bestValue->fn);
       instantiateBody(bestValue->fn);
     }
 
@@ -3644,13 +3600,13 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     coerceActuals(best->fn, &info);
     best->fn = promotionWrap(best->fn, &info);
     if (valueCall) {
-      CallInfo valueInfo(valueCall, checkonly);
-
       // If we're resolving a ref and non-ref pair,
       // also handle the value version. best is the ref version.
+      CallInfo valueInfo(valueCall, checkonly);
+
       INT_ASSERT(bestValue->fn);
       bestValue->fn = defaultWrap(bestValue->fn, &bestValue->alignedFormals,
-          &valueInfo);
+                                  &valueInfo);
       reorderActuals(bestValue->fn, &bestValue->alignedFormals, &valueInfo);
       coerceActuals(bestValue->fn, &valueInfo);
       bestValue->fn = promotionWrap(bestValue->fn, &valueInfo);
@@ -3695,7 +3651,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
       // Replace the call with a new ContextCallExpr containing two
       // calls, where the first returns ref and the 2nd does not.
-      ContextCallExpr* contextCall = new ContextCallExpr(); 
+      ContextCallExpr* contextCall = new ContextCallExpr();
       call->insertAfter(contextCall);
 
       call->remove();
@@ -3704,30 +3660,6 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
       // postorder traversal to skip the value call.
       contextCall->insertAtTail(valueCall);
       contextCall->insertAtTail(call);
-
-      printf("context call %i ref call %i value call %i\n",
-             contextCall->id, call->id, valueCall->id);
-      print_view(contextCall);
-      printf("value call %i to %i\n", valueCall->id,
-            valueCall->isResolved()->id);
-      print_view(valueCall);
-      printf("ref call %i to %i\n", call->id,
-              call->isResolved()->id);
-      print_view(call);
-      printf("default call %i to %i\n", toCallExpr(contextCall)->id,
-          toCallExpr(contextCall)->isResolved()->id);
-      print_view(toCallExpr(contextCall));
-      printf("ref symexpr %i value symexpr %i\n", call->baseExpr->id, valueCall->baseExpr->id);
-      printf("ref fn %i value fn %i\n", resolvedFn->id, resolvedValueFn->id);
-      print_view(resolvedFn);
-      print_view(resolvedValueFn);
-      INT_ASSERT(contextCall->parentSymbol);
-      INT_ASSERT(call->parentSymbol);
-      INT_ASSERT(valueCall->parentSymbol);
-      INT_ASSERT(valueCall->baseExpr->parentSymbol);
-      INT_ASSERT(call->baseExpr->parentSymbol);
-
-
     } else if (valueCall) {
       // value call was added but didn't resolve right. Remove it.
       valueCall->remove();
@@ -3742,7 +3674,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
           )
         USR_FATAL_CONT(call, "illegal call to %s() - it modifies 'const' fields of 'this', therefore it can be invoked only directly from a constructor on the object being constructed", resolvedFn->name);
 
-    if (false ) lvalueCheck(call); // TODO
+    lvalueCheck(call);
     checkForStoringIntoTuple(call, resolvedFn);
 
     if (const char* str = innerCompilerWarningMap.get(resolvedFn)) {
@@ -5561,7 +5493,7 @@ preFold(Expr* expr) {
                     INT_FATAL(call, "Cannot set a non-const reference to a const variable.");
                   }
                 } else {
-                  // It is not a problem to return a const value
+                  // It is not a problem to return a const value by const ref
                   if (fn->retTag == RET_CONST_REF &&
                       lhs && lhs->var == fn->getReturnSymbol() ) {
                     // It's OK
@@ -6534,6 +6466,8 @@ resolveExpr(Expr* expr) {
 
   if (isContextCallExpr(expr)) {
     // context call expressions are always already resolved
+    // since they are created in resolveNormalFunction to represent
+    // alternative resolutions.
     return expr;
   }
 
@@ -6588,8 +6522,8 @@ resolveExpr(Expr* expr) {
           INT_ASSERT(callOption->isResolved());
           resolveFns(callOption->isResolved());
         }
-        // Use the call expr...
-        expr = toCallExpr(cc);
+        // Proceed using the designated call option
+        expr = getDesignatedCall(cc);
       } else {
         INT_ASSERT(call->isResolved());
         resolveFns(call->isResolved());
@@ -6839,119 +6773,6 @@ static void instantiate_default_constructor(FnSymbol* fn) {
   }
 }
 
-/*
-static FnSymbol* doBuildValueFunction(FnSymbol* fn, bool retConstRef)
-{
-  FnSymbol* copy;
-  // Build the value function when it does not already exist.
-  copy = fn->copy();
-  copy->removeFlag(FLAG_RESOLVED);
-  copy->addFlag(FLAG_INVISIBLE_FN);
-  if (fn->hasFlag(FLAG_NO_IMPLICIT_COPY))
-    copy->addFlag(FLAG_NO_IMPLICIT_COPY);
-
-  fn->defPoint->insertBefore(new DefExpr(copy));
-
-  if (retConstRef)
-    copy->retTag = RET_CONST_REF;   // Change ret flag to const ref
-  else
-    copy->retTag = RET_VALUE;   // Change ret flag to return value
-
-  Symbol* ret = copy->getReturnSymbol();
-  // Reset the types of the return symbol and any declared return type.
-  ret->type = dtUnknown;
-  copy->retType = dtUnknown;
-  replaceSetterArgWithFalse(copy, copy, ret);
-
-  resolveFns(copy);
-  return copy;
-}
-*/
-/*
-static bool fnsHaveSameSignature(FnSymbol* fn, FnSymbol* candidate) {
-
-  // Do they have the same number of formals?
-  if (candidate->numFormals() != fn->numFormals())
-    return false;
-
-  // Are they both generic or neither generic?
-  if (candidate->hasFlag(FLAG_GENERIC) != fn->hasFlag(FLAG_GENERIC))
-    return false;
-
-  if (fn->numFormals() == 0) {
-    return true;
-  }
-
-  // Do the formals have the same names and types?
-  ArgSymbol* candidateFormal = candidate->getFormal(1);
-  ArgSymbol* fnFormal = fn->getFormal(1);
-
-  int n = fn->numFormals();
-  for (int i = 0; i < n; i++ ) {
-    if (candidateFormal->type != fnFormal->type ||
-        candidateFormal->name != fnFormal->name) {
-      return false;
-    }
-
-    candidateFormal = next_formal(candidateFormal);
-    fnFormal = next_formal(fnFormal);
-  }
-
-  return true;
-}
-*/
-/*
-static void findValueFunction(FnSymbol* fn) {
-  if (!fn->isIterator()) {
-    FnSymbol* valueFn = NULL;
-    bool valueFunctionExists = fn->valueFunction;
-    if (!valueFunctionExists) {
-      // Resolve the value version of the function.
-      forv_Vec(FnSymbol, candidate, gFnSymbols) {
-        // Don't find same function
-        if (candidate == fn)
-          continue;
-
-        // Name must match
-        if (candidate->name != fn->name)
-          continue;
-
-        // Looking for a value function
-        if (candidate->retTag == RET_REF)
-          continue;
-
-
-        if (fnsHaveSameSignature(candidate, fn)) {
-          valueFn = candidate;
-          break;
-        }
-      }
-
-      if (valueFn) {
-        if (fn->id == 796397)
-          gdbShouldBreakHere();
-
-        fn->valueFunction = valueFn;
-        
-        printf("found value function %p\n", valueFn);
-        printf("ref %i value %i\n", fn->id, valueFn->id);
-        printf(" ref version:\n");
-        print_view(fn);
-        printf("\n");
-        printf(" value version:\n");
-        print_view(valueFn);
-        printf("\n");
-      }
-    } else {
-      valueFn = fn->valueFunction;
-    }
-    if (valueFn) {
-      resolveFns(valueFn);
-    }
-  }
-}
-*/
-
 static void resolveReturnType(FnSymbol* fn)
 {
   // Resolve return type.
@@ -7082,11 +6903,6 @@ resolveFns(FnSymbol* fn) {
     fn->addFlag(FLAG_INLINE_ITERATOR);
     stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
   }
-
-  // Does this function return by ref-intent?
-  /*if (fn->retTag == RET_REF) {
-    findValueFunction(fn);
-  }*/
 
   insertFormalTemps(fn);
 
@@ -8443,7 +8259,6 @@ static void removeUnusedFunctions() {
 
       if (! fn->isResolved() || fn->retTag == RET_PARAM) {
         clearDefaultInitFns(fn);
-        //printf("removing id %i\n", fn->id);
         fn->defPoint->remove();
       }
     }
