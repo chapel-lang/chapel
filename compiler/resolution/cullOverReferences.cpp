@@ -48,7 +48,7 @@ shouldUseByValueFunction(FnSymbol*                     fn,
 
   if (refNecessary(se, defMap, useMap) == false) {
     if (isString(se->var->type->getValType())) {
-      retval = false;
+      retval = true; ///false;
 
     } else {
       retval = true;
