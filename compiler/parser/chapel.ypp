@@ -951,11 +951,12 @@ proc_or_iter:
 ;
 
 opt_ret_tag:
-            { $$ = RET_VALUE; }
-| TCONST    { $$ = RET_VALUE; }
-| TREF      { $$ = RET_REF; } // TODO -- handle const ref
-| TPARAM    { $$ = RET_PARAM; }
-| TTYPE     { $$ = RET_TYPE; }
+              { $$ = RET_VALUE; }
+| TCONST      { $$ = RET_VALUE; }
+| TCONST TREF { $$ = RET_CONST_REF; }
+| TREF        { $$ = RET_REF; }
+| TPARAM      { $$ = RET_PARAM; }
+| TTYPE       { $$ = RET_TYPE; }
 ;
 
 opt_function_body_stmt:
