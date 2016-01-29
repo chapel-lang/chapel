@@ -1,3 +1,5 @@
+use Reflection;
+
 record R {
   var x:int;
 }

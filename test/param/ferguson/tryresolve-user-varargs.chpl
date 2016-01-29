@@ -1,4 +1,4 @@
-
+use Reflection;
 
 proc hi(args...) {
   writeln((...args));

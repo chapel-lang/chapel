@@ -1,4 +1,4 @@
-
+use Reflection;
 
 proc hi(x=0, y="a") {
   writeln(x,y);
