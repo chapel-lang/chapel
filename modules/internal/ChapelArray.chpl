@@ -1601,7 +1601,7 @@ module ChapelArray {
     proc rank param return this.domain.rank;
 
     // When 'this' is 'const', so is the returned l-value.
-    pragma "no doc"
+    pragma "no doc" // ref version
     pragma "reference to const when const this"
     inline proc this(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
@@ -1609,19 +1609,44 @@ module ChapelArray {
       else
         return _value.dsiAccess(i(1));
     }
+    pragma "no doc" // value version, for POD types
+    inline proc this(i: rank*_value.dom.idxType)
+      where isPODType(_value.eltType)
+    {
+      if isRectangularArr(this) || isSparseArr(this) then
+        return _value.dsiAccess(i);
+      else
+        return _value.dsiAccess(i(1));
+    }
+    pragma "no doc" // const ref version, for not-POD types
+    inline proc this(i: rank*_value.dom.idxType) const ref
+      where !isPODType(_value.eltType)
+    {
+      if isRectangularArr(this) || isSparseArr(this) then
+        return _value.dsiAccess(i);
+      else
+        return _value.dsiAccess(i(1));
+    }
+
+
 
     pragma "no doc" // ref version
     pragma "reference to const when const this"
     inline proc this(i: _value.dom.idxType ...rank) ref
       return this(i);
 
-    pragma "no doc" // value version
-    pragma "reference to const when const this"
+    pragma "no doc" // value version, for POD types
     inline proc this(i: _value.dom.idxType ...rank)
+    where isPODType(_value.eltType)
+      return this(i);
+
+    pragma "no doc" // const ref version, for not-POD types
+    inline proc this(i: _value.dom.idxType ...rank) const ref
+      where !isPODType(_value.eltType)
       return this(i);
 
 
-    pragma "no doc"
+    pragma "no doc" // ref version
     pragma "reference to const when const this"
     inline proc localAccess(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
@@ -1629,11 +1654,38 @@ module ChapelArray {
       else
         return _value.dsiLocalAccess(i(1));
     }
+    pragma "no doc" // value version, for POD types
+    inline proc localAccess(i: rank*_value.dom.idxType) {
+      if isRectangularArr(this) || isSparseArr(this) then
+        return _value.dsiLocalAccess(i);
+      else
+        return _value.dsiLocalAccess(i(1));
+    }
+    pragma "no doc" // const ref version, for not-POD types
+    inline proc localAccess(i: rank*_value.dom.idxType) const ref {
+      if isRectangularArr(this) || isSparseArr(this) then
+        return _value.dsiLocalAccess(i);
+      else
+        return _value.dsiLocalAccess(i(1));
+    }
 
-    pragma "no doc"
+
+
+    pragma "no doc" // ref version
     pragma "reference to const when const this"
     inline proc localAccess(i: _value.dom.idxType ...rank) ref
       return localAccess(i);
+
+    pragma "no doc" // value version, for POD types
+    inline proc localAccess(i: _value.dom.idxType ...rank)
+      where isPODType(_value.eltType)
+      return localAccess(i);
+
+    pragma "no doc" // const ref version, for not-POD types
+    inline proc localAccess(i: _value.dom.idxType ...rank) const ref
+      where !isPODType(_value.eltType)
+      return localAccess(i);
+
 
     //
     // requires dense domain implementation that returns a tuple of
