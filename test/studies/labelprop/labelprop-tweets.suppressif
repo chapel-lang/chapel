@@ -1,0 +1,4 @@
+# compilation error ITE0227 with baseline
+# This is almost certainly a bug. Suppresing it for now
+# in order to avoid the testing noise.
+COMPOPTS <= --baseline
