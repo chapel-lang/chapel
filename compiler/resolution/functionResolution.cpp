@@ -3696,22 +3696,15 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
       // Replace the call with a new ContextCallExpr containing two
       // calls, where the first returns ref and the 2nd does not.
-      ContextCallExpr* contextCall = NULL;
-      contextCall = new ContextCallExpr();
-
+      ContextCallExpr* contextCall = new ContextCallExpr(); 
       call->insertAfter(contextCall);
-      Symbol* parentSymbol = call->parentSymbol;
+
       call->remove();
       valueCall->remove();
-      // It is important to store the ref call after
-      // the value call, so that the postorder traversal
-      // will skip the value call.
-      contextCall->options.insertAtTail(valueCall);
-      contextCall->options.insertAtTail(call);
-      call->parentExpr = contextCall;
-      call->parentSymbol = parentSymbol;
-      valueCall->parentExpr = contextCall;
-      valueCall->parentSymbol = parentSymbol;
+      // Storing the ref call after the value call allows a
+      // postorder traversal to skip the value call.
+      contextCall->insertAtTail(valueCall);
+      contextCall->insertAtTail(call);
 
       printf("context call %i ref call %i value call %i\n",
              contextCall->id, call->id, valueCall->id);
@@ -3725,8 +3718,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
       INT_ASSERT(contextCall->parentSymbol);
       INT_ASSERT(call->parentSymbol);
       INT_ASSERT(valueCall->parentSymbol);
-      //INT_ASSERT(valueCall->baseExpr->parentSymbol);
-      //INT_ASSERT(call->baseExpr->parentSymbol);
+      INT_ASSERT(valueCall->baseExpr->parentSymbol);
+      INT_ASSERT(call->baseExpr->parentSymbol);
 
 
     } else if (valueCall) {

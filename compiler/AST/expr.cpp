@@ -3728,6 +3728,7 @@ CallExpr::insertAtTail(BaseAST* ast) {
     argList.insertAtTail(new SymExpr(a));
   else
     argList.insertAtTail(toExpr(ast));
+  // TODO -- should this call parent_insert_help ?
 }
 
 
@@ -5831,6 +5832,17 @@ void ContextCallExpr::accept(AstVisitor* visitor) {
   for_alist(expr, options)
     expr->accept(visitor);
 }
+
+void
+ContextCallExpr::insertAtTail(BaseAST* ast) {
+  Expr* newExpr = toExpr(ast);
+
+  INT_ASSERT(newExpr);
+
+  options.insertAtTail(newExpr);
+  parent_insert_help(this, newExpr);
+}
+
 
 
 /************************************ | *************************************

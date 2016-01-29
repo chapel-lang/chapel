@@ -249,6 +249,8 @@ class ContextCallExpr : public Expr { // TODO inherit  : CallExpr
   virtual Expr*   getFirstChild();
 
   virtual Expr*   getFirstExpr();
+
+  void            insertAtTail(BaseAST* ast);
 };
 
 
