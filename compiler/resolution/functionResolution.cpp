@@ -2273,7 +2273,8 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
  */
 static bool isBetterMatch(ResolutionCandidate* candidate1,
                           ResolutionCandidate* candidate2,
-                          const DisambiguationContext& DC) {
+                          const DisambiguationContext& DC,
+                          bool onlyConsiderPromotion=false) {
 
   DisambiguationState DS;
 
@@ -2293,7 +2294,7 @@ static bool isBetterMatch(ResolutionCandidate* candidate1,
     return true;
   }
 
-  if (!(DS.fn1MoreSpecific || DS.fn2MoreSpecific)) {
+  if (!onlyConsiderPromotion && !(DS.fn1MoreSpecific || DS.fn2MoreSpecific)) {
     // If the decision hasn't been made based on the argument mappings...
 
     if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
@@ -2326,6 +2327,11 @@ static bool isBetterMatch(ResolutionCandidate* candidate1,
   return DS.fn1MoreSpecific && !DS.fn2MoreSpecific;
 }
 
+typedef enum {
+  FIND_EITHER = 0,
+  FIND_REF,
+  FIND_NOT_REF
+} disambiguate_kind_t;
 
 /** Find the best candidate from a list of candidates.
  *
@@ -2342,7 +2348,7 @@ static bool isBetterMatch(ResolutionCandidate* candidate1,
 static ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
                     DisambiguationContext DC,
-                    bool refReturn) {
+                    disambiguate_kind_t kind) {
 
   // If index i is set then we can skip testing function F_i because we already
   // know it can not be the best match.
@@ -2358,7 +2364,8 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
     bool best = true; // is fn1 the best candidate?
 
     // Only consider ref return fns in ref return part
-    if ((candidate1->fn->retTag == RET_REF) != refReturn ) continue;
+    if (kind == FIND_REF && (candidate1->fn->retTag != RET_REF)) continue;
+    if (kind == FIND_NOT_REF && (candidate1->fn->retTag == RET_REF)) continue;
 
     TRACE_DISAMBIGUATE_BY_MATCH("%s\n\n", toString(candidate1->fn));
 
@@ -2376,7 +2383,8 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
       ResolutionCandidate* candidate2 = candidates.v[j];
 
       // Only consider ref return fns in ref return part
-      if ((candidate2->fn->retTag == RET_REF) != refReturn ) continue;
+      if (kind == FIND_REF && (candidate2->fn->retTag != RET_REF)) continue;
+      if (kind == FIND_NOT_REF && (candidate2->fn->retTag == RET_REF)) continue;
 
       TRACE_DISAMBIGUATE_BY_MATCH("%s\n", toString(candidate2->fn));
 
@@ -3524,11 +3532,19 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
      info.call->id == explainCallID);
   DisambiguationContext DC(&info.actuals, scope, explain);
 
-  // Find best ref-return and value/const-ref-return intent match
-  ResolutionCandidate* bestRef = disambiguateByMatch(candidates, DC, true);
-  ResolutionCandidate* bestValue = disambiguateByMatch(candidates, DC, false);
+  ResolutionCandidate* bestRef = disambiguateByMatch(candidates, DC, FIND_REF);
+  ResolutionCandidate* bestValue = disambiguateByMatch(candidates, DC, FIND_NOT_REF);
 
-  // Let best be the ref-return version if available.
+  if (bestRef && bestValue) {
+    // If one requires more promotion than the other, this is not a ref-pair.
+    if (isBetterMatch(bestRef, bestValue, DC, true)) {
+      bestValue = NULL; // Don't consider the value function.
+    }
+    if (isBetterMatch(bestValue, bestRef, DC, true)) {
+      bestRef = NULL; // Don't consider the ref function.
+    }
+  }
+
   ResolutionCandidate* best = bestRef;
   if (!best) best = bestValue;
 
@@ -3666,6 +3682,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     } else {
       // If we aren't working with a ref not-ref return intent pair,
       // adjust the returned value to have flag FLAG_REF_TO_CONST
+
       if (resolvedFn->retTag == RET_CONST_REF)
         if (CallExpr* parentCall = toCallExpr(call->parentExpr))
           if (parentCall->isPrimitive(PRIM_MOVE))
