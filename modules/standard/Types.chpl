@@ -790,30 +790,30 @@ proc hasField(type t, param s:string) param : bool
   return getFieldIndex(t, s) > 0;
 
 /* Returns true if a function named `fname` taking in no arguments
-   is available in the current scope.
+   could be called in the current scope.
    */
 proc canResolve(param fname : string) param : bool
   return __primitive("call resolves", fname);
 
 /* Returns true if a function named `fname` taking the arguments in args
-   is available in the current scope.
+   could be called in the current scope.
    */
 proc canResolve(param fname : string, args ...) param : bool
   return __primitive("call resolves", fname, (...args));
 
 // TODO -- how can this work with by-name argument passing?
 
-/* Returns true if a method on x named `fname` taking in no arguments
-   is available in the current scope.
+/* Returns true if a method on `obj` named `fname` taking in no arguments
+   could be called in the current scope.
    */
-proc canResolveMethod(x, param fname : string) param : bool
-  return __primitive("method call resolves", x, fname);
+proc canResolveMethod(obj, param fname : string) param : bool
+  return __primitive("method call resolves", obj, fname);
 
-/* Returns true if a method on x named `fname` taking the arguments in args
-   is available in the current scope.
+/* Returns true if a method on `obj` named `fname` taking the arguments in args
+   could be called in the current scope.
    */
-proc canResolveMethod(x, param fname : string, args ...) param : bool
-  return __primitive("method call resolves", x, fname, (...args));
+proc canResolveMethod(obj, param fname : string, args ...) param : bool
+  return __primitive("method call resolves", obj, fname, (...args));
 
 // TODO -- do we need a different version of can resolve with ref this?
 
