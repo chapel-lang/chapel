@@ -1,0 +1,2 @@
+nestedOnlys.chpl:19: In function 'main':
+nestedOnlys.chpl:20: error: 'bar' undeclared (first use this function)

@@ -58,6 +58,7 @@ Expr* buildDotExpr(const char* base, const char* member);
 
 BlockStmt* buildChapelStmt(Expr* expr = NULL);
 BlockStmt* buildUseStmt(CallExpr* modules);
+BlockStmt* buildUseStmt(Expr* mod, CallExpr* names, bool except);
 BlockStmt* buildRequireStmt(CallExpr* args);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);

@@ -394,6 +394,11 @@ void AstDumpToHtml::visitUseStmt(UseStmt* node) {
 
   node->mod->accept(this);
 
+  if (!node->isPlainUse()) {
+    node->writeListPredicate(mFP);
+    outputVector(mFP, node->named);
+  }
+
   fprintf(mFP, ")");
 
   if (isBlockStmt(node->parentExpr)) {

@@ -27,6 +27,7 @@
 #include "ForLoop.h"
 #include "log.h"
 #include "ParamForLoop.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -984,6 +985,16 @@ void AstDumpToNode::visitUseStmt(UseStmt* node)
 
   newline();
   node->mod->accept(this);
+
+
+  if (!node->isPlainUse()) {
+    node->writeListPredicate(mFP);
+    for_vector(const char, str, node->named) {
+      newline();
+      fprintf(mFP, "%s", str);
+    }
+  }
+
   mOffset = mOffset - 2;
   newline();
   exitNode(node);
