@@ -294,6 +294,11 @@ void AstDump::visitUseStmt(UseStmt* node) {
 
   node->mod->accept(this);
 
+  if (!node->isPlainUse()) {
+    node->writeListPredicate(mFP);
+    outputVector(mFP, node->named);
+  }
+
   write(false, ")", true);
 }
 

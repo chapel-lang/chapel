@@ -20,6 +20,8 @@
 #ifndef _STMT_H_
 #define _STMT_H_
 
+#include <cstdio>
+
 #include "expr.h"
 
 #ifdef HAVE_LLVM
@@ -55,6 +57,12 @@ class UseStmt : public Stmt {
   Expr* mod; // Can be either an UnresolvedSymExpr, SymExpr, or CallExpr to
   // specify an explicit module name.
 
+  // Lydia note: This field is only public because our AstTraversal classes
+  // need to see it.  No one else should touch it.  I mean it!
+  std::vector<const char *> named; // The names of symbols from an 'except' or
+  // 'only' list
+
+
   UseStmt(BaseAST* module);
   UseStmt(BaseAST* module, std::vector<const char*>* args, bool exclude);
 
@@ -70,6 +78,8 @@ class UseStmt : public Stmt {
   virtual Expr*   getFirstChild();
 
   void validateList();
+  bool isPlainUse();
+  void writeListPredicate(FILE* mFP);
 
   bool skipSymbolSearch(const char* name);
   UseStmt* applyOuterUse(UseStmt* outer);
@@ -78,14 +88,14 @@ class UseStmt : public Stmt {
  private:
   bool except; // Used to determine if the use contains an 'except' or 'only'
   // list (but only if 'named' has any contents)
-  std::vector<const char *> named; // The names of symbols from an 'except' or
-  // 'only' list
   std::vector<const char *> relatedNames; // The names of fields or methods
   // related to a type specified in an 'except' or 'only' list.
 
+  bool hasOnlyList();
+  bool hasExceptList();
+
   void createRelatedNames(Symbol* maybeType);
 
-  bool isPlainUse();
   bool matchedNameOrConstructor(const char* name);
   bool inRelatedNames(const char* name);
 };

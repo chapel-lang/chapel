@@ -180,6 +180,22 @@ void UseStmt::accept(AstVisitor* visitor) {
   visitor->visitUseStmt(this);
 }
 
+void UseStmt::writeListPredicate(FILE* mFP) {
+  if (hasOnlyList()) {
+    fprintf(mFP, " 'only' ");
+  } else if (hasExceptList()) {
+    fprintf(mFP, " 'except' ");
+  }
+}
+
+bool UseStmt::hasOnlyList() {
+  return !isPlainUse() && !except;
+}
+
+bool UseStmt::hasExceptList() {
+  return !isPlainUse() && except;
+}
+
 bool UseStmt::isPlainUse() {
   // This is an unmodified use statement if no 'only' or 'except' list was
   // provided.
