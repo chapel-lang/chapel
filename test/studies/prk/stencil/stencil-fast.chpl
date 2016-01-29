@@ -61,18 +61,29 @@ var tiling = (tileSize > 0 && tileSize < order);
 // Safety check for creation of tiledDom
 if (!tiling) then tileSize = 1;
 
-// Domains
+// Domain Map
+
 const localDom = {0.. # order, 0.. # order},
  innerLocalDom = localDom.expand(-R),
-weightLocalDom = {-R..R, -R..R},
-           Dom = if useBlockDist then localDom dmapped Block(localDom)
-                 else if useStencilDist then localDom dmapped Stencil(innerLocalDom)
-                 else localDom,
-      innerDom = if useBlockDist then innerLocalDom dmapped Block(innerLocalDom)
-                 else if useStencilDist then innerLocalDom dmapped Stencil(innerLocalDom, fluff=(R,R))
-                 else innerLocalDom,
-     weightDom = if (useBlockDist || useStencilDist) then weightLocalDom dmapped ReplicatedDist()
-                 else weightLocalDom;
+weightLocalDom = {-R..R, -R..R};
+
+// Choice of distribution / parallelism
+const blockDist = new dmap(new Block(localDom)),
+    stencilDist = new dmap(new Stencil(innerLocalDom, fluff=(R,R))),
+         noDist = new dmap(new DefaultDist()),
+       replDist = new dmap(new ReplicatedDist());
+
+const Dist =  if useBlockDist then blockDist
+              else if useStencilDist then stencilDist
+              else noDist;
+
+const weightDist = if (useBlockDist || useStencilDist) then replDist
+                 else noDist;
+
+// Domains
+const Dom = localDom dmapped Dist,
+ innerDom = innerLocalDom dmapped Dist,
+weightDom = weightLocalDom dmapped weightDist;
 
 var tiledDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize};
 
