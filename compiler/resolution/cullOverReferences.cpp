@@ -47,8 +47,7 @@ shouldUseByValueFunction(FnSymbol*                     fn,
   bool retval = false;
 
   if (refNecessary(se, defMap, useMap) == false) {
-    if (isString(se->var->type->getValType()) &&
-        fn->hasFlag(FLAG_FN_REF_USES_SETTER) == false) {
+    if (isString(se->var->type->getValType())) {
       retval = false;
 
     } else {

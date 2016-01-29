@@ -405,7 +405,6 @@ static void removeMootFields();
 static void expandInitFieldPrims();
 static void fixTypeNames(AggregateType* ct);
 static void setScalarPromotionType(AggregateType* ct);
-static bool functionUsesSetter(FnSymbol* fn);
 
 bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   if (alignedActuals.n != 0) alignedActuals.clear();
@@ -6699,43 +6698,6 @@ computeReturnTypeParamVectors(BaseAST* ast,
   AST_CHILDREN_CALL(ast, computeReturnTypeParamVectors, retSymbol, retTypes, retParams);
 }
 
-/*
-static void
-replaceSetterArgWithTrue(BaseAST* ast, FnSymbol* fn) {
-  if (SymExpr* se = toSymExpr(ast)) {
-    if (se->var == fn->setter->sym) {
-      se->var = gTrue;
-
-      // This variation relies on the setter param directly
-      fn->addFlag(FLAG_FN_REF_USES_SETTER);
-
-      if (fn->isIterator())
-        USR_WARN(fn, "setter argument is not supported in iterators");
-    }
-  }
-
-  AST_CHILDREN_CALL(ast, replaceSetterArgWithTrue, fn);
-}
-
-
-static void
-replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret) {
-  if (SymExpr* se = toSymExpr(ast)) {
-    if (se->var == fn->setter->sym)
-      se->var = gFalse;
-    else if (se->var == ret && fn->retTag == RET_VALUE) {
-      if (CallExpr* move = toCallExpr(se->parentExpr))
-        if (move->isPrimitive(PRIM_MOVE))
-          if (CallExpr* call = toCallExpr(move->get(2)))
-            if (call->isPrimitive(PRIM_ADDR_OF))
-              call->primitive = primitives[PRIM_DEREF];
-    }
-  }
-  AST_CHILDREN_CALL(ast, replaceSetterArgWithFalse, fn, ret);
-}
-
-*/
-
 static void
 insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
   if (CallExpr* call = toCallExpr(ast)) {
@@ -7129,15 +7091,6 @@ resolveFns(FnSymbol* fn) {
   insertFormalTemps(fn);
 
   resolveBlockStmt(fn->body);
-
-  // Does this function return by ref-intent?
-  if (fn->retTag == RET_REF) {
-    // Determine if it might rely on the setter param recursively
-    if (fn->hasFlag(FLAG_FN_REF_USES_SETTER) == false &&
-        functionUsesSetter(fn)               == true) {
-      fn->addFlag(FLAG_FN_REF_USES_SETTER);
-    }
-  }
 
   if (tryFailure) {
     fn->removeFlag(FLAG_RESOLVED);
@@ -9241,24 +9194,4 @@ setScalarPromotionType(AggregateType* ct) {
   }
 }
 
-//
-// Does this function call a ref-return function that relies on the
-// setter param?  By induction this handles the general recursive case.
-//
-static bool functionUsesSetter(FnSymbol* fn) {
-  std::vector<CallExpr*> calls;
-  bool                   retval = false;
 
-  collectCallExprs(fn, calls);
-
-  for (size_t i = 0; i < calls.size() && retval == false; i++) {
-    CallExpr* call = calls[i];
-
-    if (FnSymbol* calledFn = call->isResolved()) {
-      if (calledFn->hasFlag(FLAG_FN_REF_USES_SETTER))
-        retval = true;
-    }
-  }
-
-  return retval;
-}
