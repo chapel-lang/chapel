@@ -1,1 +1,2 @@
-testBadSyncSingle.chpl:4: error: sync/single types cannot be of type '[domain(1,int(64),false)] _syncvar(int(64))'
+testBadSyncSingle.chpl:4: In function 'main':
+testBadSyncSingle.chpl:5: error: sync/single types cannot be of type '[domain(1,int(64),false)] _syncvar(int(64))'

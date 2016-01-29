@@ -463,6 +463,35 @@ resolveUninsertedCall(Type* type, CallExpr* call) {
   return call->isResolved();
 }
 
+static void resolveFnForCall(FnSymbol* fn, CallExpr* call)
+{
+  // If 'call' is already on the call stack, do not add it.
+  // If this assertion fail, change it to 'if'.
+  INT_ASSERT(callStack.n == 0 || call != callStack.v[callStack.n-1]);
+
+  // The following is assumed in printCallStack(), which may be invoked
+  // from resolveFns() if we add 'call' to 'callStack'.
+  INT_ASSERT(call->inTree());
+
+  // Push 'call' onto the stack. In case of an error or warning,
+  // this allows the user to see how they got there.
+  callStack.add(call);
+
+  // do real work
+  resolveFns(fn);
+
+  callStack.pop();
+}
+
+void resolveCallAndCallee(CallExpr* call, bool allowUnresolved) {
+  resolveCall(call);
+  FnSymbol* callee = call->isResolved();
+  if (!allowUnresolved)
+    INT_ASSERT(callee);
+  if (callee)
+    resolveFnForCall(callee, call);
+}
+
 
 // Fills in the refType field of a type
 // with the type's corresponding reference type.
@@ -1745,6 +1774,10 @@ resolve_type_constructor(FnSymbol* fn, CallInfo& info) {
       }
     }
     info.call->insertBefore(typeConstructorCall);
+    // If instead we call resolveCallAndCallee(typeConstructorCall)
+    // then the line number reported in an error would change
+    // e.g.: domains/deitz/test_generic_class_of_sparse_domain
+    // or:   classes/diten/multipledestructor
     resolveCall(typeConstructorCall);
     INT_ASSERT(typeConstructorCall->isResolved());
     resolveFns(typeConstructorCall->isResolved());
@@ -4595,7 +4628,7 @@ createFunctionAsValue(CallExpr *call) {
   }
 
   resolveFormals(captured_fn);
-  resolveFns(captured_fn);
+  resolveFnForCall(captured_fn, call);
 
   AggregateType *parent;
   FnSymbol *thisParentMethod;
@@ -4955,8 +4988,7 @@ static Expr* resolvePrimInit(CallExpr* call)
 
   CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
   call->replace(defOfCall);
-  resolveCall(defOfCall);
-  resolveFns(defOfCall->isResolved());
+  resolveCallAndCallee(defOfCall);
   result = postFold(defOfCall);
   return result;
 }
@@ -6931,10 +6963,7 @@ resolveFns(FnSymbol* fn) {
     Vec<CallExpr*> casts;
     insertCasts(fn->body, fn, casts);
     forv_Vec(CallExpr, cast, casts) {
-      resolveCall(cast);
-      if (cast->isResolved()) {
-        resolveFns(cast->isResolved());
-      }
+      resolveCallAndCallee(cast, true);
     }
   }
 
@@ -6985,9 +7014,7 @@ resolveFns(FnSymbol* fn) {
 
         fn->insertAtHead(block);
         fn->insertAtHead(new DefExpr(tmp));
-        resolveCall(call);
-
-        resolveFns(call->isResolved());
+        resolveCallAndCallee(call);
         ct->destructor = call->isResolved();
 
         block->remove();
@@ -7737,8 +7764,7 @@ static void insertRuntimeTypeTemps() {
       ts->type->defaultInitializer->insertBeforeReturn(new DefExpr(tmp));
       CallExpr* call = new CallExpr("chpl__convertValueToRuntimeType", tmp);
       ts->type->defaultInitializer->insertBeforeReturn(call);
-      resolveCall(call);
-      resolveFns(call->isResolved());
+      resolveCallAndCallee(call);
       valueToRuntimeTypeMap.put(ts->type, call->isResolved());
       call->remove();
       tmp->defPoint->remove();
@@ -7941,21 +7967,17 @@ static void resolveRecordInitializers() {
       CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->defaultInitializer);
       CallExpr* move = new CallExpr(PRIM_MOVE, tmp, classCall);
       init->getStmtExpr()->insertBefore(move);
-      resolveCall(classCall);
-      resolveFns(classCall->isResolved());
+      resolveCallAndCallee(classCall);
       resolveCall(move);
       CallExpr* distCall = new CallExpr("chpl__buildDistValue", tmp);
       init->replace(distCall);
-      resolveCall(distCall);
-      resolveFns(distCall->isResolved());
+      resolveCallAndCallee(distCall);
     } else {
       CallExpr* call = new CallExpr("_defaultOf", type->symbol);
       init->replace(call);
-      resolveNormalCall(call);
       // At this point in the compiler, we can resolve the _defaultOf function
       // for the type, so do so.
-      if (call->isResolved())
-        resolveFns(call->isResolved());
+      resolveCallAndCallee(call);
     }
   }
 }
@@ -8160,9 +8182,7 @@ static void insertReturnTemps() {
               CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
               call->insertBefore(sls);
               reset_ast_loc(sls, call);
-              resolveCall(sls);
-              INT_ASSERT(sls->isResolved());
-              resolveFns(sls->isResolved());
+              resolveCallAndCallee(sls);
             }
             def->insertAfter(new CallExpr(PRIM_MOVE, tmp, call->remove()));
           }
