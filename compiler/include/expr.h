@@ -121,6 +121,9 @@ class SymExpr : public Expr {
   Symbol* var;
 
   SymExpr(Symbol* init_var);
+  virtual ~SymExpr() {
+    printf("Deleting se %i at %p\n", id, this);
+  }
 
   DECLARE_COPY(SymExpr);
 

@@ -3659,6 +3659,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   }
 
   FnSymbol* resolvedFn = best != NULL ? best->fn : NULL;
+  FnSymbol* resolvedValueFn = bestValue != NULL ? bestValue->fn : NULL;
 
   forv_Vec(ResolutionCandidate*, candidate, candidates) {
     delete candidate;
@@ -3690,8 +3691,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if (resolvedFn && call->parentSymbol) {
     SET_LINENO(call);
     call->baseExpr->replace(new SymExpr(resolvedFn));
-    if (valueCall && bestValue && bestValue->fn) {
-      valueCall->baseExpr->replace(new SymExpr(bestValue->fn));
+    if (valueCall && resolvedValueFn) {
+      valueCall->baseExpr->replace(new SymExpr(resolvedValueFn));
 
       // Replace the call with a new ContextCallExpr containing two
       // calls, where the first returns ref and the 2nd does not.
@@ -3702,7 +3703,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
       Symbol* parentSymbol = call->parentSymbol;
       call->remove();
       valueCall->remove();
-      // It is important to store the call after
+      // It is important to store the ref call after
       // the value call, so that the postorder traversal
       // will skip the value call.
       contextCall->options.insertAtTail(valueCall);
@@ -3717,12 +3718,16 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
       print_view(contextCall);
       print_view(call);
       print_view(valueCall);
-      printf("ref %i value %i\n", call->baseExpr->id, valueCall->baseExpr->id);
+      printf("ref symexpr %i value symexpr %i\n", call->baseExpr->id, valueCall->baseExpr->id);
+      printf("ref fn %i value fn %i\n", resolvedFn->id, resolvedValueFn->id);
       print_view(resolvedFn);
-      print_view(bestValue->fn);
+      print_view(resolvedValueFn);
       INT_ASSERT(contextCall->parentSymbol);
       INT_ASSERT(call->parentSymbol);
       INT_ASSERT(valueCall->parentSymbol);
+      //INT_ASSERT(valueCall->baseExpr->parentSymbol);
+      //INT_ASSERT(call->baseExpr->parentSymbol);
+
 
     } else if (valueCall) {
       // value call was added but didn't resolve right. Remove it.
@@ -6579,11 +6584,15 @@ resolveExpr(Expr* expr) {
       }
 
       if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
-        for_alist(expr, cc->options) {
-          CallExpr* call = toCallExpr(expr);
-          resolveFns(call->isResolved());
+        for_alist(optionExpr, cc->options) {
+          CallExpr* callOption = toCallExpr(optionExpr);
+          INT_ASSERT(callOption->isResolved());
+          resolveFns(callOption->isResolved());
         }
+        // Use the call expr...
+        expr = toCallExpr(cc);
       } else {
+        INT_ASSERT(call->isResolved());
         resolveFns(call->isResolved());
       }
     }
