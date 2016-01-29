@@ -3670,10 +3670,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
       call->remove();
       valueCall->remove();
-      // Storing the ref call after the value call allows a
-      // postorder traversal to skip the value call.
-      contextCall->insertAtTail(valueCall);
-      contextCall->insertAtTail(call);
+      contextCall->setRefRValueOptions(call, valueCall);
     } else if (valueCall) {
       // value call was added but didn't resolve right. Remove it.
       valueCall->remove();

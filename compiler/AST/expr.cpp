@@ -5831,33 +5831,27 @@ Expr* ContextCallExpr::getFirstExpr() {
 }
 
 
-void ContextCallExpr::insertAtTail(BaseAST* ast) {
-  Expr* newExpr = toExpr(ast);
+void ContextCallExpr::setRefRValueOptions(CallExpr* refCall,
+                                          CallExpr* rvalueCall) {
+  // Storing the ref call after the value call allows a
+  // postorder traversal to skip the value call.
+  // The order is important also - the first is always the value.
 
-  INT_ASSERT(newExpr);
-
-  options.insertAtTail(newExpr);
-  parent_insert_help(this, newExpr);
+  options.insertAtTail(rvalueCall);
+  parent_insert_help(this, rvalueCall);
+  options.insertAtTail(refCall);
+  parent_insert_help(this, refCall);
 }
 
 CallExpr* ContextCallExpr::getRefCall() {
-  for_alist(expr, options)
-    if (CallExpr* call = toCallExpr(expr))
-      if (FnSymbol* fn = call->isResolved())
-        if (fn->retTag == RET_REF)
-          return call;
-
-  return NULL;
+  // This used to check for the call with RET_REF, but
+  // the return tag might change during resolution. So
+  // instead we rely on them always being in order.
+  return toCallExpr(options.tail);
 }
 
 CallExpr* ContextCallExpr::getRValueCall() {
-  for_alist(expr, options)
-    if (CallExpr* call = toCallExpr(expr))
-      if (FnSymbol* fn = call->isResolved())
-        if (fn->retTag != RET_REF)
-          return call;
-
-  return NULL;
+  return toCallExpr(options.head);
 }
 
 /************************************ | *************************************

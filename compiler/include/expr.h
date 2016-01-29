@@ -249,7 +249,7 @@ class ContextCallExpr : public Expr {
 
   virtual Expr*   getFirstExpr();
 
-  void            insertAtTail(BaseAST* ast);
+  void            setRefRValueOptions(CallExpr* refCall, CallExpr* rvalueCall);
   CallExpr*       getRefCall();
   CallExpr*       getRValueCall();
 };
