@@ -3535,14 +3535,12 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   ResolutionCandidate* bestRef = disambiguateByMatch(candidates, DC, FIND_REF);
   ResolutionCandidate* bestValue = disambiguateByMatch(candidates, DC, FIND_NOT_REF);
 
-  if (bestRef && bestValue) {
-    // If one requires more promotion than the other, this is not a ref-pair.
-    if (isBetterMatch(bestRef, bestValue, DC, true)) {
-      bestValue = NULL; // Don't consider the value function.
-    }
-    if (isBetterMatch(bestValue, bestRef, DC, true)) {
-      bestRef = NULL; // Don't consider the ref function.
-    }
+  // If one requires more promotion than the other, this is not a ref-pair.
+  if (bestRef && bestValue && isBetterMatch(bestRef, bestValue, DC, true)) {
+    bestValue = NULL; // Don't consider the value function.
+  }
+  if (bestRef && bestValue && isBetterMatch(bestValue, bestRef, DC, true)) {
+    bestRef = NULL; // Don't consider the ref function.
   }
 
   ResolutionCandidate* best = bestRef;
