@@ -97,8 +97,10 @@ refNecessary(SymExpr*                      se,
       } else if (call->isPrimitive(PRIM_RETURN) ||
                  call->isPrimitive(PRIM_YIELD)) {
         FnSymbol* inFn = toFnSymbol(call->parentSymbol);
-        // Return true only for ref-return functions
-        if (inFn->retTag != RET_REF) return false;
+        // A reference is not needed for a const-ref return.
+        if (inFn->retTag == RET_CONST_REF) return false;
+        // MPF: it seems to cause problems to return false
+        // here when inFn->retTag is RET_VALUE.
         return true;
 
       } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
