@@ -121,9 +121,6 @@ class SymExpr : public Expr {
   Symbol* var;
 
   SymExpr(Symbol* init_var);
-  /*virtual ~SymExpr() {
-    printf("Deleting se %i at %p\n", id, this);
-  }*/
 
   DECLARE_COPY(SymExpr);
 
@@ -164,18 +161,14 @@ class UnresolvedSymExpr : public Expr {
 
 
 
+// Note -- isCallExpr() retuns true for CallExpr and also
+// ContextCallExpr. Therefore, it is important to use toCallExpr()
+// instead of casting to CallExpr* directly.
 class CallExpr : public Expr {
  public:
   Expr* baseExpr;         // function expression
   AList argList;          // function actuals
   PrimitiveOp* primitive; // primitive expression (baseExpr == NULL)
-
-  //Expr* baseExprValue; // if this call is to a ref-return and rvalue-return
-                       // pair, baseExpr will point to the ref-return version,
-                       // and cullOverReferences will swap in valueFn
-                       // if the ref version is not necessary (ie the
-                       // call was used in a value context). Resolution
-                       // will fully resolve both versions.
 
   bool partialTag;
   bool methodTag; ///< Set to true if the call is a method call.
@@ -236,7 +229,8 @@ class CallExpr : public Expr {
 // on the context call.
 // typeInfo on the context call will return the type info for
 // the designated call.
-class ContextCallExpr : public Expr { // TODO inherit  : CallExpr
+// isCallExpr() will return true for a ContextCallExpr.
+class ContextCallExpr : public Expr {
  public:
   AList options;
 

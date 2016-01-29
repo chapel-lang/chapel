@@ -317,7 +317,6 @@ static inline bool isCallExpr(const BaseAST* a)
 def_is_ast(SymExpr)
 def_is_ast(UnresolvedSymExpr)
 def_is_ast(DefExpr)
-//def_is_ast(CallExpr)
 def_is_ast(ContextCallExpr)
 def_is_ast(NamedExpr)
 def_is_ast(UseStmt)
@@ -358,7 +357,6 @@ bool isCForLoop(const BaseAST* a);
 def_to_ast(SymExpr)
 def_to_ast(UnresolvedSymExpr)
 def_to_ast(DefExpr)
-//def_to_ast(CallExpr)
 def_to_ast(ContextCallExpr)
 def_to_ast(NamedExpr)
 def_to_ast(UseStmt)
@@ -389,7 +387,6 @@ def_to_ast(CForLoop);
 def_to_ast(ParamForLoop);
 
 #undef def_to_ast
-
 
 static inline LcnSymbol* toLcnSymbol(BaseAST* a)
 {
@@ -444,7 +441,6 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
   case E_CallExpr:                                                      \
     AST_CALL_CHILD(_a, CallExpr, baseExpr, call, __VA_ARGS__);          \
     AST_CALL_LIST(_a, CallExpr, argList, call, __VA_ARGS__);            \
-    /*AST_CALL_CHILD(_a, CallExpr, baseExprValue, call, __VA_ARGS__);*/  \
     break;                                                              \
   case E_NamedExpr:                                                     \
     AST_CALL_CHILD(_a, NamedExpr, actual, call, __VA_ARGS__);           \
@@ -522,7 +518,6 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_CHILD(_a, FnSymbol, body, call, __VA_ARGS__);              \
     AST_CALL_CHILD(_a, FnSymbol, where, call, __VA_ARGS__);             \
     AST_CALL_CHILD(_a, FnSymbol, retExprType, call, __VA_ARGS__);       \
-    /*AST_CALL_CHILD(_a, FnSymbol, valueFunction, call, __VA_ARGS__);*/  \
     break;                                                              \
   case E_EnumType:                                                      \
     AST_CALL_LIST(_a, EnumType, constants, call, __VA_ARGS__);          \

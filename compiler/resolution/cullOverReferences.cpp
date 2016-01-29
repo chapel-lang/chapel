@@ -25,8 +25,6 @@
 #include "stmt.h"
 #include "symbol.h"
 
-#include "view.h" // TODO remove
-
 static bool
 refNecessary(SymExpr*                      se,
              Map<Symbol*, Vec<SymExpr*>*>& defMap,
@@ -47,12 +45,7 @@ shouldUseByValueFunction(FnSymbol*                     fn,
   bool retval = false;
 
   if (refNecessary(se, defMap, useMap) == false) {
-    if (isString(se->var->type->getValType())) {
-      retval = true; ///false;
-
-    } else {
-      retval = true;
-    }
+    retval = true;
   }
 
   return retval;
@@ -105,7 +98,6 @@ refNecessary(SymExpr*                      se,
                  call->isPrimitive(PRIM_YIELD)) {
         FnSymbol* inFn = toFnSymbol(call->parentSymbol);
         // Return true only for ref-return functions
-        // TODO -- almost certainly needs updating.
         if (inFn->retTag != RET_REF) return false;
         return true;
 
@@ -197,11 +189,6 @@ void cullOverReferences() {
     INT_ASSERT(refCall);
     INT_ASSERT(valueCall);
 
-
-    printf("Working with contextcall %i\n", cc->id);
-    print_view(refCall);
-    print_view(valueCall);
-
     FnSymbol* fn = refCall->isResolved();
     INT_ASSERT(fn);
     FnSymbol* valueFn = valueCall->isResolved();
@@ -232,11 +219,10 @@ void cullOverReferences() {
     if (useValueCall) {
       // Replace the ContextCallExpr with the value call
       cc->replace(valueCall);
-      valueCall->verify(); // TODO
 
       // Adjust the AST around the value call to include
       // a temporary to receive the value.
-      
+
       // Adjust code to use value return version.
       // The other option is that retTag is RET_CONST_REF,
       // in which case no further adjustment is necessary.
@@ -262,7 +248,7 @@ void cullOverReferences() {
                                          lhs->var,
                                          new CallExpr(PRIM_ADDR_OF, tmp)));
         } else {
-          // If the LHS was not used, 
+          // If the LHS was not used,
           // remove the old definition point since we have
           // provided a new one above.
           lhs->var->defPoint->remove();
@@ -275,7 +261,6 @@ void cullOverReferences() {
     } else {
       // Replace the ContextCallExpr with the ref call
       cc->replace(refCall);
-      refCall->verify(); // TODO
     }
   }
 

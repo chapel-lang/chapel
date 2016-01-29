@@ -272,22 +272,28 @@ static void build_getter(AggregateType* ct, Symbol *field) {
   else if (field->hasFlag(FLAG_SUPER_CLASS)) {
     fn->retTag = RET_VALUE;
   } else {
-    // TODO -- handle const ref
-    fn->retTag = RET_REF;
+    if (fieldIsConst)
+      fn->retTag = RET_CONST_REF;
+    else
+      fn->retTag = RET_REF;
   }
 
+  FnSymbol* getterFn = NULL;
   // TODO -- build default union getter/setter
-  /*if (isUnion(ct))
-    fn->insertAtTail(
-      new CondStmt(
-        new SymExpr(fn->setter->sym),
-        new CallExpr(PRIM_SET_UNION_ID, _this, new_IntSymbol(field->id)),
+  if (isUnion(ct)) {
+    getterFn = fn->copy();
+    getterFn->retTag = RET_CONST_REF;
+    // Set the union ID in the setter.
+    fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
+                                  _this, new_IntSymbol(field->id)));
+    // Check the union ID in the getter.
+    getterFn->insertAtTail(
         new CondStmt(
           new CallExpr("!=",
-            new CallExpr(PRIM_GET_UNION_ID, _this),
-              new_IntSymbol(field->id)),
-          new CallExpr("halt", new_CStringSymbol("illegal union access")))));
-  */
+                       new CallExpr(PRIM_GET_UNION_ID, _this),
+                       new_IntSymbol(field->id)),
+          new CallExpr("halt", new_CStringSymbol("illegal union access"))));
+  }
   if (isTypeSymbol(field) && isEnumType(field->type)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, field));
     // better flatten enumerated types now
@@ -313,6 +319,19 @@ static void build_getter(AggregateType* ct, Symbol *field) {
   fn->cname = astr("chpl_get_", ct->symbol->cname, "_", fn->cname);
   fn->addFlag(FLAG_NO_PARENS);
   fn->_this = _this;
+
+  if(getterFn) {
+    DefExpr* def = new DefExpr(getterFn);
+    ct->symbol->defPoint->insertBefore(def);
+    reset_ast_loc(getterFn, field);
+    normalize(getterFn);
+    ct->methods.add(getterFn);
+    getterFn->addFlag(FLAG_METHOD);
+    getterFn->addFlag(FLAG_METHOD_PRIMARY);
+    getterFn->cname = astr("chpl_get_", ct->symbol->cname, "_", getterFn->cname);
+    getterFn->addFlag(FLAG_NO_PARENS);
+    getterFn->_this = _this;
+  }
 }
 
 

@@ -1057,12 +1057,12 @@ bool ArgSymbol::isVisible(BaseAST* scope) const {
 
 const char* retTagDescrString(RetTag retTag) {
   switch (retTag) {
-    case RET_VALUE: return "value";
-    case RET_REF:   return "ref";
-    case RET_CONST_REF:   return "const ref";
-    case RET_PARAM: return "param";
-    case RET_TYPE:  return "type";
-    default:        return "<unknown RetTag>";
+    case RET_VALUE:     return "value";
+    case RET_REF:       return "ref";
+    case RET_CONST_REF: return "const ref";
+    case RET_PARAM:     return "param";
+    case RET_TYPE:      return "type";
+    default:            return "<unknown RetTag>";
   }
 }
 

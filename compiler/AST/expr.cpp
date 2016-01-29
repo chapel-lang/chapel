@@ -3495,7 +3495,6 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   baseExpr(NULL),
   argList(),
   primitive(NULL),
-  /*baseExprValue(NULL),*/
   partialTag(false),
   methodTag(false),
   square(false)
@@ -3523,7 +3522,6 @@ CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2,
   baseExpr(NULL),
   argList(),
   primitive(prim),
-  /*baseExprValue(NULL),*/
   partialTag(false),
   methodTag(false),
   square(false)
@@ -3543,7 +3541,6 @@ CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2,
   baseExpr(NULL),
   argList(),
   primitive(primitives[prim]),
-  /*baseExprValue(NULL),*/
   partialTag(false),
   methodTag(false),
   square(false)
@@ -3564,7 +3561,6 @@ CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
   baseExpr(new UnresolvedSymExpr(name)),
   argList(),
   primitive(NULL),
-  /*baseExprValue(NULL),*/
   partialTag(false),
   methodTag(false),
   square(false)
@@ -3692,9 +3688,6 @@ CallExpr::copyInner(SymbolMap* map) {
   for_actuals(expr, this)
     _this->insertAtTail(COPY_INT(expr));
   _this->primitive = primitive;
-  /*if (baseExprValue) {
-    _this->baseExprValue = COPY_INT(baseExprValue);
-  }*/
   _this->partialTag = partialTag;
   _this->methodTag = methodTag;
   _this->square = square;
@@ -3705,8 +3698,6 @@ CallExpr::copyInner(SymbolMap* map) {
 void CallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == baseExpr) {
     baseExpr = new_ast;
-  /*} else if (old_ast == baseExprValue ) {
-    baseExprValue = new_ast;*/
   } else {
     INT_FATAL(this, "Unexpected case in CallExpr::replaceChild");
   }
@@ -3865,9 +3856,6 @@ void CallExpr::accept(AstVisitor* visitor) {
 
     for_alist(next_ast, argList)
       next_ast->accept(visitor);
-
-    /*if (baseExprValue)
-      baseExprValue->accept(visitor);*/
 
     visitor->exitCallExpr(this);
   }
@@ -6334,5 +6322,3 @@ new_Expr(const char* format, va_list vl) {
   INT_ASSERT(stack.size() == 1);
   return stack.top();
 }
-
-
