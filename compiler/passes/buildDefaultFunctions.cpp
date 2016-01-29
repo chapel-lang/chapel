@@ -163,11 +163,18 @@ static bool type_match(Type* type, Symbol* sym) {
   return false;
 }
 
+typedef enum {
+  FIND_EITHER = 0,
+  FIND_REF,
+  FIND_NOT_REF
+} fuction_exists_kind_t;
+
 static FnSymbol* function_exists(const char* name,
                                  int numFormals,
                                  Type* formalType1 = NULL,
                                  Type* formalType2 = NULL,
-                                 Type* formalType3 = NULL)
+                                 Type* formalType3 = NULL,
+                                 fuction_exists_kind_t kind=FIND_EITHER)
 {
   switch(numFormals)
   {
@@ -201,6 +208,12 @@ static FnSymbol* function_exists(const char* name,
       if (!type_match(formalType3, fn->getFormal(3)))
         continue;
 
+    if (kind == FIND_REF && fn->retTag != RET_REF)
+      continue;
+
+    if (kind == FIND_NOT_REF && fn->retTag == RET_REF)
+      continue;
+
     return fn;
   }
 
@@ -209,35 +222,48 @@ static FnSymbol* function_exists(const char* name,
 }
 
 
+static void fixup_getter(AggregateType* ct, Symbol *field,
+                         bool fieldIsConst, bool recordLike,
+                         FnSymbol* fn)
+{
+  std::vector<BaseAST*> asts;
+  collect_asts(fn, asts);
+  for_vector(BaseAST, ast, asts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->isNamed(field->name) && call->numActuals() == 2) {
+        if (call->get(1)->typeInfo() == dtMethodToken &&
+            call->get(2)->typeInfo() == ct) {
+          Expr* arg2 = call->get(2);
+          call->replace(new CallExpr(PRIM_GET_MEMBER,
+                                     arg2->remove(),
+                                     new_CStringSymbol(field->name)));
+        }
+      }
+    }
+  }
+  fn->addFlag(FLAG_FIELD_ACCESSOR);
+  if (fieldIsConst)
+    fn->addFlag(FLAG_REF_TO_CONST);
+  else if (recordLike)
+    fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
+}
+
 // Getter and setter functions are provided by the compiler if not supplied by
 // the user.
 // These functions have the same binding strength as if they were user-defined.
 static void build_getter(AggregateType* ct, Symbol *field) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   const bool recordLike = ct->isRecord() || ct->isUnion();
-  if (FnSymbol* fn = function_exists(field->name, 2, dtMethodToken, ct)) {
-    std::vector<BaseAST*> asts;
-    collect_asts(fn, asts);
-    for_vector(BaseAST, ast, asts) {
-      if (CallExpr* call = toCallExpr(ast)) {
-        if (call->isNamed(field->name) && call->numActuals() == 2) {
-          if (call->get(1)->typeInfo() == dtMethodToken &&
-              call->get(2)->typeInfo() == ct) {
-            Expr* arg2 = call->get(2);
-            call->replace(new CallExpr(PRIM_GET_MEMBER,
-                                       arg2->remove(),
-                                       new_CStringSymbol(field->name)));
-          }
-        }
-      }
-    }
-    fn->addFlag(FLAG_FIELD_ACCESSOR);
-    if (fieldIsConst)
-      fn->addFlag(FLAG_REF_TO_CONST);
-    else if (recordLike)
-      fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
+  FnSymbol *setter = function_exists(field->name, 2,
+                                     dtMethodToken, ct, NULL, FIND_REF);
+  FnSymbol *getter = function_exists(field->name, 2,
+                                     dtMethodToken, ct, NULL, FIND_NOT_REF);
+  if (setter)
+    fixup_getter(ct, field, fieldIsConst, recordLike, setter);
+  if (getter)
+    fixup_getter(ct, field, fieldIsConst, recordLike, getter);
+  if (getter || setter)
     return;
-  }
 
   FnSymbol* fn = new FnSymbol(field->name);
   fn->addFlag(FLAG_NO_IMPLICIT_COPY);
