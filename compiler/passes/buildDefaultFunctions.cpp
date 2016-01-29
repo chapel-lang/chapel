@@ -30,7 +30,8 @@
 static bool mainReturnsInt;
 
 static void build_chpl_entry_points();
-static void build_getter(AggregateType* ct, Symbol* field);
+static void build_getter_setter(AggregateType* ct, Symbol* field, bool setter);
+static void build_getter_setter(AggregateType* ct, Symbol* field);
 static void build_union_assignment_function(AggregateType* ct);
 static void build_enum_assignment_function(EnumType* et);
 static void build_record_assignment_function(AggregateType* ct);
@@ -135,10 +136,10 @@ static void buildFieldAccessorFunctions(AggregateType* at)
     if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
       if (isVarSymbol(field)) {
         if (strcmp(field->name, "_promotionType")) {
-          build_getter(at, field);
+          build_getter_setter(at, field);
         }
       } else if (isEnumType(field->type)) {
-        build_getter(at, field);
+        build_getter_setter(at, field);
       }
     }
   }
@@ -251,19 +252,15 @@ static void fixup_getter(AggregateType* ct, Symbol *field,
 // Getter and setter functions are provided by the compiler if not supplied by
 // the user.
 // These functions have the same binding strength as if they were user-defined.
-static void build_getter(AggregateType* ct, Symbol *field) {
+static void build_getter_setter(AggregateType* ct, Symbol *field, bool setter) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   const bool recordLike = ct->isRecord() || ct->isUnion();
-  FnSymbol *setter = function_exists(field->name, 2,
-                                     dtMethodToken, ct, NULL, FIND_REF);
-  FnSymbol *getter = function_exists(field->name, 2,
-                                     dtMethodToken, ct, NULL, FIND_NOT_REF);
-  if (setter)
-    fixup_getter(ct, field, fieldIsConst, recordLike, setter);
-  if (getter)
-    fixup_getter(ct, field, fieldIsConst, recordLike, getter);
-  if (getter || setter)
-    return;
+
+  // Only build a 'ref' version for records and classes.
+  // Unions need a special getter and setter.
+  if (!isUnion(ct))
+    if (!setter)
+      return;
 
   FnSymbol* fn = new FnSymbol(field->name);
   fn->addFlag(FLAG_NO_IMPLICIT_COPY);
@@ -298,27 +295,26 @@ static void build_getter(AggregateType* ct, Symbol *field) {
   else if (field->hasFlag(FLAG_SUPER_CLASS)) {
     fn->retTag = RET_VALUE;
   } else {
-    if (fieldIsConst)
+    if (fieldIsConst || !setter)
       fn->retTag = RET_CONST_REF;
     else
       fn->retTag = RET_REF;
   }
 
-  FnSymbol* getterFn = NULL;
-  // TODO -- build default union getter/setter
   if (isUnion(ct)) {
-    getterFn = fn->copy();
-    getterFn->retTag = RET_CONST_REF;
-    // Set the union ID in the setter.
-    fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
+    if (setter)  {
+      // Set the union ID in the setter.
+      fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
                                   _this, new_IntSymbol(field->id)));
-    // Check the union ID in the getter.
-    getterFn->insertAtTail(
-        new CondStmt(
-          new CallExpr("!=",
-                       new CallExpr(PRIM_GET_UNION_ID, _this),
-                       new_IntSymbol(field->id)),
-          new CallExpr("halt", new_CStringSymbol("illegal union access"))));
+    } else {
+      // Check the union ID in the getter.
+      fn->insertAtTail(
+          new CondStmt(
+            new CallExpr("!=",
+                         new CallExpr(PRIM_GET_UNION_ID, _this),
+                         new_IntSymbol(field->id)),
+            new CallExpr("halt", new_CStringSymbol("illegal union access"))));
+    }
   }
   if (isTypeSymbol(field) && isEnumType(field->type)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, field));
@@ -346,20 +342,27 @@ static void build_getter(AggregateType* ct, Symbol *field) {
   fn->addFlag(FLAG_NO_PARENS);
   fn->_this = _this;
 
-  if(getterFn) {
-    DefExpr* def = new DefExpr(getterFn);
-    ct->symbol->defPoint->insertBefore(def);
-    reset_ast_loc(getterFn, field);
-    normalize(getterFn);
-    ct->methods.add(getterFn);
-    getterFn->addFlag(FLAG_METHOD);
-    getterFn->addFlag(FLAG_METHOD_PRIMARY);
-    getterFn->cname = astr("chpl_get_", ct->symbol->cname, "_", getterFn->cname);
-    getterFn->addFlag(FLAG_NO_PARENS);
-    getterFn->_this = _this;
-  }
 }
 
+static void build_getter_setter(AggregateType* ct, Symbol *field) {
+  const bool fieldIsConst = field->hasFlag(FLAG_CONST);
+  const bool recordLike = ct->isRecord() || ct->isUnion();
+
+  FnSymbol *setter = function_exists(field->name, 2,
+                                     dtMethodToken, ct, NULL, FIND_REF);
+  FnSymbol *getter = function_exists(field->name, 2,
+                                     dtMethodToken, ct, NULL, FIND_NOT_REF);
+  if (setter)
+    fixup_getter(ct, field, fieldIsConst, recordLike, setter);
+  if (getter)
+    fixup_getter(ct, field, fieldIsConst, recordLike, getter);
+  if (getter || setter)
+    return;
+
+  // Otherwise, build compiler-default getter and setter.
+  build_getter_setter(ct, field, true);
+  build_getter_setter(ct, field, false);
+}
 
 static FnSymbol* chpl_gen_main_exists() {
   FnSymbol* match = NULL;
