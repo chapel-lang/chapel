@@ -5783,7 +5783,7 @@ ContextCallExpr::copyInner(SymbolMap* map) {
   return _this;
 }
 
-CallExpr* getMainCall(ContextCallExpr* a) {
+CallExpr* getDesignatedCall(ContextCallExpr* a) {
   return toCallExpr(a->options.tail);
 }
 
@@ -5813,7 +5813,7 @@ void ContextCallExpr::accept(AstVisitor* visitor) {
 }
 
 Type* ContextCallExpr::typeInfo() {
-  CallExpr* mainCall = getMainCall(this);
+  CallExpr* mainCall = getDesignatedCall(this);
   if (mainCall)
     return mainCall->typeInfo();
   return dtUnknown;

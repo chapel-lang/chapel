@@ -231,6 +231,11 @@ class CallExpr : public Expr {
 // choosing between them depends on context
 // (and that choice might need to be done later in resolution).
 // These should only exist during resolution.
+// A ContextCall has a designated call.
+// The designated call will be returned if toCallExpr() is called
+// on the context call.
+// typeInfo on the context call will return the type info for
+// the designated call.
 class ContextCallExpr : public Expr { // TODO inherit  : CallExpr
  public:
   AList options;
