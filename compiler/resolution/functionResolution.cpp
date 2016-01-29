@@ -3663,6 +3663,16 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     } else if (valueCall) {
       // value call was added but didn't resolve right. Remove it.
       valueCall->remove();
+    } else {
+      // If we aren't working with a ref not-ref return intent pair,
+      // adjust the returned value to have flag FLAG_REF_TO_CONST
+      if (resolvedFn->retTag == RET_CONST_REF)
+        if (CallExpr* parentCall = toCallExpr(call->parentExpr))
+          if (parentCall->isPrimitive(PRIM_MOVE))
+            if (SymExpr* lhsSe = toSymExpr(parentCall->get(1)))
+              if (VarSymbol* lhs = toVarSymbol(lhsSe->var))
+                if (lhs->hasFlag(FLAG_EXPR_TEMP))
+                  lhs->addFlag(FLAG_REF_TO_CONST);
     }
   }
 
