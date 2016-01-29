@@ -1,0 +1,4 @@
+--set compact=false         -M../../../release/examples/benchmarks/miniMD/helpers
+--set compact=true          -M../../../release/examples/benchmarks/miniMD/helpers
+--set useBlockDist=true     -M../../../release/examples/benchmarks/miniMD/helpers
+--set useStencilDist=true   -M../../../release/examples/benchmarks/miniMD/helpers

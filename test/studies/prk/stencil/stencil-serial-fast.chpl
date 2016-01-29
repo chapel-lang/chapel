@@ -1,5 +1,5 @@
 //
-// Chapel's serial stencil implementation
+// Chapel's stencil implementation
 //
 use Time;
 

@@ -1,2 +1,2 @@
---set compact=false
---set compact=true
+--set compact=false -M../../../release/examples/benchmarks/miniMD/helpers
+--set compact=true -M../../../release/examples/benchmarks/miniMD/helpers
