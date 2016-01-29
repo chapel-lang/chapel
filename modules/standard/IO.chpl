@@ -6321,16 +6321,13 @@ proc channel.skipField() {
 }
 
 
-//
-// TODO: Should _do_format take a string rather than a c_string?
-//
-private inline proc _do_format(fmt:c_string, args ...?k, out error:syserr):string {
+private inline proc chpl_do_format(fmt:string, args ...?k, out error:syserr):string {
   // Open a memory buffer to store the result
   var f = openmem();
 
   var w = f.writer(locking=false);
 
-  w.writef(fmt:string, (...args), error=error);
+  w.writef(fmt, (...args), error=error);
 
   var offset = w.offset();
 
@@ -6373,14 +6370,14 @@ proc format(fmt:string, args ...?k):string {
 
  */
 proc string.format(args ...?k, out error:syserr):string {
-  return _do_format(this.localize().c_str(), (...args), error);
+  return chpl_do_format(this, (...args), error);
 }
 
 // documented in the error= version
 pragma "no doc"
 proc string.format(args ...?k):string {
   var err:syserr = ENOERR;
-  var ret = _do_format(this.localize().c_str(), (...args), error=err);
+  var ret = chpl_do_format(this, (...args), error=err);
   if err then ioerror(err, "in string.format");
   return ret;
 }
