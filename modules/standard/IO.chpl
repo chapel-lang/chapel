@@ -6321,13 +6321,16 @@ proc channel.skipField() {
 }
 
 
+//
+// TODO: Should _do_format take a string rather than a c_string?
+//
 private inline proc _do_format(fmt:c_string, args ...?k, out error:syserr):string {
   // Open a memory buffer to store the result
   var f = openmem();
 
   var w = f.writer(locking=false);
 
-  w.writef(fmt, (...args), error=error);
+  w.writef(fmt:string, (...args), error=error);
 
   var offset = w.offset();
 
