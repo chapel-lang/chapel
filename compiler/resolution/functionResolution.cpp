@@ -3676,15 +3676,18 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
       valueCall->remove();
     } else {
       // If we aren't working with a ref not-ref return intent pair,
-      // adjust the returned value to have flag FLAG_REF_TO_CONST
-
+      // adjust the returned value to have flag FLAG_REF_TO_CONST,
+      // but disable this behavior for constructors, so that they
+      // can set 'const' fields.
       if (resolvedFn->retTag == RET_CONST_REF)
         if (CallExpr* parentCall = toCallExpr(call->parentExpr))
           if (parentCall->isPrimitive(PRIM_MOVE))
             if (SymExpr* lhsSe = toSymExpr(parentCall->get(1)))
               if (VarSymbol* lhs = toVarSymbol(lhsSe->var))
                 if (lhs->hasFlag(FLAG_EXPR_TEMP))
-                  lhs->addFlag(FLAG_REF_TO_CONST);
+                  if (FnSymbol* inFn = toFnSymbol(parentCall->parentSymbol))
+                    if (!isConstructorLikeFunction(inFn))
+                      lhs->addFlag(FLAG_REF_TO_CONST);
     }
   }
 
