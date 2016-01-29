@@ -121,9 +121,9 @@ class SymExpr : public Expr {
   Symbol* var;
 
   SymExpr(Symbol* init_var);
-  virtual ~SymExpr() {
+  /*virtual ~SymExpr() {
     printf("Deleting se %i at %p\n", id, this);
-  }
+  }*/
 
   DECLARE_COPY(SymExpr);
 
@@ -251,6 +251,8 @@ class ContextCallExpr : public Expr { // TODO inherit  : CallExpr
   virtual Expr*   getFirstExpr();
 
   void            insertAtTail(BaseAST* ast);
+  CallExpr*       getRefCall();
+  CallExpr*       getRValueCall();
 };
 
 

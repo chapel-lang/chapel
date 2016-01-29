@@ -3709,8 +3709,15 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
       printf("context call %i ref call %i value call %i\n",
              contextCall->id, call->id, valueCall->id);
       print_view(contextCall);
-      print_view(call);
+      printf("value call %i to %i\n", valueCall->id,
+            valueCall->isResolved()->id);
       print_view(valueCall);
+      printf("ref call %i to %i\n", call->id,
+              call->isResolved()->id);
+      print_view(call);
+      printf("default call %i to %i\n", toCallExpr(contextCall)->id,
+          toCallExpr(contextCall)->isResolved()->id);
+      print_view(toCallExpr(contextCall));
       printf("ref symexpr %i value symexpr %i\n", call->baseExpr->id, valueCall->baseExpr->id);
       printf("ref fn %i value fn %i\n", resolvedFn->id, resolvedValueFn->id);
       print_view(resolvedFn);
