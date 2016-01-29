@@ -3,12 +3,20 @@ record R {
 
   proc return_ref() ref
   {
-    if setter then writeln("setter");
-    else writeln("getter");
+    writeln("setter");
+    return x;
+  }
+  proc return_ref()
+  {
+    writeln("getter");
     return x;
   }
   
   proc call_return_ref() ref
+  {
+    return return_ref();
+  }
+  proc call_return_ref()
   {
     return return_ref();
   }
