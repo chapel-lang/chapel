@@ -401,13 +401,13 @@ static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a)
   return isLcnSymbol(a) ? (const LcnSymbol*) a : NULL;
 }
 
-CallExpr* getMainCall(ContextCallExpr* a);
+CallExpr* getDesignatedCall(ContextCallExpr* a);
 
 static inline CallExpr* toCallExpr(BaseAST* a)
 {
   if (!a) return NULL;
   if (a->astTag == E_CallExpr) return (CallExpr*) a;
-  if (a->astTag == E_ContextCallExpr) return getMainCall((ContextCallExpr*)a);
+  if (a->astTag == E_ContextCallExpr) return getDesignatedCall((ContextCallExpr*)a);
   return NULL;
 }
 
@@ -415,7 +415,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
 {
   if (!a) return NULL;
   if (a->astTag == E_CallExpr) return (const CallExpr*) a;
-  if (a->astTag == E_ContextCallExpr) return getMainCall((ContextCallExpr*)a);
+  if (a->astTag == E_ContextCallExpr) return getDesignatedCall((ContextCallExpr*)a);
   return NULL;
 }
 

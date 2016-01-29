@@ -5774,28 +5774,6 @@ ContextCallExpr::ContextCallExpr() :
   gContextCallExprs.add(this);
 }
 
-void
-ContextCallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
-  INT_FATAL(this, "unexpected case in UnresolvedSymExpr::replaceChild");
-}
-
-
-Expr* ContextCallExpr::getFirstChild() {
-  return options.head;
-}
-
-Expr* ContextCallExpr::getFirstExpr() {
-  return options.head->getFirstExpr();
-}
-
-void
-ContextCallExpr::verify() {
-  Expr::verify();
-  if (astTag != E_ContextCallExpr)
-    INT_FATAL(this, "bad ContextCallExpr::astTag");
-}
-
-
 ContextCallExpr*
 ContextCallExpr::copyInner(SymbolMap* map) {
   ContextCallExpr* _this = 0;
@@ -5805,13 +5783,41 @@ ContextCallExpr::copyInner(SymbolMap* map) {
   return _this;
 }
 
-
-Type* ContextCallExpr::typeInfo(void) {
-  if (options.head)
-    return options.head->typeInfo();
-  return dtUnknown;
+CallExpr* getDesignatedCall(ContextCallExpr* a) {
+  return toCallExpr(a->options.tail);
 }
 
+void
+ContextCallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
+  INT_FATAL(this, "unexpected case in ContextCallExpr::replaceChild");
+}
+
+void
+ContextCallExpr::verify() {
+  Expr::verify();
+  if (astTag != E_ContextCallExpr)
+    INT_FATAL(this, "bad ContextCallExpr::astTag");
+  for_alist(expr, options) {
+    if (expr->parentExpr != this)
+      INT_FATAL(this, "Bad ContextCallExpr::options::parentExpr");
+    if (isContextCallExpr(expr))
+      INT_FATAL(this, "ContextCallExpr cannot contain a ContextCallExpr");
+    if (!isCallExpr(expr))
+      INT_FATAL(this, "ContextCallExpr must contain only CallExpr");
+  }
+}
+
+void ContextCallExpr::accept(AstVisitor* visitor) {
+  for_alist(expr, options)
+    expr->accept(visitor);
+}
+
+Type* ContextCallExpr::typeInfo() {
+  CallExpr* mainCall = getDesignatedCall(this);
+  if (mainCall)
+    return mainCall->typeInfo();
+  return dtUnknown;
+}
 
 GenRet ContextCallExpr::codegen() {
   GenRet ret;
@@ -5828,13 +5834,16 @@ void ContextCallExpr::prettyPrint(std::ostream *o) {
   *o << " )";
 }
 
-void ContextCallExpr::accept(AstVisitor* visitor) {
-  for_alist(expr, options)
-    expr->accept(visitor);
+Expr* ContextCallExpr::getFirstChild() {
+  return options.head;
 }
 
-void
-ContextCallExpr::insertAtTail(BaseAST* ast) {
+Expr* ContextCallExpr::getFirstExpr() {
+  return options.head->getFirstExpr();
+}
+
+
+void ContextCallExpr::insertAtTail(BaseAST* ast) {
   Expr* newExpr = toExpr(ast);
 
   INT_ASSERT(newExpr);
@@ -5843,7 +5852,25 @@ ContextCallExpr::insertAtTail(BaseAST* ast) {
   parent_insert_help(this, newExpr);
 }
 
+CallExpr* ContextCallExpr::getRefCall() {
+  for_alist(expr, options)
+    if (CallExpr* call = toCallExpr(expr))
+      if (FnSymbol* fn = call->isResolved())
+        if (fn->retTag == RET_REF)
+          return call;
 
+  return NULL;
+}
+
+CallExpr* ContextCallExpr::getRValueCall() {
+  for_alist(expr, options)
+    if (CallExpr* call = toCallExpr(expr))
+      if (FnSymbol* fn = call->isResolved())
+        if (fn->retTag != RET_REF)
+          return call;
+
+  return NULL;
+}
 
 /************************************ | *************************************
 *                                                                           *
@@ -6308,6 +6335,4 @@ new_Expr(const char* format, va_list vl) {
   return stack.top();
 }
 
-CallExpr* getMainCall(ContextCallExpr* a) {
-  return toCallExpr(a->options.tail);
-}
+
