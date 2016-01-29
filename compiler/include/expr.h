@@ -231,7 +231,7 @@ class CallExpr : public Expr {
 // choosing between them depends on context
 // (and that choice might need to be done later in resolution).
 // These should only exist during resolution.
-class ContextCallExpr : public Expr {
+class ContextCallExpr : public Expr { // TODO inherit  : CallExpr
  public:
   AList options;
 

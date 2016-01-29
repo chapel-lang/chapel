@@ -8150,7 +8150,7 @@ static void resolveRecordInitializers() {
       }
       init->get(1)->replace(res);
       resolveCall(res);
-      makeNoop((CallExpr *)init->parentExpr);
+      makeNoop(toCallExpr(init->parentExpr));
       // Now that we've resolved the type constructor and thus resolved the
       // generic type of the variable we were assigning to, the outer move
       // is no longer needed, so remove it and continue to the next init.

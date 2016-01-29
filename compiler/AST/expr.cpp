@@ -6297,5 +6297,5 @@ new_Expr(const char* format, va_list vl) {
 }
 
 CallExpr* getMainCall(ContextCallExpr* a) {
-  return (CallExpr*) a->options.tail;
+  return toCallExpr(a->options.tail);
 }
