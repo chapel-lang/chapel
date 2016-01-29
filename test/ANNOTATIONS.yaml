@@ -137,6 +137,8 @@ bfs:
 binary-trees:
   12/05/14:
     - introduce "library mode"
+  01/25/16:
+    - Optimize iteration over anonymous low-bounded counted ranges (#3154)
 
 chameneos-redux:
   07/08/13:
@@ -391,6 +393,8 @@ thread-ring:
 time_array_vs_ddata:
   05/31/14:
     - specializing binaries to target architectures
+  01/25/16:
+    - Optimize iteration over anonymous low-bounded counted ranges (#3154)
 
 time_array_vs_tuple:
   08/19/14:
