@@ -130,7 +130,7 @@ follows:
 ``foo.perfkeys``
 
   .. code-block:: text
- 
+
     Time:
     Memory:
 
@@ -160,7 +160,7 @@ verify that the last line of output contains the string "SUCCESS":
 ``foo.perfkeys``
 
   .. code-block:: text
- 
+
     Time:
     Memory:
     verify:-1: SUCCESS
@@ -237,7 +237,6 @@ performance test ``foo-c.test.c``.  Like any other test, the C test needs
 a ``.good`` file for correctness testing and a ``.perfkeys`` file for
 performance testing.
 
-.. TODO: Third party codes? Mention of internal repository?
 
 To compare a single Chapel test compiled or run in multiple
 configurations, the approach taken is to use multi-line versions of
@@ -274,7 +273,7 @@ they are typically pulling from multiple ``.dat`` files; making the
 filename useful to human readers is the main consideration).
 
 ``foo.graph``
- 
+
   .. code-block:: text
 
     perfkeys: Time:, Time:
@@ -393,3 +392,44 @@ The current categories of future are:
 * unimplemented feature: this test uses features that are specified, but
     which have not yet been implemented.
 
+
+
+Summary of Testing Files
+========================
+
+.. code-block:: text
+
+     correctness
+     -----------
+    .chpl     - test program
+    .good     - expected output
+    .compopts - compiler flags
+     COMPOPTS - directory-wide compiler flags
+    .execopts - runtime flags
+     EXECOPTS - directory-wide runtime flags
+    .prediff  - script that is run on the test output, before the diff
+
+    performance
+    -----------
+    .perfcompopts   - compiler flags, overrides .compopts for --performance
+    .perfexecopts   - runtime flags, overrides .execopts for --performance
+    .perfkeys       - keys to search for in the output
+    .graph          - Specifies how to graph .dat files (and which ones)
+    test/GRAPHFILES - Identifies which .graph files to graph
+
+
+    futures
+    -------
+    .future - keyword, short description, and long description of feature
+    .bad    - output generated on a failing test
+
+
+
+.. TODO: Recursive behavior of COMPOPTS/EXECOPTS?
+.. TODO: Restrictions in perfcompopts / perfexecopts
+.. TODO: Naming in perf*opts
+.. TODO: All options for .graph files
+.. TODO: What files can be treated as a script?
+.. TODO: Other pre* files
+.. TODO: JIRA usage with .futures
+.. TODO: Third party codes - state plans to support in future..
