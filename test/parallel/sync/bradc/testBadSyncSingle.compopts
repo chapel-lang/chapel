@@ -1,0 +1,14 @@
+-st=complex(64)                         # testBadSyncSingle-complex64
+-st=complex(128)                        # testBadSyncSingle-complex128
+-st=range                               # testBadSyncSingle-range
+-st=R                                   # testBadSyncSingle-R
+-st='[0..127] int'                      # testBadSyncSingle-arr
+-st='[1..5] sync int'                   # testBadSyncSingle-arr2
+-st='sync int'                          # testBadSyncSingle-sync
+-st=complex(64) -stestSingle=true       # testBadSyncSingle-complex64
+-st=complex(128) -stestSingle=true      # testBadSyncSingle-complex128
+-st=range -stestSingle=true             # testBadSyncSingle-range
+-st=R -stestSingle=true                 # testBadSyncSingle-R
+-st='[0..127] int' -stestSingle=true    # testBadSyncSingle-arr
+-st='[1..5] sync int' -stestSingle=true # testBadSyncSingle-arr2
+-st='sync int' -stestSingle=true        # testBadSyncSingle-sync
