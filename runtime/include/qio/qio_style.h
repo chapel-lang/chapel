@@ -40,6 +40,7 @@ typedef uint8_t style_char_t;
 #define QIO_STYLE_ELEMENT_TUPLE 5
 #define QIO_STYLE_ELEMENT_BYTE_ORDER 6
 #define QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER 7
+#define QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS 8
 
 
 #define QIO_STRING_FORMAT_WORD 0
@@ -205,6 +206,12 @@ typedef struct qio_style_s {
   // QIO_TUPLE_FORMAT_CHPL make it look like (a,b,c)
   // QIO_TUPLE_FORMAT_JSON make it look like a JSON array [1,2]
   uint8_t tuple_style;
+
+  // If this is set, skip any unknown record/class fields
+  // when reading (ie the data to read might have more fields
+  // than a record, and the additional fields will be ignored).
+  uint8_t skip_unknown_fields;
+
 } qio_style_t;
 
 typedef qio_style_t _qio_style_ptr_t;

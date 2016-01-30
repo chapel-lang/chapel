@@ -39,21 +39,22 @@
  * time, provide a more optimized iterator that uses "<, <=, >, or >=" as the
  * relational operator.
  *
- * This is only meant to replace anonymous range iteration for "simple" bounded
- * ranges. Simple means it's a range of the form "low..high" or "low..high by
- * stride". Anything more complex is ignored with the thinking that this should
- * optimize the most common range iterators, but it could be expanded to handle
- * more cases.
+ * This is only meant to replace anonymous range iteration for "simple" ranges.
+ * Simple means it's a range of the form "low..high", "low..high by stride", or
+ * "low..#count". Anything more complex is ignored with the thinking that this
+ * should optimize the most common range iterators, but it could be expanded to
+ * handle more cases.
  *
  * An alternative is to update scalar replacement of aggregates to work on
  * ranges, which should be able to achieve similar results as this optimization
  * while handling all ranges, including non-anonymous ranges.
  *
- * Will optimize things like:
+ * This function will optimize things like:
  * - "for i in 1..10"
  * - "for i in 1..10+1"
  * - "var lo=1, hi=10;for i in lo..hi"
  * - "for i in 1..10 by 2"
+ * - "for i in 1..#10"
  * - "for (i, j) in zip(1..10 by 2, 1..10 by -2)"
  * - "for (i, j) in zip(A, 1..10 by 2)" // will optimize range iter still
  * - "coforall i in 1..10 by 2"         // works for coforalls as well
@@ -62,9 +63,10 @@
  * - "for in in (1..)"             // doesn't handle unbounded ranges
  * - "for i in 1..10 by 2 by 2"    // doesn't handle more than one by operator
  * - "for i in 1..10 align 2"      // doesn't handle align operator
- * - "for i in 1..#10"             // doesn't handle # operator
+ * - "for i in (1..10)#2"          // doesn't handle bounded counted ranges
+ * - "for i in 1..#10 by 2"        // doesn't handle strided and counted ranges
  * - "var r = 1..10"; for i in r"  // not an anonymous range
- * - "forall i in 1..10"           // does not get applied to foralls
+ * - "forall i in 1..10"           // doesn't get applied to foralls
  *
  * Note that this function is pretty fragile because it relies on names of
  * functions/iterators as well as the arguments and order of those
@@ -73,29 +75,64 @@
  */
 static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
 {
-  CallExpr* range = NULL;
-  Expr* stride = NULL;
   if (CallExpr* call = toCallExpr(iteratorExpr))
   {
+    CallExpr* range = NULL;
+    Expr* stride = NULL;
+    Expr* count = NULL;
     // grab the stride if we have a strided range
     if (call->isNamed("chpl_by"))
     {
       range = toCallExpr(call->get(1)->copy());
       stride = toExpr(call->get(2)->copy());
     }
-    // assume the call is the range (checked below) and set default stride
+    // or grab the count if we have a counted range and set unit stride
+    else if (call->isNamed("#"))
+    {
+      range = toCallExpr(call->get(1)->copy());
+      count = toExpr(call->get(2)->copy());
+      stride = new SymExpr(new_IntSymbol(1));
+    }
+    // or assume the call is the range (checked below) and set unit stride
     else
     {
       range = call;
       stride = new SymExpr(new_IntSymbol(1));
     }
-    // see if we're looking at a builder for a bounded range. the builder is
-    // iteratable since range has these() iterators
+
+    //
+    // see if we're looking at a range builder. The builder is iteratable since
+    // range has these() iterators
+    //
+
+    // replace fully bounded (and possibly strided range) with a direct range
+    // iter. e.g. replace:
+    //
+    //   `low..high by stride`
+    //
+    // with:
+    //
+    // `chpl_direct_range_iter(low, high, stride)`
     if (range && range->isNamed("chpl_build_bounded_range"))
     {
       // replace the range construction with a direct range iterator
       Expr* low = range->get(1)->copy();
       Expr* high = range->get(2)->copy();
+      iteratorExpr->replace(new CallExpr("chpl_direct_range_iter", low, high, stride));
+    }
+
+    // replace a counted, low bounded range with unit stride with an equivalent
+    // direct range iter. e.g. replace:
+    //
+    //   `low..#count` (which is equivalent to `low..low+count-1`)
+    //
+    // with:
+    //
+    //   `chpl_direct_range_iter(low, low+count-1, 1)`
+    else if (count && range && range->isNamed("chpl_build_low_bounded_range"))
+    {
+      Expr* low = range->get(1)->copy();
+      Expr* high = new CallExpr("-", new CallExpr("+", low->copy(), count), new_IntSymbol(1));
       iteratorExpr->replace(new CallExpr("chpl_direct_range_iter", low, high, stride));
     }
   }

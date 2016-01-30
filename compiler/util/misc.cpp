@@ -61,8 +61,16 @@ static int err_print;
 static int err_ignore;
 static FnSymbol* err_fn = NULL;
 
-bool forceWidePtrs() {
-  return !strcmp(CHPL_LOCALE_MODEL, "numa");
+//
+// Chances are that all non-flat locale models will require wide
+// pointers.  Ultimately, we'd like to have such decisions be made by
+// param fields/methods within the locale models themselves, but that
+// would require a fairly large refactoring, so for now, we
+// special-case 'flat' with the expectation that most other locale
+// models will not be flat.
+//
+static bool forceWidePtrs() {
+  return (strcmp(CHPL_LOCALE_MODEL, "flat") != 0);
 }
 
 bool forceWidePtrsForLocal() {
@@ -73,8 +81,14 @@ bool requireWideReferences() {
   return !fLocal || forceWidePtrs();
 }
 
+//
+// If the --no-local flag is used, or the locale model is not 'flat'
+// (i.e., has sub-locales that an on-clause might target), we should
+// require on-clauses to be "outlined" (i.e., we should not assume the
+// on-clause is a no-op and execute the associated statement locally.
+//
 bool requireOutlinedOn() {
-  return !fLocal || forceWidePtrs();
+  return !fLocal || strcmp(CHPL_LOCALE_MODEL, "flat") != 0;
 }
 
 const char* cleanFilename(const char* name) {

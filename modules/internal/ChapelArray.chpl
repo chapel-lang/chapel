@@ -1340,12 +1340,12 @@ module ChapelArray {
       return _value.dsiGetIndices();
 
     pragma "no doc"
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       _value.dsiSerialWrite(f);
     }
 
     pragma "no doc"
-    proc readThis(f: Reader) {
+    proc readThis(f) {
       _value.dsiSerialRead(f);
     }
 
@@ -1860,12 +1860,12 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       _value.dsiSerialWrite(f);
     }
 
     pragma "no doc"
-    proc readThis(f: Reader) {
+    proc readThis(f) {
       _value.dsiSerialRead(f);
     }
 
@@ -2814,6 +2814,13 @@ module ChapelArray {
     }
   }
 
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_by(a:domain, b) { ... }
+   *
+   * because the parser renames the routine since 'by' is a keyword.
+   */
   proc by(a: domain, b) {
     var r: a.rank*range(a._value.idxType,
                       BoundedRangeType.bounded,

@@ -375,7 +375,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
     // Now get the taskList field out of the end count.
 
-    taskList = newTemp(astr("_taskList", fn->name), dtTaskList->refType);
+    taskList = newTemp(astr("_taskList", fn->name), dtCVoidPtr->refType);
 
     // If the end count is a reference, dereference it.
     // EndCount is a class.
@@ -428,6 +428,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   if (fn->hasFlag(FLAG_NON_BLOCKING))           wrap_fn->addFlag(FLAG_NON_BLOCKING);
   if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))    wrap_fn->addFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK);
   if (fn->hasFlag(FLAG_BEGIN))                  wrap_fn->addFlag(FLAG_BEGIN_BLOCK);
+  if (fn->hasFlag(FLAG_LOCAL_ON))               wrap_fn->addFlag(FLAG_LOCAL_ON);
 
   if (fn->hasFlag(FLAG_ON)) {
     // The wrapper function for 'on' block has an additional argument, which
@@ -457,7 +458,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   } else {
     // create a task list argument.
     ArgSymbol *taskListArg = new ArgSymbol( INTENT_IN, "dummy_taskList", 
-                                            dtTaskList->refType );
+                                            dtCVoidPtr->refType );
     taskListArg->addFlag(FLAG_NO_CODEGEN);
     wrap_fn->insertFormalAtTail(taskListArg);
     ArgSymbol *taskListNode = new ArgSymbol( INTENT_IN, "dummy_taskListNode", 
@@ -824,7 +825,7 @@ needHeapVars() {
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ON) && needHeapVars()) {
+    if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_LOCAL_ON) && needHeapVars()) {
       for_formals(formal, fn) {
         if (formal->type->symbol->hasFlag(FLAG_REF)) {
           refSet.set_add(formal);
@@ -1031,6 +1032,11 @@ makeHeapAllocations() {
         // don't heap-allocate globals
         continue;
       }
+    }
+
+    if (isString(var) && var->isImmediate()) {
+      // String immediates are privatized; do not widen them
+      continue;
     }
 
     SET_LINENO(var);

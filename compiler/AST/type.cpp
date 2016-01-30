@@ -1553,12 +1553,6 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL (dtSingleVarAuxFields, gSingleVarAuxFields, "_nullSingleVarAuxFields");
   gSingleVarAuxFields->cname = "NULL";
 
-  dtTaskList = createPrimitiveType( "_task_list", "chpl_task_list_p");
-  dtTaskList->symbol->addFlag(FLAG_EXTERN);
-
-  CREATE_DEFAULT_SYMBOL (dtTaskList, gTaskList, "_nullTaskList");
-  gTaskList->cname = "NULL";
-
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
 
@@ -1672,8 +1666,8 @@ void initChplProgram(DefExpr* objectDef) {
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
 
-  CallExpr* base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
-  CallExpr* std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
+  UseStmt* base = new UseStmt(new UnresolvedSymExpr("ChapelBase"));
+  UseStmt* std  = new UseStmt(new UnresolvedSymExpr("ChapelStandard"));
 
   theProgram->block->insertAtTail(base);
 
@@ -2134,7 +2128,6 @@ bool needsCapture(Type* t) {
       isUnion(t) ||
       t == dtTaskID || // false?
       t == dtFile ||
-      t == dtTaskList ||
       // TODO: Move these down to the "no" section.
       t == dtNil ||
       t == dtOpaque ||

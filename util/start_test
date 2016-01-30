@@ -823,12 +823,11 @@ def set_up_performance_testing_B():
         else:
             perf_dir = os.environ["CHPL_TEST_PERF_DIR"]
 
-        perf_html_dir = os.path.join(perf_dir, "html")
+        perf_desc = args.performance_description
+        perf_html_dir = os.path.join(perf_dir, perf_desc, "html")
 
-        if (args.performance_description != "" 
-                and args.performance_description != "default"):
-            os.environ["CHPL_TEST_PERF_DESCRIPTION"] = (
-                args.performance_description)
+        if (perf_desc != "" and perf_desc != "default"):
+            os.environ["CHPL_TEST_PERF_DESCRIPTION"] = perf_desc
 
     global perf_keys
     perf_keys = "{0}keys".format(args.perflabel)

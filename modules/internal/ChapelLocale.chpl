@@ -59,6 +59,11 @@ module ChapelLocale {
              then if accessible then nPUsLogAcc else nPUsLogAll
              else if accessible then nPUsPhysAcc else nPUsPhysAll;
 
+    proc numCores: int {
+      compilerWarning("numCores is deprecated; please use numPUs() instead");
+      return this.numPUs(logical=true, accessible=true);
+    }
+
     var maxTaskPar: int; // max parallelism tasking layer expects to deliver
 
     proc id : int return chpl_id();  // just the node part
@@ -124,7 +129,7 @@ module ChapelLocale {
     }
 
     // A useful default definition is provided (not pure virtual).
-    proc readWriteThis(f) {
+    proc writeThis(f) {
       f <~> name;
     }
 

@@ -458,7 +458,7 @@ iter ReplicatedDom.these(param tag: iterKind, followThis) where tag == iterKind.
 }
 
 /* Write the domain out to the given Writer serially. */
-proc ReplicatedDom.dsiSerialWrite(f: Writer): void {
+proc ReplicatedDom.dsiSerialWrite(f): void {
   // redirect to DefaultRectangular
   redirectee()._value.dsiSerialWrite(f);
   if printReplicatedLocales {
@@ -588,7 +588,7 @@ proc ReplicatedArr.dsiAccess(indexx) ref: eltType {
 }
 
 // Write the array out to the given Writer serially.
-proc ReplicatedArr.dsiSerialWrite(f: Writer): void {
+proc ReplicatedArr.dsiSerialWrite(f): void {
   var neednl = false;
   for locArr in localArrs {
 //  on locArr {  // may cause deadlock

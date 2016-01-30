@@ -3785,9 +3785,10 @@ void CallExpr::prettyPrint(std::ostream *o) {
         *o << "*(";
         argList.last()->prettyPrint(o);
         *o << ")";
-      } else if (strcmp(expr->unresolved, "chpl_build_bounded_range") == 0 ||
-                 strcmp(expr->unresolved, "chpl_build_partially_bounded_range") == 0 ||
-                 strcmp(expr->unresolved, "chpl_build_unbounded_range") == 0) {
+      } else if (strcmp(expr->unresolved, "chpl_build_bounded_range") == 0) {
+        // Note that this code path is only used by chpldoc to create function
+        // return signatures and the only place a range will show up is in a
+        // fully specified array, in which case the range must be fully bounded
         argList.first()->prettyPrint(o);
         *o << "..";
         argList.last()->prettyPrint(o);
@@ -4006,6 +4007,9 @@ GenRet CallExpr::codegen() {
     }
     case PRIM_ARRAY_ALLOC:
     {
+      // get(1): return symbol
+      // get(2): element type
+      // get(3): number of elements
       GenRet dst = get(1);
       GenRet alloced;
       INT_ASSERT(dst.isLVPtr);
@@ -5058,21 +5062,6 @@ GenRet CallExpr::codegen() {
       ret = codegenCallExpr("chpl_single_isFull",
                             val_ptr, aux);
       break; 
-    }
-    case PRIM_PROCESS_TASK_LIST: {
-      GenRet taskListPtr = codegenFieldPtr(get(1), "taskList");
-      codegenCall("chpl_taskListProcess", codegenValue(taskListPtr), get(2), get(3));
-      break;
-    }
-    case PRIM_EXECUTE_TASKS_IN_LIST:
-      codegenCall("chpl_taskListExecute", get(1), get(2), get(3));
-      break;
-    case PRIM_FREE_TASK_LIST:
-    {
-      if (fNoMemoryFrees)
-        break;
-      codegenCall("chpl_taskListFree", get(1), get(2), get(3));
-      break;
     }
     case PRIM_GET_SERIAL:
       ret = codegenCallExpr("chpl_task_getSerial");

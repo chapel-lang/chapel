@@ -1,0 +1,2 @@
+hidesCorrectFunction.chpl:15: In function 'main':
+hidesCorrectFunction.chpl:16: error: unresolved call 'foo()'

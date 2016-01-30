@@ -498,7 +498,7 @@ proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
 proc hdfsChapelFileSystem_local.hdfs_chapel_open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
   var err:syserr = ENOERR;
   var ret = open(err, path, mode, hints, style, this._internal_);
-  if err then ioerror(err, "in foreign open", path);
+  if err then ioerror(err, "in foreign open", path.localize().c_str());
   return ret;
 }
 
@@ -516,7 +516,7 @@ proc hdfs_chapel_connect(path:string, port: int): hdfsChapelFileSystem_local{
 
   var err: syserr;
   var ret = hdfs_chapel_connect(err, path, port);
-  if err then ioerror(err, "Unable to connect to HDFS", path);
+  if err then ioerror(err, "Unable to connect to HDFS", path.localize().c_str());
   return ret;
 }
 

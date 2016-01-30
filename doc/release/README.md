@@ -36,7 +36,6 @@ This directory contains the following documentation:
     atomics.rst          :  information about using 'atomic' variables
     auxIO.rst            :  information about Auxiliary I/O with Chapel
     chpl-ipe.rst         :  information about Interactive Chapel
-    chpldoc.rst          :  notes on using the 'chpldoc' capability
     reduceIntents.rst    :  'reduce' forall intents
     dsi.rst              :  requirements/guidelines on writing a domain map
     extern.rst           :  calling external C routines

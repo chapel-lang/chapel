@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+rm -f *.good
+if [ "gasnet" = `$CHPL_HOME/util/chplenv/chpl_comm.py` ]; then ln -s goods-4/*.good .; else ln -s goods-1/*.good .; fi

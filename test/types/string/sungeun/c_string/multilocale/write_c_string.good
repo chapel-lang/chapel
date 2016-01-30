@@ -1,1 +1,1 @@
-write_c_string.chpl:4: error: Cannot write out a c_string, cast to string for multi-locale IO.
+$CHPL_HOME/modules/standard/IO.chpl:3685: error: Cannot write a c_string, cast to a string first.

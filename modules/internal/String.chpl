@@ -33,6 +33,9 @@ module BaseStringType {
   type bufferType = c_ptr(uint(8));
 }
 
+// Note - the I/O module has
+// :proc:`string.format` and :proc:`stringify`.
+
 // Chapel Strings
 module String {
   use BaseStringType;
@@ -137,6 +140,12 @@ module String {
           }
         }
       }
+    }
+
+    proc string(cs: c_string, owned: bool = true, needToCopy:  bool = true) {
+      this.owned = owned;
+      const cs_len = cs.length;
+      this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
     }
 
     // This constructor can cause a leak if owned = false and needToCopy = true
@@ -337,11 +346,11 @@ module String {
 
     // These should never be called (but are default functions for records)
     pragma "no doc"
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       compilerError("not implemented: writeThis");
     }
     pragma "no doc"
-    proc readThis(f: Reader) {
+    proc readThis(f) {
       compilerError("not implemented: readThis");
     }
 
@@ -1131,7 +1140,7 @@ module String {
   //
   // Append
   //
-  proc +=(ref lhs: string, rhs: string) : void {
+  proc +=(ref lhs: string, const ref rhs: string) : void {
     // if rhs is empty, nothing to do
     if rhs.len == 0 then return;
 
@@ -1331,9 +1340,9 @@ module String {
   proc chpldev_refToString(ref arg) : string {
     // print out the address of class references as well
     proc chpldev_classToString(x: object) : string
-      return " (class = " + __primitive("ref to string", x) + ")";
+      return " (class = " + __primitive("ref to string", x):string + ")";
     proc chpldev_classToString(x) : string return "";
 
-    return __primitive("ref to string", arg) + chpldev_classToString(arg);
+    return __primitive("ref to string", arg):string + chpldev_classToString(arg);
   }
 }

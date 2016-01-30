@@ -1,0 +1,2 @@
+functionMultDef.chpl:18: In function 'main':
+functionMultDef.chpl:19: error: unresolved call 'foo(4)'

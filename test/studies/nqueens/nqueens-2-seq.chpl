@@ -136,7 +136,7 @@ proc Board.nextPlacementIsLegal(col: int): bool {
 //
 config var show1line: bool = true;
 
-proc Board.writeThis(f:Writer) {
+proc Board.writeThis(f) {
   if boardSize <= 0 {
     f.write("the board is empty");
     return;

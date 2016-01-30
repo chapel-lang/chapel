@@ -128,10 +128,6 @@ enum PrimitiveTag {
   PRIM_GET_END_COUNT,
   PRIM_SET_END_COUNT,
 
-  PRIM_PROCESS_TASK_LIST,
-  PRIM_EXECUTE_TASKS_IN_LIST,
-  PRIM_FREE_TASK_LIST,
-
   PRIM_GET_SERIAL,              // get serial state
   PRIM_SET_SERIAL,              // set serial state to true or false
 
@@ -144,7 +140,6 @@ enum PrimitiveTag {
   PRIM_CAST,
   PRIM_DYNAMIC_CAST,
   PRIM_TYPEOF,
-  PRIM_USE,
   PRIM_USED_MODULES_LIST,       // used modules in BlockStmt::modUses
   PRIM_TUPLE_EXPAND,
   PRIM_TUPLE_AND_EXPAND,
@@ -205,6 +200,7 @@ enum PrimitiveTag {
 
   PRIM_WIDE_GET_NODE,           // Get just the node portion of a wide pointer.
   PRIM_WIDE_GET_ADDR,           // Get just the address portion of a wide pointer.
+  PRIM_IS_WIDE_PTR,             // Returns true if the symbol is represented by a wide poitner.
 
   PRIM_ON_LOCALE_NUM,           // specify a particular localeID for an on clause.
 

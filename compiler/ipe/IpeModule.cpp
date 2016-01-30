@@ -29,7 +29,6 @@
 #include "ipeDriver.h"
 #include "ipeResolve.h"
 #include "ipeEvaluate.h"
-#include "ipeUtils.h"
 
 #include "AstDumpToNode.h"
 #include "expr.h"

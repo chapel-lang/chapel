@@ -361,7 +361,7 @@ BlockStmt* buildChapelStmt(Expr* expr) {
 }
 
 
-static void addModuleToSearchList(CallExpr* newUse, BaseAST* module) {
+static void addModuleToSearchList(UseStmt* newUse, BaseAST* module) {
   UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
   if (modNameExpr) {
     addModuleToParseList(modNameExpr->unresolved, newUse);
@@ -372,7 +372,7 @@ static void addModuleToSearchList(CallExpr* newUse, BaseAST* module) {
 
 
 static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
-  CallExpr* newUse = new CallExpr(PRIM_USE, module);
+  UseStmt* newUse = new UseStmt(module);
   addModuleToSearchList(newUse, module);
   if (list == NULL) {
     return buildChapelStmt(newUse);
@@ -401,6 +401,32 @@ static void processStringInRequireStmt(const char* str) {
   }
 }
 
+
+//
+// Build a 'use' statement with an 'except' list
+//
+BlockStmt* buildUseStmt(Expr* mod, CallExpr* names, bool except) {
+  std::vector<const char*> namesList;
+
+  // Iterate through the list of names to exclude when using mod
+  for_actuals(expr, names) {
+    if (UnresolvedSymExpr* name = toUnresolvedSymExpr(expr)) {
+      namesList.push_back(name->unresolved);
+      name->remove();
+    } else {
+      // Currently we expect only unresolved sym exprs
+      if (except) {
+        USR_FATAL(expr, "incorrect expression in 'except' list, identifier expected");
+      } else {
+        USR_FATAL(expr, "incorrect expression in 'only' list, identifier expected");
+      }
+    }
+  }
+
+  UseStmt* newUse = new UseStmt(mod, &namesList, except);
+
+  return buildChapelStmt(newUse);
+}
 
 //
 // Build a 'use' statement
@@ -1387,7 +1413,6 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
     BlockStmt* block = ForLoop::buildForLoop(indices, iterator, beginBlk, true, zippered);
     block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gTrue)));
     block->insertAtHead(new DefExpr(coforallCount));
-    block->insertAtTail(new CallExpr(PRIM_PROCESS_TASK_LIST, coforallCount));
     beginBlk->insertBefore(new CallExpr("_upEndCount", coforallCount));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount));
     block->insertAtTail(new CallExpr("_endCountFree", coforallCount));
@@ -1593,7 +1618,6 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   leadBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S))}", leadIdx, leadIter);
   leadBlock->insertAtTail(leadBody);
   leadBlock->insertAtTail("_freeIterator(%S)", leadIter);
-  serialBlock->insertAtHead("compilerWarning('reduce has been serialized (see note in $CHPL_HOME/STATUS)')");
 
   fn->insertAtTail(new CondStmt(new SymExpr(gTryToken), leadBlock, serialBlock));
 
@@ -2006,15 +2030,31 @@ buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
 BlockStmt* buildLocalStmt(Expr* stmt) {
   BlockStmt* block = buildChapelStmt();
 
-  if (fLocal) {
+  if (!requireWideReferences()) {
     block->insertAtTail(stmt);
     return block;
   }
 
-  BlockStmt* localBlock = new BlockStmt(stmt);
-  localBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
-  block->insertAtTail(localBlock);
-  return block;
+  BlockStmt* body = toBlockStmt(stmt);
+
+  //
+  // detect on-statement directly inside local statement
+  //
+  BlockStmt* onBlock = findStmtWithTag(PRIM_BLOCK_ON, body);
+
+  if (onBlock) {
+    CallExpr* call = toCallExpr(onBlock->blockInfoGet());
+
+    // first argument of a primitive on is a param bool that distinguishes
+    // between a local-on and a regular on-statement.
+    call->argList.head->replace(new SymExpr(gTrue));
+    return body;
+  } else {
+    BlockStmt* localBlock = new BlockStmt(stmt);
+    localBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
+    block->insertAtTail(localBlock);
+    return block;
+  }
 }
 
 
@@ -2075,7 +2115,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     Symbol* tmp = newTemp();
     body->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr));
     body->insertAtHead(new DefExpr(tmp));
-    beginBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_BEGIN_ON, tmp));
+    beginBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_BEGIN_ON, gFalse, tmp));
     // If there are beginBlock->byrefVars, they will be preserved.
     return body;
   } else {
@@ -2085,7 +2125,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     block->insertAtTail(new DefExpr(tmp));
     block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, onExpr));
     BlockStmt* onBlock = new BlockStmt(stmt);
-    onBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_ON, tmp));
+    onBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_ON, gFalse, tmp));
     block->insertAtTail(onBlock);
     return block;
   }
@@ -2174,7 +2214,6 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
 
   block->insertAtHead(new CallExpr(PRIM_MOVE, cobeginCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gTrue)));
   block->insertAtHead(new DefExpr(cobeginCount));
-  block->insertAtTail(new CallExpr(PRIM_PROCESS_TASK_LIST, cobeginCount));
   block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount));
   block->insertAtTail(new CallExpr("_endCountFree", cobeginCount));
 
