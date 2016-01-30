@@ -1,6 +1,6 @@
 /*
- * Copyright 2004-2016 Cray Inc.
- * Other additional copyright holders may be indicated within.
+ * Copyright 2004-2016 Cray Inc.  Other additional copyright holders
+ * may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -241,11 +241,11 @@ bool UseStmt::skipSymbolSearch(const char* name) {
 
 bool UseStmt::matchedNameOrConstructor(const char* name) {
   for_vector(const char, toCheck, named) {
-    uint constructorLen = strlen(toCheck) + strlen("_construct_");
+    unsigned int constructorLen = strlen(toCheck) + strlen("_construct_");
     char constructorName[constructorLen];
     strcpy(constructorName, "_construct_");
     strcat(constructorName, toCheck);
-    uint typeConstLen = constructorLen + strlen("_type");
+    unsigned int typeConstLen = constructorLen + strlen("_type");
     char typeConstructorName[typeConstLen];
     strcpy(typeConstructorName, "_type_construct_");
     strcat(typeConstructorName, toCheck);

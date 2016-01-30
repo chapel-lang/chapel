@@ -2380,7 +2380,7 @@ bool UseStmt::providesNewSymbols(UseStmt* other) {
       // Other also has an 'except' list.
       if (other->named.size() <= named.size()) {
         // We are excluding more symbols than other, or the same number
-        uint numSame = 0;
+        unsigned int numSame = 0;
         for_vector(const char, exclude, other->named) {
           if (std::find(named.begin(), named.end(), exclude) != named.end())
             numSame++;
@@ -2422,7 +2422,7 @@ bool UseStmt::providesNewSymbols(UseStmt* other) {
       // providing symbols not available in other.
       return true;
     } else {
-      uint numSame = 0;
+      unsigned int numSame = 0;
       for_vector(const char, include, named) {
         if (std::find(other->named.begin(), other->named.end(), include) != other->named.end()) {
           numSame++;
