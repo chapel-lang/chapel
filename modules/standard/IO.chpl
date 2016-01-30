@@ -3800,13 +3800,17 @@ inline proc channel.readwrite(ref x) where !this.writing {
    */
   inline proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
   {
-    this.readWriteLiteral(lit.c_str(), ignoreWhiteSpace);
+    var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
+    this.readwrite(iolit);
   }
+
+  //
+  // TODO: Do we still want this?
+  //
   pragma "no doc"
   inline proc channel.readWriteLiteral(lit:c_string, ignoreWhiteSpace=true)
   {
-    var iolit = new ioLiteral(lit, ignoreWhiteSpace);
-    this.readwrite(iolit);
+    this.readWriteLiteral(lit, ignoreWhiteSpace);
   }
 
   /* Explicit call for reading or writing a newline as an
