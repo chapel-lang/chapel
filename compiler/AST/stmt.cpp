@@ -81,15 +81,16 @@ bool Stmt::isStmt() const {
 }
 
 
-
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
 ********************************* | ********************************/
+
 UseStmt::UseStmt(BaseAST* module):
   Stmt(E_UseStmt),
   mod(NULL),
   named(),
+  except(false),
   relatedNames()
 {
   if (Symbol* b = toSymbol(module)) {
@@ -99,14 +100,18 @@ UseStmt::UseStmt(BaseAST* module):
   } else {
     INT_FATAL(this, "Bad mod in UseStmt constructor");
   }
+
   gUseStmts.add(this);
 }
 
 //
-UseStmt::UseStmt(BaseAST* module, std::vector<const char*>* args, bool exclude) :
+UseStmt::UseStmt(BaseAST*                  module,
+                 std::vector<const char*>* args,
+                 bool                      exclude) :
   Stmt(E_UseStmt),
   mod(NULL),
   named(),
+  except(exclude),
   relatedNames()
 {
   if (Symbol* b = toSymbol(module)) {
@@ -116,7 +121,7 @@ UseStmt::UseStmt(BaseAST* module, std::vector<const char*>* args, bool exclude) 
   } else {
     INT_FATAL(this, "Bad mod in UseStmt constructor");
   }
-  except = exclude;
+
   if (args->size() > 0) {
     // Symbols to search when going through this module's scope from an outside
     // scope
@@ -124,6 +129,7 @@ UseStmt::UseStmt(BaseAST* module, std::vector<const char*>* args, bool exclude) 
       named.push_back(str);
     }
   }
+
   gUseStmts.add(this);
 }
 
