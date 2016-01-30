@@ -184,9 +184,9 @@ module unitTest {
       const s: t = "s";
       const cs: c_string = "0";
       if useExpr {
-        writeMe(s+cs);
+        writeMe(s+cs:string);
       } else {
-        const scs = s+cs;
+        const scs = s+cs:string;
         writeMe(scs);
       }
     }
@@ -200,9 +200,9 @@ module unitTest {
       const cs: c_string = "s";
       const s: t = "0";
       if useExpr {
-        writeMe(cs+s);
+        writeMe(cs:string+s);
       } else {
-        const css = cs+s;
+        const css = cs:string+s;
         writeMe(css);
       }
     }
@@ -217,9 +217,9 @@ module unitTest {
       on Locales[numLocales-1] {
         const cs: c_string = "r";
         if useExpr {
-          writeMe(s+cs);
+          writeMe(s+cs:string);
         } else {
-          const scs = s+cs;
+          const scs = s+cs:string;
           writeMe(scs);
         }
       }
@@ -235,9 +235,9 @@ module unitTest {
       on Locales[numLocales-1] {
         const cs: c_string = "s";
         if useExpr {
-          writeMe(cs+s);
+          writeMe(cs:string+s);
         } else {
-          const css = cs+s;
+          const css = cs:string+s;
           writeMe(css);
         }
       }
