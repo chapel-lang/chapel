@@ -3788,14 +3788,16 @@ Type* CallExpr::typeInfo(void) {
 }
 
 void CallExpr::prettyPrint(std::ostream *o) {
-  if (isResolved()) {
-    if (isResolved()->hasFlag(FLAG_BEGIN_BLOCK))
+  if (FnSymbol* fn = theFnSymbol()) {
+    if      (fn->hasFlag(FLAG_BEGIN_BLOCK))
       *o << "begin";
-    else if (isResolved()->hasFlag(FLAG_ON_BLOCK))
+    else if (fn->hasFlag(FLAG_ON_BLOCK))
       *o << "on";
   }
-  bool array = false;
+
+  bool array   = false;
   bool unusual = false;
+
   if (baseExpr != NULL) {
     if (UnresolvedSymExpr *expr = toUnresolvedSymExpr(baseExpr)) {
       if (strcmp(expr->unresolved, "*") == 0){

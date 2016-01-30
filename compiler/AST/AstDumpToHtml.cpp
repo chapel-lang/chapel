@@ -166,7 +166,7 @@ bool AstDumpToHtml::enterCallExpr(CallExpr* node) {
 
   fprintf(mFP, " ");
 
-  if (FnSymbol* fn = node->isResolved()) {
+  if (FnSymbol* fn = node->theFnSymbol()) {
     if (fn->hasFlag(FLAG_BEGIN_BLOCK))
       fprintf(mFP, "begin ");
     else if (fn->hasFlag(FLAG_ON_BLOCK))

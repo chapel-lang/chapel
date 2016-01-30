@@ -861,7 +861,7 @@ bool AstDumpToNode::enterCallExpr(CallExpr* node)
   else
     newline();
 
-  if (FnSymbol* fn = node->isResolved())
+  if (FnSymbol* fn = node->theFnSymbol())
   {
     if (fn->hasFlag(FLAG_BEGIN_BLOCK))
       write("begin");
