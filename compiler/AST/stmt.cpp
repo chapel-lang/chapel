@@ -99,6 +99,7 @@ UseStmt::UseStmt(BaseAST* module):
   } else {
     INT_FATAL(this, "Bad mod in UseStmt constructor");
   }
+  except = false;
   gUseStmts.add(this);
 }
 
