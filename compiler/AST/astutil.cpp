@@ -244,7 +244,6 @@ void reset_ast_loc(BaseAST* destNode, astlocT astlocArg) {
   AST_CHILDREN_CALL(destNode, reset_ast_loc, astlocArg);
 }
 
-
 void compute_call_sites() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->calledBy)
@@ -252,16 +251,23 @@ void compute_call_sites() {
     else
       fn->calledBy = new Vec<CallExpr*>();
   }
+
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (FnSymbol* fn = call->isResolved()) {
+    if (call->isEmpty() == true) {
+
+    } else if (FnSymbol* fn = call->isResolved()) {
       fn->calledBy->add(call);
+
     } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
       // sjd: do we have to do anything special here?
       //      should this call be added to some function's calledBy list?
+
     } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      FnSymbol* fn = toFnSymbol(toSymExpr(call->get(1))->var);
+      FnSymbol*       fn       = toFnSymbol(toSymExpr(call->get(1))->var);
       Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
+
       fn->calledBy->add(call);
+
       forv_Vec(FnSymbol, child, *children)
         child->calledBy->add(call);
     }

@@ -3722,6 +3722,10 @@ CallExpr::insertAtTail(BaseAST* ast) {
 }
 
 
+bool CallExpr::isEmpty() const {
+  return primitive == NULL && baseExpr == NULL;
+}
+
 FnSymbol* CallExpr::isResolved() const {
   return resolvedFunction();
 }
