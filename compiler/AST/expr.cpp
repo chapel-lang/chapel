@@ -3726,6 +3726,7 @@ bool CallExpr::isEmpty() const {
   return primitive == NULL && baseExpr == NULL;
 }
 
+// MDN 2016/01/29: This will become a predicate
 FnSymbol* CallExpr::isResolved() const {
   return resolvedFunction();
 }
@@ -3734,8 +3735,43 @@ FnSymbol* CallExpr::isResolved() const {
 FnSymbol* CallExpr::resolvedFunction() const {
   FnSymbol* retval = NULL;
 
-  if (SymExpr* base = toSymExpr(baseExpr))
-    retval = toFnSymbol(base->var);
+  // A PRIM-OP
+  if (primitive != NULL) {
+    INT_ASSERT(baseExpr  == NULL);
+
+  // A Chapel call
+  } else if (baseExpr != NULL) {
+    INT_ASSERT(primitive == NULL);
+
+    if (isUnresolvedSymExpr(baseExpr) == true) {
+
+    } else if (SymExpr* base = toSymExpr(baseExpr)) {
+      if (FnSymbol* fn = toFnSymbol(base->var)) {
+        retval = toFnSymbol(base->var);
+
+      // Probably an array index
+      } else if (isArgSymbol(base->var)  == true ||
+                 isVarSymbol(base->var)  == true) {
+
+      // A type specifier
+      } else if (isTypeSymbol(base->var) == true) {
+
+      } else {
+        INT_ASSERT(false);
+      }
+
+    } else if (CallExpr* subCall = toCallExpr(baseExpr)) {
+      // Confirm that this is a partial call
+      INT_ASSERT(subCall->partialTag == true);
+
+    } else {
+      INT_ASSERT(false);
+    }
+
+  // The CallExpr has been purged during resolve
+  } else {
+    INT_ASSERT(false);
+  }
 
   return retval;
 }
