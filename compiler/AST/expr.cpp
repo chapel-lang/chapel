@@ -3722,9 +3722,28 @@ CallExpr::insertAtTail(BaseAST* ast) {
 }
 
 
-FnSymbol* CallExpr::isResolved(void) {
-  SymExpr* base = toSymExpr(baseExpr);
-  return base ? toFnSymbol(base->var) : NULL;
+FnSymbol* CallExpr::isResolved() const {
+  return resolvedFunction();
+}
+
+
+FnSymbol* CallExpr::resolvedFunction() const {
+  FnSymbol* retval = NULL;
+
+  if (SymExpr* base = toSymExpr(baseExpr))
+    retval = toFnSymbol(base->var);
+
+  return retval;
+}
+
+
+FnSymbol* CallExpr::theFnSymbol() const {
+  FnSymbol* retval = NULL;
+
+  if (SymExpr* base = toSymExpr(baseExpr))
+    retval = toFnSymbol(base->var);
+
+  return retval;
 }
 
 
