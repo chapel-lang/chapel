@@ -3804,15 +3804,6 @@ inline proc channel.readwrite(ref x) where !this.writing {
     this.readwrite(iolit);
   }
 
-  //
-  // TODO: Do we still want this?
-  //
-  pragma "no doc"
-  inline proc channel.readWriteLiteral(lit:c_string, ignoreWhiteSpace=true)
-  {
-    this.readWriteLiteral(lit, ignoreWhiteSpace);
-  }
-
   /* Explicit call for reading or writing a newline as an
      alternative to using :type:`IO.ioNewline`.
    */
