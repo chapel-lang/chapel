@@ -879,7 +879,7 @@ def set_up_performance_testing_B():
     if args.performance or args.comp_performance:
         # SHA for current run, in order to track dates to commits
         if args.performance:
-            dat_dir = perf_dir
+            dat_dir = os.path.join(perf_dir, perf_desc)
         else:
             dat_dir = comp_perf_dir
 
@@ -901,7 +901,6 @@ def set_up_performance_testing_B():
         sha_dat_file_name = "perfSha"
         sha_dat_file_path = os.path.join(dat_dir, "{0}.dat"
                 .format(sha_dat_file_name))
-        os.environ["CHPL_TEST_SHA_DAT_FILE"] = sha_dat_file_path
 
         logger.write("[Saving current git sha to {0}]"
                 .format(sha_dat_file_path))
@@ -1086,7 +1085,7 @@ def check_for_duplicates():
     # check for .graph files, and GRAPHFILES
     if args.gen_graphs or args.comp_performance:
         logger.write("[Checking for duplicate .graph files and that all .graph"
-                " files appear in {0}/test/.*GRAPHFILES]".format(home))
+                " files appear in {0}/.*GRAPHFILES]".format(test_dir))
 
         # find GRAPHFILES
         graph_files = [f for f in os.listdir(test_dir) if
