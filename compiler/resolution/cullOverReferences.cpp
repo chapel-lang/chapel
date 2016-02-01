@@ -196,7 +196,7 @@ void cullOverReferences() {
     FnSymbol* valueFn = valueCall->isResolved();
     INT_ASSERT(valueFn);
 
-    bool useValueCall = false;
+    bool useValueCall;
 
     CallExpr* move = NULL; // set if the call is in a PRIM_MOVE
     SymExpr* lhs = NULL; // lhs if call is in a PRIM_MOVE
@@ -206,9 +206,11 @@ void cullOverReferences() {
     // (It would be an improvement to choose the appropriate one
     //  based upon how the iterator is used, but such a feature
     //  would require specific support for iterators since yielding
-    //  is not the same as returning.
+    //  is not the same as returning.)
     move = toCallExpr(cc->parentExpr);
-    if (move && !fn->isIterator()) {
+    if (fn->isIterator())
+      useValueCall = false;
+    else if (move) {
       INT_ASSERT(move->isPrimitive(PRIM_MOVE));
 
       lhs = toSymExpr(move->get(1));
@@ -217,7 +219,13 @@ void cullOverReferences() {
 
       // Should we switch to the by-value form?
       useValueCall = shouldUseByValueFunction(fn, lhs, defMap, useMap);
-
+    } else {
+      // e.g. array access in own statement like this:
+      //   A(i)
+      // should use 'getter'
+      // MPF - note 2016-01: this code does not seem to be triggered
+      // in the present compiler.
+      useValueCall = true;
     }
 
     valueCall->remove();
