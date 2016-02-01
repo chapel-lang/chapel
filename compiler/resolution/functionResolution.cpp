@@ -8184,25 +8184,35 @@ static void insertReturnTemps() {
     if (call->parentSymbol) {
       if (FnSymbol* fn = call->isResolved()) {
         if (fn->retType != dtVoid) {
-          CallExpr* parent = toCallExpr(call->parentExpr);
-          if (!parent && !isDefExpr(call->parentExpr)) { // no use
+          ContextCallExpr* contextCall = toContextCallExpr(call->parentExpr);
+          Expr* contextCallOrCall; // insert before, remove it
+          if (contextCall) {
+            contextCallOrCall = contextCall;
+            // Only consider the designated call; the other
+            // call need not be considered by this transformation.
+            if (call != getDesignatedCall(contextCall))
+              continue;
+          } else contextCallOrCall = call;
+          Expr* parent = contextCallOrCall->parentExpr;
+
+          if (!isCallExpr(parent) && !isDefExpr(parent)) { // no use
             SET_LINENO(call); // TODO: reset_ast_loc() below?
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);
             DefExpr* def = new DefExpr(tmp);
-            call->insertBefore(def);
+            contextCallOrCall->insertBefore(def);
             if (!fMinimalModules &&
                 ((fn->retType->getValType() &&
                   isSyncType(fn->retType->getValType())) ||
                  isSyncType(fn->retType) ||
                  fn->isIterator())) {
               CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
-              call->insertBefore(sls);
+              contextCallOrCall->insertBefore(sls);
               reset_ast_loc(sls, call);
               resolveCall(sls);
               INT_ASSERT(sls->isResolved());
               resolveFns(sls->isResolved());
             }
-            def->insertAfter(new CallExpr(PRIM_MOVE, tmp, call->remove()));
+            def->insertAfter(new CallExpr(PRIM_MOVE, tmp, contextCallOrCall->remove()));
           }
         }
       }
