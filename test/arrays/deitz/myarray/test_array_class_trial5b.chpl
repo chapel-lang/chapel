@@ -4,10 +4,7 @@ record array1d {
   var x2 : t;
   var x3 : t;
   proc this(i : int) ref : t {
-    if setter then
-      write("[Write on ", i, "]");
-    else
-      write("[Read on ", i, "]");
+    write("[Write on ", i, "]");
     select i {
       when 1 do return x1;
       when 2 do return x2;
@@ -16,6 +13,17 @@ record array1d {
     }
     return x1;
   }
+  proc this(i : int) : t {
+    write("[Read on ", i, "]");
+    select i {
+      when 1 do return x1;
+      when 2 do return x2;
+      when 3 do return x3;
+      otherwise writeln("[Out of bounds read]");
+    }
+    return x1;
+  }
+
 }
 
 var a : array1d(int);
@@ -31,6 +39,10 @@ record array2d {
   proc this(i : int, j : int) ref : t {
     return data((i - 1) * 2 + j);
   }
+  proc this(i : int, j : int) : t {
+    return data((i - 1) * 2 + j);
+  }
+
 }
 
 var a2 : array2d(int);
