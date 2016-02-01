@@ -491,10 +491,6 @@ initPrimitive() {
   prim_def(PRIM_GET_END_COUNT, "get end count", returnInfoEndCount);
   prim_def(PRIM_SET_END_COUNT, "set end count", returnInfoVoid, true);
 
-  prim_def(PRIM_PROCESS_TASK_LIST, "process task list", returnInfoVoid, true, true);
-  prim_def(PRIM_EXECUTE_TASKS_IN_LIST, "execute tasks in list", returnInfoVoid, true, true);
-  prim_def(PRIM_FREE_TASK_LIST, "free task list", returnInfoVoid, true, true);
-
   // task primitives
   prim_def(PRIM_GET_SERIAL, "task_get_serial", returnInfoBool);
   prim_def(PRIM_SET_SERIAL, "task_set_serial", returnInfoVoid, true);
@@ -512,7 +508,6 @@ initPrimitive() {
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false, true);
   prim_def(PRIM_TYPEOF, "typeof", returnInfoFirstDeref);
-  prim_def(PRIM_USE, "use", returnInfoVoid, true);
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);
   prim_def(PRIM_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
   prim_def(PRIM_TUPLE_AND_EXPAND, "and_expand_tuple", returnInfoVoid);

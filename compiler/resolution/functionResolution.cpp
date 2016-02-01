@@ -1302,8 +1302,6 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   }
   if (actualType->symbol->hasFlag(FLAG_REF))
     return canDispatch(actualType->getValType(), NULL, formalType, fn, promotes);
-  if (formalType == dtString && actualType == dtStringC)
-    return true;
   if (formalType == dtString && actualType == dtStringCopy)
     return true;
   if (formalType == dtStringC && actualType == dtStringCopy)
@@ -1977,7 +1975,9 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
   //
   if (block && block->modUses) {
     for_actuals(expr, block->modUses) {
-      SymExpr* se = toSymExpr(expr);
+      UseStmt* use = toUseStmt(expr);
+      INT_ASSERT(use);
+      SymExpr* se = toSymExpr(use->mod);
       INT_ASSERT(se);
       ModuleSymbol* mod = toModuleSymbol(se->var);
       INT_ASSERT(mod);
@@ -2808,7 +2808,12 @@ getVisibleFunctions(BlockStmt* block,
 
   if (block->modUses) {
     for_actuals(expr, block->modUses) {
-      SymExpr* se = toSymExpr(expr);
+      UseStmt* use = toUseStmt(expr);
+      INT_ASSERT(use);
+      if (use->skipSymbolSearch(name)) {
+        continue;
+      }
+      SymExpr* se = toSymExpr(use->mod);
       INT_ASSERT(se);
       ModuleSymbol* mod = toModuleSymbol(se->var);
       INT_ASSERT(mod);
@@ -6287,8 +6292,6 @@ postFold(Expr* expr) {
                call->isPrimitive(PRIM_SINGLE_READFF) ||
                call->isPrimitive(PRIM_SINGLE_READXX) ||
                call->isPrimitive(PRIM_SINGLE_IS_FULL) ||
-               call->isPrimitive(PRIM_EXECUTE_TASKS_IN_LIST) ||
-               call->isPrimitive(PRIM_FREE_TASK_LIST) ||
                (call->primitive &&
                 (!strncmp("_fscan", call->primitive->name, 6) ||
                  !strcmp("_readToEndOfLine", call->primitive->name) ||
@@ -7383,13 +7386,15 @@ computeStandardModuleSet() {
   while (ModuleSymbol* mod = stack.pop()) {
     if (mod->block->modUses) {
       for_actuals(expr, mod->block->modUses) {
-        SymExpr* se = toSymExpr(expr);
-        INT_ASSERT(se);
-        ModuleSymbol* use = toModuleSymbol(se->var);
+        UseStmt* use = toUseStmt(expr);
         INT_ASSERT(use);
-        if (!standardModuleSet.set_in(use->block)) {
-          stack.add(use);
-          standardModuleSet.set_add(use->block);
+        SymExpr* se = toSymExpr(use->mod);
+        INT_ASSERT(se);
+        ModuleSymbol* mod = toModuleSymbol(se->var);
+        INT_ASSERT(mod);
+        if (!standardModuleSet.set_in(mod->block)) {
+          stack.add(mod);
+          standardModuleSet.set_add(mod->block);
         }
       }
     }

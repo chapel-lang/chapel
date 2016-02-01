@@ -383,6 +383,31 @@ void AstDumpToHtml::visitUsymExpr(UnresolvedSymExpr* node) {
 
 
 //
+// UseStmt
+//
+void AstDumpToHtml::visitUseStmt(UseStmt* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "<DL>\n");
+  }
+
+  fprintf(mFP, " (%d 'use' ", node->id);
+
+  node->mod->accept(this);
+
+  if (!node->isPlainUse()) {
+    node->writeListPredicate(mFP);
+    outputVector(mFP, node->named);
+  }
+
+  fprintf(mFP, ")");
+
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "</DL>\n");
+  }
+}
+
+
+//
 // BlockStmt
 //
 bool AstDumpToHtml::enterBlockStmt(BlockStmt* node) {

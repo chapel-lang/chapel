@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:76: error: sync/single types cannot be of type 'R'

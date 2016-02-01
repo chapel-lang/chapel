@@ -3800,12 +3800,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
    */
   inline proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
   {
-    this.readWriteLiteral(lit.c_str(), ignoreWhiteSpace);
-  }
-  pragma "no doc"
-  inline proc channel.readWriteLiteral(lit:c_string, ignoreWhiteSpace=true)
-  {
-    var iolit = new ioLiteral(lit, ignoreWhiteSpace);
+    var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
     this.readwrite(iolit);
   }
 
@@ -6321,7 +6316,7 @@ proc channel.skipField() {
 }
 
 
-private inline proc _do_format(fmt:c_string, args ...?k, out error:syserr):string {
+private inline proc chpl_do_format(fmt:string, args ...?k, out error:syserr):string {
   // Open a memory buffer to store the result
   var f = openmem();
 
@@ -6370,14 +6365,14 @@ proc format(fmt:string, args ...?k):string {
 
  */
 proc string.format(args ...?k, out error:syserr):string {
-  return _do_format(this.localize().c_str(), (...args), error);
+  return chpl_do_format(this, (...args), error);
 }
 
 // documented in the error= version
 pragma "no doc"
 proc string.format(args ...?k):string {
   var err:syserr = ENOERR;
-  var ret = _do_format(this.localize().c_str(), (...args), error=err);
+  var ret = chpl_do_format(this, (...args), error=err);
   if err then ioerror(err, "in string.format");
   return ret;
 }

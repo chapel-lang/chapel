@@ -740,7 +740,7 @@ module ChapelBase {
     type taskType;
     var i: iType,
         taskCnt: taskType,
-        taskList: _task_list = _defaultOf(_task_list);
+        taskList: c_void_ptr = _defaultOf(c_void_ptr);
   }
 
   // This function is called once by the initiating task.  No on
@@ -811,7 +811,7 @@ module ChapelBase {
   pragma "dont disable remote value forwarding"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true) {
     // See if we can help with any of the started tasks
-    __primitive("execute tasks in list", e.taskList);
+    chpl_taskListExecute(e.taskList);
 
     // Remove the task that will just be waiting/yielding in the following
     // waitFor() from the running task count to let others do real work. It is
@@ -829,16 +829,6 @@ module ChapelBase {
       // re-add the task that was waiting for others to finish
       here.runningTaskCntAdd(1);
     }
-
-    // It is now safe to free the task list, because we know that all the
-    // tasks have been completed.  We could free this list when all the
-    // tasks have been started, but this seems cleaner.  The alternative
-    // would be for the tasking layer to free the elements of the list
-    // when when they are no longer needed, but then every tasking layer
-    // would have to implement the free, and it's not clear that it
-    // would be of any benefit.  Another option would be for the
-    // starting task to free its own list element.
-    __primitive("free task list", e.taskList);
   }
 
   proc _upEndCount(param countRunningTasks=true) {
@@ -857,7 +847,7 @@ module ChapelBase {
   }
 
   pragma "command line setting"
-  proc _command_line_cast(param s: c_string, type t, x) return _cast(t, x);
+  proc _command_line_cast(param s: c_string, type t, x) return _cast(t, x:string);
 
 
   //
@@ -1539,8 +1529,6 @@ module ChapelBase {
   inline proc _defaultOf(type t) where t: chpl_taskID_t return chpl_nullTaskID;
   pragma "no doc"
   inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
-  pragma "no doc"
-  inline proc _defaultOf(type t) where t == _task_list return _nullTaskList;
 
   pragma "no doc"
   inline proc _defaultOf(type t) where t: _ddata

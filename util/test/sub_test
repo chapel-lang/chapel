@@ -301,7 +301,7 @@ def DiffFiles(f1, f2):
 # diff output vs. .bad file, filtering line numbers out of error messages that arise
 # in module files.
 def DiffBadFiles(f1, f2):
-    sys.stdout.write('[Executing diff %s %s]\n'%(f1, f2))
+    sys.stdout.write('[Executing diff-ignoring-module-line-numbers %s %s]\n'%(f1, f2))
     p = subprocess.Popen([utildir+'/test/diff-ignoring-module-line-numbers', f1, f2],
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock

@@ -32,21 +32,19 @@ module StringCasts {
   //
   // Bool
   //
-  const _true_s: string = "true";
-  const _false_s: string = "false";
 
   inline proc _cast(type t, x: bool) where t == string {
     if (x) {
-      return _true_s;
+      return "true";
     } else {
-      return _false_s;
+      return "false";
     }
   }
 
   proc _cast(type t, x: string) where t == bool {
-    if (x == _true_s) {
+    if (x == "true") {
       return true;
-    } else if (x == _false_s) {
+    } else if (x == "false") {
       return false;
     } else {
       halt("Unexpected value when converting from string to bool: '"+x+"'");

@@ -203,13 +203,10 @@ statement~(\rsec{Using_Modules}).
 \label{Visibility_Of_A_Module}
 \index{modules!access}
 
-A top-level module is visible anywhere if the \sntx{privacy-specifier}
-of its declaration is \chpl{public} or is omitted (i.e. by default).
-A top-level module declared \chpl{private} is visible only within that
-module.  The visibility of a nested module is subject to the rules
-of~\rsec{Visibility_Of_Symbols}. There, the nested module is
-considered a "symbol defined at the top level scope" of its outer
-module.
+A module defined at file scope is visible anywhere. The visibility of a nested
+module is subject to the rules of~\rsec{Visibility_Of_Symbols}. There,
+the nested module is considered a "symbol defined at the top level
+scope" of its outer module.
 
 \subsection{Visibility Of A Module's Symbols}
 \label{Visibility_Of_Symbols}
@@ -347,8 +344,8 @@ than the symbols of other modules immediately used by B.
 % We would like to provide a way to specify that a use should not be
 % transitive
 
-It is an error for two public variables, types, or modules to be
-defined at the same depth.
+It is an error for two public variables, types, or modules with the same
+name to be defined at the same depth.
 
 \begin{openissue}
 There is an expectation that this statement will be extended to allow

@@ -1,0 +1,2 @@
+nestedBlocks.chpl:21: In function 'main':
+nestedBlocks.chpl:22: error: 'bar' undeclared (first use this function)

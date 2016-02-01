@@ -25,12 +25,14 @@
 #include "files.h"
 #include "misc.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stringutil.h"
 
 #include "AstVisitor.h"
 
 #include <cstring>
 #include <algorithm>
+#include <vector>
 
 // remember these so we can update their labels' iterResumeGoto
 Map<GotoStmt*,GotoStmt*> copiedIterResumeGotos;
@@ -78,6 +80,196 @@ bool Stmt::isStmt() const {
   return true;
 }
 
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+UseStmt::UseStmt(BaseAST* module):
+  Stmt(E_UseStmt),
+  mod(NULL),
+  named(),
+  except(false),
+  relatedNames()
+{
+  if (Symbol* b = toSymbol(module)) {
+    mod = new SymExpr(b);
+  } else if (Expr* b = toExpr(module)) {
+    mod = b;
+  } else {
+    INT_FATAL(this, "Bad mod in UseStmt constructor");
+  }
+
+  gUseStmts.add(this);
+}
+
+//
+UseStmt::UseStmt(BaseAST*                  module,
+                 std::vector<const char*>* args,
+                 bool                      exclude) :
+  Stmt(E_UseStmt),
+  mod(NULL),
+  named(),
+  except(exclude),
+  relatedNames()
+{
+  if (Symbol* b = toSymbol(module)) {
+    mod = new SymExpr(b);
+  } else if (Expr* b = toExpr(module)) {
+    mod = b;
+  } else {
+    INT_FATAL(this, "Bad mod in UseStmt constructor");
+  }
+
+  if (args->size() > 0) {
+    // Symbols to search when going through this module's scope from an outside
+    // scope
+    for_vector(const char, str, *args) {
+      named.push_back(str);
+    }
+  }
+
+  gUseStmts.add(this);
+}
+
+
+UseStmt* UseStmt::copyInner(SymbolMap* map) {
+  UseStmt *_this = 0;
+  if (named.size() > 0) {
+    _this = new UseStmt(COPY_INT(mod), &named, except);
+  } else {
+    _this = new UseStmt(COPY_INT(mod));
+  }
+  for_vector(const char, sym, relatedNames) {
+    _this->relatedNames.push_back(sym);
+  }
+  return _this;
+}
+
+void UseStmt::verify() {
+  Expr::verify();
+  if (astTag != E_UseStmt) {
+    INT_FATAL(this, "Bad NamedExpr::astTag");
+  }
+  if (mod == NULL) {
+    INT_FATAL(this, "Bad UseStmt::mod");
+  }
+  if (relatedNames.size() != 0 && named.size() == 0) {
+    INT_FATAL(this, "Have names to avoid, but nothing was listed in the use to begin with");
+  }
+}
+
+void UseStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
+  if (old_ast == mod) {
+    mod = new_ast;
+  } else {
+    INT_FATAL(this, "Unexpected case in UseStmt::replaceChild");
+  }
+}
+
+GenRet UseStmt::codegen() {
+  GenRet ret;
+  INT_FATAL(this, "UseStmt::codegen not implemented");
+  return ret;
+}
+
+Expr* UseStmt::getFirstExpr() {
+  return this;
+}
+
+Expr* UseStmt::getFirstChild() {
+  return NULL;
+}
+
+void UseStmt::accept(AstVisitor* visitor) {
+  visitor->visitUseStmt(this);
+}
+
+void UseStmt::writeListPredicate(FILE* mFP) {
+  if (hasOnlyList()) {
+    fprintf(mFP, " 'only' ");
+  } else if (hasExceptList()) {
+    fprintf(mFP, " 'except' ");
+  }
+}
+
+bool UseStmt::hasOnlyList() {
+  return !isPlainUse() && !except;
+}
+
+bool UseStmt::hasExceptList() {
+  return !isPlainUse() && except;
+}
+
+bool UseStmt::isPlainUse() {
+  // This is an unmodified use statement if no 'only' or 'except' list was
+  // provided.
+  return named.size() == 0;
+}
+
+// Return whether the use permits us to search for a symbol with the given
+// name.  Returns true ("should skip") if the name is related to our 'except'
+// list, or not present when we've been given an 'only' list.
+bool UseStmt::skipSymbolSearch(const char* name) {
+  if (isPlainUse()) {
+    // The use is unmodified by an 'except' or 'only' list, so it is safe to
+    // search for this name
+    return false;
+  }
+
+  if (except) {
+    // If the name is present in our 'except' list, or is a (type) constructor
+    // on a type that is in that list, or is a method or field on a type that
+    // is in that list, then we shouldn't look in this use for that name.
+    // Otherwise, it is safe to look.
+    if (matchedNameOrConstructor(name)) {
+      return true;
+    } else if (inRelatedNames(name)) {
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    // If the name is present in our 'only' list, or is a (type) constructor
+    // on a type that is in that list, or is a method or field on a type that
+    // is in that list, then we should look in this use for that name.
+    // Otherwise, we shouldn't look for that name here.
+    if (matchedNameOrConstructor(name)) {
+      return false;
+    } else if (inRelatedNames(name)) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+}
+
+bool UseStmt::matchedNameOrConstructor(const char* name) {
+  for_vector(const char, toCheck, named) {
+    unsigned int constructorLen = strlen(toCheck) + strlen("_construct_");
+    char constructorName[constructorLen];
+    strcpy(constructorName, "_construct_");
+    strcat(constructorName, toCheck);
+    unsigned int typeConstLen = constructorLen + strlen("_type");
+    char typeConstructorName[typeConstLen];
+    strcpy(typeConstructorName, "_type_construct_");
+    strcat(typeConstructorName, toCheck);
+    if (!strcmp(name, toCheck) || !strcmp(constructorName, name) ||
+        !strcmp(typeConstructorName, name)) {
+      // Matches the name we're searching for, or the name we're
+      // searching for is a constructor or type constructor on this
+      // type
+      return true;
+    }
+  }
+  return false;
+}
+
+// Returns true if the name was in the relatedNames field, false otherwise.
+bool UseStmt::inRelatedNames(const char* name) {
+  return std::find(relatedNames.begin(), relatedNames.end(), name) != relatedNames.end();
+}
 
 
 /******************************** | *********************************
@@ -469,6 +661,11 @@ BlockStmt::length() const {
 
 void
 BlockStmt::moduleUseAdd(ModuleSymbol* mod) {
+  moduleUseAdd(new UseStmt(mod));
+}
+
+void
+BlockStmt::moduleUseAdd(UseStmt* use) {
   if (modUses == NULL) {
     modUses = new CallExpr(PRIM_USED_MODULES_LIST);
 
@@ -476,7 +673,7 @@ BlockStmt::moduleUseAdd(ModuleSymbol* mod) {
       insert_help(modUses, this, parentSymbol);
   }
 
-  modUses->insertAtTail(mod);
+  modUses->insertAtTail(use);
 }
 
 

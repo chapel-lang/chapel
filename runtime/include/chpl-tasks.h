@@ -140,14 +140,12 @@ void chpl_task_addToTaskList(
          chpl_fn_int_t,      // function to call for task
          void*,              // argument to the function
          c_sublocid_t,       // desired sublocale
-         chpl_task_list_p*,  // task list
+         void**,             // task list
          c_nodeid_t,         // locale (node) where task list resides
          chpl_bool,          // is begin{} stmt?  (vs. cobegin or coforall)
          int,                // line at which function begins
          int32_t);          // name of file containing functions
-void chpl_task_processTaskList(chpl_task_list_p);
-void chpl_task_executeTasksInList(chpl_task_list_p);
-void chpl_task_freeTaskList(chpl_task_list_p);
+void chpl_task_executeTasksInList(void**);
 
 //
 // Launch a task that is the logical continuation of some other task,

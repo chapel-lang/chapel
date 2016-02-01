@@ -64,6 +64,7 @@
   macro(CallExpr) sep                              \
   macro(NamedExpr) sep                             \
                                                    \
+  macro(UseStmt) sep                               \
   macro(BlockStmt) sep                             \
   macro(CondStmt) sep                              \
   macro(GotoStmt) sep                              \
@@ -131,6 +132,7 @@ enum AstTag {
   E_DefExpr,
   E_CallExpr,
   E_NamedExpr,
+  E_UseStmt,
   E_BlockStmt,
   E_CondStmt,
   E_GotoStmt,
@@ -311,6 +313,7 @@ def_is_ast(UnresolvedSymExpr)
 def_is_ast(DefExpr)
 def_is_ast(CallExpr)
 def_is_ast(NamedExpr)
+def_is_ast(UseStmt)
 def_is_ast(BlockStmt)
 def_is_ast(CondStmt)
 def_is_ast(GotoStmt)
@@ -350,6 +353,7 @@ def_to_ast(UnresolvedSymExpr)
 def_to_ast(DefExpr)
 def_to_ast(CallExpr)
 def_to_ast(NamedExpr)
+def_to_ast(UseStmt)
 def_to_ast(BlockStmt)
 def_to_ast(CondStmt)
 def_to_ast(GotoStmt)
@@ -420,6 +424,9 @@ static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a)
     AST_CALL_CHILD(_a, DefExpr, init, call, __VA_ARGS__);               \
     AST_CALL_CHILD(_a, DefExpr, exprType, call, __VA_ARGS__);           \
     AST_CALL_CHILD(_a, DefExpr, sym, call, __VA_ARGS__);                \
+    break;                                                              \
+  case E_UseStmt:                                                       \
+    AST_CALL_CHILD(_a, UseStmt, mod, call, __VA_ARGS__);                \
     break;                                                              \
                                                                                \
   case E_BlockStmt: {                                                          \

@@ -1,0 +1,2 @@
+noAllowPrivateAccess.chpl:15: In function 'main':
+noAllowPrivateAccess.chpl:16: error: 'c' undeclared (first use this function)

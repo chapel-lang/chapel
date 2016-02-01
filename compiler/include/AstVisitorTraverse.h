@@ -90,6 +90,8 @@ public:
   //
   // The sub-classes of Stmt
   //
+  virtual void   visitUseStmt     (UseStmt*           node);
+
   virtual bool   enterBlockStmt   (BlockStmt*         node);
   virtual void   exitBlockStmt    (BlockStmt*         node);
 
