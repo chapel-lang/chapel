@@ -202,8 +202,13 @@ void cullOverReferences() {
     SymExpr* lhs = NULL; // lhs if call is in a PRIM_MOVE
 
     // Decide whether to use the value call or the ref call.
+    // Always leave the ref call for iterators.
+    // (It would be an improvement to choose the appropriate one
+    //  based upon how the iterator is used, but such a feature
+    //  would require specific support for iterators since yielding
+    //  is not the same as returning.
     move = toCallExpr(cc->parentExpr);
-    if (move) {
+    if (move && !fn->isIterator()) {
       INT_ASSERT(move->isPrimitive(PRIM_MOVE));
 
       lhs = toSymExpr(move->get(1));
