@@ -1415,21 +1415,21 @@ module ChapelBase {
     if a == 0 then return true; else return __primitive("<=", a, b);
   }
 
-  proc numFields(type t) param {
-    return __primitive("num fields", t);
-  }
+  // numFields moved to Reflection
 
+  pragma "no doc"
   proc fieldNumToName(type t, param i) param {
-    return __primitive("field num to name", t, i);
+    compilerError("fieldNumToName deprecated. Use getFieldName");
   }
 
+  pragma "no doc"
   proc fieldValueByNum(x, param i) {
-    return __primitive("field value by num", x, i);
+    compilerError("fieldValueByNum deprecated. Use getField");
   }
 
+  pragma "no doc"
   proc fieldValueByName(x, param name) {
-    compilerError("Not yet implemented");
-    return __primitive("field value by name", x, name);
+    compilerError("fieldValueByName deprecated. Use getField");
   }
 
   proc isClassType(type t) param where t:object return true;

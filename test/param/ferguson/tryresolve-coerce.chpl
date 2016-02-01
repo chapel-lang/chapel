@@ -1,4 +1,4 @@
-
+use Reflection;
 
 proc hi1(x:int) {
   writeln("hi", x);
