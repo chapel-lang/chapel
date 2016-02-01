@@ -717,24 +717,27 @@ cannot be used as an lvalue.
 
 When using a \chpl{ref} return intent, the function call is an lvalue
 (specifically, a call expression for a procedure and an iterator variable for
-an iterator).  This implies that the function produces a reference; however,
-this reference cannot be captured.
-%TODO: is this still true with ref variables?
+an iterator).
 
 The \chpl{ref} return intent is specified by following the argument list with
 the \chpl{ref} keyword.  The function must return or yield an lvalue.
-% Todo: disallow void return types for variable functions?
 
-When a procedure with a \chpl{ref} return intent is called on the left-hand
-side of an assignment statement or in the context of a call to a formal
-argument by \chpl{out}, \chpl{inout}, or \chpl{ref} intent, the lvalue that is
-returned by the procedure is assigned a value.
+During function resolution, if a producure with a \chpl{ref} return
+intent and a procedure without a \chpl{ref} return intent are both
+possible candidates, and either neither use promotion or both do,
+this pair fo procedures is called a ref-pair.
 
-Functions with a \chpl{ref} return intent provide an implicit \chpl{param}
-formal argument \chpl{setter} of type \chpl{bool}.  If the function is called
-in a context requiring an lvalue, the actual argument for \chpl{setter} is
-implicitly \chpl{true}; otherwise it is \chpl{false}.  This argument is useful
-for adjusting the behavior depending to the calling context.
+When a procedure in a ref-pair is called on the left-hand side of an
+assignment statement or in the context of a call to a formal argument by
+\chpl{out}, \chpl{inout}, or \chpl{ref} intent, the \chpl{ref} return
+intent procudure is used. Otherwise, the other candidate is used.  This
+behavior can be useful for adjusting the behavior depending to the
+calling context.
+
+Previous versions of Chapel included an implicit \chpl{setter} param of
+type \chpl{bool} for \chpl{ref} return intent functions. The old behavior
+can be recreated by making both ref-pair functions call another function
+and explicitly pass the \chpl{setter} value, as in the the example below.
 
 \begin{chapelexample}{ref-return-intent.chpl}
 The following code defines a procedure that can be interpreted as a
@@ -764,31 +767,45 @@ writeln(A(0) + A(1));
 \end{chapel}
 This code outputs the number \chpl{3}.
 
+\begin{chapeloutput}
+3
+\end{chapeloutput}
+\end{chapelexample}
+
+\begin{chapelexample}{ref-return-intent-pair.chpl}
+
 \index{setter}
 \index{functions!setter argument}
-The implicit \chpl{setter} argument can be used to ensure, for
+The getter-setter pair can be used to ensure, for
 example, that the second element in the pseudo-array is only assigned
-a value if the first argument is positive.  To do this, add the
-following:
-\begin{chapelnoprint}
-proc A2(i: int) ref { // } to fool latex
+a value if the first argument is positive.  The following is an
+example:
+\begin{chapel}
+var x, y = 0;
+
+proc doA(param setter, i: int) ref {
   if i < 0 || i > 1 then
     halt("array access out of bounds");
-\end{chapelnoprint}
-\begin{chapel}
-if setter && i == 1 && x <= 0 then
-  halt("cannot assign value to A(1) if A(0) <= 0");
-\end{chapel}
-\begin{chapelpost}
-// { to fool latex
+
+  if setter && i == 1 && x <= 0 then
+    halt("cannot assign value to A(1) if A(0) <= 0");
+
   if i == 0 then
     return x;
   else
     return y;
 }
-A2(0) = 0;
-A2(1) = 1;
-\end{chapelpost}
+proc A(i: int) ref {
+  return doA(true, i);
+}
+proc A(i: int) {
+  return doA(false, i);
+}
+
+A(0) = 0;
+A(1) = 1;
+
+\end{chapel}
 \begin{chapelprediff}
 \#!/usr/bin/env python
 
@@ -806,8 +823,7 @@ with open(sys.argv[2], 'w') as fp:
     fp.write(''.join(lines))
 \end{chapelprediff}
 \begin{chapeloutput}
-3
-ref-return-intent.chpl:18: error: halt reached - cannot assign value to A(1) if A(0) <= 0
+ref-return-intent-pair.chpl:8: error: halt reached - cannot assign value to A(1) if A(0) <= 0
 \end{chapeloutput}
 \end{chapelexample}
 
