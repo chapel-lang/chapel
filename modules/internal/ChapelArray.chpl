@@ -962,9 +962,11 @@ module ChapelArray {
     // anything that is not covered by the above
     pragma "no doc"
     proc this(args ...?numArgs) {
-      if numArgs == rank then
+      if numArgs == rank {
+        // Doing this just to get a better compiler error
+        var ranges = _getRankChangeRanges(args);
         compilerError("invalid argument types for domain slicing");
-      else
+      } else
         compilerError("a domain slice requires either a single domain argument or exactly one argument per domain dimension");
     }
 
