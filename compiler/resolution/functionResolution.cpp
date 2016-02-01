@@ -1564,6 +1564,8 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
       else
         tupleCall = new CallExpr("_construct__tuple");
 
+      tupleCall->insertAtTail(new_IntSymbol(n));
+
       for (int i = 0; i < n; i++) {
         DefExpr*   newArgDef = formal->defPoint->copy();
         ArgSymbol* newFormal = toArgSymbol(newArgDef->sym);
@@ -1594,25 +1596,26 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
       }
 
       if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
-        int i = 1;
+        int i = 0;
 
         for_actuals(actual, tupleCall) {
-          VarSymbol* tmp    = newTemp("_varargs_tmp_");
+          // Skip the tuple count
+          if (i > 0) {
+            VarSymbol* tmp    = newTemp("_varargs_tmp_");
 
-          CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i));
-          CallExpr*  move   = new CallExpr(PRIM_MOVE, tmp,            elem);
+            CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i));
+            CallExpr*  move   = new CallExpr(PRIM_MOVE, tmp,            elem);
 
-          CallExpr*  assign = new CallExpr("=",       actual->copy(), tmp);
+            CallExpr*  assign = new CallExpr("=",       actual->copy(), tmp);
 
-          workingFn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-          workingFn->insertBeforeReturnAfterLabel(move);
-          workingFn->insertBeforeReturnAfterLabel(assign);
+            workingFn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+            workingFn->insertBeforeReturnAfterLabel(move);
+            workingFn->insertBeforeReturnAfterLabel(assign);
+          }
 
           i++;
         }
       }
-
-      tupleCall->insertAtHead(new_IntSymbol(n));
 
       workingFn->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall));
       workingFn->insertAtHead(new DefExpr(var));
