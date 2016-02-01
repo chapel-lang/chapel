@@ -3722,9 +3722,67 @@ CallExpr::insertAtTail(BaseAST* ast) {
 }
 
 
-FnSymbol* CallExpr::isResolved(void) {
-  SymExpr* base = toSymExpr(baseExpr);
-  return base ? toFnSymbol(base->var) : NULL;
+bool CallExpr::isEmpty() const {
+  return primitive == NULL && baseExpr == NULL;
+}
+
+
+// MDN 2016/01/29: This will become a predicate
+FnSymbol* CallExpr::isResolved() const {
+  return resolvedFunction();
+}
+
+
+FnSymbol* CallExpr::resolvedFunction() const {
+  FnSymbol* retval = NULL;
+
+  // A PRIM-OP
+  if (primitive != NULL) {
+    INT_ASSERT(baseExpr  == NULL);
+
+  // A Chapel call
+  } else if (baseExpr != NULL) {
+    if (isUnresolvedSymExpr(baseExpr) == true) {
+
+    } else if (SymExpr* base = toSymExpr(baseExpr)) {
+      if (FnSymbol* fn = toFnSymbol(base->var)) {
+        retval = fn;
+
+      // Probably an array index
+      } else if (isArgSymbol(base->var)  == true ||
+                 isVarSymbol(base->var)  == true) {
+
+      // A type specifier
+      } else if (isTypeSymbol(base->var) == true) {
+
+      } else {
+        INT_ASSERT(false);
+      }
+
+    } else if (CallExpr* subCall = toCallExpr(baseExpr)) {
+      // Confirm that this is a partial call
+      INT_ASSERT(subCall->partialTag == true);
+
+    } else {
+      INT_ASSERT(false);
+    }
+
+  // The CallExpr has been purged during resolve
+  } else {
+    INT_ASSERT(false);
+  }
+
+  return retval;
+}
+
+
+FnSymbol* CallExpr::theFnSymbol() const {
+  FnSymbol* retval = NULL;
+
+  if (SymExpr* base = toSymExpr(baseExpr))
+    retval = toFnSymbol(base->var);
+
+  return retval;
 }
 
 
@@ -3769,14 +3827,16 @@ Type* CallExpr::typeInfo(void) {
 }
 
 void CallExpr::prettyPrint(std::ostream *o) {
-  if (isResolved()) {
-    if (isResolved()->hasFlag(FLAG_BEGIN_BLOCK))
+  if (FnSymbol* fn = theFnSymbol()) {
+    if      (fn->hasFlag(FLAG_BEGIN_BLOCK))
       *o << "begin";
-    else if (isResolved()->hasFlag(FLAG_ON_BLOCK))
+    else if (fn->hasFlag(FLAG_ON_BLOCK))
       *o << "on";
   }
-  bool array = false;
+
+  bool array   = false;
   bool unusual = false;
+
   if (baseExpr != NULL) {
     if (UnresolvedSymExpr *expr = toUnresolvedSymExpr(baseExpr)) {
       if (strcmp(expr->unresolved, "*") == 0){
