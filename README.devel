@@ -72,9 +72,6 @@ the git tree, but not exactly the same:
 The following files/directories are for developers only:
 
   README.devel     : this file
-  DIRS             : a developer's view of files/directories, similar to
-                     README.files above; currently out of date, possibly
-                     redundant with this file
   TAGS             : an emacs TAGS file created after every compile when
                      CHPL_DEVELOPER is set to true
   chapel.tar.gz    : when the util/gen_release is script, the release is
