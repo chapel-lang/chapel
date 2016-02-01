@@ -3726,6 +3726,7 @@ bool CallExpr::isEmpty() const {
   return primitive == NULL && baseExpr == NULL;
 }
 
+
 // MDN 2016/01/29: This will become a predicate
 FnSymbol* CallExpr::isResolved() const {
   return resolvedFunction();
@@ -3741,13 +3742,11 @@ FnSymbol* CallExpr::resolvedFunction() const {
 
   // A Chapel call
   } else if (baseExpr != NULL) {
-    INT_ASSERT(primitive == NULL);
-
     if (isUnresolvedSymExpr(baseExpr) == true) {
 
     } else if (SymExpr* base = toSymExpr(baseExpr)) {
       if (FnSymbol* fn = toFnSymbol(base->var)) {
-        retval = toFnSymbol(base->var);
+        retval = fn;
 
       // Probably an array index
       } else if (isArgSymbol(base->var)  == true ||
