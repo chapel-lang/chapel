@@ -117,7 +117,7 @@ bool AstDump::enterCallExpr(CallExpr* node) {
     newline();
   }
 
-  if (FnSymbol* fn = node->isResolved()) {
+  if (FnSymbol* fn = node->theFnSymbol()) {
     if (fn->hasFlag(FLAG_BEGIN_BLOCK))
       write("begin");
     else if (fn->hasFlag(FLAG_ON_BLOCK))
@@ -293,6 +293,11 @@ void AstDump::visitUseStmt(UseStmt* node) {
   mNeedSpace = true;
 
   node->mod->accept(this);
+
+  if (!node->isPlainUse()) {
+    node->writeListPredicate(mFP);
+    outputVector(mFP, node->named);
+  }
 
   write(false, ")", true);
 }

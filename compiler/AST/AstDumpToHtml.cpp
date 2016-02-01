@@ -166,7 +166,7 @@ bool AstDumpToHtml::enterCallExpr(CallExpr* node) {
 
   fprintf(mFP, " ");
 
-  if (FnSymbol* fn = node->isResolved()) {
+  if (FnSymbol* fn = node->theFnSymbol()) {
     if (fn->hasFlag(FLAG_BEGIN_BLOCK))
       fprintf(mFP, "begin ");
     else if (fn->hasFlag(FLAG_ON_BLOCK))
@@ -393,6 +393,11 @@ void AstDumpToHtml::visitUseStmt(UseStmt* node) {
   fprintf(mFP, " (%d 'use' ", node->id);
 
   node->mod->accept(this);
+
+  if (!node->isPlainUse()) {
+    node->writeListPredicate(mFP);
+    outputVector(mFP, node->named);
+  }
 
   fprintf(mFP, ")");
 

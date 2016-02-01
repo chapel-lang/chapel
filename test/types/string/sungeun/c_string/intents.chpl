@@ -32,13 +32,13 @@ if errorCase == 1 {
 
 var s: c_string = "hi";
 s += s;
-f(s);
-fi(s);
+f(s:string);
+fi(s:string);
 if errorCase == 2 then
-   fo(s);
+  fo(s:string);
 
 if errorCase == 3 then
-   fio(s);
+  fio(s:string);
 
 if errorCase == 4 then
-   fr(s);
+  fr(s:string);

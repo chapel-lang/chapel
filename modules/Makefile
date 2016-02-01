@@ -88,6 +88,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Norm.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
+	standard/Reflection.chpl \
 	standard/Regexp.chpl \
 	standard/Search.chpl \
 	standard/Sort.chpl \
