@@ -81,7 +81,7 @@ The following files/directories are for developers only:
                      left in this file
   chapel-emacs.tar.gz : ditto for the util/gen_editors script
   chapel-vim.tar.gz   : "
-  etc/             : miscellaneous stuff -- see the README/README.devel there
+  highlight/       : syntax highlighters -- see the README/README.devel there
   log/             : this directory is created when using the -t compiler
                      option, and so often ends up in this location
   papers/          : LaTeX sources for various papers and publications
