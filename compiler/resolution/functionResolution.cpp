@@ -1617,8 +1617,6 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
       workingFn->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall));
       workingFn->insertAtHead(new DefExpr(var));
 
-      formal->defPoint->remove();
-
       if (workingFn->hasFlag(FLAG_PARTIAL_COPY)) {
         // If this is a partial copy, store the mapping for substitution later.
         workingFn->partialCopyMap.put(formal, var);
@@ -1640,6 +1638,8 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
 
         subSymbol(workingFn->where, formal, var);
       }
+
+      formal->defPoint->remove();
     }
   }
 }
