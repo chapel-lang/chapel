@@ -33,10 +33,10 @@
 //
 
 //
-// We want to use block-distributed arrays (BlockDist) and barrier
-// synchronization (Barrier).
+// We want to use block-distributed arrays (BlockDist), barrier
+// synchronization (Barrier), and timers (Time).
 //
-use BlockDist, Barrier;
+use BlockDist, Barrier, Time;
 
 //
 // The type of key to use when sorting.
@@ -53,7 +53,8 @@ config type keyType = int(32);
 config const debug = false,
              testrun = debug,
              quiet = false,
-             printConfig = !quiet;
+             printConfig = !quiet,
+             printTimings = !quiet;
 
 
 //

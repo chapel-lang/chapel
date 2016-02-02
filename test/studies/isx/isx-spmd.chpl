@@ -37,10 +37,10 @@
 //
 
 //
-// We want to use block-distributed arrays (BlockDist) and barrier
-// synchronization (Barrier).
+// We want to use block-distributed arrays (BlockDist), barrier
+// synchronization (Barrier), and timers (Time).
 //
-use BlockDist, Barrier;
+use BlockDist, Barrier, Time;
 
 //
 // The type of key to use when sorting.
@@ -57,7 +57,9 @@ config type keyType = int(32);
 config const debug = false,
              testrun = debug,
              quiet = false,
-             printConfig = !quiet;
+             printConfig = !quiet,
+             printTimings = !quiet,
+             printTimingTables = false;
 
 
 //
@@ -150,6 +152,7 @@ const OnePerLocale = LocaleSpace dmapped Block(LocaleSpace);
 
 var allBucketKeys: [OnePerLocale] [0..#recvBuffSize] int;
 var recvOffset: [OnePerLocale] atomic int;
+var totalTime: [OnePerLocale] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
 //
@@ -173,7 +176,7 @@ coforall loc in Locales do
     // the final timed run.
     //
     for i in 1-numBurnInRuns..numTrials do
-      bucketSort(time=(i>0), verify=(i==numTrials));
+      bucketSort(trial=i, time=(i>0), verify=(i==numTrials));
   }
 
 if debug {
@@ -181,10 +184,41 @@ if debug {
   for (i,b) in zip(LocaleSpace, allBucketKeys) do
     writeln("Bucket ", i, " (owned by ", b.locale.id, "): ", b);
 }
+
+if printTimings {
+  if printTimingTables {
+    writeln("Locales / Trials");
+    for i in OnePerLocale {
+      write(here.id, ": ");
+      for t in totalTime[i] {
+        write(t, "\t");
+      }
+      writeln();
+    }
+  }
+  var minMinTime: real = max(real);
+  var maxMinTime, totMinTime: real;
+  forall loc in OnePerLocale with (/*min reduce minMinTime,
+                                     max reduce maxMinTime,*/
+                                   + reduce totMinTime) {
+    const minTime = min reduce totalTime[loc];
+    totMinTime += minTime;
+  }
+  var avgTime = totMinTime / numLocales;
+  //
+  // TODO: Did I get that right?
+  //
+  writeln("average across locales of min time across trials = ",
+          avgTime / numLocales);
+}
   
 
-proc bucketSort(time = false, verify = false) {
+proc bucketSort(trial: int, time = false, verify = false) {
   var myKeys = makeInput();
+  var totalTimer: Timer;
+
+  if time then
+    totalTimer.start();
 
   var bucketSizes = countLocalBucketSizes(myKeys);
   if debug then writeln(here.id, ": bucketSizes = ", bucketSizes);
@@ -220,6 +254,11 @@ proc bucketSort(time = false, verify = false) {
 
   const keysInMyBucket = recvOffset[here.id].read();
   var myLocalKeyCounts = countLocalKeys(keysInMyBucket);
+
+  if time {
+    totalTimer.stop();
+    totalTime[here.id][trial] = totalTimer.elapsed();
+  }    
 
   if (verify) then
     verifyResults(keysInMyBucket, myLocalKeyCounts);
