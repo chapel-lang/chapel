@@ -2712,15 +2712,16 @@ static void issueCompilerError(CallExpr* call) {
   }
 
   const char* str = "";
+  VarSymbol* var = NULL;
   for_formals(arg, fn) {
     if (foundDepthVal && arg->defPoint == fn->formals.tail)
       continue;
-    VarSymbol* var = toVarSymbol(paramMap.get(arg));
+    var = toVarSymbol(paramMap.get(arg));
     INT_ASSERT(var && var->immediate && var->immediate->const_kind == CONST_KIND_STRING);
     str = astr(str, var->immediate->v_string);
   }
   // collapse newlines and other escape sequences before printing
-  str = astr(unescapeString(str).c_str());
+  str = astr(unescapeString(str, var).c_str());
   if (call->isPrimitive(PRIM_ERROR)) {
     USR_FATAL(from, "%s", str);
   } else {
@@ -6281,7 +6282,7 @@ postFold(Expr* expr) {
       INT_ASSERT(se);
       if (se->var->isParameter()) {
         const char* str = get_string(se);
-        int length = unescapeString(str).length();
+        int length = unescapeString(str, se).length();
         result = new SymExpr(new_IntSymbol(length, INT_SIZE_DEFAULT));
         call->replace(result);
       }
@@ -6290,7 +6291,7 @@ postFold(Expr* expr) {
       INT_ASSERT(se);
       if (se->var->isParameter()) {
         const char* str = get_string(se);
-        const std::string unescaped = unescapeString(str);
+        const std::string unescaped = unescapeString(str, se);
         result = new SymExpr(new_IntSymbol((int)unescaped[0], INT_SIZE_DEFAULT));
         call->replace(result);
       }

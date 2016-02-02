@@ -539,7 +539,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       // with C escapes - that is newline is 2 chars \ n
       // so we have to convert to a sequence of bytes
       // for LLVM (the C backend can just print it out).
-      std::string newString = unescapeString(i->v_string);
+      std::string newString = unescapeString(i->v_string, NULL);
       ret = info->builder->CreateGlobalString(newString);
       break;
   }
@@ -2976,7 +2976,7 @@ void LabelSymbol::accept(AstVisitor* visitor) {
 *                                                                   *
 ********************************* | ********************************/
 
-std::string unescapeString(const char* const str) {
+std::string unescapeString(const char* const str, BaseAST *astForError) {
   std::string newString = "";
   char nextChar;
   int pos = 0;
@@ -3029,7 +3029,7 @@ std::string unescapeString(const char* const str) {
         }
         break;
       default:
-        INT_FATAL("Unknown C string escape");
+        USR_FATAL(astForError, "Unexpected string escape: '\\%c'",  nextChar);
         break;
     }
   }
@@ -3079,7 +3079,7 @@ VarSymbol *new_StringSymbol(const char *str) {
       castTemp,
       new CallExpr("_cast", cptrTemp, new_CStringSymbol(str)));
 
-  int strLength = unescapeString(str).length();
+  int strLength = unescapeString(str, castCall).length();
 
   CallExpr *ctor = new CallExpr("_construct_string",
       castTemp,

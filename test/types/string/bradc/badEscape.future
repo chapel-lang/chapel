@@ -1,5 +1,0 @@
-bug: internal error on unexpected escape sequence
-
-The compiler currently prints an internal error for cases like this
-with no pointer for the user as to what line# is the issue, what the
-bad escape sequence is, etc.  This seems bad and easily correctable.
