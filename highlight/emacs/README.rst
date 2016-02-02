@@ -16,7 +16,7 @@ To use these modes, it is suggested that you install these directories
 so that they appear under your Chapel release as follows::
 
    $CHPL_HOME/    -- the location of your normal Chapel installation
-     etc/
+     highlight/
        emacs/     -- this directory
 
 In which case, you should be able to use these modes by adding the
@@ -28,11 +28,11 @@ following lines to your standard ``.emacs`` or ``.emacs.d/init.el`` file:
     ; query the environment variable CHPL_HOME
     (setq chpl-home (getenv "CHPL_HOME"))
 
-    ; prepend $CHPL_HOME/etc/emacs to your emacs load-path
+    ; prepend $CHPL_HOME/highlight/emacs to your emacs load-path
     (if (string= chpl-home nil)
         nil
       (add-to-list 'load-path (concat chpl-home
-                                      "/etc/emacs/"
+                                      "/highlight/emacs/"
                                       )
                    )
       )

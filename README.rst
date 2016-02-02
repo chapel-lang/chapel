@@ -171,7 +171,7 @@ What's next?
     executing Chapel programs                   `executing.rst`_
     debugging Chapel programs                   `debugging.rst`_
     reporting bugs                              `bugs.rst`_
-    Chapel modes for emacs and vim              ``etc/README.md``
+    Chapel modes for emacs and vim              ``highlight/README.md``
     example Chapel programs                     ``examples/README``
     a quick reference for Chapel syntax         `doc/quickReference.pdf`_
     the Chapel language specification           `doc/chapelLanguageSpec.pdf`_
