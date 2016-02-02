@@ -33,6 +33,9 @@ man1/%.1: %.txt Makefile
 %.ps: man1/%.1
 	groff -man $< > $@
 
+%.html: man1/%.1
+	groff -T html -man $< > $@
+
 %.pdf: %.ps
 	ps2pdf $< $@
 
