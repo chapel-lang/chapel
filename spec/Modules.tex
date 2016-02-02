@@ -352,6 +352,12 @@ These fields and methods cannot be specified in a \sntx{limitation-clause} on
 their own.  It is an error to provide a name in a \sntx{limitation-clause} that
 does not exist or is not visible in the respective module.
 
+% We need to figure out what to do about functions that return types which due
+% to the limitation-clause are not visible without prefix.
+
+If a use statement mentions multiple modules, only the last module can have a
+\sntx{limitation-clause}.
+
 Use statements are transitive by default: if a module A used by
 another module B also contains a use of a further module C, C's
 symbols will also be considered visible within B, at a further scope
