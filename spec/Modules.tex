@@ -340,17 +340,17 @@ defined directly in the scope where the use statement occurs, but at a
 nearer scope than symbols defined in the scope containing the scope where
 the use statement occurs.
 
-An optional \sntx{limitation-clause} may be provided to limit the symbols
-made available by the current use of that module.  If an \chpl{except} list
-is provided, then all the visible but unnamed symbols in the module will be
-made available without prefix.  If an \chpl{only} list is provided, then just
-the named visible symbols in the module will be made available without prefix.
-All visible symbols not provided via these limited use statements are still
-accessible with the module name prefix.  If a type is specified in the
-\sntx{limitation-clause}, then the type's fields and methods are treated
-similarly.  These fields and methods cannot be specified in a
-\sntx{limitation-clause} on their own.  Note that it is an error to provide a
-name in a \sntx{limitation-clause} that does not exist within that context.
+An optional \sntx{limitation-clause} may be provided to limit the symbols made
+available by the use statement.  If an \chpl{except} list is provided, then all
+the visible but unlisted symbols in the module will be made available without
+prefix.  If an \chpl{only} list is provided, then just the listed visible
+symbols in the module will be made available without prefix.  All visible
+symbols not provided via these limited use statements are still accessible with
+the module name prefix.  If a type is specified in the \sntx{limitation-clause},
+then the type's fields and methods are treated similarly to the type name.
+These fields and methods cannot be specified in a \sntx{limitation-clause} on
+their own.  It is an error to provide a name in a \sntx{limitation-clause} that
+does not exist or is not visible in the respective module.
 
 Use statements are transitive by default: if a module A used by
 another module B also contains a use of a further module C, C's
@@ -365,7 +365,6 @@ symbols are visible to B.
 
 It is an error for two public variables, types, or modules with the same
 name to be defined at the same depth.
-
 
 \begin{openissue}
 There is an expectation that this statement will be extended to allow
