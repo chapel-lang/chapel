@@ -193,8 +193,13 @@ static Symbol* insertAutoCopyDestroyForTaskArg
 
   // This applies only to arguments being passed to asynchronous task
   // functions. No need to increment+decrement the reference counters
-  // for cobegins/coforalls.
-  if (fn->hasFlag(FLAG_BEGIN) || isString(baseType))
+  // for cobegins/coforalls. Except for the index variable for a
+  // coforall - since each task needs its own copy.
+  // MPF - should this logic also apply to arguments to coforall fns
+  // that had the 'in' task intent?
+  if (fn->hasFlag(FLAG_BEGIN) ||
+      isString(baseType) ||
+      var->hasFlag(FLAG_COFORALL_INDEX_VAR))
   {
     FnSymbol* autoCopyFn = getAutoCopy(baseType);
     FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
@@ -307,7 +312,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   for_actuals(arg, fcall) 
   {
     // Insert autoCopy/autoDestroy as needed for "begin" or "nonblocking on"
-    // calls.
+    // calls (and some other cases).
     Symbol  *var = insertAutoCopyDestroyForTaskArg(arg, fcall, fn, firstCall);
 
     // Copy the argument into the corresponding slot in the argument bundle.
@@ -852,12 +857,13 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 {
   forv_Vec(DefExpr, def, gDefExprs) {
     SET_LINENO(def);
+
     if (!fLocal &&
-               isModuleSymbol(def->parentSymbol) &&
-               def->parentSymbol != rootModule &&
-               isVarSymbol(def->sym) &&
-               !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
-               !def->sym->hasFlag(FLAG_EXTERN)) {
+        isModuleSymbol(def->parentSymbol) &&
+        def->parentSymbol != rootModule &&
+        isVarSymbol(def->sym) &&
+        !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
+        !def->sym->hasFlag(FLAG_EXTERN)) {
       if (def->sym->hasFlag(FLAG_CONST) &&
           (is_bool_type(def->sym->type) ||
            is_enum_type(def->sym->type) ||
