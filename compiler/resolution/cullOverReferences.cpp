@@ -191,6 +191,9 @@ void cullOverReferences() {
     INT_ASSERT(refCall);
     INT_ASSERT(valueCall);
 
+    // Make sure that the context call only has 2 options.
+    INT_ASSERT(cc->options.length == 2);
+
     FnSymbol* fn = refCall->isResolved();
     INT_ASSERT(fn);
     FnSymbol* valueFn = valueCall->isResolved();

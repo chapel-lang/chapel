@@ -5853,6 +5853,11 @@ ContextCallExpr::verify() {
     if (!isCallExpr(expr))
       INT_FATAL(this, "ContextCallExpr must contain only CallExpr");
   }
+  // At present, a ContextCallExpr is only used to handle
+  // ref/not-ref return intent functions. So there should always
+  // be exactly 2 options.
+  if (options.length != 2)
+    INT_FATAL(this, "ContextCallExpr with > 2 options");
 }
 
 void ContextCallExpr::accept(AstVisitor* visitor) {
