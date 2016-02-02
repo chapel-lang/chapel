@@ -6553,12 +6553,40 @@ resolveExpr(Expr* expr) {
         implementForallIntents2wrapper(call, eflopiHelper);
       }
 
+      // For ContextCallExprs, be sure to resolve all of the
+      // functions that could be called.
       if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
+        Type* firstRetType = NULL;
+        Type* retType = NULL;
+        bool same = true;
         for_alist(optionExpr, cc->options) {
           CallExpr* callOption = toCallExpr(optionExpr);
-          INT_ASSERT(callOption->isResolved());
-          resolveFns(callOption->isResolved());
+          FnSymbol* calledFn = callOption->isResolved();
+          INT_ASSERT(calledFn);
+          resolveFns(calledFn);
+          INT_ASSERT(calledFn->retType);
+          // Make sure that the return type for all of the
+          // options is the same, since we're going to switch
+          // between them later.
+          retType = calledFn->retType->getValType();
+          if (firstRetType == NULL)
+            firstRetType = retType;
+          else if(firstRetType != retType)
+            same = false;
         }
+
+        if (!same) {
+          USR_FATAL_CONT(cc, "invalid ref return pair: return types differ");
+          for_alist(optionExpr, cc->options) {
+            CallExpr* callOption = toCallExpr(optionExpr);
+            FnSymbol* calledFn = callOption->isResolved();
+
+            retType = calledFn->retType;
+            USR_FATAL_CONT(calledFn, "function returns %s", toString(retType));
+          }
+          USR_STOP();
+        }
+
         // Proceed using the designated call option
         expr = getDesignatedCall(cc);
       } else {
