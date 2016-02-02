@@ -203,7 +203,14 @@ class CallExpr : public Expr {
   void            insertAtHead(BaseAST* ast);
   void            insertAtTail(BaseAST* ast);
 
-  FnSymbol*       isResolved();
+  // True if the callExpr has been emptied (aka dead)
+  bool            isEmpty()                                              const;
+
+  FnSymbol*       isResolved()                                           const;
+  FnSymbol*       resolvedFunction()                                     const;
+
+  FnSymbol*       theFnSymbol()                                          const;
+
   bool            isNamed(const char*);
 
   int             numActuals();

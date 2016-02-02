@@ -117,7 +117,7 @@ bool AstDump::enterCallExpr(CallExpr* node) {
     newline();
   }
 
-  if (FnSymbol* fn = node->isResolved()) {
+  if (FnSymbol* fn = node->theFnSymbol()) {
     if (fn->hasFlag(FLAG_BEGIN_BLOCK))
       write("begin");
     else if (fn->hasFlag(FLAG_ON_BLOCK))
@@ -268,6 +268,40 @@ void AstDump::visitUsymExpr(UnresolvedSymExpr* node) {
 
   write(node->unresolved);
 }
+
+
+//
+// UseStmt
+//
+void AstDump::visitUseStmt(UseStmt* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    newline();
+  }
+
+  if (fLogIds) {
+    fprintf(mFP, "(%d ", node->id);
+    mNeedSpace = false;
+  } else {
+    write(true, "(", false);
+  }
+
+  if (mNeedSpace)
+    fputc(' ', mFP);
+
+  fprintf(mFP, "'use'");
+
+  mNeedSpace = true;
+
+  node->mod->accept(this);
+
+  if (!node->isPlainUse()) {
+    node->writeListPredicate(mFP);
+    outputVector(mFP, node->named);
+  }
+
+  write(false, ")", true);
+}
+
 
 
 //

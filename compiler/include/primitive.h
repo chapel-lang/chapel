@@ -128,10 +128,6 @@ enum PrimitiveTag {
   PRIM_GET_END_COUNT,
   PRIM_SET_END_COUNT,
 
-  PRIM_PROCESS_TASK_LIST,
-  PRIM_EXECUTE_TASKS_IN_LIST,
-  PRIM_FREE_TASK_LIST,
-
   PRIM_GET_SERIAL,              // get serial state
   PRIM_SET_SERIAL,              // set serial state to true or false
 
@@ -144,7 +140,6 @@ enum PrimitiveTag {
   PRIM_CAST,
   PRIM_DYNAMIC_CAST,
   PRIM_TYPEOF,
-  PRIM_USE,
   PRIM_USED_MODULES_LIST,       // used modules in BlockStmt::modUses
   PRIM_TUPLE_EXPAND,
   PRIM_TUPLE_AND_EXPAND,
@@ -247,9 +242,9 @@ enum PrimitiveTag {
 
   PRIM_NUM_FIELDS,
   PRIM_FIELD_NUM_TO_NAME,
+  PRIM_FIELD_NAME_TO_NUM,
   PRIM_FIELD_VALUE_BY_NUM,
   PRIM_FIELD_ID_BY_NUM,
-  PRIM_FIELD_VALUE_BY_NAME,
   PRIM_IS_UNION_TYPE,
   PRIM_IS_ATOMIC_TYPE,
   PRIM_IS_REF_ITER_TYPE,

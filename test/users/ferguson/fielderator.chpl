@@ -24,10 +24,6 @@ assert(__primitive("field value by num", m, 3) == 3);
 assert(__primitive("field value by num", m, 4) == "hi");
 assert(realEqual(__primitive("field value by num", m, 5), 17.23));
 
-assert(__primitive("field value by name", m, "x") == 3);
-assert(__primitive("field value by name", m, "y") == "hi");
-assert(realEqual(__primitive("field value by name", m, "z"), 17.23));
-
 for param i in 1..(__primitive("num fields", R)) {
   if isType(__primitive("field value by num", m, i)) {
     writeln("type ", __primitive("field num to name", R, i));

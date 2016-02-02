@@ -266,7 +266,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_ACTUALS_LIST:
   case PRIM_YIELD:
 
-  case PRIM_USE:
   case PRIM_USED_MODULES_LIST:
 
   case PRIM_WHEN:
@@ -277,9 +276,9 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_NUM_FIELDS:
   case PRIM_IS_POD:
   case PRIM_FIELD_NUM_TO_NAME:
+  case PRIM_FIELD_NAME_TO_NUM:
   case PRIM_FIELD_VALUE_BY_NUM:
   case PRIM_FIELD_ID_BY_NUM:
-  case PRIM_FIELD_VALUE_BY_NAME:
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 
@@ -293,7 +292,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
    // These don't block in the Chapel sense, but they may require a system
     // call so we don't consider them eligible.
     //
-  case PRIM_FREE_TASK_LIST:
   case PRIM_ARRAY_ALLOC:
   case PRIM_ARRAY_FREE:
   case PRIM_ARRAY_FREE_ELTS:
@@ -304,8 +302,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
     // here until they are proven fast.
   case PRIM_GET_END_COUNT:
   case PRIM_SET_END_COUNT:
-  case PRIM_PROCESS_TASK_LIST:
-  case PRIM_EXECUTE_TASKS_IN_LIST:
   case PRIM_TO_LEADER:
   case PRIM_TO_FOLLOWER:
   case PRIM_DELETE:

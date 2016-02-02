@@ -622,8 +622,6 @@ extern FnSymbol *gChplHereFree;
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
 
-extern Symbol *gTaskList;
-
 extern std::map<FnSymbol*,int> ftableMap;
 extern Vec<FnSymbol*> ftableVec;
 

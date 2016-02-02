@@ -332,7 +332,7 @@ module LocaleModel {
 
     proc getChild(idx:int) return this.myLocales[idx];
 
-    iter getChlidren() : locale  {
+    iter getChildren() : locale  {
       for loc in this.myLocales do
         yield loc;
     }
@@ -543,11 +543,9 @@ module LocaleModel {
   //
   pragma "insert line file info"
   extern proc chpl_task_addToTaskList(fn: int, args: c_void_ptr, subloc_id: int,
-                                      ref tlist: _task_list, tlist_node_id: int,
+                                      ref tlist: c_void_ptr, tlist_node_id: int,
                                       is_begin: bool);
-  extern proc chpl_task_processTaskList(tlist: _task_list);
-  extern proc chpl_task_executeTasksInList(tlist: _task_list);
-  extern proc chpl_task_freeTaskList(tlist: _task_list);
+  extern proc chpl_task_executeTasksInList(ref tlist: c_void_ptr);
 
   //
   // add a task to a list of tasks being built for a begin statement
@@ -557,7 +555,7 @@ module LocaleModel {
   proc chpl_taskListAddBegin(subloc_id: int,        // target sublocale
                              fn: int,               // task body function idx
                              args: c_void_ptr,      // function args
-                             ref tlist: _task_list, // task list
+                             ref tlist: c_void_ptr, // task list
                              tlist_node_id: int     // task list owner node
                             ) {
     chpl_task_addToTaskList(fn, args, subloc_id, tlist, tlist_node_id, true);
@@ -572,19 +570,10 @@ module LocaleModel {
   proc chpl_taskListAddCoStmt(subloc_id: int,        // target sublocale
                               fn: int,               // task body function idx
                               args: c_void_ptr,      // function args
-                              ref tlist: _task_list, // task list
+                              ref tlist: c_void_ptr, // task list
                               tlist_node_id: int     // task list owner node
                              ) {
     chpl_task_addToTaskList(fn, args, subloc_id, tlist, tlist_node_id, false);
-  }
-
-  //
-  // make sure all tasks in a list are known to the tasking layer
-  //
-  pragma "insert line file info"
-  export
-  proc chpl_taskListProcess(task_list: _task_list) {
-    chpl_task_processTaskList(task_list);
   }
 
   //
@@ -592,16 +581,7 @@ module LocaleModel {
   //
   pragma "insert line file info"
   export
-  proc chpl_taskListExecute(task_list: _task_list) {
+  proc chpl_taskListExecute(ref task_list: c_void_ptr) {
     chpl_task_executeTasksInList(task_list);
-  }
-
-  //
-  // do final cleanup for a task list
-  //
-  pragma "insert line file info"
-  export
-  proc chpl_taskListFree(task_list: _task_list) {
-    chpl_task_freeTaskList(task_list);
   }
 }

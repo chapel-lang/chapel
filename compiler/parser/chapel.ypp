@@ -271,10 +271,10 @@
 //
 %token TALIGN TATOMIC TBEGIN TBREAK TBY
 %token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
-%token TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXPORT TEXTERN
+%token TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFOR TFORALL TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
-%token TNEW TNIL TNOINIT TON TOTHERWISE TOUT
+%token TNEW TNIL TNOINIT TON TONLY TOTHERWISE TOUT
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPUBLIC
 %token TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
@@ -491,6 +491,8 @@ stmt_ls:
 
 use_stmt:
   TUSE expr_ls TSEMI                   { $$ = buildUseStmt($2); }
+| TUSE expr TEXCEPT expr_ls TSEMI      { $$ = buildUseStmt($2, $4, true); }
+| TUSE expr TONLY expr_ls TSEMI        { $$ = buildUseStmt($2, $4, false); }
 ;
 
 require_stmt:
@@ -879,7 +881,7 @@ fn_ident:
 | TNOT           { $$ = "!"; }
 | TBY            { $$ = "chpl_by"; }
 | THASH          { $$ = "#"; }
-| TALIGN         { $$ = "align"; }
+| TALIGN         { $$ = "chpl_align"; }
 | TSWAP          { $$ = "<=>"; }
 | TIO            { $$ = "<~>"; }
 ;
@@ -1433,11 +1435,11 @@ expr:
 | expr TDOTDOT expr
     { $$ = new CallExpr("chpl_build_bounded_range", $1, $3); }
 | expr TDOTDOT
-    { $$ = new CallExpr("chpl_build_partially_bounded_range", buildDotExpr("BoundedRangeType", "boundedLow"), $1); }
+    { $$ = new CallExpr("chpl_build_low_bounded_range", $1); }
 | TDOTDOT expr
-    { $$ = new CallExpr("chpl_build_partially_bounded_range", buildDotExpr("BoundedRangeType", "boundedHigh"), $2); }
+    { $$ = new CallExpr("chpl_build_high_bounded_range", $2); }
 | TDOTDOT
-    { $$ = new CallExpr("chpl_build_unbounded_range", buildDotExpr("BoundedRangeType", "boundedNone")); }
+    { $$ = new CallExpr("chpl_build_unbounded_range"); }
 ;
 
 lhs_expr:
@@ -1521,7 +1523,7 @@ binary_op_expr:
 | expr TOR  expr           { $$ = new CallExpr("||", $1, $3); }
 | expr TEXP expr           { $$ = new CallExpr("**", $1, $3); }
 | expr TBY expr            { $$ = new CallExpr("chpl_by", $1, $3); }
-| expr TALIGN expr         { $$ = new CallExpr("align", $1, $3); }
+| expr TALIGN expr         { $$ = new CallExpr("chpl_align", $1, $3); }
 | expr THASH expr          { $$ = new CallExpr("#", $1, $3); }
 | expr TDMAPPED expr       { $$ = new CallExpr("chpl__distributed", $3, $1); }
 ;

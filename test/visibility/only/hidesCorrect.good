@@ -1,0 +1,2 @@
+hidesCorrect.chpl:13: In function 'main':
+hidesCorrect.chpl:14: error: 'foo' undeclared (first use this function)

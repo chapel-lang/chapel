@@ -40,7 +40,6 @@ static IntentTag constIntentForType(Type* t) {
              t == dtOpaque ||
              t == dtTaskID ||
              t == dtFile ||
-             t == dtTaskList ||
              t == dtNil ||
              t == dtStringC ||
              t == dtStringCopy ||
@@ -72,7 +71,6 @@ IntentTag blankIntentForType(Type* t) {
              isUnion(t) ||
              t == dtTaskID ||
              t == dtFile ||
-             t == dtTaskList ||
              t == dtNil ||
              t == dtOpaque ||
              t->symbol->hasFlag(FLAG_DOMAIN) ||

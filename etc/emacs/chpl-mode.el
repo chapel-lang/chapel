@@ -72,9 +72,10 @@ but they don't build a type of themselves.  Unlike the keywords on
 `c-primitive-type-kwds', they are fontified with the keyword face and
 not the type face."
   chpl '("const" "config"
-         "export" "extern"
+         "except" "export" "extern"
          "inline" "iter"
          "module"
+         "only"
          "param" "private" "proc" "public"
          "require"
          "type"
@@ -137,7 +138,7 @@ be mutually exclusive with `c-type-list-kwds'.
 
 Note: Use `c-typeless-decl-kwds' for keywords followed by a function
 or variable identifier (that's being defined)."
-  chpl '("use"))
+  chpl '("except" "only" "use"))
 
 (c-lang-defconst c-block-stmt-1-kwds
   "Statement keywords followed directly by a substatement."

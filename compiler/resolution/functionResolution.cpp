@@ -1302,8 +1302,6 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   }
   if (actualType->symbol->hasFlag(FLAG_REF))
     return canDispatch(actualType->getValType(), NULL, formalType, fn, promotes);
-  if (formalType == dtString && actualType == dtStringC)
-    return true;
   if (formalType == dtString && actualType == dtStringCopy)
     return true;
   if (formalType == dtStringC && actualType == dtStringCopy)
@@ -1549,26 +1547,37 @@ computeGenericSubs(SymbolMap &subs,
  * varargs tuple.
  */
 static void
-handleSymExprInExpandVarArgs(FnSymbol* workingFn, ArgSymbol* formal, SymExpr* sym) {
+handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
+                             ArgSymbol* formal,
+                             SymExpr*   sym) {
   workingFn->addFlag(FLAG_EXPANDED_VARARGS);
 
   // Handle specified number of variable arguments.
-  if (VarSymbol* n_var = toVarSymbol(sym->var)) {
-    if (n_var->type == dtInt[INT_SIZE_DEFAULT] && n_var->immediate) {
-      int n = n_var->immediate->int_value();
-      CallExpr* tupleCall = new CallExpr((formal->hasFlag(FLAG_TYPE_VARIABLE)) ?
-                                         "_type_construct__tuple" : "_construct__tuple");
-      for (int i = 0; i < n; i++) {
-        DefExpr* new_arg_def = formal->defPoint->copy();
-        ArgSymbol* new_formal = toArgSymbol(new_arg_def->sym);
-        new_formal->variableExpr = NULL;
-        tupleCall->insertAtTail(new SymExpr(new_formal));
-        new_formal->name = astr("_e", istr(i), "_", formal->name);
-        new_formal->cname = astr("_e", istr(i), "_", formal->cname);
-        formal->defPoint->insertBefore(new_arg_def);
-      }
+  if (VarSymbol* nVar = toVarSymbol(sym->var)) {
+    if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate) {
+      VarSymbol* var       = new VarSymbol(formal->name);
+      int        n         = nVar->immediate->int_value();
+      CallExpr*  tupleCall = NULL;
 
-      VarSymbol* var = new VarSymbol(formal->name);
+      if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true)
+        tupleCall = new CallExpr("_type_construct__tuple");
+      else
+        tupleCall = new CallExpr("_construct__tuple");
+
+      tupleCall->insertAtTail(new_IntSymbol(n));
+
+      for (int i = 0; i < n; i++) {
+        DefExpr*   newArgDef = formal->defPoint->copy();
+        ArgSymbol* newFormal = toArgSymbol(newArgDef->sym);
+
+        newFormal->variableExpr = NULL;
+        newFormal->name         = astr("_e", istr(i), "_", formal->name);
+        newFormal->cname        = astr("_e", istr(i), "_", formal->cname);
+
+        tupleCall->insertAtTail(new SymExpr(newFormal));
+
+        formal->defPoint->insertBefore(newArgDef);
+      }
 
       // Replace mappings to the old formal with mappings to the new variable.
       if (workingFn->hasFlag(FLAG_PARTIAL_COPY)) {
@@ -1587,20 +1596,83 @@ handleSymExprInExpandVarArgs(FnSymbol* workingFn, ArgSymbol* formal, SymExpr* sy
       }
 
       if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
-        int i = 1;
+        int i = 0;
+
         for_actuals(actual, tupleCall) {
-          VarSymbol* tmp = newTemp("_varargs_tmp_");
-          workingFn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
-          workingFn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp, new CallExpr(var, new_IntSymbol(i))));
-          workingFn->insertBeforeReturnAfterLabel(new CallExpr("=", actual->copy(), tmp));
+          // Skip the tuple count
+          if (i > 0) {
+            VarSymbol* tmp    = newTemp("_varargs_tmp_");
+
+            CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i));
+            CallExpr*  move   = new CallExpr(PRIM_MOVE, tmp,            elem);
+
+            CallExpr*  assign = new CallExpr("=",       actual->copy(), tmp);
+
+            workingFn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
+            workingFn->insertBeforeReturnAfterLabel(move);
+            workingFn->insertBeforeReturnAfterLabel(assign);
+          }
+
           i++;
         }
       }
 
-      tupleCall->insertAtHead(new_IntSymbol(n));
-      workingFn->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall));
-      workingFn->insertAtHead(new DefExpr(var));
-      formal->defPoint->remove();
+      // MDN 2016/02/01. Enable special handling for strings with blank intent
+
+      // If the original formal is a string with blank intent then the
+      // new formals appear to be strings with blank intent.  However
+      // the resolver is about to update these to be const ref intent.
+      //
+      // Currently this will cause the tuple to appear to be a tuple
+      // ref(String) which is not supported.
+      //
+      // Insert local copies that can be used for the tuple
+
+      if (isString(formal->type) && formal->intent == INTENT_BLANK) {
+        DefExpr* varDefn = new DefExpr(var);
+        Expr*    tail    = NULL;
+
+        // Insert the new locals
+        for (int i = 0; i < n; i++) {
+          const char* localName = astr("_e", istr(i + n), "_", formal->name);
+          VarSymbol*  local     = newTemp(localName, formal->type);
+          DefExpr*    defn      = new DefExpr(local);
+
+          if (tail == NULL)
+            workingFn->insertAtHead(defn);
+          else
+            tail->insertAfter(defn);
+
+          tail = defn;
+        }
+
+        // Insert the definition for the tuple
+        tail->insertAfter(varDefn);
+        tail = varDefn;
+
+        // Insert the copies from the blank-intent strings to the locals
+        // Update the arguments to the tuple call
+        for (int i = 1; i <= n; i++) {
+          DefExpr*  localDefn = toDefExpr(workingFn->body->body.get(i));
+          Symbol*   local     = localDefn->sym;
+          SymExpr*  localExpr = new SymExpr(local);
+
+          SymExpr*  tupleArg  = toSymExpr(tupleCall->get(i + 1));
+          SymExpr*  copyArg   = tupleArg->copy();
+
+          CallExpr* moveExpr  = new CallExpr(PRIM_MOVE, localExpr, copyArg);
+
+          tupleArg->var = local;
+
+          tail->insertAfter(moveExpr);
+          tail = moveExpr;
+        }
+
+        tail->insertAfter(new CallExpr(PRIM_MOVE, var, tupleCall));
+      } else {
+        workingFn->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall));
+        workingFn->insertAtHead(new DefExpr(var));
+      }
 
       if (workingFn->hasFlag(FLAG_PARTIAL_COPY)) {
         // If this is a partial copy, store the mapping for substitution later.
@@ -1611,16 +1683,20 @@ handleSymExprInExpandVarArgs(FnSymbol* workingFn, ArgSymbol* formal, SymExpr* sy
       }
 
       if (workingFn->where) {
-        VarSymbol* var = new VarSymbol(formal->name);
+        VarSymbol* var  = new VarSymbol(formal->name);
+        CallExpr*  move = new CallExpr(PRIM_MOVE, var, tupleCall->copy());
 
         if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
           var->addFlag(FLAG_TYPE_VARIABLE);
         }
 
-        workingFn->where->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall->copy()));
+        workingFn->where->insertAtHead(move);
         workingFn->where->insertAtHead(new DefExpr(var));
+
         subSymbol(workingFn->where, formal, var);
       }
+
+      formal->defPoint->remove();
     }
   }
 }
@@ -1977,7 +2053,9 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
   //
   if (block && block->modUses) {
     for_actuals(expr, block->modUses) {
-      SymExpr* se = toSymExpr(expr);
+      UseStmt* use = toUseStmt(expr);
+      INT_ASSERT(use);
+      SymExpr* se = toSymExpr(use->mod);
       INT_ASSERT(se);
       ModuleSymbol* mod = toModuleSymbol(se->var);
       INT_ASSERT(mod);
@@ -2808,7 +2886,12 @@ getVisibleFunctions(BlockStmt* block,
 
   if (block->modUses) {
     for_actuals(expr, block->modUses) {
-      SymExpr* se = toSymExpr(expr);
+      UseStmt* use = toUseStmt(expr);
+      INT_ASSERT(use);
+      if (use->skipSymbolSearch(name)) {
+        continue;
+      }
+      SymExpr* se = toSymExpr(use->mod);
       INT_ASSERT(se);
       ModuleSymbol* mod = toModuleSymbol(se->var);
       INT_ASSERT(mod);
@@ -3567,6 +3650,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
       }
     }
   } else {
+    INT_ASSERT(best->fn);
     best->fn = defaultWrap(best->fn, &best->alignedFormals, &info);
     reorderActuals(best->fn, &best->alignedFormals, &info);
     coerceActuals(best->fn, &info);
@@ -5566,11 +5650,13 @@ preFold(Expr* expr) {
       if (!name) {
         // In this case, we ran out of fields without finding the number
         // specified.  This is the user's error.
-        USR_FATAL(call, "'%d' is not a valid field number", fieldnum);
+        USR_FATAL(call, "'%d' is not a valid field number for %s", fieldnum,
+            toString(classtype));
       }
       result = new SymExpr(new_StringSymbol(name));
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NUM)) {
+      // if call->get(1) is a reference type, dereference it
       AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
       INT_ASSERT( classtype != NULL );
       classtype = toAggregateType(classtype->getValType());
@@ -5582,19 +5668,26 @@ preFold(Expr* expr) {
 
       int fieldnum = var->immediate->int_value();
       int fieldcount = 0;
+      const char* name = NULL;
 
       for_fields(field, classtype) {
         if( ! isNormalField(field) ) continue;
 
         fieldcount++;
         if (fieldcount == fieldnum) {
-          result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(),
-                                new_CStringSymbol(field->name));
+          name = field->name;
           break;
         }
       }
+      if (!name) {
+        USR_FATAL(call, "'%d' is not a valid field number for %s", fieldnum,
+                  toString(classtype));
+      }
+      result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(),
+                            new_CStringSymbol(name));
       call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_ID_BY_NUM)) {
+      /* this is really for unions */
       AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
       INT_ASSERT( classtype != NULL );
       classtype = toAggregateType(classtype->getValType());
@@ -5616,8 +5709,8 @@ preFold(Expr* expr) {
         }
       }
       call->replace(result);
-    } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NAME)) {
-      AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
+    } else if (call->isPrimitive(PRIM_FIELD_NAME_TO_NUM)) {
+      AggregateType* classtype = toAggregateType(toSymExpr(call->get(1))->var->type);
       INT_ASSERT( classtype != NULL );
       classtype = toAggregateType(classtype->getValType());
       INT_ASSERT( classtype != NULL );
@@ -5633,16 +5726,18 @@ preFold(Expr* expr) {
 
       const char* fieldname = imm->v_string;
       int fieldcount = 0;
+      int num = 0;  // return 0 if the field is not found.
       for_fields(field, classtype) {
         if( ! isNormalField(field) ) continue;
 
         fieldcount++;
         if ( 0 == strcmp(field->name,  fieldname) ) {
-          result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(),
-                                new_CStringSymbol(field->name));
+          num = fieldcount;
           break;
         }
       }
+      result = new SymExpr(new_IntSymbol(num));
+
       call->replace(result);
     } else if (call->isPrimitive(PRIM_CALL_RESOLVES) ||
                call->isPrimitive(PRIM_METHOD_CALL_RESOLVES)) {
@@ -6275,8 +6370,6 @@ postFold(Expr* expr) {
                call->isPrimitive(PRIM_SINGLE_READFF) ||
                call->isPrimitive(PRIM_SINGLE_READXX) ||
                call->isPrimitive(PRIM_SINGLE_IS_FULL) ||
-               call->isPrimitive(PRIM_EXECUTE_TASKS_IN_LIST) ||
-               call->isPrimitive(PRIM_FREE_TASK_LIST) ||
                (call->primitive &&
                 (!strncmp("_fscan", call->primitive->name, 6) ||
                  !strcmp("_readToEndOfLine", call->primitive->name) ||
@@ -7371,13 +7464,15 @@ computeStandardModuleSet() {
   while (ModuleSymbol* mod = stack.pop()) {
     if (mod->block->modUses) {
       for_actuals(expr, mod->block->modUses) {
-        SymExpr* se = toSymExpr(expr);
-        INT_ASSERT(se);
-        ModuleSymbol* use = toModuleSymbol(se->var);
+        UseStmt* use = toUseStmt(expr);
         INT_ASSERT(use);
-        if (!standardModuleSet.set_in(use->block)) {
-          stack.add(use);
-          standardModuleSet.set_add(use->block);
+        SymExpr* se = toSymExpr(use->mod);
+        INT_ASSERT(se);
+        ModuleSymbol* mod = toModuleSymbol(se->var);
+        INT_ASSERT(mod);
+        if (!standardModuleSet.set_in(mod->block)) {
+          stack.add(mod);
+          standardModuleSet.set_add(mod->block);
         }
       }
     }

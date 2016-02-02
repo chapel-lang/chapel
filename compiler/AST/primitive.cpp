@@ -491,10 +491,6 @@ initPrimitive() {
   prim_def(PRIM_GET_END_COUNT, "get end count", returnInfoEndCount);
   prim_def(PRIM_SET_END_COUNT, "set end count", returnInfoVoid, true);
 
-  prim_def(PRIM_PROCESS_TASK_LIST, "process task list", returnInfoVoid, true, true);
-  prim_def(PRIM_EXECUTE_TASKS_IN_LIST, "execute tasks in list", returnInfoVoid, true, true);
-  prim_def(PRIM_FREE_TASK_LIST, "free task list", returnInfoVoid, true, true);
-
   // task primitives
   prim_def(PRIM_GET_SERIAL, "task_get_serial", returnInfoBool);
   prim_def(PRIM_SET_SERIAL, "task_set_serial", returnInfoVoid, true);
@@ -512,7 +508,6 @@ initPrimitive() {
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false, true);
   prim_def(PRIM_TYPEOF, "typeof", returnInfoFirstDeref);
-  prim_def(PRIM_USE, "use", returnInfoVoid, true);
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);
   prim_def(PRIM_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
   prim_def(PRIM_TUPLE_AND_EXPAND, "and_expand_tuple", returnInfoVoid);
@@ -624,9 +619,9 @@ initPrimitive() {
 
   prim_def(PRIM_NUM_FIELDS, "num fields", returnInfoInt32);
   prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
+  prim_def(PRIM_FIELD_NAME_TO_NUM, "field name to num", returnInfoInt32);
   prim_def(PRIM_FIELD_VALUE_BY_NUM, "field value by num", returnInfoUnknown);
   prim_def(PRIM_FIELD_ID_BY_NUM, "field id by num", returnInfoInt32);
-  prim_def(PRIM_FIELD_VALUE_BY_NAME, "field value by name", returnInfoUnknown);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
   prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);

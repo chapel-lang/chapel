@@ -3722,9 +3722,67 @@ CallExpr::insertAtTail(BaseAST* ast) {
 }
 
 
-FnSymbol* CallExpr::isResolved(void) {
-  SymExpr* base = toSymExpr(baseExpr);
-  return base ? toFnSymbol(base->var) : NULL;
+bool CallExpr::isEmpty() const {
+  return primitive == NULL && baseExpr == NULL;
+}
+
+
+// MDN 2016/01/29: This will become a predicate
+FnSymbol* CallExpr::isResolved() const {
+  return resolvedFunction();
+}
+
+
+FnSymbol* CallExpr::resolvedFunction() const {
+  FnSymbol* retval = NULL;
+
+  // A PRIM-OP
+  if (primitive != NULL) {
+    INT_ASSERT(baseExpr  == NULL);
+
+  // A Chapel call
+  } else if (baseExpr != NULL) {
+    if (isUnresolvedSymExpr(baseExpr) == true) {
+
+    } else if (SymExpr* base = toSymExpr(baseExpr)) {
+      if (FnSymbol* fn = toFnSymbol(base->var)) {
+        retval = fn;
+
+      // Probably an array index
+      } else if (isArgSymbol(base->var)  == true ||
+                 isVarSymbol(base->var)  == true) {
+
+      // A type specifier
+      } else if (isTypeSymbol(base->var) == true) {
+
+      } else {
+        INT_ASSERT(false);
+      }
+
+    } else if (CallExpr* subCall = toCallExpr(baseExpr)) {
+      // Confirm that this is a partial call
+      INT_ASSERT(subCall->partialTag == true);
+
+    } else {
+      INT_ASSERT(false);
+    }
+
+  // The CallExpr has been purged during resolve
+  } else {
+    INT_ASSERT(false);
+  }
+
+  return retval;
+}
+
+
+FnSymbol* CallExpr::theFnSymbol() const {
+  FnSymbol* retval = NULL;
+
+  if (SymExpr* base = toSymExpr(baseExpr))
+    retval = toFnSymbol(base->var);
+
+  return retval;
 }
 
 
@@ -3769,14 +3827,16 @@ Type* CallExpr::typeInfo(void) {
 }
 
 void CallExpr::prettyPrint(std::ostream *o) {
-  if (isResolved()) {
-    if (isResolved()->hasFlag(FLAG_BEGIN_BLOCK))
+  if (FnSymbol* fn = theFnSymbol()) {
+    if      (fn->hasFlag(FLAG_BEGIN_BLOCK))
       *o << "begin";
-    else if (isResolved()->hasFlag(FLAG_ON_BLOCK))
+    else if (fn->hasFlag(FLAG_ON_BLOCK))
       *o << "on";
   }
-  bool array = false;
+
+  bool array   = false;
   bool unusual = false;
+
   if (baseExpr != NULL) {
     if (UnresolvedSymExpr *expr = toUnresolvedSymExpr(baseExpr)) {
       if (strcmp(expr->unresolved, "*") == 0){
@@ -3785,9 +3845,10 @@ void CallExpr::prettyPrint(std::ostream *o) {
         *o << "*(";
         argList.last()->prettyPrint(o);
         *o << ")";
-      } else if (strcmp(expr->unresolved, "chpl_build_bounded_range") == 0 ||
-                 strcmp(expr->unresolved, "chpl_build_partially_bounded_range") == 0 ||
-                 strcmp(expr->unresolved, "chpl_build_unbounded_range") == 0) {
+      } else if (strcmp(expr->unresolved, "chpl_build_bounded_range") == 0) {
+        // Note that this code path is only used by chpldoc to create function
+        // return signatures and the only place a range will show up is in a
+        // fully specified array, in which case the range must be fully bounded
         argList.first()->prettyPrint(o);
         *o << "..";
         argList.last()->prettyPrint(o);
@@ -4006,6 +4067,9 @@ GenRet CallExpr::codegen() {
     }
     case PRIM_ARRAY_ALLOC:
     {
+      // get(1): return symbol
+      // get(2): element type
+      // get(3): number of elements
       GenRet dst = get(1);
       GenRet alloced;
       INT_ASSERT(dst.isLVPtr);
@@ -5058,21 +5122,6 @@ GenRet CallExpr::codegen() {
       ret = codegenCallExpr("chpl_single_isFull",
                             val_ptr, aux);
       break; 
-    }
-    case PRIM_PROCESS_TASK_LIST: {
-      GenRet taskListPtr = codegenFieldPtr(get(1), "taskList");
-      codegenCall("chpl_taskListProcess", codegenValue(taskListPtr), get(2), get(3));
-      break;
-    }
-    case PRIM_EXECUTE_TASKS_IN_LIST:
-      codegenCall("chpl_taskListExecute", get(1), get(2), get(3));
-      break;
-    case PRIM_FREE_TASK_LIST:
-    {
-      if (fNoMemoryFrees)
-        break;
-      codegenCall("chpl_taskListFree", get(1), get(2), get(3));
-      break;
     }
     case PRIM_GET_SERIAL:
       ret = codegenCallExpr("chpl_task_getSerial");
