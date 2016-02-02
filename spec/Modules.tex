@@ -312,7 +312,7 @@ compiler error.
 \label{Using_Modules}
 \index{modules!using}
 
-If a module is visible to where accessing its symbols is desirable,
+If a module is visible to the scope in which accessing its symbols is desirable,
 then a use statement on that module may be employed.  Use statements
 make a module's visible symbols available without requiring them to be
 prefixed by the module's name.  The syntax of the use statement is
@@ -323,12 +323,16 @@ use-statement:
   `use' module-name-list ;
 
 module-name-list:
-  module-name
+  module-name limitation-clause[OPT]
   module-name , module-name-list
 
 module-name:
   identifier
   module-name . module-name
+
+limitation-clause:
+  `except' identifier-list
+  `only' identifier-list
 \end{syntax}
 
 Symbols made available by a use statement are at an outer scope from those
@@ -336,10 +340,31 @@ defined directly in the scope where the use statement occurs, but at a
 nearer scope than symbols defined in the scope containing the scope where
 the use statement occurs.
 
+An optional \sntx{limitation-clause} may be provided to limit the symbols made
+available by the use statement.  If an \chpl{except} list is provided, then all
+the visible but unlisted symbols in the module will be made available without
+prefix.  If an \chpl{only} list is provided, then just the listed visible
+symbols in the module will be made available without prefix.  All visible
+symbols not provided via these limited use statements are still accessible with
+the module name prefix.  If a type is specified in the \sntx{limitation-clause},
+then the type's fields and methods are treated similarly to the type name.
+These fields and methods cannot be specified in a \sntx{limitation-clause} on
+their own.  It is an error to provide a name in a \sntx{limitation-clause} that
+does not exist or is not visible in the respective module.
+
+% We need to figure out what to do about functions that return types which due
+% to the limitation-clause are not visible without prefix.
+
+If a use statement mentions multiple modules, only the last module can have a
+\sntx{limitation-clause}.
+
 Use statements are transitive by default: if a module A used by
 another module B also contains a use of a further module C, C's
 symbols will also be considered visible within B, at a further scope
-than the symbols of other modules immediately used by B.
+than the symbols of other modules immediately used by B.  Limitation clauses
+are applied transitively as well - if module B's use of module A contains an
+\chpl{except} or \chpl{only} list, that list will also limit which of C's
+symbols are visible to B.
 
 % We would like to provide a way to specify that a use should not be
 % transitive
@@ -349,8 +374,7 @@ name to be defined at the same depth.
 
 \begin{openissue}
 There is an expectation that this statement will be extended to allow
-the programmer to restrict which symbols are 'used' as well as to
-rename symbols that are 'used.'
+the programmer to rename symbols that are 'used.'
 \end{openissue}
 
 \begin{chapelexample}{use.chpl}
