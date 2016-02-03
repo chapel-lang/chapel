@@ -183,18 +183,18 @@ void normalize() {
   find_printModuleInit_stuff();
 }
 
-/************************************ | *************************************
-*                                                                           *
-* Insert the module initFn in to every module in allModules.  The current   *
-* implementation pulls the entire module in to the prototypical initFn and  *
-* then lets the reset of normalize sort things out.  The module looks       *
-* reasonable by the end of the pass but odd in the middle.                  *
-*                                                                           *
-* MDN 2014/07/25 At some point this transformation should be reworked to be *
-* more delicate e.g. insert an empty init function and then carefully       *
-* populate it so that the AST is well-behaved at all points.                *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+* Insert the module initFn in to every module in allModules.  The current     *
+* implementation pulls the entire module in to the prototypical initFn and    *
+* then lets the reset of normalize sort things out.  The module looks         *
+* reasonable by the end of the pass but odd in the middle.                    *
+*                                                                             *
+* MDN 2014/07/25 At some point this transformation should be reworked to be   *
+* more delicate e.g. insert an empty init function and then carefully         *
+* populate it so that the AST is well-behaved at all points.                  *
+*                                                                             *
+************************************** | *************************************/
 
 static void insertModuleInit() {
   // Insert an init function into every module
@@ -230,19 +230,19 @@ static void insertModuleInit() {
 
 
 
-/************************************ | *************************************
-*                                                                           *
-* Historically, parser/build converted                                      *
-*                                                                           *
-*    <expr1> && <expr2>                                                     *
-*    <expr1> || <expr2>                                                     *
-*                                                                           *
-* into an IfExpr (which itself currently has a complex implementation).     *
-*                                                                           *
-* Now we allow the parser to generate a simple unresolvable call to either  *
-* && or || and then replace it with the original IF/THEN/ELSE expansion.    *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+* Historically, parser/build converted                                        *
+*                                                                             *
+*    <expr1> && <expr2>                                                       *
+*    <expr1> || <expr2>                                                       *
+*                                                                             *
+* into an IfExpr (which itself currently has a complex implementation).       *
+*                                                                             *
+* Now we allow the parser to generate a simple unresolvable call to either    *
+* && or || and then replace it with the original IF/THEN/ELSE expansion.      *
+*                                                                             *
+************************************** | *************************************/
 
 static void transformLogicalShortCircuit()
 {
@@ -282,10 +282,10 @@ static void transformLogicalShortCircuit()
   }
 }
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 // the following function is called from multiple places,
 // e.g., after generating default or wrapper functions
@@ -921,6 +921,12 @@ static void insert_call_temps(CallExpr* call)
   stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 //
 // fix_def_expr removes DefExpr::exprType and DefExpr::init from a
 //   variable's def expression, normalizing the AST with primitive
@@ -1220,6 +1226,11 @@ static void init_untyped_var(VarSymbol* var, Expr* init, Expr* stmt, VarSymbol* 
     }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void hack_resolve_types(ArgSymbol* arg) {
   // Look only at unknown or arbitrary types.
