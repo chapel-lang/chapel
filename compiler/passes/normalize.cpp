@@ -54,11 +54,6 @@ static void call_constructor_for_class(CallExpr* call);
 static void applyGetterTransform(CallExpr* call);
 static void insert_call_temps(CallExpr* call);
 static void fix_def_expr(VarSymbol* var);
-static void init_array_alias(VarSymbol* var, Expr* type, Expr* init, Expr* stmt);
-static void init_ref_var(VarSymbol* var, Expr* init, Expr* stmt);
-static void init_config_var(VarSymbol* var, Expr*& stmt, VarSymbol* constTemp);
-static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, VarSymbol* constTemp);
-static void init_untyped_var(VarSymbol* var, Expr* init, Expr* stmt, VarSymbol* constTemp);
 static void hack_resolve_types(ArgSymbol* arg);
 static void fixup_array_formals(FnSymbol* fn);
 static void clone_parameterized_primitive_methods(FnSymbol* fn);
@@ -926,6 +921,30 @@ static void insert_call_temps(CallExpr* call)
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+
+static void init_array_alias(VarSymbol* var,
+                             Expr*      type,
+                             Expr*      init,
+                             Expr*      stmt);
+
+static void init_ref_var(VarSymbol*     var,
+                         Expr*          init,
+                         Expr*          stmt);
+
+static void init_config_var(VarSymbol* var,
+                            Expr*&     stmt,
+                            VarSymbol* constTemp);
+
+static void init_typed_var(VarSymbol* var,
+                           Expr*      type,
+                           Expr*      init,
+                           Expr*      stmt,
+                           VarSymbol* constTemp);
+
+static void init_untyped_var(VarSymbol* var,
+                             Expr*      init,
+                             Expr*      stmt,
+                             VarSymbol* constTemp);
 
 //
 // fix_def_expr removes DefExpr::exprType and DefExpr::init from a
