@@ -30,8 +30,8 @@
 static bool mainReturnsInt;
 
 static void build_chpl_entry_points();
-static void build_getter_setter(AggregateType* ct, Symbol* field, bool setter);
-static void build_getter_setter(AggregateType* ct, Symbol* field);
+static void build_accessor(AggregateType* ct, Symbol* field, bool setter);
+static void build_accessors(AggregateType* ct, Symbol* field);
 static void build_union_assignment_function(AggregateType* ct);
 static void build_enum_assignment_function(EnumType* et);
 static void build_record_assignment_function(AggregateType* ct);
@@ -136,10 +136,10 @@ static void buildFieldAccessorFunctions(AggregateType* at)
     if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
       if (isVarSymbol(field)) {
         if (strcmp(field->name, "_promotionType")) {
-          build_getter_setter(at, field);
+          build_accessors(at, field);
         }
       } else if (isEnumType(field->type)) {
-        build_getter_setter(at, field);
+        build_accessors(at, field);
       }
     }
   }
@@ -223,9 +223,9 @@ static FnSymbol* function_exists(const char* name,
 }
 
 
-static void fixup_getter(AggregateType* ct, Symbol *field,
-                         bool fieldIsConst, bool recordLike,
-                         FnSymbol* fn)
+static void fixup_accessor(AggregateType* ct, Symbol *field,
+                           bool fieldIsConst, bool recordLike,
+                           FnSymbol* fn)
 {
   std::vector<BaseAST*> asts;
   collect_asts(fn, asts);
@@ -249,10 +249,9 @@ static void fixup_getter(AggregateType* ct, Symbol *field,
     fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
 }
 
-// Getter and setter functions are provided by the compiler if not supplied by
-// the user.
-// These functions have the same binding strength as if they were user-defined.
-static void build_getter_setter(AggregateType* ct, Symbol *field, bool setter) {
+// This function builds the getter or the setter, depending on the
+// 'setter' argument.
+static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   const bool recordLike = ct->isRecord() || ct->isUnion();
 
@@ -341,10 +340,14 @@ static void build_getter_setter(AggregateType* ct, Symbol *field, bool setter) {
   fn->cname = astr("chpl_get_", ct->symbol->cname, "_", fn->cname);
   fn->addFlag(FLAG_NO_PARENS);
   fn->_this = _this;
-
 }
 
-static void build_getter_setter(AggregateType* ct, Symbol *field) {
+// Getter and setter functions are provided by the compiler if not supplied by
+// the user.
+// These functions have the same binding strength as if they were user-defined.
+// This function calls build_accessor twice, passing
+// true (to build the setter) and false (to build the getter).
+static void build_accessors(AggregateType* ct, Symbol *field) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   const bool recordLike = ct->isRecord() || ct->isUnion();
 
@@ -353,15 +356,15 @@ static void build_getter_setter(AggregateType* ct, Symbol *field) {
   FnSymbol *getter = function_exists(field->name, 2,
                                      dtMethodToken, ct, NULL, FIND_NOT_REF);
   if (setter)
-    fixup_getter(ct, field, fieldIsConst, recordLike, setter);
+    fixup_accessor(ct, field, fieldIsConst, recordLike, setter);
   if (getter)
-    fixup_getter(ct, field, fieldIsConst, recordLike, getter);
+    fixup_accessor(ct, field, fieldIsConst, recordLike, getter);
   if (getter || setter)
     return;
 
   // Otherwise, build compiler-default getter and setter.
-  build_getter_setter(ct, field, true);
-  build_getter_setter(ct, field, false);
+  build_accessor(ct, field, true);
+  build_accessor(ct, field, false);
 }
 
 static FnSymbol* chpl_gen_main_exists() {

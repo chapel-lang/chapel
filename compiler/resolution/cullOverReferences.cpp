@@ -42,13 +42,7 @@ shouldUseByValueFunction(FnSymbol*                     fn,
                          SymExpr*                      se,
                          Map<Symbol*, Vec<SymExpr*>*>& defMap,
                          Map<Symbol*, Vec<SymExpr*>*>& useMap) {
-  bool retval = false;
-
-  if (refNecessary(se, defMap, useMap) == false) {
-    retval = true;
-  }
-
-  return retval;
+  return !refNecessary(se, defMap, useMap);
 }
 
 static bool
@@ -97,7 +91,8 @@ refNecessary(SymExpr*                      se,
       } else if (call->isPrimitive(PRIM_RETURN) ||
                  call->isPrimitive(PRIM_YIELD)) {
         FnSymbol* inFn = toFnSymbol(call->parentSymbol);
-        // A reference is not needed for a const-ref return.
+        // It is not necessary to use the 'ref' version
+        // if the function result is returned by 'const ref'.
         if (inFn->retTag == RET_CONST_REF) return false;
         // MPF: it seems to cause problems to return false
         // here when inFn->retTag is RET_VALUE.

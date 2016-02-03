@@ -871,11 +871,13 @@ module DefaultRectangular {
     inline proc dsiAccess(ind: idxType ...1) ref
     where rank == 1
       return dsiAccess(ind);
+
     inline proc dsiAccess(ind: idxType ...1)
-    where rank == 1 && isPODType(eltType)
+    where rank == 1 && !shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(ind);
+
     inline proc dsiAccess(ind: idxType ...1) const ref
-    where rank == 1 && !isPODType(eltType)
+    where rank == 1 && shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(ind);
 
     inline proc dsiAccess(ind : rank*idxType) ref {
@@ -891,8 +893,7 @@ module DefaultRectangular {
       return theData(dataInd);
     }
     inline proc dsiAccess(ind : rank*idxType)
-    where isPODType(eltType)
-    {
+    where !shouldReturnRvalueByConstRef(eltType) {
       if boundsChecking then
         if !dom.dsiMember(ind) {
           halt("array index out of bounds: " + _stringify_index(ind));
@@ -901,8 +902,7 @@ module DefaultRectangular {
       return theData(dataInd);
     }
     inline proc dsiAccess(ind : rank*idxType) const ref
-    where !isPODType(eltType)
-    {
+    where shouldReturnRvalueByConstRef(eltType) {
       if boundsChecking then
         if !dom.dsiMember(ind) {
           halt("array index out of bounds: " + _stringify_index(ind));
@@ -911,19 +911,16 @@ module DefaultRectangular {
       return theData(dataInd);
     }
 
-    inline proc dsiLocalAccess(i) ref {
+    inline proc dsiLocalAccess(i) ref
       return dsiAccess(i);
-    }
+
     inline proc dsiLocalAccess(i)
-    where isPODType(eltType)
-    {
+    where !shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(i);
-    }
+
     inline proc dsiLocalAccess(i) const ref
-    where !isPODType(eltType)
-    {
+    where shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(i);
-    }
 
     proc dsiReindex(d: DefaultRectangularDom) {
       var alias : DefaultRectangularArr(eltType=eltType, rank=d.rank,

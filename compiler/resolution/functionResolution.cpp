@@ -3626,13 +3626,23 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   ResolutionCandidate* best = bestRef;
   if (!best) best = bestValue;
 
+  // If we have both ref and value matches:
+  //  'call' will invoke the ref function best->fn
+  //  'valueCall' will invoke the value function bestValue->fn
+  //  we will manipulate these two side by side.
+  //  valueCall is always NULL if there aren't ref and value matches.
   CallExpr* valueCall = NULL;
 
   if (bestRef && bestValue) {
-    // Create a copy of the call to work with the value version.
-
-    valueCall = call->copy();
-    call->insertAfter(valueCall);
+    if (bestRef->fn->isIterator() || bestValue->fn->isIterator()) {
+      // Don't consider it a ref pair.
+      // Iterators would require specific support since
+      // they return differently.
+      bestValue = NULL;
+    } else {
+      valueCall = call->copy();
+      call->insertAfter(valueCall);
+    }
   }
 
   if (best && best->fn) {
@@ -6635,34 +6645,24 @@ resolveExpr(Expr* expr) {
       // For ContextCallExprs, be sure to resolve all of the
       // functions that could be called.
       if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
-        Type* firstRetType = NULL;
-        Type* retType = NULL;
-        bool same = true;
-        for_alist(optionExpr, cc->options) {
-          CallExpr* callOption = toCallExpr(optionExpr);
-          FnSymbol* calledFn = callOption->isResolved();
-          INT_ASSERT(calledFn);
-          resolveFns(calledFn);
-          INT_ASSERT(calledFn->retType);
-          // Make sure that the return type for all of the
-          // options is the same, since we're going to switch
-          // between them later.
-          retType = calledFn->retType->getValType();
-          if (firstRetType == NULL)
-            firstRetType = retType;
-          else if(firstRetType != retType)
-            same = false;
-        }
+        CallExpr* refCall = cc->getRefCall();
+        CallExpr* valueCall = cc->getRValueCall();
+        FnSymbol* refFn = refCall->isResolved();
+        FnSymbol* valueFn = valueCall->isResolved();
 
-        if (!same) {
+        INT_ASSERT(refFn && valueFn);
+        resolveFns(refFn);
+        resolveFns(valueFn);
+
+        // Produce an error if they are not calling an iterator
+        // and the return types do not match.
+        if (!refCall->isResolved()->isIterator() &&
+            refFn->retType->getValType() != valueFn->retType->getValType()) {
           USR_FATAL_CONT(cc, "invalid ref return pair: return types differ");
-          for_alist(optionExpr, cc->options) {
-            CallExpr* callOption = toCallExpr(optionExpr);
-            FnSymbol* calledFn = callOption->isResolved();
-
-            retType = calledFn->retType;
-            USR_FATAL_CONT(calledFn, "function returns %s", toString(retType));
-          }
+            USR_FATAL_CONT(valueFn, "function returns %s",
+                           toString(valueFn->retType));
+            USR_FATAL_CONT(refFn, "function returns %s",
+                           toString(refFn->retType));
           USR_STOP();
         }
 

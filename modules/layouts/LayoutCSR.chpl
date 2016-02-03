@@ -366,12 +366,10 @@ class CSRArr: BaseArr {
 
     // lookup the index and return the data or IRV
     const (found, loc) = dom.find(ind);
-    if !found then
-      halt("attempting to assign a 'zero' value in a sparse array: ", ind);
     if found then
       return data(loc);
     else
-      return irv;
+      halt("attempting to assign a 'zero' value in a sparse array: ", ind);
   }
   proc dsiAccess(ind: rank*idxType) {
     // make sure we're in the dense bounding box

@@ -722,7 +722,7 @@ an iterator).
 The \chpl{ref} return intent is specified by following the argument list with
 the \chpl{ref} keyword.  The function must return or yield an lvalue.
 
-During function resolution, if a producure with a \chpl{ref} return
+During function resolution, if a procedure with a \chpl{ref} return
 intent and a procedure without a \chpl{ref} return intent are both
 possible candidates, and either neither use promotion or both do,
 this pair fo procedures is called a ref-pair.
@@ -734,10 +734,12 @@ intent procudure is used. Otherwise, the other candidate is used.  This
 behavior can be useful for adjusting the behavior depending to the
 calling context.
 
+\begin{craychapel}
 Previous versions of Chapel included an implicit \chpl{setter} param of
 type \chpl{bool} for \chpl{ref} return intent functions. The old behavior
 can be recreated by making both ref-pair functions call another function
 and explicitly pass the \chpl{setter} value, as in the the example below.
+\end{craychapel}
 
 \begin{chapelexample}{ref-return-intent.chpl}
 The following code defines a procedure that can be interpreted as a

@@ -177,7 +177,6 @@ class CallExpr : public Expr {
   // TODO: Maybe use a new primitive to represent partials, and get rid of this tag.
   bool square; // true if call made with square brackets
 
-
   CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
            BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
   CallExpr(PrimitiveOp *prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
@@ -230,7 +229,7 @@ class CallExpr : public Expr {
 // For storing several call expressions, where
 // choosing between them depends on context
 // (and that choice might need to be done later in resolution).
-// These should only exist during resolution.
+// These should only exist between resolution and cullOverReferences.
 // A ContextCall has a designated call.
 // The designated call will be returned if toCallExpr() is called
 // on the context call.
@@ -239,6 +238,12 @@ class CallExpr : public Expr {
 // isCallExpr() will return true for a ContextCallExpr.
 class ContextCallExpr : public Expr {
  public:
+  // The options list always contains two CallExprs.
+  // The first is the value/const ref return intent
+  // and the second is the ref return intent version of a call.
+  // Storing the ref call after the value call allows a
+  // postorder traversal to skip the value call.
+  // The order is important also - the first is always the value.
   AList options;
 
   ContextCallExpr();
