@@ -10,6 +10,7 @@ and Pydoc. ``chpldoc`` is used to produce Chapel's web documentation for the
 :ref:`Built-in-Types and Functions <built-in-types>`.
 
 
+
 **Contents**:
 
 #. `Building chpldoc`_
@@ -20,6 +21,12 @@ and Pydoc. ``chpldoc`` is used to produce Chapel's web documentation for the
 #. `Advanced chpldoc options`_
 #. `How chpldoc works`_
 #. `Future directions`_
+#. :doc:`Man page <man>`
+
+.. toctree::
+   :hidden:
+
+   Man page <man>
 
 
 .. _Building chpldoc:
