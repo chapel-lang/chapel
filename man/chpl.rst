@@ -1,10 +1,11 @@
 chpl
 ====
 
-:Version: 1.12.0
-:Manual section: 1
-:Title: \\fBchpl\\fP
-:Subtitle: Compiler for the Chapel Programming Language
+..
+    :Version: 1.12.0
+    :Manual section: 1
+    :Title: \\fBchpl\\fP
+    :Subtitle: Compiler for the Chapel Programming Language
 
 SYNOPSIS
 --------
@@ -13,6 +14,7 @@ SYNOPSIS
 |            [**-g**] [**--savec** *directory*]
 |            [**-M** *directory*...] [**--main-module** *mod*]
 |            [**-o** *outfile*] [*options*] source-files...
+|
 
 DESCRIPTION
 -----------

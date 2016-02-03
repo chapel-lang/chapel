@@ -64,6 +64,7 @@ tags
 /doc/sphinx/source/modules/layouts
 /doc/sphinx/source/modules/internal
 /doc/sphinx/source/language/*.pdf
+/doc/sphinx/source/language/man.rst
 !/doc/sphinx/source/index.rst
 !/doc/sphinx/source/technotes/index.rst
 !/doc/sphinx/source/platforms/index.rst
