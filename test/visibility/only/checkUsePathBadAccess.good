@@ -1,0 +1,1 @@
+checkUsePathBadAccess.chpl:4: error: 'a' undeclared (first use this function)
