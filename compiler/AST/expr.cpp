@@ -3719,7 +3719,6 @@ CallExpr::insertAtTail(BaseAST* ast) {
     argList.insertAtTail(new SymExpr(a));
   else
     argList.insertAtTail(toExpr(ast));
-  // TODO -- should this call parent_insert_help ?
 }
 
 
