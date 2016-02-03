@@ -1240,33 +1240,37 @@ static void init_typed_var(VarSymbol* var,
 
     // Create an empty type block.
     BlockStmt* block    = new BlockStmt(NULL, BLOCK_SCOPELESS);
-    VarSymbol* typeTemp = newTemp("type_tmp");
-    CallExpr*  initCall = NULL;
 
-    block->insertAtTail(new DefExpr(typeTemp));
+    VarSymbol* typeTemp = newTemp("type_tmp");
+    DefExpr*   typeDefn = new DefExpr(typeTemp);
+    CallExpr*  initCall = NULL;
 
     initCall = new CallExpr(PRIM_MOVE,
                             typeTemp,
                             new CallExpr(PRIM_INIT, type->remove()));
 
-    block->insertAtTail(initCall);
+    block->insertAtTail(typeDefn);
+
+    typeDefn->insertAfter(initCall);
 
     if (init) {
+      CallExpr* assign = new CallExpr("=",       typeTemp,  init->remove());
+      CallExpr* move   = new CallExpr(PRIM_MOVE, constTemp, typeTemp);
+
       // This should be copy-initialization, not assignment.
-      block->insertAtTail(new CallExpr("=",       typeTemp,  init->remove()));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
-    } else {
-      if (constTemp->isType())
-        block->insertAtTail(new CallExpr(PRIM_MOVE,
+      initCall->insertAfter(assign);
+      assign->insertAfter(move);
+
+    } else if (constTemp->isType()) {
+      initCall->insertAfter(new CallExpr(PRIM_MOVE,
                                          constTemp,
                                          new CallExpr(PRIM_TYPEOF, typeTemp)));
-      else
-      {
-        block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
 
-        if (constTemp->hasFlag(FLAG_EXTERN))
-          (unsigned&) block->blockTag |= BLOCK_EXTERN | BLOCK_TYPE;
-      }
+    } else {
+      initCall->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
+
+      if (constTemp->hasFlag(FLAG_EXTERN))
+        (unsigned&) block->blockTag |= BLOCK_EXTERN | BLOCK_TYPE;
     }
 
     stmt->insertAfter(block);
