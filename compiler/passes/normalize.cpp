@@ -1061,17 +1061,27 @@ static void init_array_alias(VarSymbol* var,
                              Expr*      init,
                              Expr*      stmt)
 {
-  CallExpr* partial;
+  CallExpr* partial  = NULL;
+  CallExpr* autoCopy = NULL;
+
   if (!type) {
     partial = new CallExpr("newAlias", gMethodToken, init->remove());
+
     // newAlias is not a method, so we don't set the methodTag
-    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", partial)));
+
   } else {
-    partial = new CallExpr("reindex", gMethodToken, init->remove());
-    partial->partialTag = true;
-    partial->methodTag = true;
-    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", new CallExpr(partial, type->remove()))));
+    CallExpr* reindex = new CallExpr("reindex", gMethodToken, init->remove());
+
+    reindex->partialTag = true;
+    reindex->methodTag  = true;
+
+    partial = new CallExpr(reindex, type->remove());
   }
+
+  autoCopy = new CallExpr("chpl__autoCopy", partial);
+
+  stmt->insertAfter(new CallExpr(PRIM_MOVE, var, autoCopy));
+
 }
 
 
@@ -1234,10 +1244,9 @@ static void init_typed_var(VarSymbol* var,
     // Create an empty type block.
     BlockStmt* block    = new BlockStmt(NULL, BLOCK_SCOPELESS);
     VarSymbol* typeTemp = newTemp("type_tmp");
+    CallExpr*  initCall = NULL;
 
     block->insertAtTail(new DefExpr(typeTemp));
-
-    CallExpr* initCall;
 
     initCall = new CallExpr(PRIM_MOVE,
                             typeTemp,
@@ -1288,14 +1297,15 @@ static void init_untyped_var(VarSymbol* var,
   //      issue since we will do a double free.
   //
   CallExpr* initCall = toCallExpr(init);
+  Expr*     rhs      = NULL;
 
   if (initCall && initCall->isPrimitive(PRIM_NEW)) {
-    stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, init->remove()));
+    rhs = init->remove();
   } else {
-    stmt->insertAfter(new CallExpr(PRIM_MOVE,
-                                   constTemp,
-                                   new CallExpr("chpl__initCopy", init->remove())));
+    rhs = new CallExpr("chpl__initCopy", init->remove());
   }
+
+  stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, rhs));
 }
 
 /************************************* | **************************************
