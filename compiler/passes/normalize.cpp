@@ -1044,205 +1044,205 @@ fix_def_expr(VarSymbol* var) {
 
 static void init_array_alias(VarSymbol* var, Expr* type, Expr* init, Expr* stmt)
 {
-    CallExpr* partial;
-    if (!type) {
-      partial = new CallExpr("newAlias", gMethodToken, init->remove());
-      // newAlias is not a method, so we don't set the methodTag
-      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", partial)));
-    } else {
-      partial = new CallExpr("reindex", gMethodToken, init->remove());
-      partial->partialTag = true;
-      partial->methodTag = true;
-      stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", new CallExpr(partial, type->remove()))));
-    }
+  CallExpr* partial;
+  if (!type) {
+    partial = new CallExpr("newAlias", gMethodToken, init->remove());
+    // newAlias is not a method, so we don't set the methodTag
+    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", partial)));
+  } else {
+    partial = new CallExpr("reindex", gMethodToken, init->remove());
+    partial->partialTag = true;
+    partial->methodTag = true;
+    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr("chpl__autoCopy", new CallExpr(partial, type->remove()))));
+  }
 }
 
 
 static void init_ref_var(VarSymbol* var, Expr* init, Expr* stmt)
 {
-    if (!init) {
-      USR_FATAL_CONT(var, "References must be initialized when they are defined.");
-    }
+  if (!init) {
+    USR_FATAL_CONT(var, "References must be initialized when they are defined.");
+  }
 
-    Expr* varLocation = NULL;
+  Expr* varLocation = NULL;
 
-    // If this is a const reference to an immediate, we need to insert a temp
-    // variable so we can take the address of it, non-const references to an
-    // immediate are not allowed.
-    if (var->hasFlag(FLAG_CONST)) {
-      if (SymExpr* initSym = toSymExpr(init)) {
-        if (initSym->var->isImmediate()) {
-          VarSymbol* constRefTemp  = newTemp("const_ref_immediate_tmp");
-          stmt->insertBefore(new DefExpr(constRefTemp));
-          stmt->insertBefore(new CallExpr(PRIM_MOVE, constRefTemp, init->remove()));
-          varLocation = new SymExpr(constRefTemp);
-        }
+  // If this is a const reference to an immediate, we need to insert a temp
+  // variable so we can take the address of it, non-const references to an
+  // immediate are not allowed.
+  if (var->hasFlag(FLAG_CONST)) {
+    if (SymExpr* initSym = toSymExpr(init)) {
+      if (initSym->var->isImmediate()) {
+        VarSymbol* constRefTemp  = newTemp("const_ref_immediate_tmp");
+        stmt->insertBefore(new DefExpr(constRefTemp));
+        stmt->insertBefore(new CallExpr(PRIM_MOVE, constRefTemp, init->remove()));
+        varLocation = new SymExpr(constRefTemp);
       }
     }
+  }
 
-    if (varLocation == NULL && init != NULL) {
-      varLocation = init->remove();
+  if (varLocation == NULL && init != NULL) {
+    varLocation = init->remove();
+  }
+
+  if (SymExpr* sym = toSymExpr(varLocation)) {
+    if (!var->hasFlag(FLAG_CONST) && sym->var->isConstant()) {
+      USR_FATAL_CONT(sym, "Cannot set a non-const reference to a const variable.");
     }
+  }
 
-    if (SymExpr* sym = toSymExpr(varLocation)) {
-      if (!var->hasFlag(FLAG_CONST) && sym->var->isConstant()) {
-        USR_FATAL_CONT(sym, "Cannot set a non-const reference to a const variable.");
-      }
-    }
-
-    stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_ADDR_OF, varLocation)));
+  stmt->insertAfter(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_ADDR_OF, varLocation)));
 }
 
 
 static void init_config_var(VarSymbol* var, Expr*& stmt, VarSymbol* constTemp)
 {
-      Expr* noop = new CallExpr(PRIM_NOOP);
-      Symbol* module_name = (var->getModule()->modTag != MOD_INTERNAL ?
-                             new_CStringSymbol(var->getModule()->name) :
-                             new_CStringSymbol("Built-in"));
-      CallExpr* strToValExpr =
-        new CallExpr("_command_line_cast",
-                     new SymExpr(new_CStringSymbol(var->name)),
-                     new CallExpr(PRIM_TYPEOF, constTemp),
-                     new CallExpr("chpl_config_get_value",
-                                  new_CStringSymbol(var->name),
-                                  module_name));
-      stmt->insertAfter(
-        new CondStmt(
-          new CallExpr("!",
-                       new CallExpr("chpl_config_has_value",
-                                    new_CStringSymbol(var->name),
-                                    module_name)),
-          noop,
-          new CallExpr(PRIM_MOVE, constTemp, strToValExpr)));
-      stmt = noop; // insert regular definition code in then block
+  Expr* noop = new CallExpr(PRIM_NOOP);
+  Symbol* module_name = (var->getModule()->modTag != MOD_INTERNAL ?
+                         new_CStringSymbol(var->getModule()->name) :
+                         new_CStringSymbol("Built-in"));
+  CallExpr* strToValExpr =
+    new CallExpr("_command_line_cast",
+                 new SymExpr(new_CStringSymbol(var->name)),
+                 new CallExpr(PRIM_TYPEOF, constTemp),
+                 new CallExpr("chpl_config_get_value",
+                              new_CStringSymbol(var->name),
+                              module_name));
+  stmt->insertAfter(
+                    new CondStmt(
+                                 new CallExpr("!",
+                                              new CallExpr("chpl_config_has_value",
+                                                           new_CStringSymbol(var->name),
+                                                           module_name)),
+                                 noop,
+                                 new CallExpr(PRIM_MOVE, constTemp, strToValExpr)));
+  stmt = noop; // insert regular definition code in then block
 }
 
 
 static void init_typed_var(VarSymbol* var, Expr* type, Expr* init, Expr* stmt, VarSymbol* constTemp)
 {
-    //
-    // use cast for parameters to avoid multiple parameter assignments
-    //
-    if (init && var->hasFlag(FLAG_PARAM)) {
-      stmt->insertAfter(
-        new CallExpr(PRIM_MOVE, var,
-          new CallExpr("_cast", type->remove(), init->remove())));
-      return;
+  //
+  // use cast for parameters to avoid multiple parameter assignments
+  //
+  if (init && var->hasFlag(FLAG_PARAM)) {
+    stmt->insertAfter(
+                      new CallExpr(PRIM_MOVE, var,
+                                   new CallExpr("_cast", type->remove(), init->remove())));
+    return;
+  }
+
+  //
+  // initialize variable based on specified type and then assign it
+  // the initialization expression if it exists
+  //
+  bool isNoinit = init && init->isNoInitExpr();
+
+  bool moduleNoinit = false;
+  if (isNoinit && !fUseNoinit) {
+    // In the case where --no-use-noinit is thrown, we want to still use
+    // noinit in the module code (as the correct operation of strings and
+    // complexes depends on it).
+
+    // Lydia note: The requirement for strings is expected to go away when
+    // our new string implementation is the default.  The requirement for
+    // complexes is expected to go away when we transition to constructors for
+    // all types instead of the _defaultOf function
+    Symbol* moduleSource = var;
+    while (!isModuleSymbol(moduleSource) && moduleSource != NULL &&
+           moduleSource->defPoint != NULL) {
+      // This will go up the definition tree until it reaches a module symbol
+      // Or until it encounters a null field.
+      moduleSource = moduleSource->defPoint->parentSymbol;
+    }
+    ModuleSymbol* mod = toModuleSymbol(moduleSource);
+    if (mod != NULL && moduleSource->defPoint != NULL) {
+      // As these are the only other cases that would have caused the prior
+      // while loop to exit, the moduleSource must be a module
+      moduleNoinit = (mod->modTag == MOD_INTERNAL) || (mod->modTag == MOD_STANDARD);
+      // Check if the parent module of this variable is a standard or
+      // internal module, and store the result of this check in moduleNoinit
+    }
+  }
+
+  // Lydia note:  I'm adding fUseNoinit here because utilizing noinit with
+  // return temps is necessary, so the only instances that should be
+  // controlled by the flag are generated here
+  if (isNoinit && (fUseNoinit || moduleNoinit)) {
+    // Only perform this action if noinit has been specified and the flag
+    // --no-use-noinit has not been thrown (or if the noinit is found in
+    // module code)
+    var->defPoint->init->remove();
+    CallExpr* initCall = new CallExpr(PRIM_MOVE, var,
+                                      new CallExpr(PRIM_NO_INIT, type->remove()));
+    // Since the variable won't have been defined just yet (stmt is
+    // its def expression after all), insert the move after the defPoint
+    stmt->insertAfter(initCall);
+  } else {
+    if (!fUseNoinit && isNoinit) {
+      // The instance would be initialized to noinit, but we aren't allowing
+      // noinit, so remove the initialization expression, allowing  it to
+      // default initialize.
+      init->remove();
+      init = NULL;
     }
 
-    //
-    // initialize variable based on specified type and then assign it
-    // the initialization expression if it exists
-    //
-    bool isNoinit = init && init->isNoInitExpr();
+    // Create an empty type block.
+    BlockStmt* block = new BlockStmt(NULL, BLOCK_SCOPELESS);
 
-    bool moduleNoinit = false;
-    if (isNoinit && !fUseNoinit) {
-      // In the case where --no-use-noinit is thrown, we want to still use
-      // noinit in the module code (as the correct operation of strings and
-      // complexes depends on it).
+    VarSymbol* typeTemp = newTemp("type_tmp");
+    block->insertAtTail(new DefExpr(typeTemp));
 
-      // Lydia note: The requirement for strings is expected to go away when
-      // our new string implementation is the default.  The requirement for
-      // complexes is expected to go away when we transition to constructors for
-      // all types instead of the _defaultOf function
-      Symbol* moduleSource = var;
-      while (!isModuleSymbol(moduleSource) && moduleSource != NULL &&
-             moduleSource->defPoint != NULL) {
-        // This will go up the definition tree until it reaches a module symbol
-        // Or until it encounters a null field.
-        moduleSource = moduleSource->defPoint->parentSymbol;
-      }
-      ModuleSymbol* mod = toModuleSymbol(moduleSource);
-      if (mod != NULL && moduleSource->defPoint != NULL) {
-        // As these are the only other cases that would have caused the prior
-        // while loop to exit, the moduleSource must be a module
-        moduleNoinit = (mod->modTag == MOD_INTERNAL) || (mod->modTag == MOD_STANDARD);
-        // Check if the parent module of this variable is a standard or
-        // internal module, and store the result of this check in moduleNoinit
-      }
-    }
+    CallExpr* initCall;
+    initCall = new CallExpr(PRIM_MOVE, typeTemp,
+                            new CallExpr(PRIM_INIT, type->remove()));
 
-    // Lydia note:  I'm adding fUseNoinit here because utilizing noinit with
-    // return temps is necessary, so the only instances that should be
-    // controlled by the flag are generated here
-    if (isNoinit && (fUseNoinit || moduleNoinit)) {
-      // Only perform this action if noinit has been specified and the flag
-      // --no-use-noinit has not been thrown (or if the noinit is found in
-      // module code)
-      var->defPoint->init->remove();
-      CallExpr* initCall = new CallExpr(PRIM_MOVE, var,
-                   new CallExpr(PRIM_NO_INIT, type->remove()));
-      // Since the variable won't have been defined just yet (stmt is
-      // its def expression after all), insert the move after the defPoint
-      stmt->insertAfter(initCall);
+    block->insertAtTail(initCall);
+
+    if (init) {
+      // This should be copy-initialization, not assignment.
+      block->insertAtTail(new CallExpr("=", typeTemp, init->remove()));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
     } else {
-      if (!fUseNoinit && isNoinit) {
-        // The instance would be initialized to noinit, but we aren't allowing
-        // noinit, so remove the initialization expression, allowing  it to
-        // default initialize.
-        init->remove();
-        init = NULL;
-      }
-
-      // Create an empty type block.
-      BlockStmt* block = new BlockStmt(NULL, BLOCK_SCOPELESS);
-
-      VarSymbol* typeTemp = newTemp("type_tmp");
-      block->insertAtTail(new DefExpr(typeTemp));
-
-      CallExpr* initCall;
-      initCall = new CallExpr(PRIM_MOVE, typeTemp,
-                   new CallExpr(PRIM_INIT, type->remove()));
-
-      block->insertAtTail(initCall);
-
-      if (init) {
-        // This should be copy-initialization, not assignment.
-        block->insertAtTail(new CallExpr("=", typeTemp, init->remove()));
+      if (constTemp->isType())
+        block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp,
+                                         new CallExpr(PRIM_TYPEOF, typeTemp)));
+      else
+      {
         block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
-      } else {
-        if (constTemp->isType())
-          block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp,
-                                           new CallExpr(PRIM_TYPEOF, typeTemp)));
-        else
-        {
-          block->insertAtTail(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
-          if (constTemp->hasFlag(FLAG_EXTERN))
-            (unsigned&) block->blockTag |= BLOCK_EXTERN | BLOCK_TYPE;
-        }
+        if (constTemp->hasFlag(FLAG_EXTERN))
+          (unsigned&) block->blockTag |= BLOCK_EXTERN | BLOCK_TYPE;
       }
-
-      stmt->insertAfter(block);
     }
+
+    stmt->insertAfter(block);
+  }
 }
 
 
 static void init_untyped_var(VarSymbol* var, Expr* init, Expr* stmt, VarSymbol* constTemp)
 {
-    // See Note 4.
-    //
-    // initialize untyped variable with initialization expression
-    //
-    // sjd: this new specialization of PRIM_NEW addresses the test
-    //         test/classes/diten/test_destructor.chpl
-    //      in which we call an explicit record destructor and avoid
-    //      calling the default constructor.  However, if written with
-    //      an explicit type, this would happen.  The record in this
-    //      test is an issue since its destructor deletes field c, but
-    //      the default constructor does not 'new' it.  Thus if we
-    //      pass the record to a function and it is copied, we have an
-    //      issue since we will do a double free.
-    //
-    CallExpr* initCall = toCallExpr(init);
-    if (initCall && initCall->isPrimitive(PRIM_NEW)) {
-      stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, init->remove()));
-    } else {
-      stmt->insertAfter(
-        new CallExpr(PRIM_MOVE, constTemp,
-          new CallExpr("chpl__initCopy", init->remove())));
-    }
+  // See Note 4.
+  //
+  // initialize untyped variable with initialization expression
+  //
+  // sjd: this new specialization of PRIM_NEW addresses the test
+  //         test/classes/diten/test_destructor.chpl
+  //      in which we call an explicit record destructor and avoid
+  //      calling the default constructor.  However, if written with
+  //      an explicit type, this would happen.  The record in this
+  //      test is an issue since its destructor deletes field c, but
+  //      the default constructor does not 'new' it.  Thus if we
+  //      pass the record to a function and it is copied, we have an
+  //      issue since we will do a double free.
+  //
+  CallExpr* initCall = toCallExpr(init);
+  if (initCall && initCall->isPrimitive(PRIM_NEW)) {
+    stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, init->remove()));
+  } else {
+    stmt->insertAfter(
+                      new CallExpr(PRIM_MOVE, constTemp,
+                                   new CallExpr("chpl__initCopy", init->remove())));
+  }
 }
 
 /************************************* | **************************************
