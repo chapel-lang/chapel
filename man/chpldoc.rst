@@ -26,74 +26,74 @@ reStructuredText as an intermediate format.
 
 **-o, --output-dir <dirname>**
 
-Specify the *directory* name into which documentation should be saved
-(defaults to ’docs’ if unspecified).
+    Specify the *directory* name into which documentation should be saved
+    (defaults to 'docs' if unspecified).
 
 **--author <**\ *authortext*\ **>**
 
-Documentation author string. *authortext* becomes the copyright and
-author in the output documentation.
+    Documentation author string. *authortext* becomes the copyright and
+    author in the output documentation.
 
 **--comment-style <string>**
 
-Specify the opening comment character sequence used to distinguish a
-documentation comment from a normal one (defaults to ’/\*’ if
-unspecified).
+    Specify the opening comment character sequence used to distinguish a
+    documentation comment from a normal one (defaults to '/\*' if
+    unspecified).
 
 **--process-used-modules**
 
-By default, **chpldoc** only generates documentation for the source
-**file**\ (s) named on the command-line. When this flag is thrown,
-modules that it ’use’s are also parsed and processed.
+    By default, **chpldoc** only generates documentation for the source
+    **file**\ (s) named on the command-line. When this flag is thrown,
+    modules that it 'use's are also parsed and processed.
 
 **--save-sphinx <**\ *directory*\ **>**
 
-Save generated Sphinx project in *directory*.
+    Save generated Sphinx project in *directory*.
 
 **--text-only**
 
-Generate text-based documentation instead of HTML. Takes precedence over
---[no-]html
+    Generate text-based documentation instead of HTML. Takes precedence over
+    --[no-]html
 
 **--[no-]html**
 
-[Don’t] generate HTML-based documentation (on by default)
+    [Don't] generate HTML-based documentation (on by default)
 
 **--[no-]print-commands**
 
-Prints the system commands that **chpldoc** executes in order to create
-the documentation.
+    Prints the system commands that **chpldoc** executes in order to create
+    the documentation.
 
 *Information Options*
 
 **-h, --help**
 
-Print a list of the command line options, indicating the arguments that
-they expect and a brief summary of their purpose.
+    Print a list of the command line options, indicating the arguments that
+    they expect and a brief summary of their purpose.
 
 **--help-env**
 
-Print the command line option help message, listing the environment
-variable equivalent for each flag, if applicable (see ENVIRONMENT), and
-its current value.
+    Print the command line option help message, listing the environment
+    variable equivalent for each flag, if applicable (see ENVIRONMENT), and
+    its current value.
 
 **--help-settings**
 
-Print the command line option help message, listing the current setting
-of each option as specified by environment variables and other flags on
-the command line.
+    Print the command line option help message, listing the current setting
+    of each option as specified by environment variables and other flags on
+    the command line.
 
 **--version**
 
-Print **chpldoc**\ ’s version number.
+    Print **chpldoc**\ 's version number.
 
 **--copyright**
 
-Print **chpldoc**\ ’s copyright information.
+    Print **chpldoc**\ 's copyright information.
 
 **--license**
 
-Print **chpldoc**\ ’s license information.
+    Print **chpldoc**\ 's license information.
 
 ENVIRONMENT
 -----------

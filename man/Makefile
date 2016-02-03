@@ -10,7 +10,6 @@ CHPLDOC_MANPAGE = man1/$(CHPLDOC).1
 TARGETS = $(MANPAGE) $(PROGRAM).pdf $(CHPLDOC).pdf
 
 RST2MAN = $(CHPL_MAKE_HOME)/third-party/chpl-venv/install/darwin/chpl-virtualenv/bin/rst2man.py
-TXT2MAN = $(CHPL_MAKE_HOME)/third-party/txt2man/txt2man
 
 STARS = \*\*\*\*\*
 
