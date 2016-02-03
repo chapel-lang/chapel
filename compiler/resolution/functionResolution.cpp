@@ -3634,15 +3634,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   CallExpr* valueCall = NULL;
 
   if (bestRef && bestValue) {
-    if (bestRef->fn->isIterator() || bestValue->fn->isIterator()) {
-      // Don't consider it a ref pair.
-      // Iterators would require specific support since
-      // they return differently.
-      bestValue = NULL;
-    } else {
-      valueCall = call->copy();
-      call->insertAfter(valueCall);
-    }
+    valueCall = call->copy();
+    call->insertAfter(valueCall);
   }
 
   if (best && best->fn) {
@@ -6654,15 +6647,17 @@ resolveExpr(Expr* expr) {
         resolveFns(refFn);
         resolveFns(valueFn);
 
-        // Produce an error if they are not calling an iterator
-        // and the return types do not match.
-        if (!refCall->isResolved()->isIterator() &&
+        // Produce an error if the return types do not match.
+        // This error is skipped for iterators because
+        // the return type of an iterator is e.g. an iterator record
+        // which is not the same as the yielded type.
+        if (!refFn->isIterator() &&
             refFn->retType->getValType() != valueFn->retType->getValType()) {
           USR_FATAL_CONT(cc, "invalid ref return pair: return types differ");
-            USR_FATAL_CONT(valueFn, "function returns %s",
-                           toString(valueFn->retType));
-            USR_FATAL_CONT(refFn, "function returns %s",
-                           toString(refFn->retType));
+          USR_FATAL_CONT(valueFn, "function returns %s",
+                         toString(valueFn->retType));
+          USR_FATAL_CONT(refFn, "function returns %s",
+                         toString(refFn->retType));
           USR_STOP();
         }
 
