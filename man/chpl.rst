@@ -369,11 +369,6 @@ OPTIONS
 
     Specify a C library search path on the C compiler command line.
 
-**--make <make utility>**
-
-    Specify the gmake-compatible utility that should be used when compiling
-    the generated code.
-
 **-O, --[no-]optimize**
 
     Causes the generated C code to be compiled with [without] optimizations
@@ -592,7 +587,7 @@ OPTIONS
     (defaults to a best guess based on $CHPL\_COMM and
     $CHPL\_TARGET\_PLATFORM).
 
-**--**\ *locale*\ **-model <**\ *locale*\ **-model>**
+**--locale-model <locale-model>**
 
     Specify the *locale* model to use for describing your *locale*
     architecture. This flag corresponds with and overrides the
