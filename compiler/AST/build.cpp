@@ -424,6 +424,7 @@ BlockStmt* buildUseStmt(Expr* mod, CallExpr* names, bool except) {
   }
 
   UseStmt* newUse = new UseStmt(mod, &namesList, except);
+  addModuleToSearchList(newUse, mod);
 
   return buildChapelStmt(newUse);
 }
