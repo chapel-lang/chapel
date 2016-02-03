@@ -3,30 +3,18 @@
 chpldoc
 =======
 
+.. toctree::
+   :hidden:
+
+   Man Page <man>
+
 ``chpldoc`` is a tool for generating HTML based documentation from Chapel
 source code and embedded comments. It is similar in spirit to Godoc, Javadoc,
 and Pydoc. ``chpldoc`` is used to produce Chapel's web documentation for the
 :ref:`Standard Library <modules>` and
 :ref:`Built-in-Types and Functions <built-in-types>`.
 
-
-
-**Contents**:
-
-#. `Building chpldoc`_
-#. `Prerequisites`_
-#. `Documenting Chapel code`_
-#. `Documenting Modules`_
-#. `reStructuredText primer`_
-#. `Advanced chpldoc options`_
-#. `How chpldoc works`_
-#. `Future directions`_
-#. :doc:`Man page <man>`
-
-.. toctree::
-   :hidden:
-
-   Man page <man>
+See the online :doc:`man page <man>` for all available flags.
 
 
 .. _Building chpldoc:
