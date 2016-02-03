@@ -63,11 +63,15 @@ def check_man_page(bin_name, additional_args=None):
     # Get the man page text
     manpage = _get_man_page(bin_name)
 
-    # Dictionaries of sections
+    # Section dictionaries
     helpsections = {}
     mansections = {}
 
-    numErrors = 0
+    #
+    # Parse help and man page to populate section dictionaries
+    #
+
+    numerrors = 0
     currentsection = None
 
     # Collect flags and sections from helptxt
@@ -81,7 +85,7 @@ def check_man_page(bin_name, additional_args=None):
         # Line is flag
         elif hline[0] == '-':
             if currentsection is None:
-                numErrors += 1
+                numerrors += 1
                 _error(sl, 'not in a {0} man page section'.format(short_bin_name))
                 notFound.append(hline)
                 continue
@@ -109,7 +113,9 @@ def check_man_page(bin_name, additional_args=None):
             mansections[section] = []
             currentsection = section
 
-    # Comparsion of parsed sections and flags
+    #
+    # Compare contents section dictionaries
+    #
 
     # Do both pages have the same sections?
     if helpsections.keys() != mansections.keys():
@@ -117,7 +123,7 @@ def check_man_page(bin_name, additional_args=None):
         helpdiff = list(set(helpsections.keys()) - set(mansections.keys()))
         mandiff = list(set(mansections.keys()) - set(helpsections.keys()))
 
-        numErrors += len(helpdiff) + len(mandiff)
+        numerrors += len(helpdiff) + len(mandiff)
 
         if helpdiff:
             _error('help output has additional sections: {0}'.format(helpdiff))
@@ -125,7 +131,7 @@ def check_man_page(bin_name, additional_args=None):
             _error('man page has additional sections: {0}'.format(mandiff))
 
         # We require same sections to continue, return early
-        return numErrors
+        return numerrors
 
     # Does each section contain the same number of flags?
     for section in helpsections.keys():
@@ -136,7 +142,7 @@ def check_man_page(bin_name, additional_args=None):
             helpdiff = list(set(helpflags) - set(manflags))
             mandiff = list(set(manflags) - set(helpflags))
 
-            numErrors += len(helpdiff) + len(mandiff)
+            numerrors += len(helpdiff) + len(mandiff)
 
             if helpdiff:
                 _error('help section "{0}" has additional flags:\
@@ -146,7 +152,7 @@ def check_man_page(bin_name, additional_args=None):
                         {1}'.format(section, mandiff))
 
     # Return True if no error (man/help text match). False otherwise.
-    return numErrors == 0
+    return numerrors == 0
 
 
 def _get_chpl_home():
