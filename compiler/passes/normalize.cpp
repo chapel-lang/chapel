@@ -324,8 +324,8 @@ void normalize(BaseAST* base) {
 // We can't really do this before resolution, because we need to know
 // if symbols used as actual arguments are passed by ref, inout, or out
 // (all of which would be considered definitions).
-// The workaround for this has been early initialization -- 
-// which is redundant with guaranteed initialization, at least with respect 
+// The workaround for this has been early initialization --
+// which is redundant with guaranteed initialization, at least with respect
 // to class instances.
 // Given that it is not completely correct, and it forces unnecessary
 // initializations to be added to the AST, I recommend that the check be
@@ -466,7 +466,7 @@ moveGlobalDeclarationsToModuleScope() {
 
           mod->block->insertAtTail(def->remove());
         }
-        
+
         // All type and function symbols are moved out to module scope.
         if (isTypeSymbol(def->sym) || isFnSymbol(def->sym))
         {
@@ -499,9 +499,9 @@ insertUseForExplicitModuleCalls(void) {
 
 // Two cases are handled here:
 // 1. ('new' (dmap arg)) ==> (chpl__buildDistValue arg)
-// 2. (chpl__distributed (Dist args)) ==> 
+// 2. (chpl__distributed (Dist args)) ==>
 //     (chpl__distributed (chpl__buildDistValue ('new' (Dist args)))),
-//     where isDistClass(Dist). 
+//     where isDistClass(Dist).
 // In 1., the only type that has FLAG_SYNTACTIC_DISTRIBUTION on it is "dmap".
 // This is a dummy record type that must be replaced.  The call to
 // chpl__buildDistValue() performs this task, returning _newDistribution(x),
@@ -1269,7 +1269,7 @@ static void hack_resolve_types(ArgSymbol* arg) {
 // I think this prepares the function to be instantiated with various argument types.
 // That is, it reaches through one level in the type hierarchy -- treating all
 // arrays equally and then resolving using the element type.
-// But this is something of a kludge.  The expansion of arrays 
+// But this is something of a kludge.  The expansion of arrays
 // w.r.t. generic argument types should be done during expansion and resolution,
 // not up front like this. <hilde>
 static void fixup_array_formals(FnSymbol* fn) {
@@ -1327,12 +1327,12 @@ static void fixup_array_formals(FnSymbol* fn) {
         } else if (!noDomain) {
           // The domain argument is supplied but NULL.
           INT_ASSERT(queryDomain == NULL);
-          
+
           // actualArg.chpl_checkArrArgDoms(arg->typeExpr)
           fn->insertAtHead(new CallExpr(new CallExpr(".", arg,
                                                      new_CStringSymbol("chpl_checkArrArgDoms")
                                                      ),
-                                        call->get(1)->copy(), 
+                                        call->get(1)->copy(),
                                         (fNoFormalDomainChecks ? gFalse : gTrue)));
         }
       }
@@ -1464,7 +1464,7 @@ fixup_query_formals(FnSymbol* fn) {
               }
             fn->defPoint->remove();
             return;
-          } else if (callFnSym == dtInt[INT_SIZE_DEFAULT]->symbol || 
+          } else if (callFnSym == dtInt[INT_SIZE_DEFAULT]->symbol ||
                      callFnSym == dtUInt[INT_SIZE_DEFAULT]->symbol) {
             for( int i=INT_SIZE_8; i<INT_SIZE_NUM; i++)
               if (dtInt[i])
@@ -1615,7 +1615,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
 
   fn->name = ct->defaultInitializer->name;
   fn->addFlag(FLAG_CONSTRUCTOR);
-  // Hide the compiler-generated initializer 
+  // Hide the compiler-generated initializer
   // which also serves as the default constructor.
   // hilde sez: Try leaving this visible, but make it inferior in case of multiple matches
   // (in disambiguateByMatch()).
