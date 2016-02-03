@@ -3,7 +3,7 @@ chpl
 
 :Version: 1.12.0
 :Manual section: 1
-:Title: **chpl**
+:Title: \\fBchpl\\fP
 :Subtitle: Compiler for the Chapel Programming Language
 
 SYNOPSIS
@@ -20,7 +20,7 @@ DESCRIPTION
 The **chpl** command invokes the Chapel compiler. **chpl** converts one
 or more Chapel source files into an executable. It does this by
 compiling Chapel code to C99 code and then invoking the target
-platform’s C compiler to create the executable. However, most users will
+platform's C compiler to create the executable. However, most users will
 not need to be aware of the use of C as an intermediate format during
 compilation.
 
@@ -67,19 +67,19 @@ OPTIONS
 **-M, --module-dir <**\ *directory*\ **>**
 
     Add the specified *directory* to the module search path. The module
-    search path is used to satisfy module ’use’ statements. In the current
+    search path is used to satisfy module 'use' statements. In the current
     implementation, the compiler tries to locate unresolved modules by
     searching for a filename whose name matches that of the module. For
-    example, if the user program contains ’use foo’ and the .\ **chpl**
-    files listed by the programmer on the compiler’s command line do not
-    define a module named ’foo’, the compiler will search for files named
-    ’foo.chpl’ in the module search path. The complete path that will be
+    example, if the user program contains 'use foo' and the .\ **chpl**
+    files listed by the programmer on the compiler's command line do not
+    define a module named 'foo', the compiler will search for files named
+    'foo.chpl' in the module search path. The complete path that will be
     searched can be displayed using the **--print-search-dirs** flag and is
     composed of (1) the directories containing the .\ **chpl** files that
     were specified on the compiler command-line (in left-to-right order),
     (2) all directories specified by **-M** flags (in left-to-right order),
     (3) all directories specified by the $CHPL\_MODULE\_PATH environment
-    variable (colon-separated directories), (4) the compiler’s standard
+    variable (colon-separated directories), (4) the compiler's standard
     module search path.
 
 **--[no-]print-code-size**
@@ -104,7 +104,8 @@ OPTIONS
 
     Print the module search path used to resolve module for further details.
 
-*Parallelism Control Options* 
+*Parallelism Control Options*
+
 **--[no-]local**
 
     Compile code for single/[multi-] *locale* execution, changing *on
@@ -113,8 +114,9 @@ OPTIONS
     $CHPL\_COMM is set to "none", **--local** is the default; otherwise
     **--no-local** is the default.
 
-*Optimization Control Options* **
- --baseline**
+*Optimization Control Options*
+
+**--baseline**
 
     Turns off all optimizations in the Chapel compiler and generates naive C
     code with many temporaries.
@@ -142,16 +144,10 @@ OPTIONS
 
     Enable [disable] dead code elimination.
 
-+--------------------+--------------------+--------------------+--------------------+
-|                    | **--fast**         |                    | Turns off all      |
-|                    |                    |                    | runtime checks     |
-|                    |                    |                    | using              |
-|                    |                    |                    | **--no-checks**,   |
-|                    |                    |                    | turns on **-O**,   |
-|                    |                    |                    | **--specialize**,  |
-|                    |                    |                    | and                |
-|                    |                    |                    | **--vectorize**.   |
-+--------------------+--------------------+--------------------+--------------------+
+**--fast**
+
+    Turns off all runtime checks using **--no-checks**, turns on **-O**,
+    **--specialize**, and **--vectorize**.
 
 **--[no-]fast-followers**
 
@@ -163,12 +159,12 @@ OPTIONS
     Disable [enable] optimizations that may affect IEEE floating point
     conformance. The default is whatever level of optimization/IEEE floating
     point support your C compiler provides at the optimization level
-    provided by ’\ **chpl**\ ’.
+    provided by '\ **chpl**\ '.
 
 **--[no-]loop-invariant-code-motion**
 
     Enable [disable] the optimization that moves loop invariant code from
-    loop runs into the loop’s "pre-header." By default invariant code is
+    loop runs into the loop's "pre-header." By default invariant code is
     moved. This is currently a rather conservative pass in the sense that it
     may not identify all code that is truly invariant.
 
@@ -184,7 +180,7 @@ OPTIONS
 
     Enable [disable] iterator inlining. When possible, the compiler
     optimizes the invocation of an iterator in a loop header by inlining the
-    iterator’s definition around the loop body.
+    iterator's definition around the loop body.
 
 **--[no-]live-analysis**
 
@@ -256,8 +252,9 @@ OPTIONS
     Enable [disable] ability to skip default initialization through the
     keyword noinit
 
-*Run-time Semantic Check Options* **
- --no-checks**
+*Run-time Semantic Check Options* 
+
+**--no-checks**
 
     Turns off all of the run-time checks in this section of the man page.
     Currently, it is typically necessary to use this flag (or **--fast**,
@@ -272,7 +269,7 @@ OPTIONS
 **--[no-]formal-domain-checks**
 
     Enable [disable] run-time checks to ensure that an actual array
-    argument’s domain matches its formal array argument’s domain in terms of
+    argument's domain matches its formal array argument's domain in terms of
     (a) describing the same index set and (b) having an equivalent domain
     map (if the formal domain explicitly specifies a domain map).
 
@@ -292,10 +289,11 @@ OPTIONS
 **--[no-]cast-checks**
 
     Enable [disable] run-time checks in safeCast calls for casts that
-    wouldn’t preserve the logical value being cast.
+    wouldn't preserve the logical value being cast.
 
-*C Code Generation Options* **
- --[no-]codegen**
+*C Code Generation Options* 
+
+**--[no-]codegen**
 
     Enable [disable] generating C code and the binary executable. Disabling
     code generation is useful to reduce compilation time, for example, when
@@ -320,7 +318,7 @@ OPTIONS
     By default, **chpl** munges all user identifiers in the generated C code
     in order to minimize the chances of conflict with an identifier or
     keyword in C (in the current implementation, this is done by appending
-    ’\_chpl’ to the identifier). This flag provides the ability to disable
+    '\_chpl' to the identifier). This flag provides the ability to disable
     this munging. Note that whichever mode, the flag is in, **chpl** may
     perform additional munging in order to implement Chapel semantics in C,
     or for other reasons.
@@ -331,8 +329,9 @@ OPTIONS
     creating the *directory* if it does not already exist. This option may
     overwrite existing files in the *directory*.
 
-*C Code Compilation Options* **
- --ccflags <flags>**
+*C Code Compilation Options*
+
+**--ccflags <flags>**
 
     Add the specified flags to the C compiler command line when compiling
     the generated code. Multiple **--ccflags** *options* can be provided and
@@ -350,12 +349,12 @@ OPTIONS
 **--dynamic**
 
     Use dynamic linking when generating the final binary. If neither
-    **--dynamic** or **--static** are specified, use the backend compiler’s
+    **--dynamic** or **--static** are specified, use the backend compiler's
     default.
 
 **-I, --hdr-search-path <dir>**
 
-    Add dir to the back-end C compiler’s search path for header files.
+    Add dir to the back-end C compiler's search path for header files.
 
 **--ldflags <flags>**
 
@@ -400,11 +399,12 @@ OPTIONS
 **--static**
 
     Use static linking when generating the final binary. If neither
-    **--static** or **--dynamic** are specified, use the backend compiler’s
+    **--static** or **--dynamic** are specified, use the backend compiler's
     default.
 
-*LLVM Code Generation Options* **
- --[no-]llvm**
+*LLVM Code Generation Options*
+
+**--[no-]llvm**
 
     Use LLVM as the code generation target rather than C. See
     $CHPL\_HOME/doc/technotes/llvm.rst for details.
@@ -416,11 +416,12 @@ OPTIONS
     pointers are enabled by setting CHPL\_WIDE\_POINTERS = node16. You must
     also supply **--fast** to enable wide pointer optimizations. This flag
     allows existing LLVM optimizations to work with wide pointers - for
-    example, they might be able to hoist a ’get’ out of a loop. See
+    example, they might be able to hoist a 'get' out of a loop. See
     $CHPL\_HOME/doc/technotes/llvm.rst for details.
 
-*Compilation Trace Options* **
- --[no-]print-commands**
+*Compilation Trace Options*
+
+**--[no-]print-commands**
 
     Prints the system commands that the compiler executes in order to
     compile the Chapel program.
@@ -441,8 +442,9 @@ OPTIONS
     the pass to <filename>. An error is displayed if the file cannot be
     opened but no recovery attempt is made.
 
-*Miscellaneous Options* **
- --[no-]devel**
+*Miscellaneous Options*
+
+**--[no-]devel**
 
     Puts the compiler into [out of] developer mode, which takes off some of
     the safety belts, changes default behaviors, and exposes additional
@@ -492,15 +494,15 @@ OPTIONS
 
     Enable [disable] the Chapel-implemented task tracking table that
     supports the execution-time **-b** / **-t** flags. This option is
-    currently only useful when $CHPL\_TASKS is set or inferred to ’fifo’ and
+    currently only useful when $CHPL\_TASKS is set or inferred to 'fifo' and
     adds compilation-time overhead when it will not be used, so is off by
     default.
 
 **--[no-]warn-const-loops**
 
-    Enable [disable] warnings for ’while’ loops whose condition is a ’const’
-    variable, because such a loop condition is likely unintended. ’While’
-    loops with ’param’ conditions do not trigger this warning.
+    Enable [disable] warnings for 'while' loops whose condition is a 'const'
+    variable, because such a loop condition is likely unintended. 'While'
+    loops with 'param' conditions do not trigger this warning.
 
 **--[no-]warn-special**
 
@@ -525,15 +527,16 @@ OPTIONS
     Enable [disable] the printing of compiler warnings. Defaults to printing
     warnings.
 
-*Compiler Configuration Options* **
- --home <path>**
+*Compiler Configuration Options*
+
+**--home <path>**
 
     Specify the location of the Chapel installation *directory*. This flag
     corresponds with and overrides the $CHPL\_HOME environment variable.
 
 **--atomics <atomics-impl>**
 
-    Specify the implementation to use for Chapel’s atomic variables. This
+    Specify the implementation to use for Chapel's atomic variables. This
     flag corresponds with and overrides the $CHPL\_ATOMICS environment
     variable. (defaults to a best guess based on $CHPL\_TARGET\_COMPILER,
     $CHPL\_TARGET\_PLATFORM, and $CHPL\_COMM)
@@ -548,13 +551,13 @@ OPTIONS
 
     Specify runtime support for additional file systems. This flag
     corresponds with and overrides the $CHPL\_AUX\_FILESYS environment
-    variable (defaults to ’none’).
+    variable (defaults to 'none').
 
 **--comm <comm-impl>**
 
     Specify the communication implementation to use for inter-\ *locale*
     data transfers. This flag corresponds with and overrides the $CHPL\_COMM
-    environment variable (defaults to ’none’).
+    environment variable (defaults to 'none').
 
 **--comm-substrate <conduit>**
 
@@ -574,14 +577,14 @@ OPTIONS
     Specify the GMP library implementation to be used by the GMP module.
     This flag corresponds with and overrides the $CHPL\_GMP environment
     variable (defaults to best guess based on $CHPL\_TARGET\_PLATFORM and
-    whether you’ve built the included GMP library in the third-party
+    whether you've built the included GMP library in the third-party
     *directory*).
 
 **--hwloc <hwloc-impl>**
 
     Specify whether or not to use the hwloc library. This flag corresponds
     with and overrides the $CHPL\_HWLOC environment variable (defaults to a
-    best guess based on whether you’ve built the included library in the
+    best guess based on whether you've built the included library in the
     third-party hwloc *directory*).
 
 **--launcher <launcher-system>**
@@ -595,7 +598,7 @@ OPTIONS
 
     Specify the *locale* model to use for describing your *locale*
     architecture. This flag corresponds with and overrides the
-    $CHPL\_LOCALE\_MODEL environment variable (defaults to ’flat’).
+    $CHPL\_LOCALE\_MODEL environment variable (defaults to 'flat').
 
 **--make <make utility>**
 
@@ -613,7 +616,7 @@ OPTIONS
 
     Specify the regular expression library to use. This flag corresponds
     with and overrides the $CHPL\_REGEXP environment variable (defaults to
-    ’none’ or ’re2’ if you’ve installed the re2 package in the third-party
+    'none' or 're2' if you've installed the re2 package in the third-party
     *directory*).
 
 **--target-arch <architecture>**
@@ -649,18 +652,19 @@ OPTIONS
 
     Specify a timer implementation to be used by the Time module. This flag
     corresponds with and overrides the $CHPL\_TIMERS environment variable
-    (defaults to ’generic’).
+    (defaults to 'generic').
 
 **--wide-pointers <format>**
 
     Specify the wide pointer format format. This flag corresponds with and
     overrides the $CHPL\_WIDE\_POINTERS environment variable (defaults to
-    ’struct’).
+    'struct').
 
-*Compiler Information Options* **
- --copyright**
+*Compiler Information Options*
 
-    Print the compiler’s copyright information.
+**--copyright**
+
+    Print the compiler's copyright information.
 
 **-h, --help**
 
@@ -681,7 +685,7 @@ OPTIONS
 
 **--license**
 
-    Print the compiler’s license information.
+    Print the compiler's license information.
 
 **--version**
 
@@ -704,11 +708,13 @@ For *options* that can be used with or without the leading **--no**
 equivalent, when set to a non-empty string, has the following effect.
 When the first character of the string is one of:
 
+|
+
     Y y T t 1 - same as passing the option without --no,
 
     N n F f 0 - same as passing the option with --no,
 
-anything else - generates an error.
+    anything else - generates an error.
 
 For the other *options* that enable, disable or toggle some feature, any
 non-empty value of the environment variable equivalent has the same
