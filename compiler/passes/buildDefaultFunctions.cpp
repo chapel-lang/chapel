@@ -754,6 +754,12 @@ static void build_enum_cast_function(EnumType* et) {
              new CallExpr("==", arg2, new_StringSymbol(constant->sym->name)),
              new CallExpr(PRIM_RETURN, constant->sym),
              cond);
+    cond = new CondStmt(
+             new CallExpr("==", arg2,
+                          new_StringSymbol(
+                            astr(et->symbol->name, ".", constant->sym->name))),
+             new CallExpr(PRIM_RETURN, constant->sym),
+             cond);
   }
 
   fn->insertAtTail(cond);
