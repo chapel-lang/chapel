@@ -1238,8 +1238,20 @@ static void init_typed_var(VarSymbol* var,
       init = NULL;
     }
 
-    // Create an empty type block.
-    BlockStmt* block    = new BlockStmt(NULL, BLOCK_SCOPELESS);
+    //
+    // MDN 2016/02/02
+    // The code for resolving the type of an extern variable
+    //
+    //   functionResolution.cpp : resolveExternVarSymbols()
+    //
+    // expects to find the init code inside a block stmt.
+    //
+    // However the remaining cases do not need it.
+    //
+    BlockStmt* block = NULL;
+
+    if (var->hasFlag(FLAG_EXTERN) == true)
+      block = new BlockStmt(NULL, BLOCK_SCOPELESS);
 
     VarSymbol* typeTemp = newTemp("type_tmp");
     DefExpr*   typeDefn = new DefExpr(typeTemp);
@@ -1249,7 +1261,10 @@ static void init_typed_var(VarSymbol* var,
                             typeTemp,
                             new CallExpr(PRIM_INIT, type->remove()));
 
-    block->insertAtTail(typeDefn);
+    if (block != NULL)
+      block->insertAtTail(typeDefn);
+    else
+      stmt->insertAfter(typeDefn);
 
     typeDefn->insertAfter(initCall);
 
@@ -1273,7 +1288,8 @@ static void init_typed_var(VarSymbol* var,
         (unsigned&) block->blockTag |= BLOCK_EXTERN | BLOCK_TYPE;
     }
 
-    stmt->insertAfter(block);
+    if (block != NULL)
+      stmt->insertAfter(block);
   }
 }
 
