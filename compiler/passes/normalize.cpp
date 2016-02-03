@@ -970,7 +970,7 @@ static void fix_def_expr(VarSymbol* var) {
 
   INT_ASSERT(fn);
 
-  if ( // Not explicily marked "no auto destroy"
+  if (// Not explicily marked "no auto destroy"
       !var->hasFlag(FLAG_NO_AUTO_DESTROY) &&
 
       // Not a param variable.  (Note 1)
@@ -1023,7 +1023,7 @@ static void fix_def_expr(VarSymbol* var) {
   //
   // insert temporary for constants to assist constant checking
   //
-  if (var->hasFlag(FLAG_CONST) &&
+  if ( var->hasFlag(FLAG_CONST) &&
       !var->hasEitherFlag(FLAG_EXTERN, FLAG_REF_VAR)) {
     constTemp = newTemp("const_tmp");
 
@@ -1059,8 +1059,7 @@ static void fix_def_expr(VarSymbol* var) {
 static void init_array_alias(VarSymbol* var,
                              Expr*      type,
                              Expr*      init,
-                             Expr*      stmt)
-{
+                             Expr*      stmt) {
   CallExpr* partial  = NULL;
   CallExpr* autoCopy = NULL;
 
@@ -1081,12 +1080,10 @@ static void init_array_alias(VarSymbol* var,
   autoCopy = new CallExpr("chpl__autoCopy", partial);
 
   stmt->insertAfter(new CallExpr(PRIM_MOVE, var, autoCopy));
-
 }
 
 
-static void init_ref_var(VarSymbol* var, Expr* init, Expr* stmt)
-{
+static void init_ref_var(VarSymbol* var, Expr* init, Expr* stmt) {
   if (!init) {
     USR_FATAL_CONT(var,
                    "References must be initialized when they are defined.");
@@ -1129,8 +1126,9 @@ static void init_ref_var(VarSymbol* var, Expr* init, Expr* stmt)
 }
 
 
-static void init_config_var(VarSymbol* var, Expr*& stmt, VarSymbol* constTemp)
-{
+static void init_config_var(VarSymbol* var,
+                            Expr*&     stmt,
+                            VarSymbol* constTemp) {
   Expr*   noop        = new CallExpr(PRIM_NOOP);
   Symbol* module_name = (var->getModule()->modTag != MOD_INTERNAL ?
                          new_CStringSymbol(var->getModule()->name) :
@@ -1160,8 +1158,7 @@ static void init_typed_var(VarSymbol* var,
                            Expr*      type,
                            Expr*      init,
                            Expr*      stmt,
-                           VarSymbol* constTemp)
-{
+                           VarSymbol* constTemp) {
   //
   // use cast for parameters to avoid multiple parameter assignments
   //
