@@ -3706,19 +3706,25 @@ void CallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 
 void
 CallExpr::insertAtHead(BaseAST* ast) {
+  Expr *toInsert;
   if (Symbol* a = toSymbol(ast))
-    argList.insertAtHead(new SymExpr(a));
+    toInsert = new SymExpr(a);
   else
-    argList.insertAtHead(toExpr(ast));
+    toInsert = toExpr(ast);
+  argList.insertAtHead(toInsert);
+  parent_insert_help(this, toInsert);
 }
 
 
 void
 CallExpr::insertAtTail(BaseAST* ast) {
+  Expr *toInsert;
   if (Symbol* a = toSymbol(ast))
-    argList.insertAtTail(new SymExpr(a));
+    toInsert = new SymExpr(a);
   else
-    argList.insertAtTail(toExpr(ast));
+    toInsert = toExpr(ast);
+  argList.insertAtTail(toInsert);
+  parent_insert_help(this, toInsert);
 }
 
 
