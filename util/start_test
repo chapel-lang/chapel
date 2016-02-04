@@ -1017,9 +1017,10 @@ def auto_generate_tests():
                             "Log file: {0}]".format(tmp_file_path))
                         finish()
 
+                dat_dir = os.path.join(perf_dir, args.performance_description)
                 with cd(test_dir):
-                    if not os.path.isdir(perf_dir):
-                        os.makedirs(perf_dir)
+                    if not os.path.isdir(dat_dir):
+                        os.makedirs(dat_dir)
 
                     logger.write("[Computing stats for spec examples]")
                     temp_perf_path = os.path.join(home,
@@ -1029,7 +1030,7 @@ def auto_generate_tests():
                             cmd = os.path.join(util_dir, "test", 
                                     "computePerfStats")
                             out = subprocess.check_output([cmd, "spectests", 
-                                perf_dir, os.path.join(home, "test", 
+                                dat_dir, os.path.join(home, "test",
                                 "spectests.perfkeys"), tmp_file_path])
                             temp_perf_file.write(out)
                         except:
