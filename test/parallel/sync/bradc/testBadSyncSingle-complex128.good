@@ -1,1 +1,2 @@
-testBadSyncSingle.chpl:4: error: sync/single types cannot be of type 'complex(128)'
+testBadSyncSingle.chpl:4: In function 'main':
+testBadSyncSingle.chpl:5: error: sync/single types cannot be of type 'complex(128)'

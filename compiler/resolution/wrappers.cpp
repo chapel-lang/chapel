@@ -590,9 +590,8 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
   call->getStmtExpr()->insertBefore(new DefExpr(castTemp));
   call->getStmtExpr()->insertBefore(castMove);
 
-  resolveCall(castCall);
+  resolveCallAndCallee(castCall, true);
   if (FnSymbol* castTarget = castCall->isResolved()) {
-    resolveFns(castTarget);
 
     // Perhaps equivalently, we could check "if (tryToken)",
     // except tryToken is not visible in this file.
