@@ -765,10 +765,10 @@ static void build_type_constructor(AggregateType* ct) {
 
   Vec<const char*> fieldNamesSet;
 
-  /*
   CallExpr* superCall = NULL;
 
   // Copy arguments from superclass type constructor
+  // (supporting inheritence from generic classes)
   if (ct->dispatchParents.n > 0) {
     // TODO -- do this only for classes?
 
@@ -800,20 +800,20 @@ static void build_type_constructor(AggregateType* ct) {
         }
       }
     }
-  } */
+  }
 
   for_fields(tmp, ct) {
     SET_LINENO(tmp);
 
     if (VarSymbol* field = toVarSymbol(tmp)) {
       if (field->hasFlag(FLAG_SUPER_CLASS)) {
-        // Do something special with exprTyp
-        /*if (superCall) {
+        // supporting inheritence from generic classes
+        if (superCall) {
           gdbShouldBreakHere();
           DefExpr* def = field->defPoint->copy();
           def->exprType = superCall;
           field->defPoint->replace(def);
-        }*/
+        }
         continue;
       }
 
