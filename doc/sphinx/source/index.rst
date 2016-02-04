@@ -20,7 +20,6 @@ Chapel Documentation
 
    Quick Reference <language/reference>
    Language Specification <language/spec>
-   Man Page <language/man>
    modules/builtins
    modules/standardlibrary
    users-guide/index

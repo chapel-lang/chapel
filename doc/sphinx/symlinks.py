@@ -51,7 +51,7 @@ def main():
 
     # Man pages
     chplmanpage = os.path.join(chpl_home, 'man', 'chpl.rst')
-    os.symlink(chplmanpage, 'source/language/man.rst')
+    os.symlink(chplmanpage, 'source/usingchapel/man.rst')
 
     chpldocmanpage = os.path.join(chpl_home, 'man', 'chpldoc.rst')
     os.symlink(chpldocmanpage, 'source/tools/chpldoc/man.rst')

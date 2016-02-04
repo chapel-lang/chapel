@@ -19,3 +19,4 @@ Contents:
    tasks
    debugging
    bugs
+   Man Page <man>
