@@ -1142,13 +1142,6 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
 *                                                                             *
 ************************************** | *************************************/
 
-static void changeRetToArgAndClone(CallExpr*                     move,
-                                   Symbol*                       lhs,
-                                   CallExpr*                     call,
-                                   FnSymbol*                     fn,
-                                   Map<Symbol*, Vec<SymExpr*>*>& defMap,
-                                   Map<Symbol*, Vec<SymExpr*>*>& useMap);
-
 static void replaceRemainingUses(Vec<SymExpr*>& use,
                                  SymExpr*       firstUse,
                                  Symbol*        actual);
@@ -1159,8 +1152,8 @@ static void replaceUsesOfFnResultInCaller(CallExpr*      move,
                                           FnSymbol*      fn);
 
 static void returnRecordsByReferenceArguments() {
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  Map<Symbol*, Vec<SymExpr*>*> defMap;
+  Map<Symbol*, Vec<SymExpr*>*> useMap;
 
   buildDefUseMaps(defMap, useMap);
 
@@ -1168,61 +1161,46 @@ static void returnRecordsByReferenceArguments() {
     if (call->parentSymbol) {
       if (FnSymbol* fn = requiresImplicitDestroy(call)) {
         if (fn->hasFlag(FLAG_EXTERN) == false) {
-          CallExpr* move = toCallExpr(call->parentExpr);
+          CallExpr*     move    = toCallExpr(call->parentExpr);
+          SymExpr*      lhsExpr = toSymExpr(move->get(1));
+          Symbol*       lhs     = lhsExpr->var;
+          Vec<SymExpr*> use;
 
           INT_ASSERT(move->isPrimitive(PRIM_MOVE));
-
-          SymExpr* lhsExpr = toSymExpr(move->get(1));
-          Symbol*  lhs     = lhsExpr->var;
-
           INT_ASSERT(lhs->hasFlag(FLAG_TYPE_VARIABLE) == false);
 
-          changeRetToArgAndClone(move, lhs, call, fn, defMap, useMap);
+          // In the suffix of the containing function, look for uses
+          // of the lhs of the move containing the call to fn.
+
+          if (useMap.get(lhs) && useMap.get(lhs)->n == 1) {
+            use = *useMap.get(lhs);
+          } else {
+            for (Expr* stmt = move->next; stmt; stmt = stmt->next) {
+              std::vector<SymExpr*> symExprs;
+
+              collectSymExprs(stmt, symExprs);
+
+              for_vector(SymExpr, se, symExprs) {
+                if (se->var == lhs) {
+                  use.add(se);
+                }
+              }
+            }
+          }
+
+          // If such a use is found, create a copy of the called function,
+          // replacing the return statement in that function with a copy
+          // of the call which uses the result of the above call to that
+          // function.
+          if (use.n > 0) {
+            replaceUsesOfFnResultInCaller(move, call, use, fn);
+          }
         }
       }
     }
   }
 
   freeDefUseMaps(defMap, useMap);
-}
-
-
-static void changeRetToArgAndClone(CallExpr*                     move,
-                                   Symbol*                       lhs,
-                                   CallExpr*                     call,
-                                   FnSymbol*                     fn,
-                                   Map<Symbol*, Vec<SymExpr*>*>& defMap,
-                                   Map<Symbol*, Vec<SymExpr*>*>& useMap) {
-  // Here are some relations between the arguments that can be relied upon.
-  INT_ASSERT(call->parentExpr == move);
-  INT_ASSERT(call->isResolved() == fn);
-
-  // In the suffix of the containing function, look for uses
-  // of the lhs of the move containing the call to fn.
-  Vec<SymExpr*> use;
-
-  if (useMap.get(lhs) && useMap.get(lhs)->n == 1) {
-    use = *useMap.get(lhs);
-  } else {
-    for (Expr* stmt = move->next; stmt; stmt = stmt->next) {
-      std::vector<SymExpr*> symExprs;
-
-      collectSymExprs(stmt, symExprs);
-
-      for_vector(SymExpr, se, symExprs) {
-        if (se->var == lhs) {
-          use.add(se);
-        }
-      }
-    }
-  }
-
-  // If such a use is found, create a copy of the called function, replacing
-  // the return statement in that function with a copy of the call which uses
-  // the result of the above call to that function.
-  if (use.n > 0) {
-    replaceUsesOfFnResultInCaller(move, call, use, fn);
-  }
 }
 
 
@@ -1252,8 +1230,8 @@ static void replaceUsesOfFnResultInCaller(CallExpr*      move,
       if ((strcmp(useFn->name, "=") == 0 && firstUse == useCall->get(2)) ||
           useFn->hasFlag(FLAG_AUTO_COPY_FN)                              ||
           useFn->hasFlag(FLAG_INIT_COPY_FN)) {
-        Symbol* actual;
-        FnSymbol* newFn = NULL;
+        Symbol*   actual = NULL;
+        FnSymbol* newFn  = NULL;
 
         //
         // check cache for new function
