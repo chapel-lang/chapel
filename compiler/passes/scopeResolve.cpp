@@ -790,13 +790,13 @@ static void build_type_constructor(AggregateType* ct) {
           DefExpr* superArg = formal->defPoint->copy();
 
           // Omit the arguments shadowed by this class's fields.
-          // if (fieldNamesSet.set_in(superArg->sym->name))
-          //  continue;
-
-          fieldNamesSet.set_add(superArg->sym->name);
-
-          fn->insertFormalAtTail(superArg);
-          superCall->insertAtTail(superArg->sym);
+          Symbol* myField = ct->getField(superArg->sym->name, false);
+          if( myField && myField->hasFlag(FLAG_COMPILER_GENERATED) ) {
+            // Already an argument
+            //fieldNamesSet.set_add(superArg->sym->name);
+            //fn->insertFormalAtTail(superArg);
+            superCall->insertAtTail(new SymExpr(myField));
+          }
         }
       }
     }
@@ -810,9 +810,13 @@ static void build_type_constructor(AggregateType* ct) {
         // supporting inheritence from generic classes
         if (superCall) {
           gdbShouldBreakHere();
-          DefExpr* def = field->defPoint->copy();
-          def->exprType = superCall;
-          field->defPoint->replace(def);
+          
+          CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, superCall);
+          CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER, 
+                                           fn->_this,
+                                           new_CStringSymbol(field->name),
+                                           newInit);
+          fn->insertAtTail(newSet);
         }
         continue;
       }
@@ -842,6 +846,18 @@ static void build_type_constructor(AggregateType* ct) {
             (!exprType && !init)) {
 
           ArgSymbol* arg = create_generic_arg(field);
+
+          // Indicate which type constructor args are also for super class 
+          if (field->hasFlag(FLAG_COMPILER_GENERATED)) {
+            arg->addFlag(FLAG_COMPILER_GENERATED);
+            // Replace any such field in superCall with the arg
+            for_actuals(actual, superCall) {
+              if (SymExpr* se = toSymExpr(actual)) {
+                if (se->var == field)
+                  se->replace(new SymExpr(arg));
+              }
+            }
+          }
 
           fn->insertFormalAtTail(arg);
 

@@ -496,10 +496,11 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap& subs, FnSymbol* fn) {
  *
  * \param fn   Type constructor we are working on
  * \param subs Type substitutions to be made during instantiation
+ * \param call The call that is being resolved (used for scope)
  * \param type The generic type we wish to instantiate
  */
 static Type*
-instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, Type* type) {
+instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call, Type* type) {
   INT_ASSERT(isAggregateType(type));
   AggregateType* ct = toAggregateType(type);
 
@@ -508,7 +509,7 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, Type* type) {
 
   Type *oldParentTy = NULL;
   Type* newParentTy = NULL;
-  //AggregateType* newCt = toAggregateType(newType);
+  AggregateType* newCt = toAggregateType(newType);
 
   // Get the right super type if we are using a super constructor.
   // This only matters for generic parent types.
@@ -517,10 +518,28 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, Type* type) {
       if (parentTy->symbol->hasFlag(FLAG_GENERIC)) {
         // Set the type of super to be the instantiated
         // parent with substitutions.
-        oldParentTy = parentTy;
-        newParentTy = instantiateTypeForTypeConstructor(fn, subs, parentTy);
 
-        /*
+        CallExpr* parentTyCall = new CallExpr(astr("_type_construct_", parentTy->symbol->name));
+        // Pass the special formals to the superclass type constructor.
+        for_formals(arg, fn) {
+          if (arg->hasFlag(FLAG_COMPILER_GENERATED)) {
+            Symbol* value = subs.get(arg);
+            if (!value) {
+              value = arg;
+              // Or error?
+            }
+            parentTyCall->insertAtTail(value);
+          }
+        }
+        call->insertBefore(parentTyCall);
+        resolveCallAndCallee(parentTyCall);
+
+        oldParentTy = parentTy;
+        newParentTy = parentTyCall->isResolved()->retType;
+        parentTyCall->remove();
+        
+        // Now adjust the super field's type.
+
         DefExpr* superDef = NULL;
 
         // Find the super field
@@ -541,12 +560,6 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, Type* type) {
                           NULL ));
           INT_ASSERT(newCt->getField("super")->typeInfo() == newParentTy);
         }
-        */
-
-// TODO -- will this make multiple new types for the parent?
-// Is that bad?
-// Should we really be calling the parent type
-// constructor?
       }
     }
   }
@@ -665,7 +678,7 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
     if (fn->retType && fn->retType->id == 150380)
       gdbShouldBreakHere();
 
-    newType = instantiateTypeForTypeConstructor(fn, subs, fn->retType);
+    newType = instantiateTypeForTypeConstructor(fn, subs, call, fn->retType);
   }
 
   //
