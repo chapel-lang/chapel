@@ -498,7 +498,7 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap& subs, FnSymbol* fn) {
  * \param subs Type substitutions to be made during instantiation
  * \param type The generic type we wish to instantiate
  */
-Type*
+static Type*
 instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, Type* type) {
   INT_ASSERT(isAggregateType(type));
   AggregateType* ct = toAggregateType(type);

@@ -1030,7 +1030,7 @@ static void build_constructor(AggregateType* ct) {
             VarSymbol* field = toVarSymbol(ct->getField(superArg->sym->name));
             if (field && field->hasFlag(FLAG_COMPILER_GENERATED)) {
               fn->insertFormalAtHead(fieldArgMap[field]); // don't shadow.
-              superCall->insertAtHead(superArg->sym);
+              superCall->insertAtHead(fieldArgMap[field]);
             }
             continue;
           }

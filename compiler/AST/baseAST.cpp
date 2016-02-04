@@ -143,6 +143,7 @@ void trace_remove(BaseAST* ast, char flag) {
     if (deletedIdON() == true) fflush(deletedIdHandle);
     gdbShouldBreakHere();
   }
+  //printf("delete %p id %i\n", ast, ast->id);
   // There should never be an attempt to delete a global type.
   if (flag != 'z' && // At least, not before compiler shutdown.
       isPrimitiveType(ast) &&
