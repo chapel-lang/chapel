@@ -554,10 +554,12 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
         }
 
         if (superDef) {
-          superDef->replace(
+          /*superDef->replace(
               new DefExpr(new VarSymbol("super", newParentTy),
                           superDef->init,
-                          NULL ));
+                          NULL ));*/
+          superDef->sym->type = newParentTy;
+          // But need to leave flags!
           INT_ASSERT(newCt->getField("super")->typeInfo() == newParentTy);
         }
       }
@@ -600,7 +602,9 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
   }
 
   forv_Vec(Type, t, fn->retType->dispatchParents) {
-    bool inserted = t->dispatchChildren.add_exclusive(newType);
+    Type *useT = t;
+    if (t == oldParentTy) useT = newParentTy;
+    bool inserted = useT->dispatchChildren.add_exclusive(newType);
     INT_ASSERT(inserted);
   }
   if (newType->dispatchChildren.n)
