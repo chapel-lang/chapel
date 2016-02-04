@@ -463,14 +463,17 @@ resolveUninsertedCall(Type* type, CallExpr* call) {
   return call->isResolved();
 }
 
+//
+// Invoke resolveFns(fn), while having 'call' be on the top of 'callStack'.
+//
 static void resolveFnForCall(FnSymbol* fn, CallExpr* call)
 {
   // If 'call' is already on the call stack, do not add it.
-  // If this assertion fail, change it to 'if'.
+  // If this assertion fails, change it to 'if'.
   INT_ASSERT(callStack.n == 0 || call != callStack.v[callStack.n-1]);
 
-  // The following is assumed in printCallStack(), which may be invoked
-  // from resolveFns() if we add 'call' to 'callStack'.
+  // When 'call' is on 'callStack', its parentSymbol etc. may be queried
+  // in printCallStack(), which resolveFns() may invoke.
   INT_ASSERT(call->inTree());
 
   // Push 'call' onto the stack. In case of an error or warning,
@@ -483,13 +486,18 @@ static void resolveFnForCall(FnSymbol* fn, CallExpr* call)
   callStack.pop();
 }
 
+//
+// Resolve 'call', then resolve its target function if applicable.
+// 'call' must be resolved successfully, except when allowUnresolved==true.
+//
 void resolveCallAndCallee(CallExpr* call, bool allowUnresolved) {
   resolveCall(call);
-  FnSymbol* callee = call->isResolved();
-  if (!allowUnresolved)
-    INT_ASSERT(callee);
-  if (callee)
+
+  if (FnSymbol* callee = call->isResolved()) {
     resolveFnForCall(callee, call);
+  } else if (!allowUnresolved) {
+    INT_ASSERT(false);
+  }
 }
 
 
