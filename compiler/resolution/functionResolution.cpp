@@ -6038,6 +6038,21 @@ isSubType(Type* sub, Type* super) {
   return false;
 }
 
+static bool
+isSubTypeOrInstantiation(Type* sub, Type* super) {
+  if (sub == super)
+    return true;
+  forv_Vec(Type, parent, sub->dispatchParents) {
+    if (isSubTypeOrInstantiation(parent, super))
+      return true;
+  }
+  if (sub->instantiatedFrom &&
+      isSubTypeOrInstantiation(sub->instantiatedFrom, super))
+    return true;
+  return false;
+}
+
+
 static void
 insertValueTemp(Expr* insertPoint, Expr* actual) {
   if (SymExpr* se = toSymExpr(actual)) {
@@ -6279,11 +6294,7 @@ postFold(Expr* expr) {
         Type* rt = call->get(1)->getValType();
         if (lt != dtUnknown && rt != dtUnknown && lt != dtAny &&
             rt != dtAny && !lt->symbol->hasFlag(FLAG_GENERIC)) {
-          bool is_true = false;
-          if (lt->instantiatedFrom == rt)
-            is_true = true;
-          if (isSubType(lt, rt))
-            is_true = true;
+          bool is_true = isSubTypeOrInstantiation(lt, rt);
           result = (is_true) ? new SymExpr(gTrue) : new SymExpr(gFalse);
           call->replace(result);
         }
