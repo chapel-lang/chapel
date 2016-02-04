@@ -104,11 +104,14 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
                                 Vec<Symbol*>& varSet, Vec<Symbol*>& varVec);
 
+static bool variableNeedsHeapManagement(DefExpr* def);
+static bool variableShouldUsePrivateBroadcast(Symbol* var);
+
 // Package args into a class and call a wrapper function with that
 // object. The wrapper function will then call the function
 // created by the previous parallel pass. This is a way to pass along
 // multiple args through the limitation of one arg in the runtime's
-// thread creation interface. 
+// thread creation interface.
 //
 // Implemented using BundleArgsFnData and the functions:
 //   create_arg_bundle_class
@@ -851,42 +854,30 @@ static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 //   Otherwise, if it is a record-wrapped type, replicate it.
 //   Otherwise,
 //    Add it to varSet and varVec, so it will be put on the heap.
-static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                                Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
-                                Vec<Symbol*>& varSet, Vec<Symbol*>& varVec)
-{
+static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                                Vec<Symbol*>&                 refSet,
+                                Vec<Symbol*>&                 refVec,
+                                Vec<Symbol*>&                 varSet,
+                                Vec<Symbol*>&                 varVec) {
   forv_Vec(DefExpr, def, gDefExprs) {
     SET_LINENO(def);
 
-    if (!fLocal &&
-        isModuleSymbol(def->parentSymbol) &&
-        def->parentSymbol != rootModule &&
-        isVarSymbol(def->sym) &&
-        !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
-        !def->sym->hasFlag(FLAG_EXTERN)) {
-      if (def->sym->hasFlag(FLAG_CONST) &&
-          (is_bool_type(def->sym->type) ||
-           is_enum_type(def->sym->type) ||
-           is_int_type(def->sym->type) ||
-           is_uint_type(def->sym->type) ||
-           is_real_type(def->sym->type) ||
-           is_imag_type(def->sym->type) ||
-           is_complex_type(def->sym->type) ||
-           (isRecord(def->sym->type) &&
-            !isRecordWrappedType(def->sym->type) &&
-            // sync/single are currently classes, so this shouldn't matter
-            !isSyncType(def->sym->type) &&
-            // Dont try to broadcast string literals, they'll get fixed in
-            // another manner
-            (def->sym->type != dtString)))) {
+    if (variableNeedsHeapManagement(def) == true) {
+      if (variableShouldUsePrivateBroadcast(def->sym) == true) {
         // replicate global const of primitive type
-        INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
+
+        INT_ASSERT(defMap.get(def->sym)    != NULL);
+        INT_ASSERT(defMap.get(def->sym)->n ==    1);
+
         for_defs(se, defMap, def->sym) {
-          se->getStmtExpr()->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
+          se->getStmtExpr()->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST,
+                                                      def->sym));
         }
+
       } else if (isRecordWrappedType(def->sym->type)) {
         // replicate address of global arrays, domains, and distributions
         replicateGlobalRecordWrappedVars(def);
+
       } else {
         // put other global constants and all global variables on the heap
         varSet.set_add(def->sym);
@@ -896,6 +887,58 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
   }
 }
 
+
+bool variableWillBePrivateBroadcast(Symbol* var) {
+  bool retval = false;
+
+  if (variableNeedsHeapManagement(var->defPoint) == true)
+    retval = variableShouldUsePrivateBroadcast(var);
+
+  return retval;
+}
+
+static bool variableNeedsHeapManagement(DefExpr* def) {
+  bool retval = false;
+
+  if (fLocal                                 == false      &&
+      isModuleSymbol(def->parentSymbol)      == true       &&
+      def->parentSymbol                      != rootModule &&
+      isVarSymbol(def->sym)                  == true       &&
+      def->sym->hasFlag(FLAG_LOCALE_PRIVATE) == false      &&
+      def->sym->hasFlag(FLAG_EXTERN)         == false)
+    retval = true;
+
+  return retval;
+}
+
+static bool variableShouldUsePrivateBroadcast(Symbol* var) {
+  bool retval = false;
+
+  if (var->hasFlag(FLAG_CONST) == true) {
+    Type* type = var->type;
+
+    if (is_bool_type(type)    ||
+        is_enum_type(type)    ||
+        is_int_type(type)     ||
+        is_uint_type(type)    ||
+        is_real_type(type)    ||
+        is_imag_type(type)    ||
+        is_complex_type(type) ||
+
+        (isRecord(type)            == true  &&
+         isRecordWrappedType(type) == false &&
+
+         // sync/single are currently classes, so this shouldn't matter
+         isSyncType(type)          == false &&
+
+         // String literals are handled elsewhere
+         type != dtString)) {
+      retval = true;
+    }
+  }
+
+  return retval;
+}
 
 static void
 makeHeapAllocations() {
