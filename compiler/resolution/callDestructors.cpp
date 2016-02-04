@@ -1162,54 +1162,66 @@ static void
 returnRecordsByReferenceArguments() {
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
+
   buildDefUseMaps(defMap, useMap);
 
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
       if (FnSymbol* fn = requiresImplicitDestroy(call)) {
-        if (fn->hasFlag(FLAG_EXTERN))
-          continue;
-        CallExpr* move = toCallExpr(call->parentExpr);
-        INT_ASSERT(move->isPrimitive(PRIM_MOVE));
-        SymExpr* lhs = toSymExpr(move->get(1));
-        INT_ASSERT(!lhs->var->hasFlag(FLAG_TYPE_VARIABLE));
-        changeRetToArgAndClone(move, lhs->var, call, fn, defMap, useMap);
-      }
-    }
-  }
-  freeDefUseMaps(defMap, useMap);
-}
+        if (fn->hasFlag(FLAG_EXTERN) == false) {
+          CallExpr* move = toCallExpr(call->parentExpr);
 
-static void replaceRemainingUses(Vec<SymExpr*>& use, SymExpr* firstUse,
-                                 Symbol* actual)
-{
-  // for each remaining use "se"
-  //   replace se with deref of the actual return value argument, unless parent is
-  //   accessing its address
-  forv_Vec(SymExpr, se, use) {
-    // Because we've already handled the first use
-    if (se != firstUse) {
-      CallExpr* parent = toCallExpr(se->parentExpr);
-      if (parent) {
-        SET_LINENO(parent);
-        if (parent->isPrimitive(PRIM_ADDR_OF)) {
-          parent->replace(new SymExpr(actual));
-        } else {
-          FnSymbol* parentFn = parent->isResolved();
-          if (!(parentFn->hasFlag(FLAG_AUTO_COPY_FN) ||
-                parentFn->hasFlag(FLAG_INIT_COPY_FN))) {
-            // Leave the auto copies/inits in, we'll need them for
-            // moving information back to us.
+          INT_ASSERT(move->isPrimitive(PRIM_MOVE));
 
-            // Copy the information we currently have into the temp
-            se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, se->var, new CallExpr(PRIM_DEREF, actual)));
-          }
+          SymExpr* lhsExpr = toSymExpr(move->get(1));
+          Symbol*  lhs     = lhsExpr->var;
+
+          INT_ASSERT(lhs->hasFlag(FLAG_TYPE_VARIABLE) == false);
+
+          changeRetToArgAndClone(move, lhs, call, fn, defMap, useMap);
         }
       }
     }
   }
+
+  freeDefUseMaps(defMap, useMap);
 }
 
+
+
+static void
+changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
+                       CallExpr* call, FnSymbol* fn,
+                       Map<Symbol*,Vec<SymExpr*>*>& defMap,
+                       Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+  // Here are some relations between the arguments that can be relied upon.
+  INT_ASSERT(call->parentExpr == move);
+  INT_ASSERT(call->isResolved() == fn);
+
+  // In the suffix of the containing function, look for uses of the lhs of the
+  // move containing the call to fn.
+  Vec<SymExpr*> use;
+  if (useMap.get(lhs) && useMap.get(lhs)->n == 1) {
+    use = *useMap.get(lhs);
+  } else {
+    for (Expr* stmt = move->next; stmt; stmt = stmt->next) {
+      std::vector<SymExpr*> symExprs;
+      collectSymExprs(stmt, symExprs);
+      for_vector(SymExpr, se, symExprs) {
+        if (se->var == lhs) {
+          use.add(se);
+        }
+      }
+    }
+  }
+
+  // If such a use is found, create a copy of the called function, replacing
+  // the return statement in that function with a copy of the call which uses
+  // the result of the above call to that function.
+  if (use.n > 0) {
+    replaceUsesOfFnResultInCaller(move, call, use, fn);
+  }
+}
 
 // Create a copy of the called function, replacing
 // the return statement in that function with a copy of the call which uses
@@ -1313,38 +1325,33 @@ static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
   }
 }
 
+static void replaceRemainingUses(Vec<SymExpr*>& use, SymExpr* firstUse,
+                                 Symbol* actual)
+{
+  // for each remaining use "se"
+  //   replace se with deref of the actual return value argument, unless parent is
+  //   accessing its address
+  forv_Vec(SymExpr, se, use) {
+    // Because we've already handled the first use
+    if (se != firstUse) {
+      CallExpr* parent = toCallExpr(se->parentExpr);
+      if (parent) {
+        SET_LINENO(parent);
+        if (parent->isPrimitive(PRIM_ADDR_OF)) {
+          parent->replace(new SymExpr(actual));
+        } else {
+          FnSymbol* parentFn = parent->isResolved();
+          if (!(parentFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                parentFn->hasFlag(FLAG_INIT_COPY_FN))) {
+            // Leave the auto copies/inits in, we'll need them for
+            // moving information back to us.
 
-static void
-changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
-                       CallExpr* call, FnSymbol* fn,
-                       Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                       Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  // Here are some relations between the arguments that can be relied upon.
-  INT_ASSERT(call->parentExpr == move);
-  INT_ASSERT(call->isResolved() == fn);
-
-  // In the suffix of the containing function, look for uses of the lhs of the
-  // move containing the call to fn.
-  Vec<SymExpr*> use;
-  if (useMap.get(lhs) && useMap.get(lhs)->n == 1) {
-    use = *useMap.get(lhs);
-  } else {
-    for (Expr* stmt = move->next; stmt; stmt = stmt->next) {
-      std::vector<SymExpr*> symExprs;
-      collectSymExprs(stmt, symExprs);
-      for_vector(SymExpr, se, symExprs) {
-        if (se->var == lhs) {
-          use.add(se);
+            // Copy the information we currently have into the temp
+            se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, se->var, new CallExpr(PRIM_DEREF, actual)));
+          }
         }
       }
     }
-  }
-
-  // If such a use is found, create a copy of the called function, replacing
-  // the return statement in that function with a copy of the call which uses
-  // the result of the above call to that function.
-  if (use.n > 0) {
-    replaceUsesOfFnResultInCaller(move, call, use, fn);
   }
 }
 
