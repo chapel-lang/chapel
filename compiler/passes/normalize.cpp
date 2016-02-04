@@ -390,6 +390,7 @@ checkUseBeforeDefs() {
                 if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
                   if (!sym->var->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN) &&
                       !sym->var->hasFlag(FLAG_TEMP)) {
+                    printf("sym->var->id = %i\n", sym->var->id);
                     USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
                     undefined.set_add(sym->var);
                   }

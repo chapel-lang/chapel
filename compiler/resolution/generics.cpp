@@ -506,6 +506,51 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, Type* type) {
   Type* newType = NULL;
   newType = ct->symbol->copy()->type;
 
+  Type *oldParentTy = NULL;
+  Type* newParentTy = NULL;
+  //AggregateType* newCt = toAggregateType(newType);
+
+  // Get the right super type if we are using a super constructor.
+  // This only matters for generic parent types.
+  if (ct->dispatchParents.n > 0) {
+    if(AggregateType *parentTy = toAggregateType(ct->dispatchParents.v[0])){
+      if (parentTy->symbol->hasFlag(FLAG_GENERIC)) {
+        // Set the type of super to be the instantiated
+        // parent with substitutions.
+        oldParentTy = parentTy;
+        newParentTy = instantiateTypeForTypeConstructor(fn, subs, parentTy);
+
+        /*
+        DefExpr* superDef = NULL;
+
+        // Find the super field
+        for_alist(tmp, newCt->fields) {
+          DefExpr* def = toDefExpr(tmp);
+          INT_ASSERT(def);
+          if (VarSymbol* field = toVarSymbol(def->sym)) {
+            if (field->hasFlag(FLAG_SUPER_CLASS)) {
+              superDef = def;
+            }
+          }
+        }
+
+        if (superDef) {
+          superDef->replace(
+              new DefExpr(new VarSymbol("super", newParentTy),
+                          superDef->init,
+                          NULL ));
+          INT_ASSERT(newCt->getField("super")->typeInfo() == newParentTy);
+        }
+        */
+
+// TODO -- will this make multiple new types for the parent?
+// Is that bad?
+// Should we really be calling the parent type
+// constructor?
+      }
+    }
+  }
+
   //
   // mark star tuples, add star flag
   //
@@ -532,7 +577,15 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, Type* type) {
   if (isSyncType(newType))
     newType->defaultValue = NULL;
   newType->substitutions.copy(fn->retType->substitutions);
-  newType->dispatchParents.copy(fn->retType->dispatchParents);
+  //newType->dispatchParents.copy(fn->retType->dispatchParents);
+  // Add dispatch parents, but replace parent type with
+  // instantiated parent type.
+  forv_Vec(Type, t, fn->retType->dispatchParents) {
+    Type *useT = t;
+    if (t == oldParentTy) useT = newParentTy;
+    newType->dispatchParents.add(useT);
+  }
+
   forv_Vec(Type, t, fn->retType->dispatchParents) {
     bool inserted = t->dispatchChildren.add_exclusive(newType);
     INT_ASSERT(inserted);
@@ -609,6 +662,9 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   //
   Type* newType = NULL;
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
+    if (fn->retType && fn->retType->id == 150380)
+      gdbShouldBreakHere();
+
     newType = instantiateTypeForTypeConstructor(fn, subs, fn->retType);
   }
 

@@ -530,6 +530,9 @@ static void addClassToHierarchy(AggregateType*       ct,
 
   add_root_type(ct);
 
+  if (ct->id == 150360 ||ct->symbol->id == 150360)
+    gdbShouldBreakHere();
+
   // Walk the base class list, and add parents into the class hierarchy.
   for_alist(expr, ct->inherits) {
     AggregateType* pt = discoverParentAndCheck(expr, ct);
@@ -554,6 +557,36 @@ static void addClassToHierarchy(AggregateType*       ct,
       super->addFlag(FLAG_SUPER_CLASS);
 
       ct->fields.insertAtHead(new DefExpr(super));
+
+      // add type and param fields from parent
+      for_fields_backward(tmp, pt) {
+        SET_LINENO(ct);
+        if (VarSymbol* field = toVarSymbol(tmp)) {
+          if (field->hasFlag(FLAG_PARAM) || field->isType()) {
+            // If not already in derived class (by name), copy it.
+            bool alreadyContainsField = false;
+
+            for_fields(myfield, ct) {
+              if (!strcmp(myfield->name, field->name)) {
+                alreadyContainsField = true;
+                break;
+              }
+            }
+
+            if (!alreadyContainsField) {
+              DefExpr* def = field->defPoint->copy();
+            
+              // Mark such fields as compiler generated so
+              // that we no longer consider them shadowing
+              // the parent field in build_constructors.
+              def->sym->addFlag(FLAG_COMPILER_GENERATED);
+              ct->fields.insertAtHead(def);
+            }
+
+
+          }
+        }
+      }
     } else {
       SET_LINENO(ct);
 
@@ -697,6 +730,13 @@ void build_constructors(AggregateType* ct)
 
 // Create the (default) type constructor for this class.
 static void build_type_constructor(AggregateType* ct) {
+  // Do nothing if it is already built
+  if (ct->defaultTypeConstructor)
+    return;
+
+  if (ct->id == 150413 || ct->symbol->id == 150413)
+    gdbShouldBreakHere();
+
   // Create the type constructor function,
   FnSymbol* fn = new FnSymbol(astr("_type_construct_", ct->symbol->name));
 
@@ -723,15 +763,60 @@ static void build_type_constructor(AggregateType* ct) {
 
   fn->insertAtTail(new DefExpr(fn->_this));
 
-  // Walk all fields and select the generic ones.
   Vec<const char*> fieldNamesSet;
+
+  /*
+  CallExpr* superCall = NULL;
+
+  // Copy arguments from superclass type constructor
+  if (ct->dispatchParents.n > 0) {
+    // TODO -- do this only for classes?
+
+    if(AggregateType *parentTy = toAggregateType(ct->dispatchParents.v[0])){
+
+      // This class/record has a parent class/record
+      if (!parentTy->defaultTypeConstructor) {
+        // If it doesn't yet have an type constructor, make one
+        build_type_constructor(parentTy);
+      }
+      FnSymbol* superTypeCtor = parentTy->defaultTypeConstructor;
+
+      if (superTypeCtor->numFormals() > 0) {
+        superCall = new CallExpr(parentTy->symbol->name);
+
+        // Now walk through arguments in super class type constructor 
+        for_formals(formal, superTypeCtor) {
+
+          DefExpr* superArg = formal->defPoint->copy();
+
+          // Omit the arguments shadowed by this class's fields.
+          // if (fieldNamesSet.set_in(superArg->sym->name))
+          //  continue;
+
+          fieldNamesSet.set_add(superArg->sym->name);
+
+          fn->insertFormalAtTail(superArg);
+          superCall->insertAtTail(superArg->sym);
+        }
+      }
+    }
+  } */
 
   for_fields(tmp, ct) {
     SET_LINENO(tmp);
 
     if (VarSymbol* field = toVarSymbol(tmp)) {
-      if (field->hasFlag(FLAG_SUPER_CLASS))
+      if (field->hasFlag(FLAG_SUPER_CLASS)) {
+        // Do something special with exprTyp
+        /*if (superCall) {
+          gdbShouldBreakHere();
+          DefExpr* def = field->defPoint->copy();
+          def->exprType = superCall;
+          field->defPoint->replace(def);
+        }*/
         continue;
+      }
+
 
       Expr* exprType = field->defPoint->exprType;
       Expr* init = field->defPoint->init;
@@ -937,9 +1022,18 @@ static void build_constructor(AggregateType* ct) {
 
           DefExpr* superArg = formal->defPoint->copy();
 
-          // Omit the arguments shadowed by this class's fields.
-          if (fieldNamesSet.set_in(superArg->sym->name))
+          // Omit the arguments shadowed by this class's fields
+          // unless they are marked compiler generated,
+          // which means we added them in addClassToHierarchy
+          // for type/param fields from a parent.
+          if (fieldNamesSet.set_in(superArg->sym->name)) {
+            VarSymbol* field = toVarSymbol(ct->getField(superArg->sym->name));
+            if (field && field->hasFlag(FLAG_COMPILER_GENERATED)) {
+              fn->insertFormalAtHead(fieldArgMap[field]); // don't shadow.
+              superCall->insertAtHead(superArg->sym);
+            }
             continue;
+          }
 
           fieldNamesSet.set_add(superArg->sym->name);
 
@@ -1066,7 +1160,9 @@ static void build_constructor(AggregateType* ct) {
     if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
 
-    fn->insertFormalAtTail(arg);
+    if (!field->hasFlag(FLAG_COMPILER_GENERATED))
+      // Added fields mark with FLAG_COMPILER_GENERATED earlier
+      fn->insertFormalAtTail(arg);
 
     if (arg->type == dtAny && !arg->hasFlag(FLAG_TYPE_VARIABLE) &&
         !arg->hasFlag(FLAG_PARAM) && !ct->symbol->hasFlag(FLAG_REF))

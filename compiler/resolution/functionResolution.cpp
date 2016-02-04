@@ -1837,6 +1837,10 @@ expandVarArgs(FnSymbol* origFn, int numActuals) {
 static void
 resolve_type_constructor(FnSymbol* fn, CallInfo& info) {
     SET_LINENO(fn);
+
+    if (fn->id == 827077)
+      gdbShouldBreakHere();
+
     CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
     for_formals(formal, fn) {
       if (strcmp(formal->name, "meme")) {
@@ -1931,6 +1935,10 @@ static void
 filterGenericCandidate(Vec<ResolutionCandidate*>& candidates,
                        ResolutionCandidate* currCandidate,
                        CallInfo& info) {
+
+  if( info.call->id == breakOnResolveID ) {
+    gdbShouldBreakHere();
+  }
 
   currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
 
