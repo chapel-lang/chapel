@@ -189,7 +189,7 @@ if printTimings {
   if printTimingTables {
     writeln("Locales / Trials");
     for i in OnePerLocale {
-      write(here.id, ": ");
+      write(i, ": ");
       for t in totalTime[i] {
         write(t, "\t");
       }
@@ -205,11 +205,7 @@ if printTimings {
     totMinTime += minTime;
   }
   var avgTime = totMinTime / numLocales;
-  //
-  // TODO: Did I get that right?
-  //
-  writeln("average across locales of min time across trials = ",
-          avgTime / numLocales);
+  writeln("average across locales of min time across trials = ", avgTime);
 }
   
 
