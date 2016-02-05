@@ -338,6 +338,8 @@ usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen);
 static Expr* preFold(Expr* expr);
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
 static bool isSubType(Type* sub, Type* super);
+static bool isInstantiation(Type* sub, Type* super);
+static bool isSubTypeOrInstantiation(Type* sub, Type* super);
 static void insertValueTemp(Expr* insertPoint, Expr* actual);
 FnSymbol* requiresImplicitDestroy(CallExpr* call);
 static Expr* postFold(Expr* expr);
@@ -1199,6 +1201,41 @@ isLegalConstRefActualArg(ArgSymbol* formal, Expr* actual) {
   return retval;
 }
 
+/* If we have a generic parent, e.g.:
+   class Parent { type t; proc foo(){} }
+   class Child : Parent { }
+
+   when we have e.g. Child(int) and we call foo,
+   we need we to instantiate Parent.foo() to Parent(int).foo().
+   In that case, the actual is Child(int) and the formal is Parent.
+   We need to return Parent(int), which should be the dispatch
+   parent for Child(int).
+
+   This table helps one to understand the situation
+
+                                              (formal)
+     Parent(int) ------ instantiatedFrom --->  Parent
+         |                                      |
+      dispatch child                         dispatch child
+         |                                      |
+         v                                      v
+     Child(int)  ------ instantiatedFrom ---> Child
+      (actual)
+
+   This function detects that situation and returns the type that
+   should be instantiated.
+*/
+static
+Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType)
+{
+  forv_Vec(Type, parent, actualType->dispatchParents) {
+    if (isInstantiation(parent, formalType))
+      return parent;
+    if (Type* t = getConcreteParentForGenericFormal(parent, formalType))
+      return t;
+  }
+  return NULL;
+}
 
 // Returns true iff dispatching the actualType to the formalType
 // results in an instantiation.
@@ -1228,6 +1265,11 @@ canInstantiate(Type* actualType, Type* formalType) {
     return true;
   if (actualType->instantiatedFrom && canInstantiate(actualType->instantiatedFrom, formalType))
     return true;
+  if (actualType->instantiatedFrom &&
+      formalType->symbol->hasFlag(FLAG_GENERIC) &&
+      getConcreteParentForGenericFormal(actualType, formalType))
+    return true;
+
   return false;
 }
 
@@ -1483,7 +1525,7 @@ computeActualFormalAlignment(FnSymbol* fn,
 // instantiated by a given actual type
 //
 static Type*
-getInstantiationType(Type* actualType, Type* formalType) {
+geBasictInstantiationType(Type* actualType, Type* formalType) {
   if (canInstantiate(actualType, formalType)) {
     return actualType;
   }
@@ -1499,6 +1541,31 @@ getInstantiationType(Type* actualType, Type* formalType) {
         return st;
   }
   return NULL;
+}
+
+static Type*
+getInstantiationType(Type* actualType, Type* formalType) {
+  Type *ret = geBasictInstantiationType(actualType, formalType);
+
+  // Now, if formalType is a generic parent type to actualType,
+  // we should instantiate the parent actual type
+  if (ret->instantiatedFrom &&
+      formalType->symbol->hasFlag(FLAG_GENERIC)) {
+    Type* concrete = getConcreteParentForGenericFormal(ret, formalType);
+    if (concrete) {
+      printf("actual:\n");
+      print_view(actualType);
+      printf("formal:\n");
+      print_view(formalType);
+      printf("concrete:\n");
+      print_view(concrete);
+      gdbShouldBreakHere();
+      concrete = getConcreteParentForGenericFormal(ret, formalType); //DEBUG
+      ret = concrete;
+    }
+  }
+
+  return ret;
 }
 
 
@@ -6045,6 +6112,18 @@ isSubType(Type* sub, Type* super) {
   }
   return false;
 }
+
+static bool
+isInstantiation(Type* sub, Type* super) {
+  Type * cur;
+  cur = sub->instantiatedFrom;
+  while (cur && cur != super) {
+    cur = cur->instantiatedFrom;
+  }
+
+  return cur == super;
+}
+
 
 static bool
 isSubTypeOrInstantiation(Type* sub, Type* super) {

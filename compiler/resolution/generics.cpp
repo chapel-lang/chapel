@@ -626,6 +626,10 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
  */
 FnSymbol*
 instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
+
+  if (call && call->id == 827233 )
+    gdbShouldBreakHere();
+
   form_Map(SymbolMapElem, e, subs) {
     if (TypeSymbol* ts = toTypeSymbol(e->value)) {
       if (ts->type->symbol->hasFlag(FLAG_GENERIC))
