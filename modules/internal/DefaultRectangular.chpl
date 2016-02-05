@@ -867,7 +867,8 @@ module DefaultRectangular {
       }
     }
   
-    // only need second version because wrapper record can pass a 1-tuple
+    // only need second version (ind : rank*idxType)
+    // because wrapper record can pass a 1-tuple
     inline proc dsiAccess(ind: idxType ...1) ref
     where rank == 1
       return dsiAccess(ind);
@@ -879,6 +880,7 @@ module DefaultRectangular {
     inline proc dsiAccess(ind: idxType ...1) const ref
     where rank == 1 && shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(ind);
+
 
     inline proc dsiAccess(ind : rank*idxType) ref {
       if boundsChecking then
@@ -892,6 +894,7 @@ module DefaultRectangular {
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
     }
+
     inline proc dsiAccess(ind : rank*idxType)
     where !shouldReturnRvalueByConstRef(eltType) {
       if boundsChecking then
@@ -901,6 +904,7 @@ module DefaultRectangular {
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
     }
+
     inline proc dsiAccess(ind : rank*idxType) const ref
     where shouldReturnRvalueByConstRef(eltType) {
       if boundsChecking then
@@ -910,6 +914,7 @@ module DefaultRectangular {
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
     }
+
 
     inline proc dsiLocalAccess(i) ref
       return dsiAccess(i);
