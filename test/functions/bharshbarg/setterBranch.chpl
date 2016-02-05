@@ -3,9 +3,12 @@ class foo {
   var data : int;
   
   proc this(i : int) ref {
-    if setter then return data;
-    else return (data,42);
+    return data;
   }
+  proc this(i : int) {
+    return (data,42);
+  }
+
 }
 
 var f = new foo();

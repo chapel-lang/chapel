@@ -1,3 +1,7 @@
+feature request: setter returns different type from getter
+
+.future message before the ref return change:
+
 bug: setter in where clause fails to compile
 
 compiler output:

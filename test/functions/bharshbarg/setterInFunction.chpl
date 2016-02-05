@@ -1,8 +1,10 @@
 var x : int;
 
 proc test(i : int) ref {
-  if setter then return x;
-  else return (x,42);
+  return x;
+}
+proc test(i : int) {
+  return (x,42);
 }
 
 test(1) = 4;
