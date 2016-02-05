@@ -1142,6 +1142,8 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
 *                                                                             *
 ************************************** | *************************************/
 
+static bool allUsesSafe(Vec<SymExpr*>& uses);
+
 static void replaceRemainingUses(Vec<SymExpr*>& use,
                                  SymExpr*       firstUse,
                                  Symbol*        actual);
@@ -1191,7 +1193,7 @@ static void returnRecordsByReferenceArguments() {
           // replacing the return statement in that function with a copy
           // of the call which uses the result of the above call to that
           // function.
-          if (use.n > 0) {
+          if (use.n > 0 && allUsesSafe(use) == true) {
             replaceUsesOfFnResultInCaller(move, use, fn);
           }
         }
@@ -1202,6 +1204,44 @@ static void returnRecordsByReferenceArguments() {
   freeDefUseMaps(defMap, useMap);
 }
 
+
+//
+// Avoid this transformation if any of the symbols meet the
+// criteria for a particular private broadcast.
+//
+// We include a short-circuit to skip the tests for the simple
+// single-locale applications that dominate our test suite.
+//
+static bool allUsesSafe(Vec<SymExpr*>& uses) {
+  if (fLocal == false) {
+    forv_Vec(SymExpr, se, uses) {
+      if (CallExpr* useCall = toCallExpr(se->parentExpr)) {
+        if (FnSymbol* useFn = useCall->isResolved()) {
+          if ((strcmp(useFn->name, "=") == 0 && se == useCall->get(2)) ||
+              useFn->hasFlag(FLAG_AUTO_COPY_FN)                        ||
+              useFn->hasFlag(FLAG_INIT_COPY_FN)) {
+            Symbol* useLhs = NULL;
+
+            if (CallExpr* useMove = toCallExpr(useCall->parentExpr)) {
+              INT_ASSERT(useMove->isPrimitive(PRIM_MOVE));
+
+              useLhs = toSymExpr(useMove->get(1))->var;
+
+            } else {
+              useLhs = toSymExpr(useCall->get(1))->var;
+            }
+
+            if (variableWillBePrivateBroadcast(useLhs) == true) {
+              return false;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return true;
+}
 
 // Create a copy of the called function, replacing
 // the return statement in that function with a copy of the call which uses
