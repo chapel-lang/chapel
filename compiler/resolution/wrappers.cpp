@@ -96,8 +96,6 @@ buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
     wrapper->addFlag(FLAG_REF_TO_CONST);
   if (!fn->isIterator()) { // getValue is var, not iterator
     wrapper->retTag = fn->retTag;
-    if (fn->setter)
-      wrapper->setter = fn->setter->copy();
   }
   if (fn->hasFlag(FLAG_METHOD))
     wrapper->addFlag(FLAG_METHOD);

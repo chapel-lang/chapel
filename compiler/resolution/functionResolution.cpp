@@ -348,12 +348,7 @@ computeReturnTypeParamVectors(BaseAST* ast,
                               Vec<Type*>& retTypes,
                               Vec<Symbol*>& retParams);
 static void
-replaceSetterArgWithTrue(BaseAST* ast, FnSymbol* fn);
-static void
-replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret);
-static void
 insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts);
-static void buildValueFunction(FnSymbol* fn);
 static bool
 possible_signature_match(FnSymbol* fn, FnSymbol* gn);
 static bool signature_match(FnSymbol* fn, FnSymbol* gn);
@@ -404,7 +399,6 @@ static void removeMootFields();
 static void expandInitFieldPrims();
 static void fixTypeNames(AggregateType* ct);
 static void setScalarPromotionType(AggregateType* ct);
-static bool functionUsesSetter(FnSymbol* fn);
 
 bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   if (alignedActuals.n != 0) alignedActuals.clear();
@@ -805,7 +799,7 @@ protoIteratorClass(FnSymbol* fn) {
   // TODO -- do a better job of deciding if an iterator record is
   // POD or not POD.
   rts->addFlag(FLAG_NOT_POD);
-  if (fn->retTag == RET_REF)
+  if (fn->retTag == RET_REF) // TODO -- handle RET_CONST_REF
     rts->addFlag(FLAG_REF_ITERATOR_CLASS);
   fn->defPoint->insertBefore(new DefExpr(rts));
 
@@ -940,7 +934,7 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
   fn->retType = retType;
 
   if (retType != dtUnknown) {
-    if (fn->retTag == RET_REF) {
+    if (fn->returnsRefOrConstRef()) {
       makeRefType(retType);
       retType = fn->retType->refType;
       fn->retType = retType;
@@ -2396,7 +2390,8 @@ static void testArgMapping(FnSymbol* fn1, ArgSymbol* formal1,
  */
 static bool isBetterMatch(ResolutionCandidate* candidate1,
                           ResolutionCandidate* candidate2,
-                          const DisambiguationContext& DC) {
+                          const DisambiguationContext& DC,
+                          bool onlyConsiderPromotion=false) {
 
   DisambiguationState DS;
 
@@ -2416,7 +2411,7 @@ static bool isBetterMatch(ResolutionCandidate* candidate1,
     return true;
   }
 
-  if (!(DS.fn1MoreSpecific || DS.fn2MoreSpecific)) {
+  if (!onlyConsiderPromotion && !(DS.fn1MoreSpecific || DS.fn2MoreSpecific)) {
     // If the decision hasn't been made based on the argument mappings...
 
     if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
@@ -2449,6 +2444,11 @@ static bool isBetterMatch(ResolutionCandidate* candidate1,
   return DS.fn1MoreSpecific && !DS.fn2MoreSpecific;
 }
 
+typedef enum {
+  FIND_EITHER = 0,
+  FIND_REF,
+  FIND_NOT_REF
+} disambiguate_kind_t;
 
 /** Find the best candidate from a list of candidates.
  *
@@ -2463,7 +2463,9 @@ static bool isBetterMatch(ResolutionCandidate* candidate1,
  * \return The result of the disambiguation process.
  */
 static ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>& candidates, DisambiguationContext DC) {
+disambiguateByMatch(Vec<ResolutionCandidate*>& candidates,
+                    DisambiguationContext DC,
+                    disambiguate_kind_t kind) {
 
   // If index i is set then we can skip testing function F_i because we already
   // know it can not be the best match.
@@ -2477,6 +2479,10 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates, DisambiguationContext
 
     ResolutionCandidate* candidate1 = candidates.v[i];
     bool best = true; // is fn1 the best candidate?
+
+    // Only consider ref return fns in ref return part
+    if (kind == FIND_REF && (candidate1->fn->retTag != RET_REF)) continue;
+    if (kind == FIND_NOT_REF && (candidate1->fn->retTag == RET_REF)) continue;
 
     TRACE_DISAMBIGUATE_BY_MATCH("%s\n\n", toString(candidate1->fn));
 
@@ -2492,6 +2498,10 @@ disambiguateByMatch(Vec<ResolutionCandidate*>& candidates, DisambiguationContext
       TRACE_DISAMBIGUATE_BY_MATCH("-----------------------\n");
 
       ResolutionCandidate* candidate2 = candidates.v[j];
+
+      // Only consider ref return fns in ref return part
+      if (kind == FIND_REF && (candidate2->fn->retTag != RET_REF)) continue;
+      if (kind == FIND_NOT_REF && (candidate2->fn->retTag == RET_REF)) continue;
 
       TRACE_DISAMBIGUATE_BY_MATCH("%s\n", toString(candidate2->fn));
 
@@ -3643,7 +3653,31 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
      info.call->id == explainCallID);
   DisambiguationContext DC(&info.actuals, scope, explain);
 
-  ResolutionCandidate* best = disambiguateByMatch(candidates, DC);
+  ResolutionCandidate* bestRef = disambiguateByMatch(candidates, DC, FIND_REF);
+  ResolutionCandidate* bestValue = disambiguateByMatch(candidates, DC, FIND_NOT_REF);
+
+  // If one requires more promotion than the other, this is not a ref-pair.
+  if (bestRef && bestValue && isBetterMatch(bestRef, bestValue, DC, true)) {
+    bestValue = NULL; // Don't consider the value function.
+  }
+  if (bestRef && bestValue && isBetterMatch(bestValue, bestRef, DC, true)) {
+    bestRef = NULL; // Don't consider the ref function.
+  }
+
+  ResolutionCandidate* best = bestRef;
+  if (!best) best = bestValue;
+
+  // If we have both ref and value matches:
+  //  'call' will invoke the ref function best->fn
+  //  'valueCall' will invoke the value function bestValue->fn
+  //  we will manipulate these two side by side.
+  //  valueCall is always NULL if there aren't ref and value matches.
+  CallExpr* valueCall = NULL;
+
+  if (bestRef && bestValue) {
+    valueCall = call->copy();
+    call->insertAfter(valueCall);
+  }
 
   if (best && best->fn) {
     /*
@@ -3652,6 +3686,12 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
      */
 
     instantiateBody(best->fn);
+    if (valueCall) {
+      // If we're resolving a ref and non-ref pair,
+      // also instantiate the value version. best is the ref version.
+      INT_ASSERT(bestValue->fn);
+      instantiateBody(bestValue->fn);
+    }
 
     if (explainCallLine && explainCallMatch(call)) {
       USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
@@ -3697,9 +3737,22 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     reorderActuals(best->fn, &best->alignedFormals, &info);
     coerceActuals(best->fn, &info);
     best->fn = promotionWrap(best->fn, &info);
+    if (valueCall) {
+      // If we're resolving a ref and non-ref pair,
+      // also handle the value version. best is the ref version.
+      CallInfo valueInfo(valueCall, checkonly);
+
+      INT_ASSERT(bestValue->fn);
+      bestValue->fn = defaultWrap(bestValue->fn, &bestValue->alignedFormals,
+                                  &valueInfo);
+      reorderActuals(bestValue->fn, &bestValue->alignedFormals, &valueInfo);
+      coerceActuals(bestValue->fn, &valueInfo);
+      bestValue->fn = promotionWrap(bestValue->fn, &valueInfo);
+    }
   }
 
   FnSymbol* resolvedFn = best != NULL ? best->fn : NULL;
+  FnSymbol* resolvedValueFn = bestValue != NULL ? bestValue->fn : NULL;
 
   forv_Vec(ResolutionCandidate*, candidate, candidates) {
     delete candidate;
@@ -3707,6 +3760,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   if (call->partialTag) {
     if (!resolvedFn) {
+      if (valueCall) valueCall->remove();
       return NULL;
     }
     call->partialTag = false;
@@ -3730,6 +3784,35 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   if (resolvedFn && call->parentSymbol) {
     SET_LINENO(call);
     call->baseExpr->replace(new SymExpr(resolvedFn));
+    if (valueCall && resolvedValueFn) {
+      valueCall->baseExpr->replace(new SymExpr(resolvedValueFn));
+
+      // Replace the call with a new ContextCallExpr containing two
+      // calls, where the first returns ref and the 2nd does not.
+      ContextCallExpr* contextCall = new ContextCallExpr();
+      call->insertAfter(contextCall);
+
+      call->remove();
+      valueCall->remove();
+      contextCall->setRefRValueOptions(call, valueCall);
+    } else if (valueCall) {
+      // value call was added but didn't resolve right. Remove it.
+      valueCall->remove();
+    } else {
+      // If we aren't working with a ref not-ref return intent pair,
+      // adjust the returned value to have flag FLAG_REF_TO_CONST,
+      // but disable this behavior for constructors, so that they
+      // can set 'const' fields.
+      if (resolvedFn->retTag == RET_CONST_REF)
+        if (CallExpr* parentCall = toCallExpr(call->parentExpr))
+          if (parentCall->isPrimitive(PRIM_MOVE))
+            if (SymExpr* lhsSe = toSymExpr(parentCall->get(1)))
+              if (VarSymbol* lhs = toVarSymbol(lhsSe->var))
+                if (lhs->hasFlag(FLAG_EXPR_TEMP))
+                  if (FnSymbol* inFn = toFnSymbol(parentCall->parentSymbol))
+                    if (!isConstructorLikeFunction(inFn))
+                      lhs->addFlag(FLAG_REF_TO_CONST);
+    }
   }
 
   if( ! checkonly ) {
@@ -5286,7 +5369,7 @@ preFold(Expr* expr) {
             USR_WARN(call, "type %s does not currently support noinit, using default initialization", type->symbol->name);
           result = new CallExpr(PRIM_INIT, call->get(1)->remove());
           call->replace(result);
-          inits.add((CallExpr *)result);
+          inits.add(toCallExpr(result));
         } else {
           result = call;
           inits.add(call);
@@ -5539,8 +5622,9 @@ preFold(Expr* expr) {
                     !ret->var->type->symbol->hasFlag(FLAG_ARRAY))
                   // Should this conditional include domains, distributions, sync and/or single?
                   USR_FATAL(ret, "illegal expression to return by ref");
-                if (ret->var->isConstant() || ret->var->isParameter())
-                  USR_FATAL(ret, "function cannot return constant by ref");
+                if (fn->retTag == RET_REF)
+                  if (ret->var->isConstant() || ret->var->isParameter())
+                    USR_FATAL(ret, "function cannot return constant by ref");
               }
             }
           }
@@ -5557,12 +5641,20 @@ preFold(Expr* expr) {
                     INT_FATAL(call, "Cannot set a non-const reference to a const variable.");
                   }
                 } else {
-                  // This probably indicates that an invalid 'addr of' primitive
-                  // was inserted, which would be the compiler's fault, not the
-                  // user's.
-                  // At least, we might perform the check at or before the 'addr
-                  // of' primitive is inserted.
-                  INT_FATAL(call, "A non-lvalue appears where an lvalue is expected.");
+                  // It is not a problem to return a const value by const ref
+                  if (fn->retTag == RET_CONST_REF &&
+                      lhs && lhs->var == fn->getReturnSymbol() ) {
+                    // It's OK
+                    // TODO -- this should be handled differently
+                    // by including the idea of 'const ref' types
+                    // throughout resolution
+                  } else {
+                    // This probably indicates that an invalid 'addr of'
+                    // primitive was inserted, which would be the compiler's
+                    // fault, not the user's.  At least, we might perform the
+                    // check at or before the 'addr of' primitive is inserted.
+                    INT_FATAL(call, "A non-lvalue appears where an lvalue is expected.");
+                  }
                 }
               }
             }
@@ -6542,6 +6634,13 @@ resolveExpr(Expr* expr) {
 
   SET_LINENO(expr);
 
+  if (isContextCallExpr(expr)) {
+    // context call expressions are always already resolved
+    // since they are created in resolveNormalFunction to represent
+    // alternative resolutions.
+    return expr;
+  }
+
   if (SymExpr* se = toSymExpr(expr)) {
     if (se->var) {
       makeRefType(se->var->type);
@@ -6587,7 +6686,38 @@ resolveExpr(Expr* expr) {
         implementForallIntents2wrapper(call, eflopiHelper);
       }
 
-      resolveFns(call->isResolved());
+      // For ContextCallExprs, be sure to resolve all of the
+      // functions that could be called.
+      if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
+        CallExpr* refCall = cc->getRefCall();
+        CallExpr* valueCall = cc->getRValueCall();
+        FnSymbol* refFn = refCall->isResolved();
+        FnSymbol* valueFn = valueCall->isResolved();
+
+        INT_ASSERT(refFn && valueFn);
+        resolveFns(refFn);
+        resolveFns(valueFn);
+
+        // Produce an error if the return types do not match.
+        // This error is skipped for iterators because
+        // the return type of an iterator is e.g. an iterator record
+        // which is not the same as the yielded type.
+        if (!refFn->isIterator() &&
+            refFn->retType->getValType() != valueFn->retType->getValType()) {
+          USR_FATAL_CONT(cc, "invalid ref return pair: return types differ");
+          USR_FATAL_CONT(valueFn, "function returns %s",
+                         toString(valueFn->retType));
+          USR_FATAL_CONT(refFn, "function returns %s",
+                         toString(refFn->retType));
+          USR_STOP();
+        }
+
+        // Proceed using the designated call option
+        expr = getDesignatedCall(cc);
+      } else {
+        INT_ASSERT(call->isResolved());
+        resolveFns(call->isResolved());
+      }
     }
 
     if (tryFailure) {
@@ -6691,42 +6821,6 @@ computeReturnTypeParamVectors(BaseAST* ast,
 
   AST_CHILDREN_CALL(ast, computeReturnTypeParamVectors, retSymbol, retTypes, retParams);
 }
-
-
-static void
-replaceSetterArgWithTrue(BaseAST* ast, FnSymbol* fn) {
-  if (SymExpr* se = toSymExpr(ast)) {
-    if (se->var == fn->setter->sym) {
-      se->var = gTrue;
-
-      // This variation relies on the setter param directly
-      fn->addFlag(FLAG_FN_REF_USES_SETTER);
-
-      if (fn->isIterator())
-        USR_WARN(fn, "setter argument is not supported in iterators");
-    }
-  }
-
-  AST_CHILDREN_CALL(ast, replaceSetterArgWithTrue, fn);
-}
-
-
-static void
-replaceSetterArgWithFalse(BaseAST* ast, FnSymbol* fn, Symbol* ret) {
-  if (SymExpr* se = toSymExpr(ast)) {
-    if (se->var == fn->setter->sym)
-      se->var = gFalse;
-    else if (se->var == ret) {
-      if (CallExpr* move = toCallExpr(se->parentExpr))
-        if (move->isPrimitive(PRIM_MOVE))
-          if (CallExpr* call = toCallExpr(move->get(2)))
-            if (call->isPrimitive(PRIM_ADDR_OF))
-              call->primitive = primitives[PRIM_DEREF];
-    }
-  }
-  AST_CHILDREN_CALL(ast, replaceSetterArgWithFalse, fn, ret);
-}
-
 
 static void
 insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
@@ -6869,37 +6963,6 @@ static void instantiate_default_constructor(FnSymbol* fn) {
   }
 }
 
-
-static void buildValueFunction(FnSymbol* fn) {
-  if (!fn->isIterator()) {
-    FnSymbol* copy;
-    bool valueFunctionExists = fn->valueFunction;
-    if (!valueFunctionExists) {
-      // Build the value function when it does not already exist.
-      copy = fn->copy();
-      copy->removeFlag(FLAG_RESOLVED);
-      copy->addFlag(FLAG_INVISIBLE_FN);
-      if (fn->hasFlag(FLAG_NO_IMPLICIT_COPY))
-        copy->addFlag(FLAG_NO_IMPLICIT_COPY);
-      copy->retTag = RET_VALUE;   // Change ret flag to value (not ref).
-      fn->defPoint->insertBefore(new DefExpr(copy));
-      fn->valueFunction = copy;
-      Symbol* ret = copy->getReturnSymbol();
-      // Reset the type sof the return symbol and any declared return type.
-      ret->type = dtUnknown;
-      copy->retType = dtUnknown;
-      replaceSetterArgWithFalse(copy, copy, ret);
-      replaceSetterArgWithTrue(fn, fn);
-    } else {
-      copy = fn->valueFunction;
-    }
-    resolveFns(copy);
-  } else {
-    replaceSetterArgWithTrue(fn, fn);
-  }
-}
-
-
 static void resolveReturnType(FnSymbol* fn)
 {
   // Resolve return type.
@@ -7031,23 +7094,9 @@ resolveFns(FnSymbol* fn) {
     stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
   }
 
-  // Does this function return by ref-intent?
-  if (fn->retTag == RET_REF) {
-    buildValueFunction(fn);
-  }
-
   insertFormalTemps(fn);
 
   resolveBlockStmt(fn->body);
-
-  // Does this function return by ref-intent?
-  if (fn->retTag == RET_REF) {
-    // Determine if it might rely on the setter param recursively
-    if (fn->hasFlag(FLAG_FN_REF_USES_SETTER) == false &&
-        functionUsesSetter(fn)               == true) {
-      fn->addFlag(FLAG_FN_REF_USES_SETTER);
-    }
-  }
 
   if (tryFailure) {
     fn->removeFlag(FLAG_RESOLVED);
@@ -8054,7 +8103,7 @@ static void resolveRecordInitializers() {
       }
       init->get(1)->replace(res);
       resolveCall(res);
-      makeNoop((CallExpr *)init->parentExpr);
+      makeNoop(toCallExpr(init->parentExpr));
       // Now that we've resolved the type constructor and thus resolved the
       // generic type of the variable we were assigning to, the outer move
       // is no longer needed, so remove it and continue to the next init.
@@ -8278,23 +8327,33 @@ static void insertReturnTemps() {
     if (call->parentSymbol) {
       if (FnSymbol* fn = call->isResolved()) {
         if (fn->retType != dtVoid) {
-          CallExpr* parent = toCallExpr(call->parentExpr);
-          if (!parent && !isDefExpr(call->parentExpr)) { // no use
+          ContextCallExpr* contextCall = toContextCallExpr(call->parentExpr);
+          Expr* contextCallOrCall; // insert before, remove it
+          if (contextCall) {
+            contextCallOrCall = contextCall;
+            // Only consider the designated call; the other
+            // call need not be considered by this transformation.
+            if (call != getDesignatedCall(contextCall))
+              continue;
+          } else contextCallOrCall = call;
+          Expr* parent = contextCallOrCall->parentExpr;
+
+          if (!isCallExpr(parent) && !isDefExpr(parent)) { // no use
             SET_LINENO(call); // TODO: reset_ast_loc() below?
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);
             DefExpr* def = new DefExpr(tmp);
-            call->insertBefore(def);
+            contextCallOrCall->insertBefore(def);
             if (!fMinimalModules &&
                 ((fn->retType->getValType() &&
                   isSyncType(fn->retType->getValType())) ||
                  isSyncType(fn->retType) ||
                  fn->isIterator())) {
               CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
-              call->insertBefore(sls);
+              contextCallOrCall->insertBefore(sls);
               reset_ast_loc(sls, call);
               resolveCallAndCallee(sls);
             }
-            def->insertAfter(new CallExpr(PRIM_MOVE, tmp, call->remove()));
+            def->insertAfter(new CallExpr(PRIM_MOVE, tmp, contextCallOrCall->remove()));
           }
         }
       }
@@ -9138,24 +9197,4 @@ setScalarPromotionType(AggregateType* ct) {
   }
 }
 
-//
-// Does this function call a ref-return function that relies on the
-// setter param?  By induction this handles the general recursive case.
-//
-static bool functionUsesSetter(FnSymbol* fn) {
-  std::vector<CallExpr*> calls;
-  bool                   retval = false;
 
-  collectCallExprs(fn, calls);
-
-  for (size_t i = 0; i < calls.size() && retval == false; i++) {
-    CallExpr* call = calls[i];
-
-    if (FnSymbol* calledFn = call->isResolved()) {
-      if (calledFn->hasFlag(FLAG_FN_REF_USES_SETTER))
-        retval = true;
-    }
-  }
-
-  return retval;
-}

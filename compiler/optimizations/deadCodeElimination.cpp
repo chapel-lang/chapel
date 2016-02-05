@@ -485,6 +485,9 @@ static void findReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
   // We set up a work queue to perform a BFS on reachable blocks, and seed it
   // with the first block in the function.
   std::queue<BasicBlock*> work_queue;
+
+  INT_ASSERT(fn->basicBlocks);
+  INT_ASSERT(fn->basicBlocks->size() > 0);
   work_queue.push((*fn->basicBlocks)[0]);
 
   // Then we iterate until there are no more blocks to visit.

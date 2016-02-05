@@ -47,6 +47,7 @@ class SymExpr;
 enum RetTag {
   RET_VALUE,
   RET_REF,
+  RET_CONST_REF,
   RET_PARAM,
   RET_TYPE
 };
@@ -322,7 +323,6 @@ class TypeSymbol : public Symbol {
 class FnSymbol : public Symbol {
  public:
   AList formals; // each formal is an ArgSymbol
-  DefExpr* setter; // implicit setter argument to var functions
   Type* retType; // The return type of the function.  This field is not
                  // fully established until resolution, and could be NULL
                  // before then.  Up to that point, return type information is
@@ -409,6 +409,7 @@ class FnSymbol : public Symbol {
   bool            isPrimaryMethod()                            const;
   bool            isSecondaryMethod()                          const;
   bool            isIterator()                                 const;
+  bool            returnsRefOrConstRef()                       const;
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 

@@ -947,7 +947,8 @@ proc StencilArr.dsiReadRemote(i: rank*idxType) {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
-proc StencilArr.dsiAccess(i: rank*idxType) ref {
+inline
+proc StencilArr.do_dsiAccess(param setter, i: rank*idxType) ref {
   local {
     if myLocArr != nil {
 
@@ -994,6 +995,14 @@ proc StencilArr.dsiAccess(i: rank*idxType) ref {
   }
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
+
+proc StencilArr.dsiAccess(i: rank*idxType) ref {
+  return do_dsiAccess(true, i);
+}
+proc StencilArr.dsiAccess(i: rank*idxType) {
+  return do_dsiAccess(false, i);
+}
+
 
 proc StencilArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);

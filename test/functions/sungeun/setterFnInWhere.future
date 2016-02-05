@@ -1,3 +1,0 @@
-bug: setter in where clause results in always calling the setter version of the function
-
-See related: test/functions/bharshbarg/setterInWhere.future

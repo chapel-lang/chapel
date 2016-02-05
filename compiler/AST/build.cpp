@@ -1953,8 +1953,6 @@ buildFunctionDecl(FnSymbol*   fn,
   {
     if (fn->hasFlag(FLAG_EXTERN))
       USR_FATAL_CONT(fn, "Extern functions cannot be setters.");
-
-    fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
   }
 
   if (optRetType)

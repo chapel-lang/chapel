@@ -962,9 +962,11 @@ module ChapelArray {
     // anything that is not covered by the above
     pragma "no doc"
     proc this(args ...?numArgs) {
-      if numArgs == rank then
+      if numArgs == rank {
+        // Doing this just to get a better compiler error
+        var ranges = _getRankChangeRanges(args);
         compilerError("invalid argument types for domain slicing");
-      else
+      } else
         compilerError("a domain slice requires either a single domain argument or exactly one argument per domain dimension");
     }
 
@@ -1547,6 +1549,11 @@ module ChapelArray {
     return true;
   }
 
+  pragma "no doc"
+  proc shouldReturnRvalueByConstRef(type t) param {
+    if isPODType(t) then return false;
+    return true;
+  }
 
   // Array wrapper record
   pragma "array"
@@ -1601,7 +1608,7 @@ module ChapelArray {
     proc rank param return this.domain.rank;
 
     // When 'this' is 'const', so is the returned l-value.
-    pragma "no doc"
+    pragma "no doc" // ref version
     pragma "reference to const when const this"
     inline proc this(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
@@ -1609,25 +1616,88 @@ module ChapelArray {
       else
         return _value.dsiAccess(i(1));
     }
+    pragma "no doc" // value version, for POD types
+    inline proc this(i: rank*_value.dom.idxType)
+    where !shouldReturnRvalueByConstRef(_value.eltType)
+    {
+      if isRectangularArr(this) || isSparseArr(this) then
+        return _value.dsiAccess(i);
+      else
+        return _value.dsiAccess(i(1));
+    }
+    pragma "no doc" // const ref version, for not-POD types
+    inline proc this(i: rank*_value.dom.idxType) const ref
+    where shouldReturnRvalueByConstRef(_value.eltType)
+    {
+      if isRectangularArr(this) || isSparseArr(this) then
+        return _value.dsiAccess(i);
+      else
+        return _value.dsiAccess(i(1));
+    }
 
-    pragma "no doc"
+
+
+    pragma "no doc" // ref version
     pragma "reference to const when const this"
     inline proc this(i: _value.dom.idxType ...rank) ref
       return this(i);
 
-    pragma "no doc"
+    pragma "no doc" // value version, for POD types
+    inline proc this(i: _value.dom.idxType ...rank)
+    where !shouldReturnRvalueByConstRef(_value.eltType)
+      return this(i);
+
+    pragma "no doc" // const ref version, for not-POD types
+    inline proc this(i: _value.dom.idxType ...rank) const ref
+    where shouldReturnRvalueByConstRef(_value.eltType)
+      return this(i);
+
+
+    pragma "no doc" // ref version
     pragma "reference to const when const this"
-    inline proc localAccess(i: rank*_value.dom.idxType) ref {
+    inline proc localAccess(i: rank*_value.dom.idxType) ref
+    {
+      if isRectangularArr(this) || isSparseArr(this) then
+        return _value.dsiLocalAccess(i);
+      else
+        return _value.dsiLocalAccess(i(1));
+    }
+    pragma "no doc" // value version, for POD types
+    inline proc localAccess(i: rank*_value.dom.idxType)
+    where !shouldReturnRvalueByConstRef(_value.eltType)
+    {
+      if isRectangularArr(this) || isSparseArr(this) then
+        return _value.dsiLocalAccess(i);
+      else
+        return _value.dsiLocalAccess(i(1));
+    }
+    pragma "no doc" // const ref version, for not-POD types
+    inline proc localAccess(i: rank*_value.dom.idxType) const ref
+    where shouldReturnRvalueByConstRef(_value.eltType)
+    {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiLocalAccess(i);
       else
         return _value.dsiLocalAccess(i(1));
     }
 
-    pragma "no doc"
+
+
+    pragma "no doc" // ref version
     pragma "reference to const when const this"
     inline proc localAccess(i: _value.dom.idxType ...rank) ref
       return localAccess(i);
+
+    pragma "no doc" // value version, for POD types
+    inline proc localAccess(i: _value.dom.idxType ...rank)
+    where !shouldReturnRvalueByConstRef(_value.eltType)
+      return localAccess(i);
+
+    pragma "no doc" // const ref version, for not-POD types
+    inline proc localAccess(i: _value.dom.idxType ...rank) const ref
+    where shouldReturnRvalueByConstRef(_value.eltType)
+      return localAccess(i);
+
 
     //
     // requires dense domain implementation that returns a tuple of
@@ -2395,10 +2465,14 @@ module ChapelArray {
   // integers and ranges; that is, it is a valid argument list for rank
   // change
   proc _validRankChangeArgs(args, type idxType) param {
+    proc _isRange(type idxType, r: range(?)) param return true;
+    proc _isRange(type idxType, x) param return false;
+
     proc _validRankChangeArg(type idxType, r: range(?)) param return true;
     proc _validRankChangeArg(type idxType, i: idxType) param return true;
     proc _validRankChangeArg(type idxType, x) param return false;
 
+    /*
     proc help(param dim: int) param {
       if !_validRankChangeArg(idxType, args(dim)) then
         return false;
@@ -2406,9 +2480,25 @@ module ChapelArray {
         return help(dim+1);
       else
         return true;
+    }*/
+
+    proc allValid() param {
+      for param dim in 1.. args.size {
+        if !_validRankChangeArg(idxType, args(dim)) then
+          return false;
+      }
+      return true;
+    }
+    proc oneRange() param {
+      for param dim in 1.. args.size {
+        if _isRange(idxType, args(dim)) then
+          return true;
+      }
+      return false;
     }
 
-    return help(1);
+    return allValid() && oneRange();
+    //return help(1);
   }
 
   proc _getRankChangeRanges(args) {

@@ -521,6 +521,7 @@ module DefaultAssociative {
       dsiAccess(idx, haveLock) = initval;
     }
 
+    // ref version
     proc dsiAccess(idx : idxType, haveLock = false) ref {
       const shouldLock = dom.parSafe && !haveLock;
       if shouldLock then dom.lockTable();
@@ -528,8 +529,7 @@ module DefaultAssociative {
       if found {
         if shouldLock then dom.unlockTable();
         return data(slotNum);
-      }
-      else if setter && slotNum != -1 { // do an insert using the slot we found
+      } else if slotNum != -1 { // do an insert using the slot we found
         if dom._arrs.length != 1 {
           halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
           return data(0);
@@ -538,6 +538,20 @@ module DefaultAssociative {
           if shouldLock then dom.unlockTable();
           return data(newSlot);
         }
+      } else {
+        halt("array index out of bounds: ", idx);
+        return data(0);
+      }
+    }
+
+    // value version
+    proc dsiAccess(idx : idxType, haveLock = false) const ref {
+      const shouldLock = dom.parSafe && !haveLock;
+      if shouldLock then dom.lockTable();
+      var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
+      if found {
+        if shouldLock then dom.unlockTable();
+        return data(slotNum);
       } else {
         halt("array index out of bounds: ", idx);
         return data(0);

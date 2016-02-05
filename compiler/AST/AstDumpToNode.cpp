@@ -764,6 +764,12 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
       write("RetTag:      ref");
       break;
 
+    case RET_CONST_REF:
+      newline();
+      write("RetTag:      const ref");
+      break;
+
+
     case RET_PARAM:
       newline();
       write("RetTag:      param");
@@ -803,16 +809,6 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
       next_ast->accept(this);
     }
 
-    mOffset = mOffset - 13;
-  }
-
-  if (node->setter)
-  {
-    newline();
-    write(false, "Setter:      ", false);
-
-    mOffset = mOffset + 13;
-    node->setter->accept(this);
     mOffset = mOffset - 13;
   }
 
