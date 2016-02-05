@@ -4,32 +4,13 @@
 CWD=$(cd $(dirname $0) ; pwd)
 
 source $CWD/common-perf.bash
-source $CWD/common-fifo.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chap04.playground"
 
-# test out the performance of Greg's #3178, which simplifies structured
-# parallelism (and in particular simplifies fifo a lot.)
+# Test the performance impact of disable the shifted base pointer optimization
 
-beforeSimplifyFifo="f2f814a0e475"
-afterSimplifyFifo="274c361da867"
+perf_args="-performance-description noShift -performance-configs default:v,noShift:v -sync-dir-suffix noShift"
+perf_args="${perf_args} -performance -numtrials 5 -startdate 02/05/16"
+perf_args="${perf_args} -compopts -searlyShiftData=false"
 
-# remove both branches
-git branch -D $beforeSimplifyFifo
-git branch -D $afterSimplifyFifo
-
-# checkout and test before
-git checkout $beforeSimplifyFifo
-perf_args="-performance-description fifo -performance-configs default:v,fifo:v,afterFifo:v -sync-dir-suffix fifo"
-perf_args="${perf_args} -performance -numtrials 1 -startdate 01/26/16"
-$CWD/nightly -cron ${nightly_args} ${perf_args}
-
-# cleanup the repo (jenkins does this the first time)
-git checkout .
-git clean -fd .
-
-# checkout and test after
-git checkout $afterSimplifyFifo
-perf_args="-performance-description afterFifo -performance-configs default:v,fifo:v,afterFifo:v -sync-dir-suffix fifo"
-perf_args="${perf_args} -performance -numtrials 1 -startdate 01/26/16"
 $CWD/nightly -cron ${nightly_args} ${perf_args}
