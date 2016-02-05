@@ -1147,7 +1147,6 @@ static void replaceRemainingUses(Vec<SymExpr*>& use,
                                  Symbol*        actual);
 
 static void replaceUsesOfFnResultInCaller(CallExpr*      move,
-                                          CallExpr*      call,
                                           Vec<SymExpr*>& use,
                                           FnSymbol*      fn);
 
@@ -1193,7 +1192,7 @@ static void returnRecordsByReferenceArguments() {
           // of the call which uses the result of the above call to that
           // function.
           if (use.n > 0) {
-            replaceUsesOfFnResultInCaller(move, call, use, fn);
+            replaceUsesOfFnResultInCaller(move, use, fn);
           }
         }
       }
@@ -1219,10 +1218,10 @@ static void returnRecordsByReferenceArguments() {
 // newFn.  The use function is expected to be assignment, initCopy or
 // autoCopy.  All other cases are ignored.
 static void replaceUsesOfFnResultInCaller(CallExpr*      move,
-                                          CallExpr*      call,
                                           Vec<SymExpr*>& use,
                                           FnSymbol*      fn) {
-  SymExpr* firstUse = use.v[0];
+  CallExpr* call     = toCallExpr(move->get(2));
+  SymExpr*  firstUse = use.v[0];
 
   // If this isn't a call expression, we've got problems.
   if (CallExpr* useCall = toCallExpr(firstUse->parentExpr)) {
