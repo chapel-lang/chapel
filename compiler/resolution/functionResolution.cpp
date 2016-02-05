@@ -1553,14 +1553,14 @@ getInstantiationType(Type* actualType, Type* formalType) {
       formalType->symbol->hasFlag(FLAG_GENERIC)) {
     Type* concrete = getConcreteParentForGenericFormal(ret, formalType);
     if (concrete) {
-      printf("actual:\n");
+      /*printf("actual:\n");
       print_view(actualType);
       printf("formal:\n");
       print_view(formalType);
       printf("concrete:\n");
-      print_view(concrete);
-      gdbShouldBreakHere();
-      concrete = getConcreteParentForGenericFormal(ret, formalType); //DEBUG
+      print_view(concrete);*/
+      //gdbShouldBreakHere();
+      //concrete = getConcreteParentForGenericFormal(ret, formalType); //DEBUG
       ret = concrete;
     }
   }
@@ -7320,7 +7320,7 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
   forv_Vec(FnSymbol, cfn, ct->methods) {
     // checking that subtype method is not a generic instantiation
     //  (we will instantiate again)
-    if (cfn && !cfn->instantiatedFrom && possible_signature_match(pfn, cfn)) {
+    if (cfn && /*!cfn->instantiatedFrom &&*/ possible_signature_match(pfn, cfn)) {
       Vec<Type*> types;
       if (ct->symbol->hasFlag(FLAG_GENERIC))
         collectInstantiatedAggregateTypes(types, ct);
