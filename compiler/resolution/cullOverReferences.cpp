@@ -180,17 +180,14 @@ void cullOverReferences() {
   buildDefUseMaps(defMap, useMap);
 
   forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
-    CallExpr* refCall = cc->getRefCall();
-    CallExpr* valueCall = cc->getRValueCall();
-
-    INT_ASSERT(refCall);
-    INT_ASSERT(valueCall);
-
     // Make sure that the context call only has 2 options.
     INT_ASSERT(cc->options.length == 2);
 
-    FnSymbol* fn = refCall->isResolved();
-    INT_ASSERT(fn);
+    CallExpr* refCall = cc->getRefCall();
+    CallExpr* valueCall = cc->getRValueCall();
+
+    FnSymbol* refFn = refCall->isResolved();
+    INT_ASSERT(refFn);
     FnSymbol* valueFn = valueCall->isResolved();
     INT_ASSERT(valueFn);
 
@@ -206,7 +203,7 @@ void cullOverReferences() {
     //  would require specific support for iterators since yielding
     //  is not the same as returning.)
     move = toCallExpr(cc->parentExpr);
-    if (fn->isIterator())
+    if (refFn->isIterator())
       useValueCall = false;
     else if (move) {
       INT_ASSERT(move->isPrimitive(PRIM_MOVE));
@@ -216,7 +213,7 @@ void cullOverReferences() {
       INT_ASSERT(lhs);
 
       // Should we switch to the by-value form?
-      useValueCall = shouldUseByValueFunction(fn, lhs, defMap, useMap);
+      useValueCall = shouldUseByValueFunction(refFn, lhs, defMap, useMap);
     } else {
       // e.g. array access in own statement like this:
       //   A(i)
