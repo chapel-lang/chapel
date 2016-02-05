@@ -724,13 +724,13 @@ the \chpl{ref} keyword.  The function must return or yield an lvalue.
 
 During function resolution, if a procedure with a \chpl{ref} return
 intent and a procedure without a \chpl{ref} return intent are both
-possible candidates, and either neither use promotion or both do,
-this pair fo procedures is called a ref-pair.
+possible candidates for a call, and either use promotion or neither do,
+then this pair of procedures is called a ref-pair.
 
-When a procedure in a ref-pair is called on the left-hand side of an
-assignment statement or in the context of a call to a formal argument by
-\chpl{out}, \chpl{inout}, or \chpl{ref} intent, the \chpl{ref} return
-intent procudure is used. Otherwise, the other candidate is used.  This
+When the call to a ref-pair is on the left-hand side of an
+assignment statement or appears in a call and corresponds to a formal argument
+with \chpl{out}, \chpl{inout}, or \chpl{ref} intent, the \chpl{ref} return
+intent procedure is used. Otherwise, the other candidate is used.  This
 behavior can be useful for adjusting the behavior depending to the
 calling context.
 
@@ -808,22 +808,6 @@ A(0) = 0;
 A(1) = 1;
 
 \end{chapel}
-\begin{chapelprediff}
-\#!/usr/bin/env python
-
-"""Sort the output file. Some platforms (especially WLMs) seem to reverse the
-order (probably because one line is on stdout and the other is on stderr).
-"""
-
-import sys
-
-with open(sys.argv[2], 'r') as fp:
-    content = fp.read()
-lines = content.splitlines(True)
-lines.sort()
-with open(sys.argv[2], 'w') as fp:
-    fp.write(''.join(lines))
-\end{chapelprediff}
 \begin{chapeloutput}
 ref-return-intent-pair.chpl:8: error: halt reached - cannot assign value to A(1) if A(0) <= 0
 \end{chapeloutput}
