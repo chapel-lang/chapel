@@ -1,3 +1,0 @@
-setterInWhere.chpl:17: error: invalid ref return pair: return types differ
-setterInWhere.chpl:11: error: function returns (int(64),bool)
-setterInWhere.chpl:7: error: function returns int(64)
