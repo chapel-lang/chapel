@@ -1,6 +1,6 @@
 class Parent {
-  type t;
-  var x:t;
+  type u;
+  var x:u;
   proc parent_method() {
     writeln(x);
   }
@@ -10,7 +10,8 @@ class Parent {
 
 }
 
-class Child : Parent {
+class Child : Parent(int) {
+  type t;
   var y:t;
   proc overridden_method() {
     writeln(x,y);
@@ -27,13 +28,13 @@ p.overridden_method();
 delete p;
 
 writeln("Child(int)");
-var c = new Child(int, 1, 2);
+var c = new Child(1, int, 2);
 c.parent_method();
 c.overridden_method();
 c.child_method();
 
 writeln("Dynamic Child(int)");
-var pc:Parent(int) = c;
+var pc:Parent = c;
 pc.parent_method();
 pc.overridden_method();
 delete pc;

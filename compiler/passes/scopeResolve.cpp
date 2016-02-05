@@ -558,6 +558,7 @@ static void addClassToHierarchy(AggregateType*       ct,
 
       ct->fields.insertAtHead(new DefExpr(super));
 
+      /*
       // add type and param fields from parent
       for_fields_backward(tmp, pt) {
         SET_LINENO(ct);
@@ -587,6 +588,8 @@ static void addClassToHierarchy(AggregateType*       ct,
           }
         }
       }
+      */
+
     } else {
       SET_LINENO(ct);
 
@@ -604,7 +607,9 @@ static void addClassToHierarchy(AggregateType*       ct,
           }
 
           if (!alreadyContainsField) {
-            ct->fields.insertAtHead(field->defPoint->copy());
+            DefExpr* def = field->defPoint->copy();
+            ct->fields.insertAtHead(def);
+            def->sym->addFlag(FLAG_COMPILER_GENERATED);
           }
         }
       }
@@ -769,7 +774,7 @@ static void build_type_constructor(AggregateType* ct) {
 
   // Copy arguments from superclass type constructor
   // (supporting inheritence from generic classes)
-  if (ct->dispatchParents.n > 0) {
+  if (isClass(ct) && ct->dispatchParents.n > 0) {
     // TODO -- do this only for classes?
 
     if(AggregateType *parentTy = toAggregateType(ct->dispatchParents.v[0])){
@@ -782,21 +787,39 @@ static void build_type_constructor(AggregateType* ct) {
       FnSymbol* superTypeCtor = parentTy->defaultTypeConstructor;
 
       if (superTypeCtor->numFormals() > 0) {
+
+        gdbShouldBreakHere();
+
         superCall = new CallExpr(parentTy->symbol->name);
 
-        // Now walk through arguments in super class type constructor 
+        // Now walk through arguments in super class type constructor
         for_formals(formal, superTypeCtor) {
 
           DefExpr* superArg = formal->defPoint->copy();
 
-          // Omit the arguments shadowed by this class's fields.
-          Symbol* myField = ct->getField(superArg->sym->name, false);
-          if( myField && myField->hasFlag(FLAG_COMPILER_GENERATED) ) {
-            // Already an argument
-            //fieldNamesSet.set_add(superArg->sym->name);
-            //fn->insertFormalAtTail(superArg);
-            superCall->insertAtTail(new SymExpr(myField));
+          // Add a formal to the current class type constructor.
+
+          ArgSymbol* arg = toArgSymbol(superArg->sym->copy());
+          bool fieldInThisClass = false;
+          for_fields(sym, ct) {
+            if (0 == strcmp(sym->name, arg->name)) {
+              fieldInThisClass = true;
+            }
           }
+
+          if (fieldInThisClass) {
+            // If the field is also present in the child, adjust the field
+            // name in the super. Otherwise it would not be possible to
+            // type construct the super.
+
+            // ?
+            // Should we omit them?
+            // Or pass the child field to the super constructor?
+            arg->name = astr("super_", arg->name);
+          }
+          arg->addFlag(FLAG_COMPILER_GENERATED);
+          fn->insertFormalAtTail(arg);
+          superCall->insertAtTail(new SymExpr(arg));
         }
       }
     }
@@ -812,7 +835,7 @@ static void build_type_constructor(AggregateType* ct) {
           gdbShouldBreakHere();
           
           CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, superCall);
-          CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER, 
+          CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER,
                                            fn->_this,
                                            new_CStringSymbol(field->name),
                                            newInit);
@@ -848,8 +871,11 @@ static void build_type_constructor(AggregateType* ct) {
           ArgSymbol* arg = create_generic_arg(field);
 
           // Indicate which type constructor args are also for super class 
+          // This helps us to call the superclass type constructor in resolution
           if (field->hasFlag(FLAG_COMPILER_GENERATED)) {
             arg->addFlag(FLAG_COMPILER_GENERATED);
+
+            /*
             // Replace any such field in superCall with the arg
             for_actuals(actual, superCall) {
               if (SymExpr* se = toSymExpr(actual)) {
@@ -857,6 +883,7 @@ static void build_type_constructor(AggregateType* ct) {
                   se->replace(new SymExpr(arg));
               }
             }
+            */
           }
 
           fn->insertFormalAtTail(arg);
@@ -1039,16 +1066,24 @@ static void build_constructor(AggregateType* ct) {
           DefExpr* superArg = formal->defPoint->copy();
 
           // Omit the arguments shadowed by this class's fields
-          // unless they are marked compiler generated,
-          // which means we added them in addClassToHierarchy
-          // for type/param fields from a parent.
           if (fieldNamesSet.set_in(superArg->sym->name)) {
-            VarSymbol* field = toVarSymbol(ct->getField(superArg->sym->name));
-            if (field && field->hasFlag(FLAG_COMPILER_GENERATED)) {
-              fn->insertFormalAtHead(fieldArgMap[field]); // don't shadow.
-              superCall->insertAtHead(fieldArgMap[field]);
-            }
-            continue;
+            // unless they are marked compiler generated,
+            // which means we added them in addClassToHierarchy
+            // for type/param fields from a parent.
+            //VarSymbol* field = toVarSymbol(ct->getField(superArg->sym->name));
+
+            //if (field && field->hasFlag(FLAG_COMPILER_GENERATED)) {
+            //  fn->insertFormalAtHead(fieldArgMap[field]); // don't shadow.
+            //  superCall->insertAtHead(fieldArgMap[field]);
+            //}
+
+            gdbShouldBreakHere();
+
+
+            superArg->sym->name = astr("super_", superArg->sym->name);
+            // What if there is a another field named super_t e.g. ?
+
+            //continue;
           }
 
           fieldNamesSet.set_add(superArg->sym->name);
@@ -1176,9 +1211,9 @@ static void build_constructor(AggregateType* ct) {
     if (!exprType && arg->type == dtUnknown)
       arg->type = dtAny;
 
-    if (!field->hasFlag(FLAG_COMPILER_GENERATED))
+    //if (!field->hasFlag(FLAG_COMPILER_GENERATED))
       // Added fields mark with FLAG_COMPILER_GENERATED earlier
-      fn->insertFormalAtTail(arg);
+    fn->insertFormalAtTail(arg);
 
     if (arg->type == dtAny && !arg->hasFlag(FLAG_TYPE_VARIABLE) &&
         !arg->hasFlag(FLAG_PARAM) && !ct->symbol->hasFlag(FLAG_REF))

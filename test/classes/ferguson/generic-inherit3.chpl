@@ -36,3 +36,4 @@ writeln("Dynamic Child(int)");
 var pc:Parent = c;
 pc.parent_method();
 pc.overridden_method();
+delete pc;
