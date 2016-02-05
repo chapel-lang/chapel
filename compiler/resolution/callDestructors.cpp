@@ -1095,36 +1095,153 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
 }
 
 
-static void replaceRemainingUses(Vec<SymExpr*>& use, SymExpr* firstUse,
-                                 Symbol* actual)
-{
-  // for each remaining use "se"
-  //   replace se with deref of the actual return value argument, unless parent is
-  //   accessing its address
-  forv_Vec(SymExpr, se, use) {
-    // Because we've already handled the first use
-    if (se != firstUse) {
-      CallExpr* parent = toCallExpr(se->parentExpr);
-      if (parent) {
-        SET_LINENO(parent);
-        if (parent->isPrimitive(PRIM_ADDR_OF)) {
-          parent->replace(new SymExpr(actual));
-        } else {
-          FnSymbol* parentFn = parent->isResolved();
-          if (!(parentFn->hasFlag(FLAG_AUTO_COPY_FN) ||
-                parentFn->hasFlag(FLAG_INIT_COPY_FN))) {
-            // Leave the auto copies/inits in, we'll need them for
-            // moving information back to us.
+/************************************* | **************************************
+*                                                                             *
+* The following functions implement a transformation that is intended to      *
+* reduce the number of calls to autoCopy/autoDestroy pairs by focussing on    *
+* a common cliche in the current AST.                                         *
+*                                                                             *
+* The transformation attempts to identify pairs of calls such that            *
+*   the first  call generates a value that requires an autoDestroy            *
+*   the second call is an assignment/initCopy/autoCopy                        *
+*                                                                             *
+* When this pattern occurs, the compiler creates a new function based on      *
+*   the function used for the first call                                      *
+*   the operation performed by the second call                                *
+*                                                                             *
+* that accepts an extra argument that is passed by reference.                 *
+*                                                                             *
+* For example assume we have                                                  *
+*                                                                             *
+*   tmp0 = foo(a, b, c);                                                      *
+*   tmp1 = autoCopy(tmp0);                                                    *
+*                                                                             *
+* A new function will be generated based on foo() that                        *
+*   does not return a value                                                   *
+*   accepts a reference to any tmp1.type as an extra argument                 *
+*   replaces the return statement with the second call, e.g. the autoCopy()   *
+*                                                                             *
+* The original call sequence becomes                                          *
+*                                                                             *
+*   fooPrime(a, b, c, &tmp1);                                                 *
+*                                                                             *
+* This transformation may enable optimizations within fooPrime() that would   *
+* be challenging to find otherwise.                                           *
+*                                                                             *
+* Unfortunately this transformation can disrupt flow analysis in later        *
+* passes due to a weakness in the existing def-use infrastructure. The        *
+* current implementation recognizes that the original form of the code        *
+* is a definition for tmp0 and then tmp1.  However it does not recognize      *
+* the indirect definition of tmp1 in the transformed version.                 *
+*                                                                             *
+* In general this might lead to a failure to implement a desired optimization *
+* but it can also lead to a incorrect behavior.  In particular it can         *
+* interfere with the code to generate private-broadcasts during the           *
+* the initialization of module level variables.  Hence we have to detect if   *
+* tmp1 would be broadcast and then disable this transformation.               *
+*                                                                             *
+************************************** | *************************************/
 
-            // Copy the information we currently have into the temp
-            se->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, se->var, new CallExpr(PRIM_DEREF, actual)));
+static bool allUsesSafe(Vec<SymExpr*>& uses);
+
+static void replaceRemainingUses(Vec<SymExpr*>& use,
+                                 SymExpr*       firstUse,
+                                 Symbol*        actual);
+
+static void replaceUsesOfFnResultInCaller(CallExpr*      move,
+                                          Vec<SymExpr*>& use,
+                                          FnSymbol*      fn);
+
+static void returnRecordsByReferenceArguments() {
+  Map<Symbol*, Vec<SymExpr*>*> defMap;
+  Map<Symbol*, Vec<SymExpr*>*> useMap;
+
+  buildDefUseMaps(defMap, useMap);
+
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->parentSymbol) {
+      if (FnSymbol* fn = requiresImplicitDestroy(call)) {
+        if (fn->hasFlag(FLAG_EXTERN) == false) {
+          CallExpr*     move    = toCallExpr(call->parentExpr);
+          SymExpr*      lhsExpr = toSymExpr(move->get(1));
+          Symbol*       lhs     = lhsExpr->var;
+          Vec<SymExpr*> use;
+
+          INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+          INT_ASSERT(lhs->hasFlag(FLAG_TYPE_VARIABLE) == false);
+
+          // In the suffix of the containing function, look for uses
+          // of the lhs of the move containing the call to fn.
+
+          if (useMap.get(lhs) && useMap.get(lhs)->n == 1) {
+            use = *useMap.get(lhs);
+          } else {
+            for (Expr* stmt = move->next; stmt; stmt = stmt->next) {
+              std::vector<SymExpr*> symExprs;
+
+              collectSymExprs(stmt, symExprs);
+
+              for_vector(SymExpr, se, symExprs) {
+                if (se->var == lhs) {
+                  use.add(se);
+                }
+              }
+            }
+          }
+
+          // If such a use is found, create a copy of the called function,
+          // replacing the return statement in that function with a copy
+          // of the call which uses the result of the above call to that
+          // function.
+          if (use.n > 0 && allUsesSafe(use) == true) {
+            replaceUsesOfFnResultInCaller(move, use, fn);
           }
         }
       }
     }
   }
+
+  freeDefUseMaps(defMap, useMap);
 }
 
+
+//
+// Avoid this transformation if any of the symbols meet the
+// criteria for a particular private broadcast.
+//
+// We include a short-circuit to skip the tests for the simple
+// single-locale applications that dominate our test suite.
+//
+static bool allUsesSafe(Vec<SymExpr*>& uses) {
+  if (fLocal == false) {
+    forv_Vec(SymExpr, se, uses) {
+      if (CallExpr* useCall = toCallExpr(se->parentExpr)) {
+        if (FnSymbol* useFn = useCall->isResolved()) {
+          if ((strcmp(useFn->name, "=") == 0 && se == useCall->get(2)) ||
+              useFn->hasFlag(FLAG_AUTO_COPY_FN)                        ||
+              useFn->hasFlag(FLAG_INIT_COPY_FN)) {
+            Symbol* useLhs = NULL;
+
+            if (CallExpr* useMove = toCallExpr(useCall->parentExpr)) {
+              INT_ASSERT(useMove->isPrimitive(PRIM_MOVE));
+
+              useLhs = toSymExpr(useMove->get(1))->var;
+
+            } else {
+              useLhs = toSymExpr(useCall->get(1))->var;
+            }
+
+            if (variableWillBePrivateBroadcast(useLhs) == true) {
+              return false;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return true;
+}
 
 // Create a copy of the called function, replacing
 // the return statement in that function with a copy of the call which uses
@@ -1140,18 +1257,20 @@ static void replaceRemainingUses(Vec<SymExpr*>& use, SymExpr* firstUse,
 // where a call to useFn replaces the return that used to be at the end of
 // newFn.  The use function is expected to be assignment, initCopy or
 // autoCopy.  All other cases are ignored.
-static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
-                                          Vec<SymExpr*>& use, FnSymbol* fn)
-{
-  SymExpr* firstUse = use.v[0];
+static void replaceUsesOfFnResultInCaller(CallExpr*      move,
+                                          Vec<SymExpr*>& use,
+                                          FnSymbol*      fn) {
+  CallExpr* call     = toCallExpr(move->get(2));
+  SymExpr*  firstUse = use.v[0];
+
   // If this isn't a call expression, we've got problems.
   if (CallExpr* useCall = toCallExpr(firstUse->parentExpr)) {
     if (FnSymbol* useFn = useCall->isResolved()) {
-      if ((!strcmp(useFn->name, "=") && firstUse == useCall->get(2)) ||
-          useFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+      if ((strcmp(useFn->name, "=") == 0 && firstUse == useCall->get(2)) ||
+          useFn->hasFlag(FLAG_AUTO_COPY_FN)                              ||
           useFn->hasFlag(FLAG_INIT_COPY_FN)) {
-        Symbol* actual;
-        FnSymbol* newFn = NULL;
+        Symbol*   actual = NULL;
+        FnSymbol* newFn  = NULL;
 
         //
         // check cache for new function
@@ -1164,34 +1283,41 @@ static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
           }
         }
 
-        if (!newFn) {
+        if (newFn == NULL) {
           newFn = createClonedFnWithRetArg(fn, useFn);
 
           //
           // add new function to cache
           //
           Vec<FnSymbol*>* vfn = retToArgCache.get(fn);
-          if (!vfn)
+
+          if (vfn == NULL)
             vfn = new Vec<FnSymbol*>();
+
           vfn->add(useFn);
           vfn->add(newFn);
+
           retToArgCache.put(fn, vfn);
         }
 
         SET_LINENO(call);
+
         call->baseExpr->replace(new SymExpr(newFn));
 
-        CallExpr* useMove = toCallExpr(useCall->parentExpr);
-        if (useMove)
-        {
+        if (CallExpr* useMove = toCallExpr(useCall->parentExpr)) {
           INT_ASSERT(useMove->isPrimitive(PRIM_MOVE));
 
           Symbol* useLhs = toSymExpr(useMove->get(1))->var;
-          if (!useLhs->type->symbol->hasFlag(FLAG_REF))
-          {
+
+          if (!useLhs->type->symbol->hasFlag(FLAG_REF)) {
             useLhs = newTemp("ret_to_arg_ref_tmp_", useFn->retType->refType);
+
             move->insertBefore(new DefExpr(useLhs));
-            move->insertBefore(new CallExpr(PRIM_MOVE, useLhs, new CallExpr(PRIM_ADDR_OF, useMove->get(1)->remove())));
+            move->insertBefore(
+                        new CallExpr(PRIM_MOVE,
+                                     useLhs,
+                                     new CallExpr(PRIM_ADDR_OF,
+                                                  useMove->get(1)->remove())));
           }
 
           move->replace(call->remove());
@@ -1199,12 +1325,10 @@ static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
           call->insertAtTail(useLhs);
 
           actual = useLhs;
-        }
-        else
-        {
+
+        } else {
           // We assume the useFn is an assignment.
-          if (strcmp(useFn->name, "="))
-          {
+          if (strcmp(useFn->name, "=") != 0) {
             INT_FATAL(useFn, "should be an assignment function");
             return;
           }
@@ -1215,11 +1339,14 @@ static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
           INT_ASSERT(firstUse == useCall->get(2));
 
           Symbol* useLhs = toSymExpr(useCall->get(1))->var;
+
           move->replace(call->remove());
+
           call->insertAtTail(useLhs);
 
           actual = useLhs;
         }
+
         if (actual) {
           replaceRemainingUses(use, firstUse, actual);
         }
@@ -1229,62 +1356,48 @@ static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
 }
 
 
-static void
-changeRetToArgAndClone(CallExpr* move, Symbol* lhs,
-                       CallExpr* call, FnSymbol* fn,
-                       Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                       Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  // Here are some relations between the arguments that can be relied upon.
-  INT_ASSERT(call->parentExpr == move);
-  INT_ASSERT(call->isResolved() == fn);
+static void replaceRemainingUses(Vec<SymExpr*>& use,
+                                 SymExpr*       firstUse,
+                                 Symbol*        actual) {
+  // for each remaining use "se"
+  //   replace se with deref of the actual return value argument,
+  //   unless parent is accessing its address
+  forv_Vec(SymExpr, se, use) {
+    // Because we've already handled the first use
+    if (se != firstUse) {
+      CallExpr* parent = toCallExpr(se->parentExpr);
 
-  // In the suffix of the containing function, look for uses of the lhs of the
-  // move containing the call to fn.
-  Vec<SymExpr*> use;
-  if (useMap.get(lhs) && useMap.get(lhs)->n == 1) {
-    use = *useMap.get(lhs);
-  } else {
-    for (Expr* stmt = move->next; stmt; stmt = stmt->next) {
-      std::vector<SymExpr*> symExprs;
-      collectSymExprs(stmt, symExprs);
-      for_vector(SymExpr, se, symExprs) {
-        if (se->var == lhs) {
-          use.add(se);
+      if (parent) {
+        SET_LINENO(parent);
+
+        if (parent->isPrimitive(PRIM_ADDR_OF)) {
+          parent->replace(new SymExpr(actual));
+        } else {
+          FnSymbol* parentFn = parent->isResolved();
+
+          if (!(parentFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                parentFn->hasFlag(FLAG_INIT_COPY_FN))) {
+            // Leave the auto copies/inits in, we'll need them for
+            // moving information back to us.
+
+            // Copy the information we currently have into the temp
+            se->getStmtExpr()->insertBefore(
+                                     new CallExpr(PRIM_MOVE,
+                                                  se->var,
+                                                  new CallExpr(PRIM_DEREF,
+                                                               actual)));
+          }
         }
       }
     }
   }
-
-  // If such a use is found, create a copy of the called function, replacing
-  // the return statement in that function with a copy of the call which uses
-  // the result of the above call to that function.
-  if (use.n > 0) {
-    replaceUsesOfFnResultInCaller(move, call, use, fn);
-  }
 }
 
-
-static void
-returnRecordsByReferenceArguments() {
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
-  buildDefUseMaps(defMap, useMap);
-
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol) {
-      if (FnSymbol* fn = requiresImplicitDestroy(call)) {
-        if (fn->hasFlag(FLAG_EXTERN))
-          continue;
-        CallExpr* move = toCallExpr(call->parentExpr);
-        INT_ASSERT(move->isPrimitive(PRIM_MOVE));
-        SymExpr* lhs = toSymExpr(move->get(1));
-        INT_ASSERT(!lhs->var->hasFlag(FLAG_TYPE_VARIABLE));
-        changeRetToArgAndClone(move, lhs->var, call, fn, defMap, useMap);
-      }
-    }
-  }
-  freeDefUseMaps(defMap, useMap);
-}
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void
 fixupDestructors() {
