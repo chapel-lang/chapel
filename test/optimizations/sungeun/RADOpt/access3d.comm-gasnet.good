@@ -1,6 +1,6 @@
 3 dimensional array of int(64)
 
-[3D Block] Remote read (Locale0): gets: 1
+[3D Block] Remote read (Locale0): gets: 0
 [3D Block] Remote read (Locale0): puts: 0
 [3D Block] Remote read (Locale0): executeOns: 0
 [3D Block] Remote read (Locale0): fast executeOns: 0
@@ -10,7 +10,7 @@
 [3D Block] Remote write (Locale0): executeOns: 0
 [3D Block] Remote write (Locale0): fast executeOns: 0
 [3D Block] Remote write (Locale0): nb executeOns: 0
-[3D Block] Remote read (Locale1): gets: 1
+[3D Block] Remote read (Locale1): gets: 0
 [3D Block] Remote read (Locale1): puts: 0
 [3D Block] Remote read (Locale1): executeOns: 0
 [3D Block] Remote read (Locale1): fast executeOns: 0
@@ -20,7 +20,7 @@
 [3D Block] Remote write (Locale1): executeOns: 0
 [3D Block] Remote write (Locale1): fast executeOns: 0
 [3D Block] Remote write (Locale1): nb executeOns: 0
-[3D Block] Remote read (Locale2): gets: 1
+[3D Block] Remote read (Locale2): gets: 0
 [3D Block] Remote read (Locale2): puts: 0
 [3D Block] Remote read (Locale2): executeOns: 0
 [3D Block] Remote read (Locale2): fast executeOns: 0
@@ -30,7 +30,7 @@
 [3D Block] Remote write (Locale2): executeOns: 0
 [3D Block] Remote write (Locale2): fast executeOns: 0
 [3D Block] Remote write (Locale2): nb executeOns: 0
-[3D Block] Remote read (Locale3): gets: 1
+[3D Block] Remote read (Locale3): gets: 0
 [3D Block] Remote read (Locale3): puts: 0
 [3D Block] Remote read (Locale3): executeOns: 0
 [3D Block] Remote read (Locale3): fast executeOns: 0
@@ -40,7 +40,7 @@
 [3D Block] Remote write (Locale3): executeOns: 0
 [3D Block] Remote write (Locale3): fast executeOns: 0
 [3D Block] Remote write (Locale3): nb executeOns: 0
-[3D Block] Remote read (Locale4): gets: 1
+[3D Block] Remote read (Locale4): gets: 0
 [3D Block] Remote read (Locale4): puts: 0
 [3D Block] Remote read (Locale4): executeOns: 0
 [3D Block] Remote read (Locale4): fast executeOns: 0
@@ -50,7 +50,7 @@
 [3D Block] Remote write (Locale4): executeOns: 0
 [3D Block] Remote write (Locale4): fast executeOns: 0
 [3D Block] Remote write (Locale4): nb executeOns: 0
-[3D Block] Remote read (Locale5): gets: 1
+[3D Block] Remote read (Locale5): gets: 0
 [3D Block] Remote read (Locale5): puts: 0
 [3D Block] Remote read (Locale5): executeOns: 0
 [3D Block] Remote read (Locale5): fast executeOns: 0
@@ -60,7 +60,7 @@
 [3D Block] Remote write (Locale5): executeOns: 0
 [3D Block] Remote write (Locale5): fast executeOns: 0
 [3D Block] Remote write (Locale5): nb executeOns: 0
-[3D Block] Remote read (Locale6): gets: 1
+[3D Block] Remote read (Locale6): gets: 0
 [3D Block] Remote read (Locale6): puts: 0
 [3D Block] Remote read (Locale6): executeOns: 0
 [3D Block] Remote read (Locale6): fast executeOns: 0
@@ -70,7 +70,7 @@
 [3D Block] Remote write (Locale6): executeOns: 0
 [3D Block] Remote write (Locale6): fast executeOns: 0
 [3D Block] Remote write (Locale6): nb executeOns: 0
-[3D Block] Remote read (Locale7): gets: 1
+[3D Block] Remote read (Locale7): gets: 0
 [3D Block] Remote read (Locale7): puts: 0
 [3D Block] Remote read (Locale7): executeOns: 0
 [3D Block] Remote read (Locale7): fast executeOns: 0
@@ -81,7 +81,7 @@
 [3D Block] Remote write (Locale7): fast executeOns: 0
 [3D Block] Remote write (Locale7): nb executeOns: 0
 
-[3D Cyclic] Remote read (Locale0): gets: 1
+[3D Cyclic] Remote read (Locale0): gets: 0
 [3D Cyclic] Remote read (Locale0): puts: 0
 [3D Cyclic] Remote read (Locale0): executeOns: 0
 [3D Cyclic] Remote read (Locale0): fast executeOns: 0
@@ -91,7 +91,7 @@
 [3D Cyclic] Remote write (Locale0): executeOns: 0
 [3D Cyclic] Remote write (Locale0): fast executeOns: 0
 [3D Cyclic] Remote write (Locale0): nb executeOns: 0
-[3D Cyclic] Remote read (Locale1): gets: 1
+[3D Cyclic] Remote read (Locale1): gets: 0
 [3D Cyclic] Remote read (Locale1): puts: 0
 [3D Cyclic] Remote read (Locale1): executeOns: 0
 [3D Cyclic] Remote read (Locale1): fast executeOns: 0
@@ -101,7 +101,7 @@
 [3D Cyclic] Remote write (Locale1): executeOns: 0
 [3D Cyclic] Remote write (Locale1): fast executeOns: 0
 [3D Cyclic] Remote write (Locale1): nb executeOns: 0
-[3D Cyclic] Remote read (Locale2): gets: 1
+[3D Cyclic] Remote read (Locale2): gets: 0
 [3D Cyclic] Remote read (Locale2): puts: 0
 [3D Cyclic] Remote read (Locale2): executeOns: 0
 [3D Cyclic] Remote read (Locale2): fast executeOns: 0
@@ -111,7 +111,7 @@
 [3D Cyclic] Remote write (Locale2): executeOns: 0
 [3D Cyclic] Remote write (Locale2): fast executeOns: 0
 [3D Cyclic] Remote write (Locale2): nb executeOns: 0
-[3D Cyclic] Remote read (Locale3): gets: 1
+[3D Cyclic] Remote read (Locale3): gets: 0
 [3D Cyclic] Remote read (Locale3): puts: 0
 [3D Cyclic] Remote read (Locale3): executeOns: 0
 [3D Cyclic] Remote read (Locale3): fast executeOns: 0
@@ -121,7 +121,7 @@
 [3D Cyclic] Remote write (Locale3): executeOns: 0
 [3D Cyclic] Remote write (Locale3): fast executeOns: 0
 [3D Cyclic] Remote write (Locale3): nb executeOns: 0
-[3D Cyclic] Remote read (Locale4): gets: 1
+[3D Cyclic] Remote read (Locale4): gets: 0
 [3D Cyclic] Remote read (Locale4): puts: 0
 [3D Cyclic] Remote read (Locale4): executeOns: 0
 [3D Cyclic] Remote read (Locale4): fast executeOns: 0
@@ -131,7 +131,7 @@
 [3D Cyclic] Remote write (Locale4): executeOns: 0
 [3D Cyclic] Remote write (Locale4): fast executeOns: 0
 [3D Cyclic] Remote write (Locale4): nb executeOns: 0
-[3D Cyclic] Remote read (Locale5): gets: 1
+[3D Cyclic] Remote read (Locale5): gets: 0
 [3D Cyclic] Remote read (Locale5): puts: 0
 [3D Cyclic] Remote read (Locale5): executeOns: 0
 [3D Cyclic] Remote read (Locale5): fast executeOns: 0
@@ -141,7 +141,7 @@
 [3D Cyclic] Remote write (Locale5): executeOns: 0
 [3D Cyclic] Remote write (Locale5): fast executeOns: 0
 [3D Cyclic] Remote write (Locale5): nb executeOns: 0
-[3D Cyclic] Remote read (Locale6): gets: 1
+[3D Cyclic] Remote read (Locale6): gets: 0
 [3D Cyclic] Remote read (Locale6): puts: 0
 [3D Cyclic] Remote read (Locale6): executeOns: 0
 [3D Cyclic] Remote read (Locale6): fast executeOns: 0
@@ -151,7 +151,7 @@
 [3D Cyclic] Remote write (Locale6): executeOns: 0
 [3D Cyclic] Remote write (Locale6): fast executeOns: 0
 [3D Cyclic] Remote write (Locale6): nb executeOns: 0
-[3D Cyclic] Remote read (Locale7): gets: 1
+[3D Cyclic] Remote read (Locale7): gets: 0
 [3D Cyclic] Remote read (Locale7): puts: 0
 [3D Cyclic] Remote read (Locale7): executeOns: 0
 [3D Cyclic] Remote read (Locale7): fast executeOns: 0
