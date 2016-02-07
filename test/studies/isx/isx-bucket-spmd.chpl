@@ -54,8 +54,8 @@ config const debug = false,
              testrun = debug,
              quiet = false,
              printConfig = !quiet,
-             printTimings = !quiet;
-
+             printTimings = !quiet,
+             printTimingTables = false;
 
 //
 // Define three scaling modes: strong scaling, weak scaling, and
@@ -153,6 +153,7 @@ const BucketSpace = LocBucketSpace dmapped BucketDist;
 
 var allBucketKeys: [BucketSpace] [0..#recvBuffSize] int;
 var recvOffset: [BucketSpace] atomic int;
+var totalTime: [LocBucketSpace] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
 //
@@ -183,7 +184,7 @@ coforall bucketID in BucketSpace do
       // to let them refer to bucketID non-locally?  Or is that
       // crazy?
       //
-      bucketSort(bucketID, time=(i>0), verify=(i==numTrials));
+      bucketSort(bucketID, i, time=(i>0), verify=(i==numTrials));
   }
 
 if debug {
@@ -192,9 +193,36 @@ if debug {
     writeln("Bucket ", i, " (owned by locale ", b.locale.id, "): ", b);
 }
   
+if printTimings {
+  if printTimingTables {
+    writeln("Buckets / Trials");
+    for i in LocBucketSpace {
+      write(i, ": ");
+      for t in totalTime[i] {
+        write(t, "\t");
+      }
+      writeln();
+    }
+  }
+  var minMinTime: real = max(real);
+  var maxMinTime, totMinTime: real;
+  forall loc in LocBucketSpace with (/*min reduce minMinTime,
+                                     max reduce maxMinTime,*/
+                                   + reduce totMinTime) {
+    const minTime = min reduce totalTime[loc];
+    totMinTime += minTime;
+  }
+  var avgTime = totMinTime / numBuckets;
+  writeln("averages across locales of min across trials:");
+  writeln("total = ", avgTime);
+}
 
-proc bucketSort(bucketID, time = false, verify = false) {
+proc bucketSort(bucketID, trial: int, time = false, verify = false) {
   var myKeys = makeInput(bucketID);
+  var totalTimer: Timer;
+
+  if time then
+    totalTimer.start();
 
   var bucketSizes = countLocalBucketSizes(myKeys);
   if debug then writeln(bucketID, ": bucketSizes = ", bucketSizes);
@@ -230,6 +258,11 @@ proc bucketSort(bucketID, time = false, verify = false) {
 
   const keysInMyBucket = recvOffset[bucketID].read();
   var myLocalKeyCounts = countLocalKeys(bucketID, keysInMyBucket);
+
+  if time {
+    totalTimer.stop();
+    totalTime[bucketID][trial] = totalTimer.elapsed();
+  }    
 
   if (verify) then
     verifyResults(bucketID, keysInMyBucket, myLocalKeyCounts);
