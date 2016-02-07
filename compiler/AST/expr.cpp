@@ -5830,7 +5830,7 @@ ContextCallExpr::copyInner(SymbolMap* map) {
   return _this;
 }
 
-CallExpr* getDesignatedCall(ContextCallExpr* a) {
+CallExpr* getDesignatedCall(const ContextCallExpr* a) {
   return toCallExpr(a->options.tail);
 }
 
