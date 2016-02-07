@@ -61,7 +61,6 @@ config const debug = false,
              printTimings = !quiet,
              printTimingTables = false;
 
-
 //
 // Define three scaling modes: strong scaling, weak scaling, and
 // weakISO (in which the width of the buckets is held constant).
@@ -152,7 +151,7 @@ const OnePerLocale = LocaleSpace dmapped Block(LocaleSpace);
 
 var allBucketKeys: [OnePerLocale] [0..#recvBuffSize] int;
 var recvOffset: [OnePerLocale] atomic int;
-var totalTime: [OnePerLocale] [1..numTrials] real;
+var totalTime: [LocaleSpace] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
 //
@@ -176,7 +175,7 @@ coforall loc in Locales do
     // the final timed run.
     //
     for i in 1-numBurnInRuns..numTrials do
-      bucketSort(trial=i, time=(i>0), verify=(i==numTrials));
+      bucketSort(trial=i, time=printTimings && (i>0), verify=(i==numTrials));
   }
 
 if debug {
@@ -188,7 +187,7 @@ if debug {
 if printTimings {
   if printTimingTables {
     writeln("Locales / Trials");
-    for i in OnePerLocale {
+    for i in LocaleSpace {
       write(i, ": ");
       for t in totalTime[i] {
         write(t, "\t");
@@ -205,9 +204,9 @@ if printTimings {
     totMinTime += minTime;
   }
   var avgTime = totMinTime / numLocales;
-  writeln("average across locales of min time across trials = ", avgTime);
+  writeln("averages across locales of min across trials:");
+  writeln("total = ", avgTime);
 }
-  
 
 proc bucketSort(trial: int, time = false, verify = false) {
   var myKeys = makeInput();
