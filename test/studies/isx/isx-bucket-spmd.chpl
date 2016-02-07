@@ -213,7 +213,7 @@ if printTimings {
     totMinTime += minTime;
   }
   var avgTime = totMinTime / numBuckets;
-  writeln("averages across locales of min across trials:");
+  writeln("averages across buckets of min across trials:");
   writeln("total = ", avgTime);
 }
 
