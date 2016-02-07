@@ -196,20 +196,19 @@ if debug {
 if printTimings {
   if printTimingTables {
     writeln("Buckets / Trials");
-    for i in LocBucketSpace {
+    for (timings, i) in zip(totalTime, 1..) {
       write(i, ": ");
-      for t in totalTime[i] {
+      for t in timings do
         write(t, "\t");
-      }
       writeln();
     }
   }
   var minMinTime: real = max(real);
   var maxMinTime, totMinTime: real;
-  forall loc in LocBucketSpace with (/*min reduce minMinTime,
-                                     max reduce maxMinTime,*/
-                                   + reduce totMinTime) {
-    const minTime = min reduce totalTime[loc];
+  forall timings in totalTime with (/*min reduce minMinTime,
+                                      max reduce maxMinTime,*/
+                                    + reduce totMinTime) {
+    const minTime = min reduce timings;
     totMinTime += minTime;
   }
   var avgTime = totMinTime / numBuckets;
