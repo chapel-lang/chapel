@@ -724,14 +724,14 @@ the \chpl{ref} keyword.  The function must return or yield an lvalue.
 
 During function resolution, if a procedure with a \chpl{ref} return
 intent and a procedure without a \chpl{ref} return intent are both
-possible candidates for a call, and either use promotion or neither do,
+possible candidates for a call, and either both use promotion or neither do,
 then this pair of procedures is called a ref-pair.
 
 When the call to a ref-pair is on the left-hand side of an
 assignment statement or appears in a call and corresponds to a formal argument
 with \chpl{out}, \chpl{inout}, or \chpl{ref} intent, the \chpl{ref} return
 intent procedure is used. Otherwise, the other candidate is used.  This
-behavior can be useful for adjusting the behavior depending to the
+behavior can be useful for adjusting the behavior depending on the
 calling context.
 
 \begin{craychapel}
