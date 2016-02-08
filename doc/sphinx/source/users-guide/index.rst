@@ -43,3 +43,4 @@ Locality
    locality/localesInChapel
    locality/compilingAndExecutingMultiLocalePrograms
    locality/localeTypeAndVariables
+   locality/onClauses
