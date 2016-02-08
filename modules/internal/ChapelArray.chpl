@@ -1807,7 +1807,7 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    inline proc these() ref {
+    inline proc these() {
       return _value.these();
     }
 
