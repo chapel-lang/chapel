@@ -6,8 +6,8 @@ On-Clauses
 ==========
 
 As mentioned previously, all Chapel programs begin execution as a
-single task running on locale #0.  Tasks can be executed on remote
-locales using *on-clauses*.  An on-clause prefixes another statement,
+single task running on locale #0.  Tasks can execute on remote locales
+using *on-clauses*.  An on-clause prefixes another statement,
 specifying where it should be executed.  This can be thought of as
 migrating the task that encountered the on-clause to a (potentially)
 remote locale.  Once the on-clause's statement completes, the original
@@ -41,6 +41,10 @@ When run on three locales, this program generates:
 .. literalinclude:: ../../../../../test/release/examples/users-guide/locality/onClausePlusOrig.good
   :language: text
   :lines: 1-12
+
+Note that the statement following an on-clause may include compound
+statements or function calls, so can result in an arbitrary amount of
+code being executed remotely.
 
 
 Locality is Orthogonal to Parallelism
@@ -101,7 +105,7 @@ declared on other locales.
 their on-clauses are technically data-driven since each unique locale
 value is stored on its corresponding locale.  However, in practice we
 typically use the term to refer to cases when an on-clause's
-expression is of a type other than *locale*.
+expression is of a type other than *locale*).
 
 .. UP NEXT:
    - data allocation and on-clauses
