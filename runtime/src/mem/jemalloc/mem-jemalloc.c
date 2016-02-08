@@ -42,7 +42,9 @@
 //
 // A hacky (but easy/straightforward) solution would be do modify jemalloc
 // source. For qthreads we could get rid of the 4x multiplier and just default
-// to the number of logical cpus. See jemalloc.c:1277
+// to the number of logical cpus. See jemalloc.c:1277. Might be worth testing
+// the performance difference in a playground just to see if it's worth
+// investigating further.
 
 // TODO put these into a struct?
 static void*  heap_base = NULL;
@@ -52,8 +54,8 @@ static size_t cur_heap_offset = 0;
 // *** Chunk hook replacements *** //
 // See http://www.canonware.com/download/jemalloc/jemalloc-latest/doc/jemalloc.html#arena.i.chunk_hooks
 
-// Our chunk replacement hook for allocations. Grab memory out of the shared
-// heap and give it to jemalloc.
+// Our chunk replacement hook for allocations (Essentially a replacement for
+// mmap/sbrk.) Grab memory out of the shared heap and give it to jemalloc.
 static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero, bool *commit, unsigned arena_ind) {
 
   void* p = NULL;
@@ -121,14 +123,14 @@ static bool null_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_
 // *** End chunk hook replacements *** //
 
 
-// TODO check for errors on all je_mallctl calls
-
-// get the number of arenas could use
+// get the number of arenas
 static unsigned get_num_arenas(void) {
   unsigned narenas;
   size_t sz;
   sz = sizeof(narenas);
-  je_mallctl("opt.narenas", &narenas, &sz, NULL, 0);
+  if (je_mallctl("opt.narenas", &narenas, &sz, NULL, 0) != 0) {
+    chpl_internal_error("could not get number of arenas from jemalloc");
+  }
   return narenas;
 }
 
@@ -140,12 +142,16 @@ static void initialize_arenas(void) {
   // for each arena, set the current thread to use it (this initializes each arena)
   narenas = get_num_arenas();
   for (arena=0; arena<narenas; arena++) {
-    je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena));
+    if (je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
+      chpl_internal_error("could not change current thread's arena");
+    }
   }
 
   // then set the current thread back to using arena 0
   arena = 0;
-  je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena));
+  if (je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
+      chpl_internal_error("could not change current thread's arena back to 0");
+  }
 }
 
 
@@ -170,7 +176,9 @@ static void replaceChunkHooks(void) {
   for (arena=0; arena<narenas; arena++) {
     char path[128];
     snprintf(path, sizeof(path), "arena.%u.chunk_hooks", arena);
-    je_mallctl(path, NULL, NULL, &new_hooks, sizeof(chunk_hooks_t));
+    if (je_mallctl(path, NULL, NULL, &new_hooks, sizeof(chunk_hooks_t)) != 0) {
+      chpl_internal_error("could not update the chunk hooks");
+    }
   }
 }
 
@@ -186,7 +194,9 @@ static void useUpMemNotInHeap(void) {
   do {
     // TODO use a larger value than size_t here (must be smaller than
     // "arenas.hchunk.0.size" though
-    p = je_malloc(sizeof(size_t));
+    if ((p = je_malloc(sizeof(size_t))) == NULL) {
+      chpl_internal_error("could not use up memory outside of shared heap");
+    }
   } while ((p != NULL && (p < (char*) heap_base || p > (char*) heap_base + heap_size)));
 }
 
@@ -223,8 +233,9 @@ void chpl_mem_layerInit(void) {
     initializeSharedHeap();
   } else {
     void* p;
-    if ((p = je_malloc(1)) == NULL)
+    if ((p = je_malloc(1)) == NULL) {
       chpl_internal_error("cannot init heap: je_malloc() failed");
+    }
     je_free(p);
   }
 }
