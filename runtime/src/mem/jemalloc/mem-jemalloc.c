@@ -68,8 +68,8 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
   // offset aligned to "alignment"
   p = (void*)((((uintptr_t) heap_base + cur_heap_offset + alignment - 1) / alignment) * alignment);
 
-  // jemalloc man: "If chunk is not NULL, the returned pointer must be chunk
-  // on success or NULL on error"
+  // jemalloc 4.0.4 man: "If chunk is not NULL, the returned pointer must be
+  // chunk on success or NULL on error"
   if (chunk && chunk != p) {
     return NULL;
   }
@@ -86,7 +86,7 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
   // Update the current pointer, now that we've past any early returns.
   cur_heap_offset = p_offset + size;
 
-  // jemalloc man: "Zeroing is mandatory if *zero is true upon function entry."
+  // jemalloc 4.0.4 man: "Zeroing is mandatory if *zero is true upon entry."
   if (*zero) {
      memset(p, 0, size);
   }
@@ -124,8 +124,8 @@ static bool null_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_
 
 
 // get the number of arenas
-static unsigned get_num_arenas(void) {
-  unsigned narenas;
+static size_t get_num_arenas(void) {
+  size_t narenas;
   size_t sz;
   sz = sizeof(narenas);
   if (je_mallctl("opt.narenas", &narenas, &sz, NULL, 0) != 0) {
@@ -136,11 +136,22 @@ static unsigned get_num_arenas(void) {
 
 // initialize our arenas (this is required to be able to set the chunk hooks)
 static void initialize_arenas(void) {
+  size_t s_narenas;
   unsigned narenas;
   unsigned arena;
 
+  // "thread.arena" takes an unsigned, but num_arenas is a size_t.
+  s_narenas = get_num_arenas();
+  if (s_narenas > (size_t) UINT_MAX) {
+    chpl_internal_error("narenas too large to fit into unsigned");
+  }
+  narenas = (unsigned) s_narenas;
+
   // for each arena, set the current thread to use it (this initializes each arena)
-  narenas = get_num_arenas();
+  //
+  //   jemalloc 4.0.4 man: "If the specified arena was not initialized
+  //   beforehand, it will be automatically initialized as a side effect of
+  //   calling this interface."
   for (arena=0; arena<narenas; arena++) {
     if (je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
       chpl_internal_error("could not change current thread's arena");
@@ -157,8 +168,8 @@ static void initialize_arenas(void) {
 
 // replace the chunk hooks for each arena with the hooks we provided above
 static void replaceChunkHooks(void) {
-  unsigned narenas;
-  unsigned arena;
+  size_t narenas;
+  size_t arena;
 
   // set the pointers for the new_hooks to our above functions
   chunk_hooks_t new_hooks = {
@@ -175,7 +186,7 @@ static void replaceChunkHooks(void) {
   narenas = get_num_arenas();
   for (arena=0; arena<narenas; arena++) {
     char path[128];
-    snprintf(path, sizeof(path), "arena.%u.chunk_hooks", arena);
+    snprintf(path, sizeof(path), "arena.%zu.chunk_hooks", arena);
     if (je_mallctl(path, NULL, NULL, &new_hooks, sizeof(chunk_hooks_t)) != 0) {
       chpl_internal_error("could not update the chunk hooks");
     }
@@ -186,7 +197,7 @@ static void useUpMemNotInHeap(void) {
   // grab (and leak) whatever memory jemalloc got on it's own, that's not in
   // our shared heap
   //
-  //   jemalloc man: "arenas may have already created chunks prior to the
+  //   jemalloc 4.0.4 man: "arenas may have already created chunks prior to the
   //   application having an opportunity to take over chunk allocation."
   //
   // Note that this will also allow jemalloc to initialize itself since
@@ -224,8 +235,8 @@ void chpl_mem_layerInit(void) {
   // of initializing jemalloc. If we're not using a shared heap, do a first
   // allocation to allow jemaloc to set up:
   //
-  //   jemalloc man: "Once, when the first call is made to one of the memory
-  //   allocation routines, the allocator initializes its internals"
+  //   jemalloc 4.0.4 man: "Once, when the first call is made to one of the
+  //   memory allocation routines, the allocator initializes its internals"
   if (heap_base_ != NULL) {
     heap_base = heap_base_;
     heap_size = heap_size_;
