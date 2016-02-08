@@ -42,7 +42,9 @@
 //
 // A hacky (but easy/straightforward) solution would be do modify jemalloc
 // source. For qthreads we could get rid of the 4x multiplier and just default
-// to the number of logical cpus. See jemalloc.c:1277
+// to the number of logical cpus. See jemalloc.c:1277. Might be worth testing
+// the performance difference in a playground just to see if it's worth
+// investigating further.
 
 // TODO put these into a struct?
 static void*  heap_base = NULL;
@@ -52,8 +54,8 @@ static size_t cur_heap_offset = 0;
 // *** Chunk hook replacements *** //
 // See http://www.canonware.com/download/jemalloc/jemalloc-latest/doc/jemalloc.html#arena.i.chunk_hooks
 
-// Our chunk replacement hook for allocations. Grab memory out of the shared
-// heap and give it to jemalloc.
+// Our chunk replacement hook for allocations (Essentially a replacement for
+// mmap/sbrk.) Grab memory out of the shared heap and give it to jemalloc.
 static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero, bool *commit, unsigned arena_ind) {
 
   void* p = NULL;
@@ -66,8 +68,8 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
   // offset aligned to "alignment"
   p = (void*)((((uintptr_t) heap_base + cur_heap_offset + alignment - 1) / alignment) * alignment);
 
-  // jemalloc man: "If chunk is not NULL, the returned pointer must be chunk
-  // on success or NULL on error"
+  // jemalloc 4.0.4 man: "If chunk is not NULL, the returned pointer must be
+  // chunk on success or NULL on error"
   if (chunk && chunk != p) {
     return NULL;
   }
@@ -84,7 +86,7 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
   // Update the current pointer, now that we've past any early returns.
   cur_heap_offset = p_offset + size;
 
-  // jemalloc man: "Zeroing is mandatory if *zero is true upon function entry."
+  // jemalloc 4.0.4 man: "Zeroing is mandatory if *zero is true upon entry."
   if (*zero) {
      memset(p, 0, size);
   }
@@ -121,38 +123,54 @@ static bool null_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_
 // *** End chunk hook replacements *** //
 
 
-// TODO check for errors on all je_mallctl calls
-
-// get the number of arenas could use
-static unsigned get_num_arenas(void) {
-  unsigned narenas;
+// get the number of arenas
+static size_t get_num_arenas(void) {
+  size_t narenas;
   size_t sz;
   sz = sizeof(narenas);
-  je_mallctl("opt.narenas", &narenas, &sz, NULL, 0);
+  if (je_mallctl("opt.narenas", &narenas, &sz, NULL, 0) != 0) {
+    chpl_internal_error("could not get number of arenas from jemalloc");
+  }
   return narenas;
 }
 
 // initialize our arenas (this is required to be able to set the chunk hooks)
 static void initialize_arenas(void) {
+  size_t s_narenas;
   unsigned narenas;
   unsigned arena;
 
-  // for each arena, set the current thread to use it (this initializes each arena)
-  narenas = get_num_arenas();
-  for (arena=0; arena<narenas; arena++) {
-    je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena));
+  // "thread.arena" takes an unsigned, but num_arenas is a size_t.
+  s_narenas = get_num_arenas();
+  if (s_narenas > (size_t) UINT_MAX) {
+    chpl_internal_error("narenas too large to fit into unsigned");
+  }
+  narenas = (unsigned) s_narenas;
+
+  // for each non-zero arena, set the current thread to use it (this
+  // initializes each arena). arena 0 is automatically initialized.
+  //
+  //   jemalloc 4.0.4 man: "If the specified arena was not initialized
+  //   beforehand, it will be automatically initialized as a side effect of
+  //   calling this interface."
+  for (arena=1; arena<narenas; arena++) {
+    if (je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
+      chpl_internal_error("could not change current thread's arena");
+    }
   }
 
   // then set the current thread back to using arena 0
   arena = 0;
-  je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena));
+  if (je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
+      chpl_internal_error("could not change current thread's arena back to 0");
+  }
 }
 
 
 // replace the chunk hooks for each arena with the hooks we provided above
 static void replaceChunkHooks(void) {
-  unsigned narenas;
-  unsigned arena;
+  size_t narenas;
+  size_t arena;
 
   // set the pointers for the new_hooks to our above functions
   chunk_hooks_t new_hooks = {
@@ -169,8 +187,10 @@ static void replaceChunkHooks(void) {
   narenas = get_num_arenas();
   for (arena=0; arena<narenas; arena++) {
     char path[128];
-    snprintf(path, sizeof(path), "arena.%u.chunk_hooks", arena);
-    je_mallctl(path, NULL, NULL, &new_hooks, sizeof(chunk_hooks_t));
+    snprintf(path, sizeof(path), "arena.%zu.chunk_hooks", arena);
+    if (je_mallctl(path, NULL, NULL, &new_hooks, sizeof(chunk_hooks_t)) != 0) {
+      chpl_internal_error("could not update the chunk hooks");
+    }
   }
 }
 
@@ -178,7 +198,7 @@ static void useUpMemNotInHeap(void) {
   // grab (and leak) whatever memory jemalloc got on it's own, that's not in
   // our shared heap
   //
-  //   jemalloc man: "arenas may have already created chunks prior to the
+  //   jemalloc 4.0.4 man: "arenas may have already created chunks prior to the
   //   application having an opportunity to take over chunk allocation."
   //
   // Note that this will also allow jemalloc to initialize itself since
@@ -186,7 +206,9 @@ static void useUpMemNotInHeap(void) {
   do {
     // TODO use a larger value than size_t here (must be smaller than
     // "arenas.hchunk.0.size" though
-    p = je_malloc(sizeof(size_t));
+    if ((p = je_malloc(sizeof(size_t))) == NULL) {
+      chpl_internal_error("could not use up memory outside of shared heap");
+    }
   } while ((p != NULL && (p < (char*) heap_base || p > (char*) heap_base + heap_size)));
 }
 
@@ -214,8 +236,8 @@ void chpl_mem_layerInit(void) {
   // of initializing jemalloc. If we're not using a shared heap, do a first
   // allocation to allow jemaloc to set up:
   //
-  //   jemalloc man: "Once, when the first call is made to one of the memory
-  //   allocation routines, the allocator initializes its internals"
+  //   jemalloc 4.0.4 man: "Once, when the first call is made to one of the
+  //   memory allocation routines, the allocator initializes its internals"
   if (heap_base_ != NULL) {
     heap_base = heap_base_;
     heap_size = heap_size_;
@@ -223,8 +245,9 @@ void chpl_mem_layerInit(void) {
     initializeSharedHeap();
   } else {
     void* p;
-    if ((p = je_malloc(1)) == NULL)
+    if ((p = je_malloc(1)) == NULL) {
       chpl_internal_error("cannot init heap: je_malloc() failed");
+    }
     je_free(p);
   }
 }
