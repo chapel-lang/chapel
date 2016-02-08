@@ -98,8 +98,8 @@ anywhere:
 .. literalinclude:: ../../../../../test/release/examples/users-guide/locality/dataDrivenOnClause-trivial.good
   :language: text
 
-In the next section, we'll see more about how variables can be
-declared on other locales.
+The next section will explain how variables can be declared on other
+locales to make data-driven on-clauses more interesting.
 
 (It's worth noting that even cases which use locale values to specify
 their on-clauses are technically data-driven since each unique locale
