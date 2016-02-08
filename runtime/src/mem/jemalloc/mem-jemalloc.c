@@ -30,44 +30,203 @@
 #include "chpltypes.h"
 #include "error.h"
 
+
+// TODO it'd be great if there was some way for us to set the number of arenas.
+// jemalloc's default is `4 * logicalCPUs` which is fine for fifo, but for
+// qthreads and muxed, we know how many pthreads will be created at startup.
+// The number of arenas can be set with je_malloc_conf, but that's a compile
+// time constant. We can also set it with JE_MALLOC_CONF, but I think that has
+// to be prior to program execution, I think by the time we get here, we're
+// already too late. I was hoping we just had to set it before the first call
+// to an allocation routine, but that doesn't appear to be the case.
+//
+// A hacky (but easy/straightforward) solution would be do modify jemalloc
+// source. For qthreads we could get rid of the 4x multiplier and just default
+// to the number of logical cpus. See jemalloc.c:1277
+
+// TODO put these into a struct?
+static void*  heap_base = NULL;
+static size_t heap_size = 0;
+static size_t cur_heap_offset = 0;
+
+// *** Chunk hook replacements *** //
+// See http://www.canonware.com/download/jemalloc/jemalloc-latest/doc/jemalloc.html#arena.i.chunk_hooks
+
+// Our chunk replacement hook for allocations. Grab memory out of the shared
+// heap and give it to jemalloc.
+static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero, bool *commit, unsigned arena_ind) {
+
+  void* p = NULL;
+  size_t p_offset;
+
+  // TODO cleanup some of the pointer arithmetic. The current code was
+  // originally copied out of the tcmalloc shim, and could use a little cleanup
+
+  // compute our current pointer into the shared heap based on the current
+  // offset aligned to "alignment"
+  p = (void*)((((uintptr_t) heap_base + cur_heap_offset + alignment - 1) / alignment) * alignment);
+
+  // jemalloc man: "If chunk is not NULL, the returned pointer must be chunk
+  // on success or NULL on error"
+  if (chunk && chunk != p) {
+    return NULL;
+  }
+
+  p_offset = (uintptr_t)p - (uintptr_t)(heap_base);
+
+  size = ((size + alignment - 1) / alignment) * alignment;
+
+  // If we're out of space on the heap, return NULL
+  if (size > heap_size - p_offset) {
+    return NULL;
+  }
+
+  // Update the current pointer, now that we've past any early returns.
+  cur_heap_offset = p_offset + size;
+
+  // jemalloc man: "Zeroing is mandatory if *zero is true upon function entry."
+  if (*zero) {
+     memset(p, 0, size);
+  }
+
+  // Commit is not relevant for linux/darwin, but jemalloc wants us to set it
+  *commit = true;
+
+  return p;
+}
+
+//
+// Returning true indicates an opt-out of these hooks. For dalloc, this means
+// that we never get memory back from jemalloc and we just let it re-use it in
+// the future.
+//
+static bool null_dalloc(void *chunk, size_t size, bool committed, unsigned arena_ind) {
+  return true;
+}
+static bool null_commit(void *chunk, size_t size, size_t offset, size_t length, unsigned arena_ind) {
+  return true;
+}
+static bool null_decommit(void *chunk, size_t size, size_t offset, size_t length, unsigned arena_ind) {
+  return true;
+}
+static bool null_purge(void *chunk, size_t size, size_t offset, size_t length, unsigned arena_ind) {
+  return true;
+}
+static bool null_split(void *chunk, size_t size, size_t size_a, size_t size_b, bool committed, unsigned arena_ind) {
+  return true;
+}
+static bool null_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_b, bool committed, unsigned arena_ind) {
+  return true;
+}
+// *** End chunk hook replacements *** //
+
+
+// TODO check for errors on all je_mallctl calls
+
+// get the number of arenas could use
+static unsigned get_num_arenas(void) {
+  unsigned narenas;
+  size_t sz;
+  sz = sizeof(narenas);
+  je_mallctl("opt.narenas", &narenas, &sz, NULL, 0);
+  return narenas;
+}
+
+// initialize our arenas (this is required to be able to set the chunk hooks)
+static void initialize_arenas(void) {
+  unsigned narenas;
+  unsigned arena;
+
+  // for each arena, set the current thread to use it (this initializes each arena)
+  narenas = get_num_arenas();
+  for (arena=0; arena<narenas; arena++) {
+    je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena));
+  }
+
+  // then set the current thread back to using arena 0
+  arena = 0;
+  je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena));
+}
+
+
+// replace the chunk hooks for each arena with the hooks we provided above
+static void replaceChunkHooks(void) {
+  unsigned narenas;
+  unsigned arena;
+
+  // set the pointers for the new_hooks to our above functions
+  chunk_hooks_t new_hooks = {
+    chunk_alloc,
+    null_dalloc,
+    null_commit,
+    null_decommit,
+    null_purge,
+    null_split,
+    null_merge
+  };
+
+  // for each arena, change the chunk hooks
+  narenas = get_num_arenas();
+  for (arena=0; arena<narenas; arena++) {
+    char path[128];
+    snprintf(path, sizeof(path), "arena.%u.chunk_hooks", arena);
+    je_mallctl(path, NULL, NULL, &new_hooks, sizeof(chunk_hooks_t));
+  }
+}
+
+static void useUpMemNotInHeap(void) {
+  // grab (and leak) whatever memory jemalloc got on it's own, that's not in
+  // our shared heap
+  //
+  //   jemalloc man: "arenas may have already created chunks prior to the
+  //   application having an opportunity to take over chunk allocation."
+  //
+  // Note that this will also allow jemalloc to initialize itself since
+  char* p = NULL;
+  do {
+    // TODO use a larger value than size_t here (must be smaller than
+    // "arenas.hchunk.0.size" though
+    p = je_malloc(sizeof(size_t));
+  } while ((p != NULL && (p < (char*) heap_base || p > (char*) heap_base + heap_size)));
+}
+
+// Have jemalloc use our shared heap. Initialize all the arenas, then replace
+// the chunk hooks with our custom ones, and finally use up any memory jemalloc
+// got from the system that's not in our shared heap.
+static void initializeSharedHeap(void) {
+  initialize_arenas();
+
+  replaceChunkHooks();
+
+  useUpMemNotInHeap();
+}
+
 void chpl_mem_layerInit(void) {
-  void* start;
-  size_t size;
+  void* heap_base_;
+  size_t heap_size_;
 
-  chpl_comm_desired_shared_heap(&start, &size);
+  chpl_comm_desired_shared_heap(&heap_base_, &heap_size_);
+  if (heap_base_ != NULL && heap_size_ == 0) {
+    chpl_internal_error("if heap address is specified, size must be also");
+  }
 
+  // If we have a shared heap, initialize our shared heap. This will take care
+  // of initializing jemalloc. If we're not using a shared heap, do a first
+  // allocation to allow jemaloc to set up:
   //
-  // TODO (EJR 12/17/15): add support for shared heaps. I think we basically
-  // need to create a custom chunk allocator.
-  //
-  // HPX-5 did this so I think we can too:
-  //     http://jemalloc-discuss.canonware.narkive.com/FzSQ4Qv4/need-help-in-porting-jemalloc
-  //
-  //     http://www.canonware.com/pipermail/jemalloc-discuss/2015-October/001179.html
-  //
-  //  TODO (EJR 12/17/15): when we support shared heaps, I need to remember to
-  //  update the third-party README
-  //
-  if (start || size)
-    chpl_error("set CHPL_MEM to a more appropriate mem type", 0, 0);
-
-  //
-  // Do a first allocation, to allow jemalloc to set up:
-  //
-  //   """
-  //   Once, when the first call is made to one of the memory allocation
-  //   routines, the allocator initializes its internals based in part on various
-  //   options that can be specified at compile- or run-time.
-  //   """
-  //
-  {
+  //   jemalloc man: "Once, when the first call is made to one of the memory
+  //   allocation routines, the allocator initializes its internals"
+  if (heap_base_ != NULL) {
+    heap_base = heap_base_;
+    heap_size = heap_size_;
+    cur_heap_offset = 0;
+    initializeSharedHeap();
+  } else {
     void* p;
-
     if ((p = je_malloc(1)) == NULL)
       chpl_internal_error("cannot init heap: je_malloc() failed");
     je_free(p);
   }
-
 }
 
 
