@@ -147,12 +147,13 @@ static void initialize_arenas(void) {
   }
   narenas = (unsigned) s_narenas;
 
-  // for each arena, set the current thread to use it (this initializes each arena)
+  // for each non-zero arena, set the current thread to use it (this
+  // initializes each arena). arena 0 is automatically initialized.
   //
   //   jemalloc 4.0.4 man: "If the specified arena was not initialized
   //   beforehand, it will be automatically initialized as a side effect of
   //   calling this interface."
-  for (arena=0; arena<narenas; arena++) {
+  for (arena=1; arena<narenas; arena++) {
     if (je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
       chpl_internal_error("could not change current thread's arena");
     }
