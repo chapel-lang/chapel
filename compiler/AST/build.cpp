@@ -33,6 +33,9 @@
 #include "symbol.h"
 #include "type.h"
 
+#include <map>
+#include <utility>
+
 static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt);
 static void buildSerialIteratorFn(FnSymbol* fn, const char* iteratorName,
                                   Expr* expr, Expr* cond, Expr* indices,
@@ -401,26 +404,55 @@ static void processStringInRequireStmt(const char* str) {
   }
 }
 
+// UseStmt builder's helper.  If the Expr* provided was wrong in some way,
+// generate the appropriate error message.
+static void useListError(Expr* expr, bool except) {
+  if (except) {
+    USR_FATAL(expr, "incorrect expression in 'except' list, identifier expected");
+  } else {
+    USR_FATAL(expr, "incorrect expression in 'only' list, identifier expected");
+  }
+}
 
 //
-// Build a 'use' statement with an 'except' list
+// Build a 'use' statement with an 'except'/'only' list
 //
-BlockStmt* buildUseStmt(Expr* mod, CallExpr* names, bool except) {
+BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except) {
   std::vector<const char*> namesList;
+  std::map<const char*, const char*> renameMap;
 
   // Iterate through the list of names to exclude when using mod
-  for_actuals(expr, names) {
-    if (UnresolvedSymExpr* name = toUnresolvedSymExpr(expr)) {
-      namesList.push_back(name->unresolved);
-      name->remove();
-    } else {
-      // Currently we expect only unresolved sym exprs
-      if (except) {
-        USR_FATAL(expr, "incorrect expression in 'except' list, identifier expected");
-      } else {
-        USR_FATAL(expr, "incorrect expression in 'only' list, identifier expected");
-      }
+  for_vector(OnlyRename, listElem, *names) {
+    switch (listElem->tag) {
+      case OnlyRename::SINGLE:
+        if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
+          namesList.push_back(name->unresolved);
+        } else {
+          // Currently we expect only unresolved sym exprs
+          useListError(listElem->elem, except);
+        }
+        break;
+      case OnlyRename::DOUBLE:
+        std::pair<Expr*, Expr*>* elem = listElem->renamed;
+        // Need to check that we aren't renaming in an 'except' list
+        if (except) {
+          USR_FATAL(elem->first, "cannot rename in 'except' list");
+        }
+        UnresolvedSymExpr* old_name = toUnresolvedSymExpr(elem->first);
+        UnresolvedSymExpr* new_name = toUnresolvedSymExpr(elem->second);
+        if (old_name != NULL && new_name != NULL) {
+          // Verify that the new name isn't already in the renameMap
+          if (renameMap.count(new_name->unresolved) == 0) {
+            renameMap[new_name->unresolved] = old_name->unresolved;
+          } else {
+            USR_WARN(elem->first, "already renamed '%s' to '%s', ignoring '%s'", renameMap[new_name->unresolved], new_name->unresolved, old_name->unresolved);
+          }
+        } else {
+          useListError(elem->first, except);
+        }
+        break;
     }
+
   }
 
   UseStmt* newUse = new UseStmt(mod, &namesList, except);
