@@ -2257,26 +2257,26 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
       // If that happened, we want to check if any of the identifiers
       // in the 'except' list are specified by the 'only' list, and
       // not place them in the new 'only' list.
-      std::vector<const char*>* newOnlyList = new std::vector<const char*>();
+      std::vector<const char*> newOnlyList;
       for_vector(const char, includeMe, named) {
         if (std::find(outer->named.begin(), outer->named.end(), includeMe) == outer->named.end()) {
           // We didn't find this symbol in the list to exclude, so
           // add it.
-          newOnlyList->push_back(includeMe);
+          newOnlyList.push_back(includeMe);
         }
       }
-      if (newOnlyList->size() == named.size()) {
+      if (newOnlyList.size() == named.size()) {
         // The except list didn't cut down on our only list.
         // No need to create a new UseStmt, just return ourself.
         return this;
-      } else if (newOnlyList->size() == 0) {
+      } else if (newOnlyList.size() == 0) {
         // All of the 'only' list was in the 'except' list, so we don't provide
         // new symbols.
         return NULL;
       } else {
         // The only list will be shorter, create a new UseStmt with it.
         SET_LINENO(this);
-        return new UseStmt(mod, newOnlyList, false);
+        return new UseStmt(mod, &newOnlyList, false);
         // Note: we don't populate the relatedNames vector for the new use,
         // since we don't have a way to connect the names in it back to the
         // types we did or didn't include in the shorter 'only' list.
@@ -2299,22 +2299,22 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
         // The more complicated case arises if we have an 'except' list
         // The inner use should turn into a use with an 'only' list if anything
         // remains.
-        std::vector<const char*>* newOnlyList = new std::vector<const char*>();
+        std::vector<const char*> newOnlyList;
         for_vector(const char, includeMe, outer->named) {
           if (std::find(named.begin(), named.end(), includeMe) == named.end()) {
             // We didn't find this symbol in our 'except' list, so
             // add it.
-            newOnlyList->push_back(includeMe);
+            newOnlyList.push_back(includeMe);
           }
         }
-        if (newOnlyList->size() > 0) {
+        if (newOnlyList.size() > 0) {
           // At least some of the identifiers in the 'only' list
           // weren't in the inner 'except' list.  Modify the use to
           // 'only' include those from the original 'only' list which
           // weren't in the inner 'except' list (could be all of the
           // outer 'only' list)
           SET_LINENO(this);
-          return new UseStmt(mod, newOnlyList, false);
+          return new UseStmt(mod, &newOnlyList, false);
         } else {
           // all the 'only' identifiers were in the 'except'
           // list so this module use will give us nothing.
@@ -2324,19 +2324,19 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
         // We had an 'only' list, so we need to narrow that list down to just
         // the names that are in both lists.
         SET_LINENO(this);
-        std::vector<const char*>* newOnlyList = new std::vector<const char*>();
+        std::vector<const char*> newOnlyList;
         for_vector(const char, includeMe, outer->named) {
           if (std::find(named.begin(), named.end(), includeMe) != named.end()) {
             // We found this symbol in both 'only' lists, so add it
             // to the union of them.
-            newOnlyList->push_back(includeMe);
+            newOnlyList.push_back(includeMe);
           }
         }
-        if (newOnlyList->size() > 0) {
+        if (newOnlyList.size() > 0) {
           // There were symbols that were in both 'only' lists, so
           // this module use is still interesting.
           SET_LINENO(this);
-          return new UseStmt(mod, newOnlyList, false);
+          return new UseStmt(mod, &newOnlyList, false);
         } else {
           // all of the 'only' identifiers in the outer use
           // were missing from the inner use's 'only' list, so this
