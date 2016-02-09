@@ -390,7 +390,6 @@ checkUseBeforeDefs() {
                 if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
                   if (!sym->var->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN) &&
                       !sym->var->hasFlag(FLAG_TEMP)) {
-                    printf("sym->var->id = %i\n", sym->var->id);
                     USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
                     undefined.set_add(sym->var);
                   }
@@ -536,7 +535,7 @@ static bool is_void_return(CallExpr* call) {
 static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
   Expr* ret_expr = ret->get(1);
   ret_expr->remove();
-  if (fn->retTag == RET_REF)
+  if (fn->returnsRefOrConstRef())
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_ADDR_OF, ret_expr)));
   else if (fn->retExprType)
   {
