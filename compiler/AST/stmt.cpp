@@ -247,7 +247,7 @@ bool UseStmt::skipSymbolSearch(const char* name) {
 
 bool UseStmt::matchedNameOrConstructor(const char* name) {
   for_vector(const char, toCheck, named) {
-    unsigned int constructorLen = strlen(toCheck) + strlen("_construct_");
+    unsigned int constructorLen = strlen(toCheck) + strlen("_construct_") + 1;
     char constructorName[constructorLen];
     strcpy(constructorName, "_construct_");
     strcat(constructorName, toCheck);
