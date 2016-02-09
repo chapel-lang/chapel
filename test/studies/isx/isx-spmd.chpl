@@ -151,7 +151,7 @@ const OnePerLocale = LocaleSpace dmapped Block(LocaleSpace);
 
 var allBucketKeys: [OnePerLocale] [0..#recvBuffSize] int;
 var recvOffset: [OnePerLocale] atomic int;
-var totalTime: [LocaleSpace] [1..numTrials] real;
+var totalTime: [OnePerLocale] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
 //
@@ -251,7 +251,7 @@ proc bucketSort(trial: int, time = false, verify = false) {
 
   if time {
     totalTimer.stop();
-    totalTime[here.id][trial] = totalTimer.elapsed();
+    totalTime.localAccess[here.id][trial] = totalTimer.elapsed();
   }    
 
   if (verify) then

@@ -153,7 +153,7 @@ const BucketSpace = LocBucketSpace dmapped BucketDist;
 
 var allBucketKeys: [BucketSpace] [0..#recvBuffSize] int;
 var recvOffset: [BucketSpace] atomic int;
-var totalTime: [LocBucketSpace] [1..numTrials] real;
+var totalTime: [BucketSpace] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
 //
@@ -260,7 +260,7 @@ proc bucketSort(bucketID, trial: int, time = false, verify = false) {
 
   if time {
     totalTimer.stop();
-    totalTime[bucketID][trial] = totalTimer.elapsed();
+    totalTime.localAccess[bucketID][trial] = totalTimer.elapsed();
   }    
 
   if (verify) then
