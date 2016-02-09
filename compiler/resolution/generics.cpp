@@ -522,7 +522,7 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
         CallExpr* parentTyCall = new CallExpr(astr("_type_construct_", parentTy->symbol->name));
         // Pass the special formals to the superclass type constructor.
         for_formals(arg, fn) {
-          if (arg->hasFlag(FLAG_COMPILER_GENERATED)) {
+          if (arg->hasFlag(FLAG_PARENT_FIELD)) {
             Symbol* value = subs.get(arg);
             if (!value) {
               value = arg;

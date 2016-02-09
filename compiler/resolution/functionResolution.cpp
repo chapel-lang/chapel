@@ -7357,7 +7357,7 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
   forv_Vec(FnSymbol, cfn, ct->methods) {
     // checking that subtype method is not a generic instantiation
     //  (we will instantiate again)
-    if (cfn && /*!cfn->instantiatedFrom &&*/ possible_signature_match(pfn, cfn)) {
+    if (cfn && possible_signature_match(pfn, cfn)) {
       Vec<Type*> types;
       if (ct->symbol->hasFlag(FLAG_GENERIC))
         collectInstantiatedAggregateTypes(types, ct);

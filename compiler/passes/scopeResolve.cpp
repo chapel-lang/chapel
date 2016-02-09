@@ -573,7 +573,7 @@ static void addClassToHierarchy(AggregateType*       ct,
           if (!alreadyContainsField) {
             DefExpr* def = field->defPoint->copy();
             ct->fields.insertAtHead(def);
-            def->sym->addFlag(FLAG_COMPILER_GENERATED);
+            def->sym->addFlag(FLAG_PARENT_FIELD);
           }
         }
       }
@@ -773,9 +773,9 @@ static void build_type_constructor(AggregateType* ct) {
             // ?
             // Should we omit them?
             // Or pass the child field to the super constructor?
-            arg->name = astr("super_", arg->name);
+            continue;
           }
-          arg->addFlag(FLAG_COMPILER_GENERATED);
+          arg->addFlag(FLAG_PARENT_FIELD);
           fn->insertFormalAtTail(arg);
           superCall->insertAtTail(new SymExpr(arg));
         }
@@ -828,8 +828,8 @@ static void build_type_constructor(AggregateType* ct) {
 
           // Indicate which type constructor args are also for super class 
           // This helps us to call the superclass type constructor in resolution
-          if (field->hasFlag(FLAG_COMPILER_GENERATED)) {
-            arg->addFlag(FLAG_COMPILER_GENERATED);
+          if (field->hasFlag(FLAG_PARENT_FIELD)) {
+            arg->addFlag(FLAG_PARENT_FIELD);
           }
 
           fn->insertFormalAtTail(arg);
