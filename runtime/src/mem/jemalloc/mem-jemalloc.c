@@ -83,8 +83,6 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
 
   cur_heap_size = (uintptr_t)cur_chunk_base - (uintptr_t)heap_base;
 
-  size = ((size + alignment - 1) / alignment) * alignment;
-
   // If there's not enough space on the heap for this allocation, return NULL
   if (size > heap_size - cur_heap_size) {
     pthread_mutex_unlock(&chunk_alloc_lock);
