@@ -12,5 +12,5 @@ Contents:
    :maxdepth: 1
    :glob:
 
-   chpldoc
+   chpldoc/chpldoc
    chplvis/chplvis

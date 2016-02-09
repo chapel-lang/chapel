@@ -200,7 +200,6 @@ print "Removing runtime directories that are not ready for release...\n";
 SystemOrDie("cd runtime/src/launch && rm -r dummy");
 SystemOrDie("cd runtime/src/launch && rm -r mpirun");
 SystemOrDie("cd runtime/include && rm -r sunos_old");
-SystemOrDie("cd third-party && rm -rf txt2man");
 
 print "Removing third-party directories that are not intended for release...\n";
 SystemOrDie("cd third-party && rm *.devel*");

@@ -49,6 +49,13 @@ def main():
     chplhomereadme = os.path.join(chpl_home, 'README.rst')
     os.symlink(chplhomereadme, 'source/usingchapel/README.rst')
 
+    # Man pages
+    chplmanpage = os.path.join(chpl_home, 'man', 'chpl.rst')
+    os.symlink(chplmanpage, 'source/usingchapel/man.rst')
+
+    chpldocmanpage = os.path.join(chpl_home, 'man', 'chpldoc.rst')
+    os.symlink(chpldocmanpage, 'source/tools/chpldoc/man.rst')
+
 
 if __name__ == '__main__':
     main()

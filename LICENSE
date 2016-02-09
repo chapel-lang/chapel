@@ -53,7 +53,6 @@ The Chapel implementation is composed of two categories of code:
      qthread          alternative lightweight tasking option       new BSD
      re2              optional regular expression parsing library  new BSD
      tcmalloc         alternative memory allocator                 new BSD
-     txt2man          creation of man pages (developer-only)       GPL
      utf8-decoder     used for runtime UTF-8 string decoding       MIT
 
    For a more complete introduction to these packages and their
@@ -100,7 +99,6 @@ The Chapel implementation is composed of two categories of code:
      re2              where possible, used by default or when CHPL_REGEXP is
                       're2'
      tcmalloc         only used when CHPL_MEM is 'tcmalloc'
-     txt2man          only used by developers to create the Chapel man page
      utf8-decoder     bundled into the Chapel runtime to decode UTF-8 strings
 
    For packages that are only used based on a CHPL_* setting, note
