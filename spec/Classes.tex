@@ -688,10 +688,13 @@ class C {
   var setCount: int;
   var x: int;
   proc x ref {
-    if setter then
-      setCount += 1;
+    setCount += 1;
     return x;
   }
+  proc x {
+    return x;
+  }
+
 }
 \end{chapel}
 \begin{chapelpost}

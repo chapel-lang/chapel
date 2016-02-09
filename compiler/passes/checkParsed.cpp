@@ -248,9 +248,9 @@ checkFunction(FnSymbol* fn) {
   if (isIterator && numYields == 0)
     USR_FATAL_CONT(fn, "iterator does not yield a value");
   if (!isIterator &&
-      fn->retTag == RET_REF &&
+      fn->returnsRefOrConstRef() &&
       numNonVoidReturns == 0) {
-    USR_FATAL_CONT(fn, "function declared 'var' but does not return anything");
+    USR_FATAL_CONT(fn, "function declared 'ref' but does not return anything");
   }
 }
 

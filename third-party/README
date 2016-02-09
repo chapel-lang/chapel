@@ -70,6 +70,7 @@ hwloc/
 jemalloc/
   Summary: Jason Evan's memory allocator (jemalloc) which "emphasizes
            fragmentation avoidance and scalable concurrency support."
+           and can be used when a shared heap is required.
 
   License: jemalloc is released under a BSD-derived License (see
            jemalloc/jemalloc-*/COPYING)

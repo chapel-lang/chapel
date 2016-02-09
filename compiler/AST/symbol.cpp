@@ -1057,11 +1057,12 @@ bool ArgSymbol::isVisible(BaseAST* scope) const {
 
 const char* retTagDescrString(RetTag retTag) {
   switch (retTag) {
-    case RET_VALUE: return "value";
-    case RET_REF:   return "ref";
-    case RET_PARAM: return "param";
-    case RET_TYPE:  return "type";
-    default:        return "<unknown RetTag>";
+    case RET_VALUE:     return "value";
+    case RET_REF:       return "ref";
+    case RET_CONST_REF: return "const ref";
+    case RET_PARAM:     return "param";
+    case RET_TYPE:      return "type";
+    default:            return "<unknown RetTag>";
   }
 }
 
@@ -1423,7 +1424,6 @@ void TypeSymbol::accept(AstVisitor* visitor) {
 FnSymbol::FnSymbol(const char* initName) :
   Symbol(E_FnSymbol, initName),
   formals(),
-  setter(NULL),
   retType(dtUnknown),
   where(NULL),
   retExprType(NULL),
@@ -1494,7 +1494,6 @@ FnSymbol::copyInner(SymbolMap* map) {
   FnSymbol* copy = this->copyInnerCore(map);
 
   // Copy members that weren't set by copyInnerCore.
-  copy->setter      = COPY_INT(this->setter);
   copy->where       = COPY_INT(this->where);
   copy->body        = COPY_INT(this->body);
   copy->retExprType = COPY_INT(this->retExprType);
@@ -1653,8 +1652,6 @@ void FnSymbol::finalizeCopy(void) {
     // Retrieve our old/new symbol map from the partial copy process.
     SymbolMap* map = &(this->partialCopyMap);
 
-    this->setter = COPY_INT(this->partialCopySource->setter);
-
     /*
      * When we reach this point we will be in one of three scenarios:
      *  1) The function's body is empty and needs to be copied over from the
@@ -1769,8 +1766,6 @@ void FnSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     body = toBlockStmt(new_ast);
   } else if (old_ast == where) {
     where = toBlockStmt(new_ast);
-  } else if (old_ast == setter) {
-    setter = toDefExpr(new_ast);
   } else if (old_ast == retExprType) {
     retExprType = toBlockStmt(new_ast);
   } else {
@@ -2332,9 +2327,6 @@ void FnSymbol::accept(AstVisitor* visitor) {
       next_ast->accept(visitor);
     }
 
-    if (setter)
-      setter->accept(visitor);
-
     if (body)
       body->accept(visitor);
 
@@ -2372,6 +2364,10 @@ bool FnSymbol::isIterator() const {
   return hasFlag(FLAG_ITERATOR_FN);
 }
 
+// This function returns by ref or const ref
+bool FnSymbol::returnsRefOrConstRef() const {
+  return (retTag == RET_REF || retTag == RET_CONST_REF);
+}
 
 std::string FnSymbol::docsDirective() {
   if (fDocsTextOnly) {
@@ -2423,6 +2419,9 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   switch (this->retTag) {
   case RET_REF:
     *file << " ref";
+    break;
+  case RET_CONST_REF:
+    *file << " const ref";
     break;
   case RET_PARAM:
     *file << " param";

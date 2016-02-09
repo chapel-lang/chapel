@@ -4474,6 +4474,8 @@ GenRet CallExpr::codegen() {
     case PRIM_ARRAY_GET:
     case PRIM_ARRAY_GET_VALUE:
     case PRIM_ON_LOCALE_NUM:
+    case PRIM_GET_REAL:
+    case PRIM_GET_IMAG:
       // generated during generation of PRIM_MOVE
       break;
     case PRIM_WIDE_GET_LOCALE:
@@ -5811,6 +5813,115 @@ bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
 
 bool CallExpr::isPrimitive(const char* primitiveName) const {
   return primitive && !strcmp(primitive->name, primitiveName);
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
+ContextCallExpr::ContextCallExpr() :
+  Expr(E_ContextCallExpr),
+  options()
+{
+  gContextCallExprs.add(this);
+}
+
+ContextCallExpr*
+ContextCallExpr::copyInner(SymbolMap* map) {
+  ContextCallExpr* _this = 0;
+  _this = new ContextCallExpr();
+  for_alist(expr, options)
+    _this->options.insertAtTail(COPY_INT(expr));
+  return _this;
+}
+
+CallExpr* getDesignatedCall(const ContextCallExpr* a) {
+  return toCallExpr(a->options.tail);
+}
+
+void
+ContextCallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
+  INT_FATAL(this, "unexpected case in ContextCallExpr::replaceChild");
+}
+
+void
+ContextCallExpr::verify() {
+  Expr::verify();
+  if (astTag != E_ContextCallExpr)
+    INT_FATAL(this, "bad ContextCallExpr::astTag");
+  for_alist(expr, options) {
+    if (expr->parentExpr != this)
+      INT_FATAL(this, "Bad ContextCallExpr::options::parentExpr");
+    if (isContextCallExpr(expr))
+      INT_FATAL(this, "ContextCallExpr cannot contain a ContextCallExpr");
+    if (!isCallExpr(expr))
+      INT_FATAL(this, "ContextCallExpr must contain only CallExpr");
+  }
+  // At present, a ContextCallExpr is only used to handle
+  // ref/not-ref return intent functions. So there should always
+  // be exactly 2 options.
+  if (options.length != 2)
+    INT_FATAL(this, "ContextCallExpr with > 2 options");
+}
+
+void ContextCallExpr::accept(AstVisitor* visitor) {
+  for_alist(expr, options)
+    expr->accept(visitor);
+}
+
+Type* ContextCallExpr::typeInfo() {
+  CallExpr* mainCall = getDesignatedCall(this);
+  if (mainCall)
+    return mainCall->typeInfo();
+  return dtUnknown;
+}
+
+GenRet ContextCallExpr::codegen() {
+  GenRet ret;
+  INT_FATAL(this, "ContextCallExpr::codegen called");
+  return ret;
+}
+
+void ContextCallExpr::prettyPrint(std::ostream *o) {
+  *o << "(options";
+  for_alist(expr, options) {
+    *o << " ";
+    expr->prettyPrint(o);
+  }
+  *o << " )";
+}
+
+Expr* ContextCallExpr::getFirstChild() {
+  return options.head;
+}
+
+Expr* ContextCallExpr::getFirstExpr() {
+  return options.head->getFirstExpr();
+}
+
+
+void ContextCallExpr::setRefRValueOptions(CallExpr* refCall,
+                                          CallExpr* rvalueCall) {
+  // Storing the ref call after the value call allows a
+  // postorder traversal to skip the value call.
+  // The order is important also - the first is always the value.
+
+  options.insertAtTail(rvalueCall);
+  parent_insert_help(this, rvalueCall);
+  options.insertAtTail(refCall);
+  parent_insert_help(this, refCall);
+}
+
+CallExpr* ContextCallExpr::getRefCall() {
+  // This used to check for the call with RET_REF, but
+  // the return tag might change during resolution. So
+  // instead we rely on them always being in order.
+  return toCallExpr(options.tail);
+}
+
+CallExpr* ContextCallExpr::getRValueCall() {
+  return toCallExpr(options.head);
 }
 
 /************************************ | *************************************

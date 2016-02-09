@@ -857,7 +857,6 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 {
   forv_Vec(DefExpr, def, gDefExprs) {
     SET_LINENO(def);
-
     if (!fLocal &&
         isModuleSymbol(def->parentSymbol) &&
         def->parentSymbol != rootModule &&

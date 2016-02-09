@@ -654,6 +654,8 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   Symbol*   useLhs   = toSymExpr(lhs)->var;
   Symbol*   refVar   = newTemp("ret_to_arg_ref_tmp_", useLhs->type->refType);
 
+  // Make sure that we created a temp with a type
+  INT_ASSERT(useLhs->type->refType);
 
   // Determine if
   //   a) current call is not a PRIMOP

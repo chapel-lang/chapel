@@ -1,1 +1,0 @@
-defaultParamValue.chpl:17: error: type mismatch in assignment from U(1,2,3,4) to U(1,2,3,4)

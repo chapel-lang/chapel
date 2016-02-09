@@ -62,6 +62,7 @@
   macro(UnresolvedSymExpr) sep                     \
   macro(DefExpr) sep                               \
   macro(CallExpr) sep                              \
+  macro(ContextCallExpr) sep                       \
   macro(NamedExpr) sep                             \
                                                    \
   macro(UseStmt) sep                               \
@@ -131,6 +132,7 @@ enum AstTag {
   E_UnresolvedSymExpr,
   E_DefExpr,
   E_CallExpr,
+  E_ContextCallExpr,
   E_NamedExpr,
   E_UseStmt,
   E_BlockStmt,
@@ -302,6 +304,10 @@ static inline bool isType(const BaseAST* a)
 static inline bool isLcnSymbol(const BaseAST* a)
 { return a && (a->astTag == E_ArgSymbol || a->astTag == E_VarSymbol); }
 
+static inline bool isCallExpr(const BaseAST* a)
+{ return a && (a->astTag == E_CallExpr || a->astTag == E_ContextCallExpr); }
+
+
 #define def_is_ast(Type)                          \
   static inline bool is##Type(const BaseAST* a)   \
   {                                               \
@@ -311,7 +317,7 @@ static inline bool isLcnSymbol(const BaseAST* a)
 def_is_ast(SymExpr)
 def_is_ast(UnresolvedSymExpr)
 def_is_ast(DefExpr)
-def_is_ast(CallExpr)
+def_is_ast(ContextCallExpr)
 def_is_ast(NamedExpr)
 def_is_ast(UseStmt)
 def_is_ast(BlockStmt)
@@ -351,7 +357,7 @@ bool isCForLoop(const BaseAST* a);
 def_to_ast(SymExpr)
 def_to_ast(UnresolvedSymExpr)
 def_to_ast(DefExpr)
-def_to_ast(CallExpr)
+def_to_ast(ContextCallExpr)
 def_to_ast(NamedExpr)
 def_to_ast(UseStmt)
 def_to_ast(BlockStmt)
@@ -392,6 +398,25 @@ static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a)
   return isLcnSymbol(a) ? (const LcnSymbol*) a : NULL;
 }
 
+CallExpr* getDesignatedCall(const ContextCallExpr* a);
+
+static inline CallExpr* toCallExpr(BaseAST* a)
+{
+  if (!a) return NULL;
+  if (a->astTag == E_CallExpr) return (CallExpr*) a;
+  if (a->astTag == E_ContextCallExpr) return getDesignatedCall((ContextCallExpr*)a);
+  return NULL;
+}
+
+static inline const CallExpr* toConstCallExpr(const BaseAST* a)
+{
+  if (!a) return NULL;
+  if (a->astTag == E_CallExpr) return (const CallExpr*) a;
+  if (a->astTag == E_ContextCallExpr) return getDesignatedCall((const ContextCallExpr*)a);
+  return NULL;
+}
+
+
 //
 // traversal macros
 //
@@ -416,6 +441,9 @@ static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a)
   case E_CallExpr:                                                      \
     AST_CALL_CHILD(_a, CallExpr, baseExpr, call, __VA_ARGS__);          \
     AST_CALL_LIST(_a, CallExpr, argList, call, __VA_ARGS__);            \
+    break;                                                              \
+  case E_ContextCallExpr:                                               \
+    AST_CALL_LIST(_a, ContextCallExpr, options, call, __VA_ARGS__);     \
     break;                                                              \
   case E_NamedExpr:                                                     \
     AST_CALL_CHILD(_a, NamedExpr, actual, call, __VA_ARGS__);           \
@@ -490,7 +518,6 @@ static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a)
     break;                                                              \
   case E_FnSymbol:                                                      \
     AST_CALL_LIST(_a, FnSymbol, formals, call, __VA_ARGS__);            \
-    AST_CALL_CHILD(_a, FnSymbol, setter, call, __VA_ARGS__);            \
     AST_CALL_CHILD(_a, FnSymbol, body, call, __VA_ARGS__);              \
     AST_CALL_CHILD(_a, FnSymbol, where, call, __VA_ARGS__);             \
     AST_CALL_CHILD(_a, FnSymbol, retExprType, call, __VA_ARGS__);       \
