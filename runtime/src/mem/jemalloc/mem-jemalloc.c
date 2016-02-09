@@ -51,7 +51,7 @@
 static void*  heap_base = NULL;
 static size_t heap_size = 0;
 static size_t cur_heap_offset = 0;
-static pthread_mutex_t chunk_alloc_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t chunk_alloc_lock;
 
 // *** Chunk hook replacements *** //
 // See http://www.canonware.com/download/jemalloc/jemalloc-latest/doc/jemalloc.html#arena.i.chunk_hooks
@@ -253,6 +253,9 @@ void chpl_mem_layerInit(void) {
     heap_base = heap_base_;
     heap_size = heap_size_;
     cur_heap_offset = 0;
+    if (pthread_mutex_init(&chunk_alloc_lock, NULL) != 0) {
+      chpl_internal_error("cannot init chunk_alloc lock");
+    }
     initializeSharedHeap();
   } else {
     void* p;
@@ -265,5 +268,8 @@ void chpl_mem_layerInit(void) {
 
 
 void chpl_mem_layerExit(void) {
-  pthread_mutex_destroy(&chunk_alloc_lock);
+  if (heap_base != NULL) {
+    // ignore errors, we're exiting anyways
+    pthread_mutex_destroy(&chunk_alloc_lock);
+  }
 }
