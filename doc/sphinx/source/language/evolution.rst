@@ -8,6 +8,60 @@ capture significant language changes that have the possibility of breaking
 existing user codes or code samples from old presentations or papers that
 predated the changes.
 
+version 1.13, April 2016
+------------------------
+
+ref return intent
+*****************
+
+Previous versions of Chapel included an implicit `setter` param of
+type `bool` for `ref` return intent functions. In addition, the compiler
+created a getter and setter version of each ref return intent function.
+The getter version would return an rvalue, and the setter version would
+return an lvalue by ref. For example:
+
+.. code-block:: chapel
+
+  var x = 1;
+
+  proc refToX() ref {
+    if setter then
+      return x; // setter version
+    else
+      return 0; // getter version
+  }
+
+  refToX() = 3;       // uses the setter version
+  var tmp = refToX(); // uses the getter version
+  writeln(tmp);       // prints 3
+
+This functionality has changed with version 1.13. It is still possible to
+write a getter and a setter, but these must be written as pair of
+related functions:
+
+.. code-block:: chapel
+
+  var x = 1;
+
+  // setter version
+  proc refToX() ref {
+    return x;
+  }
+
+  // getter version
+  proc refToX() {
+    return 0;
+  }
+
+  refToX() = 3;       // uses the setter version
+  var tmp = refToX(); // uses the getter version
+  writeln(tmp);       // prints 3
+
+
+In some cases, when migrating code over to the new functionatity,
+it is useful to put the old ref return intent function into a
+helper function with an explicit param `setter` argument, and then to
+call that function from the getter or setter.
 
 version 1.11, April 2015
 ------------------------
