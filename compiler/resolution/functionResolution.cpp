@@ -1985,10 +1985,6 @@ filterGenericCandidate(Vec<ResolutionCandidate*>& candidates,
                        ResolutionCandidate* currCandidate,
                        CallInfo& info) {
 
-  if( info.call->id == breakOnResolveID ) {
-    gdbShouldBreakHere();
-  }
-
   currCandidate->fn = expandVarArgs(currCandidate->fn, info.actuals.n);
 
   if (!currCandidate->fn) return;
