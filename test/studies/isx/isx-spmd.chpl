@@ -57,7 +57,15 @@ config type keyType = int(32);
 config const debug = false,
              testrun = debug,
              quiet = false,
-             printConfig = !quiet,
+             printConfig = !quiet;
+
+//
+// The following options control timing related information.
+// - whether or not to use sub-timers to time each program phase
+// - whether or not to print out (summary) timings
+// - whether or not to print out full timing tables (when printing timings)
+//
+config const useSubTimers = false,
              printTimings = !quiet,
              printTimingTables = false;
 
@@ -151,7 +159,8 @@ const OnePerLocale = LocaleSpace dmapped Block(LocaleSpace);
 
 var allBucketKeys: [OnePerLocale] [0..#recvBuffSize] int;
 var recvOffset: [OnePerLocale] atomic int;
-var totalTime: [OnePerLocale] [1..numTrials] real;
+var totalTime, inputTime, bucketCountTime, bucketOffsetTime, bucketizeTime,
+    exchangeKeysTime, countKeysTime: [OnePerLocale] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
 //
@@ -159,6 +168,10 @@ var verifyKeyCount: atomic int;
 //
 var barrier = new Barrier(numLocales);
 
+
+//
+// TODO: introduce a main()
+//
 coforall loc in Locales do
   on loc {
     //
@@ -184,28 +197,9 @@ if debug {
     writeln("Bucket ", i, " (owned by ", b.locale.id, "): ", b);
 }
 
-if printTimings {
-  if printTimingTables {
-    writeln("Locales / Trials");
-    for (timings, i) in zip(totalTime, 0..) {
-      write(i, ": ");
-      for t in timings do
-        write(t, "\t");
-      writeln();
-    }
-  }
-  var minMinTime: real = max(real);
-  var maxMinTime, totMinTime: real;
-  forall timings in totalTime with (/*min reduce minMinTime,
-                                      max reduce maxMinTime,*/
-                                    + reduce totMinTime) {
-    const minTime = min reduce timings;
-    totMinTime += minTime;
-  }
-  var avgTime = totMinTime / numLocales;
-  writeln("averages across locales of min across trials:");
-  writeln("total = ", avgTime);
-}
+if printTimings then
+  printTimingData("locales");
+
 
 proc bucketSort(trial: int, time = false, verify = false) {
   var myKeys = makeInput();
@@ -371,7 +365,7 @@ proc verifyResults(myBucketSize, myLocalKeyCounts) {
     halt("total key count mismatch: " + verifyKeyCount.read() + " != " + totalKeys);
 
   if (!quiet && here.id == 0) then
-    writeln("Verification successful!");
+    writeln("\nVerification successful!");
 }
 
 
@@ -445,4 +439,51 @@ proc writelnPotentialPowerOfTwo(desc, n) {
   if 2**lgn == n then
     write(" (2**", lgn, ")");
   writeln();
+}
+
+
+//
+// Print out timings for the run, if requested
+//
+proc printTimingData(units) {
+  if printTimingTables {
+    printTimeTable(totalTime, units, "total");
+  }
+
+  writeln();
+  writeln("averages across ", units, " of min across trials:");
+  printTimingStats(totalTime, "total");
+}
+
+//
+// Print out one timer's table of locales/buckets x trials data
+//
+proc printTimeTable(timeTable, units, timerName) {
+  //
+  // print entire table, if user requested it
+  //
+  writeln();
+  writeln(timerName, " time (", units, " / trials)");
+  for (timings, i) in zip(timeTable, 0..) {
+    write(i, ": ");
+    for t in timings do
+      write(t, "\t");
+    writeln();
+  }
+}
+
+//
+// print timing statistics (currently only avg across locales/buckets
+// of min across trials)
+//
+proc printTimingStats(timeTable, timerName) {
+  //  var minMinTime: real = max(real);
+  var /* maxMinTime, */ totMinTime: real;
+  forall timings in timeTable with (/*min reduce minMinTime,
+                                      max reduce maxMinTime,*/
+                                    + reduce totMinTime) {
+    totMinTime += min reduce timings;
+  }
+  var avgTime = totMinTime / numLocales;
+  writeln(timerName, " = ", avgTime);
 }
