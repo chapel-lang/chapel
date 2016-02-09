@@ -734,13 +734,6 @@ intent procedure is used. Otherwise, the other candidate is used.  This
 behavior can be useful for adjusting the behavior depending on the
 calling context.
 
-\begin{craychapel}
-Previous versions of Chapel included an implicit \chpl{setter} param of
-type \chpl{bool} for \chpl{ref} return intent functions. The old behavior
-can be recreated by making both ref-pair functions call another function
-and explicitly pass the \chpl{setter} value, as in the the example below.
-\end{craychapel}
-
 \begin{chapelexample}{ref-return-intent.chpl}
 The following code defines a procedure that can be interpreted as a
 simple two-element array where the elements are actually module
