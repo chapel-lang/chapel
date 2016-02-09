@@ -202,11 +202,12 @@ if printTimings then
 
 
 proc bucketSort(trial: int, time = false, verify = false) {
-  var myKeys = makeInput();
   var totalTimer: Timer;
 
   if time then
     totalTimer.start();
+
+  var myKeys = makeInput();
 
   var bucketSizes = countLocalBucketSizes(myKeys);
   if debug then writeln(here.id, ": bucketSizes = ", bucketSizes);
