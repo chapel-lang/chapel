@@ -60,8 +60,8 @@ static pthread_mutex_t chunk_alloc_lock;
 // mmap/sbrk.) Grab memory out of the shared heap and give it to jemalloc.
 static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero, bool *commit, unsigned arena_ind) {
 
-  void* p = NULL;
-  size_t p_offset;
+  void* cur_chunk_base = NULL;
+  size_t cur_heap_size;
 
   // this function can be called concurrently and it looks like jemalloc
   // doesn't call it inside a lock, so we need to protect it ourselves
@@ -72,40 +72,40 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
 
   // compute our current pointer into the shared heap based on the current
   // offset aligned to "alignment"
-  p = (void*)((((uintptr_t) heap_base + cur_heap_offset + alignment - 1) / alignment) * alignment);
+  cur_chunk_base = (void*)((((uintptr_t) heap_base + cur_heap_offset + alignment - 1) / alignment) * alignment);
 
   // jemalloc 4.0.4 man: "If chunk is not NULL, the returned pointer must be
   // chunk on success or NULL on error"
-  if (chunk && chunk != p) {
+  if (chunk && chunk != cur_chunk_base) {
     pthread_mutex_unlock(&chunk_alloc_lock);
     return NULL;
   }
 
-  p_offset = (uintptr_t)p - (uintptr_t)(heap_base);
+  cur_heap_size = (uintptr_t)cur_chunk_base - (uintptr_t)heap_base;
 
   size = ((size + alignment - 1) / alignment) * alignment;
 
-  // If we're out of space on the heap, return NULL
-  if (size > heap_size - p_offset) {
+  // If there's not enough space on the heap for this allocation, return NULL
+  if (size > heap_size - cur_heap_size) {
     pthread_mutex_unlock(&chunk_alloc_lock);
     return NULL;
   }
 
   // Update the current pointer, now that we've past any early returns.
-  cur_heap_offset = p_offset + size;
+  cur_heap_offset = cur_heap_size + size;
 
   // now that cur_heap_offset is updated, we can unlock
   pthread_mutex_unlock(&chunk_alloc_lock);
 
   // jemalloc 4.0.4 man: "Zeroing is mandatory if *zero is true upon entry."
   if (*zero) {
-     memset(p, 0, size);
+     memset(cur_chunk_base, 0, size);
   }
 
   // Commit is not relevant for linux/darwin, but jemalloc wants us to set it
   *commit = true;
 
-  return p;
+  return cur_chunk_base;
 }
 
 //
