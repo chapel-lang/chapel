@@ -5,5 +5,10 @@ maxKeyVal =
 bucketWidth =
 numTrials =
 numLocales =
-Verification
 total =
+bucket count =
+bucket offset =
+bucketize =
+exchange =
+count keys =
+verify:Verification successful!

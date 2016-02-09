@@ -202,15 +202,30 @@ if printTimings then
 
 
 proc bucketSort(trial: int, time = false, verify = false) {
+  const subtime = time && useSubTimers;
   var totalTimer: Timer;
+  var subTimer: Timer;
 
-  if time then
+  if time {
     totalTimer.start();
+    if useSubTimers then
+      subTimer.start();
+  }
 
   var myKeys = makeInput();
 
+  if subtime {
+    inputTime.localAccess[here.id][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
+
   var bucketSizes = countLocalBucketSizes(myKeys);
   if debug then writeln(here.id, ": bucketSizes = ", bucketSizes);
+
+  if subtime {
+    bucketCountTime.localAccess[here.id][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
 
   //
   // TODO: Should we be able to support scans on arrays of atomics without a
@@ -223,13 +238,29 @@ proc bucketSort(trial: int, time = false, verify = false) {
   sendOffsets -= bucketSizes.read();
   if debug then writeln(here.id, ": sendOffsets = ", sendOffsets);
 
+  if subtime {
+    bucketOffsetTime.localAccess[here.id][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
+
   //
   // TODO: should we pass our globals into/out of these routines?
   //
   var myBucketedKeys = bucketizeLocalKeys(myKeys, sendOffsets);
-  exchangeKeys(sendOffsets, bucketSizes, myBucketedKeys);
 
+  if subtime {
+    bucketizeTime.localAccess[here.id][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
+  
+  exchangeKeys(sendOffsets, bucketSizes, myBucketedKeys);
   barrier.barrier();
+
+  if subtime {
+    exchangeKeysTime.localAccess[here.id][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
+
 
   //
   // TODO: discussed with Jake a version in which the histogramming
@@ -245,7 +276,8 @@ proc bucketSort(trial: int, time = false, verify = false) {
   var myLocalKeyCounts = countLocalKeys(keysInMyBucket);
 
   if time {
-    totalTimer.stop();
+    if subtime then
+      countKeysTime.localAccess[here.id][trial] = subTimer.elapsed();
     totalTime.localAccess[here.id][trial] = totalTimer.elapsed();
   }    
 
@@ -448,11 +480,27 @@ proc writelnPotentialPowerOfTwo(desc, n) {
 //
 proc printTimingData(units) {
   if printTimingTables {
+    if useSubTimers {
+      printTimeTable(inputTime, units, "input");
+      printTimeTable(bucketCountTime, units, "bucket count");
+      printTimeTable(bucketOffsetTime, units, "bucket offset");
+      printTimeTable(bucketizeTime, units, "bucketize");
+      printTimeTable(exchangeKeysTime, units, "exchange");
+      printTimeTable(countKeysTime, units, "count keys");
+    }
     printTimeTable(totalTime, units, "total");
   }
 
   writeln();
   writeln("averages across ", units, " of min across trials:");
+  if useSubTimers {
+    printTimingStats(inputTime, "input");
+    printTimingStats(bucketCountTime, "bucket count");
+    printTimingStats(bucketOffsetTime, "bucket offset");
+    printTimingStats(bucketizeTime, "bucketize");
+    printTimingStats(exchangeKeysTime, "exchange");
+    printTimingStats(countKeysTime, "count keys");
+  }
   printTimingStats(totalTime, "total");
 }
 
