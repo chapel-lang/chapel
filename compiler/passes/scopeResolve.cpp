@@ -1011,7 +1011,7 @@ static void build_constructor(AggregateType* ct) {
 
           DefExpr* superArg = formal->defPoint->copy();
 
-          // Omit the arguments shadowed by this class's fields
+          // Omit the arguments shadowed by this class's fields.
           if (fieldNamesSet.set_in(superArg->sym->name))
             continue;
 
