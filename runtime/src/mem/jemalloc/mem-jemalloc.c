@@ -19,6 +19,7 @@
 
 #include "chplrt.h"
 
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -50,6 +51,7 @@
 static void*  heap_base = NULL;
 static size_t heap_size = 0;
 static size_t cur_heap_offset = 0;
+static pthread_mutex_t chunk_alloc_lock = PTHREAD_MUTEX_INITIALIZER;
 
 // *** Chunk hook replacements *** //
 // See http://www.canonware.com/download/jemalloc/jemalloc-latest/doc/jemalloc.html#arena.i.chunk_hooks
@@ -61,6 +63,10 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
   void* p = NULL;
   size_t p_offset;
 
+  // this function can be called concurrently and it looks like jemalloc
+  // doesn't call it inside a lock, so we need to protect it ourselves
+  pthread_mutex_lock(&chunk_alloc_lock);
+
   // TODO cleanup some of the pointer arithmetic. The current code was
   // originally copied out of the tcmalloc shim, and could use a little cleanup
 
@@ -71,6 +77,7 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
   // jemalloc 4.0.4 man: "If chunk is not NULL, the returned pointer must be
   // chunk on success or NULL on error"
   if (chunk && chunk != p) {
+    pthread_mutex_unlock(&chunk_alloc_lock);
     return NULL;
   }
 
@@ -80,11 +87,15 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
 
   // If we're out of space on the heap, return NULL
   if (size > heap_size - p_offset) {
+    pthread_mutex_unlock(&chunk_alloc_lock);
     return NULL;
   }
 
   // Update the current pointer, now that we've past any early returns.
   cur_heap_offset = p_offset + size;
+
+  // now that cur_heap_offset is updated, we can unlock
+  pthread_mutex_unlock(&chunk_alloc_lock);
 
   // jemalloc 4.0.4 man: "Zeroing is mandatory if *zero is true upon entry."
   if (*zero) {
@@ -253,4 +264,6 @@ void chpl_mem_layerInit(void) {
 }
 
 
-void chpl_mem_layerExit(void) { }
+void chpl_mem_layerExit(void) {
+  pthread_mutex_destroy(&chunk_alloc_lock);
+}
