@@ -1547,14 +1547,6 @@ getInstantiationType(Type* actualType, Type* formalType) {
       formalType->symbol->hasFlag(FLAG_GENERIC)) {
     Type* concrete = getConcreteParentForGenericFormal(ret, formalType);
     if (concrete) {
-      /*printf("actual:\n");
-      print_view(actualType);
-      printf("formal:\n");
-      print_view(formalType);
-      printf("concrete:\n");
-      print_view(concrete);*/
-      //gdbShouldBreakHere();
-      //concrete = getConcreteParentForGenericFormal(ret, formalType); //DEBUG
       ret = concrete;
     }
   }
@@ -1898,10 +1890,6 @@ expandVarArgs(FnSymbol* origFn, int numActuals) {
 static void
 resolve_type_constructor(FnSymbol* fn, CallInfo& info) {
     SET_LINENO(fn);
-
-    if (fn->id == 827077)
-      gdbShouldBreakHere();
-
     CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
     for_formals(formal, fn) {
       if (strcmp(formal->name, "meme")) {

@@ -537,7 +537,7 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
         oldParentTy = parentTy;
         newParentTy = parentTyCall->isResolved()->retType;
         parentTyCall->remove();
-        
+
         // Now adjust the super field's type.
 
         DefExpr* superDef = NULL;
@@ -554,12 +554,7 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
         }
 
         if (superDef) {
-          /*superDef->replace(
-              new DefExpr(new VarSymbol("super", newParentTy),
-                          superDef->init,
-                          NULL ));*/
           superDef->sym->type = newParentTy;
-          // But need to leave flags!
           INT_ASSERT(newCt->getField("super")->typeInfo() == newParentTy);
         }
       }
@@ -626,10 +621,6 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
  */
 FnSymbol*
 instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
-
-  if (call && call->id == 827233 )
-    gdbShouldBreakHere();
-
   form_Map(SymbolMapElem, e, subs) {
     if (TypeSymbol* ts = toTypeSymbol(e->value)) {
       if (ts->type->symbol->hasFlag(FLAG_GENERIC))
@@ -683,9 +674,6 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   //
   Type* newType = NULL;
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-    if (fn->retType && fn->retType->id == 150380)
-      gdbShouldBreakHere();
-
     newType = instantiateTypeForTypeConstructor(fn, subs, call, fn->retType);
   }
 
