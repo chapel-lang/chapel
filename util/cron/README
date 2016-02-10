@@ -9,7 +9,6 @@ TODO: list the cray tests here... (thomasvandoren, 2014-07-01)
 Discontinued testing (that we might like to revive)
 ===================================================
 - opts   (start_opt_test, nightly-opts-all.cron, nightly-opts-examples.cron)
-- tcmalloc (comm none, gasnet multilocale-examples, preserved as nightly.tcmalloc)
 
 Discontinued testing (that we don't care about anymore)
 =======================================================
