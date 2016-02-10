@@ -161,7 +161,8 @@ const BucketSpace = LocBucketSpace dmapped BucketDist;
 
 var allBucketKeys: [BucketSpace] [0..#recvBuffSize] int;
 var recvOffset: [BucketSpace] atomic int;
-var totalTime: [BucketSpace] [1..numTrials] real;
+var totalTime, inputTime, bucketCountTime, bucketOffsetTime, bucketizeTime,
+    exchangeKeysTime, countKeysTime: [BucketSpace] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
 //
@@ -180,7 +181,7 @@ coforall bucketID in BucketSpace do
     //
     // Execution is SPMD-style across buckets here
     //
-    // TODO: remove this
+    // TODO: remove this once we feel confident it's working
     //
     if allBucketKeys[bucketID][0].locale != here then
       warning("Need to distribute allBucketKeys");
@@ -196,7 +197,8 @@ coforall bucketID in BucketSpace do
       // to let them refer to bucketID non-locally?  Or is that
       // crazy?
       //
-      bucketSort(bucketID, i, time=(i>0), verify=(i==numTrials));
+      bucketSort(bucketID, trial=i, time=printTimings && (i>0),
+                 verify=(i==numTrials));
   }
 
 if debug {
@@ -210,15 +212,30 @@ if printTimings then
 
 
 proc bucketSort(bucketID, trial: int, time = false, verify = false) {
+  const subtime = time && useSubTimers;
   var totalTimer: Timer;
+  var subTimer: Timer;
 
-  if time then
+  if time {
     totalTimer.start();
+    if useSubTimers then
+      subTimer.start();
+  }
 
   var myKeys = makeInput(bucketID);
 
+  if subtime {
+    inputTime.localAccess[here.id][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
+
   var bucketSizes = countLocalBucketSizes(myKeys);
   if debug then writeln(bucketID, ": bucketSizes = ", bucketSizes);
+
+  if subtime {
+    bucketCountTime.localAccess[here.id][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
 
   //
   // TODO: Should we be able to support scans on arrays of atomics without a
@@ -231,13 +248,28 @@ proc bucketSort(bucketID, trial: int, time = false, verify = false) {
   sendOffsets -= bucketSizes.read();
   if debug then writeln(bucketID, ": sendOffsets = ", sendOffsets);
 
+  if subtime {
+    bucketOffsetTime.localAccess[here.id][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
+
   //
   // TODO: should we pass our globals into/out of these routines?
   //
   var myBucketedKeys = bucketizeLocalKeys(bucketID, myKeys, sendOffsets);
-  exchangeKeys(bucketID, sendOffsets, bucketSizes, myBucketedKeys);
 
+  if subtime {
+    bucketizeTime.localAccess[here.id][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
+  
+  exchangeKeys(bucketID, sendOffsets, bucketSizes, myBucketedKeys);
   barrier.barrier();
+
+  if subtime {
+    exchangeKeysTime.localAccess[here.id][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
 
   //
   // TODO: discussed with Jake a version in which the histogramming
@@ -253,8 +285,9 @@ proc bucketSort(bucketID, trial: int, time = false, verify = false) {
   var myLocalKeyCounts = countLocalKeys(bucketID, keysInMyBucket);
 
   if time {
-    totalTimer.stop();
-    totalTime.localAccess[bucketID][trial] = totalTimer.elapsed();
+    if subtime then
+      countKeysTime.localAccess[here.id][trial] = subTimer.elapsed();
+    totalTime.localAccess[here.id][trial] = totalTimer.elapsed();
   }    
 
   if (verify) then
@@ -455,11 +488,27 @@ proc writelnPotentialPowerOfTwo(desc, n) {
 //
 proc printTimingData(units) {
   if printTimingTables {
+    if useSubTimers {
+      printTimeTable(inputTime, units, "input");
+      printTimeTable(bucketCountTime, units, "bucket count");
+      printTimeTable(bucketOffsetTime, units, "bucket offset");
+      printTimeTable(bucketizeTime, units, "bucketize");
+      printTimeTable(exchangeKeysTime, units, "exchange");
+      printTimeTable(countKeysTime, units, "count keys");
+    }
     printTimeTable(totalTime, units, "total");
   }
 
   writeln();
   writeln("averages across ", units, " of min across trials:");
+  if useSubTimers {
+    printTimingStats(inputTime, "input");
+    printTimingStats(bucketCountTime, "bucket count");
+    printTimingStats(bucketOffsetTime, "bucket offset");
+    printTimingStats(bucketizeTime, "bucketize");
+    printTimingStats(exchangeKeysTime, "exchange");
+    printTimingStats(countKeysTime, "count keys");
+  }
   printTimingStats(totalTime, "total");
 }
 

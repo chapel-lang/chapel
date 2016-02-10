@@ -5,5 +5,10 @@ maxKeyVal =
 bucketWidth =
 numTrials =
 numBuckets =
-Verification
 total =
+bucket count =
+bucket offset =
+bucketize =
+exchange =
+count keys =
+verify:Verification successful!

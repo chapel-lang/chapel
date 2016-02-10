@@ -168,14 +168,16 @@ var verifyKeyCount: atomic int;
 //
 var barrier = new Barrier(numLocales);
 
-
 //
 // TODO: introduce a main()
 //
+
+
+
 coforall loc in Locales do
   on loc {
     //
-    // SPMD-style across locales
+    // Execution is SPMD-style across locales here
     //
     // TODO: remove this once we feel confident it's working
     //
@@ -188,7 +190,13 @@ coforall loc in Locales do
     // the final timed run.
     //
     for i in 1-numBurnInRuns..numTrials do
+      //
+      // TODO: Could make all other procedures nested in this loop
+      // to let them refer to bucketID non-locally?  Or is that
+      // crazy?
+      //
       bucketSort(trial=i, time=printTimings && (i>0), verify=(i==numTrials));
+
   }
 
 if debug {
@@ -260,7 +268,6 @@ proc bucketSort(trial: int, time = false, verify = false) {
     exchangeKeysTime.localAccess[here.id][trial] = subTimer.elapsed();
     subTimer.clear();
   }
-
 
   //
   // TODO: discussed with Jake a version in which the histogramming
@@ -473,7 +480,6 @@ proc writelnPotentialPowerOfTwo(desc, n) {
     write(" (2**", lgn, ")");
   writeln();
 }
-
 
 //
 // Print out timings for the run, if requested
