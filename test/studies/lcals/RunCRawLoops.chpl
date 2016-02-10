@@ -129,11 +129,49 @@ module RunCRawLoops {
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.ADI {
-            halt("multidim cases not implemented ", iloop:LoopKernelID);
             loopInit(iloop, stat);
             var du1 => loop_data.RealArray_1D[0],
                 du2 => loop_data.RealArray_1D[1],
                 du3 => loop_data.RealArray_1D[2];
+
+            var u1 = loop_data.RealArray_3D_2xNx4[0],
+                u2 = loop_data.RealArray_3D_2xNx4[1],
+                u3 = loop_data.RealArray_3D_2xNx4[2];
+
+            const sig = loop_data.RealArray_scalars[0],
+                  a11 = loop_data.RealArray_scalars[1],
+                  a12 = loop_data.RealArray_scalars[2],
+                  a13 = loop_data.RealArray_scalars[3],
+                  a21 = loop_data.RealArray_scalars[4],
+                  a22 = loop_data.RealArray_scalars[5],
+                  a23 = loop_data.RealArray_scalars[6],
+                  a31 = loop_data.RealArray_scalars[7],
+                  a32 = loop_data.RealArray_scalars[8],
+                  a33 = loop_data.RealArray_scalars[9];
+
+            const nl1 = 0, nl2 = 1;
+
+            ltimer.start();
+            for isamp in 0..#num_samples {
+              for kx in 1..3-1 {
+                for ky in 1..len-1 {
+                  du1[ky] = u1[nl1, ky+1, kx] - u1[nl1, ky-1, kx];
+                  du2[ky] = u2[nl1, ky+1, kx] - u2[nl1, ky-1, kx];
+                  du3[ky] = u3[nl1, ky+1, kx] - u3[nl1, ky-1, kx];
+
+                  u1[nl2, ky, kx] =
+                    u1[nl1, ky, kx] + a11*du1[ky] + a12*du2[ky] + a13*du3[ky] +
+                    sig*(u1[nl1, ky, kx+1] - 2.0*u1[nl1, ky, kx] + u1[nl1, ky, kx-1]);
+                  u2[nl2, ky, kx] =
+                     u2[nl1, ky, kx] + a21*du1[ky] + a22*du2[ky] + a23*du3[ky] +
+                     sig*(u2[nl1, ky, kx+1]-2.0*u2[nl1, ky, kx]+u2[nl1, ky, kx-1]);
+                  u3[nl2, ky, kx] =
+                     u3[nl1, ky, kx] + a31*du1[ky] + a32*du2[ky] + a33*du3[ky] +
+                     sig*(u3[nl1, ky, kx+1]-2.0*u3[nl1, ky, kx]+u3[nl1, ky, kx-1]);
+                }
+              }
+            }
+            ltimer.stop();
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.INT_PREDICT {

@@ -322,8 +322,54 @@ module LCALSDataTypes {
     var RealArray_2D_Nx25: [0..#s_num_2D_Nx25_Real_arrays][0..#aligned_chunksize, 0..#25] real;
     var RealArray_2D_7xN: [0..#s_num_2D_7xN_Real_arrays][0..#7, 0..#aligned_chunksize] real;
     var RealArray_2D_64x64: [0..#s_num_2D_64x64_Real_arrays][0..#64, 0..#64] real;
-    var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays][0..#2, 0..#aligned_chunksize, 0..#4] real;
+
+    //var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays][0..#2, 0..#aligned_chunksize, 0..#4] real;
+    var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays] LCALS_Overlapping_Array_3D(real) = [i in 0..s_num_3D_2xNx4_Real_arrays] new LCALS_Overlapping_Array_3D(real, 2*4*aligned_chunksize); // 2 X loop_length X 4 array size
 
     var RealArray_scalars: [0..#s_num_Real_scalars] real;
+    proc ~LoopData() {
+      for arr in RealArray_3D_2xNx4 do delete arr;
+    }
   }
+
+  /* Mimic the strange, self-overlapping 3D array in the LCALS
+     benchmark reference.
+
+     The 3D array there is actually a 2D array of pointers into the
+     array "data", with each pointer representing 4 elements.
+     A[i,j] = &data[i*j*4]
+
+     This means that many of these 4 element pointers will overlap,
+     for example i==0 or j==0, will always point to the begining of
+     "data".
+
+     data:
+      01234567890123456
+     [A   B   C   D   E]
+
+     2D_Array:
+      01234
+   0 [AAAAA]
+   1 [ABCDE]
+
+     The letter in "2D_Array" is the letter that element points to within
+     "data". In the full 3 dimensions, A[i,j,k] points at data[i*j*4 + k].
+   */
+  class LCALS_Overlapping_Array_3D {
+    type t;
+    var len: int;
+    var data: [0..#len] t;
+    proc this(i: int, j: int, k: int) ref {
+      return data[i*j*4 + k];
+    }
+    // iterate through the data array instead of following the strange
+    // access pattern. This is just used to initialize data and compute
+    // checksums.
+    iter these() ref {
+      for i in 0..#len {
+        yield data[i];
+      }
+    }
+  }
+
 }

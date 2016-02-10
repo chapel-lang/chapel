@@ -25,6 +25,13 @@ module LCALSLoops {
     ia = 0;
   }
 
+  proc initData(ra: LCALS_Overlapping_Array_3D(real), id: int) {
+    const factor: Real_type = if id % 2 != 0 then 0.1 else 0.2;
+    for (r,j) in zip(ra, 0..) {
+      r = factor*(j + 1.1)/(j + 1.12345);
+    }
+  }
+
   proc initData(ra: [] real, id: int) {
     const factor: Real_type = if id % 2 != 0 then 0.1 else 0.2;
     for (r,j) in zip(ra, 0..) {
@@ -421,6 +428,15 @@ module LCALSLoops {
     }
   }
 
+  proc updateChksum(stat: LoopStat, ilength: LoopLength, ra: LCALS_Overlapping_Array_3D(real), scale_factor: real = 1.0) {
+    var len = ra.len;
+    var tchk = stat.loop_chksum[ilength];
+    for (j, dat) in zip(0..#len, ra) {
+      tchk += (j+1)*dat*scale_factor;
+    }
+    stat.loop_chksum[ilength] = tchk;
+  }
+
   proc updateChksum(stat: LoopStat, ilength: LoopLength, ra: [] real, scale_factor: real = 1.0) {
     var data => ra;
     var len = ra.numElements;
@@ -434,7 +450,6 @@ module LCALSLoops {
   proc updateChksum(stat: LoopStat, ilength: LoopLength, val: real) {
     stat.loop_chksum[ilength] += val;
   }
-  var cplxCnt = 0;
   proc updateChksum(stat: LoopStat, ilength: LoopLength, ca: [] complex, scale_factor: real = 1.0) {
     var data => ca;
     var len = ca.numElements;
