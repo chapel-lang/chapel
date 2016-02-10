@@ -480,6 +480,19 @@ void UseStmt::validateList() {
 
     createRelatedNames(sym);
   }
+
+  for (std::map<const char*, const char*>::iterator it = renamed.begin();
+       it != renamed.end(); ++it) {
+    Symbol* sym = lookup(module->block, it->second);
+
+    if (!sym) {
+      USR_FATAL_CONT(this, "Bad identifier in rename, no known '%s'", it->second);
+    } else if (!sym->isVisible(this)) {
+      USR_FATAL_CONT(this, "Bad identifier in rename, '%s' is private", it->second);
+    }
+
+    createRelatedNames(sym);
+  }
 }
 
 void UseStmt::createRelatedNames(Symbol* maybeType) {
@@ -2026,12 +2039,13 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
 
         forv_Vec(UseStmt, use, *moduleUses) {
           if (use) {
+            const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
             if (!use->skipSymbolSearch(name)) {
               SymExpr* se = toSymExpr(use->mod);
               INT_ASSERT(se);
               ModuleSymbol* mod = toModuleSymbol(se->var);
               INT_ASSERT(mod);
-              if (Symbol* sym = inSymbolTable(mod->block, name)) {
+              if (Symbol* sym = inSymbolTable(mod->block, nameToUse)) {
                 if (sym->hasFlag(FLAG_PRIVATE)) {
                   if (rejectedPrivateIds.find(sym->id) ==
                       rejectedPrivateIds.end()) {
@@ -2278,7 +2292,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
       } else {
         // The only list will be shorter, create a new UseStmt with it.
         SET_LINENO(this);
-        return new UseStmt(mod, &newOnlyList, false);
+        return new UseStmt(mod, newOnlyList, false, &renamed);
         // Note: we don't populate the relatedNames vector for the new use,
         // since we don't have a way to connect the names in it back to the
         // types we did or didn't include in the shorter 'only' list.
@@ -2316,7 +2330,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
           // weren't in the inner 'except' list (could be all of the
           // outer 'only' list)
           SET_LINENO(this);
-          return new UseStmt(mod, &newOnlyList, false);
+          return new UseStmt(mod, newOnlyList, false, &renamed);
         } else {
           // all the 'only' identifiers were in the 'except'
           // list so this module use will give us nothing.
@@ -2338,7 +2352,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
           // There were symbols that were in both 'only' lists, so
           // this module use is still interesting.
           SET_LINENO(this);
-          return new UseStmt(mod, &newOnlyList, false);
+          return new UseStmt(mod, newOnlyList, false, &renamed);
         } else {
           // all of the 'only' identifiers in the outer use
           // were missing from the inner use's 'only' list, so this
