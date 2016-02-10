@@ -49,7 +49,7 @@ module LCALSConfiguration {
   config const runC_tridiagElim  = true;
   config const runC_eos          = true;
   config const runC_adi          = true;
-  config const runC_intPredict   = false; // not implemented
+  config const runC_intPredict   = true;
   config const runC_diffPredict  = false; // not implemented
   config const runC_firstSum     = true;
   config const runC_firstDiff    = true;
