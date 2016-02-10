@@ -4,4 +4,4 @@
 # scripts that wish to make use of the variables set here.
 
 source $(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)/common.bash
-source $($CHPL_HOME/util/quickstart/setchplenv.bash)
+source ${CHPL_HOME}/util/quickstart/setchplenv.bash
