@@ -53,6 +53,18 @@ static size_t heap_size = 0;
 static size_t cur_heap_offset = 0;
 static pthread_mutex_t chunk_alloc_lock;
 
+
+// compute aligned index into our shared heap, alignment must be a power of 2
+static inline void* alignHelper(void* base_ptr, size_t offset, size_t alignment) {
+  uintptr_t p;
+
+  assert(alignment && ((alignment & (alignment -1)) == 0));
+  p = (uintptr_t)base_ptr + offset;
+  p = (p + alignment - 1) & ~(alignment - 1);
+  return(void*) p;
+}
+
+
 // *** Chunk hook replacements *** //
 // See http://www.canonware.com/download/jemalloc/jemalloc-latest/doc/jemalloc.html#arena.i.chunk_hooks
 
@@ -67,12 +79,11 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
   // doesn't call it inside a lock, so we need to protect it ourselves
   pthread_mutex_lock(&chunk_alloc_lock);
 
-  // TODO cleanup some of the pointer arithmetic. The current code was
-  // originally copied out of the tcmalloc shim, and could use a little cleanup
-
-  // compute our current pointer into the shared heap based on the current
-  // offset aligned to "alignment"
-  cur_chunk_base = (void*)((((uintptr_t) heap_base + cur_heap_offset + alignment - 1) / alignment) * alignment);
+  // compute our current aligned pointer into the shared heap
+  //
+  //   jemalloc 4.0.4 man: "The alignment parameter is always a power of two at
+  //   least as large as the chunk size."
+  cur_chunk_base = alignHelper(heap_base, cur_heap_offset, alignment);
 
   // jemalloc 4.0.4 man: "If chunk is not NULL, the returned pointer must be
   // chunk on success or NULL on error"
