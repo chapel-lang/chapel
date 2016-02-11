@@ -101,6 +101,7 @@ class UseStmt : public Stmt {
   void createRelatedNames(Symbol* maybeType);
 
   bool matchedNameOrConstructor(const char* name);
+  bool matchedNameOrConstructorHelper(const char* name, const char* toCheck);
   bool inRelatedNames(const char* name);
 };
 
