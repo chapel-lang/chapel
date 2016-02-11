@@ -257,8 +257,54 @@ module RunCRawLoops {
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.PIC_2D {
-            halt("multidim cases not implemented ", iloop:LoopKernelID);
             loopInit(iloop, stat);
+            var p => loop_data.RealArray_2D_Nx25[0],
+                b => loop_data.RealArray_2D_Nx25[1],
+                c => loop_data.RealArray_2D_Nx25[2];
+
+            var y => loop_data.RealArray_1D[0],
+                z => loop_data.RealArray_1D[1];
+
+            var e => loop_data.IndxArray_1D[0],
+                f => loop_data.IndxArray_1D[1];
+
+            var h => loop_data.RealArray_2D_64x64[0];
+            ltimer.start();
+            proc overIndexMapper(i,j) {
+              /* The reference version of this kernel is over-indexing a
+                 logical Nx25 array using indices like (16,26).  With bounds
+                 checking enabled, 26 is out of bounds in the second dimension.
+                 Convert the over-indexed pairs into in-bounds pairs */
+              return (i+j/25, j%25);
+            }
+            for isamp in 0..#num_samples {
+              for ip in 0..#len {
+                var i1, j1, i2, j2: int;
+                i1 = p[ip,0]: int;
+                j1 = p[ip,1]: int;
+                i1 &= 64-1;
+                j1 &= 64-1;
+                p[ip,2] += b[overIndexMapper(j1,i1)];
+                p[ip,3] += c[overIndexMapper(j1,i1)];
+                p[ip,0] += p[ip,2];
+                p[ip,1] += p[ip,3];
+                i2 = p[ip,0]: int;
+                j2 = p[ip,1]: int;
+                i2 &= 64-1;
+                j2 &= 64-1;
+                p[ip,0] += y[i2+32];
+                p[ip,1] += z[j2+32];
+                i2 += e[i2+32];
+                j2 += f[j2+32];
+                h[j2,i2] += 1.0;
+              }
+            }
+            ltimer.stop();
+/*
+            writeln(ilength);
+            stdout.writef("(%{#########.#######################}, %{#########.#######################}, %{#########.#######################})\n", p[0,0], p[10,10], p[20,20]);
+            stdout.writef("(%{#########.#######################}, %{#########.#######################}, %{#########.#######################})\n", h[0,0], h[10,10], h[20,20]);
+*/
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.PIC_1D {
@@ -304,11 +350,55 @@ module RunCRawLoops {
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.HYDRO_2D {
-            halt("multidim cases not implemented ", iloop:LoopKernelID);
             loopInit(iloop, stat);
+            var za => loop_data.RealArray_2D_7xN[0],
+                zb => loop_data.RealArray_2D_7xN[1],
+                zm => loop_data.RealArray_2D_7xN[2],
+                zp => loop_data.RealArray_2D_7xN[3],
+                zq => loop_data.RealArray_2D_7xN[4],
+                zr => loop_data.RealArray_2D_7xN[5],
+                zu => loop_data.RealArray_2D_7xN[6],
+                zv => loop_data.RealArray_2D_7xN[7],
+                zz => loop_data.RealArray_2D_7xN[8];
+
+            var zrout => loop_data.RealArray_2D_7xN[9],
+                zzout => loop_data.RealArray_2D_7xN[10];
+
+            const t = 0.0037;
+            const s = 0.0041;
+
+            var kn = 6, jn = len;
+
             ltimer.start();
             for isamp in 0..#num_samples {
+              for k in 1..kn-1 {
+                for j in 1..jn-1 {
+                  za[k,j] = ( zp[k+1,j-1] +zq[k+1,j-1] -zp[k,j-1] -zq[k,j-1] )*
+                            ( zr[k,j] +zr[k,j-1] ) / ( zm[k,j-1] +zm[k+1,j-1]);
+                  zb[k,j] = ( zp[k,j-1] +zq[k,j-1] -zp[k,j] -zq[k,j] ) *
+                            ( zr[k,j] +zr[k-1,j] ) / ( zm[k,j] +zm[k,j-1]);
+                }
+              }
+              for k in 1..kn-1 {
+                for j in 1..jn-1 {
+                  zu[k,j] += s*( za[k,j]   *( zz[k,j] - zz[k,j+1] ) -
+                                 za[k,j-1] *( zz[k,j] - zz[k,j-1] ) -
+                                 zb[k,j]   *( zz[k,j] - zz[k-1,j] ) +
+                                 zb[k+1,j] *( zz[k,j] - zz[k+1,j] ) );
+                  zv[k,j] += s*( za[k,j]   *( zr[k,j] - zr[k,j+1] ) -
+                                 za[k,j-1] *( zr[k,j] - zr[k,j-1] ) -
+                                 zb[k,j]   *( zr[k,j] - zr[k-1,j] ) +
+                                 zb[k+1,j] *( zr[k,j] - zr[k+1,j] ) );
+                }
+              }
+              for k in 1..kn-1 {
+                for j in 1..jn-1 {
+                  zrout[k,j] = zr[k,j] + t*zu[k,j];
+                  zzout[k,j] = zz[k,j] + t*zv[k,j];
+                }
+              }
             }
+
             ltimer.stop();
             loopFinalize(iloop, stat, ilength);
           }
