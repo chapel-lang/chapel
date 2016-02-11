@@ -15,7 +15,6 @@
 
 //
 // Top priorities:
-// - timer insertion and printout of timings
 // - performance analysis / chplvis
 
 // TODO:
