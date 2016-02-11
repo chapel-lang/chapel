@@ -65,7 +65,7 @@ module LCALSChecksums {
                 writeln((loopKernel, length),
                         " Pass (expected, computed) = ",
                         (Checksums[loopKernel](1+length:int),
-                         stat.loop_chksum[length]));
+                         stat.loop_chksum[length]), " difference: ", diff);
               }
             }
           }

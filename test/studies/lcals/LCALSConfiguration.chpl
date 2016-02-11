@@ -50,7 +50,7 @@ module LCALSConfiguration {
   config const runC_eos          = true;
   config const runC_adi          = true;
   config const runC_intPredict   = true;
-  config const runC_diffPredict  = false; // not implemented
+  config const runC_diffPredict  = true;
   config const runC_firstSum     = true;
   config const runC_firstDiff    = true;
   config const runC_pic2D        = false; // not implemented

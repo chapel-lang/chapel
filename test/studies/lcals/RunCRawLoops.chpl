@@ -198,8 +198,35 @@ module RunCRawLoops {
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.DIFF_PREDICT {
-            halt("multidim cases not implemented ", iloop:LoopKernelID);
             loopInit(iloop, stat);
+            var px => loop_data.RealArray_2D_Nx25[0];
+            var cx => loop_data.RealArray_2D_Nx25[1];
+            ltimer.start();
+            for isamp in 0..#num_samples {
+              for i in 0..#len {
+                var ar, br, cr: real;
+                ar       =      cx[i,4];
+                br       = ar - px[i,4];
+                px[i,4]  = ar;
+                cr       = br - px[i,5];
+                px[i,5]  = br;
+                ar       = cr - px[i,6];
+                px[i,6]  = cr;
+                br       = ar - px[i,7];
+                px[i,7]  = ar;
+                cr       = br - px[i,8];
+                px[i,8]  = br;
+                ar       = cr - px[i,9];
+                px[i,9]  = cr;
+                br       = ar - px[i,10];
+                px[i,10] = ar;
+                cr       = br - px[i,11];
+                px[i,11] = br;
+                px[i,13] = cr - px[i,12];
+                px[i,12] = cr;
+              }
+            }
+            ltimer.stop();
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.FIRST_SUM {
