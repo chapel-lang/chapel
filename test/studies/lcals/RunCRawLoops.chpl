@@ -457,10 +457,19 @@ module RunCRawLoops {
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.MAT_X_MAT {
-            halt("multidim cases not implemented ", iloop:LoopKernelID);
             loopInit(iloop, stat);
+            var px => loop_data.RealArray_2D_Nx25[0],
+                cx => loop_data.RealArray_2D_Nx25[1],
+                vy => loop_data.RealArray_2D_64x64[0];
             ltimer.start();
             for isamp in 0..#num_samples {
+              for k in 0..#25 {
+                for i in 0..#25 {
+                  for j in 0..#len {
+                    px[j,i] += vy[k,i]*cx[j,k];
+                  }
+                }
+              }
             }
             ltimer.stop();
             loopFinalize(iloop, stat, ilength);
@@ -485,10 +494,23 @@ module RunCRawLoops {
             loopFinalize(iloop, stat, ilength);
           }
           when LoopKernelID.IMP_HYDRO_2D {
-            halt("multidim cases not implemented ", iloop:LoopKernelID);
             loopInit(iloop, stat);
+            var za => loop_data.RealArray_2D_7xN[0],
+                zb => loop_data.RealArray_2D_7xN[1],
+                zr => loop_data.RealArray_2D_7xN[2],
+                zu => loop_data.RealArray_2D_7xN[3],
+                zv => loop_data.RealArray_2D_7xN[4],
+                zz => loop_data.RealArray_2D_7xN[5];
+
             ltimer.start();
             for isamp in 0..#num_samples {
+              for j in 1..6-1 {
+                for k in 1..len-1 {
+                  var qa = za[j+1,k]*zr[j,k] + za[j-1,k]*zb[j,k] +
+                       za[j,k+1]*zu[j,k] + za[j,k-1]*zv[j,k] + zz[j,k];
+                  za[j,k] += 0.175*( qa - za[j,k] );
+                }
+              }
             }
             ltimer.stop();
             loopFinalize(iloop, stat, ilength);

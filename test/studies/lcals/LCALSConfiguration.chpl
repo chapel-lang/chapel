@@ -58,9 +58,9 @@ module LCALSConfiguration {
   config const runC_hydro2D      = true;
   config const runC_genLinRecur  = true;
   config const runC_discOrd      = true;
-  config const runC_matXMat      = false; // not implemented
+  config const runC_matXMat      = false; // bad checksum (M)
   config const runC_planckian    = true;
-  config const runC_impHydro2D   = false; // not implemented
+  config const runC_impHydro2D   = true;
   config const runC_findFirstMin = true;
 
   //
