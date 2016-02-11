@@ -58,7 +58,6 @@ comprt: FORCE
 	@$(MAKE) third-party-try-opt
 	@$(MAKE) always-build-test-venv
 	@$(MAKE) always-build-chpldoc
-	@$(MAKE) always-build-man
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
