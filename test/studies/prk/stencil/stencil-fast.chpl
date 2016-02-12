@@ -26,10 +26,13 @@ config param R = 2,
 // Configurable type for array elements
 config type dtype = real;
 
+param weightSize = 2*R + 1,
+      Wsize = 2*R + 1,
+      R1 = R+1;
+
 // Runtime constants
 const activePoints = (order-2*R)*(order-2*R),
       stencilSize = 4*R + 1,
-      weightSize = 2*R + 1,
       coefx : dtype = 1.0,
       coefy : dtype = 1.0;
 
@@ -77,28 +80,30 @@ const Dist =  if useBlockDist then blockDist
               else if useStencilDist then stencilDist
               else noDist;
 
-const weightDist = if (useBlockDist || useStencilDist) then replDist
-                 else noDist;
+//const weightDist = if (useBlockDist || useStencilDist) then replDist
+//                 else noDist;
 
 // Domains
 const Dom = localDom dmapped Dist,
- innerDom = innerLocalDom dmapped Dist,
-weightDom = weightLocalDom dmapped weightDist;
+ innerDom = innerLocalDom dmapped Dist;
 
 var tiledDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize};
 
 // Arrays (initialized to zeros)
-var input, output:  [Dom] dtype = 0.0,
-    weight: [weightDom] dtype = 0.0;
+var input, output:  [Dom] dtype = 0.0;
+
+// Tuple of tuples
+var weight: Wsize*(Wsize*(dtype));
 
 // Create local copy of weight on each Locale
-for L in Locales do on L {
-  forall i in 1..R do {
-    const element = 1.0 / (2.0*i*R);
-    weight[0, i]  =  element;
-    weight[i, 0]  =  element;
-    weight[-i, 0] = -element;
-    weight[0, -i] = -element;
+for loc in Locales do on loc {
+  writeln("Writing to locale ", loc);
+  for i in 1..R {
+    const element : dtype = 1 / (2*i*R) : dtype;
+    weight[R1][R1+i]  =  element;
+    weight[R1+i][R1]  =  element;
+    weight[R1-i][R1] = -element;
+    weight[R1][R1-i] = -element;
   }
 }
 
@@ -137,12 +142,15 @@ for iteration in 0..iterations {
   if (!tiling) {
     forall (i,j) in innerDom {
       if (!compact) {
-        for param jj in -R..R  do output[i, j] += weight[0, jj] * input[i, j+jj];
-        for param ii in -R..-1 do output[i, j] += weight[ii, 0] * input[i+ii, j];
-        for param ii in 1..R   do output[i, j] += weight[ii, 0] * input[i+ii, j];
+        var tmpout: dtype = 0.0;
+        for param jj in -R..-1 do tmpout += weight[R1][R1+jj] * input[i, j+jj];
+        for param jj in 1..R   do tmpout += weight[R1][R1+jj] * input[i, j+jj];
+        for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
+        for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
+        output[i, j] += tmpout;
       } else {
-        for (ii, jj) in weightDom do
-          output[i, j] += weight[ii,jj] * input[i+ii, j+jj];
+       // for (ii, jj) in weightDom do
+       //   output[i, j] += weight[ii,jj] * input[i+ii, j+jj];
       }
     }
   } else {
@@ -150,12 +158,15 @@ for iteration in 0..iterations {
       for i in it .. # min(order - R - it, tileSize) {
         for j in jt .. # min(order - R - jt, tileSize) {
           if (!compact) {
-            for param jj in -R..R  do output[i, j] += weight[0, jj] * input[i, j+jj];
-            for param ii in -R..-1 do output[i, j] += weight[ii, 0] * input[i+ii, j];
-            for param ii in 1..R   do output[i, j] += weight[ii, 0] * input[i+ii, j];
+            var tmpout: dtype = 0.0;
+            for param jj in -R..-1 do tmpout += weight[R1][R1+jj] * input[i, j+jj];
+            for param jj in 1..R   do tmpout += weight[R1][R1+jj] * input[i, j+jj];
+            for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
+            for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
+            output[i, j] += tmpout;
           } else {
-            for (ii, jj) in weightDom do
-              output[i, j] += weight[ii,jj] * input[i+ii, j+jj];
+           // for (ii, jj) in weightDom do
+           //   output[i, j] += weight[ii,jj] * input[i+ii, j+jj];
           }
         }
       }
