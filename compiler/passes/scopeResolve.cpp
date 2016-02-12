@@ -2039,8 +2039,8 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
 
         forv_Vec(UseStmt, use, *moduleUses) {
           if (use) {
-            const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
             if (!use->skipSymbolSearch(name)) {
+              const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
               SymExpr* se = toSymExpr(use->mod);
               INT_ASSERT(se);
               ModuleSymbol* mod = toModuleSymbol(se->var);
@@ -2281,18 +2281,30 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
           newOnlyList.push_back(includeMe);
         }
       }
-      if (newOnlyList.size() == named.size()) {
+      std::map<const char*, const char*> newRenamed;
+      for (std::map<const char*, const char*>::iterator it = renamed.begin();
+          it != renamed.end(); ++it) {
+        if (std::find(outer->named.begin(), outer->named.end(), it->first) ==
+            outer->named.end()) {
+          // We didn't find the new name in the list to exclude, so the rename
+          // is still interesting.  Add it.
+          newRenamed[it->first] = it->second;
+        }
+      }
+
+      if (newOnlyList.size() == named.size() &&
+          newRenamed.size() == renamed.size()) {
         // The except list didn't cut down on our only list.
         // No need to create a new UseStmt, just return ourself.
         return this;
-      } else if (newOnlyList.size() == 0) {
+      } else if (newOnlyList.size() == 0 && newRenamed.size() == 0) {
         // All of the 'only' list was in the 'except' list, so we don't provide
         // new symbols.
         return NULL;
       } else {
         // The only list will be shorter, create a new UseStmt with it.
         SET_LINENO(this);
-        return new UseStmt(mod, newOnlyList, false, &renamed);
+        return new UseStmt(mod, &newOnlyList, false, &newRenamed);
         // Note: we don't populate the relatedNames vector for the new use,
         // since we don't have a way to connect the names in it back to the
         // types we did or didn't include in the shorter 'only' list.
@@ -2323,14 +2335,23 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
             newOnlyList.push_back(includeMe);
           }
         }
-        if (newOnlyList.size() > 0) {
+        std::map<const char*, const char*> newRenamed;
+        for(std::map<const char*, const char*>::iterator it = outer->renamed.begin();
+            it != outer->renamed.end(); ++it) {
+          if (std::find(named.begin(), named.end(), it->second) == named.end()) {
+            // We didn't find the old name of the renamed symbol in our
+            // 'except' list, so add it.
+            newRenamed[it->first] = it->second;
+          }
+        }
+        if (newOnlyList.size() > 0 || newRenamed.size() > 0) {
           // At least some of the identifiers in the 'only' list
           // weren't in the inner 'except' list.  Modify the use to
           // 'only' include those from the original 'only' list which
           // weren't in the inner 'except' list (could be all of the
           // outer 'only' list)
           SET_LINENO(this);
-          return new UseStmt(mod, newOnlyList, false, &renamed);
+          return new UseStmt(mod, &newOnlyList, false, &newRenamed);
         } else {
           // all the 'only' identifiers were in the 'except'
           // list so this module use will give us nothing.
@@ -2341,18 +2362,41 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
         // the names that are in both lists.
         SET_LINENO(this);
         std::vector<const char*> newOnlyList;
+        std::map<const char*, const char*> newRenamed;
         for_vector(const char, includeMe, outer->named) {
           if (std::find(named.begin(), named.end(), includeMe) != named.end()) {
             // We found this symbol in both 'only' lists, so add it
             // to the union of them.
             newOnlyList.push_back(includeMe);
+          } else {
+            std::map<const char*, const char*>::iterator it = renamed.find(includeMe);
+            if (it != renamed.end()) {
+              // We found this symbol in the renamed list and the outer 'only'
+              // list so add it to the new renamed list.
+              newRenamed[it->first] = it->second;
+            }
           }
         }
-        if (newOnlyList.size() > 0) {
+        for (std::map<const char*, const char*>::iterator it = outer->renamed.begin();
+             it != outer->renamed.end(); ++it) {
+          if (std::find(named.begin(), named.end(), it->second) != named.end()) {
+            // The old name was in our 'only' list.  We need to rename it.
+            newRenamed[it->first] = it->second;
+          } else {
+            std::map<const char*, const char*>::iterator innerIt = renamed.find(it->second);
+            if (innerIt != renamed.end()) {
+              // We found this symobl in the renamed list and the outer
+              // renamed list so add the outer use's new name as the key, and
+              // our old name as the old name to use.
+              newRenamed[it->first] = innerIt->second;
+            }
+          }
+        }
+        if (newOnlyList.size() > 0 || newRenamed.size() > 0) {
           // There were symbols that were in both 'only' lists, so
           // this module use is still interesting.
           SET_LINENO(this);
-          return new UseStmt(mod, newOnlyList, false, &renamed);
+          return new UseStmt(mod, &newOnlyList, false, &newRenamed);
         } else {
           // all of the 'only' identifiers in the outer use
           // were missing from the inner use's 'only' list, so this
@@ -2362,10 +2406,14 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
       }
     } else {
       // The inner use did not specify an 'except' or 'only' list,
-      // so propogate our 'only' list to it.
+      // so propogate our 'only' list and/or renamed list to it.
       UseStmt* newUse = copy();
       for_vector(const char, toInclude, outer->named) {
         newUse->named.push_back(toInclude);
+      }
+      for (std::map<const char*, const char*>::iterator it = outer->renamed.begin();
+          it != outer->renamed.end(); ++it) {
+        newUse->renamed[it->first] = it->second;
       }
       newUse->except = false;
       return newUse;

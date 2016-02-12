@@ -62,7 +62,7 @@ class UseStmt : public Stmt {
   // need to see it.  No one else should touch it.  I mean it!
   std::vector<const char *> named; // The names of symbols from an 'except' or
   // 'only' list
-  std::map<const char*, const char*> renamed;
+  std::map<const char*, const char*> renamed; // Map of newName: oldName
 
 
   UseStmt(BaseAST* module);
