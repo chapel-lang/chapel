@@ -12,6 +12,13 @@ ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_JEMALLOC_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
 endif
 
+# Can't build under cce with `-hgnu` or anything above `-O1`. Additionally,
+# CCE doesn't support the dependency flags that jemalloc expects (-MM -MT)
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
+CFLAGS += "-hnognu -O1'
+CHPL_JEMALLOC_MAKE_OPTIONS += CC_MM=''
+endif
+
 CHPL_JEMALLOC_CFG_OPTIONS += --prefix=$(JEMALLOC_INSTALL_DIR) \
 			     --with-jemalloc-prefix=je_
 
@@ -51,7 +58,7 @@ configure-jemalloc: FORCE
 	cd $(JEMALLOC_BUILD_DIR) && $(JEMALLOC_SUBDIR)/configure CC='$(CC)' EXTRA_CFLAGS='$(CHPL_JEMALLOC_EXTRA_CFLAGS)' $(CHPL_JEMALLOC_CFG_OPTIONS)
 
 build-jemalloc: FORCE
-	cd $(JEMALLOC_BUILD_DIR) && $(MAKE) build_lib_static
+	cd $(JEMALLOC_BUILD_DIR) && $(MAKE) $(CHPL_JEMALLOC_MAKE_OPTIONS) build_lib_static
 
 install-jemalloc: FORCE
 	cd $(JEMALLOC_BUILD_DIR) && $(MAKE) install_lib_static install_bin install_include
