@@ -112,6 +112,10 @@ studies/parsec/blackscholes.graph
 studies/parsec/blackscholes_promote.graph
 # suite: LCALS benchmarks
 studies/lcals/LCALSMain.graph
+# suite: ISx benchmark
+studies/isx/isx.graph
+studies/isx/isx-bucket-spmd.graph
+studies/isx/isx-spmd.graph
 # suite: PRK benchmarks
 studies/prk/synch_p2p/prk-synch_p2p.graph
 studies/prk/stencil/prk-stencil.graph

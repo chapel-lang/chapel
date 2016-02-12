@@ -11,7 +11,6 @@
 
 //
 // Top priorities:
-// - timer insertion
 // - performance analysis / chplvis
 
 // TODO:
@@ -33,10 +32,10 @@
 //
 
 //
-// We want to use block-distributed arrays (BlockDist) and barrier
-// synchronization (Barrier).
+// We want to use block-distributed arrays (BlockDist), barrier
+// synchronization (Barrier), and timers (Time).
 //
-use BlockDist, Barrier;
+use BlockDist, Barrier, Time;
 
 //
 // The type of key to use when sorting.
@@ -54,7 +53,16 @@ config const debug = false,
              testrun = debug,
              quiet = false,
              printConfig = !quiet;
-
+  
+//
+// The following options control timing related information.
+// - whether or not to use sub-timers to time each program phase
+// - whether or not to print out (summary) timings
+// - whether or not to print out full timing tables (when printing timings)
+//
+config const useSubTimers = false,
+             printTimings = !quiet,
+             printTimingTables = false;
 
 //
 // Define three scaling modes: strong scaling, weak scaling, and
@@ -105,7 +113,7 @@ config const isoBucketWidth = if mode == scaling.weakISO then 8192 else 0;
 // (Issue a warning if this has been set in modes other than weakISO)
 //
 if !quiet && mode != scaling.weakISO && isoBucketWidth != 0 then
-  warning("Note that isoBucketWidth has no effect for weakISO scaling mode");
+  warning("Note that 'isoBucketWidth' only impacts weakISO scaling mode");
 
 //
 // The maximum key value to use.  When debugging, use a small size.
@@ -152,12 +160,18 @@ const BucketSpace = LocBucketSpace dmapped BucketDist;
 
 var allBucketKeys: [BucketSpace] [0..#recvBuffSize] int;
 var recvOffset: [BucketSpace] atomic int;
+var totalTime, inputTime, bucketCountTime, bucketOffsetTime, bucketizeTime,
+    exchangeKeysTime, countKeysTime: [BucketSpace] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
 //
 // TODO: better name?
 //
 var barrier = new Barrier(numBuckets);
+
+//
+// TODO: introduce a main()
+//
 
 // TODO: This seems attractive, but also like it will break the barrier:
 // forall bucketID in BucketSpace {
@@ -166,7 +180,7 @@ coforall bucketID in BucketSpace do
     //
     // Execution is SPMD-style across buckets here
     //
-    // TODO: remove this
+    // TODO: remove this once we feel confident it's working
     //
     if allBucketKeys[bucketID][0].locale != here then
       warning("Need to distribute allBucketKeys");
@@ -182,7 +196,8 @@ coforall bucketID in BucketSpace do
       // to let them refer to bucketID non-locally?  Or is that
       // crazy?
       //
-      bucketSort(bucketID, time=(i>0), verify=(i==numTrials));
+      bucketSort(bucketID, trial=i, time=printTimings && (i>0),
+                 verify=(i==numTrials));
   }
 
 if debug {
@@ -191,12 +206,35 @@ if debug {
     writeln("Bucket ", i, " (owned by locale ", b.locale.id, "): ", b);
 }
   
+if printTimings then
+  printTimingData("buckets");
 
-proc bucketSort(bucketID, time = false, verify = false) {
+
+proc bucketSort(bucketID, trial: int, time = false, verify = false) {
+  const subtime = time && useSubTimers;
+  var totalTimer: Timer;
+  var subTimer: Timer;
+
+  if time {
+    totalTimer.start();
+    if useSubTimers then
+      subTimer.start();
+  }
+
   var myKeys = makeInput(bucketID);
+
+  if subtime {
+    inputTime.localAccess[here.id][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
 
   var bucketSizes = countLocalBucketSizes(myKeys);
   if debug then writeln(bucketID, ": bucketSizes = ", bucketSizes);
+
+  if subtime {
+    bucketCountTime.localAccess[here.id][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
 
   //
   // TODO: Should we be able to support scans on arrays of atomics without a
@@ -209,13 +247,28 @@ proc bucketSort(bucketID, time = false, verify = false) {
   sendOffsets -= bucketSizes.read();
   if debug then writeln(bucketID, ": sendOffsets = ", sendOffsets);
 
+  if subtime {
+    bucketOffsetTime.localAccess[here.id][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
+
   //
   // TODO: should we pass our globals into/out of these routines?
   //
   var myBucketedKeys = bucketizeLocalKeys(bucketID, myKeys, sendOffsets);
-  exchangeKeys(bucketID, sendOffsets, bucketSizes, myBucketedKeys);
 
+  if subtime {
+    bucketizeTime.localAccess[here.id][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
+  
+  exchangeKeys(bucketID, sendOffsets, bucketSizes, myBucketedKeys);
   barrier.barrier();
+
+  if subtime {
+    exchangeKeysTime.localAccess[here.id][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
 
   //
   // TODO: discussed with Jake a version in which the histogramming
@@ -229,6 +282,12 @@ proc bucketSort(bucketID, time = false, verify = false) {
 
   const keysInMyBucket = recvOffset[bucketID].read();
   var myLocalKeyCounts = countLocalKeys(bucketID, keysInMyBucket);
+
+  if time {
+    if subtime then
+      countKeysTime.localAccess[here.id][trial] = subTimer.elapsed();
+    totalTime.localAccess[here.id][trial] = totalTimer.elapsed();
+  }    
 
   if (verify) then
     verifyResults(bucketID, keysInMyBucket, myLocalKeyCounts);
@@ -347,7 +406,7 @@ proc verifyResults(bucketID, myBucketSize, myLocalKeyCounts) {
     halt("total key count mismatch: " + verifyKeyCount.read() + " != " + totalKeys);
 
   if (!quiet && bucketID == 0) then
-    writeln("Verification successful!");
+    writeln("\nVerification successful!");
 }
 
 
@@ -421,4 +480,66 @@ proc writelnPotentialPowerOfTwo(desc, n) {
   if 2**lgn == n then
     write(" (2**", lgn, ")");
   writeln();
+}
+
+//
+// Print out timings for the run, if requested
+//
+proc printTimingData(units) {
+  if printTimingTables {
+    if useSubTimers {
+      printTimeTable(inputTime, units, "input");
+      printTimeTable(bucketCountTime, units, "bucket count");
+      printTimeTable(bucketOffsetTime, units, "bucket offset");
+      printTimeTable(bucketizeTime, units, "bucketize");
+      printTimeTable(exchangeKeysTime, units, "exchange");
+      printTimeTable(countKeysTime, units, "count keys");
+    }
+    printTimeTable(totalTime, units, "total");
+  }
+
+  writeln();
+  writeln("averages across ", units, " of min across trials:");
+  if useSubTimers {
+    printTimingStats(inputTime, "input");
+    printTimingStats(bucketCountTime, "bucket count");
+    printTimingStats(bucketOffsetTime, "bucket offset");
+    printTimingStats(bucketizeTime, "bucketize");
+    printTimingStats(exchangeKeysTime, "exchange");
+    printTimingStats(countKeysTime, "count keys");
+  }
+  printTimingStats(totalTime, "total");
+}
+
+//
+// Print out one timer's table of locales/buckets x trials data
+//
+proc printTimeTable(timeTable, units, timerName) {
+  //
+  // print entire table, if user requested it
+  //
+  writeln();
+  writeln(timerName, " time (", units, " / trials)");
+  for (timings, i) in zip(timeTable, 0..) {
+    write(i, ": ");
+    for t in timings do
+      write(t, "\t");
+    writeln();
+  }
+}
+
+//
+// print timing statistics (currently only avg across locales/buckets
+// of min across trials)
+//
+proc printTimingStats(timeTable, timerName) {
+  //  var minMinTime: real = max(real);
+  var /* maxMinTime, */ totMinTime: real;
+  forall timings in timeTable with (/*min reduce minMinTime,
+                                      max reduce maxMinTime,*/
+                                    + reduce totMinTime) {
+    totMinTime += min reduce timings;
+  }
+  var avgTime = totMinTime / numLocales;
+  writeln(timerName, " = ", avgTime);
 }
