@@ -85,7 +85,8 @@ const Dist =  if useBlockDist then blockDist
 
 // Domains
 const Dom = localDom dmapped Dist,
- innerDom = innerLocalDom dmapped Dist;
+ innerDom = innerLocalDom dmapped Dist,
+weightDom = {-R..R, -R..R};
 
 var tiledDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize};
 
@@ -97,7 +98,6 @@ var weight: Wsize*(Wsize*(dtype));
 
 // Create local copy of weight on each Locale
 for loc in Locales do on loc {
-  writeln("Writing to locale ", loc);
   for i in 1..R {
     const element : dtype = 1 / (2*i*R) : dtype;
     weight[R1][R1+i]  =  element;
@@ -141,33 +141,33 @@ for iteration in 0..iterations {
 
   if (!tiling) {
     forall (i,j) in innerDom {
+      var tmpout: dtype = 0.0;
       if (!compact) {
-        var tmpout: dtype = 0.0;
         for param jj in -R..-1 do tmpout += weight[R1][R1+jj] * input[i, j+jj];
         for param jj in 1..R   do tmpout += weight[R1][R1+jj] * input[i, j+jj];
         for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
         for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
-        output[i, j] += tmpout;
       } else {
-       // for (ii, jj) in weightDom do
-       //   output[i, j] += weight[ii,jj] * input[i+ii, j+jj];
+        for (ii, jj) in weightDom do
+          tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
       }
+      output[i, j] += tmpout;
     }
   } else {
     forall (it,jt) in tiledDom {
       for i in it .. # min(order - R - it, tileSize) {
         for j in jt .. # min(order - R - jt, tileSize) {
+          var tmpout: dtype = 0.0;
           if (!compact) {
-            var tmpout: dtype = 0.0;
             for param jj in -R..-1 do tmpout += weight[R1][R1+jj] * input[i, j+jj];
             for param jj in 1..R   do tmpout += weight[R1][R1+jj] * input[i, j+jj];
             for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
             for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
-            output[i, j] += tmpout;
           } else {
-           // for (ii, jj) in weightDom do
-           //   output[i, j] += weight[ii,jj] * input[i+ii, j+jj];
+            for (ii, jj) in weightDom do
+              tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
           }
+          output[i, j] += tmpout;
         }
       }
     }

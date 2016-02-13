@@ -2,5 +2,3 @@
 --set validate --set tileSize=20                    -M../../../release/examples/benchmarks/miniMD/helpers
 --set validate                   --set compact=true -M../../../release/examples/benchmarks/miniMD/helpers
 --set validate --set tileSize=20 --set compact=true -M../../../release/examples/benchmarks/miniMD/helpers
---set validate --set useBlockDist=true              -M../../../release/examples/benchmarks/miniMD/helpers
---set validate --set useStencilDist=true            -M../../../release/examples/benchmarks/miniMD/helpers
