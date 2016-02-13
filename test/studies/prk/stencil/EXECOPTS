@@ -1,2 +1,0 @@
---iterations=10 --order=100 --validate
---iterations=10 --order=100 --tileSize=20 --validate
