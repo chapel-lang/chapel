@@ -1,3 +1,3 @@
-                          -M../../../release/examples/benchmarks/miniMD/helpers # fast-shared
---set useBlockDist=true   -M../../../release/examples/benchmarks/miniMD/helpers # fast-blockdist
---set useStencilDist=true -M../../../release/examples/benchmarks/miniMD/helpers # fast-stencildist
+                          -M../../../release/examples/benchmarks/miniMD/helpers # stencil-shared-fast
+--set useBlockDist=true   -M../../../release/examples/benchmarks/miniMD/helpers # stencil-blockdist-fast
+--set useStencilDist=true -M../../../release/examples/benchmarks/miniMD/helpers # stencil-stencildist-fast
