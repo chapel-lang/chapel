@@ -19,7 +19,8 @@ Functions Supported on All Array Types
 hasSingleLocalSubdomain
 -----------------------
 
-.. code-block:: chapel
+.. SyntaxError in Pygments, throws warning in Sphinx 1.3.5+
+.. code-block:: text
 
   proc [].hasSingleLocalSubdomain() : bool;
 
@@ -43,7 +44,8 @@ function named 'dsiHasSingleLocalSubdomain'.
 localSubdomain
 --------------
 
-.. code-block:: chapel
+.. SyntaxError in Pygments, throws warning in Sphinx 1.3.5+
+.. code-block:: text
 
   proc [].localSubdomain() : domain;
 
@@ -74,7 +76,7 @@ If the locale's index set can be represented by a single domain, then the
 result of ``localSubdomain`` is yielded.
 
 Currently, this is a serial iterator.
- 
+
 To support this iterator on a custom distributed array type, write an iterator
 named 'dsiLocalSubdomains'.
 
@@ -87,7 +89,8 @@ Calling them on a non-distributed array will result in a compiler error.
 targetLocales
 -------------
 
-.. code-block:: chapel
+.. SyntaxError in Pygments, throws warning in Sphinx 1.3.5+
+.. code-block:: text
 
   proc [].targetLocales() : [] locale;
 

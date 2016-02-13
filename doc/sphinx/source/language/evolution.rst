@@ -306,7 +306,8 @@ Emacs users working on updating existing code can use the following recipe
 to update old-style domain literals to the new syntax:
 
 
-.. code-block:: chapel
+.. SyntaxError in Pygments, throws warning in Sphinx 1.3.5+
+.. code-block:: text
 
           M-x query-replace-regexp: \([=|,] *\)\[\(.*?\)\]\([;|)]\)
           with: \1{\2}\3
