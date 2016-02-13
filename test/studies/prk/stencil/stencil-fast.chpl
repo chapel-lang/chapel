@@ -1,7 +1,10 @@
 //
-// Chapel's stencil implementation
+// Chapel's shared parallel stencil implementation
 //
 use Time;
+use BlockDist;
+use ReplicatedDist;
+use StencilDist; // Included from miniMD
 
 param PRKVERSION = "2.15";
 
@@ -9,23 +12,29 @@ config var tileSize: int = 0;
 
 config const iterations: int = 10,
              order: int = 1000,
+             // Output controls
              debug: bool = false,
              validate: bool = false;
 
 config param R = 2,
-             compact = false;
+             // Square weight matrix (true) or Star weight matrix (false)
+             compact = false,
+             // Control of multilocale parallelism
+             useStencilDist = false,
+             useBlockDist = (CHPL_COMM != "none" && !useStencilDist);
 
 // Configurable type for array elements
 config type dtype = real;
 
-const activePoints = (order-2*R)*(order-2*R),
-      coefx: dtype = 1.0,
-      coefy: dtype = 1.0;
-
-param stencilSize = 4*R + 1,
-      weightSize = 2*R + 1,
+param weightSize = 2*R + 1,
       Wsize = 2*R + 1,
       R1 = R+1;
+
+// Runtime constants
+const activePoints = (order-2*R)*(order-2*R),
+      stencilSize = 4*R + 1,
+      coefx : dtype = 1.0,
+      coefy : dtype = 1.0;
 
 var timer: Timer;
 
@@ -55,31 +64,53 @@ var tiling = (tileSize > 0 && tileSize < order);
 // Safety check for creation of tiledDom
 if (!tiling) then tileSize = 1;
 
+// Domain Map
+
+const localDom = {0.. # order, 0.. # order},
+ innerLocalDom = localDom.expand(-R),
+weightLocalDom = {-R..R, -R..R};
+
+// Choice of distribution / parallelism
+const blockDist = new dmap(new Block(localDom)),
+    stencilDist = new dmap(new Stencil(innerLocalDom, fluff=(R,R))),
+         noDist = new dmap(new DefaultDist()),
+       replDist = new dmap(new ReplicatedDist());
+
+const Dist =  if useBlockDist then blockDist
+              else if useStencilDist then stencilDist
+              else noDist;
+
+//const weightDist = if (useBlockDist || useStencilDist) then replDist
+//                 else noDist;
+
 // Domains
-const    Dom = {0.. # order, 0.. # order},
-    innerDom = Dom.expand(-R),
-   weightDom = {-R..R, -R..R};
+const Dom = localDom dmapped Dist,
+ innerDom = innerLocalDom dmapped Dist,
+weightDom = {-R..R, -R..R};
 
 var tiledDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize};
 
-// Arrays
-var input, output: [Dom] dtype = 0.0;
-var tmpout : dtype = 0.0;
+// Arrays (initialized to zeros)
+var input, output:  [Dom] dtype = 0.0;
 
 // Tuple of tuples
 var weight: Wsize*(Wsize*(dtype));
 
-// Set up weight matrix
-for i in 1..R {
-  const element : dtype = 1 / (2*i*R) : dtype;
-  weight[R1][R1+i]  =  element;
-  weight[R1+i][R1]  =  element;
-  weight[R1-i][R1] = -element;
-  weight[R1][R1-i] = -element;
+// Create local copy of weight on each Locale
+for loc in Locales do on loc {
+  for i in 1..R {
+    const element : dtype = 1 / (2*i*R) : dtype;
+    weight[R1][R1+i]  =  element;
+    weight[R1+i][R1]  =  element;
+    weight[R1-i][R1] = -element;
+    weight[R1][R1-i] = -element;
+  }
 }
 
 // Initialize the input and output arrays
-[(i, j) in Dom] input[i,j] = coefx*i + coefy*j;
+[(i, j) in Dom] input[i,j] = coefx*i+coefy*j;
+
+if useStencilDist then input.updateFluff();
 
 //
 // Print information before main loop
@@ -97,6 +128,7 @@ if (!validate) {
   writeln("Number of iterations = ", iterations);
 }
 
+
 //
 // Main loop
 //
@@ -108,7 +140,7 @@ for iteration in 0..iterations {
   }
 
   if (!tiling) {
-    for (i,j) in innerDom {
+    forall (i,j) in innerDom {
       var tmpout: dtype = 0.0;
       if (!compact) {
         for param jj in -R..-1 do tmpout += weight[R1][R1+jj] * input[i, j+jj];
@@ -122,7 +154,7 @@ for iteration in 0..iterations {
       output[i, j] += tmpout;
     }
   } else {
-    for (it,jt) in tiledDom {
+    forall (it,jt) in tiledDom {
       for i in it .. # min(order - R - it, tileSize) {
         for j in jt .. # min(order - R - jt, tileSize) {
           var tmpout: dtype = 0.0;
@@ -141,8 +173,12 @@ for iteration in 0..iterations {
     }
   }
 
+  if useStencilDist then input.updateFluff();
+
   // Add constant to solution to force refresh of neighbor data, if any
-  for (i,j) in Dom do input[i,j] += 1.0;
+  forall (i,j) in Dom {
+    input[i, j] += 1.0;
+  }
 
 } // end of iterations
 
