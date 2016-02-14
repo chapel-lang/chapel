@@ -108,6 +108,9 @@ all:
     - Enable the Qthreads tasking shim (#3040)
   01/06/16:
     - Replace filenames with indices into a lookup table (#3049)
+  02/14/16:
+    - text: Default to jemalloc for gasnet configurations
+      config: 16 node XC
 
 AllCompTime:
   11/09/14:
