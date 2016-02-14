@@ -22,9 +22,9 @@
 //
 // TODO: What are the potential performance issues?
 // * put as one message?
-//   - not currently happening due to int(32)/int(64) mismatch that
-//     prevents direct copying -- will fix in future revision to
-//     see performance impact.
+//   - not currently happening due to origin check in bulk transfer
+//     optimization -- will fix in future revision to see performance
+//     impact.
 // * how do Ben's locality optimizations do?
 // * does returning arrays cost us anything?  Do we leak them?
 // * other?
@@ -158,7 +158,7 @@ const LocBucketSpace = {0..#numBuckets};
 const BucketDist = new dmap(new Block(LocBucketSpace));
 const BucketSpace = LocBucketSpace dmapped BucketDist;
 
-var allBucketKeys: [BucketSpace] [0..#recvBuffSize] int;
+var allBucketKeys: [BucketSpace] [0..#recvBuffSize] keyType;
 var recvOffset: [BucketSpace] atomic int;
 var totalTime, inputTime, bucketCountTime, bucketOffsetTime, bucketizeTime,
     exchangeKeysTime, countKeysTime: [BucketSpace] [1..numTrials] real;
