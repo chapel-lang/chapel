@@ -6,7 +6,7 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_arch, chpl_comm, chpl_comm_segment, chpl_compiler, chpl_platform
+import chpl_comm, chpl_comm_segment
 from utils import memoize
 
 
@@ -18,15 +18,6 @@ def get(flag='host'):
         mem_val = os.environ.get('CHPL_MEM')
         if not mem_val:
             comm_val = chpl_comm.get()
-            #platform_val = chpl_platform.get('host')
-            #arch_val = chpl_arch.get('target', get_lcd=True)
-            #tcmallocCompat = ["gnu", "clang", "clang-included", "intel"]
-
-            # true if tcmalloc is compatible with the target compiler
-            #if (not (platform_val == 'cray-xc' and arch_val == 'knc') and
-            #        (not platform_val.startswith("cygwin")) and
-            #        any(sub in chpl_compiler.get('target') for sub in tcmallocCompat)):
-            #    return 'tcmalloc'
             if comm_val == 'gasnet':
                 segment_val = chpl_comm_segment.get()
                 if segment_val == 'fast' or segment_val == 'large':
