@@ -1,3 +1,5 @@
+.. _readme-testsystem:
+
 =====================
 Chapel Testing System
 =====================
@@ -9,28 +11,81 @@ issue tracking, and for nightly correctness and performance regression
 testing.  Getting really comfortable with it is one of the most
 important things a developer can do early in the development cycle.
 
-The tests for the testing system are located in $CHPL_HOME/test.  The
-main script that drives the test system itself is
-$CHPL_HOME/util/start_test, though it relies on several helper scripts
-located in $CHPL_HOME/util/test.
+The tests for the testing system are located in ``$CHPL_HOME/test``.
+The main script that drives the test system itself is
+``$CHPL_HOME/util/start_test``, though it relies on several helper scripts
+located in ``$CHPL_HOME/util/test``.
 
 This document provides only a high-level introduction to the testing
 system.  For further details, see the extensive comments at the top of
-the start_test script or ask a core Chapel developer for pointers.
+the ``start_test`` script or ask a core Chapel developer for pointers.
 You can also get a sense for the test system by looking through the
 test directory itself to see how it is used in practice.
 
 
-Writing a Correctness Test
-==========================
+Summary of Testing Files
+========================
 
-[though trivial, this test is available at $CHPL_HOME/test/Correctness
-in the Chapel source repository]
+.. TODO: When we move these docs to Sphinx, add :ref:'s to other parts of file,
+         within this table
+
+The following table serves as a quick reference for the various test files, and
+as a table of contents for this page.
+Using file base name, ``foo`` for the filenames in this table.
+
+=================   ===========================================================
+File                Contents of file
+=================   ===========================================================
+**correctness**
+-------------------------------------------------------------------------------
+foo.chpl            test program to compile and run
+foo.good            expected output of test program
+foo.compopts        line separated compiler flag configurations
+COMPOPTS            directory-wide compiler flags
+foo.execopts        line separated runtime flag configurations
+EXECOPTS            directory-wide runtime flags
+foo.prediff         script that is run on the test output, before taking the
+                    diff between the output and .good file
+-------------------------------------------------------------------------------
+**performance**
+-------------------------------------------------------------------------------
+foo.perfcompopts    compiler flags, overrides .compopts for --performance
+foo.perfexecopts    runtime flags, overrides .execopts for --performance
+foo.perfkeys        keys to search for in the output
+foo.graph           Specifies which data files and perfkeys to graph, and
+                    contains meta-data associated with labeling data sets,
+                    axis, and graphs
+test/GRAPHFILES     Acts as an index that tracks all .graph that should be
+                    graphed.
+-------------------------------------------------------------------------------
+**futures**
+-------------------------------------------------------------------------------
+foo.future          Describes the future being tested, following the
+                    newline-separated format of:
+                    *keyword*, *short description*, *long description*
+foo.bad             output generated on a failing test, to track if a known
+                    failing future begins failing a different way
+=================   ===========================================================
+
+
+.. _correctness:
+
+Correctness Tests
+=================
+
+.. TODO: Recursive behavior of COMPOPTS/EXECOPTS?
+.. TODO: Specifying .good files in compopts/execopts
+.. TODO: Which files can be treated as an executable script?
+.. TODO: New .pre* files
+
+
+Though trivial, this test is available at ``$CHPL_HOME/test/Correctness``
+in the Chapel source repository
 
 Creating a Simple Test
 ----------------------
-A simplest use of the test system is to create a .chpl file containing
-some Chapel code and a .good file containing the expected output.  For
+A simplest use of the test system is to create a ``.chpl`` file containing
+some Chapel code and a ``.good`` file containing the expected output.  For
 example, given a directory containing two files:
 
 
@@ -52,15 +107,15 @@ The test system can be exercised by invoking:
 
 This will cause the compiler to compile hi.chpl then execute the
 resulting binary.  The concatenation of the compiler and executable
-output will then be compared against the .good file.  A transcript of
+output will then be compared against the ``.good`` file.  A transcript of
 the test system's actions is printed to the console and also stored in
 ``$CHPL_HOME/test/Logs/`` by default.
 
 
 Invoking start_test for correctness testing
 -------------------------------------------
-The simple example above demonstrates invoking start_test on a single
-explicitly-named file.  More generally, start_test takes a list of
+The simple example above demonstrates invoking ``start_test`` on a single
+explicitly-named file.  More generally, ``start_test`` takes a list of
 test and directory names on the command line and will run all tests
 explicitly named or contained within the directories (or their
 subdirectories).  For example:
@@ -71,7 +126,7 @@ will test the two explicitly-named tests (``foo.chpl`` and ``baz.chpl`` stored
 in the ``bar/`` directory).  It will also recursively search for any tests
 stored in the ``typeTests/`` and ``OOPTests/`` subdirectories.
 
-If invoked without any arguments, start_test will start in the current
+If invoked without any arguments, ``start_test`` will start in the current
 directory and recursively look for tests in subdirectories.
 
 
@@ -93,13 +148,20 @@ specify compiler options that should only be used for the ``hi.chpl``
 test.
 
 For more information on these capabilities, review the comments at the
-top of start_test which is currently the most complete documentation
+top of ``start_test`` which is currently the most complete documentation
 on the testing system.  (NOTE: Over time, we want to migrate that
 documentation over to this text file).
 
 
-Creating Performance Tests
-==========================
+.. _performance:
+
+Performance Tests
+=================
+
+.. TODO: Restrictions in perfcompopts / perfexecopts w.r.t multiple configs
+.. TODO: Specifying .dat files in perf*opts
+.. TODO: All options for .graph files
+
 
 [Files used to illustrate the running example here can be found at
 ``$CHPL_HOME/test/Samples/Performance`` in the Chapel source repository]
@@ -168,11 +230,11 @@ verify that the last line of output contains the string "SUCCESS":
 
 Invoking start_test for performance testing
 -------------------------------------------
-To run performance testing, add the ``-performance`` flag to ``start_test``
+To run performance testing, add the ``--performance`` flag to ``start_test``
 along with the traditional options.  So for example, to run this
 single test in performance mode, one could use:
 
-  ``start_test -performance foo.chpl``
+  ``start_test --performance foo.chpl``
 
 When crawling a directory hierarchy, only tests with ``.perfkeys`` files
 will be considered when testing in performance mode.
@@ -314,8 +376,6 @@ suite(s) in which your graph appears, and you should see data for it.
 (Note that for a new graph with only one day of data, it can be hard
 to see the singleton points at first).
 
-.. Other features? graphname?
-
 Test Your Test Before Submitting
 --------------------------------
 Before submitting your test for review, be sure that it works under
@@ -329,9 +389,12 @@ pages as well.
 
 
 
+.. _futures:
 
 Futures: A mechanism for tracking bugs, feature requests, etc.
 ==============================================================
+
+.. TODO: JIRA usage with .futures
 
 The testing system also serves as our current system for tracking
 code-driven bugs and open issues.  In particular, any test can be
@@ -393,43 +456,10 @@ The current categories of future are:
     which have not yet been implemented.
 
 
+.. _extensions:
 
-Summary of Testing Files
-========================
+Planned Extensions of Testing System
+====================================
 
-.. code-block:: text
-
-     correctness
-     -----------
-    .chpl     - test program
-    .good     - expected output
-    .compopts - compiler flags
-     COMPOPTS - directory-wide compiler flags
-    .execopts - runtime flags
-     EXECOPTS - directory-wide runtime flags
-    .prediff  - script that is run on the test output, before the diff
-
-    performance
-    -----------
-    .perfcompopts   - compiler flags, overrides .compopts for --performance
-    .perfexecopts   - runtime flags, overrides .execopts for --performance
-    .perfkeys       - keys to search for in the output
-    .graph          - Specifies how to graph .dat files (and which ones)
-    test/GRAPHFILES - Identifies which .graph files to graph
-
-
-    futures
-    -------
-    .future - keyword, short description, and long description of feature
-    .bad    - output generated on a failing test
-
-
-
-.. TODO: Recursive behavior of COMPOPTS/EXECOPTS?
-.. TODO: Restrictions in perfcompopts / perfexecopts
-.. TODO: Naming in perf*opts
-.. TODO: All options for .graph files
-.. TODO: What files can be treated as a script?
-.. TODO: Other pre* files
-.. TODO: JIRA usage with .futures
-.. TODO: Third party codes - state plans to support in future..
+.. TODO: Third party codes
+.. TODO: Potential yaml system rather than multiple files per test
