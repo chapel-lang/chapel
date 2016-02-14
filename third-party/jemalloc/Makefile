@@ -15,7 +15,7 @@ endif
 # Can't build under cce with `-hgnu` or anything above `-O1`. Additionally,
 # CCE doesn't support the dependency flags that jemalloc expects (-MM -MT)
 ifeq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
-CFLAGS += "-hnognu -O1'
+CFLAGS += -hnognu -O1
 CHPL_JEMALLOC_MAKE_OPTIONS += CC_MM=''
 endif
 
