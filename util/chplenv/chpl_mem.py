@@ -6,7 +6,7 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_comm, chpl_comm_segment
+import chpl_comm
 from utils import memoize
 
 
@@ -19,11 +19,7 @@ def get(flag='host'):
         if not mem_val:
             comm_val = chpl_comm.get()
             if comm_val == 'gasnet':
-                segment_val = chpl_comm_segment.get()
-                if segment_val == 'fast' or segment_val == 'large':
-                    mem_val = 'dlmalloc'
-                else:
-                    mem_val = 'cstdlib'
+                mem_val='jemalloc'
             elif comm_val == 'ugni':
                 mem_val = 'tcmalloc'
             else:
