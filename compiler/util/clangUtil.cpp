@@ -1094,11 +1094,11 @@ void runClang(const char* just_parse_filename) {
 
   std::string readargsfrom;
 
-  if( just_parse_filename ) {
+  if( !llvmCodegen && just_parse_filename ) {
     // We're handling an extern block and not using the LLVM backend.
-    // Don't change CHPL_TARGET_COMPILER or ask for any compiler-specific
-    // C flags. Just get the neccesary includes and defines.
-    readargsfrom = compileline + " --llvm-install-dir"
+    // Don't ask for any compiler-specific C flags.
+    readargsfrom = compileline + " --llvm"
+                                 " --llvm-install-dir"
                                  " --clang-sysroot-arguments"
                                  " --includes-and-defines";
   } else {
