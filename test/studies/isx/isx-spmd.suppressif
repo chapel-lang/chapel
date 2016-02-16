@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+# various ISx timeouts, see JIRA issue 181
+
+# suppress ISx timeouts for multi-locale gasnet performance runs and on
+# bradc-lnx
+
+import os
+import platform
+
+machine = platform.node()
+
+print(os.getenv('CHPL_TEST_PERF') == 'on' and
+      (os.getenv('CHPL_COMM') == 'gasnet' or machine == "bradc-lnx"))
