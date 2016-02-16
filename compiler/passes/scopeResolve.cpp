@@ -506,6 +506,18 @@ void UseStmt::createRelatedNames(Symbol* maybeType) {
         relatedNames.push_back(sym->name);
       }
     }
+
+    unsigned int constructorLen = strlen(ts->name) + strlen("_construct_") + 1;
+    char * constructorName = (char *) malloc(constructorLen);
+    strcpy(constructorName, "_construct_");
+    strcat(constructorName, ts->name);
+    relatedNames.push_back(constructorName);
+
+    unsigned int typeConstLen = constructorLen + strlen("_type");
+    char * typeConstructorName = (char *) malloc(typeConstLen);
+    strcpy(typeConstructorName, "_type_construct_");
+    strcat(typeConstructorName, ts->name);
+    relatedNames.push_back(typeConstructorName);
   }
 }
 

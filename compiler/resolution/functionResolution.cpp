@@ -2949,7 +2949,11 @@ getVisibleFunctions(BlockStmt* block,
       INT_ASSERT(mod);
       canSkipThisBlock = false; // cannot skip if this block uses modules
       if (mod->isVisible(callOrigin)) {
-        getVisibleFunctions(mod->block, name, visibleFns, visited, callOrigin);
+        if (use->isARename(name)) {
+          getVisibleFunctions(mod->block, use->getRename(name), visibleFns, visited, callOrigin);
+        } else {
+          getVisibleFunctions(mod->block, name, visibleFns, visited, callOrigin);
+        }
       }
     }
   }

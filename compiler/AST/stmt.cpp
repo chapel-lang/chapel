@@ -259,38 +259,26 @@ bool UseStmt::skipSymbolSearch(const char* name) {
 
 bool UseStmt::matchedNameOrConstructor(const char* name) {
   for_vector(const char, toCheck, named) {
-    if (matchedNameOrConstructorHelper(name, toCheck)) {
+    if (!strcmp(name, toCheck)) {
       return true;
     }
   }
   for(std::map<const char*, const char*>::iterator it = renamed.begin();
       it != renamed.end(); ++it) {
-    if (matchedNameOrConstructorHelper(name, it->first)) {
+    if (!strcmp(name, it->first)) {
       return true;
     }
   }
   return false;
 }
 
-bool UseStmt::matchedNameOrConstructorHelper(const char* name, const char* toCheck) {
-  unsigned int constructorLen = strlen(toCheck) + strlen("_construct_") + 1;
-  char constructorName[constructorLen];
-  strcpy(constructorName, "_construct_");
-  strcat(constructorName, toCheck);
-  unsigned int typeConstLen = constructorLen + strlen("_type");
-  char typeConstructorName[typeConstLen];
-  strcpy(typeConstructorName, "_type_construct_");
-  strcat(typeConstructorName, toCheck);
-  // Check if matches the name we're searching for, or the name we're
-  // searching for is a constructor or type constructor on this
-  // type
-  return !strcmp(name, toCheck) || !strcmp(constructorName, name) ||
-    !strcmp(typeConstructorName, name);
-}
-
 // Returns true if the name was in the relatedNames field, false otherwise.
 bool UseStmt::inRelatedNames(const char* name) {
-  return std::find(relatedNames.begin(), relatedNames.end(), name) != relatedNames.end();
+  for_vector(const char, toCheck, relatedNames) {
+    if (!strcmp(name, toCheck))
+      return true;
+  }
+  return false;
 }
 
 bool UseStmt::isARename(const char* name) {
