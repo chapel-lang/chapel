@@ -9,8 +9,9 @@ Chapel itself.  Current subdirectories include:
 
 chpl-venv/
   Summary: Directory where several python packages are downloaded and
-           installed. Used for chpldoc and the testing system. See
-           chpldoc-requirements.txt, test-requirements.txt, and
+           installed. Used by chpldoc and the testing system, and to generate
+           the man page and standard module documentation.
+           See chpldoc-requirements.txt, test-requirements.txt, and
            virtualenv.txt files for a complete list of packages that are
            installed.
 

@@ -1,3 +1,7 @@
 CHPL_TARGET_COMPILER==cray-prgenv-gnu
 CHPL_TARGET_COMPILER==cray-prgenv-intel
 CHPL_TARGET_COMPILER==cray-prgenv-pgi
+
+# this test expects the underlying chapel memory allocators be calling malloc()
+# and friends but that's not the case for non-cstdlib allocators
+CHPL_MEM != cstdlib

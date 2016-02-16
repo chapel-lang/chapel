@@ -54,8 +54,8 @@ export CHPL_COMM=none
 echo "Setting CHPL_TASKS to fifo"
 export CHPL_TASKS=fifo
 
-#echo "Setting CHPL_MEM to cstdlib"
-#export CHPL_MEM=cstdlib
+echo "Setting CHPL_MEM to cstdlib"
+export CHPL_MEM=cstdlib
 
 echo "Setting CHPL_GMP to none"
 export CHPL_GMP=none

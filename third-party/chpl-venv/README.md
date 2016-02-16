@@ -129,7 +129,7 @@ Required by Sphinx.
 
 Python Documentation Utilities
 
-Required by Sphinx.
+Required by Sphinx, and man page generation.
 
 **License**: public domain, Python, 2-Clause BSD, GPL 3 (see COPYING.txt, also found at http://sourceforge.net/p/docutils/code/HEAD/tree/trunk/docutils/COPYING.txt)
 

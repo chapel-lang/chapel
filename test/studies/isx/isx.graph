@@ -1,0 +1,5 @@
+perfkeys: total =, total =
+files: isx-spmd.dat, isx-bucket-spmd.dat
+graphkeys: Locale-based SPMD, Bucket-based SPMD
+ylabel: Time (seconds)
+graphtitle: ISx variations

@@ -673,6 +673,7 @@ Data Parallelism
   E.g., [i in D] f(i) should result in an array of type: [D] f(i).type
     but instead results in a 1D array
   # arrays/bradc/inferArrayType.future
+  # arrays/tmacd/promotionLosesArrayShape.future
   # reductions/bradc/minmaxlocscan-shape.future
   # sparse/bradc/inferSparseArrayType.future
 - Parallel zippered iteration does not perform runtime size/shape checks
