@@ -1312,12 +1312,10 @@ module DefaultRectangular {
     }
   }
 
-  // This is very conservative.  For example, it will return false for
-  // 1-d array aliases that are shifted from the aliased array.
+  // This is very conservative.
   proc DefaultRectangularArr.isDataContiguous() {
     if debugDefaultDistBulkTransfer then
       writeln("isDataContiguous(): origin=", origin, " off=", off, " blk=", blk);
-    if origin != 0 then return false;
   
     for param dim in 1..rank do
       if off(dim)!= dom.dsiDim(dim).first then return false;
