@@ -849,7 +849,8 @@ void AggregateType::codegenDef() {
           if (this->fields.length != 0)
             fprintf(outfile, "union {\n");
         } else if (this->fields.length == 0) {
-          fprintf(outfile, "int dummyFieldToAvoidWarning;\n");
+          // TODO: remove and enforce at least 1 element in a union
+          fprintf(outfile, "uint8_t dummyFieldToAvoidWarning;\n");
         }
 
         if (this->fields.length != 0) {

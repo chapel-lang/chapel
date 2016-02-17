@@ -303,16 +303,21 @@ static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
   if (isUnion(ct)) {
     if (setter)  {
       // Set the union ID in the setter.
-      fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
-                                  _this, new_IntSymbol(field->id)));
+      fn->insertAtTail(
+          new CallExpr(PRIM_SET_UNION_ID,
+                       _this,
+                       new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                    ct->symbol,
+                                    new_CStringSymbol(field->name))));
     } else {
       // Check the union ID in the getter.
-      fn->insertAtTail(
-          new CondStmt(
-            new CallExpr("!=",
-                         new CallExpr(PRIM_GET_UNION_ID, _this),
-                         new_IntSymbol(field->id)),
-            new CallExpr("halt", new_CStringSymbol("illegal union access"))));
+      fn->insertAtTail(new CondStmt(
+          new CallExpr("!=",
+            new CallExpr(PRIM_GET_UNION_ID, _this),
+            new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                         ct->symbol,
+                         new_CStringSymbol(field->name))),
+          new CallExpr("halt", new_CStringSymbol("illegal union access"))));
     }
   }
   if (isTypeSymbol(field) && isEnumType(field->type)) {
@@ -941,6 +946,7 @@ static void build_record_cast_function(AggregateType* ct) {
   normalize(fn);
 }
 
+// TODO: we should know what field is active after assigning unions
 static void build_union_assignment_function(AggregateType* ct) {
   if (function_exists("=", 2, ct, ct))
     return;
@@ -954,17 +960,21 @@ static void build_union_assignment_function(AggregateType* ct) {
   fn->insertFormalAtTail(arg2);
   fn->retType = dtUnknown;
   fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID, arg1, new_IntSymbol(0)));
-  for_fields(tmp, ct)
-    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
-      if (!tmp->hasFlag(FLAG_TYPE_VARIABLE))
-        fn->insertAtTail(
-          new CondStmt(
+  for_fields(tmp, ct) {
+    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
+      if (!tmp->hasFlag(FLAG_TYPE_VARIABLE)) {
+        fn->insertAtTail(new CondStmt(
             new CallExpr("==",
               new CallExpr(PRIM_GET_UNION_ID, arg2),
-              new_IntSymbol(tmp->id)),
+              new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                           ct->symbol,
+                           new_CStringSymbol(tmp->name))),
             new CallExpr("=",
-              new CallExpr(".", arg1, new_CStringSymbol(tmp->name)),
-              new CallExpr(".", arg2, new_CStringSymbol(tmp->name)))));
+              new CallExpr(".", arg1, new_StringSymbol(tmp->name)),
+              new CallExpr(".", arg2, new_StringSymbol(tmp->name)))));
+      }
+    }
+  }
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, ct->symbol);

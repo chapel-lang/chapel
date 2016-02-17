@@ -5819,29 +5819,6 @@ preFold(Expr* expr) {
       result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(),
                             new_CStringSymbol(name));
       call->replace(result);
-    } else if (call->isPrimitive(PRIM_FIELD_ID_BY_NUM)) {
-      /* this is really for unions */
-      AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
-      INT_ASSERT( classtype != NULL );
-      classtype = toAggregateType(classtype->getValType());
-      INT_ASSERT( classtype != NULL );
-
-      VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
-
-      INT_ASSERT( var != NULL );
-
-      int fieldnum = var->immediate->int_value();
-      int fieldcount = 0;
-      for_fields(field, classtype) {
-        if( ! isNormalField(field) ) continue;
-
-        fieldcount++;
-        if (fieldcount == fieldnum) {
-          result = new SymExpr(new_IntSymbol(field->id));
-          break;
-        }
-      }
-      call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_NAME_TO_NUM)) {
       AggregateType* classtype = toAggregateType(toSymExpr(call->get(1))->var->type);
       INT_ASSERT( classtype != NULL );
