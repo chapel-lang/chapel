@@ -102,6 +102,8 @@ class UseStmt : public Stmt {
 
   bool matchedNameOrConstructor(const char* name);
   bool inRelatedNames(const char* name);
+
+  void noRepeats();
 };
 
 /************************************ | *************************************
