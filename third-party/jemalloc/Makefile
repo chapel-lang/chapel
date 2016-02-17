@@ -12,10 +12,19 @@ ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_JEMALLOC_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
 endif
 
-# Can't build under cce with `-hgnu` or anything above `-O1`. Additionally,
-# CCE doesn't support the dependency flags that jemalloc expects (-MM -MT)
+# Can't build under CCE with gcc extensions enabled or with high levels of
+# interprocedural analysis on. The build fails with -hipa3 (the default) or
+# higher so we limit to a max of -hipa2. Additionally, CCE doesn't have the
+# dependency flags that jemalloc expects (-MM -MT)
 ifeq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
-CFLAGS += -hnognu -O1
+CFLAGS += -hnognu
+
+ifeq ($(OPTIMIZE), 1)
+CFLAGS += -hipa2
+else
+CFLAGS += -hipa0
+endif
+
 CHPL_JEMALLOC_MAKE_OPTIONS += CC_MM=''
 endif
 
