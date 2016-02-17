@@ -458,6 +458,8 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except)
   UseStmt* newUse = new UseStmt(mod, &namesList, except, &renameMap);
   addModuleToSearchList(newUse, mod);
 
+  delete names;
+
   return buildChapelStmt(newUse);
 }
 
