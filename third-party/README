@@ -20,18 +20,6 @@ chpl-venv/
   Website: Varies, see chpl-venv/README.md
 
 
-dlmalloc/
-  Summary: Doug Lea's memory allocator (dlmalloc) is a portable
-           allocator that can be used when a shared heap is required.
-
-  License: dlmalloc has been placed in the public domain as explained
-           at http://creativecommons.org/publicdomain/zero/1.0/
-
-  Website: http://g.oswego.edu/dl/html/malloc.html
-
-  See also: the comments in dlmalloc/src/dlmalloc.c
-
-
 gasnet/
   Summary: the Berkeley GASNet library for one-sided communication
            which we use as a communication layer to implement Chapel's
