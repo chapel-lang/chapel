@@ -363,15 +363,13 @@ CHPL_MEM
         Value     Description
         ========= =======================================================
         cstdlib   use the standard C malloc/free commands
-        dlmalloc  use Doug Lea's memory allocation package
         jemalloc  use Jason Evan's memory allocation package
         tcmalloc  use the tcmalloc package from Google Performance Tools
         ========= =======================================================
 
-   If unset, ``CHPL_MEM`` defaults to ``cstdlib`` in most cases.  If comm is
-   ``gasnet`` and you are using the fast or large segments it defaults to
-   ``dlmalloc``.  If comm is ``ugni`` it defaults to ``tcmalloc``.  See
-   :ref:`readme-multilocale` for more information on GASNet segments.
+   If unset, ``CHPL_MEM`` defaults to ``cstdlib`` if comm is ``none``,
+   ``jemalloc`` if comm is ``gasnet``, and ``tcmalloc`` if comm is
+   ``ugni``.
 
 
 CHPL_LAUNCHER
