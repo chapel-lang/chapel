@@ -1287,7 +1287,9 @@ module DefaultRectangular {
       if boundsChecking then
         assert((len:uint*elemSize:uint) <= max(ssize_t):uint,
                "length of array to write is greater than ssize_t can hold");
-      f.writeBytes(data, len:ssize_t*elemSize:ssize_t);
+      const src = this.theData;
+      const idx = getDataIndex(this.dom.dsiLow);
+      f.writeBytes(_ddata_shift(src.eltType, src, idx), len:ssize_t*elemSize:ssize_t);
     } else {
       this.dsiSerialReadWrite(f);
     }
