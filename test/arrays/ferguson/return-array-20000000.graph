@@ -1,0 +1,5 @@
+perfkeys: serial 20000000 untyped return, parallel 20000000 untyped return, serial 20000000 typed return, parallel 20000000 typed return, serial 20000000 untyped arg, parallel 20000000 untyped arg, serial 20000000 typed arg, parallel 20000000 typed arg
+graphkeys: serial untyped return, parallel untyped return, serial typed return, parallel typed return, serial untyped arg, parallel untyped arg, serial typed arg, parallel typed arg
+files: return-array-serial-20000000-10.dat, return-array-parallel-20000000-10.dat, return-array-serial-20000000-10.dat, return-array-parallel-20000000-10.dat, return-array-serial-20000000-10.dat, return-array-parallel-20000000-10.dat, return-array-serial-20000000-10.dat, return-array-parallel-20000000-10.dat
+ylabel: Time (seconds)
+graphtitle: array return performance, serial/parallel, 20000000 element array
