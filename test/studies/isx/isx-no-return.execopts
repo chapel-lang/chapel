@@ -1,0 +1,6 @@
+--testrun=true --mode=strong  --printTimings=false # isx-test-strong.good
+--testrun=true --mode=weak    --printTimings=false # isx-test-weak.good
+--testrun=true --mode=weakISO --printTimings=false # isx-test-weakISO.good
+--numTrials=0 --mode=strong   --printTimings=false # isx-probsize-strong.good
+--numTrials=0 --mode=weak     --printTimings=false # isx-probsize-weak.good
+--numTrials=0 --mode=weakISO  --printTimings=false # isx-probsize-weakISO.good
