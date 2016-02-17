@@ -2025,30 +2025,32 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
         }
 
         forv_Vec(UseStmt, use, *moduleUses) {
-          if (use && !use->skipSymbolSearch(name)) {
-            SymExpr* se = toSymExpr(use->mod);
-            INT_ASSERT(se);
-            ModuleSymbol* mod = toModuleSymbol(se->var);
-            INT_ASSERT(mod);
-            if (Symbol* sym = inSymbolTable(mod->block, name)) {
-              if (sym->hasFlag(FLAG_PRIVATE)) {
-                if (rejectedPrivateIds.find(sym->id) ==
-                    rejectedPrivateIds.end()) {
-                  // The symbol found was not one of the already rejected
-                  // private symbols
-                  if (!sym->isVisible(callingContext)) {
-                    rejectedPrivateIds.insert(sym->id);
-                  } else {
-                    if (!isRepeat(symbols, sym)) {
-                      symbols.push_back(sym);
+          if (use) {
+            if (!use->skipSymbolSearch(name)) {
+              SymExpr* se = toSymExpr(use->mod);
+              INT_ASSERT(se);
+              ModuleSymbol* mod = toModuleSymbol(se->var);
+              INT_ASSERT(mod);
+              if (Symbol* sym = inSymbolTable(mod->block, name)) {
+                if (sym->hasFlag(FLAG_PRIVATE)) {
+                  if (rejectedPrivateIds.find(sym->id) ==
+                      rejectedPrivateIds.end()) {
+                    // The symbol found was not one of the already rejected
+                    // private symbols
+                    if (!sym->isVisible(callingContext)) {
+                      rejectedPrivateIds.insert(sym->id);
+                    } else {
+                      if (!isRepeat(symbols, sym)) {
+                        symbols.push_back(sym);
+                      }
                     }
                   }
-                }
-                // If it was already rejected, we don't want to add it.
+                  // If it was already rejected, we don't want to add it.
 
-              } else if (!isRepeat(symbols, sym)) {
-                // Don't want to add if the symbol itself was already present.
-                symbols.push_back(sym);
+                } else if (!isRepeat(symbols, sym)) {
+                  // Don't want to add if the symbol itself was already present.
+                  symbols.push_back(sym);
+                }
               }
             }
           } else {
