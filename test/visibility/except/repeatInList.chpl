@@ -15,7 +15,7 @@ module Foo {
 module M {
   use Foo except a, a;
   // Verifies that the user is informed when they repeat an identifier in an
-  // only list.
+  // except list.
 
   proc main() {
     writeln(b);
