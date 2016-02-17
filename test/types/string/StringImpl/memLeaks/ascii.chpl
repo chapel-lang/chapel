@@ -5,8 +5,8 @@ module unitTest {
     if useExpr {
       writeMe(ascii(s));
     } else {
-      const as = ascii(s);
-      writeMe(as);
+      const aStr = ascii(s);
+      writeMe(aStr);
     }
   }
 
