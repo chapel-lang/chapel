@@ -114,6 +114,7 @@ floatLiteral     {decFloatLiteral}|{hexFloatLiteral}
 %%
 
 align            return processToken(yyscanner, TALIGN);
+as               return processToken(yyscanner, TAS);
 atomic           return processToken(yyscanner, TATOMIC);
 begin            return processToken(yyscanner, TBEGIN);
 break            return processToken(yyscanner, TBREAK);

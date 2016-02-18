@@ -21,6 +21,7 @@
 #define _STMT_H_
 
 #include <cstdio>
+#include <map>
 
 #include "expr.h"
 
@@ -61,10 +62,11 @@ class UseStmt : public Stmt {
   // need to see it.  No one else should touch it.  I mean it!
   std::vector<const char *> named; // The names of symbols from an 'except' or
   // 'only' list
+  std::map<const char*, const char*> renamed; // Map of newName: oldName
 
 
   UseStmt(BaseAST* module);
-  UseStmt(BaseAST* module, std::vector<const char*>* args, bool exclude);
+  UseStmt(BaseAST* module, std::vector<const char*>* args, bool exclude, std::map<const char*, const char*>* renames);
 
   virtual void    verify();
 
@@ -82,6 +84,8 @@ class UseStmt : public Stmt {
   void writeListPredicate(FILE* mFP);
 
   bool skipSymbolSearch(const char* name);
+  bool isARename(const char* name);
+  const char* getRename(const char* name);
   UseStmt* applyOuterUse(UseStmt* outer);
   bool providesNewSymbols(UseStmt* other);
 
