@@ -10,28 +10,6 @@
 //
 
 //
-// Top priorities:
-// - performance analysis / chplvis
-
-// TODO:
-// * variants that we should try
-//   - multiple buckets per locale w/out any atomic ints
-//   - some sort of hybrid between the current 1 bucket per locale scheme
-//     and the previous?
-
-//
-// TODO: What are the potential performance issues?
-// * put as one message?
-//   - not currently happening due to origin check in bulk transfer
-//     optimization -- will fix in future revision to see performance
-//     impact.
-// * how do Ben's locality optimizations do?
-// * does returning arrays cost us anything?  Do we leak them?
-// * other?
-// * (this would be a good chplvis demo)
-//
-
-//
 // We want to use block-distributed arrays (BlockDist), barrier
 // synchronization (Barrier), and timers (Time).
 //
@@ -84,10 +62,10 @@ config const mode = scaling.weak;
 config const n = if testrun then 32 else 2**27;
 
 //
-// TODO: permit these to be configurable
+// The number of buckets per locale and total number of buckets.
 //
 const bucketsPerLocale = 1;
-const numBuckets = numLocales;
+const numBuckets = numLocales * bucketsPerLocale;
 
 //
 // The total number of keys
@@ -164,26 +142,14 @@ var totalTime, inputTime, bucketCountTime, bucketOffsetTime, bucketizeTime,
     exchangeKeysTime, countKeysTime: [BucketSpace] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
-//
-// TODO: better name?
-//
 var barrier = new Barrier(numBuckets);
 
-//
-// TODO: introduce a main()
-//
 
-// TODO: This seems attractive, but also like it will break the barrier:
-// forall bucketID in BucketSpace {
 coforall bucketID in BucketSpace do
   on BucketDist.idxToLocale(bucketID) {
     //
     // Execution is SPMD-style across buckets here
     //
-    // TODO: remove this once we feel confident it's working
-    //
-    if allBucketKeys[bucketID][0].locale != here then
-      warning("Need to distribute allBucketKeys");
 
     //
     // The non-positive iterations represent burn-in runs, so don't
@@ -191,11 +157,6 @@ coforall bucketID in BucketSpace do
     // the final timed run.
     //
     for i in 1-numBurnInRuns..numTrials do
-      //
-      // TODO: Could make all other procedures nested in this loop
-      // to let them refer to bucketID non-locally?  Or is that
-      // crazy?
-      //
       bucketSort(bucketID, trial=i, time=printTimings && (i>0),
                  verify=(i==numTrials));
   }
@@ -236,13 +197,6 @@ proc bucketSort(bucketID, trial: int, time = false, verify = false) {
     subTimer.clear();
   }
 
-  //
-  // TODO: Should we be able to support scans on arrays of atomics without a
-  // .read()?
-  //
-  // TODO: We really want an exclusive scan, but Chapel's is inclusive... :(
-  // Weren't we planning on supporting both?
-  //
   var sendOffsets: [LocBucketSpace] int = + scan bucketSizes.read();
   sendOffsets -= bucketSizes.read();
   if debug then writeln(bucketID, ": sendOffsets = ", sendOffsets);
@@ -252,9 +206,6 @@ proc bucketSort(bucketID, trial: int, time = false, verify = false) {
     subTimer.clear();
   }
 
-  //
-  // TODO: should we pass our globals into/out of these routines?
-  //
   var myBucketedKeys = bucketizeLocalKeys(bucketID, myKeys, sendOffsets);
 
   if subtime {
@@ -269,16 +220,6 @@ proc bucketSort(bucketID, trial: int, time = false, verify = false) {
     exchangeKeysTime.localAccess[here.id][trial] = subTimer.elapsed();
     subTimer.clear();
   }
-
-  //
-  // TODO: discussed with Jake a version in which the histogramming
-  // (countLocalKeys) was done in parallel with the exchangeKeys;
-  // the exchange keys task would write a "done"-style sync variable
-  // when a put was complete and the task could begin aggressively
-  // histogramming the next buffer's worth of data.  Use a cobegin
-  // to kick off both of these tasks in parallel and know when they're
-  // both done.
-  //
 
   const keysInMyBucket = recvOffset[bucketID].read();
   var myLocalKeyCounts = countLocalKeys(bucketID, keysInMyBucket);
@@ -321,7 +262,6 @@ proc bucketizeLocalKeys(bucketID, myKeys, sendOffsets) {
 
 
 proc countLocalBucketSizes(myKeys) {
-  // TODO: if adding numBuckets, change to that here
   var bucketSizes: [LocBucketSpace] atomic int;
 
   forall key in myKeys {
@@ -342,12 +282,7 @@ proc exchangeKeys(bucketID, sendOffsets, bucketSizes, myBucketedKeys) {
     const transferSize = bucketSizes[dstBucketID].read();
     const dstOffset = recvOffset[dstBucketID].fetchAdd(transferSize);
     const srcOffset = sendOffsets[dstBucketID];
-    //
-    // TODO: are we implementing this with one communication?
-    // Answer (BenH): No, due to int(32)/int(64) mismatch.  Leaving
-    // it as is now in order to measure the perf difference in the
-    // test system.
-    //
+
     allBucketKeys[dstBucketID][dstOffset..#transferSize] = 
              myBucketedKeys[srcOffset..#transferSize];
   }
@@ -356,17 +291,9 @@ proc exchangeKeys(bucketID, sendOffsets, bucketSizes, myBucketedKeys) {
 
 
 proc countLocalKeys(bucketID, myBucketSize) {
-  //
-  // TODO: what if we used a global histogram here instead?
-  // Note that if we did so and moved this outside of the coforall,
-  // we could also remove the barrier from within the coforall
-  //
   const myMinKeyVal = bucketID * bucketWidth;
   var myLocalKeyCounts: [myMinKeyVal..#bucketWidth] atomic int;
-  //
-  // TODO: Can we use a ref/array alias to myBucketKeys[bucketID] to avoid
-  // redundant indexing?
-  //
+
   forall i in 0..#myBucketSize do
     myLocalKeyCounts[allBucketKeys[bucketID][i]].add(1);
 
@@ -421,11 +348,6 @@ proc makeInput(bucketID) {
   if (debug) then
     writeln(bucketID, ": Calling pcg32_srandom_r with ", bucketID);
 
-  //
-  // TODO: The reference version of ISx uses pcg32_srandom_r(), which
-  // takes a second argument in addition to the seed to specify a stream
-  // ID.  Should/can our PCG interface do that as well?
-  //
   var MyRandStream = new PCGRandomStream(seed = here.id,
                                          parSafe=false,
                                          eltType = keyType);
@@ -439,14 +361,6 @@ proc makeInput(bucketID) {
   // is in [0, maKeyVal) before storing it to key.  This is tricky when
   // maxKeyVal isn't a power of two and so we take some care to keep the
   // value distributed evenly.
-  //
-  // TODO: Double-check that I don't have an off-by-one error here.
-  // Having one would not make the code break, but would imply
-  // that we're not evenly distributing the random numbers.
-  //
-  // TODO: The C PCG takes care of this bounding automatically.  Should
-  // our PCG interface do so as well?  (Can it if it's being called
-  // in parallel?  Seems unlikely...)
   //
   const maxModdableKeyVal = max(keyType) - max(keyType)%maxKeyVal;
   for key in myKeys do
