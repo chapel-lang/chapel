@@ -323,7 +323,13 @@ module LCALSDataTypes {
     var RealArray_2D_7xN: [0..#s_num_2D_7xN_Real_arrays][0..#7, 0..#aligned_chunksize] real;
     var RealArray_2D_64x64: [0..#s_num_2D_64x64_Real_arrays][0..#64, 0..#64] real;
 
-    //var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays][0..#2, 0..#aligned_chunksize, 0..#4] real;
+    // This is how this array *seems* like it should be declared, making
+    // it an array of 3D arrays of 2xNx4 elements.  However, the reference
+    // LCALS uses a bunch of pointers into a data vector that cause many
+    // indices to overlap with eachother. The LCALS_Overlapping_Array_3D
+    // class implements the same pattern used in the LCALS reference.
+    //
+    // var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays][0..#2, 0..#aligned_chunksize, 0..#4] real;
     var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays] LCALS_Overlapping_Array_3D(real) = [i in 0..s_num_3D_2xNx4_Real_arrays] new LCALS_Overlapping_Array_3D(real, 2*4*aligned_chunksize); // 2 X loop_length X 4 array size
 
     var RealArray_scalars: [0..#s_num_Real_scalars] real;
