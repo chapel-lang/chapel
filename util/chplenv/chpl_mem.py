@@ -18,10 +18,8 @@ def get(flag='host'):
         mem_val = os.environ.get('CHPL_MEM')
         if not mem_val:
             comm_val = chpl_comm.get()
-            if comm_val == 'gasnet':
+            if comm_val != 'none':
                 mem_val='jemalloc'
-            elif comm_val == 'ugni':
-                mem_val = 'tcmalloc'
             else:
                 mem_val = 'cstdlib'
     else:
