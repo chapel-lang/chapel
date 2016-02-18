@@ -445,7 +445,7 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except)
           if (renameMap.count(new_name->unresolved) == 0) {
             renameMap[new_name->unresolved] = old_name->unresolved;
           } else {
-            USR_FATAL_CONT(elem->first, "already renamed '%s' to '%s'", renameMap[new_name->unresolved], new_name->unresolved);
+            USR_FATAL_CONT(elem->first, "already renamed '%s' to '%s', renaming '%s' would conflict", renameMap[new_name->unresolved], new_name->unresolved, old_name->unresolved);
           }
         } else {
           useListError(elem->first, except);

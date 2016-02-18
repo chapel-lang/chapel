@@ -468,6 +468,8 @@ void UseStmt::validateList() {
   ModuleSymbol* module = toModuleSymbol(se->var);
   INT_ASSERT(module);
 
+  noRepeats();
+
   const char* listName = except ? "except" : "only";
   for_vector(const char, name, named) {
     Symbol* sym = lookup(module->block, name);
@@ -486,12 +488,65 @@ void UseStmt::validateList() {
     Symbol* sym = lookup(module->block, it->second);
 
     if (!sym) {
-      USR_FATAL_CONT(this, "Bad identifier in rename, no known '%s'", it->second);
+      USR_FATAL_CONT(this, "Bad identifier in rename, no known '%s' in module '%s'", it->second, module->name);
     } else if (!sym->isVisible(this)) {
       USR_FATAL_CONT(this, "Bad identifier in rename, '%s' is private", it->second);
     }
 
     createRelatedNames(sym);
+  }
+}
+
+void UseStmt::noRepeats() {
+  for (std::vector<const char*>::iterator it = named.begin();
+       it != named.end(); ++it) {
+    std::vector<const char*>::iterator next = it;
+    for (++next; next != named.end(); ++next) {
+      // Check rest of named for the same name
+      if (!strcmp(*it, *next)) {
+        USR_WARN(this, "identifier '%s' is repeated", *it);
+      }
+    }
+    for (std::map<const char*, const char*>::iterator renamedIt = renamed.begin();
+         renamedIt != renamed.end(); ++renamedIt) {
+      if (!strcmp(*it, renamedIt->second)) {
+        // This identifier is also used as the old name for a renaming.
+        // Probably a mistake on the user's part, but not a catastrophic one
+        USR_WARN(this, "identifier '%s' is repeated", *it);
+      }
+      if (!strcmp(*it, renamedIt->first)) {
+        // The user attempted to rename a symbol to a name that was already
+        // in the 'only' list.  This causes a naming conflict.
+        USR_FATAL_CONT(this, "symbol '%s' multiply defined", *it);
+      }
+    }
+  }
+  for (std::map<const char*, const char*>::iterator it = renamed.begin();
+       it != renamed.end(); ++it) {
+    std::map<const char*, const char*>::iterator next = it;
+    for (++next; next != renamed.end(); ++next) {
+      if (!strcmp(it->second, next->second)) {
+        // Renamed this variable twice.  Probably a mistake on the user's part,
+        // but not a catastrophic one
+        USR_WARN(this, "identifier '%s' is repeated", it->second);
+      }
+      if (!strcmp(it->second, next->first)) {
+        // This name is the old_name in one rename and the new_name in another
+        // Did the user actually want to cut out the middle man?
+        USR_WARN(this, "identifier '%s' is repeated", it->second);
+        USR_PRINT("Did you mean to rename '%s' to '%s'?", next->second, it->first);
+      }
+      if (!strcmp(it->first, next->second)) {
+        // This name is the old_name in one rename and the new_name in another
+        // Did the user actually want to cut out the middle man?
+        USR_WARN(this, "identifier '%s' is repeated", it->first);
+        USR_PRINT("Did you mean to rename '%s' to '%s'?", it->second, next->first);
+      }
+      // Two symbols can't be renamed to the same name because the map can only
+      // store one entry with a given key.  We catch this case in build.cpp
+      // when creating the UseStmt.  No need to check it->first matching
+      // next->first.
+    }
   }
 }
 
