@@ -488,7 +488,7 @@ void UseStmt::validateList() {
     Symbol* sym = lookup(module->block, it->second);
 
     if (!sym) {
-      USR_FATAL_CONT(this, "Bad identifier in rename, no known '%s'", it->second);
+      USR_FATAL_CONT(this, "Bad identifier in rename, no known '%s' in module '%s'", it->second, module->name);
     } else if (!sym->isVisible(this)) {
       USR_FATAL_CONT(this, "Bad identifier in rename, '%s' is private", it->second);
     }
@@ -534,18 +534,18 @@ void UseStmt::noRepeats() {
         // This name is the old_name in one rename and the new_name in another
         // Did the user actually want to cut out the middle man?
         USR_WARN(this, "identifier '%s' is repeated", it->second);
-        USR_PRINT("Did you mean '%s' as '%s'?", next->second, it->first);
+        USR_PRINT("Did you mean to rename '%s' to '%s'?", next->second, it->first);
       }
       if (!strcmp(it->first, next->second)) {
         // This name is the old_name in one rename and the new_name in another
         // Did the user actually want to cut out the middle man?
         USR_WARN(this, "identifier '%s' is repeated", it->first);
-        USR_PRINT("Did you mean '%s' as '%s'?", it->second, next->first);
+        USR_PRINT("Did you mean to rename '%s' to '%s'?", it->second, next->first);
       }
-      if (!strcmp(it->first, next->first)) {
-        // Two symbols were renamed to the same name.  Naming conflict!
-        USR_FATAL_CONT(this, "symbol '%s' multiply defined", it->first);
-      }
+      // Two symbols can't be renamed to the same name because the map can only
+      // store one entry with a given key.  We catch this case in build.cpp
+      // when creating the UseStmt.  No need to check it->first matching
+      // next->first.
     }
   }
 }
