@@ -654,6 +654,16 @@ void chpl_task_init(void)
     hwpar = setupAvailableParallelism(commMaxThreads);
     setupCallStacks(hwpar);
 
+    // Make sure Qthreads supplies enough space for our task-local needs.
+    {
+        unsigned long int tasklocal_size = chpl_qt_getenv_num("TASKLOCAL_SIZE", 0);
+        if (tasklocal_size < sizeof(chpl_qthread_tls_t)) {
+            char newenv[QT_ENV_S];
+            snprintf(newenv, sizeof(newenv), "%zu", sizeof(chpl_qthread_tls_t));
+            chpl_qt_setenv("TASKLOCAL_SIZE", newenv, 1);
+        }
+    }
+
     if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
 
     // Initialize qthreads
