@@ -111,8 +111,8 @@ all:
   02/14/16:
     - text: Default to jemalloc for gasnet configurations
       config: 16 node XC
-  02/16/16:
-    - text: Remove origin check to improve bulk transfer
+  02/17/16:
+    - text: Remove origin check to improve bulk transfer (#3301)
       config: 16 node XC
 
 AllCompTime:
