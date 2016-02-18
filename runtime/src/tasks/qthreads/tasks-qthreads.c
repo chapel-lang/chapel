@@ -639,6 +639,19 @@ static void setupCallStacks(int32_t hwpar) {
     }
 }
 
+static void setupTasklocalStorage(void) {
+    unsigned long int tasklocal_size;
+    char newenv[QT_ENV_S];
+
+    // Make sure Qthreads knows how much space we need for per-task
+    // local storage.
+    tasklocal_size = chpl_qt_getenv_num("TASKLOCAL_SIZE", 0);
+    if (tasklocal_size < sizeof(chpl_qthread_tls_t)) {
+        snprintf(newenv, sizeof(newenv), "%zu", sizeof(chpl_qthread_tls_t));
+        chpl_qt_setenv("TASKLOCAL_SIZE", newenv, 1);
+    }
+}
+
 void chpl_task_init(void)
 {
     int32_t   commMaxThreads;
@@ -650,19 +663,11 @@ void chpl_task_init(void)
 
     commMaxThreads = chpl_comm_getMaxThreads();
 
-    // Setup hardware parallelism, the stack size, and stack guards
+    // Set up hardware parallelism, the stack size and stack guards, and
+    // tasklocal storage.
     hwpar = setupAvailableParallelism(commMaxThreads);
     setupCallStacks(hwpar);
-
-    // Make sure Qthreads supplies enough space for our task-local needs.
-    {
-        unsigned long int tasklocal_size = chpl_qt_getenv_num("TASKLOCAL_SIZE", 0);
-        if (tasklocal_size < sizeof(chpl_qthread_tls_t)) {
-            char newenv[QT_ENV_S];
-            snprintf(newenv, sizeof(newenv), "%zu", sizeof(chpl_qthread_tls_t));
-            chpl_qt_setenv("TASKLOCAL_SIZE", newenv, 1);
-        }
-    }
+    setupTasklocalStorage();
 
     if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
 
