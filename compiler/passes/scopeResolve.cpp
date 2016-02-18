@@ -501,7 +501,7 @@ void UseStmt::noRepeats() {
   for (std::vector<const char*>::iterator it = named.begin();
        it != named.end(); ++it) {
     std::vector<const char*>::iterator next = it;
-    for (std::advance(next, 1); next != named.end(); ++next) {
+    for (++next; next != named.end(); ++next) {
       // Check rest of named for the same name
       if (!strcmp(*it, *next)) {
         USR_WARN(this, "identifier '%s' is repeated", *it);
@@ -524,7 +524,7 @@ void UseStmt::noRepeats() {
   for (std::map<const char*, const char*>::iterator it = renamed.begin();
        it != renamed.end(); ++it) {
     std::map<const char*, const char*>::iterator next = it;
-    for (std::advance(next, 1); next != renamed.end(); ++next) {
+    for (++next; next != renamed.end(); ++next) {
       if (!strcmp(it->second, next->second)) {
         // Renamed this variable twice.  Probably a mistake on the user's part,
         // but not a catastrophic one
