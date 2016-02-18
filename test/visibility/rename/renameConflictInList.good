@@ -1,2 +1,1 @@
 renameConflictInList.chpl:8: error: symbol 'baz' multiply defined
-renameConflictInList.chpl:8: error: symbol 'baz' multiply defined
