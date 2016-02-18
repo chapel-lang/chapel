@@ -336,6 +336,10 @@ parOpEquals:
   02/28/15:
     - (no-local) Move the check for src==dst from comm_get to array op= (#1410)
 
+prk-stencil:
+  02/13/16:
+    - Improved performance on PRK-stencil (#3288)
+
 regexdna:
   10/07/14:
     - Add c_string_copy type
