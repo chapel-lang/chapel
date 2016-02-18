@@ -126,19 +126,6 @@ re2/
   See also: re2/re2/README
 
 
-tcmalloc/
-  Summary: the Google perf-tools memory allocator (tcmalloc) is
-           optimized for high concurrency code and can be used when a
-           shared heap is required.
-
-  License: Google-perftools is released under the New BSD License (see
-           tcmalloc/google-perftools-<version>/COPYING)
-
-  Website: http://code.google.com/p/google-perftools/
-
-  See also: tcmalloc/README
-
-
 utf8-decoder/
   Summary: A fast UTF-8 decoder, used for fast UTF-8 I/O.
            This decoder is by Bjoern Hoehrmann.

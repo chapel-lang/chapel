@@ -31,7 +31,6 @@ There are currently a number of limitations for KNC builds:
   =================  ================================
   Configuration      Reason
   =================  ================================
-  CHPL_MEM=tcmalloc  lfence not supported
   CHPL_REGEXP=re2    sfence not supported
   CHPL_GMP=system    system version not built for KNC
   =================  ================================

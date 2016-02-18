@@ -166,12 +166,6 @@ def print_mode(mode='list'):
         if regexp == 're2':
             link_args_3p.extend(chpl_3p_re2_configs.get_link_args())
 
-        print_var('  CHPL_TCMALLOC_UNIQ_CFG_PATH',
-                  chpl_3p_tcmalloc_configs.get_uniq_cfg_path(),
-                  mode, filters=('runtime',))
-        if target_mem == 'tcmalloc':
-            link_args_3p.extend(chpl_3p_tcmalloc_configs.get_link_args())
-
         link_args_3p_dedup=[]
         for arg in reversed(link_args_3p):
             if arg not in link_args_3p_dedup:

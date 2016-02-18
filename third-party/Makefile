@@ -15,7 +15,7 @@ endif
 
 default: all
 
-all: test-venv chpldoc-venv gasnet gmp hwloc jemalloc qthread tcmalloc llvm
+all: test-venv chpldoc-venv gasnet gmp hwloc jemalloc qthread llvm
 
 clean: FORCE
 	cd chpl-venv && $(MAKE) clean
@@ -27,7 +27,6 @@ clean: FORCE
 	cd massivethreads && $(MAKE) clean
 	cd qthread && $(MAKE) clean
 	cd re2 && $(MAKE) clean
-	cd tcmalloc && $(MAKE) clean
 	cd fltk && $(MAKE) clean
 
 cleanall: FORCE
@@ -40,7 +39,6 @@ cleanall: FORCE
 	cd massivethreads && $(MAKE) cleanall
 	cd qthread && $(MAKE) cleanall
 	cd re2 && $(MAKE) cleanall
-	cd tcmalloc && $(MAKE) cleanall
 	cd fltk && $(MAKE) cleanall
 
 clobber: FORCE
@@ -53,7 +51,6 @@ clobber: FORCE
 	cd massivethreads && $(MAKE) clobber
 	cd qthread && $(MAKE) clobber
 	cd re2 && $(MAKE) clobber
-	cd tcmalloc && $(MAKE) clobber
 	cd fltk && $(MAKE) clobber
 
 depend:
@@ -103,10 +100,6 @@ endif
 $(QTHREAD_INSTALL_DIR):
 	cd qthread && $(MAKE)
 $(QTHREAD_ALIASES): qthread
-
-tcmalloc: $(TCMALLOC_INSTALL_DIR)
-$(TCMALLOC_INSTALL_DIR):
-	cd tcmalloc && $(MAKE)
 
 llvm: FORCE
 	cd llvm && $(MAKE)

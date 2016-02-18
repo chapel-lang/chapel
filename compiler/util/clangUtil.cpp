@@ -1933,7 +1933,7 @@ void makeBinaryLLVM(void) {
   INT_ASSERT(tmpbinname);
 
   // Run linker... we always use clang++ since some relevant libraries
-  //  (like tcmalloc, GASNet, etc) are actually written with C++
+  //  (like re2, GASNet, etc) are actually written with C++
   //  and need C++ support. With the C backend, this switcheroo is
   //  accomplished in the Makefiles somewhere....
   std::string command = clangInstall + "/bin/clang++ " + options + " " +

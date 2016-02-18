@@ -26,5 +26,4 @@ __all__ = [
     'chpl_3p_massivethreads_configs',
     'chpl_3p_qthreads_configs',
     'chpl_3p_re2_configs',
-    'chpl_3p_tcmalloc_configs'
 ]
