@@ -787,10 +787,10 @@ module DefaultRectangular {
         // work for something with no immediate reward.
         if dom.dsiNumIndices > 0 {
           if isIntType(idxType) then
-            shiftedData = _ddata_shift(eltType, data, origin-factoredOffs);
+            shiftedData = _ddata_shift(data, origin-factoredOffs);
           else
             // Not bothering to check for over/underflow
-            shiftedData = _ddata_shift(eltType, data,
+            shiftedData = _ddata_shift(data,
                                        origin:chpl__signedType(idxType)-
                                        factoredOffs:chpl__signedType(idxType));
         }
@@ -1289,7 +1289,7 @@ module DefaultRectangular {
                "length of array to write is greater than ssize_t can hold");
       const src = this.theData;
       const idx = getDataIndex(this.dom.dsiLow);
-      f.writeBytes(_ddata_shift(src.eltType, src, idx), len:ssize_t*elemSize:ssize_t);
+      f.writeBytes(_ddata_shift(src, idx), len:ssize_t*elemSize:ssize_t);
     } else {
       this.dsiSerialReadWrite(f);
     }
@@ -1378,42 +1378,27 @@ module DefaultRectangular {
               " Alo=", Alo, ", Blo=", Blo,
               ", len=", len, ", elemSize=", elemSize);
     }
+
+    const Adata = _ddata_shift(this.theData, getDataIndex(Alo));
+    const Bdata = _ddata_shift(B._value.theData, B._value.getDataIndex(Blo));
+
+    if Adata == Bdata then return;
   
     // NOTE: This does not work with --heterogeneous, but heterogeneous
     // compilation does not work right now.  The calls to chpl_comm_get
     // and chpl_comm_put should be changed once that is fixed.
-    if this.data.locale.id==here.id {
+    if Adata.locale.id==here.id {
       if debugDefaultDistBulkTransfer then //See bug in test/optimizations/bulkcomm/alberto/rafatest2.chpl
         writeln("\tlocal get() from ", B._value.locale.id);
-      const dest = this.theData;
-      const src = B._value.theData;
-      if dest != src {
-        __primitive("chpl_comm_array_get",
-                  __primitive("array_get", dest, getDataIndex(Alo)),
-                  B._value.data.locale.id,
-                  __primitive("array_get", src, B._value.getDataIndex(Blo)),
-                  len);
-      }
-    } else if B._value.data.locale.id==here.id {
+      __primitive("chpl_comm_array_get", Adata[0], Bdata.locale.id, Bdata[0], len);
+    } else if Bdata.locale.id==here.id {
       if debugDefaultDistBulkTransfer then
         writeln("\tlocal put() to ", this.locale.id);
-      const dest = this.theData;
-      const src = B._value.theData;
-      __primitive("chpl_comm_array_put",
-                  __primitive("array_get", src, B._value.getDataIndex(Blo)),
-                  this.data.locale.id,
-                  __primitive("array_get", dest, getDataIndex(Alo)),
-                  len);
-    } else on this.data.locale {
+      __primitive("chpl_comm_array_put", Bdata[0], Adata.locale.id, Adata[0], len); 
+    } else on Adata.locale {
       if debugDefaultDistBulkTransfer then
         writeln("\tremote get() on ", here.id, " from ", B.locale.id);
-      const dest = this.theData;
-      const src = B._value.theData;
-      __primitive("chpl_comm_array_get",
-                  __primitive("array_get", dest, getDataIndex(Alo)),
-                  B._value.data.locale.id,
-                  __primitive("array_get", src, B._value.getDataIndex(Blo)),
-                  len);
+      __primitive("chpl_comm_array_get", Adata[0], Bdata.locale.id, Bdata[0], len);
     }
   }
   
