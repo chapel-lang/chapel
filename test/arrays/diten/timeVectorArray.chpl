@@ -61,7 +61,7 @@ class InsertRandom: Runner {
     extern proc rand(): int;
     srand(randSeed);
     for i in 1..n {
-      A.insert(i, (rand() % i) + 1);
+      A.insert((rand() % i) + 1, i);
     }
   }
 }

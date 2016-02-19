@@ -111,6 +111,9 @@ all:
   02/14/16:
     - text: Default to jemalloc for gasnet configurations
       config: 16 node XC
+  02/17/16:
+    - text: Remove origin check to improve bulk transfer (#3301)
+      config: 16 node XC
 
 AllCompTime:
   11/09/14:
@@ -335,6 +338,10 @@ parOpEquals:
     - (no-local) Reversion of chpl_localeID_t's ignore subloc field being minimized to 1 bit
   02/28/15:
     - (no-local) Move the check for src==dst from comm_get to array op= (#1410)
+
+prk-stencil:
+  02/14/16:
+    - Improved performance on PRK-stencil (#3288)
 
 regexdna:
   10/07/14:

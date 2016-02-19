@@ -368,8 +368,7 @@ CHPL_MEM
         ========= =======================================================
 
    If unset, ``CHPL_MEM`` defaults to ``cstdlib`` if comm is ``none``,
-   ``jemalloc`` if comm is ``gasnet``, and ``tcmalloc`` if comm is
-   ``ugni``.
+   otherwise it defaults to ``jemalloc``.
 
 
 CHPL_LAUNCHER

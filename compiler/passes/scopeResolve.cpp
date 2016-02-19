@@ -468,6 +468,8 @@ void UseStmt::validateList() {
   ModuleSymbol* module = toModuleSymbol(se->var);
   INT_ASSERT(module);
 
+  noRepeats();
+
   const char* listName = except ? "except" : "only";
   for_vector(const char, name, named) {
     Symbol* sym = lookup(module->block, name);
@@ -479,6 +481,72 @@ void UseStmt::validateList() {
     }
 
     createRelatedNames(sym);
+  }
+
+  for (std::map<const char*, const char*>::iterator it = renamed.begin();
+       it != renamed.end(); ++it) {
+    Symbol* sym = lookup(module->block, it->second);
+
+    if (!sym) {
+      USR_FATAL_CONT(this, "Bad identifier in rename, no known '%s' in module '%s'", it->second, module->name);
+    } else if (!sym->isVisible(this)) {
+      USR_FATAL_CONT(this, "Bad identifier in rename, '%s' is private", it->second);
+    }
+
+    createRelatedNames(sym);
+  }
+}
+
+void UseStmt::noRepeats() {
+  for (std::vector<const char*>::iterator it = named.begin();
+       it != named.end(); ++it) {
+    std::vector<const char*>::iterator next = it;
+    for (++next; next != named.end(); ++next) {
+      // Check rest of named for the same name
+      if (!strcmp(*it, *next)) {
+        USR_WARN(this, "identifier '%s' is repeated", *it);
+      }
+    }
+    for (std::map<const char*, const char*>::iterator renamedIt = renamed.begin();
+         renamedIt != renamed.end(); ++renamedIt) {
+      if (!strcmp(*it, renamedIt->second)) {
+        // This identifier is also used as the old name for a renaming.
+        // Probably a mistake on the user's part, but not a catastrophic one
+        USR_WARN(this, "identifier '%s' is repeated", *it);
+      }
+      if (!strcmp(*it, renamedIt->first)) {
+        // The user attempted to rename a symbol to a name that was already
+        // in the 'only' list.  This causes a naming conflict.
+        USR_FATAL_CONT(this, "symbol '%s' multiply defined", *it);
+      }
+    }
+  }
+  for (std::map<const char*, const char*>::iterator it = renamed.begin();
+       it != renamed.end(); ++it) {
+    std::map<const char*, const char*>::iterator next = it;
+    for (++next; next != renamed.end(); ++next) {
+      if (!strcmp(it->second, next->second)) {
+        // Renamed this variable twice.  Probably a mistake on the user's part,
+        // but not a catastrophic one
+        USR_WARN(this, "identifier '%s' is repeated", it->second);
+      }
+      if (!strcmp(it->second, next->first)) {
+        // This name is the old_name in one rename and the new_name in another
+        // Did the user actually want to cut out the middle man?
+        USR_WARN(this, "identifier '%s' is repeated", it->second);
+        USR_PRINT("Did you mean to rename '%s' to '%s'?", next->second, it->first);
+      }
+      if (!strcmp(it->first, next->second)) {
+        // This name is the old_name in one rename and the new_name in another
+        // Did the user actually want to cut out the middle man?
+        USR_WARN(this, "identifier '%s' is repeated", it->first);
+        USR_PRINT("Did you mean to rename '%s' to '%s'?", it->second, next->first);
+      }
+      // Two symbols can't be renamed to the same name because the map can only
+      // store one entry with a given key.  We catch this case in build.cpp
+      // when creating the UseStmt.  No need to check it->first matching
+      // next->first.
+    }
   }
 }
 
@@ -493,6 +561,18 @@ void UseStmt::createRelatedNames(Symbol* maybeType) {
         relatedNames.push_back(sym->name);
       }
     }
+
+    unsigned int constructorLen = strlen(ts->name) + strlen("_construct_") + 1;
+    char * constructorName = (char *) malloc(constructorLen);
+    strcpy(constructorName, "_construct_");
+    strcat(constructorName, ts->name);
+    relatedNames.push_back(constructorName);
+
+    unsigned int typeConstLen = constructorLen + strlen("_type");
+    char * typeConstructorName = (char *) malloc(typeConstLen);
+    strcpy(typeConstructorName, "_type_construct_");
+    strcat(typeConstructorName, ts->name);
+    relatedNames.push_back(typeConstructorName);
   }
 }
 
@@ -2027,11 +2107,12 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
         forv_Vec(UseStmt, use, *moduleUses) {
           if (use) {
             if (!use->skipSymbolSearch(name)) {
+              const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
               SymExpr* se = toSymExpr(use->mod);
               INT_ASSERT(se);
               ModuleSymbol* mod = toModuleSymbol(se->var);
               INT_ASSERT(mod);
-              if (Symbol* sym = inSymbolTable(mod->block, name)) {
+              if (Symbol* sym = inSymbolTable(mod->block, nameToUse)) {
                 if (sym->hasFlag(FLAG_PRIVATE)) {
                   if (rejectedPrivateIds.find(sym->id) ==
                       rejectedPrivateIds.end()) {
@@ -2267,18 +2348,30 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
           newOnlyList.push_back(includeMe);
         }
       }
-      if (newOnlyList.size() == named.size()) {
+      std::map<const char*, const char*> newRenamed;
+      for (std::map<const char*, const char*>::iterator it = renamed.begin();
+          it != renamed.end(); ++it) {
+        if (std::find(outer->named.begin(), outer->named.end(), it->first) ==
+            outer->named.end()) {
+          // We didn't find the new name in the list to exclude, so the rename
+          // is still interesting.  Add it.
+          newRenamed[it->first] = it->second;
+        }
+      }
+
+      if (newOnlyList.size() == named.size() &&
+          newRenamed.size() == renamed.size()) {
         // The except list didn't cut down on our only list.
         // No need to create a new UseStmt, just return ourself.
         return this;
-      } else if (newOnlyList.size() == 0) {
+      } else if (newOnlyList.size() == 0 && newRenamed.size() == 0) {
         // All of the 'only' list was in the 'except' list, so we don't provide
         // new symbols.
         return NULL;
       } else {
         // The only list will be shorter, create a new UseStmt with it.
         SET_LINENO(this);
-        return new UseStmt(mod, &newOnlyList, false);
+        return new UseStmt(mod, &newOnlyList, false, &newRenamed);
         // Note: we don't populate the relatedNames vector for the new use,
         // since we don't have a way to connect the names in it back to the
         // types we did or didn't include in the shorter 'only' list.
@@ -2309,14 +2402,23 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
             newOnlyList.push_back(includeMe);
           }
         }
-        if (newOnlyList.size() > 0) {
+        std::map<const char*, const char*> newRenamed;
+        for(std::map<const char*, const char*>::iterator it = outer->renamed.begin();
+            it != outer->renamed.end(); ++it) {
+          if (std::find(named.begin(), named.end(), it->second) == named.end()) {
+            // We didn't find the old name of the renamed symbol in our
+            // 'except' list, so add it.
+            newRenamed[it->first] = it->second;
+          }
+        }
+        if (newOnlyList.size() > 0 || newRenamed.size() > 0) {
           // At least some of the identifiers in the 'only' list
           // weren't in the inner 'except' list.  Modify the use to
           // 'only' include those from the original 'only' list which
           // weren't in the inner 'except' list (could be all of the
           // outer 'only' list)
           SET_LINENO(this);
-          return new UseStmt(mod, &newOnlyList, false);
+          return new UseStmt(mod, &newOnlyList, false, &newRenamed);
         } else {
           // all the 'only' identifiers were in the 'except'
           // list so this module use will give us nothing.
@@ -2327,18 +2429,41 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
         // the names that are in both lists.
         SET_LINENO(this);
         std::vector<const char*> newOnlyList;
+        std::map<const char*, const char*> newRenamed;
         for_vector(const char, includeMe, outer->named) {
           if (std::find(named.begin(), named.end(), includeMe) != named.end()) {
             // We found this symbol in both 'only' lists, so add it
             // to the union of them.
             newOnlyList.push_back(includeMe);
+          } else {
+            std::map<const char*, const char*>::iterator it = renamed.find(includeMe);
+            if (it != renamed.end()) {
+              // We found this symbol in the renamed list and the outer 'only'
+              // list so add it to the new renamed list.
+              newRenamed[it->first] = it->second;
+            }
           }
         }
-        if (newOnlyList.size() > 0) {
+        for (std::map<const char*, const char*>::iterator it = outer->renamed.begin();
+             it != outer->renamed.end(); ++it) {
+          if (std::find(named.begin(), named.end(), it->second) != named.end()) {
+            // The old name was in our 'only' list.  We need to rename it.
+            newRenamed[it->first] = it->second;
+          } else {
+            std::map<const char*, const char*>::iterator innerIt = renamed.find(it->second);
+            if (innerIt != renamed.end()) {
+              // We found this symobl in the renamed list and the outer
+              // renamed list so add the outer use's new name as the key, and
+              // our old name as the old name to use.
+              newRenamed[it->first] = innerIt->second;
+            }
+          }
+        }
+        if (newOnlyList.size() > 0 || newRenamed.size() > 0) {
           // There were symbols that were in both 'only' lists, so
           // this module use is still interesting.
           SET_LINENO(this);
-          return new UseStmt(mod, &newOnlyList, false);
+          return new UseStmt(mod, &newOnlyList, false, &newRenamed);
         } else {
           // all of the 'only' identifiers in the outer use
           // were missing from the inner use's 'only' list, so this
@@ -2348,10 +2473,14 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
       }
     } else {
       // The inner use did not specify an 'except' or 'only' list,
-      // so propogate our 'only' list to it.
+      // so propogate our 'only' list and/or renamed list to it.
       UseStmt* newUse = copy();
       for_vector(const char, toInclude, outer->named) {
         newUse->named.push_back(toInclude);
+      }
+      for (std::map<const char*, const char*>::iterator it = outer->renamed.begin();
+          it != outer->renamed.end(); ++it) {
+        newUse->renamed[it->first] = it->second;
       }
       newUse->except = false;
       return newUse;
