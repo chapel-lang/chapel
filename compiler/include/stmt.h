@@ -81,6 +81,9 @@ class UseStmt : public Stmt {
 
   void validateList();
   bool isPlainUse();
+  bool hasOnlyList();
+  bool hasExceptList();
+
   void writeListPredicate(FILE* mFP);
 
   bool skipSymbolSearch(const char* name);
@@ -94,9 +97,6 @@ class UseStmt : public Stmt {
   // list (but only if 'named' has any contents)
   std::vector<const char *> relatedNames; // The names of fields or methods
   // related to a type specified in an 'except' or 'only' list.
-
-  bool hasOnlyList();
-  bool hasExceptList();
 
   void createRelatedNames(Symbol* maybeType);
 
