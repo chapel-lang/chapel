@@ -26,7 +26,6 @@ for i in D {
   Aref(i) = off;
   AD += off;
 }
-
 if verify then QuickSort(Aref);
 
 forall i in AD {
