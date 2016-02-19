@@ -21,6 +21,7 @@
 #define _AST_LOGGER_H_
 
 #include <cstdio>
+#include <map>
 #include <vector>
 
 #include "AstVisitor.h"
@@ -110,7 +111,9 @@ public:
   virtual void   exitGotoStmt     (GotoStmt*          node);
 
  protected:
-  void outputVector (FILE* mFP, std::vector<const char *> vec);
+  bool outputVector (FILE* mFP, std::vector<const char *> vec);
+  void outputRenames(FILE* mFP, std::map<const char*, const char*> renames,
+                     bool first);
 };
 
 #endif

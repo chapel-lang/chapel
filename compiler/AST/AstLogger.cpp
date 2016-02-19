@@ -172,7 +172,7 @@ bool AstLogger::enterGotoStmt(GotoStmt* node) {
 void AstLogger::exitGotoStmt(GotoStmt* node) {
 }
 
-void AstLogger::outputVector(FILE* mFP, std::vector<const char *> vec) {
+bool AstLogger::outputVector(FILE* mFP, std::vector<const char *> vec) {
   bool first = true;
   for_vector(const char, str, vec) {
     if (first) {
@@ -181,5 +181,20 @@ void AstLogger::outputVector(FILE* mFP, std::vector<const char *> vec) {
       fprintf(mFP, ", ");
     }
     fprintf(mFP, "%s", str);
+  }
+  return first;
+}
+
+void AstLogger::outputRenames(FILE* mFP,
+                              std::map<const char*, const char*> renames,
+                              bool first) {
+  for (std::map<const char*, const char*>::iterator it = renames.begin();
+       it != renames.end(); ++it) {
+    if (first) {
+      first = false;
+    } else {
+      fprintf(mFP, ", ");
+    }
+    fprintf(mFP, "%s 'as' %s", it->second, it->first);
   }
 }

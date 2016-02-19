@@ -396,7 +396,8 @@ void AstDumpToHtml::visitUseStmt(UseStmt* node) {
 
   if (!node->isPlainUse()) {
     node->writeListPredicate(mFP);
-    outputVector(mFP, node->named);
+    bool first = outputVector(mFP, node->named);
+    outputRenames(mFP, node->renamed, first);
   }
 
   fprintf(mFP, ")");
