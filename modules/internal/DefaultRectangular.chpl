@@ -787,10 +787,10 @@ module DefaultRectangular {
         // work for something with no immediate reward.
         if dom.dsiNumIndices > 0 {
           if isIntType(idxType) then
-            shiftedData = _ddata_shift(data, origin-factoredOffs);
+            shiftedData = _ddata_shift(eltType, data, origin-factoredOffs);
           else
             // Not bothering to check for over/underflow
-            shiftedData = _ddata_shift(data,
+            shiftedData = _ddata_shift(eltType, data,
                                        origin:chpl__signedType(idxType)-
                                        factoredOffs:chpl__signedType(idxType));
         }
@@ -1289,7 +1289,7 @@ module DefaultRectangular {
                "length of array to write is greater than ssize_t can hold");
       const src = this.theData;
       const idx = getDataIndex(this.dom.dsiLow);
-      f.writeBytes(_ddata_shift(src, idx), len:ssize_t*elemSize:ssize_t);
+      f.writeBytes(_ddata_shift(eltType, src, idx), len:ssize_t*elemSize:ssize_t);
     } else {
       this.dsiSerialReadWrite(f);
     }
@@ -1379,8 +1379,8 @@ module DefaultRectangular {
               ", len=", len, ", elemSize=", elemSize);
     }
 
-    const Adata = _ddata_shift(this.theData, getDataIndex(Alo));
-    const Bdata = _ddata_shift(B._value.theData, B._value.getDataIndex(Blo));
+    const Adata = _ddata_shift(eltType, this.theData, getDataIndex(Alo));
+    const Bdata = _ddata_shift(eltType, B._value.theData, B._value.getDataIndex(Blo));
 
     if Adata == Bdata then return;
   
