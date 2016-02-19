@@ -989,6 +989,11 @@ void AstDumpToNode::visitUseStmt(UseStmt* node)
       newline();
       fprintf(mFP, "%s", str);
     }
+    for (std::map<const char*, const char*>::iterator it = node->renamed.begin();
+         it != node->renamed.end(); ++it) {
+      newline();
+      fprintf(mFP, "%s as %s", it->second, it->first);
+    }
   }
 
   mOffset = mOffset - 2;
