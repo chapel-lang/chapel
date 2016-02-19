@@ -1932,10 +1932,9 @@ void makeBinaryLLVM(void) {
   codegen_makefile(&mainfile, &tmpbinname, true);
   INT_ASSERT(tmpbinname);
 
-  // Run linker... we always use clang++ since some relevant libraries
-  //  (like re2, GASNet, etc) are actually written with C++
-  //  and need C++ support. With the C backend, this switcheroo is
-  //  accomplished in the Makefiles somewhere....
+  // Run the linker. We always use clang++ because some third-party
+  // libraries are written in C++. With the C backend, this switcheroo
+  // is accomplished in the Makefiles somewhere
   std::string command = clangInstall + "/bin/clang++ " + options + " " +
                         moduleFilename + " " + maino +
                         " -o " + tmpbinname;
