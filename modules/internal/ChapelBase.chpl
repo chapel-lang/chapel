@@ -673,7 +673,8 @@ module ChapelBase {
     return __primitive("cast", t, x);
   }
 
-  inline proc _ddata_shift(data: _ddata(?eltType), shift: integral) {
+  // Removing the 'eltType' arg results in errors for --baseline
+  inline proc _ddata_shift(type eltType, data: _ddata(eltType), shift: integral) {
     var ret: _ddata(eltType);
      __primitive("shift_base_pointer", ret, data, shift);
     return ret;
