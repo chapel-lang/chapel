@@ -12,7 +12,7 @@ from utils import memoize, CompVersion
 def get():
     tasks_val = os.environ.get('CHPL_TASKS')
     if not tasks_val:
-        platform_val = chpl_platform.get()
+        platform_val = chpl_platform.get('target')
         compiler_val = chpl_compiler.get('target')
 
         # CCE >= 8.4 is required to build qthreads (for gnu style inline asm.)
