@@ -446,7 +446,7 @@ Using the ugni Communications Layer
 
 To use ugni communications:
 
-1) Make sure that you are using either the GNU or Intel target
+1) Make sure that you are using either the GNU, Intel, or Cray target
    compiler::
 
      module load PrgEnv-gnu
@@ -454,6 +454,10 @@ To use ugni communications:
    or::
 
      module load PrgEnv-intel
+
+   or::
+
+     module load PrgEnv-cray
 
    (If you have a different PrgEnv module loaded, you will have to
    unload it first, or do a swap instead of a load.)
@@ -589,7 +593,7 @@ Using the muxed Tasking Layer
 
 To use muxed tasking:
 
-1) Make sure that you are using either the GNU or Intel target
+1) Make sure that you are using either the GNU, Intel, or Cray target
    compiler::
 
      module load PrgEnv-gnu
@@ -597,6 +601,10 @@ To use muxed tasking:
    or::
 
      module load PrgEnv-intel
+
+   or::
+
+     module load PrgEnv-cray
 
    (If you have a different PrgEnv module loaded, you will have to
    unload it first, or do a swap instead of a load.)
