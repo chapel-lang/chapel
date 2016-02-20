@@ -19,10 +19,10 @@ Functions Supported on All Array Types
 hasSingleLocalSubdomain
 -----------------------
 
-.. SyntaxError in Pygments, throws warning in Sphinx 1.3.5+
-.. code-block:: text
+.. code-block:: chapel
 
-  proc [].hasSingleLocalSubdomain() : bool;
+  // A is an array
+  proc A.hasSingleLocalSubdomain() : bool;
 
 This is a param function which returns a boolean. If true, then the index set
 owned by a locale can be represented by a single domain.
@@ -44,10 +44,10 @@ function named 'dsiHasSingleLocalSubdomain'.
 localSubdomain
 --------------
 
-.. SyntaxError in Pygments, throws warning in Sphinx 1.3.5+
-.. code-block:: text
+.. code-block:: chapel
 
-  proc [].localSubdomain() : domain;
+  // A is an array
+  proc A.localSubdomain() : domain;
 
 This function only operates on arrays whose 'hasSingleLocalSubdomain()' result
 is true. Otherwise, a compiler error is thrown.
@@ -89,10 +89,10 @@ Calling them on a non-distributed array will result in a compiler error.
 targetLocales
 -------------
 
-.. SyntaxError in Pygments, throws warning in Sphinx 1.3.5+
-.. code-block:: text
+.. code-block:: chapel
 
-  proc [].targetLocales() : [] locale;
+  // A is an array
+  proc A.targetLocales() : [] locale;
 
 This function returns an array of locales that the distribution uses as the
 locale grid.
