@@ -21,8 +21,7 @@ hasSingleLocalSubdomain
 
 .. code-block:: chapel
 
-  // A is an array
-  proc A.hasSingleLocalSubdomain() : bool;
+  proc array.hasSingleLocalSubdomain() : bool;
 
 This is a param function which returns a boolean. If true, then the index set
 owned by a locale can be represented by a single domain.
@@ -46,8 +45,7 @@ localSubdomain
 
 .. code-block:: chapel
 
-  // A is an array
-  proc A.localSubdomain() : domain;
+  proc array.localSubdomain() : domain;
 
 This function only operates on arrays whose 'hasSingleLocalSubdomain()' result
 is true. Otherwise, a compiler error is thrown.
@@ -67,7 +65,7 @@ localSubdomains
 
 .. code-block:: chapel
 
-  iter [].localSubdomains() : domain;
+  iter array.localSubdomains() : domain;
 
 This iterator yields the subdomain(s) that represent the index set owned by the
 current locale.
@@ -91,8 +89,7 @@ targetLocales
 
 .. code-block:: chapel
 
-  // A is an array
-  proc A.targetLocales() : [] locale;
+  proc array.targetLocales() : [] locale;
 
 This function returns an array of locales that the distribution uses as the
 locale grid.
