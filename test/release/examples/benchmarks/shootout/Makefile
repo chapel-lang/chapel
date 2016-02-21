@@ -47,10 +47,10 @@ nbody: nbody.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) --no-warnings $<
 
 pidigits: pidigits.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	@if [ -z "$$CHPL_GMP" ]; then $(CHPL) -o $@ $(CHPL_FLAGS) $<; fi
 
 regexdna: regexdna.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	@if [ -z "$$CHPL_REGEXP" ]; then $(CHPL) -o $@ $(CHPL_FLAGS) $<; fi
 
 spectralnorm: spectralnorm.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
