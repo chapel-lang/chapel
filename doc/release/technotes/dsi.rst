@@ -767,6 +767,7 @@ class that chooses to support privatization.
   Returns `true` to indicate that privatization is supported.
   NOTE: do not specify the return type (due to a bug in the compiler).
 
+
 .. code-block:: chapel
 
     class Global ... {
@@ -775,9 +776,9 @@ class that chooses to support privatization.
       ...
     }
 
-  The field ``pid`` should be provided as shown.
-  It should not be accessed by the DSI implementation except
-  in conjunction with ``chpl_getPrivatizedCopy()`` as discussed later.
+The field ``pid`` should be provided as shown.
+It should not be accessed by the DSI implementation except
+in conjunction with ``chpl_getPrivatizedCopy()`` as discussed later.
 
 .. method:: proc Global.dsiGetPrivatizeData()
 

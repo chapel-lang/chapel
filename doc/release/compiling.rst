@@ -33,7 +33,8 @@ variables are listed by the ``--help-env`` option.  The flags' current
 settings are listed by ``--help-settings``.
 
 More detailed information about the compiler and its command-line
-flags is also available on its man page, which you can read using:
+flags is also available on its :any:`man page <man>`, which can be viewed from
+the command-line using:
 
   .. code-block:: sh
 
@@ -46,33 +47,37 @@ Most Useful Flags
 
 We note some of the most useful flags here:
 
-     -o <filename>      specify the filename of the generated
+=====================   ======================================================
+Flags                   Description
+---------------------   ------------------------------------------------------
+``-o <filename>``       specify the filename of the generated
                         executable, otherwise ./a.out is used by default
-     --no-checks        turns off runtime semantic checks like bounds
+``--no-checks``         turns off runtime semantic checks like bounds
                         checking and nil class instance dereferencing
-     -O                 turns on optimization of the generated C code
-     --fast             turns on ``--no-checks``, ``-O``, and enables
+``-O``                  turns on optimization of the generated C code
+``--fast``              turns on ``--no-checks``, ``-O``, and enables
                         many other optimizations
-     --savec <dir>      saves the generated C code in the specified
+``--savec <dir>``       saves the generated C code in the specified
                         directory
-     -g                 support debugging of the generated C code
-     --ccflags <flags>  specify flags that should be used when invoking
+``-g``                  support debugging of the generated C code
+``--ccflags <flags>``   specify flags that should be used when invoking
                         the back-end C compiler
-     --ldflags <flags>  specify flags that should be used when invoking
+``--ldflags <flags>``   specify flags that should be used when invoking
                         the back-end linker
-     -s <name[=expr]>   set a config variable with the given expression
+``-s <name[=expr]>``    set a config variable with the given expression
                         as its default value (config params must be set
                         to values that are known at compile time)
-     --print-passes     print the compiler passes as they execute
-     --print-commands   print the system commands that the compiler
+``--print-passes``      print the compiler passes as they execute
+``--print-commands``    print the system commands that the compiler
                         executes
-     --print-code-size  prints some code size statistics about the
+``--print-code-size``   prints some code size statistics about the
                         number of lexical tokens per line, as well as
                         the number of code, comment, and blank lines
-     --version          print the Chapel compiler version number
-     --help             print a brief overview of the command-line
+``--version``           print the Chapel compiler version number
+``--help``              print a brief overview of the command-line
                         options
-     --help-env         lists the environment variables for each
+``--help-env``          lists the environment variables for each
                         command-line flag
-     --help-settings    lists the current setting of each command-line
+``--help-settings``     lists the current setting of each command-line
                         flag
+=====================   ======================================================
