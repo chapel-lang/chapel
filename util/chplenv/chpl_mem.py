@@ -6,7 +6,7 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_comm
+import chpl_platform
 from utils import memoize
 
 
@@ -17,11 +17,11 @@ def get(flag='host'):
     elif flag == 'target':
         mem_val = os.environ.get('CHPL_MEM')
         if not mem_val:
-            comm_val = chpl_comm.get()
-            if comm_val != 'none':
-                mem_val='jemalloc'
-            else:
+            platform_val = chpl_platform.get('target')
+            if platform_val.startswith('cygwin'):
                 mem_val = 'cstdlib'
+            else:
+                mem_val = 'jemalloc'
     else:
         raise ValueError("Invalid flag: '{0}'".format(flag))
     return mem_val

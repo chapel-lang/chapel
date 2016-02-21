@@ -367,8 +367,8 @@ CHPL_MEM
         tcmalloc  use the tcmalloc package from Google Performance Tools
         ========= =======================================================
 
-   If unset, ``CHPL_MEM`` defaults to ``cstdlib`` if comm is ``none``,
-   otherwise it defaults to ``jemalloc``.
+   If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
+   If the target platform is ``cygwin*``, it defaults to ``cstdlib``
 
 
 CHPL_LAUNCHER

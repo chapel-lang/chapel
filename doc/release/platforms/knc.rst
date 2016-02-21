@@ -59,7 +59,7 @@ For vanilla Intel compiler:
     CHPL_TASKS: qthreads
     CHPL_LAUNCHER: none
     CHPL_TIMERS: generic
-    CHPL_MEM: cstdlib
+    CHPL_MEM: jemalloc
     CHPL_MAKE: gmake
     CHPL_ATOMICS: intrinsics
     CHPL_GMP: none
@@ -114,7 +114,7 @@ For Cray machines, only the ``aprun`` launcher is supported.  In addition,
     CHPL_TASKS: qthreads
     CHPL_LAUNCHER: aprun
     CHPL_TIMERS: generic
-    CHPL_MEM: cstdlib
+    CHPL_MEM: jemalloc
     CHPL_MAKE: gmake
     CHPL_ATOMICS: intrinsics
       CHPL_NETWORK_ATOMICS: none
