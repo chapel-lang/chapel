@@ -15,6 +15,9 @@ TARGETS = \
 	spectralnorm \
 	threadring
 
+CHPL_MAKE_REGEXP=$(shell python $(CHPL_HOME)/util/chplenv/chpl_regexp.py)
+CHPL_MAKE_GMP=$(shell python $(CHPL_HOME)/util/chplenv/chpl_gmp.py)
+
 REALS = $(TARGETS:%=%_real)
 
 default: all
@@ -47,10 +50,10 @@ nbody: nbody.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) --no-warnings $<
 
 pidigits: pidigits.chpl
-	@if [ -z "$$CHPL_GMP" ]; then $(CHPL) -o $@ $(CHPL_FLAGS) $<; fi
+	@if [ "$(CHPL_MAKE_GMP)" != "none" ]; then $(CHPL) -o $@ $(CHPL_FLAGS) $<; fi
 
 regexdna: regexdna.chpl
-	@if [ -z "$$CHPL_REGEXP" ]; then $(CHPL) -o $@ $(CHPL_FLAGS) $<; fi
+	@if [ "$(CHPL_REGEXP)" != "none" ]; then $(CHPL) -o $@ $(CHPL_FLAGS) $<; fi
 
 spectralnorm: spectralnorm.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<
