@@ -11,15 +11,25 @@ Abstract
 --------
 
 A proposal for when Chapel will introduce record copies and when it
-should destroy records.
-
+should destroy records. This proposal will include a description of how
+arrays can be implemented with the new copy semantics.
 
 Rationale
 ---------
 
 Record copy and destruction semantics, while recently improved, continues
-to be a source of bugs. This document is an attempt at describing how
-the implementation can be adjusted to resolve many of these issues.
+to be a source of bugs. Memory leaks remain for arrays. Additionally,
+there are many cases in which the current implementation adds obviously
+unnecessary copy calls.
+
+It is our belief that much of the complexity in the current
+implementation stems from lacking a clear design incorporating details
+about when copies are necessary.  Such a design is helpful for this kind
+of problem since the issue cuts across many parts of the compiler.
+Furthermore, there is a language design component here. The specification
+needs to provide users with some understanding of when copies will be
+added.
+
 
 Description
 -----------
@@ -27,6 +37,55 @@ Description
 This document describes when Chapel should create copies of records. How
 a user defines a copy function for a record, its exact name, and whether
 or not it is an initializer are not covered in this proposal.
+
+Additionally, record copy semantics as previously implemented in the
+language are tied to array semantics. Therefore, this document attempts
+to describe how arrays can be implemented as the language moves to more
+optimizeable copy semantics.
+
+.. _user-view:
+
+The User's View
+---------------
+
+A variable declaration creates unique storage for a record's fields.  The
+process of returning may or may not provide unique storage for a record.
+The `in` argument intent is treated similarly to a variable declaration
+in that the `in` argument has unique storage for the record's fields. A
+copy may or may not be needed in order to ensure that a variable has
+unique storage.
+
+What does *unique storage for a record's fields* mean?
+
+.. code-block:: chapel
+
+  var a:R;
+  a.x = 1;
+  var b = a;
+  b.x = 2;
+  writeln(a.x); // b is a different variable from a, so
+                // updating b's field x must not change a's field x.
+
+This property does not extend to memory pointed to by a record. The copy
+behavior of data beyond such pointers depends on the record
+implementation.
+
+This guiding rule does not say anything about how a variable is returned.
+It does not prohibit an implementation from making temporary copies.
+
+This strategy is meant to support the following use cases:
+
+ * records implementing reference counting (see :ref:`ref-count`)
+ * records storing some data in buffer (e.g. BigInt record) (see
+   :ref:`buffer`)
+ * strings (see :ref:`strings`)
+ * arrays (see :ref:`arrays`)
+
+In particular, if records contain pointers, the expectation is that typical use
+of the record will always copy the pointed-to data, or will always share the
+pointed-to data. Records that sometimes copy the pointed-to data and sometimes
+share it require special care. In fact arrays and strings fall into this
+category currently.
 
 Copy Functions for This Proposal
 --------------------------------
@@ -39,7 +98,23 @@ This proposal works with two copy functions:
 Both of these return a new record.
 
 This proposal will describe exactly in which situation the compiler will
-introduce `copy()` and `move()` calls.
+introduce `copy()` and `move()` calls. The expectation is that once
+Chapel supports better constructors/initializers, these `copy` and `move`
+calls will be implemented with the appropriate initializers. They could
+remain as functions created by the compiler or they could be replaced
+with the equivalent sequence using an initializer.
+
+If `move` and `copy` are actual functions, then to avoid infinite recursion,
+these functions should not call `move` or `copy` in the process of returning.
+For that reason, these functions must:
+
+ * always return the result of a function call or a local variable
+   (but not e.g. a global variable)
+ * always return by value
+
+and the compiler should omit any `move` call that would be normally emitted in
+the process of returning from `move` or `copy`.
+
 
 The type argument
 -----------------
@@ -47,31 +122,43 @@ The type argument
 Arrays and other types that have a runtime type will need this runtime
 type as a run-time argument to the `copy` and `move` functions.  This
 argument needs to be passed to the copy initializer implementing `copy`
-or `move`. It is necessary so that the size of the array can be set
-appropriately based on the array declaration (for example).
+or `move`. It is necessary so that the size of the array can be checked
+appropriately based on an array declaration (for example).
 
-In addition, because of limitations in the current compiler architecture,
-it is also useful to pass the static type to the `copy` and `move`
-functions for types that do not have a runtime type. Doing so enables the
-compiler to use the same pattern for initialization everywhere but to add
-coercions when necessary. For example:
+In addition, if some copy calls continue to be added early in compilation
+in the normalize pass, it is also useful to pass the static type to the
+`copy` and `move` functions for types that do not have a runtime type.
+Doing so enables the compiler to use the same pattern for initialization
+everywhere but to add coercions during resolution. For example:
 
 .. code-block:: chapel
 
   var x:real = 10;
 
-requires a coercion from 10 to 10.0 - but the `copy` and `move` calls
-are added during normalization when the types are not known. Including
-the destination type in the `copy` or `move` calls allows this coercion
-to be added after the types are known.
+requires a coercion from 10 to 10.0.
 
 Finally, note that depending on implementation choices, it might be
 convenient for types with runtime types to implement copy and move
 operations that do not take in a runtime type in addition to ones that
 do. This alternative is described below.
 
-For understandability, the examples below will describe special behavior
-for arrays. Such behavior will in fact apply to any type with a runtime type.
+Where in the compiler are  `copy` and `move` handled?
+-----------------------------------------------------
+
+`copy` and `move` calls could be added in normalize, functionResolution,
+or callDestructors. The current compiler adds these calls in all of the
+above passes. A future implementation could continue to add some copy
+calls in normalize or add all during function resolution.
+
+This is an implementation choice that can be made independently of
+accepting the semantics proposed in this document. For the purposes of
+explanation, however, the main section of this document will describe
+what the AST would look like if the `copy` and `move` calls are added in
+normalize and also describe the AST after resolution.
+
+Note that the `copy` and `move` calls added under this proposal to
+support the `in` argument intent must be added during function
+resolution. These cannot be handled in normalize.
 
 Relocating Records
 ------------------
@@ -92,8 +179,8 @@ locales. This proposal assumes that some function provided by a record
 author needs to be invoked when moving a record across locales. We expect
 that relaxing this rule would not significantly change this proposal.
 
-Also, it would not seriously alter this proposal for the `move` function
-to be called in the array-resize case.
+Note that it would not seriously alter this proposal for the `move`
+function to be called in the array-resize case.
 
 Basic Rules
 -----------
@@ -103,7 +190,7 @@ has the responsibility to destroy that record or to transfer the
 responsibility somewhere else (e.g. by returning the record).
 
 Each function has the responsibility to either destroy each local
-variables of record type or to transfer that responsibility to the caller
+variable of record type or to transfer that responsibility to the caller
 of the function by returning that variable.
 
 .. code-block:: chapel
@@ -128,13 +215,17 @@ There are 3 broad categories of cases to consider:
  3) Nested Call
 
 In order to keep the description short and clear, we will use `f()` and
-`g()` to indicate function calls, `a` and `b` indicate a variable, `t`
-to indicate some type, `local` to indicate a local variable, and
-`outerVar` to indicate a variable in an outer scope from the function in
-question - including references to such variables.
+`g()` to indicate function calls to functions that return by value, `a`
+and `b` indicate a variable, `t` to indicate some type, `local` to
+indicate a local variable, and `outerVar` to indicate a variable in an
+outer scope from the function in question. `outerVar` also includes
+any reference variable or call to a function returning with `ref` intent.
 
 For each case, we will start with a Chapel code snippet and then describe
-what the post-normalization AST should look like.
+what the post-normalization and post-resolution AST should look like.  It
+is an implementation choice whether or not any of these transformations
+will be handled in normalize - it is also reasonable to handle them all
+in resolution.
 
 These AST listings will use `tmp`, `retVar`, and `exprtmp` variables.
 Of these, only `exprTmp` should be destroyed upon return from
@@ -145,29 +236,29 @@ Variable Initialization
 
 There are 4 variable initialization cases:
 
- 1) Un-typed Initialization from a function return
- 2) Typed Initialization from a function return
+ 1) Un-typed Initialization with a function call
+ 2) Typed Initialization with a function call
  3) Un-typed Initialization from another variable
  4) Typed Initialization from another variable
 
-Note that field initialization in a record or class constructor uses the
-same rules as variable initialization, except that the field is destroyed
-in the record or class destructor rather than at the end of the
-initialization function.
+Field initialization in a record or class constructor uses the same rules as
+variable initialization, except that the field is destroyed in the record or
+class destructor rather than at the end of the initialization function.
 
-Un-typed Initialization from a function return
-**********************************************
+Un-typed Initialization with a function call
+*********************************************
 
 .. code-block:: chapel
 
   var a=f();
 
-This example should call the `move` function, transferring the
+Assuming that `f` returns by value (and not with `ref` return intent),
+this example should call the `move` function, transferring the
 responsibility of destroying the returned value to the variable.
 
-It might be possible to omit this `move` call entirely, but it is useful
-to allow record authors to distinguish user variables from compiler
-temporaries.
+It might be possible to omit this `move` call entirely. This proposal keeps
+this `move` call for symmetry with the next case, where it is required for
+types with a runtime component.
 
 ::
 
@@ -175,28 +266,41 @@ temporaries.
   move t, tmp.type;
   move a, move(t, tmp)
 
-Alternatively, the implementation could support a `move` function
-without the type argument for this case:
+After resolution, the AST would look like this for an array or other type
+with a runtime type:
+
+::
+
+  move tmp, f()
+  move t, tmp.type
+  move rtt, getRuntimeType(t)
+  move a, move(rtt, tmp)
+  (on exit: destroy rtt)
+
+(a type without a runtime type would simply omit the `rtt` argument).
+
+Alternatively, the implementation could directly support a `move`
+function without the type argument for this case:
 
 ::
 
   move tmp, f()
   move a, move(tmp)
 
-
-Typed initialization from a function return
-*******************************************
+Typed initialization with a function call
+*****************************************
 
 .. code-block:: chapel
 
   var a:t = f();
 
-This example should call the `move` function, transferring the
+Assuming that `f` returns by value (and not with `ref` return intent),
+this example should call the `move` function, transferring the
 responsibility of destroying the returned value to the variable.
 
-It might be possible to omit this `move` call entirely, but it is useful
-to allow record authors to distinguish user variables from compiler
-temporaries.
+It might be possible to omit this `move` call entirely, but it is at least
+necessary to give types with runtime types (such as arrays) an opportunity to
+check that the runtime types match (ie that the arrays have compatible sizes).
 
 ::
 
@@ -214,6 +318,10 @@ has a runtime component (as with an array):
   (on exit: destroy rtt)
 
 
+(a type without a runtime type would simply omit the `rtt` argument).
+
+.. _untyped-init-var:
+
 Un-typed Initialization from another variable
 *********************************************
 
@@ -222,12 +330,26 @@ Un-typed Initialization from another variable
     var a = b;
 
 This example should call the `copy` function. It needs to do so because
-each variable will be destroyed or returned at the end of the function.
+the new variable, `a`, needs unique storage, since `b` continues to be
+available after this call.  This section also applies if `b` is replaced
+by a function returning with `ref` or `const ref` return intent.
 
 ::
 
   move t, b.type
   move a, copy(t, b)
+
+After resolution, the AST would look like this for an array or other type
+with a runtime type:
+
+::
+
+  move t, b.type
+  move rtt, getRuntimeType(tmp)
+  move a, move(t, tmp)
+
+(a type without a runtime type would simply omit the `rtt` argument).
+
 
 Alternatively, the implementation could support a `move` function
 without the type argument for this case:
@@ -243,8 +365,10 @@ Typed Initialization from another variable
 
     var a:t = b;
 
-This example should call the `copy` function. It needs to do so because
-each variable will be destroyed or returned at the end of the function.
+This example should call the `copy` function for the same reasons as the
+previous, un-typed case: `a` is a different variable from `b`.  This
+section also applies if `b` is replaced by a function returning with
+`ref` or `const ref` return intent.
 
 ::
 
@@ -259,22 +383,24 @@ has a runtime component (as with an array):
   move a, copy(rtt, b)
   (on exit: destroy rtt)
 
+(a type without a runtime type would simply omit the `rtt` argument).
 
 Returning from a Function
 +++++++++++++++++++++++++
 
 There are 6 cases when returning from a function:
 
- 1) Un-typed Return from a Function Return
- 2) Typed Return from a Function Return
+ 1) Un-typed Return from a Call Result
+ 2) Typed Return from a Call Result
  3) Un-typed Return from a Local Variable
  4) Typed Return from a Local Variable
  5) Un-typed Return from an Outer Variable
  6) Typed Return from an Outer Variable
 
+.. _untyped-return-call:
 
-Un-typed Return from a Function Return
-**************************************
+Un-typed Return from a Call Result
+**********************************
 
 .. code-block:: chapel
 
@@ -284,17 +410,44 @@ Un-typed Return from a Function Return
       ...;
     }
 
-No `copy` or `move` call is necessary under the proposed semantics.
+Assuming that `f` returns by value (and not with `ref` return intent),
+no `copy` call is necessary under the proposed semantics.
 The process of returning transfers the responsibility for destroying
 the result of `f` to the caller of `g`.
 
+This case could be implemented without any `move` call, but for symmetry with
+the next case, where the `move` call is required for types with a runtime type,
+a `move` call is included. Including a `move` in this case also helps with
+array slices (see :ref:`array-slices`).
+
 ::
 
-  move retVar, f()
+  move tmp, f()
+  move t, tmp.type
+  move retVar, move(t, tmp)
   return retVar
 
-Typed Return from a Function Return
-***********************************
+After function resolution, we would expect the following AST if `t`
+has a runtime component (as with an array):
+
+::
+
+  move tmp, f()
+  move t, tmp.type
+  move rtt, getRuntimeType(t)
+  move retVar, move(rtt, tmp)
+  (on exit: destroy rtt)
+
+
+(a type without a runtime type would simply omit the `rtt` argument).
+
+Calls to function that have the `ref` or `const ref` return intent are
+handled as in :ref:`untyped-return-global`. See also :ref:`ref-return`.
+
+.. _typed-return-call:
+
+Typed Return from a Call Result
+*******************************
 
 .. code-block:: chapel
 
@@ -304,13 +457,15 @@ Typed Return from a Function Return
       ...;
     }
 
-This case is similar to the above case, however the function has a
-declared return type. For arrays, it is necessary to allow the array
-implementation to assert that the runtime type of `f()` is compatible
-with the declared return type `t`.
+Assuming that `f` returns by value (and not with `ref` return intent),
+this case is similar to the above case. The difference is just that the
+function has a declared return type. For arrays, it is necessary to allow
+the array implementation to assert that the runtime type of `f()` is
+compatible with the declared return type `t`.
 
-For that reason, a `move` call is necessary under the proposed semantics,
-at least for arrays and other types with runtime types.
+For that reason, a `move` call is necessary under the proposed semantics, at
+least for arrays and other types with runtime types.  Including a `move` in
+this case also helps with array slices (see :ref:`array-slices`).
 
 ::
 
@@ -329,6 +484,10 @@ has a runtime component (as with an array):
   (destroy rtt)
   return retVar
 
+(a type without a runtime type would simply omit the `rtt` argument).
+
+Calls to function that have the `ref` or `const ref` return intent are
+handled as in :ref:`typed-return-global`. See also :ref:`ref-return`.
 
 Un-typed Return from a Local Variable
 *************************************
@@ -341,14 +500,33 @@ Un-typed Return from a Local Variable
       ...;
     }
 
-In this case, no `copy` or `move` call is necessary under the proposed
+In this case, no `copy` call is necessary under the proposed
 semantics. The responsibility for destroying `local` is transferred to
 the caller of `g`.
 
+This case could be implemented without any `move` call, but it is
+included for symmetry with the :ref:`untyped-return-call` case and with
+case when the function has  declared return type. Including a `move` in
+this case also helps with array slices (see :ref:`array-slices`).
+
 ::
 
-  move retVar, local
+  move t, local.type
+  move retVar, move(t, local)
   return retVar
+
+After function resolution, we would expect the following AST if `t`
+has a runtime component (as with an array):
+
+::
+
+  move t, local.type
+  move rtt, getRuntimeType(t)
+  move retVar, move(rtt, local)
+  (destroy rtt)
+  return retVar
+
+(a type without a runtime type would simply omit the `rtt` argument).
 
 Typed Return from a Local Variable
 **********************************
@@ -384,7 +562,7 @@ has a runtime component (as with an array):
   (destroy rtt)
   return retVar
 
-
+(a type without a runtime type would simply omit the `rtt` argument).
 
 .. _untyped-return-global:
 
@@ -399,9 +577,11 @@ Un-typed Return from an Outer Variable
       ...;
     }
 
-In this case, the function is returning a value that it does not
-have the responsibility to destroy. Therefore, it cannot transfer
-that responsibility to the caller and so a copy is necessary.
+In this case, the function is returning a value that it does not have the
+responsibility to destroy. Therefore, it cannot transfer that
+responsibility to the caller and so a copy is necessary.  This case
+includes `return f()` when `f` has the `ref` or `const ref` return
+intent.
 
 ::
 
@@ -409,15 +589,35 @@ that responsibility to the caller and so a copy is necessary.
   move retVar, copy(t, outerVar)
   return retVar
 
-Alternatively, if 2 copy constructors are implemented for arrays, it could be
+After function resolution, we would expect the following AST if `t`
+has a runtime component (as with an array):
+
+::
+
+  move t, outerVar.type
+  move rtt, getRuntimeType(t)
+  move retVar, copy(rtt, local)
+  (destroy rtt)
+  return retVar
+
+(a type without a runtime type would simply omit the `rtt` argument).
+
+Alternatively, if 2 copy constructors are implemented for arrays and
+other types with runtime types, it could be
 
 ::
 
   move retVar, copy(outerVar)
   return retVar
 
-Note that this case is the only case which would need to call a different
-`copy` function if arrays are not to be returned by value.
+
+Note that the proposed optional extension to this proposal,
+:ref:`automatic-ref-return`, would not add a `copy` in many cases. In
+particular, if all returns from a function fall into this case (return an
+`outerVar` or `ref`), then that function would automatically be marked with
+`ref` or `const ref` intent. 
+
+.. _typed-return-global:
 
 Typed Return from an Outer Variable
 ***********************************
@@ -430,8 +630,10 @@ Typed Return from an Outer Variable
       ...;
     }
 
-This case is similar to the previous case, except that the function
-has a declared return type.
+This case is similar to the previous case, except that the function has a
+declared return type.  This case includes `return f()` when `f` has the
+`ref` or `const ref` return intent.
+
 
 ::
 
@@ -449,6 +651,11 @@ has a runtime component (as with an array):
   (destroy rtt)
   return retVar
 
+(a type without a runtime type would simply omit the `rtt` argument).
+
+As with the previous case, the proposed optional extension to this proposal,
+:ref:`automatic-ref-return`, could avoid adding a `copy` in many of these
+cases. 
 
 Nested Call
 +++++++++++
@@ -457,8 +664,8 @@ Nested Call
 
     g(f())
 
-In this case, `f()` returns a value which the current function has a
-responsibility to free. This value needs to be stored in a
+In this case, when `f()` returns by value, the current function has a
+responsibility to free that value. This value needs to be stored in a
 compiler-introduced temporary that will be destroyed on any return from
 the function. No call to `move` or `copy` is necessary since it is always
 the caller's responsibility to free any value returned from a function.
@@ -468,7 +675,14 @@ is known whether a global variable or the result of a call is returned.
 ::
 
   move exprTmp, f()
+  g(exprTmp)
   (on exit: destroy exprTmp)
+
+
+If `f()` uses the `ref` or `const ref` return intent, and `g()` takes in
+an argument by `ref` or `const ref`, no `move` or `copy` call is
+necessary at this time. If `g()` takes in its argument with the `in`
+intent, a `copy` call will be added as described in the next section.
 
 
 Argument Intents
@@ -478,8 +692,8 @@ It is clear that the `in` intent should cause the `copy` function to be
 called in some cases. The current compiler adds `copy` calls (or the
 equivalent) at the start of the body of a function with the `in` intent.
 However, in order to support optimization of common patterns, this
-proposal recommends that any copying required by the `in`, `inout`, or
-`out` intents be handled by the caller of the function.
+proposal recommends that any copying in required by the `in`, and `inout`
+intents be handled by the caller of the function.
 
 In particular, the `in` intent should be treated similarly to a variable
 declaration. For example,
@@ -501,25 +715,30 @@ is nearly equivalent to, under this proposal:
 
     var tmp = someExpression;
     g( tmp );
-    
+
 As with a variable declaration, no copy is required if `someExpression`
 is a function call - but a copy is required if `someExpression` is
-another variable.  (The minor difference from variable declarations is
-that if `someExpression` is a function call, a `move` call is not
-required since `tmp` is not a user-level variable). 
+another variable or a function call returning a reference.
 
-Similarly, the `out` intent should be treated in the same manner as a
-function return - it transfers the responsibility of freeing to the
-caller.
-
-This example:
+Here is an example showing the proposed behavior for `in`, `inout`,
+and `out` argument intents.
 
 .. code-block:: chapel
 
-    proc g(in inArg, inout inoutArg, out outArg) { ...  }
+    proc g(in inArg, inout inoutArg, out outArg)
+    {
+      ...;
+      inoutArg = f();
+      inoutArg = outerVar;
+      outArg = f();
+      outArg = outerVar;
+      ...;
+    }
 
     {
-      g( inExpr, inoutExpr, outExpr );
+      var inoutVar: t;
+      var outVar: t;
+      g( inExpr, inoutExpr, outVar );
       ...;
     }
 
@@ -530,40 +749,266 @@ Would be translated to the following:
     proc g(ref inArg, ref inoutArg, ref outArg) {
       (copies for in/inout are handled in caller)
       ...;
+      inoutArg = f();      // assignments to inout and out args
+      inoutArg = outerVar; // use assignment overload
+      outArg = f();
+      outArg = outerVar;
+      ...;
       (destroy inArg)
-      (does NOT destroy inoutArg, that happens in caller)
-      (does NOT destroy outArg, that happens in caller)
     }
 
     {
       var inExprTmp = inExpr;
-      var inoutExprTmp = inoutExpr;
-      ref outExprTmp = outExpr;
-      (destroy outExprTmp)
+      var inoutExprTmp = inoutVar;
+      var outExprTmp: outVar.type;
       g( inExprTmp, inoutExprTmp, outExprTmp );
+      inoutVar = inoutExprTmp; 
+      outVar = inoutExprTmp; 
       ...;
       ( does NOT destroy inExprTmp, that happens in g ) 
       ( destroy inoutExprTmp )
-      ( destroy outExpr )
+      ( destroy outVar as normal )
     }
 
+Note that:
+ * assignments to an `inout` or `out` argument within a function use the
+   `=` overload
+ * multiple assignments to an `inout` or `out` argument are possible
+ * `out` and `inout` include unncessary copies in many cases.
 
-An alternative would be to implement `inout` and `out` with a call to
-the assignment function `=`. The proposed design allows optimization
-for certain typical cases such as:
+See :ref:`removing-inout` and :ref:`optimizing-out` for specific optional
+proposals that could improve the situation with `inout` and `out`. While
+these optional proposals do not need to be implemented immediately, the
+specification can be worded in a way that permits them to be implemented
+in the future without changing the language.
+
+Note that this handling of argument intents needs to happen during or
+after function resolution, since it operates on both a called function
+and its call sites.
+
+
+.. _ref-return:
+
+ref return intent
+-----------------
+
+A call to a function with `ref` or `const ref` return intents would be
+considered the same as an outer variable according to the rules above.
+For example if we have,
 
 .. code-block:: chapel
 
-    proc g(out outArg) {
-      outArg = f();
-    }
+  proc fRef() ref { ... }
 
-    var r:R;
-    g(r);
+then the statement
 
-In particular, the example above would not generate any copies - but for
-an array, the version using `=` would amount to a deep copy of the array
-elements.
+.. code-block:: chapel
+
+  var a=fRef();
+
+is equavalent to
+
+.. code-block:: chapel
+
+  ref tmp=fRef();
+  var a=tmp;
+
+where a `copy` will be added by the second line as described in
+:ref:`untyped-init-var`.
+
+Return statements inside a function with `ref` or `const ref` return
+intent have the following behavior:
+
+ * The `return` statement in a `ref` or `const ref` return intent function
+   does not cause a `move` or `copy` call to be made in any case. The
+   usual rules for `return` statements are disabled; instead, the
+   `retVar` is just set to the returned `ref`. For types with runtime
+   components (such as arrays), a `moveRef` call would be made in order
+   to allow the implementation to type check (see below).
+ * unlike non - `ref` returns, coercions and promotions are disabled
+   for a ref return intent function. The type of the returned expression
+   must match exactly. (This constraint is already described in the language
+   specification);
+ * it is a program error to return a stack variable. This can be detected
+   with a compile error.
+ * it is a program error to return a call to a function that does not
+   have `ref` or `const ref` return intent. This can be detected with a
+   compile error.
+ * it is a program error to return reference to a value that will be
+   destroyed once the function exits. It would be difficult for
+   compiler analysis to find all such cases.
+ * it is a program error to return a reference to a value with a type or
+   runtime type that is different from a function's declared return type.  This
+   should be flagged as a compile error or an execution-time error. We do not
+   expect that all such cases can be flagged at compile time. For example, the
+   following program should likely result in an execution-time error (at least
+   when --fast is not used):
+   
+   .. code-block:: chapel
+
+      var A:[1..4] int;
+
+      proc retA() ref :[1..3] int
+      {
+        return A;
+      }
+
+      writeln(retA());
+
+In order to support size checking for arrays, or generally checking run-time
+types against declared types, returning from a ref-return intent function needs
+to call `moveRef` for types with run-time types, such as arrays.
+
+Alternatives include:
+
+ * a `check` call that only does run-time type checking
+ * enabling some types to specify another type to serve as their `ref` type.
+   In that case, the `move` or `copy` calls would be added as normal, but
+   would call the `ref` type versions so that the record implementation can
+   distinguish between these cases.
+
+.. _ref-count:
+
+Supporting Reference Counting
+-----------------------------
+
+A record that implements reference counting is supported by this
+proposal. For the purposes of this document, we will call such a record
+`_refcnt`. The `_refcnt` `move` function does nothing (other than
+memcpy). The `_refcnt` `copy` function bumps the reference count.
+Intuitively, there is no need to change the reference count for a
+`_refcnt` variable unless that variable arrives at a new user variable.
+
+Note that the pointer inside each `_refcnt` to another object (e.g. a
+class instance) does not change when the `_refcnt` is copied.
+
+.. _buffer:
+
+Supporting Records storing a Buffer
+-----------------------------------
+
+Suppose that a record conceptually stores a variable number of fields, or
+stores a number of fields too large to be reasonably stored on the stack.
+Such a record could be implemented with a pointer to some memory that is
+owned by the record.
+
+For example,
+
+.. code-block:: chapel
+
+  class buffer {
+    var d:int;
+    var e:int;
+    var f:int;
+    var g:int;
+    var h:int;
+    // ...
+  }
+  
+  record R {
+    var a:int;
+    var b:int;
+    var c:int;
+    var buf:buffer; // (private)
+  }
+
+
+In this case, the record `R` should work the same as if the fields `d`,
+`e`, `f`, ... s were stored directly instead of through a buffer. To
+support that behavior:
+
+ * the constructor/initializer for `R` would allocate `buf`.
+ * the destructor/deinitializer for `R` would delete `buf`.
+ * the `copy` function would create a new `buf` containing a copy
+   of the original data
+ * the `move` function does nothing other than `memcpy`.
+
+In the simple case with this pattern, it is impossible or invalid to
+create two user variables `A` and `B` that both store the same `buf`
+pointer. Of course, doing so would presumably lead to a double-free.
+
+.. _strings:
+
+Strings
+-------
+
+The record implementing a string is similar to the :ref:`buffer` case
+described above, but there is one important exception. Strings store a
+pointer to the string data in a `buff` field. It *is* possible for two
+strings to be created that share a `buff` field. The `localize()` call
+is a function that does that in the current implementation. Also,
+copies of strings created from string literals will all share a buffer
+to the same original string literal data. These are immutable, unlike
+the `localize` case.
+
+For example:
+
+.. code-block:: chapel
+ 
+  var A:string = someExpression;
+  var B = A.localize();
+
+  // Now changing data pointed to by A.buff or B.buff affects both
+
+While changing the data pointed to by the `buff` field directly is not
+supported in the string implementation, the `+=` function is supported
+and can, in some situations, change that that data. However, the
+`localize` function is only meant to create a compiler-introduced
+temporary string so that something like:
+
+.. code-block:: chapel
+ 
+  A.localize().c_str();
+  
+can be used as an expression, since it is invalid to call `c_str()` on a
+remote string.
+
+Thus, while it is technically possible for strings to alias each other
+and be mutable, this situation is the exception.
+
+The implementation envisaged for the `string` record is the following:
+
+ * the `string` record stores an additional `bool` field `aliasMutable`
+ * strings created for string literals have `aliasMutable` set to `false`
+ * `localize` returns a new string with `aliasMutable` set to `true` 
+ * `move` checks `aliasMutable` and copies the buffer if `true`.
+   Otherwise, it shares the buffer between the source and the destination
+   of the move.
+ * `copy` creates a new buffer with the same data as the source of the
+   copy
+
+In this way, a program such as:
+
+.. code-block:: chapel
+
+  proc f(x:int) {
+    var s:string;
+    s += x:string;
+    return s.localize();
+  }
+
+  writeln(f(100));
+
+will not core-dump, since the process of returning the result of `s.localize()`
+from `f` will invoke `move`, which will in turn create a copy.
+
+One issue with this pattern is that it is unclear how to write the `localize`
+function. Some possible strategies might include:
+
+  * mark `localize` as a function that should not invoke `move` when returning
+  * implement `localize` as an initializer/constructor. While
+    initializers/constructors don't return in the usual sense, and so
+    wouldn't invoke `move`, code calling `localize` would have to
+    be rewritten.
+  * instead of `aliasMutable`, use a counter or a second boolean field, so that
+    the first `move` call results in sharing the buffer, but subsequent `move`
+    calls create a copy
+  * allow `string` to specify a different `ref` type and mark `localize`
+    as returning by `ref`. The `ref` type would be the same as the string
+    record. The `move` would be be omitted because `localize` would have
+    `ref` return intent. 
+
+.. _arrays:
 
 Array Semantics
 ---------------
@@ -578,21 +1023,21 @@ Arrays in Chapel are implemented with two types:
 To implement Chapel's array semantics, the `copy` function for `_array`
 performs a deep copy, and the `move` function performs a shallow copy.
 Without further special handling in the compiler, the resulting semantics
-are a slight change from the current behavior. We have identified two
-situations in which program behavior would differ under this proposal:
+are a slight change from the current behavior. We have identified primarily
+one situations in which program behavior would differ under this proposal:
 
-  1) Arrays return by value
-  2) Array slices are not copied when captured in a variable
+  1) Returning a global array makes a copy
 
 Note that we do not believe that the current specification clearly states
-what happens in these cases. First, the current specification does not
+what happens in this cases. First, the current specification does not
 seem to explicitly say that arrays return semantically by reference -
 even though the current behavior is that they return by reference.  (By
 return semantically by reference, we mean that a function returning an
 array will create a new `_array` record that may alias another array).
-Similarly, while the specification describes array assignment as
-`by value`, the difference between initialization and assignment is not
-discussed in the specification.
+
+This difference in behavior is discussed in :ref:`arrays-by-value`. Note that
+the optional extension :ref:`automatic-ref-return` is one way to avoid this
+`copy` in most cases.
 
 The Current Strategy for Arrays
 +++++++++++++++++++++++++++++++
@@ -608,7 +1053,7 @@ generate `initCopy` as in:
     var A:[1..10] int;
     return A;
   } 
-  var A = returnArray();
+  var A = returnArray(); // becomes move A, initCopy(returnArray())
 
 but it would seem that a copy is not necessary in this case.
 
@@ -641,13 +1086,10 @@ Then, `callDestructors` and `removeUnnecessaryAutoCopyCalls` both attempt in
 various ways to clean up the mess. The implementation is a series of
 hard-to-follow special cases and exceptions.
 
-It is our belief that the complexity in the current implementation stems from
-lacking a clear design incorporating details about when copies are necessary.
-Such a design is helpful for this kind of problem since the issue cuts across
-many parts of the compiler.
+.. _arrays-by-value:
 
-Arrays Return by Value
-++++++++++++++++++++++
+Returning a global array makes a copy
++++++++++++++++++++++++++++++++++++++
 
 Here is an example program that would generate a copy of the array
 elements under this proposal, where no copy occurs in the current
@@ -664,7 +1106,7 @@ implementation:
   writeln(f());
 
 Note that this difference also applies to `f` returning a ref-intent
-argument or any other reference to another variable.
+argument or any other reference to an outer variable.
 
 Note that the current implementation already makes a copy if:
 
@@ -694,75 +1136,152 @@ proposal:
 Under this proposal, this program would produce `0 0 0`, but the current
 implementation produces `1 0 0`
 
-
-Array slices are not copied when captured in a variable
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-The following example
-
-.. code-block:: chapel
-
-  var X = A[InnerD];
-
-would create a copy in the current implementation but not under this
-proposal. Here is a related example that shows the difference with
-different program output:
+In :ref:`automatic-ref-return`, we discuss one possible strategy that could
+remove this difference from the current behavior in most cases. Even with that
+optional strategy, the following program would have different output:
 
 .. code-block:: chapel
 
   var A:[1..3] int;
-  var X = A[2..3];
-  X = 1;
+
+  proc f(x:bool) {
+    if x then return A;
+    else {
+      var tmp:[1..0] int;
+      return tmp;
+    }
+  }
+  proc g(x) {
+    x[1] = 1;
+  }
+  g(f(true));
   writeln(A);
 
-would produce `0 1 1` under this proposal but produces `0 0 0` in the
-current implementation.
+It produces `1 0 0` in the current implementation, but would produce `0 0 0`
+under the proposal, because returning `A` from within `f` would make a copy.
+The :ref:`automatic-ref-return` strategy cannot remove this copy since `f`
+sometimes returns a local array (and it would not be legal to return the local
+array by ref).
 
-This lack of a copy is in some ways demonstrating that a `slice` function
-can be implemented under the proposed rules.  Consider the example in the
-language specification for array slicing:
+A further alternative here would be for the the :ref:`untyped-return-global`
+case to use a different `copy` function, perhaps called `copyRef`, for arrays.
+In some ways this approach is similar to :ref:`automatic-ref-return` but less
+general.
+
+More Array Examples
++++++++++++++++++++
 
 .. code-block:: chapel
 
-  var OuterD: domain(2) = {0..n+1, 0..n+1};
-  var InnerD: domain(2) = {1..n, 1..n};
-  var A, B: [OuterD] real;
+   proc createArray() {
+     var retA: [1..10000] real;
+     return retA;
+   }
+   var A = createArray();
 
-  A[InnerD] = B[InnerD];
+`retA` is an `_array`. In the process of returning from `createArray`, `move`
+is called. `move` is called a second time when initializing the `A` variable
+and again does not perform a deep copy. Thus, the desired behavior is achieved:
+the array is returned without any copies.
 
-The last line translates into
+.. code-block:: chapel
 
-::
+   var outerA: [1..10000] real;
+   proc returnExistingArray() {
+     return outerA;
+   }
+   var A = returnExistingArray();
 
-  move tmpLhs, slice(A, InnerD) 
-  move tmpRhs, slice(B, InnerD)
-  =(tmpLhs, tmpRhs)
+The process of returning from `returnExistingArray` calls `copy` with an
+`outerA` argument. This copy is `move` d into `A`. That results in the desired
+semantics: `A` refers to a different array than `outerA`. Note that
+:ref:`automatic-ref-return` could transform the above case into the following
+case.
 
-If `slice` returns new `_array` by value, the rules outlined in this
-proposal would not create a copy in this particular case.
+.. code-block:: chapel
 
-There are several alternatives to these changes to program behavior:
+   var outerA: [1..10000] real;
+   proc returnExistingArray() ref {
+     return outerA;
+   }
+   var A = returnExistingArray();
 
- * introducing a new type for array references:
+The process of returning from `returnExistingArray` does not create a copy of
+the array `outerA` since it returns with `ref` intent. However, the variable
+initialization for `A` is using a ref and so is treated the same as
+initialization from another variable. That results in a `copy` call. That gives
+in the desired semantics: `A` refers to a different array than `outerA`.
 
-   * arrays could continue to return semantically by reference in all
-     cases, and the array reference types could be implemented with a
-     different wrapper record (e.g. `_arrayRef` instead of `_array`).
-   * array slicing could return a new type such as `_arrayRef`
-   * the `move` function from the new type to an `_array` would perform a
-     deep copy
+.. code-block:: chapel
 
- * the :ref:`untyped-return-global` case could use a different `copy`
-   function, perhaps called `copyRef`, for arrays
+   var outerA: [1..10000] real;
+   proc returnExistingArray() {
+     return outerA;
+   }
+   proc consumesArray(A:[] real) { ... }
+   consumesArray(returnExistingArray());
 
- * the `slice` function could return an `_array` record with a special
-   flag `isalias` set to `true`. Then, the `move` implementation for
-   `_array` would create a full copy if `isalias==true`.
+This example would have different behavior as discussed in the
+:ref:`arrays-by-value` section, unless the :ref:`automatic-ref-return` strategy
+is applied. That strategy would automatically change this example to the
+following:
+
+.. code-block:: chapel
+
+   var outerA: [1..10000] real;
+   proc returnExistingArray() ref {
+     return outerA;
+   }
+   proc consumesArray(A:[] real) { ... }
+   consumesArray(returnExistingArray());
+
+The result is that the additional copy is avoided. `returnExistingArray` does
+not create a copy in the process of returning with the `ref` intent. Since the
+function `consumesArray` takes in `A` by blank intent, which is `ref` for
+arrays, no copy is made when passing the ref returned to that function. That
+gives the desired semantics: no copy is added for this program.
+
+
+.. code-block:: chapel
+
+   proc createArray() {
+     var retA: [1..10000] real;
+     return retA;
+   }
+   proc consumesArray(A:[] real) { ... }
+   consumesArray(createArray());
+
+As we have previously discussed, the process of returning from `createArray`
+would not create a copy. `consumesArray` also does not create a copy. Note that
+it would still not make a copy in this case even if it had the `in` argument
+intent.  That gives the desired result: no copy is necessary.
+
+
+.. code-block:: chapel
+
+   record RecordStoringArray{ var field; }
+   proc createArray() {
+     var retA: [1..10000] real;
+     return retA;
+   }
+   proc consumesArray(A:[] real) {
+     return new RecordStoringArray(A);
+   }
+   consumesArray(createArray());
+
+As before, `createArray` does not call `copy` in the process of returning. The
+value returned will be destroyed after the `consumesArray` call. The call to
+`consumesArray` does not create a copy since it is passing by reference. The
+initialization function for `RecordStoringArray` initializes `field` field with
+another variable; therefore a `copy` call is included. That gives an acceptable
+result: `retA` is copied into the record `field` as in the current compiler.
+The section :ref:`automatic-in-arg-intent` describes a strategy that could
+eliminate this unnecessary copy.
 
 ref return intent for arrays
 ++++++++++++++++++++++++++++
 
-If arrays return by value, perhaps:
+Perhaps:
 
 .. code-block:: chapel
 
@@ -779,17 +1298,557 @@ intent, for the same reasons that:
 
 results in a compilation error in the current implementation.
 
+The current compiler ignores the `ref` return intent for functions returning
+arrays. Here we propose a similar strategy. The `ref` type for `_array` should
+be the same as `_array`. However, the usual `move` and `copy` calls will not be
+made when returning an array from a function with `ref` return intent. Note
+that some call should be made when returning an array by `ref` from a function
+with declared return type - in order to check the runtime types match.
 
-It remains an open question what the `ref` return intent should mean for
-arrays. The current implementation basically removes these return intents
-for arrays (since arrays return `by ref` already).  The initial proposal
-here is the `ref` return intent should continue to be removed for
-functions returning arrays. Alternatively, the `ref` return intent could
-cause a function to return a `_ref(_array)` value.
+As discussed in :ref:`ref-return`, an alternative approach is for the `ref`
+type for `_array` to be a different type that has the same fields. In this way,
+the `move` and `copy` calls for a `ref(_array)` could just type check.
+ 
+.. _array-slices:
+
+Array slices
+++++++++++++
+
+Array slices are a tricky case for the same reasons as `string.localize()`
+discussed above (see :ref:`strings`).
+
+Consider this example program:
+
+.. code-block:: chapel
+
+
+  proc f() {
+    var A:[1..4] int;
+    return A[2..3];
+  }
+
+  var A_slice = f();
+  writeln(A_slice);
+
+It currently outputs `0 0` but would result in an invalid program/core dump if
+the return from `f` did not make a copy of the slice or somehow arrange for the
+slice to take ownership of the original array. The proposed strategy is to
+arrange for the return `move` call to make a copy because an `_array` field
+`isalias` would be set to `true` when constructing the slice.
+
+.. code-block:: chapel
+
+  var A:[1..4] int;
+
+  proc f() {
+    return A[2..3];
+  }
+
+  proc g(x) {
+    x[2] = 1;
+  }
+
+  g(f());
+  writeln(A);
+
+Currently outputs `0 1 0 0`. Under the proposal, it would output `0 0 0 0`
+because a `move` call is invoked in the `return` from `f` and `isalias` is
+true, resulting in a copy.
+
+Manually adjusting `f` to return by `ref` could restore the old behavior.  If
+it returned with `ref` intent and an array reference is actually just another
+`_array` but where `move` or `copy` calls are not applied (or have no effect) -
+it could return `0 1 0 0`.
+
+.. code-block:: chapel
+
+  var A:[1..4] int;
+  var A_slice = A[2..3];
+  A_slice[2] = 1;
+  writeln(A);
+
+Currently outputs `0 0 0 0`. Will still do that because `move` for array slice
+from variable initialization will detect `isalias` and perform a full copy.
+
+.. code-block:: chapel
+
+  var A:[1..4] int;
+  var A_slice => A[2..3];
+  A_slice[2] = 1;
+  writeln(A);
+
+Currently outputs `0 1 0 0`. It could still do that if `=>` is not considered
+normal variable initialization, but more like `ref` initialization.
+
+
+There are several alternatives:
+
+ * change var B = A[InnerD]; to not create a copy of the slice
+
+ * introducing a new type for array slices:
+
+   * array slicing could return a new type such as `_arraySlice`
+   * the `move` function from the new type to an `_array` would perform a
+     deep copy
+
+ * the `slice` function could return an `_array` record with a special
+   flag `isalias` set to `true`. Then, the `move` implementation for
+   `_array` would create a full copy if `isalias==true`.
+
+_array Implementation Alternatives
+----------------------------------
+
+* "ownership bit" idea discussed previously - this approach requires separate
+  copy fn for user variable init from return (or some other way to distinguish).
+  (see :ref:`distinguish-move-calls`).
+  Otherwise, return outerVar would always make a copy. One serious drawback
+  with this approach is that it cannot tolerate extra copies of
+  compiler temporaries in case the compiler is not as tidy as possible
+  about generating the copies. Thus, it would be just as much work
+  as the current proposal.
+
+* reference counting - we do not believe the language requires array reference
+  counting
+
+Recommended Optional Extensions
+-------------------------------
+
+.. _automatic-ref-return:
+
+Automatic Ref Return Intent
++++++++++++++++++++++++++++
+
+Certain patterns, such as a chain of functions transforming an array, could be
+optimized beyond what is described in this document. One implementation
+alternative is to use such an optimization to remove unnecessary copies
+generated in the cases above.
+
+One example is this program that was discussed earlier:
+
+.. code-block:: chapel
+
+  var A:[1..3] int;
+
+  proc f() {
+    return A;
+  }
+
+  writeln(f());
+
+This program causes the array A to be copied in the process of being
+output. This copy is unnecessary in this example and could be optimized
+away. A user could adjust the program by adding the `ref` return intent
+to `f`.
+
+A further example is this program:
+
+.. code-block:: chapel
+
+  proc xform(arg) {
+    arg[1] += 1;
+    return arg;
+  }
+
+  var A:[1..4] int;
+  var B = xform(xform(xform(A)));
+
+In this case, if `arg` has the `in` intent, the rules above would optimize away
+the copies. However, if `arg` has the `ref` intent, the copies cannot be
+removed by the rules above.
+
+The `ref` return intent could perhaps be added automatically.
+
+  * functions that always return a particular ref argument or
+    outer scope variable by value are modified by the compiler to
+    return by `ref`.
+  * the `ref` return intent would be added for arrays, but `const ref`
+    would be added for user types. The idea is that the new return intent
+    should match the default argument intent.
+
+Note that
+
+  * it is already illegal to assign to the result of such a call:
+
+    .. code-block:: chapel
+
+      var global = 12;
+
+      proc f() {
+        return global; 
+      }
+
+      f() = 1;
+
+    results in the error "illegal lvalue in assignment".
+
+This transformation preserves the property described in :ref:`user-view`.
+However, it certainly does change program behavior.
+
+Things to watch out for:
+
+ * returning a reference to a local variable
+   (wouldn't want to change a correct program into an incorrect one)
+   For example,
+
+   .. code-block:: chapel
+
+      proc f() {
+        var x = 12;
+        ref y = x; 
+        return y; 
+      }
+
+      writeln(f());
+
+   This example does not meet the criteria for the transformation above,
+   since it returns neither an *outer scope variable* nor a
+   *particular ref argument*. This transformation should probably not
+   apply to functions returning arbitrary function calls that
+   return a `ref`.
+
+ * functions returning a reference yield a reference to a variable
+   with unknown lifetime (local? global?). It would be a problem
+   if the returned reference has a shorter lifetime than
+   the variable it refers to.
+
+Revisiting our earlier examples,
+
+.. code-block:: chapel
+
+  var A:[1..3] int;
+
+  proc f() {
+    return A;
+  }
+
+  writeln(f());
+
+applying the transformation above would change it into the following:
+
+.. code-block:: chapel
+
+  var A:[1..3] int;
+
+  proc f() ref {
+    return A;
+  }
+
+  writeln(f());
+
+Note that a copy of A would still be made in a case such as
+
+.. code-block:: chapel
+
+  var B = f();
+
+since f() is a reference and is treated as another variable.
+
+This example works with a similar optimization:
+
+.. code-block:: chapel
+
+  proc xform(arg) {
+    arg[1] += 1;
+    return arg;
+  }
+
+  var A:[1..4] int;
+  var B = xform(xform(xform(A)));
+
+Since the array argument to xform is passed by reference and always
+returned, xform can return by reference:
+
+.. code-block:: chapel
+
+  proc xform(arg) ref {
+    arg[1] += 1;
+    return arg;
+  }
+
+  var A:[1..4] int;
+  var B = xform(xform(xform(A)));
+
+In that case, A is modified by each xform call, instead of sometimes being a
+temporary being modified. This difference is observable if A is not dead after
+its use as an argument.
+
+
+Future Optional Extensions
+--------------------------
+
+.. _distinguish-move-calls:
+
+Distinguing between `move` calls
+++++++++++++++++++++++++++++++++
+
+In an argument to `move` calls, distinguish between:
+
+ * `move` calls made as part of function return
+ * `move` calls made as part of user variable initialization
+
+While none of the examples discussed would rely on such behavior, it might be
+useful. In particular, keeping the current reference-counted array
+implementation with `autoCopy` and `initCopy` would require distinguishing
+between these cases. In addition, some of the alternative ways of
+implementing `_array` would require it. 
+
+.. _removing-inout:
+
+Removing `inout` argument intent from the language
+++++++++++++++++++++++++++++++++++++++++++++++++++
+
+What can you do with `inout` that can't be done more efficiently with
+`ref` ? The `inout` intent seems possibly useful for parallelism (as a
+task intent) but even there, if the copy back happens in the spawned
+tasks, it does nothing to prevent race conditions. Contrast with `in`
+which can remove race conditions and fits in well with copy reduction
+strategy.
+
+It is worth noting that the `inout` intent predates the `ref` intent.
+
+.. _optimizing-out:
+
+Optimizing `out` arguments
+++++++++++++++++++++++++++
+
+The `out` intent could be treated in the same manner as a function return
+in that it transfers the responsibility of freeing to the caller. For
+example, we would like the following example to not have any copies:
+
+.. code-block:: chapel
+
+    proc g(out arg) {
+      arg = f();
+    }
+
+    var tmp:t;
+    g( tmp );
+
+However, implementing such semantics has some implications:
+
+ 1. it would imply that at `out` argument is not initialized
+    on the way in to a function body - since e.g. declaring
+    `tmp` as an array would allocate space
+
+ 2. that would imply that this particular `var tmp:t` does not behave as
+    usual - so destinations for `out` arguments would need special
+    initialization logic. One approachable way to achieve this logic
+    would be to destroy the actuals for `out` intent formals before the
+    function call, and to use an optimization to remove initializations
+    of a variable that is next used by being destroyed.
+
+ 3. it would require either that:
+
+   * it is an error if an `out` argument is not set exactly once on some
+     path through a function, or
+   * each `out` argument can be set zero or one times on each path
+     through a function. If it is set zero times, it will be
+     default-initialized. Or,
+   * each path through a function will default-initialize each `out`
+     argument if it is not set, and use the `=` overload to set it if it
+     has already been set once. For example:
+
+     .. code-block:: chapel
+
+         proc g(out outArg)
+         {
+           ...;
+           outArg = f();  // first time outArg is set is initialization
+           outArg = f();  // second time outArg is set is assignment
+           ...;
+         }
+
+     The required compiler support for differentiating initializing `out`
+     arguments from assigning them has some similarities to some phase 1
+     initializer proposals.
+
+The current implementation implements the copies sometimes implied by
+`inout` and `out` with a call to the assignment function `=`. The
+advantage of the proposed design is that it allows optimization for
+certain typical cases such as:
+
+.. code-block:: chapel
+
+    proc g(out outArg) {
+      outArg = f();
+    }
+
+    var r:R;
+    g(r);
+
+In particular, the example above would not generate any copies - but for
+an array, the version using `=` would amount to a deep copy of the array
+elements.
+
+The following example shows a scenario in which copies would occur under
+the proposed rules, but where these copies could be optimized away by
+:ref:`expiring-value-opt`.
+
+.. code-block:: chapel
+
+    proc makeArray() {
+      var A:[1..100] int;
+      return A;
+    }
+
+    proc source(out a, out b) {
+      a = makeArray();
+      b = makeArray();
+    }
+
+    proc sink(in a, in b) {
+      writeln(a);
+      writeln(b);
+    }
+
+    var tmp_a:A[1..100] int;
+    var tmp_b:A[1..100] int;
+    source(tmp_a, tmp_b);
+    sink(tmp_a, tmp_b);
+
+This example has these issues under these rules:
+ * tmp_a and tmp_b allocate memory and then re-write it
+
+.. _expiring-value-opt:
+
+Eliminating Copies from Expiring Values
++++++++++++++++++++++++++++++++++++++++
+
+In addition, a program such as this:
+
+.. code-block:: chapel
+
+  {
+    var A:[1..4] int;
+    var B = A;
+    var C = B;
+    writeln(C);
+  }
+
+creates an extra copy of A that is not needed.
+
+
+Here we propose that:
+
+ 2) the compiler can remove any `copy` if the source of the copy
+    is an expiring value (that is, a value that is dead after the copy
+    is made except for a call to destroy it - this call to destroy
+    it is required ).
+ 3) when the compiler removes such `copy` calls, it replaces them
+    with `move` calls.
+
+There is one case where this behavior might be suprising to a record
+author. Suppose that `R` is a record that contains a `ptr` field of a class
+type. Suppose a `copy` function is defined for `R` that allocates a
+new `ptr` value in the destination and copies the contents of `ptr`.
+Suppose further that a `move` function is defined for `R` that does
+does not perform the deep copy (and is equivalent to a shallow copy).
+
+Now suppose that `g` is an `R` record value storing a pointer, and that
+somehow `alias` is set up as a record storing the same pointer.  Then a
+copy is made from `alias` to `x`. Finally, the value pointed to within
+`x` is modified.
+
+.. code-block:: chapel
+
+    {
+      var g = new R(ptr);
+      var alias:R;
+      alias.ptr = g.ptr;
+      var x = alias; // a copy might be expected here.
+                     // if the copy occurs, x.ptr != g.ptr.
+                     // if it does not, x.ptr == g.ptr.
+      mutate(copy.ptr);
+      // has g.ptr changed?
+    }
+
+In this case, the optimization might remove the copy from `alias` to `x`,
+which would cause the mutate call to modify `g.ptr` instead of a separate
+value. This difference changes the way the program behaves. Note that it
+is also possible to write this pattern as several function calls so that
+the role played by `x` is instead played by a compiler-introduced
+temporary.
+
+Here we propose that in cases where a record might store a pointer that aliases
+another record, the `move` function be implemented by the record author to call
+the `copy` function. This choice can be made at runtime.  Since the calls to
+`move` under this proposal correspond to all cases where a value is bound to a
+new user variable - by implementing a `move` function a record designer can
+control this behavior. We have already observed that there are other reasons
+for the `string` and `_array` implementations to do this - see :ref:`strings`
+and :ref:`arrays`.
+
+This optimization still meets the *unique storage for a record's fields* idea
+from :ref:`user-view` since the optimized-away copy is from a dead variable.
+
+Alternative designs include:
+
+ * apply this optimization only to compiler-introduced temporaries
+   and always apply it to compiler-introduced temporaries
+   (This is the choice that C++ and D made, but it has the disadvantage
+   that user variables have different behavior from compiler-introduced
+   temporaries - and that this optimization cannot apply to user
+   variables).
+ * apply this optimization only when the result of a possibly-eliminated
+   copy is not logically modified
+   (This choice is possible but would require an understanding
+   of `const` or some other concept that includes mutation through
+   a pointer field, such a transitive immutability).
+
+
+.. _automatic-in-arg-intent:
+
+Automatic in argument intent
+++++++++++++++++++++++++++++
+
+TODO -- this part is sketchy.
+
+This example:
+
+.. code-block:: chapel
+
+   record RecordStoringArray{ var field; }
+   proc createArray() {
+     var retA: [1..10000] real;
+     return retA;
+   }
+   proc consumesArray(A:[] real) {
+     return new RecordStoringArray(A);
+   }
+   consumesArray(createArray());
+
+results in a copy, even though that copy is not strictly necessary.  If the
+function `consumesArray` and the `RecordStoringArray` construction call both
+took their argument with the `in` intent, and if the :ref:`expiring-value-opt`
+strategy is applied at least to compiler temporaries created from the `in`
+intent, then this copy can be eliminated.
+
+Thus, one optimization idea is to automatically add the `in` argument intent to
+some arguments. Perhaps rules could be developed which cause program behavior to be preserved. One possible rule would be:
+
+ * Change a `ref` argument to an `in` intent to an argument if the only use
+   of that argument is to `copy` it to a newly initialized variable or
+   field.
+
+The argument that the optimization is correct with this rule is that the
+optimization does not change the number of semantic copies (since `in` intent
+implies a `copy`, but one that can be omitted in certain cases). It just moves
+the `copy` call.
+
+This rule would be met by the record constructor `RecordStoringArray`; then
+once it has the `in` intent, the rule will be met by the `consumesArray`
+function.
 
 
 Implementation
 --------------
+
+TODO -- this section needs to be rewritten based on the semantics decisions.
+Below is a previous version that at least identifies the relevant portions of
+the compiler.
+
+TODO -- To what extend does `move` corresponding to `autoCopy` in the current
+implementation?
 
 We expect that almost all of the changes required to implement the new behavior
 could be done in the normalization pass. Certain variables can continue to be
@@ -903,105 +1962,5 @@ Besides the compiler changes, the module code would change in this way:
    the domain needs to be freed.
  * distributions would optionally store a list of domains over that
    distribution and function similarly to domains.
-
-
-Further copy optimization
---------------------------
-
-Certain patterns, such as a chain of functions transforming an array, as
-well as extra user-introduced temporary variables, could be optimized
-beyond what is described in this document. One implementation alternative
-is to use such an optimization to remove unnecessary copies generated in
-the cases above.
-
-For example, this program:
-
-.. code-block:: chapel
-
-  proc xform(arg) {
-    arg[1] += 1;
-    return arg;
-  }
-
-  var A:[1..4] int;
-  var B = xform(xform(xform(A)));
-
-In this case, if `arg` has the `in` intent, the rules above would
-optimize away the copies. However, if it has the `ref` intent, the copies
-cannot be removed by the rules above.
-
-In addition, a program such as this:
-
-.. code-block:: chapel
-
-  {
-    var A:[1..4] int;
-    var B = A;
-    var C = B;
-    writeln(C);
-  }
-
-creates an extra copy of A that is not needed.
-
-Here we propose that:
-
- 1) the compiler can remove any `copy` if the source of the copy
-    is an expiring value (that is, a value that is dead after the copy
-    is made except for a call to destroy it).
- 2) when the compiler removes such `copy` calls, it replaces them
-    with `move` calls.
-
-There is one case where this behavior might be suprising to a record
-author. Suppose that `R` is a record that contains a `ptr` field of a class
-type. Suppose a `copy` function is defined for `R` that allocates a
-new `ptr` value in the destination and copies the contents of `ptr`.
-Suppose further that a `move` function is defined for `R` that does
-does not perform the deep copy (and is equivalent to a shallow copy).
-
-Now suppose that `g` is an `R` record value storing a pointer, and that
-somehow `alias` is set up as a record storing the same pointer.  Then a
-copy is made from `alias` to `x`. Finally, the value pointed to within
-`x` is modified.
-
-.. code-block:: chapel
-
-    {
-      var g = new R(ptr);
-      var alias:R;
-      alias.ptr = g.ptr;
-      var x = alias; // a copy might be expected here.
-                     // if the copy occurs, x.ptr != g.ptr.
-                     // if it does not, x.ptr == g.ptr.
-      mutate(copy.ptr);
-      // has g.ptr changed?
-    }
-
-In this case, the optimization might remove the copy from `alias` to `x`,
-which would cause the mutate call to modify `g.ptr` instead of a separate
-value. This difference changes the way the program behaves. Note that it
-is also possible to write this pattern as several function calls so that
-the role played by `x` is instead played by a compiler-introduced
-temporary.
-
-Here we propose that in cases where a record might store a pointer that
-aliases another record, the `move` function be implemented by the record
-author to call the `copy` function. This choice can be made at runtime.
-Since the calls to `move` under this proposal correspond to all cases
-where a value is bound to a new user variable - by implementing a `move`
-function a record designer can control this behavior.
-
-Alternative designs include:
-
- * apply this optimization only to compiler-introduced temporaries
-   and always apply it to compiler-introduced temporaries
-   (This is the choice that C++ and D made, but it has the disadvantage
-   that user variables have different behavior from compiler-introduced
-   temporaries - and that this optimization cannot apply to user
-   variables).
- * apply this optimization only when the result of a possibly-eliminated
-   copy is not logically modified
-   (This choice is possible but would require an understanding
-   of `const` or some other concept that includes mutation through
-   a pointer field, such a transitive immutability).
 
 
