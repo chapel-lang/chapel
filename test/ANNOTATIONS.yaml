@@ -109,11 +109,16 @@ all:
   01/06/16:
     - Replace filenames with indices into a lookup table (#3049)
   02/14/16:
-    - text: Default to jemalloc for gasnet configurations
+    - text: Default to jemalloc for gasnet configurations (#3287)
       config: 16 node XC
   02/17/16:
     - text: Remove origin check to improve bulk transfer (#3301)
       config: 16 node XC
+  02/19/16:
+    - text: Default to jemalloc for comm=ugni (#3321)
+      config: 16 node XC
+  02/22/16:
+    - Default to jemalloc for comm=none (#3333)
 
 AllCompTime:
   11/09/14:
