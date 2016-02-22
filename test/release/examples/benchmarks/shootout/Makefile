@@ -53,6 +53,7 @@ pidigits: pidigits.chpl
 	@if [ "$(CHPL_MAKE_GMP)" != "none" ]; then \
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<; \
 	else \
+	echo "";\
 	echo "Can't build pidigits without CHPL_GMP being enabled. See for details:"; \
 	echo "http://chapel.cray.com/docs/latest/usingchapel/chplenv.html#chpl-gmp"; \
 	echo ""; \
@@ -63,8 +64,9 @@ regexdna: regexdna.chpl
 	@if [ "$(CHPL_REGEXP)" != "none" ]; then \
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<; \
 	else \
+	echo "";\
 	echo "Can't build regexdna without CHPL_REGEXP being enabled. See for details:"; \
-	echo "http://chapel.cray.com/docs/master/usingchapel/chplenv.html#chpl-regexp"; \
+	echo "http://chapel.cray.com/docs/latest/usingchapel/chplenv.html#chpl-regexp"; \
 	echo ""; \
 	fi
 
