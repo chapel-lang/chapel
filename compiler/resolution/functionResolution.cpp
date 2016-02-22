@@ -2612,64 +2612,59 @@ printResolutionErrorUnresolved(
   if( ! info->call ) INT_FATAL("call is NULL");
   CallExpr* call = userCall(info->call);
 
-  if( developer ) {
-    // Should this be controled another way?
-    USR_FATAL_CONT(call, "failed to resolve call with id %i", call->id);
-  }
-
   if (!strcmp("_cast", info->name)) {
     if (!info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL(call, "illegal cast to non-type",
-                toString(info->actuals.v[1]->type),
-                toString(info->actuals.v[0]->type));
+      USR_FATAL_CONT(call, "illegal cast to non-type",
+                     toString(info->actuals.v[1]->type),
+                     toString(info->actuals.v[0]->type));
     } else {
-      USR_FATAL(call, "illegal cast from %s to %s",
-                toString(info->actuals.v[1]->type),
-                toString(info->actuals.v[0]->type));
+      USR_FATAL_CONT(call, "illegal cast from %s to %s",
+                     toString(info->actuals.v[1]->type),
+                     toString(info->actuals.v[0]->type));
     }
   } else if (!strcmp("free", info->name)) {
     if (info->actuals.n > 0 &&
         isRecord(info->actuals.v[2]->type))
-      USR_FATAL(call, "delete not allowed on records");
+      USR_FATAL_CONT(call, "delete not allowed on records");
   } else if (!strcmp("these", info->name)) {
     if (info->actuals.n == 2 &&
         info->actuals.v[0]->type == dtMethodToken)
-    USR_FATAL(call, "cannot iterate over values of type %s",
-              toString(info->actuals.v[1]->type));
+    USR_FATAL_CONT(call, "cannot iterate over values of type %s",
+                   toString(info->actuals.v[1]->type));
   } else if (!strcmp("_type_construct__tuple", info->name)) {
     if (info->call->argList.length == 0)
-      USR_FATAL(call, "tuple size must be specified");
+      USR_FATAL_CONT(call, "tuple size must be specified");
     SymExpr* sym = toSymExpr(info->call->get(1));
     if (!sym || !sym->var->isParameter()) {
-      USR_FATAL(call, "tuple size must be static");
+      USR_FATAL_CONT(call, "tuple size must be static");
     } else {
-      USR_FATAL(call, "invalid tuple");
+      USR_FATAL_CONT(call, "invalid tuple");
     }
   } else if (!strcmp("=", info->name)) {
     if (info->actuals.v[0] && !info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
         info->actuals.v[1] && info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL(call, "illegal assignment of type to value");
+      USR_FATAL_CONT(call, "illegal assignment of type to value");
     } else if (info->actuals.v[0] && info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
                info->actuals.v[1] && !info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL(call, "illegal assignment of value to type");
+      USR_FATAL_CONT(call, "illegal assignment of value to type");
     } else if (info->actuals.v[1]->type == dtNil) {
-      USR_FATAL(call, "type mismatch in assignment from nil to %s",
+      USR_FATAL_CONT(call, "type mismatch in assignment from nil to %s",
                 toString(info->actuals.v[0]->type));
     } else {
-      USR_FATAL(call, "type mismatch in assignment from %s to %s",
-                toString(info->actuals.v[1]->type),
-                toString(info->actuals.v[0]->type));
+      USR_FATAL_CONT(call, "type mismatch in assignment from %s to %s",
+                     toString(info->actuals.v[1]->type),
+                     toString(info->actuals.v[0]->type));
     }
   } else if (!strcmp("this", info->name)) {
     Type* type = info->actuals.v[1]->getValType();
     if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-      USR_FATAL(call, "illegal access of iterator or promoted expression");
+      USR_FATAL_CONT(call, "illegal access of iterator or promoted expression");
     } else if (type->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
-      USR_FATAL(call, "illegal access of first class function");
+      USR_FATAL_CONT(call, "illegal access of first class function");
     } else {
-      USR_FATAL(call, "unresolved access of '%s' by '%s'",
-                toString(info->actuals.v[1]->type),
-                toString(info));
+      USR_FATAL_CONT(call, "unresolved access of '%s' by '%s'",
+                     toString(info->actuals.v[1]->type),
+                     toString(info));
     }
   } else {
     const char* entity = "call";
@@ -2706,8 +2701,12 @@ printResolutionErrorUnresolved(
         visibleFns.v[0]->numFormals() == 0
         && !strncmp("_type_construct_", info->name, 16))
       USR_PRINT(call, "did you forget the 'new' keyword?");
-    USR_STOP();
   }
+  if( developer ) {
+    // Should this be controled another way?
+    USR_FATAL_CONT(call, "unresolved call had id %i", call->id);
+  }
+  USR_STOP();
 }
 
 static void issueCompilerError(CallExpr* call) {
