@@ -2537,8 +2537,14 @@ bool UseStmt::providesNewSymbols(UseStmt* other) {
     // We have an 'only' list.  This is likely more specific than other, but
     // we should still check.
     if (other->except) {
-      // Other has an 'except' list, if there's overlap in the two lists then
-      // we provide new symbols
+      // Other has an 'except' list
+      if (renamed.size() > 0) {
+        // If we renamed any symbols, then we provide something new
+        return true;
+      }
+
+      // If there were no renamed symbols and there's overlap in the two
+      // lists then we provide new symbols
       int numSame = 0;
       for_vector(const char, include, named) {
         if (std::find(other->named.begin(), other->named.end(), include) != other->named.end()) {
@@ -2548,7 +2554,8 @@ bool UseStmt::providesNewSymbols(UseStmt* other) {
       // If numSame > 0, some of the names in our 'only' list were present in
       // other's 'except' list, which means we definitely provide new symbols
       return numSame > 0;
-    } else if (other->named.size() < named.size()) {
+    } else if (other->named.size() + other->renamed.size() < named.size() +
+               renamed.size()) {
       // Other has a smaller 'only' list.  By definition, this means we are
       // providing symbols not available in other.
       return true;
@@ -2558,10 +2565,28 @@ bool UseStmt::providesNewSymbols(UseStmt* other) {
         if (std::find(other->named.begin(), other->named.end(), include) != other->named.end()) {
           numSame++;
         }
+        // Don't check against other's renamed list, since a renamed version
+        // of something in our only list is a new symbol
       }
+      for(std::map<const char*, const char*>::iterator it = renamed.begin();
+          it != renamed.end(); ++it) {
+        // Don't check against other's only list.  A renamed version of
+        // something in their only list is a new symbol
+        // Do check against other's renamed list.  If both uses cause the exact
+        // same rename to occur, we should count it.
+        for (std::map<const char*, const char*>::iterator otherIt =
+               other->renamed.begin();
+             otherIt != other->renamed.end(); ++otherIt) {
+          if (!strcmp(it->first, otherIt->first) &&
+              !strcmp(it->second, otherIt->second)) {
+            numSame++;
+          }
+        }
+      }
+
       // If all of our 'only' list was in the 'only' list of other, we don't
       // provide anything new.
-      return numSame != named.size();
+      return numSame != named.size() + renamed.size();
     }
   }
 }
