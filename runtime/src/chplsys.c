@@ -201,6 +201,13 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
   if ((f = fopen("/proc/cpuinfo", "r")) == NULL)
     chpl_internal_error("Cannot open /proc/cpuinfo");
 
+  //
+  // If f is NULL, we should have exited by now, but Coverity doesn't
+  // seem to be catching this (anymore), so I'm adding an assertion
+  // to try and help it out.
+  //
+  assert(f != NULL);
+
   while (!feof(f) && fgets(buf, sizeof(buf), f) != NULL) {
     size_t buf_len = strlen(buf);
     int procTmp;

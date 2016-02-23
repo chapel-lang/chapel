@@ -1758,6 +1758,12 @@ qioerr qio_shortest_path(qio_file_t* file, const char** path_out, const char* pa
   qio_free((void*) cwd); cwd = NULL;
 
   if( ! err ) {
+    //
+    // If relpath is NULL, err should have been non-zero, but Coverity
+    // doesn't feel safe about this, so I'm adding this assertion to
+    // be double-sure.
+    //
+    assert(relpath != NULL);
     // Use relpath or path_in, whichever is shorter.
     if( strlen(relpath) < strlen(path_in) ) {
       *path_out = relpath; relpath = NULL;
