@@ -492,6 +492,62 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap& subs, FnSymbol* fn) {
   sym->name = astr(sym->name, ")");
 }
 
+/** Instantiate a type
+ *
+ * \param fn   Type constructor we are working on
+ * \param subs Type substitutions to be made during instantiation
+ * \param call The call that is being resolved (used for scope)
+ * \param type The generic type we wish to instantiate
+ */
+static Type*
+instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs,
+                                  CallExpr* call, Type* type) {
+
+  INT_ASSERT(isAggregateType(type));
+  AggregateType* ct = toAggregateType(type);
+
+  Type* newType = NULL;
+  newType = ct->symbol->copy()->type;
+
+  //
+  // mark star tuples, add star flag
+  //
+  if (!fn->hasFlag(FLAG_TUPLE) && newType->symbol->hasFlag(FLAG_TUPLE)) {
+    bool markStar = true;
+    Type* starType = NULL;
+    form_Map(SymbolMapElem, e, subs) {
+      TypeSymbol* ts = toTypeSymbol(e->value);
+      INT_ASSERT(ts && ts->type);
+      if (starType == NULL) {
+        starType = ts->type;
+      } else if (starType != ts->type) {
+        markStar = false;
+        break;
+      }
+    }
+    if (markStar)
+      newType->symbol->addFlag(FLAG_STAR_TUPLE);
+  }
+
+  renameInstantiatedType(newType->symbol, subs, fn);
+  fn->retType->symbol->defPoint->insertBefore(new DefExpr(newType->symbol));
+  newType->symbol->copyFlags(fn);
+  if (isSyncType(newType))
+    newType->defaultValue = NULL;
+  newType->substitutions.copy(fn->retType->substitutions);
+  newType->dispatchParents.copy(fn->retType->dispatchParents);
+  forv_Vec(Type, t, fn->retType->dispatchParents) {
+    bool inserted = t->dispatchChildren.add_exclusive(newType);
+    INT_ASSERT(inserted);
+  }
+  if (newType->dispatchChildren.n)
+    INT_FATAL(fn, "generic type has subtypes");
+  newType->instantiatedFrom = fn->retType;
+  newType->substitutions.map_union(subs);
+  newType->symbol->removeFlag(FLAG_GENERIC);
+
+  return newType;
+}
 
 /** Instantiate enough of the function for it to make it through the candidate
  *  filtering and disambiguation process.
@@ -555,45 +611,7 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   //
   Type* newType = NULL;
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-    INT_ASSERT(isAggregateType(fn->retType));
-    newType = fn->retType->symbol->copy()->type;
-
-    //
-    // mark star tuples, add star flag
-    //
-    if (!fn->hasFlag(FLAG_TUPLE) && newType->symbol->hasFlag(FLAG_TUPLE)) {
-      bool markStar = true;
-      Type* starType = NULL;
-      form_Map(SymbolMapElem, e, subs) {
-        TypeSymbol* ts = toTypeSymbol(e->value);
-        INT_ASSERT(ts && ts->type);
-        if (starType == NULL) {
-          starType = ts->type;
-        } else if (starType != ts->type) {
-          markStar = false;
-          break;
-        }
-      }
-      if (markStar)
-        newType->symbol->addFlag(FLAG_STAR_TUPLE);
-    }
-
-    renameInstantiatedType(newType->symbol, subs, fn);
-    fn->retType->symbol->defPoint->insertBefore(new DefExpr(newType->symbol));
-    newType->symbol->copyFlags(fn);
-    if (isSyncType(newType))
-      newType->defaultValue = NULL;
-    newType->substitutions.copy(fn->retType->substitutions);
-    newType->dispatchParents.copy(fn->retType->dispatchParents);
-    forv_Vec(Type, t, fn->retType->dispatchParents) {
-      bool inserted = t->dispatchChildren.add_exclusive(newType);
-      INT_ASSERT(inserted);
-    }
-    if (newType->dispatchChildren.n)
-      INT_FATAL(fn, "generic type has subtypes");
-    newType->instantiatedFrom = fn->retType;
-    newType->substitutions.map_union(subs);
-    newType->symbol->removeFlag(FLAG_GENERIC);
+    newType = instantiateTypeForTypeConstructor(fn, subs, call, fn->retType);
   }
 
   //
