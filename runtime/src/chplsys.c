@@ -201,6 +201,8 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
   if ((f = fopen("/proc/cpuinfo", "r")) == NULL)
     chpl_internal_error("Cannot open /proc/cpuinfo");
 
+  assert(f != NULL);
+
   while (!feof(f) && fgets(buf, sizeof(buf), f) != NULL) {
     size_t buf_len = strlen(buf);
     int procTmp;
