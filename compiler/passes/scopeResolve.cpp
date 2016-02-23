@@ -814,7 +814,7 @@ static void build_type_constructor(AggregateType* ct) {
   CallExpr* superCall = NULL;
 
   // Copy arguments from superclass type constructor
-  // (supporting inheritence from generic classes)
+  // (supporting inheritance from generic classes)
   if (isClass(ct) && ct->dispatchParents.n > 0) {
 
     if(AggregateType *parentTy = toAggregateType(ct->dispatchParents.v[0])){
@@ -868,7 +868,7 @@ static void build_type_constructor(AggregateType* ct) {
 
     if (VarSymbol* field = toVarSymbol(tmp)) {
       if (field->hasFlag(FLAG_SUPER_CLASS)) {
-        // supporting inheritence from generic classes
+        // supporting inheritance from generic classes
         if (superCall) {
           CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, superCall);
           CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER,

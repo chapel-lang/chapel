@@ -1519,7 +1519,7 @@ computeActualFormalAlignment(FnSymbol* fn,
 // instantiated by a given actual type
 //
 static Type*
-geBasictInstantiationType(Type* actualType, Type* formalType) {
+getBasicInstantiationType(Type* actualType, Type* formalType) {
   if (canInstantiate(actualType, formalType)) {
     return actualType;
   }
@@ -1539,7 +1539,7 @@ geBasictInstantiationType(Type* actualType, Type* formalType) {
 
 static Type*
 getInstantiationType(Type* actualType, Type* formalType) {
-  Type *ret = geBasictInstantiationType(actualType, formalType);
+  Type *ret = getBasicInstantiationType(actualType, formalType);
 
   // Now, if formalType is a generic parent type to actualType,
   // we should instantiate the parent actual type
