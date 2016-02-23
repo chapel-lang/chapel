@@ -644,6 +644,13 @@ module DefaultRectangular {
     pragma "local field"
     var shiftedData : _ddata(eltType);
     var noinit_data: bool = false;
+
+    // 'dataAllocDom' is used by the array-vector operations (e.g. push_back,
+    // pop_back, insert, remove) to allow growing or shrinking the data
+    // buffer in a doubling/halving style.  If it is used, it will be the
+    // actual size of the data buffer, while 'dom' represents the size of the
+    // user-level array.
+    var dataAllocDom: domain(1);
     //var numelm: int = -1; // for correctness checking
   
     // end class definition here, then defined secondary methods below
@@ -1027,7 +1034,7 @@ module DefaultRectangular {
       }
       return alias;
     }
-  
+
     proc dsiReallocate(d: domain) {
       if (d._value.type == dom.type) {
         on this {

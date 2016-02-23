@@ -149,6 +149,11 @@ module ChapelArray {
   pragma "no doc"
   config param useBulkTransferStride = false;
 
+  pragma "no doc" // no doc unless we decide to expose this
+  config param arrayAsVecGrowthFactor = 1.5;
+  pragma "no doc"
+  config param debugArrayAsVec = false;
+
   pragma "privatized class"
   proc _isPrivatized(value) param
     return !_local && ((_privatization && value.dsiSupportsPrivatization()) || value.dsiRequiresPrivatization());
@@ -2027,7 +2032,28 @@ module ChapelArray {
     proc tail(): this._value.eltType {
       return this[this.domain.high];
     }
-
+    pragma "no doc"
+    proc resizeAllocDomain(d: domain, d2: domain, factor=arrayAsVecGrowthFactor, direction=1, grow=1) {
+      const lo = d.low,
+            hi = d.high,
+            size = hi - lo + 1;
+      var newSize: int;
+      if grow > 0 {
+        newSize = max(size+1, (size*factor):int); // Always grow by at least 1.
+        if direction > 0 {
+          return lo..#newSize;
+        } else {
+          return ..hi#-newSize;
+        }
+      } else {
+        // shrink to match the d2 bound on the side indicated by direction
+        if direction > 0 {
+          return lo..d2.high;
+        } else {
+          return d2.low..hi;
+        }
+      }
+    }
     /* Add element ``val`` to the back of the array, extending the array's
        domain by one. If the domain was ``{1..5}`` it will become ``{1..6}``.
      */
@@ -2036,8 +2062,30 @@ module ChapelArray {
       const lo = this.domain.low,
             hi = this.domain.high+1;
       const newDom = {lo..hi};
+      if debugArrayAsVec then
+        writeln("Adding index ", hi, " to ", this.domain, " dataAllocDom = ", this._value.dataAllocDom);
       on this._value {
-        this._value.dsiReallocate(newDom);
+        if !this._value.dataAllocDom.member(hi) {
+          /* The new index is not in the allocated space.  We'll need to
+             realloc it. */
+          if this._value.dataAllocDom.numIndices < this.domain.numIndices {
+            /* if dataAllocDom has fewer indices than this.domain it must not
+               be set correctly.  Set it to match this.domain to start.
+             */ 
+            if debugArrayAsVec then
+              writeln("setting dataAllocDom to this.domain: ", this.domain);
+            this._value.dataAllocDom = this.domain;
+          }
+          this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom);
+          extern proc printf(fmt: c_string, args...);
+          if debugArrayAsVec {
+            writeln("dataAllocDom resized to: ", this._value.dataAllocDom);
+            printf("%p %p\n", this._value.data, this._value.shiftedData);
+          }
+          this._value.dsiReallocate(this._value.dataAllocDom);
+          if debugArrayAsVec then
+            printf("%p %p\n", this._value.data, this._value.shiftedData);
+        }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
       }
@@ -2052,8 +2100,23 @@ module ChapelArray {
       const lo = this.domain.low,
             hi = this.domain.high-1;
       const newDom = {lo..hi};
+      if debugArrayAsVec then
+        writeln("Removing index ", hi+1, " from ", this.domain, " dataAllocDom = ", this._value.dataAllocDom);
       on this._value {
-        this._value.dsiReallocate(newDom);
+        if this._value.dataAllocDom.numIndices < this.domain.numIndices {
+          this._value.dataAllocDom = this.domain;
+        }
+        if newDom.numIndices < (this._value.dataAllocDom.numIndices / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom, grow=-1);
+          extern proc printf(fmt: c_string, args...);
+          if debugArrayAsVec {
+            writeln("dataAllocDom resized to ", this._value.dataAllocDom);
+            printf("%p %p\n", this._value.data, this._value.shiftedData);
+          }
+          this._value.dsiReallocate(this._value.dataAllocDom);
+          if debugArrayAsVec then
+            printf("%p %p\n", this._value.data, this._value.shiftedData);
+        }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
       }
@@ -2067,8 +2130,26 @@ module ChapelArray {
       const lo = this.domain.low-1,
             hi = this.domain.high;
       const newDom = {lo..hi};
+      if debugArrayAsVec then
+        writeln("Adding index ", lo, " to ", this.domain, " dataAllocDom = ", this._value.dataAllocDom);
       on this._value {
-        this._value.dsiReallocate(newDom);
+        if !this._value.dataAllocDom.member(lo) {
+          if this._value.dataAllocDom.numIndices < this.domain.numIndices {
+            this._value.dataAllocDom = this.domain;
+          }
+          this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom, direction=-1);
+          extern proc printf(fmt: c_string, args...);
+          if debugArrayAsVec {
+            writeln("dataAllocDom resized to: ", this._value.dataAllocDom);
+            printf("%p %p\n", this._value.data, this._value.shiftedData);
+          }
+
+          this._value.dsiReallocate(this._value.dataAllocDom);
+
+          if debugArrayAsVec then
+            printf("%p %p\n", this._value.data, this._value.shiftedData);
+
+        }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
       }
@@ -2084,7 +2165,13 @@ module ChapelArray {
             hi = this.domain.high;
       const newDom = {lo..hi};
       on this._value {
-        this._value.dsiReallocate(newDom);
+        if this._value.dataAllocDom.numIndices < this.domain.numIndices {
+          this._value.dataAllocDom = this.domain;
+        }
+        if newDom.numIndices < (this._value.dataAllocDom.numIndices / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom, direction=-1, grow=-1);
+          this._value.dsiReallocate(this._value.dataAllocDom);
+        }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
       }
@@ -2100,7 +2187,13 @@ module ChapelArray {
             hi = this.domain.high+1;
       const newDom = {lo..hi};
       on this._value {
-        this._value.dsiReallocate(newDom);
+        if !this._value.dataAllocDom.member(hi) {
+          if this._value.dataAllocDom.numIndices < this.domain.numIndices {
+            this._value.dataAllocDom = this.domain;
+          }
+          this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom);
+          this._value.dsiReallocate(this._value.dataAllocDom);
+        }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
       }
@@ -2121,7 +2214,13 @@ module ChapelArray {
         this[i] = this[i+1];
       }
       on this._value {
-        this._value.dsiReallocate(newDom);
+        if this._value.dataAllocDom.numIndices < this.domain.numIndices {
+          this._value.dataAllocDom = this.domain;
+        }
+        if newDom.numIndices < (this._value.dataAllocDom.numIndices / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom, grow=-1);
+          this._value.dsiReallocate(this._value.dataAllocDom);
+        }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
       }
@@ -2141,7 +2240,13 @@ module ChapelArray {
         this[i] = this[i+count];
       }
       on this._value {
-        this._value.dsiReallocate(newDom);
+        if this._value.dataAllocDom.numIndices < this.domain.numIndices {
+          this._value.dataAllocDom = this.domain;
+        }
+        if newDom.numIndices < (this._value.dataAllocDom.numIndices / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom, grow=-1);
+          this._value.dsiReallocate(this._value.dataAllocDom);
+        }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
       }
