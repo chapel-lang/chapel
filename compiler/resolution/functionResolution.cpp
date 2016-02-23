@@ -7327,13 +7327,11 @@ collectInstantiatedAggregateTypes(Vec<Type*>& icts, Type* ct) {
 }
 
 //
-// add to vector icts all methods that would be linked
-// to ct but are not because ct was instantiated from something else
-// and they are generic methods
-// but only those that possibly match pfn's signature
-// returns the number of non-generic methods
+// add methods that possibly match pfn to vector,
+// but does not add instantiated generics, since addToVirtualMaps
+// will instantiate again.
 static void
-collectInstantiatedFromMethods(Vec<FnSymbol*>& methods, Type* ct, FnSymbol* pfn) {
+collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods, Type* ct, FnSymbol* pfn) {
 
   //printf("in collectGenericMethods\n");
   //print_view(ct->symbol);
@@ -7472,7 +7470,7 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
   // Collect methods from ct and ct->instantiatedFrom
 
   Vec<FnSymbol*> methods;
-  collectInstantiatedFromMethods(methods, ct, pfn);
+  collectMethodsForVirtualMaps(methods, ct, pfn);
 
   /*
   forv_Vec(FnSymbol, cfn, methods) {
