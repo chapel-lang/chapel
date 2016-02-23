@@ -7293,6 +7293,13 @@ signature_match(FnSymbol* fn, FnSymbol* gn) {
       return false;
     if (fa->type != ga->type)
       return false;
+    // Check that instantiated parameters match.
+    /*if (fa->intent == INTENT_PARAM || ga->intent == INTENT_PARAM) {
+      Symbol* faParam = paramMap.get(fa);
+      Symbol* gaParam = paramMap.get(ga);
+      if (faParam != gaParam)
+        return false;
+    }*/
   }
   return true;
 }
@@ -7303,14 +7310,108 @@ signature_match(FnSymbol* fn, FnSymbol* gn) {
 //
 static void
 collectInstantiatedAggregateTypes(Vec<Type*>& icts, Type* ct) {
+  //printf("in collectInstantiatedAggregateTypes\n");
+  //print_view(ct->symbol);
+
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->type->defaultTypeConstructor)
       if (!ts->hasFlag(FLAG_GENERIC) &&
           ts->type->defaultTypeConstructor->instantiatedFrom ==
-          ct->defaultTypeConstructor)
+          ct->defaultTypeConstructor) {
         icts.add(ts->type);
+        //print_view(ts);
+        INT_ASSERT(isInstantiation(ts->type, ct));
+        INT_ASSERT(ts->type->instantiatedFrom == ct);
+      }
   }
 }
+
+//
+// add to vector icts all methods that would be linked
+// to ct but are not because ct was instantiated from something else
+// and they are generic methods
+// but only those that possibly match pfn's signature
+// returns the number of non-generic methods
+static void
+collectInstantiatedFromMethods(Vec<FnSymbol*>& methods, Type* ct, FnSymbol* pfn) {
+
+  //printf("in collectGenericMethods\n");
+  //print_view(ct->symbol);
+
+  Vec<FnSymbol*> tmp;
+  std::set<FnSymbol*> generics;
+
+  // Gather the generic, concrete, instantiated methods
+  for (Type* fromType = ct;
+       fromType != NULL;
+       fromType = fromType->instantiatedFrom) {
+
+    forv_Vec(FnSymbol, cfn, fromType->methods) {
+      if (cfn && possible_signature_match(pfn, cfn))
+        tmp.add(cfn);
+    }
+  }
+
+  // Don't add instantiations of generics if we were already
+  // going to add the generic version. addToVirtualMaps will
+  // re-instantiate.
+
+  // So, gather a set of generic versions.
+  forv_Vec(FnSymbol, cfn, tmp)
+    if (cfn->hasFlag(FLAG_GENERIC))
+      generics.insert(cfn);
+
+  // Then, add anything not instantiated from something in
+  // the set.
+  forv_Vec(FnSymbol, cfn, tmp) {
+    if (cfn->instantiatedFrom && generics.count(cfn->instantiatedFrom)) {
+      // skip it
+    } else {
+      // add it
+      methods.add(cfn);
+    }
+  }
+
+
+  // Don't add 
+  /*
+  int ret;
+
+  forv_Vec(FnSymbol, cfn, ct->methods) {
+    if( cfn &&
+        possible_signature_match(pfn, cfn) &&
+        !cfn->instantiatedFrom )
+      methods.add(cfn);
+  }
+  
+  // Then add instantiations
+  forv_Vec(FnSymbol, cfn, ct->methods) {
+    if( cfn &&
+        possible_signature_match(pfn, cfn) &&
+        !cfn->instantiatedFrom )
+      methods.add(cfn);
+  }
+ 
+  // Return the number of non generic methods
+  ret = methods.n;
+
+  // Now add all of the generic versions.
+  for( Type* fromType = ct;
+       fromType != NULL;
+       fromType = fromType->instantiatedFrom ) {
+
+    forv_Vec(FnSymbol, cfn, fromType->methods) {
+      if( cfn &&
+          possible_signature_match(pfn, cfn) &&
+          cfn->instantcfn->hasFlag(FLAG_GENERIC))
+        methods.add(cfn);
+    }
+  }
+
+  return ret;
+  */
+}
+
 
 
 //
@@ -7350,10 +7451,113 @@ in that dispatch child that could override the above 'fn'.
 // that method could override pfn, adds it to the virtual maps
 static void
 addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
-  forv_Vec(FnSymbol, cfn, ct->methods) {
+#if 0
+  if( 1 /*0 == memcmp(ct->symbol->name, "Parent", strlen("Parent")) ||
+      0 == memcmp(ct->symbol->name, "Child", strlen("Child")) */ ) {
+
+    printf("in addToVirtualMaps with pfn\n");
+    print_view(pfn);
+    viewFlags(pfn);
+    printf("and class type\n");
+    print_view(ct);
+    viewFlags(ct->symbol);
+    printf("\n");
+  }
+#endif
+
+  // ? makes arrays work
+  // but breaks generic parent
+  //if (ct->instantiatedFrom) return;
+
+  // Collect methods from ct and ct->instantiatedFrom
+
+  Vec<FnSymbol*> methods;
+  collectInstantiatedFromMethods(methods, ct, pfn);
+
+  /*
+  forv_Vec(FnSymbol, cfn, methods) {
+    printf("got method:\n");
+    print_view(cfn);
+  }*/
+
+  // pfn BaseArr.dsiGetBaseDom ct DefaultRectangularArr(locale,1,int(64),false)
+  // we can assume that collectInstantiatedFromMethods
+  // adds both the instantiated and the regular method here
+  // id 93627 is the version that causes "actual argument to this generic"
+  // but this worked just fine the first time... which was when
+  // we worked with ct as DefaultRectangularArr?
+  // When it comes around again to working with the instantiated
+  // version of DefaultRectangularArr, the problem occurs.
+  // Perhaps we could skip the generic version of the function
+  //  if we already have a non-generic version?
+  forv_Vec(FnSymbol, cfn, methods) {
     // checking that subtype method is not a generic instantiation
     //  (we will instantiate again)
-    if (cfn && possible_signature_match(pfn, cfn)) {
+    // including !cfn->instantiatedFrom here breaks
+    //   test/classes/ferguson/generic-inherit2.chpl 
+    // removing it breaks
+    //   test/classes/deitz/dispatch/test_generic_where.chpl 
+  
+#if 0
+    if( /*cfn && possible_signature_match(pfn, cfn) &&*/
+        1 /*(0 == memcmp(ct->symbol->name, "Parent", strlen("Parent")) ||
+         0 == memcmp(ct->symbol->name, "Child", strlen("Child"))) */) {
+      printf("in for loop over methods, cfn is:\n");
+      printf("id %i\n", cfn->id);
+      print_view(cfn);
+      if( cfn->instantiatedFrom )
+        printf("instantiated from id %i\n", cfn->instantiatedFrom->id);
+    }
+#endif
+
+
+    if (cfn && !cfn->instantiatedFrom  ) {
+      // An alternative would be for failed instantiation
+      // to *not* update ct->methods.
+      if (cfn->hasFlag(FLAG_PARTIAL_COPY)) continue;
+
+      // TODO -- if !cfn->instantiatedFrom is left out,
+      // we seem to be running this logic an extra time
+      // and not checking the where clause?
+
+      // TODO -- I think the problem is that this partial
+      // (failed) instantiation is hanging around and causing
+      // the parent method to become virtual
+
+      // -> a parent call could dispatch to a child
+      // -> a child call cannot dispatch to a parent under the
+      //    current rules
+
+      // in this call for Child.foo, ct is ChildSub
+      // first time through the loop - cfn is the generic parent
+      // instantiate ChildSub with
+      // literal=1 for x, -> NULL (ruled out by where clause)
+      // next time through the loop, cfn is the partially instantiated
+      //  version with where = false. Skip that.
+      // next time through the loop, consider concrete
+      // version where  x == 2, but we never check that
+      // the instantiated params match
+
+      // So, one solution is to check here that the instantiated
+      // params/types match
+
+      // Another is to adjust the loop to rule out instantiatedFrom
+      // another fn we are considering
+
+      // What happens wrong for generic-inherit2 if we leave
+      // !cfn->instantiatedFrom in?
+      // in this call for Parent(int64).overridden_method, ct is Child(int64)
+      // there are no methods for ct that could be a signature
+      // match (loop only contains destructor).
+
+      // next time through the loop, 
+      /*
+      if ( 0 == strcmp(cfn->name, "foo") ) {
+        printf("HERE\n");
+        print_view(cfn);
+        viewFlags(cfn);
+      }*/
+
       Vec<Type*> types;
       if (ct->symbol->hasFlag(FLAG_GENERIC))
         collectInstantiatedAggregateTypes(types, ct);
@@ -7361,21 +7565,52 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
         types.add(ct);
 
       forv_Vec(Type, type, types) {
+#if 0
+        if( 1 /*0 == memcmp(ct->symbol->name, "Parent", strlen("Parent")) ||
+            0 == memcmp(ct->symbol->name, "Child", strlen("Child")) */ ) {
+          printf("in for loop over types, type is:\n");
+          print_view(type);
+        }
+#endif
+
         SymbolMap subs;
-        if (ct->symbol->hasFlag(FLAG_GENERIC))
+        if (ct->symbol->hasFlag(FLAG_GENERIC) ||
+            cfn->getFormal(2)->type->symbol->hasFlag(FLAG_GENERIC)) {
           // instantiateSignature handles subs from formal to a type
           subs.put(cfn->getFormal(2), type->symbol);
+#if 0
+          printf("sub ");
+          print_view(cfn->getFormal(2));
+          printf("to ");
+          print_view(type->symbol);
+#endif
+        }
         for (int i = 3; i <= cfn->numFormals(); i++) {
           ArgSymbol* arg = cfn->getFormal(i);
           if (arg->intent == INTENT_PARAM) {
             subs.put(arg, paramMap.get(pfn->getFormal(i)));
+#if 0
+            printf("sub ");
+            print_view(arg);
+            printf("to ");
+            print_view(paramMap.get(pfn->getFormal(i)));
+#endif
           } else if (arg->type->symbol->hasFlag(FLAG_GENERIC)) {
             subs.put(arg, pfn->getFormal(i)->type->symbol);
+#if 0
+            printf("sub ");
+            print_view(arg);
+            printf("to ");
+            print_view(pfn->getFormal(i)->type->symbol);
+#endif
           }
         }
         FnSymbol* fn = cfn;
         if (subs.n) {
+          //printf("instantiating\n");
+          //print_view(fn);
           fn = instantiate(fn, subs, NULL);
+          //print_view(fn);
           if (fn) {
             if (type->defaultTypeConstructor->instantiationPoint)
               fn->instantiationPoint = type->defaultTypeConstructor->instantiationPoint;
@@ -7431,6 +7666,26 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
               virtualChildrenMap.put(pfn, fns);
               fn->addFlag(FLAG_VIRTUAL);
               pfn->addFlag(FLAG_VIRTUAL);
+#if 0
+              if( 1 /*0 == memcmp(ct->symbol->name, "Parent", strlen("Parent")) ||
+                  0 == memcmp(ct->symbol->name, "Child", strlen("Child")) */ ) {
+
+                printf("inside addToVirtualMaps, adding\n");
+                printf("fn\n");
+                print_view(fn);
+                viewFlags(fn);
+
+                printf("now virtual children of pfn are:\n");
+                forv_Vec(FnSymbol, f, *fns) {
+                  print_view(f);
+                  printf("\n");
+                }
+                printf("\n");
+
+                // in a call for Child.foo(1)
+                // here we instantiate ChildSub.foo(1)
+              }
+#endif
             }
             {
               Vec<FnSymbol*>* fns = virtualRootsMap.get(fn);
@@ -7474,16 +7729,56 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
 
 // Add overrides of fn to virtual maps down the inheritance heirarchy
 static void
-addAllToVirtualMaps(FnSymbol* fn, AggregateType* ct) {
-  forv_Vec(Type, t, ct->dispatchChildren) {
+addAllToVirtualMaps(FnSymbol* fn, AggregateType* pct) {
+#if 0
+  if( 0 == memcmp(pct->symbol->name, "Parent", strlen("Parent")) ||
+      0 == memcmp(pct->symbol->name, "Child", strlen("Child")) ) {
+
+    if( fn->id == 877302 )
+      gdbShouldBreakHere();
+
+    printf("in addAllToVirtualMaps with fn\n"); // id %i\n", fn->id);
+    print_view(fn);
+    viewFlags(fn);
+    print_view(pct);
+
+    INT_ASSERT(!fn->hasFlag(FLAG_PARTIAL_COPY));
+  }
+#endif
+
+  forv_Vec(Type, t, pct->dispatchChildren) {
     AggregateType* ct = toAggregateType(t);
+
     if (ct->defaultTypeConstructor &&
         (ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) ||
-         ct->defaultTypeConstructor->isResolved()))
+         ct->defaultTypeConstructor->isResolved())) {
+      // This conditional added in r7120 9361a7c
+      // tests added at that time did not use generics
+      // I think it was "No longer dynamic dispatch to a type that is dead"
+      // commenting out the check for FLAG_GENERIC causes
+      //  halt reached - internal error: dsiMyDist is not implemented
+#if 0
+      if( 0 == memcmp(ct->symbol->name, "Parent", strlen("Parent")) ||
+          0 == memcmp(ct->symbol->name, "Child", strlen("Child")) ) {
+        printf("calling addToVirtualMaps from addAllToVirtualMaps\n");
+        printf("parent type:\n");
+        print_view(pct);
+      }
+#endif
+
       addToVirtualMaps(fn, ct);
+    }
 
     // if sub-class is not a generic instantiation
     if (!ct->instantiatedFrom)
+#if 0
+      if( 0 == memcmp(ct->symbol->name, "Parent", strlen("Parent")) ||
+          0 == memcmp(ct->symbol->name, "Child", strlen("Child")) ) {
+        printf("calling addAllToVirtualMaps from parent type\n");
+        print_view(pct);
+      }
+#endif
+ 
       // add to maps transitively
       addAllToVirtualMaps(fn, ct);
   }
@@ -7514,7 +7809,8 @@ buildVirtualMaps() {
       // Only methods go in the virtual function table.
       if (AggregateType* pt = toAggregateType(fn->getFormal(2)->type)) {
 
-        if (isClass(pt) && !pt->symbol->hasFlag(FLAG_GENERIC)) {
+        if (isClass(pt) && !pt->symbol->hasFlag(FLAG_GENERIC) /*&&
+            !fn->hasFlag(FLAG_PARTIAL_COPY) */) {
           // MPF - note the check for generic seemed to originate
           // in SVN revision 7103
           addAllToVirtualMaps(fn, pt);
@@ -7882,6 +8178,13 @@ static void resolveDynamicDispatches() {
     }
     virtualRootsMap.clear();
     buildVirtualMaps();
+#if 0
+    printf("loop of buildVirtualMaps added %i types:\n", 
+           (int) (gTypeSymbols.n - num_types));
+    for( int k = num_types; k < gTypeSymbols.n; k++ ) {
+      print_view(gTypeSymbols.v[k]);
+    }
+#endif
   } while (num_types != gTypeSymbols.n);
 
   for (int i = 0; i < virtualRootsMap.n; i++) {
