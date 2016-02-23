@@ -500,14 +500,67 @@ renameInstantiatedType(TypeSymbol* sym, SymbolMap& subs, FnSymbol* fn) {
  * \param type The generic type we wish to instantiate
  */
 static Type*
-instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs,
-                                  CallExpr* call, Type* type) {
-
+instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call, Type* type) {
   INT_ASSERT(isAggregateType(type));
   AggregateType* ct = toAggregateType(type);
 
   Type* newType = NULL;
   newType = ct->symbol->copy()->type;
+
+  Type *oldParentTy = NULL;
+  Type* newParentTy = NULL;
+  AggregateType* newCt = toAggregateType(newType);
+
+  // Get the right super type if we are using a super constructor.
+  // This only matters for generic parent types.
+  if (ct->dispatchParents.n > 0) {
+    if(AggregateType *parentTy = toAggregateType(ct->dispatchParents.v[0])){
+      if (parentTy->symbol->hasFlag(FLAG_GENERIC)) {
+        // Set the type of super to be the instantiated
+        // parent with substitutions.
+
+        CallExpr* parentTyCall = new CallExpr(astr("_type_construct_", parentTy->symbol->name));
+        // Pass the special formals to the superclass type constructor.
+        for_formals(arg, fn) {
+          if (arg->hasFlag(FLAG_PARENT_FIELD)) {
+            Symbol* value = subs.get(arg);
+            if (!value) {
+              value = arg;
+              // Or error?
+            }
+            parentTyCall->insertAtTail(value);
+          }
+        }
+        call->insertBefore(parentTyCall);
+        resolveCallAndCallee(parentTyCall);
+
+        oldParentTy = parentTy;
+        newParentTy = parentTyCall->isResolved()->retType;
+        parentTyCall->remove();
+
+        // Now adjust the super field's type.
+
+        DefExpr* superDef = NULL;
+
+        // Find the super field
+        for_alist(tmp, newCt->fields) {
+          DefExpr* def = toDefExpr(tmp);
+          INT_ASSERT(def);
+          if (VarSymbol* field = toVarSymbol(def->sym)) {
+            if (field->hasFlag(FLAG_SUPER_CLASS)) {
+              superDef = def;
+            }
+          }
+        }
+
+        if (superDef) {
+          superDef->sym->type = newParentTy;
+          INT_ASSERT(newCt->getField("super")->typeInfo() == newParentTy);
+        }
+
+      }
+    }
+  }
 
   //
   // mark star tuples, add star flag
@@ -535,9 +588,18 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs,
   if (isSyncType(newType))
     newType->defaultValue = NULL;
   newType->substitutions.copy(fn->retType->substitutions);
-  newType->dispatchParents.copy(fn->retType->dispatchParents);
+  // Add dispatch parents, but replace parent type with
+  // instantiated parent type.
   forv_Vec(Type, t, fn->retType->dispatchParents) {
-    bool inserted = t->dispatchChildren.add_exclusive(newType);
+    Type *useT = t;
+    if (t == oldParentTy) useT = newParentTy;
+    newType->dispatchParents.add(useT);
+  }
+
+  forv_Vec(Type, t, fn->retType->dispatchParents) {
+    Type *useT = t;
+    if (t == oldParentTy) useT = newParentTy;
+    bool inserted = useT->dispatchChildren.add_exclusive(newType);
     INT_ASSERT(inserted);
   }
   if (newType->dispatchChildren.n)
@@ -551,7 +613,7 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs,
 
 /** Instantiate enough of the function for it to make it through the candidate
  *  filtering and disambiguation process.
- * 
+ *
  * \param fn   Generic function to instantiate
  * \param subs Type substitutions to be made during instantiation
  * \param call Call that is being resolved
