@@ -7254,15 +7254,35 @@ in that dispatch child that could override the above 'fn'.
 -----------
 */
 
+//
+// add methods that possibly match pfn to vector,
+// but does not add instantiated generics, since addToVirtualMaps
+// will instantiate again.
+static void
+collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods, Type* ct, FnSymbol* pfn) {
+  forv_Vec(FnSymbol, cfn, ct->methods) {
+    if (cfn && possible_signature_match(pfn, cfn))
+      if (!cfn->instantiatedFrom)
+        methods.add(cfn);
+  }
+}
+
 
 // addToVirtualMaps itself goes through each method in ct and if
 // that method could override pfn, adds it to the virtual maps
 static void
 addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
-  forv_Vec(FnSymbol, cfn, ct->methods) {
+  // Collect methods from ct and ct->instantiatedFrom.
+  // Does not include generic instantiations - sometimes we
+  // have to make the instantiation here, so we always run
+  // through a code path that instantiates.
+  Vec<FnSymbol*> methods;
+  collectMethodsForVirtualMaps(methods, ct, pfn);
+
+  forv_Vec(FnSymbol, cfn, methods) {
     // checking that subtype method is not a generic instantiation
     //  (we will instantiate again)
-    if (cfn && !cfn->instantiatedFrom && possible_signature_match(pfn, cfn)) {
+    if (cfn && !cfn->instantiatedFrom) {
       Vec<Type*> types;
       if (ct->symbol->hasFlag(FLAG_GENERIC))
         collectInstantiatedAggregateTypes(types, ct);
