@@ -338,6 +338,8 @@ usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen);
 static Expr* preFold(Expr* expr);
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
 static bool isSubType(Type* sub, Type* super);
+static bool isInstantiation(Type* sub, Type* super);
+static bool isSubTypeOrInstantiation(Type* sub, Type* super);
 static void insertValueTemp(Expr* insertPoint, Expr* actual);
 FnSymbol* requiresImplicitDestroy(CallExpr* call);
 static Expr* postFold(Expr* expr);
@@ -1193,6 +1195,41 @@ isLegalConstRefActualArg(ArgSymbol* formal, Expr* actual) {
   return retval;
 }
 
+/* If we have a generic parent, e.g.:
+   class Parent { type t; proc foo(){} }
+   class Child : Parent { }
+
+   when we have e.g. Child(int) and we call foo,
+   we need we to instantiate Parent.foo() to Parent(int).foo().
+   In that case, the actual is Child(int) and the formal is Parent.
+   We need to return Parent(int), which should be the dispatch
+   parent for Child(int).
+
+   This table helps one to understand the situation
+
+                                              (formal)
+     Parent(int) ------ instantiatedFrom --->  Parent
+         |                                      |
+      dispatch child                         dispatch child
+         |                                      |
+         v                                      v
+     Child(int)  ------ instantiatedFrom ---> Child
+      (actual)
+
+   This function detects that situation and returns the type that
+   should be instantiated.
+*/
+static
+Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType)
+{
+  forv_Vec(Type, parent, actualType->dispatchParents) {
+    if (isInstantiation(parent, formalType))
+      return parent;
+    if (Type* t = getConcreteParentForGenericFormal(parent, formalType))
+      return t;
+  }
+  return NULL;
+}
 
 // Returns true iff dispatching the actualType to the formalType
 // results in an instantiation.
@@ -1222,6 +1259,11 @@ canInstantiate(Type* actualType, Type* formalType) {
     return true;
   if (actualType->instantiatedFrom && canInstantiate(actualType->instantiatedFrom, formalType))
     return true;
+  if (actualType->instantiatedFrom &&
+      formalType->symbol->hasFlag(FLAG_GENERIC) &&
+      getConcreteParentForGenericFormal(actualType, formalType))
+    return true;
+
   return false;
 }
 
@@ -1477,7 +1519,7 @@ computeActualFormalAlignment(FnSymbol* fn,
 // instantiated by a given actual type
 //
 static Type*
-getInstantiationType(Type* actualType, Type* formalType) {
+getBasicInstantiationType(Type* actualType, Type* formalType) {
   if (canInstantiate(actualType, formalType)) {
     return actualType;
   }
@@ -1493,6 +1535,23 @@ getInstantiationType(Type* actualType, Type* formalType) {
         return st;
   }
   return NULL;
+}
+
+static Type*
+getInstantiationType(Type* actualType, Type* formalType) {
+  Type *ret = getBasicInstantiationType(actualType, formalType);
+
+  // Now, if formalType is a generic parent type to actualType,
+  // we should instantiate the parent actual type
+  if (ret->instantiatedFrom &&
+      formalType->symbol->hasFlag(FLAG_GENERIC)) {
+    Type* concrete = getConcreteParentForGenericFormal(ret, formalType);
+    if (concrete) {
+      ret = concrete;
+    }
+  }
+
+  return ret;
 }
 
 
@@ -6111,6 +6170,18 @@ isSubType(Type* sub, Type* super) {
 }
 
 static bool
+isInstantiation(Type* sub, Type* super) {
+  Type * cur;
+  cur = sub->instantiatedFrom;
+  while (cur && cur != super) {
+    cur = cur->instantiatedFrom;
+  }
+
+  return cur == super;
+}
+
+
+static bool
 isSubTypeOrInstantiation(Type* sub, Type* super) {
   if (sub == super)
     return true;
@@ -7189,6 +7260,8 @@ possible_signature_match(FnSymbol* fn, FnSymbol* gn) {
 }
 
 
+// Checks that types match.
+// Note - does not currently check that instantiated params match.
 static bool
 signature_match(FnSymbol* fn, FnSymbol* gn) {
   if (fn->name != gn->name)
@@ -7216,8 +7289,11 @@ collectInstantiatedAggregateTypes(Vec<Type*>& icts, Type* ct) {
     if (ts->type->defaultTypeConstructor)
       if (!ts->hasFlag(FLAG_GENERIC) &&
           ts->type->defaultTypeConstructor->instantiatedFrom ==
-          ct->defaultTypeConstructor)
+          ct->defaultTypeConstructor) {
         icts.add(ts->type);
+        INT_ASSERT(isInstantiation(ts->type, ct));
+        INT_ASSERT(ts->type->instantiatedFrom == ct);
+      }
   }
 }
 
@@ -7251,18 +7327,70 @@ child for that class, passing that same method 'fn'.
 
 addToVirtualMaps adds to the virtual maps all methods
 in that dispatch child that could override the above 'fn'.
+
+These functions go down the inheritance heirarchy because in the current
+language, a call to a class with static type could dispatch to any child call.
+If calling an arbitrary super method is supported, a call to an object of static
+child type could end up calling something in the parent.
+
 -----------
 */
+
+//
+// add methods that possibly match pfn to vector,
+// but does not add instantiated generics, since addToVirtualMaps
+// will instantiate again.
+static void
+collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods, Type* ct, FnSymbol* pfn) {
+  Vec<FnSymbol*> tmp;
+  std::set<FnSymbol*> generics;
+
+  // Gather the generic, concrete, instantiated methods
+  for (Type* fromType = ct;
+       fromType != NULL;
+       fromType = fromType->instantiatedFrom) {
+
+    forv_Vec(FnSymbol, cfn, fromType->methods) {
+      if (cfn && possible_signature_match(pfn, cfn))
+        tmp.add(cfn);
+    }
+  }
+
+  // Don't add instantiations of generics if we were already
+  // going to add the generic version. addToVirtualMaps will
+  // re-instantiate.
+
+  // So, gather a set of generic versions.
+  forv_Vec(FnSymbol, cfn, tmp)
+    if (cfn->hasFlag(FLAG_GENERIC))
+      generics.insert(cfn);
+
+  // Then, add anything not instantiated from something in
+  // the set.
+  forv_Vec(FnSymbol, cfn, tmp) {
+    if (cfn->instantiatedFrom && generics.count(cfn->instantiatedFrom)) {
+      // skip it
+    } else {
+      // add it
+      methods.add(cfn);
+    }
+  }
+}
 
 
 // addToVirtualMaps itself goes through each method in ct and if
 // that method could override pfn, adds it to the virtual maps
 static void
 addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
-  forv_Vec(FnSymbol, cfn, ct->methods) {
-    // checking that subtype method is not a generic instantiation
-    //  (we will instantiate again)
-    if (cfn && !cfn->instantiatedFrom && possible_signature_match(pfn, cfn)) {
+  // Collect methods from ct and ct->instantiatedFrom.
+  // Does not include generic instantiations - sometimes we
+  // have to make the instantiation here, so we always run
+  // through a code path that instantiates.
+  Vec<FnSymbol*> methods;
+  collectMethodsForVirtualMaps(methods, ct, pfn);
+
+  forv_Vec(FnSymbol, cfn, methods) {
+    if (cfn && !cfn->instantiatedFrom) {
       Vec<Type*> types;
       if (ct->symbol->hasFlag(FLAG_GENERIC))
         collectInstantiatedAggregateTypes(types, ct);
@@ -7271,7 +7399,8 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
 
       forv_Vec(Type, type, types) {
         SymbolMap subs;
-        if (ct->symbol->hasFlag(FLAG_GENERIC))
+        if (ct->symbol->hasFlag(FLAG_GENERIC) ||
+            cfn->getFormal(2)->type->symbol->hasFlag(FLAG_GENERIC))
           // instantiateSignature handles subs from formal to a type
           subs.put(cfn->getFormal(2), type->symbol);
         for (int i = 3; i <= cfn->numFormals(); i++) {
@@ -7383,8 +7512,8 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
 
 // Add overrides of fn to virtual maps down the inheritance heirarchy
 static void
-addAllToVirtualMaps(FnSymbol* fn, AggregateType* ct) {
-  forv_Vec(Type, t, ct->dispatchChildren) {
+addAllToVirtualMaps(FnSymbol* fn, AggregateType* pct) {
+  forv_Vec(Type, t, pct->dispatchChildren) {
     AggregateType* ct = toAggregateType(t);
     if (ct->defaultTypeConstructor &&
         (ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) ||
