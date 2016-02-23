@@ -15,11 +15,10 @@ endif
 
 default: all
 
-all: test-venv chpldoc-venv dlmalloc gasnet gmp hwloc jemalloc qthread tcmalloc llvm
+all: test-venv chpldoc-venv gasnet gmp hwloc jemalloc qthread tcmalloc llvm
 
 clean: FORCE
 	cd chpl-venv && $(MAKE) clean
-	cd dlmalloc && $(MAKE) clean
 	cd gasnet && $(MAKE) clean
 	cd gmp && $(MAKE) clean
 	cd hwloc && $(MAKE) clean
@@ -33,7 +32,6 @@ clean: FORCE
 
 cleanall: FORCE
 	cd chpl-venv && $(MAKE) cleanall
-	cd dlmalloc && $(MAKE) cleanall
 	cd gasnet && $(MAKE) cleanall
 	cd gmp && $(MAKE) cleanall
 	cd hwloc && $(MAKE) cleanall
@@ -47,7 +45,6 @@ cleanall: FORCE
 
 clobber: FORCE
 	cd chpl-venv && $(MAKE) clobber
-	cd dlmalloc && $(MAKE) clobber
 	cd gasnet && $(MAKE) clobber
 	cd gmp && $(MAKE) clobber
 	cd hwloc && $(MAKE) clobber
@@ -68,10 +65,6 @@ $(CHPL_VENV_TEST_REQS): $(CHPL_VENV_TEST_REQUIREMENTS_FILE)
 chpldoc-venv: $(CHPL_VENV_SPHINX_BUILD)
 $(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE)
 	cd chpl-venv && $(MAKE) chpldoc-venv
-
-dlmalloc: $(DLMALLOC_INSTALL_DIR)
-$(DLMALLOC_INSTALL_DIR):
-	cd dlmalloc && $(MAKE)
 
 # See gasnet/Makefile for explanation of the post-install step
 gasnet: $(GASNET_INSTALL_DIR)

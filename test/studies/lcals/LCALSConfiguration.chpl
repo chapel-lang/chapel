@@ -48,19 +48,19 @@ module LCALSConfiguration {
   config const runC_bandLinEq    = true;
   config const runC_tridiagElim  = true;
   config const runC_eos          = true;
-  config const runC_adi          = false; // not implemented
-  config const runC_intPredict   = false; // not implemented
-  config const runC_diffPredict  = false; // not implemented
+  config const runC_adi          = true;
+  config const runC_intPredict   = true;
+  config const runC_diffPredict  = true;
   config const runC_firstSum     = true;
   config const runC_firstDiff    = true;
-  config const runC_pic2D        = false; // not implemented
+  config const runC_pic2D        = false; // bad checksums
   config const runC_pic1D        = true;
-  config const runC_hydro2D      = false; // not implemented
+  config const runC_hydro2D      = true;
   config const runC_genLinRecur  = true;
   config const runC_discOrd      = true;
-  config const runC_matXMat      = false; // not implemented
+  config const runC_matXMat      = false; // bad checksum (M)
   config const runC_planckian    = true;
-  config const runC_impHydro2D   = false; // not implemented
+  config const runC_impHydro2D   = true;
   config const runC_findFirstMin = true;
 
   //

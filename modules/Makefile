@@ -73,6 +73,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Buffers.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/Curl.chpl \
+	standard/Error.chpl \
 	standard/FFTW.chpl \
 	standard/FFTW_MT.chpl \
 	standard/FileSystem.chpl \
@@ -81,19 +82,22 @@ MODULES_TO_DOCUMENT = \
 	standard/HDFSiterator.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
-	standard/List.chpl \
 	standard/LAPACK.chpl \
+	standard/List.chpl \
 	standard/Math.chpl \
 	standard/Memory.chpl \
 	standard/Norm.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
+	standard/RecordParser.chpl \
 	standard/Reflection.chpl \
 	standard/Regexp.chpl \
 	standard/Search.chpl \
 	standard/Sort.chpl \
 	standard/Spawn.chpl \
 	standard/Sys.chpl \
+	standard/SysBasic.chpl \
+	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/UtilReplicatedVar.chpl \
 	standard/VisualDebug.chpl \

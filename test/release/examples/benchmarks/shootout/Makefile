@@ -15,6 +15,9 @@ TARGETS = \
 	spectralnorm \
 	threadring
 
+CHPL_MAKE_REGEXP=$(shell python $(CHPL_HOME)/util/chplenv/chpl_regexp.py)
+CHPL_MAKE_GMP=$(shell python $(CHPL_HOME)/util/chplenv/chpl_gmp.py)
+
 REALS = $(TARGETS:%=%_real)
 
 default: all
@@ -47,10 +50,25 @@ nbody: nbody.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) --no-warnings $<
 
 pidigits: pidigits.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	@if [ "$(CHPL_MAKE_GMP)" != "none" ]; then \
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<; \
+	else \
+	echo "";\
+	echo "Can't build pidigits without CHPL_GMP being enabled. See for details:"; \
+	echo "http://chapel.cray.com/docs/latest/usingchapel/chplenv.html#chpl-gmp"; \
+	echo ""; \
+	fi
+
 
 regexdna: regexdna.chpl
-	$(CHPL) -o $@ $(CHPL_FLAGS) $<
+	@if [ "$(CHPL_REGEXP)" != "none" ]; then \
+	$(CHPL) -o $@ $(CHPL_FLAGS) $<; \
+	else \
+	echo "";\
+	echo "Can't build regexdna without CHPL_REGEXP being enabled. See for details:"; \
+	echo "http://chapel.cray.com/docs/latest/usingchapel/chplenv.html#chpl-regexp"; \
+	echo ""; \
+	fi
 
 spectralnorm: spectralnorm.chpl
 	$(CHPL) -o $@ $(CHPL_FLAGS) $<

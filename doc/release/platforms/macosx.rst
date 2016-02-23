@@ -31,21 +31,3 @@ following command::
 .. _Homebrew: https://github.com/Homebrew/homebrew
 .. _repository: https://github.com/chapel-lang/chapel
 .. _release: https://github.com/chapel-lang/chapel/releases
-
------
-Xcode
------
-
-  .. warning::
-
-    Be forewarned that we do not maintain the Xcode project file very regularly
-    and appreciate updates to the project file from external contributors.
-
-For Macintosh developers, there is an Xcode project file located in
-
-``$CHPL_HOME/make/Chapel.xcodeproj/project.pbxproj``
-
-that can be used to develop Chapel within Xcode by opening the project
-
-``$CHPL_HOME/make/Chapel.xcodeproj``
-

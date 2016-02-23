@@ -19,6 +19,7 @@
 
 #include "chplrt.h"
 
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -50,6 +51,19 @@
 static void*  heap_base = NULL;
 static size_t heap_size = 0;
 static size_t cur_heap_offset = 0;
+static pthread_mutex_t chunk_alloc_lock;
+
+
+// compute aligned index into our shared heap, alignment must be a power of 2
+static inline void* alignHelper(void* base_ptr, size_t offset, size_t alignment) {
+  uintptr_t p;
+
+  assert(alignment && ((alignment & (alignment -1)) == 0));
+  p = (uintptr_t)base_ptr + offset;
+  p = (p + alignment - 1) & ~(alignment - 1);
+  return(void*) p;
+}
+
 
 // *** Chunk hook replacements *** //
 // See http://www.canonware.com/download/jemalloc/jemalloc-latest/doc/jemalloc.html#arena.i.chunk_hooks
@@ -58,43 +72,49 @@ static size_t cur_heap_offset = 0;
 // mmap/sbrk.) Grab memory out of the shared heap and give it to jemalloc.
 static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero, bool *commit, unsigned arena_ind) {
 
-  void* p = NULL;
-  size_t p_offset;
+  void* cur_chunk_base = NULL;
+  size_t cur_heap_size;
 
-  // TODO cleanup some of the pointer arithmetic. The current code was
-  // originally copied out of the tcmalloc shim, and could use a little cleanup
+  // this function can be called concurrently and it looks like jemalloc
+  // doesn't call it inside a lock, so we need to protect it ourselves
+  pthread_mutex_lock(&chunk_alloc_lock);
 
-  // compute our current pointer into the shared heap based on the current
-  // offset aligned to "alignment"
-  p = (void*)((((uintptr_t) heap_base + cur_heap_offset + alignment - 1) / alignment) * alignment);
+  // compute our current aligned pointer into the shared heap
+  //
+  //   jemalloc 4.0.4 man: "The alignment parameter is always a power of two at
+  //   least as large as the chunk size."
+  cur_chunk_base = alignHelper(heap_base, cur_heap_offset, alignment);
 
   // jemalloc 4.0.4 man: "If chunk is not NULL, the returned pointer must be
   // chunk on success or NULL on error"
-  if (chunk && chunk != p) {
+  if (chunk && chunk != cur_chunk_base) {
+    pthread_mutex_unlock(&chunk_alloc_lock);
     return NULL;
   }
 
-  p_offset = (uintptr_t)p - (uintptr_t)(heap_base);
+  cur_heap_size = (uintptr_t)cur_chunk_base - (uintptr_t)heap_base;
 
-  size = ((size + alignment - 1) / alignment) * alignment;
-
-  // If we're out of space on the heap, return NULL
-  if (size > heap_size - p_offset) {
+  // If there's not enough space on the heap for this allocation, return NULL
+  if (size > heap_size - cur_heap_size) {
+    pthread_mutex_unlock(&chunk_alloc_lock);
     return NULL;
   }
 
   // Update the current pointer, now that we've past any early returns.
-  cur_heap_offset = p_offset + size;
+  cur_heap_offset = cur_heap_size + size;
+
+  // now that cur_heap_offset is updated, we can unlock
+  pthread_mutex_unlock(&chunk_alloc_lock);
 
   // jemalloc 4.0.4 man: "Zeroing is mandatory if *zero is true upon entry."
   if (*zero) {
-     memset(p, 0, size);
+     memset(cur_chunk_base, 0, size);
   }
 
   // Commit is not relevant for linux/darwin, but jemalloc wants us to set it
   *commit = true;
 
-  return p;
+  return cur_chunk_base;
 }
 
 //
@@ -242,6 +262,9 @@ void chpl_mem_layerInit(void) {
     heap_base = heap_base_;
     heap_size = heap_size_;
     cur_heap_offset = 0;
+    if (pthread_mutex_init(&chunk_alloc_lock, NULL) != 0) {
+      chpl_internal_error("cannot init chunk_alloc lock");
+    }
     initializeSharedHeap();
   } else {
     void* p;
@@ -253,4 +276,9 @@ void chpl_mem_layerInit(void) {
 }
 
 
-void chpl_mem_layerExit(void) { }
+void chpl_mem_layerExit(void) {
+  if (heap_base != NULL) {
+    // ignore errors, we're exiting anyways
+    pthread_mutex_destroy(&chunk_alloc_lock);
+  }
+}

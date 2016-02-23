@@ -304,7 +304,7 @@ module ChapelIO {
         // print out just the set field for a union.
         var id = __primitive("get_union_id", x);
         for param i in 1..num_fields {
-          if isIoField(x, i) && __primitive("field id by num", t, i) == id {
+          if isIoField(x, i) && i == id {
             if isBinary {
               // store the union ID
               write(id);
@@ -546,7 +546,7 @@ module ChapelIO {
           // Read the ID
           reader.readwrite(id);
           for param i in 1..num_fields {
-            if isIoField(x, i) && __primitive("field id by num", t, i) == id {
+            if isIoField(x, i) && i == id {
               reader.readwrite(__primitive("field value by num", x, i));
             }
           }

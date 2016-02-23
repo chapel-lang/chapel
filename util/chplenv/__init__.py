@@ -20,7 +20,6 @@ __all__ = [
     'chpl_wide_pointers',
     'utils',
     # third-party package configuration helpers
-    'chpl_3p_dlmalloc_configs',
     'chpl_3p_gmp_configs',
     'chpl_3p_hwloc_configs',
     'chpl_3p_jemalloc_configs',
