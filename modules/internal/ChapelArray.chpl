@@ -151,8 +151,6 @@ module ChapelArray {
 
   pragma "no doc" // no doc unless we decide to expose this
   config param arrayAsVecGrowthFactor = 1.5;
-  pragma "no doc"
-  config param debugArrayAsVec = false;
 
   pragma "privatized class"
   proc _isPrivatized(value) param
@@ -2062,8 +2060,6 @@ module ChapelArray {
       const lo = this.domain.low,
             hi = this.domain.high+1;
       const newDom = {lo..hi};
-      if debugArrayAsVec then
-        writeln("Adding index ", hi, " to ", this.domain, " dataAllocDom = ", this._value.dataAllocDom);
       on this._value {
         if !this._value.dataAllocDom.member(hi) {
           /* The new index is not in the allocated space.  We'll need to
@@ -2072,19 +2068,10 @@ module ChapelArray {
             /* if dataAllocDom has fewer indices than this.domain it must not
                be set correctly.  Set it to match this.domain to start.
              */ 
-            if debugArrayAsVec then
-              writeln("setting dataAllocDom to this.domain: ", this.domain);
             this._value.dataAllocDom = this.domain;
           }
           this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom);
-          extern proc printf(fmt: c_string, args...);
-          if debugArrayAsVec {
-            writeln("dataAllocDom resized to: ", this._value.dataAllocDom);
-            printf("%p %p\n", this._value.data, this._value.shiftedData);
-          }
           this._value.dsiReallocate(this._value.dataAllocDom);
-          if debugArrayAsVec then
-            printf("%p %p\n", this._value.data, this._value.shiftedData);
         }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
@@ -2100,22 +2087,13 @@ module ChapelArray {
       const lo = this.domain.low,
             hi = this.domain.high-1;
       const newDom = {lo..hi};
-      if debugArrayAsVec then
-        writeln("Removing index ", hi+1, " from ", this.domain, " dataAllocDom = ", this._value.dataAllocDom);
       on this._value {
         if this._value.dataAllocDom.numIndices < this.domain.numIndices {
           this._value.dataAllocDom = this.domain;
         }
         if newDom.numIndices < (this._value.dataAllocDom.numIndices / arrayAsVecGrowthFactor):int {
           this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom, grow=-1);
-          extern proc printf(fmt: c_string, args...);
-          if debugArrayAsVec {
-            writeln("dataAllocDom resized to ", this._value.dataAllocDom);
-            printf("%p %p\n", this._value.data, this._value.shiftedData);
-          }
           this._value.dsiReallocate(this._value.dataAllocDom);
-          if debugArrayAsVec then
-            printf("%p %p\n", this._value.data, this._value.shiftedData);
         }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
@@ -2130,25 +2108,13 @@ module ChapelArray {
       const lo = this.domain.low-1,
             hi = this.domain.high;
       const newDom = {lo..hi};
-      if debugArrayAsVec then
-        writeln("Adding index ", lo, " to ", this.domain, " dataAllocDom = ", this._value.dataAllocDom);
       on this._value {
         if !this._value.dataAllocDom.member(lo) {
           if this._value.dataAllocDom.numIndices < this.domain.numIndices {
             this._value.dataAllocDom = this.domain;
           }
           this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom, direction=-1);
-          extern proc printf(fmt: c_string, args...);
-          if debugArrayAsVec {
-            writeln("dataAllocDom resized to: ", this._value.dataAllocDom);
-            printf("%p %p\n", this._value.data, this._value.shiftedData);
-          }
-
           this._value.dsiReallocate(this._value.dataAllocDom);
-
-          if debugArrayAsVec then
-            printf("%p %p\n", this._value.data, this._value.shiftedData);
-
         }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
