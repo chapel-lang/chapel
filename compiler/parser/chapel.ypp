@@ -1080,6 +1080,7 @@ var_decl_stmt:
       flags.insert($1);
       flags.insert(FLAG_PARAM);
       $$ = buildVarDecls($3, flags, @1.comment);
+      context->latestComment = NULL;
     }
 | opt_config TCONST var_decl_stmt_inner_ls TSEMI
     {
@@ -1087,6 +1088,7 @@ var_decl_stmt:
       flags.insert($1);
       flags.insert(FLAG_CONST);
       $$ = buildVarDecls($3, flags, @1.comment);
+      context->latestComment = NULL;
     }
 | opt_config TREF var_decl_stmt_inner_ls TSEMI
     {
@@ -1094,6 +1096,7 @@ var_decl_stmt:
       flags.insert($1);
       flags.insert(FLAG_REF_VAR);
       $$ = buildVarDecls($3, flags, @1.comment);
+      context->latestComment = NULL;
     }
 | opt_config TCONST TREF var_decl_stmt_inner_ls TSEMI
     {
@@ -1102,12 +1105,14 @@ var_decl_stmt:
       flags.insert(FLAG_CONST);
       flags.insert(FLAG_REF_VAR);
       $$ = buildVarDecls($4, flags, @1.comment);
+      context->latestComment = NULL;
     }
 | opt_config TVAR var_decl_stmt_inner_ls TSEMI
     {
       std::set<Flag> flags;
       flags.insert($1);
       $$ = buildVarDecls($3, flags, @1.comment);
+      context->latestComment = NULL;
     }
 ;
 
