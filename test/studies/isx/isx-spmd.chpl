@@ -65,20 +65,20 @@ config const mode = scaling.weak;
 //
 config const n = if testrun then 32 else 2**27;
 
-const tasksPerLocale = here.maxTaskPar;
+config const perBucketMultiply = here.maxTaskPar;
 
 //
 // The total number of keys
 //
 config const totalKeys = if mode == scaling.strong then n
-                                                   else n * numLocales * tasksPerLocale;
+                                                   else n * numLocales * perBucketMultiply;
 
 //
 // The number of keys per locale -- this is approximate for strong
 // scaling if the number of locales doesn't divide 'n' evenly.
 //
 config const keysPerLocale = if mode == scaling.strong then n/numLocales
-                                                       else n * tasksPerLocale;
+                                                       else n * perBucketMultiply;
 
 
 //
@@ -97,7 +97,7 @@ if !quiet && mode != scaling.weakISO && isoBucketWidth != 0 then
 // The maximum key value to use.  When debugging, use a small size.
 //
 config const maxKeyVal = (if mode == scaling.weakISO 
-                            then (numLocales * tasksPerLocale * isoBucketWidth)
+                            then (numLocales * perBucketMultiply * isoBucketWidth)
                             else (if testrun then 32 else 2**28)): keyType;
 
 //
@@ -106,7 +106,7 @@ config const maxKeyVal = (if mode == scaling.weakISO
 // number of locales.
 //
 config const bucketWidth = if mode == scaling.weakISO
-                             then isoBucketWidth * tasksPerLocale
+                             then isoBucketWidth * perBucketMultiply
                              else maxKeyVal/numLocales;
 
 //
