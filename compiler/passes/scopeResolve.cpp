@@ -651,7 +651,9 @@ static void addClassToHierarchy(AggregateType*       ct,
           }
 
           if (!alreadyContainsField) {
-            ct->fields.insertAtHead(field->defPoint->copy());
+            DefExpr* def = field->defPoint->copy();
+            ct->fields.insertAtHead(def);
+            def->sym->addFlag(FLAG_PARENT_FIELD);
           }
         }
       }
@@ -777,6 +779,10 @@ void build_constructors(AggregateType* ct)
 
 // Create the (default) type constructor for this class.
 static void build_type_constructor(AggregateType* ct) {
+  // Do nothing if it is already built
+  if (ct->defaultTypeConstructor)
+    return;
+
   // Create the type constructor function,
   FnSymbol* fn = new FnSymbol(astr("_type_construct_", ct->symbol->name));
 
@@ -803,15 +809,77 @@ static void build_type_constructor(AggregateType* ct) {
 
   fn->insertAtTail(new DefExpr(fn->_this));
 
-  // Walk all fields and select the generic ones.
   Vec<const char*> fieldNamesSet;
+
+  CallExpr* superCall = NULL;
+
+  // Copy arguments from superclass type constructor
+  // (supporting inheritence from generic classes)
+  if (isClass(ct) && ct->dispatchParents.n > 0) {
+
+    if(AggregateType *parentTy = toAggregateType(ct->dispatchParents.v[0])){
+
+      // This class/record has a parent class/record
+      if (!parentTy->defaultTypeConstructor) {
+        // If it doesn't yet have an type constructor, make one
+        build_type_constructor(parentTy);
+      }
+      FnSymbol* superTypeCtor = parentTy->defaultTypeConstructor;
+
+      if (superTypeCtor->numFormals() > 0) {
+
+        superCall = new CallExpr(parentTy->symbol->name);
+
+        // Now walk through arguments in super class type constructor
+        for_formals(formal, superTypeCtor) {
+
+          DefExpr* superArg = formal->defPoint->copy();
+
+          // Add a formal to the current class type constructor.
+
+          ArgSymbol* arg = toArgSymbol(superArg->sym->copy());
+          bool fieldInThisClass = false;
+          for_fields(sym, ct) {
+            if (0 == strcmp(sym->name, arg->name)) {
+              fieldInThisClass = true;
+            }
+          }
+
+          if (fieldInThisClass) {
+            // If the field is also present in the child, adjust the field
+            // name in the super. Otherwise it would not be possible to
+            // type construct the super.
+
+            // ?
+            // Should we omit them?
+            // Or pass the child field to the super constructor?
+            continue;
+          }
+          arg->addFlag(FLAG_PARENT_FIELD);
+          fn->insertFormalAtTail(arg);
+          superCall->insertAtTail(new SymExpr(arg));
+        }
+      }
+    }
+  }
 
   for_fields(tmp, ct) {
     SET_LINENO(tmp);
 
     if (VarSymbol* field = toVarSymbol(tmp)) {
-      if (field->hasFlag(FLAG_SUPER_CLASS))
+      if (field->hasFlag(FLAG_SUPER_CLASS)) {
+        // supporting inheritence from generic classes
+        if (superCall) {
+          CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, superCall);
+          CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER,
+                                           fn->_this,
+                                           new_CStringSymbol(field->name),
+                                           newInit);
+          fn->insertAtTail(newSet);
+        }
         continue;
+      }
+
 
       Expr* exprType = field->defPoint->exprType;
       Expr* init = field->defPoint->init;
@@ -837,6 +905,12 @@ static void build_type_constructor(AggregateType* ct) {
             (!exprType && !init)) {
 
           ArgSymbol* arg = create_generic_arg(field);
+
+          // Indicate which type constructor args are also for super class
+          // This helps us to call the superclass type constructor in resolution
+          if (field->hasFlag(FLAG_PARENT_FIELD)) {
+            arg->addFlag(FLAG_PARENT_FIELD);
+          }
 
           fn->insertFormalAtTail(arg);
 

@@ -487,6 +487,7 @@ static void findReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
   std::queue<BasicBlock*> work_queue;
 
   INT_ASSERT(fn->basicBlocks);
+
   INT_ASSERT(fn->basicBlocks->size() > 0);
   work_queue.push((*fn->basicBlocks)[0]);
 

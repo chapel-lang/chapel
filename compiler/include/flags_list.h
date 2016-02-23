@@ -196,6 +196,8 @@ symbolFlag( FLAG_ON , npr, "on" , ncm )
 symbolFlag( FLAG_ON_BLOCK , npr, "on block" , ncm )
 symbolFlag( FLAG_PARAM , npr, "param" , "parameter (compile-time constant)" )
 
+symbolFlag( FLAG_PARENT_FIELD , npr, "parent field" , "field from parent type" )
+
 symbolFlag( FLAG_PARTIAL_COPY, npr, "partial copy", ncm )
 symbolFlag( FLAG_PARTIAL_TUPLE, npr, "partial tuple", ncm)
 
