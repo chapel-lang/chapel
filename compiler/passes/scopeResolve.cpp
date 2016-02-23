@@ -906,7 +906,7 @@ static void build_type_constructor(AggregateType* ct) {
 
           ArgSymbol* arg = create_generic_arg(field);
 
-          // Indicate which type constructor args are also for super class 
+          // Indicate which type constructor args are also for super class
           // This helps us to call the superclass type constructor in resolution
           if (field->hasFlag(FLAG_PARENT_FIELD)) {
             arg->addFlag(FLAG_PARENT_FIELD);

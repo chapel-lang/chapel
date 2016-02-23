@@ -30,7 +30,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "view.h" // temporary
 
 #include <cstdlib>
 #include <inttypes.h>
@@ -589,7 +588,6 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
   if (isSyncType(newType))
     newType->defaultValue = NULL;
   newType->substitutions.copy(fn->retType->substitutions);
-  //newType->dispatchParents.copy(fn->retType->dispatchParents);
   // Add dispatch parents, but replace parent type with
   // instantiated parent type.
   forv_Vec(Type, t, fn->retType->dispatchParents) {
@@ -610,32 +608,6 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
   newType->substitutions.map_union(subs);
   newType->symbol->removeFlag(FLAG_GENERIC);
 
-  // Set the methods to be the same as what was in the
-  // instantiated type.
-  //newType->methods.copy(type->methods);
-  // this seems to cause other problems in resolution
-  // for one thing, this is generic
-
-#if 0
-  if ( (0 == memcmp(newType->symbol->name, "Parent", strlen("Parent")) ||
-        0 == memcmp(newType->symbol->name, "Child", strlen("Child"))) ) {
-    printf("instantiated type\n");
-    print_view(type);
-    printf("into newType\n");
-    print_view(newType);
-
-    printf("type had methods\n");
-    forv_Vec(FnSymbol, cfn, type->methods) {
-      print_view(cfn);
-    }
-
-    printf("newType has methods\n");
-    forv_Vec(FnSymbol, cfn, newType->methods) {
-      print_view(cfn);
-    }
-  }
-#endif
-
   return newType;
 }
 
@@ -649,10 +621,6 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
  */
 FnSymbol*
 instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
-
-  if (fn->id == 151544)
-    gdbShouldBreakHere();
-
   form_Map(SymbolMapElem, e, subs) {
     if (TypeSymbol* ts = toTypeSymbol(e->value)) {
       if (ts->type->symbol->hasFlag(FLAG_GENERIC))
