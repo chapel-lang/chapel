@@ -2273,11 +2273,10 @@ static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
             // if applyOuterUse returned NULL, the number of symbols that
             // could be provided from this use was 0, so it didn't need to be
             // added to the alreadySeen map.
+            if (useToAdd != NULL) {
+              (*alreadySeen)[useMod].push_back(useToAdd);
+            }
 
-          }
-
-          if (useToAdd != NULL) {
-            (*alreadySeen)[useMod].push_back(useToAdd);
           } else {
             (*alreadySeen)[useMod].push_back(use);
           }
