@@ -7403,8 +7403,8 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
 
 // Add overrides of fn to virtual maps down the inheritance heirarchy
 static void
-addAllToVirtualMaps(FnSymbol* fn, AggregateType* ct) {
-  forv_Vec(Type, t, ct->dispatchChildren) {
+addAllToVirtualMaps(FnSymbol* fn, AggregateType* pct) {
+  forv_Vec(Type, t, pct->dispatchChildren) {
     AggregateType* ct = toAggregateType(t);
     if (ct->defaultTypeConstructor &&
         (ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) ||
