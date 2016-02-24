@@ -100,6 +100,11 @@ endif
 #
 cd examples
 $mymake -j$num_procs
+set tmpstatus = $status
+if ($tmpstatus!= 0) then
+    echo "ERROR: compiling examples with 'make' failed"
+    exit($tmpstatus)
+endif
 cd ..
 
 
