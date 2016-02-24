@@ -311,7 +311,6 @@ void chpl_mem_replace_malloc_if_needed(void) {
   // BSD: malloc_size
   // glibc: malloc_usable_size
   // jemalloc: malloc_usable_size
-  // tcmalloc: tc_malloc_size
 #endif
 }
 

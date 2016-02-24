@@ -364,7 +364,6 @@ CHPL_MEM
         ========= =======================================================
         cstdlib   use the standard C malloc/free commands
         jemalloc  use Jason Evan's memory allocation package
-        tcmalloc  use the tcmalloc package from Google Performance Tools
         ========= =======================================================
 
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
