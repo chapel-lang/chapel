@@ -46,7 +46,6 @@ module String {
   //
   // Externs and constants used to implement strings
   //
-  // TODO: mark most of these as private or move elsewhere
 
   param chpl_string_min_alloc_size: int = 16;
   // Growth factor to use when extending the buffer for appends
@@ -79,9 +78,23 @@ module String {
       return dest;
   }
 
-  extern proc memmove(destination: c_ptr, const source: c_ptr, num: size_t);
-  extern proc memcpy(destination: c_ptr, const source: c_ptr, num: size_t);
-  extern proc memcmp(s1: c_ptr, s2: c_ptr, n: size_t) : c_int;
+  //
+  // simple wrappers for memmove, memcpy, and memcmp that handle safe casting
+  //
+  private inline proc str_memmove(dest: c_void_ptr, const src: c_void_ptr, n: int): void {
+    extern proc memmove(dest: c_void_ptr, const src: c_void_ptr, n: size_t);
+    memmove(dest, src, n.safeCast(size_t));
+  }
+
+  private inline proc str_memcpy(dest: c_void_ptr, const src: c_void_ptr, n: int): void {
+    extern proc memcpy(dest: c_void_ptr, const src: c_void_ptr, n: size_t);
+    memcpy(dest, src, n.safeCast(size_t));
+  }
+
+  private inline proc str_memcmp(const s1: c_void_ptr, const s2: c_void_ptr, n: int): int {
+    extern proc memcmp(const s1: c_void_ptr, const s2: c_void_ptr, n: size_t) : c_int;
+    return memcmp(s1, s2, n.safeCast(size_t)).safeCast(int);
+  }
 
   config param debugStrings = false;
 
@@ -117,7 +130,7 @@ module String {
             const allocSize = chpl_here_good_alloc_size(sLen+1);
             this.buff = chpl_here_alloc(allocSize,
                                        CHPL_RT_MD_STR_COPY_DATA): bufferType;
-            memcpy(this.buff, s.buff, s.len.safeCast(size_t));
+            str_memcpy(this.buff, s.buff, s.len);
             this.buff[sLen] = 0;
             this._size = allocSize;
           } else {
@@ -175,7 +188,7 @@ module String {
             // We just allocated a buffer, make sure to free it later
             this.owned = true;
           }
-          memmove(this.buff, buf, s_len.safeCast(size_t));
+          str_memmove(this.buff, buf, s_len);
         } else {
           if this.owned && !this.isEmptyString() then
             chpl_here_free(this.buff);
@@ -358,13 +371,13 @@ module String {
 
           const needleR = 0:int..#localNeedle.len;
           if fromLeft {
-            const result = memcmp(this.buff, localNeedle.buff,
-                                  localNeedle.len.safeCast(size_t));
+            const result = str_memcmp(this.buff, localNeedle.buff,
+                                      localNeedle.len);
             ret = result == 0;
           } else {
             var offset = this.len-localNeedle.len;
-            const result = memcmp(this.buff+offset, localNeedle.buff,
-                                  localNeedle.len.safeCast(size_t));
+            const result = str_memcmp(this.buff+offset, localNeedle.buff,
+                                      localNeedle.len);
             ret = result == 0;
           }
           if ret == true then break;
@@ -557,13 +570,13 @@ module String {
         var first = true;
         for s in S {
           if !first && this.len != 0 {
-            memcpy(ret.buff+offset, this.buff, this.len.safeCast(size_t));
+            str_memcpy(ret.buff+offset, this.buff, this.lensize_t);
             offset += this.len;
           }
           var sLen = s.len;
           if sLen != 0 {
             if _local || s.locale_id == chpl_nodeID {
-              memcpy(ret.buff+offset, s.buff, sLen.safeCast(size_t));
+              str_memcpy(ret.buff+offset, s.buff, sLen);
             } else {
               chpl_string_comm_get(ret.buff+offset, s.locale_id,
                                   s.buff, sLen.safeCast(size_t));
@@ -873,7 +886,7 @@ module String {
         if s.owned {
           ret.buff = chpl_here_alloc(s._size,
                                     CHPL_RT_MD_STR_COPY_DATA): bufferType;
-          memcpy(ret.buff, s.buff, s.len.safeCast(size_t));
+          str_memcpy(ret.buff, s.buff, s.len);
           ret.buff[s.len] = 0;
         } else {
           ret.buff = s.buff;
@@ -912,7 +925,7 @@ module String {
         if s.owned {
           ret.buff = chpl_here_alloc(s._size,
                                     CHPL_RT_MD_STR_COPY_DATA): bufferType;
-          memcpy(ret.buff, s.buff, s.len.safeCast(size_t));
+          str_memcpy(ret.buff, s.buff, s.len);
           ret.buff[s.len] = 0;
         } else {
           ret.buff = s.buff;
@@ -988,7 +1001,7 @@ module String {
       chpl_string_comm_get(ret.buff, s0.locale_id,
                            s0.buff, s0len.safeCast(size_t));
     } else {
-      memcpy(ret.buff, s0.buff, s0len.safeCast(size_t));
+      str_memcpy(ret.buff, s0.buff, s0len);
     }
 
     const s1remote = s1.locale_id != chpl_nodeID;
@@ -996,7 +1009,7 @@ module String {
       chpl_string_comm_get(ret.buff+s0len, s1.locale_id,
                            s1.buff, s1len.safeCast(size_t));
     } else {
-      memcpy(ret.buff+s0len, s1.buff, s1len.safeCast(size_t));
+      str_memcpy(ret.buff+s0len, s1.buff, s1len);
     }
     ret.buff[ret.len] = 0;
 
@@ -1022,13 +1035,13 @@ module String {
       chpl_string_comm_get(ret.buff, s.locale_id,
                            s.buff, sLen.safeCast(size_t));
     } else {
-      memcpy(ret.buff, s.buff, sLen.safeCast(size_t));
+      str_memcpy(ret.buff, s.buff, sLen);
     }
 
     var iterations = n-1;
     var offset = sLen;
     for i in 1..iterations {
-      memcpy(ret.buff+offset, ret.buff, sLen.safeCast(size_t));
+      str_memcpy(ret.buff+offset, ret.buff, sLen);
       offset += sLen;
     }
     ret.buff[ret.len] = 0;
@@ -1144,7 +1157,7 @@ module String {
         } else {
           var newBuff = chpl_here_alloc(newSize,
                                        CHPL_RT_MD_STR_COPY_DATA):bufferType;
-          memcpy(newBuff, lhs.buff, lhs.len.safeCast(size_t));
+          str_memcpy(newBuff, lhs.buff, lhs.len);
           lhs.buff = newBuff;
           lhs.owned = true;
         }
@@ -1156,7 +1169,7 @@ module String {
         chpl_string_comm_get(lhs.buff+lhs.len, rhs.locale_id,
                               rhs.buff, rhsLen.safeCast(size_t));
       } else {
-        memcpy(lhs.buff+lhs.len, rhs.buff, rhsLen.safeCast(size_t));
+        str_memcpy(lhs.buff+lhs.len, rhs.buff, rhsLen);
       }
       lhs.len = newLength;
       lhs.buff[newLength] = 0;
@@ -1182,7 +1195,7 @@ module String {
   inline proc _strcmp(a: string, b:string) : int {
     // Assumes a and b are on same locale and not empty.
     const size = min(a.len, b.len);
-    const result =  memcmp(a.buff, b.buff, size.safeCast(size_t));
+    const result = str_memcmp(a.buff, b.buff, size);
 
     if (result == 0) {
       // Handle cases where one string is the beginning of the other
