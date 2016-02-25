@@ -201,9 +201,11 @@
 static void debug(BaseAST* base, const char* format, ...) {
 #ifdef PRINT_WIDE_ANALYSIS
   Symbol* sym = toSymbol(base);
-  if (!sym) {
+  if (sym == NULL) {
     sym = toSymExpr(base)->var;
   }
+  INT_ASSERT(sym != NULL);
+
   DEBUG_PRINTF("%s (%d) in %s : ", sym->cname, sym->id, sym->getModule()->cname);
   va_list argptr;
   va_start(argptr, format);
@@ -1060,7 +1062,7 @@ static void propagateVar(Symbol* sym) {
                      rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
               widenTupleField(rhs, def);
             }
-            else if (rhs->isResolved() && isRef(def)) {
+            else if (rhs->isResolved()) {
               debug(sym, "return symbol must be wide\n");
               matchWide(sym, rhs->isResolved()->getReturnSymbol());
             }
