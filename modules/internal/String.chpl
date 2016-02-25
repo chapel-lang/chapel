@@ -53,7 +53,11 @@ module String {
   config param chpl_stringGrowthFactor = 1.5;
   extern proc chpl_mem_goodAllocSize(minSize: size_t) : size_t;
 
-  extern type chpl_mem_descInt_t;
+  // TODO (EJR: 02/25/16): see if we can remove this explicit type declaration.
+  // chpl_mem_descInt_t is really a well known compiler type since the compiler
+  // emits calls for the chpl_mem_descs table. Maybe the compiler should just
+  // create the type and export it to the runtime?
+  extern type chpl_mem_descInt_t = int(16);
 
   // We use this as a shortcut to get at here.id without actually constructing
   // a locale object. Used when determining if we should make a remote transfer.

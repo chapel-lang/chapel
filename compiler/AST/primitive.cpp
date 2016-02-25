@@ -35,8 +35,8 @@ returnInfoVoid(CallExpr* call) {
 }
 
 static Type*
-returnInfoOpaque(CallExpr* call) {
-  return dtOpaque;
+returnInfoCVoidPtr(CallExpr* call) {
+  return dtCVoidPtr;
 }
 
 static Type*
@@ -589,7 +589,7 @@ initPrimitive() {
   prim_def("ascii", returnInfoInt32);
   prim_def("string_index", returnInfoStringCopy, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringCopy, false, true);
-  prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoOpaque, true, false);
+  prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoCVoidPtr, true, false);
   prim_def("string_select", returnInfoStringCopy, true, true);
   prim_def("sleep", returnInfoVoid, true);
   prim_def("real2int", returnInfoDefaultInt);
