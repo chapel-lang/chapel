@@ -294,8 +294,9 @@ proc countLocalKeys(myBucketSize) {
   const myMinKeyVal = here.id * bucketWidth;
   var myLocalKeyCounts: [myMinKeyVal..#bucketWidth] atomic int;
 
+  ref myBucket = allBucketKeys[here.id];
   forall i in 0..#myBucketSize do
-    myLocalKeyCounts[allBucketKeys[here.id][i]].add(1);
+    myLocalKeyCounts[myBucket[i]].add(1);
 
   if debug then
     writeln(here.id, ": myLocalKeyCounts[", myMinKeyVal, "..] = ", 

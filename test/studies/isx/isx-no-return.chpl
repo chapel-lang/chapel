@@ -289,8 +289,9 @@ proc exchangeKeys(bucketID, sendOffsets, bucketSizes, myBucketedKeys) {
 
 
 proc countLocalKeys(myLocalKeyCounts, bucketID, myBucketSize, myMinKeyVal) {
+  ref myBucket = allBucketKeys[bucketID];
   forall i in 0..#myBucketSize do
-    myLocalKeyCounts[allBucketKeys[bucketID][i]].add(1);
+    myLocalKeyCounts[myBucket[i]].add(1);
 
   if debug then
     writeln(bucketID, ": myLocalKeyCounts[", myMinKeyVal, "..] = ", 
