@@ -43,6 +43,14 @@ function log_error()
     echo "[Fail] ${msg}" >&2
 }
 
+function log_debug()
+{
+    local msg=$@
+    if [ "${DEBUG}" == "1" ]; then
+        echo "[Debug] ${msg}" >&2
+    fi
+}
+
 # Base name for test job in examples
 TEST_JOB_BASENAME=hello6-taskpar-dist
 
@@ -75,11 +83,21 @@ else
     log_info "Found \$CHPL_HOME directory: ${CHPL_HOME}"
 fi
 
+CHPL_DIR_REMOVE=1
+
 # Create ~/.chpl directory, if it does not already exist
 CHPL_DIR=${CHPL_CHECK_INSTALL_DIR:-${HOME}/.chpl}
 if [ ! -d ${CHPL_DIR} ] ; then
     log_info "${CHPL_DIR} does not exist. Creating it."
     mkdir -p ${CHPL_DIR} || { log_error "Failed to create ${CHPL_DIR}." && exit 1 ; }
+else
+    log_info "${CHPL_DIR} already exists. Using it."
+    if find "${CHPL_DIR}" -mindepth 1 -print -quit | grep -q .; then
+        log_debug "${CHPL_DIR} is not empty. Not removing it after 'make check'"
+        CHPL_DIR_REMOVE=0
+    else
+        log_debug "${CHPL_DIR} is empty. Removing it after 'make check'"
+    fi
 fi
 
 # Location of test job
@@ -134,7 +152,12 @@ fi
 # Cleanup the tmp directory whenever exit is invoked
 function cleanup_tmp_dir()
 {
+    log_debug "Removing ${TMP_TEST_DIR}"
     rm -rf ${TMP_TEST_DIR}
+    if [ "${CHPL_DIR_REMOVE}" == "1" ]; then
+        log_debug "Removing ${CHPL_DIR}"
+        rm -rf ${CHPL_DIR}
+    fi
 }
 trap cleanup_tmp_dir EXIT
 
