@@ -46,10 +46,12 @@ function log_error()
 function log_debug()
 {
     local msg=$@
-    if [ "${DEBUG}" == "1" ]; then
+    if [ "${CHPL_CHECK_DEBUG}" == "1" ]; then
         echo "[Debug] ${msg}" >&2
     fi
 }
+
+log_debug "Debug output is turned on, because \$CHPL_CHECK_DEBUG == 1"
 
 # Base name for test job in examples
 TEST_JOB_BASENAME=hello6-taskpar-dist
