@@ -139,8 +139,8 @@ void* chpl_memcpy(void* dest, const void* src, size_t num)
 //
 // If an allocator does not have the ability to get this information, minSize
 // will be returned.
-static inline size_t chpl_mem_goodAllocSize(size_t minSize) {
-  return chpl_goodAllocSize(minSize);
+static inline size_t chpl_mem_good_alloc_size(size_t minSize) {
+  return chpl_good_alloc_size(minSize);
 }
 
 // free a c_string_copy, no error checking.
