@@ -1379,6 +1379,9 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
     return true;
   if (formalType == dtStringC && actualType == dtStringCopy)
     return true;
+  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+      (formalType == dtCVoidPtr))
+    return true;
 
   return false;
 }
