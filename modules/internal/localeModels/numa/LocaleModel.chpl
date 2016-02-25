@@ -370,6 +370,7 @@ module LocaleModel {
   pragma "allocator"
   pragma "locale model alloc"
   proc chpl_here_alloc(size:int, md:int(16)) {
+    extern proc chpl_memhook_md_num(): int(16);
     pragma "insert line file info"
       extern proc chpl_mem_alloc(size:int, md:int(16)) : opaque;
     return chpl_mem_alloc(size, md + chpl_memhook_md_num());
@@ -377,6 +378,7 @@ module LocaleModel {
 
   pragma "allocator"
   proc chpl_here_calloc(size:int, number:int, md:int(16)) {
+    extern proc chpl_memhook_md_num(): int(16);
     pragma "insert line file info"
       extern proc chpl_mem_calloc(number:int, size:int, md:int(16)) : opaque;
     return chpl_mem_calloc(number, size, md + chpl_memhook_md_num());
@@ -384,6 +386,7 @@ module LocaleModel {
 
   pragma "allocator"
   proc chpl_here_realloc(ptr:opaque, size:int, md:int(16)) {
+    extern proc chpl_memhook_md_num(): int(16);
     pragma "insert line file info"
       extern proc chpl_mem_realloc(ptr:opaque, size:int, md:int(16)) : opaque;
     return chpl_mem_realloc(ptr, size, md + chpl_memhook_md_num());
