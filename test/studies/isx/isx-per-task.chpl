@@ -309,7 +309,7 @@ proc verifyResults(taskID, myBucketSize, myLocalKeyCounts) {
   const myMinKeyVal = taskID * bucketWidth;
   const myKeys = myMinKeyVal..#bucketWidth;
   ref myBucket = allBucketKeys[taskID];
-  forall i in 0..#myBucketSize {
+  for i in 0..#myBucketSize {
     const key = myBucket[i];
     if !myKeys.member(key) then
       halt("got key value outside my range: "+key + " not in " + myKeys);
