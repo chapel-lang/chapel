@@ -452,6 +452,7 @@ static void cause_helper(BaseAST* target, int level, std::set<Symbol*>& visited)
 }
 
 static void printCauses(Symbol* sym) {
+  //quiet unused function warning
   if (sym == NULL) return;
 
   DEBUG_PRINTF("Printing causes for %s (%d)\n", sym->cname, sym->id);
@@ -2082,6 +2083,7 @@ insertWideReferences(void) {
   printf("Summary:\n\twide: %d\n\tnarrow: %d\n", wide, narrow);
 #endif
 
+  //quiet unused function warning
   printCauses(NULL);
 
 }
