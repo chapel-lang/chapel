@@ -6092,7 +6092,7 @@ void insertChplHereAlloc(Expr *call, bool insertAfter, Symbol *sym,
                                                  (ct != NULL) ?
                                                  ct->symbol : t->symbol));
   VarSymbol* mdExpr = (md != NULL) ? md : newMemDesc(t->symbol->name);
-  Symbol *allocTmp = newTemp("chpl_here_alloc_tmp", dtOpaque);
+  Symbol *allocTmp = newTemp("chpl_here_alloc_tmp", dtCVoidPtr);
   CallExpr* allocExpr = new CallExpr(PRIM_MOVE, allocTmp,
                                      new CallExpr(gChplHereAlloc,
                                                   sizeTmp, mdExpr));
