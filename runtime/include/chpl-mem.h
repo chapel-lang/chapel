@@ -139,7 +139,7 @@ void* chpl_memcpy(void* dest, const void* src, size_t num)
 //
 // If an allocator does not have the ability to get this information, minSize
 // will be returned.
-static inline size_t chpl_mem_good_alloc_size(size_t minSize) {
+static inline size_t chpl_mem_good_alloc_size(size_t minSize, int32_t lineno, int32_t filename) {
   return chpl_good_alloc_size(minSize);
 }
 

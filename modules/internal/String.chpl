@@ -51,6 +51,7 @@ module String {
   param chpl_string_min_alloc_size: int = 16;
   // Growth factor to use when extending the buffer for appends
   config param chpl_stringGrowthFactor = 1.5;
+  pragma "insert line file info"
   extern proc chpl_mem_good_alloc_size(minSize: size_t) : size_t;
 
   // TODO (EJR: 02/25/16): see if we can remove this explicit type declaration.

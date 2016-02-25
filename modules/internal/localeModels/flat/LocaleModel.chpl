@@ -309,6 +309,12 @@ module LocaleModel {
     return chpl_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());
   }
 
+  proc chpl_here_good_alloc_size(min_size:int) {
+    pragma "insert line file info"
+      extern proc chpl_mem_good_alloc_size(min_size:size_t) : size_t;
+    return chpl_mem_good_alloc_size(min_size.safeCast(size_t)).safeCast(int);
+  }
+
   pragma "locale model free"
   proc chpl_here_free(ptr:c_void_ptr) {
     pragma "insert line file info"
