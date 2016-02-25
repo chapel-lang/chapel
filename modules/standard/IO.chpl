@@ -4761,7 +4761,7 @@ record ItemWriter {
   /* the locking field for our channel */
   param locking:bool;
   /* our channel */
-  var ch:channel(false,kind);
+  var ch:channel(true,kind,locking);
   /* write a single item, returning an error */
   proc write(arg:ItemType, out error:syserr):bool {
     return ch.write(arg, error=error);
