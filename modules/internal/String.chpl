@@ -53,7 +53,7 @@ module String {
   config param chpl_stringGrowthFactor = 1.5;
   extern proc chpl_mem_goodAllocSize(minSize: size_t) : size_t;
 
-  extern type chpl_mem_descInt_t;
+  extern type chpl_mem_descInt_t = int(16);
 
   // We use this as a shortcut to get at here.id without actually constructing
   // a locale object. Used when determining if we should make a remote transfer.

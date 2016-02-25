@@ -287,26 +287,26 @@ module LocaleModel {
   // The allocator pragma is used by scalar replacement.
   pragma "allocator"
   pragma "locale model alloc"
-  proc chpl_here_alloc(size:int, md:int(16)) {
-    extern proc chpl_memhook_md_num(): int(16);
+  proc chpl_here_alloc(size:int, md:chpl_mem_descInt_t) {
+    extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
     pragma "insert line file info"
-      extern proc chpl_mem_alloc(size:size_t, md:int(16)) : c_void_ptr;
+      extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
     return chpl_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
   }
 
   pragma "allocator"
-  proc chpl_here_calloc(size:int, number:int, md:int(16)) {
-    extern proc chpl_memhook_md_num(): int(16);
+  proc chpl_here_calloc(size:int, number:int, md:chpl_mem_descInt_t) {
+    extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
     pragma "insert line file info"
-      extern proc chpl_mem_calloc(number:size_t, size:size_t, md:int(16)) : c_void_ptr;
+      extern proc chpl_mem_calloc(number:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
     return chpl_mem_calloc(number.safeCast(size_t), size.safeCast(size_t), md + chpl_memhook_md_num());
   }
 
   pragma "allocator"
-  proc chpl_here_realloc(ptr:c_void_ptr, size:int, md:int(16)) {
-    extern proc chpl_memhook_md_num(): int(16);
+  proc chpl_here_realloc(ptr:c_void_ptr, size:int, md:chpl_mem_descInt_t) {
+    extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
     pragma "insert line file info"
-      extern proc chpl_mem_realloc(ptr:c_void_ptr, size:size_t, md:int(16)) : c_void_ptr;
+      extern proc chpl_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
     return chpl_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());
   }
 
