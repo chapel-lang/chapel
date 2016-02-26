@@ -1,2 +1,0 @@
-This directory is designed to be non-writeable in order to lock in
-a test that used result in a segfault.
