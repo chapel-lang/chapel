@@ -1,7 +1,7 @@
 // Verifies that use of enum does not prevent normal enum access
 enum blondie {oneWay, orAnother, oneDay, maybeNextWeek};
 
-use foo;
+use blondie;
 
 var first: blondie;
 var second: blondie = blondie.orAnother;
