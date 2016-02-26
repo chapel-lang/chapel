@@ -337,9 +337,10 @@ qioerr qio_waitpid(int64_t pid,
 
   if( WIFEXITED(status) ) {
     *exitcode = WEXITSTATUS(status);
-    if( WIFSIGNALED(status) ) {
-      *exitcode = - WSTOPSIG(status);
-    }
+    *done = 1;
+  }
+  else if( WIFSIGNALED(status) ) {
+    *exitcode = WTERMSIG(status);
     *done = 1;
   }
   return 0;
