@@ -824,11 +824,95 @@ module Spawn {
     if err then ioerror(err, "in subprocess.close");
   }
 
-// Future work: support
-// send_signal
-// terminate
-// kill (send SIGKILL)
+  // Signals as required by POSIX-2013
+  enum signal {
+    SIGABRT = 1,
+    SIGALRM,
+    SIGFPE,
+    SIGHUP,
+    SIGILL,
+    SIGINT,
+    SIGKILL,
+    SIGPIPE,
+    SIGQUIT,
+    SIGSEGV,
+    SIGTERM,
+    SIGUSR1,
+    SIGUSR2,
+    SIGCHLD,
+    SIGCONT,
+    SIGSTOP,
+    SIGTSTP,
+    SIGTTIN,
+    SIGTTOU,
+    SIGBUS,
+    SIGPOLL,
+    SIGPROF,
+    SIGSYS,
+    SIGTRAP,
+    SIGURG,
+    SIGVTALRM,
+    SIGXCPU,
+    SIGXFSZ
+  };
 
+  private extern proc qio_send_signal(pid: int(64), qio_sig: int(64)): syserr;
+
+  /*
+
+    :arg error: optional argument to capture any error encountered
+                when .
+   */
+  proc subprocess.send_signal(out error:syserr, sig: signal) {
+    on home {
+      error = qio_send_signal(pid, sig:int(64));
+    }
+  }
+
+  // documented in the out error version
+  pragma "no doc"
+  proc subprocess.send_signal(sig:int) {
+    var err:syserr = ENOERR;
+
+    _halt_on_launch_error();
+
+    this.send_signal(error=err, sig=sig);
+    if err then ioerror(err, "in subprocess.send_signal");
+  }
+
+  /*
+   */
+  proc subprocess.kill(out error:syserr) {
+    this.send_signal(error, signal.SIGKILL);
+  }
+
+  // documented in the out error version
+  pragma "no doc"
+  proc subprocess.kill() {
+    var err:syserr = ENOERR;
+
+    _halt_on_launch_error();
+
+    this.kill(error=err);
+    if err then ioerror(err, "in subprocess.kill");
+  }
+
+  /*
+   */
+  proc subprocess.terminate(out error:syserr) {
+    this.send_signal(error, signal.SIGTERM);
+  }
+
+  // documented in the out error version
+  pragma "no doc"
+  proc subprocess.terminate() {
+    var err:syserr = ENOERR;
+
+    _halt_on_launch_error();
+
+    this.terminate(error=err);
+    if err then ioerror(err, "in subprocess.terminate");
+  }
 
 }
 
