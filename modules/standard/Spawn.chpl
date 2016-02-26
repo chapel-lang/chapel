@@ -638,6 +638,17 @@ module Spawn {
       }
     }
   }
+
+  // documented in the out error version
+  pragma "no doc"
+  proc subprocess.poll() {
+    var err:syserr = ENOERR;
+
+    _halt_on_launch_error();
+
+    this.poll(error=err);
+    if err then ioerror(err, "in subprocess.poll");
+  }
   
   /*
     Wait for a child process to complete. After this function
