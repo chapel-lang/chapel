@@ -272,17 +272,7 @@ void openCFile(fileinfo* fi, const char* name, const char* ext) {
     fi->filename = astr(name);
 
   fi->pathname = genIntermediateFilename(fi->filename);
-  fi->fptr = fopen(fi->pathname, "w");
-}
-
-void appendCFile(fileinfo* fi, const char* name, const char* ext) {
-  if (ext)
-    fi->filename = astr(name, ".", ext);
-  else
-    fi->filename = astr(name);
-
-  fi->pathname = genIntermediateFilename(fi->filename);
-  fi->fptr     = fopen(fi->pathname, "a+");
+  openfile(fi, "w");
 }
 
 void closeCFile(fileinfo* fi, bool beautifyIt) {
