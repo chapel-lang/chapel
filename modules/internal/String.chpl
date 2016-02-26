@@ -66,14 +66,17 @@ module String {
   extern const CHPL_RT_MD_STR_COPY_REMOTE: chpl_mem_descInt_t;
   extern const CHPL_RT_MD_STR_COPY_DATA: chpl_mem_descInt_t;
 
-  private inline proc chpl_string_comm_get(dest: bufferType, src_loc_id: int(64),
-                                   src_addr: bufferType, len: size_t) {
-    __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len);
+  //
+  // simple wrappers for communication
+  //
+  private inline proc chpl_str_comm_get(dest: bufferType, src_loc_id: int(64),
+                                        src_addr: bufferType, len: int) {
+    __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
   }
 
-  proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType, len: int): bufferType {
+  private proc copyRemoteBuffer(src_loc_id: int(64), src_addr: bufferType, len: int): bufferType {
       const dest = chpl_here_alloc(len+1, CHPL_RT_MD_STR_COPY_REMOTE): bufferType;
-      chpl_string_comm_get(dest, src_loc_id, src_addr, len.safeCast(size_t));
+      chpl_str_comm_get(dest, src_loc_id, src_addr, len);
       dest[len] = 0;
       return dest;
   }
@@ -259,7 +262,7 @@ module String {
 
       const remoteThis = this.locale_id != chpl_nodeID;
       if remoteThis {
-        chpl_string_comm_get(ret.buff, this.locale_id, this.buff + i - 1, 1);
+        chpl_str_comm_get(ret.buff, this.locale_id, this.buff + i - 1, 1);
       } else {
         ret.buff[0] = this.buff[i-1];
       }
@@ -570,7 +573,7 @@ module String {
         var first = true;
         for s in S {
           if !first && this.len != 0 {
-            str_memcpy(ret.buff+offset, this.buff, this.lensize_t);
+            str_memcpy(ret.buff+offset, this.buff, this.len);
             offset += this.len;
           }
           var sLen = s.len;
@@ -578,8 +581,7 @@ module String {
             if _local || s.locale_id == chpl_nodeID {
               str_memcpy(ret.buff+offset, s.buff, sLen);
             } else {
-              chpl_string_comm_get(ret.buff+offset, s.locale_id,
-                                  s.buff, sLen.safeCast(size_t));
+              chpl_str_comm_get(ret.buff+offset, s.locale_id, s.buff, sLen);
             }
             offset += sLen;
           }
@@ -998,16 +1000,14 @@ module String {
 
     const s0remote = s0.locale_id != chpl_nodeID;
     if s0remote {
-      chpl_string_comm_get(ret.buff, s0.locale_id,
-                           s0.buff, s0len.safeCast(size_t));
+      chpl_str_comm_get(ret.buff, s0.locale_id, s0.buff, s0len);
     } else {
       str_memcpy(ret.buff, s0.buff, s0len);
     }
 
     const s1remote = s1.locale_id != chpl_nodeID;
     if s1remote {
-      chpl_string_comm_get(ret.buff+s0len, s1.locale_id,
-                           s1.buff, s1len.safeCast(size_t));
+      chpl_str_comm_get(ret.buff+s0len, s1.locale_id, s1.buff, s1len);
     } else {
       str_memcpy(ret.buff+s0len, s1.buff, s1len);
     }
@@ -1032,8 +1032,7 @@ module String {
 
     const sRemote = s.locale_id != chpl_nodeID;
     if sRemote {
-      chpl_string_comm_get(ret.buff, s.locale_id,
-                           s.buff, sLen.safeCast(size_t));
+      chpl_str_comm_get(ret.buff, s.locale_id, s.buff, sLen);
     } else {
       str_memcpy(ret.buff, s.buff, sLen);
     }
@@ -1166,8 +1165,7 @@ module String {
       }
       const rhsRemote = rhs.locale_id != chpl_nodeID;
       if rhsRemote {
-        chpl_string_comm_get(lhs.buff+lhs.len, rhs.locale_id,
-                              rhs.buff, rhsLen.safeCast(size_t));
+        chpl_str_comm_get(lhs.buff+lhs.len, rhs.locale_id, rhs.buff, rhsLen);
       } else {
         str_memcpy(lhs.buff+lhs.len, rhs.buff, rhsLen);
       }
