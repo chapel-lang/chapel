@@ -325,11 +325,11 @@ static void processImportExprs() {
       // paths from that chain head (see buildBreadthFirstModuleList).  In
       // that case, we don't need to do any further work here beyond make
       // sure the sym is a SymExpr
-      use->mod = new SymExpr(sym);
+      use->src = new SymExpr(sym);
       continue;
     }
 
-    use->mod->replace(new SymExpr(sym));
+    use->src->replace(new SymExpr(sym));
     // Need to update the use now that we've found what it refers to
 
     ModuleSymbol* enclosingModule = use->getModule();
@@ -355,7 +355,7 @@ static void processImportExprs() {
 // nested: e.g. "use outermost.middle.innermost;"
 //
 static Symbol* getUsedSymbol(UseStmt* use) {
-  return getUsedSymbol(use->mod, use);
+  return getUsedSymbol(use->src, use);
 }
 
 
@@ -363,7 +363,7 @@ static Symbol* getUsedSymbol(UseStmt* use) {
 // Helper routine to factor some 'use' error messages into a single place
 //
 static void printUseError(UseStmt* useExpr,
-                                Symbol* sym = NULL) {
+                          Symbol* sym = NULL) {
   if (sym && !sym->isImmediate()) {
     if (sym->name) {
       USR_FATAL(useExpr, "'use' of non-module/enum symbol %s", sym->name);
@@ -490,7 +490,7 @@ void UseStmt::validateList() {
     Symbol* sym = lookup(scopeToUse, it->second);
 
     if (!sym) {
-      SymExpr* se = toSymExpr(mod);
+      SymExpr* se = toSymExpr(src);
       INT_ASSERT(se);
       USR_FATAL_CONT(this, "Bad identifier in rename, no known '%s' in '%s'", it->second, se->var->name);
     } else if (!sym->isVisible(this)) {
@@ -2315,11 +2315,11 @@ static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
 
   Vec<UseStmt*> next;
 
-  forv_Vec(UseStmt, module, *current) {
-    if (!module) {
+  forv_Vec(UseStmt, source, *current) {
+    if (!source) {
       break;
     } else {
-      SymExpr* se = toSymExpr(module->mod);
+      SymExpr* se = toSymExpr(source->src);
       INT_ASSERT(se);
       if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
         if (mod->block->modUses) {
@@ -2327,7 +2327,7 @@ static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
             UseStmt* use = toUseStmt(expr);
             INT_ASSERT(use);
 
-            SymExpr* useSE = toSymExpr(use->mod);
+            SymExpr* useSE = toSymExpr(use->src);
             INT_ASSERT(useSE);
 
             UseStmt* useToAdd = NULL;
@@ -2337,7 +2337,7 @@ static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
               // parent.  Therefore, if the symbol is private, we will not
               // traverse it further and will merely add it to the alreadySeen
               // map.
-              useToAdd = use->applyOuterUse(module);
+              useToAdd = use->applyOuterUse(source);
               if (useToAdd != NULL && !skipUse(alreadySeen, useToAdd)) {
                 next.add(useToAdd);
                 modules->add(useToAdd);
@@ -2443,7 +2443,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
       } else {
         // The only list will be shorter, create a new UseStmt with it.
         SET_LINENO(this);
-        return new UseStmt(mod, &newOnlyList, false, &newRenamed);
+        return new UseStmt(src, &newOnlyList, false, &newRenamed);
         // Note: we don't populate the relatedNames vector for the new use,
         // since we don't have a way to connect the names in it back to the
         // types we did or didn't include in the shorter 'only' list.
@@ -2490,7 +2490,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
           // weren't in the inner 'except' list (could be all of the
           // outer 'only' list)
           SET_LINENO(this);
-          return new UseStmt(mod, &newOnlyList, false, &newRenamed);
+          return new UseStmt(src, &newOnlyList, false, &newRenamed);
         } else {
           // all the 'only' identifiers were in the 'except'
           // list so this module use will give us nothing.
@@ -2535,7 +2535,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
           // There were symbols that were in both 'only' lists, so
           // this module use is still interesting.
           SET_LINENO(this);
-          return new UseStmt(mod, &newOnlyList, false, &newRenamed);
+          return new UseStmt(src, &newOnlyList, false, &newRenamed);
         } else {
           // all of the 'only' identifiers in the outer use
           // were missing from the inner use's 'only' list, so this
@@ -2667,7 +2667,7 @@ bool UseStmt::providesNewSymbols(UseStmt* other) {
 // provides have already been covered by a previous use.
 static bool skipUse(std::map<Symbol*, std::vector<UseStmt*> >* seen,
                     UseStmt* current) {
-  SymExpr* useSE = toSymExpr(current->mod);
+  SymExpr* useSE = toSymExpr(current->src);
   INT_ASSERT(useSE);
 
   std::vector<UseStmt*> vec = (*seen)[useSE->var];

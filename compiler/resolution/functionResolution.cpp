@@ -2149,7 +2149,7 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
     for_actuals(expr, block->modUses) {
       UseStmt* use = toUseStmt(expr);
       INT_ASSERT(use);
-      SymExpr* se = toSymExpr(use->mod);
+      SymExpr* se = toSymExpr(use->src);
       INT_ASSERT(se);
       // We only care about uses of modules during function resolution, not
       // uses of enums.
@@ -3003,7 +3003,7 @@ getVisibleFunctions(BlockStmt* block,
       if (use->skipSymbolSearch(name)) {
         continue;
       }
-      SymExpr* se = toSymExpr(use->mod);
+      SymExpr* se = toSymExpr(use->src);
       INT_ASSERT(se);
       if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
         // The use statement could be of an enum instead of a module, but only
@@ -7675,13 +7675,14 @@ computeStandardModuleSet() {
       for_actuals(expr, mod->block->modUses) {
         UseStmt* use = toUseStmt(expr);
         INT_ASSERT(use);
-        SymExpr* se = toSymExpr(use->mod);
+        SymExpr* se = toSymExpr(use->src);
         INT_ASSERT(se);
-        ModuleSymbol* mod = toModuleSymbol(se->var);
-        INT_ASSERT(mod);
-        if (!standardModuleSet.set_in(mod->block)) {
-          stack.add(mod);
-          standardModuleSet.set_add(mod->block);
+        if (ModuleSymbol* usedMod = toModuleSymbol(se->var)) {
+          INT_ASSERT(usedMod);
+          if (!standardModuleSet.set_in(usedMod->block)) {
+            stack.add(usedMod);
+            standardModuleSet.set_add(usedMod->block);
+          }
         }
       }
     }

@@ -980,7 +980,7 @@ void AstDumpToNode::visitUseStmt(UseStmt* node)
   }
 
   newline();
-  node->mod->accept(this);
+  node->src->accept(this);
 
 
   if (!node->isPlainUse()) {

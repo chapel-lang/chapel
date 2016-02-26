@@ -649,7 +649,7 @@ static bool blockProcessUseStmts(BlockStmt* stmt, IpeEnv* env)
 
     if (isUseStmt(expr) == true)
     {
-      Expr*              modName = toUseStmt(expr)->mod;
+      Expr*              modName = toUseStmt(expr)->src;
       UnresolvedSymExpr* sel     = toUnresolvedSymExpr(modName);
       LcnSymbol*         sym     = env->findVariable(sel->unresolved);
 
