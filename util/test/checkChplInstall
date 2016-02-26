@@ -43,6 +43,16 @@ function log_error()
     echo "[Fail] ${msg}" >&2
 }
 
+function log_debug()
+{
+    local msg=$@
+    if [ "${CHPL_CHECK_DEBUG}" == "1" ]; then
+        echo "[Debug] ${msg}" >&2
+    fi
+}
+
+log_debug "Debug output is turned on, because \$CHPL_CHECK_DEBUG == 1"
+
 # Base name for test job in examples
 TEST_JOB_BASENAME=hello6-taskpar-dist
 
@@ -80,6 +90,10 @@ CHPL_DIR=${CHPL_CHECK_INSTALL_DIR:-${HOME}/.chpl}
 if [ ! -d ${CHPL_DIR} ] ; then
     log_info "${CHPL_DIR} does not exist. Creating it."
     mkdir -p ${CHPL_DIR} || { log_error "Failed to create ${CHPL_DIR}." && exit 1 ; }
+    CHPL_DIR_REMOVE=1
+else
+    log_info "${CHPL_DIR} already exists. Using it."
+    CHPL_DIR_REMOVE=0
 fi
 
 # Location of test job
@@ -134,7 +148,12 @@ fi
 # Cleanup the tmp directory whenever exit is invoked
 function cleanup_tmp_dir()
 {
+    log_debug "Removing ${TMP_TEST_DIR}"
     rm -rf ${TMP_TEST_DIR}
+    if [ "${CHPL_DIR_REMOVE}" == "1" ]; then
+        log_debug "Removing ${CHPL_DIR}"
+        rm -rf ${CHPL_DIR}
+    fi
 }
 trap cleanup_tmp_dir EXIT
 
