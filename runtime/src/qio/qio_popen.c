@@ -597,32 +597,46 @@ qioerr qio_send_signal(int64_t pid, int qio_sig)
   switch (qio_sig) {
   case  1 /* signal.SIGABRT   */ : sig = SIGABRT   ; break;
   case  2 /* signal.SIGALRM   */ : sig = SIGALRM   ; break;
-  case  3 /* signal.SIGFPE    */ : sig = SIGFPE    ; break;
-  case  4 /* signal.SIGHUP    */ : sig = SIGHUP    ; break;
-  case  5 /* signal.SIGILL    */ : sig = SIGILL    ; break;
-  case  6 /* signal.SIGINT    */ : sig = SIGINT    ; break;
-  case  7 /* signal.SIGKILL   */ : sig = SIGKILL   ; break;
-  case  8 /* signal.SIGPIPE   */ : sig = SIGPIPE   ; break;
-  case  9 /* signal.SIGQUIT   */ : sig = SIGQUIT   ; break;
-  case 10 /* signal.SIGSEGV   */ : sig = SIGSEGV   ; break;
-  case 11 /* signal.SIGTERM   */ : sig = SIGTERM   ; break;
-  case 12 /* signal.SIGUSR1   */ : sig = SIGUSR1   ; break;
-  case 13 /* signal.SIGUSR2   */ : sig = SIGUSR2   ; break;
-  case 14 /* signal.SIGCHLD   */ : sig = SIGCHLD   ; break;
-  case 15 /* signal.SIGCONT   */ : sig = SIGCONT   ; break;
-  case 16 /* signal.SIGSTOP   */ : sig = SIGSTOP   ; break;
-  case 17 /* signal.SIGTSTP   */ : sig = SIGTSTP   ; break;
-  case 18 /* signal.SIGTTIN   */ : sig = SIGTTIN   ; break;
-  case 19 /* signal.SIGTTOU   */ : sig = SIGTTOU   ; break;
-  case 20 /* signal.SIGBUS    */ : sig = SIGBUS    ; break;
-  case 21 /* signal.SIGPOLL   */ : sig = SIGPOLL   ; break;
-  case 22 /* signal.SIGPROF   */ : sig = SIGPROF   ; break;
-  case 23 /* signal.SIGSYS    */ : sig = SIGSYS    ; break;
-  case 24 /* signal.SIGTRAP   */ : sig = SIGTRAP   ; break;
-  case 25 /* signal.SIGURG    */ : sig = SIGURG    ; break;
-  case 26 /* signal.SIGVTALRM */ : sig = SIGVTALRM ; break;
-  case 27 /* signal.SIGXCPU   */ : sig = SIGXCPU   ; break;
-  case 28 /* signal.SIGXFSZ   */ : sig = SIGXFSZ   ; break;
+  case  3 /* signal.SIGBUS    */ : sig = SIGBUS    ; break;
+  case  4 /* signal.SIGCHLD   */ : sig = SIGCHLD   ; break;
+  case  5 /* signal.SIGCONT   */ : sig = SIGCONT   ; break;
+#if defined(__APPLE__) && defined(__MACH__)
+  case  6 /* signal.SIGEMT    */ : sig = SIGEMT    ; break;
+#endif
+  case  7 /* signal.SIGFPE    */ : sig = SIGFPE    ; break;
+  case  8 /* signal.SIGHUP    */ : sig = SIGHUP    ; break;
+  case  9 /* signal.SIGILL    */ : sig = SIGILL    ; break;
+#if defined(__APPLE__) && defined(__MACH__)
+  case 10 /* signal.SIGINFO   */ : sig = SIGINFO   ; break;
+#endif
+  case 11 /* signal.SIGINT    */ : sig = SIGINT    ; break;
+#if ( defined(__APPLE__) && defined(__MACH__) ) || defined(__linux__)
+  case 12 /* signal.SIGIO     */ : sig = SIGIO     ; break;
+#endif
+  case 13 /* signal.SIGKILL   */ : sig = SIGKILL   ; break;
+  case 14 /* signal.SIGPIPE   */ : sig = SIGPIPE   ; break;
+#if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L
+  case 15 /* signal.SIGPOLL   */ : sig = SIGPOLL   ; break;
+#endif
+  case 16 /* signal.SIGPROF   */ : sig = SIGPROF   ; break;
+  case 17 /* signal.SIGQUIT   */ : sig = SIGQUIT   ; break;
+  case 18 /* signal.SIGSEGV   */ : sig = SIGSEGV   ; break;
+  case 19 /* signal.SIGSTOP   */ : sig = SIGSTOP   ; break;
+  case 20 /* signal.SIGSYS    */ : sig = SIGSYS    ; break;
+  case 21 /* signal.SIGTERM   */ : sig = SIGTERM   ; break;
+  case 22 /* signal.SIGTRAP   */ : sig = SIGTRAP   ; break;
+  case 23 /* signal.SIGTSTP   */ : sig = SIGTSTP   ; break;
+  case 24 /* signal.SIGTTIN   */ : sig = SIGTTIN   ; break;
+  case 25 /* signal.SIGTTOU   */ : sig = SIGTTOU   ; break;
+  case 26 /* signal.SIGURG    */ : sig = SIGURG    ; break;
+  case 27 /* signal.SIGUSR1   */ : sig = SIGUSR1   ; break;
+  case 28 /* signal.SIGUSR2   */ : sig = SIGUSR2   ; break;
+  case 29 /* signal.SIGVTALRM */ : sig = SIGVTALRM ; break;
+#if defined(__APPLE__) && defined(__MACH__)
+  case 30 /* signal.SIGWINCH  */ : sig = SIGWINCH  ; break;
+#endif
+  case 31 /* signal.SIGXCPU   */ : sig = SIGXCPU   ; break;
+  case 32 /* signal.SIGXFSZ   */ : sig = SIGXFSZ   ; break;
   }
 
   if (sig != 0)
