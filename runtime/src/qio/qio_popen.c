@@ -615,7 +615,8 @@ qioerr qio_send_signal(int64_t pid, int qio_sig)
 #endif
   case 13 /* signal.SIGKILL   */ : sig = SIGKILL   ; break;
   case 14 /* signal.SIGPIPE   */ : sig = SIGPIPE   ; break;
-#if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L
+#if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L && \
+  !( defined(__APPLE__) || defined(__MACH__) )
   case 15 /* signal.SIGPOLL   */ : sig = SIGPOLL   ; break;
 #endif
   case 16 /* signal.SIGPROF   */ : sig = SIGPROF   ; break;
