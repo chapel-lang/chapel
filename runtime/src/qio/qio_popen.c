@@ -33,6 +33,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <spawn.h>
+#include <signal.h>
 
 // We need to be able to call malloc, free, etc.
 #include "chpl-mem-no-warning-macros.h"
@@ -577,3 +578,63 @@ qioerr qio_proc_communicate(
   return err;
 }
 
+/* Send a signal to the specified pid.
+
+   The signal value `qio_sig` is not the actual signal value defined in
+   signal.h.  The qio_sig value is Chapel-specific and must be converted to
+   the system-specific signal value.
+ */
+qioerr qio_send_signal(int64_t pid, int qio_sig)
+{
+  qioerr err = 0;
+  int rc = 0;
+  int sig = 0;
+
+  // Convert qio_sig values (from Chapel signal enums) to system-specific
+  // signal values.  This isn't ideal, but we don't have extern params.
+  // The order and values of these qio_sig cases must match the enum defintion
+  // in Spawn.chpl.
+  switch (qio_sig) {
+  case  1 /* signal.SIGABRT   */ : sig = SIGABRT   ; break;
+  case  2 /* signal.SIGALRM   */ : sig = SIGALRM   ; break;
+  case  3 /* signal.SIGFPE    */ : sig = SIGFPE    ; break;
+  case  4 /* signal.SIGHUP    */ : sig = SIGHUP    ; break;
+  case  5 /* signal.SIGILL    */ : sig = SIGILL    ; break;
+  case  6 /* signal.SIGINT    */ : sig = SIGINT    ; break;
+  case  7 /* signal.SIGKILL   */ : sig = SIGKILL   ; break;
+  case  8 /* signal.SIGPIPE   */ : sig = SIGPIPE   ; break;
+  case  9 /* signal.SIGQUIT   */ : sig = SIGQUIT   ; break;
+  case 10 /* signal.SIGSEGV   */ : sig = SIGSEGV   ; break;
+  case 11 /* signal.SIGTERM   */ : sig = SIGTERM   ; break;
+  case 12 /* signal.SIGUSR1   */ : sig = SIGUSR1   ; break;
+  case 13 /* signal.SIGUSR2   */ : sig = SIGUSR2   ; break;
+  case 14 /* signal.SIGCHLD   */ : sig = SIGCHLD   ; break;
+  case 15 /* signal.SIGCONT   */ : sig = SIGCONT   ; break;
+  case 16 /* signal.SIGSTOP   */ : sig = SIGSTOP   ; break;
+  case 17 /* signal.SIGTSTP   */ : sig = SIGTSTP   ; break;
+  case 18 /* signal.SIGTTIN   */ : sig = SIGTTIN   ; break;
+  case 19 /* signal.SIGTTOU   */ : sig = SIGTTOU   ; break;
+  case 20 /* signal.SIGBUS    */ : sig = SIGBUS    ; break;
+  case 21 /* signal.SIGPOLL   */ : sig = SIGPOLL   ; break;
+  case 22 /* signal.SIGPROF   */ : sig = SIGPROF   ; break;
+  case 23 /* signal.SIGSYS    */ : sig = SIGSYS    ; break;
+  case 24 /* signal.SIGTRAP   */ : sig = SIGTRAP   ; break;
+  case 25 /* signal.SIGURG    */ : sig = SIGURG    ; break;
+  case 26 /* signal.SIGVTALRM */ : sig = SIGVTALRM ; break;
+  case 27 /* signal.SIGXCPU   */ : sig = SIGXCPU   ; break;
+  case 28 /* signal.SIGXFSZ   */ : sig = SIGXFSZ   ; break;
+  }
+
+  if (sig != 0)
+  {
+    rc = kill(pid, sig);
+    if (rc == -1)
+      err = qio_mkerror_errno();
+  }
+  else
+  {
+    err = qio_int_to_err(EINVAL);
+  }
+
+  return err;
+}

@@ -61,6 +61,7 @@ qioerr qio_proc_communicate(
     qio_file_t* error_file,
     qio_channel_t* error);
 
+qioerr qio_send_signal(int64_t pid, int qio_sig);
 
 #ifdef __cplusplus
 } // end extern "C"
