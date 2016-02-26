@@ -289,6 +289,25 @@ const char* UseStmt::getRename(const char* name) {
   return renamed[name];
 }
 
+// Should only be called when the mod field has been resolved
+BaseAST* UseStmt::getSearchScope() {
+  if (SymExpr* se = toSymExpr(mod)) {
+    if (ModuleSymbol* module = toModuleSymbol(se->var)) {
+      return module->block;
+    } else if (TypeSymbol* enumTypeSym = toTypeSymbol(se->var)) {
+      // Assumes we have correctly verified that the type was an enum.
+      return enumTypeSym;
+    } else {
+      // Internal failure because resolving the mod field should have raised
+      // an error if it wasn't an enum or module
+      INT_FATAL(this, "Use invalid, not applied to module or enum");
+    }
+  } else {
+    INT_FATAL(this, "getSearchScope called before this use was processed");
+  }
+  return NULL;
+}
+
 
 /******************************** | *********************************
 *                                                                   *

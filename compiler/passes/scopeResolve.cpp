@@ -468,21 +468,9 @@ void UseStmt::validateList() {
     // valid!
     return;
   }
-  SymExpr* se = toSymExpr(mod);
-  INT_ASSERT(se);
-
-  BaseAST* scopeToUse = NULL;
-  // Allows us to abstract away whether what is being used is a
-  // module or an enum
-  if (ModuleSymbol* module = toModuleSymbol(se->var)) {
-    scopeToUse = module->block;
-  } else if (TypeSymbol* enumTypeSym = toTypeSymbol(se->var)) {
-    scopeToUse = enumTypeSym;
-  } else {
-    INT_FATAL(mod, "Failed to detect use of something that wasn't a module or enum");
-  }
-
   noRepeats();
+
+  BaseAST* scopeToUse = getSearchScope();
 
   const char* listName = except ? "except" : "only";
   for_vector(const char, name, named) {
@@ -502,6 +490,8 @@ void UseStmt::validateList() {
     Symbol* sym = lookup(scopeToUse, it->second);
 
     if (!sym) {
+      SymExpr* se = toSymExpr(mod);
+      INT_ASSERT(se);
       USR_FATAL_CONT(this, "Bad identifier in rename, no known '%s' in '%s'", it->second, se->var->name);
     } else if (!sym->isVisible(this)) {
       USR_FATAL_CONT(this, "Bad identifier in rename, '%s' is private", it->second);
@@ -2196,19 +2186,8 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
           if (use) {
             if (!use->skipSymbolSearch(name)) {
               const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
-              SymExpr* se = toSymExpr(use->mod);
-              INT_ASSERT(se);
+              BaseAST* scopeToUse = use->getSearchScope();
 
-              BaseAST* scopeToUse = NULL;
-              // Allows us to abstract away whether what is being used is a
-              // module or an enum
-              if (ModuleSymbol* module = toModuleSymbol(se->var)) {
-                scopeToUse = module->block;
-              } else if (TypeSymbol* enumTypeSym = toTypeSymbol(se->var)) {
-                scopeToUse = enumTypeSym;
-              } else {
-                INT_FATAL(use, "Failed to detect use of something that wasn't a module or enum");
-              }
               if (Symbol* sym = inSymbolTable(scopeToUse, nameToUse)) {
                 if (sym->hasFlag(FLAG_PRIVATE)) {
                   if (rejectedPrivateIds.find(sym->id) ==

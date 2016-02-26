@@ -91,6 +91,7 @@ class UseStmt : public Stmt {
   const char* getRename(const char* name);
   UseStmt* applyOuterUse(UseStmt* outer);
   bool providesNewSymbols(UseStmt* other);
+  BaseAST* getSearchScope();
 
  private:
   bool except; // Used to determine if the use contains an 'except' or 'only'
