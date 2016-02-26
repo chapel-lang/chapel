@@ -822,8 +822,10 @@ intent have the following behavior:
  * The `return` statement in a `ref` or `const ref` return intent function
    does not cause a `move` or `copy` call to be made in any case. The
    usual rules for `return` statements are disabled; instead, the
-   `retVar` is just set to the returned `ref`. For types with runtime
-   components (such as arrays), a `moveRef` call would be made in order
+   `retVar` is just set to the returned `ref`. For arrays, `moveRef`
+   and `copyRef` would be called instead of `move` and `copy`. Note that
+   types with runtime
+   components need  a `moveRef` in order
    to allow the implementation to type check (see below).
  * unlike non - `ref` returns, coercions and promotions are disabled
    for a ref return intent function. The type of the returned expression
@@ -1281,34 +1283,26 @@ eliminate this unnecessary copy.
 ref return intent for arrays
 ++++++++++++++++++++++++++++
 
-Perhaps:
-
-.. code-block:: chapel
-
-  var alias => f();
-
-should produce a compiler error if `f` does not have the `ref` return
-intent, for the same reasons that:
-
-.. code-block:: chapel
-
-  proc f() { return 43; }
-
-  ref r = f();
-
-results in a compilation error in the current implementation.
-
 The current compiler ignores the `ref` return intent for functions returning
 arrays. Here we propose a similar strategy. The `ref` type for `_array` should
 be the same as `_array`. However, the usual `move` and `copy` calls will not be
-made when returning an array from a function with `ref` return intent. Note
+made when returning an array from a function with `ref` return intent.
+Instead, `moveRef` and `copyRef` calls would be made. These calls support
+returning an array slice by reference. Note
 that some call should be made when returning an array by `ref` from a function
 with declared return type - in order to check the runtime types match.
 
-As discussed in :ref:`ref-return`, an alternative approach is for the `ref`
-type for `_array` to be a different type that has the same fields. In this way,
-the `move` and `copy` calls for a `ref(_array)` could just type check.
- 
+Alternatives:
+
+ * As discussed in :ref:`ref-return`, an alternative approach is for the
+   `ref` type for `_array` to be a different type that has the same
+   fields. In this way, the `move` and `copy` calls for a `ref(_array)`
+   could just type check.
+ * If returning a slice of a local array is a program error, we could
+   make functions returning arrays behave the same as if they were marked
+   with the `ref` return intent. This is in some ways more consistent
+   with the current behavior.
+
 .. _array-slices:
 
 Array slices
@@ -1572,6 +1566,74 @@ In that case, A is modified by each xform call, instead of sometimes being a
 temporary being modified. This difference is observable if A is not dead after
 its use as an argument.
 
+
+TODO::: NOTES
+
+
+Note: could make functions that mix ref-type return and non-ref type
+return a compile error. e.g.
+
+.. code-block:: chapel
+
+ proc f(x:bool) {
+   if x return outerVar;
+   else {
+     var A:[1..100] int;
+     return A;
+   }
+ }
+
+But would this program work?
+
+.. code-block:: chapel
+
+ proc f(x:bool) ref {
+   if x return outerVar;  // copyRef -- create new _array aliasing old
+                          // copyRef sets isalias=true
+   else {
+     var A:[1..100] int;
+     return A;            // moveRef -- just bit copy (and type check) 
+                          // moveRef propagates isalias, never copies
+   }
+ }
+   
+If so, arrays should just return the same as if by `ref`.
+But then this function would not work:
+
+.. code-block:: chapel
+
+  proc f() ref {
+    var A:[1..4] int;
+    return A[2..3];
+  }
+
+This function might not have the same behavior as the non-ref version.
+In particular, the copy we were using would not be called. The returned
+_array would refer to freed memory.
+
+Or - if we didn't use `ref` to turn off the `isalias` `move` -> `copy`,
+this function could work the same.
+
+* A function returning a local array by default intent or with `ref` return
+  intent will just copy the _array to the caller (and transfer responsibility
+  to free)
+* A function returning a slice by default intent will copy the slice
+* A function returning a slice by `ref` will not copy the slice (and possibly
+  lead to problems if the array goes out of scope)
+*   
+
+Would it be better to just say you can't return a slice of a local variable?
+Then we could take out the special behavior for `isalias` in `move`. Then
+`move` and `moveRef` could be the same.
+
+Arrays could return always by ref, or sometimes by ref and sometimes by value.
+Current document describes sometimes by ref sometimes by value.  If they always
+returned by ref, Array return `copy` call could set `isalias` to `true`. Would
+still want initializion `copy` to do something else (copy elements).
+
+Always returning arrays by `ref` is semantically challenging because it
+prevents us from using `ref` to distinguish the case when it is desired to
+return an array slice that aliases the earlier data.
 
 Future Optional Extensions
 --------------------------
