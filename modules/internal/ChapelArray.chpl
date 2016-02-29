@@ -2031,9 +2031,9 @@ module ChapelArray {
       return this[this.domain.high];
     }
     pragma "no doc"
-    proc resizeAllocDomain(d: domain, d2: domain, factor=arrayAsVecGrowthFactor, direction=1, grow=1) {
-      const lo = d.low,
-            hi = d.high,
+    proc resizeAllocRange(r: range, d2: domain, factor=arrayAsVecGrowthFactor, direction=1, grow=1) {
+      const lo = r.low,
+            hi = r.high,
             size = hi - lo + 1;
       var newSize: int;
       if grow > 0 {
@@ -2061,17 +2061,17 @@ module ChapelArray {
             hi = this.domain.high+1;
       const newDom = {lo..hi};
       on this._value {
-        if !this._value.dataAllocDom.member(hi) {
+        if !this._value.dataAllocRange.member(hi) {
           /* The new index is not in the allocated space.  We'll need to
              realloc it. */
-          if this._value.dataAllocDom.numIndices < this.domain.numIndices {
-            /* if dataAllocDom has fewer indices than this.domain it must not
+          if this._value.dataAllocRange.length < this.domain.numIndices {
+            /* if dataAllocRange has fewer indices than this.domain it must not
                be set correctly.  Set it to match this.domain to start.
              */ 
-            this._value.dataAllocDom = this.domain;
+            this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
-          this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom);
-          this._value.dsiReallocate(this._value.dataAllocDom);
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newDom);
+          this._value.dsiReallocate({this._value.dataAllocRange});
         }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
@@ -2088,12 +2088,12 @@ module ChapelArray {
             hi = this.domain.high-1;
       const newDom = {lo..hi};
       on this._value {
-        if this._value.dataAllocDom.numIndices < this.domain.numIndices {
-          this._value.dataAllocDom = this.domain;
+        if this._value.dataAllocRange.length < this.domain.numIndices {
+          this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newDom.numIndices < (this._value.dataAllocDom.numIndices / arrayAsVecGrowthFactor):int {
-          this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom, grow=-1);
-          this._value.dsiReallocate(this._value.dataAllocDom);
+        if newDom.numIndices < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newDom, grow=-1);
+          this._value.dsiReallocate({this._value.dataAllocRange});
         }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
@@ -2109,12 +2109,12 @@ module ChapelArray {
             hi = this.domain.high;
       const newDom = {lo..hi};
       on this._value {
-        if !this._value.dataAllocDom.member(lo) {
-          if this._value.dataAllocDom.numIndices < this.domain.numIndices {
-            this._value.dataAllocDom = this.domain;
+        if !this._value.dataAllocRange.member(lo) {
+          if this._value.dataAllocRange.length < this.domain.numIndices {
+            this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
-          this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom, direction=-1);
-          this._value.dsiReallocate(this._value.dataAllocDom);
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newDom, direction=-1);
+          this._value.dsiReallocate({this._value.dataAllocRange});
         }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
@@ -2131,12 +2131,12 @@ module ChapelArray {
             hi = this.domain.high;
       const newDom = {lo..hi};
       on this._value {
-        if this._value.dataAllocDom.numIndices < this.domain.numIndices {
-          this._value.dataAllocDom = this.domain;
+        if this._value.dataAllocRange.length < this.domain.numIndices {
+          this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newDom.numIndices < (this._value.dataAllocDom.numIndices / arrayAsVecGrowthFactor):int {
-          this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom, direction=-1, grow=-1);
-          this._value.dsiReallocate(this._value.dataAllocDom);
+        if newDom.numIndices < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newDom, direction=-1, grow=-1);
+          this._value.dsiReallocate({this._value.dataAllocRange});
         }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
@@ -2153,12 +2153,12 @@ module ChapelArray {
             hi = this.domain.high+1;
       const newDom = {lo..hi};
       on this._value {
-        if !this._value.dataAllocDom.member(hi) {
-          if this._value.dataAllocDom.numIndices < this.domain.numIndices {
-            this._value.dataAllocDom = this.domain;
+        if !this._value.dataAllocRange.member(hi) {
+          if this._value.dataAllocRange.length < this.domain.numIndices {
+            this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
-          this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom);
-          this._value.dsiReallocate(this._value.dataAllocDom);
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newDom);
+          this._value.dsiReallocate({this._value.dataAllocRange});
         }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
@@ -2180,12 +2180,12 @@ module ChapelArray {
         this[i] = this[i+1];
       }
       on this._value {
-        if this._value.dataAllocDom.numIndices < this.domain.numIndices {
-          this._value.dataAllocDom = this.domain;
+        if this._value.dataAllocRange.length < this.domain.numIndices {
+          this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newDom.numIndices < (this._value.dataAllocDom.numIndices / arrayAsVecGrowthFactor):int {
-          this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom, grow=-1);
-          this._value.dsiReallocate(this._value.dataAllocDom);
+        if newDom.numIndices < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newDom, grow=-1);
+          this._value.dsiReallocate({this._value.dataAllocRange});
         }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
@@ -2206,12 +2206,12 @@ module ChapelArray {
         this[i] = this[i+count];
       }
       on this._value {
-        if this._value.dataAllocDom.numIndices < this.domain.numIndices {
-          this._value.dataAllocDom = this.domain;
+        if this._value.dataAllocRange.length < this.domain.numIndices {
+          this._value.dataAllocRange = this.domain;
         }
-        if newDom.numIndices < (this._value.dataAllocDom.numIndices / arrayAsVecGrowthFactor):int {
-          this._value.dataAllocDom = resizeAllocDomain(this._value.dataAllocDom, newDom, grow=-1);
-          this._value.dsiReallocate(this._value.dataAllocDom);
+        if newDom.numIndices < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newDom, grow=-1);
+          this._value.dsiReallocate({this._value.dataAllocRange});
         }
         this.domain.setIndices(newDom.getIndices());
         this._value.dsiPostReallocate();
