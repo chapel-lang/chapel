@@ -2207,7 +2207,7 @@ module ChapelArray {
       }
       on this._value {
         if this._value.dataAllocRange.length < this.domain.numIndices {
-          this._value.dataAllocRange = this.domain;
+          this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
         if newDom.numIndices < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
           this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newDom, grow=-1);
