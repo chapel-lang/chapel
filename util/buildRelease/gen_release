@@ -181,6 +181,7 @@ SystemOrDie("./util/devel/test/extract_tests --no-futures -o ./examples/spec spe
 print "Building the man pages...\n";
 SystemOrDie("make man");
 SystemOrDie("make man-chpldoc");
+SystemOrDie("make clobber");
 
 print "Building the STATUS file...\n";
 SystemOrDie("make STATUS");
