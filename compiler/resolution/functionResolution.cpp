@@ -8458,18 +8458,25 @@ static void insertReturnTemps() {
           if (!isCallExpr(parent) && !isDefExpr(parent)) { // no use
             SET_LINENO(call); // TODO: reset_ast_loc() below?
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);
-            DefExpr* def = new DefExpr(tmp);
+            DefExpr*   def = new DefExpr(tmp);
+
+            if (isUserDefinedRecord(fn->retType) == true)
+              tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
             contextCallOrCall->insertBefore(def);
+
             if (!fMinimalModules &&
                 ((fn->retType->getValType() &&
                   isSyncType(fn->retType->getValType())) ||
                  isSyncType(fn->retType) ||
                  fn->isIterator())) {
               CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
+
               contextCallOrCall->insertBefore(sls);
               reset_ast_loc(sls, call);
               resolveCallAndCallee(sls);
             }
+
             def->insertAfter(new CallExpr(PRIM_MOVE, tmp, contextCallOrCall->remove()));
           }
         }
