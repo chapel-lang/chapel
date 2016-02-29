@@ -303,6 +303,7 @@ bool isDomainClass(Type* type);
 bool isArrayClass(Type* type);
 
 bool isString(Type* type);
+bool isUserDefinedRecord(Type* type);
 
 void registerTypeToStructurallyCodegen(TypeSymbol* type);
 GenRet genTypeStructureIndex(TypeSymbol* typesym);
