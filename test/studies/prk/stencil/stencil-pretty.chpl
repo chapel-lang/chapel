@@ -21,7 +21,7 @@ config param R = 2,
              compact = false,
              // Control of multilocale parallelism
              useStencilDist = false,
-             useBlockDist = (CHPL_COMM != "none" && !useStencilDist);
+             useBlockDist = false;
 
 // Configurable type for array elements
 config type dtype = real;
@@ -121,6 +121,9 @@ if (!validate) {
   if tiling then writeln("Tile size             = ", tileSize);
   else             writeln("Untiled");
   writeln("Number of iterations = ", iterations);
+  if useBlockDist then        writeln("Distribution         = Block");
+  else if useStencilDist then writeln("Distribution         = Stencil");
+  else                        writeln("Distribution         = None");
 }
 
 
