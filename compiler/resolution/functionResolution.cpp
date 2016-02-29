@@ -2152,12 +2152,14 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
     for_actuals(expr, block->modUses) {
       UseStmt* use = toUseStmt(expr);
       INT_ASSERT(use);
-      SymExpr* se = toSymExpr(use->mod);
+      SymExpr* se = toSymExpr(use->src);
       INT_ASSERT(se);
-      ModuleSymbol* mod = toModuleSymbol(se->var);
-      INT_ASSERT(mod);
-      if (!visited.set_in(mod->block))
-        moreVisible &= isMoreVisibleInternal(mod->block, fn1, fn2, visited);
+      // We only care about uses of modules during function resolution, not
+      // uses of enums.
+      if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
+        if (!visited.set_in(mod->block))
+          moreVisible &= isMoreVisibleInternal(mod->block, fn1, fn2, visited);
+      }
     }
   }
 
@@ -3004,16 +3006,18 @@ getVisibleFunctions(BlockStmt* block,
       if (use->skipSymbolSearch(name)) {
         continue;
       }
-      SymExpr* se = toSymExpr(use->mod);
+      SymExpr* se = toSymExpr(use->src);
       INT_ASSERT(se);
-      ModuleSymbol* mod = toModuleSymbol(se->var);
-      INT_ASSERT(mod);
-      canSkipThisBlock = false; // cannot skip if this block uses modules
-      if (mod->isVisible(callOrigin)) {
-        if (use->isARename(name)) {
-          getVisibleFunctions(mod->block, use->getRename(name), visibleFns, visited, callOrigin);
-        } else {
-          getVisibleFunctions(mod->block, name, visibleFns, visited, callOrigin);
+      if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
+        // The use statement could be of an enum instead of a module, but only
+        // modules can define functions.
+        canSkipThisBlock = false; // cannot skip if this block uses modules
+        if (mod->isVisible(callOrigin)) {
+          if (use->isARename(name)) {
+            getVisibleFunctions(mod->block, use->getRename(name), visibleFns, visited, callOrigin);
+          } else {
+            getVisibleFunctions(mod->block, name, visibleFns, visited, callOrigin);
+          }
         }
       }
     }
@@ -7674,13 +7678,14 @@ computeStandardModuleSet() {
       for_actuals(expr, mod->block->modUses) {
         UseStmt* use = toUseStmt(expr);
         INT_ASSERT(use);
-        SymExpr* se = toSymExpr(use->mod);
+        SymExpr* se = toSymExpr(use->src);
         INT_ASSERT(se);
-        ModuleSymbol* mod = toModuleSymbol(se->var);
-        INT_ASSERT(mod);
-        if (!standardModuleSet.set_in(mod->block)) {
-          stack.add(mod);
-          standardModuleSet.set_add(mod->block);
+        if (ModuleSymbol* usedMod = toModuleSymbol(se->var)) {
+          INT_ASSERT(usedMod);
+          if (!standardModuleSet.set_in(usedMod->block)) {
+            stack.add(usedMod);
+            standardModuleSet.set_add(usedMod->block);
+          }
         }
       }
     }

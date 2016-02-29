@@ -454,7 +454,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_CHILD(_a, DefExpr, sym, call, __VA_ARGS__);                \
     break;                                                              \
   case E_UseStmt:                                                       \
-    AST_CALL_CHILD(_a, UseStmt, mod, call, __VA_ARGS__);                \
+    AST_CALL_CHILD(_a, UseStmt, src, call, __VA_ARGS__);                \
     break;                                                              \
                                                                                \
   case E_BlockStmt: {                                                          \
