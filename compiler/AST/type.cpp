@@ -1974,6 +1974,26 @@ bool isString(Type* type) {
   return retval;
 }
 
+//
+// NOAKES 2016/02/29
+//
+// To support the merge of the string-as-rec branch we defined a
+// function, isString(), which is only true of the record that was
+// defined in the new implementation of String.  This predicate was
+// applied in cullOverReferences and callDestructors to improve
+// memory management for that particular record type.
+//
+// We seek to apply those routines to a wider set of record types but
+// are not ready to apply them to range, tuple, and the reference-counted
+// records.
+//
+// This shorter-term predicate, which has a slightly inelegant name, allows
+// most record-like types to use the new business logic.
+//
+// In the longer term we plan to further broaden the cases that the new
+// logic can handle and reduce the exceptions that are filtered out here.
+//
+
 bool isUserDefinedRecord(Type* type) {
   bool retval = false;
 
