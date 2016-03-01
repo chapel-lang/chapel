@@ -164,6 +164,7 @@ What's next?
     implementation status                       ``STATUS``
     performance status                          ``PERFORMANCE``
     Chapel's file and directory structure       ``README.files``
+    Chapel developer's file map                 ``README.devel``
     prerequisites for using this release        `prereqs.rst`_
     setting Chapel environment variables        `chplenv.rst`_
     building the compiler                       `building.rst`_
