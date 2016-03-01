@@ -97,6 +97,11 @@ This proposal works with two copy functions:
 
 Both of these return a new record.
 
+Additionally, to support arrays returning by ref, this proposal will
+ues a third function:
+
+  3) `check(type, src)`
+
 This proposal will describe exactly in which situation the compiler will
 introduce `copy()` and `move()` calls. The expectation is that once
 Chapel supports better constructors/initializers, these `copy` and `move`
@@ -792,6 +797,11 @@ and its call sites.
 ref return intent
 -----------------
 
+The `ref` return intent indicates that unlike a normal return, the returned
+value does not transfer the responsibility for freeing something to the caller.
+In other words, returning something by `ref` does not change when that variable
+is destroyed.
+
 A call to a function with `ref` or `const ref` return intents would be
 considered the same as an outer variable according to the rules above.
 For example if we have,
@@ -819,14 +829,14 @@ where a `copy` will be added by the second line as described in
 Return statements inside a function with `ref` or `const ref` return
 intent have the following behavior:
 
- * The `return` statement in a `ref` or `const ref` return intent function
-   does not cause a `move` or `copy` call to be made in any case. The
-   usual rules for `return` statements are disabled; instead, the
-   `retVar` is just set to the returned `ref`. For arrays, `moveRef`
-   and `copyRef` would be called instead of `move` and `copy`. Note that
-   types with runtime
-   components need  a `moveRef` in order
-   to allow the implementation to type check (see below).
+ * The `return` statement in a `ref` or `const ref` return intent function does
+   not cause a `move` or `copy` call to be made. The usual rules for
+   `return` statements are disabled; instead, the `retVar` is just set to a
+   created reference. Types with runtime components (such as arrays) need  a
+   `check` or some sort of call in order to allow the implementation to type check
+   against the declared return type of a function. See :ref:`ref-return-array`.
+ * Returning a local variable or temporary in a function with `ref` return
+   intent does not prevent that variable or temporary from being destroyed.
  * unlike non - `ref` returns, coercions and promotions are disabled
    for a ref return intent function. The type of the returned expression
    must match exactly. (This constraint is already described in the language
@@ -846,24 +856,8 @@ intent have the following behavior:
    following program should likely result in an execution-time error (at least
    when --fast is not used):
    
-   .. code-block:: chapel
-
-      var A:[1..4] int;
-
-      proc retA() ref :[1..3] int
-      {
-        return A;
-      }
-
-      writeln(retA());
-
-In order to support size checking for arrays, or generally checking run-time
-types against declared types, returning from a ref-return intent function needs
-to call `moveRef` for types with run-time types, such as arrays.
-
 Alternatives include:
 
- * a `check` call that only does run-time type checking
  * enabling some types to specify another type to serve as their `ref` type.
    In that case, the `move` or `copy` calls would be added as normal, but
    would call the `ref` type versions so that the record implementation can
@@ -995,9 +989,12 @@ will not core-dump, since the process of returning the result of `s.localize()`
 from `f` will invoke `move`, which will in turn create a copy.
 
 One issue with this pattern is that it is unclear how to write the `localize`
-function. Some possible strategies might include:
+function. The initial approach proposed here is to mark `localize` with a
+pragma that indicates that the `move` call should not be invoked when
+returning.
 
-  * mark `localize` as a function that should not invoke `move` when returning
+Possible alternative strategies might include:
+
   * implement `localize` as an initializer/constructor. While
     initializers/constructors don't return in the usual sense, and so
     wouldn't invoke `move`, code calling `localize` would have to
@@ -1006,9 +1003,9 @@ function. Some possible strategies might include:
     the first `move` call results in sharing the buffer, but subsequent `move`
     calls create a copy
   * allow `string` to specify a different `ref` type and mark `localize`
-    as returning by `ref`. The `ref` type would be the same as the string
-    record. The `move` would be be omitted because `localize` would have
-    `ref` return intent. 
+    as returning by `ref`. Make the `ref` type would be the same as the
+    string record. Mark `localize` with the `ref` return intent. Then
+    the `move` would be omitted.
 
 .. _arrays:
 
@@ -1022,8 +1019,23 @@ Arrays in Chapel are implemented with two types:
  2) a subclass of `BaseArr`, such as `DefaultRectangularArr`. The wrapper
     record typically contains a field pointing to such an object.
 
-To implement Chapel's array semantics, the `copy` function for `_array`
-performs a deep copy, and the `move` function performs a shallow copy.
+To implement Chapel's array semantics, we need to describe what the `copy`,
+`move`, and `check` functions do.  Note that the  `_array` record would
+contain an `isalias:bool` field in addition to the current fields. This field 
+supports array aliases and slices.
+
+  * `copy` will always allocate a new array and copy the array elements.
+    It can also perform size checking against declared sizes.
+  * `move` will check `isalias`. If it is `true`, it will perform the
+    same operation as `copy`. If it is `false`, it just shallow-copy
+    the `_array` field elements (and not copy the array data). It
+    can also perform size checking against declared sizes.
+  * `check` can halt with an error if its type argument does not
+    match its array argument.
+
+All 3 of these functions need to implement array bounds checking against
+declared sizes. These checks could be removed in `--fast` compiles.
+
 Without further special handling in the compiler, the resulting semantics
 are a slight change from the current behavior. We have identified primarily
 one situations in which program behavior would differ under this proposal:
@@ -1163,7 +1175,8 @@ It produces `1 0 0` in the current implementation, but would produce `0 0 0`
 under the proposal, because returning `A` from within `f` would make a copy.
 The :ref:`automatic-ref-return` strategy cannot remove this copy since `f`
 sometimes returns a local array (and it would not be legal to return the local
-array by ref).
+array by ref). It might be reasonable to make such functions result in
+a compilation error.
 
 A further alternative here would be for the the :ref:`untyped-return-global`
 case to use a different `copy` function, perhaps called `copyRef`, for arrays.
@@ -1172,6 +1185,9 @@ general.
 
 More Array Examples
 +++++++++++++++++++
+
+(Note that the `isalias` field is `false` for all of the `_array` records in
+these examples).
 
 .. code-block:: chapel
 
@@ -1183,8 +1199,8 @@ More Array Examples
 
 `retA` is an `_array`. In the process of returning from `createArray`, `move`
 is called. `move` is called a second time when initializing the `A` variable
-and again does not perform a deep copy. Thus, the desired behavior is achieved:
-the array is returned without any copies.
+and again does not perform a deep copy.  Thus, the desired behavior is
+achieved: the array is returned without any copies.
 
 .. code-block:: chapel
 
@@ -1280,28 +1296,85 @@ result: `retA` is copied into the record `field` as in the current compiler.
 The section :ref:`automatic-in-arg-intent` describes a strategy that could
 eliminate this unnecessary copy.
 
+.. _ref-return-array:
+
 ref return intent for arrays
 ++++++++++++++++++++++++++++
 
 The current compiler ignores the `ref` return intent for functions returning
-arrays. Here we propose a similar strategy. The `ref` type for `_array` should
-be the same as `_array`. However, the usual `move` and `copy` calls will not be
-made when returning an array from a function with `ref` return intent.
-Instead, `moveRef` and `copyRef` calls would be made. These calls support
-returning an array slice by reference. Note
-that some call should be made when returning an array by `ref` from a function
-with declared return type - in order to check the runtime types match.
+arrays. Here we propose a different strategy.  As described in the
+:ref:`ref-return` section, returning something by reference should not change
+when that thing is destroyed.
+
+This proposal assumes that a `ref` to an array is actually a `ref` to an
+`_array` wrapper record (that is, the ref type is `_ref(_array)`).
+
+Run-time type checking is necessary to detect at runtime array size mismatch
+errors such as in this case:
+
+.. code-block:: chapel
+
+  var A:[1..4] int;
+
+  proc retA() ref :[1..3] int
+  {
+    return A;
+  }
+
+  writeln(retA());
+
+Here, the compiler should generate a `check` call in `retA` that checks that
+the declared return type `:[1..3] int` matches A's type `:[1..4]`.
+
+Here is an example that should work without error:
+
+.. code-block:: chapel
+
+  var outerArray:[1..100] int;
+  proc f() ref {
+    return outerArray;
+  }
+
+This example should not copy `outerArray` in the process of returning it, since
+it is returning by `ref`. There will be no `move` or `copy` call.  However, a
+`check` call should be invoked in order to possibly perform size checking.  The
+returned reference will point to the `outerArray` `_array` record.  In this
+way, the `ref` has no impact on the lifetime of `outerArray` and will become
+invalid if `outerArray` is destroyed.
+
+It is not legal to return a local variable by ref:
+
+.. code-block:: chapel
+
+  proc f() ref {
+    var localArray:[1..100] int;
+    return localArray;
+  }
+
+  writeln(f()[1]);
+
+This example should be a compilation error. Since returning with `ref` intent
+has no impact on the lifetime of the returned variable, `localArray` should
+continue to be destroyed when `f` exits, so that any use of the data in the
+returned value would be a use-after-free.
 
 Alternatives:
-
+ * The `ref` type for `_array` could be the same as `_array`.
+   To construct a `ref` for an array, the compiler would call `makeRef`
+   in the process of returning. The `makeRef` call will set `isalias` to `true`
+   and perform any necessary run-time type checking.
+ * Allow returning a local array by `ref` by relaxing the rule for arrays
+   specificially. That might require `copyRef` and `moveRef` functions.
+   The current compiler relaxes this rule by making `ref` the same as
+   blank intent for arrays.
  * As discussed in :ref:`ref-return`, an alternative approach is for the
    `ref` type for `_array` to be a different type that has the same
    fields. In this way, the `move` and `copy` calls for a `ref(_array)`
-   could just type check.
+   could perform the actions described here for `makeRef`.
  * If returning a slice of a local array is a program error, we could
-   make functions returning arrays behave the same as if they were marked
-   with the `ref` return intent. This is in some ways more consistent
-   with the current behavior.
+   make functions returning arrays by `ref` behave the same as if they
+   were marked without the `ref` return intent. This is in some ways
+   more consistent with the current behavior.
 
 .. _array-slices:
 
@@ -1315,7 +1388,6 @@ Consider this example program:
 
 .. code-block:: chapel
 
-
   proc f() {
     var A:[1..4] int;
     return A[2..3];
@@ -1326,9 +1398,12 @@ Consider this example program:
 
 It currently outputs `0 0` but would result in an invalid program/core dump if
 the return from `f` did not make a copy of the slice or somehow arrange for the
-slice to take ownership of the original array. The proposed strategy is to
-arrange for the return `move` call to make a copy because an `_array` field
-`isalias` would be set to `true` when constructing the slice.
+slice to take ownership of the original array. The problem is that the `A`
+variable is destroyed at the end of `f`'s scope.
+
+The proposed strategy is to arrange for the return `move` call to make a copy
+because an `_array` field `isalias` would be set to `true` when constructing
+the slice. The field `isalias` would generally otherwise be set to `false`.
 
 .. code-block:: chapel
 
@@ -1349,10 +1424,8 @@ Currently outputs `0 1 0 0`. Under the proposal, it would output `0 0 0 0`
 because a `move` call is invoked in the `return` from `f` and `isalias` is
 true, resulting in a copy.
 
-Manually adjusting `f` to return by `ref` could restore the old behavior.  If
-it returned with `ref` intent and an array reference is actually just another
-`_array` but where `move` or `copy` calls are not applied (or have no effect) -
-it could return `0 1 0 0`.
+This proposal does not include a user-facing way to manually restore the old
+behavior.
 
 .. code-block:: chapel
 
@@ -1374,20 +1447,41 @@ from variable initialization will detect `isalias` and perform a full copy.
 Currently outputs `0 1 0 0`. It could still do that if `=>` is not considered
 normal variable initialization, but more like `ref` initialization.
 
+.. code-block:: chapel
 
-There are several alternatives:
+  var A:[1..4] int;
+  var A_slice => A[2..3];
+  proc f() ref {
+    return A_slice;
+  }
+
+  f() = 1;
+  writeln(A);
+
+Currently outputs `0 1 1 0`. It will continue to do so under this proposal,
+since `copy` and `move` for `_array` are not called when returning by ref.
+
+.. code-block:: chapel
+
+  proc f() ref {
+    var A:[1..4] int;
+    return A[2..3];
+  }
+
+  writeln(f());
+
+Currently outputs `0 0`. It should be a compile error under the proposal, since
+it returns a local (temporary) variable by `ref`.
+
+Alternatives:
 
  * change var B = A[InnerD]; to not create a copy of the slice
 
- * introducing a new type for array slices:
+ * introduce a new type for array slices:
 
    * array slicing could return a new type such as `_arraySlice`
    * the `move` function from the new type to an `_array` would perform a
      deep copy
-
- * the `slice` function could return an `_array` record with a special
-   flag `isalias` set to `true`. Then, the `move` implementation for
-   `_array` would create a full copy if `isalias==true`.
 
 _array Implementation Alternatives
 ----------------------------------
@@ -1617,6 +1711,20 @@ this function could work the same.
 * A function returning a local array by default intent or with `ref` return
   intent will just copy the _array to the caller (and transfer responsibility
   to free)
+
+  Note -- is that right?
+
+  .. code-block:: chapel
+
+    proc f() ref {
+      var A:[1..4] int;
+      return A;
+    }
+
+   does this free A's buffer at the end of the scope?
+
+
+
 * A function returning a slice by default intent will copy the slice
 * A function returning a slice by `ref` will not copy the slice (and possibly
   lead to problems if the array goes out of scope)
