@@ -196,6 +196,11 @@ public:
   // with C escapes - that is newline is 2 chars \ n
   Immediate   *immediate;
 
+  // This field is a workaround to allow moving a declared
+  // extern type (e.g. c_int) through compilation.
+  // An alternative design would be to stash this in the DefExpr.
+  Symbol*            declaredType;
+
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(const char* init_name, Type* init_type = dtUnknown);
   virtual ~VarSymbol();

@@ -1,0 +1,8 @@
+#!/bin/bash
+grep "sizeof(c_" tmp/$1.c
+if [ $? = 0 ] ; then
+  echo "found sizeof(c_" >> $2
+else
+  echo "missing sizeof(c_" >> $2
+fi
+rm -Rf tmp
