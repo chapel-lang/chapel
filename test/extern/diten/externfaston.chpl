@@ -5,6 +5,10 @@ pragma "fast-on safe extern function"
 extern proc foo1(): int;
 extern proc foo2(): int;
 
+pragma "fast-on safe extern function"
+proc nonExternFunction() {
+}
+
 proc bar(n, param fooVersion) {
   if fooVersion == 1 then
     return n + foo1();
@@ -13,11 +17,11 @@ proc bar(n, param fooVersion) {
 }
 
 startVerboseComm();
-on Locales(here.id + 1 % numLocales) {
+on Locales(1) {
   bar(2, 1);
 }
 
-on Locales(here.id + 1 % numLocales) {
+on Locales(1) {
   bar(2, 2);
 }
 stopVerboseComm();
