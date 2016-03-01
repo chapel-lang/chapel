@@ -154,6 +154,7 @@ private:
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
 bool isString(Symbol* symbol);
+bool isUserDefinedRecord(Symbol* symbol);
 
 /******************************** | *********************************
 *                                                                   *
