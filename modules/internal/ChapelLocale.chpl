@@ -396,21 +396,6 @@ module ChapelLocale {
       return dummyLocale;
   }
 
-
-  pragma "insert line file info"
-  extern proc chpl_memhook_malloc_pre(number:int, size:int, md:int(16)): void;
-  pragma "insert line file info"
-  extern proc chpl_memhook_malloc_post(ptr:opaque, number:int,
-                                       size:int, md:int(16)): void;
-  pragma "insert line file info"
-  extern proc chpl_memhook_realloc_pre(ptr:object, size:int, md:int(16)): void;
-  pragma "insert line file info"
-  extern proc chpl_memhook_realloc_post(newPtr:opaque, ptr:object,
-                                        size:int, md:int(16)): void;
-  pragma "insert line file info"
-  extern proc chpl_memhook_free_pre(ptr:opaque): void;
-  extern proc chpl_memhook_md_num(): int(16);
-
   proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
     return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
   

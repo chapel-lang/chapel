@@ -991,7 +991,10 @@ static void fix_def_expr(VarSymbol* var) {
 
       fn->_this != var                && // Note 2.
 
-      !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
+      !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) &&
+
+      // don't add auto-destroy on reference variables
+      !var->hasFlag(FLAG_REF_VAR))
     var->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
   //

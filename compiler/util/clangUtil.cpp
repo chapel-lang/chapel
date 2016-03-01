@@ -1094,11 +1094,11 @@ void runClang(const char* just_parse_filename) {
 
   std::string readargsfrom;
 
-  if( just_parse_filename ) {
+  if( !llvmCodegen && just_parse_filename ) {
     // We're handling an extern block and not using the LLVM backend.
-    // Don't change CHPL_TARGET_COMPILER or ask for any compiler-specific
-    // C flags. Just get the neccesary includes and defines.
-    readargsfrom = compileline + " --llvm-install-dir"
+    // Don't ask for any compiler-specific C flags.
+    readargsfrom = compileline + " --llvm"
+                                 " --llvm-install-dir"
                                  " --clang-sysroot-arguments"
                                  " --includes-and-defines";
   } else {
@@ -1932,10 +1932,9 @@ void makeBinaryLLVM(void) {
   codegen_makefile(&mainfile, &tmpbinname, true);
   INT_ASSERT(tmpbinname);
 
-  // Run linker... we always use clang++ since some relevant libraries
-  //  (like tcmalloc, GASNet, etc) are actually written with C++
-  //  and need C++ support. With the C backend, this switcheroo is
-  //  accomplished in the Makefiles somewhere....
+  // Run the linker. We always use clang++ because some third-party
+  // libraries are written in C++. With the C backend, this switcheroo
+  // is accomplished in the Makefiles somewhere
   std::string command = clangInstall + "/bin/clang++ " + options + " " +
                         moduleFilename + " " + maino +
                         " -o " + tmpbinname;

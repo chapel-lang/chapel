@@ -68,6 +68,8 @@
   #include "symbol.h"
 
   #include <cstdio>
+  #include <utility>
+  #include <vector>
 
   class ArgSymbol;
   class BlockStmt;
@@ -86,6 +88,15 @@
   struct IntentExpr {
     Expr*  first;
     Expr*  second;
+  };
+
+  struct OnlyRename {
+    enum{SINGLE, DOUBLE} tag;
+
+    union {
+      Expr*  elem;
+      std::pair<Expr*, Expr*>* renamed;
+    };
   };
 
   // The lexer only uses pch.
@@ -108,6 +119,7 @@
     ProcIter          procIter;
     FlagSet*          flagSet;
     IntentExpr        pIntentExpr;
+    std::vector<OnlyRename*>* ponlylist;
   };
 
   #endif
@@ -269,7 +281,7 @@
 //
 // keywords (alphabetical)
 //
-%token TALIGN TATOMIC TBEGIN TBREAK TBY
+%token TALIGN TAS TATOMIC TBEGIN TBREAK TBY
 %token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
 %token TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFOR TFORALL TIF TIN TINDEX TINLINE TINOUT TITER
@@ -350,6 +362,7 @@
 %type <pblockstmt> stmt_ls
 
 %type <pblockstmt> use_stmt require_stmt
+%type <ponlylist>  only_ls
 
 %type <pblockstmt> class_level_stmt_ls
 
@@ -489,10 +502,30 @@ stmt_ls:
 ;
 
 
+only_ls:
+  expr                                 { $$ = new std::vector<OnlyRename*>();
+                                         OnlyRename* cur = new OnlyRename();
+                                         cur->tag = OnlyRename::SINGLE;
+                                         cur->elem = $1;
+                                         $$->push_back(cur); }
+| expr TAS expr                        { $$ = new std::vector<OnlyRename*>();
+                                         OnlyRename* cur = new OnlyRename();
+                                         cur->tag = OnlyRename::DOUBLE;
+                                         cur->renamed = new std::pair<Expr*, Expr*>($1, $3);
+                                         $$->push_back(cur); }
+| only_ls TCOMMA expr                  { OnlyRename* cur = new OnlyRename();
+                                         cur->tag = OnlyRename::SINGLE;
+                                         cur->elem = $3;
+                                         $1->push_back(cur); }
+| only_ls TCOMMA expr TAS expr         { OnlyRename* cur = new OnlyRename();
+                                         cur->tag = OnlyRename::DOUBLE;
+                                         cur->renamed = new std::pair<Expr*, Expr*>($3, $5);
+                                         $1->push_back(cur); }
+
 use_stmt:
   TUSE expr_ls TSEMI                   { $$ = buildUseStmt($2); }
-| TUSE expr TEXCEPT expr_ls TSEMI      { $$ = buildUseStmt($2, $4, true); }
-| TUSE expr TONLY expr_ls TSEMI        { $$ = buildUseStmt($2, $4, false); }
+| TUSE expr TEXCEPT only_ls TSEMI      { $$ = buildUseStmt($2, $4, true); }
+| TUSE expr TONLY only_ls TSEMI        { $$ = buildUseStmt($2, $4, false); }
 ;
 
 require_stmt:
@@ -1047,6 +1080,7 @@ var_decl_stmt:
       flags.insert($1);
       flags.insert(FLAG_PARAM);
       $$ = buildVarDecls($3, flags, @1.comment);
+      context->latestComment = NULL;
     }
 | opt_config TCONST var_decl_stmt_inner_ls TSEMI
     {
@@ -1054,6 +1088,7 @@ var_decl_stmt:
       flags.insert($1);
       flags.insert(FLAG_CONST);
       $$ = buildVarDecls($3, flags, @1.comment);
+      context->latestComment = NULL;
     }
 | opt_config TREF var_decl_stmt_inner_ls TSEMI
     {
@@ -1061,6 +1096,7 @@ var_decl_stmt:
       flags.insert($1);
       flags.insert(FLAG_REF_VAR);
       $$ = buildVarDecls($3, flags, @1.comment);
+      context->latestComment = NULL;
     }
 | opt_config TCONST TREF var_decl_stmt_inner_ls TSEMI
     {
@@ -1069,12 +1105,14 @@ var_decl_stmt:
       flags.insert(FLAG_CONST);
       flags.insert(FLAG_REF_VAR);
       $$ = buildVarDecls($4, flags, @1.comment);
+      context->latestComment = NULL;
     }
 | opt_config TVAR var_decl_stmt_inner_ls TSEMI
     {
       std::set<Flag> flags;
       flags.insert($1);
       $$ = buildVarDecls($3, flags, @1.comment);
+      context->latestComment = NULL;
     }
 ;
 

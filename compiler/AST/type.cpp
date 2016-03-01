@@ -849,7 +849,8 @@ void AggregateType::codegenDef() {
           if (this->fields.length != 0)
             fprintf(outfile, "union {\n");
         } else if (this->fields.length == 0) {
-          fprintf(outfile, "int dummyFieldToAvoidWarning;\n");
+          // TODO: remove and enforce at least 1 element in a union
+          fprintf(outfile, "uint8_t dummyFieldToAvoidWarning;\n");
         }
 
         if (this->fields.length != 0) {
@@ -1969,6 +1970,69 @@ bool isString(Type* type) {
 
   if (AggregateType* aggr = toAggregateType(type))
     retval = strcmp(aggr->symbol->name, "string") == 0;
+
+  return retval;
+}
+
+//
+// NOAKES 2016/02/29
+//
+// To support the merge of the string-as-rec branch we defined a
+// function, isString(), which is only true of the record that was
+// defined in the new implementation of String.  This predicate was
+// applied in cullOverReferences and callDestructors to improve
+// memory management for that particular record type.
+//
+// We seek to apply those routines to a wider set of record types but
+// are not ready to apply them to range, tuple, and the reference-counted
+// records.
+//
+// This shorter-term predicate, which has a slightly inelegant name, allows
+// most record-like types to use the new business logic.
+//
+// In the longer term we plan to further broaden the cases that the new
+// logic can handle and reduce the exceptions that are filtered out here.
+//
+
+bool isUserDefinedRecord(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* aggr = toAggregateType(type)) {
+    Symbol*     sym  = aggr->symbol;
+    const char* name = sym->name;
+
+    // Must be a record type
+    if (aggr->aggregateTag != AGGREGATE_RECORD) {
+
+    // Not a tuple
+    } else if (sym->hasFlag(FLAG_TUPLE)              == true) {
+
+    // Not a range
+    } else if (sym->hasFlag(FLAG_RANGE)              == true) {
+
+    // Not a distribution
+    } else if (sym->hasFlag(FLAG_DISTRIBUTION)       == true) {
+
+    // Not a domain
+    } else if (sym->hasFlag(FLAG_DOMAIN)             == true) {
+
+    // Not an array or an array alias
+    } else if (sym->hasFlag(FLAG_ARRAY)              == true ||
+               sym->hasFlag(FLAG_ARRAY_ALIAS)        == true) {
+
+    // Not an atomic type
+    } else if (sym->hasFlag(FLAG_ATOMIC_TYPE)        == true) {
+
+    // Not a RUNTIME_type
+    } else if (sym->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == true) {
+
+    // Not an iterator
+    } else if (strncmp(name, "_ir_", 4)              ==    0) {
+
+    } else {
+      retval = true;
+    }
+  }
 
   return retval;
 }

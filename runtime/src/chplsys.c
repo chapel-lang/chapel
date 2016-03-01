@@ -83,21 +83,24 @@ size_t chpl_getHeapPageSize(void) {
     if ((ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) == NULL)
       pageSize = chpl_getSysPageSize();
     else {
-      int scanCnt;
+
       size_t tmpPageSize;
+      int  num_scanned;
       char units;
 
-      if ((scanCnt = sscanf(ev, "%zd%1[kKmMgG]", &tmpPageSize, &units)) > 0) {
-        if (scanCnt == 2) {
+      if ((num_scanned = sscanf(ev, "%zi%c", &tmpPageSize, &units)) != 1) {
+        if (num_scanned == 2 && strchr("kKmMgG", units) != NULL) {
           switch (units) {
           case 'k': case 'K': tmpPageSize <<= 10; break;
           case 'm': case 'M': tmpPageSize <<= 20; break;
           case 'g': case 'G': tmpPageSize <<= 30; break;
           }
         }
+        else {
+          chpl_internal_error("unexpected HUGETLB_DEFAULT_PAGE_SIZE syntax");
+        }
       }
-      else
-        chpl_internal_error("unexpected HUGETLB_DEFAULT_PAGE_SIZE syntax");
+
       pageSize = tmpPageSize;
     }
 #else
@@ -197,6 +200,13 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
 
   if ((f = fopen("/proc/cpuinfo", "r")) == NULL)
     chpl_internal_error("Cannot open /proc/cpuinfo");
+
+  //
+  // If f is NULL, we should have exited by now, but Coverity doesn't
+  // seem to be catching this (anymore), so I'm adding an assertion
+  // to try and help it out.
+  //
+  assert(f != NULL);
 
   while (!feof(f) && fgets(buf, sizeof(buf), f) != NULL) {
     size_t buf_len = strlen(buf);

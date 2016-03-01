@@ -86,17 +86,18 @@ bool Stmt::isStmt() const {
 *                                                                   *
 ********************************* | ********************************/
 
-UseStmt::UseStmt(BaseAST* module):
+UseStmt::UseStmt(BaseAST* source):
   Stmt(E_UseStmt),
-  mod(NULL),
+  src(NULL),
   named(),
+  renamed(),
   except(false),
   relatedNames()
 {
-  if (Symbol* b = toSymbol(module)) {
-    mod = new SymExpr(b);
-  } else if (Expr* b = toExpr(module)) {
-    mod = b;
+  if (Symbol* b = toSymbol(source)) {
+    src = new SymExpr(b);
+  } else if (Expr* b = toExpr(source)) {
+    src = b;
   } else {
     INT_FATAL(this, "Bad mod in UseStmt constructor");
   }
@@ -105,19 +106,21 @@ UseStmt::UseStmt(BaseAST* module):
 }
 
 //
-UseStmt::UseStmt(BaseAST*                  module,
-                 std::vector<const char*>* args,
-                 bool                      exclude) :
+UseStmt::UseStmt(BaseAST*                            source,
+                 std::vector<const char*>*           args,
+                 bool                                exclude,
+                 std::map<const char*, const char*>* renames) :
   Stmt(E_UseStmt),
-  mod(NULL),
+  src(NULL),
   named(),
+  renamed(),
   except(exclude),
   relatedNames()
 {
-  if (Symbol* b = toSymbol(module)) {
-    mod = new SymExpr(b);
-  } else if (Expr* b = toExpr(module)) {
-    mod = b;
+  if (Symbol* b = toSymbol(source)) {
+    src = new SymExpr(b);
+  } else if (Expr* b = toExpr(source)) {
+    src = b;
   } else {
     INT_FATAL(this, "Bad mod in UseStmt constructor");
   }
@@ -130,6 +133,15 @@ UseStmt::UseStmt(BaseAST*                  module,
     }
   }
 
+  if (renames->size() > 0) {
+    // The new names of symbols in the module being used, to avoid conflicts
+    // for instance.
+    for (std::map<const char*, const char*>::iterator it = renames->begin();
+         it != renames->end(); ++it) {
+      renamed[it->first] = it->second;
+    }
+  }
+
   gUseStmts.add(this);
 }
 
@@ -137,9 +149,9 @@ UseStmt::UseStmt(BaseAST*                  module,
 UseStmt* UseStmt::copyInner(SymbolMap* map) {
   UseStmt *_this = 0;
   if (named.size() > 0) {
-    _this = new UseStmt(COPY_INT(mod), &named, except);
+    _this = new UseStmt(COPY_INT(src), &named, except, &renamed);
   } else {
-    _this = new UseStmt(COPY_INT(mod));
+    _this = new UseStmt(COPY_INT(src));
   }
   for_vector(const char, sym, relatedNames) {
     _this->relatedNames.push_back(sym);
@@ -152,17 +164,17 @@ void UseStmt::verify() {
   if (astTag != E_UseStmt) {
     INT_FATAL(this, "Bad NamedExpr::astTag");
   }
-  if (mod == NULL) {
-    INT_FATAL(this, "Bad UseStmt::mod");
+  if (src == NULL) {
+    INT_FATAL(this, "Bad UseStmt::src");
   }
-  if (relatedNames.size() != 0 && named.size() == 0) {
+  if (relatedNames.size() != 0 && named.size() == 0 && renamed.size() == 0) {
     INT_FATAL(this, "Have names to avoid, but nothing was listed in the use to begin with");
   }
 }
 
 void UseStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
-  if (old_ast == mod) {
-    mod = new_ast;
+  if (old_ast == src) {
+    src = new_ast;
   } else {
     INT_FATAL(this, "Unexpected case in UseStmt::replaceChild");
   }
@@ -205,7 +217,7 @@ bool UseStmt::hasExceptList() {
 bool UseStmt::isPlainUse() {
   // This is an unmodified use statement if no 'only' or 'except' list was
   // provided.
-  return named.size() == 0;
+  return named.size() == 0 && renamed.size() == 0;
 }
 
 // Return whether the use permits us to search for a symbol with the given
@@ -247,19 +259,13 @@ bool UseStmt::skipSymbolSearch(const char* name) {
 
 bool UseStmt::matchedNameOrConstructor(const char* name) {
   for_vector(const char, toCheck, named) {
-    unsigned int constructorLen = strlen(toCheck) + strlen("_construct_") + 1;
-    char constructorName[constructorLen];
-    strcpy(constructorName, "_construct_");
-    strcat(constructorName, toCheck);
-    unsigned int typeConstLen = constructorLen + strlen("_type");
-    char typeConstructorName[typeConstLen];
-    strcpy(typeConstructorName, "_type_construct_");
-    strcat(typeConstructorName, toCheck);
-    if (!strcmp(name, toCheck) || !strcmp(constructorName, name) ||
-        !strcmp(typeConstructorName, name)) {
-      // Matches the name we're searching for, or the name we're
-      // searching for is a constructor or type constructor on this
-      // type
+    if (!strcmp(name, toCheck)) {
+      return true;
+    }
+  }
+  for(std::map<const char*, const char*>::iterator it = renamed.begin();
+      it != renamed.end(); ++it) {
+    if (!strcmp(name, it->first)) {
       return true;
     }
   }
@@ -268,7 +274,38 @@ bool UseStmt::matchedNameOrConstructor(const char* name) {
 
 // Returns true if the name was in the relatedNames field, false otherwise.
 bool UseStmt::inRelatedNames(const char* name) {
-  return std::find(relatedNames.begin(), relatedNames.end(), name) != relatedNames.end();
+  for_vector(const char, toCheck, relatedNames) {
+    if (!strcmp(name, toCheck))
+      return true;
+  }
+  return false;
+}
+
+bool UseStmt::isARename(const char* name) {
+  return renamed.count(name) == 1;
+}
+
+const char* UseStmt::getRename(const char* name) {
+  return renamed[name];
+}
+
+// Should only be called when the mod field has been resolved
+BaseAST* UseStmt::getSearchScope() {
+  if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* module = toModuleSymbol(se->var)) {
+      return module->block;
+    } else if (TypeSymbol* enumTypeSym = toTypeSymbol(se->var)) {
+      // Assumes we have correctly verified that the type was an enum.
+      return enumTypeSym;
+    } else {
+      // Internal failure because resolving the mod field should have raised
+      // an error if it wasn't an enum or module
+      INT_FATAL(this, "Use invalid, not applied to module or enum");
+    }
+  } else {
+    INT_FATAL(this, "getSearchScope called before this use was processed");
+  }
+  return NULL;
 }
 
 

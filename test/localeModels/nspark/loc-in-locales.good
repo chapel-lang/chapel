@@ -1,0 +1,2 @@
+loc-in-locales.chpl:3: error: unresolved type specifier 'channel()'
+$CHPL_HOME/modules/standard/IO.chpl:2604: note: candidates are: channel(param writing: bool, param kind: iokind, param locking: bool)

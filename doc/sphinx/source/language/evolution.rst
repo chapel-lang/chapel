@@ -306,7 +306,7 @@ Emacs users working on updating existing code can use the following recipe
 to update old-style domain literals to the new syntax:
 
 
-.. code-block:: chapel
+.. code-block:: text
 
           M-x query-replace-regexp: \([=|,] *\)\[\(.*?\)\]\([;|)]\)
           with: \1{\2}\3

@@ -79,6 +79,7 @@ symbolFlag( FLAG_COMPILER_NESTED_FUNCTION , npr, "compiler nested function" , nc
 symbolFlag( FLAG_CONCURRENTLY_ACCESSED , npr, "concurrently accessed" , "local variables accessed by multiple threads" )
 symbolFlag( FLAG_CONFIG , npr, "config" , "config variable, constant, or parameter" )
 symbolFlag( FLAG_CONST , npr, "const" , "constant" )
+symbolFlag( FLAG_C_PTR_CLASS , ypr, "c_ptr class" , "marks c_ptr class" )
 symbolFlag( FLAG_CONSTRUCTOR , npr, "constructor" , "constructor (but not type constructor); loosely defined to include constructor wrappers" )
 symbolFlag( FLAG_DATA_CLASS , ypr, "data class" , ncm )
 symbolFlag( FLAG_DEFAULT_CONSTRUCTOR , npr, "default constructor" , ncm )
@@ -195,6 +196,8 @@ symbolFlag( FLAG_OMIT_FROM_CONSTRUCTOR , ypr, "omit from constructor" , ncm )
 symbolFlag( FLAG_ON , npr, "on" , ncm )
 symbolFlag( FLAG_ON_BLOCK , npr, "on block" , ncm )
 symbolFlag( FLAG_PARAM , npr, "param" , "parameter (compile-time constant)" )
+
+symbolFlag( FLAG_PARENT_FIELD , npr, "parent field" , "field from parent type" )
 
 symbolFlag( FLAG_PARTIAL_COPY, npr, "partial copy", ncm )
 symbolFlag( FLAG_PARTIAL_TUPLE, npr, "partial tuple", ncm)

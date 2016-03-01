@@ -1,5 +1,5 @@
 //
-// Chapel's serial stencil implementation
+// Chapel's stencil implementation
 //
 use Time;
 
@@ -64,6 +64,7 @@ var tiledDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize};
 
 // Arrays
 var input, output: [Dom] dtype = 0.0;
+var tmpout : dtype = 0.0;
 
 // Tuple of tuples
 var weight: Wsize*(Wsize*(dtype));
@@ -108,27 +109,33 @@ for iteration in 0..iterations {
 
   if (!tiling) {
     for (i,j) in innerDom {
+      var tmpout: dtype = 0.0;
       if (!compact) {
-        for param jj in -R..R  do output[i, j] += weight[R1][R1+jj] * input[i, j+jj];
-        for param ii in -R..-1 do output[i, j] += weight[R1+ii][R1] * input[i+ii, j];
-        for param ii in 1..R   do output[i, j] += weight[R1+ii][R1] * input[i+ii, j];
+        for param jj in -R..-1 do tmpout += weight[R1][R1+jj] * input[i, j+jj];
+        for param jj in 1..R   do tmpout += weight[R1][R1+jj] * input[i, j+jj];
+        for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
+        for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
       } else {
         for (ii, jj) in weightDom do
-          output[i, j] += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
+          tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
       }
+      output[i, j] += tmpout;
     }
   } else {
     for (it,jt) in tiledDom {
       for i in it .. # min(order - R - it, tileSize) {
         for j in jt .. # min(order - R - jt, tileSize) {
+          var tmpout: dtype = 0.0;
           if (!compact) {
-            for param jj in -R..R  do output[i, j] += weight[R1][R1+jj] * input[i, j+jj];
-            for param ii in -R..-1 do output[i, j] += weight[R1+ii][R1] * input[i+ii, j];
-            for param ii in 1..R   do output[i, j] += weight[R1+ii][R1] * input[i+ii, j];
+            for param jj in -R..-1 do tmpout += weight[R1][R1+jj] * input[i, j+jj];
+            for param jj in 1..R   do tmpout += weight[R1][R1+jj] * input[i, j+jj];
+            for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
+            for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
           } else {
             for (ii, jj) in weightDom do
-              output[i, j] += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
+              tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
           }
+          output[i, j] += tmpout;
         }
       }
     }

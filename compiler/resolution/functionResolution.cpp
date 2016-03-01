@@ -338,6 +338,8 @@ usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen);
 static Expr* preFold(Expr* expr);
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
 static bool isSubType(Type* sub, Type* super);
+static bool isInstantiation(Type* sub, Type* super);
+static bool isSubTypeOrInstantiation(Type* sub, Type* super);
 static void insertValueTemp(Expr* insertPoint, Expr* actual);
 FnSymbol* requiresImplicitDestroy(CallExpr* call);
 static Expr* postFold(Expr* expr);
@@ -1193,6 +1195,41 @@ isLegalConstRefActualArg(ArgSymbol* formal, Expr* actual) {
   return retval;
 }
 
+/* If we have a generic parent, e.g.:
+   class Parent { type t; proc foo(){} }
+   class Child : Parent { }
+
+   when we have e.g. Child(int) and we call foo,
+   we need we to instantiate Parent.foo() to Parent(int).foo().
+   In that case, the actual is Child(int) and the formal is Parent.
+   We need to return Parent(int), which should be the dispatch
+   parent for Child(int).
+
+   This table helps one to understand the situation
+
+                                              (formal)
+     Parent(int) ------ instantiatedFrom --->  Parent
+         |                                      |
+      dispatch child                         dispatch child
+         |                                      |
+         v                                      v
+     Child(int)  ------ instantiatedFrom ---> Child
+      (actual)
+
+   This function detects that situation and returns the type that
+   should be instantiated.
+*/
+static
+Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType)
+{
+  forv_Vec(Type, parent, actualType->dispatchParents) {
+    if (isInstantiation(parent, formalType))
+      return parent;
+    if (Type* t = getConcreteParentForGenericFormal(parent, formalType))
+      return t;
+  }
+  return NULL;
+}
 
 // Returns true iff dispatching the actualType to the formalType
 // results in an instantiation.
@@ -1222,6 +1259,11 @@ canInstantiate(Type* actualType, Type* formalType) {
     return true;
   if (actualType->instantiatedFrom && canInstantiate(actualType->instantiatedFrom, formalType))
     return true;
+  if (actualType->instantiatedFrom &&
+      formalType->symbol->hasFlag(FLAG_GENERIC) &&
+      getConcreteParentForGenericFormal(actualType, formalType))
+    return true;
+
   return false;
 }
 
@@ -1336,6 +1378,9 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   if (formalType == dtString && actualType == dtStringCopy)
     return true;
   if (formalType == dtStringC && actualType == dtStringCopy)
+    return true;
+  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+      (formalType == dtCVoidPtr))
     return true;
 
   return false;
@@ -1477,7 +1522,7 @@ computeActualFormalAlignment(FnSymbol* fn,
 // instantiated by a given actual type
 //
 static Type*
-getInstantiationType(Type* actualType, Type* formalType) {
+getBasicInstantiationType(Type* actualType, Type* formalType) {
   if (canInstantiate(actualType, formalType)) {
     return actualType;
   }
@@ -1493,6 +1538,23 @@ getInstantiationType(Type* actualType, Type* formalType) {
         return st;
   }
   return NULL;
+}
+
+static Type*
+getInstantiationType(Type* actualType, Type* formalType) {
+  Type *ret = getBasicInstantiationType(actualType, formalType);
+
+  // Now, if formalType is a generic parent type to actualType,
+  // we should instantiate the parent actual type
+  if (ret->instantiatedFrom &&
+      formalType->symbol->hasFlag(FLAG_GENERIC)) {
+    Type* concrete = getConcreteParentForGenericFormal(ret, formalType);
+    if (concrete) {
+      ret = concrete;
+    }
+  }
+
+  return ret;
 }
 
 
@@ -2090,12 +2152,14 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
     for_actuals(expr, block->modUses) {
       UseStmt* use = toUseStmt(expr);
       INT_ASSERT(use);
-      SymExpr* se = toSymExpr(use->mod);
+      SymExpr* se = toSymExpr(use->src);
       INT_ASSERT(se);
-      ModuleSymbol* mod = toModuleSymbol(se->var);
-      INT_ASSERT(mod);
-      if (!visited.set_in(mod->block))
-        moreVisible &= isMoreVisibleInternal(mod->block, fn1, fn2, visited);
+      // We only care about uses of modules during function resolution, not
+      // uses of enums.
+      if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
+        if (!visited.set_in(mod->block))
+          moreVisible &= isMoreVisibleInternal(mod->block, fn1, fn2, visited);
+      }
     }
   }
 
@@ -2612,64 +2676,59 @@ printResolutionErrorUnresolved(
   if( ! info->call ) INT_FATAL("call is NULL");
   CallExpr* call = userCall(info->call);
 
-  if( developer ) {
-    // Should this be controled another way?
-    USR_FATAL_CONT(call, "failed to resolve call with id %i", call->id);
-  }
-
   if (!strcmp("_cast", info->name)) {
     if (!info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL(call, "illegal cast to non-type",
-                toString(info->actuals.v[1]->type),
-                toString(info->actuals.v[0]->type));
+      USR_FATAL_CONT(call, "illegal cast to non-type",
+                     toString(info->actuals.v[1]->type),
+                     toString(info->actuals.v[0]->type));
     } else {
-      USR_FATAL(call, "illegal cast from %s to %s",
-                toString(info->actuals.v[1]->type),
-                toString(info->actuals.v[0]->type));
+      USR_FATAL_CONT(call, "illegal cast from %s to %s",
+                     toString(info->actuals.v[1]->type),
+                     toString(info->actuals.v[0]->type));
     }
   } else if (!strcmp("free", info->name)) {
     if (info->actuals.n > 0 &&
         isRecord(info->actuals.v[2]->type))
-      USR_FATAL(call, "delete not allowed on records");
+      USR_FATAL_CONT(call, "delete not allowed on records");
   } else if (!strcmp("these", info->name)) {
     if (info->actuals.n == 2 &&
         info->actuals.v[0]->type == dtMethodToken)
-    USR_FATAL(call, "cannot iterate over values of type %s",
-              toString(info->actuals.v[1]->type));
+    USR_FATAL_CONT(call, "cannot iterate over values of type %s",
+                   toString(info->actuals.v[1]->type));
   } else if (!strcmp("_type_construct__tuple", info->name)) {
     if (info->call->argList.length == 0)
-      USR_FATAL(call, "tuple size must be specified");
+      USR_FATAL_CONT(call, "tuple size must be specified");
     SymExpr* sym = toSymExpr(info->call->get(1));
     if (!sym || !sym->var->isParameter()) {
-      USR_FATAL(call, "tuple size must be static");
+      USR_FATAL_CONT(call, "tuple size must be static");
     } else {
-      USR_FATAL(call, "invalid tuple");
+      USR_FATAL_CONT(call, "invalid tuple");
     }
   } else if (!strcmp("=", info->name)) {
     if (info->actuals.v[0] && !info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
         info->actuals.v[1] && info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL(call, "illegal assignment of type to value");
+      USR_FATAL_CONT(call, "illegal assignment of type to value");
     } else if (info->actuals.v[0] && info->actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) &&
                info->actuals.v[1] && !info->actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL(call, "illegal assignment of value to type");
+      USR_FATAL_CONT(call, "illegal assignment of value to type");
     } else if (info->actuals.v[1]->type == dtNil) {
-      USR_FATAL(call, "type mismatch in assignment from nil to %s",
+      USR_FATAL_CONT(call, "type mismatch in assignment from nil to %s",
                 toString(info->actuals.v[0]->type));
     } else {
-      USR_FATAL(call, "type mismatch in assignment from %s to %s",
-                toString(info->actuals.v[1]->type),
-                toString(info->actuals.v[0]->type));
+      USR_FATAL_CONT(call, "type mismatch in assignment from %s to %s",
+                     toString(info->actuals.v[1]->type),
+                     toString(info->actuals.v[0]->type));
     }
   } else if (!strcmp("this", info->name)) {
     Type* type = info->actuals.v[1]->getValType();
     if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-      USR_FATAL(call, "illegal access of iterator or promoted expression");
+      USR_FATAL_CONT(call, "illegal access of iterator or promoted expression");
     } else if (type->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
-      USR_FATAL(call, "illegal access of first class function");
+      USR_FATAL_CONT(call, "illegal access of first class function");
     } else {
-      USR_FATAL(call, "unresolved access of '%s' by '%s'",
-                toString(info->actuals.v[1]->type),
-                toString(info));
+      USR_FATAL_CONT(call, "unresolved access of '%s' by '%s'",
+                     toString(info->actuals.v[1]->type),
+                     toString(info));
     }
   } else {
     const char* entity = "call";
@@ -2706,8 +2765,12 @@ printResolutionErrorUnresolved(
         visibleFns.v[0]->numFormals() == 0
         && !strncmp("_type_construct_", info->name, 16))
       USR_PRINT(call, "did you forget the 'new' keyword?");
-    USR_STOP();
   }
+  if( developer ) {
+    // Should this be controled another way?
+    USR_FATAL_CONT(call, "unresolved call had id %i", call->id);
+  }
+  USR_STOP();
 }
 
 static void issueCompilerError(CallExpr* call) {
@@ -2943,13 +3006,19 @@ getVisibleFunctions(BlockStmt* block,
       if (use->skipSymbolSearch(name)) {
         continue;
       }
-      SymExpr* se = toSymExpr(use->mod);
+      SymExpr* se = toSymExpr(use->src);
       INT_ASSERT(se);
-      ModuleSymbol* mod = toModuleSymbol(se->var);
-      INT_ASSERT(mod);
-      canSkipThisBlock = false; // cannot skip if this block uses modules
-      if (mod->isVisible(callOrigin)) {
-        getVisibleFunctions(mod->block, name, visibleFns, visited, callOrigin);
+      if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
+        // The use statement could be of an enum instead of a module, but only
+        // modules can define functions.
+        canSkipThisBlock = false; // cannot skip if this block uses modules
+        if (mod->isVisible(callOrigin)) {
+          if (use->isARename(name)) {
+            getVisibleFunctions(mod->block, use->getRename(name), visibleFns, visited, callOrigin);
+          } else {
+            getVisibleFunctions(mod->block, name, visibleFns, visited, callOrigin);
+          }
+        }
       }
     }
   }
@@ -5819,29 +5888,6 @@ preFold(Expr* expr) {
       result = new CallExpr(PRIM_GET_MEMBER, call->get(1)->copy(),
                             new_CStringSymbol(name));
       call->replace(result);
-    } else if (call->isPrimitive(PRIM_FIELD_ID_BY_NUM)) {
-      /* this is really for unions */
-      AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
-      INT_ASSERT( classtype != NULL );
-      classtype = toAggregateType(classtype->getValType());
-      INT_ASSERT( classtype != NULL );
-
-      VarSymbol* var = toVarSymbol(toSymExpr(call->get(2))->var);
-
-      INT_ASSERT( var != NULL );
-
-      int fieldnum = var->immediate->int_value();
-      int fieldcount = 0;
-      for_fields(field, classtype) {
-        if( ! isNormalField(field) ) continue;
-
-        fieldcount++;
-        if (fieldcount == fieldnum) {
-          result = new SymExpr(new_IntSymbol(field->id));
-          break;
-        }
-      }
-      call->replace(result);
     } else if (call->isPrimitive(PRIM_FIELD_NAME_TO_NUM)) {
       AggregateType* classtype = toAggregateType(toSymExpr(call->get(1))->var->type);
       INT_ASSERT( classtype != NULL );
@@ -6129,6 +6175,18 @@ isSubType(Type* sub, Type* super) {
   }
   return false;
 }
+
+static bool
+isInstantiation(Type* sub, Type* super) {
+  Type * cur;
+  cur = sub->instantiatedFrom;
+  while (cur && cur != super) {
+    cur = cur->instantiatedFrom;
+  }
+
+  return cur == super;
+}
+
 
 static bool
 isSubTypeOrInstantiation(Type* sub, Type* super) {
@@ -7209,6 +7267,8 @@ possible_signature_match(FnSymbol* fn, FnSymbol* gn) {
 }
 
 
+// Checks that types match.
+// Note - does not currently check that instantiated params match.
 static bool
 signature_match(FnSymbol* fn, FnSymbol* gn) {
   if (fn->name != gn->name)
@@ -7236,8 +7296,11 @@ collectInstantiatedAggregateTypes(Vec<Type*>& icts, Type* ct) {
     if (ts->type->defaultTypeConstructor)
       if (!ts->hasFlag(FLAG_GENERIC) &&
           ts->type->defaultTypeConstructor->instantiatedFrom ==
-          ct->defaultTypeConstructor)
+          ct->defaultTypeConstructor) {
         icts.add(ts->type);
+        INT_ASSERT(isInstantiation(ts->type, ct));
+        INT_ASSERT(ts->type->instantiatedFrom == ct);
+      }
   }
 }
 
@@ -7271,18 +7334,70 @@ child for that class, passing that same method 'fn'.
 
 addToVirtualMaps adds to the virtual maps all methods
 in that dispatch child that could override the above 'fn'.
+
+These functions go down the inheritance heirarchy because in the current
+language, a call to a class with static type could dispatch to any child call.
+If calling an arbitrary super method is supported, a call to an object of static
+child type could end up calling something in the parent.
+
 -----------
 */
+
+//
+// add methods that possibly match pfn to vector,
+// but does not add instantiated generics, since addToVirtualMaps
+// will instantiate again.
+static void
+collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods, Type* ct, FnSymbol* pfn) {
+  Vec<FnSymbol*> tmp;
+  std::set<FnSymbol*> generics;
+
+  // Gather the generic, concrete, instantiated methods
+  for (Type* fromType = ct;
+       fromType != NULL;
+       fromType = fromType->instantiatedFrom) {
+
+    forv_Vec(FnSymbol, cfn, fromType->methods) {
+      if (cfn && possible_signature_match(pfn, cfn))
+        tmp.add(cfn);
+    }
+  }
+
+  // Don't add instantiations of generics if we were already
+  // going to add the generic version. addToVirtualMaps will
+  // re-instantiate.
+
+  // So, gather a set of generic versions.
+  forv_Vec(FnSymbol, cfn, tmp)
+    if (cfn->hasFlag(FLAG_GENERIC))
+      generics.insert(cfn);
+
+  // Then, add anything not instantiated from something in
+  // the set.
+  forv_Vec(FnSymbol, cfn, tmp) {
+    if (cfn->instantiatedFrom && generics.count(cfn->instantiatedFrom)) {
+      // skip it
+    } else {
+      // add it
+      methods.add(cfn);
+    }
+  }
+}
 
 
 // addToVirtualMaps itself goes through each method in ct and if
 // that method could override pfn, adds it to the virtual maps
 static void
 addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
-  forv_Vec(FnSymbol, cfn, ct->methods) {
-    // checking that subtype method is not a generic instantiation
-    //  (we will instantiate again)
-    if (cfn && !cfn->instantiatedFrom && possible_signature_match(pfn, cfn)) {
+  // Collect methods from ct and ct->instantiatedFrom.
+  // Does not include generic instantiations - sometimes we
+  // have to make the instantiation here, so we always run
+  // through a code path that instantiates.
+  Vec<FnSymbol*> methods;
+  collectMethodsForVirtualMaps(methods, ct, pfn);
+
+  forv_Vec(FnSymbol, cfn, methods) {
+    if (cfn && !cfn->instantiatedFrom) {
       Vec<Type*> types;
       if (ct->symbol->hasFlag(FLAG_GENERIC))
         collectInstantiatedAggregateTypes(types, ct);
@@ -7291,7 +7406,8 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
 
       forv_Vec(Type, type, types) {
         SymbolMap subs;
-        if (ct->symbol->hasFlag(FLAG_GENERIC))
+        if (ct->symbol->hasFlag(FLAG_GENERIC) ||
+            cfn->getFormal(2)->type->symbol->hasFlag(FLAG_GENERIC))
           // instantiateSignature handles subs from formal to a type
           subs.put(cfn->getFormal(2), type->symbol);
         for (int i = 3; i <= cfn->numFormals(); i++) {
@@ -7403,8 +7519,8 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
 
 // Add overrides of fn to virtual maps down the inheritance heirarchy
 static void
-addAllToVirtualMaps(FnSymbol* fn, AggregateType* ct) {
-  forv_Vec(Type, t, ct->dispatchChildren) {
+addAllToVirtualMaps(FnSymbol* fn, AggregateType* pct) {
+  forv_Vec(Type, t, pct->dispatchChildren) {
     AggregateType* ct = toAggregateType(t);
     if (ct->defaultTypeConstructor &&
         (ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) ||
@@ -7562,13 +7678,14 @@ computeStandardModuleSet() {
       for_actuals(expr, mod->block->modUses) {
         UseStmt* use = toUseStmt(expr);
         INT_ASSERT(use);
-        SymExpr* se = toSymExpr(use->mod);
+        SymExpr* se = toSymExpr(use->src);
         INT_ASSERT(se);
-        ModuleSymbol* mod = toModuleSymbol(se->var);
-        INT_ASSERT(mod);
-        if (!standardModuleSet.set_in(mod->block)) {
-          stack.add(mod);
-          standardModuleSet.set_add(mod->block);
+        if (ModuleSymbol* usedMod = toModuleSymbol(se->var)) {
+          INT_ASSERT(usedMod);
+          if (!standardModuleSet.set_in(usedMod->block)) {
+            stack.add(usedMod);
+            standardModuleSet.set_add(usedMod->block);
+          }
         }
       }
     }
@@ -8341,18 +8458,25 @@ static void insertReturnTemps() {
           if (!isCallExpr(parent) && !isDefExpr(parent)) { // no use
             SET_LINENO(call); // TODO: reset_ast_loc() below?
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);
-            DefExpr* def = new DefExpr(tmp);
+            DefExpr*   def = new DefExpr(tmp);
+
+            if (isUserDefinedRecord(fn->retType) == true)
+              tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
             contextCallOrCall->insertBefore(def);
+
             if (!fMinimalModules &&
                 ((fn->retType->getValType() &&
                   isSyncType(fn->retType->getValType())) ||
                  isSyncType(fn->retType) ||
                  fn->isIterator())) {
               CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
+
               contextCallOrCall->insertBefore(sls);
               reset_ast_loc(sls, call);
               resolveCallAndCallee(sls);
             }
+
             def->insertAfter(new CallExpr(PRIM_MOVE, tmp, contextCallOrCall->remove()));
           }
         }

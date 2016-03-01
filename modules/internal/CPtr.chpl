@@ -48,6 +48,7 @@ module CPtr {
   pragma "no object"
   pragma "no default functions"
   pragma "no wide class"
+  pragma "c_ptr class"
   class c_ptr {
     /* The type that this pointer points to */
     type eltType;
@@ -122,6 +123,14 @@ module CPtr {
   inline proc ==(a: _nilType, b: c_ptr) {
     return __primitive("ptr_eq", c_nil, b);
   }
+  pragma "no doc"
+  inline proc ==(a: c_void_ptr, b: _nilType) {
+    return __primitive("ptr_eq", a, c_nil);
+  }
+  pragma "no doc"
+  inline proc ==(a: _nilType, b: c_void_ptr) {
+    return __primitive("ptr_eq", c_nil, b);
+  }
 
   pragma "no doc"
   inline proc !=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
@@ -141,6 +150,14 @@ module CPtr {
   }
   pragma "no doc"
   inline proc !=(a: _nilType, b: c_ptr) {
+    return __primitive("ptr_neq", c_nil, b);
+  }
+  pragma "no doc"
+  inline proc !=(a: c_void_ptr, b: _nilType) {
+    return __primitive("ptr_neq", a, c_nil);
+  }
+  pragma "no doc"
+  inline proc !=(a: _nilType, b: c_void_ptr) {
     return __primitive("ptr_neq", c_nil, b);
   }
 

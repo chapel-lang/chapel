@@ -980,7 +980,7 @@ void AstDumpToNode::visitUseStmt(UseStmt* node)
   }
 
   newline();
-  node->mod->accept(this);
+  node->src->accept(this);
 
 
   if (!node->isPlainUse()) {
@@ -988,6 +988,11 @@ void AstDumpToNode::visitUseStmt(UseStmt* node)
     for_vector(const char, str, node->named) {
       newline();
       fprintf(mFP, "%s", str);
+    }
+    for (std::map<const char*, const char*>::iterator it = node->renamed.begin();
+         it != node->renamed.end(); ++it) {
+      newline();
+      fprintf(mFP, "%s as %s", it->second, it->first);
     }
   }
 

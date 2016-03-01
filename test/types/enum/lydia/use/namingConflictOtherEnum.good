@@ -1,0 +1,2 @@
+namingConflictOtherEnum.chpl:4: error: Symbol a multiply defined
+namingConflictOtherEnum.chpl:6: error: Symbol a multiply defined

@@ -5,4 +5,5 @@ maxKeyVal = 32 (2**5)
 bucketWidth = 32 (2**5)
 numTrials = 1
 numLocales = 1
+
 Verification successful!

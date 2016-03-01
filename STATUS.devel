@@ -172,7 +172,7 @@ Statements and Expressions
   # multilocale/sungeun/on_statement_var_decl.future
 - The local statement is not well supported.  For example, declaring
   domains (whether explicitly via a declaration or implicitly via
-  slicing results in a runtime seg fault or non-local access error).
+  slicing) results in a runtime seg fault or non-local access error.
   Also, on statements in local blocks should be illegal, but result in
   local execution.
   # multilocale/local/sungeun/local_privatization.future
@@ -673,6 +673,7 @@ Data Parallelism
   E.g., [i in D] f(i) should result in an array of type: [D] f(i).type
     but instead results in a 1D array
   # arrays/bradc/inferArrayType.future
+  # arrays/tmacd/promotionLosesArrayShape.future
   # reductions/bradc/minmaxlocscan-shape.future
   # sparse/bradc/inferSparseArrayType.future
 - Parallel zippered iteration does not perform runtime size/shape checks

@@ -1,0 +1,4 @@
+interruptingComment.doc
+   Record: R
+      proc write()
+      proc otherFunc()

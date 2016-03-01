@@ -56,7 +56,7 @@ static inline void chpl_free(void* ptr) {
   je_free(ptr);
 }
 
-static inline size_t chpl_goodAllocSize(size_t minSize) {
+static inline size_t chpl_good_alloc_size(size_t minSize) {
   // TODO (EJR 12/17/15): can/should we use nallocx()? If so, this will require
   // using the extended API. Note that the extended API has undefined behavior
   // for allocations of size 0 so I think a size 0 check will have to be added

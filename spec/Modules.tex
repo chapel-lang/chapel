@@ -332,7 +332,15 @@ module-name:
 
 limitation-clause:
   `except' identifier-list
-  `only' identifier-list
+  `only' rename-list
+
+rename-list:
+  rename-base
+  rename-base , rename-list
+
+rename-base:
+  identifier `as' identifier
+  identifier
 \end{syntax}
 
 Symbols made available by a use statement are at an outer scope from those
@@ -351,6 +359,19 @@ then the type's fields and methods are treated similarly to the type name.
 These fields and methods cannot be specified in a \sntx{limitation-clause} on
 their own.  It is an error to provide a name in a \sntx{limitation-clause} that
 does not exist or is not visible in the respective module.
+
+Within an \chpl{only} list, a visible symbol from that module may optionally be
+given a new name using the \chpl{as} keyword.  This new name will be usable from
+the scope of the use in place of the old name unless the old name is
+additionally specified in the \chpl{only} list.  If a use which renames a symbol
+is present at module scope, uses of that module will also be able to reference
+that symbol using the new name instead of the old name.  Renaming does not
+affect accesses to that symbol via the source module's prefix, nor does it
+affect uses of that module from other contexts.  It is an error to attempt to
+rename a symbol that does not exist or is not visible in the respective module,
+or to rename a symbol to a name that is already present in the same \chpl{only}
+list.  It is, however, perfectly acceptable to rename a symbol to a name present
+in the respective module which was not specified via that \chpl{only} list.
 
 % We need to figure out what to do about functions that return types which due
 % to the limitation-clause are not visible without prefix.
@@ -371,11 +392,6 @@ symbols are visible to B.
 
 It is an error for two public variables, types, or modules with the same
 name to be defined at the same depth.
-
-\begin{openissue}
-There is an expectation that this statement will be extended to allow
-the programmer to rename symbols that are 'used.'
-\end{openissue}
 
 \begin{chapelexample}{use.chpl}
   The following example illustrates how the use statement makes

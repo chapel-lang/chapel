@@ -338,40 +338,35 @@ proc copyFile(out error: syserr, src: string, dest: string) {
     // The second argument is invalid if the two arguments are the same.
   }
 
-  // Lydia note (03/04/2014): These enclosing curly braces are to avoid the bug
-  // found in test/io/lydia/outArgEarlyExit*.future.  When those futures are
-  // resolved, the braces should be removed.
-  {
-    // Open src for reading, open dest for writing
-    var srcFile = open(src, iomode.r);
-    var destFile = open(dest, iomode.cw);
-    var srcChnl = srcFile.reader(kind=ionative, locking=false);
-    var destChnl = destFile.writer(kind=ionative, locking=false);
-    // read in, write out.
-    var line: [0..1023] uint(8);
-    var numRead: int = 0;
-    while (srcChnl.readline(line, numRead=numRead, error=error)) {
-      // From mppf:
-      // If you want it to be faster, we can make it only buffer once (sharing
-      // the bytes read into memory between the two channels). To do that you'd
-      // do something like this (in a loop):
+  // Open src for reading, open dest for writing
+  var srcFile = open(src, iomode.r);
+  var destFile = open(dest, iomode.cw);
+  var srcChnl = srcFile.reader(kind=ionative, locking=false);
+  var destChnl = destFile.writer(kind=ionative, locking=false);
+  // read in, write out.
+  var line: [0..1023] uint(8);
+  var numRead: int = 0;
+  while (srcChnl.readline(line, numRead=numRead, error=error)) {
+    // From mppf:
+    // If you want it to be faster, we can make it only buffer once (sharing
+    // the bytes read into memory between the two channels). To do that you'd
+    // do something like this (in a loop):
 
-      // srcReader.mark
-      // srcReader.advance( buffer size )
-      // srcReader.beginPeekBuffer to get the current buffer (qio_channel_begin_peek_buffer)
-      // dstWriter.putBuffer with the buffer we got (qio_channel_put_buffer)
-      // srcReader.endPeekBuffer
+    // srcReader.mark
+    // srcReader.advance( buffer size )
+    // srcReader.beginPeekBuffer to get the current buffer (qio_channel_begin_peek_buffer)
+    // dstWriter.putBuffer with the buffer we got (qio_channel_put_buffer)
+    // srcReader.endPeekBuffer
 
-      // Some of these routines don't exist with Chapel wrappers now
+    // Some of these routines don't exist with Chapel wrappers now
 
-      destChnl.write(line[0..#numRead]);
-    }
-    if error == EEOF then error = ENOERR;
-    destChnl.flush();
-
-    srcFile.close();
-    destFile.close();
+    destChnl.write(line[0..#numRead]);
   }
+  if error == EEOF then error = ENOERR;
+  destChnl.flush();
+
+  srcFile.close();
+  destFile.close();
 }
 
 /* Copies the contents of the file indicated by `src` into the file indicated

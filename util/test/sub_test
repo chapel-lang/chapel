@@ -720,6 +720,10 @@ else:
     globalNumlocales=int(os.getenv('NUMLOCALES', '0'))
 # sys.stdout.write('globalNumlocales=%s\n'%(globalNumlocales))
 
+maxLocalesAvailable = os.getenv('CHPL_TEST_NUM_LOCALES_AVAILABLE')
+if maxLocalesAvailable is not None:
+    maxLocalesAvailable = int(maxLocalesAvailable)
+
 if os.access('./CATFILES',os.R_OK):
     globalCatfiles=subprocess.Popen(['cat', './CATFILES'], stdout=subprocess.PIPE).communicate()[0]
     globalCatfiles.strip(globalCatfiles)
@@ -1170,6 +1174,13 @@ for testname in testsrc:
     if (numlocales == 0) or (chplcomm=='none') or is_c_test:
         numlocexecopts = None
     else:
+        if maxLocalesAvailable is not None:
+            if numlocales > maxLocalesAvailable:
+                sys.stdout.write('[Warning: skipping {0} because it requires '
+                                 '{1} locales but only {2} are available]\n'
+                                 .format(os.path.join(localdir, test_filename),
+                                         numlocales, maxLocalesAvailable))
+                continue
         numlocexecopts = ' -nl '+str(numlocales)
 
     # if any performance test has a timeout longer than the default we only

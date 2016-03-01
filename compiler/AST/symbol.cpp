@@ -233,6 +233,10 @@ bool isString(Symbol* symbol) {
   return isString(symbol->type);
 }
 
+bool isUserDefinedRecord(Symbol* symbol) {
+  return isUserDefinedRecord(symbol->type);
+}
+
 /******************************** | *********************************
 *                                                                   *
 * Common base class for ArgSymbol and VarSymbol.                    *
@@ -2220,23 +2224,29 @@ FnSymbol::insertBeforeDownEndCount(Expr* ast) {
 
 void
 FnSymbol::insertFormalAtHead(BaseAST* ast) {
+  Expr* toInsert = NULL;
   if (ArgSymbol* arg = toArgSymbol(ast))
-    formals.insertAtHead(new DefExpr(arg));
+    toInsert = new DefExpr(arg);
   else if (DefExpr* def = toDefExpr(ast))
-    formals.insertAtHead(def);
+    toInsert = def;
   else
     INT_FATAL(ast, "Bad argument to FnSymbol::insertFormalAtHead");
+  formals.insertAtHead(toInsert);
+  parent_insert_help(this, toInsert);
 }
 
 
 void
 FnSymbol::insertFormalAtTail(BaseAST* ast) {
+  Expr* toInsert = NULL;
   if (ArgSymbol* arg = toArgSymbol(ast))
-    formals.insertAtTail(new DefExpr(arg));
+    toInsert = new DefExpr(arg);
   else if (DefExpr* def = toDefExpr(ast))
-    formals.insertAtTail(def);
+    toInsert = def;
   else
     INT_FATAL(ast, "Bad argument to FnSymbol::insertFormalAtTail");
+  formals.insertAtTail(toInsert);
+  parent_insert_help(this, toInsert);
 }
 
 
