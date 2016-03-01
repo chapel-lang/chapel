@@ -1,7 +1,8 @@
 #!/bin/bash
 
 cat README.md.in > README.md
-for name in [0-9]*.rst
+
+for name in `ls [0-9]*.rst | sort -n`
 do
   echo $name
   title=`head -n 1 $name`
