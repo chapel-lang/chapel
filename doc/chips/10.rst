@@ -41,7 +41,7 @@ or not it is an initializer are not covered in this proposal.
 Additionally, record copy semantics as previously implemented in the
 language are tied to array semantics. Therefore, this document attempts
 to describe how arrays can be implemented as the language moves to more
-optimizeable copy semantics.
+optimizable copy semantics.
 
 .. _user-view:
 
@@ -98,7 +98,7 @@ This proposal works with two copy functions:
 Both of these return a new record.
 
 Additionally, to support arrays returning by ref, this proposal will
-ues a third function:
+use a third function:
 
   3) `check(type, src)`
 
@@ -779,7 +779,7 @@ Note that:
  * assignments to an `inout` or `out` argument within a function use the
    `=` overload
  * multiple assignments to an `inout` or `out` argument are possible
- * `out` and `inout` include unncessary copies in many cases.
+ * `out` and `inout` include unnecessary copies in many cases.
 
 See :ref:`removing-inout` and :ref:`optimizing-out` for specific optional
 proposals that could improve the situation with `inout` and `out`. While
@@ -816,7 +816,7 @@ then the statement
 
   var a=fRef();
 
-is equavalent to
+is equivalent to
 
 .. code-block:: chapel
 
@@ -1364,7 +1364,7 @@ Alternatives:
    in the process of returning. The `makeRef` call will set `isalias` to `true`
    and perform any necessary run-time type checking.
  * Allow returning a local array by `ref` by relaxing the rule for arrays
-   specificially. That might require `copyRef` and `moveRef` functions.
+   specifically. That might require `copyRef` and `moveRef` functions.
    The current compiler relaxes this rule by making `ref` the same as
    blank intent for arrays.
  * As discussed in :ref:`ref-return`, an alternative approach is for the
@@ -1737,7 +1737,7 @@ Then we could take out the special behavior for `isalias` in `move`. Then
 Arrays could return always by ref, or sometimes by ref and sometimes by value.
 Current document describes sometimes by ref sometimes by value.  If they always
 returned by ref, Array return `copy` call could set `isalias` to `true`. Would
-still want initializion `copy` to do something else (copy elements).
+still want initialization `copy` to do something else (copy elements).
 
 Always returning arrays by `ref` is semantically challenging because it
 prevents us from using `ref` to distinguish the case when it is desired to
@@ -1748,8 +1748,8 @@ Future Optional Extensions
 
 .. _distinguish-move-calls:
 
-Distinguing between `move` calls
-++++++++++++++++++++++++++++++++
+Distinguishing between `move` calls
++++++++++++++++++++++++++++++++++++
 
 In an argument to `move` calls, distinguish between:
 
@@ -1907,7 +1907,7 @@ Here we propose that:
  3) when the compiler removes such `copy` calls, it replaces them
     with `move` calls.
 
-There is one case where this behavior might be suprising to a record
+There is one case where this behavior might be surprising to a record
 author. Suppose that `R` is a record that contains a `ptr` field of a class
 type. Suppose a `copy` function is defined for `R` that allocates a
 new `ptr` value in the destination and copies the contents of `ptr`.
@@ -2123,7 +2123,7 @@ Besides the compiler changes, the module code would change in this way:
    count (alternative: they could continue to store a reference count)
  * arrays would be freed when they go out of scope. Nothing would extend
    their lifetime. References, aliases, and slices of arrays would be
-   invalid once theh original array goes out of scope.
+   invalid once the original array goes out of scope.
  * domains would store a list of arrays over that domain and also a flag
    indicating whether or not the original domain variable has gone out of
    scope.  The _domain destructor sets the flag to false and checks the list.
