@@ -748,8 +748,15 @@ void VarSymbol::codegenDefC(bool global) {
     typestr = ct->classStructName(true);
   else if (this->declaredType &&
            this->declaredType->hasFlag(FLAG_EXTERN) &&
-           this->declaredType->hasFlag(FLAG_TYPE_VARIABLE))
+           this->declaredType->hasFlag(FLAG_TYPE_VARIABLE) &&
+           this->declaredType->typeInfo() == this->typeInfo()) {
+    // If this symbol was declared with an extern type,
+    // and the declared type matches the current type,
+    // use that extern type in the generated code.
+    // (The type could change for example when promoting this
+    //  variable to the heap).
     typestr = this->declaredType->cname;
+  }
   else
     typestr = type->codegen().c;
 
