@@ -47,11 +47,12 @@
 // the performance difference in a playground just to see if it's worth
 // investigating further.
 
-// TODO put these into a struct?
-static void*  heap_base = NULL;
-static size_t heap_size = 0;
-static size_t cur_heap_offset = 0;
-static pthread_mutex_t chunk_alloc_lock;
+static struct shared_heap {
+  void* base;
+  size_t size;
+  size_t cur_offset;
+  pthread_mutex_t alloc_lock;
+} heap; // static, will be "zero" initialized automatically
 
 
 // compute aligned index into our shared heap, alignment must be a power of 2
@@ -77,34 +78,34 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
 
   // this function can be called concurrently and it looks like jemalloc
   // doesn't call it inside a lock, so we need to protect it ourselves
-  pthread_mutex_lock(&chunk_alloc_lock);
+  pthread_mutex_lock(&heap.alloc_lock);
 
   // compute our current aligned pointer into the shared heap
   //
   //   jemalloc 4.0.4 man: "The alignment parameter is always a power of two at
   //   least as large as the chunk size."
-  cur_chunk_base = alignHelper(heap_base, cur_heap_offset, alignment);
+  cur_chunk_base = alignHelper(heap.base, heap.cur_offset, alignment);
 
   // jemalloc 4.0.4 man: "If chunk is not NULL, the returned pointer must be
   // chunk on success or NULL on error"
   if (chunk && chunk != cur_chunk_base) {
-    pthread_mutex_unlock(&chunk_alloc_lock);
+    pthread_mutex_unlock(&heap.alloc_lock);
     return NULL;
   }
 
-  cur_heap_size = (uintptr_t)cur_chunk_base - (uintptr_t)heap_base;
+  cur_heap_size = (uintptr_t)cur_chunk_base - (uintptr_t)heap.base;
 
   // If there's not enough space on the heap for this allocation, return NULL
-  if (size > heap_size - cur_heap_size) {
-    pthread_mutex_unlock(&chunk_alloc_lock);
+  if (size > heap.size - cur_heap_size) {
+    pthread_mutex_unlock(&heap.alloc_lock);
     return NULL;
   }
 
   // Update the current pointer, now that we've past any early returns.
-  cur_heap_offset = cur_heap_size + size;
+  heap.cur_offset = cur_heap_size + size;
 
   // now that cur_heap_offset is updated, we can unlock
-  pthread_mutex_unlock(&chunk_alloc_lock);
+  pthread_mutex_unlock(&heap.alloc_lock);
 
   // jemalloc 4.0.4 man: "Zeroing is mandatory if *zero is true upon entry."
   if (*zero) {
@@ -221,7 +222,7 @@ static void useUpMemNotInHeap(void) {
   //   jemalloc 4.0.4 man: "arenas may have already created chunks prior to the
   //   application having an opportunity to take over chunk allocation."
   //
-  // Note that this will also allow jemalloc to initialize itself since
+  // Note that this will also allow jemalloc to initialize
   char* p = NULL;
   do {
     // TODO use a larger value than size_t here (must be smaller than
@@ -229,7 +230,7 @@ static void useUpMemNotInHeap(void) {
     if ((p = je_malloc(sizeof(size_t))) == NULL) {
       chpl_internal_error("could not use up memory outside of shared heap");
     }
-  } while ((p != NULL && (p < (char*) heap_base || p > (char*) heap_base + heap_size)));
+  } while ((p != NULL && (p < (char*) heap.base || p > (char*) heap.base + heap.size)));
 }
 
 // Have jemalloc use our shared heap. Initialize all the arenas, then replace
@@ -244,11 +245,11 @@ static void initializeSharedHeap(void) {
 }
 
 void chpl_mem_layerInit(void) {
-  void* heap_base_;
-  size_t heap_size_;
+  void* heap_base;
+  size_t heap_size;
 
-  chpl_comm_desired_shared_heap(&heap_base_, &heap_size_);
-  if (heap_base_ != NULL && heap_size_ == 0) {
+  chpl_comm_desired_shared_heap(&heap_base, &heap_size);
+  if (heap_base != NULL && heap_size == 0) {
     chpl_internal_error("if heap address is specified, size must be also");
   }
 
@@ -258,11 +259,11 @@ void chpl_mem_layerInit(void) {
   //
   //   jemalloc 4.0.4 man: "Once, when the first call is made to one of the
   //   memory allocation routines, the allocator initializes its internals"
-  if (heap_base_ != NULL) {
-    heap_base = heap_base_;
-    heap_size = heap_size_;
-    cur_heap_offset = 0;
-    if (pthread_mutex_init(&chunk_alloc_lock, NULL) != 0) {
+  if (heap_base != NULL) {
+    heap.base = heap_base;
+    heap.size = heap_size;
+    heap.cur_offset = 0;
+    if (pthread_mutex_init(&heap.alloc_lock, NULL) != 0) {
       chpl_internal_error("cannot init chunk_alloc lock");
     }
     initializeSharedHeap();
@@ -277,8 +278,8 @@ void chpl_mem_layerInit(void) {
 
 
 void chpl_mem_layerExit(void) {
-  if (heap_base != NULL) {
+  if (heap.base != NULL) {
     // ignore errors, we're exiting anyways
-    pthread_mutex_destroy(&chunk_alloc_lock);
+    pthread_mutex_destroy(&heap.alloc_lock);
   }
 }
