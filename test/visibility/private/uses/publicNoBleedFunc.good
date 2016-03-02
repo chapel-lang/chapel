@@ -1,0 +1,2 @@
+publicNoBleedFunc.chpl:14: In function 'main':
+publicNoBleedFunc.chpl:17: error: unresolved call 'b()'
