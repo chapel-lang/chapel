@@ -150,6 +150,12 @@ proc file.realPath(): string {
 
    `splitPath("/")` will yield `("/", "")`
 
+   With the exception of a path of the empty string or just "/", the original
+   path can be recreated from this function's returned parts by joining them
+   with the path separator character:
+
+   `dirname` + "/" + `basename`
+
    :arg name: path to be split
    :type name: string
 */
