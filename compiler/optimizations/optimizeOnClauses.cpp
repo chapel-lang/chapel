@@ -344,8 +344,7 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
   if (fn->hasFlag(FLAG_EXPORT))
     return true;
 
-  if (fn->hasFlag(FLAG_EXTERN)) {
-    // consider a pragma to indicate that it would be "fast"
+  if (fn->hasFlag(FLAG_EXTERN) && !fn->hasFlag(FLAG_FAST_ON_SAFE_EXTERN)) {
     return false;
   }
 
