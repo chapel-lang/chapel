@@ -341,7 +341,7 @@ qioerr qio_waitpid(int64_t pid,
     *done = 1;
   }
   else if( WIFSIGNALED(status) ) {
-    *exitcode = WTERMSIG(status);
+    *exitcode = -WTERMSIG(status);
     *done = 1;
   }
   return 0;
@@ -578,78 +578,14 @@ qioerr qio_proc_communicate(
   return err;
 }
 
-/* Send a signal to the specified pid.
-
-   The signal value `qio_sig` is not the actual signal value defined in
-   signal.h.  The qio_sig value is Chapel-specific and must be converted to
-   the system-specific signal value.
- */
-qioerr qio_send_signal(int64_t pid, int qio_sig)
+// Send a signal to the specified pid
+qioerr qio_send_signal(int64_t pid, int sig)
 {
   qioerr err = 0;
-  int rc = 0;
-  int sig = 0;
 
-  // Convert qio_sig values (from Chapel signal enums) to system-specific
-  // signal values.  This isn't ideal, but we don't have extern params.
-  // The order and values of these qio_sig cases must match the enum defintion
-  // in Spawn.chpl.
-  switch (qio_sig) {
-  case  1 /* signal.SIGABRT   */ : sig = SIGABRT   ; break;
-  case  2 /* signal.SIGALRM   */ : sig = SIGALRM   ; break;
-  case  3 /* signal.SIGBUS    */ : sig = SIGBUS    ; break;
-  case  4 /* signal.SIGCHLD   */ : sig = SIGCHLD   ; break;
-  case  5 /* signal.SIGCONT   */ : sig = SIGCONT   ; break;
-#if defined(__APPLE__) && defined(__MACH__)
-  case  6 /* signal.SIGEMT    */ : sig = SIGEMT    ; break;
-#endif
-  case  7 /* signal.SIGFPE    */ : sig = SIGFPE    ; break;
-  case  8 /* signal.SIGHUP    */ : sig = SIGHUP    ; break;
-  case  9 /* signal.SIGILL    */ : sig = SIGILL    ; break;
-#if defined(__APPLE__) && defined(__MACH__)
-  case 10 /* signal.SIGINFO   */ : sig = SIGINFO   ; break;
-#endif
-  case 11 /* signal.SIGINT    */ : sig = SIGINT    ; break;
-#if ( defined(__APPLE__) && defined(__MACH__) ) || defined(__linux__)
-  case 12 /* signal.SIGIO     */ : sig = SIGIO     ; break;
-#endif
-  case 13 /* signal.SIGKILL   */ : sig = SIGKILL   ; break;
-  case 14 /* signal.SIGPIPE   */ : sig = SIGPIPE   ; break;
-#if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L && \
-  !( defined(__APPLE__) || defined(__MACH__) )
-  case 15 /* signal.SIGPOLL   */ : sig = SIGPOLL   ; break;
-#endif
-  case 16 /* signal.SIGPROF   */ : sig = SIGPROF   ; break;
-  case 17 /* signal.SIGQUIT   */ : sig = SIGQUIT   ; break;
-  case 18 /* signal.SIGSEGV   */ : sig = SIGSEGV   ; break;
-  case 19 /* signal.SIGSTOP   */ : sig = SIGSTOP   ; break;
-  case 20 /* signal.SIGSYS    */ : sig = SIGSYS    ; break;
-  case 21 /* signal.SIGTERM   */ : sig = SIGTERM   ; break;
-  case 22 /* signal.SIGTRAP   */ : sig = SIGTRAP   ; break;
-  case 23 /* signal.SIGTSTP   */ : sig = SIGTSTP   ; break;
-  case 24 /* signal.SIGTTIN   */ : sig = SIGTTIN   ; break;
-  case 25 /* signal.SIGTTOU   */ : sig = SIGTTOU   ; break;
-  case 26 /* signal.SIGURG    */ : sig = SIGURG    ; break;
-  case 27 /* signal.SIGUSR1   */ : sig = SIGUSR1   ; break;
-  case 28 /* signal.SIGUSR2   */ : sig = SIGUSR2   ; break;
-  case 29 /* signal.SIGVTALRM */ : sig = SIGVTALRM ; break;
-#if defined(__APPLE__) && defined(__MACH__)
-  case 30 /* signal.SIGWINCH  */ : sig = SIGWINCH  ; break;
-#endif
-  case 31 /* signal.SIGXCPU   */ : sig = SIGXCPU   ; break;
-  case 32 /* signal.SIGXFSZ   */ : sig = SIGXFSZ   ; break;
-  }
-
-  if (sig != 0)
-  {
-    rc = kill(pid, sig);
-    if (rc == -1)
-      err = qio_mkerror_errno();
-  }
-  else
-  {
-    err = qio_int_to_err(EINVAL);
-  }
+  int rc = kill(pid, sig);
+  if (rc == -1)
+    err = qio_mkerror_errno();
 
   return err;
 }

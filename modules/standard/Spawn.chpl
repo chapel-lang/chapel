@@ -824,52 +824,46 @@ module Spawn {
     if err then ioerror(err, "in subprocess.close");
   }
 
-  // Signals as required by POSIX-2013
-  enum signal {
-    SIGABRT = 1,
-    SIGALRM,
-    SIGBUS,
-    SIGCHLD,
-    SIGCONT,
-    SIGEMT,
-    SIGFPE,
-    SIGHUP,
-    SIGILL,
-    SIGINFO,
-    SIGINT,
-    SIGIO,
-    SIGKILL,
-    SIGPIPE,
-    SIGPOLL,
-    SIGPROF,
-    SIGQUIT,
-    SIGSEGV,
-    SIGSTOP,
-    SIGSYS,
-    SIGTERM,
-    SIGTRAP,
-    SIGTSTP,
-    SIGTTIN,
-    SIGTTOU,
-    SIGURG,
-    SIGUSR1,
-    SIGUSR2,
-    SIGVTALRM,
-    SIGWINCH,
-    SIGXCPU,
-    SIGXFSZ
-  };
+  // Signals as required by POSIX-2013, less the deprecated SIGPOLL
+  // for sake of portability
+  extern const SIGABRT: c_int;
+  extern const SIGALRM: c_int;
+  extern const SIGBUS: c_int;
+  extern const SIGCHLD: c_int;
+  extern const SIGCONT: c_int;
+  extern const SIGFPE: c_int;
+  extern const SIGHUP: c_int;
+  extern const SIGILL: c_int;
+  extern const SIGINT: c_int;
+  extern const SIGKILL: c_int;
+  extern const SIGPIPE: c_int;
+  extern const SIGPROF: c_int;
+  extern const SIGQUIT: c_int;
+  extern const SIGSEGV: c_int;
+  extern const SIGSTOP: c_int;
+  extern const SIGSYS: c_int;
+  extern const SIGTERM: c_int;
+  extern const SIGTRAP: c_int;
+  extern const SIGTSTP: c_int;
+  extern const SIGTTIN: c_int;
+  extern const SIGTTOU: c_int;
+  extern const SIGURG: c_int;
+  extern const SIGUSR1: c_int;
+  extern const SIGUSR2: c_int;
+  extern const SIGVTALRM: c_int;
+  extern const SIGXCPU: c_int;
+  extern const SIGXFSZ: c_int;
 
-  private extern proc qio_send_signal(pid: int(64), qio_sig: int(64)): syserr;
+  private extern proc qio_send_signal(pid: int(64), sig: c_int): syserr;
 
   /*
 
     :arg error: optional argument to capture any error encountered
                 when .
    */
-  proc subprocess.send_signal(out error:syserr, sig: signal) {
+  proc subprocess.send_signal(out error:syserr, sig: int) {
     on home {
-      error = qio_send_signal(pid, sig:int(64));
+      error = qio_send_signal(pid, sig:c_int);
     }
   }
 
@@ -887,7 +881,7 @@ module Spawn {
   /*
    */
   proc subprocess.kill(out error:syserr) {
-    this.send_signal(error, signal.SIGKILL);
+    this.send_signal(error, SIGKILL);
   }
 
   // documented in the out error version
@@ -904,7 +898,7 @@ module Spawn {
   /*
    */
   proc subprocess.terminate(out error:syserr) {
-    this.send_signal(error, signal.SIGTERM);
+    this.send_signal(error, SIGTERM);
   }
 
   // documented in the out error version
