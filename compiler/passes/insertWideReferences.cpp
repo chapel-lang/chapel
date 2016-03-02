@@ -189,7 +189,7 @@
 //   and 'setValWide'.
 //
 
-//#define PRINT_WIDEN_SUMMARY
+#define PRINT_WIDEN_SUMMARY
 //#define PRINT_WIDE_ANALYSIS
 
 #ifdef PRINT_WIDE_ANALYSIS
@@ -232,6 +232,12 @@ static std::set<Symbol*> fieldsToMakeWide;
 // A map from a symbol to the BaseASTs that caused it to be wide
 static std::map<Symbol*, std::set<BaseAST*> > causes;
 
+// set of calls that return a wide pointer and need to be analyzed
+static std::set<CallExpr*> returnCalls;
+
+// cache to store results of cauedByArgs
+static std::map<FnSymbol*, std::set<Symbol*> > argsCache;
+
 // Various mini-passes to manipulate the AST into something functional
 static void convertNilToObject();
 static void buildWideClasses();
@@ -245,6 +251,30 @@ static void widenGetPrivClass();
 static void moveAddressSourcesToTemp();
 static void fixAST();
 static void handleIsWidePointer();
+
+// Top-level wrapper
+static bool isCausedByArgs(FnSymbol* fn,
+                           Symbol* sym,
+                           std::set<Symbol*>& sourceArgs,
+                           bool debug = false);
+
+// wraps recursive call and passes in its own 'visited' set.
+static bool isCausedByArgs(FnSymbol* fn,
+                           Symbol* sym,
+                           std::set<Symbol*>& visited,
+                           std::set<Symbol*>& sourceArgs,
+                           bool debug = false);
+
+// Does most of the work, called recursively
+static bool recurseCausedByArgs(FnSymbol* fn,
+                                Symbol* sym,
+                                std::set<Symbol*>& visited,
+                                std::set<Symbol*>& sourceArgs);
+
+//
+// Returns true if the call returns a wide pointer
+//
+static bool shouldRetWide(CallExpr* call);
 
 //
 // Miscellaneous utility functions to help manage the AST
@@ -573,6 +603,273 @@ static FnSymbol* usedInOn(Symbol* sym) {
 // End of utility functions
 //
 
+//
+// Functions used for wide-return optimization
+//
+
+//
+// Returns TRUE if the args of `fn` are the ONLY reason that `sym` is a
+// wide pointer.
+//
+// The arguments that cause 'sym' to be a wide pointer will be returned through
+// the 'sourceArgs' formal
+//
+// The 'visited' arg is used to track symbols already visited by this recursive
+// function, and is used to avoid a cycle.
+//
+static bool recurseCausedByArgs(FnSymbol* fn,
+                                Symbol* sym,
+                                std::set<Symbol*>& visited,
+                                std::set<Symbol*>& sourceArgs) {
+
+  // return TRUE if `sym` is a class and is an arg of `fn`
+  if (isObj(sym) &&
+      isArgSymbol(sym) &&
+      !fn->hasFlag(FLAG_RETARG) &&
+      sym->defPoint->parentSymbol == fn) {
+    sourceArgs.insert(sym);
+    return true;
+  }
+
+  // A cycle was found> This doesn't say anything about the root cause of
+  // `sym`, so we'll just return TRUE. There should be some other path that
+  // causes `sym` to be wide.
+  if (visited.find(sym) != visited.end()) {
+    return true;
+  }
+  visited.insert(sym);
+
+  // Zero causes implies that it was added during addKnownWides, and is a root
+  // cause. Return FALSE.
+  std::set<BaseAST*> parents = causes[sym];
+  if (parents.size() == 0) {
+    return false;
+  }
+
+  // Check to see if our parent causes are influenced ONLY by fn's args
+  for_set(BaseAST, base, parents) {
+    // Only interested in 'base' if it is a LcnSymbol or SymExpr
+    Symbol* cause = NULL;
+    if (isSymExpr(base)) {
+      cause = toSymExpr(base)->var;
+    } else if (isLcnSymbol(base)) {
+      // Currently the case if it's a _retArg
+      cause = toSymbol(base);
+    } else {
+      return false;
+    }
+
+    // Attempts to handle cases like:
+    //   sym = foo(...);
+    //
+    // where foo's return symbol is caused by foo's args. Essentially trying to
+    // handle the same wide-return optimization. If that's the case, we then
+    // need to check if the call's actuals are caused by fn's args.
+    //
+    // TODO: handle recursive _retArg cases
+    FnSymbol* otherFn = toFnSymbol(cause->defPoint->parentSymbol);
+    if (otherFn &&
+        otherFn != sym->defPoint->parentSymbol && // exposed by SSCA2 perfcompopts
+        cause == otherFn->getReturnSymbol() &&
+        !otherFn->hasFlag(FLAG_VIRTUAL) && 
+        !isModuleSymbol(sym->defPoint->parentSymbol)) {
+
+      // TODO: should we really pass `visited` through?
+      std::set<Symbol*> otherArgs;
+      if (!isCausedByArgs(otherFn, cause, visited, otherArgs)) return false;
+
+      // find the statement `sym = otherFn(...)`
+      // `sym` can have multiple defs if it's the return symbol and there are
+      // multiple return statements in the function.
+      //
+      // TODO: could be quicker if we knew that `base` was a SymExpr
+      CallExpr* curCall = NULL;
+      for_defs(def, defMap, sym) {
+        CallExpr* parent = toCallExpr(def->parentExpr);
+        INT_ASSERT(parent->isPrimitive(PRIM_MOVE) || parent->isPrimitive(PRIM_ASSIGN));
+        CallExpr* RHS = toCallExpr(parent->get(2));
+        if (RHS->isResolved() == otherFn) {
+          curCall = RHS;
+          break;
+        }
+      }
+      INT_ASSERT(curCall != NULL);
+
+      for_set(Symbol, arg, otherArgs) {
+        SymExpr* act = toSymExpr(formal_to_actual(curCall, arg));
+        if (!recurseCausedByArgs(fn, act->var, visited, sourceArgs)) return false;
+      }
+
+    } else {
+      if (!recurseCausedByArgs(fn, cause, visited, sourceArgs)) return false;
+    }
+  }
+
+  visited.erase(sym);
+
+  return true;
+}
+
+//
+// Top-level wrapper
+//
+static bool isCausedByArgs(FnSymbol* fn,
+                         Symbol* sym,
+                         std::set<Symbol*>& sourceArgs,
+                         bool debug) {
+  std::set<Symbol*> visited;
+  return isCausedByArgs(fn, sym, visited, sourceArgs, debug);
+}
+
+//
+// Wraps recurseCausedByArgs
+//
+static bool isCausedByArgs(FnSymbol* fn,
+                         Symbol* sym,
+                         std::set<Symbol*>& visited,
+                         std::set<Symbol*>& sourceArgs,
+                         bool debug) {
+  INT_ASSERT(sourceArgs.size() == 0);
+  INT_ASSERT(sym == fn->getReturnSymbol() ||
+             (sym->hasFlag(FLAG_RETARG) && sym->defPoint->parentSymbol == fn));
+
+  // Check to see if we have some results for this fn/sym already
+  if (argsCache.count(fn) != 0) {
+    DEBUG_PRINTF("Using args cache for %s (%d)\n", fn->cname, fn->id);
+    std::set<Symbol*> stored = argsCache[fn];
+    sourceArgs.insert(stored.begin(), stored.end());
+    return sourceArgs.size() > 0;
+  }
+
+  // Assert that the only causes for formals are the corresponding actuals
+  for_formals(formal, fn) {
+    if (formal->hasFlag(FLAG_RETARG)) {
+      continue;
+    }
+
+    std::set<BaseAST*> parents = causes[formal];
+    for_set(BaseAST, base, parents) {
+      SymExpr* se = toSymExpr(base);
+      INT_ASSERT(se);
+      ArgSymbol* arg = actual_to_formal(se);
+      INT_ASSERT(arg == formal);
+    }
+  }
+
+  if (debug) {
+    printCauses(sym);
+  }
+
+  bool success = recurseCausedByArgs(fn ,sym, visited, sourceArgs);
+  if (!success) {
+    sourceArgs.clear(); // TODO: needed?
+  } else {
+    if (sym->hasFlag(FLAG_RETARG)) {
+      sourceArgs.erase(sym);
+    }
+  }
+
+  DEBUG_PRINTF("Caching result for %s (%d)\n", fn->cname, fn->id);
+  argsCache[fn] = sourceArgs;
+
+  return success;
+}
+
+static bool shouldRetWide(CallExpr* call) {
+  FnSymbol* fn = call->isResolved();
+  INT_ASSERT(fn != NULL);
+
+  Symbol* ret = NULL;
+
+  if (fn->hasFlag(FLAG_FN_RETARG)) {
+    ret = toDefExpr(fn->formals.tail)->sym;
+    INT_ASSERT(ret->hasFlag(FLAG_RETARG));
+  } else {
+    ret = fn->getReturnSymbol();
+  }
+
+  std::set<Symbol*> sourceArgs;
+  if (isCausedByArgs(fn, ret, sourceArgs)) {
+    for_set(Symbol, arg, sourceArgs) {
+      INT_ASSERT(isArgSymbol(arg) && arg->defPoint->parentSymbol == fn);
+      if (!arg->hasFlag(FLAG_RETARG) && hasSomeWideness(formal_to_actual(call, arg))) {
+        // This actual causes the returned var to be wide
+        return true;
+      }
+    }
+    return false;
+  }
+  return hasSomeWideness(ret);
+}
+
+static void handleReturns() {
+  std::vector<CallExpr*> toRemove;
+
+  for_set(CallExpr, call, returnCalls) {
+    FnSymbol* fn = call->isResolved();
+    INT_ASSERT(fn);
+
+    if (shouldRetWide(call)) {
+      toRemove.push_back(call);
+      if (fn->hasFlag(FLAG_FN_RETARG)) {
+        Symbol* retarg = toDefExpr(fn->formals.tail)->sym;
+        INT_ASSERT(retarg->hasFlag(FLAG_RETARG));
+
+        SymExpr* actual = toSymExpr(formal_to_actual(call, retarg));
+        // TODO: should we artificially insert the defs of retarg into `causes`?
+        setValWide(retarg, actual->var);
+      } else {
+        CallExpr* move = toCallExpr(call->parentExpr);
+        INT_ASSERT(move->isPrimitive(PRIM_MOVE) || move->isPrimitive(PRIM_ASSIGN));
+        SymExpr* LHS = toSymExpr(move->get(1));
+
+        // Get SymExpr in PRIM_RETURN
+        SymExpr* ret = NULL;
+        {
+          CallExpr* call = toCallExpr(fn->body->body.last());
+          INT_ASSERT(call->isPrimitive(PRIM_RETURN));
+          ret = toSymExpr(call->get(1));
+          INT_ASSERT(isObj(ret));
+        }
+
+        if (isRef(LHS)) {
+          setValWide(ret, LHS);
+        } else  {
+          setWide(ret, LHS);
+        }
+      }
+    }
+  }
+
+  // Do not keep track of calls that return wide. Going forward we only need to
+  // confirm that narrow returns are correct.
+  for_vector(CallExpr, rem, toRemove) {
+    returnCalls.erase(rem);
+  }
+
+  // Remove cache entries that allow the returned value to be narrow. This will
+  // cause those entries to be recalculated during the next propagation
+  // iteration. This is currently necessary because we don't know if something
+  // further up in the `causes` graph has changed.
+  //
+  // TODO: One could imagine using a reversed  `causes` graph to propagate some
+  // notion of 'freshness', but I'm not sure how much more performant that
+  // would be.
+  for(std::map<FnSymbol*, std::set<Symbol*> >::iterator it = argsCache.begin();
+      it != argsCache.end();) {
+    if (it->second.size() > 0) {
+      DEBUG_PRINTF("Removing cache for %s (%d)\n", it->first->cname, it->first->id);
+      argsCache.erase(it++);
+    } else {
+      ++it;
+    }
+  }
+}
+
+//
+// End of functions used for wide-return optimization
+//
+
 
 //
 // Convert dtNil to dtObject.
@@ -861,6 +1158,10 @@ static void propagateVar(Symbol* sym) {
     FnSymbol* fn = toFnSymbol(sym->defPoint->parentSymbol);
     DEBUG_PRINTF("\tFixing types for arg %s (%d) in %s\n", sym->cname, sym->id, fn->cname);
     forv_Vec(CallExpr, call, *fn->calledBy) {
+      if (sym->hasFlag(FLAG_RETARG) && call->isResolved()) {
+        returnCalls.insert(call);
+        continue;
+      }
       if (!isAlive(call)) DEBUG_PRINTF("\tFound dead call %d\n", call->id);
       if (!call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         SymExpr* actual = toSymExpr(formal_to_actual(call, sym));
@@ -896,7 +1197,6 @@ static void propagateVar(Symbol* sym) {
               case PRIM_GET_SVEC_MEMBER_VALUE:
               case PRIM_GET_REAL:
               case PRIM_GET_IMAG:
-              case PRIM_VIRTUAL_METHOD_CALL: // TODO: remove this?
                 debug(sym, "Setting %s (%d) to wide\n", lhs->cname, lhs->id);
                 setWide(use, lhs);
                 break;
@@ -943,6 +1243,14 @@ static void propagateVar(Symbol* sym) {
                   }
                   fieldsToMakeWide.insert(fi);
                 }
+              }
+            } else if (call->isPrimitive(PRIM_DEREF)) {
+              // loc_rec = *(wide_ref_rec);
+              // exposed by distributions/robust/arithmetic/modules/test_module_Sort.chpl
+              // when dereferencing a wide ref to a tuple, which had a narrow
+              // class element.
+              if (!hasSomeWideness(lhs) && isRecord(lhs->type)) {
+                widenSubAggregateTypes(use, lhs->type);
               }
             }
           }
@@ -993,6 +1301,12 @@ static void propagateVar(Symbol* sym) {
 
         forv_Vec(CallExpr*, call, *fn->calledBy) {
           if (!isAlive(call)) continue;
+
+          // TODO: handle return of _refs
+          if (isObj(sym) && call->isResolved() && isCallExpr(call->parentExpr)) {
+            returnCalls.insert(call);
+            continue;
+          }
 
           // TODO: This case handles virtual method calls, or the return of
           // a _ref. Can we handle this better?
@@ -1063,7 +1377,7 @@ static void propagateVar(Symbol* sym) {
                      rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
               widenTupleField(rhs, def);
             }
-            else if (rhs->isResolved()) {
+            else if (rhs->isResolved() && isRef(rhs->isResolved()->getReturnSymbol())) {
               debug(sym, "return symbol must be wide\n");
               matchWide(sym, rhs->isResolved()->getReturnSymbol());
             }
@@ -1748,7 +2062,69 @@ static void fixAST() {
 
     if (call->isResolved()) {
       for_formals_actuals(formal, actual, call) {
-        if (SymExpr* act = toSymExpr(actual)) {
+        if (formal->hasFlag(FLAG_RETARG)) {
+          if (formal->typeInfo() != actual->typeInfo() && hasSomeWideness(formal)) {
+            SET_LINENO(call);
+
+            SymExpr* act = toSymExpr(actual);
+            Vec<SymExpr*>* defs = defMap.get(act->var);
+
+            // def/use maps were not built for local fns
+            if (!defs) {
+              BlockStmt* parentBlock = toBlockStmt(call->getStmtExpr()->parentExpr);
+              if (parentBlock->parentSymbol &&
+                  !parentBlock->isLoopStmt() &&
+                  parentBlock->blockInfoGet() &&
+                  parentBlock->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
+                buildDefUseMaps(parentBlock, defMap, useMap);
+              } else if (FnSymbol* locfn = toFnSymbol(call->parentSymbol)) {
+                if (locfn->hasFlag(FLAG_LOCAL_FN)) {
+                  buildDefUseMaps(locfn, defMap, useMap);
+                }
+              }
+              defs = defMap.get(act->var);
+              INT_ASSERT(defs);
+            }
+
+            // assume the _retArg is only def'd once
+            INT_ASSERT(defs->n == 1);
+            SymExpr* lhs = defs->first();
+
+            //
+            // This:
+            // 
+            //   ref_T _retArg = &dest;
+            //   fn(..., _retArg);
+            //
+            // Becomes:
+            //
+            //   ref_wide_T _retArg = &wide_dest;
+            //   fn(..., _retArg);
+            //   dest = wide_dest.addr;
+            //
+
+            CallExpr* parent = toCallExpr(lhs->parentExpr);
+            INT_ASSERT(parent->isPrimitive(PRIM_MOVE));
+
+            CallExpr* addrof = toCallExpr(parent->get(2));
+            INT_ASSERT(addrof->isPrimitive(PRIM_ADDR_OF));
+            SymExpr* dest = toSymExpr(addrof->get(1));
+
+            VarSymbol* refTemp = newTemp(formal->typeInfo());
+            call->insertBefore(new DefExpr(refTemp));
+
+            VarSymbol* destTemp = newTemp(refTemp->getValType());
+            call->insertBefore(new DefExpr(destTemp));
+
+            call->insertBefore(new CallExpr(PRIM_MOVE, refTemp, new CallExpr(PRIM_ADDR_OF, destTemp)));
+            act->replace(new SymExpr(refTemp));
+
+            call->insertAfter(new CallExpr(PRIM_MOVE, dest->copy(), new SymExpr(destTemp)));
+            parent->remove();
+            act->var->defPoint->remove();
+          }
+        }
+        else if (SymExpr* act = toSymExpr(actual)) {
           makeMatch(formal, act);
         }
       }
@@ -1839,6 +2215,50 @@ static void fixAST() {
               call->insertBefore(new DefExpr(tmp));
               call->insertAfter(new CallExpr(PRIM_MOVE, lhs->copy(), tmp));
               lhs->replace(new SymExpr(tmp));
+            }
+          }
+          else if (FnSymbol* fn = rhs->isResolved()) {
+            if (call->get(1)->getValType() != call->get(2)->getValType() &&
+                hasSomeWideness(fn->retType) &&
+                isObj(fn->retType)) {
+              SET_LINENO(call);
+
+              SymExpr* LHS = toSymExpr(call->get(1));
+              VarSymbol* wideTemp = newTemp(fn->retType);
+              call->insertBefore(new DefExpr(wideTemp));
+
+              if (isRef(LHS)) {
+                //
+                // This:
+                //
+                //   *(_ref_tmp) = fn(...)
+                //
+                // Becomes:
+                //
+                //   wideTemp = fn(...)
+                //   narrowTemp = wideTemp.addr
+                //   *(ref_temp) = narrowTemp
+                //
+                VarSymbol* narrowTemp = newTemp(LHS->getValType());
+                call->insertBefore(new DefExpr(narrowTemp));
+
+                call->insertAfter(new CallExpr(PRIM_MOVE, LHS->copy(), narrowTemp));
+                call->insertAfter(new CallExpr(PRIM_MOVE, narrowTemp, wideTemp));
+              } else {
+                //
+                // This:
+                //
+                //   LHS = fn(...)
+                //
+                // Becomes:
+                //
+                //   wideTemp = fn(...)
+                //   LHS = wideTemp.addr
+                //
+                call->insertAfter(new CallExpr(PRIM_MOVE, LHS->copy(), wideTemp));
+              }
+              
+              LHS->replace(new SymExpr(wideTemp));
             }
           }
         }
@@ -2014,14 +2434,23 @@ insertWideReferences(void) {
     DEBUG_PRINTF("WARNING: No known wide things...?\n");
   }
 
+  int numIters = 0;
   while (!queueEmpty()) {
-    Symbol* sym = queuePop();
+    DEBUG_PRINTF("Propagation Iteration %d\n\n", numIters);
+    numIters += 1;
 
-    if (isField(sym)) {
-      propagateField(sym);
-    } else {
-      propagateVar(sym);
+    // Propagate as far as we can...
+    while (!queueEmpty()) {
+      Symbol* sym = queuePop();
+      if (isField(sym)) {
+        propagateField(sym);
+      } else {
+        propagateVar(sym);
+      }
     }
+
+    // ... then deal with the return of wide pointers
+    handleReturns();
   }
   debugTimer.stop();
 
