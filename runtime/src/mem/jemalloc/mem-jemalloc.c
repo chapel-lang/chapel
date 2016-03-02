@@ -215,22 +215,44 @@ static void replaceChunkHooks(void) {
   }
 }
 
+// helper routine to determine if an address is not part of the shared heap
+static bool addressNotInHeap(void* ptr) {
+  uintptr_t u_ptr = (uintptr_t)ptr;
+  uintptr_t u_base = (uintptr_t)heap.base;
+  uintptr_t u_top =  u_base + heap.size;
+  return (u_ptr < u_base) || (u_ptr > u_top);
+}
+
+// grab (and leak) whatever memory jemalloc got on it's own, that's not in
+// our shared heap
+//
+//   jemalloc 4.0.4 man: "arenas may have already created chunks prior to the
+//   application having an opportunity to take over chunk allocation."
+//
+// Note that this will also allow jemalloc to initialize
 static void useUpMemNotInHeap(void) {
-  // grab (and leak) whatever memory jemalloc got on it's own, that's not in
-  // our shared heap
-  //
-  //   jemalloc 4.0.4 man: "arenas may have already created chunks prior to the
-  //   application having an opportunity to take over chunk allocation."
-  //
-  // Note that this will also allow jemalloc to initialize
-  char* p = NULL;
+  void* p = NULL;
+#ifdef DEBUG_ALLOC_WASTE
+  size_t alloced = 0;
+  size_t num_allocs = 0;
+#endif
+
   do {
+#ifdef DEBUG_ALLOC_WASTE
+    alloced += sizeof(size_t);
+    num_allocs++;
+#endif
     // TODO use a larger value than size_t here (must be smaller than
     // "arenas.hchunk.0.size" though
     if ((p = je_malloc(sizeof(size_t))) == NULL) {
       chpl_internal_error("could not use up memory outside of shared heap");
     }
-  } while ((p != NULL && (p < (char*) heap.base || p > (char*) heap.base + heap.size)));
+  } while (addressNotInHeap(p));
+
+
+#ifdef DEBUG_ALLOC_WASTE
+  printf("Allocated %f MB with %zu allocations\n", ((double)alloced / (1024.0*1024.0)), num_allocs);
+#endif
 }
 
 // Have jemalloc use our shared heap. Initialize all the arenas, then replace
