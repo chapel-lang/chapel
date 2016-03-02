@@ -5,10 +5,6 @@ pragma "fast-on safe extern function"
 extern proc foo1(): int;
 extern proc foo2(): int;
 
-pragma "fast-on safe extern function"
-proc nonExternFunction() {
-}
-
 proc bar(n, param fooVersion) {
   if fooVersion == 1 then
     return n + foo1();
