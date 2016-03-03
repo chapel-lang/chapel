@@ -731,6 +731,9 @@ static bool isCausedByArgs(FnSymbol* fn,
   INT_ASSERT(sourceArgs.size() == 0);
   INT_ASSERT(sym == fn->getReturnSymbol() ||
              (sym->hasFlag(FLAG_RETARG) && sym->defPoint->parentSymbol == fn));
+  if (fn->hasFlag(FLAG_VIRTUAL)) {
+    return false;
+  }
 
   // Check to see if we have some results for this fn/sym already
   if (argsCache.count(fn) != 0) {
