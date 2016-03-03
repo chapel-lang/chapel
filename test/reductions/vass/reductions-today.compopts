@@ -1,0 +1,4 @@
+-s useSA=false  -s useLF=false  # reductions-today.ser.good
+-s useSA=false  -s useLF=true   # reductions-today.lf.good
+-s useSA=true   -s useLF=false  # reductions-today.sa.good
+-s useSA=true   -s useLF=true   # reductions-today.both.good
