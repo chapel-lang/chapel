@@ -625,7 +625,6 @@ static bool recurseCausedByArgs(FnSymbol* fn,
   // return TRUE if `sym` is a class and is an arg of `fn`
   if (isObj(sym) &&
       isArgSymbol(sym) &&
-      !fn->hasFlag(FLAG_RETARG) &&
       sym->defPoint->parentSymbol == fn) {
     sourceArgs.insert(sym);
     return true;
@@ -743,7 +742,7 @@ static bool isCausedByArgs(FnSymbol* fn,
 
   // Assert that the only causes for formals are the corresponding actuals
   for_formals(formal, fn) {
-    if (formal->hasFlag(FLAG_RETARG)) {
+    if (isRef(formal)) {
       continue;
     }
 
