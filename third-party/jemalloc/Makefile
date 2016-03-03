@@ -70,7 +70,9 @@ build-jemalloc: FORCE
 	cd $(JEMALLOC_BUILD_DIR) && $(MAKE) $(CHPL_JEMALLOC_MAKE_OPTIONS) build_lib_static
 
 install-jemalloc: FORCE
-	cd $(JEMALLOC_BUILD_DIR) && $(MAKE) install_lib_static install_bin install_include
+	cd $(JEMALLOC_BUILD_DIR) && $(MAKE) install_lib_static
+	cd $(JEMALLOC_BUILD_DIR) && $(MAKE) install_bin
+	cd $(JEMALLOC_BUILD_DIR) && $(MAKE) install_include
 
 
 FORCE:
