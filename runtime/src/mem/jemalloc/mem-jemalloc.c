@@ -31,22 +31,6 @@
 #include "chpltypes.h"
 #include "error.h"
 
-
-// TODO it'd be great if there was some way for us to set the number of arenas.
-// jemalloc's default is `4 * logicalCPUs` which is fine for fifo, but for
-// qthreads and muxed, we know how many pthreads will be created at startup.
-// The number of arenas can be set with je_malloc_conf, but that's a compile
-// time constant. We can also set it with JE_MALLOC_CONF, but I think that has
-// to be prior to program execution, I think by the time we get here, we're
-// already too late. I was hoping we just had to set it before the first call
-// to an allocation routine, but that doesn't appear to be the case.
-//
-// A hacky (but easy/straightforward) solution would be do modify jemalloc
-// source. For qthreads we could get rid of the 4x multiplier and just default
-// to the number of logical cpus. See jemalloc.c:1277. Might be worth testing
-// the performance difference in a playground just to see if it's worth
-// investigating further.
-
 static struct shared_heap {
   void* base;
   size_t size;
