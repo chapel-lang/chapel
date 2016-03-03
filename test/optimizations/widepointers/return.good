@@ -1,0 +1,14 @@
+Starting reflect()...
+{x = 11}
+{x = 11}
+Local var was returned as wide pointer: false
+{x = 42}
+{x = 42}
+Remote var was returned as wide pointer: true
+Starting assignReflect()...
+{x = 11}
+{x = 1337}
+Local var was returned as wide pointer: true
+{x = 42}
+{x = 1337}
+Remote var was returned as wide pointer: true
