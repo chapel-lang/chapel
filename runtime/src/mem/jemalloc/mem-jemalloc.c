@@ -215,7 +215,6 @@ static void replaceChunkHooks(void) {
   }
 }
 
-#ifdef DEBUG_ALLOC_WASTE
 // helper routines to get a mallctl value
 #define DEFINE_GET_MALLCTL_VALUE(type) \
 static type get_ ## type ##_mallctl_value(const char* mallctl_string) { \
@@ -265,7 +264,6 @@ static void get_small_and_large_class_sizes(size_t* classes) {
     classes[small_classes + class] = get_size_t_mallctl_value(lsize);
   }
 }
-#endif
 
 // helper routine to determine if an address is not part of the shared heap
 static bool addressNotInHeap(void* ptr) {
@@ -288,27 +286,28 @@ static void useUpMemNotInHeap(void) {
   size_t alloced = 0;
   size_t num_allocs = 0;
 #endif
+  unsigned class = 0;
+  unsigned num_classes = get_num_small_and_large_classes();
+  size_t classes[num_classes];
+  get_small_and_large_class_sizes(classes);
 
-  do {
+
+  for (class=num_classes-1; class!=UINT_MAX; class--) {
+    size_t alloc_size;
+    alloc_size = classes[class];
+    do {
 #ifdef DEBUG_ALLOC_WASTE
-    alloced += sizeof(size_t);
-    num_allocs++;
+      alloced += alloc_size;
+      num_allocs++;
 #endif
-    // TODO use a larger value than size_t here (must be smaller than
-    // "arenas.hchunk.0.size" though
-    if ((p = je_malloc(sizeof(size_t))) == NULL) {
-      chpl_internal_error("could not use up memory outside of shared heap");
-    }
-  } while (addressNotInHeap(p));
+      if ((p = je_malloc(alloc_size)) == NULL) {
+        chpl_internal_error("could not use up memory outside of shared heap");
+      }
+    } while (addressNotInHeap(p));
+  }
 
 
 #ifdef DEBUG_ALLOC_WASTE
-  {
-    unsigned class = 0;
-    unsigned num_classes = get_num_small_and_large_classes();
-    size_t classes[num_classes];
-    get_small_and_large_class_sizes(classes);
-
     for (class=0; class<num_classes; class++) {
       size_t alloc_size = classes[class];
       if ((p = je_malloc(alloc_size)) == NULL) {
@@ -319,9 +318,8 @@ static void useUpMemNotInHeap(void) {
       }
       je_free(p);
     }
-  }
 
-  printf("Allocated %f MB with %zu allocations", ((double)alloced / (1024.0*1024.0)), num_allocs);
+  printf("Allocated %f MB with %zu allocations\n", ((double)alloced / (1024.0*1024.0)), num_allocs);
 #endif
 }
 
