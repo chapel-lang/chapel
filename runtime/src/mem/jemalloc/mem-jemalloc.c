@@ -215,6 +215,58 @@ static void replaceChunkHooks(void) {
   }
 }
 
+#ifdef DEBUG_ALLOC_WASTE
+// helper routines to get a mallctl value
+#define DEFINE_GET_MALLCTL_VALUE(type) \
+static type get_ ## type ##_mallctl_value(const char* mallctl_string) { \
+  type value; \
+  size_t sz; \
+  sz = sizeof(value); \
+  if (je_mallctl(mallctl_string, &value, &sz, NULL, 0) != 0) { \
+    char error_msg[256]; \
+    snprintf(error_msg, sizeof(error_msg), "could not get mallctl value for %s", mallctl_string); \
+    chpl_internal_error(error_msg); \
+  } \
+  return value; \
+}
+DEFINE_GET_MALLCTL_VALUE(size_t);
+DEFINE_GET_MALLCTL_VALUE(unsigned);
+
+// helper routines to get the number of size classes
+static unsigned get_num_small_classes(void) {
+  return get_unsigned_mallctl_value("arenas.nbins");
+}
+
+static unsigned get_num_large_classes(void) {
+  return get_unsigned_mallctl_value("arenas.nlruns");
+}
+
+static unsigned get_num_small_and_large_classes(void) {
+  return get_num_small_classes() + get_num_large_classes();
+}
+
+// helper routine to get an array of size classes for small and large sizes
+static void get_small_and_large_class_sizes(size_t* classes) {
+  unsigned class;
+  unsigned small_classes;
+  unsigned large_classes;
+
+  small_classes = get_num_small_classes();
+  for (class=0; class<small_classes; class++) {
+    char ssize[128];
+    snprintf(ssize, sizeof(ssize), "arenas.bin.%u.size", class);
+    classes[class] = get_size_t_mallctl_value(ssize);
+  }
+
+  large_classes = get_num_large_classes();
+  for (class=0; class<large_classes; class++) {
+    char lsize[128];
+    snprintf(lsize, sizeof(lsize), "arenas.lrun.%u.size", class);
+    classes[small_classes + class] = get_size_t_mallctl_value(lsize);
+  }
+}
+#endif
+
 // helper routine to determine if an address is not part of the shared heap
 static bool addressNotInHeap(void* ptr) {
   uintptr_t u_ptr = (uintptr_t)ptr;
@@ -251,7 +303,25 @@ static void useUpMemNotInHeap(void) {
 
 
 #ifdef DEBUG_ALLOC_WASTE
-  printf("Allocated %f MB with %zu allocations\n", ((double)alloced / (1024.0*1024.0)), num_allocs);
+  {
+    unsigned class = 0;
+    unsigned num_classes = get_num_small_and_large_classes();
+    size_t classes[num_classes];
+    get_small_and_large_class_sizes(classes);
+
+    for (class=0; class<num_classes; class++) {
+      size_t alloc_size = classes[class];
+      if ((p = je_malloc(alloc_size)) == NULL) {
+        chpl_internal_error("could not allocate memory to test size classes");
+      }
+      if (addressNotInHeap(p)) {
+        printf("Allocation for size class %u (%zu bytes) was not in shared heap\n", class, alloc_size);
+      }
+      je_free(p);
+    }
+  }
+
+  printf("Allocated %f MB with %zu allocations", ((double)alloced / (1024.0*1024.0)), num_allocs);
 #endif
 }
 
