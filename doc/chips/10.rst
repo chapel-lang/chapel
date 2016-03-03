@@ -48,6 +48,11 @@ optimizable copy semantics.
 The User's View
 ---------------
 
+This section describes how we expect users to think about Chapel's rules
+for inserting copies. We expect that some form of this section would be
+in the language specification. It is an open question how much additional
+detail the specification should include.
+
 A variable declaration creates unique storage for a record's fields.  The
 process of returning may or may not provide unique storage for a record.
 The `in` argument intent is treated similarly to a variable declaration
@@ -69,8 +74,10 @@ This property does not extend to memory pointed to by a record. The copy
 behavior of data beyond such pointers depends on the record
 implementation.
 
-This guiding rule does not say anything about how a variable is returned.
-It does not prohibit an implementation from making temporary copies.
+This guiding rule is the same whether types are implicit or explicitly
+provided. However, it does not say anything about how a variable is
+returned. Lastly, it does not prohibit an implementation from making
+temporary copies.
 
 This strategy is meant to support the following use cases:
 
@@ -209,7 +216,6 @@ of the function by returning that variable.
     return x;
   }
 
-
 Overview of Detailed Rules
 --------------------------
 
@@ -235,6 +241,11 @@ in resolution.
 These AST listings will use `tmp`, `retVar`, `exprtmp`, and `rtt`
 variables.  Of these, only `exprTmp` and `rtt` should be destroyed upon
 return from the function.
+
+The rules cover typed and un-typed cases. The rules make the same `move`
+or `copy` calls whether typed or un-typed. When types are explicit, these
+`move` or `copy` calls need any run-time component of the type in order
+to support coercions or to do bounds checking.
 
 Variable Initialization
 +++++++++++++++++++++++
@@ -363,6 +374,9 @@ without the type argument for this case:
 
   move a, copy(b)
 
+Note that this `copy` could be removed in many cases if the optional
+proposal :ref:`expiring-value-opt` is adopted.
+
 Typed Initialization from another variable
 ******************************************
 
@@ -389,6 +403,9 @@ has a runtime component (as with an array):
   (on exit: destroy rtt)
 
 (a type without a runtime type would simply omit the `rtt` argument).
+
+Note that this `copy` could be removed in many cases if the optional
+proposal :ref:`expiring-value-opt` is adopted.
 
 Returning from a Function
 +++++++++++++++++++++++++
@@ -586,7 +603,8 @@ In this case, the function is returning a value that it does not have the
 responsibility to destroy. Therefore, it cannot transfer that
 responsibility to the caller and so a copy is necessary.  This case
 includes `return f()` when `f` has the `ref` or `const ref` return
-intent.
+intent as well as returning a `ref` or `const ref` argument or in general
+any `ref`.
 
 ::
 
@@ -637,7 +655,8 @@ Typed Return from an Outer Variable
 
 This case is similar to the previous case, except that the function has a
 declared return type.  This case includes `return f()` when `f` has the
-`ref` or `const ref` return intent.
+`ref` or `const ref` return intent as well as returning a `ref` or `const
+ref` argument or in general any `ref`.
 
 
 ::
@@ -699,7 +718,11 @@ called in some cases. The current compiler adds `copy` calls (or the
 equivalent) at the start of the body of a function with the `in` intent.
 However, in order to support optimization of common patterns, this
 proposal recommends that any copying in required by the `in`, and `inout`
-intents be handled by the caller of the function.
+intents be handled by the caller of the function. Doing these copies in
+the caller of the function allows the rules above to apply, so that (for
+example) no copy is made passing a value returned by one function to
+another with `in` intent. It also allows the :ref:`expiring-value-opt` to
+apply to them without needing to be inter-procedural.
 
 In particular, the `in` intent should be treated similarly to a variable
 declaration. For example,
@@ -724,7 +747,9 @@ is nearly equivalent to, under this proposal:
 
 As with a variable declaration, no copy is required if `someExpression`
 is a function call - but a copy is required if `someExpression` is
-another variable or a function call returning a reference.
+another variable or a function call returning a reference. By adding any
+`copy` that is necessary in the caller (vs the callee), the above rules
+can apply to minimize these copies.
 
 Here is an example showing the proposed behavior for `in`, `inout`,
 and `out` argument intents.
@@ -748,7 +773,7 @@ and `out` argument intents.
       ...;
     }
 
-Would be translated to the following:
+It would be translated to the following:
 
 .. code-block:: chapel
 
@@ -831,12 +856,13 @@ where a `copy` will be added by the second line as described in
 Return statements inside a function with `ref` or `const ref` return
 intent have the following behavior:
 
- * The `return` statement in a `ref` or `const ref` return intent function does
-   not cause a `move` or `copy` call to be made. The usual rules for
-   `return` statements are disabled; instead, the `retVar` is just set to a
-   created reference. Types with runtime components (such as arrays) need  a
-   `check` or some sort of call in order to allow the implementation to type check
-   against the declared return type of a function. See :ref:`ref-return-array`.
+ * The `return` statement in a `ref` or `const ref` return intent
+   function does not cause a `move` or `copy` call to be made. The usual
+   rules for `return` statements are disabled; instead, the `retVar` is
+   just set to a created reference. Types with runtime components (such
+   as arrays) need  a `check` or some sort of call in order to allow the
+   implementation to type check against the declared return type of a
+   function. See :ref:`ref-return-array`.
  * Returning a local variable or temporary in a function with `ref` return
    intent does not prevent that variable or temporary from being destroyed
    and so should be a compile error if possible.
@@ -885,6 +911,88 @@ Intuitively, there is no need to change the reference count for a
 Note that the pointer inside each `_refcnt` to another object (e.g. a
 class instance) does not change when the `_refcnt` is copied.
 
+The following is an example implementation of a `_refcnt` type.
+
+.. code-block:: chapel
+
+  class shared_count {
+    var count: atomic int = 1;
+
+    proc retain() {
+      count.add(1);
+    }
+    proc release() {
+      var oldValue = count.fetchSub(1);
+      return oldValue - 1;
+    }
+  }
+
+  // this could also be called `shared_ptr` to correspond
+  // with the C++ feature.
+  record _refcnt {
+    var p;               // contained pointer (class type)
+    var pn:shared_count; // reference counter
+
+    proc init(p) {
+      if !isClass(p.type) then
+        compilerError("_refcnt only works with classes");
+      this.p = p;
+      pn = new shared_count();
+    }
+    proc deinit() {
+      release();
+    }
+    proc release() {
+      var count = pn.release();
+      if count == 0 {
+        delete p;
+        delete pn;
+      }
+    }
+    proc retain() {
+      pn.retain();
+    }
+
+    // (not trying to propose the specific names here,
+    //  and depending on other initializer work, not all
+    //  of these are necessary).
+    proc copy_init(rhs) {
+      this.p = rhs.p;
+      this.pn = rhs.pn;
+      retain();
+    }
+    proc move_init(rhs) {
+      this.p = rhs.p;
+      this.pn = rhs.pn;
+    }
+  }
+
+  proc =(ref lhs:_refcnt, rhs:_refcnt) {
+    rhs.retain();
+    lhs.release();
+    lhs.p = rhs.p;
+    lhs.pn = rhs.pn;
+  }
+
+Here is an example program using `_refcnt`:
+
+.. code-block:: chapel
+
+  proc f() {
+
+    var x=new _refcnt(new MyClass());
+    // now x's ref count is 1
+
+    var y=x;  // calls copy, increments ref count to 2
+
+    return y; // calls move, does not change ref count
+
+    // (destroy x) decrements ref count to 1
+  }
+
+  var z = f(); // calls move, leaving ref count at 1
+  // (destroy z) decrements ref count to 0, freeing MyClass.
+
 .. _buffer:
 
 Supporting Records storing a Buffer
@@ -912,6 +1020,11 @@ For example,
     var a:int;
     var b:int;
     var c:int;
+
+    // the idea is to store fields d-h on the heap
+    // instead of the stack in order to save stack space.
+    // So, these fields are accessible through the
+    // following variable which points to them.
     var buf:buffer; // (implementation private)
   }
 
@@ -988,7 +1101,10 @@ In this way, a program such as:
   proc f(x:int) {
     var s:string;
     s += x:string;
-    return s.localize();
+    return s.localize(); // returns a string pointing to
+                         // a buffer freed in this function,
+                         // but the compiler-inserted `move` call
+                         // will be implemented to copy the buffer.
   }
 
   writeln(f(100));
@@ -1043,6 +1159,25 @@ supports array aliases and slices.
 
 All 3 of these functions need to implement array bounds checking against
 declared sizes. These checks could be removed in `--fast` compiles.
+
+Additionally, because arrays return by value, the compiler will need
+to relax l-value checking when promoting a temporary to a `ref`. For
+example,
+
+.. code-block:: chapel
+
+  proc returnsArray() {
+    var A:[1..10] int;
+    return A;
+  }
+  proc consumesArray(arg) {
+    writeln(arg);
+  }
+
+  consumesArray(returnsArray());
+
+will need to work, even though for other types it would be an error to
+create a `ref` from the value returned from a function.
 
 Without further special handling in the compiler, the resulting semantics
 are a slight change from the current behavior. We have identified primarily
@@ -1122,13 +1257,26 @@ implementation:
   var A:[1..3] int;
 
   proc f() {
-    return A;
+    return A; // copy created as part of returning
   }
 
   writeln(f());
 
 Note that this difference also applies to `f` returning a ref-intent
-argument or any other reference to an outer variable.
+argument or any other reference to an outer variable:
+
+.. code-block:: chapel
+
+  var A:[1..3] int;
+
+  proc f(arg) {
+    return arg; // copy created as part of returning
+  }
+
+  writeln(f(A));
+
+In both of these examples, the copy is made because of the rule
+:ref:`untyped-return-global`.
 
 Note that the current implementation already makes a copy if:
 
@@ -1147,7 +1295,7 @@ proposal:
   var A:[1..3] int;
 
   proc f() {
-    return A;
+    return A; // makes a copy under proposal, not in current compiler
   }
   proc g(x) {
     x[1] = 1;
@@ -1342,13 +1490,14 @@ errors such as in this case:
 
   proc retA() ref :[1..3] int
   {
-    return A;
+    return A; // error: 1..4 does not match 1..3
   }
 
   writeln(retA());
 
-Here, the compiler should generate a `check` call in `retA` that checks that
-the declared return type `:[1..3] int` matches A's type `:[1..4]`.
+Here, the compiler should generate a `check(rtt)` call in `retA` that
+checks that the declared return type `:[1..3] int` matches A's type
+`:[1..4]`.
 
 Here is an example that should work without error:
 
@@ -1372,7 +1521,7 @@ It is not legal to return a local variable by ref:
 
   proc f() ref {
     var localArray:[1..100] int;
-    return localArray;
+    return localArray; // error: returning local by ref
   }
 
   writeln(f()[1]);
@@ -1408,6 +1557,15 @@ Array slices
 Array slices are a tricky case for the same reasons as `string.localize()`
 discussed above (see :ref:`strings`).
 
+The proposed strategy uses an `_array` `isalias` `bool` field that is
+generally `false` but set to `true` when a slice is created. It implements
+`move` for `_array` to perform a copy when `isalias` is `true`, and also
+marks the function implementing array slice with a special pragma to
+prevent it from calling `move` when returning.
+
+Example 1
+*********
+
 Consider this example program:
 
 .. code-block:: chapel
@@ -1425,9 +1583,12 @@ the return from `f` did not make a copy of the slice or somehow arrange for the
 slice to take ownership of the original array. The problem is that the `A`
 variable is destroyed at the end of `f`'s scope.
 
-The proposed strategy is to arrange for the return `move` call to make a copy
-because an `_array` field `isalias` would be set to `true` when constructing
-the slice. The field `isalias` would generally otherwise be set to `false`.
+The proposed strategy will have the slice construction function set
+`isalias` to `true`, and then the `move` call made in the process of
+returning will create a copy of the array slice.
+
+Example 2
+*********
 
 .. code-block:: chapel
 
@@ -1448,8 +1609,12 @@ Currently outputs `0 1 0 0`. Under the proposal, it would output `0 0 0 0`
 because a `move` call is invoked in the `return` from `f` and `isalias` is
 true, resulting in a copy.
 
-This proposal does not include a user-facing way to manually restore the old
-behavior.
+This proposal does not include a user-facing way to manually restore the
+old behavior. Note though that the slice function uses a pragma that
+could possibly generalized into a user-facing feature.
+
+Example 3
+*********
 
 .. code-block:: chapel
 
@@ -1461,6 +1626,9 @@ behavior.
 Currently outputs `0 0 0 0`. Will still do that because `move` for array slice
 from variable initialization will detect `isalias` and perform a full copy.
 
+Example 4
+*********
+
 .. code-block:: chapel
 
   var A:[1..4] int;
@@ -1470,6 +1638,9 @@ from variable initialization will detect `isalias` and perform a full copy.
 
 Currently outputs `0 1 0 0`. It could still do that if `=>` is not considered
 normal variable initialization, but more like `ref` initialization.
+
+Example 5
+*********
 
 .. code-block:: chapel
 
@@ -1485,6 +1656,25 @@ normal variable initialization, but more like `ref` initialization.
 Currently outputs `0 1 1 0`. It will continue to do so under this proposal,
 since `copy` and `move` for `_array` are not called when returning by ref.
 
+As described in :ref:`arrays`, it should be possible to create a `ref` to
+the temporary `_array` record returned by a function. Therefore, this
+example could also be written:
+
+.. code-block:: chapel
+
+  var A:[1..4] int;
+  ref A_slice = A[2..3];
+  proc f() ref {
+    return A_slice;
+  }
+
+  f() = 1;
+  writeln(A);
+
+
+Example 6
+*********
+
 .. code-block:: chapel
 
   proc f() ref {
@@ -1496,6 +1686,31 @@ since `copy` and `move` for `_array` are not called when returning by ref.
 
 Currently outputs `0 0`. It should be a compile error under the proposal, since
 it returns a local (temporary) variable by `ref`.
+
+Implementing the Slice Function
+*******************************
+
+One issue is that the implementation of array slicing is almost certainly
+a function. Let's suppose it is called `slice`. That function would look
+something like this:
+
+.. code-block:: chapel
+
+  pragma "no move on return"
+  proc _array.slice(ranges: range(?) ..rank) {
+    var d = _dom((..ranges));
+    var a = _value.dsiSlice(d._value);
+    a._arrAlias = _value;
+    var ret = new _array(a, a);
+    ret.isalias = true;
+    return ret; // no `move` call can be added here,
+                // because `move` will copy a slice in order
+                // to make Example 1 work
+  }
+
+As we have already described, the `move` function for `_array` would
+copy the array data in the case of `isalias=true`. For that reason,
+the `slice` function needs to disable the `move` on return.
 
 Alternatives:
 
@@ -1517,6 +1732,9 @@ _array Implementation Alternatives
 * "ownership bit" idea discussed previously - this approach requires separate
   copy fn for user variable init from return (or some other way to distinguish).
   (see :ref:`distinguish-move-calls`).
+  It could be possible to distinguish `copy` and `move` calls from
+  dead/expiring values. (e.g. expiring could be an argument to these
+  calls).
   Otherwise, return outerVar would always make a copy. One serious drawback
   with this approach is that it cannot tolerate extra copies of
   compiler temporaries in case the compiler is not as tidy as possible
@@ -1700,7 +1918,11 @@ In that case, A is modified by each xform call, instead of sometimes being a
 temporary being modified. This difference is observable if A is not dead after
 its use as an argument.
 
+Alternatives:
 
+ * create a performance warning. When a function always returns a global
+   or an argument, warn that a copy can be removed if the function
+   is declared with the `ref` return intent.
 
 Future Optional Extensions
 --------------------------
@@ -1720,6 +1942,9 @@ useful. In particular, keeping the current reference-counted array
 implementation with `autoCopy` and `initCopy` would require distinguishing
 between these cases. In addition, some of the alternative ways of
 implementing `_array` would require it. 
+
+It might also be useful for `move` and `copy` to indicate in an argument
+whether or not the argument is a dead/expiring value.
 
 .. _removing-inout:
 
