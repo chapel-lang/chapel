@@ -279,20 +279,30 @@ static bool addressNotInHeap(void* ptr) {
 //   jemalloc 4.0.4 man: "arenas may have already created chunks prior to the
 //   application having an opportunity to take over chunk allocation."
 //
-// Note that this will also allow jemalloc to initialize
+// jemalloc grabs "chunks" from the system in order to store metadata and some
+// internal data structures. However, these chunks are not allocated from our
+// shared heap, so we need to waste whatever memory is left in them so that
+// future allocations come from chunks that were provided by our shared heap
 static void useUpMemNotInHeap(void) {
   void* p = NULL;
 #ifdef DEBUG_ALLOC_WASTE
-  size_t alloced = 0;
-  size_t num_allocs = 0;
-  size_t num_frees = 0;
+  size_t alloced;
+  size_t num_allocs;
+  size_t num_frees;
 #endif
-  unsigned class = 0;
+  unsigned class;
   unsigned num_classes = get_num_small_and_large_classes();
   size_t classes[num_classes];
   get_small_and_large_class_sizes(classes);
 
-
+  // jemalloc has 3 class sizes. The small (a few pages) and large (up to chunk
+  // size) objects come from the arenas, but huge (more than chunk size)
+  // objects comes from a shared pool. We waste memory at every large and small
+  // class size so that we can be sure there's no fragments left in a chunk
+  // that jemalloc grabbed from the system. This way we know that any future
+  // allocation, regardless of size, must have come from a chunk provided by
+  // our shared heap. Once we know a specific class size came from our shared
+  // heap, we can free the memory instead of leaking it.
   for (class=num_classes-1; class!=UINT_MAX; class--) {
     size_t alloc_size;
     alloc_size = classes[class];
