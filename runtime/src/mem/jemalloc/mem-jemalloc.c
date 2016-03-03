@@ -285,6 +285,7 @@ static void useUpMemNotInHeap(void) {
 #ifdef DEBUG_ALLOC_WASTE
   size_t alloced = 0;
   size_t num_allocs = 0;
+  size_t num_frees = 0;
 #endif
   unsigned class = 0;
   unsigned num_classes = get_num_small_and_large_classes();
@@ -304,22 +305,27 @@ static void useUpMemNotInHeap(void) {
         chpl_internal_error("could not use up memory outside of shared heap");
       }
     } while (addressNotInHeap(p));
+    je_free(p);
+#ifdef DEBUG_ALLOC_WASTE
+    alloced -= alloc_size;
+    num_frees++;
+#endif
   }
 
 
 #ifdef DEBUG_ALLOC_WASTE
-    for (class=0; class<num_classes; class++) {
-      size_t alloc_size = classes[class];
-      if ((p = je_malloc(alloc_size)) == NULL) {
-        chpl_internal_error("could not allocate memory to test size classes");
-      }
-      if (addressNotInHeap(p)) {
-        printf("Allocation for size class %u (%zu bytes) was not in shared heap\n", class, alloc_size);
-      }
-      je_free(p);
+  for (class=0; class<num_classes; class++) {
+    size_t alloc_size = classes[class];
+    if ((p = je_malloc(alloc_size)) == NULL) {
+      chpl_internal_error("could not allocate memory to test size classes");
     }
+    if (addressNotInHeap(p)) {
+      printf("Allocation for size class %u (%zu bytes) was not in shared heap\n", class, alloc_size);
+    }
+    je_free(p);
+  }
 
-  printf("Allocated %f MB with %zu allocations\n", ((double)alloced / (1024.0*1024.0)), num_allocs);
+  printf("Allocated %f MB with %zu allocations and %zu frees\n", ((double)alloced / (1024.0*1024.0)), num_allocs, num_frees);
 #endif
 }
 
