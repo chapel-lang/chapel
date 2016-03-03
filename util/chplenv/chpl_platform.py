@@ -27,6 +27,9 @@ def get(flag='host'):
         # Check for cray platform. It is a cray platform if there is an CLEinfo
         # config file and it has a known network value in it.
         cle_info_file = os.path.abspath('/etc/opt/cray/release/CLEinfo')
+        if not os.path.exists(cle_info_file):
+            cle_info_file = os.path.abspath('/etc/opt/cray/release/cle-release')
+
         if os.path.exists(cle_info_file):
             with open(cle_info_file, 'r') as fp:
                 cle_info = fp.read()

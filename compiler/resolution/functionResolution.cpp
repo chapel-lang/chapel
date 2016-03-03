@@ -5358,6 +5358,10 @@ preFold(Expr* expr) {
 
     if (call->isNamed("this")) {
       SymExpr* base = toSymExpr(call->get(2));
+      if (!base) {
+        if (NamedExpr* nb = toNamedExpr(call->get(2)))
+          base = toSymExpr(nb->actual);
+      }
       INT_ASSERT(base);
       if (isVarSymbol(base->var) && base->var->hasFlag(FLAG_TYPE_VARIABLE)) {
         if (call->numActuals() == 2)
