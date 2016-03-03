@@ -283,6 +283,7 @@ VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
   LcnSymbol(E_VarSymbol, init_name, init_type),
   immediate(NULL),
+  declaredType(NULL),
   doc(NULL),
   isField(false)
 {
@@ -310,6 +311,7 @@ VarSymbol::copyInner(SymbolMap* map) {
   VarSymbol* newVarSymbol = new VarSymbol(name, type);
   newVarSymbol->copyFlags(this);
   newVarSymbol->cname = cname;
+  newVarSymbol->declaredType = declaredType;
   INT_ASSERT(!newVarSymbol->immediate);
   return newVarSymbol;
 }
@@ -744,9 +746,23 @@ void VarSymbol::codegenDefC(bool global) {
     return;
 
   AggregateType* ct = toAggregateType(type);
-  std::string typestr =  (this->hasFlag(FLAG_SUPER_CLASS) ?
-                          std::string(ct->classStructName(true)) :
-                          type->codegen().c);
+  std::string typestr;
+
+  if (this->hasFlag(FLAG_SUPER_CLASS))
+    typestr = ct->classStructName(true);
+  else if (this->declaredType &&
+           this->declaredType->type == this->type &&
+           this->declaredType->hasFlag(FLAG_EXTERN) &&
+           this->declaredType->hasFlag(FLAG_TYPE_VARIABLE)) {
+    // If this symbol was declared with an extern type,
+    // and the declared type matches the current type,
+    // use that extern type in the generated code.
+    // (The type could change for example when promoting this
+    //  variable to the heap).
+    typestr = this->declaredType->cname;
+  }
+  else
+    typestr = type->codegen().c;
 
   //
   // a variable can be codegen'd as static if it is global and neither

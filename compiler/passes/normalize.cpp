@@ -1162,6 +1162,17 @@ static void init_config_var(VarSymbol* var,
   stmt = noop; // insert regular definition code in then block
 }
 
+static void setDeclaredType(VarSymbol* var, Expr* typeExpr)
+{
+  // For variables with a declared extern type variable type,
+  // set var->declaredType to that type.
+  // This allows code generation to use the declared extern type
+  // in many, but not all cases.
+  if (SymExpr* se = toSymExpr(typeExpr))
+    if (se->var->hasFlag(FLAG_EXTERN) &&
+        se->var->hasFlag(FLAG_TYPE_VARIABLE))
+      var->declaredType = se->var;
+}
 
 static void init_typed_var(VarSymbol* var,
                            Expr*      type,
@@ -1229,6 +1240,8 @@ static void init_typed_var(VarSymbol* var,
     // module code)
     var->defPoint->init->remove();
 
+    setDeclaredType(var, type);
+
     CallExpr* initCall = new CallExpr(PRIM_MOVE,
                                       var,
                                       new CallExpr(PRIM_NO_INIT,
@@ -1265,6 +1278,9 @@ static void init_typed_var(VarSymbol* var,
     VarSymbol* typeTemp = newTemp("type_tmp");
     DefExpr*   typeDefn = new DefExpr(typeTemp);
     CallExpr*  initCall = NULL;
+
+    setDeclaredType(typeTemp, type);
+    setDeclaredType(var, type);
 
     initCall = new CallExpr(PRIM_MOVE,
                             typeTemp,

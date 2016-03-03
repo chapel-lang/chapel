@@ -1,0 +1,8 @@
+#!/bin/bash
+grep "c_int mynum" tmp/$1.c tmp/*.h
+if [ $? = 0 ] ; then
+  echo "found c_int mynum" >> $2
+else
+  echo "missing c_int mynum" >> $2
+fi
+rm -Rf tmp
