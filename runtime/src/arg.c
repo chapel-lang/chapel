@@ -81,14 +81,6 @@ int _runInGDB(void) {
 }
 
 
-//
-// defineEnvVar() needs to be able to call malloc(), because it runs
-// before the memory layer is initialized but needs to allocate memory
-// (for a copy of the var=value string).  So, we turn off the magic
-// warning macro here, and turn it back on after defineEnvVar().
-//
-#undef malloc
-
 static void defineEnvVar(const char* currentArg,
                          int32_t lineno, int32_t filename) {
   char* eqp;
@@ -120,8 +112,6 @@ static void defineEnvVar(const char* currentArg,
   }
   *eqp = '=';
 }
-
-#define malloc dont_use_malloc_use_chpl_mem_allocMany_instead
 
 
 static void parseDashEArgs(int* argc, char* argv[]) {
