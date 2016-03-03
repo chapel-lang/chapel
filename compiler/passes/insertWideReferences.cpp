@@ -189,7 +189,7 @@
 //   and 'setValWide'.
 //
 
-#define PRINT_WIDEN_SUMMARY
+//#define PRINT_WIDEN_SUMMARY
 //#define PRINT_WIDE_ANALYSIS
 
 #ifdef PRINT_WIDE_ANALYSIS
