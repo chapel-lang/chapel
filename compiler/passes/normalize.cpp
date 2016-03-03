@@ -1132,11 +1132,10 @@ static void fix_def_expr(VarSymbol* var) {
     INT_ASSERT(!type);
     stmt->insertAfter(new CallExpr(PRIM_MOVE,
                                    var,
-                                   new CallExpr("chpl__typeAliasInit",
-                                                init->copy())));
+                                   init->copy()));
+    // TODO
     // note: insert_call_temps adjusts auto-destroy in this case
     // by checking for chpl__typeAliasInit
-
     return;
   }
 

@@ -1,0 +1,8 @@
+feature request: creating a type alias for an instantiated generic class
+
+This seems to be running into problems connected to
+normalizing PRIM_NEW calls before resolving. It
+should be possible to move this handling of PRIM_NEW
+calls to be in function resolution, but there
+are probably other necessary changes for improving
+constructor/initializers.

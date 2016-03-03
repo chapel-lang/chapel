@@ -1,0 +1,3 @@
+feature request: pass instantiated generic record as type argument
+
+See class-alias-generic-concrete.future

@@ -10037,9 +10037,12 @@ static void removeRandomPrimitive(CallExpr* call)
     case PRIM_MOVE:
     {
       // Remove types to enable --baseline
-      SymExpr* sym = toSymExpr(call->get(2));
-      if (sym && isTypeSymbol(sym->symbol()))
-        call->remove();
+      SymExpr* se = toSymExpr(call->get(2));
+      if (se && se->symbol()) {
+        Symbol* sym = se->symbol();
+        if (isTypeSymbol(sym) || sym->hasFlag(FLAG_TYPE_VARIABLE))
+          call->remove();
+      }
     }
     break;
 
