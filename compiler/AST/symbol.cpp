@@ -747,9 +747,9 @@ void VarSymbol::codegenDefC(bool global) {
   if (this->hasFlag(FLAG_SUPER_CLASS))
     typestr = ct->classStructName(true);
   else if (this->declaredType &&
+           this->declaredType->type == this->type &&
            this->declaredType->hasFlag(FLAG_EXTERN) &&
-           this->declaredType->hasFlag(FLAG_TYPE_VARIABLE) &&
-           this->declaredType->typeInfo() == this->typeInfo()) {
+           this->declaredType->hasFlag(FLAG_TYPE_VARIABLE)) {
     // If this symbol was declared with an extern type,
     // and the declared type matches the current type,
     // use that extern type in the generated code.
