@@ -215,22 +215,99 @@ static void replaceChunkHooks(void) {
   }
 }
 
+// helper routines to get a mallctl value
+#define DEFINE_GET_MALLCTL_VALUE(type) \
+static type get_ ## type ##_mallctl_value(const char* mallctl_string) { \
+  type value; \
+  size_t sz; \
+  sz = sizeof(value); \
+  if (je_mallctl(mallctl_string, &value, &sz, NULL, 0) != 0) { \
+    char error_msg[256]; \
+    snprintf(error_msg, sizeof(error_msg), "could not get mallctl value for %s", mallctl_string); \
+    chpl_internal_error(error_msg); \
+  } \
+  return value; \
+}
+DEFINE_GET_MALLCTL_VALUE(size_t);
+DEFINE_GET_MALLCTL_VALUE(unsigned);
+
+// helper routines to get the number of size classes
+static unsigned get_num_small_classes(void) {
+  return get_unsigned_mallctl_value("arenas.nbins");
+}
+
+static unsigned get_num_large_classes(void) {
+  return get_unsigned_mallctl_value("arenas.nlruns");
+}
+
+static unsigned get_num_small_and_large_classes(void) {
+  return get_num_small_classes() + get_num_large_classes();
+}
+
+// helper routine to get an array of size classes for small and large sizes
+static void get_small_and_large_class_sizes(size_t* classes) {
+  unsigned class;
+  unsigned small_classes;
+  unsigned large_classes;
+
+  small_classes = get_num_small_classes();
+  for (class=0; class<small_classes; class++) {
+    char ssize[128];
+    snprintf(ssize, sizeof(ssize), "arenas.bin.%u.size", class);
+    classes[class] = get_size_t_mallctl_value(ssize);
+  }
+
+  large_classes = get_num_large_classes();
+  for (class=0; class<large_classes; class++) {
+    char lsize[128];
+    snprintf(lsize, sizeof(lsize), "arenas.lrun.%u.size", class);
+    classes[small_classes + class] = get_size_t_mallctl_value(lsize);
+  }
+}
+
+// helper routine to determine if an address is not part of the shared heap
+static bool addressNotInHeap(void* ptr) {
+  uintptr_t u_ptr = (uintptr_t)ptr;
+  uintptr_t u_base = (uintptr_t)heap.base;
+  uintptr_t u_top =  u_base + heap.size;
+  return (u_ptr < u_base) || (u_ptr > u_top);
+}
+
+// grab (and leak) whatever memory jemalloc got on it's own, that's not in
+// our shared heap
+//
+//   jemalloc 4.0.4 man: "arenas may have already created chunks prior to the
+//   application having an opportunity to take over chunk allocation."
+//
+// jemalloc grabs "chunks" from the system in order to store metadata and some
+// internal data structures. However, these chunks are not allocated from our
+// shared heap, so we need to waste whatever memory is left in them so that
+// future allocations come from chunks that were provided by our shared heap
 static void useUpMemNotInHeap(void) {
-  // grab (and leak) whatever memory jemalloc got on it's own, that's not in
-  // our shared heap
-  //
-  //   jemalloc 4.0.4 man: "arenas may have already created chunks prior to the
-  //   application having an opportunity to take over chunk allocation."
-  //
-  // Note that this will also allow jemalloc to initialize
-  char* p = NULL;
-  do {
-    // TODO use a larger value than size_t here (must be smaller than
-    // "arenas.hchunk.0.size" though
-    if ((p = je_malloc(sizeof(size_t))) == NULL) {
-      chpl_internal_error("could not use up memory outside of shared heap");
-    }
-  } while ((p != NULL && (p < (char*) heap.base || p > (char*) heap.base + heap.size)));
+  unsigned class;
+  unsigned num_classes = get_num_small_and_large_classes();
+  size_t classes[num_classes];
+  get_small_and_large_class_sizes(classes);
+
+  // jemalloc has 3 class sizes. The small (a few pages) and large (up to chunk
+  // size) objects come from the arenas, but huge (more than chunk size)
+  // objects comes from a shared pool. We waste memory at every large and small
+  // class size so that we can be sure there's no fragments left in a chunk
+  // that jemalloc grabbed from the system. This way we know that any future
+  // allocation, regardless of size, must have come from a chunk provided by
+  // our shared heap. Once we know a specific class size came from our shared
+  // heap, we can free the memory instead of leaking it.
+  for (class=num_classes-1; class!=UINT_MAX; class--) {
+    void* p = NULL;
+    size_t alloc_size;
+    alloc_size = classes[class];
+    do {
+      if ((p = je_malloc(alloc_size)) == NULL) {
+        chpl_internal_error("could not use up memory outside of shared heap");
+      }
+    } while (addressNotInHeap(p));
+    je_free(p);
+  }
 }
 
 // Have jemalloc use our shared heap. Initialize all the arenas, then replace
