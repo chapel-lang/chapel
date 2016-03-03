@@ -284,12 +284,6 @@ static bool addressNotInHeap(void* ptr) {
 // shared heap, so we need to waste whatever memory is left in them so that
 // future allocations come from chunks that were provided by our shared heap
 static void useUpMemNotInHeap(void) {
-  void* p = NULL;
-#ifdef DEBUG_ALLOC_WASTE
-  size_t alloced;
-  size_t num_allocs;
-  size_t num_frees;
-#endif
   unsigned class;
   unsigned num_classes = get_num_small_and_large_classes();
   size_t classes[num_classes];
@@ -304,39 +298,16 @@ static void useUpMemNotInHeap(void) {
   // our shared heap. Once we know a specific class size came from our shared
   // heap, we can free the memory instead of leaking it.
   for (class=num_classes-1; class!=UINT_MAX; class--) {
+    void* p = NULL;
     size_t alloc_size;
     alloc_size = classes[class];
     do {
-#ifdef DEBUG_ALLOC_WASTE
-      alloced += alloc_size;
-      num_allocs++;
-#endif
       if ((p = je_malloc(alloc_size)) == NULL) {
         chpl_internal_error("could not use up memory outside of shared heap");
       }
     } while (addressNotInHeap(p));
     je_free(p);
-#ifdef DEBUG_ALLOC_WASTE
-    alloced -= alloc_size;
-    num_frees++;
-#endif
   }
-
-
-#ifdef DEBUG_ALLOC_WASTE
-  for (class=0; class<num_classes; class++) {
-    size_t alloc_size = classes[class];
-    if ((p = je_malloc(alloc_size)) == NULL) {
-      chpl_internal_error("could not allocate memory to test size classes");
-    }
-    if (addressNotInHeap(p)) {
-      printf("Allocation for size class %u (%zu bytes) was not in shared heap\n", class, alloc_size);
-    }
-    je_free(p);
-  }
-
-  printf("Allocated %f MB with %zu allocations and %zu frees\n", ((double)alloced / (1024.0*1024.0)), num_allocs, num_frees);
-#endif
 }
 
 // Have jemalloc use our shared heap. Initialize all the arenas, then replace
