@@ -9908,7 +9908,8 @@ static void removeUnusedGlobals()
     // Remove unused global variables
     if (toVarSymbol(def->sym))
       if (toModuleSymbol(def->parentSymbol))
-        if (def->sym->type == dtUnknown)
+        if (def->sym->type == dtUnknown ||
+            def->sym->type->symbol->hasFlag(FLAG_GENERIC))
           def->remove();
   }
 }
