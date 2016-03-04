@@ -9,9 +9,9 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-export JE_MALLOC_CONF="narenas:24"
+export CHPL_JEMALLOC_MORE_CFG_OPTIONS="--disable-cache-oblivious"
 
-perf_args="-performance-description narneas -performance-configs default:v,narneas:v -sync-dir-suffix narneas"
-perf_args="${perf_args} -performance -numtrials 5 -startdate 03/02/16"
+perf_args="-performance-description cache-oblivious -performance-configs default:v,cache-oblivious:v -sync-dir-suffix cache-oblivious"
+perf_args="${perf_args} -performance -numtrials 5 -startdate 03/03/16"
 
 $CWD/nightly -cron ${nightly_args} ${perf_args}
