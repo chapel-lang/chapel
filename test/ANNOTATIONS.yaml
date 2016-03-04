@@ -410,6 +410,8 @@ time_array_vs_ddata:
     - specializing binaries to target architectures
   01/25/16:
     - Optimize iteration over anonymous low-bounded counted ranges (#3154)
+  03/01/16:
+    - Extend early string-as-rec work to cover more sub-types of record (#3386)
 
 time_array_vs_tuple:
   08/19/14:
