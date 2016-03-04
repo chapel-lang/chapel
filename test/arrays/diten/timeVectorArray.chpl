@@ -82,6 +82,24 @@ class InsertSorted: Runner {
   }
 }
 
+class Remove: Runner {
+  const n: int;
+  const front: bool;
+  proc run(A: [] int) {
+    if front {
+      for i in 1..n {
+        A.remove(1);
+      }
+    } else {
+      var numElements = A.numElements;
+      for i in 1..n {
+        A.remove(numElements);
+        numElements -= 1;
+      }
+    }
+  }
+}
+
 // try a few similar operation on a list to compare
 class ListAppend: Runner {
   const n: int;
@@ -164,6 +182,10 @@ proc main {
   r = new PopBack(); r.run(A); delete r; // clean up
   r = new InsertSorted(n, false); output("InsertSL", timeRun(r,A)); delete r;
   assert(isSorted(A,n));
+
+  r = new Remove(n, true); output("RemoveFront", timeRun(r, A)); delete r;
+  r = new PushBack(n); r.run(A); delete r;
+  r = new Remove(n, false); output("RemoveBack", timeRun(r, A)); delete r;
 
   var l = new list(int);
   r = new ListAppend(n); output("ListAppend", timeRunList(r,l)); delete r;
