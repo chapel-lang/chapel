@@ -33,7 +33,7 @@
 static inline void sys_free(void *ptr) { free(ptr); }
 #endif
 
-#define malloc  dont_use_malloc_use_chpl_mem_allocMany_instead
-#define calloc  dont_use_calloc_use_chpl_mem_allocMany_instead
-#define free    dont_use_free_use_chpl_mem_free_instead
-#define realloc dont_use_realloc_use_chpl_mem_realloc_instead
+#define malloc(size)       dont_use_malloc_use_chpl_mem_allocMany_instead
+#define calloc(num, size)  dont_use_calloc_use_chpl_mem_allocMany_instead
+#define free(ptr)          dont_use_free_use_chpl_mem_free_instead
+#define realloc(ptr, size) dont_use_realloc_use_chpl_mem_realloc_instead
