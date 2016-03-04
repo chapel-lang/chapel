@@ -2004,10 +2004,6 @@ module ChapelArray {
 
        These are currently not parallel safe, and cannot safely be called by
        multiple tasks simultaneously on the same array.
-
-       The current implementation reallocates the array every time the domain
-       is modified.  This could be improved with a size doubling/halving
-       strategy.
      */
 
     /* Return true if the array has no elements */
@@ -2030,8 +2026,12 @@ module ChapelArray {
     proc tail(): this._value.eltType {
       return this[this.domain.high];
     }
+
+    /* Return a range that is grown or shrunk from r to accomodate 'd2' */
     pragma "no doc"
-    proc resizeAllocRange(r: range, d2: domain, factor=arrayAsVecGrowthFactor, direction=1, grow=1) {
+    inline proc resizeAllocRange(r: range, d2: domain, factor=arrayAsVecGrowthFactor, param direction=1, param grow=1) {
+      // This should only be called for 1-dimensional arrays
+      compilerAssert(d2.rank == 1);
       const lo = r.low,
             hi = r.high,
             size = hi - lo + 1;
@@ -2052,8 +2052,12 @@ module ChapelArray {
         }
       }
     }
+
     /* Add element ``val`` to the back of the array, extending the array's
        domain by one. If the domain was ``{1..5}`` it will become ``{1..6}``.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc push_back(val: this.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("push_back");
@@ -2081,6 +2085,9 @@ module ChapelArray {
 
     /* Remove the last element from the array, reducing the size of the
        domain by one. If the domain was ``{1..5}`` it will become ``{1..4}``
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc pop_back() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("pop_back");
@@ -2102,6 +2109,9 @@ module ChapelArray {
 
     /* Add element ``val`` to the front of the array, extending the array's
        domain by one. If the domain was ``{1..5}`` it will become ``{0..5}``.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc push_front(val: this.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("push_front");
@@ -2124,6 +2134,9 @@ module ChapelArray {
 
     /* Remove the first element of the array reducing the size of the
        domain by one.  If the domain was ``{1..5}`` it will become ``{2..5}``.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc pop_front() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("pop_front");
@@ -2146,6 +2159,9 @@ module ChapelArray {
     /* Insert element ``val`` into the array at index ``pos``. Shift the array
        elements above ``pos`` up one index. If the domain was ``{1..5}`` it will
        become ``{1..6}``.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc insert(pos: this.idxType, val: this.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("insert");
@@ -2170,6 +2186,9 @@ module ChapelArray {
     /* Remove the element at index ``pos`` from the array and shift the array
        elements above ``pos`` down one index. If the domain was ``{1..5}``
        it will become ``{1..4}``.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc remove(pos: this.idxType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove");
@@ -2194,6 +2213,9 @@ module ChapelArray {
 
     /* Remove ``count`` elements from the array starting at index ``pos`` and
        shift elements above ``pos+count`` down by ``count`` indices.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc remove(pos: this.idxType, count: this.idxType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove count");
@@ -2223,6 +2245,9 @@ module ChapelArray {
        ``{1..5}`` and this is called with ``2..3`` as an argument, the new
        domain would be ``{1..3}`` and the array would contain the elements
        formerly at positions 1, 4, and 5.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc remove(pos: range(this.idxType, stridable=false)) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove range");
@@ -2241,6 +2266,9 @@ module ChapelArray {
 
     /* Remove all elements from the array leaving the domain empty. If the
        domain was ``{5..10}`` it will become ``{5..4}``.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc clear() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("clear");

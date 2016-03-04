@@ -648,8 +648,8 @@ module DefaultRectangular {
     // 'dataAllocRange' is used by the array-vector operations (e.g. push_back,
     // pop_back, insert, remove) to allow growing or shrinking the data
     // buffer in a doubling/halving style.  If it is used, it will be the
-    // actual size of the data buffer, while 'dom' represents the size of the
-    // user-level array.
+    // actual size of the 'data' buffer, while 'dom' represents the size of
+    // the user-level array.
     var dataAllocRange: range(int);
     //var numelm: int = -1; // for correctness checking
   
