@@ -21,16 +21,11 @@
 #ifndef _chpl_mem_impl_H_
 #define _chpl_mem_impl_H_
 
-// jemalloc references malloc and friends internally so we need to quiet our
-// warnings before including jemalloc.h
-#undef malloc
-#undef calloc
-#undef realloc
-#undef free
-#undef _chpl_mem_warning_macros_h_
-
-
+// jemalloc.h references the token "malloc" (but not the actual function) and
+// our warning macros mess up jemalloc's use of it.
+#include "chpl-mem-no-warning-macros.h"
 #include "jemalloc.h"
+#include "chpl-mem-warning-macros.h"
 
 static inline void* chpl_calloc(size_t n, size_t size) {
   return je_calloc(n,size);
@@ -69,9 +64,5 @@ static inline size_t chpl_good_alloc_size(size_t minSize) {
 // TODO (EJR 12/17/15): if we end up using the extended API should we consider
 // adding something like `chpl_sized_free()` sized deallocations that maps down
 // to `sdallocx()`
-
-
-// Now that we've defined our functions, turn the warnings back on.
-#include "chpl-mem-warning-macros.h"
 
 #endif
