@@ -1,0 +1,1 @@
+accessSecondary.chpl:7: error: unresolved call 'Foo.other()'
