@@ -87,14 +87,14 @@ void ensureDirExists(const char* dirname, const char* explanation) {
 }
 
 
-static void removeSpacesFromString(char* str)
+static void removeSpacesBackslashesFromString(char* str)
 {
   char* src = str;
   char* dst = str;
   while (*src != '\0')
   {
     *dst = *src++;
-    if (*dst != ' ')
+    if (*dst != ' ' && *dst != '\\')
         dst++;
   }
   *dst = '\0';
@@ -141,7 +141,7 @@ const char* makeTempDir(const char* dirPrefix) {
     userid = passwdinfo->pw_name;
   }
   char* myuserid = strdup(userid);
-  removeSpacesFromString(myuserid);
+  removeSpacesBackslashesFromString(myuserid);
 
   const char* tmpDir = astr(tmpdirprefix, myuserid, mypidstr, tmpdirsuffix);
   ensureDirExists(tmpDir, "making temporary directory");
