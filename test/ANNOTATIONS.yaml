@@ -227,6 +227,22 @@ is:
   05/21/15:
     - set dataParTasksPerLocale to 2 to avoid occasional validation failure
 
+isx:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-bucket-spmd:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-spmd:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-no-return:
+  02/26/16:
+    - ISx ref to array (#3365)
+
 jacobi:
   03/07/14:
     - Added a "trivial assignment" optimization to replace field-by-field assignment with a bulk copy.
