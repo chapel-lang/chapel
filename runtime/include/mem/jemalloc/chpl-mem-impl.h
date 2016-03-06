@@ -21,7 +21,11 @@
 #ifndef _chpl_mem_impl_H_
 #define _chpl_mem_impl_H_
 
+// jemalloc.h references the token "malloc" (but not the actual function) and
+// our warning macros mess up jemalloc's use of it.
+#include "chpl-mem-no-warning-macros.h"
 #include "jemalloc.h"
+#include "chpl-mem-warning-macros.h"
 
 static inline void* chpl_calloc(size_t n, size_t size) {
   return je_calloc(n,size);
