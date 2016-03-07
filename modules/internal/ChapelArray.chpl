@@ -2027,28 +2027,26 @@ module ChapelArray {
       return this[this.domain.high];
     }
 
-    /* Return a range that is grown or shrunk from r to accomodate 'd2' */
+    /* Return a range that is grown or shrunk from r to accomodate 'r2' */
     pragma "no doc"
-    inline proc resizeAllocRange(r: range, d2: domain, factor=arrayAsVecGrowthFactor, param direction=1, param grow=1) {
+    inline proc resizeAllocRange(r: range, r2: range, factor=arrayAsVecGrowthFactor, param direction=1, param grow=1) {
       // This should only be called for 1-dimensional arrays
-      compilerAssert(d2.rank == 1);
       const lo = r.low,
             hi = r.high,
             size = hi - lo + 1;
-      var newSize: int;
       if grow > 0 {
-        newSize = max(size+1, (size*factor):int); // Always grow by at least 1.
+        const newSize = max(size+1, (size*factor):int); // Always grow by at least 1.
         if direction > 0 {
           return lo..#newSize;
         } else {
           return ..hi#-newSize;
         }
       } else {
-        // shrink to match the d2 bound on the side indicated by direction
+        // shrink to match the r2 bound on the side indicated by direction
         if direction > 0 {
-          return lo..d2.high;
+          return lo..r2.high;
         } else {
-          return d2.low..hi;
+          return r2.low..hi;
         }
       }
     }
@@ -2063,7 +2061,7 @@ module ChapelArray {
       chpl__assertSingleArrayDomain("push_back");
       const lo = this.domain.low,
             hi = this.domain.high+1;
-      const newDom = {lo..hi};
+      const newRange = lo..hi;
       on this._value {
         if !this._value.dataAllocRange.member(hi) {
           /* The new index is not in the allocated space.  We'll need to
@@ -2074,10 +2072,10 @@ module ChapelArray {
              */ 
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newDom);
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
-        this.domain.setIndices(newDom.getIndices());
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
       this[hi] = val;
@@ -2093,16 +2091,16 @@ module ChapelArray {
       chpl__assertSingleArrayDomain("pop_back");
       const lo = this.domain.low,
             hi = this.domain.high-1;
-      const newDom = {lo..hi};
+      const newRange = lo..hi;
       on this._value {
         if this._value.dataAllocRange.length < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newDom.numIndices < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newDom, grow=-1);
+        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
-        this.domain.setIndices(newDom.getIndices());
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
     }
@@ -2117,16 +2115,16 @@ module ChapelArray {
       chpl__assertSingleArrayDomain("push_front");
       const lo = this.domain.low-1,
             hi = this.domain.high;
-      const newDom = {lo..hi};
+      const newRange = lo..hi;
       on this._value {
         if !this._value.dataAllocRange.member(lo) {
           if this._value.dataAllocRange.length < this.domain.numIndices {
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newDom, direction=-1);
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
-        this.domain.setIndices(newDom.getIndices());
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
       this[lo] = val;
@@ -2142,16 +2140,16 @@ module ChapelArray {
       chpl__assertSingleArrayDomain("pop_front");
       const lo = this.domain.low+1,
             hi = this.domain.high;
-      const newDom = {lo..hi};
+      const newRange = lo..hi;
       on this._value {
         if this._value.dataAllocRange.length < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newDom.numIndices < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newDom, direction=-1, grow=-1);
+        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1, grow=-1);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
-        this.domain.setIndices(newDom.getIndices());
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
     }
@@ -2167,16 +2165,16 @@ module ChapelArray {
       chpl__assertSingleArrayDomain("insert");
       const lo = this.domain.low,
             hi = this.domain.high+1;
-      const newDom = {lo..hi};
+      const newRange = lo..hi;
       on this._value {
         if !this._value.dataAllocRange.member(hi) {
           if this._value.dataAllocRange.length < this.domain.numIndices {
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newDom);
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
-        this.domain.setIndices(newDom.getIndices());
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
       for i in pos..hi-1 by -1 do this[i+1] = this[i];
@@ -2194,7 +2192,7 @@ module ChapelArray {
       chpl__assertSingleArrayDomain("remove");
       const lo = this.domain.low,
             hi = this.domain.high-1;
-      const newDom = {lo..hi};
+      const newRange = lo..hi;
       for i in pos..hi {
         this[i] = this[i+1];
       }
@@ -2202,11 +2200,11 @@ module ChapelArray {
         if this._value.dataAllocRange.length < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newDom.numIndices < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newDom, grow=-1);
+        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
-        this.domain.setIndices(newDom.getIndices());
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
     }
@@ -2223,7 +2221,7 @@ module ChapelArray {
             hi = this.domain.high-count;
       if pos > hi then
         halt("index ", pos+count, " is outside the supported range");
-      const newDom = {lo..hi};
+      const newRange = lo..hi;
       for i in pos..hi {
         this[i] = this[i+count];
       }
@@ -2231,11 +2229,11 @@ module ChapelArray {
         if this._value.dataAllocRange.length < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newDom.numIndices < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newDom, grow=-1);
+        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
-        this.domain.setIndices(newDom.getIndices());
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
     }
@@ -2275,10 +2273,10 @@ module ChapelArray {
       const lo = this.domain.low,
             hi = this.domain.low-1;
       assert(hi < lo, "overflow occurred subtracting 1 from low bound in clear");
-      const newDom = {lo..hi};
+      const newRange = lo..hi;
       on this._value {
-        this._value.dsiReallocate(newDom);
-        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiReallocate({newRange});
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
     }
