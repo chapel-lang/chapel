@@ -37,6 +37,51 @@ class List {
     head = new Node(eltType, value, head);
   }
 
+   // deletes the first element from the list 
+
+   proc delete_first() {
+
+    if head == nil then
+      {writeln("list is empty");return;}
+
+     
+    var current=head;
+    head=head.next;
+    delete current ;
+  }
+
+// deletes the element at position p from the list 
+
+  proc delete_pos(pos: int){
+   
+   if head==nil then {
+     writeln("list is empty"); return;
+   }
+
+
+   if pos==1 then {
+    delete_first(); return; // if starting element use previously created fun //
+   }
+
+    var count: int=1;
+    var current=head;
+   // assuming 1-based indexing //
+
+    while(count!=pos-1 && current!=nil) {  
+    current=current.next;
+    count=count+1;
+    }
+   
+    if current.next==nil then 
+    { writeln("NO element found at position p"); return;}
+  
+    var temp=current.next;
+    var temp2=temp.next;
+    current.next=temp2;
+    delete temp;
+  }
+    
+   
   //
   // Return true if the list has any elements that match the argument in value
   //
@@ -124,6 +169,19 @@ proc main() {
       lst.remove(1);
     writeln("No more ones: ", lst);
   }
+
+   lst.delete_first();
+ writeln("The list after deleting first contains: ", lst);
+
+
+ lst.delete_pos(3);
+writeln("delete element at pos 3 :", lst);
+ lst.delete_pos(1);
+writeln("delete element at pos 1 :", lst);
+ lst.delete_pos(5);
+ writeln("delete element at pos 5 :", lst);
+
+
 
   //
   // Remove everything from the list using the default iterator
