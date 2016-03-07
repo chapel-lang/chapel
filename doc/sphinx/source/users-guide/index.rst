@@ -42,6 +42,8 @@ support of parallelism and locality are removed.
 
 (more to come...)
 
+.. _index-task-parallelism:
+
 Task Parallelism
 ----------------
 
@@ -57,6 +59,7 @@ explicitly and synchronizing between them.
 
 (more to come...)
 
+.. _index-data-parallelism:
 
 Data Parallelism
 ----------------
