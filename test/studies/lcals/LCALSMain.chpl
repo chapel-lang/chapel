@@ -638,9 +638,7 @@ module main {
 
     s_loop_suite_run_info.host_name = host_name;
     s_loop_suite_run_info.num_suite_passes = num_suite_passes;
-    for loop_len in run_loop_length {
-      s_loop_suite_run_info.run_loop_length.push_back(loop_len);
-    }
+    s_loop_suite_run_info.run_loop_length = run_loop_length;
     const sizeofReal = 8;
 
     s_loop_suite_run_info.cache_flush_data_len = (cache_size*2)/sizeofReal; 
@@ -1173,15 +1171,15 @@ module main {
           suite_info.loop_names.push_back(loop_name);
         max_loop_length = max(max_loop_length, max_loop_indx);
 
-        for i in 0..#suite_info.loop_length_dom.numIndices {
-          loop_stat.samples_per_pass[i] =
-            (loop_stat.samples_per_pass[i] * suite_info.loop_samp_frac /
+        for len in suite_info.loop_length_dom {
+          loop_stat.samples_per_pass[len] =
+            (loop_stat.samples_per_pass[len] * suite_info.loop_samp_frac /
              loop_length_factor):int;
-          if suite_info.run_loop_length[i] {
-            loop_stat.loop_run_count[i] =
-              loop_stat.samples_per_pass[i] * suite_info.num_suite_passes;
+          if suite_info.run_loop_length[len] {
+            loop_stat.loop_run_count[len] =
+              loop_stat.samples_per_pass[len] * suite_info.num_suite_passes;
           } else {
-            loop_stat.loop_run_count[i] = 0;
+            loop_stat.loop_run_count[len] = 0;
           }
         }
         suite_info.getLoopStats(run_variant_names[ilv]).push_back(loop_stat);

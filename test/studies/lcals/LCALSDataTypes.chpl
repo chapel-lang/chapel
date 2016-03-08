@@ -33,7 +33,7 @@ module LCALSDataTypes {
     var loop_names = new vector(string);
 
     var loop_length_dom: domain(LoopLength);
-    var run_loop_length = new vector(bool);
+    var run_loop_length: [loop_length_dom] bool;
     var loop_length_names = new vector(string);
 
     var num_suite_passes: int;
@@ -65,7 +65,6 @@ module LCALSDataTypes {
     }
     proc ~LoopSuiteRunInfo() {
       if loop_names != nil then delete loop_names;
-      if run_loop_length != nil then delete run_loop_length;
       if loop_length_names != nil then delete loop_length_names;
       if ref_loop_stat != nil then delete ref_loop_stat;
       if loop_weights != nil then delete loop_weights;
