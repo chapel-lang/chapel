@@ -78,3 +78,39 @@ as well as all memory referenced during the calls of ``A.this(5)``
 are located on the current locale. Otherwise an error is reported.
 Analogously, if ``on`` statement(s) are executed during these calls
 that attempt to execute on a different locale, an error is reported.
+
+
+The 'local on' Statement
+========================
+
+
+The ``local on`` construct in Chapel performs an on-statement on a sublocale
+within the current node. For example:
+
+.. code-block:: chapel
+
+  for i in 0..#here.getChildCount() {
+    local on here.getChild(i) {
+      writeln("On sublocale ", here);
+    }
+  }
+
+When the ``--local-checks`` flag is enabled, a runtime check will be inserted
+to confirm that the on-statement is performed within the same node. For
+example, the following code would produce a runtime error if the number of
+locales is greater than one:
+
+.. code-block:: chapel
+
+  var LastLocale = Locales[numLocales-1];
+  local on LastLocale {
+    writeln("On remote locale ", LastLocale);
+  }
+
+The ``local on`` construct functions similarly to a normal on-statement in all
+other ways. Note that it is unrelated to ``local`` statements or ``local``
+blocks, and that it has no impact on what communication is or is not allowed
+(other than where the on-statement can execute).
+
+With this information the compiler can reduce overhead associated with wide
+pointers.
