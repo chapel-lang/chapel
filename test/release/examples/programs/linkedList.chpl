@@ -38,45 +38,48 @@ class List {
   }
  
   
-  
-// deletes the first element from the list 
+ //  
+ // deletes the first element from the list 
+ //
 
-   proc delete_first() {
-
+ proc delete_first() {
     if head == nil then {
-    writeln("list is empty");return;
+      writeln("list is empty");
+      return;
     }
-
-     
     var current=head;
     head=head.next;
     delete current ;
   }
 
-// deletes the element at position p from the list 
+ //
+ // deletes the element at position p from the list 
+ //
+ 
+ proc delete_pos(pos: int) {
+    if head==nil then {
+      writeln("list is empty"); 
+      return;
+    }
 
-  proc delete_pos(pos: int){
-   
-   if head==nil then {
-     writeln("list is empty"); return;
-   }
 
+    if pos==1 then {
+      delete_first();
+      return; 
+    }
 
-   if pos==1 then {
-    delete_first(); return; // if starting element use previously created fun //
-   }
-
-    var count: int=1;
+    var count: int=1;   // assuming 1-based indexing //
     var current=head;
-   // assuming 1-based indexing //
+    
 
     while(count!=pos-1 && current!=nil) {  
-    current=current.next;
-    count=count+1;
+     current=current.next;
+     count=count+1;
     }
    
     if current.next==nil then  { 
-    writeln("No element found at position p"); return;
+     writeln("No element found at position p");
+     return;
     }
   
     var temp=current.next;
