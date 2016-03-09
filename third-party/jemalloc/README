@@ -2,8 +2,8 @@
 jemalloc README for Chapel
 ==========================
 
-This copy of jemalloc is being released with Chapel for convenience and
-uses a snapshot from:
+This copy of jemalloc 4.0.4 is being released with Chapel for
+convenience and was obtained from:
 
   https://github.com/jemalloc/jemalloc
 
