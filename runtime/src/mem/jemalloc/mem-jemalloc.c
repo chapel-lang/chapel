@@ -128,15 +128,27 @@ static bool null_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_
 // *** End chunk hook replacements *** //
 
 
+// helper routine to get a mallctl value
+#define DECLARE_GET_MALLCTL_VALUE(type) \
+static type get_ ## type ##_mallctl_value(const char* mallctl_string) { \
+  type value; \
+  size_t sz; \
+  sz = sizeof(value); \
+  if (je_mallctl(mallctl_string, &value, &sz, NULL, 0) != 0) { \
+    char error_msg[256]; \
+    snprintf(error_msg, sizeof(error_msg), "could not get mallctl value for %s", mallctl_string); \
+    chpl_internal_error(error_msg); \
+  } \
+  return value; \
+}
+DECLARE_GET_MALLCTL_VALUE(size_t);
+DECLARE_GET_MALLCTL_VALUE(unsigned);
+#undef DECLARE_GET_MALLCTL_VALUE
+
+
 // get the number of arenas
 static size_t get_num_arenas(void) {
-  size_t narenas;
-  size_t sz;
-  sz = sizeof(narenas);
-  if (je_mallctl("opt.narenas", &narenas, &sz, NULL, 0) != 0) {
-    chpl_internal_error("could not get number of arenas from jemalloc");
-  }
-  return narenas;
+  return get_size_t_mallctl_value("opt.narenas");
 }
 
 // initialize our arenas (this is required to be able to set the chunk hooks)
@@ -198,23 +210,6 @@ static void replaceChunkHooks(void) {
     }
   }
 }
-
-// helper routines to get a mallctl value
-#define DECLARE_GET_MALLCTL_VALUE(type) \
-static type get_ ## type ##_mallctl_value(const char* mallctl_string) { \
-  type value; \
-  size_t sz; \
-  sz = sizeof(value); \
-  if (je_mallctl(mallctl_string, &value, &sz, NULL, 0) != 0) { \
-    char error_msg[256]; \
-    snprintf(error_msg, sizeof(error_msg), "could not get mallctl value for %s", mallctl_string); \
-    chpl_internal_error(error_msg); \
-  } \
-  return value; \
-}
-DECLARE_GET_MALLCTL_VALUE(size_t);
-DECLARE_GET_MALLCTL_VALUE(unsigned);
-#undef DECLARE_GET_MALLCTL_VALUE
 
 // helper routines to get the number of size classes
 static unsigned get_num_small_classes(void) {
