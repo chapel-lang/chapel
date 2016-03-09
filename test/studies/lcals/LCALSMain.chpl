@@ -15,10 +15,11 @@ module main {
   use RunVectorizeOnlyRawLoops;
 
   proc allocateLoopData() {
+/*  Currently unused:
     const num_aligned_segments =
       (s_loop_data.max_loop_length + 20)/LCALS_DATA_ALIGN + 1;
     const aligned_chunksize = num_aligned_segments*LCALS_DATA_ALIGN;
-
+*/
     writeln("\n allocateLoopData...");
 
     for i in 0..#s_loop_data.s_num_1D_Real_arrays {
@@ -252,17 +253,17 @@ module main {
 
     writer.write(variant_name, " Mean Run Times ");
 
-    for i in 0..#len_names.size() {
+    for i in 0..#len_names.size {
       writer.write(sepchr);
     }
     writer.writeln();
 
-    for i in 0..#len_names.size() {
-      writer.write(sepchr, len_names[i]);
+    for name in len_names {
+      writer.write(sepchr, name);
     }
     writer.writeln();
 
-    for iloop in 0..#loop_names.size() {
+    for iloop in suite_run_info.loop_kernel_dom {
       var stat = suite_run_info.getLoopStats(variant_name)[iloop];
       if loop_names[iloop].length != 0 && stat.loop_is_run {
         writer.write(loop_names[iloop]);
@@ -290,17 +291,17 @@ module main {
     const prec = 6;
 
     writer.write(variant_name, " Relative Run Times ");
-    for i in 0..#len_names.size() {
+    for i in 0..#len_names.size {
       writer.write(sepchr);
     }
     writer.writeln();
 
-    for i in 0..#len_names.size() {
-      writer.write(sepchr, len_names[i]);
+    for name in len_names {
+      writer.write(sepchr, name);
     }
     writer.writeln();
 
-    for iloop in 0..#loop_names.size() {
+    for iloop in suite_run_info.loop_kernel_dom {
       var stat = suite_run_info.getLoopStats(variant_name)[iloop];
       if loop_names[iloop].length != 0 && stat.loop_is_run {
         writer.write(loop_names[iloop]);
@@ -317,16 +318,15 @@ module main {
   proc writeTimingSummaryReport(run_loop_variants: [] string, outchannel) {
     var suite_run_info = getLoopSuiteRunInfo();
     const nvariants = run_loop_variants.size;
-    const ref_variant = run_loop_variants[0];
+    const ref_variant = run_loop_variants[1:LoopVariantID];
     var loop_names = suite_run_info.loop_names;
 
     const equal_line = "===========================================================================================================\n";
     const dash_line = "------------------------------------------------------------------------------------------------------------\n";
     const dash_line_part = "-------------------------------------------------------\n";
     const dot_line_part = "............................................\n";
-    var len_id = new vector(string);
-    len_id.resize(suite_run_info.loop_length_names.size());
-    for ilen in 0..#len_id.size() {
+    var len_id: [suite_run_info.loop_length_dom] string;
+    for ilen in suite_run_info.loop_length_dom {
       len_id[ilen] = suite_run_info.loop_length_names[ilen][1];
     }
 
@@ -358,11 +358,11 @@ module main {
     outchannel.write(equal_line);
 
     var max_name_len = 0;
-    for iloop in 0..#loop_names.size() {
-      max_name_len = max(max_name_len, loop_names[iloop].length);
+    for name in loop_names {
+      max_name_len = max(max_name_len, name.length);
     }
     var max_var_name_len = 0;
-    for ilv in 0..#nvariants {
+    for ilv in run_loop_variants.domain {
       max_var_name_len = max(max_var_name_len, run_loop_variants[ilv].length);
     }
     var var_field = "Variant(length id)";
@@ -385,22 +385,18 @@ module main {
     // Print timing results for all loops in a table.
     //
 
-    for iloop in 0..#loop_names.size() {
-      var ref_variant_stat = suite_run_info.getLoopStats(run_loop_variants[0])[iloop];
+    for iloop in suite_run_info.loop_kernel_dom {
+      var ref_variant_stat = suite_run_info.getLoopStats(ref_variant)[iloop];
 
-      var ref_mean = new vector(real);
-      ref_mean.resize(ref_variant_stat.mean.size);
-      for i in 0..#ref_mean.size() {
-        ref_mean[i] = ref_variant_stat.mean[i];
-      }
+      var ref_mean = ref_variant_stat.mean;
 
       if loop_names[iloop].length != 0 && ref_variant_stat.loop_is_run {
         if iloop > 1 {
           outchannel.write("\n", dash_line_part);
         }
         outchannel.writef("%s (%i) --> ", loop_names[iloop], iloop);
-        for ilv in 0..#nvariants {
-          var stat = suite_run_info.getLoopStats(run_loop_variants[ilv])[iloop];
+        for (ilv, variant) in zip(0..#nvariants, run_loop_variants.domain) {
+          var stat = suite_run_info.getLoopStats(run_loop_variants[variant])[iloop];
           if stat.loop_is_run {
             if ilv == 0 {
               for ilen in 0..#stat.loop_length.size {
@@ -412,7 +408,7 @@ module main {
             }
             for ilen in 0..#stat.loop_length.size {
               if stat.loop_run_count[ilen] > 0 {
-                var var_string = run_loop_variants[ilv] + "(" + len_id[ilen] + ")";
+                var var_string = run_loop_variants[variant] + "(" + len_id[ilen] + ")";
                 outchannel.writef("%-*s", prec, var_string);
 
                 outchannel.writef("%*s", prec_buf, stat.mean[ilen]);
@@ -435,11 +431,9 @@ module main {
           }
         }
       }
-      delete ref_mean;
     }
     outchannel.write(dash_line);
     outchannel.write("\n\n\n");
-    delete len_id;
   }
 
   proc buildVersionInfo() {
@@ -467,10 +461,9 @@ module main {
     var nvariants = run_loop_variants.size;
     var ref_variant = run_loop_variants[0];
     var loop_names = suite_run_info.loop_names;
-    var len_id = new vector(string);
+    var len_id: [suite_run_info.loop_length_dom] string;
 
-    len_id.resize(suite_run_info.loop_length_names.size());
-    for ilen in 0..#len_id.size() {
+    for ilen in suite_run_info.loop_length_dom {
       len_id[ilen] = suite_run_info.loop_length_names[ilen][1];
     }
 
@@ -491,16 +484,16 @@ module main {
     outchannel.write(equal_line);
 
     var max_name_len = 0;
-    for iloop in 0..#loop_names.size() {
-      max_name_len = max(max_name_len, loop_names[iloop].length);
+    for name in loop_names {
+      max_name_len = max(max_name_len, name.length);
     }
     var max_var_name_len = 0;
-    for ilv in 0..#nvariants {
+    for ilv in run_loop_variants.domain {
       max_var_name_len = max(max_var_name_len, run_loop_variants[ilv].length);
     }
 
     var var_field = "Variant(length id)";
-    var var_field_len = max(var_field.length, max reduce [ilv in 0..#nvariants]  run_loop_variants[ilv].length + 3);
+    var var_field_len = max(var_field.length, max reduce [ilv in run_loop_variants.domain]  run_loop_variants[ilv].length + 3);
     var prec = 32;
     var prec_buf = prec + 8;
 
@@ -511,19 +504,15 @@ module main {
     outchannel.write(dash_line);
 
 
-    for iloop in 0..#loop_names.size() {
-      var ref_variant_stat = suite_run_info.getLoopStats(run_loop_variants[0])[iloop];
-      var ref_chksum = new vector(real);
-      ref_chksum.resize(ref_variant_stat.loop_chksum.size);
-      for i in 0..#ref_chksum.size() {
-        ref_chksum[i] = ref_variant_stat.loop_chksum[i];
-      }
+    for iloop in suite_run_info.loop_kernel_dom {
+      var ref_variant_stat = suite_run_info.getLoopStats(run_loop_variants[1:LoopVariantID])[iloop];
+      var ref_chksum = ref_variant_stat.loop_chksum;
       if loop_names[iloop].length != 0 && ref_variant_stat.loop_is_run {
         if iloop > 1 then
           outchannel.write("\n", dash_line_part);
         outchannel.write(loop_names[iloop], "(", iloop, ") --> ");
-        for ilv in 0..#nvariants {
-          var stat = suite_run_info.getLoopStats(run_loop_variants[ilv])[iloop];
+        for (ilv, variant) in zip(0..#nvariants, run_loop_variants.domain) {
+          var stat = suite_run_info.getLoopStats(run_loop_variants[variant])[iloop];
           if stat.loop_is_run {
 
             if ilv == 0 then outchannel.writeln();
@@ -531,7 +520,7 @@ module main {
 
             for ilen in 0..#stat.loop_length.size {
               if stat.loop_run_count[ilen] > 0 {
-                var var_string = run_loop_variants[ilv] + "(" + len_id[ilen] + ")";
+                var var_string = run_loop_variants[variant] + "(" + len_id[ilen] + ")";
                 outchannel.writef("%-*s", var_field_len+1, var_string);
                 outchannel.writef("%{#########.#######################}", stat.loop_chksum[ilen]);
                 if ilv > 0 {
@@ -545,11 +534,9 @@ module main {
           }
         }
       }
-      delete ref_chksum;
     }
     outchannel.write(dash_line);
     outchannel.write("\n\n\n");
-    delete len_id;
   }
 
   proc generateFOMReport(run_loop_variants: [] string,
@@ -653,13 +640,9 @@ module main {
   }
 
   proc getVariantNames(lvids: [] bool) {
-    //var run_variant_names = new vector(string);
-    const numVariants = + reduce lvids;
-    var run_variant_names: [0..#numVariants] string;
-    var i = 0;
-    for lvid in lvids.domain do if lvids[lvid] {
-      run_variant_names[i] = getVariantName(lvid);
-      i += 1;
+    var run_variant_names: [lvids.domain] string;
+    for lvid in lvids.domain {
+      run_variant_names[lvid] = getVariantName(lvid);
     }
     return run_variant_names;
   }
@@ -715,7 +698,6 @@ module main {
 
     suite_info.loop_samp_frac = sample_frac;
 
-    suite_info.loop_weights.resize(WeightGroup.NUM_WEIGHT_GROUPS);
     suite_info.loop_weights[WeightGroup.DATA_PARALLEL] = 2.0;
     suite_info.loop_weights[WeightGroup.ORDER_DEPENDENT] = 1.8;
     suite_info.loop_weights[WeightGroup.TRANSCENDENTAL] = 1.7;
@@ -723,17 +705,11 @@ module main {
     suite_info.loop_weights[WeightGroup.POINTER_NEST] = 1.4;
     suite_info.loop_weights[WeightGroup.COMPLEX] = 1.0;
 
-    suite_info.loop_length_names.resize(num_lengths);
     suite_info.loop_length_names[LoopLength.LONG] = "LONG";
     suite_info.loop_length_names[LoopLength.MEDIUM] = "MEDIUM";
     suite_info.loop_length_names[LoopLength.SHORT] = "SHORT";
 
-    suite_info.num_loops_run.resize(run_variant_names.size);
-    suite_info.tot_time.resize(run_variant_names.size);
-    suite_info.fom_rel.resize(run_variant_names.size);
-    suite_info.fom_rate.resize(run_variant_names.size);
-
-    for ilv in 0..#run_variant_names.size {
+    for ilv in run_variant_names.domain {
       suite_info.addLoopStats(run_variant_names[ilv]);
 
       if suite_info.num_loops_run[ilv] == nil then
@@ -759,9 +735,9 @@ module main {
     shared_loop_length[LoopLength.SHORT]  = (171 * loop_length_factor):int;
 
     // ADomain::loop_length_factor = loop_length_factor;
-    var weight: vector(real) = suite_info.loop_weights;
+    var weight = suite_info.loop_weights;
     var max_loop_length: int = 0;
-    for ilv in 0..#run_variant_names.size {
+    for ilv in run_variant_names.domain {
       for iloop in suite_info.loop_kernel_dom {
         var loop_name = iloop:string;
         var loop_stat = new LoopStat(suite_info.loop_length_dom.numIndices);
@@ -1171,8 +1147,8 @@ module main {
             }
           }
         }
-        if suite_info.loop_names.count(loop_name) == 0 then
-          suite_info.loop_names.push_back(loop_name);
+
+        suite_info.loop_names[iloop] = loop_name;
         max_loop_length = max(max_loop_length, max_loop_indx);
 
         for len in suite_info.loop_length_dom {

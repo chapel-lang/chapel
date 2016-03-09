@@ -29,24 +29,27 @@ module LCALSDataTypes {
   class LoopSuiteRunInfo {
     var host_name: string;
 
-    var loop_kernel_dom: domain(LoopKernelID);
-    var loop_names = new vector(string);
+    const loop_kernel_dom: domain(LoopKernelID);
+    const loop_length_dom: domain(LoopLength);
+    const loop_variant_dom: domain(LoopVariantID);
+    const weight_group_dom: domain(WeightGroup);
 
-    var loop_length_dom: domain(LoopLength);
+    var loop_names: [loop_kernel_dom] string;
+
     var run_loop_length: [loop_length_dom] bool;
-    var loop_length_names = new vector(string);
+    var loop_length_names: [loop_length_dom] string;
 
     var num_suite_passes: int;
     var loop_samp_frac: real;
 
     var ref_loop_stat: LoopStat;
 
-    var loop_weights = new vector(real);
+    var loop_weights: [weight_group_dom] real;
 
-    var num_loops_run = new vector(vector(int));
-    var tot_time = new vector(vector(real));
-    var fom_rel = new vector(vector(real));
-    var fom_rate = new vector(vector(real));
+    var num_loops_run: [loop_variant_dom] vector(int);
+    var tot_time: [loop_variant_dom] vector(real);
+    var fom_rel: [loop_variant_dom] vector(real);
+    var fom_rate: [loop_variant_dom] vector(real);
 
     var cache_flush_data_len: int;
     var cache_flush_data_dom: domain(1);
@@ -64,30 +67,17 @@ module LCALSDataTypes {
       loop_test_stats[name] = new vector(LoopStat);
     }
     proc ~LoopSuiteRunInfo() {
-      if loop_names != nil then delete loop_names;
-      if loop_length_names != nil then delete loop_length_names;
       if ref_loop_stat != nil then delete ref_loop_stat;
-      if loop_weights != nil then delete loop_weights;
-      if num_loops_run != nil {
-        for nlr in num_loops_run do
-          if nlr != nil then delete nlr;
-        delete num_loops_run;
-      }
-      if tot_time != nil {
-        for tt in tot_time do
-          if tt != nil then delete tt;
-        delete tot_time;
-      }
-      if fom_rel != nil {
-        for fr in fom_rel do
-          if fr != nil then delete fr;
-        delete fom_rel;
-      }
-      if fom_rate != nil {
-        for fr in fom_rate do
-          if fr != nil then delete fr;
-        delete fom_rate;
-      }
+
+      for nlr in num_loops_run do
+        if nlr != nil then delete nlr;
+      for tt in tot_time do
+        if tt != nil then delete tt;
+      for fr in fom_rel do
+        if fr != nil then delete fr;
+      for fr in fom_rate do
+        if fr != nil then delete fr;
+
       for idx in loop_test_stats_dom {
         if loop_test_stats[idx] != nil {
           for stat in loop_test_stats[idx] do
