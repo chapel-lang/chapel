@@ -101,57 +101,33 @@ module LCALSDataTypes {
   class LoopStat {
     var loop_is_run: bool;
     var loop_weight: real;
+    var loop_length_dom: domain(1);
 
-    var loop_run_time = new vector(vector(real));
-    var loop_run_count = new vector(int);
-    var mean = new vector(real);
-    var std_dev = new vector(real);
-    var min = new vector(real);
-    var max = new vector(real);
-    var harm_mean = new vector(real);
-    var meanrel2ref = new vector(real);
+    var loop_run_time: [loop_length_dom] vector(real);
+    var loop_run_count: [loop_length_dom] int;
+    var mean: [loop_length_dom] real;
+    var std_dev: [loop_length_dom] real;
+    var min: [loop_length_dom] real;
+    var max: [loop_length_dom] real;
+    var harm_mean: [loop_length_dom] real;
+    var meanrel2ref: [loop_length_dom] real;
 
-    var loop_length = new vector(int);
-    var samples_per_pass = new vector(int);
+    var loop_length: [loop_length_dom] int;
+    var samples_per_pass: [loop_length_dom] int;
 
-    var loop_chksum = new vector(real);
+    var loop_chksum: [loop_length_dom] real;
 
     proc LoopStat(num_loop_lengths: int) {
       loop_is_run = false;
       loop_weight = 0.0;
+      loop_length_dom = {0..#num_loop_lengths};
 
-      loop_run_time.resize(num_loop_lengths);
-      for i in 0..#num_loop_lengths do
+      for i in loop_length_dom do
         loop_run_time[i] = new vector(real);
-      loop_run_count.resize(num_loop_lengths);
-      mean.resize(num_loop_lengths);
-      std_dev.resize(num_loop_lengths);
-      min.resize(num_loop_lengths);
-      max.resize(num_loop_lengths);
-      harm_mean.resize(num_loop_lengths);
-      meanrel2ref.resize(num_loop_lengths);
-
-      loop_length.resize(num_loop_lengths);
-      samples_per_pass.resize(num_loop_lengths);
-
-      loop_chksum.resize(num_loop_lengths);
     }
     proc ~LoopStat() {
-      if loop_run_time != nil {
-        for lrt in loop_run_time do
-          if lrt != nil then delete lrt;
-        delete loop_run_time;
-      }
-      if loop_run_count != nil then delete loop_run_count;
-      if mean != nil then delete mean;
-      if std_dev != nil then delete std_dev;
-      if min != nil then delete min;
-      if max != nil then delete max;
-      if harm_mean != nil then delete harm_mean;
-      if meanrel2ref != nil then delete meanrel2ref;
-      if loop_length != nil then delete loop_length;
-      if samples_per_pass != nil then delete samples_per_pass;
-      if loop_chksum != nil then delete loop_chksum;
+      for lrt in loop_run_time do
+        if lrt != nil then delete lrt;
     }
   }
 

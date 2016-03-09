@@ -169,7 +169,7 @@ module main {
   proc computeStats(ilv: int, loop_stats: vector(LoopStat), do_fom: bool) {
     for iloop in 0..#loop_stats.size() {
       var stat = loop_stats[iloop];
-      for ilen in 0..#stat.loop_length.size() {
+      for ilen in 0..#stat.loop_length.size {
         if stat.loop_run_count[ilen] > 0 {
           var time_sample = stat.loop_run_time[ilen];
           var sample_size = time_sample.size();
@@ -266,7 +266,7 @@ module main {
       var stat = suite_run_info.getLoopStats(variant_name)[iloop];
       if loop_names[iloop].length != 0 && stat.loop_is_run {
         writer.write(loop_names[iloop]);
-        for ilen in 0..#stat.loop_length.size() {
+        for ilen in 0..#stat.loop_length.size {
           writer.writef("%s%r", sepchr, stat.mean[ilen]);
         }
         writer.writeln();
@@ -304,7 +304,7 @@ module main {
       var stat = suite_run_info.getLoopStats(variant_name)[iloop];
       if loop_names[iloop].length != 0 && stat.loop_is_run {
         writer.write(loop_names[iloop]);
-        for ilen in 0..#stat.loop_length.size() {
+        for ilen in 0..#stat.loop_length.size {
           writer.write(sepchr, stat.meanrel2ref[ilen]);
         }
         writer.writeln();
@@ -389,7 +389,7 @@ module main {
       var ref_variant_stat = suite_run_info.getLoopStats(run_loop_variants[0])[iloop];
 
       var ref_mean = new vector(real);
-      ref_mean.resize(ref_variant_stat.mean.size());
+      ref_mean.resize(ref_variant_stat.mean.size);
       for i in 0..#ref_mean.size() {
         ref_mean[i] = ref_variant_stat.mean[i];
       }
@@ -403,14 +403,14 @@ module main {
           var stat = suite_run_info.getLoopStats(run_loop_variants[ilv])[iloop];
           if stat.loop_is_run {
             if ilv == 0 {
-              for ilen in 0..#stat.loop_length.size() {
+              for ilen in 0..#stat.loop_length.size {
                 outchannel.writef("   %s:(%i, %i)", len_id[ilen], stat.loop_length[ilen], stat.samples_per_pass[ilen]);
               }
               outchannel.writeln();
             } else {
               outchannel.write(dot_line_part);
             }
-            for ilen in 0..#stat.loop_length.size() {
+            for ilen in 0..#stat.loop_length.size {
               if stat.loop_run_count[ilen] > 0 {
                 var var_string = run_loop_variants[ilv] + "(" + len_id[ilen] + ")";
                 outchannel.writef("%-*s", prec, var_string);
@@ -514,7 +514,7 @@ module main {
     for iloop in 0..#loop_names.size() {
       var ref_variant_stat = suite_run_info.getLoopStats(run_loop_variants[0])[iloop];
       var ref_chksum = new vector(real);
-      ref_chksum.resize(ref_variant_stat.loop_chksum.size());
+      ref_chksum.resize(ref_variant_stat.loop_chksum.size);
       for i in 0..#ref_chksum.size() {
         ref_chksum[i] = ref_variant_stat.loop_chksum[i];
       }
@@ -529,7 +529,7 @@ module main {
             if ilv == 0 then outchannel.writeln();
             else outchannel.write(dot_line_part);
 
-            for ilen in 0..#stat.loop_length.size() {
+            for ilen in 0..#stat.loop_length.size {
               if stat.loop_run_count[ilen] > 0 {
                 var var_string = run_loop_variants[ilv] + "(" + len_id[ilen] + ")";
                 outchannel.writef("%-*s", var_field_len+1, var_string);
