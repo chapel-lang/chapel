@@ -200,7 +200,7 @@ static void replaceChunkHooks(void) {
 }
 
 // helper routines to get a mallctl value
-#define DEFINE_GET_MALLCTL_VALUE(type) \
+#define DECLARE_GET_MALLCTL_VALUE(type) \
 static type get_ ## type ##_mallctl_value(const char* mallctl_string) { \
   type value; \
   size_t sz; \
@@ -212,8 +212,9 @@ static type get_ ## type ##_mallctl_value(const char* mallctl_string) { \
   } \
   return value; \
 }
-DEFINE_GET_MALLCTL_VALUE(size_t);
-DEFINE_GET_MALLCTL_VALUE(unsigned);
+DECLARE_GET_MALLCTL_VALUE(size_t);
+DECLARE_GET_MALLCTL_VALUE(unsigned);
+#undef DECLARE_GET_MALLCTL_VALUE
 
 // helper routines to get the number of size classes
 static unsigned get_num_small_classes(void) {
