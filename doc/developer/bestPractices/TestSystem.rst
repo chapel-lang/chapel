@@ -44,8 +44,7 @@ foo.compopts        line separated compiler flag configurations
 COMPOPTS            directory-wide compiler flags
 foo.execopts        line separated runtime flag configurations
 EXECOPTS            directory-wide runtime flags
-foo.prediff         script that is run on the test output, before taking the
-                    diff between the output and .good file
+foo.prediff         script that is run on the test output, before taking the diff between the output and .good file
 -------------------------------------------------------------------------------
 **performance**
 -------------------------------------------------------------------------------
@@ -55,8 +54,7 @@ foo.perfkeys        keys to search for in the output
 foo.graph           Specifies which data files and perfkeys to graph, and
                     contains meta-data associated with labeling data sets,
                     axis, and graphs
-test/GRAPHFILES     Acts as an index that tracks all .graph that should be
-                    graphed.
+test/GRAPHFILES     Acts as an index that tracks all .graph that should be graphed.
 -------------------------------------------------------------------------------
 **futures**
 -------------------------------------------------------------------------------
