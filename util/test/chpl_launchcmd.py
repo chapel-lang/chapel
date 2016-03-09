@@ -176,6 +176,20 @@ class AbstractJob(object):
         logging.info('Job name is: {0}'.format(job_name))
         return job_name
 
+    @property
+    def select_suffix(self):
+        """Returns suffix for select expression based instance attributes. For example,
+        if self.knc is True, returns `:Xeon_Phi` so reservation will
+        target KNC nodes. Returns empty string when self.knc is False.
+
+        :rtype: str
+        :returns: select expression suffix, or empty string
+        """
+        if self.knc:
+            return ':Xeon_Phi'
+        else:
+            return ''
+
     target_arch = chpl_arch.get('target')
     @property
     def knc(self):
@@ -232,8 +246,8 @@ class AbstractJob(object):
 
         if self.num_locales >= 0:
             submit_command.append('-l')
-            submit_command.append('{0}={1}'.format(
-                self.num_nodes_resource, self.num_locales))
+            submit_command.append('{0}={1}{2}'.format(
+                self.num_nodes_resource, self.num_locales, self.select_suffix))
         if self.hostlist is not None:
             submit_command.append('-l')
             submit_command.append('{0}={1}'.format(
