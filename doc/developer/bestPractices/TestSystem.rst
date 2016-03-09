@@ -45,7 +45,8 @@ COMPOPTS            directory-wide compiler flags
 foo.execopts        line separated runtime flag configurations
 EXECOPTS            directory-wide runtime flags
 foo.prediff         script that is run on the test output, before taking the
-diff between the output and .good file
+                    diff between the output and .good file
+..
 -------------------------------------------------------------------------------
 **performance**
 -------------------------------------------------------------------------------
@@ -56,7 +57,8 @@ foo.graph           Specifies which data files and perfkeys to graph, and
                     contains meta-data associated with labeling data sets,
                     axis, and graphs
 test/GRAPHFILES     Acts as an index that tracks all .graph that should be
-graphed.
+                    graphed.
+..
 -------------------------------------------------------------------------------
 **futures**
 -------------------------------------------------------------------------------
@@ -65,6 +67,7 @@ foo.future          Describes the future being tested, following the
                     *keyword*, *short description*, *long description*
 foo.bad             output generated on a failing test, to track if a known
                     failing future begins failing a different way
+..
 =================   ===========================================================
 
 
@@ -312,8 +315,8 @@ problem sizes, one might use:
 
   .. code-block:: text
 
-    --n=100    # bar-100.perfkeys
-    --n=10000  # bar-10000.perfkeys
+      --n=100    # bar-100.perfkeys
+      --n=10000  # bar-10000.perfkeys
 
 
 This would cause ``bar.chpl`` to be compiled once and executed twice, one
@@ -394,8 +397,6 @@ pages as well.
 Futures: A mechanism for tracking bugs, feature requests, etc.
 ==============================================================
 
-.. TODO: JIRA usage with .futures
-
 The testing system also serves as our current system for tracking
 code-driven bugs and open issues.  In particular, any test can be
 marked as being a "future" test indicating that it doesn't work today
@@ -455,11 +456,32 @@ The current categories of future are:
 * unimplemented feature: this test uses features that are specified, but
     which have not yet been implemented.
 
+**JIRA and futures**
+
+Currently, it is considered good practice to include a future for an issue
+tracked on the `JIRA page`_. You can optionally include a back-reference to
+this JIRA issue from the future, to remind developers to mark the issue
+complete when the future is resolved.
+
+.. _`JIRA page`: https://chapel.atlassian.net/projects/CHAPEL/issues
 
 .. _extensions:
 
 Planned Extensions of Testing System
 ====================================
 
-.. TODO: Third party codes
-.. TODO: Potential yaml system rather than multiple files per test
+**Migrate to yaml-based system**
+
+It has been proposed to move away from the current system of 1 file per type of
+configurations, and opt for a yaml-based system. This would require a
+significant overhaul of the testing infrastructure, and consequently would take
+a lot of careful planning and development. For the time being, this idea
+remains backlogged on our testing wish list.
+
+**Support performance tracking of third-party codes**
+
+There is a desire to do more comprehensive comparisons of Chapel to other
+languages, particularly in benchmark suites. This system would likely involve
+scripts that would mirror a internal copy of, build, run, and gather timings
+for reference versions. This data could be shown on the performance tracking
+page.
