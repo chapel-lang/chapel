@@ -51,12 +51,14 @@ module main {
   proc main {
     const LoopKernelDom: domain(LoopKernelID);
     const LoopLengthDom: domain(LoopLength);
+    const LoopVariantIDDom: domain(LoopVariantID);
+
     const sample_frac = 1.0;
     const loop_length_factor = 1.0;
     const run_loop_length: [LoopLengthDom] bool =
       (run_longLoops, run_mediumLoops, run_shortLoops);
     var run_loop: [LoopKernelDom] bool;
-    var run_variants = new vector(LoopVariantID);
+    var run_variants: [LoopVariantIDDom] bool;
 
     run_loop[LoopKernelID.REF_LOOP] = run_refLoop;
 
@@ -100,22 +102,22 @@ module main {
       mkdir(output_dirname, parents=true);
 
     if run_variantRaw then
-      run_variants.push_back(LoopVariantID.RAW);
+      run_variants[LoopVariantID.RAW] = true;
     if run_variantRawOmp then
-      run_variants.push_back(LoopVariantID.RAW_OMP);
+      run_variants[LoopVariantID.RAW_OMP] = true;
     if run_variantRawVectorizeOnly then
-      run_variants.push_back(LoopVariantID.RAW_VECTOR_ONLY);
+      run_variants[LoopVariantID.RAW_VECTOR_ONLY] = true;
 
 
     assert(!run_variantForallLambda &&
            !run_variantForallLambdaOmp);
     /*
     if run_variantForallLambda then
-      run_variants.push_back(LoopVariantID.FORALL_LAMBDA);
+      run_variants[LoopVariantID.FORALL_LAMBDA] = true;
     if run_variantRawOmp then
-      run_variants.push_back(LoopVariantID.RAW_OMP);
+      run_variants[LoopVariantID.RAW_OMP] = true;
     if run_variantForallLambdaOmp then
-      run_variants.push_back(LoopVariantID.FORALL_LAMBDA_OMP);
+      run_variants[LoopVariantID.FORALL_LAMBDA_OMP] = true;
     */
 
     const cache_size = 0;
@@ -137,7 +139,7 @@ module main {
 
     for ipass in 0..#num_suite_passes {
       writeln("\n run suite: pass = ", ipass);
-      for variant in run_variants {
+      for variant in run_variants.domain do if run_variants[variant] {
         const loop_variant_name = getVariantName(variant);
         writeln("\t run loop variant ---> ", loop_variant_name);
         for ilen in LoopLengthDom {
@@ -162,8 +164,6 @@ module main {
     writeln("\n freeLoopSuiteRunInfo...");
     freeLoopSuiteRunInfo();
     writeln("\n DONE!!! ");
-    delete run_variant_names;
-    delete run_variants;
   }
 
   proc computeStats(ilv: int, loop_stats: vector(LoopStat), do_fom: bool) {
@@ -207,12 +207,12 @@ module main {
     }
   }
 
-  proc generateTimingReport(run_loop_variants: vector(string),
+  proc generateTimingReport(run_loop_variants: [] string,
                             output_dirname: string) {
-    if run_loop_variants.size() == 0 then return;
+    if run_loop_variants.size == 0 then return;
     const ver_info = buildVersionInfo();
     var suite_run_info = getLoopSuiteRunInfo();
-    const nvariants = run_loop_variants.size();
+    const nvariants = run_loop_variants.size;
     for ilv in 0..#nvariants {
       computeStats(ilv, suite_run_info.getLoopStats(run_loop_variants[ilv]), do_fom);
     }
@@ -314,9 +314,9 @@ module main {
     outfile.close();
   }
 
-  proc writeTimingSummaryReport(run_loop_variants: vector(string), outchannel) {
+  proc writeTimingSummaryReport(run_loop_variants: [] string, outchannel) {
     var suite_run_info = getLoopSuiteRunInfo();
-    const nvariants = run_loop_variants.size();
+    const nvariants = run_loop_variants.size;
     const ref_variant = run_loop_variants[0];
     var loop_names = suite_run_info.loop_names;
 
@@ -350,7 +350,7 @@ module main {
     outchannel.write("     loop variants run : ");
     for ilv in 0..#nvariants {
       var last_char: string;
-      if ( ilv+1 < run_loop_variants.size() ) then last_char = " , ";
+      if ( ilv+1 < run_loop_variants.size ) then last_char = " , ";
       outchannel.write(run_loop_variants[ilv], last_char);
     }
     outchannel.writeln("\n     reference variant : ", ref_variant);
@@ -446,9 +446,9 @@ module main {
     return "Chapel";
   }
 
-  proc generateChecksumReport(run_loop_variants: vector(string),
+  proc generateChecksumReport(run_loop_variants: [] string,
                               output_dirname: string) {
-    if run_loop_variants.size() == 0 then return;
+    if run_loop_variants.size == 0 then return;
     if output_dirname.length != 0 {
       var checksum_fname = output_dirname + "/" + "checksum.txt";
       var outfile = open(checksum_fname, iomode.cw);
@@ -462,9 +462,9 @@ module main {
     }
   }
 
-  proc writeChecksumReport(run_loop_variants: vector(string), outchannel) {
+  proc writeChecksumReport(run_loop_variants: [] string, outchannel) {
     var suite_run_info = getLoopSuiteRunInfo();
-    var nvariants = run_loop_variants.size();
+    var nvariants = run_loop_variants.size;
     var ref_variant = run_loop_variants[0];
     var loop_names = suite_run_info.loop_names;
     var len_id = new vector(string);
@@ -552,7 +552,7 @@ module main {
     delete len_id;
   }
 
-  proc generateFOMReport(run_loop_variants: vector(string),
+  proc generateFOMReport(run_loop_variants: [] string,
                          output_dirname: string) {
   }
 
@@ -652,10 +652,14 @@ module main {
     return lvid:string;
   }
 
-  proc getVariantNames(lvids: vector(LoopVariantID)) {
-    var run_variant_names = new vector(string);
-    for lvid in lvids {
-      run_variant_names.push_back(getVariantName(lvid));
+  proc getVariantNames(lvids: [] bool) {
+    //var run_variant_names = new vector(string);
+    const numVariants = + reduce lvids;
+    var run_variant_names: [0..#numVariants] string;
+    var i = 0;
+    for lvid in lvids.domain do if lvids[lvid] {
+      run_variant_names[i] = getVariantName(lvid);
+      i += 1;
     }
     return run_variant_names;
   }
@@ -724,12 +728,12 @@ module main {
     suite_info.loop_length_names[LoopLength.MEDIUM] = "MEDIUM";
     suite_info.loop_length_names[LoopLength.SHORT] = "SHORT";
 
-    suite_info.num_loops_run.resize(run_variant_names.size());
-    suite_info.tot_time.resize(run_variant_names.size());
-    suite_info.fom_rel.resize(run_variant_names.size());
-    suite_info.fom_rate.resize(run_variant_names.size());
+    suite_info.num_loops_run.resize(run_variant_names.size);
+    suite_info.tot_time.resize(run_variant_names.size);
+    suite_info.fom_rel.resize(run_variant_names.size);
+    suite_info.fom_rate.resize(run_variant_names.size);
 
-    for ilv in 0..#run_variant_names.size() {
+    for ilv in 0..#run_variant_names.size {
       suite_info.addLoopStats(run_variant_names[ilv]);
 
       if suite_info.num_loops_run[ilv] == nil then
@@ -757,7 +761,7 @@ module main {
     // ADomain::loop_length_factor = loop_length_factor;
     var weight: vector(real) = suite_info.loop_weights;
     var max_loop_length: int = 0;
-    for ilv in 0..#run_variant_names.size() {
+    for ilv in 0..#run_variant_names.size {
       for iloop in suite_info.loop_kernel_dom {
         var loop_name = iloop:string;
         var loop_stat = new LoopStat(suite_info.loop_length_dom.numIndices);
@@ -1188,6 +1192,5 @@ module main {
     defineReferenceLoopRunInfo();
     s_loop_data = new LoopData(max(max_loop_length, suite_info.ref_loop_stat.loop_length[LoopLength.LONG]));
 
-    delete run_variant_names;
   }
 }
