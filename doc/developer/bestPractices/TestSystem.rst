@@ -106,7 +106,10 @@ example, given a directory containing two files:
 
 The test system can be exercised by invoking:
 
-  ``prompt% start_test hi.chpl``
+  ``start_test hi.chpl``
+
+This is assuming ``$CHPL_HOME/util/`` is in the user's `$PATH`, which is
+taken care of when sourcing ``$CHPL_HOME/util/setchplenv.bash``.
 
 This will cause the compiler to compile hi.chpl then execute the
 resulting binary.  The concatenation of the compiler and executable
@@ -467,8 +470,8 @@ complete when the future is resolved.
 
 .. _extensions:
 
-Planned Extensions of Testing System
-====================================
+Planned Changes of Testing System
+=================================
 
 **Migrate to yaml-based system**
 
@@ -485,3 +488,8 @@ languages, particularly in benchmark suites. This system would likely involve
 scripts that would mirror a internal copy of, build, run, and gather timings
 for reference versions. This data could be shown on the performance tracking
 page.
+
+**Documentation Improvements**
+
+There are several aspects of the testing system undocumented.
+See the ``..  TODO`` lines within the raw text of this file to see a few.
