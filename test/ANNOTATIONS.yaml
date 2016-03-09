@@ -440,3 +440,9 @@ time_iterate:
 time-write:
   03/05/15:
     - no strings with externs update
+
+timeVectorArray:
+  03/05/16:
+    - implemented doubling/halving for array-as-vec (#3380)
+  03/08/16:
+    - increased array-as-vec problem size (#3422)
