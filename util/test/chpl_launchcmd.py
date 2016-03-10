@@ -186,6 +186,15 @@ class AbstractJob(object):
         """
         return self.target_arch == 'knc'
 
+    @property
+    def knl(self):
+        """Returns True when testing KNL (Xeon Phi).
+
+        :rtype: bool
+        :returns: True when testing KNL
+        """
+        return self.target_arch == 'mic-knl'
+
     def work_around_knc_module_bug(self):
         """Hack to unload the knc module before calling qsub in order to work
         around a module bug. Note that this unloading of knc here is why the
@@ -839,7 +848,7 @@ class PbsProJob(AbstractJob):
             # on the system. Someday support for heterogeneous applications may
             # exist, in which case ncpus will need to be set. For now, assume
             # program will be launched onto knc only.
-            if self.num_cpus_resource is not None and not self.knc:
+            if self.num_cpus_resource is not None and not (self.knc or self.knl):
                 select_stmt += ':{0}={1}'.format(
                     self.num_cpus_resource, self.num_cpus)
 
