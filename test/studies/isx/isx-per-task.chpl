@@ -1,16 +1,16 @@
 // isx-spmd.chpl
 // 
-// This is a port of ISx to Chapel, co-developed by Brad Chamberlain,
-// Lydia Duncan, and Jacob Hemstad on 2015-10-30.  Additional cleanups
-// were done later by Brad.
+// This is a port of ISx to Chapel, developed by Ben Harshbarger as a
+// variant on the isx-spmd.chpl version co-developed by Brad Chamberlain,
+// Lydia Duncan, and Jacob Hemstad.
 //
 // This version is based on the OpenSHMEM version available from:
 //
 //   https://github.com/ParRes/ISx
 //
-// This version is very literally SPMD, using a task per locale
-// (and parallel loops to get multicore parallelism within each
-// locale).
+// This version is fully SPMD, creating a task per locale and a task
+// per physical core on each locale. Of the current Chapel implementations
+// of ISx, it is the most like the SHMEM reference version.
 //
 
 //
@@ -65,7 +65,10 @@ config const mode = scaling.weak;
 //
 config const n = if testrun then 32 else 2**27;
 
-const numTasks = + reduce for loc in Locales do loc.maxTaskPar;
+//
+// The total number of tasks across all locales
+//
+const numTasks = + reduce Locales.maxTaskPar;
 
 //
 // The total number of keys
@@ -74,11 +77,13 @@ config const totalKeys = if mode == scaling.strong then n
                                                    else n * numTasks;
 
 //
-// The number of keys per locale -- this is approximate for strong
+// The number of keys per task -- this is approximate for strong
 // scaling if the number of locales doesn't divide 'n' evenly.
 //
+// TODO: Should this really be a config const?
+//
 config const keysPerTask = if mode == scaling.strong then n/numTasks
-                                                       else n;
+                                                     else n;
 
 
 //
@@ -134,26 +139,26 @@ if numTrials == 0 then
 
 
 
-const TaskSpace = {0..#numTasks};
-const PerTask = TaskSpace dmapped Block(TaskSpace);
+const LocTaskSpace = {0..#numTasks};
+const TaskSpace = LocTaskSpace dmapped Block(LocTaskSpace);
 
-var allBucketKeys: [PerTask] [0..#recvBuffSize] keyType;
-var recvOffset: [PerTask] atomic int;
+var allBucketKeys: [TaskSpace] [0..#recvBuffSize] keyType;
+var recvOffset: [TaskSpace] atomic int;
 var totalTime, inputTime, bucketCountTime, bucketOffsetTime, bucketizeTime,
-    exchangeKeysTime, countKeysTime: [PerTask] [1..numTrials] real;
+    exchangeKeysTime, countKeysTime: [TaskSpace] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
 var barrier = new Barrier(numTasks);
 
 // should result in one loop iteration per task
-forall id in PerTask {
+forall taskID in TaskSpace {
   //
   // The non-positive iterations represent burn-in runs, so don't
   // time those.  To reduce time spent in verification, verify only
   // the final timed run.
   //
   for i in 1-numBurnInRuns..numTrials do
-    bucketSort(id, trial=i, time=printTimings && (i>0), verify=(i==numTrials));
+    bucketSort(taskID, trial=i, time=printTimings && (i>0), verify=(i==numTrials));
 }
 
 if debug {
