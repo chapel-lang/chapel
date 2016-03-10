@@ -1,7 +1,0 @@
-arrA is: 0 0 0
-arrB is: 0 0 0
-
-arrA is: 0 0 0
-arrB is: 0 0 0
-
-assignDomain.chpl:20: error: halt reached - illegal reallocation
