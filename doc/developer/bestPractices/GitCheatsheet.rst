@@ -223,7 +223,7 @@ Test your feature
 -----------------
 
 You will probably need to create new tests for your feature. See
-ContributorInfo.rst and TestSystem.txt for more information on this process.
+ContributorInfo.rst and TestSystem.rst for more information on this process.
 To do the most basic testing, you'd do:
 
 .. code-block:: bash
