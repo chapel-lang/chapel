@@ -119,6 +119,8 @@ all:
       config: 16 node XC
   02/22/16:
     - Default to jemalloc for comm=none (#3333)
+  03/04/16:
+    - implemented doubling/halving for array-as-vec (#3380)
 
 AllCompTime:
   11/09/14:
@@ -317,6 +319,8 @@ memleaks:
     - Fixed string memory leak resulting from redundant autoCopies (#3023)
   01/14/16:
     - optimize certain functions that return with ref-intent (#3101)
+  03/10/16:
+    - Cleanups to miniMD (#3436)
 
 memleaksfull:
   07/08/14:
@@ -443,6 +447,6 @@ time-write:
 
 timeVectorArray:
   03/05/16:
-    - implemented doubling/halving for array-as-vec (#3380)
-  03/08/16:
+    - implemented doubling/halving for array-as-vec (#3380) (no timing from 4th)
+  03/09/16:
     - increased array-as-vec problem size (#3422)
