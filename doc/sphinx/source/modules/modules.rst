@@ -1,7 +1,7 @@
 .. _modules:
 
-Modules
-=======
+Standard Modules
+================
 Contents:
 
 .. toctree::
