@@ -13,8 +13,7 @@ Contents:
 
    standard/**
 
-Module Indices and tables
--------------------------
+**Module Indices and tables**
 
 * :ref:`genindex`
 * :chpl:chplref:`chplmodindex`
