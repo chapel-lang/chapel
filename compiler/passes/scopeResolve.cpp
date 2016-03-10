@@ -88,6 +88,10 @@ static bool                                enableModuleUsesCache = false;
 static Vec<const char*>                         aliasFieldSet;
 
 
+// To avoid duplicate user warnings in checkIdInsideWithClause().
+// Using pair<> instead of astlocT to avoid defining operator<.
+typedef std::pair< std::pair<const char*,int>, const char* >  WFDIWmark;
+static std::set< std::pair< std::pair<const char*,int>, const char* > > warnedForDotInsideWith;
 
 
 static void     addToSymbolTable(Vec<DefExpr*>& defs); // deprecated.
@@ -213,6 +217,8 @@ void scopeResolve() {
 
   destroyModuleUsesCaches();
 
+  warnedForDotInsideWith.clear();
+
   renameDefaultTypesToReflectWidths();
 
   cleanupExternC();
@@ -300,23 +306,23 @@ static void addOneToSymbolTable(DefExpr* def)
 *                                                                           *
 ************************************* | ************************************/
 
-static ModuleSymbol* getUsedModule(UseStmt* use);
-static ModuleSymbol* getUsedModule(Expr* expr, UseStmt* useCall);
+static Symbol* getUsedSymbol(UseStmt* use);
+static Symbol* getUsedSymbol(Expr* expr, UseStmt* useCall);
 
 static void processImportExprs() {
   // handle "use mod;" where mod is a module
   forv_Vec(UseStmt, use, gUseStmts) {
     SET_LINENO(use);
 
-    ModuleSymbol* mod = getUsedModule(use);
+    Symbol* sym = getUsedSymbol(use);
 
-    if (!mod)
-      USR_FATAL(use, "Cannot find module");
+    if (!sym)
+      USR_FATAL(use, "Cannot find module or enum");
 
     // We don't need to perform any resolution on the default use of the
     // rootModule, so don't add it to the current module's use list or that
     // of its block (it should already be in the latter).
-    if (mod == rootModule)
+    if (sym == rootModule)
       continue;
 
     if (!use->parentExpr) {
@@ -324,17 +330,22 @@ static void processImportExprs() {
       // contain excepts, so that the excepted keywords are skipped down all
       // paths from that chain head (see buildBreadthFirstModuleList).  In
       // that case, we don't need to do any further work here beyond make
-      // sure the mod is a SymExpr
-      use->mod = new SymExpr(mod);
+      // sure the sym is a SymExpr
+      use->src = new SymExpr(sym);
       continue;
     }
 
-    use->mod->replace(new SymExpr(mod));
+    use->src->replace(new SymExpr(sym));
     // Need to update the use now that we've found what it refers to
 
     ModuleSymbol* enclosingModule = use->getModule();
 
-    enclosingModule->moduleUseAdd(mod);
+    if (ModuleSymbol* mod = toModuleSymbol(sym)) {
+      // A ModuleSymbol's modUseList is intended to be for initializing modules
+      // in an appropriate order.  If we're using an enum symbol, we don't
+      // need to worry about this.
+      enclosingModule->moduleUseAdd(mod);
+    }
 
     BlockStmt* useParent = getVisibilityBlock(use);
     use->getStmtExpr()->remove();
@@ -349,72 +360,71 @@ static void processImportExprs() {
 // Return the module imported by a use call.  The module returned could be
 // nested: e.g. "use outermost.middle.innermost;"
 //
-static ModuleSymbol* getUsedModule(UseStmt* use) {
-  return getUsedModule(use->mod, use);
+static Symbol* getUsedSymbol(UseStmt* use) {
+  return getUsedSymbol(use->src, use);
 }
 
 
 //
 // Helper routine to factor some 'use' error messages into a single place
 //
-static void printModuleUseError(UseStmt* useExpr,
-                                Symbol* sym = NULL) {
+static void printUseError(UseStmt* useExpr,
+                          Symbol* sym = NULL) {
   if (sym && !sym->isImmediate()) {
     if (sym->name) {
-      USR_FATAL(useExpr, "'use' of non-module symbol %s", sym->name);
+      USR_FATAL(useExpr, "'use' of non-module/enum symbol %s", sym->name);
     } else {
-      USR_FATAL(useExpr, "'use' of non-module symbol");
+      USR_FATAL(useExpr, "'use' of non-module/enum symbol");
     }
   } else {
-    USR_FATAL(useExpr, "'use' statements must refer to module symbols "
+    USR_FATAL(useExpr, "'use' statements must refer to module or enum symbols "
               "(e.g., 'use <module>[.<submodule>]*;')");
   }
   return;
 }
 
-
-//
-// if the symbol in question is a module symbol return it; otherwise,
-// generate an error.
-//
-static ModuleSymbol* getUsedModuleSymbol(UseStmt* useExpr, Symbol* symbol) {
-  if (ModuleSymbol* mod = toModuleSymbol(symbol)) {
-    return mod;
-  } else {
-    printModuleUseError(useExpr, symbol);
-    return NULL;
+static bool isValidUsedSymbol(UseStmt* useExpr, Symbol* symbol) {
+  if (isModuleSymbol(symbol)) {
+    return true;
+  } else if (TypeSymbol* type = toTypeSymbol(symbol)) {
+    if (isEnumType(type->type))
+      return true;
   }
+  printUseError(useExpr, symbol);
+  return false;
 }
 
 //
-// Return the module imported by a use call.  The module returned could be
-// nested: e.g. "use outermost.middle.innermost;"
+// Return the module or enum imported by a use call.  The module returned
+// could be nested: e.g. "use outermost.middle.innermost;"
 //
-static ModuleSymbol* getUsedModule(Expr* expr, UseStmt* useCall) {
+static Symbol* getUsedSymbol(Expr* expr, UseStmt* useCall) {
   //
   // This handles the simple case of 'use <symbol>' (as well as error
-  // cases that try to use non-module symbols)
+  // cases that try to use non-module or non-enum symbols)
   //
   if (SymExpr* sym = toSymExpr(expr)) {
     if (Symbol* symbol = sym->var) {
-      return getUsedModuleSymbol(useCall, symbol);
+      if (isValidUsedSymbol(useCall, symbol)) {
+        return symbol;
+      }
     } else {
-      printModuleUseError(useCall);
-      return NULL;
+      printUseError(useCall);
     }
-
+    return NULL;
   } else if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
     //
     // This case handles the (common) case that we're 'use'ing a
     // symbol that we have not yet resolved.
     //
     if (Symbol* symbol = lookup(useCall, sym->unresolved)) {
-      return getUsedModuleSymbol(useCall, symbol);
+      if (isValidUsedSymbol(useCall, symbol)) {
+        return symbol;
+      }
     } else {
-      USR_FATAL(useCall, "Cannot find module '%s'", sym->unresolved);
-      return NULL;
+      USR_FATAL(useCall, "Cannot find module or enum '%s'", sym->unresolved);
     }
-
+    return NULL;
   } else if (CallExpr* call = toCallExpr(expr)) {
     //
     // This handles the case of 'use <symbol>.<symbol>' (as well as
@@ -422,9 +432,9 @@ static ModuleSymbol* getUsedModule(Expr* expr, UseStmt* useCall) {
     //
 
     if (!call->isNamed("."))
-      printModuleUseError(useCall);
+      printUseError(useCall);
 
-    ModuleSymbol* lhs = getUsedModule(call->get(1), useCall);
+    ModuleSymbol* lhs = toModuleSymbol(getUsedSymbol(call->get(1), useCall));
 
     if (!lhs)
       USR_FATAL(useCall, "Cannot find module");
@@ -433,24 +443,25 @@ static ModuleSymbol* getUsedModule(Expr* expr, UseStmt* useCall) {
     const char* rhsName = 0;
 
     if (!rhs)
-      INT_FATAL(useCall, "Bad use statement in getUsedModule");
+      INT_FATAL(useCall, "Bad use statement in getUsedSymbol");
 
     if (!get_string(rhs, &rhsName))
-      INT_FATAL(useCall, "Bad use statement in getUsedModule");
+      INT_FATAL(useCall, "Bad use statement in getUsedSymbol");
 
     if (Symbol* symbol = lookup(lhs->block, rhsName)) {
-      return getUsedModuleSymbol(useCall, symbol);
+      if (isValidUsedSymbol(useCall, symbol)) {
+        return symbol;
+      }
     } else {
       USR_FATAL(useCall, "Cannot find module '%s'", rhsName);
-      return NULL;
     }
-
+    return NULL;
   } else {
     //
     // This is a general fall-through case that I suspect we may never
     // reach, but better safe than sorry...
     //
-    printModuleUseError(useCall);
+    printUseError(useCall);
     return NULL;
   }
 }
@@ -463,16 +474,13 @@ void UseStmt::validateList() {
     // valid!
     return;
   }
-  SymExpr* se = toSymExpr(mod);
-  INT_ASSERT(se);
-  ModuleSymbol* module = toModuleSymbol(se->var);
-  INT_ASSERT(module);
-
   noRepeats();
+
+  BaseAST* scopeToUse = getSearchScope();
 
   const char* listName = except ? "except" : "only";
   for_vector(const char, name, named) {
-    Symbol* sym = lookup(module->block, name);
+    Symbol* sym = lookup(scopeToUse, name);
 
     if (!sym) {
       USR_FATAL_CONT(this, "Bad identifier in '%s' clause, no known '%s'", listName, name);
@@ -485,10 +493,12 @@ void UseStmt::validateList() {
 
   for (std::map<const char*, const char*>::iterator it = renamed.begin();
        it != renamed.end(); ++it) {
-    Symbol* sym = lookup(module->block, it->second);
+    Symbol* sym = lookup(scopeToUse, it->second);
 
     if (!sym) {
-      USR_FATAL_CONT(this, "Bad identifier in rename, no known '%s' in module '%s'", it->second, module->name);
+      SymExpr* se = toSymExpr(src);
+      INT_ASSERT(se);
+      USR_FATAL_CONT(this, "Bad identifier in rename, no known '%s' in '%s'", it->second, se->var->name);
     } else if (!sym->isVisible(this)) {
       USR_FATAL_CONT(this, "Bad identifier in rename, '%s' is private", it->second);
     }
@@ -1426,6 +1436,8 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*       unresolvedSymExpr,
 static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet);
 static bool isMethodName(const char* name, Type* type);
 static bool isMethodNameLocal(const char* name, Type* type);
+static void checkIdInsideWithClause(Expr* exprInAst,
+                                    UnresolvedSymExpr* origUSE);
 
 #ifdef HAVE_LLVM
 static bool tryCResolve(ModuleSymbol* module, const char* name);
@@ -1501,6 +1513,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
   //
   if (FnSymbol* fn = toFnSymbol(sym)) {
     if (!fn->_this && fn->hasFlag(FLAG_NO_PARENS)) {
+      checkIdInsideWithClause(unresolvedSymExpr, unresolvedSymExpr);
       unresolvedSymExpr->replace(new CallExpr(fn));
       return;
     }
@@ -1628,6 +1641,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
                 }
               }
 
+              checkIdInsideWithClause(expr, unresolvedSymExpr);
               expr->replace(dot);
             }
           }
@@ -1695,7 +1709,54 @@ static bool isMethodNameLocal(const char* name, Type* type) {
   }
 
   return false;
-} 
+}
+
+
+static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
+                                     const char* construct)
+{
+  // As of this writing, a with-clause can be duplicated in the AST.
+  // This code avoids multiple error messages for the same symbol.
+
+  std::pair<const char*,int> markLoc(origUSE->astloc.filename,
+                                     origUSE->astloc.lineno);
+  WFDIWmark mark(markLoc, origUSE->unresolved);
+
+  if (!warnedForDotInsideWith.count(mark)) {
+    USR_FATAL_CONT(origUSE, "%s: cannot reference a field or function in a 'with' clause of a %s", origUSE->unresolved, construct);
+    warnedForDotInsideWith.insert(mark);
+  }
+}
+
+//
+// 'expr' ended up being a field reference (or perhaps a method call).
+// If we are inside a 'with' clause, report an error.
+//
+static void checkIdInsideWithClause(Expr* exprInAst,
+                                    UnresolvedSymExpr* origUSE)
+{
+  // A 'with' clause for a forall loop.
+  if (CallExpr* call = toCallExpr(exprInAst->parentExpr)) {
+    if (call->isPrimitive(PRIM_FORALL_LOOP)) {
+      errorDotInsideWithClause(origUSE, "forall loop");
+      return;
+    }
+  }
+
+  // A 'with' clause for a task construct.
+  if (Expr* parent1 = exprInAst->parentExpr)
+    if (BlockStmt* parent2 = toBlockStmt(parent1->parentExpr))
+      if (parent1 == parent2->byrefVars) {
+        CallExpr* blockInfo = parent2->blockInfoGet();
+        // Ensure that an issue, indeed, occurred a task construct.
+        INT_ASSERT(blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN) ||
+                   blockInfo->isPrimitive(PRIM_BLOCK_COFORALL) ||
+                   blockInfo->isPrimitive(PRIM_BLOCK_BEGIN));
+        errorDotInsideWithClause(origUSE, blockInfo->primitive->name);
+        return;
+      }
+}
+
 
 static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) {
   if (call->isNamed(".")) {
@@ -1950,7 +2011,7 @@ static void    buildBreadthFirstModuleList(Vec<UseStmt*>* modules);
 
 static void    buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
                                            Vec<UseStmt*>* current,
-                                           std::map<ModuleSymbol*, std::vector<UseStmt*> >* alreadySeen);
+                                           std::map<Symbol*, std::vector<UseStmt*> >* alreadySeen);
 
 // Given a name and a scope, determine the symbol referred by that name in the
 // context of that scope.
@@ -2182,11 +2243,9 @@ static bool lookupThisScopeAndUses(BaseAST* scope, const char * name,
           if (use) {
             if (!use->skipSymbolSearch(name)) {
               const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
-              SymExpr* se = toSymExpr(use->mod);
-              INT_ASSERT(se);
-              ModuleSymbol* mod = toModuleSymbol(se->var);
-              INT_ASSERT(mod);
-              if (Symbol* sym = inSymbolTable(mod->block, nameToUse)) {
+              BaseAST* scopeToUse = use->getSearchScope();
+
+              if (Symbol* sym = inSymbolTable(scopeToUse, nameToUse)) {
                 if (sym->hasFlag(FLAG_PRIVATE)) {
                   if (rejectedPrivateIds.find(sym->id) ==
                       rejectedPrivateIds.end()) {
@@ -2294,11 +2353,11 @@ static void lookup(BaseAST* scope, const char * name,
   }
 }
 
-static bool skipUse(std::map<ModuleSymbol*, std::vector<UseStmt*> >* seen,
+static bool skipUse(std::map<Symbol*, std::vector<UseStmt*> >* seen,
                     UseStmt* current);
 
 static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules) {
-  std::map<ModuleSymbol*, std::vector<UseStmt* > > seen;
+  std::map<Symbol*, std::vector<UseStmt* > > seen;
 
   return buildBreadthFirstModuleList(modules, modules, &seen);
 }
@@ -2308,51 +2367,48 @@ static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules) {
 // argument.
 static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules,
                                         Vec<UseStmt*>* current,
-                                        std::map<ModuleSymbol*, std::vector<UseStmt*> >* alreadySeen) {
+                                        std::map<Symbol*, std::vector<UseStmt*> >* alreadySeen) {
   modules->add(NULL); // use NULL sentinel to identify modules of equal depth
 
   Vec<UseStmt*> next;
 
-  forv_Vec(UseStmt, module, *current) {
-    if (!module) {
+  forv_Vec(UseStmt, source, *current) {
+    if (!source) {
       break;
     } else {
-      SymExpr* se = toSymExpr(module->mod);
+      SymExpr* se = toSymExpr(source->src);
       INT_ASSERT(se);
-      ModuleSymbol* mod = toModuleSymbol(se->var);
-      INT_ASSERT(mod);
-      if (mod->block->modUses) {
-        for_actuals(expr, mod->block->modUses) {
-          UseStmt* use = toUseStmt(expr);
-          INT_ASSERT(use);
+      if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
+        if (mod->block->modUses) {
+          for_actuals(expr, mod->block->modUses) {
+            UseStmt* use = toUseStmt(expr);
+            INT_ASSERT(use);
 
-          SymExpr* useSE = toSymExpr(use->mod);
-          INT_ASSERT(useSE);
+            SymExpr* useSE = toSymExpr(use->src);
+            INT_ASSERT(useSE);
 
-          ModuleSymbol* useMod = toModuleSymbol(useSE->var);
-          INT_ASSERT(mod);
+            UseStmt* useToAdd = NULL;
+            if (!useSE->var->hasFlag(FLAG_PRIVATE)) {
+              // Uses of private modules are not transitive - the symbols in the
+              // private modules are only visible to itself and its immediate
+              // parent.  Therefore, if the symbol is private, we will not
+              // traverse it further and will merely add it to the alreadySeen
+              // map.
+              useToAdd = use->applyOuterUse(source);
+              if (useToAdd != NULL && !skipUse(alreadySeen, useToAdd)) {
+                next.add(useToAdd);
+                modules->add(useToAdd);
+              }
+              // if applyOuterUse returned NULL, the number of symbols that
+              // could be provided from this use was 0, so it didn't need to be
+              // added to the alreadySeen map.
+              if (useToAdd != NULL) {
+                (*alreadySeen)[useSE->var].push_back(useToAdd);
+              }
 
-          UseStmt* useToAdd = NULL;
-          if (!useMod->hasFlag(FLAG_PRIVATE)) {
-            // Uses of private modules are not transitive - the symbols in the
-            // private modules are only visible to itself and its immediate
-            // parent.  Therefore, if the symbol is private, we will not
-            // traverse it further and will merely add it to the alreadySeen
-            // map.
-            useToAdd = use->applyOuterUse(module);
-            if (useToAdd != NULL && !skipUse(alreadySeen, useToAdd)) {
-              next.add(useToAdd);
-              modules->add(useToAdd);
+            } else {
+              (*alreadySeen)[useSE->var].push_back(use);
             }
-            // if applyOuterUse returned NULL, the number of symbols that
-            // could be provided from this use was 0, so it didn't need to be
-            // added to the alreadySeen map.
-            if (useToAdd != NULL) {
-              (*alreadySeen)[useMod].push_back(useToAdd);
-            }
-
-          } else {
-            (*alreadySeen)[useMod].push_back(use);
           }
         }
       }
@@ -2444,7 +2500,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
       } else {
         // The only list will be shorter, create a new UseStmt with it.
         SET_LINENO(this);
-        return new UseStmt(mod, &newOnlyList, false, &newRenamed);
+        return new UseStmt(src, &newOnlyList, false, &newRenamed);
         // Note: we don't populate the relatedNames vector for the new use,
         // since we don't have a way to connect the names in it back to the
         // types we did or didn't include in the shorter 'only' list.
@@ -2491,7 +2547,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
           // weren't in the inner 'except' list (could be all of the
           // outer 'only' list)
           SET_LINENO(this);
-          return new UseStmt(mod, &newOnlyList, false, &newRenamed);
+          return new UseStmt(src, &newOnlyList, false, &newRenamed);
         } else {
           // all the 'only' identifiers were in the 'except'
           // list so this module use will give us nothing.
@@ -2536,7 +2592,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
           // There were symbols that were in both 'only' lists, so
           // this module use is still interesting.
           SET_LINENO(this);
-          return new UseStmt(mod, &newOnlyList, false, &newRenamed);
+          return new UseStmt(src, &newOnlyList, false, &newRenamed);
         } else {
           // all of the 'only' identifiers in the outer use
           // were missing from the inner use's 'only' list, so this
@@ -2666,14 +2722,12 @@ bool UseStmt::providesNewSymbols(UseStmt* other) {
 
 // Returns true if we should skip looking at this use, because the symbols it
 // provides have already been covered by a previous use.
-static bool skipUse(std::map<ModuleSymbol*, std::vector<UseStmt*> >* seen,
+static bool skipUse(std::map<Symbol*, std::vector<UseStmt*> >* seen,
                     UseStmt* current) {
-  SymExpr* useSE = toSymExpr(current->mod);
+  SymExpr* useSE = toSymExpr(current->src);
   INT_ASSERT(useSE);
 
-  ModuleSymbol* mod = toModuleSymbol(useSE->var);
-  INT_ASSERT(mod);
-  std::vector<UseStmt*> vec = (*seen)[mod];
+  std::vector<UseStmt*> vec = (*seen)[useSE->var];
   if (vec.size() > 0) {
     // We've already seen at least one use of this module, but it might not be
     // thorough enough to justify skipping the newest 'use'.

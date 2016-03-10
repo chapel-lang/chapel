@@ -1,0 +1,15 @@
+feature request: invoke standalone iterator, not serial
+
+Since #3375 aka eefbfe1, certain reductions are represented in the
+compiler using forall loops. Some reductions, however, are represented
+as before. That previous representation does not know about
+standalone iterators and so invokes only either leader/follower
+if they exist or serial iterator otherwise. While we can fix that
+representation to allow for standalone iterators too, our path
+forward is to use the new representation for all reductions.
+This future commemorates our intention to do so.
+
+This future exercises the case where both a standalone iterator is
+available, as well as the serial iterator but not leader/follower.
+If so, we would like the standalone iterator to be invoked, whereas
+currently the serial iterator is.

@@ -87,7 +87,8 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
                                Expr* iterator,
                                CallExpr* byref_vars,
                                BlockStmt* body,
-                               bool zippered = false);
+                               bool zippered = false,
+                               VarSymbol* useThisGlobalOp = NULL);
 CallExpr* buildForLoopExpr(Expr* indices,
                            Expr* iterator,
                            Expr* expr,

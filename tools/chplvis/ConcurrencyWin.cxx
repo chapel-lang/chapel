@@ -61,7 +61,7 @@ void ConcurrencyWin::updateData (long loc, long tag)
 void ConcurrencyWin::showCommBoxFor(taskData *task)
 {
   if (task->commSum.numComms == 0) {
-    fl_alert("Task has no communicastions to show.");
+    fl_alert("Task has no communications to show.");
   } else {
     scroll->hide();
 

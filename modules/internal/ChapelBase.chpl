@@ -560,7 +560,7 @@ module ChapelBase {
   //
   // More primitive funs
   //
-  inline proc exit(status: int) {
+  inline proc exit(status: int=0) {
     __primitive("chpl_exit_any", status);
   }
 

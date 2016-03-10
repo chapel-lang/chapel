@@ -1,0 +1,1 @@
+blockSecondaryMethod.chpl:8: error: unresolved call 'Foo.newMethod(1)'

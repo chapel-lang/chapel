@@ -105,7 +105,7 @@ static void cullExplicitAutoDestroyFlags()
     Symbol* retVar = fn->getReturnSymbol();
 
     if (fn->hasFlag(FLAG_INIT_COPY_FN) == true ||
-        isString(retVar)               == true)
+        isUserDefinedRecord(retVar)    == true)
     {
       cullTransitively(fn);
     }
@@ -335,8 +335,12 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
     else if (fn->hasFlag(FLAG_AUTO_II)      == true)
       retval = false;
 
-    // Noakes: 2015/11/23.  Only new string type for now
-    else if (isString(type)                 == true)
+    // Can't transform extern functions
+    else if (fn->hasFlag(FLAG_EXTERN)       == true)
+      retval = false;
+
+    // Noakes: 2016/02/24.  Only "user defined records" for now
+    else if (isUserDefinedRecord(type)      == true)
       retval = true;
 
     else
@@ -414,7 +418,8 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
 
         if (symLhs != NULL && symRhs != NULL)
         {
-          if (isString(symLhs->type) == true && isString(symRhs->type) == true)
+          if (isUserDefinedRecord(symLhs->type) == true &&
+              symRhs->type                      == symLhs->type)
           {
             if (symLhs->hasFlag(FLAG_ARG_THIS) == false &&
                 (symRhs->intent == INTENT_REF ||
@@ -476,8 +481,8 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
 
         if (varLhs != NULL && varRhs != NULL)
         {
-          if (isString(varLhs->type) == true &&
-              varRhs->type           == varLhs->type->refType)
+          if (isUserDefinedRecord(varLhs->type) == true &&
+              varRhs->type                      == varLhs->type->refType)
           {
 
             // HARSHBARGER 2015-12-11:
@@ -542,7 +547,8 @@ void ReturnByRef::updateAssignmentsFromModuleLevelValue(FnSymbol* fn)
 
         if (symLhs != NULL && symRhs != NULL)
         {
-          if (isString(symLhs->type) == true && isString(symRhs->type) == true)
+          if (isUserDefinedRecord(symLhs->type) == true &&
+              symRhs->type                      == symLhs->type)
           {
             DefExpr* def = symRhs->defPoint;
 

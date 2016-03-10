@@ -297,7 +297,7 @@ void parseDependentModules(ModTag modtype) {
       handlingInternalModulesNow = true;
 
       forv_Vec(UseStmt*, moduse, modReqdByIntCopy) {
-        BaseAST*           moduleExpr     = moduse->mod;
+        BaseAST*           moduleExpr     = moduse->src;
         UnresolvedSymExpr* oldModNameExpr = toUnresolvedSymExpr(moduleExpr);
 
         if (oldModNameExpr == NULL) {

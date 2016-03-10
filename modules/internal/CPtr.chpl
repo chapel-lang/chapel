@@ -48,6 +48,7 @@ module CPtr {
   pragma "no object"
   pragma "no default functions"
   pragma "no wide class"
+  pragma "c_ptr class"
   class c_ptr {
     /* The type that this pointer points to */
     type eltType;

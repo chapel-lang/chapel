@@ -1086,13 +1086,15 @@ buildFollowLoop(VarSymbol* iter,
 // Return the globalOp symbol.
 static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
                                  Expr* reduceOp, Expr* reduceVar,
-                                 Expr* otherROp)
+                                 Expr* otherROp, VarSymbol* useThisGlobalOp)
 {
-  // Otherwise reduceVar->copy() may not be adequate.
-  INT_ASSERT(isUnresolvedSymExpr(reduceVar));
-
-  VarSymbol* globalOp = newTemp("chpl__reduceGlob");
-  iterRec->defPoint->insertBefore(new DefExpr(globalOp));
+  VarSymbol* globalOp;
+  if (useThisGlobalOp) {
+    globalOp = useThisGlobalOp;
+  } else {
+    globalOp = newTemp("chpl__reduceGlob");
+    iterRec->defPoint->insertBefore(new DefExpr(globalOp));
+  }
   reduceOp->replace(new SymExpr(globalOp));
   if (otherROp)
     otherROp->replace(new SymExpr(globalOp));
@@ -1100,8 +1102,9 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
   // globalOp = new reduceOp(eltType = reduceVar.type)
   Expr* eltType = new NamedExpr("eltType",
                     new_Expr("'typeof'(%E)", reduceVar->copy()));
-  iterRec->defPoint->insertBefore(new_Expr("'move'(%S, 'new'(%E(%E)))",
-                                           globalOp, reduceOp, eltType));
+  if (!useThisGlobalOp)
+    iterRec->defPoint->insertBefore(new_Expr("'move'(%S, 'new'(%E(%E)))",
+                                             globalOp, reduceOp, eltType));
   // reduceVar = globalOp.generate(); delete globalOp;
   parLoop->insertAfter("'delete'(%S)", globalOp);
   parLoop->insertAfter(new_Expr("'='(%E,.(%S, 'generate')())",
@@ -1114,7 +1117,8 @@ static void setupForallIntents(CallExpr* withClause,
                                VarSymbol* iterRec,
                                VarSymbol* leadIdx,
                                VarSymbol* leadIdxCopy,
-                               BlockStmt* parLoop)
+                               BlockStmt* parLoop,
+                               VarSymbol* useThisGlobalOp)
 {
   // To iterate over two withClause in parallel.
   Expr* otherActual = otherWith ? otherWith->argList.head : NULL;
@@ -1138,7 +1142,8 @@ static void setupForallIntents(CallExpr* withClause,
     } else {
       markerTurn = true;
       if (reduceOp) {
-        setupOneReduceIntent(iterRec, parLoop, reduceOp, actual, otherROp);
+        setupOneReduceIntent(iterRec, parLoop, reduceOp, actual, otherROp,
+                             useThisGlobalOp);
         reduceOp = NULL;
         otherROp = NULL;
       }
@@ -1167,7 +1172,9 @@ static void setupForallIntents(CallExpr* withClause,
 static BlockStmt*
 buildStandaloneForallLoopStmt(Expr* indices,
                               Expr* iterExpr,
-                              BlockStmt* loopBody) {
+                              BlockStmt* loopBody,
+                              VarSymbol* useThisGlobalOp)
+{
   VarSymbol* iterRec   = newTemp("chpl__iterSA"); // serial iter, SA case
   // these variables correspond to leadXXX vars in buildForallLoopStmt()
   VarSymbol* saIter    = newTemp("chpl__saIter");
@@ -1198,7 +1205,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
   SABlock->insertAtTail(SABody);
   SABlock->insertAtTail("_freeIterator(%S)", saIter);
   setupForallIntents(loopBody->byrefVars, NULL,
-                     iterRec, saIdx, saIdxCopy, SABody);
+                     iterRec, saIdx, saIdxCopy, SABody, useThisGlobalOp);
   return SABlock;
 }
 
@@ -1229,9 +1236,10 @@ buildForallLoopStmt(Expr*      indices,
                     Expr*      iterExpr,
                     CallExpr*  byref_vars,
                     BlockStmt* loopBody,
-                    bool       zippered) {
+                    bool       zippered,
+                    VarSymbol* useThisGlobalOp)
+{
   checkControlFlow(loopBody, "forall statement");
-
   SET_LINENO(loopBody);
 
   //
@@ -1357,12 +1365,13 @@ buildForallLoopStmt(Expr*      indices,
   resultBlock->insertAtTail("_freeIterator(%S)", leadIter);
   setupForallIntents(byref_vars,
                      loopBodyForFast ? loopBodyForFast->byrefVars : NULL,
-                     iterRec, leadIdx, leadIdxCopy, leadForLoop);
+                     iterRec, leadIdx, leadIdxCopy, leadForLoop,
+                     useThisGlobalOp);
 
   if (!zippered) {
-    BlockStmt* SALoop = buildStandaloneForallLoopStmt(indices,
-                                                      iterExpr,
-                                                      loopBodyForStandalone);
+    BlockStmt* SALoop = buildStandaloneForallLoopStmt(indices, iterExpr,
+                                                      loopBodyForStandalone,
+                                                      useThisGlobalOp);
     BlockStmt* result = new BlockStmt();
     result->insertAtTail(
       new CondStmt(new SymExpr(gTryToken), SALoop, resultBlock));
@@ -1548,9 +1557,167 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
   return block;
 }
 
+static void
+buildReduceScanPreface2(FnSymbol* fn, Symbol* eltType, Symbol* globalOp,
+                        Expr* opExpr);
+
+//
+// Currently a forall loop requires a parallel iterator, whereas
+// a reduction does not. See e.g. test/trivial/deitz/monte.chpl
+// To allow a reduction to iterate serially when there are no parallel
+// iterators, we add another if tryToken.
+//
+// 'forall' comes from buildForallLoopStmt() and looks like this:
+// {
+//   if (chpl__tryToken) {
+//     ... standalone case ...
+//   } else {
+//     ... leader-follower case ... // 'lfBlock'
+//   }
+// }
+//
+// We want to convert the "else" clause to be instead a CondStmt:
+//
+//   if (chpl__tryToken) {
+//     ... standalone case ...
+//   } else {
+//     if (chpl__tryToken) {
+//       ... leader-follower case ... // 'lfBlock'
+//     } else {
+//       ... serial case ...
+//     }
+//   }
+//
+static void addElseClauseForSerialIter(BlockStmt* forall, Expr* opExpr,
+                                       VarSymbol* data,
+                                       VarSymbol* result, VarSymbol* globalOp,
+                                       VarSymbol* index, bool zippered)
+{
+  CondStmt* if1 = toCondStmt(forall->body.head);
+  INT_ASSERT(if1);
+  BlockStmt* lfBlock = if1->elseStmt;
+  INT_ASSERT(lfBlock);
+
+  // construction of 'serialBlock' is copied from buildReduceExpr()
+  BlockStmt* serialBlock = buildChapelStmt();
+
+  serialBlock->insertAtTail(ForLoop::buildForLoop(new SymExpr(index),
+                                                  new SymExpr(data),
+                                                  new BlockStmt(new CallExpr(new CallExpr(".", globalOp,
+                                                                                          new_CStringSymbol("accumulate")), index)),
+                                                  false,
+                                                  zippered));
+
+  serialBlock->insertAtTail(new CallExpr(PRIM_MOVE, result, new CallExpr(new CallExpr(".", globalOp, new_CStringSymbol("generate")))));
+  serialBlock->insertAtTail("'delete'(%S)", globalOp);
+
+  CondStmt* if2 = new CondStmt(new SymExpr(gTryToken), lfBlock, serialBlock);
+
+  BlockStmt* else1 = buildChapelStmt();
+  else1->insertAtTail(if2);
+  if1->elseStmt = else1;
+}
+
+//
+// Create a forall expression for this reduce expression, if possible.
+// If not - i.e. if there is something we are not handling (yet) -
+// then return NULL.
+//
+static CallExpr*
+buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
+                     VarSymbol* data, VarSymbol* eltType, bool zippered)
+{
+  if (zippered) {
+    // A zippered reduction - not handled yet.
+    return NULL;
+  }
+    
+  if (CallExpr* dataCall = toCallExpr(dataExpr)) {
+    if (DefExpr* calleeDef = toDefExpr(dataCall->baseExpr))
+      {
+        INT_ASSERT(!strncmp(calleeDef->sym->name, "_parloopexpr", 12) ||
+                   !strncmp(calleeDef->sym->name, "_seqloopexpr", 12));
+        // A reduction over a forall - not handled yet.
+        return NULL;
+      }
+  }
+
+  UnresolvedSymExpr* opUnr = toUnresolvedSymExpr(opExpr);
+  // Some future tests have expressions here. We do not handle them.
+  if (!opUnr)
+    return NULL;
+
+  const char* opFun;
+  if (!strcmp(opUnr->unresolved, "SumReduceScanOp")) {
+    opFun = "+";
+  } else if (!strcmp(opUnr->unresolved, "ProductReduceScanOp")) {
+    opFun = "*";
+  } else if (!strcmp(opUnr->unresolved, "MaxReduceScanOp")) {
+    opFun = "max";
+  } else if (!strcmp(opUnr->unresolved, "MinReduceScanOp")) {
+    opFun = "min";
+  } else if (!strcmp(opUnr->unresolved, "LogicalAndReduceScanOp")) {
+    opFun = "&&";
+  } else if (!strcmp(opUnr->unresolved, "LogicalOrReduceScanOp")) {
+    opFun = "||";
+  } else if (!strcmp(opUnr->unresolved, "BitwiseAndReduceScanOp")) {
+    opFun = "&";
+  } else if (!strcmp(opUnr->unresolved, "BitwiseOrReduceScanOp")) {
+    opFun = "|";
+  } else if (!strcmp(opUnr->unresolved, "BitwiseXorReduceScanOp")) {
+    opFun = "^";
+  } else {
+    // We support only the reduction operations shown above.
+    // Otherwise we do not know what opFun it should be.
+    return NULL;
+  }
+
+  VarSymbol* globalOp = newTemp("chpl_reduceGlob");
+  buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
+
+  VarSymbol* result = newTemp("chpl_reduceResult");
+
+  // We need 'result' to be considered an "outer variable".
+  // FLAG_TEMP prevents that - see isOuterVar() in implementForallIntents.cpp.
+  result->removeFlag(FLAG_TEMP);
+
+  Expr* resultType = new_Expr("'typeof'(.(%S, 'generate')())", globalOp);
+  fn->insertAtTail(new DefExpr(result, NULL, resultType));
+
+  VarSymbol* index  = newTemp("chpl_reduceIndexVar");
+  fn->insertAtTail(new DefExpr(index));
+  INT_ASSERT(!opUnr->inTree()); // that way we can use it below; todo - remove
+
+  BlockStmt* loopBody = new BlockStmt();
+  loopBody->insertAtTail(new CallExpr("=", result,
+                                      new CallExpr(opFun, result, index)));
+
+  // useThisGlobalOp argument lets us handle the case where the result type
+  // differs from eltType, e.g. + reduce over booleans
+  // as in test/trivial/deitz/monte.chpl
+
+  BlockStmt* forall = buildForallLoopStmt(
+    new SymExpr(index), // indices
+    new SymExpr(data),  // iterExpr
+    new CallExpr(PRIM_ACTUALS_LIST, opUnr, result), // byref_vars
+    loopBody, // loopBody
+    zippered, // zippered
+    globalOp  // useThisGlobalOp
+  );
+
+  addElseClauseForSerialIter(forall, opExpr->copy(), data,
+                             result, globalOp, index, zippered);
+
+  fn->insertAtTail(forall);
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, result));
+
+  // Success.
+  return new CallExpr(new DefExpr(fn));
+}
+
 
 static void
-buildReduceScanPreface(FnSymbol* fn, Symbol* data, Symbol* eltType, Symbol* globalOp,
+buildReduceScanPreface1(FnSymbol* fn, Symbol* data, Symbol* eltType,
                        Expr* opExpr, Expr* dataExpr, bool zippered=false) {
   if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(opExpr)) {
     if (!strcmp(sym->unresolved, "max"))
@@ -1564,7 +1731,6 @@ buildReduceScanPreface(FnSymbol* fn, Symbol* data, Symbol* eltType, Symbol* glob
 
   fn->insertAtTail(new DefExpr(data));
   fn->insertAtTail(new DefExpr(eltType));
-  fn->insertAtTail(new DefExpr(globalOp));
   fn->insertAtTail("'move'(%S, %E)", data, dataExpr);
 
   if( !zippered ) {
@@ -1572,10 +1738,22 @@ buildReduceScanPreface(FnSymbol* fn, Symbol* data, Symbol* eltType, Symbol* glob
   } else {
     fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIteratorZip(%S)))))}", eltType, data);
   }
+}
 
+static void
+buildReduceScanPreface2(BlockStmt* fn, Symbol* eltType, Symbol* globalOp,
+                        Expr* opExpr)
+{
+  fn->insertAtTail(new DefExpr(globalOp));
   fn->insertAtTail("'move'(%S, 'new'(%E(%E)))", globalOp, opExpr, new NamedExpr("eltType", new SymExpr(eltType)));
 }
 
+static void
+buildReduceScanPreface2(FnSymbol* fn, Symbol* eltType, Symbol* globalOp,
+                        Expr* opExpr)
+{
+  buildReduceScanPreface2(fn->body, eltType, globalOp, opExpr);
+}
 
 CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   static int uid = 1;
@@ -1585,11 +1763,18 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   fn->addFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING);
   fn->addFlag(FLAG_INLINE);
 
-  VarSymbol* data = newTemp();
-  VarSymbol* eltType = newTemp();
-  VarSymbol* globalOp = newTemp();
+  VarSymbol* data = newTemp("chpl_toReduce");
+  VarSymbol* eltType = newTemp("chpl_eltType");
+  buildReduceScanPreface1(fn, data, eltType, opExpr, dataExpr, zippered);
 
-  buildReduceScanPreface(fn, data, eltType, globalOp, opExpr, dataExpr, zippered);
+  // If we can handle it via a forall with a reduce intent, do so.
+  CallExpr* forallExpr = buildReduceViaForall(fn, opExpr, dataExpr,
+                                              data, eltType, zippered);
+  if (forallExpr)
+    return forallExpr;
+
+  VarSymbol* globalOp = newTemp("chpl_globalOp");
+  buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
 
   BlockStmt* serialBlock = buildChapelStmt();
   VarSymbol* index = newTemp("_index");
@@ -1674,7 +1859,8 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   VarSymbol* eltType = newTemp();
   VarSymbol* globalOp = newTemp();
 
-  buildReduceScanPreface(fn, data, eltType, globalOp, opExpr, dataExpr, zippered);
+  buildReduceScanPreface1(fn, data, eltType, opExpr, dataExpr, zippered);
+  buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
 
   fn->insertAtTail("compilerWarning('scan has been serialized (see note in $CHPL_HOME/STATUS)')");
 

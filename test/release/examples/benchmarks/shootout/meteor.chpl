@@ -38,7 +38,7 @@ module meteor {
    * not possible to define piece 4 in terms of the 6 cardinal
    * directions in 4 moves.
    */
-  enum D {
+  enum direction {
     E=0,
     ESE=1,
     SE=2,
@@ -53,17 +53,20 @@ module meteor {
     ENE=11,
     PIVOT=12
   }
-  var pieceDef: [0..9][0..3] D = [
-    [  D.E,  D.E,   D.E, D.SE],
-    [ D.SE,  D.E,  D.NE,  D.E],
-    [  D.E,  D.E,  D.SE, D.SW],
-    [  D.E,  D.E,  D.SW, D.SE],
-    [ D.SE,  D.E,  D.NE,  D.S],
-    [  D.E,  D.E,  D.SW,  D.E],
-    [  D.E, D.SE,  D.SE, D.NE],
-    [  D.E, D.SE,  D.SE,  D.W],
-    [  D.E, D.SE,   D.E,  D.E],
-    [  D.E,  D.E,   D.E, D.SW]
+
+  use direction;  // make direction's symbols directly available to this scope
+  
+  var pieceDef: [0..9][0..3] direction = [
+    [  E,  E,   E, SE],
+    [ SE,  E,  NE,  E],
+    [  E,  E,  SE, SW],
+    [  E,  E,  SW, SE],
+    [ SE,  E,  NE,  S],
+    [  E,  E,  SW,  E],
+    [  E, SE,  SE, NE],
+    [  E, SE,  SE,  W],
+    [  E, SE,   E,  E],
+    [  E,  E,   E, SW]
   ];
 
   /* To minimize the amount of work done in the recursive solve function below,
@@ -81,13 +84,13 @@ module meteor {
   var nextCell: [0..9][0..49][0..11] uint(8);
 
   /* Returns the direction rotated 60 degrees clockwise */
-  proc rotate(dir: D) : D {
-    return ((dir + 2) % D.PIVOT): D;
+  proc rotate(dir: direction) : direction {
+    return ((dir + 2) % PIVOT): direction;
   }
 
   /* Returns the direction flipped on the horizontal axis */
-  proc flip(dir: D) : D {
-    return ((D.PIVOT - dir) % D.PIVOT): D;
+  proc flip(dir: direction) : direction {
+    return ((PIVOT - dir) % PIVOT): direction;
   }
 
   /* Returns the new cell index from the specified cell in the
@@ -95,52 +98,52 @@ module meteor {
    * starting cell and direction have been checked by the
    * outOfBounds function first.
    */
-  proc shift(cell: int(8), dir: D) : int(8) {
+  proc shift(cell: int(8), dir: direction) : int(8) {
     select dir {
-      when D.E do
+      when E do
         return cell + 1;
-      when D.ESE do
+      when ESE do
         if((cell / 5) % 2) then
           return cell + 7;
         else
           return cell + 6;
-      when D.SE do
+      when SE do
         if((cell / 5) % 2) then
           return cell + 6;
         else
           return cell + 5;
-      when D.S do
+      when S do
         return cell + 10;
-      when D.SW do
+      when SW do
         if((cell / 5) % 2) then
           return cell + 5;
         else
           return cell + 4;
-      when D.WSW do
+      when WSW do
         if((cell / 5) % 2) then
           return cell + 4;
         else
           return cell + 3;
-      when D.W do
+      when W do
         return cell - 1;
-      when D.WNW do
+      when WNW do
         if((cell / 5) % 2) then
           return cell - 6;
         else
           return cell - 7;
-      when D.NW do
+      when NW do
         if((cell / 5) % 2) then
           return cell - 5;
         else
           return cell - 6;
-      when D.N do
+      when N do
         return cell - 10;
-      when D.NE do
+      when NE do
         if((cell / 5) % 2) then
           return cell - 4;
         else
           return cell - 5;
-      when D.ENE do
+      when ENE do
         if((cell / 5) % 2) then
           return cell - 3;
         else
@@ -154,38 +157,38 @@ module meteor {
    * of the board.  Used to determine if a piece is at a legal board
    * location or not.
    */
-  proc outOfBounds(cell: int(8), dir: D) : bool {
+  proc outOfBounds(cell: int(8), dir: direction) : bool {
     var i: int(8);
     select dir {
-      when D.E do
+      when E do
         return cell % 5 == 4;
-      when D.ESE {
+      when ESE {
         i = cell % 10;
         return i == 4 || i == 8 || i == 9 || cell >= 45;
       }
-      when D.SE do
+      when SE do
         return cell % 10 == 9 || cell >= 45;
-      when D.S do
+      when S do
         return cell >= 40;
-      when D.SW do
+      when SW do
         return cell % 10 == 0 || cell >= 45;
-      when D.WSW {
+      when WSW {
         i = cell % 10;
         return i == 0 || i == 1 || i == 5 || cell >= 45;
       }
-      when D.W do
+      when W do
         return cell % 5 == 0;
-      when D.WNW {
+      when WNW {
         i = cell % 10;
         return i == 0 || i == 1 || i == 5 || cell < 5;
       }
-      when D.NW do
+      when NW do
         return cell % 10 == 0 || cell < 5;
-      when D.N do
+      when N do
         return cell < 10;
-      when D.NE do
+      when NE do
         return cell % 10 == 9 || cell < 5;
-      when D.ENE {
+      when ENE {
         i = cell % 10;
         return i == 4 || i == 8 || i == 9 || cell < 5;
       }
@@ -276,18 +279,18 @@ module meteor {
     if(board[indx] == 1) then
       return;
     board[indx] = 1;
-    if(!outOfBounds(indx, D.E)) then
-      fillContiguousSpace(board, shift(indx, D.E));
-    if(!outOfBounds(indx, D.SE)) then
-      fillContiguousSpace(board, shift(indx, D.SE));
-    if(!outOfBounds(indx, D.SW)) then
-      fillContiguousSpace(board, shift(indx, D.SW));
-    if(!outOfBounds(indx, D.W)) then
-      fillContiguousSpace(board, shift(indx, D.W));
-    if(!outOfBounds(indx, D.NW)) then
-      fillContiguousSpace(board, shift(indx, D.NW));
-    if(!outOfBounds(indx, D.NE)) then
-      fillContiguousSpace(board, shift(indx, D.NE));
+    if(!outOfBounds(indx, E)) then
+      fillContiguousSpace(board, shift(indx, E));
+    if(!outOfBounds(indx, SE)) then
+      fillContiguousSpace(board, shift(indx, SE));
+    if(!outOfBounds(indx, SW)) then
+      fillContiguousSpace(board, shift(indx, SW));
+    if(!outOfBounds(indx, W)) then
+      fillContiguousSpace(board, shift(indx, W));
+    if(!outOfBounds(indx, NW)) then
+      fillContiguousSpace(board, shift(indx, NW));
+    if(!outOfBounds(indx, NE)) then
+      fillContiguousSpace(board, shift(indx, NE));
   }
 
   /* To thin the number of pieces, I calculate if any of them trap any empty

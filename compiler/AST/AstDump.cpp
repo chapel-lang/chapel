@@ -292,7 +292,7 @@ void AstDump::visitUseStmt(UseStmt* node) {
 
   mNeedSpace = true;
 
-  node->mod->accept(this);
+  node->src->accept(this);
 
   if (!node->isPlainUse()) {
     node->writeListPredicate(mFP);

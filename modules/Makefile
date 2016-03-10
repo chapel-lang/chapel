@@ -115,17 +115,18 @@ DISTS_TO_DOCUMENT = \
 	dists/dims/ReplicatedDim.chpl \
 	layouts/LayoutCSR.chpl \
 
-INTERNAL_MODULES_TO_DOCUMENT =                \
+INTERNAL_MODULES_TO_DOCUMENT =          \
+	internal/Atomics.chpl                 \
 	internal/ChapelArray.chpl             \
-        internal/ChapelTuple.chpl             \
-        internal/ChapelIO.chpl                \
-        internal/ChapelIteratorSupport.chpl   \
-        internal/ChapelLocale_forDocs.chpl    \
-        internal/ChapelRange.chpl             \
-        internal/ChapelSyncvar.chpl           \
-        internal/Atomics.chpl                 \
-        internal/ChapelComplex_forDocs.chpl   \
-        internal/UtilMisc_forDocs.chpl
+	internal/ChapelComplex_forDocs.chpl   \
+	internal/ChapelIO.chpl                \
+	internal/ChapelIteratorSupport.chpl   \
+	internal/ChapelLocale_forDocs.chpl    \
+	internal/ChapelRange.chpl             \
+	internal/ChapelSyncvar.chpl           \
+	internal/ChapelTuple.chpl             \
+	internal/String.chpl                  \
+	internal/UtilMisc_forDocs.chpl
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \

@@ -1379,6 +1379,9 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
     return true;
   if (formalType == dtStringC && actualType == dtStringCopy)
     return true;
+  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+      (formalType == dtCVoidPtr))
+    return true;
 
   return false;
 }
@@ -2149,12 +2152,14 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
     for_actuals(expr, block->modUses) {
       UseStmt* use = toUseStmt(expr);
       INT_ASSERT(use);
-      SymExpr* se = toSymExpr(use->mod);
+      SymExpr* se = toSymExpr(use->src);
       INT_ASSERT(se);
-      ModuleSymbol* mod = toModuleSymbol(se->var);
-      INT_ASSERT(mod);
-      if (!visited.set_in(mod->block))
-        moreVisible &= isMoreVisibleInternal(mod->block, fn1, fn2, visited);
+      // We only care about uses of modules during function resolution, not
+      // uses of enums.
+      if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
+        if (!visited.set_in(mod->block))
+          moreVisible &= isMoreVisibleInternal(mod->block, fn1, fn2, visited);
+      }
     }
   }
 
@@ -3001,16 +3006,18 @@ getVisibleFunctions(BlockStmt* block,
       if (use->skipSymbolSearch(name)) {
         continue;
       }
-      SymExpr* se = toSymExpr(use->mod);
+      SymExpr* se = toSymExpr(use->src);
       INT_ASSERT(se);
-      ModuleSymbol* mod = toModuleSymbol(se->var);
-      INT_ASSERT(mod);
-      canSkipThisBlock = false; // cannot skip if this block uses modules
-      if (mod->isVisible(callOrigin)) {
-        if (use->isARename(name)) {
-          getVisibleFunctions(mod->block, use->getRename(name), visibleFns, visited, callOrigin);
-        } else {
-          getVisibleFunctions(mod->block, name, visibleFns, visited, callOrigin);
+      if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
+        // The use statement could be of an enum instead of a module, but only
+        // modules can define functions.
+        canSkipThisBlock = false; // cannot skip if this block uses modules
+        if (mod->isVisible(callOrigin)) {
+          if (use->isARename(name)) {
+            getVisibleFunctions(mod->block, use->getRename(name), visibleFns, visited, callOrigin);
+          } else {
+            getVisibleFunctions(mod->block, name, visibleFns, visited, callOrigin);
+          }
         }
       }
     }
@@ -5351,6 +5358,10 @@ preFold(Expr* expr) {
 
     if (call->isNamed("this")) {
       SymExpr* base = toSymExpr(call->get(2));
+      if (!base) {
+        if (NamedExpr* nb = toNamedExpr(call->get(2)))
+          base = toSymExpr(nb->actual);
+      }
       INT_ASSERT(base);
       if (isVarSymbol(base->var) && base->var->hasFlag(FLAG_TYPE_VARIABLE)) {
         if (call->numActuals() == 2)
@@ -7671,13 +7682,14 @@ computeStandardModuleSet() {
       for_actuals(expr, mod->block->modUses) {
         UseStmt* use = toUseStmt(expr);
         INT_ASSERT(use);
-        SymExpr* se = toSymExpr(use->mod);
+        SymExpr* se = toSymExpr(use->src);
         INT_ASSERT(se);
-        ModuleSymbol* mod = toModuleSymbol(se->var);
-        INT_ASSERT(mod);
-        if (!standardModuleSet.set_in(mod->block)) {
-          stack.add(mod);
-          standardModuleSet.set_add(mod->block);
+        if (ModuleSymbol* usedMod = toModuleSymbol(se->var)) {
+          INT_ASSERT(usedMod);
+          if (!standardModuleSet.set_in(usedMod->block)) {
+            stack.add(usedMod);
+            standardModuleSet.set_add(usedMod->block);
+          }
         }
       }
     }
@@ -8450,18 +8462,25 @@ static void insertReturnTemps() {
           if (!isCallExpr(parent) && !isDefExpr(parent)) { // no use
             SET_LINENO(call); // TODO: reset_ast_loc() below?
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);
-            DefExpr* def = new DefExpr(tmp);
+            DefExpr*   def = new DefExpr(tmp);
+
+            if (isUserDefinedRecord(fn->retType) == true)
+              tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
             contextCallOrCall->insertBefore(def);
+
             if (!fMinimalModules &&
                 ((fn->retType->getValType() &&
                   isSyncType(fn->retType->getValType())) ||
                  isSyncType(fn->retType) ||
                  fn->isIterator())) {
               CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
+
               contextCallOrCall->insertBefore(sls);
               reset_ast_loc(sls, call);
               resolveCallAndCallee(sls);
             }
+
             def->insertAfter(new CallExpr(PRIM_MOVE, tmp, contextCallOrCall->remove()));
           }
         }
