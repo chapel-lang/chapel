@@ -57,14 +57,13 @@ module LCALSDataTypes {
     var cache_flush_data_sum: real;
 
     var loop_test_stats_dom: domain(string);
-    var loop_test_stats: [loop_test_stats_dom] vector(LoopStat);
+    var loop_test_stats: [loop_test_stats_dom] [loop_kernel_dom] LoopStat;
 
     proc getLoopStats(loop_variant_name: string) {
       return loop_test_stats[loop_variant_name];
     }
     proc addLoopStats(name: string) {
       loop_test_stats_dom += name;
-      loop_test_stats[name] = new vector(LoopStat);
     }
     proc ~LoopSuiteRunInfo() {
       if ref_loop_stat != nil then delete ref_loop_stat;
@@ -79,11 +78,8 @@ module LCALSDataTypes {
         if fr != nil then delete fr;
 
       for idx in loop_test_stats_dom {
-        if loop_test_stats[idx] != nil {
-          for stat in loop_test_stats[idx] do
-            if stat != nil then delete stat;
-          delete loop_test_stats[idx];
-        }
+        for stat in loop_test_stats[idx] do
+          if stat != nil then delete stat;
       }
     }
   }
@@ -91,7 +87,7 @@ module LCALSDataTypes {
   class LoopStat {
     var loop_is_run: bool;
     var loop_weight: real;
-    var loop_length_dom: domain(1);
+    var loop_length_dom: domain(LoopLength);
 
     var loop_run_time: [loop_length_dom] vector(real);
     var loop_run_count: [loop_length_dom] int;
@@ -107,10 +103,9 @@ module LCALSDataTypes {
 
     var loop_chksum: [loop_length_dom] real;
 
-    proc LoopStat(num_loop_lengths: int) {
+    proc LoopStat() {
       loop_is_run = false;
       loop_weight = 0.0;
-      loop_length_dom = {0..#num_loop_lengths};
 
       for i in loop_length_dom do
         loop_run_time[i] = new vector(real);
