@@ -142,18 +142,18 @@ if numTrials == 0 then
 
 
 const LocTaskSpace = {0..#numTasks};
-const TaskSpace = LocTaskSpace dmapped Block(LocTaskSpace);
+const DistTaskSpace = LocTaskSpace dmapped Block(LocTaskSpace);
 
-var allBucketKeys: [TaskSpace] [0..#recvBuffSize] keyType;
-var recvOffset: [TaskSpace] atomic int;
+var allBucketKeys: [DistTaskSpace] [0..#recvBuffSize] keyType;
+var recvOffset: [DistTaskSpace] atomic int;
 var totalTime, inputTime, bucketCountTime, bucketOffsetTime, bucketizeTime,
-    exchangeKeysTime, countKeysTime: [TaskSpace] [1..numTrials] real;
+    exchangeKeysTime, countKeysTime: [DistTaskSpace] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
 var barrier = new Barrier(numTasks);
 
 // should result in one loop iteration per task
-forall taskID in TaskSpace {
+forall taskID in DistTaskSpace {
   //
   // The non-positive iterations represent burn-in runs, so don't
   // time those.  To reduce time spent in verification, verify only
@@ -165,7 +165,7 @@ forall taskID in TaskSpace {
 
 if debug {
   writeln("final buckets =\n");
-  for (i,b) in zip(TaskSpace, allBucketKeys) do
+  for (i,b) in zip(LocTaskSpace, allBucketKeys) do
     writeln("Bucket ", i, " (owned by ", b.locale.id, "): ", b);
 }
 
@@ -199,7 +199,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
     subTimer.clear();
   }
 
-  var sendOffsets: [TaskSpace] int = + scan bucketSizes;
+  var sendOffsets: [LocTaskSpace] int = + scan bucketSizes;
   sendOffsets -= bucketSizes;
   if debug then writeln(taskID, ": sendOffsets = ", sendOffsets);
 
@@ -244,7 +244,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
 
 
 proc bucketizeLocalKeys(taskID, myKeys, sendOffsets) {
-  var bucketOffsets: [TaskSpace] int;
+  var bucketOffsets: [LocTaskSpace] int;
 
   bucketOffsets = sendOffsets;
 
@@ -265,7 +265,7 @@ proc bucketizeLocalKeys(taskID, myKeys, sendOffsets) {
 
 
 proc countLocalBucketSizes(myKeys) {
-  var bucketSizes: [TaskSpace] int;
+  var bucketSizes: [LocTaskSpace] int;
 
   for key in myKeys {
     const bucketIndex = key / bucketWidth;
@@ -277,7 +277,7 @@ proc countLocalBucketSizes(myKeys) {
 
 
 proc exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys) {
-  for locid in TaskSpace {
+  for locid in LocTaskSpace {
     //
     // perturb the destination locale by our ID to avoid bottlenecks
     //
