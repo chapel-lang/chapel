@@ -1,4 +1,4 @@
-
+// see also field-in-task-ref-clause.chpl
 const ITER = 1..3;
 
 class myClass {
