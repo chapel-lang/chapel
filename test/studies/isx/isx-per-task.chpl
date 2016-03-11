@@ -65,10 +65,12 @@ config const mode = scaling.weak;
 //
 config const n = if testrun then 32 else 2**27;
 
+config const perBucketMultiply = here.maxTaskPar;
+
 //
 // The total number of tasks across all locales
 //
-const numTasks = + reduce Locales.maxTaskPar;
+const numTasks = numLocales * perBucketMultiply;
 
 //
 // The total number of keys
@@ -383,11 +385,11 @@ proc makeInput(taskID) {
 proc printConfiguration() {
   writeln("scaling mode = ", mode);
   writelnPotentialPowerOfTwo("total keys = ", totalKeys);
-  writelnPotentialPowerOfTwo("keys per task = ", keysPerTask);
+  writelnPotentialPowerOfTwo("keys per bucket = ", keysPerTask);
   writelnPotentialPowerOfTwo("maxKeyVal = ", maxKeyVal);
   writelnPotentialPowerOfTwo("bucketWidth = ", bucketWidth);
   writeln("numTrials = ", numTrials);
-  writeln("numTasks = ", numTasks);
+  writeln("numBuckets = ", numTasks);
 }
 
 
