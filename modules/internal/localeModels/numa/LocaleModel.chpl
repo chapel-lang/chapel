@@ -116,21 +116,7 @@ module LocaleModel {
     }
 
     proc getChildCount(): int { return 0; }
-    iter getChildIndices() : int {
-      halt("No children to iterate over.");
-      yield -1;
-    }
-    proc addChild(loc:locale) { halt("Cannot add children to this locale type."); }
     proc getChild(idx:int) : locale { return nil; }
-
-    // This is commented out b/c it leads to an internal error during
-    // the resolveIntents pass.  See
-    // test/functions/iterators/sungeun/iterInClass.future
-    //
-    // iter getChildren() : locale {
-    //  halt("No children to iterate over.");
-    //  yield nil;
-    // }
   }
 
   //
@@ -177,29 +163,13 @@ module LocaleModel {
       f <~> new ioLiteral("LOCALE") <~> _node_id;
     }
 
-    proc getChildSpace() return childSpace;
-
     proc getChildCount() return numSublocales;
-
-    iter getChildIndices() : int {
-      for idx in childSpace do
-        yield idx;
-    }
 
     proc getChild(idx:int) : locale {
       if boundsChecking then
         if (idx < 0) || (idx >= numSublocales) then
           halt("sublocale child index out of bounds (",idx,")");
       return childLocales[idx];
-    }
-
-    iter getChildren() : locale  {
-      for loc in childLocales do
-        yield loc;
-    }
-
-    proc getChildArray() {
-      return childLocales;
     }
 
     //------------------------------------------------------------------------{
@@ -322,19 +292,7 @@ module LocaleModel {
 
     proc getChildCount() return this.myLocaleSpace.numIndices;
 
-    proc getChildSpace() return this.myLocaleSpace;
-
-    iter getChildIndices() : int {
-      for idx in this.myLocaleSpace do
-        yield idx;
-    }
-
     proc getChild(idx:int) return this.myLocales[idx];
-
-    iter getChildren() : locale  {
-      for loc in this.myLocales do
-        yield loc;
-    }
 
     proc getDefaultLocaleSpace() return this.myLocaleSpace;
     proc getDefaultLocaleArray() return myLocales;

@@ -126,28 +126,12 @@ module LocaleModel {
       f <~> new ioLiteral("LOCALE") <~> _node_id;
     }
 
-    proc getChildSpace() return chpl_emptyLocaleSpace;
-
     proc getChildCount() return 0;
-
-    iter getChildIndices() : int {
-      for idx in chpl_emptyLocaleSpace do
-        yield idx;
-    }
 
     proc getChild(idx:int) : locale {
       if boundsChecking then
-        halt("requesting a child from a LocaleModel locale");
+        halt("requesting a child from a flat LocaleModel locale");
       return nil;
-    }
-
-    iter getChildren() : locale  {
-      for loc in chpl_emptyLocales do
-        yield loc;
-    }
-
-    proc getChildArray() {
-      return chpl_emptyLocales;
     }
 
     //------------------------------------------------------------------------{
@@ -241,19 +225,7 @@ module LocaleModel {
 
     proc getChildCount() return this.myLocaleSpace.numIndices;
 
-    proc getChildSpace() return this.myLocaleSpace;
-
-    iter getChildIndices() : int {
-      for idx in this.myLocaleSpace do
-        yield idx;
-    }
-
     proc getChild(idx:int) return this.myLocales[idx];
-
-    iter getChildren() : locale  {
-      for loc in this.myLocales do
-        yield loc;
-    }
 
     proc getDefaultLocaleSpace() return this.myLocaleSpace;
     proc getDefaultLocaleArray() return myLocales;

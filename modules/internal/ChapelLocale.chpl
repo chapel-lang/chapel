@@ -191,6 +191,11 @@ module ChapelLocale {
      */
     proc name return chpl_name() : string;
 
+    /* Synonym for getChildCount */
+    proc numChildren : int {
+      return getChildCount();
+    }
+
     // This many tasks are running on this locale.
     //
     // Note handling runningTaskCounter <= 0 in runningTaskCnt().  The
@@ -231,70 +236,89 @@ module ChapelLocale {
       var rtc = runningTaskCounter.read(memory_order_relaxed);
       return if (rtc <= 0) then 1 else rtc;
     }
+
+    //------------------------------------------------------------------------}
+
+
+    //------------------------------------------------------------------------{
+    //- Optionally overridable methods
+    //-
+
+    /* Yield the indices of child locales of this locale.
+       Yields each i in 0..#getChildCount().
+     */
+    iter getChildIndices() : int {
+      var count = getChildCount();
+      for idx in 0..#count {
+        yield idx;
+      }
+    }
+
+    pragma "no doc"
+    proc writeThis(f) {
+      f <~> name;
+    }
+
+    // The default definition halts with an error.
+    // This method is here as a placeholder for future work
+    // and is not currently used.
+    pragma "no doc"
+    proc addChild(loc:locale)
+    {
+      halt("Cannot add children to this locale type.");
+    }
+
+    /* Yield the child locales of this locale.
+       The same as yielding getChild(idx) for idx in 0..#getChildCount().
+     */
+    iter getChildren() : locale  {
+      var count = getChildCount();
+      for idx in 0..#count {
+        yield getChild(idx);
+      }
+    }
+
     //------------------------------------------------------------------------}
 
     //------------------------------------------------------------------------{
-    //- User Interface Methods (overridable)
+    //- Locale Implementation Methods - must be overridden
     //-
 
-    // These are dynamically dispatched, so they can be overridden in
-    // concrete classes.
+    /* Return the node ID of this locale */
     pragma "no doc"
     proc chpl_id() : int {
       _throwPVFCError();
       return -1;
     }
 
+    /* Return the locale ID of this locale */
     pragma "no doc"
     proc chpl_localeid() : chpl_localeID_t {
       _throwPVFCError();
       return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_none);
     }
 
+    /* Return the name for this locale */
     pragma "no doc"
     proc chpl_name() : string {
       _throwPVFCError();
       return "";
     }
 
-    // A useful default definition is provided (not pure virtual).
-    pragma "no doc"
-    proc writeThis(f) {
-      f <~> name;
-    }
-
-    pragma "no doc"
+    /* Return the number of children for this locale */
     proc getChildCount() : int {
       _throwPVFCError();
       return 0;
     }      
   
-// Part of the required locale interface.
-// Commented out because presently iterators are statically bound.
-//    iter getChildIndices() : int {
-//      for idx in this.getChildSpace do
-//        yield idx;
-//    }
-  
-    pragma "no doc"
-    proc addChild(loc:locale)
-    {
-      _throwPVFCError();
-    }
-  
-    pragma "no doc"
+
+    /* Gets the i'th child. `i` should be in 0..#getChildCount().
+       This method might return a more specific type than locale.
+     */
     proc getChild(idx:int) : locale {
       _throwPVFCError();
       return this;
     }
-
-// Part of the required locale interface.
-// Commented out because presently iterators are statically bound.
-//    iter getChildren() : locale  {
-//    _throwPVFCError();
-//      yield 0;
-//    }
-
     //------------------------------------------------------------------------}
   }
 
@@ -340,6 +364,11 @@ module ChapelLocale {
     // LocaleSpace -- an array of locales and its correponding domain
     // which are used as the default set of targetLocales in many
     // distributions.
+
+    //------------------------------------------------------------------------{
+    //- Root Locale Implementation Methods - must be overridden
+    //-
+
     proc getDefaultLocaleSpace() {
       _throwPVFCError();
       const emptyLocaleSpace: domain(1) = {1..0};
@@ -357,6 +386,9 @@ module ChapelLocale {
       _throwPVFCError();
       return this;
     }
+
+    //------------------------------------------------------------------------}
+
 
     // These iterators are to be used by RootLocale:init() to
     // initialize the LocaleModel.  The calling loop body cannot
