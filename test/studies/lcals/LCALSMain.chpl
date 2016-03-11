@@ -515,7 +515,7 @@ module main {
       if loop_names[iloop].length != 0 && ref_variant_stat.loop_is_run {
         if iloop > 1 then
           outchannel.write("\n", dash_line_part);
-        outchannel.write(loop_names[iloop], "(", iloop, ") --> ");
+        outchannel.write(loop_names[iloop], "(", iloop:int, ") --> ");
         for (ilv, variant) in zip(0..#nvariants, loop_variant_names.domain) {
           var stat = suite_run_info.getLoopStats(loop_variant_names[variant])[iloop];
           if stat.loop_is_run {
