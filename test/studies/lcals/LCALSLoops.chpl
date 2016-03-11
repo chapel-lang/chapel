@@ -438,13 +438,16 @@ module LCALSLoops {
   }
 
   proc updateChksum(stat: LoopStat, ilength: LoopLength, ra: [] real, scale_factor: real = 1.0) {
+    use LongDouble;
+
     var data => ra;
     var len = ra.numElements;
-    var tchk = stat.loop_chksum[ilength];
+
+    var tchk: longdouble = stat.loop_chksum[ilength];
     for (j, dat) in zip(0..#len, data) {
       tchk += (j+1)*dat*scale_factor;
     }
-    stat.loop_chksum[ilength] = tchk;
+    stat.loop_chksum[ilength] = tchk:real;
   }
 
   proc updateChksum(stat: LoopStat, ilength: LoopLength, val: real) {

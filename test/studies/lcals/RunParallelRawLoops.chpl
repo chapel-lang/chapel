@@ -480,11 +480,11 @@ module RunParallelRawLoops {
             loop_data.RealArray_scalars[0] = (val + 0.00123) / (val - 0.00123);
             loopFinalize(iloop, stat, ilength);
           }
-          when LoopKernelID.PIC_2D {
-            halt("multidim cases not implemented ", iloop:LoopKernelID);
-            loopInit(iloop, stat);
-            loopFinalize(iloop, stat, ilength);
-          }
+          //when LoopKernelID.PIC_2D {
+          //  halt("multidim cases not implemented ", iloop:LoopKernelID);
+          //  loopInit(iloop, stat);
+          //  loopFinalize(iloop, stat, ilength);
+          //}
           otherwise {
             // Kernel unrecognized or not part of this variant
           }

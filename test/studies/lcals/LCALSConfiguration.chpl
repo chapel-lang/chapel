@@ -53,12 +53,12 @@ module LCALSConfiguration {
   config const runC_diffPredict  = true;
   config const runC_firstSum     = true;
   config const runC_firstDiff    = true;
-  config const runC_pic2D        = false; // bad checksums
+  config const runC_pic2D        = false; // bad checksum (S)
   config const runC_pic1D        = true;
   config const runC_hydro2D      = true;
   config const runC_genLinRecur  = true;
   config const runC_discOrd      = true;
-  config const runC_matXMat      = false; // bad checksum (M)
+  config const runC_matXMat      = true;
   config const runC_planckian    = true;
   config const runC_impHydro2D   = true;
   config const runC_findFirstMin = true;
