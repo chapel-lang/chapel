@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,8 +21,8 @@
 
 Support for Hadoop Distributed Filesystem
 
-This module implements support for the 
-`Hadoop <http://hadoop.apache.org/>`_ 
+This module implements support for the
+`Hadoop <http://hadoop.apache.org/>`_
 `Distributed Filesystem <http://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HdfsUserGuide.html>`_ (HDFS).
 
 Dependencies
@@ -34,7 +34,7 @@ environment variables must be set as described below in
 :ref:`setting-up-hadoop`.  Without this it will not compile with HDFS, even if
 the flags are set. As well, the HDFS functionality is also dependent upon the
 ``CHPL_AUXIO_INCLUDE`` and ``CHPL_AUXIO_LIBS`` environment variables being set
-properly. For more information on how to set these properly, see 
+properly. For more information on how to set these properly, see
 doc/technotes/auxIO.rst in a Chapel release.
 
 
@@ -143,7 +143,7 @@ modes that are supported, due to HDFS limitations).
 
 .. _setting-up-hadoop:
 
-Setting up Hadoop 
+Setting up Hadoop
 -----------------
 
 If you have a working installation of Hadoop already, you can skip
@@ -202,9 +202,9 @@ First reflect your directory structure and version numbers (etc) in the
 .. _setup-hadoop-3:
 
 3. Set up Hadoop
-   
+
    a. For the local host - See the
-      `Hadoop website <http://hadoop.apache.org/docs/stable/single_node_setup.html>`_
+      `Hadoop website <http://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SingleCluster.html>`_
       for good documentation on how to do this.
 
    b. For a cluster of hosts. If you want to run Hadoop over a cluster, there
@@ -225,7 +225,7 @@ First reflect your directory structure and version numbers (etc) in the
       datanode.
 
       A good online tutorial for this as well can be found here:
-      http://hadoop.apache.org/docs/stable/cluster_setup.html
+      http://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/ClusterSetup.html
 
 .. _setup-hadoop-4:
 
@@ -250,8 +250,8 @@ First reflect your directory structure and version numbers (etc) in the
    * You can check the status of Hadoop via http, for example on a local
      host (e.g., for :ref:`3a above <setup-hadoop-3>`), using:
 
-       *  http://localhost:50070/
-       *  http://localhost:50030/
+       *  ``http://localhost:50070/``
+       *  ``http://localhost:50030/``
 
      For cluster mode (:ref:`3b <setup-hadoop-3>`), you'll use the name of the
      master host in the URL and its port (see the web for details).
@@ -275,7 +275,7 @@ First reflect your directory structure and version numbers (etc) in the
 
    * After this you should be able to run Chapel code with HDFS over
      a cluster of computers the same way as you normally would.
-    
+
 
 .. _setup-hadoop-bashrc:
 
@@ -297,28 +297,28 @@ Here is a sample .bashrc for using Hadoop within Chapel:
   #
   export CHPL_AUXIO_INCLUDE="-I$JAVA_INSTALL/include -I$JAVA_INSTALL/include/linux  -I$HADOOP_INSTALL/src/c++/libhdfs"
   export CHPL_AUXIO_LIBS="-L$JAVA_INSTALL/jre/lib/amd64/server -L$HADOOP_INSTALL/c++/Linux-amd64-64/lib"
-  
+
   #
   # So we can run things such as start-all.sh etc. from anywhere and
   # don't need to be in $HADOOP_INSTALL
   #
   export PATH=$PATH:$HADOOP_INSTALL/bin
-  
+
   #
   # Point to the JDK installation
   #
   export JAVA_INSTALL=<Place where you have the jdk installed>
-  
+
   #
   # Add Hadoop directories to the Java class path
   #
   export CLASSPATH=$CLASSPATH:$HADOOP_HOME/""*:$HADOOP_HOME/lib/""*:$HADOOP_HOME/conf/""*:$(hadoop classpath):
-  
+
   #
   # So we don't have to "install" these things
   #
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_HOME/c++/Linux-amd64-64/lib:$HADOOP_HOME/src/c++/libhdfs:$JAVA_INSTALL/jre/lib/amd64/server:$JAVA_INSTALL:$HADOOP_HOME/lib:$JAVA_INSTALL/jre/lib/amd64:$CLASSPATH
-  
+
   #
   # Settings to run Chapel on multiple nodes
   #
@@ -348,8 +348,8 @@ private extern const hdfs_function_struct_ptr:qio_file_functions_ptr_t;
 
 pragma "no doc"
 extern record hdfs_block_byte_map_t {
-  var locale_id: int; 
-  var start_byte: int(64); 
+  var locale_id: int;
+  var start_byte: int(64);
   var len: int(64);
 }
 
@@ -491,8 +491,8 @@ proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
   ret.home = here;
   error = qio_file_open_access_usr(ret._file_internal, path.localize().c_str(),
                                    _modestring(mode).localize().c_str(),
-                                   hints, local_style, fs, 
-                                   hdfs_function_struct_ptr); 
+                                   hints, local_style, fs,
+                                   hdfs_function_struct_ptr);
   return ret;
 }
 

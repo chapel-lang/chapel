@@ -216,7 +216,7 @@ primers (some of the text is copied verbatim).
 
 The authoritative `reStructuredText User Guide`_ is also helpful.
 
-.. _Sphinx reST Primer: http://sphinx-doc.org/rest.html
+.. _Sphinx reST Primer: http://www.sphinx-doc.org/en/stable/rest.html
 .. _Python reST Primer: https://docs.python.org/devguide/documenting.html#restructuredtext-primer
 .. _reStructuredText User Guide: http://docutils.sourceforge.net/rst.html
 
@@ -620,7 +620,7 @@ reStructuredText as HTML.
 
 .. _reStructuredText: http://docutils.sf.net/rst.html
 .. _docutils: http://docutils.sourceforge.net/
-.. _Sphinx: http://sphinx-doc.org/
+.. _Sphinx: http://www.sphinx-doc.org/en/stable/
 
 
 .. _Future directions:
