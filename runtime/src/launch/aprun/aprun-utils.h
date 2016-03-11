@@ -26,7 +26,6 @@ typedef enum {
   aprun_d,    // cores per locale
   aprun_N,    // locales per node
   aprun_j,    // cpus per node (newer versions of aprun)
-  aprun_k,    // place on Xeon Phi co-processor
   aprun_none
 } aprun_arg_t;
 
