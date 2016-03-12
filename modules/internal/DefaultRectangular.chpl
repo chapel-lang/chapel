@@ -1042,7 +1042,7 @@ module DefaultRectangular {
                                             idxType=idxType,
                                             stridable=d._value.stridable,
                                             dom=d._value);
-        forall i in zip(d((...dom.ranges))) do
+        forall i in d[(...dom.ranges)] do
           copy.dsiAccess(i) = dsiAccess(i);
         off = copy.off;
         blk = copy.blk;
