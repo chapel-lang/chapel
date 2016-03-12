@@ -1,2 +1,6 @@
-ReturnByValue: Passed
-OutIntent:     Passed
+ReturnByValue: Failed
+  Allocated:       26
+  Deallocated:     17
+OutIntent:     Failed
+  Allocated:       17
+  Deallocated:     14

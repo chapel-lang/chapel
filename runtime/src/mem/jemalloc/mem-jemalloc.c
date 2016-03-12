@@ -31,27 +31,12 @@
 #include "chpltypes.h"
 #include "error.h"
 
-
-// TODO it'd be great if there was some way for us to set the number of arenas.
-// jemalloc's default is `4 * logicalCPUs` which is fine for fifo, but for
-// qthreads and muxed, we know how many pthreads will be created at startup.
-// The number of arenas can be set with je_malloc_conf, but that's a compile
-// time constant. We can also set it with JE_MALLOC_CONF, but I think that has
-// to be prior to program execution, I think by the time we get here, we're
-// already too late. I was hoping we just had to set it before the first call
-// to an allocation routine, but that doesn't appear to be the case.
-//
-// A hacky (but easy/straightforward) solution would be do modify jemalloc
-// source. For qthreads we could get rid of the 4x multiplier and just default
-// to the number of logical cpus. See jemalloc.c:1277. Might be worth testing
-// the performance difference in a playground just to see if it's worth
-// investigating further.
-
-// TODO put these into a struct?
-static void*  heap_base = NULL;
-static size_t heap_size = 0;
-static size_t cur_heap_offset = 0;
-static pthread_mutex_t chunk_alloc_lock;
+static struct shared_heap {
+  void* base;
+  size_t size;
+  size_t cur_offset;
+  pthread_mutex_t alloc_lock;
+} heap; // static, will be "zero" initialized automatically
 
 
 // compute aligned index into our shared heap, alignment must be a power of 2
@@ -77,34 +62,34 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
 
   // this function can be called concurrently and it looks like jemalloc
   // doesn't call it inside a lock, so we need to protect it ourselves
-  pthread_mutex_lock(&chunk_alloc_lock);
+  pthread_mutex_lock(&heap.alloc_lock);
 
   // compute our current aligned pointer into the shared heap
   //
   //   jemalloc 4.0.4 man: "The alignment parameter is always a power of two at
   //   least as large as the chunk size."
-  cur_chunk_base = alignHelper(heap_base, cur_heap_offset, alignment);
+  cur_chunk_base = alignHelper(heap.base, heap.cur_offset, alignment);
 
   // jemalloc 4.0.4 man: "If chunk is not NULL, the returned pointer must be
   // chunk on success or NULL on error"
   if (chunk && chunk != cur_chunk_base) {
-    pthread_mutex_unlock(&chunk_alloc_lock);
+    pthread_mutex_unlock(&heap.alloc_lock);
     return NULL;
   }
 
-  cur_heap_size = (uintptr_t)cur_chunk_base - (uintptr_t)heap_base;
+  cur_heap_size = (uintptr_t)cur_chunk_base - (uintptr_t)heap.base;
 
   // If there's not enough space on the heap for this allocation, return NULL
-  if (size > heap_size - cur_heap_size) {
-    pthread_mutex_unlock(&chunk_alloc_lock);
+  if (size > heap.size - cur_heap_size) {
+    pthread_mutex_unlock(&heap.alloc_lock);
     return NULL;
   }
 
   // Update the current pointer, now that we've past any early returns.
-  cur_heap_offset = cur_heap_size + size;
+  heap.cur_offset = cur_heap_size + size;
 
   // now that cur_heap_offset is updated, we can unlock
-  pthread_mutex_unlock(&chunk_alloc_lock);
+  pthread_mutex_unlock(&heap.alloc_lock);
 
   // jemalloc 4.0.4 man: "Zeroing is mandatory if *zero is true upon entry."
   if (*zero) {
@@ -143,15 +128,27 @@ static bool null_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_
 // *** End chunk hook replacements *** //
 
 
+// helper routine to get a mallctl value
+#define DECLARE_GET_MALLCTL_VALUE(type) \
+static type get_ ## type ##_mallctl_value(const char* mallctl_string) { \
+  type value; \
+  size_t sz; \
+  sz = sizeof(value); \
+  if (je_mallctl(mallctl_string, &value, &sz, NULL, 0) != 0) { \
+    char error_msg[256]; \
+    snprintf(error_msg, sizeof(error_msg), "could not get mallctl value for %s", mallctl_string); \
+    chpl_internal_error(error_msg); \
+  } \
+  return value; \
+}
+DECLARE_GET_MALLCTL_VALUE(size_t);
+DECLARE_GET_MALLCTL_VALUE(unsigned);
+#undef DECLARE_GET_MALLCTL_VALUE
+
+
 // get the number of arenas
 static size_t get_num_arenas(void) {
-  size_t narenas;
-  size_t sz;
-  sz = sizeof(narenas);
-  if (je_mallctl("opt.narenas", &narenas, &sz, NULL, 0) != 0) {
-    chpl_internal_error("could not get number of arenas from jemalloc");
-  }
-  return narenas;
+  return get_size_t_mallctl_value("opt.narenas");
 }
 
 // initialize our arenas (this is required to be able to set the chunk hooks)
@@ -214,22 +211,83 @@ static void replaceChunkHooks(void) {
   }
 }
 
+// helper routines to get the number of size classes
+static unsigned get_num_small_classes(void) {
+  return get_unsigned_mallctl_value("arenas.nbins");
+}
+
+static unsigned get_num_large_classes(void) {
+  return get_unsigned_mallctl_value("arenas.nlruns");
+}
+
+static unsigned get_num_small_and_large_classes(void) {
+  return get_num_small_classes() + get_num_large_classes();
+}
+
+// helper routine to get an array of size classes for small and large sizes
+static void get_small_and_large_class_sizes(size_t* classes) {
+  unsigned class;
+  unsigned small_classes;
+  unsigned large_classes;
+
+  small_classes = get_num_small_classes();
+  for (class=0; class<small_classes; class++) {
+    char ssize[128];
+    snprintf(ssize, sizeof(ssize), "arenas.bin.%u.size", class);
+    classes[class] = get_size_t_mallctl_value(ssize);
+  }
+
+  large_classes = get_num_large_classes();
+  for (class=0; class<large_classes; class++) {
+    char lsize[128];
+    snprintf(lsize, sizeof(lsize), "arenas.lrun.%u.size", class);
+    classes[small_classes + class] = get_size_t_mallctl_value(lsize);
+  }
+}
+
+// helper routine to determine if an address is not part of the shared heap
+static bool addressNotInHeap(void* ptr) {
+  uintptr_t u_ptr = (uintptr_t)ptr;
+  uintptr_t u_base = (uintptr_t)heap.base;
+  uintptr_t u_top =  u_base + heap.size;
+  return (u_ptr < u_base) || (u_ptr > u_top);
+}
+
+// grab (and leak) whatever memory jemalloc got on it's own, that's not in
+// our shared heap
+//
+//   jemalloc 4.0.4 man: "arenas may have already created chunks prior to the
+//   application having an opportunity to take over chunk allocation."
+//
+// jemalloc grabs "chunks" from the system in order to store metadata and some
+// internal data structures. However, these chunks are not allocated from our
+// shared heap, so we need to waste whatever memory is left in them so that
+// future allocations come from chunks that were provided by our shared heap
 static void useUpMemNotInHeap(void) {
-  // grab (and leak) whatever memory jemalloc got on it's own, that's not in
-  // our shared heap
-  //
-  //   jemalloc 4.0.4 man: "arenas may have already created chunks prior to the
-  //   application having an opportunity to take over chunk allocation."
-  //
-  // Note that this will also allow jemalloc to initialize itself since
-  char* p = NULL;
-  do {
-    // TODO use a larger value than size_t here (must be smaller than
-    // "arenas.hchunk.0.size" though
-    if ((p = je_malloc(sizeof(size_t))) == NULL) {
-      chpl_internal_error("could not use up memory outside of shared heap");
-    }
-  } while ((p != NULL && (p < (char*) heap_base || p > (char*) heap_base + heap_size)));
+  unsigned class;
+  unsigned num_classes = get_num_small_and_large_classes();
+  size_t classes[num_classes];
+  get_small_and_large_class_sizes(classes);
+
+  // jemalloc has 3 class sizes. The small (a few pages) and large (up to chunk
+  // size) objects come from the arenas, but huge (more than chunk size)
+  // objects comes from a shared pool. We waste memory at every large and small
+  // class size so that we can be sure there's no fragments left in a chunk
+  // that jemalloc grabbed from the system. This way we know that any future
+  // allocation, regardless of size, must have come from a chunk provided by
+  // our shared heap. Once we know a specific class size came from our shared
+  // heap, we can free the memory instead of leaking it.
+  for (class=num_classes-1; class!=UINT_MAX; class--) {
+    void* p = NULL;
+    size_t alloc_size;
+    alloc_size = classes[class];
+    do {
+      if ((p = je_malloc(alloc_size)) == NULL) {
+        chpl_internal_error("could not use up memory outside of shared heap");
+      }
+    } while (addressNotInHeap(p));
+    je_free(p);
+  }
 }
 
 // Have jemalloc use our shared heap. Initialize all the arenas, then replace
@@ -244,11 +302,11 @@ static void initializeSharedHeap(void) {
 }
 
 void chpl_mem_layerInit(void) {
-  void* heap_base_;
-  size_t heap_size_;
+  void* heap_base;
+  size_t heap_size;
 
-  chpl_comm_desired_shared_heap(&heap_base_, &heap_size_);
-  if (heap_base_ != NULL && heap_size_ == 0) {
+  chpl_comm_desired_shared_heap(&heap_base, &heap_size);
+  if (heap_base != NULL && heap_size == 0) {
     chpl_internal_error("if heap address is specified, size must be also");
   }
 
@@ -258,11 +316,11 @@ void chpl_mem_layerInit(void) {
   //
   //   jemalloc 4.0.4 man: "Once, when the first call is made to one of the
   //   memory allocation routines, the allocator initializes its internals"
-  if (heap_base_ != NULL) {
-    heap_base = heap_base_;
-    heap_size = heap_size_;
-    cur_heap_offset = 0;
-    if (pthread_mutex_init(&chunk_alloc_lock, NULL) != 0) {
+  if (heap_base != NULL) {
+    heap.base = heap_base;
+    heap.size = heap_size;
+    heap.cur_offset = 0;
+    if (pthread_mutex_init(&heap.alloc_lock, NULL) != 0) {
       chpl_internal_error("cannot init chunk_alloc lock");
     }
     initializeSharedHeap();
@@ -277,8 +335,8 @@ void chpl_mem_layerInit(void) {
 
 
 void chpl_mem_layerExit(void) {
-  if (heap_base != NULL) {
+  if (heap.base != NULL) {
     // ignore errors, we're exiting anyways
-    pthread_mutex_destroy(&chunk_alloc_lock);
+    pthread_mutex_destroy(&heap.alloc_lock);
   }
 }

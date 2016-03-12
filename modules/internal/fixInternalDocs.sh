@@ -97,9 +97,9 @@ function removePrefixVariables() {
 
 
 
-###############################################################################
-## Modules to fixup listed in the same order as INTERNAL_MODULES_TO_DOCUMENT ##
-###############################################################################
+#############################################################
+## Modules to fixup listed in INTERNAL_MODULES_TO_DOCUMENT ##
+#############################################################
 
 ## ChapelTuple ##
 

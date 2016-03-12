@@ -86,18 +86,18 @@ bool Stmt::isStmt() const {
 *                                                                   *
 ********************************* | ********************************/
 
-UseStmt::UseStmt(BaseAST* module):
+UseStmt::UseStmt(BaseAST* source):
   Stmt(E_UseStmt),
-  mod(NULL),
+  src(NULL),
   named(),
   renamed(),
   except(false),
   relatedNames()
 {
-  if (Symbol* b = toSymbol(module)) {
-    mod = new SymExpr(b);
-  } else if (Expr* b = toExpr(module)) {
-    mod = b;
+  if (Symbol* b = toSymbol(source)) {
+    src = new SymExpr(b);
+  } else if (Expr* b = toExpr(source)) {
+    src = b;
   } else {
     INT_FATAL(this, "Bad mod in UseStmt constructor");
   }
@@ -106,21 +106,21 @@ UseStmt::UseStmt(BaseAST* module):
 }
 
 //
-UseStmt::UseStmt(BaseAST*                            module,
+UseStmt::UseStmt(BaseAST*                            source,
                  std::vector<const char*>*           args,
                  bool                                exclude,
                  std::map<const char*, const char*>* renames) :
   Stmt(E_UseStmt),
-  mod(NULL),
+  src(NULL),
   named(),
   renamed(),
   except(exclude),
   relatedNames()
 {
-  if (Symbol* b = toSymbol(module)) {
-    mod = new SymExpr(b);
-  } else if (Expr* b = toExpr(module)) {
-    mod = b;
+  if (Symbol* b = toSymbol(source)) {
+    src = new SymExpr(b);
+  } else if (Expr* b = toExpr(source)) {
+    src = b;
   } else {
     INT_FATAL(this, "Bad mod in UseStmt constructor");
   }
@@ -149,9 +149,9 @@ UseStmt::UseStmt(BaseAST*                            module,
 UseStmt* UseStmt::copyInner(SymbolMap* map) {
   UseStmt *_this = 0;
   if (named.size() > 0) {
-    _this = new UseStmt(COPY_INT(mod), &named, except, &renamed);
+    _this = new UseStmt(COPY_INT(src), &named, except, &renamed);
   } else {
-    _this = new UseStmt(COPY_INT(mod));
+    _this = new UseStmt(COPY_INT(src));
   }
   for_vector(const char, sym, relatedNames) {
     _this->relatedNames.push_back(sym);
@@ -164,8 +164,8 @@ void UseStmt::verify() {
   if (astTag != E_UseStmt) {
     INT_FATAL(this, "Bad NamedExpr::astTag");
   }
-  if (mod == NULL) {
-    INT_FATAL(this, "Bad UseStmt::mod");
+  if (src == NULL) {
+    INT_FATAL(this, "Bad UseStmt::src");
   }
   if (relatedNames.size() != 0 && named.size() == 0 && renamed.size() == 0) {
     INT_FATAL(this, "Have names to avoid, but nothing was listed in the use to begin with");
@@ -173,8 +173,8 @@ void UseStmt::verify() {
 }
 
 void UseStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
-  if (old_ast == mod) {
-    mod = new_ast;
+  if (old_ast == src) {
+    src = new_ast;
   } else {
     INT_FATAL(this, "Unexpected case in UseStmt::replaceChild");
   }
@@ -287,6 +287,25 @@ bool UseStmt::isARename(const char* name) {
 
 const char* UseStmt::getRename(const char* name) {
   return renamed[name];
+}
+
+// Should only be called when the mod field has been resolved
+BaseAST* UseStmt::getSearchScope() {
+  if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* module = toModuleSymbol(se->var)) {
+      return module->block;
+    } else if (TypeSymbol* enumTypeSym = toTypeSymbol(se->var)) {
+      // Assumes we have correctly verified that the type was an enum.
+      return enumTypeSym;
+    } else {
+      // Internal failure because resolving the mod field should have raised
+      // an error if it wasn't an enum or module
+      INT_FATAL(this, "Use invalid, not applied to module or enum");
+    }
+  } else {
+    INT_FATAL(this, "getSearchScope called before this use was processed");
+  }
+  return NULL;
 }
 
 

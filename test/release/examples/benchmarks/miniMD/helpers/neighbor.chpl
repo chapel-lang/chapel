@@ -79,7 +79,6 @@ proc buildNeighbors() {
                                  binSpace, RealCount) {
     const existing = 1..c;
     for (a, p, i) in zip(bin[existing], pos[existing], existing) {
-  //    writeln("comparing to ", r, " at ", i, " with count ", c);
       a.ncount = 0;
 
       for s in stencil {
@@ -88,13 +87,11 @@ proc buildNeighbors() {
 
         for (n, x) in zip(Pos[o][existing], existing) {
           if r == o && x == i then continue; 
-    //      writeln("\t", o, " at ", x, " with pos ", n);
 
           // are we within range?
           const del = p - n;
           const rsq = dot(del,del);
           if rsq <= cutneighsq {
-      //      writeln("\t\tadded");
             a.ncount += 1;
 
             // resize neighbor list if necessary

@@ -243,7 +243,7 @@ void cullOverReferences() {
         move->insertBefore(new DefExpr(tmp));
 
         if (requiresImplicitDestroy(valueCall)) {
-          if (isString(valueFn->retType) == false) {
+          if (isUserDefinedRecord(valueFn->retType) == false) {
             tmp->addFlag(FLAG_INSERT_AUTO_COPY);
             tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
           } else {
