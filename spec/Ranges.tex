@@ -932,7 +932,7 @@ implementation is to generate an error.
 \end{rationale}
 
 If the resulting represented sequence cannot be expressed as a range of the
-expected type, an error is generated. This can happen, for example, when
+expected type, the empty range \chpl{1..0} is computed as the result. This can happen, for example, when
 the operands represent all odd and all even numbers, or when the first
 operand is an unbounded range with unsigned \chpl{idxType} and the second
 operand represents only negative numbers.
