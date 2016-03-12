@@ -1127,8 +1127,8 @@ module ChapelRange {
     }
 
     emptyIntersection = false;
-    var newlo: idxType = max(lo1, lo2);
-    var newhi: idxType = min(hi1, hi2);
+    var newlo = max(lo1, lo2):idxType;
+    var newhi = min(hi1, hi2):idxType;
     if (emptyIntersection) {
       newlo = 1;
       newhi = 0;
