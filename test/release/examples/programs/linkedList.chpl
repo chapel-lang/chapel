@@ -44,7 +44,6 @@ class List {
 
  proc delete_first() {
     if head == nil then {
-      writeln("list is empty");
       return;
     }
     var current=head;
@@ -58,7 +57,6 @@ class List {
  
  proc delete_pos(pos: int) {
     if head==nil then {
-      writeln("list is empty"); 
       return;
     }
 
@@ -78,7 +76,6 @@ class List {
     }
    
     if current.next==nil then  { 
-     writeln("No element found at position p");
      return;
     }
   

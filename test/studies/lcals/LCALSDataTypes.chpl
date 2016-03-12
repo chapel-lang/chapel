@@ -29,24 +29,27 @@ module LCALSDataTypes {
   class LoopSuiteRunInfo {
     var host_name: string;
 
-    var loop_kernel_dom: domain(LoopKernelID);
-    var loop_names = new vector(string);
+    const loop_kernel_dom: domain(LoopKernelID);
+    const loop_length_dom: domain(LoopLength);
+    const loop_variant_dom: domain(LoopVariantID);
+    const weight_group_dom: domain(WeightGroup);
 
-    var loop_length_dom: domain(LoopLength);
-    var run_loop_length = new vector(bool);
-    var loop_length_names = new vector(string);
+    var loop_names: [loop_kernel_dom] string;
+
+    var run_loop_length: [loop_length_dom] bool;
+    var loop_length_names: [loop_length_dom] string;
 
     var num_suite_passes: int;
     var loop_samp_frac: real;
 
     var ref_loop_stat: LoopStat;
 
-    var loop_weights = new vector(real);
+    var loop_weights: [weight_group_dom] real;
 
-    var num_loops_run = new vector(vector(int));
-    var tot_time = new vector(vector(real));
-    var fom_rel = new vector(vector(real));
-    var fom_rate = new vector(vector(real));
+    var num_loops_run: [loop_variant_dom] vector(int);
+    var tot_time: [loop_variant_dom] vector(real);
+    var fom_rel: [loop_variant_dom] vector(real);
+    var fom_rate: [loop_variant_dom] vector(real);
 
     var cache_flush_data_len: int;
     var cache_flush_data_dom: domain(1);
@@ -54,47 +57,29 @@ module LCALSDataTypes {
     var cache_flush_data_sum: real;
 
     var loop_test_stats_dom: domain(string);
-    var loop_test_stats: [loop_test_stats_dom] vector(LoopStat);
+    var loop_test_stats: [loop_test_stats_dom] [loop_kernel_dom] LoopStat;
 
     proc getLoopStats(loop_variant_name: string) {
       return loop_test_stats[loop_variant_name];
     }
     proc addLoopStats(name: string) {
       loop_test_stats_dom += name;
-      loop_test_stats[name] = new vector(LoopStat);
     }
     proc ~LoopSuiteRunInfo() {
-      if loop_names != nil then delete loop_names;
-      if run_loop_length != nil then delete run_loop_length;
-      if loop_length_names != nil then delete loop_length_names;
       if ref_loop_stat != nil then delete ref_loop_stat;
-      if loop_weights != nil then delete loop_weights;
-      if num_loops_run != nil {
-        for nlr in num_loops_run do
-          if nlr != nil then delete nlr;
-        delete num_loops_run;
-      }
-      if tot_time != nil {
-        for tt in tot_time do
-          if tt != nil then delete tt;
-        delete tot_time;
-      }
-      if fom_rel != nil {
-        for fr in fom_rel do
-          if fr != nil then delete fr;
-        delete fom_rel;
-      }
-      if fom_rate != nil {
-        for fr in fom_rate do
-          if fr != nil then delete fr;
-        delete fom_rate;
-      }
+
+      for nlr in num_loops_run do
+        if nlr != nil then delete nlr;
+      for tt in tot_time do
+        if tt != nil then delete tt;
+      for fr in fom_rel do
+        if fr != nil then delete fr;
+      for fr in fom_rate do
+        if fr != nil then delete fr;
+
       for idx in loop_test_stats_dom {
-        if loop_test_stats[idx] != nil {
-          for stat in loop_test_stats[idx] do
-            if stat != nil then delete stat;
-          delete loop_test_stats[idx];
-        }
+        for stat in loop_test_stats[idx] do
+          if stat != nil then delete stat;
       }
     }
   }
@@ -102,57 +87,32 @@ module LCALSDataTypes {
   class LoopStat {
     var loop_is_run: bool;
     var loop_weight: real;
+    var loop_length_dom: domain(LoopLength);
 
-    var loop_run_time = new vector(vector(real));
-    var loop_run_count = new vector(int);
-    var mean = new vector(real);
-    var std_dev = new vector(real);
-    var min = new vector(real);
-    var max = new vector(real);
-    var harm_mean = new vector(real);
-    var meanrel2ref = new vector(real);
+    var loop_run_time: [loop_length_dom] vector(real);
+    var loop_run_count: [loop_length_dom] int;
+    var mean: [loop_length_dom] real;
+    var std_dev: [loop_length_dom] real;
+    var min: [loop_length_dom] real;
+    var max: [loop_length_dom] real;
+    var harm_mean: [loop_length_dom] real;
+    var meanrel2ref: [loop_length_dom] real;
 
-    var loop_length = new vector(int);
-    var samples_per_pass = new vector(int);
+    var loop_length: [loop_length_dom] int;
+    var samples_per_pass: [loop_length_dom] int;
 
-    var loop_chksum = new vector(real);
+    var loop_chksum: [loop_length_dom] real;
 
-    proc LoopStat(num_loop_lengths: int) {
+    proc LoopStat() {
       loop_is_run = false;
       loop_weight = 0.0;
 
-      loop_run_time.resize(num_loop_lengths);
-      for i in 0..#num_loop_lengths do
+      for i in loop_length_dom do
         loop_run_time[i] = new vector(real);
-      loop_run_count.resize(num_loop_lengths);
-      mean.resize(num_loop_lengths);
-      std_dev.resize(num_loop_lengths);
-      min.resize(num_loop_lengths);
-      max.resize(num_loop_lengths);
-      harm_mean.resize(num_loop_lengths);
-      meanrel2ref.resize(num_loop_lengths);
-
-      loop_length.resize(num_loop_lengths);
-      samples_per_pass.resize(num_loop_lengths);
-
-      loop_chksum.resize(num_loop_lengths);
     }
     proc ~LoopStat() {
-      if loop_run_time != nil {
-        for lrt in loop_run_time do
-          if lrt != nil then delete lrt;
-        delete loop_run_time;
-      }
-      if loop_run_count != nil then delete loop_run_count;
-      if mean != nil then delete mean;
-      if std_dev != nil then delete std_dev;
-      if min != nil then delete min;
-      if max != nil then delete max;
-      if harm_mean != nil then delete harm_mean;
-      if meanrel2ref != nil then delete meanrel2ref;
-      if loop_length != nil then delete loop_length;
-      if samples_per_pass != nil then delete samples_per_pass;
-      if loop_chksum != nil then delete loop_chksum;
+      for lrt in loop_run_time do
+        if lrt != nil then delete lrt;
     }
   }
 

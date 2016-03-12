@@ -45,7 +45,7 @@ module LCALSChecksums {
   config const checksumTolerence = 0.17;
   config const noisyChecksumChecks = false;
 
-  proc checkChecksums(run_variants: vector(LoopVariantID), run_loop: [] bool, run_loop_length: [] bool) {
+  proc checkChecksums(run_variants: [] bool, run_loop: [] bool, run_loop_length: [] bool) {
     var suite_run_info = getLoopSuiteRunInfo();
     var run_variant_names = getVariantNames(run_variants);
     for variant_name in run_variant_names {
