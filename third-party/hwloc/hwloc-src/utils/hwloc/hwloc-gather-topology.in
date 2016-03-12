@@ -21,6 +21,7 @@ LC_ALL=C
 export LANG LC_ALL
 
 gatherio=0
+gatherdmi=0
 
 if [ ! -x "$lstopo" ]
 then
@@ -40,6 +41,7 @@ usage()
    echo "  and the corresponding lstopo verbose output under <savepath>.output"
    echo "Options:"
    echo "  --io   Gather I/O files (takes much longer and generates much larger tarball)"
+   echo "  --dmi  Gather SMBIOS files. Works only when run as root. Requires dmi-sysfs kernel module"
    echo "Example:"
    echo "  $0 /tmp/\$(uname -n)"
 }
@@ -47,6 +49,7 @@ usage()
 while [ x`echo "$1" | cut -c1` = x- ] ; do
   case $1 in
   --io) gatherio=1;;
+  --dmi) gatherdmi=1;;
   *) echo "Unrecognized option: $1"; usage; exit 1;;
   esac
   shift
@@ -77,9 +80,11 @@ destdir=`mktemp -d`
 savefile() {
   local dest="$1"
   local file="$2"
-  dir=`dirname "$file"`
-  mkdir -p "$dest/$dir" 2>/dev/null
-  cat "$file" > "$dest/$file" 2>/dev/null
+  if test -r "$file"; then
+    dir=`dirname "$file"`
+    mkdir -p "$dest/$dir" 2>/dev/null
+    cat "$file" > "$dest/$file" 2>/dev/null
+  fi
 }
 
 savelink() {
@@ -132,6 +137,12 @@ cat << EOF | while read -r path ; do savedir "$destdir/$basename" "$path" ; done
 /proc/device-tree/cpus/
 EOF
 
+if test "x$HWLOC_DUMPED_HWDATA_DIR" = x; then
+  savedir "$destdir/$basename" /var/run/hwloc/
+else
+  savedir "$destdir/$basename" "$HWLOC_DUMPED_HWDATA_DIR"
+fi
+
 # Optionally gather I/O directories too
 if [ x$gatherio = x1 ]; then
   cat << EOF | while read -r path ; do savedir "$destdir/$basename" "$path" ; done
@@ -147,7 +158,10 @@ if [ x$gatherio = x1 ]; then
 EOF
   ls -d /sys/devices/pci* 2>/dev/null | sed -e 's@$@/@' | while read -r path ; do savedir "$destdir/$basename" "$path" ; done
   ls -d /run/udev/data/b* 2>/dev/null | while read -r path ; do savefile "$destdir/$basename" "$path" ; done
-  ls -d /sys/firmware/dmi/entries/17-* 2>/dev/null | sed -e 's@$@/@' | while read -r path ; do savedir "$destdir/$basename" "$path" ; done
+fi
+
+if [ x$gatherdmi = x1 ]; then
+  savedir "$destdir/$basename" /sys/firmware/dmi/
 fi
 
 # Get an entire mount point, after decoding its path

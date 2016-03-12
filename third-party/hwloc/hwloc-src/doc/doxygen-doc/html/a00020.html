@@ -18,7 +18,7 @@
  <tr style="height: 56px;">
   <td style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.1</span>
+   &#160;<span id="projectnumber">1.11.2</span>
    </div>
   </td>
  </tr>
@@ -75,7 +75,7 @@ Attributes in parentheses at the very beginning of the description apply to the 
 Loading a synthetic topology</h1>
 <p>Aside from lstopo, the hwloc programming interface offers the same ability by passing the synthetic description string to <a class="el" href="a00079.html#ga4fab186bb6181a00bcf585825fddd38d" title="Enable synthetic topology. ">hwloc_topology_set_synthetic()</a> before <a class="el" href="a00078.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology. ">hwloc_topology_load()</a>.</p>
 <p>Synthetic topologies are created by the <code>synthetic</code> component. This component may be enabled by force by setting the HWLOC_COMPONENTS environment variable to something such as <code>synthetic="node:2 core:3 pu:4"</code>.</p>
-<p>Loading a synthetic topology disables binding support since the topology usually does not match the underlying hardware. Binding may be reenabled as usual by setting HWLOC_THISSYSTEM=1 in the environment or by setting the HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM topology flag.</p>
+<p>Loading a synthetic topology disables binding support since the topology usually does not match the underlying hardware. Binding may be reenabled as usual by setting HWLOC_THISSYSTEM=1 in the environment or by setting the <a class="el" href="a00079.html#ggada025d3ec20b4b420f8038d23d6e7bdea6ecb6abc6a0bb75e81564f8bca85783b" title="Assume that the selected backend provides the topology for the system on which we are running...">HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM</a> topology flag.</p>
 <h1><a class="anchor" id="synthetic_export"></a>
 Exporting a topology as a synthetic string</h1>
 <p>The function <a class="el" href="a00087.html#ga24b7864a1c588309c4749f621f03b4c7" title="Export the topology as a synthetic string. ">hwloc_topology_export_synthetic()</a> may export a topology as a synthetic string. It offers a convenient way to quickly describe the contents of a machine. The lstopo tool may also perform such an export by forcing the output format.</p>

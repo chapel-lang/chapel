@@ -48,9 +48,10 @@ hwloc supports the following operating systems:
 
 <ul>
 <li>Linux (including old kernels not having sysfs topology
-information, with knowledge of cpusets, offline CPUs, ScaleMP vSMP,
-NumaScale NumaConnect, and Kerrighed support) on all supported hardware, including Intel Xeon Phi
-(either standalone or as a coprocessor).</li>
+information, with knowledge of cpusets, offline CPUs, ScaleMP vSMP and Kerrighed support)
+on all supported hardware, including Intel Xeon Phi
+(KNL and KNC, either standalone or as a coprocessor)
+and NumaScale NumaConnect.</li>
 <li>Solaris</li>
 <li>AIX</li>
 <li>Darwin / OS X</li>
@@ -662,8 +663,8 @@ Make sure to have had a look at those too!
 The following diagram can help to understand the vocabulary of the relationships
 by showing the example of a machine with two dual core packages (with no
 hardware threads); thus, a topology with 5 levels. Each box with rounded corner
-corresponds to one hwloc_obj_t, containing the values of the different integer
-fields (depth, logical_index, etc.), and arrows show to which other hwloc_obj_t
+corresponds to one ::hwloc_obj_t, containing the values of the different integer
+fields (depth, logical_index, etc.), and arrows show to which other ::hwloc_obj_t
 pointers point to (first_child, parent, etc.). The L2 cache of the last core is intentionally missing to show how asymmetric topologies are handled.
 See \ref faq_asymmetric for more information about such strange topologies.
 
@@ -759,6 +760,16 @@ relevant topology files of the current machine into a tarball
 later (possibly offline) for simulating or debugging a machine
 without actually running on it.
 
+\section cli_hwloc_dump_hwdata hwloc-dump-hwdata
+
+hwloc-dump-hwdata is a Linux and x86-specific tool that dumps
+(during boot, privileged) some topology and locality information
+from raw hardware files (SMBIOS and ACPI tables) to human-readable
+and world-accessible files that the hwloc library will later reuse.
+
+Currently only used on Intel Knights Landing Xeon Phi platforms.
+See \ref faq_knl_dump.
+
 \section cli_hwloc_distances hwloc-distances
 
 hwloc-distances displays all distance matrices attached to
@@ -850,7 +861,7 @@ following environment variables.
 
 <dt>HWLOC_THISSYSTEM=1</dt>
   <dd>enforces the return value of hwloc_topology_is_thissystem(), as if
-  HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM was set with hwloc_topology_set_flags().
+  ::HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM was set with hwloc_topology_set_flags().
   It means that it makes hwloc assume that the selected backend provides the
   topology for the system on which we are running, even if it is not the
   OS-specific backend but the XML backend for instance.
@@ -950,6 +961,11 @@ following environment variables.
   and which components are successfully loaded.
   </dd>
 
+<dt>HWLOC_DUMPED_HWDATA_DIR=/path/to/dumped/files/</dt>
+  <dd>loads files dumped by <tt>hwloc-dump-hwdata</tt> (on Linux)
+  from the given directory instead of <tt>/var/run/hwloc/</tt>.
+  </dd>
+
 <dt>HWLOC_COMPONENTS=list,of,components</dt>
   <dd>forces a list of components to enable or disable.
   Enable or disable the given comma-separated list of components
@@ -982,6 +998,11 @@ following environment variables.
   (all of them are <em>registered</em> at startup).
   </dd>
 
+<dt>HWLOC_DEBUG_VERBOSE=0</dt>
+  <dd>disables all verbose messages that are enabled by default
+  when <tt>--enable-debug</tt> is passed to configure.
+  </dd>
+
 </dl>
 
 <!-- not documented:
@@ -991,6 +1012,8 @@ following environment variables.
  HWLOC_LINUX_USE_CPUINFO
   uses /proc/cpuinfo instead of sysfs.
   may be useful in the doc for debugging?
+ HWLOC_KNL_NUMA_QUIRK
+  disables the KNL NUMA Cluster quirk in the linux backend
  HWLOC_DEBUG_CHECK
   runs sanity checks during discovery, as if \--enable-debug was passed but
   without debug messages
@@ -1024,9 +1047,9 @@ when they provide better binding support.
 
 If the application does not want the CPU binding to change when
 changing the memory policy, it needs to use the
-HWLOC_MEMBIND_NOCPUBIND flag to prevent hwloc from using OS functions
+::HWLOC_MEMBIND_NOCPUBIND flag to prevent hwloc from using OS functions
 which would change the CPU binding.  Additionally,
-HWLOC_CPUBIND_NOMEMBIND can be passed to CPU binding function to
+::HWLOC_CPUBIND_NOMEMBIND can be passed to CPU binding function to
 prevent hwloc from using OS functions would change the memory binding
 policy.  Of course, using these flags will reduce hwloc's overall support for
 binding, so their use is discouraged.
@@ -1163,22 +1186,22 @@ Here is a list of OS device objects commonly created by hwloc
 components when I/O discovery is enabled and supported.
 
 <ul>
-<li>Hard disks (HWLOC_OBJ_OSDEV_BLOCK)
+<li>Hard disks (::HWLOC_OBJ_OSDEV_BLOCK)
  <ul>
  <li><em>sda</em> (Linux component)</li>
  </ul>
 </li>
-<li>Network interfaces (HWLOC_OBJ_OSDEV_NETWORK)
+<li>Network interfaces (::HWLOC_OBJ_OSDEV_NETWORK)
  <ul>
  <li><em>eth0</em>, <em>wlan0</em>, <em>ib0</em> (Linux component)</li>
  </ul>
 </li>
-<li>OpenFabrics HCAs (HWLOC_OBJ_OSDEV_OPENFABRICS)
+<li>OpenFabrics HCAs (::HWLOC_OBJ_OSDEV_OPENFABRICS)
  <ul>
  <li><em>mlx4_0</em>, <em>qib0</em> (Linux component)</li>
  </ul>
 </li>
-<li>GPUs (HWLOC_OBJ_OSDEV_GPU)
+<li>GPUs (::HWLOC_OBJ_OSDEV_GPU)
  <ul>
  <li><em>nvml0</em> for the first NVML device
   (NVML component, using the NVIDIA Management Library)</li>
@@ -1186,7 +1209,7 @@ components when I/O discovery is enabled and supported.
   (GL component, using the NV-CONTROL X extension library, NVCtrl)</li>
  </ul>
 </li>
-<li>Co-Processors (HWLOC_OBJ_OSDEV_COPROC)
+<li>Co-Processors (::HWLOC_OBJ_OSDEV_COPROC)
  <ul>
  <li><em>opencl0d0</em> for the first device of the first OpenCL platform,
   <em>opencl1d3</em> for the fourth device of the second OpenCL platform
@@ -1197,9 +1220,9 @@ components when I/O discovery is enabled and supported.
   (Linux component)</li>
  </ul>
 </li>
-<li>DMA engine channel (HWLOC_OBJ_OSDEV_DMA)
+<li>DMA engine channel (::HWLOC_OBJ_OSDEV_DMA)
  <ul>
- <li><em>dma0chan0</em> (Linux component) when full I/O discovery is enabled (HWLOC_TOPOLOGY_FLAG_WHOLE_IO)</li>
+ <li><em>dma0chan0</em> (Linux component) when full I/O discovery is enabled (::HWLOC_TOPOLOGY_FLAG_WHOLE_IO)</li>
  </ul>
 </li>
 </ul>
@@ -1327,7 +1350,7 @@ Machine (24GB)
 \page miscobjs Miscellaneous objects
 
 hwloc topologies may be annotated with Misc objects
-(of type <tt>HWLOC_OBJ_MISC</tt>)
+(of type <tt>::HWLOC_OBJ_MISC</tt>)
 either automatically or by the user.
 This is an flexible way to annotate topologies with
 large sets of information since Misc objects may be inserted
@@ -1571,7 +1594,7 @@ Each object contains a list of such pairs that may be consulted
 manually (looking at the object <tt>infos</tt> array field)
 or using the hwloc_obj_get_info_by_name().
 The user may additionally add new key-value pairs to any object using
-::hwloc_obj_add_info() or the \ref cli_hwloc_annotate program.
+hwloc_obj_add_info() or the \ref cli_hwloc_annotate program.
 
 Here is a non-exhaustive list of attributes that may be automatically
 added by hwloc (with the usual corresponding object in parentheses).
@@ -1626,6 +1649,10 @@ and processor.
 Currently only available on Linux.
 Usually added to Package objects, but can be in Machine instead if
 hwloc failed to discover any package.
+</dd>
+<dt>Inclusive (Caches)</dt>
+<dd>The inclusiveness of a cache (1 if inclusive, 0 otherwise).
+Currently only available on x86 processors.
 </dd>
 <dt>PCIVendor, PCIDevice (PCI devices and bridges)</dt>
 <dd>The vendor and device names of the PCI device.
@@ -1702,7 +1729,8 @@ and GID #1 of port #3.
 <dt>Type</dt>
 <dd>A better type name than the usual one.
 This may be used to specify where Groups come from.
-For instance Linux s390 <em>books</em> appear as Groups of type <em>Book</em>.
+For instance Linux S/390 <em>books</em> appear as Groups of type <em>Book</em>
+(see also \ref faq_groups).
 Block OS devices may have a Type of "Disk", "Tape", "Removable Media Device"
 or "Other".
 The Type attribute value is displayed instead of the default object type name in lstopo.
@@ -1751,14 +1779,14 @@ The lstopo program can also serve as a XML topology export tool.
 
 XML topologies may then be reloaded later with hwloc_topology_set_xml()
 and hwloc_topology_set_xmlbuffer().
-The XMLFILE environment variable also tells hwloc to load the topology
+The HWLOC_XMLFILE environment variable also tells hwloc to load the topology
 from the given XML file.
 
 \note Loading XML topologies disables binding because the loaded
 topology may not correspond to the physical machine that loads it.
 This behavior may be reverted by asserting that loaded file really
 matches the underlying system with the HWLOC_THISSYSTEM environment
-variable or the HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM topology flag.
+variable or the ::HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM topology flag.
 
 \note hwloc also offers the ability to export/import \ref hwlocality_diff.
 
@@ -1907,7 +1935,7 @@ space-separated attributes. For instance:
 
 Aside from lstopo, the hwloc programming interface offers the same
 ability by passing the synthetic description string to
-::hwloc_topology_set_synthetic() before hwloc_topology_load().
+hwloc_topology_set_synthetic() before hwloc_topology_load().
 
 Synthetic topologies are created by the <tt>synthetic</tt> component.
 This component may be enabled by force by setting the HWLOC_COMPONENTS
@@ -1917,12 +1945,12 @@ environment variable to something such as
 Loading a synthetic topology disables binding support since the
 topology usually does not match the underlying hardware.
 Binding may be reenabled as usual by setting HWLOC_THISSYSTEM=1 in the
-environment or by setting the HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM
+environment or by setting the ::HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM
 topology flag.
 
 \section synthetic_export Exporting a topology as a synthetic string
 
-The function ::hwloc_topology_export_synthetic() may export
+The function hwloc_topology_export_synthetic() may export
 a topology as a synthetic string.
 It offers a convenient way to quickly describe the contents of a machine.
 The lstopo tool may also perform such an export by forcing the output format.
@@ -2077,23 +2105,23 @@ enabled for the current topology.
 
 Like most libraries that mainly fill data structures, hwloc is not
 thread safe but rather reentrant: all state is held in a
-\ref hwloc_topology_t instance without mutex protection.  That means, for
+::hwloc_topology_t instance without mutex protection.  That means, for
 example, that two threads can safely operate on and modify two
-different \ref hwloc_topology_t instances, but they should not
+different ::hwloc_topology_t instances, but they should not
 simultaneously invoke functions that modify the <em>same</em>
 instance.  Similarly, one thread should not modify a
-\ref hwloc_topology_t instance while another thread is reading or
+::hwloc_topology_t instance while another thread is reading or
 traversing it.  However, two threads can safely read or traverse the
-same \ref hwloc_topology_t instance concurrently.
+same ::hwloc_topology_t instance concurrently.
 
 When running in multiprocessor environments, be aware that proper thread
 synchronization and/or memory coherency protection is needed to pass hwloc
-data (such as \ref hwloc_topology_t pointers) from one processor
+data (such as ::hwloc_topology_t pointers) from one processor
 to another (e.g., a mutex, semaphore, or a memory barrier).
 Note that this is not a hwloc-specific requirement, but it is worth
 mentioning.
 
-For reference, \ref hwloc_topology_t modification operations include
+For reference, ::hwloc_topology_t modification operations include
 (but may not be limited to):
 
 <dl>
@@ -2112,7 +2140,7 @@ For reference, \ref hwloc_topology_t modification operations include
   <dd><tt>hwloc_topology_insert_misc_object_by_*</tt> (see
   \ref hwlocality_tinker) may modify the topology significantly by adding
   objects inside the tree, changing the topology depth, etc.
-  <tt>hwloc_topology_restrict</tt> modifies the topology even more
+  <tt>hwloc_topology_restrict()</tt> modifies the topology even more
   dramatically by removing some objects.
 
   Although references to former objects <em>may</em> still be valid
@@ -2265,10 +2293,10 @@ anything under the <tt>include/hwloc</tt> subdirectory) and nothing from the
 
 \subsection plugins_disc_basic Basics of discovery components
 
-Each discovery component is defined by a <tt>hwloc_disc_component</tt>
+Each discovery component is defined by a <tt>::hwloc_disc_component</tt>
 structure which contains an <tt>instantiate()</tt> callback.
 This function is invoked when this component is actually used by a topology.
-It fills a new <tt>hwloc_backend</tt> structure that usually contains
+It fills a new <tt>::hwloc_backend</tt> structure that usually contains
 <tt>discover()</tt> and/or <tt>notify_new_object()</tt> callbacks taking
 care of the actual topology discovery.
 
@@ -2278,16 +2306,16 @@ This offers a way for third-party plugins to override existing components.
 
 \subsection plugins_disc_register Registering a new discovery component
 
-Registering components to the hwloc core relies on a <tt>hwloc_component</tt> structure.
-Its <tt>data</tt> field points to the previously defined <tt>hwloc_disc_component</tt>
-structure while its <tt>type</tt> should be HWLOC_COMPONENT_TYPE_DISC.
+Registering components to the hwloc core relies on a <tt>::hwloc_component</tt> structure.
+Its <tt>data</tt> field points to the previously defined <tt>::hwloc_disc_component</tt>
+structure while its <tt>type</tt> should be ::HWLOC_COMPONENT_TYPE_DISC.
 This structure should be named <tt>hwloc_&lt;name&gt;_component</tt>.
 
 The configure script should be modified to add <tt>&lt;name&gt;</tt>
 to its <tt>hwloc_components</tt> shell variable so that the component
 is actually available.
 
-\note The symbol name of the <tt>hwloc_component</tt> structure
+\note The symbol name of the <tt>::hwloc_component</tt> structure
 is independent of the name of the discovery component mentioned
 in the previous section.
 
@@ -2701,25 +2729,24 @@ resulting topology will miss some objects and may be asymmetric
 ****************************************************************************
 \endverbatim
 
-As explained in the message, reporting this issue to the hwloc developers
-(by sending the tarball that is generated by the hwloc-gather-topology script
- on this platform) is a good way to make sure that this is a software
-(operating system) or hardware bug (BIOS, etc).
-
-These errors are common on large AMD platforms because several BIOS releases
-fail to properly report L3 caches. In the above example, the hardware reports
+These errors are common on large AMD platforms because of BIOS and/or Linux
+kernel bugs causing invalid L3 cache information.
+In the above example, the hardware reports
 a L3 cache that is shared by 2 cores in the first NUMA node and 4 cores
 in the second NUMA node. That's wrong, it should actually be shared by all 6
 cores in a single NUMA node.
 The resulting topology will miss some L3 caches.
+
 If your application not care about cache sharing, or if you do not plan to
 request cache-aware binding in your process launcher, you may likely ignore
-this error.
+this error (and hide it by setting HWLOC_HIDE_ERRORS=1 in your environment).
 
 Some platforms report similar warnings about conflicting Packages and NUMANodes.
 Upgrading the BIOS and/or the operating system may help.
-Otherwise, the warning may be hidden by setting HWLOC_HIDE_ERRORS=1
-in your environment.
+Otherwise, as explained in the message, reporting this issue to the hwloc developers
+(by sending the tarball that is generated by the hwloc-gather-topology script
+ on this platform) is a good way to make sure that this is a software
+(operating system) or hardware bug (BIOS, etc).
 
 
 \section faq_privileged Does hwloc require privileged access?
@@ -2745,6 +2772,11 @@ sensitive information will be disclosed through this XML export.
 This XML-based model also has the advantage of speeding up the
 discovery because reading a XML topology is usually much faster
 than querying the operating system again.
+
+The utility <tt>hwloc-dump-hwdata</tt> is also involved in gathering
+privileged information at boot time and making it available to
+non-privileged users. However it only applies to Intel Knights Landing
+Xeon Phi for now (see \ref faq_knl_dump).
 
 
 \section faq_onedim hwloc only has a one-dimensional view of the architecture, it ignores distances
@@ -2853,6 +2885,29 @@ hello from a single thread on core #3
 \endverbatim
 
 
+\section faq_groups What are these Group objects in my topology?
+
+hwloc comes with a set of predefined object types (Core, Package, NUMA node, Caches)
+that match the vast majority of hardware platforms.
+The ::HWLOC_OBJ_GROUP type was designed for cases where this set is not sufficient.
+Groups may be used anywhere to add more structure information to the topology,
+for instance to show that 2 out of 4 NUMA nodes are actually closer than the others.
+When applicable, the <tt>Type</tt> info attribute describes why a Group
+was actually added (see also \ref attributes_info).
+
+hwloc currently uses Groups for the following reasons:
+<ul>
+<li>AMD dual-core compute units (<tt>Type=ComputeUnit</tt>, in the x86 backend),
+ but these objects are usually merged with the L2 caches.</li>
+<li>Intel x2APIC non-core and non-package levels (in the x86 backend).</li>
+<li>Windows processor groups.</li>
+<li>IBM S/390 "Books" on Linux (<tt>Type=Book</tt>).</li>
+<li>AIX unknown hierarchy levels.</li>
+<li>Distance-based groups made of close objects.</li>
+<li>I/O parents when I/O locality does not match any existing object.</li>
+</ul>
+
+
 \section faq_asymmetric What happens if my topology is asymmetric?
 
 hwloc supports asymmetric topologies even if most platforms are usually
@@ -2863,7 +2918,7 @@ multithreading, or levels of caches.
 In practice, asymmetric topologies mostly appear when intermediate groups
 are added for I/O affinity: on a 4-package machine, an I/O bus may be
 connected to 2 packages. These packages are below an additional Group
-object, while the other packages are not.
+object, while the other packages are not (see also \ref faq_groups).
 
 Before hwloc v2.0, hwloc_topology_ignore_type_keep_structure() and
 hwloc_topology_ignore_all_keep_structure() may also make topologies
@@ -2874,7 +2929,7 @@ machine is disallowed by administrator restrictions
 To understand how hwloc manages such cases, one should first remember
 the meaning of levels and cousin objects. All objects of the same type
 are gathered as horizontal levels with a given depth. They are also
-connected through the cousin pointers of the hwloc_obj structure.
+connected through the cousin pointers of the ::hwloc_obj structure.
 Some types, such as Caches or Groups, are annotated with a depth or
 level attribute (for instance L2 cache or Group1). Moreover caches
 have a type attribute (for instance L1i or L1d). Such
@@ -2981,7 +3036,21 @@ to fix several issues of the 1.x interface.
 The ABI will be broken, which means
 <b>applications must be recompiled against the new 2.0 interface</b>.
 
-To check that you are not mixing old/recent headers with a recent/old runtime library:
+To check that you are not mixing old/recent headers with a recent/old runtime library,
+check the major revision number in the API version:
+\verbatim
+#include <hwloc.h>
+  unsigned version = hwloc_get_api_version();
+  if ((version >> 16) != (HWLOC_API_VERSION >> 16)) {
+    fprintf(stderr,
+           "%s compiled for hwloc API 0x%x but running on library API 0x%x.\n"
+           "You may need to point LD_LIBRARY_PATH to the right hwloc library.\n"
+           "Aborting since the new ABI is not backward compatible.\n",
+           callname, HWLOC_API_VERSION, version);
+    exit(EXIT_FAILURE);
+  }
+\endverbatim
+To specifically detect v2.0 issues:
 \verbatim
 #include <hwloc.h>
 #if HWLOC_API_VERSION >= 0x00020000
@@ -2996,7 +3065,7 @@ To check that you are not mixing old/recent headers with a recent/old runtime li
 \endverbatim
 
 You should not try to remain compatible with very old releases such as
-1.1.x or earlier because <tt>HWLOC_API_VERSION</tt> was added in 1.0.0
+1.1.x or earlier because <tt>::HWLOC_API_VERSION</tt> was added in 1.0.0
 and <tt>hwloc_get_api_version()</tt> came only in 1.1.1.
 Also do not use the old cpuset API since it was deprecated and superseded
 by the bitmap API in 1.1, and later removed in 1.5.
@@ -3030,9 +3099,63 @@ sysctl variable must be set to 1 to do so.
 Otherwise, only the number of logical processors will be detected.
 
 
+\section faq_knl_numa How do I find the local MCDRAM NUMA node on Intel Knights Landing Xeon Phi?
+
+Intel Knights Landing Xeon Phi processors introduce a new memory architecture by
+possibly having two distinct local memories:
+some normal memory (DDR) and some high-bandwidth on-package memory (MCDRAM).
+Processors can be configured in various clustering modes to have up to 4 <em>Clusters</em>.
+Moreover, each <em>Cluster</em> (quarter, half or whole processor) of the processor may have its own local
+parts of the DDR and of the MCDRAM.
+
+The upcoming hwloc 2.0 will address this new architecture by presenting memory
+in an improved way.
+For now, starting with 1.11.2, hwloc releases use the following approximate representation:
+
+If a cluster only contains DDR or MCDRAM but not both, that memory is available
+as a local NUMA node above cores as usual.
+
+If a cluster contains both, two distinct NUMA nodes appear.
+They are sibling children of a Group object of type <tt>Cluster</tt>
+(or sibling children of the Package object for non-clustered processors).
+
+The DDR memory is the local NUMA node above cores as usual.
+Allocating memory from one core to its local NUMA node will therefore actually
+allocate it on the normal memory by default.
+
+The local high-bandwidth MCDRAM is the second NUMA node (without any Core or PU below it).
+It is the next sibling of the local DDR NUMA node below the same parent object.
+To allocate on the faster MCDRAM, one should first find the local NUMA node (the DDR memory,
+by looking up parent objects), and then take the next sibling to reach the local MCDRAM
+NUMA node (if any).
+
+The MCDRAM NUMA nodes may also be identified thanks to the <tt>Type</tt> info attribute
+which is set to <tt>MCDRAM</tt>.
+
+
+\section faq_knl_dump Why do I need hwloc-dump-hwdata for caches on Intel Knights Landing Xeon Phi?
+
+Intel Knights Landing Xeon Phi processors may use the on-package memory (MCDRAM)
+as either memory or a memory-side cache (currently reported as a L3 cache by hwloc).
+Details about this cache (especially its size) are currently only available to privileged users.
+
+The hwloc-dump-hwdata utility may be used to dump this privileged binary information
+into human-readable and world-accessible files that the hwloc library will later load.
+The utility should usually run as root once during boot, in order to update dumped
+information (stored under /var/run/hwloc by default) in case the MCDRAM configuration
+changed between reboots.
+
+hwloc-dump-hwdata requires <tt>dmi-sysfs</tt> kernel module loaded.
+
+The utility is currently unneeded on non-KNL platforms.
+
+
 \section faq_phi How do I build for Intel Xeon Phi coprocessor?
 
-Intel Xeon Phi coprocessors usually runs a Linux environment but cross-compiling from the host is required.
+\note This section does not apply to standalone Intel Knights Landing Xeon Phi.
+
+Intel Knights Corner Xeon Phi coprocessors usually runs a Linux environment
+but cross-compiling from the host is required.
 hwloc uses standard autotools options for cross-compiling.
 For instance, to build for a <em>Knights Corner (KNC)</em> coprocessor:
 

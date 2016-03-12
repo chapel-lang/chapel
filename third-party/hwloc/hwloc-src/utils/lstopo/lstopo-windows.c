@@ -60,6 +60,7 @@ static int finish;
 static int the_width, the_height;
 static int win_width, win_height;
 static unsigned int the_fontsize, the_gridsize;
+static float the_scale;
 
 static void
 windows_box(void *output, int r, int g, int b, unsigned depth __hwloc_attribute_unused, unsigned x, unsigned width, unsigned y, unsigned height);
@@ -69,13 +70,48 @@ WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 {
   int redraw = 0;
   switch (message) {
+    case WM_CHAR:  {
+      switch (wparam) {
+      case '+':
+	the_scale *= 1.2f;
+	redraw = 1;
+	break;
+      case '-':
+	the_scale /= 1.2f;
+	redraw = 1;
+	break;
+      case 'f':
+      case 'F': {
+	float wscale, hscale;
+	wscale = win_width / (float)the_width;
+	hscale = win_height / (float)the_height;
+	the_scale *= wscale > hscale ? hscale : wscale;
+	redraw = 1;
+	break;
+      }
+      case '1':
+	the_scale = 1.0;
+	redraw = 1;
+	break;
+      case 'q':
+      case 'Q':
+	finish = 1;
+	break;
+      }
+      break;
+    }
+
     case WM_PAINT: {
       HFONT font;
       BeginPaint(hwnd, &the_output.ps);
       font = CreateFont(fontsize, 0, 0, 0, 0, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, NULL);
       SelectObject(the_output.ps.hdc, (HGDIOBJ) font);
       windows_box(&the_output, 0xff, 0xff, 0xff, 0, 0, win_width, 0, win_height);
+      the_output.max_x = 0;
+      the_output.max_y = 0;
       output_draw(&the_output.loutput);
+      the_width = the_output.max_x;
+      the_height = the_output.max_y;
       DeleteObject(font);
       EndPaint(hwnd, &the_output.ps);
       break;
@@ -103,8 +139,6 @@ WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
       break;
     case WM_KEYDOWN:
       switch (wparam) {
-      case 'q':
-      case 'Q':
       case VK_ESCAPE:
         finish = 1;
         break;
@@ -169,11 +203,18 @@ WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
       if (hwnd == the_output.toplevel)
 	PostQuitMessage(0);
       return 0;
-    case WM_SIZE:
+    case WM_SIZE: {
+      float wscale, hscale;
       win_width = LOWORD(lparam);
       win_height = HIWORD(lparam);
+      wscale = win_width / (float)the_width;
+      hscale = win_height / (float)the_height;
+      the_scale *= wscale > hscale ? hscale : wscale;
+      if (the_scale < 1.0f)
+	the_scale = 1.0f;
       redraw = 1;
       break;
+    }
   }
   if (redraw) {
     if (x_delta > the_width - win_width)
@@ -184,22 +225,8 @@ WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
       x_delta = 0;
     if (y_delta < 0)
       y_delta = 0;
-    if (win_width > the_width && win_height > the_height) {
-      fontsize = the_fontsize;
-      gridsize = the_gridsize;
-      if (win_width > the_width) {
-        fontsize = the_fontsize * win_width / the_width;
-        gridsize = the_gridsize * win_width / the_width;
-      }
-      if (win_height > the_height) {
-        unsigned int new_fontsize = the_fontsize * win_height / the_height;
-        unsigned int new_gridsize = the_gridsize * win_height / the_height;
-	if (new_fontsize < fontsize)
-	  fontsize = new_fontsize;
-	if (new_gridsize < gridsize)
-	  gridsize = new_gridsize;
-      }
-    }
+    fontsize = (unsigned)(the_fontsize * the_scale);
+    gridsize = (unsigned)(the_gridsize * the_scale);
     RedrawWindow(hwnd, NULL, NULL, RDW_INVALIDATE);
   }
   return DefWindowProc(hwnd, message, wparam, lparam);
@@ -264,11 +291,25 @@ windows_init(void *output)
   the_width = width;
   the_height = height;
 
+  the_scale = 1.0f;
+
   the_fontsize = fontsize;
   the_gridsize = gridsize;
 
   /* and display the window */
   ShowWindow(toplevel, SW_SHOWDEFAULT);
+
+  printf("\n");
+  printf("Keyboard shortcuts:\n");
+  printf(" Zoom-in or out .................... + -\n");
+  printf(" Try to fit scale to window ........ f F\n");
+  printf(" Reset scale to default ............ 1\n");
+  printf(" Scroll vertically ................. Up Down PageUp PageDown\n");
+  printf(" Scroll horizontally ............... Left Right Ctrl+PageUp/Down\n");
+  printf(" Scroll to the top-left corner ..... Home\n");
+  printf(" Scroll to the bottom-right corner . End\n");
+  printf(" Exit .............................. q Q Esc\n");
+  printf("\n\n");
 }
 
 static void
@@ -302,17 +343,17 @@ windows_box(void *output, int r, int g, int b, unsigned depth __hwloc_attribute_
   struct lstopo_windows_output *woutput = output;
   PAINTSTRUCT *ps = &woutput->ps;
 
-  if (!woutput->drawing) {
-    if (x > woutput->max_x)
-      woutput->max_x = x;
-    if (x+width > woutput->max_x)
-      woutput->max_x = x + width;
-    if (y > woutput->max_y)
-      woutput->max_y = y;
-    if (y + height > woutput->max_y)
-      woutput->max_y = y + height;
+  if (x > woutput->max_x)
+    woutput->max_x = x;
+  if (x+width > woutput->max_x)
+    woutput->max_x = x + width;
+  if (y > woutput->max_y)
+    woutput->max_y = y;
+  if (y + height > woutput->max_y)
+    woutput->max_y = y + height;
+
+  if (!woutput->drawing)
     return;
-  }
 
   SelectObject(ps->hdc, rgb_to_brush(r, g, b));
   SetBkColor(ps->hdc, RGB(r, g, b));
@@ -325,17 +366,17 @@ windows_line(void *output, int r, int g, int b, unsigned depth __hwloc_attribute
   struct lstopo_windows_output *woutput = output;
   PAINTSTRUCT *ps = &woutput->ps;
 
-  if (!woutput->drawing) {
-    if (x1 > woutput->max_x)
-      woutput->max_x = x1;
-    if (x2 > woutput->max_x)
-      woutput->max_x = x2;
-    if (y1 > woutput->max_y)
-      woutput->max_y = y1;
-    if (y2 > woutput->max_y)
-      woutput->max_y = y2;
+  if (x1 > woutput->max_x)
+    woutput->max_x = x1;
+  if (x2 > woutput->max_x)
+    woutput->max_x = x2;
+  if (y1 > woutput->max_y)
+    woutput->max_y = y1;
+  if (y2 > woutput->max_y)
+    woutput->max_y = y2;
+
+  if (!woutput->drawing)
     return;
-  }
 
   SelectObject(ps->hdc, rgb_to_brush(r, g, b));
   MoveToEx(ps->hdc, x1 - x_delta, y1 - y_delta, NULL);

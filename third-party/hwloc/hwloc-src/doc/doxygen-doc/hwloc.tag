@@ -5440,6 +5440,7 @@
     <docanchor file="a00004" title="hwloc-distrib">cli_hwloc_distrib</docanchor>
     <docanchor file="a00004" title="hwloc-ps">cli_hwloc_ps</docanchor>
     <docanchor file="a00004" title="hwloc-gather-topology">cli_hwloc_gather</docanchor>
+    <docanchor file="a00004" title="hwloc-dump-hwdata">cli_hwloc_dump_hwdata</docanchor>
     <docanchor file="a00004" title="hwloc-distances">cli_hwloc_distances</docanchor>
     <docanchor file="a00004" title="hwloc-annotate">cli_hwloc_annotate</docanchor>
     <docanchor file="a00004" title="hwloc-diff and hwloc-patch">cli_hwloc_diffpatch</docanchor>
@@ -5548,12 +5549,15 @@
     <docanchor file="a00030" title="hwloc only has a one-dimensional view of the architecture, it ignores distances">faq_onedim</docanchor>
     <docanchor file="a00030" title="What happens to my topology if I disable symmetric multithreading, hyper-threading, etc. ?">faq_nosmt</docanchor>
     <docanchor file="a00030" title="How may I ignore symmetric multithreading, hyper-threading, etc. ?">faq_smt</docanchor>
+    <docanchor file="a00030" title="What are these Group objects in my topology?">faq_groups</docanchor>
     <docanchor file="a00030" title="What happens if my topology is asymmetric?">faq_asymmetric</docanchor>
     <docanchor file="a00030" title="How do I annotate the topology with private notes?">faq_annotate</docanchor>
     <docanchor file="a00030" title="Why does Valgrind complain about hwloc memory leaks?">faq_valgrind</docanchor>
     <docanchor file="a00030" title="How do I handle ABI breaks and API upgrades?">faq_upgrade</docanchor>
     <docanchor file="a00030" title="How do I build hwloc for BlueGene/Q?">faq_bgq</docanchor>
     <docanchor file="a00030" title="How to get useful topology information on NetBSD?">faq_netbsd_bind</docanchor>
+    <docanchor file="a00030" title="How do I find the local MCDRAM NUMA node on Intel Knights Landing Xeon Phi?">faq_knl_numa</docanchor>
+    <docanchor file="a00030" title="Why do I need hwloc-dump-hwdata for caches on Intel Knights Landing Xeon Phi?">faq_knl_dump</docanchor>
     <docanchor file="a00030" title="How do I build for Intel Xeon Phi coprocessor?">faq_phi</docanchor>
   </compound>
   <compound kind="page">

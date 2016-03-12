@@ -18,7 +18,7 @@
  <tr style="height: 56px;">
   <td style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.1</span>
+   &#160;<span id="projectnumber">1.11.2</span>
    </div>
   </td>
  </tr>
@@ -69,6 +69,8 @@ Custom string infos</h1>
 <dd></dd>
 <dt>SystemVersionRegister, ProcessorVersionRegister (Machine) </dt>
 <dd>Some POWER/PowerPC-specific attributes describing the platform and processor. Currently only available on Linux. Usually added to Package objects, but can be in Machine instead if hwloc failed to discover any package.  </dd>
+<dt>Inclusive (Caches) </dt>
+<dd>The inclusiveness of a cache (1 if inclusive, 0 otherwise). Currently only available on x86 processors.  </dd>
 <dt>PCIVendor, PCIDevice (PCI devices and bridges) </dt>
 <dd>The vendor and device names of the PCI device.  </dd>
 <dt>PCISlot </dt>
@@ -104,7 +106,7 @@ Custom string infos</h1>
 <dt>NodeGUID, SysImageGUID, Port1State, Port2LID, Port2LMC, Port3GID1 (OpenFabrics OS devices) </dt>
 <dd>The node GUID and GUID mask, the state of a port #1 (value is 4 when active), the LID and LID mask count of port #2, and GID #1 of port #3.  </dd>
 <dt>Type </dt>
-<dd>A better type name than the usual one. This may be used to specify where Groups come from. For instance Linux s390 <em>books</em> appear as Groups of type <em>Book</em>. Block OS devices may have a Type of "Disk", "Tape", "Removable Media Device" or "Other". The Type attribute value is displayed instead of the default object type name in lstopo.  </dd>
+<dd>A better type name than the usual one. This may be used to specify where Groups come from. For instance Linux S/390 <em>books</em> appear as Groups of type <em>Book</em> (see also <a class="el" href="a00030.html#faq_groups">What are these Group objects in my topology?</a>). Block OS devices may have a Type of "Disk", "Tape", "Removable Media Device" or "Other". The Type attribute value is displayed instead of the default object type name in lstopo.  </dd>
 <dt>Vendor, AssetTag, PartNumber, DeviceLocation, BankLocation (MemoryModule Misc objects) </dt>
 <dd>Information about memory modules (DIMMs) extracted from SMBIOS.  </dd>
 <dt>hwlocVersion </dt>

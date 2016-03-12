@@ -7,11 +7,13 @@
 #include <hwloc-calc.h>
 #include <hwloc.h>
 
+#include "misc.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-static void usage(const char *callname __hwloc_attribute_unused, FILE *where)
+void usage(const char *callname __hwloc_attribute_unused, FILE *where)
 {
 	fprintf(where, "Usage: hwloc-annotate [options] <input.xml> <output.xml> <location> <annotation>\n");
 	fprintf(where, "  <location> may be:\n");

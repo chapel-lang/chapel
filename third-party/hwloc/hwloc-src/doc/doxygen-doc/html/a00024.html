@@ -18,7 +18,7 @@
  <tr style="height: 56px;">
   <td style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.1</span>
+   &#160;<span id="projectnumber">1.11.2</span>
    </div>
   </td>
  </tr>
@@ -41,9 +41,9 @@
 <div class="title">Thread Safety </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>Like most libraries that mainly fill data structures, hwloc is not thread safe but rather reentrant: all state is held in a <a class="el" href="a00078.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> instance without mutex protection. That means, for example, that two threads can safely operate on and modify two different <a class="el" href="a00078.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> instances, but they should not simultaneously invoke functions that modify the <em>same</em> instance. Similarly, one thread should not modify a <a class="el" href="a00078.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> instance while another thread is reading or traversing it. However, two threads can safely read or traverse the same <a class="el" href="a00078.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> instance concurrently.</p>
-<p>When running in multiprocessor environments, be aware that proper thread synchronization and/or memory coherency protection is needed to pass hwloc data (such as <a class="el" href="a00078.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> pointers) from one processor to another (e.g., a mutex, semaphore, or a memory barrier). Note that this is not a hwloc-specific requirement, but it is worth mentioning.</p>
-<p>For reference, <a class="el" href="a00078.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> modification operations include (but may not be limited to):</p>
+<div class="textblock"><p>Like most libraries that mainly fill data structures, hwloc is not thread safe but rather reentrant: all state is held in a <a class="el" href="a00078.html#ga9d1e76ee15a7dee158b786c30b6a6e38" title="Topology context. ">hwloc_topology_t</a> instance without mutex protection. That means, for example, that two threads can safely operate on and modify two different <a class="el" href="a00078.html#ga9d1e76ee15a7dee158b786c30b6a6e38" title="Topology context. ">hwloc_topology_t</a> instances, but they should not simultaneously invoke functions that modify the <em>same</em> instance. Similarly, one thread should not modify a <a class="el" href="a00078.html#ga9d1e76ee15a7dee158b786c30b6a6e38" title="Topology context. ">hwloc_topology_t</a> instance while another thread is reading or traversing it. However, two threads can safely read or traverse the same <a class="el" href="a00078.html#ga9d1e76ee15a7dee158b786c30b6a6e38" title="Topology context. ">hwloc_topology_t</a> instance concurrently.</p>
+<p>When running in multiprocessor environments, be aware that proper thread synchronization and/or memory coherency protection is needed to pass hwloc data (such as <a class="el" href="a00078.html#ga9d1e76ee15a7dee158b786c30b6a6e38" title="Topology context. ">hwloc_topology_t</a> pointers) from one processor to another (e.g., a mutex, semaphore, or a memory barrier). Note that this is not a hwloc-specific requirement, but it is worth mentioning.</p>
+<p>For reference, <a class="el" href="a00078.html#ga9d1e76ee15a7dee158b786c30b6a6e38" title="Topology context. ">hwloc_topology_t</a> modification operations include (but may not be limited to):</p>
 <dl>
 <dt>Creation and destruction </dt>
 <dd><p class="startdd"><code><a class="el" href="a00078.html#ga03fd4a16d8b9ee1ffc32b25fd2f6bdfa" title="Allocate a topology context. ">hwloc_topology_init()</a>, <a class="el" href="a00078.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology. ">hwloc_topology_load()</a>, <a class="el" href="a00078.html#ga9f34a640b6fd28d23699d4d084667b15" title="Terminate and free a topology context. ">hwloc_topology_destroy()</a></code> (see <a class="el" href="a00078.html">Topology Creation and Destruction</a>) imply major modifications of the structure, including freeing some objects. No other thread cannot access the topology or any of its objects at the same time.</p>
@@ -51,7 +51,7 @@
 <p class="enddd"></p>
 </dd>
 <dt>Runtime topology modifications </dt>
-<dd><p class="startdd"><code>hwloc_topology_insert_misc_object_by_*</code> (see <a class="el" href="a00084.html">Modifying a loaded Topology</a>) may modify the topology significantly by adding objects inside the tree, changing the topology depth, etc. <code>hwloc_topology_restrict</code> modifies the topology even more dramatically by removing some objects.</p>
+<dd><p class="startdd"><code>hwloc_topology_insert_misc_object_by_*</code> (see <a class="el" href="a00084.html">Modifying a loaded Topology</a>) may modify the topology significantly by adding objects inside the tree, changing the topology depth, etc. <code><a class="el" href="a00084.html#gaffdb5403e5178b0d29852dd3319de3fc" title="Restrict the topology to the given CPU set. ">hwloc_topology_restrict()</a></code> modifies the topology even more dramatically by removing some objects.</p>
 <p>Although references to former objects <em>may</em> still be valid after insertion or restriction, it is strongly advised to not rely on any such guarantee and always re-consult the topology to reacquire new instances of objects. </p>
 <p class="enddd"></p>
 </dd>

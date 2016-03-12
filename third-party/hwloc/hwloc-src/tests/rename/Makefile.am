@@ -65,6 +65,7 @@ needed: dirs include/hwloc/autogen/config.h include/private/autogen/config.h
 	@if cpp $(CPPFLAGS) $(TEST_CPPFLAGS) -Iinclude -I$(HWLOC_top_srcdir)/include -I$(HWLOC_top_builddir)/include $(srcdir)/main.c \
 		| sed -e 's/foobar_ ##   hwloc_ ## /foobar_hwloc_/g' \
 		| sed -e 's/FOOBAR_ ##   hwloc_ ## /FOOBAR_hwloc_/g' \
+		| grep -vw HWLOC_DEBUG_VERBOSE \
 		| grep -vw hwloc_uint64_t \
 		| egrep -i '(^| |\*)hwloc_' ; then false ; else true ; fi
 	@echo "# done"
