@@ -9,8 +9,9 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test performance of jemalloc 4.1.0
-#
+# Test performance of jemalloc 4.1.0 w/ decay-based purging
+
+export CHPL_JEMALLOC_MORE_CFG_OPTIONS="--with-malloc-conf=purge:decay"
 GITHUB_USER=ronawho
 GITHUB_BRANCH=upgrade-jemalloc
 SHORT_NAME=jemalloc
