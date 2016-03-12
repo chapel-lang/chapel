@@ -825,60 +825,105 @@ module Spawn {
   }
 
   // Signals as required by POSIX-2013, less the deprecated SIGPOLL
-  // for sake of portability
+  // for sake of portability on OS X
+  pragma "no doc"
   extern const SIGABRT: c_int;
+  pragma "no doc"
   extern const SIGALRM: c_int;
+  pragma "no doc"
   extern const SIGBUS: c_int;
+  pragma "no doc"
   extern const SIGCHLD: c_int;
+  pragma "no doc"
   extern const SIGCONT: c_int;
+  pragma "no doc"
   extern const SIGFPE: c_int;
+  pragma "no doc"
   extern const SIGHUP: c_int;
+  pragma "no doc"
   extern const SIGILL: c_int;
+  pragma "no doc"
   extern const SIGINT: c_int;
+  pragma "no doc"
   extern const SIGKILL: c_int;
+  pragma "no doc"
   extern const SIGPIPE: c_int;
+  pragma "no doc"
   extern const SIGPROF: c_int;
+  pragma "no doc"
   extern const SIGQUIT: c_int;
+  pragma "no doc"
   extern const SIGSEGV: c_int;
+  pragma "no doc"
   extern const SIGSTOP: c_int;
+  pragma "no doc"
   extern const SIGSYS: c_int;
+  pragma "no doc"
   extern const SIGTERM: c_int;
+  pragma "no doc"
   extern const SIGTRAP: c_int;
+  pragma "no doc"
   extern const SIGTSTP: c_int;
+  pragma "no doc"
   extern const SIGTTIN: c_int;
+  pragma "no doc"
   extern const SIGTTOU: c_int;
+  pragma "no doc"
   extern const SIGURG: c_int;
+  pragma "no doc"
   extern const SIGUSR1: c_int;
+  pragma "no doc"
   extern const SIGUSR2: c_int;
+  pragma "no doc"
   extern const SIGVTALRM: c_int;
+  pragma "no doc"
   extern const SIGXCPU: c_int;
+  pragma "no doc"
   extern const SIGXFSZ: c_int;
 
   private extern proc qio_send_signal(pid: int(64), sig: c_int): syserr;
 
   /*
+    Send a signal to a child process.
+
+    Values for :const:`signal` are system-specific and should be declared as:
+
+    .. code-block:: chapel
+
+       const SIG*: c_int;
+
+    Declarations for common signals are provided in this module:
+    :const:`SIGKILL`, :const:`SIGTERM`,
+    :const:`SIGSTOP`, :const:`SIGTSTP`, :const:`SIGCONT`
+
+    :arg signal: the signal to send
 
     :arg error: optional argument to capture any error encountered
-                when .
+                when sending a signal to the child process
    */
-  proc subprocess.send_signal(out error:syserr, sig: int) {
+  proc subprocess.send_signal(out error:syserr, signal: int) {
     on home {
-      error = qio_send_signal(pid, sig:c_int);
+      error = qio_send_signal(pid, signal:c_int);
     }
   }
 
   // documented in the out error version
   pragma "no doc"
-  proc subprocess.send_signal(sig:int) {
+  proc subprocess.send_signal(signal:int) {
     var err:syserr = ENOERR;
 
     _halt_on_launch_error();
 
-    this.send_signal(error=err, sig=sig);
+    this.send_signal(error=err, signal=signal);
     if err then ioerror(err, "in subprocess.send_signal");
   }
 
   /*
+    Unconditionally kill the child process.  The associated signal,
+    :const:`SIGKILL`, cannot be caught by the child process.
+
+    :arg error: optional argument to capture any error encountered
+                when killing the child process
    */
   proc subprocess.kill(out error:syserr) {
     this.send_signal(error, SIGKILL);
@@ -896,6 +941,11 @@ module Spawn {
   }
 
   /*
+    Request termination of the child process.  The associated signal,
+    :const:`SIGTERM`, may be caught and handled by the child process.
+
+    :arg error: optional argument to capture any error encountered
+                when terminating the child process
    */
   proc subprocess.terminate(out error:syserr) {
     this.send_signal(error, SIGTERM);
