@@ -1153,7 +1153,7 @@ module DefaultRectangular {
           idx(dim) = j;
 
           recursiveArrayWriter(idx, dim=dim+1,
-                               last=(last || dim == 1) && (j == lastIdx));
+                               last=(last || dim == 1) && (j == dom.ranges(dim).high));
 
           if isjson || ischpl {
             if j != lastIdx {
