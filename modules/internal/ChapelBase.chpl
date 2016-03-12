@@ -546,8 +546,21 @@ module ChapelBase {
   //
   // min and max
   //
+  inline proc min(x: int(?w), y: int(w)) return if x < y then x else y;
+  inline proc max(x: int(?w), y: int(w)) return if x > y then x else y;
+
+  inline proc min(x: uint(?w), y: uint(w)) return if x < y then x else y;
+  inline proc max(x: uint(?w), y: uint(w)) return if x > y then x else y;
+
+  inline proc min(x: real(?w), y: real(w)) return if x < y then x else y;
+  inline proc max(x: real(?w), y: real(w)) return if x > y then x else y;
+
+  inline proc min(x: imag(?w), y: imag(w)) return if x < y then x else y;
+  inline proc max(x: imag(?w), y: imag(w)) return if x > y then x else y;
+
   inline proc min(x, y) return if x < y then x else y;
   inline proc max(x, y) return if x > y then x else y;
+
   inline proc min(x, y)
     where chpl_isSyncSingleAtomic(x) || chpl_isSyncSingleAtomic(y)
   { compilerError("min() and max() are not allowed on sync/single/atomic arguments - apply readFE/readFF/read() to those arguments first"); }
