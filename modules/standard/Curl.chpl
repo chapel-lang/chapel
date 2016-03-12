@@ -488,10 +488,10 @@ extern const curlopt_low_speed_time             : c_int ;
 extern const curlopt_resume_from                : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_COOKIE.html */
 extern const curlopt_cookie                     : c_int ;
-/* See https://curl.haxx.se/libcurl/c/CURLOPT_httpsHEADER.html */
-extern const curlopt_httpsheader                 : c_int ;
-/* See https://curl.haxx.se/libcurl/c/CURLOPT_httpsPOST.html */
-extern const curlopt_httpspost                   : c_int ;
+/* See https://curl.haxx.se/libcurl/c/CURLOPT_HTTPHEADER.html */
+extern const curlopt_httpheader                 : c_int ;
+/* See https://curl.haxx.se/libcurl/c/CURLOPT_HTTPPOST.html */
+extern const curlopt_httppost                   : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_SSLCERT.html */
 extern const curlopt_sslcert                    : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_KEYPASSWD.html */
@@ -554,8 +554,8 @@ extern const curlopt_autoreferer                : c_int ;
 extern const curlopt_proxyport                  : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_POSTFIELDSIZE.html */
 extern const curlopt_postfieldsize              : c_int ;
-/* See https://curl.haxx.se/libcurl/c/CURLOPT_httpsPROXYTUNNEL.html */
-extern const curlopt_httpsproxytunnel            : c_int ;
+/* See https://curl.haxx.se/libcurl/c/CURLOPT_HTTPPROXYTUNNEL.html */
+extern const curlopt_httpproxytunnel            : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_INTERFACE.html */
 extern const curlopt_interface                  : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_KRBLEVEL.html */
@@ -586,16 +586,16 @@ extern const curlopt_egdsocket                  : c_int ;
 extern const curlopt_connecttimeout             : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_HEADERFUNCTION.html */
 extern const curlopt_headerfunction             : c_int ;
-/* See https://curl.haxx.se/libcurl/c/CURLOPT_httpsGET.html */
-extern const curlopt_httpsget                    : c_int ;
+/* See https://curl.haxx.se/libcurl/c/CURLOPT_HTTPGET.html */
+extern const curlopt_httpget                    : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_SSL_VERIFYHOST.html */
 extern const curlopt_ssl_verifyhost             : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_COOKIEJAR.html */
 extern const curlopt_cookiejar                  : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_SSL_CIPHER_LIST.html */
 extern const curlopt_ssl_cipher_list            : c_int ;
-/* See https://curl.haxx.se/libcurl/c/CURLOPT_https_VERSION.html */
-extern const curlopt_https_version               : c_int ;
+/* See https://curl.haxx.se/libcurl/c/CURLOPT_HTTP_VERSION.html */
+extern const curlopt_http_version               : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_FTP_USE_EPSV.html */
 extern const curlopt_ftp_use_epsv               : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_SSLCERTTYPE.html */
@@ -634,14 +634,14 @@ extern const curlopt_proxytype                  : c_int ;
 extern const curlopt_encoding                   : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_PRIVATE.html */
 extern const curlopt_private                    : c_int ;
-/* See https://curl.haxx.se/libcurl/c/CURLOPT_https200ALIASES.html */
-extern const curlopt_https200aliases             : c_int ;
+/* See https://curl.haxx.se/libcurl/c/CURLOPT_HTTP200ALIASES.html */
+extern const curlopt_http200aliases             : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_UNRESTRICTED_AUTH.html */
 extern const curlopt_unrestricted_auth          : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_FTP_USE_EPRT.html */
 extern const curlopt_ftp_use_eprt               : c_int ;
-/* See https://curl.haxx.se/libcurl/c/CURLOPT_httpsAUTH.html */
-extern const curlopt_httpsauth                   : c_int ;
+/* See https://curl.haxx.se/libcurl/c/CURLOPT_HTTPAUTH.html */
+extern const curlopt_httpauth                   : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_SSL_CTX_FUNCTION.html */
 extern const curlopt_ssl_ctx_function           : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_SSL_CTX_DATA.html */
@@ -722,10 +722,10 @@ extern const curlopt_ftp_ssl_ccc                : c_int ;
 extern const curlopt_timeout_ms                 : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_CONNECTTIMEOUT_MS.html */
 extern const curlopt_connecttimeout_ms          : c_int ;
-/* See https://curl.haxx.se/libcurl/c/CURLOPT_https_TRANSFER_DECODING.html */
-extern const curlopt_https_transfer_decoding     : c_int ;
-/* See https://curl.haxx.se/libcurl/c/CURLOPT_https_CONTENT_DECODING.html */
-extern const curlopt_https_content_decoding      : c_int ;
+/* See https://curl.haxx.se/libcurl/c/CURLOPT_HTTP_TRANSFER_DECODING.html */
+extern const curlopt_http_transfer_decoding     : c_int ;
+/* See https://curl.haxx.se/libcurl/c/CURLOPT_HTTP_CONTENT_DECODING.html */
+extern const curlopt_http_content_decoding      : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_NEW_FILE_PERMS.html */
 extern const curlopt_new_file_perms             : c_int ;
 /* See https://curl.haxx.se/libcurl/c/CURLOPT_NEW_DIRECTORY_PERMS.html */

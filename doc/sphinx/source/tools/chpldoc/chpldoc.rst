@@ -618,7 +618,7 @@ developed by the docutils_ projects and is amended by custom directives to
 support documenting Chapel code. Sphinx_ is used by ``chpldoc`` to render
 reStructuredText as HTML.
 
-.. _reStructuredText: http://docutils.sf.net/rst.html
+.. _reStructuredText: http://docutils.sourceforge.net/rst.html
 .. _docutils: http://docutils.sourceforge.net/
 .. _Sphinx: http://www.sphinx-doc.org/en/stable/
 
