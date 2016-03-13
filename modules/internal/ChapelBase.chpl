@@ -561,14 +561,16 @@ module ChapelBase {
   inline proc min(x, y) return if x < y then x else y;
   inline proc max(x, y) return if x > y then x else y;
 
-  inline proc min(x, y)
-    where chpl_isSyncSingleAtomic(x) || chpl_isSyncSingleAtomic(y)
-  { compilerError("min() and max() are not allowed on sync/single/atomic arguments - apply readFE/readFF/read() to those arguments first"); }
-  inline proc max(x, y)
-    where chpl_isSyncSingleAtomic(x) || chpl_isSyncSingleAtomic(y)
-  { compilerError("max() and min() are not allowed on sync/single/atomic arguments - apply readFE/readFF/read() to those arguments first"); }
   inline proc min(x, y, z...?k) return min(min(x, y), (...z));
   inline proc max(x, y, z...?k) return max(max(x, y), (...z));
+
+  inline proc min(x, y) where isAtomic(x) || isAtomic(y) {
+    compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
+  }
+
+  inline proc max(x, y) where isAtomic(x) || isAtomic(y) {
+    compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
+  }
 
   //
   // More primitive funs
