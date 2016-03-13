@@ -1,0 +1,1 @@
+maxmin-on-atomics.chpl:11: error: min() and max() are not supported for atomic arguments - apply read() to those arguments first
