@@ -22,3 +22,9 @@
 2 <= 3 == true
 2 >  3 == false
 2 >= 3 == false
+3 == 3 == true
+3 != 3 == false
+3 <  3 == false
+3 <= 3 == true
+3 >  3 == false
+3 >= 3 == true
