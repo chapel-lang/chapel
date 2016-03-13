@@ -5851,6 +5851,7 @@ preFold(Expr* expr) {
         fieldcount++;
         if (fieldcount == fieldnum) {
           name = field->name;
+          // break could be here, but might have issues with GCC 5.10
         }
       }
       if (!name) {
@@ -5882,7 +5883,7 @@ preFold(Expr* expr) {
         fieldcount++;
         if (fieldcount == fieldnum) {
           name = field->name;
-          break;
+          // break could be here, but seems to cause issues with GCC 5.10
         }
       }
       if (!name) {
@@ -5916,7 +5917,7 @@ preFold(Expr* expr) {
         fieldcount++;
         if ( 0 == strcmp(field->name,  fieldname) ) {
           num = fieldcount;
-          break;
+          // break could be here, but might have issues with GCC 5.10
         }
       }
       result = new SymExpr(new_IntSymbol(num));
