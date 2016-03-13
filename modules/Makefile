@@ -121,7 +121,7 @@ INTERNAL_MODULES_TO_DOCUMENT =          \
 	internal/ChapelComplex_forDocs.chpl   \
 	internal/ChapelIO.chpl                \
 	internal/ChapelIteratorSupport.chpl   \
-	internal/ChapelLocale_forDocs.chpl    \
+	internal/ChapelLocale.chpl    \
 	internal/ChapelRange.chpl             \
 	internal/ChapelSyncvar.chpl           \
 	internal/ChapelTuple.chpl             \
