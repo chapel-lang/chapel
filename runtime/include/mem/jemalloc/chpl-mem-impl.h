@@ -27,6 +27,8 @@
 #include "jemalloc.h"
 #include "chpl-mem-warning-macros.h"
 
+#define MALLOCX_NO_FLAGS 0
+
 static inline void* chpl_calloc(size_t n, size_t size) {
   return je_calloc(n,size);
 }
@@ -52,17 +54,11 @@ static inline void chpl_free(void* ptr) {
 }
 
 static inline size_t chpl_good_alloc_size(size_t minSize) {
-  // TODO (EJR 12/17/15): can/should we use nallocx()? If so, this will require
-  // using the extended API. Note that the extended API has undefined behavior
-  // for allocations of size 0 so I think a size 0 check will have to be added
-  // to all the above alloc/realloc calls. I'll probably wait till we have some
-  // performance numbers before making that change to make sure there's no
-  // negative impact of doing so.
-  return minSize;
+  if (minSize == 0) { return 0; }
+  return je_nallocx(minSize, MALLOCX_NO_FLAGS);
 }
 
-// TODO (EJR 12/17/15): if we end up using the extended API should we consider
-// adding something like `chpl_sized_free()` sized deallocations that maps down
-// to `sdallocx()`
+// TODO (EJR 03/11/16): Can/should we consider using the extended API? See JIRA
+// issue 190 (https://chapel.atlassian.net/browse/CHAPEL-190) for more info.
 
 #endif

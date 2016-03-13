@@ -1,0 +1,43 @@
+min(1:int(32), 1:int(64)) = 1:int(64)
+max(1:int(32), 1:int(64)) = 1:int(64)
+
+min(1:int(32), 2:int(64)) = 1:int(64)
+max(1:int(32), 2:int(64)) = 2:int(64)
+
+min(2:int(32), 1:int(64)) = 1:int(64)
+max(2:int(32), 1:int(64)) = 2:int(64)
+
+min(1:int(32), 1:uint(32)) = 1:int(64)
+max(1:int(32), 1:uint(32)) = 1:int(64)
+
+min(1:int(32), 2:uint(32)) = 1:int(64)
+max(1:int(32), 2:uint(32)) = 2:int(64)
+
+min(2:int(32), 1:uint(32)) = 1:int(64)
+max(2:int(32), 1:uint(32)) = 2:int(64)
+
+min(1:int(32), 1:int(64)) = 1:int(64)
+max(1:int(32), 1:int(64)) = 1:int(64)
+
+min(1:int(32), 2:int(64)) = 1:int(64)
+max(1:int(32), 2:int(64)) = 2:int(64)
+
+min(2:int(32), 1:int(64)) = 1:int(64)
+max(2:int(32), 1:int(64)) = 2:int(64)
+
+min(1:int(32), 1:uint(32)) = 1:int(64)
+max(1:int(32), 1:uint(32)) = 1:int(64)
+
+min(1:int(32), 2:uint(32)) = 1:int(64)
+max(1:int(32), 2:uint(32)) = 2:int(64)
+
+min(2:int(32), 1:uint(32)) = 1:int(64)
+max(2:int(32), 1:uint(32)) = 2:int(64)
+
+3
+min(1:int(32), 2:int(32)) = 1:int(32)
+max(1:int(32), 2:int(32)) = 2:int(32)
+
+min(1:uint(32), 2:uint(32)) = 1:uint(32)
+max(1:uint(32), 2:uint(32)) = 2:uint(32)
+

@@ -9,7 +9,7 @@ the arrays' domains being measured.
 use BlockDist, Time, Memory;
 
 config param useBlockDist = CHPL_COMM != "none";
-config const perf = !boundsChecking; // performance or --fast mode
+config const perf = false; // performance or --fast mode
 config const reportTime = perf;
 config const reportPerfSizes = perf;
 

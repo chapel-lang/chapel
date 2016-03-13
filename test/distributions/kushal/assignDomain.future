@@ -1,7 +1,0 @@
-bug: unable to assign between non-distributed and distributed domains
-
-This bug limits the types of operations that can be currently done 
-using domains. For instance choosing a subset of an array A[low..hi]
-should be independent of the fact that it is distributed or not.
-However, this bug points out that such a thing would currently not
-be possible.
