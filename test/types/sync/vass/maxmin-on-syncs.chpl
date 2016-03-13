@@ -1,5 +1,3 @@
-// Currently min/max are not allowed on sync/single/atomic vars.
-
 var s1$: sync int = 1;
 var s2$: sync int = 2;
 var si1$: single int = 1;
