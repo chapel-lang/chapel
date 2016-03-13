@@ -4357,6 +4357,14 @@ qioerr qio_conv_parse(c_string fmt,
 
       if( specifier == 's' || specifier == 'S') {
         // Handle base flags modifying string format
+
+        // Note -- when scanning, a precision should adjust the string
+        // format to not end at a whitespace.
+        // This mode scans a particular number of code points.
+        if( scanning && precision != WIDTH_NOT_SET ) {
+          style_out->string_format = QIO_STRING_FORMAT_TOEOF;
+        }
+
         if( base_flag == 'j' ) {
           style_out->string_format = QIO_STRING_FORMAT_JSON;
         } else if( base_flag == 'h' ) {
