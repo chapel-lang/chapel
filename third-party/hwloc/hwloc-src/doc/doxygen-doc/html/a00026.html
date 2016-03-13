@@ -18,7 +18,7 @@
  <tr style="height: 56px;">
   <td style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.1</span>
+   &#160;<span id="projectnumber">1.11.2</span>
    </div>
   </td>
  </tr>
@@ -74,7 +74,7 @@ Basics of discovery components</h2>
 <dl class="section note"><dt>Note</dt><dd>If two discovery components have the same name, only the highest priority one is actually made available. This offers a way for third-party plugins to override existing components.</dd></dl>
 <h2><a class="anchor" id="plugins_disc_register"></a>
 Registering a new discovery component</h2>
-<p>Registering components to the hwloc core relies on a <code><a class="el" href="a00034.html" title="Generic component structure. ">hwloc_component</a></code> structure. Its <code>data</code> field points to the previously defined <code><a class="el" href="a00035.html" title="Discovery component structure. ">hwloc_disc_component</a></code> structure while its <code>type</code> should be HWLOC_COMPONENT_TYPE_DISC. This structure should be named <code>hwloc_&lt;name&gt;_component</code>.</p>
+<p>Registering components to the hwloc core relies on a <code><a class="el" href="a00034.html" title="Generic component structure. ">hwloc_component</a></code> structure. Its <code>data</code> field points to the previously defined <code><a class="el" href="a00035.html" title="Discovery component structure. ">hwloc_disc_component</a></code> structure while its <code>type</code> should be <a class="el" href="a00102.html#gga397a1bf7d21dd073320ad0045340f463a5d6e561f467fe9795a29e7368b613900" title="The data field must point to a struct hwloc_disc_component. ">HWLOC_COMPONENT_TYPE_DISC</a>. This structure should be named <code>hwloc_&lt;name&gt;_component</code>.</p>
 <p>The configure script should be modified to add <code>&lt;name&gt;</code> to its <code>hwloc_components</code> shell variable so that the component is actually available.</p>
 <dl class="section note"><dt>Note</dt><dd>The symbol name of the <code><a class="el" href="a00034.html" title="Generic component structure. ">hwloc_component</a></code> structure is independent of the name of the discovery component mentioned in the previous section.</dd></dl>
 <p>When the component is statically built inside the hwloc library, the symbol <code>hwloc_&lt;name&gt;_component</code> is added by configure to the <code>src/static-components.h</code>. The core then registers all components listed in this file.</p>

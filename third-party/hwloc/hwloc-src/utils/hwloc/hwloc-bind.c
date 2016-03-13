@@ -17,7 +17,7 @@
 
 #include "misc.h"
 
-#ifdef HWLOC_WIN_SYS
+#if defined(HWLOC_WIN_SYS) && !defined(__CYGWIN__)
 #include <process.h>
 #define execvp(a,b) (int)_execvp((a), (const char * const *)(b))
 #endif
@@ -343,9 +343,11 @@ int main(int argc, char *argv[])
       char *s;
       hwloc_bitmap_asprintf(&s, membind_set);
       if (pid_number > 0)
-        fprintf(stderr, "hwloc_set_proc_membind %s %d failed (errno %d %s)\n", s, pid_number, bind_errno, errmsg);
+        fprintf(stderr, "hwloc_set_proc_membind %s (policy %u flags %x) PID %d failed (errno %d %s)\n",
+		s, membind_policy, membind_flags, pid_number, bind_errno, errmsg);
       else
-        fprintf(stderr, "hwloc_set_membind %s failed (errno %d %s)\n", s, bind_errno, errmsg);
+        fprintf(stderr, "hwloc_set_membind %s (policy %u flags %x) failed (errno %d %s)\n",
+		s, membind_policy, membind_flags, bind_errno, errmsg);
       free(s);
     }
     if (ret && !force)
@@ -365,6 +367,11 @@ int main(int argc, char *argv[])
       fprintf(stderr, "binding on cpu set %s\n", s);
       free(s);
     }
+    if (got_membind && !hwloc_bitmap_isequal(membind_set, cpubind_set)) {
+      if (verbose)
+	fprintf(stderr, "Conflicting CPU and memory binding requested, adding HWLOC_CPUBIND_NOMEMBIND flag.\n");
+      cpubind_flags |= HWLOC_CPUBIND_NOMEMBIND;
+    }
     if (single)
       hwloc_bitmap_singlify(cpubind_set);
     if (pid_number > 0)
@@ -377,9 +384,11 @@ int main(int argc, char *argv[])
       char *s;
       hwloc_bitmap_asprintf(&s, cpubind_set);
       if (pid_number > 0)
-        fprintf(stderr, "hwloc_set_proc_cpubind %s %d failed (errno %d %s)\n", s, pid_number, bind_errno, errmsg);
+        fprintf(stderr, "hwloc_set_proc_cpubind %s (flags %x) PID %d failed (errno %d %s)\n",
+		s, cpubind_flags, pid_number, bind_errno, errmsg);
       else
-        fprintf(stderr, "hwloc_set_cpubind %s failed (errno %d %s)\n", s, bind_errno, errmsg);
+        fprintf(stderr, "hwloc_set_cpubind %s (flags %x) failed (errno %d %s)\n",
+		s, cpubind_flags, bind_errno, errmsg);
       free(s);
     }
     if (ret && !force)

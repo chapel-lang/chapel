@@ -15,7 +15,7 @@
 #include <errno.h>
 #include <assert.h>
 
-#ifdef HWLOC_WIN_SYS
+#if defined(HWLOC_WIN_SYS) && !defined(__CYGWIN__)
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>

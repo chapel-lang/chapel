@@ -18,7 +18,7 @@
  <tr style="height: 56px;">
   <td style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.1</span>
+   &#160;<span id="projectnumber">1.11.2</span>
    </div>
   </td>
  </tr>
@@ -43,8 +43,8 @@
 <div class="contents">
 <div class="textblock"><p>hwloc offers the ability to export topologies to XML files and reload them later. This is for instance useful for loading topologies faster (see <a class="el" href="a00030.html#faq_xml">I do not want hwloc to rediscover my enormous machine topology every time I rerun a process</a>), manipulating other nodes' topology, or avoiding the need for privileged processes (see <a class="el" href="a00030.html#faq_privileged">Does hwloc require privileged access?</a>).</p>
 <p>Topologies may be exported to XML files thanks to <a class="el" href="a00086.html#ga2bf166eda4d3605362ac86f77684002a" title="Export the topology into an XML file. ">hwloc_topology_export_xml()</a>, or to a XML memory buffer with <a class="el" href="a00086.html#ga7cbf8a2d8579d192911007650366fc8a" title="Export the topology into a newly-allocated XML memory buffer. ">hwloc_topology_export_xmlbuffer()</a>. The lstopo program can also serve as a XML topology export tool.</p>
-<p>XML topologies may then be reloaded later with <a class="el" href="a00079.html#ga879439b7ee99407ee911b3ac64e9a25e" title="Enable XML-file based topology. ">hwloc_topology_set_xml()</a> and <a class="el" href="a00079.html#ga2745616b65595e1c1e579ecc7e461fa8" title="Enable XML based topology using a memory buffer (instead of a file, as with hwloc_topology_set_xml())...">hwloc_topology_set_xmlbuffer()</a>. The XMLFILE environment variable also tells hwloc to load the topology from the given XML file.</p>
-<dl class="section note"><dt>Note</dt><dd>Loading XML topologies disables binding because the loaded topology may not correspond to the physical machine that loads it. This behavior may be reverted by asserting that loaded file really matches the underlying system with the HWLOC_THISSYSTEM environment variable or the HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM topology flag.</dd>
+<p>XML topologies may then be reloaded later with <a class="el" href="a00079.html#ga879439b7ee99407ee911b3ac64e9a25e" title="Enable XML-file based topology. ">hwloc_topology_set_xml()</a> and <a class="el" href="a00079.html#ga2745616b65595e1c1e579ecc7e461fa8" title="Enable XML based topology using a memory buffer (instead of a file, as with hwloc_topology_set_xml())...">hwloc_topology_set_xmlbuffer()</a>. The HWLOC_XMLFILE environment variable also tells hwloc to load the topology from the given XML file.</p>
+<dl class="section note"><dt>Note</dt><dd>Loading XML topologies disables binding because the loaded topology may not correspond to the physical machine that loads it. This behavior may be reverted by asserting that loaded file really matches the underlying system with the HWLOC_THISSYSTEM environment variable or the <a class="el" href="a00079.html#ggada025d3ec20b4b420f8038d23d6e7bdea6ecb6abc6a0bb75e81564f8bca85783b" title="Assume that the selected backend provides the topology for the system on which we are running...">HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM</a> topology flag.</dd>
 <dd>
 hwloc also offers the ability to export/import <a class="el" href="a00099.html">Topology differences</a>.</dd>
 <dd>

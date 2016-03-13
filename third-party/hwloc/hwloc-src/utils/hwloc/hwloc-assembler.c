@@ -6,11 +6,13 @@
 #include <private/autogen/config.h>
 #include <hwloc.h>
 
+#include "misc.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-static void usage(char *name, FILE *where)
+void usage(const char *name, FILE *where)
 {
   fprintf (where, "Usage: %s [options] <output>.xml [-n <name1] <input1>.xml [-n name2] <input2>.xml ...\n", name);
   fprintf (where, "Options:\n");

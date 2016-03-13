@@ -18,7 +18,7 @@
  <tr style="height: 56px;">
   <td style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.1</span>
+   &#160;<span id="projectnumber">1.11.2</span>
    </div>
   </td>
  </tr>
@@ -69,6 +69,10 @@ hwloc-ps</h1>
 <h1><a class="anchor" id="cli_hwloc_gather"></a>
 hwloc-gather-topology</h1>
 <p>hwloc-gather-topology is a Linux-specific tool that saves the relevant topology files of the current machine into a tarball (and the corresponding lstopo output). These files may be used later (possibly offline) for simulating or debugging a machine without actually running on it.</p>
+<h1><a class="anchor" id="cli_hwloc_dump_hwdata"></a>
+hwloc-dump-hwdata</h1>
+<p>hwloc-dump-hwdata is a Linux and x86-specific tool that dumps (during boot, privileged) some topology and locality information from raw hardware files (SMBIOS and ACPI tables) to human-readable and world-accessible files that the hwloc library will later reuse.</p>
+<p>Currently only used on Intel Knights Landing Xeon Phi platforms. See <a class="el" href="a00030.html#faq_knl_dump">Why do I need hwloc-dump-hwdata for caches on Intel Knights Landing Xeon Phi?</a>.</p>
 <h1><a class="anchor" id="cli_hwloc_distances"></a>
 hwloc-distances</h1>
 <p>hwloc-distances displays all distance matrices attached to the topology. Note that lstopo may also display distance matrices in its verbose textual output. However lstopo only prints matrices that cover the entire topology while hwloc-distances also displays matrices that ignore part of the topology.</p>

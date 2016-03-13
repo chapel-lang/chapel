@@ -18,7 +18,7 @@
  <tr style="height: 56px;">
   <td style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.1</span>
+   &#160;<span id="projectnumber">1.11.2</span>
    </div>
   </td>
  </tr>
@@ -67,25 +67,25 @@ OS devices</h1>
 <p>Here is a list of OS device objects commonly created by hwloc components when I/O discovery is enabled and supported.</p>
 <ul>
 <li>
-Hard disks (HWLOC_OBJ_OSDEV_BLOCK) <ul>
+Hard disks (<a class="el" href="a00076.html#gga64f5d539df299c97ae80ce53fc4b56c0a689b0488c3c0d08d116751c6b9cb8871" title="Operating system block device. For instance &quot;sda&quot; on Linux. ">HWLOC_OBJ_OSDEV_BLOCK</a>) <ul>
 <li>
 <em>sda</em> (Linux component) </li>
 </ul>
 </li>
 <li>
-Network interfaces (HWLOC_OBJ_OSDEV_NETWORK) <ul>
+Network interfaces (<a class="el" href="a00076.html#gga64f5d539df299c97ae80ce53fc4b56c0ab715d81155f771573c8682dffc65021b" title="Operating system network device. For instance the &quot;eth0&quot; interface on Linux. ">HWLOC_OBJ_OSDEV_NETWORK</a>) <ul>
 <li>
 <em>eth0</em>, <em>wlan0</em>, <em>ib0</em> (Linux component) </li>
 </ul>
 </li>
 <li>
-OpenFabrics HCAs (HWLOC_OBJ_OSDEV_OPENFABRICS) <ul>
+OpenFabrics HCAs (<a class="el" href="a00076.html#gga64f5d539df299c97ae80ce53fc4b56c0a52157d03694fdae82dddd57ca8c973b6" title="Operating system openfabrics device. For instance the &quot;mlx4_0&quot; InfiniBand HCA device on Linux...">HWLOC_OBJ_OSDEV_OPENFABRICS</a>) <ul>
 <li>
 <em>mlx4_0</em>, <em>qib0</em> (Linux component) </li>
 </ul>
 </li>
 <li>
-GPUs (HWLOC_OBJ_OSDEV_GPU) <ul>
+GPUs (<a class="el" href="a00076.html#gga64f5d539df299c97ae80ce53fc4b56c0aa3a09798ef2836abb236dc3a645ffc90" title="Operating system GPU device. For instance &quot;:0.0&quot; for a GL display, &quot;card0&quot; for a Linux DRM device...">HWLOC_OBJ_OSDEV_GPU</a>) <ul>
 <li>
 <em>nvml0</em> for the first NVML device (NVML component, using the NVIDIA Management Library) </li>
 <li>
@@ -93,7 +93,7 @@ GPUs (HWLOC_OBJ_OSDEV_GPU) <ul>
 </ul>
 </li>
 <li>
-Co-Processors (HWLOC_OBJ_OSDEV_COPROC) <ul>
+Co-Processors (<a class="el" href="a00076.html#gga64f5d539df299c97ae80ce53fc4b56c0a46f8927e1c3e137eaa86cc8f6861fb83" title="Operating system co-processor device. For instance &quot;mic0&quot; for a Xeon Phi (MIC) on Linux...">HWLOC_OBJ_OSDEV_COPROC</a>) <ul>
 <li>
 <em>opencl0d0</em> for the first device of the first OpenCL platform, <em>opencl1d3</em> for the fourth device of the second OpenCL platform (OpenCL component) </li>
 <li>
@@ -103,9 +103,9 @@ Co-Processors (HWLOC_OBJ_OSDEV_COPROC) <ul>
 </ul>
 </li>
 <li>
-DMA engine channel (HWLOC_OBJ_OSDEV_DMA) <ul>
+DMA engine channel (<a class="el" href="a00076.html#gga64f5d539df299c97ae80ce53fc4b56c0a827ad1643360711a8b6c6af671366791" title="Operating system dma engine device. For instance the &quot;dma0chan0&quot; DMA channel on Linux. ">HWLOC_OBJ_OSDEV_DMA</a>) <ul>
 <li>
-<em>dma0chan0</em> (Linux component) when full I/O discovery is enabled (HWLOC_TOPOLOGY_FLAG_WHOLE_IO) </li>
+<em>dma0chan0</em> (Linux component) when full I/O discovery is enabled (<a class="el" href="a00079.html#ggada025d3ec20b4b420f8038d23d6e7bdea4a41dc181649ef81c2dcd44a54e271b9" title="Detect the whole PCI hierarchy. ">HWLOC_TOPOLOGY_FLAG_WHOLE_IO</a>) </li>
 </ul>
 </li>
 </ul>

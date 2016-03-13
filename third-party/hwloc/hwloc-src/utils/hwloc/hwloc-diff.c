@@ -7,7 +7,9 @@
 #include <hwloc.h>
 #include <hwloc/diff.h>
 
-static void usage(const char *callname __hwloc_attribute_unused, FILE *where)
+#include "misc.h"
+
+void usage(const char *callname __hwloc_attribute_unused, FILE *where)
 {
 	fprintf(where, "Usage: hwloc-diff [options] <old.xml> <new.xml> [<output.diff.xml>]\n");
 	fprintf(where, "Options:\n");

@@ -18,7 +18,7 @@
  <tr style="height: 56px;">
   <td style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.1</span>
+   &#160;<span id="projectnumber">1.11.2</span>
    </div>
   </td>
  </tr>
@@ -42,7 +42,7 @@
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>Some operating systems do not systematically provide separate functions for CPU and memory binding. This means that CPU binding functions may have have effects on the memory binding policy. Likewise, changing the memory binding policy may change the CPU binding of the current thread. This is often not a problem for applications, so by default hwloc will make use of these functions when they provide better binding support.</p>
-<p>If the application does not want the CPU binding to change when changing the memory policy, it needs to use the HWLOC_MEMBIND_NOCPUBIND flag to prevent hwloc from using OS functions which would change the CPU binding. Additionally, HWLOC_CPUBIND_NOMEMBIND can be passed to CPU binding function to prevent hwloc from using OS functions would change the memory binding policy. Of course, using these flags will reduce hwloc's overall support for binding, so their use is discouraged.</p>
+<p>If the application does not want the CPU binding to change when changing the memory policy, it needs to use the <a class="el" href="a00083.html#ggab00475fd98815bf4fb9aaf752030e7d2aad6b9eaf2ee324ca58dc8f58094b9997" title="Avoid any effect on CPU binding. ">HWLOC_MEMBIND_NOCPUBIND</a> flag to prevent hwloc from using OS functions which would change the CPU binding. Additionally, <a class="el" href="a00082.html#gga217dc8d373f8958cc93c154ebce1c71ca41ce440443cc3087caed95ab60edcad6" title="Avoid any effect on memory binding. ">HWLOC_CPUBIND_NOMEMBIND</a> can be passed to CPU binding function to prevent hwloc from using OS functions would change the memory binding policy. Of course, using these flags will reduce hwloc's overall support for binding, so their use is discouraged.</p>
 <p>One can avoid using these flags but still closely control both memory and CPU binding by allocating memory, touching each page in the allocated memory, and then changing the CPU binding. The already-really-allocated memory will then be "locked" to physical memory and will not be migrated. Thus, even if the memory binding policy gets changed by the CPU binding order, the already-allocated memory will not change with it. When binding and allocating further memory, the CPU binding should be performed again in case the memory binding altered the previously-selected CPU binding.</p>
 <p>Not all operating systems support the notion of a "current" memory binding policy for the current process, but such operating systems often still provide a way to allocate data on a given node set. Conversely, some operating systems support the notion of a "current" memory binding policy and do not permit allocating data on a specific node set without changing the current policy and allocate the data. To provide the most powerful coverage of these facilities, hwloc provides:</p>
 <ul>

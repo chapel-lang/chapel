@@ -103,9 +103,12 @@ bin_PROGRAMS = hwloc-annotate$(EXEEXT) hwloc-assembler$(EXEEXT) \
 	hwloc-bind$(EXEEXT) hwloc-calc$(EXEEXT) hwloc-diff$(EXEEXT) \
 	hwloc-distances$(EXEEXT) hwloc-distrib$(EXEEXT) \
 	hwloc-info$(EXEEXT) hwloc-patch$(EXEEXT) hwloc-ps$(EXEEXT)
+@HWLOC_HAVE_LINUX_TRUE@@HWLOC_HAVE_X86_TRUE@sbin_PROGRAMS = hwloc-dump-hwdata$(EXEEXT)
 @HWLOC_HAVE_LINUX_TRUE@am__append_1 = hwloc-gather-topology
 @HWLOC_HAVE_MINGW32_FALSE@@HWLOC_HAVE_PLUGINS_TRUE@am__append_2 = test-fake-plugin.sh
-@HWLOC_HAVE_LINUX_TRUE@am__append_3 = $(hgt_page)
+@HWLOC_HAVE_LINUX_TRUE@@HWLOC_HAVE_X86_TRUE@am__append_3 = hwloc-dump-hwdata.1in
+@HWLOC_HAVE_LINUX_TRUE@am__append_4 = $(hgt_page)
+@HWLOC_HAVE_LINUX_TRUE@@HWLOC_HAVE_X86_TRUE@am__append_5 = $(hdh_page)
 subdir = utils/hwloc
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hwloc.m4 \
@@ -134,9 +137,10 @@ CONFIG_CLEAN_FILES = hwloc-assembler-remote hwloc-compress-dir \
 	test-hwloc-distances.sh test-hwloc-distrib.sh \
 	test-hwloc-info.sh test-fake-plugin.sh
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)" \
-	"$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man7dir)"
-PROGRAMS = $(bin_PROGRAMS)
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)" \
+	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" \
+	"$(DESTDIR)$(man7dir)"
+PROGRAMS = $(bin_PROGRAMS) $(sbin_PROGRAMS)
 hwloc_annotate_SOURCES = hwloc-annotate.c
 hwloc_annotate_OBJECTS = hwloc-annotate.$(OBJEXT)
 hwloc_annotate_LDADD = $(LDADD)
@@ -169,6 +173,12 @@ hwloc_distrib_SOURCES = hwloc-distrib.c
 hwloc_distrib_OBJECTS = hwloc-distrib.$(OBJEXT)
 hwloc_distrib_LDADD = $(LDADD)
 hwloc_distrib_DEPENDENCIES = $(HWLOC_top_builddir)/src/libhwloc.la
+am_hwloc_dump_hwdata_OBJECTS = hwloc-dump-hwdata.$(OBJEXT) \
+	hwloc-dump-hwdata-knl.$(OBJEXT)
+hwloc_dump_hwdata_OBJECTS = $(am_hwloc_dump_hwdata_OBJECTS)
+hwloc_dump_hwdata_LDADD = $(LDADD)
+hwloc_dump_hwdata_DEPENDENCIES =  \
+	$(HWLOC_top_builddir)/src/libhwloc.la
 hwloc_info_SOURCES = hwloc-info.c
 hwloc_info_OBJECTS = hwloc-info.$(OBJEXT)
 hwloc_info_LDADD = $(LDADD)
@@ -245,10 +255,12 @@ am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = hwloc-annotate.c hwloc-assembler.c hwloc-bind.c \
 	$(hwloc_calc_SOURCES) hwloc-diff.c hwloc-distances.c \
-	hwloc-distrib.c hwloc-info.c hwloc-patch.c hwloc-ps.c
+	hwloc-distrib.c $(hwloc_dump_hwdata_SOURCES) hwloc-info.c \
+	hwloc-patch.c hwloc-ps.c
 DIST_SOURCES = hwloc-annotate.c hwloc-assembler.c hwloc-bind.c \
 	$(hwloc_calc_SOURCES) hwloc-diff.c hwloc-distances.c \
-	hwloc-distrib.c hwloc-info.c hwloc-patch.c hwloc-ps.c
+	hwloc-distrib.c $(hwloc_dump_hwdata_SOURCES) hwloc-info.c \
+	hwloc-patch.c hwloc-ps.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -668,8 +680,12 @@ EXTRA_DIST = test-hwloc-annotate.input test-hwloc-annotate.output \
 	test-hwloc-diffpatch.input1 test-hwloc-diffpatch.input2 \
 	test-hwloc-distances.output test-hwloc-distrib.output \
 	test-hwloc-info.output $(man7_pages:.7=.7in) \
-	$(man1_pages:.1=.1in) $(hgt_page:.1=.1in)
+	$(man1_pages:.1=.1in) $(hgt_page:.1=.1in) $(hdh_page:.1=.1in)
 noinst_HEADERS = misc.h
+hwloc_dump_hwdata_SOURCES = \
+	hwloc-dump-hwdata.c \
+	hwloc-dump-hwdata-knl.c
+
 hwloc_calc_SOURCES = \
         hwloc-calc.h \
         hwloc-calc.c
@@ -687,26 +703,21 @@ bin_SCRIPTS = hwloc-assembler-remote hwloc-compress-dir \
 
 # Only install man pages if we're building in standalone mode
 man7_pages = hwloc.7
-nodist_man_MANS = $(man7_pages) $(man1_pages) $(am__append_3)
-man1_pages = \
-        hwloc-annotate.1 \
-        hwloc-assembler.1 \
-        hwloc-assembler-remote.1 \
-        hwloc-bind.1 \
-        hwloc-calc.1 \
-        hwloc-compress-dir.1 \
-        hwloc-diff.1 \
-        hwloc-distances.1 \
-        hwloc-distrib.1 \
-        hwloc-info.1 \
-        hwloc-patch.1 \
-        hwloc-ps.1
-
+nodist_man_MANS = $(man7_pages) $(man1_pages) $(am__append_4) \
+	$(am__append_5)
+man1_pages = hwloc-annotate.1 hwloc-assembler.1 \
+	hwloc-assembler-remote.1 hwloc-bind.1 hwloc-calc.1 \
+	hwloc-compress-dir.1 hwloc-diff.1 hwloc-distances.1 \
+	hwloc-distrib.1 hwloc-info.1 hwloc-patch.1 hwloc-ps.1 \
+	$(am__append_3)
 
 # Only install the gather-topology page if we're on Linux, but we need
 # to include it in the tarball, regardless of what OS we're building
 # on.
 hgt_page = hwloc-gather-topology.1
+
+# Same for dump-hwdata page on Linux/x86
+hdh_page = hwloc-dump-hwdata.1
 all: all-am
 
 .SUFFIXES:
@@ -813,6 +824,55 @@ clean-binPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+install-sbinPROGRAMS: $(sbin_PROGRAMS)
+	@$(NORMAL_INSTALL)
+	@list='$(sbin_PROGRAMS)'; test -n "$(sbindir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(sbindir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(sbindir)" || exit 1; \
+	fi; \
+	for p in $$list; do echo "$$p $$p"; done | \
+	sed 's/$(EXEEXT)$$//' | \
+	while read p p1; do if test -f $$p \
+	 || test -f $$p1 \
+	  ; then echo "$$p"; echo "$$p"; else :; fi; \
+	done | \
+	sed -e 'p;s,.*/,,;n;h' \
+	    -e 's|.*|.|' \
+	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
+	sed 'N;N;N;s,\n, ,g' | \
+	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1 } \
+	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
+	    if ($$2 == $$4) files[d] = files[d] " " $$1; \
+	    else { print "f", $$3 "/" $$4, $$1; } } \
+	  END { for (d in files) print "f", d, files[d] }' | \
+	while read type dir files; do \
+	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
+	    test -z "$$files" || { \
+	    echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(sbindir)$$dir'"; \
+	    $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(sbindir)$$dir" || exit $$?; \
+	    } \
+	; done
+
+uninstall-sbinPROGRAMS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(sbin_PROGRAMS)'; test -n "$(sbindir)" || list=; \
+	files=`for p in $$list; do echo "$$p"; done | \
+	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
+	      -e 's/$$/$(EXEEXT)/' \
+	`; \
+	test -n "$$list" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(sbindir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(sbindir)" && rm -f $$files
+
+clean-sbinPROGRAMS:
+	@list='$(sbin_PROGRAMS)'; test -n "$$list" || exit 0; \
+	echo " rm -f" $$list; \
+	rm -f $$list || exit $$?; \
+	test -n "$(EXEEXT)" || exit 0; \
+	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
+	echo " rm -f" $$list; \
+	rm -f $$list
 
 hwloc-annotate$(EXEEXT): $(hwloc_annotate_OBJECTS) $(hwloc_annotate_DEPENDENCIES) $(EXTRA_hwloc_annotate_DEPENDENCIES) 
 	@rm -f hwloc-annotate$(EXEEXT)
@@ -841,6 +901,10 @@ hwloc-distances$(EXEEXT): $(hwloc_distances_OBJECTS) $(hwloc_distances_DEPENDENC
 hwloc-distrib$(EXEEXT): $(hwloc_distrib_OBJECTS) $(hwloc_distrib_DEPENDENCIES) $(EXTRA_hwloc_distrib_DEPENDENCIES) 
 	@rm -f hwloc-distrib$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(hwloc_distrib_OBJECTS) $(hwloc_distrib_LDADD) $(LIBS)
+
+hwloc-dump-hwdata$(EXEEXT): $(hwloc_dump_hwdata_OBJECTS) $(hwloc_dump_hwdata_DEPENDENCIES) $(EXTRA_hwloc_dump_hwdata_DEPENDENCIES) 
+	@rm -f hwloc-dump-hwdata$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(hwloc_dump_hwdata_OBJECTS) $(hwloc_dump_hwdata_LDADD) $(LIBS)
 
 hwloc-info$(EXEEXT): $(hwloc_info_OBJECTS) $(hwloc_info_DEPENDENCIES) $(EXTRA_hwloc_info_DEPENDENCIES) 
 	@rm -f hwloc-info$(EXEEXT)
@@ -902,6 +966,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc-diff.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc-distances.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc-distrib.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc-dump-hwdata-knl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc-dump-hwdata.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc-info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc-patch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hwloc-ps.Po@am__quote@
@@ -1328,7 +1394,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(PROGRAMS) $(SCRIPTS) $(MANS) $(HEADERS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man7dir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man7dir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -1366,7 +1432,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-libtool \
+	clean-sbinPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -1392,7 +1459,8 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-binPROGRAMS install-binSCRIPTS
+install-exec-am: install-binPROGRAMS install-binSCRIPTS \
+	install-sbinPROGRAMS
 	@$(NORMAL_INSTALL)
 	$(MAKE) $(AM_MAKEFLAGS) install-exec-hook
 install-html: install-html-am
@@ -1433,29 +1501,31 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS uninstall-man
+uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS uninstall-man \
+	uninstall-sbinPROGRAMS
 
 uninstall-man: uninstall-man1 uninstall-man7
 
 .MAKE: check-am install-am install-exec-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-TESTS check-am clean \
-	clean-binPROGRAMS clean-generic clean-libtool cscopelist-am \
-	ctags ctags-am distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-local distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-binPROGRAMS install-binSCRIPTS install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-exec-hook install-html install-html-am \
-	install-info install-info-am install-man install-man1 \
-	install-man7 install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am recheck tags tags-am \
-	uninstall uninstall-am uninstall-binPROGRAMS \
-	uninstall-binSCRIPTS uninstall-man uninstall-man1 \
-	uninstall-man7
+	clean-binPROGRAMS clean-generic clean-libtool \
+	clean-sbinPROGRAMS cscopelist-am ctags ctags-am distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-local distclean-tags distdir dvi dvi-am html html-am \
+	info info-am install install-am install-binPROGRAMS \
+	install-binSCRIPTS install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-exec-hook \
+	install-html install-html-am install-info install-info-am \
+	install-man install-man1 install-man7 install-pdf \
+	install-pdf-am install-ps install-ps-am install-sbinPROGRAMS \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am recheck tags tags-am uninstall \
+	uninstall-am uninstall-binPROGRAMS uninstall-binSCRIPTS \
+	uninstall-man uninstall-man1 uninstall-man7 \
+	uninstall-sbinPROGRAMS
 
 .PRECIOUS: Makefile
 

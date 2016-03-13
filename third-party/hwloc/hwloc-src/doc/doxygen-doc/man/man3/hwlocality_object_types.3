@@ -1,4 +1,4 @@
-.TH "hwlocality_object_types" 3 "Thu Oct 15 2015" "Version 1.11.1" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_object_types" 3 "Thu Dec 17 2015" "Version 1.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -160,7 +160,7 @@ Core\&. A computation unit (may be shared by several logical processors)\&.
 Processing Unit, or (Logical) Processor\&. An execution unit (may share a core with some other logical processors, e\&.g\&. in the case of an SMT core)\&. Objects of this kind are always reported and can thus be used as fallback when others are not\&. 
 .TP
 \fB\fIHWLOC_OBJ_GROUP \fP\fP
-Group objects\&. Objects which do not fit in the above but are detected by hwloc and are useful to take into account for affinity\&. For instance, some operating systems expose their arbitrary processors aggregation this way\&. And hwloc may insert such objects to group NUMA nodes according to their distances\&. These objects are ignored when they do not bring any structure\&. 
+Group objects\&. Objects which do not fit in the above but are detected by hwloc and are useful to take into account for affinity\&. For instance, some operating systems expose their arbitrary processors aggregation this way\&. And hwloc may insert such objects to group NUMA nodes according to their distances\&. See also \fBWhat are these Group objects in my topology?\fP\&. These objects are ignored when they do not bring any structure\&. 
 .TP
 \fB\fIHWLOC_OBJ_MISC \fP\fP
 Miscellaneous objects\&. Objects without particular meaning, that can e\&.g\&. be added by the application for its own use, or by hwloc for miscellaneous objects such as MemoryModule (DIMMs)\&. 

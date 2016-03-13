@@ -63,17 +63,17 @@ topo_cairo_box(void *_output, int r, int g, int b, unsigned depth __hwloc_attrib
   struct lstopo_cairo_output *coutput = _output;
   cairo_t *c = coutput->context;
 
-  if (!coutput->drawing) {
-    if (x > coutput->max_x)
-      coutput->max_x = x;
-    if (x + width > coutput->max_x)
-      coutput->max_x = x + width;
-    if (y > coutput->max_y)
-      coutput->max_y = y;
-    if (y + height > coutput->max_y)
-      coutput->max_y = y + height;
+  if (x > coutput->max_x)
+    coutput->max_x = x;
+  if (x + width > coutput->max_x)
+    coutput->max_x = x + width;
+  if (y > coutput->max_y)
+    coutput->max_y = y;
+  if (y + height > coutput->max_y)
+    coutput->max_y = y + height;
+
+  if (!coutput->drawing)
     return;
-  }
 
   cairo_rectangle(c, x, y, width, height);
   cairo_set_source_rgb(c, (float)r / 255, (float) g / 255, (float) b / 255);
@@ -91,17 +91,17 @@ topo_cairo_line(void *_output, int r, int g, int b, unsigned depth __hwloc_attri
   struct lstopo_cairo_output *coutput = _output;
   cairo_t *c = coutput->context;
 
-  if (!coutput->drawing) {
-    if (x1 > coutput->max_x)
-      coutput->max_x = x1;
-    if (x2 > coutput->max_x)
-      coutput->max_x = x2;
-    if (y1 > coutput->max_y)
-      coutput->max_y = y1;
-    if (y2 > coutput->max_y)
-      coutput->max_y = y2;
+  if (x1 > coutput->max_x)
+    coutput->max_x = x1;
+  if (x2 > coutput->max_x)
+    coutput->max_x = x2;
+  if (y1 > coutput->max_y)
+    coutput->max_y = y1;
+  if (y2 > coutput->max_y)
+    coutput->max_y = y2;
+
+  if (!coutput->drawing)
     return;
-  }
 
   cairo_move_to(c, x1, y1);
   cairo_set_source_rgb(c, (float) r / 255, (float) g / 255, (float) b / 255);
@@ -177,6 +177,7 @@ struct lstopo_x11_output {
   int last_screen_width, last_screen_height;	/** last visible part size */
   int width, height;				/** total normal display size */
   int x, y;					/** top left corner of the visible part */
+  float scale, last_scale;
 };
 
 static void
@@ -252,10 +253,24 @@ x11_init(void *_disp)
   disp->orig_gridsize = gridsize;
   disp->x = 0;
   disp->y = 0;
+  disp->scale = disp->last_scale = 1.0f;
+  /* TODO: if window got truncated, scale down? */
 
   x11_create(disp, coutput->max_x, coutput->max_y);
 
   XMapWindow(dpy, top);
+
+  printf("\n");
+  printf("Keyboard shortcuts:\n");
+  printf(" Zoom-in or out .................... + -\n");
+  printf(" Try to fit scale to window ........ f F\n");
+  printf(" Reset scale to default ............ 1\n");
+  printf(" Scroll vertically ................. Up Down PageUp PageDown\n");
+  printf(" Scroll horizontally ............... Left Right Ctrl+PageUp/Down\n");
+  printf(" Scroll to the top-left corner ..... Home\n");
+  printf(" Scroll to the bottom-right corner . End\n");
+  printf(" Exit .............................. q Q Esc\n");
+  printf("\n\n");
 }
 
 static struct draw_methods x11_draw_methods = {
@@ -271,6 +286,36 @@ static struct draw_methods x11_draw_methods = {
 static void
 move_x11(struct lstopo_x11_output *disp)
 {
+  if (disp->scale != disp->last_scale) {
+    disp->x = disp->scale / disp->last_scale * (float)disp->x;
+    disp->y = disp->scale / disp->last_scale * (float)disp->y;
+  }
+
+  if (disp->screen_width != disp->last_screen_width
+      || disp->screen_height != disp->last_screen_height
+      || disp->scale != disp->last_scale) {
+    disp->last_screen_width = disp->screen_width;
+    disp->last_screen_height = disp->screen_height;
+    disp->last_scale = disp->scale;
+    fontsize = disp->orig_fontsize * disp->scale;
+    gridsize = disp->orig_gridsize * disp->scale;
+
+    x11_destroy(disp);
+
+    x11_create(disp, disp->width, disp->height);
+    disp->coutput.max_x = 0;
+    disp->coutput.max_y = 0;
+    topo_cairo_paint(&disp->coutput);
+    if (disp->coutput.max_x > disp->width || disp->coutput.max_y > disp->height) {
+      /* need to extend the window and redraw */
+      x11_destroy(disp);
+      x11_create(disp, disp->coutput.max_x, disp->coutput.max_y);
+      topo_cairo_paint(&disp->coutput);
+    }
+    disp->width = disp->coutput.max_x;
+    disp->height = disp->coutput.max_y;
+  }
+
   if (disp->width <= disp->screen_width) {
     disp->x = 0;
   } else {
@@ -287,31 +332,6 @@ move_x11(struct lstopo_x11_output *disp)
       disp->y = 0;
     if (disp->y >= disp->height - disp->screen_height)
       disp->y = disp->height - disp->screen_height;
-  }
-
- if (disp->screen_width > disp->width && disp->screen_height > disp->height
-   && (disp->screen_width != disp->last_screen_width
-   || disp->screen_height != disp->last_screen_height)) {
-    disp->last_screen_width = disp->screen_width;
-    disp->last_screen_height = disp->screen_height;
-    fontsize = disp->orig_fontsize;
-    gridsize = disp->orig_gridsize;
-    if (disp->screen_width > disp->width) {
-      fontsize = disp->orig_fontsize * disp->screen_width / disp->width;
-      gridsize = disp->orig_gridsize * disp->screen_width / disp->width;
-    }
-    if (disp->screen_height > disp->height) {
-      unsigned int new_fontsize = disp->orig_fontsize * disp->screen_height / disp->height;
-      unsigned int new_gridsize = disp->orig_gridsize * disp->screen_height / disp->height;
-      if (new_fontsize < fontsize)
-	fontsize = new_fontsize;
-      if (new_gridsize < gridsize)
-	gridsize = new_gridsize;
-    }
-
-    x11_destroy(disp);
-    x11_create(disp, disp->screen_width, disp->screen_height);
-    topo_cairo_paint(&disp->coutput);
   }
 }
 
@@ -358,16 +378,23 @@ output_x11(struct lstopo_output *loutput, const char *filename)
 	  disp->y -= e.xmotion.y_root - y;
 	  x = e.xmotion.x_root;
 	  y = e.xmotion.y_root;
-          move_x11(disp);
+	  move_x11(disp);
 	}
 	break;
-      case ConfigureNotify:
+      case ConfigureNotify: {
+	float wscale, hscale;
 	disp->screen_width = e.xconfigure.width;
 	disp->screen_height = e.xconfigure.height;
-        move_x11(disp);
+	wscale = disp->screen_width / (float)disp->width;
+	hscale = disp->screen_height / (float)disp->height;
+	disp->scale *= wscale > hscale ? hscale : wscale;
+	if (disp->scale < 1.0f)
+	  disp->scale = 1.0f;
+	move_x11(disp);
 	if (disp->x != lastx || disp->y != lasty)
 	  XMoveWindow(disp->dpy, disp->win, -disp->x, -disp->y);
 	break;
+      }
       case ButtonPress:
 	  if (e.xbutton.button == Button1) {
 	  state = 1;
@@ -435,8 +462,30 @@ output_x11(struct lstopo_output *loutput, const char *filename)
             disp->y = INT_MAX;
             move_x11(disp);
             break;
-        }
-	break;
+	case XK_f:
+	case XK_F: {
+	  float wscale = disp->screen_width / (float)disp->width;
+	  float hscale = disp->screen_height / (float)disp->height;
+	  disp->scale *= wscale > hscale ? hscale : wscale;
+	  move_x11(disp);
+	  break;
+	}
+	case XK_plus:
+	case XK_KP_Add:
+	  disp->scale *= 1.2f;
+	  move_x11(disp);
+	  break;
+	case XK_minus:
+	case XK_KP_Subtract:
+	  disp->scale /= 1.2f;
+	  move_x11(disp);
+	  break;
+	case XK_1:
+	case XK_KP_1:
+	  disp->scale = 1.0f;
+	  move_x11(disp);
+	  break;
+	}
       }
     }
   }
