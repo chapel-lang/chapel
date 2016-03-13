@@ -31,22 +31,6 @@
 #include "chpltypes.h"
 #include "error.h"
 
-
-// TODO it'd be great if there was some way for us to set the number of arenas.
-// jemalloc's default is `4 * logicalCPUs` which is fine for fifo, but for
-// qthreads and muxed, we know how many pthreads will be created at startup.
-// The number of arenas can be set with je_malloc_conf, but that's a compile
-// time constant. We can also set it with JE_MALLOC_CONF, but I think that has
-// to be prior to program execution, I think by the time we get here, we're
-// already too late. I was hoping we just had to set it before the first call
-// to an allocation routine, but that doesn't appear to be the case.
-//
-// A hacky (but easy/straightforward) solution would be do modify jemalloc
-// source. For qthreads we could get rid of the 4x multiplier and just default
-// to the number of logical cpus. See jemalloc.c:1277. Might be worth testing
-// the performance difference in a playground just to see if it's worth
-// investigating further.
-
 static struct shared_heap {
   void* base;
   size_t size;
@@ -82,11 +66,11 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
 
   // compute our current aligned pointer into the shared heap
   //
-  //   jemalloc 4.0.4 man: "The alignment parameter is always a power of two at
+  //   jemalloc 4.1.0 man: "The alignment parameter is always a power of two at
   //   least as large as the chunk size."
   cur_chunk_base = alignHelper(heap.base, heap.cur_offset, alignment);
 
-  // jemalloc 4.0.4 man: "If chunk is not NULL, the returned pointer must be
+  // jemalloc 4.1.0 man: "If chunk is not NULL, the returned pointer must be
   // chunk on success or NULL on error"
   if (chunk && chunk != cur_chunk_base) {
     pthread_mutex_unlock(&heap.alloc_lock);
@@ -107,7 +91,7 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
   // now that cur_heap_offset is updated, we can unlock
   pthread_mutex_unlock(&heap.alloc_lock);
 
-  // jemalloc 4.0.4 man: "Zeroing is mandatory if *zero is true upon entry."
+  // jemalloc 4.1.0 man: "Zeroing is mandatory if *zero is true upon entry."
   if (*zero) {
      memset(cur_chunk_base, 0, size);
   }
@@ -144,36 +128,41 @@ static bool null_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_
 // *** End chunk hook replacements *** //
 
 
+// helper routine to get a mallctl value
+#define DECLARE_GET_MALLCTL_VALUE(type) \
+static type get_ ## type ##_mallctl_value(const char* mallctl_string) { \
+  type value; \
+  size_t sz; \
+  sz = sizeof(value); \
+  if (je_mallctl(mallctl_string, &value, &sz, NULL, 0) != 0) { \
+    char error_msg[256]; \
+    snprintf(error_msg, sizeof(error_msg), "could not get mallctl value for %s", mallctl_string); \
+    chpl_internal_error(error_msg); \
+  } \
+  return value; \
+}
+DECLARE_GET_MALLCTL_VALUE(size_t);
+DECLARE_GET_MALLCTL_VALUE(unsigned);
+#undef DECLARE_GET_MALLCTL_VALUE
+
+
 // get the number of arenas
-static size_t get_num_arenas(void) {
-  size_t narenas;
-  size_t sz;
-  sz = sizeof(narenas);
-  if (je_mallctl("opt.narenas", &narenas, &sz, NULL, 0) != 0) {
-    chpl_internal_error("could not get number of arenas from jemalloc");
-  }
-  return narenas;
+static unsigned get_num_arenas(void) {
+  return get_unsigned_mallctl_value("opt.narenas");
 }
 
 // initialize our arenas (this is required to be able to set the chunk hooks)
 static void initialize_arenas(void) {
-  size_t s_narenas;
   unsigned narenas;
   unsigned arena;
-
-  // "thread.arena" takes an unsigned, but num_arenas is a size_t.
-  s_narenas = get_num_arenas();
-  if (s_narenas > (size_t) UINT_MAX) {
-    chpl_internal_error("narenas too large to fit into unsigned");
-  }
-  narenas = (unsigned) s_narenas;
 
   // for each non-zero arena, set the current thread to use it (this
   // initializes each arena). arena 0 is automatically initialized.
   //
-  //   jemalloc 4.0.4 man: "If the specified arena was not initialized
+  //   jemalloc 4.1.0 man: "If the specified arena was not initialized
   //   beforehand, it will be automatically initialized as a side effect of
   //   calling this interface."
+  narenas = get_num_arenas();
   for (arena=1; arena<narenas; arena++) {
     if (je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
       chpl_internal_error("could not change current thread's arena");
@@ -190,8 +179,8 @@ static void initialize_arenas(void) {
 
 // replace the chunk hooks for each arena with the hooks we provided above
 static void replaceChunkHooks(void) {
-  size_t narenas;
-  size_t arena;
+  unsigned narenas;
+  unsigned arena;
 
   // set the pointers for the new_hooks to our above functions
   chunk_hooks_t new_hooks = {
@@ -208,29 +197,90 @@ static void replaceChunkHooks(void) {
   narenas = get_num_arenas();
   for (arena=0; arena<narenas; arena++) {
     char path[128];
-    snprintf(path, sizeof(path), "arena.%zu.chunk_hooks", arena);
+    snprintf(path, sizeof(path), "arena.%u.chunk_hooks", arena);
     if (je_mallctl(path, NULL, NULL, &new_hooks, sizeof(chunk_hooks_t)) != 0) {
       chpl_internal_error("could not update the chunk hooks");
     }
   }
 }
 
+// helper routines to get the number of size classes
+static unsigned get_num_small_classes(void) {
+  return get_unsigned_mallctl_value("arenas.nbins");
+}
+
+static unsigned get_num_large_classes(void) {
+  return get_unsigned_mallctl_value("arenas.nlruns");
+}
+
+static unsigned get_num_small_and_large_classes(void) {
+  return get_num_small_classes() + get_num_large_classes();
+}
+
+// helper routine to get an array of size classes for small and large sizes
+static void get_small_and_large_class_sizes(size_t* classes) {
+  unsigned class;
+  unsigned small_classes;
+  unsigned large_classes;
+
+  small_classes = get_num_small_classes();
+  for (class=0; class<small_classes; class++) {
+    char ssize[128];
+    snprintf(ssize, sizeof(ssize), "arenas.bin.%u.size", class);
+    classes[class] = get_size_t_mallctl_value(ssize);
+  }
+
+  large_classes = get_num_large_classes();
+  for (class=0; class<large_classes; class++) {
+    char lsize[128];
+    snprintf(lsize, sizeof(lsize), "arenas.lrun.%u.size", class);
+    classes[small_classes + class] = get_size_t_mallctl_value(lsize);
+  }
+}
+
+// helper routine to determine if an address is not part of the shared heap
+static bool addressNotInHeap(void* ptr) {
+  uintptr_t u_ptr = (uintptr_t)ptr;
+  uintptr_t u_base = (uintptr_t)heap.base;
+  uintptr_t u_top =  u_base + heap.size;
+  return (u_ptr < u_base) || (u_ptr > u_top);
+}
+
+// grab (and leak) whatever memory jemalloc got on it's own, that's not in
+// our shared heap
+//
+//   jemalloc 4.1.0 man: "arenas may have already created chunks prior to the
+//   application having an opportunity to take over chunk allocation."
+//
+// jemalloc grabs "chunks" from the system in order to store metadata and some
+// internal data structures. However, these chunks are not allocated from our
+// shared heap, so we need to waste whatever memory is left in them so that
+// future allocations come from chunks that were provided by our shared heap
 static void useUpMemNotInHeap(void) {
-  // grab (and leak) whatever memory jemalloc got on it's own, that's not in
-  // our shared heap
-  //
-  //   jemalloc 4.0.4 man: "arenas may have already created chunks prior to the
-  //   application having an opportunity to take over chunk allocation."
-  //
-  // Note that this will also allow jemalloc to initialize
-  char* p = NULL;
-  do {
-    // TODO use a larger value than size_t here (must be smaller than
-    // "arenas.hchunk.0.size" though
-    if ((p = je_malloc(sizeof(size_t))) == NULL) {
-      chpl_internal_error("could not use up memory outside of shared heap");
-    }
-  } while ((p != NULL && (p < (char*) heap.base || p > (char*) heap.base + heap.size)));
+  unsigned class;
+  unsigned num_classes = get_num_small_and_large_classes();
+  size_t classes[num_classes];
+  get_small_and_large_class_sizes(classes);
+
+  // jemalloc has 3 class sizes. The small (a few pages) and large (up to chunk
+  // size) objects come from the arenas, but huge (more than chunk size)
+  // objects comes from a shared pool. We waste memory at every large and small
+  // class size so that we can be sure there's no fragments left in a chunk
+  // that jemalloc grabbed from the system. This way we know that any future
+  // allocation, regardless of size, must have come from a chunk provided by
+  // our shared heap. Once we know a specific class size came from our shared
+  // heap, we can free the memory instead of leaking it.
+  for (class=num_classes-1; class!=UINT_MAX; class--) {
+    void* p = NULL;
+    size_t alloc_size;
+    alloc_size = classes[class];
+    do {
+      if ((p = je_malloc(alloc_size)) == NULL) {
+        chpl_internal_error("could not use up memory outside of shared heap");
+      }
+    } while (addressNotInHeap(p));
+    je_free(p);
+  }
 }
 
 // Have jemalloc use our shared heap. Initialize all the arenas, then replace
@@ -257,7 +307,7 @@ void chpl_mem_layerInit(void) {
   // of initializing jemalloc. If we're not using a shared heap, do a first
   // allocation to allow jemaloc to set up:
   //
-  //   jemalloc 4.0.4 man: "Once, when the first call is made to one of the
+  //   jemalloc 4.1.0 man: "Once, when the first call is made to one of the
   //   memory allocation routines, the allocator initializes its internals"
   if (heap_base != NULL) {
     heap.base = heap_base;

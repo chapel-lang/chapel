@@ -1332,9 +1332,9 @@ class Logger():
         self.logger = logging.getLogger("start_test")
         self.logger.setLevel(logging.DEBUG)
         # console stdout handlers
-        self.console_out = logging.StreamHandler(sys.stdout)
+        self.console_out = StreamHandlerWithException(sys.stdout)
         # file handlers
-        self.file_out = logging.FileHandler(log_file, mode="w")
+        self.file_out = FileHandlerWithException(log_file, mode="w")
         # add them
         self.logger.addHandler(self.console_out)
         self.logger.addHandler(self.file_out)
@@ -1352,8 +1352,34 @@ class Logger():
         self.logger.removeHandler(self.file_out)
 
     def restart(self):
-        self.file_out = logging.FileHandler(log_file, mode="a")
+        self.file_out = FileHandlerWithException(log_file, mode="a")
         self.logger.addHandler(self.file_out)
+
+
+# Override the error handling in Python's built-in logging module, to
+# make sure remotely-executed builds fail if something goes wrong with
+# the infrastructure (network connections, for example).
+# Normally, Python logging ignores such errors, on the assumption that
+# missing log messages are not very important to the application.
+# In this program, however, the logging provides an essential function.
+
+class StreamHandlerWithException(logging.StreamHandler):
+    """
+    Same as StreamHandler except it raises an exception.
+    """
+
+    def handleError(self, record):
+        logging.StreamHandler.handleError(self, record)
+        raise OSError("fatal error, logging.StreamHandler")
+
+class FileHandlerWithException(logging.FileHandler):
+    """
+    Same as FileHandler except it raises an exception.
+    """
+
+    def handleError(self, record):
+        logging.FileHandler.handleError(self, record)
+        raise OSError("fatal error, logging.FileHandler")
 
 
 def printout(so):

@@ -460,7 +460,7 @@ module LCALSLoops {
     stat.loop_chksum[ilength] = tchk;
   }
 
-  proc runReferenceLoop0(lstat: LoopStat, ilen: int) {
+  proc runReferenceLoop0(lstat: LoopStat, ilen: LoopLength) {
     var loop_data = getLoopData();
     var len: int = lstat.loop_length[ilen];
     var num_samples = lstat.samples_per_pass[ilen];
@@ -481,7 +481,7 @@ module LCALSLoops {
     copyTimer(lstat, ilen, ltimer);
   }
 
-  proc runReferenceLoop1(lstat: LoopStat, ilen: int) {
+  proc runReferenceLoop1(lstat: LoopStat, ilen: LoopLength) {
     var loop_data = getLoopData();
 
     var len = lstat.loop_length[ilen];

@@ -9,9 +9,12 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-export JE_MALLOC_CONF="narenas:24"
+# Test performance of jemalloc's decay-based purging
+export CHPL_JEMALLOC_MORE_CFG_OPTIONS="--with-malloc-conf=purge:decay"
+SHORT_NAME=decay-purge
+START_DATE=03/12/16
 
-perf_args="-performance-description narneas -performance-configs default:v,narneas:v -sync-dir-suffix narneas"
-perf_args="${perf_args} -performance -numtrials 5 -startdate 03/02/16"
 
-$CWD/nightly -cron ${nightly_args} ${perf_args}
+perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
+perf_args="${perf_args} -numtrials 5 -startdate $START_DATE"
+$CWD/nightly -cron ${perf_args} ${nightly_args}

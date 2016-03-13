@@ -1643,7 +1643,9 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
   }
 
   UnresolvedSymExpr* opUnr = toUnresolvedSymExpr(opExpr);
-  INT_ASSERT(opUnr);
+  // Some future tests have expressions here. We do not handle them.
+  if (!opUnr)
+    return NULL;
 
   const char* opFun;
   if (!strcmp(opUnr->unresolved, "SumReduceScanOp")) {

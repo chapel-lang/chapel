@@ -28,11 +28,8 @@
 #include <malloc/malloc.h>
 #endif
 
-#undef malloc
-#undef calloc
-#undef realloc
-#undef free
-#undef _chpl_mem_warning_macros_h_
+// disable mem warnings since cstdlib uses the system allocator
+#include "chpl-mem-no-warning-macros.h"
 
 #include <stdlib.h>
 
