@@ -931,11 +931,12 @@ operation would be completely ambiguous.  The only reasonable action for the
 implementation is to generate an error.
 \end{rationale}
 
-If the resulting represented sequence cannot be expressed as a range of the
-expected type, an error is generated. This can happen, for example, when
-the operands represent all odd and all even numbers, or when the first
-operand is an unbounded range with unsigned \chpl{idxType} and the second
-operand represents only negative numbers.
+If the resulting sequence cannot be expressed as a range of the
+original type, the slice expression evaluates to the empty
+range \chpl{1..0}. This can happen, for example, when the operands
+represent all odd and all even numbers, or when the first operand is
+an unbounded range with unsigned \chpl{idxType} and the second operand
+represents only negative numbers.
 
 \begin{chapelexample}{rangeSlicing.chpl}
 In the following example, \chpl{r} represents the integers from 1 to
