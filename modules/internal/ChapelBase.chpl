@@ -1354,8 +1354,19 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline proc ==(a: uint(64), b: int(64)) { _throwOpError("=="); }
-  inline proc ==(a: int(64), b: uint(64)) { _throwOpError("=="); }
+  inline proc ==(a: uint(64), b: int(64)) {
+    //
+    // If b's negative, these obviously aren't equal; if it's not
+    // negative, it can be cast to an int
+    //
+    return !(b < 0) && (a == b:uint(64));
+  }
+  //
+  // the dual of the above
+  //
+  inline proc ==(a: int(64), b: uint(64)) {
+    return !(a < 0) && (a:uint(64) == b);
+  }
 
   // non-param/param and param/non-param
   inline proc ==(a: uint(64), param b: uint(64)) {
@@ -1367,8 +1378,12 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline proc !=(a: uint(64), b: int(64)) { _throwOpError("!="); }
-  inline proc !=(a: int(64), b: uint(64)) { _throwOpError("!="); }
+  inline proc !=(a: uint(64), b: int(64)) {
+    return (b < 0) || (a != b:uint(64));
+  }
+  inline proc !=(a: int(64), b: uint(64)) {
+    return (a < 0) || (a:uint(64) != b);
+  }
 
   // non-param/param and param/non-param
   inline proc !=(a: uint(64), param b: uint(64)) {
@@ -1380,8 +1395,12 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline proc >(a: uint(64), b: int(64)) { _throwOpError(">"); }
-  inline proc >(a: int(64), b: uint(64)) { _throwOpError(">"); }
+  inline proc >(a: uint(64), b: int(64)) {
+    return (b < 0) || (a > b: uint(64));
+  }
+  inline proc >(a: int(64), b: uint(64)) {
+    return !(a < 0) && (a: uint(64) > b);
+  }
 
   // non-param/param and param/non-param
   inline proc >(a: uint(64), param b: uint(64)) {
@@ -1392,8 +1411,12 @@ module ChapelBase {
   }
 
   // non-param/non-param
-  inline proc <(a: uint(64), b: int(64)) { _throwOpError("<"); }
-  inline proc <(a: int(64), b: uint(64)) { _throwOpError("<"); }
+  inline proc <(a: uint(64), b: int(64)) {
+    return !(b < 0) && (a < b:uint(64));
+  }
+  inline proc <(a: int(64), b: uint(64)) {
+    return (a < 0) || (a:uint(64) < b);
+  }
 
   // non-param/param and param/non-param
   inline proc <(a: uint(64), param b: uint(64)) {
@@ -1405,8 +1428,12 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline proc >=(a: uint(64), b: int(64)) { _throwOpError(">="); }
-  inline proc >=(a: int(64), b: uint(64)) { _throwOpError(">="); }
+  inline proc >=(a: uint(64), b: int(64)) {
+    return (b < 0) || (a >= b: uint(64));
+  }
+  inline proc >=(a: int(64), b: uint(64)) {
+    return !(a < 0) && (a: uint(64) >= b);
+  }
 
   // non-param/param and param/non-param
   inline proc >=(a: uint(64), param b: uint(64)) {
@@ -1418,8 +1445,12 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline proc <=(a: uint(64), b: int(64)) { _throwOpError("<="); }
-  inline proc <=(a: int(64), b: uint(64)) { _throwOpError("<="); }
+  inline proc <=(a: uint(64), b: int(64)) {
+    return !(b < 0) && (a <= b: uint(64));
+  }
+  inline proc <=(a: int(64), b: uint(64)) {
+    return (a < 0) || (a:uint(64) <= b);
+  }
 
   // non-param/param and param/non-param
   inline proc <=(a: uint(64), param b: uint(64)) {
