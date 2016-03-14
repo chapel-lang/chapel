@@ -115,7 +115,6 @@ studies/lcals/LCALSMain.graph
 # suite: ISx benchmark
 studies/isx/isx.graph
 studies/isx/isx-bucket-spmd.graph
-studies/isx/isx-spmd.graph
 studies/isx/isx-no-return.graph
 studies/isx/isx-per-task.graph
 # suite: PRK benchmarks

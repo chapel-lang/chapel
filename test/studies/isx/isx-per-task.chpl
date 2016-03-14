@@ -1,7 +1,7 @@
-// isx-spmd.chpl
+// isx-per-task.chpl
 // 
 // This is a port of ISx to Chapel, developed by Ben Harshbarger as a
-// variant on the isx-spmd.chpl version co-developed by Brad Chamberlain,
+// variant on the isx-bucket-spmd.chpl version co-developed by Brad Chamberlain,
 // Lydia Duncan, and Jacob Hemstad.
 //
 // This version is based on the OpenSHMEM version available from:

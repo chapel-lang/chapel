@@ -1,8 +1,8 @@
 // isx-bucket-spmd.chpl
 // 
-// This is a port of ISx to Chapel, developed by Brad Chamberlain as a
-// variant on the isx-spmd.chpl version co-developed by Brad Chamberlain,
-// Lydia Duncan, and Jacob Hemstad.
+// This is a port of ISx to Chapel, co-developed by Brad Chamberlain,
+// Lydia Duncan, and Jacob Hemstad on 2015-10-30.  Additional cleanups
+// were done later by Brad.
 //
 // This version is SPMD, like the original port, but is written in terms
 // of more abstract "buckets" rather than locales, permitting multiple
