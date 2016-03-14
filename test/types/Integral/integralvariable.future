@@ -1,0 +1,4 @@
+bug: - error message displayed is:-> internal error: CAL0056 chpl Version 1.12.0,Internal error indicates a bug in chapel compiler. 
+
+this error  is wrong and inaccurate , a more acurate and informative message is suggested. 
+ 

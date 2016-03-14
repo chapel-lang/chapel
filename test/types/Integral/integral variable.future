@@ -1,3 +1,0 @@
-bug: - error message displayed is: Internal error indicates a bug in chapel compiler.
-
-whereas more informative and correct would be : Cannot declare varialbe of type integral here .
