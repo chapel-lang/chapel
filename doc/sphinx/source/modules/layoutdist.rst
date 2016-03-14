@@ -1,6 +1,6 @@
-.. _distributions_and_layouts:
+.. _layouts_and_distributions:
 
-Standard Distributions and Layouts
+Standard Layouts and Distributions
 ----------------------------------
 
 Contents:
@@ -8,5 +8,5 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   distributions
    layouts
+   distributions
