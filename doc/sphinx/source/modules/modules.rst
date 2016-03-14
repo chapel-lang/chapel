@@ -1,7 +1,7 @@
 .. _modules:
 
-Modules
-=======
+Standard Modules
+================
 Contents:
 
 .. toctree::
@@ -13,8 +13,7 @@ Contents:
 
    standard/**
 
-Module Indices and tables
--------------------------
+**Module Indices and tables**
 
 * :ref:`genindex`
 * :chpl:chplref:`chplmodindex`

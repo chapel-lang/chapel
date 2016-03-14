@@ -21,7 +21,8 @@ Chapel Documentation
    Quick Reference <language/reference>
    Language Specification <language/spec>
    modules/builtins
-   modules/standardlibrary
+   modules/modules
+   modules/layoutdist
    users-guide/index
 
 

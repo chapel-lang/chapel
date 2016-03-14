@@ -1,7 +1,7 @@
 .. _distributions:
 
-Distributions
--------------
+Standard Distributions
+----------------------
 Contents:
 
 .. toctree::
