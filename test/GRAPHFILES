@@ -117,6 +117,7 @@ studies/isx/isx.graph
 studies/isx/isx-bucket-spmd.graph
 studies/isx/isx-spmd.graph
 studies/isx/isx-no-return.graph
+studies/isx/isx-per-task.graph
 # suite: PRK benchmarks
 studies/prk/synch_p2p/prk-synch_p2p.graph
 studies/prk/stencil/prk-stencil.graph
