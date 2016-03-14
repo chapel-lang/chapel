@@ -22,7 +22,7 @@ Chapel Documentation
    Language Specification <language/spec>
    modules/builtins
    modules/modules
-   modules/distlayouts
+   modules/layoutdist
    users-guide/index
 
 
