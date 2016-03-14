@@ -11,6 +11,7 @@ record R
 
   proc R()
   {
+    writeln("in R()");
     c = new C();
   }
 
