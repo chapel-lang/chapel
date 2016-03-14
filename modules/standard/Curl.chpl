@@ -27,7 +27,7 @@ to work with many network protocols.
 The `curl homepage <https://curl.haxx.se/libcurl/>`_ describes libcurl thus::
 
  libcurl is a free and easy-to-use client-side URL transfer library, supporting
- DICT, FILE, FTP, FTPS, Gopher, https, httpsS, IMAP, IMAPS, LDAP, LDAPS, POP3,
+ DICT, FILE, FTP, FTPS, Gopher, HTTP, HTTPS, IMAP, IMAPS, LDAP, LDAPS, POP3,
  POP3S, RTMP, RTSP, SCP, SFTP, SMTP, SMTPS, Telnet and TFTP.  libcurl supports
  SSL certificates, https POST, https PUT, FTP uploading, https form based upload,
  proxies, cookies, user+password authentication (Basic, Digest, NTLM,
