@@ -116,7 +116,7 @@ Interface 1:
 
 
 Interface 2:
-  Many times when we are connecting to a URL (FTP, IMAP, SMTP, https) we have to
+  Many times when we are connecting to a URL (FTP, IMAP, SMTP, HTTP) we have to
   give extra information to the Curl handle. This is done via the setopt()
   interface.  Documentation on the various options, as well as the functions
   that are referenced below can be found `here
