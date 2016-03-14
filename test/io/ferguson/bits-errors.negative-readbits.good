@@ -1,0 +1,1 @@
+bits-errors.chpl:45: error: halt reached - readbits nbits=-1 < 0
