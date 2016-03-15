@@ -334,14 +334,19 @@ class ForceLJ : Force {
     // for each atom, compute force between itself and its neighbors
     fTimer.start();
     var eng, vir : atomic real;
-    forall (b,p,c,r) in zip(Bins, RealPos, RealCount, binSpace) {
+
+    // Get a const copy of 'cutforcesq' and use the 'in' intent to get a copy on each
+    // locale to reduce communication
+    const cfsq = cutforcesq;
+
+    forall (b,p,c,r) in zip(Bins, RealPos, RealCount, binSpace) with (in cfsq) {
       var t_eng, t_vir : real;
       for (a, x, j) in zip(b[1..c],p[1..c],1..c) {
         for(n,i) in a.neighs[1..a.ncount] {
           const del = x - Pos[n][i];
           const rsq = dot(del,del);
           
-          if rsq < cutforcesq {
+          if rsq < cfsq {
             const sr2: real = 1.0 / rsq;
             const sr6 : real = sr2 * sr2 * sr2;
             const force : real = 48.0 * sr6 * (sr6 - .5) * sr2;
