@@ -1,1 +1,1 @@
-integralvariable.chpl:1:error: the type of the actual argument 'integral' is generic
+integralvariable.chpl:1: error: the type of the actual argument 'integral' is generic
