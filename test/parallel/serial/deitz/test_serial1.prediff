@@ -1,0 +1,4 @@
+#! /bin/sh
+# program produces 6 lines in parallel (unordered) and 6 lines in serial (ordered)
+( grep '(false)' < $2 | sort ; \
+  grep '(true)' < $2 ; ) > $2.prediff.tmp && mv $2.prediff.tmp $2
