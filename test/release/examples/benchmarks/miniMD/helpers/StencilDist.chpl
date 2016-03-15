@@ -1269,7 +1269,7 @@ iter StencilArr.dsiBoundaries() {
 iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.leader {
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
-      for (D, N, L) in zip(locArr[i].Dest, locArr[i].Neighs, locArr[i].NeighDom) {
+      forall (D, N, L) in zip(locArr[i].Dest, locArr[i].Neighs, locArr[i].NeighDom) {
         if (i + L != N) {
           for el in locArr[i].myElems[D] do yield (el, L);
         }
@@ -1292,7 +1292,7 @@ proc StencilArr.dsiUpdateFluff() {
   if zeroTuple(dom.fluff) then return;
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
-      for (S, D, N, L) in zip(locArr[i].Src, locArr[i].Dest, 
+      forall (S, D, N, L) in zip(locArr[i].Src, locArr[i].Dest, 
           locArr[i].Neighs, locArr[i].NeighDom) {
         if !zeroTuple(L) {
           if !dom.dist.targetLocDom.member(i+L) && dom.periodic then
