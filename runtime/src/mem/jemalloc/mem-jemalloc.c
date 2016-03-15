@@ -147,14 +147,22 @@ DECLARE_GET_MALLCTL_VALUE(unsigned);
 
 
 // get the number of arenas
-static unsigned get_num_arenas(void) {
-  return get_unsigned_mallctl_value("opt.narenas");
+static size_t get_num_arenas(void) {
+  return get_size_t_mallctl_value("opt.narenas");
 }
 
 // initialize our arenas (this is required to be able to set the chunk hooks)
 static void initialize_arenas(void) {
+  size_t s_narenas;
   unsigned narenas;
   unsigned arena;
+
+  // "thread.arena" takes an unsigned, but num_arenas is a size_t.
+  s_narenas = get_num_arenas();
+  if (s_narenas > (size_t) UINT_MAX) {
+    chpl_internal_error("narenas too large to fit into unsigned");
+  }
+  narenas = (unsigned) s_narenas;
 
   // for each non-zero arena, set the current thread to use it (this
   // initializes each arena). arena 0 is automatically initialized.
@@ -162,7 +170,6 @@ static void initialize_arenas(void) {
   //   jemalloc 4.0.4 man: "If the specified arena was not initialized
   //   beforehand, it will be automatically initialized as a side effect of
   //   calling this interface."
-  narenas = get_num_arenas();
   for (arena=1; arena<narenas; arena++) {
     if (je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
       chpl_internal_error("could not change current thread's arena");
@@ -179,8 +186,8 @@ static void initialize_arenas(void) {
 
 // replace the chunk hooks for each arena with the hooks we provided above
 static void replaceChunkHooks(void) {
-  unsigned narenas;
-  unsigned arena;
+  size_t narenas;
+  size_t arena;
 
   // set the pointers for the new_hooks to our above functions
   chunk_hooks_t new_hooks = {
@@ -197,7 +204,7 @@ static void replaceChunkHooks(void) {
   narenas = get_num_arenas();
   for (arena=0; arena<narenas; arena++) {
     char path[128];
-    snprintf(path, sizeof(path), "arena.%u.chunk_hooks", arena);
+    snprintf(path, sizeof(path), "arena.%zu.chunk_hooks", arena);
     if (je_mallctl(path, NULL, NULL, &new_hooks, sizeof(chunk_hooks_t)) != 0) {
       chpl_internal_error("could not update the chunk hooks");
     }
