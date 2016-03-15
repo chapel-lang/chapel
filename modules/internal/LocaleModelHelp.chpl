@@ -82,42 +82,53 @@ module LocaleModelHelp {
   proc chpl_sublocFromLocaleID(loc: chpl_localeID_t)
     return chpl_rt_sublocFromLocaleID(loc);
 
+  record chpl_root_locale_accum {
+    var nPUsPhysAcc: atomic int;
+    var nPUsPhysAll: atomic int;
+    var nPUsLogAcc: atomic int;
+    var nPUsLogAll: atomic int;
+    var maxTaskPar: atomic int;
+
+    proc accum(loc:locale) {
+      nPUsPhysAcc.add(loc.nPUsPhysAcc);
+      nPUsPhysAll.add(loc.nPUsPhysAll);
+      nPUsLogAcc.add(loc.nPUsLogAcc);
+      nPUsLogAll.add(loc.nPUsLogAll);
+      maxTaskPar.add(loc.maxTaskPar);
+    }
+    proc setRootLocaleValues(dst:RootLocale) {
+      dst.nPUsPhysAcc = nPUsPhysAcc.read();
+      dst.nPUsPhysAll = nPUsPhysAll.read();
+      dst.nPUsLogAcc = nPUsLogAcc.read();
+      dst.nPUsLogAll = nPUsLogAll.read();
+      dst.maxTaskPar = maxTaskPar.read();
+    }
+  }
+
   proc helpSetupRootLocaleFlat(dst:RootLocale) {
-    //  todo -- use atomics instead of +=
-    // var tmp_nPUsPhysAcc : atomic int;
-    // tmp_nPUsPhysAcc.add(node.nPUsPhysAcc);
-    // nPUsPhysAcc = tmp_nPUsPhysAcc.read();
+    var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() {
       const node = new LocaleModel(dst);
       dst.myLocales[locIdx] = node;
-      dst.nPUsPhysAcc += node.nPUsPhysAcc;
-      dst.nPUsPhysAll += node.nPUsPhysAll;
-      dst.nPUsLogAcc += node.nPUsLogAcc;
-      dst.nPUsLogAll += node.nPUsLogAll;
-      dst.maxTaskPar += node.maxTaskPar;
+      root_accum.accum(node);
     }
 
+    root_accum.setRootLocaleValues(dst);
     here.runningTaskCntSet(0);  // locale init parallelism mis-sets this
   }
 
   proc helpSetupRootLocaleNUMA(dst:RootLocale) {
-    //  todo -- use atomics instead of +=
-    // var tmp_nPUsPhysAcc : atomic int;
-    // tmp_nPUsPhysAcc.add(node.nPUsPhysAcc);
-    // nPUsPhysAcc = tmp_nPUsPhysAcc.read();
+    var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() {
       chpl_task_setSubloc(c_sublocid_any);
       const node = new LocaleModel(dst);
       dst.myLocales[locIdx] = node;
-      dst.nPUsPhysAcc += node.nPUsPhysAcc;
-      dst.nPUsPhysAll += node.nPUsPhysAll;
-      dst.nPUsLogAcc += node.nPUsLogAcc;
-      dst.nPUsLogAll += node.nPUsLogAll;
-      dst.maxTaskPar += node.maxTaskPar;
+      root_accum.accum(node);
     }
 
+    root_accum.setRootLocaleValues(dst);
     here.runningTaskCntSet(0);  // locale init parallelism mis-sets this
   }
 
