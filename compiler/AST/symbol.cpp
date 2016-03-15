@@ -568,7 +568,27 @@ GenRet VarSymbol::codegen() {
         ret.c += immediate->v_string;
         ret.c += '"';
       } else if (immediate->const_kind == NUM_KIND_BOOL) {
-        ret.c =  immediate->bool_value() ? "true" : "false";
+        std::string bstring = (immediate->bool_value())?"true":"false";
+        const char* castString = "(";
+        switch (immediate->num_index) {
+        case BOOL_SIZE_1:
+        case BOOL_SIZE_SYS:
+        case BOOL_SIZE_8:
+          castString = "UINT8(";
+          break;
+        case BOOL_SIZE_16:
+          castString = "UINT16(";
+          break;
+        case BOOL_SIZE_32:
+          castString = "UINT32(";
+          break;
+        case BOOL_SIZE_64:
+          castString = "UINT64(";
+          break;
+        default:
+          INT_FATAL("Unexpected immediate->num_index: %d\n", immediate->num_index);
+        }
+        ret.c = castString + bstring + ")";
       } else if (immediate->const_kind == NUM_KIND_INT) {
         int64_t iconst = immediate->int_value();
         if (iconst == (1ll<<63)) {
