@@ -18,7 +18,6 @@
 #  endif
 #  include <pthread.h>
 #  include <errno.h>
-#  include <sys/time.h>
 #endif
 #include <sys/types.h>
 
