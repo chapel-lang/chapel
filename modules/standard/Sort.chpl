@@ -49,7 +49,7 @@ private inline proc chpl_sort_cmp(a, b, param reverse=false, param eq=false) {
    :type reverse: `bool`
 
  */
-proc BubbleSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+proc BubbleSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   var swapped = true;
@@ -79,7 +79,7 @@ proc BubbleSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) wh
    :type reverse: `bool`
 
  */
-proc HeapSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+proc HeapSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   const len = Dom.dim(1).size;
@@ -129,7 +129,7 @@ proc HeapSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) wher
    :type reverse: `bool`
 
  */
-proc InsertionSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+proc InsertionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.low;
   for i in Dom {
     const ithVal = Data(i);
@@ -190,7 +190,7 @@ private proc _MergeSort(Data: [?Dom], minlen=16, param reverse=false) where Dom.
 }
 
 
-private iter _MergeIterator(A1: [] ?elType, A2: [] elType, param reverse=false) {
+private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, param reverse=false) {
   var a1 = A1.domain.dim(1).low;
   const a1hi = A1.domain.dim(1).high;
   var a2 = A2.domain.dim(1).low;
@@ -228,7 +228,7 @@ private iter _MergeIterator(A1: [] ?elType, A2: [] elType, param reverse=false) 
    :type reverse: `bool`
 
  */
-proc QuickSort(Data: [?Dom] ?elType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+proc QuickSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   // grab obvious indices
   const lo = Dom.low, 
         hi = Dom.high,
@@ -308,7 +308,7 @@ proc SelectionSort(Data: [?Dom], doublecheck=false, param reverse=false) where D
    :type reverse: `bool`
 
  */
-inline proc VerifySort(Data: [?Dom] ?elType, str: string, param reverse=false) {
+inline proc VerifySort(Data: [?Dom] ?eltType, str: string, param reverse=false) {
   for i in Dom.low..Dom.high-1 do
     if chpl_sort_cmp(Data(i+1), Data(i), reverse) then
       halt(str, " did not sort properly (", i, "): ", Data);
