@@ -331,6 +331,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, AggregateType *p
 static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType);
 static AggregateType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *call);
 static Expr* createFunctionAsValue(CallExpr *call);
+static Type* resolveTypeAlias(SymExpr* se);
 static bool
 isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL);
 static bool
@@ -3511,6 +3512,9 @@ static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
 // special case cast of class w/ type variables that is not generic
 //   i.e. type variables are type definitions (have default types)
 //
+// also handles some complicated extern vars like
+//   extern var x: c_ptr(c_int)
+// which do not work in the usual order of resolution.
 static void
 resolveDefaultGenericType(CallExpr* call) {
   SET_LINENO(call);
@@ -3532,11 +3536,9 @@ resolveDefaultGenericType(CallExpr* call) {
         // Fix for complicated extern vars like
         // extern var x: c_ptr(c_int);
         if( vs->hasFlag(FLAG_EXTERN) && vs->hasFlag(FLAG_TYPE_VARIABLE) &&
-            vs->defPoint && vs->defPoint->init ) {
-          if( CallExpr* def = toCallExpr(vs->defPoint->init) ) {
-            vs->defPoint->init = resolveExpr(def);
-            te->replace(new SymExpr(vs->defPoint->init->typeInfo()->symbol));
-          }
+            vs->defPoint && vs->defPoint->init &&
+            vs->getValType() == dtUnknown ) {
+          vs->type = resolveTypeAlias(te);
         }
       }
     }
@@ -5851,6 +5853,7 @@ preFold(Expr* expr) {
         fieldcount++;
         if (fieldcount == fieldnum) {
           name = field->name;
+          // break could be here, but might have issues with GCC 5.10
         }
       }
       if (!name) {
@@ -5882,7 +5885,7 @@ preFold(Expr* expr) {
         fieldcount++;
         if (fieldcount == fieldnum) {
           name = field->name;
-          break;
+          // break could be here, but seems to cause issues with GCC 5.10
         }
       }
       if (!name) {
@@ -5916,7 +5919,7 @@ preFold(Expr* expr) {
         fieldcount++;
         if ( 0 == strcmp(field->name,  fieldname) ) {
           num = fieldcount;
-          break;
+          // break could be here, but might have issues with GCC 5.10
         }
       }
       result = new SymExpr(new_IntSymbol(num));
@@ -6719,6 +6722,7 @@ resolveExpr(Expr* expr) {
 
   if (DefExpr* def = toDefExpr(expr)) {
     if (def->init) {
+      // This section was added to handle type a = b
       Expr* init = preFold(def->init);
       init = resolveExpr(init);
       // expr is unchanged, so is treated as "resolved".
@@ -9033,10 +9037,37 @@ static void replaceTypeArgsWithFormalTypeTemps()
     if (! fn->defPoint->parentSymbol)
       continue;
 
-    // We do not remove type args from extern functions
-    // TODO: Find out if we really support type args in extern functions.
-    if (fn->hasFlag(FLAG_EXTERN))
+    // We do not remove type args from extern functions so that e.g.:
+    //  extern proc sizeof(type t);
+    //  sizeof(int)
+    // will function correctly.
+    // However, in such a case, we'd like to pass the type symbol
+    // to the call site rather than a type variable call_tmp
+    if (fn->hasFlag(FLAG_EXTERN)) {
+      // Replace the corresponding actual with a SymExpr TypeSymbol
+      // for all the call sites.
+      forv_Vec(CallExpr, call, *fn->calledBy)
+      {
+        for_formals_actuals(formal, actual, call)
+        {
+          if (! formal->hasFlag(FLAG_TYPE_VARIABLE))
+            continue;
+
+          if (SymExpr* se = toSymExpr(actual)) {
+            if (isTypeSymbol(se->var))
+              continue;
+            if (se->var->hasFlag(FLAG_EXTERN) &&
+                se->var->hasFlag(FLAG_TYPE_VARIABLE))
+              continue;
+          }
+
+          SET_LINENO(actual);
+          TypeSymbol* ts = formal->type->symbol;
+          actual->replace(new SymExpr(ts));
+        }
+      }
       continue;
+    }
 
     for_formals(formal, fn)
     {
