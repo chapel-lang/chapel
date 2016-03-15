@@ -1,4 +1,4 @@
-error message:  internal error: CAL0056 chpl Version 1.12.0  Internal errors indicate a bug in the Chapel compiler.
+error message:  getting internal error when using integral type .
 
-This error message is wrong ,a more acurate and informative message is-> error: the type of the actual argument 'integral' is generic. 
+This error message is wrong ,the error should not be internal .
  
