@@ -12,9 +12,7 @@ proc updateFluff() {
     // boundaries() yields a periodic array element, and the 
     // neighbor panel value
     forall (pos, N) in Pos.boundaries() {
-      //forall p in pos do
-       // p += PosOffset[N];
-      pos += PosOffset[N];
+      for p in pos do p += PosOffset[N];
     }
   } else {
     forall (P, D, S) in zip(PosOffset, Dest, Src) {
