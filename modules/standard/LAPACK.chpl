@@ -55,11 +55,11 @@ This requires that your matrices are stored in a two dimensional form.
 Type Adjustments
 ----------------
 
-The LAPACKE types ``lapack_int``, ``lapack_float``, ``lapack_double``, ``lapack_complex_float``, ``lapack_complex_double``, and ``lapack_logical`` are not defined at all, but rather are replaced by the types :type:`c_int`, :type:`real(32)`, :type:`real(64)`, :type:`complex(64)`, :type:`complex(128)`, and :type:`c_int` respectively.
+The LAPACKE types ``lapack_int``, ``lapack_float``, ``lapack_double``, ``lapack_complex_float``, ``lapack_complex_double``, and ``lapack_logical`` are not defined at all, but rather are replaced by the types ``c_int``, ``real(32)``, ``real(64)``, ``complex(64)``, ``complex(128)``, and ``c_int`` respectively.
 
 
 
-The :enum:`lapack_memory_order` enumeration is a replacement for the :type:`c_int` constants :data:`LAPACK_ROW_MAJOR` and :data:`LAPACK_COL_MAJOR` defined by LAPACK and used by ``matrix_order`` which is an argument present in essentially all procedures.
+The :enum:`lapack_memory_order` enumeration is a replacement for the ``c_int`` constants :data:`LAPACK_ROW_MAJOR` and :data:`LAPACK_COL_MAJOR` defined by LAPACK and used by ``matrix_order`` which is an argument present in essentially all procedures.
 The value of each enumeration is equivalent (both in type and value) of the LAPACK constants.
 However the constants are also provided and can be used as well.
 
