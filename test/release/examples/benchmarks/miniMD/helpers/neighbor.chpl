@@ -121,8 +121,9 @@ proc buildNeighbors() {
 // See test/types/records/bharshbarger/remote*Record.chpl for more.
 inline proc addatom(ref a : atom, x : v3, b : v3int) {
   // increment bin's # of atoms
-  Count[b] += 1;
-  const end = if useStencilDist then Count.readRemote(b) else Count[b];
+  var end = RealCount[b];
+  end += 1;
+  RealCount[b] = end;
   
   // resize bin storage if needed
   if end >= perBinSpace.high {
@@ -134,7 +135,7 @@ inline proc addatom(ref a : atom, x : v3, b : v3int) {
   // add to the end of the bin
   Bins[b][end].v = a.v;
   Bins[b][end].f = a.f;
-  Pos[b][end] = x;
+  RealPos[b][end] = x;
 }
 
 proc binAtoms() {

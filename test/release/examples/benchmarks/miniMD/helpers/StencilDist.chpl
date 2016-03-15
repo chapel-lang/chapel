@@ -928,20 +928,6 @@ inline proc StencilArr.dsiLocalAccess(i: rank*idxType) ref {
   return myLocArr.this(i);
 }
 
-proc _array.readRemote(i: _value.rank*_value.idxType) {
-  return _value.dsiReadRemote(i);
-}
-
-proc StencilArr.dsiReadRemote(i: rank*idxType) {
-  local {
-    if myLocArr != nil {
-
-      // return from actual if it's a write or there's no fluff
-      if myLocArr.locDom.member(i) then return myLocArr.this(i);
-    }
-  } 
-  return locArr(dom.dist.targetLocsIdx(i))(i);
-}
 //
 // the global accessor for the array
 //
