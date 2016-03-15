@@ -33,7 +33,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <spawn.h>
-#include <signal.h>
 
 // We need to be able to call malloc, free, etc.
 #include "chpl-mem-no-warning-macros.h"
@@ -332,21 +331,25 @@ qioerr qio_waitpid(int64_t pid,
   if( ! blocking ) flags |= WNOHANG;
 
   got = waitpid((pid_t) pid, &status, flags);
+
+  // Check for error
   if( got == -1 ) {
     return qio_int_to_err(errno);
   }
+  // Only update (done, exitcode) if waitpid() returned for the desired pid
+  else if ( got == pid ) {
+    if( WIFEXITED(status) ) {
+      *exitcode = WEXITSTATUS(status);
+      *done = 1;
+    }
+    else if( WIFSIGNALED(status) ) {
+      *exitcode = -WTERMSIG(status);
+      *done = 1;
+    }
+  }
 
-  if( WIFEXITED(status) ) {
-    *exitcode = WEXITSTATUS(status);
-    *done = 1;
-  }
-  else if( WIFSIGNALED(status) ) {
-    *exitcode = -WTERMSIG(status);
-    *done = 1;
-  }
   return 0;
 }
-
 
 // commit input, sending any data to the subprocess.
 // once input is sent, close input channel and file.

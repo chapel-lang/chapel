@@ -23,6 +23,7 @@
 #include "sys_basic.h"
 #include "qio.h"
 #include <stdarg.h>
+#include <signal.h>
 
 #ifdef __cplusplus
 extern "C" {
