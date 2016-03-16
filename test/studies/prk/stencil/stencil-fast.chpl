@@ -124,8 +124,6 @@ proc main() {
   /* Initialize Input matrix */
   [(i, j) in Dom] input[i,j] = coefx*i+coefy*j;
 
-  //if useStencilDist then input.updateFluff();
-
 
   //
   // Print information before main loop
@@ -208,7 +206,7 @@ proc main() {
     }
 
 
-  } // end of main loop
+  } /* end of main loop */
 
   timer.stop();
   if debug then stopVdebug();
