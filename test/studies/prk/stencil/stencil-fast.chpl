@@ -5,7 +5,6 @@
 /* Standard Library */
 use Time;
 use BlockDist;
-use ReplicatedDist;
 use VisualDebug;
 
 /* Included from miniMD benchmark */
@@ -48,10 +47,12 @@ param Wsize = 2*R + 1,
 /* Number of elements that will be updated in Output matrix */
 const activePoints = (order-2*R)*(order-2*R),
       /* Number of elements in weight matrix, for calculating flops */
-      stencilSize = if compact then (2*R + 1)**2 else 4*R + 1;
+      stencilSize = if compact then (2*R + 1)**2 else 4*R + 1,
       /* Scalar coefficients of weight matrix elements*/
       coefx : dtype = 1.0,
-      coefy : dtype = 1.0;
+      coefy : dtype = 1.0,
+      /* Determine if tiling is enabled */
+      tiling = (tileSize > 0 && tileSize < order);
 
 var timer: Timer;
 
@@ -76,43 +77,39 @@ proc main() {
     exit(1);
   }
 
-  // Determine tiling
-  var tiling = (tileSize > 0 && tileSize < order);
-
-  // Safety check for creation of tiledDom
+  /* If tiling is disabled, ensure tiledDom can still be created */
   if (!tiling) then tileSize = 1;
 
-  // Domain Map
-
+  /* Domain over entire Input/Output matrices */
   const localDom = {0.. # order, 0.. # order},
+  /* Domain over entire 'active' region, where Output will be updated */
    innerLocalDom = localDom.expand(-R),
-  weightLocalDom = {-R..R, -R..R};
+  /* Strided domain over 'active' region - possibly a cleaner way to write...*/
+        tiledDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize};
 
-  // Choice of distribution / parallelism
+  /* Flavors of parallelism, by distribution */
   const blockDist = new Block(localDom),
       stencilDist = new Stencil(innerLocalDom, fluff=(R,R)),
-           noDist = new DefaultDist(),
-         replDist = new ReplicatedDist();
+           noDist = new DefaultDist();
 
+  /* Set distribution based on configs */
   const Dist =  if useBlockDist then blockDist
                 else if useStencilDist then stencilDist
                 else noDist;
 
-
+  /* Map domains to selected distribution */
   const Dom = localDom dmapped new dmap(Dist),
    innerDom = innerLocalDom dmapped new dmap(Dist);
 
-  var tiledDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize};
-
-  // Input and Output arrays
+  /* Input and Output matrices represented as arrays over a 2D domain */
   var input, output:  [Dom] dtype = 0.0;
 
-
-  // Tuple of tuples
+  /* Pragma ensures each locale stores a local copy of weight matrix */
   pragma "locale private"
+  /* Weight matrix represented as tuple of tuples*/
   var weight: Wsize*(Wsize*(dtype));
 
-  // Create local copy of weight on each Locale
+  /* Creating weight matrix on each locale */
   for loc in Locales do on loc {
     for i in 1..R {
       const element : dtype = 1 / (2*i*R) : dtype;
@@ -123,10 +120,11 @@ proc main() {
     }
   }
 
-  // Initialize the input and output arrays
+  /* Initialize Input matrix */
   [(i, j) in Dom] input[i,j] = coefx*i+coefy*j;
 
-  if useStencilDist then input.updateFluff();
+  //if useStencilDist then input.updateFluff();
+
 
   //
   // Print information before main loop
@@ -149,17 +147,17 @@ proc main() {
 
 
   //
-  // Main loop
+  // Main loop of Stencil
   //
   if debug then startVdebug("stencil-fast-vis");
   for iteration in 0..iterations {
 
-    // Start timer after warmup iteration
+    /* Start timer after warmup iteration */
     if (iteration == 1) {
       timer.start();
     }
 
-    if debug then tagVdebug('stencil');
+    if debug then diagnostics('stencil');
     if (!tiling) {
       forall (i,j) in innerDom {
         var tmpout: dtype = 0.0;
@@ -169,8 +167,9 @@ proc main() {
           for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
           for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
         } else {
-          for (ii, jj) in (-R..R, -R..R) do
-            tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
+          for ii in -R..R do
+            for jj in -R..R do
+              tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
         }
         output[i, j] += tmpout;
       }
@@ -185,8 +184,9 @@ proc main() {
               for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
               for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
             } else {
-              for (ii, jj) in (-R..R, -R..R) do
-                tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
+              for ii in -R..R do
+                for jj in -R..R do
+                  tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
             }
             output[i, j] += tmpout;
           }
@@ -194,19 +194,20 @@ proc main() {
       }
     }
 
-    // Add constant to solution to force refresh of neighbor data, if any
+    /* Add constant to solution to force refresh of neighbor data */
     if debug then diagnostics('input += 1');
     forall (i,j) in Dom {
       input[i, j] += 1.0;
     }
 
+    /* Update ghost cells for each locales, for StencilDist */
     if useStencilDist then {
       if debug then diagnostics('output.updateFluff()');
       output.updateFluff();
     }
 
 
-  } // end of iterations
+  } // end of main loop
 
   timer.stop();
   if debug then stopVdebug();
@@ -215,20 +216,20 @@ proc main() {
   // Analyze and output results
   //
 
-  // Timings
+  /* Timings */
   var stencilTime = timer.elapsed(),
       flops = (2*stencilSize + 1) * activePoints,
       avgTime = stencilTime / iterations;
 
-  // Compute L1 norm
+  /* Compute L1 norm */
   var referenceNorm = (iterations + 1) * (coefx + coefy),
       norm = + reduce abs(output);
   norm /= activePoints;
 
-  // Error threshold
+  /* Error threshold */
   const epsilon = 1.e-8;
 
-  // Verify correctness
+  /* Verify correctness */
   if abs(norm-referenceNorm) > epsilon then {
     writeln("ERROR: L1 norm = ", norm, ", Reference L1 norm = ", referenceNorm);
     exit(1);
@@ -246,6 +247,8 @@ proc main() {
   }
 }
 
+
+/* Helper function for merging debug output and chplvis calls */
 proc diagnostics(tag: string) {
   tagVdebug(tag);
   writeln('[Debug]: ', tag);
