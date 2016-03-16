@@ -570,12 +570,19 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
 
       //
       // Instead of running the program directly, run an xterm which
-      // runs gdb on the program and its args.
+      // runs lldb on the program and its args.
       //
+#if defined __APPLE__
+      new_argv[0] = (char *) "/opt/X11/bin/xterm";
+      new_argv[1] = (char *) "-e";
+      new_argv[2] = (char *) "lldb";
+      new_argv[3] = (char *) "--";
+#else
       new_argv[0] = (char *) "/usr/bin/xterm";
       new_argv[1] = (char *) "-e";
       new_argv[2] = (char *) "gdb";
       new_argv[3] = (char *) "--args";
+#endif
       memcpy(&new_argv[4], *argv, *argc * sizeof(*new_argv));
 
       *argc = new_argc;
