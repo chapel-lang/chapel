@@ -86,8 +86,8 @@ proc main() {
   //                 else noDist;
 
   // Domains
-  const Dom = localDom dmapped new dmap(new Stencil(innerLocalDom, fluff=(R,R))),
-   innerDom = innerLocalDom dmapped new dmap(new Stencil(innerLocalDom, fluff=(R,R)));
+  const Dom =      localDom dmapped Dist,
+        innerDom = innerLocalDom dmapped Dist;
 
   var tiledDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize};
 
