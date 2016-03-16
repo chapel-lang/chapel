@@ -1,42 +1,55 @@
 //
-// Chapel's shared parallel stencil implementation
+// Chapel's parallel stencil implementation
 //
+
+/* Standard Library */
 use Time;
 use BlockDist;
 use ReplicatedDist;
 use VisualDebug;
-use StencilDist; // Included from miniMD
+
+/* Included from miniMD benchmark */
+use StencilDist;
 
 /* Version kept in sync with PRK repository */
 param PRKVERSION = "2.16";
 
-// Configurable type for array elements
+/* Numerical type for matrix elements */
 config type dtype = real;
 
+/* Radius of weight matrix */
 config param R = 2,
-             // Square weight matrix (true) or Star weight matrix (false)
+             /* Determine weight matrix shapre; square = false, star = true */
              compact = false,
-             // Control of multilocale parallelism
+             /* Map domains to Stencil Distribution */
              useStencilDist = false,
+             /* Map domains to Block Distribution */
              useBlockDist = false;
+             /* No domain mapping, if neither is selected (shared) */
 
+/* Number of iterations to execute (0th iteration is untimed) */
 config const iterations: int = 10,
+             /* Input/Output matrix dimensions are 'order' x 'order' */
              order: int = 1000,
-             // Output controls
+             /* Enable debug output, including chplvis data */
              debug: bool = false,
+             /* Only print result of validation - used in correctness tests*/
              validate: bool = false;
 
+/* Size of stride for tiling; disables tiling if set to 0 */
 config var tileSize: int = 0;
 
+/* Weight matrix dimensions are 'Wsize' x 'Wsize' */
+param Wsize = 2*R + 1,
+      /* Frequently used constant for tuple index bookkeeping*/
+      R1 = R + 1;
 
 
-param weightSize = 2*R + 1,
-      Wsize = 2*R + 1,
-      R1 = R+1;
-
-// Runtime constants
+/* Number of elements that will be updated in Output matrix */
 const activePoints = (order-2*R)*(order-2*R),
-      stencilSize = 4*R + 1,
+      /* Number of elements in weight matrix, for calculating flops */
+      stencilSize = if compact then (2*R + 1)**2 else 4*R + 1;
+      /* Scalar coefficients of weight matrix elements*/
       coefx : dtype = 1.0,
       coefy : dtype = 1.0;
 
