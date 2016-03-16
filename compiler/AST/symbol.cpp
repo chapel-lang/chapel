@@ -1104,7 +1104,7 @@ const char* modTagDescrString(ModTag modTag) {
 // describes this argument's intent (for use in an English sentence)
 const char* ArgSymbol::intentDescrString(void) {
   switch (intent) {
-    case INTENT_BLANK: return "blank intent";
+    case INTENT_BLANK: return "default intent";
     case INTENT_IN: return "'in'";
     case INTENT_INOUT: return "'inout'";
     case INTENT_OUT: return "'out'";
@@ -1123,7 +1123,7 @@ const char* ArgSymbol::intentDescrString(void) {
 // describes the given intent (for use in an English sentence)
 const char* intentDescrString(IntentTag intent) {
   switch (intent) {
-    case INTENT_BLANK:     return "blank intent";
+    case INTENT_BLANK:     return "default intent";
     case INTENT_IN:        return "'in' intent";
     case INTENT_INOUT:     return "'inout' intent";
     case INTENT_OUT:       return "'out' intent";

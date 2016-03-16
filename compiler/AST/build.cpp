@@ -1088,6 +1088,13 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
                                  Expr* reduceOp, Expr* reduceVar,
                                  Expr* otherROp, VarSymbol* useThisGlobalOp)
 {
+  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(reduceOp)) {
+    if (!strcmp(sym->unresolved, "max"))
+      sym->unresolved = astr("MaxReduceScanOp");
+    else if (!strcmp(sym->unresolved, "min"))
+      sym->unresolved = astr("MinReduceScanOp");
+  }
+
   VarSymbol* globalOp;
   if (useThisGlobalOp) {
     globalOp = useThisGlobalOp;
