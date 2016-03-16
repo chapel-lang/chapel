@@ -102,8 +102,9 @@ static bool isCorrespCoforallIndex(FnSymbol* fn, Symbol* sym)
 }
 
 // We use modified versions of these in flattenFunctions.cpp:
-//  isOuterVar(), findOuterVars(), addVarsToFormals(),
-//  replaceVarUsesWithFormals() -> replaceVarUses(), addVarsToActuals()
+//  isOuterVar(), findOuterVars();
+//  addVarsToFormals() + replaceVarUsesWithFormals() ->
+//    addVarsToFormalsActuals() + replaceVarUses()
 
 // Is 'sym' a non-const variable (including formals) defined outside of 'fn'?
 // This is a modification of isOuterVar() from flattenFunctions.cpp.
@@ -211,8 +212,11 @@ void pruneThisArg(Symbol* parent, SymbolMap& uses) {
   }
 }
 
-static void //vass also update comment above
-addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars, CallExpr* call) {
+static void
+addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
+                        CallExpr* call, bool isCoforall)
+{
+  Expr *redRef1 = NULL, *redRef2 = NULL;
   form_Map(SymbolMapElem, e, vars) {
       Symbol* sym = e->key;
       if (e->value != markPruned) {
@@ -341,6 +345,7 @@ void createTaskFunctions(void) {
       SET_LINENO(block);
 
       FnSymbol* fn = NULL;
+      bool isCoforall = false;
 
       if (info->isPrimitive(PRIM_BLOCK_BEGIN)) {
         fn = new FnSymbol("begin_fn");
@@ -351,6 +356,7 @@ void createTaskFunctions(void) {
       } else if (info->isPrimitive(PRIM_BLOCK_COFORALL)) {
         fn = new FnSymbol("coforall_fn");
         fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
+        isCoforall = true;
       } else if (info->isPrimitive(PRIM_BLOCK_ON) ||
                  info->isPrimitive(PRIM_BLOCK_BEGIN_ON) ||
                  info->isPrimitive(PRIM_BLOCK_COBEGIN_ON) ||
@@ -512,7 +518,7 @@ void createTaskFunctions(void) {
           if (block->byrefVars != NULL)
             block->byrefVars->remove();
 
-          addVarsToFormalsActuals(fn, uses, call);
+          addVarsToFormalsActuals(fn, uses, call, isCoforall);
           replaceVarUses(fn->body, uses);
         }
       } // if fn
