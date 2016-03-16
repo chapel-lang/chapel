@@ -191,8 +191,8 @@ proc main() {
       if debug then diagnostics('output.updateFluff()');
       output.updateFluff();
 
-      if debug then diagnostics('input.updateFluff()');
-      input.updateFluff();
+      //if debug then diagnostics('input.updateFluff()');
+      //input.updateFluff();
     }
 
 
