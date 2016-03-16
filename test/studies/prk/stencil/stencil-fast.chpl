@@ -56,6 +56,7 @@ const activePoints = (order-2*R)*(order-2*R),
 
 var timer: Timer;
 
+/* Parallel Research Kernel - Stencil */
 proc main() {
   //
   // Process and test input configs
@@ -248,7 +249,11 @@ proc main() {
 }
 
 
-/* Helper function for merging debug output and chplvis calls */
+/* Helper function for merging debug output and chplvis calls
+
+  :arg tag: Name of chplvis tag produced, and outputted during execution
+
+ */
 proc diagnostics(tag: string) {
   tagVdebug(tag);
   writeln('[Debug]: ', tag);
