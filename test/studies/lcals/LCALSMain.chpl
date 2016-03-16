@@ -716,22 +716,6 @@ module main {
 
     for ilv in run_variant_names.domain {
       suite_info.addLoopStats(run_variant_names[ilv]);
-
-      if suite_info.num_loops_run[ilv] == nil then
-        suite_info.num_loops_run[ilv] = new vector(int);
-      suite_info.num_loops_run[ilv].resize(num_lengths);
-
-      if suite_info.tot_time[ilv] == nil then
-        suite_info.tot_time[ilv] = new vector(real);
-      suite_info.tot_time[ilv].resize(num_lengths);
-
-      if suite_info.fom_rel[ilv] == nil then
-        suite_info.fom_rel[ilv] = new vector(real);
-      suite_info.fom_rel[ilv].resize(num_lengths);
-
-      if suite_info.fom_rate[ilv] == nil then
-        suite_info.fom_rate[ilv] = new vector(real);
-      suite_info.fom_rate[ilv].resize(num_lengths);
     }
 
     var shared_loop_length: [suite_info.loop_length_dom] int;

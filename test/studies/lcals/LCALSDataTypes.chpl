@@ -46,11 +46,6 @@ module LCALSDataTypes {
 
     var loop_weights: [weight_group_dom] real;
 
-    var num_loops_run: [loop_variant_dom] vector(int);
-    var tot_time: [loop_variant_dom] vector(real);
-    var fom_rel: [loop_variant_dom] vector(real);
-    var fom_rate: [loop_variant_dom] vector(real);
-
     var cache_flush_data_len: int;
     var cache_flush_data_dom: domain(1);
     var cache_flush_data: [cache_flush_data_dom] real;
@@ -67,15 +62,6 @@ module LCALSDataTypes {
     }
     proc ~LoopSuiteRunInfo() {
       if ref_loop_stat != nil then delete ref_loop_stat;
-
-      for nlr in num_loops_run do
-        if nlr != nil then delete nlr;
-      for tt in tot_time do
-        if tt != nil then delete tt;
-      for fr in fom_rel do
-        if fr != nil then delete fr;
-      for fr in fom_rate do
-        if fr != nil then delete fr;
 
       for idx in loop_test_stats_dom {
         for stat in loop_test_stats[idx] do
