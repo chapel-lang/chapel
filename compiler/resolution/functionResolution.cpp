@@ -5232,7 +5232,8 @@ static Expr* resolvePrimInit(CallExpr* call)
   // Declaring a variable over a generic type should not be OK
   //
   if (type->symbol->hasFlag(FLAG_GENERIC)) {
-    USR_FATAL(call, "Cannot declare a variable using a generic type");
+    USR_FATAL(call, "Variables cannot be declared using (uninstantiated) "
+              "generic types like '%s'", type->symbol->name);
   }
 
   CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
