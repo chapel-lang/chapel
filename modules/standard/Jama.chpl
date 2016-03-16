@@ -199,40 +199,13 @@ class CholeskyDecomposition {
    @return             Structure to access R and isspd flag.
    *\
 
-   public CholeskyDecomposition (Matrix Arg, int rightflag) {
-      // Initialize.
-      double[,] A = Arg.getArray();
-      n = Arg.getColumnDimension();
-      R = new double[n,n];
-      isspd = (Arg.getColumnDimension() == n);
-      // Main loop.
-      for (int j = 0; j < n; j++) {
-         double d = 0.0;
-         for (int k = 0; k < j; k++) {
-            double s = A[k,j];
-            for (int i = 0; i < k; i++) {
-               s = s - R[i,k]*R[i,j];
-            }
-            R[k,j] = s = s/R[k,k];
-            d = d + s*s;
-            isspd = isspd & (A[k,j] == A[j,k]); 
-         }
-         d = A[j,j] - d;
-         isspd = isspd & (d > 0.0);
-         R[j,j] = Math.sqrt(Math.max(d,0.0));
-         for (int k = j+1; k < n; k++) {
-            R[k,j] = 0.0;
-         }
-      }
-   }
+   CholeskyDecomposition (Matrix Arg, int rightflag)
 
    \** Return upper triangular factor.
    @return     R
    *\
 
-   public Matrix getR () {
-      return new Matrix(R,n,n);
-   }
+   Matrix getR ()
 
 \* ------------------------
    End of temporary code.
@@ -276,14 +249,16 @@ class CholeskyDecomposition {
       // Copy right hand side.
       var X = B.getArrayCopy();
       var nx = B.getColumnDimension();
+      const nxrng = {1..nx};
+      const krng = {1..k};
 
            // Solve L*Y = B;
            //for (int k = 0; k < n; k++) {
            for k in 1..n {
              //for (int j = 0; j < nx; j++) {
-             for j in 1..nx {
+             for j in nxrng {
                 //for (int i = 0; i < k ; i++) {
-                for i in 1..k {
+                for i in krng {
                     X[k,j] -= X[i,j]*L[k,i];
                 }
                 X[k,j] /= L[k,k];
@@ -294,7 +269,7 @@ class CholeskyDecomposition {
            //for (int k = n-1; k >= 0; k--) {
            for k in 1..n-1 by -1 {
              //for (int j = 0; j < nx; j++) {
-             for j in 1..nx {
+             for j in nxrng {
                 for i in k+1..n {
                     X[k,j] -= X[i,j]*L[i,k];
                 }
@@ -377,37 +352,38 @@ class EigenvalueDecomposition {
    //  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding
    //  Fortran subroutine in EISPACK.
 
-      //for (int j = 0; j < n; j++) {
-      for j in 1..n {
+      for j in d.domain {
          d[j] = V[n-1,j];
       }
 
       // Householder reduction to tridiagonal form.
    
-      //for (int i = n-1; i > 0; i--) {
       for i in 2..n by -1 {
          // Scale to avoid under/overflow.
 
          var scale = 0.0;
          var h = 0.0;
-         //for (int k = 0; k < i; k++) {
-         for k in 1..i { 
+         const irng = {1..i};
+
+         for k in irng { 
             scale = scale + abs(d[k]);
          }
+
          if (scale == 0.0) {
             e[i] = d[i-1];
-            //for (int j = 0; j < i; j++) {
-            for j in 1..i {
+
+            for j in irng {
                d[j] = V[i-1,j];
                V[i,j] = 0.0;
                V[j,i] = 0.0;
             }
-         } else {
+         } 
+         else {
    
             // Generate Householder vector.
    
             //for (int k = 0; k < i; k++) {
-            for k in 1..i { 
+            for k in irng { 
                d[k] /= scale;
                h += d[k] * d[k];
             }
@@ -420,18 +396,17 @@ class EigenvalueDecomposition {
             h = h - f * g;
             d[i-1] = f - g;
             //for (int j = 0; j < i; j++) {
-            for j in 1..i {
+            for j in irng {
                e[j] = 0.0;
             }
    
             // Apply similarity transformation to remaining columns.
    
-            //for (int j = 0; j < i; j++) {
-            for j in 1.. i { 
+            for j in irng { 
                f = d[j];
                V[j,i] = f;
                g = e[j] + V[j,j] * f;
-               //for (int k = j+1; k <= i-1; k++) {
+
                for k in j+1..i-1 { 
                   g += V[k,j] * d[k];
                   e[k] += V[k,j] * f;
@@ -439,21 +414,22 @@ class EigenvalueDecomposition {
                e[j] = g;
             }
             f = 0.0;
-            //for (int j = 0; j < i; j++) {
-            for j in 1..i {
+
+            for j in irng {
                e[j] /= h;
                f += e[j] * d[j];
             }
+
             var hh = f / (h + h);
-            //for (int j = 0; j < i; j++) {
-            for j in 1..i {
+
+            for j in irng {
                e[j] -= hh * d[j];
             }
-            //for (int j = 0; j < i; j++) {
-            for j in 1..i { 
+
+            for j in irng { 
                f = d[j];
                g = e[j];
-               //for (int k = j; k <= i-1; k++) {
+
                for k in j..i-1 {
                   V[k,j] -= (f * e[k] + g * d[k]);
                }
@@ -466,39 +442,38 @@ class EigenvalueDecomposition {
    
       // Accumulate transformations.
    
-      //for (int i = 0; i < n-1; i++) {
       for i in 1..n-1 { 
+         const irng = {1..i};
          V[n-1,i] = V[i,i];
          V[i,i] = 1.0;
          var h = d[i+1];
          if (h != 0.0) {
-            //for (int k = 0; k <= i; k++) {
-            for k in 1..i {
+            for k in irng {
                d[k] = V[k,i+1] / h;
             }
-            //for (int j = 0; j <= i; j++) {
-            for j in 1..i {
+
+            for j in irng {
                var g = 0.0;
-               //for (int k = 0; k <= i; k++) {
-               for k in 1..i { 
+               for k in irng { 
                   g += V[k,i+1] * V[k,j];
                }
-               //for (int k = 0; k <= i; k++) {
-               for k in 1..i {
+
+               for k in irng {
                   V[k,j] -= g * d[k];
                }
             }
          }
-         //for (int k = 0; k <= i; k++) {
-         for k in 1..i {
+
+         for k in irng {
             V[k,i+1] = 0.0;
          }
       }
-      //for (int j = 0; j < n; j++) {
+
       for j in 1..n {
          d[j] = V[n-1,j];
          V[n-1,j] = 0.0;
       }
+
       V[n-1,n-1] = 1.0;
       e[1] = 0.0;
    } 
@@ -520,13 +495,12 @@ class EigenvalueDecomposition {
    
       var f = 0.0;
       var tst1 = 0.0;
-      var eps = 2.0 ** -52.0; //pow(2.0,-52.0);
-      //for (int l = 0; l < n; l++) {
+      var eps = 2.0 ** -52.0;
+
       for l in 1..n { 
 
          // Find small subdiagonal element
    
-         //tst1 = Math.max(tst1,Math.abs(d[l]) + Math.abs(e[l]));
          tst1 = max(tst1,abs(d[l]) + abs(e[l]));
          var m = l;
          while (m < n) {
@@ -556,7 +530,7 @@ class EigenvalueDecomposition {
                d[l+1] = e[l] * (p + r);
                var dl1 = d[l+1];
                var h = g - d[l];
-               //for (int i = l+2; i < n; i++) {
+
                for i in l+2..n { 
                   d[i] -= h;
                }
@@ -571,7 +545,7 @@ class EigenvalueDecomposition {
                var el1 = e[l+1];
                var s = 0.0;
                var s2 = 0.0;
-               //for (int i = m-1; i >= l; i--) {
+
                for i in l..m-1 by -1 {
                   c3 = c2;
                   c2 = c;
@@ -587,7 +561,6 @@ class EigenvalueDecomposition {
    
                   // Accumulate transformation.
    
-                  //for (int k = 0; k < n; k++) {
                   for k in 1..n {
                      h = V[k,i+1];
                      V[k,i+1] = s * V[k,i] + c * h;
@@ -609,10 +582,10 @@ class EigenvalueDecomposition {
       // Sort eigenvalues and corresponding vectors.
    
       //for (int i = 0; i < n-1; i++) {
-      for i in 1..n {
+      for i in d.domain {
          var k = i;
          var p = d[i];
-         //for (int j = i+1; j < n; j++) {
+
          for j in i+1..n {
             if (d[j] < p) {
                k = j;
@@ -622,7 +595,7 @@ class EigenvalueDecomposition {
          if (k != i) {
             d[k] = d[i];
             d[i] = p;
-            //for (int j = 0; j < n; j++) {
+
             for j in 1..n {
                p = V[j,i];
                V[j,i] = V[j,k];
@@ -644,13 +617,12 @@ class EigenvalueDecomposition {
       var low = 1;
       var high = n;
    
-      //for (int m = low+1; m <= high-1; m++) {
       for m in low+1..high-1 {
    
          // Scale column.
    
          var scale = 0.0;
-         //for (int i = m; i <= high; i++) {
+
          for i in m..high { 
             scale = scale + abs(H[i,m-1]);
          }
@@ -659,11 +631,12 @@ class EigenvalueDecomposition {
             // Compute Householder transformation.
    
             var h = 0.0;
-            //for (int i = high; i >= m; i--) {
+
             for i in m..high { 
                ort[i] = H[i,m-1]/scale;
                h += ort[i] * ort[i];
             }
+
             var g = h**0.5; //sqrt(h);
             if (ort[m] > 0) {
                g = -g;
@@ -674,29 +647,23 @@ class EigenvalueDecomposition {
             // Apply Householder similarity transformation
             // H = (I-u*u'/h)*H*(I-u*u')/h)
    
-            //for (int j = m; j < n; j++) {
             for j in m..n { 
                var f = 0.0;
-               //for (int i = high; i >= m; i--) {
                for i in m..high {
                   f += ort[i]*H[i,j];
                }
                f = f/h;
-               //for (int i = m; i <= high; i++) {
                for i in m..high {
                   H[i,j] -= f*ort[i];
                }
            }
    
-           //for (int i = 0; i <= high; i++) {
            for i in 1..high {
                var f = 0.0;
-               //for (int j = high; j >= m; j--) {
                for j in m..high by -1 {
                   f += ort[j]*H[i,j];
                }
                f = f/h;
-               //for (int j = m; j <= high; j++) {
                for j in m..high {
                   H[i,j] -= f*ort[j];
                }
@@ -708,31 +675,25 @@ class EigenvalueDecomposition {
    
       // Accumulate transformations (Algol's ortran).
 
-      //for (int i = 0; i < n; i++) {
-      //   for (int j = 0; j < n; j++) {
-      for (i,j) in {1..n, 1..n} {
+      for (i,j) in V.domain {
             V[i,j] = if (i == j) then 1.0 else 0.0;
-         //}
       }
 
       //for (int m = high-1; m >= low+1; m--) {
       for m in low+1..high-1 by -1 {
          if (H[m,m-1] != 0.0) {
-            //for (int i = m+1; i <= high; i++) {
             for i in m+1..high {
                ort[i] = H[i,m-1];
             }
-            //for (int j = m; j <= high; j++) {
-            for j in m..high {
+            const mhighrng = {m..high};
+            for j in mhighrng {
                var g = 0.0;
-               //for (int i = m; i <= high; i++) {
-               for i in m..high {
+               for i in mhighrng {
                   g += ort[i] * V[i,j];
                }
                // Double division avoids possible underflow
                g = (g / ort[m]) / H[m,m-1];
-               //for (int i = m; i <= high; i++) {
-               for i in m..high {
+               for i in mhighrng {
                   V[i,j] += g * ort[i];
                }
             }
@@ -775,20 +736,18 @@ class EigenvalueDecomposition {
       var n :int = nn-1; // suspicious of this subtraction
       var low = 1;
       var high = nn;
-      var eps = 2.0 ** -52.0; //Math.pow(2.0,-52.0);
+      var eps = 2.0 ** -52.0; 
       var exshift = 0.0;
       var p,q,r,s,z,t,w,x,y:real;
    
       // Store roots isolated by balanc and compute matrix norm
    
       var norm = 0.0;
-      //for (int i = 0; i < nn; i++) {
       for i in 1..nn {
          if (i < low | i > high) {
             d[i] = H[i,i];
             e[i] = 0.0;
          }
-         //for (int j = Math.max(i-1,0); j < nn; j++) {
          for j in max(i,1)..nn {
             norm = norm + abs(H[i,j]);
          }
@@ -829,7 +788,7 @@ class EigenvalueDecomposition {
             w = H[n,n-1] * H[n-1,n];
             p = (H[n-1,n-1] - H[n,n]) / 2.0;
             q = p * p + w;
-            z = abs(q) ** 0.5; //Math.sqrt(Math.abs(q));
+            z = abs(q) ** 0.5; 
             H[n,n] = H[n,n] + exshift;
             H[n-1,n-1] = H[n-1,n-1] + exshift;
             x = H[n,n];
@@ -853,13 +812,12 @@ class EigenvalueDecomposition {
                s = abs(x) + abs(z);
                p = x / s;
                q = z / s;
-               r = (p * p+q * q) ** 0.5; //Math.sqrt(p * p+q * q);
+               r = (p * p+q * q) ** 0.5; 
                p = p / r;
                q = q / r;
    
                // Row modification
    
-               //for (int j = n-1; j < nn; j++) {
                for j in n-1..nn {
                   z = H[n-1,j];
                   H[n-1,j] = q * z + p * H[n,j];
@@ -868,7 +826,6 @@ class EigenvalueDecomposition {
    
                // Column modification
    
-               //for (int i = 0; i <= n; i++) {
                for i in 1..n {
                   z = H[i,n-1];
                   H[i,n-1] = q * z + p * H[i,n];
@@ -877,7 +834,6 @@ class EigenvalueDecomposition {
    
                // Accumulate transformations
    
-               //for (int i = low; i <= high; i++) {
                for i in low..high {
                   z = V[i,n-1];
                   V[i,n-1] = q * z + p * V[i,n];
@@ -913,7 +869,6 @@ class EigenvalueDecomposition {
    
             if (itr == 10) {
                exshift += x;
-               //for (int i = low; i <= n; i++) {
                for i in low..n {
                   H[i,i] -= x;
                }
@@ -929,12 +884,11 @@ class EigenvalueDecomposition {
                 s = (y - x) / 2.0;
                 s = s * s + w;
                 if (s > 0) {
-                    s = s ** 0.5; //Math.sqrt(s);
+                    s = s ** 0.5; 
                     if (y < x) {
                        s = -s;
                     }
                     s = x - w / ((y - x) / 2.0 + s);
-                    //for (int i = low; i <= n; i++) {
                     for i in low..n {
                        H[i,i] -= s;
                     }
@@ -970,7 +924,6 @@ class EigenvalueDecomposition {
                m-=1;
             }
    
-            //for (int i = m+2; i <= n; i++) {
             for i in m+2..n {
                H[i,i-2] = 0.0;
                if (i > m+2) {
@@ -980,8 +933,6 @@ class EigenvalueDecomposition {
    
             // Double QR step involving rows l:n and columns m:n
    
-
-            //for (int k = m; k <= n-1; k++) {
             for k in m..n-1 {
                var notlast = (k != n-1);
                if (k != m) {
@@ -997,7 +948,6 @@ class EigenvalueDecomposition {
                   r = r / x;
                }
 
-               //s = sqrt(p * p + q * q + r * r);
                s = (p * p + q * q + r * r) ** 0.5;
                if (p < 0) {
                   s = -s;
@@ -1017,7 +967,6 @@ class EigenvalueDecomposition {
    
                   // Row modification
    
-                  //for (int j = k; j < nn; j++) {
                   for j in k..nn {
                      p = H[k,j] + q * H[k+1,j];
                      if (notlast) {
@@ -1030,7 +979,6 @@ class EigenvalueDecomposition {
    
                   // Column modification
    
-                  //for (int i = 0; i <= Math.min(n,k+3); i++) {
                   for i in 1..min(n,k+3) {
                      p = x * H[i,k] + y * H[i,k+1];
                      if (notlast) {
@@ -1043,7 +991,6 @@ class EigenvalueDecomposition {
    
                   // Accumulate transformations
    
-                  //for (int i = low; i <= high; i++) {
                   for i in low..high {
                      p = x * V[i,k] + y * V[i,k+1];
                      if (notlast) {
@@ -1064,7 +1011,6 @@ class EigenvalueDecomposition {
          return;
       }
    
-      //for (n = nn-1; n >= 0; n--) {
       for n in 1..nn-1 by -1 {
          p = d[n];
          q = e[n];
@@ -1074,11 +1020,9 @@ class EigenvalueDecomposition {
          if (q == 0) {
             var l = n;
             H[n,n] = 1.0;
-            //for (int i = n-1; i >= 0; i--) {
             for i in 1..n-1 by -1 {
                w = H[i,i] - p;
                r = 0.0;
-               //for (int j = l; j <= n; j++) {
                for j in l..n {
                   r = r + H[i,j] * H[j,n];
                }
@@ -1113,7 +1057,6 @@ class EigenvalueDecomposition {
    
                   t = abs(H[i,n]);
                   if ((eps * t) * t > 1) {
-                     //for (int j = i; j <= n; j++) {
                      for j in i..n {
                         H[j,n] = H[j,n] / t;
                      }
@@ -1136,14 +1079,15 @@ class EigenvalueDecomposition {
                H[n-1,n-1] = cdivr;
                H[n-1,n] = cdivi;
             }
+
             H[n,n-1] = 0.0;
             H[n,n] = 1.0;
-            //for (int i = n-2; i >= 0; i--) {
+
             for i in 1..n-2 by -1 {
                var ra,sa,vr,vi:real;
                ra = 0.0;
                sa = 0.0;
-               //for (int j = l; j <= n; j++) {
+
                for j in l..n {
                   ra = ra + H[i,j] * H[j,n-1];
                   sa = sa + H[i,j] * H[j,n];
@@ -1189,7 +1133,6 @@ class EigenvalueDecomposition {
 
                   t = max(abs(H[i,n-1]),abs(H[i,n]));
                   if ((eps * t) * t > 1) {
-                     //for (int j = i; j <= n; j++) {
                      for j in i..n {
                         H[j,n-1] = H[j,n-1] / t;
                         H[j,n] = H[j,n] / t;
@@ -1202,10 +1145,8 @@ class EigenvalueDecomposition {
    
       // Vectors of isolated roots
    
-      //for (int i = 0; i < nn; i++) {
       for i in 1..nn {
          if (i < low | i > high) {
-            //for (int j = i; j < nn; j++) {
             for j in i..nn {
                V[i,j] = H[i,j];
             }
@@ -1214,15 +1155,13 @@ class EigenvalueDecomposition {
    
       // Back transformation to get eigenvectors of original matrix
    
-      //for (int j = nn-1; j >= low; j--) {
       for j in low..nn-1 by -1 {
-         //for (int i = low; i <= high; i++) {
          for i in low..high {
             z = 0.0;
-            //for (int k = low; k <= Math.min(j,high); k++) {
             for k in low..min(j,high) {
                z = z + V[i,k] * H[k,j];
             }
+
             V[i,j] = z;
          }
       }
@@ -1239,21 +1178,15 @@ class EigenvalueDecomposition {
    */
 
    proc EigenvalueDecomposition (Arg:Matrix) {
-      //double[,] A = Arg.getArray();
       var A = Arg.getArray();
       n = Arg.getColumnDimension();
       vDom = {1..n,1..n};
       dDom = {1..n};
       eDom = {1..n};
-      //V = new double[n,n];
-      //d = new double[n];
-      //e = new double[n];
 
       issymmetric = true;
-      //for (int j = 0; (j < n) & issymmetric; j++) {
       var j = 1;
       while( (j < n) & issymmetric ) {
-      //   for (int i = 0; (i < n) & issymmetric; i++) {
          var i = 1;
          while ( (i < n) & issymmetric ) {
             issymmetric = (A[i,j] == A[j,i]);
@@ -1263,11 +1196,8 @@ class EigenvalueDecomposition {
       }
 
       if (issymmetric) {
-         //for (int i = 0; i < n; i++) {
-         //   for (int j = 0; j < n; j++) {
          for (i,j) in {1..n, 1..n} {
                V[i,j] = A[i,j];
-            //}
          }
    
          // Tridiagonalize.
@@ -1279,14 +1209,9 @@ class EigenvalueDecomposition {
       } else {
          hDom = {1..n, 1..n};
          ortDom = {1..n};
-         //H = new double[n,n];
-         //ort = new double[n];
          
-         //for (int j = 0; j < n; j++) {
-         //   for (int i = 0; i < n; i++) {
          for (j,i) in {1..n,1..n} {
                H[i,j] = A[i,j];
-         //   }
          }
    
          // Reduce to Hessenberg form.
@@ -1332,10 +1257,9 @@ class EigenvalueDecomposition {
    proc getD () : Matrix {
       var X = new Matrix(n,n);
       var D = X.getArray();
-      //for (int i = 0; i < n; i++) {
-      for i in 1..n {
-         //for (int j = 0; j < n; j++) {
-         for j in 1..n {
+      const nrng = {1..n};
+      for i in nrng {
+         for j in nrng {
             D[i,j] = 0.0;
          }
          D[i,i] = d[i];
@@ -1405,45 +1329,39 @@ class LUDecomposition {
       luDom = {1..m,1..n};
       LU = A.getArrayCopy();
 
-      //piv = new int[m];
       pivDom = 1..m;
 
-      //for (int i = 0; i < m; i++) {
       for i in 1..m {
          piv[i] = i;
       }
+
       pivsign = 1;
-      //double[] LUrowi;
       var lurowiDom = {1..n};
       var LUrowi : [lurowiDom] real;
 
-      //double[] LUcolj = new double[m];
       var lucoljDom = {1..m};
       var LUcolj : [lucoljDom] real;
 
       // Outer loop.
 
-      //for (int j = 0; j < n; j++) {
+      const mrng = {1..m};
+
       for j in 1..n {
 
          // Make a copy of the j-th column to localize references.
-
-         //for (int i = 0; i < m; i++) {
-         for i in 1..m {
+         for i in mrng {
             LUcolj[i] = LU[i,j];
          }
 
          // Apply previous transformations.
 
-         //for (int i = 0; i < m; i++) {
-         for i in 1..m { 
+         for i in mrng { 
             LUrowi = LU[i,..];
 
             // Most of the time is spent in the following dot product.
 
             var kmax = min(i,j);
             var s = 0.0;
-            //for (int k = 0; k < kmax; k++) {
             for k in 1..kmax { 
                s += LUrowi[k]*LUcolj[k];
             }
@@ -1455,14 +1373,12 @@ class LUDecomposition {
          // Find pivot and exchange if necessary.
 
          var p = j;
-         //for (int i = j+1; i < m; i++) {
          for i in j+1..m {
             if (abs(LUcolj[i]) > abs(LUcolj[p])) {
                p = i;
             }
          }
          if (p != j) {
-            //for (int k = 0; k < n; k++) {
             for k in 1..n {
                var t = LU[p,k]; LU[p,k] = LU[j,k]; LU[j,k] = t;
             }
@@ -1473,7 +1389,6 @@ class LUDecomposition {
          // Compute multipliers.
          
          if ( (j < m) & (LU[j,j] != 0.0)) {
-            //for (int i = j+1; i < m; i++) {
             for i in j+1..m {
                LU[i,j] /= LU[j,j];
             }
@@ -1497,44 +1412,7 @@ class LUDecomposition {
    @return               Structure to access L, U and piv.
    *\
 
-   public LUDecomposition (Matrix A, int linpackflag) {
-      // Initialize.
-      LU = A.getArrayCopy();
-      m = A.getRowDimension();
-      n = A.getColumnDimension();
-      piv = new int[m];
-      for (int i = 0; i < m; i++) {
-         piv[i] = i;
-      }
-      pivsign = 1;
-      // Main loop.
-      for (int k = 0; k < n; k++) {
-         // Find pivot.
-         int p = k;
-         for (int i = k+1; i < m; i++) {
-            if (Math.abs(LU[i,k]) > Math.abs(LU[p,k])) {
-               p = i;
-            }
-         }
-         // Exchange if necessary.
-         if (p != k) {
-            for (int j = 0; j < n; j++) {
-               double t = LU[p,j]; LU[p,j] = LU[k,j]; LU[k,j] = t;
-            }
-            int t = piv[p]; piv[p] = piv[k]; piv[k] = t;
-            pivsign = -pivsign;
-         }
-         // Compute multipliers and eliminate k-th column.
-         if (LU[k,k] != 0.0) {
-            for (int i = k+1; i < m; i++) {
-               LU[i,k] /= LU[k,k];
-               for (int j = k+1; j < n; j++) {
-                  LU[i,j] -= LU[i,k]*LU[k,j];
-               }
-            }
-         }
-      }
-   }
+   LUDecomposition (Matrix A, int linpackflag) 
 
 \* ------------------------
    End of temporary code.
@@ -1549,7 +1427,6 @@ class LUDecomposition {
    */
 
    proc isNonsingular () {
-      //for (int j = 0; j < n; j++) {
       for j in 1..n {
          if (LU[j,j] == 0) {
             return false;
@@ -1565,8 +1442,6 @@ class LUDecomposition {
    proc getL () {
       var X = new Matrix(m,n);
       var L = X.getArray();
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m,1..n} {
             if (i > j) {
                L[i,j] = LU[i,j];
@@ -1575,7 +1450,6 @@ class LUDecomposition {
             } else {
                L[i,j] = 0.0;
             }
-         //}
       }
       return X;
    }
@@ -1587,8 +1461,6 @@ class LUDecomposition {
    proc getU () {
       var X = new Matrix(n,n);
       var U = X.getArray();
-      //for (int i = 0; i < n; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..n, 1..n} {
             if (i <= j) {
                U[i,j] = LU[i,j];
@@ -1606,12 +1478,7 @@ class LUDecomposition {
 
    proc getPivot () {
       var p : [1..m] int;
-
-      //for (int i = 0; i < m; i++) {
-      //for i in 1..m {
-      //   p[i] = piv[i];
-      //}
-      p(..) = piv(..);
+      p = piv;
       return p;
    }
 
@@ -1620,9 +1487,7 @@ class LUDecomposition {
    */
 
    proc getDoublePivot () {
-      //double[] vals = new double[m];
       var vals : [1..m] real;
-      //for (int i = 0; i < m; i++) {
       for i in 1..m {
          vals[i] = piv[i]:real;
       }
@@ -1639,7 +1504,6 @@ class LUDecomposition {
          assert(m != n, "Matrix must be square.");
       }
       var d : real = pivsign:real;
-      //for (int j = 0; j < n; j++) {
       for j in 1..n {
          d *= LU[j,j];
       }
@@ -1663,32 +1527,22 @@ class LUDecomposition {
 
       // Copy right hand side with pivoting
       var nx = B.getColumnDimension();
-      //var Xmat = B.getMatrix(piv,0,nx-1);
       var Xmat = B.getMatrix(piv,1,nx);
       var X = Xmat.A; 
 
       // Solve L*Y = B(piv,:)
-      //for (int k = 0; k < n; k++) {
       for k in 1..n {
-      //   for (int i = k+1; i < n; i++) {
-      //      for (int j = 0; j < nx; j++) {
-            for (i,j) in {k+1..n, 1..nx} {
-               X[i,j] -= X[k,j]*LU[i,k];
-            }
-         //}
+         for (i,j) in {k+1..n, 1..nx} {
+            X[i,j] -= X[k,j]*LU[i,k];
+         }
       }
       // Solve U*X = Y;
-      //for (int k = n-1; k >= 0; k--) {
       for k in 1..n-1 by -1 {
-         //for (int j = 0; j < nx; j++) {
          for j in 1..nx {
             X[k,j] /= LU[k,k];
          }
-         //for (int i = 0; i < k; i++) {
-         //   for (int j = 0; j < nx; j++) {
          for (i,j) in {1..k, 1..nx} {
-               X[i,j] -= X[k,j]*LU[i,k];
-            //}
+            X[i,j] -= X[k,j]*LU[i,k];
          }
       }
       Xmat.A = X;
@@ -1726,14 +1580,6 @@ class LUDecomposition {
 <DT><B>Example of use:</B></DT>
 <P>
 <DD>Solve a linear system A x = b and compute the residual norm, ||b - A x||.
-<P><PRE>
-      double[,] vals = {{1.,2.,3},{4.,5.,6.},{7.,8.,10.}};
-      Matrix A = new Matrix(vals);
-      Matrix b = Matrix.random(3,1);
-      Matrix x = A.solve(b);
-      Matrix r = A.times(x).minus(b);
-      double rnorm = r.normInf();
-</PRE></DD>
 </DL>
 
 @author The MathWorks, Inc. and the National Institute of Standards and Technology.
@@ -1749,11 +1595,8 @@ class LUDecomposition {
 proc identity (m:int, n:int) {
    var A = new Matrix(m,n);
    var X = A.getArray();
-   //for (int i = 0; i < m; i++) {
-   //   for (int j = 0; j < n; j++) {
    for (i,j) in {1..m, 1..n} {
       X[i,j] = if(i == j) then 1.0 else 0.0;
-      //}
    }
    return A;
 }
@@ -1801,13 +1644,9 @@ class Matrix {
    proc Matrix (m:int, n:int, s:real) {
       this.m = m;
       this.n = n;
-      //A = new double[m,n];
       aDom = {1..m, 1..n};
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
-            A[i,j] = s;
-         //}
+         A[i,j] = s;
       }
    }
 
@@ -1823,23 +1662,20 @@ class Matrix {
          n = 1;
       }
       else {
-        m = aDom.high(1); //A.length;
-        n = aDom.high(2); //A[0].length;
+        m = aDom.high(1); 
+        n = aDom.high(2); 
       }
 
       this.aDom = {1..m, 1..n};
 
-      //for (int i = 0; i < m; i++) {
       for i in 1..m {
-         //if (A[i].domain(2).high != n) {
          if (this.aDom.high(2) != n) {
-            //assert((A[i].length != n), "All rows must have the same length.");
             assert((this.aDom.high(2) != n), "All rows must have the same length.");
          }
       }
 
       if aDom.rank == 1 {
-        this.A(1..m, 1) = A(..);
+        this.A(1..m, 1) = A;
       }
       else {
         this.A = A;
@@ -1872,13 +1708,6 @@ class Matrix {
          assert(m*n != vals.domain.high, "Array length must be a multiple of m.");
       }
       aDom = {1..m, 1..n};
-      //A = new double[m,n];
-      //for (int i = 0; i < m; i++) {
-         //for (int j = 0; j < n; j++) {
-      //for (i,j) in {1..m, 1..n} {
-      //      A[i,j] = vals[(i+j-1)*m];
-      //}
-      //}
       var revDom = {1..n, 1..m};
       for (ij, val) in zip(revDom, vals) { A(ij(2), ij(1)) = val; }
    }
@@ -1899,9 +1728,6 @@ class Matrix {
       var C = X.getArray();
 
       for i in 1..m {
-         //if (A[i].domain.high != n) {
-         //      assert(A[i].domain.high != n, "All rows must have the same length.");
-         //}
          for j in 1..n {
             C[i,j] = A[i,j];
          }
@@ -1915,11 +1741,8 @@ class Matrix {
    proc copy () {
       var X = new Matrix(m,n);
       var C = X.getArray();
-      //for (int i = 0; i < m; i++) {
-         //for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
             C[i,j] = A[i,j];
-         //}
       }
       return X;
    }
@@ -1945,15 +1768,7 @@ class Matrix {
 
    proc getArrayCopy () {
       var C : [1..m, 1..n] real;
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
-
-      //for (i,j) in {1..m, 1..n} {
-      //      C[i,j] = A[i,j];
-         //}
-      //}
-      C[1..m, 1..n] = A[1..m, 1..n];
-
+      C = A;
       return C;
    }
 
@@ -1962,12 +1777,9 @@ class Matrix {
    */
 
    proc getColumnPackedCopy () {
-      var vals : [1..m*n] real; //double[m*n];
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
+      var vals : [1..m*n] real; 
       for (i,j) in {1..m, 1..n} {
-            vals[i+j*m] = A[i,j];
-         //}
+         vals[i+j*m] = A[i,j];
       }
       return vals;
    }
@@ -1978,11 +1790,8 @@ class Matrix {
 
    proc getRowPackedCopy () {
       var vals : [1..m*n] real;
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
-            vals[i*n+j] = A[i,j];
-         //}
+         vals[i*n+j] = A[i,j];
       }
       return vals;
    }
@@ -2025,15 +1834,9 @@ class Matrix {
 
    proc getMatrix (i0:int, i1:int, j0:int, j1:int) {
       var X = new Matrix(i1-i0+1,j1-j0+1);
-      //   for (int i = i0; i <= i1; i++) {
-      //      for (int j = j0; j <= j1; j++) {
-         for (i,j) in {i0..i1, j0..j1} {
-               X.A[(i-i0)+1,(j-j0)+1] = A[i,j];
-      //      }
-         }
-      //} catch(ArrayIndexOutOfBoundsException e) {
-      //   throw new ArrayIndexOutOfBoundsException("Submatrix indices");
-      //}
+      for (i,j) in {i0..i1, j0..j1} {
+         X.A[(i-i0)+1,(j-j0)+1] = A[i,j];
+      }
       return X;
    }
 
@@ -2047,15 +1850,9 @@ class Matrix {
    proc getMatrix (r:[?rDom] int, c:[?cDom] int) {
       var X = new Matrix(r.length,c.length);
       var B = X.getArray();
-         //for (int i = 0; i < r.length; i++) {
-         //   for (int j = 0; j < c.length; j++) {
          for (i,j) in {1..rDom.high, 1..cDom.high} {
                B[i,j] = A[r[i],c[j]];
-            //}
          }
-      //} catch(ArrayIndexOutOfBoundsException e) {
-      //   throw new ArrayIndexOutOfBoundsException("Submatrix indices");
-      //}
       return X;
    }
 
@@ -2070,16 +1867,9 @@ class Matrix {
    proc getMatrix (i0:int, i1:int, c:[?cDom] int) {
       var X = new Matrix(i1-i0+1,c.length);
       var B = X.getArray();
-      //try {
-      //   for (int i = i0; i <= i1; i++) {
-      //      for (int j = 0; j < c.length; j++) {
         for (i,j) in {i0..i1, 1..cDom.high} {
                B[i-i0,j] = A[i,c[j]];
-            //}
          }
-      //} catch(ArrayIndexOutOfBoundsException e) {
-      //   throw new ArrayIndexOutOfBoundsException("Submatrix indices");
-      //}
       return X;
    }
 
@@ -2094,17 +1884,9 @@ class Matrix {
    proc getMatrix (r:[?rDom] int, j0:int, j1:int) {
       var X = new Matrix(rDom.high,j1-j0+1);
       var B = X.getArray();
-      //try {
-         //for (int i = 0; i < r.length; i++) {
-         //   for (int j = j0; j <= j1; j++) {
          for (i,j) in {1..rDom.high, j0..j1} {
-               //B[i,j-j0] = A[r[i],j];
                B[i,(j-j0)+1] = A[r[i],j];
-            //}
          }
-      //} catch(ArrayIndexOutOfBoundsException e) {
-      //   throw new ArrayIndexOutOfBoundsException("Submatrix indices");
-      //}
       return X;
    }
 
@@ -2129,16 +1911,9 @@ class Matrix {
    */
 
    proc setMatrix (i0, i1, j0, j1:int, X:Matrix) {
-      //try {
-         //for (int i = i0; i <= i1; i++) {
-         //   for (int j = j0; j <= j1; j++) {
          for (i,j) in {i0..i1, j0..j1} {
                A[i,j] = X.get(i-i0,j-j0);
-            //}
          }
-      //} catch(ArrayIndexOutOfBoundsException e) {
-      //   throw new ArrayIndexOutOfBoundsException("Submatrix indices");
-      //}
    }
 
    /** Set a submatrix.
@@ -2149,16 +1924,9 @@ class Matrix {
    */
 
    proc setMatrix (r:[?rDom] int, c:[?cDom] int, X:Matrix) {
-      //try {
-      //   for (int i = 0; i < r.length; i++) {
-      //      for (int j = 0; j < c.length; j++) {
       for (i,j) in {1..rDom.high, 1..cDom.high} {
                A[r[i],c[j]] = X.get(i,j);
-            //}
-         //}
-      } //catch(ArrayIndexOutOfBoundsException e) {
-         //throw new ArrayIndexOutOfBoundsException("Submatrix indices");
-      //}
+      } 
    }
 
    /** Set a submatrix.
@@ -2170,15 +1938,9 @@ class Matrix {
    */
 
    proc setMatrix (r:[?rDom] int, j0:int, j1:int, X:Matrix) {
-         //for (int i = 0; i < r.length; i++) {
-         //   for (int j = j0; j <= j1; j++) {
          for (i,j) in {1..rDom.high, j0..j1} {
                A[r[i],j] = X.get(i,j-j0);
-         //   }
          }
-      //} catch(ArrayIndexOutOfBoundsException e) {
-      //   throw new ArrayIndexOutOfBoundsException("Submatrix indices");
-      //}
    }
 
    /** Set a submatrix.
@@ -2190,16 +1952,9 @@ class Matrix {
    */
 
    proc setMatrix (i0, i1:int, c:[?cDom] int, X:Matrix) {
-      //try {
-         //for (int i = i0; i <= i1; i++) {
-         //   for (int j = 0; j < c.length; j++) {
          for (i,j) in {i0..i1, 1..cDom.high} {
                A[i,c[j]] = X.get(i-i0,j);
-            //}
          }
-      //} catch(ArrayIndexOutOfBoundsException e) {
-      //   throw new ArrayIndexOutOfBoundsException("Submatrix indices");
-      //}
    }
 
    /** Matrix transpose.
@@ -2209,11 +1964,8 @@ class Matrix {
    proc transpose () {
       var X = new Matrix(n,m);
       var C = X.A;
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
             C[j,i] = A[i,j];
-         //}
       }
       X.A = C;
       return X;
@@ -2225,13 +1977,7 @@ class Matrix {
 
    proc norm1 () :real {
       var f = 0.0;
-      //for (int j = 0; j < n; j++) {
       for j in 1..n {
-         //var s = 0.0;
-         //for (int i = 0; i < m; i++) {
-         //for i in 1..m {
-         //   s += abs(A[i,j]);
-         //}
          var s = (+ reduce abs(A(1..m, j)));
          f = max(f,s);
       }
@@ -2253,13 +1999,7 @@ class Matrix {
 
    proc normInf () : real{
       var f = 0.0;
-      //for (int i = 0; i < m; i++) {
       for i in 1..m {
-         //var s = 0.0;
-         //for (int j = 0; j < n; j++) {
-         //for j in 1..n {
-         //   s += abs(A[i,j]);
-         //}
          var s = (+ reduce abs(A(i, 1..n)));
          f = max(f,s);
       }
@@ -2272,11 +2012,8 @@ class Matrix {
 
    proc normF () : real{
       var f = 0.0;
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n } {
             f = hypot(f,A[i,j]);
-         //}
       }
       return f;
    }
@@ -2288,11 +2025,8 @@ class Matrix {
    proc uminus () {
       var X = new Matrix(m,n);
       var C = X.getArray();
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
             C[i,j] = -A[i,j];
-         //}
       }
       return X;
    }
@@ -2306,11 +2040,8 @@ class Matrix {
       checkMatrixDimensions(B);
       var X = new Matrix(m,n);
       var C = X.getArray();
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
             C[i,j] = A[i,j] + B.A[i,j];
-      //   }
       }
       return X;
    }
@@ -2322,11 +2053,8 @@ class Matrix {
 
    proc plusEquals (B:Matrix) {
       checkMatrixDimensions(B);
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
             A[i,j] = A[i,j] + B.A[i,j];
-         //}
       }
       return this;
    }
@@ -2340,11 +2068,8 @@ class Matrix {
       checkMatrixDimensions(B);
       var X = new Matrix(m,n);
       var C = X.getArray();
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
             C[i,j] = A[i,j] - B.A[i,j];
-         //}
       }
       return X;
    }
@@ -2356,11 +2081,8 @@ class Matrix {
 
    proc minusEquals (B:Matrix) {
       checkMatrixDimensions(B);
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
             A[i,j] = A[i,j] - B.A[i,j];
-      //   }
       }
       return this;
    }
@@ -2374,11 +2096,8 @@ class Matrix {
       checkMatrixDimensions(B);
       var X = new Matrix(m,n);
       var C = X.getArray();
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
             C[i,j] = A[i,j] * B.A[i,j];
-         //}
       }
       return X;
    }
@@ -2390,11 +2109,8 @@ class Matrix {
 
    proc arrayTimesEquals (B:Matrix) {
       checkMatrixDimensions(B);
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
             A[i,j] = A[i,j] * B.A[i,j];
-         //}
       }
       return this;
    }
@@ -2408,11 +2124,8 @@ class Matrix {
       checkMatrixDimensions(B);
       var X = new Matrix(m,n);
       var C = X.getArray();
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
             C[i,j] = A[i,j] / B.A[i,j];
-         //}
       }
       return X;
    }
@@ -2424,11 +2137,8 @@ class Matrix {
 
    proc arrayRightDivideEquals (B:Matrix) {
       checkMatrixDimensions(B);
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
             A[i,j] = A[i,j] / B.A[i,j];
-         //}
       }
       return this;
    }
@@ -2442,11 +2152,8 @@ class Matrix {
       checkMatrixDimensions(B);
       var X = new Matrix(m,n);
       var C = X.getArray();
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
             C[i,j] = B.A[i,j] / A[i,j];
-         //}
       }
       return X;
    }
@@ -2458,11 +2165,8 @@ class Matrix {
 
    proc arrayLeftDivideEquals (B:Matrix) {
       checkMatrixDimensions(B);
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
             A[i,j] = B.A[i,j] / A[i,j];
-         //}
       }
       return this;
    }
@@ -2475,11 +2179,8 @@ class Matrix {
    proc times (s:real) {
       var X = new Matrix(m,n);
       var C = X.getArray();
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
             C[i,j] = s*A[i,j];
-         //}
       }
       return X;
    }
@@ -2490,11 +2191,8 @@ class Matrix {
    */
 
    proc timesEquals (s:real) {
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} {
             A[i,j] = s*A[i,j];
-         //}
       }
       return this;
    }
@@ -2512,20 +2210,12 @@ class Matrix {
       var X = new Matrix(m,B.n);
       var C = X.getArray();
       var Bcolj : [1..n] real;
-      //for (int j = 0; j < B.n; j++) {
       for j in 1..B.n {
-         //for (int k = 0; k < n; k++) {
          for k in 1..n {
             Bcolj[k] = B.A[k,j];
          }
-         //for (int i = 0; i < m; i++) {
          for i in 1..m {
             var Arowi = A[i,..];
-            //var s = 0.0;
-            //for (int k = 0; k < n; k++) {
-            //for k in 1..n {
-            //   s += Arowi[k]*Bcolj[k];
-            //}
             var s = (+ reduce (Arowi(1..n) * Bcolj(1..n)));
             C[i,j] = s;
          }
@@ -2641,11 +2331,6 @@ class Matrix {
    */
 
    proc trace () {
-      //var t = 0.0;
-      //for (int i = 0; i < Math.min(m,n); i++) {
-      //for i in 1..min(m,n) {
-      //   t += A[i,i];
-      //}
       var mm = min(m,n);
       var Aslice = {1..mm, 1..mm};
       var t = (+ reduce A(Aslice));
@@ -2660,143 +2345,10 @@ class Matrix {
 
    proc random (m, n:int) {
       var A = new Matrix(m,n);
-      //var X = A.getArray();
       var randlist = new RandomStream(seed);
       randlist.fillRandom(A.A);
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
-      //for (i,j) in {1..m, 1..n} {
-      //      X[i,j] = random();
-         //}
-      //}
       return A;
    }
-
-   /** Print the matrix to stdout.   Line the elements up in columns
-     * with a Fortran-like 'Fw.d' style format.
-   @param w    Column width.
-   @param d    Number of digits after the decimal.
-
-   public void print (int w, int d) {
-      print(new PrintWriter(System.out,true),w,d); }
-   */
-
-   /** Print the matrix to the output stream.   Line the elements up in
-     * columns with a Fortran-like 'Fw.d' style format.
-   @param output Output stream.
-   @param w      Column width.
-   @param d      Number of digits after the decimal.
-
-   public void print (PrintWriter output, int w, int d) {
-      DecimalFormat format = new DecimalFormat();
-      format.setDecimalFormatSymbols(new DecimalFormatSymbols(Locale.US));
-      format.setMinimumIntegerDigits(1);
-      format.setMaximumFractionDigits(d);
-      format.setMinimumFractionDigits(d);
-      format.setGroupingUsed(false);
-      print(output,format,w+2);
-   }
-   */
-
-   /** Print the matrix to stdout.  Line the elements up in columns.
-     * Use the format object, and right justify within columns of width
-     * characters.
-     * Note that is the matrix is to be read back in, you probably will want
-     * to use a NumberFormat that is set to US Locale.
-   @param format A  Formatting object for individual elements.
-   @param width     Field width for each column.
-   @see java.text.DecimalFormat#setDecimalFormatSymbols
-
-   public void print (NumberFormat format, int width) {
-      print(new PrintWriter(System.out,true),format,width); }
-   */
-
-   // DecimalFormat is a little disappointing coming from Fortran or C's printf.
-   // Since it doesn't pad on the left, the elements will come out different
-   // widths.  Consequently, we'll pass the desired column width in as an
-   // argument and do the extra padding ourselves.
-
-   /** Print the matrix to the output stream.  Line the elements up in columns.
-     * Use the format object, and right justify within columns of width
-     * characters.
-     * Note that is the matrix is to be read back in, you probably will want
-     * to use a NumberFormat that is set to US Locale.
-   @param output the output stream.
-   @param format A formatting object to format the matrix elements 
-   @param width  Column width.
-   @see java.text.DecimalFormat#setDecimalFormatSymbols
-
-   public void print (PrintWriter output, NumberFormat format, int width) {
-      output.println();  // start on new line.
-      for (int i = 0; i < m; i++) {
-         for (int j = 0; j < n; j++) {
-            String s = format.format(A[i,j]); // format the number
-            int padding = Math.max(1,width-s.length()); // At _least_ 1 space
-            for (int k = 0; k < padding; k++)
-               output.print(' ');
-            output.print(s);
-         }
-         output.println();
-      }
-      output.println();   // end with blank line.
-   }
-   */
-
-   /** Read a matrix from a stream.  The format is the same the print method,
-     * so printed matrices can be read back in (provided they were printed using
-     * US Locale).  Elements are separated by
-     * whitespace, all the elements for each row appear on a single line,
-     * the last row is followed by a blank line.
-   @param input the input stream.
-
-   public static Matrix read (BufferedReader input) throws java.io.IOException {
-      StreamTokenizer tokenizer= new StreamTokenizer(input);
-
-      // Although StreamTokenizer will parse numbers, it doesn't recognize
-      // scientific notation (E or D); however, Double.valueOf does.
-      // The strategy here is to disable StreamTokenizer's number parsing.
-      // We'll only get whitespace delimited words, EOL's and EOF's.
-      // These words should all be numbers, for Double.valueOf to parse.
-
-      tokenizer.resetSyntax();
-      tokenizer.wordChars(0,255);
-      tokenizer.whitespaceChars(0, ' ');
-      tokenizer.eolIsSignificant(true);
-      java.util.Vector<Double> vD = new java.util.Vector<Double>();
-
-      // Ignore initial empty lines
-      while (tokenizer.nextToken() == StreamTokenizer.TT_EOL);
-      if (tokenizer.ttype == StreamTokenizer.TT_EOF)
-     throw new java.io.IOException("Unexpected EOF on matrix read.");
-      do {
-         vD.addElement(Double.valueOf(tokenizer.sval)); // Read & store 1st row.
-      } while (tokenizer.nextToken() == StreamTokenizer.TT_WORD);
-
-      int n = vD.size();  // Now we've got the number of columns!
-      double row[] = new double[n];
-      for (int j=0; j<n; j++)  // extract the elements of the 1st row.
-         row[j]=vD.elementAt(j).doubleValue();
-      java.util.Vector<double[]> v = new java.util.Vector<double[]>();
-      v.addElement(row);  // Start storing rows instead of columns.
-      while (tokenizer.nextToken() == StreamTokenizer.TT_WORD) {
-         // While non-empty lines
-         v.addElement(row = new double[n]);
-         int j = 0;
-         do {
-            if (j >= n) throw new java.io.IOException
-               ("Row " + v.size() + " is too long.");
-            row[j++] = Double.valueOf(tokenizer.sval).doubleValue();
-         } while (tokenizer.nextToken() == StreamTokenizer.TT_WORD);
-         if (j < n) throw new java.io.IOException
-            ("Row " + v.size() + " is too short.");
-      }
-      int m = v.size();  // Now we've got the number of rows.
-      double[,] A = new double[m,];
-      v.copyInto(A);  // copy the rows out of the vector
-      return new Matrix(A);
-   }
-   */
-
 
 /* ------------------------
    Private Methods
@@ -2814,15 +2366,8 @@ class Matrix {
 
 proc random (m, n:int) {
    var A = new Matrix(m,n);
-   //var X = A.getArray();
    var randlist = new RandomStream(seed);
    randlist.fillRandom(A.A);
-   //for (int i = 0; i < m; i++) {
-   //   for (int j = 0; j < n; j++) {
-   //for (i,j) in {1..m, 1..n} {
-   //      X[i,j] = random();
-   //}
-   //}
    return A;
 }
 
@@ -2881,14 +2426,11 @@ class QRDecomposition {
       qrDom = {1..m, 1..n}; 
       QR = A.getArrayCopy();
       rdiagDom = {1..n};
-      //Rdiag = new double[n];
 
       // Main loop.
-      //for (int k = 0; k < n; k++) {
-      for k in 1..n {
+      for k in rdiagDom {
          // Compute 2-norm of k-th column without under/overflow.
          var nrm = 0.0;
-         //for (int i = k; i < m; i++) {
          for i in k..m {
             nrm = hypot(nrm,QR[i,k]);
          }
@@ -2898,22 +2440,18 @@ class QRDecomposition {
             if (QR[k,k] < 0) {
                nrm = -nrm;
             }
-            //for (int i = k; i < m; i++) {
             for i in k..m {
                QR[i,k] /= nrm;
             }
             QR[k,k] += 1.0;
 
             // Apply transformation to remaining columns.
-            //for (int j = k+1; j < n; j++) {
             for j in k+1..n {
                var s = 0.0; 
-               //for (int i = k; i < m; i++) {
                for i in k..m {
                   s += QR[i,k]*QR[i,j];
                }
                s = -s/QR[k,k];
-               //for (int i = k; i < m; i++) {
                for i in k..m {
                   QR[i,j] += s*QR[i,k];
                }
@@ -2932,8 +2470,7 @@ class QRDecomposition {
    */
 
    proc isFullRank () {
-      //for (int j = 0; j < n; j++) {
-      for j in 1..n {
+      for j in Rdiag.domain {
          if (Rdiag[j] == 0) {
             return false;
          }
@@ -2948,15 +2485,12 @@ class QRDecomposition {
    proc getH () {
       var X = new Matrix(m,n);
       var H = X.getArray();
-      //for (int i = 0; i < m; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..m, 1..n} { 
             if (i >= j) {
                H[i,j] = QR[i,j];
             } else {
                H[i,j] = 0.0;
             }
-         //}
       }
       return X;
    }
@@ -2971,8 +2505,6 @@ class QRDecomposition {
       // making this a ref instead of a var makes the output from getQ change.
       //
       var retR = X.A; 
-      //for (int i = 0; i < n; i++) {
-      //   for (int j = 0; j < n; j++) {
       for (i,j) in {1..n, 1..n} {
             if (i < j) {
                retR[i,j] = QR[i,j];
@@ -2981,7 +2513,6 @@ class QRDecomposition {
             } else {
                retR[i,j] = 0.0;
             }
-         //}
       }
       X.A = retR;
       return X;
@@ -2995,23 +2526,18 @@ class QRDecomposition {
       var X = new Matrix(m,n);
       var retQ = X.A;
 
-      //for (int k = n-1; k >= 0; k--) {
       for k in 1..n-1 by -1 {
-         //for (int i = 0; i < m; i++) {
          for i in 1..m {
             retQ[i,k] = 0.0;
          }
          retQ[k,k] = 1.0;
-         //for (int j = k; j < n; j++) {
          for j in k..n {
             if (QR[k,k] != 0) {
                var s = 0.0;
-               //for (int i = k; i < m; i++) {
                for i in k..m {
                   s += QR[i,k]*retQ[i,j];
                }
                s = -s/QR[k,k];
-               //for (int i = k; i < m; i++) {
                for i in k..m {
                   retQ[i,j] += s*QR[i,k];
                }
@@ -3043,35 +2569,26 @@ class QRDecomposition {
       var X = B.getArrayCopy();
 
       // Compute Y = transpose(Q)*B
-      //for (int k = 0; k < n; k++) {
-      //   for (int j = 0; j < nx; j++) {
-      //for (k,j) in {1..n, 1..nx} {
       for k in 1..n {
          for j in 1..nx {
             var s = 0.0; 
-            //for (int i = k; i < m; i++) {
-            for i in k..m {
+            const kmrng = {k..m};
+            for i in kmrng {
                s += QR[i,k]*X[i,j];
             }
             s = -s/QR[k,k];
-            //for (int i = k; i < m; i++) {
-            for i in k..m {
+            for i in kmrng {
                X[i,j] += s*QR[i,k];
             }
          }
       }
 
       // Solve R*X = Y;
-      //for (int k = n-1; k >= 0; k--) {
       for k in 1..n by -1 {
-         //for (int j = 0; j < nx; j++) {
          for j in 1..nx {
             X[k,j] /= Rdiag[k];
          }
 
-         //for (int i = 0; i < k; i++) {
-         //   for (int j = 0; j < nx; j++) {
-         //for (i,j) in {1..k, 1..nx} {
          for i in 1..k-1 { // SPECIAL SAUCE FOR CHAPEL
             for j in 1..nx {
                X[i,j] -= X[k,j]*QR[i,k];
@@ -3153,29 +2670,20 @@ class SingularValueDecomposition {
       var aDom = {0..m-1, 0..n-1};
       var A : [aDom] => Arg.getArrayCopy(); // alias the matrix
 
-      //var A : [aDom] real = Arg.getArrayCopy();
-
       /* Apparently the failing cases are only a proper subset of (m<n), 
       so let's not throw error.  Correct fix to come later?
-      if (m<n) {
-       throw new IllegalArgumentException("Jama SVD only works for m >= n"); }
       */
       var nu = min(m,n);
 
-      //s = new double [Math.min(m+1,n)];
       sDom = {1..min(m+1,n)};
       var S : [0..min(m+1,n)-1] => s; // chapel aliases saved the day!      
 
-      //U = new double [m,nu];
       uDom = {1..m, 1..nu};
       var UU : [0..m-1,0..nu-1] => U[uDom];
 
-      //V = new double [n,n];
       vDom = {1..n, 1..n};
       var VV : [0..n-1, 0..n-1] => V[vDom];
 
-      //double[] e = new double [n];
-      //double[] work = new double [m];
       var e : [0..n-1] real;
       var work : [0..m-1] real;
 
@@ -3185,12 +2693,9 @@ class SingularValueDecomposition {
       // Reduce A to bidiagonal form, storing the diagonal elements
       // in s and the super-diagonal elements in e.
 
-      //var nct = min(m-1,n);
       var nct = min(m-1,n);
-      //var nrt = max(1,min(n-2,m));
       var nrt = max(1,min(n-1,m));
 
-      //for (int k = 0; k < Math.max(nct,nrt); k++) {
       for k in 0..max(nct,nrt)-1 {
          if (k <= nct) {
 
@@ -3198,7 +2703,6 @@ class SingularValueDecomposition {
             // place the k-th diagonal in s[k].
             // Compute 2-norm of k-th column without under/overflow.
             S[k] = 0.0;
-            //for (int i = k; i < m; i++) {
             for i in k..m-1 {
                S[k] = hypot(S[k],A[i,k]);
             }
@@ -3207,7 +2711,6 @@ class SingularValueDecomposition {
                if (A[k,k] < 0.0) {
                   S[k] = -S[k];
                }
-               //for (int i = k; i < m; i++) {
                for i in k..m-1 {
                   A[i,k] /= S[k];
                }
@@ -3216,19 +2719,16 @@ class SingularValueDecomposition {
             S[k] = -S[k];
          }
 
-         //for (int j = k+1; j < n; j++) {
          for j in k+1..n-1 {
             if ((k <= nct) & (S[k] != 0.0))  {
 
             // Apply the transformation.
 
                var t = 0.0;
-               //for (int i = k; i < m; i++) {
                for i in k..m-1 {
                   t += A[i,k]*A[i,j];
                }
                t = -t/A[k,k];
-               //for (int i = k; i < m; i++) {
                for i in k..m-1 {
                   A[i,j] += t*A[i,k];
                }
@@ -3245,7 +2745,6 @@ class SingularValueDecomposition {
             // Place the transformation in U for subsequent back
             // multiplication.
 
-            //for (int i = k; i < m; i++) {
             for i in k..m-1 {
                UU[i,k] = A[i,k];
             }
@@ -3257,8 +2756,6 @@ class SingularValueDecomposition {
             // k-th super-diagonal in e[k].
             // Compute 2-norm without under/overflow.
             e[k] = 0;
-            //for (int i = k+1; i < n; i++) {
-            //for i in k+1..n {
             for i in k+1..n-1 {
                e[k] = hypot(e[k],e[i]);
             }
@@ -3267,7 +2764,6 @@ class SingularValueDecomposition {
                if (e[k+1] < 0.0) {
                   e[k] = -e[k];
                }
-               //for (int i = k+1; i < n; i++) {
                for i in k+1..n-1 {
                   e[i] /= e[k];
                }
@@ -3279,22 +2775,13 @@ class SingularValueDecomposition {
             if ((k+1 < m) & (e[k] != 0.0)) {
 
             // Apply the transformation.
-               //for (int i = k+1; i < m; i++) {
-               //for i in k+1..m {
-               //   work[i] = 0.0;
-               //}
                work(k+1..m-1) = 0.0;
 
-               //for (int j = k+1; j < n; j++) {
-                  //for (int i = k+1; i < m; i++) {
                for (j,i) in {k+1..n-1, k+1..m-1} {
                      work[i] += e[j]*A[i,j];
-                  //}
                }
-               //for (int j = k+1; j < n; j++) {
                for j in k+1..n-1 {
                   var t = -e[j]/e[k+1];
-                  //for (int i = k+1; i < m; i++) {
                   for i in k+1..m-1 {
                      A[i,j] += t*work[i];
                   }
@@ -3305,7 +2792,6 @@ class SingularValueDecomposition {
             // Place the transformation in V for subsequent
             // back multiplication.
 
-               //for (int i = k+1; i < n; i++) {
                for i in k+1..n-1 {
                   VV[i,k] = e[i];
                }
@@ -3330,41 +2816,32 @@ class SingularValueDecomposition {
       // If required, generate U.
 
       if (wantu) {
-         //for (int j = nct; j < nu; j++) {
          for j in nct..nu-1 {
-            //for (int i = 0; i < m; i++) {
             for i in 0..m-1 {
                UU[i,j] = 0.0;
             }
             UU[j,j] = 1.0;
          }
-         //for (int k = nct-1; k >= 0; k--) {
          for k in 0..nct-1 by -1 {
             if (S[k] != 0.0) {
-               //for (int j = k+1; j < nu; j++) {
                for j in k+1..nu-1 {
                   var t = 0.0;
-                  //for (int i = k; i < m; i++) {
                   for i in k..m-1 {
                      t += UU[i,k]*UU[i,j];
                   }
                   t = -t/UU[k,k];
-                  //for (int i = k; i < m; i++) {
                   for i in k..m-1 {
                      UU[i,j] += t*UU[i,k];
                   }
                }
-               //for (int i = k; i < m; i++ ) {
                for i in k..m-1 {
                   UU[i,k] = -UU[i,k];
                }
                UU[k,k] = 1.0 + UU[k,k];
-               //for (int i = 0; i < k-1; i++) {
                for i in 0..k-2 {
                   UU[i,k] = 0.0;
                }
             } else {
-               //for (int i = 0; i < m; i++) {
                for i in 0..m-1 {
                   UU[i,k] = 0.0;
                }
@@ -3376,24 +2853,19 @@ class SingularValueDecomposition {
       // If required, generate V.
 
       if (wantv) {
-         //for (int k = n-1; k >= 0; k--) {
          for k in 0..n-1 by -1 {
             if ((k < nrt) & (e[k] != 0.0)) {
-               //for (int j = k+1; j < nu; j++) {
                for j in k+1..nu-1 {
                   var t = 0.0;
-                  //for (int i = k+1; i < n; i++) {
                   for i in k+1..n-1 {
                      t += VV[i,k]*VV[i,j];
                   }
                   t = -t/VV[k+1,k];
-                  //for (int i = k+1; i < n; i++) {
                   for i in k+1..n-1 {
                      VV[i,j] += t*VV[i,k];
                   }
                }
             }
-            //for (int i = 0; i < n; i++) {
             for i in 0..n-1 {
                VV[i,k] = 0.0;
             }
@@ -3405,8 +2877,9 @@ class SingularValueDecomposition {
 
       var pp = p-1;
       var itr = 0;
-      var eps = 2.0 ** -52.0; //pow(2.0,-52.0);
-      var tiny = 2.0 ** -966.0; //pow(2.0,-966.0);
+      var eps = 2.0 ** -52.0; 
+      var tiny = 2.0 ** -966.0; 
+
       while (p > 0) {
          var k,kase : int;
 
@@ -3422,7 +2895,6 @@ class SingularValueDecomposition {
          //              s(k), ..., s(p) are not negligible (qr step).
          // kase = 4     if e(p-1) is negligible (convergence).
 
-         //for (k = p-2; k >= -1; k--) {
          for z in -1..p-2 by -1 { 
             if (z == -1) {
                k = z;
@@ -3441,7 +2913,6 @@ class SingularValueDecomposition {
          }
          else {
             var ks : int;
-            //for (ks = p-1; ks >= k; ks--) {
             for ksk in k..p-1 by -1 {
                if (ksk == k) {
                   ks = ksk;
@@ -3476,7 +2947,6 @@ class SingularValueDecomposition {
             when 1 {
                var f = e[p-2];
                e[p-2] = 0.0;
-               //for (int j = p-2; j >= k; j--) {
                for j in k..p-2 by -1 {
                   var t = hypot(S[j],f);
                   var cs = S[j]/t;
@@ -3487,7 +2957,6 @@ class SingularValueDecomposition {
                      e[j-1] = cs*e[j-1];
                   }
                   if (wantv) {
-                     //for (int i = 0; i < n; i++) {
                      for i in 0..n-1 {
                         t = cs*VV[i,j] + sn*VV[i,p-1];
                         VV[i,p-1] = -sn*VV[i,j] + cs*VV[i,p-1];
@@ -3502,7 +2971,6 @@ class SingularValueDecomposition {
             when 2 {
                var f = e[k-1];
                e[k-1] = 0.0;
-               //for (int j = k; j < p; j++) {
                for j in k..p-1 {
                   var t = hypot(S[j],f);
                   var cs = S[j]/t;
@@ -3511,7 +2979,6 @@ class SingularValueDecomposition {
                   f = -sn*e[j];
                   e[j] = cs*e[j];
                   if (wantu) {
-                     //for (int i = 0; i < m; i++) {
                      for i in 0..m-1 {
                         t = cs*UU[i,j] + sn*UU[i,k-1];
                         UU[i,k-1] = -sn*UU[i,j] + cs*UU[i,k-1];
@@ -3537,7 +3004,7 @@ class SingularValueDecomposition {
                var c = (sp*epm1)*(sp*epm1);
                var shift = 0.0;
                if ((b != 0.0) | (c != 0.0)) {
-                  shift = ((b*b)+c) ** 0.5; //Math.sqrt(b*b + c);
+                  shift = ((b*b)+c) ** 0.5; 
                   if (b < 0.0) {
                      shift = -shift;
                   }
@@ -3548,7 +3015,6 @@ class SingularValueDecomposition {
    
                // Chase zeros.
    
-               //for (int j = k; j < p-1; j++) {
                for j in k..p-2 {
                   var t = hypot(f,g);
                   var cs = f/t;
@@ -3561,7 +3027,6 @@ class SingularValueDecomposition {
                   g = sn*S[j+1];
                   S[j+1] = cs*S[j+1];
                   if (wantv) {
-                     //for (int i = 0; i < n; i++) {
                      for i in 0..n-1 {
                         t = cs*VV[i,j] + sn*VV[i,j+1];
                         VV[i,j+1] = -sn*VV[i,j] + cs*VV[i,j+1];
@@ -3577,7 +3042,6 @@ class SingularValueDecomposition {
                   g = sn*e[j+1];
                   e[j+1] = cs*e[j+1];
                   if (wantu && (j < m-1)) {
-                     //for (int i = 0; i < m; i++) {
                      for i in 0..m-1 {
                         t = cs*UU[i,j] + sn*UU[i,j+1];
                         UU[i,j+1] = -sn*UU[i,j] + cs*UU[i,j+1];
@@ -3598,7 +3062,6 @@ class SingularValueDecomposition {
                if (S[k] <= 0.0) {
                   S[k] = if(S[k] < 0.0) then -S[k] else 0.0;
                   if (wantv) {
-                     //for (int i = 0; i <= pp; i++) {
                      for i in 0..pp-1 {
                         VV[i,k] = -VV[i,k];
                      }
@@ -3615,13 +3078,11 @@ class SingularValueDecomposition {
                   S[k] = S[k+1];
                   S[k+1] = t;
                   if (wantv && (k < n-1)) {
-                     //for (int i = 0; i < n; i++) {
                      for i in 0..n-1 {
                         t = VV[i,k+1]; VV[i,k+1] = VV[i,k]; VV[i,k] = t;
                      }
                   }
                   if (wantu && (k < m-1)) {
-                     //for (int i = 0; i < m; i++) {
                      for i in 0..m-1 {
                         t = UU[i,k+1]; UU[i,k+1] = UU[i,k]; UU[i,k] = t;
                      }
@@ -3700,10 +3161,10 @@ class SingularValueDecomposition {
    */
 
    proc rank () {
-      var eps = 2.0 ** -52.0; //Math.pow(2.0,-52.0);
+      var eps = 2.0 ** -52.0; 
       var tol = max(m,n)*s[1]*eps;
       var r = 0;
-      //for (int i = 0; i < s.length; i++) {
+
       for i in 1..s.domain.high {
          if (s[i] > tol) {
             r+=1;
