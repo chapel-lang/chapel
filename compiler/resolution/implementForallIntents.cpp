@@ -993,8 +993,7 @@ static void checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn) {
   origRet->defPoint->remove();
 }
 
-static void setupRedRefs(FnSymbol* fn, bool nested,
-                         Expr*& redRef1, Expr*& redRef2)
+void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2)
 {
   if (redRef1) return;
 
@@ -1017,7 +1016,7 @@ static void setupRedRefs(FnSymbol* fn, bool nested,
   }
 }
 
-static void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
+void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
   if (!redRef1) return;
   redRef1->remove();
   redRef2->remove();
@@ -1025,7 +1024,7 @@ static void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
 }
 
 // like isArrayClass()
-static bool isReduceOp(Type* type) {
+bool isReduceOp(Type* type) {
   if (type->symbol->hasFlag(FLAG_REDUCESCANOP))
     return true;
   forv_Vec(Type, t, type->dispatchParents)

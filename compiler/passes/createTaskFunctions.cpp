@@ -21,6 +21,7 @@
 #include "passes.h"
 #include "stmt.h"
 #include "stlUtil.h"
+#include "resolution.h"
 
 // 'markPruned' replaced deletion from SymbolMap, which does not work well.
 Symbol* markPruned;
@@ -210,12 +211,16 @@ void pruneThisArg(Symbol* parent, SymbolMap& uses) {
   }
 }
 
-static void
-addVarsToFormals(FnSymbol* fn, SymbolMap& vars) {
+static void //vass also update comment above
+addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars, CallExpr* call) {
   form_Map(SymbolMapElem, e, vars) {
       Symbol* sym = e->key;
       if (e->value != markPruned) {
         SET_LINENO(sym);
+        ArgSymbol* newFormal = NULL;
+        Symbol*    newActual = NULL;
+        Symbol*    symReplace = NULL;
+
         IntentTag argTag = INTENT_BLANK;
         if (ArgSymbol* tiMarker = toArgSymbol(e->value))
           argTag = tiMarker->intent;
@@ -225,8 +230,12 @@ addVarsToFormals(FnSymbol* fn, SymbolMap& vars) {
         if (ArgSymbol* symArg = toArgSymbol(sym))
           if (symArg->hasFlag(FLAG_MARKED_GENERIC))
             arg->addFlag(FLAG_MARKED_GENERIC);
-        fn->insertFormalAtTail(new DefExpr(arg));
-        e->value = arg;  // aka vars->put(sym, arg);
+        newActual = e->key;
+        symReplace = newFormal = arg;
+        
+        call->insertAtTail(newActual);
+        fn->insertFormalAtTail(newFormal);
+        e->value = symReplace;  // aka vars->put(sym, symReplace);
       }
   }
 }
@@ -244,17 +253,6 @@ void replaceVarUses(Expr* topAst, SymbolMap& vars) {
         if (se->var == oldSym)
           se->var = newSym;
     }
-  }
-}
-
-static void
-addVarsToActuals(CallExpr* call, SymbolMap& vars) {
-  form_Map(SymbolMapElem, e, vars) {
-      Symbol* sym = e->key;
-      if (e->value != markPruned) {
-        SET_LINENO(sym);
-        call->insertAtTail(sym);
-      }
   }
 }
 
@@ -466,7 +464,6 @@ void createTaskFunctions(void) {
           // coforall, cobegin, and sync blocks do this in waitEndCount.
           if( needsMemFence && isBlockingOn )
             block->insertBefore(new CallExpr("chpl_rmem_consist_acquire"));
-           // block->insertBefore(new CallExpr(PRIM_JOIN_RMEM_FENCE));
         }
 
         block->blockInfoGet()->remove();
@@ -515,8 +512,7 @@ void createTaskFunctions(void) {
           if (block->byrefVars != NULL)
             block->byrefVars->remove();
 
-          addVarsToActuals(call, uses);
-          addVarsToFormals(fn, uses);
+          addVarsToFormalsActuals(fn, uses, call);
           replaceVarUses(fn->body, uses);
         }
       } // if fn
