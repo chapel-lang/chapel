@@ -4,18 +4,14 @@
 use Time;
 use BlockDist;
 use ReplicatedDist;
-use StencilDist; // Included from miniMD
 use VisualDebug;
+use StencilDist; // Included from miniMD
 
-param PRKVERSION = "2.15";
+/* Version kept in sync with PRK repository */
+param PRKVERSION = "2.16";
 
-config var tileSize: int = 0;
-
-config const iterations: int = 10,
-             order: int = 1000,
-             // Output controls
-             debug: bool = false,
-             validate: bool = false;
+// Configurable type for array elements
+config type dtype = real;
 
 config param R = 2,
              // Square weight matrix (true) or Star weight matrix (false)
@@ -24,8 +20,15 @@ config param R = 2,
              useStencilDist = false,
              useBlockDist = false;
 
-// Configurable type for array elements
-config type dtype = real;
+config const iterations: int = 10,
+             order: int = 1000,
+             // Output controls
+             debug: bool = false,
+             validate: bool = false;
+
+config var tileSize: int = 0;
+
+
 
 param weightSize = 2*R + 1,
       Wsize = 2*R + 1,
@@ -73,25 +76,22 @@ proc main() {
   weightLocalDom = {-R..R, -R..R};
 
   // Choice of distribution / parallelism
-  const blockDist = new dmap(new Block(localDom)),
-      stencilDist = new dmap(new Stencil(innerLocalDom, fluff=(R,R))),
-           noDist = new dmap(new DefaultDist()),
-         replDist = new dmap(new ReplicatedDist());
+  const blockDist = new Block(localDom),
+      stencilDist = new Stencil(innerLocalDom, fluff=(R,R)),
+           noDist = new DefaultDist(),
+         replDist = new ReplicatedDist();
 
   const Dist =  if useBlockDist then blockDist
                 else if useStencilDist then stencilDist
                 else noDist;
 
-  //const weightDist = if (useBlockDist || useStencilDist) then replDist
-  //                 else noDist;
 
-  // Domains
-  const Dom =      localDom dmapped Dist,
-        innerDom = innerLocalDom dmapped Dist;
+  const Dom = localDom dmapped new dmap(Dist),
+   innerDom = innerLocalDom dmapped new dmap(Dist);
 
   var tiledDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize};
 
-  // Arrays (initialized to zeros)
+  // Input and Output arrays
   var input, output:  [Dom] dtype = 0.0;
 
 
@@ -156,7 +156,7 @@ proc main() {
           for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
           for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
         } else {
-          for (ii, jj) in {-R..R, -R..R} do
+          for (ii, jj) in (-R..R, -R..R) do
             tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
         }
         output[i, j] += tmpout;
@@ -172,7 +172,7 @@ proc main() {
               for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
               for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
             } else {
-              for (ii, jj) in {-R..R, -R..R} do
+              for (ii, jj) in (-R..R, -R..R) do
                 tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
             }
             output[i, j] += tmpout;
@@ -227,7 +227,7 @@ proc main() {
     }
 
     if (!validate) {
-      writeln("Rate (MFlops/s): ", 1.0E-06 * flops/avgTime, "  Avg time (s): ", 
+      writeln("Rate (MFlops/s): ", 1.0E-06 * flops/avgTime, "  Avg time (s): ",
               avgTime);
     }
   }
