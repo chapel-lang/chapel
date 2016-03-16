@@ -51,19 +51,16 @@ module LCALSDataTypes {
     var cache_flush_data: [cache_flush_data_dom] real;
     var cache_flush_data_sum: real;
 
-    var loop_test_stats_dom: domain(string);
-    var loop_test_stats: [loop_test_stats_dom] [loop_kernel_dom] LoopStat;
+    var loop_test_stats: [loop_variant_dom] [loop_kernel_dom] LoopStat;
 
-    proc getLoopStats(loop_variant_name: string) {
-      return loop_test_stats[loop_variant_name];
+    proc getLoopStats(loop_variant: LoopVariantID) {
+      return loop_test_stats[loop_variant];
     }
-    proc addLoopStats(name: string) {
-      loop_test_stats_dom += name;
-    }
+
     proc ~LoopSuiteRunInfo() {
       if ref_loop_stat != nil then delete ref_loop_stat;
 
-      for idx in loop_test_stats_dom {
+      for idx in loop_variant_dom {
         for stat in loop_test_stats[idx] do
           if stat != nil then delete stat;
       }
