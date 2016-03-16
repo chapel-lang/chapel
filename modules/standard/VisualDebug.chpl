@@ -31,9 +31,9 @@ module VisualDebug
 
   use String;
 
-  // VDebugOn -- Should we generate data
-  config param DefaultVDebugOn = true;
-  config var VDebugOn = DefaultVDebugOn;
+  // VisualDebugOn -- Should we generate data
+  config param DefaultVisualDebugOn = true;
+  config var VisualDebugOn = DefaultVisualDebugOn;
 
   private extern proc chpl_now_time():real;
 
@@ -109,7 +109,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
     var now = chpl_now_time();
     //coforall l in Locales do
     //  on l do chpl_vdebug_start (rootname.localize().c_str(), now);
-    if (VDebugOn) {
+    if (VisualDebugOn) {
       VDebugTree (vis_op.v_start, rootname, now);
     }
   }
@@ -123,7 +123,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
     //coforall l in Locales[1..] do
     //  on l do chpl_vdebug_tag (tagname.localize().c_str(), 0);
     //chpl_vdebug_tag (tagname.localize().c_str(), 0);
-    if (VDebugOn) {
+    if (VisualDebugOn) {
        VDebugTree (vis_op.v_tag, tagname, 0);
     }
   }
@@ -135,7 +135,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
     // chpl_vdebug_stop();
     // coforall l in Locales[1..] do
     //  on l do chpl_vdebug_stop();
-    if (VDebugOn) {
+    if (VisualDebugOn) {
        VDebugTree (vis_op.v_stop, "", 0);
     }
   }
@@ -147,7 +147,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
     //coforall l in Locales[1..] do
     //  on l do chpl_vdebug_tag (tagname.localize().c_str(), 1);
     //chpl_vdebug_tag(tagname.localize().c_str(), 1);
-    if (VDebugOn) {
+    if (VisualDebugOn) {
        VDebugTree (vis_op.v_pause, "", 0);
     }
   }
@@ -162,7 +162,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
     //coforall l in Locales[1..] do
     //  on l do chpl_vdebug_resume ();
     //chpl_vdebug_resume(tagname);
-    if (VDebugOn) {
+    if (VisualDebugOn) {
       VDebugTree (vis_op.v_tag, tagname, 0);
     }
   }
