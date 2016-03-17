@@ -171,7 +171,7 @@ module main {
       for ilen in stat.loop_length_dom {
         if stat.loop_run_count[ilen] > 0 {
           var time_sample = stat.loop_run_time[ilen];
-          var sample_size = time_sample.size();
+          var sample_size = time_sample.numElements;
           var mean = 0.0;
           var sdev = 0.0;
           var maxv = min(real);

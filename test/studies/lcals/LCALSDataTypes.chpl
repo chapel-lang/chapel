@@ -4,22 +4,15 @@ module LCALSDataTypes {
 
   class vector {
     type eltType;
-    var D = {0..-1};
-    var A: [D] eltType;
+    var A: [0..-1] eltType;
     proc this(i: int) ref {
       return A[i];
     }
     proc push_back(e: eltType) {
       A.push_back(e);
     }
-    proc size() {
+    proc numElements {
       return A.numElements;
-    }
-    proc resize(size: int) {
-      D = {0..#size};
-    }
-    proc count(val: eltType) {
-      return A.count(val);
     }
     iter these() {
       for a in A do yield a;
@@ -87,12 +80,10 @@ module LCALSDataTypes {
     var loop_chksum: [loop_length_dom] real;
 
     proc LoopStat() {
-      loop_is_run = false;
-      loop_weight = 0.0;
-
       for i in loop_length_dom do
         loop_run_time[i] = new vector(real);
     }
+
     proc ~LoopStat() {
       for lrt in loop_run_time do
         if lrt != nil then delete lrt;
