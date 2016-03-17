@@ -72,6 +72,20 @@ module Random {
   */
   module RandomSupport {
 
+    // Will be deprecated in 1.14.
+    pragma "no doc"
+    const SeedGenerator: SeedGeneratorsDeprecated;
+
+    pragma "no doc"
+    record SeedGeneratorsDeprecated {
+      proc currentTime: int(64) {
+        use Time;
+        const seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
+        const oddseed = if seed % 2 == 0 then seed + 1 else seed;
+        return oddseed;
+      }
+    }
+
     /*
       Provides methods to help generate seeds when the user doesn't want
       to create one.  It currently supports two methods. Both start
