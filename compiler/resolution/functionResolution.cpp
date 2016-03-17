@@ -7663,7 +7663,7 @@ static void resolveTypedefedArgTypes(FnSymbol* fn)
       {
         if (se->var->hasFlag(FLAG_TYPE_VARIABLE))
         {
-          Type* type = resolveTypeAlias(toSymExpr(se));
+          Type* type = resolveTypeAlias(se);
           INT_ASSERT(type);
           formal->type = type;
         }
