@@ -72,6 +72,108 @@ void initForTaskIntents() {
   tiMarkAdd(INTENT_REF,       tiMarkRef);
 }
 
+//
+// Find the _waitEndCount and _endCountFree calls that comes after 'fromHere'.
+// Since these two calls come together, it is prettier to insert
+// our stuff after the latter.
+//
+static Expr* findTailInsertionPoint(Expr* fromHere, bool isCoforall) {
+  Expr* curr = fromHere;
+  if (isCoforall) curr = curr->parentExpr;
+  CallExpr* result = NULL;
+  while ((curr = curr->next)) {
+    if (CallExpr* call = toCallExpr(curr))
+      if (call->isNamed("_waitEndCount")) {
+        result = call;
+        break;
+      }
+  }
+  INT_ASSERT(result);
+  CallExpr* freeEC = toCallExpr(result->next);
+  // Currently these two calls come together.
+  INT_ASSERT(freeEC && freeEC->isNamed("_endCountFree"));
+  return freeEC;
+}
+
+/*
+To implement task reduce intents, we follow the steps in
+propagateExtraLeaderArgs() and setupOneReduceIntent()
+
+I.e. add the following to the AST:
+
+* before 'call'
+    def globalOp = new reduceType(origSym.type);
+
+* pass globalOp to call();
+  corresponding formal in 'fn': parentOp
+
+* inside 'fn'
+    def currOp = parentOp.clone()
+    def symReplace = currOp.identify;
+    ...
+    currOp.accumulate(symReplace);
+    parentOp.combine(currOp);
+    delete currOp;
+
+* after 'call' and its _waitEndCount()
+    origSym = parentOp.generate();
+    delete parentOp;
+
+Todo: to support cobegin constructs, need to share 'globalOp'
+across all fn+call pairs for the same construct.
+*/
+static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
+                                   TypeSymbol* reduceType, Symbol* origSym,
+                                   ArgSymbol*& newFormal, Symbol*& newActual,
+                                   Symbol*& symReplace, bool isCoforall,
+                                   Expr*& redRef1, Expr*& redRef2)
+{
+  setupRedRefs(fn, true, redRef1, redRef2);
+  VarSymbol* globalOp = new VarSymbol("reduceGlobal");
+  globalOp->addFlag(FLAG_NO_CAPTURE_FOR_TASKING);
+  newActual = globalOp;
+
+  VarSymbol* eltType = newTemp("redEltType");
+  eltType->addFlag(FLAG_MAYBE_TYPE);
+
+  Expr* headAncor = call;
+  if (isCoforall) headAncor = headAncor->parentExpr;
+  headAncor->insertBefore(new DefExpr(eltType));
+  headAncor->insertBefore("'move'(%S, 'typeof'(%S))", eltType, origSym);
+  headAncor->insertBefore(new DefExpr(globalOp));
+  CallExpr* newOp = new CallExpr(reduceType->type->defaultInitializer->name,
+                              new NamedExpr("eltType", new SymExpr(eltType)));
+  headAncor->insertBefore(new CallExpr(PRIM_MOVE, globalOp, newOp));
+
+  Expr* tailAncor = findTailInsertionPoint(call, isCoforall);
+  // Doing insertAfter() calls in reverse order.
+  // Can't insertBefore() on tailAncor->next - that can be NULL.
+  tailAncor->insertAfter("'delete'(%S)",
+                         globalOp);
+  tailAncor->insertAfter("'='(%S, generate(%S,%S))",
+                         origSym, gMethodToken, globalOp);
+
+  ArgSymbol* parentOp = new ArgSymbol(INTENT_BLANK, "reduceParent", dtUnknown);
+  newFormal = parentOp;
+
+  VarSymbol* currOp = new VarSymbol("reduceCurr");
+  VarSymbol* svar  = new VarSymbol(origSym->name, origSym->type);
+  symReplace = svar;
+
+  redRef1->insertBefore(new DefExpr(currOp));
+  redRef1->insertBefore("'move'(%S, clone(%S,%S))", // init
+                        currOp, gMethodToken, parentOp);
+  redRef1->insertBefore(new DefExpr(svar));
+  redRef1->insertBefore("'move'(%S, identity(%S,%S))", // init
+                        svar, gMethodToken, currOp);
+
+  redRef2->insertBefore(new CallExpr("accumulate",
+                                     gMethodToken, currOp, svar));
+  redRef2->insertBefore(new CallExpr("chpl__reduceCombine",
+                                     parentOp, currOp));
+  redRef2->insertBefore(new CallExpr("chpl__cleanupLocalOp",
+                                     parentOp, currOp));
+}
 
 // Is 'sym' an index var in the coforall loop
 // for which the 'fn' was created?
@@ -225,23 +327,44 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
         Symbol*    newActual = NULL;
         Symbol*    symReplace = NULL;
 
-        IntentTag argTag = INTENT_BLANK;
-        if (ArgSymbol* tiMarker = toArgSymbol(e->value))
-          argTag = tiMarker->intent;
-        else
-          INT_ASSERT(e->value == markUnspecified);
-        ArgSymbol* arg = new ArgSymbol(argTag, sym->name, sym->type);
-        if (ArgSymbol* symArg = toArgSymbol(sym))
-          if (symArg->hasFlag(FLAG_MARKED_GENERIC))
-            arg->addFlag(FLAG_MARKED_GENERIC);
-        newActual = e->key;
-        symReplace = newFormal = arg;
-        
+        if (TypeSymbol* reduceType = toTypeSymbol(e->value)) {
+          bool gotError = false;
+          // For cobegin, these will report the error for each task.
+          // So maybe make it no-cont to avoid duplication?
+          if (!isReduceOp(reduceType->type)) {
+            USR_FATAL_CONT(call, "%s is not a valid reduction for a reduce intent", reduceType->name);
+            gotError = true;
+          }
+          if (!isCoforall) {
+            USR_FATAL_CONT(call, "reduce intents are not available for 'begin' and are not implemented for 'cobegin'");
+            gotError = true;
+          }
+          if (gotError) continue; // skip addReduceIntentSupport() etc.
+
+          addReduceIntentSupport(fn, call, reduceType, sym,
+                                 newFormal, newActual, symReplace,
+                                 isCoforall, redRef1, redRef2);
+        } else {
+          IntentTag argTag = INTENT_BLANK;
+          if (ArgSymbol* tiMarker = toArgSymbol(e->value))
+            argTag = tiMarker->intent;
+          else
+            INT_ASSERT(e->value == markUnspecified);
+
+          newFormal = new ArgSymbol(argTag, sym->name, sym->type);
+          if (ArgSymbol* symArg = toArgSymbol(sym))
+            if (symArg->hasFlag(FLAG_MARKED_GENERIC))
+              newFormal->addFlag(FLAG_MARKED_GENERIC);
+          newActual = e->key;
+          symReplace = newFormal;
+        }
+
         call->insertAtTail(newActual);
         fn->insertFormalAtTail(newFormal);
         e->value = symReplace;  // aka vars->put(sym, symReplace);
       }
   }
+  cleanupRedRefs(redRef1, redRef2);
 }
 
 void replaceVarUses(Expr* topAst, SymbolMap& vars) {

@@ -3130,6 +3130,10 @@ static void captureTaskIntentValues(int argNum, ArgSymbol* formal,
   if (fVerify && (argNum == 0 || (argNum == 1 && taskFn->hasFlag(FLAG_ON))))
     verifyTaskFnCall(parent, call); //assertions only
   Expr* marker = parentToMarker(parent, call);
+  if (varActual->hasFlag(FLAG_NO_CAPTURE_FOR_TASKING)) {
+      // No need to worry about this.
+      return;
+  }
   if (varActual->defPoint->parentExpr == parent) {
     // Index variable of the coforall loop? Do not capture it!
     if (fVerify) {
