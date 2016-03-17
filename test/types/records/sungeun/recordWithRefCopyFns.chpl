@@ -22,5 +22,5 @@ inline proc chpl__autoCopy(ref r: myR) {
 var s0: myR;
 s0.base = "s0";
 sync {
-  begin writeln(s0);
+  begin writeln(s0.base:string);
 }

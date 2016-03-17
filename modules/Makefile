@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -73,6 +73,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Buffers.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/Curl.chpl \
+	standard/Error.chpl \
 	standard/FFTW.chpl \
 	standard/FFTW_MT.chpl \
 	standard/FileSystem.chpl \
@@ -81,18 +82,22 @@ MODULES_TO_DOCUMENT = \
 	standard/HDFSiterator.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
-	standard/List.chpl \
 	standard/LAPACK.chpl \
+	standard/List.chpl \
 	standard/Math.chpl \
 	standard/Memory.chpl \
 	standard/Norm.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
+	standard/RecordParser.chpl \
+	standard/Reflection.chpl \
 	standard/Regexp.chpl \
 	standard/Search.chpl \
 	standard/Sort.chpl \
 	standard/Spawn.chpl \
 	standard/Sys.chpl \
+	standard/SysBasic.chpl \
+	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/UtilReplicatedVar.chpl \
 	standard/VisualDebug.chpl \
@@ -110,22 +115,22 @@ DISTS_TO_DOCUMENT = \
 	dists/dims/ReplicatedDim.chpl \
 	layouts/LayoutCSR.chpl \
 
-INTERNAL_MODULES_TO_DOCUMENT =                \
+INTERNAL_MODULES_TO_DOCUMENT =          \
+	internal/Atomics.chpl                 \
 	internal/ChapelArray.chpl             \
-        internal/ChapelTuple.chpl             \
-        internal/ChapelIO.chpl                \
-        internal/ChapelIteratorSupport.chpl   \
-        internal/ChapelLocale_forDocs.chpl    \
-        internal/ChapelRange.chpl             \
-        internal/ChapelSyncvar.chpl           \
-        internal/Atomics.chpl                 \
-        internal/ChapelComplex_forDocs.chpl   \
-        internal/UtilMisc_forDocs.chpl
+	internal/ChapelComplex_forDocs.chpl   \
+	internal/ChapelIO.chpl                \
+	internal/ChapelIteratorSupport.chpl   \
+	internal/ChapelLocale.chpl    \
+	internal/ChapelRange.chpl             \
+	internal/ChapelSyncvar.chpl           \
+	internal/ChapelTuple.chpl             \
+	internal/String.chpl                  \
+	internal/UtilMisc_forDocs.chpl
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
-	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) \
-	$(DISTS_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
+	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
 	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	./dists/fixDistDocs.perl      ${MODULE_SPHINX}
 	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/

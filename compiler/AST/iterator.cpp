@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -224,8 +224,8 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
   if (call && call->isPrimitive(PRIM_GET_MEMBER)) {
     // Get member returns the address of the member, so we convert the
     // type of the corresponding temp to a reference type.
-    INT_ASSERT(tmp->type->refType);
-    tmp->type = tmp->type->refType;
+    INT_ASSERT(tmp->type->getRefType());
+    tmp->type = tmp->type->getRefType();
   }
 
   // OK, insert the declaration.

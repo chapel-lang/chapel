@@ -1,0 +1,1 @@
+privateRename.chpl:8: error: Bad identifier in rename, 'a' is private

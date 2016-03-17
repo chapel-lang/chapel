@@ -56,16 +56,3 @@ pvm/
            http://www.csm.ornl.gov/pvm/)
 
   See also: pvm/README
-
-
-txt2man/
-  Summary: Marc Vertes' shell script for converting text files to man
-           pages.  We use this to generate the Chapel man page
-
-  License: GPL (see comments at the top of txt2man/txt2man)
-
-  Contact: For more information, please refer to:
-           http://mvertes.free.fr/
-
-  See also: comments at the top of txt2man/txt2man
-

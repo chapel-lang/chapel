@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -100,7 +100,7 @@ iter HDFSiter(param tag: iterKind, path: string, type rec, regex: string)
     coforall loc in Locales {
       on loc {
         // Rip though the work in parallel on that locale
-        forall byteRange in workQueue[loc.id] {
+        forall byteRange in workQueue[loc.id] with (ref globalFile) {
           var rr = globalFile.hdfsReader(start=byteRange(1));
           var N  = new RecordReader(rec, rr, regex);
           // Dont have a L/F for this so we yield serially. 

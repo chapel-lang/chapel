@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -307,6 +307,11 @@ void CollapseBlocks::visitSymExpr(SymExpr* node)
 }
 
 void CollapseBlocks::visitUsymExpr(UnresolvedSymExpr* node)
+{
+
+}
+
+void CollapseBlocks::visitUseStmt(UseStmt* node)
 {
 
 }

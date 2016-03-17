@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -83,7 +83,7 @@ module DefaultAssociative {
                                dist: DefaultDist) {
       if !chpl__validDefaultAssocDomIdxType(idxType) then
         compilerError("Default Associative domains with idxType=",
-                      typeToString(idxType), " are not allowed", 2);
+                      idxType:string, " are not allowed", 2);
       this.dist = dist;
     }
   
@@ -107,8 +107,8 @@ module DefaultAssociative {
       }
       f <~> new ioLiteral("}");
     }
-    proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
   
     //
     // Standard user domain interface
@@ -229,27 +229,29 @@ module DefaultAssociative {
   
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
-      if followThisDom != this {
-        // check to see if domains match
-        var followThisTab = followThisDom.table;
-        var myTab = table;
-        var mismatch = false;
-        // could use a reduction
-        for slot in chunk.low..chunk.high do
-          if followThisTab[slot].status != myTab[slot].status {
-            mismatch = true;
-            break;
-          }
-        if mismatch then
-          halt("zippered associative domains do not match");
-      }
-  
+
       if debugDefaultAssoc then
         writeln("In domain follower code: Following ", chunk);
-  
-      for slot in chunk.low..chunk.high do
-        if table[slot].status == chpl__hash_status.full then
-          yield table[slot].idx;
+
+      const sameDom = followThisDom == this;
+      
+      if !sameDom then
+        if followThisDom.dsiNumIndices != this.dsiNumIndices then
+          halt("zippered associative domains do not match");
+
+      var otherTable = followThisDom.table;
+      for slot in chunk.low..chunk.high {
+        var entry = otherTable[slot];
+        if entry.status == chpl__hash_status.full {
+          var idx = slot;
+          if !sameDom {
+            const (match, loc) = _findFilledSlot(entry.idx, haveLock=true);
+            if !match then halt("zippered associative domains do not match");
+            idx = loc;
+          }
+          yield table[idx].idx;
+        }
+      }
     }
   
     //
@@ -519,6 +521,7 @@ module DefaultAssociative {
       dsiAccess(idx, haveLock) = initval;
     }
 
+    // ref version
     proc dsiAccess(idx : idxType, haveLock = false) ref {
       const shouldLock = dom.parSafe && !haveLock;
       if shouldLock then dom.lockTable();
@@ -526,8 +529,7 @@ module DefaultAssociative {
       if found {
         if shouldLock then dom.unlockTable();
         return data(slotNum);
-      }
-      else if setter && slotNum != -1 { // do an insert using the slot we found
+      } else if slotNum != -1 { // do an insert using the slot we found
         if dom._arrs.length != 1 {
           halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
           return data(0);
@@ -536,6 +538,20 @@ module DefaultAssociative {
           if shouldLock then dom.unlockTable();
           return data(newSlot);
         }
+      } else {
+        halt("array index out of bounds: ", idx);
+        return data(0);
+      }
+    }
+
+    // value version
+    proc dsiAccess(idx : idxType, haveLock = false) const ref {
+      const shouldLock = dom.parSafe && !haveLock;
+      if shouldLock then dom.lockTable();
+      var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
+      if found {
+        if shouldLock then dom.unlockTable();
+        return data(slotNum);
       } else {
         halt("array index out of bounds: ", idx);
         return data(0);
@@ -584,26 +600,29 @@ module DefaultAssociative {
   
     iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
-      if followThisDom != dom {
-        // check to see if domains match
-        var followThisTab = followThisDom.table;
-        var myTab = dom.table;
-        var mismatch = false;
-        // could use a reduction
-        for slot in chunk.low..chunk.high do
-          if followThisTab[slot].status != myTab[slot].status {
-            mismatch = true;
-            break;
-          }
-        if mismatch then
-          halt("zippered associative array does not match the iterated domain");
-      }
+
       if debugDefaultAssoc then
         writeln("In array follower code: Following ", chunk);
-      var tab = dom.table;  // cache table for performance
-      for slot in chunk.low..chunk.high do
-        if tab[slot].status == chpl__hash_status.full then
-          yield data(slot);
+
+      const sameDom = followThisDom == this.dom;
+
+      if !sameDom then
+        if followThisDom.dsiNumIndices != this.dom.dsiNumIndices then
+          halt("zippered associative array does not match the iterated domain");
+
+      var otherTable = followThisDom.table;
+      for slot in chunk.low..chunk.high {
+        var entry = otherTable[slot];
+        if entry.status == chpl__hash_status.full {
+          var idx = slot;
+          if !sameDom {
+            const (match, loc) = dom._findFilledSlot(entry.idx, haveLock=true);
+            if !match then halt("zippered associative array does not match the iterated domain");
+            idx = loc;
+          }
+          yield data[idx];
+        }
+      }
     }
   
     proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
@@ -616,8 +635,8 @@ module DefaultAssociative {
         f <~> val;
       }
     }
-    proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
   
   
     //
@@ -716,19 +735,16 @@ module DefaultAssociative {
     return _gen_key(u:int(64));
   }
   
+  // TODO: maybe move this into Strings.chpl
   // Use djb2 (Dan Bernstein in comp.lang.c)
   inline proc chpl__defaultHash(x : string): int(64) {
-    return chpl__defaultHash(x.c_str());
-  }
-
-  inline proc chpl__defaultHash(x : c_string): int(64) {
     var hash: int(64) = 0;
-    for c in 1..(x.length) {
-      hash = ((hash << 5) + hash) ^ ascii(x.substring(c));
+    for c in 0..#(x.length) {
+      hash = ((hash << 5) + hash) ^ x.buff[c];
     }
     return _gen_key(hash);
   }
-  
+
   inline proc chpl__defaultHash(l : []) {
       var hash : int(64) = 0;
       for obj in l {

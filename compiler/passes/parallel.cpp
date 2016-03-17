@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -164,7 +164,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 ///
 /// This routine optionally inserts an autoCopy ahead of each invocation of a
 /// task function that begins asynchronous execution (currently just "begin" and
-/// "nonblocking on" functions).  
+/// "nonblocking on" functions).
 /// If such an autoCopy call is inserted, a matching autoDestroy call is placed
 /// at the end of the tasking routine before the call to _downEndCount.  Since a
 /// tasking function may be called from several call sites, the task function is
@@ -180,21 +180,27 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 /// \param firstCall Should be set to \p true for the first invocation of a
 /// given task function and \p false thereafter.
 /// \ret Returns the result of calling autoCopy on the given arg, if necessary;
-/// otherwise, just returns 
+/// otherwise, just returns
 static Symbol* insertAutoCopyDestroyForTaskArg
   (Expr* arg, ///< The actual argument being passed.
    CallExpr* fcall, ///< The call that invokes the task function.
    FnSymbol* fn, ///< The task function.
    bool firstCall)
 {
-  SymExpr* s = toSymExpr(arg);
-  Symbol* var = s->var;
+  SymExpr* s        = toSymExpr(arg);
+  Symbol*  var      = s->var;
+  Type*    baseType = arg->getValType();
 
-  // This applies only to arguments being passed to asynchronous task functions.
-  // No need to increment+decrement the reference counters for cobegins/coforalls.
-  if (fn->hasFlag(FLAG_BEGIN))
+  // This applies only to arguments being passed to asynchronous task
+  // functions. No need to increment+decrement the reference counters
+  // for cobegins/coforalls. Except for the index variable for a
+  // coforall - since each task needs its own copy.
+  // MPF - should this logic also apply to arguments to coforall fns
+  // that had the 'in' task intent?
+  if (fn->hasFlag(FLAG_BEGIN) ||
+      isString(baseType) ||
+      var->hasFlag(FLAG_COFORALL_INDEX_VAR))
   {
-    Type* baseType = arg->getValType();
     FnSymbol* autoCopyFn = getAutoCopy(baseType);
     FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
 
@@ -248,7 +254,9 @@ static Symbol* insertAutoCopyDestroyForTaskArg
         insertReferenceTemps(autoDestroyCall);
       }
     }
-    else if (isRecord(baseType))
+
+    else if ((isRecord(baseType) && fn->hasFlag(FLAG_BEGIN)) ||
+             isString(baseType))
     {
       // Do this only if the record is passed by value.
       if (arg->typeInfo() == baseType)
@@ -277,6 +285,7 @@ static Symbol* insertAutoCopyDestroyForTaskArg
       }
     }
   }
+
   return var;
 }
 
@@ -303,7 +312,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   for_actuals(arg, fcall) 
   {
     // Insert autoCopy/autoDestroy as needed for "begin" or "nonblocking on"
-    // calls.
+    // calls (and some other cases).
     Symbol  *var = insertAutoCopyDestroyForTaskArg(arg, fcall, fn, firstCall);
 
     // Copy the argument into the corresponding slot in the argument bundle.
@@ -371,7 +380,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
     // Now get the taskList field out of the end count.
 
-    taskList = newTemp(astr("_taskList", fn->name), dtTaskList->refType);
+    taskList = newTemp(astr("_taskList", fn->name), dtCVoidPtr->refType);
 
     // If the end count is a reference, dereference it.
     // EndCount is a class.
@@ -424,6 +433,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   if (fn->hasFlag(FLAG_NON_BLOCKING))           wrap_fn->addFlag(FLAG_NON_BLOCKING);
   if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))    wrap_fn->addFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK);
   if (fn->hasFlag(FLAG_BEGIN))                  wrap_fn->addFlag(FLAG_BEGIN_BLOCK);
+  if (fn->hasFlag(FLAG_LOCAL_ON))               wrap_fn->addFlag(FLAG_LOCAL_ON);
 
   if (fn->hasFlag(FLAG_ON)) {
     // The wrapper function for 'on' block has an additional argument, which
@@ -453,7 +463,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   } else {
     // create a task list argument.
     ArgSymbol *taskListArg = new ArgSymbol( INTENT_IN, "dummy_taskList", 
-                                            dtTaskList->refType );
+                                            dtCVoidPtr->refType );
     taskListArg->addFlag(FLAG_NO_CODEGEN);
     wrap_fn->insertFormalAtTail(taskListArg);
     ArgSymbol *taskListNode = new ArgSymbol( INTENT_IN, "dummy_taskListNode", 
@@ -705,7 +715,9 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
             if (CallExpr* call = toCallExpr(se->parentExpr)) {
               if (call->isPrimitive(PRIM_ADDR_OF) ||
                   call->isPrimitive(PRIM_GET_MEMBER) ||
+                  call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                   call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+                  // TODO - should this handle PRIM_GET_SVEC_MEMBER_VALUE?
                   call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
                   call->isPrimitive(PRIM_WIDE_GET_NODE))
                 // Treat the use of these primitives as a use of their arguments.
@@ -810,16 +822,15 @@ needHeapVars() {
 //   varSet, varVec - symbols that themselves need to be heap-allocated
 //
 
-// Traverses all 'on' task functions flagged as nonblocking or
-// as needing heap allocation (for its formals), as determined
-// by the comm layer and/or --local setting..
+// Traverses all 'on' task functions flagged as needing heap
+// allocation (for its formals), as determined by the comm layer
+// and/or --local setting..
 // Traverses all ref formals of these functions and adds them to the refSet and
 // refVec.
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ON) &&
-        (needHeapVars() || fn->hasFlag(FLAG_NON_BLOCKING))) {
+    if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_LOCAL_ON) && needHeapVars()) {
       for_formals(formal, fn) {
         if (formal->type->symbol->hasFlag(FLAG_REF)) {
           refSet.set_add(formal);
@@ -832,10 +843,7 @@ static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 
 
 // Traverses all DefExprs.
-//  If the symbol is a coforall index expression,
-//   If it is of reference type,
-//    Add it to refSet and refVec.
-//   Otherwise, if it is not of primitive type or other undesired cases,
+//  If the symbol is not of primitive type or other undesired cases,
 //    Add it to varSet and varVec.
 //  Otherwise, select module-level vars that are not private or extern.
 //   If the var is const and has value semantics except record-wrapped types,
@@ -849,21 +857,12 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 {
   forv_Vec(DefExpr, def, gDefExprs) {
     SET_LINENO(def);
-    if (def->sym->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
-      if (def->sym->type->symbol->hasFlag(FLAG_REF)) {
-        refSet.set_add(def->sym);
-        refVec.add(def->sym);
-      } else if (!isPrimitiveType(def->sym->type) ||
-                 toFnSymbol(def->parentSymbol)->retTag==RET_REF) {
-        varSet.set_add(def->sym);
-        varVec.add(def->sym);
-      }
-    } else if (!fLocal &&
-               isModuleSymbol(def->parentSymbol) &&
-               def->parentSymbol != rootModule &&
-               isVarSymbol(def->sym) &&
-               !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
-               !def->sym->hasFlag(FLAG_EXTERN)) {
+    if (!fLocal &&
+        isModuleSymbol(def->parentSymbol) &&
+        def->parentSymbol != rootModule &&
+        isVarSymbol(def->sym) &&
+        !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
+        !def->sym->hasFlag(FLAG_EXTERN)) {
       if (def->sym->hasFlag(FLAG_CONST) &&
           (is_bool_type(def->sym->type) ||
            is_enum_type(def->sym->type) ||
@@ -875,7 +874,10 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
            (isRecord(def->sym->type) &&
             !isRecordWrappedType(def->sym->type) &&
             // sync/single are currently classes, so this shouldn't matter
-            !isSyncType(def->sym->type)))) {
+            !isSyncType(def->sym->type) &&
+            // Dont try to broadcast string literals, they'll get fixed in
+            // another manner
+            (def->sym->type != dtString)))) {
         // replicate global const of primitive type
         INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
         for_defs(se, defMap, def->sym) {
@@ -1023,6 +1025,11 @@ makeHeapAllocations() {
         // don't heap-allocate globals
         continue;
       }
+    }
+
+    if (isString(var) && var->isImmediate()) {
+      // String immediates are privatized; do not widen them
+      continue;
     }
 
     SET_LINENO(var);
@@ -1365,32 +1372,5 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
     wideRefMap.put(refType, wide);
   }
   return wide;
-}
-
- 
-//
-// Returns true if the type t is a reference to a wide string
-//
-// This is used to handle cases where wide strings are passed to
-// functions that require local arguments.  If strings were a little
-// better behaved, it arguably wouldn't/shouldn't be required.
-//
-bool isRefWideString(Type* t) {
-  if (isReferenceType(t)) {
-    AggregateType* ct = toAggregateType(t);
-    INT_ASSERT(ct);
-    Symbol* valField = ct->getField("_val", false);
-    INT_ASSERT(valField);
-    return isWideString(valField->type);
-  }
-  return false;
-}
-
-bool isWideString(Type* t) {
-  if (!requireWideReferences()) return false; // no wide string type will exist if wide references weren't created
-  INT_ASSERT(wideStringType); // should only be called after it exists!
-  if (t == NULL) return false;
-  if( t == wideStringType ) return true;
-  return false;
 }
 

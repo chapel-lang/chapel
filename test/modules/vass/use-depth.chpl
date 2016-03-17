@@ -7,9 +7,9 @@
 use M1;  // depth of use chain: x: 2, y: 2, z: 2
 use M2;  // depth of use chain: x: 3, y: 1, z: 2
 
-compilerWarning("got x: ", typeToString(x.type)); // could prefer M11's x
-compilerWarning("got y: ", typeToString(y.type)); // could prefer M2's y
-compilerWarning("got z: ", typeToString(z.type)); // error anyway
+compilerWarning("got x: ", x.type:string); // could prefer M11's x
+compilerWarning("got y: ", y.type:string); // could prefer M2's y
+compilerWarning("got z: ", z.type:string); // error anyway
 
 // modules being used
 

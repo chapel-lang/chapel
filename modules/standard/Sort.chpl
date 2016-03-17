@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -42,14 +42,14 @@ private inline proc chpl_sort_cmp(a, b, param reverse=false, param eq=false) {
    Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
 
    :arg Data: The array to be sorted
-   :type Data: [] eltType
+   :type Data: [] `eltType`
    :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: bool
+   :type doublecheck: `bool`
    :arg reverse: Sort in reverse numerical order
-   :type reverse: bool
+   :type reverse: `bool`
 
  */
-proc BubbleSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+proc BubbleSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   var swapped = true;
@@ -72,14 +72,14 @@ proc BubbleSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) wh
    Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
 
    :arg Data: The array to be sorted
-   :type Data: [] elType
+   :type Data: [] `eltType`
    :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: bool
+   :type doublecheck: `bool`
    :arg reverse: Sort in reverse numerical order
-   :type reverse: bool
+   :type reverse: `bool`
 
  */
-proc HeapSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+proc HeapSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   const len = Dom.dim(1).size;
@@ -122,14 +122,14 @@ proc HeapSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) wher
    Sort the 1D array `Data` in-place using a sequential insertion sort algorithm.
 
    :arg Data: The array to be sorted
-   :type Data: [] eltType
+   :type Data: [] `eltType`
    :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: bool
+   :type doublecheck: `bool`
    :arg reverse: Sort in reverse numerical order
-   :type reverse: bool
+   :type reverse: `bool`
 
  */
-proc InsertionSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+proc InsertionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   const lo = Dom.low;
   for i in Dom {
     const ithVal = Data(i);
@@ -156,13 +156,13 @@ proc InsertionSort(Data: [?Dom] ?elType, doublecheck=false, param reverse=false)
    Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
 
    :arg Data: The array to be sorted
-   :type Data: [] eltType
+   :type Data: [] `eltType`
    :arg minlen: When the array size is less than `minlen` use insertion sort algorithm
-   :type minlen: integral
+   :type minlen: `integral`
    :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: bool
+   :type doublecheck: `bool`
    :arg reverse: Sort in reverse numerical order
-   :type reverse: bool
+   :type reverse: `bool`
 
  */
 proc MergeSort(Data: [?Dom], minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
@@ -190,7 +190,7 @@ private proc _MergeSort(Data: [?Dom], minlen=16, param reverse=false) where Dom.
 }
 
 
-private iter _MergeIterator(A1: [] ?elType, A2: [] elType, param reverse=false) {
+private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, param reverse=false) {
   var a1 = A1.domain.dim(1).low;
   const a1hi = A1.domain.dim(1).high;
   var a2 = A2.domain.dim(1).low;
@@ -219,16 +219,16 @@ private iter _MergeIterator(A1: [] ?elType, A2: [] elType, param reverse=false) 
    Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
 
    :arg Data: The array to be sorted
-   :type Data: [] eltType
+   :type Data: [] `eltType`
    :arg minlen: When the array size is less than `minlen` use insertion sort algorithm
-   :type minlen: integral
+   :type minlen: `integral`
    :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: bool
+   :type doublecheck: `bool`
    :arg reverse: Sort in reverse numerical order
-   :type reverse: bool
+   :type reverse: `bool`
 
  */
-proc QuickSort(Data: [?Dom] ?elType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+proc QuickSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   // grab obvious indices
   const lo = Dom.low, 
         hi = Dom.high,
@@ -276,11 +276,11 @@ proc QuickSort(Data: [?Dom] ?elType, minlen=16, doublecheck=false, param reverse
    algorithm.
 
    :arg Data: The array to be sorted
-   :type Data: [] eltType
+   :type Data: [] `eltType`
    :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: bool
+   :type doublecheck: `bool`
    :arg reverse: Sort in reverse numerical order
-   :type reverse: bool
+   :type reverse: `bool`
 
  */
 proc SelectionSort(Data: [?Dom], doublecheck=false, param reverse=false) where Dom.rank == 1 {
@@ -301,14 +301,14 @@ proc SelectionSort(Data: [?Dom], doublecheck=false, param reverse=false) where D
    out of order.
 
    :arg Data: The array to verify
-   :type Data: [] eltType
+   :type Data: [] `eltType`
    :arg str: string to print while halting if an element is out of order
-   :type str: string
+   :type str: `string`
    :arg reverse: if true, expect the values to be sorted in reverse.
-   :type reverse: bool
+   :type reverse: `bool`
 
  */
-inline proc VerifySort(Data: [?Dom] ?elType, str: string, param reverse=false) {
+inline proc VerifySort(Data: [?Dom] ?eltType, str: string, param reverse=false) {
   for i in Dom.low..Dom.high-1 do
     if chpl_sort_cmp(Data(i+1), Data(i), reverse) then
       halt(str, " did not sort properly (", i, "): ", Data);
@@ -331,7 +331,7 @@ inline proc VerifySort(Data: [?Dom] ?elType, str: string, param reverse=false) {
    Yield the elements of argument `x` in sorted order.
 
    :arg x: An iterable value to be sorted and yielded element by element
-   :type x: iterable
+   :type x: `iterable`
 
    :yields: The elements of x in sorted order
    :ytype: x's element type

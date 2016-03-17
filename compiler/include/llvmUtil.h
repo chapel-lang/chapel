@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -26,9 +26,11 @@
 
 #include "llvm/Config/llvm-config.h"
 
-#if   LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=6 )
+#if   LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=7 )
+#define HAVE_LLVM_VER 37
+#elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=6 )
 #define HAVE_LLVM_VER 36
-#elif  LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=5 )
+#elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=5 )
 #define HAVE_LLVM_VER 35
 #elif LLVM_VERSION_MAJOR>3 || (LLVM_VERSION_MAJOR==3 && LLVM_VERSION_MINOR>=4 )
 #define HAVE_LLVM_VER 34
@@ -94,6 +96,17 @@ static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm:
 
 #endif
 
+// PassManager also changed names..
+#if HAVE_LLVM_VER >= 37
+#include "llvm/IR/LegacyPassManager.h"
+#define LEGACY_FUNCTION_PASS_MANAGER llvm::legacy::FunctionPassManager
+#define LEGACY_PASS_MANAGER llvm::legacy::PassManagerBase
+#else
+#include "llvm/PassManager.h"
+#define LEGACY_FUNCTION_PASS_MANAGER llvm::FunctionPassManager
+#define LEGACY_PASS_MANAGER llvm::PassManagerBase
+#endif
+
 struct PromotedPair {
   llvm::Value* a;
   llvm::Value* b;
@@ -140,6 +153,17 @@ bool llvm_small_set_insert(llvm::SmallSet<T,N> & smallset, const T &V) {
   return smallset.insert(V);
 }
 
+#endif
+
+// LLVMs after 3.5 require C++11 support
+#if HAVE_LLVM_VER >= 35
+#define HAVE_LLVM_CXX11 1
+#endif
+
+#ifdef HAVE_LLVM_CXX11
+#define LLVM_CXX_OVERRIDE override
+#else
+#define LLVM_CXX_OVERRIDE
 #endif
 
 #endif //HAVE_LLVM

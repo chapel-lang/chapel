@@ -1,0 +1,88 @@
+Performance issues
+------------------
+* atomics:
+  - all atomics are used locally, but utilize on-clauses and result
+    in on-clauses and their overhead related to bundling arguments
+    and the like.  A case for locality optimizations and/or user
+    hints/tags
+  - On systems with network atomics, like Crays, we're using the
+    network atomics path even though processor atomics are sufficient
+    and would be preferable.  Can we automatically optimize this based
+    on efforts similar to the above bullet?  And/or have the user mark
+    them as such.
+
+* returning arrays:
+  - we're currently returning arrays from procedures which causes
+    us to have two arrays live simultaneously and a copy between
+    them.  The copy doesn't seem to have a significant overall
+    performance impact (see isx-no-return.chpl), but can strain the
+    memory system of smaller-memory provisions (see bradc-lnx
+    performance results)
+
+Variants we might want to write
+-------------------------------
+* a global-view version (already in-progress on a branch of Brad's)
+
+* a version in which we explicitly do SPMD-style parallelism across
+  cores as well as locales in order to avoid using atomics at all
+  - and/or could a single version automatically switch between using
+    atomics and not based on number of buckets per locale?
+
+* a verion in which histogramming (countLocalKeys) is done in parallel
+  with exchange keys (using a cobegin, say); the exchange keys task
+  would write a "done"-style sync variable when a 'put' was complete
+  and the next task could begin aggressively histogramming the next
+  buffer's worth of data.
+
+* a version in which countLocalKeys() used a global histogram rather
+  than a local one.  Doing this and moving it outside of the coforall
+  would permit us to remove the barrier from within the coforall (?)
+
+
+Other TODOs
+-----------
+* Unify PCG usage with reference version
+  - reference version uses pcg32_srandom_r() which takes a second stream
+    ID argument
+  - PCG supports an ability to safely clamp values to a [0, maxKeyVal)
+    range.  The PCG interface we're using doesn't currently, so I did
+    it manually in the code.  Switch to a lower-level interface that
+    does the clamping and/or make sure that I don't have bugs in my
+    clamping logic.
+
+* It'd be interesting to look at this code in chplvis
+
+* Make bucketsPerLocale and numBuckets configurable in the bucket-based
+  versions?
+
+* Come up with a better name for the barrier variable?
+
+* Introduce a main() procedure?
+
+* What would it take to use a forall over BucketSpace in the
+  bucket-based versions?  It seems attractive, but also seems like
+  it'd break the barrier synchronization.
+
+* Consider using nested procedures within bucketSort() for the helper
+  routines to avoid passing so much state around?  Or is that crazy?
+
+* Related: should we avoid the use of globals and/or pass them into
+  and out of routines?
+
+* In countLocalKeys, can we use a ref/array alias to
+  myBucketKeys[bucketID] to avoid redundant reindexing in
+  countLocalKeys()?
+  
+
+Language TODOs
+--------------
+* The stats would be much more complete (while remaining elegant/
+  efficient) if we had min/max task reduction intents...
+  
+* Should we be able to support scans on arrays of atomics without a
+  .read()?
+
+* We really want an exclusive scan, but Chapel's is inclusive.  Wasn't
+  the original plan to support both?  Does code exist for this that
+  simply isn't accessible currently?
+  

@@ -1,7 +1,7 @@
 .. _layouts:
 
-Layouts
--------
+Standard Layouts
+----------------
 Contents:
 
 .. toctree::
@@ -11,4 +11,4 @@ Contents:
    :maxdepth: 1
    :glob:
 
-   layouts/*
+   layouts/**

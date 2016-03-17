@@ -16,16 +16,14 @@ __all__ = [
     'chpl_mem',
     'chpl_regexp',
     'chpl_tasks',
-    'chpl_threads',
     'chpl_timers',
     'chpl_wide_pointers',
     'utils',
     # third-party package configuration helpers
-    'chpl_3p_dlmalloc_configs',
     'chpl_3p_gmp_configs',
     'chpl_3p_hwloc_configs',
+    'chpl_3p_jemalloc_configs',
     'chpl_3p_massivethreads_configs',
     'chpl_3p_qthreads_configs',
     'chpl_3p_re2_configs',
-    'chpl_3p_tcmalloc_configs'
 ]

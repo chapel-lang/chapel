@@ -11,7 +11,7 @@ proc dit(D, lo, hi) {
 config const n = 10:int(8);
 {
   const D = {-n/2..n};
-  writeln(typeToString(n.type), ":");
+  writeln(n.type:string, ":");
   dit(D, -n/2, n/2);
 }
 
@@ -19,6 +19,6 @@ config const n = 10:int(8);
 config const un = 10:uint(8);
 {
   const uD = {-un/2..un};
-  writeln(typeToString(un.type), ":");
+  writeln(un.type:string, ":");
   dit(uD, -n/2, n/2);
 }

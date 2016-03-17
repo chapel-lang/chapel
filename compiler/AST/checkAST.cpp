@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -91,9 +91,8 @@ void checkPrimitives()
      case PRIM_TO_LEADER:
      case PRIM_TO_FOLLOWER:
      case PRIM_FIELD_NUM_TO_NAME:
+     case PRIM_FIELD_NAME_TO_NUM:
      case PRIM_FIELD_VALUE_BY_NUM:
-     case PRIM_FIELD_ID_BY_NUM:
-     case PRIM_FIELD_VALUE_BY_NAME:
      case PRIM_ENUM_MIN_BITS:
      case PRIM_ENUM_IS_SIGNED:
      case PRIM_IS_UNION_TYPE:
@@ -187,9 +186,6 @@ void checkPrimitives()
      case PRIM_SINGLE_IS_FULL:
      case PRIM_GET_END_COUNT:
      case PRIM_SET_END_COUNT:
-     case PRIM_PROCESS_TASK_LIST:
-     case PRIM_EXECUTE_TASKS_IN_LIST:
-     case PRIM_FREE_TASK_LIST:
      case PRIM_GET_SERIAL:              // get serial state
      case PRIM_SET_SERIAL:              // set serial state to true or false
      case PRIM_SIZEOF:
@@ -200,12 +196,13 @@ void checkPrimitives()
      case PRIM_CAST:
      case PRIM_DYNAMIC_CAST:
      case PRIM_TYPEOF:
-     case PRIM_USE:
      case PRIM_USED_MODULES_LIST:       // used modules in BlockStmt::modUses
      case PRIM_TUPLE_EXPAND:
      case PRIM_TUPLE_AND_EXPAND:
      case PRIM_CHPL_COMM_GET:           // Direct calls to the Chapel comm layer
      case PRIM_CHPL_COMM_PUT:           // may eventually add others (e.g.: non-blocking)
+     case PRIM_CHPL_COMM_ARRAY_GET:
+     case PRIM_CHPL_COMM_ARRAY_PUT:
      case PRIM_CHPL_COMM_REMOTE_PREFETCH:
      case PRIM_CHPL_COMM_GET_STRD:      // Direct calls to the Chapel comm layer for strided comm
      case PRIM_CHPL_COMM_PUT_STRD:      //  may eventually add others (e.g.: non-blocking)

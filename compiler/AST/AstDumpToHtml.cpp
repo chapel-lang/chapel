@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -166,7 +166,7 @@ bool AstDumpToHtml::enterCallExpr(CallExpr* node) {
 
   fprintf(mFP, " ");
 
-  if (FnSymbol* fn = node->isResolved()) {
+  if (FnSymbol* fn = node->theFnSymbol()) {
     if (fn->hasFlag(FLAG_BEGIN_BLOCK))
       fprintf(mFP, "begin ");
     else if (fn->hasFlag(FLAG_ON_BLOCK))
@@ -375,6 +375,32 @@ void AstDumpToHtml::visitUsymExpr(UnresolvedSymExpr* node) {
   }
 
   fprintf(mFP, " <FONT COLOR=\"red\">%s</FONT>", node->unresolved);
+
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "</DL>\n");
+  }
+}
+
+
+//
+// UseStmt
+//
+void AstDumpToHtml::visitUseStmt(UseStmt* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "<DL>\n");
+  }
+
+  fprintf(mFP, " (%d 'use' ", node->id);
+
+  node->src->accept(this);
+
+  if (!node->isPlainUse()) {
+    node->writeListPredicate(mFP);
+    bool first = outputVector(mFP, node->named);
+    outputRenames(mFP, node->renamed, first);
+  }
+
+  fprintf(mFP, ")");
 
   if (isBlockStmt(node->parentExpr)) {
     fprintf(mFP, "</DL>\n");
@@ -610,6 +636,7 @@ void AstDumpToHtml::writeFnSymbol(FnSymbol* fn) {
   switch (fn->retTag) {
     case RET_VALUE:                                break;
     case RET_REF:   fprintf(mFP, "<b>ref</b> ");   break;
+    case RET_CONST_REF:   fprintf(mFP, "<b>const ref</b> ");   break;
     case RET_PARAM: fprintf(mFP, "<b>param</b> "); break;
     case RET_TYPE:  fprintf(mFP, "<b>type</b> ");  break;
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,7 +21,7 @@
 #define _PARSER_H_
 
 class BlockStmt;
-class CallExpr;
+class UseStmt;
 
 #include "symbol.h"
 
@@ -48,7 +48,7 @@ BlockStmt*         parseString(const char* string,
                                const char* msg);
 
 void               addModuleToParseList(const char* name,
-                                        CallExpr*   newUse);
+                                        UseStmt*   newUse);
 
 void               parseDependentModules(ModTag modtype);
 

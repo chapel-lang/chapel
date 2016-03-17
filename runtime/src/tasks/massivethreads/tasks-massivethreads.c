@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -40,6 +40,7 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "myth.h"
 
@@ -384,7 +385,7 @@ void chpl_task_stdModulesInitialized(void) {
 }
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg, c_sublocid_t subLoc,
-    chpl_task_list_p *task_list, int32_t task_list_locale,
+    void **task_list, int32_t task_list_locale,
     chpl_bool is_begin_stmt, int lineno, c_string filename) {
   //Create a new task directly
   myth_thread_option opt;
@@ -409,15 +410,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg, c_sublocid_t subLoc,
   myth_detach(th);
 }
 
-void chpl_task_processTaskList(chpl_task_list_p task_list) {
-  //Nothing to do because chpl_task_list is actually not used.
-}
-
-void chpl_task_executeTasksInList(chpl_task_list_p task_list) {
-  //Nothing to do because chpl_task_list is actually not used.
-}
-
-void chpl_task_freeTaskList(chpl_task_list_p task_list) {
+void chpl_task_executeTasksInList(void** task_list) {
   //Nothing to do because chpl_task_list is actually not used.
 }
 
@@ -476,9 +469,13 @@ void chpl_task_yield(void) {
   myth_yield(1);
 }
 
-void chpl_task_sleep(int secs) {
+
+void chpl_task_sleep(double secs) {
   //sleep specified seconds
-  sleep(secs);
+  struct timespec delay;
+  delay.tv_sec = (time_t)(secs);
+  delay.tv_nsec = (long)(1e9*(secs - floor(secs)));
+  nanosleep(&delay, NULL);
 }
 
 chpl_bool chpl_task_getSerial(void)

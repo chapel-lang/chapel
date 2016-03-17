@@ -4,6 +4,10 @@
 from __future__ import print_function
 
 import os
+"""
+Symlink some files from doc/* to the sphinx project for generating
+the web documentation
+"""
 
 
 def extfilter(directory, extension='.rst'):
@@ -44,6 +48,13 @@ def main():
     # CHPL_HOME README
     chplhomereadme = os.path.join(chpl_home, 'README.rst')
     os.symlink(chplhomereadme, 'source/usingchapel/README.rst')
+
+    # Man pages
+    chplmanpage = os.path.join(chpl_home, 'man', 'chpl.rst')
+    os.symlink(chplmanpage, 'source/usingchapel/man.rst')
+
+    chpldocmanpage = os.path.join(chpl_home, 'man', 'chpldoc.rst')
+    os.symlink(chpldocmanpage, 'source/tools/chpldoc/man.rst')
 
 
 if __name__ == '__main__':

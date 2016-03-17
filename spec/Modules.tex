@@ -91,8 +91,8 @@ specified filename.  If the resulting name is not a legal Chapel
 identifier, it cannot be referenced in a use statement.
 
 \begin{chapelexample}{implicit.chpl}
-The following file, named myModule.chpl, defines an implicitly named
-module called myModule.
+The following file, named implicit.chpl, defines an implicitly named
+module called implicit.
 \begin{chapel}
 var x: int = 0;
 var y: int = 1;
@@ -112,7 +112,7 @@ printY();
 0
 1
 \end{chapeloutput}
-Module myModule defines the top-level module symbols x, y, printX, and
+Module implicit defines the top-level module symbols x, y, printX, and
 printY.
 \end{chapelexample}
 
@@ -155,8 +155,8 @@ Files with both module declarations and top-level statements result in
 nested modules.
 
 \begin{chapelexample}{nested.chpl}
-The following file, named myModule.chpl, defines an
-implicitly named module called myModule, with nested modules
+The following file, named nested.chpl, defines an
+implicitly named module called nested, with nested modules
 MX and MY.
 \begin{chapel}
 module MX {
@@ -203,13 +203,10 @@ statement~(\rsec{Using_Modules}).
 \label{Visibility_Of_A_Module}
 \index{modules!access}
 
-A top-level module is visible anywhere if the \sntx{privacy-specifier}
-of its declaration is \chpl{public} or is omitted (i.e. by default).
-A top-level module declared \chpl{private} is visible only within that
-module.  The visibility of a nested module is subject to the rules
-of~\rsec{Visibility_Of_Symbols}. There, the nested module is
-considered a "symbol defined at the top level scope" of its outer
-module.
+A module defined at file scope is visible anywhere. The visibility of a nested
+module is subject to the rules of~\rsec{Visibility_Of_Symbols}. There,
+the nested module is considered a "symbol defined at the top level
+scope" of its outer module.
 
 \subsection{Visibility Of A Module's Symbols}
 \label{Visibility_Of_Symbols}
@@ -315,7 +312,7 @@ compiler error.
 \label{Using_Modules}
 \index{modules!using}
 
-If a module is visible to where accessing its symbols is desirable,
+If a module is visible to the scope in which accessing its symbols is desirable,
 then a use statement on that module may be employed.  Use statements
 make a module's visible symbols available without requiring them to be
 prefixed by the module's name.  The syntax of the use statement is
@@ -326,12 +323,24 @@ use-statement:
   `use' module-name-list ;
 
 module-name-list:
-  module-name
+  module-name limitation-clause[OPT]
   module-name , module-name-list
 
 module-name:
   identifier
   module-name . module-name
+
+limitation-clause:
+  `except' identifier-list
+  `only' rename-list
+
+rename-list:
+  rename-base
+  rename-base , rename-list
+
+rename-base:
+  identifier `as' identifier
+  identifier
 \end{syntax}
 
 Symbols made available by a use statement are at an outer scope from those
@@ -339,22 +348,50 @@ defined directly in the scope where the use statement occurs, but at a
 nearer scope than symbols defined in the scope containing the scope where
 the use statement occurs.
 
+An optional \sntx{limitation-clause} may be provided to limit the symbols made
+available by the use statement.  If an \chpl{except} list is provided, then all
+the visible but unlisted symbols in the module will be made available without
+prefix.  If an \chpl{only} list is provided, then just the listed visible
+symbols in the module will be made available without prefix.  All visible
+symbols not provided via these limited use statements are still accessible with
+the module name prefix.  If a type is specified in the \sntx{limitation-clause},
+then the type's fields and methods are treated similarly to the type name.
+These fields and methods cannot be specified in a \sntx{limitation-clause} on
+their own.  It is an error to provide a name in a \sntx{limitation-clause} that
+does not exist or is not visible in the respective module.
+
+Within an \chpl{only} list, a visible symbol from that module may optionally be
+given a new name using the \chpl{as} keyword.  This new name will be usable from
+the scope of the use in place of the old name unless the old name is
+additionally specified in the \chpl{only} list.  If a use which renames a symbol
+is present at module scope, uses of that module will also be able to reference
+that symbol using the new name instead of the old name.  Renaming does not
+affect accesses to that symbol via the source module's prefix, nor does it
+affect uses of that module from other contexts.  It is an error to attempt to
+rename a symbol that does not exist or is not visible in the respective module,
+or to rename a symbol to a name that is already present in the same \chpl{only}
+list.  It is, however, perfectly acceptable to rename a symbol to a name present
+in the respective module which was not specified via that \chpl{only} list.
+
+% We need to figure out what to do about functions that return types which due
+% to the limitation-clause are not visible without prefix.
+
+If a use statement mentions multiple modules, only the last module can have a
+\sntx{limitation-clause}.
+
 Use statements are transitive by default: if a module A used by
 another module B also contains a use of a further module C, C's
 symbols will also be considered visible within B, at a further scope
-than the symbols of other modules immediately used by B.
+than the symbols of other modules immediately used by B.  Limitation clauses
+are applied transitively as well - if module B's use of module A contains an
+\chpl{except} or \chpl{only} list, that list will also limit which of C's
+symbols are visible to B.
 
 % We would like to provide a way to specify that a use should not be
 % transitive
 
-It is an error for two public variables, types, or modules to be
-defined at the same depth.
-
-\begin{openissue}
-There is an expectation that this statement will be extended to allow
-the programmer to restrict which symbols are 'used' as well as to
-rename symbols that are 'used.'
-\end{openissue}
+It is an error for two public variables, types, or modules with the same
+name to be defined at the same depth.
 
 \begin{chapelexample}{use.chpl}
   The following example illustrates how the use statement makes

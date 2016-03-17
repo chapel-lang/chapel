@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -105,7 +105,7 @@ Calling GMP functions directly
 
 The second option for Chapel programs using this module is to call the GMP
 functions directly. For a full reference to GMP capabilities, please refer to
-the `GMP website <http://gmplib.org>`_ and the
+the `GMP website <https://gmplib.org>`_ and the
 `GMP documentation <https://gmplib.org/manual/>`_.
 
 
@@ -474,7 +474,7 @@ module GMP {
     }
     proc BigInt(str:string, base:int=0) {
       var e:c_int;
-      e = mpz_init_set_str(this.mpz, str.c_str(), base.safeCast(c_int));
+      e = mpz_init_set_str(this.mpz, str.localize().c_str(), base.safeCast(c_int));
       if e {
         mpz_clear(this.mpz);
         halt("Error initializing big integer: bad format");
@@ -483,7 +483,7 @@ module GMP {
     proc BigInt(str:string, base:int=0, out error:syserr) {
       var e:c_int;
       error = ENOERR;
-      e = mpz_init_set_str(this.mpz, str.c_str(), base.safeCast(c_int));
+      e = mpz_init_set_str(this.mpz, str.localize().c_str(), base.safeCast(c_int));
       if e {
         mpz_clear(this.mpz);
         error = EFORMAT;
@@ -560,7 +560,7 @@ module GMP {
     }
     proc set_str(str:string, base:int=0)
     {
-      on this do mpz_set_str(this.mpz, str.c_str(), base.safeCast(c_int));
+      on this do mpz_set_str(this.mpz, str.localize().c_str(), base.safeCast(c_int));
     }
     proc swap(a:BigInt)
     {
@@ -613,7 +613,7 @@ module GMP {
       var ret:string;
       on this {
         var tmp = chpl_gmp_mpz_get_str(base.safeCast(c_int), this.mpz);
-        ret = toString(tmp);
+        ret = tmp:string;
       }
       return ret;
     }
@@ -1526,7 +1526,7 @@ module GMP {
   }
 
 
-  proc BigInt.writeThis(writer:Writer) {
+  proc BigInt.writeThis(writer) {
     var (acopy,a_) = this.maybeCopy();
     var s:string = a_.get_str();
     //gmp_asprintf(s, "%Zd", a_.mpz);

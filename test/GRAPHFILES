@@ -99,7 +99,6 @@ studies/shootout/regex-dna/regexdna.graph
 studies/shootout/reverse-complement/revcomp.graph
 # suite: Shootout extras
 studies/shootout/binary-trees/binary-trees-extras.graph
-studies/shootout/chameneos-redux/hannah/chameneos-redux-all.graph
 studies/shootout/fasta/fasta-extras.graph
 studies/shootout/spectral-norm/lydia/spectral-norm-specify-step.graph
 studies/shootout/mandelbrot/mandelbrot-extras.graph
@@ -111,6 +110,17 @@ studies/parboil/stencil/stencil.graph
 # suite: PARSEC benchmarks
 studies/parsec/blackscholes.graph
 studies/parsec/blackscholes_promote.graph
+# suite: LCALS benchmarks
+studies/lcals/LCALSMain.graph
+# suite: ISx benchmark
+studies/isx/isx.graph
+studies/isx/isx-bucket-spmd.graph
+studies/isx/isx-no-return.graph
+studies/isx/isx-per-task.graph
+# suite: PRK benchmarks
+studies/prk/synch_p2p/prk-synch_p2p.graph
+studies/prk/stencil/prk-stencil.graph
+studies/prk/transpose/prk-transpose.graph
 # suite: NAS Parallel benchmarks
 npb/cg/cg.graph
 npb/ep/ep.graph
@@ -140,6 +150,10 @@ distributions/robust/associative/performance/array_iter.graph
 distributions/robust/associative/performance/domain_iter.graph
 domains/bradc/domEqualityPerf.graph
 performance/thomasvandoren/matrix-multiply.graph
+types/string/ferguson/array-of-strings-read.graph
+arrays/ferguson/return-array-8.graph
+arrays/ferguson/return-array-20000000.graph
+arrays/ferguson/return-array-40000000.graph
 # suite: Dynamic iterators
 functions/iterators/angeles/dynamic.graph
 functions/iterators/angeles/distAdaptativeWSv1.graph
@@ -188,10 +202,12 @@ studies/shootout/mandelbrot/mandelbrot.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph
+reductions/vass/reductions-perf.graph
 spectests.graph
 studies/paracr/asenjo/PARACR-BC.graph
 modules/standard/BitOps/c-tests/performance/bitops.graph
 studies/rbc/tvandoren/RBC.graph
+types/string/ferguson/temporary-copies.graph
 # suite: Colorado State University
 studies/colostate/Jacobi1D.graph
 studies/colostate/Jacobi2D.graph

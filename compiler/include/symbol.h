@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,7 @@
 #include <bitset>
 #include <iostream>
 #include <vector>
+#include <map>
 
 //
 // The function that represents the compiler-generated entry point
@@ -46,6 +47,7 @@ class SymExpr;
 enum RetTag {
   RET_VALUE,
   RET_REF,
+  RET_CONST_REF,
   RET_PARAM,
   RET_TYPE
 };
@@ -150,6 +152,9 @@ private:
 };
 
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
+
+bool isString(Symbol* symbol);
+bool isUserDefinedRecord(Symbol* symbol);
 
 /******************************** | *********************************
 *                                                                   *
@@ -318,8 +323,7 @@ class TypeSymbol : public Symbol {
 
 class FnSymbol : public Symbol {
  public:
-  AList formals;
-  DefExpr* setter; // implicit setter argument to var functions
+  AList formals; // each formal is an ArgSymbol
   Type* retType; // The return type of the function.  This field is not
                  // fully established until resolution, and could be NULL
                  // before then.  Up to that point, return type information is
@@ -406,6 +410,7 @@ class FnSymbol : public Symbol {
   bool            isPrimaryMethod()                            const;
   bool            isSecondaryMethod()                          const;
   bool            isIterator()                                 const;
+  bool            returnsRefOrConstRef()                       const;
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 
@@ -517,7 +522,7 @@ class LabelSymbol : public Symbol {
 ********************************* | ********************************/
 
 // Processes a char* to replace any escape sequences with the actual bytes
-std::string unescapeString(const char* const str);
+std::string unescapeString(const char* const str, BaseAST* astForError);
 
 // Creates a new string literal with the given value.
 VarSymbol *new_StringSymbol(const char *s);
@@ -577,12 +582,15 @@ bool argMustUseCPtr(Type* t);
 extern bool localTempNames;
 
 extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
+extern HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
 extern StringChainHash uniqueStringHash;
 
 extern ModuleSymbol* rootModule;
 extern ModuleSymbol* theProgram;
 extern ModuleSymbol* mainModule;
 extern ModuleSymbol* baseModule;
+extern ModuleSymbol* stringLiteralModule;
+extern FnSymbol* initStringLiterals;
 extern ModuleSymbol* standardModule;
 extern ModuleSymbol* printModuleInitModule;
 extern Symbol *gNil;
@@ -612,14 +620,11 @@ extern VarSymbol *gModuleInitIndentLevel;
 extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gChplHereAlloc;
 extern FnSymbol *gChplHereFree;
-extern Symbol *gCLine, *gCFile;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
 
-extern Symbol *gTaskList;
-
-extern Map<FnSymbol*,int> ftableMap;
+extern std::map<FnSymbol*,int> ftableMap;
 extern Vec<FnSymbol*> ftableVec;
 
 //

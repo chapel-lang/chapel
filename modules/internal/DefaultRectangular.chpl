@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -294,7 +294,7 @@ module DefaultRectangular {
           }
         } else {
           coforall chunk in 0..#numChunks { // make sure coforall on can trigger
-            on here.getChild(chunk) {
+            local on here.getChild(chunk) {
               if debugDataParNuma {
                 if chunk!=chpl_getSubloc() then
                   writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
@@ -644,6 +644,13 @@ module DefaultRectangular {
     pragma "local field"
     var shiftedData : _ddata(eltType);
     var noinit_data: bool = false;
+
+    // 'dataAllocRange' is used by the array-vector operations (e.g. push_back,
+    // pop_back, insert, remove) to allow growing or shrinking the data
+    // buffer in a doubling/halving style.  If it is used, it will be the
+    // actual size of the 'data' buffer, while 'dom' represents the size of
+    // the user-level array.
+    var dataAllocRange: range(int);
     //var numelm: int = -1; // for correctness checking
   
     // end class definition here, then defined secondary methods below
@@ -695,22 +702,19 @@ module DefaultRectangular {
         if !dom.stridable {
           // Ideally we would like to be able to do something like
           // "for i in first..last by step". However, right now that would
-          // results in a strided iterator which isn't as optimized. It also
-          // introduces another range creation which in tight loops is
-          // unfortunately expensive. Ideally we don't want to be using C for
-          // loops outside of ChapelRange. However, since most other array data
-          // types are implemented in terms of DefaultRectangular, we think
-          // that this will serve as a second base case rather than the
-          // beginning of every iterator invoking a primitive C for loop
-          var i: idxType;
+          // result in a strided iterator which isn't as optimized. It would
+          // also add a range constructor, which in tight loops is pretty
+          // expensive. Instead we use a direct range iterator that is
+          // optimized for positively strided ranges. It should be just as fast
+          // as directly using a "c for loop", but it contains code check for
+          // overflow and invalid strides as well as the ability to use a less
+          // optimized iteration method if users are concerned about range
+          // overflow.
           const first = getDataIndex(dom.dsiLow);
           const second = getDataIndex(dom.dsiLow+1);
           const step = (second-first);
           const last = first + (dom.dsiNumIndices-1) * step;
-          while __primitive("C for loop",
-                            __primitive( "=", i, first),
-                            __primitive("<=", i, last),
-                            __primitive("+=", i, step)) {
+          for i in chpl_direct_pos_stride_range_iter(first, last, step) {
             yield theData(i);
           }
 
@@ -783,6 +787,11 @@ module DefaultRectangular {
 
     inline proc initShiftedData() {
       if earlyShiftData && !stridable {
+        // Lydia note 11/04/15: a question was raised as to whether this
+        // check on dsiNumIndices added any value.  Performance results
+        // from removing this line seemed inconclusive, which may indicate
+        // that the check is not necessary, but it seemed like unnecessary
+        // work for something with no immediate reward.
         if dom.dsiNumIndices > 0 {
           if isIntType(idxType) then
             shiftedData = _ddata_shift(eltType, data, origin-factoredOffs);
@@ -865,25 +874,66 @@ module DefaultRectangular {
       }
     }
   
-    // only need second version because wrapper record can pass a 1-tuple
-    inline proc dsiAccess(ind: idxType ...1) ref where rank == 1
+    // only need second version (ind : rank*idxType)
+    // because wrapper record can pass a 1-tuple
+    inline proc dsiAccess(ind: idxType ...1) ref
+    where rank == 1
       return dsiAccess(ind);
-  
+
+    inline proc dsiAccess(ind: idxType ...1)
+    where rank == 1 && !shouldReturnRvalueByConstRef(eltType)
+      return dsiAccess(ind);
+
+    inline proc dsiAccess(ind: idxType ...1) const ref
+    where rank == 1 && shouldReturnRvalueByConstRef(eltType)
+      return dsiAccess(ind);
+
+
     inline proc dsiAccess(ind : rank*idxType) ref {
       if boundsChecking then
-        if !dom.dsiMember(ind) then
-          halt("array index out of bounds: ", ind);
+        if !dom.dsiMember(ind) {
+          // Note -- because of module load order dependency issues,
+          // the multiple-arguments implementation of halt cannot
+          // be called at this point. So we call a special routine
+          // that does the right thing here.
+          halt("array index out of bounds: " + _stringify_index(ind));
+        }
       var dataInd = getDataIndex(ind);
-      //assert(dataInd >= 0);
-      //assert(numelm >= 0); // ensure it has been initialized
-      //assert(dataInd: uint(64) < numelm: uint(64));
       return theData(dataInd);
     }
-  
-    inline proc dsiLocalAccess(i) ref {
-      return dsiAccess(i);
+
+    inline proc dsiAccess(ind : rank*idxType)
+    where !shouldReturnRvalueByConstRef(eltType) {
+      if boundsChecking then
+        if !dom.dsiMember(ind) {
+          halt("array index out of bounds: " + _stringify_index(ind));
+        }
+      var dataInd = getDataIndex(ind);
+      return theData(dataInd);
     }
-  
+
+    inline proc dsiAccess(ind : rank*idxType) const ref
+    where shouldReturnRvalueByConstRef(eltType) {
+      if boundsChecking then
+        if !dom.dsiMember(ind) {
+          halt("array index out of bounds: " + _stringify_index(ind));
+        }
+      var dataInd = getDataIndex(ind);
+      return theData(dataInd);
+    }
+
+
+    inline proc dsiLocalAccess(i) ref
+      return dsiAccess(i);
+
+    inline proc dsiLocalAccess(i)
+    where !shouldReturnRvalueByConstRef(eltType)
+      return dsiAccess(i);
+
+    inline proc dsiLocalAccess(i) const ref
+    where shouldReturnRvalueByConstRef(eltType)
+      return dsiAccess(i);
+
     proc dsiReindex(d: DefaultRectangularDom) {
       var alias : DefaultRectangularArr(eltType=eltType, rank=d.rank,
                                         idxType=d.idxType,
@@ -984,15 +1034,26 @@ module DefaultRectangular {
       }
       return alias;
     }
-  
+
     proc dsiReallocate(d: domain) {
+      on this {
+      //
+      // If both d and dom are default rectangular, this is pretty
+      // easy...
+      //
       if (d._value.type == dom.type) {
-        on this {
         var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
-                                            idxType=idxType,
-                                            stridable=d._value.stridable,
-                                            dom=d._value);
-        for i in d((...dom.ranges)) do
+                                             idxType=idxType,
+                                             stridable=d._value.stridable,
+                                             dom=d._value);
+        //
+        // TODO: Making this for into a forall ought to accelerate
+        // dsiReallocate() calls, yet doing so breaks due to uint/int
+        // interaction issues today.  Deserves more of a look...
+        // Does our standalone parallel iterator not have the same
+        // type flexibility as the serial iterator?
+        //
+        for i in d[(...dom.ranges)] do
           copy.dsiAccess(i) = dsiAccess(i);
         off = copy.off;
         blk = copy.blk;
@@ -1005,13 +1066,25 @@ module DefaultRectangular {
         // has not yet been updated (this is called from within the
         // = function for domains.
         if earlyShiftData && !d._value.stridable then
+          // Lydia note 11/04/15: a question was raised as to whether this
+          // check on numIndices added any value.  Performance results
+          // from removing this line seemed inconclusive, which may indicate
+          // that the check is not necessary, but it seemed like unnecessary
+          // work for something with no immediate reward.
           if d.numIndices > 0 then
             shiftedData = copy.shiftedData;
         //numelm = copy.numelm;
         delete copy;
-        }
       } else {
-        halt("illegal reallocation");
+        //
+        // In this case, dom is DefaultRectangular, but d is not.  We
+        // permit assignments between distributed domains and non-,
+        // interpreting it as just the assignment of the index sets.
+        // So for the purposes of this reallocation, just create a
+        // temporary DefaultRectangular domain and use it above.
+        //
+        dsiReallocate({(...d.getIndices())});
+      }
       }
     }
   
@@ -1028,6 +1101,11 @@ module DefaultRectangular {
       rad.factoredOffs = factoredOffs;
       rad.data = data;
       if earlyShiftData && !stridable then
+        // Lydia note 11/04/15: a question was raised as to whether this
+        // check on dsiNumIndices added any value.  Performance results
+        // from removing this check seemed inconclusive, which may indicate
+        // that the check is not necessary, but it seemed like unnecessary
+        // work for something with no immediate reward.
         if dom.dsiNumIndices > 0 then rad.shiftedData = shiftedData;
       return rad;
     }
@@ -1050,8 +1128,8 @@ module DefaultRectangular {
     f <~> new ioLiteral("}");
   }
   
-  proc DefaultRectangularDom.dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
-  proc DefaultRectangularDom.dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+  proc DefaultRectangularDom.dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
+  proc DefaultRectangularDom.dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
 
   proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
     proc writeSpaces(dim:int) {
@@ -1093,7 +1171,7 @@ module DefaultRectangular {
           idx(dim) = j;
 
           recursiveArrayWriter(idx, dim=dim+1,
-                               last=(last || dim == 1) && (j == lastIdx));
+                               last=(last || dim == 1) && (j == dom.ranges(dim).alignedHigh));
 
           if isjson || ischpl {
             if j != lastIdx {
@@ -1118,11 +1196,107 @@ module DefaultRectangular {
       }
 
     }
-    const zeroTup: rank*idxType;
-    recursiveArrayWriter(zeroTup);
+
+    if false && !f.writing && !f.binary() &&
+       rank == 1 && dom.ranges(1).stride == 1 &&
+       dom._arrs.length == 1 {
+
+      // resize-on-read implementation, disabled right now
+      // until we decide how it should work.
+
+      // Binary reads could also start out with a length.
+
+      // Special handling for reading 1-D stride-1 arrays in order
+      // to read them without requiring that the array length be
+      // specified ahead of time.
+
+      var binary = f.binary();
+      var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+      var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
+      var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
+
+      if isjson || ischpl {
+        f <~> new ioLiteral("[");
+      }
+
+      var first = true;
+
+      var offset = dom.ranges(1).low;
+      var i = 0;
+
+      var read_end = false;
+
+      while ! f.error() {
+        if first {
+          first = false;
+          // but check for a ]
+          if isjson || ischpl {
+            f <~> new ioLiteral("]");
+          } else if isspace {
+            f <~> new ioNewline(skipWhitespaceOnly=true);
+          }
+          if f.error() == EFORMAT {
+            f.clearError();
+          } else {
+            read_end = true;
+            break;
+          }
+        } else {
+          // read a comma or a space.
+          if isspace then f <~> new ioLiteral(" ");
+          else if isjson || ischpl then f <~> new ioLiteral(",");
+
+          if f.error() == EFORMAT {
+            f.clearError();
+            // No comma.
+            break;
+          }
+        }
+
+        if i >= dom.ranges(1).size {
+          // Create more space.
+          var sz = dom.ranges(1).size;
+          if sz < 4 then sz = 4;
+          sz = 2 * sz;
+
+          // like push_back
+          const newDom = {offset..#sz};
+
+          dsiReallocate( newDom );
+          // This is different from how push_back does it
+          // because push_back might lead to a call to
+          // _reprivatize but I don't see how to do that here.
+          dom.dsiSetIndices( newDom.getIndices() );
+          dsiPostReallocate();
+        }
+
+        f <~> dsiAccess(offset + i);
+
+        i += 1;
+      }
+
+      if ! read_end {
+        if isjson || ischpl {
+          f <~> new ioLiteral("]");
+        }
+      }
+
+      {
+        // trim down to actual size read.
+        const newDom = {offset..#i};
+        dsiReallocate( newDom );
+        dom.dsiSetIndices( newDom.getIndices() );
+        dsiPostReallocate();
+      }
+
+    } else {
+      const zeroTup: rank*idxType;
+      recursiveArrayWriter(zeroTup);
+    }
   }
 
-  proc DefaultRectangularArr.dsiSerialWrite(f: Writer) {
+  proc DefaultRectangularArr.dsiSerialWrite(f) {
     var isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
     if _isSimpleIoType(this.eltType) && f.binary() &&
@@ -1138,13 +1312,15 @@ module DefaultRectangular {
       if boundsChecking then
         assert((len:uint*elemSize:uint) <= max(ssize_t):uint,
                "length of array to write is greater than ssize_t can hold");
-      f.writeBytes(data, len:ssize_t*elemSize:ssize_t);
+      const src = this.theData;
+      const idx = getDataIndex(this.dom.dsiLow);
+      f.writeBytes(_ddata_shift(eltType, src, idx), len:ssize_t*elemSize:ssize_t);
     } else {
       this.dsiSerialReadWrite(f);
     }
   }
 
-  proc DefaultRectangularArr.dsiSerialRead(f: Reader) {
+  proc DefaultRectangularArr.dsiSerialRead(f) {
     var isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
     if _isSimpleIoType(this.eltType) && f.binary() &&
@@ -1163,12 +1339,10 @@ module DefaultRectangular {
     }
   }
 
-  // This is very conservative.  For example, it will return false for
-  // 1-d array aliases that are shifted from the aliased array.
+  // This is very conservative.
   proc DefaultRectangularArr.isDataContiguous() {
     if debugDefaultDistBulkTransfer then
       writeln("isDataContiguous(): origin=", origin, " off=", off, " blk=", blk);
-    if origin != 0 then return false;
   
     for param dim in 1..rank do
       if off(dim)!= dom.dsiDim(dim).first then return false;
@@ -1229,42 +1403,27 @@ module DefaultRectangular {
               " Alo=", Alo, ", Blo=", Blo,
               ", len=", len, ", elemSize=", elemSize);
     }
+
+    const Adata = _ddata_shift(eltType, this.theData, getDataIndex(Alo));
+    const Bdata = _ddata_shift(eltType, B._value.theData, B._value.getDataIndex(Blo));
+
+    if Adata == Bdata then return;
   
     // NOTE: This does not work with --heterogeneous, but heterogeneous
     // compilation does not work right now.  The calls to chpl_comm_get
     // and chpl_comm_put should be changed once that is fixed.
-    if this.data.locale.id==here.id {
+    if Adata.locale.id==here.id {
       if debugDefaultDistBulkTransfer then //See bug in test/optimizations/bulkcomm/alberto/rafatest2.chpl
         writeln("\tlocal get() from ", B._value.locale.id);
-      const dest = this.theData;
-      const src = B._value.theData;
-      if dest != src {
-        __primitive("chpl_comm_get",
-                  __primitive("array_get", dest, getDataIndex(Alo)),
-                  B._value.data.locale.id,
-                  __primitive("array_get", src, B._value.getDataIndex(Blo)),
-                  len);
-      }
-    } else if B._value.data.locale.id==here.id {
+      __primitive("chpl_comm_array_get", Adata[0], Bdata.locale.id, Bdata[0], len);
+    } else if Bdata.locale.id==here.id {
       if debugDefaultDistBulkTransfer then
         writeln("\tlocal put() to ", this.locale.id);
-      const dest = this.theData;
-      const src = B._value.theData;
-      __primitive("chpl_comm_put",
-                  __primitive("array_get", src, B._value.getDataIndex(Blo)),
-                  this.data.locale.id,
-                  __primitive("array_get", dest, getDataIndex(Alo)),
-                  len);
-    } else on this.data.locale {
+      __primitive("chpl_comm_array_put", Bdata[0], Adata.locale.id, Adata[0], len); 
+    } else on Adata.locale {
       if debugDefaultDistBulkTransfer then
         writeln("\tremote get() on ", here.id, " from ", B.locale.id);
-      const dest = this.theData;
-      const src = B._value.theData;
-      __primitive("chpl_comm_get",
-                  __primitive("array_get", dest, getDataIndex(Alo)),
-                  B._value.data.locale.id,
-                  __primitive("array_get", src, B._value.getDataIndex(Blo)),
-                  len);
+      __primitive("chpl_comm_array_get", Adata[0], Bdata.locale.id, Bdata[0], len);
     }
   }
   

@@ -19,8 +19,8 @@ writeln(cstri:imag(32));
 writeln(cstri:imag(64));
 writeln(cstrc:complex(64));
 writeln(cstrc:complex(128));
-writeln(cstrE:E);
-writeln(cstrB:bool);
+writeln(cstrE:string:E);
+writeln(cstrB:string:bool);
 
 for param i in 1..4 do writeln(vcstr:uint(4<<i));
 for param i in 1..4 do writeln(vcstr:int(4<<i));
@@ -30,8 +30,8 @@ writeln(vcstri:imag(32));
 writeln(vcstri:imag(64));
 writeln(vcstrc:complex(64));
 writeln(vcstrc:complex(128));
-writeln(vcstrE:E);
-writeln(vcstrB:bool);
+writeln(vcstrE:string:E);
+writeln(vcstrB:string:bool);
 
 for param i in 1..4 do writeln(str:uint(4<<i));
 for param i in 1..4 do writeln(str:int(4<<i));
@@ -43,13 +43,6 @@ writeln(strc:complex(64));
 writeln(strc:complex(128));
 writeln(strE:E);
 writeln(strB:bool);
-
-writeln(n:c_string);
-writeln(r:c_string);
-writeln(i:c_string);
-writeln(c:c_string);
-writeln(e:c_string);
-writeln(b:c_string);
 
 writeln(n:string);
 writeln(r:string);

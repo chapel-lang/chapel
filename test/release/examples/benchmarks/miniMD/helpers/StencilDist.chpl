@@ -360,7 +360,7 @@ proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc Stencil.writeThis(x:Writer) {
+proc Stencil.writeThis(x) {
   x.writeln("Stencil");
   x.writeln("-------");
   x.writeln("distributes: ", boundingBox);
@@ -694,7 +694,7 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
 //
 // output domain
 //
-proc StencilDom.dsiSerialWrite(x:Writer) {
+proc StencilDom.dsiSerialWrite(x) {
   x.write(whole);
 }
 
@@ -947,7 +947,8 @@ proc StencilArr.dsiReadRemote(i: rank*idxType) {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
-proc StencilArr.dsiAccess(i: rank*idxType) ref {
+inline
+proc StencilArr.do_dsiAccess(param setter, i: rank*idxType) ref {
   local {
     if myLocArr != nil {
 
@@ -994,6 +995,14 @@ proc StencilArr.dsiAccess(i: rank*idxType) ref {
   }
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
+
+proc StencilArr.dsiAccess(i: rank*idxType) ref {
+  return do_dsiAccess(true, i);
+}
+proc StencilArr.dsiAccess(i: rank*idxType) {
+  return do_dsiAccess(false, i);
+}
+
 
 proc StencilArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
@@ -1089,7 +1098,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
 //
 // output array
 //
-proc StencilArr.dsiSerialWrite(f: Writer) {
+proc StencilArr.dsiSerialWrite(f) {
   type strType = chpl__signedType(idxType);
   var binary = f.binary();
   if dom.dsiNumIndices == 0 then return;
@@ -1288,7 +1297,7 @@ proc StencilArr.dsiUpdateFluff() {
         if !zeroTuple(L) {
           if !dom.dist.targetLocDom.member(i+L) && dom.periodic then
             locArr[i].myElems[D] = locArr[N].myElems[S];
-          else 
+          else if dom.dist.targetLocDom.member(N) then
             locArr[i].myElems[D] = locArr[N].myElems[D];
         }
       }

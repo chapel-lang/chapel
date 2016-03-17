@@ -13,6 +13,7 @@ Contents:
    chplenv
    building
    compiling
+   Chapel Man Page <man>
    executing
    multilocale
    launcher

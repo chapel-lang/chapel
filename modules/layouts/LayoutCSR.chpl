@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -366,13 +366,23 @@ class CSRArr: BaseArr {
 
     // lookup the index and return the data or IRV
     const (found, loc) = dom.find(ind);
-    if setter && !found then
+    if found then
+      return data(loc);
+    else
       halt("attempting to assign a 'zero' value in a sparse array: ", ind);
+  }
+  proc dsiAccess(ind: rank*idxType) {
+    // make sure we're in the dense bounding box
+    dom.boundsCheck(ind);
+
+    // lookup the index and return the data or IRV
+    const (found, loc) = dom.find(ind);
     if found then
       return data(loc);
     else
       return irv;
   }
+
 
   iter these() ref {
     for i in 1..dom.nnz do yield data[i];
@@ -425,7 +435,7 @@ class CSRArr: BaseArr {
 }
 
 
-proc CSRDom.dsiSerialWrite(f: Writer) {
+proc CSRDom.dsiSerialWrite(f) {
   f.writeln("{");
   for r in rowRange {
     const lo = rowStart(r);
@@ -438,7 +448,7 @@ proc CSRDom.dsiSerialWrite(f: Writer) {
 }
 
 
-proc CSRArr.dsiSerialWrite(f: Writer) {
+proc CSRArr.dsiSerialWrite(f) {
   for r in dom.rowRange {
     const lo = dom.rowStart(r);
     const hi = dom.rowStop(r);

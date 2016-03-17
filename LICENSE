@@ -22,7 +22,7 @@ The Chapel implementation is composed of two categories of code:
 
    directory/package  use                                          license
    -----------------  -------------------------------------------  -------
-   etc/
+   highlight/
      emacs            emacs-based syntax coloring                  GPL
      vim              vim-based syntax coloring                    VIM
 
@@ -43,20 +43,18 @@ The Chapel implementation is composed of two categories of code:
                                                                    BSD
                                                                    GPL 3
 
-     dlmalloc         alternative memory allocator option          public domain
      gasnet           portable communication library               BSD-like
      gmp              optional multi-precision math library        L-GPL
      hwloc            portable NUMA compute node utilities         new BSD
+     jemalloc         alternative memory allocator                 BSD-like
      llvm             CLANG C parsing/optional back-end compiler   U of I/NCSA
      massivethreads   alternative lightweight tasking option       2-clause BSD
      qthread          alternative lightweight tasking option       new BSD
      re2              optional regular expression parsing library  new BSD
-     tcmalloc         alternative memory allocator                 new BSD
-     txt2man          creation of man pages (developer-only)       GPL
      utf8-decoder     used for runtime UTF-8 string decoding       MIT
 
    For a more complete introduction to these packages and their
-   licensing terms, refer to etc/README.md, third-party/README, and the
+   licensing terms, refer to highlight/README.md, third-party/README, and the
    README and license files in the subdirectories listed above.
 
    Note that most of these packages are not used by Chapel unless specifically
@@ -80,25 +78,23 @@ The Chapel implementation is composed of two categories of code:
 
    directory/package  when used
    -----------------  ----------------------------------------------------
-   etc/
+   highlight/
      emacs            only used if a user modifies their emacs environment
      vim              only used if a user modifies their vim environment
 
    third-party/
      chpl-venv        only used when running 'chpldoc' or 'start_test'
-     dlmalloc         only used when CHPL_MEM is 'dlmalloc'
      gasnet           only used when CHPL_COMM is 'gasnet'
      gmp              where possible, used by default or when CHPL_GMP is 'gmp'
      hwloc            used by default on most platforms, or when CHPL_HWLOC is
                       'hwloc'
+     jemalloc         only used when CHPL_MEM is 'jemalloc'
      llvm             only used when CHPL_LLVM is 'llvm'
      massivethreads   only used when CHPL_TASKS is 'massivethreads'
      qthread          used by default on most platforms, or when CHPL_TASKS is
                       'qthreads'
      re2              where possible, used by default or when CHPL_REGEXP is
                       're2'
-     tcmalloc         only used when CHPL_MEM is 'tcmalloc'
-     txt2man          only used by developers to create the Chapel man page
      utf8-decoder     bundled into the Chapel runtime to decode UTF-8 strings
 
    For packages that are only used based on a CHPL_* setting, note

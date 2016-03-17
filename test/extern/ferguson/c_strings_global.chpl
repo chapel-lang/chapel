@@ -14,9 +14,9 @@ proc go() {
   var gotc = returns_c_string();
   print_c_string(gotc);
 
-  writeln(toString(gotc));
+  writeln(gotc:string);
 
-  var gots = toString(gotc);
+  var gots = gotc:string;
   writeln(gots);
 
   writeln("Should be returned_c_string_in_argument x3");
@@ -25,9 +25,9 @@ proc go() {
 
   print_c_string(argc);
 
-  writeln(toString(argc));
+  writeln(argc:string);
 
-  var args = toString(argc);
+  var args = argc:string;
   writeln(args);
 
   writeln("Should be returned_c_string_in_argument_with_length x3");
@@ -37,9 +37,9 @@ proc go() {
 
   print_c_string_len(arg2c, len);
 
-  writeln(toString(arg2c, len));
+  writeln((arg2c:string)[1..len]);
 
-  var arg2s = toString(arg2c, len);
+  var arg2s = (arg2c:string)[1..len];
   writeln(arg2s);
 }
 

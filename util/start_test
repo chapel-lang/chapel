@@ -281,7 +281,7 @@ def test_directory(test, test_type):
                         # error that would have already reported.
                         if not error == 0 and not error == 173:
                             logger.write("[Error running sub_test in {0} {1}]"
-                                    .format(root, e.returncode))
+                                    .format(root, error))
                                 
             # let user know no tests were found
             else:
@@ -550,6 +550,9 @@ def check_environment():
         if not os.path.isdir(home):
             print("Error: CHPL_HOME must be a legal directory.")
             sys.exit(1)
+    else:
+        print("Error: CHPL_HOME is not set.")
+        sys.exit(1)
 
     # Allow for utility directory override.
     # Useful when running more recent testing system on an older version of
@@ -820,12 +823,11 @@ def set_up_performance_testing_B():
         else:
             perf_dir = os.environ["CHPL_TEST_PERF_DIR"]
 
-        perf_html_dir = os.path.join(perf_dir, "html")
+        perf_desc = args.performance_description
+        perf_html_dir = os.path.join(perf_dir, perf_desc, "html")
 
-        if (args.performance_description != "" 
-                and args.performance_description != "default"):
-            os.environ["CHPL_TEST_PERF_DESCRIPTION"] = (
-                args.performance_description)
+        if (perf_desc != "" and perf_desc != "default"):
+            os.environ["CHPL_TEST_PERF_DESCRIPTION"] = perf_desc
 
     global perf_keys
     perf_keys = "{0}keys".format(args.perflabel)
@@ -877,7 +879,7 @@ def set_up_performance_testing_B():
     if args.performance or args.comp_performance:
         # SHA for current run, in order to track dates to commits
         if args.performance:
-            dat_dir = perf_dir
+            dat_dir = os.path.join(perf_dir, perf_desc)
         else:
             dat_dir = comp_perf_dir
 
@@ -899,7 +901,6 @@ def set_up_performance_testing_B():
         sha_dat_file_name = "perfSha"
         sha_dat_file_path = os.path.join(dat_dir, "{0}.dat"
                 .format(sha_dat_file_name))
-        os.environ["CHPL_TEST_SHA_DAT_FILE"] = sha_dat_file_path
 
         logger.write("[Saving current git sha to {0}]"
                 .format(sha_dat_file_path))
@@ -1016,9 +1017,10 @@ def auto_generate_tests():
                             "Log file: {0}]".format(tmp_file_path))
                         finish()
 
+                dat_dir = os.path.join(perf_dir, args.performance_description)
                 with cd(test_dir):
-                    if not os.path.isdir(perf_dir):
-                        os.makedirs(perf_dir)
+                    if not os.path.isdir(dat_dir):
+                        os.makedirs(dat_dir)
 
                     logger.write("[Computing stats for spec examples]")
                     temp_perf_path = os.path.join(home,
@@ -1028,7 +1030,7 @@ def auto_generate_tests():
                             cmd = os.path.join(util_dir, "test", 
                                     "computePerfStats")
                             out = subprocess.check_output([cmd, "spectests", 
-                                perf_dir, os.path.join(home, "test", 
+                                dat_dir, os.path.join(home, "test",
                                 "spectests.perfkeys"), tmp_file_path])
                             temp_perf_file.write(out)
                         except:
@@ -1084,7 +1086,7 @@ def check_for_duplicates():
     # check for .graph files, and GRAPHFILES
     if args.gen_graphs or args.comp_performance:
         logger.write("[Checking for duplicate .graph files and that all .graph"
-                " files appear in {0}/test/.*GRAPHFILES]".format(home))
+                " files appear in {0}/.*GRAPHFILES]".format(test_dir))
 
         # find GRAPHFILES
         graph_files = [f for f in os.listdir(test_dir) if
@@ -1330,9 +1332,9 @@ class Logger():
         self.logger = logging.getLogger("start_test")
         self.logger.setLevel(logging.DEBUG)
         # console stdout handlers
-        self.console_out = logging.StreamHandler(sys.stdout)
+        self.console_out = StreamHandlerWithException(sys.stdout)
         # file handlers
-        self.file_out = logging.FileHandler(log_file, mode="w")
+        self.file_out = FileHandlerWithException(log_file, mode="w")
         # add them
         self.logger.addHandler(self.console_out)
         self.logger.addHandler(self.file_out)
@@ -1350,8 +1352,34 @@ class Logger():
         self.logger.removeHandler(self.file_out)
 
     def restart(self):
-        self.file_out = logging.FileHandler(log_file, mode="a")
+        self.file_out = FileHandlerWithException(log_file, mode="a")
         self.logger.addHandler(self.file_out)
+
+
+# Override the error handling in Python's built-in logging module, to
+# make sure remotely-executed builds fail if something goes wrong with
+# the infrastructure (network connections, for example).
+# Normally, Python logging ignores such errors, on the assumption that
+# missing log messages are not very important to the application.
+# In this program, however, the logging provides an essential function.
+
+class StreamHandlerWithException(logging.StreamHandler):
+    """
+    Same as StreamHandler except it raises an exception.
+    """
+
+    def handleError(self, record):
+        logging.StreamHandler.handleError(self, record)
+        raise OSError("fatal error, logging.StreamHandler")
+
+class FileHandlerWithException(logging.FileHandler):
+    """
+    Same as FileHandler except it raises an exception.
+    """
+
+    def handleError(self, record):
+        logging.FileHandler.handleError(self, record)
+        raise OSError("fatal error, logging.FileHandler")
 
 
 def printout(so):

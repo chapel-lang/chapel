@@ -2,14 +2,14 @@
 #
 # all:
 #   mm/dd/yy:
-#     - example annotation 1
+#     - example annotation text 1 (#PR)
 #
 # group:
 #   mm/dd/yy:
-#     - example annotation 2
-#     - example annotation 3
+#     - example annotation text 2 (#PR)
+#     - example annotation text 3 (#PR)
 #   mm/dd/yy:
-#     - text: example annotation 4
+#     - text: example annotation text 4 (#PR)
 #       config: [config1, config2]
 #
 #
@@ -22,6 +22,11 @@
 # if the current configuration is in the configuration list. Note
 # that in this form, the 'config:' line does not (cannot) have a
 # leading '-' sign.
+#
+# The date listed should be day the impact of a change is seen, not
+# the day of the commit. e.g. if a commit was made on 11/11/11, the
+# date listed should be 11/12/11 (assuming testing ran successfully
+# that night, otherwise use the first day when testing runs again.)
 #
 # Groups are listed in case insensitive alphabetical order
 #
@@ -84,12 +89,44 @@ all:
     - text: ubuntu update to 15.04 (gcc upgraded to 4.9.2)
       config: shootout
   10/19/15:
-    - text: simplification of comm domain descriptor management
+    - text: can't repro old performance
       config: 16 node XC
+  10/29/15:
+    - PR 2850 to split up and inline BlockArr.dsiAccess
+  11/19/15:
+    - text: ubuntu update to 15.10 (gcc upgraded to 5.2)
+      config: shootout
+  12/05/15:
+    - text: improve comm=ugni comm domain handling
+      config: 16 node XC
+  12/08/15:
+    - text: default to qthreads+hwloc for cce (#2972)
+      config: Single node XC
+  12/09/15:
+    - Added record-based strings (#2884)
+  12/16/15:
+    - Enable the Qthreads tasking shim (#3040)
+  01/06/16:
+    - Replace filenames with indices into a lookup table (#3049)
+  02/14/16:
+    - text: Default to jemalloc for gasnet configurations (#3287)
+      config: 16 node XC
+  02/17/16:
+    - text: Remove origin check to improve bulk transfer (#3301)
+      config: 16 node XC
+  02/19/16:
+    - text: Default to jemalloc for comm=ugni (#3321)
+      config: 16 node XC
+  02/22/16:
+    - Default to jemalloc for comm=none (#3333)
+  03/04/16:
+    - implemented doubling/halving for array-as-vec (#3380)
 
 AllCompTime:
   11/09/14:
     - disable the task table by default
+  01/17/16:
+    - add dead string literal elimination (#3120)
 
 arrayPerformance-1d:
   03/19/15:
@@ -107,10 +144,18 @@ assign.1024:
 bfs:
   09/25/14:
     - addition of octal to, reformatting of format printing.
+  10/29/15:
+    - Difficult to consistently replicate
 
 binary-trees:
   12/05/14:
     - introduce "library mode"
+  01/25/16:
+    - Optimize iteration over anonymous low-bounded counted ranges (#3154)
+  03/14/16:
+    - upgrade jemalloc to 4.1.0 (#3447)
+  03/16/16:
+    - revert jemalloc to 4.0.4 (#3477)
 
 chameneos-redux:
   07/08/13:
@@ -152,6 +197,10 @@ fasta:
     - enabled unlocked I/O on fasta and fasta-printf
   10/07/14:
     - Add c_string_copy type
+  01/14/16:
+    - optimize certain functions that return with ref-intent (#3101)
+  03/12/16:
+    - implemented good_alloc_size for jemalloc(#3446)
 
 forall-dom-range:
   01/21/15:
@@ -168,6 +217,13 @@ ft:
 ft-a:
   09/05/14:
     - switched uses of locale.numCores to locale.maxTaskPar
+hpl:
+  12/11/15:
+    - Fixed string leak in DimensionalDist2D (#3013)
+
+hpl_performance:
+  12/11/15:
+    - Fixed string leak in DimensionalDist2D (#3013)
 
 is:
   09/05/14:
@@ -178,6 +234,34 @@ is:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
   05/21/15:
     - set dataParTasksPerLocale to 2 to avoid occasional validation failure
+
+isx:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-bucket-spmd:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-spmd:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-no-return:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx.xc-time:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-bucket-spmd.xc-time:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-spmd.xc-time:
+  02/26/16:
+    - ISx ref to array (#3365)
 
 jacobi:
   03/07/14:
@@ -192,6 +276,8 @@ jacobi:
     - disable the task table by default
   01/30/15:
     - param protect all calls to chpl__testPar (#1200)
+  01/17/16:
+    - add dead string literal elimination (#3120)
 
 knucleotide:
   10/16/15:
@@ -215,12 +301,16 @@ mandelbrot:
     - Bulk IO optimization
   09/05/14:
     - maxTaskPar change delayed fifo->qthreads performance hit
+  11/11/15:
+    - Initial commit of C complexes
 
 mandelbrot-extras:
   01/03/14:
     - Chapel level improvement by using a nonlocking writer
   09/05/14:
     - maxTaskPar change delayed fifo->qthreads performance hit
+  11/11/15:
+    - Initial commit of C complexes
 
 memleaks:
   11/13/13:
@@ -241,12 +331,26 @@ memleaks:
     - Closed sync/single leaks
   06/05/15:
     - Nikhil's k-d tests added to repository
+  12/11/15:
+    - Fixed string leak in DimensionalDist2D (#3013)
+  12/13/15:
+    - Fixed string memory leak resulting from redundant autoCopies (#3023)
+  01/14/16:
+    - optimize certain functions that return with ref-intent (#3101)
+  03/10/16:
+    - Cleanups to miniMD (#3436)
 
 memleaksfull:
   07/08/14:
     - Conversion of knucleotide-forall and -coforall to read input line-by-line (23733).
   07/10/14:
     - Included tests that leak only string data in the Number of Tests with Leaks (r23785).
+  12/11/15:
+    - Fixed string leak in DimensionalDist2D (#3013)
+  12/13/15:
+    - Fixed string memory leak resulting from redundant autoCopies (#3023)
+  01/14/16:
+    - optimize certain functions that return with ref-intent (#3101)
 
 meteor:
   12/18/13:
@@ -267,6 +371,12 @@ nbody:
     - removed extra formal temps
   07/24/14:
     - chap04 Subtest random glitch
+  01/17/16:
+    - add dead string literal elimination (#3120)
+  03/14/16:
+    - upgrade jemalloc to 4.1.0 (#3447)
+  03/16/16:
+    - revert jemalloc to 4.0.4 (#3477)
 
 parOpEquals:
   09/06/13:
@@ -276,13 +386,25 @@ parOpEquals:
   02/28/15:
     - (no-local) Move the check for src==dst from comm_get to array op= (#1410)
 
+prk-stencil:
+  02/14/16:
+    - Improved performance on PRK-stencil (#3288)
+
 regexdna:
   10/07/14:
     - Add c_string_copy type
+  11/29/15:
+    - started building re2 with optimizations (#2930)
+  12/13/15:
+    - Fixed string memory leak resulting from redundant autoCopies (#3023)
+  03/12/16:
+    - implemented good_alloc_size for jemalloc(#3446)
 
 revcomp:
   05/11/15:
     - various qio changes motivated by cygwin failures (#1943)
+  10/29/15:
+    - Difficult to consistently replicate
 
 spectralnorm:
   01/21/15:
@@ -330,6 +452,10 @@ thread-ring:
 time_array_vs_ddata:
   05/31/14:
     - specializing binaries to target architectures
+  01/25/16:
+    - Optimize iteration over anonymous low-bounded counted ranges (#3154)
+  03/01/16:
+    - Extend early string-as-rec work to cover more sub-types of record (#3386)
 
 time_array_vs_tuple:
   08/19/14:
@@ -342,3 +468,9 @@ time_iterate:
 time-write:
   03/05/15:
     - no strings with externs update
+
+timeVectorArray:
+  03/05/16:
+    - implemented doubling/halving for array-as-vec (#3380) (no timing from 4th)
+  03/09/16:
+    - increased array-as-vec problem size (#3422)

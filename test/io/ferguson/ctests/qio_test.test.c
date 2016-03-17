@@ -244,6 +244,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
     }
   }
 
+  // Check that reading later gives EEOF.
   if( readfp ) {
     amt_read = fread(got_chunk, 1, 1, readfp);
     assert( amt_read == 0 );
@@ -253,11 +254,11 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
       int times = -unbounded_channels;
       for( int z = 0; z < times; z++ ) {
         err = qio_channel_advance(threadsafe, reading, 1);
-        assert( !err );
+        assert( !err || qio_err_to_int(err) == EEOF );
       }
 
       err = qio_channel_advance(threadsafe, reading, -unbounded_channels);
-      assert( !err );
+      assert( !err || qio_err_to_int(err) == EEOF );
     }
 
     err = qio_channel_read(threadsafe, reading, got_chunk, 1, &amt_read);

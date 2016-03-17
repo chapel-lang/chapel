@@ -8,6 +8,6 @@ var c: C(int);
 
 c = new C(int);
 
-writeln(c);
+writeln("{p = ", c.p, ", x = ", c.x, "}");
 
 delete c;

@@ -111,12 +111,12 @@ module unitTest {
     writeln("=== cast to c_string");
     const m0 = allMemoryUsed();
     {
-      const x: t = "cs";
+      const x: t = c"cs";
       if useExpr {
-        writeMe(x:c_string);
+        writeMe(x.c_str():t);
       } else {
-        const s = x:c_string;
-        writeMe(s);
+        const s = x.c_str();
+        writeMe(s:t);
       }
     }
     checkMemLeaks(m0);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -117,8 +117,22 @@ PrimitiveType::PrimitiveType(Symbol *init, bool internalType) :
 
 PrimitiveType*
 PrimitiveType::copyInner(SymbolMap* map) {
-  INT_FATAL(this, "Unexpected call to PrimitiveType::copyInner");
-  return this;
+  //
+  // If we're trying to make a copy of an internal Chapel primitive
+  // type (say 'int'), that's a sign that something is wrong.  For
+  // external primitive types, it should be OK to make such copies.
+  // This may be desired/required if the extern type declaration is
+  // local to a generic Chapel procedure for example and we're
+  // creating multiple instantiations of that procedure, each of which
+  // wants/needs its own local type symbol.  This exception may
+  // suggest that external primitive types should really be
+  // represented as their own ExternType class...
+  //
+  if (!symbol->hasFlag(FLAG_EXTERN)) {
+    INT_FATAL(this, "Unexpected call to PrimitiveType::copyInner");
+  }
+
+  return new PrimitiveType(NULL);
 }
 
 
@@ -799,7 +813,6 @@ void AggregateType::codegenDef() {
   } else {
     if( outfile ) {
       if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
-          (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
@@ -836,7 +849,8 @@ void AggregateType::codegenDef() {
           if (this->fields.length != 0)
             fprintf(outfile, "union {\n");
         } else if (this->fields.length == 0) {
-          fprintf(outfile, "int dummyFieldToAvoidWarning;\n");
+          // TODO: remove and enforce at least 1 element in a union
+          fprintf(outfile, "uint8_t dummyFieldToAvoidWarning;\n");
         }
 
         if (this->fields.length != 0) {
@@ -916,7 +930,6 @@ void AggregateType::codegenDef() {
       // if it's a record, we make the new type now.
       // if it's a class, we update the existing type.
       if( symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) &&
-          (! isWideString(this)) &&
           (! widePointersStruct ) ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
@@ -1347,6 +1360,12 @@ void initRootModule() {
   rootModule->filename = astr("<internal>");
 }
 
+void initStringLiteralModule() {
+  stringLiteralModule = new ModuleSymbol("ChapelStringLiterals", MOD_INTERNAL, new BlockStmt());
+  stringLiteralModule->filename = astr("<internal>");
+  theProgram->block->insertAtTail(new DefExpr(stringLiteralModule));
+}
+
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
@@ -1411,6 +1430,8 @@ void initPrimitiveTypes() {
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
 
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
+
+  dtString                             = new AggregateType(AGGREGATE_RECORD);
 
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
@@ -1494,9 +1515,6 @@ void initPrimitiveTypes() {
   gStringCopy->cname = "NULL";
   gStringCopy->addFlag(FLAG_EXTERN);
 
-  dtString = createPrimitiveType( "string", "chpl_string");
-  dtString->defaultValue = NULL;
-
   // Like c_string_copy but unowned.
   // Could be == c_ptr(int(8)) e.g.
   // used in some runtime interfaces
@@ -1535,12 +1553,6 @@ void initPrimitiveTypes() {
 
   CREATE_DEFAULT_SYMBOL (dtSingleVarAuxFields, gSingleVarAuxFields, "_nullSingleVarAuxFields");
   gSingleVarAuxFields->cname = "NULL";
-
-  dtTaskList = createPrimitiveType( "_task_list", "chpl_task_list_p");
-  dtTaskList->symbol->addFlag(FLAG_EXTERN);
-
-  CREATE_DEFAULT_SYMBOL (dtTaskList, gTaskList, "_nullTaskList");
-  gTaskList->cname = "NULL";
 
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
@@ -1655,8 +1667,8 @@ void initChplProgram(DefExpr* objectDef) {
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
 
-  CallExpr* base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
-  CallExpr* std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
+  UseStmt* base = new UseStmt(new UnresolvedSymExpr("ChapelBase"));
+  UseStmt* std  = new UseStmt(new UnresolvedSymExpr("ChapelStandard"));
 
   theProgram->block->insertAtTail(base);
 
@@ -1774,10 +1786,6 @@ bool is_complex_type(Type *t) {
 
 bool is_enum_type(Type *t) {
   return toEnumType(t);
-}
-
-bool is_string_type(Type *t) {
-  return t == dtString;
 }
 
 int get_width(Type *t) {
@@ -1924,34 +1932,109 @@ bool isSubClass(Type* type, Type* baseType)
   return false;
 }
 
-bool
-isDistClass(Type* type) {
+bool isDistClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_DIST))
     return true;
+
   forv_Vec(Type, pt, type->dispatchParents)
     if (isDistClass(pt))
       return true;
+
   return false;
 }
 
-bool
-isDomainClass(Type* type) {
+bool isDomainClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_DOMAIN))
     return true;
+
   forv_Vec(Type, pt, type->dispatchParents)
     if (isDomainClass(pt))
       return true;
+
   return false;
 }
 
-bool
-isArrayClass(Type* type) {
+bool isArrayClass(Type* type) {
   if (type->symbol->hasFlag(FLAG_BASE_ARRAY))
     return true;
+
   forv_Vec(Type, t, type->dispatchParents)
     if (isArrayClass(t))
       return true;
+
   return false;
+}
+
+bool isString(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* aggr = toAggregateType(type))
+    retval = strcmp(aggr->symbol->name, "string") == 0;
+
+  return retval;
+}
+
+//
+// NOAKES 2016/02/29
+//
+// To support the merge of the string-as-rec branch we defined a
+// function, isString(), which is only true of the record that was
+// defined in the new implementation of String.  This predicate was
+// applied in cullOverReferences and callDestructors to improve
+// memory management for that particular record type.
+//
+// We seek to apply those routines to a wider set of record types but
+// are not ready to apply them to range, tuple, and the reference-counted
+// records.
+//
+// This shorter-term predicate, which has a slightly inelegant name, allows
+// most record-like types to use the new business logic.
+//
+// In the longer term we plan to further broaden the cases that the new
+// logic can handle and reduce the exceptions that are filtered out here.
+//
+
+bool isUserDefinedRecord(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* aggr = toAggregateType(type)) {
+    Symbol*     sym  = aggr->symbol;
+    const char* name = sym->name;
+
+    // Must be a record type
+    if (aggr->aggregateTag != AGGREGATE_RECORD) {
+
+    // Not a tuple
+    } else if (sym->hasFlag(FLAG_TUPLE)              == true) {
+
+    // Not a range
+    } else if (sym->hasFlag(FLAG_RANGE)              == true) {
+
+    // Not a distribution
+    } else if (sym->hasFlag(FLAG_DISTRIBUTION)       == true) {
+
+    // Not a domain
+    } else if (sym->hasFlag(FLAG_DOMAIN)             == true) {
+
+    // Not an array or an array alias
+    } else if (sym->hasFlag(FLAG_ARRAY)              == true ||
+               sym->hasFlag(FLAG_ARRAY_ALIAS)        == true) {
+
+    // Not an atomic type
+    } else if (sym->hasFlag(FLAG_ATOMIC_TYPE)        == true) {
+
+    // Not a RUNTIME_type
+    } else if (sym->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == true) {
+
+    // Not an iterator
+    } else if (strncmp(name, "_ir_", 4)              ==    0) {
+
+    } else {
+      retval = true;
+    }
+  }
+
+  return retval;
 }
 
 static Vec<TypeSymbol*> typesToStructurallyCodegen;
@@ -1969,20 +2052,12 @@ GenRet genTypeStructureIndex(TypeSymbol* typesym) {
   GenInfo* info = gGenInfo;
   GenRet ret;
   if (fHeterogeneous) {
-    // strings are special
-    if (toPrimitiveType(typesym) == dtString) {
-      if( info->cfile )
-        ret.c = std::string("-") + typesym->cname;
-      else
-        INT_FATAL("TODO: genTypeStructureIndex llvm strings");
-    } else {
-      if( info->cfile )
-        ret.c = genChplTypeEnumString(typesym);
-      else {
+    if( info->cfile )
+      ret.c = genChplTypeEnumString(typesym);
+    else {
 #ifdef HAVE_LLVM
-        ret = info->lvt->getValue(genChplTypeEnumString(typesym));
+      ret = info->lvt->getValue(genChplTypeEnumString(typesym));
 #endif
-      }
     }
   } else {
     if( info->cfile )
@@ -2111,14 +2186,12 @@ bool needsCapture(Type* t) {
       is_imag_type(t) ||
       is_complex_type(t) ||
       is_enum_type(t) ||
-      is_string_type(t) ||
       t == dtStringC ||
       isClass(t) ||
       isRecord(t) ||
       isUnion(t) ||
       t == dtTaskID || // false?
       t == dtFile ||
-      t == dtTaskList ||
       // TODO: Move these down to the "no" section.
       t == dtNil ||
       t == dtOpaque ||
@@ -2137,12 +2210,12 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t)
 {
   for( int i = 0; i < INT_SIZE_NUM; i++ ) {
     if( t == dtInt[i] ) {
-      return new_IntSymbol(s->immediate->int_value(), (IF1_int_type) i);
+      return new_IntSymbol(s->immediate->to_int(), (IF1_int_type) i);
     }
   }
   for( int i = 0; i < INT_SIZE_NUM; i++ ) {
     if( t == dtUInt[i] ) {
-      return new_UIntSymbol(s->immediate->uint_value(), (IF1_int_type) i);
+      return new_UIntSymbol(s->immediate->to_uint(), (IF1_int_type) i);
     }
   }
   return NULL;
@@ -2158,12 +2231,6 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t)
  */
 bool isPOD(Type* t)
 {
-  // Strings and wide strings aren't POD
-  // These need to be special-cases as long
-  // as code generation treats strings specially.
-  if( t == wideStringType || t == dtString )
-    return false;
-
   // things that aren't aggregate types are POD
   //   e.g. int, boolean, complex, etc
   if (!isAggregateType(t))

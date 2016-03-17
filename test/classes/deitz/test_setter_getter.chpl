@@ -1,12 +1,14 @@
 class C {
   var x: int;
   proc x ref {
-    if setter then
-      writeln("setter invoked");
-    else
-      writeln("getter invoked");
+    writeln("setter invoked");
     return x;
   }
+  proc x {
+    writeln("getter invoked");
+    return x;
+  }
+
 }
 
 var c = new C();

@@ -5,12 +5,12 @@ class C {
 
 proc foo(x: C(t=?tt, r=?rr),
         y: C(tt, rr)) {
-  writeln("In foo-a, x = ", x, ", y = ", y);
+  writeln("In foo-a, x = {r = ", x.r, "}, y = {r = ", y.r, "}");
 }
 
 proc foo(x: C(t=?tt, r=?rr),
         y: C(t=?tt2, r=?rr2)) {
-  writeln("In foo-b, x = ", x, ", y = ", y);
+  writeln("In foo-b, x = {r = ", x.r, "}, y = {r = ", y.r, "}");
 }
 
 var myC = new C(int, 2),

@@ -118,7 +118,7 @@ if ($no_clone == 0) {
        "README.files",
        "STATUS",
        "compiler/passes/reservedSymbolNames",
-       "etc/README.md",
+       "highlight/README.md",
        "util/README",
        "util/build_configs.py",
        "util/printchplenv",
@@ -140,10 +140,10 @@ if ($no_clone == 0) {
 @complete_dirs = (
     "compiler/etc",
     "doc",
-    "etc/emacs",
-    "etc/source-highlight",
-    "etc/vim",
     "examples",
+    "highlight/emacs",
+    "highlight/source-highlight",
+    "highlight/vim",
     "make",
     "man/man1",
     "modules",
@@ -160,8 +160,8 @@ if ($no_clone == 0) {
 
 chdir "$archive_dir";
 
-# Docs must be built first so we can get rid of any extra files (chpldoc) with
-# a clobber
+# Docs/man page must be built first so we can get rid of any extra files
+# (chpldoc) with a clobber
 print "Building the docs...\n";
 # Set CHPL_COMM to none to avoid issues with gasnet generated makefiles not
 # existing because we haven't built the third-party libs
@@ -169,18 +169,19 @@ $ENV{'CHPL_HOME'} = "$archive_dir";
 $ENV{'CHPL_COMM'} = "none";
 print "CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
 
+print "Building the man module-docs...\n";
 SystemOrDie("make -j docs");
 SystemOrDie("mv doc/sphinx/build/html doc/release");
+
+print "Building the man pages...\n";
+SystemOrDie("make man");
+SystemOrDie("make man-chpldoc");
 SystemOrDie("make clobber");
 
 print "Creating the examples directory...\n";
 SystemOrDie("cp -r test/release/examples .");
 SystemOrDie("cd util && cp start_test ../examples/");
 SystemOrDie("./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
-
-print "Building the man pages...\n";
-SystemOrDie("make man");
-SystemOrDie("make man-chpldoc");
 
 print "Building the STATUS file...\n";
 SystemOrDie("make STATUS");
@@ -200,7 +201,6 @@ print "Removing runtime directories that are not ready for release...\n";
 SystemOrDie("cd runtime/src/launch && rm -r dummy");
 SystemOrDie("cd runtime/src/launch && rm -r mpirun");
 SystemOrDie("cd runtime/include && rm -r sunos_old");
-SystemOrDie("cd third-party && rm -rf txt2man");
 
 print "Removing third-party directories that are not intended for release...\n";
 SystemOrDie("cd third-party && rm *.devel*");

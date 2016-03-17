@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -57,6 +57,7 @@ comprt: FORCE
 	@$(MAKE) compiler
 	@$(MAKE) third-party-try-opt
 	@$(MAKE) always-build-test-venv
+	@$(MAKE) always-build-chpldoc
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
@@ -116,6 +117,11 @@ always-build-test-venv: FORCE
 	$(MAKE) test-venv; \
 	fi
 
+always-build-chpldoc: FORCE
+	-@if [ -n "$$CHPL_ALWAYS_BUILD_CHPLDOC" ]; then \
+	$(MAKE) chpldoc; \
+	fi
+
 clean-module-docs:
 	cd modules && $(MAKE) clean-documentation
 
@@ -140,6 +146,7 @@ clean: FORCE
 	cd runtime && $(MAKE) clean
 	cd third-party && $(MAKE) clean
 	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) clean
+	rm -f util/chplenv/*.pyc
 
 cleanall: FORCE
 	cd compiler && $(MAKE) cleanall
@@ -147,6 +154,7 @@ cleanall: FORCE
 	cd runtime && $(MAKE) cleanall
 	cd third-party && $(MAKE) cleanall
 	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) cleanall
+	rm -f util/chplenv/*.pyc
 
 cleandeps: FORCE
 	cd compiler && $(MAKE) cleandeps
@@ -161,6 +169,7 @@ clobber: FORCE
 	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) clobber
 	rm -rf bin
 	rm -rf lib
+	rm -f util/chplenv/*.pyc
 
 depend:
 	@echo "make depend has been deprecated for the time being"

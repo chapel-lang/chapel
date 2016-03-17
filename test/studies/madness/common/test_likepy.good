@@ -1,7 +1,5 @@
-./MRA.chpl:430: In function 'norm2':
-./MRA.chpl:432: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
-./FTree.chpl:140: In function 'copy':
-./FTree.chpl:142: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+./FTree.chpl:148: In function 'copy':
+./FTree.chpl:150: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 
 
 

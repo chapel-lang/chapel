@@ -33,3 +33,9 @@ encourage you to email us a bug report, particularly if it is impeding
 your progress.  Depending on the issue, we may be able to suggest a
 workaround or prioritize addressing the bug.
 
+JIRA Issues
+-----------
+
+The Chapel team is hard at work bringing the `JIRA issues site`_ up to date. Bugs can be viewed without a free account.
+
+.. _JIRA issues site: https://chapel.atlassian.net/projects/CHAPEL/issues/

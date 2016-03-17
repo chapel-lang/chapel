@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -197,7 +197,7 @@ module ChapelRange {
   // for debugging
   pragma "no doc"
   proc range.displayRepresentation(msg: string = ""): void {
-    writeln(msg, "(", typeToString(idxType), ",", boundedType, ",", stridable,
+    writeln(msg, "(", idxType:string, ",", boundedType, ",", stridable,
             " : ", low, ",", high, ",", stride, ",",
             if aligned then alignment:string else "?", ")");
   }
@@ -208,25 +208,30 @@ module ChapelRange {
 
   // Range builders for fully bounded ranges
   proc chpl_build_bounded_range(low: int(?w), high: int(w))
-    return new range(idxType = int(w), _low = low, _high = high);
+    return new range(int(w), _low=low, _high=high);
   proc chpl_build_bounded_range(low: uint(?w), high: uint(w))
-    return new range(uint(w), _low = low, _high = high);
+    return new range(uint(w), _low=low, _high=high);
   proc chpl_build_bounded_range(low, high) {
-    compilerError("Bounds of '..' must be integers of compatible types, when specified.");
+    compilerError("Bounds of 'low..high' must be integers of compatible types.");
   }
 
-  // Range builders for partially bounded ranges
-  proc chpl_build_partially_bounded_range(param bt: BoundedRangeType, bound: int(?w))
-    return new range(int(w), bt, false, bound, bound);
-  proc chpl_build_partially_bounded_range(param bt: BoundedRangeType, bound: uint(?w))
-    return new range(uint(w), bt, false, bound, bound);
-  proc chpl_build_partially_bounded_range(param bt: BoundedRangeType, bound) {
-    compilerError("Bounds of '..' must be integers of compatible types, when specified.");
+  // Range builders for low bounded ranges
+  proc chpl_build_low_bounded_range(low: integral)
+    return new range(low.type, BoundedRangeType.boundedLow, _low=low);
+  proc chpl_build_low_bounded_range(low) {
+    compilerError("Bound of 'low..' must be an integer");
+  }
+
+  // Range builders for high bounded ranges
+  proc chpl_build_high_bounded_range(high: integral)
+    return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
+  proc chpl_build_high_bounded_range(high) {
+    compilerError("Bound of '..high' must be an integer.");
   }
 
   // Range builder for unbounded ranges
-  proc chpl_build_unbounded_range(param bt: BoundedRangeType)
-    return new range(int, bt);
+  proc chpl_build_unbounded_range()
+    return new range(int, BoundedRangeType.boundedNone);
   
   
   //################################################################################
@@ -556,7 +561,7 @@ module ChapelRange {
   /* private */ proc range.alignLow() 
   {
     if this.isAmbiguous() then
-      __primitive("chpl_error", "alignLow -- Cannot be applied to a range with ambiguous alignment.");
+      __primitive("chpl_error", c"alignLow -- Cannot be applied to a range with ambiguous alignment.");
   
     if stridable then _low = this.alignedLow;
     return this;
@@ -567,7 +572,7 @@ module ChapelRange {
   /* private */ proc range.alignHigh()
   {
     if this.isAmbiguous() then
-      __primitive("chpl_error", "alignHigh -- Cannot be applied to a range with ambiguous alignment.");
+      __primitive("chpl_error", c"alignHigh -- Cannot be applied to a range with ambiguous alignment.");
   
     if stridable then _high = this.alignedHigh;
     return this;
@@ -593,7 +598,7 @@ module ChapelRange {
   proc range.indexOrder(i: idxType)
   {
     if this.isAmbiguous() then
-      __primitive("chpl_error", "indexOrder -- Undefined on a range with ambiguous alignment.");
+      __primitive("chpl_error", c"indexOrder -- Undefined on a range with ambiguous alignment.");
   
     if ! member(i) then return (-1):idxType;
     if ! stridable then return i - _low;
@@ -848,7 +853,7 @@ module ChapelRange {
   inline proc chpl_check_step_integral(step) {
     if !isIntegral(step.type) then
       compilerError("can't apply 'by' using step of a non-integral type ",
-                    typeToString(step.type));
+                    step.type:string);
   }
 
   proc chpl_need_to_check_step(step, type strType) param {
@@ -867,17 +872,17 @@ module ChapelRange {
     // At present, step must coerce to range's idxType or strType.
     if numBits(step.type) > numBits(strType) then
       compilerError("can't apply 'by' to a range with idxType ",
-                    typeToString(idxType), " using a step of type ",
-                    typeToString(step.type));
+                    idxType:string, " using a step of type ",
+                    step.type:string);
 
     if boundsChecking {
       if step == 0 then
-        __primitive("chpl_error", "the step argument of the 'by' operator is zero");
+        __primitive("chpl_error", c"the step argument of the 'by' operator is zero");
 
       if chpl_need_to_check_step(step, strType) &&
          step > (max(strType):step.type)
       then
-        __primitive("chpl_error", "the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + typeToString(strType));
+        __primitive("chpl_error", c"the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + strType:string);
     }
   }
 
@@ -892,7 +897,7 @@ module ChapelRange {
     if chpl_need_to_check_step(step, strType) &&
        step > (max(strType):step.type)
     then
-      compilerError("the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + typeToString(strType));
+      compilerError("the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + strType:string);
   }
   
   proc chpl_by_help(r: range(?i,?b,?s), step) {
@@ -911,6 +916,13 @@ module ChapelRange {
     return new range(i, b, true,  lw, hh, st, alt, ald);
   }
 
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_by(r, step) { ... }
+   *
+   * because the parser renames the routine since 'by' is a keyword.
+   */
   inline proc by(r, step) {
     if !isRange(r) then
       compilerError("the first argument of the 'by' operator is not a range");
@@ -918,6 +930,13 @@ module ChapelRange {
     return chpl_by_help(r, step);
   }
   
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_by(r: range(?), param step) { ... }
+   *
+   * because the parser renames the routine since 'by' is a keyword.
+   */
   // We want to warn the user at compiler time if they had an invalid param
   // stride rather than waiting until runtime.
   inline proc by(r : range(?), param step) {
@@ -926,7 +945,14 @@ module ChapelRange {
   }
   
   
-  // This is the syntax processing routine for the "align" keyword.
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_align(r: range(?i, ?b, ?s), algn: i) { ... }
+   *
+   * because the parser renames the routine since 'align' is a keyword.
+   */
+  // This is the definition of the 'align' operator for ranges.
   // It produces a new range with the specified alignment.
   // By definition, alignment is relative to the low bound of the range.
   pragma "no doc"
@@ -938,10 +964,18 @@ module ChapelRange {
                      r._low, r._high, r.stride, algn, true);
   }
 
+  
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_align(r: range(?i, ?b, ?s), algn) { ... }
+   *
+   * because the parser renames the routine since 'align' is a keyword.
+   */
   pragma "no doc"
   inline proc align(r : range(?i, ?b, ?s), algn) {
-    compilerError("can't align a range with idxType ", typeToString(i), 
-                  " using a value of type ", typeToString(algn.type));
+    compilerError("can't align a range with idxType ", i:string, 
+                  " using a value of type ", algn.type:string);
     return r;
   }
   
@@ -980,7 +1014,7 @@ module ChapelRange {
       var st2 = abs(other.stride);
       var (g,x) = chpl__extendedEuclid(st1, st2);
       if g > 1 then
-        __primitive("chpl_error", "Cannot slice ranges with ambiguous alignments unless their strides are relatively prime.");
+        __primitive("chpl_error", c"Cannot slice ranges with ambiguous alignments unless their strides are relatively prime.");
   
       // OK, we can combine these two ranges, but the result is marked as ambiguous.
       ambig = true;
@@ -1028,12 +1062,83 @@ module ChapelRange {
   
       newStride = if this.stride > 0 then lcm else -lcm;
     }
+
+    //
+    // These are mixed int/uint min/max functions that return a value
+    // matching the first argument's type.  They are written knowing
+    // that they will be called in an intersection context and set
+    // this variable if the intersection will be guaranteed to be
+    // empty (e.g., if all values of one range are outside of the
+    // expressible range of the other.
+    //
+    var emptyIntersection: bool;
+
+    proc min(x: int, y: uint) {
+      if (y > max(int)) {
+        return x;
+      }
+
+      //
+      // otherwise, we can safely cast y to int and take the normal
+      // min()
+      //
+      return min(x, y: int);
+    }
+
+    proc min(x: uint, y: int) {
+      //
+      // if the high uint bound is bigger than int can represent,
+      // this slice is guaranteed to be empty.
+      //
+      //
+      // if the smallest value is negative, the low bound of this
+      // slice will be the uint value.
+      //
+      if (y < 0) {
+        emptyIntersection = true;
+        return x;
+      }
+
+      //
+      // otherwise, we can safely cast y to uint and take the normal
+      // min()
+      //
+      return min(x, y: uint);
+    }
+
+    //
+    // These two cases are the dual of the above
+    //
+    proc max(x: int, y: uint) {
+      if (y > max(int)) {
+        emptyIntersection = true;
+        return x;
+      }
+
+      return max(x, y: int);
+    }
   
+    proc max(x: uint, y: int) {
+      if (y < 0) {
+        return x;
+      }
+
+      return max(x, y: uint);
+    }
+
+    emptyIntersection = false;
+    var newlo = max(lo1, lo2):idxType;
+    var newhi = min(hi1, hi2):idxType;
+    if (emptyIntersection) {
+      newlo = 1;
+      newhi = 0;
+    }
+
     var result = new range(idxType,
                            computeBoundedType(this, other),
                            this.stridable | other.stridable,
-                           max(lo1, lo2):idxType,
-                           min(hi1, hi2):idxType,
+                           newlo,
+                           newhi,
                            newStride,
                            0,
                            !ambig && (this._aligned || other._aligned));
@@ -1089,7 +1194,7 @@ module ChapelRange {
 
   proc chpl_count_help(r, count: integral) {
     if r.isAmbiguous() then
-      __primitive("chpl_error", "count -- Cannot count off elements from a range which is ambiguously aligned.");
+      __primitive("chpl_error", c"count -- Cannot count off elements from a range which is ambiguously aligned.");
 
     type resultType = r.idxType;
     type strType = indexToStrideType(resultType);
@@ -1169,8 +1274,8 @@ module ChapelRange {
 
   proc #(r: range(?i), count) {
     compilerError("can't apply '#' to a range with idxType ", 
-                  typeToString(i), " using a count of type ", 
-                  typeToString(count.type));
+                  i:string, " using a count of type ", 
+                  count.type:string);
     return r;
   }
 
@@ -1271,25 +1376,25 @@ module ChapelRange {
 
   // cases for when stride is a uint (we know the stride is must be positive)
   iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: uint(w)) {
-    for i in chpl_direct_uint_stride_range_iter(low, high, stride) do yield i;
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: uint(w)) {
-    for i in chpl_direct_uint_stride_range_iter(low, high, stride) do yield i;
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
 
 
   // cases for when stride isn't valid
   iter chpl_direct_range_iter(low: int(?w), high: int(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
-                  typeToString(int(w)), " using a step of type ",
-                  typeToString(stride.type));
+                  int(w):string, " using a step of type ",
+                  stride.type:string);
     yield nil; // iters needs a yield in them
   }
 
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
-                  typeToString(uint(w)), " using a step of type ",
-                  typeToString(stride.type));
+                  uint(w):string, " using a step of type ",
+                  stride.type:string);
     yield nil; // iters needs a yield in them
   }
 
@@ -1302,10 +1407,10 @@ module ChapelRange {
 
 
   // These are the "actual" direct range iterators. Note that they do not do
-  // any checks on the arguments, and rely on the above functions to
-  // check/coerce types (assumes args are of legal types, low/high are the same
-  // same type, and stride is valid.)
-  iter chpl_direct_uint_stride_range_iter(low: ?t, high, stride) {
+  // any checks on the arguments, and rely on the above functions/expert user
+  // to check/coerce types (i.e. they assume args are of legal types, low/high
+  // are the same same type, stride is valid, etc.)
+  iter chpl_direct_pos_stride_range_iter(low: ?t, high, stride) {
     if (useOptimizedRangeIterators) {
       chpl_range_check_stride(stride, t);
 
@@ -1371,7 +1476,7 @@ module ChapelRange {
       halt("iteration over range that has no first index");
 
     if this.isAmbiguous() then
-      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+      __primitive("chpl_error", c"these -- Attempt to iterate over a range with ambiguous alignment.");
 
     // This iterator could be split into different cases depending on the
     // stride like the bounded iterators. However, all that gets you is the
@@ -1396,7 +1501,7 @@ module ChapelRange {
       if boundsChecking then checkIfIterWillOverflow();
 
       if this.isAmbiguous() then
-        __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+        __primitive("chpl_error", c"these -- Attempt to iterate over a range with ambiguous alignment.");
 
       // must use first/last since we have no knowledge of stride
       // must check if low > high (something like 10..1) because of the !=
@@ -1459,7 +1564,7 @@ module ChapelRange {
   pragma "no doc"
   iter range.generalIterator() {
     if this.isAmbiguous() then
-      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+      __primitive("chpl_error", c"these -- Attempt to iterate over a range with ambiguous alignment.");
 
     var i: idxType;
     const start = this.first;
@@ -1486,7 +1591,7 @@ module ChapelRange {
       compilerError("parallel iteration is not supported over unbounded ranges");
     }
     if this.isAmbiguous() {
-      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+      __primitive("chpl_error", c"these -- Attempt to iterate over a range with ambiguous alignment.");
     }
     if debugChapelRange {
       writeln("*** In range standalone iterator:");
@@ -1535,7 +1640,7 @@ module ChapelRange {
       compilerError("parallel iteration is not supported over unbounded ranges");
 
     if this.isAmbiguous() then
-      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+      __primitive("chpl_error", c"these -- Attempt to iterate over a range with ambiguous alignment.");
 
     if debugChapelRange then
       writeln("*** In range leader:"); // ", this);
@@ -1570,7 +1675,7 @@ module ChapelRange {
         yield (0..len-1,);
       } else {
         coforall chunk in 0..#numChunks {
-          on here.getChild(chunk) {
+          local on here.getChild(chunk) {
             if debugDataParNuma {
               if chunk!=chpl_getSubloc() then
                 writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
@@ -1629,7 +1734,7 @@ module ChapelRange {
   iter range.these(param tag: iterKind, followThis) where tag == iterKind.follower
   {
     if this.isAmbiguous() then
-      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+      __primitive("chpl_error", c"these -- Attempt to iterate over a range with ambiguous alignment.");
 
     if boundedType == BoundedRangeType.boundedNone then
       compilerError("iteration over a range with no bounds");
@@ -1743,7 +1848,25 @@ module ChapelRange {
   //################################################################################
   //# Utilities
   //#
-  
+
+  proc _cast(type t, x: range(?)) where t == string {
+    var ret: string;
+
+    if x.hasLowBound() then
+      ret += x.low;
+    ret += "..";
+    if x.hasHighBound() then
+      ret += x.high;
+    if x.stride != 1 then
+      ret += " by " + x.stride;
+
+    // Write out the alignment only if it differs from natural alignment.
+    // We take alignment modulo the stride for consistency.
+    if !(x.isNaturallyAligned()) then
+        ret += " align " + chpl__mod(x._alignment, x.stride);
+    return ret;
+  }
+
   // Write implementation for ranges
   pragma "no doc"
   proc ref range.readWriteThis(f)

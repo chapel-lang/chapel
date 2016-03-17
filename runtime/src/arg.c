@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -27,6 +27,7 @@
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chpl-tasks.h"
+#include "chpl-linefile-support.h"
 #include "config.h"
 #include "error.h"
 
@@ -80,16 +81,8 @@ int _runInGDB(void) {
 }
 
 
-//
-// defineEnvVar() needs to be able to call malloc(), because it runs
-// before the memory layer is initialized but needs to allocate memory
-// (for a copy of the var=value string).  So, we turn off the magic
-// warning macro here, and turn it back on after defineEnvVar().
-//
-#undef malloc
-
 static void defineEnvVar(const char* currentArg,
-                         int32_t lineno, c_string filename) {
+                         int32_t lineno, int32_t filename) {
   char* eqp;
 
   //
@@ -120,11 +113,9 @@ static void defineEnvVar(const char* currentArg,
   *eqp = '=';
 }
 
-#define malloc dont_use_malloc_use_chpl_mem_allocMany_instead
-
 
 static void parseDashEArgs(int* argc, char* argv[]) {
-  const char* filename = "<command-line arg>";
+  const int32_t filename = CHPL_FILE_IDX_COMMAND_LINE_ARG;
 
   for (int i = 1; i < *argc; i++) {
     int lineno = i;
@@ -252,7 +243,7 @@ void printHelpTable(void) {
 
 static int32_t _argNumLocales = 0;
 
-void parseNumLocales(const char* numPtr, int32_t lineno, c_string filename) {
+void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
   int invalid;
   char invalidChars[2] = "\0\0";
   _argNumLocales = c_string_to_int32_t_precise(numPtr, &invalid, invalidChars);
@@ -294,7 +285,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
   }
 
   for (i = 1; i < *argc; i++) {
-    const char* filename = "<command-line arg>";
+    const int32_t filename = CHPL_FILE_IDX_COMMAND_LINE_ARG;
     int lineno = i + (origargc - *argc);
     int argLength = 0;
     const char* currentArg = argv[i];

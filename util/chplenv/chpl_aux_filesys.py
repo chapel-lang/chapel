@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 import sys
 import os
+from glob import glob
 from sys import stderr, stdout
 
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 from utils import memoize
-
 
 @memoize
 def get():
@@ -25,6 +25,21 @@ def get():
             stderr.write("Warning: Can't find your Java installation\n")
         if not found_hdfs:
             stderr.write("Warning: Can't find your Hadoop installation\n")
+
+    elif aux_fs == 'hdfs3':
+        def fetchInfo(env, envtype, filename, err):
+            directories = map(lambda z: z.lstrip(envtype), os.environ.get(env, '').split())
+            res = sum([ os.path.exists(os.path.join(d, filename)) for d in directories ])
+
+            if res < 1:
+                stderr.write(err)
+                return False
+
+            return True
+
+        fetchInfo('CHPL_AUXIO_INCLUDE', '-I', 'hdfs.h', "Warning: Can't find your HDFS3 header file installation\n")
+        fetchInfo('CHPL_AUXIO_LIBS', '-L', 'libhdfs3.a', "Warning: Can't find your HDFS3 static library installation\n")
+
     return aux_fs
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -199,7 +199,7 @@ inline proc _checkFitsWithin(src: integral, type destT)
   where isIntegralType(destT)
 {
   inline proc ensure(arg:bool) {
-    if !arg then halt("When creating a domain mapped using DimensionalDist2D with a BlockCyclicDim specifier, could not fit BlockCyclicDim's adjusted lowIdx of ", src, " in the domain's idxType ", typeToString(destT));
+    if !arg then halt("When creating a domain mapped using DimensionalDist2D with a BlockCyclicDim specifier, could not fit BlockCyclicDim's adjusted lowIdx of ", src, " in the domain's idxType ", destT:string);
   }
   type maxuT = uint(64); // the largest unsigned type
   type srcT = src.type;
@@ -255,7 +255,7 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
       if lowIdxDom <= 0 then -lowIdxDom else adjustLowIdx()
     ;
 
-  if BlockCyclicDim_printAdjustedLowIdx then writeln("BlockCyclicDim(numLocales=", numLocales, ", lowIdx=", lowIdx, " blockSize=", blockSize, " name=", name, ").dsiNewRectangularDom1d(idxType=", typeToString(idxType), "): adjusted lowIdx = ", adjLowIdx);
+  if BlockCyclicDim_printAdjustedLowIdx then writeln("BlockCyclicDim(numLocales=", numLocales, ", lowIdx=", lowIdx, " blockSize=", blockSize, " name=", name, ").dsiNewRectangularDom1d(idxType=", idxType:string, "): adjusted lowIdx = ", adjLowIdx);
 
   _checkFitsWithin(adjLowIdx, idxType);
 

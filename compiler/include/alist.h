@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -84,6 +84,7 @@ class AList {
        node = _alist_prev,                                              \
          _alist_prev = node ? toDefExpr(node->prev) : NULL)
 
+// for_formals(arg, fn) arg is ArgSymbol*, fn is FnSymbol*
 #define for_formals(formal, fn)                                         \
   for (ArgSymbol *formal = ((fn)->formals.head) ? toArgSymbol(toDefExpr((fn)->formals.head)->sym) : NULL, \
          *_alist_next = (formal && formal->defPoint->next) ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL; \

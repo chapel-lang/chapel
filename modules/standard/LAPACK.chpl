@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,7 +25,7 @@ Chapel idiomatic wrappers for the LAPACK library.
 
   Because of the volume of procedures provided, and because their behavior is virtually unchanged, in-depth documentation on each procedure's purpose and use is not given here.
   
-  Consult the `Netlibs LAPACK <http://www.netlib.org/lapack/>`_ site, and the `Netlibs <http://www.netlib.org/lapack/explore-html/globals_func.html>`_ and `Intel <https://software.intel.com/en-us/node/501008>`_ LAPACK documents for that information.
+  Consult the `Netlibs LAPACK <http://www.netlib.org/lapack/>`_ site, and the `Netlibs <http://www.netlib.org/lapack/explore-html/globals_func.html>`_ and `Intel <https://software.intel.com/en-us/node/520866>`_ LAPACK documents for that information.
   
   Additionally, only a small set of LAPACK procedures have been tested for correctness.
 

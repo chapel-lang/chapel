@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -350,6 +350,11 @@ rhsAlias(CallExpr* call) {
           // we note that the lhs aliases the field and not just an integer 
           return getSvecSymbol(rhsCall);
         } else if(rhsCall->isPrimitive(PRIM_ADDR_OF)) {
+          SymExpr* rhs = toSymExpr(rhsCall->get(1));
+          INT_ASSERT(rhs);
+          return rhs->var;
+        } else if (rhsCall->isPrimitive(PRIM_GET_REAL) ||
+                   rhsCall->isPrimitive(PRIM_GET_IMAG)) {
           SymExpr* rhs = toSymExpr(rhsCall->get(1));
           INT_ASSERT(rhs);
           return rhs->var;

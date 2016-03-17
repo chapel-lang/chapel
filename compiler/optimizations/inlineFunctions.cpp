@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -103,18 +103,6 @@ static bool canRemoveRefTemps(FnSymbol* fn) {
   if (!fn) // primitive
     return true;
 
-  // Work around for a bug with non-default size bools in no-local. I believe
-  // they dont work in no-local due to not preserving thier size during
-  // codegen.
-  // TODO: Check if this can be removed onces bool sizes are preserved
-  //       ( test/types/scalar/bradc/bools[2].chpl )
-  if (!fLocal) {
-    for_formals(formal, fn) {
-      if (is_bool_type(formal->typeInfo()))
-        return false;
-    }
-  }
-
   std::vector<CallExpr*> callExprs;
   collectCallExprs(fn, callExprs);
 
@@ -122,6 +110,10 @@ static bool canRemoveRefTemps(FnSymbol* fn) {
     if (!call->primitive) {
       return false;
     } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
+      return false;
+    } else if (call->isPrimitive(PRIM_GET_REAL)) {
+      return false;
+    } else if (call->isPrimitive(PRIM_GET_IMAG)) {
       return false;
     }
   }

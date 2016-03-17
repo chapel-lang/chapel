@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,6 +26,7 @@
 #include "flex-chapel.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "insertLineNumbers.h"
 
 #include <cstdlib>
 
@@ -47,9 +48,9 @@ static bool             handlingInternalModulesNow    = false;
 static Vec<const char*> modNameSet;
 static Vec<const char*> modNameList;
 static Vec<const char*> modDoneSet;
-static Vec<CallExpr*>   modReqdByInt;  // modules required by internal ones
+static Vec<UseStmt*>    modReqdByInt;  // modules required by internal ones
 
-void addModuleToParseList(const char* name, CallExpr* useExpr) {
+void addModuleToParseList(const char* name, UseStmt* useExpr) {
   const char* modName = astr(name);
 
   if (modDoneSet.set_in(modName) || modNameSet.set_in(modName)) {
@@ -94,13 +95,10 @@ containsOnlyModules(BlockStmt* block, const char* filename) {
         hasOther = true;
       }
 
-    } else if (CallExpr* callexpr = toCallExpr(stmt)) {
-      if (callexpr->isPrimitive(PRIM_USE)) {
-        hasUses = true;
-      } else {
-        hasOther = true;
-      }
-
+    } else if (toCallExpr(stmt)) {
+      hasOther = true;
+    } else if (toUseStmt(stmt)) {
+      hasUses = true;
     } else {
       hasOther = true;
     }
@@ -127,6 +125,8 @@ ModuleSymbol* parseFile(const char* filename,
   ModuleSymbol* retval = NULL;
 
   if (FILE* fp = openInputFile(filename)) {
+    gFilenameLookup.push_back(filename);
+
     // State for the lexer
     int             lexerStatus  = 100;
 
@@ -165,6 +165,7 @@ ModuleSymbol* parseFile(const char* filename,
     }
 
     yylex_init(&context.scanner);
+    stringBufferInit();
     yyset_in(fp, context.scanner);
 
     while (lexerStatus != 0 && parserStatus == YYPUSH_MORE) {
@@ -289,14 +290,14 @@ void parseDependentModules(ModTag modtype) {
   // required for the internal modules require
   if (modtype == MOD_USER) {
     do {
-      Vec<CallExpr*> modReqdByIntCopy = modReqdByInt;
+      Vec<UseStmt*> modReqdByIntCopy = modReqdByInt;
 
       modReqdByInt.clear();
 
       handlingInternalModulesNow = true;
 
-      forv_Vec(CallExpr*, moduse, modReqdByIntCopy) {
-        BaseAST*           moduleExpr     = moduse->argList.first();
+      forv_Vec(UseStmt*, moduse, modReqdByIntCopy) {
+        BaseAST*           moduleExpr     = moduse->src;
         UnresolvedSymExpr* oldModNameExpr = toUnresolvedSymExpr(moduleExpr);
 
         if (oldModNameExpr == NULL) {
@@ -361,6 +362,7 @@ BlockStmt* parseString(const char* string,
   ParserContext   context;
 
   yylex_init(&(context.scanner));
+  stringBufferInit();
 
   handle              = yy_scan_string(string, context.scanner);
 

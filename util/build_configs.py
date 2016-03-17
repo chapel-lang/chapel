@@ -112,7 +112,7 @@ Dimensions = [
     ),
     Dimension(
         'mem', 'CHPL_MEM',
-        values=['cstdlib', 'tcmalloc', 'dlmalloc'],
+        values=['cstdlib', 'jemalloc'],
         default=chpl_mem.get('target'),
         help_text='Memory allocator ({var_name}) values to build.',
     ),

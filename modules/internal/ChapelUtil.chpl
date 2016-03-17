@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -69,7 +69,7 @@ module ChapelUtil {
       return top;
     }
   
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       for i in 0..top-1 do f.write(" ", data[i]);
     }
   }
@@ -167,7 +167,7 @@ module ChapelUtil {
 
     for i in 0..#arg.argc {
       // FIX ME: leak c_string
-      array[i] = toString(chpl_get_argument_i(local_arg, i:int(32)));
+      array[i] = chpl_get_argument_i(local_arg, i:int(32)):string;
     }
 
     return array;

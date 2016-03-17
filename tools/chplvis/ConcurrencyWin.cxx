@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Cray Inc.
+ * Copyright 2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -61,7 +61,7 @@ void ConcurrencyWin::updateData (long loc, long tag)
 void ConcurrencyWin::showCommBoxFor(taskData *task)
 {
   if (task->commSum.numComms == 0) {
-    fl_alert("Task has no communicastions to show.");
+    fl_alert("Task has no communications to show.");
   } else {
     scroll->hide();
 

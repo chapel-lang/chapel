@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -1015,6 +1015,7 @@ qioerr qio_channel_write_byte(const int threadsafe, qio_channel_t* restrict ch, 
 static inline
 qioerr qio_channel_lock(qio_channel_t* ch)
 {
+  assert( ch != NULL );
   return qio_lock(&ch->lock);
 }
 
@@ -1355,6 +1356,32 @@ qioerr qio_channel_close(const int threadsafe, qio_channel_t* ch)
   }
 
   return err;
+}
+
+// Returns true for ch=NULL channel if ch has been closed
+// (but not yet deallocated).
+static inline
+bool qio_channel_isclosed(const int threadsafe, qio_channel_t* ch)
+{
+  bool ret;
+
+  if( ch == NULL ) return true;
+
+  if( threadsafe ) {
+    qio_lock(&ch->lock);
+  }
+
+  ret = false;
+  {
+    qio_chtype_t type = (qio_chtype_t) (ch->hints & QIO_CHTYPEMASK);
+    if( type == QIO_CHTYPE_CLOSED ) ret = true;
+  }
+
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return ret;
 }
 
 qioerr qio_channel_mark(const int threadsafe, qio_channel_t* ch);

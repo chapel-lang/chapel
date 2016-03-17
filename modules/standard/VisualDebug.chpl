@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -30,6 +30,10 @@ module VisualDebug
 {
 
   use String;
+
+  // VisualDebugOn -- Should we generate data
+  config param DefaultVisualDebugOn = true;
+  config var VisualDebugOn = DefaultVisualDebugOn;
 
   private extern proc chpl_now_time():real;
 
@@ -83,9 +87,9 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
 
      /* Do the op at the root  */
      select what {
-         when vis_op.v_start    do chpl_vdebug_start (name.c_str(), time);
+         when vis_op.v_start    do chpl_vdebug_start (name.localize().c_str(), time);
          when vis_op.v_stop     do chpl_vdebug_stop ();
-         when vis_op.v_tag      do chpl_vdebug_tag (name.c_str());
+         when vis_op.v_tag      do chpl_vdebug_tag (name.localize().c_str());
          when vis_op.v_pause    do chpl_vdebug_pause ();
      }
 }
@@ -104,8 +108,10 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
   proc startVdebug ( rootname : string ) {
     var now = chpl_now_time();
     //coforall l in Locales do
-    //  on l do chpl_vdebug_start (rootname.c_str(), now);
-    VDebugTree (vis_op.v_start, rootname, now);
+    //  on l do chpl_vdebug_start (rootname.localize().c_str(), now);
+    if (VisualDebugOn) {
+      VDebugTree (vis_op.v_start, rootname, now);
+    }
   }
 
 /*
@@ -115,9 +121,11 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
 */
   proc tagVdebug ( tagname : string ) {
     //coforall l in Locales[1..] do
-    //  on l do chpl_vdebug_tag (tagname.c_str(), 0);
-    //chpl_vdebug_tag (tagname.c_str(), 0);
-    VDebugTree (vis_op.v_tag, tagname, 0);
+    //  on l do chpl_vdebug_tag (tagname.localize().c_str(), 0);
+    //chpl_vdebug_tag (tagname.localize().c_str(), 0);
+    if (VisualDebugOn) {
+       VDebugTree (vis_op.v_tag, tagname, 0);
+    }
   }
 
 /*
@@ -127,7 +135,9 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
     // chpl_vdebug_stop();
     // coforall l in Locales[1..] do
     //  on l do chpl_vdebug_stop();
-    VDebugTree (vis_op.v_stop, "", 0);
+    if (VisualDebugOn) {
+       VDebugTree (vis_op.v_stop, "", 0);
+    }
   }
 
 /*
@@ -135,9 +145,11 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
 */
   proc pauseVdebug () {
     //coforall l in Locales[1..] do
-    //  on l do chpl_vdebug_tag (tagname.c_str(), 1);
-    //chpl_vdebug_tag(tagname.c_str(), 1);
-    VDebugTree (vis_op.v_pause, "", 0);
+    //  on l do chpl_vdebug_tag (tagname.localize().c_str(), 1);
+    //chpl_vdebug_tag(tagname.localize().c_str(), 1);
+    if (VisualDebugOn) {
+       VDebugTree (vis_op.v_pause, "", 0);
+    }
   }
 
 /*
@@ -150,7 +162,9 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
     //coforall l in Locales[1..] do
     //  on l do chpl_vdebug_resume ();
     //chpl_vdebug_resume(tagname);
-    VDebugTree (vis_op.v_tag, tagname, 0);
+    if (VisualDebugOn) {
+      VDebugTree (vis_op.v_tag, tagname, 0);
+    }
   }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -53,16 +53,16 @@ config param debugAdvancedIters:bool=false;
 
   :arg c: The range to iterate over. The length of the range must be greater
           than zero.
-  :type c: range(?)
+  :type c: `range(?)`
 
   :arg chunkSize: The size of chunks to be yielded to each thread. Must be
                   greater than zero.
-  :type chunkSize: int
+  :type chunkSize: `int`
 
   :arg numTasks: The number of tasks to use. Must be >= zero. If this argument
                  has the value 0, it will use the value indicated by
                  ``dataParTasksPerLocale``.
-  :type numTasks: int
+  :type numTasks: `int`
 
   :yields: Indices in the range ``c``.
 
@@ -160,12 +160,12 @@ where tag == iterKind.follower
 /*
 
   :arg c: The range to iterate over. Must have a length greater than zero.
-  :type c: range(?)
+  :type c: `range(?)`
 
   :arg numTasks: The number of tasks to use. Must be >= zero. If this argument
                  has the value 0, it will use the value indicated by
                  ``dataParTasksPerLocale``.
-  :type numTasks: int
+  :type numTasks: `int`
 
   :yields: Indices in the range ``c``.
 
@@ -241,12 +241,12 @@ where tag == iterKind.follower
 /*
 
   :arg c: The range to iterate over. Must have a length greater than zero.
-  :type c: range(?)
+  :type c: `range(?)`
 
   :arg numTasks: The number of tasks to use. Must be >= zero. If this argument
                  has the value 0, it will use the value indicated by
                  ``dataParTasksPerLocale``.
-  :type numTasks: int
+  :type numTasks: `int`
 
   :yields: Indices in the range ``c``.
 

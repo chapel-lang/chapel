@@ -4,8 +4,7 @@ record sps33 {
 
   proc this(i, j) ref {
     if (i == j) {
-      if setter then
-        halt("Assigning an IRV value");
+      halt("Assigning an IRV value");
       return irv;
     } else if (i==-1) {
       return data(i, j==1);
@@ -13,6 +12,16 @@ record sps33 {
       return data(i, j!=-1);
     }
   }
+  proc this(i, j) {
+    if (i == j) {
+      return irv;
+    } else if (i==-1) {
+      return data(i, j==1);
+    } else {
+      return data(i, j!=-1);
+    }
+  }
+
 
   proc this(ij: 2*int) ref {
     return this(ij(1), ij(2));

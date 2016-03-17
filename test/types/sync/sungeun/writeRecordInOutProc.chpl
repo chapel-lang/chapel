@@ -14,9 +14,9 @@ r.sx = initval;
 foo(r);
 
 proc foo(inout r: myR) {
-  writeln(r); // This is a read of r.sx
+  writeln(r.sx.readFE()); // This is a read of r.sx
   r.x = initval;
   r.sx = 2*initval;
-  writeln(r); // This is a read of r.sx
+  writeln(r.sx.readFF()); // Keep full so it can be copied into the actual
 }
 

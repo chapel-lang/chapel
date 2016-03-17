@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -105,7 +105,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_FINISH_RMEM_FENCE:
 
   case PRIM_STRING_COPY:
-  case PRIM_C_STRING_FROM_STRING:
   case PRIM_CAST_TO_VOID_STAR:
   case PRIM_SIZEOF:
 
@@ -192,6 +191,8 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
 
   case PRIM_CHPL_COMM_GET:
   case PRIM_CHPL_COMM_PUT:
+  case PRIM_CHPL_COMM_ARRAY_GET:
+  case PRIM_CHPL_COMM_ARRAY_PUT:
   case PRIM_CHPL_COMM_REMOTE_PREFETCH:
   case PRIM_CHPL_COMM_GET_STRD:
   case PRIM_CHPL_COMM_PUT_STRD:
@@ -243,6 +244,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_IS_TUPLE_TYPE:
   case PRIM_IS_STAR_TUPLE_TYPE:
   case PRIM_IS_SUBTYPE:
+  case PRIM_IS_WIDE_PTR:
   case PRIM_TUPLE_EXPAND:
   case PRIM_TUPLE_AND_EXPAND:
   case PRIM_QUERY:
@@ -264,7 +266,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_ACTUALS_LIST:
   case PRIM_YIELD:
 
-  case PRIM_USE:
   case PRIM_USED_MODULES_LIST:
 
   case PRIM_WHEN:
@@ -275,9 +276,8 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_NUM_FIELDS:
   case PRIM_IS_POD:
   case PRIM_FIELD_NUM_TO_NAME:
+  case PRIM_FIELD_NAME_TO_NUM:
   case PRIM_FIELD_VALUE_BY_NUM:
-  case PRIM_FIELD_ID_BY_NUM:
-  case PRIM_FIELD_VALUE_BY_NAME:
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 
@@ -291,11 +291,9 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
    // These don't block in the Chapel sense, but they may require a system
     // call so we don't consider them eligible.
     //
-  case PRIM_FREE_TASK_LIST:
   case PRIM_ARRAY_ALLOC:
   case PRIM_ARRAY_FREE:
   case PRIM_ARRAY_FREE_ELTS:
-  case PRIM_STRING_FROM_C_STRING:
     return false;
 
     // Temporarily unclassified (legacy) cases.
@@ -303,8 +301,6 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
     // here until they are proven fast.
   case PRIM_GET_END_COUNT:
   case PRIM_SET_END_COUNT:
-  case PRIM_PROCESS_TASK_LIST:
-  case PRIM_EXECUTE_TASKS_IN_LIST:
   case PRIM_TO_LEADER:
   case PRIM_TO_FOLLOWER:
   case PRIM_DELETE:
@@ -348,8 +344,7 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
   if (fn->hasFlag(FLAG_EXPORT))
     return true;
 
-  if (fn->hasFlag(FLAG_EXTERN)) {
-    // consider a pragma to indicate that it would be "fast"
+  if (fn->hasFlag(FLAG_EXTERN) && !fn->hasFlag(FLAG_FAST_ON_SAFE_EXTERN)) {
     return false;
   }
 

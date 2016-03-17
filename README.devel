@@ -72,16 +72,13 @@ the git tree, but not exactly the same:
 The following files/directories are for developers only:
 
   README.devel     : this file
-  DIRS             : a developer's view of files/directories, similar to
-                     README.files above; currently out of date, possibly
-                     redundant with this file
   TAGS             : an emacs TAGS file created after every compile when
                      CHPL_DEVELOPER is set to true
   chapel.tar.gz    : when the util/gen_release is script, the release is
                      left in this file
   chapel-emacs.tar.gz : ditto for the util/gen_editors script
   chapel-vim.tar.gz   : "
-  etc/             : miscellaneous stuff -- see the README/README.devel there
+  highlight/       : syntax highlighters -- see the README/README.devel there
   log/             : this directory is created when using the -t compiler
                      option, and so often ends up in this location
   papers/          : LaTeX sources for various papers and publications

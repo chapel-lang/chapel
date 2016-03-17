@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,6 +27,7 @@
 #include "ForLoop.h"
 #include "log.h"
 #include "ParamForLoop.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -763,6 +764,12 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
       write("RetTag:      ref");
       break;
 
+    case RET_CONST_REF:
+      newline();
+      write("RetTag:      const ref");
+      break;
+
+
     case RET_PARAM:
       newline();
       write("RetTag:      param");
@@ -802,16 +809,6 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
       next_ast->accept(this);
     }
 
-    mOffset = mOffset - 13;
-  }
-
-  if (node->setter)
-  {
-    newline();
-    write(false, "Setter:      ", false);
-
-    mOffset = mOffset + 13;
-    node->setter->accept(this);
     mOffset = mOffset - 13;
   }
 
@@ -860,7 +857,7 @@ bool AstDumpToNode::enterCallExpr(CallExpr* node)
   else
     newline();
 
-  if (FnSymbol* fn = node->isResolved())
+  if (FnSymbol* fn = node->theFnSymbol())
   {
     if (fn->hasFlag(FLAG_BEGIN_BLOCK))
       write("begin");
@@ -966,6 +963,41 @@ void AstDumpToNode::visitUsymExpr(UnresolvedSymExpr* node)
 {
   enterNode(node);
   fprintf(mFP, " \"%s\"", node->unresolved);
+  exitNode(node);
+}
+
+
+void AstDumpToNode::visitUseStmt(UseStmt* node)
+{
+  enterNode(node);
+
+  mOffset = mOffset + 2;
+
+  if (compact)
+  {
+    mNeedSpace = true;
+    fprintf(mFP, " 'use'");
+  }
+
+  newline();
+  node->src->accept(this);
+
+
+  if (!node->isPlainUse()) {
+    node->writeListPredicate(mFP);
+    for_vector(const char, str, node->named) {
+      newline();
+      fprintf(mFP, "%s", str);
+    }
+    for (std::map<const char*, const char*>::iterator it = node->renamed.begin();
+         it != node->renamed.end(); ++it) {
+      newline();
+      fprintf(mFP, "%s as %s", it->second, it->first);
+    }
+  }
+
+  mOffset = mOffset - 2;
+  newline();
   exitNode(node);
 }
 
@@ -1240,6 +1272,7 @@ void AstDumpToNode::visitEnumSym(EnumSymbol* node)
 void AstDumpToNode::visitLabelSym(LabelSymbol* node)
 {
   enterNode(node);
+  fputc(' ', mFP);
   mOffset = mOffset + 2;
   ast_symbol(node, true);
   mOffset = mOffset - 2;
@@ -1401,7 +1434,6 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
     if (sym->type != 0)
     {
-      writeLongString("      ", "");
       writeType(sym->type);
     }
 
