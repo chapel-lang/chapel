@@ -5645,7 +5645,7 @@ preFold(Expr* expr) {
                         result = new SymExpr(constant->sym);
                         call->replace(result);
                         replaced = true;
-                        break;
+                        // could break here but might have issues with gcc 5.1
                       }
                     }
                     if (!replaced) {
