@@ -1,91 +1,76 @@
+/*
+ * Copyright 2004-2016 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ * 
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * 
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 use Jama;
 use Math;
 
-/** TestMatrix tests the functionality of the Jama Matrix class and associated decompositions.
-<P>
-Run the test from the command line using
-<BLOCKQUOTE><PRE><CODE>
- java Jama.test.TestMatrix 
-</CODE></PRE></BLOCKQUOTE>
-Detailed output is provided indicating the functionality being tested
-and whether the functionality is correctly implemented.   Exception handling
-is also tested.  
-<P>
-The test is designed to run to completion and give a summary of any implementation errors
-encountered. The final output should be:
-<BLOCKQUOTE><PRE><CODE>
-      TestMatrix completed.
-      Total errors reported: n1
-      Total warning reported: n2
-</CODE></PRE></BLOCKQUOTE>
-If the test does not run to completion, this indicates that there is a 
-substantial problem within the implementation that was not anticipated in the test design.  
-The stopping point should give an indication of where the problem exists.
+/**
+
+TestMatrix tests the functionality of the Jama Matrix class and 
+associated decompositions.
+
 **/
    proc main () {
 
       var A,B,C,Z,O,I,R,S,X,SUB,M,T,SQ,DEF,SOL : Matrix;
-      // Uncomment this to test IO in a different locale.
-      // Locale.setDefault(Locale.GERMAN);
       var errorCount=0;
       var warningCount=0;
       var tmp, s : real;
 
-      //double[] columnwise = {1.,2.,3.,4.,5.,6.,7.,8.,9.,10.,11.,12.};
       var columnwise : [1..12] real = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0];
-
-      //double[] rowwise = {1.,4.,7.,10.,2.,5.,8.,11.,3.,6.,9.,12.};
       var rowwise : [1..12] real = [1.0,4.0,7.0,10.0,2.0,5.0,8.0,11.0,3.0,6.0,9.0,12.0]; 
 
-      //double[][] avals = {{1.,4.,7.,10.},{2.,5.,8.,11.},{3.,6.,9.,12.}};
       var avals : [1..3,1..4] real;
       for (ij, val) in zip(avals.domain, rowwise) { avals(ij) = val; }
-
-      //double[][] rankdef = avals;
 
       var rankdef : [1..3,1..4] real; 
       for (ij, val) in zip(rankdef.domain, rowwise) { rankdef(ij) = val; }
 
 
-      //double[][] tvals =  {{1.,2.,3.},{4.,5.,6.},{7.,8.,9.},{10.,11.,12.}};
       var tvals : [1..3,1..4] real;
       for (ij, val) in zip(tvals.domain, rowwise) { tvals(ij) = val; }
 
-      //double[][] subavals = {{5.,8.,11.},{6.,9.,12.}};
       var subavals : [1..2,1..3] real;
       for (ij, val) in zip(subavals.domain, [5.0,8.0,11.0, 6.0, 9.0, 12.0]) { subavals(ij) = val; }
       SUB = new Matrix(subavals);
 
-      //double[][] rvals = {{1.,4.,7.,10.},{2.,5.,8.,11.},{3.,6.,9.,12.}};
       var rvals : [1..3,1..4] real;
       for (ij, val) in zip(rvals.domain, rowwise) { rvals(ij) = val; }
       
-      //double[][] pvals = {{4.,1.,1.},{1.,2.,3.},{1.,3.,6.}};
       var pvals : [1..3, 1..3] real;
       for (ij, val) in zip(pvals.domain, [4.0,1.0,1.0,1.0,2.0,3.0,1.0,3.0,6.0]) { pvals(ij) = val; }
 
-      //double[][] ivals = {{1.,0.,0.,0.},{0.,1.,0.,0.},{0.,0.,1.,0.}};
       var ivals : [1..4,1..3] real;
       for (ij, val) in zip(ivals.domain, [1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0]) { ivals(ij) = val; }
 
-      //double[][] evals = {{0.,1.,0.,0.},{1.,0.,2.e-7,0.},{0.,-2.e-7,0.,1.},{0.,0.,1.,0.}};
       var evals : [1..4,1..4] real;
       for (ij, val) in zip(evals.domain, [0.0,1.0,0.0,0.0,1.0,0.0,2.e-7,0.0,0.0,-2.e-7,0.0,1.0,0.0,0.0,1.0,0.0]) { evals(ij) = val; }
 
-      //double[][] square = {{166.,188.,210.},{188.,214.,240.},{210.,240.,270.}};
       var square : [1..3,1..3] real;
       for (ij, val) in zip(square.domain, [166.0,188.0,210.0,188.0,214.0,240.0,210.0,240.0,270.0]) { square(ij) = val; }
 
-      //double[][] sqSolution = {{13.},{15.}};
       var sqSolution : [1..2,1..1] real;
       sqSolution(1,1) = 13.0; sqSolution(2,1) = 15.0;
 
-      //double[][] condmat = {{1.,3.},{7.,9.}};
       var condmat : [1..2,1..2] real;
       for (ij, val) in zip(condmat.domain, [1.0,3.0,7.0,9.0]) { condmat(ij) = val; }
       
-
-      //double[][] badeigs = {{0,0,0,0,0}, {0,0,0,0,1},{0,0,0,1,0},{1,1,0,0,1},{1,0,1,0,1}};
       var badeigs : [1..5, 1..5] real;
       for (ij, val) in zip(badeigs.domain, [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0,0.0,1.0,1.0,0.0,0.0,1.0,1.0,0.0,1.0,0.0,1.0]) { badeigs(ij) = val; }
 
@@ -139,15 +124,6 @@ The stopping point should give an indication of where the problem exists.
       S = new Matrix(columnwise,nonconformld);
       R = S.random(A.getRowDimension(),A.getColumnDimension());
       A = R;
-
-/*
-      try {
-        S = A.minus(S);
-        errorCount = try_failure(errorCount,"minus conformance check... ","nonconformance not raised");
-      } catch ( IllegalArgumentException e ) {
-        try_success("minus conformance check... ","");
-      }
-*/
 
       if (A.minus(R).norm1() != 0.0) {
         writeln(errorCount,"minus... ","(difference of identical Matrices is nonzero,\nSubsequent use of minus should be suspect)");
@@ -329,9 +305,6 @@ check(A.normInf(),rowsummax);
       var L = Chol.getL();
          check(A,L.times(L.transpose()));
          writeln("CholeskyDecomposition...","");
-      //X = Chol.solve(identity(3,3));
-      //   writeln(A.times(X),identity(3,3));
-      //   writeln("CholeskyDecomposition solve()...","");
       var Eig = A.eig();
       var D = Eig.getD();
       var V = Eig.getV();
@@ -350,9 +323,6 @@ check(A.normInf(),rowsummax);
 	  writeln("EigenvalueDecomposition (hang)...","");
 
       writeln("\nTestMatrix completed.\n");
-      //writeln("Total errors reported: " + Integer.toString(errorCount) + "\n");
-      //writeln("Total warnings reported: " + Integer.toString(warningCount) + "\n");
-   //}
 
    /** private utility routines **/
 

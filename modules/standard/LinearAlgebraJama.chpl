@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,15 +25,15 @@ port provided by ct(.)clmsn(at)gmail
 
 http://math.nist.gov/javanumerics/jama/
 
-JAMA is a basic linear algebra package for Java. It provides user-level classes
-for constructing and manipulating real, dense matrices. It is meant to provide 
-sufficient functionality for routine problems, packaged in a way that is natural 
-and understandable to non-experts. It is intended to serve as the standard matrix 
-class for Java, and will be proposed as such to the Java Grande Forum and then to 
-Sun. A straightforward public-domain reference implementation has been developed 
-by the MathWorks and NIST as a strawman for such a class. We are releasing this 
-version in order to obtain public comment. There is no guarantee that future 
-versions of JAMA will be compatible with this one.
+JAMA is a basic linear algebra package for Java. This is a port of Jama to Chapel.
+Jama provides user-level classes for constructing and manipulating real, dense 
+matrices. Jama is meant to provide sufficient functionality for routine problems, 
+packaged in a way that is natural and understandable to non-experts. Jama is 
+intended to serve as the standard matrix class for Chapel. Jama is a straightforward 
+public-domain reference implementation has been developed by the MathWorks and 
+NIST as a strawman for such a class. MathWorks and NIST released this version in 
+order to obtain public comment. There was no guarantee that future versions of 
+JAMA will be compatible with this one.
 
 A sibling matrix package, Jampack, has also been developed at NIST and the 
 University of Maryland. The two packages arose from the need to evaluate 
