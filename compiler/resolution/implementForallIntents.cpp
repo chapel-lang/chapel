@@ -993,6 +993,13 @@ static void checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn) {
   origRet->defPoint->remove();
 }
 
+//
+// Set up ancors, if not already, so we can add reduction-related code
+// via refRef->insertBefore() within 'fn'.
+//
+// "redRef" is short for "reference for reduction".
+// redRef1 goes at the beginning of fn, redRef2 at the end.
+//
 void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2)
 {
   if (redRef1) return;
@@ -1016,6 +1023,9 @@ void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2)
   }
 }
 
+//
+// We won't need the redRef ancors any more. Remove them if we set them up.
+//
 void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
   if (!redRef1) return;
   redRef1->remove();
@@ -1023,7 +1033,8 @@ void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
   redRef1 = redRef2 = NULL;
 }
 
-// like isArrayClass()
+// Is 'type' a Reduce/Scan Op?
+// similar to isArrayClass()
 bool isReduceOp(Type* type) {
   if (type->symbol->hasFlag(FLAG_REDUCESCANOP))
     return true;

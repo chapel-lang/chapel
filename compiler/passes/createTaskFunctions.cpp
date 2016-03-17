@@ -119,6 +119,42 @@ I.e. add the following to the AST:
     origSym = parentOp.generate();
     delete parentOp;
 
+Put in a different way, a coforall like this:
+
+    var x: int;
+    coforall ITER with (OP reduce x) {
+      BODY(x);      // will typically include:  x OP= something;
+    }
+
+with its corresponding task-function representation:
+
+    var x: int;
+    proc coforall_fn() {
+      BODY(x);
+    }
+    call coforall_fn();
+
+is transformed into
+
+    var x: int;
+    var globalOp = new OP_SCAN_REDUCE_CLASS(x.type);
+
+    proc coforall_fn(parentOp) {
+      var currOp = parentOp.clone()
+      var symReplace = currOp.identify;
+
+      BODY(symReplace);
+
+      currOp.accumulate(symReplace);
+      parentOp.combine(currOp);
+      delete currOp;
+    }
+
+    call coforall_fn(globalOp);
+    // wait for endCount - not shown
+    x = globalOp.generate();
+    delete globalOp;
+
 Todo: to support cobegin constructs, need to share 'globalOp'
 across all fn+call pairs for the same construct.
 */
@@ -314,6 +350,42 @@ void pruneThisArg(Symbol* parent, SymbolMap& uses) {
   }
 }
 
+//
+// The 'vars' map describes the outer variables referenced
+// in the task function 'fn', which is invoked by 'call'.
+//
+// BTW since call+fn have just been created to represent
+// a syntactic task construct (begin or cobegin or coforall),
+// they are in a 1:1 correspondence.
+//
+// Each key of 'vars' is a variable referenced in 'fn'.
+// The corresponding value is one of:
+//   markPruned   - if we should not do anything about that variable
+//   a "tiMarker" - if the variable is an outer variable;
+//                  the marker indicates the intent for this variable -
+//                  see tiMarkForIntent(); it is markUnspecified
+//                  if the intent is not given explicitly
+//   a TypeSymbol - the same for the special case where the user requested
+//                  a reduce intent for this variable (see below)
+//
+// For a variable mentioned in a reduce intent in the 'with' clause,
+// the parser maps it to the name of the appropriate reduction class.
+// scopeResolve() resolves it to the class's TypeSymbol.
+// markOuterVarsWithIntents() places that into the 'vars' map.
+//
+
+//
+// For each outer variable of the task function 'fn':
+//   * add an appropriate actual to 'call' and formal to 'fn'
+//   * update that variable's entry in 'vars' to be the symbol
+//     that the outer variable should be replaced with in the body of 'fn'
+//
+// Upon entry to addVarsToFormalsActuals(), 'vars' specified the task intent
+// for each outer variable (see the above comment about 'vars').
+// If it is a non-reduce intent, the actual is the outer variable itself
+// and the outer variable is replaced with the corresponding formal.
+// For a reduce intent, see the comment for addReduceIntentSupport().
+//
 static void
 addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
                         CallExpr* call, bool isCoforall)
@@ -327,6 +399,8 @@ addVarsToFormalsActuals(FnSymbol* fn, SymbolMap& vars,
         Symbol*    newActual = NULL;
         Symbol*    symReplace = NULL;
 
+        // If we see a TypeSymbol here, it came from a reduce intent.
+        // (See the above comment about 'vars'.)
         if (TypeSymbol* reduceType = toTypeSymbol(e->value)) {
           bool gotError = false;
           // For cobegin, these will report the error for each task.
