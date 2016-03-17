@@ -87,7 +87,7 @@ proc main() {
   /* Domain over entire 'active' region, where Output will be updated */
    innerLocalDom = localDom.expand(-R),
   /* Strided domain over 'active' region - possibly a cleaner way to write...*/
-        tiledDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize},
+  tiledLocalDom = {R.. # order-2*R by tileSize, R.. # order-2*R by tileSize},
   /* Domain over weight matrix */
   weightLocalDom = {-R..R, -R..R};
 
@@ -108,6 +108,7 @@ proc main() {
   /* Map domains to selected distribution */
   const Dom = localDom dmapped new dmap(Dist),
    innerDom = innerLocalDom dmapped new dmap(Dist),
+   tiledDom = tiledLocalDom dmapped new dmap(Dist),
   weightDom = weightLocalDom dmapped new dmap(weightDist);
 
   /* Input and Output matrices represented as arrays over a 2D domain */
