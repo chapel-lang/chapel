@@ -8,7 +8,8 @@ var histo:[0..255] int;
 
 // Check we produce every random byte
 {
-  var rs = new PCGRandomStream(seed = seed, eltType = uint(8));
+  var rs = makeRandomStream(seed = seed, parSafe=false,
+                            eltType = uint(8), algorithm=RNG.PCG);
 
   for i in 1..1000000 {
     var got = rs.getNext();
@@ -26,7 +27,8 @@ histo = 0;
 
 // Check we produce every random byte with sub-range
 {
-  var rs = new PCGRandomStream(seed = seed, eltType = uint(8));
+  var rs = makeRandomStream(seed = seed, parSafe=false,
+                            eltType = uint(8), algorithm=RNG.PCG);
 
   for i in 1..1000000 {
     var got = rs.getNext(5, 20);
@@ -44,7 +46,8 @@ histo = 0;
 
 // Check we produce every random byte with sub-range
 {
-  var rs = new PCGRandomStream(seed = seed, eltType = uint(64));
+  var rs = makeRandomStream(seed = seed, parSafe=false,
+                            eltType = uint(64), algorithm=RNG.PCG);
 
   for i in 1..1000000 {
     var got = rs.getNext(5, 20):int;
