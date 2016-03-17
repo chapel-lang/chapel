@@ -565,7 +565,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       //
       // Create a new argv with space for -E options for the env vars.
       //
-      int new_argc = 4 + *argc;
+      int new_argc = 4 + *argc + 1;
       char** new_argv = (char**) AMUDP_malloc(new_argc * sizeof((*new_argv)));
 
       //
