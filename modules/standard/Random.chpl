@@ -34,6 +34,10 @@
    Use :proc:`makeRandomStream` or the constructor for a specific RNG
    implementation to get a RandomStream.
 
+   .. note::
+      We expect in the future for RandomStream to be the default and for
+      NPBRandomStream and PCGRandomStream to be available.
+
    Here is a list of currently open issues (TODOs) for this module:
 
    1. We plan to support general serial and parallel iterator methods
@@ -1721,7 +1725,7 @@ module Random {
   }
 
   /* The default RNG */
-  param defaultRNG = RNG.NPB;
+  param defaultRNG = RNG.PCG;
 
   // CHPLDOC FEEDBACK: If easy, I'd suggest either deprecating the 
   // :arg <type> <name>: form or else switching the order to 
@@ -1961,9 +1965,9 @@ module Random {
                         type eltType = real(64),
                         param algorithm = defaultRNG) {
     if algorithm == RNG.PCG then
-      return new PCGRandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
+      return new RandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
     else if algorithm == RNG.NPB then
-      return new /*NPB*/RandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
+      return new NPBRandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
     else
       compilerError("Unknown random number generator");
   }
