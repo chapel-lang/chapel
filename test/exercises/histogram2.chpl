@@ -30,7 +30,7 @@ writef(" Number of Buckets        = %{########}\n", numBuckets);
 writeln();
 
 // fill array with random numbers (using standard Random module)
-fillRandom(X, seed);
+fillRandom(X, seed, algorithm=RNG.NPB);
 
 // output array of random numbers
 if printRandomNumbers then
