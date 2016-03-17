@@ -923,7 +923,6 @@ OS/X:
 
 PGI compilers:
 - Chapel generated identifier names may be too long.
-- Floating point literals of -0.0 may not work as intended.
 
 Intel compilers:
 - Floating point literals of -0.0 may not work as intended.
