@@ -134,10 +134,18 @@ void normalize() {
     // state (empty) if they are used but not assigned to anything.
     forv_Vec(SymExpr, se, gSymExprs) {
       if (isFnSymbol(se->parentSymbol) && se == se->getStmtExpr()) {
-        SET_LINENO(se);
-        CallExpr* call = new CallExpr("_statementLevelSymbol");
-        se->insertBefore(call);
-        call->insertAtTail(se->remove());
+        if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
+          // Don't add these calls for the return type, since
+          // _statementLevelSymbol would do nothing in that case
+          // anyway, and it contributes to order-of-resolution issues for
+          // extern functions with declared return type.
+          if (parentFn->retExprType != se->parentExpr) {
+            SET_LINENO(se);
+            CallExpr* call = new CallExpr("_statementLevelSymbol");
+            se->insertBefore(call);
+            call->insertAtTail(se->remove());
+          }
+        }
       }
     }
   }
