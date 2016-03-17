@@ -25,6 +25,12 @@ use Math;
 TestMatrix tests the functionality of the Jama Matrix class and 
 associated decompositions.
 
+This code is a port of the original Jama test code found from 
+this site:
+
+http://math.nist.gov/javanumerics/jama/
+
+Jama is public domain and developed by MathWorks and NIST
 **/
    proc main () {
 
