@@ -1,10 +1,17 @@
+config param initInPlace = true;
+
 class C {
   type t;
   var x: t;
 }
 
-var myC: C;
+if initInPlace {
+  //
+  // This is crammed ridiculously onto one line just to re-use the .good file
+  //
+  var myC: C = new C();  writeln(myC); } else {  var myC: C;
 
-myC = new C();
+  myC = new C();
 
-writeln(myC);
+  writeln(myC);
+}
