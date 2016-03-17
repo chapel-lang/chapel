@@ -34,6 +34,7 @@ module LocaleModel {
   // moved to LocaleModelHelpNUMA.chpl
 
   use LocaleModelHelpNUMA;
+  use LocaleModelHelpMem;
 
   // debugLocaleModel
   // doneCreatingLocales
@@ -225,7 +226,7 @@ module LocaleModel {
   // chpl_here_realloc
   // chpl_here_good_alloc_size
   // chpl_here_free
-  // moved to LocaleModelHelp.chpl
+  // moved to LocaleModelHelpMem.chpl
 
   //////////////////////////////////////////
   //

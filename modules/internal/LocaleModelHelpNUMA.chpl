@@ -23,10 +23,11 @@ module LocaleModelHelpNUMA {
 
   use LocaleModelHelp;
 
+  extern proc chpl_task_getNumSublocales(): int(32);
+
   proc helpSetupLocaleNUMA(dst:LocaleModel, out local_name:string, out numSublocales) {
     helpSetupLocaleFlat(dst, local_name);
 
-    extern proc chpl_task_getNumSublocales(): int(32);
     numSublocales = chpl_task_getNumSublocales();
 
     extern proc chpl_task_getMaxPar(): uint(32);
