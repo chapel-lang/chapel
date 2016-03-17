@@ -583,7 +583,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       new_argv[2] = (char *) "gdb";
       new_argv[3] = (char *) "--args";
 #endif
-      memcpy(&new_argv[4], *argv, *argc * sizeof(*new_argv));
+      memcpy(&new_argv[4], *argv, (*argc + 1) * sizeof(*new_argv));
 
       *argc = new_argc;
       *argv = new_argv;
