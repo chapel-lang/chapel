@@ -343,7 +343,7 @@ proc verifyResults(taskID, myBucketSize, myLocalKeyCounts) {
 
 
 proc makeInput(taskID) {
-  use Random.PCGRandom;
+  use Random;
 
   var myKeys: [0..#keysPerTask] keyType;
 
@@ -353,9 +353,10 @@ proc makeInput(taskID) {
   if (debug) then
     writeln(taskID, ": Calling pcg32_srandom_r with ", taskID);
 
-  var MyRandStream = new PCGRandomStream(seed = taskID,
-                                         parSafe=false,
-                                         eltType = keyType);
+  var MyRandStream = makeRandomStream(seed = taskID,
+                                      parSafe = false,
+                                      eltType = keyType,
+                                      algorithm = RNG.PCG);
 
   //
   // Fill local array
