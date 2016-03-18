@@ -333,14 +333,13 @@ class ForceLJ : Force {
 
     // for each atom, compute force between itself and its neighbors
     fTimer.start();
-    var eng, vir : atomic real;
 
     // Get a const copy of 'cutforcesq' and use the 'in' intent to get a copy on each
     // locale to reduce communication
     const cfsq = cutforcesq;
 
-    forall (b,p,c,r) in zip(Bins, RealPos, RealCount, binSpace) with (in cfsq) {
-      var t_eng, t_vir : real;
+    var t_eng, t_vir : real;
+    forall (b,p,c,r) in zip(Bins, RealPos, RealCount, binSpace) with (in cfsq, + reduce t_eng, + reduce t_vir) {
       for (a, x, j) in zip(b[1..c],p[1..c],1..c) {
         for(n,i) in a.neighs[1..a.ncount] {
           const del = x - Pos[n][i];
@@ -359,15 +358,11 @@ class ForceLJ : Force {
           }
         }
       }
-      if store {
-        eng.add(t_eng * 4.0);
-        vir.add(t_vir * .5);
-      }
     }
 
     // update values thermo depends on
-    eng_vdwl = eng.read();
-    virial = vir.read();
+    eng_vdwl = t_eng * 4.0;
+    virial = t_vir * .5;
 
     // higher resolution performance timings - look at the actual computation
     maintime += fTimer.elapsed();
