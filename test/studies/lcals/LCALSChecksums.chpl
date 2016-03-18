@@ -47,10 +47,9 @@ module LCALSChecksums {
 
   proc checkChecksums(run_variants: [] bool, run_loop: [] bool, run_loop_length: [] bool) {
     var suite_run_info = getLoopSuiteRunInfo();
-    var run_variant_names = getVariantNames(run_variants);
-    for variant_name in run_variant_names {
+    for variant in run_variants.domain {
       for loopKernel in chpl_enumerate(LoopKernelID) {
-        var stat = suite_run_info.getLoopStats(variant_name)[loopKernel];
+        var stat = suite_run_info.getLoopStats(variant)[loopKernel];
         for length in chpl_enumerate(LoopLength) {
           if run_loop[loopKernel] && stat.loop_is_run && stat.loop_run_count[length] > 0 {
             if run_loop_length[length] {
