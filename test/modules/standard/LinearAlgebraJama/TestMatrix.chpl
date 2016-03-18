@@ -253,35 +253,37 @@ Jama is public domain and developed by MathWorks and NIST
       writeln("\nTesting linear algebra methods...\n");
       A = new Matrix(columnwise,3);
       T = new Matrix(tvals);
+      writeln("transpose...","");
       T = A.transpose();
       writeln(A.transpose(),T);
-      check(A.transpose(),T);
       writeln("transpose...","");
+      check(A.transpose(),T);
 
       A.transpose();
-      check(A.norm1(),columnsummax);
       writeln("norm1...","");
-      check(A.normInf(),rowsummax);
+      check(A.norm1(),columnsummax);
       writeln("normInf()...","");
-      check(A.normF(),sumofsquares**0.5);
+      check(A.normInf(),rowsummax);
       writeln("normF...","");
-      check(A.trace(),sumofdiagonals);
+      check(A.normF(),sumofsquares**0.5);
       writeln("trace()...","");
-      check(A.getMatrix(1,A.getRowDimension(),1,A.getRowDimension()).det(),0.0);
+      check(A.trace(),sumofdiagonals);
       writeln("det()...","");
+      check(A.getMatrix(1,A.getRowDimension(),1,A.getRowDimension()).det(),0.0);
       SQ = new Matrix(square);
-      check(A.times(A.transpose()),SQ);
-      check(A.times(0.0),Z);
       writeln("times(double)...","");
+      check(A.times(A.transpose()),SQ);
+      writeln("times(double)...","");
+      check(A.times(0.0),Z);
 
       A = new Matrix(columnwise,4);
       var QR = A.qr();
       R = QR.getR();
-      check(A,QR.getQ().times(R));
       writeln("QRDecomposition...","");
+      check(A,QR.getQ().times(R));
       var SVD = A.svd();
-      check(A,SVD.getU().times(SVD.getS().times(SVD.getV().transpose())));
       writeln("SingularValueDecomposition...","");
+      check(A,SVD.getU().times(SVD.getS().times(SVD.getV().transpose())));
       DEF = new Matrix(rankdef);
       check(DEF.rank(),min(DEF.getRowDimension(),DEF.getColumnDimension())-1);
       writeln("rank()...","");
@@ -368,8 +370,8 @@ Jama is public domain and developed by MathWorks and NIST
 
    proc check(X:Matrix, Y:Matrix) {
       var eps = 2.0 ** -52.0;
-      if ( (X.norm1() == 0.0) & (Y.norm1() < 10.0*eps)) { return; }
-      if ((Y.norm1() == 0.0) & (X.norm1() < 10.0*eps)) { return; }
+      if ( (X.norm1() == 0.0) & (Y.norm1() < 10.0*eps)) { writeln("X is good"); return; }
+      if ((Y.norm1() == 0.0) & (X.norm1() < 10.0*eps)) { writeln("Y is good"); return; }
       if (X.minus(Y).norm1() > 1000.0*eps*max(X.norm1(),Y.norm1())) {
          writeln("The norm of (X-Y) is too large: " + X.minus(Y).norm1());
       }
