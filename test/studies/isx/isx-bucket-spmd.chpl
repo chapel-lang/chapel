@@ -415,7 +415,7 @@ proc printTimingData(units) {
   }
 
   writeln();
-  writeln("averages across ", units, " of min across trials:");
+  writeln("averages across ", units, " of min across trials (min..max):");
   if useSubTimers {
     printTimingStats(inputTime, "input");
     printTimingStats(bucketCountTime, "bucket count");
@@ -445,17 +445,24 @@ proc printTimeTable(timeTable, units, timerName) {
 }
 
 //
-// print timing statistics (currently only avg across locales/buckets
-// of min across trials)
+// print timing statistics (avg/min/max across buckets of min across
+// trials)
 //
 proc printTimingStats(timeTable, timerName) {
-  //  var minMinTime: real = max(real);
-  var /* maxMinTime, */ totMinTime: real;
-  forall timings in timeTable with (/*min reduce minMinTime,
-                                      max reduce maxMinTime,*/
+  var minMinTime, maxMinTime, totMinTime: real;
+
+  //
+  // iterate over the buckets, computing the min/max/total of the
+  // min times across trials.
+  //
+  forall timings in timeTable with (min reduce minMinTime,
+                                    max reduce maxMinTime,
                                     + reduce totMinTime) {
-    totMinTime += min reduce timings;
+    const minTime = min reduce timings;
+    totMinTime += minTime;
+    minMinTime = min(minMinTime, minTime);
+    maxMinTime = max(maxMinTime, minTime);
   }
   var avgTime = totMinTime / numLocales;
-  writeln(timerName, " = ", avgTime);
+  writeln(timerName, " = ", avgTime, " (", minMinTime, "..", maxMinTime, ")");
 }
