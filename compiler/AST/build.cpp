@@ -1110,12 +1110,13 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
   Expr* eltType = new NamedExpr("eltType",
                     new_Expr("'typeof'(%E)", reduceVar->copy()));
   if (!useThisGlobalOp)
-    iterRec->defPoint->insertBefore(new_Expr("'move'(%S, 'new'(%E(%E)))",
-                                             globalOp, reduceOp, eltType));
+    iterRec->defPoint->insertBefore("'move'(%S, 'new'(%E(%E)))",
+                                    globalOp, reduceOp, eltType);
   // reduceVar = globalOp.generate(); delete globalOp;
-  parLoop->insertAfter("'delete'(%S)", globalOp);
-  parLoop->insertAfter(new_Expr("'='(%E,.(%S, 'generate')())",
-                                reduceVar->copy(), globalOp));
+  parLoop->insertAfter("'delete'(%S)",
+                       globalOp);
+  parLoop->insertAfter("'='(%E,.(%S, 'generate')())",
+                       reduceVar->copy(), globalOp);
 }
 
 // Setup for forall intents
