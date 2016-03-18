@@ -153,14 +153,17 @@ var verifyKeyCount: atomic int;
 var barrier = new Barrier(numTasks);
 
 // should result in one loop iteration per task
-forall taskID in DistTaskSpace {
-  //
-  // The non-positive iterations represent burn-in runs, so don't
-  // time those.  To reduce time spent in verification, verify only
-  // the final timed run.
-  //
-  for i in 1-numBurnInRuns..numTrials do
-    bucketSort(taskID, trial=i, time=printTimings && (i>0), verify=(i==numTrials));
+coforall loc in Locales do on loc {
+  coforall tid in 0..#perBucketMultiply {
+    //
+    // The non-positive iterations represent burn-in runs, so don't
+    // time those.  To reduce time spent in verification, verify only
+    // the final timed run.
+    //
+    const taskID = (loc.id * perBucketMultiply) + tid;
+    for i in 1-numBurnInRuns..numTrials do
+      bucketSort(taskID, trial=i, time=printTimings && (i>0), verify=(i==numTrials));
+  }
 }
 
 if debug {
