@@ -17,10 +17,12 @@ Running in gdb
 The compiler-generated executable has a ``--gdb`` flag that can be used
 to launch the program within a ``gdb`` session.  For best results, make
 sure that your program has been compiled using the chpl compiler's
-``-g`` flag.  With ``CHPL_COMM=gasnet``, launching ``gdb`` is supported
-via the environment variable ``CHPL_COMM_USE_GDB``.  This will open up a
-separate xterm running ``gdb`` for each locale.  Note that we only know
-this to work for the ``amudprun`` launcher.
+``-g`` flag.  With ``CHPL_COMM=gasnet`` when using the ``amudprun``
+launcher, you can launch ``gdb`` by setting the environment variable
+``CHPL_COMM_USE_GDB`` when running the program.  This will open up a
+separate xterm for each locale, running the designated debugger.  On the
+Mac OS X (darwin) platform, you can launch ``lldb`` instead, by setting
+the ``CHPL_COMM_USE_LLDB`` environment variable.
 
 The utility of this feature depends greatly on your familiarity with
 the Chapel generated code.  However, if your program is crashing or

@@ -559,7 +559,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     //
     // For ease-of-debugging with Chapel, hacked this so that GASNet
     // will launch each task in an xterm running a debugger if
-    // CHPL_COMM_USE_GDB is set.
+    // CHPL_COMM_USE_GDB or CHPL_COMM_USE_LLDB is set.
     //
     if (getenv("CHPL_COMM_USE_GDB") != NULL
         || getenv("CHPL_COMM_USE_LLDB") != NULL) {
