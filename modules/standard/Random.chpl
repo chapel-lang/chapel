@@ -1030,6 +1030,10 @@ module Random {
         tmpinc = pcg_getvalid_inc(100);
         tmprng.srandom(state, tmpinc);
 
+        // Run it an extra time for better mixing
+        // (this helps improve the TestU01 score for this pattern)
+        tmprng.random(tmpinc);
+
          // This comment is from pcg32_boundedrand_r:
          // Uniformity guarantees that this loop will terminate.  In practice, it
          // should usually terminate quickly; on average (assuming all bounds are
