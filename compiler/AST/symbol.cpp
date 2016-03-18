@@ -2537,8 +2537,7 @@ ModuleSymbol::ModuleSymbol(const char* iName,
     initFn(NULL),
     filename(NULL),
     doc(NULL),
-    extern_info(NULL),
-    moduleNamePrefix("")
+    extern_info(NULL)
 {
 
   block->parentSymbol = this;
@@ -2712,8 +2711,22 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
 /*
  * Append 'prefix' to existing module name prefix.
  */
-void ModuleSymbol::addPrefixToName(std::string prefix) {
-  this->moduleNamePrefix += prefix;
+void ModuleSymbol::printTableOfContents(std::ostream *file) {
+  int tabs = 1;
+  if (!fDocsTextOnly) {
+    *file << "**Submodules**" << std::endl << std::endl;
+
+    *file << ".. toctree::" << std::endl;
+    this->printTabs(file, tabs);
+    *file << ":maxdepth: 1" << std::endl;
+    this->printTabs(file, tabs);
+    *file << ":glob:" << std::endl << std::endl;
+    this->printTabs(file, tabs);
+    *file << name << "/*" << std::endl;
+  } else {
+    *file << "Submodules for this module are located in the " << name;
+    *file << "/ directory" << std::endl;
+  }
 }
 
 
@@ -2721,7 +2734,7 @@ void ModuleSymbol::addPrefixToName(std::string prefix) {
  * Returns name of module, including any prefixes that have been set.
  */
 std::string ModuleSymbol::docsName() {
-  return this->moduleNamePrefix + this->name;
+  return this->name;
 }
 
 
