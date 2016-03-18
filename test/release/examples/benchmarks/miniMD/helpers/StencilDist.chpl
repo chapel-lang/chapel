@@ -1240,15 +1240,15 @@ iter _array.boundaries(param tag : iterKind) where tag == iterKind.standalone {
 
 iter StencilArr.dsiBoundaries() {
   for i in dom.dist.targetLocDom {
-    var loc = locArr[i];
-    for (D, N, L) in zip(loc.Dest, loc.Neighs, loc.NeighDom) {
+    var LSA = locArr[i];
+    for (D, N, L) in zip(LSA.Dest, LSA.Neighs, LSA.NeighDom) {
       const target = i + L;
       const low = dom.dist.targetLocDom.low;
       const high = dom.dist.targetLocDom.high;
 
       if (!dom.dist.targetLocDom.member(target)) {
         var translated : target.type;
-        for param r in 1..loc.rank {
+        for param r in 1..LSA.rank {
           if target(r) < low(r) {
             translated(r) = target(r);
           } else if target(r) > high(r) {
@@ -1258,7 +1258,7 @@ iter StencilArr.dsiBoundaries() {
           }
         }
 
-        for el in loc.myElems[D] do yield (el, translated);
+        for el in LSA.myElems[D] do yield (el, translated);
       }
     }
   }
@@ -1271,13 +1271,13 @@ iter StencilArr.dsiBoundaries() {
 iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standalone {
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
-      var loc = locArr[i];
-      forall (D, N, L) in zip(loc.Dest, loc.Neighs, loc.NeighDom) {
+      var LSA = locArr[i];
+      forall (D, N, L) in zip(LSA.Dest, LSA.Neighs, LSA.NeighDom) {
         const target = i + L;
         const low = dom.dist.targetLocDom.low;
         const high = dom.dist.targetLocDom.high;
         //
-        // if `loc` has a cache section of the outermost fluff/boundary,
+        // if `LSA` has a cache section of the outermost fluff/boundary,
         // then we should yield that so it is updated correctly. To do
         // so, we need to translate the local offset to the global offset.
         // A 2D example:
@@ -1297,7 +1297,7 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
         // If the target locale is outside the grid, it's a boundary chunk
         if (!dom.dist.targetLocDom.member(target)) {
           var translated : target.type;
-          for param r in 1..loc.rank {
+          for param r in 1..LSA.rank {
             if target(r) < low(r) {
               translated(r) = target(r);
             } else if target(r) > high(r) {
@@ -1308,7 +1308,7 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
           }
 
           // TODO: should we 'forall' over this instead?
-          for el in loc.myElems[D] do yield (el, translated);
+          for el in LSA.myElems[D] do yield (el, translated);
         }
       }
     }
