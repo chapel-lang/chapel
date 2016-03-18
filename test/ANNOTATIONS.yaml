@@ -121,6 +121,9 @@ all:
     - Default to jemalloc for comm=none (#3333)
   03/04/16:
     - implemented doubling/halving for array-as-vec (#3380)
+  03/17/16:
+    - text: Switched gen compiler to gcc 5.1.0
+      config: 16 node XC, 1 node XC
 
 AllCompTime:
   11/09/14:
