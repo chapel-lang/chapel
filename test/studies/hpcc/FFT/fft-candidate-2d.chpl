@@ -149,7 +149,7 @@ proc initVectors(Twiddles, z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
-  fillRandom(z, seed, algorithm=NPB.RNG);
+  fillRandom(z, seed, algorithm=RNG.NPB);
 
   if (printArrays) {
     writeln("After initialization, Twiddles is: ", Twiddles, "\n");
