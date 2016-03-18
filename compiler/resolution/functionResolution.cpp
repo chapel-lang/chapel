@@ -3130,6 +3130,10 @@ static void captureTaskIntentValues(int argNum, ArgSymbol* formal,
   if (fVerify && (argNum == 0 || (argNum == 1 && taskFn->hasFlag(FLAG_ON))))
     verifyTaskFnCall(parent, call); //assertions only
   Expr* marker = parentToMarker(parent, call);
+  if (varActual->hasFlag(FLAG_NO_CAPTURE_FOR_TASKING)) {
+      // No need to worry about this.
+      return;
+  }
   if (varActual->defPoint->parentExpr == parent) {
     // Index variable of the coforall loop? Do not capture it!
     if (fVerify) {
@@ -5164,6 +5168,58 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar)
 }
 
 
+//
+// Make sure that 'type' is sufficiently non-generic to declare a
+// variable over it in the context of 'call'.
+//
+static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
+  TypeSymbol* typeSym = type->symbol;
+
+  //
+  // This function only cares about generic types
+  //
+  if (typeSym->hasFlag(FLAG_GENERIC)) {
+    bool unsafeGeneric = true;  // Assume the worst until proven otherwise
+
+    //
+    // Grab the generic type's contructor if it has one.  Things like
+    // classes and records should.  Things like 'integral' will not.
+    //
+    FnSymbol* typeCons = type->defaultTypeConstructor;
+
+    if (typeCons) {
+      //
+      // If it had one, create a zero-argument call to the type
+      // constructor, insert it into the code point in question,
+      // and try to resolve it (saving the answer).
+      //
+      CallExpr* typeConsCall = new CallExpr(typeCons->name);
+      call->replace(typeConsCall);
+      unsafeGeneric = (tryResolveCall(typeConsCall) == NULL);
+
+      //
+      // Put things back the way they were.
+      //
+      typeConsCall->replace(call);
+    }
+    
+    //
+    // If the generic was unresolved (either because its type
+    // constructor couldn't be called with zero arguments or because
+    // it didn't have a type constructor), print a message.
+    // Specialize it based on whether or not it had a type
+    // constructor.
+    //
+    if (unsafeGeneric) {
+      USR_FATAL(call, 
+                "Variables can't be declared using %s generic types like '%s'",
+                (typeCons ? "not-fully-instantiated" : "abstract"),
+                typeSym->name);
+    }
+  }
+}
+
+
 // Returns NULL if no substitution was made.  Otherwise, returns the expression
 // that replaced the PRIM_INIT (or PRIM_NO_INIT) expression.
 // Here, "replaced" means that the PRIM_INIT (or PRIM_NO_INIT) primitive is no
@@ -5227,6 +5283,13 @@ static Expr* resolvePrimInit(CallExpr* call)
       // default constructors.  So give up now!
       return result;
   }
+
+  //
+  // Catch the case of declaring a variable over an uninstantiated
+  // generic type in order to print out a useful error message before
+  // we get too deep into resolution.
+  //
+  ensureGenericSafeForDeclarations(call, type);
 
   CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
   call->replace(defOfCall);
@@ -5586,7 +5649,7 @@ preFold(Expr* expr) {
                         result = new SymExpr(constant->sym);
                         call->replace(result);
                         replaced = true;
-                        break;
+                        // could break here but might have issues with gcc 5.1
                       }
                     }
                     if (!replaced) {
@@ -7123,9 +7186,6 @@ resolveFns(FnSymbol* fn) {
     resolveReturnType(fn);
     return;
   }
-
-  if (fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
-    return;
 
   //
   // Mark serial loops that yield inside of follower, standalone, and

@@ -1104,7 +1104,7 @@ const char* modTagDescrString(ModTag modTag) {
 // describes this argument's intent (for use in an English sentence)
 const char* ArgSymbol::intentDescrString(void) {
   switch (intent) {
-    case INTENT_BLANK: return "blank intent";
+    case INTENT_BLANK: return "default intent";
     case INTENT_IN: return "'in'";
     case INTENT_INOUT: return "'inout'";
     case INTENT_OUT: return "'out'";
@@ -1123,7 +1123,7 @@ const char* ArgSymbol::intentDescrString(void) {
 // describes the given intent (for use in an English sentence)
 const char* intentDescrString(IntentTag intent) {
   switch (intent) {
-    case INTENT_BLANK:     return "blank intent";
+    case INTENT_BLANK:     return "default intent";
     case INTENT_IN:        return "'in' intent";
     case INTENT_INOUT:     return "'inout' intent";
     case INTENT_OUT:       return "'out' intent";
@@ -2595,8 +2595,7 @@ void ModuleSymbol::codegenDef() {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Ignore external and prototype functions.
-        if (fn->hasFlag(FLAG_EXTERN) ||
-            fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
+        if (fn->hasFlag(FLAG_EXTERN))
           continue;
 
         fns.push_back(fn);
@@ -2809,8 +2808,7 @@ Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Ignore external and prototype functions.
         if (includeExterns == false &&
-            (fn->hasFlag(FLAG_EXTERN) ||
-             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))) {
+            fn->hasFlag(FLAG_EXTERN)) {
           continue;
         }
 
@@ -2827,8 +2825,7 @@ Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
             if (DefExpr* def2 = toDefExpr(expr2)) {
               if (FnSymbol* fn2 = toFnSymbol(def2->sym)) {
                 if (includeExterns == false &&
-                    (fn2->hasFlag(FLAG_EXTERN) ||
-                     fn2->hasFlag(FLAG_FUNCTION_PROTOTYPE))) {
+                    fn2->hasFlag(FLAG_EXTERN)) {
                   continue;
                 }
 

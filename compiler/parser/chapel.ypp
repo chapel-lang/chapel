@@ -341,7 +341,7 @@
 %type <flag> opt_config
 %type <b> access_control
 
-%type <pt> opt_intent_tag opt_this_intent_tag
+%type <pt> required_intent_tag opt_intent_tag opt_this_intent_tag
 
 %type <retTag> opt_ret_tag
 
@@ -961,8 +961,12 @@ formal:
 ;
 
 opt_intent_tag:
-          { $$ = INTENT_BLANK; }
-| TIN     { $$ = INTENT_IN; }
+                      { $$ = INTENT_BLANK; }
+| required_intent_tag { $$ = $1; }
+;
+
+required_intent_tag:
+  TIN     { $$ = INTENT_IN; }
 | TINOUT  { $$ = INTENT_INOUT; }
 | TOUT    { $$ = INTENT_OUT; }
 | TCONST  { $$ = INTENT_CONST; }
@@ -1426,16 +1430,18 @@ task_intent_ls:
 ;
 
 intent_expr:
-  opt_intent_tag ident_expr
+  required_intent_tag ident_expr
     {
       ArgSymbol* tiMark = tiMarkForIntent($1);
-      if (!tiMark)
-        USR_FATAL_CONT($2, "Unsupported intent in with clause");
+      if (!tiMark) {
+        USR_FATAL_CONT($2, "%s is not supported in a 'with' clause",
+                           intentDescrString($1));
+        tiMark = tiMarkForIntent(INTENT_IN); //dummy, so parser can continue
+      }
       $$.first = new SymExpr(tiMark);
       $$.second = $2;
     }
-// todo: allow user-defined reductions like in reduce_expr:
-// | expr             TREDUCE ident_expr  { $$.first = $1, $$.second = $3; }
+| expr                TREDUCE ident_expr  { $$.first = $1, $$.second = $3; }
 | reduce_scan_op_expr TREDUCE ident_expr  { $$.first = $1, $$.second = $3; }
 ;
 
