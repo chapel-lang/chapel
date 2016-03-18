@@ -119,8 +119,7 @@ proc buildNeighbors() {
 // See test/types/records/bharshbarger/remote*Record.chpl for more.
 inline proc addatom(ref a : atom, x : v3, b : v3int) {
   // increment bin's # of atoms
-  var end = RealCount[b];
-  end += 1;
+  const end = RealCount[b] + 1;
   RealCount[b] = end;
   
   // resize bin storage if needed
