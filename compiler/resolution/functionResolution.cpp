@@ -7187,9 +7187,6 @@ resolveFns(FnSymbol* fn) {
     return;
   }
 
-  if (fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
-    return;
-
   //
   // Mark serial loops that yield inside of follower, standalone, and
   // explicitly vectorized iterators as order independent. By using a forall

@@ -101,7 +101,6 @@ symbolFlag( FLAG_FIELD_ACCESSOR , npr, "field accessor" , "field setter/getter f
 symbolFlag( FLAG_FIRST_CLASS_FUNCTION_INVOCATION, npr, "first class function invocation" , "proxy for first-class function invocation" )
 symbolFlag( FLAG_FORMAL_TEMP,     npr, "formal temp", "a formal temp to back an in, out, or inout argument" )
 symbolFlag( FLAG_FUNCTION_CLASS , npr, "function class" , "first-class function class representation" )
-symbolFlag( FLAG_FUNCTION_PROTOTYPE , npr, "function prototype" , "signature for function prototypes" )
 // When applied to an argument, this flag means that the arg accepts a value
 // but has unspecified type.
 symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types, functions and arguments" )
