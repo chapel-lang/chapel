@@ -928,20 +928,6 @@ inline proc StencilArr.dsiLocalAccess(i: rank*idxType) ref {
   return myLocArr.this(i);
 }
 
-proc _array.readRemote(i: _value.rank*_value.idxType) {
-  return _value.dsiReadRemote(i);
-}
-
-proc StencilArr.dsiReadRemote(i: rank*idxType) {
-  local {
-    if myLocArr != nil {
-
-      // return from actual if it's a write or there's no fluff
-      if myLocArr.locDom.member(i) then return myLocArr.this(i);
-    }
-  } 
-  return locArr(dom.dist.targetLocsIdx(i))(i);
-}
 //
 // the global accessor for the array
 //
@@ -1248,38 +1234,85 @@ iter _array.boundaries() {
   for d in _value.dsiBoundaries() do yield d;
 }
 
-iter _array.boundaries(param tag : iterKind) where tag == iterKind.leader {
+iter _array.boundaries(param tag : iterKind) where tag == iterKind.standalone {
   forall d in _value.dsiBoundaries() do yield d;
-}
-
-iter _array.boundaries(param tag : iterKind, followThis) where tag == iterKind.follower {
-  yield followThis;
 }
 
 iter StencilArr.dsiBoundaries() {
   for i in dom.dist.targetLocDom {
-    for (D, N, L) in zip(locArr[i].Dest, locArr[i].Neighs, locArr[i].NeighDom) {
-      if (i + L != N) {
-        for el in locArr[i].myElems[D] do yield (el, L);
+    var LSA = locArr[i];
+    for (D, N, L) in zip(LSA.Dest, LSA.Neighs, LSA.NeighDom) {
+      const target = i + L;
+      const low = dom.dist.targetLocDom.low;
+      const high = dom.dist.targetLocDom.high;
+
+      if (!dom.dist.targetLocDom.member(target)) {
+        var translated : target.type;
+        for param r in 1..LSA.rank {
+          if target(r) < low(r) {
+            translated(r) = target(r);
+          } else if target(r) > high(r) {
+            translated(r) = target(r) - high(r);
+          } else {
+            translated(r) = 0;
+          }
+        }
+
+        for el in LSA.myElems[D] do yield (el, translated);
       }
     }
   }
 }
 
-iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.leader {
+//
+// Yields any 'fluff' boundary chunks in the StencilArr along with a global coordinate of
+// where the chunk lives relative to the core.
+//
+iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standalone {
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
-      for (D, N, L) in zip(locArr[i].Dest, locArr[i].Neighs, locArr[i].NeighDom) {
-        if (i + L != N) {
-          for el in locArr[i].myElems[D] do yield (el, L);
+      var LSA = locArr[i];
+      forall (D, N, L) in zip(LSA.Dest, LSA.Neighs, LSA.NeighDom) {
+        const target = i + L;
+        const low = dom.dist.targetLocDom.low;
+        const high = dom.dist.targetLocDom.high;
+        //
+        // if `LSA` has a cache section of the outermost fluff/boundary,
+        // then we should yield that so it is updated correctly. To do
+        // so, we need to translate the local offset to the global offset.
+        // A 2D example:
+        //
+        //         |-----|-----|
+        //  X=>|---|     |     |
+        //     |---|-----|-----|
+        //         |  A  |     |
+        //         |-----|-----|
+        //
+        // Locale-chunk `A` knows about its cache section `X` by the
+        // coordinates (-1, 1). However, `X` is globally on the (-1,0)
+        // face of the grid. The logic below performs the translation
+        // from the local coordinate to the global coordinate.
+        //
+
+        // If the target locale is outside the grid, it's a boundary chunk
+        if (!dom.dist.targetLocDom.member(target)) {
+          var translated : target.type;
+          for param r in 1..LSA.rank {
+            if target(r) < low(r) {
+              translated(r) = target(r);
+            } else if target(r) > high(r) {
+              translated(r) = target(r) - high(r);
+            } else {
+              translated(r) = 0;
+            }
+          }
+
+          // TODO: should we 'forall' over this instead?
+          for el in LSA.myElems[D] do yield (el, translated);
         }
       }
     }
   }
-}
-
-iter StencilArr.dsiBoundaries(param tag : iterKind, followThis) where tag == iterKind.follower {
-  yield followThis;
 }
 
 // wrapper
@@ -1292,7 +1325,7 @@ proc StencilArr.dsiUpdateFluff() {
   if zeroTuple(dom.fluff) then return;
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
-      for (S, D, N, L) in zip(locArr[i].Src, locArr[i].Dest, 
+      forall (S, D, N, L) in zip(locArr[i].Src, locArr[i].Dest, 
           locArr[i].Neighs, locArr[i].NeighDom) {
         if !zeroTuple(L) {
           if !dom.dist.targetLocDom.member(i+L) && dom.periodic then
