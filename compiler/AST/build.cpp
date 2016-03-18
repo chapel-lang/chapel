@@ -1110,12 +1110,13 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
   Expr* eltType = new NamedExpr("eltType",
                     new_Expr("'typeof'(%E)", reduceVar->copy()));
   if (!useThisGlobalOp)
-    iterRec->defPoint->insertBefore(new_Expr("'move'(%S, 'new'(%E(%E)))",
-                                             globalOp, reduceOp, eltType));
+    iterRec->defPoint->insertBefore("'move'(%S, 'new'(%E(%E)))",
+                                    globalOp, reduceOp, eltType);
   // reduceVar = globalOp.generate(); delete globalOp;
-  parLoop->insertAfter("'delete'(%S)", globalOp);
-  parLoop->insertAfter(new_Expr("'='(%E,.(%S, 'generate')())",
-                                reduceVar->copy(), globalOp));
+  parLoop->insertAfter("'delete'(%S)",
+                       globalOp);
+  parLoop->insertAfter("'='(%E,.(%S, 'generate')())",
+                       reduceVar->copy(), globalOp);
 }
 
 // Setup for forall intents
@@ -2218,8 +2219,26 @@ buildFunctionDecl(FnSymbol*   fn,
   }
   else
   {
-    // Looks like this flag is redundant with FLAG_EXTERN. <hilde>
-    fn->addFlag(FLAG_FUNCTION_PROTOTYPE);
+    if (!fn->hasFlag(FLAG_EXTERN)) {
+      //
+      // Chapel doesn't really support procedures with no-op bodies (a
+      // semicolon only).  Doing so is likely to cause confusion for C
+      // programmers who will think of it as a prototype, but we don't
+      // support prototypes, so require such programmers to type the
+      // empty body instead.  This is consistent with the current draft
+      // of the spec as well.
+      //
+      USR_FATAL(fn, "no-op procedures are only legal for extern functions");
+      //
+      // this is a way to make this branch robust to downstream passes
+      // if we got past this USR_FATAL for any reason or decide we
+      // want to support this case -- it changes the NULL pointer that
+      // is the body the parser created into a no-op body.
+      //
+      //
+      fn->insertAtTail(buildChapelStmt(new BlockStmt()));
+    }
+
   }
 
   fn->doc = docs;

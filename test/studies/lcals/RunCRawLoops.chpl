@@ -280,16 +280,20 @@ module RunCRawLoops {
             for isamp in 0..#num_samples {
               for ip in 0..#len {
                 var i1, j1, i2, j2: int;
-                i1 = p[ip,0]: int;
-                j1 = p[ip,1]: int;
+                // These casts to int(32) overflow and behave differently
+                // than if they were cast to default sized int (int(64)).
+                // Cast to int(32) to maintain the behavior of the C
+                // reference version.
+                i1 = p[ip,0]: int(32);
+                j1 = p[ip,1]: int(32);
                 i1 &= 64-1;
                 j1 &= 64-1;
                 p[ip,2] += b[overIndexMapper(j1,i1)];
                 p[ip,3] += c[overIndexMapper(j1,i1)];
                 p[ip,0] += p[ip,2];
                 p[ip,1] += p[ip,3];
-                i2 = p[ip,0]: int;
-                j2 = p[ip,1]: int;
+                i2 = p[ip,0]: int(32);
+                j2 = p[ip,1]: int(32);
                 i2 &= 64-1;
                 j2 &= 64-1;
                 p[ip,0] += y[i2+32];

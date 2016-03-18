@@ -4,22 +4,15 @@ module LCALSDataTypes {
 
   class vector {
     type eltType;
-    var D = {0..-1};
-    var A: [D] eltType;
+    var A: [0..-1] eltType;
     proc this(i: int) ref {
       return A[i];
     }
     proc push_back(e: eltType) {
       A.push_back(e);
     }
-    proc size() {
+    proc numElements {
       return A.numElements;
-    }
-    proc resize(size: int) {
-      D = {0..#size};
-    }
-    proc count(val: eltType) {
-      return A.count(val);
     }
     iter these() {
       for a in A do yield a;
@@ -46,38 +39,21 @@ module LCALSDataTypes {
 
     var loop_weights: [weight_group_dom] real;
 
-    var num_loops_run: [loop_variant_dom] vector(int);
-    var tot_time: [loop_variant_dom] vector(real);
-    var fom_rel: [loop_variant_dom] vector(real);
-    var fom_rate: [loop_variant_dom] vector(real);
-
     var cache_flush_data_len: int;
     var cache_flush_data_dom: domain(1);
     var cache_flush_data: [cache_flush_data_dom] real;
     var cache_flush_data_sum: real;
 
-    var loop_test_stats_dom: domain(string);
-    var loop_test_stats: [loop_test_stats_dom] [loop_kernel_dom] LoopStat;
+    var loop_test_stats: [loop_variant_dom] [loop_kernel_dom] LoopStat;
 
-    proc getLoopStats(loop_variant_name: string) {
-      return loop_test_stats[loop_variant_name];
+    proc getLoopStats(loop_variant: LoopVariantID) {
+      return loop_test_stats[loop_variant];
     }
-    proc addLoopStats(name: string) {
-      loop_test_stats_dom += name;
-    }
+
     proc ~LoopSuiteRunInfo() {
       if ref_loop_stat != nil then delete ref_loop_stat;
 
-      for nlr in num_loops_run do
-        if nlr != nil then delete nlr;
-      for tt in tot_time do
-        if tt != nil then delete tt;
-      for fr in fom_rel do
-        if fr != nil then delete fr;
-      for fr in fom_rate do
-        if fr != nil then delete fr;
-
-      for idx in loop_test_stats_dom {
+      for idx in loop_variant_dom {
         for stat in loop_test_stats[idx] do
           if stat != nil then delete stat;
       }
@@ -104,12 +80,10 @@ module LCALSDataTypes {
     var loop_chksum: [loop_length_dom] real;
 
     proc LoopStat() {
-      loop_is_run = false;
-      loop_weight = 0.0;
-
       for i in loop_length_dom do
         loop_run_time[i] = new vector(real);
     }
+
     proc ~LoopStat() {
       for lrt in loop_run_time do
         if lrt != nil then delete lrt;
