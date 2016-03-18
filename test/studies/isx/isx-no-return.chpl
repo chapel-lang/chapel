@@ -403,7 +403,7 @@ proc printTimingData(units) {
   }
 
   writeln();
-  writeln("averages across ", units, " of min across trials:");
+  writeln("averages across ", units, " of min across trials (min..max):");
   if useSubTimers {
     printTimingStats(inputTime, "input");
     printTimingStats(bucketCountTime, "bucket count");
