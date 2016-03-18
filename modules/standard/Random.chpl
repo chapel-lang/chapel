@@ -1847,7 +1847,7 @@ module Random {
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {
-      param multiplier = if resultType == complex then 2 else 1;
+      param multiplier = 1;
       const ZD = computeZeroBasedDomain(D);
       const innerRange = followThis(ZD.rank);
       for outer in outer(followThis) {
