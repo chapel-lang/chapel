@@ -1,0 +1,1 @@
+noOpBody.chpl:1: error: no-op procedures are only legal for extern functions
