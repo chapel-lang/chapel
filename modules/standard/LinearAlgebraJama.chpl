@@ -125,7 +125,7 @@ by other parties, and makes no guarantees, expressed or implied, about its quali
 reliability, or any other characteristic. 
 
 */
-module Jama {
+module LinearAlgebraJama {
 
 use Random;
 use Math;
@@ -305,15 +305,15 @@ class CholeskyDecomposition {
       var X = B.getArrayCopy();
       var nx = B.getColumnDimension();
       const nxrng = {1..nx};
-      const krng = {1..k};
+      const krng = {1..n};
 
            // Solve L*Y = B;
            //for (int k = 0; k < n; k++) {
-           for k in 1..n {
+           for k in krng {
              //for (int j = 0; j < nx; j++) {
              for j in nxrng {
                 //for (int i = 0; i < k ; i++) {
-                for i in krng {
+                for i in 1..k {
                     X[k,j] -= X[i,j]*L[k,i];
                 }
                 X[k,j] /= L[k,k];

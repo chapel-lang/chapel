@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-use Jama;
+use LinearAlgebraJama;
 use Math;
 
 /**
