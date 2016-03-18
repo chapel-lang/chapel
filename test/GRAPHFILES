@@ -40,7 +40,6 @@ studies/shootout/regex-dna/regexdna.graph
 studies/shootout/reverse-complement/revcomp.graph
 npb/ep/ep-b.graph
 npb/ft/ft-a.graph
-npb/is/is.graph
 studies/parboil/BFS/bfs.graph
 studies/parboil/histo/histo.graph
 studies/parboil/SAD/sad.graph
@@ -127,7 +126,6 @@ npb/ep/ep.graph
 npb/ep/ep-b.graph
 npb/ft/ft.graph
 npb/ft/ft-a.graph
-npb/is/is.graph
 # suite: Array/Domain performance
 arrays/diten/arrayPerformance-2d.graph
 arrays/diten/arrayPerformance-1d.graph
