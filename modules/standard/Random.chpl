@@ -313,8 +313,21 @@ module Random {
         compilerError("NPBRandomStream(eltType=", eltType:string, 
                       ") can only be used to fill arrays of ", eltType:string);
       }
-        
-      pragma "no doc"
+
+      /*
+         Returns an iterable expression for generating
+         D.numIndices random numbers. The RNG state will
+         be immediately advanced by D.numIndices before
+         this function yields any values.
+
+         The iterable expression can be usefully used
+         in a parallel context, whether standalone or
+         zippered.
+
+         :arg D: a domain
+         :arg resultType: the type of number to yield
+         :return: an iterable expression yielding random resultType values
+       */
       proc iterate(D: domain, type resultType=real) {
         if parSafe then
           NPBRandomStreamPrivate_lock$ = true;
@@ -459,6 +472,7 @@ module Random {
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                          start: int(64), param tag: iterKind)
           where tag == iterKind.leader {
+      // forward to the domain D's iterator
       for block in D._value.these(tag=iterKind.leader) do
         yield block;
     }
@@ -616,9 +630,9 @@ module Random {
       }
 
       pragma "no doc"
-      proc PCGRandomStreamPrivate_getNext_noLock() {
+      proc PCGRandomStreamPrivate_getNext_noLock(type resultType=eltType) {
         PCGRandomStreamPrivate_count += 1;
-        return randlc(eltType, PCGRandomStreamPrivate_rngs);
+        return randlc(resultType, PCGRandomStreamPrivate_rngs);
       }
       pragma "no doc"
       proc PCGRandomStreamPrivate_getNext_noLock(min:eltType, max:eltType) {
@@ -639,10 +653,10 @@ module Random {
         Reals are between 0 and 1; integers are in the range of the integer.
         :returns: The next value in the random stream as type :type:`eltType`.
        */
-      proc getNext(): eltType {
+      proc getNext(type resultType=eltType): resultType {
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
-        const result = PCGRandomStreamPrivate_getNext_noLock();
+        const result = PCGRandomStreamPrivate_getNext_noLock(resultType);
         if parSafe then
           PCGRandomStreamPrivate_lock$;
         return result;
@@ -760,9 +774,22 @@ module Random {
         compilerError("PCGRandomStream(eltType=", eltType:string, 
                       ") can only be used to fill arrays of ", eltType:string);
       }
-        
-      pragma "no doc"
-      proc iterate(D: domain, type resultType=real) {
+
+      /*
+         Returns an iterable expression for generating
+         D.numIndices random numbers. The RNG state will
+         be immediately advanced by D.numIndices before
+         this function yields any values.
+
+         The iterable expression can be usefully used
+         in a parallel context, whether standalone or
+         zippered.
+
+         :arg D: a domain
+         :arg resultType: the type of number to yield
+         :return: an iterable expression yielding random resultType values
+       */
+      proc iterate(D: domain, type resultType=eltType) {
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
         const start = PCGRandomStreamPrivate_count;
@@ -1530,22 +1557,15 @@ module Random {
       return acc_mult * state + acc_plus;
     }
 
-    // returns a random number in [0, 1)
-    // where the number is a multiple of 2**-53
+    // returns a random number in [0, 1]
+    // where the number is a multiple of 2**-64
     private inline
     proc randToReal64(x: uint(64)):real(64)
     {
-      //      return ldexp(x, -64); -> generates a number in [0, 1)
-      //                               and over-represents numbers > 2**53 ?
-      //                               under-represents numbers < 2**-11 ?
-      // Generates a number in [0,1)
-      // values < 2^-54 are not possible
-      const mask = 1:uint << 53 - 1;
-      const n = x & mask;
-      return ldexp(n, -53);
+      return ldexp(x, -64);
     }
-    // returns a random number in [min, max)
-    // by scaling a multiple of 2**-53 by (max-min)
+    // returns a random number in [min, max]
+    // by scaling a multiple of 2**-64 by (max-min)
     private inline
     proc randToReal64(x: uint(64), min:real(64), max:real(64)):real(64)
     {
@@ -1553,15 +1573,12 @@ module Random {
       return (max-min)*normalized + min;
     }
 
-    // returns a random number in [0, 1)
+    // returns a random number in [0, 1]
     // where the number is a rounded multiple of 2**-24
     private inline
     proc randToReal32(x: uint(32))
     {
-      //return ldexp(x, -32);
-      const mask = 1:uint << 24 - 1;
-      const n = x & mask;
-      return ldexp(n, -24);
+      return ldexp(x, -32);
     }
 
     // returns a random number in [min, max)
@@ -1635,6 +1652,18 @@ module Random {
     // Wrapper that takes a result type
     private inline
     proc randlc(type resultType, ref states) {
+
+      param numGenForResultType = numGenerators(resultType);
+      param numGen = states.size;
+      if numGenForResultType > numGen then
+        compilerError("PCGRandomStream cannot produce " +
+                      resultType:string +
+                      " (requiring " +
+                      (32*numGenForResultType):string +
+                      " bits) from a stream configured for " +
+                      (32*numGen):string +
+                      " bits of output");
+
       if resultType == complex(128) {
         return (randToReal64(rand64_1(states)),
                 randToReal64(rand64_2(states))):complex(128);
@@ -1869,16 +1898,17 @@ module Random {
   }
 
   /*
+
     Models a stream of pseudorandom numbers.  This class is defined for
-    documentation purposes and should not be instantiated. See :class:`PCGRandom` and
-    :class:`NPBRandom` for details on the PRNG used. To create a random stream,
-    use :proc:`makeRandomStream`.
+    documentation purposes and should not be instantiated. See
+    :module:`PCGRandom` and :module:`NPBRandom` for RNGs that can be
+    instantiated. To create a random stream, use :proc:`makeRandomStream`.
+
   */
   class RandomStreamInterface {
     /*
       Specifies the type of value generated by the RandomStream.
-      Currently, only `real(64)`, `imag(64)`, and `complex(128)` are
-      supported.
+      Not all RandomStream implementations support all types.
     */
     type eltType = real(64);
 
@@ -1893,8 +1923,8 @@ module Random {
     param parSafe: bool = true;
 
     /*
-      The seed value for the PRNG.  It must be an odd integer in the
-      range (1, 2**46).
+      The seed value for the PRNG.  It may have constraints upon
+      legal values depending on the specific RNG.
     */
     const seed: int(64);
 
@@ -1904,12 +1934,9 @@ module Random {
       :returns: The next value in the random stream as type :type:`eltType`.
      */
     proc getNext(): eltType {
-      if parSafe then
-        RandomStreamPrivate_lock$ = true;
-      const result = RandomStreamPrivate_getNext_noLock();
-      if parSafe then
-        RandomStreamPrivate_lock$;
-      return result;
+      compilerError("RandomStreamInterface.getNext called");
+      var x:eltType;
+      return x;
     }
 
     /*
@@ -1920,13 +1947,7 @@ module Random {
      */
 
     proc skipToNth(n: integral) {
-      if n <= 0 then
-        halt("RandomStream.skipToNth(n) called with non-positive 'n' value", n);
-      if parSafe then
-        RandomStreamPrivate_lock$ = true;
-      RandomStreamPrivate_skipToNth_noLock(n);
-      if parSafe then
-        RandomStreamPrivate_lock$;
+      compilerError("RandomStreamInterface.skipToNth called");
     }
 
     /*
@@ -1941,15 +1962,7 @@ module Random {
     */
 
     proc getNth(n: integral): eltType {
-      if (n <= 0) then 
-        halt("RandomStream.getNth(n) called with non-positive 'n' value", n);
-      if parSafe then
-        RandomStreamPrivate_lock$ = true;
-      RandomStreamPrivate_skipToNth_noLock(n);
-      const result = RandomStreamPrivate_getNext_noLock();
-      if parSafe then
-        RandomStreamPrivate_lock$;
-      return result;
+      compilerError("RandomStreamInterface.getNth called");
     }
 
     /*
@@ -1963,31 +1976,35 @@ module Random {
       :type arr: [] :type:`eltType`
     */
     proc fillRandom(arr: [] eltType) {
-      forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
-        x = r;
+      compilerError("RandomStreamInterface.fillRandom called");
     }
 
     pragma "no doc"
     proc fillRandom(arr: []) {
-      compilerError("RandomStream(eltType=", eltType:string, 
-                    ") can only be used to fill arrays of ", eltType:string);
+      compilerError("RandomStreamInterface.fillRandom called");
     }
-      
-    pragma "no doc"
-    proc iterate(D: domain, type resultType=real) {
-      if parSafe then
-        RandomStreamPrivate_lock$ = true;
-      const start = RandomStreamPrivate_count;
-      RandomStreamPrivate_count += D.numIndices.safeCast(int(64));
-      RandomStreamPrivate_skipToNth_noLock(RandomStreamPrivate_count);
-      if parSafe then
-        RandomStreamPrivate_lock$;
-      return RandomPrivate_iterate(resultType, D, seed, start);
+
+    /*
+       Returns an iterable expression for generating
+       D.numIndices random numbers. The RNG state will
+       be immediately advanced by D.numIndices before
+       this function yields any values.
+
+       The iterable expression can be usefully used
+       in a parallel context, whether standalone or
+       zippered.
+
+       :arg D: a domain
+       :arg resultType: the type of number to yield
+       :return: an iterable expression yielding random resultType values
+     */
+    proc iterate(D: domain, type resultType=eltType) {
+      compilerError("RandomStreamInterface.iterate called");
     }
 
     pragma "no doc"
     proc writeThis(f) {
-      f <~> "RandomStream(eltType=";
+      f <~> "RandomStreamInterface(eltType=";
       f <~> eltType:string;
       f <~> ", parSafe=";
       f <~> parSafe;
@@ -1995,20 +2012,6 @@ module Random {
       f <~> seed;
       f <~> ")";
     }
-
-    ///////////////////////////////////////////////////////// CLASS PRIVATE //
-    //
-    // It is the intent that once Chapel supports the notion of
-    // 'private', everything in this class declared below this line will
-    // be made private to this class.
-    //
-
-    pragma "no doc"
-    var RandomStreamPrivate_lock$: sync bool;
-    pragma "no doc"
-    var RandomStreamPrivate_cursor: real = seed;
-    pragma "no doc"
-    var RandomStreamPrivate_count: int(64) = 1;
   }
 
   /*
