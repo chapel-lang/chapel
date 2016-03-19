@@ -21,8 +21,6 @@
 
 The Jama Chapel module is a port of the JAMA matrix library
 
-port provided by ct(.)clmsn(at)gmail
-
 http://math.nist.gov/javanumerics/jama/
 
 JAMA is a basic linear algebra package for Java. This is a port of Jama to Chapel.
@@ -153,47 +151,37 @@ proc hypot(a, b:real) {
 }
 
 
-   /** Cholesky Decomposition.
-   <P>
+/*
+   Cholesky Decomposition.
+
    For a symmetric, positive definite matrix A, the Cholesky decomposition
    is an lower triangular matrix L so that A = L*L'.
-   <P>
+   
    If the matrix is not symmetric or positive definite, the constructor
    returns a partial decomposition and sets an internal flag that may
    be queried by the isSPD() method.
-   */
+
+*/
 
 class CholeskyDecomposition {
 
-/* ------------------------
-   Class variables
- * ------------------------ */
-
-   /** Array for internal storage of decomposition.
-   @serial internal array storage.
-   */
+   pragma "no doc"
    var lDom = {0..1,0..1};
+
+   /* Array for internal storage of decomposition. internal array storage. */
    var L : [lDom] real;
 
-   /** Row and column dimension (square matrix).
-   @serial matrix dimension.
-   */
+   /* Row and column dimension (square matrix). */
    var n:int;
 
-   /** Symmetric and positive definite flag.
-   @serial is symmetric and positive definite flag.
+   /* Symmetric and positive definite flag.
    */
    var isspd:bool;
 
-/* ------------------------
-   Constructor
- * ------------------------ */
-
-   /** Cholesky algorithm for symmetric and positive definite matrix.
+   /* Cholesky algorithm for symmetric and positive definite matrix.
        Structure to access L and isspd flag.
-   @param  Arg   Square, symmetric matrix.
+       Arg a Square, symmetric matrix.
    */
-
    proc CholeskyDecomposition (Arg:Matrix) {
 
 
@@ -231,66 +219,25 @@ class CholeskyDecomposition {
       }
    }
 
-/* ------------------------
-   Temporary, experimental code.
- * ------------------------ *\
-
-   \** Right Triangular Cholesky Decomposition.
-   <P>
-   For a symmetric, positive definite matrix A, the Right Cholesky
-   decomposition is an upper triangular matrix R so that A = R'*R.
-   This constructor computes R with the Fortran inspired column oriented
-   algorithm used in LINPACK and MATLAB.  In Java, we suspect a row oriented,
-   lower triangular decomposition is faster.  We have temporarily included
-   this constructor here until timing experiments confirm this suspicion.
-   *\
-
-   \** Array for internal storage of right triangular decomposition. **\
-   private transient double[,] R;
-
-   \** Cholesky algorithm for symmetric and positive definite matrix.
-   @param  A           Square, symmetric matrix.
-   @param  rightflag   Actual value ignored.
-   @return             Structure to access R and isspd flag.
-   *\
-
-   CholeskyDecomposition (Matrix Arg, int rightflag)
-
-   \** Return upper triangular factor.
-   @return     R
-   *\
-
-   Matrix getR ()
-
-\* ------------------------
-   End of temporary code.
- * ------------------------ */
-
-/* ------------------------
-   Public Methods
- * ------------------------ */
-
-   /** Is the matrix symmetric and positive definite?
-   @return     true if A is symmetric and positive definite.
+   /* Is the matrix symmetric and positive definite?
+   return     true if A is symmetric and positive definite.
    */
 
    proc isSPD () {
       return isspd;
    }
 
-   /** Return triangular factor.
-   @return     L
+   /* Return triangular factor.
+   return     L
    */
 
    proc getL () {
       return new Matrix(L,n,n);
    }
 
-   /** Solve A*X = B
-   @param  B   A Matrix with as many rows as A and any number of columns.
-   @return     X so that L*L'*X = B
-   @exception  IllegalArgumentException  Matrix row dimensions must agree.
-   @exception  RuntimeException  Matrix is not symmetric positive definite.
+   /* Solve A*X = B
+   param  B   A Matrix with as many rows as A and any number of columns.
+   return     X so that L*L'*X = B
    */
 
    proc solve (B:Matrix) {
@@ -337,13 +284,13 @@ class CholeskyDecomposition {
 
 }
 
-/** Eigenvalues and eigenvectors of a real matrix. 
-<P>
+/* Eigenvalues and eigenvectors of a real matrix. 
+
     If A is symmetric, then A = V*D*V' where the eigenvalue matrix D is
     diagonal and the eigenvector matrix V is orthogonal.
     I.e. A = V.times(D.times(V.transpose())) and 
     V.times(V.transpose()) equals the identity matrix.
-<P>
+
     If A is not symmetric, then the eigenvalue matrix D is block diagonal
     with the real eigenvalues in 1-by-1 blocks and any complex eigenvalues,
     lambda + i*mu, in 2-by-2 blocks, [lambda, mu; -mu, lambda].  The
@@ -351,61 +298,52 @@ class CholeskyDecomposition {
     i.e. A.times(V) equals V.times(D).  The matrix V may be badly
     conditioned, or even singular, so the validity of the equation
     A = V*D*inverse(V) depends upon V.cond().
-**/
+*/
 
 class EigenvalueDecomposition {
 
-/* ------------------------
-   Class variables
- * ------------------------ */
-
-   /** Row and column dimension (square matrix).
-   @serial matrix dimension.
+   /* Row and column dimension (square matrix).
    */
    var n:int;
 
-   /** Symmetry flag.
-   @serial internal symmetry flag.
+   /* Symmetry flag.
+   internal symmetry flag.
    */
    var issymmetric:bool;
 
-   /** Arrays for internal storage of eigenvalues.
-   @serial internal storage of eigenvalues.
+   /* Arrays for internal storage of eigenvalues.
+   internal storage of eigenvalues.
    */
    var dDom, eDom = {1..1};
    var d: [dDom] real;
    var e: [eDom] real;
 
-   /** Array for internal storage of eigenvectors.
-   @serial internal storage of eigenvectors.
+   /* Array for internal storage of eigenvectors.
+   internal storage of eigenvectors.
    */
    var vDom = {1..1, 1..1};
    var V : [vDom] real;
 
-   /** Array for internal storage of nonsymmetric Hessenberg form.
-   @serial internal storage of nonsymmetric Hessenberg form.
+   /* Array for internal storage of nonsymmetric Hessenberg form.
+   internal storage of nonsymmetric Hessenberg form.
    */
    var hDom = {1..1,1..1};
    var H : [hDom] real; 
 
-   /** Working storage for nonsymmetric algorithm.
-   @serial working storage for nonsymmetric algorithm.
+   /* Working storage for nonsymmetric algorithm.
+   working storage for nonsymmetric algorithm.
    */
    var ortDom = {1..1};
    var ort : [ortDom] real;
 
-/* ------------------------
-   Private Methods
- * ------------------------ */
-
-   // Symmetric Householder reduction to tridiagonal form.
+   /* Symmetric Householder reduction to tridiagonal form. */
 
    proc tred2 () {
 
-   //  This is derived from the Algol procedures tred2 by
-   //  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
-   //  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding
-   //  Fortran subroutine in EISPACK.
+   /*  This is derived from the Algol procedures tred2 by
+     Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
+     Auto. Comp., Vol.ii-Linear Algebra, and the corresponding
+     Fortran subroutine in EISPACK. */
 
       for j in d.domain {
          d[j] = V[n-1,j];
@@ -533,7 +471,7 @@ class EigenvalueDecomposition {
       e[1] = 0.0;
    } 
 
-   // Symmetric tridiagonal QL algorithm.
+   /* Symmetric tridiagonal QL algorithm. */
    
    proc tql2 () {
 
@@ -660,7 +598,7 @@ class EigenvalueDecomposition {
       }
    }
 
-   // Nonsymmetric reduction to Hessenberg form.
+   /* Nonsymmetric reduction to Hessenberg form. */
 
    proc orthes () {
    
@@ -756,11 +694,9 @@ class EigenvalueDecomposition {
       }
    }
 
-
-   // Complex scalar division.
-
    var cdivr, cdivi : real;
 
+   /* Complex scalar division. */
    proc cdiv(xr, xi, yr, yi:real) {
       var r,d : real;
       if (abs(yr) > abs(yi)) {
@@ -776,7 +712,7 @@ class EigenvalueDecomposition {
       }
    }
 
-   // Nonsymmetric reduction from Hessenberg to real Schur form.
+   /* Nonsymmetric reduction from Hessenberg to real Schur form. */
 
    proc hqr2 () {
    
@@ -1223,13 +1159,8 @@ class EigenvalueDecomposition {
    }
 
 
-/* ------------------------
-   Constructor
- * ------------------------ */
-
-   /** Check for symmetry, then construct the eigenvalue decomposition
+   /* Check for symmetry, then construct the eigenvalue decomposition
        Structure to access D and V.
-   @param Arg    Square matrix
    */
 
    proc EigenvalueDecomposition (Arg:Matrix) {
@@ -1277,36 +1208,30 @@ class EigenvalueDecomposition {
       }
    }
 
-/* ------------------------
-   Public Methods
- * ------------------------ */
-
-   /** Return the eigenvector matrix
-   @return     V
+   /* Return the eigenvector matrix
    */
 
    proc getV () : Matrix {
       return new Matrix(V,n,n);
    }
 
-   /** Return the real parts of the eigenvalues
-   @return     real(diag(D))
+   /* Return the real parts of the eigenvalues
+   real(diag(D))
    */
 
    proc getRealEigenvalues () {
       return d;
    }
 
-   /** Return the imaginary parts of the eigenvalues
-   @return     imag(diag(D))
+   /* Return the imaginary parts of the eigenvalues
+   imag(diag(D))
    */
 
    proc getImagEigenvalues () {
       return e;
    }
 
-   /** Return the block diagonal eigenvalue matrix
-   @return     D
+   /* Return the block diagonal eigenvalue matrix
    */
 
    proc getD () : Matrix {
@@ -1329,51 +1254,43 @@ class EigenvalueDecomposition {
 
 }
 
-   /** LU Decomposition.
-   <P>
+/* 
+   LU Decomposition.
+
    For an m-by-n matrix A with m >= n, the LU decomposition is an m-by-n
    unit lower triangular matrix L, an n-by-n upper triangular matrix U,
    and a permutation vector piv of length m so that A(piv,:) = L*U.
    If m < n, then L is m-by-m and U is m-by-n.
-   <P>
+
    The LU decompostion with pivoting always exists, even if the matrix is
    singular, so the constructor will never fail.  The primary use of the
    LU decomposition is in the solution of square systems of simultaneous
    linear equations.  This will fail if isNonsingular() returns false.
-   */
+*/
 
 class LUDecomposition {
 
-/* ------------------------
-   Class variables
- * ------------------------ */
-
-   /** Array for internal storage of decomposition.
-   @serial internal array storage.
+   /* Array for internal storage of decomposition.
    */
    var luDom = {1..1, 1..1};
    var LU : [luDom] real;
 
-   /** Row and column dimensions, and pivot sign.
-   @serial column dimension.
-   @serial row dimension.
-   @serial pivot sign.
+   /* Row and column dimensions, and pivot sign.
+   column dimension.
+   row dimension.
+   pivot sign.
    */
    var m, n, pivsign : int;
 
-   /** Internal storage of pivot vector.
-   @serial pivot vector.
+   /* Internal storage of pivot vector.
+   pivot vector.
    */
    var pivDom = {1..1};
    var piv : [pivDom] int;
 
-/* ------------------------
-   Constructor
- * ------------------------ */
-
-   /** LU Decomposition
+   /* LU Decomposition
        Structure to access L, U and piv.
-   @param  A Rectangular matrix
+   A Rectangular matrix
    */
 
    proc LUDecomposition (A:Matrix) {
@@ -1451,36 +1368,9 @@ class LUDecomposition {
       }
    }
 
-/* ------------------------
-   Temporary, experimental code.
-   ------------------------ *\
-
-   \** LU Decomposition, computed by Gaussian elimination.
-   <P>
-   This constructor computes L and U with the "daxpy"-based elimination
-   algorithm used in LINPACK and MATLAB.  In Java, we suspect the dot-product,
-   Crout algorithm will be faster.  We have temporarily included this
-   constructor until timing experiments confirm this suspicion.
-   <P>
-   @param  A             Rectangular matrix
-   @param  linpackflag   Use Gaussian elimination.  Actual value ignored.
-   @return               Structure to access L, U and piv.
-   *\
-
-   LUDecomposition (Matrix A, int linpackflag) 
-
-\* ------------------------
-   End of temporary code.
- * ------------------------ */
-
-/* ------------------------
-   Public Methods
- * ------------------------ */
-
-   /** Is the matrix nonsingular?
-   @return     true if U, and hence A, is nonsingular.
+   /* Is the matrix nonsingular?
+       true if U, and hence A, is nonsingular.
    */
-
    proc isNonsingular () {
       for j in 1..n {
          if (LU[j,j] == 0) {
@@ -1490,8 +1380,7 @@ class LUDecomposition {
       return true;
    }
 
-   /** Return lower triangular factor
-   @return     L
+   /* Return lower triangular factor
    */
 
    proc getL () {
@@ -1509,8 +1398,7 @@ class LUDecomposition {
       return X;
    }
 
-   /** Return upper triangular factor
-   @return     U
+   /* Return upper triangular factor
    */
 
    proc getU () {
@@ -1522,25 +1410,20 @@ class LUDecomposition {
             } else {
                U[i,j] = 0.0;
             }
-         //}
       }
       return X;
    }
 
-   /** Return pivot permutation vector
-   @return     piv
+   /* Return pivot permutation vector
    */
-
    proc getPivot () {
       var p : [1..m] int;
       p = piv;
       return p;
    }
 
-   /** Return pivot permutation vector as a one-dimensional double array
-   @return     (double) piv
+   /* Return pivot permutation vector as a one-dimensional double array
    */
-
    proc getDoublePivot () {
       var vals : [1..m] real;
       for i in 1..m {
@@ -1549,9 +1432,7 @@ class LUDecomposition {
       return vals;
    }
 
-   /** Determinant
-   @return     det(A)
-   @exception  IllegalArgumentException  Matrix must be square
+   /* Determinant
    */
 
    proc det () {
@@ -1565,11 +1446,9 @@ class LUDecomposition {
       return d;
    }
 
-   /** Solve A*X = B
-   @param  B   A Matrix with as many rows as A and any number of columns.
-   @return     X so that L*U*X = B(piv,:)
-   @exception  IllegalArgumentException Matrix row dimensions must agree.
-   @exception  RuntimeException  Matrix is singular.
+   /* Solve A*X = B
+   	B,   A Matrix with as many rows as A and any number of columns.
+   	X so that L*U*X = B(piv,:)
    */
 
    proc solve (B:Matrix) {
@@ -1606,45 +1485,10 @@ class LUDecomposition {
 
 }
 
-/**
-   Jama = Java Matrix class.
-<P>
-   The Java Matrix Class provides the fundamental operations of numerical
-   linear algebra.  Various constructors create Matrices from two dimensional
-   arrays of double precision floating point numbers.  Various "gets" and
-   "sets" provide access to submatrices and matrix elements.  Several methods 
-   implement basic matrix arithmetic, including matrix addition and
-   multiplication, matrix norms, and element-by-element array operations.
-   Methods for reading and printing matrices are also included.  All the
-   operations in this version of the Matrix Class involve real matrices.
-   Complex matrices may be handled in a future version.
-<P>
-   Five fundamental matrix decompositions, which consist of pairs or triples
-   of matrices, permutation vectors, and the like, produce results in five
-   decomposition classes.  These decompositions are accessed by the Matrix
-   class to compute solutions of simultaneous linear equations, determinants,
-   inverses and other matrix functions.  The five decompositions are:
-<P><UL>
-   <LI>Cholesky Decomposition of symmetric, positive definite matrices.
-   <LI>LU Decomposition of rectangular matrices.
-   <LI>QR Decomposition of rectangular matrices.
-   <LI>Singular Value Decomposition of rectangular matrices.
-   <LI>Eigenvalue Decomposition of both symmetric and nonsymmetric square matrices.
-</UL>
-<DL>
-<DT><B>Example of use:</B></DT>
-<P>
-<DD>Solve a linear system A x = b and compute the residual norm, ||b - A x||.
-</DL>
-
-@author The MathWorks, Inc. and the National Institute of Standards and Technology.
-@version 5 August 1998
-*/
-
-/** Generate identity matrix
-@param m    Number of rows.
-@param n    Number of colums.
-@return     An m-by-n matrix with ones on the diagonal and zeros elsewhere.
+/* Generate identity matrix
+	m    Number of rows.
+	n    Number of colums.
+	returns An m-by-n matrix with ones on the diagonal and zeros elsewhere.
 */
 
 proc identity (m:int, n:int) {
@@ -1656,32 +1500,56 @@ proc identity (m:int, n:int) {
    return A;
 }
 
+/*
+   Jama = Java Matrix class.
+
+   The Java Matrix Class provides the fundamental operations of numerical
+   linear algebra.  Various constructors create Matrices from two dimensional
+   arrays of double precision floating point numbers.  Various "gets" and
+   "sets" provide access to submatrices and matrix elements.  Several methods 
+   implement basic matrix arithmetic, including matrix addition and
+   multiplication, matrix norms, and element-by-element array operations.
+   Methods for reading and printing matrices are also included.  All the
+   operations in this version of the Matrix Class involve real matrices.
+   Complex matrices may be handled in a future version.
+
+   Five fundamental matrix decompositions, which consist of pairs or triples
+   of matrices, permutation vectors, and the like, produce results in five
+   decomposition classes.  These decompositions are accessed by the Matrix
+   class to compute solutions of simultaneous linear equations, determinants,
+   inverses and other matrix functions.  The five decompositions are:
+
+   Cholesky Decomposition of symmetric, positive definite matrices.
+   LU Decomposition of rectangular matrices.
+   QR Decomposition of rectangular matrices.
+   Singular Value Decomposition of rectangular matrices.
+   Eigenvalue Decomposition of both symmetric and nonsymmetric square matrices.
+
+Example of use:
+
+Solve a linear system A x = b and compute the residual norm, ||b - A x||.
+
+
+author The MathWorks, Inc. and the National Institute of Standards and Technology.
+version 5 August 1998
+*/
 
 class Matrix { 
 
-/* ------------------------
-   Class variables
- * ------------------------ */
-
-   /** Array for internal storage of elements.
-   @serial internal array storage.
+   /* Array for internal storage of elements.
    */
    var aDom = {1..1, 1..1};
    var A : [aDom] real;
 
-   /** Row and column dimensions.
-   @serial row dimension.
-   @serial column dimension.
+   /* Row and column dimensions.
+	row dimension.
+   	column dimension.
    */
    var m, n : int;
 
-/* ------------------------
-   Constructors
- * ------------------------ */
-
-   /** Construct an m-by-n matrix of zeros. 
-   @param m    Number of rows.
-   @param n    Number of colums.
+   /* Construct an m-by-n matrix of zeros. 
+   	m    Number of rows.
+   	n    Number of colums.
    */
 
    proc Matrix (m:int, n: int) {
@@ -1690,10 +1558,10 @@ class Matrix {
       aDom = {1..m, 1..n};
    }
 
-   /** Construct an m-by-n constant matrix.
-   @param m    Number of rows.
-   @param n    Number of colums.
-   @param s    Fill the matrix with this scalar value.
+   /* Construct an m-by-n constant matrix.
+   	m    Number of rows.
+   	n    Number of colums.
+   	s    Fill the matrix with this scalar value.
    */
 
    proc Matrix (m:int, n:int, s:real) {
@@ -1705,10 +1573,8 @@ class Matrix {
       }
    }
 
-   /** Construct a matrix from a 2-D array.
-   @param A    Two-dimensional array of doubles.
-   @exception  IllegalArgumentException All rows must have the same length
-   @see        #constructWithCopy
+   /* Construct a matrix from a 2-D array.
+   	A    Two-dimensional array of doubles.
    */
 
    proc Matrix (A:[?aDom] real) {
@@ -1737,10 +1603,10 @@ class Matrix {
       }
    }
 
-   /** Construct a matrix quickly without checking arguments.
-   @param A    Two-dimensional array of doubles.
-   @param m    Number of rows.
-   @param n    Number of colums.
+   /* Construct a matrix quickly without checking arguments.
+   	A    Two-dimensional array of doubles.
+   	m    Number of rows.
+   	n    Number of colums.
    */
 
    proc Matrix (A:[?aDom] real, m:int, n:int) where aDom.rank == 2 {
@@ -1750,10 +1616,9 @@ class Matrix {
       this.n = n;
    }
 
-   /** Construct a matrix from a one-dimensional packed array
-   @param vals One-dimensional array of doubles, packed by columns (ala Fortran).
-   @param m    Number of rows.
-   @exception  IllegalArgumentException Array length must be a multiple of m.
+   /* Construct a matrix from a one-dimensional packed array
+   	vals One-dimensional array of doubles, packed by columns (ala Fortran).
+   	m    Number of rows.
    */
 
    proc Matrix (vals:[?valsDom] real, m:int) where valsDom.rank == 1 {
@@ -1767,13 +1632,8 @@ class Matrix {
       for (ij, val) in zip(revDom, vals) { A(ij(2), ij(1)) = val; }
    }
 
-/* ------------------------
-   Public Methods
- * ------------------------ */
-
-   /** Construct a matrix from a copy of a 2-D array.
-   @param A    Two-dimensional array of doubles.
-   @exception  IllegalArgumentException All rows must have the same length
+   /* Construct a matrix from a copy of a 2-D array.
+   	A    Two-dimensional array of doubles.
    */
 
    proc constructWithCopy(A : [?aDom] real) where aDom.rank == 2 {
@@ -1790,7 +1650,7 @@ class Matrix {
       return X;
    }
 
-   /** Make a deep copy of a matrix
+   /* Make a deep copy of a matrix
    */
 
    proc copy () {
@@ -1802,23 +1662,23 @@ class Matrix {
       return X;
    }
 
-   /** Clone the Matrix object.
+   /* Clone the Matrix object.
    */
 
    proc clone () {
       return this.copy();
    }
 
-   /** Access the internal two-dimensional array.
-   @return     Pointer to the two-dimensional array of matrix elements.
+   /* Access the internal two-dimensional array.
+   	Pointer to the two-dimensional array of matrix elements.
    */
 
    proc getArray () {
       return A;
    }
 
-   /** Copy the internal two-dimensional array.
-   @return     Two-dimensional array copy of matrix elements.
+   /* Copy the internal two-dimensional array.
+   	Two-dimensional array copy of matrix elements.
    */
 
    proc getArrayCopy () {
@@ -1827,8 +1687,8 @@ class Matrix {
       return C;
    }
 
-   /** Make a one-dimensional column packed copy of the internal array.
-   @return     Matrix elements packed in a one-dimensional array by columns.
+   /* Make a one-dimensional column packed copy of the internal array.
+   	Matrix elements packed in a one-dimensional array by columns.
    */
 
    proc getColumnPackedCopy () {
@@ -1839,8 +1699,8 @@ class Matrix {
       return vals;
    }
 
-   /** Make a one-dimensional row packed copy of the internal array.
-   @return     Matrix elements packed in a one-dimensional array by rows.
+   /* Make a one-dimensional row packed copy of the internal array.
+   	Matrix elements packed in a one-dimensional array by rows.
    */
 
    proc getRowPackedCopy () {
@@ -1851,40 +1711,38 @@ class Matrix {
       return vals;
    }
 
-   /** Get row dimension.
-   @return     m, the number of rows.
+   /* Get row dimension.
+   	m, the number of rows.
    */
 
    proc getRowDimension () {
       return m;
    }
 
-   /** Get column dimension.
-   @return     n, the number of columns.
+   /* Get column dimension.
+   	n, the number of columns.
    */
 
    proc getColumnDimension () {
       return n;
    }
 
-   /** Get a single element.
-   @param i    Row index.
-   @param j    Column index.
-   @return     A(i,j)
-   @exception  ArrayIndexOutOfBoundsException
+   /* Get a single element.
+   	i    Row index.
+   	j    Column index.
+   	return A(i,j)
    */
 
    proc get (i, j:int) {
       return A[i,j];
    }
 
-   /** Get a submatrix.
-   @param i0   Initial row index
-   @param i1   Final row index
-   @param j0   Initial column index
-   @param j1   Final column index
-   @return     A(i0:i1,j0:j1)
-   @exception  ArrayIndexOutOfBoundsException Submatrix indices
+   /* Get a submatrix.
+   	i0   Initial row index
+   	i1   Final row index
+   	j0   Initial column index
+   	j1   Final column index
+   	return     A(i0:i1,j0:j1)
    */
 
    proc getMatrix (i0:int, i1:int, j0:int, j1:int) {
@@ -1895,11 +1753,10 @@ class Matrix {
       return X;
    }
 
-   /** Get a submatrix.
-   @param r    Array of row indices.
-   @param c    Array of column indices.
-   @return     A(r(:),c(:))
-   @exception  ArrayIndexOutOfBoundsException Submatrix indices
+   /* Get a submatrix.
+   	r    Array of row indices.
+	c    Array of column indices.
+	return     A(r(:),c(:))
    */
 
    proc getMatrix (r:[?rDom] int, c:[?cDom] int) {
@@ -1911,12 +1768,11 @@ class Matrix {
       return X;
    }
 
-   /** Get a submatrix.
-   @param i0   Initial row index
-   @param i1   Final row index
-   @param c    Array of column indices.
-   @return     A(i0:i1,c(:))
-   @exception  ArrayIndexOutOfBoundsException Submatrix indices
+   /* Get a submatrix.
+   	i0   Initial row index
+   	i1   Final row index
+   	c    Array of column indices.
+   	return     A(i0:i1,c(:))
    */
 
    proc getMatrix (i0:int, i1:int, c:[?cDom] int) {
@@ -1928,12 +1784,11 @@ class Matrix {
       return X;
    }
 
-   /** Get a submatrix.
-   @param r    Array of row indices.
-   @param j0   Initial column index
-   @param j1   Final column index
-   @return     A(r(:),j0:j1)
-   @exception  ArrayIndexOutOfBoundsException Submatrix indices
+   /* Get a submatrix.
+   	r    Array of row indices.
+	j0   Initial column index
+	j1   Final column index
+   	return     A(r(:),j0:j1)
    */
 
    proc getMatrix (r:[?rDom] int, j0:int, j1:int) {
@@ -1945,24 +1800,22 @@ class Matrix {
       return X;
    }
 
-   /** Set a single element.
-   @param i    Row index.
-   @param j    Column index.
-   @param s    A(i,j).
-   @exception  ArrayIndexOutOfBoundsException
+   /* Set a single element.
+	i    Row index.
+	j    Column index.
+   	s    A(i,j).
    */
 
    proc set (i, j:int, s:real) {
       A[i,j] = s;
    }
 
-   /** Set a submatrix.
-   @param i0   Initial row index
-   @param i1   Final row index
-   @param j0   Initial column index
-   @param j1   Final column index
-   @param X    A(i0:i1,j0:j1)
-   @exception  ArrayIndexOutOfBoundsException Submatrix indices
+   /* Set a submatrix.
+   i0   Initial row index
+   i1   Final row index
+   j0   Initial column index
+   j1   Final column index
+   X    A(i0:i1,j0:j1)
    */
 
    proc setMatrix (i0, i1, j0, j1:int, X:Matrix) {
@@ -1971,11 +1824,10 @@ class Matrix {
          }
    }
 
-   /** Set a submatrix.
-   @param r    Array of row indices.
-   @param c    Array of column indices.
-   @param X    A(r(:),c(:))
-   @exception  ArrayIndexOutOfBoundsException Submatrix indices
+   /* Set a submatrix.
+   r    Array of row indices.
+   c    Array of column indices.
+   X    A(r(:),c(:))
    */
 
    proc setMatrix (r:[?rDom] int, c:[?cDom] int, X:Matrix) {
@@ -1984,12 +1836,11 @@ class Matrix {
       } 
    }
 
-   /** Set a submatrix.
-   @param r    Array of row indices.
-   @param j0   Initial column index
-   @param j1   Final column index
-   @param X    A(r(:),j0:j1)
-   @exception  ArrayIndexOutOfBoundsException Submatrix indices
+   /* Set a submatrix.
+   r    Array of row indices.
+   j0   Initial column index
+   j1   Final column index
+   X    A(r(:),j0:j1)
    */
 
    proc setMatrix (r:[?rDom] int, j0:int, j1:int, X:Matrix) {
@@ -1998,12 +1849,11 @@ class Matrix {
          }
    }
 
-   /** Set a submatrix.
-   @param i0   Initial row index
-   @param i1   Final row index
-   @param c    Array of column indices.
-   @param X    A(i0:i1,c(:))
-   @exception  ArrayIndexOutOfBoundsException Submatrix indices
+   /* Set a submatrix.
+   i0   Initial row index
+   i1   Final row index
+   c    Array of column indices.
+   X    A(i0:i1,c(:))
    */
 
    proc setMatrix (i0, i1:int, c:[?cDom] int, X:Matrix) {
@@ -2012,8 +1862,8 @@ class Matrix {
          }
    }
 
-   /** Matrix transpose.
-   @return    A'
+   /* Matrix transpose.
+   return    A'
    */
 
    proc transpose () {
@@ -2026,8 +1876,8 @@ class Matrix {
       return X;
    }
 
-   /** One norm
-   @return    maximum column sum.
+   /* One norm
+   return    maximum column sum.
    */
 
    proc norm1 () :real {
@@ -2039,8 +1889,8 @@ class Matrix {
       return f;
    }
 
-   /** Two norm
-   @return    maximum singular value.
+   /* Two norm
+   return    maximum singular value.
    */
 
    proc norm2 () : real{
@@ -2048,8 +1898,8 @@ class Matrix {
       return toret.norm2();
    }
 
-   /** Infinity norm
-   @return    maximum row sum.
+   /* Infinity norm
+   return    maximum row sum.
    */
 
    proc normInf () : real{
@@ -2061,8 +1911,8 @@ class Matrix {
       return f;
    }
 
-   /** Frobenius norm
-   @return    sqrt of sum of squares of all elements.
+   /* Frobenius norm
+   return    sqrt of sum of squares of all elements.
    */
 
    proc normF () : real{
@@ -2073,8 +1923,8 @@ class Matrix {
       return f;
    }
 
-   /**  Unary minus
-   @return    -A
+   /*  Unary minus
+   return    -A
    */
 
    proc uminus () {
@@ -2086,9 +1936,9 @@ class Matrix {
       return X;
    }
 
-   /** C = A + B
-   @param B    another matrix
-   @return     A + B
+   /* C = A + B
+   B    another matrix
+   return     A + B
    */
 
    proc plus (B:Matrix) {
@@ -2101,9 +1951,9 @@ class Matrix {
       return X;
    }
 
-   /** A = A + B
-   @param B    another matrix
-   @return     A + B
+   /* A = A + B
+   B    another matrix
+   return     A + B
    */
 
    proc plusEquals (B:Matrix) {
@@ -2114,9 +1964,9 @@ class Matrix {
       return this;
    }
 
-   /** C = A - B
-   @param B    another matrix
-   @return     A - B
+   /* C = A - B
+   B    another matrix
+   return     A - B
    */
 
    proc minus (B:Matrix) {
@@ -2129,9 +1979,9 @@ class Matrix {
       return X;
    }
 
-   /** A = A - B
-   @param B    another matrix
-   @return     A - B
+   /* A = A - B
+   B    another matrix
+   return     A - B
    */
 
    proc minusEquals (B:Matrix) {
@@ -2142,9 +1992,9 @@ class Matrix {
       return this;
    }
 
-   /** Element-by-element multiplication, C = A.*B
-   @param B    another matrix
-   @return     A.*B
+   /* Element-by-element multiplication, C = A.*B
+   B    another matrix
+   return     A.*B
    */
 
    proc arrayTimes (B:Matrix) {
@@ -2157,9 +2007,9 @@ class Matrix {
       return X;
    }
 
-   /** Element-by-element multiplication in place, A = A.*B
-   @param B    another matrix
-   @return     A.*B
+   /* Element-by-element multiplication in place, A = A.*B
+   B    another matrix
+   return     A.*B
    */
 
    proc arrayTimesEquals (B:Matrix) {
@@ -2170,9 +2020,9 @@ class Matrix {
       return this;
    }
 
-   /** Element-by-element right division, C = A./B
-   @param B    another matrix
-   @return     A./B
+   /* Element-by-element right division, C = A./B
+   B    another matrix
+   return     A./B
    */
 
    proc arrayRightDivide (B:Matrix) {
@@ -2185,9 +2035,9 @@ class Matrix {
       return X;
    }
 
-   /** Element-by-element right division in place, A = A./B
-   @param B    another matrix
-   @return     A./B
+   /* Element-by-element right division in place, A = A./B
+   B    another matrix
+   return     A./B
    */
 
    proc arrayRightDivideEquals (B:Matrix) {
@@ -2198,9 +2048,9 @@ class Matrix {
       return this;
    }
 
-   /** Element-by-element left division, C = A.\B
-   @param B    another matrix
-   @return     A.\B
+   /* Element-by-element left division, C = A.\B
+   B    another matrix
+   return     A.\B
    */
 
    proc arrayLeftDivide (B:Matrix) {
@@ -2213,9 +2063,9 @@ class Matrix {
       return X;
    }
 
-   /** Element-by-element left division in place, A = A.\B
-   @param B    another matrix
-   @return     A.\B
+   /* Element-by-element left division in place, A = A.\B
+   B    another matrix
+   return     A.\B
    */
 
    proc arrayLeftDivideEquals (B:Matrix) {
@@ -2226,9 +2076,9 @@ class Matrix {
       return this;
    }
 
-   /** Multiply a matrix by a scalar, C = s*A
-   @param s    scalar
-   @return     s*A
+   /* Multiply a matrix by a scalar, C = s*A
+   s    scalar
+   return     s*A
    */
 
    proc times (s:real) {
@@ -2240,9 +2090,9 @@ class Matrix {
       return X;
    }
 
-   /** Multiply a matrix by a scalar in place, A = s*A
-   @param s    scalar
-   @return     replace A by s*A
+   /* Multiply a matrix by a scalar in place, A = s*A
+   s    scalar
+   return     replace A by s*A
    */
 
    proc timesEquals (s:real) {
@@ -2252,10 +2102,9 @@ class Matrix {
       return this;
    }
 
-   /** Linear algebraic matrix multiplication, A * B
-   @param B    another matrix
-   @return     Matrix product, A * B
-   @exception  IllegalArgumentException Matrix inner dimensions must agree.
+   /* Linear algebraic matrix multiplication, A * B
+   B    another matrix
+   return     Matrix product, A * B
    */
 
    proc times (B:Matrix) {
@@ -2278,36 +2127,32 @@ class Matrix {
       return X;
    }
 
-   /** LU Decomposition
-   @return     LUDecomposition
-   @see LUDecomposition
+   /* LU Decomposition
+   return     LUDecomposition
    */
 
    proc lu () {
       return new LUDecomposition(this);
    }
 
-   /** QR Decomposition
-   @return     QRDecomposition
-   @see QRDecomposition
+   /* QR Decomposition
+   return     QRDecomposition
    */
 
    proc qr () {
       return new QRDecomposition(this);
    }
 
-   /** Cholesky Decomposition
-   @return     CholeskyDecomposition
-   @see CholeskyDecomposition
+   /* Cholesky Decomposition
+   return     CholeskyDecomposition
    */
 
    proc chol () {
       return new CholeskyDecomposition(this);
    }
 
-   /** Singular Value Decomposition
-   @return     SingularValueDecomposition
-   @see SingularValueDecomposition
+   /* Singular Value Decomposition
+   return     SingularValueDecomposition
    */
 
    proc svd () {
@@ -2318,18 +2163,17 @@ class Matrix {
       return new RandomSingularValueDecomposition(this);
    }
 
-   /** Eigenvalue Decomposition
-   @return     EigenvalueDecomposition
-   @see EigenvalueDecomposition
+   /* Eigenvalue Decomposition
+   return     EigenvalueDecomposition
    */
 
    proc eig () {
       return new EigenvalueDecomposition(this);
    }
 
-   /** Solve A*X = B
-   @param B    right hand side
-   @return     solution if A is square, least squares solution otherwise
+   /* Solve A*X = B
+   B    right hand side
+   return     solution if A is square, least squares solution otherwise
    */
 
    proc solve (B:Matrix) {
@@ -2338,25 +2182,25 @@ class Matrix {
       return toret;
    }
 
-   /** Solve X*A = B, which is also A'*X' = B'
-   @param B    right hand side
-   @return     solution if A is square, least squares solution otherwise.
+   /* Solve X*A = B, which is also A'*X' = B'
+   B    right hand side
+   return     solution if A is square, least squares solution otherwise.
    */
 
    proc solveTranspose (B:Matrix) {
       return transpose().solve(B.transpose());
    }
 
-   /** Matrix inverse or pseudoinverse
-   @return     inverse(A) if A is square, pseudoinverse otherwise.
+   /* Matrix inverse or pseudoinverse
+   return     inverse(A) if A is square, pseudoinverse otherwise.
    */
 
    proc inverse () {
       return solve(identity(m,m));
    }
 
-   /** Matrix determinant
-   @return     determinant
+   /* Matrix determinant
+   return     determinant
    */
 
    proc det () {
@@ -2364,8 +2208,8 @@ class Matrix {
       return toret.det();
    }
 
-   /** Matrix rank
-   @return     effective numerical rank, obtained from SVD.
+   /* Matrix rank
+   return     effective numerical rank, obtained from SVD.
    */
 
    proc rank () {
@@ -2373,8 +2217,8 @@ class Matrix {
       return toret.rank();
    }
 
-   /** Matrix condition (2 norm)
-   @return     ratio of largest to smallest singular value.
+   /* Matrix condition (2 norm)
+   return     ratio of largest to smallest singular value.
    */
 
    proc cond () {
@@ -2382,8 +2226,8 @@ class Matrix {
       return toret.cond();
    }
 
-   /** Matrix trace.
-   @return     sum of the diagonal elements.
+   /* Matrix trace.
+   return     sum of the diagonal elements.
    */
 
    proc trace () {
@@ -2393,10 +2237,10 @@ class Matrix {
       return t;
    }
 
-   /** Generate matrix with random elements
-   @param m    Number of rows.
-   @param n    Number of colums.
-   @return     An m-by-n matrix with uniformly distributed random elements.
+   /* Generate matrix with random elements
+   m    Number of rows.
+   n    Number of colums.
+   return     An m-by-n matrix with uniformly distributed random elements.
    */
 
    proc random (m, n:int) {
@@ -2406,11 +2250,7 @@ class Matrix {
       return A;
    }
 
-/* ------------------------
-   Private Methods
- * ------------------------ */
-
-   /** Check if size(A) == size(B) **/
+   /* Check if size(A) == size(B) */
 
    proc checkMatrixDimensions (B:Matrix) {
       if (B.m != m || B.n != n) {
@@ -2428,12 +2268,12 @@ proc random (m, n:int) {
 }
 
 
-/** QR Decomposition.
-<P>
+/* QR Decomposition.
+
    For an m-by-n matrix A with m >= n, the QR decomposition is an m-by-n
    orthogonal matrix Q and an n-by-n upper triangular matrix R so that
    A = Q*R.
-<P>
+
    The QR decompostion always exists, even if the matrix does not have
    full rank, so the constructor will never fail.  The primary use of the
    QR decomposition is in the least squares solution of nonsquare systems
@@ -2443,35 +2283,25 @@ proc random (m, n:int) {
 
 class QRDecomposition {
 
-/* ------------------------
-   Class variables
- * ------------------------ */
-
-   /** Array for internal storage of decomposition.
-   @serial internal array storage.
+   /* Array for internal storage of decomposition.
    */
    var qrDom = {1..1,1..1};
    var QR : [qrDom] real;
 
-   /** Row and column dimensions.
-   @serial column dimension.
-   @serial row dimension.
+   /* Row and column dimensions.
+   column dimension.
+   row dimension.
    */
    var m, n:int;
 
-   /** Array for internal storage of diagonal of R.
-   @serial diagonal of R.
+   /* Array for internal storage of diagonal of R.
    */
    var rdiagDom = {1..1};
    var Rdiag : [rdiagDom] real;
 
-/* ------------------------
-   Constructor
- * ------------------------ */
-
-   /** QR Decomposition, computed by Householder reflections.
+   /* QR Decomposition, computed by Householder reflections.
        Structure to access R and the Householder vectors and compute Q.
-   @param A    Rectangular matrix
+   A    Rectangular matrix
    */
 
    proc QRDecomposition (A:Matrix) {
@@ -2517,12 +2347,8 @@ class QRDecomposition {
       }
    }
 
-/* ------------------------
-   Public Methods
- * ------------------------ */
-
-   /** Is the matrix full rank?
-   @return     true if R, and hence A, has full rank.
+   /* Is the matrix full rank?
+   return     true if R, and hence A, has full rank.
    */
 
    proc isFullRank () {
@@ -2534,8 +2360,8 @@ class QRDecomposition {
       return true;
    }
 
-   /** Return the Householder vectors
-   @return     Lower trapezoidal matrix whose columns define the reflections
+   /* Return the Householder vectors
+   return     Lower trapezoidal matrix whose columns define the reflections
    */
 
    proc getH () {
@@ -2551,8 +2377,8 @@ class QRDecomposition {
       return X;
    }
 
-   /** Return the upper triangular factor
-   @return     R
+   /* Return the upper triangular factor
+   return     R
    */
 
    proc getR () {
@@ -2574,8 +2400,8 @@ class QRDecomposition {
       return X;
    }
 
-   /** Generate and return the (economy-sized) orthogonal factor
-   @return     Q
+   /* Generate and return the (economy-sized) orthogonal factor
+   return     Q
    */
 
    proc getQ () {
@@ -2605,11 +2431,9 @@ class QRDecomposition {
       return X;
    }
 
-   /** Least squares solution of A*X = B
-   @param B    A Matrix with as many rows as A and any number of columns.
-   @return     X that minimizes the two norm of Q*R*X-B.
-   @exception  IllegalArgumentException  Matrix row dimensions must agree.
-   @exception  RuntimeException  Matrix is rank deficient.
+   /* Least squares solution of A*X = B
+   B    A Matrix with as many rows as A and any number of columns.
+   return     X that minimizes the two norm of Q*R*X-B.
    */
 
    proc solve (B:Matrix) {
@@ -2659,29 +2483,26 @@ class QRDecomposition {
 
 }
 
-   /** Singular Value Decomposition.
-   <P>
+/* 
+   Singular Value Decomposition.
+   
    For an m-by-n matrix A with m >= n, the singular value decomposition is
    an m-by-n orthogonal matrix U, an n-by-n diagonal matrix S, and
    an n-by-n orthogonal matrix V so that A = U*S*V'.
-   <P>
+   
    The singular values, sigma[k] = S[k,k], are ordered so that
    sigma[0] >= sigma[1] >= ... >= sigma[n-1].
-   <P>
+   
    The singular value decompostion always exists, so the constructor will
    never fail.  The matrix condition number and the effective numerical
    rank can be computed from this decomposition.
-   */
+*/
 
 class SingularValueDecomposition {
 
-/* ------------------------
-   Class variables
- * ------------------------ */
-
-   /** Arrays for internal storage of U and V.
-   @serial internal storage of U.
-   @serial internal storage of V.
+   /* Arrays for internal storage of U and V.
+   internal storage of U.
+   internal storage of V.
    */
    var uDom = {1..1,1..1};
    var vDom = {1..1,1..1};
@@ -2689,25 +2510,20 @@ class SingularValueDecomposition {
    var U : [uDom] real;
    var V : [vDom] real;
 
-   /** Array for internal storage of singular values.
-   @serial internal storage of singular values.
+   /* Array for internal storage of singular values.
    */
    var sDom = {1..1};
    var s : [sDom] real;
 
-   /** Row and column dimensions.
-   @serial row dimension.
-   @serial column dimension.
+   /* Row and column dimensions.
+   row dimension.
+   column dimension.
    */
    var m, n : int;
 
-/* ------------------------
-   Constructor
- * ------------------------ */
-
-   /** Construct the singular value decomposition
+   /* Construct the singular value decomposition
        Structure to access U, S and V.
-   @param Arg    Rectangular matrix
+   Arg    Rectangular matrix
    */
 
    proc SingularValueDecomposition (Arg:Matrix) {
@@ -3154,36 +2970,32 @@ class SingularValueDecomposition {
       }
    }
 
-/* ------------------------
-   Public Methods
- * ------------------------ */
-
-   /** Return the left singular vectors
-   @return     U
+   /* Return the left singular vectors
+   return     U
    */
 
    proc getU () {
       return new Matrix(U,m,min(m+1,n));
    }
 
-   /** Return the right singular vectors
-   @return     V
+   /* Return the right singular vectors
+   return     V
    */
 
    proc getV () {
       return new Matrix(V,n,n);
    }
 
-   /** Return the one-dimensional array of singular values
-   @return     diagonal of S.
+   /* Return the one-dimensional array of singular values
+   return     diagonal of S.
    */
 
    proc getSingularValues () {
       return s;
    }
 
-   /** Return the diagonal matrix of singular values
-   @return     S
+   /* Return the diagonal matrix of singular values
+   return     S
    */
 
    proc getS () {
@@ -3198,24 +3010,24 @@ class SingularValueDecomposition {
       return X;
    }
 
-   /** Two norm
-   @return     max(S)
+   /* Two norm
+   return     max(S)
    */
 
    proc norm2 () {
       return s[1];
    }
 
-   /** Two norm condition number
-   @return     max(S)/min(S)
+   /* Two norm condition number
+   return     max(S)/min(S)
    */
 
    proc cond () {
       return s[1]/s[min(m,n)-1];
    }
 
-   /** Effective numerical matrix rank
-   @return     Number of nonnegligible singular values.
+   /* Effective numerical matrix rank
+   return     Number of nonnegligible singular values.
    */
 
    proc rank () {
