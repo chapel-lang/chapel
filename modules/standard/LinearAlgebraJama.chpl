@@ -1447,8 +1447,8 @@ class LUDecomposition {
    }
 
    /* Solve A*X = B
-   	B,   A Matrix with as many rows as A and any number of columns.
-   	X so that L*U*X = B(piv,:)
+        B,   A Matrix with as many rows as A and any number of columns.
+        X so that L*U*X = B(piv,:)
    */
 
    proc solve (B:Matrix) {
@@ -1486,9 +1486,9 @@ class LUDecomposition {
 }
 
 /* Generate identity matrix
-	m    Number of rows.
-	n    Number of colums.
-	returns An m-by-n matrix with ones on the diagonal and zeros elsewhere.
+     m    Number of rows.
+     n    Number of colums.
+     returns An m-by-n matrix with ones on the diagonal and zeros elsewhere.
 */
 
 proc identity (m:int, n:int) {
@@ -1542,14 +1542,14 @@ class Matrix {
    var A : [aDom] real;
 
    /* Row and column dimensions.
-	row dimension.
-   	column dimension.
+     row dimension.
+        column dimension.
    */
    var m, n : int;
 
    /* Construct an m-by-n matrix of zeros. 
-   	m    Number of rows.
-   	n    Number of colums.
+        m    Number of rows.
+        n    Number of colums.
    */
 
    proc Matrix (m:int, n: int) {
@@ -1559,9 +1559,9 @@ class Matrix {
    }
 
    /* Construct an m-by-n constant matrix.
-   	m    Number of rows.
-   	n    Number of colums.
-   	s    Fill the matrix with this scalar value.
+        m    Number of rows.
+        n    Number of colums.
+        s    Fill the matrix with this scalar value.
    */
 
    proc Matrix (m:int, n:int, s:real) {
@@ -1574,7 +1574,7 @@ class Matrix {
    }
 
    /* Construct a matrix from a 2-D array.
-   	A    Two-dimensional array of doubles.
+        A    Two-dimensional array of doubles.
    */
 
    proc Matrix (A:[?aDom] real) {
@@ -1604,9 +1604,9 @@ class Matrix {
    }
 
    /* Construct a matrix quickly without checking arguments.
-   	A    Two-dimensional array of doubles.
-   	m    Number of rows.
-   	n    Number of colums.
+        A    Two-dimensional array of doubles.
+        m    Number of rows.
+        n    Number of colums.
    */
 
    proc Matrix (A:[?aDom] real, m:int, n:int) where aDom.rank == 2 {
@@ -1617,8 +1617,8 @@ class Matrix {
    }
 
    /* Construct a matrix from a one-dimensional packed array
-   	vals One-dimensional array of doubles, packed by columns (ala Fortran).
-   	m    Number of rows.
+        vals One-dimensional array of doubles, packed by columns (ala Fortran).
+        m    Number of rows.
    */
 
    proc Matrix (vals:[?valsDom] real, m:int) where valsDom.rank == 1 {
@@ -1633,7 +1633,7 @@ class Matrix {
    }
 
    /* Construct a matrix from a copy of a 2-D array.
-   	A    Two-dimensional array of doubles.
+        A    Two-dimensional array of doubles.
    */
 
    proc constructWithCopy(A : [?aDom] real) where aDom.rank == 2 {
@@ -1670,7 +1670,7 @@ class Matrix {
    }
 
    /* Access the internal two-dimensional array.
-   	Pointer to the two-dimensional array of matrix elements.
+        Pointer to the two-dimensional array of matrix elements.
    */
 
    proc getArray () {
@@ -1678,7 +1678,7 @@ class Matrix {
    }
 
    /* Copy the internal two-dimensional array.
-   	Two-dimensional array copy of matrix elements.
+        Two-dimensional array copy of matrix elements.
    */
 
    proc getArrayCopy () {
@@ -1688,7 +1688,7 @@ class Matrix {
    }
 
    /* Make a one-dimensional column packed copy of the internal array.
-   	Matrix elements packed in a one-dimensional array by columns.
+        Matrix elements packed in a one-dimensional array by columns.
    */
 
    proc getColumnPackedCopy () {
@@ -1700,7 +1700,7 @@ class Matrix {
    }
 
    /* Make a one-dimensional row packed copy of the internal array.
-   	Matrix elements packed in a one-dimensional array by rows.
+        Matrix elements packed in a one-dimensional array by rows.
    */
 
    proc getRowPackedCopy () {
@@ -1712,7 +1712,7 @@ class Matrix {
    }
 
    /* Get row dimension.
-   	m, the number of rows.
+        m, the number of rows.
    */
 
    proc getRowDimension () {
@@ -1720,7 +1720,7 @@ class Matrix {
    }
 
    /* Get column dimension.
-   	n, the number of columns.
+        n, the number of columns.
    */
 
    proc getColumnDimension () {
@@ -1728,9 +1728,9 @@ class Matrix {
    }
 
    /* Get a single element.
-   	i    Row index.
-   	j    Column index.
-   	return A(i,j)
+        i    Row index.
+        j    Column index.
+        return A(i,j)
    */
 
    proc get (i, j:int) {
@@ -1738,11 +1738,11 @@ class Matrix {
    }
 
    /* Get a submatrix.
-   	i0   Initial row index
-   	i1   Final row index
-   	j0   Initial column index
-   	j1   Final column index
-   	return     A(i0:i1,j0:j1)
+        i0   Initial row index
+        i1   Final row index
+        j0   Initial column index
+        j1   Final column index
+        return     A(i0:i1,j0:j1)
    */
 
    proc getMatrix (i0:int, i1:int, j0:int, j1:int) {
@@ -1754,9 +1754,9 @@ class Matrix {
    }
 
    /* Get a submatrix.
-   	r    Array of row indices.
-	c    Array of column indices.
-	return     A(r(:),c(:))
+        r    Array of row indices.
+     c    Array of column indices.
+     return     A(r(:),c(:))
    */
 
    proc getMatrix (r:[?rDom] int, c:[?cDom] int) {
@@ -1769,10 +1769,10 @@ class Matrix {
    }
 
    /* Get a submatrix.
-   	i0   Initial row index
-   	i1   Final row index
-   	c    Array of column indices.
-   	return     A(i0:i1,c(:))
+        i0   Initial row index
+        i1   Final row index
+        c    Array of column indices.
+        return     A(i0:i1,c(:))
    */
 
    proc getMatrix (i0:int, i1:int, c:[?cDom] int) {
@@ -1785,10 +1785,10 @@ class Matrix {
    }
 
    /* Get a submatrix.
-   	r    Array of row indices.
-	j0   Initial column index
-	j1   Final column index
-   	return     A(r(:),j0:j1)
+        r    Array of row indices.
+     j0   Initial column index
+     j1   Final column index
+        return     A(r(:),j0:j1)
    */
 
    proc getMatrix (r:[?rDom] int, j0:int, j1:int) {
@@ -1801,9 +1801,9 @@ class Matrix {
    }
 
    /* Set a single element.
-	i    Row index.
-	j    Column index.
-   	s    A(i,j).
+     i    Row index.
+     j    Column index.
+     s    A(i,j).
    */
 
    proc set (i, j:int, s:real) {
