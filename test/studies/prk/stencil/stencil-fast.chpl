@@ -106,25 +106,19 @@ const Dom = localDom dmapped new dmap(Dist),
 /* Input and Output matrices represented as arrays over a 2D domain */
 var input, output:  [Dom] dtype = 0.0;
 
-/* Pragma ensures each locale stores a local copy of weight matrix */
-pragma "locale private"
 /* Weight matrix represented as tuple of tuples*/
 var weight: Wsize*(Wsize*(dtype));
 
-/* Creating weight matrix on each locale */
-for loc in Locales do on loc {
-  for i in 1..R {
-    const element : dtype = 1 / (2*i*R) : dtype;
-    weight[R1][R1+i]  =  element;
-    weight[R1+i][R1]  =  element;
-    weight[R1-i][R1] = -element;
-    weight[R1][R1-i] = -element;
-  }
+for i in 1..R {
+  const element : dtype = 1 / (2*i*R) : dtype;
+  weight[R1][R1+i]  =  element;
+  weight[R1+i][R1]  =  element;
+  weight[R1-i][R1] = -element;
+  weight[R1][R1-i] = -element;
 }
 
 /* Initialize Input matrix */
 [(i, j) in Dom] input[i,j] = coefx*i+coefy*j;
-
 
 //
 // Print information before main loop
@@ -145,7 +139,7 @@ if (!validate) {
   else                        writeln("Distribution         = None");
 }
 
-
+if useStencilDist then input.updateFluff();
 //
 // Main loop of Stencil
 //
@@ -159,7 +153,7 @@ for iteration in 0..iterations {
 
   if debug then diagnostics('stencil');
   if (!tiling) {
-    forall (i,j) in innerDom {
+    forall (i,j) in innerDom with (in weight) {
       var tmpout: dtype = 0.0;
       if (!compact) {
         for param jj in -R..-1 do tmpout += weight[R1][R1+jj] * input[i, j+jj];
@@ -204,6 +198,7 @@ for iteration in 0..iterations {
   if useStencilDist then {
     if debug then diagnostics('output.updateFluff()');
     output.updateFluff();
+    input.updateFluff();
   }
 
 
