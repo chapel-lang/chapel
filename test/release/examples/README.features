@@ -25,6 +25,7 @@ benchmarks/
     variants/
       stream-promoted : promoted/whole-array operations
       ra-cleanloop    : cleaner use of on-clauses -- correct but slower (today)
+  isx/         : multi-locale task parallelism, barriers, bulk communication
   lulesh/      : dense and sparse domains; domain-independent computation
   miniMD/
     miniMD     : high-level expression of complex stencil operations
