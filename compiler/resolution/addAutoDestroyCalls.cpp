@@ -48,6 +48,8 @@ public:
 
   void                     variableAdd(VarSymbol* var);
 
+  bool                     startingToHandleFormalTemps(const Expr* stmt) const;
+
   void                     insertAutoDestroys(FnSymbol* fn,
                                               Expr*     refStmt);
 
@@ -57,6 +59,8 @@ private:
 
   const Scope*             mParent;
   const BlockStmt*         mBlock;
+
+  bool                     mLocalsHandled;       // Manage function epilogue
 
   std::vector<VarSymbol*>  mFormalTemps;         // Temps for out/inout formals
   std::vector<VarSymbol*>  mLocals;
@@ -132,14 +136,39 @@ static void cullForDefaultConstructor(FnSymbol* fn) {
 *                                                                             *
 *   3) Insert auto destroy calls at the end of the block                      *
 *                                                                             *
+*      Functions with multiple return points require additional care when     *
+*      traversing a function's top-level block.                               *
+*                                                                             *
+*      Nested return statements are implemented as one or more PRIM_MOVEs to  *
+*      the return variable followed by a GOTO to the return label. The        *
+*      return value may be different at each return and so the autoDestroy    *
+*      sets for the locals are handled immediately before each GOTO.          *
+*                                                                             *
+*      Functions that accept formals with OUT intent or INOUT intent rely on  *
+*      formal temps within the function.  These formal temps are written to   *
+*      the final destination using compiler generated code that appears       *
+*      immediately before the return statement and will be shared by every    *
+*      return path. We refer to this code as the "function epilogue".         *
+*                                                                             *
+*      The function epilogue is informally defined as                         *
+*                                                                             *
+*        a) The return label for the common exit point                        *
+*        b) The first compiler-generated statement to write back a formal tmp *
+*                                                                             *
+*      but is not formally represented in the AST. Hence we add code to       *
+*      detect the start of epilogue.                                          *
+*                                                                             *
 ************************************** | *************************************/
 
-static VarSymbol* definesAnAutoDestroyedVariable(const Expr* stmt);
+static VarSymbol*   definesAnAutoDestroyedVariable(const Expr* stmt);
+static LabelSymbol* findReturnLabel(FnSymbol* fn);
+static bool         isReturnLabel(const Expr*        stmt,
+                                  const LabelSymbol* returnLabel);
 
-static void walkBlock(FnSymbol*  fn,
-                      Scope*     parent,
-                      BlockStmt* block) {
-  Scope scope(parent, block);
+static void walkBlock(FnSymbol* fn, Scope* parent, BlockStmt* block) {
+  Scope        scope(parent, block);
+
+  LabelSymbol* retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
 
   for_alist(stmt, block->body) {
     //
@@ -149,6 +178,11 @@ static void walkBlock(FnSymbol*  fn,
     // Collect variables that should be autoDestroyed
     if (VarSymbol* var = definesAnAutoDestroyedVariable(stmt)) {
       scope.variableAdd(var);
+
+    // Add autoDestroys for primary locals at start of "function epilogue"
+    } else if (isReturnLabel(stmt, retLabel)           == true ||
+               scope.startingToHandleFormalTemps(stmt) == true) {
+      scope.insertAutoDestroys(fn, stmt);
 
     // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
     } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
@@ -205,6 +239,51 @@ static VarSymbol* definesAnAutoDestroyedVariable(const Expr* stmt) {
   return retval;
 }
 
+//
+// The return label is one of the logical markers for the start of
+// the function epilogue but is not currently well marked.
+//
+// Identify it by inspecting any goto statements.  If there are
+// multiple jumps to the return label then verify they are all
+// the same.
+//
+
+static LabelSymbol* findReturnLabel(FnSymbol* fn) {
+  std::vector<GotoStmt*> gotoStmts;
+  BlockStmt*             block  = fn->body;
+  LabelSymbol*           retval = NULL;
+
+  collectGotoStmts(block, gotoStmts);
+
+  for_vector(GotoStmt, gotoStmt, gotoStmts) {
+    if (gotoStmt->isGotoReturn() == true) {
+      LabelSymbol* target = gotoStmt->gotoTarget();
+
+      if (retval == NULL)
+        retval = target;
+      else
+        INT_ASSERT(retval == target);
+    }
+  }
+
+  return retval;
+}
+
+// Is this the definition of the return label?
+static bool isReturnLabel(const Expr* stmt, const LabelSymbol* returnLabel) {
+  bool retval = false;
+
+  if (returnLabel != NULL) {
+    if (const DefExpr*  expr = toConstDefExpr(stmt)) {
+      if (LabelSymbol* label = toLabelSymbol(expr->sym)) {
+        retval = (label == returnLabel) ? true : false;
+      }
+    }
+  }
+
+  return retval;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -216,8 +295,10 @@ static bool       isReturnStmt(const Expr* stmt);
 static BlockStmt* findBlockForTarget(GotoStmt* stmt);
 
 Scope::Scope(const Scope* parent, const BlockStmt* block) {
-  mParent = parent;
-  mBlock  = block;
+  mParent        = parent;
+  mBlock         = block;
+
+  mLocalsHandled = false;
 }
 
 void Scope::variableAdd(VarSymbol* var) {
@@ -225,6 +306,41 @@ void Scope::variableAdd(VarSymbol* var) {
     mLocals.push_back(var);
   else
     mFormalTemps.push_back(var);
+}
+
+//
+// Functions have an informal epilogue defined by code that
+//
+//   1) appears after a common "return label" (if present)
+//   2) copies values to out/in-out formals
+//
+// We must      destroy the primaries before (1).
+// We choose to destroy the primaries before (2).
+//
+// This code detects the start of (2)
+//
+bool Scope::startingToHandleFormalTemps(const Expr* stmt) const {
+  bool retval = false;
+
+  if (mLocalsHandled == false) {
+    if (const CallExpr* call = toConstCallExpr(stmt)) {
+      FnSymbol* fn  =  NULL;
+      SymExpr*  lhs =  NULL;
+      SymExpr*  rhs =  NULL;
+
+      if ((fn  = call->isResolved())          != NULL &&
+          fn->hasFlag(FLAG_ASSIGNOP)          == true &&
+          call->numActuals()                  ==    2 &&
+          (lhs = toSymExpr(call->get(1)))     != NULL &&
+          (rhs = toSymExpr(call->get(2)))     != NULL &&
+          isArgSymbol(lhs->var)               == true &&
+          rhs->var->hasFlag(FLAG_FORMAL_TEMP) == true) {
+        retval = true;
+      }
+    }
+  }
+
+  return retval;
 }
 
 // If the refStmt is a goto then we need to recurse
@@ -241,11 +357,13 @@ void Scope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt) {
 
     scope = (recurse == true) ? scope->mParent : NULL;
   }
+
+  mLocalsHandled = true;
 }
 
 void Scope::variablesDestroy(Expr* refStmt, VarSymbol* excludeVar) const {
   // Handle the primary locals
-  if (true) {
+  if (mLocalsHandled == false) {
     bool   insertAfter = false;
     size_t count       = mLocals.size();
 
