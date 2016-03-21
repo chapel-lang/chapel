@@ -174,7 +174,20 @@ static void walkBlock(FnSymbol*  fn,
 
       // Currently unprepared for a nested scope that ends in a goto
       } else {
-        INT_ASSERT(false);
+        switch (gotoStmt->gotoTag) {
+          case GOTO_RETURN:
+          case GOTO_CONTINUE:
+          case GOTO_BREAK:
+            scope.insertAutoDestroys(fn, stmt);
+            break;
+
+          case GOTO_NORMAL:
+          case GOTO_GETITER_END:
+          case GOTO_ITER_RESUME:
+          case GOTO_ITER_END:
+           // MDN 2016/03/18 Need to revisit these cases
+           break;
+        }
       }
     }
   }
@@ -200,6 +213,7 @@ static VarSymbol* definesAnAutoDestroyedVariable(const Expr* stmt) {
 
 static VarSymbol* variableToExclude(FnSymbol*  fn, Expr* refStmt);
 static bool       isReturnStmt(const Expr* stmt);
+static BlockStmt* findBlockForTarget(GotoStmt* stmt);
 
 Scope::Scope(const Scope* parent, const BlockStmt* block) {
   mParent = parent;
@@ -213,19 +227,32 @@ void Scope::variableAdd(VarSymbol* var) {
     mFormalTemps.push_back(var);
 }
 
+// If the refStmt is a goto then we need to recurse
+// to the block that contains the target of the goto
 void Scope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt) {
-  VarSymbol* excludeVar = variableToExclude(fn, refStmt);
+  GotoStmt*    gotoStmt   = toGotoStmt(refStmt);
+  bool         recurse    = (gotoStmt != NULL) ? true : false;
+  BlockStmt*   forTarget  = findBlockForTarget(gotoStmt);
+  VarSymbol*   excludeVar = variableToExclude(fn, refStmt);
+  const Scope* scope      = this;
 
-  variablesDestroy(refStmt, excludeVar);
+  while (scope != NULL && scope->mBlock != forTarget) {
+    scope->variablesDestroy(refStmt, excludeVar);
+
+    scope = (recurse == true) ? scope->mParent : NULL;
+  }
 }
 
 void Scope::variablesDestroy(Expr* refStmt, VarSymbol* excludeVar) const {
   // Handle the primary locals
   if (true) {
-    // For the top-level block, insert before the return
-    // For the simple nested blocks, insert after the last statement
-    bool   insertAfter = (mParent != NULL) ? true : false;
+    bool   insertAfter = false;
     size_t count       = mLocals.size();
+
+    // If this is a simple nested block, insert after the final stmt
+    if (mParent != NULL && isGotoStmt(refStmt) == false) {
+      insertAfter = true;
+    }
 
     for (size_t i = 1; i <= count; i++) {
       VarSymbol* var = mLocals[count - i];
@@ -309,6 +336,25 @@ static bool isReturnStmt(const Expr* stmt) {
 
   if (const CallExpr* expr = toConstCallExpr(stmt))
     retval = expr->isPrimitive(PRIM_RETURN);
+
+  return retval;
+}
+
+// Find the block stmt that encloses the target of this gotoStmt
+static BlockStmt* findBlockForTarget(GotoStmt* stmt) {
+  BlockStmt* retval = NULL;
+
+  if (stmt != NULL && stmt->isGotoReturn() == false) {
+    SymExpr*   labelSymExpr = toSymExpr(stmt->label);
+    Expr*      ptr          = labelSymExpr->var->defPoint;
+
+    while (ptr != NULL && isBlockStmt(ptr) == false)
+      ptr = ptr->parentExpr;
+
+    retval = toBlockStmt(ptr);
+
+    INT_ASSERT(retval);
+  }
 
   return retval;
 }

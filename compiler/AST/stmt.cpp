@@ -1263,6 +1263,10 @@ Expr* GotoStmt::getFirstExpr() {
   return (label != 0) ? label->getFirstExpr() : this;
 }
 
+bool GotoStmt::isGotoReturn() const {
+  return gotoTag == GOTO_RETURN;
+}
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
