@@ -128,7 +128,9 @@ static void cullForDefaultConstructor(FnSymbol* fn) {
 *                                                                             *
 *   1) Collect variables that are marked to be auto destroyed                 *
 *                                                                             *
-*   2) Insert auto destroy calls at the end of the block                      *
+*   2) Handle recursion in to nested sub blocks                               *
+*                                                                             *
+*   3) Insert auto destroy calls at the end of the block                      *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -140,18 +142,37 @@ static void walkBlock(FnSymbol*  fn,
   Scope scope(parent, block);
 
   for_alist(stmt, block->body) {
+    //
+    // Handle the current statement
+    //
+
     // Collect variables that should be autoDestroyed
     if (VarSymbol* var = definesAnAutoDestroyedVariable(stmt)) {
       scope.variableAdd(var);
+
+    // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
+    } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
+      walkBlock(fn, &scope, subBlock);
+
+    // Recurse in to the BlockStmt(s) of a CondStmt
+    } else if (CondStmt*  cond     = toCondStmt(stmt))  {
+      walkBlock(fn, &scope, cond->thenStmt);
+
+      if (cond->elseStmt != NULL)
+        walkBlock(fn, &scope, cond->elseStmt);
     }
 
+    //
     // Handle the end of a block
+    //
     if (stmt->next == NULL) {
-      // The main block of a procedure
-      if (parent == NULL) {
+      GotoStmt* gotoStmt = toGotoStmt(stmt);
+
+      // The main block for a function or a simple sub-block
+      if (parent == NULL || gotoStmt == NULL) {
         scope.insertAutoDestroys(fn, stmt);
 
-      // Currently unprepared for a nested scope
+      // Currently unprepared for a nested scope that ends in a goto
       } else {
         INT_ASSERT(false);
       }
@@ -201,7 +222,10 @@ void Scope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt) {
 void Scope::variablesDestroy(Expr* refStmt, VarSymbol* excludeVar) const {
   // Handle the primary locals
   if (true) {
-    size_t count = mLocals.size();
+    // For the top-level block, insert before the return
+    // For the simple nested blocks, insert after the last statement
+    bool   insertAfter = (mParent != NULL) ? true : false;
+    size_t count       = mLocals.size();
 
     for (size_t i = 1; i <= count; i++) {
       VarSymbol* var = mLocals[count - i];
@@ -210,7 +234,12 @@ void Scope::variablesDestroy(Expr* refStmt, VarSymbol* excludeVar) const {
         if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
           SET_LINENO(var);
 
-         refStmt->insertBefore(new CallExpr(autoDestroyFn, var));
+          CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
+
+          if (insertAfter == true)
+            refStmt->insertAfter (autoDestroy);
+          else
+            refStmt->insertBefore(autoDestroy);
         }
       }
     }
