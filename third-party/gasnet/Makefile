@@ -86,6 +86,8 @@ else
 endif
 endif
 
+CHPL_GASNET_CFG_OPTIONS += $(CHPL_GASNET_MORE_CFG_OPTIONS)
+
 MKFILES=$(shell find $(GASNET_INSTALL_DIR) -name \*.mak)
 
 default: all

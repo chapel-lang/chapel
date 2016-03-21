@@ -40,7 +40,6 @@ studies/shootout/regex-dna/regexdna.graph
 studies/shootout/reverse-complement/revcomp.graph
 npb/ep/ep-b.graph
 npb/ft/ft-a.graph
-npb/is/is.graph
 studies/parboil/BFS/bfs.graph
 studies/parboil/histo/histo.graph
 studies/parboil/SAD/sad.graph
@@ -117,6 +116,7 @@ studies/isx/isx.graph
 studies/isx/isx-bucket-spmd.graph
 studies/isx/isx-no-return.graph
 studies/isx/isx-per-task.graph
+release/examples/benchmarks/isx/isx-release.graph
 # suite: PRK benchmarks
 studies/prk/synch_p2p/prk-synch_p2p.graph
 studies/prk/stencil/prk-stencil.graph
@@ -127,7 +127,6 @@ npb/ep/ep.graph
 npb/ep/ep-b.graph
 npb/ft/ft.graph
 npb/ft/ft-a.graph
-npb/is/is.graph
 # suite: Array/Domain performance
 arrays/diten/arrayPerformance-2d.graph
 arrays/diten/arrayPerformance-1d.graph
