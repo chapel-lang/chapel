@@ -22,7 +22,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "resolution.h"
-#include "stlutil.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
 
