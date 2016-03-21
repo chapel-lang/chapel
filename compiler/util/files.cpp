@@ -724,10 +724,10 @@ void setupModulePaths() {
   const char* modulesRoot = 0;
 
   if (fMinimalModules == true)
-    modulesRoot = "modules-minimal";
+    modulesRoot = "modules/minimal";
 
   else if (fUseIPE == true)
-    modulesRoot = "modules-ipe";
+    modulesRoot = "modules/ipe";
 
   else
     modulesRoot = "modules";
