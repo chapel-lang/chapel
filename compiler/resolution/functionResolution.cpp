@@ -1169,13 +1169,7 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
         ((se->var->hasFlag(FLAG_REF_TO_CONST) ||
           se->var->isConstant()) && !formal->hasFlag(FLAG_ARG_THIS)) ||
         se->var->isParameter())
-      if (okToConvertFormalToRefType(formal->type) ||
-          // If the user says 'const', it means 'const'.
-          // Honor FLAG_CONST if it is a coerce temp, too.
-          (se->var->hasFlag(FLAG_CONST) &&
-           (!se->var->hasFlag(FLAG_TEMP) || se->var->hasFlag(FLAG_COERCE_TEMP))
-         ))
-        return false;
+      return false;
   // Perhaps more checks are needed.
   return true;
 }
@@ -4487,14 +4481,12 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
     // (or not) into the cases below, as appropriate.
     Type* formalType = formal->type->getValType();
 
-    if ((formal->intent == INTENT_BLANK ||
-         formal->intent == INTENT_CONST ||
-         formal->intent == INTENT_CONST_IN) &&
-        !isSyncType(formalType) &&
-        !isRefCountedType(formalType))
-    {
+    // mark CONST as needed
+    if (concreteIntent(formal->intent, formalType) & INTENT_FLAG_CONST) {
       tmp->addFlag(FLAG_CONST);
-      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      if (!isSyncType(formalType) &&
+          !isRefCountedType(formalType))
+        tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
     }
 
     // This switch adds the extra code inside the current function necessary
