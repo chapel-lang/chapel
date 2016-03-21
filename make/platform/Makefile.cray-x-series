@@ -25,4 +25,4 @@ endif
 # could not find a version of GLIBCXX when compiling with intel/cray compilers
 # This particular approach was suggested by CCE build/integration staff.
 # Note: This is assuming gcc-libs maintain forward compatibility
-LDFLAGS += -Wl,-rpath,/opt/cray/gcc-libs
+LDFLAGS += -Wl,-rpath,/opt/cray/gcc-libs,-rpath,/opt/cray/pe/gcc-libs

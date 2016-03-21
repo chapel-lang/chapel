@@ -480,11 +480,67 @@ module RunParallelRawLoops {
             loop_data.RealArray_scalars[0] = (val + 0.00123) / (val - 0.00123);
             loopFinalize(iloop, stat, ilength);
           }
-          //when LoopKernelID.PIC_2D {
-          //  halt("multidim cases not implemented ", iloop:LoopKernelID);
-          //  loopInit(iloop, stat);
-          //  loopFinalize(iloop, stat, ilength);
-          //}
+          when LoopKernelID.PIC_2D {
+            loopInit(iloop, stat);
+            var p => loop_data.RealArray_2D_Nx25[0],
+                b => loop_data.RealArray_2D_Nx25[1],
+                c => loop_data.RealArray_2D_Nx25[2];
+
+            var y => loop_data.RealArray_1D[0],
+                z => loop_data.RealArray_1D[1];
+
+            var e => loop_data.IndxArray_1D[0],
+                f => loop_data.IndxArray_1D[1];
+
+            var h => loop_data.RealArray_2D_64x64[0];
+            var atomicH: [0..#64, 0..#64] atomic real;
+
+            ltimer.start();
+
+            // initialize the array of atomics to match the 'h' array so
+            // it can be updated in parallel
+            for (aH, init) in zip(atomicH, h) do aH.write(init);
+            proc overIndexMapper(i,j) {
+              /* The reference version of this kernel is over-indexing a
+                 logical Nx25 array using indices like (16,26).  With bounds
+                 checking enabled, 26 is out of bounds in the second dimension.
+                 Convert the over-indexed pairs into in-bounds pairs */
+              return (i+j/25, j%25);
+            }
+            for isamp in 0..#num_samples {
+              forall ip in 0..#len {
+                var i1, j1, i2, j2: int;
+                // These casts to int(32) overflow and behave differently
+                // than if they were cast to default sized int (int(64)).
+                // Cast to int(32) to maintain the behavior of the C
+                // reference version.
+                i1 = p[ip,0]: int(32);
+                j1 = p[ip,1]: int(32);
+                i1 &= 64-1;
+                j1 &= 64-1;
+                p[ip,2] += b[overIndexMapper(j1,i1)];
+                p[ip,3] += c[overIndexMapper(j1,i1)];
+                p[ip,0] += p[ip,2];
+                p[ip,1] += p[ip,3];
+                i2 = p[ip,0]: int(32);
+                j2 = p[ip,1]: int(32);
+                i2 &= 64-1;
+                j2 &= 64-1;
+                p[ip,0] += y[i2+32];
+                p[ip,1] += z[j2+32];
+                i2 += e[i2+32];
+                j2 += f[j2+32];
+
+                /* #pragma omp atomic */
+                atomicH[j2,i2].add(1.0);
+              }
+            }
+            // copy the computed values out of the atomic array and
+            // back into the 'h' array
+            for (aH, val) in zip(atomicH, h) do val = aH.read();
+            ltimer.stop();
+            loopFinalize(iloop, stat, ilength);
+          }
           otherwise {
             // Kernel unrecognized or not part of this variant
           }

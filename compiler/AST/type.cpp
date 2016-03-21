@@ -1726,6 +1726,7 @@ bool is_void_type(Type* t) {
 
 bool is_bool_type(Type* t) {
   return
+    t == dtBools[BOOL_SIZE_1] ||
     t == dtBools[BOOL_SIZE_SYS] ||
     t == dtBools[BOOL_SIZE_8] ||
     t == dtBools[BOOL_SIZE_16] ||
@@ -1789,7 +1790,8 @@ bool is_enum_type(Type *t) {
 }
 
 int get_width(Type *t) {
-  if (t == dtBools[BOOL_SIZE_SYS]) {
+  if (t == dtBools[BOOL_SIZE_1] ||
+      t == dtBools[BOOL_SIZE_SYS]) {
     return 1;
     // BLC: This is a lie, but one I'm hoping we can get away with
     // based on how this function is used
