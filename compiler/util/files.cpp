@@ -747,6 +747,7 @@ void setupModulePaths() {
                       "-", CHPL_TARGET_COMPILER));
 
   stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));
+  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/packages"));
   stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/layouts"));
   stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists"));
   stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists/dims"));
