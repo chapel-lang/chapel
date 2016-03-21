@@ -153,10 +153,16 @@ static void cullForDefaultConstructor(FnSymbol* fn) {
 *      The function epilogue is informally defined as                         *
 *                                                                             *
 *        a) The return label for the common exit point                        *
-*        b) The first compiler-generated statement to write back a formal tmp *
+*        b) The first compiler-generated statement to write to a formal temp  *
 *                                                                             *
-*      but is not formally represented in the AST. Hence we add code to       *
+*      but is not formally represented in the AST. Hence we require code to   *
 *      detect the start of epilogue.                                          *
+*                                                                             *
+* A final complication is that the current implementation may find goto       *
+* statements in the middle of a BlockStmt; this is not currently removed      *
+* before this phase.  To be conservative, we arrange to ignore any such       *
+* dead code.  The possibility of multiple returns makes this a little         *
+* convoluted for the function's top level block statement.                    *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -169,31 +175,41 @@ static void walkBlock(FnSymbol* fn, Scope* parent, BlockStmt* block) {
   Scope        scope(parent, block);
 
   LabelSymbol* retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
+  bool         isDeadCode = false;
 
   for_alist(stmt, block->body) {
     //
     // Handle the current statement
     //
 
-    // Collect variables that should be autoDestroyed
-    if (VarSymbol* var = definesAnAutoDestroyedVariable(stmt)) {
-      scope.variableAdd(var);
-
-    // Add autoDestroys for primary locals at start of "function epilogue"
-    } else if (isReturnLabel(stmt, retLabel)           == true ||
-               scope.startingToHandleFormalTemps(stmt) == true) {
+    // AutoDestroy primary locals at start of function epilogue (1)
+    if (isReturnLabel(stmt, retLabel) == true) {
       scope.insertAutoDestroys(fn, stmt);
 
-    // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
-    } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
-      walkBlock(fn, &scope, subBlock);
+    } else if (isGotoStmt(stmt) == true) {
+      isDeadCode = true;
 
-    // Recurse in to the BlockStmt(s) of a CondStmt
-    } else if (CondStmt*  cond     = toCondStmt(stmt))  {
-      walkBlock(fn, &scope, cond->thenStmt);
+    // Be conservative about unreachable code before the epilogue
+    } else if (isDeadCode == false) {
+      // Collect variables that should be autoDestroyed
+      if (VarSymbol* var = definesAnAutoDestroyedVariable(stmt)) {
+        scope.variableAdd(var);
 
-      if (cond->elseStmt != NULL)
-        walkBlock(fn, &scope, cond->elseStmt);
+      // AutoDestroy primary locals at start of function epilogue (2)
+      } else if (scope.startingToHandleFormalTemps(stmt) == true) {
+        scope.insertAutoDestroys(fn, stmt);
+
+      // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
+      } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
+        walkBlock(fn, &scope, subBlock);
+
+      // Recurse in to the BlockStmt(s) of a CondStmt
+      } else if (CondStmt*  cond     = toCondStmt(stmt))  {
+        walkBlock(fn, &scope, cond->thenStmt);
+
+        if (cond->elseStmt != NULL)
+          walkBlock(fn, &scope, cond->elseStmt);
+      }
     }
 
     //
@@ -368,8 +384,11 @@ void Scope::variablesDestroy(Expr* refStmt, VarSymbol* excludeVar) const {
     size_t count       = mLocals.size();
 
     // If this is a simple nested block, insert after the final stmt
-    if (mParent != NULL && isGotoStmt(refStmt) == false) {
-      insertAfter = true;
+    // Do not get tricked by sequences of unreachable code
+    if (refStmt->next == NULL) {
+      if (mParent != NULL && isGotoStmt(refStmt) == false) {
+        insertAfter = true;
+      }
     }
 
     for (size_t i = 1; i <= count; i++) {
