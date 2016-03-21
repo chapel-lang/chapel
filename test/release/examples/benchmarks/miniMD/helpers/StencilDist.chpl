@@ -723,7 +723,9 @@ proc StencilDom.dsiSetIndices(x: domain) {
   if x._value.idxType != idxType then
     compilerError("index type mismatch in domain assignment");
   whole = x;
-  wholeFluff = whole.expand(fluff);
+  if whole.size > 0 {
+    wholeFluff = whole.expand(fluff);
+  }
   setup();
   if debugStencilDist {
     writeln("Setting indices of Stencil domain:");
@@ -740,7 +742,9 @@ proc StencilDom.dsiSetIndices(x) {
   // TODO: This seems weird:
   //
   whole.setIndices(x);
-  wholeFluff = whole.expand(fluff);
+  if whole.size > 0 {
+    wholeFluff = whole.expand(fluff);
+  }
   setup();
   if debugStencilDist {
     writeln("Setting indices of Stencil domain:");
@@ -1463,7 +1467,9 @@ proc StencilDom.dsiPrivatize(privatizeData) {
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
   c.whole = {(...privatizeData(2))};
-  c.wholeFluff = c.whole.expand(fluff);
+  if c.whole.size > 0 {
+    c.wholeFluff = c.whole.expand(fluff);
+  }
   return c;
 }
 
@@ -1473,7 +1479,9 @@ proc StencilDom.dsiReprivatize(other, reprivatizeData) {
   for i in dist.targetLocDom do
     locDoms(i) = other.locDoms(i);
   whole = {(...reprivatizeData)};
-  wholeFluff = whole.expand(fluff);
+  if whole.size > 0 {
+    wholeFluff = whole.expand(fluff);
+  }
 }
 
 proc StencilArr.dsiSupportsPrivatization() param return true;
