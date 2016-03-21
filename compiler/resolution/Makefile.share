@@ -16,7 +16,7 @@
 # limitations under the License.
 
 RESOLUTION_SRCS =                                    \
-        addAutoDestroyCalls.cpp                      \
+	addAutoDestroyCalls.cpp                      \
 	caches.cpp                                   \
 	callDestructors.cpp                          \
 	callInfo.cpp                                 \
