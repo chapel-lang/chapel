@@ -56,7 +56,6 @@ private:
   std::string     moduleName;
   std::string     pathWithoutPostfix;
   bool            tableOfContentsNeeded;
-  bool            hidden;
 };
 
 #endif
