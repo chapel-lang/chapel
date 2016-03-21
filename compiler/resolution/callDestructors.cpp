@@ -17,7 +17,13 @@
  * limitations under the License.
  */
 
+#define NEW_AUTO_DESTROY 1
+
 #include "passes.h"
+
+#if NEW_AUTO_DESTROY
+#include "addAutoDestroyCalls.h"
+#endif
 
 #include "astutil.h"
 #include "expr.h"
@@ -27,6 +33,7 @@
 #include "stmt.h"
 #include "symbol.h"
 
+#if !NEW_AUTO_DESTROY
 // Clear autoDestroy flags on variables that get assigned to the return value
 // of certain functions.
 //
@@ -86,7 +93,6 @@ static void cullAutoDestroyFlags()
     }
   }
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -164,6 +170,7 @@ static void cullTransitively(FnSymbol* fn)
 
   freeDefUseMaps(defMap, useMap);
 }
+#endif
 
 
 /************************************* | **************************************
@@ -705,6 +712,8 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
     copyExpr->replace(copyExpr->get(1)->remove());
 }
 
+#if !NEW_AUTO_DESTROY
+
 /************************************* | **************************************
 *                                                                             *
 * A set of functions that scan every BlockStmt to determine whether it is     *
@@ -1019,6 +1028,14 @@ static void updateBlockExit(Expr*            stmt,
   }
 }
 
+#endif
+
+
+/************************************* | **************************************
+*                                                                             *
+* Code to implement original style of return record by ref formal             *
+*                                                                             *
+************************************** | *************************************/
 
 //
 // Cache to avoid cloning functions that return records if the copy
@@ -1591,6 +1608,11 @@ static void insertReferenceTemps() {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+* Entry point                                                                 *
+*                                                                             *
+************************************** | *************************************/
 
 void callDestructors() {
   fixupDestructors();
@@ -1598,13 +1620,15 @@ void callDestructors() {
   insertDestructorCalls();
   insertAutoCopyTemps();
 
+#if !NEW_AUTO_DESTROY
   cullAutoDestroyFlags();
   cullExplicitAutoDestroyFlags();
+  insertAutoDestroyCalls();
+#else
+  addAutoDestroyCalls();
+#endif
 
   ReturnByRef::apply();
-
-  insertAutoDestroyCalls();
-
   returnRecordsByReferenceArguments();
 
   insertYieldTemps();
