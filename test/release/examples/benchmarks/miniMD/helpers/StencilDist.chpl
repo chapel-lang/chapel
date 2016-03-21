@@ -170,6 +170,7 @@ class StencilDom: BaseRectangularDom {
   var pid: int = -1; // privatized object id (this should be factored out)
   var fluff: rank*idxType;
   var periodic: bool = false;
+  var wholeFluff : domain(rank=rank, idxType=idxType, stridable=stridable);
 }
 
 //
@@ -722,6 +723,9 @@ proc StencilDom.dsiSetIndices(x: domain) {
   if x._value.idxType != idxType then
     compilerError("index type mismatch in domain assignment");
   whole = x;
+  if whole.size > 0 {
+    wholeFluff = whole.expand(fluff);
+  }
   setup();
   if debugStencilDist {
     writeln("Setting indices of Stencil domain:");
@@ -738,6 +742,9 @@ proc StencilDom.dsiSetIndices(x) {
   // TODO: This seems weird:
   //
   whole.setIndices(x);
+  if whole.size > 0 {
+    wholeFluff = whole.expand(fluff);
+  }
   setup();
   if debugStencilDist {
     writeln("Setting indices of Stencil domain:");
@@ -947,9 +954,11 @@ proc StencilArr.do_dsiAccess(param setter, i: rank*idxType) ref {
   }
   if doRADOpt {
     if myLocArr {
-      if boundsChecking then
-        if !dom.dsiMember(i) then
+      if boundsChecking {
+        if !dom.wholeFluff.member(i) {
           halt("array index out of bounds: ", i);
+        }
+      }
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableStencilLazyRAD {
         if myLocArr.locRAD == nil {
@@ -1458,6 +1467,9 @@ proc StencilDom.dsiPrivatize(privatizeData) {
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
   c.whole = {(...privatizeData(2))};
+  if c.whole.size > 0 {
+    c.wholeFluff = c.whole.expand(fluff);
+  }
   return c;
 }
 
@@ -1467,6 +1479,9 @@ proc StencilDom.dsiReprivatize(other, reprivatizeData) {
   for i in dist.targetLocDom do
     locDoms(i) = other.locDoms(i);
   whole = {(...reprivatizeData)};
+  if whole.size > 0 {
+    wholeFluff = whole.expand(fluff);
+  }
 }
 
 proc StencilArr.dsiSupportsPrivatization() param return true;
