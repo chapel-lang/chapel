@@ -676,7 +676,8 @@ module Random {
       pragma "no doc"
       proc PCGRandomStreamPrivate_getNext_noLock(min:eltType, max:eltType) {
         PCGRandomStreamPrivate_count += 1;
-        return randlc(eltType, PCGRandomStreamPrivate_rngs, min, max);
+        return randlc_bounded(eltType, PCGRandomStreamPrivate_rngs,
+                              seed, PCGRandomStreamPrivate_count-1, min, max);
       }
 
 
@@ -734,6 +735,7 @@ module Random {
 
       /*
         Advances/rewinds the stream to the `n`-th value in the sequence.
+        The first value is with n=1.
 
         :arg n: The position in the stream to skip to.  Must be non-negative.
         :type n: integral
@@ -798,11 +800,21 @@ module Random {
         //if arr.domain.type.strideable then
         //  compilerError("Shuffle requires non-strideable 1-D array");
 
+        if parSafe then
+          PCGRandomStreamPrivate_lock$ = true;
+
         for j in low+1..high by -1 {
-          var k = randlc(arr.domain.idxType, PCGRandomStreamPrivate_rngs,
-                         low, j);
+          var k = randlc_bounded(arr.domain.idxType,
+                                 PCGRandomStreamPrivate_rngs,
+                                 seed, PCGRandomStreamPrivate_count,
+                                 low, j);
           arr[k] <=> arr[j];
         }
+
+        PCGRandomStreamPrivate_count += high-low;
+
+        if parSafe then
+          PCGRandomStreamPrivate_lock$;
       }
       /* Produce a random permutation, storing it in a 1-D array.
          The resulting array will include each value from low..high
@@ -817,12 +829,22 @@ module Random {
         //if arr.domain.dim(1).strideable then
         //  compilerError("Permutation requires non-strideable 1-D array");
 
+        if parSafe then
+          PCGRandomStreamPrivate_lock$ = true;
+
         for i in low..high {
-          var j = randlc(arr.domain.idxType, PCGRandomStreamPrivate_rngs,
-                         low, i);
+          var j = randlc_bounded(arr.domain.idxType,
+                                 PCGRandomStreamPrivate_rngs,
+                                 seed, PCGRandomStreamPrivate_count,
+                                 low, i);
           arr[i] = arr[j];
           arr[j] = i;
         }
+
+        PCGRandomStreamPrivate_count += high-low;
+
+        if parSafe then
+          PCGRandomStreamPrivate_lock$;
       }
 
 
@@ -1059,34 +1081,16 @@ module Random {
 
       /* Generate a random number in [0,bound).
 
-         This function corresponds to pcg32_boundedrand_r, but has one
-         difference. Because parallel random number generation relies
-         upon advancing to a known position, this function only advances
-         the RNG state once per call. Where the pcg32_boundedrand_r would
-         advance the RNG state multiple times, this function creates
-         a new RNG with a different sequence constant but the same state,
-         steps it once, and uses the resulting RNG to generate any
-         more numbers that are necessary.
-
-         .. note::
-
-           This a strategy for generating a value in a particular range that
-           has not been subject to rigorous study and may have statistical
-           problems.
-
+         This function corresponds to pcg32_boundedrand_r and can
+         call the random-number generator more than once.
 
          :arg inc: The sequence constant (same as passed to `srandom`)
          :arg bound: The returned value will be < `bound`.
-         :returns: a random number in [0,bound].
+         :returns: a random number in [0,bound).
        */
       inline
       proc bounded_random(inc:uint(64), bound:uint(32))
       {
-        // unlike the PCG-C version, this version advances the RNG only
-        // one iteration - if more iterations are necessary, it computes
-        // a different stream each time a new bounded random number is needed.
-
-
             // This comment is from pcg32_boundedrand_r:
             // To avoid bias, we need to make the range of the RNG a multiple of
             // bound, which we do by dropping output less than a threshold.
@@ -1108,37 +1112,102 @@ module Random {
         var tmpinc:uint(64);
         var r:uint(32);
 
+        // Keepy trying until we get a random number that is within the bounds.
+        while true {
+          r = random(inc);
+          if r >= threshold then
+            return r % bound;
+        }
+
+        // never reached.
+        return 0;
+      }
+
+
+      /* Generate a random number in [0,bound).
+
+         This function corresponds to pcg32_boundedrand_r, but has one
+         difference. Because parallel random number generation relies
+         upon advancing to a known position, this function only advances
+         the RNG state once per call. Where the pcg32_boundedrand_r would
+         advance the RNG state multiple times, this function creates
+         a new RNGs with the same initial seed but different sequence
+         numbers and uses those when more random numbers are needed.
+         In this way, this strategy is similar to the strategy
+         for generating 64-bit numbers by pairing 32-bit PCG RNGs.
+
+         .. note::
+
+           This a strategy for generating a value in a particular range that
+           has not been subject to rigorous study and may have statistical
+           problems. Additionally, its performance could be improved
+           in the case that this function is called many times
+           in a row by caching the temporary RNGs at their current position.
+
+
+         :arg inc: The sequence constant (same as passed to `srandom`)
+         :arg bound: The returned value will be < `bound`.
+         :arg seed: The seed this RNG started with
+         :arg skip: How many numbers, before this one, has this RNG generated?
+         :arg nextinc: The first increment to pass to pcg_getvalid_inc and that should be unique for this RNG. Defaults to 100.
+         :arg inc_increment: Advance nextinc by inc_increment each time a new value is needed.
+         :returns: a random number in [0,bound).
+       */
+      inline
+      proc bounded_random_vary_inc(inc:uint(64), bound:uint(32),
+                                   seed:uint(64), skip:uint(64),
+                                   next_inc:uint(64),
+                                   inc_increment:uint(64))
+      {
+        // unlike the PCG-C version, this version advances the RNG only
+        // one iteration - if more iterations are necessary, it computes
+        // a paired RNG with different inc each time a new value is needed.
+
+            // This comment is from pcg32_boundedrand_r:
+            // To avoid bias, we need to make the range of the RNG a multiple of
+            // bound, which we do by dropping output less than a threshold.
+            // A naive scheme to calculate the threshold would be to do
+            //
+            //     uint32_t threshold = 0x100000000ull % bound;
+            //
+            // but 64-bit div/mod is slower than 32-bit div/mod (especially on
+            // 32-bit platforms).  In essence, we do
+            //
+            //     uint32_t threshold = (0x100000000ull-bound) % bound;
+            //
+            // because this version will calculate the same modulus, but the LHS
+            // value is less than 2^32.
+
+        const negbound:uint(32) = ( -(bound:int(32)) ):uint(32);
+        const threshold:uint(32) = negbound % bound;
+        var r:uint(32);
+
         // First, try getting a random number that is within the bounds.
         r = random(inc);
+
         if r >= threshold then
           return r % bound;
 
         // not the same as in PCG:
-        // If we didn't get the answer we wanted, seed a new
-        // RNG starting with state and ask for a different stream.
-        // we ask for stream 100, but that value is arbitrary. It's
-        // nice if it's different from the values used elsewhere (so
-        // that things stay independently random)
-        tmpinc = pcg_getvalid_inc(100);
-        tmprng.srandom(state, tmpinc);
+        // If we didn't get the answer we wanted, start a different
+        // with the same position and initial seed but with a different
+        // inc.
 
-        // Run it an extra time for better mixing
-        // (this helps improve the TestU01 score for this pattern)
-        tmprng.random(tmpinc);
+        var newinc:uint(64);
+        for newinc in next_inc.. by inc_increment {
+          var tmprng:pcg_setseq_64_xsh_rr_32_rng;
+          var tmpinc:uint(64);
 
-         // This comment is from pcg32_boundedrand_r:
-         // Uniformity guarantees that this loop will terminate.  In practice, it
-         // should usually terminate quickly; on average (assuming all bounds are
-         // equally likely), 82.25% of the time, we can expect it to require just
-         // one iteration.  In the worst case, someone passes a bound of 2^31 + 1
-         // (i.e., 2147483649), which invalidates almost 50% of the range.  In 
-         // practice, bounds are typically small and only a tiny amount of the range
-         // is eliminated.
+          tmpinc = pcg_getvalid_inc(newinc);
 
-        while true {
-          // Imagine that we call srand/rand to get each number, while
-          // varying 'inc'.
+          // Seed the tmp RNG with the provided seed
+          tmprng.srandom(seed, tmpinc);
+          // Advance the tmp RNG to the right offset
+          tmprng.advance(tmpinc, skip);
+
+          // Get a number from the RNG at that inc.
           r = tmprng.random(tmpinc);
+
           if r >= threshold then
             return r % bound;
         }
@@ -1666,18 +1735,28 @@ module Random {
       return states[2].random(pcg_getvalid_inc(2));
     }
     // returns x with 0 <= x <= bound
+    // count is 1-based
     private inline
-    proc boundedrand32_1(ref states, bound:uint(32)):uint(32) {
+    proc boundedrand32_1(ref states, seed:int(64), count:int(64),
+                         bound:uint(32)):uint(32) {
       // just get 32 random bits if bound+1 is not representable.
       if bound == max(uint(32)) then return rand32_1(states);
-      else return states[1].bounded_random(pcg_getvalid_inc(1), bound + 1);
+      else return states[1].bounded_random_vary_inc(
+          pcg_getvalid_inc(1), bound + 1,
+          seed:uint(64), (count - 1):uint(64),
+          101, 4);
     }
     // returns x with 0 <= x <= bound
+    // count is 1-based
     private inline
-    proc boundedrand32_2(ref states, bound:uint(32)):uint(32) {
+    proc boundedrand32_2(ref states, seed:int(64), count:int(64),
+                         bound:uint(32)):uint(32) {
       // just get 32 random bits if bound+1 is not representable.
       if bound == max(uint(32)) then return rand32_2(states);
-      else return states[2].bounded_random(pcg_getvalid_inc(2), bound + 1);
+      else return states[2].bounded_random_vary_inc(
+          pcg_getvalid_inc(2), bound + 1,
+          seed:uint(64), (count - 1):uint(64),
+          102, 4);
     }
 
     private inline
@@ -1698,26 +1777,30 @@ module Random {
     }
 
     // Returns an unsigned integer x with 0 <= x <= bound
-    private proc boundedrand64_1(ref states, bound:uint):uint
+    // count is 1-based
+    private proc boundedrand64_1(ref states, seed:int(64), count:int(64),
+                                 bound:uint):uint
     {
       if bound > max(uint(32)):uint {
         var toprand = 0:uint;
         var botrand = 0:uint;
         
         // compute the bounded number in two calls to a 32-bit RNG
-        toprand = boundedrand32_1(states, (bound >> 32):uint(32));
-        botrand = boundedrand32_2(states, (bound & max(uint(32))):uint(32));
+        toprand = boundedrand32_1(states, seed, count, (bound >> 32):uint(32));
+        botrand = boundedrand32_2(states, seed, count, (bound & max(uint(32))):uint(32));
         return (toprand << 32) | botrand;
       } else {
-        return boundedrand32_1(states, bound:uint(32));
+        // Generate a # with RNG 1 but ignore it, to keep the
+        // stepping consistent.
+        rand32_1(states);
+        return boundedrand32_2(states, seed, count, bound:uint(32));
       }
     }
 
-
-    // Wrapper that takes a result type
-    private inline
-    proc randlc(type resultType, ref states) {
-
+    proc checkSufficientBits(type resultType, ref states) {
+      // Note - this error could be eliminated if we used
+      // the same strategy as bounded_rand_vary_inc and
+      // just computed the RNGs at the later incs
       param numGenForResultType = numGenerators(resultType);
       param numGen = states.size;
       if numGenForResultType > numGen then
@@ -1728,6 +1811,14 @@ module Random {
                       " bits) from a stream configured for " +
                       (32*numGen):string +
                       " bits of output");
+
+    }
+
+    // Wrapper that takes a result type
+    private inline
+    proc randlc(type resultType, ref states) {
+
+      checkSufficientBits(resultType, states);
 
       if resultType == complex(128) {
         return (randToReal64(rand64_1(states)),
@@ -1760,8 +1851,15 @@ module Random {
 
     // returns x with min <= x <= max (for integers)
     // and min <= x < max (for real/complex/imag)
+    // seed should be the initial seed of the RNG
+    // count should be the current count value
     private inline
-    proc randlc(type resultType, ref states, min, max) {
+    proc randlc_bounded(type resultType,
+                        ref states, seed:int(64), count:int(64),
+                        min, max) {
+
+      checkSufficientBits(resultType, states);
+
       if resultType == complex(128) {
         return (randToReal64(rand64_1(states), min.re, max.re),
                 randToReal64(rand64_2(states), min.im, max.im)):complex(128);
@@ -1777,15 +1875,15 @@ module Random {
       } else if resultType == real(32) {
         return randToReal32(rand32_1(states), min, max);
       } else if resultType == uint(64) || resultType == int(64) {
-        return (boundedrand64_1(states, (max-min):uint(64)) + min:uint(64)):resultType;
+        return (boundedrand64_1(states, seed, count, (max-min):uint(64)) + min:uint(64)):resultType;
       } else if resultType == uint(32) || resultType == int(32) {
-        return (boundedrand32_1(states, (max-min):uint(32)) + min:uint(32)):resultType;
+        return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
       } else if(resultType == uint(16) ||
                 resultType == int(16)) {
-        return (boundedrand32_1(states, (max-min):uint(32)) + min:uint(32)):resultType;
+        return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
       } else if(resultType == uint(8) ||
                 resultType == int(8)) {
-        return (boundedrand32_1(states, (max-min):uint(32)) + min:uint(32)):resultType;
+        return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
       } else if isBoolType(resultType) {
         compilerError("bounded rand with boolean type");
         return false;
@@ -2006,6 +2104,7 @@ module Random {
 
     /*
       Advances/rewinds the stream to the `n`-th value in the sequence.
+      The first value is with n=1.
 
       :arg n: The position in the stream to skip to.  Must be non-negative.
       :type n: integral
