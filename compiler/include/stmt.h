@@ -263,6 +263,7 @@ class GotoStmt : public Stmt {
   const char*         getName();
 
   bool                isGotoReturn()                                   const;
+  LabelSymbol*        gotoTarget()                                     const;
 };
 
 /************************************ | *************************************
