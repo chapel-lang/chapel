@@ -20,7 +20,7 @@ var rngs:width*pcg_setseq_64_xsh_rr_32_rng;
 var incs:width*uint(64);
 
 for j in 1..width {
-  incs(j) = pcg_getvalid_inc((100+j-1):uint(64));
+  incs(j) = pcg_getvalid_inc((101+4*(j-1)):uint(64));
   rngs(j).srandom(seed:uint(64), incs(j));
 }
 
