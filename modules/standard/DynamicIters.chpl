@@ -26,7 +26,7 @@
   Angeles Navarro. *PGAS 2011: Fifth Conference on Partitioned Global
   Address Space Programming Models*, October 2011.
 */
-module AdvancedIters {
+module DynamicIters {
 
 /*
    An atomic test-and-set lock.
@@ -45,7 +45,7 @@ record vlock {
 /*
    Toggle debugging output.
 */
-config param debugAdvancedIters:bool=false;
+config param debugDynamicIters:bool=false;
 
 //************************* Dynamic iterator
 
@@ -79,7 +79,7 @@ config param debugAdvancedIters:bool=false;
 */
 iter dynamic(c:range(?), chunkSize:int, numTasks:int=0) {
 
-  if debugAdvancedIters then 
+  if debugDynamicIters then 
     writeln("Serial dynamic Iterator. Working with range ", c);
   
   for i in c do yield i;    
@@ -107,7 +107,7 @@ where tag == iterKind.leader
   // If the number of tasks is insufficient, yield in serial
   if c.length == 0 then halt("The range is empty");
   if nTasks == 1 then {
-    if debugAdvancedIters then
+    if debugDynamicIters then
       writeln("Dynamic Iterator: serial execution because there is not enough work");
     yield (remain,);
   } else {
@@ -131,7 +131,7 @@ where tag == iterKind.leader
         const current:rType = remain(low .. high);
         
         if high >= low then {
-          if debugAdvancedIters then 
+          if debugDynamicIters then 
             writeln("Parallel dynamic Iterator. Working at tid ", tid, " with range ", unDensify(current,c), " yielded as ", current);
           yield (current,);
         }
@@ -147,7 +147,7 @@ where tag == iterKind.follower
 {
   type rType=c.type;
   const current:rType=unDensify(followThis(1),c);
-  if debugAdvancedIters then
+  if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
   for i in current do {
     yield i;
@@ -181,7 +181,7 @@ where tag == iterKind.follower
 */
 iter guided(c:range(?), numTasks:int=0) {
 
-  if debugAdvancedIters then 
+  if debugDynamicIters then 
     writeln("Serial guided Iterator. Working with range ", c);
   
   for i in c do yield i;                  
@@ -198,7 +198,7 @@ where tag == iterKind.leader
   // If the number of tasks is insufficient, yield in serial
   if c.length == 0 then halt("The range is empty");
   if nTasks == 1 then {
-    if debugAdvancedIters then
+    if debugDynamicIters then
       writeln("Guided Iterator: serial execution because there is not enoguh work");
     yield (remain,); 
   }
@@ -213,7 +213,7 @@ where tag == iterKind.leader
         // There is local work in remain(tid)
         const current:rType=adaptSplit(remain, factor, undone, lock); 
         if current.length !=0 then {
-          if debugAdvancedIters then 
+          if debugDynamicIters then 
             writeln("Parallel guided Iterator. Working at tid ", tid, " with range ", unDensify(current,c), " yielded as ", current);
           yield (current,);
         }
@@ -230,7 +230,7 @@ where tag == iterKind.follower
 {
   type rType=c.type;
   const current:rType=unDensify(followThis(1),c);
-  if debugAdvancedIters then
+  if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
   for i in current do {
     yield i;
@@ -266,7 +266,7 @@ where tag == iterKind.follower
 */
 iter adaptive(c:range(?), numTasks:int=0) {  
 
-  if debugAdvancedIters then 
+  if debugDynamicIters then 
     writeln("Serial adaptive work-stealing Iterator. Working with range ", c);
   
   for i in c do yield i;
@@ -320,7 +320,7 @@ where tag == iterKind.leader
   // If the number of tasks is insufficient, yield in serial
   if c.length == 0 then halt("The range is empty");
   if nTasks == 1 then {
-    if debugAdvancedIters then
+    if debugDynamicIters then
       writeln("Adaptive work-stealing Iterator: serial execution because there is not enough work");
     yield (densify(c,c),);
     
@@ -354,7 +354,7 @@ where tag == iterKind.leader
         (r+tid*chunkSize)#chunkSize;
       barrier.add(1);
 
-      if debugAdvancedIters then 
+      if debugDynamicIters then 
         writeln("Parallel adaptive work-stealing Iterator. Working at tid ", tid, " with initial range ", localWork[tid]);
 
       // A barrier waiting for each thread to finish the initial assignment
@@ -367,7 +367,7 @@ where tag == iterKind.leader
         // The current range we get after splitting locally
         const zeroBasedIters:rType=adaptSplit(localWork[tid], factorSteal, moreLocalWork[tid], locks[tid]);
         if zeroBasedIters.length !=0 then {
-          if debugAdvancedIters then 
+          if debugDynamicIters then 
             writeln("Parallel adaptive Iterator. Working locally at tid ", tid, " with range yielded as ", zeroBasedIters);
           yield (zeroBasedIters,);
         }
@@ -380,7 +380,7 @@ where tag == iterKind.leader
       var stealFailed:bool=false;
 
       while moreWork do {
-        if debugAdvancedIters then 
+        if debugDynamicIters then 
           writeln("Entering at Stealing phase in tid ", tid," with victim ", victim, " using method of Stealing ", methodStealing);
 
         // Perform the spliting at the victim remaining range
@@ -390,7 +390,7 @@ where tag == iterKind.leader
             // There is work in victim
             const zeroBasedIters2:rType=adaptSplit(localWork[victim], factorSteal, moreLocalWork[victim], locks[victim]);
             if zeroBasedIters2.length !=0 then {
-              if debugAdvancedIters then 
+              if debugDynamicIters then 
                 writeln("Range stealed at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
               yield (zeroBasedIters2,);
             }
@@ -403,7 +403,7 @@ where tag == iterKind.leader
             const zeroBasedIters2:rType=adaptSplit(localWork[victim], factorSteal, moreLocalWork[victim], locks[victim], methodStealing==Method.WholeTail);
                                           //after splitting from a victim range
             if zeroBasedIters2.length !=0 then {
-              if debugAdvancedIters then 
+              if debugDynamicIters then 
                 writeln("Range stealed at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
               yield (zeroBasedIters2,);
             }
@@ -416,7 +416,7 @@ where tag == iterKind.leader
         if (methodStealing==Method.Whole || methodStealing==Method.WholeTail || (methodStealing==Method.RoundRobin && stealFailed)) then { 
           nVisitedVictims += 1; // Signal that there is no more work in victim
           stealFailed=false; 
-          if debugAdvancedIters then 
+          if debugDynamicIters then 
             writeln("Failed Stealing intent at tid ", tid," with victim ", victim, " and total no. of visited victims ", nVisitedVictims);
         }
         // Check if there is no more work
@@ -439,7 +439,7 @@ where tag == iterKind.follower
 {
   type rType=c.type;
   var current:rType=unDensify(followThis(1),c);
-  if debugAdvancedIters then
+  if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
   for i in current do {
     yield i;
