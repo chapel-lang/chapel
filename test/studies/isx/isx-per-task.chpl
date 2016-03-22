@@ -153,14 +153,17 @@ var verifyKeyCount: atomic int;
 var barrier = new Barrier(numTasks);
 
 // should result in one loop iteration per task
-forall taskID in DistTaskSpace {
-  //
-  // The non-positive iterations represent burn-in runs, so don't
-  // time those.  To reduce time spent in verification, verify only
-  // the final timed run.
-  //
-  for i in 1-numBurnInRuns..numTrials do
-    bucketSort(taskID, trial=i, time=printTimings && (i>0), verify=(i==numTrials));
+coforall loc in Locales do on loc {
+  coforall tid in 0..#perBucketMultiply {
+    //
+    // The non-positive iterations represent burn-in runs, so don't
+    // time those.  To reduce time spent in verification, verify only
+    // the final timed run.
+    //
+    const taskID = (loc.id * perBucketMultiply) + tid;
+    for i in 1-numBurnInRuns..numTrials do
+      bucketSort(taskID, trial=i, time=printTimings && (i>0), verify=(i==numTrials));
+  }
 }
 
 if debug {
@@ -171,6 +174,8 @@ if debug {
 
 if printTimings then
   printTimingData("locales");
+
+delete barrier;
 
 
 proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
@@ -343,7 +348,7 @@ proc verifyResults(taskID, myBucketSize, myLocalKeyCounts) {
 
 
 proc makeInput(taskID) {
-  use Random.PCGRandom;
+  use Random;
 
   var myKeys: [0..#keysPerTask] keyType;
 
@@ -351,11 +356,12 @@ proc makeInput(taskID) {
   // Seed RNG
   //
   if (debug) then
-    writeln(taskID, ": Calling pcg32_srandom_r with ", taskID);
+    writeln(taskID, ": Initializing random stream with seed = ", taskID);
 
-  var MyRandStream = new PCGRandomStream(seed = taskID,
-                                         parSafe=false,
-                                         eltType = keyType);
+  var MyRandStream = makeRandomStream(seed = taskID,
+                                      parSafe = false,
+                                      eltType = keyType,
+                                      algorithm = RNG.PCG);
 
   //
   // Fill local array
@@ -377,6 +383,8 @@ proc makeInput(taskID) {
     
   if (debug) then
     writeln(taskID, ": myKeys: ", myKeys);
+
+  delete MyRandStream;
 
   return myKeys;
 }
@@ -418,7 +426,7 @@ proc printTimingData(units) {
   }
 
   writeln();
-  writeln("averages across ", units, " of min across trials:");
+  writeln("averages across ", units, " of min across trials (min..max):");
   if useSubTimers {
     printTimingStats(inputTime, "input");
     printTimingStats(bucketCountTime, "bucket count");
@@ -448,17 +456,24 @@ proc printTimeTable(timeTable, units, timerName) {
 }
 
 //
-// print timing statistics (currently only avg across locales/buckets
-// of min across trials)
+// print timing statistics (avg/min/max across tasks of min across
+// trials)
 //
 proc printTimingStats(timeTable, timerName) {
-  //  var minMinTime: real = max(real);
-  var /* maxMinTime, */ totMinTime: real;
-  forall timings in timeTable with (/*min reduce minMinTime,
-                                      max reduce maxMinTime,*/
+  var minMinTime, maxMinTime, totMinTime: real;
+
+  //
+  // iterate over the buckets, computing the min/max/total of the
+  // min times across trials.
+  //
+  forall timings in timeTable with (min reduce minMinTime,
+                                    max reduce maxMinTime,
                                     + reduce totMinTime) {
-    totMinTime += min reduce timings;
+    const minTime = min reduce timings;
+    totMinTime += minTime;
+    minMinTime = min(minMinTime, minTime);
+    maxMinTime = max(maxMinTime, minTime);
   }
   var avgTime = totMinTime / numTasks;
-  writeln(timerName, " = ", avgTime);
+  writeln(timerName, " = ", avgTime, " (", minMinTime, "..", maxMinTime, ")");
 }

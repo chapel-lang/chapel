@@ -32,8 +32,7 @@ chunk_alloc_mmap_slow(size_t size, size_t alignment, bool *zero, bool *commit)
 }
 
 void *
-chunk_alloc_mmap(void *new_addr, size_t size, size_t alignment, bool *zero,
-    bool *commit)
+chunk_alloc_mmap(size_t size, size_t alignment, bool *zero, bool *commit)
 {
 	void *ret;
 	size_t offset;
@@ -54,10 +53,9 @@ chunk_alloc_mmap(void *new_addr, size_t size, size_t alignment, bool *zero,
 	assert(alignment != 0);
 	assert((alignment & chunksize_mask) == 0);
 
-	ret = pages_map(new_addr, size);
-	if (ret == NULL || ret == new_addr)
-		return (ret);
-	assert(new_addr == NULL);
+	ret = pages_map(NULL, size);
+	if (ret == NULL)
+		return (NULL);
 	offset = ALIGNMENT_ADDR2OFFSET(ret, alignment);
 	if (offset != 0) {
 		pages_unmap(ret, size);

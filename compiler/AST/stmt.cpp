@@ -1263,6 +1263,27 @@ Expr* GotoStmt::getFirstExpr() {
   return (label != 0) ? label->getFirstExpr() : this;
 }
 
+bool GotoStmt::isGotoReturn() const {
+  return gotoTag == GOTO_RETURN;
+}
+
+LabelSymbol* GotoStmt::gotoTarget() const {
+  LabelSymbol* retval = NULL;
+
+  if (SymExpr* labelExpr = toSymExpr(label)) {
+    if (LabelSymbol* label = toLabelSymbol(labelExpr->var)) {
+      retval = label;
+    } else {
+      INT_ASSERT(false);
+    }
+
+  } else {
+    INT_ASSERT(false);
+  }
+
+  return retval;
+}
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *

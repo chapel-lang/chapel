@@ -63,6 +63,7 @@ tags
 /doc/sphinx/source/modules/dists
 /doc/sphinx/source/modules/layouts
 /doc/sphinx/source/modules/internal
+/doc/sphinx/source/modules/packages
 /doc/sphinx/source/language/*.pdf
 /doc/sphinx/source/tools/chpldoc/man.rst
 !/doc/sphinx/source/index.rst

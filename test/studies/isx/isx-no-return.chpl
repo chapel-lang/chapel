@@ -171,6 +171,8 @@ if debug {
 if printTimings then
   printTimingData("buckets");
 
+delete barrier;
+
 
 proc bucketSort(bucketID, trial: int, time = false, verify = false) {
   const subtime = time && useSubTimers;
@@ -332,17 +334,18 @@ proc verifyResults(bucketID, myBucketSize, myLocalKeyCounts) {
 
 
 proc makeInput(myKeys, bucketID) {
-  use Random.PCGRandom;
+  use Random;
 
   //
   // Seed RNG
   //
   if (debug) then
-    writeln(bucketID, ": Calling pcg32_srandom_r with ", bucketID);
+    writeln(here.id, ": Initializing random stream with seed = ", here.id);
 
-  var MyRandStream = new PCGRandomStream(seed = here.id,
-                                         parSafe=false,
-                                         eltType = keyType);
+  var MyRandStream = makeRandomStream(seed = here.id,
+                                      parSafe = false,
+                                      eltType = keyType,
+                                      algorithm = RNG.PCG);
 
   //
   // Fill local array
@@ -364,6 +367,8 @@ proc makeInput(myKeys, bucketID) {
     
   if (debug) then
     writeln(bucketID, ": myKeys: ", myKeys);
+
+  delete MyRandStream;
 }
 
 
@@ -403,7 +408,7 @@ proc printTimingData(units) {
   }
 
   writeln();
-  writeln("averages across ", units, " of min across trials:");
+  writeln("averages across ", units, " of min across trials (min..max):");
   if useSubTimers {
     printTimingStats(inputTime, "input");
     printTimingStats(bucketCountTime, "bucket count");
@@ -433,17 +438,24 @@ proc printTimeTable(timeTable, units, timerName) {
 }
 
 //
-// print timing statistics (currently only avg across locales/buckets
-// of min across trials)
+// print timing statistics (avg/min/max across buckets of min across
+// trials)
 //
 proc printTimingStats(timeTable, timerName) {
-  //  var minMinTime: real = max(real);
-  var /* maxMinTime, */ totMinTime: real;
-  forall timings in timeTable with (/*min reduce minMinTime,
-                                      max reduce maxMinTime,*/
+  var minMinTime, maxMinTime, totMinTime: real;
+
+  //
+  // iterate over the buckets, computing the min/max/total of the
+  // min times across trials.
+  //
+  forall timings in timeTable with (min reduce minMinTime,
+                                    max reduce maxMinTime,
                                     + reduce totMinTime) {
-    totMinTime += min reduce timings;
+    const minTime = min reduce timings;
+    totMinTime += minTime;
+    minMinTime = min(minMinTime, minTime);
+    maxMinTime = max(maxMinTime, minTime);
   }
   var avgTime = totMinTime / numLocales;
-  writeln(timerName, " = ", avgTime);
+  writeln(timerName, " = ", avgTime, " (", minMinTime, "..", maxMinTime, ")");
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 rm -f *.good
-if [ "gasnet" = `$CHPL_HOME/util/chplenv/chpl_comm.py` ]; then cp goods-4/*.good .; else cp goods-1/*.good .; fi
+if [ ! "none" = `$CHPL_HOME/util/chplenv/chpl_comm.py` ]; then cp goods-4/*.good .; else cp goods-1/*.good .; fi
 
 for f in *.good; do
   ftmp="$f.tmp"

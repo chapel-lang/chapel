@@ -1,0 +1,83 @@
+==============================
+Chapel implementation of LCALS
+==============================
+
+This directory contains a Chapel port of the LCALS benchmark. See the reference
+version at https://codesign.llnl.gov/LCALS.php for more details.
+
+
+------
+Status
+------
+
+The Chapel version of LCALS is a work-in-progress. Several improvements remain
+to improve both performance and elegance. See the list below for more details.
+
+
+-----
+Files
+-----
+
+This directory's contents are as follows:
+
+./
+  LCALSMain.chpl       : The main entry point in the Chapel source code
+
+  RunARawLoops.chpl             :\
+  RunBRawLoops.chpl             : \
+  RunCRawLoops.chpl             :  | The kernel implementations
+  RunParallelRawLoops.chpl      : /
+  RunVectorizeOnlyRawLoops.chpl :/
+
+  LCALSConfiguration.chpl : Configuration constants to define what to run
+  LCALSLoops.chpl         : Routines to initialize kernel data
+
+  LCALSDataTypes.chpl : | Data types and enumerations
+  LCALSEnums.chpl     :/
+
+  LCALSParams.chpl : | Global variables and constants
+  LCALSStatic.chpl :/
+
+  LCALSChecksums.chpl : Checks the validity of computed checksums
+
+  Timer.chpl      : A simple timer
+
+  LongDouble.chpl : | An interface to the "long double" type in C
+  longdouble.h    :/
+
+  Makefile       : Build LCALS
+
+  *.notest               :\
+  LCALSMain.graph        : \
+  LCALSMain.perfexecopts :  \
+  LCALSMain.perfkeys     :   | Used by the Chapel testing system
+  LCALSMain.perftimeout  :  /
+  LCALSMain.prediff      : /
+  LCALSMain.skipif       :/
+
+  README                   : This file
+  README-LCALS_license.txt : The 
+
+-----------------
+Execution Options
+-----------------
+
+* The individual kernels and loop variants to run can be controlled with
+  configuration constants with names starting with "run". To see the full
+  list, type './LCALSMain --help'.
+
+* checkSumTolerence : allow computed checksums to be off by this amount from
+  the expected values.
+
+* noisyChecksumChecks : Print computed checksums and differences from expected
+  values even if they are within 'checkSumTolerence'.
+
+
+-----
+TODOs
+-----
+
+Performance issues
+------------------
+
+* The performance of this benchmark has not been deeply investigated or tuned.

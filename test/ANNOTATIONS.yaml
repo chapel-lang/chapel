@@ -121,6 +121,9 @@ all:
     - Default to jemalloc for comm=none (#3333)
   03/04/16:
     - implemented doubling/halving for array-as-vec (#3380)
+  03/17/16:
+    - text: Switched gen compiler to gcc 5.1.0
+      config: 16 node XC, Single node XC
 
 AllCompTime:
   11/09/14:
@@ -152,6 +155,10 @@ binary-trees:
     - introduce "library mode"
   01/25/16:
     - Optimize iteration over anonymous low-bounded counted ranges (#3154)
+  03/14/16:
+    - upgrade jemalloc to 4.1.0 (#3447)
+  03/16/16:
+    - revert jemalloc to 4.0.4 (#3477)
 
 chameneos-redux:
   07/08/13:
@@ -195,6 +202,8 @@ fasta:
     - Add c_string_copy type
   01/14/16:
     - optimize certain functions that return with ref-intent (#3101)
+  03/12/16:
+    - implemented good_alloc_size for jemalloc(#3446)
 
 forall-dom-range:
   01/21/15:
@@ -367,6 +376,10 @@ nbody:
     - chap04 Subtest random glitch
   01/17/16:
     - add dead string literal elimination (#3120)
+  03/14/16:
+    - upgrade jemalloc to 4.1.0 (#3447)
+  03/16/16:
+    - revert jemalloc to 4.0.4 (#3477)
 
 parOpEquals:
   09/06/13:
@@ -387,6 +400,8 @@ regexdna:
     - started building re2 with optimizations (#2930)
   12/13/15:
     - Fixed string memory leak resulting from redundant autoCopies (#3023)
+  03/12/16:
+    - implemented good_alloc_size for jemalloc(#3446)
 
 revcomp:
   05/11/15:

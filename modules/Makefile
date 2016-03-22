@@ -66,42 +66,44 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 
 
 MODULES_TO_DOCUMENT = \
-	standard/AdvancedIters.chpl \
 	standard/Assert.chpl \
 	standard/Barrier.chpl \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
 	standard/CommDiagnostics.chpl \
-	standard/Curl.chpl \
+	standard/DynamicIters.chpl \
 	standard/Error.chpl \
-	standard/FFTW.chpl \
-	standard/FFTW_MT.chpl \
 	standard/FileSystem.chpl \
 	standard/GMP.chpl \
-	standard/HDFS.chpl \
-	standard/HDFSiterator.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
-	standard/LAPACK.chpl \
 	standard/List.chpl \
 	standard/Math.chpl \
 	standard/Memory.chpl \
-	standard/Norm.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
-	standard/RecordParser.chpl \
 	standard/Reflection.chpl \
 	standard/Regexp.chpl \
-	standard/Search.chpl \
-	standard/Sort.chpl \
 	standard/Spawn.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/UtilReplicatedVar.chpl \
-	standard/VisualDebug.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
+
+PACKAGES_TO_DOCUMENT = \
+	packages/Curl.chpl \
+	packages/FFTW.chpl \
+	packages/FFTW_MT.chpl \
+	packages/HDFS.chpl \
+	packages/HDFSiterator.chpl \
+	packages/LAPACK.chpl \
+	packages/Norm.chpl \
+	packages/RecordParser.chpl \
+	packages/Search.chpl \
+	packages/Sort.chpl \
+	packages/VisualDebug.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
@@ -122,18 +124,19 @@ INTERNAL_MODULES_TO_DOCUMENT =          \
 	internal/ChapelIO.chpl                \
 	internal/ChapelIteratorSupport.chpl   \
 	internal/ChapelLocale.chpl    \
+	internal/UtilMisc_forDocs.chpl 	      \
 	internal/ChapelRange.chpl             \
-	internal/ChapelSyncvar.chpl           \
-	internal/ChapelTuple.chpl             \
 	internal/String.chpl                  \
-	internal/UtilMisc_forDocs.chpl
+	internal/ChapelSyncvar.chpl           \
+	internal/ChapelTuple.chpl
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
-	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
+	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
 	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	./dists/fixDistDocs.perl      ${MODULE_SPHINX}
 	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/packages ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_SPHINX}/source/modules/
