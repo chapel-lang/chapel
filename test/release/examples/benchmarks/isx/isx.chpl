@@ -175,6 +175,8 @@ if debug {
 if printTimings then
   printTimingData("locales");
 
+delete barrier;
+
 
 proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   const subtime = time && useSubTimers;
@@ -346,11 +348,11 @@ proc makeInput(taskID, myKeys) {
   // Seed RNG
   //
   if (debug) then
-    writeln(taskID, ": Calling pcg32_srandom_r with ", taskID);
+    writeln(taskID, ": Initializing random stream with seed = ", taskID);
 
-  var MyRandStream = new PCGRandomStream(seed = taskID,
-                                         parSafe=false,
-                                         eltType = keyType);
+  var MyRandStream = new RandomStream(seed = taskID,
+                                      parSafe=false,
+                                      eltType = keyType);
 
   //
   // Fill local array
@@ -373,6 +375,7 @@ proc makeInput(taskID, myKeys) {
   if (debug) then
     writeln(taskID, ": myKeys: ", myKeys);
 
+  delete MyRandStream;
 }
 
 

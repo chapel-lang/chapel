@@ -1357,7 +1357,7 @@ for testname in testsrc:
         #
         # Compile (with timeout)
         #
-        # compilation timeout defaults to 2 * execution timeout.
+        # compilation timeout defaults to 4 * execution timeout.
         # This is to quiet compilation timeouts in some oversubscribed test
         # configurations (since they are generating a lot of testing noise, but
         # don't represent a real issue.)
@@ -1368,7 +1368,7 @@ for testname in testsrc:
         # testing. Hopefully this is just a temporary work around and I'll
         # remember to add the cleaner solution soon.
         #
-        comptimeout = 2*timeout
+        comptimeout = 4*timeout
         cmd=ShellEscapeCommand(cmd);
         sys.stdout.write('[Executing compiler %s'%(cmd))
         if args:

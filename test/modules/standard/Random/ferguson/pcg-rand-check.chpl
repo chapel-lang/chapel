@@ -13,7 +13,8 @@ var expect32_2 = [0xff85ecc9, 0x4de4d2f6, 0x72eb3394,
 
 writeln("Checking 32-bit RNG seq 1");
 {
-  var rs = new PCGRandomStream(seed = seed, eltType = uint(32));
+  var rs = makeRandomStream(seed = seed, parSafe=false,
+                            eltType = uint(32), algorithm=RNG.PCG);
   for i in 1..6 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
@@ -35,7 +36,8 @@ writeln("Checking 32-bit RNG seq 1");
 }
 
 {
-  var rs = new PCGRandomStream(seed = seed, eltType = int(32));
+  var rs = makeRandomStream(seed = seed, parSafe=false,
+                            eltType = int(32), algorithm=RNG.PCG);
   for i in 1..6 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
@@ -59,7 +61,8 @@ writeln("Checking 32-bit RNG seq 1");
 
 // check 8 bit version
 {
-  var rs = new PCGRandomStream(seed = seed, eltType = uint(8));
+  var rs = makeRandomStream(seed = seed, parSafe=false,
+                            eltType = uint(8), algorithm=RNG.PCG);
   for i in 1..6 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
@@ -82,7 +85,8 @@ writeln("Checking 32-bit RNG seq 1");
 
 // check 16 bit version
 {
-  var rs = new PCGRandomStream(seed = seed, eltType = uint(16));
+  var rs = makeRandomStream(seed = seed, parSafe=false,
+                            eltType = uint(16), algorithm=RNG.PCG);
   for i in 1..6 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
@@ -106,7 +110,8 @@ writeln("Checking 32-bit RNG seq 1");
 writeln("Checking 2x 32-bit RNG seq 1 seq 2");
 // check 64 bit version
 {
-  var rs = new PCGRandomStream(seed = seed, eltType = uint(64));
+  var rs = makeRandomStream(seed = seed, parSafe=false,
+                            eltType = uint(64), algorithm=RNG.PCG);
   for i in 1..6 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
@@ -133,7 +138,7 @@ writeln("Checking 2x 32-bit RNG seq 1 seq 2");
 /*{
   var expect:[1..6] real(32);
   fillRandom(expect, seed=seed, algorithm=RNG.PCG);
-  var rs = new RandomStream(seed = seed, eltType = real(32));
+  var rs = makeRandomStream(seed = seed, eltType = real(32), algorithm=RNG.PCG);
   for i in 1..6 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
@@ -159,7 +164,7 @@ writeln("Checking real(64)");
 {
   var expect:[1..6] real(64);
   fillRandom(expect, seed=seed, algorithm=RNG.PCG);
-  var rs = new PCGRandomStream(seed = seed, eltType = real(64));
+  var rs = new RandomStream(seed = seed, eltType = real(64));
   for i in 1..6 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
@@ -185,12 +190,12 @@ writeln("Checking random shuffle and permutation");
 {
   for i in 1..10 {
     var arr = [10,20,30,40];
-    shuffle(arr, seed=i);
+    shuffle(arr, seed=i, algorithm=RNG.PCG);
     writeln(arr);
   }
   for i in 1..10 {
     var arr:[1..4] int;
-    permutation(arr, seed=i);
+    permutation(arr, seed=i, algorithm=RNG.PCG);
     writeln(arr);
   }
 }

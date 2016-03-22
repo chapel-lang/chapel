@@ -111,9 +111,9 @@ module SSCA2_driver
             var linear_index         : index (vertex_indices);
 
             var Rand_Gen = if REPRODUCIBLE_PROBLEMS then 
-                             new RandomStream (seed = 3217900597)
+                             new NPBRandomStream (seed = 3217900597)
                            else
-                             new RandomStream ();
+                             new NPBRandomStream ();
 
             var V_s      = 0;
 

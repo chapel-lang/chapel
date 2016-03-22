@@ -484,7 +484,7 @@ proc gen_keys () {
       var first: int = mype*(nkeys/numLocales);
       var last : int = first+(nkeys/numLocales) - 1;
  
-      var rs = new RandomStream(seed);
+      var rs = new NPBRandomStream(seed);
       rs.skipToNth(first*4+1);
       for i in first..last {
         rs.fillRandom(tmpreals);

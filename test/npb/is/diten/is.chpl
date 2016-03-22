@@ -48,7 +48,7 @@ var passedVerifications = 0;
 
 proc main() {
   var time = new Timer();
-  var randomStream = new RandomStream(seed);
+  var randomStream = new NPBRandomStream(seed);
   var tempreals: [1..4] real;
   var max = maxKey / 4;
 

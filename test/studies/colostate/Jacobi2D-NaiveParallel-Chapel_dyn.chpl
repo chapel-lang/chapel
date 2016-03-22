@@ -13,7 +13,7 @@
  ******************************************************************************/
 use Time;
 use Random; 
-use AdvancedIters;
+use DynamicIters;
 config const printTime: bool = true; // print timer
 config const globalSeed = SeedGenerator.currentTime;
 config const problemSize = 1000; 

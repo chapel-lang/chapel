@@ -31,8 +31,8 @@ writef(" Number of Buckets        = %{########}\n", numBuckets);
 writeln();
 
 // fill arrays with random numbers (using standard Random module)
-fillRandom(X, seed);
-fillRandom(X2, seed2);
+fillRandom(X, seed, algorithm=RNG.NPB);
+fillRandom(X2, seed2, algorithm=RNG.NPB);
 X = (X+X2)/2;
 
 // output arrays of random numbers as averages

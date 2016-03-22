@@ -2,13 +2,13 @@
 libhdfs3 README for Chapel
 ==========================
 
-Chapel can be built (by setting CHPL_AUX_FILESYS=libhdfs3) to include libhdfs3
-(http://llvm.org) for HDFS file processing. 
+Chapel runtime support for HDFS using libhdfs3 can be built 
+by setting CHPL_AUX_FILESYS=hdfs3.
 
 For more information on the current support for libhdfs3 within Chapel,
 please refer to $CHPL_HOME/doc/technotes/auxIO.rst.  For more
-information about libhdfs3 itself, please refer to the website above or to
-the README in the libhdfs3/ subdirectory of this directory.
+information about libhdfs3 itself, please refer to the website: 
+https://github.com/PivotalRD/libhdfs3
 
 libhdfs3 has the following build dependencies:
 
@@ -20,7 +20,9 @@ libhdfs3 has the following build dependencies:
     libuuid                         http://sourceforge.net/projects/libuuid/
     libgsasl                        http://www.gnu.org/software/gsasl/
 
-To use Chapel's third-party build support, change directory to 
+Instructions
+
+To use Chapel's third-party build support for libhdfs3, change directory to 
 $CHPL_HOME/third-party/libhdfs3 and type 'make'.
 
 When the build completes all of libhdfs3's header files and library files 
