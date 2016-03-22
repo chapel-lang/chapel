@@ -1357,7 +1357,7 @@ for testname in testsrc:
         #
         # Compile (with timeout)
         #
-        # compilation timeout defaults to 2 * execution timeout.
+        # compilation timeout defaults to 4 * execution timeout.
         # This is to quiet compilation timeouts in some oversubscribed test
         # configurations (since they are generating a lot of testing noise, but
         # don't represent a real issue.)
