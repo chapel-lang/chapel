@@ -570,6 +570,7 @@ module Random {
   module PCGRandom {
 
     use RandomSupport;
+    use PCGRandomLib;
 
     // How many generators do we need for this type?
     private
@@ -1053,6 +1054,7 @@ module Random {
     }
 
 
+    module PCGRandomLib {
     /*
        Low-level PCG random number generation interface (64-bits of state,
        32-bits output).
@@ -1733,6 +1735,8 @@ module Random {
       }
       return acc_mult * state + acc_plus;
     }
+
+    } // end PCGRandomLib
 
     // returns a random number in [0, 1]
     // where the number is a multiple of 2**-64
