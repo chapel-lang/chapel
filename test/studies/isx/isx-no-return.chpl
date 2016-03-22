@@ -332,7 +332,7 @@ proc verifyResults(bucketID, myBucketSize, myLocalKeyCounts) {
 
 
 proc makeInput(myKeys, bucketID) {
-  use Random.PCGRandom;
+  use Random;
 
   //
   // Seed RNG
@@ -340,9 +340,10 @@ proc makeInput(myKeys, bucketID) {
   if (debug) then
     writeln(bucketID, ": Calling pcg32_srandom_r with ", bucketID);
 
-  var MyRandStream = new PCGRandomStream(seed = here.id,
-                                         parSafe=false,
-                                         eltType = keyType);
+  var MyRandStream = makeRandomStream(seed = here.id,
+                                      parSafe = false,
+                                      eltType = keyType,
+                                      algorithm = RNG.PCG);
 
   //
   // Fill local array
