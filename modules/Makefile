@@ -33,7 +33,7 @@ CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_COMPILER)
-SYS_CTYPES_MODULE_DOC=standard/gen/doc/SysCTypes.chpl
+SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
