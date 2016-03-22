@@ -217,8 +217,8 @@ class CallExpr : public Expr {
 
   bool            isNamed(const char*);
 
-  int             numActuals();
-  Expr*           get(int index);
+  int             numActuals()                                           const;
+  Expr*           get(int index)                                         const;
   FnSymbol*       findFnSymbol();
 
   bool            isPrimitive()                                          const;
