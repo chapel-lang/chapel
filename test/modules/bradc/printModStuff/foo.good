@@ -7,6 +7,7 @@ module search dirs:
   subdir4/subdir
   $CHPL_HOME/modules/standard/gen/...
   $CHPL_HOME/modules/standard
+  $CHPL_HOME/modules/packages
   $CHPL_HOME/modules/layouts
   $CHPL_HOME/modules/dists
   $CHPL_HOME/modules/dists/dims
@@ -30,8 +31,8 @@ Parsing module files:
   $CHPL_HOME/modules/standard/List.chpl
   $CHPL_HOME/modules/standard/SysBasic.chpl
   $CHPL_HOME/modules/standard/IO.chpl
-  $CHPL_HOME/modules/standard/Sort.chpl
-  $CHPL_HOME/modules/standard/Search.chpl
+  $CHPL_HOME/modules/packages/Sort.chpl
+  $CHPL_HOME/modules/packages/Search.chpl
   $CHPL_HOME/modules/standard/Error.chpl
   $CHPL_HOME/modules/standard/Regexp.chpl
 In bar

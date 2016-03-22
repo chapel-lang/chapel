@@ -1,5 +1,5 @@
-// Test to check the correctness of the adaptive() Iterator from the AdvancedIters module
-use AdvancedIters;
+// Test to check the correctness of the adaptive() Iterator from the DynamicIters module
+use DynamicIters;
 
 config const nTasks=4;           // number of cores; should be here.maxTaskPar?
 config const n:int=10000;        // The size of the range
