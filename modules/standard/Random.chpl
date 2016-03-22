@@ -554,22 +554,6 @@ module Random {
      and the paper, "PCG: A Family of Simple Fast Space-Efficient Statistically
      Good Algorithms for Random Number Generation" by M.E. O'Neill.
 
-     Besides a Chapel :class:`RandomStream` interface, this module includes a
-     number of low-level PCG random functions:
-
-       * :record:`pcg_setseq_64_xsh_rr_32_rng` (the default PCG RNG)
-       * :record:`pcg_setseq_64_rxs_m_xs_64_rng`
-       * :record:`pcg_setseq_32_rxs_m_xs_32_rng`
-       * :record:`pcg_setseq_16_rxs_m_xs_16_rng`
-       * :record:`pcg_setseq_8_rxs_m_xs_8_rng`
-       * :record:`pcg_setseq_N_rxs_m_xs_N_rng` which is a generalization of the
-         above
-
-     These names come from the PCG paper and reference implementations.  The
-     first integer is the number of state bits, and the last integer is the
-     number of output bits. The other parts describe the permutation function in
-     the LCG.
-
      It also includes some Chapel-specific features, such as generating real,
      imag, and complex numbers; and generating numbers in a range in parallel.
      These features are not available in the reference implementations of PCG.
@@ -1068,6 +1052,27 @@ module Random {
     }
 
 
+    /*
+
+     Low-level PCG RNG implementation.
+
+     Besides a Chapel :class:`RandomStream` interface, the :mod:`PCGRandomLib`
+     module includes a number of low-level PCG random functions.
+
+       * :record:`pcg_setseq_64_xsh_rr_32_rng` (the default PCG RNG)
+       * :record:`pcg_setseq_64_rxs_m_xs_64_rng`
+       * :record:`pcg_setseq_32_rxs_m_xs_32_rng`
+       * :record:`pcg_setseq_16_rxs_m_xs_16_rng`
+       * :record:`pcg_setseq_8_rxs_m_xs_8_rng`
+       * :record:`pcg_setseq_N_rxs_m_xs_N_rng` which is a generalization of the
+         above
+
+     These names come from the PCG paper and reference implementations.  The
+     first integer is the number of state bits, and the last integer is the
+     number of output bits. The other parts describe the permutation function in
+     the LCG.
+
+     */
     module PCGRandomLib {
     /*
        Low-level PCG random number generation interface (64-bits of state,
