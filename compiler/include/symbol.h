@@ -490,14 +490,11 @@ public:
   ExternBlockInfo*     extern_info;
 
   virtual void         printDocs(std::ostream *file, unsigned int tabs);
-          void         addPrefixToName(std::string prefix);
+          void         printTableOfContents(std::ostream *file);
           std::string  docsName();
 
 private:
   void                 getTopLevelConfigOrVariables(Vec<VarSymbol *> *contain, Expr *expr, bool config);
-
-  // Used when documenting submodules.
-  std::string          moduleNamePrefix;
 };
 
 /******************************** | *********************************

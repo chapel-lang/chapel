@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
+#include <cerrno>
 #include <fstream>
 #include <iostream>
-#include <stack>
 #include <string>
 #include <sys/stat.h>
 
@@ -27,17 +27,31 @@
 
 #include "docsDriver.h"
 #include "symbol.h"
+#include "stringutil.h"
 #include "type.h"
 
 
-AstPrintDocs::AstPrintDocs(std::ostream *file) :
-  file(file),
-  tabs(0)
+AstPrintDocs::AstPrintDocs(std::string moduleName, std::string path) :
+  file(NULL),
+  tabs(0),
+  moduleName(moduleName),
+  pathWithoutPostfix(""),
+  tableOfContentsNeeded(false)
 {
+  pathWithoutPostfix = path + "/" + moduleName;
+
+  std::string fullname = pathWithoutPostfix;
+  if (fDocsTextOnly) {
+    fullname = fullname + ".txt";
+  } else {
+    fullname = fullname + ".rst";
+  }
+  file = new std::ofstream(fullname.c_str(), std::ios::out);
 }
 
 
 AstPrintDocs::~AstPrintDocs() {
+  file->close();
 }
 
 
@@ -98,15 +112,26 @@ bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
   }
 
   // If this is a sub module (i.e. other modules were entered and not yet
-  // exited before this one), ensure the docs naming is correct.
-  if (!this->moduleNames.empty()) {
-    node->addPrefixToName(this->moduleNames.top() + ".");
+  // exited before this one), we want to open a new file in a subdirectory.
+  if (strcmp(node->name, this->moduleName.c_str()) != 0) {
+    // Create a directory with our module name and store this file in it.
+    static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
+    int result = mkdir(this->pathWithoutPostfix.c_str(), dirPerms);
+    if (result != 0 && errno != 0 && errno != EEXIST) {
+      USR_FATAL(astr("Failed to create directory: ", this->pathWithoutPostfix.c_str(),
+                   " due to: ", strerror(errno)));
+    }
+
+    AstPrintDocs *docsVisitor = new AstPrintDocs(node->name,
+                                                 this->pathWithoutPostfix);
+    node->accept(docsVisitor);
+    delete docsVisitor;
+
+    this->tableOfContentsNeeded = true;
+    return false;
   }
 
   node->printDocs(this->file, this->tabs);
-
-  // Record this module's name, so it can be added to any submodules.
-  this->moduleNames.push(node->docsName());
 
   if (fDocsTextOnly) {
     this->tabs++;
@@ -123,13 +148,13 @@ void AstPrintDocs::exitModSym(ModuleSymbol* node) {
     return;
   }
 
-  // Remove the current module from stack of names.
-  assert(!this->moduleNames.empty());
-  this->moduleNames.pop();
-
   if (fDocsTextOnly) {
     this->tabs--;
   }
+
+  // If we had submodules, be sure to link to them
+  if (tableOfContentsNeeded)
+    node->printTableOfContents(this->file);
 }
 
 
