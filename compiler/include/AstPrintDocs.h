@@ -51,7 +51,7 @@ public:
   virtual bool   enterGotoStmt    (GotoStmt*          node);
 
 private:
-  std::ofstream*   file;
+  std::ofstream*  file;
   unsigned int    tabs;
   std::string     moduleName;
   std::string     pathWithoutPostfix;
