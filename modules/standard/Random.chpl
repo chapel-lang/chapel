@@ -1208,6 +1208,310 @@ module Random {
     // module.
     //
 
+
+    // returns a random number in [0, 1]
+    // where the number is a multiple of 2**-64
+    private inline
+    proc randToReal64(x: uint(64)):real(64)
+    {
+      return ldexp(x, -64);
+    }
+    // returns a random number in [min, max]
+    // by scaling a multiple of 2**-64 by (max-min)
+    private inline
+    proc randToReal64(x: uint(64), min:real(64), max:real(64)):real(64)
+    {
+      var normalized = randToReal64(x);
+      return (max-min)*normalized + min;
+    }
+
+    // returns a random number in [0, 1]
+    // where the number is a rounded multiple of 2**-24
+    private inline
+    proc randToReal32(x: uint(32))
+    {
+      return ldexp(x, -32);
+    }
+
+    // returns a random number in [min, max)
+    // where the number is a multiple of 2**-24
+    private inline
+    proc randToReal32(x: uint(32), min:real(32), max:real(32)):real(32)
+    {
+      var normalized = randToReal32(x);
+      return (max-min)*normalized + min;
+    }
+
+
+    // These would form the RNG interface.
+    private inline
+    proc rand32_1(ref states):uint(32) {
+      return states[1].random(pcg_getvalid_inc(1));
+    }
+    private inline
+    proc rand32_2(ref states):uint(32) {
+      return states[2].random(pcg_getvalid_inc(2));
+    }
+    // returns x with 0 <= x <= bound
+    // count is 1-based
+    private inline
+    proc boundedrand32_1(ref states, seed:int(64), count:int(64),
+                         bound:uint(32)):uint(32) {
+      // just get 32 random bits if bound+1 is not representable.
+      if bound == max(uint(32)) then return rand32_1(states);
+      else return states[1].bounded_random_vary_inc(
+          pcg_getvalid_inc(1), bound + 1,
+          seed:uint(64), (count - 1):uint(64),
+          101, 4);
+    }
+    // returns x with 0 <= x <= bound
+    // count is 1-based
+    private inline
+    proc boundedrand32_2(ref states, seed:int(64), count:int(64),
+                         bound:uint(32)):uint(32) {
+      // just get 32 random bits if bound+1 is not representable.
+      if bound == max(uint(32)) then return rand32_2(states);
+      else return states[2].bounded_random_vary_inc(
+          pcg_getvalid_inc(2), bound + 1,
+          seed:uint(64), (count - 1):uint(64),
+          102, 4);
+    }
+
+    private inline
+    proc rand64_1(ref states):uint(64) {
+      var ret:uint(64) = 0;
+      ret |= states[1].random(pcg_getvalid_inc(1));
+      ret <<= 32;
+      ret |= states[2].random(pcg_getvalid_inc(2));
+      return ret;
+    }
+    private inline
+    proc rand64_2(ref states):uint(64) {
+      var ret:uint(64) = 0;
+      ret |= states[3].random(pcg_getvalid_inc(3));
+      ret <<= 32;
+      ret |= states[4].random(pcg_getvalid_inc(4));
+      return ret;
+    }
+
+    // Returns an unsigned integer x with 0 <= x <= bound
+    // count is 1-based
+    private proc boundedrand64_1(ref states, seed:int(64), count:int(64),
+                                 bound:uint):uint
+    {
+      if bound > max(uint(32)):uint {
+        var toprand = 0:uint;
+        var botrand = 0:uint;
+        
+        // compute the bounded number in two calls to a 32-bit RNG
+        toprand = boundedrand32_1(states, seed, count, (bound >> 32):uint(32));
+        botrand = boundedrand32_2(states, seed, count, (bound & max(uint(32))):uint(32));
+        return (toprand << 32) | botrand;
+      } else {
+        // Generate a # with RNG 1 but ignore it, to keep the
+        // stepping consistent.
+        rand32_1(states);
+        return boundedrand32_2(states, seed, count, bound:uint(32));
+      }
+    }
+
+    proc checkSufficientBits(type resultType, ref states) {
+      // Note - this error could be eliminated if we used
+      // the same strategy as bounded_rand_vary_inc and
+      // just computed the RNGs at the later incs
+      param numGenForResultType = numGenerators(resultType);
+      param numGen = states.size;
+      if numGenForResultType > numGen then
+        compilerError("PCGRandomStream cannot produce " +
+                      resultType:string +
+                      " (requiring " +
+                      (32*numGenForResultType):string +
+                      " bits) from a stream configured for " +
+                      (32*numGen):string +
+                      " bits of output");
+
+    }
+
+    // Wrapper that takes a result type
+    private inline
+    proc randlc(type resultType, ref states) {
+
+      checkSufficientBits(resultType, states);
+
+      if resultType == complex(128) {
+        return (randToReal64(rand64_1(states)),
+                randToReal64(rand64_2(states))):complex(128);
+      } else if resultType == complex(64) {
+        return (randToReal32(rand32_1(states)),
+                randToReal32(rand32_2(states))):complex(64);
+      } else if resultType == imag(64) {
+        return _r2i(randToReal64(rand64_1(states)));
+      } else if resultType == imag(32) {
+        return _r2i(randToReal32(rand32_1(states)));
+      } else if resultType == real(64) {
+        return randToReal64(rand64_1(states));
+      } else if resultType == real(32) {
+        return randToReal32(rand32_1(states));
+      } else if resultType == uint(64) || resultType == int(64) {
+        return rand64_1(states):resultType;
+      } else if resultType == uint(32) || resultType == int(32) {
+        return rand32_1(states):resultType;
+      } else if(resultType == uint(16) ||
+                resultType == int(16)) {
+        return (rand32_1(states) >> 16):resultType;
+      } else if(resultType == uint(8) ||
+                resultType == int(8)) {
+        return (rand32_1(states) >> 24):resultType;
+      } else if isBoolType(resultType) {
+        return (rand32_1(states) >> 31) != 0;
+      }
+    }
+
+    // returns x with min <= x <= max (for integers)
+    // and min <= x < max (for real/complex/imag)
+    // seed should be the initial seed of the RNG
+    // count should be the current count value
+    private inline
+    proc randlc_bounded(type resultType,
+                        ref states, seed:int(64), count:int(64),
+                        min, max) {
+
+      checkSufficientBits(resultType, states);
+
+      if resultType == complex(128) {
+        return (randToReal64(rand64_1(states), min.re, max.re),
+                randToReal64(rand64_2(states), min.im, max.im)):complex(128);
+      } else if resultType == complex(64) {
+        return (randToReal32(rand32_1(states), min.re, max.re),
+                randToReal32(rand32_2(states), min.im, max.im)):complex(64);
+      } else if resultType == imag(64) {
+        return _r2i(randToReal64(rand64_1(states), _i2r(min), _i2r(max)));
+      } else if resultType == imag(32) {
+        return _r2i(randToReal32(rand32_1(states), _i2r(min), _i2r(max)));
+      } else if resultType == real(64) {
+        return randToReal64(rand64_1(states), min, max);
+      } else if resultType == real(32) {
+        return randToReal32(rand32_1(states), min, max);
+      } else if resultType == uint(64) || resultType == int(64) {
+        return (boundedrand64_1(states, seed, count, (max-min):uint(64)) + min:uint(64)):resultType;
+      } else if resultType == uint(32) || resultType == int(32) {
+        return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
+      } else if(resultType == uint(16) ||
+                resultType == int(16)) {
+        return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
+      } else if(resultType == uint(8) ||
+                resultType == int(8)) {
+        return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
+      } else if isBoolType(resultType) {
+        compilerError("bounded rand with boolean type");
+        return false;
+      }
+    }
+
+    //
+    // Return a value for the cursor so that the next call to randlc will
+    // return the same value as the nth call to randlc
+    //
+    // resultType is used to compute the size required.
+    private proc randlc_skipto(type resultType, seed: int(64), n: integral) {
+      var states: numGenerators(resultType) * pcg_setseq_64_xsh_rr_32_rng;
+
+      for param i in 1..states.size {
+        param inc = pcg_getvalid_inc(i);
+        states[i].srandom(seed:uint(64), inc);
+        states[i].advance(inc, (n - 1):uint(64));
+      }
+      return states;
+    }
+
+    //
+    // iterate over outer ranges in tuple of ranges
+    //
+    private iter outer(ranges, param dim: int = 1) {
+      if dim + 1 == ranges.size {
+        for i in ranges(dim) do
+          yield (i,);
+      } else if dim + 1 < ranges.size {
+        for i in ranges(dim) do
+          for j in outer(ranges, dim+1) do
+            yield (i, (...j));
+      } else {
+        yield 0; // 1D case is a noop
+      }
+    }
+
+    //
+    // PCGRandomStream iterator implementation
+    //
+    pragma "no doc"
+    iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+                               start: int(64)) {
+      var cursor = randlc_skipto(resultType, seed, start);
+      for i in D do
+        yield randlc(resultType, cursor);
+    }
+
+    pragma "no doc"
+    iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+                               start: int(64), param tag: iterKind)
+          where tag == iterKind.leader {
+      for block in D._value.these(tag=iterKind.leader) do
+        yield block;
+    }
+
+    pragma "no doc"
+    iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+                 start: int(64), param tag: iterKind, followThis)
+          where tag == iterKind.follower {
+      param multiplier = 1;
+      const ZD = computeZeroBasedDomain(D);
+      const innerRange = followThis(ZD.rank);
+      for outer in outer(followThis) {
+        var myStart = start;
+        if ZD.rank > 1 then
+          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low)).safeCast(int(64));
+        else
+          myStart += multiplier * ZD.indexOrder(innerRange.low).safeCast(int(64));
+        if !innerRange.stridable {
+          var cursor = randlc_skipto(resultType, seed, myStart);
+          for i in innerRange do
+            yield randlc(resultType, cursor);
+        } else {
+          myStart -= innerRange.low.safeCast(int(64));
+          for i in innerRange {
+            var cursor = randlc_skipto(resultType, seed, myStart + i.safeCast(int(64)) * multiplier);
+            yield randlc(resultType, cursor);
+          }
+        }
+      }
+    }
+
+
+  } // close module PCGRandom
+
+  /*
+
+   Low-level PCG RNG implementation.
+
+   Besides a Chapel :class:`RandomStream` interface, the :mod:`PCGRandomLib`
+   module includes a number of low-level PCG random functions.
+
+     * :record:`pcg_setseq_64_xsh_rr_32_rng` (the default PCG RNG)
+     * :record:`pcg_setseq_64_rxs_m_xs_64_rng`
+     * :record:`pcg_setseq_32_rxs_m_xs_32_rng`
+     * :record:`pcg_setseq_16_rxs_m_xs_16_rng`
+     * :record:`pcg_setseq_8_rxs_m_xs_8_rng`
+     * :record:`pcg_setseq_N_rxs_m_xs_N_rng` which is a generalization of the
+       above
+
+   These names come from the PCG paper and reference implementations.  The
+   first integer is the number of state bits, and the last integer is the
+   number of output bits. The other parts describe the permutation function in
+   the LCG.
+
+   */
+  module PCGRandomLib {
+    
     // Translated from PCG-C-basic-0.9
     // Keeping the same function names in order to simplify maintenance
     // These functions correspond to pcg32_random_r in that version.
@@ -1307,28 +1611,6 @@ module Random {
     }
 
 
-    /*
-
-     Low-level PCG RNG implementation.
-
-     Besides a Chapel :class:`RandomStream` interface, the :mod:`PCGRandomLib`
-     module includes a number of low-level PCG random functions.
-
-       * :record:`pcg_setseq_64_xsh_rr_32_rng` (the default PCG RNG)
-       * :record:`pcg_setseq_64_rxs_m_xs_64_rng`
-       * :record:`pcg_setseq_32_rxs_m_xs_32_rng`
-       * :record:`pcg_setseq_16_rxs_m_xs_16_rng`
-       * :record:`pcg_setseq_8_rxs_m_xs_8_rng`
-       * :record:`pcg_setseq_N_rxs_m_xs_N_rng` which is a generalization of the
-         above
-
-     These names come from the PCG paper and reference implementations.  The
-     first integer is the number of state bits, and the last integer is the
-     number of output bits. The other parts describe the permutation function in
-     the LCG.
-
-     */
-    module PCGRandomLib {
     /*
        Low-level PCG random number generation interface (64-bits of state,
        32-bits output).
@@ -2010,287 +2292,8 @@ module Random {
       return acc_mult * state + acc_plus;
     }
 
-    } // end PCGRandomLib
+  } // end PCGRandomLib
 
-    // returns a random number in [0, 1]
-    // where the number is a multiple of 2**-64
-    private inline
-    proc randToReal64(x: uint(64)):real(64)
-    {
-      return ldexp(x, -64);
-    }
-    // returns a random number in [min, max]
-    // by scaling a multiple of 2**-64 by (max-min)
-    private inline
-    proc randToReal64(x: uint(64), min:real(64), max:real(64)):real(64)
-    {
-      var normalized = randToReal64(x);
-      return (max-min)*normalized + min;
-    }
-
-    // returns a random number in [0, 1]
-    // where the number is a rounded multiple of 2**-24
-    private inline
-    proc randToReal32(x: uint(32))
-    {
-      return ldexp(x, -32);
-    }
-
-    // returns a random number in [min, max)
-    // where the number is a multiple of 2**-24
-    private inline
-    proc randToReal32(x: uint(32), min:real(32), max:real(32)):real(32)
-    {
-      var normalized = randToReal32(x);
-      return (max-min)*normalized + min;
-    }
-
-
-    // These would form the RNG interface.
-    private inline
-    proc rand32_1(ref states):uint(32) {
-      return states[1].random(pcg_getvalid_inc(1));
-    }
-    private inline
-    proc rand32_2(ref states):uint(32) {
-      return states[2].random(pcg_getvalid_inc(2));
-    }
-    // returns x with 0 <= x <= bound
-    // count is 1-based
-    private inline
-    proc boundedrand32_1(ref states, seed:int(64), count:int(64),
-                         bound:uint(32)):uint(32) {
-      // just get 32 random bits if bound+1 is not representable.
-      if bound == max(uint(32)) then return rand32_1(states);
-      else return states[1].bounded_random_vary_inc(
-          pcg_getvalid_inc(1), bound + 1,
-          seed:uint(64), (count - 1):uint(64),
-          101, 4);
-    }
-    // returns x with 0 <= x <= bound
-    // count is 1-based
-    private inline
-    proc boundedrand32_2(ref states, seed:int(64), count:int(64),
-                         bound:uint(32)):uint(32) {
-      // just get 32 random bits if bound+1 is not representable.
-      if bound == max(uint(32)) then return rand32_2(states);
-      else return states[2].bounded_random_vary_inc(
-          pcg_getvalid_inc(2), bound + 1,
-          seed:uint(64), (count - 1):uint(64),
-          102, 4);
-    }
-
-    private inline
-    proc rand64_1(ref states):uint(64) {
-      var ret:uint(64) = 0;
-      ret |= states[1].random(pcg_getvalid_inc(1));
-      ret <<= 32;
-      ret |= states[2].random(pcg_getvalid_inc(2));
-      return ret;
-    }
-    private inline
-    proc rand64_2(ref states):uint(64) {
-      var ret:uint(64) = 0;
-      ret |= states[3].random(pcg_getvalid_inc(3));
-      ret <<= 32;
-      ret |= states[4].random(pcg_getvalid_inc(4));
-      return ret;
-    }
-
-    // Returns an unsigned integer x with 0 <= x <= bound
-    // count is 1-based
-    private proc boundedrand64_1(ref states, seed:int(64), count:int(64),
-                                 bound:uint):uint
-    {
-      if bound > max(uint(32)):uint {
-        var toprand = 0:uint;
-        var botrand = 0:uint;
-        
-        // compute the bounded number in two calls to a 32-bit RNG
-        toprand = boundedrand32_1(states, seed, count, (bound >> 32):uint(32));
-        botrand = boundedrand32_2(states, seed, count, (bound & max(uint(32))):uint(32));
-        return (toprand << 32) | botrand;
-      } else {
-        // Generate a # with RNG 1 but ignore it, to keep the
-        // stepping consistent.
-        rand32_1(states);
-        return boundedrand32_2(states, seed, count, bound:uint(32));
-      }
-    }
-
-    proc checkSufficientBits(type resultType, ref states) {
-      // Note - this error could be eliminated if we used
-      // the same strategy as bounded_rand_vary_inc and
-      // just computed the RNGs at the later incs
-      param numGenForResultType = numGenerators(resultType);
-      param numGen = states.size;
-      if numGenForResultType > numGen then
-        compilerError("PCGRandomStream cannot produce " +
-                      resultType:string +
-                      " (requiring " +
-                      (32*numGenForResultType):string +
-                      " bits) from a stream configured for " +
-                      (32*numGen):string +
-                      " bits of output");
-
-    }
-
-    // Wrapper that takes a result type
-    private inline
-    proc randlc(type resultType, ref states) {
-
-      checkSufficientBits(resultType, states);
-
-      if resultType == complex(128) {
-        return (randToReal64(rand64_1(states)),
-                randToReal64(rand64_2(states))):complex(128);
-      } else if resultType == complex(64) {
-        return (randToReal32(rand32_1(states)),
-                randToReal32(rand32_2(states))):complex(64);
-      } else if resultType == imag(64) {
-        return _r2i(randToReal64(rand64_1(states)));
-      } else if resultType == imag(32) {
-        return _r2i(randToReal32(rand32_1(states)));
-      } else if resultType == real(64) {
-        return randToReal64(rand64_1(states));
-      } else if resultType == real(32) {
-        return randToReal32(rand32_1(states));
-      } else if resultType == uint(64) || resultType == int(64) {
-        return rand64_1(states):resultType;
-      } else if resultType == uint(32) || resultType == int(32) {
-        return rand32_1(states):resultType;
-      } else if(resultType == uint(16) ||
-                resultType == int(16)) {
-        return (rand32_1(states) >> 16):resultType;
-      } else if(resultType == uint(8) ||
-                resultType == int(8)) {
-        return (rand32_1(states) >> 24):resultType;
-      } else if isBoolType(resultType) {
-        return (rand32_1(states) >> 31) != 0;
-      }
-    }
-
-    // returns x with min <= x <= max (for integers)
-    // and min <= x < max (for real/complex/imag)
-    // seed should be the initial seed of the RNG
-    // count should be the current count value
-    private inline
-    proc randlc_bounded(type resultType,
-                        ref states, seed:int(64), count:int(64),
-                        min, max) {
-
-      checkSufficientBits(resultType, states);
-
-      if resultType == complex(128) {
-        return (randToReal64(rand64_1(states), min.re, max.re),
-                randToReal64(rand64_2(states), min.im, max.im)):complex(128);
-      } else if resultType == complex(64) {
-        return (randToReal32(rand32_1(states), min.re, max.re),
-                randToReal32(rand32_2(states), min.im, max.im)):complex(64);
-      } else if resultType == imag(64) {
-        return _r2i(randToReal64(rand64_1(states), _i2r(min), _i2r(max)));
-      } else if resultType == imag(32) {
-        return _r2i(randToReal32(rand32_1(states), _i2r(min), _i2r(max)));
-      } else if resultType == real(64) {
-        return randToReal64(rand64_1(states), min, max);
-      } else if resultType == real(32) {
-        return randToReal32(rand32_1(states), min, max);
-      } else if resultType == uint(64) || resultType == int(64) {
-        return (boundedrand64_1(states, seed, count, (max-min):uint(64)) + min:uint(64)):resultType;
-      } else if resultType == uint(32) || resultType == int(32) {
-        return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
-      } else if(resultType == uint(16) ||
-                resultType == int(16)) {
-        return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
-      } else if(resultType == uint(8) ||
-                resultType == int(8)) {
-        return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
-      } else if isBoolType(resultType) {
-        compilerError("bounded rand with boolean type");
-        return false;
-      }
-    }
-
-    //
-    // Return a value for the cursor so that the next call to randlc will
-    // return the same value as the nth call to randlc
-    //
-    // resultType is used to compute the size required.
-    private proc randlc_skipto(type resultType, seed: int(64), n: integral) {
-      var states: numGenerators(resultType) * pcg_setseq_64_xsh_rr_32_rng;
-
-      for param i in 1..states.size {
-        param inc = pcg_getvalid_inc(i);
-        states[i].srandom(seed:uint(64), inc);
-        states[i].advance(inc, (n - 1):uint(64));
-      }
-      return states;
-    }
-
-    //
-    // iterate over outer ranges in tuple of ranges
-    //
-    private iter outer(ranges, param dim: int = 1) {
-      if dim + 1 == ranges.size {
-        for i in ranges(dim) do
-          yield (i,);
-      } else if dim + 1 < ranges.size {
-        for i in ranges(dim) do
-          for j in outer(ranges, dim+1) do
-            yield (i, (...j));
-      } else {
-        yield 0; // 1D case is a noop
-      }
-    }
-
-    //
-    // PCGRandomStream iterator implementation
-    //
-    pragma "no doc"
-    iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                               start: int(64)) {
-      var cursor = randlc_skipto(resultType, seed, start);
-      for i in D do
-        yield randlc(resultType, cursor);
-    }
-
-    pragma "no doc"
-    iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                               start: int(64), param tag: iterKind)
-          where tag == iterKind.leader {
-      for block in D._value.these(tag=iterKind.leader) do
-        yield block;
-    }
-
-    pragma "no doc"
-    iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                 start: int(64), param tag: iterKind, followThis)
-          where tag == iterKind.follower {
-      param multiplier = 1;
-      const ZD = computeZeroBasedDomain(D);
-      const innerRange = followThis(ZD.rank);
-      for outer in outer(followThis) {
-        var myStart = start;
-        if ZD.rank > 1 then
-          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low)).safeCast(int(64));
-        else
-          myStart += multiplier * ZD.indexOrder(innerRange.low).safeCast(int(64));
-        if !innerRange.stridable {
-          var cursor = randlc_skipto(resultType, seed, myStart);
-          for i in innerRange do
-            yield randlc(resultType, cursor);
-        } else {
-          myStart -= innerRange.low.safeCast(int(64));
-          for i in innerRange {
-            var cursor = randlc_skipto(resultType, seed, myStart + i.safeCast(int(64)) * multiplier);
-            yield randlc(resultType, cursor);
-          }
-        }
-      }
-    }
-
-
-  } // close module PCGRandom
 
 
 } // close module Random
