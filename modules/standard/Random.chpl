@@ -80,7 +80,12 @@ module Random {
 
     // Will be deprecated in 1.14.
     pragma "no doc"
-    const SeedGenerator: SeedGeneratorsDeprecated;
+    const SeedGenerator_actual: SeedGeneratorsDeprecated;
+    pragma "no doc"
+    proc SeedGenerator {
+      compilerWarning("Random.SeedGenerator is deprecated - use Random.SeedGenerators");
+      return SeedGenerator_actual;
+    }
 
     pragma "no doc"
     record SeedGeneratorsDeprecated {

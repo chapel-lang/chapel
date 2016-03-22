@@ -1,0 +1,1 @@
+random-seedgenerator.chpl:6: warning: Random.SeedGenerator is deprecated - use Random.SeedGenerators
