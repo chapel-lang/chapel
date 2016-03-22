@@ -1368,7 +1368,7 @@ for testname in testsrc:
         # testing. Hopefully this is just a temporary work around and I'll
         # remember to add the cleaner solution soon.
         #
-        comptimeout = 2*timeout
+        comptimeout = 4*timeout
         cmd=ShellEscapeCommand(cmd);
         sys.stdout.write('[Executing compiler %s'%(cmd))
         if args:
