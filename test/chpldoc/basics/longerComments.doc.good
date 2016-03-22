@@ -1,21 +1,4 @@
 longerComments.doc
-   longerComments.doc.Other
-      proc inside
-         This is a comment for a method inside of
-         a module 
-
-      proc body()
-         This is a comment for a method with a body 
-         inside of a module 
-
-      proc hasArg(val: int)
-         This is a comment for a method with an 
-         argument inside of a module 
-
-      proc argAndBody(val: int)
-         This is a comment for a method with an 
-         argument and body inside of a module 
-
    proc method1()
       This is a comment for method1, which lies
       outside of a defined module 
@@ -33,4 +16,22 @@ longerComments.doc
       This is a comment for method with an
       argument and body which lies outside of a
       defined module 
+
+Submodules for this module are located in the longerComments.doc/ directory
+Other
+   proc inside
+      This is a comment for a method inside of
+      a module 
+
+   proc body()
+      This is a comment for a method with a body 
+      inside of a module 
+
+   proc hasArg(val: int)
+      This is a comment for a method with an 
+      argument inside of a module 
+
+   proc argAndBody(val: int)
+      This is a comment for a method with an 
+      argument and body inside of a module 
 
