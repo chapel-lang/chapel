@@ -62,11 +62,11 @@ export PE_CHAPEL_MODULE_NAME := chapel
 
 # ugni and gasnet-{aries, gemini} require pmi and ugni
 ifeq ($(CHPL_MAKE_COMM), ugni)
-PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS)
+export PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS)
 endif
 ifeq ($(CHPL_MAKE_COMM), gasnet)
 ifneq (,$(filter $(CHPL_MAKE_COMM_SUBSTRATE),gemini aries))
-PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS)
+export PE_CHAPEL_PKGCONFIG_LIBS := cray-pmi:cray-ugni:$(PE_CHAPEL_PKGCONFIG_LIBS)
 endif
 endif
 
@@ -75,8 +75,6 @@ endif
 ifneq (,$(findstring lustre,$(CHPL_MAKE_AUXFS)))
 HAVE_LUSTRE_API_DEVEL_STATUS=$(shell pkg-config --libs cray-lustre-api-devel &>/dev/null; echo $$?)
 ifeq ($(HAVE_LUSTRE_API_DEVEL_STATUS), 0)
-PE_CHAPEL_PKGCONFIG_LIBS := cray-lustre-api-devel:$(PE_CHAPEL_PKGCONFIG_LIBS)
+export PE_CHAPEL_PKGCONFIG_LIBS := cray-lustre-api-devel:$(PE_CHAPEL_PKGCONFIG_LIBS)
 endif
 endif
-
-export PE_CHAPEL_PKGCONFIG_LIBS
