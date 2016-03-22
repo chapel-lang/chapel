@@ -175,6 +175,8 @@ if debug {
 if printTimings then
   printTimingData("locales");
 
+delete barrier;
+
 
 proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   const subtime = time && useSubTimers;
@@ -373,6 +375,7 @@ proc makeInput(taskID, myKeys) {
   if (debug) then
     writeln(taskID, ": myKeys: ", myKeys);
 
+  delete MyRandStream;
 }
 
 
