@@ -363,7 +363,7 @@ proc create_and_analyze_graph()
 
   // re-seed the RNG if seed is 0.
   if seed == 0 {
-    seed = SeedGenerator.currentTime;
+    seed = SeedGenerators.currentTime;
   }
 
 

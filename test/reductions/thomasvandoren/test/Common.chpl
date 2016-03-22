@@ -4,7 +4,7 @@
 
 use Random;
 
-config const randSeed = SeedGenerator.currentTime;
+config const randSeed = SeedGenerators.oddCurrentTime;
 
 var emptyArray: [1..0] int(8),
   realArray: [1..1000] real,
