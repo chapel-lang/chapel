@@ -224,13 +224,21 @@ module Random {
       proc NPBRandomStream(seed: int(64) = SeedGenerators.oddCurrentTime,
                         param parSafe: bool = true,
                         type eltType = real(64)) {
+
+        // The mod operation is written in these steps in order
+        // to work around an apparent PGI compiler bug.
+        // See test/portability/bigmod.test.c
+        var one:uint(64) = 1;
+        var two_46:uint(64) = one << 46;
         var useed = seed:uint(64);
+        var mod:uint(64);
         if useed % 2 == 0 then
           halt("NPBRandomStream seed must be an odd integer");
         // Adjust seed to be between 0 and 2**46.
-        this.seed = (useed % (1:int(64) << 46)):int(64);
+        mod = useed % two_46;
+        this.seed = mod:int(64);
 
-        if this.seed % 2 == 0 || this.seed < 1 || this.seed > 1:int(64)<<46 then
+        if this.seed % 2 == 0 || this.seed < 1 || this.seed > two_46:int(64) then
           halt("NPBRandomStream seed must be an odd integer between 0 and 2**46");
 
         NPBRandomStreamPrivate_cursor = seed;
