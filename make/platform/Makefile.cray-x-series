@@ -27,4 +27,6 @@ endif
 # /opt/cray/pe/gcc-libs, but this only works for non PrgEnv-gnu compilers.
 # PrgEnv-gnu sets a LD_LIBRARY_PATH to include a set of libs that could be
 # older than the versions we build the compiler and llvm with.
+ifeq ($(CHPL_MAKE_HOST_COMPILER),gnu)
 LDFLAGS += -static-libstdc++
+endif
