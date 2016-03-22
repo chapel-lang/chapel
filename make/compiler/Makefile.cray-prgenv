@@ -50,3 +50,17 @@ LIB_DYNAMIC_FLAG = -shared
 # will take care of that Since we want to be able to get other flags from e.g.
 # Makefile.intel, here we replace SPECIALIZE_CFLAGS with nothing.
 SPECIALIZE_CFLAGS =
+
+
+#
+# The CC and cc drivers use pkg-config to determine several things including
+# which libraries to link in. Set the appropriate libs based on our config:
+#
+
+# ugni and gasnet-{aries, gemini} require pmi and ugni
+ifeq ($(CHPL_MAKE_COMM), ugni)
+PE_PKGCONFIG_LIBS += :cray-pmi:cray-ugni
+endif
+ifneq (,$(filter $(CHPL_MAKE_COMM_SUBSTRATE),gemini aries))
+PE_PKGCONFIG_LIBS += :cray-pmi:cray-ugni
+endif
