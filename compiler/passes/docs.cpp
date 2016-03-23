@@ -93,9 +93,9 @@ void docs(void) {
       // TODO: Add flag to compiler to turn on doc dev only output
       if (!mod->noDocGen() && !devOnlyModule(mod)) {
         if (isNotSubmodule(mod)) {
-          std::ofstream *file = openFileFromMod(mod, docsRstDir);
+          std::string filename = filenameFromMod(mod, docsRstDir);
 
-          AstPrintDocs *docsVisitor = new AstPrintDocs(file);
+          AstPrintDocs *docsVisitor = new AstPrintDocs(mod->name, filename);
           mod->accept(docsVisitor);
           delete docsVisitor;
 
@@ -104,8 +104,6 @@ void docs(void) {
           // this will be restored (hopefully soon)... (thomasvandoren, 2015-02-22)
           //
           // printModule(file, mod, 0);
-
-          file->close();
         }
       }
     }
@@ -225,7 +223,6 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs) {
     forv_Vec(ModuleSymbol, subMod, mods) {
       // TODO: Add flag to compiler to turn on doc dev only output
       if (!devOnlyModule(subMod)) {
-        subMod->addPrefixToName(mod->docsName() + ".");
         printModule(file, subMod, tabs + 1);
       }
     }
@@ -350,18 +347,5 @@ std::string filenameFromMod(ModuleSymbol *mod, std::string docsWorkDir) {
   filename = docsWorkDir + "/" + filename;
   createDocsFileFolders(filename);
 
-  // Creates files for each top level module.
-  if (fDocsTextOnly) {
-    filename = filename + mod->name + ".txt";
-  } else {
-    filename = filename + mod->name + ".rst";
-  }
-
   return filename;
-}
-
-
-std::ofstream* openFileFromMod(ModuleSymbol *mod, std::string docsWorkDir) {
-  std::string filename = filenameFromMod(mod, docsWorkDir);
-  return new std::ofstream(filename.c_str(), std::ios::out);
 }

@@ -11,7 +11,8 @@ Contents:
    :maxdepth: 1
    :glob:
 
-   standard/**
+
+   standard/*
 
 **Module Indices and tables**
 
