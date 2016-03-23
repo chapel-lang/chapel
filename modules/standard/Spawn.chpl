@@ -855,8 +855,6 @@ module Spawn {
   pragma "no doc"
   extern const SIGSTOP: c_int;
   pragma "no doc"
-  extern const SIGSYS: c_int;
-  pragma "no doc"
   extern const SIGTERM: c_int;
   pragma "no doc"
   extern const SIGTRAP: c_int;
