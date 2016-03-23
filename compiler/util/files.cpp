@@ -724,10 +724,10 @@ void setupModulePaths() {
   const char* modulesRoot = 0;
 
   if (fMinimalModules == true)
-    modulesRoot = "modules-minimal";
+    modulesRoot = "modules/minimal";
 
   else if (fUseIPE == true)
-    modulesRoot = "modules-ipe";
+    modulesRoot = "modules/ipe";
 
   else
     modulesRoot = "modules";
@@ -747,6 +747,7 @@ void setupModulePaths() {
                       "-", CHPL_TARGET_COMPILER));
 
   stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));
+  stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/packages"));
   stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/layouts"));
   stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists"));
   stdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/dists/dims"));

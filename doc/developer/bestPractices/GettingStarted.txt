@@ -76,7 +76,7 @@ project via the following steps:
 * Get acquainted with the testing system which is a crucial technology
   for the development team for test-first development, pre-commit
   sanity checks, and nightly correctness and performance regression
-  testing.  See TestSystem.txt in this directory for an introduction.
+  testing.  See TestSystem.rst in this directory for an introduction.
 
 * Get aquainted with the compiler architecture via the compiler
   overview document in $CHPL_HOME/doc/developer/compilerOverview/

@@ -44,7 +44,6 @@ class List {
 
  proc delete_first() {
     if head == nil then {
-      writeln("list is empty");
       return;
     }
     var current=head;
@@ -58,7 +57,6 @@ class List {
  
  proc delete_pos(pos: int) {
     if head==nil then {
-      writeln("list is empty"); 
       return;
     }
 
@@ -78,7 +76,6 @@ class List {
     }
    
     if current.next==nil then  { 
-     writeln("No element found at position p");
      return;
     }
   
@@ -155,8 +152,8 @@ proc main() {
 
   var lst = new List(int);
   var rnd = if useClockSeed 
-              then new RandomStream()
-              else new RandomStream(seed = randomSeed);
+              then new NPBRandomStream()
+              else new NPBRandomStream(seed = randomSeed);
   const maxValue = 100;
 
   //

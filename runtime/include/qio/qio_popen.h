@@ -23,6 +23,7 @@
 #include "sys_basic.h"
 #include "qio.h"
 #include <stdarg.h>
+#include <signal.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,6 +62,7 @@ qioerr qio_proc_communicate(
     qio_file_t* error_file,
     qio_channel_t* error);
 
+qioerr qio_send_signal(int64_t pid, int qio_sig);
 
 #ifdef __cplusplus
 } // end extern "C"

@@ -137,7 +137,6 @@ module LocaleModel {
   // The node model
   //
   class LocaleModel : AbstractLocaleModel {
-    const callStackSize: size_t;
     const _node_id : int;
     const local_name : string;
 

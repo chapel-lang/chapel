@@ -4244,22 +4244,31 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
                will halt with an error message.
    :returns: `true` if the bits were read without error, `false` on error or EOF
  */
-inline proc channel.readbits(out v:uint(64), nbits:int(8), out error:syserr):bool {
+inline proc channel.readbits(out v:integral, nbits:integral, out error:syserr):bool {
   var tmp:ioBits;
   var ret:bool;
 
   error = ENOERR;
 
-  tmp.nbits = nbits;
+  if castChecking { // mimic safeCast
+    // Error if reading more bits than fit into v
+    if numBits(v.type) < nbits then
+      halt("readbits nbits=", nbits, " > bits in v:", v.type:string);
+    // Error if reading negative number of bits
+    if isIntType(nbits.type) && nbits < 0 then
+      halt("readbits nbits=", nbits, " < 0");
+  }
+
+  tmp.nbits = nbits:int(8);
   ret = this.read(tmp, error=error);
-  v = tmp.v;
+  v = tmp.v:v.type;
 
   return ret;
 }
 
 // documented in the error= version
 pragma "no doc"
-proc channel.readbits(out v:uint(64), nbits:int(8)):bool {
+proc channel.readbits(out v:integral, nbits:integral):bool {
   var e:syserr = ENOERR;
   this.readbits(v, nbits, error=e);
   if !e then return true;
@@ -4280,13 +4289,22 @@ proc channel.readbits(out v:uint(64), nbits:int(8)):bool {
                will halt with an error message.
    :returns: `true` if the bits were written without error, `false` on error
  */
-inline proc channel.writebits(v:uint(64), nbits:int(8), out error:syserr):bool {
-  return this.write(new ioBits(v, nbits), error=error);
+inline proc channel.writebits(v:integral, nbits:integral, out error:syserr):bool {
+  if castChecking { // mimic safeCast
+    // Error if writing more bits than fit into v
+    if numBits(v.type) < nbits then
+      halt("writebits nbits=", nbits, " > bits in v:", v.type:string);
+    // Error if writing negative number of bits
+    if isIntType(nbits.type) && nbits < 0 then
+      halt("writebits nbits=", nbits, " < 0");
+  }
+
+  return this.write(new ioBits(v:uint(64), nbits:int(8)), error=error);
 }
 
 // documented in the error= version
 pragma "no doc"
-proc channel.writebits(v:uint(64), nbits:int(8)):bool {
+proc channel.writebits(v:integral, nbits:integral):bool {
   var e:syserr = ENOERR;
   this.writebits(v, nbits, error=e);
   if !e then return true;

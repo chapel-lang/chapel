@@ -1,0 +1,9 @@
+scaling mode = weakISO
+total keys = 128 (2**7)
+keys per locale = 32 (2**5)
+maxKeyVal = 32768 (2**15)
+bucketWidth = 8192 (2**13)
+numTrials = 1
+numLocales = 4
+
+Verification successful!

@@ -44,5 +44,3 @@ static std::string generateSphinxProject(std::string dirpath);
 static void generateSphinxOutput(std::string sphinxDir, std::string outputDir);
 
 static std::string filenameFromMod(ModuleSymbol *mod, std::string docsWorkDir);
-
-static std::ofstream* openFileFromMod(ModuleSymbol *mod, std::string docsWorkDir);

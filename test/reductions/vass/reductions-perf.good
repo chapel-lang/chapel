@@ -1,0 +1,6 @@
+4 locale(s)   dist: Block  sizes: 4000000 16384 16384 15625  reps: 10
+success  single reduction 1d: 
+success  multiple reductions 1d: 
+success  multiple reductions 2d: 
+success  multiple reductions 3d: 
+all tests succeeded

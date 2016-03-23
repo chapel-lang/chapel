@@ -331,6 +331,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, AggregateType *p
 static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType);
 static AggregateType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *call);
 static Expr* createFunctionAsValue(CallExpr *call);
+static Type* resolveTypeAlias(SymExpr* se);
 static bool
 isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL);
 static bool
@@ -1168,13 +1169,7 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
         ((se->var->hasFlag(FLAG_REF_TO_CONST) ||
           se->var->isConstant()) && !formal->hasFlag(FLAG_ARG_THIS)) ||
         se->var->isParameter())
-      if (okToConvertFormalToRefType(formal->type) ||
-          // If the user says 'const', it means 'const'.
-          // Honor FLAG_CONST if it is a coerce temp, too.
-          (se->var->hasFlag(FLAG_CONST) &&
-           (!se->var->hasFlag(FLAG_TEMP) || se->var->hasFlag(FLAG_COERCE_TEMP))
-         ))
-        return false;
+      return false;
   // Perhaps more checks are needed.
   return true;
 }
@@ -3129,6 +3124,10 @@ static void captureTaskIntentValues(int argNum, ArgSymbol* formal,
   if (fVerify && (argNum == 0 || (argNum == 1 && taskFn->hasFlag(FLAG_ON))))
     verifyTaskFnCall(parent, call); //assertions only
   Expr* marker = parentToMarker(parent, call);
+  if (varActual->hasFlag(FLAG_NO_CAPTURE_FOR_TASKING)) {
+      // No need to worry about this.
+      return;
+  }
   if (varActual->defPoint->parentExpr == parent) {
     // Index variable of the coforall loop? Do not capture it!
     if (fVerify) {
@@ -3511,6 +3510,9 @@ static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
 // special case cast of class w/ type variables that is not generic
 //   i.e. type variables are type definitions (have default types)
 //
+// also handles some complicated extern vars like
+//   extern var x: c_ptr(c_int)
+// which do not work in the usual order of resolution.
 static void
 resolveDefaultGenericType(CallExpr* call) {
   SET_LINENO(call);
@@ -3532,11 +3534,9 @@ resolveDefaultGenericType(CallExpr* call) {
         // Fix for complicated extern vars like
         // extern var x: c_ptr(c_int);
         if( vs->hasFlag(FLAG_EXTERN) && vs->hasFlag(FLAG_TYPE_VARIABLE) &&
-            vs->defPoint && vs->defPoint->init ) {
-          if( CallExpr* def = toCallExpr(vs->defPoint->init) ) {
-            vs->defPoint->init = resolveExpr(def);
-            te->replace(new SymExpr(vs->defPoint->init->typeInfo()->symbol));
-          }
+            vs->defPoint && vs->defPoint->init &&
+            vs->getValType() == dtUnknown ) {
+          vs->type = resolveTypeAlias(te);
         }
       }
     }
@@ -4481,14 +4481,12 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
     // (or not) into the cases below, as appropriate.
     Type* formalType = formal->type->getValType();
 
-    if ((formal->intent == INTENT_BLANK ||
-         formal->intent == INTENT_CONST ||
-         formal->intent == INTENT_CONST_IN) &&
-        !isSyncType(formalType) &&
-        !isRefCountedType(formalType))
-    {
+    // mark CONST as needed
+    if (concreteIntent(formal->intent, formalType) & INTENT_FLAG_CONST) {
       tmp->addFlag(FLAG_CONST);
-      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      if (!isSyncType(formalType) &&
+          !isRefCountedType(formalType))
+        tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
     }
 
     // This switch adds the extra code inside the current function necessary
@@ -5162,6 +5160,58 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar)
 }
 
 
+//
+// Make sure that 'type' is sufficiently non-generic to declare a
+// variable over it in the context of 'call'.
+//
+static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
+  TypeSymbol* typeSym = type->symbol;
+
+  //
+  // This function only cares about generic types
+  //
+  if (typeSym->hasFlag(FLAG_GENERIC)) {
+    bool unsafeGeneric = true;  // Assume the worst until proven otherwise
+
+    //
+    // Grab the generic type's contructor if it has one.  Things like
+    // classes and records should.  Things like 'integral' will not.
+    //
+    FnSymbol* typeCons = type->defaultTypeConstructor;
+
+    if (typeCons) {
+      //
+      // If it had one, create a zero-argument call to the type
+      // constructor, insert it into the code point in question,
+      // and try to resolve it (saving the answer).
+      //
+      CallExpr* typeConsCall = new CallExpr(typeCons->name);
+      call->replace(typeConsCall);
+      unsafeGeneric = (tryResolveCall(typeConsCall) == NULL);
+
+      //
+      // Put things back the way they were.
+      //
+      typeConsCall->replace(call);
+    }
+    
+    //
+    // If the generic was unresolved (either because its type
+    // constructor couldn't be called with zero arguments or because
+    // it didn't have a type constructor), print a message.
+    // Specialize it based on whether or not it had a type
+    // constructor.
+    //
+    if (unsafeGeneric) {
+      USR_FATAL(call, 
+                "Variables can't be declared using %s generic types like '%s'",
+                (typeCons ? "not-fully-instantiated" : "abstract"),
+                typeSym->name);
+    }
+  }
+}
+
+
 // Returns NULL if no substitution was made.  Otherwise, returns the expression
 // that replaced the PRIM_INIT (or PRIM_NO_INIT) expression.
 // Here, "replaced" means that the PRIM_INIT (or PRIM_NO_INIT) primitive is no
@@ -5225,6 +5275,13 @@ static Expr* resolvePrimInit(CallExpr* call)
       // default constructors.  So give up now!
       return result;
   }
+
+  //
+  // Catch the case of declaring a variable over an uninstantiated
+  // generic type in order to print out a useful error message before
+  // we get too deep into resolution.
+  //
+  ensureGenericSafeForDeclarations(call, type);
 
   CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
   call->replace(defOfCall);
@@ -5584,7 +5641,7 @@ preFold(Expr* expr) {
                         result = new SymExpr(constant->sym);
                         call->replace(result);
                         replaced = true;
-                        break;
+                        // could break here but might have issues with gcc 5.1
                       }
                     }
                     if (!replaced) {
@@ -5851,6 +5908,7 @@ preFold(Expr* expr) {
         fieldcount++;
         if (fieldcount == fieldnum) {
           name = field->name;
+          // break could be here, but might have issues with GCC 5.10
         }
       }
       if (!name) {
@@ -5882,7 +5940,7 @@ preFold(Expr* expr) {
         fieldcount++;
         if (fieldcount == fieldnum) {
           name = field->name;
-          break;
+          // break could be here, but seems to cause issues with GCC 5.10
         }
       }
       if (!name) {
@@ -5916,7 +5974,7 @@ preFold(Expr* expr) {
         fieldcount++;
         if ( 0 == strcmp(field->name,  fieldname) ) {
           num = fieldcount;
-          break;
+          // break could be here, but might have issues with GCC 5.10
         }
       }
       result = new SymExpr(new_IntSymbol(num));
@@ -6719,6 +6777,7 @@ resolveExpr(Expr* expr) {
 
   if (DefExpr* def = toDefExpr(expr)) {
     if (def->init) {
+      // This section was added to handle type a = b
       Expr* init = preFold(def->init);
       init = resolveExpr(init);
       // expr is unchanged, so is treated as "resolved".
@@ -7119,9 +7178,6 @@ resolveFns(FnSymbol* fn) {
     resolveReturnType(fn);
     return;
   }
-
-  if (fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
-    return;
 
   //
   // Mark serial loops that yield inside of follower, standalone, and
@@ -9033,10 +9089,37 @@ static void replaceTypeArgsWithFormalTypeTemps()
     if (! fn->defPoint->parentSymbol)
       continue;
 
-    // We do not remove type args from extern functions
-    // TODO: Find out if we really support type args in extern functions.
-    if (fn->hasFlag(FLAG_EXTERN))
+    // We do not remove type args from extern functions so that e.g.:
+    //  extern proc sizeof(type t);
+    //  sizeof(int)
+    // will function correctly.
+    // However, in such a case, we'd like to pass the type symbol
+    // to the call site rather than a type variable call_tmp
+    if (fn->hasFlag(FLAG_EXTERN)) {
+      // Replace the corresponding actual with a SymExpr TypeSymbol
+      // for all the call sites.
+      forv_Vec(CallExpr, call, *fn->calledBy)
+      {
+        for_formals_actuals(formal, actual, call)
+        {
+          if (! formal->hasFlag(FLAG_TYPE_VARIABLE))
+            continue;
+
+          if (SymExpr* se = toSymExpr(actual)) {
+            if (isTypeSymbol(se->var))
+              continue;
+            if (se->var->hasFlag(FLAG_EXTERN) &&
+                se->var->hasFlag(FLAG_TYPE_VARIABLE))
+              continue;
+          }
+
+          SET_LINENO(actual);
+          TypeSymbol* ts = formal->type->symbol;
+          actual->replace(new SymExpr(ts));
+        }
+      }
       continue;
+    }
 
     for_formals(formal, fn)
     {
