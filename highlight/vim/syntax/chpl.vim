@@ -259,6 +259,9 @@ syn keyword chplConstant	nil
 syn keyword chplRepeat		while for do coforall forall in serial
 syn keyword chplLabel	        when otherwise label
 
+" Folding
+syn region scopeFold start="{" end="}" fold transparent
+
 " The minimum and maximum operators in GNU C++
 syn match chplMinMax "[<>]?"
 

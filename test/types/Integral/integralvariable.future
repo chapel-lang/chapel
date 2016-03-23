@@ -1,3 +1,0 @@
-error message:  getting internal error when using integral type.
-
-This error message is wrong, the error should not be internal but rather a user error.

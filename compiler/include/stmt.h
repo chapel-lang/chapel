@@ -261,6 +261,9 @@ class GotoStmt : public Stmt {
   virtual Expr*       getFirstExpr();
 
   const char*         getName();
+
+  bool                isGotoReturn()                                   const;
+  LabelSymbol*        gotoTarget()                                     const;
 };
 
 /************************************ | *************************************

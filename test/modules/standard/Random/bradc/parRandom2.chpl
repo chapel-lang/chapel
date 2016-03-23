@@ -1,5 +1,9 @@
 use Random;
 
+config param useNPB = true;
+config param rtype = if useNPB then RNG.NPB else RNG.PCG;
+
+
 config var n = 10000:int(64);
 
 const D = [1..n];
