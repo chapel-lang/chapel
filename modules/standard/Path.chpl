@@ -44,7 +44,7 @@ use Error;
 
    :arg name: a string file name.  Note that this string does not have to be
               a valid file name, as the file itself will not be affected.
-   :type name: string
+   :type name: `string`
 */
  proc basename(name: string): string {
    return splitPath(name)[2];
@@ -59,7 +59,7 @@ const curDir = ".";
 
    :arg name: a string file name.  Note that this string does not have to be
               a valid file name, as the file itself will not be affected.
-   :type name: string
+   :type name: `string`
 */
  proc dirname(name: string): string{
    return splitPath(name)[1];
@@ -88,10 +88,10 @@ proc realPath(out error: syserr, name: string): string {
 
    :arg name: A path to resolve.  If the path does not refer to a valid file
               or directory, an error will occur.
-   :type name: string
+   :type name: `string`
 
    :return: A canonical version of the argument.
-   :rtype: string
+   :rtype: `string`
 */
 proc realPath(name: string): string {
   var err: syserr = ENOERR;
@@ -127,7 +127,7 @@ proc file.realPath(out error: syserr): string {
    :return: A canonical path to the file referenced by this :type:`~IO.file`
             record.  If the :type:`~IO.file` record is not valid, an error will
             occur
-   :rtype: string
+   :rtype: `string`
 */
 proc file.realPath(): string {
   var err: syserr = ENOERR;
@@ -157,7 +157,7 @@ proc file.realPath(): string {
    `dirname` + "/" + `basename`
 
    :arg name: path to be split
-   :type name: string
+   :type name: `string`
 */
  proc splitPath(name: string): (string, string) {
    var rLoc, lLoc, prev: int = name.rfind(pathSep);
