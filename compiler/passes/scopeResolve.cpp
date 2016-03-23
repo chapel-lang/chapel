@@ -344,7 +344,10 @@ static void processImportExprs() {
       // A ModuleSymbol's modUseList is intended to be for initializing modules
       // in an appropriate order.  If we're using an enum symbol, we don't
       // need to worry about this.
-      enclosingModule->moduleUseAdd(mod);
+
+      // Avoid a self-reference in the mod-use list
+      if (mod != enclosingModule)
+        enclosingModule->moduleUseAdd(mod);
     }
 
     BlockStmt* useParent = getVisibilityBlock(use);
@@ -1761,10 +1764,12 @@ static void checkIdInsideWithClause(Expr* exprInAst,
 static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) {
   if (call->isNamed(".")) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
-      if (ModuleSymbol* mod = toModuleSymbol(se->var)) { 
+      if (ModuleSymbol* mod = toModuleSymbol(se->var)) {
         ModuleSymbol* enclosingModule = call->getModule();
 
-        enclosingModule->moduleUseAdd(mod);
+        // Avoid a self-reference in module use list
+        if (mod != enclosingModule)
+          enclosingModule->moduleUseAdd(mod);
 
         SET_LINENO(call);
 
