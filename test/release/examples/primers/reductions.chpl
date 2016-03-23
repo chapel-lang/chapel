@@ -23,8 +23,8 @@ var A: [1..size, 1..size] real; // The 2D work array
 
 //
 // Fill A with random real values between 0 and 1.
-//
-fillRandom(A, seed);
+// Uses the NPB random number generator for historical reasons.
+fillRandom(A, seed, algorithm=RNG.NPB);
 writeln("A is: "); writeln(A);
 writeln();
 

@@ -392,7 +392,7 @@ void AstDumpToHtml::visitUseStmt(UseStmt* node) {
 
   fprintf(mFP, " (%d 'use' ", node->id);
 
-  node->mod->accept(this);
+  node->src->accept(this);
 
   if (!node->isPlainUse()) {
     node->writeListPredicate(mFP);

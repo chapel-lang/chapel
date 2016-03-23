@@ -7,8 +7,8 @@ proc main(){
   var x: [0..n-1, 0..n-1] complex; 
   var y: [0..n**2 - 1] complex;
 
-  fillRandom(x, seed);
-  fillRandom(y, seed);
+  fillRandom(x, seed, algorithm=RNG.NPB);
+  fillRandom(y, seed, algorithm=RNG.NPB);
 
   for (i, j) in x.domain do
     if x(i, j) != y(i * n + j) then

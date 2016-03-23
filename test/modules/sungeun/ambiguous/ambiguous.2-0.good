@@ -4,6 +4,7 @@ module search dirs:
   modules/d1
   $CHPL_HOME/modules/standard/gen/...
   $CHPL_HOME/modules/standard
+  $CHPL_HOME/modules/packages
   $CHPL_HOME/modules/layouts
   $CHPL_HOME/modules/dists
   $CHPL_HOME/modules/dists/dims

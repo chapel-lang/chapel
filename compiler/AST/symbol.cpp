@@ -233,6 +233,10 @@ bool isString(Symbol* symbol) {
   return isString(symbol->type);
 }
 
+bool isUserDefinedRecord(Symbol* symbol) {
+  return isUserDefinedRecord(symbol->type);
+}
+
 /******************************** | *********************************
 *                                                                   *
 * Common base class for ArgSymbol and VarSymbol.                    *
@@ -564,7 +568,27 @@ GenRet VarSymbol::codegen() {
         ret.c += immediate->v_string;
         ret.c += '"';
       } else if (immediate->const_kind == NUM_KIND_BOOL) {
-        ret.c =  immediate->bool_value() ? "true" : "false";
+        std::string bstring = (immediate->bool_value())?"true":"false";
+        const char* castString = "(";
+        switch (immediate->num_index) {
+        case BOOL_SIZE_1:
+        case BOOL_SIZE_SYS:
+        case BOOL_SIZE_8:
+          castString = "UINT8(";
+          break;
+        case BOOL_SIZE_16:
+          castString = "UINT16(";
+          break;
+        case BOOL_SIZE_32:
+          castString = "UINT32(";
+          break;
+        case BOOL_SIZE_64:
+          castString = "UINT64(";
+          break;
+        default:
+          INT_FATAL("Unexpected immediate->num_index: %d\n", immediate->num_index);
+        }
+        ret.c = castString + bstring + ")";
       } else if (immediate->const_kind == NUM_KIND_INT) {
         int64_t iconst = immediate->int_value();
         if (iconst == (1ll<<63)) {
@@ -1080,7 +1104,7 @@ const char* modTagDescrString(ModTag modTag) {
 // describes this argument's intent (for use in an English sentence)
 const char* ArgSymbol::intentDescrString(void) {
   switch (intent) {
-    case INTENT_BLANK: return "blank intent";
+    case INTENT_BLANK: return "default intent";
     case INTENT_IN: return "'in'";
     case INTENT_INOUT: return "'inout'";
     case INTENT_OUT: return "'out'";
@@ -1099,7 +1123,7 @@ const char* ArgSymbol::intentDescrString(void) {
 // describes the given intent (for use in an English sentence)
 const char* intentDescrString(IntentTag intent) {
   switch (intent) {
-    case INTENT_BLANK:     return "blank intent";
+    case INTENT_BLANK:     return "default intent";
     case INTENT_IN:        return "'in' intent";
     case INTENT_INOUT:     return "'inout' intent";
     case INTENT_OUT:       return "'out' intent";
@@ -2513,8 +2537,7 @@ ModuleSymbol::ModuleSymbol(const char* iName,
     initFn(NULL),
     filename(NULL),
     doc(NULL),
-    extern_info(NULL),
-    moduleNamePrefix("")
+    extern_info(NULL)
 {
 
   block->parentSymbol = this;
@@ -2572,8 +2595,7 @@ void ModuleSymbol::codegenDef() {
     if (DefExpr* def = toDefExpr(expr))
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Ignore external and prototype functions.
-        if (fn->hasFlag(FLAG_EXTERN) ||
-            fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))
+        if (fn->hasFlag(FLAG_EXTERN))
           continue;
 
         fns.push_back(fn);
@@ -2688,8 +2710,22 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
 /*
  * Append 'prefix' to existing module name prefix.
  */
-void ModuleSymbol::addPrefixToName(std::string prefix) {
-  this->moduleNamePrefix += prefix;
+void ModuleSymbol::printTableOfContents(std::ostream *file) {
+  int tabs = 1;
+  if (!fDocsTextOnly) {
+    *file << "**Submodules**" << std::endl << std::endl;
+
+    *file << ".. toctree::" << std::endl;
+    this->printTabs(file, tabs);
+    *file << ":maxdepth: 1" << std::endl;
+    this->printTabs(file, tabs);
+    *file << ":glob:" << std::endl << std::endl;
+    this->printTabs(file, tabs);
+    *file << name << "/*" << std::endl;
+  } else {
+    *file << "Submodules for this module are located in the " << name;
+    *file << "/ directory" << std::endl;
+  }
 }
 
 
@@ -2697,7 +2733,7 @@ void ModuleSymbol::addPrefixToName(std::string prefix) {
  * Returns name of module, including any prefixes that have been set.
  */
 std::string ModuleSymbol::docsName() {
-  return this->moduleNamePrefix + this->name;
+  return this->name;
 }
 
 
@@ -2772,8 +2808,7 @@ Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Ignore external and prototype functions.
         if (includeExterns == false &&
-            (fn->hasFlag(FLAG_EXTERN) ||
-             fn->hasFlag(FLAG_FUNCTION_PROTOTYPE))) {
+            fn->hasFlag(FLAG_EXTERN)) {
           continue;
         }
 
@@ -2790,8 +2825,7 @@ Vec<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
             if (DefExpr* def2 = toDefExpr(expr2)) {
               if (FnSymbol* fn2 = toFnSymbol(def2->sym)) {
                 if (includeExterns == false &&
-                    (fn2->hasFlag(FLAG_EXTERN) ||
-                     fn2->hasFlag(FLAG_FUNCTION_PROTOTYPE))) {
+                    fn2->hasFlag(FLAG_EXTERN)) {
                   continue;
                 }
 

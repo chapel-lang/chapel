@@ -18,7 +18,7 @@ and industry. See `chapel.cray.com`_ for more information.
 .. _Cray Inc.: http://www.cray.com/
 .. _chapel.cray.com: http://chapel.cray.com/
 
-This is the 1.12.0 release of the Chapel compiler, intended to give
+This is the 1.13.0 release of the Chapel compiler, intended to give
 potential users a look at what we're doing and the opportunity to
 provide us with feedback.  See the LICENSE file for the release's
 licensing terms.
@@ -40,7 +40,7 @@ capabilities in the interest of a simple and clean build.
    might need to have installed for Chapel to work. Download
    a Chapel source release from `download.html`_ if you haven't already.
 
-.. _prereqs.rst: http://chapel.cray.com/docs/1.12/usingchapel/prereqs.html
+.. _prereqs.rst: http://chapel.cray.com/docs/1.13/usingchapel/prereqs.html
 .. _download.html: http://chapel.cray.com/download.html
 
 
@@ -50,7 +50,7 @@ capabilities in the interest of a simple and clean build.
 
     .. code-block:: sh
 
-        cd ~/chapel-1.12.0
+        cd ~/chapel-1.13.0
 
 
 
@@ -67,7 +67,7 @@ capabilities in the interest of a simple and clean build.
    please consider contributing a copy of it back to the project for
    inclusion in the next release.
 
-.. _chplenv.rst: http://chapel.cray.com/docs/1.12/usingchapel/chplenv.html
+.. _chplenv.rst: http://chapel.cray.com/docs/1.13/usingchapel/chplenv.html
 
 ======================================== ==========================================
 **If you use:**                           **then type:**
@@ -150,7 +150,7 @@ the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
     in a single-locale / shared-memory mode. To run on multiple compute
     nodes, please refer to `multilocale.rst`_.
 
-.. _multilocale.rst: http://chapel.cray.com/docs/1.12/usingchapel/multilocale.html
+.. _multilocale.rst: http://chapel.cray.com/docs/1.13/usingchapel/multilocale.html
 
 
 
@@ -182,12 +182,12 @@ What's next?
 
 .. _doc/quickReference.pdf: http://chapel.cray.com/spec/quickReference.pdf
 .. _doc/chapelLanguageSpec.pdf: http://chapel.cray.com/spec/spec-0.98.pdf
-.. _chapel.cray.com/docs: http://chapel.cray.com/docs/1.12/
-.. _building.rst: http://chapel.cray.com/docs/1.12/usingchapel/building.html
-.. _compiling.rst: http://chapel.cray.com/docs/1.12/usingchapel/compiling.html
-.. _executing.rst: http://chapel.cray.com/docs/1.12/usingchapel/executing.html
-.. _debugging.rst: http://chapel.cray.com/docs/1.12/usingchapel/debugging.html
-.. _bugs.rst: http://chapel.cray.com/docs/1.12/usingchapel/bugs.html
+.. _chapel.cray.com/docs: http://chapel.cray.com/docs/1.13/
+.. _building.rst: http://chapel.cray.com/docs/1.13/usingchapel/building.html
+.. _compiling.rst: http://chapel.cray.com/docs/1.13/usingchapel/compiling.html
+.. _executing.rst: http://chapel.cray.com/docs/1.13/usingchapel/executing.html
+.. _debugging.rst: http://chapel.cray.com/docs/1.13/usingchapel/debugging.html
+.. _bugs.rst: http://chapel.cray.com/docs/1.13/usingchapel/bugs.html
 
 
 =============================================== =====================================
@@ -198,5 +198,5 @@ What's next?
 =============================================== =====================================
 
 
-.. _cray.rst: http://chapel.cray.com/docs/1.12/platforms/cray.html
-.. _cygwin.rst: http://chapel.cray.com/docs/1.12/platforms/cygwin.html
+.. _cray.rst: http://chapel.cray.com/docs/1.13/platforms/cray.html
+.. _cygwin.rst: http://chapel.cray.com/docs/1.13/platforms/cygwin.html

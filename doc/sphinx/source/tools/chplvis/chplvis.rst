@@ -504,8 +504,21 @@ calculation of concurrency as seen above.
 
 ..  Find more examples to show off more of chplvis 
 
-..  Give examples of how to find problems. 
+..  Give examples of how to find problems.
 
+Config Paramaters and Variables
+-------------------------------
+
+Because :mod:`VisualDebug` support requires added procedure calls in
+source to use it, there is a boolean config variable, :var:`VisualDebugOn`,
+that controls generation of :mod:`VisualDebug` data.  This variable
+may be set on the command line like any config variable.  The standard
+default value is *true*.  The default value may be set at compile time
+using the config param :var:`DefaultVisualDebugOn`.  Setting this config
+param to false at compile time requires the variable :var:`VisualDebugOn`
+to be set to true on the command line to generate :mod:`VisualDebug`
+data.
+   
 Final Comments
 --------------
 

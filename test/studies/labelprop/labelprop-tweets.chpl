@@ -438,7 +438,8 @@ proc create_and_analyze_graph()
       var maxcount = 0;
       // TODO -- performance -- this allocates memory.
       // There might not be a tie.
-      var tiebreaker = new PCGRandomStream(seed+vid, eltType=bool, parSafe=false);
+      var tiebreaker = makeRandomStream(seed+vid, eltType=bool,
+                                        parSafe=false, algorithm=RNG.PCG);
       for (count,lab) in zip(counts, counts.domain) {
         if count > maxcount || (count == maxcount && tiebreaker.getNext()) {
           maxcount = count;

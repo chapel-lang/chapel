@@ -3803,12 +3803,12 @@ bool CallExpr::isNamed(const char* name) {
 }
 
 
-int CallExpr::numActuals() {
+int CallExpr::numActuals() const {
   return argList.length;
 }
 
 
-Expr* CallExpr::get(int index) {
+Expr* CallExpr::get(int index) const {
   return argList.get(index);
 }
 

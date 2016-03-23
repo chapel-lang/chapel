@@ -105,7 +105,7 @@ Calling GMP functions directly
 
 The second option for Chapel programs using this module is to call the GMP
 functions directly. For a full reference to GMP capabilities, please refer to
-the `GMP website <http://gmplib.org>`_ and the
+the `GMP website <https://gmplib.org>`_ and the
 `GMP documentation <https://gmplib.org/manual/>`_.
 
 

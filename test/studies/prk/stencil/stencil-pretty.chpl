@@ -21,7 +21,7 @@ config param R = 2,
              compact = false,
              // Control of multilocale parallelism
              useStencilDist = false,
-             useBlockDist = (CHPL_COMM != "none" && !useStencilDist);
+             useBlockDist = false;
 
 // Configurable type for array elements
 config type dtype = real;
@@ -121,6 +121,9 @@ if (!validate) {
   if tiling then writeln("Tile size             = ", tileSize);
   else             writeln("Untiled");
   writeln("Number of iterations = ", iterations);
+  if useBlockDist then        writeln("Distribution         = Block");
+  else if useStencilDist then writeln("Distribution         = Stencil");
+  else                        writeln("Distribution         = None");
 }
 
 
@@ -137,9 +140,9 @@ for iteration in 0..iterations {
   if (!tiling) {
     forall (i,j) in innerDom {
       if (!compact) {
-        for param jj in -R..R  do output[i, j] += weight[0, jj] * input[i, j+jj];
-        for param ii in -R..-1 do output[i, j] += weight[ii, 0] * input[i+ii, j];
-        for param ii in 1..R   do output[i, j] += weight[ii, 0] * input[i+ii, j];
+        for jj in -R..R  do output[i, j] += weight[0, jj] * input[i, j+jj];
+        for ii in -R..-1 do output[i, j] += weight[ii, 0] * input[i+ii, j];
+        for ii in 1..R   do output[i, j] += weight[ii, 0] * input[i+ii, j];
       } else {
         for (ii, jj) in weightDom do
           output[i, j] += weight[ii,jj] * input[i+ii, j+jj];
@@ -150,9 +153,9 @@ for iteration in 0..iterations {
       for i in it .. # min(order - R - it, tileSize) {
         for j in jt .. # min(order - R - jt, tileSize) {
           if (!compact) {
-            for param jj in -R..R  do output[i, j] += weight[0, jj] * input[i, j+jj];
-            for param ii in -R..-1 do output[i, j] += weight[ii, 0] * input[i+ii, j];
-            for param ii in 1..R   do output[i, j] += weight[ii, 0] * input[i+ii, j];
+            for jj in -R..R  do output[i, j] += weight[0, jj] * input[i, j+jj];
+            for ii in -R..-1 do output[i, j] += weight[ii, 0] * input[i+ii, j];
+            for ii in 1..R   do output[i, j] += weight[ii, 0] * input[i+ii, j];
           } else {
             for (ii, jj) in weightDom do
               output[i, j] += weight[ii,jj] * input[i+ii, j+jj];
@@ -162,12 +165,12 @@ for iteration in 0..iterations {
     }
   }
 
-  if useStencilDist then input.updateFluff();
-
   // Add constant to solution to force refresh of neighbor data, if any
   forall (i,j) in Dom {
     input[i, j] += 1.0;
   }
+
+  if useStencilDist then output.updateFluff();
 
 } // end of iterations
 

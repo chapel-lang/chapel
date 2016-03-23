@@ -96,12 +96,12 @@ symbolFlag( FLAG_EXPORT_INIT, ypr, "export init", "indicate that the module's in
 symbolFlag( FLAG_EXPR_TEMP , npr, "expr temp" , "temporary that stores the result of an expression" )
 symbolFlag( FLAG_EXTERN , npr, "extern" , "extern variables, types, and functions" )
 symbolFlag( FLAG_FAST_ON , npr, "fast on" , "with FLAG_ON/FLAG_ON_BLOCK, \"on block\" , use fast spawning option (if available)" )
+symbolFlag( FLAG_FAST_ON_SAFE_EXTERN, ypr, "fast-on safe extern function", "extern function is safe for fast-on optimization")
 symbolFlag( FLAG_FIELD_ACCESSOR , npr, "field accessor" , "field setter/getter function, user-declared or compiler-generated" )
 symbolFlag( FLAG_FIRST_CLASS_FUNCTION_INVOCATION, npr, "first class function invocation" , "proxy for first-class function invocation" )
 symbolFlag( FLAG_FN_RETARG, npr, "fn returns via _retArg", ncm )
 symbolFlag( FLAG_FORMAL_TEMP,     npr, "formal temp", "a formal temp to back an in, out, or inout argument" )
 symbolFlag( FLAG_FUNCTION_CLASS , npr, "function class" , "first-class function class representation" )
-symbolFlag( FLAG_FUNCTION_PROTOTYPE , npr, "function prototype" , "signature for function prototypes" )
 // When applied to an argument, this flag means that the arg accepts a value
 // but has unspecified type.
 symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types, functions and arguments" )
@@ -158,6 +158,7 @@ symbolFlag( FLAG_NECESSARY_AUTO_COPY, npr, "necessary auto copy", "a variable co
 symbolFlag( FLAG_IGNORE_NOINIT, ypr, "ignore noinit", "this type must be initialized" )
 symbolFlag( FLAG_NON_BLOCKING , npr, "non blocking" , "with FLAG_ON/FLAG_ON_BLOCK, non-blocking on functions" )
 symbolFlag( FLAG_NO_AUTO_DESTROY , ypr, "no auto destroy" , ncm )
+symbolFlag( FLAG_NO_CAPTURE_FOR_TASKING , npr, "no capture for tasking", "does not need to be captured before spawning tasks" )
 symbolFlag( FLAG_NO_CODEGEN , ypr, "no codegen" , "do not generate e.g. C code defining this symbol" )
 symbolFlag( FLAG_NO_COPY , ypr, "no copy" , "do not apply chpl__initCopy to initialization of a variable" )
 symbolFlag( FLAG_NO_DEFAULT_FUNCTIONS , ypr, "no default functions" , ncm )

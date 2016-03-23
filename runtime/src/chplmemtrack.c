@@ -60,9 +60,8 @@ extern void chpl_memTracking_returnConfigVals(chpl_bool* memTrack,
 
 chpl_bool chpl_memTrack = false;
 
-#undef malloc
-#undef calloc
-#undef free
+// memory layer hasn't been initialized, need to use the system allocator
+#include "chpl-mem-no-warning-macros.h"
 
 typedef struct memTableEntry_struct { /* table entry */
   size_t number;

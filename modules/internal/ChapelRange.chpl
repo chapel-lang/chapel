@@ -1062,12 +1062,83 @@ module ChapelRange {
   
       newStride = if this.stride > 0 then lcm else -lcm;
     }
+
+    //
+    // These are mixed int/uint min/max functions that return a value
+    // matching the first argument's type.  They are written knowing
+    // that they will be called in an intersection context and set
+    // this variable if the intersection will be guaranteed to be
+    // empty (e.g., if all values of one range are outside of the
+    // expressible range of the other.
+    //
+    var emptyIntersection: bool;
+
+    proc min(x: int, y: uint) {
+      if (y > max(int)) {
+        return x;
+      }
+
+      //
+      // otherwise, we can safely cast y to int and take the normal
+      // min()
+      //
+      return min(x, y: int);
+    }
+
+    proc min(x: uint, y: int) {
+      //
+      // if the high uint bound is bigger than int can represent,
+      // this slice is guaranteed to be empty.
+      //
+      //
+      // if the smallest value is negative, the low bound of this
+      // slice will be the uint value.
+      //
+      if (y < 0) {
+        emptyIntersection = true;
+        return x;
+      }
+
+      //
+      // otherwise, we can safely cast y to uint and take the normal
+      // min()
+      //
+      return min(x, y: uint);
+    }
+
+    //
+    // These two cases are the dual of the above
+    //
+    proc max(x: int, y: uint) {
+      if (y > max(int)) {
+        emptyIntersection = true;
+        return x;
+      }
+
+      return max(x, y: int);
+    }
   
+    proc max(x: uint, y: int) {
+      if (y < 0) {
+        return x;
+      }
+
+      return max(x, y: uint);
+    }
+
+    emptyIntersection = false;
+    var newlo = max(lo1, lo2):idxType;
+    var newhi = min(hi1, hi2):idxType;
+    if (emptyIntersection) {
+      newlo = 1;
+      newhi = 0;
+    }
+
     var result = new range(idxType,
                            computeBoundedType(this, other),
                            this.stridable | other.stridable,
-                           max(lo1, lo2):idxType,
-                           min(hi1, hi2):idxType,
+                           newlo,
+                           newhi,
                            newStride,
                            0,
                            !ambig && (this._aligned || other._aligned));

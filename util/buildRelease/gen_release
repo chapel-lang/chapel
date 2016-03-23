@@ -147,7 +147,6 @@ if ($no_clone == 0) {
     "make",
     "man/man1",
     "modules",
-    "modules-ipe",
     "runtime",
     "third-party",
     "util/chplenv",
@@ -160,8 +159,8 @@ if ($no_clone == 0) {
 
 chdir "$archive_dir";
 
-# Docs must be built first so we can get rid of any extra files (chpldoc) with
-# a clobber
+# Docs/man page must be built first so we can get rid of any extra files
+# (chpldoc) with a clobber
 print "Building the docs...\n";
 # Set CHPL_COMM to none to avoid issues with gasnet generated makefiles not
 # existing because we haven't built the third-party libs
@@ -169,18 +168,19 @@ $ENV{'CHPL_HOME'} = "$archive_dir";
 $ENV{'CHPL_COMM'} = "none";
 print "CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
 
+print "Building the man module-docs...\n";
 SystemOrDie("make -j docs");
 SystemOrDie("mv doc/sphinx/build/html doc/release");
+
+print "Building the man pages...\n";
+SystemOrDie("make man");
+SystemOrDie("make man-chpldoc");
 SystemOrDie("make clobber");
 
 print "Creating the examples directory...\n";
 SystemOrDie("cp -r test/release/examples .");
 SystemOrDie("cd util && cp start_test ../examples/");
 SystemOrDie("./util/devel/test/extract_tests --no-futures -o ./examples/spec spec/*.tex");
-
-print "Building the man pages...\n";
-SystemOrDie("make man");
-SystemOrDie("make man-chpldoc");
 
 print "Building the STATUS file...\n";
 SystemOrDie("make STATUS");

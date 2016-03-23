@@ -1,0 +1,129 @@
+.TH "hwlocality_object_strings" 3 "Thu Dec 17 2015" "Version 1.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+hwlocality_object_strings \- Manipulating Object Type, Sets and Attributes as Strings
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "const char * \fBhwloc_obj_type_string\fP (\fBhwloc_obj_type_t\fP type)"
+.br
+.ti -1c
+.RI "int \fBhwloc_obj_type_sscanf\fP (const char *string, \fBhwloc_obj_type_t\fP *typep, int *depthattrp, void *typeattrp, size_t typeattrsize)"
+.br
+.ti -1c
+.RI "int \fBhwloc_obj_type_snprintf\fP (char *restrict string, size_t size, \fBhwloc_obj_t\fP obj, int verbose)"
+.br
+.ti -1c
+.RI "int \fBhwloc_obj_attr_snprintf\fP (char *restrict string, size_t size, \fBhwloc_obj_t\fP obj, const char *restrict separator, int verbose)"
+.br
+.ti -1c
+.RI "int \fBhwloc_obj_cpuset_snprintf\fP (char *restrict str, size_t size, size_t nobj, const \fBhwloc_obj_t\fP *restrict objs)"
+.br
+.ti -1c
+.RI "static const char * \fBhwloc_obj_get_info_by_name\fP (\fBhwloc_obj_t\fP obj, const char *name)"
+.br
+.ti -1c
+.RI "void \fBhwloc_obj_add_info\fP (\fBhwloc_obj_t\fP obj, const char *name, const char *value)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+
+.SH "Function Documentation"
+.PP 
+.SS "void hwloc_obj_add_info (\fBhwloc_obj_t\fP obj, const char * name, const char * value)"
+
+.PP
+Add the given info name and value pair to the given object\&. The info is appended to the existing info array even if another key with the same name already exists\&.
+.PP
+The input strings are copied before being added in the object infos\&.
+.PP
+\fBNote:\fP
+.RS 4
+This function may be used to enforce object colors in the lstopo graphical output by using 'lstopoStyle' as a name and 'Background=#rrggbb' as a value\&. See CUSTOM COLORS in the lstopo(1) manpage for details\&.
+.PP
+If \fCvalue\fP contains some non-printable characters, they will be dropped when exporting to XML, see \fBhwloc_topology_export_xml()\fP\&. 
+.RE
+.PP
+
+.SS "int hwloc_obj_attr_snprintf (char *restrict string, size_t size, \fBhwloc_obj_t\fP obj, const char *restrict separator, int verbose)"
+
+.PP
+Stringify the attributes of a given topology object into a human-readable form\&. Attribute values are separated by \fCseparator\fP\&.
+.PP
+Only the major attributes are printed in non-verbose mode\&.
+.PP
+If \fCsize\fP is 0, \fCstring\fP may safely be \fCNULL\fP\&.
+.PP
+\fBReturns:\fP
+.RS 4
+the number of character that were actually written if not truncating, or that would have been written (not including the ending \\0)\&. 
+.RE
+.PP
+
+.SS "int hwloc_obj_cpuset_snprintf (char *restrict str, size_t size, size_t nobj, const \fBhwloc_obj_t\fP *restrict objs)"
+
+.PP
+Stringify the cpuset containing a set of objects\&. If \fCsize\fP is 0, \fCstring\fP may safely be \fCNULL\fP\&.
+.PP
+\fBReturns:\fP
+.RS 4
+the number of character that were actually written if not truncating, or that would have been written (not including the ending \\0)\&. 
+.RE
+.PP
+
+.SS "static const char* hwloc_obj_get_info_by_name (\fBhwloc_obj_t\fP obj, const char * name)\fC [inline]\fP, \fC [static]\fP"
+
+.PP
+Search the given key name in object infos and return the corresponding value\&. If multiple keys match the given name, only the first one is returned\&.
+.PP
+\fBReturns:\fP
+.RS 4
+\fCNULL\fP if no such key exists\&. 
+.RE
+.PP
+
+.SS "int hwloc_obj_type_snprintf (char *restrict string, size_t size, \fBhwloc_obj_t\fP obj, int verbose)"
+
+.PP
+Stringify the type of a given topology object into a human-readable form\&. It differs from \fBhwloc_obj_type_string()\fP because it prints type attributes such as cache depth and type\&.
+.PP
+If \fCsize\fP is 0, \fCstring\fP may safely be \fCNULL\fP\&.
+.PP
+\fBReturns:\fP
+.RS 4
+the number of character that were actually written if not truncating, or that would have been written (not including the ending \\0)\&. 
+.RE
+.PP
+
+.SS "int hwloc_obj_type_sscanf (const char * string, \fBhwloc_obj_type_t\fP * typep, int * depthattrp, void * typeattrp, size_t typeattrsize)"
+
+.PP
+Return an object type and attributes from a type string\&. Convert strings such as 'Package' or 'Cache' into the corresponding types\&. Matching is case-insensitive, and only the first letters are actually required to match\&.
+.PP
+Types that have specific attributes, for instance caches and groups, may be returned in \fCdepthattrp\fP and \fCtypeattrp\fP\&. They are ignored when these pointers are \fCNULL\fP\&.
+.PP
+For instance 'L2i' or 'L2iCache' would return type HWLOC_OBJ_CACHE in \fCtypep\fP, 2 in \fCdepthattrp\fP, and HWLOC_OBJ_CACHE_TYPE_INSTRUCTION in \fCtypeattrp\fP (this last pointer should point to a hwloc_obj_cache_type_t)\&. 'Group3' would return type HWLOC_OBJ_GROUP type and 3 in \fCdepthattrp\fP\&. Attributes that are not specified in the string (for instance 'Group' without a depth, or 'L2Cache' without a cache type) are set to -1\&.
+.PP
+\fCtypeattrp\fP is only filled if the size specified in \fCtypeattrsize\fP is large enough\&. It is currently only used for caches, and the required size is at least the size of hwloc_obj_cache_type_t\&.
+.PP
+\fBReturns:\fP
+.RS 4
+0 if a type was correctly identified, otherwise -1\&.
+.RE
+.PP
+\fBNote:\fP
+.RS 4
+This is an extended version of the now deprecated hwloc_obj_type_of_string() 
+.RE
+.PP
+
+.SS "const char* hwloc_obj_type_string (\fBhwloc_obj_type_t\fP type)"
+
+.PP
+Return a stringified topology object type\&. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

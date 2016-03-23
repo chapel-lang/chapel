@@ -55,8 +55,8 @@ public:
 ************************************* | ************************************/
 class UseStmt : public Stmt {
  public:
-  Expr* mod; // Can be either an UnresolvedSymExpr, SymExpr, or CallExpr to
-  // specify an explicit module name.
+  Expr* src; // Can be either an UnresolvedSymExpr, SymExpr, or CallExpr to
+  // specify an explicit module or enum name.
 
   // Lydia note: These fields are only public because our AstTraversal classes
   // need to see them.  No one else should touch it.  I mean it!
@@ -65,8 +65,8 @@ class UseStmt : public Stmt {
   std::map<const char*, const char*> renamed; // Map of newName: oldName
 
 
-  UseStmt(BaseAST* module);
-  UseStmt(BaseAST* module, std::vector<const char*>* args, bool exclude, std::map<const char*, const char*>* renames);
+  UseStmt(BaseAST* source);
+  UseStmt(BaseAST* source, std::vector<const char*>* args, bool exclude, std::map<const char*, const char*>* renames);
 
   virtual void    verify();
 
@@ -91,6 +91,7 @@ class UseStmt : public Stmt {
   const char* getRename(const char* name);
   UseStmt* applyOuterUse(UseStmt* outer);
   bool providesNewSymbols(UseStmt* other);
+  BaseAST* getSearchScope();
 
  private:
   bool except; // Used to determine if the use contains an 'except' or 'only'
@@ -260,6 +261,9 @@ class GotoStmt : public Stmt {
   virtual Expr*       getFirstExpr();
 
   const char*         getName();
+
+  bool                isGotoReturn()                                   const;
+  LabelSymbol*        gotoTarget()                                     const;
 };
 
 /************************************ | *************************************
