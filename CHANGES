@@ -2,7 +2,7 @@
 Release Changes List
 ====================
 
-finished thru commit 7ce2bbe
+finished thru commit c40ad80
 
 ==============
 version 1.13.0
@@ -30,6 +30,7 @@ Environment/Configuration Changes
 * reorganized files to better support packaging of Chapel
 * made 'cray-prgenv-cray' default to using qthreads+hwloc
 * made 'jemalloc' our default allocator for all configurations other than Cygwin
+* renamed the 'etc' directory to 'highlight' to better label its contents
 
 Tool Changes
 ------------
@@ -46,6 +47,7 @@ Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * made default I/O routines ignore 'param' fields as they do 'type' fields
 * improved the handling of "return by ref" functions in setter/getter contexts
+  (see 'The Ref Return Intent' in the 'Procedures' chapter of the language spec)
 * removed support for performing I/O on 'c_string's
 * removed coercions from c_strings to strings
 
@@ -67,6 +69,8 @@ New Features
   (see TODO)
 * added the ability to query whether a call can be resolved or not
   (see TODO)
+* added support for casting from fully-qualified enum strings to enum values
+  (e.g., '"mycolor.green":mycolor' now works where it wouldn't have previously)
   
 
 Standard Library/Modules
@@ -96,10 +100,12 @@ Memory Improvements
 * stopped heap-allocating variables referred to within 'begin' scopes
 * stopped heap-allocating variables referred to within non-blocking on-clauses
 * dramatically reduced the compiler-generated leaks due to strings and records
+* stopped heap-allocating index variables of coforall loops
 
 Documentation
 -------------
 * dramatically improved the organization of the online Chapel documentation
+* created web-based versions of the 'chpl' and 'chpldoc' man pages
 * reorganized math constants to the top of the Math module documentation
 * removed redundant 'Module:' prefixes in the online module documentation
 * cleaned up the HTML titles for online documentation
@@ -109,6 +115,9 @@ Documentation
 * added the language specification and quick reference to Chapel's online docs
 * moved the Chapel evolution page from chapel.cray.com to the online docs
 * cleaned up the man pages for 'chpl' and 'chpldoc'
+* improved the descriptions of scalar function promotion in the spec
+* improved some descriptions and wordings in the spec for clarity
+* moved the document describing Chapel's evolution to the online documentation
 
 Example Codes
 -------------
@@ -126,12 +135,15 @@ Compiler Flags (see 'man chpl' for details)
 
 Execution Flags
 ---------------
+* added support for specifying enum configs using fully-qualified names
 
 Error Message Improvements
 --------------------------
 * added an error message for 'real*2' pointing the user to '2*real'
 * improved error messages for illegal/incorrect 'use' statements
 * stopped warning about reductions being serialized -- they should be legal
+* implemented an error message for strings containing bad escape sequences
+* reduced the degree to which internal module line numbers are named in errors
 
 Bug Fixes
 ---------
@@ -156,6 +168,9 @@ Bug Fixes
 * fixed the line numbers reported for standalone iterators
 * improved the handling of C ecsapes in string literals
 * fixed a bug related to nested modules with the same name, each defining main()
+* fixed a bug in which subtype checking now handles transitive instantiation
+* fixed a bug in which generic types were not printed properly
+* fixed a bug in which assignment between generic records did not work properly
 
 Platform-specific Changes
 -------------------------
@@ -208,6 +223,7 @@ Performance Testing/Graphing System
 
 Developer-oriented changes: Process Improvements
 ------------------------------------------------
+* changed the generation of the man page from txt2man into an rst-based scheme
 
 Developer-oriented changes: Documentation Improvements
 ------------------------------------------------------
@@ -241,6 +257,8 @@ Developer-oriented changes: Compiler improvements/changes
 * made all non-'flat' locale models outline on-clauses and use wide pointers
 * unified the handling of 'by' and 'align' in the parser
 * introduced a new 'UseStmt' AST node for representing 'use' statements
+* improved the handling of string varargs with default intent
+* improved the normalization of initialization expressions
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
