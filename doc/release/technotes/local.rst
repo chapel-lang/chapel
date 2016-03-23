@@ -99,9 +99,11 @@ within the current node. For example:
   }
 
 When the ``--local-checks`` flag is enabled, a runtime check will be inserted
-to confirm that the on-statement is performed within the same node. For
-example, the following code would produce a runtime error if the number of
-locales is greater than one:
+to confirm that the on-statement is performed within the same node.
+``--local-checks`` is enabled by default and can be disabled with
+``--no-local-checks``, ``--no-checks``, or ``--fast``. For example, the
+following code would produce a runtime error if the number of locales is
+greater than one:
 
 .. code-block:: chapel
 
