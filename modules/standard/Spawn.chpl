@@ -890,18 +890,25 @@ module Spawn {
   /*
     Send a signal to a child process.
 
-    Values for `signal` are system-specific and can be declared as:
-
-    .. code-block:: chapel
-
-       extern const SIG*: c_int;
-
     Declarations for POSIX.1.2008 signals are provided in this module.
+    These include `SIGABRT`, `SIGALRM`, `SIGBUS`, `SIGCHLD`, `SIGCONT`,
+    `SIGFPE`, `SIGHUP`, `SIGILL`, `SIGINT`, `SIGKILL`, `SIGPIPE`, `SIGQUIT`,
+    `SIGSEGV`, `SIGSTOP`, `SIGTERM`, `SIGTRAP`, `SIGTSTP`, `SIGTTIN`,
+    `SIGTTOU`, `SIGURG`, `SIGUSR1`, `SIGUSR2`, `SIGXCPU`, `SIGXFSZ`.
+
     See your system's documentation for their meaning:
 
     ::
 
       man signal
+
+    Other values for `signal` are system-specific and can be declared in this
+    way, for example:
+
+    .. code-block:: chapel
+
+       extern const SIGPOLL: c_int;
+
 
     :arg signal: the signal to send
 
