@@ -1,6 +1,9 @@
 .. _readme-local:
 
-=====================
+===================
+The 'local' keyword
+===================
+
 The 'local' Statement
 =====================
 
@@ -107,10 +110,15 @@ locales is greater than one:
     writeln("On remote locale ", LastLocale);
   }
 
+Output::
+
+  > ./a.out -nl 2
+  local-on-err.chpl:2: error: Local-on is not local
+
 The ``local on`` construct functions similarly to a normal on-statement in all
 other ways. Note that it is unrelated to ``local`` statements or ``local``
 blocks, and that it has no impact on what communication is or is not allowed
 (other than where the on-statement can execute).
 
 With this information the compiler can reduce overhead associated with wide
-pointers.
+pointers and hopefully improve performance.
