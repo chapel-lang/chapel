@@ -113,7 +113,7 @@ bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
 
   // If this is a sub module (i.e. other modules were entered and not yet
   // exited before this one), we want to open a new file in a subdirectory.
-  if (strcmp(node->name, this->moduleName.c_str()) != 0) {
+  if (node->name != this->moduleName) {
     // Create a directory with our module name and store this file in it.
     static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
     int result = mkdir(this->pathWithoutPostfix.c_str(), dirPerms);
