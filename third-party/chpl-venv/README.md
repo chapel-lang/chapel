@@ -26,7 +26,7 @@ installation). The dependencies for these packages are listed in the next
 section.
 
 The primary packages required by `start_test` are: `subprocess32`,
-`argparse`, and `virtualenv` (for installation).
+`argparse`, `PyYAML`, and `virtualenv` (for installation).
 
 ### Sphinx
 
@@ -67,6 +67,14 @@ Command line argument parsing library, backported from Python 2.7.
 **License**: Python Software Foundation License
 
 **Website**: https://pypi.python.org/pypi/argparse
+
+### PyYAML
+
+A YAML parser and emitter for Python
+
+**License**: MIT
+
+**Website**: https://pypi.python.org/pypi/PyYAML
 
 ### subprocess32
 

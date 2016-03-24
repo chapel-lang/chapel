@@ -16,8 +16,8 @@ The Chapel implementation is composed of two categories of code:
    category are made available under the terms of their original
    licenses, respectively.
 
-   Packages in this second category are redistributed in the etc/ and
-   third-party/ directories.  The following table provides a summary
+   Packages in this second category are redistributed in the highlight/
+   and third-party/ directories.  The following table provides a summary
    of the packages, their uses, and their licenses.
 
    directory/package  use                                          license
@@ -30,6 +30,7 @@ The Chapel implementation is composed of two categories of code:
      chpl-venv        python packages supporting chpldoc & tests
        subprocess32   Back port of python3 subprocess to python2   Python
        argparse       Back port of argparse to < python2.7         Python
+       PyYAML         YAML parser and emitter for Python           MIT
        Sphinx         Python documentation generator               BSD
        sphinxcontrib-chapeldomain
                       The Chapel language domain for Sphinx        Apache v2.0
