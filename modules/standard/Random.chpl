@@ -70,7 +70,7 @@
    2. If no seed is provided by the user, one is chosen based on the
    current time in microseconds, allowing for some degree of
    pseudorandomness in seed selection.  The intent of
-   :record:`SeedGenerators` is to provide a menu of other options
+   :record:`SeedGenerator` is to provide a menu of other options
    for initializing the random stream seed, but only one option is
    implemented at present.
 
@@ -129,10 +129,10 @@ module Random {
     :arg arr: The array to be filled, where T is `real(64)`, `imag(64)`, or `complex(128)`.
     :type arr: [] T
 
-    :arg seed: The seed to use for the PRNG.  Defaults to :proc:`SeedGenerators.oddCurrentTime`.
+    :arg seed: The seed to use for the PRNG.  Defaults to :proc:`SeedGenerator.oddCurrentTime`.
     :type seed: int(64)
   */
-  proc fillRandom(arr: [], seed: int(64) = SeedGenerators.oddCurrentTime, param
+  proc fillRandom(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
       algorithm=defaultRNG)
     where isSupportedNumericType(arr.eltType) {
     var randNums = makeRandomStream(seed, eltType=arr.eltType, parSafe=false, algorithm=algorithm);
@@ -141,7 +141,7 @@ module Random {
   }
 
   pragma "no doc"
-  proc fillRandom(arr: [], seed: int(64) = SeedGenerators.oddCurrentTime, param
+  proc fillRandom(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
       algorithm=defaultRNG) {
     compilerError("Random.fillRandom is only defined for numeric arrays");
   }
@@ -151,7 +151,7 @@ module Random {
      :arg arr: a 1-D non-strided array
      :arg seed: the seed to use when shuffling
    */
-  proc shuffle(arr: [], seed: int(64) = SeedGenerators.oddCurrentTime, param algorithm=RNG.PCG) {
+  proc shuffle(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
     var randNums = makeRandomStream(seed, eltType=arr.eltType, parSafe=false, algorithm=algorithm);
     randNums.shuffle(arr);
     delete randNums;
@@ -164,7 +164,7 @@ module Random {
      :arg arr: a 1-D non-strided array
      :arg seed: the seed to use when creating the permutation
    */
-  proc permutation(arr: [], seed: int(64) = SeedGenerators.oddCurrentTime, param algorithm=RNG.PCG) {
+  proc permutation(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
     var randNums = makeRandomStream(seed, eltType=arr.eltType, parSafe=false, algorithm=algorithm);
     randNums.permutation(arr);
     delete randNums;
@@ -301,7 +301,7 @@ module Random {
     and parallel safety.  Ensures that the seed value meets the PRNG's
     constraints.
 
-    :arg seed: The seed to use for the PRNG.  Defaults to :proc:`SeedGenerators.oddCurrentTime`.
+    :arg seed: The seed to use for the PRNG.  Defaults to :proc:`SeedGenerator.oddCurrentTime`.
     :type seed: int(64)
 
     :arg parSafe: The parallel safety setting.  Defaults to `true`.
@@ -313,7 +313,7 @@ module Random {
     :arg algorithm: which algorithm to use. A param enum RNG element.  Defaults to PCG.
     :type algorithm: RNG
   */
-  proc makeRandomStream(seed: int(64) = SeedGenerators.oddCurrentTime,
+  proc makeRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
                         param parSafe: bool = true,
                         type eltType = real(64),
                         param algorithm = defaultRNG) {
@@ -335,31 +335,12 @@ module Random {
   */
   module RandomSupport {
 
-    // Will be deprecated in 1.14.
-    pragma "no doc"
-    const SeedGenerator_actual: SeedGeneratorsDeprecated;
-    pragma "no doc"
-    proc SeedGenerator {
-      compilerWarning("Random.SeedGenerator is deprecated - use Random.SeedGenerators");
-      return SeedGenerator_actual;
-    }
-
-    pragma "no doc"
-    record SeedGeneratorsDeprecated {
-      proc currentTime: int(64) {
-        use Time;
-        const seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
-        const oddseed = if seed % 2 == 0 then seed + 1 else seed;
-        return oddseed;
-      }
-    }
-
     /*
       Provides methods to help generate seeds when the user doesn't want
       to create one.  It currently supports two type methods. Both start
       with the current time.
     */
-    record SeedGenerators {
+    record SeedGenerator {
       /*
         Generate a seed based on the current time in microseconds as
         reported by :proc:`Time.getCurrentTime`. This seed is not
@@ -530,7 +511,7 @@ module Random {
         and parallel safety.
 
         :arg seed: The seed to use for the PRNG.  Defaults to
-         :proc:`SeedGenerators.currentTime`. Can be any int(64) value.
+         :proc:`SeedGenerator.currentTime`. Can be any int(64) value.
         :type seed: int(64)
 
         :arg parSafe: The parallel safety setting.  Defaults to `true`.
@@ -539,7 +520,7 @@ module Random {
         :arg eltType: The element type to be generated.  Defaults to `real(64)`.
         :type eltType: type
       */
-      proc RandomStream(seed: int(64) = SeedGenerators.currentTime,
+      proc RandomStream(seed: int(64) = SeedGenerator.currentTime,
                         param parSafe: bool = true,
                         type eltType = real(64) ) {
         this.seed = seed;
@@ -1976,7 +1957,7 @@ module Random {
           halt().
 
         :arg seed: The seed to use for the PRNG.  Defaults to
-          :proc:`SeedGenerators.oddCurrentTime`.
+          :proc:`SeedGenerator.oddCurrentTime`.
         :type seed: int(64)
 
         :arg parSafe: The parallel safety setting.  Defaults to `true`.
@@ -1985,7 +1966,7 @@ module Random {
         :arg eltType: The element type to be generated.  Defaults to `real(64)`.
         :type eltType: type
       */
-      proc NPBRandomStream(seed: int(64) = SeedGenerators.oddCurrentTime,
+      proc NPBRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
                         param parSafe: bool = true,
                         type eltType = real(64)) {
 
