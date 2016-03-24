@@ -1,7 +1,0 @@
-scaling mode = weakISO
-total keys = 536870912 (2**29)
-keys per locale = 134217728 (2**27)
-maxKeyVal = 32768 (2**15)
-bucketWidth = 8192 (2**13)
-numTrials = 0
-numLocales = 4
