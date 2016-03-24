@@ -368,6 +368,8 @@ miniMD:
     - param protect all calls to chpl__testPar -- resolve DefaultRect cast regression (#1200)
   03/17/15:
     -  Avoid shallow record copies in miniMD (#1643)
+  03/19/16:
+    -  Increase parallelism, decrease comm (#3483)
 
 nbody:
   03/17/14:
