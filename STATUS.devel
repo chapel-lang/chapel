@@ -808,9 +808,6 @@ chpldoc
   # chpldoc/basics/main.doc.future
 - chpldoc is incorrect or incomplete for some types
   # chpldoc/enum/docConstants.doc.future
-- chpldoc associates a procedure following a submodule with that submodule
-  instead of the real module it is contained within.
-  # chpldoc/compflags/folder/save-sphinx/deepNestModules.doc.future
 
 
 Developer
