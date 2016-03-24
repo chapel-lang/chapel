@@ -667,8 +667,10 @@ label outer for i in 1..n {
 
 The use statement makes constants in each listed enumerated type or symbols in
 each listed module's scope available without prefix from the scope where the use
-statement occurs.  For rules which are only applicable to modules, please
-see~\rsec{Using_Modules}.  The syntax of the use statement is given by:
+statement occurs.  Note that this is the only way to reference an enumeration
+constant without the enumeration type name as a prefix
+(see~\rsec{Enumerated_Types}).  For rules which are only applicable to modules,
+please see~\rsec{Using_Modules}.  The syntax of the use statement is given by:
 
 \begin{syntax}
 use-statement:
@@ -680,7 +682,7 @@ module-or-enum-name-list:
 
 module-or-enum-name:
   identifier
-  module-or-enum-name . module-or-enum-name
+  identifier . module-or-enum-name
 
 limitation-clause:
   `except' identifier-list
@@ -696,9 +698,13 @@ rename-base:
 \end{syntax}
 
 Symbols made available by a use statement are at an outer scope from those
-defined directly in the scope where the use statement occurs, but at a
-nearer scope than symbols defined in the scope containing the scope where
-the use statement occurs.
+defined directly in the scope where the use statement occurs, but at a nearer
+scope than symbols defined in the scope containing the scope where the use
+statement occurs.  The placement of a use statement relative to other statements
+within a scope does not affect the availability of the used module's symbols or
+the used enumerated type's constants - a use statement at the end or middle of a
+scope will impact the same symbol accesses it would have impacted if it had been
+placed at the beginning of that scope.
 
 An optional \sntx{limitation-clause} may be provided to limit the symbols made
 available by the use statement.  If an \chpl{except} list is provided, then all
@@ -727,7 +733,11 @@ that \chpl{only} list.
 
 If a use statement mentions multiple modules or enumerated types or a mix of
 these symbols, only the last module or enumerated type can have a
-\sntx{limitation-clause}.
+\sntx{limitation-clause}.  All use statements in a scope are considered at the
+same depth relative to the symbols within the scope - the ordering of use
+statements or modules/enumerated types within a use statement will not affect
+that depth.  It is an error for two public variables, types, enumeration
+constants, or modules with the same name to be defined at the same depth.
 
 Use statements are transitive by default: if a module A used by another module B
 also contains a use of a further module or enumerated type C, C's symbols will
@@ -739,9 +749,6 @@ symbols are visible to B.
 
 % We would like to provide a way to specify that a use should not be
 % transitive
-
-It is an error for two public variables, types, enumeration constants, or
-modules with the same name to be defined at the same depth.
 
 \begin{chapelexample}{use.chpl}
   The following example illustrates how the use statement makes
