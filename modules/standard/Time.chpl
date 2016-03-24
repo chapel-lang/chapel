@@ -72,10 +72,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
 /*
    :arg  unit: The units for the returned value
-   :type unit: TimeUnits
+   :type unit: :type:`TimeUnits`
 
    :returns: The elapsed time since midnight, local time, in the units specified
-   :rtype:   real(64)
+   :rtype:   `real(64)`
  */
 proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64)
   return _convert_microseconds(unit, chpl_now_time());
@@ -98,7 +98,7 @@ proc getCurrentDate() {
 
 /*
    :returns: The current day of the week
-   :rtype:   Day
+   :rtype:   :type:`Day`
  */
 proc getCurrentDayOfWeek() : Day {
   var now = chpl_now_timevalue();
@@ -114,10 +114,10 @@ proc getCurrentDayOfWeek() : Day {
    Delay a task for a duration in the units specified
 
    :arg  t: The duration for the time to sleep
-   :type t: real
+   :type t: `real`
 
    :arg  unit: The units for the duration
-   :type unit: TimeUnits
+   :type unit: :type:`TimeUnits`
 */
 inline proc sleep(t: real, unit: TimeUnits = TimeUnits.seconds) : void {
   extern proc chpl_task_sleep(s:c_double) : void;
@@ -188,16 +188,16 @@ record Timer {
 
   /*
      Returns the cumulative elapsed time, in the units specified, between
-     all pairs of calls to :proc:`~!Timer.start` and :proc:`~!Timer.stop`
-     since the timer was created or the last call to :proc:`~!Timer.clear`.
+     all pairs of calls to :proc:`start` and :proc:`stop`
+     since the timer was created or the last call to :proc:`clear`.
      If the timer is running, the elapsed time since the last call to
-     :proc:`~!Timer.start` is added to the return value.
+     :proc:`start` is added to the return value.
 
      :arg  unit: The units for the returned value
-     :type unit: TimeUnits
+     :type unit: :type:`TimeUnits`
 
      :returns: The elapsed time in the units specified
-     :rtype:   real(64)
+     :rtype:   `real(64)`
   */
   proc elapsed(unit: TimeUnits = TimeUnits.seconds) : real {
     if running {
