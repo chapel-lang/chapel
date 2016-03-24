@@ -2907,7 +2907,7 @@ void ModuleSymbol::addDefaultUses() {
 // Fortunately there are currently no tests that expose this fallacy so
 // long at ChapelStandard always appears first in the list
 void ModuleSymbol::moduleUseAdd(ModuleSymbol* mod) {
-  if (modUseList.index(mod) < 0) {
+  if (mod != this && modUseList.index(mod) < 0) {
     if (mod == standardModule) {
       modUseList.insert(0, mod);
     } else {
