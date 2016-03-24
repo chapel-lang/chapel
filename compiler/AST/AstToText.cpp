@@ -115,19 +115,14 @@ void AstToText::appendName(FnSymbol* fn)
 
 void AstToText::appendThisIntent(FnSymbol* fn)
 {
-  int index = indexForThis(fn);
+  if (fn->thisTag == INTENT_REF)
+    mText += "ref ";
 
-  if (index > 0)
-  {
-    DefExpr*   formal = toDefExpr(fn->formals.get(index));
-    ArgSymbol* argSym = toArgSymbol(formal->sym);
+  else if (fn->thisTag == INTENT_PARAM)
+    mText += "param ";
 
-    if (argSym->intent == INTENT_REF)
-      mText += "ref ";
-
-    else if (argSym->intent == INTENT_PARAM)
-      mText += "param ";
-  }
+  else if (fn->thisTag == INTENT_TYPE)
+    mText += "type ";
 }
 
 void AstToText::appendClassName(FnSymbol* fn)

@@ -119,12 +119,12 @@ module ChapelLocale {
       :arg logical: Count logical PUs (hyperthreads and the like),
                     or physical ones (cores)?  Defaults to `false`,
                     for cores.
-      :type logical: :type:`bool`
+      :type logical: `bool`
       :arg accessible: Count only PUs that can be reached, or all of
                        them?  Defaults to `true`, for accessible PUs.
-      :type accessible: :type:`bool`
+      :type accessible: `bool`
       :returns: number of PUs
-      :rtype: :type:`int`
+      :rtype: `int`
 
       There are several things that can cause the OS to limit the
       processor resources available to a Chapel program.  On plain

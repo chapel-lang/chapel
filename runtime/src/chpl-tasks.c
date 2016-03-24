@@ -60,8 +60,8 @@ int32_t chpl_task_getenvNumThreadsPerLocale(void)
     }
     else {
       if (sscanf(p, "%" SCNi32, &num) != 1)
-        chpl_warning("Cannot parse CHPL_RT_NUM_THREADS_PER_LOCALE environment "
-                     "variable", 0, 0);
+        chpl_error("Cannot parse CHPL_RT_NUM_THREADS_PER_LOCALE environment "
+                   "variable", 0, 0);
       if (num < 0) {
         chpl_error("CHPL_RT_NUM_THREADS_PER_LOCALE must be >= 0", 0, 0);
         num = 0;
