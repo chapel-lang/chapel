@@ -1319,7 +1319,7 @@ module Random {
       }
     }
 
-    proc checkSufficientBits(type resultType, ref states) {
+    proc checkSufficientBitsAndAdvanceOthers(type resultType, ref states) {
       // Note - this error could be eliminated if we used
       // the same strategy as bounded_rand_vary_inc and
       // just computed the RNGs at the later incs
@@ -1334,13 +1334,18 @@ module Random {
                       (32*numGen):string +
                       " bits of output");
 
+      // Step each RNG that is not involved in the output.
+      for i in numGenForResultType+1..numGen {
+        states[i].random(pcg_getvalid_inc(i:uint));
+      }
     }
+
 
     // Wrapper that takes a result type
     private inline
     proc randlc(type resultType, ref states) {
 
-      checkSufficientBits(resultType, states);
+      checkSufficientBitsAndAdvanceOthers(resultType, states);
 
       if resultType == complex(128) {
         return (randToReal64(rand64_1(states)),
@@ -1380,7 +1385,7 @@ module Random {
                         ref states, seed:int(64), count:int(64),
                         min, max) {
 
-      checkSufficientBits(resultType, states);
+      checkSufficientBitsAndAdvanceOthers(resultType, states);
 
       if resultType == complex(128) {
         return (randToReal64(rand64_1(states), min.re, max.re),
