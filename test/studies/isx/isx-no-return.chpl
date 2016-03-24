@@ -131,9 +131,6 @@ config const numBurnInRuns = 1,
 if printConfig then
   printConfiguration();
 
-if numTrials == 0 then
-  exit(0);
-
 const LocBucketSpace = {0..#numBuckets};
 const BucketDist = new dmap(new Block(LocBucketSpace));
 const BucketSpace = LocBucketSpace dmapped BucketDist;
@@ -146,32 +143,36 @@ var verifyKeyCount: atomic int;
 
 var barrier = new Barrier(numBuckets);
 
-coforall bucketID in BucketSpace do
-  on BucketDist.idxToLocale(bucketID) {
-    //
-    // Execution is SPMD-style across buckets here
-    //
+proc main() {
+  if numTrials != 0 {
+    coforall bucketID in BucketSpace do
+      on BucketDist.idxToLocale(bucketID) {
+        //
+        // Execution is SPMD-style across buckets here
+        //
 
-    //
-    // The non-positive iterations represent burn-in runs, so don't
-    // time those.  To reduce time spent in verification, verify only
-    // the final timed run.
-    //
-    for i in 1-numBurnInRuns..numTrials do
-      bucketSort(bucketID, trial=i, time=printTimings && (i>0),
-                 verify=(i==numTrials));
+        //
+        // The non-positive iterations represent burn-in runs, so don't
+        // time those.  To reduce time spent in verification, verify only
+        // the final timed run.
+        //
+        for i in 1-numBurnInRuns..numTrials do
+          bucketSort(bucketID, trial=i, time=printTimings && (i>0),
+                     verify=(i==numTrials));
+      }
+
+    if debug {
+      writeln("final buckets =\n");
+      for (i,b) in zip(BucketSpace, allBucketKeys) do
+        writeln("Bucket ", i, " (owned by locale ", b.locale.id, "): ", b);
+    }
+
+    if printTimings then
+      printTimingData("buckets");
   }
 
-if debug {
-  writeln("final buckets =\n");
-  for (i,b) in zip(BucketSpace, allBucketKeys) do
-    writeln("Bucket ", i, " (owned by locale ", b.locale.id, "): ", b);
+  delete barrier;
 }
-  
-if printTimings then
-  printTimingData("buckets");
-
-delete barrier;
 
 
 proc bucketSort(bucketID, trial: int, time = false, verify = false) {

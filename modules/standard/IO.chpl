@@ -258,7 +258,7 @@ In addition, there are several convenient synonyms for :proc:`channel.write` and
 :proc:`channel.read`:
 
  * :proc:`channel.readwrite`
- * :proc:`<~>`
+ * the `<~> operator`_
 
 Sometimes it's important to flush the buffer in a channel - to do that, use the
 .flush() method. Flushing the buffer will make all writes available to other
@@ -1199,12 +1199,12 @@ The :type:`iomode` type is an enum.
 When used as arguments when opening files,
 its constants have the following meaning:
 
-* :enum:`iomode.r` - open an existing file for reading.
-* :enum:`iomode.rw` - open an existing file for reading and writing.
-* :enum:`iomode.cw` - create a new file for writing.
+* ``iomode.r`` - open an existing file for reading.
+* ``iomode.rw`` - open an existing file for reading and writing.
+* ``iomode.cw`` - create a new file for writing.
   If the file already exists, its contents are removed
   when the file is opened in this mode.
-* :enum:`iomode.cwr` - as with :enum:`iomode.cw` but reading from the
+* ``iomode.cwr`` - as with ``iomode.cw`` but reading from the
   file is also allowed.
 
 */
@@ -1220,29 +1220,29 @@ enum iomode {
 The :type:`iokind` type is an enum. When used as arguments to the
 :record:`channel` type, its constants have the following meaning:
 
-* :enum:`iokind.big` means binary I/O with big-endian byte order is performed
+* ``iokind.big`` means binary I/O with big-endian byte order is performed
   when writing/reading basic types from the channel.
 
-* :enum:`iokind.little` means binary I/O with little-endian byte order
-  (similar to :enum:`iokind.big` but with little-endian byte order).
+* ``iokind.little`` means binary I/O with little-endian byte order
+  (similar to ``iokind.big`` but with little-endian byte order).
 
-* :enum:`iokind.native` means binary I/O in native byte order
-  (similar to :enum:`iokind.big` but with the byte order that is native
+* ``iokind.native`` means binary I/O in native byte order
+  (similar to ``iokind.big`` but with the byte order that is native
   to the target platform).
 
-* :enum:`iokind.dynamic` means that the applicable I/O style has full effect
+* ``iokind.dynamic`` means that the applicable I/O style has full effect
   and as a result the kind varies at runtime.
 
-In the case of :enum:`iokind.big`, :enum:`iokind.little`, and
-:enum:`iokind.native` the applicable :record:`iostyle` is consulted when
+In the case of ``iokind.big``, ``iokind.little``, and
+``iokind.native`` the applicable :record:`iostyle` is consulted when
 writing/reading strings, but not for other basic types.
 
 There are synonyms available for these values:
 
-* ``iodynamic`` = :enum:`iokind.dynamic`
-* ``ionative`` = :enum:`iokind.native`
-* ``iobig`` = :enum:`iokind.big`
-* ``iolittle`` = :enum:`iokind.little`
+* :proc:`iodynamic` = ``iokind.dynamic``
+* :proc:`ionative` = ``iokind.native``
+* :proc:`iobig` = ``iokind.big``
+* :proc:`iolittle` = ``iokind.little``
 
 */
 enum iokind {
@@ -1256,13 +1256,13 @@ enum iokind {
   little = 3
 }
 
-/* A synonym for :enum:`iokind.dynamic`; see :type:`iokind` */
+/* A synonym for ``iokind.dynamic``; see :type:`iokind` */
 param iodynamic = iokind.dynamic;
-/* A synonym for :enum:`iokind.native`; see :type:`iokind` */
+/* A synonym for ``iokind.native``; see :type:`iokind` */
 param ionative = iokind.native;
-/* A synonym for :enum:`iokind.big`; see :type:`iokind` */
+/* A synonym for ``iokind.big``; see :type:`iokind` */
 param iobig = iokind.big;
-/* A synonym for :enum:`iokind.little`; see :type:`iokind` */
+/* A synonym for ``iokind.little``; see :type:`iokind` */
 param iolittle = iokind.little;
 
 /*
@@ -1270,23 +1270,23 @@ param iolittle = iokind.little;
 This enum contains values used to control binary I/O with strings
 via the ``str_style`` field in :record:`iostyle`.
 
-* :enum:`iostringstyle.len1b_data` indicates a string format of 1 byte of
+* ``iostringstyle.len1b_data`` indicates a string format of 1 byte of
   length followed by length bytes of string data.
-* :enum:`iostringstyle.len2b_data` indicates a string format of 2 bytes of
+* ``iostringstyle.len2b_data`` indicates a string format of 2 bytes of
   length followed by length bytes of string data.
-* :enum:`iostringstyle.len4b_data` indicates a string format of 4 bytes of
+* ``iostringstyle.len4b_data`` indicates a string format of 4 bytes of
   length followed by length bytes of string data.
-* :enum:`iostringstyle.len8b_data` indicates a string format of 8 bytes of
+* ``iostringstyle.len8b_data`` indicates a string format of 8 bytes of
   length followed by length bytes of string data.
-* :enum:`iostringstyle.lenVb_data` indicates a string format of a variable
+* ``iostringstyle.lenVb_data`` indicates a string format of a variable
   number of bytes of length, encoded with high-bit meaning more bytes
   of length follow, and where the 7-bits of length from each byte store
   the 7-bit portions of the length in order from least-significant to
   most-significant. This way of encoding a variable-byte length  matches
   `Google Protocol Buffers <https://github.com/google/protobuf/>`_.
-* :enum:`iostringstyle.data_toeof` indicates a string format that contains
+* ``iostringstyle.data_toeof`` indicates a string format that contains
   string data until the end of the file
-* :enum:`iostringstyle.data_null` indicates a string that is terminated
+* ``iostringstyle.data_null`` indicates a string that is terminated
   by a zero byte. It can be combined with other numeric
   values to indicate a string terminated by a particular byte. For example,
   to indicate a string terminated by ``$`` (which in ASCII has byte value 0x24),
@@ -2504,7 +2504,7 @@ The temporary file will be created in an OS-dependent temporary directory,
 for example "/tmp" is the typical location. The temporary file will be
 deleted upon closing.
 
-Temporary files are always opened with :type:`iomode` :enum:`iomode.cwr`;
+Temporary files are always opened with :type:`iomode` ``iomode.cwr``;
 that is, a new file is created that supports both writing and reading.
 
 :arg error: optional argument to capture an error code. If this argument
@@ -3028,7 +3028,7 @@ This function is equivalent to calling :proc:`open` and then
            is required unless the ``url=`` argument is used.
 :arg kind: :type:`iokind` compile-time argument to determine the
             corresponding parameter of the :record:`channel` type. Defaults
-            to :enum:`iokind.dynamic`, meaning that the associated
+            to ``iokind.dynamic``, meaning that the associated
             :record:`iostyle` controls the formatting choices.
 :arg locking: compile-time argument to determine whether or not the
               channel should use locking; sets the 
@@ -3097,7 +3097,7 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
            is required unless the ``url=`` argument is used.
 :arg kind: :type:`iokind` compile-time argument to determine the
            corresponding parameter of the :record:`channel` type. Defaults
-           to :enum:`iokind.dynamic`, meaning that the associated
+           to ``iokind.dynamic``, meaning that the associated
            :record:`iostyle` controls the formatting choices.
 :arg locking: compile-time argument to determine whether or not the
               channel should use locking; sets the 
@@ -3168,7 +3168,7 @@ proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
                will halt with an error message.
    :arg kind: :type:`iokind` compile-time argument to determine the
               corresponding parameter of the :record:`channel` type. Defaults
-              to :enum:`iokind.dynamic`, meaning that the associated
+              to ``iokind.dynamic``, meaning that the associated
               :record:`iostyle` controls the formatting choices.
    :arg locking: compile-time argument to determine whether or not the
                  channel should use locking; sets the 
@@ -3267,7 +3267,7 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
                will halt with an error message.
    :arg kind: :type:`iokind` compile-time argument to determine the
               corresponding parameter of the :record:`channel` type. Defaults
-              to :enum:`iokind.dynamic`, meaning that the associated
+              to ``iokind.dynamic``, meaning that the associated
               :record:`iostyle` controls the formatting choices.
    :arg locking: compile-time argument to determine whether or not the
                  channel should use locking; sets the 
@@ -3729,6 +3729,7 @@ proc channel.writeIt(x) {
    For a writing channel, writes as with :proc:`channel.write`.
    For a reading channel, reads as with :proc:`channel.read`.
    Stores any error encountered in the channel. Does not return anything.
+
  */
 inline proc channel.readwrite(x) where this.writing {
   this.writeIt(x);
@@ -3741,7 +3742,9 @@ inline proc channel.readwrite(ref x) where !this.writing {
 
   /*
 
-     The `<~>` operator is the same as calling :proc:`channel.readwrite`,
+     The _`<~> operator`
+
+     This `<~>` operator is the same as calling :proc:`channel.readwrite`,
      except that it returns the channel so that multiple operator
      calls can be chained together.
 

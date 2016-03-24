@@ -1,4 +1,6 @@
-c_string-to-string.chpl:6: internal error: FUN3038 chpl Version 1.11.0.e5a07fc
+array-var-var.chpl:2: In function 'main':
+array-var-var.chpl:5: warning: Arrays, domains, and distributions currently can be passed into the forall loop by 'const', 'ref' or 'const ref' intent only. 'ARR' will be passed by 'ref' intent.
+array-var-var.chpl:6: internal error: IMP0350 chpl Version 1.13.0.653007b
 Note: This source location is a guess.
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),

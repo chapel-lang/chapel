@@ -260,7 +260,7 @@ module String {
     }
 
     /*
-      Get a :type:`c_string` from a :record:`string`.
+      Get a `c_string` from a :record:`string`.
 
       .. warning::
 
@@ -278,8 +278,8 @@ module String {
           }
 
       :returns:
-          A :type:`c_string` that points to the underlying buffer used by this
-          :record:`string`.  The returned :type:`c_string` is only valid while
+          A `c_string` that points to the underlying buffer used by this
+          :record:`string`.  The returned `c_string` is only valid while
           on the current locale and while the :record:`string` is.
      */
     inline proc c_str(): c_string {

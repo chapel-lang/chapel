@@ -4,7 +4,8 @@ OuterMod
    proc outerCommented()
       The second method is commented 
 
-   OuterMod.Inner
-      proc innerFn()
-         This module has no comment, but it's inner function does! 
+Submodules for this module are located in the OuterMod/ directory
+Inner
+   proc innerFn()
+      This module has no comment, but it's inner function does! 
 
