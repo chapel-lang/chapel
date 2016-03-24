@@ -1193,6 +1193,9 @@ module String {
   //
   // Assignment functions
   //
+  /*
+     Copies the `string` `rhs` into the `string` `lhs`.
+  */
   proc =(ref lhs: string, rhs: string) {
     inline proc helpMe(ref lhs: string, rhs: string) {
       if _local || rhs.locale_id == chpl_nodeID {
@@ -1217,6 +1220,11 @@ module String {
     }
   }
 
+  /*
+     Copies the `c_string` `rhs_c` into the `string` `lhs`.
+
+     Halts if `lhs` is a remote string.
+  */
   proc =(ref lhs: string, rhs_c: c_string) {
     // Make this some sort of local check once we have local types/vars
     if !_local && (lhs.locale_id != chpl_nodeID) then
@@ -1230,6 +1238,9 @@ module String {
   //
   // Concatenation
   //
+  /*
+     :returns: A new string which is the result of concatenating `s0` and `s1`
+  */
   proc +(s0: string, s1: string) {
     // cache lengths locally
     const s0len = s0.len;
@@ -1265,6 +1276,20 @@ module String {
     return ret;
   }
 
+  /*
+     :returns: A new string which is the result of concatenating `s` `n` times.
+               If `n` is less than or equal to 0, an empty string is returned.
+
+     For example:
+
+     .. code-block:: chapel
+        
+        writeln("Hello! " * 3);
+
+     Results in::
+
+       Hello! Hello! Hello! 
+  */
   proc *(s: string, n: integral) {
     if n <= 0 then return "";
 
@@ -1311,6 +1336,11 @@ module String {
     return ret;
   }
 
+  /*
+     The following concatenation functions return a new string which is the
+     result of casting the non-string argument to a string, and concatenating
+     that result with `s`.
+  */
   inline proc +(s: string, x: numeric) return concatHelp(s, x);
   inline proc +(x: numeric, s: string) return concatHelp(x, s);
   inline proc +(s: string, x: enumerated) return concatHelp(s, x);
@@ -1406,6 +1436,9 @@ module String {
   //
   // Append
   //
+  /*
+     Appends the `string` `lhs` with the `string` `rhs`.
+  */
   proc +=(ref lhs: string, const ref rhs: string) : void {
     // if rhs is empty, nothing to do
     if rhs.len == 0 then return;
@@ -1566,6 +1599,9 @@ module String {
   // ascii
   // TODO: replace with ordinal()
   //
+  /*
+     :returns: The byte value of the first character in `a` as an integer.
+  */
   inline proc ascii(a: string) : int(32) {
     if a.isEmptyString() then return 0;
 
