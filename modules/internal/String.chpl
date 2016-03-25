@@ -41,8 +41,9 @@ private module BaseStringType {
 // It might be worth moving them here for documentation - KB Feb 2016
 
 /*
-  The :mod:`String` module provides the implementation of strings for Chapel,
-  along with functions that can be used to manipulate and process strings.
+  The following documentation consists of functions and methods used to
+  manipulate and process Chapel strings. See the :mod:`IO` documentation for
+  more information on reading, writing, and formatting strings.
 
   .. warning::
 
