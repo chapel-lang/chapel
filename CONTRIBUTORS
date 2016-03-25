@@ -9,41 +9,44 @@ language:
 Contributors to the current release
 -----------------------------------
 Ben Albrecht, Cray Inc.
-Ian Bertolacci, Cray Inc./Colorado State University
 Kyle Brady, Cray Inc.
+Paul Cassella, Cray Inc.
 Brad Chamberlain, Cray Inc.
 Sung-Eun Choi, Cray Inc.
 Lydia Duncan, Cray Inc.
 Michael Ferguson, Cray Inc.
 Ben Harshbarger, Cray Inc.
-Tom Hildebrandt, Cray Inc.
 David Iten, Cray Inc.
+Przemysław Leśniak, individual contributor
 Vassily Litvinov, Cray Inc.
 Tom MacDonald, Cray Inc.
-Cory McCartan, Cray Inc.
-Damian McGuckin, Pacific Engineering Systems International
-Phil Nelson, Western Washington University/Cray Inc.
+Phil Nelson, Western Washington University / Cray Inc.
 Michael Noakes, Cray Inc.
-Konstantina Panagiotopoulou, individual contributor
+Joshua Olson, individual contributor
+Nicholas Park, DOD
 Elliot Ronaghan, Cray Inc.
+Kushal Singh, individual contributor
+George Stelle, Sandia National Laboratories
+Chris Taylor, DOD
 Greg Titus, Cray Inc.
-Thomas Van Doren, Cray Inc.
+Tony Wallace, Cray Inc.
 
 Contributors to previous releases
 ---------------------------------
 Rafael Asenjo, Universidad de Málaga (University of Malaga)
 Matthew Baker, ORNL
 Steve Balensiefer, University of Washington
-Casey Battaglino, Cray Inc./Georgia Tech
+Casey Battaglino, Cray Inc. / Georgia Tech
+Ian Bertolacci, Cray Inc. / Colorado State University
 Sean Billig, individual contributor
-Robert Bocchino, Cray Inc./University of Illinois, Urbana-Champaign
+Robert Bocchino, Cray Inc. / University of Illinois, Urbana-Champaign
 Dan Bonachea, UC Berkeley
 Daniel Buettner, LTS
 David Callahan, Cray Inc.
 Steve Deitz, Cray Inc.
 Joel Denny, ETI
 Roxana Diaconescu, CalTech
-James Dinan, Cray Inc./The Ohio State University
+James Dinan, Cray Inc. / The Ohio State University
 Martha Dumler, Cray Inc.
 Saliya Ekanayake, Indiana University
 Samuel Figueroa, Cray Inc. (*)
@@ -51,38 +54,43 @@ Roald Frederickx, individual contributor
 Alexey Gokhberg, Unicorn Enterprises SA
 Paul Hargrove, Lawrence Berkeley National Laboratory
 Akihiro Hayashi, Rice University
-Hannah Hemmaplardh, Cray Inc./University of Washington
-Steven Hemmy, Cray Inc./University of Wisconsin
+Hannah Hemmaplardh, Cray Inc. / University of Washington
+Steven Hemmy, Cray Inc. / University of Wisconsin
+Tom Hildebrandt, Cray Inc.
 Shannon Hoffswell, Cray Inc. (*)
 Mary Beth Hribar, Cray Inc. (*)
-Mackale Joyner, Cray Inc./Rice University
+Mackale Joyner, Cray Inc. / Rice University
 Jessica Jueckstock, MITRE
 John Koenig, Cray Inc.
 Rafael Larrosa Jiminez, Universidad de Málaga (University of Malaga)
 Matthew Lentz, University of Maryland
 Juan Lopez, Universidad de Málaga (University of Malaga)
 Simon Lund, Københavns Universitet (University of Copenhagen)
+Cory McCartan, Cray Inc.
+Damian McGuckin, Pacific Engineering Systems International
 Maria Angeles Navarro, Universidad de Málaga (University of Malaga)
 Jun Nakashima, University of Tokyo
-Jacob Nelson, Cray Inc./University of Washington
+Jacob Nelson, Cray Inc. / University of Washington
 Nikhil Padmanabhan, Yale University
+Konstantina Panagiotopoulou, individual contributor
 John Plevyak, Cray Inc.
 Lee Prokowich, Cray Inc.
 Brandon Ross, University at Buffalo
 Sara Salem, Cairo University
 Alberto Sanz, Universidad de Málaga (University of Malaga)
-Albert Sidelnik, Cray Inc./University of Illinois, Urbana-Champaign
+Albert Sidelnik, Cray Inc. / University of Illinois, Urbana-Champaign
 Darren Smith, University of Maryland
-Rachel Sobel, Cray Inc./University of Washington
+Rachel Sobel, Cray Inc. / University of Washington
 Francisco Souza, individual contributor
-Srinivas Sridharan, University of Notre Dame/ORNL
-Andy Stone, Cray Inc./University of Colorado
+Srinivas Sridharan, University of Notre Dame / ORNL
+Andy Stone, Cray Inc. / University of Colorado
 Chris Swenson, individual contributor
-Jonathan Turner, Cray Inc./CU Boulder
+Jonathan Turner, Cray Inc. / CU Boulder
+Thomas Van Doren, Cray Inc.
 Chris Wailes, Indiana University
 Wayne Wong, Cray Inc.
 Joe Yan, University of Maryland
-Tim Zakian, Cray Inc./Indiana University
+Tim Zakian, Cray Inc. / Indiana University
 
 
 We are also grateful to our many enthusiastic and vocal users for
