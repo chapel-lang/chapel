@@ -1,1 +1,0 @@
-cast_to_int_ignore_whitespace.chpl:3: error: Unexpected character when converting from string to int(64): ' '
