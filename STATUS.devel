@@ -873,7 +873,6 @@ PGI compilers:
 - Chapel generated identifier names may be too long.
 
 Intel compilers:
-- Floating point literals of -0.0 may not work as intended.
 - Static linking may not work.
 # OMITTED: studies/lulesh/intelVectBug/lulesh.future
 # We suspect that there is a vectorization bug with icc
