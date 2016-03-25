@@ -139,7 +139,7 @@ module FFTW_MT {
     values.
 
     :arg nthreads: The number of threads to use.
-    :type nthreads: int
+    :type nthreads: `int`
   */
   proc plan_with_nthreads(nthreads: int = 0) {
     coforall loc in Locales {

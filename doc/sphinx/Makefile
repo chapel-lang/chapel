@@ -32,7 +32,10 @@ clean-symlink-docs: FORCE
 	rm -f language/spec.pdf
 
 clean-module-docs: FORCE
-	rm -rf source/modules/standard
+	rm -rf source/modules/dists
 	rm -rf source/modules/internal
+	rm -rf source/modules/layouts
+	rm -rf source/modules/packages
+	rm -rf source/modules/standard
 
 FORCE:

@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,8 +31,18 @@ module VisualDebug
 
   use String;
 
-  // VisualDebugOn -- Should we generate data
+  /*
+    This is the default setting for :var:`VisualDebugOn`.  It defaults
+    to `true`, but can be changed at compile time.
+  */
   config param DefaultVisualDebugOn = true;
+
+  /*
+    If this is `true`, data collection to support chplvis reporting is
+    turned on.
+    It defaults to the value of :param:`DefaultVisualDebugOn`, but can
+    be changed at execution time.
+  */
   config var VisualDebugOn = DefaultVisualDebugOn;
 
   private extern proc chpl_now_time():real;
@@ -71,7 +81,7 @@ private iter hc_id2com ( id: int, off: int ) {
       ix = ix + 1;
    }
 }
-  
+
 private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
                    n: int = numLocales, off: int = -1) {
       var offset = 1;
@@ -95,7 +105,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
 }
 
 
-/* 
+/*
   Start logging events for VisualDebug.  Open a new set of data
   files, one for each locale, for chplvis.  This routine should be
   called only once for each program.  It creates a directory with the
@@ -103,7 +113,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
   named with the rootname and "-n" is added where n is the locale
   number.
 
-  :arg rootname:  Directory name and rootname for files. 
+  :arg rootname:  Directory name and rootname for files.
 */
   proc startVdebug ( rootname : string ) {
     var now = chpl_now_time();

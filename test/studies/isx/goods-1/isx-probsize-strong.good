@@ -1,7 +1,0 @@
-scaling mode = strong
-total keys = 134217728 (2**27)
-keys per locale = 134217728 (2**27)
-maxKeyVal = 268435456 (2**28)
-bucketWidth = 268435456 (2**28)
-numTrials = 0
-numLocales = 1

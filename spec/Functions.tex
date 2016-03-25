@@ -730,8 +730,8 @@ then this pair of procedures is called a ref-pair.
 When the call to a ref-pair is on the left-hand side of an
 assignment statement or appears in a call and corresponds to a formal argument
 with \chpl{out}, \chpl{inout}, or \chpl{ref} intent, the \chpl{ref} return
-intent procedure is used. Otherwise, the other candidate is used.  This
-behavior can be useful for adjusting the behavior depending on the
+intent procedure is used. Otherwise, the other candidate is used.  Thus,
+a ref-pair can be useful for adjusting the behavior depending on the
 calling context.
 
 \begin{chapelexample}{ref-return-intent.chpl}
@@ -771,7 +771,7 @@ This code outputs the number \chpl{3}.
 
 \index{setter}
 \index{functions!setter argument}
-The getter-setter pair can be used to ensure, for
+A ref-pair can be used to ensure, for
 example, that the second element in the pseudo-array is only assigned
 a value if the first argument is positive.  The following is an
 example:
