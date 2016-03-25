@@ -21,20 +21,23 @@
    Support for pseudorandom number generation
 
    This module defines an abstraction for a stream of pseudorandom numbers,
-   :class:`~Random.RandomStreamInterface`, supporting methods to get the next
-   random number in the stream (:proc:`~Random.RandomStreamInterface.getNext`),
+   :class:`~RandomStreamInterface`, supporting methods to get the next
+   random number in the stream (:proc:`~RandomStreamInterface.getNext`),
    to fast-forward to a specific value in the stream
-   (:proc:`~Random.RandomStreamInterface.skipToNth` and
-   :proc:`~Random.RandomStreamInterface.getNth`), to iterate over random values
-   :proc:`~Random.RandomStreamInterface.iterate` (possibly in parallel), or to
+   (:proc:`~RandomStreamInterface.skipToNth` and
+   :proc:`~RandomStreamInterface.getNth`), to iterate over random values
+   :proc:`~RandomStreamInterface.iterate` (possibly in parallel), or to
    fill an array with random numbers in parallel
-   (:proc:`~Random.RandomStream.fillRandom`).  The module also provides a
+   (:proc:`~RandomStreamInterface.fillRandom`).  The module also provides a
    standalone convenience function, :proc:`fillRandom` that can be used to fill
    an array with random numbers in parallel without manually creating a
-   :class:`RandomStream` object.
+   :class:`RandomStreamInterface` object.
 
    Use :proc:`makeRandomStream` or the constructor for a specific RNG
-   implementation to get a RandomStream.
+   implementation to get a RandomStream. Specific implementations are:
+
+     * :mod:`PCGRandom`
+     * :mod:`NPBRandom`
 
    .. note::
 
@@ -56,23 +59,24 @@
    Here is a list of currently open issues (TODOs) for this module:
 
    1. We plan to support general serial and parallel iterator methods
-   on :class:`RandomStream`; however, providing the full suite of
+   on :class:`RandomStreamInterface`; however, providing the full suite of
    iterators is not possible with our current parallel iterator
-   framework.  Specifically, if :class:`RandomStream` is a follower in
+   framework.  Specifically, if :class:`RandomStreamInterface` is a follower in
    a zippered iteration context, there is no way for it to update the
    total number of random numbers generated in a safe/sane/coordinated
    way.  We are exploring a revised leader-follower iterator framework
    that would support this idiom (and other cursor-based ones).  With
    Chapel's recent support for standalone parallel iterators, one
    could define a standalone parallel iterator for
-   :class:`RandomStream`, but this effort has not yet been taken on.
+   :class:`RandomStreamInterface`, but this effort has not yet been taken on.
 
    2. If no seed is provided by the user, one is chosen based on the
    current time in microseconds, allowing for some degree of
    pseudorandomness in seed selection.  The intent of
-   :record:`SeedGenerator` is to provide a menu of other options
+   :record:`~RandomSupport.SeedGenerator` is to provide a menu of other options
    for initializing the random stream seed, but only one option is
-   implemented at present.
+   implemented at present. In particular, it would be useful to
+   allow multiple tasks to create different seeds at the same time.
 
    3. The :class:`RandomStreamInterface` is included here only
    for documentation and does not help with compilation in any way.
@@ -87,14 +91,15 @@ module Random {
 
 
   /* Select between different supported RNG algorithms.
-     See also :mod:`PCGRandom` and :mod:`NPBRandom`.
+     See :mod:`PCGRandom` and :mod:`NPBRandom` for details on
+     these algorithms.
    */
   enum RNG {
     PCG = 1,
     NPB = 2
   }
 
-  /* The default RNG */
+  /* The default RNG. The current default is PCG - see :mod:`PCGRandom`. */
   param defaultRNG = RNG.PCG;
 
   // CHPLDOC FEEDBACK: If easy, I'd suggest either deprecating the 
@@ -119,7 +124,7 @@ module Random {
   /*
     Fill an array of `real(64)`, `imag(64)`, or `complex(128)` elements
     with pseudorandom values in parallel using a new
-    :class:`RandomStream` created specifically for this call.  The
+    :class:`RandomStreamInterface` created specifically for this call.  The
     first `arr.size` values from the stream will be assigned to the
     array's elements in row-major order for `real` and `imag` elements.
     For `complex` elements, consecutive pairs of random numbers are
@@ -127,10 +132,14 @@ module Random {
     parallelization strategy is determined by the array.
 
     :arg arr: The array to be filled, where T is `real(64)`, `imag(64)`, or `complex(128)`.
-    :type arr: [] T
+    :type arr: `[] T`
 
-    :arg seed: The seed to use for the PRNG.  Defaults to :proc:`SeedGenerator.oddCurrentTime`.
-    :type seed: int(64)
+    :arg seed: The seed to use for the PRNG.  Defaults to
+     `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
+    :type seed: `int(64)`
+
+    :arg algorithm: The RNG algorithm to use. Defaults to :param:`defaultRNG`.
+      The `algorithm` argument must be a param :type:`RNG` element.
   */
   proc fillRandom(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
       algorithm=defaultRNG)
@@ -149,7 +158,10 @@ module Random {
   /* Shuffle the elements of an array into a random order.
 
      :arg arr: a 1-D non-strided array
-     :arg seed: the seed to use when shuffling
+     :arg seed: the seed to use when shuffling. Defaults to
+      `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
+     :arg algorithm: The RNG algorithm to use. Defaults to :param:`defaultRNG`.
+      The `algorithm` argument must be a param :type:`RNG` element.
    */
   proc shuffle(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
     var randNums = makeRandomStream(seed, eltType=arr.eltType, parSafe=false, algorithm=algorithm);
@@ -162,13 +174,47 @@ module Random {
      exactly once.
 
      :arg arr: a 1-D non-strided array
-     :arg seed: the seed to use when creating the permutation
+     :arg seed: the seed to use when creating the permutation. Defaults to
+      `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
+     :arg algorithm: The RNG algorithm to use. Defaults to :param:`defaultRNG`.
+      The `algorithm` argument must be a param :type:`RNG` element.
    */
   proc permutation(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
     var randNums = makeRandomStream(seed, eltType=arr.eltType, parSafe=false, algorithm=algorithm);
     randNums.permutation(arr);
     delete randNums;
   }
+
+  /*
+    Constructs a new stream of random numbers using the specified seed
+    and parallel safety.  Ensures that the seed value meets the PRNG's
+    constraints.
+
+    :arg seed: The seed to use for the PRNG.  Defaults to `oddCurrentTime` from
+     :type:`RandomSupport.SeedGenerator`.
+    :type seed: `int(64)`
+
+    :arg parSafe: The parallel safety setting.  Defaults to `true`.
+    :type parSafe: `bool`
+
+    :arg eltType: The element type to be generated.  Defaults to `real(64)`.
+    :type eltType: `type`
+
+    :arg algorithm: which algorithm to use. A param enum RNG element.  Defaults to PCG.
+    :type: RNG
+  */
+  proc makeRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
+                        param parSafe: bool = true,
+                        type eltType = real(64),
+                        param algorithm = defaultRNG) {
+    if algorithm == RNG.PCG then
+      return new RandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
+    else if algorithm == RNG.NPB then
+      return new NPBRandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
+    else
+      compilerError("Unknown random number generator");
+  }
+
 
   /*
 
@@ -225,7 +271,7 @@ module Random {
       The first value is with n=1.
 
       :arg n: The position in the stream to skip to.  Must be > 0.
-      :type n: integral
+      :type n: `integral`
      */
 
     proc skipToNth(n: integral) {
@@ -238,7 +284,7 @@ module Random {
       :proc:`skipToNth()` followed by :proc:`getNext()`.
 
       :arg n: The position in the stream to skip to.  Must be > 0.
-      :type n: integral
+      :type n: `integral`
 
       :returns: The `n`-th value in the random stream as type :type:`eltType`.
     */
@@ -251,7 +297,7 @@ module Random {
       Fill the argument array with pseudorandom values.  This method is
       identical to the standalone :proc:`fillRandom` procedure,
       except that it consumes random values from the
-      :class:`RandomStream` object on which it's invoked rather
+      :class:`RandomStreamInterface` object on which it's invoked rather
       than creating a new stream for the purpose of the call.
 
       :arg arr: The array to be filled
@@ -294,35 +340,6 @@ module Random {
       f <~> seed;
       f <~> ")";
     }
-  }
-
-  /*
-    Constructs a new stream of random numbers using the specified seed
-    and parallel safety.  Ensures that the seed value meets the PRNG's
-    constraints.
-
-    :arg seed: The seed to use for the PRNG.  Defaults to :proc:`SeedGenerator.oddCurrentTime`.
-    :type seed: int(64)
-
-    :arg parSafe: The parallel safety setting.  Defaults to `true`.
-    :type parSafe: bool
-
-    :arg eltType: The element type to be generated.  Defaults to `real(64)`.
-    :type eltType: type
-
-    :arg algorithm: which algorithm to use. A param enum RNG element.  Defaults to PCG.
-    :type algorithm: RNG
-  */
-  proc makeRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
-                        param parSafe: bool = true,
-                        type eltType = real(64),
-                        param algorithm = defaultRNG) {
-    if algorithm == RNG.PCG then
-      return new RandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
-    else if algorithm == RNG.NPB then
-      return new NPBRandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
-    else
-      compilerError("Unknown random number generator");
   }
 
   // An apparent bug prevents this from working.
@@ -407,7 +424,7 @@ module Random {
       of Simple Fast Space-Efficient Statistically Good Algorithms for Random
       Number Generation" by M.E. O'Neill.
 
-      This class builds upon the :record:`pcg_setseq_64_xsh_rr_32_rng` PCG RNG
+      This class builds upon the :record:`~PCGRandomLib.pcg_setseq_64_xsh_rr_32_rng` PCG RNG
       which has 64 bits of state and 32 bits of output.
 
       While the PCG RNG used here is believed to have good statistical
@@ -486,7 +503,7 @@ module Random {
       /*
         Specifies the type of value generated by the PCGRandomStream.
         All numeric types are supported: `int`, `uint`, `real`, `imag`,
-        `complex`, and `bool` `types` of all sizes.
+        `complex`, and `bool` types of all sizes.
       */
       type eltType;
 
@@ -511,14 +528,15 @@ module Random {
         and parallel safety.
 
         :arg seed: The seed to use for the PRNG.  Defaults to
-         :proc:`SeedGenerator.currentTime`. Can be any int(64) value.
-        :type seed: int(64)
+          `currentTime` from :type:`RandomSupport.SeedGenerator`.
+          Can be any int(64) value.
+        :type seed: `int(64)`
 
         :arg parSafe: The parallel safety setting.  Defaults to `true`.
-        :type parSafe: bool
+        :type parSafe: `bool`
 
         :arg eltType: The element type to be generated.  Defaults to `real(64)`.
-        :type eltType: type
+        :type eltType: `type`
       */
       proc RandomStream(seed: int(64) = SeedGenerator.currentTime,
                         param parSafe: bool = true,
@@ -562,7 +580,7 @@ module Random {
 
         :arg resultType: the type of the result. Defaults to :type:`eltType`.
           `resultType` must be the same or a smaller size number.
-        :returns: The next value in the random stream as type :type:`resultType`.
+        :returns: The next value in the random stream as type `resultType`.
        */
       proc getNext(type resultType=eltType): resultType {
         if parSafe then
@@ -604,7 +622,7 @@ module Random {
         routine with n <= 0.
 
         :arg n: The position in the stream to skip to.  Must be > 0.
-        :type n: integral
+        :type n: `integral`
        */
 
       proc skipToNth(n: integral) {
@@ -623,7 +641,7 @@ module Random {
         :proc:`skipToNth()` followed by :proc:`getNext()`.
 
         :arg n: The position in the stream to skip to.  Must be > 0.
-        :type n: integral
+        :type n: `integral`
 
         :returns: The `n`-th value in the random stream as type :type:`eltType`.
       */
@@ -644,7 +662,7 @@ module Random {
         Fill the argument array with pseudorandom values.  This method is
         identical to the standalone :proc:`fillRandom` procedure,
         except that it consumes random values from the
-        :class:`PCGRandomStream` object on which it's invoked rather
+        :class:`RandomStream` object on which it's invoked rather
         than creating a new stream for the purpose of the call.
 
         :arg arr: The array to be filled
@@ -1957,14 +1975,14 @@ module Random {
           halt().
 
         :arg seed: The seed to use for the PRNG.  Defaults to
-          :proc:`SeedGenerator.oddCurrentTime`.
-        :type seed: int(64)
+          `oddCurrentTime` from :type:`~RandomSupport.SeedGenerator`.
+        :type seed: `int(64)`
 
         :arg parSafe: The parallel safety setting.  Defaults to `true`.
-        :type parSafe: bool
+        :type parSafe: `bool`
 
         :arg eltType: The element type to be generated.  Defaults to `real(64)`.
-        :type eltType: type
+        :type eltType: `type`
       */
       proc NPBRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
                         param parSafe: bool = true,
@@ -2034,7 +2052,7 @@ module Random {
         Advances/rewinds the stream to the `n`-th value in the sequence.
 
         :arg n: The position in the stream to skip to.  Must be > 0.
-        :type n: integral
+        :type n: `integral`
        */
 
       proc skipToNth(n: integral) {
@@ -2053,7 +2071,7 @@ module Random {
         :proc:`skipToNth()` followed by :proc:`getNext()`.
 
         :arg n: The position in the stream to skip to.  Must be > 0.
-        :type n: integral
+        :type n: `integral`
 
         :returns: The `n`-th value in the random stream as type :type:`eltType`.
       */
