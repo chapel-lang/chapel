@@ -881,6 +881,11 @@ Going through each section for text conversions:
    (in order to help line up with negative numbers)
   ``-``
    left-justify the converted value instead of right-justifying
+  ``~``
+   when reading a record or class instance, skip over fields in the input not
+   present in the Chapel type. This flag currently only works in combination
+   with the JSON format.  This flag allows a Chapel program to describe only the
+   relevant fields in a record when the input might contain many more fields.
   
   Note, if both ``0`` and ``-`` are given, the effect is as if only ``-`` were
   given.
