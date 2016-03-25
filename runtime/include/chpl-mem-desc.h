@@ -57,7 +57,6 @@
   m(COMM_PER_LOC_INFO,    "comm layer per-locale information",        false), \
   m(COMM_PRV_OBJ_ARRAY,   "comm layer private objects array",         false), \
   m(COMM_PRV_BCAST_DATA,  "comm layer private broadcast data",        false), \
-  m(C_STR_2_NUM_BUF,      "c_string to number conversion buffer",     true ), \
   m(GLOM_STRINGS_DATA,    "glom strings data",                        true ), \
   m(STR_COPY_DATA,        "string copy data",                         true ), \
   m(STR_COPY_REMOTE,      "remote string copy",                       true ), \
