@@ -5,7 +5,7 @@ use Random;
 use Time;
 
 // random seed for arrays
-config const randSeed = SeedGenerator.currentTime;
+config const randSeed = SeedGenerator.oddCurrentTime;
 
 // Control output.
 config const printC = true,

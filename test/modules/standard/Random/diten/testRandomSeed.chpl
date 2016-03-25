@@ -3,16 +3,16 @@ use Random;
 config const n = 100, trials = 100, useRndSeed = true;
 
 proc getNextSeed(oldSeed) {
-  var newSeed = SeedGenerator.currentTime;
+  var newSeed = SeedGenerator.oddCurrentTime;
   while newSeed == oldSeed {
-    newSeed = SeedGenerator.currentTime;
+    newSeed = SeedGenerator.oddCurrentTime;
   }
   return newSeed;
 }
 
 proc main {
   var A: [1..n] real;
-  var initSeed = if useRndSeed then SeedGenerator.currentTime else 31415;
+  var initSeed = if useRndSeed then SeedGenerator.oddCurrentTime else 31415;
   var diffCnt: int;
 
   fillRandom(A, initSeed);
