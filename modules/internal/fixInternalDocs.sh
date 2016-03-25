@@ -201,6 +201,13 @@ fixTitle "Complex" $file
 
 # End ChapelComplex_forDocs ##
 
+## String ##
+
+file="./String.rst"
+fixTitle "Strings" $file
+
+## End of String ##
+
 
 
 
