@@ -665,12 +665,11 @@ label outer for i in 1..n {
 \index{modules!using}
 \index{types!enumerated!using}
 
-The use statement makes constants in each listed enumerated type or symbols in
-each listed module's scope available without prefix from the scope where the use
-statement occurs.  Note that this is the only way to reference an enumeration
-constant without the enumeration type name as a prefix
-(see~\rsec{Enumerated_Types}).  For rules which are only applicable to modules,
-please see~\rsec{Using_Modules}.  The syntax of the use statement is given by:
+The use statement provides access to the constants in an enumerated type or
+the public symbols of a module within the scope in which it appears without
+the need to provide a full qualified path.
+
+The syntax of the use statement is given by:
 
 \begin{syntax}
 use-statement:
@@ -697,14 +696,82 @@ rename-base:
   identifier
 \end{syntax}
 
-Symbols made available by a use statement are at an outer scope from those
-defined directly in the scope where the use statement occurs, but at a nearer
-scope than symbols defined in the scope containing the scope where the use
-statement occurs.  The placement of a use statement relative to other statements
-within a scope does not affect the availability of the used module's symbols or
-the used enumerated type's constants - a use statement at the end or middle of a
-scope will impact the same symbol accesses it would have impacted if it had been
-placed at the beginning of that scope.
+For example, the program
+\begin{chapelexample}{use1.chpl}
+\begin{chapel}
+module M1 {
+  proc foo() {
+    writeln("In M1's foo.");
+  }
+}
+
+module M2 {
+  proc main() {
+    writeln("In M2's main.");
+    M1.foo();
+  }
+}
+\end{chapel}
+prints out
+\begin{chapelprintoutput}{}
+In M2's main.
+In M1's foo.
+\end{chapelprintoutput}
+\end{chapelexample}
+
+This program is equivalent to:
+\begin{chapelexample}{use2.chpl}
+\begin{chapel}
+module M1 {
+  proc foo() {
+    writeln("In M1's foo.");
+  }
+}
+
+module M2 {
+  proc main() {
+    use M1;
+
+    writeln("In M2's main.");
+    foo();
+  }
+}
+\end{chapel}
+which also prints out
+\begin{chapelprintoutput}{}
+In M2's main.
+In M1's foo.
+\end{chapelprintoutput}
+\end{chapelexample}
+
+The names that are imported by a use statement are inserted in to a
+new scope that immediately encloses the scope within which the
+statement appears.  This implies that the position of the use
+statement within a scope has no effect on its behavior.  If a scope
+includes multiple use statements then the imported names are inserted
+in to a common enclosing scope.
+
+An error is signaled if multiple enumeration constants or public module-level
+symbols would be inserted into this enclosing scope with the same name, and
+that name is referenced by other statements in the same scope as the use.
+
+
+Use statements are transitive by default: if a module A uses a module
+B, and module B contains a use of a module or enumerated type C, then
+C's public symbols may also be visible within A.  The exception to
+this occurs when B has public symbols that shadow symbols with the
+same name in C.
+
+This notion of transitivity extends to the case in which a scope
+imports symbols from multiple modules or constants from multiple
+enumeration types.  For example if a module A uses modules B1, B2, B3
+and modules B1, B2, B3 use modules C1, C2, C3 respectively, then all
+of the public symbols in B1, B2, B3 have the potential to shadow the
+public symbols of C1, C2, and C3.  However an error is signaled if
+C1, C2, C3 have public module level definitions of the same symbol.
+
+% We would like to provide a way to specify that a use should not be
+% transitive
 
 An optional \sntx{limitation-clause} may be provided to limit the symbols made
 available by the use statement.  If an \chpl{except} list is provided, then all
@@ -733,54 +800,15 @@ that \chpl{only} list.
 
 If a use statement mentions multiple modules or enumerated types or a mix of
 these symbols, only the last module or enumerated type can have a
-\sntx{limitation-clause}.  All use statements in a scope are considered at the
-same depth relative to the symbols within the scope - the ordering of use
-statements or modules/enumerated types within a use statement will not affect
-that depth.  It is an error for two public variables, types, enumeration
-constants, or modules with the same name to be defined at the same depth.
+\sntx{limitation-clause}.  Limitation clauses are applied transitively as well
+- in the first example, if module A's use of module B contains an \chpl{except}
+or \chpl{only} list, that list will also limit which of C's symbols are visible
+to A.
 
-Use statements are transitive by default: if a module A used by another module B
-also contains a use of a further module or enumerated type C, C's symbols will
-also be considered visible within B, at a further scope than the symbols of
-other modules immediately used by B.  Limitation clauses are applied
-transitively as well - if module B's use of module A contains an
-\chpl{except} or \chpl{only} list, that list will also limit which of C's
-symbols are visible to B.
-
-% We would like to provide a way to specify that a use should not be
-% transitive
-
-\begin{chapelexample}{use.chpl}
-  The following example illustrates how the use statement makes
-  symbols declared in \chpl{M1}'s scope (like procedure
-  \chpl{foo()}) visible within the scope of \chpl{M2}'s \chpl{main}
-  function.  Without the \chpl{use} statement, the procedure call to
-  \chpl{foo} could not be resolved since \chpl{M2} would not have
-  access to symbols in \chpl{M1}.
-
-  When executed, the program
-\begin{chapel}
-module M1 {
-  proc foo() {
-    writeln("In M1's foo.");
-  }
-}
-
-module M2 {
-  proc main() {
-    use M1;
-
-    writeln("In M2's main.");
-    foo();
-  }
-}
-\end{chapel}
-prints out
-\begin{chapelprintoutput}{}
-In M2's main.
-In M1's foo.
-\end{chapelprintoutput}
-\end{chapelexample}
+For more information on enumerated types, please see~\rsec{Enumerated_Types}.
+For use statement rules which are only applicable to modules, please
+see~\rsec{Using_Modules}.  For more information on modules in general, please
+see~\rsec{Modules}.
 
 
 \section{The Empty Statement}
