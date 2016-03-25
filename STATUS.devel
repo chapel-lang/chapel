@@ -156,6 +156,8 @@ Conversions
   # expressions/vass/cast-to-non-type-2.future
 - Integer to c_string cast promotes from int to real before cast is performed
   # types/string/thomasvandoren/int-to-c_string.future
+- Cast from string to scalar type does not ignore leading white space
+  # users/ferguson/cast_to_int_ignore_whitespace.future
 
 
 Statements and Expressions
