@@ -1,4 +1,6 @@
 basic.doc
+Submodules for this module are located in the basic.doc/ directory
+
    proc method1(): string
       Comment for method1 
 
@@ -28,7 +30,6 @@ basic.doc
       This proc has an implicit return type and a return statement 
 
    proc returnCommentless()
-Submodules for this module are located in the basic.doc/ directory
 Other
    proc inside(): int
       Comment for method inside module 

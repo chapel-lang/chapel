@@ -1,4 +1,6 @@
 fullyCommented.doc
+Submodules for this module are located in the fullyCommented.doc/ directory
+
    proc method1()
       Comment for method1 
 
@@ -11,7 +13,6 @@ fullyCommented.doc
    proc argAndBody(val: int)
       Comment for method with argument and body 
 
-Submodules for this module are located in the fullyCommented.doc/ directory
 Other
    proc inside
       Comment for method inside module 

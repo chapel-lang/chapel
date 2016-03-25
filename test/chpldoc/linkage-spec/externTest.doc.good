@@ -1,4 +1,6 @@
 externTest.doc
+Submodules for this module are located in the externTest.doc/ directory
+
    proc method1()
       Comment for method1 
 
@@ -20,7 +22,6 @@ externTest.doc
       This method has a return type and an argument 
 
    proc hasReturnTypeAndArgCommentless(val: int): int
-Submodules for this module are located in the externTest.doc/ directory
 Other
    proc inside
       Comment for method inside module 

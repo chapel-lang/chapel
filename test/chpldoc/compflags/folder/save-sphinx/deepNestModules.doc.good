@@ -4,8 +4,6 @@
 
 Foo
 ===
-.. function:: proc gob()
-
 **Submodules**
 
 .. toctree::
@@ -13,6 +11,9 @@ Foo
    :glob:
 
    Foo/*
+
+.. function:: proc gob()
+
 .. default-domain:: chpl
 
 .. module:: Bar

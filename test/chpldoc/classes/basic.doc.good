@@ -1,10 +1,13 @@
 basic
+Submodules for this module are located in the basic/ directory
+
    This is the module that Lydia built 
    proc inner()
       This is the proc that lies in the module that Lydia built 
 
-Submodules for this module are located in the basic/ directory
 sadAndAlone
+Submodules for this module are located in the sadAndAlone/ directory
+
    This is the module all sad and alone, listed behind the proc
    that lies in the module that Lydia built 
    Class: naryATone
@@ -12,7 +15,6 @@ sadAndAlone
       sad and alone, listed behind the proc that lies in the module
       that Lydia built 
 
-Submodules for this module are located in the sadAndAlone/ directory
 classesAreGrown
    This is the module whose classes are grown, sister of the
    class with nary a tone, declared in the module all sad and
