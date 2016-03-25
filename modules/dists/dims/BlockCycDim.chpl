@@ -44,7 +44,7 @@ This Block-Cyclic dimension specifier is for use with the
 :class:`DimensionalDist2D` distribution.
 
 It specifies the mapping of indices in its dimension
-that would be produced by a 1D :class:`BlockCyclic` distribution.
+that would be produced by a 1D :class:`~BlockCycDist.BlockCyclic` distribution.
 
 **Constructor Arguments**
 
@@ -66,7 +66,7 @@ The arguments are as follows:
       to be distributed over
   ``lowIdx``, ``blockSize``
       are the counterparts to ``startIdx`` and ``blocksize``
-      in the :class:`BlockCyclic` distribution
+      in the :class:`~BlockCycDist.BlockCyclic` distribution
   ``name``
       may be used for debugging; it is ignored by the implementation
   ``cycleSizePos``
