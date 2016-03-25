@@ -285,6 +285,8 @@ Functions and Iterators
 - Const checking is incorrect for standalone iterator index variables
   # performance/vectorization/vectorizeOnly/constChecking/standaloneConstChecking.future
   # statements/elliot/loops/modifyIndicesStandalone.future
+- Ref iterators yielding records may introduce uninitialized values
+  # types/records/ferguson/parallel/coforall-mod/coforall-mod.future
 - The implicit 'setter' argument does not work in var iterators.
   # functions/deitz/iterators/iterator_uses_setter.future
   # functions/deitz/iterators/test_promote_var_function_and_iterate.future
