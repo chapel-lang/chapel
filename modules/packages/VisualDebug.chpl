@@ -31,8 +31,18 @@ module VisualDebug
 
   use String;
 
-  // VisualDebugOn -- Should we generate data
+  /*
+    This is the default setting for :var:`VisualDebugOn`.  It defaults
+    to `true`, but can be changed at compile time.
+  */
   config param DefaultVisualDebugOn = true;
+
+  /*
+    If this is `true`, data collection to support chplvis reporting is
+    turned on.
+    It defaults to the value of :param:`DefaultVisualDebugOn`, but can
+    be changed at execution time.
+  */
   config var VisualDebugOn = DefaultVisualDebugOn;
 
   private extern proc chpl_now_time():real;
