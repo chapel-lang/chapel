@@ -80,8 +80,10 @@ The Chapel implementation is composed of two categories of code:
      re2              only used when CHPL_REGEXP is 're2'
      utf8-decoder     bundled into the Chapel runtime to decode UTF-8 strings
 
-   For packages that are only used based on a CHPL_* setting, note that
-   this setting may either be explicitly or implicitly set. Also note
-   that some packages are speculatively built, and will only be used if
-   they were built successfully. To check your CHPL_* settings, run
+   For packages that are used based on a CHPL_* setting, note that this
+   setting may either be explicitly or implicitly set. Additionally,
+   some packages are only used if a speculative build was successful.
+   See http://chapel.cray.com/docs/latest/usingchapel/chplenv.html to
+   see which packages are used by default and which ones are built
+   speculatively. You can also check your CHPL_* settings by running
    $CHPL_HOME/util/printchplenv after Chapel has been built
