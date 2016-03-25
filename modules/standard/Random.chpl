@@ -940,6 +940,7 @@ module Random {
       }
     }
 
+    private
     proc checkSufficientBitsAndAdvanceOthers(type resultType, ref states) {
       // Note - this error could be eliminated if we used
       // the same strategy as bounded_rand_vary_inc and
