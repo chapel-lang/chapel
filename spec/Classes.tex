@@ -58,13 +58,9 @@ from other classes %and/or records
 if the \sntx{inherit-type-list} is specified.
 Inheritance is described in~\rsec{Inheritance}.
 
-\begin{future}
-Classes that inherit from records are not currently supported.  When enabled,
-such inheritance will have the
-same effect as creating a field of that record type within the class, except
-that all of the record's field and method names will appear within the scope of
-the inheriting class.
-\end{future}
+\begin{openissue}
+Classes that inherit from records are an area for future work.
+\end{openissue}
 
 The body of a class declaration consists of a sequence of statements
 where each of the statements either defines a variable (called a
