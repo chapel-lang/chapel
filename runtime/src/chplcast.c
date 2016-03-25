@@ -22,8 +22,6 @@
 #include "chplcast.h"
 #include "chpltypes.h"
 #include "chplfp.h"
-#include "chpl-mem-desc.h"
-#include "chpl-mem.h"
 #include "error.h"
 
 #include <ctype.h>
@@ -66,18 +64,7 @@ static int illegalFirstUnsChar(char c) {
                                                           int* invalid,    \
                                                           char* invalidCh) { \
     char* endPtr;                                                       \
-    char *buffer;                                                       \
-    const char *token;                                                  \
-    int length;                                                         \
-    _type(base,width) val;                                              \
-    length = strlen(str)-1;                                             \
-    buffer = (char *)chpl_mem_alloc(strlen(str)+1,CHPL_RT_MD_C_STR_2_NUM_BUF,0,0);  \
-    strncpy(buffer,str,strlen(str)+1);                                  \
-    while(length > 0 && isspace(str[length])) length--;                 \
-    length++;                                                           \
-    if (length >= 0) buffer[length]='\0';                               \
-    token = buffer;                                                     \
-    val = (_type(base, width))strtol(token, &endPtr, 10);               \
+    _type(base, width) val = (_type(base, width))strtol(str, &endPtr, 10);  \
     *invalid = (*str == '\0' || *endPtr != '\0');                       \
     *invalidCh = *endPtr;                                               \
     /* for negatives, strtol works, but we wouldn't want chapel to */   \
@@ -85,7 +72,6 @@ static int illegalFirstUnsChar(char c) {
       *invalid = 1;                                                     \
       *invalidCh = *str;                                                \
     }                                                                   \
-    chpl_mem_free(buffer,0,0);                                          \
     return val;                                                         \
   }
 
@@ -95,15 +81,12 @@ static int illegalFirstUnsChar(char c) {
                                                             char* invalidCh) { \
     _type(base, width)  val;                                            \
     int numbytes;                                                       \
-    int length;                                                         \
     int numitems = sscanf(str, format"%n", &val, &numbytes);            \
-    length = strlen(str);                                               \
-    while(length > 0 && isspace(str[length-1])) length--;               \
     if (scanningNCounts() && numitems == 2) {                           \
       numitems = 1;                                                     \
     }                                                                   \
     if (numitems == 1) {                                                \
-      if (numbytes == length) {                                         \
+      if (numbytes == strlen(str)) {                                    \
         /* for negatives, sscanf works, but we wouldn't want chapel to */ \
         if (uns && illegalFirstUnsChar(*str)) {                         \
           *invalid = 1;                                                 \
@@ -158,13 +141,11 @@ chpl_bool c_string_to_chpl_bool(c_string str, int lineno, int32_t filename) {
     _real_type(base, width) val;                                        \
     int numbytes;                                                       \
     int numitems = sscanf(str, format"%n", &val, &numbytes);            \
-    int length = strlen(str);                                           \
-    while(length > 0 && isspace(str[length-1])) length--;               \
     if (scanningNCounts() && numitems == 2) {                           \
       numitems = 1;                                                     \
     }                                                                   \
     if (numitems == 1) {                                                \
-      if (numbytes == length) {                                         \
+      if (numbytes == strlen(str)) {                                    \
         /* for negatives, sscanf works, but we wouldn't want chapel to */ \
         *invalid = 0;                                                   \
         *invalidCh = '\0';                                              \
