@@ -737,10 +737,27 @@ void chpl_task_yield(void) {
 
 
 void chpl_task_sleep(double secs) {
-  struct timespec delay;
-  delay.tv_sec = (time_t)(secs);
-  delay.tv_nsec = (long)(1e9*(secs - floor(secs)));
-  nanosleep(&delay, NULL);
+  struct timeval deadline;
+  struct timeval now;
+
+  //
+  // Figure out when this task can proceed again, and until then, keep
+  // yielding.
+  //
+  gettimeofday(&deadline, NULL);
+  deadline.tv_usec += (suseconds_t) ((secs - trunc(secs)) * 1.0e6);
+  if (deadline.tv_usec > 1000000) {
+    deadline.tv_sec++;
+    deadline.tv_usec -= 1000000;
+  }
+  deadline.tv_sec += (time_t) trunc(secs);
+
+  do {
+    chpl_task_yield();
+    gettimeofday(&now, NULL);
+  } while (now.tv_sec < deadline.tv_sec
+           || (now.tv_sec == deadline.tv_sec
+               && now.tv_usec < deadline.tv_usec));
 }
 
 chpl_bool chpl_task_getSerial(void) {
