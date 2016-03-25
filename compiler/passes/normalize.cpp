@@ -1405,8 +1405,10 @@ static void fixup_array_formals(FnSymbol* fn) {
         // "arg.eltType", so we use the instantiated element type.
         if (queryEltType) {
           for_vector(SymExpr, se, symExprs) {
-            if (se->var == queryEltType->sym)
+            if (se->var == queryEltType->sym) {
+              SET_LINENO(se);
               se->replace(new CallExpr(".", arg, new_CStringSymbol("eltType")));
+            }
           }
         } else if (!noEltType) {
           // The element type is supplied, but it is null.
@@ -1429,8 +1431,10 @@ static void fixup_array_formals(FnSymbol* fn) {
           // Array type is built using a domain.
           // If we match the domain symbol, replace it with arg._dom.
           for_vector(SymExpr, se, symExprs) {
-            if (se->var == queryDomain->sym)
+            if (se->var == queryDomain->sym) {
+              SET_LINENO(se);
               se->replace(new CallExpr(".", arg, new_CStringSymbol("_dom")));
+            }
           }
         } else if (!noDomain) {
           // The domain argument is supplied but NULL.
