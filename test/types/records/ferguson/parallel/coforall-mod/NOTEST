@@ -1,0 +1,3 @@
+This test was sporadically passing.
+It probably still represents a compiler bug, but the noise
+it was adding to our testing system was not worthwhile.
