@@ -15,11 +15,12 @@ get started with Chapel program structure:
 It also contains subdirectories that contain more interesting
 examples:
 
-     benchmarks/ : contains standard benchmarks written in Chapel
-     patterns/   : examples demonstrating common tasks
-     primers/    : introduce Chapel concepts narratively for new users
-     programs/   : demonstrate Chapel using small programs/idioms
-     spec/       : example codes from the Chapel Specification (see below)
+     benchmarks/  : contains standard benchmarks written in Chapel
+     patterns/    : examples demonstrating common tasks
+     primers/     : introduce Chapel concepts narratively for new users
+     programs/    : demonstrate Chapel using small programs/idioms
+     users-guide/ : example codes from the Chapel Users Guide
+     spec/        : example codes from the Chapel Specification (see below)
 
 The README.features file in this directory gives an overview of all
 the tests (except the spec tests) and what language features each one
