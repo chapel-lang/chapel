@@ -387,7 +387,7 @@ module String {
       :arg r: range of the indices the new string should be made from
 
       :returns: a new string that is a substring within `1..string.length`. If
-                `r.size` is zero, an empty string is returned.
+                the length of `r` is zero, an empty string is returned.
      */
     // TODO: I wasn't very good about caching variables locally in this one.
     proc this(r: range(?)) : string {
@@ -586,8 +586,8 @@ module String {
     /*
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
-                   default is the whole string. Halts if range is not within
-                   `1..string.length`
+                   default is the whole string. Halts if the range is not
+                   within `1..string.length`
 
       :returns: the index of the first occurrence of `needle` within a
                 string, or 0 if the `needle` is not in the string.
@@ -600,8 +600,8 @@ module String {
     /*
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
-                   default is the whole string. Halts if range is not within
-                   `1..string.length`
+                   default is the whole string. Halts if the range is not
+                   within `1..string.length`
 
       :returns: the index of the first occurrence from the right of `needle`
                 within a string, or 0 if the `needle` is not in the string.
@@ -613,8 +613,8 @@ module String {
     /*
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
-                   default is the whole string. Halts if range is not within
-                   `1..string.length`
+                   default is the whole string. Halts if the range is not
+                   within `1..string.length`
 
       :returns: the number of times `needle` occurs in the string
      */
@@ -1463,7 +1463,7 @@ module String {
   // Append
   //
   /*
-     Appends the string `lhs` with the string `rhs`.
+     Appends the string `rhs` to the string `lhs`.
   */
   proc +=(ref lhs: string, const ref rhs: string) : void {
     // if rhs is empty, nothing to do
