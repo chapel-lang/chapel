@@ -1,5 +1,8 @@
 use Random;
 
+config param useNPB = true;
+config param rtype = if useNPB then RNG.NPB else RNG.PCG;
+
 config const n = 100, trials = 100, useRndSeed = true;
 
 proc getNextSeed(oldSeed) {
@@ -15,12 +18,12 @@ proc main {
   var initSeed = if useRndSeed then SeedGenerator.oddCurrentTime else 31415;
   var diffCnt: int;
 
-  fillRandom(A, initSeed);
+  fillRandom(A, initSeed, algorithm=rtype);
   for i in 1..trials {
     if !useRndSeed then initSeed += 2;
     var seed = if useRndSeed then getNextSeed(initSeed) else initSeed;
     var B: [1..n] real;
-    fillRandom(B, seed);
+    fillRandom(B, seed, algorithm=rtype);
 
     if !(&& reduce (A == B)) then
       diffCnt += 1;
