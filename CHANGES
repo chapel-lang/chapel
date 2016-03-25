@@ -268,6 +268,7 @@ Bug Fixes
 * fixed a bug in which assignment between generic records did not work properly
 * fixed a bug in which extern type declarations in generic procedures broke
 * fixed a bug with isHomogeneousTuple*() queries when passed non-tuples
+* fixed a bug with self-references in module use lists
 * fixed a bug when calling exit() without arguments
 * fixed the runtime sizes of boolean literals of varying bit widths
 * fixed a bug w.r.t. reduce intents interacting poorly with on-clauses
@@ -280,6 +281,7 @@ Bug Fixes
 * made some improvements to the Spawn module relative to QIO
 * made some I/O functions more tolerant of EINTR
 * fixed some bugs in which I/O routines executed on the wrong locale
+* fixed a bug in formatted reads of digits
 * fixed a bug preventing channel.itemWriter() from working
 * improved the handling of C ecsapes in string literals
 * fixed the handling of escape characters in compilerWarning()/compilerError()
@@ -338,6 +340,7 @@ Third-Party Software Changes
 * upgraded hwloc to version 1.11.2
 * upgraded LLVM to version 3.7
 * switched several third-party directories to a more GIT-friendly organization
+* fixed a buffer overflow bug in hwloc related to /proc/mounts
 
 Runtime Library Changes
 -----------------------
@@ -367,6 +370,7 @@ Makefile Changes
 Developer-oriented changes: Process Improvements
 ------------------------------------------------
 * changed the generation of the man page from txt2man into an rst-based scheme
+* added a 'make check' option for Sphinx documentation to check for errors
 
 Developer-oriented changes: Packaging Changes
 ---------------------------------------------
@@ -681,8 +685,6 @@ Bug Fixes
 * preserved source location information for cobegins
 * fixed a bug relating to inlined iterators and generic array fields
 * fixed a bug relating to passing c_strings to extern C functions
-* fixed a bug in formatted reads of digits
-* fixed a bug with self-references in module use lists
 
 Platform-specific Changes
 -------------------------
@@ -718,7 +720,6 @@ Third-Party Software Changes
 * improved cross-compilation of third-party packages for 'cray-x*' platforms
 * we're now storing RE2 in an unpacked form due to all of our local changes
 * fixed a valgrind issue in RE2
-* fixed a buffer overflow bug in hwloc related to /proc/mounts
 
 Launcher-specific Changes
 -------------------------
@@ -764,8 +765,7 @@ Developer-oriented changes: Process Improvements
 
 Developer-oriented changes: Documentation Improvements
 ------------------------------------------------------
-* added notes about running nightly testing scripts to util/cron/README
-* added a 'make check' option for Sphinx documentation to check for errors
+* added notes about testing nightly scripts to util/cron/README
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
