@@ -233,7 +233,7 @@ Functions and Iterators
   # functions/vass/return-type-function-failure.future
 - Array-of-array formal argument declarations do not work.
   # arrays/bradc/arrayOfArrayArg.future
-- Arrays returned from a var function result in memory corruption.
+- Arrays returned from a ref function result in memory corruption.
   # arrays/vass/setter-assigned-to-a-var.future
 - Function argument with type tuple of generic class results in a
   compiler assertion.
@@ -256,11 +256,11 @@ Functions and Iterators
 - Recursive functions with default argument values may not work.
   # users/csep524/recRetArr.future
 - Type and parameter functions are not checked for side effects.
-- Var functions returning multiple class types should be illegal, but
+- Ref functions returning multiple class types should be illegal, but
   instead they are compiled and result in runtime error.
   # functions/diten/varFnRetClasses.future
   # functions/diten/varFnRetClasses2.future
-- Var functions that return local data may not result in an error.
+- Ref functions that return local data may not result in an error.
   # functions/deitz/test_var_function_returns_local_via_var_function.future
 - Type functions with unambiguous return paths may result in "illegal
   cast" errors.
@@ -285,11 +285,11 @@ Functions and Iterators
   # statements/elliot/loops/modifyIndicesStandalone.future
 - Ref iterators yielding records may introduce uninitialized values
   # types/records/ferguson/parallel/coforall-mod/coforall-mod.future
-- The implicit 'setter' argument does not work in var iterators.
+- The (deprecated) implicit 'setter' argument does not work in ref iterators.
   # functions/deitz/iterators/iterator_uses_setter.future
   # functions/deitz/iterators/test_promote_var_function_and_iterate.future
-- The implicit 'setter' argument passed to other functions may be
-  incorrect.
+- The (deprecated) implicit 'setter' argument passed to other functions may
+  be incorrect.
   # functions/vass/setter-passed-to-another-fun.future
 - A forall loop with an iteratable expression that does not provide
   leader/follower iterators cause an internal compiler error.
