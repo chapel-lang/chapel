@@ -1,4 +1,6 @@
 inlineTest.doc
+Submodules for this module are located in the inlineTest.doc/ directory
+
    proc method1()
       Comment for method1 
 
@@ -36,7 +38,6 @@ inlineTest.doc
       This method has a return type, an argument, and a function body 
 
    proc allThreeCommentless(val: int): int
-Submodules for this module are located in the inlineTest.doc/ directory
 Other
    proc inside
       Comment for inline method inside module 
