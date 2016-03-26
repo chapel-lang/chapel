@@ -13,7 +13,8 @@ arguments to the console, one after the other without spaces, followed
 by a newline.  Thus, the following statement will print a greeting to
 the console:
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/base/hello.chpl
+.. literalinclude:: examples/users-guide/base/hello.chpl
+  :caption:
   :language: chapel
   :lines: 1-1
 
@@ -38,7 +39,7 @@ the program using::
 
 The program should then print the greeting to your console as follows:
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/base/hello.good
+.. literalinclude:: examples/users-guide/base/hello.good
   :language: text
 
 And with that, you've executed your first Chapel program!
