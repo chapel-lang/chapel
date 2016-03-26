@@ -63,11 +63,14 @@ subdirectories by simply using:
 Other files
 -----------
 
-./
-  Makefile        : Makefile for compiling the examples
+This directory:
   README.testing  : provides an introduction to using the Chapel testing system
   start_test      : the main script for the Chapel testing system
   Logs/           : directory created by the test system to store logs
+
+This directory and subdirectories:
+  *.chpl          : the Chapel example programs
+  Makefile        : Makefile for compiling the examples
   COMPOPTS        : used by the Chapel testing system -- see README.testing
   NUMLOCALES      : "
   PREDIFF         : "
