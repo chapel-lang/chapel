@@ -141,7 +141,7 @@ the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
 
 
 9) If you plan to do performance studies of Chapel programs, be sure
-   to (a) use the full-featured version and (b) read the ``PERFORMANCE``
+   to (a) use the full-featured version and (b) read the ``PERFORMANCE.md``
    file in this directory to avoid common pitfalls.
 
 
@@ -160,9 +160,9 @@ What's next?
 =============================================== =====================================
 **For more detailed information about:**        **refer to:**
 ----------------------------------------------- -------------------------------------
-    changes since the last release              ``CHANGES``
+    changes since the last release              ``CHANGES.md``
     implementation status                       ``STATUS``
-    performance status                          ``PERFORMANCE``
+    performance status                          ``PERFORMANCE.md``
     Chapel's file and directory structure       ``README.files``
     prerequisites for using this release        `prereqs.rst`_
     setting Chapel environment variables        `chplenv.rst`_
