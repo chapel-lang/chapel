@@ -11,7 +11,7 @@ Contributors to the current release
 * Ben Albrecht, [Cray Inc.]
 * Kyle Brady, [Cray Inc.]
 * Paul Cassella, [Cray Inc.]
-* Brad Chamberlain, [Cray Inc.]
+* [Brad Chamberlain], [Cray Inc.]
 * Sung-Eun Choi, [Cray Inc.]
 * Lydia Duncan, [Cray Inc.]
 * Michael Ferguson, [Cray Inc.]
@@ -20,7 +20,7 @@ Contributors to the current release
 * Przemysław Leśniak, individual contributor
 * Vassily Litvinov, [Cray Inc.]
 * Tom MacDonald, [Cray Inc.]
-* Phil Nelson, [Western Washington University] / [Cray Inc.]
+* [Phil Nelson], [Western Washington University] / [Cray Inc.]
 * Michael Noakes, [Cray Inc.]
 * Joshua Olson, individual contributor
 * Nicholas Park, [DOD]
@@ -49,7 +49,7 @@ Contributors to previous releases
 * James Dinan, [Cray Inc.] / [The Ohio State University]
 * Martha Dumler, [Cray Inc.]
 * Saliya Ekanayake, [Indiana University]
-* Samuel Figueroa, [Cray Inc.] (*)
+* Samuel Figueroa, [Cray Inc.] [*][*]
 * Roald Frederickx, individual contributor
 * Alexey Gokhberg, [Unicorn Enterprises SA]
 * Paul Hargrove, [Lawrence Berkeley National Laboratory]
@@ -92,6 +92,23 @@ Contributors to previous releases
 * Joe Yan, [University of Maryland]
 * Tim Zakian, [Cray Inc.] / [Indiana University]
 
+Website Design
+--------------
+* Eric Nordlund
+
+[Logo Design][http://chapel.cray.com/logo.html]
+-----------------------------------------------
+* Jim Cissell
+* Kristina Davis
+* Oli Laurelle
+* Timothy Stitt
+
+
+We are also grateful to all of the enthusiastic and vocal users who
+help us continually improve the quality of the Chapel language and
+implementation.
+
+
 [Cairo University]: http://cu.edu.eg/Home
 [CalTech]: http://www.cms.caltech.edu/
 [Colorado State University]: http://www.cs.colostate.edu/cstop/index.php
@@ -123,18 +140,10 @@ Contributors to previous releases
 [Western Washington University]: https://cse.wwu.edu/computer-science
 [Yale University]: http://physics.yale.edu/
 
-We are also grateful to our many enthusiastic and vocal users for
-helping us continually improve the quality of the Chapel language and
-compiler.
+[Brad Chamberlain]: http://homes.cs.washington.edu/~bradc/
+[Phil Nelson]: http://facultyweb.cs.wwu.edu/~phil/
 
-
-
-
-
-
------
-
-* = Note that due to a conversion mistake when moving our source
+[*]: Note that due to a conversion mistake when moving our source
     repository from SVN/SourceForge to Git/GitHub, some past
     contributors' names were mapped to an incorrect name in the Git
     repository.
