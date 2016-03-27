@@ -5,8 +5,8 @@ Building Chapel
 ===============
 
 To build the Chapel compiler, set up your environment as described in
-:ref:`chapelhome-readme` (or :ref:`readme-chplenv` for more settings),
-cd to ``$CHPL_HOME``, and type:
+:ref:`chapelhome-quickstart` (or :ref:`readme-chplenv` for more
+settings), cd to ``$CHPL_HOME``, and type:
 
 .. code-block:: sh
 
