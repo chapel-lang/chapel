@@ -114,6 +114,7 @@ if ($no_clone == 0) {
        "LICENSE.chapel",
        "Makefile",
        "PERFORMANCE.md",
+       "QUICKSTART.rst",
        "README.rst",
        "README.files",
        "STATUS",
