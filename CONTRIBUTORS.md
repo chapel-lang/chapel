@@ -108,6 +108,24 @@ help us continually improve the quality of the Chapel language and
 implementation.
 
 
+**A Note on Mis-Attributions**
+<a name="footnote"></a>
+
+\* = Note that due to a conversion mistake when moving our source
+    repository from SVN/SourceForge to Git/GitHub, some past
+    contributors' names were mapped to an incorrect name in the Git
+    repository.  These mistakes have been annotated in the repository
+    itself via git-notes indicating the "Actual Commit Author."  For all
+    intents and purposes, any commits that are:
+
+| attributed to...           | should actually be attributed to... |
+| -------------------------- | ----------------------------------- |
+| ...Tito Figueroa           | ...Samuel Figueroa                  |
+| ...MaryBeth Seekamp        | ...Mary Beth Hribar                 |
+| ...Charles Shannon Hendrix | ...Shannon Hoffswell                |
+
+
+
 [Cairo University]: http://cu.edu.eg/Home
 [CalTech]: http://www.cms.caltech.edu/
 [Colorado State University]: http://www.cs.colostate.edu/cstop/index.php
@@ -142,19 +160,3 @@ implementation.
 [Brad Chamberlain]: http://homes.cs.washington.edu/~bradc/
 [Phil Nelson]: http://facultyweb.cs.wwu.edu/~phil/
 
-<a name="footnote">
-
-\* = Note that due to a conversion mistake when moving our source
-    repository from SVN/SourceForge to Git/GitHub, some past
-    contributors' names were mapped to an incorrect name in the Git
-    repository.  These mistakes have been annotated in the repository
-    itself via git-notes indicating the "Actual Commit Author."  For all
-    intents and purposes, any commits that are:
-
-| attributed to...           | should actually be attributed to... |
-| -------------------------- | ----------------------------------- |
-| ...Tito Figueroa           | ...Samuel Figueroa                  |
-| ...MaryBeth Seekamp        | ...Mary Beth Hribar                 |
-| ...Charles Shannon Hendrix | ...Shannon Hoffswell                |
-
-</a>
