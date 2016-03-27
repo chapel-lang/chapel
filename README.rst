@@ -26,4 +26,3 @@ licensing terms.
 Here are some useful Chapel resources:
 
 * The Chapel project homepage:  http://chapel.cray.com
-

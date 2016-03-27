@@ -55,7 +55,6 @@ private:
   unsigned int    tabs;
   std::string     moduleName;
   std::string     pathWithoutPostfix;
-  bool            tableOfContentsNeeded;
 };
 
 #endif

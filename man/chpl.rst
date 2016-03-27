@@ -728,7 +728,7 @@ Chapel.
 AUTHORS
 -------
 
-See $CHPL\_HOME/CONTRIBUTORS for a list of contributors to Chapel.
+See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 
 COPYRIGHT
 ---------

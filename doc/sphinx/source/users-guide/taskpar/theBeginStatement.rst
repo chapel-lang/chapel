@@ -12,7 +12,8 @@ As an example, the following program creates a task to execute the
 call to ``writeln()`` in the first statement while the original task
 goes on to execute the second call to ``writeln()``.
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/taskpar/begin.chpl
+.. literalinclude:: examples/users-guide/taskpar/begin.chpl
+  :caption:
   :language: chapel
 
 Because these two tasks are not synchronized in any way, the order in
@@ -20,11 +21,11 @@ which the messages appear on the console is not guaranteed.  As a
 result, when running this program, the console could display the
 messages either like this:
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/taskpar/begin-alt.good
+.. literalinclude:: examples/users-guide/taskpar/begin-alt.good
 
 or this:
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/taskpar/begin.good
+.. literalinclude:: examples/users-guide/taskpar/begin.good
 
 Happily, the ``writeln()`` routine is written in a parallel-safe
 manner, so there is no danger of the characters from the two strings
@@ -42,7 +43,8 @@ prints some messages using a compound statement and a second that
 prints other messages using a function call, while the original task
 prints messages of its own.
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/taskpar/beginBiggerStatements.chpl
+.. literalinclude:: examples/users-guide/taskpar/beginBiggerStatements.chpl
+  :caption:
   :language: chapel
 
 
@@ -54,7 +56,8 @@ may itself create other tasks.  For example, the following routine
 uses recursion and **begin** statements to create a distinct task to
 process each node in a binary tree:
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/taskpar/walkTreeUsingBegins.chpl
+.. literalinclude:: examples/users-guide/taskpar/walkTreeUsingBegins.chpl
+  :caption:
   :language: chapel
   :lines: 24-31
 

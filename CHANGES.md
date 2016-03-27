@@ -2,9 +2,10 @@
 Release Changes List
 ====================
 
-TODO: wrap up -- finished thru commit 5d9bf0e
-TODO: check master -> 1.13 conversion
-TODO: .md / .rst?
+TODO:
+-----
+* wrap up -- finished thru commit 5d9bf0e
+* check links
 
 ==============
 version 1.13.0
@@ -230,6 +231,7 @@ Example Codes
 * fixed some typos and explanations in the primer examples
   (see examples/primers/*.chpl)
 * updated example tests to reflect the changes to the language and libraries
+* removed README.features from the examples subdirectory
 
 Compiler Flags (see 'man chpl' for details)
 -------------------------------------------

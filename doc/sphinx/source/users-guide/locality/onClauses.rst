@@ -22,23 +22,25 @@ of the Locales on which the program is running, conceptually migrating
 the main task to that locale, where it writes out a message indicating
 the locale's ID:
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/onClause.chpl
+.. literalinclude:: examples/users-guide/locality/onClause.chpl
+  :caption:
   :language: chapel
 
 Running this program on four locales generates:
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/onClause.good
+.. literalinclude:: examples/users-guide/locality/onClause.good
   :language: text
 
 Here's a minor change to this example which demonstrates that the
 original task starts and ends on locale #0:
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/onClausePlusOrig.chpl
+.. literalinclude:: examples/users-guide/locality/onClausePlusOrig.chpl
+  :caption:
   :language: chapel
 
 When run on three locales, this program generates:
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/onClausePlusOrig.good
+.. literalinclude:: examples/users-guide/locality/onClausePlusOrig.good
   :language: text
   :lines: 1-12
 
@@ -64,14 +66,15 @@ simple example, the following program uses a coforall loop to create a
 task per locale in combination with an on-clause to execute each task
 on its corresponding locale:
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/coforallPlusOn.chpl
+.. literalinclude:: examples/users-guide/locality/coforallPlusOn.chpl
+  :caption:
   :language: chapel
 
 In effect, this creates an SPMD (Single Program, Multiple Data) style
 of parallelism.  When running on four locales, the output will be a
 nondeterministic permutation of the following four lines:
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/coforallPlusOn.good
+.. literalinclude:: examples/users-guide/locality/coforallPlusOn.good
   :language: text
 
 
@@ -88,14 +91,15 @@ the variable or expression is stored.  These are referred to as
 As a simple example of a data-driven on-clause, the following program
 moves its task to the locale on which *x* is stored:
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/dataDrivenOnClause-trivial.chpl
+.. literalinclude:: examples/users-guide/locality/dataDrivenOnClause-trivial.chpl
+  :caption:
   :language: chapel
 
 However, this program is trivial in that *x* is stored on locale 0,
 so the on-clause is essentially degenerate and doesn't move execution
 anywhere:
 
-.. literalinclude:: ../../../../../test/release/examples/users-guide/locality/dataDrivenOnClause-trivial.good
+.. literalinclude:: examples/users-guide/locality/dataDrivenOnClause-trivial.good
   :language: text
 
 The next section will explain how variables can be declared on other

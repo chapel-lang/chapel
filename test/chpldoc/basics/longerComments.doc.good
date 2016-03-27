@@ -1,4 +1,6 @@
 longerComments.doc
+Submodules for this module are located in the longerComments.doc/ directory
+
    proc method1()
       This is a comment for method1, which lies
       outside of a defined module 
@@ -17,7 +19,6 @@ longerComments.doc
       argument and body which lies outside of a
       defined module 
 
-Submodules for this module are located in the longerComments.doc/ directory
 Other
    proc inside
       This is a comment for a method inside of

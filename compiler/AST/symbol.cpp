@@ -2691,6 +2691,11 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     *file << std::endl;
   }
 
+  // If we had submodules, be sure to link to them
+  if (hasTopLevelModule()) {
+    this->printTableOfContents(file);
+  }
+
   if (this->doc != NULL) {
     // Only print tabs for text only mode. The .rst prefers not to have the
     // tabs for module level comments and leading whitespace removed.
@@ -2721,10 +2726,10 @@ void ModuleSymbol::printTableOfContents(std::ostream *file) {
     this->printTabs(file, tabs);
     *file << ":glob:" << std::endl << std::endl;
     this->printTabs(file, tabs);
-    *file << name << "/*" << std::endl;
+    *file << name << "/*" << std::endl << std::endl;
   } else {
     *file << "Submodules for this module are located in the " << name;
-    *file << "/ directory" << std::endl;
+    *file << "/ directory" << std::endl << std::endl;
   }
 }
 
@@ -2853,6 +2858,20 @@ Vec<ModuleSymbol*> ModuleSymbol::getTopLevelModules() {
   }
 
   return mods;
+}
+
+// Intended for documentation purposes only, please don't use otherwise.
+bool ModuleSymbol::hasTopLevelModule() {
+  for_alist(expr, block->body) {
+    if (DefExpr* def = toDefExpr(expr)) {
+      if (ModuleSymbol* mod = toModuleSymbol(def->sym)) {
+        if (mod->defPoint->parentExpr == block && !mod->noDocGen()) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
 void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {

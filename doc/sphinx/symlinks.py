@@ -56,6 +56,18 @@ def main():
     chpldocmanpage = os.path.join(chpl_home, 'man', 'chpldoc.rst')
     os.symlink(chpldocmanpage, 'source/tools/chpldoc/man.rst')
 
+    chpldocexamples = os.path.join(chpl_home, 'test', 'release', 'examples')
+    os.symlink(chpldocexamples, 'source/users-guide/base/examples')
+
+    chpldocexamples = os.path.join(chpl_home, 'test', 'release', 'examples')
+    os.symlink(chpldocexamples, 'source/users-guide/taskpar/examples')
+
+#    chpldocexamples = os.path.join(chpl_home, 'test', 'release', 'examples')
+#    os.symlink(chpldocexamples, 'source/users-guide/datapar/examples')
+
+    chpldocexamples = os.path.join(chpl_home, 'test', 'release', 'examples')
+    os.symlink(chpldocexamples, 'source/users-guide/locality/examples')
+
 
 if __name__ == '__main__':
     main()

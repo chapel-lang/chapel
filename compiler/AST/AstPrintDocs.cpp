@@ -35,8 +35,7 @@ AstPrintDocs::AstPrintDocs(std::string moduleName, std::string path) :
   file(NULL),
   tabs(0),
   moduleName(moduleName),
-  pathWithoutPostfix(""),
-  tableOfContentsNeeded(false)
+  pathWithoutPostfix("")
 {
   pathWithoutPostfix = path + "/" + moduleName;
 
@@ -127,10 +126,10 @@ bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
     node->accept(docsVisitor);
     delete docsVisitor;
 
-    this->tableOfContentsNeeded = true;
     return false;
   }
 
+  // Then print our documentation
   node->printDocs(this->file, this->tabs);
 
   if (fDocsTextOnly) {
@@ -151,10 +150,6 @@ void AstPrintDocs::exitModSym(ModuleSymbol* node) {
   if (fDocsTextOnly) {
     this->tabs--;
   }
-
-  // If we had submodules, be sure to link to them
-  if (tableOfContentsNeeded)
-    node->printTableOfContents(this->file);
 }
 
 
