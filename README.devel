@@ -14,8 +14,6 @@ same place for developers and end users.  See README.files for a
 description:
 
 ./
-  README.rst
-  README.files
   ACKNOWLEDGEMENTS.md
   CHANGES.md
   CONTRIBUTORS.md
@@ -23,6 +21,10 @@ description:
   GOALS.md
   LICENSE
   LICENSE.chapel
+  PERFORMANCE.md
+  QUICKSTART.rst
+  README.files
+  README.rst
   STATUS
   Makefile
   bin/
