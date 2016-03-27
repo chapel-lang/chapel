@@ -96,7 +96,7 @@ Website Design
 --------------
 * Eric Nordlund
 
-[Logo Design][http://chapel.cray.com/logo.html]
+[Logo Design](http://chapel.cray.com/logo.html)
 -----------------------------------------------
 * Jim Cissell
 * Kristina Davis
@@ -149,11 +149,11 @@ implementation.
     contributors' names were mapped to an incorrect name in the Git
     repository.  For all intents and purposes, any commits that are:
 
-   | attributed to...           | should actually be attributed to... |
-   | -------------------------- | ----------------------------------- |
-   | ...Tito Figueroa           | ...Samuel Figueroa                  |
-   | ...MaryBeth Seekamp        | ...Mary Beth Hribar                 |
-   | ...Charles Shannon Hendrix | ...Shannon Hoffswell                |
+| attributed to...           | should actually be attributed to... |
+| -------------------------- | ----------------------------------- |
+| ...Tito Figueroa           | ...Samuel Figueroa                  |
+| ...MaryBeth Seekamp        | ...Mary Beth Hribar                 |
+| ...Charles Shannon Hendrix | ...Shannon Hoffswell                |
 
    These mistakes have been annotated in the repository itself via
    git-notes indicating the "Actual Commit Author."
