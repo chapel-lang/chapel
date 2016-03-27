@@ -144,7 +144,7 @@ implementation.
 
 <a name="footnote">
 
-* = Note that due to a conversion mistake when moving our source
+\* = Note that due to a conversion mistake when moving our source
     repository from SVN/SourceForge to Git/GitHub, some past
     contributors' names were mapped to an incorrect name in the Git
     repository.  These mistakes have been annotated in the repository
