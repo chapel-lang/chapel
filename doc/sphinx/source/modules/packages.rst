@@ -2,7 +2,12 @@
 
 Package Modules
 ===============
-Contents:
+
+Package modules are libraries that currently live outside of the
+Chapel Standard Library, either because they are not considered to be
+fundamental enough or because they are not yet mature enough for
+inclusion there.
+
 
 .. toctree::
    :hidden:
@@ -13,7 +18,10 @@ Contents:
 
    packages/**
 
-**Package Indices and tables**
 
-* :ref:`genindex`
-* :chpl:chplref:`chplmodindex`
+Index
+-----
+
+* :ref:`Chapel Online Documentation Index <genindex>`
+
+.. COMMENT: clean this up before exposing:: * :chpl:chplref:`chplmodindex`
