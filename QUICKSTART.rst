@@ -1,7 +1,7 @@
 .. _chapelhome-quickstart:
 
-Chapel Quick-Start Instructions
-===============================
+Chapel Quickstart Instructions
+==============================
 
 The following instructions are designed to get you get a Chapel
 installation up and running with a minimum of fuss.  Note that
@@ -23,7 +23,7 @@ additional capabilities.
 
 
 1) Make sure that your shell is in the directory containing this
-   ``README.rst`` file.  For example:
+   ``QUICKSTART.rst`` file.  For example:
 
     .. code-block:: sh
 
@@ -114,7 +114,7 @@ the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
 
 
 10) If you plan to do performance studies of Chapel programs, be sure
-    to (a) use the full-featured version and (b) read the ``PERFORMANCE``
+    to (a) use the full-featured version and (b) read the ``PERFORMANCE.md``
     file in this directory to avoid common pitfalls.
 
 
@@ -124,9 +124,9 @@ What's next?
 =============================================== =====================================
 **For more detailed information about:**        **refer to:**
 ----------------------------------------------- -------------------------------------
-    changes since the last release              ``CHANGES``
+    changes since the last release              ``CHANGES.md``
     implementation status                       ``STATUS``
-    performance status                          ``PERFORMANCE``
+    performance status                          ``PERFORMANCE.md``
     Chapel's file and directory structure       ``README.files``
     prerequisites for using this release        `prereqs.rst`_
     setting Chapel environment variables        `chplenv.rst`_
