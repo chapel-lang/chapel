@@ -26,9 +26,15 @@ Chapel Documentation
    modules/layoutdist
    users-guide/index
 
-
 .. toctree::
    :caption: Language History
    :maxdepth: 1
 
    Chapel Evolution <language/evolution>
+
+Index
+-----
+
+* :ref:`Chapel Online Documentation Index <genindex>`
+
+.. COMMENT: clean this up before exposing:: * :chpl:chplref:`chplmodindex`

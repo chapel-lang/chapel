@@ -2,7 +2,9 @@
 
 Built-in Types and Functions
 ============================
-Contents:
+
+The following sections describe built-in language features which are
+amenable to being documented using **chpldoc**:
 
 .. toctree::
    :hidden:
@@ -12,3 +14,11 @@ Contents:
    :glob:
 
    internal/**
+
+
+Index
+-----
+
+* :ref:`Chapel Online Documentation Index <genindex>`
+
+.. COMMENT: clean this up before exposing:: * :chpl:chplref:`chplmodindex`
