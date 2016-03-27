@@ -2,9 +2,8 @@
 Chapel Contributors
 ===================
 
-The following people have made significant contributions to the
-implementation of this release and to the design of the Chapel
-language:
+The following people have contributed to the implementation of the
+Chapel release:
 
 Contributors to the current release
 -----------------------------------
@@ -143,11 +142,14 @@ implementation.
 [Brad Chamberlain]: http://homes.cs.washington.edu/~bradc/
 [Phil Nelson]: http://facultyweb.cs.wwu.edu/~phil/
 
-<a name="footnote"></a>
 \* = Note that due to a conversion mistake when moving our source
     repository from SVN/SourceForge to Git/GitHub, some past
     contributors' names were mapped to an incorrect name in the Git
-    repository.  For all intents and purposes, any commits that are:
+    repository.  These mistakes have been annotated in the repository
+    itself via git-notes indicating the "Actual Commit Author."  For all
+    intents and purposes, any commits that are:
+
+<a name="footnote"></a>
 
 | attributed to...           | should actually be attributed to... |
 | -------------------------- | ----------------------------------- |
@@ -155,5 +157,4 @@ implementation.
 | ...MaryBeth Seekamp        | ...Mary Beth Hribar                 |
 | ...Charles Shannon Hendrix | ...Shannon Hoffswell                |
 
-   These mistakes have been annotated in the repository itself via
-   git-notes indicating the "Actual Commit Author."
+   
