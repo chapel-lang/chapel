@@ -20,7 +20,7 @@ Contributors to the current release
 * Przemysław Leśniak, individual contributor
 * Vassily Litvinov, [Cray Inc.][1]
 * Tom MacDonald, [Cray Inc.][1]
-* Phil Nelson, Western Washington University / [Cray Inc.][1]
+* Phil Nelson, [Western Washington University][WWU] / [Cray Inc.][1]
 * Michael Noakes, [Cray Inc.][1]
 * Joshua Olson, individual contributor
 * Nicholas Park, DOD
@@ -93,6 +93,7 @@ Contributors to previous releases
 * Tim Zakian, [Cray Inc.][1] / Indiana University
 
 [1]: http://www.cray.com
+[WWU]: https://cse.wwu.edu/computer-science
 
 We are also grateful to our many enthusiastic and vocal users for
 helping us continually improve the quality of the Chapel language and
