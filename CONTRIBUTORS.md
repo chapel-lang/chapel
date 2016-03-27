@@ -144,7 +144,7 @@ implementation.
 [Phil Nelson]: http://facultyweb.cs.wwu.edu/~phil/
 
 <a name="footnote"></a>
-* = Note that due to a conversion mistake when moving our source
+\* = Note that due to a conversion mistake when moving our source
     repository from SVN/SourceForge to Git/GitHub, some past
     contributors' names were mapped to an incorrect name in the Git
     repository.  For all intents and purposes, any commits that are:
