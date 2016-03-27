@@ -49,7 +49,7 @@ Contributors to previous releases
 * James Dinan, [Cray Inc.] / [The Ohio State University]
 * Martha Dumler, [Cray Inc.]
 * Saliya Ekanayake, [Indiana University]
-* Samuel Figueroa*[footnote], [Cray Inc.]
+* Samuel Figueroa* [footnote], [Cray Inc.]
 * Roald Frederickx, individual contributor
 * Alexey Gokhberg, [Unicorn Enterprises SA]
 * Paul Hargrove, [Lawrence Berkeley National Laboratory]
