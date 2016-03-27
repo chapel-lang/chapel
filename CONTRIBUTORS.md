@@ -20,80 +20,108 @@ Contributors to the current release
 * Przemysław Leśniak, individual contributor
 * Vassily Litvinov, [Cray Inc.]
 * Tom MacDonald, [Cray Inc.]
-* Phil Nelson, [Western Washington University][WWU] / [Cray Inc.]
+* Phil Nelson, [Western Washington University] / [Cray Inc.]
 * Michael Noakes, [Cray Inc.]
 * Joshua Olson, individual contributor
-* Nicholas Park, DOD
+* Nicholas Park, [DOD]
 * Elliot Ronaghan, [Cray Inc.]
 * Kushal Singh, individual contributor
-* George Stelle, Sandia National Laboratories
-* Chris Taylor, DOD
+* George Stelle, [Sandia National Laboratories]
+* Chris Taylor, [DOD]
 * Greg Titus, [Cray Inc.]
 * Tony Wallace, [Cray Inc.]
 
 Contributors to previous releases
 ---------------------------------
-* Rafael Asenjo, Universidad de Málaga (University of Malaga)
-* Matthew Baker, ORNL
-* Steve Balensiefer, University of Washington
-* Casey Battaglino, [Cray Inc.] / Georgia Tech
-* Ian Bertolacci, [Cray Inc.] / Colorado State University
+* Rafael Asenjo, [Universidad de Málaga (University of Malaga)]
+* Matthew Baker, [ORNL]
+* Steve Balensiefer, [University of Washington]
+* Casey Battaglino, [Cray Inc.] / [Georgia Tech]
+* Ian Bertolacci, [Cray Inc.] / [Colorado State University]
 * Sean Billig, individual contributor
-* Robert Bocchino, [Cray Inc.] / University of Illinois, Urbana-Champaign
-* Dan Bonachea, UC Berkeley
-* Daniel Buettner, LTS
+* Robert Bocchino, [Cray Inc.] / [University of Illinois, Urbana-Champaign]
+* Dan Bonachea, [UC Berkeley]
+* Daniel Buettner, [LTS]
 * David Callahan, [Cray Inc.]
 * Steve Deitz, [Cray Inc.]
-* Joel Denny, ETI
-* Roxana Diaconescu, CalTech
-* James Dinan, [Cray Inc.] / The Ohio State University
+* Joel Denny, [ETI]
+* Roxana Diaconescu, [CalTech]
+* James Dinan, [Cray Inc.] / [The Ohio State University]
 * Martha Dumler, [Cray Inc.]
-* Saliya Ekanayake, Indiana University
+* Saliya Ekanayake, [Indiana University]
 * Samuel Figueroa, [Cray Inc.] (*)
 * Roald Frederickx, individual contributor
-* Alexey Gokhberg, Unicorn Enterprises SA
-* Paul Hargrove, Lawrence Berkeley National Laboratory
-* Akihiro Hayashi, Rice University
-* Hannah Hemmaplardh, [Cray Inc.] / University of Washington
-* Steven Hemmy, [Cray Inc.] / University of Wisconsin
+* Alexey Gokhberg, [Unicorn Enterprises SA]
+* Paul Hargrove, [Lawrence Berkeley National Laboratory]
+* Akihiro Hayashi, [Rice University]
+* Hannah Hemmaplardh, [Cray Inc.] / [University of Washington]
+* Steven Hemmy, [Cray Inc.] / [University of Wisconsin]
 * Tom Hildebrandt, [Cray Inc.]
 * Shannon Hoffswell, [Cray Inc.] (*)
 * Mary Beth Hribar, [Cray Inc.] (*)
-* Mackale Joyner, [Cray Inc.] / Rice University
-* Jessica Jueckstock, MITRE
+* Mackale Joyner, [Cray Inc.] / [Rice University]
+* Jessica Jueckstock, [MITRE]
 * John Koenig, [Cray Inc.]
-* Rafael Larrosa Jiminez, Universidad de Málaga (University of Malaga)
-* Matthew Lentz, University of Maryland
-* Juan Lopez, Universidad de Málaga (University of Malaga)
-* Simon Lund, Københavns Universitet (University of Copenhagen)
+* Rafael Larrosa Jiminez, [Universidad de Málaga (University of Malaga)]
+* Matthew Lentz, [University of Maryland]
+* Juan Lopez, [Universidad de Málaga (University of Malaga)]
+* Simon Lund, [Københavns Universitet (University of Copenhagen)]
 * Cory McCartan, [Cray Inc.]
-* Damian McGuckin, Pacific Engineering Systems International
-* Maria Angeles Navarro, Universidad de Málaga (University of Malaga)
-* Jun Nakashima, University of Tokyo
-* Jacob Nelson, [Cray Inc.] / University of Washington
-* Nikhil Padmanabhan, Yale University
+* Damian McGuckin, [Pacific Engineering Systems International]
+* Maria Angeles Navarro, [Universidad de Málaga (University of Malaga)]
+* Jun Nakashima, [University of Tokyo]
+* Jacob Nelson, [Cray Inc.] / [University of Washington]
+* Nikhil Padmanabhan, [Yale University]
 * Konstantina Panagiotopoulou, individual contributor
 * John Plevyak, [Cray Inc.]
 * Lee Prokowich, [Cray Inc.]
-* Brandon Ross, University at Buffalo
-* Sara Salem, Cairo University
-* Alberto Sanz, Universidad de Málaga (University of Malaga)
-* Albert Sidelnik, [Cray Inc.] / University of Illinois, Urbana-Champaign
-* Darren Smith, University of Maryland
-* Rachel Sobel, [Cray Inc.] / University of Washington
+* Brandon Ross, [University at Buffalo]
+* Sara Salem, [Cairo University]
+* Alberto Sanz, [Universidad de Málaga (University of Malaga)]
+* Albert Sidelnik, [Cray Inc.] / [University of Illinois, Urbana-Champaign]
+* Darren Smith, [University of Maryland]
+* Rachel Sobel, [Cray Inc.] / [University of Washington]
 * Francisco Souza, individual contributor
-* Srinivas Sridharan, University of Notre Dame / ORNL
-* Andy Stone, [Cray Inc.] / University of Colorado
+* Srinivas Sridharan, [University of Notre Dame] / [ORNL]
+* Andy Stone, [Cray Inc.] / [Colorado State University]
 * Chris Swenson, individual contributor
-* Jonathan Turner, [Cray Inc.] / CU Boulder
+* Jonathan Turner, [Cray Inc.] / [CU Boulder]
 * Thomas Van Doren, [Cray Inc.]
-* Chris Wailes, Indiana University
+* Chris Wailes, [Indiana University]
 * Wayne Wong, [Cray Inc.]
-* Joe Yan, University of Maryland
-* Tim Zakian, [Cray Inc.] / Indiana University
+* Joe Yan, [University of Maryland]
+* Tim Zakian, [Cray Inc.] / [Indiana University]
 
+[Cairo University]: http://cu.edu.eg/Home
+[CalTech]: http://www.cms.caltech.edu/
+[Colorado State University]: http://www.cs.colostate.edu/cstop/index.php
 [Cray Inc.]: http://www.cray.com
-[WWU]: https://cse.wwu.edu/computer-science
+[CU Boulder]: http://www.colorado.edu/cs/
+[DOD]: http://www.defense.gov/
+[ETI]: http://www.etinternational.com/
+[Georgia Tech]: http://www.cc.gatech.edu/
+[Indiana University]: http://www.cs.indiana.edu/
+[Københavns Universitet (University of Copenhagen)]: http://diku.dk/english/
+[Lawrence Berkeley National Laboratory]: http://crd.lbl.gov/
+[LTS]: https://www.ltsnet.net/
+[MITRE]: http://www.mitre.org/
+[The Ohio State University]: https://cse.osu.edu/
+[ORNL]: https://www.ornl.gov/
+[Pacific Engineering Systems International]: http://www.esi.com.au/
+[Rice University]: http://www.cs.rice.edu/
+[Sandia National Laboratories]: http://www.sandia.gov/
+[Unicorn Enterprises SA]: http://www.unicorn-enterprises.com/
+[University at Buffalo]: https://www.cse.buffalo.edu/
+[UC Berkeley]: http://www.cs.berkeley.edu/
+[University of Illinois, Urbana-Champaign]: https://cs.illinois.edu/
+[Universidad de Málaga (University of Malaga)]: http://www.ac.uma.es/index-e.html
+[University of Maryland]: https://www.cs.umd.edu/
+[University of Notre Dame]: http://cse.nd.edu/
+[University of Tokyo]: http://www.i.u-tokyo.ac.jp/index_e.shtml
+[University of Washington]: http://cs.washington.edu/
+[University of Wisconsin]: http://www.cs.wisc.edu/
+[Western Washington University]: https://cse.wwu.edu/computer-science
+[Yale University]: http://physics.yale.edu/
 
 We are also grateful to our many enthusiastic and vocal users for
 helping us continually improve the quality of the Chapel language and
