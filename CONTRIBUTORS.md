@@ -108,6 +108,10 @@ help us continually improve the quality of the Chapel language and
 implementation.
 
 
+
+
+---
+
 **A Note on Mis-Attributions**
 <a name="footnote"></a>
 
@@ -116,9 +120,9 @@ implementation.
     contributors' names were mapped to an incorrect name in the Git
     repository.  These mistakes have been annotated in the repository
     itself via git-notes indicating the "Actual Commit Author."  For all
-    intents and purposes, any commits that are:
+    intents and purposes, any:
 
-| attributed to...           | should actually be attributed to... |
+| commits attributed to...   | should actually be attributed to... |
 | -------------------------- | ----------------------------------- |
 | ...Tito Figueroa           | ...Samuel Figueroa                  |
 | ...MaryBeth Seekamp        | ...Mary Beth Hribar                 |
