@@ -7,7 +7,7 @@ Chapel Documentation
    :caption: Compiling and Running Chapel
    :maxdepth: 1
 
-   Quickstart Instructions <usingchapel/README>
+   Quickstart Instructions <usingchapel/QUICKSTART>
    usingchapel/index
    platforms/index
    technotes/index
