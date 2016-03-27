@@ -2,9 +2,10 @@
 Release Changes List
 ====================
 
-TODO: wrap up -- finished thru commit 5d9bf0e
-TODO: check master -> 1.13 conversion
-TODO: .md / .rst?
+TODO:
+-----
+* wrap up -- finished thru commit 5d9bf0e
+* check links
 
 ==============
 version 1.13.0
