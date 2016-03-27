@@ -49,7 +49,7 @@ Contributors to previous releases
 * James Dinan, [Cray Inc.] / [The Ohio State University]
 * Martha Dumler, [Cray Inc.]
 * Saliya Ekanayake, [Indiana University]
-* Samuel Figueroa[*](footnote), [Cray Inc.]
+* Samuel Figueroa[*](#footnote), [Cray Inc.]
 * Roald Frederickx, individual contributor
 * Alexey Gokhberg, [Unicorn Enterprises SA]
 * Paul Hargrove, [Lawrence Berkeley National Laboratory]
@@ -57,8 +57,8 @@ Contributors to previous releases
 * Hannah Hemmaplardh, [Cray Inc.] / [University of Washington]
 * Steven Hemmy, [Cray Inc.] / [University of Wisconsin]
 * Tom Hildebrandt, [Cray Inc.]
-* Shannon Hoffswell [*](footnote), [Cray Inc.]
-* Mary Beth Hribar, [Cray Inc.] (*)
+* Shannon Hoffswell[*](#footnote), [Cray Inc.]
+* Mary Beth Hribar[*](#footnote), [Cray Inc.]
 * Mackale Joyner, [Cray Inc.] / [Rice University]
 * Jessica Jueckstock, [MITRE]
 * John Koenig, [Cray Inc.]
@@ -143,17 +143,17 @@ implementation.
 [Brad Chamberlain]: http://homes.cs.washington.edu/~bradc/
 [Phil Nelson]: http://facultyweb.cs.wwu.edu/~phil/
 
-*: <a name="footnote"></a>Note that due to a conversion mistake when moving our source
-    repository from SVN/SourceForge to Git/GitHub, some past
-    contributors' names were mapped to an incorrect name in the Git
-    repository.
+<a name="footnote"></a>
+*: Note that due to a conversion mistake when moving our source
+   repository from SVN/SourceForge to Git/GitHub, some past
+   contributors' names were mapped to an incorrect name in the Git
+   repository.  For all intents and purposes, any commits that are:
 
-    For all intents and purposes, any commits that are
-    attributed to...             should actually be attributed to...
-    ----------------             -----------------------------------
-    ...Tito Figueroa             ...Samuel Figueroa
-    ...MaryBeth Seekamp          ...Mary Beth Hribar
-    ...Charles Shannon Hendrix   ...Shannon Hoffswell
+    | attributed to...           | should actually be attributed to... |
+    | -------------------------- | ----------------------------------- |
+    | ...Tito Figueroa           | ...Samuel Figueroa                  |
+    | ...MaryBeth Seekamp        | ...Mary Beth Hribar                 |
+    | ...Charles Shannon Hendrix | ...Shannon Hoffswell                |
 
-    These mistakes have been annotated in the repository itself via
-    git-notes indicating the "Actual Commit Author."
+   These mistakes have been annotated in the repository itself via
+   git-notes indicating the "Actual Commit Author."
