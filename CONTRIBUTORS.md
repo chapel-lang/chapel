@@ -49,7 +49,7 @@ Contributors to previous releases
 * James Dinan, [Cray Inc.] / [The Ohio State University]
 * Martha Dumler, [Cray Inc.]
 * Saliya Ekanayake, [Indiana University]
-* Samuel Figueroa, [Cray Inc.] [*][*]
+* Samuel Figueroa*[footnote], [Cray Inc.]
 * Roald Frederickx, individual contributor
 * Alexey Gokhberg, [Unicorn Enterprises SA]
 * Paul Hargrove, [Lawrence Berkeley National Laboratory]
@@ -143,7 +143,7 @@ implementation.
 [Brad Chamberlain]: http://homes.cs.washington.edu/~bradc/
 [Phil Nelson]: http://facultyweb.cs.wwu.edu/~phil/
 
-[*]: Note that due to a conversion mistake when moving our source
+[footnote]: Note that due to a conversion mistake when moving our source
     repository from SVN/SourceForge to Git/GitHub, some past
     contributors' names were mapped to an incorrect name in the Git
     repository.
