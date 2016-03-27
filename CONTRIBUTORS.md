@@ -142,6 +142,8 @@ implementation.
 [Brad Chamberlain]: http://homes.cs.washington.edu/~bradc/
 [Phil Nelson]: http://facultyweb.cs.wwu.edu/~phil/
 
+<a name="footnote">
+
 \* = Note that due to a conversion mistake when moving our source
     repository from SVN/SourceForge to Git/GitHub, some past
     contributors' names were mapped to an incorrect name in the Git
@@ -149,12 +151,10 @@ implementation.
     itself via git-notes indicating the "Actual Commit Author."  For all
     intents and purposes, any commits that are:
 
-<a name="footnote"></a>
-
 | attributed to...           | should actually be attributed to... |
 | -------------------------- | ----------------------------------- |
 | ...Tito Figueroa           | ...Samuel Figueroa                  |
 | ...MaryBeth Seekamp        | ...Mary Beth Hribar                 |
 | ...Charles Shannon Hendrix | ...Shannon Hoffswell                |
 
-   
+</a>
