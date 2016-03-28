@@ -16,7 +16,8 @@ A class declaration (\rsec{Class_Declarations}) generates a class
 type (\rsec{Class_Types}).  A variable of a class type can refer to an
 instance of that class or any of its derived classes.
 
-A class is generic if it has generic fields. Generic classes and fields
+A class is generic if it has generic fields. A class can also
+be generic if it inherits from a generic class. Generic classes and fields
 are discussed in~\rsec{Generic_Types}.
 
 \section{Class Declarations}
@@ -57,12 +58,9 @@ from other classes %and/or records
 if the \sntx{inherit-type-list} is specified.
 Inheritance is described in~\rsec{Inheritance}.
 
-\begin{future}
-Record inheritance is not currently implemented.  When enabled, it will have the
-same effect as creating a field of that record type within the class, except
-that all of the record's field and method names will appear within the scope of
-the inheriting class.
-\end{future}
+\begin{openissue}
+Classes that inherit from records are an area for future work.
+\end{openissue}
 
 The body of a class declaration consists of a sequence of statements
 where each of the statements either defines a variable (called a
@@ -105,8 +103,9 @@ class-type:
   identifier ( named-expression-list )
 \end{syntax}
 
-A class type may appear in inheritance lists of
-other class declarations.
+A class type, including a generic class type that is not
+fully specified, may appear in the inheritance lists
+of other class declarations.
 
 \subsection{Class Values}
 \label{Class_Values}
@@ -258,6 +257,13 @@ These restrictions on inheritance induce a class hierarchy which has the form of
 a tree.  A variable referring to an instance of class \chpl{C} can be
 cast to any type that is an ancestor of \chpl{C}.  Note that casts to more- and
 less-derived classes are both permitted.
+
+It is possible for a class to inherit from a generic class. Suppose for
+example that a class \chpl{C} inherits from class \chpl{ParentC}. In this
+situation, \chpl{C} will have type constructor arguments based upon
+generic fields in the \chpl{ParentC} as described in
+~\ref{Type_Constructors}. Furthermore, a fully specified \chpl{C} will be
+a subclass of a corresponding fully specified \chpl{ParentC}.
 
 \begin{future}
 A derived class may also incorporate any number of records by listing them
