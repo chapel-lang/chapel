@@ -43,6 +43,8 @@ handling in the Math module.  The default behavior is as if the macro
 all math functions will return an implementation-defined value; no
 exception will be generated.
 
+.. note:: This module is included by default.
+
 */
 module Math {
 

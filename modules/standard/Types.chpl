@@ -22,6 +22,9 @@ Functions related to predefined types.
 
 These functions are provided by default;
 an explicit 'use' statement is not necessary.
+
+.. note:: This module is included by default.
+
 */
 module Types {
 
