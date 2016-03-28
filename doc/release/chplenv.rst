@@ -167,7 +167,6 @@ CHPL_*_COMPILER
         darwin        clang if available, otherwise gnu
         marenostrum   ibm
         pwr5, pwr6    ibm
-        x1, x2        cray-vec
         other         gnu
         ============  ==================================================
 
