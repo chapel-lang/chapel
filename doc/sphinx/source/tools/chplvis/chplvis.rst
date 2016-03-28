@@ -516,7 +516,7 @@ This may be set on the execution command line like any config const.
 The standard default value is `true`.
 This default value may be changed at compile time
 by setting the config param :const:`~VisualDebug.DefaultVisualDebugOn`.
-If this is this to `false` at compile time
+If this is set to `false` at compile time
 then :param:`~VisualDebug.VisualDebugOn` must be set to `true`
 on the execution command line to generate :mod:`VisualDebug` data.
 
