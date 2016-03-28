@@ -35,16 +35,15 @@ confirm it is correctly installed, do the following:
      ./hello6-taskpar-dist -nl 4
 
 
-This is all that is necessary for most Chapel installations on Cray X-Series
-systems.  If the installation setup by your system administratordeviates from
-the default settings, or you are interested in additional configuration
+This may be all that is necessary to use Chapel on a Cray X-Series system.
+If the installation setup by your system administrator deviates from
+the default settings, or you are interested in other configuration
 options, see `Using Chapel on a Cray System`_ below.  If instead you wish to
 build Chapel from source, continue on to
 `Building Chapel for a Cray System from Source`_ just below.
 
 For information on obtaining and installing the Chapel module please
 contact your system administrator.
-
 
 
 ----------------------------------------------
