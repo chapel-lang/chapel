@@ -21,10 +21,11 @@
 /*
   Support for simple assert() routines.
 
-  .. note:: 
-            In the current implementation, these asserts never become
-            no-ops.  That is, using them will always incur
-            execution-time checks.
+  In the current implementation, these asserts never become no-ops.  That is,
+  using them will always incur execution-time checks.
+
+  .. note:: This module is included by default.
+
 */
 module Assert {
 
