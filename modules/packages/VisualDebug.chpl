@@ -43,7 +43,7 @@ module VisualDebug
     It defaults to the value of :param:`DefaultVisualDebugOn`, but can
     be changed at execution time.
   */
-  config var VisualDebugOn = DefaultVisualDebugOn;
+  config const VisualDebugOn = DefaultVisualDebugOn;
 
   private extern proc chpl_now_time():real;
 

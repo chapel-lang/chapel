@@ -510,13 +510,15 @@ Config Paramaters and Variables
 -------------------------------
 
 Because :mod:`VisualDebug` support requires added procedure calls in source to
-use it, there is a boolean config variable, :var:`~VisualDebug.VisualDebugOn`,
-that controls generation of :mod:`VisualDebug` data.  This variable may be set
-on the command line like any config variable.  The standard default value is
-*true*.  The default value may be set at compile time using the config param
-:var:`~VisualDebug.DefaultVisualDebugOn`.  Setting this config param to false
-at compile time requires the variable :var:`~VisualDebug.VisualDebugOn` to be
-set to true on the command line to generate :mod:`VisualDebug` data.
+use it, there is a boolean config const, :const:`~VisualDebug.VisualDebugOn`
+that controls generation of :mod:`VisualDebug` data.
+This may be set on the execution command line like any config const.
+The standard default value is `true`.
+This default value may be changed at compile time
+by setting the config param :const:`~VisualDebug.DefaultVisualDebugOn`.
+If this is set to `false` at compile time
+then :param:`~VisualDebug.VisualDebugOn` must be set to `true`
+on the execution command line to generate :mod:`VisualDebug` data.
 
 Final Comments
 --------------
