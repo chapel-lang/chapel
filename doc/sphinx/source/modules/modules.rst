@@ -2,7 +2,9 @@
 
 Standard Modules
 ================
-Contents:
+
+Standard modules are those which describe features that are considered
+part of the Chapel Standard Library.
 
 .. toctree::
    :hidden:
@@ -14,7 +16,10 @@ Contents:
 
    standard/*
 
-**Module Indices and tables**
 
-* :ref:`genindex`
-* :chpl:chplref:`chplmodindex`
+Index
+-----
+
+* :ref:`Chapel Online Documentation Index <genindex>`
+
+.. COMMENT: clean this up before exposing:: * :chpl:chplref:`chplmodindex`

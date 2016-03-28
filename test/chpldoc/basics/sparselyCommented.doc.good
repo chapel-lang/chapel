@@ -1,4 +1,6 @@
 sparselyCommented.doc
+Submodules for this module are located in the sparselyCommented.doc/ directory
+
    proc method1()
       Comment for method1 
 
@@ -15,7 +17,6 @@ sparselyCommented.doc
       Comment for method with argument and body 
 
    proc argAndBodyCommentless(val: int)
-Submodules for this module are located in the sparselyCommented.doc/ directory
 Other
    proc inside()
       Comment for method inside module 

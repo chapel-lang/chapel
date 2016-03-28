@@ -1,4 +1,6 @@
 intents.doc
+Submodules for this module are located in the intents.doc/ directory
+
    proc one(in val)
       This function has an argument with the in intent 
 
@@ -44,7 +46,6 @@ intents.doc
    proc fourteen()
       This function has a return intent (other than ref) and a body 
 
-Submodules for this module are located in the intents.doc/ directory
 Inner
    proc one(in val)
       This function has an argument with the in intent 

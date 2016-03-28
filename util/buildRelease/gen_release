@@ -105,15 +105,16 @@ if ($no_clone == 0) {
 
 # explicit files to include
 @files = (
-       "ACKNOWLEDGEMENTS",
-       "CHANGES",
-       "CONTRIBUTORS",
+       "ACKNOWLEDGEMENTS.md",
+       "CHANGES.md",
+       "CONTRIBUTORS.md",
        "COPYRIGHT",
-       "GOALS",
+       "GOALS.md",
        "LICENSE",
        "LICENSE.chapel",
        "Makefile",
-       "PERFORMANCE",
+       "PERFORMANCE.md",
+       "QUICKSTART.rst",
        "README.rst",
        "README.files",
        "STATUS",

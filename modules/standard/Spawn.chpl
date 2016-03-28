@@ -676,6 +676,8 @@ module Spawn {
 
     :arg error: optional argument to capture any error encountered
                 when waiting for the child process.
+    :arg buffer: if `true`, buffer input and output pipes (see above).
+
    */
   proc subprocess.wait(out error:syserr, buffer=true) {
 

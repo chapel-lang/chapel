@@ -2,6 +2,442 @@
 Release Changes List
 ====================
 
+TODO:
+-----
+* wrap up -- finished thru commit 5d9bf0e
+* check links
+
+==============
+version 1.13.0
+==============
+
+Sixteenth public release of Chapel, April 7, 2016
+
+Highlights
+----------
+* string improvements:
+  - dramatically improved string performance and reduced memory leaks
+  - added standard library routines on strings
+    (see http://chapel.cray.com/docs/1.13/modules/internal/String.html)
+* language feature highlights:
+  - added support for filtering and renaming symbols in module 'use's
+    (see 'Using Modules' in the Chapel Language Specification)
+  - added support for min/max reduce intents and reduce intents on coforalls
+    (see http://chapel.cray.com/docs/1.13/technotes/reduceIntents.html)
+  - significantly improved memory management and reduced leaks for record types
+  - added support for creating subclasses of generic classes
+  - replaced 'locale.numCores' with a richer 'locale.numPUs()' interface
+    (see http://chapel.cray.com/docs/1.13/modules/internal/ChapelLocale.html)
+  - added the ability to 'use' an enumerated type to avoid qualifying names
+    (see TODO)
+  - added support for casting types to strings and deprecated typeToString()
+    (see "Explicit Type to String Conversions" in the Chapel language spec)
+* standard library highlights:
+  - added a new 'Reflection' module to support reasoning about code
+    (see http://chapel.cray.com/docs/1.13/modules/standard/Reflection.html)
+  - added a new JAMA-based Linear Algebra matrix package
+    (see TODO)
+  - added a new PCG-based random number generator to 'Random' as the default
+    (see http://chapel.cray.com/docs/1.13/modules/standard/Random.html)
+  - extended the 'HDFS' module to support libhdfs3
+    (see http://chapel.cray.com/docs/1.13/technotes/auxIO.html)
+  - added additional routines to the 'FileSystem' and 'Path' modules
+    (see http://chapel.cray.com/docs/1.13/modules/standard/FileSystem.html
+     and http://chapel.cray.com/docs/1.13/modules/standard/Path.html)
+* implementation improvement highlights:
+  - made Chapel's default allocator 'jemalloc', resulting in better performance
+    (see http://chapel.cray.com/docs/1.13/usingchapel/chplenv.html#chpl-mem)
+  - 'complex' types are now code generated as C99 complex rather than a record
+  - added compiler flags for all of the traditional CHPL_* environment vars.
+    (see 'Compiler Configuration Options' in 'chpl --help' or the man page)
+* added support for Intel Xeon Phi Knights Landing (KNL) processors
+  (see http://chapel.cray.com/docs/1.13/platforms/knl.html)
+* added new Chapel ports of the ISx and LCALS proxy applications to the release
+  (see examples/benchmarks/isx and examples/benchmarks/lcals/)
+* documentation highlights:
+  - dramatically improved the organization of the online Chapel documentation
+    (see http://chapel.cray.com/docs/1.13/)
+  - created web-based versions of the 'chpl' and 'chpldoc' man pages
+    (see http://chapel.cray.com/docs/1.13/usingchapel/man.html
+     and http://chapel.cray.com/docs/1.13/tools/chpldoc/man.html)
+* performance improvement highlights:
+  - made significant performance improvements for common use cases of 'reduce'
+  - implemented amortized reallocation when resizing arrays due to vector ops
+  - broadened the applicability of the bulk communication optimization
+  - significantly improved the performance resulting from the LLVM back-end
+* additional highlights:
+  - renamed the 'etc/' directory 'highlight/' to better identify its contents
+    (see highlight/README)
+  - made Chapel's scripts compatible with key versions of Python 2 and 3
+  - unified the support of third-party packages and runtime options on Crays
+    (see  http://chapel.cray.com/docs/1.13/platforms/cray.html)
+  - numerous error message improvements, bug fixes, feature improvements, ...
+
+Configuration Changes
+---------------------
+* made 'jemalloc' the default allocator for all platforms other than Cygwin
+  (see http://chapel.cray.com/docs/1.13/usingchapel/chplenv.html#chpl-mem)
+* made 'cray-prgenv-cray' default to using qthreads+hwloc and 'ugni'
+  (see  http://chapel.cray.com/docs/1.13/platforms/cray.html)
+* added support for 're2' when using Cray and PGI compilers
+* changed 'knc' to default to using 'qthreads+hwloc'
+* switched to using pg++ rather than pgCC as the C++ compiler for 'pgi'
+* removed stale support for Xcode
+
+Syntactic/Naming Changes
+------------------------
+* added new keywords, 'as', 'except', and 'only', for filtering module 'use's
+  (see "Using Modules" in the Chapel language specification)
+* replaced 'locale.numCores' with a richer interface 'locale.numPUs()'
+  (see http://chapel.cray.com/docs/1.13/modules/internal/ChapelLocale.html)
+* replaced the 'Writer' and 'Reader' types in favor of unifying on 'channel's
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+* improved the handling of "return by ref" functions in setter/getter contexts
+  (see 'http://chapel.cray.com/docs/1.13/language/evolution.html
+   and 'The Ref Return Intent' under 'Procedures' in the language spec)
+* made default I/O routines ignore 'param' fields as they have 'type' fields
+* restricted 'sync'/'single' types to sufficiently simple types
+* removed support for performing Chapel I/O on 'c_string's
+* removed coercions from 'c_string's to 'string's
+
+New Features
+------------
+* added a standard library of routines on the 'string' type
+  (see http://chapel.cray.com/docs/1.13/modules/internal/String.html)
+* added support for filtering module 'use' statements with 'only' and 'except'
+  (e.g., 'use M only foo;' or '... except foo;' to restrict to / exclude 'foo')
+  (see 'Using Modules' in spec)
+* added support for renaming 'use'd module symbols
+  (e.g., 'use M only foo as M_foo;' causes 'foo' to be referred to as 'M_foo')
+  (see 'Using Modules' in the spec)
+* added the ability to 'use' an enumerated type
+  (e.g., "...mycolor.green..." can now be written "use mycolor;  ...green...")
+* added support for casting types to strings and deprecated typeToString()
+  (e.g., 'writeln(x.type:string);' can be used to print the name of x's type)
+* added a capability to iterate over the fields in a class or record
+  (see http://chapel.cray.com/docs/1.13/modules/standard/Reflection.html)
+* added the ability to query whether a call can be resolved or not
+  (see http://chapel.cray.com/docs/1.13/modules/standard/Reflection.html)
+* added support for annotating an on-clause as being 'local'
+  (see http://chapel.cray.com/docs/1.13/technotes/local.html)
+* added support for 'c_string' values
+  (e.g., "this is a Chapel string" while c"this is a C string")
+
+Feature Improvements
+--------------------
+* added support for creating subclasses of a generic class
+* added support for min/max reduce intents
+  (see http://chapel.cray.com/docs/1.13/technotes/reduceIntents.html)
+* added support for reduce intents on coforall loops
+  (see http://chapel.cray.com/docs/1.13/technotes/reduceIntents.html)
+* added the ability to pass sync/single variables via generic arguments
+* improved the type signatures of min()/max() to support better type resolution
+  (see http://chapel.cray.com/docs/1.13/modules/internal/UtilMisc_forDocs.html)
+* extended comparison operators (==, !=, <=, etc.) to support mixed int/uints
+  (see 'Expressions' in the Chapel language specification)
+* added support for range slicing between mixed int/uint idxTypes
+* added support for comparing between 'c_void_ptr' expressions and 'nil'
+* added support for implicitly coercing 'c_ptr' types to 'c_void_ptr'
+* added support for casting from fully-qualified enum strings to enum values
+  (e.g., '"mycolor.green":mycolor' now works where it wouldn't have previously)
+* extended channel.readbits/writebits to accept other integral types
+  (see http://chapel.cray.com/docs/1.13/modules/standard/IO.html)
+* added scalar versions of domain.exterior(), interior(), and translate()
+  (see http://chapel.cray.com/docs/1.13/modules/internal/ChapelArray.html)
+
+Standard Library/Modules
+------------------------
+* started distinguishing between "standard Chapel modules" and "packages"
+  (see http://chapel.cray.com/docs/1.13/modules/modules.html
+   and http://chapel.cray.com/docs/1.13/modules/packages.html)
+* added a new JAMA-based linear algebra matrix package
+  (see TODO)
+* added a new PCG-based random number generator to 'Random' as the default
+  (see http://chapel.cray.com/docs/1.13/modules/standard/Random/PCGRandom.html)
+* added a new 'Reflection' module supporting reflection about a program
+  (see http://chapel.cray.com/docs/1.13/modules/standard/Reflection.html)
+* extended the 'HDFS' module to support libhdfs3
+  (http://chapel.cray.com/docs/1.13/technotes/auxIO.html)
+* added support for skipping unknown fields when reading JSON records/classes
+  (see http://chapel.cray.com/docs/1.13/modules/standard/IO.html)
+* made the default I/O routines for records/classes support arbitrary orders
+  (TODO: JSON only?)
+* added 'basename', 'dirname', and 'splitPath' to the 'Path' module
+  (see http://chapel.cray.com/docs/1.13/modules/standard/Path.html)
+* added rmTree(), moveDir() to the 'FileSystem' module
+  (see http://chapel.cray.com/docs/1.13/modules/standard/FileSystem.html)
+* added an optional time units argument to 'sleep()' in the Time module
+  (see http://chapel.cray.com/docs/1.13/modules/standard/Time.html#Time.sleep)
+* added support for sending signals to subprocesses for the 'Spawn' module
+  (see http://chapel.cray.com/docs/1.13/modules/standard/Spawn.html)
+* added an optional 'buffer' boolean to the 'Spawn' module's wait() routine
+  (see http://chapel.cray.com/docs/1.13/modules/standard/Spawn.html)
+* added an isclosed() method to the 'channel' type
+  (see http://chapel.cray.com/docs/1.13/modules/standard/IO.html)
+* improved the 'List' module to support JSON format
+* improved error handling in the IO and Spawn modules
+* added the ability to call exit() without arguments for a 0 default status
+* removed deprecated functions from 'Memory' module
+
+Performance Improvements
+------------------------
+* obtained notable performance improvements from the switch to 'jemalloc'
+* made significant performance improvements to common uses of 'reduce'
+* implemented amortized reallocation when resizing arrays due to vector ops
+* made bulk data transfers more likely to fire by removing a conservative check
+* enabled bulk data transfers between portions of the same array
+* generally improved the performance of string-based computations
+* optimized iteration over anonymous range values of the form 'lo..#size'
+* improved the performance of code generated by the LLVM back-end
+* improved the performance of many common reduction cases
+
+Memory Improvements
+-------------------
+* dramatically reduced the compiler-generated leaks due to strings and records
+* significantly improved construction/destruction/copy behavior for records
+* stopped heap-allocating variables referred to within 'begin' scopes
+* stopped heap-allocating variables referred to within non-blocking on-clauses
+* stopped heap-allocating index variables of coforall loops
+
+Documentation
+-------------
+* dramatically improved the organization of the online Chapel documentation
+  (see http://chapel.cray.com/docs/1.13/)
+* created web-based versions of the 'chpl' and 'chpldoc' man pages
+  (see http://chapel.cray.com/docs/1.13/usingchapel/man.html
+   and http://chapel.cray.com/docs/1.13/tools/chpldoc/man.html)
+* moved the Chapel evolution page from chapel.cray.com to the online docs
+  (see http://chapel.cray.com/docs/1.13/language/evolution.html)
+* linked to the language specification and quick reference from the online docs
+  (see http://chapel.cray.com/docs/1.13/language/spec.html
+   and http://chapel.cray.com/docs/1.13/language/reference.html)
+* started writing a Chapel Users Guide, though much work remains
+  (see http://chapel.cray.com/docs/1.13/users-guide/index.html)
+* improved the accuracy of Chapel's prerequisites list
+  (see http://chapel.cray.com/docs/1.13/usingchapel/prereqs.html)
+* improved wordings and descriptions in the language specification
+* fixed many instances of broken links / formatting in online documentation
+
+Example Codes
+-------------
+* added new Chapel ports of the ISx and LCALS proxy applications to the release
+  (see examples/benchmarks/isx/ and examples/benchmarks/lcals/)
+* made correctness, performance, and style improvements to MiniMD in Chapel
+  (see examples/benchmarks/miniMD/)
+* extended the linkedList example program to support additional methods
+  (see examples/programs/linkedList.chpl)
+* fixed some typos and explanations in the primer examples
+  (see examples/primers/*.chpl)
+* updated example tests to reflect the changes to the language and libraries
+* removed README.features from the examples subdirectory
+
+Compiler Flags (see 'man chpl' for details)
+-------------------------------------------
+* added compiler flags for all of the traditional CHPL_* environment variables
+  (see 'Compiler Configuration Options' in 'chpl's '--help' output or man page)
+* made the --ldflags stack when used multiple times, similar to --ccflags
+* made the --no-warnings flag reversible by changing it to --[no-]warnings
+
+Execution Flags
+---------------
+* added support for specifying enum configs using fully-qualified names
+  (e.g., '--myColor=color.red' is now supported where only '--myColor=red' was)
+
+Error Message Improvements
+--------------------------
+* improved 'const' checking for domains and arrays
+* added an error message for variable declarations over incomplete generics
+* stopped warning about reductions being serialized -- that's completely legal
+* added an error message for non-extern functions with no-op bodies
+* reduced the degree to which internal module line numbers are named in errors
+* implemented an error message for strings containing bad escape sequences
+* improved the error message for bad CHPL_RT_NUM_THREADS_PER_LOCALE values
+* improved error messages for illegal/incorrect 'use' statements
+* added an error message for references to fields within 'with' clauses
+* added an error message for 'real*2' suggesting the user wants '2*real'
+
+Bug Fixes
+---------
+* fixed a bug in applying reduce intents to forall loops over ranges
+* fixed a bug in zippered iteration over equivalent associative domains/arrays
+* fixed the ability to declare a 'ref' to a domain or array
+* fixed a bug in which overridden/overloaded methods were not resolved properly
+* fixed a bug in assigning between distributed domains and non- with arrays
+* fixed a bug in the computation of 'maxTaskPar' for the numa locale model
+* fixed a bug in which generic types were not printed properly
+* fixed a bug in which assignment between generic records did not work properly
+* fixed a bug in which extern type declarations in generic procedures broke
+* fixed a bug with isHomogeneousTuple*() queries when passed non-tuples
+* fixed a bug with self-references in module use lists
+* fixed a bug when calling exit() without arguments
+* fixed the runtime sizes of boolean literals of varying bit widths
+* fixed a bug w.r.t. reduce intents interacting poorly with on-clauses
+* fixed a bug in which returning tuples of arrays did not work
+* fixed a bug in the initialization of nearly-maximally-sized arrays
+* fixed a bug in the Block and Cyclic parallel iterators for arrays of arrays
+* fixed a bug in which subtype checking now handles transitive instantiation
+* fixed bugs in default I/O routines for subclasses
+* fixed a few bugs in the Spawn module's communicate() routine
+* made some improvements to the Spawn module relative to QIO
+* made some I/O functions more tolerant of EINTR
+* fixed some bugs in which I/O routines executed on the wrong locale
+* fixed a bug in formatted reads of digits
+* fixed a bug preventing channel.itemWriter() from working
+* improved the handling of C ecsapes in string literals
+* fixed the handling of escape characters in compilerWarning()/compilerError()
+* fixed a bug related to nested modules sharing a name, each defining main()
+* fixed a bug in which Qthreads tasks weren't allocating sufficient storage
+* fixed the line numbers reported for standalone iterators
+* fixed a bug in which record fields were not properly widened
+* fixed a bug in which records could be double-freed for out/inout arg passing
+* fixed a bug in 'chpldoc' in the handling of multiline mid-variable comments
+* fixed a bug in which failure to open files for codegen caused internal errors
+* made the compiler resilient to usernames containing backslashes
+* fixed a bug in the checking of definitions made in SysCTypes
+* fixed the chpl-venv path to be based on the host platform rather than target
+
+Environment Changes
+-------------------
+* the setchplenv[.bash|.fish|.sh] scripts can now be sourced from any directory
+* removed the CHPL_THREADS environment variable
+
+Directory Structure Changes
+---------------------------
+* renamed the 'etc/' directory to 'highlight/' to better identify its contents
+* split 'modules/standard' into 'modules/standard' and 'modules/packages'
+
+Cray-specific Changes
+---------------------
+* hugepages is now optional with the 'ugni' communication layer
+* improved the Spawn module to support 'ugni' when hugepages are not in use
+* started statically linking 'chpl' in the Cray module to ensure portability
+
+Portability Improvements
+------------------------
+* added support for Intel Xeon Phi Knights Landing (KNL) processors
+  (see http://chapel.cray.com/docs/1.13/platforms/knl.html)
+* made Chapel's scripts compatible with key versions of Python 2 and 3
+* improved the portability of the code base to gcc 5.1
+* improved the portability of the code base to newer versions of Cygwin
+
+Tool Changes
+------------
+* 'chpldoc' improvements:
+  - it now generates a doc page per module rather than .chpl source file
+  - it now only documents files listed on its command line by default
+  - it now reflects information about the module hierarchy
+  - added a --[no-]html option to opt in/out of the rst->html phase
+* added basic support for folding for 'vim' users
+* added an option to disable chplvis tracing for a given run in 'VisualDebug'
+* improved 'chpltags' support for older versions of 'ctags'
+
+Third-Party Software Changes
+----------------------------
+* turned on optimizations when compiling 're2' for optimized builds
+* enabled 're2' when using Cray and PGI compilers
+* added jemalloc version 4.0.4 and retired tcmalloc and dlmalloc
+* upgraded GASNet to version 1.26.0
+* upgraded hwloc to version 1.11.2
+* upgraded LLVM to version 3.7
+* switched several third-party directories to a more GIT-friendly organization
+* fixed a buffer overflow bug in hwloc related to /proc/mounts
+
+Runtime Library Changes
+-----------------------
+* updated the names of several runtime communication interface routines
+
+Generated Code Cleanups
+-----------------------
+* started code-generating 'complex' types as C99 complexes rather than a record
+* filenames are now represented a a table + indices rather than string literals
+
+Testing System
+--------------
+* added support for many files, such as compopts, to be executable scripts
+* added .compenv files as a means of changing the compiler environment
+* made 'make check' clean up after itself better
+* made the test system no longer mail out the list of unresolved future tests
+* parallel testing now ignores symbolic links to avoid infinite loops
+* made the test system deal better with unexpected failures
+* improved start_test's error message if CHPL_HOME is not set
+
+Makefile Changes
+----------------
+* added an "always build chpldoc" capability via CHPL_ALWAYS_BUILD_CHPLDOC
+* only generate 'tags' commands when CHPL_DEVELOPER or TAGS is set at make-time
+* improved the logic for updating/re-building the 'chpl' version number
+
+Developer-oriented changes: Process Improvements
+------------------------------------------------
+* changed the generation of the man page from txt2man into an rst-based scheme
+* added a 'make check' option for Sphinx documentation to check for errors
+
+Developer-oriented changes: Packaging Changes
+---------------------------------------------
+* reorganized files to better support packaging of Chapel
+* begain differentiating runtime launcher paths based on CHPL_COMM
+* no longer specialize runtime library directories on CHPL_NETWORK_ATOMICS
+
+Developer-oriented changes: Module improvements
+-----------------------------------------------
+* made use of 'local' on-clauses within internal modules targeting 'numa'
+* changed a "c for loop" in DefaultRectangular into a direct range iterator
+* refactored generation of unbounded range values
+* changed some uses of c_calloc() to c_malloc()
+* improved the extern declarations of the locale model chpl_mem* routines
+* retired the ChapelLocale_forDocs.chpl workaround for documentation
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+* added --break-on-codegen-id to stop when a specific ID is code generated
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+* introduced a new 'UseStmt' AST node for representing 'use' statements
+* made all non-'flat' locale models outline on-clauses and use wide pointers
+* removed the pragma form of 'export'
+* added support for operator overloads on the bitVec type
+* reworked how argument bundles are managed for begin- and on-functions
+* changed wide_get_address mechanisms to return a 64-bit uints
+* refactored duplicate code in buildForLoopExpr
+* made addArgCoercion() sensitive to errors
+* improve the compiler's handling of PRIM_ASSIGN
+* improved the compiler's handling of POD types
+* improved the compiler's handling of declared return types
+* made the compiler remove casts from 'ref T' to 'T'
+* unified the handling of 'by' and 'align' in the parser
+* improved the handling of string varargs with default intent
+* improved the normalization of initialization expressions
+* added support for tracking the causes of wide pointers
+* refactored the implementation of some reductions to use reduce intents
+* removed the FLAG_FUNCTION_PROTOTYPE flag as not being interesting or useful
+
+Developer-oriented changes: Generated code improvements
+-------------------------------------------------------
+* improved the representation of unions in the generated code
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+* moved the Qthreads tasking shim into the Chapel runtime/ directory
+* changd the communication interface to take sizes rather than elemsize+length
+* fixed problems with GETs to unregistered remote memory
+* simplified the interfaces for creating structured parallelism within Chapel
+* removed deprecated code supporting Tilera processors
+
+Developer-oriented changes: Third-party improvements
+----------------------------------------------------
+* disabled OpenCL support in hwloc for the time being
+* disabled libnuma in hwloc builds
+
+Developer-oriented changes: Testing system improvements
+-------------------------------------------------------
+* added a script to help maintain .dat files when perfkeys change
+  (see util/devel/updateDatFiles.py)
+* renamed 'grepgoods' to 'greptestoutputs' and had it span .good and .bad files
+
+
 ==============
 version 1.12.0
 ==============

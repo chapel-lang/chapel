@@ -1,4 +1,6 @@
 exportTest.doc
+Submodules for this module are located in the exportTest.doc/ directory
+
    export proc method1()
       Comment for method1 
 
@@ -36,7 +38,6 @@ exportTest.doc
       This method has a return type, an argument, and a function body 
 
    export proc allThreeCommentless2(val: int): int
-Submodules for this module are located in the exportTest.doc/ directory
 Other
    export proc inside()
       Comment for method inside module 

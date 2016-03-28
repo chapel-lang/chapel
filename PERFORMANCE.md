@@ -94,7 +94,7 @@ We are currently working to improve Chapel performance with each
 release and are making significant strides.  To track our progress
 over time, refer to:
 
-        http://chapel.sourceforge.net/perf/
+  http://chapel.sourceforge.net/perf/
 
 From this page, you can track performance tests, either on a nightly
 or release-over-release basis.  Interested users are encouraged to

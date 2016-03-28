@@ -1,4 +1,6 @@
 variableArguments.doc
+Submodules for this module are located in the variableArguments.doc/ directory
+
    proc variable(x ...)
       This method has a variable number of arguments 
 
@@ -12,7 +14,6 @@ variableArguments.doc
       be specified by the caller 
 
    proc specifyMeCommentless(q ...?p)
-Submodules for this module are located in the variableArguments.doc/ directory
 Other
    proc variable(x ...)
       This method has a variable number of arguments 

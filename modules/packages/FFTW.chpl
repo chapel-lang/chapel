@@ -124,12 +124,12 @@ module FFTW {
 
     :arg output: The output array, whose size and shape must match the input array's
     :type output: [] `complex(128)`
-    
+
     :arg sign: :const:`FFTW_FORWARD` or :const:`FFTW_BACKWARD`
-    :type sign: c_int
+    :type sign: `c_int`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: c_int
+    :type flags: `c_int`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
@@ -157,10 +157,10 @@ module FFTW {
     :type arr: [] `complex(128)`
 
     :arg sign: :const:`FFTW_FORWARD` or :const:`FFTW_BACKWARD`
-    :type sign: c_int
+    :type sign: `c_int`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: c_int
+    :type flags: `c_int`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
@@ -198,9 +198,9 @@ module FFTW {
 
     :arg output: The output array, whose size and shape must match the input array's, except for the leading dimension which should be n/2 + 1, where n is the size of the input array's leading dimension.  See the `FFTW documentation <http://www.fftw.org/fftw3_doc/Multi_002dDimensional-DFTs-of-Real-Data.html#Multi_002dDimensional-DFTs-of-Real-Data>`_ for more information.
     :type output: [] `complex(128)`
-    
+
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: c_int
+    :type flags: `c_int`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
@@ -239,7 +239,7 @@ module FFTW {
     :type arr: [] `T` where `T` is of type `real(64)` or `complex(128)`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: c_int
+    :type flags: `c_int`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
@@ -276,7 +276,7 @@ module FFTW {
     :type output: [] `real(64)`
     
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: c_int
+    :type flags: `c_int`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
@@ -314,7 +314,7 @@ module FFTW {
     :type arr: [] `T` where `T` is of type `real(64)` or `complex(128)`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: c_int
+    :type flags: `c_int`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
@@ -339,13 +339,13 @@ module FFTW {
   }
 
 
-  // Using plans 
+  // Using plans
 
   /*
     Execute an FFTW plan.
 
     :arg plan: The plan to execute, as computed by a `plan_dft*()` routine.
-    :type plan: fftw_plan
+    :type plan: `fftw_plan`
   */
   proc execute(const plan: fftw_plan) {
    C_FFTW.fftw_execute(plan);
@@ -355,7 +355,7 @@ module FFTW {
     Destroy an FFTW plan.
 
     :arg plan: The plan to destroy
-    :type plan: fftw_plan
+    :type plan: `fftw_plan`
   */
   proc destroy_plan(plan: fftw_plan) {
     C_FFTW.fftw_destroy_plan(plan);
