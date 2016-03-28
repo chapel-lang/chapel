@@ -23,6 +23,8 @@ can be convenient.
 Recommended Settings
 --------------------
 
+.. _readme-chplenv.CHPL_HOME:
+
 CHPL_HOME
 ~~~~~~~~~
    Set the ``CHPL_HOME`` environment variable to point to the location of the
@@ -40,6 +42,7 @@ CHPL_HOME
      the appropriate adjustment.
 
 
+.. _readme-chplenv.CHPL_HOST_PLATFORM:
 
 CHPL_HOST_PLATFORM
 ~~~~~~~~~~~~~~~~~~
@@ -111,7 +114,7 @@ MANPATH
 Optional Settings
 -----------------
 
-.. _chpl_target_platform:
+.. _readme-chplenv.CHPL_TARGET_PLATFORM:
 
 CHPL_TARGET_PLATFORM
 ~~~~~~~~~~~~~~~~~~~~
@@ -125,7 +128,7 @@ CHPL_TARGET_PLATFORM
      If ``CHPL_TARGET_PLATFORM`` is not set, the target platform defaults to the
      same value as ``$CHPL_HOST_PLATFORM``.
 
-.. _chpl_compiler:
+.. _readme-chplenv.CHPL_COMPILER:
 
 CHPL_*_COMPILER
 ~~~~~~~~~~~~~~~
@@ -177,6 +180,8 @@ CHPL_*_COMPILER
      once with clang-included. We do this in order to avoid issues in linking
      objects built by different compilers.
 
+.. _readme-chplenv.CHPL_TARGET_ARCH:
+
 CHPL_TARGET_ARCH
 ~~~~~~~~~~~~~~~~
    Optionally, set the ``CHPL_TARGET_ARCH`` environment variable to indicate
@@ -224,7 +229,7 @@ CHPL_TARGET_ARCH
    The default value for this setting will vary based on settings in your
    environment, in order of application these rules are:
 
-        * If :ref:`CHPL_TARGET_COMPILER <chpl_compiler>` is ``cray-prgenv-*`` you do not need to
+        * If :ref:`CHPL_TARGET_COMPILER <readme-chplenv.chpl_compiler>` is ``cray-prgenv-*`` you do not need to
           set anything in ``CHPL_TARGET_ARCH``. One of the ``craype-*`` modules
           (e.g.  ``craype-sandybridge``) should be loaded to provide equivalent
           functionality. Once the proper module is loaded, ``CRAY_CPU_TARGET``
@@ -234,14 +239,16 @@ CHPL_TARGET_ARCH
           ``CHPL_TARGET_ARCH`` will be set to ``none`` and no specialization
           will occur.
 
-        * If :ref:`CHPL_COMM` is set, no attempt to set a useful value will be
+        * If :ref:`readme-chplenv.CHPL_COMM` is set, no attempt to set a useful value will be
           made, ``CHPL_TARGET_ARCH`` will be ``unknown``.
 
-        * If :ref:`CHPL_TARGET_PLATFORM` is ``darwin``, ``linux*``, or
+        * If :ref:`readme-chplenv.CHPL_TARGET_PLATFORM` is ``darwin``, ``linux*``, or
           ``cygwin*`` ``CHPL_TARGET_ARCH`` will be ``native``, passing the
           responsibility off to the backend C compiler to detect the specifics
           of the hardware.
 
+
+.. _readme-chplenv.CHPL_MAKE:
 
 CHPL_MAKE
 ~~~~~~~~~
@@ -259,6 +266,8 @@ CHPL_MAKE
         ==================    ============
 
 
+.. _readme-chplenv.CHPL_MODULE_PATH:
+
 CHPL_MODULE_PATH
 ~~~~~~~~~~~~~~~~
    Optionally, set the ``CHPL_MODULE_PATH`` environment variable to provide a
@@ -273,7 +282,8 @@ CHPL_MODULE_PATH
    directories containing the .chpl files named explicitly on the compiler
    command line.
 
-.. _chpl_locale_model:
+
+.. _readme-chplenv.CHPL_LOCALE_MODEL:
 
 CHPL_LOCALE_MODEL
 ~~~~~~~~~~~~~~~~~
@@ -293,7 +303,8 @@ CHPL_LOCALE_MODEL
    See :ref:`readme-localeModels` for more information about
    locale models.
 
-.. _chpl_tasks:
+
+.. _readme-chplenv.CHPL_TASKS:
 
 CHPL_TASKS
 ~~~~~~~~~~
@@ -329,7 +340,8 @@ CHPL_TASKS
    various ``CHPL_TASKS`` options.  See also :ref:`readme-cray` for more
    information about Cray-specific runtime layers.
 
-.. _chpl_comm:
+
+.. _readme-chplenv.CHPL_COMM:
 
 CHPL_COMM
 ~~~~~~~~~
@@ -354,6 +366,8 @@ CHPL_COMM
    about Cray-specific runtime layers.
 
 
+.. _readme-chplenv.CHPL_MEM:
+
 CHPL_MEM
 ~~~~~~~~
    Optionally, the ``CHPL_MEM`` environment variable can be used to select
@@ -372,12 +386,16 @@ CHPL_MEM
    it defaults to ``cstdlib``
 
 
+.. _readme-chplenv.CHPL_LAUNCHER:
+
 CHPL_LAUNCHER
 ~~~~~~~~~~~~~
    Optionally, the ``CHPL_LAUNCHER`` environment variable can be used to select
    a launcher to get your program up and running.  See :ref:`readme-launcher`
    for more information on this variable's default and possible settings.
 
+
+.. _readme-chplenv.CHPL_ATOMICS:
 
 CHPL_ATOMICS
 ~~~~~~~~~~~~
@@ -409,6 +427,8 @@ CHPL_ATOMICS
    runtime implementation.
 
 
+.. _readme-chplenv.CHPL_TIMERS:
+
 CHPL_TIMERS
 ~~~~~~~~~~~
    Optionally, the ``CHPL_TIMERS`` environment variable can be used to
@@ -419,6 +439,8 @@ CHPL_TIMERS
 
    If unset, ``CHPL_TIMERS`` defaults to ``generic``
 
+
+.. _readme-chplenv.CHPL_GMP:
 
 CHPL_GMP
 ~~~~~~~~
@@ -435,7 +457,7 @@ CHPL_GMP
        =======  ============================================================
 
    If unset, Chapel will attempt to build GMP using
-   :ref:`CHPL_TARGET_COMPILER<chpl_compiler>` (noting that the bundled version
+   :ref:`CHPL_TARGET_COMPILER<readme-chplenv.CHPL_COMPILER>` (noting that the bundled version
    may not be supported by all compilers).  Based on the outcome, Chapel will
    default to:
 
@@ -443,7 +465,7 @@ CHPL_GMP
        Value   Description
        ======= ====================================================
        gmp     if the build was successful
-       system  if unsuccessful and :ref:`CHPL_TARGET_PLATFORM` is cray-x*
+       system  if unsuccessful and :ref:`readme-chplenv.CHPL_TARGET_PLATFORM` is cray-x*
        none    otherwise
        ======= ====================================================
 
@@ -452,6 +474,8 @@ CHPL_GMP
      ``CHPL_GMP`` to ``none`` while the ``util/setchplenv.*`` versions leave it
      unset, resulting in the behavior described just above.
 
+
+.. _readme-chplenv.CHPL_HWLOC:
 
 CHPL_HWLOC
 ~~~~~~~~~~
@@ -468,13 +492,15 @@ CHPL_HWLOC
        hwloc   use the hwloc distribution bundled with Chapel in third-party
        ======= ==============================================================
 
-   If unset, ``CHPL_HWLOC`` defaults to ``hwloc`` if :ref:`CHPL_TASKS` is
+   If unset, ``CHPL_HWLOC`` defaults to ``hwloc`` if :ref:`readme-chplenv.CHPL_TASKS` is
    ``qthreads``.  In all other cases it defaults to ``none``.  In the unlikely
    event the bundled hwloc distribution does not build successfully, it should
    still be possible to use qthreads.  To do this, manually set ``CHPL_HWLOC``
    to ``none`` and rebuild (and please file a bug with the Chapel team.) Note
    that building without hwloc will have a negative impact on performance.
 
+
+.. _readme-chplenv.CHPL_REGEXP:
 
 CHPL_REGEXP
 ~~~~~~~~~~~
@@ -489,7 +515,7 @@ CHPL_REGEXP
        none    do not support regular expression operations
        ======= ==============================================
 
-   If unset, Chapel will attempt to build RE2 using :ref:`CHPL_TARGET_COMPILER<CHPL_COMPILER>`
+   If unset, Chapel will attempt to build RE2 using :ref:`CHPL_TARGET_COMPILER<readme-chplenv.CHPL_COMPILER>`
    (noting that the bundled version may not be supported by all compilers).
    Based on the outcome, Chapel will default to:
 
@@ -505,6 +531,8 @@ CHPL_REGEXP
      ``CHPL_REGEXP`` to ``'none`` while the ``util/setchplenv.*`` versions
      leave it unset, resulting in the behavior described just above.
 
+
+.. _readme-chplenv.CHPL_AUX_FILESYS:
 
 CHPL_AUX_FILESYS
 ~~~~~~~~~~~~~~~~
@@ -527,6 +555,8 @@ CHPL_AUX_FILESYS
    information about HDFS and CURL support.
 
 
+.. _readme-chplenv.CHPL_LLVM:
+
 CHPL_LLVM
 ~~~~~~~~~
    Optionally, the ``CHPL_LLVM`` environment variable can be used to
@@ -544,6 +574,8 @@ CHPL_LLVM
    If unset, ``CHPL_LLVM`` defaults to ``llvm`` if you've already installed
    llvm in third-party and ``none`` otherwise.
 
+
+.. _readme-chplenv.CHPL_WIDE_POINTERS:
 
 CHPL_WIDE_POINTERS
 ~~~~~~~~~~~~~~~~~~
