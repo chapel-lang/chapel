@@ -2,11 +2,6 @@
 Release Changes List
 ====================
 
-TODO:
------
-* wrap up -- finished thru commit 5d9bf0e
-* check links
-
 ==============
 version 1.13.0
 ==============
@@ -20,8 +15,8 @@ Highlights
   - added standard library routines on strings
     (see http://chapel.cray.com/docs/1.13/modules/internal/String.html)
 * language feature highlights:
-  - added support for filtering and renaming symbols in module 'use's
-    (see 'Using Modules' in the Chapel Language Specification)
+  - added support for filtering and renaming symbols with the 'use' statement
+    (see 'The Use Statement' in the Chapel language specification)
   - added support for min/max reduce intents and reduce intents on coforalls
     (see http://chapel.cray.com/docs/1.13/technotes/reduceIntents.html)
   - significantly improved memory management and reduced leaks for record types
@@ -29,14 +24,14 @@ Highlights
   - replaced 'locale.numCores' with a richer 'locale.numPUs()' interface
     (see http://chapel.cray.com/docs/1.13/modules/internal/ChapelLocale.html)
   - added the ability to 'use' an enumerated type to avoid qualifying names
-    (see TODO)
+    (see 'The Use Statement' in the Chapel language specification)
   - added support for casting types to strings and deprecated typeToString()
-    (see "Explicit Type to String Conversions" in the Chapel language spec)
+    (see 'Explicit Type to String Conversions' in the Chapel language spec)
 * standard library highlights:
   - added a new 'Reflection' module to support reasoning about code
     (see http://chapel.cray.com/docs/1.13/modules/standard/Reflection.html)
   - added a new JAMA-based Linear Algebra matrix package
-    (see TODO)
+    (see modules/packages/LinearAlgebraJama.chpl)
   - added a new PCG-based random number generator to 'Random' as the default
     (see http://chapel.cray.com/docs/1.13/modules/standard/Random.html)
   - extended the 'HDFS' module to support libhdfs3
@@ -63,6 +58,7 @@ Highlights
 * performance improvement highlights:
   - made significant performance improvements for common use cases of 'reduce'
   - implemented amortized reallocation when resizing arrays due to vector ops
+  - made significant performance improvements for 'ugni' communication on Crays
   - broadened the applicability of the bulk communication optimization
   - significantly improved the performance resulting from the LLVM back-end
 * additional highlights:
@@ -86,8 +82,8 @@ Configuration Changes
 
 Syntactic/Naming Changes
 ------------------------
-* added new keywords, 'as', 'except', and 'only', for filtering module 'use's
-  (see "Using Modules" in the Chapel language specification)
+* added new keywords, 'as', 'except', and 'only', for filtering 'use'd symbols
+  (see 'The Use Statement' in the Chapel language specification)
 * replaced 'locale.numCores' with a richer interface 'locale.numPUs()'
   (see http://chapel.cray.com/docs/1.13/modules/internal/ChapelLocale.html)
 * removed the 'Writer' and 'Reader' types in favor of unifying on 'channel's
@@ -95,6 +91,7 @@ Syntactic/Naming Changes
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * added support for a 'const ref' return intent
+  (see "The Const Ref Return Intent" in "Procedures" in the Chapel spec)
 * improved the handling of "return by ref" functions in setter/getter contexts
   (see 'http://chapel.cray.com/docs/1.13/language/evolution.html
    and 'The Ref Return Intent' under 'Procedures' in the language spec)
@@ -107,12 +104,12 @@ New Features
 ------------
 * added a standard library of routines on the 'string' type
   (see http://chapel.cray.com/docs/1.13/modules/internal/String.html)
-* added support for filtering module 'use' statements with 'only' and 'except'
+* added support for filtering on 'use' statements with 'only' and 'except'
   (e.g., 'use M only foo;' or '... except foo;' to restrict to / exclude 'foo')
-  (see 'Using Modules' in spec)
-* added support for renaming 'use'd module symbols
+  (see 'The Use Statement' in the Chapel language specification)
+* added support for renaming symbols made accessible by a 'use'
   (e.g., 'use M only foo as M_foo;' causes 'foo' to be referred to as 'M_foo')
-  (see 'Using Modules' in the spec)
+  (see 'The Use Statement' in the Chapel language specification)
 * added the ability to 'use' an enumerated type
   (e.g., "...mycolor.green..." can now be written "use mycolor;  ...green...")
 * added support for casting types to strings and deprecated typeToString()
@@ -154,7 +151,7 @@ Standard Library/Modules
   (see http://chapel.cray.com/docs/1.13/modules/modules.html
    and http://chapel.cray.com/docs/1.13/modules/packages.html)
 * added a new JAMA-based linear algebra matrix package
-  (see TODO)
+  (see modules/packages/LinearAlgebraJama.chpl)
 * added a new PCG-based random number generator to 'Random' as the default
   (see http://chapel.cray.com/docs/1.13/modules/standard/Random/PCGRandom.html)
 * added a new 'Reflection' module supporting reflection about a program
@@ -164,7 +161,6 @@ Standard Library/Modules
 * added support for skipping unknown fields when reading JSON records/classes
   (see http://chapel.cray.com/docs/1.13/modules/standard/IO.html)
 * made the default I/O routines for records/classes support arbitrary orders
-  (TODO: JSON only?)
 * added 'basename', 'dirname', and 'splitPath' to the 'Path' module
   (see http://chapel.cray.com/docs/1.13/modules/standard/Path.html)
 * added rmTree(), moveDir() to the 'FileSystem' module
@@ -187,6 +183,7 @@ Performance Improvements
 * obtained notable performance improvements from the switch to 'jemalloc'
 * made significant performance improvements to common uses of 'reduce'
 * implemented amortized reallocation when resizing arrays due to vector ops
+* made significant performance improvements for 'ugni' communication on Crays
 * made bulk data transfers more likely to fire by removing a conservative check
 * enabled bulk data transfers between portions of the same array
 * generally improved the performance of string-based computations
@@ -209,11 +206,14 @@ Documentation
 * created web-based versions of the 'chpl' and 'chpldoc' man pages
   (see http://chapel.cray.com/docs/1.13/usingchapel/man.html
    and http://chapel.cray.com/docs/1.13/tools/chpldoc/man.html)
-* moved the Chapel evolution page from chapel.cray.com to the online docs
-  (see http://chapel.cray.com/docs/1.13/language/evolution.html)
 * linked to the language specification and quick reference from the online docs
   (see http://chapel.cray.com/docs/1.13/language/spec.html
    and http://chapel.cray.com/docs/1.13/language/reference.html)
+* converted a number of top-level README-style files to markdown format
+  (e.g., see $CHPL_HOME/CHANGES.md, CONTRIBUTORS.md, PERFORMANCE.md, ...)
+* moved the Chapel evolution page from chapel.cray.com to the online docs
+  (see http://chapel.cray.com/docs/1.13/language/evolution.html)
+* split the top-level README.rst file into README.rst and QUICKSTART.rst
 * started writing a Chapel Users Guide, though much work remains
   (see http://chapel.cray.com/docs/1.13/users-guide/index.html)
 * improved the accuracy of Chapel's prerequisites list
@@ -245,6 +245,45 @@ Execution Flags
 ---------------
 * added support for specifying enum configs using fully-qualified names
   (e.g., '--myColor=color.red' is now supported where only '--myColor=red' was)
+
+Environment Changes
+-------------------
+* the setchplenv[.bash|.fish|.sh] scripts can now be sourced from any directory
+* removed the CHPL_THREADS environment variable
+
+Directory Structure Changes
+---------------------------
+* renamed the 'etc/' directory to 'highlight/' to better identify its contents
+* split 'modules/standard' into 'modules/standard' and 'modules/packages'
+
+Cray-specific Changes
+---------------------
+* 'ugni' no longer requires any heap memory to be registered
+  (see http://chapel.cray.com/docs/1.13/platforms/cray.html)
+* streamlined 'ugni' resource management, dramatically improving performance
+* hugepages is now optional with the 'ugni' communication layer
+* improved the Spawn module to support 'ugni' when hugepages are not in use
+* started statically linking 'chpl' in the Cray module to ensure portability
+
+Portability Improvements
+------------------------
+* added support for Intel Xeon Phi Knights Landing (KNL) processors
+  (see http://chapel.cray.com/docs/1.13/platforms/knl.html)
+* made Chapel's scripts compatible with key versions of Python 2 and 3
+* improved the portability of the code base to gcc 5.1
+* improved the portability of the code base to newer versions of Cygwin
+
+Tool Changes
+------------
+* 'chpldoc' improvements:
+  - added usage information to the top of a module's documentation
+  - made modules automatically list any submodules that they contain
+  - it now generates a doc page per module rather than .chpl source file
+  - it now only documents files listed on its command line by default
+  - added a --[no-]html option to opt in/out of the rst->html phase
+* added basic support for folding for 'vim' users
+* added an option to disable chplvis tracing for a given run in 'VisualDebug'
+* improved 'chpltags' support for older versions of 'ctags'
 
 Error Message Improvements
 --------------------------
@@ -298,41 +337,15 @@ Bug Fixes
 * made the compiler resilient to usernames containing backslashes
 * fixed a bug in the checking of definitions made in SysCTypes
 * fixed the chpl-venv path to be based on the host platform rather than target
+* fixed line numbers related to domain query expressions in formal arguments
+* fixed a bug in which sleep() could result in tasks awakening prematurely
 
-Environment Changes
--------------------
-* the setchplenv[.bash|.fish|.sh] scripts can now be sourced from any directory
-* removed the CHPL_THREADS environment variable
-
-Directory Structure Changes
----------------------------
-* renamed the 'etc/' directory to 'highlight/' to better identify its contents
-* split 'modules/standard' into 'modules/standard' and 'modules/packages'
-
-Cray-specific Changes
----------------------
-* hugepages is now optional with the 'ugni' communication layer
-* improved the Spawn module to support 'ugni' when hugepages are not in use
-* started statically linking 'chpl' in the Cray module to ensure portability
-
-Portability Improvements
-------------------------
-* added support for Intel Xeon Phi Knights Landing (KNL) processors
-  (see http://chapel.cray.com/docs/1.13/platforms/knl.html)
-* made Chapel's scripts compatible with key versions of Python 2 and 3
-* improved the portability of the code base to gcc 5.1
-* improved the portability of the code base to newer versions of Cygwin
-
-Tool Changes
-------------
-* 'chpldoc' improvements:
-  - it now generates a doc page per module rather than .chpl source file
-  - it now only documents files listed on its command line by default
-  - it now reflects information about the module hierarchy
-  - added a --[no-]html option to opt in/out of the rst->html phase
-* added basic support for folding for 'vim' users
-* added an option to disable chplvis tracing for a given run in 'VisualDebug'
-* improved 'chpltags' support for older versions of 'ctags'
+Cray-specific Bug Fixes
+-----------------------
+* 'ugni' now supports communication to/from any unregistered address
+* resolved a rare program hang in 'ugni' communication
+* fix 'ugni' memory mis-registration under CLE 6.*
+* plug a memory leak in 'ugni' for certain remote on-statements
 
 Third-Party Software Changes
 ----------------------------
@@ -426,6 +439,7 @@ Developer-oriented changes: Runtime improvements
 * fixed problems with GETs to unregistered remote memory
 * simplified the interfaces for creating structured parallelism within Chapel
 * removed deprecated code supporting Tilera processors
+* extensively reworked debug support in 'ugni'
 
 Developer-oriented changes: Third-party improvements
 ----------------------------------------------------
