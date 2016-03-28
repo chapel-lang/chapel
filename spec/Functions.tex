@@ -728,9 +728,6 @@ an iterator).
 The \chpl{ref} return intent is specified by following the argument list with
 the \chpl{ref} keyword.  The function must return or yield an lvalue.
 
-It is a program error to return a variable with the \chpl{ref} return
-intent if that variable is used after it is destroyed.
-
 \begin{chapelexample}{ref-return-intent.chpl}
 The following code defines a procedure that can be interpreted as a
 simple two-element array where the elements are actually module
@@ -777,10 +774,6 @@ mechanism but the function call cannot be assigned to. The \chpl{const ref}
 return intent should be viewed as a performance optimization. It
 indicates that the returned value does not need to be copied because the
 returned value will not be destroyed when the function returns.
-
-As with the \chpl{ref} return intent, it is a program error to return a
-variable with the \chpl{const ref} return intent if that variable is used
-after it is destroyed.
 
 \subsection{Choosing a Ref Return Intent Function Based on Calling Context}
 \label{Ref_Pair}
