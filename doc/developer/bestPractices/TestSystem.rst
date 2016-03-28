@@ -82,7 +82,7 @@ Correctness Tests
 .. TODO: New .pre* files
 
 
-Though trivial, this test is available at ``$CHPL_HOME/test/Correctness``
+Though trivial, this test is available at ``$CHPL_HOME/test/Samples/Correctness``
 in the Chapel source repository
 
 Creating a Simple Test
