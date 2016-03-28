@@ -26,7 +26,7 @@ variable-kind:
   `const'
   `var'
   `ref'
-  `const' `ref'
+  `const ref'
 
 variable-declaration-list:
   variable-declaration
@@ -430,18 +430,19 @@ configuration variable can be used to write rank-independent code.
 \index{ref@\chpl{ref}}
 
 A \emph{ref} variable is a variable declared using the \chpl{ref} keyword.
-A ref variable serves as an alias to another variable.
-% TODO: once the bug is fixed, add: another variable, field or array element.
+A ref variable serves as an alias to another variable, field or array element.
 The declaration of a ref variable must contain \sntx{initialization-part},
 which specifies what is to be aliased and can be a variable
 or any lvalue expression.
 
 Access or update to a ref variable is equivalent to access or update
-to the variable being aliased, subject to memory consistency model
-\rsec{Memory_Consistency_Model}. For example, an update to a ref variable
+to the variable being aliased. For example, an update to a ref variable
 is visible via the original variable, and visa versa.
 
-If the variable being aliased is a runtime constant, the corresponding
+If the expression being aliased is a runtime constant variable,
+a formal argument with a \chpl{const ref} concrete intent
+(\rsec{Concrete Intents}), or a call to a function with a \chpl{const ref}
+return intent (\rsec{Const_Ref_Return_Intent}), the corresponding
 ref variable must be declared as \chpl{const ref}.
 Parameter constants and expressions cannot be aliased.
 
