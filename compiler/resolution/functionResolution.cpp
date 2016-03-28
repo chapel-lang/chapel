@@ -2918,7 +2918,7 @@ getVisibilityBlock(Expr* expr) {
       else
         return getVisibilityBlock(s->defPoint);
   } else {
-    INT_FATAL(expr, "Expresion has no visibility block.");
+    INT_FATAL(expr, "Expression has no visibility block.");
     return NULL;
   }
 }
