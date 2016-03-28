@@ -156,8 +156,10 @@ referenced anywhere. It could be reclaimed by the garbage collector.
 \index{fields!class}
 
 Variable declarations within a class declaration define
-fields within that class.  Parameter fields make a class generic.
-Variable fields define the storage associated with a class instance.
+fields within that class.
+% When a class is generic is defined in \section{Class Declarations}.
+\chpl{var} fields define the storage associated with a class instance.
+A \chpl{ref} field provides an alias to another variable.
 
 \begin{chapelexample}{defineActor.chpl}
 The code
@@ -177,6 +179,10 @@ string field \chpl{name} and the unsigned integer field \chpl{age}.
 \end{chapelexample}
 
 Field access is described in \rsec{Class_Field_Accesses}.
+
+\begin{craychapel}
+\chpl{ref} fields are presently not available.
+\end{craychapel}
 
 \subsection{Class Methods}
 \label{Class_Methods}
