@@ -90,10 +90,11 @@ Syntactic/Naming Changes
   (see "Using Modules" in the Chapel language specification)
 * replaced 'locale.numCores' with a richer interface 'locale.numPUs()'
   (see http://chapel.cray.com/docs/1.13/modules/internal/ChapelLocale.html)
-* replaced the 'Writer' and 'Reader' types in favor of unifying on 'channel's
+* removed the 'Writer' and 'Reader' types in favor of unifying on 'channel's
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
+* added support for a 'const ref' return intent
 * improved the handling of "return by ref" functions in setter/getter contexts
   (see 'http://chapel.cray.com/docs/1.13/language/evolution.html
    and 'The Ref Return Intent' under 'Procedures' in the language spec)
@@ -285,7 +286,7 @@ Bug Fixes
 * fixed some bugs in which I/O routines executed on the wrong locale
 * fixed a bug in formatted reads of digits
 * fixed a bug preventing channel.itemWriter() from working
-* improved the handling of C ecsapes in string literals
+* improved the handling of C escapes in string literals
 * fixed the handling of escape characters in compilerWarning()/compilerError()
 * fixed a bug related to nested modules sharing a name, each defining main()
 * fixed a bug in which Qthreads tasks weren't allocating sufficient storage
@@ -351,7 +352,7 @@ Runtime Library Changes
 Generated Code Cleanups
 -----------------------
 * started code-generating 'complex' types as C99 complexes rather than a record
-* filenames are now represented a a table + indices rather than string literals
+* filenames are now represented a table + indices rather than string literals
 
 Testing System
 --------------
@@ -377,7 +378,7 @@ Developer-oriented changes: Process Improvements
 Developer-oriented changes: Packaging Changes
 ---------------------------------------------
 * reorganized files to better support packaging of Chapel
-* begain differentiating runtime launcher paths based on CHPL_COMM
+* began differentiating runtime launcher paths based on CHPL_COMM
 * no longer specialize runtime library directories on CHPL_NETWORK_ATOMICS
 
 Developer-oriented changes: Module improvements
@@ -400,7 +401,7 @@ Developer-oriented changes: Compiler improvements/changes
 * removed the pragma form of 'export'
 * added support for operator overloads on the bitVec type
 * reworked how argument bundles are managed for begin- and on-functions
-* changed wide_get_address mechanisms to return a 64-bit uints
+* changed wide_get_address mechanisms to return a 64-bit uint
 * refactored duplicate code in buildForLoopExpr
 * made addArgCoercion() sensitive to errors
 * improve the compiler's handling of PRIM_ASSIGN
@@ -421,7 +422,7 @@ Developer-oriented changes: Generated code improvements
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * moved the Qthreads tasking shim into the Chapel runtime/ directory
-* changd the communication interface to take sizes rather than elemsize+length
+* changed the communication interface to take sizes rather than elemsize+length
 * fixed problems with GETs to unregistered remote memory
 * simplified the interfaces for creating structured parallelism within Chapel
 * removed deprecated code supporting Tilera processors
