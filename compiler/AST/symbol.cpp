@@ -2700,11 +2700,7 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
   this->printTabs(file, tabs + 1);
   *file << "use ";
 
-  *file << this->getUsage() << ";" << std::endl;
-
-  if (!fDocsTextOnly) {
-    *file << std::endl;
-  }
+  *file << this->getUsage() << ";" << std::endl << std::endl;
 
   // If we had submodules, be sure to link to them
   if (hasTopLevelModule()) {
