@@ -63,6 +63,61 @@ it is useful to put the old ref return intent function into a
 helper function with an explicit param `setter` argument, and then to
 call that function from the getter or setter.
 
+version 1.12, October 2015
+--------------------------
+
+lexical scoping
+***************
+
+Variables used to be kept alive past their lexical scopes. For example:
+
+.. code-block:: chapel
+
+  {
+    var A: [1..n] real;
+    var count$: sync int;
+    var x: real;
+    begin with (ref x) {
+      ... A ...;
+      ... count$ ...;
+      ... x ...;
+    }
+    // ^^^ this task and its references to A, count$, and x could outlive
+    // their scope.
+  } // So, previously, Chapel has kept these variables alive past
+    // their logical scope.
+
+Disadvantage of this approach included:
+
+  * moves logical stack variables to the heap (like `x` and `count$` above)
+  * complicates memory management. Incurs reference counting overhead -
+    or causes memory leaks in cases reference counting hasn't been added.
+  * not particularly valued or leveraged by users
+  * arguably surprising ("x still exists even though it left scope?")
+
+As of Chapel 1.12, and more so in Chapel 1.13, the implementation
+no longer provides this property. Instead, it is a user error to refer
+to a variable after it has left scope. For example:
+
+.. code-block:: chapel
+
+  var flag$: sync bool; // flag$ starts empty
+  {
+    var x: real;
+    begin with(ref x) { // create task referring to x
+      flag$;            // block task until flag$ is full
+      ... x ...         // user error: access to x occurs after it leaves scope
+    }                   // end task
+  }             // x`s scope ends
+  flag$ = true; // fill flag$ only after x's scope closes
+
+Code that refers to lexically scoped variables in tasks in this manner
+should use `sync` variables or `sync` blocks in order to guarnatee the
+tasks's completion before the enclosing block exits. Note that the more
+commonly used `cobegin`, `coforall`, and `forall` statements already
+guarantee that the tasks they create will complete before the enclosing
+block exits.
+
 version 1.11, April 2015
 ------------------------
 
