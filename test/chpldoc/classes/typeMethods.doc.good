@@ -1,4 +1,8 @@
 typeMethods.doc
+
+Usage:
+   use typeMethods.doc;
+
    Class: Foo
       proc type biff()
          A type method declared inside the class Foo 
