@@ -169,8 +169,12 @@ formal-intent:
   `param'
   `type'
 
-return-intent: one of
-  `ref' $ $ $ $ `const' $ $ $ $ `param' $ $ $ $ `type'
+return-intent:
+  `const'
+  `const ref'
+  `ref'
+  `param'
+  `type'
 
 return-type:
   : type-specifier
@@ -713,6 +717,8 @@ cannot be used as an lvalue.
 \subsection{The Ref Return Intent}
 \label{Ref_Return_Intent}
 \index{functions!ref keyword and@\chpl{ref} keyword and}
+\index{ref (return intent)@\chpl{ref} (return intent)}
+\index{intents!ref return@\chpl{ref} return}
 \index{functions!lvalues}
 
 When using a \chpl{ref} return intent, the function call is an lvalue
@@ -722,17 +728,8 @@ an iterator).
 The \chpl{ref} return intent is specified by following the argument list with
 the \chpl{ref} keyword.  The function must return or yield an lvalue.
 
-During function resolution, if a procedure with a \chpl{ref} return
-intent and a procedure without a \chpl{ref} return intent are both
-possible candidates for a call, and either both use promotion or neither do,
-then this pair of procedures is called a ref-pair.
-
-When the call to a ref-pair is on the left-hand side of an
-assignment statement or appears in a call and corresponds to a formal argument
-with \chpl{out}, \chpl{inout}, or \chpl{ref} intent, the \chpl{ref} return
-intent procedure is used. Otherwise, the other candidate is used.  Thus,
-a ref-pair can be useful for adjusting the behavior depending on the
-calling context.
+It is a program error to return a variable with the \chpl{ref} return
+intent if that variable is used after it is destroyed.
 
 \begin{chapelexample}{ref-return-intent.chpl}
 The following code defines a procedure that can be interpreted as a
@@ -766,6 +763,43 @@ This code outputs the number \chpl{3}.
 3
 \end{chapeloutput}
 \end{chapelexample}
+
+
+\subsection{The Const Ref Return Intent}
+\label{Const_Ref_Return_Intent}
+\index{functions!const ref keyword and@\chpl{const ref} keyword and}
+\index{const ref (return intent)@\chpl{const ref} (return intent)}
+\index{intents!const ref return@\chpl{const ref} return}
+
+The \chpl{const ref} return intent is also available. It is a restricted
+form of the \chpl{ref} return intent. In particular, it uses a similar
+mechanism but the function call cannot be assigned to. The \chpl{const ref}
+return intent should be viewed as a performance optimization. It
+indicates that the returned value does not need to be copied because the
+returned value will not be destroyed when the function returns.
+
+As with the \chpl{ref} return intent, it is a program error to return a
+variable with the \chpl{const ref} return intent if that variable is used
+after it is destroyed.
+
+\subsection{Choosing a Ref Return Intent Function Based on Calling Context}
+\label{Ref_Pair}
+\index{functions!ref-pair}
+
+During function resolution, if a procedure with a \chpl{ref} return
+intent and a procedure without a \chpl{ref} return intent are both
+possible candidates for a call, and either both use promotion or neither
+do, then this pair of procedures is called a ref-pair. Note that the
+procedure without \chpl{ref} return intent in a ref-pair could have no
+specified return intent, it could have the \chpl{const} return intent,
+or it could have the \chpl{const ref} return intent.
+
+When the call to a ref-pair is on the left-hand side of an
+assignment statement or appears in a call and corresponds to a formal argument
+with \chpl{out}, \chpl{inout}, or \chpl{ref} intent, the \chpl{ref} return
+intent procedure is used. Otherwise, the other candidate is used.  Thus,
+a ref-pair can be useful for adjusting the behavior depending on the
+calling context.
 
 \begin{chapelexample}{ref-return-intent-pair.chpl}
 
