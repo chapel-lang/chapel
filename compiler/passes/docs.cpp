@@ -95,7 +95,7 @@ void docs(void) {
         if (isNotSubmodule(mod)) {
           std::string filename = filenameFromMod(mod, docsRstDir);
 
-          AstPrintDocs *docsVisitor = new AstPrintDocs(mod->name, filename);
+          AstPrintDocs *docsVisitor = new AstPrintDocs(mod->name, filename, "");
           mod->accept(docsVisitor);
           delete docsVisitor;
 
@@ -103,7 +103,7 @@ void docs(void) {
           // get the old category based output (or alphabetical). Note that
           // this will be restored (hopefully soon)... (thomasvandoren, 2015-02-22)
           //
-          // printModule(file, mod, 0);
+          // printModule(file, mod, 0, "");
         }
       }
     }
@@ -176,9 +176,9 @@ bool devOnlyModule(ModuleSymbol *mod) {
   return mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD;
 }
 
-void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs) {
+void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs, std::string parentName) {
   if (!mod->noDocGen()) {
-    mod->printDocs(file, tabs);
+    mod->printDocs(file, tabs, parentName);
 
     Vec<VarSymbol*> configs = mod->getTopLevelConfigVars();
     if (fDocsAlphabetize)
@@ -223,7 +223,12 @@ void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs) {
     forv_Vec(ModuleSymbol, subMod, mods) {
       // TODO: Add flag to compiler to turn on doc dev only output
       if (!devOnlyModule(subMod)) {
-        printModule(file, subMod, tabs + 1);
+        std::string parent = "";
+        if (parentName != "") {
+          parent = parentName + ".";
+        }
+        parent = parent + mod->name;
+        printModule(file, subMod, tabs + 1, parent);
       }
     }
   }

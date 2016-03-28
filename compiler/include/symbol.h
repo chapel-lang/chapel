@@ -489,7 +489,8 @@ public:
   // LLVM uses this for extern C blocks.
   ExternBlockInfo*     extern_info;
 
-  virtual void         printDocs(std::ostream *file, unsigned int tabs);
+  void         printDocs(std::ostream *file, unsigned int tabs, std::string parentName);
+
           void         printTableOfContents(std::ostream *file);
           std::string  docsName();
 

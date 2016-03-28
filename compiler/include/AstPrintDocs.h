@@ -29,7 +29,7 @@
 
 class AstPrintDocs : public AstVisitorTraverse {
 public:
-  AstPrintDocs(std::string moduleName, std::string path);
+  AstPrintDocs(std::string moduleName, std::string path, std::string parentName);
                   ~AstPrintDocs();
 
   virtual bool   enterAggrType    (AggregateType*     node);
@@ -55,6 +55,7 @@ private:
   unsigned int    tabs;
   std::string     moduleName;
   std::string     pathWithoutPostfix;
+  std::string     parentName;
 };
 
 #endif

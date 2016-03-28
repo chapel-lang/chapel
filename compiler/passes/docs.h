@@ -23,7 +23,7 @@
 
 void createDocsFileFolders(std::string filename);
 
-void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs);
+void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs, std::string parentName);
 
 void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs);
 
