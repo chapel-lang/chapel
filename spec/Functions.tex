@@ -776,8 +776,8 @@ This code outputs the number \chpl{3}.
 \index{intents!const ref return@\chpl{const ref} return}
 
 The \chpl{const ref} return intent is also available. It is a restricted
-form of the \chpl{ref} return intent. Functions marked with the
-\chpl{const ref} return intent cannot be used as an lvalue.
+form of the \chpl{ref} return intent. Calls to functions marked with
+the \chpl{const ref} return intent are not lvalue expressions.
 
 \subsection{Choosing a Ref Return Intent Function Based on Calling Context}
 \label{Ref_Pair}
