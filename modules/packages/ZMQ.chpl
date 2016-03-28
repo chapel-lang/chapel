@@ -305,6 +305,16 @@ module ZMQ {
       if this.parSafe then this.lock;
     }
 
+    // ZMQ serialization checker
+    inline proc isZMQSerializable(type T) param: bool {
+      return isString(T) || isNumericType(T);
+    }
+
+    // send, static error handling
+    proc send(data: ?T, flags: int = 0) where !isZMQSerializable(T) {
+      compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
+    }
+
     // send, strings
     proc send(data: string, flags: int = 0) {
       // message part 1, length
@@ -335,6 +345,11 @@ module ZMQ {
           halt("Error in Socket.send(%s): %s\n", T:string, errmsg);
         }
       }
+    }
+
+    // recv, static error handling
+    proc recv(data: ?T, flags: int = 0) where !isZMQSerializable(T) {
+      compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
     }
 
     // recv, strings
