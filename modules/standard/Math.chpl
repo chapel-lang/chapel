@@ -19,8 +19,7 @@
 
 /*
 This module provides wrappers for <cmath> (math.h) numerical constants and
-routines.  Its symbols are provided by default; an explicit 'use' statement
-is not necessary.
+routines.
 
 The C Math library is part of the C Language Standard (ISO/IEC 9899), as
 described in Section 7.12.  Please consult that standard for an
@@ -43,7 +42,8 @@ handling in the Math module.  The default behavior is as if the macro
 all math functions will return an implementation-defined value; no
 exception will be generated.
 
-.. note:: This module is included by default.
+.. note:: All Chapel programs automatically ``use`` this module by default.
+          An explicit ``use`` statement is not necessary.
 
 */
 module Math {
