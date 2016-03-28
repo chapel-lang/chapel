@@ -2691,7 +2691,7 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs, std::string 
     *file << std::endl << std::endl;
 
     *file << "**Usage**" << std::endl << std::endl;
-    *file << ".. code::" << std::endl << std::endl;
+    *file << ".. code-block:: chapel" << std::endl << std::endl;
     this->printTabs(file, tabs + 1);
     *file << "use ";
     if (parentName != "") {
