@@ -1,4 +1,8 @@
 unattached
+
+Usage:
+   use unattached;
+
    This comment should be attached to unattached but not reallyCommentless, 
    even when before the defined module 
    proc reallyCommentless()

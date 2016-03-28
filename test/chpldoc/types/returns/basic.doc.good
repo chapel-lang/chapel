@@ -1,4 +1,8 @@
 basic.doc
+
+Usage:
+   use basic.doc;
+
 Submodules for this module are located in the basic.doc/ directory
 
    proc method1(): string
@@ -31,6 +35,10 @@ Submodules for this module are located in the basic.doc/ directory
 
    proc returnCommentless()
 Other
+
+Usage:
+   use basic.doc.Other;
+
    proc inside(): int
       Comment for method inside module 
 

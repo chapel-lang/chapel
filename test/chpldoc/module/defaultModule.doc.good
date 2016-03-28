@@ -1,4 +1,8 @@
 defaultModule.doc
+
+Usage:
+   use defaultModule.doc;
+
    proc foo()
       This proc doesn't matter very much 
 
