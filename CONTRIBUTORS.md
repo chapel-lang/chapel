@@ -27,6 +27,7 @@ Contributors to the current release
 * Kushal Singh, individual contributor
 * George Stelle, [Sandia National Laboratories]
 * Chris Taylor, [DOD]
+* Akash Thorat, individual contributor
 * Greg Titus, [Cray Inc.]
 * Tony Wallace, [Cray Inc.]
 
