@@ -10,9 +10,16 @@ Sequential consistency (SC) means that all Chapel tasks agree on the
 interleaving of memory operations and this interleaving results in an
 order is consistent with the order of operations in the program source
 code.  \emph{Conflicting memory operations}, i.e., operations to the
-same location and one of which is a write, form a data race if they
-are from different Chapel tasks and can be executed concurrently.  Any
-Chapel program with a data race is not a valid program, and an
+same variable, or memory location, and one of which is a write, form a data race if they
+are from different Chapel tasks and can be executed concurrently.
+Accesses to the same variable from different tasks can result from
+the tasks referencing the same variable directly -- or indirectly
+via aliases. Aliases arise, for example, when using \chpl{ref} variables,
+argument intents, return intents, task intents and forall intents.
+% TODO: add to the above: 'const ref' variables/intents and
+% 'ref'/'const ref' fields, once we settle on their semantics.
+
+Any Chapel program with a data race is not a valid program, and an
 implementation cannot be relied upon to produce consistent behavior.
 Valid Chapel programs will use synchronization constructs such
 as \emph{sync}, \emph{single}, or \emph{atomic} variables or
