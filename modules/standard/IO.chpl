@@ -1765,7 +1765,7 @@ private extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_
 private extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t):syserr;
 private extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t):syserr;
 
-extern proc qio_channel_skip_json_field(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
+private extern proc qio_channel_skip_json_field(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
 /*********************** Curl/HDFS support ******************/
 
@@ -2778,6 +2778,7 @@ record ioBits {
   }
 }
 
+pragma "no doc"
 inline proc _cast(type t, x: ioBits) where t == string {
   const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
   return ret;
@@ -4706,6 +4707,7 @@ proc channel.readBytes(x, len:ssize_t, out error:syserr) {
   error = qio_channel_read_amt(false, _channel_internal, x, len);
 }
 
+pragma "no doc"
 proc channel.readBytes(x, len:ssize_t) {
   var e:syserr = ENOERR;
   this.readBytes(x, len, error=e);
