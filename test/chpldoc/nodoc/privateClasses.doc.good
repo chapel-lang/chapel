@@ -1,3 +1,7 @@
 privateClasses
+
+Usage:
+   use privateClasses;
+
    Class: bar
       var showMe: bool
