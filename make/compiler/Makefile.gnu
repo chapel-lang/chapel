@@ -119,9 +119,12 @@ WARN_GEN_CFLAGS += -Wno-pointer-sign
 endif
 
 #
-# Suppress a possible bug in GCC 5.*.
+# 2016/03/28: Help to protect the Chapel compiler from a partially characterized
+# regression when compiled with gcc 5.X.  Issue will be pursued after the release
 #
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 4; echo "$$?"),1)
+# Note that 0 means "SUCCESS" rather than "false".
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 5; echo "$$?"),0)
 OPT_CFLAGS += -fno-tree-vrp
 endif
 
