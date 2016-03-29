@@ -16,10 +16,10 @@ additional features enabled.  Step 9 explains how to build Chapel for
 distributed memory execution.
 
 
-0) See `prereqs.rst`_ for more information about system tools and
+0) See `doc/prereqs.rst`_ for more information about system tools and
    packages you may need to have installed to build and run Chapel.
 
-.. _prereqs.rst: http://chapel.cray.com/docs/1.13/usingchapel/prereqs.html
+.. _doc/prereqs.rst: http://chapel.cray.com/docs/1.13/usingchapel/prereqs.html
 
 
 1) Make sure that your shell is in the directory containing this
@@ -43,10 +43,10 @@ the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
    they are merely designed to help new users get their environment
    variables and paths set up quickly.  Long-term, users may want to
    copy and paste these settings into their dotfiles or set them in
-   other ways.  See `chplenv.rst`_ for a complete description of
+   other ways.  See `doc/chplenv.rst`_ for a complete description of
    Chapel's environment variables and their expected values.
 
-.. _chplenv.rst: http://chapel.cray.com/docs/1.13/usingchapel/chplenv.html
+.. _doc/chplenv.rst: http://chapel.cray.com/docs/1.13/usingchapel/chplenv.html
 
 
 3) Build the compiler and runtime libraries using:
@@ -104,9 +104,9 @@ the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
 
 9) All of the instructions above describe how to run Chapel programs
    in a single-locale (shared-memory) mode. To run using multiple
-   locales (distributed memory), please refer to `multilocale.rst`_.
+   locales (distributed memory), please refer to `doc/multilocale.rst`_.
 
-.. _multilocale.rst: http://chapel.cray.com/docs/1.13/usingchapel/multilocale.html
+.. _doc/multilocale.rst: http://chapel.cray.com/docs/1.13/usingchapel/multilocale.html
 
 
 10) If you plan to do performance studies of Chapel programs, be sure
@@ -123,12 +123,12 @@ What's next?
     platform-specific notes                     `platforms`_
     online Chapel Documentation                 `chapel.cray.com/docs`_
     example Chapel programs                     ``examples/README``
-    setting Chapel environment variables        `chplenv.rst`_
-    building the compiler                       `building.rst`_
-    compiling Chapel programs                   `compiling.rst`_
-    executing Chapel programs                   `executing.rst`_
-    debugging Chapel programs                   `debugging.rst`_
-    reporting bugs                              `bugs.rst`_
+    setting Chapel environment variables        `doc/chplenv.rst`_
+    building the compiler                       `doc/building.rst`_
+    compiling Chapel programs                   `doc/compiling.rst`_
+    executing Chapel programs                   `doc/executing.rst`_
+    debugging Chapel programs                   `doc/debugging.rst`_
+    reporting bugs                              `doc/bugs.rst`_
     implementation status                       ``STATUS``
     performance status                          ``PERFORMANCE.md``
     Chapel modes for emacs and vim              ``highlight/README.md``
@@ -138,8 +138,8 @@ What's next?
 
 .. _platforms: http://chapel.cray.com/docs/1.13/platforms/index.html
 .. _chapel.cray.com/docs: http://chapel.cray.com/docs/1.13/
-.. _building.rst: http://chapel.cray.com/docs/1.13/usingchapel/building.html
-.. _compiling.rst: http://chapel.cray.com/docs/1.13/usingchapel/compiling.html
-.. _executing.rst: http://chapel.cray.com/docs/1.13/usingchapel/executing.html
-.. _debugging.rst: http://chapel.cray.com/docs/1.13/usingchapel/debugging.html
-.. _bugs.rst: http://chapel.cray.com/docs/1.13/usingchapel/bugs.html
+.. _doc/building.rst: http://chapel.cray.com/docs/1.13/usingchapel/building.html
+.. _doc/compiling.rst: http://chapel.cray.com/docs/1.13/usingchapel/compiling.html
+.. _doc/executing.rst: http://chapel.cray.com/docs/1.13/usingchapel/executing.html
+.. _doc/debugging.rst: http://chapel.cray.com/docs/1.13/usingchapel/debugging.html
+.. _doc/bugs.rst: http://chapel.cray.com/docs/1.13/usingchapel/bugs.html
