@@ -1,0 +1,81 @@
+use Help;
+use Spawn;
+use ZMQ;
+
+enum ExecMode {
+  Launcher,
+  Master,
+  Worker,
+};
+
+config const mode = ExecMode.Launcher;
+
+const env = [
+  "QTHREAD_NUM_SHEPHERDS=1",
+  "QTHREAD_NUM_WORKERS_PER_SHEPHERD=1"
+  ];
+
+proc main(args: [] string) {
+  if (args.size >= 2) && (args[1] == "--help" || args[1] == "-h") {
+    printUsage();
+    exit(0);
+  }
+
+  select mode {
+    when ExecMode.Launcher do Launcher(args[0]);
+    when ExecMode.Master   do Master();
+    when ExecMode.Worker   do Worker();
+  }
+}
+
+proc Launcher(exec: string) {
+  var master = spawn(["master", "--mode=Master"], env=env, executable=exec);
+  var worker = spawn(["worker", "--mode=Worker"], env=env, executable=exec);
+  master.communicate();
+  worker.communicate();
+}
+
+proc Master() {
+  var context = new ZMQ.Context();
+  var socket = context.socket(ZMQ.REP);
+  socket.bind("tcp://*:5555");
+
+  // Numeric Types
+  {
+    var val = socket.recv(real) * 42.0;
+    socket.send(val);
+  }
+
+  // Strings
+  {
+    var val = socket.recv(string);
+    val += "jumps over the lazy dog.";
+    socket.send(val);
+  }
+
+  delete context;
+}
+
+proc Worker() {
+  var context = new ZMQ.Context();
+  var socket = context.socket(ZMQ.REQ);
+  socket.connect("tcp://localhost:5555");
+
+  // Numeric Types
+  {
+    var val = 13.0;
+    socket.send(val);
+    val = socket.recv(real);
+    writeln("val = ", val);
+  }
+
+  // Strings
+  {
+    var val = "The quick brown fox...";
+    socket.send(val);
+    val = socket.recv(string);
+    writeln("val = ", val);
+  }
+
+  delete context;
+}
