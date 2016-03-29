@@ -45,7 +45,7 @@ Highlights
   - 'complex' types are now code generated as C99 complex rather than a record
   - added compiler flags for all of the traditional CHPL_* environment vars.
     (see 'Compiler Configuration Options' in 'chpl --help' or the man page)
-* added support for Intel Xeon Phi Knights Landing (KNL) processors
+* added initial support for Intel Xeon Phi Knights Landing (KNL) processors
   (see http://chapel.cray.com/docs/1.13/platforms/knl.html)
 * added new Chapel ports of the ISx and LCALS proxy applications to the release
   (see examples/benchmarks/isx and examples/benchmarks/lcals/)
@@ -71,12 +71,14 @@ Highlights
 
 Configuration Changes
 ---------------------
-* made 'jemalloc' the default allocator for all platforms other than Cygwin
+* made 'jemalloc' the default allocator for most configurations
   (see http://chapel.cray.com/docs/1.13/usingchapel/chplenv.html#chpl-mem)
-* made 'cray-prgenv-cray' default to using qthreads+hwloc and 'ugni'
+* made 'cray-prgenv-cray' default to using 'qthreads'+'hwloc' and 'ugni'
   (see  http://chapel.cray.com/docs/1.13/platforms/cray.html)
 * added support for 're2' when using Cray and PGI compilers
-* changed 'knc' to default to using 'qthreads+hwloc'
+* changed 'knc' to default to using 'qthreads'+'hwloc'
+* deprecated 'knc' support
+  (see  http://chapel.cray.com/docs/1.13/platforms/knc.html)
 * switched to using pg++ rather than pgCC as the C++ compiler for 'pgi'
 * removed stale support for Xcode
 
@@ -258,16 +260,15 @@ Directory Structure Changes
 
 Cray-specific Changes
 ---------------------
-* 'ugni' no longer requires any heap memory to be registered
-  (see http://chapel.cray.com/docs/1.13/platforms/cray.html)
 * streamlined 'ugni' resource management, dramatically improving performance
-* hugepages is now optional with the 'ugni' communication layer
+* hugepages are now optional with the 'ugni' communication layer
+  (see http://chapel.cray.com/docs/1.13/platforms/cray.html)
 * improved the Spawn module to support 'ugni' when hugepages are not in use
 * started statically linking 'chpl' in the Cray module to ensure portability
 
 Portability Improvements
 ------------------------
-* added support for Intel Xeon Phi Knights Landing (KNL) processors
+* added initial support for Intel Xeon Phi Knights Landing (KNL) processors
   (see http://chapel.cray.com/docs/1.13/platforms/knl.html)
 * made Chapel's scripts compatible with key versions of Python 2 and 3
 * improved the portability of the code base to gcc 5.1
@@ -354,9 +355,9 @@ Third-Party Software Changes
 * added jemalloc version 4.0.4 and retired tcmalloc and dlmalloc
 * upgraded GASNet to version 1.26.0
 * upgraded hwloc to version 1.11.2
+  - and cherry-picked a /proc/mounts buffer overflow fix from hwloc master
 * upgraded LLVM to version 3.7
 * switched several third-party directories to a more GIT-friendly organization
-* fixed a buffer overflow bug in hwloc related to /proc/mounts
 
 Runtime Library Changes
 -----------------------
