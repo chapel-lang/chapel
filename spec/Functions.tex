@@ -805,11 +805,11 @@ there are two candidate functions where:
 
 then this pair of candidate functions is called a ref-pair.
 
-When such a call appears on the left-hand side of an assignment statement
-or appears in a call and corresponds to a formal argument with
-\chpl{out}, \chpl{inout}, or \chpl{ref} intent, the candidate with
-the \chpl{ref} return intent is used. Otherwise, the other candidate is
-used.
+When such a call appears on the left-hand side of an assignment
+statement, is returned in a function with \chpl{ref} return intent, or
+appears in a call and corresponds to a formal argument with \chpl{out},
+\chpl{inout}, or \chpl{ref} intent, the candidate with the \chpl{ref}
+return intent is used. Otherwise, the other candidate is used.
 
 % TODO - this section, or a significant portion of it,
 % should move to the function resolution section.
