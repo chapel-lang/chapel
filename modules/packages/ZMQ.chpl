@@ -327,7 +327,7 @@ module ZMQ {
           chpl_task_yield();
         else {
           var errmsg = zmq_strerror(errno):string;
-          halt("Error in Socket.send(%s): %s\n", string:string, errmsg);
+          halt("Error in Socket.send(%s): %s\n".format(string:string, errmsg));
         }
       }
     }
@@ -342,7 +342,7 @@ module ZMQ {
           chpl_task_yield();
         else {
           var errmsg = zmq_strerror(errno):string;
-          halt("Error in Socket.send(%s): %s\n", T:string, errmsg);
+          halt("Error in Socket.send(%s): %s\n".format(T:string, errmsg));
         }
       }
     }
@@ -364,7 +364,7 @@ module ZMQ {
           chpl_task_yield();
         else {
           var errmsg = zmq_strerror(errno):string;
-          halt("Error in Socket.recv(%s): %s\n", T:string, errmsg);
+          halt("Error in Socket.recv(%s): %s\n".format(T:string, errmsg));
         }
       }
       return str;
@@ -380,7 +380,7 @@ module ZMQ {
           chpl_task_yield();
         else {
           var errmsg = zmq_strerror(errno):string;
-          halt("Error in Socket.recv(%s): %s\n", T:string, errmsg);
+          halt("Error in Socket.recv(%s): %s\n".format(T:string, errmsg));
         }
       }
       return data;
