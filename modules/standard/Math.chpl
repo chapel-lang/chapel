@@ -18,9 +18,10 @@
  */
 
 /*
-This module provides wrappers for <cmath> (math.h) numerical constants and
-routines.  Its symbols are provided by default; an explicit 'use' statement
-is not necessary.
+This module provides numerical constants and functions,
+including those found in <cmath> (math.h) headers.
+These symbols are provided by default;
+an explicit 'use' statement is not necessary.
 
 The C Math library is part of the C Language Standard (ISO/IEC 9899), as
 described in Section 7.12.  Please consult that standard for an
