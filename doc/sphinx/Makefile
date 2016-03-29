@@ -41,8 +41,8 @@ clean-source: clean-symlink-docs clean-module-docs
 clean-symlink-docs: FORCE
 	@echo "Removing all symbolic links contained in source/"
 	find source -type l -delete
-	rm -f language/reference.pdf
-	rm -f language/spec.pdf
+	rm -f language/quickReference.pdf
+	rm -f language/chapelLanguageSpec.pdf
 
 clean-module-docs: FORCE
 	rm -rf source/modules/dists
