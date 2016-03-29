@@ -839,7 +839,7 @@ module Random {
     private inline
     proc randToReal64(x: uint(64)):real(64)
     {
-      return ldexp(x, -64);
+      return ldexp(x:real(64), -64);
     }
     // returns a random number in [min, max]
     // by scaling a multiple of 2**-64 by (max-min)
@@ -855,7 +855,7 @@ module Random {
     private inline
     proc randToReal32(x: uint(32))
     {
-      return ldexp(x, -32);
+      return ldexp(x:real(32), -32);
     }
 
     // returns a random number in [min, max)

@@ -63,6 +63,11 @@ scopes are considered to be passed into a task function by default intent,
 unless a different \emph{task intent} is specified explicitly
 by a \sntx{task-intent-clause}.
 
+% Should this be placed more prominently right before this section?
+Accesses to the same variable from different tasks are subject
+to the Memory Consistency Model (\rsec{Memory_Consistency_Model}).
+Such accesses can result from aliasing due to \chpl{ref} argument intents
+or task intents, among others.
 
 \section{The Begin Statement}
 \label{Begin}

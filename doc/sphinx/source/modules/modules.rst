@@ -6,6 +6,10 @@ Standard Modules
 Standard modules are those which describe features that are considered
 part of the Chapel Standard Library.
 
+All Chapel programs automatically ``use`` the modules :chpl:mod:`Assert` ,
+:chpl:mod:`Math` , and :chpl:mod:`Types` by default.
+
+
 .. toctree::
    :hidden:
 

@@ -128,7 +128,9 @@ INTERNAL_MODULES_TO_DOCUMENT =          \
 	internal/ChapelRange.chpl             \
 	internal/String.chpl                  \
 	internal/ChapelSyncvar.chpl           \
-	internal/ChapelTuple.chpl
+	internal/ChapelTuple.chpl \
+	internal/ChapelEnv.chpl
+
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \

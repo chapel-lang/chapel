@@ -1,23 +1,64 @@
-var globalInt = 0;
+record R {
+  var x;
 
-proc someFunction() {
-  return 22;
+  proc return_ref() ref
+  {
+    writeln("setter");
+    return x;
+  }
+  proc return_ref() const
+  {
+    writeln("getter");
+    return x;
+  }
+  
+  proc call_return_ref() ref
+  {
+    return return_ref();
+  }
+  proc call_return_ref() const
+  {
+    return return_ref();
+  }
+
 }
 
-proc returnRef2() ref {
-  return globalInt;
+{
+  var r = new R(1);
+
+  writeln("should be reading 1");
+  var x = r.return_ref(); // getter
+  writeln(x);
+
+  writeln("setting it to 2");
+  r.return_ref() = 2; // setter
+  writeln(r.x);
+
+  writeln("should be reading 2");
+  var y = r.call_return_ref(); // getter
+  writeln(r.x);
+
+  writeln("setting it to 3");
+  r.call_return_ref() = 3; // setter
+  writeln(r.x);
 }
 
-proc returnRef2() {
-  var x : int = someFunction();
+{
+  var r = new R("one");
 
-  return x;
+  writeln("should be reading one");
+  var x = r.return_ref(); // getter
+  writeln(x);
+
+  writeln("setting it to two");
+  r.return_ref() = "two"; // setter
+  writeln(r.x);
+
+  writeln("should be reading two");
+  var y = r.call_return_ref(); // getter
+  writeln(r.x);
+
+  writeln("setting it to three");
+  r.call_return_ref() = "three"; // setter
+  writeln(r.x);
 }
-
-
-returnRef2() = 1;      // resolves to 'ref' return intent version
-var y = returnRef2(); // resolves to default/const ref return intent
-
-writeln(globalInt);
-writeln(y);
-

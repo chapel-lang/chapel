@@ -3599,7 +3599,7 @@ qioerr qio_channel_print_complex(const int threadsafe,
     err = maybe_right_pad(ch, width);
     if( err ) goto rewind;
   } else {
-    QIO_GET_CONSTANT_ERROR(err, EINVAL, "unknow complex format");
+    QIO_GET_CONSTANT_ERROR(err, EINVAL, "unknown complex format");
     goto rewind;
   }
 

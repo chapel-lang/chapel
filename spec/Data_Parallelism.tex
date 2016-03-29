@@ -20,6 +20,12 @@ are handled within forall statements and expressions.
 controlling default data parallelism.
 \end{itemize}       
 
+Data-parallel constructs may result in accesses to the same variable
+from different tasks, possibly due to aliasing using
+\chpl{ref} argument intents or forall intents, among others.
+Such accesses are subject to the Memory Consistency Model
+(\rsec{Memory_Consistency_Model}).
+
 \section{The Forall Statement}
 \label{Forall}
 \index{forall@\chpl{forall} (see also statements, forall)}

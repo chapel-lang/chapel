@@ -20,8 +20,9 @@
 /*
 Functions related to predefined types.
 
-These functions are provided by default;
-an explicit 'use' statement is not necessary.
+.. note:: All Chapel programs automatically ``use`` this module by default.
+          An explicit ``use`` statement is not necessary.
+
 */
 module Types {
 

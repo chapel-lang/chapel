@@ -18,12 +18,11 @@
  */
 
 /*
-This module provides wrappers for <cmath> (math.h) numerical constants and
-routines.  Its symbols are provided by default; an explicit 'use' statement
-is not necessary.
+This module provides mathematical constants and functions.
 
-The C Math library is part of the C Language Standard (ISO/IEC 9899), as
-described in Section 7.12.  Please consult that standard for an
+It includes wrappers for many of the constants in functions in
+the C Math library, which is part of the C Language Standard (ISO/IEC 9899)
+as described in Section 7.12.  Please consult that standard for an
 authoritative description of the expected properties of those constants and
 routines.
 
@@ -42,6 +41,9 @@ handling in the Math module.  The default behavior is as if the macro
 ``math_errhandling`` is set to 0: Given erroneous input at run-time,
 all math functions will return an implementation-defined value; no
 exception will be generated.
+
+.. note:: All Chapel programs automatically ``use`` this module by default.
+          An explicit ``use`` statement is not necessary.
 
 */
 module Math {

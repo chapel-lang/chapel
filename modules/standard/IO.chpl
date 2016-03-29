@@ -553,7 +553,7 @@ Integral Conversions
  (That is, it is right-justified in a 17-column field.
  Padding width is ignored when reading integers)
 ``%*i``
- as with ``%17i`` but read the minimum width from the preceeding argument
+ as with ``%17i`` but read the minimum width from the preceding argument
 ``%017i``
  a decimal integer padded on the left with zeros to 17 columns
 ``%-17i``
@@ -586,13 +586,13 @@ Real Conversions
 ``%.4r``
  as with ``%r`` but with 4 significant digits
 ``%.*r``
- as with ``%.4r`` but with significant digits read from preceeding argument
+ as with ``%.4r`` but with significant digits read from preceding argument
 ``%6.4r``
  as with ``%r`` but padded on the left to 6 columns
  and with 4 significant digits
 ``%*.*r``
  as with ``%6.4r`` but read minimum width and significant digits from
- preceeding arguments
+ preceding arguments
 
 ``%dr``
  a real number in decimal notation, e.g. ``12.34``

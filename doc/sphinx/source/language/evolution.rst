@@ -63,6 +63,65 @@ it is useful to put the old ref return intent function into a
 helper function with an explicit param `setter` argument, and then to
 call that function from the getter or setter.
 
+version 1.12, October 2015
+--------------------------
+
+lexical scoping
+***************
+
+Prior to version 1.12 of Chapel, variables could be kept alive past
+their lexical scopes. For example:
+
+.. code-block:: chapel
+
+  {
+    var A: [1..n] real;
+    var count$: sync int;
+    var x: real;
+    begin with (ref x) {
+      ... A ...;
+      ... count$ ...;
+      ... x ...;
+    }
+    // ^^^ this task and its references to A, count$, and x could outlive
+    // the scope in which those variables are declared.
+  } // So, previously, Chapel kept these variables alive past their
+    // logical scope.
+
+Disadvantages of this approach included:
+
+  * It moves logical stack variables (like `x` and `count$` above) to
+    the heap.
+  * It complicates memory management by incurring reference counting
+    overhead---or causing memory leaks in cases where reference
+    counting hadn't been added.
+  * It was not particularly valued or utilized by users.
+  * It was arguably surprising ("x still exists even though it left
+    scope?").
+
+As of Chapel 1.12 (and moreso in subsequent releases), the
+implementation no longer provides this property. Instead, it is a user
+error to refer to a variable after it has left scope. For example:
+
+.. code-block:: chapel
+
+  var flag$: sync bool; // flag$ starts empty
+  {
+    var x: real;
+    begin with(ref x) { // create task referring to x
+      flag$;            // block task until flag$ is full
+      ... x ...         // user error: access to x occurs after it leaves scope
+    }                   // end task
+  }                     // x`s scope ends
+  flag$ = true;         // fill flag$ only after x's scope closes
+
+Code that refers to lexically scoped variables within tasks in this manner
+should use `sync` variables or blocks in order to guarantee the
+tasks's completion before the enclosing block exits. Note that the
+more commonly used `cobegin`, `coforall`, and `forall` statements
+already guarantee that the tasks they create will complete before the
+enclosing block exits.
+
 version 1.11, April 2015
 ------------------------
 
