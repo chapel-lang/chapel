@@ -8,6 +8,18 @@ enum ExecMode {
   Worker,
 };
 
+record Bar {
+  var a: complex;
+  var b: string;
+}
+
+record Foo {
+  var a: int;
+  var b: real;
+  var c: string;
+  var d: Bar;
+}
+
 config const mode = ExecMode.Launcher;
 
 const env = [
@@ -53,6 +65,17 @@ proc Master() {
     socket.send(val);
   }
 
+  // "Basic" Records
+  {
+    var val = socket.recv(Foo);
+    val.a *= 2;
+    val.b += 29.0;
+    val.c = val.c.toUpper();
+    val.d.a *= -1.0i;
+    val.d.b = val.d.b.toTitle();
+    socket.send(val);
+  }
+
   delete context;
 }
 
@@ -74,6 +97,14 @@ proc Worker() {
     var val = "The quick brown fox...";
     socket.send(val);
     val = socket.recv(string);
+    writeln("val = ", val);
+  }
+
+  // "Basic" Records
+  {
+    var val = new Foo(42, 13.0, "hello", new Bar(4+8i, "good bye"));
+    socket.send(val);
+    val = socket.recv(Foo);
     writeln("val = ", val);
   }
 

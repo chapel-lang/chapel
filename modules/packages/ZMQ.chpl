@@ -27,6 +27,8 @@ module ZMQ {
 
   require "zmq.h", "-lzmq";
 
+  use Reflection;
+
   /*
     External ZMQ interface
      - Currently, the special nature of Chapel strings means that we have to
@@ -307,7 +309,7 @@ module ZMQ {
 
     // ZMQ serialization checker
     inline proc isZMQSerializable(type T) param: bool {
-      return isString(T) || isNumericType(T);
+      return isString(T) || isNumericType(T) || isRecordType(T);
     }
 
     // send, static error handling
@@ -347,8 +349,16 @@ module ZMQ {
       }
     }
 
+    // send, records (of other supported things)
+    proc send(data: ?T, flags: int = 0) where (isRecordType(T) && (!isString(T))) {
+      param N = numFields(T);
+      for param i in 1..(N-1) do
+        send(getField(data,i), ZMQ_SNDMORE | flags);
+      send(getField(data,N), flags);
+    }
+
     // recv, static error handling
-    proc recv(data: ?T, flags: int = 0) where !isZMQSerializable(T) {
+    proc recv(type T, flags: int = 0) where !isZMQSerializable(T) {
       compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
     }
 
@@ -383,6 +393,17 @@ module ZMQ {
           halt("Error in Socket.recv(%s): %s\n".format(T:string, errmsg));
         }
       }
+      return data;
+    }
+
+    // recv, records (of other supported things)
+    proc recv(type T, flags: int = 0) where (isRecordType(T) && (!isString(T))) {
+      inline proc getField(x:?t, param i:int) ref
+        return __primitive("field value by num", x, i);
+
+      var data: T;
+      for param i in 1..numFields(T) do
+        getField(data,i) = recv(getField(data,i).type);
       return data;
     }
 
