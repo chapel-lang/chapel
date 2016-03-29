@@ -124,7 +124,7 @@ endif
 # compiled with gcc 5.X.  Issue will be pursued after the release
 #
 # Note that 0 means "SUCCESS" rather than "false".
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 5; echo "$$?"),0)
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 5; echo "$$?"),0)
 
 ifeq ($(OPTIMIZE),1)
 COMP_CFLAGS += -fno-tree-vrp
