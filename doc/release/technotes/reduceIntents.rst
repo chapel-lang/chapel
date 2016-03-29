@@ -33,6 +33,8 @@ Reduce intents are distinct:
 Note that the value of the outer variable immediately before the forall loop
 is discarded.
 
+Reduce intents are also available with coforall statements.
+
 
 ------
 Syntax
@@ -52,10 +54,15 @@ The syntax of ``task-intent-list`` is extended to allow ``reduce-intent``:
 
     reduce-intent:
       reduce-operator 'reduce' identifier
+      reduce-class    'reduce' identifier
 
     reduce-operator: one of
        // these have the same meaning as in a reduction expression
-       +  *  &&  ||  &  |  ^
+       +  *  &&  ||  &  |  ^  min  max
+
+    reduce-class:
+       // the name of the class that implements a user-defined reduction
+       identifier
 
 
 --------
@@ -81,6 +88,41 @@ Set ``x`` in the loop -- counts the number of tasks:
     x = 1;
   }
   writeln("The number of tasks is: ", x);
+
+For a user-defined reduction, there is a task-private instance
+of the reduction class for each task created for the forall
+or coforall loop. Here is an example of such a class that
+implements + reduction over numeric data.
+
+ .. code-block:: chapel
+
+  class UserReduceOp: ReduceScanOp {
+
+    // the type of the elements to be reduced
+    type eltType;
+
+    // task-private accumulator state
+    var value: eltType;
+
+    // identity w.r.t. the reduction operation
+    proc identity         return 0: eltType;
+
+    // accumulate a single element onto the accumulator
+    proc accumulate(elm)  { value = value + elm; }
+
+    // combine the accumulations in 'this' and 'other'
+    // Note: 'this' can be accessed concurrently and
+    // is locked by the Chapel implementation.
+    // 'other' will not be accessed concurrently.
+    proc combine(other)   { value = value + other.value; }
+
+    // convert the accumulation into the value of the reduction
+    // that is reported to the user (trivial in this case)
+    proc generate()       return value;
+
+    // produce a new instance of this class
+    proc clone()          return new UserReduceOp(eltType=eltType);
+  }
 
 
 -----------
@@ -127,14 +169,10 @@ Open Issues
 Future Work
 -----------
 
-* Provide reduce intents as task intents.
+* Provide reduce intents as task intents for cobegin statements.
 
 * Provide the other predefined reduction operators as reduce intents:
 
   .. code-block:: chapel
 
-    min max minloc maxloc
-
-* Allow user-defined reductions to be used with reduce intents.
-
-* Implement reduction expressions using forall loops and reduce intents.
+    minloc maxloc
