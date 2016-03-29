@@ -4,20 +4,22 @@ Chapel Quickstart Instructions
 ==============================
 
 The following instructions are designed to help you build Chapel from
-source.  If you haven't already downloaded Chapel, head over to
-http://chapel.cray.com/download.html to obtain the latest release, or
-see http://chapel.cray.com/install.html for other installation
-options.
+source.  If you haven't already downloaded Chapel, obtain the latest
+release from http://chapel.cray.com/download.html, or refer to
+http://chapel.cray.com/install.html for other installation options.
 
 In the following instructions, note that building and using Chapel as
 described in steps 1-7 disables optional and advanced features in the
-interest of getting you a clean build as quickly as possible.  Steps
-8-9 explain how to re-build the preferred configuration that has these
-additional features enabled.
+interest of getting you a clean build as quickly as possible.  Step 8
+explains how to re-build in the preferred configuration with these
+additional features enabled.  Step 9 explains how to build Chapel for
+distributed memory execution.
 
 
 0) See `prereqs.rst`_ for more information about system tools and
-   packages you may need to have installed in support of Chapel.
+   packages you may need to have installed to build and run Chapel.
+
+.. _prereqs.rst: http://chapel.cray.com/docs/1.13/usingchapel/prereqs.html
 
 
 1) Make sure that your shell is in the directory containing this
@@ -40,9 +42,9 @@ the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
    Note that there is no requirement to use these scripts long-term,
    they are merely designed to help new users get their environment
    variables and paths set up quickly.  Long-term, users may want to
-   make these settings in their dotfiles or via other means.  See
-   `chplenv.rst`_ for a complete description of Chapel's environment
-   variables and their values.
+   copy and paste these settings into their dotfiles or set them in
+   other ways.  See `chplenv.rst`_ for a complete description of
+   Chapel's environment variables and their expected values.
 
 .. _chplenv.rst: http://chapel.cray.com/docs/1.13/usingchapel/chplenv.html
 
@@ -59,7 +61,7 @@ the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
    Parallel builds (e.g. ``gmake -j``) are also supported.
 
 
-4) ``csh``/``tcsh`` users only: Update your shell's path cache using:
+4) ``csh``/``tcsh`` users only: Update your shell's path hash table using:
 
         ``rehash``
 
@@ -73,33 +75,31 @@ the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
         ``make check``
 
 
-6) Compile an example program using:
+6) Compile an example program:
 
         ``chpl -o hello examples/hello.chpl``
 
 
-7) Execute the resulting executable:
+7) Run the resulting executable:
 
        ``./hello``
 
 
-8) Experiment with Chapel in this Quick-Start mode to your heart's
-   content.
-
-   Once you are comfortable with Chapel and interested in using a
-   full-featured version in the preferred configuration:
+8) Experiment with Chapel in this Quickstart mode to your heart's
+   content.  Once you are comfortable with Chapel and interested in
+   using a full-featured version in the preferred configuration:
 
    a) Open up a new shell to avoid inheriting the previous environment
       settings.
 
-   b) Repeat steps 1-7 above, but in Step 2, use ``util/setchplenv.*``
+   b) Repeat steps 1-7 above, but in Step 2, source ``util/setchplenv.*``
       instead of ``util/quickstart/setchplenv.*``
 
    This will set up your environment to use Chapel in the preferred
-   configuration.  Building this configuration will involve compiling
-   one or more third-party packages which will increase the overall
-   build time.  If you run into any portability issues, please let us
-   know at chapel_info@cray.com.
+   configuration.  Building this configuration involves compiling
+   third-party packages, which will increase the overall build time.
+   If you run into any portability issues, please let us know via
+   http://chapel.cray.com/bugs.html.
 
 
 9) All of the instructions above describe how to run Chapel programs
@@ -110,8 +110,8 @@ the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
 
 
 10) If you plan to do performance studies of Chapel programs, be sure
-    to (a) use the full-featured version and (b) read the ``PERFORMANCE.md``
-    file in this directory to avoid common pitfalls.
+    to (a) use the full-featured version from steps 8-9 and (b) read
+    ``$CHPL_HOME/PERFORMANCE.md`` to avoid common pitfalls.
 
 
 
