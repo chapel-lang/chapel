@@ -24,22 +24,6 @@ Resources
 ---------
 For more information about Chapel, refer to the following resources:
 
-* Project homepage:      http://chapel.cray.com
-* Installing Chapel:     http://chapel.cray.com/install.html
-* Building from source:  `QUICKSTART.rst`_ (in this directory)
-* Sample computations:   http://chapel.cray.com/hellos.html
-* Learning Chapel:       http://chapel.cray.com/learning.html
-* Filing bugs:           http://chapel.cray.com/bugs.html
-* Online documentation:  http://chapel.cray.com/docs/latest/
-* GitHub:                https://github.com/chapel-lang/chapel
-* Mailing lists:         https://sourceforge.net/p/chapel/mailman
-* Facebook:              https://www.facebook.com/ChapelLanguage
-* Twitter:               https://twitter.com/ChapelLanguage
-
-
-* Building from source:  `QUICKSTART.rst <QUICKSTART.rst>`_ (in this directory)
-
-
 =====================  ========================================
 Project homepage:      http://chapel.cray.com
 Installing Chapel:     http://chapel.cray.com/install.html
