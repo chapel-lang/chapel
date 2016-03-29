@@ -91,38 +91,47 @@ Set ``x`` in the loop -- counts the number of tasks:
 
 For a user-defined reduction, there is a task-private instance
 of the reduction class for each task created for the forall
-or coforall loop. Here is an example of such a class that
-implements + reduction over numeric data.
+or coforall loop. Here is an example of such a class:
 
  .. code-block:: chapel
 
-  class UserReduceOp: ReduceScanOp {
+  /* Implements + reduction over numeric data. */
+  class PlusReduceOp: ReduceScanOp {
 
-    // the type of the elements to be reduced
+    /* the type of the elements to be reduced */
     type eltType;
 
-    // task-private accumulator state
+    /* task-private accumulator state */
     var value: eltType;
 
-    // identity w.r.t. the reduction operation
+    /* identity w.r.t. the reduction operation */
     proc identity         return 0: eltType;
 
-    // accumulate a single element onto the accumulator
+    /* accumulate a single element onto the accumulator */
     proc accumulate(elm)  { value = value + elm; }
 
-    // combine the accumulations in 'this' and 'other'
-    // Note: 'this' can be accessed concurrently and
-    // is locked by the Chapel implementation.
+    // Note: 'this' can be accessed by multiple calls to combine()
+    // concurrently. The Chapel implementation serializes such calls
+    // with a lock on 'this'.
     // 'other' will not be accessed concurrently.
+    /* combine the accumulations in 'this' and 'other' */
     proc combine(other)   { value = value + other.value; }
 
-    // convert the accumulation into the value of the reduction
-    // that is reported to the user (trivial in this case)
+    /* Convert the accumulation into the value of the reduction
+       that is reported to the user. This is trivial in our case. */
     proc generate()       return value;
 
-    // produce a new instance of this class
-    proc clone()          return new UserReduceOp(eltType=eltType);
+    /* produce a new instance of this class */
+    proc clone()          return new PlusReduceOp(eltType=eltType);
   }
+
+  // Use the above class.
+  var A = [1000, 200, 30, 4];
+  var sum: int;
+  forall elm in A with (PlusReduceOp reduce sum) {
+    sum += elm;
+  }
+  writeln(sum);
 
 
 -----------
