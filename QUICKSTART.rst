@@ -117,44 +117,29 @@ the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
 
 What's next?
 ------------
-=============================================== =====================================
+=============================================== =========================
 **For more detailed information about:**        **refer to:**
------------------------------------------------ -------------------------------------
-    changes since the last release              ``CHANGES.md``
-    implementation status                       ``STATUS``
-    performance status                          ``PERFORMANCE.md``
-    Chapel's file and directory structure       ``README.files``
+----------------------------------------------- -------------------------
+    platform-specific notes                     `platforms`_
+    online Chapel Documentation                 `chapel.cray.com/docs`_
+    example Chapel programs                     ``examples/README``
     setting Chapel environment variables        `chplenv.rst`_
     building the compiler                       `building.rst`_
-    using the compiler                          `compiling.rst`_
+    compiling Chapel programs                   `compiling.rst`_
     executing Chapel programs                   `executing.rst`_
     debugging Chapel programs                   `debugging.rst`_
     reporting bugs                              `bugs.rst`_
+    implementation status                       ``STATUS``
+    performance status                          ``PERFORMANCE.md``
     Chapel modes for emacs and vim              ``highlight/README.md``
-    example Chapel programs                     ``examples/README``
-    a quick reference for Chapel syntax         `doc/quickReference.pdf`_
-    the Chapel language specification           `doc/chapelLanguageSpec.pdf`_
-    other Chapel Documentation                  `chapel.cray.com/docs`_
-    third-party software that we use            ``third-party/README``
-=============================================== =====================================
+    Chapel's file and directory structure       ``README.files``
+    changes since the last release              ``CHANGES.md``
+=============================================== =========================
 
-.. _doc/quickReference.pdf: http://chapel.cray.com/spec/quickReference.pdf
-.. _doc/chapelLanguageSpec.pdf: http://chapel.cray.com/spec/spec-0.98.pdf
+.. _platforms: http://chapel.cray.com/docs/1.13/platforms/index.html
 .. _chapel.cray.com/docs: http://chapel.cray.com/docs/1.13/
 .. _building.rst: http://chapel.cray.com/docs/1.13/usingchapel/building.html
 .. _compiling.rst: http://chapel.cray.com/docs/1.13/usingchapel/compiling.html
 .. _executing.rst: http://chapel.cray.com/docs/1.13/usingchapel/executing.html
 .. _debugging.rst: http://chapel.cray.com/docs/1.13/usingchapel/debugging.html
 .. _bugs.rst: http://chapel.cray.com/docs/1.13/usingchapel/bugs.html
-
-
-=============================================== =====================================
-**To use Chapel on a specific platform:**       **refer to:**
------------------------------------------------ -------------------------------------
-       a Cray system                            `cray.rst`_
-       Cygwin over Windows                      `cygwin.rst`_
-=============================================== =====================================
-
-
-.. _cray.rst: http://chapel.cray.com/docs/1.13/platforms/cray.html
-.. _cygwin.rst: http://chapel.cray.com/docs/1.13/platforms/cygwin.html
