@@ -3,31 +3,27 @@
 Chapel Quickstart Instructions
 ==============================
 
-The following instructions are designed to get you get a Chapel
-installation up and running with a minimum of fuss.  Note that
-building and using Chapel as described in steps 1-7 disables advanced
-runtime options and optional language capabilities in the interest of
-a simple and clean build.  Steps 8-9 give instructions for enabling
-additional capabilities.
+The following instructions are designed to help you build Chapel from
+source.  If you haven't already downloaded Chapel, head over to
+http://chapel.cray.com/download.html to obtain the latest release, or
+see http://chapel.cray.com/install.html for other installation
+options.
+
+In the following instructions, note that building and using Chapel as
+described in steps 1-7 disables optional and advanced features in the
+interest of getting you a clean build as quickly as possible.  Steps
+8-9 explain how to re-build the preferred configuration that has these
+additional features enabled.
 
 
 0) See `prereqs.rst`_ for more information about system tools and
    packages you may need to have installed in support of Chapel.
-   Download a Chapel source release from `download.html`_ if you
-   haven't already or refer to `install.html`_ to learn about other
-   installation options.
-
-.. _prereqs.rst: http://chapel.cray.com/docs/1.13/usingchapel/prereqs.html
-.. _download.html: http://chapel.cray.com/download.html
-.. _install.html: http://chapel.cray.com/install.html
 
 
 1) Make sure that your shell is in the directory containing this
    ``QUICKSTART.rst`` file.  For example:
 
-    .. code-block:: sh
-
-        cd ~/chapel-1.13.0
+        ``cd ~/chapel-1.13.0``
 
 
 2) Set up your environment to use Chapel in "Quick Start" mode:
@@ -128,7 +124,6 @@ What's next?
     implementation status                       ``STATUS``
     performance status                          ``PERFORMANCE.md``
     Chapel's file and directory structure       ``README.files``
-    prerequisites for using this release        `prereqs.rst`_
     setting Chapel environment variables        `chplenv.rst`_
     building the compiler                       `building.rst`_
     using the compiler                          `compiling.rst`_
