@@ -12,5 +12,5 @@ proc getter() {
 
 // Currently enters the 'write' case, but I would expect a read
 write("Read array: ");
-var x = getter();
+var x = getter()[1];
 writeln(x);
