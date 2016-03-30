@@ -64,6 +64,7 @@ Contributors to previous releases
 * John Koenig, [Cray Inc.]
 * Rafael Larrosa Jiminez, [Universidad de Málaga (University of Malaga)]
 * Matthew Lentz, [University of Maryland]
+* John Lewis, [Cray Inc.]
 * Juan Lopez, [Universidad de Málaga (University of Malaga)]
 * Simon Lund, [Københavns Universitet (University of Copenhagen)]
 * Cory McCartan, [Cray Inc.]
@@ -126,6 +127,8 @@ implementation.
 | commits attributed to...   | should actually be attributed to... |
 | -------------------------- | ----------------------------------- |
 | ...Tito Figueroa           | ...Samuel Figueroa                  |
+| ...Jeff Lewis              | ...John Lewis                       |
+| ...Preston Pfarner         | ...Preston Briggs                   |
 | ...MaryBeth Seekamp        | ...Mary Beth Hribar                 |
 | ...Charles Shannon Hendrix | ...Shannon Hoffswell                |
 
