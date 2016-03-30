@@ -309,7 +309,8 @@ module ZMQ {
 
     // ZMQ serialization checker
     inline proc isZMQSerializable(type T) param: bool {
-      return isString(T) || isNumericType(T) || isRecordType(T);
+      return isNumericType(T) || isEnumType(T) ||
+        isString(T) || isRecordType(T);
     }
 
     // send, static error handling
@@ -347,6 +348,11 @@ module ZMQ {
           halt("Error in Socket.send(%s): %s\n".format(T:string, errmsg));
         }
       }
+    }
+
+    // send, enumerated types
+    proc send(data: ?T, flags: int = 0) where isEnumType(T) {
+      send(data:int, flags);
     }
 
     // send, records (of other supported things)
@@ -394,6 +400,11 @@ module ZMQ {
         }
       }
       return data;
+    }
+
+    // recv, enumerated types
+    proc recv(type T, flags: int = 0) where isEnumType(T) {
+      return recv(int, flags):T;
     }
 
     // recv, records (of other supported things)

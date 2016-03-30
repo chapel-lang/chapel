@@ -20,6 +20,10 @@ record Foo {
   var d: Bar;
 }
 
+enum Baz {
+  A, B, C, D, E
+}
+
 config const mode = ExecMode.Launcher;
 
 const env = [
@@ -58,6 +62,13 @@ proc Master() {
     socket.send(val);
   }
 
+  // Enumerated Types
+  {
+    var val = socket.recv(Baz);
+    assert(val == Baz.B);
+    socket.send(Baz.D);
+  }
+
   // Strings
   {
     var val = socket.recv(string);
@@ -89,6 +100,14 @@ proc Worker() {
     var val = 13.0;
     socket.send(val);
     val = socket.recv(real);
+    writeln("val = ", val);
+  }
+
+  // Enumerated Types
+  {
+    var val = Baz.B;
+    socket.send(val);
+    val = socket.recv(Baz);
     writeln("val = ", val);
   }
 
