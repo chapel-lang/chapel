@@ -1,4 +1,8 @@
 methods.doc
+
+Usage:
+   use methods.doc;
+
    Class: fullOfMethods
       proc commented()
          This is just a normal method with a comment.  I shouldn't

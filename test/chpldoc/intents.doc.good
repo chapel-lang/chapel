@@ -1,4 +1,8 @@
 intents.doc
+
+Usage:
+   use intents.doc;
+
 Submodules for this module are located in the intents.doc/ directory
 
    proc one(in val)
@@ -47,6 +51,10 @@ Submodules for this module are located in the intents.doc/ directory
       This function has a return intent (other than ref) and a body 
 
 Inner
+
+Usage:
+   use intents.doc.Inner;
+
    proc one(in val)
       This function has an argument with the in intent 
 
