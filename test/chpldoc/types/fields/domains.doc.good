@@ -1,4 +1,8 @@
 domains.doc
+
+Usage:
+   use domains.doc;
+
    Class: fullOfDomains
       var baseCase: domain(1)
          This field contains a one dimensional array 

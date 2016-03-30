@@ -1,4 +1,8 @@
 arrays.doc
+
+Usage:
+   use arrays.doc;
+
    Class: fullOfArrays
       var smallArray: [1..4] bool
          This field contains an array of bools 

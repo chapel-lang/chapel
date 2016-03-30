@@ -1,2 +1,6 @@
 loseComments.doc
+
+Usage:
+   use loseComments.doc;
+
    proc found()

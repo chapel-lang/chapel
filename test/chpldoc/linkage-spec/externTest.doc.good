@@ -1,4 +1,8 @@
 externTest.doc
+
+Usage:
+   use externTest.doc;
+
 Submodules for this module are located in the externTest.doc/ directory
 
    proc method1()
@@ -23,6 +27,10 @@ Submodules for this module are located in the externTest.doc/ directory
 
    proc hasReturnTypeAndArgCommentless(val: int): int
 Other
+
+Usage:
+   use externTest.doc.Other;
+
    proc inside
       Comment for method inside module 
 

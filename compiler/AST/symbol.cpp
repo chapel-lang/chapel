@@ -2691,6 +2691,17 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     *file << std::endl;
   }
 
+  if (!fDocsTextOnly) {
+    *file << "**Usage**" << std::endl << std::endl;
+  } else {
+    *file << std::endl;
+    *file << "Usage:" << std::endl;
+  }
+  this->printTabs(file, tabs + 1);
+  *file << "use ";
+
+  *file << this->getUsage() << ";" << std::endl << std::endl;
+
   // If we had submodules, be sure to link to them
   if (hasTopLevelModule()) {
     this->printTableOfContents(file);
@@ -2873,6 +2884,32 @@ bool ModuleSymbol::hasTopLevelModule() {
   }
   return false;
 }
+
+std::string ModuleSymbol::getUsage() {
+  std::string parent;
+
+  if (!this->defPoint || !this->defPoint->parentSymbol ||
+      !toModuleSymbol(this->defPoint->parentSymbol) ||
+      this->defPoint->parentSymbol == theProgram ||
+      this->defPoint->parentSymbol == rootModule) {
+    // We're a top level module
+    parent = "";
+  } else {
+    // We have a parent module
+    parent = toModuleSymbol(this->defPoint->parentSymbol)->getUsage() + ".";
+  }
+
+  if (!fDocsTextOnly) {
+    if (parent != "") {
+      parent = parent + " ";
+      // Space separator necessary for link to later modules to work
+    }
+    return parent + ":mod:`" + name + "`";
+  } else {
+    return parent + name;
+  }
+}
+
 
 void ModuleSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == block) {

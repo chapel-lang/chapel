@@ -1,4 +1,8 @@
 fields.doc
+
+Usage:
+   use fields.doc;
+
    Class: fullOfFields
       type eltType
          This is a generic type. 

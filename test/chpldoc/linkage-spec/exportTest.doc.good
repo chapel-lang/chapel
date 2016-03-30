@@ -1,4 +1,8 @@
 exportTest.doc
+
+Usage:
+   use exportTest.doc;
+
 Submodules for this module are located in the exportTest.doc/ directory
 
    export proc method1()
@@ -39,6 +43,10 @@ Submodules for this module are located in the exportTest.doc/ directory
 
    export proc allThreeCommentless2(val: int): int
 Other
+
+Usage:
+   use exportTest.doc.Other;
+
    export proc inside()
       Comment for method inside module 
 
