@@ -20,7 +20,10 @@ develall: STATUS
 	@$(MAKE) always-build-man
 
 docs: module-docs
-	cd doc/sphinx && ./run-in-venv.bash ${MAKE} docs
+	cd doc/sphinx && $(MAKE) docs
+
+checkdocs: FORCE
+	cd doc/sphinx && $(MAKE) checkdocs
 
 man: third-party-chpldoc-venv FORCE
 	cd man && $(MAKE)
