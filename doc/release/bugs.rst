@@ -48,6 +48,6 @@ JIRA Issues
 -----------
 
 The Chapel team is working to bring our `JIRA issues site`_ up to
-date. Bugs can be viewed without a free account.
+date. Bugs can be viewed without creating an account.
 
 .. _JIRA issues site: https://chapel.atlassian.net/projects/CHAPEL/issues/
