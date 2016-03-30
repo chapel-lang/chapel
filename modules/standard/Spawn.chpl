@@ -393,7 +393,7 @@ module Spawn {
      :arg kind: What kind of channels should be created when
                 :const:`PIPE` is used. This argument is used to set
                 :attr:`subprocess.kind` in the resulting subprocess.
-                Defaults to :enum:`IO.iokind.dynamic`.
+                Defaults to :type:`IO.iokind` ``iokind.dynamic``.
                  
      :arg locking: Should channels created use locking?
                    This argument is used to set :attr:`subprocess.locking`
@@ -598,7 +598,7 @@ module Spawn {
      :arg kind: What kind of channels should be created when
                 :const:`PIPE` is used. This argument is used to set
                 :attr:`subprocess.kind` in the resulting subprocess.
-                Defaults to :enum:`IO.iokind.dynamic`.
+                Defaults to :type:`IO.iokind` ``iokind.dynamic``.
                  
      :arg locking: Should channels created use locking?
                    This argument is used to set :attr:`subprocess.locking`
@@ -676,6 +676,8 @@ module Spawn {
 
     :arg error: optional argument to capture any error encountered
                 when waiting for the child process.
+    :arg buffer: if `true`, buffer input and output pipes (see above).
+
    */
   proc subprocess.wait(out error:syserr, buffer=true) {
 
@@ -824,8 +826,8 @@ module Spawn {
     if err then ioerror(err, "in subprocess.close");
   }
 
-  // Signals as required by POSIX-2013, less the deprecated SIGPOLL
-  // for sake of portability on OS X
+  // Signals as required by POSIX.1-2008, 2013 edition
+  // See note below about signals intentionally not included.
   pragma "no doc"
   extern const SIGABRT: c_int;
   pragma "no doc"
@@ -849,15 +851,11 @@ module Spawn {
   pragma "no doc"
   extern const SIGPIPE: c_int;
   pragma "no doc"
-  extern const SIGPROF: c_int;
-  pragma "no doc"
   extern const SIGQUIT: c_int;
   pragma "no doc"
   extern const SIGSEGV: c_int;
   pragma "no doc"
   extern const SIGSTOP: c_int;
-  pragma "no doc"
-  extern const SIGSYS: c_int;
   pragma "no doc"
   extern const SIGTERM: c_int;
   pragma "no doc"
@@ -875,26 +873,42 @@ module Spawn {
   pragma "no doc"
   extern const SIGUSR2: c_int;
   pragma "no doc"
-  extern const SIGVTALRM: c_int;
-  pragma "no doc"
   extern const SIGXCPU: c_int;
   pragma "no doc"
   extern const SIGXFSZ: c_int;
+
+  // These signals are not strictly required by POSIX.1.2008 2013 edition
+  // and so should not be included here:
+
+  // SIGPOLL is Obsolescent and optional as part of XSI STREAMS
+  // SIGPROF is Obsolescent and optional as part of XSI STREAMS
+  // SIGSYS is optional as part of X/Open Systems Interface
+  // SIGVTALRM is optional as part of X/Open Systems Interface
 
   private extern proc qio_send_signal(pid: int(64), sig: c_int): syserr;
 
   /*
     Send a signal to a child process.
 
-    Values for :const:`signal` are system-specific and should be declared as:
+    Declarations for POSIX.1.2008 signals are provided in this module.
+    These include `SIGABRT`, `SIGALRM`, `SIGBUS`, `SIGCHLD`, `SIGCONT`,
+    `SIGFPE`, `SIGHUP`, `SIGILL`, `SIGINT`, `SIGKILL`, `SIGPIPE`, `SIGQUIT`,
+    `SIGSEGV`, `SIGSTOP`, `SIGTERM`, `SIGTRAP`, `SIGTSTP`, `SIGTTIN`,
+    `SIGTTOU`, `SIGURG`, `SIGUSR1`, `SIGUSR2`, `SIGXCPU`, `SIGXFSZ`.
+
+    See your system's documentation for their meaning:
+
+    ::
+
+      man signal
+
+    Other values for `signal` are system-specific and can be declared in this
+    way, for example:
 
     .. code-block:: chapel
 
-       const SIG*: c_int;
+       extern const SIGPOLL: c_int;
 
-    Declarations for common signals are provided in this module:
-    :const:`SIGKILL`, :const:`SIGTERM`,
-    :const:`SIGSTOP`, :const:`SIGTSTP`, :const:`SIGCONT`
 
     :arg signal: the signal to send
 
@@ -920,7 +934,9 @@ module Spawn {
 
   /*
     Unconditionally kill the child process.  The associated signal,
-    :const:`SIGKILL`, cannot be caught by the child process.
+    `SIGKILL`, cannot be caught by the child process. See
+    :proc:`subprocess.send_signal`.
+
 
     :arg error: optional argument to capture any error encountered
                 when killing the child process
@@ -942,7 +958,8 @@ module Spawn {
 
   /*
     Request termination of the child process.  The associated signal,
-    :const:`SIGTERM`, may be caught and handled by the child process.
+    `SIGTERM`, may be caught and handled by the child process. See
+    :proc:`subprocess.send_signal`.
 
     :arg error: optional argument to capture any error encountered
                 when terminating the child process

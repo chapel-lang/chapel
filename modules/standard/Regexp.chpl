@@ -905,7 +905,7 @@ record regexp {
 
      :arg repl: replace matches with this string
      :arg text: the text to search and replace within
-     :type text: string
+     :type text: `string`
      :arg global: if true, replace multiple matches
      :returns: a tuple containing (new string, number of substitutions made)
    */
@@ -938,7 +938,7 @@ record regexp {
 
      :arg repl: replace matches with this string
      :arg text: the text to search and replace within
-     :type text: string
+     :type text: `string`
      :arg global: if true, replace multiple matches
      :returns: the new string
    */

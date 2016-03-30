@@ -2,7 +2,13 @@
 
 Standard Modules
 ================
-Contents:
+
+Standard modules are those which describe features that are considered
+part of the Chapel Standard Library.
+
+All Chapel programs automatically ``use`` the modules :chpl:mod:`Assert` ,
+:chpl:mod:`Math` , and :chpl:mod:`Types` by default.
+
 
 .. toctree::
    :hidden:
@@ -11,9 +17,13 @@ Contents:
    :maxdepth: 1
    :glob:
 
-   standard/**
 
-**Module Indices and tables**
+   standard/*
 
-* :ref:`genindex`
-* :chpl:chplref:`chplmodindex`
+
+Index
+-----
+
+* :ref:`Chapel Online Documentation Index <genindex>`
+
+.. COMMENT: clean this up before exposing:: * :chpl:chplref:`chplmodindex`

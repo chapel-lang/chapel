@@ -210,6 +210,7 @@ def get_sys_c_types(docs=False):
     #
     sys_c_types.append("""
 {
+  pragma "no doc"
   pragma "no prototype"
   extern proc sizeof(type t): size_t;
 """)

@@ -46,8 +46,8 @@ def main():
             os.symlink(rstfile, newpath)
 
     # CHPL_HOME README
-    chplhomereadme = os.path.join(chpl_home, 'README.rst')
-    os.symlink(chplhomereadme, 'source/usingchapel/README.rst')
+    chplhomereadme = os.path.join(chpl_home, 'QUICKSTART.rst')
+    os.symlink(chplhomereadme, 'source/usingchapel/QUICKSTART.rst')
 
     # Man pages
     chplmanpage = os.path.join(chpl_home, 'man', 'chpl.rst')
@@ -55,6 +55,18 @@ def main():
 
     chpldocmanpage = os.path.join(chpl_home, 'man', 'chpldoc.rst')
     os.symlink(chpldocmanpage, 'source/tools/chpldoc/man.rst')
+
+    chpldocexamples = os.path.join(chpl_home, 'test', 'release', 'examples')
+    os.symlink(chpldocexamples, 'source/users-guide/base/examples')
+
+    chpldocexamples = os.path.join(chpl_home, 'test', 'release', 'examples')
+    os.symlink(chpldocexamples, 'source/users-guide/taskpar/examples')
+
+#    chpldocexamples = os.path.join(chpl_home, 'test', 'release', 'examples')
+#    os.symlink(chpldocexamples, 'source/users-guide/datapar/examples')
+
+    chpldocexamples = os.path.join(chpl_home, 'test', 'release', 'examples')
+    os.symlink(chpldocexamples, 'source/users-guide/locality/examples')
 
 
 if __name__ == '__main__':

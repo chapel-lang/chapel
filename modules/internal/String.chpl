@@ -41,18 +41,18 @@ private module BaseStringType {
 // It might be worth moving them here for documentation - KB Feb 2016
 
 /*
-  The :mod:`String` module provides the implementation of strings for Chapel.
-  :record:`string` is a record, and therefore a value type. The
-  :record:`string` type stores a "home" locale where its data resides.
-  Operations on strings will automatically take this into account and will work
-  transparently across locales. There is one exception to this with the
-  :proc:`string.c_str()` function described below.
+  The following documentation consists of functions and methods used to
+  manipulate and process Chapel strings. See the :mod:`IO` documentation for
+  more information on reading, writing, and formatting strings.
 
   .. warning::
 
     While :record:`string` is intended to be a Unicode string, there is much
     left to do. As of Chapel 1.13, only ASCII strings can be expected to work
     correctly with all functions.
+
+    Future work involves support for both ASCII and unicode strings, and
+    allowing users to specify the encoding for individual strings.
  */
 module String {
   use BaseStringType;
@@ -119,12 +119,14 @@ module String {
     // We use chpl_nodeID as a shortcut to get at here.id without actually constructing
     // a locale object. Used when determining if we should make a remote transfer.
     var locale_id = chpl_nodeID; // : chpl_nodeID_t
+
     /*
-      Construct a new string from ``s``. If ``owned`` is set to ``true`` the
-      underlying buffer will be copied from ``s`` into the new instance. If it
-      is ``false`` a shallow copy will be made. It is the responsibility of the
-      user to ensure that the underlying buffer is not freed while being used
-      as part of a shallow copy.
+      Construct a new string from ``s``. If ``owned`` is set to ``true`` then
+      ``s`` will be fully copied into the new instance. If it is ``false`` a
+      shallow copy will be made such that any in-place modifications to the new
+      string may appear in ``s``. It is the responsibility of the user to
+      ensure that the underlying buffer is not freed while being used as part
+      of a shallow copy.
      */
     proc string(s: string, owned: bool = true) {
       const sRemote = s.locale_id != chpl_nodeID;
@@ -155,9 +157,9 @@ module String {
     }
 
     /*
-      Construct a new string from the `c_string` `cs`. If `owned` is set to true, the
-      backing buffer will be freed when the new record is destroyed. If
-      `needToCopy` is set to true, the `c_string` will be copied into the
+      Construct a new string from the `c_string` `cs`. If `owned` is set to
+      true, the backing buffer will be freed when the new record is destroyed.
+      If `needToCopy` is set to true, the `c_string` will be copied into the
       record, otherwise it will be used directly. It is the responsibility of
       the user to ensure that the underlying buffer is not freed if the
       `c_string` is not copied in.
@@ -169,12 +171,12 @@ module String {
     }
 
     /*
-      Construct a new string from `buff` (`c_ptr(uint(8))`). `size` indicates the total size
-      of the buffer available, while `len` indicates the current length of
-      the string in the buffer (the common case would be `size-1` for a C-style
-      string). If `owned` is set to true, the backing buffer will be freed
-      when the new record is destroyed. If `needToCopy` is set to true, the
-      `c_string` will be copied into the record, otherwise it will be used
+      Construct a new string from `buff` ( `c_ptr(uint(8))` ). `size` indicates
+      the total size of the buffer available, while `len` indicates the current
+      length of the string in the buffer (the common case would be `size-1` for
+      a C-style string). If `owned` is set to true, the backing buffer will be
+      freed when the new record is destroyed. If `needToCopy` is set to true,
+      the `c_string` will be copied into the record, otherwise it will be used
       directly. It is the responsibility of the user to ensure that the
       underlying buffer is not freed if the `c_string` is not copied in.
      */
@@ -260,13 +262,14 @@ module String {
     }
 
     /*
-      Get a :type:`c_string` from a :record:`string`.
+      Get a `c_string` from a :record:`string`.
 
       .. warning::
 
           This can only be called safely on a :record:`string` whose home is
           the current locale.  This property can be enforced by calling
-          :proc:`string.localize()` before :proc:`~string.c_str()`.
+          :proc:`string.localize()` before :proc:`~string.c_str()`. If the
+          string is remote, the program will halt.
 
       For example:
 
@@ -278,9 +281,9 @@ module String {
           }
 
       :returns:
-          A :type:`c_string` that points to the underlying buffer used by this
-          :record:`string`.  The returned :type:`c_string` is only valid while
-          on the current locale and while the :record:`string` is.
+          A `c_string` that points to the underlying buffer used by this
+          :record:`string`. The returned `c_string` is only valid when used
+          on the same locale as the string.
      */
     inline proc c_str(): c_string {
       inline proc _cast(type t, x) where t:c_string && x.type:bufferType {
@@ -303,6 +306,22 @@ module String {
 
     /*
       Iterates over the string character by character.
+
+      For example:
+
+      .. code-block:: chapel
+      
+        var str = "abcd";
+        for c in str {
+          writeln(c);
+        }
+
+      Output::
+
+        a
+        b
+        c
+        d
      */
     iter these() : string {
       for i in 1..this.len {
@@ -362,11 +381,13 @@ module String {
     }
 
     /*
-      Slice a string.
+      Slice a string. Halts if r is not completely inside the range
+      `1..string.length`.
 
       :arg r: range of the indices the new string should be made from
 
-      :returns: a substring within `1..string.length`
+      :returns: a new string that is a substring within `1..string.length`. If
+                the length of `r` is zero, an empty string is returned.
      */
     // TODO: I wasn't very good about caching variables locally in this one.
     proc this(r: range(?)) : string {
@@ -565,7 +586,8 @@ module String {
     /*
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
-                   default is the whole string
+                   default is the whole string. Halts if the range is not
+                   within `1..string.length`
 
       :returns: the index of the first occurrence of `needle` within a
                 string, or 0 if the `needle` is not in the string.
@@ -578,7 +600,8 @@ module String {
     /*
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
-                   default is the whole string
+                   default is the whole string. Halts if the range is not
+                   within `1..string.length`
 
       :returns: the index of the first occurrence from the right of `needle`
                 within a string, or 0 if the `needle` is not in the string.
@@ -590,7 +613,8 @@ module String {
     /*
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
-                   default is the whole string
+                   default is the whole string. Halts if the range is not
+                   within `1..string.length`
 
       :returns: the number of times `needle` occurs in the string
      */
@@ -604,7 +628,8 @@ module String {
       :arg count: an optional integer specifying the number of replacements to
                   make, values less than zero will replace all occurrences
 
-      :returns: a copy of the string where `needle` replaces `replacement` up to `count` times
+      :returns: a copy of the string where `needle` replaces `replacement` up
+                to `count` times
      */
     // TODO: not ideal - count and single allocation probably faster
     //                 - can special case on replacement|needle.length (0, 1)
@@ -707,6 +732,7 @@ module String {
           writeln(x); // prints: "a|10|d"
      */
     // TODO: could rewrite to have cleaner logic / more efficient for edge cases
+    // TODO: allow for varargs?
     proc join(S: [] string) : string {
       var newSize: int = 0;
       var ret: string;
@@ -1193,6 +1219,9 @@ module String {
   //
   // Assignment functions
   //
+  /*
+     Copies the string `rhs` into the string `lhs`.
+  */
   proc =(ref lhs: string, rhs: string) {
     inline proc helpMe(ref lhs: string, rhs: string) {
       if _local || rhs.locale_id == chpl_nodeID {
@@ -1217,6 +1246,11 @@ module String {
     }
   }
 
+  /*
+     Copies the c_string `rhs_c` into the string `lhs`.
+
+     Halts if `lhs` is a remote string.
+  */
   proc =(ref lhs: string, rhs_c: c_string) {
     // Make this some sort of local check once we have local types/vars
     if !_local && (lhs.locale_id != chpl_nodeID) then
@@ -1230,6 +1264,9 @@ module String {
   //
   // Concatenation
   //
+  /*
+     :returns: A new string which is the result of concatenating `s0` and `s1`
+  */
   proc +(s0: string, s1: string) {
     // cache lengths locally
     const s0len = s0.len;
@@ -1265,6 +1302,20 @@ module String {
     return ret;
   }
 
+  /*
+     :returns: A new string which is the result of repeating `s` `n` times.
+               If `n` is less than or equal to 0, an empty string is returned.
+
+     For example:
+
+     .. code-block:: chapel
+        
+        writeln("Hello! " * 3);
+
+     Results in::
+
+       Hello! Hello! Hello! 
+  */
   proc *(s: string, n: integral) {
     if n <= 0 then return "";
 
@@ -1311,6 +1362,11 @@ module String {
     return ret;
   }
 
+  /*
+     The following concatenation functions return a new string which is the
+     result of casting the non-string argument to a string, and concatenating
+     that result with `s`.
+  */
   inline proc +(s: string, x: numeric) return concatHelp(s, x);
   inline proc +(x: numeric, s: string) return concatHelp(x, s);
   inline proc +(s: string, x: enumerated) return concatHelp(s, x);
@@ -1406,6 +1462,9 @@ module String {
   //
   // Append
   //
+  /*
+     Appends the string `rhs` to the string `lhs`.
+  */
   proc +=(ref lhs: string, const ref rhs: string) : void {
     // if rhs is empty, nothing to do
     if rhs.len == 0 then return;
@@ -1566,6 +1625,9 @@ module String {
   // ascii
   // TODO: replace with ordinal()
   //
+  /*
+     :returns: The byte value of the first character in `a` as an integer.
+  */
   inline proc ascii(a: string) : int(32) {
     if a.isEmptyString() then return 0;
 

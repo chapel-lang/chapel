@@ -33,7 +33,7 @@ CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_COMPILER)
-SYS_CTYPES_MODULE_DOC=standard/gen/doc/SysCTypes.chpl
+SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
@@ -128,7 +128,9 @@ INTERNAL_MODULES_TO_DOCUMENT =          \
 	internal/ChapelRange.chpl             \
 	internal/String.chpl                  \
 	internal/ChapelSyncvar.chpl           \
-	internal/ChapelTuple.chpl
+	internal/ChapelTuple.chpl \
+	internal/ChapelEnv.chpl
+
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
@@ -141,6 +143,7 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_SPHINX}/source/modules/
 	rm -rf ${MODULE_SPHINX}
+	rm -f ${CHPL_MAKE_HOME}/modules/$(SYS_CTYPES_MODULE_DOC)
 
 clean-documentation:
 	rm -rf ./docs

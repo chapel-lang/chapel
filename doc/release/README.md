@@ -27,6 +27,7 @@ This directory contains the following documentation:
     cygwin.rst           :  Cygwin
     ibm.rst              :  IBM
     knc.rst              :  Intel Xeon Phi (Knights Corner)
+    knl.rst              :  Intel Xeon Phi (Knights Landing)
     macosx.rst           :  Mac
     marenostrum.rst      :  MareNostrum (at BSC)
     sgi.rst              :  SGI Altix

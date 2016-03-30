@@ -201,9 +201,12 @@ fixTitle "Complex" $file
 
 # End ChapelComplex_forDocs ##
 
+## String ##
 
+file="./String.rst"
+fixTitle "Strings" $file
 
-
+## End of String ##
 
 ## UtilMisc_forDocs ##
 
@@ -213,3 +216,11 @@ removePrefixFunctions $file
 fixTitle "Misc Functions" $file
 
 # End UtilMisc_forDocs ##
+
+## ChapelEnv ##
+
+file="./ChapelEnv.rst"
+fixTitle "Chapel Environment Variables" $file
+replace " = AppendExpr.Call09" "" $file
+
+## End of ChapelEnv##

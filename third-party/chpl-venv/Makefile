@@ -105,6 +105,9 @@ rm-sphinx-build: FORCE
 	@rm -f $(CHPL_VENV_SPHINX_BUILD)
 
 
+use-system-python: FORCE
+	@./venv-use-sys-python.py $(CHPL_VENV_VIRTUALENV_BIN)
+
 FORCE:
 
 .PHONY: install-requirements create-virtualenv virtualenv check-exes rm-sphinx-build check-easy-install check-python

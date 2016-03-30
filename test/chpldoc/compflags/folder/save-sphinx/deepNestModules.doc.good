@@ -1,25 +1,24 @@
 .. default-domain:: chpl
 
 .. module:: Foo
-   :synopsis: * There's a problem with the placement of definitions when nest modules are
 
 Foo
 ===
+**Submodules**
 
-* There's a problem with the placement of definitions when nest modules are
-* involved
-*
-* Doesn't work :proc:`gob`
-* Also broken :proc:`Foo.gob`
-* But this works :proc:`Foo.Bar.gob`
+.. toctree::
+   :maxdepth: 1
+   :glob:
 
+   Foo/*
 
 .. function:: proc gob()
 
 .. default-domain:: chpl
 
-.. module:: Foo.Bar
+.. module:: Bar
 
-Foo.Bar
-=======
+Bar
+===
 .. function:: proc baz()
+

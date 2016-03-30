@@ -1,8 +1,12 @@
 .. _readme-knc:
 
-==============================
-Using Chapel on Intel Xeon Phi
-==============================
+======================================
+Using Chapel on Intel "Knights Corner"
+======================================
+
+.. warning::
+   KNC support is deprecated as of Chapel 1.13 and support will be entirely
+   removed for the 1.14 release.
 
 The following information is assembled to help Chapel users get up and
 running on Intel Xeon Phi, Knights Corner (KNC).

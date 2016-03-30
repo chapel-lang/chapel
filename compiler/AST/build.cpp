@@ -2284,9 +2284,24 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
 
   //
   // detect on-statement directly inside local statement
+  // i.e., we want "local on {} ", not "local { on {} }"
   //
-  BlockStmt* onBlock = findStmtWithTag(PRIM_BLOCK_ON, body);
+  BlockStmt* onBlock = toBlockStmt(body->body.tail);
+  if (body->blockTag == BLOCK_SCOPELESS &&
+      onBlock != NULL &&
+      onBlock->isBlockType(PRIM_BLOCK_ON)) {
+    // On-statement directly inside scopeless local block
 
+    CallExpr* call = toCallExpr(onBlock->blockInfoGet());
+    SymExpr* head = toSymExpr(call->argList.head);
+    if (head->var == gTrue) {
+      // avoiding 'local local on'
+      onBlock = NULL;
+    }
+  } else {
+    // not an on-block
+    onBlock = NULL;
+  }
   if (onBlock) {
     CallExpr* call = toCallExpr(onBlock->blockInfoGet());
 
