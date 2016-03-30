@@ -2688,7 +2688,7 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs, std::string 
     for (int i = 0; i < length; i++) {
       *file << "=";
     }
-    *file << std::endl << std::endl;
+    *file << std::endl;
   }
 
   if (!fDocsTextOnly) {
@@ -2703,12 +2703,7 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs, std::string 
   if (parentName != "") {
     *file << parentName << ".";
   }
-  *file << name << ";" << std::endl;
-
-  if (!fDocsTextOnly) {
-    *file << std::endl;
-  }
-
+  *file << name << ";" << std::endl << std::endl;
 
   // If we had submodules, be sure to link to them
   if (hasTopLevelModule()) {
