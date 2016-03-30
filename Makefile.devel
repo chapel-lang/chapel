@@ -22,6 +22,9 @@ develall: STATUS
 docs: module-docs
 	cd doc/sphinx && ./run-in-venv.bash ${MAKE} docs
 
+checkdocs: FORCE
+	cd doc/sphinx && ./run-in-venv.bash ${MAKE} check
+
 man: third-party-chpldoc-venv FORCE
 	cd man && $(MAKE)
 
