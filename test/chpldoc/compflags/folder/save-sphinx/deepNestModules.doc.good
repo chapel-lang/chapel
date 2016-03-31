@@ -4,6 +4,12 @@
 
 Foo
 ===
+**Usage**
+
+.. code-block:: chapel
+
+   use Foo;
+
 **Submodules**
 
 .. toctree::
@@ -20,5 +26,11 @@ Foo
 
 Bar
 ===
+**Usage**
+
+.. code-block:: chapel
+
+   use Foo.Bar;
+
 .. function:: proc baz()
 

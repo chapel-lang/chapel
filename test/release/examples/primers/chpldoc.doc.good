@@ -1,4 +1,8 @@
 chpldoc.doc
+
+Usage:
+   use chpldoc.doc;
+
 Submodules for this module are located in the chpldoc.doc/ directory
 
    proc commented(val: int): string
@@ -12,6 +16,10 @@ Submodules for this module are located in the chpldoc.doc/ directory
 
    proc uncommented()
 Defined
+
+Usage:
+   use chpldoc.doc.Defined;
+
    
    If the source code defines a module, it can also have a comment associated
    with it

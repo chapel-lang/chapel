@@ -2658,7 +2658,7 @@ Vec<AggregateType*> ModuleSymbol::getTopLevelClasses() {
 }
 
 
-void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
+void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs, std::string parentName) {
   if (this->noDocGen()) {
     return;
   }
@@ -2690,6 +2690,20 @@ void ModuleSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     }
     *file << std::endl;
   }
+
+  if (!fDocsTextOnly) {
+    *file << "**Usage**" << std::endl << std::endl;
+    *file << ".. code-block:: chapel" << std::endl << std::endl;
+  } else {
+    *file << std::endl;
+    *file << "Usage:" << std::endl;
+  }
+  this->printTabs(file, tabs + 1);
+  *file << "use ";
+  if (parentName != "") {
+    *file << parentName << ".";
+  }
+  *file << name << ";" << std::endl << std::endl;
 
   // If we had submodules, be sure to link to them
   if (hasTopLevelModule()) {

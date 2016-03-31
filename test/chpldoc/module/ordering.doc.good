@@ -1,4 +1,8 @@
 ordering.doc
+
+Usage:
+   use ordering.doc;
+
    proc second()
       This is a proc... 
 
