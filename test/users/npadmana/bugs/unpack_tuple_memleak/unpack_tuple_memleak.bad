@@ -1,0 +1,13 @@
+
+==================================================================================================================
+Allocated Memory (Bytes)          Number   Size     Total    Description                      Address             
+==================================================================================================================
+unpack_tuple_memleak.chpl:14      1        136      136      [domain(1,int(64),false)] real(64)0x00007f3b33a2c460  
+unpack_tuple_memleak.chpl:14      1        136      136      [domain(1,int(64),false)] real(64)0x00007f3b33a2c3c0  
+unpack_tuple_memleak.chpl:14      32768    8        262144   array elements                   0x00007f3b3068fa40  
+unpack_tuple_memleak.chpl:14      32768    8        262144   array elements                   0x00007f3b33b4b340  
+unpack_tuple_memleak.chpl:13      1        96       96       domain(1,int(64),false)          0x00007f3b33a291e0  
+unpack_tuple_memleak.chpl:14      1        24       24       listNode(BaseArr)                0x00007f3b33a19dc0  
+unpack_tuple_memleak.chpl:14      1        24       24       listNode(BaseArr)                0x00007f3b33a19da0  
+==================================================================================================================
+
