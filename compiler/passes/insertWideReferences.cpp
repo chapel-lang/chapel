@@ -669,6 +669,7 @@ static bool recurseCausedByArgs(FnSymbol* fn,
     FnSymbol* otherFn = toFnSymbol(cause->defPoint->parentSymbol);
     if (otherFn &&
         otherFn != sym->defPoint->parentSymbol && // exposed by SSCA2 perfcompopts
+        !isRef(cause) && // Skip _ref_T = foo(...), not the desired case
         cause == otherFn->getReturnSymbol() &&
         !otherFn->hasFlag(FLAG_VIRTUAL) && 
         !isModuleSymbol(sym->defPoint->parentSymbol)) {
