@@ -1,4 +1,8 @@
 inlineTest.doc
+
+Usage:
+   use inlineTest.doc;
+
 Submodules for this module are located in the inlineTest.doc/ directory
 
    proc method1()
@@ -39,6 +43,10 @@ Submodules for this module are located in the inlineTest.doc/ directory
 
    proc allThreeCommentless(val: int): int
 Other
+
+Usage:
+   use inlineTest.doc.Other;
+
    proc inside
       Comment for inline method inside module 
 

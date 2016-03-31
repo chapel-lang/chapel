@@ -1,4 +1,8 @@
 fullyCommented.doc
+
+Usage:
+   use fullyCommented.doc;
+
 Submodules for this module are located in the fullyCommented.doc/ directory
 
    proc method1()
@@ -14,6 +18,10 @@ Submodules for this module are located in the fullyCommented.doc/ directory
       Comment for method with argument and body 
 
 Other
+
+Usage:
+   use fullyCommented.doc.Other;
+
    proc inside
       Comment for method inside module 
 

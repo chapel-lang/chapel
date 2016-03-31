@@ -1,4 +1,8 @@
 rangesAndDomains.doc
+
+Usage:
+   use rangesAndDomains.doc;
+
    Record: R
       var isRange: range
       var boundedRange = 1..10

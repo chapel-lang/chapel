@@ -1,4 +1,8 @@
 variableArguments.doc
+
+Usage:
+   use variableArguments.doc;
+
 Submodules for this module are located in the variableArguments.doc/ directory
 
    proc variable(x ...)
@@ -15,6 +19,10 @@ Submodules for this module are located in the variableArguments.doc/ directory
 
    proc specifyMeCommentless(q ...?p)
 Other
+
+Usage:
+   use variableArguments.doc.Other;
+
    proc variable(x ...)
       This method has a variable number of arguments 
 

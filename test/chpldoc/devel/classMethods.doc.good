@@ -1,4 +1,8 @@
 classMethods.doc
+
+Usage:
+   use classMethods.doc;
+
    proc method(_mt: _MT, this: named)
        This method has a comment 
 

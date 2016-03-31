@@ -1,4 +1,8 @@
 queried.doc
+
+Usage:
+   use queried.doc;
+
    proc queried(x: ?t)
       This proc queries the type of its argument 
 

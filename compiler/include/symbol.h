@@ -496,6 +496,7 @@ public:
 private:
   void                 getTopLevelConfigOrVariables(Vec<VarSymbol *> *contain, Expr *expr, bool config);
   bool                 hasTopLevelModule();
+  std::string          getUsage();
 };
 
 /******************************** | *********************************
