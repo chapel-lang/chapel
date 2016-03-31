@@ -193,7 +193,7 @@ module CString {
   {
     pragma "insert line file info"
     extern proc c_string_to_chpl_bool(x:c_string) : bool;
-    return c_string_to_chpl_bool(x) : t;
+    return c_string_to_chpl_bool((x:string).strip().c_str()) : t;
   }
 
   //
@@ -217,21 +217,21 @@ module CString {
   extern proc c_string_to_uint64_t(x:c_string) : uint(64);
 
   inline proc _cast(type t, x:c_string) where t == int(8)
-    return c_string_to_int8_t(x);
+    return c_string_to_int8_t((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == int(16)
-    return c_string_to_int16_t(x);
+    return c_string_to_int16_t((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == int(32)
-    return c_string_to_int32_t(x);
+    return c_string_to_int32_t((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == int(64)
-    return c_string_to_int64_t(x);
+    return c_string_to_int64_t((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == uint(8)
-    return c_string_to_uint8_t(x);
+    return c_string_to_uint8_t((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == uint(16)
-    return c_string_to_uint16_t(x);
+    return c_string_to_uint16_t((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == uint(32)
-    return c_string_to_uint32_t(x);
+    return c_string_to_uint32_t((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == uint(64)
-    return c_string_to_uint64_t(x);
+    return c_string_to_uint64_t((x:string).strip().c_str());
 
   //
   // casts from c_string to real/imag types
@@ -246,13 +246,13 @@ module CString {
   extern proc c_string_to_imag64(x:c_string) : imag(64);
 
   inline proc _cast(type t, x:c_string) where t == real(32)
-    return c_string_to_real32(x);
+    return c_string_to_real32((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == real(64)
-    return c_string_to_real64(x);
+    return c_string_to_real64((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == imag(32)
-    return c_string_to_imag32(x);
+    return c_string_to_imag32((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == imag(64)
-    return c_string_to_imag64(x);
+    return c_string_to_imag64((x:string).strip().c_str());
 
   //
   // casts from c_string to complex types
@@ -263,9 +263,9 @@ module CString {
   extern proc c_string_to_complex128(x:c_string) : complex(128);
 
   inline proc _cast(type t, x:c_string) where t == complex(64)
-    return c_string_to_complex64(x);
+    return c_string_to_complex64((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == complex(128)
-    return c_string_to_complex128(x);
+    return c_string_to_complex128((x:string).strip().c_str());
 
   //
   // casts from complex
