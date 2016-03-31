@@ -1,0 +1,8 @@
+test-npb32 big failures: 100
+test-npb64 big failures: 41
+test-pcg-real-32 big failures: 87
+test-pcg-real-64 big pass
+test-pcg-uint-32 big failures: 1
+test-pcg-uint-32-c big failures: 1
+test-pcg-uint-64 big pass
+test-pcg-uint-32-bounded big pass
