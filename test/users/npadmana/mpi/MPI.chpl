@@ -19,16 +19,16 @@ module MPI {
   /* MPI types.
      We define these as opaque types.
      */
-  extern type MPI_Aint : opaque;
-  extern type MPI_Status : opaque;
-  extern type MPI_Group : opaque;
-  extern type MPI_Comm : opaque;
-  extern type MPI_Datatype : opaque;
-  extern type MPI_Request : opaque;
-  extern type MPI_Op : opaque;
+  extern type MPI_Aint = opaque;
+  extern type MPI_Status = opaque;
+  extern type MPI_Group = opaque;
+  extern type MPI_Comm = opaque;
+  extern type MPI_Datatype = opaque;
+  extern type MPI_Request = opaque;
+  extern type MPI_Op = opaque;
 
   // TODO : Not explicily found in the spec
-  extern type MPI_Errhandler : opaque;
+  extern type MPI_Errhandler = opaque;
 
   /* Return codes. 
      Define these as c_int
@@ -232,8 +232,8 @@ module MPI {
   extern proc MPI_Wait (ref request: MPI_Request, ref status: MPI_Status): c_int;
   extern proc MPI_Test (ref request: MPI_Request, ref flag: c_int, ref status: MPI_Status): c_int;
   extern proc MPI_Request_free (ref request: MPI_Request): c_int;
-  extern proc MPI_Waitany (count: c_int, ref array_of_requests: MPI_Request, ref index: c_int, ref status: MPI_Status): c_int;
-  extern proc MPI_Testany (count: c_int, ref array_of_requests: MPI_Request, ref index: c_int, ref flag: c_int, ref status: MPI_Status): c_int;
+  extern proc MPI_Waitany (count: c_int, ref array_of_requests: MPI_Request, ref iindex : c_int, ref status: MPI_Status): c_int;
+  extern proc MPI_Testany (count: c_int, ref array_of_requests: MPI_Request, ref iindex : c_int, ref flag: c_int, ref status: MPI_Status): c_int;
   extern proc MPI_Waitall (count: c_int, ref array_of_requests: MPI_Request, ref array_of_statuses: MPI_Status): c_int;
   extern proc MPI_Testall (count: c_int, ref array_of_requests: MPI_Request, ref flag: c_int, ref array_of_statuses: MPI_Status): c_int;
   extern proc MPI_Waitsome (incount: c_int, ref array_of_requests: MPI_Request, 
@@ -279,10 +279,10 @@ module MPI {
   /* Process topologies */
   extern proc MPI_Cart_create (comm_old: MPI_Comm, ndims: c_int, ref dims: c_int, ref periods: c_int, reorder: c_int, ref comm_cart: MPI_Comm): c_int;
   extern proc MPI_Dims_create (nnodes: c_int, ndims: c_int, ref dims: c_int): c_int;
-  extern proc MPI_Graph_create (comm_old: MPI_Comm, nnodes: c_int, ref index: c_int, ref edges: c_int, reorder: c_int, ref comm_graph: MPI_Comm): c_int;
+  extern proc MPI_Graph_create (comm_old: MPI_Comm, nnodes: c_int, ref iindex: c_int, ref edges: c_int, reorder: c_int, ref comm_graph: MPI_Comm): c_int;
   extern proc MPI_Topo_test (comm: MPI_Comm, ref status: c_int): c_int;
   extern proc MPI_Graphdims_get (comm: MPI_Comm, ref nnodes: c_int, ref nedges: c_int): c_int;
-  extern proc MPI_Graph_get (comm: MPI_Comm, maxindex: c_int, maxedges: c_int, ref index: c_int, ref edges: c_int): c_int;
+  extern proc MPI_Graph_get (comm: MPI_Comm, maxindex: c_int, maxedges: c_int, ref iindex: c_int, ref edges: c_int): c_int;
   extern proc MPI_Cartdim_get (comm: MPI_Comm, ref ndims: c_int): c_int;
   extern proc MPI_Cart_get (comm: MPI_Comm, maxdims: c_int, ref dims: c_int, ref periods: c_int, ref coords: c_int): c_int;
   extern proc MPI_Cart_rank (comm: MPI_Comm, ref coords: c_int, ref rank: c_int): c_int;
@@ -292,5 +292,5 @@ module MPI {
   extern proc MPI_Cart_shift (comm: MPI_Comm, direction: c_int, disp: c_int, ref rank_source: c_int, ref rank_dest: c_int): c_int;
   extern proc MPI_Cart_sub (comm: MPI_Comm, ref remain_dims: c_int, ref newcomm: MPI_Comm): c_int;
   extern proc MPI_Cart_map (comm: MPI_Comm, ndims: c_int, ref dims: c_int, ref periods: c_int, ref newrank: c_int): c_int;
-  extern proc MPI_Graph_map (comm: MPI_Comm, nnodes: c_int, ref index: c_int, ref edges: c_int, ref newrank: c_int): c_int;
+  extern proc MPI_Graph_map (comm: MPI_Comm, nnodes: c_int, ref iindex: c_int, ref edges: c_int, ref newrank: c_int): c_int;
 }
