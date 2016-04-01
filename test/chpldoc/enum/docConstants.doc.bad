@@ -1,4 +1,8 @@
 docConstants.doc
+
+Usage:
+   use docConstants.doc;
+
    enum Color { Red, Yellow }
       first constant doc 
 
