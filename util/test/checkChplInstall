@@ -103,19 +103,15 @@ log_info "Temporary test job directory: ${TMP_TEST_DIR}"
 # Cleanup the tmp directory whenever exit is invoked
 function cleanup_tmp_dir()
 {
-    local i
     log_debug "Removing ${TMP_TEST_DIR}"
-    for i in 1 2 3 4 5
-    do
-        rm -rf ${TMP_TEST_DIR} && break
-        # sometimes rm needs to wait for the TEST_JOB exe file to close
-        log_debug "wait and try again"
-        sleep 1
-    done
+    rm -rf ${TMP_TEST_DIR} || (
+        log_warning "failed rm -rf ${TMP_TEST_DIR}, ignore the error"
+        set -x; ls -la ${TMP_TEST_DIR}
+    ) || : ok
     if [ "${CHPL_DIR_REMOVE}" == "1" ]; then
         log_debug "Removing ${CHPL_DIR}"
         # rmdir should fail if some other process started using CHPL_DIR after we created it
-        rmdir ${CHPL_DIR} || log_debug "error ignored"
+        rmdir ${CHPL_DIR} || log_debug "rmdir error ignored"
     fi
 }
 trap cleanup_tmp_dir EXIT
