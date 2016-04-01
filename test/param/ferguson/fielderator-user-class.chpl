@@ -1,6 +1,6 @@
 use Reflection;
 
-record R {
+class R {
   var x: int;
   var y: int;
 }
