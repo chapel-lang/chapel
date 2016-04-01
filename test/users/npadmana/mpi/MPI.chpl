@@ -1,4 +1,13 @@
 module MPI {
+  /* 
+   Currently unsupported in the MPI 1.1 standard 
+      MPI_Op_create
+      MPI_Op_free
+      MPI_Errhandler_create
+      MPI_Errhandler_free
+      MPI_Keyval_create
+      MPI_Keyval_free
+   */
 
   use SysCTypes;
   require "mpi.h";

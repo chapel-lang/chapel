@@ -7,7 +7,8 @@ This is built on top of pycparser :
 Some parts of this code may need to be special cased for particular bindings,
 and the resulting bindings may require some human intervention.
 """
-from pycparser import c_parser, c_ast
+from pycparser import c_parser, c_ast, parse_file
+import sys
 
 ## Global dictionary of C->Chapel mappings. New typedefs can
 ## be registered here.
@@ -17,6 +18,7 @@ c2chapel['double'] = 'c_double'
 c2chapel['float'] = 'c_float'
 c2chapel['int'] = 'c_int'
 c2chapel['long'] = 'c_long'
+c2chapel['char'] = 'c_char'
 c2chapel['void'] = None
 
 # Convert a type declaration into Chapel
@@ -76,14 +78,6 @@ class FuncDeclVisitor(c_ast.NodeVisitor):
         print funcDecl2Chapel(node) + ";"
 
 if __name__=="__main__":
-    txt = """
-    double f1(double x);
-    void f2(double x, double y);
-    double f3(double x[]);
-    double f4(void* x, int *y);
-    double f5();
-    """
-    parser = c_parser.CParser()
-    ast = parser.parse(txt)
+    ast = parse_file(sys.argv[1], use_cpp=True)
     v = FuncDeclVisitor()
     v.visit(ast)
