@@ -1,0 +1,15 @@
+Trying to parse (in an extern block) a C structure with a function pointer as a member
+triggers an internal compiler error. It isn't surprising that this 
+doesn't work, since Chapel doesn't have a defined way to pass function 
+pointers back to C.
+
+It would be nice if this just treated the structure as an opaque type.
+
+I'll note that this is the only issue I've run into getting 
+Chapel to parse the GSL header files - which is quite impressive.
+
+The way around this right now is to make a dummy declaration/header file,
+which is how I've handled the GSL cases. But getting this working would 
+mean that the GSL headers could be parsed as-is, and the GSL functions
+would be useable in Chapel with no work.
+
