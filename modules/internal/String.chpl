@@ -42,13 +42,13 @@ private module BaseStringType {
 
 /*
   The following documentation shows functions and methods used to
-  manipulate and process Chapel strings. See the :mod:`IO` documentation for
-  more information on reading, writing, and formatting strings.
+  manipulate and process Chapel strings.
 
   Besides the functions below, some other modules proved routines that are
   useful for working with strings. The :mod:`IO` module provides
   :proc:`IO.string.format` which creates a string that is the result of
-  formatting. The :mod:`Regexp` module also provides some routines for searching
+  formatting. It also includes functions for reading and writing strings.
+  The :mod:`Regexp` module also provides some routines for searching
   within strings.
 
   .. warning::
