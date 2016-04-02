@@ -17,6 +17,10 @@ since all of these are built around user-defined handlers, that we support.
      style pointer is necessary.
   #. An exception to the above is if the C prototype names the argument ``array_of_*``,
      in which case we write it using an array form.
+  #. Some MPI-1.1 functions were deprecated in MPI-2. These should be updated in the future, but
+     are still present in this version.
+  #. We represent MPI_Aint by ptrdiff. If this is not the correct size, there will be an assertion 
+     failure in the code.
 */
 module MPI {
   use SysCTypes;
