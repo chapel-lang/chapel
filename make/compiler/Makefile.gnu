@@ -22,8 +22,13 @@
 #
 # Tools
 #
+ifdef CHPL_MPI
+CXX=mpicxx
+CC=mpicc
+else
 CXX = g++
 CC = gcc
+endif
 
 RANLIB = ranlib
 
