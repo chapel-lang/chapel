@@ -72,12 +72,20 @@ module MPI {
   /* MPI types.
      We define these as opaque types.
      */
-  extern type MPI_Aint;
+  extern type MPI_Aint = c_ptrdiff;
   extern type MPI_Group;
   extern type MPI_Comm;
   extern type MPI_Datatype;
   extern type MPI_Request;
   extern type MPI_Op;
+
+  {
+    pragma "no doc"
+    pragma "no prototype"
+    extern proc sizeof(type t): size_t;
+    assert(sizeof(MPI_Aint) == sizeof(c_ptrdiff));
+  }
+
 
   // TODO : Not explicily found in the spec
   extern type MPI_Errhandler = opaque;
