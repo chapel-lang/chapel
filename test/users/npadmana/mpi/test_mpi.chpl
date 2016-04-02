@@ -14,6 +14,7 @@ that off with the autoInitMPI parameter
  */
 use MPI; 
 use C_MPI; // Include the C-API, to reduce verbosity of the code.
+use Random;
 
 const requiredSize = 4;
 
@@ -26,6 +27,7 @@ proc main() {
   hello();
   point2point();
   ring();
+  pi();
 
   MPI_Finalize();
 }
@@ -87,3 +89,28 @@ proc ring() {
   writef("Rank %i recieved %i from the left, and %i from the right\n",worldRank, buf[1], buf[2]);
   MPI_Barrier(MPI_COMM_WORLD);
 }
+
+/* Compute pi -- test MPI_Reduce */
+proc pi() {
+  const N=10000;
+  var x : [0.. #N] real;
+  var y : [0.. #N] real;
+
+  fillRandom(x); fillRandom(y);
+  var sum = 0.0;
+  forall (x1,y1) in zip(x,y) with (+ reduce sum) {
+    if (x1*x1+y1*y1) <= 1 then sum += 1;
+  }
+  sum /= N;
+
+  var summ : real;
+  MPI_Reduce(sum, summ, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+  if worldRank==0 {
+    summ *= 4/worldSize;
+    writef("I estimate pi to be %r\n",summ);
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+}
+
+
