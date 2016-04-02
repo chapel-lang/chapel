@@ -164,4 +164,25 @@ proc test_scatter() {
     MPI_Type_free(coltype);
   }
 
+  // Use an indexed data type
+  {
+    var arr2 = reshape(arr, {0.. #16});
+    var indextype : MPI_Datatype;
+    var stat : MPI_Status;
+
+    var blocklength : [0.. #2]c_int = [2:c_int,2:c_int];
+    var displ : [0.. #2]c_int = [5:c_int,12:c_int];
+
+    MPI_Type_indexed(2, blocklength, displ, MPI_FLOAT, indextype);
+    MPI_Type_commit(indextype);
+
+    if worldRank==0 {
+      for irank in 0.. #worldSize do MPI_Send(arr2[0], 1, indextype, irank, 1, MPI_COMM_WORLD);
+    }
+    MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
+    writef("Rank %i :",worldRank); writeln(recbuf);
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Type_free(indextype);
+  }
+
 }
