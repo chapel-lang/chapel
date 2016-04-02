@@ -12,6 +12,27 @@ module MPI {
   use SysCTypes;
   require "mpi.h";
 
+  config const autoInitMPI=true;
+
+  /* Automatically initialize, and define
+   worldSize and worldRank, since we will
+   likely use those often. 
+
+   You are still responsible for calling MPI_Finalize,
+   until Chapel has a module termination scheme.
+   */
+  var worldRank, worldSize : c_int;
+  if autoInitMPI {
+    var flag : c_int;
+    C_MPI.MPI_Initialized(flag);
+    if flag==0 {
+      C_MPI.MPI_Init(0,0);
+      C_MPI.MPI_Comm_size(MPI_COMM_WORLD, worldSize);
+      C_MPI.MPI_Comm_rank(MPI_COMM_WORLD, worldRank);
+    }
+  }
+    
+
   /******************************
     Defined Constants and Datatypes
    ******************************/
@@ -141,7 +162,15 @@ module MPI {
 
   /********************************************
    FUNCTION DECLARATIONS GO BELOW
+
+   We wrap all of these into a C_MPI submodule,
+   since we likely will add in some helper routines
+   above. We don't do this for the constants, since
+   we'll likely end up using these more often.
+
    *******************************************/
+   
+   module C_MPI {
 
   /* Special case MPI_Init -- we will send these null pointers
    and let the compiler do all the munging */
@@ -293,4 +322,6 @@ module MPI {
   extern proc MPI_Cart_sub (comm: MPI_Comm, ref remain_dims: c_int, ref newcomm: MPI_Comm): c_int;
   extern proc MPI_Cart_map (comm: MPI_Comm, ndims: c_int, ref dims: c_int, ref periods: c_int, ref newrank: c_int): c_int;
   extern proc MPI_Graph_map (comm: MPI_Comm, nnodes: c_int, ref iindex: c_int, ref edges: c_int, ref newrank: c_int): c_int;
+
+   } // End C_MPI
 }
