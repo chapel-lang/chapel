@@ -2,7 +2,8 @@
 # This has been tested with the GNU compiler
 CHPL=chpl
 
-TESTS = test_mpi_initialize.x
+TESTS = test_mpi_initialize.x \
+				test_mpi_point2point.x
 
 all : ${TESTS}
 

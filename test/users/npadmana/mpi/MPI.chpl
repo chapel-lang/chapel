@@ -31,6 +31,22 @@ module MPI {
       C_MPI.MPI_Comm_rank(MPI_COMM_WORLD, worldRank);
     }
   }
+
+
+  // MPI_Status
+  extern record MPI_Status {
+    var MPI_SOURCE : c_int;
+    var MPI_TAG : c_int;
+    var MPI_ERROR : c_int;
+    /* The other fields are implementation dependent */
+  }
+
+
+  proc MPI_Status.getCount(tt : MPI_Datatype) {
+    var count : c_int;
+    C_MPI.MPI_Get_count(this, tt, count);
+    return count : int;
+  }
     
 
   /******************************
@@ -41,7 +57,7 @@ module MPI {
      We define these as opaque types.
      */
   extern type MPI_Aint = opaque;
-  extern type MPI_Status = opaque;
+  //extern type MPI_Status = opaque;
   extern type MPI_Group = opaque;
   extern type MPI_Comm = opaque;
   extern type MPI_Datatype = opaque;
