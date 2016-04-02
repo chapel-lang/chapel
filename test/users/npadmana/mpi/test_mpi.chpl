@@ -30,6 +30,8 @@ proc main() {
   pi();
   test_scatter();
   test_structure();
+  test_allgather();
+  test_newcomm();
 
   MPI_Finalize();
 }
@@ -232,3 +234,37 @@ proc test_structure() {
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
+/* Test Allgather 
+
+*/
+proc test_allgather() {
+  var ranks : [0.. #worldSize]c_int;
+  
+  MPI_Allgather(worldRank, 1, MPI_INT, ranks[0], 1, MPI_INT, MPI_COMM_WORLD);
+  writeln("Rank ", worldRank, " : ", ranks);
+  MPI_Barrier(MPI_COMM_WORLD);
+}
+
+/* MPI make communicator */
+proc test_newcomm() {
+  var comm : MPI_Comm,
+      ranks1 : [0..1]c_int = [0:c_int, 1:c_int],
+      ranks2 : [0..1]c_int = [2:c_int, 3:c_int],
+      sum : c_int, 
+      newrank : c_int,
+      origgrp, newgrp : MPI_Group;
+
+  MPI_Comm_group(MPI_COMM_WORLD, origgrp);
+  if worldRank < 2 {
+    MPI_Group_incl(origgrp, 2, ranks1[0], newgrp);
+  } else {
+    MPI_Group_incl(origgrp, 2, ranks2[0], newgrp);
+  }
+  MPI_Comm_create(MPI_COMM_WORLD, newgrp, comm);
+  MPI_Allreduce(worldRank, sum, 1, MPI_INT, MPI_SUM, comm);
+
+  MPI_Comm_rank(comm, newrank);
+
+  writef("Rank = %i, new rank = %i, sum = %i\n",worldRank, newrank, sum);
+  MPI_Barrier(MPI_COMM_WORLD);
+}
