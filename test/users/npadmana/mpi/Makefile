@@ -2,20 +2,12 @@
 # This has been tested with the GNU compiler
 CHPL=chpl
 
-TESTS = test_mpi_initialize.x \
-				test_mpi_point2point.x
+TESTS = test_mpi.x
 
 all : ${TESTS}
 
 test_%.x : test_%.chpl MPI.chpl
 	${CHPL} -o $@ $<
-
-
-testFlags :
-	@echo ${MPICOMPILE}
-	@echo ${MPILINK}
-	@echo ${CHPL}
-
 
 clean :
 	-rm *~ a.out *.x
