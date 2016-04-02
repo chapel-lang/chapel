@@ -29,6 +29,7 @@ proc main() {
   ring();
   pi();
   test_scatter();
+  test_structure();
 
   MPI_Finalize();
 }
@@ -186,3 +187,48 @@ proc test_scatter() {
   }
 
 }
+
+
+/* Test structure derived type. 
+
+Note that this particular function is deprecated in MPI-1.1
+*/
+proc test_structure() {
+  record Particle {
+    var x, y, z, vel : real;
+    var n, typ : int;
+  }
+
+  var ptype : MPI_Datatype,
+      offsets : [0..1]MPI_Aint,
+      extent: MPI_Aint,
+      block : [0..1]c_int = [4:c_int, 2:c_int],
+      oldtype : [0..1]MPI_Datatype = [MPI_DOUBLE, MPI_LONG];
+
+  offsets[0] = 0;
+  MPI_Type_extent(MPI_DOUBLE, extent);
+  offsets[1] = 4*extent;
+  MPI_Type_struct(2, block, offsets, oldtype, ptype);
+  MPI_Type_commit(ptype);
+
+  
+  var a : [0.. #10] Particle;
+  if worldRank==0 {
+    for (i1, p1) in zip(0.. , a) {
+      p1.x = i1;
+      p1.y = -i1;
+      p1.z = i1;
+      p1.vel = 0.25;
+      p1.n = i1;
+      p1.typ = i1 % 2;
+    }
+  }
+
+  MPI_Bcast(a[0], 10, ptype, 0, MPI_COMM_WORLD);
+
+  writeln("Rank : ", worldRank, " : ", a[3]);
+
+  MPI_Type_free(ptype);
+  MPI_Barrier(MPI_COMM_WORLD);
+}
+
