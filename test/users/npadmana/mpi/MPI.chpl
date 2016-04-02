@@ -1,18 +1,26 @@
-module MPI {
-  /* 
-   Currently unsupported in the MPI 1.1 standard 
+/* MPI Bindings for Chapel.
+
+These implement the C-API for the MPI 1.1 standard. We currently do not support the following 
+routines ::
+
       MPI_Op_create
       MPI_Op_free
       MPI_Errhandler_create
       MPI_Errhandler_free
       MPI_Keyval_create
       MPI_Keyval_free
-   */
 
+since all of these are built around user-defined handlers, that we support.
+
+.. note::
+  #. Pointer arguments are written as `ref` areguments, so no casting to a C
+     style pointer is necessary.
+  #. An exception to the above is if the C prototype names the argument ``array_of_*``,
+     in which case we write it using an array form.
+*/
+module MPI {
   use SysCTypes;
   require "mpi.h";
-
-  config const autoInitMPI=true;
 
   /* Automatically initialize, and define
    worldSize and worldRank, since we will
@@ -21,19 +29,27 @@ module MPI {
    You are still responsible for calling MPI_Finalize,
    until Chapel has a module termination scheme.
    */
+  config const autoInitMPI=true;
+
+  /* Define module level variables with the rank and
+   size in MPI_COMM_WORLD */
   var worldRank, worldSize : c_int;
+
   if autoInitMPI {
     var flag : c_int;
     C_MPI.MPI_Initialized(flag);
-    if flag==0 {
+    if flag==0 then initialize();
+  }
+
+  /* Helper routine that also sets worldRank and worldSize */
+  proc initialize() {
       C_MPI.MPI_Init(0,0);
       C_MPI.MPI_Comm_size(MPI_COMM_WORLD, worldSize);
       C_MPI.MPI_Comm_rank(MPI_COMM_WORLD, worldRank);
-    }
   }
 
 
-  // MPI_Status
+  /* A wrapper around MPI_Status. Only the defined fields are exposed */
   extern record MPI_Status {
     var MPI_SOURCE : c_int;
     var MPI_TAG : c_int;
@@ -41,7 +57,7 @@ module MPI {
     /* The other fields are implementation dependent */
   }
 
-
+  /* Get the count from a status object */
   proc MPI_Status.getCount(tt : MPI_Datatype) {
     var count : c_int;
     C_MPI.MPI_Get_count(this, tt, count);
@@ -56,13 +72,12 @@ module MPI {
   /* MPI types.
      We define these as opaque types.
      */
-  extern type MPI_Aint = opaque;
-  //extern type MPI_Status = opaque;
-  extern type MPI_Group = opaque;
-  extern type MPI_Comm = opaque;
-  extern type MPI_Datatype = opaque;
-  extern type MPI_Request = opaque;
-  extern type MPI_Op = opaque;
+  extern type MPI_Aint;
+  extern type MPI_Group;
+  extern type MPI_Comm;
+  extern type MPI_Datatype;
+  extern type MPI_Request;
+  extern type MPI_Op;
 
   // TODO : Not explicily found in the spec
   extern type MPI_Errhandler = opaque;
@@ -176,16 +191,15 @@ module MPI {
   extern const MPI_LOR : MPI_Op;
   extern const MPI_LXOR : MPI_Op;
 
-  /********************************************
-   FUNCTION DECLARATIONS GO BELOW
+  /*
+   C-API 
 
-   We wrap all of these into a C_MPI submodule,
+   We wrap all of these into a ``C_MPI`` submodule,
    since we likely will add in some helper routines
    above. We don't do this for the constants, since
    we'll likely end up using these more often.
 
-   *******************************************/
-   
+   */
    module C_MPI {
 
   /* Special case MPI_Init -- we will send these null pointers
@@ -277,14 +291,14 @@ module MPI {
   extern proc MPI_Wait (ref request: MPI_Request, ref status: MPI_Status): c_int;
   extern proc MPI_Test (ref request: MPI_Request, ref flag: c_int, ref status: MPI_Status): c_int;
   extern proc MPI_Request_free (ref request: MPI_Request): c_int;
-  extern proc MPI_Waitany (count: c_int, ref array_of_requests: MPI_Request, ref iindex : c_int, ref status: MPI_Status): c_int;
-  extern proc MPI_Testany (count: c_int, ref array_of_requests: MPI_Request, ref iindex : c_int, ref flag: c_int, ref status: MPI_Status): c_int;
-  extern proc MPI_Waitall (count: c_int, ref array_of_requests: MPI_Request, ref array_of_statuses: MPI_Status): c_int;
-  extern proc MPI_Testall (count: c_int, ref array_of_requests: MPI_Request, ref flag: c_int, ref array_of_statuses: MPI_Status): c_int;
-  extern proc MPI_Waitsome (incount: c_int, ref array_of_requests: MPI_Request, 
-      ref outcount: c_int, ref array_of_indices: c_int, ref array_of_statuses: MPI_Status): c_int;
-  extern proc MPI_Testsome (incount: c_int, ref array_of_requests: MPI_Request, 
-      ref outcount: c_int, ref array_of_indices: c_int, ref array_of_statuses: MPI_Status): c_int;
+  extern proc MPI_Waitany (count: c_int, array_of_requests: []MPI_Request, ref iindex : c_int, ref status: MPI_Status): c_int;
+  extern proc MPI_Testany (count: c_int, array_of_requests: []MPI_Request, ref iindex : c_int, ref flag: c_int, ref status: MPI_Status): c_int;
+  extern proc MPI_Waitall (count: c_int, array_of_requests: []MPI_Request, array_of_statuses: []MPI_Status): c_int;
+  extern proc MPI_Testall (count: c_int, array_of_requests: []MPI_Request, ref flag: c_int, array_of_statuses: []MPI_Status): c_int;
+  extern proc MPI_Waitsome (incount: c_int, array_of_requests: []MPI_Request, 
+      ref outcount: c_int, array_of_indices: []c_int, array_of_statuses: []MPI_Status): c_int;
+  extern proc MPI_Testsome (incount: c_int, array_of_requests: []MPI_Request, 
+      ref outcount: c_int, array_of_indices: []c_int, array_of_statuses: []MPI_Status): c_int;
   extern proc MPI_Iprobe (source: c_int, tag: c_int, comm: MPI_Comm, ref flag: c_int, ref status: MPI_Status): c_int;
   extern proc MPI_Probe (source: c_int, tag: c_int, comm: MPI_Comm, ref status: MPI_Status): c_int;
   extern proc MPI_Cancel (ref request: MPI_Request): c_int;
@@ -295,7 +309,7 @@ module MPI {
   extern proc MPI_Rsend_init (ref buf, count: c_int, datatype: MPI_Datatype, dest: c_int, tag: c_int, comm: MPI_Comm, ref request: MPI_Request): c_int;
   extern proc MPI_Recv_init (ref buf, count: c_int, datatype: MPI_Datatype, source: c_int, tag: c_int, comm: MPI_Comm, ref request: MPI_Request): c_int;
   extern proc MPI_Start (ref request: MPI_Request): c_int;
-  extern proc MPI_Startall (count: c_int, ref array_of_requests: MPI_Request): c_int;
+  extern proc MPI_Startall (count: c_int, array_of_requests: []MPI_Request): c_int;
   extern proc MPI_Sendrecv (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype, dest: c_int, sendtag: c_int, 
       ref recvbuf, recvcount: c_int, recvtype: MPI_Datatype, source: c_int, recvtag: MPI_Datatype, comm: MPI_Comm, ref status: MPI_Status): c_int;
   extern proc MPI_Sendrecv_replace (ref buf, count: c_int, datatype: MPI_Datatype, dest: c_int, sendtag: c_int, 
@@ -303,12 +317,12 @@ module MPI {
   extern proc MPI_Type_contiguous (count: c_int, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
   extern proc MPI_Type_vector (count: c_int, blocklength: c_int, stride: c_int, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
   extern proc MPI_Type_hvector (count: c_int, blocklength: c_int, stride: MPI_Aint, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
-  extern proc MPI_Type_indexed (count: c_int, ref array_of_blocklengths: c_int, 
-      ref array_of_displacements: c_int, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
-  extern proc MPI_Type_hindexed (count: c_int, ref array_of_blocklengths: c_int, 
-      ref array_of_displacements: MPI_Aint, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
-  extern proc MPI_Type_struct (count: c_int, ref array_of_blocklengths: c_int, 
-      ref array_of_displacements: MPI_Aint, ref array_of_types: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
+  extern proc MPI_Type_indexed (count: c_int, array_of_blocklengths: []c_int, 
+      array_of_displacements: []c_int, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
+  extern proc MPI_Type_hindexed (count: c_int, array_of_blocklengths: []c_int, 
+      array_of_displacements: []MPI_Aint, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
+  extern proc MPI_Type_struct (count: c_int, array_of_blocklengths: []c_int, 
+      array_of_displacements: []MPI_Aint, array_of_types: []MPI_Datatype, ref newtype: MPI_Datatype): c_int;
   extern proc MPI_Address (ref location, ref address: MPI_Aint): c_int;
   extern proc MPI_Type_extent (datatype: MPI_Datatype, ref extent: MPI_Aint): c_int;
   extern proc MPI_Type_size (datatype: MPI_Datatype, ref size: c_int): c_int;
