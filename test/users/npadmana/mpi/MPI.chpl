@@ -95,8 +95,9 @@ module MPI {
   extern type MPI_Errhandler = opaque;
 
   /* Return codes. 
-     Define these as c_int
+     We define these to be `c_int`.
      */
+
   extern const MPI_SUCCESS : c_int;
   extern const MPI_ERR_BUFFER : c_int;
   extern const MPI_ERR_COUNT : c_int;
