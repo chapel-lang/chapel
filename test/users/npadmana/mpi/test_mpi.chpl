@@ -28,6 +28,7 @@ proc main() {
   point2point();
   ring();
   pi();
+  test_scatter();
 
   MPI_Finalize();
 }
@@ -113,4 +114,15 @@ proc pi() {
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
+/* Test scatter */
+proc test_scatter() {
+  var arr : [{0..3,0..3}]real(32);
+  forall (i,j) in arr.domain {
+    arr[i,j] = (i*4 + j):real(32);
+  }
+  var recbuf : [0..3]real(32);
 
+  MPI_Scatter(arr[0,0], 4, MPI_FLOAT, recbuf[0], 4, MPI_FLOAT, 0, MPI_COMM_WORLD);
+  writef("Rank %i :",worldRank); writeln(recbuf);
+  MPI_Barrier(MPI_COMM_WORLD);
+}
