@@ -114,7 +114,7 @@ proc pi() {
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
-/* Test scatter */
+/* Test scatters. */
 proc test_scatter() {
   var arr : [{0..3,0..3}]real(32);
   forall (i,j) in arr.domain {
@@ -122,7 +122,46 @@ proc test_scatter() {
   }
   var recbuf : [0..3]real(32);
 
-  MPI_Scatter(arr[0,0], 4, MPI_FLOAT, recbuf[0], 4, MPI_FLOAT, 0, MPI_COMM_WORLD);
-  writef("Rank %i :",worldRank); writeln(recbuf);
-  MPI_Barrier(MPI_COMM_WORLD);
+  // Use MPI Scatter
+  {
+    MPI_Scatter(arr[0,0], 4, MPI_FLOAT, recbuf[0], 4, MPI_FLOAT, 0, MPI_COMM_WORLD);
+    writef("Rank %i :",worldRank); writeln(recbuf);
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+
+  // Use a contiguous data type
+  {
+    arr += 1:real(32);
+    var rowtype : MPI_Datatype;
+    var stat : MPI_Status;
+
+    MPI_Type_contiguous(4, MPI_FLOAT, rowtype);
+    MPI_Type_commit(rowtype);
+
+    if worldRank==0 {
+      for irank in 0.. #worldSize do MPI_Send(arr[irank,0], 1, rowtype, irank, 1, MPI_COMM_WORLD);
+    }
+    MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
+    writef("Rank %i :",worldRank); writeln(recbuf);
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Type_free(rowtype);
+  }
+
+  // Use a vector data dtype - send columns
+  {
+    var coltype : MPI_Datatype;
+    var stat : MPI_Status;
+
+    MPI_Type_vector(4, 1, 4, MPI_FLOAT, coltype);
+    MPI_Type_commit(coltype);
+
+    if worldRank==0 {
+      for irank in 0.. #worldSize do MPI_Send(arr[0,irank], 1, coltype, irank, 1, MPI_COMM_WORLD);
+    }
+    MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
+    writef("Rank %i :",worldRank); writeln(recbuf);
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Type_free(coltype);
+  }
+
 }
