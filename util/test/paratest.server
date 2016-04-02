@@ -85,6 +85,11 @@ sub systemd {
     system ($cmd);
 }
 
+sub trim {
+  my $s = shift;
+  $s =~ s/^\s+|\s+$//g;
+  return $s;
+}
 
 # Collect individual logs into one final one.
 sub collect_logs {
@@ -649,6 +654,9 @@ sub main {
         while (<nodefile>) {
             next if /^$|^\#/;
             chomp;
+            if (trim($_) eq "localhost") {
+              $_ = $localnode;
+            }
             $count = $node_para;
             while ($count--) {
                 push @node_list, $_;
