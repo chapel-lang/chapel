@@ -511,10 +511,16 @@ void readMacrosClang(void) {
 //    since we might need to code generate called functions.
 // 3: append to the target description
 // 4: get LLVM values for code generated C things (e.g. types, function ptrs)
-
-// In previous versions, we had CCodeGenConsumer re-implementing
-// CodeGenerator from ModuleBuilder.cpp. But that creates a maintenance
-// burden, so here we switch to inheriting from CodeGenerator.
+//
+// This code is boiler-plate code mostly copied from ModuleBuilder.cpp - see
+// http://clang.llvm.org/doxygen/ModuleBuilder_8cpp_source.html
+// Note that ModuleBuilder.cpp is from the clang project and distributed
+// under a BSD-like license.
+//
+// As far as we know, there is no public API for clang that
+// would allow us the level of control we need over code generation.
+// The portions that are not copied are delineated by
+// comments indicating that they are custom to Chapel.
 class CCodeGenConsumer : public ASTConsumer {
   private:
     GenInfo* info;

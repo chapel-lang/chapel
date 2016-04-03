@@ -39,7 +39,9 @@
    :proc:`copyFile`
    :proc:`copyTree`
    :proc:`mkdir`
+   :proc:`moveDir`
    :proc:`remove`
+   :proc:`rmTree`
    :proc:`symlink`
    :proc:`chmod`
    :proc:`chown`

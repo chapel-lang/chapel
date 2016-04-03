@@ -1,4 +1,8 @@
 specifiedDefault.doc
+
+Usage:
+   use specifiedDefault.doc;
+
    proc found()
       This comment should be seen 
 

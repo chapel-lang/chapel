@@ -31,11 +31,12 @@
 #include "type.h"
 
 
-AstPrintDocs::AstPrintDocs(std::string moduleName, std::string path) :
+AstPrintDocs::AstPrintDocs(std::string moduleName, std::string path, std::string parentName) :
   file(NULL),
   tabs(0),
   moduleName(moduleName),
-  pathWithoutPostfix("")
+  pathWithoutPostfix(""),
+  parentName(parentName)
 {
   pathWithoutPostfix = path + "/" + moduleName;
 
@@ -121,8 +122,15 @@ bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
                    " due to: ", strerror(errno)));
     }
 
+    std::string parent = "";
+    if (this->parentName != "") {
+      parent = this->parentName + ".";
+    }
+    parent = parent + this->moduleName;
+
     AstPrintDocs *docsVisitor = new AstPrintDocs(node->name,
-                                                 this->pathWithoutPostfix);
+                                                 this->pathWithoutPostfix,
+                                                 parent);
     node->accept(docsVisitor);
     delete docsVisitor;
 
@@ -130,7 +138,7 @@ bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
   }
 
   // Then print our documentation
-  node->printDocs(this->file, this->tabs);
+  node->printDocs(this->file, this->tabs, this->parentName);
 
   if (fDocsTextOnly) {
     this->tabs++;

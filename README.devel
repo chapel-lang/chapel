@@ -42,8 +42,6 @@ description:
 The following files/directories in the release are based on those in
 the git tree, but not exactly the same:
 
-  CONTRIBUTORS-devel.md : contributors whose code has not been in a release
-
   doc/      : for the end user, this directory is built from a 
               combination of the developer's doc/release directory and
               some documents that are built and installed by the
