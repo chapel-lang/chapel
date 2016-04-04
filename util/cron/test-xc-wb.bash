@@ -6,6 +6,7 @@
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/functions.bash
 source $CWD/common-whitebox.bash
+source $CWD/common-oversubscribed.bash
 
 # Run the tests!
 nightly_args="-cron"
