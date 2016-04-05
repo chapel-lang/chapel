@@ -152,6 +152,9 @@ void scopeResolve() {
   //
   forv_Vec(AggregateType, ct, gAggregateTypes) {
     for_fields(field, ct) {
+      if (strcmp(field->name, "outer") == 0) {
+        USR_FATAL_CONT(field, "Cannot have a field named 'outer'. 'outer' is used to refer to an outer class from within a nested class.");
+      }
       if (aliasFieldSet.set_in(field->name)) {
         SET_LINENO(field);
 
