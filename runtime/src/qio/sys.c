@@ -84,7 +84,9 @@
 //#include <ntddk.h>
 //#include <winternl.h>
 //#include <ntifs.h>
+#include "chpl-mem-no-warning-macros.h"
 #include <windows.h>
+#include "chpl-mem-warning-macros.h"
 #include <sys/cygwin.h> // for cygwin_internal
 
 #define REPLACE_CYGWIN_PREADWRITE 1
