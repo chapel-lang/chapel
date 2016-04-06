@@ -95,6 +95,7 @@ module DefaultRectangular {
   
     proc linksDistribution() param return false;
     proc dsiLinksDistribution()     return false;
+    proc isDefaultRectangular() param return true;
   
     proc DefaultRectangularDom(param rank, type idxType, param stridable, dist) {
       this.dist = dist;
@@ -1038,10 +1039,9 @@ module DefaultRectangular {
     proc dsiReallocate(d: domain) {
       on this {
       //
-      // If both d and dom are default rectangular, this is pretty
-      // easy...
+      // If d is default rectangular, like dom, this is pretty easy...
       //
-      if (d._value.type == dom.type) {
+      if (d._value.isDefaultRectangular()) {
         var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                              idxType=idxType,
                                              stridable=d._value.stridable,

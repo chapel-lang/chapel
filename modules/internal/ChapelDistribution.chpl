@@ -203,6 +203,7 @@ module ChapelDistribution {
 
     proc dsiSupportsPrivatization() param return false;
     proc dsiRequiresPrivatization() param return false;
+    proc isDefaultRectangular() param return false;
   
     // false for default distribution so that we don't increment the
     // default distribution's reference count and add domains to the
