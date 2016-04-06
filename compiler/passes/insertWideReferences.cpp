@@ -235,7 +235,7 @@ static std::map<Symbol*, std::set<BaseAST*> > causes;
 // set of calls that return a wide pointer and need to be analyzed
 static std::set<CallExpr*> returnCalls;
 
-// cache to store results of cauedByArgs
+// cache to store results of isCausedByArgs
 static std::map<FnSymbol*, std::set<Symbol*> > argsCache;
 
 // Various mini-passes to manipulate the AST into something functional
@@ -630,7 +630,7 @@ static bool recurseCausedByArgs(FnSymbol* fn,
     return true;
   }
 
-  // A cycle was found> This doesn't say anything about the root cause of
+  // A cycle was found. This doesn't say anything about the root cause of
   // `sym`, so we'll just return TRUE. There should be some other path that
   // causes `sym` to be wide.
   if (visited.find(sym) != visited.end()) {
@@ -658,22 +658,39 @@ static bool recurseCausedByArgs(FnSymbol* fn,
       return false;
     }
 
-    // Attempts to handle cases like:
-    //   sym = foo(...);
     //
-    // where foo's return symbol is caused by foo's args. Essentially trying to
-    // handle the same wide-return optimization. If that's the case, we then
-    // need to check if the call's actuals are caused by fn's args.
+    // Look for a call like this:
+    //   sym = foo(x,y,z);
+    //
+    // Where foo looks like this:
+    //
+    //   proc foo(x,y,z) {
+    //     ...
+    //     return cause;
+    //   }
+    //
+    // If `foo` is the kind of function that returns a wide pointer only if the
+    // arguments are wide, we can return TRUE if the actuals in the call are
+    // caused by the args of `fn`.
+    //
+    // If we didn't try and detect this case, we'd see that the args of `foo`
+    // are caused by wide pointers at a lot of different call sites and most
+    // likely return FALSE when we could have returned TRUE.
+    //
+    // Do not enter this branch if `sym` is a ref.
     //
     // TODO: handle recursive _retArg cases
     FnSymbol* otherFn = toFnSymbol(cause->defPoint->parentSymbol);
     if (otherFn &&
         otherFn != sym->defPoint->parentSymbol && // exposed by SSCA2 perfcompopts
-        !isRef(cause) && // Skip _ref_T = foo(...), not the desired case
+        !isRef(cause) &&
         cause == otherFn->getReturnSymbol() &&
-        !otherFn->hasFlag(FLAG_VIRTUAL) && 
+        !otherFn->hasFlag(FLAG_VIRTUAL) &&
         !isModuleSymbol(sym->defPoint->parentSymbol)) {
 
+      //
+      // Is `cause` a wide pointer because of the args for `otherFn`?
+      //
       // TODO: should we really pass `visited` through?
       std::set<Symbol*> otherArgs;
       if (!isCausedByArgs(otherFn, cause, visited, otherArgs)) return false;
@@ -695,23 +712,32 @@ static bool recurseCausedByArgs(FnSymbol* fn,
       }
       INT_ASSERT(curCall != NULL);
 
+      //
+      // Are these actuals wide pointers because of the args of `fn` ? If not,
+      // return FALSE.
+      //
       for_set(Symbol, arg, otherArgs) {
         SymExpr* act = toSymExpr(formal_to_actual(curCall, arg));
         if (!recurseCausedByArgs(fn, act->var, visited, sourceArgs)) return false;
       }
 
     } else {
+      //
+      // Default case, handles something as simple as:
+      //   MOVE sym, cause
+      //
       if (!recurseCausedByArgs(fn, cause, visited, sourceArgs)) return false;
     }
   }
 
   visited.erase(sym);
 
+  // `sym` is a wide pointer because of the args of `fn`
   return true;
 }
 
 //
-// Top-level wrapper
+// Top-level wrapper if you want to avoid creating your own `visited`
 //
 static bool isCausedByArgs(FnSymbol* fn,
                          Symbol* sym,
@@ -723,6 +749,13 @@ static bool isCausedByArgs(FnSymbol* fn,
 
 //
 // Wraps recurseCausedByArgs
+//
+// Returns TRUE if the args of `fn` are the ONLY reason that `sym` is a wide
+// pointer.
+//
+// Will return FALSE if `fn` is a virtual function.
+//
+// `sym` must be either the return symbol of `fn`, or the _retArg for `fn`
 //
 static bool isCausedByArgs(FnSymbol* fn,
                          Symbol* sym,
@@ -778,6 +811,9 @@ static bool isCausedByArgs(FnSymbol* fn,
   return success;
 }
 
+//
+// Returns TRUE if the returned symbol should be a wide pointer
+//
 static bool shouldRetWide(CallExpr* call) {
   FnSymbol* fn = call->isResolved();
   INT_ASSERT(fn != NULL);
@@ -794,6 +830,7 @@ static bool shouldRetWide(CallExpr* call) {
   std::set<Symbol*> sourceArgs;
   if (isCausedByArgs(fn, ret, sourceArgs)) {
     for_set(Symbol, arg, sourceArgs) {
+      // If the corresponding actual is wide, the returned var must be wide
       INT_ASSERT(isArgSymbol(arg) && arg->defPoint->parentSymbol == fn);
       if (!arg->hasFlag(FLAG_RETARG) && hasSomeWideness(formal_to_actual(call, arg))) {
         // This actual causes the returned var to be wide
@@ -819,14 +856,14 @@ static void handleReturns() {
         INT_ASSERT(retarg->hasFlag(FLAG_RETARG));
 
         SymExpr* actual = toSymExpr(formal_to_actual(call, retarg));
-        // TODO: should we artificially insert the defs of retarg into `causes`?
+        // TODO: Find SymExprs to use instead of a Symbol for the cause
         setValWide(retarg, actual->var);
       } else {
         CallExpr* move = toCallExpr(call->parentExpr);
         INT_ASSERT(move->isPrimitive(PRIM_MOVE) || move->isPrimitive(PRIM_ASSIGN));
         SymExpr* LHS = toSymExpr(move->get(1));
 
-        // Get SymExpr in PRIM_RETURN
+        // Get SymExpr in PRIM_RETURN to use as a cause
         SymExpr* ret = NULL;
         {
           CallExpr* call = toCallExpr(fn->body->body.last());
@@ -856,8 +893,7 @@ static void handleReturns() {
   // further up in the `causes` graph has changed.
   //
   // TODO: One could imagine using a reversed  `causes` graph to propagate some
-  // notion of 'freshness', but I'm not sure how much more performant that
-  // would be.
+  // notion of 'freshness', but I'm not sure if that would be much faster.
   for(std::map<FnSymbol*, std::set<Symbol*> >::iterator it = argsCache.begin();
       it != argsCache.end();) {
     if (it->second.size() > 0) {
@@ -1162,6 +1198,8 @@ static void propagateVar(Symbol* sym) {
     DEBUG_PRINTF("\tFixing types for arg %s (%d) in %s\n", sym->cname, sym->id, fn->cname);
     forv_Vec(CallExpr, call, *fn->calledBy) {
       if (sym->hasFlag(FLAG_RETARG) && call->isResolved()) {
+        // Function is trying to return a wide pointer, add it to the list of
+        // calls to be processed.
         returnCalls.insert(call);
         continue;
       }
@@ -1248,7 +1286,7 @@ static void propagateVar(Symbol* sym) {
                 }
               }
             } else if (call->isPrimitive(PRIM_DEREF)) {
-              // loc_rec = *(wide_ref_rec);
+              // loc_record = *(wide_ref_record);
               // exposed by distributions/robust/arithmetic/modules/test_module_Sort.chpl
               // when dereferencing a wide ref to a tuple, which had a narrow
               // class element.
@@ -1307,6 +1345,8 @@ static void propagateVar(Symbol* sym) {
 
           // TODO: handle return of _refs
           if (isObj(sym) && call->isResolved() && isCallExpr(call->parentExpr)) {
+            // Returning a wide pointer, need to analyze the call to see if the
+            // destination can be narrow.
             returnCalls.insert(call);
             continue;
           }
@@ -2095,7 +2135,7 @@ static void fixAST() {
 
             //
             // This:
-            // 
+            //
             //   ref_T _retArg = &dest;
             //   fn(..., _retArg);
             //
@@ -2260,7 +2300,7 @@ static void fixAST() {
                 //
                 call->insertAfter(new CallExpr(PRIM_MOVE, LHS->copy(), wideTemp));
               }
-              
+
               LHS->replace(new SymExpr(wideTemp));
             }
           }
@@ -2437,6 +2477,9 @@ insertWideReferences(void) {
     DEBUG_PRINTF("WARNING: No known wide things...?\n");
   }
 
+  //
+  // Iteratively propagate wide pointers through the AST.
+  //
   int numIters = 0;
   while (!queueEmpty()) {
     DEBUG_PRINTF("Propagation Iteration %d\n\n", numIters);
