@@ -32,8 +32,9 @@ return an lvalue by ref. For example:
   }
 
   refToX() = 3;       // uses the setter version
+  writeln(x);         // prints 3
   var tmp = refToX(); // uses the getter version
-  writeln(tmp);       // prints 3
+  writeln(tmp);       // prints 0
 
 This functionality has changed with version 1.13. It is still possible to
 write a getter and a setter, but these must be written as pair of
@@ -54,8 +55,9 @@ related functions:
   }
 
   refToX() = 3;       // uses the setter version
+  writeln(x);         // prints 3
   var tmp = refToX(); // uses the getter version
-  writeln(tmp);       // prints 3
+  writeln(tmp);       // prints 0
 
 
 In some cases, when migrating code over to the new functionatity,
