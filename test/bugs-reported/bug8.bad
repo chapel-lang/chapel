@@ -1,0 +1,1 @@
+bug8.chpl:8: error: unresolved access of 'list(int(64))' by '(2)'
