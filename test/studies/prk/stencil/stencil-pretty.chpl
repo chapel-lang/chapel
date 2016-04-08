@@ -101,6 +101,9 @@ proc main() {
   const Dist = if useBlockDist then blockDist
                else if useStencilDist then stencilDist
                else noDist,
+  outputDist =  if useBlockDist then blockDist
+                      else if useStencilDist then blockDist
+                      else noDist,
   /* Replicated distribution ensures a full local copy on each locale */
   weightDist = if (useBlockDist || useStencilDist) then replDist
                else noDist;
