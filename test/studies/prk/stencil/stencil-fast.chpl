@@ -99,13 +99,20 @@ proc main() {
                 else if useStencilDist then stencilDist
                 else noDist;
 
+  const outputDist =  if useBlockDist then blockDist
+                      else if useStencilDist then blockDist
+                      else noDist;
+
   /* Map domains to selected distribution */
   const Dom = localDom dmapped new dmap(Dist),
    innerDom = innerLocalDom dmapped new dmap(Dist),
    tiledDom = tiledLocalDom dmapped new dmap(Dist);
 
+  const outputDom = localDom dmapped new dmap(outputDist);
+
   /* Input and Output matrices represented as arrays over a 2D domain */
-  var input, output:  [Dom] dtype = 0.0;
+  var input: [Dom] dtype = 0.0,
+      output: [outputDom] dtype = 0.0;
 
   /* Weight matrix represented as tuple of tuples*/
   var weight: Wsize*(Wsize*(dtype));
@@ -200,7 +207,7 @@ proc main() {
     /* Update ghost cells for each locales, for StencilDist */
     if useStencilDist then {
       if debug then diagnostics('output.updateFluff()');
-      output.updateFluff();
+      //output.updateFluff();
       input.updateFluff();
     }
 

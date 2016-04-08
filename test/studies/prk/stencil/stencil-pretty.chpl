@@ -111,9 +111,12 @@ proc main() {
    tiledDom = tiledLocalDom dmapped new dmap(Dist),
   weightDom = weightLocalDom dmapped new dmap(weightDist);
 
+  const outputDom = localDom dmapped new dmap(outputDist);
+
   /* Input and Output matrices represented as arrays over a 2D domain */
-  var input, output:  [Dom] dtype = 0.0,
-        weight: [weightDom] dtype = 0.0;
+  var input: [Dom] dtype = 0.0,
+      output: [outputDom] dtype = 0.0,
+      weight: [weightDom] dtype = 0.0;
 
   /* Creating weight matrix on each locale */
   for L in Locales do on L {
