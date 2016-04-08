@@ -1,7 +1,0 @@
-unimplemented feature: Support for stack and queue data structures. Also have Concurrent versions of these data structures - thread-safe (or task-safe if you will) access to these data structures.
-
-Forgive me if it already exists, but I couldn't find the Stack and Queue implementations in the Standard Library. 
-
-Explaination:
-Stack and Queue are very popular Data Structures and i feel that having is of paramount importance.
-I have tried to implement Queue Data Structure using Lists.
