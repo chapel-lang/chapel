@@ -1,0 +1,5 @@
+bug: Accessing elements of a list by index using .these() iterator leads to internal error.  
+			
+
+Description:
+	I agree that .these() iterator should not be used for accessing list elements by index. But, it should throw an error like "Iterator does not allow indexed access."
