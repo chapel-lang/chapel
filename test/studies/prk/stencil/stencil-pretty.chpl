@@ -201,6 +201,7 @@ proc main() {
     if useStencilDist then {
       if debug then diagnostics('output.updateFluff()');
       output.updateFluff();
+      input.updateFluff();
     }
 
 
