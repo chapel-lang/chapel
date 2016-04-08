@@ -394,6 +394,8 @@ parOpEquals:
 prk-stencil:
   02/14/16:
     - Improved performance on PRK-stencil (#3288)
+  04/08/16:
+    - Looping over range instead of domain for weight matrix (#3500)
 
 regexdna:
   10/07/14:
