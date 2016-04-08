@@ -202,8 +202,7 @@ proc main() {
 
     /* Update ghost cells for each locales, for StencilDist */
     if useStencilDist then {
-      if debug then diagnostics('output.updateFluff()');
-      output.updateFluff();
+      if debug then diagnostics('input.updateFluff()');
       input.updateFluff();
     }
 
