@@ -129,6 +129,9 @@ proc main() {
   /* Initialize Input matrix */
   [(i, j) in Dom] input[i,j] = coefx*i+coefy*j;
 
+  /* Update ghost cells with initial values */
+  if useStencilDist then input.updateFluff();
+
 
   //
   // Print information before main loop
