@@ -29,50 +29,40 @@ module ZMQ {
 
   use Reflection;
 
-  /*
-    External ZMQ interface
-     - Currently, the special nature of Chapel strings means that we have to
-       choose between using pointer types (which can clear up C compilation
-       warnings) and strings.  This should go away with the new strings.
-     - Ideally, these would be "private" extern procs, which could only be
-       directly accessible inside module ZMQ.
-   */
   private extern var errno: c_int;
-  // -- Types
+
+  // Types
   extern type zmq_msg_t;
-  type zmq_msg_p = c_ptr(zmq_msg_t);
-  // -- API
+
+  // C API
   private extern proc zmq_bind(sock: c_void_ptr, endpoint: c_string): c_int;
   private extern proc zmq_close(ctx: c_void_ptr): c_int;
   private extern proc zmq_connect(sock: c_void_ptr, endpoint: c_string): c_int;
   private extern proc zmq_ctx_new(): c_void_ptr;
   private extern proc zmq_ctx_term(ctx: c_void_ptr): c_int;
   private extern proc zmq_errno(): c_int;
-  private extern proc zmq_msg_init(msg: zmq_msg_p): c_int;
-  private extern proc zmq_msg_init_size(msg: zmq_msg_p, size: size_t): c_int;
-  private extern proc zmq_msg_send(msg: zmq_msg_p, sock: c_void_ptr,
-                           flags: c_int): c_int;
-  private extern proc zmq_msg_recv(msg: zmq_msg_p, sock: c_void_ptr,
-                           flags: c_int): c_int;
+  private extern proc zmq_msg_init(ref msg: zmq_msg_t): c_int;
+  private extern proc zmq_msg_init_size(ref msg: zmq_msg_t,
+                                        size: size_t): c_int;
+  private extern proc zmq_msg_send(ref msg: zmq_msg_t, sock: c_void_ptr,
+                                   flags: c_int): c_int;
+  private extern proc zmq_msg_recv(ref msg: zmq_msg_t, sock: c_void_ptr,
+                                   flags: c_int): c_int;
   private extern proc zmq_recv(sock: c_void_ptr, buf: c_void_ptr,
-                       len: size_t, flags: c_int): c_int;
+                               len: size_t, flags: c_int): c_int;
   private extern proc zmq_send(sock: c_void_ptr, buf: c_void_ptr,
-                       len: size_t, flags: c_int): c_int;
+                               len: size_t, flags: c_int): c_int;
   private extern proc zmq_setsockopt (sock: c_void_ptr, option_name: int,
-                              const option_value: c_void_ptr,
-                              option_len: size_t): c_int;
+                                      const option_value: c_void_ptr,
+                                      option_len: size_t): c_int;
   private extern proc zmq_socket(ctx: c_void_ptr, socktype: c_int): c_void_ptr;
   private extern proc zmq_strerror(errnum: c_int): c_string;
   private extern proc zmq_version(major: c_ptr(c_int),
-                          minor: c_ptr(c_int),
-                          patch: c_ptr(c_int));
-  // -- Constants
-  //    Ideally, for each ZMQ_* constant, we would have a non-extern Chapel
-  //    constant (without the "ZMQ_" prefix) whose value is set according to
-  //    the "private" extern constant.  This would enable a non-namespace-
-  //    polluting "use" to access such constants as class fields (ZMQ.*).
-  //  * Socket Types
-  //    "private" constants
+                                  minor: c_ptr(c_int),
+                                  patch: c_ptr(c_int));
+
+  // Constants
+  // -- Socket Types
   private extern const ZMQ_PAIR: c_int;
   private extern const ZMQ_PUB: c_int;
   private extern const ZMQ_SUB: c_int;
@@ -85,14 +75,14 @@ module ZMQ {
   private extern const ZMQ_XPUB: c_int;
   private extern const ZMQ_XSUB: c_int;
   private extern const ZMQ_STREAM: c_int;
-  //   "namespace" constants
   const PUB  = ZMQ_PUB;
   const SUB  = ZMQ_SUB;
   const REQ  = ZMQ_REQ;
   const REP  = ZMQ_REP;
   const PUSH = ZMQ_PUSH;
   const PULL = ZMQ_PULL;
-  //  * Socket Options
+
+  // -- Socket Options
   private extern const ZMQ_AFFINITY: c_int;
   private extern const ZMQ_IDENTITY: c_int;
   private extern const ZMQ_SUBSCRIBE: c_int;
@@ -140,12 +130,15 @@ module ZMQ {
   private extern const ZMQ_REQ_RELAXED: c_int;
   private extern const ZMQ_CONFLATE: c_int;
   private extern const ZMQ_ZAP_DOMAIN: c_int;
-  //  * Message Options
+
+  // -- Message Options
   private extern const ZMQ_MORE: c_int;
-  //  * Send/Recv Options
+
+  // -- Send/Recv Options
   private extern const ZMQ_DONTWAIT: c_int;
   private extern const ZMQ_SNDMORE: c_int;
-  //  * Security Options
+
+  // -- Security Options
   private extern const ZMQ_NULL: c_int;
   private extern const ZMQ_PLAIN: c_int;
   private extern const ZMQ_CURVE: c_int;
