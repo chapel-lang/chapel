@@ -101,6 +101,9 @@ proc main() {
   const Dist = if useBlockDist then blockDist
                else if useStencilDist then stencilDist
                else noDist,
+  outputDist =  if useBlockDist then blockDist
+                      else if useStencilDist then blockDist
+                      else noDist,
   /* Replicated distribution ensures a full local copy on each locale */
   weightDist = if (useBlockDist || useStencilDist) then replDist
                else noDist;
@@ -111,9 +114,12 @@ proc main() {
    tiledDom = tiledLocalDom dmapped new dmap(Dist),
   weightDom = weightLocalDom dmapped new dmap(weightDist);
 
+  const outputDom = localDom dmapped new dmap(outputDist);
+
   /* Input and Output matrices represented as arrays over a 2D domain */
-  var input, output:  [Dom] dtype = 0.0,
-        weight: [weightDom] dtype = 0.0;
+  var input: [Dom] dtype = 0.0,
+      output: [outputDom] dtype = 0.0,
+      weight: [weightDom] dtype = 0.0;
 
   /* Creating weight matrix on each locale */
   for L in Locales do on L {
@@ -128,6 +134,9 @@ proc main() {
 
   /* Initialize Input matrix */
   [(i, j) in Dom] input[i,j] = coefx*i+coefy*j;
+
+  /* Update ghost cells with initial values */
+  if useStencilDist then input.updateFluff();
 
 
   //
@@ -196,8 +205,8 @@ proc main() {
 
     /* Update ghost cells for each locales, for StencilDist */
     if useStencilDist then {
-      if debug then diagnostics('output.updateFluff()');
-      output.updateFluff();
+      if debug then diagnostics('input.updateFluff()');
+      input.updateFluff();
     }
 
 
