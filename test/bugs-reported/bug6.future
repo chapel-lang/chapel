@@ -1,3 +1,0 @@
-bug: Chapel is unable to import a module in the same directory. (as it is described here in Module section: http://faculty.knox.edu/dbunde/teaching/chapel/)
-			
-I even added the directory to $CHPL_MODULE_PATH (as described here: http://chapel.cray.com/docs/1.12/technotes/module_search.html)
