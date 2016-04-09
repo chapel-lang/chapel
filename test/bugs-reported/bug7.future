@@ -1,7 +1,0 @@
-unimplemented feature:	Support for Graph Data Structures and Concurrent Graph DS. 
-		
-Feature Addition:
-	Graphs are important data structures, used in many data-intensive processing (like Data Mining Algorithms). 
-	Supporting optimized Graph Data Structures in the Standard Library will really help the Chapel Users.
-			
-I am in the process of writing a simple Module supporting common Graph DS and Algorithms like BFS, DFS, MST Algorithms, etc.
