@@ -1,12 +1,3 @@
-proc max(a:int, b:int): int{
-	if(a > b){
-		return a;
-	}
-	else{
-		return b;
-	}
-}
-
 proc lcs(string1:string, string2:string, len1:int, len2:int): int{
 	if (len1 == 0 || len2 == 0){
 		return 0;
