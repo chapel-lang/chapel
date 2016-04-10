@@ -1,13 +1,4 @@
-proc min(x:int, y:int):int{
-	if(x > y){
-		return y;
-	}
-	else{
-		return x;
-	}
-}
-
-proc min(x:int,y:int,z:int):int{
+proc min3(x:int,y:int,z:int):int{
    return min(min(x, y), z);
 }
 
@@ -33,7 +24,7 @@ proc editDist(str1:string, str2:string, len1:int, len2:int):int{
     	// operations on last character of first string, recursively
     	// compute minimum cost for all three operations and take
     	// minimum of three values.
-    	return 1 + min ( editDist(str1,  str2, len1, len2-1), editDist(str1,  str2, len1-1, len2), editDist(str1,  str2, len1-1, len2-1));
+    	return 1 + min3 ( editDist(str1,  str2, len1, len2-1), editDist(str1,  str2, len1-1, len2), editDist(str1,  str2, len1-1, len2-1));
 }
 
 var str1:string = "sunday";
