@@ -1,5 +1,3 @@
-//var arr: [1..10] int = (8, 14, -8, -9, 5, -9, -3, 0, 17, 19);
-
 proc partition(arr, left: int, right: int) : int{
 	var x : int = arr(right);
 	var i : int = (left - 1);
@@ -9,17 +7,12 @@ proc partition(arr, left: int, right: int) : int{
         	{
             		i+=1;
 			//swap
-            		var temp : int = arr(j);
-			arr(j) = arr(i);
-			arr(i) = temp;
-        	}
+			arr(i) <=> arr(j);
+		}
     	}
 	//swap last
-    	var temp : int = arr(i+1);
-	arr(i+1) = arr(right);
-	arr(right) = temp;
-
-
+	arr(i+1) <=> arr(right);
+	
     	return (i + 1);
 }
 
@@ -54,11 +47,7 @@ config var k: int = 1;
 
 writeln("Input Array:");
 
-for i in (1..100){
-        write(arr(i), " ");
-}
-
-writeln("");
+writeln(arr);
 
 var ele : int = quickselect(arr, 1, 100, k);
 
