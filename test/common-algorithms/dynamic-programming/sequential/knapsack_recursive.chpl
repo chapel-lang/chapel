@@ -1,20 +1,10 @@
-proc max(a:int, b:int): int{
-	if(a > b){
-		return a;
-	}
-	else{
-		return b;
-	}
-}
-
 // Returns the maximum value that can be put in a knapsack of capacity W
 proc knapSack(weight:int, wt_list, val_list, n:int):int{
 	// Base Case
 	if(n == 0 || weight == 0){
 		return 0;
  	}
-   	// If weight of the nth item is more than Knapsack capacity W, then
-   	// this item cannot be included in the optimal solution
+   	// If weight of the nth item is more than Knapsack capacity W, then this item cannot be included in the optimal solution
    	if (wt_list[n] > weight){
    		return knapSack(weight, wt_list, val_list, n-1);
  	}
