@@ -145,6 +145,9 @@ module ZMQ {
 
   /*
     Query the ZMQ library version.
+
+    :returns: An :type:`(int,int,int)` tuple of the major, minor, and patch
+        version of the ZMQ library.
    */
   proc version: (int,int,int) {
     var major, minor, patch: c_int;
@@ -180,6 +183,7 @@ module ZMQ {
     }
 
     // Destructor
+    pragma "no doc"
     proc ~Context() {
       // Close any open sockets
       for sock in socks do
@@ -247,6 +251,7 @@ module ZMQ {
     }
 
     // Destructor
+    pragma "no doc"
     proc ~Socket() {
       if this.socket != nil then
         this.close();
@@ -301,17 +306,29 @@ module ZMQ {
     }
 
     // ZMQ serialization checker
+    pragma "no doc"
     inline proc isZMQSerializable(type T) param: bool {
       return isNumericType(T) || isEnumType(T) ||
         isString(T) || isRecordType(T);
     }
 
-    // send, static error handling
+    /*
+      Send an object `data` on a socket.
+
+      :arg data: The object to be sent. If `data` is an object whose type
+          is not serializable by the ZMQ module, a compile-time error will be
+          raised.
+
+      :arg flags: An optional argument of the OR-able flags :const:`DONTWAIT`
+          and :const:`SNDMORE`.
+      :type flags: `int`
+     */
     proc send(data: ?T, flags: int = 0) where !isZMQSerializable(T) {
       compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
     }
 
     // send, strings
+    pragma "no doc"
     proc send(data: string, flags: int = 0) {
       // message part 1, length
       send(data.length:uint, ZMQ_SNDMORE | flags);
@@ -329,6 +346,7 @@ module ZMQ {
     }
 
     // send, numeric types
+    pragma "no doc"
     proc send(data: ?T, flags: int = 0) where isNumericType(T) {
       var temp = data;
       while (-1 == zmq_send(this.socket, c_ptrTo(temp):c_void_ptr,
@@ -344,24 +362,38 @@ module ZMQ {
     }
 
     // send, enumerated types
+    pragma "no doc"
     proc send(data: ?T, flags: int = 0) where isEnumType(T) {
       send(data:int, flags);
     }
 
     // send, records (of other supported things)
-    proc send(data: ?T, flags: int = 0) where (isRecordType(T) && (!isString(T))) {
+    pragma "no doc"
+    proc send(data: ?T, flags: int = 0) where (isRecordType(T) &&
+                                               (!isString(T))) {
       param N = numFields(T);
       for param i in 1..(N-1) do
         send(getField(data,i), ZMQ_SNDMORE | flags);
       send(getField(data,N), flags);
     }
 
-    // recv, static error handling
-    proc recv(type T, flags: int = 0) where !isZMQSerializable(T) {
+    /*
+      Receive an object of type :type:`T` from a socket.
+
+      :arg T: The type of the object to be received. If :type:`T` is not
+          serializable by the ZMQ module, a compile-time error will be raised.
+
+      :arg flags: An optional argument of the flag :const:`SNDMORE`.
+      :type flags: `int`
+
+      :returns: An object of type :type:`T`
+     */
+    proc recv(type T, flags: int = 0): T where !isZMQSerializable(T) {
       compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
     }
 
     // recv, strings
+    pragma "no doc"
     proc recv(type T, flags: int = 0) where isString(T) {
       var len = recv(uint, flags):int;
       var buf = c_calloc(uint(8), (len+1):size_t);
@@ -380,6 +412,7 @@ module ZMQ {
     }
 
     // recv, numeric types
+    pragma "no doc"
     proc recv(type T, flags: int = 0) where isNumericType(T) {
       var data: T;
       while (-1 == zmq_recv(this.socket, c_ptrTo(data):c_void_ptr,
@@ -396,11 +429,13 @@ module ZMQ {
     }
 
     // recv, enumerated types
+    pragma "no doc"
     proc recv(type T, flags: int = 0) where isEnumType(T) {
       return recv(int, flags):T;
     }
 
     // recv, records (of other supported things)
+    pragma "no doc"
     proc recv(type T, flags: int = 0) where (isRecordType(T) && (!isString(T))) {
       inline proc getField(x:?t, param i:int) ref
         return __primitive("field value by num", x, i);
