@@ -849,7 +849,7 @@ module String {
      Checks if all the characters in the string are either uppercase (A-Z) or
      uncased (not a letter).
 
-      :returns: * `true`  -- when the string contains at least one uppercase
+      :returns: * `true`  -- if the string contains at least one uppercase
                              character and no lowercase characters, ignoring
                              uncased characters.
                 * `false` -- otherwise
@@ -1140,7 +1140,7 @@ module String {
       if result.isEmptyString() then return result;
 
       var b = result.buff[0];
-      if _byte_isLower(b) { // Only change alpha
+      if _byte_isLower(b) {
         result.buff[0] = b - 0x20;
       }
       return result;
