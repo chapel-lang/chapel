@@ -68,7 +68,7 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
     return new CallExpr(new UnresolvedSymExpr("c_ptr"), pointee);
 
   //structs
-  } else if (type->isStructureType()) { 
+  } else if (type->isStructureType()) {
       clang::RecordDecl *rd = type->getAsStructureType()->getDecl();
       const char* tmp_name = astr(rd->getNameAsString().c_str());
       const char* cname = tmp_name;
@@ -115,8 +115,11 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
       }
 
       return new UnresolvedSymExpr(tmp_name);
+  } else if (type->isFunctionType()) {
+    // Treat function types as opaque, at least until Chapel
+    // learns to understand them.
+    return new UnresolvedSymExpr("opaque");
   } else {
-    
     // Check for enum types, which are really some sort of integer type
     if (type->isEnumeralType()) {
       clang::QualType qType = type->getCanonicalTypeInternal();
