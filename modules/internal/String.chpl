@@ -739,44 +739,45 @@ module String {
           var x = "|".join(["a","10","d"]);
           writeln(x); // prints: "a|10|d"
      */
-    // TODO: could rewrite to have cleaner logic / more efficient for edge cases
-    // TODO: allow for varargs?
-    proc join(S: [] string) : string {
-      var newSize: int = 0;
-      var ret: string;
-      if S.size > 1 {
-        for s in S {
-          newSize += s.length;
-        }
-        newSize += this.len*(S.size-1);
-        ret.len = newSize;
-        const allocSize = chpl_here_good_alloc_size(ret.len+1);
-        ret._size = allocSize;
-        ret.buff = chpl_here_alloc(allocSize,
-                                  CHPL_RT_MD_STR_COPY_DATA): bufferType;
-        var offset = 0;
+    proc join(S: string ...?k) : string {
+      if k == 1 {
+        return S[1];
+      } else {
+        var joinedSize: int = this.len * (k - 1);
+        for i in 1..k do joinedSize += S[i].length;
+
+        var joined: string;
+        joined.len = joinedSize;
+        const allocSize = chpl_here_good_alloc_size(joined.len + 1);
+        joined._size = allocSize;
+        joined.buff = chpl_here_alloc(
+          allocSize,
+          CHPL_RT_MD_STR_COPY_DATA): bufferType;
+
         var first = true;
-        for s in S {
-          if !first && this.len != 0 {
-            memcpy(ret.buff+offset, this.buff, this.len.safeCast(size_t));
+        var offset = 0;
+        for i in 1..k {
+          if first {
+            first = false;
+          } else if this.len != 0 {
+            memcpy(joined.buff + offset, this.buff, this.len.safeCast(size_t));
             offset += this.len;
           }
+          var s = S[i];
           var sLen = s.len;
           if sLen != 0 {
+            var cpyStart = joined.buff + offset;
+            var sLenSafe = sLen.safeCast(size_t);
             if _local || s.locale_id == chpl_nodeID {
-              memcpy(ret.buff+offset, s.buff, sLen.safeCast(size_t));
+              memcpy(cpyStart, s.buff, sLenSafe);
             } else {
-              chpl_string_comm_get(ret.buff+offset, s.locale_id,
-                                  s.buff, sLen.safeCast(size_t));
+              chpl_string_comm_get(cpyStart, s.locale_id, s.buff, sLenSafe);
             }
             offset += sLen;
           }
-          first = false;
         }
-      } else if S.size == 1 {
-        ret = S[0];
+        return joined;
       }
-      return ret;
     }
 
     /*
