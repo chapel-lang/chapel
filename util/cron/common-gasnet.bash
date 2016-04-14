@@ -3,7 +3,9 @@
 # Configure environment for GASNet testing. This should be sourced by other
 # scripts that wish to make use of the variables set here.
 
-source $(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)/common.bash
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+
+source $CWD/common.bash
 
 export CHPL_COMM=gasnet
 export GASNET_SPAWNFN=L
@@ -15,9 +17,8 @@ export CHPL_TEST_TIMEOUT=500
 
 tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
 if [ "${tasks}" == "qthreads" ] ; then
-    # Set these to use oversubscription to help with timeouts
-    export QT_AFFINITY=no
-    export CHPL_QTHREAD_ENABLE_OVERSUBSCRIPTION=1
+
+    source $CWD/common-oversubscribed.bash
 
     # Even with oversubscription we still have some timeouts with
     # qtheads+gasnet on "low" core count machines. The main issue is

@@ -17,10 +17,9 @@ The main script that drives the test system itself is
 located in ``$CHPL_HOME/util/test``.
 
 This document provides only a high-level introduction to the testing
-system.  For further details, see the extensive comments at the top of
-the ``start_test`` script or ask a core Chapel developer for pointers.
-You can also get a sense for the test system by looking through the
-test directory itself to see how it is used in practice.
+system.  For further details, ask a core Chapel developer for
+suggestions.  You can also get a sense for the test system by looking
+through the test directory itself to see how it is used in practice.
 
 
 Summary of Testing Files

@@ -30,14 +30,14 @@ distributed memory execution.
 
 2) Set up your environment to use Chapel in "Quick Start" mode:
 
-======================================== ==========================================
-**If you use:**                           **then type:**
----------------------------------------- ------------------------------------------
-a bash-compatible shell (bash/zsh)       ``source util/quickstart/setchplenv.bash``
-a csh-compatible shell (csh/tcsh)        ``source util/quickstart/setchplenv.csh``
-the fish shell (fish)                    ``. util/quickstart/setchplenv.fish``
-the Bourne shell (sh)                    ``. util/quickstart/setchplenv.sh``
-======================================== ==========================================
+==================================== ==========================================
+**If you use:**                       **then type:**
+------------------------------------ ------------------------------------------
+a bash-compatible shell (bash/zsh)   ``source util/quickstart/setchplenv.bash``
+a csh-compatible shell (csh/tcsh)    ``source util/quickstart/setchplenv.csh``
+the fish shell (fish)                ``. util/quickstart/setchplenv.fish``
+the Bourne shell (sh)                ``. util/quickstart/setchplenv.sh``
+==================================== ==========================================
 
    Note that there is no requirement to use these scripts long-term,
    they are merely designed to help new users get their environment
