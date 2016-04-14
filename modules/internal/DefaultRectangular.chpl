@@ -229,15 +229,15 @@ module DefaultRectangular {
             for param i in 1..rank {
               const rStride = ranges(i).stride:strType;
               if ranges(i).stride > 0 {
-                const low = ranges(i).alignedLow + followMe(i).low*rStride,
-                      high = ranges(i).alignedLow + followMe(i).high*rStride,
-                      stride = rStride:idxType;
+                const stride = rStride:idxType,
+                      low = ranges(i).alignedLow + followMe(i).low*stride,
+                      high = ranges(i).alignedLow + followMe(i).high*stride;
                 block(i) = low..high by stride;
               } else {
-                const low = ranges(i).alignedHigh + followMe(i).high*rStride,
-                      high = ranges(i).alignedHigh + followMe(i).low*rStride,
-                      stride = rStride:idxType;
-                block(i) = low..high by stride;
+                const abstride = abs(rStride):idxType,
+                      low = ranges(i).alignedHigh - followMe(i).high*abstride,
+                      high = ranges(i).alignedHigh - followMe(i).low*abstride;
+                block(i) = low..high by rStride;
               }
             }
           } else {
@@ -422,15 +422,15 @@ module DefaultRectangular {
           const rStride = ranges(i).stride:strType,
                 fStride = followThis(i).stride:strType;
           if ranges(i).stride > 0 {
-            const low = ranges(i).alignedLow + followThis(i).low*rStride,
-                  high = ranges(i).alignedLow + followThis(i).high*rStride,
-                  stride = (rStride * fStride):idxType;
+            const stride = (rStride * fStride):idxType,
+                  low = ranges(i).alignedLow + followThis(i).low*stride,
+                  high = ranges(i).alignedLow + followThis(i).high*stride;
             block(i) = low..high by stride;
           } else {
-            const low = ranges(i).alignedHigh + followThis(i).high*rStride,
-                  high = ranges(i).alignedHigh + followThis(i).low*rStride,
-                  stride = (rStride * fStride):idxType;
-            block(i) = low..high by stride;
+            const abstride = (rStride * fStride):idxType,
+                  low = ranges(i).alignedHigh + followThis(i).high*abstride,
+                  high = ranges(i).alignedHigh + followThis(i).low*abstride;
+            block(i) = low..high by rStride;
           }
         }
       } else {
@@ -1046,14 +1046,7 @@ module DefaultRectangular {
                                              idxType=idxType,
                                              stridable=d._value.stridable,
                                              dom=d._value);
-        //
-        // TODO: Making this for into a forall ought to accelerate
-        // dsiReallocate() calls, yet doing so breaks due to uint/int
-        // interaction issues today.  Deserves more of a look...
-        // Does our standalone parallel iterator not have the same
-        // type flexibility as the serial iterator?
-        //
-        for i in d[(...dom.ranges)] do
+        forall i in d[(...dom.ranges)] do
           copy.dsiAccess(i) = dsiAccess(i);
         off = copy.off;
         blk = copy.blk;
