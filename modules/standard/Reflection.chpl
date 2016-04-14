@@ -55,7 +55,7 @@ proc getFieldName(type t, param i:int) param : string
    :returns: an rvalue referring to that field.
  */
 inline
-proc getField(x:?t, param i:int)
+proc getField(const ref x:?t, param i:int) const ref
   return __primitive("field by num", x, i);
 
 // TODO ref return version of getField(x, int)
@@ -68,7 +68,7 @@ proc getField(x:?t, param i:int)
    :arg s: the name of a field
    :returns: an rvalue referring to that field.
  */
-proc getField(x:?t, param s:string) {
+proc getField(const ref x:?t, param s:string) const ref {
   param i = __primitive("field name to num", t, s);
   if i == 0 then
     compilerError("field ", s, " not found in ", t:string);
