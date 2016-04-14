@@ -1037,7 +1037,21 @@ module DefaultRectangular {
     }
 
     proc dsiReallocate(d: domain) {
-      on this {
+      //
+      // The following test seems like it should be unnecessary; this
+      // routine should only be called with domains of matching rank,
+      // and we are reasonably sure that this always happens in
+      // practice.  Yet dynamic method resolution is somehow invoking
+      // this in a way where they do not match, making other things
+      // blow up (which is also why the halt() can't be turned into
+      // a compilerError()... it always triggers).  This deserves a
+      // deeper look, but the lack of this is breaking newer clang
+      // builds with c warnings on, so I'm adding this for the time
+      // being.
+      //
+      if (d.rank != dom.rank) then
+        halt("internal error: dsiReallocate() rank mismatch");
+      else on this {
       //
       // If d is default rectangular, like dom, this is pretty easy...
       //
