@@ -739,12 +739,14 @@ module String {
           var x = "|".join(["a","10","d"]);
           writeln(x); // prints: "a|10|d"
      */
+    // proc join(S: ?T) where isTupleType(T) || isArrayType(T) && T.eltType() == string : string
     proc join(S: string ...?k) : string {
       if k == 1 {
-        return S[1];
+        return S[1]; // probably needs to be copied somehow
       } else {
-        var joinedSize: int = this.len * (k - 1);
-        for i in 1..k do joinedSize += S[i].length;
+        var joinedSize: int = this.len * (S.size - 1);
+        for s in S do joinedSize += s.length;
+        // if s.type != string then compilerError()...
 
         var joined: string;
         joined.len = joinedSize;
@@ -756,22 +758,22 @@ module String {
 
         var first = true;
         var offset = 0;
-        for i in 1..k {
+        for s in S {
           if first {
             first = false;
           } else if this.len != 0 {
             memcpy(joined.buff + offset, this.buff, this.len.safeCast(size_t));
             offset += this.len;
           }
-          var s = S[i];
+
           var sLen = s.len;
           if sLen != 0 {
             var cpyStart = joined.buff + offset;
-            var sLenSafe = sLen.safeCast(size_t);
+            var sLenSize = sLen.safeCast(size_t);
             if _local || s.locale_id == chpl_nodeID {
-              memcpy(cpyStart, s.buff, sLenSafe);
+              memcpy(cpyStart, s.buff, sLenSize);
             } else {
-              chpl_string_comm_get(cpyStart, s.locale_id, s.buff, sLenSafe);
+              chpl_string_comm_get(cpyStart, s.locale_id, s.buff, sLenSize);
             }
             offset += sLen;
           }
