@@ -55,10 +55,8 @@ proc getFieldName(type t, param i:int) param : string
    :returns: an rvalue referring to that field.
  */
 inline
-proc getField(x:?t, param i:int)
-  return __primitive("field value by num", x, i);
-
-// TODO ref return version of getField(x, int)
+proc getField(const ref x:?t, param i:int) const ref
+  return __primitive("field by num", x, i);
 
 /* Get a field in a class or record by name.
    Will generate a compilation error if a field with that name
@@ -68,14 +66,39 @@ proc getField(x:?t, param i:int)
    :arg s: the name of a field
    :returns: an rvalue referring to that field.
  */
-proc getField(x:?t, param s:string) {
+proc getField(const ref x:?t, param s:string) const ref {
   param i = __primitive("field name to num", t, s);
   if i == 0 then
     compilerError("field ", s, " not found in ", t:string);
-  return __primitive("field value by num", x, i);
+  return __primitive("field by num", x, i);
 }
 
-// TODO ref return version of getField(x, string)
+/* Get a mutable ref to the ith field in a class or record.
+   Causes a compilation error if `i` is not in 1..numFields(t)
+   or if the argument is not mutable.
+
+   :arg x: a class or record
+   :arg i: which field to get
+   :returns: an rvalue referring to that field.
+ */
+inline
+proc getFieldRef(ref x:?t, param i:int) ref
+  return __primitive("field by num", x, i);
+
+/* Get a mutable ref to a field in a class or record by name.
+   Will generate a compilation error if a field with that name
+   is not found or if the class or record is not mutable.
+
+   :arg x: a class or record
+   :arg s: the name of a field
+   :returns: an rvalue referring to that field.
+ */
+proc getFieldRef(ref x:?t, param s:string) ref {
+  param i = __primitive("field name to num", t, s);
+  if i == 0 then
+    compilerError("field ", s, " not found in ", t:string);
+  return __primitive("field by num", x, i);
+}
 
 /* Get a field index in a class or record, or 0 if
    the field is not found.
