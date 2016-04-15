@@ -4,11 +4,13 @@ extern {
   } S;
  
   const S const1;
+  const double const2;
   
-  void func(S x) {
+  static void func(S x) {
   }
 }
 
 var x : S;
 
 func(const1);
+var y= const2;
