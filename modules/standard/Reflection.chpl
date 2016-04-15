@@ -83,7 +83,7 @@ proc getField(const ref x:?t, param s:string) const ref {
  */
 inline
 proc getFieldRef(ref x:?t, param i:int) ref
-  return __primitive("field value by num", x, i);
+  return __primitive("field by num", x, i);
 
 /* Get a mutable ref to a field in a class or record by name.
    Will generate a compilation error if a field with that name
@@ -97,7 +97,7 @@ proc getFieldRef(ref x:?t, param s:string) ref {
   param i = __primitive("field name to num", t, s);
   if i == 0 then
     compilerError("field ", s, " not found in ", t:string);
-  return __primitive("field value by num", x, i);
+  return __primitive("field by num", x, i);
 }
 
 /* Get a field index in a class or record, or 0 if
