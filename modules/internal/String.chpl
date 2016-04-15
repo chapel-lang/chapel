@@ -316,7 +316,7 @@ module String {
       For example:
 
       .. code-block:: chapel
-      
+
         var str = "abcd";
         for c in str {
           writeln(c);
@@ -344,7 +344,8 @@ module String {
                 `1..string.length`
      */
     proc this(i: int) : string {
-      if i <= 0 || i > this.len then halt("index out of bounds of string");
+      if boundsChecking && (i <= 0 || i > this.len)
+        then halt("index out of bounds of string");
 
       var ret: string;
       const newSize = chpl_here_good_alloc_size(2);
@@ -370,17 +371,18 @@ module String {
     // TODO: move into the public interface in some form? better name if so?
     pragma "no doc"
     proc _getView(r:range(?)) {
-      //TODO: don't use halt here, or at least wrap in a bounds checks param
       //TODO: halt()s should use string.writef at some point.
-      if r.hasLowBound() {
-        if r.low <= 0 then
-          halt("range out of bounds of string");
-          //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
-      }
-      if r.hasHighBound() {
-        if (r.high < 0) || (r.high:int > this.len) then
-          halt("range out of bounds of string");
-          //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
+      if boundsChecking {
+        if r.hasLowBound() {
+          if r.low <= 0 then
+            halt("range out of bounds of string");
+            //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
+        }
+        if r.hasHighBound() {
+          if (r.high < 0) || (r.high:int > this.len) then
+            halt("range out of bounds of string");
+            //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
+        }
       }
       const ret = r[1:r.idxType..#(this.len:r.idxType)];
       return ret;
@@ -847,29 +849,27 @@ module String {
      Checks if all the characters in the string are either uppercase (A-Z) or
      uncased (not a letter).
 
-      :returns: * `true`  -- when there are no lowercase characters in the string.
+      :returns: * `true`  -- if the string contains at least one uppercase
+                             character and no lowercase characters, ignoring
+                             uncased characters.
                 * `false` -- otherwise
      */
-    // TODO/BUG: the is* functions are implemented as documented above, but
-    // this is slightly different than what python does. They check to make
-    // sure there is at least one cased character in the string.  eg.
-    // ";".isUpper() == false in python but would be true for us. They also
-    // check for a least one character in the string matching. These functions
-    // should be changed.
     proc isUpper() : bool {
-      var result: bool = false;
       if this.isEmptyString() then return false;
 
+      var result: bool;
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+        var locale_result = false;
         for i in 0..#this.len {
           const b = buff[i];
           if _byte_isLower(b) {
-            result = false;
+            locale_result = false;
             break;
-          } else if !result && _byte_isUpper(b) {
-            result = true;
+          } else if !locale_result && _byte_isUpper(b) {
+            locale_result = true;
           }
+          result = locale_result;
         }
       }
       return result;
@@ -892,7 +892,7 @@ module String {
           const b = buff[i];
           if _byte_isUpper(b) {
             result = false;
-            break; 
+            break;
           } else if !result && _byte_isLower(b) {
             result = true;
           }
@@ -1130,18 +1130,17 @@ module String {
     }
 
     /*
-      :returns: A new string with the first character capitalized.
+      :returns: A new string with the first character in uppercase (if it is a
+                case character), and all other case characters in lowercase.
+                Uncased characters are copied with no changes.
     */
-    // TODO/BUG: This is just wrong, whoops. I make the first character
-    // uppercase, then don't do anything to the rest of the string.
-    // fOO->FOO instead of Foo like it should. Remove the nodoc when it works.
     pragma "no doc"
     proc capitalize() : string {
       var result: string = this.toLower();
       if result.isEmptyString() then return result;
 
       var b = result.buff[0];
-      if _byte_isLower(b) { // Only change alpha
+      if _byte_isLower(b) {
         result.buff[0] = b - 0x20;
       }
       return result;
@@ -1315,12 +1314,12 @@ module String {
      For example:
 
      .. code-block:: chapel
-        
+
         writeln("Hello! " * 3);
 
      Results in::
 
-       Hello! Hello! Hello! 
+       Hello! Hello! Hello!
   */
   proc *(s: string, n: integral) {
     if n <= 0 then return "";
