@@ -4354,24 +4354,52 @@ static void resolveMove(CallExpr* call) {
 static void
 resolveNew(CallExpr* call)
 {
-  // This is a 'new' primitive, so we expect the argument to be a constructor
-  // call.
-  CallExpr* ctor = toCallExpr(call->get(1));
+  // This is a 'new' primitive
+  // we expect the 1st argument to be a type
+  // and the remaining arguments to be arguments for the constructor call
 
-  // May need to resolve ctor here.
+  SymExpr* tySe = toSymExpr(call->get(1));
+  INT_ASSERT(tySe);
+
+  Type* ty = resolveTypeAlias(tySe);
+  INT_ASSERT(ty);
+
+  AggregateType* ct = toAggregateType(ty);
+  INT_ASSERT(ct);
+
+  // Now replace the PRIM_NEW with a call to a constructor
+
+
+  tySe->remove();
+
+  // I had this code earlier to make a new CallExpr
+  // but it left the husk of the old one, which messed
+  // up print-callstack-on-error.
+  // If we do make a new one, cloning will be important...
+  //CallExpr *ctor = new CallExpr(new UnresolvedSymExpr(ct->defaultInitializer->name));
+  // Move the actuals to the new ctor call
+  // except skip the 1st actual since it is the type
+  //for_actuals(actual, call) {
+  //  ctor->insertAtTail(actual->remove());
+  //}
+
+  //call->replace(ctor);
+
+  CallExpr *ctor = call;
+  ctor->primitive = NULL;
+  ctor->baseExpr = new UnresolvedSymExpr(ct->defaultInitializer->name);
+  parent_insert_help(ctor, ctor->baseExpr);
+  resolveExpr(ctor);
+
+  // Do some error checking
+
   if (FnSymbol* fn = ctor->isResolved())
   {
-    // If the function is a constructor, just bridge out the 'new' primitive
-    // and call the constructor.  Done.
+    // If the function is a constructor, OK
     if (fn->hasFlag(FLAG_CONSTRUCTOR))
-    {
-      call->replace(ctor);
       return;
-    }
-
-    // Not a constructor, so issue an error.
-    USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
-    return;
+    else // otherwise, issue an error
+      USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
   }
 
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(ctor->baseExpr))

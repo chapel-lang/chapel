@@ -794,35 +794,62 @@ static TypeSymbol* resolveTypeAlias(SymExpr* se)
 //    to chpl_buildDistType().
 // 2. In the context of a 'new' (complete or partial), it is converted to a
 //    constructor call.
+//
+// This can't possibly work before resolution, because we don't know
+// the type of a type variable in a generic.
+// I'm going to look into moving this code to during/after resolution.
+// Other alternatives:
+//  -> make _construct_X always have the same name and take
+//     in a type argument for what should be constructed
+//  -> create a new primitive "CALL_CONSTRUCT" which takes
+//     in the type argument
 static void call_constructor_for_class(CallExpr* call) {
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
-    if (TypeSymbol* ts = resolveTypeAlias(se)) {
-      if (AggregateType* ct = toAggregateType(ts->type)) {
-        // Select symExprs of class (or record) type.
 
-        SET_LINENO(call);
-        CallExpr* parent = toCallExpr(call->parentExpr);
-        CallExpr* parentParent = NULL;
-        if (parent)
-          parentParent = toCallExpr(parent->parentExpr);
+    CallExpr* parent = toCallExpr(call->parentExpr);
+    CallExpr* parentParent = NULL;
+    if (parent)
+      parentParent = toCallExpr(parent->parentExpr);
 
-        if (parent && parent->isPrimitive(PRIM_NEW)) {
-          // Transform "new C ( ... )" into _construct_C ( ... ).
-          se->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
-          parent->replace(call->remove());
-        } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
-                   call->partialTag) {
-          // Transform "new C ( (_partial C) ... )" into _construct_C ( ... ).
-          se->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
-          parentParent->replace(parent->remove());
-        } else {
-          if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
-            // Call chpl__buildDistType for syntactic distributions.
-            se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
-          else
-            // Transform C ( ... ) into _type_construct_C ( ... ) .
-            se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
-        }
+    AggregateType* ct = NULL;
+    if (TypeSymbol* ts = resolveTypeAlias(se))
+      ct = toAggregateType(ts->type);
+
+    CallExpr* primNew = NULL;
+
+    // Select symExprs of class (or record) type.
+
+    SET_LINENO(call);
+
+    if (parent && parent->isPrimitive(PRIM_NEW)) {
+      primNew = parent;
+    } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
+             call->partialTag) {
+      primNew = parentParent;
+    } else if (ct) {
+      if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
+        // Call chpl__buildDistType for syntactic distributions.
+        se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
+      else
+        // Transform C ( ... ) into _type_construct_C ( ... ) .
+        se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
+    }
+
+    if (primNew) {
+      // Transform   new (call C args...)
+      //      into   new C args...
+
+      // Transform   new (call (_partial C) args...)
+      //      into   new C args...
+
+
+      CallExpr *newNew = new CallExpr(PRIM_NEW);
+      primNew->replace(newNew);
+
+      newNew->insertAtTail(call->baseExpr);
+      // Move the actuals to the new PRIM_NEW
+      for_actuals(actual, call) {
+        newNew->insertAtTail(actual->remove());
       }
     }
   }

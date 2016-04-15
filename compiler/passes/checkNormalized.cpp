@@ -79,21 +79,17 @@ static void checkPrimNew()
     if (!call->isPrimitive(PRIM_NEW))
       continue;
 
-    // The operand of a new should be a contructor call.
-    if (CallExpr* ctorCall = toCallExpr(call->get(1)))
+    // The 1st operand of a new should be a type
+    // the remaining operands are arguments
+    if (Expr* typeExpr = call->get(1))
     {
-      if (isUnresolvedSymExpr(ctorCall->baseExpr))
+      if (isUnresolvedSymExpr(typeExpr))
         // We can't know anything more about this symbol until resolution.
         // So let it pass
         continue;
 
-      if (isTypeExpr(ctorCall))
+      if (isTypeExpr(typeExpr))
         // If we know the expression represents a type, that's also good.
-        continue;
-
-      if (ctorCall->baseExpr && isTypeExpr(ctorCall->baseExpr))
-        // This is of the form <type-expr>(<args>)
-        // That is, it looks like a constructor.
         continue;
 
       // Fail by default
