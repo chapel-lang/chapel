@@ -43,7 +43,6 @@ writeln("Random numbers from a few random number generators");
 for ii in 1..10 {
   writeln(gsl_rng_uniform(rng1), ' ',gsl_rng_get(rng2));
 }
-/*
 
 // Try out some random number distributions
 var arr : [0.. #1000]real(64);
@@ -104,7 +103,7 @@ extern {
 #include <gsl/gsl_integration.h>
 
   double func(double,void*);
-  void call_qags(void* params, double a, double b, double epsabs, double epsrel, size_t limit, 
+  static void call_qags(void* params, double a, double b, double epsabs, double epsrel, size_t limit, 
       gsl_integration_workspace* wk, double *result, double *err) 
   {
     gsl_function F;
@@ -123,6 +122,6 @@ writeln("Expected : ", expected);
 writeln("Estimated error : ",error);
 writeln("Actual error : ",abs(result-expected));
 gsl_integration_workspace_free(wk);
-*/
+
 // Constants 
 writef("The speed of light in m/s is %r\n",GSL_CONST_MKS_SPEED_OF_LIGHT);

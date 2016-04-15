@@ -26,7 +26,6 @@ x:0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9
 y:0.0 0.201 0.408 0.627 0.864 1.125 1.416 1.743 2.112 2.529
 x^3 + 2x for x=0.45 :0.991138
 Compared to :0.991125
-x^3 + 2x for x=0.45 (Chapel version) :0.991138
 Integration result : -4.0
 Expected : -4.0
 Estimated error : 1.35447e-13
