@@ -321,7 +321,7 @@ proc Stencil.dsiAssign(other: this.type) {
 proc Stencil.dsiClone() {
   return new Stencil(boundingBox, targetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity);
+                   dataParMinGranularity, fluff=fluff, periodic=periodic);
 }
 
 proc Stencil.dsiDestroyDistClass() {
@@ -510,7 +510,7 @@ proc Stencil.dsiCreateReindexDist(newSpace, oldSpace) {
   var d = {(...myNewBbox)};
   var newDist = new Stencil(d, targetLocales, 
                           dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                          dataParMinGranularity);
+                          dataParMinGranularity, fluff=fluff, periodic=periodic);
   return newDist;
 }
 
@@ -612,7 +612,7 @@ proc Stencil.dsiCreateRankChangeDist(param newRank: int, args) {
   const newTargetLocales = targetLocales((...collapsedLocs));
   return new Stencil(newBbox, newTargetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity);
+                   dataParMinGranularity, fluff=fluff, periodic=periodic);
 }
 
 iter StencilDom.these() {
@@ -810,7 +810,8 @@ proc StencilDom.dsiBuildRectangularDom(param rank: int, type idxType,
     compilerError("Stencil domain rank does not match distribution's");
 
   var dom = new StencilDom(rank=rank, idxType=idxType,
-                         dist=dist, stridable=stridable);
+                         dist=dist, stridable=stridable, fluff=fluff,
+                         periodic=periodic);
   dom.dsiSetIndices(ranges);
   return dom;
 }
@@ -1427,6 +1428,8 @@ proc Stencil.Stencil(other: Stencil, privateData,
   dataParTasksPerLocale = privateData(3);
   dataParIgnoreRunningTasks = privateData(4);
   dataParMinGranularity = privateData(5);
+  fluff = privateData(6);
+  periodic = privateData(7);
 
   for i in targetLocDom {
     targetLocales(i) = other.targetLocales(i);
@@ -1438,7 +1441,8 @@ proc Stencil.dsiSupportsPrivatization() param return true;
 
 proc Stencil.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
-          dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
+          dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity,
+          fluff, periodic);
 }
 
 proc Stencil.dsiPrivatize(privatizeData) {
