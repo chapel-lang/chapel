@@ -217,12 +217,12 @@ class RecordReader {
         return (rec, false);
       }
       for param n in 1..num_fields {
-        var tmp = __primitive("field value by num", rec, n);
+        var tmp = __primitive("field by num", rec, n);
         var s: string;
         myReader.extractMatch(m(n + 1), s);
         if(s == "") 
-          then __primitive("field value by num", rec, n) = tmp;
-        else __primitive("field value by num", rec, n) = s:tmp.type;
+          then __primitive("field by num", rec, n) = tmp;
+        else __primitive("field by num", rec, n) = s:tmp.type;
         once = true;
       }
     } 
