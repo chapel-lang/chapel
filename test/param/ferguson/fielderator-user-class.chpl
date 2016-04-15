@@ -1,6 +1,6 @@
 use Reflection;
 
-record R {
+class R {
   var x: int;
   var y: int;
 }
@@ -32,3 +32,4 @@ getFieldRef(r, "y") = 200;
 assert(getFieldRef(r, "x") == 100);
 assert(getFieldRef(r, "y") == 200);
 
+writeln(r);
