@@ -731,22 +731,45 @@ module String {
     }
 
     /*
-      Returns a new string of all of the strings in `S` with the receiving
-      string concatenated between them.
+      Returns a new string, which is the concatenation of all of the strings
+      passed in with the receiving string inserted between them.
+
+      .. code-block:: chapel
+
+          var x = "|".join("a","10","d");
+          writeln(x); // prints: "a|10|d"
+     */
+
+    proc join(S: string ...) : string {
+      return _join(S);
+    }
+
+    proc join(S) : string where isTuple(S) {
+      //if S[S.domain.low].type != string || !isHomogeneousTuple(S) then
+        //compilerError("join should only be called with homogeneous tuples");
+      return _join(S);
+    }
+
+    /*
+      Same as the varargs version, but with all the strings in an array.
 
       .. code-block:: chapel
 
           var x = "|".join(["a","10","d"]);
           writeln(x); // prints: "a|10|d"
      */
-    // proc join(S: ?T) where isTupleType(T) || isArrayType(T) && T.eltType() == string : string
-    proc join(S: string ...?k) : string {
-      if k == 1 {
-        return S[1]; // probably needs to be copied somehow
+    proc join(S: [] string) : string {
+      return _join(S);
+    }
+
+    proc _join(const ref S) : string where isTuple(S) || isArray(S) {
+      if S.size == 1 {
+        // TODO: ensures copy, clean up when no longer needed
+        var ret = S[S.domain.low];
+        return ret;
       } else {
         var joinedSize: int = this.len * (S.size - 1);
         for s in S do joinedSize += s.length;
-        // if s.type != string then compilerError()...
 
         var joined: string;
         joined.len = joinedSize;
@@ -769,11 +792,11 @@ module String {
           var sLen = s.len;
           if sLen != 0 {
             var cpyStart = joined.buff + offset;
-            var sLenSize = sLen.safeCast(size_t);
+            var sSize = sLen.safeCast(size_t);
             if _local || s.locale_id == chpl_nodeID {
-              memcpy(cpyStart, s.buff, sLenSize);
+              memcpy(cpyStart, s.buff, sSize);
             } else {
-              chpl_string_comm_get(cpyStart, s.locale_id, s.buff, sLenSize);
+              chpl_string_comm_get(cpyStart, s.locale_id, s.buff, sSize);
             }
             offset += sLen;
           }
