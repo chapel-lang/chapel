@@ -11,6 +11,7 @@
  *     explicit exclusion of symbols
  *     explicit inclusion of symbols
  *     renaming included symbols
+ *   outside access of modules in different files
  */
 
 
@@ -35,8 +36,45 @@ module modToUse {
     return x * (x + y);
   }
 
-  // TO COVER: private symbols
   // TO COVER: nested modules
+
+
+
+  /* Often, the functionality of a group of code doesn't need to be completely
+     visible to outside clients.  Sometimes it would be harmful for the client
+     to access a function that isn't part of the blessed API, and sometimes it
+     just adds unnecessary clutter to the namespace.  To avoid these cases, a
+     symbol can be declared "private" - this means that only code defined within
+     the same scope as the definition of this symbol can access it.
+
+  /* Here, hiddenFoo is a private global variable, which is only accessible by
+     symbols defined within modToUse
+  */
+  private var hiddenFoo = false;
+
+  /* hiddenBaz is a private function, which is also only accessible by symbols
+     defined within modToUse.
+  */
+  private proc hiddenBaz(a) {
+    writeln(a);
+    return a + 3;
+  }
+
+  module Inner {
+    /* Since the module Inner is defined within modToUse, it can access the
+       private variable hiddenFoo and the private function hiddenBaz.  However,
+       any private symbol defined within Inner will not be visible to symbols
+       defined outside of Inner.
+     */
+
+    private var innerOnly = -17;
+    var canSeeHidden = !hiddenFoo;
+  }
+
+  // At the moment, private cannot be applied to type definitions; type
+  // aliases, and declarations of enums, records, and classes cannot be declared
+  // private.  Private also cannot be applied to fields or methods yet.
+
 }
 
 module AnotherModule {
