@@ -39,6 +39,7 @@
 #include <string.h>
 #include <sys/resource.h>
 #include <sys/time.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 typedef struct {
@@ -82,31 +83,101 @@ static void            (*saved_threadEndFn)(void);
 static void*           initial_pthread_func(void*);
 static void*           pthread_func(void*);
 
+/* This conditional is necessary because on some operating systems
+ * (like OSX) the cstdlib malloc doesn't use nmap for the allocation
+ * and can't be mprotect-ed. In that case, we use the default pthread
+ * stack
+ */
+#ifndef CHPL_USING_CSTDLIB_MALLOC
+#define CHPL_TASKS_FIFO_REGISTERED_STACK 1
+#endif
+
+#ifdef CHPL_TASKS_FIFO_REGISTERED_STACK
+typedef struct thread_stack_list* thread_stack_list_p;
+struct thread_stack_list {
+  void*               stack;
+  thread_stack_list_p next;
+};
+
+static thread_stack_list_p   thread_stack_list_head = NULL;
+static pthread_mutex_t       thread_stack_list_lock;
+
+static void* allocate_pthread_stack(size_t stack_size){
+  thread_stack_list_p          tslp;
+  size_t align;
+  void* stack;
+  int rc;
+
+  align = chpl_getSysPageSize();
+  stack = chpl_memalign(align, stack_size + align);
+
+  if(stack == NULL){
+    return NULL;
+  }
+
+  rc = mprotect((unsigned char*)stack + stack_size, align, PROT_NONE);
+  if( rc != 0 ) {
+    chpl_free(stack);
+    return NULL;
+  }
+
+  tslp = (thread_stack_list_p) chpl_mem_alloc(sizeof(struct thread_stack_list),
+                                       CHPL_RT_MD_THREAD_STACK_DESC, 0, 0);
+
+  tslp->stack = stack;
+
+  pthread_mutex_lock(&thread_stack_list_lock);
+
+  tslp->next = thread_stack_list_head;
+  thread_stack_list_head = tslp;
+
+  pthread_mutex_unlock(&thread_stack_list_lock);
+
+  return stack;
+}
+
+static void free_pthread_stack(void *stack){
+  int free_flag = PROT_READ | PROT_WRITE | PROT_EXEC;
+  mprotect((unsigned char*)stack + threadCallStackSize, chpl_getSysPageSize(), free_flag);
+  chpl_free(stack);
+}
+#endif
+
 static int do_pthread_create(pthread_t* thread,
                              pthread_attr_t* attr,
                              void *(*start_routine)(void *),
                              void *restrict arg) {
-
-  // update the attributes with a mem-layer allocated
-  // thread stack
-
-  size_t stack_size, align;
+#ifdef CHPL_TASKS_FIFO_REGISTERED_STACK
+  pthread_attr_t local_attr;
+  size_t stack_size;
   void* stack;
   int rc;
 
-  // TODO -- guard pages...
-  stack_size  = threadCallStackSize;
-  align = chpl_getSysPageSize();
-  stack = chpl_memalign(align, stack_size);
-
-
-  rc = pthread_attr_setstack(attr, stack, stack_size);
+  rc = pthread_attr_init(&local_attr);
   if( rc != 0 ) {
     memset(thread, 0, sizeof(pthread_t));
     return rc;
   }
 
+  stack_size = threadCallStackSize;
+  stack = allocate_pthread_stack(stack_size);
+  if( stack == NULL ){
+    memset(thread, 0, sizeof(pthread_t));
+    return EAGAIN;
+  }
+
+  rc = pthread_attr_setstack(&local_attr, stack, stack_size);
+  if( rc != 0 ) {
+    memset(thread, 0, sizeof(pthread_t));
+    return rc;
+  }
+
+  rc = pthread_create(thread, &local_attr, start_routine, arg);
+  pthread_attr_destroy(&local_attr);
+  return rc;
+#else
   return pthread_create(thread, attr, start_routine, arg);
+#endif
 }
 
 // Mutexes
@@ -266,6 +337,9 @@ void chpl_thread_init(void(*threadBeginFn)(void*),
 
   pthread_mutex_init(&thread_info_lock, NULL);
   pthread_mutex_init(&numThreadsLock, NULL);
+#ifdef CHPL_TASKS_FIFO_REGISTERED_STACK
+  pthread_mutex_init(&thread_stack_list_lock, NULL);
+#endif
 
   //
   // This is something of a hack, but it makes us a bit more resilient
@@ -312,6 +386,9 @@ int chpl_thread_createCommThread(chpl_fn_p fn, void* arg) {
 void chpl_thread_exit(void) {
   chpl_bool debug = false;
   thread_list_p tlp;
+#ifdef CHPL_TASKS_FIFO_REGISTERED_STACK
+  thread_stack_list_p tslp;
+#endif
 
   pthread_mutex_lock(&thread_info_lock);
   exiting = true;
@@ -331,6 +408,15 @@ void chpl_thread_exit(void) {
     thread_list_head = thread_list_head->next;
     chpl_mem_free(tlp, 0, 0);
   }
+
+#ifdef CHPL_TASKS_FIFO_REGISTERED_STACK
+  while (thread_stack_list_head != NULL) {
+    tslp = thread_stack_list_head;
+    free_pthread_stack(tslp->stack);
+    thread_stack_list_head = thread_stack_list_head->next;
+    chpl_mem_free(tslp, 0, 0);
+  }
+#endif
 
   CHPL_TLS_DELETE(chpl_thread_id);
   CHPL_TLS_DELETE(chpl_thread_data);

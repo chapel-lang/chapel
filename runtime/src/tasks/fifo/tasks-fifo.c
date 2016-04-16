@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- *
+ * 
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- *
+ * 
  * You may obtain a copy of the License at
- *
+ * 
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,6 +40,7 @@
 #include <inttypes.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <sys/mman.h>
 #include <unistd.h>
 #include <math.h>
 
@@ -200,7 +201,7 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
           timed_out = chpl_thread_sync_suspend(s, &deadline);
         else
           chpl_thread_yield();
-
+        
         if (s->is_full != want_full && !timed_out)
           gettimeofday(&now, NULL);
       } while (s->is_full != want_full
@@ -408,25 +409,47 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   // since we want to run all work in a task with a comm-friendly stack,
   // run main in a pthread that we will wait for.
   size_t stack_size;
-  size_t align;
   pthread_attr_t attr;
   pthread_t thread;
-  void* stack;
   int rc;
-
-  stack_size  = chpl_thread_getCallStackSize();
-  align = chpl_getSysPageSize();
-  stack = chpl_memalign(align, stack_size);
+#ifndef CHPL_USING_CSTDLIB_MALLOC
+  size_t align;
+  int free_flag;
+  void* stack;
+#endif
 
   rc = pthread_attr_init(&attr);
   if( rc != 0 ) {
     chpl_internal_error("pthread_attr_init main failed");
   }
 
+  stack_size  = chpl_thread_getCallStackSize();
+
+/* Uses a registered stack, if possible. For the reason about
+ * this define, see threads-pthreads.c
+ */
+#ifndef CHPL_USING_CSTDLIB_MALLOC
+  align = chpl_getSysPageSize();
+  stack = chpl_memalign(align, stack_size + align);
+  if( stack == NULL ){
+    chpl_internal_error("chpl_memalign main failed");
+  }
+
+  rc = mprotect((unsigned char *)stack + stack_size, align, PROT_NONE);
+  if( rc != 0 ) {
+    chpl_internal_error("mprotect main failed");
+  }
+
   rc = pthread_attr_setstack(&attr, stack, stack_size);
   if( rc != 0 ) {
     chpl_internal_error("pthread_attr_setstack main failed");
   }
+#else
+  rc = pthread_attr_setstacksize(&attr, stack_size);
+  if( rc != 0 ) {
+    chpl_internal_error("pthread_attr_setstacksize main failed");
+  }
+#endif
 
   rc = pthread_create(&thread, &attr, do_callMain, chpl_main);
   if( rc != 0 ) {
@@ -437,6 +460,13 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   if( rc != 0 ) {
     chpl_internal_error("pthread_join main failed");
   }
+
+#ifndef CHPL_USING_CSTDLIB_MALLOC
+  //If the task use a registered stack, I've to free it
+  free_flag = PROT_READ | PROT_WRITE | PROT_EXEC;
+  mprotect((unsigned char *)stack + stack_size, align, free_flag);
+  chpl_free(stack);
+#endif
 
   pthread_attr_destroy(&attr);
 }
@@ -1171,7 +1201,7 @@ thread_begin(void* ptask_void) {
 
       unset_block_loc();
     }
-
+ 
     //
     // Just now the pool had at least one task in it.  Lock and see if
     // there's something still there.

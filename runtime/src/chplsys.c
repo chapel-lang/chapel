@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- *
+ * 
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- *
+ * 
  * You may obtain a copy of the License at
- *
+ * 
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -85,6 +85,7 @@ size_t chpl_getHeapPageSize(void) {
     else {
 
       size_t tmpPageSize;
+      int scanCnt;
       char units[4]; // leave room for terminating null byte
 
       if ((scanCnt = sscanf(ev, "%zd%1[kKmMgG]", &tmpPageSize, units)) > 0) {
@@ -121,7 +122,7 @@ uint64_t chpl_bytesPerLocale(void) {
 #elif defined __APPLE__
   uint64_t membytes;
   size_t len = sizeof(membytes);
-  if (sysctlbyname("hw.memsize", &membytes, &len, NULL, 0))
+  if (sysctlbyname("hw.memsize", &membytes, &len, NULL, 0)) 
     chpl_internal_error("query of physical memory failed");
   return membytes;
 #elif defined _AIX
@@ -160,7 +161,7 @@ size_t chpl_bytesAvailOnThisLocale(void) {
 #if defined __APPLE__
   int membytes;
   size_t len = sizeof(membytes);
-  if (sysctlbyname("hw.usermem", &membytes, &len, NULL, 0))
+  if (sysctlbyname("hw.usermem", &membytes, &len, NULL, 0)) 
     chpl_internal_error("query of physical memory failed");
   return (size_t) membytes;
 #elif defined __NetBSD__
@@ -456,7 +457,7 @@ c_string chpl_nodeName(void) {
 
     uname(&utsinfo);
     namelen = strlen(utsinfo.nodename)+1;
-    namespace = chpl_mem_realloc(namespace, namelen * sizeof(char),
+    namespace = chpl_mem_realloc(namespace, namelen * sizeof(char), 
                                  CHPL_RT_MD_LOCALE_NAME_BUF, 0, 0);
     strcpy(namespace, utsinfo.nodename);
   }
