@@ -63,6 +63,13 @@ html: symlink-docs check-sphinxbuild clean-build
 	@echo
 	@echo "Build finished. The HTML pages are in "'$(BUILDPATH)'"/html."
 
+check: symlink-docs check-sphinxbuild clean-build
+	@echo "Checking for dead links and cross-references"
+	$(SPHINXBUILD) -n -b linkcheck -d $(BUILDDIR)/doctrees source $(BUILDDIR)/html
+	chmod -R ugo+rX $(BUILDDIR)
+	@echo
+	@echo "Build finished. The HTML pages are in "'$(BUILDPATH)'"/html."
+
 dirhtml:  symlink-docs check-sphinxbuild clean-build
 	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
 	@echo

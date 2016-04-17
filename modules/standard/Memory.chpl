@@ -27,23 +27,23 @@
   described here, other than :proc:`locale.physicalMemory`, will cause
   the program to halt with an error message.
 
-  ``memTrack``: :type:`bool`:
+  ``memTrack``: `bool`:
     Enable memory tracking.  This causes memory allocations and
     deallocations to be internally tracked, to support logging them on
     the fly and/or producing any of several kinds of memory-related
     reports, described below.
 
-  ``memLeaks``: :type:`bool`:
+  ``memLeaks``: `bool`:
     Enable memory tracking and produce detailed information about
     leaked memory by invoking :proc:`printMemAllocs` implicitly when
     the program terminates normally.
 
-  ``memLeaksByType``: :type:`bool`:
+  ``memLeaksByType``: `bool`:
     Enable memory tracking and produce summary information about
     leaked memory by invoking :proc:`printMemAllocsByType` implicitly
     when the program terminates normally.
 
-  ``memLeaksLog``: :type:`c_string`:
+  ``memLeaksLog``: `c_string`:
     Enable memory tracking and append a report to the named file when
     the program terminates normally.
     The report contains the compilation command used to build the
@@ -53,12 +53,12 @@
     :proc:`printMemAllocsByType`.
     
 
-  ``memStats``: :type:`bool`:
+  ``memStats``: `bool`:
     Enable memory tracking and produce summary memory statistics by
     invoking :proc:`printMemAllocStats` implicitly at normal program
     termination.
 
-  ``memMax``: :type:`uint`:
+  ``memMax``: `uint`:
     If the value is greater than 0 (zero), enable memory tracking
     and use the value as a limit on the number of bytes of memory
     that can be allocated per top-level (network-connected) locale.
@@ -69,11 +69,11 @@
   they only modify how it is done.
 
 
-  ``memThreshold``: :type:`uint`:
+  ``memThreshold``: `uint`:
     If this is set to a value greater than 0 (zero), only allocation
     requests larger than this are tracked and/or reported.
 
-  ``memLog``: :type:`c_string`:
+  ``memLog``: `c_string`:
     Memory reporting is written to this file.  By default it is the
     ``stdout`` associated with the process (not the Chapel channel
     with the same name).  Setting this config variable to a file path
@@ -105,11 +105,11 @@ enum MemUnits {Bytes, KB, MB, GB};
   one does not require memory tracking to be enabled.
 
   :arg unit: Units in which the returned value is to be expressed.
-  :type unit: MemUnits
+  :type unit: :type:`~Memory.MemUnits`
   :arg retType: Type of the returned value.  Defaults to `int(64)`.
-  :type retType: type
+  :type retType: `type`
   :returns: Size of physical memory on the locale where the call is made.
-  :rtype: :type:`retType`
+  :rtype: `retType`
  */
 proc locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) {
   extern proc chpl_bytesPerLocale(): uint(64);
@@ -156,7 +156,7 @@ proc memoryUsed() {
 
   :arg thresh: Do not print entries whose size is less than this.
     Defaults to 0.
-  :type thresh: int
+  :type thresh: `int`
 */
 proc printMemAllocs(thresh=0) {
   pragma "insert line file info" 

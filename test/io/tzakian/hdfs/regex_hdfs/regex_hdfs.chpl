@@ -194,12 +194,12 @@ writeln("+matches: All words capturing first letter");
     writeln("offset ", r.offset());
     writeln("match ", m);
     var s:string;
-    var as:string;
+    var my_as:string;
     r.extractMatch(m, s);
     writeln("string ", s);
     writeln("cap match", a);
     r.extractMatch(m, a);
-    writeln("cap string ", as);
+    writeln("cap string ", my_as);
 
   }
   writeln("offset ", r.offset());

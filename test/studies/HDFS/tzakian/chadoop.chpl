@@ -93,12 +93,13 @@ sync coforall loc in Locales { // look at this more
     // 2) Find all the hosts/blocks for the file, from byte 0 to length
     // 3) On each locale, find the blocks you own and process them
     write("Connecting to HDFS on host " + here.name + "...");
-    var hdfsFS: c_void_ptr = HDFS.hdfsConnect(namenode, connectNumber);
+    var hdfsFS: c_void_ptr = HDFS.hdfsConnect(namenode.localize().c_str(), 
+                                              connectNumber);
     writeln("done");
-    var fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, dataFile);
+    var fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, dataFile.localize().c_str());
     //      writeln("Info for file " + dataFile + ":");
     //      writeln(fileInfo);
-    var blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile, 0, fileInfo.mSize);
+    var blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile.localize().c_str(), 0, fileInfo.mSize);
     // ==== Get the blocks
     var blockCount = HDFS.chadoopGetBlockCount(blockHosts);
     // END
@@ -106,7 +107,8 @@ sync coforall loc in Locales { // look at this more
     // ==== Connect to HDFS
     // ==== Open the file 
     writeln("Opening file " + dataFile + " on " + here.name + "...");
-    var dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, dataFile, O_RDONLY, 0, 0, 0);
+    var dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, dataFile.localize().c_str(), 
+                                          O_RDONLY, 0, 0, 0);
     assert(HDFS.IS_NULL(dataFileLocal) == HDFS.IS_NULL_FALSE, "Failed to open dataFileLocal");
     // assert that we opened the file successfully
     writeln("done");
@@ -123,7 +125,7 @@ sync coforall loc in Locales { // look at this more
       // This might have to be changed back to the original once (if) we
       // switch to a cluster setup
       // ==== Get the host that the block resides on
-      var owner_tmp = HDFS.chadoopGetHost(blockHosts, block: int(32), (block % fileInfo.mReplication): int(32)) + domainSuffix;
+      var owner_tmp = HDFS.chadoopGetHost(blockHosts, block: int(32), (block % fileInfo.mReplication): int(32)):string + domainSuffix;
       var IDX = indexOf(".", owner_tmp, 1);
       var owner = owner_tmp[1..IDX-1];
 
@@ -145,7 +147,7 @@ sync coforall loc in Locales { // look at this more
 
         // ==== Read in characters from the file
         //writeln("Positional read with startByte=" + startByte + " length=" + length);
-        var s = HDFS.chadoopReadFilePositional(hdfsFS, dataFileLocal, startByte, length);
+        var s = HDFS.chadoopReadFilePositional(hdfsFS, dataFileLocal, startByte, length):string;
         // writeln("Read " + s.length + " characters from " + dataFile);
 
         // Read through the string and load it into the problem domain record

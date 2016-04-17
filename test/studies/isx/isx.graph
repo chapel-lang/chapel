@@ -1,5 +1,5 @@
-perfkeys: total =, total =, total =
-files: isx-spmd.dat, isx-bucket-spmd.dat, isx-no-return.dat
-graphkeys: Locale-based SPMD, Bucket-based SPMD, Avoids array returns
+perfkeys: total =, total =, total =, total =
+files: isx-bucket-spmd.dat, isx-no-return.dat, isx-per-task.dat, isx-release.dat
+graphkeys: Bucket-based SPMD, Avoids array returns, Pure SPMD, Release
 ylabel: Time (seconds)
 graphtitle: ISx variations

@@ -39,7 +39,7 @@ config const epsilon = 2.0 ** -51.0,
 // specify the fixed seed explicitly
 //
 config const useRandomSeed = false,
-             seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
+             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -260,7 +260,7 @@ proc initVectors(Twiddles, z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
-  fillRandom(z, seed);
+  fillRandom(z, seed, algorithm=RNG.NPB);
 
   if (printArrays) {
     writeln("After initialization, Twiddles is: ", Twiddles, "\n");

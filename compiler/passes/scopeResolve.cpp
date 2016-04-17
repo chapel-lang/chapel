@@ -88,6 +88,10 @@ static bool                                enableModuleUsesCache = false;
 static Vec<const char*>                         aliasFieldSet;
 
 
+// To avoid duplicate user warnings in checkIdInsideWithClause().
+// Using pair<> instead of astlocT to avoid defining operator<.
+typedef std::pair< std::pair<const char*,int>, const char* >  WFDIWmark;
+static std::set< std::pair< std::pair<const char*,int>, const char* > > warnedForDotInsideWith;
 
 
 static void     addToSymbolTable(Vec<DefExpr*>& defs); // deprecated.
@@ -148,6 +152,9 @@ void scopeResolve() {
   //
   forv_Vec(AggregateType, ct, gAggregateTypes) {
     for_fields(field, ct) {
+      if (strcmp(field->name, "outer") == 0) {
+        USR_FATAL_CONT(field, "Cannot have a field named 'outer'. 'outer' is used to refer to an outer class from within a nested class.");
+      }
       if (aliasFieldSet.set_in(field->name)) {
         SET_LINENO(field);
 
@@ -212,6 +219,8 @@ void scopeResolve() {
   destroyTable();
 
   destroyModuleUsesCaches();
+
+  warnedForDotInsideWith.clear();
 
   renameDefaultTypesToReflectWidths();
 
@@ -1430,6 +1439,8 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr*       unresolvedSymExpr,
 static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet);
 static bool isMethodName(const char* name, Type* type);
 static bool isMethodNameLocal(const char* name, Type* type);
+static void checkIdInsideWithClause(Expr* exprInAst,
+                                    UnresolvedSymExpr* origUSE);
 
 #ifdef HAVE_LLVM
 static bool tryCResolve(ModuleSymbol* module, const char* name);
@@ -1505,6 +1516,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
   //
   if (FnSymbol* fn = toFnSymbol(sym)) {
     if (!fn->_this && fn->hasFlag(FLAG_NO_PARENS)) {
+      checkIdInsideWithClause(unresolvedSymExpr, unresolvedSymExpr);
       unresolvedSymExpr->replace(new CallExpr(fn));
       return;
     }
@@ -1632,6 +1644,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
                 }
               }
 
+              checkIdInsideWithClause(expr, unresolvedSymExpr);
               expr->replace(dot);
             }
           }
@@ -1699,7 +1712,54 @@ static bool isMethodNameLocal(const char* name, Type* type) {
   }
 
   return false;
-} 
+}
+
+
+static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
+                                     const char* construct)
+{
+  // As of this writing, a with-clause can be duplicated in the AST.
+  // This code avoids multiple error messages for the same symbol.
+
+  std::pair<const char*,int> markLoc(origUSE->astloc.filename,
+                                     origUSE->astloc.lineno);
+  WFDIWmark mark(markLoc, origUSE->unresolved);
+
+  if (!warnedForDotInsideWith.count(mark)) {
+    USR_FATAL_CONT(origUSE, "%s: cannot reference a field or function in a 'with' clause of a %s", origUSE->unresolved, construct);
+    warnedForDotInsideWith.insert(mark);
+  }
+}
+
+//
+// 'expr' ended up being a field reference (or perhaps a method call).
+// If we are inside a 'with' clause, report an error.
+//
+static void checkIdInsideWithClause(Expr* exprInAst,
+                                    UnresolvedSymExpr* origUSE)
+{
+  // A 'with' clause for a forall loop.
+  if (CallExpr* call = toCallExpr(exprInAst->parentExpr)) {
+    if (call->isPrimitive(PRIM_FORALL_LOOP)) {
+      errorDotInsideWithClause(origUSE, "forall loop");
+      return;
+    }
+  }
+
+  // A 'with' clause for a task construct.
+  if (Expr* parent1 = exprInAst->parentExpr)
+    if (BlockStmt* parent2 = toBlockStmt(parent1->parentExpr))
+      if (parent1 == parent2->byrefVars) {
+        CallExpr* blockInfo = parent2->blockInfoGet();
+        // Ensure that an issue, indeed, occurred a task construct.
+        INT_ASSERT(blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN) ||
+                   blockInfo->isPrimitive(PRIM_BLOCK_COFORALL) ||
+                   blockInfo->isPrimitive(PRIM_BLOCK_BEGIN));
+        errorDotInsideWithClause(origUSE, blockInfo->primitive->name);
+        return;
+      }
+}
+
 
 static void resolveModuleCall(CallExpr* call, Vec<UnresolvedSymExpr*>& skipSet) {
   if (call->isNamed(".")) {

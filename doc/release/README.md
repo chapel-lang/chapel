@@ -27,6 +27,7 @@ This directory contains the following documentation:
     cygwin.rst           :  Cygwin
     ibm.rst              :  IBM
     knc.rst              :  Intel Xeon Phi (Knights Corner)
+    knl.rst              :  Intel Xeon Phi (Knights Landing)
     macosx.rst           :  Mac
     marenostrum.rst      :  MareNostrum (at BSC)
     sgi.rst              :  SGI Altix
@@ -57,7 +58,7 @@ Online Documentation
 You can navigate to the root of the documentation for this release using
 the URL:
 
-[chapel.cray.com/docs/1.12](http://chapel.cray.com/docs/1.12/)
+[chapel.cray.com/docs/1.13](http://chapel.cray.com/docs/1.13/)
 
 
 For More Information

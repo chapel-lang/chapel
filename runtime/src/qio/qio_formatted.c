@@ -462,8 +462,8 @@ unlock:
   return err;
 }
 
-// allocates and returns a string. maxlen is in CHARACTERS.
-qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen)
+// allocates and returns a string.
+qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes)
 {
   qioerr err;
   char* restrict ret = NULL;
@@ -483,12 +483,14 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
   ssize_t nread = 0;
   int64_t mark_offset;
   int64_t end_offset;
+  ssize_t maxlen_chars = SSIZE_MAX - 1;
+  int found_term = 0;
 
   if( qio_glocale_utf8 == 0 ) {
     qio_set_glocale();
   }
 
-  if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
+  if( maxlen_bytes <= 0 ) maxlen_bytes = SSIZE_MAX - 1;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -498,8 +500,12 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
   style = &ch->style;
 
   if( style->max_width_characters < UINT32_MAX &&
-      style->max_width_characters < maxlen ) {
-    maxlen = style->max_width_characters;
+      style->max_width_characters < maxlen_chars ) {
+    maxlen_chars = style->max_width_characters;
+  }
+  if( style->max_width_bytes < UINT32_MAX &&
+      style->max_width_bytes < maxlen_bytes ) {
+    maxlen_bytes = style->max_width_bytes;
   }
 
   // Allocate room for our buffer...
@@ -552,7 +558,14 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
   }
 
   err = 0;
-  for( nread = 0; nread < maxlen && !err; nread++ ) {
+  for( nread = 0;
+      // limit # characters
+      nread < maxlen_chars &&
+      // stop on error
+      !err &&
+      // limit # bytes
+      qio_channel_offset_unlocked(ch) - mark_offset < maxlen_bytes;
+      nread++ ) {
     err = qio_channel_read_char(false, ch, &chr);
     if( err ) break;
 
@@ -700,6 +713,7 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
       if(style->string_format == QIO_STRING_FORMAT_TOEND) {
         err = _append_char(&ret, &ret_len, &ret_max, chr);
       }
+      found_term = 1;
       break;
     } else {
       err = _append_char(&ret, &ret_len, &ret_max, chr);
@@ -715,7 +729,7 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
 
     // Unget the terminating character - there must
     // be one (or else err!=0)
-    if( err == 0 ) {
+    if( err == 0 && found_term ) {
       // Unget the terminating character.
       qio_channel_revert_unlocked(ch);
       qio_channel_advance_unlocked(ch, end_offset - mark_offset - 1);
@@ -3585,7 +3599,7 @@ qioerr qio_channel_print_complex(const int threadsafe,
     err = maybe_right_pad(ch, width);
     if( err ) goto rewind;
   } else {
-    QIO_GET_CONSTANT_ERROR(err, EINVAL, "unknow complex format");
+    QIO_GET_CONSTANT_ERROR(err, EINVAL, "unknown complex format");
     goto rewind;
   }
 
@@ -4343,6 +4357,14 @@ qioerr qio_conv_parse(c_string fmt,
 
       if( specifier == 's' || specifier == 'S') {
         // Handle base flags modifying string format
+
+        // Note -- when scanning, a precision should adjust the string
+        // format to not end at a whitespace.
+        // This mode scans a particular number of code points.
+        if( scanning && precision != WIDTH_NOT_SET ) {
+          style_out->string_format = QIO_STRING_FORMAT_TOEOF;
+        }
+
         if( base_flag == 'j' ) {
           style_out->string_format = QIO_STRING_FORMAT_JSON;
         } else if( base_flag == 'h' ) {

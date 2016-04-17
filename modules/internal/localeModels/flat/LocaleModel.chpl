@@ -90,7 +90,6 @@ module LocaleModel {
   // A concrete class representing the nodes in this architecture.
   //
   class LocaleModel : AbstractLocaleModel {
-    const callStackSize: size_t;
     const _node_id : int;
     const local_name : string;
 

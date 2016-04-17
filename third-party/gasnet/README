@@ -14,11 +14,12 @@ library itself.
 The modifications that we have made to the official GASNet release are
 as follows:
 
-* Added support for launching an xterm window running gdb in the udp
-  active messages layer if the environment variable CHPL_COMM_USE_GDB
-  is set.  Our modification is not particularly elegant, but it should
-  be innocuous for non-Chapel developers, and has been exceedingly
-  useful for the Chapel development team.
+* Added support for launching an xterm window running a debugger in the
+  udp active messages layer if either of the environment variables
+  CHPL_COMM_USE_GDB or CHPL_COMM_USE_LLDB is set.  Our modification is
+  not particularly elegant, but it should be innocuous for non-Chapel
+  developers, and has been exceedingly useful for the Chapel development
+  team.
 
 The structure of this directory is as follows:
 

@@ -24,9 +24,9 @@
  ******************************************************************************/
 use Time;
 use Random; 
-use AdvancedIters;
+use DynamicIters;
 config const printTime: bool = true; // print timer
-config const globalSeed = SeedGenerator.currentTime;
+config const globalSeed = SeedGenerator.oddCurrentTime;
 config const problemSize = 100000; 
 config const T = 1000; // number of time steps    
 config const tau = 10;

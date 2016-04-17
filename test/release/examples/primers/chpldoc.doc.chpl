@@ -50,16 +50,27 @@ proc uncommented() {
 }
 
 /*
+  To prevent the display and access of a particular function, specified module,
+  or global variable, simply preface it with:
+  private
+*/
+private
+proc undocumented1() {
+  // This function won't be in the final output.
+
+  // Note that private does not support types at this time, or the fields or
+  // methods on a type.
+}
+
+/*
   To prevent the display of a particular function, class, record, specified
-  module, or global variable, simply preface it with:
+  module, or global variable but not prevent its access by outside modules,
+  simply preface it with:
   pragma "no doc"
 */
 pragma "no doc"
-proc undocumented() {
+proc undocumented2() {
   // This function won't be in the final output.
-
-  // Once Chapel has support for marking symbol as private, that can be used
-  // to squash documentation instead.
 }
 
 /*

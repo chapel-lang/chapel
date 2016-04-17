@@ -258,7 +258,7 @@ In addition, there are several convenient synonyms for :proc:`channel.write` and
 :proc:`channel.read`:
 
  * :proc:`channel.readwrite`
- * :proc:`<~>`
+ * the `<~> operator`_
 
 Sometimes it's important to flush the buffer in a channel - to do that, use the
 .flush() method. Flushing the buffer will make all writes available to other
@@ -553,7 +553,7 @@ Integral Conversions
  (That is, it is right-justified in a 17-column field.
  Padding width is ignored when reading integers)
 ``%*i``
- as with ``%17i`` but read the minimum width from the preceeding argument
+ as with ``%17i`` but read the minimum width from the preceding argument
 ``%017i``
  a decimal integer padded on the left with zeros to 17 columns
 ``%-17i``
@@ -586,13 +586,13 @@ Real Conversions
 ``%.4r``
  as with ``%r`` but with 4 significant digits
 ``%.*r``
- as with ``%.4r`` but with significant digits read from preceeding argument
+ as with ``%.4r`` but with significant digits read from preceding argument
 ``%6.4r``
  as with ``%r`` but padded on the left to 6 columns
  and with 4 significant digits
 ``%*.*r``
  as with ``%6.4r`` but read minimum width and significant digits from
- preceeding arguments
+ preceding arguments
 
 ``%dr``
  a real number in decimal notation, e.g. ``12.34``
@@ -880,10 +880,15 @@ Going through each section for text conversions:
    (a space) leaves a blank before a positive number
    (in order to help line up with negative numbers)
   ``-``
-   left-justify the converted value instead of right-justifying
+   left-justify the converted value instead of right-justifying.
+   Note, if both ``0`` and ``-`` are given, the effect is as if only ``-``
+   were given.
+  ``~``
+   when reading a record or class instance, skip over fields in the input not
+   present in the Chapel type. This flag currently only works in combination
+   with the JSON format.  This flag allows a Chapel program to describe only the
+   relevant fields in a record when the input might contain many more fields.
   
-  Note, if both ``0`` and ``-`` are given, the effect is as if only ``-`` were
-  given.
 
 [optional field width]
    When printing numeric or string values, the field width specifies the number
@@ -1199,12 +1204,12 @@ The :type:`iomode` type is an enum.
 When used as arguments when opening files,
 its constants have the following meaning:
 
-* :enum:`iomode.r` - open an existing file for reading.
-* :enum:`iomode.rw` - open an existing file for reading and writing.
-* :enum:`iomode.cw` - create a new file for writing.
+* ``iomode.r`` - open an existing file for reading.
+* ``iomode.rw`` - open an existing file for reading and writing.
+* ``iomode.cw`` - create a new file for writing.
   If the file already exists, its contents are removed
   when the file is opened in this mode.
-* :enum:`iomode.cwr` - as with :enum:`iomode.cw` but reading from the
+* ``iomode.cwr`` - as with ``iomode.cw`` but reading from the
   file is also allowed.
 
 */
@@ -1220,29 +1225,29 @@ enum iomode {
 The :type:`iokind` type is an enum. When used as arguments to the
 :record:`channel` type, its constants have the following meaning:
 
-* :enum:`iokind.big` means binary I/O with big-endian byte order is performed
+* ``iokind.big`` means binary I/O with big-endian byte order is performed
   when writing/reading basic types from the channel.
 
-* :enum:`iokind.little` means binary I/O with little-endian byte order
-  (similar to :enum:`iokind.big` but with little-endian byte order).
+* ``iokind.little`` means binary I/O with little-endian byte order
+  (similar to ``iokind.big`` but with little-endian byte order).
 
-* :enum:`iokind.native` means binary I/O in native byte order
-  (similar to :enum:`iokind.big` but with the byte order that is native
+* ``iokind.native`` means binary I/O in native byte order
+  (similar to ``iokind.big`` but with the byte order that is native
   to the target platform).
 
-* :enum:`iokind.dynamic` means that the applicable I/O style has full effect
+* ``iokind.dynamic`` means that the applicable I/O style has full effect
   and as a result the kind varies at runtime.
 
-In the case of :enum:`iokind.big`, :enum:`iokind.little`, and
-:enum:`iokind.native` the applicable :record:`iostyle` is consulted when
+In the case of ``iokind.big``, ``iokind.little``, and
+``iokind.native`` the applicable :record:`iostyle` is consulted when
 writing/reading strings, but not for other basic types.
 
 There are synonyms available for these values:
 
-* ``iodynamic`` = :enum:`iokind.dynamic`
-* ``ionative`` = :enum:`iokind.native`
-* ``iobig`` = :enum:`iokind.big`
-* ``iolittle`` = :enum:`iokind.little`
+* :proc:`iodynamic` = ``iokind.dynamic``
+* :proc:`ionative` = ``iokind.native``
+* :proc:`iobig` = ``iokind.big``
+* :proc:`iolittle` = ``iokind.little``
 
 */
 enum iokind {
@@ -1256,13 +1261,13 @@ enum iokind {
   little = 3
 }
 
-/* A synonym for :enum:`iokind.dynamic`; see :type:`iokind` */
+/* A synonym for ``iokind.dynamic``; see :type:`iokind` */
 param iodynamic = iokind.dynamic;
-/* A synonym for :enum:`iokind.native`; see :type:`iokind` */
+/* A synonym for ``iokind.native``; see :type:`iokind` */
 param ionative = iokind.native;
-/* A synonym for :enum:`iokind.big`; see :type:`iokind` */
+/* A synonym for ``iokind.big``; see :type:`iokind` */
 param iobig = iokind.big;
-/* A synonym for :enum:`iokind.little`; see :type:`iokind` */
+/* A synonym for ``iokind.little``; see :type:`iokind` */
 param iolittle = iokind.little;
 
 /*
@@ -1270,23 +1275,23 @@ param iolittle = iokind.little;
 This enum contains values used to control binary I/O with strings
 via the ``str_style`` field in :record:`iostyle`.
 
-* :enum:`iostringstyle.len1b_data` indicates a string format of 1 byte of
+* ``iostringstyle.len1b_data`` indicates a string format of 1 byte of
   length followed by length bytes of string data.
-* :enum:`iostringstyle.len2b_data` indicates a string format of 2 bytes of
+* ``iostringstyle.len2b_data`` indicates a string format of 2 bytes of
   length followed by length bytes of string data.
-* :enum:`iostringstyle.len4b_data` indicates a string format of 4 bytes of
+* ``iostringstyle.len4b_data`` indicates a string format of 4 bytes of
   length followed by length bytes of string data.
-* :enum:`iostringstyle.len8b_data` indicates a string format of 8 bytes of
+* ``iostringstyle.len8b_data`` indicates a string format of 8 bytes of
   length followed by length bytes of string data.
-* :enum:`iostringstyle.lenVb_data` indicates a string format of a variable
+* ``iostringstyle.lenVb_data`` indicates a string format of a variable
   number of bytes of length, encoded with high-bit meaning more bytes
   of length follow, and where the 7-bits of length from each byte store
   the 7-bit portions of the length in order from least-significant to
   most-significant. This way of encoding a variable-byte length  matches
   `Google Protocol Buffers <https://github.com/google/protobuf/>`_.
-* :enum:`iostringstyle.data_toeof` indicates a string format that contains
+* ``iostringstyle.data_toeof`` indicates a string format that contains
   string data until the end of the file
-* :enum:`iostringstyle.data_null` indicates a string that is terminated
+* ``iostringstyle.data_null`` indicates a string that is terminated
   by a zero byte. It can be combined with other numeric
   values to indicate a string terminated by a particular byte. For example,
   to indicate a string terminated by ``$`` (which in ASCII has byte value 0x24),
@@ -1760,7 +1765,7 @@ private extern proc qio_channel_scan_literal_2(threadsafe:c_int, ch:qio_channel_
 private extern proc qio_channel_print_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t):syserr;
 private extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel_ptr_t, match:c_void_ptr, len:ssize_t):syserr;
 
-extern proc qio_channel_skip_json_field(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
+private extern proc qio_channel_skip_json_field(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
 /*********************** Curl/HDFS support ******************/
 
@@ -2504,7 +2509,7 @@ The temporary file will be created in an OS-dependent temporary directory,
 for example "/tmp" is the typical location. The temporary file will be
 deleted upon closing.
 
-Temporary files are always opened with :type:`iomode` :enum:`iomode.cwr`;
+Temporary files are always opened with :type:`iomode` ``iomode.cwr``;
 that is, a new file is created that supports both writing and reading.
 
 :arg error: optional argument to capture an error code. If this argument
@@ -2773,6 +2778,7 @@ record ioBits {
   }
 }
 
+pragma "no doc"
 inline proc _cast(type t, x: ioBits) where t == string {
   const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
   return ret;
@@ -3028,7 +3034,7 @@ This function is equivalent to calling :proc:`open` and then
            is required unless the ``url=`` argument is used.
 :arg kind: :type:`iokind` compile-time argument to determine the
             corresponding parameter of the :record:`channel` type. Defaults
-            to :enum:`iokind.dynamic`, meaning that the associated
+            to ``iokind.dynamic``, meaning that the associated
             :record:`iostyle` controls the formatting choices.
 :arg locking: compile-time argument to determine whether or not the
               channel should use locking; sets the 
@@ -3097,7 +3103,7 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
            is required unless the ``url=`` argument is used.
 :arg kind: :type:`iokind` compile-time argument to determine the
            corresponding parameter of the :record:`channel` type. Defaults
-           to :enum:`iokind.dynamic`, meaning that the associated
+           to ``iokind.dynamic``, meaning that the associated
            :record:`iostyle` controls the formatting choices.
 :arg locking: compile-time argument to determine whether or not the
               channel should use locking; sets the 
@@ -3168,7 +3174,7 @@ proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
                will halt with an error message.
    :arg kind: :type:`iokind` compile-time argument to determine the
               corresponding parameter of the :record:`channel` type. Defaults
-              to :enum:`iokind.dynamic`, meaning that the associated
+              to ``iokind.dynamic``, meaning that the associated
               :record:`iostyle` controls the formatting choices.
    :arg locking: compile-time argument to determine whether or not the
                  channel should use locking; sets the 
@@ -3267,7 +3273,7 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
                will halt with an error message.
    :arg kind: :type:`iokind` compile-time argument to determine the
               corresponding parameter of the :record:`channel` type. Defaults
-              to :enum:`iokind.dynamic`, meaning that the associated
+              to ``iokind.dynamic``, meaning that the associated
               :record:`iostyle` controls the formatting choices.
    :arg locking: compile-time argument to determine whether or not the
                  channel should use locking; sets the 
@@ -3729,6 +3735,7 @@ proc channel.writeIt(x) {
    For a writing channel, writes as with :proc:`channel.write`.
    For a reading channel, reads as with :proc:`channel.read`.
    Stores any error encountered in the channel. Does not return anything.
+
  */
 inline proc channel.readwrite(x) where this.writing {
   this.writeIt(x);
@@ -3741,7 +3748,9 @@ inline proc channel.readwrite(ref x) where !this.writing {
 
   /*
 
-     The `<~>` operator is the same as calling :proc:`channel.readwrite`,
+     The _`<~> operator`
+
+     This `<~>` operator is the same as calling :proc:`channel.readwrite`,
      except that it returns the channel so that multiple operator
      calls can be chained together.
 
@@ -4244,22 +4253,31 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool {
                will halt with an error message.
    :returns: `true` if the bits were read without error, `false` on error or EOF
  */
-inline proc channel.readbits(out v:uint(64), nbits:int(8), out error:syserr):bool {
+inline proc channel.readbits(out v:integral, nbits:integral, out error:syserr):bool {
   var tmp:ioBits;
   var ret:bool;
 
   error = ENOERR;
 
-  tmp.nbits = nbits;
+  if castChecking { // mimic safeCast
+    // Error if reading more bits than fit into v
+    if numBits(v.type) < nbits then
+      halt("readbits nbits=", nbits, " > bits in v:", v.type:string);
+    // Error if reading negative number of bits
+    if isIntType(nbits.type) && nbits < 0 then
+      halt("readbits nbits=", nbits, " < 0");
+  }
+
+  tmp.nbits = nbits:int(8);
   ret = this.read(tmp, error=error);
-  v = tmp.v;
+  v = tmp.v:v.type;
 
   return ret;
 }
 
 // documented in the error= version
 pragma "no doc"
-proc channel.readbits(out v:uint(64), nbits:int(8)):bool {
+proc channel.readbits(out v:integral, nbits:integral):bool {
   var e:syserr = ENOERR;
   this.readbits(v, nbits, error=e);
   if !e then return true;
@@ -4280,13 +4298,22 @@ proc channel.readbits(out v:uint(64), nbits:int(8)):bool {
                will halt with an error message.
    :returns: `true` if the bits were written without error, `false` on error
  */
-inline proc channel.writebits(v:uint(64), nbits:int(8), out error:syserr):bool {
-  return this.write(new ioBits(v, nbits), error=error);
+inline proc channel.writebits(v:integral, nbits:integral, out error:syserr):bool {
+  if castChecking { // mimic safeCast
+    // Error if writing more bits than fit into v
+    if numBits(v.type) < nbits then
+      halt("writebits nbits=", nbits, " > bits in v:", v.type:string);
+    // Error if writing negative number of bits
+    if isIntType(nbits.type) && nbits < 0 then
+      halt("writebits nbits=", nbits, " < 0");
+  }
+
+  return this.write(new ioBits(v:uint(64), nbits:int(8)), error=error);
 }
 
 // documented in the error= version
 pragma "no doc"
-proc channel.writebits(v:uint(64), nbits:int(8)):bool {
+proc channel.writebits(v:integral, nbits:integral):bool {
   var e:syserr = ENOERR;
   this.writebits(v, nbits, error=e);
   if !e then return true;
@@ -4680,6 +4707,7 @@ proc channel.readBytes(x, len:ssize_t, out error:syserr) {
   error = qio_channel_read_amt(false, _channel_internal, x, len);
 }
 
+pragma "no doc"
 proc channel.readBytes(x, len:ssize_t) {
   var e:syserr = ENOERR;
   this.readBytes(x, len, error=e);

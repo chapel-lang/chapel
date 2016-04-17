@@ -1,4 +1,8 @@
 explicitImplicit.doc
+
+Usage:
+   use explicitImplicit.doc;
+
    proc foo(bar: int)
       This proc has an explicit type argument of type int 
 

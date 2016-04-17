@@ -1,11 +1,21 @@
 surroundingModule.doc
+
+Usage:
+   use surroundingModule.doc;
+
+Submodules for this module are located in the surroundingModule.doc/ directory
+
    proc before()
       This comment and its proc lies before the defined module 
 
-   surroundingModule.doc.Middle
-      proc inside()
-         This comment and its proc lies inside the defined module 
-
    proc after()
       This comment and its proc lies after the defined module 
+
+Middle
+
+Usage:
+   use surroundingModule.doc.Middle;
+
+   proc inside()
+      This comment and its proc lies inside the defined module 
 

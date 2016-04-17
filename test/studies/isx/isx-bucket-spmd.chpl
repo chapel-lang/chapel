@@ -1,8 +1,8 @@
 // isx-bucket-spmd.chpl
 // 
-// This is a port of ISx to Chapel, developed by Brad Chamberlain as a
-// variant on the isx-spmd.chpl version co-developed by Brad Chamberlain,
-// Lydia Duncan, and Jacob Hemstad.
+// This is a port of ISx to Chapel, co-developed by Brad Chamberlain,
+// Lydia Duncan, and Jacob Hemstad on 2015-10-30.  Additional cleanups
+// were done later by Brad.
 //
 // This version is SPMD, like the original port, but is written in terms
 // of more abstract "buckets" rather than locales, permitting multiple
@@ -130,8 +130,6 @@ config const numBurnInRuns = 1,
 if printConfig then
   printConfiguration();
 
-if numTrials == 0 then
-  exit(0);
 
 const LocBucketSpace = {0..#numBuckets};
 const BucketDist = new dmap(new Block(LocBucketSpace));
@@ -145,31 +143,34 @@ var verifyKeyCount: atomic int;
 
 var barrier = new Barrier(numBuckets);
 
+proc main() {
+  coforall bucketID in BucketSpace do
+    on BucketDist.idxToLocale(bucketID) {
+      //
+      // Execution is SPMD-style across buckets here
+      //
 
-coforall bucketID in BucketSpace do
-  on BucketDist.idxToLocale(bucketID) {
-    //
-    // Execution is SPMD-style across buckets here
-    //
+      //
+      // The non-positive iterations represent burn-in runs, so don't
+      // time those.  To reduce time spent in verification, verify only
+      // the final timed run.
+      //
+      for i in 1-numBurnInRuns..numTrials do
+        bucketSort(bucketID, trial=i, time=printTimings && (i>0),
+                   verify=(i==numTrials));
+    }
 
-    //
-    // The non-positive iterations represent burn-in runs, so don't
-    // time those.  To reduce time spent in verification, verify only
-    // the final timed run.
-    //
-    for i in 1-numBurnInRuns..numTrials do
-      bucketSort(bucketID, trial=i, time=printTimings && (i>0),
-                 verify=(i==numTrials));
+  if debug {
+    writeln("final buckets =\n");
+    for (i,b) in zip(BucketSpace, allBucketKeys) do
+      writeln("Bucket ", i, " (owned by locale ", b.locale.id, "): ", b);
   }
 
-if debug {
-  writeln("final buckets =\n");
-  for (i,b) in zip(BucketSpace, allBucketKeys) do
-    writeln("Bucket ", i, " (owned by locale ", b.locale.id, "): ", b);
+  if printTimings then
+    printTimingData("buckets");
+
+  delete barrier;
 }
-  
-if printTimings then
-  printTimingData("buckets");
 
 
 proc bucketSort(bucketID, trial: int, time = false, verify = false) {
@@ -340,7 +341,7 @@ proc verifyResults(bucketID, myBucketSize, myLocalKeyCounts) {
 
 
 proc makeInput(bucketID) {
-  use Random.PCGRandom;
+  use Random;
 
   var myKeys: [0..#keysPerBucket] keyType;
 
@@ -348,11 +349,12 @@ proc makeInput(bucketID) {
   // Seed RNG
   //
   if (debug) then
-    writeln(bucketID, ": Calling pcg32_srandom_r with ", bucketID);
+    writeln(here.id, ": Initializing random stream with seed = ", here.id);
 
-  var MyRandStream = new PCGRandomStream(seed = here.id,
-                                         parSafe=false,
-                                         eltType = keyType);
+  var MyRandStream = makeRandomStream(seed = here.id,
+                                      parSafe = false,
+                                      eltType = keyType,
+                                      algorithm = RNG.PCG);
 
   //
   // Fill local array
@@ -374,6 +376,8 @@ proc makeInput(bucketID) {
     
   if (debug) then
     writeln(bucketID, ": myKeys: ", myKeys);
+
+  delete MyRandStream;
 
   return myKeys;
 }
@@ -415,7 +419,7 @@ proc printTimingData(units) {
   }
 
   writeln();
-  writeln("averages across ", units, " of min across trials:");
+  writeln("averages across ", units, " of min across trials (min..max):");
   if useSubTimers {
     printTimingStats(inputTime, "input");
     printTimingStats(bucketCountTime, "bucket count");
@@ -445,17 +449,24 @@ proc printTimeTable(timeTable, units, timerName) {
 }
 
 //
-// print timing statistics (currently only avg across locales/buckets
-// of min across trials)
+// print timing statistics (avg/min/max across buckets of min across
+// trials)
 //
 proc printTimingStats(timeTable, timerName) {
-  //  var minMinTime: real = max(real);
-  var /* maxMinTime, */ totMinTime: real;
-  forall timings in timeTable with (/*min reduce minMinTime,
-                                      max reduce maxMinTime,*/
+  var minMinTime, maxMinTime, totMinTime: real;
+
+  //
+  // iterate over the buckets, computing the min/max/total of the
+  // min times across trials.
+  //
+  forall timings in timeTable with (min reduce minMinTime,
+                                    max reduce maxMinTime,
                                     + reduce totMinTime) {
-    totMinTime += min reduce timings;
+    const minTime = min reduce timings;
+    totMinTime += minTime;
+    minMinTime = min(minMinTime, minTime);
+    maxMinTime = max(maxMinTime, minTime);
   }
   var avgTime = totMinTime / numLocales;
-  writeln(timerName, " = ", avgTime);
+  writeln(timerName, " = ", avgTime, " (", minMinTime, "..", maxMinTime, ")");
 }

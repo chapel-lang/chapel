@@ -1088,6 +1088,13 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
                                  Expr* reduceOp, Expr* reduceVar,
                                  Expr* otherROp, VarSymbol* useThisGlobalOp)
 {
+  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(reduceOp)) {
+    if (!strcmp(sym->unresolved, "max"))
+      sym->unresolved = astr("MaxReduceScanOp");
+    else if (!strcmp(sym->unresolved, "min"))
+      sym->unresolved = astr("MinReduceScanOp");
+  }
+
   VarSymbol* globalOp;
   if (useThisGlobalOp) {
     globalOp = useThisGlobalOp;
@@ -1103,12 +1110,13 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
   Expr* eltType = new NamedExpr("eltType",
                     new_Expr("'typeof'(%E)", reduceVar->copy()));
   if (!useThisGlobalOp)
-    iterRec->defPoint->insertBefore(new_Expr("'move'(%S, 'new'(%E(%E)))",
-                                             globalOp, reduceOp, eltType));
+    iterRec->defPoint->insertBefore("'move'(%S, 'new'(%E(%E)))",
+                                    globalOp, reduceOp, eltType);
   // reduceVar = globalOp.generate(); delete globalOp;
-  parLoop->insertAfter("'delete'(%S)", globalOp);
-  parLoop->insertAfter(new_Expr("'='(%E,.(%S, 'generate')())",
-                                reduceVar->copy(), globalOp));
+  parLoop->insertAfter("'delete'(%S)",
+                       globalOp);
+  parLoop->insertAfter("'='(%E,.(%S, 'generate')())",
+                       reduceVar->copy(), globalOp);
 }
 
 // Setup for forall intents
@@ -2211,8 +2219,26 @@ buildFunctionDecl(FnSymbol*   fn,
   }
   else
   {
-    // Looks like this flag is redundant with FLAG_EXTERN. <hilde>
-    fn->addFlag(FLAG_FUNCTION_PROTOTYPE);
+    if (!fn->hasFlag(FLAG_EXTERN)) {
+      //
+      // Chapel doesn't really support procedures with no-op bodies (a
+      // semicolon only).  Doing so is likely to cause confusion for C
+      // programmers who will think of it as a prototype, but we don't
+      // support prototypes, so require such programmers to type the
+      // empty body instead.  This is consistent with the current draft
+      // of the spec as well.
+      //
+      USR_FATAL(fn, "no-op procedures are only legal for extern functions");
+      //
+      // this is a way to make this branch robust to downstream passes
+      // if we got past this USR_FATAL for any reason or decide we
+      // want to support this case -- it changes the NULL pointer that
+      // is the body the parser created into a no-op body.
+      //
+      //
+      fn->insertAtTail(buildChapelStmt(new BlockStmt()));
+    }
+
   }
 
   fn->doc = docs;
@@ -2258,9 +2284,24 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
 
   //
   // detect on-statement directly inside local statement
+  // i.e., we want "local on {} ", not "local { on {} }"
   //
-  BlockStmt* onBlock = findStmtWithTag(PRIM_BLOCK_ON, body);
+  BlockStmt* onBlock = toBlockStmt(body->body.tail);
+  if (body->blockTag == BLOCK_SCOPELESS &&
+      onBlock != NULL &&
+      onBlock->isBlockType(PRIM_BLOCK_ON)) {
+    // On-statement directly inside scopeless local block
 
+    CallExpr* call = toCallExpr(onBlock->blockInfoGet());
+    SymExpr* head = toSymExpr(call->argList.head);
+    if (head->var == gTrue) {
+      // avoiding 'local local on'
+      onBlock = NULL;
+    }
+  } else {
+    // not an on-block
+    onBlock = NULL;
+  }
   if (onBlock) {
     CallExpr* call = toCallExpr(onBlock->blockInfoGet());
 

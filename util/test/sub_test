@@ -1357,7 +1357,7 @@ for testname in testsrc:
         #
         # Compile (with timeout)
         #
-        # compilation timeout defaults to 2 * execution timeout.
+        # compilation timeout defaults to 4 * execution timeout.
         # This is to quiet compilation timeouts in some oversubscribed test
         # configurations (since they are generating a lot of testing noise, but
         # don't represent a real issue.)
@@ -1368,7 +1368,7 @@ for testname in testsrc:
         # testing. Hopefully this is just a temporary work around and I'll
         # remember to add the cleaner solution soon.
         #
-        comptimeout = 2*timeout
+        comptimeout = 4*timeout
         cmd=ShellEscapeCommand(cmd);
         sys.stdout.write('[Executing compiler %s'%(cmd))
         if args:
@@ -1812,6 +1812,8 @@ for testname in testsrc:
                         launcher_error = 'Jira 18 -- Expired slurm credential for'
                     elif re.search('output file from job .* does not exist', output, re.IGNORECASE) != None:
                         launcher_error = 'Jira 17 -- Missing output file for'
+                    elif re.search('aprun: Unexpected close of the apsys control connection', output, re.IGNORECASE) != None:
+                        launcher_error = 'Jira 193 -- Unexpected close of apsys for'
                     elif (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or
                           re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None):
                         exectimeout = True

@@ -1,16 +1,9 @@
 fullyCommented.doc
-   fullyCommented.doc.Other
-      proc inside
-         Comment for method inside module 
 
-      proc body()
-         Comment for method with a body inside module 
+Usage:
+   use fullyCommented.doc;
 
-      proc hasArg(val: int)
-         Comment for method with an argument inside module 
-
-      proc argAndBody(val: int)
-         Comment for method with argument and body inside module 
+Submodules for this module are located in the fullyCommented.doc/ directory
 
    proc method1()
       Comment for method1 
@@ -23,4 +16,21 @@ fullyCommented.doc
 
    proc argAndBody(val: int)
       Comment for method with argument and body 
+
+Other
+
+Usage:
+   use fullyCommented.doc.Other;
+
+   proc inside
+      Comment for method inside module 
+
+   proc body()
+      Comment for method with a body inside module 
+
+   proc hasArg(val: int)
+      Comment for method with an argument inside module 
+
+   proc argAndBody(val: int)
+      Comment for method with argument and body inside module 
 

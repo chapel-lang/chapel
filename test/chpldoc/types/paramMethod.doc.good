@@ -1,0 +1,8 @@
+paramMethod.doc
+
+Usage:
+   use paramMethod.doc;
+
+   proc param int.foo()
+      I can only be called on param versions of the type `int` 
+

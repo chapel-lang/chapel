@@ -44,30 +44,63 @@ Additional utilities
 */
 
 module UtilMisc_forDocs {
-  proc compilerError(param x:c_string ...?n, param errorDepth:int) {
-    __primitive("error", (...x));
-  }
 
   /*
-     These two functions are used primarily within system modules to signal
-     a compile time error.  The first version accepts a param int as the
-     last argument; this value is used to control the depth of an error
-     stack trace
+     Generate a compile-time error.
+     The error text is a concatenation of the arguments.
   */
   proc compilerError(param x:c_string ...?n) {
     __primitive("error", (...x));
   }
 
-  proc compilerWarning(param x:c_string ...?n, param errorDepth:int) {
-    __primitive("warning", (...x));
+  /*
+     Generate a compile-time error.
+     The error text is a concatenation of the string arguments.
+
+     :arg errorDepth: controls the depth of the error stack trace
+  */
+  proc compilerError(param x:c_string ...?n, param errorDepth:int) {
+    __primitive("error", (...x));
   }
 
-  /* Similar to compilerError() but generate a warning rather than an error */
+
+  /*
+     Generate a compile-time warning.
+     The warning text is a concatenation of the arguments.
+  */
   proc compilerWarning(param x:c_string ...?n) {
     __primitive("warning", (...x));
   }
 
+  /*
+     Generate a compile-time warning.
+     The warning text is a concatenation of the string arguments.
 
+     :arg errorDepth: controls the depth of the error stack trace
+  */
+  proc compilerWarning(param x:c_string ...?n, param errorDepth:int) {
+    __primitive("warning", (...x));
+  }
+
+
+
+  //
+  // chpldoc note: I wanted to aggregate compilerAssert into just a couple
+  // of nice-looking prototypes and call the int argument 'errorDepth'
+  // - in this file - so that the online docs look pretty.
+  //
+  // I chose against it - to avoid situations where the user invokes
+  // compilerAssert() according to one of these prototypes and gets
+  // an "unresolved call" error.  -vass 3'2016
+  //
+  // TODO: improve the compilerAssert() functions in ChapelBase.chpl:
+  //  * either require the formals to be 'string' or cast them
+  //    to 'string' when passing to compilerError
+  //  * name the 'int' formal 'errorDepth'
+  //  * do we want to +1 when passing errorDepth to compilerError() ?
+  //  * switch to nice-looking prototypes by allowing varargs;
+  //    one option for that is to invoke __primitive("error") directly
+  //
 
   /*
      This function is used primarily within system modules to test a compile
@@ -101,23 +134,23 @@ module UtilMisc_forDocs {
   proc compilerAssert(param test: bool, param arg1) where !isIntegralType(arg1.type)
   { if !test then compilerError("assert failed - ", arg1); }
 
-
+  /* Generate a compile-time error if `test` is false.
+     The error message includes `arg1` and `arg2`. */
   proc compilerAssert(param test: bool, param arg1, param arg2)
   { if !test then compilerError("assert failed - ", arg1, arg2); }
 
+  /* Generate a compile-time error if `test` is false.
+     The error message includes `arg1`, `arg2`, `arg3`. */
   proc compilerAssert(param test: bool, param arg1, param arg2, param arg3)
   { if !test then compilerError("assert failed - ", arg1, arg2, arg3); }
 
+  /* Generate a compile-time error if `test` is false.
+     The error message includes `arg1` through `arg4`. */
   proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4)
   { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4); }
 
-  /*
-     An extended set of functions that provides additional information for the error
-     message. A current limitation in the handling of tuples of parameters prevents
-     the use of a variable number of arguments
-
-     :arg test: the param value to be tested
-  */
+  /* Generate a compile-time error if `test` is false.
+     The error message includes `arg1` through `arg5`. */
   proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5)
   { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5); }
 
@@ -155,17 +188,13 @@ module UtilMisc_forDocs {
 
 
 
+  /* Compute the minimum value of 2 or more arguments
+     using the ``<`` operator for comparison. */
+  inline proc min(x, y...) return min();  // dummy
 
-
-  inline proc min(x, y) return if x < y then x else y;
-
-  /* Compute the minimum value of 2 or more arguments */
-  inline proc min(x, y, z...?k) return min(min(x, y), (...z));
-
-  inline proc max(x, y) return if x > y then x else y;
-
-  /* Compute the maximum value of 2 or more arguments */
-  inline proc max(x, y, z...?k) return max(max(x, y), (...z));
+  /* Compute the maximum value of 2 or more arguments
+     using the ``>`` operator for comparison. */
+  inline proc max(x, y...) return max();  // dummy
 
   /*
     Exit the program

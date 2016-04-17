@@ -92,7 +92,7 @@ if [ "${COMPILER}" != "gnu" ] ; then
     module load gcc/${CHPL_GCC_TARGET_VERSION}
 fi
 
-# quiet libu warning about cpuid detection failure until it's fixed in CCE 8.4
+# quiet libu warning about cpuid detection failure
 if [ "${COMPILER}" == "cray" ] ; then
   export RFE_811452_DISABLE=true
 fi
@@ -107,7 +107,14 @@ case $COMPILER in
         log_info "Swap network module for host-only environment."
         module swap craype-network-aries craype-target-local_host
         ;;
-    intel|gnu|pgi)
+    intel|gnu)
+        ;;
+    pgi)
+        # EJR (04/07/16): Since the default pgi was upgraded from 15.10.0 to
+        # 16.3.0 on 04/02/16 the speculative gmp build gets stuck in an
+        # infinite loop during `make check` while trying to test t_scan.c. Just
+        # force disable gmp until there's more time to investigate this.
+        export CHPL_GMP=none
         ;;
     *)
         log_error "Unknown COMPILER value: ${COMPILER}. Exiting."

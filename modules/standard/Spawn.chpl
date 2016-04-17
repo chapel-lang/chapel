@@ -393,7 +393,7 @@ module Spawn {
      :arg kind: What kind of channels should be created when
                 :const:`PIPE` is used. This argument is used to set
                 :attr:`subprocess.kind` in the resulting subprocess.
-                Defaults to :enum:`IO.iokind.dynamic`.
+                Defaults to :type:`IO.iokind` ``iokind.dynamic``.
                  
      :arg locking: Should channels created use locking?
                    This argument is used to set :attr:`subprocess.locking`
@@ -598,7 +598,7 @@ module Spawn {
      :arg kind: What kind of channels should be created when
                 :const:`PIPE` is used. This argument is used to set
                 :attr:`subprocess.kind` in the resulting subprocess.
-                Defaults to :enum:`IO.iokind.dynamic`.
+                Defaults to :type:`IO.iokind` ``iokind.dynamic``.
                  
      :arg locking: Should channels created use locking?
                    This argument is used to set :attr:`subprocess.locking`
@@ -638,6 +638,17 @@ module Spawn {
       }
     }
   }
+
+  // documented in the out error version
+  pragma "no doc"
+  proc subprocess.poll() {
+    var err:syserr = ENOERR;
+
+    _halt_on_launch_error();
+
+    this.poll(error=err);
+    if err then ioerror(err, "in subprocess.poll");
+  }
   
   /*
     Wait for a child process to complete. After this function
@@ -665,6 +676,8 @@ module Spawn {
 
     :arg error: optional argument to capture any error encountered
                 when waiting for the child process.
+    :arg buffer: if `true`, buffer input and output pipes (see above).
+
    */
   proc subprocess.wait(out error:syserr, buffer=true) {
 
@@ -813,11 +826,158 @@ module Spawn {
     if err then ioerror(err, "in subprocess.close");
   }
 
-// Future work: support
-// send_signal
-// terminate
-// kill (send SIGKILL)
+  // Signals as required by POSIX.1-2008, 2013 edition
+  // See note below about signals intentionally not included.
+  pragma "no doc"
+  extern const SIGABRT: c_int;
+  pragma "no doc"
+  extern const SIGALRM: c_int;
+  pragma "no doc"
+  extern const SIGBUS: c_int;
+  pragma "no doc"
+  extern const SIGCHLD: c_int;
+  pragma "no doc"
+  extern const SIGCONT: c_int;
+  pragma "no doc"
+  extern const SIGFPE: c_int;
+  pragma "no doc"
+  extern const SIGHUP: c_int;
+  pragma "no doc"
+  extern const SIGILL: c_int;
+  pragma "no doc"
+  extern const SIGINT: c_int;
+  pragma "no doc"
+  extern const SIGKILL: c_int;
+  pragma "no doc"
+  extern const SIGPIPE: c_int;
+  pragma "no doc"
+  extern const SIGQUIT: c_int;
+  pragma "no doc"
+  extern const SIGSEGV: c_int;
+  pragma "no doc"
+  extern const SIGSTOP: c_int;
+  pragma "no doc"
+  extern const SIGTERM: c_int;
+  pragma "no doc"
+  extern const SIGTRAP: c_int;
+  pragma "no doc"
+  extern const SIGTSTP: c_int;
+  pragma "no doc"
+  extern const SIGTTIN: c_int;
+  pragma "no doc"
+  extern const SIGTTOU: c_int;
+  pragma "no doc"
+  extern const SIGURG: c_int;
+  pragma "no doc"
+  extern const SIGUSR1: c_int;
+  pragma "no doc"
+  extern const SIGUSR2: c_int;
+  pragma "no doc"
+  extern const SIGXCPU: c_int;
+  pragma "no doc"
+  extern const SIGXFSZ: c_int;
 
+  // These signals are not strictly required by POSIX.1.2008 2013 edition
+  // and so should not be included here:
+
+  // SIGPOLL is Obsolescent and optional as part of XSI STREAMS
+  // SIGPROF is Obsolescent and optional as part of XSI STREAMS
+  // SIGSYS is optional as part of X/Open Systems Interface
+  // SIGVTALRM is optional as part of X/Open Systems Interface
+
+  private extern proc qio_send_signal(pid: int(64), sig: c_int): syserr;
+
+  /*
+    Send a signal to a child process.
+
+    Declarations for POSIX.1.2008 signals are provided in this module.
+    These include `SIGABRT`, `SIGALRM`, `SIGBUS`, `SIGCHLD`, `SIGCONT`,
+    `SIGFPE`, `SIGHUP`, `SIGILL`, `SIGINT`, `SIGKILL`, `SIGPIPE`, `SIGQUIT`,
+    `SIGSEGV`, `SIGSTOP`, `SIGTERM`, `SIGTRAP`, `SIGTSTP`, `SIGTTIN`,
+    `SIGTTOU`, `SIGURG`, `SIGUSR1`, `SIGUSR2`, `SIGXCPU`, `SIGXFSZ`.
+
+    See your system's documentation for their meaning:
+
+    ::
+
+      man signal
+
+    Other values for `signal` are system-specific and can be declared in this
+    way, for example:
+
+    .. code-block:: chapel
+
+       extern const SIGPOLL: c_int;
+
+
+    :arg signal: the signal to send
+
+    :arg error: optional argument to capture any error encountered
+                when sending a signal to the child process
+   */
+  proc subprocess.send_signal(out error:syserr, signal: int) {
+    on home {
+      error = qio_send_signal(pid, signal:c_int);
+    }
+  }
+
+  // documented in the out error version
+  pragma "no doc"
+  proc subprocess.send_signal(signal:int) {
+    var err:syserr = ENOERR;
+
+    _halt_on_launch_error();
+
+    this.send_signal(error=err, signal=signal);
+    if err then ioerror(err, "in subprocess.send_signal");
+  }
+
+  /*
+    Unconditionally kill the child process.  The associated signal,
+    `SIGKILL`, cannot be caught by the child process. See
+    :proc:`subprocess.send_signal`.
+
+
+    :arg error: optional argument to capture any error encountered
+                when killing the child process
+   */
+  proc subprocess.kill(out error:syserr) {
+    this.send_signal(error, SIGKILL);
+  }
+
+  // documented in the out error version
+  pragma "no doc"
+  proc subprocess.kill() {
+    var err:syserr = ENOERR;
+
+    _halt_on_launch_error();
+
+    this.kill(error=err);
+    if err then ioerror(err, "in subprocess.kill");
+  }
+
+  /*
+    Request termination of the child process.  The associated signal,
+    `SIGTERM`, may be caught and handled by the child process. See
+    :proc:`subprocess.send_signal`.
+
+    :arg error: optional argument to capture any error encountered
+                when terminating the child process
+   */
+  proc subprocess.terminate(out error:syserr) {
+    this.send_signal(error, SIGTERM);
+  }
+
+  // documented in the out error version
+  pragma "no doc"
+  proc subprocess.terminate() {
+    var err:syserr = ENOERR;
+
+    _halt_on_launch_error();
+
+    this.terminate(error=err);
+    if err then ioerror(err, "in subprocess.terminate");
+  }
 
 }
 

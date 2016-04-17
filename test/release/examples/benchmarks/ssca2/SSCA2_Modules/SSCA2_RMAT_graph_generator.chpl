@@ -170,7 +170,7 @@ module SSCA2_RMAT_graph_generator
 
       var rndPos = 1;
       const seed = if REPRODUCIBLE_PROBLEMS then 0556707007
-                                            else SeedGenerator.currentTime;
+                                            else SeedGenerator.oddCurrentTime;
 
       const delta = n_raw_edges + 1; // 1 corresponds to 'skip' in "old" code
       rndPos += 1;                   // start with a skip
@@ -274,9 +274,9 @@ module SSCA2_RMAT_graph_generator
       // Random Numbers return in the range [0.0, 1.0)
 
       var Rand_Gen = if REPRODUCIBLE_PROBLEMS then 
-	               new RandomStream (seed = 0556707007)
+	               new NPBRandomStream (seed = 0556707007)
 		     else
-		       new RandomStream ();
+		       new NPBRandomStream ();
 
       var   Noisy_a     : [edge_domain] real,
             Noisy_b     : [edge_domain] real,

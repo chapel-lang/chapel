@@ -169,8 +169,12 @@ formal-intent:
   `param'
   `type'
 
-return-intent: one of
-  `ref' $ $ $ $ `const' $ $ $ $ `param' $ $ $ $ `type'
+return-intent:
+  `const'
+  `const ref'
+  `ref'
+  `param'
+  `type'
 
 return-type:
   : type-specifier
@@ -710,9 +714,18 @@ and in what contexts that function is allowed to be used.  By default, or if
 the \sntx{return-intent} is \chpl{const}, the function returns a value that
 cannot be used as an lvalue.
 
+% TODO: it's a little jarring that the above talks about returning
+% a value when e.g. a type function does not return a value at all
+% (since it returns a type).
+% It would probably be better to consider type and param return
+% functions "type functions" or "param functions" and leave this
+% section to only discuss const/ref/const ref return intents.
+
 \subsection{The Ref Return Intent}
 \label{Ref_Return_Intent}
 \index{functions!ref keyword and@\chpl{ref} keyword and}
+\index{ref (return intent)@\chpl{ref} (return intent)}
+\index{intents!ref return@\chpl{ref} return}
 \index{functions!lvalues}
 
 When using a \chpl{ref} return intent, the function call is an lvalue
@@ -721,18 +734,6 @@ an iterator).
 
 The \chpl{ref} return intent is specified by following the argument list with
 the \chpl{ref} keyword.  The function must return or yield an lvalue.
-
-During function resolution, if a procedure with a \chpl{ref} return
-intent and a procedure without a \chpl{ref} return intent are both
-possible candidates for a call, and either both use promotion or neither do,
-then this pair of procedures is called a ref-pair.
-
-When the call to a ref-pair is on the left-hand side of an
-assignment statement or appears in a call and corresponds to a formal argument
-with \chpl{out}, \chpl{inout}, or \chpl{ref} intent, the \chpl{ref} return
-intent procedure is used. Otherwise, the other candidate is used.  This
-behavior can be useful for adjusting the behavior depending on the
-calling context.
 
 \begin{chapelexample}{ref-return-intent.chpl}
 The following code defines a procedure that can be interpreted as a
@@ -767,11 +768,56 @@ This code outputs the number \chpl{3}.
 \end{chapeloutput}
 \end{chapelexample}
 
+
+\subsection{The Const Ref Return Intent}
+\label{Const_Ref_Return_Intent}
+\index{functions!const ref keyword and@\chpl{const ref} keyword and}
+\index{const ref (return intent)@\chpl{const ref} (return intent)}
+\index{intents!const ref return@\chpl{const ref} return}
+
+The \chpl{const ref} return intent is also available. It is a restricted
+form of the \chpl{ref} return intent. Calls to functions marked with
+the \chpl{const ref} return intent are not lvalue expressions.
+
+\subsection{Choosing a Ref Return Intent Function Based on Calling Context}
+\label{Ref_Pair}
+\index{functions!ref-pair}
+
+In some situations, it is useful to distinguish between calls that are
+used in an lvalue setting and those that are not. In particular, suppose
+that there are two functions that have the same formal arguments and
+differ only in their return intent. Normally, such a situation will cause
+an error since it is ambiguous which function is called. However, the
+Chapel language includes a special rule for determining which function to
+call when one of the calls is an lvalue and the other is not.  This rule
+enables data structures such as sparse arrays.
+
+This special rule is called the ref-pair rule. If, when resolving a call,
+there are two candidate functions where:
+
+\begin{itemize}
+\item
+ one of them uses the \chpl{ref} return intent and the other uses
+ \chpl{const}, \chpl{const ref}, or blank return intent
+\item
+ either both use promotion or neither do
+\end{itemize}
+
+then this pair of candidate functions is called a ref-pair.
+
+When such a call appears on the left-hand side of an assignment
+statement, is returned in a function with \chpl{ref} return intent, or
+appears in a call and corresponds to a formal argument with \chpl{out},
+\chpl{inout}, or \chpl{ref} intent, the candidate with the \chpl{ref}
+return intent is used. Otherwise, the other candidate is used.
+
+% TODO - this section, or a significant portion of it,
+% should move to the function resolution section.
+
 \begin{chapelexample}{ref-return-intent-pair.chpl}
 
-\index{setter}
-\index{functions!setter argument}
-The getter-setter pair can be used to ensure, for
+\index{functions!ref-pair}
+A ref-pair can be used to ensure, for
 example, that the second element in the pseudo-array is only assigned
 a value if the first argument is positive.  The following is an
 example:

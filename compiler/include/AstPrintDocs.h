@@ -29,8 +29,8 @@
 
 class AstPrintDocs : public AstVisitorTraverse {
 public:
-                  AstPrintDocs(std::ostream *file);
-  virtual         ~AstPrintDocs();
+  AstPrintDocs(std::string moduleName, std::string path, std::string parentName);
+                  ~AstPrintDocs();
 
   virtual bool   enterAggrType    (AggregateType*     node);
   virtual void   exitAggrType     (AggregateType*     node);
@@ -51,9 +51,11 @@ public:
   virtual bool   enterGotoStmt    (GotoStmt*          node);
 
 private:
-  std::ostream*   file;
+  std::ofstream*  file;
   unsigned int    tabs;
-  std::stack<std::string> moduleNames;
+  std::string     moduleName;
+  std::string     pathWithoutPostfix;
+  std::string     parentName;
 };
 
 #endif

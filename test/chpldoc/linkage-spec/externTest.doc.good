@@ -1,21 +1,10 @@
 externTest.doc
-   externTest.doc.Other
-      proc inside
-         Comment for method inside module 
 
-      proc commentless
-      proc hasArg(val: int)
-         Comment for method with an argument inside module 
+Usage:
+   use externTest.doc;
 
-      proc hasArgCommentless(val: int)
-      proc hasReturnType(): int
-         This method has a return type 
+Submodules for this module are located in the externTest.doc/ directory
 
-      proc hasReturnTypeCommentless(): int
-      proc hasReturnTypeAndArg(val: int): int
-         This method has a return type and an argument 
-
-      proc hasReturnTypeAndArgCommentless(val: int): int
    proc method1()
       Comment for method1 
 
@@ -29,6 +18,27 @@ externTest.doc
       And spans for
       Multiple lines 
 
+   proc hasReturnType(): int
+      This method has a return type 
+
+   proc hasReturnTypeCommentless(): int
+   proc hasReturnTypeAndArg(val: int): int
+      This method has a return type and an argument 
+
+   proc hasReturnTypeAndArgCommentless(val: int): int
+Other
+
+Usage:
+   use externTest.doc.Other;
+
+   proc inside
+      Comment for method inside module 
+
+   proc commentless
+   proc hasArg(val: int)
+      Comment for method with an argument inside module 
+
+   proc hasArgCommentless(val: int)
    proc hasReturnType(): int
       This method has a return type 
 

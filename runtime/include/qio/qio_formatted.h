@@ -397,7 +397,7 @@ qioerr qio_channel_write_complex(const int threadsafe, const int byteorder, qio_
 // QIO_BINARY_STRING_STYLE_TOEOF -0xff00 -- read until end or up to maxlen
 // BINARY_STRING_STYLE_DATA_NULL|0xXX -0x01XX -- read until terminator XX
 //  + -- nonzero positive -- read exactly this length.
-qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen);
+qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes);
 
 // string binary style:
 // QIO_BINARY_STRING_STYLE_LEN1B_DATA -1 -- 1 byte of length before
@@ -739,7 +739,7 @@ qioerr qio_channel_skip_past_newline(const int threadsafe, qio_channel_t* restri
 
 qioerr qio_channel_write_newline(const int threadsafe, qio_channel_t* restrict ch);
 
-qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen);
+qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes);
 
 // reads match exactly - skipping whitespace before it if skipwsbefore is set.
 // returns 0 if it matched, or EFORMAT if it did not.

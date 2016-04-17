@@ -303,7 +303,7 @@ record list {
   Construct a new :record:`list` containing all of the supplied arguments.
 
   :arg x: Every argument must be of type `T`.
-  :type x: T
+  :type x: `T`
   :rtype: list(T)
  */
 // TODO: could just be a constructor?

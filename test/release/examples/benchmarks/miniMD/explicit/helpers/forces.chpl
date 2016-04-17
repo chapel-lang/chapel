@@ -10,7 +10,6 @@ class Force {
 
   var wipetime, maintime: real;
 
-  proc Force();
   proc compute(store : bool) : void {}
 }
 

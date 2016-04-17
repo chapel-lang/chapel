@@ -722,13 +722,13 @@ $CHPL\_HOME/doc/bugs.rst for instructions on reporting bugs.
 SEE ALSO
 --------
 
-$CHPL\_HOME/README.rst for more information on how to get started with
+$CHPL\_HOME/QUICKSTART.rst for more information on how to get started with
 Chapel.
 
 AUTHORS
 -------
 
-See $CHPL\_HOME/CONTRIBUTORS for a list of contributors to Chapel.
+See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 
 COPYRIGHT
 ---------

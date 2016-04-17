@@ -1,6 +1,22 @@
 outer
+
+Usage:
+   use outer;
+
+Submodules for this module are located in the outer/ directory
+
    This is the outer module's comment 
-   outer.inner
-      This is the inner module's comment 
-      outer.inner.innermost
-         This is the innermost module's comment 
+inner
+
+Usage:
+   use outer.inner;
+
+Submodules for this module are located in the inner/ directory
+
+   This is the inner module's comment 
+innermost
+
+Usage:
+   use outer.inner.innermost;
+
+   This is the innermost module's comment 

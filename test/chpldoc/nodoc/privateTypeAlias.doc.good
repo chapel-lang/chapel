@@ -1,1 +1,5 @@
 privateTypeAlias
+
+Usage:
+   use privateTypeAlias;
+

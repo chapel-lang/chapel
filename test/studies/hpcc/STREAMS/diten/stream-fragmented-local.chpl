@@ -15,7 +15,7 @@ config const numTrials = 10,
              epsilon = 0.0;
 
 config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
+             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
 
 config const printParams = true,
              printArrays = false,
@@ -67,7 +67,7 @@ proc printConfiguration() {
 
 
 proc initVectors(B, C, ProblemSpace) {
-  var randlist = new RandomStream(seed);
+  var randlist = new NPBRandomStream(seed);
 
   randlist.skipToNth(B.domain.low);
   randlist.fillRandom(B);
