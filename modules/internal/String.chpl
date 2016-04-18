@@ -740,11 +740,19 @@ module String {
           writeln(x); // prints: "a|10|d"
      */
 
-    proc join(S: string ...) : string {
+    proc join(const ref S: string ...) : string {
       return _join(S);
     }
 
-    proc join(S) : string where isTuple(S) {
+    /*
+      Same as the varargs version, but with a homogenous tuple of strings.
+
+      .. code-block:: chapel
+
+          var x = "|".join("a","10","d");
+          writeln(x); // prints: "a|10|d"
+     */
+    proc join(const ref S) : string where isTuple(S) {
       if !isHomogeneousTuple(S) || !isString(S[1]) then
         compilerError("join() on tuples only handles homogeneous tuples of strings");
       return _join(S);
@@ -758,7 +766,7 @@ module String {
           var x = "|".join(["a","10","d"]);
           writeln(x); // prints: "a|10|d"
      */
-    proc join(S: [] string) : string {
+    proc join(const ref S: [] string) : string {
       return _join(S);
     }
 
