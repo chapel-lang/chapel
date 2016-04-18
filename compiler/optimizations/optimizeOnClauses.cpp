@@ -277,7 +277,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_IS_POD:
   case PRIM_FIELD_NUM_TO_NAME:
   case PRIM_FIELD_NAME_TO_NUM:
-  case PRIM_FIELD_VALUE_BY_NUM:
+  case PRIM_FIELD_BY_NUM:
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 
