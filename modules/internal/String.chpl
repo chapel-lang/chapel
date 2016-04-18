@@ -731,52 +731,86 @@ module String {
     }
 
     /*
-      Returns a new string of all of the strings in `S` with the receiving
-      string concatenated between them.
+      Returns a new string, which is the concatenation of all of the strings
+      passed in with the receiving string inserted between them.
+
+      .. code-block:: chapel
+
+          var x = "|".join("a","10","d");
+          writeln(x); // prints: "a|10|d"
+     */
+
+    proc join(const ref S: string ...) : string {
+      return _join(S);
+    }
+
+    /*
+      Same as the varargs version, but with a homogenous tuple of strings.
+
+      .. code-block:: chapel
+
+          var x = "|".join("a","10","d");
+          writeln(x); // prints: "a|10|d"
+     */
+    proc join(const ref S) : string where isTuple(S) {
+      if !isHomogeneousTuple(S) || !isString(S[1]) then
+        compilerError("join() on tuples only handles homogeneous tuples of strings");
+      return _join(S);
+    }
+
+    /*
+      Same as the varargs version, but with all the strings in an array.
 
       .. code-block:: chapel
 
           var x = "|".join(["a","10","d"]);
           writeln(x); // prints: "a|10|d"
      */
-    // TODO: could rewrite to have cleaner logic / more efficient for edge cases
-    // TODO: allow for varargs?
-    proc join(S: [] string) : string {
-      var newSize: int = 0;
-      var ret: string;
-      if S.size > 1 {
-        for s in S {
-          newSize += s.length;
-        }
-        newSize += this.len*(S.size-1);
-        ret.len = newSize;
-        const allocSize = chpl_here_good_alloc_size(ret.len+1);
-        ret._size = allocSize;
-        ret.buff = chpl_here_alloc(allocSize,
-                                  CHPL_RT_MD_STR_COPY_DATA): bufferType;
-        var offset = 0;
+    proc join(const ref S: [] string) : string {
+      return _join(S);
+    }
+
+    proc _join(const ref S) : string where isTuple(S) || isArray(S) {
+      if S.size == 1 {
+        // TODO: ensures copy, clean up when no longer needed
+        var ret = S[S.domain.low];
+        return ret;
+      } else {
+        var joinedSize: int = this.len * (S.size - 1);
+        for s in S do joinedSize += s.length;
+
+        var joined: string;
+        joined.len = joinedSize;
+        const allocSize = chpl_here_good_alloc_size(joined.len + 1);
+        joined._size = allocSize;
+        joined.buff = chpl_here_alloc(
+          allocSize,
+          CHPL_RT_MD_STR_COPY_DATA): bufferType;
+
         var first = true;
+        var offset = 0;
         for s in S {
-          if !first && this.len != 0 {
-            memcpy(ret.buff+offset, this.buff, this.len.safeCast(size_t));
+          if first {
+            first = false;
+          } else if this.len != 0 {
+            memcpy(joined.buff + offset, this.buff, this.len.safeCast(size_t));
             offset += this.len;
           }
+
           var sLen = s.len;
           if sLen != 0 {
+            var cpyStart = joined.buff + offset;
+            var sSize = sLen.safeCast(size_t);
             if _local || s.locale_id == chpl_nodeID {
-              memcpy(ret.buff+offset, s.buff, sLen.safeCast(size_t));
+              memcpy(cpyStart, s.buff, sSize);
             } else {
-              chpl_string_comm_get(ret.buff+offset, s.locale_id,
-                                  s.buff, sLen.safeCast(size_t));
+              chpl_string_comm_get(cpyStart, s.locale_id, s.buff, sSize);
             }
             offset += sLen;
           }
-          first = false;
         }
-      } else if S.size == 1 {
-        ret = S[0];
+        return joined;
       }
-      return ret;
     }
 
     /*
