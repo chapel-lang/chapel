@@ -47,11 +47,15 @@ fi
 export CHPL_HOME_ORIG=$CHPL_HOME
 export CHPL_TEST_UTIL_DIR=$CHPL_HOME_ORIG/util
 
-if [[ -z $CHPL_TEST_VENV_DIR && ! -z $CHPL_HOST_PLATFORM ]]; then
-    export CHPL_TEST_VENV_DIR=$CHPL_HOME_ORIG/third-party/chpl-venv/install/$CHPL_HOST_PLATFORM/chpl-virtualenv
+if [[ -z $CHPL_TEST_VENV_DIR ]]; then
+    if [[ -z $CHPL_HOST_PLATFORM ]]; then
+        export CHPL_TEST_VENV_DIR=$CHPL_HOME_ORIG/third-party/chpl-venv/install/`$CHPL_TEST_UTIL_DIR/chplenv/chpl_platform.py --host`/chpl-virtualenv
+    else
+        export CHPL_TEST_VENV_DIR=$CHPL_HOME_ORIG/third-party/chpl-venv/install/$CHPL_HOST_PLATFORM/chpl-virtualenv
+    fi
 fi
 if [[ ! -d $CHPL_TEST_VENV_DIR ]]; then
-    echo "ERROR: incorrect or missing CHPL_TEST_VENV_DIR=$CHPL_TEST_VENV_DIR or CHPL_HOST_PLATFORM"
+    echo "ERROR: incorrect or missing CHPL_TEST_VENV_DIR='$CHPL_TEST_VENV_DIR'"
     exit 1
 fi
 
