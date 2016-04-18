@@ -745,8 +745,8 @@ module String {
     }
 
     proc join(S) : string where isTuple(S) {
-      //if S[S.domain.low].type != string || !isHomogeneousTuple(S) then
-        //compilerError("join should only be called with homogeneous tuples");
+      if !isHomogeneousTuple(S) || !isString(S[1]) then
+        compilerError("join() on tuples only handles homogeneous tuples of strings");
       return _join(S);
     }
 
