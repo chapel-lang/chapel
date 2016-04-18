@@ -5919,7 +5919,7 @@ preFold(Expr* expr) {
       }
       result = new SymExpr(new_StringSymbol(name));
       call->replace(result);
-    } else if (call->isPrimitive(PRIM_FIELD_VALUE_BY_NUM)) {
+    } else if (call->isPrimitive(PRIM_FIELD_BY_NUM)) {
       // if call->get(1) is a reference type, dereference it
       AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
       INT_ASSERT( classtype != NULL );
