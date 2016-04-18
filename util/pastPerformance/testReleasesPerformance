@@ -58,7 +58,6 @@ if [[ ! -d $CHPL_TEST_VENV_DIR ]]; then
     echo "ERROR: incorrect or missing CHPL_TEST_VENV_DIR='$CHPL_TEST_VENV_DIR'"
     exit 1
 fi
-echo VASS SUCCESS; exit
 
 #
 # This is a place where all releases will be unpacked and built with
