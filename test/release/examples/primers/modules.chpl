@@ -3,7 +3,7 @@
  *
  * This primer introduces the concept of modules, a strategy for encapsulating
  * code for later use.  It covers:
- *   motivation for creating a module
+ *   how to define a module
  *   namespace control for a module's symbols
  *   outside access of a module's symbols
  *   namespace control when using a module in an outside context, including:
@@ -15,17 +15,16 @@
  */
 
 
-/* Once programs become large, it is useful to group related code into units.
-   If the related code extends beyond mere object orientation, then it is best
-   to utilize what is known in Chapel as a "module".
-
-   Modules 
-
-   TODO!!!!!!!!!!!!!!!!!!!!!!
+/* A module is a grouping of code - each program consists of at least one
+   module, and every symbol is associated with some module.  If all the code of
+   a file is not enclosed in an explicit module, defined using the syntax below,
+   then the file itself is treated as a module with the same name as the file
+   (minus the .chpl suffix).
  */
 module modToUse {
 
-  /* In this case, foo is a public global variable which lives in modToUse */
+  /* In this case, foo is a public global variable which lives in the module
+     modToUse */
   var foo = 12;
 
   // As is bar.
@@ -36,7 +35,20 @@ module modToUse {
     return x * (x + y);
   }
 
-  // TO COVER: nested modules
+  /* A module defined within another module is known as a nested module.  These
+     modules can take advantage of symbols defined within their parent module,
+     but their parent module must take additional steps to access the contents
+     of the nested module.  We will cover how to access the contents of other
+     modules later in this primer.
+  */
+  module Inner1 {
+    /* The variable foobar is utilizing modToUse's foo and bar variables. */
+    var foobar = foo + bar;
+  }
+
+  /* Note that since there is other code after the end of modToUse's definition,
+     modToUse is a submodule of the overarching file module "modules".
+  */
 
 
 
@@ -46,6 +58,7 @@ module modToUse {
      just adds unnecessary clutter to the namespace.  To avoid these cases, a
      symbol can be declared "private" - this means that only code defined within
      the same scope as the definition of this symbol can access it.
+  */
 
   /* Here, hiddenFoo is a private global variable, which is only accessible by
      symbols defined within modToUse
@@ -60,11 +73,11 @@ module modToUse {
     return a + 3;
   }
 
-  module Inner {
-    /* Since the module Inner is defined within modToUse, it can access the
+  module Inner2 {
+    /* Since the module Inner2 is defined within modToUse, it can access the
        private variable hiddenFoo and the private function hiddenBaz.  However,
-       any private symbol defined within Inner will not be visible to symbols
-       defined outside of Inner.
+       any private symbol defined within Inner2 will not be visible to symbols
+       defined outside of Inner2.
      */
 
     private var innerOnly = -17;
