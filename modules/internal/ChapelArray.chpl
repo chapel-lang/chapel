@@ -2219,8 +2219,11 @@ module ChapelArray {
       chpl__assertSingleArrayDomain("remove count");
       const lo = this.domain.low,
             hi = this.domain.high-count;
-      if pos > hi then
-        halt("index ", pos+count, " is outside the supported range");
+      if pos+count-1 > this.domain.high then
+        halt("index ", pos+count-1, " is outside the supported range");
+      if pos < lo then
+        halt("index ", pos, " is outside the supported range");
+
       const newRange = lo..hi;
       for i in pos..hi {
         this[i] = this[i+count];
