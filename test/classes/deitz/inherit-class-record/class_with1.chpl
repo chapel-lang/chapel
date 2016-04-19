@@ -1,6 +1,10 @@
 class point {
   var x : real;
   var y : real;
+
+  proc speak() {
+    writeln("Hello");
+  }
 }
 
 class cpoint : point {
@@ -14,6 +18,8 @@ p.y = 4.5;
 
 writeln("p { ", p.x, ", ", p.y, " }");
 
+delete p;
+
 var cp : cpoint = new cpoint();
 
 cp.color = 5;
@@ -21,3 +27,7 @@ cp.x = 2.2;
 cp.y = 3.3;
 
 writeln("cp { ", cp.x, ", ", cp.y, ", ", cp.color, " }");
+
+cp.speak();
+
+delete cp;

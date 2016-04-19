@@ -10,3 +10,5 @@ class D {
 var d = new D();
 
 writeln(d);
+
+delete d;
