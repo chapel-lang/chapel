@@ -719,14 +719,60 @@ module String {
     /*
       Works as above, but uses runs of whitespace as the delimiter.
 
-      .. warning:: While this function is supposed to split on groups of
-                   whitespace, it currently only splits on spaces.
+      :arg maxsplit: The number of times to split the string, negative values
+                     indicate no limit.
      */
-    // TODO: Make this support splitting on runs of whitespace rather than just a space
     // TODO: specifying return type leads to un-inited string?
-    iter split(maxsplit: int = -1, ignoreEmpty: bool = false) /* : string*/ {
-      for s in this.split(" ", maxsplit, ignoreEmpty) {
-        yield s;
+    iter split(maxsplit: int = -1) /* : string */ {
+      if !this.isEmptyString() {
+        const localThis: string = this.localize();
+        var done : bool = false;
+        var chunk : string = "";
+
+        var noSplits : bool = maxsplit == 0;
+        var limitSplits : bool = maxsplit > 0;
+        var splitCount: int = 0;
+        var iEnd = localThis.len - 1;
+
+        var inChunk : bool = false;
+        var chunkStart : int;
+
+        for i in 0..localThis.len {
+          if noSplits {
+            done = true;
+            if !localThis.isSpace() then
+              chunk = localThis;
+          } else {
+            var b = localThis.buff[i];
+            var bSpace = _byte_isSpace(b);
+            if !(inChunk || bSpace) {
+              // zero-based buff to one-based range
+              chunkStart = i + 1;
+              inChunk = true;
+            } else if inChunk {
+              if bSpace {
+                splitCount += 1;
+                if limitSplits && splitCount > maxsplit {
+                  chunk = localThis[chunkStart..];
+                  done = true;
+                } else {
+                  chunk = localThis[chunkStart..i];
+                  inChunk = false;
+                }
+              } else if i == iEnd {
+                chunk = localThis[chunkStart..];
+                done = true;
+              }
+            }
+          }
+
+          if !chunk.isEmptyString() {
+            yield chunk;
+            chunk = "";
+          }
+          if done then
+            break;
+        }
       }
     }
 
@@ -950,9 +996,7 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if !((b == ascii(' ')) ||
-               (b == ascii('\t')) ||
-               (b >= ascii('\n') && b <= ascii('\r'))) { // \n \v \f \r
+          if !(_byte_isSpace(b)) {
             result = false;
             break;
           }
@@ -1643,22 +1687,38 @@ module String {
   //
   // Helper routines
   //
+  private const uint_A: uint(8) = ascii('A');
+  private const uint_Z: uint(8) = ascii('Z');
+  private const uint_a: uint(8) = ascii('a');
+  private const uint_z: uint(8) = ascii('z');
+  private const uint_0: uint(8) = ascii('0');
+  private const uint_9: uint(8) = ascii('9');
+  private const uint_space   : uint(8) = ascii(' ');
+  private const uint_tab     : uint(8) = ascii('\t');
+  private const uint_newline : uint(8) = ascii('\n');
+  private const uint_return  : uint(8) = ascii ('\r');
+
   private inline proc _byte_isUpper(b: uint(8)) : bool {
-    return b >= ascii('A') && b <= ascii('Z');
+    return b >= uint_A && b <= uint_Z;
   }
 
   private inline proc _byte_isLower(b: uint(8)) : bool {
-    return b >= ascii('a') && b <= ascii('z');
+    return b >= uint_a && b <= uint_z;
   }
 
   private inline proc _byte_isAlpha(b: uint(8)) : bool {
-    return b >= ascii('A')  && b <= ascii('z');
+    return b >= uint_A  && b <= uint_z;
   }
 
   private inline proc _byte_isDigit(b: uint(8)) : bool {
-    return b >= ascii('0')  && b <= ascii('9');
+    return b >= uint_0  && b <= uint_9;
   }
 
+  private inline proc _byte_isSpace(b: uint(8)) : bool {
+    return b == uint_space
+        || b == uint_tab
+        || (b >= uint_newline && b <= uint_return);
+  }
 
   //
   // ascii
