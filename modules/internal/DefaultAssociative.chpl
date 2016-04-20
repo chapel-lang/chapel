@@ -54,6 +54,12 @@ module DefaultAssociative {
    108086391056891903, 216172782113783767, 432345564227567503,
    864691128455135207);
 
+  // How full should we allow the hashtable to get?
+  // 0.5 means grow after 50% of the buckets are full
+  // there will be performance problems as this approaches 1;
+  // values above 0.9 are probably unreasonable.
+  param maxLoadRatio = 0.5;
+
   class DefaultAssociativeDom: BaseAssociativeDom {
     type idxType;
     param parSafe: bool;
@@ -286,7 +292,7 @@ module DefaultAssociative {
         const shouldLock = !haveLock && parSafe;
         if shouldLock then lockTable();
         var findAgain = shouldLock;
-        if ((numEntries.read()+1)*2 > tableSize) {
+        if ((numEntries.read()+1) > tableSize*maxLoadRatio) {
           _resize(grow=true);
           findAgain = true;
         }
@@ -347,7 +353,7 @@ module DefaultAssociative {
       if entries < numKeys {
 
         //Find the first suitable prime
-        var threshhold = (numKeys + 1) * 2;
+        var threshhold = (numKeys + 1) / maxLoadRatio;
         var prime = 0;
         var primeLoc = 0;
         for i in 1..chpl__primes.size {
