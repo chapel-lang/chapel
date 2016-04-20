@@ -385,6 +385,9 @@ module ChapelArray {
 
     //Size the domain appropriately for the number of keys
     //This prevents expensive resizing as keys are added.
+    // Note that k/2 is the number of keys, since the tuple
+    // passed to this function has 2 elements (key and value)
+    // for each array element.
     D.requestCapacity(k/2);
     var A : [D] valType;
 
