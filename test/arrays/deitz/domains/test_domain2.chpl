@@ -88,3 +88,5 @@ for i in D.dfor(1) {
     writeln(t);
   }
 }
+
+delete D;
