@@ -114,10 +114,6 @@ module DefaultRectangular {
     proc dsiGetIndices() return ranges;
   
     proc dsiSetIndices(x) {
-      if ranges.size != x.size then
-        compilerError("rank mismatch in domain assignment");
-      if ranges(1).idxType != x(1).idxType then
-        compilerError("index type mismatch in domain assignment");
       ranges = x;
     }
 

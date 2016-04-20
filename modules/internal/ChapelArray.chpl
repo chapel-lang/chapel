@@ -2659,6 +2659,14 @@ module ChapelArray {
   }
 
   proc =(ref a: domain, b: domain) {
+    if a.rank != b.rank then
+      compilerError("rank mismatch in domain assignment");
+    if a.idxType != b.idxType then
+      compilerError("index type mismatch in domain assignment");
+    if isRectangularDom(a) && isRectangularDom(b) then
+      if !a.stridable && b.stridable then
+        compilerError("stridable mismatch in domain assignment");
+
     if !isIrregularDom(a) && !isIrregularDom(b) {
       for e in a._value._arrs do {
         on e do e.dsiReallocate(b);
