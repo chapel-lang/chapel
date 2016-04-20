@@ -110,7 +110,7 @@ static void*           pthread_func(void*);
 static void init_heap_stack(void){
 
   // We don't want a guard page, but we want the stack in the heap
-	if (CHPL_STACK_CHECKS == 0) {
+  if (CHPL_STACK_CHECKS == 0) {
     alloc_stack_in_heap = true;
     use_guard_page      = false;
     return;
@@ -165,9 +165,9 @@ static void* alloc_pthread_stack(size_t stack_size){
 
     rc = mprotect(mem_buffer, page_size, PROT_NONE);
     if( rc != 0 ) {
-    	chpl_free(mem_buffer);
-    	return NULL;
-  	}
+      chpl_free(mem_buffer);
+      return NULL;
+    }
   }
 
   tslp = (thread_stack_list_p) chpl_mem_alloc(sizeof(struct thread_stack_list),
