@@ -41,11 +41,25 @@ module DefaultAssociative {
     var idx: idxType;
   }
   
-  proc chpl__primes return (23, 53, 97, 193, 389, 769, 1543,
-                           3079, 6151, 12289, 24593, 49157, 98317, 196613,
-                           393241, 786433, 1572869, 3145739, 6291469, 12582917, 25165843,
-                           50331653, 100663319, 201326611, 402653189, 805306457, 1610612741);
-  
+  proc chpl__primes return
+  (23, 47, 83, 191, 383, 751, 1531, 3067, 6143, 12263, 24571, 49139, 98299,
+   196583, 393203, 786431, 1572803, 3145711, 6291431, 12582803, 25165807,
+   50331599, 100663291, 201326551, 402653171, 805306339, 1610612711,
+   3221225383, 6442450939, 12884901871, 25769803751, 51539607551,
+   103079215087, 206158430183, 412316860387, 824633720831, 1649267441651,
+   3298534883219, 6597069766631, 13194139533299, 26388279066623,
+   52776558133163, 105553116266483, 211106232532939, 422212465065883,
+   844424930131963, 1688849860263859, 3377699720527787, 6755399441055731,
+   13510798882111483, 27021597764222939, 54043195528445831,
+   108086391056891903, 216172782113783767, 432345564227567503,
+   864691128455135207);
+
+  // How full should we allow the hashtable to get?
+  // 0.5 means grow after 50% of the buckets are full
+  // there will be performance problems as this approaches 1;
+  // values above 0.9 are probably unreasonable.
+  param maxLoadRatio = 0.5;
+
   class DefaultAssociativeDom: BaseAssociativeDom {
     type idxType;
     param parSafe: bool;
@@ -278,7 +292,7 @@ module DefaultAssociative {
         const shouldLock = !haveLock && parSafe;
         if shouldLock then lockTable();
         var findAgain = shouldLock;
-        if ((numEntries.read()+1)*2 > tableSize) {
+        if ((numEntries.read()+1) > tableSize*maxLoadRatio) {
           _resize(grow=true);
           findAgain = true;
         }
@@ -339,7 +353,7 @@ module DefaultAssociative {
       if entries < numKeys {
 
         //Find the first suitable prime
-        var threshhold = (numKeys + 1) * 2;
+        var threshhold = (numKeys + 1) / maxLoadRatio;
         var prime = 0;
         var primeLoc = 0;
         for i in 1..chpl__primes.size {
@@ -485,12 +499,30 @@ module DefaultAssociative {
     // NOTE: Calls to this routine assume that the tableLock has been acquired.
     //
     iter _lookForSlots(idx: idxType, numSlots = tableSize) {
-      const baseSlot = chpl__defaultHashWrapper(idx);
-      for probe in 0..numSlots/2 {
-        yield (baseSlot + probe**2)%numSlots;
+      // note - defaultHashWrapper returns a positive int,
+      // and so baseSlot should be positive and in 0..#numSlots
+      const baseSlot = chpl__defaultHashWrapper(idx) % numSlots;
+      for probe in 0..#numSlots {
+        // quadratic probing
+        // alternating sign allows hashtable to be > 50% full
+        // and to still find empty slots
+        var neg = (probe & 1) != 0;
+        // now compute a positive offset
+        // in the negative case, we are modding a negative number,
+        // which might result in a value < 0; so we add numSlots to
+        // keep it positive.
+        var squareProbe =
+          if neg then -probe*probe
+          else probe*probe;
+        var offset = numSlots + squareProbe % numSlots;
+        // Now baseSlot and offset are both in 0..2*numSlots
+        // so adding them shouldn't result in overflow
+        // (except for a very very large table)
+        yield (baseSlot + offset) % numSlots;
       }
     }
-  
+
+
     iter _fullSlots(tab = table) {
       for slot in tab.domain {
         if tab[slot].status == chpl__hash_status.full then
