@@ -13,14 +13,17 @@ class E : C {
     for i in 1..rank do
       ranges(i) = 1..i by -1;
   }
-  
+
   proc bbox(x: int) {
     return ranges(x);
   }
 }
 
 var e:C = new E(4);
+
 writeln(e.bbox(1));
 writeln(e.bbox(2));
 writeln(e.bbox(3));
 writeln(e.bbox(4));
+
+delete e;

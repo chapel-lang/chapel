@@ -14,3 +14,5 @@ class A{
 var a = new A(t = int);
 
 writeln("a is: ", a);
+
+delete a;
