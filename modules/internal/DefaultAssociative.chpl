@@ -492,9 +492,11 @@ module DefaultAssociative {
     // NOTE: Calls to this routine assume that the tableLock has been acquired.
     //
     iter _lookForSlots(idx: idxType, numSlots = tableSize) {
-      const baseSlot = chpl__defaultHashWrapper(idx);
+      const baseSlot = chpl__defaultHashWrapper(idx):uint;
       for probe in 0..numSlots/2 {
-        yield (baseSlot + probe**2)%numSlots;
+        var uprobe = probe:uint;
+        var n = numSlots:uint;
+        yield ((baseSlot + uprobe**2)%n):int;
       }
     }
   
