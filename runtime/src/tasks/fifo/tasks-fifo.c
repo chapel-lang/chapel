@@ -405,6 +405,38 @@ static void* do_callMain(void* arg) {
   return NULL;
 }
 
+/* For comments about how init_heap_stack works, see
+ * threads-pthreads.c
+ */
+#if defined(CHPL_USING_CSTDLIB_MALLOC) && defined(__APPLE__)
+#define APPLE__CSTDLIB__ALLOC
+#endif
+
+static chpl_bool       use_guard_page;
+static chpl_bool alloc_stack_in_heap;
+
+static void init_heap_stack(void){
+
+  if (CHPL_STACK_CHECKS == 0) {
+    alloc_stack_in_heap = true;
+    use_guard_page      = false;
+    return;
+  }
+#ifdef APPLE__CSTDLIB__ALLOC
+  alloc_stack_in_heap = false;
+  use_guard_page      = false;
+  return;
+#else
+  else if (chpl_getHeapPageSize() != chpl_getSysPageSize()) {
+    alloc_stack_in_heap = false;
+    use_guard_page      = false;
+    return ;
+  } 
+#endif
+  alloc_stack_in_heap = true;
+  use_guard_page      = true;
+}
+
 void chpl_task_callMain(void (*chpl_main)(void)) {
   // since we want to run all work in a task with a comm-friendly stack,
   // run main in a pthread that we will wait for.
@@ -412,11 +444,11 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   pthread_attr_t attr;
   pthread_t thread;
   int rc;
-#ifndef CHPL_USING_CSTDLIB_MALLOC
-  size_t align;
+  size_t page_size, mem_size; 
   int free_flag;
   void* stack;
-#endif
+
+  init_heap_stack();
 
   rc = pthread_attr_init(&attr);
   if( rc != 0 ) {
@@ -424,32 +456,37 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   }
 
   stack_size  = chpl_thread_getCallStackSize();
+  
+  if(alloc_stack_in_heap){
 
-/* Uses a registered stack, if possible. For the reason about
- * this define, see threads-pthreads.c
- */
-#ifndef CHPL_USING_CSTDLIB_MALLOC
-  align = chpl_getSysPageSize();
-  stack = chpl_memalign(align, stack_size + align);
-  if( stack == NULL ){
-    chpl_internal_error("chpl_memalign main failed");
-  }
+    page_size = chpl_getSysPageSize();
+    mem_size = (use_guard_page ? stack_size + page_size : stack_size);
 
-  rc = mprotect((unsigned char *)stack + stack_size, align, PROT_NONE);
-  if( rc != 0 ) {
-    chpl_internal_error("mprotect main failed");
-  }
+    stack = chpl_memalign(page_size, mem_size);
+    if( stack == NULL ){
+      chpl_internal_error("chpl_memalign main failed");
+    }
 
-  rc = pthread_attr_setstack(&attr, stack, stack_size);
-  if( rc != 0 ) {
-    chpl_internal_error("pthread_attr_setstack main failed");
+    if(use_guard_page){
+      stack = (unsigned char*)stack + page_size;
+
+      rc = mprotect((unsigned char *)stack - page_size, page_size, PROT_NONE);
+      if( rc != 0 ) {
+        chpl_internal_error("mprotect main failed");
+      }
+    }
+  
+    rc = pthread_attr_setstack(&attr, stack, stack_size);
+    if( rc != 0 ) {
+      chpl_internal_error("pthread_attr_setstack main failed");
+    }
   }
-#else
-  rc = pthread_attr_setstacksize(&attr, stack_size);
-  if( rc != 0 ) {
-    chpl_internal_error("pthread_attr_setstacksize main failed");
+  else {
+    rc = pthread_attr_setstacksize(&attr, stack_size);
+    if( rc != 0 ) {
+      chpl_internal_error("pthread_attr_setstacksize main failed");
+    }
   }
-#endif
 
   rc = pthread_create(&thread, &attr, do_callMain, chpl_main);
   if( rc != 0 ) {
@@ -461,15 +498,20 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
     chpl_internal_error("pthread_join main failed");
   }
 
-#ifndef CHPL_USING_CSTDLIB_MALLOC
-  //If the task use a registered stack, I've to free it
-  free_flag = PROT_READ | PROT_WRITE | PROT_EXEC;
-  mprotect((unsigned char *)stack + stack_size, align, free_flag);
-  chpl_free(stack);
-#endif
-
+  if(alloc_stack_in_heap){
+    if(use_guard_page){
+      free_flag = PROT_READ | PROT_WRITE | PROT_EXEC;
+      mprotect((unsigned char *)stack - page_size, page_size, free_flag);
+      chpl_free((unsigned char *)stack - page_size);
+    }
+    else
+      chpl_free(stack);
+  }
+  
   pthread_attr_destroy(&attr);
 }
+
+#undef APPLE__CSTDLIB__ALLOC
 
 
 void chpl_task_stdModulesInitialized(void) {
