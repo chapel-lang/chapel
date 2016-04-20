@@ -32,22 +32,34 @@ class bclass: base {
 class contain {
   var objs: list(base);
 
+  proc ~contain() {
+    objs.destroy();
+  }
+
   proc xxx() {
     var something: somedata(int);
+
     something = new somedata( int, 10);
+
     for e in objs do
        e.jam( 99, something);
+
+    delete something;
   }
 }
 
 
 proc main () {
-  var a : aclass(int) = new aclass(int);
+  var a : aclass(int)  = new aclass(int);
   var b : bclass(bool) = new bclass(bool);
+  var c : contain      = new contain();
 
-  var c: contain = new contain();
   c.objs.append(b);
   c.objs.append(a);
   c.xxx();
+
+  delete c;
+  delete b;
+  delete a;
 }
 

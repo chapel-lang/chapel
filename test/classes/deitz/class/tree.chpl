@@ -3,6 +3,11 @@ class BinaryTree {
   var data: eltType;
   var left: BinaryTree(eltType);
   var right: BinaryTree(eltType);
+
+  proc ~BinaryTree() {
+    if left  != nil then delete left;
+    if right != nil then delete right;
+  }
 }
 
 iter BinaryTree.postOrder(): eltType {
@@ -25,3 +30,5 @@ var bt =
       new BinaryTree(int, 7)));
 
 writeln(bt.postOrder());
+
+delete bt;
