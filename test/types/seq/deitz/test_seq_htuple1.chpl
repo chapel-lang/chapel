@@ -6,3 +6,5 @@ type ht = 2*int;
 var s : list(ht) = makeList( t1, t2 );
 
 writeln(s);
+
+s.destroy();

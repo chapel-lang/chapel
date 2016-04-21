@@ -15,3 +15,5 @@ writeln("newrecord is: ", newrecord);
 var myseq: list(myrecord) = makeList( newrecord );
 
 writeln("myseq is: ", myseq);
+
+myseq.destroy();
