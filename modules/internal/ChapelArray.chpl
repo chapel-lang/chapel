@@ -559,7 +559,7 @@ module ChapelArray {
 
   proc chpl__isRectangularDomType(type domainType) param {
     var dom: domainType;
-    return isRectangularDom(dom);
+    return isDomainType(domainType) && isRectangularDom(dom);
   }
 
   proc chpl__isSparseDomType(type domainType) param {
@@ -1382,7 +1382,65 @@ module ChapelArray {
 
     pragma "no doc"
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
+    /* Cast a rectangular domain to another rectangular domain type.
+       If the old type is stridable and the new type is not stridable,
+       ensure that the stride was 1.
+     */
+    proc safeCast(type t)
+      where chpl__isRectangularDomType(t) && isRectangularDom(this) {
+      const tmpD: t;
+      if tmpD.rank != this.rank then
+        compilerError("rank mismatch in cast");
+      if tmpD.idxType != this.idxType then
+        compilerError("idxType mismatch in cast");
+      if tmpD.stridable == this.stridable then
+        return this;
+      else if !tmpD.stridable && this.stridable {
+        const inds = this.getIndices();
+        for param dim in 1..inds.size {
+          if inds(dim).stride != 1 then
+            halt("non-stridable domain assigned non-unit stride in dimension ", dim);
+        }
+        tmpD.setIndices(inds);
+        return tmpD;
+      } else /* if tmpD.stridable && !this.stridable */ {
+        tmpD = this;
+        return tmpD;
+      }
+    }
   }  // record _domain
+
+  /* Cast a rectangular domain to a new rectangular domain type.  If the old
+     type was stridable and the new type is not stridable then assume the
+     stride was 1 without checking.
+
+     For example:
+     {1..10 by 2}:domain(stridable=false)
+
+     results in the domain '{1..10}'
+   */
+  pragma "no doc"
+  proc _cast(type t, d: domain) where chpl__isRectangularDomType(t) && isRectangularDom(d) {
+    const tmpD: t;
+    if tmpD.rank != d.rank then
+      compilerError("rank mismatch in cast");
+    if tmpD.idxType != d.idxType then
+      compilerError("idxType mismatch in cast");
+    if tmpD.stridable == d.stridable then
+      return d;
+    else if !tmpD.stridable && d.stridable {
+      var inds = d.getIndices();
+      for param i in 1..tmpD.rank {
+        inds(i)._stride = 1;
+      }
+      tmpD.setIndices(inds);
+      return tmpD;
+    } else /* if tmpD.stridable && !d.stridable */ {
+      tmpD = d;
+      return tmpD;
+    }
+  }
 
   proc chpl_countDomHelp(dom, counts) {
     var ranges = dom.dims();
