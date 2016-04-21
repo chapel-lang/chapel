@@ -375,27 +375,28 @@ class UserMapAssocDom: BaseAssociativeDom {
     //
     // TODO -- how does this divide into tasks?
     // Iterator forwarding, as in Block line 779 ?
-    coforall locDom in locDoms do on locDom {
-      // redirect to the DefaultAssociative's leader
-      // note that DefaultAssociative's leader returns (lo..hi, this)
-      // ie. a range of table slots and then the DefaultAssociativeDom.
-      for follow in locDom.myInds._value.these(tag) do
-        yield follow;
-      //  for followThis in tmpBlock._value.these(iterKind.leader, maxTasks,
-      //                                           myIgnoreRunning, minSize,
-      //                                           locOffset)
-      //yield locDom;
+    coforall (locDom, localeIndex) in zip(locDoms,dist.targetLocDom) {
+      on locDom {
+        // redirect to the DefaultAssociative's leader
+        // note that DefaultAssociative's leader returns (lo..hi, this)
+        // ie. a range of table slots and then the DefaultAssociativeDom.
+        for follow in locDom.myInds._value.these(tag) do
+          yield (follow, localeIndex);
+        //  for followThis in tmpBlock._value.these(iterKind.leader, maxTasks,
+        //                                           myIgnoreRunning, minSize,
+        //                                           locOffset)
+        //yield locDom;
+      }
     }
   }
 
   // follower iterator for the distributed domain
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
-    var (chunk, followThisDom) = followThis;
+    var (locFollowThis, localeIndex) = followThis;
 
-    // redirect to the DefaultAssociative's follower
-    // TODO - better handle zippering - this will break if
-    // the elements are the same but the hashtables differ...
-    for i in followThisDom.these(tag, followThis) do
+    var locDom = locDoms[localeIndex];
+
+    for i in locDom.myInds._value.these(tag, locFollowThis) do
       yield i;
   }
 
@@ -615,8 +616,8 @@ class UserMapAssocArr: BaseArr {
   //
   // DOWN: an array of local array classes
   var locArrs: [dom.dist.targetLocDom] LocUserMapAssocArr(idxType, mapperType, eltType);
-  var locAssocDoms: domain(BaseAssociativeDom);
-  var locArrsByAssoc: [locAssocDoms] LocUserMapAssocArr(idxType, mapperType, eltType);
+  //var locAssocDoms: domain(BaseAssociativeDom);
+  //var locArrsByAssoc: [locAssocDoms] LocUserMapAssocArr(idxType, mapperType, eltType);
 
   var pid: int = -1; // privatized object id
 
@@ -628,8 +629,8 @@ class UserMapAssocArr: BaseArr {
         locArrs(localeIdx) = new LocUserMapAssocArr(idxType, mapperType, eltType, dom.locDoms(localeIdx));
     for localeIdx in dom.dist.targetLocDom {
       var locDomImpl = dom.locDoms(localeIdx).myInds._value;
-      locAssocDoms += locDomImpl;
-      locArrsByAssoc[locDomImpl] = locArrs(localeIdx);
+      //locAssocDoms += locDomImpl;
+      //locArrsByAssoc[locDomImpl] = locArrs(localeIdx);
     }
   }
 
@@ -639,8 +640,8 @@ class UserMapAssocArr: BaseArr {
     var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
     var c = new UserMapAssocArr(idxType=idxType, mapperType=mapperType, eltType=eltType, dom=privdom);
     c.locArrs = locArrs;
-    c.locAssocDoms = locAssocDoms;
-    c.locArrsByAssoc = locArrsByAssoc;
+    //c.locAssocDoms = locAssocDoms;
+    //c.locArrsByAssoc = locArrsByAssoc;
     return c;
   }
 
@@ -688,21 +689,24 @@ class UserMapAssocArr: BaseArr {
   }
 
   iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
-    var (chunk, followThisDom) = followThis;
+    var (locFollowThis, localeIndex) = followThis;
 
-    // Which local DefaultAssociativeArray has .dom == followThisDom ?
-    // Get the .data field for that one.
-    var useData = locArrsByAssoc(followThisDom).myElems._value.data;
+    var locArr = locArrs[localeIndex];
 
-    var otherTable = followThisDom.table;
-    for slot in chunk.low..chunk.high {
-      var entry = otherTable[slot];
-      if entry.status == chpl__hash_status.full {
-        var idx = slot;
-        yield useData[idx];
+    // forward to locArr
+    for i in locArr.myElems._value.these(tag, locFollowThis) do
+      yield i;
+  }
+
+  iter these(param tag: iterKind, followThis) ref where tag == iterKind.standalone {
+    coforall locArr in locArrs do on locArr {
+      // Forward to associative array standalone iterator
+      for i in locArr.myElems._value.these(tag) {
+        yield i;
       }
     }
   }
+
 
   //
   // how to print out the whole array, sequentially

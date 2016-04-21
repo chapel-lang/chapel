@@ -42,24 +42,26 @@ writeln("Checking d locales standalone");
 // standalone iterator
 forall d in D {
   assert(here == Locales[myMapper.indexToLocaleIndex(d, Locales)]);
+  if verbose then writeln(d);
 }
 writeln("Checking d locales leader/follower");
 // leader/follower iterator
 forall (d1, d2) in zip(D, D) {
   assert(d1 == d2);
   assert(here == Locales[myMapper.indexToLocaleIndex(d1, Locales)]);
+  if verbose then writeln(d1, " ", d2);
 }
 writeln("Checking d/array locales leader/follower");
 // leader/follower array iterator
 forall (d, a) in zip(D, A) {
-  writeln(d, " ", a, " on ", here.id);
+  if verbose then writeln(d, " ", a, " on ", here.id);
   assert(here == Locales[myMapper.indexToLocaleIndex(d, Locales)]);
   assert(here == a.locale);
 }
 writeln("Checking array/d locales leader/follower");
 // leader/follower array iterator
 forall (a, d) in zip(A, D) {
-  writeln(a, " ", d, " on ", here.id);
+  if verbose then writeln(a, " ", d, " on ", here.id);
   assert(here == Locales[myMapper.indexToLocaleIndex(d, Locales)]);
   assert(here == a.locale);
 }
