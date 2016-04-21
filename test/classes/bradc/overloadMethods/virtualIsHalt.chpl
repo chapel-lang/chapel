@@ -36,8 +36,6 @@ myD.ranges(2) = 1..20;
 var r1 = myD.bbox(1);
 var r2 = myD.bbox(2);
 
-delete myD;
-
 writeln("r1 = ", r1);
 writeln("r2 = ", r2);
 
@@ -49,5 +47,6 @@ var myE = new E(myD);
 
 writeln(myE.rowRange);
 
-delete myE;
 
+delete myD;
+delete myE;
