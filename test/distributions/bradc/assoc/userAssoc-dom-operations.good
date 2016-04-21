@@ -1,0 +1,31 @@
+D is:
+1.1
+2.2
+3.3
+4.4
+5.5
+6.6
+7.7
+8.8
+A is:
+1.1: one point one
+2.2: two point two
+3.3: three point three
+4.4: four point four
+5.5: five point five
+6.6: six point six
+7.7: seven point seven
+8.8: eight point eight
+
+after adding 9.9 to D, A is:
+1.1: one point one
+2.2: two point two
+3.3: three point three
+4.4: four point four
+5.5: five point five
+6.6: six point six
+7.7: seven point seven
+8.8: eight point eight
+9.9: 
+
+after D.clear, A is:

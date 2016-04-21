@@ -24,6 +24,10 @@ for d in D.sorted() {
   writeln(d);
 }
 
+assert(D.member(1.1));
+assert(!D.member(3.5));
+assert(!D.member(100.0));
+
 var A: [D] string;
 
 A(1.1) = "one point one";
@@ -37,7 +41,29 @@ A(8.8) = "eight point eight";
 
 writeln("A is:");
 for d in D.sorted() {
+  writeln(d, ": ", A[d]);
+  if verbose then
+    writeln(A[d], " on locale ", A[d].locale);
+}
+writeln();
+
+D += 9.9;
+writeln("after adding 9.9 to D, A is:");
+for d in D.sorted() {
+  writeln(d, ": ", A[d]);
+  if verbose then
+    writeln(A[d], " on locale ", A[d].locale);
+}
+
+writeln();
+
+D.clear();
+
+assert(!D.member(9.9));
+writeln("after D.clear, A is:");
+for d in D.sorted() {
   writeln(A[d]);
   if verbose then
     writeln(A[d], " on locale ", A[d].locale);
 }
+
