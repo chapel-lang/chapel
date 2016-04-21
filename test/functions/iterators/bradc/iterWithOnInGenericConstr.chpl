@@ -12,6 +12,12 @@ class C {
       on Locales(locid) do
         dArray(locid) = new D(elemType);
   }
+
+  proc ~C() {
+    for locid in LocaleSpace do
+      on Locales(locid) do
+        delete dArray(locid);
+  }
 }
 
 var myC = new C(real(64), Locales);
