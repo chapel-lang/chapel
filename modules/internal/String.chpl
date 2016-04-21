@@ -722,6 +722,8 @@ module String {
       :arg maxsplit: The number of times to split the string, negative values
                      indicate no limit.
      */
+    // note: to improve performance, this code collapses several cases into a
+    //       single yield statement, which makes it confusing to read
     // TODO: specifying return type leads to un-inited string?
     iter split(maxsplit: int = -1) /* : string */ {
       if !this.isEmptyString() {

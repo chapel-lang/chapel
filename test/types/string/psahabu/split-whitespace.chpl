@@ -1,4 +1,4 @@
-var fox = "The quick brown fox jumps over the lazy dog";
+var spaces = "The quick brown fox jumps over the lazy dog";
 var tabs = "The\tquick\tbrown\tfox\tjumps";
 var newLines = "The\nquick\nbrown\nfox\njumps";
 var returns = "The\rquick\rbrown\rfox\rjumps";
@@ -6,9 +6,8 @@ var bigSpace = "The quick brown           fox   jumps";
 var whitespace = " \t\r\n";
 var empty = "";
 
-proc test(s) {
-  writeln("test: ", '"', s, '"');
-  writeln();
+proc test(s, testname) {
+  writeln(testname, ': "', s, '"');
 
   write("no limit: [ ");
   for x in s.split() {
@@ -27,13 +26,14 @@ proc test(s) {
     write('"', x, '"', " ");
   }
   writeln("]");
-  writeln("\n\n");
+
+  writeln("\n");
 }
 
-test(fox);
-test(tabs);
-test(newLines);
-test(returns);
-test(bigSpace);
-test(whitespace);
-test(empty);
+test(spaces, "spaces");
+test(tabs, "tabs");
+test(newLines, "new lines");
+test(returns, "returns");
+test(bigSpace, "several spaces");
+test(whitespace, "whitespace");
+test(empty, "empty");
