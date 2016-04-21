@@ -16,4 +16,7 @@ class DerivedClass: BaseClass {
 }
 
 var D = new DerivedClass(1,2);
+
 writeln(D);
+
+delete D;

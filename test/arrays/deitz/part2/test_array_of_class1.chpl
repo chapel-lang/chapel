@@ -11,6 +11,7 @@ var a : [d] foo;
 
 forall (i,j) in d {
   a(i,j) = new foo();
+
   a(i,j).i = i*j;
   a(i,j).f = 3.5 * i;
 }
@@ -18,3 +19,5 @@ forall (i,j) in d {
 for (i,j) in d {
   writeln(a(i,j).i);
 }
+
+for (i,j) in d do delete a(i,j);

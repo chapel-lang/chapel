@@ -945,14 +945,22 @@ inline
 proc StencilArr.do_dsiAccess(param setter, i: rank*idxType) ref {
   local {
     if myLocArr != nil {
-
-      // return from actual if it's a write or there's no fluff
-      if myLocArr.locDom.member(i) && (setter || zeroTuple(dom.fluff)) then return myLocArr.this(i);
-
-      // return from fluff if it's a read and there's fluff
-      if myLocArr.locDom.myFluff.member(i) && !setter && !zeroTuple(dom.fluff) then return myLocArr.this(i);
+      if setter {
+        // A write: return from actual data and not fluff
+        if myLocArr.locDom.member(i) then return myLocArr.this(i);
+      } else {
+        // A read: return from fluff if possible
+        // If there is no fluff, then myFluff == myBlock
+        if myLocArr.locDom.myFluff.member(i) then return myLocArr.this(i);
+      }
     }
   }
+
+  return nonLocalAccess(i);
+}
+
+proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
+
   if doRADOpt {
     if myLocArr {
       if boundsChecking {
@@ -992,10 +1000,10 @@ proc StencilArr.do_dsiAccess(param setter, i: rank*idxType) ref {
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
 
-proc StencilArr.dsiAccess(i: rank*idxType) ref {
+inline proc StencilArr.dsiAccess(i: rank*idxType) ref {
   return do_dsiAccess(true, i);
 }
-proc StencilArr.dsiAccess(i: rank*idxType) {
+inline proc StencilArr.dsiAccess(i: rank*idxType) {
   return do_dsiAccess(false, i);
 }
 

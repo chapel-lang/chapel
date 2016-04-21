@@ -39,12 +39,27 @@
 //For naming of variadic function variables (and temporary names for void *'s).
 static int query_uid = 1;
 
+static void convertTypedef(ModuleSymbol* module, clang::TypedefNameDecl *tdn, Vec<Expr*> & results);
+
 
 //Given a clang type, returns the corresponding chapel type (usually as 
 //  an UnresolvedSymExpr to be resolved by scopeResolve).
 static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Vec<Expr*> & results, const char* typedefName=NULL) {
+
+  //typedefs
+  if (const clang::TypedefType *td =
+      llvm::dyn_cast_or_null<clang::TypedefType>(type)) {
+
+    // Get the typedef decl for that
+    clang::TypedefNameDecl* tdn = td->getDecl();
+
+    convertTypedef(module, tdn, results);
+
+    const char* typedef_name = tdn->getNameAsString().c_str();
+    return new UnresolvedSymExpr(typedef_name);
+
   //pointers
-  if (type->isPointerType()) {
+  } else if (type->isPointerType()) {
     clang::QualType pointeeType = type->getPointeeType();
 
     //Pointers to c_char must be converted to Chapel's C string type
@@ -68,7 +83,7 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
     return new CallExpr(new UnresolvedSymExpr("c_ptr"), pointee);
 
   //structs
-  } else if (type->isStructureType()) { 
+  } else if (type->isStructureType()) {
       clang::RecordDecl *rd = type->getAsStructureType()->getDecl();
       const char* tmp_name = astr(rd->getNameAsString().c_str());
       const char* cname = tmp_name;
@@ -115,8 +130,11 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
       }
 
       return new UnresolvedSymExpr(tmp_name);
+  } else if (type->isFunctionType()) {
+    // Treat function types as opaque, at least until Chapel
+    // learns to understand them.
+    return new UnresolvedSymExpr("opaque");
   } else {
-    
     // Check for enum types, which are really some sort of integer type
     if (type->isEnumeralType()) {
       clang::QualType qType = type->getCanonicalTypeInternal();
@@ -187,6 +205,53 @@ static void convertMacroToChpl(ModuleSymbol* module, const char* name, Type* chp
   setAlreadyConvertedExtern(module, name);
 }
 
+static void convertTypedef(ModuleSymbol* module, clang::TypedefNameDecl *tdn, Vec<Expr*> & results) {
+
+  //handle typedefs
+
+  bool do_typedef = true;
+  const char* typedef_name = astr(tdn->getNameAsString().c_str());
+  const clang::Type* contents_type = tdn->getUnderlyingType().getTypePtr();
+
+  //If we've already converted this, return immediately to
+  //  avoid multiple Chapel definitions.
+  if( alreadyConvertedExtern(module, typedef_name) ) return;
+
+  if( contents_type->isStructureType() ) {
+    clang::RecordDecl *rd = contents_type->getAsStructureType()->getDecl();
+    const char* struct_name = rd->getNameAsString().c_str();
+    // We already make 'struct some_structure { .. }' create a
+    // Chapel type for 'some_structure'. So if this is a typedef
+    // creating an alias for 'struct some_structure' == 'some_structure',
+    // just return the result of adding the structure.
+    if( 0 == strcmp(typedef_name, struct_name) ) {
+      convertToChplType(module, contents_type, results);
+      do_typedef = false;
+    }
+    // If the struct is unnamed, we don't need to make
+    // an alias (instead, we use the name of this typedef
+    // to name the structure by passing the typedefName
+    // argument to convertToChplType).
+    if( struct_name[0] == '\0' ) {
+      convertToChplType(module, contents_type, results, typedef_name);
+      do_typedef = false;
+    }
+  }
+
+  if( do_typedef ) {
+    //emulate chapel's type foo = blarg; behavior
+    VarSymbol* v = new VarSymbol(typedef_name);
+    v->addFlag(FLAG_TYPE_VARIABLE);
+
+    DefExpr* type_expr = new DefExpr(v, convertToChplType(module, contents_type, results, typedef_name), NULL);
+    results.add(convertTypesToExtern(buildChapelStmt(type_expr)));
+  }
+
+  setAlreadyConvertedExtern(module, typedef_name);
+}
+
+
+
 void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & results) {
   if (name == NULL || !externC || !strcmp(".", name) || !strcmp("", name))
    return;
@@ -238,41 +303,10 @@ void convertDeclToChpl(ModuleSymbol* module, const char* name, Vec<Expr*> & resu
   //typedefs
   if (clang::TypedefNameDecl *tdn =
       llvm::dyn_cast_or_null<clang::TypedefNameDecl>(cType)) {
-
-    bool do_typedef = true;
-    const clang::Type* contents_type = tdn->getUnderlyingType().getTypePtr();
-    if( contents_type->isStructureType() ) {
-      clang::RecordDecl *rd = contents_type->getAsStructureType()->getDecl();
-      const char* struct_name = rd->getNameAsString().c_str();
-      // We already make 'struct some_structure { .. }' create a
-      // Chapel type for 'some_structure'. So if this is a typedef
-      // creating an alias for 'struct some_structure' == 'some_structure',
-      // just return the result of adding the structure.
-      if( 0 == strcmp(name, struct_name) ) {
-        convertToChplType(module, contents_type, results);
-        do_typedef = false;
-      }
-      // If the struct is unnamed, we don't need to make
-      // an alias (instead, we use the name of this typedef
-      // to name the structure).
-      if( struct_name[0] == '\0' ) {
-        convertToChplType(module, contents_type, results, name);
-        do_typedef = false;
-      }
-    }
-
-    if( do_typedef ) {
-      //emulate chapel's type foo = blarg; behavior
-      VarSymbol* v = new VarSymbol(name);
-      v->addFlag(FLAG_TYPE_VARIABLE);
-
-      DefExpr* type_expr = new DefExpr(v, convertToChplType(module, contents_type, results, name), NULL);
-      results.add(convertTypesToExtern(buildChapelStmt(type_expr)));
-    }
-    
-  //functions
+    convertTypedef(module, tdn, results);
   }
 
+  //functions
   if (clang::FunctionDecl *fd =
       llvm::dyn_cast_or_null<clang::FunctionDecl>(cValue)) {
 #if HAVE_LLVM_VER >= 35

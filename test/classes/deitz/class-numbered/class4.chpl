@@ -6,3 +6,5 @@ class foo {
 var x : foo = new foo();
 
 writeln("x: (", x.i, ", ", x.f, ")");
+
+delete x;

@@ -20,7 +20,11 @@ class ExtendOuter: Outer {
 proc main {
   var outer = new Outer();
   var inner = outer.makeAnInner(1);
+
   inner.outer = new ExtendOuter();
   writeln(inner.get_s());
 
+  delete inner.outer;
+  delete inner;
+  delete outer;
 }

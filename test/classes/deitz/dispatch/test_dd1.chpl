@@ -15,3 +15,5 @@ c.foo(true);
 
 var d: D = c:D;
 d.foo(true);
+
+delete c;

@@ -21,3 +21,5 @@ a.indexedby(1) = 3;
 a.indexedby(2) = 2;
 a.indexedby(3) = 1;
 writeln(a.indexedby(1), a.indexedby(2), a.indexedby(3));
+
+delete a;

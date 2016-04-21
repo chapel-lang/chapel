@@ -17,8 +17,8 @@ sleep(100, TimeUnits.microseconds);
 timer.stop();
 if printTime then
   stderr.writeln(timer.elapsed());
-if abs((1e-6 * 100) - timer.elapsed()) > (tolerance*(1e-6*100)) then
-  halt("Exceeded tolerance on TimeUnits.microseconds");
+if timer.elapsed() < 1e-6*100 then
+  halt("Slept short on TimeUnits.microseconds", ": ", timer.elapsed());
 timer.clear();
 
 timer.start();
@@ -26,8 +26,8 @@ sleep(100, TimeUnits.milliseconds);
 timer.stop();
 if printTime then
   stderr.writeln(timer.elapsed());
-if abs((1e-3 * 100) - timer.elapsed()) > (tolerance*(1e-3*100)) then
-  halt("Exceeded tolerance on TimeUnits.milliseconds");
+if timer.elapsed() < 1e-3*100 then
+  halt("Slept short on TimeUnits.milliseconds");
 timer.clear();
 
 timer.start();
@@ -35,8 +35,8 @@ sleep(3);
 timer.stop();
 if printTime then
   stderr.writeln(timer.elapsed());
-if abs(3 - timer.elapsed()) > (tolerance*3) then
-  halt("Exceeded tolerance on TimeUnits.seconds");
+if timer.elapsed() < 3 then
+  halt("Slept short on TimeUnits.seconds");
 timer.clear();
 
 writeln("Done");
