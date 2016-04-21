@@ -7,3 +7,5 @@ var c = new C(imag, complex, int, real);
 
 writeln(c);
 writeln(c.type:string);
+
+delete c;

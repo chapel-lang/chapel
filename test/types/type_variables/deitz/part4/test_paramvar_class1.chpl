@@ -11,3 +11,6 @@ f2.str = "world";
 
 writeln("{x = ", f1.x, ", str = ", f1.str, "}");
 writeln("{x = ", f2.x, ", str = ", f2.str, "}");
+
+delete f2;
+delete f1;
