@@ -1,2 +1,18 @@
-D is: {}{1.3}{2.4}{3.5}
-A is: one point three two point four three point five
+D is:
+1.3
+2.4
+3.5
+A is:
+one point three
+two point four
+three point five
+Checking d locales standalone
+Checking d locales leader/follower
+Checking d/array locales leader/follower
+1.3 one point three on 1
+2.4 two point four on 2
+3.5 three point five on 3
+Checking array/d locales leader/follower
+one point three 1.3 on 1
+two point four 2.4 on 2
+three point five 3.5 on 3

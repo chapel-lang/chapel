@@ -1,13 +1,17 @@
 use UserMapAssoc;
 
-class myMapper : AbstractMapper {
-  proc idxToLocaleInd(ind: real, numlocs: int) {
+config const verbose = false;
+
+class MyMapper {
+  proc indexToLocaleIndex(ind, targetLocs: [] locale) {
+    const numlocs = targetLocs.domain.size;
     const indAsInt = ind: int;
     return indAsInt % numlocs;
   }
 }
 
-var newDist = new dmap(new UserMapAssoc(idxType=real, initMapper=new myMapper()));
+var myMapper = new MyMapper();
+var newDist = new dmap(new UserMapAssoc(idxType=real, mapper=myMapper));
 
 var D: domain(real) dmapped newDist;
 
@@ -15,7 +19,10 @@ D += 1.3;
 D += 2.4;
 D += 3.5;
 
-writeln("D is: ", D);
+writeln("D is:");
+for d in D.sorted() {
+  writeln(d);
+}
 
 var A: [D] string;
 
@@ -23,4 +30,36 @@ A(1.3) = "one point three";
 A(2.4) = "two point four";
 A(3.5) = "three point five";
 
-writeln("A is: ", A);
+writeln("A is:");
+for d in D.sorted() {
+  writeln(A[d]);
+  if verbose then
+    writeln(A[d], " on locale ", A[d].locale);
+  assert(A[d].locale == Locales[myMapper.indexToLocaleIndex(d, Locales)]);
+}
+
+writeln("Checking d locales standalone");
+// standalone iterator
+forall d in D {
+  assert(here == Locales[myMapper.indexToLocaleIndex(d, Locales)]);
+}
+writeln("Checking d locales leader/follower");
+// leader/follower iterator
+forall (d1, d2) in zip(D, D) {
+  assert(d1 == d2);
+  assert(here == Locales[myMapper.indexToLocaleIndex(d1, Locales)]);
+}
+writeln("Checking d/array locales leader/follower");
+// leader/follower array iterator
+forall (d, a) in zip(D, A) {
+  writeln(d, " ", a, " on ", here.id);
+  assert(here == Locales[myMapper.indexToLocaleIndex(d, Locales)]);
+  assert(here == a.locale);
+}
+writeln("Checking array/d locales leader/follower");
+// leader/follower array iterator
+forall (a, d) in zip(A, D) {
+  writeln(a, " ", d, " on ", here.id);
+  assert(here == Locales[myMapper.indexToLocaleIndex(d, Locales)]);
+  assert(here == a.locale);
+}
