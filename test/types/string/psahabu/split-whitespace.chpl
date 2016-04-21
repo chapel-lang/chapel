@@ -1,3 +1,7 @@
+use Time;
+
+config const timing = true;
+
 var spaces = "The quick brown fox jumps over the lazy dog";
 var tabs = "The\tquick\tbrown\tfox\tjumps";
 var newLines = "The\nquick\nbrown\nfox\njumps";
@@ -30,6 +34,9 @@ proc test(s, testname) {
   writeln("\n");
 }
 
+var t: Timer;
+if timing then t.start();
+
 test(spaces, "spaces");
 test(tabs, "tabs");
 test(newLines, "new lines");
@@ -37,3 +44,8 @@ test(returns, "returns");
 test(bigSpace, "several spaces");
 test(whitespace, "whitespace");
 test(empty, "empty");
+
+if timing {
+  t.stop();
+  writeln("Time: ", t.elapsed(), " seconds");
+}
