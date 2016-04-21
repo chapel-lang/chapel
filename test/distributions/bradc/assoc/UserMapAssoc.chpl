@@ -305,9 +305,14 @@ class UserMapAssocDom: BaseAssociativeDom {
     locDoms(dist.indexToLocaleIndex(i)).remove(i);
   }
 
+  proc dsiMember(i: idxType) {
+    return locDoms(dist.indexToLocaleIndex(i)).member(i);
+  }
+
   proc dsiClear() {
-    halt("dsiClear not yet implemented");
-    // Go through each sub-
+    for locDom in locDoms do on locDom {
+      locDom.clear();
+    }
   }
 
 
@@ -541,6 +546,13 @@ class LocUserMapAssocDom {
     myInds -= i;
   }
 
+  proc member(i: idxType) {
+    return myInds.member(i);
+  }
+
+  proc clear() {
+    myInds.clear();
+  }
 
   //
   // iterator over this locale's indices
