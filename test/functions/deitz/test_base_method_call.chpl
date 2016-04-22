@@ -13,4 +13,8 @@ class D: C {
 }
 
 var d: D = new D();
+
 (d:C).foo();
+
+delete d;
+

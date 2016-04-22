@@ -8,7 +8,7 @@
 
 //
 // A procedure groups computations that can be called from another part
-// of the program.  
+// of the program.
 // The procedure can be defined with zero or more "formal" arguments.
 // Each formal argument can have a default value associated with it.
 //
@@ -21,7 +21,7 @@
 // A procedure can return zero, one or more values (as a tuple).
 // The return value type can be specified after the formal argument list.
 // If no explicit return value type is supplied, the Chapel compiler infers the
-// return value type.  
+// return value type.
 //
 
 //
@@ -32,6 +32,7 @@ proc factorial(x: int) : int
 {
   if x < 0 then
     halt("factorial -- Sorry, this is not the gamma procedure!");
+
   return if x == 0 then 1 else x * factorial(x-1);
 }
 
@@ -53,7 +54,9 @@ proc factorial(x: int(32)) : int(32)
 {
   if x < 1 then
     halt("factorial -- Invalid operand.");
+
   if x < 3 then return x;
+
   return x * (x-1) * factorial(x-2);
 }
 
@@ -64,6 +67,7 @@ proc factorial(x: int(32)) : int(32)
 //
 writeln("Another simple procedure");
 writeln("33! is ", factorial(33));
+
 //
 // Whereas passing in a 32-bit integer will cause us to get the
 // 32-bit version:
@@ -112,17 +116,23 @@ class Circle {
 proc create_circle(x = 0.0, y = 0.0, diameter = 0.0)
 {
   var result = new Circle();
+
   result.radius = diameter / 2;
   result.center.x = x;
   result.center.y = y;
+
   return result;
 }
 
 writeln("Using named arguments");
+
 // Creates a circle at (2.0, 0.0) with a radius of 1.5.
 var c = create_circle(diameter=3.0,2.0);
+
 writeln(c);
 writeln();
+
+delete c;
 
 //
 // Procedures can also have arguments of indeterminate type: these are known

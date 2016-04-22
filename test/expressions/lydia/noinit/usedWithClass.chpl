@@ -9,9 +9,22 @@ inline proc _defaultOf(type t) where t == Foo {
   return nil:t;
 }
 
+
+
 var foo:Foo = noinit; // Should not print out message
+
 foo = new Foo(4, true);
+
 writeln(foo);
+
+delete foo;
+
+
+
 var bam:Foo;          // Should print out message
+
 bam = new Foo(3, false);
+
 writeln(bam);
+
+delete bam;

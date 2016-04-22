@@ -16,9 +16,13 @@ class E {
   var sf: sync real;
 }
 
-var e: E = new E(); 
+var e: E = new E();
 var f: real;
 
 e.sf = 1.2;
-f = e.sf;
+f    = e.sf;
+
 writeln( "f is ", f);
+
+delete e;
+delete d;

@@ -2,14 +2,17 @@ record R {
   var x: int;
   var y: string;
   var z: real;
+
   proc something() {
     return z;
   }
 }
+
 class C {
   var x: int;
   var y: string;
   var z: real;
+
   proc something() {
     return z;
   }
@@ -22,6 +25,8 @@ const epsilon = 1e-8; // for comparing reals.
 
 myproc(R, rec);
 myproc(C, cls);
+
+delete cls;
 
 proc myproc(type t, ref m) {
   assert(__primitive("num fields", t) == 3);
