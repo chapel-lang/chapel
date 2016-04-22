@@ -1,0 +1,7 @@
+CHPL_TARGET_COMPILER=mpi
+CHPL_TARGET_ARCH=none 
+
+The latter is to squash a number of warnings when building Chapel.
+
+Run on at least 4 ranks with something like :
+  mpirun -np 4 ./test_mpi.x
