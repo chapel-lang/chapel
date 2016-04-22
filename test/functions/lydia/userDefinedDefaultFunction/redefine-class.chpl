@@ -9,4 +9,8 @@ proc _defaultOf(type t):t where t:bar {
 }
 
 var foo: bar;
+
 writeln(foo);
+
+delete foo;
+

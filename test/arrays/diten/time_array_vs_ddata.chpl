@@ -34,4 +34,6 @@ proc main {
   if printTimes {
     writeln("ddata ", t.elapsed());
   }
+
+  _ddata_free(AA);
 }

@@ -12,3 +12,5 @@ class TestRandom {
 var randlist = new TestRandom();
 
 randlist.showseed();
+
+delete randlist;

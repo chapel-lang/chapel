@@ -131,7 +131,7 @@ var line_buff : [0..LINE_LENGTH+1] int(8);
 proc addLine(bytes: int) {
   for i in 0..bytes-1 {
     var r  = random.next();
-    var ai = r : int; 
+    var ai = r : int;
     while (lookup[ai].p < r) {
       ai = ai + 1;
     }
@@ -181,4 +181,8 @@ proc main() {
   repeatMake(">ONE Homo sapiens alu\n", ALU, n * 2);
   randomMake(">TWO IUB ambiguity codes\n", IUB, n * 3);
   randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, n * 5);
+
+  delete random;
+  for h in HomoSapiens do delete h;
+  for i in IUB         do delete i;
 }

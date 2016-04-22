@@ -1,4 +1,3 @@
-
 class pair {
   var a: int;
   var b: real;
@@ -39,12 +38,15 @@ proc callblank(x: pair) {
 
 proc main() {
   var a: pair = new pair();
+
   a.a = 10;
   a.b = 2.3;
 
   callin(a);
   writeln("back at callsite, a is: ", a.a, " ", a.b);
   writeln();
+
+  delete a;
 
   callout(a);
   writeln("back at callsite, a is: ", a.a, " ", a.b);
@@ -56,4 +58,6 @@ proc main() {
 
   callblank(a);
   writeln("back at callsite, a is: ", a.a, " ", a.b);
+
+  delete a;
 }

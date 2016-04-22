@@ -6,13 +6,21 @@ class myseq_node {
 
 class myseq {
   type elementType;
-  var length : int;
-  var first : myseq_node(elementType);
-  var last : myseq_node(elementType);
+
+  var  length : int;
+  var  first  : myseq_node(elementType);
+  var  last   : myseq_node(elementType);
+
+  proc ~myseq() {
+    if first != nil then delete first;
+  }
 
   proc append(e : elementType) {
     var copy : myseq_node(elementType) = new myseq_node(elementType = elementType);
     copy.element = e;
+
+    if first != nil then delete first;
+
     first = copy;
     last = copy;
     length = 1;
@@ -32,3 +40,5 @@ s.print();
 s.append(3);
 
 s.print();
+
+delete s;

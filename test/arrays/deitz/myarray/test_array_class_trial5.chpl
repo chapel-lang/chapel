@@ -22,9 +22,16 @@ a.indexedby(2) = 2;
 a.indexedby(3) = 1;
 writeln(a.indexedby(1), a.indexedby(2), a.indexedby(3));
 
+delete a;
+
 class array2d {
   type t;
   var data : array1d(t) = new array1d(t);
+
+  proc ~array2d() {
+    delete data;
+  }
+
   proc indexedby(i : int, j : int) ref : t {
     return data.indexedby((i - 1) * 2 + j);
   }
@@ -34,3 +41,5 @@ var a2 : array2d(int) = new array2d(int);
 
 a2.indexedby(1, 1) = 4;
 writeln(a2.indexedby(1, 1));
+
+delete a2;

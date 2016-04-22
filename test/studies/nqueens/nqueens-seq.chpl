@@ -183,9 +183,16 @@ proc tryQueenInNextRow(board: Board): void {
 proc countSolutions(boardSize: int, showEachSoln: bool) {
   solutionCount = 0;
   showEachSolution = showEachSoln;
+
   if showEachSoln then
     writeln("Solving N Queens for N=", boardSize, "...");
-  tryQueenInNextRow(createBoard(boardSize));   // elide dealloc of this board
+
+  var board = createBoard(boardSize);
+
+  tryQueenInNextRow(board);   // elide dealloc of this board
+
+  delete board;
+
   writeln("Found ", solutionCount, " solutions for N=", boardSize);
 }
 

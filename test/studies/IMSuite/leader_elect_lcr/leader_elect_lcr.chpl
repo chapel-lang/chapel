@@ -91,6 +91,8 @@
             for i in 0..(processes-1) do sumval = sumval + nval[i];
             if(sumval > 0) then writeln();
         }
+
+        for p in processSet do delete p;
      }
 
 

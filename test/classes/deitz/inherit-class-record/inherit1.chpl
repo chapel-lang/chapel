@@ -3,6 +3,10 @@ use List;
 module M1 {
   class C {
     var s: list(int);
+
+    proc ~C() {
+      s.destroy();
+    }
   }
 }
 
@@ -21,4 +25,6 @@ proc main() {
   d.i = 7;
 
   writeln(d);
+
+  delete d;
 }

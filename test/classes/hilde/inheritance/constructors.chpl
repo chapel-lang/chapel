@@ -23,6 +23,10 @@ class sub : base {
 proc main() {
   var p = new sub(3,4);
   var q = new base(2);
+
   writeln(p._i, p._j);
   writeln(q._i);
+
+  delete q;
+  delete p;
 }

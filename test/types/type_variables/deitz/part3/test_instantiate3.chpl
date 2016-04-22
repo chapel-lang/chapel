@@ -17,3 +17,7 @@ f.x = new bar(x = 12, y = 13);
 
 writeln(f);
 f.print();
+
+delete f.x;
+delete f;
+
