@@ -47,8 +47,14 @@ record Beer {
 
 var strt = "\\s*beer/name: (.*)\\s*beer/beerId: (.*)\\s*beer/brewerId: (.*)\\s*beer/ABV: (.*)\\s*beer/style: (.*)\\s*review/appearance: (.*)\\s*review/aroma: (.*)\\s*review/palate: (.*)\\s*review/taste: (.*)\\s*review/overall: (.*)\\s*review/time: (.*)\\s*review/profileName: (.*)\\s*review/text: (.*)";
 
+
+delete M;
+
+
 var N = new RecordReader(Beer, ffr, strt);
+
 writeln("========== test of stream() ==============");
 for r in N.stream() do
   writeln(r);
 
+delete N;
