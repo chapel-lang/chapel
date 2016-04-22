@@ -278,8 +278,6 @@ while current {
   on current {
     var ptr = current;
 
-    writeln("node with data = ", current.data, " on locale ", here.id);
-
     current = current.next;
 
     delete ptr;
