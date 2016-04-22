@@ -19,10 +19,6 @@ record Test {
     const per     = (max - min)/NBUCKETS;
     var   h:histo = new histo();
 
-    proc ~myhisto() {
-      delete h;
-    }
-
     proc accumulate(x) {
       h.counts[1 + x/per] += 1;
     }
