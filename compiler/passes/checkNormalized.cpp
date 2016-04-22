@@ -92,6 +92,12 @@ static void checkPrimNew()
         // If we know the expression represents a type, that's also good.
         continue;
 
+      if (isCallExpr(typeExpr))
+        // Sometimes the type expression is a (partial) callExpr
+        // This happens with nested classes, e.g.
+        // new this.someType()
+        continue;
+
       // Fail by default
       // (We may need additional filters above, to pass expected cases.)
       USR_FATAL_CONT(call, "'new' must be followed by a type expression");

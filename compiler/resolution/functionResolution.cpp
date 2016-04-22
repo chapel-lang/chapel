@@ -4356,44 +4356,52 @@ resolveNew(CallExpr* call)
 {
   // This is a 'new' primitive
   // we expect the 1st argument to be a type
+  //   or a partial call to get the type
   // and the remaining arguments to be arguments for the constructor call
 
-  SymExpr* tySe = toSymExpr(call->get(1));
-  INT_ASSERT(tySe);
+  SymExpr* toReplace = NULL;
 
-  Type* ty = resolveTypeAlias(tySe);
-  INT_ASSERT(ty);
+  // Perform three transformations on this PRIM_NEW
+  // 1 replace the type in the 1st argument with
+  //   an UnresolvedSymExpr to ct->defaultInitializer->name
+  // 2 move the 1st argument into the baseExpr
+  // 3 make it a normal call rather than a PRIM_NEW
 
-  AggregateType* ct = toAggregateType(ty);
-  INT_ASSERT(ct);
+  if( CallExpr* subCall = toCallExpr(call->get(1)) ) {
+    // Handle e.g. 'new' (call (partial) R2 _mt this) call_tmp
+    // which comes up with nested classes (e.g. R2 is a nested class type)
+    if (SymExpr* se = toSymExpr(subCall->baseExpr))
+      if (subCall->partialTag)
+        toReplace = se;
+  } else if (SymExpr* se = toSymExpr(call->get(1))) {
+    // Handle e.g. 'new' C arg
+    toReplace = se;
+  }
 
-  // Now replace the PRIM_NEW with a call to a constructor
+  INT_ASSERT(toReplace);
+  SET_LINENO(call);
 
+  // 1: replace the type with the constructor call name
+  if (Type* ty = resolveTypeAlias(toReplace)) {
+    if (AggregateType* ct = toAggregateType(ty)) {
+        toReplace->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
+    }
+  }
 
-  tySe->remove();
+  // 2: move the 1st argument into the baseExpr
+  // 3: make it a normal call and not a PRIM_NEW
+  Expr* arg = call->get(1);
+  arg->remove();
+  call->primitive = NULL;
+  call->baseExpr = arg;
+  parent_insert_help(call, call->baseExpr);
 
-  // I had this code earlier to make a new CallExpr
-  // but it left the husk of the old one, which messed
-  // up print-callstack-on-error.
-  // If we do make a new one, cloning will be important...
-  //CallExpr *ctor = new CallExpr(new UnresolvedSymExpr(ct->defaultInitializer->name));
-  // Move the actuals to the new ctor call
-  // except skip the 1st actual since it is the type
-  //for_actuals(actual, call) {
-  //  ctor->insertAtTail(actual->remove());
-  //}
-
-  //call->replace(ctor);
-
-  CallExpr *ctor = call;
-  ctor->primitive = NULL;
-  ctor->baseExpr = new UnresolvedSymExpr(ct->defaultInitializer->name);
-  parent_insert_help(ctor, ctor->baseExpr);
-  resolveExpr(ctor);
+  // Now finish resolving it, since we are after all in
+  // resolveNew.
+  resolveExpr(call);
 
   // Do some error checking
-
-  if (FnSymbol* fn = ctor->isResolved())
+  if (FnSymbol* fn = call->isResolved())
   {
     // If the function is a constructor, OK
     if (fn->hasFlag(FLAG_CONSTRUCTOR))
@@ -4402,7 +4410,7 @@ resolveNew(CallExpr* call)
       USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
   }
 
-  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(ctor->baseExpr))
+  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr))
   {
     USR_FATAL(call, "invalid use of 'new' on %s", urse->unresolved);
     return;

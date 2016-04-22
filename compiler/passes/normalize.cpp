@@ -816,6 +816,7 @@ static void call_constructor_for_class(CallExpr* call) {
       ct = toAggregateType(ts->type);
 
     CallExpr* primNew = NULL;
+    CallExpr* callInNew = NULL;
 
     // Select symExprs of class (or record) type.
 
@@ -823,9 +824,11 @@ static void call_constructor_for_class(CallExpr* call) {
 
     if (parent && parent->isPrimitive(PRIM_NEW)) {
       primNew = parent;
+      callInNew = call;
     } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
              call->partialTag) {
       primNew = parentParent;
+      callInNew = parent;
     } else if (ct) {
       if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
         // Call chpl__buildDistType for syntactic distributions.
@@ -839,16 +842,19 @@ static void call_constructor_for_class(CallExpr* call) {
       // Transform   new (call C args...)
       //      into   new C args...
 
-      // Transform   new (call (_partial C) args...)
-      //      into   new C args...
+      // Transform   new (call (call (partial) C _mt this) args...))
+      //      into   new (call (partial) C _mt this) args...
 
-
+      // The resulting AST will be handled in function resolution
+      // where the PRIM_NEW will be removed. It is transformed
+      // to no longer be a call with a type baseExpr in order
+      // to make better sense to functionn resolution.
       CallExpr *newNew = new CallExpr(PRIM_NEW);
       primNew->replace(newNew);
 
-      newNew->insertAtTail(call->baseExpr);
+      newNew->insertAtTail(callInNew->baseExpr);
       // Move the actuals to the new PRIM_NEW
-      for_actuals(actual, call) {
+      for_actuals(actual, callInNew) {
         newNew->insertAtTail(actual->remove());
       }
     }
