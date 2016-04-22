@@ -10,3 +10,5 @@ class B: A {
 
 var a = new A();
 var b: B;
+
+delete a;

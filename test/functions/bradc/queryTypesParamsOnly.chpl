@@ -14,3 +14,5 @@ proc foo(argD: D(?t, ?r)) {
 var myD = new D(x=3, t=int, r=2);
 
 foo(myD);
+
+delete myD;

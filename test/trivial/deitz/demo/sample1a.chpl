@@ -16,5 +16,9 @@ var t2 = new trio(1.0, 2.0, 3.0);
 
 writeln(t1);
 writeln(t1.sum());
+
 writeln(t2);
 writeln(t2.sum());
+
+delete t2;
+delete t1;

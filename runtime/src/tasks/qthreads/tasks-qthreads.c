@@ -922,7 +922,7 @@ void chpl_task_sleep(double secs)
         // yielding.
         //
         gettimeofday(&deadline, NULL);
-        deadline.tv_usec += (suseconds_t) ((secs - trunc(secs)) * 1.0e6);
+        deadline.tv_usec += (suseconds_t) lround((secs - trunc(secs)) * 1.0e6);
         if (deadline.tv_usec > 1000000) {
             deadline.tv_sec++;
             deadline.tv_usec -= 1000000;

@@ -85,6 +85,24 @@ Submit pull request
   testing and b) be reviewed by a member of the core Chapel team (currently, a
   member of the Cray Chapel team).
 
+* It is considered good practice to keep PRs (pull requests) to a reasonable
+  size. This ensures that the PR will be reviewed in a timely manner and will
+  receive a higher level of attention per line of code during review.
+
+  * When submitting a PR, the contributor should ask themselves if their
+    contribution can be separated into smaller logical chunks or independent
+    parts. Reviewers will also be pondering the same question and may request a
+    break up of the contribution into smaller PRs.
+
+  * Breaking up a PR can sometimes require a great deal of effort and
+    creativity, and may not be feasible at all, due to the intertwined nature
+    of the code.
+
+  * Ideally, the size of the PR should be proportional to the expected value to
+    the developer and user community. For example, a new module introduced as a
+    1000-line PR is acceptable, while a set of new tests introduced as a
+    1000-line PR is not.
+
 .. _Test changes:
 
 Test changes

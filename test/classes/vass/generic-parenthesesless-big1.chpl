@@ -19,12 +19,13 @@ proc C.f3(): int {
 proc C.g1: int return f1;
 proc C.g2: int return f2;
 proc C.g3: int return f3();
-  
+
 proc C.h1(): int return f1;
 proc C.h2(): int return f2;
 proc C.h3(): int return f3();
 
 var c = new C(1);
+
 writeln((
          c.g1,
          c.g2,
@@ -33,3 +34,5 @@ writeln((
          c.h2(),
          c.h3()
          ));
+
+delete c;

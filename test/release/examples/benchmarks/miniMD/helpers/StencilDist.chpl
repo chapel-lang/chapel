@@ -321,7 +321,7 @@ proc Stencil.dsiAssign(other: this.type) {
 proc Stencil.dsiClone() {
   return new Stencil(boundingBox, targetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity);
+                   dataParMinGranularity, fluff=fluff, periodic=periodic);
 }
 
 proc Stencil.dsiDestroyDistClass() {
@@ -510,7 +510,7 @@ proc Stencil.dsiCreateReindexDist(newSpace, oldSpace) {
   var d = {(...myNewBbox)};
   var newDist = new Stencil(d, targetLocales, 
                           dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                          dataParMinGranularity);
+                          dataParMinGranularity, fluff=fluff, periodic=periodic);
   return newDist;
 }
 
@@ -612,7 +612,7 @@ proc Stencil.dsiCreateRankChangeDist(param newRank: int, args) {
   const newTargetLocales = targetLocales((...collapsedLocs));
   return new Stencil(newBbox, newTargetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity);
+                   dataParMinGranularity, fluff=fluff, periodic=periodic);
 }
 
 iter StencilDom.these() {
@@ -810,7 +810,8 @@ proc StencilDom.dsiBuildRectangularDom(param rank: int, type idxType,
     compilerError("Stencil domain rank does not match distribution's");
 
   var dom = new StencilDom(rank=rank, idxType=idxType,
-                         dist=dist, stridable=stridable);
+                         dist=dist, stridable=stridable, fluff=fluff,
+                         periodic=periodic);
   dom.dsiSetIndices(ranges);
   return dom;
 }
@@ -944,14 +945,22 @@ inline
 proc StencilArr.do_dsiAccess(param setter, i: rank*idxType) ref {
   local {
     if myLocArr != nil {
-
-      // return from actual if it's a write or there's no fluff
-      if myLocArr.locDom.member(i) && (setter || zeroTuple(dom.fluff)) then return myLocArr.this(i);
-
-      // return from fluff if it's a read and there's fluff
-      if myLocArr.locDom.myFluff.member(i) && !setter && !zeroTuple(dom.fluff) then return myLocArr.this(i);
+      if setter {
+        // A write: return from actual data and not fluff
+        if myLocArr.locDom.member(i) then return myLocArr.this(i);
+      } else {
+        // A read: return from fluff if possible
+        // If there is no fluff, then myFluff == myBlock
+        if myLocArr.locDom.myFluff.member(i) then return myLocArr.this(i);
+      }
     }
   }
+
+  return nonLocalAccess(i);
+}
+
+proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
+
   if doRADOpt {
     if myLocArr {
       if boundsChecking {
@@ -991,10 +1000,10 @@ proc StencilArr.do_dsiAccess(param setter, i: rank*idxType) ref {
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
 
-proc StencilArr.dsiAccess(i: rank*idxType) ref {
+inline proc StencilArr.dsiAccess(i: rank*idxType) ref {
   return do_dsiAccess(true, i);
 }
-proc StencilArr.dsiAccess(i: rank*idxType) {
+inline proc StencilArr.dsiAccess(i: rank*idxType) {
   return do_dsiAccess(false, i);
 }
 
@@ -1427,6 +1436,8 @@ proc Stencil.Stencil(other: Stencil, privateData,
   dataParTasksPerLocale = privateData(3);
   dataParIgnoreRunningTasks = privateData(4);
   dataParMinGranularity = privateData(5);
+  fluff = privateData(6);
+  periodic = privateData(7);
 
   for i in targetLocDom {
     targetLocales(i) = other.targetLocales(i);
@@ -1438,7 +1449,8 @@ proc Stencil.dsiSupportsPrivatization() param return true;
 
 proc Stencil.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
-          dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
+          dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity,
+          fluff, periodic);
 }
 
 proc Stencil.dsiPrivatize(privatizeData) {

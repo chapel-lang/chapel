@@ -6,9 +6,10 @@ class node {
 
 record foo {
   type t;
-  var length : int;
-  var first : node(t);
-  var last : node(t);
+
+  var  length : int;
+  var  first  : node(t);
+  var  last   : node(t);
 
   proc append(e : t) {
    var anew : node(t) = new node(t);

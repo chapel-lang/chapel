@@ -85,3 +85,5 @@ iter printIterRefnessWrapper2(myCls) where !isRefIter(_getIterator(myCls)) {
 }
 
 for i in printIterRefnessWrapper2(c) do;
+
+delete c;

@@ -18,3 +18,5 @@ for e in s do e.foo();
 
 for e in s do
   delete e;
+
+s.destroy();

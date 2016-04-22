@@ -10,3 +10,5 @@ class C {
 var myC = new C(a=2);
 
 writeln("myC is: ", myC);
+
+delete myC;

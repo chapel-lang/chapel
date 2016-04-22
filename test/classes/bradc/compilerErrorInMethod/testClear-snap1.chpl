@@ -57,5 +57,11 @@ var a = new Wrap(_value = new Assoc());
 if doDense {
   d = 1;
 }
+
 s = 1;
 a = 1;
+
+delete a._value;
+delete s._value;
+delete d._value;
+

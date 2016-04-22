@@ -27,3 +27,5 @@ writer.close();
 var reader = f.reader();
 reader.read(a);
 writeln("a after reading is ", a);
+
+delete a;

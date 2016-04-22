@@ -1,6 +1,7 @@
 class mything {
   var x:int;
   var y:int;
+
   proc readWriteThis(rw) {
     rw <~> x;
     rw <~> new ioLiteral(" ");
@@ -29,5 +30,8 @@ class mything {
   writeln("Read ", b);
 
   assert(a.x == b.x);
+
+  delete b;
+  delete a;
 }
 

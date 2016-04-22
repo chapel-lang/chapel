@@ -8,3 +8,5 @@ class foo {
 var f : foo = new foo(50);
 
 writeln(f);
+
+delete f;

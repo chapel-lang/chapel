@@ -17,3 +17,7 @@ c.y = 12;
 
 writeln(b);
 writeln(c);
+
+delete c;
+delete b;
+

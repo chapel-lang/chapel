@@ -9,4 +9,8 @@ class StoreSomeInts {
 }
 
 var powers = new StoreSomeInts(1, 2, 3);
+
 writeln("powers = ", powers);
+
+delete powers;
+

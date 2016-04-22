@@ -28,6 +28,7 @@
 #include "docsDriver.h"
 #include "symbol.h"
 #include "stringutil.h"
+#include "stmt.h"
 #include "type.h"
 
 
@@ -165,6 +166,14 @@ void AstPrintDocs::visitVarSym(VarSymbol* node) {
   node->printDocs(this->file, this->tabs);
 }
 
+
+bool AstPrintDocs::enterBlockStmt(BlockStmt* node) {
+  // Top level block statements have no parentExpr, only a parentSymbol.
+  // Nested block statements have a parentExpr.  We don't want to go into
+  // nested block statements, because their contents aren't accessible
+  // outside of that scope.
+  return node->parentExpr == NULL;
+}
 
 bool AstPrintDocs::enterWhileDoStmt(WhileDoStmt* node) {
   return false;

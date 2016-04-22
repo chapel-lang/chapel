@@ -568,11 +568,13 @@ def check_environment():
             sys.exit(1)
 
     # find test dir and check for access
-    global test_dir
+    global test_dir, auto_gen_spec_tests
     test_dir = os.path.join(home, "test")
+    auto_gen_spec_tests = os.access(os.path.join(home, "spec"), os.F_OK)
     if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
         or not os.access(test_dir, os.X_OK)):
         test_dir = os.path.join(home, "examples")
+        auto_gen_spec_tests = False
         if (not os.access(test_dir, os.F_OK) or not os.access(test_dir, os.W_OK)
             or not os.access(test_dir, os.X_OK)):
             test_dir = os.getcwd()
@@ -999,6 +1001,8 @@ def set_up_executables():
 
 
 def auto_generate_tests():
+    if not auto_gen_spec_tests:
+        return
     path = os.getcwd()
     with cd(home):
         if path == home or path == test_dir and not args.clean_only:
@@ -1086,7 +1090,7 @@ def check_for_duplicates():
     # check for .graph files, and GRAPHFILES
     if args.gen_graphs or args.comp_performance:
         logger.write("[Checking for duplicate .graph files and that all .graph"
-                " files appear in {0}/.*GRAPHFILES]".format(test_dir))
+                " files appear in {0}/*GRAPHFILES]".format(test_dir))
 
         # find GRAPHFILES
         graph_files = [f for f in os.listdir(test_dir) if

@@ -10,3 +10,5 @@ var f : foo = new foo();
 f.x = 12;
 f.bar(13);
 f.bar(f.x);
+
+delete f;

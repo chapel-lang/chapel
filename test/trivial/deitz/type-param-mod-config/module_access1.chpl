@@ -33,7 +33,11 @@ module Q {
     bar();
     foo();
     bar();
+
     var N = new M(5);
+
     writeln(N.x);
+
+    delete N;
   }
 }

@@ -26,12 +26,17 @@ module M3 {
 
 module M4 {
   use M1, M2, M3;
+
   record R {
     var z: int;
     proc goo() { writeln("R.goo"); }
   }
+
   proc main() {
     var c: C = new D(t=R);
+
     bar(c);
+
+    delete c;
   }
 }
