@@ -4367,7 +4367,7 @@ resolveNew(CallExpr* call)
   // 2 move the 1st argument into the baseExpr
   // 3 make it a normal call rather than a PRIM_NEW
 
-  if( CallExpr* subCall = toCallExpr(call->get(1)) ) {
+  if (CallExpr* subCall = toCallExpr(call->get(1))) {
     // Handle e.g. 'new' (call (partial) R2 _mt this) call_tmp
     // which comes up with nested classes (e.g. R2 is a nested class type)
     if (SymExpr* se = toSymExpr(subCall->baseExpr))
@@ -4378,27 +4378,28 @@ resolveNew(CallExpr* call)
     toReplace = se;
   }
 
-  INT_ASSERT(toReplace);
-  SET_LINENO(call);
+  if (toReplace) {
+    SET_LINENO(call);
 
-  // 1: replace the type with the constructor call name
-  if (Type* ty = resolveTypeAlias(toReplace)) {
-    if (AggregateType* ct = toAggregateType(ty)) {
-        toReplace->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
+    // 1: replace the type with the constructor call name
+    if (Type* ty = resolveTypeAlias(toReplace)) {
+      if (AggregateType* ct = toAggregateType(ty)) {
+          toReplace->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
+      }
     }
+
+    // 2: move the 1st argument into the baseExpr
+    // 3: make it a normal call and not a PRIM_NEW
+    Expr* arg = call->get(1);
+    arg->remove();
+    call->primitive = NULL;
+    call->baseExpr = arg;
+    parent_insert_help(call, call->baseExpr);
+
+    // Now finish resolving it, since we are after all in
+    // resolveNew.
+    resolveExpr(call);
   }
-
-  // 2: move the 1st argument into the baseExpr
-  // 3: make it a normal call and not a PRIM_NEW
-  Expr* arg = call->get(1);
-  arg->remove();
-  call->primitive = NULL;
-  call->baseExpr = arg;
-  parent_insert_help(call, call->baseExpr);
-
-  // Now finish resolving it, since we are after all in
-  // resolveNew.
-  resolveExpr(call);
 
   // Do some error checking
   if (FnSymbol* fn = call->isResolved())
@@ -4410,10 +4411,18 @@ resolveNew(CallExpr* call)
       USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
   }
 
-  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr))
-  {
-    USR_FATAL(call, "invalid use of 'new' on %s", urse->unresolved);
-    return;
+  if (call->get(1)) {
+    Expr* arg = call->get(1);
+
+    if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(arg)) {
+      USR_FATAL(call, "invalid use of 'new' on %s", urse->unresolved);
+      return;
+    } else if (CallExpr* subCall = toCallExpr(arg)) {
+      if (FnSymbol* fn = subCall->isResolved()) {
+        USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
+        return;
+      }
+    }
   }
 
   USR_FATAL(call, "invalid use of 'new'");

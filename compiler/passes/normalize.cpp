@@ -815,20 +815,21 @@ static void call_constructor_for_class(CallExpr* call) {
     if (TypeSymbol* ts = resolveTypeAlias(se))
       ct = toAggregateType(ts->type);
 
-    CallExpr* primNew = NULL;
-    CallExpr* callInNew = NULL;
+    CallExpr* primNewToFix = NULL;
 
     // Select symExprs of class (or record) type.
 
     SET_LINENO(call);
 
-    if (parent && parent->isPrimitive(PRIM_NEW)) {
-      primNew = parent;
-      callInNew = call;
+    if (parent && parent->isPrimitive(PRIM_NEW) ) {
+      if (!call->partialTag) { // avoid normalizing PRIM_NEW twice
+        primNewToFix = parent;
+        INT_ASSERT(primNewToFix->get(1) == call);
+      }
     } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
              call->partialTag) {
-      primNew = parentParent;
-      callInNew = parent;
+      primNewToFix = parentParent;
+      INT_ASSERT(primNewToFix->get(1) == parent);
     } else if (ct) {
       if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
         // Call chpl__buildDistType for syntactic distributions.
@@ -838,23 +839,32 @@ static void call_constructor_for_class(CallExpr* call) {
         se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
     }
 
-    if (primNew) {
-      // Transform   new (call C args...)
-      //      into   new C args...
+    if (primNewToFix) {
+      // Transform   new (call C args...) args2...
+      //      into   new C args... args2...
 
-      // Transform   new (call (call (partial) C _mt this) args...))
-      //      into   new (call (partial) C _mt this) args...
+      // Transform   new (call (call (partial) C _mt this) args...)) args2...
+      //      into   new (call (partial) C _mt this) args... args2...
 
       // The resulting AST will be handled in function resolution
       // where the PRIM_NEW will be removed. It is transformed
       // to no longer be a call with a type baseExpr in order
       // to make better sense to functionn resolution.
-      CallExpr *newNew = new CallExpr(PRIM_NEW);
-      primNew->replace(newNew);
 
-      newNew->insertAtTail(callInNew->baseExpr);
-      // Move the actuals to the new PRIM_NEW
+      CallExpr* callInNew = toCallExpr(primNewToFix->get(1));
+      callInNew->remove();
+      CallExpr *newNew = new CallExpr(PRIM_NEW);
+      primNewToFix->replace(newNew);
+
+      newNew->insertAtHead(callInNew->baseExpr);
+      // Move the actuals from the call to the new PRIM_NEW
       for_actuals(actual, callInNew) {
+        newNew->insertAtTail(actual->remove());
+      }
+      // Move actual from the PRIM_NEW as well
+      // This is not the expected AST form, but keeping this
+      // code here adds some resiliency.
+      for_actuals(actual, primNewToFix) {
         newNew->insertAtTail(actual->remove());
       }
     }

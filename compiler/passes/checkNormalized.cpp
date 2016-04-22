@@ -98,6 +98,12 @@ static void checkPrimNew()
         // new this.someType()
         continue;
 
+      if (SymExpr* se = toSymExpr(typeExpr))
+        if (se->var->hasFlag(FLAG_MAYBE_TYPE))
+          // E.g. new gettype()
+          // where gettype is a parantheses-less method returning a type
+          continue;
+
       // Fail by default
       // (We may need additional filters above, to pass expected cases.)
       USR_FATAL_CONT(call, "'new' must be followed by a type expression");
