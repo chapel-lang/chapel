@@ -13,6 +13,9 @@ module M {
 
   proc main() {
     var instance = new bleep();
+
     instance.baz();
+
+    delete instance;
   }
 }
