@@ -5,7 +5,7 @@ iter myiter() {
 }
 
 class Parent {
-  iter foo(k:int) {    
+  iter foo(k:int) {
     yield 2;
   }
 }
@@ -17,7 +17,11 @@ class Child : Parent {
     }
   }
 }
+
 var c:Parent = new Child();
+
 for m in c.foo(10) {
   writeln(m);
 }
+
+delete c;
