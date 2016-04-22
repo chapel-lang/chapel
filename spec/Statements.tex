@@ -578,13 +578,13 @@ Parameter for loops are unrolled by the compiler so that the index
 variable is a parameter rather than a variable.  The syntax for a
 parameter for loop statement is given by:
 \begin{syntax}
-param-iteratable-expression:
-  range-literal
-  range-literal `by' integer-literal
-
 param-for-statement:
   `for' `param' identifier `in' param-iteratable-expression `do' statement
   `for' `param' identifier `in' param-iteratable-expression block-statement
+
+param-iteratable-expression:
+  range-literal
+  range-literal `by' integer-literal
 \end{syntax}
 Parameter for loops are restricted to iteration over range literals
 with an optional by expression where the bounds and stride must be

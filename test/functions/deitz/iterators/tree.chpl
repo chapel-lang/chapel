@@ -1,6 +1,11 @@
 class Tree {
   var data: int;
   var left, right: Tree;
+
+  proc ~Tree() {
+    if left  != nil then delete left;
+    if right != nil then delete right;
+  }
 }
 
 iter treeNodes(tree: Tree): Tree {
@@ -17,3 +22,5 @@ var tree = new Tree(1, new Tree(2), new Tree(3, new Tree(4), new Tree(5)));
 
 for t in treeNodes(tree) do
   writeln(t.data);
+
+delete tree;

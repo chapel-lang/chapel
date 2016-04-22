@@ -79,6 +79,8 @@ writeln(myFoo, ' ', myrefFoo);
 myrefFoo.doubleMe();
 writeln(myFoo, ' ', myrefFoo);
 
+delete myFoo;
+
 // Ref Functions ////////////////////////
 proc testRefReturn(ref x: int) ref {
   ref y = x;

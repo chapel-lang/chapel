@@ -13,6 +13,9 @@ b.y = 2.4;
 
 writeln("a is: ", a, ", b is: ", b);
 
+delete b;
+delete a;
+
 a = nil;
 b = nil;
 

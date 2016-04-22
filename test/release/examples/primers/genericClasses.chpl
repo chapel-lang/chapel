@@ -62,3 +62,13 @@ uf3 = uf;
 writeln("taf3 = ", taf3);
 writeln("pf3 = ", pf3);
 writeln("uf3 = ", uf3);
+
+delete uf2.a;
+delete uf2;
+delete uf;
+
+delete pf2;
+delete pf;
+
+delete taf2;
+delete taf;

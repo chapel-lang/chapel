@@ -15,7 +15,10 @@ class D {
 
 proc main() {
   var d: D = new D();
+
   d.doit;
   writeln(d);
+
+  delete d;
 }
 

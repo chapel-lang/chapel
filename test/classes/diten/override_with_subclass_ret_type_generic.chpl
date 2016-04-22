@@ -28,5 +28,9 @@ class B: A {
 proc main {
   var a: A = new B(1, "a string");
   var d: C = a.foo();
+
   d.bar();
+
+  delete d;
+  delete a;
 }

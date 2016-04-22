@@ -9,3 +9,5 @@ var p = new C(myIdxType);
 
 writeln("p = ", p);
 writeln("numBits(myIdxType) = ", numBits(myIdxType));
+
+delete p;

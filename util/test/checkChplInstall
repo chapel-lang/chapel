@@ -104,8 +104,17 @@ log_info "Temporary test job directory: ${TMP_TEST_DIR}"
 function cleanup_tmp_dir()
 {
     log_debug "Removing ${TMP_TEST_DIR}"
+    local i
+    # sometimes on an NFS file system, rm needs to wait for the TEST_JOB exe file to close
+    for i in 1 2 3 4 5
+    do
+        rm -rf ${TMP_TEST_DIR} && break
+        log_warning "failed rm -rf ${TMP_TEST_DIR}, wait and try again"
+        ( set -x; ls -la ${TMP_TEST_DIR} ) || : ok
+        sleep 1
+    done
     rm -rf ${TMP_TEST_DIR} || (
-        log_warning "failed rm -rf ${TMP_TEST_DIR}, ignore the error"
+        log_warning "Failed to remove ${TMP_TEST_DIR}. Please remove this directory manually."
         set -x; ls -la ${TMP_TEST_DIR}
     ) || : ok
     if [ "${CHPL_DIR_REMOVE}" == "1" ]; then

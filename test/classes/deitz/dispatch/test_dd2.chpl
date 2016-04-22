@@ -19,3 +19,6 @@ var d: D = new D(x=6, y=7);
 
 c.foo();
 d.foo();
+
+delete d;
+delete c;

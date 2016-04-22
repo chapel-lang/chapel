@@ -12,3 +12,5 @@ var f : foo = new foo();
 
 f.setx();
 f.primary();
+
+delete f;
