@@ -30,7 +30,7 @@ limit 3: [ "The" "quick" "brown" "foxjumps" ]
 limit 1: [ "The" "quickbrownfoxjumps" ]
 
 
-several spaces: "The quick brown           fox   jumps"
+consecutive spaces: "The quick brown           fox   jumps"
 no limit: [ "The" "quick" "brown" "fox" "jumps" ]
 limit 3: [ "The" "quick" "brown" "fox   jumps" ]
 limit 1: [ "The" "quick brown           fox   jumps" ]
@@ -44,7 +44,33 @@ limit 1: [ "The" "quick	brown
 foxjumps" ]
 
 
-only whitespace: "
+mixed consecutive whitespace: "The 	quick 
+brown fox	
+jumps	over
+the 	
+lazy  	dog"
+no limit: [ "The" "quick" "brown" "fox" "jumps" "over" "the" "lazy" "dog" ]
+limit 3: [ "The" "quick" "brown" "fox	
+jumps	over
+the 	
+lazy  	dog" ]
+limit 1: [ "The" "quick 
+brown fox	
+jumps	over
+the 	
+lazy  	dog" ]
+
+
+trailing whitespace: "The quick brown fox jumps 	
+"
+no limit: [ "The" "quick" "brown" "fox" "jumps" ]
+limit 3: [ "The" "quick" "brown" "fox jumps 	
+" ]
+limit 1: [ "The" "quick brown fox jumps 	
+" ]
+
+
+only whitespace: " 	
 "
 no limit: [ ]
 limit 3: [ ]
@@ -55,3 +81,5 @@ empty: ""
 no limit: [ ]
 limit 3: [ ]
 limit 1: [ ]
+
+

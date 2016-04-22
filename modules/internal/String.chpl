@@ -729,7 +729,8 @@ module String {
       if !this.isEmptyString() {
         const localThis: string = this.localize();
         var done : bool = false;
-        var chunk : string = "";
+        var yieldChunk : bool = false;
+        var chunk : string;
 
         var noSplits : bool = maxsplit == 0;
         var limitSplits : bool = maxsplit > 0;
@@ -739,11 +740,13 @@ module String {
         var inChunk : bool = false;
         var chunkStart : int;
 
-        for i in 0..localThis.len {
+        for i in 0..#localThis.len {
           if noSplits {
             done = true;
-            if !localThis.isSpace() then
+            if !localThis.isSpace() then {
               chunk = localThis;
+              yieldChunk = true;
+            }
           } else {
             var b = localThis.buff[i];
             var bSpace = byte_isWhitespace(b);
@@ -756,21 +759,24 @@ module String {
                 splitCount += 1;
                 if limitSplits && splitCount > maxsplit {
                   chunk = localThis[chunkStart..];
+                  yieldChunk = true;
                   done = true;
                 } else {
                   chunk = localThis[chunkStart..i];
+                  yieldChunk = true;
                   inChunk = false;
                 }
               } else if i == iEnd {
                 chunk = localThis[chunkStart..];
+                yieldChunk = true;
                 done = true;
               }
             }
           }
 
-          if !chunk.isEmptyString() {
+          if yieldChunk {
             yield chunk;
-            chunk = "";
+            yieldChunk = false;
           }
           if done then
             break;
