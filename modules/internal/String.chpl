@@ -746,7 +746,7 @@ module String {
               chunk = localThis;
           } else {
             var b = localThis.buff[i];
-            var bSpace = _byte_isSpace(b);
+            var bSpace = byte_isWhitespace(b);
             if !(inChunk || bSpace) {
               // zero-based buff to one-based range
               chunkStart = i + 1;
@@ -945,10 +945,10 @@ module String {
         var locale_result = false;
         for i in 0..#this.len {
           const b = buff[i];
-          if _byte_isLower(b) {
+          if byte_isLower(b) {
             locale_result = false;
             break;
-          } else if !locale_result && _byte_isUpper(b) {
+          } else if !locale_result && byte_isUpper(b) {
             locale_result = true;
           }
           result = locale_result;
@@ -972,10 +972,10 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if _byte_isUpper(b) {
+          if byte_isUpper(b) {
             result = false;
             break;
-          } else if !result && _byte_isLower(b) {
+          } else if !result && byte_isLower(b) {
             result = true;
           }
         }
@@ -998,7 +998,7 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if !(_byte_isSpace(b)) {
+          if !(byte_isWhitespace(b)) {
             result = false;
             break;
           }
@@ -1021,7 +1021,7 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if !_byte_isAlpha(b) {
+          if !byte_isAlpha(b) {
             result = false;
             break;
           }
@@ -1044,7 +1044,7 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if !_byte_isDigit(b) {
+          if !byte_isDigit(b) {
             result = false;
             break;
           }
@@ -1067,7 +1067,7 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if !(_byte_isAlpha(b) || _byte_isDigit(b)) {
+          if !(byte_isAlpha(b) || byte_isDigit(b)) {
             result = false;
             break;
           }
@@ -1118,7 +1118,7 @@ module String {
         var last = UN;
         for i in 0..#this.len {
           const b = buff[i];
-          if _byte_isLower(b) {
+          if byte_isLower(b) {
             if last == UPPER || last == LOWER {
               last = LOWER;
             } else { // last == UN
@@ -1126,7 +1126,7 @@ module String {
               break;
             }
           }
-          else if _byte_isUpper(b) {
+          else if byte_isUpper(b) {
             if last == UN {
               last = UPPER;
             } else { // last == UPPER || last == LOWER
@@ -1152,7 +1152,7 @@ module String {
 
       for i in 0..#result.len {
         const b = result.buff[i];
-        if _byte_isUpper(b) {
+        if byte_isUpper(b) {
           // We can just add or subtract 0x20 to change between upper and lower
           result.buff[i] = b + 0x20;
         }
@@ -1170,7 +1170,7 @@ module String {
 
       for i in 0..#result.len {
         const b = result.buff[i];
-        if _byte_isLower(b) {
+        if byte_isLower(b) {
           result.buff[i] = b - 0x20;
         }
       }
@@ -1190,14 +1190,14 @@ module String {
       var last = UN;
       for i in 0..#result.len {
         const b = result.buff[i];
-        if _byte_isAlpha(b) {
+        if byte_isAlpha(b) {
           if last == UN {
             last = LETTER;
-            if _byte_isLower(b) {
+            if byte_isLower(b) {
               result.buff[i] = b - 0x20;
             }
           } else { // last == LETTER
-            if _byte_isUpper(b) {
+            if byte_isUpper(b) {
               result.buff[i] = b + 0x20;
             }
           }
@@ -1220,7 +1220,7 @@ module String {
       if result.isEmptyString() then return result;
 
       var b = result.buff[0];
-      if _byte_isLower(b) {
+      if byte_isLower(b) {
         result.buff[0] = b - 0x20;
       }
       return result;
@@ -1700,23 +1700,23 @@ module String {
   private const uint_newline : uint(8) = ascii('\n');
   private const uint_return  : uint(8) = ascii ('\r');
 
-  private inline proc _byte_isUpper(b: uint(8)) : bool {
+  private inline proc byte_isUpper(b: uint(8)) : bool {
     return b >= uint_A && b <= uint_Z;
   }
 
-  private inline proc _byte_isLower(b: uint(8)) : bool {
+  private inline proc byte_isLower(b: uint(8)) : bool {
     return b >= uint_a && b <= uint_z;
   }
 
-  private inline proc _byte_isAlpha(b: uint(8)) : bool {
+  private inline proc byte_isAlpha(b: uint(8)) : bool {
     return b >= uint_A  && b <= uint_z;
   }
 
-  private inline proc _byte_isDigit(b: uint(8)) : bool {
+  private inline proc byte_isDigit(b: uint(8)) : bool {
     return b >= uint_0  && b <= uint_9;
   }
 
-  private inline proc _byte_isSpace(b: uint(8)) : bool {
+  private inline proc byte_isWhitespace(b: uint(8)) : bool {
     return b == uint_space
         || b == uint_tab
         || (b >= uint_newline && b <= uint_return);

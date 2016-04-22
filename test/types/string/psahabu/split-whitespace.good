@@ -36,8 +36,16 @@ limit 3: [ "The" "quick" "brown" "fox   jumps" ]
 limit 1: [ "The" "quick brown           fox   jumps" ]
 
 
-whitespace: " 	
-"
+mixed whitespace: "The quick	brown
+foxjumps"
+no limit: [ "The" "quick" "brown" "fox" "jumps" ]
+limit 3: [ "The" "quick" "brown" "foxjumps" ]
+limit 1: [ "The" "quick	brown
+foxjumps" ]
+
+
+only whitespace: "
+"
 no limit: [ ]
 limit 3: [ ]
 limit 1: [ ]
@@ -47,5 +55,3 @@ empty: ""
 no limit: [ ]
 limit 3: [ ]
 limit 1: [ ]
-
-

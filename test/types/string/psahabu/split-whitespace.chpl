@@ -7,7 +7,8 @@ var tabs = "The\tquick\tbrown\tfox\tjumps";
 var newLines = "The\nquick\nbrown\nfox\njumps";
 var returns = "The\rquick\rbrown\rfox\rjumps";
 var bigSpace = "The quick brown           fox   jumps";
-var whitespace = " \t\r\n";
+var mixedSpace = "The quick\tbrown\nfox\rjumps";
+var whitespace = " \t\n\r";
 var empty = "";
 
 proc test(s, testname) {
@@ -42,7 +43,8 @@ test(tabs, "tabs");
 test(newLines, "new lines");
 test(returns, "returns");
 test(bigSpace, "several spaces");
-test(whitespace, "whitespace");
+test(mixedSpace, "mixed whitespace");
+test(whitespace, "only whitespace");
 test(empty, "empty");
 
 if timing {
