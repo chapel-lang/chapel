@@ -77,6 +77,19 @@ module BitOps {
   }
 
   /*
+    Rotate `x` left via the left-rotate operator.
+
+    :arg x: integral of size `bits`
+    :arg n: rotation amount, must be less than `bits`
+
+    :returns: `x` rotated left by `n` bits
+    :rtype: `x.type`
+   */
+  inline proc <<<(x: integral, n: integral) {
+    return BitOps_internal.rotl(x, n);
+  }
+
+  /*
     Rotate `x` right.
 
     :arg x: integral of size `bits`
@@ -86,6 +99,19 @@ module BitOps {
     :rtype: `x.type`
    */
   inline proc rotr(x: integral, n: integral) {
+    return BitOps_internal.rotr(x, n);
+  }
+
+  /*
+    Rotate `x` right via the right-rotate operator.
+
+    :arg x: integral of size `bits`
+    :arg n: rotation amount, must be less than `bits`
+
+    :returns: `x` rotated right by `n` bits
+    :rtype: `x.type`
+   */
+  inline proc >>>(x: integral, n: integral) {
     return BitOps_internal.rotr(x, n);
   }
 
