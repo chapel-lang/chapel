@@ -17,3 +17,5 @@ writeln("y: (", y.i, ", ", y.f, ")");
 y.i = -2;
 
 writeln("x: (", x.i, ", ", x.f, ")");
+
+delete x;

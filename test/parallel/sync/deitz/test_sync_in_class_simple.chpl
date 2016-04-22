@@ -9,3 +9,5 @@ c.s = 2;
 var r = c.s;
 
 writeln(r);
+
+delete c;

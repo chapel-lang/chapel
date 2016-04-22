@@ -11,3 +11,5 @@ var f : foo(int) = new foo(t=int);
 f.x = 2;
 
 f.print();
+
+delete f;

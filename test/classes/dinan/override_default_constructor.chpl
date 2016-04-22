@@ -9,3 +9,5 @@ class Foo {
 var bar = new Foo(5);
 
 writeln(bar.x);
+
+delete bar;

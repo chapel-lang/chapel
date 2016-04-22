@@ -1,0 +1,6 @@
+A simple demonstration of accessing the GSL routines using
+the extern block functionality of Chapel.
+
+Requires GSL_DIR to be set, such that $GSL_DIR/include and
+$GSL_DIR/lib point to the location of the headers and libraries.
+

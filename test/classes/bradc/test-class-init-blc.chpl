@@ -11,3 +11,5 @@ class Params {
 var ListOfParams = new Params();
 
 writeln(ListOfParams);
+
+delete ListOfParams;

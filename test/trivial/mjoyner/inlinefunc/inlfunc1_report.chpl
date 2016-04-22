@@ -7,9 +7,12 @@ class Foo {
 
 proc main() {
   var f : Foo = new Foo();
+
   f.x = 1;
   f.y = 2;
-  f.z = 3; 
+  f.z = 3;
 
   writeln(f.y);
+
+  delete f;
 }

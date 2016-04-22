@@ -31,7 +31,7 @@ config const n00 = numLocales * n00perLocale;
 
 // small arrays for multipe reductions
 config const elemsPerCore = 1024; // or 65536
-config const numCores = if perf then here.numPUs() else 4;
+config const numCores = if perf then here.maxTaskPar else 4;
 
 proc myRound(arg) return (arg+0.5):int;
 
