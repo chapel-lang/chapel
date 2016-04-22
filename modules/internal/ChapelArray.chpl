@@ -1398,11 +1398,14 @@ module ChapelArray {
         return this;
       else if !tmpD.stridable && this.stridable {
         const inds = this.getIndices();
+        var unstridableInds: rank*range(stridable=false);
+
         for param dim in 1..inds.size {
           if inds(dim).stride != 1 then
             halt("non-stridable domain assigned non-unit stride in dimension ", dim);
+          unstridableInds(dim) = inds(dim).safeCast(range(stridable=false));
         }
-        tmpD.setIndices(inds);
+        tmpD.setIndices(unstridableInds);
         return tmpD;
       } else /* if tmpD.stridable && !this.stridable */ {
         tmpD = this;
@@ -1427,14 +1430,17 @@ module ChapelArray {
       compilerError("rank mismatch in cast");
     if tmpD.idxType != d.idxType then
       compilerError("idxType mismatch in cast");
+
     if tmpD.stridable == d.stridable then
       return d;
     else if !tmpD.stridable && d.stridable {
       var inds = d.getIndices();
+      var unstridableInds: d.rank*range(stridable=false);
+
       for param i in 1..tmpD.rank {
-        inds(i)._stride = 1;
+        unstridableInds(i) = inds(i):range(stridable=false);
       }
-      tmpD.setIndices(inds);
+      tmpD.setIndices(unstridableInds);
       return tmpD;
     } else /* if tmpD.stridable && !d.stridable */ {
       tmpD = d;

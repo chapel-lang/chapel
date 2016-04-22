@@ -514,7 +514,58 @@ module ChapelRange {
   proc ident(r1: range(?), r2: range(?)) param
     return false;
   
-  
+  //////////////////////////////////////////////////////////////////////////////////
+  // Range Casts
+  //
+/* Cast a range to another range type. If the old type is stridable and the
+   new type is not stridable, ensure that the old stride was 1.
+ */
+pragma "no doc"
+proc range.safeCast(type t) where isRangeType(t) {
+  var tmp: t;
+  if tmp.stridable {
+    tmp._low = this.low;
+    tmp._high = this.high;
+    tmp._stride = this.stride;
+    tmp._alignment = this.alignment;
+    tmp._aligned = this.aligned;
+    return tmp;
+  } else {
+    if this.stride == 1 {
+      tmp._low = this.low;
+      tmp._high = this.high;
+      tmp._alignment = this.alignment;
+      tmp._aligned = this.aligned;
+      return tmp;
+    } else {
+      halt("illegal safeCast from non-unit stride range to unstridable range");
+    }
+  }
+}
+
+/* Cast a range to a new range type.  If the old type was stridable and the
+   new type is not stridable, then assume the stride was 1 without checking.
+ */
+pragma "no doc"
+proc _cast(type t, r: range(?)) where isRangeType(t) {
+  var tmp: t;
+  if tmp.stridable {
+    tmp._low = r.low;
+    tmp._high = r.high;
+    tmp._stride = r.stride;
+    tmp._alignment = r.alignment;
+    tmp._aligned = r.aligned;
+    return tmp;
+  } else {
+    tmp._low = r.low;
+    tmp._high = r.high;
+    tmp._alignment = r.alignment;
+    tmp._aligned = r.aligned;
+    return tmp;
+  }
+}
+
+
   //////////////////////////////////////////////////////////////////////////////////
   // Bounds checking
   //
@@ -808,11 +859,10 @@ module ChapelRange {
   {
     if r1.boundedType != r2.boundedType then
       compilerError("type mismatch in assignment of ranges with different boundedType parameters");
-  
+
     if !s1 && s2 then
-      if r2._stride != 1 then
-        halt("non-stridable range assigned non-unit stride");
-  
+      compilerError("type mismatch in assignment of ranges with different stridable parameters"); 
+
     r1._low = r2._low;
     r1._high = r2._high;
     r1._stride = r2._stride;
