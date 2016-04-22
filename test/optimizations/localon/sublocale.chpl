@@ -3,10 +3,8 @@ class Foo {
 }
 
 proc main() {
-  var f = new Foo();
-
-  var LM = here:LocaleModel;
-
+  var f    = new Foo();
+  var LM   = here:LocaleModel;
   var wide = false;
 
   // If the variable `f` is represented as a wide pointer within the local-on,
@@ -18,4 +16,6 @@ proc main() {
   }
 
   writeln(wide);
+
+  delete f;
 }

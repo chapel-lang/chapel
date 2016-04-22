@@ -33,3 +33,5 @@ assert(getFieldRef(r, "x") == 100);
 assert(getFieldRef(r, "y") == 200);
 
 writeln(r);
+
+delete r;
