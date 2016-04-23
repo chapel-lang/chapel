@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -580,6 +580,20 @@ module Random {
           PCGRandomStreamPrivate_rngs[i].srandom(seed:uint(64), inc);
         }
         PCGRandomStreamPrivate_count = 1;
+      }
+
+      //
+      // NOAKES: 2016/04/21
+      //
+      // syncs are currently implemented as bare classes and so require a delete to be reclaimed
+      //
+      // We do not want to update application code but have agreed to update the randomStream
+      // classes to reduce leak noise until the implementation can be revised
+      //
+
+      pragma "no doc"
+      proc ~RandomStream() {
+        delete PCGRandomStreamPrivate_lock$;
       }
 
       pragma "no doc"
@@ -2050,6 +2064,19 @@ module Random {
         } else {
           compilerError("NPBRandomStream only supports eltType=real(64), imag(64), or complex(128)");
         }
+      }
+
+      //
+      // NOAKES: 2016/04/21
+      //
+      // syncs are currently implemented as bare classes and so require a delete to be reclaimed
+      //
+      // We do not want to update application code but have agreed to update the randomStream
+      // classes to reduce leak noise until the implementation can be revised
+      //
+      pragma "no doc"
+      proc ~NPBRandomStream() {
+        delete NPBRandomStreamPrivate_lock$;
       }
 
       pragma "no doc"
