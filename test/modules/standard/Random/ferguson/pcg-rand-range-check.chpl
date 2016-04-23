@@ -18,13 +18,16 @@ var expect32_1_2_31_30_1 = [ 0x4df1ccf9, 0x25838751, 0x58ed9e10,
 {
   if verbose then
     writeln("Checking 32-bit RNG seq 1 bound 2**31+1");
+
   var bound:uint(32) = 2147483649;
   var tmprng:pcg_setseq_64_xsh_rr_32_rng;
   var tmpinc = pcg_getvalid_inc(1);
+
   tmprng.srandom(seed:uint, tmpinc);
 
   for i in 1..6 {
     var got = tmprng.bounded_random(tmpinc, bound);
+
     if verbose then writef("%xu\n", got);
     assert( got == expect32_1_2_31_1[i] );
   }
@@ -34,13 +37,16 @@ var expect32_1_2_31_30_1 = [ 0x4df1ccf9, 0x25838751, 0x58ed9e10,
 {
   if verbose then
     writeln("Checking 32-bit RNG seq 1 bound 2**31+2**30+1");
+
   var bound:uint(32) = 3221225473;
   var tmprng:pcg_setseq_64_xsh_rr_32_rng;
   var tmpinc = pcg_getvalid_inc(1);
+
   tmprng.srandom(seed:uint, tmpinc);
 
   for i in 1..6 {
     var got = tmprng.bounded_random(tmpinc, bound);
+
     if verbose then writef("%xu\n", got);
     assert( got == expect32_1_2_31_30_1[i] );
   }
@@ -56,13 +62,17 @@ var histo:[0..255] int;
 
   for i in 1..1000000 {
     var got = rs.getNext();
+
     histo[got] += 1;
   }
 
   for (h,i) in zip(histo,0..) {
     assert(h > 0);
+
     if verbose then writef("% 3i: %i\n", i, h);
   }
+
+  delete rs;
 }
 
 
@@ -81,8 +91,11 @@ histo = 0;
   for (h,i) in zip(histo,0..) {
     if 5 <= i && i <= 20 then assert(h > 0);
     else assert(h == 0);
+
     if verbose then writef("% 3i: %i\n", i, h);
   }
+
+  delete rs;
 }
 
 histo = 0;
@@ -94,14 +107,18 @@ histo = 0;
 
   for i in 1..1000000 {
     var got = rs.getNext(5, 20):int;
+
     histo[got] += 1;
   }
 
   for (h,i) in zip(histo,0..) {
     if 5 <= i && i <= 20 then assert(h > 0);
     else assert(h == 0);
+
     if verbose then writef("% 3i: %i\n", i, h);
   }
+
+  delete rs;
 }
 
 
