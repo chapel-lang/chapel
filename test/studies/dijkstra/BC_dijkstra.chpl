@@ -13,7 +13,7 @@ module BC_dijkstra {
     for i in D1 {
       // onStack = next record on stack; -1 EOS; -2 not on stack
       // inHeap = location of this record in heap
-      Records[i] = new Record(distance = INFINITY, onStack = -2, inHeap = -1);
+      Records[i]         = new Record(distance = INFINITY, onStack = -2, inHeap = -1);
       Records[i].preEdge = new PreEdge(edge = -1, next = nil);
     }
 
@@ -24,11 +24,11 @@ module BC_dijkstra {
 
     // Put S onto heap
     Records[S].distance = 0.0;
-    Records[S].sigma = 1.0;
-    Records[S].inHeap = 0;
+    Records[S].sigma    = 1.0;
+    Records[S].inHeap   = 0;
 
     heap.Ids[0] = S;
-    heap.size = 1;
+    heap.size   = 1;
 
     while (heap.size != 0) {
 
@@ -123,6 +123,11 @@ module BC_dijkstra {
         Edges[edge].vb$ += factor;
       }
     }
+
+    delete heap;
+
+    for r in Records do delete r.preEdge;
+    for r in Records do delete r;
   }
 
 }

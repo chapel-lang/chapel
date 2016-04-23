@@ -30,5 +30,8 @@ class mything {
   writeln("Read ", b);
 
   assert(a.x == b.x);
+
+  delete b;
+  delete a;
 }
 

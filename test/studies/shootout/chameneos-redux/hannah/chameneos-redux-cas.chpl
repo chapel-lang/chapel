@@ -249,6 +249,11 @@ proc main() {
       runQuiet(population1, forest);
       runQuiet(population2, forest);
     }
+
+    for c in population2 do delete c;
+    for c in population1 do delete c;
+
+    delete forest;
   }
 }
 

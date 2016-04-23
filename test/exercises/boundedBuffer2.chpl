@@ -92,9 +92,13 @@ proc main {
   // nConsumers consumers.
   cobegin {
     producer(problemSize);
+
     coforall i in 1..nMiddleSteps do
       middleStep(i);
+
     coforall i in 1..nConsumers do
       consumer(i);
   }
+
+  for b in buffers do delete b;
 }
