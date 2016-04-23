@@ -54,6 +54,8 @@ for i in 0..#n {
   assert(got[i] == num);
 }
 
+delete rs;
+
 var rs2 = makeRandomStream(seed=seed, parSafe=false, eltType=uint(64), algorithm=RNG.PCG);
 
 var max2:uint = (2**32 + max):uint;
@@ -91,3 +93,4 @@ rs2.skipToNth(n + 3);
 num = rs2.getNext();
 assert(got2[n+2] == num);
 
+delete rs2;

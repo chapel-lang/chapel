@@ -26,6 +26,7 @@ var Grid:     [BigD] bool, // grid of life
 
 // initialize grid
 var rs = makeRandomStream(seed, eltType=real(64), algorithm=RNG.NPB);
+
 for i in D do
   Grid(i) = if rs.getNext() <= p:real / 100 then true else false;
 
@@ -44,14 +45,20 @@ for i in 1..k {
       Grid(i+1,j-1) + Grid(i+1,j) + Grid(i+1,j+1);
     NextGrid(i,j) = neighbors == 3 || neighbors == 2 && Grid(i,j);
   }
+
   if !(|| reduce (NextGrid != Grid(D))) {
     writeln("Stable Grid");
     break;
   }
+
   Grid(D) = NextGrid;
+
   writeln("Iteration ", i);
+
   printGrid();
 }
+
+delete rs;
 
 // print a generation
 proc printGrid() {
