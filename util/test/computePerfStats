@@ -204,13 +204,12 @@ def verify_data_file(keys_exp, keys_file):
                 columns = len(header)
                 keys_actual = header[1:]
                 continue
-            if header == None: # for all lines after the header
-                # ignore comments and empty lines
-                if parsed[0] == "" or "#" in parsed[0]:
-                    continue
-                else:
-                    print("[Error: data entry prior to header or missing header in {0}]".format(data_file))
-                    exit(2)
+            # ignore comments and empty lines
+            if parsed[0] == "" or "#" in parsed[0]:
+                continue
+            if header == None:
+                print("[Error: data entry prior to header or missing header in {0}]".format(data_file))
+                exit(2)
             if len(parsed) != columns:
                 print("[Error: {0} entry for {1} doesn't match header length.]"
                       .format(data_file, parsed[0]))
