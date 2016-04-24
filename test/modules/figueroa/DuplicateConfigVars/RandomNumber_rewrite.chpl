@@ -20,6 +20,10 @@ config const seed: uint(32) = 13,
 proc main {
   var r = new Random (seed);
   var rArray: [1..arraySize] real;
+
   rArray = r.RandomNumber(arraySize);
+
   writeln (rArray);
+
+  delete r;
 }
