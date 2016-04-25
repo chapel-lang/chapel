@@ -79,22 +79,30 @@ static void checkPrimNew()
     if (!call->isPrimitive(PRIM_NEW))
       continue;
 
-    // The operand of a new should be a contructor call.
-    if (CallExpr* ctorCall = toCallExpr(call->get(1)))
+    // The 1st operand of a new should be a type
+    // the remaining operands are arguments
+    if (Expr* typeExpr = call->get(1))
     {
-      if (isUnresolvedSymExpr(ctorCall->baseExpr))
+      if (isUnresolvedSymExpr(typeExpr))
         // We can't know anything more about this symbol until resolution.
         // So let it pass
         continue;
 
-      if (isTypeExpr(ctorCall))
+      if (isTypeExpr(typeExpr))
         // If we know the expression represents a type, that's also good.
         continue;
 
-      if (ctorCall->baseExpr && isTypeExpr(ctorCall->baseExpr))
-        // This is of the form <type-expr>(<args>)
-        // That is, it looks like a constructor.
+      if (isCallExpr(typeExpr))
+        // Sometimes the type expression is a (partial) callExpr
+        // This happens with nested classes, e.g.
+        // new this.someType()
         continue;
+
+      if (SymExpr* se = toSymExpr(typeExpr))
+        if (se->var->hasFlag(FLAG_MAYBE_TYPE))
+          // E.g. new gettype()
+          // where gettype is a parantheses-less method returning a type
+          continue;
 
       // Fail by default
       // (We may need additional filters above, to pass expected cases.)

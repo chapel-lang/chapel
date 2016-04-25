@@ -25,9 +25,9 @@ const tree = new Node(5,
                    new Node(9, nil, nil)));
 
 
-begin walkTree(tree);
-
-delete tree;
+begin {
+  walkTree(tree);
+}
 
 proc walkTree(node) {
   node.processNode();

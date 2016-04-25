@@ -17,3 +17,5 @@ writeln("sorted? ", isSorted reduce A);
 QuickSort(A);
 writeln("A: ", A);
 writeln("sorted? ", isSorted reduce A);
+
+delete randStream;
