@@ -1,2 +1,0 @@
-bug4.chpl:27: In function 'dequeue':
-bug4.chpl:34: error: unresolved access of 'list(int(64))' by '(int(64))'
