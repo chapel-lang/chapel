@@ -582,6 +582,8 @@ list.next = new Node(2);
 \begin{chapelpost}
 writeln(list.data);
 writeln(list.next.data);
+delete list.next;
+delete list;
 \end{chapelpost}
 \begin{chapeloutput}
 1
