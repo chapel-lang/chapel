@@ -787,22 +787,18 @@ static TypeSymbol* resolveTypeAlias(SymExpr* se)
 }
 
 
-// By default, a call whose base expression is a symbol referring to an
-// aggregate type is converted to a call to the default type constructor for
-// that class.  There are a few exceptions:
-// 1. If the type is "dmap" (syntactic distribution), it is replaced by a call
-//    to chpl_buildDistType().
-// 2. In the context of a 'new' (complete or partial), it is converted to a
-//    constructor call.
-//
-// This can't possibly work before resolution, because we don't know
-// the type of a type variable in a generic.
-// I'm going to look into moving this code to during/after resolution.
-// Other alternatives:
-//  -> make _construct_X always have the same name and take
-//     in a type argument for what should be constructed
-//  -> create a new primitive "CALL_CONSTRUCT" which takes
-//     in the type argument
+/*
+   Normalize constructor/type constructor calls.
+    * a call whose base expression is a symbol referring to an aggregate
+      type is converted to a call to the default type constructor for
+      that class, unless it's in a 'new' expression
+    * calls to such aggregate types in a 'new' expression are transformed
+      to put the call arguments directly into the PRIM_NEW in order to
+      improve function resolution's ability to handle them.
+    * if the type is "dmap" (syntactic distribution), it is replaced by a
+      call to chpl_buildDistType().
+
+ */
 static void call_constructor_for_class(CallExpr* call) {
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
 
@@ -849,7 +845,7 @@ static void call_constructor_for_class(CallExpr* call) {
       // The resulting AST will be handled in function resolution
       // where the PRIM_NEW will be removed. It is transformed
       // to no longer be a call with a type baseExpr in order
-      // to make better sense to functionn resolution.
+      // to make better sense to function resolution.
 
       CallExpr* callInNew = toCallExpr(primNewToFix->get(1));
       callInNew->remove();
