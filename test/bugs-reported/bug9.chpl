@@ -13,4 +13,4 @@ for i in mylist.these(){
 writeln("");
 
 writeln("Accessing list by index using the .these() iterator.");
-//writeln(mylist.these(2));
+writeln(mylist.these(2));
