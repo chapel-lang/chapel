@@ -1674,6 +1674,7 @@ hwloc_strdup_mntpath(const char *escapedpath, size_t length)
 static void
 hwloc_find_linux_cpuset_mntpnt(char **cgroup_mntpnt, char **cpuset_mntpnt, int fsroot_fd)
 {
+// ideally, length should not be hard-coded. this is considered a hack.
 #define PROC_MOUNT_LINE_LEN 2048
   char line[PROC_MOUNT_LINE_LEN];
   FILE *fd;
