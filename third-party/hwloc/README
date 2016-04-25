@@ -10,3 +10,9 @@ uses a snapshot of obtained from Open MPI at:
 Any Chapel issues that seem to be related to hwloc should be directed
 to the Chapel team at chapel-bugs@lists.sourceforge.net.
 
+
+The modifications that we have made to the official hwloc 1.10.1
+release are as follows:
+
+* Increased PROC_MOUNT_LINE_LEN from 512 to 2048 to support CLE6 OS, in which
+  /proc/mount/* path name typically exceeds 512 characters.
