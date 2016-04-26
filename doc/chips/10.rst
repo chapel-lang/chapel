@@ -81,14 +81,15 @@ well or the code would break:
      }
    }
 
-In the example above if `Foo` were renamed to `Bar`, so too would the method
-`Foo()` need to be renamed or it would no longer be a constructor on that type.
-Additionally, if the type designer wished to give their type a particularly long
-name, that name would also have to be repeated at the constructor definition.
-With these concerns in mind, we propose to change the name of an initializer
-method to `init` for all types – this name is succinct and does not vary,
-meaning that modifications to the type name will be less painful to perform.
-Similarly and for consistency, the destructor name will be updated to `deinit`.
+In the example above if ``Foo`` were renamed to ``Bar``, so too would the method
+``Foo()`` need to be renamed or it would no longer be a constructor on that
+type.  Additionally, if the type designer wished to give their type a
+particularly long name, that name would also have to be repeated at the
+constructor definition.  With these concerns in mind, we propose to change the
+name of an initializer method to ``init`` for all types – this name is succinct
+and does not vary, meaning that modifications to the type name will be less
+painful to perform.  Similarly and for consistency, the destructor name will be
+updated to ``deinit``.
 
 Defining the Initializer Body
 +++++++++++++++++++++++++++++
@@ -112,11 +113,11 @@ be limited.  However, the type designer may desire to perform some more
 complicated actions on the instance before returning it to the user – these
 actions will be possible during Phase 2 of the initializer.
 
-During Phase 1, methods on the `this` instance cannot be called.  Fields must be
-initialized in declaration order, but the type designer can omit fields in Phase
-1 to use the field declaration or (if not present) the type default for that
-field.  Omitted fields will be treated as if the intended initialization was
-inserted in the appropriate statement order.  For instance:
+During Phase 1, methods on the ``this`` instance cannot be called.  Fields must
+be initialized in declaration order, but the type designer can omit fields in
+Phase 1 to use the field declaration or (if not present) the type default for
+that field.  Omitted fields will be treated as if the intended initialization
+was inserted in the appropriate statement order.  For instance:
 
 .. code-block:: chapel
 
@@ -158,17 +159,17 @@ earlier fields, but not of later fields:
      }
    }
 
-`const` and `ref` fields may be initialized during this phase.  No parent fields
-may be accessed during this phase, as they have not been given an initial value
-yet – the parent's Phase 1 will be entered once the child's phase 1 is complete
-(more information on this process will be provided later in this document
-`Referencing Other Initializers`_).  Local helper variables may be created and
-used, and functions may be called so long as `this` is not provided as an
-argument, but loops and parallel statements are not allowed to contain the
-initialization of fields, as fields cannot be initialized multiple times or in
-an arbitrary order.  Should allowing loops and parallel statements which do not
-violate this condition prove infeasible to implement, they will not be allowed
-at all during this phase.
+``const`` and ``ref`` fields may be initialized during this phase.  No parent
+fields may be accessed during this phase, as they have not been given an initial
+value yet – the parent's Phase 1 will be entered once the child's phase 1 is
+complete (more information on this process will be provided later in this
+document `Referencing Other Initializers`_).  Local helper variables may be
+created and used, and functions may be called so long as ``this`` is not
+provided as an argument, but loops and parallel statements are not allowed to
+contain the initialization of fields, as fields cannot be initialized multiple
+times or in an arbitrary order.  Should allowing loops and parallel statements
+which do not violate this condition prove infeasible to implement, they will not
+be allowed at all during this phase.
 
 Phase 2 of Initialization
 *************************
@@ -176,14 +177,14 @@ Phase 2 of Initialization
 At the start of Phase 2, every field is expected to contain a valid initial
 value, though the contents of certain fields may be redefined during this phase.
 This applies to fields inherited from a parent.  Thus, modifications to fields
-during Phase 2 are considered assignment, including updates to `ref` fields.
-Methods may be called on the `this` instance, and the object can be treated as a
-whole.  Parent fields may be accessed during this phase; operations on these
-fields in the parent's Phase 2 will have already occurred.  However, `const`
+during Phase 2 are considered assignment, including updates to ``ref`` fields.
+Methods may be called on the ``this`` instance, and the object can be treated as
+a whole.  Parent fields may be accessed during this phase; operations on these
+fields in the parent's Phase 2 will have already occurred.  However, ``const``
 fields may not be redefined.  Note that we may choose to loosen the latter
-decision in the future and allow modification of `const` fields during Phase 2,
-but it is a less breaking change to go from strict to tolerant than the opposite
-direction.
+decision in the future and allow modification of ``const`` fields during Phase
+2, but it is a less breaking change to go from strict to tolerant than the
+opposite direction.
 
 Syntax
 ******
@@ -222,7 +223,7 @@ The first syntax has the benefit of maintaining the initializer as a single
 body.  It appears more visually simple to the type designer's eyes, though the
 implementation may need to be more complicated to accommodate this benefit
 (which is not necessarily an argument against it).  Local variables can be
-shared from Phase 1 to Phase 2, and `if` statements may be used to wrap across
+shared from Phase 1 to Phase 2, and ``if`` statements may be used to wrap across
 both phases, though loops and parallel statements are not allowed to encapsulate
 both phases.  However, since the call to the parent constructor serves as the
 division between the two phases, it would be easy for this statement to get lost
@@ -238,7 +239,7 @@ for the first time.  This comes at the cost of sharing local variables between
 the two phases.  That functionality can be recovered by calling a sibling
 initializer with the necessary variables as arguments; however, this workaround
 may be impractical or seen as a high cost for the type designer to pay.  The
-`finalize` block may be easily dropped, though this does more to support a
+``finalize`` block may be easily dropped, though this does more to support a
 default of Phase 1 rather than Phase 2.
 
 From an implementation standpoint, these syntaxes do not differ wildly – indeed,
@@ -246,7 +247,7 @@ it is likely that after a certain point in the compiler, they would be handled
 identically, perhaps by inserting a pair of block statements similar to that
 visible in syntax 2, so that the rules for Phase 1 may be applied to the first
 block while the rules for Phase 2 may be applied to the second, without a
-constant check to the location of the `.init()` call which is the linchpin for
+constant check to the location of the ``.init()`` call which is the linchpin for
 syntax 1.
 
 Referencing Other Initializers
@@ -258,12 +259,12 @@ the end of Phase 1 for the current initializer.  The syntax of choice explicitly
 enforces this rule by separating the two phases based on these calls, while the
 alternate syntax would require a check to ensure correct usage.
 
-The syntax to call a parent initializer is `super.init(<args>);`.  All the
+The syntax to call a parent initializer is ``super.init(<args>);``.  All the
 child's fields must be initialized at this point, so when the parent finishes
 its Phase 1 and begins its Phase 2, the object may be treated as a whole.  Once
 the parent has finished its Phase 2, control flow returns to the child's
 initializer and enters the child's Phase 2.  If the type has no parent, an
-argument-less `super.init();` call will be valid (signifying that control is
+argument-less ``super.init();`` call will be valid (signifying that control is
 entering Phase 2) but is otherwise a no-op.  (Note that this extra call is
 unnecessary in the second syntax proposal.)
 
@@ -305,21 +306,22 @@ initialization:
 	Child Phase 2
 
 
-The syntax to call a sibling initializer is `this.init(<args>);`.  Similarly to
-in the parent-referential case, the return from that call will indicate that the
-calling initializer has begun Phase 2. In contrast to the parent case, however,
-a call to a sibling initializer may not be made if the current initializer has
-defined any fields.  The rationale for this decision is that a valid sibling
-initializer will initialize all of its fields, and so any initialization prior
-to that call will lead to the occurrence of an unexpected double initialization.
+The syntax to call a sibling initializer is ``this.init(<args>);``.  Similarly
+to in the parent-referential case, the return from that call will indicate that
+the calling initializer has begun Phase 2. In contrast to the parent case,
+however, a call to a sibling initializer may not be made if the current
+initializer has defined any fields.  The rationale for this decision is that a
+valid sibling initializer will initialize all of its fields, and so any
+initialization prior to that call will lead to the occurrence of an unexpected
+double initialization.
 
-An initializer may only contain one `this.init(<args>)` or `super.init(<args>)`
-call in a single path through the body – it may not contain both, or multiple of
-either one.
+An initializer may only contain one ``this.init(<args>)`` or
+``super.init(<args>)`` call in a single path through the body – it may not
+contain both, or multiple of either one.
 
-If no `this.init(<args>)` or `super.init(<args>)` call is present, the compiler
-will insert an argument-less `super.init()` call at the beginning of the
-initializer body:
+If no ``this.init(<args>)`` or ``super.init(<args>)`` call is present, the
+compiler will insert an argument-less ``super.init()`` call at the beginning of
+the initializer body:
 
 .. code-block:: chapel
 
@@ -359,67 +361,68 @@ example, the user could know that the initial value for the instance will not be
 used before it is overwritten by some other value.  This instance could then
 gain an initial value at a later time, instead of paying the cost of default
 initialization and then updating through assignment.  This would be done through
-an application of the keyword `noinit`.  To provide a specific case, if the user
-wished to create an array and then give it a complex set of contents (perhaps by
-passing it to a function which would provide the proper value for each element,
-e.g.), the user could indicate this with the syntax `var arrayName: [domain]
-real = noinit;`.  Note that it is considered an error to access the contents of
-an instance that has been created with `noinit` until an initial value for its
-entire contents has been provided.  This is the responsibility of the user.
-Instances that cannot be changed after initialization, such as `const`s or
-`param`s, cannot have `noinit` applied to them.
+an application of the keyword ``noinit``.  To provide a specific case, if the
+user wished to create an array and then give it a complex set of contents
+(perhaps by passing it to a function which would provide the proper value for
+each element, e.g.), the user could indicate this with the syntax ``var
+arrayName: [domain] real = noinit;``.  Note that it is considered an error to
+access the contents of an instance that has been created with ``noinit`` until
+an initial value for its entire contents has been provided.  This is the
+responsibility of the user.  Instances that cannot be changed after
+initialization, such as ``const``s or ``param``s, cannot have ``noinit`` applied
+to them.
 
 In the above example, it should be noted that the user would need to fully
-specify the type of the instance to which they wish to apply `noinit`, or the
+specify the type of the instance to which they wish to apply ``noinit``, or the
 compiler will not be able to perform the space allocation necessary for
-construction.  Relatedly, an array that has been created via the `noinit`
+construction.  Relatedly, an array that has been created via the ``noinit``
 keyword requires certain type knowledge to be present in order to accurately
 create the space – the domain of the array and the type it will store are
-essential.  There are other Chapel types with special requirements for `noinit`
-to be valid, such as types which have removed the setter method for a particular
-field (and as such cannot update this field after initialization), or types
-whose assignment operators assume that a particular field will always contain
-initialized memory.  Because some of these types are complex and large enough
-that the application of `noinit` would be a useful optimization, it is
+essential.  There are other Chapel types with special requirements for
+``noinit`` to be valid, such as types which have removed the setter method for a
+particular field (and as such cannot update this field after initialization), or
+types whose assignment operators assume that a particular field will always
+contain initialized memory.  Because some of these types are complex and large
+enough that the application of ``noinit`` would be a useful optimization, it is
 desireable to provide a mechanism for the type designer to specify how their
-type should respond to the `noinit` keyword (if at all) rather than have the
+type should respond to the ``noinit`` keyword (if at all) rather than have the
 language make the decision and declare that such types cannot support the
 keyword.
 
 To that end, for arbitrary classes or records the type designer will be able to
-specify what `noinit` means for their type via the initializers they define, as
-an argument to the initializer that can be referenced throughout the body.  The
-compiler-generated all-fields initializer will support `noinit` by applying it
-to all fields when the `noinit` argument is set to `true`.  Should the type
-designer provide an initializer, this will prevent the all-fields `noinit`
-application case, as part of preventing the use of the all-fields initializer.
-This means that in order for a type with one or more defined initializer to
-support `noinit`, the argument must be explicitly present in one of the
-initializers.
+specify what ``noinit`` means for their type via the initializers they define,
+as an argument to the initializer that can be referenced throughout the body.
+The compiler-generated all-fields initializer will support ``noinit`` by
+applying it to all fields when the ``noinit`` argument is set to ``true``.
+Should the type designer provide an initializer, this will prevent the
+all-fields ``noinit`` application case, as part of preventing the use of the
+all-fields initializer.  This means that in order for a type with one or more
+defined initializer to support ``noinit``, the argument must be explicitly
+present in one of the initializers.
 
-In the type designer's initializer, `noinit` can only be applied to a field
+In the type designer's initializer, ``noinit`` can only be applied to a field
 during Phase 1.  This is because at the time of Phase 2, the field will have
-been given an initial value and `noinit` cannot be applied as assignment.  The
-recommended strategy is to only apply `noinit` within the initializer body when
-the `noinit` argument is set to `true`, but the type designer may choose to
-ignore this rule – for instance, so that an array field may be filled in
-parallel during Phase 2.  However, in doing so they must be careful, as with any
-use of `noinit`, to be certain that uninitialized memory is not read.
+been given an initial value and ``noinit`` cannot be applied as assignment.  The
+recommended strategy is to only apply ``noinit`` within the initializer body
+when the ``noinit`` argument is set to ``true``, but the type designer may
+choose to ignore this rule – for instance, so that an array field may be filled
+in parallel during Phase 2.  However, in doing so they must be careful, as with
+any use of ``noinit``, to be certain that uninitialized memory is not read.
 
-Note that the name of the `noinit` argument to the initializer is not set in
-stone – should it prove difficult to implement `noinit` as both a keyword and an
-argument that can be referenced, adjustments will need to be made.  This could
-be done by only treating `noinit` as a keyword (but not defining it as such in
-the parser, as it currently is) when used to initialize a field or instance, or
-by giving the argument a different name (but still keeping their relationship
-strongly linked).
+Note that the name of the ``noinit`` argument to the initializer is not set in
+stone – should it prove difficult to implement ``noinit`` as both a keyword and
+an argument that can be referenced, adjustments will need to be made.  This
+could be done by only treating ``noinit`` as a keyword (but not defining it as
+such in the parser, as it currently is) when used to initialize a field or
+instance, or by giving the argument a different name (but still keeping their
+relationship strongly linked).
 
 Copy Initializers
 +++++++++++++++++
 
 The type designer may find themselves also looking to control the behavior of
 their type when copies of it must be made, such as when the type is passed to a
-function or task by the `in` intent, or copied across locale boundaries.  An
+function or task by the ``in`` intent, or copied across locale boundaries.  An
 example of when such control would be desired is if the type designer wanted to
 implement reference counting for their type.  For these situations, the type
 designer may define a copy initializer, to handle the final state of the type's
@@ -445,11 +448,11 @@ initializers is unnecessary in the copy initializer body.  The body will behave
 in a similar manner to Phase 2 of the normal initializers, with the ability to
 modify a field in any order and to call methods on the instance as a whole.
 However, since the type designer would otherwise be unable to directly control
-the value of a `const` field, `const` fields can be modified in the body of a
-copy initializer.  Due to concerns about providing a field value to a method
+the value of a ``const`` field, ``const`` fields can be modified in the body of
+a copy initializer.  Due to concerns about providing a field value to a method
 which could change unexpectedly in the middle of the method's operations,
-ideally `const` fields would only be modifiable before the first method call on
-the instance during the copy initializer body – this may prove infeasible,
+ideally ``const`` fields would only be modifiable before the first method call
+on the instance during the copy initializer body – this may prove infeasible,
 though.  If doable, this permissive behavior could be extended to Phase 2 of the
 normal initializer body.
 
@@ -476,18 +479,18 @@ one for the type based on its field declarations.  The operations possible in an
 initializer body will be divided into two phases – the first will be more
 strict, requiring ordering of field initialization and rejecting attempts to
 utilize the object as a whole; the second will be more permissive in general but
-will not allow the redefinition of `const` fields.  The syntax for the
+will not allow the redefinition of ``const`` fields.  The syntax for the
 initializer will consist of a single body, with a call to another initializer
 serving as the divide between phases – if no call to another initializer is
 provided, the body is assumed to be operating in the second phase.  Calls to
 other initializers must occur at the end of the first phase only, and a parent
 initializer will fully complete before returning control to the child which
-called it.  For optimization purposes, some types will support `noinit` in order
-to skip initialization when their starting value would only be overwritten.  The
-type designer may prevent this on their type by defining an initializer, or may
-exert explicit control by utilizing an additional argument to the initializer.
-The type designer may also utilize `noinit` on individual fields during the
-first phase of the initializer body.  If there are operations which must occur
-on a copy made by the compiler before it is operated on by other code, such as
-via an `in` intent, the type designer may supply a copy initializer which will
-be executed on the freshly made copy.
+called it.  For optimization purposes, some types will support ``noinit`` in
+order to skip initialization when their starting value would only be
+overwritten.  The type designer may prevent this on their type by defining an
+initializer, or may exert explicit control by utilizing an additional argument
+to the initializer.  The type designer may also utilize ``noinit`` on individual
+fields during the first phase of the initializer body.  If there are operations
+which must occur on a copy made by the compiler before it is operated on by
+other code, such as via an ``in`` intent, the type designer may supply a copy
+initializer which will be executed on the freshly made copy.
