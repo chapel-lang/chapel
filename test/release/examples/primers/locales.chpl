@@ -184,12 +184,15 @@ writeln();
 
 {
   var x: int = 2;
+
   on Locales[1 % numLocales] {
     var y: int = 3;
+
     on x do
-      writeln("Using a data-driven on-clause, I'm now executing on locale ", 
+      writeln("Using a data-driven on-clause, I'm now executing on locale ",
               here.id);
   }
+
   writeln();
 }
 
@@ -225,12 +228,16 @@ class Node {
 // the next locale.  That way, our execution of 'new' will create
 // the new object on that "next" locale.
 //
-var head = new Node(0);
+var head    = new Node(0);
+
+
+
 var current = head;
+
 for i in 1..numLocales-1 do
   on Locales[i] {
     current.next = new Node(i);
-    current = current.next;
+    current      = current.next;
   }
 
 //
@@ -240,10 +247,12 @@ for i in 1..numLocales-1 do
 // memory as necessary.
 //
 current = head;
+
 while current {
   writeln("node with data = ", current.data, " on locale ", current.locale.id);
   current = current.next;
 }
+
 writeln();
 
 //
@@ -252,6 +261,7 @@ writeln();
 // variables, resolve to the locale of the object, not the reference.
 //
 current = head;
+
 while current {
   on current {
     writeln("node with data = ", current.data, " on locale ", here.id);
@@ -259,7 +269,23 @@ while current {
   }
 }
 
+
+
+
+current = head;
+
+while current {
+  on current {
+    var ptr = current;
+
+    current = current.next;
+
+    delete ptr;
+  }
+}
+
 //
 // For more information about Locales, refer to the Locales chapter of
 // the language spec.
 //
+

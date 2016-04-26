@@ -98,7 +98,6 @@ void expandExternArrayCalls() {
       SET_LINENO(fn);
       fn->defPoint->insertAfter(new DefExpr(fcopy));
       fcopy->removeFlag(FLAG_EXTERN);
-      fcopy->removeFlag(FLAG_FUNCTION_PROTOTYPE);
       fcopy->addFlag(FLAG_INLINE);
       fcopy->cname = astr("chpl__extern_array_wrapper_", fcopy->cname);
       fn->name = astr("chpl__extern_array_", fn->name);

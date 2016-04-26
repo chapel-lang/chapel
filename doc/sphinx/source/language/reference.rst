@@ -3,4 +3,4 @@
 Chapel Quick Reference
 ======================
 
-:download:`View Quick Reference [pdf] <reference.pdf>`
+:download:`View Quick Reference [pdf] <quickReference.pdf>`

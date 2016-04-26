@@ -1,0 +1,2 @@
+affectsDeeper.chpl:19: In function 'main':
+affectsDeeper.chpl:20: error: 'bar' undeclared (first use this function)

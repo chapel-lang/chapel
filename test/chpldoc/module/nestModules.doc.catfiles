@@ -1,1 +1,3 @@
 docs/outer.txt
+docs/outer/inner.txt
+docs/outer/inner/innermost.txt

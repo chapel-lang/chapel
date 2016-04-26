@@ -1,4 +1,4 @@
-
+use Reflection;
 
 proc foo(x:int) {
   writeln("foo(int)");

@@ -161,7 +161,6 @@ module CString {
     __primitive("=", a, b);
   }
 
-
   // A c_string_copy can always be used as a c_string.
   inline proc _cast(type t, x: c_string_copy) where t == c_string {
     return __primitive("cast", t, x);
@@ -187,13 +186,20 @@ module CString {
   }
 
   //
+  // casts from c_string to c_void_ptr
+  //
+  inline proc _cast(type t, x: c_string) where t == c_void_ptr {
+    return __primitive("cast", t, x);
+  }
+
+  //
   // casts from c_string to bool types
   //
   inline proc _cast(type t, x:c_string) where isBoolType(t)
   {
     pragma "insert line file info"
     extern proc c_string_to_chpl_bool(x:c_string) : bool;
-    return c_string_to_chpl_bool(x) : t;
+    return c_string_to_chpl_bool((x:string).strip().c_str()) : t;
   }
 
   //
@@ -217,21 +223,21 @@ module CString {
   extern proc c_string_to_uint64_t(x:c_string) : uint(64);
 
   inline proc _cast(type t, x:c_string) where t == int(8)
-    return c_string_to_int8_t(x);
+    return c_string_to_int8_t((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == int(16)
-    return c_string_to_int16_t(x);
+    return c_string_to_int16_t((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == int(32)
-    return c_string_to_int32_t(x);
+    return c_string_to_int32_t((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == int(64)
-    return c_string_to_int64_t(x);
+    return c_string_to_int64_t((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == uint(8)
-    return c_string_to_uint8_t(x);
+    return c_string_to_uint8_t((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == uint(16)
-    return c_string_to_uint16_t(x);
+    return c_string_to_uint16_t((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == uint(32)
-    return c_string_to_uint32_t(x);
+    return c_string_to_uint32_t((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == uint(64)
-    return c_string_to_uint64_t(x);
+    return c_string_to_uint64_t((x:string).strip().c_str());
 
   //
   // casts from c_string to real/imag types
@@ -246,13 +252,13 @@ module CString {
   extern proc c_string_to_imag64(x:c_string) : imag(64);
 
   inline proc _cast(type t, x:c_string) where t == real(32)
-    return c_string_to_real32(x);
+    return c_string_to_real32((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == real(64)
-    return c_string_to_real64(x);
+    return c_string_to_real64((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == imag(32)
-    return c_string_to_imag32(x);
+    return c_string_to_imag32((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == imag(64)
-    return c_string_to_imag64(x);
+    return c_string_to_imag64((x:string).strip().c_str());
 
   //
   // casts from c_string to complex types
@@ -263,9 +269,9 @@ module CString {
   extern proc c_string_to_complex128(x:c_string) : complex(128);
 
   inline proc _cast(type t, x:c_string) where t == complex(64)
-    return c_string_to_complex64(x);
+    return c_string_to_complex64((x:string).strip().c_str());
   inline proc _cast(type t, x:c_string) where t == complex(128)
-    return c_string_to_complex128(x);
+    return c_string_to_complex128((x:string).strip().c_str());
 
   //
   // casts from complex
@@ -373,16 +379,6 @@ module CString {
   }
   */
 
-  proc c_string.writeThis(x) {
-    x.write(this);
-  }
-  // The c_string_copy version is required, since apparently coercions are not
-  // applied to "this".
-  proc c_string_copy.writeThis(x) {
-    x.write(this:c_string);
-  }
-
-
   //
   // primitive c_string functions and methods
   //
@@ -418,6 +414,22 @@ module CString {
     extern proc chpl_rt_free_c_string(ref cs: c_string_copy);
     if (cs != _nullString) then chpl_rt_free_c_string(cs);
     // cs = _nullString;
+  }
+
+  proc c_string.writeThis(x) {
+    compilerError("Cannot write a c_string, cast to a string first.");
+  }
+  // The c_string_copy version is required, since apparently coercions are not
+  // applied to "this".
+  proc c_string_copy.writeThis(x) {
+    compilerError("Cannot write a c_string_copy, cast to a string first.");
+  }
+
+  proc c_string.readThis(x) {
+    compilerError("Cannot read a c_string, use string.");
+  }
+  proc c_string_copy.readThis(x) {
+    compilerError("Cannot read a c_string_copy, use string.");
   }
 
 }

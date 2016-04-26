@@ -301,7 +301,7 @@ def DiffFiles(f1, f2):
 # diff output vs. .bad file, filtering line numbers out of error messages that arise
 # in module files.
 def DiffBadFiles(f1, f2):
-    sys.stdout.write('[Executing diff %s %s]\n'%(f1, f2))
+    sys.stdout.write('[Executing diff-ignoring-module-line-numbers %s %s]\n'%(f1, f2))
     p = subprocess.Popen([utildir+'/test/diff-ignoring-module-line-numbers', f1, f2],
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
@@ -719,6 +719,10 @@ else:
     # start_test sets this, so we'll assume it's right :)
     globalNumlocales=int(os.getenv('NUMLOCALES', '0'))
 # sys.stdout.write('globalNumlocales=%s\n'%(globalNumlocales))
+
+maxLocalesAvailable = os.getenv('CHPL_TEST_NUM_LOCALES_AVAILABLE')
+if maxLocalesAvailable is not None:
+    maxLocalesAvailable = int(maxLocalesAvailable)
 
 if os.access('./CATFILES',os.R_OK):
     globalCatfiles=subprocess.Popen(['cat', './CATFILES'], stdout=subprocess.PIPE).communicate()[0]
@@ -1170,6 +1174,13 @@ for testname in testsrc:
     if (numlocales == 0) or (chplcomm=='none') or is_c_test:
         numlocexecopts = None
     else:
+        if maxLocalesAvailable is not None:
+            if numlocales > maxLocalesAvailable:
+                sys.stdout.write('[Warning: skipping {0} because it requires '
+                                 '{1} locales but only {2} are available]\n'
+                                 .format(os.path.join(localdir, test_filename),
+                                         numlocales, maxLocalesAvailable))
+                continue
         numlocexecopts = ' -nl '+str(numlocales)
 
     # if any performance test has a timeout longer than the default we only
@@ -1346,7 +1357,7 @@ for testname in testsrc:
         #
         # Compile (with timeout)
         #
-        # compilation timeout defaults to 2 * execution timeout.
+        # compilation timeout defaults to 4 * execution timeout.
         # This is to quiet compilation timeouts in some oversubscribed test
         # configurations (since they are generating a lot of testing noise, but
         # don't represent a real issue.)
@@ -1357,7 +1368,7 @@ for testname in testsrc:
         # testing. Hopefully this is just a temporary work around and I'll
         # remember to add the cleaner solution soon.
         #
-        comptimeout = 2*timeout
+        comptimeout = 4*timeout
         cmd=ShellEscapeCommand(cmd);
         sys.stdout.write('[Executing compiler %s'%(cmd))
         if args:
@@ -1801,6 +1812,8 @@ for testname in testsrc:
                         launcher_error = 'Jira 18 -- Expired slurm credential for'
                     elif re.search('output file from job .* does not exist', output, re.IGNORECASE) != None:
                         launcher_error = 'Jira 17 -- Missing output file for'
+                    elif re.search('aprun: Unexpected close of the apsys control connection', output, re.IGNORECASE) != None:
+                        launcher_error = 'Jira 193 -- Unexpected close of apsys for'
                     elif (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or
                           re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None):
                         exectimeout = True

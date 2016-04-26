@@ -16,7 +16,8 @@ forall s in HDFSmap("/tmp/test.txt") {
 HDFSreduce();
 
 // return a tuple (startWhite, wc, endWhite)
-proc wordCount((s, block)) {
+proc wordCount((s_c_string, block)) {
+  var s = s_c_string: string;
   var nl = 0; // number of lines
   var nw = 0; // number of words
   var IN = 1; // in a word

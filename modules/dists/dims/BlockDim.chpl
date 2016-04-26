@@ -29,7 +29,7 @@ This Block dimension specifier is for use with the
 :class:`DimensionalDist2D` distribution.
 
 It specifies the mapping of indices in its dimension
-that would be produced by a 1D :class:`Block` distribution.
+that would be produced by a 1D :class:`~BlockDist.Block` distribution.
 
 **Constructor Arguments**
 

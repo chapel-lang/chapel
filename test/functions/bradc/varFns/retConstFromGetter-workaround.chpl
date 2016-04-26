@@ -2,11 +2,12 @@ var   zero = 0;
 var data = 1;
 
 proc myVarFn() ref {
-  if setter then
-    return data;
-  else
-    return zero;
+  return data;
 }
+proc myVarFn()  {
+  return zero;
+}
+
 
 writeln("data is: ", data);
 

@@ -1,4 +1,8 @@
 oneWord.doc
+
+Usage:
+   use oneWord.doc;
+
    proc dummy()
       Should be located in myDocs/unspecified.txt 
 

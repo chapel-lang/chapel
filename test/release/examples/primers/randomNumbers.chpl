@@ -8,32 +8,6 @@
 use Random;
 
 //
-// This module contains a random number generator based on
-// the one used in the NPB benchmarks.  Tailoring the NPB comments to
-// this code, we can say the following:
-//
-//   This generator returns uniform pseudorandom real values in the
-//   range (0, 1) by using the linear congruential generator
-//
-//     x_{k+1} = a x_k  (mod 2**46)
-//
-//   where 0 < x_k < 2**46 and 0 < a < 2**46.  This scheme generates
-//   2**44 numbers before repeating.  The seed value must be an odd
-//   64-bit integer in the range (1, 2^46).  The generated values are
-//   normalized to be between 0 and 1, i.e., 2**(-46) * x_k.
-//
-//   This generator should produce the same results on any computer
-//   with at least 48 mantissa bits for real(64) data.
-//
-// The generation functionality is currently restricted to default-sized
-// reals, imags, and complex values.
-//
-// By default the random stream seed is initialized based on the current
-// time in microseconds.
-//
-
-
-//
 // There are two ways to generate a sequence of random numbers:
 // The first is by creating an array of random numbers using the fillRandom
 // function
@@ -52,13 +26,20 @@ fillRandom(randsSeeded, seed);
 writeln("randsSeeded = ", randsSeeded); // Here the output is deterministic
 writeln();
 
+// Other numeric types are supported:
+var rand16s: [1..10] uint(16);
+fillRandom(rand16s, seed);
+writeln("rand16s = ", rand16s); // Here the output is deterministic
+writeln();
+
+
 //
 // The second way to generate a sequence of random numbers is by creating
 // a RandomStream class instance.  If one is desired, the seed must be
 // specified upon creation of this instance.
 //
-var randStream: RandomStream = new RandomStream();
-var randStreamSeeded: RandomStream = new RandomStream(seed);
+var randStream:       RandomStream(real) = new RandomStream();
+var randStreamSeeded: RandomStream(real) = new RandomStream(seed);
 
 //
 // Then the instance can be used to obtain the numbers.
@@ -116,8 +97,14 @@ for i in randStreamSeeded.iterate({5..10}, real) {
 // class creation.  As a result, two parallel accesses or updates to the
 // position from which reading is intended may conflict.
 //
-var parallelUnsafe = new RandomStream(parSafe=false);
+var parallelUnsafe       = new RandomStream(parSafe=false);
 var parallelSeededUnsafe = new RandomStream(seed, false);
+
 // Commented out for deterministic testing output.
 //writeln(parallelUnsafe.getNext());
 //writeln(parallelSeededUnsafe.getNext());
+
+delete parallelSeededUnsafe;
+delete parallelUnsafe;
+delete randStreamSeeded;
+delete randStream;

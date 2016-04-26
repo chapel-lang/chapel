@@ -1,13 +1,13 @@
 Initializing Modules:
    ChapelStandard
-    ChapelBase
-     ChapelStringLiterals
     CPtr
     CString
     String
      BaseStringType
      SysCTypes
      StringCasts
+    ChapelBase
+     ChapelStringLiterals
     MemConsistency
     Atomics
     AtomicsCommon

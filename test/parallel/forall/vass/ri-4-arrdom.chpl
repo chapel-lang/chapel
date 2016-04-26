@@ -2,9 +2,11 @@
 
 use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist;
 
+const defR = if CHPL_COMM=="none" then 3000 else 1500;
+
 config var
   n2 = 100,   // for compatibility with distributions/robust/arithmetic suite
-  r = 3000,   // how many times to repeat
+  r = defR,   // how many times to repeat
   d = n2,     // each dimension of the domain and array
   f = 500;    // frequency of reports, 0 if none
 

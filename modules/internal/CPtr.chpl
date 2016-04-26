@@ -48,6 +48,7 @@ module CPtr {
   pragma "no object"
   pragma "no default functions"
   pragma "no wide class"
+  pragma "c_ptr class"
   class c_ptr {
     /* The type that this pointer points to */
     type eltType;
@@ -122,6 +123,14 @@ module CPtr {
   inline proc ==(a: _nilType, b: c_ptr) {
     return __primitive("ptr_eq", c_nil, b);
   }
+  pragma "no doc"
+  inline proc ==(a: c_void_ptr, b: _nilType) {
+    return __primitive("ptr_eq", a, c_nil);
+  }
+  pragma "no doc"
+  inline proc ==(a: _nilType, b: c_void_ptr) {
+    return __primitive("ptr_eq", c_nil, b);
+  }
 
   pragma "no doc"
   inline proc !=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
@@ -141,6 +150,14 @@ module CPtr {
   }
   pragma "no doc"
   inline proc !=(a: _nilType, b: c_ptr) {
+    return __primitive("ptr_neq", c_nil, b);
+  }
+  pragma "no doc"
+  inline proc !=(a: c_void_ptr, b: _nilType) {
+    return __primitive("ptr_neq", a, c_nil);
+  }
+  pragma "no doc"
+  inline proc !=(a: _nilType, b: c_void_ptr) {
     return __primitive("ptr_neq", c_nil, b);
   }
 
@@ -196,7 +213,8 @@ module CPtr {
   }
 
 
-  /* Allocate memory that is filled with zeros. This memory should eventually be
+  /*
+    Allocate memory that is filled with zeros. This memory should eventually be
     freed with c_free.
 
     :arg eltType: the type of the elements to allocate
@@ -206,9 +224,26 @@ module CPtr {
   inline proc c_calloc(type eltType, size: integral) : c_ptr(eltType) {
     var ret:c_ptr(eltType);
     __primitive("array_alloc", ret, eltType, size);
+    // TODO - one day, this should call calloc instead of
+    // initializing the memory possibly in parallel.
     init_elts(ret, size, eltType);
     return ret;
   }
+
+  /*
+    Allocate memory that is not initialized. The memory should be written to
+    before it is read. This memory should eventually be freed with c_free.
+
+    :arg eltType: the type of the elements to allocate
+    :arg size: the number of elements to allocate
+    :returns: a c_ptr(eltType) to allocated memory
+    */
+  inline proc c_malloc(type eltType, size: integral) : c_ptr(eltType) {
+    var ret:c_ptr(eltType);
+    __primitive("array_alloc", ret, eltType, size);
+    return ret;
+  }
+
 
   /* Free memory that was allocated with :proc:`c_free`.
     :arg data: the c_ptr to memory that was allocated

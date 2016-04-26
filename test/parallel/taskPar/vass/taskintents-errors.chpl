@@ -3,7 +3,7 @@
 var i = 555;
 var s$: sync int;
 
-
+/* blank intents are not available at present
 writeln(i, "  blank intent");
 cobegin with (i) {
   {
@@ -14,7 +14,7 @@ cobegin with (i) {
     writeln(i, "    inside");
   }
 }
-
+*/
 
 writeln(i, "  const intent");
 cobegin with (const i) {

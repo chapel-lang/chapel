@@ -21,8 +21,12 @@ variable-declaration-statement:
 config-or-extern: one of
   `config' $ $ $ $ `extern'
 
-variable-kind: one of
-  `param' $ $ $ $ `const' $ $ $ $ `var'
+variable-kind:
+  `param'
+  `const'
+  `var'
+  `ref'
+  `const ref'
 
 variable-declaration-list:
   variable-declaration
@@ -68,12 +72,15 @@ Section~\rsec{Configuration_Variables}.  The optional keyword \chpl{extern}
 indicates that the variable is externally defined.  Its name and type are used
 within the Chapel program for resolution, but no space is allocated for it and
 no initialization code emitted.
+See \rsec{Shared_Data} for further details.
 
 The \sntx{variable-kind} specifies whether the variables are
-parameters (\chpl{param}), constants (\chpl{const}), or regular
+parameters (\chpl{param}), constants (\chpl{const}),
+ref variables (\chpl{ref}), or regular
 variables (\chpl{var}).  Parameters are compile-time constants whereas
 constants are runtime constants.  Both levels of constants are
 discussed in~\rsec{Constants}.
+Ref variables are discussed in \rsec{Ref_Variables}.
 
 The \sntx{type-part} of a variable declaration specifies the type of
 the variable.  It is optional if the \sntx{initialization-part} is
@@ -182,14 +189,10 @@ var v = e;
 \end{chapel}
 is equivalent to
 \begin{chapel}
-var v: e.type;
-v = e;
+var v: e.type = e;
 \end{chapel}
-for an arbitrary expression \chpl{e}.  For expressions of sync or
-single type, this translation does not hold because the evaluation
-of \chpl{e} results in a default read of this expression.  The type of
-the variable is thus equal to the base type of the sync or single
-expression.
+for an arbitrary expression \chpl{e}.  If \chpl{e} is of sync or
+single type, the type of \chpl{v} is the base type of \chpl{e}.
 
 \subsection{Multiple Variable Declarations}
 \label{Multiple_Variable_Declarations}
@@ -414,11 +417,74 @@ writeln(rank);
 \begin{chapeloutput}
 2
 \end{chapeloutput}
-sets a integer parameter \chpl{rank} to \chpl{2}.  At
-compile-time, \chpl{rank} can be set via a configuration file or compile-line
-override to \chpl{3} or \chpl{2*n}\footnote{It is assumed here that \chpl{n} is
-also a param variable.} or indeed to any other expression
-that can be evaluated at compile-time.  The value supplied at compile time
-overrides the value \chpl{2} appearing in the code.  In this example, the \chpl{rank}
+sets an integer parameter \chpl{rank} to \chpl{2}.
+At compile-time, this default value of \chpl{rank} can be overridden
+with another parameter expression, such as \chpl{3} or \chpl{2*n},
+provided \chpl{n} itself is a parameter. The \chpl{rank}
 configuration variable can be used to write rank-independent code.
+\end{chapelexample}
+
+\section{Ref Variables}
+\label{Ref_Variables}
+\index{variables!ref}
+\index{ref@\chpl{ref}}
+
+A \emph{ref} variable is a variable declared using the \chpl{ref} keyword.
+A ref variable serves as an alias to another variable, field or array element.
+The declaration of a ref variable must contain \sntx{initialization-part},
+which specifies what is to be aliased and can be a variable
+or any lvalue expression.
+
+Access or update to a ref variable is equivalent to access or update
+to the variable being aliased. For example, an update to a ref variable
+is visible via the original variable, and visa versa.
+
+If the expression being aliased is a runtime constant variable,
+a formal argument with a \chpl{const ref} concrete intent
+(\rsec{Concrete Intents}), or a call to a function with a \chpl{const ref}
+return intent (\rsec{Const_Ref_Return_Intent}), the corresponding
+ref variable must be declared as \chpl{const ref}.
+Parameter constants and expressions cannot be aliased.
+
+\begin{openissue}
+The behavior of a \chpl{const ref} alias to a non-\chpl{const} variable
+is an open issue. The options include disallowing such an alias,
+disallowing changes to the variable while it can be accessed via
+a \chpl{const ref} alias, making changes visible through the alias,
+and making the behavior undefined.
+\end{openissue}
+
+\begin{chapelexample}{refVariables.chpl}
+For example, the following code:
+
+\begin{chapel}
+var myInt = 51;
+ref refInt = myInt;                   // alias of a local or global variable
+myInt = 62;
+writeln("refInt = ", refInt);
+refInt = 73;
+writeln("myInt = ", myInt);
+
+var myArr: [1..3] int = 51;
+proc arrayElement(i) ref  return myArr[i];
+ref refToExpr = arrayElement(3);      // alias to lvalue returned by a function
+myArr[3] = 62;
+writeln("refToExpr = ", refToExpr);
+refToExpr = 73;
+writeln("myArr[3] = ", myArr[3]);
+
+const constArr: [1..3] int = 51..53;
+const ref myConstRef = constArr[2];   // would be an error without 'const'
+writeln("myConstRef = ", myConstRef);
+\end{chapel}
+
+prints out:
+
+\begin{chapelprintoutput}{}
+refInt = 62
+myInt = 73
+refToExpr = 62
+myArr[3] = 73
+myConstRef = 52
+\end{chapelprintoutput}
 \end{chapelexample}

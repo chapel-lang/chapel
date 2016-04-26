@@ -9,26 +9,15 @@ Chapel itself.  Current subdirectories include:
 
 chpl-venv/
   Summary: Directory where several python packages are downloaded and
-           installed. Used for chpldoc and the testing system. See
-           chpldoc-requirements.txt, test-requirements.txt, and
+           installed. Used by chpldoc and the testing system, and to generate
+           the man page and standard module documentation.
+           See chpldoc-requirements.txt, test-requirements.txt, and
            virtualenv.txt files for a complete list of packages that are
            installed.
 
   License: Varies, see chpl-venv/README.md
 
   Website: Varies, see chpl-venv/README.md
-
-
-dlmalloc/
-  Summary: Doug Lea's memory allocator (dlmalloc) is a portable
-           allocator that can be used when a shared heap is required.
-
-  License: dlmalloc has been placed in the public domain as explained
-           at http://creativecommons.org/publicdomain/zero/1.0/
-
-  Website: http://g.oswego.edu/dl/html/malloc.html
-
-  See also: the comments in dlmalloc/src/dlmalloc.c
 
 
 gasnet/
@@ -70,6 +59,7 @@ hwloc/
 jemalloc/
   Summary: Jason Evan's memory allocator (jemalloc) which "emphasizes
            fragmentation avoidance and scalable concurrency support."
+           and can be used when a shared heap is required.
 
   License: jemalloc is released under a BSD-derived License (see
            jemalloc/jemalloc-*/COPYING)
@@ -136,19 +126,6 @@ re2/
   See also: re2/re2/README
 
 
-tcmalloc/
-  Summary: the Google perf-tools memory allocator (tcmalloc) is
-           optimized for high concurrency code and can be used when a
-           shared heap is required.
-
-  License: Google-perftools is released under the New BSD License (see
-           tcmalloc/google-perftools-<version>/COPYING)
-
-  Website: http://code.google.com/p/google-perftools/
-
-  See also: tcmalloc/README
-
-
 utf8-decoder/
   Summary: A fast UTF-8 decoder, used for fast UTF-8 I/O.
            This decoder is by Bjoern Hoehrmann.
@@ -160,10 +137,12 @@ utf8-decoder/
   See also: utf8-decoder/README
 
 libhdfs3/
-  Summary: A pure C/C++ implementation of the libhdfs client library, can be used as 
-           an alternative to the libhdfs client library provided in the Apache Hadoop 
-           distribution (Apache Hadoop's libhdfs uses the JVM). libhdfs3 is developed
-           by Pivotal and is used in HAWQ.
+
+  Summary: A pure C/C++ implementation of the libhdfs client library,
+           which can be used as an alternative to the libhdfs client
+           library provided in the Apache Hadoop distribution (Apache
+           Hadoop's libhdfs uses the JVM). libhdfs3 is developed by
+           Pivotal and is used in HAWQ.
 
   License: Apache 2.0
 

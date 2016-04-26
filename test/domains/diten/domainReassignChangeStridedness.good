@@ -1,0 +1,1 @@
+domainReassignChangeStridedness.chpl:8: error: stridable mismatch in domain assignment

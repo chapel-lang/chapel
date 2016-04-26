@@ -1,4 +1,8 @@
 basic.doc
+
+Usage:
+   use basic.doc;
+
    config var isInt: int
       Comment for config var that is an int 
    config var isIntCommentless: int

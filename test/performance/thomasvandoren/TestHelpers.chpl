@@ -5,7 +5,7 @@ use Random;
 use Time;
 
 // random seed for arrays
-config const randSeed = SeedGenerator.currentTime;
+config const randSeed = SeedGenerator.oddCurrentTime;
 
 // Control output.
 config const printC = true,
@@ -15,7 +15,7 @@ config const printC = true,
 // matrices.
 config const scalingFactor = 1;
 
-var randStream = new RandomStream(randSeed),
+var randStream = makeRandomStream(randSeed, algorithm=RNG.NPB),
   timer: Timer;
 
 const inner = 1..5 * scalingFactor,

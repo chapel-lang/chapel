@@ -6,7 +6,7 @@ use Norm;
 
 config const is2D2Norm = false;
 
-var rng = new RandomStream(314159265);
+var rng = makeRandomStream(314159265, eltType=real(64), algorithm=RNG.NPB);
 
 rng.fillRandom(R1D);
 rng.fillRandom(R2D);
@@ -132,3 +132,5 @@ writeln("\trcR1D:");
 doNorm(rcR1D, 1);
 writeln("\trcR2D:");
 doNorm(rcR2D, 2);
+
+delete rng;

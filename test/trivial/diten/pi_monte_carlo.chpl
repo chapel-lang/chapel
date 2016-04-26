@@ -7,7 +7,7 @@ config const verbose: bool = false;
 
 var count:int;
 var pi, startTime, totalTime: real;
-var rs = new RandomStream(seed);
+var rs = new NPBRandomStream(seed);
 
 startTime = getCurrentTime(TimeUnits.microseconds);
 

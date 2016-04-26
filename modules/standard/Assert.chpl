@@ -21,10 +21,12 @@
 /*
   Support for simple assert() routines.
 
-  .. note:: 
-            In the current implementation, these asserts never become
-            no-ops.  That is, using them will always incur
-            execution-time checks.
+  .. note:: All Chapel programs automatically ``use`` this module by default.
+            An explicit ``use`` statement is not necessary.
+
+  In the current implementation, these asserts never become no-ops.  That is,
+  using them will always incur execution-time checks.
+
 */
 module Assert {
 

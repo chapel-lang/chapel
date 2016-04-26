@@ -28,6 +28,7 @@
 
 #include "qio_popen.h"
 
+#include <sys/select.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -330,20 +331,25 @@ qioerr qio_waitpid(int64_t pid,
   if( ! blocking ) flags |= WNOHANG;
 
   got = waitpid((pid_t) pid, &status, flags);
+
+  // Check for error
   if( got == -1 ) {
     return qio_int_to_err(errno);
   }
-
-  if( WIFEXITED(status) ) {
-    *exitcode = WEXITSTATUS(status);
-    if( WIFSIGNALED(status) ) {
-      *exitcode = - WSTOPSIG(status);
+  // Only update (done, exitcode) if waitpid() returned for the desired pid
+  else if ( got == pid ) {
+    if( WIFEXITED(status) ) {
+      *exitcode = WEXITSTATUS(status);
+      *done = 1;
     }
-    *done = 1;
+    else if( WIFSIGNALED(status) ) {
+      *exitcode = -WTERMSIG(status);
+      *done = 1;
+    }
   }
+
   return 0;
 }
-
 
 // commit input, sending any data to the subprocess.
 // once input is sent, close input channel and file.
@@ -575,3 +581,14 @@ qioerr qio_proc_communicate(
   return err;
 }
 
+// Send a signal to the specified pid
+qioerr qio_send_signal(int64_t pid, int sig)
+{
+  qioerr err = 0;
+
+  int rc = kill(pid, sig);
+  if (rc == -1)
+    err = qio_mkerror_errno();
+
+  return err;
+}

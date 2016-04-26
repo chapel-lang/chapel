@@ -1,0 +1,4 @@
+inherit_mod2.chpl:17: In function 'foo':
+inherit_mod2.chpl:18: error: unresolved call 'C.x'
+inherit_mod2.chpl:4: note: candidates are: D1.x
+inherit_mod2.chpl:8: note:                 D2.x

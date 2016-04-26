@@ -1,0 +1,83 @@
+.TH "hwloc_backend" 3 "Thu Dec 17 2015" "Version 1.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+hwloc_backend \- 
+.SH SYNOPSIS
+.br
+.PP
+.PP
+\fC#include <plugins\&.h>\fP
+.SS "Data Fields"
+
+.in +1c
+.ti -1c
+.RI "unsigned long \fBflags\fP"
+.br
+.ti -1c
+.RI "int \fBis_custom\fP"
+.br
+.ti -1c
+.RI "int \fBis_thissystem\fP"
+.br
+.ti -1c
+.RI "void * \fBprivate_data\fP"
+.br
+.ti -1c
+.RI "void(* \fBdisable\fP )(struct \fBhwloc_backend\fP *backend)"
+.br
+.ti -1c
+.RI "int(* \fBdiscover\fP )(struct \fBhwloc_backend\fP *backend)"
+.br
+.ti -1c
+.RI "int(* \fBget_obj_cpuset\fP )(struct \fBhwloc_backend\fP *backend, struct \fBhwloc_backend\fP *caller, struct \fBhwloc_obj\fP *obj, \fBhwloc_bitmap_t\fP cpuset)"
+.br
+.ti -1c
+.RI "int(* \fBnotify_new_object\fP )(struct \fBhwloc_backend\fP *backend, struct \fBhwloc_backend\fP *caller, struct \fBhwloc_obj\fP *obj)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+Discovery backend structure\&. 
+
+A backend is the instantiation of a discovery component\&. When a component gets enabled for a topology, its instantiate() callback creates a backend\&.
+.PP
+\fBhwloc_backend_alloc()\fP initializes all fields to default values that the component may change (except 'component' and 'next') before enabling the backend with \fBhwloc_backend_enable()\fP\&. 
+.SH "Field Documentation"
+.PP 
+.SS "void(* hwloc_backend::disable) (struct \fBhwloc_backend\fP *backend)"
+
+.PP
+Callback for freeing the private_data\&. May be NULL\&. 
+.SS "int(* hwloc_backend::discover) (struct \fBhwloc_backend\fP *backend)"
+
+.PP
+Main discovery callback\&. returns > 0 if it modified the topology tree, -1 on error, 0 otherwise\&. May be NULL if type is \fBHWLOC_DISC_COMPONENT_TYPE_MISC\fP\&. 
+.SS "unsigned long hwloc_backend::flags"
+
+.PP
+Backend flags, as an OR'ed set of \fBhwloc_backend_flag_e\fP\&. 
+.SS "int(* hwloc_backend::get_obj_cpuset) (struct \fBhwloc_backend\fP *backend, struct \fBhwloc_backend\fP *caller, struct \fBhwloc_obj\fP *obj, \fBhwloc_bitmap_t\fP cpuset)"
+
+.PP
+Callback used by the PCI backend to retrieve the locality of a PCI object from the OS/cpu backend\&. May be NULL\&. 
+.SS "int hwloc_backend::is_custom"
+
+.PP
+Backend-specific 'is_custom' property\&. Shortcut on !strcmp(\&.\&.->component->name, 'custom')\&. Only the custom component should touch this\&. 
+.SS "int hwloc_backend::is_thissystem"
+
+.PP
+Backend-specific 'is_thissystem' property\&. Set to 0 or 1 if the backend should enforce the thissystem flag when it gets enabled\&. Set to -1 if the backend doesn't care (default)\&. 
+.SS "int(* hwloc_backend::notify_new_object) (struct \fBhwloc_backend\fP *backend, struct \fBhwloc_backend\fP *caller, struct \fBhwloc_obj\fP *obj)"
+
+.PP
+Callback called by backends to notify this backend that a new object was added\&. returns > 0 if it modified the topology tree, 0 otherwise\&. May be NULL\&. 
+.SS "void* hwloc_backend::private_data"
+
+.PP
+Backend private data, or NULL if none\&. 
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

@@ -1,0 +1,4 @@
+--test=1 # bits-errors.negative-writebits.good
+--test=2 # bits-errors.big-writebits.good
+--test=3 # bits-errors.negative-readbits.good
+--test=4 # bits-errors.big-readbits.good

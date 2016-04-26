@@ -20,9 +20,13 @@ ifeq ($(CHPL_COMM), gasnet)
   GEN_LFLAGS += -L/usr/lib64/nptl
 endif
 
-# This ensures that the Chapel binary can find and link against the latest
-# gcc-lib versions. This addition was motivated by an error where chapel
-# could not find a version of GLIBCXX when compiling with intel/cray compilers
-# This particular approach was suggested by CCE build/integration staff.
-# Note: This is assuming gcc-libs maintain forward compatibility
-LDFLAGS += -Wl,-rpath,/opt/cray/gcc-libs
+# Statically link in libstdc++ so that it doesn't matter what compiler a user
+# has loaded at `chpl` invocation time. We build the compiler (and llvm) with a
+# specific version of gcc, but we don't want to force users to have that gcc
+# version loaded. Ideally we would just set an rpath to /opt/cray/gcc-libs and
+# /opt/cray/pe/gcc-libs, but this only works for non PrgEnv-gnu compilers.
+# PrgEnv-gnu sets a LD_LIBRARY_PATH to include a set of libs that could be
+# older than the versions we build the compiler and llvm with.
+ifeq ($(CHPL_MAKE_HOST_COMPILER),gnu)
+LDFLAGS += -static-libstdc++
+endif

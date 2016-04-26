@@ -37,8 +37,34 @@ module Path {
 
 use Error;
 
+/* Returns the basename of the file name provided.  For instance, in the
+   name `/foo/bar/baz`, this function would return `baz`, while `/foo/bar/`
+   would yield the empty string.  Note that this is different from the Unix
+   basename function.
+
+   :arg name: a string file name.  Note that this string does not have to be
+              a valid file name, as the file itself will not be affected.
+   :type name: `string`
+*/
+ proc basename(name: string): string {
+   return splitPath(name)[2];
+ }
+
 /* Represents generally the current directory */
 const curDir = ".";
+
+/* Returns the parent directory of the file name provided.  For instance,
+   in the name `/foo/bar/baz`, this function would return `/foo/bar`, as
+   would a call with `/foo/bar/` as the argument.
+
+   :arg name: a string file name.  Note that this string does not have to be
+              a valid file name, as the file itself will not be affected.
+   :type name: `string`
+*/
+ proc dirname(name: string): string{
+   return splitPath(name)[1];
+ }
+
 /* Represents generally the parent directory */
 const parentDir = "..";
 /* Denotes the separator between a directory and its child. */
@@ -62,10 +88,10 @@ proc realPath(out error: syserr, name: string): string {
 
    :arg name: A path to resolve.  If the path does not refer to a valid file
               or directory, an error will occur.
-   :type name: string
+   :type name: `string`
 
    :return: A canonical version of the argument.
-   :rtype: string
+   :rtype: `string`
 */
 proc realPath(name: string): string {
   var err: syserr = ENOERR;
@@ -101,7 +127,7 @@ proc file.realPath(out error: syserr): string {
    :return: A canonical path to the file referenced by this :type:`~IO.file`
             record.  If the :type:`~IO.file` record is not valid, an error will
             occur
-   :rtype: string
+   :rtype: `string`
 */
 proc file.realPath(): string {
   var err: syserr = ENOERR;
@@ -109,5 +135,58 @@ proc file.realPath(): string {
   if err != ENOERR then ioerror(err, "in file.realPath");
   return ret;
 }
+
+/* Split name into a tuple that is equivalent to (:proc:`dirname`,
+   :proc:`basename`).  The second part of the tuple will never contain a slash.
+   Examples:
+
+   `splitPath("foo/bar")` will yield `("foo", "bar")`
+
+   `splitPath("bar")` will yield `("", "bar")`
+
+   `splitPath("foo/")` will yield `("foo", "")`
+
+   `splitPath("")` will yield `("", "")`
+
+   `splitPath("/")` will yield `("/", "")`
+
+   With the exception of a path of the empty string or just "/", the original
+   path can be recreated from this function's returned parts by joining them
+   with the path separator character:
+
+   `dirname` + "/" + `basename`
+
+   :arg name: path to be split
+   :type name: `string`
+*/
+ proc splitPath(name: string): (string, string) {
+   var rLoc, lLoc, prev: int = name.rfind(pathSep);
+   if (prev != 0) {
+     do {
+       prev = lLoc;
+       lLoc = name.rfind(pathSep, 1..prev-1);
+     } while (lLoc + 1 == prev && lLoc > 1);
+
+     if (prev == 1) {
+       // This happens when the only instance of pathSep in the string is
+       // the first character
+       return (name[prev..rLoc], name[rLoc+1..]);
+     } else if (lLoc == 1 && prev == 2) {
+       // This happens when there is a line of pathSep instances at the
+       // start of the string
+       return (name[..rLoc], name[rLoc+1..]);
+     } else if (prev != rLoc) {
+       // If prev wasn't the first character, then we want to skip all those
+       // duplicate pathSeps
+       return (name[..prev-1], name[rLoc+1..]);
+     } else {
+       // The last instance of pathSep in the string was on its own, so just
+       // snip it out.
+       return (name[..rLoc-1], name[rLoc+1..]);
+     }
+   } else {
+     return ("", name);
+   }
+ }
 
 }

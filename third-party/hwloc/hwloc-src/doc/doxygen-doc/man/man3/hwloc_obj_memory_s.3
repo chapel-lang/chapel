@@ -1,0 +1,56 @@
+.TH "hwloc_obj_memory_s" 3 "Thu Dec 17 2015" "Version 1.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+hwloc_obj_memory_s \- 
+.SH SYNOPSIS
+.br
+.PP
+.PP
+\fC#include <hwloc\&.h>\fP
+.SS "Data Structures"
+
+.in +1c
+.ti -1c
+.RI "struct \fBhwloc_obj_memory_page_type_s\fP"
+.br
+.in -1c
+.SS "Data Fields"
+
+.in +1c
+.ti -1c
+.RI "hwloc_uint64_t \fBtotal_memory\fP"
+.br
+.ti -1c
+.RI "hwloc_uint64_t \fBlocal_memory\fP"
+.br
+.ti -1c
+.RI "unsigned \fBpage_types_len\fP"
+.br
+.ti -1c
+.RI "struct \fBhwloc_obj_memory_s::hwloc_obj_memory_page_type_s\fP * \fBpage_types\fP"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+Object memory\&. 
+.SH "Field Documentation"
+.PP 
+.SS "hwloc_uint64_t hwloc_obj_memory_s::local_memory"
+
+.PP
+Local memory (in bytes) 
+.SS "struct \fBhwloc_obj_memory_s::hwloc_obj_memory_page_type_s\fP *  hwloc_obj_memory_s::page_types"
+
+.SS "unsigned hwloc_obj_memory_s::page_types_len"
+
+.PP
+Size of array \fCpage_types\fP\&. 
+.SS "hwloc_uint64_t hwloc_obj_memory_s::total_memory"
+
+.PP
+Total memory (in bytes) in this object and its children\&. 
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

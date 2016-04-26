@@ -66,6 +66,5 @@ For a list of other test system options, use:
 For more information
 --------------------
 
-For complete documentation on the testing system, refer to the
-comments at the top of the start_test script.
-
+See:
+https://github.com/chapel-lang/chapel/blob/release/1.13/doc/developer/bestPractices/TestSystem.txt

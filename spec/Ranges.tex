@@ -536,6 +536,45 @@ produces the output
 \end{chapelprintoutput}
 \end{chapelexample}
 
+\subsection{Range Promotion of Scalar Functions}
+\label{Range_Promotion_of_Scalar_Functions}
+\index{ranges!promotion}
+\index{promotion!range}
+
+Range values may be passed to a scalar function argument whose type
+matches the range's index type.  This results in a promotion of the
+scalar function as described in~\rsec{Promotion}.
+
+\begin{chapelexample}{rangePromotion.chpl}
+Given a function \chpl{addOne(x:int)} that accepts \chpl{int} values and
+a range \chpl{1..10}, the function \chpl{addOne()} can be called with
+\chpl{1..10} as its actual argument which will result in the function
+being invoked for each value in the range.
+
+\begin{chapel}
+proc addOne(x:int) {
+  return x + 1;
+}
+var A:[1..10] int;
+A = addOne(1..10);
+\end{chapel}
+\begin{chapelpost}
+writeln(A);
+\end{chapelpost}
+\begin{chapeloutput}
+2 3 4 5 6 7 8 9 10 11
+\end{chapeloutput}
+
+\end{chapelexample}
+
+The last statement is equivalent to:
+\begin{chapel}
+forall (a,i) in zip(A,1..10) do
+  a = addOne(i);
+\end{chapel}
+
+
+
 %REVIEW: perhaps define implicit/explicit conversions as well
 % under "Common Operations"?
 
@@ -892,11 +931,12 @@ operation would be completely ambiguous.  The only reasonable action for the
 implementation is to generate an error.
 \end{rationale}
 
-If the resulting represented sequence cannot be expressed as a range of the
-expected type, an error is generated. This can happen, for example, when
-the operands represent all odd and all even numbers, or when the first
-operand is an unbounded range with unsigned \chpl{idxType} and the second
-operand represents only negative numbers.
+If the resulting sequence cannot be expressed as a range of the
+original type, the slice expression evaluates to the empty
+range \chpl{1..0}. This can happen, for example, when the operands
+represent all odd and all even numbers, or when the first operand is
+an unbounded range with unsigned \chpl{idxType} and the second operand
+represents only negative numbers.
 
 \begin{chapelexample}{rangeSlicing.chpl}
 In the following example, \chpl{r} represents the integers from 1 to

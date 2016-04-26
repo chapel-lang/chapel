@@ -17,9 +17,11 @@ class D : C {
   proc foo() {
     writeln("In D.foo(), y is ", y);
   }
+
   proc baz(): int {
     return y;
   }
+
   proc buildNew() {
     return new D();
   }
@@ -27,10 +29,18 @@ class D : C {
 
 var myC = new C();
 var myD = new D(DsC=myC);
+
 writeln("myC = ", myC);
 writeln("myD = ", myD);
 
 if (runsegfault) {
   var myD2 = myD.buildNew();
+
   writeln("myD2 = ", myD2);
+
+  delete myD2;
 }
+
+delete myD;
+delete myC;
+

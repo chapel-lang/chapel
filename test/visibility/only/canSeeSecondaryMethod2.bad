@@ -1,0 +1,1 @@
+canSeeSecondaryMethod2.chpl:9: error: unresolved call 'Foo.newMethod(1)'

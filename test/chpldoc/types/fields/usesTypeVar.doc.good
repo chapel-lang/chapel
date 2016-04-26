@@ -1,4 +1,8 @@
 usesTypeVar.doc
+
+Usage:
+   use usesTypeVar.doc;
+
    Class: Bar
       This class uses the type field as the type of another field 
 

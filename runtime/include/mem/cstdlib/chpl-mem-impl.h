@@ -28,11 +28,8 @@
 #include <malloc/malloc.h>
 #endif
 
-#undef malloc
-#undef calloc
-#undef realloc
-#undef free
-#undef _chpl_mem_warning_macros_h_
+// disable mem warnings since cstdlib uses the system allocator
+#include "chpl-mem-no-warning-macros.h"
 
 #include <stdlib.h>
 
@@ -71,7 +68,7 @@ static inline void chpl_free(void* ptr) {
 
 // malloc_good_size is OSX specifc unfortunately. On other platforms just
 // return minSize.
-static inline size_t chpl_goodAllocSize(size_t minSize) {
+static inline size_t chpl_good_alloc_size(size_t minSize) {
 #if defined(__APPLE__)
   return malloc_good_size(minSize);
 #else

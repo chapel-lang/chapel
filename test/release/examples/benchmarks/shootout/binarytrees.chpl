@@ -8,7 +8,7 @@
 //
 // Use this helper module to get the dynamic iterator
 //
-use AdvancedIters;
+use DynamicIters;
 
 //
 // The problem size determines the maximum depth of the trees created

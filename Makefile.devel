@@ -16,16 +16,25 @@
 # limitations under the License.
 
 
-develall: man STATUS
+develall: STATUS
+	@$(MAKE) always-build-man
 
 docs: module-docs
-	cd doc/sphinx && ./run-in-venv.bash ${MAKE} docs
+	cd doc/sphinx && $(MAKE) docs
 
-man: FORCE
+checkdocs: FORCE
+	cd doc/sphinx && $(MAKE) checkdocs
+
+man: third-party-chpldoc-venv FORCE
 	cd man && $(MAKE)
 
 man-chpldoc: FORCE
 	cd man && $(MAKE) chpldoc
+
+always-build-man: FORCE
+	-@if [ -n "$$CHPL_ALWAYS_BUILD_MAN" ]; then \
+	$(MAKE) man; \
+	fi
 
 test: FORCE
 	cd test && start_test

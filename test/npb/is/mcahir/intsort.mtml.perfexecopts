@@ -1,5 +1,0 @@
---probClass=S --dataParTasksPerLocale=2 # intsort.S
-#--probClass=W # intsort.W
-#--probClass=A # intsort.A
-#--probClass=B # intsort.B
-#--probClass=C # intsort.C

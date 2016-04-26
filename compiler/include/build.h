@@ -21,7 +21,9 @@
 #define _BUILD_H_
 
 #include <set>
+#include <vector>
 
+#include "bison-chapel.h"
 #include "flags.h"
 #include "stmt.h"
 #include "vec.h"
@@ -58,6 +60,7 @@ Expr* buildDotExpr(const char* base, const char* member);
 
 BlockStmt* buildChapelStmt(Expr* expr = NULL);
 BlockStmt* buildUseStmt(CallExpr* modules);
+BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except);
 BlockStmt* buildRequireStmt(CallExpr* args);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
@@ -84,7 +87,8 @@ BlockStmt* buildForallLoopStmt(Expr* indices,
                                Expr* iterator,
                                CallExpr* byref_vars,
                                BlockStmt* body,
-                               bool zippered = false);
+                               bool zippered = false,
+                               VarSymbol* useThisGlobalOp = NULL);
 CallExpr* buildForLoopExpr(Expr* indices,
                            Expr* iterator,
                            Expr* expr,

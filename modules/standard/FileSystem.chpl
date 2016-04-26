@@ -39,7 +39,9 @@
    :proc:`copyFile`
    :proc:`copyTree`
    :proc:`mkdir`
+   :proc:`moveDir`
    :proc:`remove`
+   :proc:`rmTree`
    :proc:`symlink`
    :proc:`chmod`
    :proc:`chown`
@@ -168,7 +170,7 @@ proc locale.chdir(out error: syserr, name: string) {
       will affect the current working directory of all tasks for that locale.
 
    :arg name: The intended current working directory
-   :type name: string
+   :type name: `string`
 */
 proc locale.chdir(name: string) {
   var err: syserr = ENOERR;
@@ -192,11 +194,11 @@ proc chmod(out error: syserr, name: string, mode: int) {
 
    :arg name: The name of the file or directory whose permissions should be
               alterred.
-   :type name: string
+   :type name: `string`
    :arg mode: The permissions desired for the file or direcory in question.
               See description of :const:`S_IRUSR`, for instance, for potential
               values.
-   :type mode: int
+   :type mode: `int`
 */
 proc chmod(name: string, mode: int) {
   var err: syserr = ENOERR;
@@ -219,13 +221,13 @@ proc chown(out error: syserr, name: string, uid: int, gid: int) {
    Halts with an error message if one occurred.
 
    :arg name: The name of the file to be changed.
-   :type name: string
+   :type name: `string`
    :arg uid: The intended new owner(user) id, or -1 if it should remain the
              same.
-   :type uid: int
+   :type uid: `int`
    :arg gid: The intended new group owner(id), or -1 if it should remain the
              same.
-   :type gid: int
+   :type gid: `int`
 */
 proc chown(name: string, uid: int, gid: int) {
   var err: syserr = ENOERR;
@@ -290,14 +292,14 @@ proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) 
       this function will be able to support directories for the dest argument.
 
    :arg src: The source file whose contents and permissions are to be copied
-   :type src: string
+   :type src: `string`
    :arg dest: The name of the destination file for the contents and permissions.
               May or may not exist previously, but will be overwritten if it did
               exist
-   :type dest: string
+   :type dest: `string`
    :arg metadata: This argument indicates whether to copy metadata associated
                   with the source file.  It is set to `false` by default.
-   :type metadata: bool
+   :type metadata: `bool`
 */
 proc copy(src: string, dest: string, metadata: bool = false) {
   var err: syserr = ENOERR;
@@ -338,40 +340,35 @@ proc copyFile(out error: syserr, src: string, dest: string) {
     // The second argument is invalid if the two arguments are the same.
   }
 
-  // Lydia note (03/04/2014): These enclosing curly braces are to avoid the bug
-  // found in test/io/lydia/outArgEarlyExit*.future.  When those futures are
-  // resolved, the braces should be removed.
-  {
-    // Open src for reading, open dest for writing
-    var srcFile = open(src, iomode.r);
-    var destFile = open(dest, iomode.cw);
-    var srcChnl = srcFile.reader(kind=ionative, locking=false);
-    var destChnl = destFile.writer(kind=ionative, locking=false);
-    // read in, write out.
-    var line: [0..1023] uint(8);
-    var numRead: int = 0;
-    while (srcChnl.readline(line, numRead=numRead, error=error)) {
-      // From mppf:
-      // If you want it to be faster, we can make it only buffer once (sharing
-      // the bytes read into memory between the two channels). To do that you'd
-      // do something like this (in a loop):
+  // Open src for reading, open dest for writing
+  var srcFile = open(src, iomode.r);
+  var destFile = open(dest, iomode.cw);
+  var srcChnl = srcFile.reader(kind=ionative, locking=false);
+  var destChnl = destFile.writer(kind=ionative, locking=false);
+  // read in, write out.
+  var line: [0..1023] uint(8);
+  var numRead: int = 0;
+  while (srcChnl.readline(line, numRead=numRead, error=error)) {
+    // From mppf:
+    // If you want it to be faster, we can make it only buffer once (sharing
+    // the bytes read into memory between the two channels). To do that you'd
+    // do something like this (in a loop):
 
-      // srcReader.mark
-      // srcReader.advance( buffer size )
-      // srcReader.beginPeekBuffer to get the current buffer (qio_channel_begin_peek_buffer)
-      // dstWriter.putBuffer with the buffer we got (qio_channel_put_buffer)
-      // srcReader.endPeekBuffer
+    // srcReader.mark
+    // srcReader.advance( buffer size )
+    // srcReader.beginPeekBuffer to get the current buffer (qio_channel_begin_peek_buffer)
+    // dstWriter.putBuffer with the buffer we got (qio_channel_put_buffer)
+    // srcReader.endPeekBuffer
 
-      // Some of these routines don't exist with Chapel wrappers now
+    // Some of these routines don't exist with Chapel wrappers now
 
-      destChnl.write(line[0..#numRead]);
-    }
-    if error == EEOF then error = ENOERR;
-    destChnl.flush();
-
-    srcFile.close();
-    destFile.close();
+    destChnl.write(line[0..#numRead]);
   }
+  if error == EEOF then error = ENOERR;
+  destChnl.flush();
+
+  srcFile.close();
+  destFile.close();
 }
 
 /* Copies the contents of the file indicated by `src` into the file indicated
@@ -383,9 +380,9 @@ proc copyFile(out error: syserr, src: string, dest: string) {
    halt with other error messages.
 
    :arg src: The source file whose contents are to be copied.
-   :type src: string
+   :type src: `string`
    :arg dest: The intended destination of the contents.
-   :type dest: string
+   :type dest: `string`
 */
 proc copyFile(src: string, dest: string) {
   var err: syserr = ENOERR;
@@ -411,9 +408,9 @@ proc copyMode(out error: syserr, src: string, dest: string) {
    Will halt with an error message if one is detected.
 
    :arg src: The source file whose permissions are to be copied.
-   :type src: string
+   :type src: `string`
    :arg dest: The intended destination of the permissions.
-   :type dest: string
+   :type dest: `string`
 */
 proc copyMode(src: string, dest: string) {
   var err: syserr = ENOERR;
@@ -488,15 +485,15 @@ proc copyTree(out error: syserr, src: string, dest: string, copySymbolically: bo
    Will halt with an error message if one is detected.
 
    :arg src: The root of the source tree to be copied.
-   :type src: string
+   :type src: `string`
    :arg dest: The root of the destination directory under which the contents of
               `src` are to be copied (must not exist prior to this function
               call).
-   :type dest: string
+   :type dest: `string`
    :arg copySymbolically: This argument is used to indicate how to handle
                           symlinks in the source directory.  It is set to
                           `false` by default
-   :type copySymbolically: bool
+   :type copySymbolically: `bool`
 */
 proc copyTree(src: string, dest: string, copySymbolically: bool=false) {
   var err: syserr = ENOERR;
@@ -535,7 +532,7 @@ proc locale.cwd(out error: syserr): string {
       a parallel environment.
 
    :return: The current working directory for the locale in question.
-   :rtype: string
+   :rtype: `string`
 */
 proc locale.cwd(): string {
   var err: syserr = ENOERR;
@@ -559,12 +556,12 @@ proc exists(out error: syserr, name: string): bool {
    Will halt with an error message if one was detected.
 
    :arg name: The file or directory whose existence is in question.
-   :type name: string
+   :type name: `string`
 
    :return: `true` if the provided argument corresponds to an existing file or
             directory, `false` otherwise.  Also returns `false` for broken
             symbolic links.
-   :rtype: bool
+   :rtype: `bool`
 */
 proc exists(name: string): bool {
   var err: syserr = ENOERR;
@@ -580,14 +577,14 @@ proc exists(name: string): bool {
 
    :arg startdir: The root directory from which to start the search 
                   (defaults to ``"."``)
-   :type startdir: string
+   :type startdir: `string`
 
    :arg recursive: Indicates whether or not to descend recursively into 
                    subdirectories (defaults to `false`)
-   :type recursive: bool
+   :type recursive: `bool`
 
    :arg hidden: Indicates whether or not to descend into hidden subdirectories and yield hidden files (defaults to `false`)
-   :type hidden: bool
+   :type hidden: `bool`
 
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
@@ -632,10 +629,10 @@ proc getGID(out error: syserr, name: string): int {
    Will halt with an error message if one is detected
 
    :arg name: The file or directory whose group id is desired
-   :type name: string
+   :type name: `string`
 
    :return: The group id of the file or directory in question
-   :rtype: int
+   :rtype: `int`
 */
 proc getGID(name: string): int {
   var err: syserr = ENOERR;
@@ -659,12 +656,12 @@ proc getMode(out error: syserr, name: string): int {
    Will halt with an error message if one is detected
 
    :arg name: The file or directory whose permissions are desired.
-   :type name: string
+   :type name: `string`
 
    :return: The permissions of the specified file or directory
             See description of :const:`S_IRUSR`, for instance, for potential
             values.
-   :rtype: int
+   :rtype: `int`
 */
 proc getMode(name: string): int {
   var err:syserr = ENOERR;
@@ -688,10 +685,10 @@ proc getFileSize(out error: syserr, name: string): int {
    Will halt with an error message if one is detected
 
    :arg name: The file whose size is desired
-   :type name: string
+   :type name: `string`
 
    :return: The size in bytes of the file in question
-   :rtype: int
+   :rtype: `int`
 */
 proc getFileSize(name: string): int {
   var err: syserr = ENOERR;
@@ -716,10 +713,10 @@ proc getUID(out error: syserr, name: string): int {
    Will halt with an error message if one is detected.
 
    :arg name: The file or directory whose user id is desired
-   :type name: string
+   :type name: `string`
 
    :return: The user id of the specified file or directory
-   :rtype: int
+   :rtype: `int`
 */
 proc getUID(name: string): int {
   var err: syserr = ENOERR;
@@ -750,7 +747,7 @@ private module chpl_glob_c_interface {
    in serial or parallel contexts (zippered or non-).
 
    :arg pattern: The glob pattern to match against (defaults to ``"*"``)
-   :type pattern: string
+   :type pattern: `string`
 
    :yield: The matching filenames as strings
 */
@@ -867,10 +864,10 @@ proc isDir(out error:syserr, name:string):bool {
    does not refer to a valid file or directory
 
    :arg name: A path that could refer to a directory.
-   :type name: string
+   :type name: `string`
 
    :return: `true` if the path is a directory, `false` if it is not
-   :rtype: bool
+   :rtype: `bool`
 */
 proc isDir(name:string):bool {
   var err:syserr;
@@ -899,10 +896,10 @@ proc isFile(out error:syserr, name:string):bool {
    does not refer to a valid file or directory
 
    :arg name: A path that could refer to a file.
-   :type name: string
+   :type name: `string`
 
    :return: `true` if the path is a file, `false` if it is not
-   :rtype: bool
+   :rtype: `bool`
 */
 proc isFile(name:string):bool {
   var err:syserr;
@@ -927,11 +924,11 @@ proc isLink(out error:syserr, name: string): bool {
    does not refer to a valid file or directory
 
    :arg name: A path that could refer to a symbolic link.
-   :type name: string
+   :type name: `string`
 
    :return: `true` if the path is a symbolic link, `false` if it is not or
             if symbolic links are not supported.
-   :rtype: bool
+   :rtype: `bool`
 */
 proc isLink(name: string): bool {
   var err:syserr;
@@ -965,10 +962,10 @@ proc isMount(out error:syserr, name: string): bool {
    does not refer to a valid file or directory.
 
    :arg name: A path that could refer to a mount point.
-   :type name: string
+   :type name: `string`
 
    :return: `true` if the path is a mount point, `false` if it is not.
-   :rtype: bool
+   :rtype: `bool`
 */
 proc isMount(name: string): bool {
   var err:syserr;
@@ -983,22 +980,22 @@ proc isMount(name: string): bool {
 
    :arg path: The directory whose contents should be listed 
               (defaults to ``"."``)
-   :type path: string
+   :type path: `string`
 
    :arg hidden: Indicates whether hidden files/directory should be listed 
                 (defaults to `false`)
-   :type hidden: bool
+   :type hidden: `bool`
 
    :arg dirs: Indicates whether directories should be listed 
               (defaults to `true`)
-   :type dirs: bool
+   :type dirs: `bool`
 
    :arg files: Indicates whether files should be listed (defaults to `true`)
-   :type files: bool
+   :type files: `bool`
 
    :arg listlinks: Indicates whether symbolic links should be listed 
                    (defaults to `true`)
-   :type listlinks: bool
+   :type listlinks: `bool`
 
    :yield: The names of the specified directory's contents, as strings
 */
@@ -1074,12 +1071,15 @@ proc mkdir(out error: syserr, name: string, mode: int = 0o777,
       attempt to perform the same functionality will run a similar risk.
 
    :arg name: The name of the directory to be created, fully specified.
+   :type name: `string`
    :arg mode: The permissions desired for the directory to create.  Takes the
               current :proc:`~locale.umask` into account.  See description of
               :const:`S_IRUSR`, for instance, for potential values.
+   :type mode: `int`
    :arg parents: Indicates whether parent directories should be created.  If
                  set to `false`, any nonexistent parent will cause an error
                  to occur.
+   :type parents: `bool`
 */
 proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
   var err: syserr = ENOERR;
@@ -1145,9 +1145,9 @@ proc moveDir(out error: syserr, src: string, dest: string) {
    Will halt with an error message if one is detected.
 
    :arg src: the location of the directory to be moved
-   :type src: string
+   :type src: `string`
    :arg dest: the location to move it to.
-   :type dest: string
+   :type dest: `string`
 */
 proc moveDir(src: string, dest: string) {
   var err: syserr = ENOERR;
@@ -1171,9 +1171,9 @@ proc rename(out error: syserr, oldname, newname: string) {
    Will halt with an error message if one is detected
 
    :arg oldname: Current name of the file
-   :type oldname: string
+   :type oldname: `string`
    :arg newname: Name which should be used to refer to the file in the future.
-   :type newname: string
+   :type newname: `string`
 */
  proc rename(oldname: string, newname: string) {
   var err:syserr = ENOERR;
@@ -1193,7 +1193,7 @@ proc remove(out error: syserr, name: string) {
    Will halt with an error message if one is detected
 
    :arg name: The file/directory to remove
-   :type name: string
+   :type name: `string`
 */
 proc remove(name: string) {
   var err:syserr = ENOERR;
@@ -1254,7 +1254,7 @@ proc rmTree(out error: syserr, root: string) {
 
    :arg root: path name representing a directory that should be deleted along
               with its entire contents.
-   :type root: string
+   :type root: `string`
 */
 proc rmTree(root: string) {
   var err: syserr = ENOERR;
@@ -1279,13 +1279,13 @@ proc sameFile(out error: syserr, file1: string, file2: string): bool {
    Will halt with an error message if one is detected
 
    :arg file1: The first path to be compared.
-   :type file1: string
+   :type file1: `string`
    :arg file2: The second path to be compared.
-   :type file2: string
+   :type file2: `string`
 
    :return: `true` if the two paths refer to the same file or directory,
             `false` otherwise.
-   :rtype: bool
+   :rtype: `bool`
 */
 proc sameFile(file1: string, file2: string): bool {
   var err:syserr = ENOERR;
@@ -1331,13 +1331,13 @@ proc sameFile(out error: syserr, file1: file, file2: file): bool {
    Will halt with an error message if one is detected
 
    :arg file1: The first file to be compared.
-   :type file1: file
+   :type file1: `file`
    :arg file2: The second file to be compared.
-   :type file2: file
+   :type file2: `file`
 
    :return: `true` if the two records refer to the same file, `false`
             otherwise.
-   :rtype: bool
+   :rtype: `bool`
 */
 proc sameFile(file1: file, file2: file): bool {
   var err:syserr = ENOERR;
@@ -1358,9 +1358,9 @@ proc symlink(out error: syserr, oldName: string, newName: string) {
    Will halt with an error message if one is detected
 
    :arg oldName: The source file to be linked
-   :type oldName: string
+   :type oldName: `string`
    :arg newName: The location where the symbolic link should live
-   :type newName: string
+   :type newName: `string`
 */
 proc symlink(oldName: string, newName: string) {
   var err:syserr = ENOERR;
@@ -1379,10 +1379,10 @@ proc symlink(oldName: string, newName: string) {
 
 
    :arg mask: The file creation mask to use now.
-   :type mask: int
+   :type mask: `int`
 
    :return: The previous file creation mask
-   :rtype: int
+   :rtype: `int`
 */
 proc locale.umask(mask: int): int {
   extern proc chpl_fs_umask(mask: mode_t): mode_t;
@@ -1406,22 +1406,22 @@ proc locale.umask(mask: int): int {
             could be improved in this regard.
 
    :arg path: The directory from which to start the walk (defaults to ``"."``)
-   :type path: string
+   :type path: `string`
 
    :arg topdown: Indicates whether to yield a directory before or after descending into its children (defaults to `true`)
-   :type topdown: bool
+   :type topdown: `bool`
 
    :arg depth: Indicates the maximum recursion depth to use (defaults to `max(int)`)
-   :type depth: int
+   :type depth: `int`
 
    :arg hidden: Indicates whether to descend into hidden directories (defaults to `false`)
-   :type hidden: bool
+   :type hidden: `bool`
 
    :arg followlinks: Indicates whether to follow symbolic links (defaults to `false`)
-   :type followlinks: bool
+   :type followlinks: `bool`
 
    :arg sort: Indicates whether or not to consider subdirectories in sorted order (defaults to `false`).  Note that requesting sorting has no effect in parallel invocations.
-   :type sort: bool
+   :type sort: `bool`
 
    :yield: The directory names encountered, relative to `path`, as strings
 */

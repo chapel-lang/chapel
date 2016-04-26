@@ -32,7 +32,7 @@ def print_mode(mode='list'):
     elif chpl_home and m == 'shell':
         print_var('CHPL_HOME', chpl_home, mode)
 
-    if m != 'runtime':
+    if m != 'runtime' and m != 'list':
         host_platform = chpl_platform.get('host')
         host_compiler = chpl_compiler.get('host')
         #host_arch = arch.get('host')
@@ -109,8 +109,9 @@ def print_mode(mode='list'):
         wide_pointer_defines = chpl_wide_pointers.get('define')
         print_var('CHPL_WIDE_POINTERS_DEFINES', wide_pointer_defines, mode, 'widedef')
 
-    llvm = chpl_llvm.get()
-    print_var('CHPL_LLVM', llvm, mode, 'llvm', ('compiler',))
+    if mode != 'list':
+        llvm = chpl_llvm.get()
+        print_var('CHPL_LLVM', llvm, mode, 'llvm', ('compiler',))
 
     aux_filesys = chpl_aux_filesys.get()
     if mode == 'make' or mode == 'runtime':
@@ -129,12 +130,6 @@ def print_mode(mode='list'):
         print_mode('launcher')
 
         link_args_3p = []
-
-        print_var('  CHPL_DLMALLOC_UNIQ_CFG_PATH',
-                  chpl_3p_dlmalloc_configs.get_uniq_cfg_path(),
-                  mode, filters=('runtime',))
-        if target_mem == 'dlmalloc':
-            link_args_3p.extend(chpl_3p_dlmalloc_configs.get_link_args())
 
         print_var('  CHPL_GMP_UNIQ_CFG_PATH',
                   chpl_3p_gmp_configs.get_uniq_cfg_path(),
@@ -170,12 +165,6 @@ def print_mode(mode='list'):
                   mode, filters=('runtime',))
         if regexp == 're2':
             link_args_3p.extend(chpl_3p_re2_configs.get_link_args())
-
-        print_var('  CHPL_TCMALLOC_UNIQ_CFG_PATH',
-                  chpl_3p_tcmalloc_configs.get_uniq_cfg_path(),
-                  mode, filters=('runtime',))
-        if target_mem == 'tcmalloc':
-            link_args_3p.extend(chpl_3p_tcmalloc_configs.get_link_args())
 
         link_args_3p_dedup=[]
         for arg in reversed(link_args_3p):

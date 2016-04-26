@@ -1,4 +1,8 @@
 Foo
+
+Usage:
+   use Foo;
+
    config var blah4: int
    proc d()
    Class: bar

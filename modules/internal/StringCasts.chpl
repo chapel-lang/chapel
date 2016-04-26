@@ -32,21 +32,20 @@ module StringCasts {
   //
   // Bool
   //
-  const _true_s: string = "true";
-  const _false_s: string = "false";
 
   inline proc _cast(type t, x: bool) where t == string {
     if (x) {
-      return _true_s;
+      return "true";
     } else {
-      return _false_s;
+      return "false";
     }
   }
 
-  proc _cast(type t, x: string) where t == bool {
-    if (x == _true_s) {
+  proc _cast(type t, x: string) where isBoolType(t) {
+    var str = x.strip();
+    if (str == "true") {
       return true;
-    } else if (x == _false_s) {
+    } else if (str == "false") {
       return false;
     } else {
       halt("Unexpected value when converting from string to bool: '"+x+"'");
@@ -90,7 +89,7 @@ module StringCasts {
     pragma "insert line file info"
     extern proc c_string_to_uint64_t(x:c_string) : uint(64);
 
-    const localX = x.localize();
+    const localX = x.strip().localize();
     if isIntType(t) {
       select numBits(t) {
         when 8  do return c_string_to_int8_t(localX.c_str());
@@ -146,7 +145,7 @@ module StringCasts {
     pragma "insert line file info"
     extern proc c_string_to_real64(x: c_string) : real(64);
 
-    const localX = x.localize();
+    const localX = x.strip().localize();
     select numBits(t) {
       when 32 do return c_string_to_real32(localX.c_str());
       when 64 do return c_string_to_real64(localX.c_str());
@@ -160,7 +159,7 @@ module StringCasts {
     pragma "insert line file info"
     extern proc c_string_to_imag64(x: c_string) : imag(64);
 
-    const localX = x.localize();
+    const localX = x.strip().localize();
     select numBits(t) {
       when 32 do return c_string_to_imag32(localX.c_str());
       when 64 do return c_string_to_imag64(localX.c_str());
@@ -201,7 +200,7 @@ module StringCasts {
     pragma "insert line file info"
     extern proc c_string_to_complex128(x:c_string) : complex(128);
 
-    const localX = x.localize();
+    const localX = x.strip().localize();
     select numBits(t) {
       when 64 do return c_string_to_complex64(localX.c_str());
       when 128 do return c_string_to_complex128(localX.c_str());

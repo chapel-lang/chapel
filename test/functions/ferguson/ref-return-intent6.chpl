@@ -1,0 +1,54 @@
+record R {
+  var x;
+
+  proc return_ref() ref
+  {
+    writeln("setter");
+    return x;
+  }
+  proc return_ref()
+  {
+    writeln("getter");
+    return x;
+  }
+  
+  proc call_return_ref() const ref
+  {
+    return return_ref();
+  }
+
+}
+
+{
+  var r = new R(1);
+
+  writeln("should be reading 1");
+  var x = r.return_ref(); // getter
+  writeln(x);
+
+  writeln("setting it to 2");
+  r.return_ref() = 2; // setter
+  writeln(r.x);
+
+  writeln("should be reading 2");
+  var y = r.call_return_ref(); // getter
+  writeln(r.x);
+
+}
+
+{
+  var r = new R("one");
+
+  writeln("should be reading one");
+  var x = r.return_ref(); // getter
+  writeln(x);
+
+  writeln("setting it to two");
+  r.return_ref() = "two"; // setter
+  writeln(r.x);
+
+  writeln("should be reading two");
+  var y = r.call_return_ref(); // getter
+  writeln(r.x);
+
+}

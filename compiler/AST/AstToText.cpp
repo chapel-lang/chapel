@@ -115,19 +115,14 @@ void AstToText::appendName(FnSymbol* fn)
 
 void AstToText::appendThisIntent(FnSymbol* fn)
 {
-  int index = indexForThis(fn);
+  if (fn->thisTag == INTENT_REF)
+    mText += "ref ";
 
-  if (index > 0)
-  {
-    DefExpr*   formal = toDefExpr(fn->formals.get(index));
-    ArgSymbol* argSym = toArgSymbol(formal->sym);
+  else if (fn->thisTag == INTENT_PARAM)
+    mText += "param ";
 
-    if (argSym->intent == INTENT_REF)
-      mText += "ref ";
-
-    else if (argSym->intent == INTENT_PARAM)
-      mText += "param ";
-  }
+  else if (fn->thisTag == INTENT_TYPE)
+    mText += "type ";
 }
 
 void AstToText::appendClassName(FnSymbol* fn)
@@ -880,6 +875,18 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         appendExpr(expr->get(1), printingType);
       }
 
+      else if (strcmp(fnName, "chpl__buildDomainExpr")        == 0)
+      {
+        mText += "{";
+        appendExpr(expr->get(1), printingType);
+        for (int index = 2; index <= expr->numActuals(); index++)
+        {
+          mText += ", ";
+          appendExpr(expr->get(index), printingType);
+        }
+        mText += "}";
+      }
+
       else if (strcmp(fnName, "chpl__ensureDomainExpr")       == 0)
       {
         appendExpr(expr->get(1), printingType);
@@ -996,11 +1003,28 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       else if (strcmp(fnName, "range")                       == 0)
         appendExpr(expr, "range", printingType);
 
-      else if (strcmp(fnName, "chpl_build_bounded_range")    == 0)
+      else if (strcmp(fnName, "chpl_build_bounded_range") == 0)
       {
         appendExpr(expr->get(1), printingType);
         mText += "..";
         appendExpr(expr->get(2), printingType);
+      }
+
+      else if (strcmp(fnName, "chpl_build_low_bounded_range") == 0)
+      {
+        appendExpr(expr->get(1), printingType);
+        mText += "..";
+      }
+
+      else if (strcmp(fnName, "chpl_build_high_bounded_range") == 0)
+      {
+        mText += "..";
+        appendExpr(expr->get(1), printingType);
+      }
+
+      else if (strcmp(fnName, "chpl_build_unbounded_range") == 0)
+      {
+        mText += "..";
       }
 
       else if (strcmp(fnName, ".")                           == 0)

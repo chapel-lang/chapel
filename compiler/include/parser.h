@@ -21,7 +21,7 @@
 #define _PARSER_H_
 
 class BlockStmt;
-class CallExpr;
+class UseStmt;
 
 #include "symbol.h"
 
@@ -48,7 +48,7 @@ BlockStmt*         parseString(const char* string,
                                const char* msg);
 
 void               addModuleToParseList(const char* name,
-                                        CallExpr*   newUse);
+                                        UseStmt*   newUse);
 
 void               parseDependentModules(ModTag modtype);
 

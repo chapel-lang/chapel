@@ -34,7 +34,6 @@
 #include "ipeDriver.h"
 #include "ipeResolve.h"
 #include "ipeEvaluate.h"
-#include "ipeUtils.h"
 
 #include "stmt.h"
 #include "symbol.h"

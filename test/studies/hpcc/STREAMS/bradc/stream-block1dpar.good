@@ -1,5 +1,3 @@
-stream-block1dpar.chpl:105: In function 'verifyResults':
-stream-block1dpar.chpl:108: warning: reduce has been serialized (see note in $CHPL_HOME/STATUS)
 Problem size = 8 (2**3)
 Bytes per array = 64
 Total memory required (GB) = 1.78814e-07

@@ -47,6 +47,26 @@ module ChapelSyncvar {
   pragma "no doc"
   inline proc chpl__readXX(x) return x;
 
+  proc chpl_ensureFEType(type t) {
+    //
+    // The following types are OK for full empty types (sync/single)
+    // because they represent a single logical value.  (Note that for
+    // the class it's the referenece to the object that has full/empty
+    // semantics.  Note that this includes the internal type
+    // chpl_taskID_t in order to keep parallel/taskPar/sungeun/private.chpl
+    // working, but this does not seem to be more broadly necessary.
+    //
+    if !(isVoidType(t) || isBoolType(t) || isIntegralType(t) || 
+         isEnumType(t) || isFloatType(t) || isStringType(t) || 
+         isClassType(t) || t == chpl_taskID_t) {
+      //
+      // TODO: compilerError() does not seem to be propagating up to
+      // the user-level modules... it should, shouldn't it?
+      //
+      compilerError("sync/single types cannot be of type '", t:string, "'");
+    }
+  }
+
   pragma "sync"
     pragma "no object" // Optimize out the object base pointer.
     pragma "no default functions"
@@ -63,6 +83,7 @@ module ChapelSyncvar {
       proc ~_syncvar() { __primitive("sync_destroy", this); }
 
       proc initialize() {
+        chpl_ensureFEType(base_type);
         __primitive("sync_init", this);
       }
     }
@@ -263,6 +284,7 @@ module ChapelSyncvar {
       proc ~_singlevar() { __primitive("single_destroy", this); }
 
       proc initialize() {
+        chpl_ensureFEType(base_type);
         __primitive("single_init", this);
       }
     }

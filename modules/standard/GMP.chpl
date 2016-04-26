@@ -105,7 +105,7 @@ Calling GMP functions directly
 
 The second option for Chapel programs using this module is to call the GMP
 functions directly. For a full reference to GMP capabilities, please refer to
-the `GMP website <http://gmplib.org>`_ and the
+the `GMP website <https://gmplib.org>`_ and the
 `GMP documentation <https://gmplib.org/manual/>`_.
 
 
@@ -907,7 +907,7 @@ module GMP {
       var ret:c_ulong;
       on this {
         var (ncopy,n_) = n.maybeCopy();
-        ret=mpz_mod(this.mpz, n_.mpz, d.safeCast(c_ulong));
+        ret=mpz_mod_ui(this.mpz, n_.mpz, d.safeCast(c_ulong));
         if ncopy then delete n_;
       }
       return ret.safeCast(uint);

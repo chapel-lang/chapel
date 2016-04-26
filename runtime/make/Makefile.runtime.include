@@ -87,7 +87,7 @@ ifeq ($(RUNTIME_CYGWIN),1)
   RUNTIME_INCLS += -I/usr/include/w32api
 endif
 
-# Add any further includes (e.g. third party tcmalloc dir) for memory
+# Add any further includes for memory
 MEM_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.mem-$(CHPL_MAKE_MEM)
 ifneq ($(strip $(wildcard $(MEM_INCLUDE))),)
   include $(MEM_INCLUDE)
@@ -109,6 +109,6 @@ RUNTIME_DEFS += -fPIC
 endif
 
 RUNTIME_CFLAGS += $(RUNTIME_DEFS)
-RUNTIME_CXXFLAGS += $(RUNTIME_DEFS)
+RUNTIME_CXXFLAGS += $(RUNTIME_DEFS) $(CXXFLAGS)
 
 

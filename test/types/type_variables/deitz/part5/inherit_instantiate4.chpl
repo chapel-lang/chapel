@@ -10,6 +10,7 @@ class D : C {
 var d = new D(p=2);
 
 writeln(d);
+writeln("p=", d.p);
 
 proc foo(c : C) {
   for param i in 1..c.p do
@@ -17,3 +18,5 @@ proc foo(c : C) {
 }
 
 foo(d);
+
+delete d;

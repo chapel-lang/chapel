@@ -1,4 +1,0 @@
-feature request: Call a constructor using a type function as the base.
-
-This currently results in a syntax error.
-

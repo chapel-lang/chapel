@@ -12,9 +12,7 @@ proc updateFluff() {
     // boundaries() yields a periodic array element, and the 
     // neighbor panel value
     forall (pos, N) in Pos.boundaries() {
-      //forall p in pos do
-       // p += PosOffset[N];
-      pos += PosOffset[N];
+      for p in pos do p += PosOffset[N];
     }
   } else {
     forall (P, D, S) in zip(PosOffset, Dest, Src) {
@@ -79,7 +77,6 @@ proc buildNeighbors() {
                                  binSpace, RealCount) {
     const existing = 1..c;
     for (a, p, i) in zip(bin[existing], pos[existing], existing) {
-  //    writeln("comparing to ", r, " at ", i, " with count ", c);
       a.ncount = 0;
 
       for s in stencil {
@@ -88,13 +85,11 @@ proc buildNeighbors() {
 
         for (n, x) in zip(Pos[o][existing], existing) {
           if r == o && x == i then continue; 
-    //      writeln("\t", o, " at ", x, " with pos ", n);
 
           // are we within range?
           const del = p - n;
           const rsq = dot(del,del);
           if rsq <= cutneighsq {
-      //      writeln("\t\tadded");
             a.ncount += 1;
 
             // resize neighbor list if necessary
@@ -124,8 +119,8 @@ proc buildNeighbors() {
 // See test/types/records/bharshbarger/remote*Record.chpl for more.
 inline proc addatom(ref a : atom, x : v3, b : v3int) {
   // increment bin's # of atoms
-  Count[b] += 1;
-  const end = if useStencilDist then Count.readRemote(b) else Count[b];
+  const end = RealCount[b] + 1;
+  RealCount[b] = end;
   
   // resize bin storage if needed
   if end >= perBinSpace.high {
@@ -137,7 +132,7 @@ inline proc addatom(ref a : atom, x : v3, b : v3int) {
   // add to the end of the bin
   Bins[b][end].v = a.v;
   Bins[b][end].f = a.f;
-  Pos[b][end] = x;
+  RealPos[b][end] = x;
 }
 
 proc binAtoms() {

@@ -114,6 +114,7 @@ floatLiteral     {decFloatLiteral}|{hexFloatLiteral}
 %%
 
 align            return processToken(yyscanner, TALIGN);
+as               return processToken(yyscanner, TAS);
 atomic           return processToken(yyscanner, TATOMIC);
 begin            return processToken(yyscanner, TBEGIN);
 break            return processToken(yyscanner, TBREAK);
@@ -131,6 +132,7 @@ domain           return processToken(yyscanner, TDOMAIN);
 else             return processToken(yyscanner, TELSE);
 enum             return processToken(yyscanner, TENUM);
 export           return processToken(yyscanner, TEXPORT);
+except           return processToken(yyscanner, TEXCEPT);
 extern           return processExtern(yyscanner);
 for              return processToken(yyscanner, TFOR);
 forall           return processToken(yyscanner, TFORALL);
@@ -149,6 +151,7 @@ new              return processToken(yyscanner, TNEW);
 nil              return processToken(yyscanner, TNIL);
 noinit           return processToken(yyscanner, TNOINIT);
 on               return processToken(yyscanner, TON);
+only             return processToken(yyscanner, TONLY);
 otherwise        return processToken(yyscanner, TOTHERWISE);
 out              return processToken(yyscanner, TOUT);
 param            return processToken(yyscanner, TPARAM);
@@ -431,6 +434,10 @@ static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
         addCharString('\\');
       }
 
+      // \ escape ? to avoid C trigraphs
+      if (c == '?')
+        addCharString('\\');
+
       addCharString(c);
     }
 
@@ -440,6 +447,12 @@ static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
       if (c == '\n') {
         processNewline(scanner);
         addCharString('n');
+      } else if (c == 'u' || c == 'U') {
+        ParserContext context(scanner);
+        yyerror(yyLloc, &context, "universal character name not yet supported in string literal");
+      } else if ('0' <= c && c <= '7' ) {
+        ParserContext context(scanner);
+        yyerror(yyLloc, &context, "octal escape not supported in string literal");
       } else if (c != 0) {
         addCharString(c);
       }

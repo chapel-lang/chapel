@@ -57,6 +57,23 @@ sub process {
          my $next = <RST>;
          $next =~ /^=+$/ or die "Expected an underline after module name, got $next";
          print MOD $next;
+
+         my $usageFirstLine = <RST>;
+         $usageFirstLine =~ /^\*\*Usage\*\*/ or die "Expected usage information, got $usageFirstLine";
+         print MOD $usageFirstLine;
+         # the next five lines are anticipated to be a continuation of the
+         # usage output.  We don't really need to validate that, that's what our
+         # testing system is for.
+         my $usageNextLine = <RST>;
+         print MOD $usageNextLine;
+         $usageNextLine = <RST>;
+         print MOD $usageNextLine;
+         $usageNextLine = <RST>;
+         print MOD $usageNextLine;
+         $usageNextLine = <RST>;
+         print MOD $usageNextLine;
+         $usageNextLine = <RST>;
+         print MOD $usageNextLine;
          last;
       }
    }

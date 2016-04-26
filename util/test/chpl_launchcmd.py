@@ -176,6 +176,20 @@ class AbstractJob(object):
         logging.info('Job name is: {0}'.format(job_name))
         return job_name
 
+    @property
+    def select_suffix(self):
+        """Returns suffix for select expression based instance attributes. For example,
+        if self.knc is True, returns `:Xeon_Phi` so reservation will
+        target KNC nodes. Returns empty string when self.knc is False.
+
+        :rtype: str
+        :returns: select expression suffix, or empty string
+        """
+        if self.knc:
+            return ':Xeon_Phi'
+        else:
+            return ''
+
     target_arch = chpl_arch.get('target')
     @property
     def knc(self):
@@ -185,6 +199,15 @@ class AbstractJob(object):
         :returns: True when testing KNC
         """
         return self.target_arch == 'knc'
+
+    @property
+    def knl(self):
+        """Returns True when testing KNL (Xeon Phi).
+
+        :rtype: bool
+        :returns: True when testing KNL
+        """
+        return self.target_arch == 'mic-knl'
 
     def work_around_knc_module_bug(self):
         """Hack to unload the knc module before calling qsub in order to work
@@ -232,8 +255,8 @@ class AbstractJob(object):
 
         if self.num_locales >= 0:
             submit_command.append('-l')
-            submit_command.append('{0}={1}'.format(
-                self.num_nodes_resource, self.num_locales))
+            submit_command.append('{0}={1}{2}'.format(
+                self.num_nodes_resource, self.num_locales, self.select_suffix))
         if self.hostlist is not None:
             submit_command.append('-l')
             submit_command.append('{0}={1}'.format(
@@ -839,7 +862,7 @@ class PbsProJob(AbstractJob):
             # on the system. Someday support for heterogeneous applications may
             # exist, in which case ncpus will need to be set. For now, assume
             # program will be launched onto knc only.
-            if self.num_cpus_resource is not None and not self.knc:
+            if self.num_cpus_resource is not None and not (self.knc or self.knl):
                 select_stmt += ':{0}={1}'.format(
                     self.num_cpus_resource, self.num_cpus)
 

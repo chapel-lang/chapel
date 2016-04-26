@@ -68,6 +68,8 @@
   #include "symbol.h"
 
   #include <cstdio>
+  #include <utility>
+  #include <vector>
 
   class ArgSymbol;
   class BlockStmt;
@@ -86,6 +88,15 @@
   struct IntentExpr {
     Expr*  first;
     Expr*  second;
+  };
+
+  struct OnlyRename {
+    enum{SINGLE, DOUBLE} tag;
+
+    union {
+      Expr*  elem;
+      std::pair<Expr*, Expr*>* renamed;
+    };
   };
 
   // The lexer only uses pch.
@@ -108,6 +119,7 @@
     ProcIter          procIter;
     FlagSet*          flagSet;
     IntentExpr        pIntentExpr;
+    std::vector<OnlyRename*>* ponlylist;
   };
 
   #endif
@@ -269,12 +281,12 @@
 //
 // keywords (alphabetical)
 //
-%token TALIGN TATOMIC TBEGIN TBREAK TBY
+%token TALIGN TAS TATOMIC TBEGIN TBREAK TBY
 %token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
-%token TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXPORT TEXTERN
+%token TDELETE TDMAPPED TDO TDOMAIN TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFOR TFORALL TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
-%token TNEW TNIL TNOINIT TON TOTHERWISE TOUT
+%token TNEW TNIL TNOINIT TON TONLY TOTHERWISE TOUT
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPUBLIC
 %token TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
@@ -329,7 +341,7 @@
 %type <flag> opt_config
 %type <b> access_control
 
-%type <pt> opt_intent_tag opt_this_intent_tag
+%type <pt> required_intent_tag opt_intent_tag opt_this_intent_tag
 
 %type <retTag> opt_ret_tag
 
@@ -350,6 +362,7 @@
 %type <pblockstmt> stmt_ls
 
 %type <pblockstmt> use_stmt require_stmt
+%type <ponlylist>  only_ls
 
 %type <pblockstmt> class_level_stmt_ls
 
@@ -489,8 +502,30 @@ stmt_ls:
 ;
 
 
+only_ls:
+  expr                                 { $$ = new std::vector<OnlyRename*>();
+                                         OnlyRename* cur = new OnlyRename();
+                                         cur->tag = OnlyRename::SINGLE;
+                                         cur->elem = $1;
+                                         $$->push_back(cur); }
+| expr TAS expr                        { $$ = new std::vector<OnlyRename*>();
+                                         OnlyRename* cur = new OnlyRename();
+                                         cur->tag = OnlyRename::DOUBLE;
+                                         cur->renamed = new std::pair<Expr*, Expr*>($1, $3);
+                                         $$->push_back(cur); }
+| only_ls TCOMMA expr                  { OnlyRename* cur = new OnlyRename();
+                                         cur->tag = OnlyRename::SINGLE;
+                                         cur->elem = $3;
+                                         $1->push_back(cur); }
+| only_ls TCOMMA expr TAS expr         { OnlyRename* cur = new OnlyRename();
+                                         cur->tag = OnlyRename::DOUBLE;
+                                         cur->renamed = new std::pair<Expr*, Expr*>($3, $5);
+                                         $1->push_back(cur); }
+
 use_stmt:
   TUSE expr_ls TSEMI                   { $$ = buildUseStmt($2); }
+| TUSE expr TEXCEPT only_ls TSEMI      { $$ = buildUseStmt($2, $4, true); }
+| TUSE expr TONLY only_ls TSEMI        { $$ = buildUseStmt($2, $4, false); }
 ;
 
 require_stmt:
@@ -751,7 +786,7 @@ lambda_decl_expr:
   opt_ret_tag opt_type opt_where_part function_body_stmt
     {
       $3->retTag = $5;
-      if ($5 == RET_REF)
+      if ($5 == RET_REF || $5 == RET_CONST_REF)
         USR_FATAL("'ref' return types are not allowed in lambdas");
       if ($5 == RET_PARAM)
         USR_FATAL("'param' return types are not allowed in lambdas");
@@ -879,7 +914,7 @@ fn_ident:
 | TNOT           { $$ = "!"; }
 | TBY            { $$ = "chpl_by"; }
 | THASH          { $$ = "#"; }
-| TALIGN         { $$ = "align"; }
+| TALIGN         { $$ = "chpl_align"; }
 | TSWAP          { $$ = "<=>"; }
 | TIO            { $$ = "<~>"; }
 ;
@@ -926,8 +961,12 @@ formal:
 ;
 
 opt_intent_tag:
-          { $$ = INTENT_BLANK; }
-| TIN     { $$ = INTENT_IN; }
+                      { $$ = INTENT_BLANK; }
+| required_intent_tag { $$ = $1; }
+;
+
+required_intent_tag:
+  TIN     { $$ = INTENT_IN; }
 | TINOUT  { $$ = INTENT_INOUT; }
 | TOUT    { $$ = INTENT_OUT; }
 | TCONST  { $$ = INTENT_CONST; }
@@ -951,11 +990,12 @@ proc_or_iter:
 ;
 
 opt_ret_tag:
-            { $$ = RET_VALUE; }
-| TCONST    { $$ = RET_VALUE; }
-| TREF      { $$ = RET_REF; }
-| TPARAM    { $$ = RET_PARAM; }
-| TTYPE     { $$ = RET_TYPE; }
+              { $$ = RET_VALUE; }
+| TCONST      { $$ = RET_VALUE; }
+| TCONST TREF { $$ = RET_CONST_REF; }
+| TREF        { $$ = RET_REF; }
+| TPARAM      { $$ = RET_PARAM; }
+| TTYPE       { $$ = RET_TYPE; }
 ;
 
 opt_function_body_stmt:
@@ -1044,6 +1084,7 @@ var_decl_stmt:
       flags.insert($1);
       flags.insert(FLAG_PARAM);
       $$ = buildVarDecls($3, flags, @1.comment);
+      context->latestComment = NULL;
     }
 | opt_config TCONST var_decl_stmt_inner_ls TSEMI
     {
@@ -1051,6 +1092,7 @@ var_decl_stmt:
       flags.insert($1);
       flags.insert(FLAG_CONST);
       $$ = buildVarDecls($3, flags, @1.comment);
+      context->latestComment = NULL;
     }
 | opt_config TREF var_decl_stmt_inner_ls TSEMI
     {
@@ -1058,6 +1100,7 @@ var_decl_stmt:
       flags.insert($1);
       flags.insert(FLAG_REF_VAR);
       $$ = buildVarDecls($3, flags, @1.comment);
+      context->latestComment = NULL;
     }
 | opt_config TCONST TREF var_decl_stmt_inner_ls TSEMI
     {
@@ -1066,12 +1109,14 @@ var_decl_stmt:
       flags.insert(FLAG_CONST);
       flags.insert(FLAG_REF_VAR);
       $$ = buildVarDecls($4, flags, @1.comment);
+      context->latestComment = NULL;
     }
 | opt_config TVAR var_decl_stmt_inner_ls TSEMI
     {
       std::set<Flag> flags;
       flags.insert($1);
       $$ = buildVarDecls($3, flags, @1.comment);
+      context->latestComment = NULL;
     }
 ;
 
@@ -1385,16 +1430,18 @@ task_intent_ls:
 ;
 
 intent_expr:
-  opt_intent_tag ident_expr
+  required_intent_tag ident_expr
     {
       ArgSymbol* tiMark = tiMarkForIntent($1);
-      if (!tiMark)
-        USR_FATAL_CONT($2, "Unsupported intent in with clause");
+      if (!tiMark) {
+        USR_FATAL_CONT($2, "%s is not supported in a 'with' clause",
+                           intentDescrString($1));
+        tiMark = tiMarkForIntent(INTENT_IN); //dummy, so parser can continue
+      }
       $$.first = new SymExpr(tiMark);
       $$.second = $2;
     }
-// todo: allow user-defined reductions like in reduce_expr:
-// | expr             TREDUCE ident_expr  { $$.first = $1, $$.second = $3; }
+| expr                TREDUCE ident_expr  { $$.first = $1, $$.second = $3; }
 | reduce_scan_op_expr TREDUCE ident_expr  { $$.first = $1, $$.second = $3; }
 ;
 
@@ -1433,11 +1480,11 @@ expr:
 | expr TDOTDOT expr
     { $$ = new CallExpr("chpl_build_bounded_range", $1, $3); }
 | expr TDOTDOT
-    { $$ = new CallExpr("chpl_build_partially_bounded_range", buildDotExpr("BoundedRangeType", "boundedLow"), $1); }
+    { $$ = new CallExpr("chpl_build_low_bounded_range", $1); }
 | TDOTDOT expr
-    { $$ = new CallExpr("chpl_build_partially_bounded_range", buildDotExpr("BoundedRangeType", "boundedHigh"), $2); }
+    { $$ = new CallExpr("chpl_build_high_bounded_range", $2); }
 | TDOTDOT
-    { $$ = new CallExpr("chpl_build_unbounded_range", buildDotExpr("BoundedRangeType", "boundedNone")); }
+    { $$ = new CallExpr("chpl_build_unbounded_range"); }
 ;
 
 lhs_expr:
@@ -1521,7 +1568,7 @@ binary_op_expr:
 | expr TOR  expr           { $$ = new CallExpr("||", $1, $3); }
 | expr TEXP expr           { $$ = new CallExpr("**", $1, $3); }
 | expr TBY expr            { $$ = new CallExpr("chpl_by", $1, $3); }
-| expr TALIGN expr         { $$ = new CallExpr("align", $1, $3); }
+| expr TALIGN expr         { $$ = new CallExpr("chpl_align", $1, $3); }
 | expr THASH expr          { $$ = new CallExpr("#", $1, $3); }
 | expr TDMAPPED expr       { $$ = new CallExpr("chpl__distributed", $3, $1); }
 ;

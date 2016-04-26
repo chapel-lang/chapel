@@ -26,7 +26,7 @@
    This module also defines the error types :type:`syserr` and :type:`err_t`.
 
    When should one use :type:`syserr` and when should one use :type:`err_t`?
-   :type:`err_t` is a system error code (a :type:`c_int` by a nicer name to
+   :type:`err_t` is a system error code (a `c_int` by a nicer name to
    indicate its purpose). :type:`syserr` is an enhanced error that might also
    include an error message. All user-facing Chapel library code, or user
    Chapel code, should generally use :type:`syserr`. When wrapping functions
@@ -91,13 +91,13 @@ extern proc chpl_cnullfile():_file;
  */
 extern type syserr; // = c_int, opaque so we can manually override ==,!=,etc
 
-/* An integral error code. This is really just a :type:`c_int`, but code is
+/* An integral error code. This is really just a `c_int`, but code is
    clearer if you use err_t to indicate arguments, variables, and return types
    that are system error codes. 
  */
 extern type err_t = c_int;
 
-/* A system file descriptior. This is really just a :type:`c_int`, but code is
+/* A system file descriptior. This is really just a `c_int`, but code is
    clearer if you use fd_t to indicate arguments, variables, and return types
    that are system file descriptors.
  */

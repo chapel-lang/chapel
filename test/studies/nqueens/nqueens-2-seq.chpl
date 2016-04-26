@@ -30,7 +30,13 @@ proc countSolutions(boardSize: int, showEachSoln: bool) {
   showEachSolution = showEachSoln;
   if showEachSoln then
     writeln("Solving N Queens for N=", boardSize, "...");
-  tryQueenInNextRow(createBoard(boardSize));  // forego dealloc of this board
+
+  var board = createBoard(boardSize);
+
+  tryQueenInNextRow(board);  // forego dealloc of this board
+
+  delete board;
+
   writeln("Found ", solutionCount, " solutions for N=", boardSize);
 }
 

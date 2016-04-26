@@ -1,10 +1,20 @@
 OuterMod
+
+Usage:
+   use OuterMod;
+
+Submodules for this module are located in the OuterMod/ directory
+
    This module has a comment, but uncommented first method 
    proc outerFn()
    proc outerCommented()
       The second method is commented 
 
-   OuterMod.Inner
-      proc innerFn()
-         This module has no comment, but it's inner function does! 
+Inner
+
+Usage:
+   use OuterMod.Inner;
+
+   proc innerFn()
+      This module has no comment, but it's inner function does! 
 

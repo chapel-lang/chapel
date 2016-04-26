@@ -604,7 +604,10 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
                             sizeof(ftable)/sizeof(gasnet_handlerentry_t),
                             gasnet_getMaxLocalSegmentSize(),
                             0));
-#undef malloc
+  // memory layer hasn't been initialized, need to use the system allocator
+#include "chpl-mem-no-warning-macros.h"
+  // TODO (EJR: 03/03/16): we currently "leak" seginfo_table. We should
+  // probably free it on exit (but only for "clean" exits.)
   seginfo_table = (gasnet_seginfo_t*)malloc(chpl_numNodes*sizeof(gasnet_seginfo_t));
   //
   // The following call has no real effect on the .addr and .size
@@ -667,7 +670,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   GASNET_BLOCKUNTIL(bcast_seginfo_done);
   chpl_comm_barrier("making sure everyone's done with the broadcast");
 #endif
-#define malloc dont_use_malloc_use_chpl_mem_allocMany_instead
+#include "chpl-mem-warning-macros.h"
 
   gasnet_set_waitmode(GASNET_WAIT_BLOCK);
 

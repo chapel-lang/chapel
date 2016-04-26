@@ -30,7 +30,8 @@
 static bool mainReturnsInt;
 
 static void build_chpl_entry_points();
-static void build_getter(AggregateType* ct, Symbol* field);
+static void build_accessor(AggregateType* ct, Symbol* field, bool setter);
+static void build_accessors(AggregateType* ct, Symbol* field);
 static void build_union_assignment_function(AggregateType* ct);
 static void build_enum_assignment_function(EnumType* et);
 static void build_record_assignment_function(AggregateType* ct);
@@ -135,10 +136,10 @@ static void buildFieldAccessorFunctions(AggregateType* at)
     if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
       if (isVarSymbol(field)) {
         if (strcmp(field->name, "_promotionType")) {
-          build_getter(at, field);
+          build_accessors(at, field);
         }
       } else if (isEnumType(field->type)) {
-        build_getter(at, field);
+        build_accessors(at, field);
       }
     }
   }
@@ -163,11 +164,18 @@ static bool type_match(Type* type, Symbol* sym) {
   return false;
 }
 
+typedef enum {
+  FIND_EITHER = 0,
+  FIND_REF,
+  FIND_NOT_REF
+} fuction_exists_kind_t;
+
 static FnSymbol* function_exists(const char* name,
                                  int numFormals,
                                  Type* formalType1 = NULL,
                                  Type* formalType2 = NULL,
-                                 Type* formalType3 = NULL)
+                                 Type* formalType3 = NULL,
+                                 fuction_exists_kind_t kind=FIND_EITHER)
 {
   switch(numFormals)
   {
@@ -201,6 +209,12 @@ static FnSymbol* function_exists(const char* name,
       if (!type_match(formalType3, fn->getFormal(3)))
         continue;
 
+    if (kind == FIND_REF && fn->retTag != RET_REF)
+      continue;
+
+    if (kind == FIND_NOT_REF && fn->retTag == RET_REF)
+      continue;
+
     return fn;
   }
 
@@ -209,35 +223,43 @@ static FnSymbol* function_exists(const char* name,
 }
 
 
-// Getter and setter functions are provided by the compiler if not supplied by
-// the user.
-// These functions have the same binding strength as if they were user-defined.
-static void build_getter(AggregateType* ct, Symbol *field) {
-  const bool fieldIsConst = field->hasFlag(FLAG_CONST);
-  const bool recordLike = ct->isRecord() || ct->isUnion();
-  if (FnSymbol* fn = function_exists(field->name, 2, dtMethodToken, ct)) {
-    std::vector<BaseAST*> asts;
-    collect_asts(fn, asts);
-    for_vector(BaseAST, ast, asts) {
-      if (CallExpr* call = toCallExpr(ast)) {
-        if (call->isNamed(field->name) && call->numActuals() == 2) {
-          if (call->get(1)->typeInfo() == dtMethodToken &&
-              call->get(2)->typeInfo() == ct) {
-            Expr* arg2 = call->get(2);
-            call->replace(new CallExpr(PRIM_GET_MEMBER,
-                                       arg2->remove(),
-                                       new_CStringSymbol(field->name)));
-          }
+static void fixup_accessor(AggregateType* ct, Symbol *field,
+                           bool fieldIsConst, bool recordLike,
+                           FnSymbol* fn)
+{
+  std::vector<BaseAST*> asts;
+  collect_asts(fn, asts);
+  for_vector(BaseAST, ast, asts) {
+    if (CallExpr* call = toCallExpr(ast)) {
+      if (call->isNamed(field->name) && call->numActuals() == 2) {
+        if (call->get(1)->typeInfo() == dtMethodToken &&
+            call->get(2)->typeInfo() == ct) {
+          Expr* arg2 = call->get(2);
+          call->replace(new CallExpr(PRIM_GET_MEMBER,
+                                     arg2->remove(),
+                                     new_CStringSymbol(field->name)));
         }
       }
     }
-    fn->addFlag(FLAG_FIELD_ACCESSOR);
-    if (fieldIsConst)
-      fn->addFlag(FLAG_REF_TO_CONST);
-    else if (recordLike)
-      fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
-    return;
   }
+  fn->addFlag(FLAG_FIELD_ACCESSOR);
+  if (fieldIsConst)
+    fn->addFlag(FLAG_REF_TO_CONST);
+  else if (recordLike)
+    fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
+}
+
+// This function builds the getter or the setter, depending on the
+// 'setter' argument.
+static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
+  const bool fieldIsConst = field->hasFlag(FLAG_CONST);
+  const bool recordLike = ct->isRecord() || ct->isUnion();
+
+  // Only build a 'ref' version for records and classes.
+  // Unions need a special getter and setter.
+  if (!isUnion(ct))
+    if (!setter)
+      return;
 
   FnSymbol* fn = new FnSymbol(field->name);
   fn->addFlag(FLAG_NO_IMPLICIT_COPY);
@@ -272,21 +294,32 @@ static void build_getter(AggregateType* ct, Symbol *field) {
   else if (field->hasFlag(FLAG_SUPER_CLASS)) {
     fn->retTag = RET_VALUE;
   } else {
-    fn->retTag = RET_REF;
-    fn->setter = new DefExpr(new ArgSymbol(INTENT_BLANK, "setter", dtBool));
+    if (fieldIsConst || !setter)
+      fn->retTag = RET_CONST_REF;
+    else
+      fn->retTag = RET_REF;
   }
 
-  if (isUnion(ct))
-    fn->insertAtTail(
-      new CondStmt(
-        new SymExpr(fn->setter->sym),
-        new CallExpr(PRIM_SET_UNION_ID, _this, new_IntSymbol(field->id)),
-        new CondStmt(
+  if (isUnion(ct)) {
+    if (setter)  {
+      // Set the union ID in the setter.
+      fn->insertAtTail(
+          new CallExpr(PRIM_SET_UNION_ID,
+                       _this,
+                       new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                    ct->symbol,
+                                    new_CStringSymbol(field->name))));
+    } else {
+      // Check the union ID in the getter.
+      fn->insertAtTail(new CondStmt(
           new CallExpr("!=",
             new CallExpr(PRIM_GET_UNION_ID, _this),
-              new_IntSymbol(field->id)),
-          new CallExpr("halt", new_CStringSymbol("illegal union access")))));
-
+            new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                         ct->symbol,
+                         new_CStringSymbol(field->name))),
+          new CallExpr("halt", new_CStringSymbol("illegal union access"))));
+    }
+  }
   if (isTypeSymbol(field) && isEnumType(field->type)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, field));
     // better flatten enumerated types now
@@ -314,6 +347,30 @@ static void build_getter(AggregateType* ct, Symbol *field) {
   fn->_this = _this;
 }
 
+// Getter and setter functions are provided by the compiler if not supplied by
+// the user.
+// These functions have the same binding strength as if they were user-defined.
+// This function calls build_accessor twice, passing
+// true (to build the setter) and false (to build the getter).
+static void build_accessors(AggregateType* ct, Symbol *field) {
+  const bool fieldIsConst = field->hasFlag(FLAG_CONST);
+  const bool recordLike = ct->isRecord() || ct->isUnion();
+
+  FnSymbol *setter = function_exists(field->name, 2,
+                                     dtMethodToken, ct, NULL, FIND_REF);
+  FnSymbol *getter = function_exists(field->name, 2,
+                                     dtMethodToken, ct, NULL, FIND_NOT_REF);
+  if (setter)
+    fixup_accessor(ct, field, fieldIsConst, recordLike, setter);
+  if (getter)
+    fixup_accessor(ct, field, fieldIsConst, recordLike, getter);
+  if (getter || setter)
+    return;
+
+  // Otherwise, build compiler-default getter and setter.
+  build_accessor(ct, field, true);
+  build_accessor(ct, field, false);
+}
 
 static FnSymbol* chpl_gen_main_exists() {
   FnSymbol* match = NULL;
@@ -677,7 +734,7 @@ static void build_enum_cast_function(EnumType* et) {
     CondStmt* otherwise =
       new CondStmt(new CallExpr(PRIM_WHEN),
                    new BlockStmt(new CallExpr("halt",
-                                 new_CStringSymbol(errorString))));
+                                 new_StringSymbol(errorString))));
     whenstmts->insertAtTail(otherwise);
     fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
   }
@@ -705,15 +762,21 @@ static void build_enum_cast_function(EnumType* et) {
              new CallExpr("==", arg2, new_StringSymbol(constant->sym->name)),
              new CallExpr(PRIM_RETURN, constant->sym),
              cond);
+    cond = new CondStmt(
+             new CallExpr("==", arg2,
+                          new_StringSymbol(
+                            astr(et->symbol->name, ".", constant->sym->name))),
+             new CallExpr(PRIM_RETURN, constant->sym),
+             cond);
   }
 
   fn->insertAtTail(cond);
 
   fn->insertAtTail(new CallExpr("halt",
-                                new_CStringSymbol("illegal conversion of string \\\""),
+                                new_StringSymbol("illegal conversion of string \\\""),
                                 arg2,
-                                new_CStringSymbol("\\\" to "),
-                                new_CStringSymbol(et->symbol->name)));
+                                new_StringSymbol("\\\" to "),
+                                new_StringSymbol(et->symbol->name)));
 
   fn->insertAtTail(new CallExpr(PRIM_RETURN,
                                 toDefExpr(et->constants.first())->sym));
@@ -883,6 +946,7 @@ static void build_record_cast_function(AggregateType* ct) {
   normalize(fn);
 }
 
+// TODO: we should know what field is active after assigning unions
 static void build_union_assignment_function(AggregateType* ct) {
   if (function_exists("=", 2, ct, ct))
     return;
@@ -896,17 +960,21 @@ static void build_union_assignment_function(AggregateType* ct) {
   fn->insertFormalAtTail(arg2);
   fn->retType = dtUnknown;
   fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID, arg1, new_IntSymbol(0)));
-  for_fields(tmp, ct)
-    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD))
-      if (!tmp->hasFlag(FLAG_TYPE_VARIABLE))
-        fn->insertAtTail(
-          new CondStmt(
+  for_fields(tmp, ct) {
+    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
+      if (!tmp->hasFlag(FLAG_TYPE_VARIABLE)) {
+        fn->insertAtTail(new CondStmt(
             new CallExpr("==",
               new CallExpr(PRIM_GET_UNION_ID, arg2),
-              new_IntSymbol(tmp->id)),
+              new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                           ct->symbol,
+                           new_CStringSymbol(tmp->name))),
             new CallExpr("=",
-              new CallExpr(".", arg1, new_CStringSymbol(tmp->name)),
-              new CallExpr(".", arg2, new_CStringSymbol(tmp->name)))));
+              new CallExpr(".", arg1, new_StringSymbol(tmp->name)),
+              new CallExpr(".", arg2, new_StringSymbol(tmp->name)))));
+      }
+    }
+  }
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, ct->symbol);

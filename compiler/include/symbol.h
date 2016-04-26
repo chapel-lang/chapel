@@ -47,6 +47,7 @@ class SymExpr;
 enum RetTag {
   RET_VALUE,
   RET_REF,
+  RET_CONST_REF,
   RET_PARAM,
   RET_TYPE
 };
@@ -153,6 +154,7 @@ private:
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
 bool isString(Symbol* symbol);
+bool isUserDefinedRecord(Symbol* symbol);
 
 /******************************** | *********************************
 *                                                                   *
@@ -322,7 +324,6 @@ class TypeSymbol : public Symbol {
 class FnSymbol : public Symbol {
  public:
   AList formals; // each formal is an ArgSymbol
-  DefExpr* setter; // implicit setter argument to var functions
   Type* retType; // The return type of the function.  This field is not
                  // fully established until resolution, and could be NULL
                  // before then.  Up to that point, return type information is
@@ -409,6 +410,7 @@ class FnSymbol : public Symbol {
   bool            isPrimaryMethod()                            const;
   bool            isSecondaryMethod()                          const;
   bool            isIterator()                                 const;
+  bool            returnsRefOrConstRef()                       const;
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 
@@ -487,15 +489,14 @@ public:
   // LLVM uses this for extern C blocks.
   ExternBlockInfo*     extern_info;
 
-  virtual void         printDocs(std::ostream *file, unsigned int tabs);
-          void         addPrefixToName(std::string prefix);
+  void         printDocs(std::ostream *file, unsigned int tabs, std::string parentName);
+
+          void         printTableOfContents(std::ostream *file);
           std::string  docsName();
 
 private:
   void                 getTopLevelConfigOrVariables(Vec<VarSymbol *> *contain, Expr *expr, bool config);
-
-  // Used when documenting submodules.
-  std::string          moduleNamePrefix;
+  bool                 hasTopLevelModule();
 };
 
 /******************************** | *********************************
@@ -520,7 +521,7 @@ class LabelSymbol : public Symbol {
 ********************************* | ********************************/
 
 // Processes a char* to replace any escape sequences with the actual bytes
-std::string unescapeString(const char* const str);
+std::string unescapeString(const char* const str, BaseAST* astForError);
 
 // Creates a new string literal with the given value.
 VarSymbol *new_StringSymbol(const char *s);
@@ -621,8 +622,6 @@ extern FnSymbol *gChplHereFree;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
-
-extern Symbol *gTaskList;
 
 extern std::map<FnSymbol*,int> ftableMap;
 extern Vec<FnSymbol*> ftableVec;

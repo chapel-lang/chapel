@@ -20,6 +20,12 @@ are handled within forall statements and expressions.
 controlling default data parallelism.
 \end{itemize}       
 
+Data-parallel constructs may result in accesses to the same variable
+from different tasks, possibly due to aliasing using
+\chpl{ref} argument intents or forall intents, among others.
+Such accesses are subject to the Memory Consistency Model
+(\rsec{Memory_Consistency_Model}).
+
 \section{The Forall Statement}
 \label{Forall}
 \index{forall@\chpl{forall} (see also statements, forall)}
@@ -280,8 +286,10 @@ ranges, or the yielded types of the iterators can be resolved to the
 type of the argument.  The rules of when an overloaded function can be
 promoted are discussed in~\rsec{Function_Resolution}.
 
-In addition to scalar functions, operators and casts are also
-promoted.
+Functions that can be promoted include procedures, operators, casts,
+and methods. Also note that since class and record field access
+is performed with getter methods~(\rsec{Getter_Methods}), field
+access can also be promoted.
 
 \begin{chapelexample}{promotion.chpl}
 Given the array
@@ -307,6 +315,37 @@ for s in square(A) do writeln(s);
 25
 \end{chapeloutput}
 \end{chapelexample}
+
+\begin{chapelexample}{field-promotion.chpl}
+Given an array of points, such as \chpl{A} defined below:
+\begin{chapel}
+record Point {
+  var x: real;
+  var y: real;
+}
+var A: [1..5] Point = [i in 1..5] new Point(x=i, y=i);
+\end{chapel}
+the following statement will create a new array consisting of
+the \chpl{x} field value for each value in A:
+\begin{chapel}
+var X = A.x;
+\end{chapel}
+and the following call will set the \chpl{y} field values for each
+element in A to 1.0:
+\begin{chapel}
+A.y = 1.0;
+\end{chapel}
+
+\begin{chapelnoprint}
+writeln(X);
+writeln(A);
+\end{chapelnoprint}
+\begin{chapeloutput}
+1.0 2.0 3.0 4.0 5.0
+(x = 1.0, y = 1.0) (x = 2.0, y = 1.0) (x = 3.0, y = 1.0) (x = 4.0, y = 1.0) (x = 5.0, y = 1.0)
+\end{chapeloutput}
+\end{chapelexample}
+
 
 %%
 %% sungeun: 10/2011

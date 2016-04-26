@@ -208,25 +208,30 @@ module ChapelRange {
 
   // Range builders for fully bounded ranges
   proc chpl_build_bounded_range(low: int(?w), high: int(w))
-    return new range(idxType = int(w), _low = low, _high = high);
+    return new range(int(w), _low=low, _high=high);
   proc chpl_build_bounded_range(low: uint(?w), high: uint(w))
-    return new range(uint(w), _low = low, _high = high);
+    return new range(uint(w), _low=low, _high=high);
   proc chpl_build_bounded_range(low, high) {
-    compilerError("Bounds of '..' must be integers of compatible types, when specified.");
+    compilerError("Bounds of 'low..high' must be integers of compatible types.");
   }
 
-  // Range builders for partially bounded ranges
-  proc chpl_build_partially_bounded_range(param bt: BoundedRangeType, bound: int(?w))
-    return new range(int(w), bt, false, bound, bound);
-  proc chpl_build_partially_bounded_range(param bt: BoundedRangeType, bound: uint(?w))
-    return new range(uint(w), bt, false, bound, bound);
-  proc chpl_build_partially_bounded_range(param bt: BoundedRangeType, bound) {
-    compilerError("Bounds of '..' must be integers of compatible types, when specified.");
+  // Range builders for low bounded ranges
+  proc chpl_build_low_bounded_range(low: integral)
+    return new range(low.type, BoundedRangeType.boundedLow, _low=low);
+  proc chpl_build_low_bounded_range(low) {
+    compilerError("Bound of 'low..' must be an integer");
+  }
+
+  // Range builders for high bounded ranges
+  proc chpl_build_high_bounded_range(high: integral)
+    return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
+  proc chpl_build_high_bounded_range(high) {
+    compilerError("Bound of '..high' must be an integer.");
   }
 
   // Range builder for unbounded ranges
-  proc chpl_build_unbounded_range(param bt: BoundedRangeType)
-    return new range(int, bt);
+  proc chpl_build_unbounded_range()
+    return new range(int, BoundedRangeType.boundedNone);
   
   
   //################################################################################
@@ -911,6 +916,13 @@ module ChapelRange {
     return new range(i, b, true,  lw, hh, st, alt, ald);
   }
 
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_by(r, step) { ... }
+   *
+   * because the parser renames the routine since 'by' is a keyword.
+   */
   inline proc by(r, step) {
     if !isRange(r) then
       compilerError("the first argument of the 'by' operator is not a range");
@@ -918,6 +930,13 @@ module ChapelRange {
     return chpl_by_help(r, step);
   }
   
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_by(r: range(?), param step) { ... }
+   *
+   * because the parser renames the routine since 'by' is a keyword.
+   */
   // We want to warn the user at compiler time if they had an invalid param
   // stride rather than waiting until runtime.
   inline proc by(r : range(?), param step) {
@@ -926,7 +945,14 @@ module ChapelRange {
   }
   
   
-  // This is the syntax processing routine for the "align" keyword.
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_align(r: range(?i, ?b, ?s), algn: i) { ... }
+   *
+   * because the parser renames the routine since 'align' is a keyword.
+   */
+  // This is the definition of the 'align' operator for ranges.
   // It produces a new range with the specified alignment.
   // By definition, alignment is relative to the low bound of the range.
   pragma "no doc"
@@ -938,6 +964,14 @@ module ChapelRange {
                      r._low, r._high, r.stride, algn, true);
   }
 
+  
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_align(r: range(?i, ?b, ?s), algn) { ... }
+   *
+   * because the parser renames the routine since 'align' is a keyword.
+   */
   pragma "no doc"
   inline proc align(r : range(?i, ?b, ?s), algn) {
     compilerError("can't align a range with idxType ", i:string, 
@@ -1028,12 +1062,83 @@ module ChapelRange {
   
       newStride = if this.stride > 0 then lcm else -lcm;
     }
+
+    //
+    // These are mixed int/uint min/max functions that return a value
+    // matching the first argument's type.  They are written knowing
+    // that they will be called in an intersection context and set
+    // this variable if the intersection will be guaranteed to be
+    // empty (e.g., if all values of one range are outside of the
+    // expressible range of the other.
+    //
+    var emptyIntersection: bool;
+
+    proc min(x: int, y: uint) {
+      if (y > max(int)) {
+        return x;
+      }
+
+      //
+      // otherwise, we can safely cast y to int and take the normal
+      // min()
+      //
+      return min(x, y: int);
+    }
+
+    proc min(x: uint, y: int) {
+      //
+      // if the high uint bound is bigger than int can represent,
+      // this slice is guaranteed to be empty.
+      //
+      //
+      // if the smallest value is negative, the low bound of this
+      // slice will be the uint value.
+      //
+      if (y < 0) {
+        emptyIntersection = true;
+        return x;
+      }
+
+      //
+      // otherwise, we can safely cast y to uint and take the normal
+      // min()
+      //
+      return min(x, y: uint);
+    }
+
+    //
+    // These two cases are the dual of the above
+    //
+    proc max(x: int, y: uint) {
+      if (y > max(int)) {
+        emptyIntersection = true;
+        return x;
+      }
+
+      return max(x, y: int);
+    }
   
+    proc max(x: uint, y: int) {
+      if (y < 0) {
+        return x;
+      }
+
+      return max(x, y: uint);
+    }
+
+    emptyIntersection = false;
+    var newlo = max(lo1, lo2):idxType;
+    var newhi = min(hi1, hi2):idxType;
+    if (emptyIntersection) {
+      newlo = 1;
+      newhi = 0;
+    }
+
     var result = new range(idxType,
                            computeBoundedType(this, other),
                            this.stridable | other.stridable,
-                           max(lo1, lo2):idxType,
-                           min(hi1, hi2):idxType,
+                           newlo,
+                           newhi,
                            newStride,
                            0,
                            !ambig && (this._aligned || other._aligned));
@@ -1271,10 +1376,10 @@ module ChapelRange {
 
   // cases for when stride is a uint (we know the stride is must be positive)
   iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: uint(w)) {
-    for i in chpl_direct_uint_stride_range_iter(low, high, stride) do yield i;
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: uint(w)) {
-    for i in chpl_direct_uint_stride_range_iter(low, high, stride) do yield i;
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
 
 
@@ -1302,10 +1407,10 @@ module ChapelRange {
 
 
   // These are the "actual" direct range iterators. Note that they do not do
-  // any checks on the arguments, and rely on the above functions to
-  // check/coerce types (assumes args are of legal types, low/high are the same
-  // same type, and stride is valid.)
-  iter chpl_direct_uint_stride_range_iter(low: ?t, high, stride) {
+  // any checks on the arguments, and rely on the above functions/expert user
+  // to check/coerce types (i.e. they assume args are of legal types, low/high
+  // are the same same type, stride is valid, etc.)
+  iter chpl_direct_pos_stride_range_iter(low: ?t, high, stride) {
     if (useOptimizedRangeIterators) {
       chpl_range_check_stride(stride, t);
 
@@ -1570,7 +1675,7 @@ module ChapelRange {
         yield (0..len-1,);
       } else {
         coforall chunk in 0..#numChunks {
-          on here.getChild(chunk) {
+          local on here.getChild(chunk) {
             if debugDataParNuma {
               if chunk!=chpl_getSubloc() then
                 writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+

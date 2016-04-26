@@ -45,8 +45,8 @@ forall ar in DomRealType do
   AReal(ar) = ar;
 if debug then writeln(AReal);
 if doString {
-  forall as in DomStringType do
-    AString(as) = as;
+  forall aStr in DomStringType do
+    AString(aStr) = aStr;
   if debug then writeln(AString);
 }
 

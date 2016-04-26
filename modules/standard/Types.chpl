@@ -20,8 +20,9 @@
 /*
 Functions related to predefined types.
 
-This is an automatic module, so these functions are available
-to all Chapel programs.
+.. note:: All Chapel programs automatically ``use`` this module by default.
+          An explicit ``use`` statement is not necessary.
+
 */
 module Types {
 
@@ -86,22 +87,26 @@ pragma "no instantiation limit"
 proc isFloatType(type t) param return
   isRealType(t) || isImagType(t);
 
-// We document the following functions as one group, for user convenience.
+/* Returns `true` if the type `t` is the `void` type. */
 pragma "no instantiation limit"
 proc isVoidType(type t) param return t == void;
 
+/* Returns `true` if the type `t` is a `bool` type, of any width. */
 pragma "no instantiation limit"
 proc isBoolType(type t) param return
   (t == bool) || (t == bool(8)) || (t == bool(16)) || (t == bool(32)) || (t == bool(64));
 
+/* Returns `true` if the type `t` is an `int` type, of any width. */
 pragma "no instantiation limit"
 proc isIntType(type t) param return
   (t == int(8)) || (t == int(16)) || (t == int(32)) || (t == int(64));
 
+/* Returns `true` if the type `t` is a `uint` type, of any width. */
 pragma "no instantiation limit"
 proc isUintType(type t) param return
   (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64));
 
+/* Returns `true` if the type `t` is an `enum` type. */
 pragma "no instantiation limit"
 proc isEnumType(type t) param {
   proc isEnumHelp(type t: enumerated) param return true;
@@ -109,24 +114,22 @@ proc isEnumType(type t) param {
   return isEnumHelp(t);
 }
 
+/* Returns `true` if the type `t` is a `complex` type, of any width. */
 pragma "no instantiation limit"
 proc isComplexType(type t) param return
   (t == complex(64)) || (t == complex(128));
 
+/* Returns `true` if the type `t` is a `real` type, of any width. */
 pragma "no instantiation limit"
 proc isRealType(type t) param return
   (t == real(32)) || (t == real(64));
 
+/* Returns `true` if the type `t` is an `imag` type, of any width. */
 pragma "no instantiation limit"
 proc isImagType(type t) param return
   (t == imag(32)) || (t == imag(64));
 
-// Here is a single doc comment for the above.
-/*
-Each of the above functions returns `true` if its argument is
-a corresponding type.
-The argument must be a type.
-*/
+/* Returns `true` if the type `t` is the `string` type. */
 pragma "no instantiation limit"
 proc isStringType(type t) param return t == string;
 
@@ -343,36 +346,54 @@ Returns `true` if the argument is one the following types, of any width:
 `real`, `imag`, or a value of such a type.
 */
 proc isFloat(e)     param  return isFloatValue(e);
-// We document the following functions as one group, for user convenience.
+
+/* Returns `true` if the argument is a `bool` type or value, of any width. */
 proc isBool(e)      param  return isBoolValue(e);
+/* Returns `true` if the argument is an `int` type or value, of any width. */
 proc isInt(e)       param  return isIntValue(e);
+/* Returns `true` if the argument is a `uint` type or value, of any width. */
 proc isUint(e)      param  return isUintValue(e);
+/* Returns `true` if the argument is a `real` type or value, of any width. */
 proc isReal(e)      param  return isRealValue(e);
+/* Returns `true` if the argument is an `imag` type or value, of any width. */
 proc isImag(e)      param  return isImagValue(e);
+/* Returns `true` if the argument is a `complex` type or value, of any width. */
 proc isComplex(e)   param  return isComplexValue(e);
+/* Returns `true` if the argument is a string or the `string` type. */
 proc isString(e)    param  return isStringValue(e);
+/* Returns `true` if the argument is an `enum` type or value, of any width. */
 proc isEnum(e)      param  return isEnumValue(e);
+/* Returns `true` if the argument is a tuple type or value. */
 proc isTuple(e)     param  return isTupleValue(e);
+/* Returns `true` if the argument is a homogeneous tuple.
+   The argument must be a tuple or any type. */
 proc isHomogeneousTuple(e: _tuple)  param  return isHomogeneousTupleValue(e);
+/* Returns `true` if the argument is a class type or value. */
 proc isClass(e)     param  return isClassValue(e);
+/* Returns `true` if the argument is a record type or value. */
 proc isRecord(e)    param  return isRecordValue(e);
+/* Returns `true` if the argument is a union type or value. */
 proc isUnion(e)     param  return isUnionValue(e);
+/* Returns `true` if the argument is a range type or value. */
 proc isRange(e)     param  return isRangeValue(e);
+/* Returns `true` if the argument is a domain map or a domain map type. */
 proc isDmap(e)      param  return isDmapValue(e);
+/* Returns `true` if the argument is a domain or a domain type. */
 proc isDomain(e)    param  return isDomainValue(e);
+/* Returns `true` if the argument is an array or an array type. */
 proc isArray(e)     param  return isArrayValue(e);
 pragma "no doc"
 proc isSync(e: sync)     param  return true; // workaround: not isSyncValue
+/* Returns `true` if the argument is a `sync` type or a `sync` variable. */
 proc isSync(e)           param  return false;
 pragma "no doc"
 proc isSingle(e: single) param  return true; // workaround: not isSingleValue
+/* Returns `true` if the argument is a `single` type or a `single` variable. */
 proc isSingle(e)         param  return false;
+/*Returns `true` if the argument is an `atomic` type or an `atomic` variable.*/
 proc isAtomic(e)    param  return isAtomicValue(e);
-// Here is a single doc comment for the above.
-/*
-Each of the above functions returns `true` if its argument is
-a corresponding type or a value of such a type.
-*/
+
+pragma "no doc"
 proc isRefIter(e)   param  return isRefIterValue(e);
 
 pragma "no doc" // Not sure how we want to document isPOD* right now
@@ -546,7 +567,7 @@ proc min(type t) where isComplexType(t) {
 
 // joint documentation, for user convenience
 /*
-Returns the minimum value the type `t` can store.
+Returns the maximum value the type `t` can store.
 `t` can be one of the following types, of any width:
 `bool`, `int`, `uint`, `real`, `imag`, `complex`.
 When `t` is a `bool` type, it returns `false`.

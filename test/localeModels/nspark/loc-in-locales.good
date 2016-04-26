@@ -1,0 +1,1 @@
+loc-in-locales.chpl:3: error: Variables can't be declared using not-fully-instantiated generic types like 'channel'

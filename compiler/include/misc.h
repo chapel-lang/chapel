@@ -51,7 +51,6 @@
 
 class BaseAST;
 
-bool forceWidePtrs();
 bool forceWidePtrsForLocal();
 bool requireWideReferences();
 bool requireOutlinedOn();

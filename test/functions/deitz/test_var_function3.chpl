@@ -1,7 +1,11 @@
 var x: int;
 
 proc foo() ref {
-  writeln(setter);
+  writeln(true);
+  return x;
+}
+proc foo() {
+  writeln(false);
   return x;
 }
 

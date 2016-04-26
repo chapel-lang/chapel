@@ -18,12 +18,14 @@
  */
 
 /*
-This module provides wrappers for <cmath> (math.h) numerical constants and
-routines.  Its symbols are provided by default; an explicit 'use' statement
-is not necessary.
+This module provides mathematical constants and functions.
 
-The C Math library is part of the C Language Standard (ISO/IEC 9899), as
-described in Section 7.12.  Please consult that standard for an
+.. note:: All Chapel programs automatically ``use`` this module by default.
+          An explicit ``use`` statement is not necessary.
+
+It includes wrappers for many of the constants in functions in
+the C Math library, which is part of the C Language Standard (ISO/IEC 9899)
+as described in Section 7.12.  Please consult that standard for an
 authoritative description of the expected properties of those constants and
 routines.
 
@@ -612,7 +614,10 @@ module Math {
 
 
   /* Computes the mod operator on the two arguments, defined as
-     ``mod(x,y) = x - y * floor(x / y)``.
+     ``mod(m,n) = m - n * floor(m / n)``.
+
+     The result is always >= 0 if `n` > 0.
+     It is an error if `n` == 0.
   */
   proc mod(param m: integral, param n: integral) param {
     param temp = m % n;
@@ -629,10 +634,13 @@ module Math {
   }
 
   /* Computes the mod operator on the two arguments, defined as
-     ``mod(x,y) = x - y * floor(x / y)``.
+     ``mod(m,n) = m - n * floor(m / n)``.
 
      If the arguments are of unsigned type, then
-     fewer condititionals will be evaluated at run time. 
+     fewer conditionals will be evaluated at run time.
+
+     The result is always >= 0 if `n` > 0.
+     It is an error if `n` == 0.
   */
   proc mod(m: integral, n: integral) {
     const temp = m % n;

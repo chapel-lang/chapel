@@ -12,15 +12,25 @@ proc f_const_ref(const ref arg) {}
 
 var globalInt: int;
 proc accessorInt() ref {
-  writeln(setter);
+  writeln(true);
+  return globalInt;
+}
+proc accessorInt() {
+  writeln(false);
   return globalInt;
 }
 
+
 var globalArr: [1..2] int;
 proc accessorArr() ref {
-  writeln(setter);
+  writeln(true);
   return globalArr;
 }
+proc accessorArr() {
+  writeln(false);
+  return globalArr;
+}
+
 
 write("int drop result  "); accessorInt();
 write("int assign to    "); accessorInt() = 5;

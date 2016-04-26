@@ -42,19 +42,7 @@ shouldUseByValueFunction(FnSymbol*                     fn,
                          SymExpr*                      se,
                          Map<Symbol*, Vec<SymExpr*>*>& defMap,
                          Map<Symbol*, Vec<SymExpr*>*>& useMap) {
-  bool retval = false;
-
-  if (refNecessary(se, defMap, useMap) == false) {
-    if (isString(se->var->type->getValType()) &&
-        fn->hasFlag(FLAG_FN_REF_USES_SETTER) == false) {
-      retval = false;
-
-    } else {
-      retval = true;
-    }
-  }
-
-  return retval;
+  return !refNecessary(se, defMap, useMap);
 }
 
 static bool
@@ -102,6 +90,12 @@ refNecessary(SymExpr*                      se,
 
       } else if (call->isPrimitive(PRIM_RETURN) ||
                  call->isPrimitive(PRIM_YIELD)) {
+        FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+        // It is not necessary to use the 'ref' version
+        // if the function result is returned by 'const ref'.
+        if (inFn->retTag == RET_CONST_REF) return false;
+        // MPF: it seems to cause problems to return false
+        // here when inFn->retTag is RET_VALUE.
         return true;
 
       } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
@@ -185,54 +179,98 @@ void cullOverReferences() {
 
   buildDefUseMaps(defMap, useMap);
 
-  forv_Vec(CallExpr, call, gCallExprs) {
-    // Is this call to a non-primitive function?
-    if (FnSymbol* fn = call->isResolved()) {
-      // Does that function have a "value" counter part?
-      if (FnSymbol* valueFn = fn->valueFunction) {
-        if (CallExpr* move = toCallExpr(call->parentExpr)) {
-          INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+  forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
+    // Make sure that the context call only has 2 options.
+    INT_ASSERT(cc->options.length == 2);
 
-          SymExpr* se = toSymExpr(move->get(1));
+    CallExpr* refCall = cc->getRefCall();
+    CallExpr* valueCall = cc->getRValueCall();
 
-          INT_ASSERT(se);
+    FnSymbol* refFn = refCall->isResolved();
+    INT_ASSERT(refFn);
+    FnSymbol* valueFn = valueCall->isResolved();
+    INT_ASSERT(valueFn);
 
-          // Should we switch to the by-value form?
-          if (shouldUseByValueFunction(fn, se, defMap, useMap) == true) {
-            SET_LINENO(move);
+    bool useValueCall;
 
-            SymExpr*   base = toSymExpr(call->baseExpr);
-            VarSymbol* tmp  = newTemp(valueFn->retType);
+    CallExpr* move = NULL; // set if the call is in a PRIM_MOVE
+    SymExpr* lhs = NULL; // lhs if call is in a PRIM_MOVE
 
-            // Swap in the by-value implementation
-            base->var = valueFn;
+    // Decide whether to use the value call or the ref call.
+    // Always leave the ref call for iterators.
+    // (It would be an improvement to choose the appropriate one
+    //  based upon how the iterator is used, but such a feature
+    //  would require specific support for iterators since yielding
+    //  is not the same as returning.)
+    move = toCallExpr(cc->parentExpr);
+    if (refFn->isIterator())
+      useValueCall = false;
+    else if (move) {
+      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
 
-            // Generate a value temp to receive the value
-            move->insertBefore(new DefExpr(tmp));
+      lhs = toSymExpr(move->get(1));
 
-            if (requiresImplicitDestroy(call)) {
-              if (isString(valueFn->retType) == false) {
-                tmp->addFlag(FLAG_INSERT_AUTO_COPY);
-                tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
-              } else {
-                tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
-              }
-            }
+      INT_ASSERT(lhs);
 
-            if (useMap.get(se->var) && useMap.get(se->var)->n > 0) {
-              move->insertAfter(new CallExpr(PRIM_MOVE,
-                                             se->var,
-                                             new CallExpr(PRIM_ADDR_OF, tmp)));
-            } else {
-              se->var->defPoint->remove();
-            }
+      // Should we switch to the by-value form?
+      useValueCall = shouldUseByValueFunction(refFn, lhs, defMap, useMap);
+    } else {
+      // e.g. array access in own statement like this:
+      //   A(i)
+      // should use 'getter'
+      // MPF - note 2016-01: this code does not seem to be triggered
+      // in the present compiler.
+      useValueCall = true;
+    }
 
-            se->var = tmp;
+    valueCall->remove();
+    refCall->remove();
+
+    if (useValueCall) {
+      // Replace the ContextCallExpr with the value call
+      cc->replace(valueCall);
+
+      // Adjust the AST around the value call to include
+      // a temporary to receive the value.
+
+      // Adjust code to use value return version.
+      // The other option is that retTag is RET_CONST_REF,
+      // in which case no further adjustment is necessary.
+      if (move && valueFn->retTag == RET_VALUE) {
+        SET_LINENO(move);
+        // Generate a value temp to receive the value
+        VarSymbol* tmp  = newTemp(valueFn->retType);
+        move->insertBefore(new DefExpr(tmp));
+
+        if (requiresImplicitDestroy(valueCall)) {
+          if (isUserDefinedRecord(valueFn->retType) == false) {
+            tmp->addFlag(FLAG_INSERT_AUTO_COPY);
+            tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          } else {
+            tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
           }
-        } else {
-          INT_FATAL(call, "unexpected case");
         }
+
+        if (lhs && useMap.get(lhs->var) && useMap.get(lhs->var)->n > 0) {
+          // If the LHS was used, set it based on the
+          // new temporary (which is the function return value)
+          move->insertAfter(new CallExpr(PRIM_MOVE,
+                                         lhs->var,
+                                         new CallExpr(PRIM_ADDR_OF, tmp)));
+        } else {
+          // If the LHS was not used,
+          // remove the old definition point since we have
+          // provided a new one above.
+          lhs->var->defPoint->remove();
+        }
+
+        // Replace the LHS with our new temporary
+        lhs->var = tmp;
       }
+
+    } else {
+      // Replace the ContextCallExpr with the ref call
+      cc->replace(refCall);
     }
   }
 

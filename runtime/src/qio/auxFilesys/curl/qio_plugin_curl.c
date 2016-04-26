@@ -440,7 +440,7 @@ qioerr curl_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs
       if (curl_local->length != -1)  // we have the length
         curl_local->current_offset= curl_local->length + offset;
       else
-        QIO_RETURN_CONSTANT_ERROR(ESPIPE, "Unable to SEEK_END for path with unkown length");
+        QIO_RETURN_CONSTANT_ERROR(ESPIPE, "Unable to SEEK_END for path with unknown length");
       break;
     case SEEK_SET:
       curl_local->current_offset = offset;

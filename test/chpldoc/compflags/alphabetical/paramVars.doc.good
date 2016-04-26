@@ -1,4 +1,8 @@
 hasGlobalParams.doc
+
+Usage:
+   use hasGlobalParams.doc;
+
    This module has some global scoped params. 
    param first
    param fourth: bool

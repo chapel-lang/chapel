@@ -1,0 +1,3 @@
+x = 0x2
+cast to c_ptr(R) = 0x2
+cast back to c_void_ptr = 0x2

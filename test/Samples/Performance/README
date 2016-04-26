@@ -1,5 +1,5 @@
 This directory contains a sample performance test which is used to
-illustrate the example given in bestPractices/TestSystem.txt.  Note
+illustrate the example given in bestPractices/TestSystem.rst.  Note
 that the test itself is bogus and is designed simply to illustrate the
 mechanisms required to create a simple Chapel vs. C performance
 comparison.

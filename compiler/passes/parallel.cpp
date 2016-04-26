@@ -193,8 +193,13 @@ static Symbol* insertAutoCopyDestroyForTaskArg
 
   // This applies only to arguments being passed to asynchronous task
   // functions. No need to increment+decrement the reference counters
-  // for cobegins/coforalls.
-  if (fn->hasFlag(FLAG_BEGIN) || isString(baseType))
+  // for cobegins/coforalls. Except for the index variable for a
+  // coforall - since each task needs its own copy.
+  // MPF - should this logic also apply to arguments to coforall fns
+  // that had the 'in' task intent?
+  if (fn->hasFlag(FLAG_BEGIN) ||
+      isString(baseType) ||
+      var->hasFlag(FLAG_COFORALL_INDEX_VAR))
   {
     FnSymbol* autoCopyFn = getAutoCopy(baseType);
     FnSymbol* autoDestroyFn = getAutoDestroy(baseType);
@@ -307,7 +312,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   for_actuals(arg, fcall) 
   {
     // Insert autoCopy/autoDestroy as needed for "begin" or "nonblocking on"
-    // calls.
+    // calls (and some other cases).
     Symbol  *var = insertAutoCopyDestroyForTaskArg(arg, fcall, fn, firstCall);
 
     // Copy the argument into the corresponding slot in the argument bundle.
@@ -375,7 +380,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
     // Now get the taskList field out of the end count.
 
-    taskList = newTemp(astr("_taskList", fn->name), dtTaskList->refType);
+    taskList = newTemp(astr("_taskList", fn->name), dtCVoidPtr->refType);
 
     // If the end count is a reference, dereference it.
     // EndCount is a class.
@@ -428,6 +433,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   if (fn->hasFlag(FLAG_NON_BLOCKING))           wrap_fn->addFlag(FLAG_NON_BLOCKING);
   if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL))    wrap_fn->addFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK);
   if (fn->hasFlag(FLAG_BEGIN))                  wrap_fn->addFlag(FLAG_BEGIN_BLOCK);
+  if (fn->hasFlag(FLAG_LOCAL_ON))               wrap_fn->addFlag(FLAG_LOCAL_ON);
 
   if (fn->hasFlag(FLAG_ON)) {
     // The wrapper function for 'on' block has an additional argument, which
@@ -457,7 +463,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   } else {
     // create a task list argument.
     ArgSymbol *taskListArg = new ArgSymbol( INTENT_IN, "dummy_taskList", 
-                                            dtTaskList->refType );
+                                            dtCVoidPtr->refType );
     taskListArg->addFlag(FLAG_NO_CODEGEN);
     wrap_fn->insertFormalAtTail(taskListArg);
     ArgSymbol *taskListNode = new ArgSymbol( INTENT_IN, "dummy_taskListNode", 
@@ -824,7 +830,7 @@ needHeapVars() {
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ON) && needHeapVars()) {
+    if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_LOCAL_ON) && needHeapVars()) {
       for_formals(formal, fn) {
         if (formal->type->symbol->hasFlag(FLAG_REF)) {
           refSet.set_add(formal);
@@ -837,10 +843,7 @@ static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 
 
 // Traverses all DefExprs.
-//  If the symbol is a coforall index expression,
-//   If it is of reference type,
-//    Add it to refSet and refVec.
-//   Otherwise, if it is not of primitive type or other undesired cases,
+//  If the symbol is not of primitive type or other undesired cases,
 //    Add it to varSet and varVec.
 //  Otherwise, select module-level vars that are not private or extern.
 //   If the var is const and has value semantics except record-wrapped types,
@@ -854,21 +857,12 @@ static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 {
   forv_Vec(DefExpr, def, gDefExprs) {
     SET_LINENO(def);
-    if (def->sym->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
-      if (def->sym->type->symbol->hasFlag(FLAG_REF)) {
-        refSet.set_add(def->sym);
-        refVec.add(def->sym);
-      } else if (!isPrimitiveType(def->sym->type) ||
-                 toFnSymbol(def->parentSymbol)->retTag==RET_REF) {
-        varSet.set_add(def->sym);
-        varVec.add(def->sym);
-      }
-    } else if (!fLocal &&
-               isModuleSymbol(def->parentSymbol) &&
-               def->parentSymbol != rootModule &&
-               isVarSymbol(def->sym) &&
-               !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
-               !def->sym->hasFlag(FLAG_EXTERN)) {
+    if (!fLocal &&
+        isModuleSymbol(def->parentSymbol) &&
+        def->parentSymbol != rootModule &&
+        isVarSymbol(def->sym) &&
+        !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
+        !def->sym->hasFlag(FLAG_EXTERN)) {
       if (def->sym->hasFlag(FLAG_CONST) &&
           (is_bool_type(def->sym->type) ||
            is_enum_type(def->sym->type) ||

@@ -5,7 +5,7 @@
    modified by Lydia Duncan, Brad Chamberlain, and Ben Harshbarger
 */
 
-use AdvancedIters;
+use DynamicIters;
 
 config const n = 200,              // the problem size
              maxIter = 50,         // the maximum # of iterations

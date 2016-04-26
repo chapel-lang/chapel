@@ -5,8 +5,8 @@ use Random;
 
 config const printRefArrays = true;
 
-var rng = new RandomStream(314159265);
-var trng = new RandomStream(314159265);
+var rng  = makeRandomStream(314159265, eltType=real(64), algorithm=RNG.NPB);
+var trng = makeRandomStream(314159265, eltType=real(64), algorithm=RNG.NPB);
 
 proc fillRefArrays() {
   rng.fillRandom(R1D);
@@ -123,3 +123,6 @@ writeln("\trcR3D: ", checkRNG(rcR3D, rcT3D), " errors");
 
 if printRefArrays then
   outputRealArrays();
+
+delete trng;
+delete rng;

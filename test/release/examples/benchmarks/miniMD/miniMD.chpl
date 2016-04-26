@@ -54,7 +54,7 @@ proc main() {
 proc initialIntegrate() {
   // On each Locale in parallel, and for each bin in parallel, 
   // update the velocity and position of the bin's atoms
-  forall (b,p,c) in zip(Bins, Pos[binSpace], Count[binSpace]) {
+  forall (b,p,c) in zip(Bins, RealPos, RealCount) {
     for (a,x) in zip(b[1..c], p[1..c]) {
       a.v += dtforce * a.f;
       x += dt * a.v;
@@ -67,7 +67,7 @@ proc finalIntegrate() {
   // On each Locale in parallel, and for each bin in parallel, 
   // update the velocity of the bin's atoms. We do this again so that 
   // the thermo computation has up-to-date values to work with.
-  forall (b,c) in zip(Bins, Count[binSpace]) {
+  forall (b,c) in zip(Bins, RealCount) {
     for a in b[1..c] {
       a.v += dtforce * a.f;
     }

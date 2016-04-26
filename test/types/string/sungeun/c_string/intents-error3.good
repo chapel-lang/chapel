@@ -1,2 +1,1 @@
-intents.chpl:41: error: unresolved call 'fio(c_string)'
-intents.chpl:8: note: candidates are: fio(inout s: string)
+intents.chpl:41: error: non-lvalue actual is passed to 'inout' formal 's' of fio()

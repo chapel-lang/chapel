@@ -17,6 +17,11 @@ Classes
 * indicate that parentheses-less methods are statically dispatched,
   just like fields
 
+Conversions
+-----------
+* how does explicit real->int conversion treat the fractional part
+  (round or truncate, and in which direction)?
+
 Expressions
 -----------
 * the index expressions section should also have a pointer to the

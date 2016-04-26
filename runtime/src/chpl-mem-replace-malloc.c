@@ -27,10 +27,7 @@
 #include "error.h"
 
 // This file needs to be able to use real allocator names
-#undef malloc
-#undef calloc
-#undef realloc
-#undef free
+#include "chpl-mem-no-warning-macros.h"
 
 // This file always declares this function at least.
 void chpl_mem_replace_malloc_if_needed(void);
@@ -310,8 +307,7 @@ void chpl_mem_replace_malloc_if_needed(void) {
   // functions needed include a "size" function and a "valloc" function:
   // BSD: malloc_size
   // glibc: malloc_usable_size
-  // dlmalloc: dlmalloc_usable_size
-  // tcmalloc: tc_malloc_size
+  // jemalloc: malloc_usable_size
 #endif
 }
 

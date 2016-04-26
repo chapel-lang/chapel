@@ -33,4 +33,6 @@ class intSortedList: intList {
 
 proc main() {
   var lst = new intSortedList();
+
+  delete lst;
 }

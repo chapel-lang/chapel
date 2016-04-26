@@ -1,0 +1,2 @@
+# Skip for non-GASNet runs since it might pass there
+CHPL_COMM != gasnet

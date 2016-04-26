@@ -242,9 +242,9 @@ proc createRandomGraph() {
   //
   // Note: example usage of the standard module Random can be found in
   // the primer randomNumbers.chpl, located in the current directory.
-  //
+  // Uses the NPB random number generator for historical reasons.
   use Random;
-  var myRandNums = new RandomStream(seed=314159265);
+  var myRandNums = makeRandomStream(seed=314159265,algorithm=RNG.NPB);
 
   //
   // allocate all the vertices and assign them labels and random weights

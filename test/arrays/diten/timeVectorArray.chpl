@@ -1,6 +1,7 @@
 use Random, Time;
 
 config const n: int = 30000;
+const linearN: int = n/1000; // problem size for slow "linear" opeations
 config const randSeed: int = 11;
 
 class Runner {
@@ -60,8 +61,8 @@ class InsertRandom: Runner {
     extern proc srand(int);
     extern proc rand(): int;
     srand(randSeed);
-    for i in 1..n {
-      A.insert(i, (rand() % i) + 1);
+    for i in 1..linearN {
+      A.insert((rand() % i) + 1, i);
     }
   }
 }
@@ -74,10 +75,28 @@ class InsertSorted: Runner {
     extern proc srand(int);
     extern proc rand(): int;
     srand(randSeed);
-    for i in 1..n {
+    for i in 1..linearN {
       const val = rand();
       const (_, loc) = if linear then LinearSearch(A, val) else BinarySearch(A, val);
       A.insert(loc, val);
+    }
+  }
+}
+
+class Remove: Runner {
+  const n: int;
+  const front: bool;
+  proc run(A: [] int) {
+    if front {
+      for i in 1..linearN {
+        A.remove(1);
+      }
+    } else {
+      var numElements = A.numElements;
+      for i in 1..n {
+        A.remove(numElements);
+        numElements -= 1;
+      }
     }
   }
 }
@@ -159,11 +178,15 @@ proc main {
   r = new PopBack(); r.run(A); delete r; // clean up
   r = new InsertSorted(n); output("InsertSB", timeRun(r, A)); delete r;
 
-  assert(isSorted(A,n));
+  assert(isSorted(A,linearN));
 
   r = new PopBack(); r.run(A); delete r; // clean up
   r = new InsertSorted(n, false); output("InsertSL", timeRun(r,A)); delete r;
-  assert(isSorted(A,n));
+  assert(isSorted(A,linearN));
+
+  r = new Remove(n, true); output("RemoveFront", timeRun(r, A)); delete r;
+  r = new PushBack(n); r.run(A); delete r;
+  r = new Remove(n, false); output("RemoveBack", timeRun(r, A)); delete r;
 
   var l = new list(int);
   r = new ListAppend(n); output("ListAppend", timeRunList(r,l)); delete r;

@@ -1,4 +1,8 @@
 hasGlobalVariables
+
+Usage:
+   use hasGlobalVariables;
+
    This module has some global scoped variables. 
    var first: int
    var second = 16

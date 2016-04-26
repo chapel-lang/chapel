@@ -1,1 +1,0 @@
-bug: cast from string to int does not ignore whitespace

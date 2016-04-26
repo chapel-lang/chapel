@@ -1753,7 +1753,9 @@ qioerr qio_shortest_path(qio_file_t* file, const char** path_out, const char* pa
 
   err = qio_relative_path(&relpath, cwd, path_in);
 
-  //printf("cwd %s abs %s rel %s\n", cwd, path_in, relpath);
+  // If relpath is NULL, err should have been non-zero.
+  // This line is here to quiety Coverity.
+  if( !relpath ) err = QIO_ENOMEM;
 
   qio_free((void*) cwd); cwd = NULL;
 
@@ -4068,6 +4070,8 @@ int64_t qio_channel_style_element(qio_channel_t* ch, int64_t element)
             ch->style.byteorder == QIO_NATIVE) ? 1 : 0;
   }
 #endif // __BYTE_ORDER
+  if( element == QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS )
+    return ch->style.skip_unknown_fields;
   return 0;
 }
 

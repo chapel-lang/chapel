@@ -100,6 +100,11 @@ endif
 #
 cd examples
 $mymake -j$num_procs
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: compiling examples with 'make' failed"
+    exit($tmpstatus)
+endif
 cd ..
 
 
@@ -112,7 +117,15 @@ if ($tmpstatus != 0) then
     echo "ERROR: cd into examples failed"
     exit($tmpstatus)
 endif
-./start_test -logfile Logs/testReleaseHelp.log
+
+set start_test_flags = ''
+if ($?CHPL_TEST_RELEASE_NORECURSE) then
+    set start_test_flags = ${start_test_flags}' --norecurse'
+endif
+
+./start_test ${start_test_flags} -logfile Logs/testReleaseHelp.log
+
+endif
 set tmpstatus = $status
 if ($tmpstatus != 0) then
     echo "ERROR: testing of examples failed"

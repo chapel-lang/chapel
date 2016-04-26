@@ -1,58 +1,84 @@
-config const debug = false;
+use Memory, Types, Time;
+
 config const printTiming = false;
+config const verify = true;
 
-config const n = 1024;
-const D = {1..n};
-var AD: domain(int);
 config const offset = 7;
-var Aref: [D] int;
-var A: [D] int;
-var success = true;
+
+config const memFraction = if verify then 100000 else 1000;
+type eltType = int;
+
+const totalMem = here.physicalMemory(unit = MemUnits.Bytes);
+const target = (totalMem / numBytes(eltType)) / memFraction;
+
+// set a max problem size
+const n = min(target, 8 * 1e9) : int;
+
+const D = {1..n};
+var AD: domain(eltType);
+
+var Aref: [D] eltType;
+var A: [D] eltType;
+
 
 for i in D {
-  Aref(i) = 2*i-offset;
-  AD += Aref(i);
+  const off = 2*i-offset;
+  Aref(i) = off;
+  AD += off;
 }
-QuickSort(Aref);
-if debug then writeln(AD);
-if debug then writeln(Aref);
+if verify then QuickSort(Aref);
 
-use Time;
-var t0: Timer;
+//
+// SERIAL
+//
 
-t0.start();
-for ai in AD {
-  A((ai+offset)/2) = ai;
-}
-t0.stop();
-if debug then writeln(A);
-success = true;
-QuickSort(A);
-for i in D {
-  if A(i) != Aref(i) {
-    success = false;
-    break;
+{
+  var timer: Timer;
+  timer.start();
+  for ai in AD {
+    A((ai+offset)/2) = ai;
   }
-}
-writeln("Serial domain iteration: ", if success then "SUCCESS" else "FAILED");
-if printTiming then writeln("Serial: ", t0.elapsed(TimeUnits.milliseconds));
+  timer.stop();
 
+  var success = true;
 
-var t1: Timer;
-t1.start();
-forall ai in AD {
-  A((ai+offset)/2) = ai;
-}
-t1.stop();
-if debug then writeln(A);
-success = true;
-QuickSort(A);
-for i in D {
-  if A(i) != Aref(i) {
-    success = false;
-    break;
+  if verify {
+    QuickSort(A);
+    for i in D {
+      if A(i) != Aref(i) {
+        success = false;
+        break;
+      }
+    }
   }
-}
-writeln("Parallel domain iteration: ", if success then "SUCCESS" else "FAILED");
-if printTiming then writeln("Parallel: ", t1.elapsed(TimeUnits.milliseconds));
 
+  writeln("Serial domain iteration: ", if success then "SUCCESS" else "FAILED");
+  if printTiming then writeln("Serial: ", timer.elapsed());
+}
+
+//
+// PARALLEL
+//
+
+{
+  var timer: Timer;
+  timer.start();
+  forall ai in AD {
+    A((ai+offset)/2) = ai;
+  }
+  timer.stop();
+
+  var success = true;
+
+  if verify {
+    QuickSort(A);
+    for i in D {
+      if A(i) != Aref(i) {
+        success = false;
+        break;
+      }
+    }
+  }
+  writeln("Parallel domain iteration: ", if success then "SUCCESS" else "FAILED");
+  if printTiming then writeln("Parallel: ", timer.elapsed());
+}

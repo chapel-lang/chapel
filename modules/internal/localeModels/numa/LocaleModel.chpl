@@ -137,7 +137,6 @@ module LocaleModel {
   // The node model
   //
   class LocaleModel : AbstractLocaleModel {
-    const callStackSize: size_t;
     const _node_id : int;
     const local_name : string;
 
@@ -237,13 +236,12 @@ module LocaleModel {
       numSublocales = chpl_task_getNumSublocales();
 
       extern proc chpl_task_getMaxPar(): uint(32);
-      maxTaskPar = if numSublocales==0 then chpl_task_getMaxPar()
-                                       else numSublocales;
+      maxTaskPar = chpl_task_getMaxPar();
 
       if numSublocales >= 1 {
         childSpace = {0..#numSublocales};
         // These nPUs* values are estimates only; better values await
-        // full hwloc support.
+        // full hwloc support. In particular it assumes a homogeneous node
         const nPUsPhysAccPerSubloc = nPUsPhysAcc/numSublocales;
         const nPUsPhysAllPerSubloc = nPUsPhysAll/numSublocales;
         const nPUsLogAccPerSubloc = nPUsLogAcc/numSublocales;
@@ -333,7 +331,7 @@ module LocaleModel {
 
     proc getChild(idx:int) return this.myLocales[idx];
 
-    iter getChlidren() : locale  {
+    iter getChildren() : locale  {
       for loc in this.myLocales do
         yield loc;
     }
@@ -367,36 +365,43 @@ module LocaleModel {
   // support for memory management
   //
 
+  private extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
+
   // The allocator pragma is used by scalar replacement.
   pragma "allocator"
   pragma "locale model alloc"
-  proc chpl_here_alloc(size:int, md:int(16)) {
+  proc chpl_here_alloc(size:int, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "insert line file info"
-      extern proc chpl_mem_alloc(size:int, md:int(16)) : opaque;
-    return chpl_mem_alloc(size, md + chpl_memhook_md_num());
+      extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    return chpl_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
   }
 
   pragma "allocator"
-  proc chpl_here_calloc(size:int, number:int, md:int(16)) {
+  proc chpl_here_calloc(size:int, number:int, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "insert line file info"
-      extern proc chpl_mem_calloc(number:int, size:int, md:int(16)) : opaque;
-    return chpl_mem_calloc(number, size, md + chpl_memhook_md_num());
+      extern proc chpl_mem_calloc(number:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    return chpl_mem_calloc(number.safeCast(size_t), size.safeCast(size_t), md + chpl_memhook_md_num());
   }
 
   pragma "allocator"
-  proc chpl_here_realloc(ptr:opaque, size:int, md:int(16)) {
+  proc chpl_here_realloc(ptr:c_void_ptr, size:int, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "insert line file info"
-      extern proc chpl_mem_realloc(ptr:opaque, size:int, md:int(16)) : opaque;
-    return chpl_mem_realloc(ptr, size, md + chpl_memhook_md_num());
+      extern proc chpl_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    return chpl_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());
+  }
+
+  proc chpl_here_good_alloc_size(min_size:int): int {
+    pragma "insert line file info"
+      extern proc chpl_mem_good_alloc_size(min_size:size_t) : size_t;
+    return chpl_mem_good_alloc_size(min_size.safeCast(size_t)).safeCast(int);
   }
 
   pragma "locale model free"
-  proc chpl_here_free(ptr:opaque) {
+  proc chpl_here_free(ptr:c_void_ptr): void {
     pragma "insert line file info"
-      extern proc chpl_mem_free(ptr:opaque): void;
+      extern proc chpl_mem_free(ptr:c_void_ptr) : void;
     chpl_mem_free(ptr);
   }
-
 
   //////////////////////////////////////////
   //
@@ -544,11 +549,9 @@ module LocaleModel {
   //
   pragma "insert line file info"
   extern proc chpl_task_addToTaskList(fn: int, args: c_void_ptr, subloc_id: int,
-                                      ref tlist: _task_list, tlist_node_id: int,
+                                      ref tlist: c_void_ptr, tlist_node_id: int,
                                       is_begin: bool);
-  extern proc chpl_task_processTaskList(tlist: _task_list);
-  extern proc chpl_task_executeTasksInList(tlist: _task_list);
-  extern proc chpl_task_freeTaskList(tlist: _task_list);
+  extern proc chpl_task_executeTasksInList(ref tlist: c_void_ptr);
 
   //
   // add a task to a list of tasks being built for a begin statement
@@ -558,7 +561,7 @@ module LocaleModel {
   proc chpl_taskListAddBegin(subloc_id: int,        // target sublocale
                              fn: int,               // task body function idx
                              args: c_void_ptr,      // function args
-                             ref tlist: _task_list, // task list
+                             ref tlist: c_void_ptr, // task list
                              tlist_node_id: int     // task list owner node
                             ) {
     chpl_task_addToTaskList(fn, args, subloc_id, tlist, tlist_node_id, true);
@@ -573,19 +576,10 @@ module LocaleModel {
   proc chpl_taskListAddCoStmt(subloc_id: int,        // target sublocale
                               fn: int,               // task body function idx
                               args: c_void_ptr,      // function args
-                              ref tlist: _task_list, // task list
+                              ref tlist: c_void_ptr, // task list
                               tlist_node_id: int     // task list owner node
                              ) {
     chpl_task_addToTaskList(fn, args, subloc_id, tlist, tlist_node_id, false);
-  }
-
-  //
-  // make sure all tasks in a list are known to the tasking layer
-  //
-  pragma "insert line file info"
-  export
-  proc chpl_taskListProcess(task_list: _task_list) {
-    chpl_task_processTaskList(task_list);
   }
 
   //
@@ -593,16 +587,7 @@ module LocaleModel {
   //
   pragma "insert line file info"
   export
-  proc chpl_taskListExecute(task_list: _task_list) {
+  proc chpl_taskListExecute(ref task_list: c_void_ptr) {
     chpl_task_executeTasksInList(task_list);
-  }
-
-  //
-  // do final cleanup for a task list
-  //
-  pragma "insert line file info"
-  export
-  proc chpl_taskListFree(task_list: _task_list) {
-    chpl_task_freeTaskList(task_list);
   }
 }

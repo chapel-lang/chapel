@@ -1,0 +1,24 @@
+should be reading 1
+getter
+1
+setting it to 2
+setter
+2
+should be reading 2 (setter)
+setter
+2
+setting it to 3
+setter
+3
+should be reading one
+getter
+one
+setting it to two
+setter
+two
+should be reading two (setter)
+setter
+two
+setting it to three
+setter
+three

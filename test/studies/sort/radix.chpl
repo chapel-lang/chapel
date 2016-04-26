@@ -112,7 +112,7 @@ var Permute_G: [D] int(64);
 var rngTime: real;
 writeln("Generating random numbers...");
 const rngStartTime = getCurrentTime();
-fillRandom(F, 65535);
+fillRandom(F, 65535, algorithm=RNG.NPB);
 F_prime = (F * 9223372036854775808):int(64);
 rngTime = getCurrentTime() - rngStartTime;
 //writeln("Finished generating numbers in ", rngTime, " sec");

@@ -173,6 +173,11 @@ void check_cullOverReferences()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterResolution();
+
+  // No ContextCallExprs should remain in the tree.
+  forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
+    INT_FATAL("ContextCallExpr should no longer be in AST");
+  }
 }
 
 void check_callDestructors()

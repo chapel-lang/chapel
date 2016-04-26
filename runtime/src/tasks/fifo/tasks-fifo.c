@@ -58,30 +58,15 @@ typedef struct task_pool_struct {
   chpl_fn_p        fun;          // function to call for task
   void*            arg;          // argument to the function
   chpl_bool        is_executeOn; // is this the body of an executeOn?
-  chpl_bool        begun;        // whether execution of this task has begun
-  chpl_task_list_p ltask;        // points to the task list entry, if there is one
   int32_t          filename;
   int              lineno;
   chpl_task_prvDataImpl_t chpl_data;
-  task_pool_p      next;
+  task_pool_p*     p_list_head;  // task list we're on, if any
+  task_pool_p      list_next;    // double-link pointers for list
+  task_pool_p      list_prev;
+  task_pool_p      next;         // double-link pointers for pool
   task_pool_p      prev;
 } task_pool_t;
-
-
-// This struct is intended for use in a circular linked list where the pointer
-// to the list actually points to the tail of the list, i.e., the last entry
-// inserted into the list, making it easier to append items to the end of the list.
-// Since it is part of a circular list, the last entry will, of course,
-// point to the first entry in the list.
-struct chpl_task_list {
-  chpl_fn_p fun;
-  void* arg;
-  chpl_task_prvDataImpl_t chpl_data;
-  volatile task_pool_p ptask; // when null, execution of the associated task has begun
-  int32_t filename;
-  int lineno;
-  chpl_task_list_p next;
-};
 
 
 //
@@ -128,8 +113,6 @@ static int                 queued_task_cnt;    // number of tasks in task pool
 static int                 running_task_cnt;   // number of running tasks
 static int64_t             extra_task_cnt;     // number of tasks being run by
                                                //   threads occupied already
-static int                 waking_thread_cnt;  // number of threads created but
-                                               //   not yet running
 static int                 blocked_thread_cnt; // number of threads that
                                                //   cannot make progress
 static int                 idle_thread_cnt;    // number of threads looking
@@ -149,6 +132,8 @@ static chpl_fn_p comm_task_fn;
 //
 // Internal functions.
 //
+static void                    enqueue_task(task_pool_p, task_pool_p*);
+static void                    dequeue_task(task_pool_p);
 static void                    comm_task_wrapper(void*);
 static void                    movedTaskWrapper(void* a);
 static chpl_taskID_t           get_next_task_id(void);
@@ -164,16 +149,11 @@ static void                    unset_block_loc(void);
 static void                    check_for_deadlock(void);
 static void                    thread_begin(void*);
 static void                    thread_end(void);
-static void                    begin_task(chpl_fn_p, void*,
-                                          chpl_task_prvDataImpl_t,
-                                          chpl_task_list_p);
-static void                    launch_next_task_in_new_thread(void);
-static void                    schedule_next_task(int);
-static task_pool_p             add_to_task_pool(chpl_fn_p,
-                                                void*,
-                                                chpl_bool,
+static void                    maybe_add_thread(void);
+static task_pool_p             add_to_task_pool(chpl_fn_p, void*, chpl_bool,
                                                 chpl_task_prvDataImpl_t,
-                                                chpl_task_list_p);
+                                                task_pool_p*, chpl_bool,
+                                                int, int32_t);
 
 //
 // Condition variable methods
@@ -344,7 +324,6 @@ void chpl_task_init(void) {
   chpl_thread_mutexInit(&task_list_lock);
   queued_task_cnt = 0;
   running_task_cnt = 1;                     // only main task running
-  waking_thread_cnt = 0;
   blocked_thread_cnt = 0;
   idle_thread_cnt = 0;
   extra_task_cnt = 0;
@@ -376,10 +355,9 @@ void chpl_task_init(void) {
     tp->ptask->fun          = NULL;
     tp->ptask->arg          = NULL;
     tp->ptask->is_executeOn = false;
-    tp->ptask->ltask        = NULL;
-    tp->ptask->begun        = true;
     tp->ptask->filename     = CHPL_FILE_IDX_MAIN_PROGRAM;
     tp->ptask->lineno       = 0;
+    tp->ptask->p_list_head  = NULL;
     tp->ptask->next         = NULL;
     tp->lockRprt            = NULL;
 
@@ -474,10 +452,9 @@ static void comm_task_wrapper(void* arg) {
   tp->ptask->fun          = comm_task_fn;
   tp->ptask->arg          = arg;
   tp->ptask->is_executeOn = false;
-  tp->ptask->ltask        = NULL;
-  tp->ptask->begun        = true;
   tp->ptask->filename     = CHPL_FILE_IDX_COMM_TASK;
   tp->ptask->lineno       = 0;
+  tp->ptask->p_list_head  = NULL;
   tp->ptask->next         = NULL;
 
   //
@@ -493,139 +470,150 @@ static void comm_task_wrapper(void* arg) {
 }
 
 
-void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
-                             c_sublocid_t subloc,
-                             chpl_task_list_p *task_list,
-                             int32_t task_list_locale,
-                             chpl_bool is_begin_stmt,
-                             int lineno,
-                             int32_t filename) {
-  chpl_task_prvDataImpl_t chpl_data = {
-    .prvdata = { .serial_state = chpl_task_getSerial() } };
+//
+// Enqueue and dequeue tasks from the pool.
+//
+static inline
+void enqueue_task(task_pool_p ptask, task_pool_p* p_task_list_head) {
+  queued_task_cnt++;
 
-  assert(subloc == 0 || subloc == c_sublocid_any);
+  //
+  // Add to pool.
+  //
+  if (task_pool_tail)
+    task_pool_tail->next = ptask;
+  else
+    task_pool_head = ptask;
+  ptask->prev = task_pool_tail;
+  task_pool_tail = ptask;
 
-  if (task_list_locale == chpl_nodeID) {
-    chpl_task_list_p ltask;
-
-    ltask = (chpl_task_list_p) chpl_mem_alloc(sizeof(struct chpl_task_list),
-                                              CHPL_RT_MD_TASK_LIST_DESC,
-                                              0, 0);
-    ltask->filename = filename;
-    ltask->lineno   = lineno;
-    ltask->fun      = chpl_ftable[fid];
-    ltask->arg      = arg;
-    ltask->ptask    = NULL;
-    ltask->chpl_data = chpl_data;
-
-    if (is_begin_stmt)
-      begin_task(chpl_ftable[fid], arg, chpl_data, ltask);
-
-    // begin critical section - not needed for cobegin or coforall statements
-    if (is_begin_stmt)
-      chpl_thread_mutexLock(&task_list_lock);
-
-    if (*task_list) {
-      ltask->next = (*task_list)->next;
-      (*task_list)->next = ltask;
-    }
-    else
-      ltask->next = ltask;
-    *task_list = ltask;
-
-    // end critical section - not needed for cobegin or coforall statements
-    if (is_begin_stmt)
-      chpl_thread_mutexUnlock(&task_list_lock);
+  //
+  // Add to list, if any.
+  //
+  if (p_task_list_head == NULL) {
+    ptask->p_list_head = NULL;
   }
   else {
-    // is_begin_stmt should be true here because if task_list_locale !=
-    // chpl_nodeID, then this function could not have been called from
-    // the context of a cobegin or coforall statement.
-    assert(is_begin_stmt);
-    begin_task(chpl_ftable[fid], arg, chpl_data, NULL);
+    ptask->p_list_head = p_task_list_head;
+    ptask->list_next = *p_task_list_head;
+    if (*p_task_list_head != NULL)
+      (*p_task_list_head)->list_prev = ptask;
+    ptask->list_prev = NULL;
+    *p_task_list_head = ptask;
   }
 }
 
 
-void chpl_task_processTaskList(chpl_task_list_p task_list) {
-  // task_list points to the last entry on the list; task_list->next is
-  // actually the first element on the list.
-  chpl_task_list_p ltask = task_list, next_task;
-  task_pool_p curr_ptask;
-  task_pool_t nested_task;
+static inline
+void dequeue_task(task_pool_p ptask) {
+  assert(queued_task_cnt > 0);
+  queued_task_cnt--;
 
-  // This function is not expected to be called if a cobegin contains fewer
-  // than two statements; a coforall, however, may generate just one task,
-  // or even none at all.
-  if (ltask == NULL)
+  //
+  // Remove from pool.
+  //
+  if (ptask == task_pool_head) {
+    if ((task_pool_head = task_pool_head->next) == NULL)
+      task_pool_tail = NULL;
+    else
+      task_pool_head->prev = NULL;
+  }
+  else {
+    if ((ptask->prev->next = ptask->next) == NULL)
+      task_pool_tail = ptask->prev;
+    else
+      ptask->next->prev = ptask->prev;
+  }
+
+  //
+  // Remove from list, if on one.
+  //
+  if (ptask->p_list_head != NULL) {
+    if (ptask == *(ptask->p_list_head))
+      *(ptask->p_list_head) = ptask->list_next;
+    else
+      ptask->list_prev->list_next = ptask->list_next;
+    if (ptask->list_next != NULL)
+      ptask->list_next->list_prev = ptask->list_prev;
+  }
+}
+
+
+void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg,
+                             c_sublocid_t subloc,
+                             void** p_task_list_void,
+                             int32_t task_list_locale,
+                             chpl_bool is_begin_stmt,
+                             int lineno,
+                             int32_t filename) {
+  task_pool_p curr_ptask = get_current_ptask();
+  chpl_task_prvDataImpl_t chpl_data =
+    { .prvdata = { .serial_state = curr_ptask->chpl_data.prvdata.serial_state }
+    };
+
+  assert(subloc == 0 || subloc == c_sublocid_any);
+
+  if (chpl_data.prvdata.serial_state) {
+    (*chpl_ftable[fid])(arg);
     return;
-  assert(ltask->next);
-  next_task = ltask->next;  // next_task now points to the head of the list
+  }
+
+  // begin critical section
+  chpl_thread_mutexLock(&threading_lock);
+
+  if (task_list_locale == chpl_nodeID) {
+    (void) add_to_task_pool(chpl_ftable[fid], arg, false, chpl_data,
+                            (task_pool_p*) p_task_list_void, is_begin_stmt,
+                            lineno, filename);
+
+  }
+  else {
+    //
+    // is_begin_stmt should be true here because if task_list_locale !=
+    // chpl_nodeID, then this function could not have been called from
+    // the context of a cobegin or coforall statement.
+    //
+    assert(is_begin_stmt);
+    (void) add_to_task_pool(chpl_ftable[fid], arg, false, chpl_data,
+                            NULL, true, 0, CHPL_FILE_IDX_UNKNOWN);
+  }
+
+  // end critical section
+  chpl_thread_mutexUnlock(&threading_lock);
+}
+
+
+void chpl_task_executeTasksInList(void** p_task_list_void) {
+  task_pool_p* p_task_list_head = (task_pool_p*) p_task_list_void;
+  task_pool_p curr_ptask;
+  task_pool_p child_ptask;
+
+  //
+  // If we're serial, all the tasks have already been executed.
+  //
+  if (chpl_task_getSerial())
+    return;
 
   curr_ptask = get_current_ptask();
 
-  if (curr_ptask->chpl_data.prvdata.serial_state) {
-    do {
-      ltask = next_task;
-      (*ltask->fun)(ltask->arg);
-      next_task = ltask->next;
-    } while (ltask != task_list);
-  } else {
-    int task_cnt = 0;
-    chpl_task_list_p first_task = next_task;
-    next_task = next_task->next;
+  while (*p_task_list_head != NULL) {
+    chpl_fn_p task_to_run_fun = NULL;
 
-    if (first_task != task_list) {
-      // there are at least two tasks in task_list
+    // begin critical section
+    chpl_thread_mutexLock(&threading_lock);
 
-      // begin critical section
-      chpl_thread_mutexLock(&threading_lock);
-
-      do {
-        ltask = next_task;
-        ltask->ptask = add_to_task_pool(ltask->fun, ltask->arg, false,
-                                        ltask->chpl_data, ltask);
-        assert(ltask->ptask == NULL
-               || ltask->ptask->ltask == ltask);
-        next_task = ltask->next;
-        task_cnt++;
-      } while (ltask != task_list);
-
-      schedule_next_task(task_cnt);
-
-      // end critical section
-      chpl_thread_mutexUnlock(&threading_lock);
+    if ((child_ptask = *p_task_list_head) != NULL) {
+      task_to_run_fun = child_ptask->fun;
+      dequeue_task(child_ptask);
     }
 
-    // Execute the first task on the list, since it has to run to completion
-    // before continuing beyond the cobegin or coforall it's in.
-    nested_task.id           = get_next_task_id();
-    nested_task.fun          = first_task->fun;
-    nested_task.arg          = first_task->arg;
-    nested_task.is_executeOn = false;
-    nested_task.ltask        = first_task;
-    nested_task.begun        = true;
-    nested_task.filename     = first_task->filename;
-    nested_task.lineno       = first_task->lineno;
-    nested_task.chpl_data    = curr_ptask->chpl_data;
+    // end critical section
+    chpl_thread_mutexUnlock(&threading_lock);
 
-    chpl_task_do_callbacks(chpl_task_cb_event_kind_create,
-                           nested_task.filename,
-                           nested_task.lineno,
-                           nested_task.id,
-                           nested_task.is_executeOn);
+    if (task_to_run_fun == NULL)
+      continue;
 
-    set_current_ptask(&nested_task);
-
-    if (do_taskReport) {
-      chpl_thread_mutexLock(&taskTable_lock);
-      chpldev_taskTable_add(nested_task.id,
-                            nested_task.lineno, nested_task.filename,
-                            (uint64_t) (intptr_t) &nested_task);
-      chpldev_taskTable_set_suspended(curr_ptask->id);
-      chpldev_taskTable_set_active(nested_task.id);
-      chpl_thread_mutexUnlock(&taskTable_lock);
-    }
+    set_current_ptask(child_ptask);
 
     // begin critical section
     chpl_thread_mutexLock(&extra_task_lock);
@@ -635,22 +623,36 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
     // end critical section
     chpl_thread_mutexUnlock(&extra_task_lock);
 
+    if (do_taskReport) {
+      chpl_thread_mutexLock(&taskTable_lock);
+      chpldev_taskTable_set_suspended(curr_ptask->id);
+      chpldev_taskTable_set_active(child_ptask->id);
+      chpl_thread_mutexUnlock(&taskTable_lock);
+    }
+
     if (blockreport)
       initializeLockReportForThread();
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
-                           nested_task.filename,
-                           nested_task.lineno,
-                           nested_task.id,
-                           nested_task.is_executeOn);
+                           child_ptask->filename,
+                           child_ptask->lineno,
+                           child_ptask->id,
+                           child_ptask->is_executeOn);
 
-    (*first_task->fun)(first_task->arg);
+    (*task_to_run_fun)(child_ptask->arg);
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
-                           nested_task.filename,
-                           nested_task.lineno,
-                           nested_task.id,
-                           nested_task.is_executeOn);
+                           child_ptask->filename,
+                           child_ptask->lineno,
+                           child_ptask->id,
+                           child_ptask->is_executeOn);
+
+    if (do_taskReport) {
+      chpl_thread_mutexLock(&taskTable_lock);
+      chpldev_taskTable_set_active(curr_ptask->id);
+      chpldev_taskTable_remove(child_ptask->id);
+      chpl_thread_mutexUnlock(&taskTable_lock);
+    }
 
     // begin critical section
     chpl_thread_mutexLock(&extra_task_lock);
@@ -660,157 +662,10 @@ void chpl_task_processTaskList(chpl_task_list_p task_list) {
     // end critical section
     chpl_thread_mutexUnlock(&extra_task_lock);
 
-    if (do_taskReport) {
-      chpl_thread_mutexLock(&taskTable_lock);
-      chpldev_taskTable_set_active(curr_ptask->id);
-      chpldev_taskTable_remove(nested_task.id);
-      chpl_thread_mutexUnlock(&taskTable_lock);
-    }
-
     set_current_ptask(curr_ptask);
+    chpl_mem_free(child_ptask, 0, 0);
+
   }
-}
-
-
-void chpl_task_executeTasksInList(chpl_task_list_p task_list) {
-  // task_list points to the last entry on the list; task_list->next is
-  // actually the first element on the list.
-  chpl_task_list_p ltask = task_list, next_task;
-  // This function is not expected to be called if a cobegin contains fewer
-  // than two statements; a coforall, however, may generate just one task,
-  // or even none at all.
-  if (ltask == NULL)
-    return;
-  assert(ltask->next);
-  next_task = ltask->next;  // next_task now points to the head of the list
-
-  // If the serial state is true, the tasks in task_list have already been
-  // executed.
-  if (!chpl_task_getSerial()) do {
-    ltask = next_task;
-    next_task = ltask->next;
-
-    // don't lock unless it looks like we will find a task to execute
-    // if we do so
-    if (ltask->ptask) {
-      task_pool_p  curr_ptask;
-      task_pool_p  nested_ptask = NULL;
-      chpl_fn_p    task_to_run_fun = NULL;
-      void*        task_to_run_arg = NULL;
-
-      // begin critical section
-      chpl_thread_mutexLock(&threading_lock);
-
-      if (ltask->ptask) {
-        assert(!ltask->ptask->begun);
-        task_to_run_fun = ltask->ptask->fun;
-        task_to_run_arg = ltask->ptask->arg;
-        ltask->ptask->begun = true;
-        ltask->ptask->ltask = NULL;
-        // there is no longer any need to access the corresponding task
-        // pool entry so avoid any potential of accessing a node that
-        // will eventually be freed
-        nested_ptask = ltask->ptask;
-        ltask->ptask = NULL;
-        if (waking_thread_cnt > 0)
-          waking_thread_cnt--;
-        assert(queued_task_cnt > 0);
-        queued_task_cnt--;
-        if (nested_ptask->prev == NULL) {
-          if ((task_pool_head = nested_ptask->next) == NULL)
-            task_pool_tail = NULL;
-          else
-            task_pool_head->prev = NULL;
-        }
-        else {
-          nested_ptask->prev->next = nested_ptask->next;
-          if (nested_ptask->next == NULL)
-            task_pool_tail = nested_ptask->prev;
-          else
-            nested_ptask->next->prev = nested_ptask->prev;
-        }
-      }
-
-      // end critical section
-      chpl_thread_mutexUnlock(&threading_lock);
-
-      if (task_to_run_fun) {
-        curr_ptask = get_current_ptask();
-        set_current_ptask(nested_ptask);
-
-        // begin critical section
-        chpl_thread_mutexLock(&extra_task_lock);
-
-        extra_task_cnt++;
-
-        // end critical section
-        chpl_thread_mutexUnlock(&extra_task_lock);
-
-        if (do_taskReport) {
-          chpl_thread_mutexLock(&taskTable_lock);
-          chpldev_taskTable_set_suspended(curr_ptask->id);
-          chpldev_taskTable_set_active(nested_ptask->id);
-          chpl_thread_mutexUnlock(&taskTable_lock);
-        }
-
-        if (blockreport)
-          initializeLockReportForThread();
-
-        chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
-                               nested_ptask->filename,
-                               nested_ptask->lineno,
-                               nested_ptask->id,
-                               nested_ptask->is_executeOn);
-
-        (*task_to_run_fun)(task_to_run_arg);
-
-        chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
-                               nested_ptask->filename,
-                               nested_ptask->lineno,
-                               nested_ptask->id,
-                               nested_ptask->is_executeOn);
-
-        if (do_taskReport) {
-          chpl_thread_mutexLock(&taskTable_lock);
-          chpldev_taskTable_set_active(curr_ptask->id);
-          chpldev_taskTable_remove(nested_ptask->id);
-          chpl_thread_mutexUnlock(&taskTable_lock);
-        }
-
-        // begin critical section
-        chpl_thread_mutexLock(&extra_task_lock);
-
-        extra_task_cnt--;
-
-        // end critical section
-        chpl_thread_mutexUnlock(&extra_task_lock);
-
-        set_current_ptask(curr_ptask);
-        chpl_mem_free(nested_ptask, 0, 0);
-      }
-    }
-
-  } while (ltask != task_list);
-}
-
-
-void chpl_task_freeTaskList(chpl_task_list_p task_list) {
-  // task_list points to the last entry on the list; task_list->next is
-  // actually the first element on the list.
-  chpl_task_list_p ltask = task_list, next_task;
-  // This function is not expected to be called if a cobegin contains fewer
-  // than two statements; a coforall, however, may generate just one task,
-  // or even none at all.
-  if (ltask == NULL)
-    return;
-  assert(ltask->next);
-  next_task = ltask->next;  // next_task now points to the head of the list
-
-  do {
-    ltask = next_task;
-    next_task = ltask->next;
-    chpl_mem_free(ltask, 0, 0);
-  } while (ltask != task_list);
 }
 
 
@@ -837,9 +692,8 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
 
-  (void) add_to_task_pool(movedTaskWrapper, pmtwd, true,
-                          pmtwd->chpl_data, NULL);
-  schedule_next_task(1);
+  (void) add_to_task_pool(movedTaskWrapper, pmtwd, true, pmtwd->chpl_data,
+                          NULL, false, 0, CHPL_FILE_IDX_UNKNOWN);
 
   // end critical section
   chpl_thread_mutexUnlock(&threading_lock);
@@ -883,10 +737,27 @@ void chpl_task_yield(void) {
 
 
 void chpl_task_sleep(double secs) {
-  struct timespec delay;
-  delay.tv_sec = (time_t)(secs);
-  delay.tv_nsec = (long)(1e9*(secs - floor(secs)));
-  nanosleep(&delay, NULL);
+  struct timeval deadline;
+  struct timeval now;
+
+  //
+  // Figure out when this task can proceed again, and until then, keep
+  // yielding.
+  //
+  gettimeofday(&deadline, NULL);
+  deadline.tv_usec += (suseconds_t) lround((secs - trunc(secs)) * 1.0e6);
+  if (deadline.tv_usec > 1000000) {
+    deadline.tv_sec++;
+    deadline.tv_usec -= 1000000;
+  }
+  deadline.tv_sec += (time_t) trunc(secs);
+
+  do {
+    chpl_task_yield();
+    gettimeofday(&now, NULL);
+  } while (now.tv_sec < deadline.tv_sec
+           || (now.tv_sec == deadline.tv_sec
+               && now.tv_usec < deadline.tv_usec));
 }
 
 chpl_bool chpl_task_getSerial(void) {
@@ -1044,10 +915,8 @@ static void report_all_tasks(void) {
   // print out pending tasks
   printf("Pending tasks:\n");
   while (pendingTask != NULL) {
-    if (!pendingTask->begun) {
-      printf("- %s:%d\n", chpl_lookupFilename(pendingTask->filename),
-             (int)pendingTask->lineno);
-    }
+    printf("- %s:%d\n", chpl_lookupFilename(pendingTask->filename),
+           (int)pendingTask->lineno);
     pendingTask = pendingTask->next;
   }
   printf("\n");
@@ -1201,20 +1070,94 @@ static void check_for_deadlock(void) {
 //
 static void
 thread_begin(void* ptask_void) {
-  task_pool_p ptask = (task_pool_p) ptask_void;
+  task_pool_p ptask;
   thread_private_data_t *tp;
 
   tp = (thread_private_data_t*) chpl_mem_alloc(sizeof(thread_private_data_t),
                                                CHPL_RT_MD_THREAD_PRV_DATA,
                                                0, 0);
-  tp->ptask    = ptask;
-  tp->lockRprt = NULL;
   chpl_thread_setPrivateData(tp);
 
+  tp->lockRprt = NULL;
   if (blockreport)
     initializeLockReportForThread();
 
   while (true) {
+    //
+    // wait for a task to be present in the task pool
+    //
+
+    // In revision 22137, we investigated whether it was beneficial to
+    // implement this while loop in a hybrid style, where depending on
+    // the number of tasks available, idle threads would either yield or
+    // wait on a condition variable to waken them.  Through analysis, we
+    // realized this could potential create a case where a thread would
+    // become stranded, waiting for a condition signal that would never
+    // come.  A potential solution to this was to keep a count of threads
+    // that were waiting on the signal, but since there was a performance
+    // impact from keeping it as a hybrid as opposed to merely yielding,
+    // it was decided that we would return to the simple yield case.
+    while (!task_pool_head) {
+      if (set_block_loc(0, CHPL_FILE_IDX_IDLE_TASK)) {
+        // all other tasks appear to be blocked
+        struct timeval deadline, now;
+        gettimeofday(&deadline, NULL);
+        deadline.tv_sec += 1;
+        do {
+          chpl_thread_yield();
+          if (!task_pool_head)
+            gettimeofday(&now, NULL);
+        } while (!task_pool_head
+                 && (now.tv_sec < deadline.tv_sec
+                     || (now.tv_sec == deadline.tv_sec
+                         && now.tv_usec < deadline.tv_usec)));
+        if (!task_pool_head) {
+          check_for_deadlock();
+        }
+      }
+      else {
+        do {
+          chpl_thread_yield();
+        } while (!task_pool_head);
+      }
+
+      unset_block_loc();
+    }
+ 
+    //
+    // Just now the pool had at least one task in it.  Lock and see if
+    // there's something still there.
+    //
+    chpl_thread_mutexLock(&threading_lock);
+    if (!task_pool_head) {
+      chpl_thread_mutexUnlock(&threading_lock);
+      continue;
+    }
+
+    //
+    // We've found a task to run.
+    //
+
+    if (blockreport)
+      progress_cnt++;
+
+    //
+    // start new task; increment running count and remove task from pool
+    // also add to task to task-table (structure in ChapelRuntime that keeps
+    // track of currently running tasks for task-reports on deadlock or
+    // Ctrl+C).
+    //
+    ptask = task_pool_head;
+    idle_thread_cnt--;
+    running_task_cnt++;
+
+    dequeue_task(ptask);
+
+    // end critical section
+    chpl_thread_mutexUnlock(&threading_lock);
+
+    tp->ptask = ptask;
+
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
       chpldev_taskTable_set_active(ptask->id);
@@ -1241,21 +1184,11 @@ thread_begin(void* ptask_void) {
       chpl_thread_mutexUnlock(&taskTable_lock);
     }
 
-    // begin critical section
-    chpl_thread_mutexLock(&threading_lock);
-
-    //
-    // We have to wait to free the ptask until we hold the lock, in
-    // order to make sure launch_next_task_in_new_thread() is done
-    // manipulating the ptask before anyone else could re-allocate it.
-    // We could do the free before grabbing the lock if we arranged for
-    // launch_next_task_in_new_thread() to do the pool manipulations
-    // before calling chpl_thread_create(), but then we would also have
-    // to be prepared to undo all those manipulations if we were unable
-    // to create a thread.
-    //
     tp->ptask = NULL;
     chpl_mem_free(ptask, 0, 0);
+
+    // begin critical section
+    chpl_thread_mutexLock(&threading_lock);
 
     //
     // finished task; decrement running count and increment idle count
@@ -1263,87 +1196,6 @@ thread_begin(void* ptask_void) {
     assert(running_task_cnt > 0);
     running_task_cnt--;
     idle_thread_cnt++;
-
-    //
-    // wait for a not-yet-begun task to be present in the task pool
-    //
-
-    // In revision 22137, we investigated whether it was beneficial to
-    // implement this while loop in a hybrid style, where depending on
-    // the number of tasks available, idle threads would either yield or
-    // wait on a condition variable to waken them.  Through analysis, we
-    // realized this could potential create a case where a thread would
-    // become stranded, waiting for a condition signal that would never
-    // come.  A potential solution to this was to keep a count of threads
-    // that were waiting on the signal, but since there was a performance
-    // impact from keeping it as a hybrid as opposed to merely yielding,
-    // it was decided that we would return to the simple yield case.
-    while (!task_pool_head) {
-      chpl_thread_mutexUnlock(&threading_lock);
-      while (!task_pool_head) {
-        if (set_block_loc(0, CHPL_FILE_IDX_IDLE_TASK)) {
-          // all other tasks appear to be blocked
-          struct timeval deadline, now;
-          gettimeofday(&deadline, NULL);
-          deadline.tv_sec += 1;
-          do {
-            chpl_thread_yield();
-            if (!task_pool_head)
-              gettimeofday(&now, NULL);
-          } while (!task_pool_head
-                   && (now.tv_sec < deadline.tv_sec
-                       || (now.tv_sec == deadline.tv_sec
-                           && now.tv_usec < deadline.tv_usec)));
-          if (!task_pool_head) {
-            check_for_deadlock();
-          }
-        }
-        else {
-          do {
-            chpl_thread_yield();              
-          } while (!task_pool_head);
-        }
-
-        unset_block_loc();
-      }
-      chpl_thread_mutexLock(&threading_lock);
-    }
-
-
-    if (blockreport)
-      progress_cnt++;
-
-    assert(task_pool_head && !task_pool_head->begun);
-
-    if (waking_thread_cnt > 0)
-      waking_thread_cnt--;
-
-    //
-    // start new task; increment running count and remove task from pool
-    // also add to task to task-table (structure in ChapelRuntime that keeps
-    // track of currently running tasks for task-reports on deadlock or
-    // Ctrl+C).
-    //
-    assert(queued_task_cnt > 0);
-    queued_task_cnt--;
-    idle_thread_cnt--;
-    running_task_cnt++;
-    ptask = task_pool_head;
-    if (ptask->ltask) {
-      ptask->ltask->ptask = NULL;
-      // there is no longer any need to access the corresponding task
-      // list entry so avoid any potential of accessing a node that
-      // will eventually be freed
-      ptask->ltask = NULL;
-    }
-    tp->ptask = ptask;
-    ptask->begun = true;
-    task_pool_head = task_pool_head->next;
-    if (task_pool_head == NULL)  // task pool is now empty
-      task_pool_tail = NULL;
-    else {
-      task_pool_head->prev = NULL;
-    }
 
     // end critical section
     chpl_thread_mutexUnlock(&threading_lock);
@@ -1371,56 +1223,16 @@ static void thread_end(void)
 
 
 //
-// interface function with begin-statement
+// Launch another thread, if it seems useful to do so and we can.
 //
-static
-void begin_task(chpl_fn_p fp, void* a, chpl_task_prvDataImpl_t chpl_data,
-                chpl_task_list_p ltask) {
-  if (chpl_data.prvdata.serial_state)
-    (*fp)(a);
-  else {
-    task_pool_p ptask = NULL;
+static void maybe_add_thread(void) {
+  static chpl_bool warning_issued = false;
 
-    // begin critical section
-    chpl_thread_mutexLock(&threading_lock);
-
-    ptask = add_to_task_pool(fp, a, false, chpl_data, ltask);
-
-    //
-    // This task may begin executing before returning from this function,
-    // so the task list node needs to be updated before there is any
-    // possibility of launching this task (inside the critical section).
-    //
-    if (ltask)
-      ltask->ptask = ptask;
-
-    schedule_next_task(1);
-
-    assert(ptask->ltask == NULL
-           || (ptask->ltask == ltask
-               && ltask->ptask == ptask));
-
-    // end critical section
-    chpl_thread_mutexUnlock(&threading_lock);
-  }
-}
-
-
-//
-// run task in a new thread
-// assumes at least one task is in the pool and threading_lock has already
-// been acquired!
-//
-static void
-launch_next_task_in_new_thread(void) {
-  task_pool_p       ptask;
-  static chpl_bool  warning_issued = false;
-
-  if (warning_issued)  // If thread creation failed previously, don't try again
-    return;
-
-  if ((ptask = task_pool_head)) {
-    if (chpl_thread_create(ptask)) {
+  if (!warning_issued && chpl_thread_canCreate()) {
+    if (chpl_thread_create(NULL) == 0) {
+      idle_thread_cnt++;
+    }
+    else {
       int32_t max_threads = chpl_thread_getMaxThreads();
       uint32_t num_threads = chpl_thread_getNumThreads();
       char msg[256];
@@ -1436,61 +1248,22 @@ launch_next_task_in_new_thread(void) {
                 num_threads);
       chpl_warning(msg, 0, 0);
       warning_issued = true;
-    } else {
-      assert(queued_task_cnt > 0);
-      queued_task_cnt--;
-      running_task_cnt++;
-      if (ptask->ltask) {
-        ptask->ltask->ptask = NULL;
-        // there is no longer any need to access the corresponding task
-        // list entry so avoid any potential of accessing a node that
-        // will eventually be freed
-        ptask->ltask = NULL;
-      }
-      ptask->begun = true;
-      task_pool_head = task_pool_head->next;
-      if (task_pool_head == NULL)  // task pool is now empty
-        task_pool_tail = NULL;
-      else
-        task_pool_head->prev = NULL;
     }
   }
-}
-
-
-// Schedule one or more tasks either by signaling an existing thread or by
-// launching new threads if available
-static void schedule_next_task(int howMany) {
-  //
-  // Reduce the number of new threads to be started, by the number that
-  // are already looking for work and will find it very soon.  Try to
-  // launch each remaining task in a new thread, up to the maximum number
-  // of threads we are supposed to have.
-  //
-  if (idle_thread_cnt > waking_thread_cnt) {
-    // increment waking_thread_cnt by the number of idle threads
-    if (idle_thread_cnt - waking_thread_cnt >= howMany) {
-      waking_thread_cnt += howMany;
-      howMany = 0;
-    } else {
-      howMany -= (idle_thread_cnt - waking_thread_cnt);
-      waking_thread_cnt = idle_thread_cnt;
-    }
-  }
-
-  for (; howMany && chpl_thread_canCreate(); howMany--)
-    launch_next_task_in_new_thread();
 }
 
 
 // create a task from the given function pointer and arguments
 // and append it to the end of the task pool
 // assumes threading_lock has already been acquired!
-static task_pool_p add_to_task_pool(chpl_fn_p fp,
-                                    void* a,
-                                    chpl_bool is_executeOn,
-                                    chpl_task_prvDataImpl_t chpl_data,
-                                    chpl_task_list_p ltask) {
+static inline
+task_pool_p add_to_task_pool(chpl_fn_p fp,
+                             void* a,
+                             chpl_bool is_executeOn,
+                             chpl_task_prvDataImpl_t chpl_data,
+                             task_pool_p* p_task_list_head,
+                             chpl_bool is_begin_stmt,
+                             int lineno, int32_t filename) {
   task_pool_p ptask =
     (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t),
                                         CHPL_RT_MD_TASK_POOL_DESC,
@@ -1499,28 +1272,13 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
   ptask->fun          = fp;
   ptask->arg          = a;
   ptask->is_executeOn = is_executeOn;
-  ptask->ltask        = ltask;
-  ptask->begun        = false;
   ptask->chpl_data    = chpl_data;
+  ptask->filename     = filename;
+  ptask->lineno       = lineno;
+  ptask->p_list_head  = NULL;
+  ptask->next         = NULL;
 
-  if (ltask) {
-    ptask->filename = ltask->filename;
-    ptask->lineno = ltask->lineno;
-  } else {  /* Believe this happens only when an on-clause starts the task */
-    ptask->filename = CHPL_FILE_IDX_UNKNOWN;
-    ptask->lineno = 0;
-  }
-
-  ptask->next = NULL;
-
-  if (task_pool_tail)
-    task_pool_tail->next = ptask;
-  else
-    task_pool_head = ptask;
-  ptask->prev = task_pool_tail;
-  task_pool_tail = ptask;
-
-  queued_task_cnt++;
+  enqueue_task(ptask, p_task_list_head);
 
   chpl_task_do_callbacks(chpl_task_cb_event_kind_create,
                          ptask->filename,
@@ -1536,6 +1294,17 @@ static task_pool_p add_to_task_pool(chpl_fn_p fp,
     chpl_thread_mutexUnlock(&taskTable_lock);
   }
 
+  //
+  // If we now have more tasks than threads to run them on (taking
+  // into account that the current parent of a structured parallel
+  // construct can run at least one of that construct's children),
+  // try to start another thread.
+  //
+  if (queued_task_cnt > idle_thread_cnt &&
+      (p_task_list_head == NULL || ptask->list_next != NULL || is_begin_stmt)) {
+    maybe_add_thread();
+  }
+
   return ptask;
 }
 
@@ -1547,16 +1316,5 @@ uint32_t chpl_task_getNumThreads(void) {
 }
 
 uint32_t chpl_task_getNumIdleThreads(void) {
-  int numIdleThreads;
-
-  // begin critical section
-  chpl_thread_mutexLock(&threading_lock);
-
-  numIdleThreads = idle_thread_cnt - waking_thread_cnt;
-
-  // end critical section
-  chpl_thread_mutexUnlock(&threading_lock);
-
-  assert(numIdleThreads >= 0);
-  return numIdleThreads;
+  return idle_thread_cnt;
 }

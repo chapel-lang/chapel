@@ -1,0 +1,1 @@
+literalExcept.chpl:6: error: incorrect expression in 'except' list, identifier expected

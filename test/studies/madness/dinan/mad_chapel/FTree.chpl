@@ -53,20 +53,24 @@ class FTree {
      */
     proc this(lvl: int, idx: int) ref {
         if !indices.member((lvl, idx)) {
-            if setter {
-              indices += ((lvl, idx));
-              nodes[(lvl, idx)] = new Coeff(coeffDom);
-            } else {
-              // This is a getter so it shouldn't be modifying what
-              // we return, should be safe to return the zero vector.
-              // FIXME: Zeroes should really be a const, but can'ti
-              //        return const from a var fcn.
-              return zeroes;
-            }
+            indices += ((lvl, idx));
+            nodes[(lvl, idx)] = new Coeff(coeffDom);
         }
 
         return nodes[(lvl, idx)].data;
     }
+    proc this(lvl: int, idx: int) {
+        if !indices.member((lvl, idx)) {
+            // This is a getter so it shouldn't be modifying what
+            // we return, should be safe to return the zero vector.
+            // FIXME: Zeroes should really be a const, but can'ti
+            //        return const from a var fcn.
+            return zeroes;
+        }
+
+        return nodes[(lvl, idx)].data;
+    }
+
 
 
     /** Access an element in the FTree.  If it doesn't exist, 

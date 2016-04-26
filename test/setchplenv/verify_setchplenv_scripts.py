@@ -162,10 +162,7 @@ class SetChplEnvTests(unittest.TestCase):
             self.assertEqual('none', get_var('CHPL_GMP'))
             self.assertEqual('none', get_var('CHPL_REGEXP'))
             self.assertEqual('none', get_var('CHPL_LLVM'))
-
-            # TODO: Re-add this check when/if tcmalloc becomes
-            #       default. (thomasvandoren, 2015-01-13)
-            # self.assertEqual('cstdlib', get_var('CHPL_MEM'))
+            self.assertEqual('cstdlib', get_var('CHPL_MEM'))
 
     def check_scripts(self, shell, source_cmd, path_sep,
                       post_source_cmd=None, shell_cmd=None):

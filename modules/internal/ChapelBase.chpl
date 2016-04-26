@@ -513,29 +513,27 @@ module ChapelBase {
   // complex component methods re and im
   //
   inline proc ref chpl_anycomplex.re ref {
-    if setter {
-      return __primitive("complex_get_real", this);
+    return __primitive("complex_get_real", this);
+  }
+  inline proc chpl_anycomplex.re {
+    if this.type == complex(128) {
+      extern proc creal(x:complex(128)): real(64);
+      return creal(this);
     } else {
-      if this.type == complex(128) {
-        extern proc creal(x:complex(128)): real(64);
-        return creal(this);
-      } else {
-        extern proc crealf(x:complex(64)): real(32);
-        return crealf(this);
-      }
+      extern proc crealf(x:complex(64)): real(32);
+      return crealf(this);
     }
   }
   inline proc ref chpl_anycomplex.im ref {
-    if setter {
-      return __primitive("complex_get_imag", this);
+    return __primitive("complex_get_imag", this);
+  }
+  inline proc chpl_anycomplex.im {
+    if this.type == complex(128) {
+      extern proc cimag(x:complex(128)): real(64);
+      return cimag(this);
     } else {
-      if this.type == complex(128) {
-        extern proc cimag(x:complex(128)): real(64);
-        return cimag(this);
-      } else {
-        extern proc cimagf(x:complex(64)): real(32);
-        return cimagf(this);
-      }
+      extern proc cimagf(x:complex(64)): real(32);
+      return cimagf(this);
     }
   }
   
@@ -548,21 +546,36 @@ module ChapelBase {
   //
   // min and max
   //
+  inline proc min(x: int(?w), y: int(w)) return if x < y then x else y;
+  inline proc max(x: int(?w), y: int(w)) return if x > y then x else y;
+
+  inline proc min(x: uint(?w), y: uint(w)) return if x < y then x else y;
+  inline proc max(x: uint(?w), y: uint(w)) return if x > y then x else y;
+
+  inline proc min(x: real(?w), y: real(w)) return if x < y then x else y;
+  inline proc max(x: real(?w), y: real(w)) return if x > y then x else y;
+
+  inline proc min(x: imag(?w), y: imag(w)) return if x < y then x else y;
+  inline proc max(x: imag(?w), y: imag(w)) return if x > y then x else y;
+
   inline proc min(x, y) return if x < y then x else y;
   inline proc max(x, y) return if x > y then x else y;
-  inline proc min(x, y)
-    where chpl_isSyncSingleAtomic(x) || chpl_isSyncSingleAtomic(y)
-  { compilerError("min() and max() are not allowed on sync/single/atomic arguments - apply readFE/readFF/read() to those arguments first"); }
-  inline proc max(x, y)
-    where chpl_isSyncSingleAtomic(x) || chpl_isSyncSingleAtomic(y)
-  { compilerError("max() and min() are not allowed on sync/single/atomic arguments - apply readFE/readFF/read() to those arguments first"); }
+
   inline proc min(x, y, z...?k) return min(min(x, y), (...z));
   inline proc max(x, y, z...?k) return max(max(x, y), (...z));
+
+  inline proc min(x, y) where isAtomic(x) || isAtomic(y) {
+    compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
+  }
+
+  inline proc max(x, y) where isAtomic(x) || isAtomic(y) {
+    compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
+  }
 
   //
   // More primitive funs
   //
-  inline proc exit(status: int) {
+  inline proc exit(status: int=0) {
     __primitive("chpl_exit_any", status);
   }
 
@@ -675,6 +688,7 @@ module ChapelBase {
     return __primitive("cast", t, x);
   }
 
+  // Removing the 'eltType' arg results in errors for --baseline
   inline proc _ddata_shift(type eltType, data: _ddata(eltType), shift: integral) {
     var ret: _ddata(eltType);
      __primitive("shift_base_pointer", ret, data, shift);
@@ -740,7 +754,7 @@ module ChapelBase {
     type taskType;
     var i: iType,
         taskCnt: taskType,
-        taskList: _task_list = _defaultOf(_task_list);
+        taskList: c_void_ptr = _defaultOf(c_void_ptr);
   }
 
   // This function is called once by the initiating task.  No on
@@ -811,7 +825,7 @@ module ChapelBase {
   pragma "dont disable remote value forwarding"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true) {
     // See if we can help with any of the started tasks
-    __primitive("execute tasks in list", e.taskList);
+    chpl_taskListExecute(e.taskList);
 
     // Remove the task that will just be waiting/yielding in the following
     // waitFor() from the running task count to let others do real work. It is
@@ -829,16 +843,6 @@ module ChapelBase {
       // re-add the task that was waiting for others to finish
       here.runningTaskCntAdd(1);
     }
-
-    // It is now safe to free the task list, because we know that all the
-    // tasks have been completed.  We could free this list when all the
-    // tasks have been started, but this seems cleaner.  The alternative
-    // would be for the tasking layer to free the elements of the list
-    // when when they are no longer needed, but then every tasking layer
-    // would have to implement the free, and it's not clear that it
-    // would be of any benefit.  Another option would be for the
-    // starting task to free its own list element.
-    __primitive("free task list", e.taskList);
   }
 
   proc _upEndCount(param countRunningTasks=true) {
@@ -857,7 +861,7 @@ module ChapelBase {
   }
 
   pragma "command line setting"
-  proc _command_line_cast(param s: c_string, type t, x) return _cast(t, x);
+  proc _command_line_cast(param s: c_string, type t, x) return _cast(t, x:string);
 
 
   //
@@ -1350,8 +1354,19 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline proc ==(a: uint(64), b: int(64)) { _throwOpError("=="); }
-  inline proc ==(a: int(64), b: uint(64)) { _throwOpError("=="); }
+  inline proc ==(a: uint(64), b: int(64)) {
+    //
+    // If b's negative, these obviously aren't equal; if it's not
+    // negative, it can be cast to an int
+    //
+    return !(b < 0) && (a == b:uint(64));
+  }
+  //
+  // the dual of the above
+  //
+  inline proc ==(a: int(64), b: uint(64)) {
+    return !(a < 0) && (a:uint(64) == b);
+  }
 
   // non-param/param and param/non-param
   inline proc ==(a: uint(64), param b: uint(64)) {
@@ -1363,8 +1378,12 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline proc !=(a: uint(64), b: int(64)) { _throwOpError("!="); }
-  inline proc !=(a: int(64), b: uint(64)) { _throwOpError("!="); }
+  inline proc !=(a: uint(64), b: int(64)) {
+    return (b < 0) || (a != b:uint(64));
+  }
+  inline proc !=(a: int(64), b: uint(64)) {
+    return (a < 0) || (a:uint(64) != b);
+  }
 
   // non-param/param and param/non-param
   inline proc !=(a: uint(64), param b: uint(64)) {
@@ -1376,8 +1395,12 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline proc >(a: uint(64), b: int(64)) { _throwOpError(">"); }
-  inline proc >(a: int(64), b: uint(64)) { _throwOpError(">"); }
+  inline proc >(a: uint(64), b: int(64)) {
+    return (b < 0) || (a > b: uint(64));
+  }
+  inline proc >(a: int(64), b: uint(64)) {
+    return !(a < 0) && (a: uint(64) > b);
+  }
 
   // non-param/param and param/non-param
   inline proc >(a: uint(64), param b: uint(64)) {
@@ -1388,8 +1411,12 @@ module ChapelBase {
   }
 
   // non-param/non-param
-  inline proc <(a: uint(64), b: int(64)) { _throwOpError("<"); }
-  inline proc <(a: int(64), b: uint(64)) { _throwOpError("<"); }
+  inline proc <(a: uint(64), b: int(64)) {
+    return !(b < 0) && (a < b:uint(64));
+  }
+  inline proc <(a: int(64), b: uint(64)) {
+    return (a < 0) || (a:uint(64) < b);
+  }
 
   // non-param/param and param/non-param
   inline proc <(a: uint(64), param b: uint(64)) {
@@ -1401,8 +1428,12 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline proc >=(a: uint(64), b: int(64)) { _throwOpError(">="); }
-  inline proc >=(a: int(64), b: uint(64)) { _throwOpError(">="); }
+  inline proc >=(a: uint(64), b: int(64)) {
+    return (b < 0) || (a >= b: uint(64));
+  }
+  inline proc >=(a: int(64), b: uint(64)) {
+    return !(a < 0) && (a: uint(64) >= b);
+  }
 
   // non-param/param and param/non-param
   inline proc >=(a: uint(64), param b: uint(64)) {
@@ -1414,8 +1445,12 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline proc <=(a: uint(64), b: int(64)) { _throwOpError("<="); }
-  inline proc <=(a: int(64), b: uint(64)) { _throwOpError("<="); }
+  inline proc <=(a: uint(64), b: int(64)) {
+    return !(b < 0) && (a <= b: uint(64));
+  }
+  inline proc <=(a: int(64), b: uint(64)) {
+    return (a < 0) || (a:uint(64) <= b);
+  }
 
   // non-param/param and param/non-param
   inline proc <=(a: uint(64), param b: uint(64)) {
@@ -1425,21 +1460,21 @@ module ChapelBase {
     if a == 0 then return true; else return __primitive("<=", a, b);
   }
 
-  proc numFields(type t) param {
-    return __primitive("num fields", t);
-  }
+  // numFields moved to Reflection
 
+  pragma "no doc"
   proc fieldNumToName(type t, param i) param {
-    return __primitive("field num to name", t, i);
+    compilerError("fieldNumToName deprecated. Use getFieldName");
   }
 
+  pragma "no doc"
   proc fieldValueByNum(x, param i) {
-    return __primitive("field value by num", x, i);
+    compilerError("fieldValueByNum deprecated. Use getField");
   }
 
+  pragma "no doc"
   proc fieldValueByName(x, param name) {
-    compilerError("Not yet implemented");
-    return __primitive("field value by name", x, name);
+    compilerError("fieldValueByName deprecated. Use getField");
   }
 
   proc isClassType(type t) param where t:object return true;
@@ -1476,6 +1511,7 @@ module ChapelBase {
   extern const QIO_STYLE_ELEMENT_TUPLE:int;
   extern const QIO_STYLE_ELEMENT_BYTE_ORDER:int;
   extern const QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER:int;
+  extern const QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS:int;
 
   extern const QIO_ARRAY_FORMAT_SPACE:int;
   extern const QIO_ARRAY_FORMAT_CHPL:int;
@@ -1538,8 +1574,6 @@ module ChapelBase {
   inline proc _defaultOf(type t) where t: chpl_taskID_t return chpl_nullTaskID;
   pragma "no doc"
   inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
-  pragma "no doc"
-  inline proc _defaultOf(type t) where t == _task_list return _nullTaskList;
 
   pragma "no doc"
   inline proc _defaultOf(type t) where t: _ddata

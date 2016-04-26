@@ -1,0 +1,2 @@
+numCores.chpl:1: warning: numCores is deprecated; please use numPUs() instead
+ok

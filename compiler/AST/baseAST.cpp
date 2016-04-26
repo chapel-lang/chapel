@@ -73,10 +73,12 @@ void printStatistics(const char* pass) {
 
   foreach_ast(decl_counters);
 
-  int nStmt = nCondStmt + nBlockStmt + nGotoStmt;
-  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kExternBlockStmt;
-  int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr + nNamedExpr;
-  int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr + kNamedExpr;
+  int nStmt = nCondStmt + nBlockStmt + nGotoStmt + nUseStmt;
+  int kStmt = kCondStmt + kBlockStmt + kGotoStmt + kUseStmt + kExternBlockStmt;
+  int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
+    nContextCallExpr + nNamedExpr;
+  int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
+    kContextCallExpr + kNamedExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
   int nType = nPrimitiveType+nEnumType+nAggregateType;
@@ -402,8 +404,16 @@ const char* BaseAST::astTagAsString() const {
       retval = "CallExpr";
       break;
 
+    case E_ContextCallExpr:
+      retval = "ContextCallExpr";
+      break;
+
     case E_NamedExpr:
       retval = "NamedExpr";
+      break;
+
+    case E_UseStmt:
+      retval = "UseStmt";
       break;
 
     case E_BlockStmt:

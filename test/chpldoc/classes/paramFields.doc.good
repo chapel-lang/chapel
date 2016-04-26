@@ -1,4 +1,8 @@
 paramFields.doc
+
+Usage:
+   use paramFields.doc;
+
    Class: hasParams
       param typeless
       param docTyped: int

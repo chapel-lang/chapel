@@ -16,7 +16,8 @@ A class declaration (\rsec{Class_Declarations}) generates a class
 type (\rsec{Class_Types}).  A variable of a class type can refer to an
 instance of that class or any of its derived classes.
 
-A class is generic if it has generic fields. Generic classes and fields
+A class is generic if it has generic fields. A class can also
+be generic if it inherits from a generic class. Generic classes and fields
 are discussed in~\rsec{Generic_Types}.
 
 \section{Class Declarations}
@@ -57,12 +58,9 @@ from other classes %and/or records
 if the \sntx{inherit-type-list} is specified.
 Inheritance is described in~\rsec{Inheritance}.
 
-\begin{future}
-Record inheritance is not currently implemented.  When enabled, it will have the
-same effect as creating a field of that record type within the class, except
-that all of the record's field and method names will appear within the scope of
-the inheriting class.
-\end{future}
+\begin{openissue}
+Classes that inherit from records are an area for future work.
+\end{openissue}
 
 The body of a class declaration consists of a sequence of statements
 where each of the statements either defines a variable (called a
@@ -105,8 +103,9 @@ class-type:
   identifier ( named-expression-list )
 \end{syntax}
 
-A class type may appear in inheritance lists of
-other class declarations.
+A class type, including a generic class type that is not
+fully specified, may appear in the inheritance lists
+of other class declarations.
 
 \subsection{Class Values}
 \label{Class_Values}
@@ -155,9 +154,10 @@ referenced anywhere. It could be reclaimed by the garbage collector.
 \index{classes!fields}
 \index{fields!class}
 
-Variable declarations within a class declaration define
-fields within that class.  Parameter fields make a class generic.
-Variable fields define the storage associated with a class instance.
+A variable declaration within a class declaration defines
+a \emph{field} within that class.
+Each class instance consists of one variable per each
+\chpl{var} or \chpl{const} field in the class.
 
 \begin{chapelexample}{defineActor.chpl}
 The code
@@ -177,6 +177,11 @@ string field \chpl{name} and the unsigned integer field \chpl{age}.
 \end{chapelexample}
 
 Field access is described in \rsec{Class_Field_Accesses}.
+
+\begin{future}
+\chpl{ref} fields, which are fields corresponding to variable declarations
+with \chpl{ref} or \chpl{const ref} keywords, are an area of future work.
+\end{future}
 
 \subsection{Class Methods}
 \label{Class_Methods}
@@ -259,6 +264,13 @@ a tree.  A variable referring to an instance of class \chpl{C} can be
 cast to any type that is an ancestor of \chpl{C}.  Note that casts to more- and
 less-derived classes are both permitted.
 
+It is possible for a class to inherit from a generic class. Suppose for
+example that a class \chpl{C} inherits from class \chpl{ParentC}. In this
+situation, \chpl{C} will have type constructor arguments based upon
+generic fields in the \chpl{ParentC} as described in
+~\ref{Type_Constructors}. Furthermore, a fully specified \chpl{C} will be
+a subclass of a corresponding fully specified \chpl{ParentC}.
+
 \begin{future}
 A derived class may also incorporate any number of records by listing them
 in the derived class declaration.
@@ -285,7 +297,7 @@ can hold a reference to an object of any class type.
 
 A derived class contains data associated with the fields in its base
 classes.  The fields can be accessed in the same way that they are
-accessed in their base class unless the getter or setter method is
+accessed in their base class unless a getter method is
 overridden in the derived class, as discussed
 in~\rsec{Overriding_Base_Class_Methods}.
 
@@ -519,8 +531,7 @@ The order of the arguments in the argument list matches the order of the field d
 within the class, with the arguments for a superclass's fields occurring
 before the arguments for the fields declared in current class.
 
-Generic fields are treated separately
-which are discussed in Section~\rsec{Generic_Compiler_Generated_Constructors}.
+Generic fields are discussed in Section~\rsec{Generic_Compiler_Generated_Constructors}.
 
 When invoked, the compiler-generated constructor initializes each field in the class to the
 value of the corresponding actual argument.  
@@ -688,10 +699,13 @@ class C {
   var setCount: int;
   var x: int;
   proc x ref {
-    if setter then
-      setCount += 1;
+    setCount += 1;
     return x;
   }
+  proc x {
+    return x;
+  }
+
 }
 \end{chapel}
 \begin{chapelpost}
@@ -848,7 +862,7 @@ writeln((42+three).isOdd());  // prints true
 // writeln(seven.isOdd());    // illegal since 'seven' is not a param
 
 writeln(int.size());          // prints 64
-// writeln(42.size());        // illegal since 'size()' is a static method
+// writeln(42.size());        // illegal since 'size()' is a type method
 \end{chapel}
 \begin{chapeloutput}
 false

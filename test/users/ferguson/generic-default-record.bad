@@ -1,1 +1,0 @@
-generic-default-record.chpl:1: error: type mismatch in assignment from R(int(64),3) to R(int(64),3)

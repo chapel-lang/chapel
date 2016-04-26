@@ -48,9 +48,9 @@ static bool             handlingInternalModulesNow    = false;
 static Vec<const char*> modNameSet;
 static Vec<const char*> modNameList;
 static Vec<const char*> modDoneSet;
-static Vec<CallExpr*>   modReqdByInt;  // modules required by internal ones
+static Vec<UseStmt*>    modReqdByInt;  // modules required by internal ones
 
-void addModuleToParseList(const char* name, CallExpr* useExpr) {
+void addModuleToParseList(const char* name, UseStmt* useExpr) {
   const char* modName = astr(name);
 
   if (modDoneSet.set_in(modName) || modNameSet.set_in(modName)) {
@@ -95,13 +95,10 @@ containsOnlyModules(BlockStmt* block, const char* filename) {
         hasOther = true;
       }
 
-    } else if (CallExpr* callexpr = toCallExpr(stmt)) {
-      if (callexpr->isPrimitive(PRIM_USE)) {
-        hasUses = true;
-      } else {
-        hasOther = true;
-      }
-
+    } else if (toCallExpr(stmt)) {
+      hasOther = true;
+    } else if (toUseStmt(stmt)) {
+      hasUses = true;
     } else {
       hasOther = true;
     }
@@ -293,14 +290,14 @@ void parseDependentModules(ModTag modtype) {
   // required for the internal modules require
   if (modtype == MOD_USER) {
     do {
-      Vec<CallExpr*> modReqdByIntCopy = modReqdByInt;
+      Vec<UseStmt*> modReqdByIntCopy = modReqdByInt;
 
       modReqdByInt.clear();
 
       handlingInternalModulesNow = true;
 
-      forv_Vec(CallExpr*, moduse, modReqdByIntCopy) {
-        BaseAST*           moduleExpr     = moduse->argList.first();
+      forv_Vec(UseStmt*, moduse, modReqdByIntCopy) {
+        BaseAST*           moduleExpr     = moduse->src;
         UnresolvedSymExpr* oldModNameExpr = toUnresolvedSymExpr(moduleExpr);
 
         if (oldModNameExpr == NULL) {

@@ -3,6 +3,6 @@ const n = 5,
   csc = n: c_string_copy,
   s = n: string;
 writeln(n, " : ", n.type:string);
-writeln(cs, " : ", cs.type:string);
-writeln(csc, " : ", csc.type:string);
+writeln(cs:string, " : ", cs.type:string);
+writeln(csc:string, " : ", csc.type:string);
 writeln(s, " : ", s.type:string);

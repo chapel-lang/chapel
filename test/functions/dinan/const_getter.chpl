@@ -3,9 +3,12 @@ const x = 10;
 var y = 0;
 
 proc f() ref {
-    if setter then return y;
-              else return x;
+  return y;
 }
+proc f() {
+  return x;
+}
+
 
 f() = 11;
 

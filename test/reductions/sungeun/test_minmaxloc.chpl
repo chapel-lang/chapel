@@ -54,7 +54,7 @@ config const debug = false;
 var R: [1..n] real;
 var A: [1..n] int;
 
-fillRandom(R, seed);
+fillRandom(R, seed, algorithm=RNG.NPB);
 
 proc getSigDigit(r: real) {
   var rn = r*10;

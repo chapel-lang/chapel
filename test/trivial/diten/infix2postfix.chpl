@@ -26,8 +26,13 @@ record Stack {
     if head == nil {
       return "";
     } else {
+      var h = head;
       var e = head.element;
+
       head = head.next;
+
+      delete h;
+
       return e;
     }
   }

@@ -1,14 +1,14 @@
 # Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
-# 
+#
 # The entirety of this work is licensed under the Apache License,
 # Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License.
-# 
+#
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -55,7 +55,7 @@ RUNTIME_GEN_CXXFLAGS = $(RUNTIME_CXXFLAGS)
 GEN_CFLAGS = -std=c99
 GEN_STATIC_FLAG = -static
 GEN_DYNAMIC_FLAG =
-LIB_STATIC_FLAG = 
+LIB_STATIC_FLAG =
 LIB_DYNAMIC_FLAG = -shared
 SHARED_LIB_CFLAGS = -fPIC
 
@@ -118,6 +118,21 @@ ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4; echo "$$?"),1)
 WARN_GEN_CFLAGS += -Wno-pointer-sign
 endif
 
+#
+# 2016/03/28: Help to protect the Chapel compiler from a partially
+# characterized GCC optimizer regression when the compiler is being
+# compiled with gcc 5.X.  Issue will be pursued after the release
+#
+# Note that 0 means "SUCCESS" rather than "false".
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 5; echo "$$?"),0)
+
+ifeq ($(OPTIMIZE),1)
+COMP_CFLAGS += -fno-tree-vrp
+endif
+
+endif
+
+
 ifeq ($(GNU_GPP_SUPPORTS_MISSING_DECLS),1)
 WARN_CXXFLAGS += -Wmissing-declarations
 else
@@ -126,7 +141,7 @@ endif
 
 ifeq ($(GNU_GPP_SUPPORTS_STRICT_OVERFLOW),1)
 # -Wno-strict-overflow is needed only because the way we code range iteration
-# (ChapelRangeBase.chpl:793) generates code which can overflow.  
+# (ChapelRangeBase.chpl:793) generates code which can overflow.
 GEN_CFLAGS += -Wno-strict-overflow
 # -fstrict-overflow was introduced in GCC 4.2 and is on by default.  When on,
 # it allows the compiler to assume that integer sums will not overflow, which

@@ -17,14 +17,30 @@ Getting Started with Chapel on Cray X-Series Systems
 
 Chapel is available as a module for Cray X-series systems.  When it is
 installed on your system, you do not need to build Chapel from the
-source release (though you can); instead, simply load the module
-using::
+source release (though you can). To use Chapel with the default settings and
+confirm it is correctly installed, do the following:
+
+1) Load the Chapel module::
 
      module load chapel
 
-Then proceed directly to `Using Chapel on a Cray System`_ below.  If instead
-you wish to build Chapel from source, continue on to `Building Chapel for a
-Cray System from Source`_ just below.
+
+2) Compile an example program using::
+
+     chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
+
+
+3) Execute the resulting executable (on four locales)::
+
+     ./hello6-taskpar-dist -nl 4
+
+
+This may be all that is necessary to use Chapel on a Cray X-Series system.
+If the installation setup by your system administrator deviates from
+the default settings, or you are interested in other configuration
+options, see `Using Chapel on a Cray System`_ below.  If instead you wish to
+build Chapel from source, continue on to
+`Building Chapel for a Cray System from Source`_ just below.
 
 For information on obtaining and installing the Chapel module please
 contact your system administrator.
@@ -37,8 +53,8 @@ Getting Started with Chapel on Cray CS Systems
 On Cray CS systems, Chapel is not currently available as a module due
 to the wide diversity of software packages that Cray CS customers may
 choose to install on their system.  For this reason, Chapel must be
-built from source on Cray CS systems using the instructions just
-below.
+built from source on Cray CS systems using the
+`Building Chapel for a Cray System from Source`_ instructions just below.
 
 
 ---------------------------------------------
@@ -446,7 +462,7 @@ Using the ugni Communications Layer
 
 To use ugni communications:
 
-1) Make sure that you are using either the GNU or Intel target
+1) Make sure that you are using either the GNU, Intel, or Cray target
    compiler::
 
      module load PrgEnv-gnu
@@ -454,6 +470,10 @@ To use ugni communications:
    or::
 
      module load PrgEnv-intel
+
+   or::
+
+     module load PrgEnv-cray
 
    (If you have a different PrgEnv module loaded, you will have to
    unload it first, or do a swap instead of a load.)
@@ -589,7 +609,7 @@ Using the muxed Tasking Layer
 
 To use muxed tasking:
 
-1) Make sure that you are using either the GNU or Intel target
+1) Make sure that you are using either the GNU, Intel, or Cray target
    compiler::
 
      module load PrgEnv-gnu
@@ -597,6 +617,10 @@ To use muxed tasking:
    or::
 
      module load PrgEnv-intel
+
+   or::
+
+     module load PrgEnv-cray
 
    (If you have a different PrgEnv module loaded, you will have to
    unload it first, or do a swap instead of a load.)
@@ -703,7 +727,7 @@ environment variable, which can take the following values:
 Successively higher levels of overflow checking are more likely both to
 catch overflow and to catch it earlier, but they also have more overhead
 and thus a greater impact on performance.
- 
+
 Note: in some situations the check as to whether or not the task
 stacks are in hugepage memory gets the wrong answer, leading to
 internal errors when the tasking layer tries to use guard pages and

@@ -1,0 +1,2 @@
+exceptOnlyPrevents.chpl:18: In function 'main':
+exceptOnlyPrevents.chpl:19: error: 'd' undeclared (first use this function)

@@ -1,3 +1,0 @@
-bug: slicing an unsigned range with a signed range is not supported
-
-This is the same as slice-1.*, except for the order of the slice operands.

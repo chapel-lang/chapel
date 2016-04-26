@@ -71,7 +71,7 @@ proc main() {
 }
 
 proc initStreamVectors() {
-  var randlist = new RandomStream(seed);
+  var randlist = new NPBRandomStream(seed);
 
   randlist.fillRandom(A);
   randlist.fillRandom(B);
@@ -91,7 +91,7 @@ proc computeStreamResults() {
 
 
 proc checkSTREAMresults() {
-  var randlist = new RandomStream(seed);
+  var randlist = new NPBRandomStream(seed);
 
   var Aref, Bref, Cref, error : [VecDomain] elemType;
 

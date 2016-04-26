@@ -1,0 +1,5 @@
+verify:SUCCESS
+serial 8 untyped return
+serial 8 typed return
+serial 8 untyped arg
+serial 8 typed arg

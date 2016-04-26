@@ -213,7 +213,6 @@ checkReturnPaths(FnSymbol* fn) {
       fn->retType == dtVoid ||
       fn->retTag == RET_TYPE ||
       fn->hasFlag(FLAG_EXTERN) ||
-      fn->hasFlag(FLAG_FUNCTION_PROTOTYPE) ||
       fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
       fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
       fn->hasFlag(FLAG_AUTO_II))

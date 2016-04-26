@@ -8,12 +8,12 @@ proc main()
 
   if sys_getenv(ENV_VAR, foo)
   {
-    writeln("found $", ENV_VAR, " = ", foo);
+    writeln("found $", ENV_VAR:string, " = ", foo:string);
     exit(0);
   }
   else
   {
-    writeln("failed to find $", ENV_VAR);
+    writeln("failed to find $", ENV_VAR:string);
     exit(1);
   }
 

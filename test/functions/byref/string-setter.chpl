@@ -24,6 +24,11 @@ proc refReturnString() ref
 {
   return getterString;
 }
+proc refReturnString()
+{
+  return getterString;
+}
+
 
 writeln(refReturnString());
 writeln("");
@@ -37,11 +42,13 @@ writeln("");
 
 proc refWithSetter() ref
 {
-  if setter then
-    return setterString;
-  else
-    return getterString;
+  return setterString;
 }
+proc refWithSetter()
+{
+  return getterString;
+}
+
 
 writeln(refWithSetter());
 writeln(setterString);
@@ -60,24 +67,41 @@ proc refWithSetter3() ref
 {
   return refWithSetter2();
 }
+proc refWithSetter3()
+{
+  return refWithSetter2();
+}
+
 
 proc refWithSetter4() ref
 {
   return refWithSetter3();
 }
+proc refWithSetter4()
+{
+  return refWithSetter3();
+}
+
 
 proc refWithSetter2() ref
 {
   return refWithSetter1();
 }
+proc refWithSetter2()
+{
+  return refWithSetter1();
+}
+
 
 proc refWithSetter1()   ref
 {
-  if setter then
-    return setterString;
-  else
-    return getterString;
+  return setterString;
 }
+proc refWithSetter1()
+{
+  return getterString;
+}
+
 
 setterString = "setter";
 

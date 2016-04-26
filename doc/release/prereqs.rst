@@ -29,23 +29,26 @@ about your environment for using Chapel:
     relatively recent versions of gcc/g++, clang, and compilers from
     Cray, Intel, and PGI.
 
-  * If you wish to use Chapel's test system, python-devel or an
-    equivalent package for your platform is required.
-
+  * If you wish to use Chapel's test system, python-setuptools and
+    python-devel (or equivalent packages for your platform) are required.
 
 Installation
 ------------
 
-We have used the following commands to install the above prerequisites
+We have used the following commands to install the above prerequisites:
 
-  * CentOS::
+  * CentOS, Fedora 21::
 
-      sudo yum install gcc gcc-c++ perl python python-devel bash make gawk
+      sudo yum install gcc gcc-c++ perl python python-devel python-setuptools bash make gawk
 
-  * SLES::
+  * Fedora 22::
 
-      sudo zypper install gcc gcc-c++ perl python python-devel bash make gawk
+      sudo dnf install gcc gcc-c++ perl python python-devel python-setuptools bash make gawk
+
+  * SLES, openSUSE::
+
+      sudo zypper install gcc gcc-c++ perl python python-devel python-setuptools bash make gawk
 
   * Debian, Ubuntu::
 
-      sudo apt-get install gcc g++ perl python python-dev bash make mawk
+      sudo apt-get install gcc g++ perl python python-dev python-setuptools bash make mawk

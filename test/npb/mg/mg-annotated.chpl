@@ -454,7 +454,7 @@ proc zran3(V) {
   var pos, neg: [1..numCharges] index(Base);
 
   // compute the random array of values
-  fillRandom(V, 314159265);
+  fillRandom(V, 314159265, RNG.NPB);
 
   // the following does a number of maxloc/minloc reductions, each of
   // which returns the location of the largest/smallest element as an

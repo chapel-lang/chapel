@@ -21,9 +21,16 @@ a(2) = 2;
 a(3) = 1;
 writeln(a(1), a(2), a(3));
 
+delete a;
+
 class array2d {
   type t;
   var data : array1d(t) = new array1d(t);
+
+  proc ~array2d() {
+    delete data;
+  }
+
   proc this(i : int, j : int) ref {
     return data((i - 1) * 2 + j);
   }
@@ -33,3 +40,5 @@ var a2 : array2d(int) = new array2d(int);
 
 a2(1, 1) = 4;
 writeln(a2(1, 1));
+
+delete a2;

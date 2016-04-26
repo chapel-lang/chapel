@@ -108,6 +108,22 @@ all:
     - Enable the Qthreads tasking shim (#3040)
   01/06/16:
     - Replace filenames with indices into a lookup table (#3049)
+  02/14/16:
+    - text: Default to jemalloc for gasnet configurations (#3287)
+      config: 16 node XC
+  02/17/16:
+    - text: Remove origin check to improve bulk transfer (#3301)
+      config: 16 node XC
+  02/19/16:
+    - text: Default to jemalloc for comm=ugni (#3321)
+      config: 16 node XC
+  02/22/16:
+    - Default to jemalloc for comm=none (#3333)
+  03/04/16:
+    - implemented doubling/halving for array-as-vec (#3380)
+  03/17/16:
+    - text: Switched gen compiler to gcc 5.1.0
+      config: 16 node XC, Single node XC
 
 AllCompTime:
   11/09/14:
@@ -119,6 +135,10 @@ arrayPerformance-1d:
   03/19/15:
     - text: memory related, qthreads memory pool bug fix
       config: chap03
+
+array-of-strings-read:
+  04/14/16:
+    - string changes to bounds checking, isUpper (#3718)
 
 arr-forall:
   03/24/15:
@@ -137,6 +157,12 @@ bfs:
 binary-trees:
   12/05/14:
     - introduce "library mode"
+  01/25/16:
+    - Optimize iteration over anonymous low-bounded counted ranges (#3154)
+  03/14/16:
+    - upgrade jemalloc to 4.1.0 (#3447)
+  03/16/16:
+    - revert jemalloc to 4.0.4 (#3477)
 
 chameneos-redux:
   07/08/13:
@@ -180,6 +206,8 @@ fasta:
     - Add c_string_copy type
   01/14/16:
     - optimize certain functions that return with ref-intent (#3101)
+  03/12/16:
+    - implemented good_alloc_size for jemalloc(#3446)
 
 forall-dom-range:
   01/21/15:
@@ -214,6 +242,34 @@ is:
   05/21/15:
     - set dataParTasksPerLocale to 2 to avoid occasional validation failure
 
+isx:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-bucket-spmd:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-spmd:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-no-return:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx.xc-time:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-bucket-spmd.xc-time:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-spmd.xc-time:
+  02/26/16:
+    - ISx ref to array (#3365)
+
 jacobi:
   03/07/14:
     - Added a "trivial assignment" optimization to replace field-by-field assignment with a bulk copy.
@@ -229,6 +285,8 @@ jacobi:
     - param protect all calls to chpl__testPar (#1200)
   01/17/16:
     - add dead string literal elimination (#3120)
+  04/01/16:
+    - casting bug fix (#3615)
 
 knucleotide:
   10/16/15:
@@ -288,6 +346,8 @@ memleaks:
     - Fixed string memory leak resulting from redundant autoCopies (#3023)
   01/14/16:
     - optimize certain functions that return with ref-intent (#3101)
+  03/10/16:
+    - Cleanups to miniMD (#3436)
 
 memleaksfull:
   07/08/14:
@@ -314,6 +374,8 @@ miniMD:
     - param protect all calls to chpl__testPar -- resolve DefaultRect cast regression (#1200)
   03/17/15:
     -  Avoid shallow record copies in miniMD (#1643)
+  03/19/16:
+    -  Increase parallelism, decrease comm (#3483)
 
 nbody:
   03/17/14:
@@ -322,6 +384,10 @@ nbody:
     - chap04 Subtest random glitch
   01/17/16:
     - add dead string literal elimination (#3120)
+  03/14/16:
+    - upgrade jemalloc to 4.1.0 (#3447)
+  03/16/16:
+    - revert jemalloc to 4.0.4 (#3477)
 
 parOpEquals:
   09/06/13:
@@ -331,6 +397,20 @@ parOpEquals:
   02/28/15:
     - (no-local) Move the check for src==dst from comm_get to array op= (#1410)
 
+prk-stencil:
+  02/14/16:
+    - Improved performance on PRK-stencil (#3288)
+  04/08/16:
+    - Looping over range instead of domain for weight matrix (#3500)
+  04/09/16:
+    - blockDist for useStencilDist output matrix and more (#3705)
+
+prk-stencil.xc-perf:
+  04/08/16:
+    - Looping over range instead of domain for weight matrix (#3500)
+  04/09/16:
+    - blockDist for useStencilDist output matrix and more (#3705)
+
 regexdna:
   10/07/14:
     - Add c_string_copy type
@@ -338,6 +418,8 @@ regexdna:
     - started building re2 with optimizations (#2930)
   12/13/15:
     - Fixed string memory leak resulting from redundant autoCopies (#3023)
+  03/12/16:
+    - implemented good_alloc_size for jemalloc(#3446)
 
 revcomp:
   05/11/15:
@@ -391,6 +473,10 @@ thread-ring:
 time_array_vs_ddata:
   05/31/14:
     - specializing binaries to target architectures
+  01/25/16:
+    - Optimize iteration over anonymous low-bounded counted ranges (#3154)
+  03/01/16:
+    - Extend early string-as-rec work to cover more sub-types of record (#3386)
 
 time_array_vs_tuple:
   08/19/14:
@@ -403,3 +489,9 @@ time_iterate:
 time-write:
   03/05/15:
     - no strings with externs update
+
+timeVectorArray:
+  03/05/16:
+    - implemented doubling/halving for array-as-vec (#3380) (no timing from 4th)
+  03/09/16:
+    - increased array-as-vec problem size (#3422)

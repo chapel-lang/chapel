@@ -24,7 +24,8 @@ warning messages from GASNet regarding using the Infiniband conduit.
 
 DEBUGGING
 =========
-See executing.rst regarding debugging with CHPL_COMM_USE_GDB.
+See debugging.rst regarding debugging with CHPL_COMM_USE_GDB or
+CHPL_COMM_USE_LLDB.
 
 Sometimes GASNet issues are general multi-locale issues that can be
 recreated by compiling the program with the --no-local flag and using

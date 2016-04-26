@@ -47,7 +47,7 @@ case $target in
         if [[ -n $hwld && -d $hwld/bin ]] ; then
           numNuma=$( $hwld/bin/lstopo --only numa | wc -l )
           numCores=$( $hwld/bin/lstopo --only cores | wc -l )
-          echo $numNuma > $1.good
+          echo $numCores > $1.good
           for (( i=0 ; $i < $numNuma ; i++ )) ; do
             echo $(( $numCores / $numNuma )) >> $1.good
           done

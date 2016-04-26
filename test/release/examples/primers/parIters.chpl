@@ -242,7 +242,7 @@ iter count(param tag: iterKind, n: int, low: int=1)
 // As mentioned at the outset, this leader is fairly static and
 // simple.  More generally, a leader can introduce tasks more
 // dynamically, partition work between the tasks more dynamically,
-// etc.  See $CHPL_HOME/modules/standard/AdvancedIters.chpl for
+// etc.  See $CHPL_HOME/modules/standard/DynamicIters.chpl for
 // some more interesting examples of leader iterators, including
 // those that use dynamic partitioning.
 //

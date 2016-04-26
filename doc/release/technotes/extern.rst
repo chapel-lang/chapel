@@ -177,7 +177,7 @@ c_string
 
 The c_string type maps to a constant C string (that is, const char*)
 that is intended for use locally. A c_string can be obtained from a
-Chapel string using the method string.c_str(). A Chapel string can be
+Chapel string using the method :proc:`~String.string.c_str`. A Chapel string can be
 constructed from a C string using the cast operator. Note however that
 because c_string is a local-only type, the .c_str() method can only be
 called on Chapel strings that are stored on the same locale; calling
@@ -846,7 +846,7 @@ Working with strings
 If you need to call a C function and provide a Chapel string, you may need to
 convert the Chapel string to a C string first.  Chapel string literals will
 automatically convert to C strings.  A Chapel string variable can be converted
-using the :proc:`string.c_str` method.
+using the :proc:`~String.string.c_str` method.
 
 myprint.h:
 

@@ -1,4 +1,8 @@
 copyright.doc
+
+Usage:
+   use copyright.doc;
+
    proc foo()
       this is a proc 
 

@@ -9,4 +9,6 @@ See the first CHIP for an overview.
 * [Implement Object Copying Using a "Postblit" Method](5.rst)
 * [Tuple Semantics](6.rst)
 * [Rules for inserting autoCopy](7.rst)
+* [Error Handling in Chapel](8.rst)
+* [Chapel Package Manager](9.rst)
 

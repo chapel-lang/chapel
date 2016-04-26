@@ -1,0 +1,5 @@
+verify:SUCCESS
+parallel 8 untyped return
+parallel 8 typed return
+parallel 8 untyped arg
+parallel 8 typed arg

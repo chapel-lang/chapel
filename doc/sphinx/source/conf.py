@@ -53,15 +53,15 @@ master_doc = 'index'
 # built documents.
 #
 # The short X.Y version.
-# version = '1.12'
+# version = '1.13'
 
 # We use a custom version variable (shortversion) instead, because setting
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
-shortversion = 1.12
+shortversion = 1.13
 
 # The full version, including alpha/beta/rc tags.
-release = '1.12.0'
+release = '1.13.0'
 
 # General information about the project.
 project = u'Chapel Documentation {0}'.format(shortversion)
@@ -138,7 +138,8 @@ if not on_rtd:
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-#html_title = version
+# We set this because the default title is repetitive
+html_title = 'Chapel Documentation {0}'.format(shortversion)
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
@@ -168,7 +169,8 @@ html_static_path = ['_static']
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
-#html_use_smartypants = True
+# We turn this off because it clobbers the man page documentation
+html_use_smartypants = False
 
 # Custom sidebar templates, maps document names to template names.
 #html_sidebars = {}

@@ -16,3 +16,5 @@ s.append(new C(3));
 writeln(s);
 
 for c in s do delete c;
+
+s.destroy();
