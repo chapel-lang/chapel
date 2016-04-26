@@ -85,12 +85,12 @@ size_t chpl_getHeapPageSize(void) {
     else {
 
       size_t tmpPageSize;
-      int scanCnt;
-      char units[4]; // leave room for terminating null byte
+      int  num_scanned;
+      char units;
 
-      if ((scanCnt = sscanf(ev, "%zd%1[kKmMgG]", &tmpPageSize, units)) > 0) {
-        if (scanCnt == 2) {
-          switch (units[0]) {
+      if ((num_scanned = sscanf(ev, "%zi%c", &tmpPageSize, &units)) != 1) {
+        if (num_scanned == 2 && strchr("kKmMgG", units) != NULL) {
+          switch (units) {
           case 'k': case 'K': tmpPageSize <<= 10; break;
           case 'm': case 'M': tmpPageSize <<= 20; break;
           case 'g': case 'G': tmpPageSize <<= 30; break;
@@ -102,9 +102,6 @@ size_t chpl_getHeapPageSize(void) {
       }
 
       pageSize = tmpPageSize;
-
-      if (pageSize <= 0L)
-        chpl_internal_error("heap page size must be positive");
     }
 #else
     pageSize = chpl_getSysPageSize();
