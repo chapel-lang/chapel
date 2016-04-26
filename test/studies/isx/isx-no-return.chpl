@@ -341,33 +341,20 @@ proc makeInput(myKeys, bucketID) {
   if (debug) then
     writeln(here.id, ": Initializing random stream with seed = ", here.id);
 
-  var MyRandStream = makeRandomStream(seed = here.id,
-                                      parSafe = false,
-                                      eltType = keyType,
-                                      algorithm = RNG.PCG);
+  var pcg : pcg_setseq_64_xsh_rr_32_rng;
+  const tid = bucketID:uint(64);
+  const inc = pcg_getvalid_inc(tid);
+  pcg.srandom(tid, inc);
 
   //
   // Fill local array
   //
 
-  //
-  // The following code ensures that the value we get from the stream
-  // is in [0, maKeyVal) before storing it to key.  This is tricky when
-  // maxKeyVal isn't a power of two and so we take some care to keep the
-  // value distributed evenly.
-  //
-  const maxModdableKeyVal = max(keyType) - max(keyType)%maxKeyVal;
-  for key in myKeys do
-    do {
-      key = MyRandStream.getNext();
-      if key <= maxModdableKeyVal
-        then key %= maxKeyVal;
-    } while (key >= maxKeyVal || key < 0);
-    
+  for key in myKeys do key = pcg.bounded_random(inc, maxKeyVal:uint(32)):int(32);
+
   if (debug) then
     writeln(bucketID, ": myKeys: ", myKeys);
 
-  delete MyRandStream;
 }
 
 

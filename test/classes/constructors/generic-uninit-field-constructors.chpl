@@ -4,7 +4,7 @@
 // to the generic fields (see sample compiler error messages in comments)
 // (and callers to pass values to those formals,
 //  via the resolution mechanism - because they do not have defaults?)
-// the actuals DO initialze the like-formal-named fields
+// the actuals DO initialize the like-formal-named fields
 /////////////////////////////////
 
 class A {

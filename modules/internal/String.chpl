@@ -719,14 +719,68 @@ module String {
     /*
       Works as above, but uses runs of whitespace as the delimiter.
 
-      .. warning:: While this function is supposed to split on groups of
-                   whitespace, it currently only splits on spaces.
+      :arg maxsplit: The number of times to split the string, negative values
+                     indicate no limit.
      */
-    // TODO: Make this support splitting on runs of whitespace rather than just a space
+    // note: to improve performance, this code collapses several cases into a
+    //       single yield statement, which makes it confusing to read
     // TODO: specifying return type leads to un-inited string?
-    iter split(maxsplit: int = -1, ignoreEmpty: bool = false) /* : string*/ {
-      for s in this.split(" ", maxsplit, ignoreEmpty) {
-        yield s;
+    iter split(maxsplit: int = -1) /* : string */ {
+      if !this.isEmptyString() {
+        const localThis: string = this.localize();
+        var done : bool = false;
+        var yieldChunk : bool = false;
+        var chunk : string;
+
+        var noSplits : bool = maxsplit == 0;
+        var limitSplits : bool = maxsplit > 0;
+        var splitCount: int = 0;
+        var iEnd = localThis.len - 1;
+
+        var inChunk : bool = false;
+        var chunkStart : int;
+
+        for i in 0..#localThis.len {
+          if noSplits {
+            done = true;
+            if !localThis.isSpace() then {
+              chunk = localThis;
+              yieldChunk = true;
+            }
+          } else {
+            var b = localThis.buff[i];
+            var bSpace = byte_isWhitespace(b);
+            if !(inChunk || bSpace) {
+              // zero-based buff to one-based range
+              chunkStart = i + 1;
+              inChunk = true;
+            } else if inChunk {
+              if bSpace {
+                splitCount += 1;
+                if limitSplits && splitCount > maxsplit {
+                  chunk = localThis[chunkStart..];
+                  yieldChunk = true;
+                  done = true;
+                } else {
+                  chunk = localThis[chunkStart..i];
+                  yieldChunk = true;
+                  inChunk = false;
+                }
+              } else if i == iEnd {
+                chunk = localThis[chunkStart..];
+                yieldChunk = true;
+                done = true;
+              }
+            }
+          }
+
+          if yieldChunk {
+            yield chunk;
+            yieldChunk = false;
+          }
+          if done then
+            break;
+        }
       }
     }
 
@@ -897,10 +951,10 @@ module String {
         var locale_result = false;
         for i in 0..#this.len {
           const b = buff[i];
-          if _byte_isLower(b) {
+          if byte_isLower(b) {
             locale_result = false;
             break;
-          } else if !locale_result && _byte_isUpper(b) {
+          } else if !locale_result && byte_isUpper(b) {
             locale_result = true;
           }
           result = locale_result;
@@ -924,10 +978,10 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if _byte_isUpper(b) {
+          if byte_isUpper(b) {
             result = false;
             break;
-          } else if !result && _byte_isLower(b) {
+          } else if !result && byte_isLower(b) {
             result = true;
           }
         }
@@ -950,9 +1004,7 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if !((b == ascii(' ')) ||
-               (b == ascii('\t')) ||
-               (b >= ascii('\n') && b <= ascii('\r'))) { // \n \v \f \r
+          if !(byte_isWhitespace(b)) {
             result = false;
             break;
           }
@@ -975,7 +1027,7 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if !_byte_isAlpha(b) {
+          if !byte_isAlpha(b) {
             result = false;
             break;
           }
@@ -998,7 +1050,7 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if !_byte_isDigit(b) {
+          if !byte_isDigit(b) {
             result = false;
             break;
           }
@@ -1021,7 +1073,7 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if !(_byte_isAlpha(b) || _byte_isDigit(b)) {
+          if !(byte_isAlpha(b) || byte_isDigit(b)) {
             result = false;
             break;
           }
@@ -1072,7 +1124,7 @@ module String {
         var last = UN;
         for i in 0..#this.len {
           const b = buff[i];
-          if _byte_isLower(b) {
+          if byte_isLower(b) {
             if last == UPPER || last == LOWER {
               last = LOWER;
             } else { // last == UN
@@ -1080,7 +1132,7 @@ module String {
               break;
             }
           }
-          else if _byte_isUpper(b) {
+          else if byte_isUpper(b) {
             if last == UN {
               last = UPPER;
             } else { // last == UPPER || last == LOWER
@@ -1106,7 +1158,7 @@ module String {
 
       for i in 0..#result.len {
         const b = result.buff[i];
-        if _byte_isUpper(b) {
+        if byte_isUpper(b) {
           // We can just add or subtract 0x20 to change between upper and lower
           result.buff[i] = b + 0x20;
         }
@@ -1124,7 +1176,7 @@ module String {
 
       for i in 0..#result.len {
         const b = result.buff[i];
-        if _byte_isLower(b) {
+        if byte_isLower(b) {
           result.buff[i] = b - 0x20;
         }
       }
@@ -1144,14 +1196,14 @@ module String {
       var last = UN;
       for i in 0..#result.len {
         const b = result.buff[i];
-        if _byte_isAlpha(b) {
+        if byte_isAlpha(b) {
           if last == UN {
             last = LETTER;
-            if _byte_isLower(b) {
+            if byte_isLower(b) {
               result.buff[i] = b - 0x20;
             }
           } else { // last == LETTER
-            if _byte_isUpper(b) {
+            if byte_isUpper(b) {
               result.buff[i] = b + 0x20;
             }
           }
@@ -1174,7 +1226,7 @@ module String {
       if result.isEmptyString() then return result;
 
       var b = result.buff[0];
-      if _byte_isLower(b) {
+      if byte_isLower(b) {
         result.buff[0] = b - 0x20;
       }
       return result;
@@ -1643,22 +1695,38 @@ module String {
   //
   // Helper routines
   //
-  private inline proc _byte_isUpper(b: uint(8)) : bool {
-    return b >= ascii('A') && b <= ascii('Z');
+  private const uint_A: uint(8) = ascii('A');
+  private const uint_Z: uint(8) = ascii('Z');
+  private const uint_a: uint(8) = ascii('a');
+  private const uint_z: uint(8) = ascii('z');
+  private const uint_0: uint(8) = ascii('0');
+  private const uint_9: uint(8) = ascii('9');
+  private const uint_space   : uint(8) = ascii(' ');
+  private const uint_tab     : uint(8) = ascii('\t');
+  private const uint_newline : uint(8) = ascii('\n');
+  private const uint_return  : uint(8) = ascii ('\r');
+
+  private inline proc byte_isUpper(b: uint(8)) : bool {
+    return b >= uint_A && b <= uint_Z;
   }
 
-  private inline proc _byte_isLower(b: uint(8)) : bool {
-    return b >= ascii('a') && b <= ascii('z');
+  private inline proc byte_isLower(b: uint(8)) : bool {
+    return b >= uint_a && b <= uint_z;
   }
 
-  private inline proc _byte_isAlpha(b: uint(8)) : bool {
-    return b >= ascii('A')  && b <= ascii('z');
+  private inline proc byte_isAlpha(b: uint(8)) : bool {
+    return b >= uint_A  && b <= uint_z;
   }
 
-  private inline proc _byte_isDigit(b: uint(8)) : bool {
-    return b >= ascii('0')  && b <= ascii('9');
+  private inline proc byte_isDigit(b: uint(8)) : bool {
+    return b >= uint_0  && b <= uint_9;
   }
 
+  private inline proc byte_isWhitespace(b: uint(8)) : bool {
+    return b == uint_space
+        || b == uint_tab
+        || (b >= uint_newline && b <= uint_return);
+  }
 
   //
   // ascii

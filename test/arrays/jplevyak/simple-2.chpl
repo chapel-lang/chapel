@@ -3,4 +3,7 @@ class E {
 }
 
 var y3 = new E();
+
 writeln(y3);
+
+delete y3;

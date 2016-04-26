@@ -4,5 +4,9 @@ class Foo {
     writeln("Create a new Foo using the alias bar");
   }
 }
+
 type bar = Foo;
+
 var myBar = new bar();
+
+delete myBar;

@@ -212,25 +212,25 @@ def test_directory(test, test_type):
                 # SKIP IF IMPLEMENTATIONS
                 test_env = os.path.join(util_dir, "test", "testEnv")
 
-                # Skip the directory if there is a SKIPIF file that
-                # evaluates true
-                skip_test = False
-                if os.path.isfile("SKIPIF"):
-                    try:
-                        skip_test = subprocess.check_output(
-                                [test_env, "SKIPIF"]).strip()
-                        # check output and skip if true
-                        if skip_test == "1" or skip_test == "True":
-                            logger.write("[Skipping directory based on SKIPIF "
-                                    "environment settings]")
-                            continue
-                    except:
-                        logger.write("[Warning: SKIPIF error.]")
+                # The below cases are ordered to check for
+                # recursive skipping first, and then to check
+                # for skipping only within a directory.
+                # That way, if both are specified, we do
+                # not visit child directories.
 
-                # Skip this directory if there is a <dir>.skipif file
-                # returning true
+                # Skip this directory and child directories
+                # if there is a <dir>.notest file
+                notest_file_name = os.path.join(root, "..",
+                        "{0}.notest".format(os.path.basename(root)))
+                notest_file_name = os.path.normpath(notest_file_name)
+                if os.path.isfile(notest_file_name):
+                    del dirs[:]
+                    continue
+
+                # Skip this directory and child directories
+                # if there is a <dir>.skipif file returning true
                 prune_if = False
-                skip_file_name = os.path.join(root, "..", 
+                skip_file_name = os.path.join(root, "..",
                         "{0}.skipif".format(os.path.basename(root)))
                 skip_file_name = os.path.normpath(skip_file_name)
                 if os.path.isfile(skip_file_name):
@@ -246,6 +246,21 @@ def test_directory(test, test_type):
                             continue
                     except:
                         logger.write("[Warning: .skipif error.]")
+
+                # Skip the directory if there is a SKIPIF file that
+                # evaluates true
+                skip_test = False
+                if os.path.isfile("SKIPIF"):
+                    try:
+                        skip_test = subprocess.check_output(
+                                [test_env, "SKIPIF"]).strip()
+                        # check output and skip if true
+                        if skip_test == "1" or skip_test == "True":
+                            logger.write("[Skipping directory based on SKIPIF "
+                                    "environment settings]")
+                            continue
+                    except:
+                        logger.write("[Warning: SKIPIF error.]")
 
                 # skip this directory if there is a NOTEST file
                 if os.path.isfile(os.path.join(dir, "NOTEST")):

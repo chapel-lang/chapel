@@ -614,7 +614,10 @@ module Math {
 
 
   /* Computes the mod operator on the two arguments, defined as
-     ``mod(x,y) = x - y * floor(x / y)``.
+     ``mod(m,n) = m - n * floor(m / n)``.
+
+     The result is always >= 0 if `n` > 0.
+     It is an error if `n` == 0.
   */
   proc mod(param m: integral, param n: integral) param {
     param temp = m % n;
@@ -631,10 +634,13 @@ module Math {
   }
 
   /* Computes the mod operator on the two arguments, defined as
-     ``mod(x,y) = x - y * floor(x / y)``.
+     ``mod(m,n) = m - n * floor(m / n)``.
 
      If the arguments are of unsigned type, then
-     fewer condititionals will be evaluated at run time. 
+     fewer conditionals will be evaluated at run time.
+
+     The result is always >= 0 if `n` > 0.
+     It is an error if `n` == 0.
   */
   proc mod(m: integral, n: integral) {
     const temp = m % n;

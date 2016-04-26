@@ -260,6 +260,9 @@ def strip_series(csvFile, numseries):
 
 ############
 
+class CouldNotReadGraphFile(Exception):
+    pass
+
 # Global info about generating graphs
 class GraphStuff:
     def __init__(self, _name, _testdir, _perfdir, _outdir, _startdate, _enddate,
@@ -409,15 +412,18 @@ class GraphStuff:
 
 
     def genGraphStuff(self, fname, suites):
-        fullFname = self.testdir+'/'+fname
-        if not os.path.exists(fullFname):
-            fullFname = './'+fname
+        if os.path.isabs(fname):
+            fullFname = fname
+        else:
+            fullFname = self.testdir+'/'+fname
+            if not os.path.exists(fullFname):
+                fullFname = './'+fname
         if verbose:
             sys.stdout.write('Reading %s...\n'%(fullFname))
         lines=fileReadHelp.ReadFileWithComments(fullFname)
         if lines==None:
             sys.stdout.write('WARNING: Could not read graph description from %s.  Ignoring.\n'%(fullFname))
-            return
+            raise CouldNotReadGraphFile
 
         basename = os.path.splitext(os.path.basename(fname))[0]
 
@@ -524,7 +530,10 @@ class GraphClass:
     def __str__(self):
         l  = 'Graph: '+str(self.name)+' (id='+str(self.id)+')\n'
         l += '\ttitle: '+self.title+'\n'
-        l += '\tsuites: ['+','.join(suites)+']\n'
+        if self.suites == None or self.suites == [] or self.suites == [None]:
+            l += '\tsuites: none\n'
+        else:
+            l += '\tsuites: ['+','.join(self.suites)+']\n'
         l += '\tgraphname: '+self.graphname+'\n'
         l += '\tylabel: '+self.ylabel+'\n'
         if self.startdate != None:
@@ -1017,6 +1026,8 @@ def main():
         try:
             graphInfo.genGraphStuff(graph[0], graph[1])
             numGraphfiles += 1
+        except (CouldNotReadGraphFile):
+            pass  # do not increment numGraphfiles
         except (ValueError, IOError, OSError):
             return -1
 

@@ -15,3 +15,4 @@ var r = new R(int, 7);
 
 r.test();
 
+delete r;

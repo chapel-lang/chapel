@@ -16,3 +16,6 @@ proc f(c: C(1+2+3,?p)) {
 
 f(c1);
 f(c2);
+
+delete c2;
+delete c1;

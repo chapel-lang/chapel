@@ -8,9 +8,13 @@ class MyNum {
 
 proc foo() {
   var c = new MyNum(17);
+
   begin {
     sleep(1);
     writeln(c.x);
+
+    delete c;
   }
+
   c.x = 18;
 }

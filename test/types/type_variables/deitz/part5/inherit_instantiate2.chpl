@@ -10,3 +10,5 @@ class D : C {
 var d = new D(real);
 
 writeln(d);
+
+delete d;

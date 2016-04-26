@@ -12,3 +12,5 @@ class foo {
 var f : foo(t=int) = new foo(t=int, x=3);
 
 f.print();
+
+delete f;

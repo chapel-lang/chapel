@@ -11,3 +11,5 @@ if verbose then
   writeln(displace);
 
 
+delete rng;
+

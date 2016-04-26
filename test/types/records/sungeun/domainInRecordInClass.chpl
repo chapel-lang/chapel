@@ -11,4 +11,6 @@ proc main {
   writeln(c);
   c.r.d = {1..1};
   writeln(c);
+
+  delete c;
 }
