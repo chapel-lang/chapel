@@ -491,6 +491,10 @@ module DefaultAssociative {
     //
     // NOTE: Calls to this routine assume that the tableLock has been acquired.
     //
+    // NOTE: A copy of this routine is tested in
+    //    test/associative/ferguson/check-look-for-slots.chpl
+    // So, when updating this routine, either refactor so the test
+    // can use the below code - or update the test in a corresponding manner.
     iter _lookForSlots(idx: idxType, numSlots = tableSize) {
       const baseSlot = chpl__defaultHashWrapper(idx):uint;
       for probe in 0..numSlots/2 {
