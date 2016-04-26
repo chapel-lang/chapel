@@ -369,8 +369,8 @@ arrayName: [domain] real = noinit;``.  Note that it is considered an error to
 access the contents of an instance that has been created with ``noinit`` until
 an initial value for its entire contents has been provided.  This is the
 responsibility of the user.  Instances that cannot be changed after
-initialization, such as ``const``s or ``param``s, cannot have ``noinit`` applied
-to them.
+initialization, such as ``const`` s or ``param`` s, cannot have ``noinit``
+applied to them.
 
 In the above example, it should be noted that the user would need to fully
 specify the type of the instance to which they wish to apply ``noinit``, or the
