@@ -787,42 +787,81 @@ static TypeSymbol* resolveTypeAlias(SymExpr* se)
 }
 
 
-// By default, a call whose base expression is a symbol referring to an
-// aggregate type is converted to a call to the default type constructor for
-// that class.  There are a few exceptions:
-// 1. If the type is "dmap" (syntactic distribution), it is replaced by a call
-//    to chpl_buildDistType().
-// 2. In the context of a 'new' (complete or partial), it is converted to a
-//    constructor call.
+/*
+   Normalize constructor/type constructor calls.
+    * a call whose base expression is a symbol referring to an aggregate
+      type is converted to a call to the default type constructor for
+      that class, unless it's in a 'new' expression
+    * calls to such aggregate types in a 'new' expression are transformed
+      to put the call arguments directly into the PRIM_NEW in order to
+      improve function resolution's ability to handle them.
+    * if the type is "dmap" (syntactic distribution), it is replaced by a
+      call to chpl_buildDistType().
+
+ */
 static void call_constructor_for_class(CallExpr* call) {
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
-    if (TypeSymbol* ts = resolveTypeAlias(se)) {
-      if (AggregateType* ct = toAggregateType(ts->type)) {
-        // Select symExprs of class (or record) type.
 
-        SET_LINENO(call);
-        CallExpr* parent = toCallExpr(call->parentExpr);
-        CallExpr* parentParent = NULL;
-        if (parent)
-          parentParent = toCallExpr(parent->parentExpr);
+    CallExpr* parent = toCallExpr(call->parentExpr);
+    CallExpr* parentParent = NULL;
+    if (parent)
+      parentParent = toCallExpr(parent->parentExpr);
 
-        if (parent && parent->isPrimitive(PRIM_NEW)) {
-          // Transform "new C ( ... )" into _construct_C ( ... ).
-          se->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
-          parent->replace(call->remove());
-        } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
-                   call->partialTag) {
-          // Transform "new C ( (_partial C) ... )" into _construct_C ( ... ).
-          se->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
-          parentParent->replace(parent->remove());
-        } else {
-          if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
-            // Call chpl__buildDistType for syntactic distributions.
-            se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
-          else
-            // Transform C ( ... ) into _type_construct_C ( ... ) .
-            se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
-        }
+    AggregateType* ct = NULL;
+    if (TypeSymbol* ts = resolveTypeAlias(se))
+      ct = toAggregateType(ts->type);
+
+    CallExpr* primNewToFix = NULL;
+
+    // Select symExprs of class (or record) type.
+
+    SET_LINENO(call);
+
+    if (parent && parent->isPrimitive(PRIM_NEW) ) {
+      if (!call->partialTag) { // avoid normalizing PRIM_NEW twice
+        primNewToFix = parent;
+        INT_ASSERT(primNewToFix->get(1) == call);
+      }
+    } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
+             call->partialTag) {
+      primNewToFix = parentParent;
+      INT_ASSERT(primNewToFix->get(1) == parent);
+    } else if (ct) {
+      if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
+        // Call chpl__buildDistType for syntactic distributions.
+        se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
+      else
+        // Transform C ( ... ) into _type_construct_C ( ... ) .
+        se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
+    }
+
+    if (primNewToFix) {
+      // Transform   new (call C args...) args2...
+      //      into   new C args... args2...
+
+      // Transform   new (call (call (partial) C _mt this) args...)) args2...
+      //      into   new (call (partial) C _mt this) args... args2...
+
+      // The resulting AST will be handled in function resolution
+      // where the PRIM_NEW will be removed. It is transformed
+      // to no longer be a call with a type baseExpr in order
+      // to make better sense to function resolution.
+
+      CallExpr* callInNew = toCallExpr(primNewToFix->get(1));
+      callInNew->remove();
+      CallExpr *newNew = new CallExpr(PRIM_NEW);
+      primNewToFix->replace(newNew);
+
+      newNew->insertAtHead(callInNew->baseExpr);
+      // Move the actuals from the call to the new PRIM_NEW
+      for_actuals(actual, callInNew) {
+        newNew->insertAtTail(actual->remove());
+      }
+      // Move actual from the PRIM_NEW as well
+      // This is not the expected AST form, but keeping this
+      // code here adds some resiliency.
+      for_actuals(actual, primNewToFix) {
+        newNew->insertAtTail(actual->remove());
       }
     }
   }

@@ -5,9 +5,15 @@ class node {
 
 var head : node;
 
-head = new node();
-head.data = "one";
-head.next = new node();
+head           = new node();
+head.data      = "one";
+
+head.next      = new node();
 head.next.data = "two";
+
 writeln(head.data);
 writeln(head.next.data);
+
+delete head.next;
+delete head;
+

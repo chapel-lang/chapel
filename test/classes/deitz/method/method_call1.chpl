@@ -16,3 +16,5 @@ var b = new bar();
 foo();
 b.foo();
 b.goo();
+
+delete b;

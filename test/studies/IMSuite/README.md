@@ -25,7 +25,7 @@ The test inputs used have been taken from the input provided in the IMSuite inpu
 - Dominating Set
 - Maximal Independent Set
 - Leader Election:
-    * LCR
+    * ```LCR```
     * HS
     * DP
 - Minimum Spanning Tree
@@ -38,8 +38,14 @@ initially coloring the nodes of the tree with six colors which takes O(log*n) ti
 Next the algorithm uses a shift down operation (constant time) to color the tree
 using three colors.
 
+```Leader-Election: LCR```: This algorithm (known as LeLann-Chang-Roberts algorithm) finds the
+leader for a set of nodes organized in a ring network, where the data flow is unidirectional.
+The distinguishing feature of this algorithm is its simplicity and negligible computation.
 
 ## To learn more about the algorithms:
 - Vertex Coloring :
     * https://en.wikipedia.org/wiki/Graph_coloring#Parallel_and_distributed_algorithms
     * http://www.iitg.ernet.in/gkd/aie/slide/Coloring-PSM.pdf
+- Leader Election : LCR
+    * https://en.wikipedia.org/wiki/Leader_election#Leader_election_in_rings
+    * http://www.cs.rug.nl/~eirini/DS_slides/leader_election.pdf

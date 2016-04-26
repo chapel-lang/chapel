@@ -4,5 +4,9 @@ use secondaryMethod except other;
 // the except
 
 var a = new Foo(7);
+
 writeln(a.innerMethod(3)); // Should be 21
 writeln(a.outerMethod(1)); // Should be 6
+
+delete a;
+

@@ -19,3 +19,11 @@ for loc in Locales do
     myC.Ds[loc.id] = new D(me=loc.id);
 
 writeln(myC);
+
+for loc in Locales do
+  on loc do
+    delete myC.Ds[loc.id];
+
+delete myC;
+
+

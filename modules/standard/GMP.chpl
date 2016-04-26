@@ -907,7 +907,7 @@ module GMP {
       var ret:c_ulong;
       on this {
         var (ncopy,n_) = n.maybeCopy();
-        ret=mpz_mod(this.mpz, n_.mpz, d.safeCast(c_ulong));
+        ret=mpz_mod_ui(this.mpz, n_.mpz, d.safeCast(c_ulong));
         if ncopy then delete n_;
       }
       return ret.safeCast(uint);

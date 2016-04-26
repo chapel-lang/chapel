@@ -9,6 +9,12 @@ record foo {
     writeln("I default initialized!");
   }
 }
+
 var bar: foo = noinit;
+
 bar.t = new aClass();
+
 writeln(bar);
+
+delete bar.t;
+

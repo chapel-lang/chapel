@@ -11,4 +11,8 @@ proc C.g2: int {
 }
 
 var c = new C(1);
+
 writeln(c.g2);
+
+delete c;
+

@@ -13,3 +13,5 @@ var f : foo = new foo();
 
 f.primary();
 f.secondary();
+
+delete f;

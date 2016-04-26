@@ -80,14 +80,26 @@ proc IC.special_next() {
     value = s[i];
 }
 
+
+
+
+
 var ic = fun_string_chars("ABC");
+
 while ic.cursor {
   writeln(ic.value);
   ic.next();
 }
 
+delete ic;
+
+
+
 ic = special_fun_string_chars("ABC");
+
 while ic.cursor {
   writeln(ic.value);
   ic.special_next();
 }
+
+delete ic;

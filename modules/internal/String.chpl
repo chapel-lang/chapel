@@ -316,7 +316,7 @@ module String {
       For example:
 
       .. code-block:: chapel
-      
+
         var str = "abcd";
         for c in str {
           writeln(c);
@@ -344,7 +344,8 @@ module String {
                 `1..string.length`
      */
     proc this(i: int) : string {
-      if i <= 0 || i > this.len then halt("index out of bounds of string");
+      if boundsChecking && (i <= 0 || i > this.len)
+        then halt("index out of bounds of string");
 
       var ret: string;
       const newSize = chpl_here_good_alloc_size(2);
@@ -370,17 +371,18 @@ module String {
     // TODO: move into the public interface in some form? better name if so?
     pragma "no doc"
     proc _getView(r:range(?)) {
-      //TODO: don't use halt here, or at least wrap in a bounds checks param
       //TODO: halt()s should use string.writef at some point.
-      if r.hasLowBound() {
-        if r.low <= 0 then
-          halt("range out of bounds of string");
-          //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
-      }
-      if r.hasHighBound() {
-        if (r.high < 0) || (r.high:int > this.len) then
-          halt("range out of bounds of string");
-          //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
+      if boundsChecking {
+        if r.hasLowBound() {
+          if r.low <= 0 then
+            halt("range out of bounds of string");
+            //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
+        }
+        if r.hasHighBound() {
+          if (r.high < 0) || (r.high:int > this.len) then
+            halt("range out of bounds of string");
+            //halt("range %t out of bounds of string %t".writef(r, 1..this.len));
+        }
       }
       const ret = r[1:r.idxType..#(this.len:r.idxType)];
       return ret;
@@ -717,64 +719,152 @@ module String {
     /*
       Works as above, but uses runs of whitespace as the delimiter.
 
-      .. warning:: While this function is supposed to split on groups of
-                   whitespace, it currently only splits on spaces.
+      :arg maxsplit: The number of times to split the string, negative values
+                     indicate no limit.
      */
-    // TODO: Make this support splitting on runs of whitespace rather than just a space
+    // note: to improve performance, this code collapses several cases into a
+    //       single yield statement, which makes it confusing to read
     // TODO: specifying return type leads to un-inited string?
-    iter split(maxsplit: int = -1, ignoreEmpty: bool = false) /* : string*/ {
-      for s in this.split(" ", maxsplit, ignoreEmpty) {
-        yield s;
+    iter split(maxsplit: int = -1) /* : string */ {
+      if !this.isEmptyString() {
+        const localThis: string = this.localize();
+        var done : bool = false;
+        var yieldChunk : bool = false;
+        var chunk : string;
+
+        var noSplits : bool = maxsplit == 0;
+        var limitSplits : bool = maxsplit > 0;
+        var splitCount: int = 0;
+        var iEnd = localThis.len - 1;
+
+        var inChunk : bool = false;
+        var chunkStart : int;
+
+        for i in 0..#localThis.len {
+          if noSplits {
+            done = true;
+            if !localThis.isSpace() then {
+              chunk = localThis;
+              yieldChunk = true;
+            }
+          } else {
+            var b = localThis.buff[i];
+            var bSpace = byte_isWhitespace(b);
+            if !(inChunk || bSpace) {
+              // zero-based buff to one-based range
+              chunkStart = i + 1;
+              inChunk = true;
+            } else if inChunk {
+              if bSpace {
+                splitCount += 1;
+                if limitSplits && splitCount > maxsplit {
+                  chunk = localThis[chunkStart..];
+                  yieldChunk = true;
+                  done = true;
+                } else {
+                  chunk = localThis[chunkStart..i];
+                  yieldChunk = true;
+                  inChunk = false;
+                }
+              } else if i == iEnd {
+                chunk = localThis[chunkStart..];
+                yieldChunk = true;
+                done = true;
+              }
+            }
+          }
+
+          if yieldChunk {
+            yield chunk;
+            yieldChunk = false;
+          }
+          if done then
+            break;
+        }
       }
     }
 
     /*
-      Returns a new string of all of the strings in `S` with the receiving
-      string concatenated between them.
+      Returns a new string, which is the concatenation of all of the strings
+      passed in with the receiving string inserted between them.
+
+      .. code-block:: chapel
+
+          var x = "|".join("a","10","d");
+          writeln(x); // prints: "a|10|d"
+     */
+
+    proc join(const ref S: string ...) : string {
+      return _join(S);
+    }
+
+    /*
+      Same as the varargs version, but with a homogenous tuple of strings.
+
+      .. code-block:: chapel
+
+          var x = "|".join("a","10","d");
+          writeln(x); // prints: "a|10|d"
+     */
+    proc join(const ref S) : string where isTuple(S) {
+      if !isHomogeneousTuple(S) || !isString(S[1]) then
+        compilerError("join() on tuples only handles homogeneous tuples of strings");
+      return _join(S);
+    }
+
+    /*
+      Same as the varargs version, but with all the strings in an array.
 
       .. code-block:: chapel
 
           var x = "|".join(["a","10","d"]);
           writeln(x); // prints: "a|10|d"
      */
-    // TODO: could rewrite to have cleaner logic / more efficient for edge cases
-    // TODO: allow for varargs?
-    proc join(S: [] string) : string {
-      var newSize: int = 0;
-      var ret: string;
-      if S.size > 1 {
-        for s in S {
-          newSize += s.length;
-        }
-        newSize += this.len*(S.size-1);
-        ret.len = newSize;
-        const allocSize = chpl_here_good_alloc_size(ret.len+1);
-        ret._size = allocSize;
-        ret.buff = chpl_here_alloc(allocSize,
-                                  CHPL_RT_MD_STR_COPY_DATA): bufferType;
-        var offset = 0;
+    proc join(const ref S: [] string) : string {
+      return _join(S);
+    }
+
+    proc _join(const ref S) : string where isTuple(S) || isArray(S) {
+      if S.size == 1 {
+        // TODO: ensures copy, clean up when no longer needed
+        var ret = S[S.domain.low];
+        return ret;
+      } else {
+        var joinedSize: int = this.len * (S.size - 1);
+        for s in S do joinedSize += s.length;
+
+        var joined: string;
+        joined.len = joinedSize;
+        const allocSize = chpl_here_good_alloc_size(joined.len + 1);
+        joined._size = allocSize;
+        joined.buff = chpl_here_alloc(
+          allocSize,
+          CHPL_RT_MD_STR_COPY_DATA): bufferType;
+
         var first = true;
+        var offset = 0;
         for s in S {
-          if !first && this.len != 0 {
-            memcpy(ret.buff+offset, this.buff, this.len.safeCast(size_t));
+          if first {
+            first = false;
+          } else if this.len != 0 {
+            memcpy(joined.buff + offset, this.buff, this.len.safeCast(size_t));
             offset += this.len;
           }
+
           var sLen = s.len;
           if sLen != 0 {
+            var cpyStart = joined.buff + offset;
+            var sSize = sLen.safeCast(size_t);
             if _local || s.locale_id == chpl_nodeID {
-              memcpy(ret.buff+offset, s.buff, sLen.safeCast(size_t));
+              memcpy(cpyStart, s.buff, sSize);
             } else {
-              chpl_string_comm_get(ret.buff+offset, s.locale_id,
-                                  s.buff, sLen.safeCast(size_t));
+              chpl_string_comm_get(cpyStart, s.locale_id, s.buff, sSize);
             }
             offset += sLen;
           }
-          first = false;
         }
-      } else if S.size == 1 {
-        ret = S[0];
+        return joined;
       }
-      return ret;
     }
 
     /*
@@ -847,29 +937,27 @@ module String {
      Checks if all the characters in the string are either uppercase (A-Z) or
      uncased (not a letter).
 
-      :returns: * `true`  -- when there are no lowercase characters in the string.
+      :returns: * `true`  -- if the string contains at least one uppercase
+                             character and no lowercase characters, ignoring
+                             uncased characters.
                 * `false` -- otherwise
      */
-    // TODO/BUG: the is* functions are implemented as documented above, but
-    // this is slightly different than what python does. They check to make
-    // sure there is at least one cased character in the string.  eg.
-    // ";".isUpper() == false in python but would be true for us. They also
-    // check for a least one character in the string matching. These functions
-    // should be changed.
     proc isUpper() : bool {
-      var result: bool = false;
       if this.isEmptyString() then return false;
 
+      var result: bool;
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+        var locale_result = false;
         for i in 0..#this.len {
           const b = buff[i];
-          if _byte_isLower(b) {
-            result = false;
+          if byte_isLower(b) {
+            locale_result = false;
             break;
-          } else if !result && _byte_isUpper(b) {
-            result = true;
+          } else if !locale_result && byte_isUpper(b) {
+            locale_result = true;
           }
+          result = locale_result;
         }
       }
       return result;
@@ -890,10 +978,10 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if _byte_isUpper(b) {
+          if byte_isUpper(b) {
             result = false;
-            break; 
-          } else if !result && _byte_isLower(b) {
+            break;
+          } else if !result && byte_isLower(b) {
             result = true;
           }
         }
@@ -916,9 +1004,7 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if !((b == ascii(' ')) ||
-               (b == ascii('\t')) ||
-               (b >= ascii('\n') && b <= ascii('\r'))) { // \n \v \f \r
+          if !(byte_isWhitespace(b)) {
             result = false;
             break;
           }
@@ -941,7 +1027,7 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if !_byte_isAlpha(b) {
+          if !byte_isAlpha(b) {
             result = false;
             break;
           }
@@ -964,7 +1050,7 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if !_byte_isDigit(b) {
+          if !byte_isDigit(b) {
             result = false;
             break;
           }
@@ -987,7 +1073,7 @@ module String {
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         for i in 0..#this.len {
           const b = buff[i];
-          if !(_byte_isAlpha(b) || _byte_isDigit(b)) {
+          if !(byte_isAlpha(b) || byte_isDigit(b)) {
             result = false;
             break;
           }
@@ -1038,7 +1124,7 @@ module String {
         var last = UN;
         for i in 0..#this.len {
           const b = buff[i];
-          if _byte_isLower(b) {
+          if byte_isLower(b) {
             if last == UPPER || last == LOWER {
               last = LOWER;
             } else { // last == UN
@@ -1046,7 +1132,7 @@ module String {
               break;
             }
           }
-          else if _byte_isUpper(b) {
+          else if byte_isUpper(b) {
             if last == UN {
               last = UPPER;
             } else { // last == UPPER || last == LOWER
@@ -1072,7 +1158,7 @@ module String {
 
       for i in 0..#result.len {
         const b = result.buff[i];
-        if _byte_isUpper(b) {
+        if byte_isUpper(b) {
           // We can just add or subtract 0x20 to change between upper and lower
           result.buff[i] = b + 0x20;
         }
@@ -1090,7 +1176,7 @@ module String {
 
       for i in 0..#result.len {
         const b = result.buff[i];
-        if _byte_isLower(b) {
+        if byte_isLower(b) {
           result.buff[i] = b - 0x20;
         }
       }
@@ -1110,14 +1196,14 @@ module String {
       var last = UN;
       for i in 0..#result.len {
         const b = result.buff[i];
-        if _byte_isAlpha(b) {
+        if byte_isAlpha(b) {
           if last == UN {
             last = LETTER;
-            if _byte_isLower(b) {
+            if byte_isLower(b) {
               result.buff[i] = b - 0x20;
             }
           } else { // last == LETTER
-            if _byte_isUpper(b) {
+            if byte_isUpper(b) {
               result.buff[i] = b + 0x20;
             }
           }
@@ -1130,18 +1216,17 @@ module String {
     }
 
     /*
-      :returns: A new string with the first character capitalized.
+      :returns: A new string with the first character in uppercase (if it is a
+                case character), and all other case characters in lowercase.
+                Uncased characters are copied with no changes.
     */
-    // TODO/BUG: This is just wrong, whoops. I make the first character
-    // uppercase, then don't do anything to the rest of the string.
-    // fOO->FOO instead of Foo like it should. Remove the nodoc when it works.
     pragma "no doc"
     proc capitalize() : string {
       var result: string = this.toLower();
       if result.isEmptyString() then return result;
 
       var b = result.buff[0];
-      if _byte_isLower(b) { // Only change alpha
+      if byte_isLower(b) {
         result.buff[0] = b - 0x20;
       }
       return result;
@@ -1315,12 +1400,12 @@ module String {
      For example:
 
      .. code-block:: chapel
-        
+
         writeln("Hello! " * 3);
 
      Results in::
 
-       Hello! Hello! Hello! 
+       Hello! Hello! Hello!
   */
   proc *(s: string, n: integral) {
     if n <= 0 then return "";
@@ -1610,22 +1695,38 @@ module String {
   //
   // Helper routines
   //
-  private inline proc _byte_isUpper(b: uint(8)) : bool {
-    return b >= ascii('A') && b <= ascii('Z');
+  private const uint_A: uint(8) = ascii('A');
+  private const uint_Z: uint(8) = ascii('Z');
+  private const uint_a: uint(8) = ascii('a');
+  private const uint_z: uint(8) = ascii('z');
+  private const uint_0: uint(8) = ascii('0');
+  private const uint_9: uint(8) = ascii('9');
+  private const uint_space   : uint(8) = ascii(' ');
+  private const uint_tab     : uint(8) = ascii('\t');
+  private const uint_newline : uint(8) = ascii('\n');
+  private const uint_return  : uint(8) = ascii ('\r');
+
+  private inline proc byte_isUpper(b: uint(8)) : bool {
+    return b >= uint_A && b <= uint_Z;
   }
 
-  private inline proc _byte_isLower(b: uint(8)) : bool {
-    return b >= ascii('a') && b <= ascii('z');
+  private inline proc byte_isLower(b: uint(8)) : bool {
+    return b >= uint_a && b <= uint_z;
   }
 
-  private inline proc _byte_isAlpha(b: uint(8)) : bool {
-    return b >= ascii('A')  && b <= ascii('z');
+  private inline proc byte_isAlpha(b: uint(8)) : bool {
+    return b >= uint_A  && b <= uint_z;
   }
 
-  private inline proc _byte_isDigit(b: uint(8)) : bool {
-    return b >= ascii('0')  && b <= ascii('9');
+  private inline proc byte_isDigit(b: uint(8)) : bool {
+    return b >= uint_0  && b <= uint_9;
   }
 
+  private inline proc byte_isWhitespace(b: uint(8)) : bool {
+    return b == uint_space
+        || b == uint_tab
+        || (b >= uint_newline && b <= uint_return);
+  }
 
   //
   // ascii

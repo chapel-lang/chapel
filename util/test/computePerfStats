@@ -104,7 +104,7 @@ def validate_output(verify_keys, output_file):
         # match verify keys
         m = re.match("(verify|reject):(?:(-?[1-9][0-9]*):)? ?(.+)", key)
         if not m:
-            print("[Error: invalid verify/reject line '{}']".format(key))
+            print("[Error: invalid verify/reject line '{0}']".format(key))
             exit(1)
         # set parts of match to variables
         type = m.group(1)
@@ -204,17 +204,19 @@ def verify_data_file(keys_exp, keys_file):
                 columns = len(header)
                 keys_actual = header[1:]
                 continue
-            if header == None: # for all lines after the header
-                # ignore comments and empty lines
-                if parsed[0] == "" or "#" in parsed[0]:
-                    continue
-                if len(parsed) != columns:
-                    print("[Error: {} entry for {} doesn't match header length.]"
-                            .format(data_file, parsed[0]))
-                    exit(2)
+            # ignore comments and empty lines
+            if parsed[0] == "" or "#" in parsed[0]:
+                continue
+            if header == None:
+                print("[Error: data entry prior to header or missing header in {0}]".format(data_file))
+                exit(2)
+            if len(parsed) != columns:
+                print("[Error: {0} entry for {1} doesn't match header length.]"
+                      .format(data_file, parsed[0]))
+                exit(2)
 
         if header == None: # not found
-            print("[Error: {} has no header.]".format(data_file))
+            print("[Error: {0} has no header.]".format(data_file))
             exit(2)
 
     
@@ -226,7 +228,7 @@ def verify_data_file(keys_exp, keys_file):
 
     # the two aren't equal
     if len(diff) > 1 or (len(diff) == 1 and diff[0][0] != "equal"):        
-        print("[Error: key mismatch between {} and {}]"
+        print("[Error: key mismatch between {0} and {1}]"
                 .format(keys_file, data_file))
         print("Changes since creation of .dat file:")
         for d in diff:
@@ -235,16 +237,16 @@ def verify_data_file(keys_exp, keys_file):
                 continue
             elif type == "delete":
                 for i in range(d[1], d[2]):
-                    print("\t'{}' has been removed.".format(keys_actual[i]))
+                    print("\t'{0}' has been removed.".format(keys_actual[i]))
             elif type == "insert":
                 for i in range(d[3], d[4]):
-                    print("\t'{}' has been added.".format(keys_exp[i]))
+                    print("\t'{0}' has been added.".format(keys_exp[i]))
             elif type == "replace":
                 if d[2] - d[1] == 1: # singlular
-                    print("\t'{}' has been replaced with '{}'.".format(
+                    print("\t'{0}' has been replaced with '{1}'.".format(
                             keys_actual[d[1]], ", ".join(keys_exp[d[3]:d[4]])))
                 else: # plural
-                    print("\t'{}' have been replaced with '{}'.".format(
+                    print("\t'{0}' have been replaced with '{1}'.".format(
                         ", ".join(keys_actual[d[1]:d[2]]), 
                         ", ".join(keys_exp[d[3]:d[4]])))
 

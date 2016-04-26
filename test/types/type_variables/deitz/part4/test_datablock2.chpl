@@ -32,3 +32,6 @@ y(3) = "!";
 writeln(y(1));
 writeln(y(2));
 writeln(y(3));
+
+delete y;
+delete x;

@@ -16,4 +16,7 @@ proc main() {
   }
 
   writeln(x);
+
+  delete d;
+  delete c;
 }

@@ -7,4 +7,8 @@ class D: C {
 }
 
 var d = new D();
+
 writeln(d.x);
+
+delete d;
+

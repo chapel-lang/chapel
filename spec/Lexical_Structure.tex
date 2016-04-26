@@ -125,6 +125,7 @@ The following identifiers are reserved as keywords:
 \begin{chapel}
 _
 align
+as
 atomic
 begin
 break
@@ -142,6 +143,7 @@ do
 domain
 else
 enum
+except
 export
 extern
 for
@@ -161,6 +163,7 @@ new
 nil
 noinit
 on
+only
 otherwise
 out
 param
@@ -171,6 +174,7 @@ public
 record
 reduce
 ref
+require
 return
 scan
 select
@@ -188,6 +192,7 @@ var
 when
 where
 while
+with
 yield
 zip
 \end{chapel} \\
@@ -282,8 +287,8 @@ Real literals are designated by the following syntax:
 real-literal:
   digits[OPT] . digits exponent-part[OPT]
   digits .[OPT] exponent-part
-  `0x' hexadecimal-digits[OPT] . digits p-exponent-part[OPT]
-  `0X' hexadecimal-digits[OPT] . digits p-exponent-part[OPT]
+  `0x' hexadecimal-digits[OPT] . hexadecimal-digits p-exponent-part[OPT]
+  `0X' hexadecimal-digits[OPT] . hexadecimal-digits p-exponent-part[OPT]
   `0x' hexadecimal-digits .[OPT] p-exponent-part
   `0X' hexadecimal-digits .[OPT] p-exponent-part
 

@@ -26,12 +26,9 @@ assert(getField(r, "x") == 10);
 assert(getField(r, "y") == 20);
 
 
-// TODO -- ref return versions of field getter
-/*
 getFieldRef(r, 1) = 100;
 getFieldRef(r, "y") = 200;
 
-assert(getField(r, "x") == 100);
-assert(getField(r, "y") == 200);
+assert(getFieldRef(r, "x") == 100);
+assert(getFieldRef(r, "y") == 200);
 
-*/

@@ -20,3 +20,7 @@ writeln("{a = ", c.a, ", b = ", c.b, ", c = ", c.c,
 writeln("{a = ", d.a, ", b = ", d.b,
         ", c = {a = ", d.c.a, ", b = ", d.c.b, ", c = ", d.c.c,
         ", d = ", d.c.d, ", e = ", d.c.e, "}}");
+
+delete d;
+delete c;
+

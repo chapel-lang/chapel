@@ -10,6 +10,8 @@ proc foo() {
   var r = new R(x = x, y = y);
 
   writeln("r is: ", r);
+
+  delete r;
 }
 
 proc bar() {
@@ -19,6 +21,8 @@ proc bar() {
   var r = new R(x = y, y = x);
 
   writeln("r is: ", r);
+
+  delete r;
 }
 
 proc main() {

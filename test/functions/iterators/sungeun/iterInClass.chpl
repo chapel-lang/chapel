@@ -7,6 +7,9 @@ class c1 {
 }
 
 var c = new c1();
+
 for o in c.getChildren() {
   writeln(o);
 }
+
+delete c;

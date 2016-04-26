@@ -136,6 +136,10 @@ arrayPerformance-1d:
     - text: memory related, qthreads memory pool bug fix
       config: chap03
 
+array-of-strings-read:
+  04/14/16:
+    - string changes to bounds checking, isUpper (#3718)
+
 arr-forall:
   03/24/15:
     - with CCE, bug fix to avoid vectorizing when not valid
@@ -281,6 +285,8 @@ jacobi:
     - param protect all calls to chpl__testPar (#1200)
   01/17/16:
     - add dead string literal elimination (#3120)
+  04/01/16:
+    - casting bug fix (#3615)
 
 knucleotide:
   10/16/15:
@@ -396,6 +402,14 @@ prk-stencil:
     - Improved performance on PRK-stencil (#3288)
   04/08/16:
     - Looping over range instead of domain for weight matrix (#3500)
+  04/09/16:
+    - blockDist for useStencilDist output matrix and more (#3705)
+
+prk-stencil.xc-perf:
+  04/08/16:
+    - Looping over range instead of domain for weight matrix (#3500)
+  04/09/16:
+    - blockDist for useStencilDist output matrix and more (#3705)
 
 regexdna:
   10/07/14:
