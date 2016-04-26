@@ -437,12 +437,9 @@ module ZMQ {
     // recv, records (of other supported things)
     pragma "no doc"
     proc recv(type T, flags: int = 0) where (isRecordType(T) && (!isString(T))) {
-      inline proc getField(x:?t, param i:int) ref
-        return __primitive("field value by num", x, i);
-
       var data: T;
       for param i in 1..numFields(T) do
-        getField(data,i) = recv(getField(data,i).type);
+        getFieldRef(data,i) = recv(getField(data,i).type);
       return data;
     }
 
