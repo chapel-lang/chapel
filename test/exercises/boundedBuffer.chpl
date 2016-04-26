@@ -85,4 +85,6 @@ proc main {
     producer(problemSize);
     consumer();
   }
+
+  delete buffer;
 }

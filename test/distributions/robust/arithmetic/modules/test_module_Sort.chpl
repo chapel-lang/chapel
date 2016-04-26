@@ -98,3 +98,5 @@ rng.fillRandom(rc4DR1D);
 QuickSort(rc4DR1D, doublecheck=true);
 rng.fillRandom(rc4DR1D);
 HeapSort(rc4DR1D, doublecheck=true);
+
+delete rng;

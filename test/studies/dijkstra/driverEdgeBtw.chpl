@@ -40,7 +40,7 @@ proc main() {
   var Nodes = InitializeNodes(nEdges, nNodes, Edges, isDirected);
 
   var nSources: int;
-  var ignoreWt: real;  
+  var ignoreWt: real;
 
   //Initialize Generators/Sources:
   fin2.readln(nSources);
@@ -57,7 +57,7 @@ proc main() {
     writeln(Sources[i], " - ", ignoreWt);
   }
   fin2.close();
-  
+
   var nSinks: int;
   fin3.readln(nSinks);
 
@@ -97,20 +97,20 @@ proc main() {
 
   for i in D1 {
     if (Edges[i].dupl != 0) {
-      
+
       // Recover original distance of edge
       var sum: real = 1.0 / Edges[i].distance;
       for j in (i+1)..(nEdges-1) {
         if (Edges[j].dupl == 1) then break;
         sum -= 1.0 / Edges[j].distance;
       }
-      
+
       Edges[i].distance = 1.0 / sum;
-      
+
       // Compute total distance of component edges (= total distance)
       sum = Edges[i].distance;
       for j in (i+1)..(nEdges-1) {
-        if (Edges[j].dupl == 1) then break; 
+        if (Edges[j].dupl == 1) then break;
         sum += Edges[j].distance;
       }
 
@@ -118,7 +118,7 @@ proc main() {
       // to (edge distance / total distance)
       var vbHL: real = Edges[i].vb$.readXX() / sum;
       Edges[i].vb$.writeXF(Edges[i].distance * vbHL);
-      
+
       for j in (i+1)..(nEdges-1) {
         if (Edges[j].dupl == 1) then break;
         Edges[j].vb$.writeXF(Edges[j].distance * vbHL);
@@ -127,8 +127,10 @@ proc main() {
   }
 
   writeln("#     From     To     Betweenness");
+
   for i in D1 do writeln(Edges[i].id, "     ", Edges[i].n1+1, "     ",
                          Edges[i].n2+1, "     ", Edges[i].vb$.readXX());
 
-  return;
+  for n in Nodes do delete n;
+  for e in Edges do delete e;
 }

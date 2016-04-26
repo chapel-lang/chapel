@@ -99,6 +99,7 @@ void checkPrimitives()
      case PRIM_IS_ATOMIC_TYPE:
      case PRIM_IS_TUPLE_TYPE:
      case PRIM_IS_STAR_TUPLE_TYPE:
+     case PRIM_NEW:                 // new keyword
       if (resolved)
         INT_FATAL("Primitive should not appear after resolution is complete.");
       break;
@@ -152,7 +153,6 @@ void checkPrimitives()
      case PRIM_GET_MEMBER_VALUE:
      case PRIM_SET_MEMBER:
      case PRIM_CHECK_NIL:
-     case PRIM_NEW:                 // new keyword
      case PRIM_GET_REAL:            // get complex real component
      case PRIM_GET_IMAG:            // get complex imag component
      case PRIM_QUERY:               // query expression primitive

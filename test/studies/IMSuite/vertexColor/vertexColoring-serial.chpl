@@ -239,6 +239,8 @@ module vertexColoring {
 
             if(loadValue != 0) then nval[i] = loadweight(nval[i]+i);
             }
+
+            delete randStream;
         }
 
     }
