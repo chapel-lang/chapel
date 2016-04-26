@@ -123,7 +123,7 @@ void chpl_init_heap_stack(void){
   chpl_use_guard_page      = false;
   return;
 #else
-  else if (chpl_getHeapPageSize() != chpl_getSysPageSize()) {
+  if (chpl_getHeapPageSize() != chpl_getSysPageSize()) {
     chpl_alloc_stack_in_heap = false;
     chpl_use_guard_page      = false;
     return;
@@ -175,9 +175,12 @@ void* chpl_alloc_pthread_stack(size_t stack_size){
 }
 
 void chpl_free_pthread_stack(void* stack){
-  int free_flag = PROT_READ | PROT_WRITE | PROT_EXEC;
-  size_t page_size = chpl_getSysPageSize();
+  int free_flag;
+  size_t page_size;
+
   if(chpl_use_guard_page){
+    free_flag = PROT_READ | PROT_WRITE | PROT_EXEC;
+    page_size = chpl_getSysPageSize();
     mprotect((unsigned char*)stack - page_size, page_size, free_flag);
     chpl_free((unsigned char*)stack - page_size);
   }
