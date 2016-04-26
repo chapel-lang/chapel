@@ -16,7 +16,7 @@ for s in very_long.split() {
 }
 t.stop();
 
-if i == n then
-  writeln("SUCCESS");
 if timing then
   writeln("Time: ", t.elapsed());
+if i == n then
+  writeln("SUCCESS");
