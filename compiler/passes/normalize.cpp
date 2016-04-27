@@ -1015,26 +1015,42 @@ static void fix_def_expr(VarSymbol* var) {
 
   INT_ASSERT(fn);
 
-  if (// Not explicily marked "no auto destroy"
-      !var->hasFlag(FLAG_NO_AUTO_DESTROY) &&
+  if (!var->hasFlag(FLAG_NO_AUTO_DESTROY) &&
+      !var->hasFlag(FLAG_PARAM)           && // Note 1.
+      !var->hasFlag(FLAG_REF_VAR)         &&
+      fn->_this != var                    && // Note 2.
+      !fn->hasFlag(FLAG_INIT_COPY_FN)     && // Note 3.
+      !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
 
-      // Not a param variable.  (Note 1)
-      !var->hasFlag(FLAG_PARAM) &&
+    // Variables in a module initializer need special attention
+    if (var->defPoint->parentExpr == fn->getModule()->initFn->body) {
 
-      // The variables initialized in a module initializer are global,
-      // and therefore should not be autodestroyed.
-      // There is a special global destructor function for that.
-      var->defPoint->parentExpr != fn->getModule()->initFn->body &&
+      // MDN 2016/04/27
+      //
+      // Most variables in a module init function will become
+      // global and should not be auto destroyed.  The challenging
+      // case is injected by
+      //
+      // var (a1, a2) = fnReturnTuple();
+      //
+      // The parser expands this as
+      //
+      // var tmp = fnReturnTuple();
+      // var a1  = tmp.x1;
+      // var a2  = tmp.x2;
+      //
+      // This pseudo-tuple must be auto-destroyed to ensure the components
+      // are managed correctly. However the AST doesn't provide us with a
+      // strong/easy way to determine that we're dealing with this case.
+      // In practice is appears to be sufficient to flag any TMP
+      if (var->hasFlag(FLAG_TEMP)) {
+        var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      }
 
-      !fn->hasFlag(FLAG_INIT_COPY_FN) && // Note 3.
-
-      fn->_this != var                && // Note 2.
-
-      !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) &&
-
-      // don't add auto-destroy on reference variables
-      !var->hasFlag(FLAG_REF_VAR))
-    var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    } else {
+      var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    }
+  }
 
   //
   // handle "no copy" variables
