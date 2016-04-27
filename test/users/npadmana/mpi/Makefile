@@ -1,6 +1,6 @@
 # This has been tested with the GNU compiler
 CHPL=chpl
-CHPL_FLAGS=--target-compiler=mpi
+CHPL_FLAGS=--target-compiler=mpi-gnu
 
 TESTS = test_mpi.x
 
