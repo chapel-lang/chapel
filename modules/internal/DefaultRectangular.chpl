@@ -1036,24 +1036,13 @@ module DefaultRectangular {
     }
 
     proc dsiReallocate(d: domain) {
-      on this {
-      //
-      // If both d and dom are default rectangular, this is pretty
-      // easy...
-      //
       if (d._value.type == dom.type) {
+        on this {
         var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
-                                             idxType=idxType,
-                                             stridable=d._value.stridable,
-                                             dom=d._value);
-        //
-        // TODO: Making this for into a forall ought to accelerate
-        // dsiReallocate() calls, yet doing so breaks due to uint/int
-        // interaction issues today.  Deserves more of a look...
-        // Does our standalone parallel iterator not have the same
-        // type flexibility as the serial iterator?
-        //
-        for i in d[(...dom.ranges)] do
+                                            idxType=idxType,
+                                            stridable=d._value.stridable,
+                                            dom=d._value);
+        for i in d((...dom.ranges)) do
           copy.dsiAccess(i) = dsiAccess(i);
         off = copy.off;
         blk = copy.blk;
@@ -1075,16 +1064,9 @@ module DefaultRectangular {
             shiftedData = copy.shiftedData;
         //numelm = copy.numelm;
         delete copy;
+        }
       } else {
-        //
-        // In this case, dom is DefaultRectangular, but d is not.  We
-        // permit assignments between distributed domains and non-,
-        // interpreting it as just the assignment of the index sets.
-        // So for the purposes of this reallocation, just create a
-        // temporary DefaultRectangular domain and use it above.
-        //
-        dsiReallocate({(...d.getIndices())});
-      }
+        halt("illegal reallocation");
       }
     }
   

@@ -1,10 +1,10 @@
 class myClass {
   var x: int;
-
 }
 
 proc myClass.setMember(a: int ...?rank) {
   var mc : myClass = new myClass();
+
   for i in 1..rank do
     mc.x = a(i);
 
@@ -12,6 +12,12 @@ proc myClass.setMember(a: int ...?rank) {
 }
 
 var a: myClass = new myClass();
+var t          = a;
+
 a = a.setMember(1, 2, 3, 4, 5);
 
 writeln(a);
+
+delete a;
+delete t;
+

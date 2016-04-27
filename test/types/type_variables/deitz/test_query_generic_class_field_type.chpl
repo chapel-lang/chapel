@@ -11,3 +11,5 @@ proc f(c: C(?t)) {
 }
 
 f(c);
+
+delete c;

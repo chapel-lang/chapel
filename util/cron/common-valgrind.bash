@@ -11,8 +11,7 @@ export CHPL_RT_NUM_THREADS_PER_LOCALE=100
 # with debugging
 tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
 if [ "${tasks}" == "qthreads" ] ; then
-    export QT_AFFINITY=no
-    export CHPL_QTHREAD_ENABLE_OVERSUBSCRIPTION=1
+    source $CWD/common-oversubscribed.bash
     export CHPL_QTHREAD_MORE_CFG_OPTIONS=--enable-valgrind
 fi
 

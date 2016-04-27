@@ -17,3 +17,5 @@ c.noparns;
 
 // check whether dynamic dispatch for iterators works
 for n in c.itest() do writeln(n);
+
+delete c;

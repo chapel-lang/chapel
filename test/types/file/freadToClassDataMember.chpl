@@ -21,3 +21,4 @@ r.close();
 writeln("a.x should be equal to 9");
 writeln("a.x = ", a.x);
 
+delete a;

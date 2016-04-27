@@ -36,6 +36,8 @@ const c = + reduce checkSums;
 const r = max reduce maxFlips;
 writeln(c, "\nPfannkuchen(", n, ") = ", r);
 
+for f in Fanns do delete f;
+
 class Fann {
   const D = {0..#n};
   var p, pp, count : [D] int;
@@ -99,7 +101,7 @@ class Fann {
       for j in 1..i-1 do p[j] = p[j+1];
       p[i] = first;
       first = next;
-      
+
       count[i] += 1;
     }
   }

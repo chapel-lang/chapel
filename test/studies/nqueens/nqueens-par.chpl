@@ -251,7 +251,11 @@ proc countSolutions(boardSize: int, showEachSoln: bool) {
     writeln("Solving N Queens for N=", boardSize,
             " in parallel from level ", parRow, "...");
   sync {
-    tryQueenInNextRow(createBoard(boardSize));   // elide dealloc of this board
+    var board = createBoard(boardSize);
+
+    tryQueenInNextRow(board);   // elide dealloc of this board
+
+    delete board;
   }
   writeln("Found ", solutionCount.readFE(), " solutions for N=", boardSize);
 }

@@ -9,4 +9,7 @@ proc foo() {
 }
 
 var a = foo();
+
 writeln("a is: ", a);
+
+a.destroy();

@@ -231,8 +231,8 @@ module ChapelIO {
 
     private
     proc isIoField(x, param i) param {
-      if isType(__primitive("field value by num", x, i)) ||
-         isParam(__primitive("field value by num", x, i)) {
+      if isType(__primitive("field by num", x, i)) ||
+         isParam(__primitive("field by num", x, i)) {
         // I/O should ignore type or param fields
         return false;
       } else {
@@ -294,7 +294,7 @@ module ChapelIO {
               writer.readwrite(eq);
             }
 
-            writer.readwrite(__primitive("field value by num", x, i));
+            writer.readwrite(__primitive("field by num", x, i));
   
             first = false;
           }
@@ -312,7 +312,7 @@ module ChapelIO {
               var eq:ioLiteral = ioFieldNameEqLiteral(writer, t, i);
               writer.readwrite(eq);
             }
-            writer.readwrite(__primitive("field value by num", x, i));
+            writer.readwrite(__primitive("field by num", x, i));
           }
         }
       }
@@ -432,7 +432,7 @@ module ChapelIO {
         if isBinary {
           for param i in 1..num_fields {
             if isIoField(x, i) {
-              reader.readwrite(__primitive("field value by num", x, i));
+              reader.readwrite(__primitive("field by num", x, i));
             }
           }
         } else if num_fields > 0 {
@@ -502,7 +502,7 @@ module ChapelIO {
                     }
                     reader.readwrite(eq);
 
-                    reader.readwrite(__primitive("field value by num", x, i));
+                    reader.readwrite(__primitive("field by num", x, i));
                     if !reader.error() {
                       read_field[i] = true;
                       num_read += 1;
@@ -547,7 +547,7 @@ module ChapelIO {
           reader.readwrite(id);
           for param i in 1..num_fields {
             if isIoField(x, i) && i == id {
-              reader.readwrite(__primitive("field value by num", x, i));
+              reader.readwrite(__primitive("field by num", x, i));
             }
           }
         } else {
@@ -577,7 +577,7 @@ module ChapelIO {
                 readIt(eq);
 
                 // We read the 'name = ', so now read the value!
-                reader.readwrite(__primitive("field value by num", x, i));
+                reader.readwrite(__primitive("field by num", x, i));
               }
             }
           }

@@ -90,4 +90,7 @@ proc main {
   writeln(c.ddName());
   writeln(d.name);
   writeln(d.ddName());
+
+  delete d;
+  delete c;
 }

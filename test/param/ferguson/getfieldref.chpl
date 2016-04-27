@@ -7,7 +7,7 @@ record R {
 var r:R;
 
 proc getFieldRef(x:?t, param i:int) ref {
-  return __primitive("field value by num", x, i);
+  return __primitive("field by num", x, i);
 }
 
 getFieldRef(r, 1) = 10;

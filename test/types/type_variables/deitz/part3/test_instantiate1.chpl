@@ -15,3 +15,5 @@ var f : foo(t=bar) = new foo(t=bar);
 
 writeln(f);
 f.print();
+
+delete f;

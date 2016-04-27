@@ -391,6 +391,9 @@ module ChapelArray {
 
     //Size the domain appropriately for the number of keys
     //This prevents expensive resizing as keys are added.
+    // Note that k/2 is the number of keys, since the tuple
+    // passed to this function has 2 elements (key and value)
+    // for each array element.
     D.requestCapacity(k/2);
     var A : [D] valType;
 
@@ -2095,6 +2098,10 @@ module ChapelArray {
      */
     proc pop_back() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("pop_back");
+
+      if boundsChecking && isEmpty() then
+        halt("pop_back called on empty array");
+
       const lo = this.domain.low,
             hi = this.domain.high-1;
       const newRange = lo..hi;
@@ -2144,6 +2151,10 @@ module ChapelArray {
      */
     proc pop_front() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("pop_front");
+
+      if boundsChecking && isEmpty() then
+        halt("pop_front called on empty array");
+
       const lo = this.domain.low+1,
             hi = this.domain.high;
       const newRange = lo..hi;
@@ -2172,6 +2183,10 @@ module ChapelArray {
       const lo = this.domain.low,
             hi = this.domain.high+1;
       const newRange = lo..hi;
+
+      if boundsChecking && !newRange.member(pos) then
+        halt("insert at position " + pos + " out of bounds");
+
       on this._value {
         if !this._value.dataAllocRange.member(hi) {
           if this._value.dataAllocRange.length < this.domain.numIndices {
@@ -2196,6 +2211,10 @@ module ChapelArray {
      */
     proc remove(pos: this.idxType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove");
+
+      if boundsChecking && !this.domain.member(pos) then
+        halt("remove at position " + pos + " out of bounds");
+
       const lo = this.domain.low,
             hi = this.domain.high-1;
       const newRange = lo..hi;
@@ -2225,8 +2244,11 @@ module ChapelArray {
       chpl__assertSingleArrayDomain("remove count");
       const lo = this.domain.low,
             hi = this.domain.high-count;
-      if pos > hi then
-        halt("index ", pos+count, " is outside the supported range");
+      if boundsChecking && pos+count-1 > this.domain.high then
+        halt("remove at position ", pos+count-1, " out of bounds");
+      if boundsChecking && pos < lo then
+        halt("remove at position ", pos, " out of bounds");
+
       const newRange = lo..hi;
       for i in pos..hi {
         this[i] = this[i+count];

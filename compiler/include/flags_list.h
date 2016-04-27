@@ -99,6 +99,7 @@ symbolFlag( FLAG_FAST_ON , npr, "fast on" , "with FLAG_ON/FLAG_ON_BLOCK, \"on bl
 symbolFlag( FLAG_FAST_ON_SAFE_EXTERN, ypr, "fast-on safe extern function", "extern function is safe for fast-on optimization")
 symbolFlag( FLAG_FIELD_ACCESSOR , npr, "field accessor" , "field setter/getter function, user-declared or compiler-generated" )
 symbolFlag( FLAG_FIRST_CLASS_FUNCTION_INVOCATION, npr, "first class function invocation" , "proxy for first-class function invocation" )
+symbolFlag( FLAG_FN_RETARG, npr, "fn returns via _retArg", ncm )
 symbolFlag( FLAG_FORMAL_TEMP,     npr, "formal temp", "a formal temp to back an in, out, or inout argument" )
 symbolFlag( FLAG_FUNCTION_CLASS , npr, "function class" , "first-class function class representation" )
 // When applied to an argument, this flag means that the arg accepts a value
@@ -232,6 +233,7 @@ symbolFlag( FLAG_REF_VAR , ypr, "ref var" , "reference variable" )
 symbolFlag( FLAG_REMOVABLE_AUTO_COPY , ypr, "removable auto copy" , ncm )
 symbolFlag( FLAG_REMOVABLE_AUTO_DESTROY , ypr, "removable auto destroy" , ncm )
 symbolFlag( FLAG_RESOLVED , npr, "resolved" , "this function has been resolved" )
+symbolFlag( FLAG_RETARG, npr, "symbol is a _retArg", ncm )
 // See buildRuntimeTypeToValueFns() in functionResolution.cpp for more info on FLAG_RUNTIME_TYPE_INIT_FN
 symbolFlag( FLAG_RUNTIME_TYPE_INIT_FN , ypr, "runtime type init fn" , "function for initializing runtime time types" )
 symbolFlag( FLAG_RUNTIME_TYPE_VALUE , npr, "runtime type value" , "associated runtime type (value)" )

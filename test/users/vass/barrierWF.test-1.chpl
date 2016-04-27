@@ -33,3 +33,5 @@ for try in 1..ty {
 }
 
 writeln("done");
+
+delete b;

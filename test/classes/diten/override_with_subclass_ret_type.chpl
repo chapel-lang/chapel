@@ -30,5 +30,9 @@ class B: A {
 proc main {
   var a: A = new B(1, 2.0);
   var ic_b = a.foo();
+
   ic_b.bar();
+
+  delete ic_b;
+  delete a;
 }

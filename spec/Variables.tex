@@ -454,12 +454,9 @@ a \chpl{const ref} alias, making changes visible through the alias,
 and making the behavior undefined.
 \end{openissue}
 
+\begin{chapelexample}{refVariables.chpl}
 For example, the following code:
 
-% TODO: wrap the following code in "chapelexample".
-% We are not adding it to our test suite as of this writing
-% because it is too close to release cutoff.
-%
 \begin{chapel}
 var myInt = 51;
 ref refInt = myInt;                   // alias of a local or global variable
@@ -481,34 +478,13 @@ const ref myConstRef = constArr[2];   // would be an error without 'const'
 writeln("myConstRef = ", myConstRef);
 \end{chapel}
 
-%TODO: fix the bug in the following, then add to the above example:
-%
-% var myArr: [1..3] int = 51;
-% ref refArr = myArr[2];   // alias of an array element
-% myArr[2] = 62;
-% writeln("refArr = ", refArr);
-%
-% class C { var cField = 51; }
-% var myC = new C();
-% ref refField = myC.cField;   // alias of a field
-% myC.cField = 62;
-% writeln(refField);
-% delete myC;
-%
-% record R { var rField = 51; }
-% var myR = new R();
-% ref refToRecord = myR;
-% ref refToField  = myR.rField;
-% refToRecord = new R(rField = 62);  // updates 'myR', including its rField
-% writeln("refToField = ", refToField);
-
 prints out:
 
-% to be converted to {chapeloutput}
-\begin{chapel}
+\begin{chapelprintoutput}{}
 refInt = 62
 myInt = 73
 refToExpr = 62
 myArr[3] = 73
 myConstRef = 52
-\end{chapel}
+\end{chapelprintoutput}
+\end{chapelexample}

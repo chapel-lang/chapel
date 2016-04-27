@@ -10,5 +10,10 @@ proc f() {
   return s;
 }
 
-writeln(f());
+var l = f();
+
+writeln(l);
+
+l.destroy();
+
 

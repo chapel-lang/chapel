@@ -5,7 +5,7 @@ config const verify = true;
 
 config const offset = 7;
 
-config const memFraction = if verify then 5000 else 1000;
+config const memFraction = if verify then 100000 else 1000;
 type eltType = int;
 
 const totalMem = here.physicalMemory(unit = MemUnits.Bytes);

@@ -13,3 +13,5 @@ var f : foo = new foo();
 
 f.bar();
 bar(f);
+
+delete f;

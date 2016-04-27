@@ -13,4 +13,8 @@ class D: C {
 }
 
 var c: C = new D();
+
 writeln(c.a(3));
+
+delete c;
+

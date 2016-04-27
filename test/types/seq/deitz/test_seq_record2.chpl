@@ -14,3 +14,5 @@ writeln(s);
 s.prepend(new R(3, 4));
 
 writeln(s);
+
+s.destroy();

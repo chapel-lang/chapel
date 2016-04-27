@@ -13,3 +13,4 @@ if f.bar
   then writeln("Bar");
   else writeln("Not Bar");
 
+delete f;

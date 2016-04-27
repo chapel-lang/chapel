@@ -9,9 +9,18 @@ inline proc _defaultOf(type t) where t == (int, foo) {
 }
 
 var tup: (int, foo) = noinit; // Should not print message
+
 tup(2) = new foo(2);
 tup(1) = 5;
+
 writeln(tup);
+
+delete tup(2);
+
 var otherTup: (int, foo);     // Should print message
+
 otherTup(2) = new foo(3);
 writeln(otherTup);
+
+delete otherTup(2);
+

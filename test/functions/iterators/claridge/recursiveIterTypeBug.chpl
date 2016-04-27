@@ -11,21 +11,28 @@
 
 
 proc main {
-  
+
   // var node: Node;
   // for n in traverse(node) do writeln(n.data);
-    
+
   var list = new List("A");
+
   list.head.next = new Node("B");
+
   for n in traverse(list.head) do writeln(n.data);
-  
+
+  delete list.head.next;
+  delete list;
 }
 
 
 
 class List {
   var head: Node;
+
   proc List ( str: string ) { head = new Node(str); }
+
+  proc ~List() { delete head; }
 }
 
 

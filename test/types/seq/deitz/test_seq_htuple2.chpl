@@ -14,3 +14,5 @@ t1 = (5, 6);
 writeln(t1);
 writeln(t2);
 writeln(s);
+
+s.destroy();
