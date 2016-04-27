@@ -62,7 +62,10 @@ struct thread_list {
 typedef struct thread_stack_list* thread_stack_list_p;
 struct thread_stack_list {
   void*               stack;
+  pthread_t           owner_pthread;
+
   thread_stack_list_p next;
+  thread_stack_list_p prec;
 };
 
 chpl_bool              chpl_use_guard_page;     // we have to add guard pages?
@@ -217,26 +220,38 @@ static int do_pthread_create(pthread_t* thread,
     return EAGAIN;
   }
   
+  rc = pthread_attr_setstack(&local_attr, stack, stack_size);
+  if( rc != 0 ) {
+    memset(thread, 0, sizeof(pthread_t));
+    chpl_free_pthread_stack(stack);
+    return rc;
+  }
+
+  rc = pthread_create(thread, &local_attr, start_routine, arg);
+  if( rc != 0 ) {
+    memset(thread, 0, sizeof(pthread_t));
+    chpl_free_pthread_stack(stack);
+    return rc;
+  }
+
   // Add the new stack to the stack list
   tslp = (thread_stack_list_p) chpl_mem_alloc(sizeof(struct thread_stack_list),
                                        CHPL_RT_MD_THREAD_STACK_DESC, 0, 0);
 
   tslp->stack = stack;
+  memcpy(&(tslp->owner_pthread), thread, sizeof(pthread_t));
+  tslp->prec = NULL;
   
   pthread_mutex_lock(&thread_stack_list_lock);
 
   tslp->next = thread_stack_list_head;
+  if(thread_stack_list_head != NULL)
+    thread_stack_list_head->prec = tslp;
+
   thread_stack_list_head = tslp;
 
   pthread_mutex_unlock(&thread_stack_list_lock);
 
-  rc = pthread_attr_setstack(&local_attr, stack, stack_size);
-  if( rc != 0 ) {
-    memset(thread, 0, sizeof(pthread_t));
-    return rc;
-  }
-
-  rc = pthread_create(thread, &local_attr, start_routine, arg);
   pthread_attr_destroy(&local_attr);
   return rc;
 }
@@ -460,21 +475,31 @@ void chpl_thread_exit(void) {
 
   pthread_mutex_unlock(&thread_info_lock);
 
+  pthread_mutex_lock(&thread_stack_list_lock);
+
   while (thread_list_head != NULL) {
-    if (pthread_join(thread_list_head->thread, NULL) != 0)
-      chpl_internal_error("thread join failed");
     tlp = thread_list_head;
+    if (pthread_join(tlp->thread, NULL) != 0)
+      chpl_internal_error("thread join failed");
+
+    /* We have joined with tlp->thread, so now we search for its stack
+     * in the thread_stack_list_head list and free it. This is for be
+     * sure that we free stacks used only by teminated threads.
+     */
+    for (tslp = thread_stack_list_head; tslp != NULL; tslp = tslp->next) {
+      if(pthread_equal(tlp->thread, tslp->owner_pthread)){
+          chpl_free_pthread_stack(tslp->stack);
+          if(tslp->prec == NULL)
+            thread_stack_list_head = tslp->next;
+          else
+            tslp->prec->next = tslp->next;
+          chpl_mem_free(tslp, 0, 0);
+          break;
+      }
+    }
+
     thread_list_head = thread_list_head->next;
     chpl_mem_free(tlp, 0, 0);
-  }
-
-  pthread_mutex_lock(&thread_stack_list_lock);
-  
-  while (thread_stack_list_head != NULL) {
-    tslp = thread_stack_list_head;
-    chpl_free_pthread_stack(tslp->stack);
-    thread_stack_list_head = thread_stack_list_head->next;
-    chpl_mem_free(tslp, 0, 0);
   }
 
   pthread_mutex_unlock(&thread_stack_list_lock);
