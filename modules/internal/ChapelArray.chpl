@@ -303,19 +303,9 @@ module ChapelArray {
     return chpl__buildDomainRuntimeType(d, _OpaqueIndex);
 
   pragma "runtime type init fn"
-  proc chpl__buildSparseDomainRuntimeType(dom: domain) {
-    //    compilerWarning("***"+typeToString(dom._value.type));
-    return _newDomain(dom._value.dsiNewSpsSubDom(dom));
-  }
-
-  /*
-  //  pragma "has runtime type"
-  pragma "runtime type init fn"
-    proc chpl__buildSparseDomainRuntimeType(dom: domain)  {
+  proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain)
     return _newDomain(d.newSparseDom(dom.rank, dom._value.idxType, dom));
-  }
-  */
-  
+
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where dom._value:BaseRectangularDom
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.rank,
@@ -331,8 +321,8 @@ module ChapelArray {
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where dom._value:BaseSparseDom
-    return chpl__buildSparseDomainRuntimeType(dom._value.parentDom);
-  
+    return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
+
   proc chpl__convertValueToRuntimeType(dom: domain) type {
     compilerError("the global domain class of each domain map implementation must be a subclass of BaseRectangularDom, BaseAssociativeDom, BaseOpaqueDom, or BaseSparseDom", 0);
     return 0; // dummy
@@ -595,7 +585,7 @@ module ChapelArray {
       // sparse/bradc/CSR/sparse.chpl as an example
       //
       pragma "no auto destroy" var dom: domainType;
-      return chpl__buildSparseDomainRuntimeType(dom._value.parentDom);
+      return chpl__buildSparseDomainRuntimeType(d, dom._value.parentDom);
     } else {
       var dom: domainType;
       return chpl__buildDomainRuntimeType(d, dom._value.idxType, dom._value.parSafe);
@@ -1395,6 +1385,13 @@ module ChapelArray {
 
     pragma "no doc"
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
+    pragma "no doc"
+    proc defaultSparseDist {
+      // We assume here a distribution is the same as a dense one
+      // This function would need to be updated if that changed.
+      return _getDistribution(_value.dist);
+    }
   }  // record _domain
 
   proc chpl_countDomHelp(dom, counts) {

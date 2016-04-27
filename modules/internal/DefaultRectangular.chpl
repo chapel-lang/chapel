@@ -100,10 +100,6 @@ module DefaultRectangular {
       this.dist = dist;
     }
   
-    proc dsiNewSpsSubDom(parentDomVal) {
-      return new DefaultSparseDom(rank, idxType, dist, parentDomVal);
-    }
-
     proc dsiDisplayRepresentation() {
       writeln("ranges = ", ranges);
     }

@@ -295,11 +295,6 @@ class BlockDom: BaseRectangularDom {
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
-
-  proc dsiNewSpsSubDom(parentDomVal) {
-    //    writeln("In Block.dsiNewSpsSubDom");
-    return new SparseBlockDom(rank=rank, idxType=idxType, dist=dist, parentDom=parentDomVal, whole=whole);
-  }
 }
 
 //
@@ -491,7 +486,7 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
 }
 
 proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
-  return dsiNewRectangularDom(rank, idxType, false);
+  return new SparseBlockDom(rank=rank, idxType=idxType, dist=this, parentDom=dom, whole=dom._value.whole);
 }
 
 //
