@@ -1,3 +1,0 @@
---n=10000      # split-whitespace-perf-10000.perfkeys
---n=100000     # split-whitespace-perf-100000.perfkeys
---n=1000000    # split-whitespace-perf-1000000.perfkeys

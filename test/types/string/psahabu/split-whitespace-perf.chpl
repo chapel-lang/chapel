@@ -1,11 +1,11 @@
 use Time;
 
-config const n = 1;
+config const n = 2000000;
 config const timing = true;
 
 var very_long: string;
 for i in 1..n {
-  very_long += "fish ";
+  very_long += "this is a very long string ";
 }
 
 var i: int;
@@ -18,5 +18,5 @@ t.stop();
 
 if timing then
   writeln("Time: ", t.elapsed());
-if i == n then
+if i == 6 * n then
   writeln("SUCCESS");
