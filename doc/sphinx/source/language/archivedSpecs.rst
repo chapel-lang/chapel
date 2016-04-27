@@ -3,31 +3,18 @@
 Archived Language Specifications
 ================================
 
-This page contains language specifications prior to `Spec 0.981 (Chapel 1.13.0)`_.
-
-
-Latest Spec Version
--------------------
+**Latest Spec Version**
 
 * `Language Specification`_
 
-Spec Version >= 0.981
----------------------
+**Spec Version >= 0.981**
 
 * Visit ``chapel.cray.com/docs/<X.YY>/language/spec.html``, where ``X.YY`` is
   their associated Chapel release version
 
-Spec Version < 0.981
---------------------
+**Spec Version < 0.981**
 
-**Format:**
-
-* Spec *<version>* (Chapel *<release in which specification was made available>*)
-
-.. note::
-
-    Chapel releases that are no longer available for public download are
-    not listed after their associated language specification versions.
+Spec *<version>* (Chapel *<release in which specification was made available>*)
 
 * `Spec 0.98  (Chapel 1.12.0)`_
 * `Spec 0.97  (Chapel 1.11.0)`_
@@ -49,6 +36,11 @@ Spec Version < 0.981
 * `Spec 0.750`_
 * `Spec 0.702`_
 * `Spec 0.4`_
+
+.. note::
+
+    Chapel releases that are no longer available for public download are
+    not listed after their associated language specification versions.
 
 
 
