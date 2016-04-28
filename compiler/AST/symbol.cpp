@@ -1547,7 +1547,6 @@ FnSymbol::copyInnerCore(SymbolMap* map) {
   }
 
   // Copy members that are needed by both copyInner and partialCopy.
-  newFn->partialCopySource  = this;
   newFn->astloc             = this->astloc;
   newFn->retType            = this->retType;
   newFn->thisTag            = this->thisTag;
@@ -1575,6 +1574,7 @@ FnSymbol::copyInnerCore(SymbolMap* map) {
  */
 FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
   FnSymbol* newFn = this->copyInnerCore(map);
+  newFn->partialCopySource  = this;
 
   if (this->_this == NULL) {
     // Case 1: No _this pointer.
@@ -1689,29 +1689,20 @@ void FnSymbol::finalizeCopy(void) {
     if (this->hasFlag(FLAG_EXPANDED_VARARGS)) {
       // Alias the old body and make a new copy of the body from the source.
       BlockStmt* varArgNodes = this->body;
-      this->body             = COPY_INT(this->partialCopySource->body);
+      this->body->replace( COPY_INT(this->partialCopySource->body) );
 
       /*
        * Iterate over the statements that have been added to the function body
        * and add them to the new body.
        */
       for_alist_backward(node, varArgNodes->body) {
-        remove_help(node, false);
-        node->list = NULL;
-        this->body->insertAtHead(node);
+        this->body->insertAtHead(node->remove());
       }
-
-      // Clean up blocks that aren't going to be used any more.
-      gBlockStmts.remove(gBlockStmts.index(varArgNodes));
-      delete varArgNodes;
 
       this->removeFlag(FLAG_EXPANDED_VARARGS);
 
     } else if (this->body->body.length == 0) {
-      gBlockStmts.remove(gBlockStmts.index(this->body));
-      delete this->body;
-
-      this->body = COPY_INT(this->partialCopySource->body);
+      this->body->replace( COPY_INT(this->partialCopySource->body) );
     }
 
     Symbol* replacementThis = map->get(this->partialCopySource->_this);
