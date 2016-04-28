@@ -281,8 +281,24 @@ void cullOverReferences() {
         }
 
         if (lhs && useMap.get(lhs->var) && useMap.get(lhs->var)->n > 0) {
-          // If the LHS was used, set it based on the
+          // If the LHS was used, set it to the address of the
           // new temporary (which is the function return value)
+
+          FnSymbol* moveInFn = toFnSymbol(move->parentSymbol);
+          INT_ASSERT(moveInFn);
+          Symbol* retSymbol = moveInFn->getReturnSymbol();
+          // Check: are we adding a return of a local variable ?
+          for_uses(use, useMap, lhs->var) {
+            if (CallExpr* useCall = toCallExpr(use->parentExpr))
+              if (useCall->isPrimitive(PRIM_MOVE))
+                if (SymExpr* useCallLHS = toSymExpr(useCall->get(1)))
+                  if (useCallLHS->var == retSymbol) {
+                    USR_FATAL_CONT(move, "illegal expression to return by ref");
+                    USR_PRINT(refCall, "called function returns a value");
+                    USR_STOP();
+                  }
+          }
+
           move->insertAfter(new CallExpr(PRIM_MOVE,
                                          lhs->var,
                                          new CallExpr(PRIM_ADDR_OF, tmp)));
