@@ -394,7 +394,17 @@ class SparseBlockArr: BaseArr {
       //      writeln("In general case, and finding that locale is ", dom.dist.targetLocsIdx(i));
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
   }
-  proc dsiAccess(i: rank*idxType) const ref {
+  proc dsiAccess(i: rank*idxType)
+  where !shouldReturnRvalueByConstRef(eltType) {
+    //    local { // TODO: Turn back on once privatization is on
+      if myLocArr != nil && myLocArr.locDom.dsiMember(i) {
+        return myLocArr.dsiAccess(i);
+        //      }
+    }
+    return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
+  }
+  proc dsiAccess(i: rank*idxType) const ref
+  where shouldReturnRvalueByConstRef(eltType) {
     //    local { // TODO: Turn back on once privatization is on
       if myLocArr != nil && myLocArr.locDom.dsiMember(i) {
         return myLocArr.dsiAccess(i);
@@ -405,9 +415,14 @@ class SparseBlockArr: BaseArr {
 
 
 
+
   proc dsiAccess(i: idxType...rank) ref
     return dsiAccess(i);
+  proc dsiAccess(i: idxType...rank)
+  where !shouldReturnRvalueByConstRef(eltType)
+    return dsiAccess(i);
   proc dsiAccess(i: idxType...rank) const ref
+  where shouldReturnRvalueByConstRef(eltType)
     return dsiAccess(i);
 
 
@@ -437,7 +452,12 @@ class LocSparseBlockArr {
   proc dsiAccess(i) ref {
     return myElems[i];
   }
-  proc dsiAccess(i) const ref {
+  proc dsiAccess(i)
+  where !shouldReturnRvalueByConstRef(eltType) {
+    return myElems[i];
+  }
+  proc dsiAccess(i) const ref
+  where shouldReturnRvalueByConstRef(eltType) {
     return myElems[i];
   }
 }
