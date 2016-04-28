@@ -741,6 +741,7 @@ module String {
         var chunkStart : int;
 
         for i in 0..#localThis.len {
+          // emit whole string, unless all whitespace
           if noSplits {
             done = true;
             if !localThis.isSpace() then {
@@ -750,22 +751,26 @@ module String {
           } else {
             var b = localThis.buff[i];
             var bSpace = byte_isWhitespace(b);
+            // first char of a chunk
             if !(inChunk || bSpace) {
-              // zero-based buff to one-based range
-              chunkStart = i + 1;
+              chunkStart = i + 1; // 0-based buff -> 1-based range
               inChunk = true;
             } else if inChunk {
+              // first char out of a chunk
               if bSpace {
                 splitCount += 1;
+                // last split under limit
                 if limitSplits && splitCount > maxsplit {
                   chunk = localThis[chunkStart..];
                   yieldChunk = true;
                   done = true;
+                // no limit
                 } else {
                   chunk = localThis[chunkStart..i];
                   yieldChunk = true;
                   inChunk = false;
                 }
+              // out of chars
               } else if i == iEnd {
                 chunk = localThis[chunkStart..];
                 yieldChunk = true;
