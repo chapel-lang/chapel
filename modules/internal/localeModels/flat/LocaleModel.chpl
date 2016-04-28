@@ -186,8 +186,7 @@ module LocaleModel {
   //
   inline
   proc chpl_getSubloc() {
-    compilerError("must not call chpl_getSubloc() ",
-                  "when locale model lacks sublocales");
+    halt("called chpl_getSubloc() in a locale model that lacks sublocales");
     return c_sublocid_none;
   }
 }

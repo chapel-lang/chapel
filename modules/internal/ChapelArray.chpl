@@ -3188,6 +3188,7 @@ module ChapelArray {
     // constraints specific to a particular domain map array type
     if !a._value.doiCanBulkTransfer() then return false;
     if !b._value.doiCanBulkTransfer() then return false;
+    if !a._value.doiUseBulkTransfer(b) then return false;
 
     return true;
   }
@@ -3201,6 +3202,7 @@ module ChapelArray {
     // constraints specific to a particular domain map array type
     if !a._value.doiCanBulkTransferStride() then return false;
     if !b._value.doiCanBulkTransferStride() then return false;
+    if !a._value.doiUseBulkTransferStride(b) then return false;
 
     return true;
   }

@@ -899,14 +899,14 @@ proc SparseBlockArr.doiBulkTransfer(B) {
           // NOTE: This does not work with --heterogeneous, but heterogeneous
           // compilation does not work right now.  This call should be changed
           // once that is fixed.
-          var dest = myLocArr.myElems._value.data;
-          const src = B._value.locArr[rid].myElems._value.data;
+          var dest = myLocArr.myElems._value.theDataChunk(0);
+          const src = B._value.locArr[rid].myElems._value.theDataChunk(0);
           __primitive("chpl_comm_get",
                       __primitive("array_get", dest,
-                                  myLocArr.myElems._value.getDataIndex(lo)),
+                                  myLocArr.myElems._value.getDataIndex(lo, getChunked=false)),
                       rid,
                       __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
+                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
                       size);
           lo+=size;
         }
@@ -922,14 +922,14 @@ proc SparseBlockArr.doiBulkTransfer(B) {
                                         "; lo=", lo,
                                         "; rlo=", rlo
                                         );
-          var dest = myLocArr.myElems._value.data;
-          const src = B._value.locArr[rid].myElems._value.data;
+          var dest = myLocArr.myElems._value.theDataChunk(0);
+          const src = B._value.locArr[rid].myElems._value.theDataChunk(0);
           __primitive("chpl_comm_get",
                       __primitive("array_get", dest,
-                                  myLocArr.myElems._value.getDataIndex(lo)),
+                                  myLocArr.myElems._value.getDataIndex(lo, getChunked=false)),
                       dom.dist.targetLocales(rid).id,
                       __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo)),
+                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
                       size);
             lo(rank)+=size;
           }
