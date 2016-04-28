@@ -367,20 +367,30 @@ class SparseBlockArr: BaseArr {
   }
 
   proc dsiAccess(i: rank*idxType) ref {
-    //    writeln("In SparseBlockDist's dsiAccess, got i = ", i);
     //    local { // TODO: Turn back on once privatization is on
       if myLocArr != nil && myLocArr.locDom.dsiMember(i) {
-        //        writeln("In local case");
-        //        writeln("myLocArr.locDom = ", myLocArr.locDom);
 	return myLocArr.dsiAccess(i);
         //      }
     }
       //      writeln("In general case, and finding that locale is ", dom.dist.targetLocsIdx(i));
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
   }
+  proc dsiAccess(i: rank*idxType) const ref {
+    //    local { // TODO: Turn back on once privatization is on
+      if myLocArr != nil && myLocArr.locDom.dsiMember(i) {
+	return myLocArr.dsiAccess(i);
+        //      }
+    }
+    return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
+  }
+
+
 
   proc dsiAccess(i: idxType...rank) ref
     return dsiAccess(i);
+  proc dsiAccess(i: idxType...rank) const ref
+    return dsiAccess(i);
+
 
 
   proc dsiGetBaseDom() return dom;
@@ -406,10 +416,11 @@ class LocSparseBlockArr {
   var myElems: [locDom.mySparseBlock] eltType;
 
   proc dsiAccess(i) ref {
-    //    writeln("In dsiAccess(", i, ") on ", here.id, " locDom = ", locDom, " mySparseBlock = ", locDom.mySparseBlock);
     return myElems[i];
   }
-
+  proc dsiAccess(i) const ref {
+    return myElems[i];
+  }
 }
 
 //
