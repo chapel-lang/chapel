@@ -2,7 +2,7 @@ Constructor Syntax and Semantics
 ================================
 
 Status
-  Draft
+  Superseded
 
 Author
   Tom Hildebrandt
