@@ -51,8 +51,37 @@ refNecessary(SymExpr*                      se,
              Map<Symbol*, Vec<SymExpr*>*>& useMap) {
   Vec<SymExpr*>* defs = defMap.get(se->var);
 
-  if (defs && defs->n > 1)
-    return true;
+  if (defs && defs->n > 1) {
+    // If se is a reference that is written to,
+    // we need to keep the ref version.
+
+    // If it is not a reference, it's not clear why
+    // this code is being run...
+    INT_ASSERT(se->getValType() != se->typeInfo());
+
+    // We're only looking for things that set the value.
+    // We don't care about PRIM_MOVEs b/c they only set the reference.
+    // We do care about PRIM_ASSIGN or if the argument is passed
+    // to a function (typically = ) as ref, inout, or out argument.
+    bool valueIsSet = false;
+    for_defs(def, defMap, se->var) {
+      if (def->parentExpr) {
+        if (CallExpr* parentCall = toCallExpr(def->parentExpr)) {
+          if (parentCall->isPrimitive(PRIM_MOVE)) {
+            // Ignore this def
+            // We don't care about a PRIM_MOVE because it's setting
+            // a reference
+          } else {
+            valueIsSet = true;
+          }
+        }
+      }
+    }
+
+    if (valueIsSet) {
+      return true;
+    }
+  }
 
   for_uses(use, useMap, se->var) {
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
