@@ -133,7 +133,7 @@ class SparseBlockDom: BaseSparseDom {
   param stridable: bool = false;  // TODO: remove default value eventually
   const dist: Block(rank, idxType);
   var parentDom;
-  const whole: domain(rank=rank, idxType=idxType, stridable=stridable); 
+  const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
 
@@ -172,7 +172,7 @@ class SparseBlockDom: BaseSparseDom {
   // it down to a smaller test case in the time I spent on it.
   proc dsiAdd(ind: rank*idxType) {
     on dist.dsiIndexToLocale(ind) {
-      locDoms[dist.targetLocsIdx(ind)].dsiAdd(ind);      
+      locDoms[dist.targetLocsIdx(ind)].dsiAdd(ind);
     }
   }
 
@@ -243,9 +243,9 @@ class SparseBlockDom: BaseSparseDom {
     for i in followThis(1).these(tag, followThis) do
       yield i;
   }
-    
+
   proc dsiDims() return whole.dims();
-  
+
   proc dsiMember(ind) {
     on parentDom.dist.idxToLocale(ind) {
       writeln("Need to add support for mapping locale to local domain");
@@ -281,7 +281,7 @@ class LocSparseBlockDom {
   proc initialize() {
     //    writeln("On locale ", here.id, " LocSparseBlockDom = ", this);
   }
-  
+
   proc dsiAdd(ind: rank*idxType) {
     mySparseBlock.add(ind);
   }
@@ -446,7 +446,7 @@ proc SparseBlock.SparseBlock(boundingBox: domain,
                                else dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity = dataParMinGranularity;
-  
+
   if debugSparseBlockDist {
     writeln("Creating new SparseBlock distribution:");
     dsiDisplayRepresentation();
@@ -501,7 +501,7 @@ proc SparseBlock.dsiNewRectangularDom(param rank: int, type idxType,
     compilerError("SparseBlock domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("SparseBlock domain rank does not match distribution's");
-  
+
   var dom = new SparseBlockDom(rank=rank, idxType=idxType, dist=this, stridable=stridable);
   dom.setup();
   if debugSparseBlockDist {
@@ -661,7 +661,7 @@ proc SparseBlock.dsiCreateReindexDist(newSpace, oldSpace) {
     }
   }
   var d = {(...myNewBbox)};
-  var newDist = new SparseBlock(d, targetLocales, 
+  var newDist = new SparseBlock(d, targetLocales,
                           dataParTasksPerLocale, dataParIgnoreRunningTasks,
                           dataParMinGranularity);
   return newDist;
@@ -669,7 +669,7 @@ proc SparseBlock.dsiCreateReindexDist(newSpace, oldSpace) {
 
 /*
 proc LocSparseBlock.LocSparseBlock(param rank: int,
-                      type idxType, 
+                      type idxType,
                       locid, // the locale index from the target domain
                       boundingBox: rank*range(idxType),
                       targetLocBox: rank*range) {
@@ -829,7 +829,7 @@ proc SparseBlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
     compilerError("SparseBlock domain index type does not match distribution's");
   if rank != dist.rank then
     compilerError("SparseBlock domain rank does not match distribution's");
-  
+
   var dom = new SparseBlockDom(rank=rank, idxType=idxType,
                          dist=dist, stridable=stridable);
   dom.dsiSetIndices(ranges);
@@ -886,7 +886,7 @@ proc SparseBlockArr.dsiLocalSlice(ranges) {
 proc _extendTuple(type t, idx: _tuple, args) {
   var tup: args.size*t;
   var j: int = 1;
-  
+
   for param i in 1..args.size {
     if isCollapsedDimension(args(i)) then
       tup(i) = args(i);
@@ -922,7 +922,7 @@ proc SparseBlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, 
     on d.dist.targetLocales(ind) {
       const locDom = d.getLocDom(ind);
       // locSlice is a tuple of ranges and scalars. It will match the basic
-      // shape of the args argument. 
+      // shape of the args argument.
       var locSlice: _matchArgsShape(range(idxType=idxType, stridable=stridable), idxType, args);
       // collapsedDims stores the value any collapsed dimension is down to.
       // For any non-collapsed dimension, that position is ignored.
@@ -1259,7 +1259,7 @@ proc SparseBlockDom.numRemoteElems(rlo,rid){
       bhi=dist.boundingBox.dim(rank).low +
 	intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1),
                    dist.targetLocDom.dim(rank).length) - 1;
-  
+
   return(bhi - rlo + 1);
 }
 

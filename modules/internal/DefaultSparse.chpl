@@ -130,7 +130,7 @@ module DefaultSparse {
     proc dsiDims() {
       return parentDom.dims();
     }
-    
+
     // private
     proc find(ind) {
       //

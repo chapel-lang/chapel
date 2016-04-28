@@ -261,7 +261,6 @@ class Block : BaseDist {
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
   var pid: int = -1; // privatized object id (this should be factored out)
-
 }
 
 //
