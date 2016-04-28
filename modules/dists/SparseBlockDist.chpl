@@ -146,11 +146,11 @@ class SparseBlockDom: BaseSparseDom {
     //    writeln("In setup");
     if locDoms(dist.targetLocDom.low) == nil {
       coforall localeIdx in dist.targetLocDom do {
-	on dist.targetLocales(localeIdx) do {
+        on dist.targetLocales(localeIdx) do {
           //                    writeln("Setting up on ", here.id);
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
-	  locDoms(localeIdx) = new LocSparseBlockDom(rank, idxType, stridable,
-						     dist.getChunk(whole, localeIdx));
+         locDoms(localeIdx) = new LocSparseBlockDom(rank, idxType, stridable,
+                                                     dist.getChunk(whole, localeIdx));
           //                    writeln("Back on ", here.id);
         }
       }
@@ -159,8 +159,8 @@ class SparseBlockDom: BaseSparseDom {
       halt("Don't know how to reallocate yet");
       /*
       coforall localeIdx in dist.targetLocDom do {
-	on dist.targetLocales(localeIdx) do
-	  locDoms(localeIdx).mySparseBlock = dist.getChunk(whole, localeIdx);
+        on dist.targetLocales(localeIdx) do
+          locDoms(localeIdx).mySparseBlock = dist.getChunk(whole, localeIdx);
       }
       */
     }
@@ -187,12 +187,12 @@ class SparseBlockDom: BaseSparseDom {
     if (rank == 1) {
       f.write("{");
       for locdom in locDoms do {
-        //	on locdom do {
-	  if (locdom.dsiNumIndices) {
+        // on locdom do {
+        if (locdom.dsiNumIndices) {
             f.write(" ");
-	    locdom.dsiSerialWrite(f);
+            locdom.dsiSerialWrite(f);
           }
-          //	}
+          //}
       }
       f.write("}");
     } else {
@@ -223,7 +223,7 @@ class SparseBlockDom: BaseSparseDom {
   iter these(param tag: iterKind) where tag == iterKind.leader {
     coforall locDom in locDoms do on locDom {
       for followThis in locDom.mySparseBlock._value.these(tag) do
-	yield followThis;
+        yield followThis;
     }
   }
 
@@ -255,7 +255,7 @@ class SparseBlockDom: BaseSparseDom {
   proc dsiClear() {
     coforall locDom in locDoms do
       on locDom do
-	locDom.dsiClear();
+        locDom.dsiClear();
   }
 
   proc dsiMyDist() return dist;
@@ -330,10 +330,10 @@ class SparseBlockArr: BaseArr {
     var thisid = this.locale.id;
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocales(localeIdx) {
-	const locDom = dom.getLocDom(localeIdx);
-	locArr(localeIdx) = new LocSparseBlockArr(eltType, rank, idxType, stridable, locDom);
-	if thisid == here.id then
-	  myLocArr = locArr(localeIdx);
+        const locDom = dom.getLocDom(localeIdx);
+        locArr(localeIdx) = new LocSparseBlockArr(eltType, rank, idxType, stridable, locDom);
+        if thisid == here.id then
+          myLocArr = locArr(localeIdx);
       }
     }
   }
@@ -369,7 +369,7 @@ class SparseBlockArr: BaseArr {
   proc dsiAccess(i: rank*idxType) ref {
     //    local { // TODO: Turn back on once privatization is on
       if myLocArr != nil && myLocArr.locDom.dsiMember(i) {
-	return myLocArr.dsiAccess(i);
+        return myLocArr.dsiAccess(i);
         //      }
     }
       //      writeln("In general case, and finding that locale is ", dom.dist.targetLocsIdx(i));
@@ -378,7 +378,7 @@ class SparseBlockArr: BaseArr {
   proc dsiAccess(i: rank*idxType) const ref {
     //    local { // TODO: Turn back on once privatization is on
       if myLocArr != nil && myLocArr.locDom.dsiMember(i) {
-	return myLocArr.dsiAccess(i);
+        return myLocArr.dsiAccess(i);
         //      }
     }
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
@@ -1083,12 +1083,12 @@ proc SparseBlockArr.dsiSerialWrite(f) {
   if (rank == 1) {
     f.write("[");
     for locarr in locArr do {
-      //	on locdom do {
+      // on locdom do {
       if (locarr.locDom.dsiNumIndices) {
         f.write(" ");
         locarr.dsiSerialWrite(f);
       }
-      //	}
+      // }
     }
     f.write("]");
   } else {
@@ -1268,7 +1268,7 @@ proc SparseBlockDom.numRemoteElems(rlo,rid){
     bhi=whole.dim(rank).high;
   else
       bhi=dist.boundingBox.dim(rank).low +
-	intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1),
+        intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1),
                    dist.targetLocDom.dim(rank).length) - 1;
 
   return(bhi - rlo + 1);
