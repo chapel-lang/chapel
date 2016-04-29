@@ -1024,7 +1024,11 @@ module ChapelArray {
       _value.dsiRemove(i);
     }
 
-    pragma "no doc"
+    /* Request space for a particular number of values in an
+       domain.
+
+       Currently only applies to associative domains.
+     */
     proc requestCapacity(i) {
 
       if i < 0 {
