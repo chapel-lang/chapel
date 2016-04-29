@@ -819,6 +819,9 @@ module DefaultRectangular {
       var size = blk(1) * dom.dsiDim(1).length;
       data = _ddata_allocate(eltType, size);
       initShiftedData();
+      if rank == 1 then
+        dataAllocRange = dom.dsiDim(1);
+
     }
   
     inline proc getDataIndex(ind: idxType ...1) where rank == 1
