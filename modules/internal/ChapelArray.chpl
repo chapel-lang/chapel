@@ -273,6 +273,12 @@ module ChapelArray {
       return new _distribution(value, value);
   }
 
+  // Run-time type support
+  //
+  // NOTE: the bodies of functions marked with runtime type init fn such as
+  // chpl__buildDomainRuntimeType and chpl__buildArrayRuntimeType are replaced
+  // by the compiler to just create a record storing the arguments. The body
+  // is moved by the compiler to convertRuntimeTypeToValue.
 
   //
   // Support for domain types
@@ -385,6 +391,9 @@ module ChapelArray {
 
     //Size the domain appropriately for the number of keys
     //This prevents expensive resizing as keys are added.
+    // Note that k/2 is the number of keys, since the tuple
+    // passed to this function has 2 elements (key and value)
+    // for each array element.
     D.requestCapacity(k/2);
     var A : [D] valType;
 
