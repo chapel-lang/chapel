@@ -1,0 +1,4 @@
+constAndParamInHeader.chpl:4: In initializer 'Foo':
+constAndParamInHeader.chpl:4: error: invalid access of class member in initializer header
+constAndParamInHeader.chpl:12: In initializer 'Bar':
+constAndParamInHeader.chpl:12: error: invalid access of class member in initializer header
