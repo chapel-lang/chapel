@@ -935,16 +935,27 @@ proc BlockCyclicArr.dsiReindex(dom) {
 proc BlockCyclicArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }
+proc BlockCyclicDom.dsiTargetLocales() {
+  return dist.targetLocales;
+}
+proc BlockCyclic.dsiTargetLocales() {
+  return targetLocales;
+}
+
 
 proc BlockCyclicArr.dsiHasSingleLocalSubdomain() param return false;
+proc BlockCyclicDom.dsiHasSingleLocalSubdomain() param return false;
 
 // essentially enumerateBlocks()
 // basically add blocksize to the start indices
-iter BlockCyclicArr.dsiLocalSubdomains() {
-  for i in myLocArr.indexDom.myStarts {
+private
+iter do_dsiLocalSubdomains(indexDom) {
+  param rank = indexDom.rank;
+  type idxType = indexDom.idxType;
+  for i in indexDom.myStarts {
     var temp : rank*range(idxType);
-    const blockSizes = myLocArr.indexDom.globDom.dist.blocksize;
-    const globDims = myLocArr.indexDom.globDom.whole.dims();
+    const blockSizes = indexDom.globDom.dist.blocksize;
+    const globDims = indexDom.globDom.whole.dims();
     for param j in 1..rank {
       var lo: idxType;
       if rank == 1 then lo = i;
@@ -954,6 +965,22 @@ iter BlockCyclicArr.dsiLocalSubdomains() {
     yield {(...temp)};
   }
 }
+iter BlockCyclicArr.dsiLocalSubdomains() {
+  for i in do_dsiLocalSubdomains(myLocArr.indexDom) do
+    yield i;
+}
+iter BlockCyclicDom.dsiLocalSubdomains() {
+  // TODO -- could be replaced by a privatized myLocDom in BlockCyclicDom
+  // as it is with BlockCyclicArr
+  var myLocDom:LocBlockCyclicDom(rank, idxType, stridable) = nil;
+  for (loc, locDom) in zip(dist.targetLocales, locDoms) {
+    if loc == here then
+      myLocDom = locDom;
+  }
+  for i in do_dsiLocalSubdomains(myLocDom) do
+    yield i;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Array Class

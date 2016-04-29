@@ -1546,14 +1546,33 @@ proc BlockArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }
 
+proc BlockDom.dsiTargetLocales() {
+  return dist.targetLocales;
+}
+
+proc Block.dsiTargetLocales() {
+  return targetLocales;
+}
+
 // Block subdomains are continuous
 
 proc BlockArr.dsiHasSingleLocalSubdomain() param return true;
+proc BlockDom.dsiHasSingleLocalSubdomain() param return true;
 
 // returns the current locale's subdomain
 
 proc BlockArr.dsiLocalSubdomain() {
   return myLocArr.locDom.myBlock;
+}
+proc BlockDom.dsiLocalSubdomain() {
+  // TODO -- could be replaced by a privatized myLocDom in BlockDom
+  // as it is with BlockArr
+  var myLocDom:LocBlockDom(rank, idxType, stridable) = nil;
+  for (loc, locDom) in zip(dist.targetLocales, locDoms) {
+    if loc == here then
+      myLocDom = locDom;
+  }
+  return myLocDom.myBlock;
 }
 
 iter ConsecutiveChunks(d1,d2,lid,lo) {
