@@ -6,7 +6,7 @@ TESTS = test_mpi.x
 
 all : ${TESTS}
 
-test_%.x : test_%.chpl MPI.chpl
+test_%.x : test_%.chpl 
 	${CHPL} ${CHPL_FLAGS} -o $@ $<
 
 clean :
