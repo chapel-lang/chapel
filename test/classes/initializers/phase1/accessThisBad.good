@@ -1,0 +1,1 @@
+accessThisBad.chpl:5: error: attempted utilization of "this" too early in initializer

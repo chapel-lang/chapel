@@ -1,0 +1,1 @@
+multipleInits.chpl:10: error: multiple initializations of a field detected
