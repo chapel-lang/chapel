@@ -9,6 +9,43 @@ The latter is to squash a number of warnings when building Chapel.
 Run on at least 4 ranks with something like :
   mpirun -np 4 ./test_mpi.x
 
+Notes on constructing the MPI module
+====================================
+
+1. Get the MPI 1.1 standard from here :
+   http://www.mpi-forum.org/docs/mpi-1.1/mpi-11-html/mpi-report.html
+
+   In particular, we consider the following pages from the Language Bindings Section
+   * Defined Constants for C and Fortran
+   * C bindings for Point-to-Point Communication
+   * C Bindings for Collective Communication
+   * C Bindings for Groups, Contexts, and Communicators
+   * C Bindings for Process Topologies
+   * C bindings for Environmental Inquiry
+
+2. Build, by hand, the Chapel extern interfaces for the constants and types. We started 
+   with the obvious ones, and made everything else blank, and then added more explicit 
+   cases as needed.
+
+3. Construct dummy header files by extracting function prototypes from the standard.
+   Remove all functions that involve passing handlers, since function pointer support 
+   is not yet in Chapel.
+
+4. Build a simple header that "typedef"'s the MPI types. This is needed by c2chapel.py to 
+   actually parse this file. These can all be aliases to ints, since the actual type is never
+   needed.
+
+5. Run c2chapel on the header types .
+
+6. This produces a first pass at the Chapel module. As I tested some of the routines, there were 
+   a few cases where I changed, by hand. Since these are not in the history here, I note the ones I spotted 
+     -- index seemed to cause a conflict as a variable name, make these iindex.
+     -- all MPI routines with a parameter that started with array_of_ (array_of_indices, array_of_requests, etc), 
+        had their Chapel versions explicitly use arrays.
+
+7. Added in some top-level modules, including a autoinitialization step.
+
+
 Motivating an MPI module
 ========================
 
