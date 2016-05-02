@@ -239,7 +239,7 @@ static int do_pthread_create(pthread_t* thread,
                                        CHPL_RT_MD_THREAD_STACK_DESC, 0, 0);
 
   tslp->stack = stack;
-  memcpy(&(tslp->owner_pthread), thread, sizeof(pthread_t));
+  tslp->owner_pthread = *thread;
   tslp->prec = NULL;
   
   pthread_mutex_lock(&thread_stack_list_lock);
@@ -493,6 +493,10 @@ void chpl_thread_exit(void) {
             thread_stack_list_head = tslp->next;
           else
             tslp->prec->next = tslp->next;
+          
+          if(tslp->next != NULL)
+            tslp->next->prec = tslp->prec;
+          
           chpl_mem_free(tslp, 0, 0);
           break;
       }
