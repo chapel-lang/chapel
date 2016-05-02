@@ -213,7 +213,6 @@ module CPtr {
     return c_pointer_return(x);
   }
 
-
   /*
     Allocate memory that is filled with zeros. This memory should eventually be
     freed with c_free.
@@ -245,12 +244,27 @@ module CPtr {
     return ret;
   }
 
-
   /* Free memory that was allocated with :proc:`c_calloc` or :proc:`c_malloc`.
 
     :arg data: the c_ptr to memory that was allocated
     */
   inline proc c_free(data: c_ptr) {
     __primitive("array_free", data);
+  }
+
+
+  /*
+    Copies n (potentially overlapping) bytes from memory area src to memory
+    area dest.
+
+    This is a simple wrapper over the C memmove() function.
+
+    :arg dest: the destination memory area to copy to
+    :arg src: the source memory area to copy from
+    :arg n: the number of bytes from src to copy to dest
+   */
+  inline proc c_memmove(dest: c_ptr, const src: c_ptr, n: integral) {
+    extern proc memmove(dest: c_void_ptr, const src: c_void_ptr, n: size_t);
+    memmove(dest, src, n.safeCast(size_t));
   }
 }

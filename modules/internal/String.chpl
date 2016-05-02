@@ -98,7 +98,6 @@ module String {
       return dest;
   }
 
-  private extern proc memmove(destination: c_ptr, const source: c_ptr, num: size_t);
   private extern proc memcpy(destination: c_ptr, const source: c_ptr, num: size_t);
   private extern proc memcmp(s1: c_ptr, s2: c_ptr, n: size_t) : c_int;
 
@@ -229,7 +228,7 @@ module String {
             // We just allocated a buffer, make sure to free it later
             this.owned = true;
           }
-          memmove(this.buff, buf, s_len.safeCast(size_t));
+          c_memmove(this.buff, buf, s_len);
         } else {
           if this.owned && !this.isEmptyString() then
             chpl_here_free(this.buff);
