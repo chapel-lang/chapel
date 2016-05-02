@@ -12,12 +12,6 @@ ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_HWLOC_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
 endif
 
-ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),intel)
-CFLAGS += -mmic
-endif
-endif
-
 #
 # Something with ffsl is broken with cce >= 8.4.0 (and older
 # versions with -hgnu thrown.)
