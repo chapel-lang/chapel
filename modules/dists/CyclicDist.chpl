@@ -1293,11 +1293,28 @@ proc CyclicArr.doiBulkTransferFromDR(Barg)
 proc CyclicArr.dsiTargetLocales() {
   return dom.dist.targetLocs;
 }
+proc CyclicDom.dsiTargetLocales() {
+  return dist.targetLocs;
+}
+proc Cyclic.dsiTargetLocales() {
+  return targetLocs;
+}
 
 // Cyclic subdomains are represented as a single domain
 
 proc CyclicArr.dsiHasSingleLocalSubdomain() param return true;
+proc CyclicDom.dsiHasSingleLocalSubdomain() param return true;
 
 proc CyclicArr.dsiLocalSubdomain() {
   return myLocArr.locDom.myBlock;
+}
+proc CyclicDom.dsiLocalSubdomain() {
+  // TODO -- could be replaced by a privatized myLocDom in CyclicDom
+  // as it is with CyclicArr
+  var myLocDom:LocCyclicDom(rank, idxType, stridable) = nil;
+  for (loc, locDom) in zip(dist.targetLocs, locDoms) {
+    if loc == here then
+      myLocDom = locDom;
+  }
+  return myLocDom.myBlock;
 }

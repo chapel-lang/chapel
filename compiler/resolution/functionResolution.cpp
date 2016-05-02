@@ -1641,6 +1641,7 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
   workingFn->addFlag(FLAG_EXPANDED_VARARGS);
 
   // Handle specified number of variable arguments.
+  // sym->var is not a VarSymbol e.g. in: proc f(param n, v...n)
   if (VarSymbol* nVar = toVarSymbol(sym->var)) {
     if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate) {
       VarSymbol* var       = new VarSymbol(formal->name);
@@ -1785,6 +1786,9 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
       }
 
       formal->defPoint->remove();
+    } else {
+      // Just documenting the current status.
+      INT_FATAL(formal, "unexpected non-VarSymbol");
     }
   }
 }
