@@ -1,1 +1,1 @@
---use order=100 --use iterations=5 --use correctness=false
+--set order=100 --set iterations=5 --set correctness=false
