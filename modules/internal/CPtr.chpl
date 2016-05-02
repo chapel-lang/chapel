@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
+/* A Chapel version of a C pointer. */
 module CPtr {
-  /* A Chapel version of a C NULL pointer.
-  */
+  /* A Chapel version of a C NULL pointer. */
   extern const c_nil:c_void_ptr;
 
   // To generate legal C prototypes, we have to manually instantiate this
@@ -85,6 +85,7 @@ module CPtr {
   inline proc _cast(type t, x) where t:c_void_ptr && x.type:c_ptr {
     return __primitive("cast", t, x);
   }
+  pragma "no doc"
   inline proc _cast(type t, x) where t:c_ptr && x.type:c_void_ptr {
     return __primitive("cast", t, x);
   }
@@ -245,7 +246,8 @@ module CPtr {
   }
 
 
-  /* Free memory that was allocated with :proc:`c_free`.
+  /* Free memory that was allocated with :proc:`c_calloc` or :proc:`c_malloc`.
+
     :arg data: the c_ptr to memory that was allocated
     */
   inline proc c_free(data: c_ptr) {
