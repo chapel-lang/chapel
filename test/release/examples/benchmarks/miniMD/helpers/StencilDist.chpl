@@ -1000,16 +1000,34 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
 
+// ref version
 inline proc StencilArr.dsiAccess(i: rank*idxType) ref {
   return do_dsiAccess(true, i);
 }
-inline proc StencilArr.dsiAccess(i: rank*idxType) {
+// value version for POD types
+inline proc StencilArr.dsiAccess(i: rank*idxType)
+where !shouldReturnRvalueByConstRef(eltType) {
+  return do_dsiAccess(false, i);
+}
+// const ref version for types with copy-ctor
+inline proc StencilArr.dsiAccess(i: rank*idxType) const ref
+where shouldReturnRvalueByConstRef(eltType) {
   return do_dsiAccess(false, i);
 }
 
 
+// ref version
 proc StencilArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
+// value version for POD types
+proc StencilArr.dsiAccess(i: idxType...rank)
+where !shouldReturnRvalueByConstRef(eltType)
+  return dsiAccess(i);
+// const ref version for types with copy-ctor
+proc StencilArr.dsiAccess(i: idxType...rank) const ref
+where shouldReturnRvalueByConstRef(eltType)
+  return dsiAccess(i);
+
 
 iter StencilArr.these() ref {
   for i in dom do
