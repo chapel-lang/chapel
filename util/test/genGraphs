@@ -247,13 +247,14 @@ def fill_sparse_csv(csvFile):
         if len(dates) > 1:
             start_date = dates[0]
             end_date = dates[-1]
+
             # for all the missing days append an empty entry to the end of the
             # data (we'll sort later to get things in the right order)
-            for date in date_range(start_date, end_date):
-               if date not in dates:
-                   # emptydate = [[date], [''], [''], ...]
-                   emptydate = [[date]] + [['']]*(len(keys)-1)
-                   data.append(emptydate)
+            missing_dates = set(date_range(start_date, end_date)) - set(dates)
+            for date in missing_dates:
+               # emptydate = [[date], [''], [''], ...]
+               emptydate = [[date]] + [['']]*(len(keys)-1)
+               data.append(emptydate)
 
         # sort our data, we don't need to convert our date strings to datetimes
         # because for ISO 8601 dates lexical order is also chronological order
