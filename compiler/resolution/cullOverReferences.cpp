@@ -294,8 +294,7 @@ void cullOverReferences() {
                 if (SymExpr* useCallLHS = toSymExpr(useCall->get(1)))
                   if (useCallLHS->var == retSymbol) {
                     USR_FATAL_CONT(move, "illegal expression to return by ref");
-                    USR_PRINT(refCall, "called function returns a value");
-                    USR_STOP();
+                    USR_PRINT(refCall, "called function returns a value not a reference");
                   }
           }
 
