@@ -1,3 +1,8 @@
+/**
+  * This test demonstrates the performance difference between accessing arrays
+  * vs. accessing tuples.
+  *
+ **/
 use Time;
 
 config param subOrder: int = 5;

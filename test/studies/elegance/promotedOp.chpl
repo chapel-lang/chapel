@@ -1,3 +1,8 @@
+/**
+  * This test demonstrates the performance difference between the promoted
+  * operation ``Array += 1.0``, and the manual loop that the promoted operation
+  * should be reproducing: ``for (i,j) in Dom do Array[i, j] += 1.0``.
+ **/
 use Time;
 
 config const order: int = 100,
