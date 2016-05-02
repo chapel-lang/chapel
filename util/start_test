@@ -1294,10 +1294,10 @@ def parser_setup():
             help="set the number of locales to run on")
     # stdin redirect
     parser.add_argument("-nostdinredirect", "--nostdinredirect",
-            action="store", dest="no_stdin_redirect",
+            action="store_true", dest="no_stdin_redirect",
             help="run the tests without redirecting stdin from /dev/null")
-    parser.add_argument("-stdinredirect", "--stdinredirect", action="store",
-            dest="stdin_redirect",
+    parser.add_argument("-stdinredirect", "--stdinredirect",
+            action="store_true", dest="stdin_redirect",
             help="force stdin redirection from /dev/null")
     # launcher timeout
     parser.add_argument("-launchertimeout", "--launchertimeout", 
