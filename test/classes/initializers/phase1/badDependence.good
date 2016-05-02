@@ -1,0 +1,4 @@
+badDependence.chpl:8: error: implicit initialization of field "f1" relies on later field
+badDependence.chpl:11: error: explicit initialization of field "f2" relies on later field
+badDependence.chpl:12: error: explicit initialization of field "f3" relies on later field
+badDependence.chpl:12: error: implicit initialization of field "f4" relies on later field
