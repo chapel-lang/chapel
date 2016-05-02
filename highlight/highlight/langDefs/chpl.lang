@@ -27,6 +27,9 @@ Keywords={
     List= { "bool", "complex", "imag", "int", "opaque", "range", "real",
             "string", "uint"
           }
+  },
+  { Id=3,
+    Regex=[[(\w+)\s*\(]]
   }
 }
 
