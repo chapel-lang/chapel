@@ -45,6 +45,9 @@ if HWLOC_HAVE_WINDOWS
 bin_PROGRAMS += lstopo lstopo-win
 lstopo_SOURCES += lstopo-windows.c
 lstopo_CPPFLAGS += -DLSTOPO_HAVE_GRAPHICS
+if HWLOC_HAVE_USER32
+lstopo_LDADD += -luser32
+endif
 lstopo_win_SOURCES = $(lstopo_SOURCES)
 lstopo_win_CPPFLAGS = $(lstopo_CPPFLAGS)
 lstopo_win_CFLAGS = $(lstopo_CFLAGS) -mwindows

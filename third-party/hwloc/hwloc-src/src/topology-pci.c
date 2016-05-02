@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2011, 2013 Université Bordeaux
  * Copyright © 2014 Cisco Systems, Inc.  All rights reserved.
  * Copyright © 2015      Research Organization for Information Science
@@ -22,7 +22,6 @@
 #include <string.h>
 #include <assert.h>
 #include <stdarg.h>
-#include <setjmp.h>
 #ifdef HWLOC_LINUX_SYS
 #include <dirent.h>
 #endif

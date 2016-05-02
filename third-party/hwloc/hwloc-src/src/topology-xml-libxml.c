@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2014 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -13,6 +13,7 @@
 /* private headers allowed because this plugin is built within hwloc */
 #include <private/xml.h>
 #include <private/debug.h>
+#include <private/misc.h>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>

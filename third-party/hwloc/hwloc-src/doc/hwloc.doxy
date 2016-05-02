@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2013 Université Bordeaux
  * Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -624,7 +624,8 @@ Make sure to have had a look at those too!
   object.  This may be completely arbitrary, non-unique, non-contiguous, not
   representative of logical proximity, and may depend on the BIOS
   configuration. That is why hwloc almost never uses them, only in the default
-  lstopo output (<tt>P\#x</tt>) and cpuset masks.</dd>
+  lstopo output (<tt>P\#x</tt>) and cpuset masks.
+  See also \ref faq_indexes.</dd>
 
 <dt>Logical index</dt>
   <dd>Index to uniquely identify objects of the same type and depth,
@@ -641,7 +642,7 @@ Make sure to have had a look at those too!
   processor" (which in hwloc we rather call "processing unit" to avoid the
   confusion) has both a physical index (as chosen arbitrarily by BIOS/OS) and a logical
   index (as computed according to logical proximity by hwloc).
-  </dd>
+  See also \ref faq_indexes.</dd>
 
 <dt>Processing unit</dt>
   <dd>The smallest processing element that can be represented by a hwloc
@@ -682,6 +683,7 @@ command line utilities. Each of them is fully documented in its own
 manual page; the following is a summary of the available command line
 tools.
 
+
 \section cli_lstopo lstopo and lstopo-no-graphics
 
 lstopo (also known as hwloc-ls) displays the
@@ -704,6 +706,7 @@ filesystems and display topological maps representing those systems
 (e.g., use lstopo to output an XML file on one system, and then use
 lstopo to read in that XML file and display it on a different system).
 
+
 \section cli_hwloc_bind hwloc-bind
 
 hwloc-bind binds processes to specific hardware objects through a
@@ -711,39 +714,59 @@ flexible syntax.  A simple example is binding an executable to
 specific cores (or packages or bitmaps or ...).  The hwloc-bind(1) man
 page provides much more detail on what is possible.
 
-hwloc-bind can also be used to retrieve the current process' binding.
+hwloc-bind can also be used to retrieve the current process' binding,
+or retrieve the last CPU(s) where a process ran,
+or operate on memory binding.
+
+Just like hwloc-calc, the input locations given to hwloc-bind may be
+either objects or cpusets (bitmaps as reported by hwloc-calc or hwloc-distrib).
+
 
 \section cli_hwloc_calc hwloc-calc
 
-hwloc-calc is generally used to create bitmap strings to pass to
-hwloc-bind.  Although hwloc-bind accepts many forms of object
-specification (i.e., bitmap strings are one of many forms that
-hwloc-bind understands), they can be useful, compact representations
-in shell scripts, for example.
+hwloc-calc is hwloc's Swiss Army Knife command-line tool for converting things.
+The input may be either objects or cpusets (bitmaps as reported by another hwloc-calc instance or by hwloc-distrib),
+that may be combined by addition, intersection or subtraction.
+The output kinds include:
+<ul>
+<li>a cpuset bitmap: This compact opaque representation of objects is useful for shell scripts etc.
+It may passed to hwloc command-line tools such as hwloc-calc or hwloc-bind,
+or to hwloc command-line options such as <tt>lstopo \--restrict</tt>.</li>
+<li>the amount of the equivalent hwloc objects from a specific type, or the list of their indexes.
+This is useful for iterating over all similar objects (for instance all cores) within a given
+part of a platform.</li>
+<li>a hierarchical description of objects,
+for instance a thread index within a core within a package.
+This gives a better view of the actual location of an object.</li>
+</ul>
 
-hwloc-calc generates bitmap strings from given hardware objects with
-the ability to aggregate them, intersect them, and more.  hwloc-calc
-generally uses the same syntax than hwloc-bind, but multiple instances
-may be composed to generate complex combinations.  
+Moreover, input and/or output may be use either physical/OS object
+indexes or as hwloc's logical object indexes.
+It eases cooperation with external tools such as taskset or numactl
+by exporting hwloc specifications into list of processor or NUMA node
+physical indexes.
+See also \ref faq_indexes.
 
-Note that hwloc-calc can also generate lists of logical processors or
-NUMA nodes that are convenient to pass to some external tools such as
-taskset or numactl.
 
 \section cli_hwloc_info hwloc-info
 
-hwloc-info dumps information about the given objects.
+hwloc-info dumps information about the given objects, as well as all its specific attributes.
 It is intended to be used with tools such as grep for filtering
 certain attribute lines.
-When no object is specified, hwloc-info prints a summary of the topology.
+When no object is specified, or when <tt>\--topology</tt> is passed,
+hwloc-info prints a summary of the topology.
+When <tt>\--support</tt> is passed, hwloc-info lists the supported
+features for the topology.
+
 
 \section cli_hwloc_distrib hwloc-distrib
 
-hwloc-distrib generates a set of bitmap strings that are uniformly
+hwloc-distrib generates a set of cpuset bitmaps that are uniformly
 distributed across the machine for the given number of processes.
 These strings may be used with hwloc-bind to run processes to maximize
 their memory bandwidth by properly distributing them across the
 machine.
+
 
 \section cli_hwloc_ps hwloc-ps
 
@@ -752,23 +775,6 @@ currently running on the local machine.  By default, hwloc-ps only
 lists processes that are bound; unbound process (and Linux kernel
 threads) are not displayed.
 
-\section cli_hwloc_gather hwloc-gather-topology
-
-hwloc-gather-topology is a Linux-specific tool that saves the
-relevant topology files of the current machine into a tarball
-(and the corresponding lstopo output). These files may be used
-later (possibly offline) for simulating or debugging a machine
-without actually running on it.
-
-\section cli_hwloc_dump_hwdata hwloc-dump-hwdata
-
-hwloc-dump-hwdata is a Linux and x86-specific tool that dumps
-(during boot, privileged) some topology and locality information
-from raw hardware files (SMBIOS and ACPI tables) to human-readable
-and world-accessible files that the hwloc library will later reuse.
-
-Currently only used on Intel Knights Landing Xeon Phi platforms.
-See \ref faq_knl_dump.
 
 \section cli_hwloc_distances hwloc-distances
 
@@ -779,6 +785,7 @@ prints matrices that cover the entire topology while
 hwloc-distances also displays matrices that ignore part
 of the topology.
 
+
 \section cli_hwloc_annotate hwloc-annotate
 
 hwloc-annotate may add object attributes such as string information
@@ -786,14 +793,14 @@ hwloc-annotate may add object attributes such as string information
 It reads an input topology from a XML file and outputs
 the annotated topology as another XML file.
 
-\section cli_hwloc_diffpatch hwloc-diff and hwloc-patch
+
+\section cli_hwloc_diffpatchcompress hwloc-diff, hwloc-patch and hwloc-compress-dir
 
 hwloc-diff computes the difference between two topologies
 and outputs it to another XML file.
+
 hwloc-patch reads such a difference file and applies to
 another topology.
-
-\section cli_hwloc_compressdir hwloc-compress-dir
 
 hwloc-compress-dir compresses an entire directory of XML
 files by using hwloc-diff to save the differences between
@@ -813,6 +820,30 @@ hwloc-assembler-remote is a frontend to hwloc-assembler.
 It takes care of contacting the given list of remote hosts
 (through ssh) and retrieving their topologies as XML before
 assembling them with hwloc-assembler.
+
+
+\section cli_hwloc_dump_hwdata hwloc-dump-hwdata
+
+hwloc-dump-hwdata is a Linux and x86-specific tool that dumps
+(during boot, privileged) some topology and locality information
+from raw hardware files (SMBIOS and ACPI tables) to human-readable
+and world-accessible files that the hwloc library will later reuse.
+
+Currently only used on Intel Knights Landing Xeon Phi platforms.
+See \ref faq_knl_dump.
+
+See <tt>HWLOC_DUMPED_HWDATA_DIR</tt> in \ref envvar for details
+about the location of dumped files.
+
+
+\section cli_hwloc_gather hwloc-gather-topology
+
+hwloc-gather-topology is a Linux-specific tool that saves the
+relevant topology files of the current machine into a tarball
+(and the corresponding lstopo output).
+
+These files may be used later (possibly offline) for simulating
+or debugging a machine without actually running on it.
 
 
 
@@ -961,9 +992,21 @@ following environment variables.
   and which components are successfully loaded.
   </dd>
 
+<dt>HWLOC_PLUGINS_BLACKLIST=filename1,filename2,...</dt>
+  <dd>prevents plugins from being loaded if their filename
+  (without path) is listed.
+  Plugin filenames may be found in verbose messages outputted
+  when HWLOC_PLUGINS_VERBOSE=1.
+  </dd>
+
 <dt>HWLOC_DUMPED_HWDATA_DIR=/path/to/dumped/files/</dt>
   <dd>loads files dumped by <tt>hwloc-dump-hwdata</tt> (on Linux)
-  from the given directory instead of <tt>/var/run/hwloc/</tt>.
+  from the given directory.
+  The default dump/load directory is configured during build based
+  on \--runstatedir, \--localstatedir, and \--prefix options.
+  It usually points to <tt>/var/run/hwloc/</tt> in Linux distribution
+  packages, but it may also point to <tt>$prefix/var/run/hwloc/</tt>
+  when manually installing and only specifying \--prefix.
   </dd>
 
 <dt>HWLOC_COMPONENTS=list,of,components</dt>
@@ -1030,6 +1073,9 @@ following environment variables.
  HWLOC_NO_LIBXML_EXPORT
  HWLOC_NO_LIBXML_IMPORT
   forces the use of the nolibxml XML backend instead of libxml2 if available
+ HWLOC_XML_USERDATA_NOT_DECODED
+  do not decode base64 userdata on import,
+  and reexport it the same (used by tools for leaving userdata untouched)
 -->
 
 
@@ -1196,9 +1242,9 @@ components when I/O discovery is enabled and supported.
  <li><em>eth0</em>, <em>wlan0</em>, <em>ib0</em> (Linux component)</li>
  </ul>
 </li>
-<li>OpenFabrics HCAs (::HWLOC_OBJ_OSDEV_OPENFABRICS)
+<li>OpenFabrics (InfiniBand, Omni-Path, usNIC, etc) HCAs (::HWLOC_OBJ_OSDEV_OPENFABRICS)
  <ul>
- <li><em>mlx4_0</em>, <em>qib0</em> (Linux component)</li>
+ <li><em>mlx5_0</em>, <em>hfi1_0</em>, <em>qib0</em>, <em>usnic_0</em> (Linux component)</li>
  </ul>
 </li>
 <li>GPUs (::HWLOC_OBJ_OSDEV_GPU)
@@ -2272,7 +2318,8 @@ names to specify the exact list of components to build as plugins.
 Plugins are built as independent dynamic libraries that are installed
 in <tt>$libdir/hwloc</tt>.
 All plugins found in this directory are loaded during
-<tt>topology_init()</tt>.
+<tt>topology_init()</tt>
+(unless blacklisted in <tt>HWLOC_PLUGINS_BLACKLIST</tt>, see \ref envvar).
 A specific list of directories (colon-separated) to scan may be
 specified in the <tt>HWLOC_PLUGINS_PATH</tt> environment variable.
 
@@ -2622,7 +2669,52 @@ than any system-provided copy of hwloc.
 
 
 
+
+
 \page faq Frequently Asked Questions
+
+\section faq_indexes Should I use logical or physical/OS indexes? and how?
+
+One of the original reasons why hwloc was created is that <b>physical/OS indexes</b>
+(<tt>obj->os_index</tt>) are often crazy and unpredictable:
+logical processors numbers are usually
+non-contiguous (processors 0 and 1 are not physically close), they vary from
+one machine to another, and may even change after a BIOS or system update.
+This numbers make task placement hardly portable.
+Moreover some objects have no physical/OS numbers (caches), and some objects
+have non-unique numbers (core numbers are only unique within a socket).
+Physical/OS indexes are only guaranteed to exist and be unique for PU
+and NUMA nodes.
+
+hwloc therefore introduces <b>logical indexes</b> (<tt>obj->logical_index</tt>)
+which are portable, contiguous and logically ordered
+(based on the resource organization in the locality tree).
+In general, one should only use logical indexes and just let hwloc do the
+internal conversion when really needed (when talking to the OS and hardware).
+
+hwloc developers recommends that users do not use physical/OS indexes
+unless they really know what they are doing.
+The main reason for still using physical/OS indexes is when interacting with
+non-hwloc tools such as numactl or taskset, or when reading hardware information
+from raw sources such as /proc/cpuinfo.
+
+lstopo options <tt>-l</tt> and <tt>-p</tt> may be used to switch between
+logical indexes (prefixed with <tt>L#</tt>) and physical/OS indexes (<tt>P#</tt>).
+Converting one into the other may also be achieved with hwloc-calc which may
+manipulate either logical or physical indexes as input or output.
+See also \ref cli_hwloc_calc.
+
+\verbatim
+# Convert PU with physical number 3 into logical number
+$ hwloc-calc -I pu --physical-input --logical-output pu:3
+5
+
+# Convert a set of NUMA nodes from logical to physical
+# (beware that the output order may not match the input order)
+$ hwloc-calc -I numa --logical-input --physical-output numa:2-3 numa:7
+0,2,5
+\endverbatim
+
 
 \section faq_xml I do not want hwloc to rediscover my enormous machine topology every time I rerun a process
 
@@ -2777,6 +2869,8 @@ The utility <tt>hwloc-dump-hwdata</tt> is also involved in gathering
 privileged information at boot time and making it available to
 non-privileged users. However it only applies to Intel Knights Landing
 Xeon Phi for now (see \ref faq_knl_dump).
+See also <tt>HWLOC_DUMPED_HWDATA_DIR</tt> in \ref envvar for details
+about the location of dumped files.
 
 
 \section faq_onedim hwloc only has a one-dimensional view of the architecture, it ignores distances
@@ -3148,6 +3242,9 @@ changed between reboots.
 hwloc-dump-hwdata requires <tt>dmi-sysfs</tt> kernel module loaded.
 
 The utility is currently unneeded on non-KNL platforms.
+
+See <tt>HWLOC_DUMPED_HWDATA_DIR</tt> in \ref envvar for details
+about the location of dumped files.
 
 
 \section faq_phi How do I build for Intel Xeon Phi coprocessor?
