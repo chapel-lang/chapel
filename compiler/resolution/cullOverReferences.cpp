@@ -33,10 +33,10 @@ refNecessary(SymExpr*                      se,
 //
 // Should we switch to the "value" function?
 //
-// Generally we continue to so do for non-lvalue references when a value
-// is acceptable.  However functions that return strings prefer to use
-// the by-ref version so long as there is no specialization on
-// the setter param
+// Here the "value" function includes blank return intent
+// and also const ref return intent.
+//
+// Returning 'false' means to use the 'ref' return intent version.
 static bool
 shouldUseByValueFunction(FnSymbol*                     fn,
                          SymExpr*                      se,
