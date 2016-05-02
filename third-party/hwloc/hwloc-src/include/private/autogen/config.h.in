@@ -91,9 +91,25 @@
    0 if you don't. */
 #undef HAVE_DECL_PTHREAD_SETAFFINITY_NP
 
+/* Define to 1 if you have the declaration of `RUNNING_ON_VALGRIND', and to 0
+   if you don't. */
+#undef HAVE_DECL_RUNNING_ON_VALGRIND
+
+/* Define to 1 if you have the declaration of `snprintf', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SNPRINTF
+
+/* Define to 1 if you have the declaration of `strcasecmp', and to 0 if you
+   don't. */
+#undef HAVE_DECL_STRCASECMP
+
 /* Define to 1 if you have the declaration of `strtoull', and to 0 if you
    don't. */
 #undef HAVE_DECL_STRTOULL
+
+/* Define to 1 if you have the declaration of `_putenv', and to 0 if you
+   don't. */
+#undef HAVE_DECL__PUTENV
 
 /* Define to 1 if you have the declaration of `_SC_LARGE_PAGESIZE', and to 0
    if you don't. */
@@ -122,6 +138,10 @@
 /* Define to 1 if you have the declaration of `_SC_PAGE_SIZE', and to 0 if you
    don't. */
 #undef HAVE_DECL__SC_PAGE_SIZE
+
+/* Define to 1 if you have the declaration of `_strdup', and to 0 if you
+   don't. */
+#undef HAVE_DECL__STRDUP
 
 /* Define to 1 if you have the <dirent.h> header file. */
 #undef HAVE_DIRENT_H
@@ -271,6 +291,9 @@
 /* Define to 1 if you have the `setlocale' function. */
 #undef HAVE_SETLOCALE
 
+/* Define to 1 if the system has the type `ssize_t'. */
+#undef HAVE_SSIZE_T
+
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
@@ -288,6 +311,9 @@
 
 /* Define to 1 if you have the `strncasecmp' function. */
 #undef HAVE_STRNCASECMP
+
+/* Define to 1 if you have the `strtoull' function. */
+#undef HAVE_STRTOULL
 
 /* Define to '1' if sysctl is present and usable */
 #undef HAVE_SYSCTL
@@ -335,6 +361,9 @@
 
 /* Define to 1 if you have the `uselocale' function. */
 #undef HAVE_USELOCALE
+
+/* Define to 1 if you have the <valgrind/valgrind.h> header file. */
+#undef HAVE_VALGRIND_VALGRIND_H
 
 /* Define to 1 if the system has the type `wchar_t'. */
 #undef HAVE_WCHAR_T
@@ -500,6 +529,9 @@
 
 /* Define to 1 if migrate_pages is available. */
 #undef HWLOC_HAVE_MIGRATE_PAGES
+
+/* Define to 1 if move_pages is available. */
+#undef HWLOC_HAVE_MOVE_PAGES
 
 /* Define to 1 if you have the `NVML' library. */
 #undef HWLOC_HAVE_NVML

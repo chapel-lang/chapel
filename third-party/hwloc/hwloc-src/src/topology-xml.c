@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -54,6 +54,8 @@ hwloc_nolibxml_export(void)
   }
   return nolibxml;
 }
+
+#define BASE64_ENCODED_LENGTH(length) (4*(((length)+2)/3))
 
 /*********************************
  ********* XML callbacks *********
@@ -323,7 +325,22 @@ hwloc__xml_import_object_attr(struct hwloc_topology *topology __hwloc_attribute_
     }
   }
 
-
+  /**************************
+   * forward compat with 2.0
+   */
+  else if (!strcmp(name, "kind") || !strcmp(name, "subkind")) {
+    if (obj->type == HWLOC_OBJ_GROUP) {
+      /* ignored, unused in <2.0 */
+    } else {
+      if (hwloc__xml_verbose())
+	fprintf(stderr, "%s: ignoring %s attribute for non-group object\n",
+		state->global->msgprefix, name);
+    }
+  }
+  else if (!strcmp(name, "subtype")) {
+    /* FIXME: should be "CoProcType" for osdev/coproc but we don't have that type-specific attribute yet */
+    hwloc_obj_add_info(obj, "Type", value);
+  }
 
 
   /*************************
@@ -491,11 +508,21 @@ hwloc__xml_import_distances(struct hwloc_xml_backend_data_s *data,
     float *matrix, latmax = 0;
     struct hwloc_xml_imported_distances_s *distances;
 
+    matrix = malloc(nbobjs*nbobjs*sizeof(float));
     distances = malloc(sizeof(*distances));
+    if (!matrix || !distances) {
+      if (hwloc__xml_verbose())
+	fprintf(stderr, "%s: failed to allocate distance matrix for %lu objects\n",
+		state->global->msgprefix, nbobjs);
+      free(distances);
+      free(matrix);
+      return -1;
+    }
+
     distances->root = obj;
     distances->distances.relative_depth = reldepth;
     distances->distances.nbobjs = nbobjs;
-    distances->distances.latency = matrix = malloc(nbobjs*nbobjs*sizeof(float));
+    distances->distances.latency = matrix;
     distances->distances.latency_base = latbase;
 
     for(i=0; i<nbobjs*nbobjs; i++) {
@@ -532,12 +559,23 @@ hwloc__xml_import_distances(struct hwloc_xml_backend_data_s *data,
 
     distances->distances.latency_max = latmax;
 
-    if (data->last_distances)
-      data->last_distances->next = distances;
-    else
-      data->first_distances = distances;
-    distances->prev = data->last_distances;
-    distances->next = NULL;
+    if (nbobjs < 2) {
+      /* distances with a single object are useless, even if the XML isn't invalid */
+      assert(nbobjs == 1);
+      if (hwloc__xml_verbose())
+	fprintf(stderr, "%s: ignoring invalid distance matrix with only 1 object\n",
+		state->global->msgprefix);
+      free(matrix);
+      free(distances);
+    } else {
+      /* queue the distance */
+      if (data->last_distances)
+	data->last_distances->next = distances;
+      else
+	data->first_distances = distances;
+      distances->prev = data->last_distances;
+      distances->next = NULL;
+    }
   }
 
   return state->global->close_tag(state);
@@ -550,6 +588,7 @@ hwloc__xml_import_userdata(hwloc_topology_t topology __hwloc_attribute_unused, h
   size_t length = 0;
   int encoded = 0;
   char *name = NULL; /* optional */
+  int ret;
 
   while (1) {
     char *attrname, *attrvalue;
@@ -565,12 +604,29 @@ hwloc__xml_import_userdata(hwloc_topology_t topology __hwloc_attribute_unused, h
       return -1;
   }
 
-  if (length && topology->userdata_import_cb) {
-    int ret;
+  if (!topology->userdata_import_cb) {
+    char *buffer;
+    size_t reallength = encoded ? BASE64_ENCODED_LENGTH(length) : length;
+    ret = state->global->get_content(state, &buffer, reallength);
+    if (ret < 0)
+      return -1;
 
-    if (encoded) {
+  } else if (topology->userdata_not_decoded) {
+      char *buffer, *fakename;
+      size_t reallength = encoded ? BASE64_ENCODED_LENGTH(length) : length;
+      ret = state->global->get_content(state, &buffer, reallength);
+      if (ret < 0)
+        return -1;
+      fakename = malloc(6 + 1 + (name ? strlen(name) : 4) + 1);
+      if (!fakename)
+	return -1;
+      sprintf(fakename, encoded ? "base64%c%s" : "normal%c%s", name ? ':' : '-', name ? name : "anon");
+      topology->userdata_import_cb(topology, obj, fakename, buffer, length);
+      free(fakename);
+
+  } else if (encoded && length) {
       char *encoded_buffer;
-      size_t encoded_length = 4*((length+2)/3);
+      size_t encoded_length = BASE64_ENCODED_LENGTH(length);
       ret = state->global->get_content(state, &encoded_buffer, encoded_length);
       if (ret < 0)
         return -1;
@@ -580,20 +636,25 @@ hwloc__xml_import_userdata(hwloc_topology_t topology __hwloc_attribute_unused, h
 	  return -1;
 	assert(encoded_buffer[encoded_length] == 0);
 	ret = hwloc_decode_from_base64(encoded_buffer, decoded_buffer, length+1);
-	if (ret != (int) length)
+	if (ret != (int) length) {
+	  free(decoded_buffer);
 	  return -1;
+	}
 	topology->userdata_import_cb(topology, obj, name, decoded_buffer, length);
 	free(decoded_buffer);
       }
-    } else {
-      char *buffer;
-      ret = state->global->get_content(state, &buffer, length);
-      if (ret < 0)
-        return -1;
+
+  } else { /* always handle length==0 in the non-encoded case */
+      char *buffer = "";
+      if (length) {
+	ret = state->global->get_content(state, &buffer, length);
+	if (ret < 0)
+	  return -1;
+      }
       topology->userdata_import_cb(topology, obj, name, buffer, length);
-    }
-    state->global->close_content(state);
   }
+
+  state->global->close_content(state);
   return state->global->close_tag(state);
 }
 
@@ -612,11 +673,11 @@ hwloc__xml_import_object(hwloc_topology_t topology,
       break;
     if (!strcmp(attrname, "type")) {
       if (hwloc_obj_type_sscanf(attrvalue, &obj->type, NULL, NULL, 0) < 0)
-	goto error;
+	goto error_with_object;
     } else {
       /* type needed first */
       if (obj->type == (hwloc_obj_type_t)-1)
-	goto error;
+	goto error_with_object;
       hwloc__xml_import_object_attr(topology, obj, attrname, attrvalue, state);
     }
   }
@@ -714,8 +775,9 @@ hwloc__xml_import_object(hwloc_topology_t topology,
 
   return state->global->close_tag(state);
 
- error:
+ error_with_object:
   hwloc_free_unlinked_object(obj);
+ error:
   return -1;
 }
 
@@ -869,25 +931,38 @@ hwloc__xml_import_diff(hwloc__xml_import_state_t state,
  ********* main XML import *********
  ***********************************/
 
+static void
+hwloc_xml__free_distances(struct hwloc_xml_backend_data_s *data)
+{
+  struct hwloc_xml_imported_distances_s *xmldist;
+  while ((xmldist = data->first_distances) != NULL) {
+    data->first_distances = xmldist->next;
+    free(xmldist->distances.latency);
+    free(xmldist);
+  }
+}
+
 static int
 hwloc_xml__handle_distances(struct hwloc_topology *topology,
 			    struct hwloc_xml_backend_data_s *data,
 			    const char *msgprefix)
 {
-  struct hwloc_xml_imported_distances_s *xmldist, *next = data->first_distances;
-
-  if (!next)
-    return 0;
+  struct hwloc_xml_imported_distances_s *xmldist;
 
   /* connect things now because we need levels to check/build, they'll be reconnected properly later anyway */
   hwloc_connect_children(topology->levels[0][0]);
-  if (hwloc_connect_levels(topology) < 0)
+  if (hwloc_connect_levels(topology) < 0) {
+    hwloc_xml__free_distances(data);
     return -1;
+  }
 
-  while ((xmldist = next) != NULL) {
+  while ((xmldist = data->first_distances) != NULL) {
     hwloc_obj_t root = xmldist->root;
     unsigned depth = root->depth + xmldist->distances.relative_depth;
     unsigned nbobjs = hwloc_get_nbobjs_inside_cpuset_by_depth(topology, root->cpuset, depth);
+
+    data->first_distances = xmldist->next;
+
     if (nbobjs != xmldist->distances.nbobjs) {
       /* distances invalid, drop */
       if (hwloc__xml_verbose())
@@ -910,7 +985,6 @@ hwloc_xml__handle_distances(struct hwloc_topology *topology,
       hwloc_distances_set(topology, objs[0]->type, nbobjs, indexes, objs, xmldist->distances.latency, 0 /* XML cannot force */);
     }
 
-    next = xmldist->next;
     free(xmldist);
   }
 
@@ -971,6 +1045,7 @@ hwloc_look_xml(struct hwloc_backend *backend)
     fprintf(stderr, "%s: XML component discovery failed.\n",
 	    data->msgprefix);
  err:
+  hwloc_xml__free_distances(data);
   hwloc_localeswitch_fini();
   return -1;
 }
@@ -1513,16 +1588,22 @@ hwloc__export_obj_userdata(hwloc__xml_export_state_t parentstate, int encoded,
   state.new_prop(&state, "length", tmp);
   if (encoded)
     state.new_prop(&state, "encoding", "base64");
-  state.add_content(&state, buffer, encoded ? encoded_length : length);
+  if (encoded_length)
+    state.add_content(&state, buffer, encoded ? encoded_length : length);
   state.end_object(&state, "userdata");
 }
 
 int
 hwloc_export_obj_userdata(void *reserved,
-			  struct hwloc_topology *topology __hwloc_attribute_unused, struct hwloc_obj *obj __hwloc_attribute_unused,
+			  struct hwloc_topology *topology, struct hwloc_obj *obj __hwloc_attribute_unused,
 			  const char *name, const void *buffer, size_t length)
 {
   hwloc__xml_export_state_t state = reserved;
+
+  if (!buffer) {
+    errno = EINVAL;
+    return -1;
+  }
 
   if ((name && hwloc__xml_export_check_buffer(name, strlen(name)) < 0)
       || hwloc__xml_export_check_buffer(buffer, length) < 0) {
@@ -1530,7 +1611,29 @@ hwloc_export_obj_userdata(void *reserved,
     return -1;
   }
 
-  hwloc__export_obj_userdata(state, 0, name, length, buffer, length);
+  if (topology->userdata_not_decoded) {
+    int encoded;
+    size_t encoded_length;
+    const char *realname;
+    if (!strncmp(name, "normal", 6)) {
+      encoded = 0;
+      encoded_length = length;
+    } else if (!strncmp(name, "base64", 6)) {
+      encoded = 1;
+      encoded_length = BASE64_ENCODED_LENGTH(length);
+    } else
+      assert(0);
+    if (name[6] == ':')
+      realname = name+7;
+    else if (!strcmp(name+6, "-anon"))
+      realname = NULL;
+    else
+      assert(0);
+    hwloc__export_obj_userdata(state, encoded, realname, length, buffer, encoded_length);
+
+  } else
+    hwloc__export_obj_userdata(state, 0, name, length, buffer, length);
+
   return 0;
 }
 
@@ -1544,12 +1647,19 @@ hwloc_export_obj_userdata_base64(void *reserved,
   char *encoded_buffer;
   int ret __hwloc_attribute_unused;
 
+  if (!buffer) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  assert(!topology->userdata_not_decoded);
+
   if (name && hwloc__xml_export_check_buffer(name, strlen(name)) < 0) {
     errno = EINVAL;
     return -1;
   }
 
-  encoded_length = 4*((length+2)/3);
+  encoded_length = BASE64_ENCODED_LENGTH(length);
   encoded_buffer = malloc(encoded_length+1);
   if (!encoded_buffer) {
     errno = ENOMEM;
