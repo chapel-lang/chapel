@@ -53,9 +53,11 @@ use Spawn;
 use Time;
 use Graph;
 use Random;
+use UserMapAssoc;
+use BlockDist;
 
 // twitter user ID to twitter user ID mentions
-var Pairs:domain( (int, int) );
+var Pairs:domain( (int, int) ) dmapped UserMapAssoc(idxType=(int, int));
 // TODO -- scalability. Pairs should be distributed.
 
 // packing twitter user IDs to numbers
@@ -81,7 +83,9 @@ proc main(args:[] string) {
     }
   }
 
-  var allfiles:[1..todo.length] string;
+  const FilesSpace = {1..todo.length};
+  const BlockSpace = FilesSpace dmapped Block(boundingBox=FilesSpace);
+  var allfiles:[BlockSpace] string;
   allfiles = todo;
 
   todo.destroy();
@@ -99,6 +103,15 @@ proc main(args:[] string) {
   }
 
   parseAndMakeSetTime.stop();
+
+  if verbose {
+    for i in 0..#numLocales {
+      writeln("on locale ", i, " there are ",
+              Pairs._value.locDoms[i].myInds.size,
+              " values");
+
+    }
+  }
 
   if verbose then
     writeln("the maximum user id was ", max_user_id.read());
@@ -483,7 +496,7 @@ proc create_and_analyze_graph()
     }
     i += 1;
   } }
-
+ 
   graphAlgorithmTime.stop();
 
   if timing {
