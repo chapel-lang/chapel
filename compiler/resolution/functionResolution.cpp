@@ -3758,8 +3758,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
   // error.
   bool ambiguousRef = false;
   bool ambiguousValue = false;
-  if (refCandidates.n > 0 && !bestRef) ambiguousRef = true;
-  if (valueCandidates.n > 0 && !bestValue) ambiguousValue = true;
+  if (refCandidates.n > 1 && !bestRef) ambiguousRef = true;
+  if (valueCandidates.n > 1 && !bestValue) ambiguousValue = true;
   if (ambiguousRef || ambiguousValue) {
     bestValue = NULL;
     bestRef = NULL;
