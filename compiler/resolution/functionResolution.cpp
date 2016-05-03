@@ -3549,14 +3549,17 @@ resolveDefaultGenericType(CallExpr* call) {
 
 
 static void
-gatherCandidates(Vec<ResolutionCandidate*>& candidates,
+doGatherCandidates(Vec<ResolutionCandidate*>& candidates,
                  Vec<FnSymbol*>& visibleFns,
-                 CallInfo& info) {
+                 CallInfo& info,
+                 bool onlyUser) {
 
-  // Search user-defined (i.e. non-compiler-generated) functions first.
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    if (visibleFn->hasFlag(FLAG_COMPILER_GENERATED)) {
-      continue;
+    // Only consider user functions or compiler-generated functions
+    if (onlyUser) {
+      if (visibleFn->hasFlag(FLAG_COMPILER_GENERATED)) continue;
+    } else {
+      if (!visibleFn->hasFlag(FLAG_COMPILER_GENERATED)) continue;
     }
 
     if (info.call->methodTag &&
@@ -3577,6 +3580,16 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
 
     filterCandidate(candidates, visibleFn, info);
   }
+}
+
+
+static void
+gatherCandidates(Vec<ResolutionCandidate*>& candidates,
+                 Vec<FnSymbol*>& visibleFns,
+                 CallInfo& info) {
+
+  // Search user-defined (i.e. non-compiler-generated) functions first.
+  doGatherCandidates(candidates, visibleFns, info, /*onlyUser*/ true);
 
   // Return if we got a successful match with user-defined functions.
   if (candidates.n) {
@@ -3584,29 +3597,7 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
   }
 
   // No.  So search compiler-defined functions.
-  forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    if (!visibleFn->hasFlag(FLAG_COMPILER_GENERATED)) {
-      continue;
-    }
-
-    if (info.call->methodTag &&
-        ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||
-           visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR))) {
-      continue;
-    }
-
-    if (fExplainVerbose &&
-        ((explainCallLine && explainCallMatch(info.call)) ||
-         info.call->id == explainCallID))
-    {
-      USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
-      if( info.call->id == breakOnResolveID ) {
-        gdbShouldBreakHere();
-      }
-    }
-
-    filterCandidate(candidates, visibleFn, info);
-  }
+  doGatherCandidates(candidates, visibleFns, info, /*onlyUser*/ false);
 }
 
 
