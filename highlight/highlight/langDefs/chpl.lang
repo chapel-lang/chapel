@@ -39,7 +39,7 @@ Strings = {
 
 Comments = {
    { Block=true,
-     Nested=false,
+     Nested=true,
      Delimiter = { [[\/\*]], [[\*\/]] }
    },
    {
