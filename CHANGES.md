@@ -79,7 +79,7 @@ Configuration Changes
 * changed 'knc' to default to using 'qthreads'+'hwloc'
 * deprecated 'knc' support
   (see  http://chapel.cray.com/docs/1.13/platforms/knc.html)
-* switched to using pg++ rather than pgCC as the C++ compiler for 'pgi'
+* switched to using pgc++ rather than pgCC as the C++ compiler for 'pgi'
 * removed stale support for Xcode
 
 Syntactic/Naming Changes
@@ -355,7 +355,7 @@ Third-Party Software Changes
 * upgraded hwloc to version 1.11.2
   - and cherry-picked a /proc/mounts buffer overflow fix from hwloc master
 * upgraded LLVM to version 3.7
-* switched several third-party directories to a more GIT-friendly organization
+* switched several third-party directories to a more Git-friendly organization
 
 Runtime Library Changes
 -----------------------
