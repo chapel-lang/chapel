@@ -680,7 +680,7 @@ void chpl_task_taskCall(chpl_fn_p fp, void* arg, size_t arg_size,
 
   if (arg != NULL) {
     arg_copy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_TASK_ARG, 0, 0);
-    memcpy(arg_copy, arg, arg_size);
+    chpl_memcpy(arg_copy, arg, arg_size);
   }
   taskCallBody(fp, NULL, arg_copy, subloc, false, lineno, filename);
 }
