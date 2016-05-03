@@ -32,8 +32,8 @@ routines ::
 since all of these are built around user-defined handlers, that we support.
 
 .. note::
-  #. Pointer arguments are written as `ref` areguments, so no casting to a C
-     style pointer is necessary.
+  #. Pointer arguments are written as `ref` areguments, so no casting to a ``c_ptr``
+     is necessary.
   #. An exception to the above is if the C prototype names the argument ``array_of_*``,
      in which case we write it using an array form.
   #. Some MPI-1.1 functions were deprecated in MPI-2. These should be updated in the future, but
@@ -203,7 +203,7 @@ module MPI {
   extern const MPI_UNEQUAL : c_int;
 
   /* Environmental inquiry keys */ 
-  // All of the above appear to be C enums or defines....
+  // These appear to be C enums or defines....
   extern const MPI_TAG_UB : c_int; 
   extern const MPI_IO : c_int; 
   extern const MPI_HOST : c_int; 
