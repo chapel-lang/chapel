@@ -20,7 +20,7 @@ const tree = new Node(5,
                    new Node(9, nil, nil)));
 
                       
-begin walkTree(tree);                      
+sync begin walkTree(tree);
 
 proc walkTree(node) {
   node.processNode();
@@ -30,3 +30,11 @@ proc walkTree(node) {
     begin walkTree(node.right);
 }
 
+proc Node.~Node() {
+  if this.left != nil then
+    delete this.left;
+  if this.right != nil then
+    delete this.right;
+}
+
+delete tree;
