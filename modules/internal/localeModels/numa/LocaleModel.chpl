@@ -417,6 +417,10 @@ module LocaleModel {
                                         args: c_void_ptr, args_size: size_t);
   extern proc chpl_comm_execute_on_nb(loc_id: int, subloc_id: int, fn: int,
                                       args: c_void_ptr, args_size: size_t);
+  pragma "insert line file info"
+    extern proc chpl_task_taskCallFTable(fn: int,
+                                         args: c_void_ptr, args_size: size_t,
+                                         subloc_id: int): void;
   extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
   extern proc chpl_task_setSubloc(subloc: int(32));
 
@@ -476,19 +480,9 @@ module LocaleModel {
     }
   }
 
-  // Unused for now due to bug when using 'begin'
-  inline proc chpl_executeOnNBAux(fn: int,         // on-body function idx
-                                  args: c_void_ptr // function args
-                                  ) {
-    if __primitive("task_get_serial") then
-      chpl_ftable_call(fn, args);
-    else
-      begin chpl_ftable_call(fn, args);
-  }
   //
   // nonblocking "on" (doesn't wait for completion)
   //
-  param useBegin = false;
   pragma "insert line file info"
   export
   proc chpl_executeOnNB(loc: chpl_localeID_t, // target locale
@@ -502,40 +496,16 @@ module LocaleModel {
     //
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
-    if dnode != chpl_nodeID {
+    if dnode == chpl_nodeID {
+      if __primitive("task_get_serial") then
+        chpl_ftable_call(fn, args);
+      else
+        chpl_task_taskCallFTable(fn, args, args_size, dsubloc);
+    } else {
       if __primitive("task_get_serial") then
         chpl_comm_execute_on(dnode, dsubloc, fn, args, args_size);
       else
         chpl_comm_execute_on_nb(dnode, dsubloc, fn, args, args_size);
-    } else {
-      var origSubloc = chpl_task_getRequestedSubloc();
-      // We'd like to call chpl_executeOnNBaux() here, but the begin
-      //  statement seems to cause a problem
-      if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
-        // run on this sublocale
-        if useBegin {
-          chpl_executeOnNBAux(fn, args);
-        } else {
-          if __primitive("task_get_serial") then
-            chpl_ftable_call(fn, args);
-          else
-            // begin chpl_ftable_call(fn, args);
-            chpl_comm_execute_on_nb(dnode, dsubloc, fn, args, args_size);
-        }
-      } else {
-        // move to a different sublocale
-        chpl_task_setSubloc(dsubloc);
-        if useBegin {
-          chpl_executeOnNBAux(fn, args);
-        } else {
-          if __primitive("task_get_serial") then
-            chpl_ftable_call(fn, args);
-          else
-            // begin chpl_ftable_call(fn, args);
-            chpl_comm_execute_on_nb(dnode, dsubloc, fn, args, args_size);
-        }
-        chpl_task_setSubloc(origSubloc);
-      }
     }
   }
 

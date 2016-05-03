@@ -336,7 +336,12 @@ module LocaleModel {
                                         args: c_void_ptr, args_size: size_t);
   extern proc chpl_comm_execute_on_nb(loc_id: int, subloc_id: int, fn: int,
                                       args: c_void_ptr, args_size: size_t);
+  pragma "insert line file info"
+    extern proc chpl_task_taskCallFTable(fn: int,
+                                         args: c_void_ptr, args_size: size_t,
+                                         subloc_id: int): void;
   extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
+
   //
   // regular "on"
   //
@@ -353,7 +358,7 @@ module LocaleModel {
       chpl_ftable_call(fn, args);
     } else {
       chpl_comm_execute_on(node, chpl_sublocFromLocaleID(loc),
-                     fn, args, args_size);
+                           fn, args, args_size);
     }
   }
 
@@ -374,7 +379,7 @@ module LocaleModel {
       chpl_ftable_call(fn, args);
     } else {
       chpl_comm_execute_on_fast(node, chpl_sublocFromLocaleID(loc),
-                          fn, args, args_size);
+                                fn, args, args_size);
     }
   }
 
@@ -395,20 +400,14 @@ module LocaleModel {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
       if __primitive("task_get_serial") then
-        // don't call the runtime nb execute_on function if we can stay local
         chpl_ftable_call(fn, args);
       else
-        // We'd like to use a begin, but unfortunately doing so as
-        // follows does not compile for --no-local:
-        // begin chpl_ftable_call(fn, args);
-        chpl_comm_execute_on_nb(node, chpl_sublocFromLocaleID(loc),
-                          fn, args, args_size);
+        chpl_task_taskCallFTable(fn, args, args_size, c_sublocid_any);
     } else {
-      const subloc = chpl_sublocFromLocaleID(loc);
       if __primitive("task_get_serial") then
-        chpl_comm_execute_on(node, subloc, fn, args, args_size);
+        chpl_comm_execute_on(node, c_sublocid_any, fn, args, args_size);
       else
-        chpl_comm_execute_on_nb(node, subloc, fn, args, args_size);
+        chpl_comm_execute_on_nb(node, c_sublocid_any, fn, args, args_size);
     }
   }
 
