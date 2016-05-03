@@ -1,1 +1,1 @@
---iterations=10 --order=2000 --tileSize=64  # transpose-defaultdist
+--set iterations=10 --set order=2000 --set tileSize=64  # transpose-defaultdist

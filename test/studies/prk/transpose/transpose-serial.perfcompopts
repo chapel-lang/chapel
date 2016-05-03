@@ -1,1 +1,1 @@
---iterations=10 --order=2000 --tileSize=64 # transpose-serial
+--set iterations=10 --set order=2000 --set tileSize=64
