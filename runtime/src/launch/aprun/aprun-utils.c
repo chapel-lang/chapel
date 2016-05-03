@@ -52,8 +52,7 @@ static char const *aprun_arg_strings[aprun_none] = { "-cc",
                                                      "-n",
                                                      "-d",
                                                      "-N",
-                                                     "-j",
-                                                     "-k"};
+                                                     "-j"};
 
 //
 // Return the appropriate integer value for given argument type
@@ -210,7 +209,6 @@ static char _nbuf[16];
 static char _dbuf[16];
 static char _Nbuf[16];
 static char _jbuf[16];
-extern const char *CHPL_TARGET_ARCH; // supplied by the generated code
 char** chpl_create_aprun_cmd(int argc, char* argv[],
                              int32_t numLocales, const char* _ccArg) {
   char *largv[8];
