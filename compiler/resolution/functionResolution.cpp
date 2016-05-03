@@ -2617,9 +2617,9 @@ printResolutionErrorAmbiguous(
                      CallInfo* info) {
   CallExpr* call = userCall(info->call);
   if (!strcmp("this", info->name)) {
-    USR_FATAL(call, "ambiguous access of '%s' by '%s'",
-              toString(info->actuals.v[1]->type),
-              toString(info));
+    USR_FATAL_CONT(call, "ambiguous access of '%s' by '%s'",
+                   toString(info->actuals.v[1]->type),
+                   toString(info));
   } else {
     const char* entity = "call";
     if (!strncmp("_type_construct_", info->name, 16))
@@ -2631,25 +2631,26 @@ printResolutionErrorAmbiguous(
       str = astr(mod->name, ".", str);
     }
     USR_FATAL_CONT(call, "ambiguous %s '%s'", entity, str);
-    if (developer) {
-      for (int i = callStack.n-1; i>=0; i--) {
-        CallExpr* cs = callStack.v[i];
-        FnSymbol* f = cs->getFunction();
-        if (f->instantiatedFrom)
-          USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
-        else
-          break;
-      }
-    }
-    bool printed_one = false;
-    forv_Vec(FnSymbol, fn, candidates) {
-      USR_PRINT(fn, "%s %s",
-                printed_one ? "               " : "candidates are:",
-                toString(fn));
-      printed_one = true;
-    }
-    USR_STOP();
   }
+
+  if (developer) {
+    for (int i = callStack.n-1; i>=0; i--) {
+      CallExpr* cs = callStack.v[i];
+      FnSymbol* f = cs->getFunction();
+      if (f->instantiatedFrom)
+        USR_PRINT(callStack.v[i], "  instantiated from %s", f->name);
+      else
+        break;
+    }
+  }
+  bool printed_one = false;
+  forv_Vec(FnSymbol, fn, candidates) {
+    USR_PRINT(fn, "%s %s",
+              printed_one ? "               " : "candidates are:",
+              toString(fn));
+    printed_one = true;
+  }
+  USR_STOP();
 }
 
 static void
