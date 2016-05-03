@@ -47,16 +47,15 @@ config var seed = 0;
 config const maxiter = 20;
 config const output = true;
 config const parallel = true;
+config param distributed = false; // NOTE - could default to CHPL_COMM != none
 
 use FileSystem;
 use Spawn;
 use Time;
 use Graph;
 use Random;
-
-// twitter user ID to twitter user ID mentions
-var Pairs:domain( (int, int) );
-// TODO -- scalability. Pairs should be distributed.
+use UserMapAssoc;
+use BlockDist;
 
 // packing twitter user IDs to numbers
 var total_tweets_processed : atomic int;
@@ -66,9 +65,6 @@ var max_user_id : atomic int;
 proc main(args:[] string) {
   var files = args[1..];
   var todo:list(string);
-
-  var t:Timer;
-  t.start();
 
   for arg in files {
     if isDir(arg) {
@@ -81,7 +77,30 @@ proc main(args:[] string) {
     }
   }
 
-  var allfiles:[1..todo.length] string;
+  // TODO - using 2 functions because of lack of
+  // domain assignment in UserMapAssoc
+  // Pairs is for collecting twitter  user ID to user ID mentions
+  if distributed {
+    var Pairs: domain( (int, int) ) dmapped UserMapAssoc(idxType=(int, int));
+    run(todo, Pairs);
+  } else {
+    var Pairs: domain( (int, int) );
+    run(todo, Pairs);
+  }
+}
+
+
+
+proc run(todo:list(string), Pairs) {
+  var t:Timer;
+  t.start();
+
+  const FilesSpace = {1..todo.length};
+  const BlockSpace = if distributed then
+                       FilesSpace dmapped Block(boundingBox=FilesSpace)
+                     else
+                       FilesSpace;
+  var allfiles:[BlockSpace] string;
   allfiles = todo;
 
   todo.destroy();
@@ -95,10 +114,22 @@ proc main(args:[] string) {
     // we don't want to lock/unlock the hashtable
     // every time we add an entry. Appends could
     // be aggregated.
-    process_json(f);
+    process_json(f, Pairs);
   }
 
   parseAndMakeSetTime.stop();
+
+  if verbose {
+    if distributed {
+      // TODO -- this is not portable code
+      // need UserMapAssoc to support localDomain
+      for i in 0..#numLocales {
+        writeln("on locale ", i, " there are ",
+                Pairs._value.locDoms[i].myInds.size,
+                " values");
+      }
+    }
+  }
 
   if verbose then
     writeln("the maximum user id was ", max_user_id.read());
@@ -109,7 +140,7 @@ proc main(args:[] string) {
     writeln("parsed ", nlines, " lines in ", parseAndMakeSetTime.elapsed(), " s ");
   }
 
-  create_and_analyze_graph();
+  create_and_analyze_graph(Pairs);
 
   t.stop();
   var days = t.elapsed(TimeUnits.hours) / 24.0;
@@ -144,7 +175,7 @@ record Empty {
 }
 
 
-proc process_json(logfile:channel, fname:string) {
+proc process_json(logfile:channel, fname:string, Pairs) {
   var tweet:Tweet;
   var empty:Empty;
   var err:syserr;
@@ -212,20 +243,28 @@ proc process_json(logfile:channel, fname:string) {
   }
 }
 
-proc process_json(fname: string)
+proc process_json(fname: string, Pairs)
 {
 
   var last3chars = fname[fname.length-2..fname.length];
   if last3chars == ".gz" {
     var sub = spawn(["gunzip", "-c", fname], stdout=PIPE);
-    process_json(sub.stdout, fname);
+    process_json(sub.stdout, fname, Pairs);
   } else {
     var logfile = openreader(fname);
-    process_json(logfile, fname);
+    process_json(logfile, fname, Pairs);
   }
 }
 
-proc create_and_analyze_graph()
+
+record Triple {
+  var from: int(32);
+  var to: int(32);
+  proc weight return 1:int(32);
+}
+
+
+proc create_and_analyze_graph(Pairs)
 {
   if progress {
     writeln("funding mutual mentions");
@@ -286,12 +325,6 @@ proc create_and_analyze_graph()
 
   // construct array of triples (from, to, weight)
   // this is also known as Coordinate List (COO)
-  record Triple {
-    var from: int(32);
-    var to: int(32);
-    proc weight return 1:int(32);
-  }
-
   var max_nid:int(32);
 
   if progress then
