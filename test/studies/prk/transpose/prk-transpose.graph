@@ -1,7 +1,7 @@
 perfkeys: Rate (MB/s):, Rate (MB/s):
-graphkeys: serial-fast, shared-fast
-files: ./transpose-serial-fast.dat, ./transpose-shared-fast.dat
-graphtitle: transpose
+files: ./transpose-serial.dat, ./transpose-defaultdist.dat
+graphkeys: Serial, DefaultDist
+graphtitle: PRK transpose
 ylabel: Rate (MB/s)
 graphname: prk-stencil
 
