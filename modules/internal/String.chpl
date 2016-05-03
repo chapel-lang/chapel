@@ -98,8 +98,6 @@ module String {
       return dest;
   }
 
-  private extern proc memcmp(s1: c_ptr, s2: c_ptr, n: size_t) : c_int;
-
   private config param debugStrings = false;
 
   //
@@ -483,13 +481,13 @@ module String {
 
           const needleR = 0:int..#localNeedle.len;
           if fromLeft {
-            const result = memcmp(this.buff, localNeedle.buff,
-                                  localNeedle.len.safeCast(size_t));
+            const result = c_memcmp(this.buff, localNeedle.buff,
+                                    localNeedle.len);
             ret = result == 0;
           } else {
             var offset = this.len-localNeedle.len;
-            const result = memcmp(this.buff+offset, localNeedle.buff,
-                                  localNeedle.len.safeCast(size_t));
+            const result = c_memcmp(this.buff+offset, localNeedle.buff,
+                                    localNeedle.len);
             ret = result == 0;
           }
           if ret == true then break;
@@ -1615,7 +1613,7 @@ module String {
   private inline proc _strcmp(a: string, b:string) : int {
     // Assumes a and b are on same locale and not empty.
     const size = min(a.len, b.len);
-    const result =  memcmp(a.buff, b.buff, size.safeCast(size_t));
+    const result =  c_memcmp(a.buff, b.buff, size);
 
     if (result == 0) {
       // Handle cases where one string is the beginning of the other

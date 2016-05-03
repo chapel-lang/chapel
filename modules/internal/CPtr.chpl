@@ -282,4 +282,18 @@ module CPtr {
     extern proc memcpy (dest: c_void_ptr, const src: c_void_ptr, n: size_t);
     memcpy(dest, src, n.safeCast(size_t));
   }
+
+  /*
+    Compares the first n bytes of memory areas s1 and s2
+
+    This is a simple wrapper over the C memcmp() function.
+
+    :returns: returns an integer less than, equal to, or greater than zero if
+              the first n bytes of s1 are found, respectively, to be less than,
+              to match, or be greater than the first n bytes of s2.
+   */
+  inline proc c_memcmp(const s1: c_ptr, const s2: c_ptr, n: integral) {
+    extern proc memcmp(const s1: c_void_ptr, const s2: c_ptr, n: size_t) : c_int;
+    return memcmp(s1, s2, n.safeCast(size_t)).safeCast(int);
+  }
 }
