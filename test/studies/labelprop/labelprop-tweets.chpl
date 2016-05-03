@@ -267,7 +267,7 @@ record Triple {
 proc create_and_analyze_graph(Pairs)
 {
   if progress {
-    writeln("funding mutual mentions");
+    writeln("finding mutual mentions");
 
     writeln(Pairs.size, " pairs / ",
             total_tweets_processed.read(), " tweets / ",
