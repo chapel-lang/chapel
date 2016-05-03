@@ -650,7 +650,7 @@ module DefaultRectangular {
     // buffer in a doubling/halving style.  If it is used, it will be the
     // actual size of the 'data' buffer, while 'dom' represents the size of
     // the user-level array.
-    var dataAllocRange: range(int);
+    var dataAllocRange: range(idxType);
     //var numelm: int = -1; // for correctness checking
   
     // end class definition here, then defined secondary methods below
@@ -819,6 +819,9 @@ module DefaultRectangular {
       var size = blk(1) * dom.dsiDim(1).length;
       data = _ddata_allocate(eltType, size);
       initShiftedData();
+      if rank == 1 && !stridable then
+        dataAllocRange = dom.dsiDim(1);
+
     }
   
     inline proc getDataIndex(ind: idxType ...1) where rank == 1
