@@ -41,6 +41,7 @@
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "chpl-locale-model.h"
+#include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-linefile-support.h"
 #include "chpl-tasks.h"
@@ -74,6 +75,7 @@
 static aligned_t profile_task_yield = 0;
 static aligned_t profile_task_addToTaskList = 0;
 static aligned_t profile_task_executeTasksInList = 0;
+static aligned_t profile_task_taskCall = 0;
 static aligned_t profile_task_startMovedTask = 0;
 static aligned_t profile_task_getId = 0;
 static aligned_t profile_task_sleep = 0;
@@ -97,6 +99,7 @@ static void profile_print(void)
     fprintf(stderr, "task yield: %lu\n", (unsigned long)profile_task_yield);
     fprintf(stderr, "task addToTaskList: %lu\n", (unsigned long)profile_task_addToTaskList);
     fprintf(stderr, "task executeTasksInList: %lu\n", (unsigned long)profile_task_executeTasksInList);
+    fprintf(stderr, "task taskCall: %lu\n", (unsigned long)profile_task_taskCall);
     fprintf(stderr, "task startMovedTask: %lu\n", (unsigned long)profile_task_startMovedTask);
     fprintf(stderr, "task getId: %lu\n", (unsigned long)profile_task_getId);
     fprintf(stderr, "task sleep: %lu\n", (unsigned long)profile_task_sleep);
@@ -154,10 +157,13 @@ chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
                       c_sublocid_any_val, false),
     0, 0 };
 
-//
-// structs chpl_task_prvDataImpl_t, chpl_qthread_wrapper_args_t and
-// chpl_qthread_tls_t have been moved to tasks-qthreads.h
-//
+typedef struct {
+    void                     *fn;
+    void                     *arg;
+    void                     *arg_copy;
+    chpl_bool                countRunning;
+    chpl_task_prvDataImpl_t  chpl_data;
+} chpl_qthread_wrapper_args_t;
 
 //
 // chpl_qthread_get_tasklocal() is in tasks-qthreads.h
@@ -741,7 +747,12 @@ static aligned_t chapel_wrapper(void *arg)
 
     wrap_callbacks(chpl_task_cb_event_kind_begin, &data->chpl_data);
 
-    (*(chpl_fn_p)(rarg->fn))(rarg->args);
+    if (rarg->arg_copy != NULL) {
+        (*(chpl_fn_p)(rarg->fn))(rarg->arg_copy);
+        chpl_mem_free(rarg->arg_copy, 0, 0);
+    } else {
+        (*(chpl_fn_p)(rarg->fn))(rarg->arg);
+    }
 
     wrap_callbacks(chpl_task_cb_event_kind_end, &data->chpl_data);
 
@@ -772,7 +783,7 @@ static void *comm_task_wrapper(void *arg)
 void chpl_task_callMain(void (*chpl_main)(void))
 {
     chpl_qthread_wrapper_args_t wrapper_args =
-        {chpl_main, NULL, false,
+        {chpl_main, NULL, NULL, false,
          PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_MAIN_TASK , 0,
                            chpl_qthread_process_tls.chpl_data.id, false,
                            c_sublocid_any_val, false) };
@@ -831,7 +842,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
         (chpl_ftable[fid])(arg);
     } else {
         chpl_qthread_wrapper_args_t wrapper_args =
-            {chpl_ftable[fid], arg, false,
+            {chpl_ftable[fid], arg, NULL, false,
              PRV_DATA_IMPL_VAL(filename, lineno, chpl_nullTaskID, false,
                                subloc, serial_state) };
 
@@ -854,25 +865,18 @@ void chpl_task_executeTasksInList(void **task_list)
     PROFILE_INCR(profile_task_executeTasksInList,1);
 }
 
-void chpl_task_startMovedTask(chpl_fn_p      fp,
-                              void          *arg,
-                              c_sublocid_t   subloc,
-                              chpl_taskID_t  id,
-                              chpl_bool      serial_state)
+static inline void taskCallBody(chpl_fn_p fp, void *arg, void *arg_copy,
+                                c_sublocid_t subloc,  chpl_bool serial_state,
+                                int lineno, int32_t filename)
 {
     chpl_qthread_wrapper_args_t wrapper_args =
-        {fp, arg, canCountRunningTasks,
-         PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_UNKNOWN, 0, chpl_nullTaskID, true,
+        {fp, arg, arg_copy, canCountRunningTasks,
+         PRV_DATA_IMPL_VAL(filename, lineno, chpl_nullTaskID, true,
                            subloc, serial_state) };
-
-    assert(subloc != c_sublocid_none);
-    assert(id == chpl_nullTaskID);
-
-    PROFILE_INCR(profile_task_startMovedTask,1);
 
     wrap_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);
 
-    if (subloc == c_sublocid_any) {
+    if (subloc < 0) {
         qthread_fork_copyargs(chapel_wrapper, &wrapper_args,
                               sizeof(chpl_qthread_wrapper_args_t), NULL);
     } else {
@@ -880,6 +884,40 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
                                  sizeof(chpl_qthread_wrapper_args_t), NULL,
                                  (qthread_shepherd_id_t) subloc);
     }
+}
+
+void chpl_task_taskCall(chpl_fn_p fp, void *arg, size_t arg_size,
+                        c_sublocid_t subloc,
+                        int lineno, int32_t filename)
+{
+    void *arg_copy = NULL;
+
+    PROFILE_INCR(profile_task_taskCall,1);
+
+    if (arg != NULL) {
+        arg_copy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_TASK_ARG, 0, 0);
+        memcpy(arg_copy, arg, arg_size);
+    }
+    taskCallBody(fp, NULL, arg_copy, subloc, false, lineno, filename);
+}
+
+void chpl_task_startMovedTask(chpl_fn_p      fp,
+                              void          *arg,
+                              c_sublocid_t   subloc,
+                              chpl_taskID_t  id,
+                              chpl_bool      serial_state)
+{
+    //
+    // For now the incoming task ID is simply dropped, though we check
+    // to make sure the caller wasn't expecting us to do otherwise.  If
+    // we someday make task IDs global we will need to be able to set
+    // the ID of this moved task.
+    //
+    assert(id == chpl_nullTaskID);
+
+    PROFILE_INCR(profile_task_startMovedTask,1);
+
+    taskCallBody(fp, arg, NULL, subloc, serial_state, 0, CHPL_FILE_IDX_UNKNOWN);
 }
 
 //

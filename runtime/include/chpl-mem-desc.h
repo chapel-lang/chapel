@@ -68,6 +68,7 @@
   m(LOCALE_NAME_BUF,      "locale name buffer",                       true ), \
   m(TASK_DESC,            "task descriptor",                          false), \
   m(TASK_DESC_LINK,       "task descriptor link",                     false), \
+  m(TASK_ARG,             "task body argument",                       false), \
   m(TASK_STACK,           "task stack",                               false), \
   m(MUTEX,                "mutex",                                    false), \
   m(LOCK_REPORT_DATA,     "lock report data",                         false), \

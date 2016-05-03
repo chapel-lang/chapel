@@ -70,14 +70,15 @@ typedef struct task_pool_struct {
 
 
 //
-// This is a descriptor for movedTaskWrapper().
+// This is a descriptor for taskCallWrapper().
 //
 typedef struct {
   chpl_fn_p fp;
   void* arg;
+  void* arg_copy;
   chpl_bool countRunning;
   chpl_task_prvDataImpl_t chpl_data;
-} movedTaskWrapperDesc_t;
+} taskCallWrapperDesc_t;
 
 
 typedef struct lockReport {
@@ -135,7 +136,10 @@ static chpl_fn_p comm_task_fn;
 static void                    enqueue_task(task_pool_p, task_pool_p*);
 static void                    dequeue_task(task_pool_p);
 static void                    comm_task_wrapper(void*);
-static void                    movedTaskWrapper(void* a);
+static void                    taskCallBody(chpl_fn_p, void*, void*,
+                                            c_sublocid_t, chpl_bool,
+                                            int, int32_t);
+static void                    taskCallWrapper(void* a);
 static chpl_taskID_t           get_next_task_id(void);
 static thread_private_data_t*  get_thread_private_data(void);
 static task_pool_p             get_current_ptask(void);
@@ -669,45 +673,77 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
 }
 
 
-void chpl_task_startMovedTask(chpl_fn_p fp,
-                              void* a,
-                              c_sublocid_t subloc,
-                              chpl_taskID_t id,
-                              chpl_bool serial_state) {
-  movedTaskWrapperDesc_t* pmtwd;
+void chpl_task_taskCall(chpl_fn_p fp, void* arg, size_t arg_size,
+                        c_sublocid_t subloc,
+                        int lineno, int32_t filename) {
+  void *arg_copy = NULL;
+
+  if (arg != NULL) {
+    arg_copy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_TASK_ARG, 0, 0);
+    memcpy(arg_copy, arg, arg_size);
+  }
+  taskCallBody(fp, NULL, arg_copy, subloc, false, lineno, filename);
+}
+
+
+static inline
+void taskCallBody(chpl_fn_p fp, void* arg, void* arg_copy,
+                  c_sublocid_t subloc, chpl_bool serial_state,
+                  int lineno, int32_t filename) {
+  taskCallWrapperDesc_t* ptcwd;
   chpl_task_prvDataImpl_t private = {
     .prvdata = { .serial_state = serial_state } };
 
-  assert(subloc == 0 || subloc == c_sublocid_any);
-  assert(id == chpl_nullTaskID);
-
-  pmtwd = (movedTaskWrapperDesc_t*)
-          chpl_mem_alloc(sizeof(*pmtwd),
+  ptcwd = (taskCallWrapperDesc_t*)
+          chpl_mem_alloc(sizeof(*ptcwd),
                          CHPL_RT_MD_THREAD_PRV_DATA,
                          0, 0);
-  *pmtwd = (movedTaskWrapperDesc_t)
-           { fp, a, canCountRunningTasks,
-             private };
+  *ptcwd = (taskCallWrapperDesc_t)
+    { fp, arg, arg_copy, canCountRunningTasks, private };
 
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
 
-  (void) add_to_task_pool(movedTaskWrapper, pmtwd, true, pmtwd->chpl_data,
-                          NULL, false, 0, CHPL_FILE_IDX_UNKNOWN);
+  (void) add_to_task_pool(taskCallWrapper, ptcwd, true, ptcwd->chpl_data,
+                          NULL, false, lineno, filename);
 
   // end critical section
   chpl_thread_mutexUnlock(&threading_lock);
 }
 
 
-static void movedTaskWrapper(void* a) {
-  movedTaskWrapperDesc_t* pmtwd = (movedTaskWrapperDesc_t*) a;
-  if (pmtwd->countRunning)
+static void
+taskCallWrapper(void* a) {
+  taskCallWrapperDesc_t* ptcwd = (taskCallWrapperDesc_t*) a;
+  if (ptcwd->countRunning)
     chpl_taskRunningCntInc(0, 0);
-  (pmtwd->fp)(pmtwd->arg);
-  if (pmtwd->countRunning)
+
+  if (ptcwd->arg_copy != NULL) {
+    (ptcwd->fp)(ptcwd->arg_copy);
+    chpl_mem_free(ptcwd->arg_copy, 0, 0);
+  } else
+    (ptcwd->fp)(ptcwd->arg);
+
+  if (ptcwd->countRunning)
     chpl_taskRunningCntDec(0, 0);
-  chpl_mem_free(pmtwd, 0, 0);
+  chpl_mem_free(ptcwd, 0, 0);
+}
+
+
+void chpl_task_startMovedTask(chpl_fn_p fp,
+                              void* arg,
+                              c_sublocid_t subloc,
+                              chpl_taskID_t id,
+                              chpl_bool serial_state) {
+  //
+  // For now the incoming task ID is simply dropped, though we check
+  // to make sure the caller wasn't expecting us to do otherwise.  If
+  // we someday make task IDs global we will need to be able to set
+  // the ID of this moved task.
+  //
+  assert(id == chpl_nullTaskID);
+
+  taskCallBody(fp, arg, NULL, subloc, serial_state, 0, CHPL_FILE_IDX_UNKNOWN);
 }
 
 
