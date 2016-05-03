@@ -176,8 +176,15 @@ class AbstractJob(object):
         logging.info('Job name is: {0}'.format(job_name))
         return job_name
 
+    @property
+    def select_suffix(self):
+        """Returns suffix for select expression based instance attributes.
 
-    target_arch = chpl_arch.get('target')
+        :rtype: str
+        :returns: select expression suffix, or empty string
+        """
+        return ''
+
     @property
     def knl(self):
         """Returns True when testing KNL (Xeon Phi).
@@ -185,7 +192,7 @@ class AbstractJob(object):
         :rtype: bool
         :returns: True when testing KNL
         """
-        return self.target_arch == 'mic-knl'
+        return chpl_arch.get('target') == 'mic-knl'
 
     def _qsub_command_base(self, output_file):
         """Returns base qsub command, without any resource listing.
@@ -734,6 +741,15 @@ class PbsProJob(AbstractJob):
         job_name = super_name[-15:]
         logging.info('PBSPro job name is: {0}'.format(job_name))
         return job_name
+
+    @property
+    def select_suffix(self):
+        """Returns suffix for select expression based instance attributes.
+
+        :rtype: str
+        :returns: select expression suffix, or empty string
+        """
+        return ''
 
     @classmethod
     def status(cls, job_id):
