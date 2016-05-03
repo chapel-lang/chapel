@@ -267,4 +267,19 @@ module CPtr {
     extern proc memmove(dest: c_void_ptr, const src: c_void_ptr, n: size_t);
     memmove(dest, src, n.safeCast(size_t));
   }
+
+  /*
+    Copies n (non-overlapping) bytes from memory area src to memory
+    area dest. Use :proc:`c_memmove` if memory areas do overlap.
+
+    This is a simple wrapper over the C memcpy() function.
+
+    :arg dest: the destination memory area to copy to
+    :arg src: the source memory area to copy from
+    :arg n: the number of bytes from src to copy to dest
+   */
+  inline proc c_memcpy(dest: c_ptr, const src: c_ptr, n: integral) {
+    extern proc memcpy (dest: c_void_ptr, const src: c_void_ptr, n: size_t);
+    memcpy(dest, src, n.safeCast(size_t));
+  }
 }
