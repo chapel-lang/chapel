@@ -7,11 +7,11 @@ class Child : Parent {
   var f3 = f1 * 2; // 8.54
 
   proc init(parentFieldVal: real) {
-    f2 = f1 - 3.2; // Error, parent field f1 hasn't been initialized yet
     // Omitted field relies on parent field value.
     super.init(parentFieldVal);
-    // The proper way to do this is to either use the value we know the parent
-    // field will be updated to, or wait to initialize the field until Phase 2
+    f2 = f1 - 3.2;
+    // overwrites the default value of f2.  If that was costly, we could noinit
+    // the field in Phase 1
   }
 }
 
