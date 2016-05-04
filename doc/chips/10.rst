@@ -24,6 +24,8 @@ Outline
    - `Phase 1 of Initialization`_
    - `Phase 2 of Initialization`_
    - `Syntax`_
+   - `Parent/Child Field Dependence`_
+   - `Ordering of Parent/Child Initialization`_
  * `Referencing Other Initializers`_
  * `Implementation Strategy, Misc.`_
  * `Noinit`_
@@ -51,6 +53,9 @@ call.
 
 Description
 -----------
+
+.. contents:: Outline
+   :local:
 
 Compiler Generated Initializers
 +++++++++++++++++++++++++++++++
@@ -249,6 +254,88 @@ visible in syntax 2, so that the rules for Phase 1 may be applied to the first
 block while the rules for Phase 2 may be applied to the second, without a
 constant check to the location of the ``.init()`` call which is the linchpin for
 syntax 1.
+
+Parent/Child Field Dependence
+*****************************
+
+We also considered allowing a child's fields to be initialized based on
+its parent's fields. For example, the child could control the point
+during its Phase 1 when the parent's Phase 1 is to be invoked.
+The following example is based on the second syntax above:
+
+.. code-block:: chapel
+
+   class Parent {
+     var D: domain(1);
+     proc init(myRange) {
+       D = {myRange};  // Phase 1
+     } finalize {
+       ... Phase 2 code ...
+     }
+   }
+
+   class Child: Parent {
+     var xD: domain(1);
+     proc init(myRange, extra) {
+       super.init(myRange);   // initializes Parent.D
+       xD = D.expand(extra);  // initialize xD based on Parent.D
+     } finalize {
+       ... Phase 2 code ...
+     }
+   }
+
+Analogously, we could allow the child to control the point during its Phase 2
+when the parent's Phase 2 is to be invoked. For example:
+
+.. code-block:: chapel
+
+   class Child: Parent {
+     proc init(...) {
+       ... Phase 1 code ...
+     } finalize {
+       ... Phase 2 in Child ...
+       super.finalize();      // executes Phase 2 in Parent
+     }
+   }
+
+This approach seems to require syntax 2.
+We chose not to incorporate this feature because of the additional complexity
+it introduces in how initialization is performed.
+
+Ordering of Parent/Child Initialization
+***************************************
+
+We also considered allowing the parent class to perform final initialization
+actions after the child class(es) have established their initialization
+invariants. An example of such an action is adding the new object to a shared
+list. If the list is concurrently accessible, all other invariants on the
+new object must have been established prior to such addition.
+
+One way to achieve this is by introducing the optional "lastly" phase, to be executed
+in the parent after all actions specified by child class(es) have completed.
+It allows parent to assume "final control" over newly-created objects.
+
+The following example relies on syntax 2:
+
+.. code-block:: chapel
+
+   class Parent {
+     proc init(...) {
+       ... Phase 1 in Parent ...
+     } finalize {
+       ... Phase 2 in Parent ...
+     } lastly {
+       AllObjects.add(this); // done after Parent's and Child's Phase 2
+     }
+   }
+   class Child: Parent {
+     proc init(...) finalize {
+       ... Phase 2 in Child ...
+     }
+   }
+
+We did not incorporate this functionality because we preferred the user
+to perform such "final" actions outside of the initializer.
 
 Referencing Other Initializers
 ++++++++++++++++++++++++++++++
