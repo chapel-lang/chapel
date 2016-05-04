@@ -76,6 +76,7 @@
   m(TASK_LIST_DESC,       "task list descriptor",                     false), \
   m(THREAD_PRV_DATA,      "thread private data",                      false), \
   m(THREAD_LIST_DESC,     "thread list descriptor",                   false), \
+  m(THREAD_STACK_DESC,    "thread stack descriptor",                  false), \
   m(IO_BUFFER,            "io buffer or bytes",                       true ), \
   m(OS_LAYER_TMP_DATA,    "OS layer temporary data",                  true ), \
   m(GMP,                  "gmp data",                                 true ), \

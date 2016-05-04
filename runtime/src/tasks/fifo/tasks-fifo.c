@@ -40,6 +40,7 @@
 #include <inttypes.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <sys/mman.h>
 #include <unistd.h>
 #include <math.h>
 
@@ -319,6 +320,34 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s) {
   chpl_thread_mutexDestroy(&s->lock);
 }
 
+static void setup_main_thread_private_data(void)
+{
+  thread_private_data_t* tp;
+
+  tp = (thread_private_data_t*) chpl_mem_alloc(sizeof(thread_private_data_t),
+                                               CHPL_RT_MD_THREAD_PRV_DATA,
+                                               0, 0);
+
+  tp->ptask = (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t),
+                                           CHPL_RT_MD_TASK_POOL_DESC,
+                                           0, 0);
+  tp->ptask->id           = get_next_task_id();
+  tp->ptask->fun          = NULL;
+  tp->ptask->arg          = NULL;
+  tp->ptask->is_executeOn = false;
+  tp->ptask->filename     = CHPL_FILE_IDX_MAIN_PROGRAM;
+  tp->ptask->lineno       = 0;
+  tp->ptask->p_list_head  = NULL;
+  tp->ptask->next         = NULL;
+  tp->lockRprt            = NULL;
+
+  // Set up task-private data for locale (architectural) support.
+  tp->ptask->chpl_data.prvdata.serial_state = true;     // Set to false in chpl_task_callMain().
+
+  chpl_thread_setPrivateData(tp);
+}
+
+
 // Tasks
 
 void chpl_task_init(void) {
@@ -345,31 +374,7 @@ void chpl_task_init(void) {
   // install the signal handlers, because when those are invoked they
   // may use the thread private data.
   //
-  {
-    thread_private_data_t* tp;
-
-    tp = (thread_private_data_t*) chpl_mem_alloc(sizeof(thread_private_data_t),
-                                                 CHPL_RT_MD_THREAD_PRV_DATA,
-                                                 0, 0);
-
-    tp->ptask = (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t),
-                                             CHPL_RT_MD_TASK_POOL_DESC,
-                                             0, 0);
-    tp->ptask->id           = get_next_task_id();
-    tp->ptask->fun          = NULL;
-    tp->ptask->arg          = NULL;
-    tp->ptask->is_executeOn = false;
-    tp->ptask->filename     = CHPL_FILE_IDX_MAIN_PROGRAM;
-    tp->ptask->lineno       = 0;
-    tp->ptask->p_list_head  = NULL;
-    tp->ptask->next         = NULL;
-    tp->lockRprt            = NULL;
-
-    // Set up task-private data for locale (architectural) support.
-    tp->ptask->chpl_data.prvdata.serial_state = true;     // Set to false in chpl_task_callMain().
-
-    chpl_thread_setPrivateData(tp);
-  }
+  setup_main_thread_private_data();
 
   if (blockreport) {
     progress_cnt = 0;
@@ -393,10 +398,79 @@ void chpl_task_exit(void) {
 }
 
 
-void chpl_task_callMain(void (*chpl_main)(void)) {
+typedef void (*main_ptr_t)(void);
+static void* do_callMain(void* arg) {
+  main_ptr_t chpl_main = (main_ptr_t) arg;
+
+  // make sure this thread has thread-private data.
+  setup_main_thread_private_data();
+
   chpl_main();
+  return NULL;
 }
 
+/* These extern are implemented in threads-pthreads.c
+ * and they are used for allocate the stack of the main
+ * task as a normal task
+ */
+extern chpl_bool       chpl_use_guard_page;
+extern chpl_bool       chpl_alloc_stack_in_heap;
+
+extern void            chpl_init_heap_stack(void);
+extern void*           chpl_alloc_pthread_stack(size_t);
+extern void            chpl_free_pthread_stack(void*);
+
+void chpl_task_callMain(void (*chpl_main)(void)) {
+  // since we want to run all work in a task with a comm-friendly stack,
+  // run main in a pthread that we will wait for.
+  size_t stack_size;
+  void* stack;
+  pthread_attr_t attr;
+  pthread_t thread;
+  int rc;
+
+  chpl_init_heap_stack();
+
+  rc = pthread_attr_init(&attr);
+  if( rc != 0 ) {
+    chpl_internal_error("pthread_attr_init main failed");
+  }
+
+  stack_size  = chpl_thread_getCallStackSize();
+  
+  if(chpl_alloc_stack_in_heap){
+    stack = chpl_alloc_pthread_stack(stack_size);
+    if(stack == NULL)
+      chpl_internal_error("chpl_alloc_pthread_stack main failed");
+  
+    rc = pthread_attr_setstack(&attr, stack, stack_size);
+    if( rc != 0 ) {
+      chpl_internal_error("pthread_attr_setstack main failed");
+    }
+  }
+  else {
+    rc = pthread_attr_setstacksize(&attr, stack_size);
+    if( rc != 0 ) {
+      chpl_internal_error("pthread_attr_setstacksize main failed");
+    }
+  }
+
+  rc = pthread_create(&thread, &attr, do_callMain, chpl_main);
+  if( rc != 0 ) {
+    chpl_internal_error("pthread_create main failed");
+  }
+
+  rc = pthread_join(thread, NULL);
+  if( rc != 0 ) {
+    chpl_internal_error("pthread_join main failed");
+  }
+
+  if(chpl_alloc_stack_in_heap){
+    chpl_free_pthread_stack(stack);
+  }
+  
+  pthread_attr_destroy(&attr);
+}
 
 void chpl_task_stdModulesInitialized(void) {
   //
