@@ -21,15 +21,17 @@ Outline
  * `Compiler Generated Initializers`_
  * `Initializer Naming`_
  * `Defining the Initializer Body`_
+
    - `Phase 1 of Initialization`_
    - `Phase 2 of Initialization`_
    - `Syntax`_
+   - `Definition Location`_
+
  * `Referencing Other Initializers`_
  * `Implementation Strategy, Misc.`_
  * `Noinit`_
  * `Copy Initializers`_
  * `Summary`_
-
 
 
 Rationale
@@ -163,13 +165,13 @@ earlier fields, but not of later fields:
 fields may be accessed during this phase, as they have not been given an initial
 value yet – the parent's Phase 1 will be entered once the child's phase 1 is
 complete (more information on this process will be provided later in this
-document `Referencing Other Initializers`_).  Local helper variables may be
-created and used, and functions may be called so long as ``this`` is not
-provided as an argument, but loops and parallel statements are not allowed to
-contain the initialization of fields, as fields cannot be initialized multiple
-times or in an arbitrary order.  Should allowing loops and parallel statements
-which do not violate this condition prove infeasible to implement, they will not
-be allowed at all during this phase.
+document in the section on `Referencing Other Initializers`_).  Local helper
+variables may be created and used, and functions may be called so long as
+``this`` is not provided as an argument, but loops and parallel statements are
+not allowed to contain the initialization of fields, as fields cannot be
+initialized multiple times or in an arbitrary order.  Should allowing loops and
+parallel statements which do not violate this condition prove infeasible to
+implement, they will not be allowed at all during this phase for the time being.
 
 Phase 2 of Initialization
 *************************
@@ -223,14 +225,14 @@ The first syntax has the benefit of maintaining the initializer as a single
 body.  It appears more visually simple to the type designer's eyes, though the
 implementation may need to be more complicated to accommodate this benefit
 (which is not necessarily an argument against it).  Local variables can be
-shared from Phase 1 to Phase 2, and ``if`` statements may be used to wrap across
-both phases, though loops and parallel statements are not allowed to encapsulate
-both phases.  However, since the call to the parent constructor serves as the
-division between the two phases, it would be easy for this statement to get lost
-amid a larger and more complex initializer body.  Additionally, because the
-phase split is not as extreme as in the second syntax, the type designer may be
-more confused or frustrated when code placed after the call is valid but
-identical code before it is not.
+shared from Phase 1 to Phase 2, and ``param`` or compile-time const ``if``
+statements may be used to wrap across both phases, though loops and parallel
+statements are not allowed to encapsulate both phases.  However, since the call
+to the parent initializer serves as the division between the two phases, it
+would be easy for this statement to get lost amid a larger and more complex
+initializer body.  Additionally, because the phase split is not as extreme as in
+the second syntax, the type designer may be more confused or frustrated when
+code placed after the call is valid but identical code before it is not.
 
 In contrast, the second syntax denotes more obviously the divide between the two
 phases.  Different rules for the different portions of the initializer would
@@ -249,6 +251,36 @@ visible in syntax 2, so that the rules for Phase 1 may be applied to the first
 block while the rules for Phase 2 may be applied to the second, without a
 constant check to the location of the ``.init()`` call which is the linchpin for
 syntax 1.
+
+Definition Location
+*******************
+An initializer for a type may be defined within its original confines:
+
+.. code-block:: chapel
+
+   record Bar {
+     ... // Some fields
+     proc init(...) { ... }
+     ... // Some methods
+   }
+
+At the same scope as the type definition:
+
+.. code-block:: chapel
+
+   record Bar {
+     ... // Some fields and methods
+   }
+   proc init(...) { ... }
+
+Or even in a separate module from where the type was defined, so long as the
+type itself is accessible from that scope.  While the latter could allow
+extensions to the type that the type designer did not intend, the type designer
+may still maintain control over which fields may be manipulated in this way.
+This can be done either by setting fields as private (when private fields and
+methods are supported) so that the knowledge of these fields' existence is
+hidden, or by defining a parenthesesless method instead of a field by the same
+name so that the value may be relied upon in all circumstances.
 
 Referencing Other Initializers
 ++++++++++++++++++++++++++++++
@@ -317,7 +349,8 @@ double initialization.
 
 An initializer may only contain one ``this.init(<args>)`` or
 ``super.init(<args>)`` call in a single path through the body – it may not
-contain both, or multiple of either one.
+contain both, or multiple of either one.  Additionally, only ``param``
+conditionals may surround one of these calls.
 
 If no ``this.init(<args>)`` or ``super.init(<args>)`` call is present, the
 compiler will insert an argument-less ``super.init()`` call at the beginning of
