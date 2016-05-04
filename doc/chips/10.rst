@@ -17,21 +17,21 @@ ordinary and more complex cases.
 Outline
 -------
 
-* `Rationale`_: The Problems Associated With Constructors
-* `Compiler Generated Initializers`_
-* `Initializer Naming`_
-* `Defining the Initializer Body`_
+ * `Rationale`_: The Problems Associated With Constructors
+ * `Compiler Generated Initializers`_
+ * `Initializer Naming`_
+ * `Defining the Initializer Body`_
 
-  - `Phase 1 of Initialization`_
-  - `Phase 2 of Initialization`_
-  - `Syntax`_
-  - `Definition Location`_
+   - `Phase 1 of Initialization`_
+   - `Phase 2 of Initialization`_
+   - `Syntax`_
+   - `Definition Location`_
 
-* `Referencing Other Initializers`_
-* `Implementation Strategy, Misc.`_
-* `Noinit`_
-* `Copy Initializers`_
-* `Summary`_
+ * `Referencing Other Initializers`_
+ * `Implementation Strategy, Misc.`_
+ * `Noinit`_
+ * `Copy Initializers`_
+ * `Summary`_
 
 
 Rationale
