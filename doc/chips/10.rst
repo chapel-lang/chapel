@@ -17,7 +17,7 @@ ordinary and more complex cases.
 Outline
 -------
 
-.. contents::
+.. contents:: outline
    :local:
 
 
