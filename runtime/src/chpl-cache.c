@@ -1060,14 +1060,14 @@ void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
 
   prev = NULL;
   bottom = &match->bottom_index[bottom_idx];
-  bottom_match = bottom_list_search(*bottom, low_bits, node, &prev);
+  bottom_match = bottom_list_search(*bottom, raddr, node, &prev);
 
   assert( bottom_match );
   assert( bottom_match == element );
 
   // Remove bottom_match (== element) from the list.
   if( prev ) {
-    prev->next = bottom_match->bottom_next;
+    prev->bottom_next = bottom_match->bottom_next;
   } else {
     // no prev means we are the list head.
     *bottom = bottom_match->bottom_next;
@@ -1432,7 +1432,7 @@ struct cache_entry_s* find_in_tree(struct rdcache_s* tree,
   top_match = top_list_search(*head, high_bits, NULL);
   if (!top_match) return NULL;
   bottom = &top_match->bottom_index[bottom_idx];
-  bottom_match = bottom_list_search(*bottom, low_bits, node, &bottom_prev);
+  bottom_match = bottom_list_search(*bottom, raddr, node, &bottom_prev);
   return bottom_match;
 }
 
@@ -1863,7 +1863,7 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
   }
 
   bottom = &top_match->bottom_index[bottom_idx];
-  bottom_match = bottom_list_search(*bottom, low_bits, node, &bottom_prev);
+  bottom_match = bottom_list_search(*bottom, raddr, node, &bottom_prev);
 
   if( bottom_match ) {
   // If X is in A1out then find space for X and add it to the head of Am
