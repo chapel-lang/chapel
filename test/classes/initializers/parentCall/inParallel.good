@@ -1,1 +1,1 @@
-inParallel.chpl:7: error: super.init() call in parallel statement makes Phase fror other parallel statements ambiguous
+inParallel.chpl:7: error: super.init() call in parallel statement makes Phase for other statements ambiguous
