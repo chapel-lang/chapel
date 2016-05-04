@@ -441,12 +441,36 @@ proc create_and_analyze_graph(Pairs)
     components[cids[vid]].append(vid);
   }
 
+
+  //var distributedVertices = partition_graph(components);
+
   // Naive solution to partition problem
-  // TODO -- distribute subGraphs as blockDist
-  var subGraphs = partition_graph(components);
+  // TODO -- distribute distributedVertices as blockDist
+  var localeDom = {0..#numLocales};
+  var Dom = localeDom dmapped Block(localeDom);
+  var distributedVertices: [localeDom] list(int(32));
+
+  QuickSortLists(components, reverse=true);
+
+  // Distribute array values across bins
+  for idxlist in components {
+    for idx in idxlist do
+      distributedVertices[0].append(idx);
+    SelectionSortLists(distributedVertices);
+  }
+
+  /* TODO -- print stuff
+  writeln("distributedVertices:");
+  for loc in Locales {
+    on loc {
+      writeln(distributedVertices._value.locArr[here.id].myElems);
+    }
+  }
+  */
+
 
   writeln("bin lengths:");
-  for bin in subGraphs {
+  for bin in distributedVertices {
     writeln(bin.length);
   }
 
@@ -532,65 +556,92 @@ proc create_and_analyze_graph(Pairs)
     // stop unless we determine we should continue
     go.write(false, memory_order_relaxed);
 
+    /* for Block Distributed version, we need to:
+
+        * Find a way to dmap with out specific bins from above
+          * 1xnumLocales array of arrays?
+          * coforall { on loc { }}?
+
+        * Make sure all other read/writes are local
+          * Encapsulate inner loop
+          * local copies of:
+            * labels?
+            * G (read-only)
+
+        * After all is said and done, increment labels by largest label from
+          previous locale
+
+        * I assume reorder reduces overlap of neighbors?
+    
+    */
     // TODO:  -> forall, but handle races in vertex labels?
     // iterate over G.vertices in a random order
-    serial !parallel { forall vid in reorder {
+    serial !parallel { forall vids in distributedVertices {
     //for vid in G.vertices {
+      for vid in vids {
 
-      if printall then
-        writeln("on node ", vid, " currently in group ", labels[vid]);
-
-      // label -> count
-      var foundLabels:domain(int(32));
-      var counts:[foundLabels] int;
-
-      for nid in G.Neighbors(vid) {
-        // TODO -- shouldn't be needed.
-        if nid == 0 then continue;
+        //if distributed && verbose {
+          //writeln("on locale ", here.id, " there are ",
+          //        distributedVertices._value.locArr[here.id].myElems.size,
+          //        " vertices");
+        //}
 
         if printall then
-          writeln("on neighbor ", nid);
-        var nlabel = labels[nid].read(memory_order_relaxed);
-        if printall then
-          writeln("with label ", nlabel);
+          writeln("on node ", vid, " currently in group ", labels[vid]);
 
-        if ! foundLabels.member(nlabel) {
-          foundLabels += nlabel;
+        // label -> count
+        var foundLabels:domain(int(32));
+        var counts:[foundLabels] int;
+
+        for nid in G.Neighbors(vid) {
+          // TODO -- shouldn't be needed.
+          if nid == 0 then continue;
+
+          if printall then
+            writeln("on neighbor ", nid);
+          var nlabel = labels[nid].read(memory_order_relaxed);
+          if printall then
+            writeln("with label ", nlabel);
+
+          if ! foundLabels.member(nlabel) {
+            foundLabels += nlabel;
+          }
+          counts[nlabel] += 1;
         }
-        counts[nlabel] += 1;
-      }
 
-      var mylabel = labels[vid].read(memory_order_relaxed);
+        var mylabel = labels[vid].read(memory_order_relaxed);
 
-      // TODO: ties should be broken uniformly randomly
-      var maxlabel:int(32) = 0;
-      var maxcount = 0;
-      // TODO -- performance -- this allocates memory.
-      // There might not be a tie.
-      var tiebreaker = makeRandomStream(seed+vid, eltType=bool,
-                                        parSafe=false, algorithm=RNG.PCG);
-      for (count,lab) in zip(counts, counts.domain) {
-        if count > maxcount || (count == maxcount && tiebreaker.getNext()) {
-          maxcount = count;
-          maxlabel = lab;
+        // TODO: ties should be broken uniformly randomly
+        var maxlabel:int(32) = 0;
+        var maxcount = 0;
+        // TODO -- performance -- this allocates memory.
+        // There might not be a tie.
+        var tiebreaker = makeRandomStream(seed+vid, eltType=bool,
+                                          parSafe=false, algorithm=RNG.PCG);
+        for (count,lab) in zip(counts, counts.domain) {
+          if count > maxcount || (count == maxcount && tiebreaker.getNext()) {
+            maxcount = count;
+            maxlabel = lab;
+          }
         }
-      }
-      delete tiebreaker;
+        delete tiebreaker;
 
-      // TODO:
-      // Did the existing label correspond to a maximal label?
-      // stop when every node has a label a maximum number of neighbors have
-      // (e.g. there might be 2 labels each attaining the maximum)
-      if foundLabels.member[mylabel] && counts[mylabel] < maxlabel {
-        go.write(true, memory_order_relaxed);
-      }
+        // TODO:
+        // Did the existing label correspond to a maximal label?
+        // stop when every node has a label a maximum number of neighbors have
+        // (e.g. there might be 2 labels each attaining the maximum)
+        if foundLabels.member[mylabel] && counts[mylabel] < maxlabel {
+          go.write(true, memory_order_relaxed);
+        }
 
-      // set the current label to the maximum label.
-      if mylabel != maxlabel then
-        labels[vid].write(maxlabel, memory_order_relaxed);
-    }
+        // set the current label to the maximum label.
+        if mylabel != maxlabel then
+          labels[vid].write(maxlabel, memory_order_relaxed);
+      } // for vid in vids
+    } // forall vids
     i += 1;
-  } }
+  } // serial !parallel 
+  } // while !go
 
   graphAlgorithmTime.stop();
 
@@ -610,14 +661,14 @@ proc create_and_analyze_graph(Pairs)
 /* Partition graph vertices into bins for distribution across locales */
 proc partition_graph(components) {
   // TODO -- Replace with real numLocales at some point
-  var numlocales = 4,
-      localeDom = {0..#numlocales},
-      bins: [localeDom] list(int);
+  var localeDom = {0..#numLocales},
+      Dom = localeDom dmapped Block(localeDom),
+      bins: [localeDom] list(int(32));
 
   QuickSortLists(components, reverse=true);
 
   // Distribute array values across bins
-  for idxlist in components{
+  for idxlist in components {
     for idx in idxlist do
       bins[0].append(idx);
     SelectionSortLists(bins);
