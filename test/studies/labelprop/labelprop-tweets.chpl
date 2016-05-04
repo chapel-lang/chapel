@@ -17,7 +17,7 @@ Computation consists of these steps:
 /* How can we represent a graph in Chapel?
     * Matrix view - dense or sparse
     * Class instances tree
-    
+
     * Opaque Domain view
     var People = opaque;
     var Child: [People] [1..maxChildren] index(People);
@@ -31,8 +31,8 @@ Computation consists of these steps:
     * Array of Edges view
      -> rectangular array of Vertex by vertex ID
      -> each Vertex contains an array of edges (a bag of values)
-        
-    We don't yet have opaque distributions or associative distributions. 
+
+    We don't yet have opaque distributions or associative distributions.
       -- see test/distributions/bradc/assoc
 
     We don't yet support inner arrays with different sizes.
@@ -47,7 +47,9 @@ config var seed = 0;
 config const maxiter = 20;
 config const output = true;
 config const parallel = true;
-config param distributed = false; // NOTE - could default to CHPL_COMM != none
+
+param distributed = if CHPL_COMM == "none" then false
+                    else true;
 
 use FileSystem;
 use Spawn;
@@ -56,6 +58,8 @@ use Graph;
 use Random;
 use UserMapAssoc;
 use BlockDist;
+use List;
+use listSorts;
 
 // packing twitter user IDs to numbers
 var total_tweets_processed : atomic int;
@@ -136,9 +140,8 @@ proc run(todo:list(string), Pairs) {
 
   var nlines = total_lines_processed.read();
 
-  if timing {
+  if timing then
     writeln("parsed ", nlines, " lines in ", parseAndMakeSetTime.elapsed(), " s ");
-  }
 
   create_and_analyze_graph(Pairs);
 
@@ -187,7 +190,7 @@ proc process_json(logfile:channel, fname:string, Pairs) {
 
   if progress then
     writeln(fname, " : processing");
- 
+
   while true {
     got = logfile.readf("%~jt", tweet, error=err);
     if got && !err {
@@ -285,7 +288,7 @@ proc create_and_analyze_graph(Pairs)
   forall (id, other_id) in Pairs with (ref userIds) {
     if Pairs.member( (other_id, id) ) {
       //writeln("Reciprocal match! ", (id, other_id) );
-      
+
       // add to userIds
       userIds += id;
       // Not necessary to add other_id now since we will
@@ -311,7 +314,7 @@ proc create_and_analyze_graph(Pairs)
     idToNode[id] = node:int(32);
     nodeToId[node] = id;
   }
-  
+
   if printall {
     writeln("idToNode:");
     for id in userIds {
@@ -331,7 +334,7 @@ proc create_and_analyze_graph(Pairs)
     writeln("creating triples");
 
   var triples = [(id, other_id) in Pairs]
-                   if id < other_id && Pairs.member( (other_id, id) ) then 
+                   if id < other_id && Pairs.member( (other_id, id) ) then
                      new Triple(idToNode[id], idToNode[other_id]);
 
   if printall {
@@ -364,11 +367,10 @@ proc create_and_analyze_graph(Pairs)
 
   createGraphTime.stop();
 
-  if timing {
+  if timing then
     writeln("created graph in ", createGraphTime.elapsed(), " s ");
-  }
 
-  if progress then 
+  if progress then
     writeln("done creating graph");
 
   if printall {
@@ -381,6 +383,79 @@ proc create_and_analyze_graph(Pairs)
   }
 
   if progress then
+    writeln("connected component analysis");
+
+  var CCATime:Timer;
+  CCATime.start();
+
+  // Component ID
+  var cid: int(32) = 0;
+  // Graph of componenent IDs
+  var cids:[G.vertices] int(32);
+  // todo stack
+  var todo: list(int(32));
+
+  for vid in G.vertices {
+    // if vertex has not been visited
+    if cids[vid] then continue;
+
+    cid += 1;
+    todo.prepend(vid: int(32));
+
+    if printall then
+      writeln('Vertex ', vid, ' has neighbors:');
+
+    do {
+      for nid in G.Neighbors(todo.pop_front()) {
+        // TODO -- checking value of nid shouldn't be necessary
+        if nid == 0 then continue;
+        if cids[nid] then continue;
+        cids[nid] = cid;
+        todo.prepend(nid:int(32));
+
+        if printall then
+          writeln(nid);
+
+      }
+    } while todo.first != nil;
+  }
+
+  const totalcomponents = cid;
+
+  writeln("number of connected components: ", totalcomponents);
+
+  CCATime.stop();
+
+  if timing then
+    writeln("connected component analysis ran in ", CCATime.elapsed(), " s");
+
+  if progress then
+    writeln("graph partition");
+
+  var graphPartitionTime: Timer;
+  graphPartitionTime.start();
+
+  // TODO -- parallelize (should be easy)
+  var components: [{1..totalcomponents}] list(int(32));
+  for vid in G.vertices {
+    components[cids[vid]].append(vid);
+  }
+
+  // Naive solution to partition problem
+  // TODO -- distribute subGraphs as blockDist
+  var subGraphs = partition_graph(components);
+
+  writeln("bin lengths:");
+  for bin in subGraphs {
+    writeln(bin.length);
+  }
+
+  graphPartitionTime.stop();
+
+  if timing then
+    writeln("graph partitioning ran in ", graphPartitionTime.elapsed(), " s");
+
+  if progress then
     writeln("label propagation");
 
   var graphAlgorithmTime:Timer;
@@ -391,7 +466,7 @@ proc create_and_analyze_graph(Pairs)
 
   var labels:[1..max_nid] atomic int(32);
   forall (lab,i) in zip(labels,1:int(32)..) {
-    // TODO -- elegance - use "atomic counter" that acts as normal var 
+    // TODO -- elegance - use "atomic counter" that acts as normal var
     // or change the default for the atomic
     labels[i].write(i, memory_order_relaxed);
   }
@@ -505,7 +580,7 @@ proc create_and_analyze_graph(Pairs)
       // TODO:
       // Did the existing label correspond to a maximal label?
       // stop when every node has a label a maximum number of neighbors have
-      // (e.g. there might be 2 labels each attaining the maximum) 
+      // (e.g. there might be 2 labels each attaining the maximum)
       if foundLabels.member[mylabel] && counts[mylabel] < maxlabel {
         go.write(true, memory_order_relaxed);
       }
@@ -519,9 +594,8 @@ proc create_and_analyze_graph(Pairs)
 
   graphAlgorithmTime.stop();
 
-  if timing {
-    writeln("graph algorithm ran ", graphAlgorithmTime.elapsed(), " s ");
-  }
+  if timing then
+    writeln("graph algorithm ran in ", graphAlgorithmTime.elapsed(), " s ");
 
 
   if output {
@@ -533,4 +607,21 @@ proc create_and_analyze_graph(Pairs)
   }
 }
 
+/* Partition graph vertices into bins for distribution across locales */
+proc partition_graph(components) {
+  // TODO -- Replace with real numLocales at some point
+  var numlocales = 4,
+      localeDom = {0..#numlocales},
+      bins: [localeDom] list(int);
 
+  QuickSortLists(components, reverse=true);
+
+  // Distribute array values across bins
+  for idxlist in components{
+    for idx in idxlist do
+      bins[0].append(idx);
+    SelectionSortLists(bins);
+  }
+
+  return bins;
+}
