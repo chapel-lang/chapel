@@ -12,4 +12,5 @@ See the first CHIP for an overview.
 * [Error Handling in Chapel](8.rst)
 * [Chapel Package Manager](9.rst)
 * [Initializers](10.rst)
+* [Alternative Initializer Features](11.rst)
 
