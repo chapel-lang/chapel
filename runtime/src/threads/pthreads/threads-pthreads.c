@@ -144,6 +144,7 @@ void* chpl_alloc_pthread_stack(size_t stack_size){
   void*  mem_buffer;
   int    rc;
 
+  rc = 0;
   // Gets the system page size since we'll use it for guard pages
   // and guard pages are only enabled when not using a huge-pages heap.
   page_size = chpl_getSysPageSize();
@@ -180,6 +181,9 @@ void* chpl_alloc_pthread_stack(size_t stack_size){
 void chpl_free_pthread_stack(void* stack){
   int free_flag;
   size_t page_size;
+  
+  free_flag = 0;
+  page_size = 0;
 
   if(chpl_use_guard_page){
     free_flag = PROT_READ | PROT_WRITE | PROT_EXEC;
