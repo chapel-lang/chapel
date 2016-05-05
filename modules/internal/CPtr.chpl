@@ -213,35 +213,32 @@ module CPtr {
     return c_pointer_return(x);
   }
 
+  private extern const CHPL_RT_MD_ARRAY_ELEMENTS:chpl_mem_descInt_t;
+
   /*
-    Allocate memory that is filled with zeros. This memory should eventually be
-    freed with c_free.
+    Allocate memory and initialize all bits to 0. Note that this simply zeros
+    memory, it does not call Chapel initializers (it is meant for primitive
+    types and C interoperability only.) This memory should eventually be freed
+    with :proc:`c_free`.
 
     :arg eltType: the type of the elements to allocate
     :arg size: the number of elements to allocate
     :returns: a c_ptr(eltType) to allocated memory
     */
   inline proc c_calloc(type eltType, size: integral) : c_ptr(eltType) {
-    var ret:c_ptr(eltType);
-    __primitive("array_alloc", ret, eltType, size);
-    // TODO - one day, this should call calloc instead of
-    // initializing the memory possibly in parallel.
-    init_elts(ret, size, eltType);
-    return ret;
+    return chpl_here_calloc(size, 1, CHPL_RT_MD_ARRAY_ELEMENTS):c_ptr(eltType);
   }
 
   /*
-    Allocate memory that is not initialized. The memory should be written to
-    before it is read. This memory should eventually be freed with c_free.
+    Allocate memory that is not initialized. This memory should eventually be
+    freed with :proc:`c_free`.
 
     :arg eltType: the type of the elements to allocate
     :arg size: the number of elements to allocate
     :returns: a c_ptr(eltType) to allocated memory
     */
   inline proc c_malloc(type eltType, size: integral) : c_ptr(eltType) {
-    var ret:c_ptr(eltType);
-    __primitive("array_alloc", ret, eltType, size);
-    return ret;
+    return chpl_here_alloc(size, CHPL_RT_MD_ARRAY_ELEMENTS):c_ptr(eltType);
   }
 
   /* Free memory that was allocated with :proc:`c_calloc` or :proc:`c_malloc`.
@@ -249,7 +246,7 @@ module CPtr {
     :arg data: the c_ptr to memory that was allocated
     */
   inline proc c_free(data: c_ptr) {
-    __primitive("array_free", data);
+    chpl_here_free(data);
   }
 
 
