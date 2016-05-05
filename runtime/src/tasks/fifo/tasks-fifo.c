@@ -429,6 +429,7 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   pthread_t thread;
   int rc;
 
+  stack = NULL;
   chpl_init_heap_stack();
 
   rc = pthread_attr_init(&attr);
