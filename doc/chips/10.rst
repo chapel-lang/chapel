@@ -271,7 +271,7 @@ At the same scope as the type definition:
    record Bar {
      ... // Some fields and methods
    }
-   proc init(...) { ... }
+   proc Bar.init(...) { ... }
 
 Or even in a separate module from where the type was defined, so long as the
 type itself is accessible from that scope.  While the latter could allow
