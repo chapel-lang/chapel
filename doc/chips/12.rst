@@ -42,7 +42,7 @@ and `C` is a non-generic class.
 Record Initialization
 +++++++++++++++++++++
 
-This section applies to generic records.  Also, these examples are meant
+This section applies to non-generic records.  Also, these examples are meant
 to be introductory. While these examples should be correct with respect
 to all planned ways to reduce unnecessary record copies, the details of
 these are discussed in other documents.
