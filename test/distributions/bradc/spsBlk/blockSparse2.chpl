@@ -27,7 +27,7 @@ var MatElems: sparse subdomain(Elems);
 //
 // Populate the sparse domain.  Note that for best performance (a)
 // adding indices in pre-sorted order works best and (b) declaring
-// your dense array after your sparse domain has been finalized is
+// your sparse array after your sparse domain has been finalized is
 // ideal.
 //
 for i in 0..#n {
