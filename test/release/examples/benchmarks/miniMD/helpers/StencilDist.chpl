@@ -248,7 +248,7 @@ class LocStencilArr {
   }
 }
 
-proc makeZero(param rank : int) {
+private proc makeZero(param rank : int) {
   var ret : rank*int;
   return ret;
 }
@@ -317,6 +317,24 @@ proc Stencil.dsiAssign(other: this.type) {
       locDist(locid) = new LocStencil(rank, idxType, locid, boundingBoxDims,
                                     targetLocDomDims);
 }
+
+//
+// Stencil distributions are equivalent if they share the same bounding
+// box and target locale set.
+//
+proc Stencil.dsiEqualDMaps(that: Stencil(?)) {
+  return (this.boundingBox == that.boundingBox &&
+          this.targetLocales.equals(that.targetLocales) &&
+          this.fluff == that.fluff &&
+          this.periodic == that.periodic);
+}
+
+
+proc Stencil.dsiEqualDMaps(that) param {
+  return false;
+}
+
+
 
 proc Stencil.dsiClone() {
   return new Stencil(boundingBox, targetLocales,
@@ -1601,7 +1619,7 @@ proc StencilArr.doiBulkTransfer(B) {
           // once that is fixed.
           var dest = myLocArr.myElems._value.theData;
           const src = B._value.locArr[rid].myElems._value.theData;
-          __primitive("chpl_comm_get",
+          __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo)),
                       rid,
@@ -1624,7 +1642,7 @@ proc StencilArr.doiBulkTransfer(B) {
                                         );
           var dest = myLocArr.myElems._value.theData;
           const src = B._value.locArr[rid].myElems._value.theData;
-          __primitive("chpl_comm_get",
+          __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo)),
                       dom.dist.targetLocales(rid).id,
