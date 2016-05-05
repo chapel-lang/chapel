@@ -1035,14 +1035,14 @@ where shouldReturnRvalueByConstRef(eltType) {
 
 
 // ref version
-proc StencilArr.dsiAccess(i: idxType...rank) ref
+inline proc StencilArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
 // value version for POD types
-proc StencilArr.dsiAccess(i: idxType...rank)
+inline proc StencilArr.dsiAccess(i: idxType...rank)
 where !shouldReturnRvalueByConstRef(eltType)
   return dsiAccess(i);
 // const ref version for types with copy-ctor
-proc StencilArr.dsiAccess(i: idxType...rank) const ref
+inline proc StencilArr.dsiAccess(i: idxType...rank) const ref
 where shouldReturnRvalueByConstRef(eltType)
   return dsiAccess(i);
 
@@ -1098,6 +1098,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     lowIdx(i) = myFollowThis(i).low;
   }
 
+  const myFollowThisDom = {(...myFollowThis)};
   if fast {
     //
     // TODO: The following is a buggy hack that will only work when we're
@@ -1113,24 +1114,23 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     //
     if arrSection.locale.id != here.id then
       arrSection = myLocArr;
+
+    //
+    // Slicing arrSection.myElems will require reference counts to be updated.
+    // If myElems is an array of arrays, the inner array's domain or dist may
+    // live on a different locale and require communication for reference
+    // counting. Simply put: don't slice inside a local block.
+    //
+    var chunk => arrSection.myElems(myFollowThisDom);
     local {
-      for e in arrSection.myElems((...myFollowThis)) do
-        yield e;
+      for i in chunk do yield i;
     }
   } else {
     //
     // we don't necessarily own all the elements we're following
     //
-    proc accessHelper(i) ref {
-      if myLocArr then local {
-        if myLocArr.locDom.member(i) then
-          return myLocArr.this(i);
-      }
-      return dsiAccess(i);
-    }
-    const myFollowThisDom = {(...myFollowThis)};
     for i in myFollowThisDom {
-      yield accessHelper(i);
+      yield dsiAccess(i);
     }
   }
 }
@@ -1278,7 +1278,7 @@ proc StencilArr.dsiRankChange(d, param newRank: int, param stridable: bool, args
   return alias;
 }
 
-inline proc zeroTuple(t) {
+private inline proc zeroTuple(t) {
   for param i in 1..t.size do 
     if t(i) != 0 then return false;
   return true;
