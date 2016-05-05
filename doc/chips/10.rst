@@ -5,7 +5,7 @@ Status:
   Draft
 
 Authors:
-  Lydia Duncan, Michael Ferguson, Mike Noakes, Vassily Litvinov
+  Lydia Duncan, Michael Ferguson, Mike Noakes, Vassily Litvinov, Kyle Brady
 
 
 Abstract
