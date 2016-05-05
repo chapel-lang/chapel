@@ -1474,7 +1474,7 @@ int validate_queue(struct rdcache_s* tree, struct cache_entry_s* head, struct ca
 
     // and check some additional properties. In tree?
     if( queue != QUEUE_FREE ) {
-      found = find_in_tree(tree, cur->base.node, cur->raddr);
+      found = find_in_tree(tree, cur->node, cur->raddr);
       assert(found == cur);
     }
 
@@ -1539,13 +1539,13 @@ void validate_cache(struct rdcache_s* tree)
           if( in_am ) assert( bottom_cur->queue == QUEUE_AM );
           if( bottom_cur->page ) num_used_pages++;
           if( bottom_cur->dirty ) num_dirty++;
-          bottom_cur = (struct cache_entry_s*)bottom_cur->base.next;
+          bottom_cur = bottom_cur->bottom_next;
           count++;
         }
       }
       // Check that the count is correct.
       assert(count == top_cur->num_entries);
-      top_cur = (struct top_entry_s*)top_cur->base.next;
+      top_cur = top_cur->next;
     }
   }
 
