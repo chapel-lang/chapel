@@ -1,22 +1,6 @@
 /* Home grown selection sort that assumes only first element changed */
-proc SelectionSortLists(Data: [?Dom] ?eltType) where Dom.rank == 1 {
-  for j in Dom {
-    var iMin = j;
-    for i in j+1..Dom.high {
-      if Data[i].length < Data[iMin].length then
-        iMin = i;
-    }
-
-    if (iMin != j) then
-      Data[j] <=> Data[iMin];
-    else
-      break;
-  }
-}
-
-
 /**
-  * Quick sort array of lists by list size
+  * Quick sort array of lists by list Array.size
   * When Chapel supports FCF default arguments, we can make this better
  **/
 proc QuickSortLists(Data: [?Dom] ?eltType, minlen=16, param reverse=false) where Dom.rank == 1 {

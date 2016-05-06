@@ -297,9 +297,7 @@ proc create_and_analyze_graph(Pairs)
   }
 
   if progress then
-    writeln(Pairs.size, " pairs / ",
-            total_tweets_processed.read(), " tweets / ",
-            total_lines_processed.read(), " lines");
+    writeln(userIds.size, " users");
 
   if progress then
     writeln("compacting ids");
@@ -442,36 +440,11 @@ proc create_and_analyze_graph(Pairs)
   }
 
 
-  //var distributedVertices = partition_graph(components);
-
-  // Naive solution to partition problem
-  // TODO -- distribute distributedVertices as blockDist
-  var localeDom = {0..#numLocales};
-  var Dom = localeDom dmapped Block(localeDom);
-  var distributedVertices: [localeDom] list(int(32));
-
-  QuickSortLists(components, reverse=true);
-
-  // Distribute array values across bins
-  for idxlist in components {
-    for idx in idxlist do
-      distributedVertices[0].append(idx);
-    SelectionSortLists(distributedVertices);
-  }
-
-  /* TODO -- print stuff
-  writeln("distributedVertices:");
-  for loc in Locales {
-    on loc {
-      writeln(distributedVertices._value.locArr[here.id].myElems);
-    }
-  }
-  */
-
+  var partitionedGraph = partition_graph(components);
 
   writeln("bin lengths:");
-  for bin in distributedVertices {
-    writeln(bin.length);
+  for bin in partitionedGraph{
+    writeln(bin.Array.size);
   }
 
   graphPartitionTime.stop();
@@ -572,13 +545,13 @@ proc create_and_analyze_graph(Pairs)
           previous locale
 
         * I assume reorder reduces overlap of neighbors?
-    
+
     */
     // TODO:  -> forall, but handle races in vertex labels?
     // iterate over G.vertices in a random order
-    serial !parallel { forall vids in distributedVertices {
+    serial !parallel { forall partition in partitionedGraph{
     //for vid in G.vertices {
-      for vid in vids {
+      for vid in partition.Array {
 
         //if distributed && verbose {
           //writeln("on locale ", here.id, " there are ",
@@ -640,7 +613,7 @@ proc create_and_analyze_graph(Pairs)
       } // for vid in vids
     } // forall vids
     i += 1;
-  } // serial !parallel 
+  } // serial !parallel
   } // while !go
 
   graphAlgorithmTime.stop();
@@ -661,18 +634,46 @@ proc create_and_analyze_graph(Pairs)
 /* Partition graph vertices into bins for distribution across locales */
 proc partition_graph(components) {
   // TODO -- Replace with real numLocales at some point
-  var localeDom = {0..#numLocales},
-      Dom = localeDom dmapped Block(localeDom),
-      bins: [localeDom] list(int(32));
+  const perLocale= LocaleSpace dmapped Block(LocaleSpace);
+  var bins: [perLocale] Sub(int(32));
 
   QuickSortLists(components, reverse=true);
+
+  // Populate bins
+  for i in perLocale {
+    bins[i] = new Sub(int(32), {1..0});
+  }
 
   // Distribute array values across bins
   for idxlist in components {
     for idx in idxlist do
-      bins[0].append(idx);
-    SelectionSortLists(bins);
+      bins[0].Array.push_back(idx);
+    first_sort(bins);
   }
 
   return bins;
+}
+
+/* Sub-region of a domain/array */
+class Sub {
+  type eltType;
+  // TODO -- should these be associative domain/arrays?
+  var Domain: domain(1);
+  var Array: [Domain] eltType;
+}
+
+/* Selection sort that assumes that only the first element is out of order */
+proc first_sort(Data: [?Dom] ?eltType) where Dom.rank == 1 {
+  for j in Dom {
+    var iMin = j;
+    for i in j+1..Dom.high {
+      if Data[i].Array.size < Data[iMin].Array.size then
+        iMin = i;
+    }
+
+    if (iMin != j) then
+      Data[j] <=> Data[iMin];
+    else
+      break;
+  }
 }
