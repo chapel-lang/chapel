@@ -1964,21 +1964,23 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
              entry->node, (void*) &ops->op,
              (int) ops->op.payload_size));
 
-
-      // Get a slot for the handle.
+      // Get a slot for the handle and update sequence number.
       ops->max_ops_sequence_number = pending_push_ops(cache, &handle_toset);
 
-      // Start the operations and initialize the handle.
-      chpl_comm_start_ops(entry->node, &ops->op, handle_toset);
-
-      // Now remove the ops structure and put it back on its free list.
-      // We will wait for it before re-using an ops
+      // Remove the ops structure and put it back on its free list.
+      // We will wait for it before re-using an ops.
+      // We remove it before running start_ops because the
+      // start_ops call might be local and run other cache code.
       DOUBLE_REMOVE(cache, ops, ops_lru);
       ops->entry = NULL;
       entry->ops = NULL;
       DOUBLE_PUSH_TAIL(cache, ops, ops_lru);
       // ... and decrement the number of ops pages.
       cache->num_ops_pages--;
+
+      // Start the operations and initialize the handle.
+      chpl_comm_start_ops(entry->node, &ops->op, handle_toset);
+
     }
   }
 

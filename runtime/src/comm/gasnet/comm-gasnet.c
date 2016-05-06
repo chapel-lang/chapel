@@ -1515,6 +1515,8 @@ void chpl_comm_start_ops(c_nodeid_t node, chpl_op_t *ops,
     // Visual Debug Support : TODO
     // chpl_vdebug_log_fast_fork(node, subloc, fid, arg, arg_size);
 
+    // Operation starts out as not complete.
+    *handle = 0;
     // Set the completion pointer.
     ops->comm_private.completion = handle;
     // Set the pointer back to the original payload,
