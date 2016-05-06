@@ -1,0 +1,5 @@
+local: starting operations a a a
+in MyOperationsHandler.processOperations hello
+in MyOperationsHandler.processOperations hello
+in MyOperationsHandler.processOperations hello
+local: done operations

@@ -1,0 +1,19 @@
+local: starting operations a a a
+in MyOperationsHandler.processOperations hello
+in MyOperationsHandler.processOperations hello
+in MyOperationsHandler.processOperations hello
+local: done operations
+2 locales: starting operations a a b b a
+in MyOperationsHandler.processOperations hello
+in MyOperationsHandler.processOperations hello
+in OtherOperationsHandler.processOperations hello
+in OtherOperationsHandler.processOperations hello
+in MyOperationsHandler.processOperations hello
+2 locales: done operations
+3 locales: starting operations a a b b a
+in MyOperationsHandler.processOperations hello
+in MyOperationsHandler.processOperations hello
+in OtherOperationsHandler.processOperations hello
+in OtherOperationsHandler.processOperations hello
+in MyOperationsHandler.processOperations hello
+3 locales: done operations
