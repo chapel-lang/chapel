@@ -1466,6 +1466,7 @@ FnSymbol::FnSymbol(const char* initName) :
   codegenUniqueNum(1),
   doc(NULL),
   partialCopySource(NULL),
+  varargOldFormal(NULL),
   retSymbol(NULL)
 {
   substitutions.clear();
@@ -1694,6 +1695,7 @@ void FnSymbol::finalizeCopy(void) {
       /*
        * Iterate over the statements that have been added to the function body
        * and add them to the new body.
+       * (Added only if needTupleInBody - see handleSymExprInExpandVarArgs().)
        */
       for_alist_backward(node, varArgNodes->body) {
         this->body->insertAtHead(node->remove());
@@ -1767,6 +1769,15 @@ void FnSymbol::finalizeCopy(void) {
      * replacements.
      */
     update_symbols(this, map);
+
+    // Replace vararg formal if appropriate.
+    if (this->varargOldFormal) {
+      substituteVarargTupleRefs(this->body, this->varargNewFormals.size(),
+                                this->varargOldFormal, this->varargNewFormals);
+      // Done, clean up.
+      this->varargOldFormal = NULL;
+      this->varargNewFormals.clear(); // unless we want to keep these around?
+    }
 
     // Clean up book keeping information.
     this->partialCopyMap.clear();

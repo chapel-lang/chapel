@@ -1628,6 +1628,166 @@ computeGenericSubs(SymbolMap &subs,
 }
 
 
+//
+// Is 'parent' an indexing expression into the tuple 'se'?
+// If so, return the index (between 1 and numArgs). Otherwise return 0.
+//
+static int isVarargAccessIndex(SymExpr* se, CallExpr* parent, int numArgs){
+  if (se == parent->baseExpr) {
+    if(parent->numActuals() == 1) {
+      VarSymbol* idxVar = toVarSymbol(toSymExpr(parent->get(1))->var);
+      if (idxVar && idxVar->immediate &&
+          idxVar->immediate->const_kind == NUM_KIND_INT)
+        {
+          int idxNum = idxVar->immediate->int_value();
+          if (1 <= idxNum && idxNum <= numArgs)
+            return idxNum;
+          // report an "index out of bounds" error otherwise?
+        }
+    }
+  }
+  return 0;
+}
+
+//
+// 'parent' corresponds to tuple(i); replace it with 'replFormal'.
+//
+// If 'parent' is the source of a prim_move into a temp 'dest',
+// then eliminate 'dest' altogether, replacing its uses with 'replFormal'.
+//
+// Q: Why not just keep move(dest,replFormal), which is simpler?
+// A: because 'move' does not preserv replFormal's ref-ness and const-ness,
+// so we will get errors when using dest on the l.h.s. and miss errors
+// when dest or deref(dest) is modified and it shouldn't.
+// Note that we are here before the code is resolved, so we do not
+// necessarily know whether 'replFormal' is a const and/or a ref.
+// To keep 'dest' around, instead of move we probably need to add
+// the AST equivalent of Chapel's "ref dest = replFormal;".
+//
+static void replaceVarargAccess(CallExpr* parent, SymExpr* se,
+                                ArgSymbol* replFormal, SymbolMap& tempReps)
+{
+  if (CallExpr* move = toCallExpr(parent->parentExpr))
+    if (move->isPrimitive(PRIM_MOVE)) {
+      Symbol* dest = toSymExpr(move->get(1))->var;
+      if (dest->hasFlag(FLAG_TEMP)) {
+        // Remove the def of 'dest'.
+        dest->defPoint->remove();
+        move->remove();
+        // Uses of 'dest' will come later. We replace them with 'replFormal'
+        // in substituteVarargTupleRefs() using 'tempReps'.
+        tempReps.put(dest, replFormal);
+        return;
+      }
+    }
+  // Otherwise, just replace 'parent'.
+  parent->replace(new SymExpr(replFormal));
+}
+
+//
+// Is 'parent' the call 'se'.size?
+//
+static bool isVarargSizeExpr(SymExpr* se, CallExpr* parent) {
+  if (parent->isNamed("size"))
+    // Is 'parent' a method call?
+    if (parent->numActuals() == 2)
+      if (SymExpr* firstArg = toSymExpr(parent->get(1)))
+        if (firstArg->var->type == dtMethodToken) {
+          // If this fails, ensure that isVarargSizeExpr still works correctly.
+          INT_ASSERT(parent->get(2) == se);
+          return true;
+        }
+  return false;
+}
+
+//
+// Does 'ast' contain use(s) of the vararg tuple 'formal'
+// that require 'formal' as a whole tuple?
+//
+// Keep in sync with substituteVarargTupleRefs().
+//
+static bool needVarArgTupleAsWhole(BlockStmt* ast, int numArgs,
+                                   ArgSymbol* formal)
+{
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(ast, symExprs);
+
+  for_vector(SymExpr, se, symExprs) {
+    if (se->var == formal) {
+      if (CallExpr* parent = toCallExpr(se->parentExpr)) {
+        SET_LINENO(parent);
+        if (parent->isPrimitive(PRIM_TUPLE_EXPAND)) {
+          // (...formal) -- does not require
+          continue;
+        }
+        if (isVarargAccessIndex(se, parent, numArgs)) {
+          // formal(i) -- does not require
+          continue;
+        }
+        if (isVarargSizeExpr(se, parent)) {
+          // formal.size -- does not require
+          continue;
+        }
+      }
+      // Something else ==> may require.
+      return true;
+    }
+  }
+
+  // The 'formal' is used only in "does not require" cases.
+  return false;
+}
+
+//
+// Replace, in 'ast', uses of the vararg tuple 'formal'
+// with references to individual formals.
+//
+// Keep in sync with needVarArgTupleAsWhole().
+//
+void substituteVarargTupleRefs(BlockStmt* ast, int numArgs, ArgSymbol* formal,
+                               std::vector<ArgSymbol*>& varargFormals)
+{
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(ast, symExprs);
+  SymbolMap tempReps;
+
+  for_vector(SymExpr, se, symExprs) {
+    if (se->var == formal) {
+      if (CallExpr* parent = toCallExpr(se->parentExpr)) {
+        SET_LINENO(parent);
+
+        if (parent->isPrimitive(PRIM_TUPLE_EXPAND)) {
+          // Replace 'parent' with a sequence of individual args.
+          for_vector(ArgSymbol, arg, varargFormals)
+            parent->insertBefore(new SymExpr(arg));
+          parent->remove();
+          continue;
+        }
+
+        if (int idxNum = isVarargAccessIndex(se, parent, numArgs)) {
+          INT_ASSERT(1 <= idxNum && idxNum <= numArgs);
+          ArgSymbol* replFormal = varargFormals[idxNum-1];
+          replaceVarargAccess(parent, se, replFormal, tempReps);
+          continue;
+        }
+
+        if (isVarargSizeExpr(se, parent)) {
+          parent->replace(new SymExpr(new_IntSymbol(numArgs)));
+          continue;
+        }
+
+      }
+      // Cases not "continue"-ed above should have been ruled out
+      // by needVarArgTupleAsWhole().
+      INT_ASSERT(false);
+    } else if (Symbol* replmt = tempReps.get(se->var)) {
+      SET_LINENO(se);
+      se->replace(new SymExpr(replmt));
+    }
+  }
+}
+
+
 /** Common code for multiple paths through expandVarArgs.
  *
  * This code handles the case where the number of varargs are known at compile
@@ -1638,16 +1798,17 @@ static void
 handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
                              ArgSymbol* formal,
                              SymExpr*   sym) {
-  workingFn->addFlag(FLAG_EXPANDED_VARARGS);
-
   // Handle specified number of variable arguments.
   // sym->var is not a VarSymbol e.g. in: proc f(param n, v...n)
   if (VarSymbol* nVar = toVarSymbol(sym->var)) {
     if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate) {
+      workingFn->addFlag(FLAG_EXPANDED_VARARGS);
+
+      SET_LINENO(formal);
       VarSymbol* var       = new VarSymbol(formal->name);
       int        n         = nVar->immediate->int_value();
       CallExpr*  tupleCall = NULL;
-
+      std::vector<ArgSymbol*> varargFormals(n);
       if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true)
         tupleCall = new CallExpr("_type_construct__tuple");
       else
@@ -1664,27 +1825,55 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
         newFormal->cname        = astr("_e", istr(i), "_", formal->cname);
 
         tupleCall->insertAtTail(new SymExpr(newFormal));
-
         formal->defPoint->insertBefore(newArgDef);
+        varargFormals[i] = newFormal;
       }
+
+      bool needTupleInBody;
 
       // Replace mappings to the old formal with mappings to the new variable.
       if (workingFn->hasFlag(FLAG_PARTIAL_COPY)) {
+        bool gotFormal = false; // for assertion only
         for (int index = workingFn->partialCopyMap.n; --index >= 0;) {
           SymbolMapElem& mapElem = workingFn->partialCopyMap.v[index];
 
           if (mapElem.value == formal) {
-            mapElem.value = var;
+            gotFormal = true;
+            needTupleInBody =
+              needVarArgTupleAsWhole(workingFn->partialCopySource->body, n,
+                                     toArgSymbol(mapElem.key));
+
+            if (needTupleInBody) {
+              mapElem.value = var;
+            } else {
+              // We will rely on mapElem.value==formal to replace it away
+              // in finalizeCopy().
+              workingFn->varargOldFormal = formal;
+              workingFn->varargNewFormals = varargFormals;
+            }
+
             break;
           }
         }
+        // If !gotFormal, still need to compute needTupleInBody.
+        // What to pass for 'formal' argument? Or maybe doesn't matter?
+        INT_ASSERT(gotFormal);
+      } else {
+        needTupleInBody = needVarArgTupleAsWhole(workingFn->body, n, formal);
       }
 
       if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
         var->addFlag(FLAG_TYPE_VARIABLE);
       }
 
+      // This is needed regardless of needTupleInBody...
       if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
+        // ... however, we need temporaries even if !needTupleInBody.
+        // Creating one temporary per formal is left as future work.
+        // A challenge is whether varargFormals should contain these
+        // per-formal temporaries instead of the formals, in this case.
+        needTupleInBody = true;
+
         int i = 0;
 
         for_actuals(actual, tupleCall) {
@@ -1705,6 +1894,9 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
           i++;
         }
       }
+
+     // odd indentation to avoid revision diffs on the body of this 'if'
+     if (needTupleInBody) {
 
       // MDN 2016/02/01. Enable special handling for strings with blank intent
 
@@ -1770,8 +1962,13 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
         // Otherwise, do the substitution now.
         subSymbol(workingFn->body, formal, var);
       }
+     } else {
+      // !needTupleInBody
+      substituteVarargTupleRefs(workingFn->body, n, formal, varargFormals);
+     }
 
       if (workingFn->where) {
+       if (needVarArgTupleAsWhole(workingFn->where, n, formal)) {
         VarSymbol* var  = new VarSymbol(formal->name);
         CallExpr*  move = new CallExpr(PRIM_MOVE, var, tupleCall->copy());
 
@@ -1783,6 +1980,10 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
         workingFn->where->insertAtHead(new DefExpr(var));
 
         subSymbol(workingFn->where, formal, var);
+       } else {
+        // !needVarArgTupleAsWhole()
+        substituteVarargTupleRefs(workingFn->where, n, formal, varargFormals);
+       }
       }
 
       formal->defPoint->remove();
@@ -1862,6 +2063,7 @@ expandVarArgs(FnSymbol* origFn, int numActuals) {
 
       Symbol*  newSym     = substitutions.get(def->sym);
       SymExpr* newSymExpr = new SymExpr(new_IntSymbol(numCopies));
+      newSymExpr->astloc = newSym->astloc;
       newSym->defPoint->replace(newSymExpr);
 
       subSymbol(workingFn, newSym, new_IntSymbol(numCopies));
