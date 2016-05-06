@@ -1,0 +1,2 @@
+$CHPL_HOME/modules/packages/Sort.chpl:134: In function 'BubbleSort':
+$CHPL_HOME/modules/packages/Sort.chpl:135: error: The comparator record requires a 'key(a)' or 'compare(a, b)' method
