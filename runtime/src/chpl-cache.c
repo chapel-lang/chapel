@@ -288,10 +288,13 @@ use.
 
 #ifdef HAS_CHPL_CACHE_FNS
 
-// This is now just set at compile time.
-//int CHPL_CACHE_REMOTE = 1;
-#define VERIFY 0
+// Enable extra cache structural checks. Not intended to be fast.
+#define VERIFY 1
 
+// cache configuration
+//  see also cache_create for other settings that,
+//  like these, have been arbitrarily chosen
+//
 // We try to auto-size the cache so that we
 // can have CACHE_PAGES_PER_NODE cache pages per locale, but we
 // do so within the below bounds.
@@ -300,7 +303,23 @@ use.
 #define MAX_CACHE_DATA_SIZE (256*1024*1024)
 
 // How many pending operations can we have at once?
+// This should be a multiple of 8, or code in create_cache
+// should be adjusted to add padding
 #define MAX_PENDING 32
+
+// How big is each ops payload?
+// Should be a multiple of 8
+#define OPS_PAYLOAD 880
+
+// see cache_create - the number of
+//  * top entries
+//  * dirty pages
+//  * ops pages
+// are set based upon the size of the overall cache
+
+// Below is other configuration that is less arbitrarily set.
+// Also, there is less confidence that changing the values below
+// will leave the cache working correctly.
 
 // CACHEPAGE_BITS 
 // Controls the cache page size - the cache manages items of this many bytes
@@ -467,6 +486,27 @@ struct dirty_entry_s {
   uint64_t dirty[CACHEPAGE_BITMASK_WORDS]; // ie we need to create a put for these bytes
 };
 
+
+// this data structure manages operations buffers.
+// separate from main cache so it can be managed in an LRU
+// and because most cache entries won't have operations buffers.
+struct ops_entry_s {
+  // linked list of currently dirty pages
+  struct ops_entry_s* next;
+  struct ops_entry_s* prev;
+  // which cache entry are we talking about here?
+  struct cache_entry_s* entry;
+
+  // sequence number for the latest update started on this data
+  cache_seqn_t max_ops_sequence_number;
+
+  // TODO -- include some way to record indices added
+  // possibly like dirty field in dirty_entry_s.
+  chpl_op_t op;
+};
+#define OPS_SIZE (OPS_PAYLOAD+sizeof(struct ops_entry_s))
+
+
 #define QUEUE_FREE 0
 #define QUEUE_AIN 1
 #define QUEUE_AOUT 2
@@ -506,6 +546,9 @@ struct cache_entry_s {
   uint64_t valid_lines[CACHE_LINES_PER_PAGE_BITMASK_WORDS];
   // dirty info if this cache page is dirty, NULL otherwise.
   struct dirty_entry_s* dirty;
+  // ops if this cache pages has associated operations, NULL otherwise
+  struct ops_entry_s *ops;
+
   // What is the mininimum sequence number stored in this cache entry?
   // If we ran an acquire fence, we need to check that nothing in a cache line is too old.
   cache_seqn_t min_sequence_number;
@@ -649,12 +692,19 @@ struct rdcache_s {
   struct dirty_entry_s *dirty_lru_head;
   struct dirty_entry_s *dirty_lru_tail;
 
+  // List of ops pages (for ops-combining)
+  int num_ops_pages;
+  struct ops_entry_s *ops_lru_head;
+  struct ops_entry_s *ops_lru_tail;
+
   // chpl-comm handles for pending operations
   // After requests are started, they will be stored here..
   unsigned int pending_len; // must be >0 and a power of 2
   int pending_first_entry;
   int pending_last_entry;
+  unsigned char *pending_is_op;
   chpl_comm_nb_handle_t *pending;
+  chpl_comm_nb_ops_handle_t *pending_ops;
   cache_seqn_t *pending_sequence_numbers;
 
   // space for mid-level entries
@@ -675,12 +725,14 @@ struct rdcache_s* cache_create(void) {
   int ain_pages, aout_pages;
   int dirty_pages;
   int top_entries;
+  int ops_pages;
   int i;
   int n_entries;
   struct top_entry_s* top_nodes = NULL;
   struct page_list_s* page_list_entries = NULL;
   struct cache_entry_s *entries = NULL;
   struct dirty_entry_s *dirty_nodes = NULL;
+  unsigned char *ops_nodes = NULL;
   uintptr_t offset;
 
   size_t total_size = 0;
@@ -701,8 +753,13 @@ struct rdcache_s* cache_create(void) {
                                 // buffer"
   // How many pages can be dirty at once?
   dirty_pages = 16 + cache_pages / 64; 
-  // How many mid-level elements can we have in our tree? Note each is 8k in the current config..
+  // How many ops pages can we have going at once?
+  ops_pages = 16 + cache_pages / 64;
+
+  // How many mid-level elements can we have in our tree?
+  // Note each is 8k in the current config..
   top_entries = cache_pages / 16;
+
   // How many cache entries do we need? 
   n_entries = cache_pages + aout_pages;
 
@@ -710,7 +767,10 @@ struct rdcache_s* cache_create(void) {
   total_size += sizeof(struct page_list_s) * cache_pages;
   total_size += sizeof(struct cache_entry_s) * n_entries;
   total_size += sizeof(struct dirty_entry_s) * dirty_pages;
+  total_size += OPS_SIZE * ops_pages;
+  total_size += sizeof(unsigned char) * pending_len;
   total_size += sizeof(chpl_comm_nb_handle_t) * pending_len;
+  total_size += sizeof(chpl_comm_nb_ops_handle_t) * pending_len;
   total_size += sizeof(cache_seqn_t) * pending_len;
   total_size += sizeof(struct top_entry_s) * top_entries;
   // We allocate an extra page for alignment
@@ -733,9 +793,18 @@ struct rdcache_s* cache_create(void) {
   // dirty entries
   dirty_nodes = (struct dirty_entry_s*) (buffer + total_size);
   total_size += sizeof(struct dirty_entry_s) * dirty_pages;
+  // ops entries
+  ops_nodes = (unsigned char*) (buffer + total_size);
+  total_size += OPS_SIZE * ops_pages;
+  // pending type area
+  c->pending_is_op = (unsigned char*) (buffer + total_size);
+  total_size += sizeof(unsigned char) * pending_len;
   // and the pending data area
   c->pending = (chpl_comm_nb_handle_t*) (buffer + total_size);
   total_size += sizeof(chpl_comm_nb_handle_t) * pending_len;
+  // and the pending ops area
+  c->pending_ops = (chpl_comm_nb_ops_handle_t*) (buffer + total_size);
+  total_size += sizeof(chpl_comm_nb_ops_handle_t) * pending_len;
   // and the pending sequence numbers
   c->pending_sequence_numbers = (cache_seqn_t*) (buffer + total_size);
   total_size += sizeof(cache_seqn_t) * pending_len;
@@ -812,17 +881,36 @@ struct rdcache_s* cache_create(void) {
   // set up dirty_lru as a linked list of dirty entries
   c->dirty_lru_head = &dirty_nodes[0];
   for( i = 0; i < dirty_pages; i++ ) {
-    struct dirty_entry_s* next;
-    struct dirty_entry_s* prev;
-    if( i + 1 < dirty_pages ) next = &dirty_nodes[i+1];
-    else next = NULL;
-    if( i > 0 ) prev = &dirty_nodes[i-1];
-    else prev = NULL;
+    struct dirty_entry_s* next = NULL;
+    struct dirty_entry_s* prev = NULL;
+    if( i + 1 < dirty_pages )
+      next = &dirty_nodes[i+1];
+    if( i > 0 )
+      prev = &dirty_nodes[i-1];
     dirty_nodes[i].next = next;
     dirty_nodes[i].prev = prev;
     dirty_nodes[i].entry = NULL;
   }
   c->dirty_lru_tail = &dirty_nodes[dirty_pages-1];
+
+  c->ops_lru_head = NULL;
+  c->ops_lru_tail = NULL;
+  // set up ops_lru as a linked list of ops entries
+  c->ops_lru_head = (struct ops_entry_s*) ops_nodes;
+  for( i = 0; i < ops_pages; i++ ) {
+    struct ops_entry_s* next = NULL;
+    struct ops_entry_s* prev = NULL;
+    struct ops_entry_s* cur = (struct ops_entry_s*) (ops_nodes + i*OPS_SIZE);
+    if( i + 1 < ops_pages )
+      next = (struct ops_entry_s*) (ops_nodes + (i+1)*OPS_SIZE);
+    if( i > 0 )
+      prev = (struct ops_entry_s*) (ops_nodes + (i-1)*OPS_SIZE);
+    cur->next = next;
+    cur->prev = prev;
+    cur->entry = NULL;
+  }
+  c->ops_lru_tail = (struct ops_entry_s*) (ops_nodes + (ops_pages-1)*OPS_SIZE);
+
 
   c->pending_len = MAX_PENDING;
   c->pending_first_entry = -1;
@@ -871,6 +959,17 @@ void cache_entry_print(struct cache_entry_s* entry, const char* prefix, int prin
          (int) entry->min_sequence_number,
          (int) entry->max_put_sequence_number,
          (int) entry->max_prefetch_sequence_number);
+  if( entry->ops ) {
+    struct ops_entry_s* ops = entry->ops;
+    printf("%s ops %p subloc %i fid %i sn %d raddr %p payload_size %i\n",
+           prefix, ops,
+           (int) ops->op.subloc,
+           (int) ops->op.fid,
+           (int) ops->max_ops_sequence_number,
+           ops->op.obj,
+           (int) ops->op.payload_size);
+  }
+
   if( print_data && entry->page ) {
     printf("%svalid lines: %llx\n", prefix, (long long int) entry->valid_lines[0]);
     printf("%sdata:", prefix);
@@ -1106,9 +1205,12 @@ void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
 #define FLUSH_DO_INVALIDATE 8
 // Evict the page. entry->page will be added to a free list.
 #define FLUSH_DO_EVICT 16
+// Flush the operations.
+#define FLUSH_DO_CLEAR_OPS 32
+
 
 // These are the normally-used combinations
-#define FLUSH_EVICT (FLUSH_DO_PAGE|FLUSH_DO_CLEAR_DIRTY|FLUSH_DO_PENDING|FLUSH_DO_EVICT)
+#define FLUSH_EVICT (FLUSH_DO_PAGE|FLUSH_DO_CLEAR_DIRTY|FLUSH_DO_PENDING|FLUSH_DO_EVICT|FLUSH_DO_CLEAR_OPS)
 #define FLUSH_INVALIDATE_REGION (FLUSH_DO_CLEAR_DIRTY|FLUSH_DO_PENDING|FLUSH_DO_INVALIDATE)
 #define FLUSH_INVALIDATE_PAGE (FLUSH_DO_PAGE|FLUSH_DO_CLEAR_DIRTY|FLUSH_DO_PENDING|FLUSH_DO_INVALIDATE)
 #define FLUSH_PREPARE_PUT (FLUSH_DO_PENDING)
@@ -1327,10 +1429,14 @@ unsigned char* allocate_page(struct rdcache_s* cache)
 static
 void ensure_free_dirty(struct rdcache_s* cache)
 {
+  struct cache_entry_s* entry;
+
   assert( cache->dirty_lru_tail );
 
-  if( cache->dirty_lru_tail->entry ) {
-    flush_entry(cache, cache->dirty_lru_tail->entry, FLUSH_DO_PAGE|FLUSH_DO_CLEAR_DIRTY,
+  entry = cache->dirty_lru_tail->entry;
+  if( entry ) {
+    flush_entry(cache, entry,
+                FLUSH_DO_PAGE|FLUSH_DO_CLEAR_DIRTY,
                 0, CACHEPAGE_SIZE);
   }
 }
@@ -1365,6 +1471,22 @@ static void use_dirty(struct rdcache_s* cache, struct dirty_entry_s* dirty)
   DOUBLE_PUSH_HEAD(cache, dirty, dirty_lru);
 }
 
+static
+void ensure_free_ops(struct rdcache_s* cache)
+{
+  struct cache_entry_s* entry;
+
+  assert( cache->ops_lru_tail );
+
+  entry = cache->ops_lru_tail->entry;
+  if( entry ) {
+    flush_entry(cache, entry,
+                FLUSH_DO_PAGE|FLUSH_DO_CLEAR_OPS,
+                0, CACHEPAGE_SIZE);
+  }
+}
+
+
 
 static
 void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn);
@@ -1377,8 +1499,50 @@ void wait_for(struct rdcache_s* cache, cache_seqn_t sn)
   do_wait_for(cache, sn);
 }
 
+static struct ops_entry_s* allocate_ops(struct rdcache_s* cache,
+                                        struct cache_entry_s* for_entry)
+{
+  struct ops_entry_s* ops;
+
+  assert( cache->ops_lru_tail );
+
+  if( cache->ops_lru_tail->entry ) ensure_free_ops(cache);
+
+  // Wait for any in-flight ops before we re-use the buffer.
+  wait_for(cache, cache->ops_lru_tail->max_ops_sequence_number);
+
+  ops = cache->ops_lru_tail;
+  DOUBLE_REMOVE_TAIL(cache, ops_lru);
+  DOUBLE_PUSH_HEAD(cache, ops, ops_lru);
+  cache->num_ops_pages++;
+
+  ops->entry = for_entry;
+  for_entry->ops = ops;
+
+  ops->max_ops_sequence_number = NO_SEQUENCE_NUMBER;
+
+  ops->op.subloc = c_sublocid_any;
+  ops->op.fid = -1;
+  ops->op.obj = NULL;
+  ops->op.payload_size = 0;
+
+
+  return ops;
+}
+
+static void use_ops(struct rdcache_s* cache, struct ops_entry_s* ops)
+{
+  DOUBLE_REMOVE(cache, ops, ops_lru);
+  DOUBLE_PUSH_HEAD(cache, ops, ops_lru);
+}
+
+
+// pushes a spot for a handle onto the pending tasks
+// the handle starts out as NULL. The caller should set it immediately
+// after this call.
 static
-cache_seqn_t pending_push(struct rdcache_s* cache, chpl_comm_nb_handle_t handle)
+cache_seqn_t pending_push_core(struct rdcache_s* cache,
+                               int* index_out)
 {
   cache_seqn_t wait_sn;
   cache_seqn_t sn;
@@ -1401,11 +1565,42 @@ cache_seqn_t pending_push(struct rdcache_s* cache, chpl_comm_nb_handle_t handle)
 
   fifo_circleb_push(&cache->pending_first_entry, &cache->pending_last_entry, cache->pending_len);
   index = cache->pending_last_entry;
-  cache->pending[index] = handle;
+
+  *index_out = index;
+
   cache->pending_sequence_numbers[index] = sn;
  
-  DEBUG_PRINT(("in pending_push added pending[%i]=%p sn=%i\n",
-               index, (void*) handle, (int) sn));
+  DEBUG_PRINT(("in pending_push added pending[%i] sn=%i\n",
+               index, (int) sn));
+
+  return sn;
+}
+
+static
+cache_seqn_t pending_push_ops(struct rdcache_s* cache,
+                              chpl_comm_nb_ops_handle_t **handle_toset)
+{
+  int index = -1;
+  cache_seqn_t sn = pending_push_core(cache, &index);
+
+  cache->pending_is_op[index] = 1;
+  cache->pending[index] = NULL; // not using this one...
+  //memset(&cache->pending_ops[index], 0, sizeof(chpl_comm_nb_ops_handle_t));
+  *handle_toset = &cache->pending_ops[index];
+
+  return sn;
+}
+
+
+static
+cache_seqn_t pending_push(struct rdcache_s* cache, chpl_comm_nb_handle_t handle)
+{
+  int index = -1;
+  cache_seqn_t sn = pending_push_core(cache, &index);
+
+  cache->pending_is_op[index] = 0;
+  cache->pending[index] = handle;
+  //memset(&cache->pending_ops[index], 0xcc, sizeof(chpl_comm_nb_ops_handle_t));
 
   return sn;
 }
@@ -1449,6 +1644,17 @@ int find_in_dirty(struct rdcache_s* tree, struct dirty_entry_s* entry)
 }
 
 static
+int find_in_ops(struct rdcache_s* tree, struct ops_entry_s* entry)
+{
+  struct ops_entry_s* head = tree->ops_lru_head;
+  struct ops_entry_s* cur;
+  for( cur = head; cur; cur = cur->next ) {
+    if( cur == entry ) return 1;
+  }
+  return 0;
+}
+
+static
 int find_in_queue(struct cache_entry_s* head, struct cache_entry_s* entry)
 {
   struct cache_entry_s* cur;
@@ -1483,14 +1689,19 @@ int validate_queue(struct rdcache_s* tree, struct cache_entry_s* head, struct ca
 
     // Ain and Am only have page?
     if( queue == QUEUE_AIN || queue == QUEUE_AM ) {
-      assert(cur->page);
+      //assert(cur->page); can have ops too...
       if( cur->dirty ) {
         // Check that it's in the dirty list.
         assert(find_in_dirty(tree, cur->dirty));
       }
+      if( cur->ops ) {
+        // Check that it's in the ops list.
+        assert(find_in_ops(tree, cur->ops));
+      }
     } else {
       assert(! cur->page);
       assert(! cur->dirty);
+      assert(! cur->ops);
     }
     forward_count++;
   }
@@ -1518,6 +1729,7 @@ void validate_cache(struct rdcache_s* tree)
   int num_used_pages = 0;
   int num_used_top_nodes = 0;
   int num_dirty = 0;
+  int num_ops = 0;
 
   // 0: All tree entries must be in either Ain, Aout, or Am,
   //    and num_entries is correct for each top entry.
@@ -1539,6 +1751,7 @@ void validate_cache(struct rdcache_s* tree)
           if( in_am ) assert( bottom_cur->queue == QUEUE_AM );
           if( bottom_cur->page ) num_used_pages++;
           if( bottom_cur->dirty ) num_dirty++;
+          if( bottom_cur->ops ) num_ops++;
           bottom_cur = bottom_cur->bottom_next;
           count++;
         }
@@ -1573,6 +1786,7 @@ void validate_cache(struct rdcache_s* tree)
       if( cur->entry ) {
         with_entry_count++;
         assert(without_entry_count == 0); // used ones before free ones.
+        assert(cur->entry->dirty == cur);
       } else without_entry_count++;
     }
     for( cur = tree->dirty_lru_tail; cur; cur = cur->prev ) {
@@ -1582,6 +1796,32 @@ void validate_cache(struct rdcache_s* tree)
     assert(forward_count == reverse_count);
     assert(num_dirty == tree->num_dirty_pages);
     assert(with_entry_count == tree->num_dirty_pages);
+  }
+
+  // 4.5: ops list must be well-formed
+  {
+    struct ops_entry_s* cur;
+    int forward_count = 0;
+    int reverse_count = 0;
+    int with_entry_count = 0;
+    int without_entry_count = 0;
+
+    for( cur = tree->ops_lru_head; cur; cur = cur->next ) {
+      if( cur->next ) assert(cur->next->prev == cur);
+      forward_count++;
+      if( cur->entry ) {
+        with_entry_count++;
+        assert(without_entry_count == 0); // used ones before free ones.
+        assert(cur->entry->ops == cur);
+      } else without_entry_count++;
+    }
+    for( cur = tree->ops_lru_tail; cur; cur = cur->prev ) {
+      if( cur->prev ) assert(cur->prev->next == cur);
+      reverse_count++;
+    }
+    assert(forward_count == reverse_count);
+    assert(num_ops == tree->num_ops_pages);
+    assert(with_entry_count == tree->num_ops_pages);
   }
   
   // 5: must not lose entries. Check that the entry free list
@@ -1625,6 +1865,7 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
   cache_seqn_t at;
   cache_seqn_t max_completed = cache->completed_request_number;
   int last;
+  int complete;
 
   DEBUG_PRINT(("wait_for(%i) completed=%i\n", (int) sn, (int) max_completed));
 
@@ -1647,14 +1888,27 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
       // Wait for some requests
       last = cache->pending_last_entry;
       if( last < index ) last = cache->pending_len - 1;
-      while( cache->pending[index] ) {
-        DEBUG_PRINT(("wait_for waiting %i..%i\n", index, last));
-        // Wait for some requests to complete.
-        chpl_comm_wait_nb_some(&cache->pending[index], last - index + 1);
+
+      if( cache->pending_is_op[index] ) {
+        // Wait for an op
+        chpl_wait_op(&cache->pending_ops[index]);
+      } else {
+        while( cache->pending[index] ) {
+          DEBUG_PRINT(("wait_for waiting %i..%i\n", index, last));
+          // Wait for some requests to complete.
+          chpl_comm_wait_nb_some(&cache->pending[index], last - index + 1);
+        }
       }
       // cache->pending[index] == NULL now
     }
-    if( chpl_comm_test_nb_complete(cache->pending[index]) ) {
+
+    // Set complete
+    if( cache->pending_is_op[index] )
+      complete = chpl_test_op_complete(&cache->pending_ops[index]);
+    else
+      complete = chpl_comm_test_nb_complete(cache->pending[index]);
+
+    if( complete ) {
       // we completed cache->pending[index], so remove the entry from the queue.
       DEBUG_PRINT(("wait_for removing %i\n", index));
       fifo_circleb_pop( &cache->pending_first_entry, &cache->pending_last_entry, cache->pending_len);
@@ -1680,8 +1934,6 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
   struct page_list_s* free_page_list_entry;
   unsigned char* page;
   uintptr_t start;
-  struct dirty_entry_s* dirty;
-  uint64_t *dirty_bits;
   raddr_t skip = raddr & CACHEPAGE_MASK;
   uintptr_t len = len_in;
   raddr_t line_start, line_last, line_next;
@@ -1702,6 +1954,34 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
     skip = 0; len = CACHEPAGE_SIZE;
   }
 
+  // Perform any operations
+  if( op & FLUSH_DO_CLEAR_OPS ) {
+    if( entry->ops ) {
+      struct ops_entry_s* ops = entry->ops;
+      chpl_comm_nb_ops_handle_t* handle_toset = NULL;
+
+      DEBUG_PRINT(("chpl_comm_start_ops(%i, %p, %i)\n",
+             entry->node, (void*) &ops->op,
+             (int) ops->op.payload_size));
+
+
+      // Get a slot for the handle.
+      ops->max_ops_sequence_number = pending_push_ops(cache, &handle_toset);
+
+      // Start the operations and initialize the handle.
+      chpl_comm_start_ops(entry->node, &ops->op, handle_toset);
+
+      // Now remove the ops structure and put it back on its free list.
+      // We will wait for it before re-using an ops
+      DOUBLE_REMOVE(cache, ops, ops_lru);
+      ops->entry = NULL;
+      entry->ops = NULL;
+      DOUBLE_PUSH_TAIL(cache, ops, ops_lru);
+      // ... and decrement the number of ops pages.
+      cache->num_ops_pages--;
+    }
+  }
+
   line_start = round_down_to_mask(skip, CACHELINE_MASK);
   line_last = round_down_to_mask(skip+len-1, CACHELINE_MASK);
   line_next = line_last + CACHELINE_SIZE;
@@ -1713,6 +1993,9 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
     // start writes for all dirty bits
 
     if( entry->dirty ) {
+      struct dirty_entry_s* dirty;
+      uint64_t *dirty_bits;
+
       dirty = entry->dirty;
       page = entry->page;
       assert(page);
@@ -1726,7 +2009,7 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
           start = got_skip;
           // Start a put for len bytes starting at page + start
           DEBUG_PRINT(("chpl_comm_start_put(%p, %i, %p, %i)\n",
-                 page+start, entry->base.node, (void*) (entry->raddr+start),
+                 page+start, entry->node, (void*) (entry->raddr+start),
                  (int) got_len));
 
           handle =
@@ -1888,6 +2171,7 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
     memset(&bottom_match->valid_lines, 0, sizeof(uint64_t)*CACHE_LINES_PER_PAGE_BITMASK_WORDS);
     // Clear the dirty pointer and sequence numbers.
     bottom_match->dirty = NULL;
+    bottom_match->ops = NULL;
     bottom_match->min_sequence_number = NO_SEQUENCE_NUMBER;
     bottom_match->max_put_sequence_number = NO_SEQUENCE_NUMBER;
     bottom_match->max_prefetch_sequence_number = NO_SEQUENCE_NUMBER;
@@ -1899,10 +2183,10 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
     bottom_tmp = allocate_entry(tree);
 
     // Fill in the entry...
+    // Link to next hashtable element, adding not replacing.
     bottom_tmp->bottom_next = *bottom;
     bottom_tmp->raddr = raddr;
     bottom_tmp->node = node;
-    // Link to next hashtable element, adding not replacing.
 
     bottom_tmp->queue = QUEUE_AIN;
     bottom_tmp->readahead_skip = 0;
@@ -1913,6 +2197,7 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
     bottom_tmp->page = page;
     memset(&bottom_tmp->valid_lines, 0, sizeof(uint64_t)*CACHE_LINES_PER_PAGE_BITMASK_WORDS);
     bottom_tmp->dirty = NULL;
+    bottom_tmp->ops = NULL;
     bottom_tmp->min_sequence_number = NO_SEQUENCE_NUMBER;
     bottom_tmp->max_put_sequence_number = NO_SEQUENCE_NUMBER;
     bottom_tmp->max_prefetch_sequence_number = NO_SEQUENCE_NUMBER;
@@ -1989,7 +2274,7 @@ void cache_put(struct rdcache_s* cache,
     page = NULL;
 
     // Ignore entries in Aout for now.
-    if( entry && ! entry->page ) entry = NULL;
+    if( entry && entry->queue == QUEUE_AOUT ) entry = NULL;
 
     if( entry ) {
       // Is this cache line available for use, based on when we
@@ -2056,6 +2341,116 @@ void cache_put(struct rdcache_s* cache,
 #endif
 
 }
+
+/*  TODO.
+
+   Plan:
+
+   * cache entry has pointer, like dirty entry,
+     to ops data
+   * ops data preallocated like dirty entries
+   * don't record indices for now
+     (future: index can control write-after-write consistency
+              use mode to specify consistency required)
+
+   * put the ops entry on the queue, start a request,
+     keep sequence number in the cache entry AND
+     in the ops entry. Data cannot be reused until
+     that sequence number is complete.
+
+   * other request just starts, creates new buffer, go.
+
+   each cache entry
+   can only support 1 object at a time
+   use dirty bits to record indexes
+
+*/
+static
+void cache_start_op(struct rdcache_s* cache,
+                    c_nodeid_t node,
+                    c_sublocid_t subloc,
+                    chpl_fn_int_t fid,
+                    raddr_t raddr,
+                    void* buf,
+                    size_t buf_size,
+                    int32_t mode, int64_t idx)
+{
+  struct cache_entry_s* entry;
+  struct ops_entry_s* ops;
+  raddr_t ra_page;
+  cache_seqn_t sn;
+
+  DEBUG_PRINT(("cache_start_op %i:%p from %p len %i\n",
+               (int) node, (void*) raddr, buf, (int) buf_size));
+
+  // Ignore zero-length payloads
+  if (buf_size == 0)
+    return;
+
+  ra_page = round_down_to_mask(raddr, CACHEPAGE_MASK);
+
+  // Is the page in the tree?
+  entry = find_in_tree(cache, node, ra_page);
+  ops = NULL;
+
+  // Ignore entries in Aout for now.
+  if( entry && entry->queue == QUEUE_AOUT ) entry = NULL;
+
+  if( entry ) {
+    // Does the cache page already have another ops buffer in
+    // it for a different object? If so, flush first.
+    ops = entry->ops;
+    if (ops) {
+      size_t cur_payload_sz = ops->op.payload_size;
+      if (ops->op.subloc != subloc ||
+          ops->op.fid != fid ||
+          (raddr_t) ops->op.obj != raddr ||
+          cur_payload_sz + buf_size > OPS_PAYLOAD ) {
+
+        flush_entry(cache, entry,
+                    FLUSH_DO_CLEAR_OPS | FLUSH_DO_PAGE,
+                    0, CACHEPAGE_SIZE);
+        // sets entry->ops == NULL
+      }
+    }
+  }
+
+  if( entry ) use_entry(cache, entry);
+  else entry = make_entry(cache, node, ra_page, NULL);
+
+  if( !entry->ops) {
+    // allocate ops... giving one with a 0 byte payload
+    ops = allocate_ops(cache, entry);
+    // now ops->entry = ops
+
+    ops->op.node = node;
+    ops->op.subloc = subloc;
+    ops->op.fid = fid;
+    ops->op.obj = (void*) raddr;
+  } else {
+    use_ops(cache, entry->ops);
+    ops = entry->ops;
+  }
+
+  // Now add the data to our buffer.
+  memcpy(&ops->op.payload[ops->op.payload_size], buf, buf_size);
+  ops->op.payload_size += buf_size;
+
+  // This will increment next request number so cache events are recorded.
+  sn = cache->next_request_number;
+  cache->next_request_number++;
+  // Set the max sequence number so that
+  // flushing the cache page or the ops entry will
+  // wait for that.
+  //entry->max_ops_sequence_number = sn;
+  ops->max_ops_sequence_number = sn;
+
+  // Make sure that there is an ops available for next time.
+  ensure_free_ops(cache);
+  // Make sure that there is an available page for next time.
+  ensure_free_page(cache, NULL);
+}
+
 
 /*
     // Handle prefetching. See http://www.ece.eng.wayne.edu/~sjiang/Tsinghua-2010/linux-readahead.pdf
@@ -2308,7 +2703,7 @@ void cache_get(struct rdcache_s* cache,
 
 
     // Ignore entries in Aout for now.
-    if( entry && ! entry->page ) entry = NULL;
+    if( entry && entry->queue == QUEUE_AOUT ) entry = NULL;
 
     if( entry ) {
       // Is this cache line available for use, based on when we
@@ -2644,16 +3039,35 @@ void cache_invalidate(struct rdcache_s* cache,
 }
 #endif
 
+// clean dirty pages, start writes
+// start any ops
 static
-void cache_clean_dirty(struct rdcache_s* cache)
+void cache_start_all(struct rdcache_s* cache)
 {
-  struct dirty_entry_s* cur;
+  {
+    struct dirty_entry_s* cur;
+    // Clean dirty pages; start writes
+    while( 1 ) {
+      cur = cache->dirty_lru_head;
+      // Dirty records with page entries are before free ones without
+      if( ! cur || ! cur->entry ) break;
+      flush_entry(cache, cur->entry, FLUSH_DO_CLEAR_DIRTY, 0, CACHEPAGE_SIZE);
+      // FLUSH_DO_CLEAR_DIRTY moves the entry to the tail of the list
+      // and starts the writes.
+    }
+  }
 
-  while( 1 ) {
-    cur = cache->dirty_lru_head;
-    // Dirty records with page entries are before free ones without
-    if( ! cur || ! cur->entry ) break;
-    flush_entry(cache, cur->entry, FLUSH_DO_CLEAR_DIRTY, 0, CACHEPAGE_SIZE);
+  {
+    struct ops_entry_s* ops;
+    // Start operations
+    while( 1 ) {
+      ops = cache->ops_lru_head;
+      // Ops records with page entries are before free ones without
+      if( ! ops || ! ops->entry ) break;
+      flush_entry(cache, ops->entry, FLUSH_DO_CLEAR_OPS, 0, CACHEPAGE_SIZE);
+      // FLUSH_DO_CLEAR_OPS moves the entry to the tail of the list
+      // and starts the operations.
+    }
   }
 }
 
@@ -2753,6 +3167,10 @@ void chpl_cache_init(void) {
 
   //printf("CACHE IS ENABLED\n");
   chpl_cache_do_init();
+
+  if( VERIFY ) {
+    printf("VERIFY is on for --cache-remote - it will be slow\n");
+  }
 }
 
 void chpl_cache_exit(void)
@@ -2768,7 +3186,7 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
     struct rdcache_s* cache = tls_cache_remote_data();
     chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
     
-    INFO_PRINT(("%i fence acquire %i release %i %s:%i\n", chpl_nodeID, acquire, release, fn, ln));
+    INFO_PRINT(("%i fence acquire %i release %i %i:%i\n", chpl_nodeID, acquire, release, fn, ln));
 
     TRACE_PRINT(("%d: task %d in chpl_cache_fence(acquire=%i,release=%i) on cache %p from %s:%d\n", chpl_nodeID, (int) chpl_task_getId(), acquire, release, cache, fn?fn:"", ln));
     //printf("%d: task %d in chpl_cache_fence(acquire=%i,release=%i) on cache %p from %s:%d\n", chpl_nodeID, (int) chpl_task_getId(), acquire, release, cache, fn?fn:"", ln);
@@ -2784,7 +3202,7 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
     }
 
     if( release ) {
-      cache_clean_dirty(cache);
+      cache_start_all(cache);
       wait_all(cache);
     }
 #ifdef DUMP
@@ -2923,6 +3341,18 @@ void chpl_cache_set_enabled(int enabled)
   CHPL_CACHE_REMOTE = enabled;
 }
 */
+
+void chpl_cache_comm_start_op(c_nodeid_t node, c_sublocid_t subloc, chpl_fn_int_t fid, void* raddr_obj, void* args, size_t args_size, int32_t mode, int64_t idx)
+{
+  struct rdcache_s* cache = tls_cache_remote_data();
+  TRACE_PRINT(("%d: in chpl_cache_comm_start_op\n", chpl_nodeID));
+  if (chpl_verbose_comm)
+    printf("%d: start op on %d\n", chpl_nodeID, node);
+
+  cache_start_op(cache, node, subloc, fid,
+                 (raddr_t) raddr_obj, args, args_size,
+                 mode, idx);
+}
 
 #endif
 // end ifdef HAS_CHPL_CACHE_FNS
