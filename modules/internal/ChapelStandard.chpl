@@ -65,4 +65,5 @@ module ChapelStandard {
   use Math;
 
   use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
+  use Operations;
 }
