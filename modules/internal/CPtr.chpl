@@ -215,6 +215,11 @@ module CPtr {
 
   private extern const CHPL_RT_MD_ARRAY_ELEMENTS:chpl_mem_descInt_t;
 
+  private inline proc c_sizeof(type x): size_t {
+    extern proc sizeof(type x): size_t;
+    return sizeof(x);
+  }
+
   /*
     Allocate memory and initialize all bits to 0. Note that this simply zeros
     memory, it does not call Chapel initializers (it is meant for primitive
@@ -222,11 +227,12 @@ module CPtr {
     with :proc:`c_free`.
 
     :arg eltType: the type of the elements to allocate
-    :arg size: the number of elements to allocate
+    :arg size: the number of elements to allocate space for
     :returns: a c_ptr(eltType) to allocated memory
     */
   inline proc c_calloc(type eltType, size: integral) : c_ptr(eltType) {
-    return chpl_here_calloc(size, 1, CHPL_RT_MD_ARRAY_ELEMENTS):c_ptr(eltType);
+    const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
+    return chpl_here_calloc(alloc_size, 1, CHPL_RT_MD_ARRAY_ELEMENTS):c_ptr(eltType);
   }
 
   /*
@@ -234,11 +240,12 @@ module CPtr {
     freed with :proc:`c_free`.
 
     :arg eltType: the type of the elements to allocate
-    :arg size: the number of elements to allocate
+    :arg size: the number of elements to allocate space for
     :returns: a c_ptr(eltType) to allocated memory
     */
   inline proc c_malloc(type eltType, size: integral) : c_ptr(eltType) {
-    return chpl_here_alloc(size, CHPL_RT_MD_ARRAY_ELEMENTS):c_ptr(eltType);
+    const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
+    return chpl_here_alloc(alloc_size, CHPL_RT_MD_ARRAY_ELEMENTS):c_ptr(eltType);
   }
 
   /* Free memory that was allocated with :proc:`c_calloc` or :proc:`c_malloc`.
