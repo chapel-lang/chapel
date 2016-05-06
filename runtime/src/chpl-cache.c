@@ -289,7 +289,7 @@ use.
 #ifdef HAS_CHPL_CACHE_FNS
 
 // Enable extra cache structural checks. Not intended to be fast.
-#define VERIFY 1
+#define VERIFY 0
 
 // cache configuration
 //  see also cache_create for other settings that,
