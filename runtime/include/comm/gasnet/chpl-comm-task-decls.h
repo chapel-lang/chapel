@@ -22,6 +22,14 @@
 
 // The type of the communication handle.
 typedef void* chpl_comm_nb_handle_t;
+typedef volatile int chpl_comm_nb_ops_handle_t;
+
+struct chpl_op_comm_use_s {
+  chpl_comm_nb_ops_handle_t *completion;
+  void *arg;
+  c_nodeid_t requesting_node;
+  int serial_state;
+};
 
 // The type of task private data.
 #include "chpl-cache-task-decls.h"
