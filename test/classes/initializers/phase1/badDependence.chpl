@@ -1,8 +1,7 @@
 class ManyFields {
-  var f1 = -f5;
   var f2: int;
   var f3: int;
-  var f4 = f5 * 4;
+  var f4 = 12;
   var f5 = 3;
 
   proc init(val: int) {

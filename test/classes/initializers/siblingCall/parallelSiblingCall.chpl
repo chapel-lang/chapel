@@ -7,7 +7,7 @@ class ParaThis {
   }
 
   proc init(start: int) {
-    val = best;
+    val = start;
     super.init();
   }
 }

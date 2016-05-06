@@ -12,7 +12,7 @@ class Foo {
 
   proc init(f1Val: int, unmod: bool) {
     f1 = f1Val;
-    f2 = f2Val;
+    f2 = unmod;
     super.init();
   }
 }
