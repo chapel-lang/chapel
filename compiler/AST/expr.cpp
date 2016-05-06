@@ -4506,8 +4506,8 @@ GenRet CallExpr::codegen() {
       } else {
         ret = codegenValue(get(1));
       }
-      // _wide_get_addr promises to return a uint.  Hence the cast.
-      ret = codegenCast(dtUInt[INT_SIZE_64], ret);
+      // _wide_get_addr promises to return a c void ptr.  Hence the cast.
+      ret = codegenCast(dtCVoidPtr, ret);
       ret.isUnsigned = true;
       break;
     }

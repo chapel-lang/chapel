@@ -79,10 +79,12 @@ returnInfoInt64(CallExpr* call) {
   return dtInt[INT_SIZE_64];
 }
 
+/*
 static Type*
 returnInfoUInt64(CallExpr* call) {
   return dtUInt[INT_SIZE_64];
 }
+*/
 
 static Type*
 returnInfoSizeType(CallExpr* call) {
@@ -568,7 +570,7 @@ initPrimitive() {
   // functions for debugging.
   prim_def(PRIM_WIDE_GET_LOCALE, "_wide_get_locale", returnInfoLocaleID, false, true);
   prim_def(PRIM_WIDE_GET_NODE, "_wide_get_node", returnInfoNodeID, false, true);
-  prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoUInt64, false, true);
+  prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoCVoidPtr, false, true);
   prim_def(PRIM_IS_WIDE_PTR, "is wide pointer", returnInfoBool);
   //prim_def(PRIM_MAKE_WIDE, "make wide", returnInfoFirst);
 
