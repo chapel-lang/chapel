@@ -20,7 +20,9 @@
 // DefaultAssociative.chpl
 //
 module DefaultAssociative {
-  
+
+  use Operations;
+
   use DSIUtil;
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
@@ -53,10 +55,45 @@ module DefaultAssociative {
    27021597764222939, 54043195528445869, 108086391056891903, 216172782113783773,
    432345564227567561, 864691128455135207);
 
+  class DefaultAssociativeDomOperationsHandler : OperationsHandler {
+    type idxType;
+    param parSafe: bool;
+    var dom: DefaultAssociativeDom(idxType, parSafe);
+    proc processOperations( size:int, buf:c_void_ptr ) {
+      extern proc sizeof(type t):size_t;
+
+      extern proc printf(fmt:c_string, sz:c_int);
+      printf("IN PROCESS size=%i\n", size:c_int);
+
+// Why do I seem to need to use this primitive?
+      var ptr:c_ptr(idxType) = __primitive("cast", c_ptr(idxType), buf);
+      const eltSize = sizeof(idxType):int;
+      var i = 0;
+      var offset = 0;
+      if parSafe then dom.lockTable();
+// Why can't I use request capacity?
+      dom.dsiRequestCapacity(dom.dsiNumIndices + size/eltSize, haveLock=true);
+      while offset < size {
+        //writeln("Adding ", ptr[i], " size is ", dom.dsiNumIndices);
+        dom.dsiAddInternal(ptr[i], haveLock=true);
+        offset += eltSize;
+        i += 1;
+      }
+      if parSafe then dom.unlockTable();
+    }
+    proc enqueueAdd(idx: idxType) {
+      extern proc sizeof(type t):size_t;
+      var idx_copy = idx;
+      var idx_copy_ptr = c_ptrTo(idx_copy);
+      enqueue_operation(this:OperationsHandler, 0, 0,
+                        sizeof(idxType):int, idx_copy_ptr:c_void_ptr);
+    }
+  }
+
   class DefaultAssociativeDom: BaseAssociativeDom {
     type idxType;
     param parSafe: bool;
-  
+
     var dist: DefaultDist;
   
     // The guts of the associative domain
@@ -70,6 +107,8 @@ module DefaultAssociative {
     var tableDom = {0..tableSize-1};
     var table: [tableDom] chpl_TableEntry(idxType);
   
+    var opHandler:DefaultAssociativeDomOperationsHandler(idxType, parSafe);
+
     inline proc lockTable() {
       while tableLock.testAndSet() do chpl_task_yield();
     }
@@ -92,6 +131,8 @@ module DefaultAssociative {
         compilerError("Default Associative domains with idxType=",
                       idxType:string, " are not allowed", 2);
       this.dist = dist;
+      if CHPL_CACHE_REMOTE then
+        this.opHandler = new DefaultAssociativeDomOperationsHandler(idxType, parSafe, this);
     }
   
     //
@@ -279,7 +320,8 @@ module DefaultAssociative {
       return _findFilledSlot(idx)(1);
     }
   
-    proc dsiAdd(idx: idxType, in slotNum : index(tableDom) = -1, haveLock = !parSafe): index(tableDom) {
+    //inline -- get comp error if inlined...
+    proc dsiAddInternal(idx: idxType, in slotNum : index(tableDom) = -1, haveLock = !parSafe): index(tableDom) {
       const inSlot = slotNum;
       on this {
         const shouldLock = !haveLock && parSafe;
@@ -298,6 +340,13 @@ module DefaultAssociative {
       return slotNum;
     }
 
+   proc dsiAdd(idx: idxType) {
+     if this.opHandler then
+       this.opHandler.enqueueAdd(idx);
+     else
+       dsiAddInternal(idx);
+   }
+
     // This routine adds new indices without checking the table size and
     //  is thus appropriate for use by routines like _resize().
     //
@@ -311,6 +360,7 @@ module DefaultAssociative {
         table[slotNum].status = chpl__hash_status.full;
         table[slotNum].idx = idx;
         numEntries.add(1);
+        //writeln("Adding 1 to num entries");
       } else {
         if (slotNum < 0) {
           halt("couldn't add ", idx, " -- ", numEntries.read(), " / ", tableSize, " taken");
@@ -554,7 +604,7 @@ module DefaultAssociative {
           halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
           return data(0);
         } else {
-          const newSlot = dom.dsiAdd(idx, slotNum, haveLock=true);
+          const newSlot = dom.dsiAddInternal(idx, slotNum, haveLock=true);
           if shouldLock then dom.unlockTable();
           return data(newSlot);
         }
