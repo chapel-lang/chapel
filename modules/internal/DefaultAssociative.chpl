@@ -340,7 +340,8 @@ module DefaultAssociative {
       }
     }
   
-    proc dsiRequestCapacity(numKeys:int) {
+    proc dsiRequestCapacity(numKeys:int, haveLock = !parSafe) {
+      const shouldLock = !haveLock && parSafe;
       var entries = numEntries.read();
 
       if entries < numKeys {
@@ -363,8 +364,14 @@ module DefaultAssociative {
         }
 
         //Changing underlying strucure, time for locking
-        if parSafe then lockTable();
+        if shouldLock then lockTable();
         if entries > 0 {
+          if tableSize==prime {
+            if shouldLock then lockTable();
+
+            return;
+          }
+
           // Slow path: back up required
           _backupArrays();
 
@@ -394,7 +401,7 @@ module DefaultAssociative {
         }
 
         //Unlock the table
-        if parSafe then unlockTable();
+        if shouldLock then unlockTable();
       } else if entries > numKeys {
         warning("Requested capacity (" + numKeys + ") " +
                 "is less than current size (" + entries + ")");
