@@ -1,53 +1,69 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Sung-Eun Choi
-   modified by Lydia Duncan
+   contributed by Sung-Eun Choi and Lydia Duncan
 */
 
 
 //
-// config consts can be set from the command line upon execution using
-// --<name>=<value> syntax
+// Note that this program uses the term 'thread' to refer to the
+// parallel entities in order to match the benchmark's description.
+// In Chapel, these are actually 'tasks' (in Chapel, a 'thread' is the
+// system-level resource with which language-level tasks are executed
+// (e.g., POSIX threads).
 //
-config const n = 1000,         // The number of passes that should occur
-             nthreads = 503;   // The number of threads to use
 
+config const n = 1000,        // The number of token passes to perform
+             nthreads = 503;  // the number of threads to use
 
 //
-// A range and array used to represent the set of threads and the sync
-// variables used to coordinate between them.
+// An array of per-thread synchronized integers representing mailboxes
+// for receiving the token.  By default each element will be 'empty'
+// causing reads to block until it becomes full.
 //
-const Threads = 1..nthreads;
-var token$: [Threads] sync int;
+var mailbox$: [1..nthreads] sync int;
+
 
 proc main() {
   //
-  // Signal that the first thread can run once it's started
+  // Write the number of token passes so far (0) to thread 1's
+  // mailbox, giving it the token by making it 'full'.
   //
-  token$[1] = 1;
+  mailbox$[1] = 0;
 
-  // Use a coforall here to start everyone in parallel
-  coforall t in Threads {
-    passTokens(t);
-  }
+  //
+  // Create a task per thread using a 'coforall' over the 'Threads'
+  // range.  Index 'tid' stores the thread's ID.
+  //
+  coforall tid in 1..nthreads do
+    passTokens(tid);
 }
 
 //
-// Each thread spins, and when the value it reads has been changed, it
-// then writes a new value, "passing" the token.  Once the specified
-// number of passes has occurred, prints out the thread who is
-// currently holding the thread and exit.
+// A routine that each thread runs to pass tokens.
 //
-proc passTokens(id) {
-  while (true) {
-    const t = token$[id];
-    token$[id%nthreads+1] = t+1;
-    if t == n + 1 {
-      writeln(id);
-      return;
-    } else if t > n {
-      return;
-    }
-  }
+proc passTokens(tid) {
+  do {
+    //
+    // Read the token value from this thread's mailbox.  If the
+    // mailbox is empty, the thread blocks until it's full.
+    //
+    const numPasses = mailbox$[tid];
+
+    //
+    // Increment the number of token passes and store in the next
+    // thread's mailbox.
+    //
+    mailbox$[tid%nthreads+1] = numPasses+1;
+
+    //
+    // Have the thread that got the n'th token pass write its ID.
+    //
+    if numPasses == n then
+      writeln(tid);
+
+    //
+    // Keep looping until we've passed the token 'n' times.
+    //
+  } while (numPasses < n);
 }
