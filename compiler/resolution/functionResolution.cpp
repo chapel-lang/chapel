@@ -5223,7 +5223,7 @@ static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
     bool unsafeGeneric = true;  // Assume the worst until proven otherwise
 
     //
-    // Grab the generic type's contructor if it has one.  Things like
+    // Grab the generic type's constructor if it has one.  Things like
     // classes and records should.  Things like 'integral' will not.
     //
     FnSymbol* typeCons = type->defaultTypeConstructor;
