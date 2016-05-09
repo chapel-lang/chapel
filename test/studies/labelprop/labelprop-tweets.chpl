@@ -66,6 +66,9 @@ var total_tweets_processed : atomic int;
 var total_lines_processed : atomic int;
 var max_user_id : atomic int;
 
+// Record of timers
+var t: timings;
+
 proc main(args:[] string) {
   var files = args[1..];
   var todo:list(string);
@@ -81,24 +84,28 @@ proc main(args:[] string) {
     }
   }
 
-  // TODO - using 2 functions because of lack of
-  // domain assignment in UserMapAssoc
+  t.total.start();
+
   // Pairs is for collecting twitter  user ID to user ID mentions
-  if distributed {
-    var Pairs: domain( (int, int) ) dmapped UserMapAssoc(idxType=(int, int));
-    run(todo, Pairs);
-  } else {
-    var Pairs: domain( (int, int) );
-    run(todo, Pairs);
-  }
+  var assocDist = new UserMapAssoc(idxType=(int, int)),
+      noDist = new DefaultDist();
+
+  var Dist = if distributed then assocDist
+             else noDist;
+
+  var Pairs: domain( (int, int) ) dmapped new dmap(Dist);
+
+  run(todo, Pairs);
+
+  t.total.stop();
+
+  if timing then
+    t.print();
 }
 
 
 
 proc run(todo:list(string), Pairs) {
-  var t:Timer;
-  t.start();
-
   const FilesSpace = {1..todo.length};
   const BlockSpace = if distributed then
                        FilesSpace dmapped Block(boundingBox=FilesSpace)
@@ -109,10 +116,7 @@ proc run(todo:list(string), Pairs) {
 
   todo.destroy();
 
-  var parseAndMakeSetTime:Timer;
-  parseAndMakeSetTime.start();
-
-
+  t.parse.start();
   forall f in allfiles {
     // TODO -- performance/scalability
     // we don't want to lock/unlock the hashtable
@@ -120,8 +124,7 @@ proc run(todo:list(string), Pairs) {
     // be aggregated.
     process_json(f, Pairs);
   }
-
-  parseAndMakeSetTime.stop();
+  t.parse.stop();
 
   if verbose {
     if distributed {
@@ -138,20 +141,7 @@ proc run(todo:list(string), Pairs) {
   if verbose then
     writeln("the maximum user id was ", max_user_id.read());
 
-  var nlines = total_lines_processed.read();
-
-  if timing then
-    writeln("parsed ", nlines, " lines in ", parseAndMakeSetTime.elapsed(), " s ");
-
   create_and_analyze_graph(Pairs);
-
-  t.stop();
-  var days = t.elapsed(TimeUnits.hours) / 24.0;
-  var m = 1000000.0;
-  if timing {
-    writeln("processed ", nlines, " lines in ", t.elapsed(), " s ");
-    writeln("that is ", nlines / days / m, "M tweets/day processed");
-  }
 }
 
 record TweetUser {
@@ -277,11 +267,9 @@ proc create_and_analyze_graph(Pairs)
             total_lines_processed.read(), " lines");
   }
 
-  var createGraphTime:Timer;
-  createGraphTime.start();
+  t.graph.start();
 
-  var nmutual = 0;
-
+  t.mutualmentions.start();
   // Build idToNode
   var userIds:domain(int);
 
@@ -295,6 +283,7 @@ proc create_and_analyze_graph(Pairs)
       // add it when processing (other_id, id)
     }
   }
+  t.mutualmentions.stop();
 
   if progress then
     writeln(userIds.size, " users");
@@ -302,6 +291,7 @@ proc create_and_analyze_graph(Pairs)
   if progress then
     writeln("compacting ids");
 
+  t.compactids.start();
   // compact userIds into idToNode
   var idToNode: [userIds] int(32);
   var nodeToId: [1..userIds.size] int;
@@ -312,6 +302,7 @@ proc create_and_analyze_graph(Pairs)
     idToNode[id] = node:int(32);
     nodeToId[node] = id;
   }
+  t.compactids.stop();
 
   if printall {
     writeln("idToNode:");
@@ -351,22 +342,27 @@ proc create_and_analyze_graph(Pairs)
   // of hashtables.
 
 
+  t.maxnid.start();
   // TODO: This line wouldn't be necessary if we had reduce intents
   max_nid = max reduce [r in triples] max(r.from, r.to);
+  t.maxnid.stop();
 
   if progress then
     writeln("creating graph");
 
+  t.buildgraph.start();
   // TODO - performance - merge graph element updates
   var G = buildUndirectedGraph(triples, false, {1..max_nid} );
+
+  // 'gt' is defined in graph module and populater after a graph build
+  t.buildgraphcomponents = gt;
 
   // Clear out memory used by triples.
   triples.domain.clear();
 
-  createGraphTime.stop();
+  t.buildgraph.stop();
 
-  if timing then
-    writeln("created graph in ", createGraphTime.elapsed(), " s ");
+  t.graph.stop();
 
   if progress then
     writeln("done creating graph");
@@ -383,8 +379,7 @@ proc create_and_analyze_graph(Pairs)
   if progress then
     writeln("connected component analysis");
 
-  var CCATime:Timer;
-  CCATime.start();
+  t.cca.start();
 
   // Component ID
   var cid: int(32) = 0;
@@ -420,18 +415,16 @@ proc create_and_analyze_graph(Pairs)
 
   const totalcomponents = cid;
 
-  writeln("number of connected components: ", totalcomponents);
+  if verbose then
+    writeln("number of connected components: ", totalcomponents);
 
-  CCATime.stop();
+  t.cca.stop();
 
-  if timing then
-    writeln("connected component analysis ran in ", CCATime.elapsed(), " s");
 
   if progress then
     writeln("graph partition");
 
-  var graphPartitionTime: Timer;
-  graphPartitionTime.start();
+  t.partition.start();
 
   // TODO -- parallelize (should be easy)
   var components: [{1..totalcomponents}] list(int(32));
@@ -442,21 +435,20 @@ proc create_and_analyze_graph(Pairs)
 
   var partitionedGraph = partition_graph(components);
 
-  writeln("bin lengths:");
-  for bin in partitionedGraph{
-    writeln(bin.Array.size);
+  if verbose {
+    writeln("partition sizes:");
+    for bin in partitionedGraph{
+      writeln(bin.Array.size);
+    }
   }
 
-  graphPartitionTime.stop();
+  t.partition.stop();
 
-  if timing then
-    writeln("graph partitioning ran in ", graphPartitionTime.elapsed(), " s");
 
   if progress then
     writeln("label propagation");
 
-  var graphAlgorithmTime:Timer;
-  graphAlgorithmTime.start();
+  t.labelprop.start();
 
   // start with a different label for each node
   // the labels correspond to clusters.
@@ -616,10 +608,7 @@ proc create_and_analyze_graph(Pairs)
   } // serial !parallel
   } // while !go
 
-  graphAlgorithmTime.stop();
-
-  if timing then
-    writeln("graph algorithm ran in ", graphAlgorithmTime.elapsed(), " s ");
+  t.labelprop.stop();
 
 
   if output {
@@ -677,3 +666,32 @@ proc first_sort(Data: [?Dom] ?eltType) where Dom.rank == 1 {
       break;
   }
 }
+
+record timings {
+  var total, parse, graph, mutualmentions, compactids, maxnid, buildgraph, cca, partition, labelprop: Timer;
+  var buildgraphcomponents: graphtimings;
+}
+
+/* Consolidate timings prints to one function */
+proc timings.print() {
+  var nlines = total_lines_processed.read(),
+        days = total.elapsed(TimeUnits.hours) / 24.0,
+           m = 1000000.0;
+
+  writeln("Timings:");
+  writeln("parsed ", nlines, " lines in ", parse.elapsed(), " s");
+  writeln("created graph in   ", graph.elapsed(), " s");
+  writeln("graph components:");
+  writeln("  mutual mentions: ", mutualmentions.elapsed(), " s");
+  writeln("  compact ids    : ", compactids.elapsed(), " s");
+  writeln("  max nid        : ", maxnid.elapsed(), " s");
+  writeln("  build graph    : ", buildgraph.elapsed(), " s");
+  buildgraphcomponents.print();
+  writeln("connected component analysis ran in ", cca.elapsed(), " s");
+  writeln("graph partitioning ran in ", partition.elapsed(), " s");
+  writeln("label propagation ran in ", labelprop.elapsed(), " s");
+
+  writeln("processed ", nlines, " lines in ", total.elapsed(), " s");
+  writeln("that is ", nlines / days / m, "M tweets/day processed");
+}
+
