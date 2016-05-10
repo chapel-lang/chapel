@@ -20,3 +20,5 @@ class E : C {
 var arr: [1..3] C = (new D(1), new D(2), new E(3));
 
 writeln("arr is: ", arr);
+
+for a in arr do delete a;

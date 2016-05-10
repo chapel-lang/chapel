@@ -232,8 +232,10 @@ ArgSymbol* ReturnByRef::addFormal(FnSymbol* fn)
   AggregateType* refType = type->refType;
   IntentTag      intent  = blankIntentForType(refType);
   ArgSymbol*     formal  = new ArgSymbol(intent, "_retArg", refType);
+  formal->addFlag(FLAG_RETARG);
 
   fn->insertFormalAtTail(formal);
+  fn->addFlag(FLAG_FN_RETARG);
 
   return formal;
 }
@@ -613,7 +615,9 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
   SET_LINENO(fn);
   FnSymbol* newFn = fn->copy();
   ArgSymbol* arg = new ArgSymbol(blankIntentForType(useFn->retType->refType), "_retArg", useFn->retType->refType);
+  arg->addFlag(FLAG_RETARG);
   newFn->insertFormalAtTail(arg);
+  newFn->addFlag(FLAG_FN_RETARG);
   VarSymbol* ret = toVarSymbol(newFn->getReturnSymbol());
   INT_ASSERT(ret);
   Expr* returnPrim = newFn->body->body.tail;

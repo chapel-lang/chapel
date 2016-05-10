@@ -1,0 +1,7 @@
+bug: Non matching parenthesis. The compiler should throw proper error alongwith the reference to the unmatched parenthesis. In this case, the compiler cannot find the closing brace.
+
+Although this is a really small issue, but I spent considerable amount of time figuring out the error. 
+
+Possible Troubles:
+
+The parser completes parsing entirely and then identifies that there is no matching parenthesis. But, saving the occurance of the opening parenthesis on the stack during parsing may help out in throwing proper error.

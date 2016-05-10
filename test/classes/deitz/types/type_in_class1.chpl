@@ -3,8 +3,13 @@ class foo {
     var x : int;
     var y : int;
   }
+
   var b : bar = new bar();
   var z : int;
+
+  proc ~foo() {
+    delete b;
+  }
 }
 
 var f : foo = new foo();
@@ -14,3 +19,5 @@ f.b.y = 2;
 f.z = 3;
 
 writeln(f.b.x, f.b.y, f.z);
+
+delete f;

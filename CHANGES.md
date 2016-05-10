@@ -79,7 +79,7 @@ Configuration Changes
 * changed 'knc' to default to using 'qthreads'+'hwloc'
 * deprecated 'knc' support
   (see  http://chapel.cray.com/docs/1.13/platforms/knc.html)
-* switched to using pg++ rather than pgCC as the C++ compiler for 'pgi'
+* switched to using pgc++ rather than pgCC as the C++ compiler for 'pgi'
 * removed stale support for Xcode
 
 Syntactic/Naming Changes
@@ -355,7 +355,7 @@ Third-Party Software Changes
 * upgraded hwloc to version 1.11.2
   - and cherry-picked a /proc/mounts buffer overflow fix from hwloc master
 * upgraded LLVM to version 3.7
-* switched several third-party directories to a more GIT-friendly organization
+* switched several third-party directories to a more Git-friendly organization
 
 Runtime Library Changes
 -----------------------
@@ -919,7 +919,7 @@ New Features
 
 New Interoperability Features
 -----------------------------
-* inital support for Python->Chapel interoperability via PyChapel
+* initial support for Python->Chapel interoperability via PyChapel
   (see http://pychapel.readthedocs.org/ for more details)
 * added a prototype capability to embed external dependences to source via 'use'
   (e.g., use "foo.h", "-lfoo"; is like adding these to the 'chpl' command-line)
@@ -2429,7 +2429,7 @@ Third-Party Software Changes
 ----------------------------
 - updated to version 1.20 of GASNet
 - updated to version 1.9 of Qthreads
-- made the LLVM checkout script grab version 3.2 to ensure compatability
+- made the LLVM checkout script grab version 3.2 to ensure compatibility
 - removed the nanox tasking layer due to lack of support/champion
 
 Testing System
@@ -4221,7 +4221,7 @@ Bug Fixes/New Semantic Checks (for old semantics)
 - fixed a race in the creation of private, replicated distribution classes
 - fixed a bug in which tensor iteration resulted in internal errors
 - removed a subtle race condition in program startup
-- fixed a bug in which we called default constructrs by name
+- fixed a bug in which we called default constructors by name
 - fixed deletion of list elements in List module
 - added support for generating the implicit Program module in --html view
 

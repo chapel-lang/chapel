@@ -52,8 +52,7 @@ static char const *aprun_arg_strings[aprun_none] = { "-cc",
                                                      "-n",
                                                      "-d",
                                                      "-N",
-                                                     "-j",
-                                                     "-k"};
+                                                     "-j"};
 
 //
 // Return the appropriate integer value for given argument type
@@ -75,8 +74,6 @@ int getAprunArg(aprun_arg_t argt) {
     return getLocalesPerNode();
   case aprun_j:
     return getCPUsPerCU();
-  case aprun_k:
-    return -1; // no arg needed
   default:
     return -1;
   }
@@ -212,7 +209,6 @@ static char _nbuf[16];
 static char _dbuf[16];
 static char _Nbuf[16];
 static char _jbuf[16];
-extern const char *CHPL_TARGET_ARCH; // supplied by the generated code
 char** chpl_create_aprun_cmd(int argc, char* argv[],
                              int32_t numLocales, const char* _ccArg) {
   char *largv[8];
@@ -227,25 +223,16 @@ char** chpl_create_aprun_cmd(int argc, char* argv[],
     largv[largc++] = (char *) "-q";
   }
   sprintf(_nbuf, "%s%d", getNumLocalesStr(), numLocales);
-  if (strcmp(CHPL_TARGET_ARCH, "knc")==0) {
-    largv[largc++] = (char *) getAprunArgStr(aprun_cc);
-    largv[largc++] = (char *) ccArg;
-    largv[largc++] = _nbuf;
-    largv[largc++] = (char *) getAprunArgStr(aprun_k);
-    sprintf(_Nbuf, "%s%d", getLocalesPerNodeStr(), getLocalesPerNode());
-    largv[largc++] = _Nbuf;
-  } else {
-    largv[largc++] = (char *) getAprunArgStr(aprun_cc);
-    largv[largc++] = (char *) ccArg;
-    sprintf(_dbuf, "%s%d", getCoresPerLocaleStr(), getCoresPerLocale());
-    largv[largc++] = _dbuf;
-    largv[largc++] = _nbuf;
-    sprintf(_Nbuf, "%s%d", getLocalesPerNodeStr(), getLocalesPerNode());
-    largv[largc++] = _Nbuf;
-    if ((CPUsPerCU = getCPUsPerCU()) >= 0) {
-      sprintf(_jbuf, "%s%d", getCPUsPerCUStr(), getCPUsPerCU());
-      largv[largc++] = _jbuf;
-    }
+  largv[largc++] = (char *) getAprunArgStr(aprun_cc);
+  largv[largc++] = (char *) ccArg;
+  sprintf(_dbuf, "%s%d", getCoresPerLocaleStr(), getCoresPerLocale());
+  largv[largc++] = _dbuf;
+  largv[largc++] = _nbuf;
+  sprintf(_Nbuf, "%s%d", getLocalesPerNodeStr(), getLocalesPerNode());
+  largv[largc++] = _Nbuf;
+  if ((CPUsPerCU = getCPUsPerCU()) >= 0) {
+    sprintf(_jbuf, "%s%d", getCPUsPerCUStr(), getCPUsPerCU());
+    largv[largc++] = _jbuf;
   }
 
   return chpl_bundle_exec_args(argc, argv, largc, largv);

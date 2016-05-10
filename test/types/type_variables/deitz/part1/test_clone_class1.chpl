@@ -8,3 +8,5 @@ class foo {
 var f : foo(int) = new foo(2);
 
 f.print();
+
+delete f;

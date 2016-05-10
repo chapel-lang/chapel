@@ -17,3 +17,6 @@ writer.close();
 var reader = f.reader();
 reader.read(b);
 writeln("b after reading in a's values from a file: ", b);
+
+delete b;
+delete a;

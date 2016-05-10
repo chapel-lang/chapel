@@ -38,7 +38,7 @@ writeln();
 // a RandomStream class instance.  If one is desired, the seed must be
 // specified upon creation of this instance.
 //
-var randStream: RandomStream(real) = new RandomStream();
+var randStream:       RandomStream(real) = new RandomStream();
 var randStreamSeeded: RandomStream(real) = new RandomStream(seed);
 
 //
@@ -97,8 +97,14 @@ for i in randStreamSeeded.iterate({5..10}, real) {
 // class creation.  As a result, two parallel accesses or updates to the
 // position from which reading is intended may conflict.
 //
-var parallelUnsafe = new RandomStream(parSafe=false);
+var parallelUnsafe       = new RandomStream(parSafe=false);
 var parallelSeededUnsafe = new RandomStream(seed, false);
+
 // Commented out for deterministic testing output.
 //writeln(parallelUnsafe.getNext());
 //writeln(parallelSeededUnsafe.getNext());
+
+delete parallelSeededUnsafe;
+delete parallelUnsafe;
+delete randStreamSeeded;
+delete randStream;

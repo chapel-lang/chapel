@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2013 Inria.  All rights reserved.
+.\" Copyright © 2013-2016 Inria.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH HWLOC-DIFF "1" "#HWLOC_DATE#" "#PACKAGE_VERSION#" "#PACKAGE_NAME#"
 .SH NAME
@@ -56,6 +56,12 @@ with hwloc-patch.
 .PP
 hwloc-compress-dir may be used for computing the diffs between
 all XML files in a directory.
+.
+.PP
+.B NOTE:
+If some application-specific userdata were been exported to the input XMLs,
+they will be ignored and discarded from the output because hwloc has no way
+to understand and compare them.
 .
 .PP
 .B NOTE:

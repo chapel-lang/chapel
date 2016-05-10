@@ -50,7 +50,7 @@ module CString {
   // We can't use the catch-all initCopy or autoCopy because of the
   // transformation of c_strings into string for generic parameters
   // TODO: cant specify return type or else we run into a bug were we do an
-  //       assignment out of these fuctions, causing acess to uninitalized
+  //       assignment out of these functions, causing access to uninitialized
   //       memory for c_string_copy
   pragma "init copy fn"
   inline proc chpl__initCopy(x: c_string) : c_string {
@@ -161,7 +161,6 @@ module CString {
     __primitive("=", a, b);
   }
 
-
   // A c_string_copy can always be used as a c_string.
   inline proc _cast(type t, x: c_string_copy) where t == c_string {
     return __primitive("cast", t, x);
@@ -184,6 +183,13 @@ module CString {
   inline proc _cast(type t, x:integral) where t == c_string_copy {
     extern proc integral_to_c_string_copy(x:int(64), size:size_t, isSigned: bool) : c_string_copy ;
     return integral_to_c_string_copy(x:int(64), numBytes(x.type), isIntType(x.type));
+  }
+
+  //
+  // casts from c_string to c_void_ptr
+  //
+  inline proc _cast(type t, x: c_string) where t == c_void_ptr {
+    return __primitive("cast", t, x);
   }
 
   //

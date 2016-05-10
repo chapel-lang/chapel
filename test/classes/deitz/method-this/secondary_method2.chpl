@@ -9,8 +9,23 @@ class foo {
   }
 }
 
-var f : foo = new foo();
-f.i = 4;
 
-f.primary();
-f.secondary();
+
+var f1 : foo = new foo();
+
+f1.primary();
+f1.secondary();
+
+delete f1;
+
+
+
+
+
+var f2 : foo = new foo();
+f2.i = 4;
+
+f2.primary();
+f2.secondary();
+
+delete f2;

@@ -5,15 +5,20 @@ class C {
   var y : real;
 }
 
-var c1 : C = new C(1, 2.3), c2 : C = new C(2, 3.4);
+var c1 : C       = new C(1, 2.3);
+var c2 : C       = new C(2, 3.4);
 
-var s : list(C) = makeList( c1, c2 );
+var l1 : list(C) = makeList(c1, c2);
+var l2 : list(C) = makeList(c1, c2);
 
-writeln(s);
+writeln(l1);
 
-s.concat(makeList(c1, c2));
+l1.concat(l2);
 
-writeln(s);
+writeln(l1);
+
+l2.destroy();
+l1.destroy();
 
 delete c1;
 delete c2;

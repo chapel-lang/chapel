@@ -14,7 +14,7 @@ class base {
 class sub : base {
   var _j:int;
   proc sub(i:int, j = -2) {
-    // How do we call the base class constuctor?
+    // How do we call the base class constructor?
     _i = i;
     _j = j;
   }
@@ -23,6 +23,10 @@ class sub : base {
 proc main() {
   var p = new sub(3,4);
   var q = new base(2);
+
   writeln(p._i, p._j);
   writeln(q._i);
+
+  delete q;
+  delete p;
 }

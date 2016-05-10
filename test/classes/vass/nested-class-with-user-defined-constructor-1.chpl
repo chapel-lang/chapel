@@ -1,10 +1,9 @@
 class enclosing {
 
   class inner {
-    proc inner(outer) {
+    proc inner() {
       writeln("in inner constructor");
     }
-    proc foo return new inner();
   } // class inner
 
   proc new_inner() {

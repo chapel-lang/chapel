@@ -299,7 +299,7 @@ remove those copies and simplify this example to the following:
   }
 
 That is the case *even if* MyRecord supplies custom assignment, default
-initalization, destruction, or postblit constructor routines. The compiler
+initialization, destruction, or postblit constructor routines. The compiler
 can change the number or order of these calls in ways that can be observed
 if those routines have side effects. However, programs with assignment,
 initialization, destruction, or postblit construction routines that

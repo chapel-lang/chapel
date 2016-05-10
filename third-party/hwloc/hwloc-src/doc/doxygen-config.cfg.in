@@ -11,8 +11,6 @@ INPUT          = \
 		@top_srcdir@/include/hwloc.h \
 		@top_srcdir@/include/hwloc/helper.h \
 		@top_srcdir@/include/hwloc/bitmap.h \
-		@top_srcdir@/include/hwloc/diff.h \
-		@top_srcdir@/include/hwloc/plugins.h \
 		@top_srcdir@/include/hwloc/linux.h \
 		@top_srcdir@/include/hwloc/linux-libnuma.h \
 		@top_srcdir@/include/hwloc/glibc-sched.h \
@@ -23,7 +21,9 @@ INPUT          = \
 		@top_srcdir@/include/hwloc/gl.h \
 		@top_srcdir@/include/hwloc/intel-mic.h \
 		@top_srcdir@/include/hwloc/openfabrics-verbs.h \
-		@top_srcdir@/include/hwloc/myriexpress.h
+		@top_srcdir@/include/hwloc/myriexpress.h \
+		@top_srcdir@/include/hwloc/diff.h \
+		@top_srcdir@/include/hwloc/plugins.h
 
 EXAMPLE_PATH   = @top_srcdir@/doc
 

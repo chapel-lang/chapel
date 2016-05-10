@@ -1,10 +1,15 @@
+use List;
+
 {
   var mylist = new list(int);
+
   mylist.append(1);
   mylist.append(2);
   mylist.append(3);
 
   writef("testing json write: %jt\n", mylist);
+
+  mylist.destroy();
 }
 
 var f = opentmp();
@@ -26,11 +31,14 @@ var f = opentmp();
   writeln("Read: ", mylist);
 
   reader.close();
+
+  mylist.destroy();
 }
 
 {
   var writer = f.writer();
-  var str = '[ ]';
+  var str    = '[ ]';
+
   writeln("Writing JSON: ", str);
   writer.write(str);
   writer.close();
@@ -46,12 +54,15 @@ var f = opentmp();
   writeln("Read: ", mylist);
 
   reader.close();
+
+  mylist.destroy();
 }
 
 
 {
   var writer = f.writer();
-  var str = '[1]';
+  var str    = '[1]';
+
   writeln("Writing JSON: ", str);
   writer.write(str);
   writer.close();
@@ -67,11 +78,14 @@ var f = opentmp();
   writeln("Read: ", mylist);
 
   reader.close();
+
+  mylist.destroy();
 }
 
 {
   var writer = f.writer();
-  var str = '[1,2]';
+  var str    = '[1,2]';
+
   writeln("Writing JSON: ", str);
   writer.write(str);
   writer.close();
@@ -87,11 +101,14 @@ var f = opentmp();
   writeln("Read: ", mylist);
 
   reader.close();
+
+  mylist.destroy();
 }
 
 {
   var writer = f.writer();
-  var str = '[ 1, 2, 3 ]';
+  var str    = '[ 1, 2, 3 ]';
+
   writeln("Writing JSON: ", str);
   writer.write(str);
   writer.close();
@@ -107,5 +124,7 @@ var f = opentmp();
   writeln("Read: ", mylist);
 
   reader.close();
+
+  mylist.destroy();
 }
 

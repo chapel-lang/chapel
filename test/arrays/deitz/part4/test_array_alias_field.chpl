@@ -23,3 +23,6 @@ c2.A(2) = -2;
 writeln("global array:            ", GA);
 writeln("class w/ copied array:   ", c1);
 writeln("class w/ aliased array:  ", c2);
+
+delete c2;
+delete c1;

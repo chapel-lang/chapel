@@ -286,13 +286,7 @@ int chpl_getNumPhysicalCpus(chpl_bool accessible_only) {
     static int numCpus = 0;
 
     if (numCpus == 0) {
-#if defined __MIC__
-      //
-      // On Intel MIC, we seem (for now at least) not to have kernel
-      // scheduling affinity information.
-      //
-      numCpus = numPhysCpus;
-#elif defined __NetBSD__
+#if defined __NetBSD__
       numCpus = numPhysCpus;
 #else
       //
@@ -372,13 +366,7 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
     static int numCpus = 0;
 
     if (numCpus == 0) {
-#if defined __MIC__
-      //
-      // On Intel MIC, we seem (for now at least) not to have kernel
-      // scheduling affinity information.
-      //
-      numCpus = numLogCpus;
-#elif defined __NetBSD__
+#if defined __NetBSD__
       numCpus = numLogCpus;
 #else
       cpu_set_t m;
@@ -415,9 +403,9 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
 //
 void chpl_moveToLastCPU(void) {
   //
-  // This is currently a no-op except on non-MIC Linux.
+  // This is currently a no-op except on Linux.
   //
-#if defined(__linux__) && !defined(__MIC__)
+#if defined __linux__
   {
     cpu_set_t mask;
     int i, cnt;

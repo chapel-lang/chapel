@@ -1,4 +1,4 @@
-# Copyright © 2009-2015 Inria.  All rights reserved.
+# Copyright © 2009-2016 Inria.  All rights reserved.
 # Copyright © 2009-2012, 2014 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 #
@@ -33,8 +33,11 @@ bin_PROGRAMS = \
         hwloc-distances \
         hwloc-distrib \
         hwloc-info \
-        hwloc-patch \
-        hwloc-ps
+        hwloc-patch
+
+if !HWLOC_HAVE_WINDOWS
+bin_PROGRAMS += hwloc-ps
+endif
 
 if HWLOC_HAVE_LINUX
 if HWLOC_HAVE_X86
@@ -45,6 +48,7 @@ endif HWLOC_HAVE_LINUX
 hwloc_dump_hwdata_SOURCES = \
 	hwloc-dump-hwdata.c \
 	hwloc-dump-hwdata-knl.c
+hwloc_dump_hwdata_CPPFLAGS = $(AM_CPPFLAGS) -DRUNSTATEDIR=\"$(HWLOC_runstatedir)\"
 
 hwloc_calc_SOURCES = \
         hwloc-calc.h \
@@ -86,15 +90,7 @@ man1_pages = \
         hwloc-distances.1 \
         hwloc-distrib.1 \
         hwloc-info.1 \
-        hwloc-patch.1 \
-        hwloc-ps.1
-
-if HWLOC_HAVE_LINUX
-if HWLOC_HAVE_X86
-man1_pages += hwloc-dump-hwdata.1in
-endif HWLOC_HAVE_X86
-endif HWLOC_HAVE_LINUX
-
+        hwloc-patch.1
 EXTRA_DIST += $(man1_pages:.1=.1in)
 nodist_man_MANS += $(man1_pages)
 
@@ -106,6 +102,13 @@ EXTRA_DIST += $(hgt_page:.1=.1in)
 if HWLOC_HAVE_LINUX
 nodist_man_MANS += $(hgt_page)
 endif HWLOC_HAVE_LINUX
+
+# Same for hwloc-ps on !Windows
+hps_page = hwloc-ps.1
+EXTRA_DIST += $(hps_page:.1=.1in)
+if !HWLOC_HAVE_WINDOWS
+nodist_man_MANS += $(hps_page)
+endif
 
 # Same for dump-hwdata page on Linux/x86
 hdh_page = hwloc-dump-hwdata.1
@@ -122,6 +125,7 @@ endif HWLOC_HAVE_LINUX
 	@ $(SED) -e 's/#PACKAGE_NAME#/@PACKAGE_NAME@/g' \
 	  -e 's/#PACKAGE_VERSION#/@PACKAGE_VERSION@/g' \
 	  -e 's/#HWLOC_DATE#/@HWLOC_RELEASE_DATE@/g' \
+	  -e 's@#RUNSTATEDIR#@'$(HWLOC_runstatedir)'@g' \
 	  > $@ < $<
 
 .3in.3:

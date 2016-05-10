@@ -1,4 +1,4 @@
-# Copyright © 2009-2015 Inria.  All rights reserved.
+# Copyright © 2009-2016 Inria.  All rights reserved.
 # Copyright © 2009-2012 Université Bordeaux
 # Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -35,6 +35,7 @@ check_PROGRAMS = hwloc_list_components \
 	hwloc_type_depth \
 	hwloc_bind \
 	hwloc_get_last_cpu_location \
+	hwloc_get_area_memlocation \
 	hwloc_object_userdata \
 	hwloc_synthetic \
 	hwloc_custom \

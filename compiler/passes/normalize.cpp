@@ -787,42 +787,81 @@ static TypeSymbol* resolveTypeAlias(SymExpr* se)
 }
 
 
-// By default, a call whose base expression is a symbol referring to an
-// aggregate type is converted to a call to the default type constructor for
-// that class.  There are a few exceptions:
-// 1. If the type is "dmap" (syntactic distribution), it is replaced by a call
-//    to chpl_buildDistType().
-// 2. In the context of a 'new' (complete or partial), it is converted to a
-//    constructor call.
+/*
+   Normalize constructor/type constructor calls.
+    * a call whose base expression is a symbol referring to an aggregate
+      type is converted to a call to the default type constructor for
+      that class, unless it's in a 'new' expression
+    * calls to such aggregate types in a 'new' expression are transformed
+      to put the call arguments directly into the PRIM_NEW in order to
+      improve function resolution's ability to handle them.
+    * if the type is "dmap" (syntactic distribution), it is replaced by a
+      call to chpl_buildDistType().
+
+ */
 static void call_constructor_for_class(CallExpr* call) {
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
-    if (TypeSymbol* ts = resolveTypeAlias(se)) {
-      if (AggregateType* ct = toAggregateType(ts->type)) {
-        // Select symExprs of class (or record) type.
 
-        SET_LINENO(call);
-        CallExpr* parent = toCallExpr(call->parentExpr);
-        CallExpr* parentParent = NULL;
-        if (parent)
-          parentParent = toCallExpr(parent->parentExpr);
+    CallExpr* parent = toCallExpr(call->parentExpr);
+    CallExpr* parentParent = NULL;
+    if (parent)
+      parentParent = toCallExpr(parent->parentExpr);
 
-        if (parent && parent->isPrimitive(PRIM_NEW)) {
-          // Transform "new C ( ... )" into _construct_C ( ... ).
-          se->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
-          parent->replace(call->remove());
-        } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
-                   call->partialTag) {
-          // Transform "new C ( (_partial C) ... )" into _construct_C ( ... ).
-          se->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
-          parentParent->replace(parent->remove());
-        } else {
-          if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
-            // Call chpl__buildDistType for syntactic distributions.
-            se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
-          else
-            // Transform C ( ... ) into _type_construct_C ( ... ) .
-            se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
-        }
+    AggregateType* ct = NULL;
+    if (TypeSymbol* ts = resolveTypeAlias(se))
+      ct = toAggregateType(ts->type);
+
+    CallExpr* primNewToFix = NULL;
+
+    // Select symExprs of class (or record) type.
+
+    SET_LINENO(call);
+
+    if (parent && parent->isPrimitive(PRIM_NEW) ) {
+      if (!call->partialTag) { // avoid normalizing PRIM_NEW twice
+        primNewToFix = parent;
+        INT_ASSERT(primNewToFix->get(1) == call);
+      }
+    } else if (parentParent && parentParent->isPrimitive(PRIM_NEW) &&
+             call->partialTag) {
+      primNewToFix = parentParent;
+      INT_ASSERT(primNewToFix->get(1) == parent);
+    } else if (ct) {
+      if (ct->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
+        // Call chpl__buildDistType for syntactic distributions.
+        se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
+      else
+        // Transform C ( ... ) into _type_construct_C ( ... ) .
+        se->replace(new UnresolvedSymExpr(ct->defaultTypeConstructor->name));
+    }
+
+    if (primNewToFix) {
+      // Transform   new (call C args...) args2...
+      //      into   new C args... args2...
+
+      // Transform   new (call (call (partial) C _mt this) args...)) args2...
+      //      into   new (call (partial) C _mt this) args... args2...
+
+      // The resulting AST will be handled in function resolution
+      // where the PRIM_NEW will be removed. It is transformed
+      // to no longer be a call with a type baseExpr in order
+      // to make better sense to function resolution.
+
+      CallExpr* callInNew = toCallExpr(primNewToFix->get(1));
+      callInNew->remove();
+      CallExpr *newNew = new CallExpr(PRIM_NEW);
+      primNewToFix->replace(newNew);
+
+      newNew->insertAtHead(callInNew->baseExpr);
+      // Move the actuals from the call to the new PRIM_NEW
+      for_actuals(actual, callInNew) {
+        newNew->insertAtTail(actual->remove());
+      }
+      // Move actual from the PRIM_NEW as well
+      // This is not the expected AST form, but keeping this
+      // code here adds some resiliency.
+      for_actuals(actual, primNewToFix) {
+        newNew->insertAtTail(actual->remove());
       }
     }
   }
@@ -976,26 +1015,42 @@ static void fix_def_expr(VarSymbol* var) {
 
   INT_ASSERT(fn);
 
-  if (// Not explicily marked "no auto destroy"
-      !var->hasFlag(FLAG_NO_AUTO_DESTROY) &&
+  if (!var->hasFlag(FLAG_NO_AUTO_DESTROY) &&
+      !var->hasFlag(FLAG_PARAM)           && // Note 1.
+      !var->hasFlag(FLAG_REF_VAR)         &&
+      fn->_this != var                    && // Note 2.
+      !fn->hasFlag(FLAG_INIT_COPY_FN)     && // Note 3.
+      !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
 
-      // Not a param variable.  (Note 1)
-      !var->hasFlag(FLAG_PARAM) &&
+    // Variables in a module initializer need special attention
+    if (var->defPoint->parentExpr == fn->getModule()->initFn->body) {
 
-      // The variables initialized in a module initializer are global,
-      // and therefore should not be autodestroyed.
-      // There is a special global destructor function for that.
-      var->defPoint->parentExpr != fn->getModule()->initFn->body &&
+      // MDN 2016/04/27
+      //
+      // Most variables in a module init function will become
+      // global and should not be auto destroyed.  The challenging
+      // case is injected by
+      //
+      // var (a1, a2) = fnReturnTuple();
+      //
+      // The parser expands this as
+      //
+      // var tmp = fnReturnTuple();
+      // var a1  = tmp.x1;
+      // var a2  = tmp.x2;
+      //
+      // This pseudo-tuple must be auto-destroyed to ensure the components
+      // are managed correctly. However the AST doesn't provide us with a
+      // strong/easy way to determine that we're dealing with this case.
+      // In practice is appears to be sufficient to flag any TMP
+      if (var->hasFlag(FLAG_TEMP)) {
+        var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      }
 
-      !fn->hasFlag(FLAG_INIT_COPY_FN) && // Note 3.
-
-      fn->_this != var                && // Note 2.
-
-      !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) &&
-
-      // don't add auto-destroy on reference variables
-      !var->hasFlag(FLAG_REF_VAR))
-    var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    } else {
+      var->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    }
+  }
 
   //
   // handle "no copy" variables
@@ -1190,13 +1245,12 @@ static void init_typed_var(VarSymbol* var,
 
   if (isNoinit && !fUseNoinit) {
     // In the case where --no-use-noinit is thrown, we want to still use
-    // noinit in the module code (as the correct operation of strings and
-    // complexes depends on it).
+    // noinit in the module code (as the correct operation of complexes
+    // depends on it).
 
-    // Lydia note: The requirement for strings is expected to go away when
-    // our new string implementation is the default.  The requirement for
-    // complexes is expected to go away when we transition to constructors for
-    // all types instead of the _defaultOf function
+    // Lydia note: The requirement for complexes is expected to go away when
+    // we transition to constructors for all types instead of the _defaultOf
+    // function
     Symbol* moduleSource = var;
 
     while (!isModuleSymbol(moduleSource)  &&
@@ -1727,11 +1781,6 @@ static void change_method_into_constructor(FnSymbol* fn) {
 
   fn->name = ct->defaultInitializer->name;
   fn->addFlag(FLAG_CONSTRUCTOR);
-  // Hide the compiler-generated initializer
-  // which also serves as the default constructor.
-  // hilde sez: Try leaving this visible, but make it inferior in case of multiple matches
-  // (in disambiguateByMatch()).
-//  ct->defaultInitializer->addFlag(FLAG_INVISIBLE_FN);
 }
 
 // Note 1: Since param variables can only be of primitive or enumerated type,

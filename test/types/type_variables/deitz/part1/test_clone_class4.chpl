@@ -7,9 +7,9 @@ class foo {
   }
 }
 
-var f = new foo(x = 2, y = 3.0);
+var f1 = new foo(x = 2, y = 3.0);
 
-f.print();
+f1.print();
 
 var f2 = new foo(x = "bar", y = "none");
 
@@ -22,3 +22,8 @@ f3.print();
 var f4 = new foo(x = "bar", y = "hat", z = 3);
 
 f4.print();
+
+delete f4;
+delete f3;
+delete f2;
+delete f1;

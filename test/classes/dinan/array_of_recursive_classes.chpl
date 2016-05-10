@@ -10,6 +10,10 @@ class B {
 
 
 var b = new B();
+
 b.a = new A(10);
 
 writeln(b.a.x);
+
+delete b.a;
+delete b;

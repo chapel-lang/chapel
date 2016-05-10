@@ -19,3 +19,5 @@ f.x = 4;
 f.print();
 
 printout("I hope this works.");
+
+delete f;

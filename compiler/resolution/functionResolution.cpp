@@ -1641,6 +1641,7 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
   workingFn->addFlag(FLAG_EXPANDED_VARARGS);
 
   // Handle specified number of variable arguments.
+  // sym->var is not a VarSymbol e.g. in: proc f(param n, v...n)
   if (VarSymbol* nVar = toVarSymbol(sym->var)) {
     if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate) {
       VarSymbol* var       = new VarSymbol(formal->name);
@@ -1785,6 +1786,9 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
       }
 
       formal->defPoint->remove();
+    } else {
+      // Just documenting the current status.
+      INT_FATAL(formal, "unexpected non-VarSymbol");
     }
   }
 }
@@ -3346,7 +3350,7 @@ static bool isInConstructorLikeFunction(CallExpr* call) {
 }
 
 // Is the function of interest invoked from a constructor
-// or initialize(), with the constructor's or intialize's 'this'
+// or initialize(), with the constructor's or initialize's 'this'
 // as the receiver actual.
 static bool isInvokedFromConstructorLikeFunction(int stackIdx) {
   if (stackIdx > 0) {
@@ -4354,30 +4358,75 @@ static void resolveMove(CallExpr* call) {
 static void
 resolveNew(CallExpr* call)
 {
-  // This is a 'new' primitive, so we expect the argument to be a constructor
-  // call.
-  CallExpr* ctor = toCallExpr(call->get(1));
+  // This is a 'new' primitive
+  // we expect the 1st argument to be a type
+  //   or a partial call to get the type
+  // and the remaining arguments to be arguments for the constructor call
 
-  // May need to resolve ctor here.
-  if (FnSymbol* fn = ctor->isResolved())
-  {
-    // If the function is a constructor, just bridge out the 'new' primitive
-    // and call the constructor.  Done.
-    if (fn->hasFlag(FLAG_CONSTRUCTOR))
-    {
-      call->replace(ctor);
-      return;
-    }
+  SymExpr* toReplace = NULL;
 
-    // Not a constructor, so issue an error.
-    USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
-    return;
+  // Perform three transformations on this PRIM_NEW
+  // 1 replace the type in the 1st argument with
+  //   an UnresolvedSymExpr to ct->defaultInitializer->name
+  // 2 move the 1st argument into the baseExpr
+  // 3 make it a normal call rather than a PRIM_NEW
+
+  if (CallExpr* subCall = toCallExpr(call->get(1))) {
+    // Handle e.g. 'new' (call (partial) R2 _mt this) call_tmp
+    // which comes up with nested classes (e.g. R2 is a nested class type)
+    if (SymExpr* se = toSymExpr(subCall->baseExpr))
+      if (subCall->partialTag)
+        toReplace = se;
+  } else if (SymExpr* se = toSymExpr(call->get(1))) {
+    // Handle e.g. 'new' C arg
+    toReplace = se;
   }
 
-  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(ctor->baseExpr))
+  if (toReplace) {
+    SET_LINENO(call);
+
+    // 1: replace the type with the constructor call name
+    if (Type* ty = resolveTypeAlias(toReplace)) {
+      if (AggregateType* ct = toAggregateType(ty)) {
+          toReplace->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
+      }
+    }
+
+    // 2: move the 1st argument into the baseExpr
+    // 3: make it a normal call and not a PRIM_NEW
+    Expr* arg = call->get(1);
+    arg->remove();
+    call->primitive = NULL;
+    call->baseExpr = arg;
+    parent_insert_help(call, call->baseExpr);
+
+    // Now finish resolving it, since we are after all in
+    // resolveNew.
+    resolveExpr(call);
+  }
+
+  // Do some error checking
+  if (FnSymbol* fn = call->isResolved())
   {
-    USR_FATAL(call, "invalid use of 'new' on %s", urse->unresolved);
-    return;
+    // If the function is a constructor, OK
+    if (fn->hasFlag(FLAG_CONSTRUCTOR))
+      return;
+    else // otherwise, issue an error
+      USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
+  }
+
+  if (call->get(1)) {
+    Expr* arg = call->get(1);
+
+    if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(arg)) {
+      USR_FATAL(call, "invalid use of 'new' on %s", urse->unresolved);
+      return;
+    } else if (CallExpr* subCall = toCallExpr(arg)) {
+      if (FnSymbol* fn = subCall->isResolved()) {
+        USR_FATAL(call, "invalid use of 'new' on %s", fn->name);
+        return;
+      }
+    }
   }
 
   USR_FATAL(call, "invalid use of 'new'");
@@ -5174,7 +5223,7 @@ static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
     bool unsafeGeneric = true;  // Assume the worst until proven otherwise
 
     //
-    // Grab the generic type's contructor if it has one.  Things like
+    // Grab the generic type's constructor if it has one.  Things like
     // classes and records should.  Things like 'integral' will not.
     //
     FnSymbol* typeCons = type->defaultTypeConstructor;

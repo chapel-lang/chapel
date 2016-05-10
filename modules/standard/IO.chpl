@@ -1590,7 +1590,7 @@ private extern proc qio_file_open_tmp(ref file_out:qio_file_ptr_t, iohints:c_int
 private extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, const ref style:iostyle):syserr;
 
 // Same as qio_file_open_access in, except this time we pass though our
-// struct that will initilize the file with the appropriate functions for that FS
+// struct that will initialize the file with the appropriate functions for that FS
 pragma "no doc"
 extern proc qio_file_open_access_usr(out file_out:qio_file_ptr_t, path:c_string,
                                      access:c_string, iohints:c_int, /*const*/ ref style:iostyle,

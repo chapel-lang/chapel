@@ -12,3 +12,7 @@ var myC2: C = new C();
 writeln(myC);
 writeln(myC2);
 
+
+delete myC2;
+delete myC;
+

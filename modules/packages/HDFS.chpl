@@ -461,7 +461,7 @@ proc hdfsChapelFile.getLocal(): file {
   return rcLocal(this.files);
 }
 
-/* Convenience funtion. Does the same as file.reader except that we dont have
+/* Convenience function. Does the same as file.reader except that we don't have
    to get our local file first */
 pragma "no doc"
 proc hdfsChapelFile.hdfsReader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE) {

@@ -270,7 +270,12 @@ public:
   IntentTag       intent;
   BlockStmt*      typeExpr;    // Type expr for arg type, or NULL.
   BlockStmt*      defaultExpr;
+
+  // Stores the expression specified after an ellipsis in vararg formal.
+  // This must resolve during function resolution to a parameter expression.
+  // It can be omitted for variadic arguments or a query identifier.
   BlockStmt*      variableExpr;
+
   Type*           instantiatedFrom;
 
 };

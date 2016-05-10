@@ -9,3 +9,5 @@ var y: real = 1.2;
 var r = new R(x = x, y = y);
 
 writeln("r is: ", r);
+
+delete r;

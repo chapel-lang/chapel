@@ -16,18 +16,10 @@ QTHREAD_BUILD_DIR = $(QTHREAD_ABS_DIR)/$(QTHREAD_BUILD_SUBDIR)
 QTHREAD_DIR = $(QTHREAD_ABS_DIR)
 
 #
-# Cray X* builds are cross-compilations, as are Intel Phi KNC builds.
+# Cray X* builds are cross-compilations
 #
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_QTHREAD_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
-else ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
-CHPL_QTHREAD_CFG_OPTIONS += --host=x86_64-unknown-linux-gnu
-endif
-
-ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),intel)
-CFLAGS += -mmic
-endif
 endif
 
 ifeq ($(CHPL_MAKE_HWLOC),hwloc)
