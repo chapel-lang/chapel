@@ -35,8 +35,7 @@ ifneq ($(CHPL_MAKE_LAUNCHER),none)
 endif
 ifneq ($(TMPBINNAME),$(BINNAME))
 	rm -f $(BINNAME)
-	cp -p $(TMPBINNAME) $(BINNAME)
-	rm $(TMPBINNAME)
+	mv $(TMPBINNAME) $(BINNAME)
 endif
 
 FORCE:
