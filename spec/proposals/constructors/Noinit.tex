@@ -80,7 +80,7 @@ with only (r = x)
 {}
 \end{chapel}
 In the record type R defined below, this would leave the fields \chpl{i} and \chpl{u}
-unitialized and set the value of field \chpl{r} to x.  It then becomes very easy to write
+uninitialized and set the value of field \chpl{r} to x.  It then becomes very easy to write
 a constructor that will perform no initialization at all:
 \begin{chapel}
 ctor R() with only () {}
