@@ -157,10 +157,10 @@ private inline proc chpl_compare(a, b, param reverse=false, comparator:?rec=empt
 
   if reverse {
     if a < b { return 1; }
-    else if a > b { return -1; }
+    else if b < a { return -1; }
   } else {
     if a < b { return -1; }
-    else if a > b { return 1; }
+    else if b < a { return 1; }
   }
 
   return 0;
