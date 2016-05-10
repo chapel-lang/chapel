@@ -7,4 +7,4 @@ Make sure that variables declared in on-statements are accessed via a
 reference.
 
 This is related to the global variables work and maybe a good first
-step, though it can also be implemnted orthongonally.
+step, though it can also be implemented orthongonally.

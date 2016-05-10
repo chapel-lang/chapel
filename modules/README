@@ -11,7 +11,7 @@ The directory structure of the modules/ directory is as follows:
 
   internal/ : Chapel code used to implement the language; modules here
               should be code that the user either need not be aware
-              of, or would considere to be part of the Chapel language
+              of, or would consider to be part of the Chapel language
               itself (i.e., something you'd document in the language
               specification rather than as part of a library's
               documentation).

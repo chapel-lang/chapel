@@ -110,7 +110,7 @@ module MPI {
   }
 
 
-  // TODO : Not explicily found in the spec
+  // TODO : Not explicitly found in the spec
   extern type MPI_Errhandler = opaque;
 
   /* Return codes. 

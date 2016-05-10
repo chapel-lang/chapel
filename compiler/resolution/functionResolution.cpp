@@ -3350,7 +3350,7 @@ static bool isInConstructorLikeFunction(CallExpr* call) {
 }
 
 // Is the function of interest invoked from a constructor
-// or initialize(), with the constructor's or intialize's 'this'
+// or initialize(), with the constructor's or initialize's 'this'
 // as the receiver actual.
 static bool isInvokedFromConstructorLikeFunction(int stackIdx) {
   if (stackIdx > 0) {

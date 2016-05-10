@@ -21,7 +21,7 @@
    
    This module provides basic types when those types are not
    platform-dependent. The module :mod:`SysCTypes` contains the
-   platform-dependent declarations for C compatability.
+   platform-dependent declarations for C compatibility.
 
    This module also defines the error types :type:`syserr` and :type:`err_t`.
 
