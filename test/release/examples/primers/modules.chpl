@@ -1,69 +1,48 @@
 /*
  * Module Primer
  *
- * This primer introduces the concept of modules, a strategy for encapsulating
- * code for later use.  It covers:
+ * This primer introduces the concept of modules, a concept for encapsulating
+ * code for use by other code.  It covers:
  *   how to define a module
- *   namespace control for a module's symbols
- *   outside access of a module's symbols
- *   namespace control when using a module in an outside context, including:
+ *   namespace control within a module
+ *   external access to a module's symbols
+ *   namespace control when using a module, including:
  *     unlimited
  *     explicit exclusion of symbols
  *     explicit inclusion of symbols
  *     renaming included symbols
- *   outside access of modules in different files
+ *   cross-file module access
  */
 
 
 /* A module is a grouping of code - each program consists of at least one
    module, and every symbol is associated with some module.  If all the code of
-   a file is not enclosed in an explicit module, defined using the syntax below,
-   then the file itself is treated as a module with the same name as the file
-   (minus the .chpl suffix).
+   a file is not enclosed in an explicit module, defined using the 'module'
+   keyword, then the file itself is treated as a module with the same name as
+   the file (minus the .chpl suffix).
  */
 module modToUse {
 
-  /* In this case, foo is a public global variable which lives in the module
-     modToUse */
+  /* In this case, foo is a public module-level variable that is defined within
+     the module modToUse */
   var foo = 12;
 
-  // As is bar.
+  /* As is bar. */
   var bar: int = 2;
 
-  /* baz is a public function which lives in modToUse */
-  proc baz (x, y) {
-    return x * (x + y);
-  }
+  /* A symbol can be declared "private" - this means that only code defined
+     within the same scope as the definition of this symbol can access it.
 
-  /* A module defined within another module is known as a nested module.  These
-     modules can take advantage of symbols defined within their parent module,
-     but their parent module must take additional steps to access the contents
-     of the nested module.  We will cover how to access the contents of other
-     modules later in this primer.
-  */
-  module Inner1 {
-    /* The variable foobar is utilizing modToUse's foo and bar variables. */
-    var foobar = foo + bar;
-  }
-
-  /* Note that since there is other code after the end of modToUse's definition,
-     modToUse is a submodule of the overarching file module "modules".
-  */
-
-
-
-  /* Often, the functionality of a group of code doesn't need to be completely
-     visible to outside clients.  Sometimes it would be harmful for the client
-     to access a function that isn't part of the blessed API, and sometimes it
-     just adds unnecessary clutter to the namespace.  To avoid these cases, a
-     symbol can be declared "private" - this means that only code defined within
-     the same scope as the definition of this symbol can access it.
-  */
-
-  /* Here, hiddenFoo is a private global variable, which is only accessible by
+     Here, hiddenFoo is a private global variable, which is only accessible by
      symbols defined within modToUse
   */
   private var hiddenFoo = false;
+
+
+  /* baz is a public function which is defined within modToUse */
+  proc baz (x, y) {
+    return x * (x + y);
+  }
 
   /* hiddenBaz is a private function, which is also only accessible by symbols
      defined within modToUse.
@@ -73,20 +52,38 @@ module modToUse {
     return a + 3;
   }
 
+
+  /* A module defined within another module is called a nested module.  These
+     submodules can refer to symbols defined within their parent module, but
+     their parent module can't directly access the contents of the nested
+     module.  We will cover how to access the contents of other modules later in
+     this primer.
+  */
+  module Inner1 {
+    /* The variable foobar references modToUse's foo and bar variables. */
+    var foobar = foo + bar;
+  }
+
+  /* Note that since there is other code after the end of modToUse's definition,
+     modToUse is a submodule of the overarching file module "modules".
+  */
+
+
   module Inner2 {
     /* Since the module Inner2 is defined within modToUse, it can access the
        private variable hiddenFoo and the private function hiddenBaz.  However,
-       any private symbol defined within Inner2 will not be visible to symbols
-       defined outside of Inner2.
+       any private symbol defined within Inner2 will not be visible within
+       scopes defined outside of Inner2.
      */
 
     private var innerOnly = -17;
     var canSeeHidden = !hiddenFoo;
   }
 
-  // At the moment, private cannot be applied to type definitions; type
-  // aliases, and declarations of enums, records, and classes cannot be declared
-  // private.  Private also cannot be applied to fields or methods yet.
+  // In the current implementation, private cannot be applied to type
+  // definitions; type aliases, and declarations of enums, records, and
+  // classes cannot be declared private.  Private also cannot be applied to
+  // fields or methods yet.
 
 }
 
@@ -107,19 +104,21 @@ module Conflict {
   }
 
   var other = 5.0 + 3i;
+
+  var another = false;
 }
 
 
 proc main() {
   writeln("Access from outside a module");
 
-  /* Often, it is desirable for the contents of a module to be accessed from
-     outside that context.  There are several strategies for accomplishing this:
+  /* If a module is not the main module for a program, it is desirable for its
+     contents to be accessible to external modules.  There are several
+     strategies for accomplishing this:
 
-     First, if only one symbol defined in the module is desired, and it is
-     desired only once, the symbol can be referenced explicitly - this is done
-     using the module name and a separating '.' as a prefix to the name of the
-     symbol desired.
+     First, a symbol can be referenced explicitly - this is done using the
+     module name and a separating '.' as a prefix to the name of the symbol
+     desired.
   */
   var thriceFoo = 3 * modToUse.foo; // should be 36
   writeln(thriceFoo);
@@ -132,36 +131,41 @@ proc main() {
     */
     use modToUse;
 
-    /*
-      Use statements can be inserted at the global scope, as well as any
-      arbitrary inner scope defined.
-    */
+    /* Use statements can be inserted at any lexical scope that contains
+       executable code.
 
-    /* A use statement brings all of the visible symbols of a module into the
-       scope which defines the use statement.  These symbols may then be
+       A use statement makes all of the module's visible symbols available to
+       the scope which contains the use statement.  These symbols may then be
        accessed without the module name prefix.
+
+       In this case, bazBarFoo should store the result of calling modToUse.baz
+       on modToUse.bar and modToUse.foo, which is in this case '28'.
     */
-    var bazBarFoo = baz(bar, foo); // should be 28
+    var bazBarFoo = baz(bar, foo);
     writeln(bazBarFoo);
   }
 
 
 
-  /* Once the scope defining a use statement is left, however, the symbols must
-     be accessed with a prefix.  The following line would cause an error,
-     because the previous use of the module 'modToUse' occurred within the curly
-     braces above:
+  /* Since the following line doesn't live within a scope that contains a 'use'
+     of 'modToUse', it would generate an error if uncommented.  This is because
+     'foo' cannot be directly referenced, and is not qualified with a module
+     name.
   */
   // var twiceFoo = 2 * foo;
 
 
 
   {
-    var bazBarFoo = baz(bar, foo); // should be 28
+    var bazBarFoo = baz(bar, foo);
 
     /* Use statements apply to the entire scope in which they are defined.  Even
-       if the use statement occurs after code which would access the symbols
-       without prefix, these accesses are still valid.
+       if the use statement occurs after code which would directly refer to its
+       symbols, these references are still valid.
+
+       Thus, as in an earlier example, bazBarFoo should store the result of
+       calling modToUse.baz on modToUse.bar and modToUse.foo, which is in this
+       case '28'.
     */
     use modToUse;
 
@@ -170,8 +174,8 @@ proc main() {
 
 
   {
-    /* The symbols provided by a use statement are considered at an outer scope
-       to the symbols defined at the same level as the use itself.  Thus, if
+    /* The symbols provided by a use statement are only considered when the name
+       in question cannot be resolved directly within the local scope.  Thus, if
        another bar were defined here, and an access was attempted, the compiler
        would find the bar at this scope, rather than modToUse.bar.
     */
@@ -179,21 +183,26 @@ proc main() {
 
     use modToUse;
 
-    writeln(bar); // Will output 4.0, not 2
+    writeln(bar);
+    // Will output the value of the bar defined in scope (which is '4.0'),
+    // rather than the value of modToUse.bar (which is '2')
   }
 
 
   var bar = false;
   {
-    /* The symbols provided by a use statement are considered at an inner scope
-       to the symbols defined outside of the scope where the use statement
-       applies.  Thus, if another bar were defined outside of these curly
-       braces, and an access was attempted, the compiler would find the bar from
-       modToUse, rather than the outer bar.
+    /* If a symbol cannot be resolved directly within the local scope, then the
+       symbols provided by a use statement are considered before the symbols
+       defined outside of the scope where the use statement applies.  Thus, if
+       another bar were defined outside of these curly braces, and an access was
+       attempted, the compiler would find the bar from modToUse, rather than the
+       outer bar.
     */
 
     use modToUse;
-    writeln(bar); // Will output 2, not false
+    writeln(bar);
+    // Will output the value of modToUse.bar (which is '2'), rather than the
+    // value of the bar defined outside of this scope (which is 'false')
   }
 
 
@@ -202,19 +211,23 @@ proc main() {
     use modToUse, AnotherModule, ThirdModule;
 
     if (a || b < 0) {
-      writeln(foo);
+      // Refers to AnotherModule.a (which is 'false') and ThirdModule.b (which
+      // is '-13.0')
+      writeln(foo); // Refers to modToUse.foo
     } else {
-      writeln(bar);
-    } // Will output foo (12)
+      writeln(bar); // Refers to modToUse.bar
+    } // Will output modToUse.foo (which is '12')
   }
 
 
   {
-    /* And a scope may contain multiple use statements */
+    /* Equivalently, a scope may contain multiple use statements */
     use modToUse;
-    use AnotherModule;
+    use AnotherModule, ThirdModule;
 
-    writeln(a && foo > 15); // outputs false
+    writeln(a && foo > 15);
+    // outputs false (because AnotherModule.a is 'false' and modToUse.foo is
+    // '12')
   }
 
 
@@ -226,12 +239,12 @@ proc main() {
     */
     use modToUse, Conflict;
 
-    writeln(foo); // Outputs 12
+    writeln(foo); // Outputs modToUse.foo ('12')
     /* The following line would fail because both modToUse and Conflict define a
-       bar:
+       symbol named bar:
     */
     // writeln(bar);
-    writeln(other); // Outputs 5.0 + 3.0i
+    writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
   }
 
   writeln();
@@ -242,13 +255,16 @@ proc main() {
     /* To get around such conflicts, there are multiple strategies.  If only a
        small number of symbols are desired from a particular module, you can
        specify the symbols to bring in via an 'only' list.
+
+       Here, because of the 'only' clause in the 'use' of Conflict, Conflict's
+       'bar' is not directly accessible here.
     */
     use modToUse;
-    use Conflict only other;
+    use Conflict only other, another;
 
-    writeln(foo); // Outputs 12
-    writeln(bar); // Outputs 2
-    writeln(other); // Outputs 5.0 + 3.0i
+    writeln(foo); // Outputs modToUse.foo ('12')
+    writeln(bar); // Outputs modToUse.bar ('2')
+    writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
   }
 
 
@@ -259,22 +275,22 @@ proc main() {
     use Conflict;
     use modToUse except bar;
 
-    writeln(foo); // Outputs 12
-    writeln(bar); // Outputs 5 after output in Conflict.bar function
-    writeln(other); // Outputs 5.0 + 3.0i
+    writeln(foo); // Outputs modToUse.foo ('12')
+    writeln(bar); // Outputs '5' after output in Conflict.bar function
+    writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
   }
 
 
   {
     /* If both symbols which conflict are desired, or if the use causes symbols
        to be shadowed which are necessary, you can choose to rename a symbol
-       when including it, so long as the new name does not cause any conflicts
-       with other included symbols.
+       when including it via the 'as' keyword, so long as the new name does not
+       cause any conflicts with other included symbols.
     */
     use modToUse;
     use Conflict only bar as boop;
-    writeln(bar); // Outputs 2
-    writeln(boop); // Outputs 5 after output in Conflict.bar function
+    writeln(bar); // Outputs modToUse.bar ('2')
+    writeln(boop); // Outputs '5' after output in Conflict.bar function
   }
 
   writeln();
@@ -294,7 +310,8 @@ proc main() {
 
     use color;
 
-    // The use statement allows you to access it without the prefix
+    // The use statement allows you to access an enum's symbols without the
+    // prefix
     var anotherColor = yellow; // color.yellow
     writeln(anotherColor);
 

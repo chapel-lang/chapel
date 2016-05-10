@@ -65,4 +65,7 @@ FFTWlib: FFTWlib.chpl
 LAPACKlib: LAPACKlib.chpl
 	$(CHPL) -o $@ $(LAPACK_OPTS) $<
 
+modules: modules.chpl
+	$(CHPL) -o $@ modulesHelper2.chpl modulesHelper3.chpl --main-module modules -M modulesPrimerDir/ $<
+
 FORCE:
