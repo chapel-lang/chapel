@@ -1,4 +1,4 @@
-semantic: initilizer depending on values at module use
+semantic: initializer depending on values at module use
 
 If I can fulfill module requirements at use time,
 why can't those requirements be used in an initializer?
