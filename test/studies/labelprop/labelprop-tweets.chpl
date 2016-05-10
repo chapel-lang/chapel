@@ -87,7 +87,7 @@ proc main(args:[] string) {
   t.total.start();
 
   // Pairs is for collecting twitter  user ID to user ID mentions
-  var assocDist = new UserMapAssoc(idxType=(int, int)),
+  var assocDist = new UserMapAssoc(idxType=(int, int), mapper=new MinMapper()),
       noDist = new DefaultDist();
 
   var Dist = if distributed then assocDist
@@ -648,6 +648,16 @@ class Sub {
   // TODO -- should these be associative domain/arrays?
   var Domain: domain(1);
   var Array: [Domain] eltType;
+}
+
+class MinMapper{
+  proc indexToLocaleIndex(ind, targetLocs: [] locale) : int {
+    var (x, y) = ind;
+    var m = min(x, y);
+    var h: int = _gen_key(m);
+    const numlocs = targetLocs.domain.size;
+    return h % numlocs;
+  }
 }
 
 /* Selection sort that assumes that only the first element is out of order */
