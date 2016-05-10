@@ -249,7 +249,7 @@ static const char* aidIgnoreError(const char* callerMsg, int id) {
                          " is small, use aid09(id) to examine it");
 }
 
-// This version of aid*() does not exlude any id.
+// This version of aid*() does not exclude any id.
 BaseAST* aid09(int id) {
   #define match_id(type)                        \
     forv_Vec(type, a, g##type##s) {             \
