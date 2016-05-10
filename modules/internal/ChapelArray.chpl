@@ -273,6 +273,12 @@ module ChapelArray {
       return new _distribution(value, value);
   }
 
+  // Run-time type support
+  //
+  // NOTE: the bodies of functions marked with runtime type init fn such as
+  // chpl__buildDomainRuntimeType and chpl__buildArrayRuntimeType are replaced
+  // by the compiler to just create a record storing the arguments. The body
+  // is moved by the compiler to convertRuntimeTypeToValue.
 
   //
   // Support for domain types
@@ -804,6 +810,11 @@ module ChapelArray {
     }
 
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
+    // the locale grid
+    proc targetLocales() {
+      return _value.dsiTargetLocales();
+    }
   }  // record _distribution
 
   inline proc ==(d1: _distribution(?), d2: _distribution(?)) {
@@ -1024,7 +1035,11 @@ module ChapelArray {
       _value.dsiRemove(i);
     }
 
-    pragma "no doc"
+    /* Request space for a particular number of values in an
+       domain.
+
+       Currently only applies to associative domains.
+     */
     proc requestCapacity(i) {
 
       if i < 0 {
@@ -1391,6 +1406,32 @@ module ChapelArray {
       // We assume here a distribution is the same as a dense one
       // This function would need to be updated if that changed.
       return _getDistribution(_value.dist);
+    }
+
+    // the locale grid
+    proc targetLocales() {
+      return _value.dsiTargetLocales();
+    }
+
+    /* Return true if the local subdomain can be represented as a single
+       domain. Otherwise return false. */
+    proc hasSingleLocalSubdomain() param {
+      return _value.dsiHasSingleLocalSubdomain();
+    }
+
+    /* Return the subdomain that is local to the current locale */
+    proc localSubdomain() {
+      if !_value.dsiHasSingleLocalSubdomain() then
+        compilerError("Domain's local domain is not a single domain");
+      return _value.dsiLocalSubdomain();
+    }
+
+    /* Yield the subdomains that are local to the current locale */
+    iter localSubdomains() {
+      if _value.dsiHasSingleLocalSubdomain() then
+        yield _value.dsiLocalSubdomain();
+      else
+        for d in _value.dsiLocalSubdomains() do yield d;
     }
   }  // record _domain
 

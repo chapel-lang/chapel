@@ -3,6 +3,7 @@
 import sys, os, shutil, time, math, re, stat
 from optparse import OptionParser
 
+import datetime
 import fileReadHelp
 import json
 try:
@@ -222,6 +223,44 @@ def sort_csv(csvFile):
     # untranspose the data
     data = zip(*data)
 
+    data_to_csv(data, csvFile)
+
+# Yield dateformat-ed dates in the range [start_date, end_date]
+def date_range(start_date, end_date, dateformat='%Y-%m-%d'):
+  cur_date = datetime.datetime.strptime(start_date, dateformat)
+  end_date = datetime.datetime.strptime(end_date, dateformat)
+
+  while cur_date <= end_date:
+    yield cur_date.strftime(dateformat)
+    cur_date += datetime.timedelta(days=1)
+
+# Fill in missing dates in the csv file. Grabs the start and end date from the
+# file, and ensures that we have an entry for every date in the range.
+# We do this because annotations require an actual data point to attach to, so
+# we make sure there will always be a day available
+def fill_sparse_csv(csvFile):
+    data = parse_csv(csvFile)
+    keys = data.pop(0)
+    if len(data) > 1:
+        dates = zip(*data).pop(0)
+        dates = [date[0] for date in dates]
+        if len(dates) > 1:
+            start_date = dates[0]
+            end_date = dates[-1]
+
+            # for all the missing days append an empty entry to the end of the
+            # data (we'll sort later to get things in the right order)
+            missing_dates = set(date_range(start_date, end_date)) - set(dates)
+            for date in missing_dates:
+               # emptydate = [[date], [''], [''], ...]
+               emptydate = [[date]] + [['']]*(len(keys)-1)
+               data.append(emptydate)
+
+        # sort our data, we don't need to convert our date strings to datetimes
+        # because for ISO 8601 dates lexical order is also chronological order
+        data.sort()
+
+    data.insert(0, keys)
     data_to_csv(data, csvFile)
 
 
@@ -735,6 +774,8 @@ class GraphClass:
         # functions section above, you can eliminate the intermediate step.
         if self.sort:
             sort_csv(fname)
+
+        fill_sparse_csv(fname)
 
         if self.numseries > 0:
             strip_series(fname, self.numseries)

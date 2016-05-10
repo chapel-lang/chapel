@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -10,6 +10,7 @@
 #include <hwloc.h>
 #include <hwloc/plugins.h>
 #include <private/private.h>
+#include <private/misc.h>
 #include <private/xml.h>
 #include <private/debug.h>
 
@@ -240,7 +241,8 @@ hwloc__nolibxml_import_close_content(hwloc__xml_import_state_t state)
 {
   /* put back the '<' that we overwrote to 0-terminate the content */
   hwloc__nolibxml_import_state_data_t nstate = (void*) state->data;
-  *nstate->tagbuffer = '<';
+  if (!nstate->closed)
+    *nstate->tagbuffer = '<';
 }
 
 static int

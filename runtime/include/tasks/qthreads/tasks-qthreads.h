@@ -134,13 +134,6 @@ typedef struct {
           .requestedSubloc = _subloc, \
           .prvdata = { .serial_state = _serial } }
 
-typedef struct {
-    void                     *fn;
-    void                     *args;
-    chpl_bool                countRunning;
-    chpl_task_prvDataImpl_t  chpl_data;
-} chpl_qthread_wrapper_args_t;
-
 // Structure of task-local storage
 typedef struct chpl_qthread_tls_s {
     /* Task private data: serial state, etc. */

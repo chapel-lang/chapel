@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -30,8 +30,8 @@ typedef enum hwloc_calc_append_mode_e {
 } hwloc_calc_append_mode_t;
 
 static __hwloc_inline int
-hwloc_calc_append_cpuset(hwloc_bitmap_t set, hwloc_const_bitmap_t newset,
-		       hwloc_calc_append_mode_t mode, int verbose)
+hwloc_calc_append_set(hwloc_bitmap_t set, hwloc_const_bitmap_t newset,
+		      hwloc_calc_append_mode_t mode, int verbose)
 {
   char *s1, *s2;
   hwloc_bitmap_asprintf(&s1, newset);
@@ -534,23 +534,31 @@ hwloc_calc_process_type_arg(hwloc_topology_t topology, unsigned topodepth,
   return hwloc_calc_append_object_range(topology, topodepth, hwloc_topology_get_complete_cpuset(topology), depth, sep+1, logical, cbfunc, cbdata, verbose);
 }
 
+struct hwloc_calc_process_arg_cpuset_cbdata_s {
+  hwloc_bitmap_t set;
+  int nodeset_output;
+};
+
 static __hwloc_inline void
 hwloc_calc_process_arg_cpuset_cb(void *_data, hwloc_obj_t obj, int verbose)
 {
-  hwloc_bitmap_t set = _data;
+  struct hwloc_calc_process_arg_cpuset_cbdata_s *cbdata = _data;
+  hwloc_bitmap_t set = cbdata->set;
   /* walk up out of I/O objects */
   while (obj && !obj->cpuset)
     obj = obj->parent;
   if (!obj)
     /* do nothing */
     return;
-  hwloc_calc_append_cpuset(set, obj->cpuset, HWLOC_CALC_APPEND_ADD, verbose);
+  hwloc_calc_append_set(set,
+			cbdata->nodeset_output ? obj->nodeset : obj->cpuset,
+			HWLOC_CALC_APPEND_ADD, verbose);
 }
 
 static __hwloc_inline int
 hwloc_calc_process_arg(hwloc_topology_t topology, unsigned topodepth,
 		       const char *arg, int logical, hwloc_bitmap_t set,
-		       int verbose)
+		       int nodeset_input, int nodeset_output, int verbose)
 {
   hwloc_calc_append_mode_t mode = HWLOC_CALC_APPEND_ADD;
   size_t typelen;
@@ -568,19 +576,23 @@ hwloc_calc_process_arg(hwloc_topology_t topology, unsigned topodepth,
   }
 
   if (!strcmp(arg, "all") || !strcmp(arg, "root"))
-    return hwloc_calc_append_cpuset(set, hwloc_topology_get_topology_cpuset(topology), mode, verbose);
+    return hwloc_calc_append_set(set,
+				 nodeset_output ? hwloc_topology_get_topology_nodeset(topology) : hwloc_topology_get_topology_cpuset(topology),
+				 mode, verbose);
 
   /* try to match a type/depth followed by a special character */
   typelen = strspn(arg, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
   if (typelen && (arg[typelen] == ':' || arg[typelen] == '=' || arg[typelen] == '[')) {
     /* process type/depth */
-    hwloc_bitmap_t newset = hwloc_bitmap_alloc();
+    struct hwloc_calc_process_arg_cpuset_cbdata_s cbdata;
+    cbdata.set = hwloc_bitmap_alloc();
+    cbdata.nodeset_output = nodeset_output;
     err = hwloc_calc_process_type_arg(topology, topodepth, arg, typelen, logical,
-				      hwloc_calc_process_arg_cpuset_cb, newset,
+				      hwloc_calc_process_arg_cpuset_cb, &cbdata,
 				      verbose);
     if (!err)
-      err = hwloc_calc_append_cpuset(set, newset, mode, verbose);
-    hwloc_bitmap_free(newset);
+      err = hwloc_calc_append_set(set, cbdata.set, mode, verbose);
+    hwloc_bitmap_free(cbdata.set);
 
   } else {
     /* try to match a cpuset */
@@ -641,7 +653,19 @@ hwloc_calc_process_arg(hwloc_topology_t topology, unsigned topodepth,
       hwloc_bitmap_taskset_sscanf(newset, arg);
     else
       hwloc_bitmap_sscanf(newset, arg);
-    err = hwloc_calc_append_cpuset(set, newset, mode, verbose);
+    if (nodeset_output && !nodeset_input) {
+      hwloc_bitmap_t newnset = hwloc_bitmap_alloc();
+      hwloc_cpuset_to_nodeset(topology, newset, newnset);
+      err = hwloc_calc_append_set(set, newnset, mode, verbose);
+      hwloc_bitmap_free(newnset);
+    } else if (nodeset_input && !nodeset_output) {
+      hwloc_bitmap_t newcset = hwloc_bitmap_alloc();
+      hwloc_cpuset_from_nodeset(topology, newcset, newset);
+      err = hwloc_calc_append_set(set, newcset, mode, verbose);
+      hwloc_bitmap_free(newcset);
+    } else {
+      err = hwloc_calc_append_set(set, newset, mode, verbose);
+    }
     hwloc_bitmap_free(newset);
   }
 

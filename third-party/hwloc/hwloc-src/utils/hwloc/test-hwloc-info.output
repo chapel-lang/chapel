@@ -3,6 +3,40 @@ depth 0:	1 Machine (type #1)
   depth 2:	6 Core (type #5)
    depth 3:	24 PU (type #6)
 
+depth 0:	1 Machine (type #1)
+ depth 1:	2 NUMANode (type #2)
+  depth 2:	6 Core (type #5)
+   depth 3:	24 PU (type #6)
+
+discovery:pu = 1
+cpubind:set_thisproc_cpubind = 0
+cpubind:get_thisproc_cpubind = 0
+cpubind:set_proc_cpubind = 0
+cpubind:get_proc_cpubind = 0
+cpubind:set_thisthread_cpubind = 0
+cpubind:get_thisthread_cpubind = 0
+cpubind:set_thread_cpubind = 0
+cpubind:get_thread_cpubind = 0
+cpubind:get_thisproc_last_cpu_location = 0
+cpubind:get_proc_last_cpu_location = 0
+cpubind:get_thisthread_cpubind = 0
+membind:set_thisproc_membind = 0
+membind:get_thisproc_membind = 0
+membind:set_proc_membind = 0
+membind:get_proc_membind = 0
+membind:set_thisthread_membind = 0
+membind:get_thisthread_membind = 0
+membind:set_area_membind = 0
+membind:get_area_membind = 0
+membind:firsttouch_membind = 0
+membind:bind_membind = 0
+membind:interleave_membind = 0
+membind:nexttouch_membind = 0
+membind:migrate_membind = 0
+membind:firsttouch_membind = 0
+membind:get_area_memlocation = 0
+
+
 Core L#2
  type = Core
  full type = Core

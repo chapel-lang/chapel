@@ -59,7 +59,7 @@ record Handle
 pragma "init copy fn"
 proc chpl__initCopy(h: Handle)
 {
-  if h._impl == nil then halt("Illegal copy of unintialized Handle.");
+  if h._impl == nil then halt("Illegal copy of uninitialized Handle.");
 
   h._impl.retain();
   return h;

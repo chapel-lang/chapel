@@ -1,7 +1,0 @@
-bug: memory leak unpacking a tuple in a global scope
-
-There is a memory leak unpacking a returned tuple in a global scope. This 
-only appears to come up in this very special case; if unpacked in a function
-or even a more local scope, there is no memory leak.
-
-This is easy to work around for now.

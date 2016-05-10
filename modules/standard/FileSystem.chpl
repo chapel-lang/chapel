@@ -195,7 +195,7 @@ proc chmod(out error: syserr, name: string, mode: int) {
    :arg name: The name of the file or directory whose permissions should be
               alterred.
    :type name: `string`
-   :arg mode: The permissions desired for the file or direcory in question.
+   :arg mode: The permissions desired for the file or directory in question.
               See description of :const:`S_IRUSR`, for instance, for potential
               values.
    :type mode: `int`

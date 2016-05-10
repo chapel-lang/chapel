@@ -1,0 +1,20 @@
+perfkeys: Elegant: , Performant:
+files: arrayAdd.dat, arrayAdd.dat
+graphkeys: Elegant, Performant
+graphtitle: Elegance arrayAdd
+ylabel: Time (seconds)
+graphname: elegance-arrayAdd
+
+perfkeys: Elegant: , Performant:
+files: promotedOp.dat, promotedOp.dat
+graphkeys: Elegant, Performant
+graphtitle: Elegance promotedOp
+ylabel: Time (seconds)
+graphname: elegance-promotedOp
+
+perfkeys: Elegant: , Performant:
+files: tuplesVSarrays.dat, tuplesVSarrays.dat
+graphkeys: Elegant, Performant
+graphtitle: Elegance tuplesVSarrays
+ylabel: Time (seconds)
+graphname: elegance-tuplesVSarrays

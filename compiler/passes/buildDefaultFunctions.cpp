@@ -535,6 +535,8 @@ static void build_chpl_entry_points() {
     if (mainHasArgs) {
       VarSymbol* converted_args = newTemp("_main_args");
 
+      converted_args->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
       chpl_gen_main->insertAtTail(new DefExpr(converted_args));
       chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
                                                converted_args,
