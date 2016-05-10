@@ -454,10 +454,8 @@ proc create_and_analyze_graph(Pairs)
   // the labels correspond to clusters.
 
   var labels:[1..max_nid] atomic int(32);
-  forall (lab,i) in zip(labels,1:int(32)..) {
-    // TODO -- elegance - use "atomic counter" that acts as normal var
-    // or change the default for the atomic
-    labels[i].write(i, memory_order_relaxed);
+  forall i in 1..max_nid {
+    labels[i].poke(i);
   }
 
   // label propagation for community detection according to
@@ -543,7 +541,7 @@ proc create_and_analyze_graph(Pairs)
     // iterate over G.vertices in a random order
     serial !parallel { forall partition in partitionedGraph{
     //for vid in G.vertices {
-      for vid in partition.Array {
+      serial !parallel { forall vid in partition.Array {
 
         //if distributed && verbose {
           //writeln("on locale ", here.id, " there are ",
@@ -602,10 +600,11 @@ proc create_and_analyze_graph(Pairs)
         // set the current label to the maximum label.
         if mylabel != maxlabel then
           labels[vid].write(maxlabel, memory_order_relaxed);
-      } // for vid in vids
-    } // forall vids
+      } // forall vid
+      } // serial !parallel
+    } // forall partition
     i += 1;
-  } // serial !parallel
+    } // serial !parallel
   } // while !go
 
   t.labelprop.stop();
@@ -694,4 +693,3 @@ proc timings.print() {
   writeln("processed ", nlines, " lines in ", total.elapsed(), " s");
   writeln("that is ", nlines / days / m, "M tweets/day processed");
 }
-
