@@ -1629,21 +1629,20 @@ computeGenericSubs(SymbolMap &subs,
 
 
 //
-// Is 'parent' an indexing expression into the tuple 'se'?
-// If so, return the index (between 1 and numArgs). Otherwise return 0.
+// Assuming 'parent' is an indexing expression into the tuple 'se',
+// return the index, between 1 and numArgs. Otherwise return 0.
 //
-static int isVarargAccessIndex(SymExpr* se, CallExpr* parent, int numArgs){
+static int varargAccessIndex(SymExpr* se, CallExpr* parent, int numArgs) {
   if (se == parent->baseExpr) {
     if(parent->numActuals() == 1) {
       VarSymbol* idxVar = toVarSymbol(toSymExpr(parent->get(1))->var);
       if (idxVar && idxVar->immediate &&
-          idxVar->immediate->const_kind == NUM_KIND_INT)
-        {
-          int idxNum = idxVar->immediate->int_value();
-          if (1 <= idxNum && idxNum <= numArgs)
-            return idxNum;
-          // report an "index out of bounds" error otherwise?
-        }
+          idxVar->immediate->const_kind == NUM_KIND_INT) {
+        int idxNum = idxVar->immediate->int_value();
+        if (1 <= idxNum && idxNum <= numArgs)
+          return idxNum;
+        // report an "index out of bounds" error otherwise?
+      }
     }
   }
   return 0;
@@ -1704,7 +1703,8 @@ static bool isVarargSizeExpr(SymExpr* se, CallExpr* parent) {
 // Does 'ast' contain use(s) of the vararg tuple 'formal'
 // that require 'formal' as a whole tuple?
 //
-// Keep in sync with substituteVarargTupleRefs().
+// needVarArgTupleAsWhole() and substituteVarargTupleRefs() should handle
+// the exact same set of SymExprs.
 //
 static bool needVarArgTupleAsWhole(BlockStmt* ast, int numArgs,
                                    ArgSymbol* formal)
@@ -1715,12 +1715,11 @@ static bool needVarArgTupleAsWhole(BlockStmt* ast, int numArgs,
   for_vector(SymExpr, se, symExprs) {
     if (se->var == formal) {
       if (CallExpr* parent = toCallExpr(se->parentExpr)) {
-        SET_LINENO(parent);
         if (parent->isPrimitive(PRIM_TUPLE_EXPAND)) {
           // (...formal) -- does not require
           continue;
         }
-        if (isVarargAccessIndex(se, parent, numArgs)) {
+        if (varargAccessIndex(se, parent, numArgs) > 0) {
           // formal(i) -- does not require
           continue;
         }
@@ -1742,7 +1741,8 @@ static bool needVarArgTupleAsWhole(BlockStmt* ast, int numArgs,
 // Replace, in 'ast', uses of the vararg tuple 'formal'
 // with references to individual formals.
 //
-// Keep in sync with needVarArgTupleAsWhole().
+// needVarArgTupleAsWhole() and substituteVarargTupleRefs() should handle
+// the exact same set of SymExprs.
 //
 void substituteVarargTupleRefs(BlockStmt* ast, int numArgs, ArgSymbol* formal,
                                std::vector<ArgSymbol*>& varargFormals)
@@ -1764,7 +1764,7 @@ void substituteVarargTupleRefs(BlockStmt* ast, int numArgs, ArgSymbol* formal,
           continue;
         }
 
-        if (int idxNum = isVarargAccessIndex(se, parent, numArgs)) {
+        if (int idxNum = varargAccessIndex(se, parent, numArgs)) {
           INT_ASSERT(1 <= idxNum && idxNum <= numArgs);
           ArgSymbol* replFormal = varargFormals[idxNum-1];
           replaceVarargAccess(parent, se, replFormal, tempReps);
@@ -1829,12 +1829,12 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
         varargFormals[i] = newFormal;
       }
 
-      bool needTupleInBody;
+      bool needTupleInBody = true; //avoid "may be used uninitialized" warning
 
       // Replace mappings to the old formal with mappings to the new variable.
       if (workingFn->hasFlag(FLAG_PARTIAL_COPY)) {
         bool gotFormal = false; // for assertion only
-        for (int index = workingFn->partialCopyMap.n; --index >= 0;) {
+        for (int index = workingFn->partialCopyMap.n-1; index >= 0; index--) {
           SymbolMapElem& mapElem = workingFn->partialCopyMap.v[index];
 
           if (mapElem.value == formal) {
@@ -1847,7 +1847,7 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
               mapElem.value = var;
             } else {
               // We will rely on mapElem.value==formal to replace it away
-              // in finalizeCopy().
+              // in finalizeCopy().  This assumes a single set of varargs.
               workingFn->varargOldFormal = formal;
               workingFn->varargNewFormals = varargFormals;
             }
@@ -1968,22 +1968,22 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
      }
 
       if (workingFn->where) {
-       if (needVarArgTupleAsWhole(workingFn->where, n, formal)) {
-        VarSymbol* var  = new VarSymbol(formal->name);
-        CallExpr*  move = new CallExpr(PRIM_MOVE, var, tupleCall->copy());
+        if (needVarArgTupleAsWhole(workingFn->where, n, formal)) {
+          VarSymbol* var  = new VarSymbol(formal->name);
+          CallExpr*  move = new CallExpr(PRIM_MOVE, var, tupleCall->copy());
 
-        if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-          var->addFlag(FLAG_TYPE_VARIABLE);
+          if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+            var->addFlag(FLAG_TYPE_VARIABLE);
+          }
+
+          workingFn->where->insertAtHead(move);
+          workingFn->where->insertAtHead(new DefExpr(var));
+
+          subSymbol(workingFn->where, formal, var);
+        } else {
+          // !needVarArgTupleAsWhole()
+          substituteVarargTupleRefs(workingFn->where, n, formal, varargFormals);
         }
-
-        workingFn->where->insertAtHead(move);
-        workingFn->where->insertAtHead(new DefExpr(var));
-
-        subSymbol(workingFn->where, formal, var);
-       } else {
-        // !needVarArgTupleAsWhole()
-        substituteVarargTupleRefs(workingFn->where, n, formal, varargFormals);
-       }
       }
 
       formal->defPoint->remove();
@@ -2045,6 +2045,7 @@ expandVarArgs(FnSymbol* origFn, int numActuals) {
 
     // Handle unspecified variable number of arguments.
     if (DefExpr* def = toDefExpr(formal->variableExpr->body.tail)) {
+      // This assumes a single set of varargs.
       int numCopies = numActuals - workingFn->numFormals() + 1;
       if (numCopies <= 0) {
         if (workingFn != origFn) delete workingFn;
@@ -2061,6 +2062,7 @@ expandVarArgs(FnSymbol* origFn, int numActuals) {
         formal = static_cast<ArgSymbol*>(substitutions.get(formal));
       }
 
+      // newSym queries the number of varargs. Replace it with int literal.
       Symbol*  newSym     = substitutions.get(def->sym);
       SymExpr* newSymExpr = new SymExpr(new_IntSymbol(numCopies));
       newSymExpr->astloc = newSym->astloc;

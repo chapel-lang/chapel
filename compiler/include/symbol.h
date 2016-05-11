@@ -354,6 +354,8 @@ class FnSymbol : public Symbol {
   const char *doc;
 
   // The following fields are used only when hasFlag(FLAG_PARTIAL_COPY)
+  // to pass information from partialCopy() to finalizeCopy().
+  // This localized use suggests that they should be moved to a hashtable.
   /// Used to keep track of symbol substitutions during partial copying.
   SymbolMap partialCopyMap;
   /// Source of a partially copied function.

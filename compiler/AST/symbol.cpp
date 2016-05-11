@@ -1695,7 +1695,6 @@ void FnSymbol::finalizeCopy(void) {
       /*
        * Iterate over the statements that have been added to the function body
        * and add them to the new body.
-       * (Added only if needTupleInBody - see handleSymExprInExpandVarArgs().)
        */
       for_alist_backward(node, varArgNodes->body) {
         this->body->insertAtHead(node->remove());
@@ -1776,7 +1775,7 @@ void FnSymbol::finalizeCopy(void) {
                                 this->varargOldFormal, this->varargNewFormals);
       // Done, clean up.
       this->varargOldFormal = NULL;
-      this->varargNewFormals.clear(); // unless we want to keep these around?
+      this->varargNewFormals.clear();
     }
 
     // Clean up book keeping information.
