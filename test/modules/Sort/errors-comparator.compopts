@@ -2,4 +2,3 @@
 -scomparator=wrong
 -scomparator=keyargs
 -scomparator=compareargs
--scomparator=keyreturn

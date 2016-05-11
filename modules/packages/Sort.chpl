@@ -35,9 +35,8 @@ instance of that record to the sort function.
 Most sort routines support comparators, which is denoted by their function
 signature.
 
-The ``key(a)`` method accepts one argument with the array ``eltType`` and
-returns a value that supports all of comparison operations: ``<``, ``<=``,
-``>``, ``>=``, or ``==``.
+The ``key(a)`` method accepts 1 argument with the array ``eltType`` and
+returns a value that must support all numeric operations.
 
 The default key method would look like this:
 
@@ -70,20 +69,18 @@ elements, we can use the following comparator record with a key method:
 
 
 The ``compare(a, b)`` method accepts 2 arguments of the data ``eltType`` and
-returns an integer between ``1`` if ``a > b``, ``0`` if ``a == b``, and ``-1`` if ``a < b``.
+returns an integer indicating how a and b compare to each other. It should return:
+
+  * > 0 if ``a > b``
+  * 0 if ``a == b``
+  * < 0 if ``a < b``
 
 The default compare method would look like this:
 
 .. code-block:: chapel
 
     proc default.compare(a, b) {
-      if a > b {
-        return 1;
-      } else if a < b {
-        return -1;
-      } else {
-        return 0;
-      }
+      return a - b;
     }
 
 
@@ -99,13 +96,7 @@ implemented with a compare method:
 
   // compare method defines how 2 elements are compared
   proc comparator.compare(a, b) {
-    if abs(a) > abs(b) {
-      return 1;
-    } else if abs(a) < abs(b) {
-      return -1;
-    } else {
-      return 0;
-    }
+    return abs(a) - abs(b);
   }
 
   myComparator = new comparator();
@@ -116,7 +107,7 @@ implemented with a compare method:
   writeln(Array);
 
 If both methods are implemented on the record passed as the comparator, the
-``compare(a, b)`` method will take priority over the ``key(a)`` method.
+``key(a)`` method will take priority over the ``compare(a, b)`` method.
 
  */
 
@@ -143,17 +134,18 @@ pragma "no doc"
 private inline proc chpl_compare(a, b, param reverse=false, comparator:?rec=emptyRecord): int {
   use Reflection;
 
-  // TODO -- we could also check types
+  // TODO -- In cases where values are larger than keys, it may be faster to
+  //         key data once and sort the keyed data, mirroring swaps in data.
+  // Compare results of comparator.key(a) if is defined by user
+  if canResolveMethod(comparator, "key", a) && canResolveMethod(comparator, "key", b) then
+    return chpl_compare(comparator.key(a), comparator.key(b), reverse);
+
   // Use comparator.compare(a, b) if is defined by user
   if canResolveMethod(comparator, "compare", a, b) {
     if reverse { return -comparator.compare(a, b); }
     else { return  comparator.compare(a, b); }
   }
 
-  // TODO -- It may be faster to call key() on all data once, and mirror swaps
-  // Compare results of comparator.key(a) if is defined by user
-  if canResolveMethod(comparator, "key", a) && canResolveMethod(comparator, "key", b) then
-    return chpl_compare(comparator.key(a), comparator.key(b), reverse);
 
   if reverse {
     if a < b { return 1; }
@@ -181,10 +173,23 @@ private proc chpl_check_comparator(comparator, a) {
   use Reflection;
 
   if comparator.type == defaultComparator {}
-  else if canResolveMethod(comparator, "compare", a, a) {}
-  else if canResolveMethod(comparator, "key", a) {}
+  // Check for valid comaprator methods
+  else if canResolveMethod(comparator, "compare", a, a) {
+    // Check return type of compare
+    type comparetype = comparator.compare(a, a).type;
+    if !(isNumericType(comparetype)) {
+      compilerError("The compare method must return a numeric type");
+    }
+  }
+  else if canResolveMethod(comparator, "key", a) {
+    // Check return type of key
+    type keytype = comparator.key(a).type;
+    if !(isNumericType(keytype) || isStringType(keytype)) {
+      compilerError("The key method must return a numeric or string type");
+    }
+  }
   else {
-    // If we make it this far, the passed comparator does not work
+    // If we make it this far, the passed comparator was defined incorrectly
     compilerError("The comparator record requires a 'key(a)' or 'compare(a, b)' method");
   }
 }
@@ -481,7 +486,7 @@ proc SelectionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false
       the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
 
  */
-inline proc VerifySort(Data: [?Dom] ?eltType, str: string, param reverse=false, comparator:?rec=emptyRecord) where isRecord(rec) {
+proc VerifySort(Data: [?Dom] ?eltType, str: string, param reverse=false, comparator:?rec=emptyRecord) where isRecord(rec) {
   chpl_check_comparator(comparator, Data(Dom.dim(1).low));
   for i in Dom.low..Dom.high-1 do
     if chpl_compare(Data(i+1), Data(i), reverse, comparator) < 0 then
@@ -489,6 +494,12 @@ inline proc VerifySort(Data: [?Dom] ?eltType, str: string, param reverse=false, 
 }
 
 
+proc isSorted(Data: [?Dom] ?eltType, str: string, param reverse=false, comparator:?rec=emptyRecord) where isRecord(rec) {
+  chpl_check_comparator(comparator, Data(Dom.dim(1).low));
+  for i in Dom.low..Dom.high-1 do
+    if chpl_compare(Data(i+1), Data(i), reverse, comparator) < 0 then
+      halt(str, " did not sort properly (", i, "): ", Data);
+}
 //
 // This is a first draft "sorterator" which is designed to take some
 // other iterator/iterable and yield its elements, in sorted order.

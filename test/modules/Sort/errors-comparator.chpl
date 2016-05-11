@@ -1,7 +1,6 @@
 /*
- *  Confirms that passing a broken comparators will result in compile error
- *
-*/
+ *  Tests compile errors upon passing a broken comparator
+ */
 
 use Sort;
 
@@ -42,7 +41,7 @@ proc compareargs.key(a, b) {
   return a - b;
 }
 
-/* Unhandled errors:
+/* TODO -- Unhandled errors:
 
 // Wrong return type -- hangs
 record keyreturn { }
@@ -50,8 +49,3 @@ proc keyreturn.key(a) {
   return 42;
 }
 */
-
-/* Working comparators */
-
-record working{ }
-proc working.key(a) { return abs(a); }
