@@ -168,14 +168,14 @@ typedef enum {
   FIND_EITHER = 0,
   FIND_REF,
   FIND_NOT_REF
-} fuction_exists_kind_t;
+} function_exists_kind_t;
 
 static FnSymbol* function_exists(const char* name,
                                  int numFormals,
                                  Type* formalType1 = NULL,
                                  Type* formalType2 = NULL,
                                  Type* formalType3 = NULL,
-                                 fuction_exists_kind_t kind=FIND_EITHER)
+                                 function_exists_kind_t kind=FIND_EITHER)
 {
   switch(numFormals)
   {
