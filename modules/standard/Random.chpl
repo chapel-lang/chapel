@@ -154,7 +154,7 @@ module Random {
      :type algorithm: :type:`RNG`
    */
   proc shuffle(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
-    var randNums = makeRandomStream(seed, eltType=arr.eltType, parSafe=false, algorithm=algorithm);
+    var randNums = makeRandomStream(seed, eltType=arr.domain.idxType, parSafe=false, algorithm=algorithm);
     randNums.shuffle(arr);
     delete randNums;
   }
@@ -708,7 +708,7 @@ module Random {
 
       /* Randomly shuffle a 1-D non-strided array.
          */
-      proc shuffle(arr: [] eltType) {
+      proc shuffle(arr: []) {
         var low = arr.domain.dim(1).low;
         var high = arr.domain.dim(1).high;
 
