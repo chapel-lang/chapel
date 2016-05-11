@@ -99,6 +99,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/HDFS.chpl \
 	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \
+	packages/LinearAlgebraJama.chpl \
 	packages/Norm.chpl \
 	packages/RecordParser.chpl \
 	packages/Search.chpl \
