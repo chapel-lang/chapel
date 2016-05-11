@@ -26,6 +26,7 @@ module DefaultAssociative {
   use DSIUtil;
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
+  config param defaultAssocAggregation = CHPL_CACHE_REMOTE;
   
   use Sort /* only QuickSort */;
   
@@ -62,8 +63,8 @@ module DefaultAssociative {
     proc processOperations( size:int, buf:c_void_ptr ) {
       extern proc sizeof(type t):size_t;
 
-      extern proc printf(fmt:c_string, sz:c_int);
-      printf("IN PROCESS size=%i\n", size:c_int);
+      //extern proc printf(fmt:c_string, sz:c_int);
+      //printf("IN PROCESS size=%i\n", size:c_int);
 
 // Why do I seem to need to use this primitive?
       var ptr:c_ptr(idxType) = __primitive("cast", c_ptr(idxType), buf);
@@ -72,21 +73,38 @@ module DefaultAssociative {
       var offset = 0;
       if parSafe then dom.lockTable();
 // Why can't I use request capacity?
-      dom.dsiRequestCapacity(dom.dsiNumIndices + size/eltSize, haveLock=true);
+// It seems to change the result? Losing a small number of elements?
+//      dom.dsiRequestCapacity(dom.dsiNumIndices + size/eltSize, haveLock=true);
       while offset < size {
         //writeln("Adding ", ptr[i], " size is ", dom.dsiNumIndices);
         dom.dsiAddInternal(ptr[i], haveLock=true);
+        //printf("%i\n", ptr[i]:c_int);
         offset += eltSize;
         i += 1;
       }
       if parSafe then dom.unlockTable();
     }
     proc enqueueAdd(idx: idxType) {
+
+      //extern proc printf(fmt:c_string, sz:c_int);
+      //printf("IN ENQUEUE v=%i\n", idx:c_int);
+
+
       extern proc sizeof(type t):size_t;
       var idx_copy = idx;
       var idx_copy_ptr = c_ptrTo(idx_copy);
       enqueue_operation(this:OperationsHandler, 0, 0,
                         sizeof(idxType):int, idx_copy_ptr:c_void_ptr);
+    }
+
+    // This flush call isn't actually necessary as
+    // long as we lock the table
+    proc flush() {
+      //extern proc printf(fmt:c_string, sz:c_int);
+      //printf("IN FLUSH %i\n", 0:c_int);
+
+
+      flush_operations(this:OperationsHandler, 0, 0);
     }
   }
 
@@ -131,19 +149,26 @@ module DefaultAssociative {
         compilerError("Default Associative domains with idxType=",
                       idxType:string, " are not allowed", 2);
       this.dist = dist;
-      if CHPL_CACHE_REMOTE then
+      if defaultAssocAggregation then
         this.opHandler = new DefaultAssociativeDomOperationsHandler(idxType, parSafe, this);
     }
   
+    proc _flushAggregatedOps() {
+      if defaultAssocAggregation then
+        this.opHandler.flush();
+    }
+
     //
     // Standard Internal Domain Interface
     //
     proc dsiBuildArray(type eltType) {
+      _flushAggregatedOps();
       return new DefaultAssociativeArr(eltType=eltType, idxType=idxType,
                                        parSafeDom=parSafe, dom=this);
     }
   
     proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
+      _flushAggregatedOps();
       var first = true;
       f <~> new ioLiteral("{");
       for idx in this {
@@ -163,10 +188,12 @@ module DefaultAssociative {
     //
   
     inline proc dsiNumIndices {
+      _flushAggregatedOps();
       return numEntries.read();
     }
   
     iter dsiIndsIterSafeForRemoving() {
+      _flushAggregatedOps();
       postponeResize = true;
       for i in this.these() do
         yield i;
@@ -183,6 +210,7 @@ module DefaultAssociative {
     }
   
     iter these() {
+      _flushAggregatedOps();
       if !isEnumType(idxType) {
         for slot in _fullSlots() {
           yield table[slot].idx;
@@ -197,6 +225,7 @@ module DefaultAssociative {
     }
  
     iter these(param tag: iterKind) where tag == iterKind.standalone {
+      _flushAggregatedOps();
       if debugDefaultAssoc {
         writeln("*** In associative domain standalone iterator");
       }
@@ -232,6 +261,7 @@ module DefaultAssociative {
     }
  
     iter these(param tag: iterKind) where tag == iterKind.leader {
+      _flushAggregatedOps();
       if debugDefaultAssoc then
         writeln("*** In domain leader code:");
       const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
@@ -276,6 +306,7 @@ module DefaultAssociative {
     }
   
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
+      _flushAggregatedOps();
       var (chunk, followThisDom) = followThis;
 
       if debugDefaultAssoc then
@@ -306,6 +337,7 @@ module DefaultAssociative {
     // Associative Domain Interface
     //
     proc dsiClear() {
+      _flushAggregatedOps();
       on this {
         if parSafe then lockTable();
         for slot in tableDom {
@@ -317,6 +349,7 @@ module DefaultAssociative {
     }
   
     proc dsiMember(idx: idxType): bool {
+      _flushAggregatedOps();
       return _findFilledSlot(idx)(1);
     }
   
@@ -341,7 +374,7 @@ module DefaultAssociative {
     }
 
    proc dsiAdd(idx: idxType) {
-     if this.opHandler then
+     if defaultAssocAggregation then
        this.opHandler.enqueueAdd(idx);
      else
        dsiAddInternal(idx);
@@ -372,6 +405,7 @@ module DefaultAssociative {
     }
   
     proc dsiRemove(idx: idxType) {
+      _flushAggregatedOps();
       on this {
         if parSafe then lockTable();
         const (foundSlot, slotNum) = _findFilledSlot(idx, haveLock=parSafe);
@@ -391,8 +425,11 @@ module DefaultAssociative {
     }
   
     proc dsiRequestCapacity(numKeys:int, haveLock = !parSafe) {
+      _flushAggregatedOps();
       const shouldLock = !haveLock && parSafe;
       var entries = numEntries.read();
+
+      // Shouldn't this be in an 'on' statement?
 
       if entries < numKeys {
 
@@ -459,6 +496,7 @@ module DefaultAssociative {
     }
   
     iter dsiSorted() {
+      _flushAggregatedOps();
       var tableCopy: [0..#numEntries.read()] idxType;
   
       for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do

@@ -197,6 +197,20 @@ void chpl_gen_comm_start_op(c_nodeid_t node, c_sublocid_t subloc,
   }
 }
 
+static inline
+void chpl_gen_comm_finish_ops(c_nodeid_t node, c_sublocid_t subloc,
+                              chpl_fn_int_t fid,
+                              void* raddr_obj,
+                              int32_t mode, int64_t idx)
+{
+#ifdef HAS_CHPL_CACHE_FNS
+  if( chpl_cache_enabled() ) {
+    chpl_cache_comm_finish_ops(node, subloc, fid, raddr_obj, mode, idx);
+    return;
+  }
+#endif
+  // Don't need to do anything if cache is not enabled.
+}
 
 // Returns true if the given node ID matches the ID of the currently node,
 // false otherwise.

@@ -1,0 +1,3 @@
+-sdefaultAssocAggregation=false
+--cache-remote -sdefaultAssocAggregation=false
+--cache-remote -sdefaultAssocAggregation=true
