@@ -523,6 +523,12 @@ module ChapelRange {
 pragma "no doc"
 proc range.safeCast(type t) where isRangeType(t) {
   var tmp: t;
+
+  if tmp.boundedType != this.boundedType {
+    compilerError("cannot cast range from ",
+                  this.boundedType:string, " to ", tmp.boundedType:string);
+  }
+
   if tmp.stridable {
     tmp._stride = this.stride;
   } else if this.stride != 1 {
@@ -542,6 +548,12 @@ proc range.safeCast(type t) where isRangeType(t) {
 pragma "no doc"
 proc _cast(type t, r: range(?)) where isRangeType(t) {
   var tmp: t;
+
+  if tmp.boundedType != r.boundedType {
+    compilerError("cannot cast range from ",
+                  r.boundedType:string, " to ", tmp.boundedType:string);
+  }
+
   if tmp.stridable {
     tmp._stride = r.stride;
   }
