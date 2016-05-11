@@ -301,8 +301,8 @@
 %token TASSIGNMULTIPLY TASSIGNPLUS TASSIGNSL TASSIGNSR TBAND TBNOT TBOR TBXOR
 %token TCOLON TCOMMA TDIVIDE TDOT TDOTDOT TDOTDOTDOT TEQUAL TEXP TGREATER
 %token TGREATEREQUAL THASH TLESS TLESSEQUAL TMINUS TMOD TNOT TNOTEQUAL TOR
-%token TPLUS TQUESTION TSEMI TSHIFTLEFT TSHIFTRIGHT TSTAR TSWAP
-%token TIO
+%token TPLUS TQUESTION TROTATELEFT TROTATERIGHT TSEMI TSHIFTLEFT TSHIFTRIGHT
+%token TSTAR TSWAP TIO
 
 //
 // braces
@@ -328,6 +328,7 @@
 %left TBXOR
 %left TBAND
 %left TSHIFTLEFT TSHIFTRIGHT
+%left TROTATELEFT TROTATERIGHT
 %right TUPLUS TUMINUS
 %left TSTAR TDIVIDE TMOD
 %right TBNOT TNOT
@@ -909,6 +910,8 @@ fn_ident:
 | TDIVIDE        { $$ = "/"; }
 | TSHIFTLEFT     { $$ = "<<"; }
 | TSHIFTRIGHT    { $$ = ">>"; }
+| TROTATELEFT    { $$ = "<<<"; }
+| TROTATERIGHT   { $$ = ">>>"; }
 | TMOD           { $$ = "%"; }
 | TEXP           { $$ = "**"; }
 | TNOT           { $$ = "!"; }
@@ -1554,6 +1557,8 @@ binary_op_expr:
 | expr TDIVIDE expr        { $$ = new CallExpr("/", $1, $3); }
 | expr TSHIFTLEFT expr     { $$ = new CallExpr("<<", $1, $3); }
 | expr TSHIFTRIGHT expr    { $$ = new CallExpr(">>", $1, $3); }
+| expr TROTATELEFT expr    { $$ = new CallExpr("<<<", $1, $3); }
+| expr TROTATERIGHT expr   { $$ = new CallExpr(">>>", $1, $3); }
 | expr TMOD expr           { $$ = new CallExpr("%", $1, $3); }
 | expr TEQUAL expr         { $$ = new CallExpr("==", $1, $3); }
 | expr TNOTEQUAL expr      { $$ = new CallExpr("!=", $1, $3); }

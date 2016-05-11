@@ -411,6 +411,8 @@ initPrimitive() {
   prim_def(PRIM_MOD, "%", returnInfoFirst); // mod by zero?
   prim_def(PRIM_LSH, "<<", returnInfoFirst);
   prim_def(PRIM_RSH, ">>", returnInfoFirst);
+  prim_def(PRIM_LROT, "<<<", returnInfoFirst);
+  prim_def(PRIM_RROT, ">>>", returnInfoFirst);
   prim_def(PRIM_EQUAL, "==", returnInfoBool);
   prim_def(PRIM_NOTEQUAL, "!=", returnInfoBool);
   prim_def(PRIM_LESSOREQUAL, "<=", returnInfoBool);
