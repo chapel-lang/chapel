@@ -17,7 +17,7 @@ proc main() {
   // Correctness arrays
   const ArrAbsSorted = [-1, 2, 3, -4],
            ArrSorted = [-4, -1, 2, 3],
-        StrArrSorted = ['anthony', 'Brad', 'ben', 'david'];
+        StrArrSorted = ['Brad', 'anthony', 'ben', 'david'];
 
   // Comparators
   const key = new keycomparator();
@@ -86,7 +86,7 @@ proc checksort(ref array, correct, sort:string, comparator:string='none') {
     writeln('Expected correct array:');
     writeln(correct);
   }
-  shuffle(array);
+  shuffle(array, seed=42);
 }
 
 
