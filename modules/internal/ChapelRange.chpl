@@ -524,23 +524,17 @@ pragma "no doc"
 proc range.safeCast(type t) where isRangeType(t) {
   var tmp: t;
   if tmp.stridable {
-    tmp._low = this.low;
-    tmp._high = this.high;
     tmp._stride = this.stride;
-    tmp._alignment = this.alignment;
-    tmp._aligned = this.aligned;
-    return tmp;
-  } else {
-    if this.stride == 1 {
-      tmp._low = this.low;
-      tmp._high = this.high;
-      tmp._alignment = this.alignment;
-      tmp._aligned = this.aligned;
-      return tmp;
-    } else {
+  } else if this.stride != 1 {
       halt("illegal safeCast from non-unit stride range to unstridable range");
     }
   }
+
+  tmp._low = this.low.safeCast(tmp.idxType);
+  tmp._high = this.high.safeCast(tmp.idxType);
+  tmp._alignment = this.alignment.safeCast(tmp.idxType);
+  tmp._aligned = this.aligned;
+  return tmp;
 }
 
 /* Cast a range to a new range type.  If the old type was stridable and the
@@ -550,19 +544,14 @@ pragma "no doc"
 proc _cast(type t, r: range(?)) where isRangeType(t) {
   var tmp: t;
   if tmp.stridable {
-    tmp._low = r.low;
-    tmp._high = r.high;
     tmp._stride = r.stride;
-    tmp._alignment = r.alignment;
-    tmp._aligned = r.aligned;
-    return tmp;
-  } else {
-    tmp._low = r.low;
-    tmp._high = r.high;
-    tmp._alignment = r.alignment;
-    tmp._aligned = r.aligned;
-    return tmp;
   }
+
+  tmp._low = r.low: tmp.idxType;
+  tmp._high = r.high: tmp.idxType;
+  tmp._alignment = r.alignment: tmp.idxType;
+  tmp._aligned = r.aligned;
+  return tmp;
 }
 
 
