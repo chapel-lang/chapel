@@ -3095,11 +3095,11 @@ module ChapelArray {
   proc align(a: domain, b) {
     var r: a.rank*range(a._value.idxType,
                       BoundedRangeType.bounded,
-                      true);
+                      a.stridable);
     var t = _makeIndexTuple(a.rank, b, expand=true);
     for param i in 1..a.rank do
       r(i) = a.dim(i) align t(i);
-    var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, true, r);
+    var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, a.stridable, r);
     if !noRefCount then
       if (d.linksDistribution()) then
         d.dist.incRefCount();
