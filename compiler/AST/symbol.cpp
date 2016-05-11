@@ -2899,12 +2899,21 @@ void ModuleSymbol::accept(AstVisitor* visitor) {
 
 void ModuleSymbol::addDefaultUses() {
   if (modTag != MOD_INTERNAL) {
-    UnresolvedSymExpr* modRef = 0;
+    ModuleSymbol* parentModule = toModuleSymbol(this->defPoint->parentSymbol);
+    assert (parentModule != NULL);
 
-    SET_LINENO(this);
+    //
+    // Don't insert 'use ChapelStandard' for nested user modules.
+    // They should get their ChapelStandard symbols from their parent.
+    //
+    if (parentModule->modTag != MOD_USER) {
+      //      printf("Inserting use of ChapelStandard into %s\n", name);
 
-    modRef = new UnresolvedSymExpr("ChapelStandard");
-    block->insertAtHead(new UseStmt(modRef));
+      SET_LINENO(this);
+
+      UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStandard");
+      block->insertAtHead(new UseStmt(modRef));
+    }
 
   // We don't currently have a good way to fetch the root module by name.
   // Insert it directly rather than by name
