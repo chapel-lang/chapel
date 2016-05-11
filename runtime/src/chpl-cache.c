@@ -1101,10 +1101,11 @@ uint32_t get_high_bits(raddr_t raddr) {
   return (val >> (HALF_BITS + CACHEPAGE_BITS)) & (HALF_SIZE-1);
 }
 
+/*
 static
 uint32_t get_low_bits(raddr_t raddr) {
   return (raddr >> CACHEPAGE_BITS) & (HALF_SIZE-1);
-}
+}*/
 
 static
 struct top_entry_s* top_list_search(struct top_entry_s *head,
@@ -1170,7 +1171,7 @@ void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
   struct cache_entry_s **bottom;
   struct cache_entry_s *bottom_match;
   int top_idx, bottom_idx;
-  uint32_t high_bits, low_bits;
+  uint32_t high_bits;
   c_nodeid_t node = element->node;
   raddr_t raddr = element->raddr;
 
@@ -1181,7 +1182,6 @@ void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
   top_idx = get_top_bits(raddr, node);
   bottom_idx = get_bottom_bits(raddr, node);
   high_bits = get_high_bits(raddr);
-  low_bits = get_low_bits(raddr);
 
   head = &tree->top_index_list[top_idx];
 
@@ -1647,7 +1647,6 @@ struct cache_entry_s* find_in_tree(struct rdcache_s* tree,
 {
   int top_idx, bottom_idx;
   uint32_t high_bits;
-  uint32_t low_bits;
   struct top_entry_s **head, *top_match;
   struct cache_entry_s **bottom, *bottom_match;
   struct cache_entry_s* bottom_prev;
@@ -1657,7 +1656,6 @@ struct cache_entry_s* find_in_tree(struct rdcache_s* tree,
   top_idx = get_top_bits(raddr, node);
   bottom_idx = get_bottom_bits(raddr, node);
   high_bits = get_high_bits(raddr);
-  low_bits = get_low_bits(raddr);
 
   head = &tree->top_index_list[top_idx];
   top_match = top_list_search(*head, high_bits, NULL);
@@ -2168,7 +2166,6 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
 {
   int top_idx, bottom_idx;
   uint32_t high_bits;
-  uint32_t low_bits;
   struct top_entry_s **head, *top_match, *top_tmp;
   struct cache_entry_s **bottom, *bottom_match, *bottom_tmp;
   struct cache_entry_s* bottom_prev;
@@ -2178,7 +2175,6 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
   top_idx = get_top_bits(raddr, node);
   bottom_idx = get_bottom_bits(raddr, node);
   high_bits = get_high_bits(raddr);
-  low_bits = get_low_bits(raddr);
 
   head = &tree->top_index_list[top_idx];
   top_match = top_list_search(*head, high_bits, NULL);
