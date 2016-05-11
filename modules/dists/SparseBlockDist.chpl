@@ -219,6 +219,14 @@ class SparseBlockDom: BaseSparseDom {
     }
   }
 
+  proc dsiNumIndices {
+    var total:atomic int;
+    coforall locDom in locDoms do on locDom {
+      var localNum = locDom.dsiNumIndices;
+      total.add(localNum);
+    }
+    return total.read();
+  }
 
   //
   // how to allocate a new array over this domain

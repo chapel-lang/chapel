@@ -30,9 +30,15 @@ var MatElems: sparse subdomain(Elems);
 // your sparse array after your sparse domain has been finalized is
 // ideal.
 //
+
+var totalElts = 0;
 for i in 0..#n by 2 {
   MatElems += i;
+  totalElts += 1;
 }
+
+// Check that the sparse domain has the correct size.
+assert(MatElems.numIndices == totalElts);
 
 //
 // Print the sparse index set.
