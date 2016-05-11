@@ -61,7 +61,7 @@ X use
   public vs. private
   nested modules
 X using modules in other files
-  using modules in files not explicity passed to the compiler
+  using modules in files not explicitly passed to the compiler
 
 2.11 The With Statement
 
