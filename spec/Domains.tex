@@ -686,6 +686,7 @@ domain-expression:
   domain-name
   domain-assignment-expression
   domain-striding-expression
+  domain-alignment-expression
   domain-slice-expression
 
 domain-literal:
@@ -747,6 +748,31 @@ applying the integer value to each range in the value using the
 \chpl{by} operator.  In the case of a tuple stride value, the resulting
 domain's value is computed by applying each tuple component to the
 corresponding range using the \chpl{by} operator.
+
+
+\subsection{Domain Alignment}
+\label{Domain_Alignment}
+\index{domains!alignment}
+\index{align@\chpl{align}!on rectangular domains}
+\index{operators!align (domain)@\chpl{align} (domain)}
+
+The \chpl{align} operator can be applied to a rectangular domain value in
+order to change the alignment of a rectangular domain value.  The right-hand
+operand to the \chpl{align} operator can either be an integral value or
+an integral tuple whose size matches the domain's rank.
+
+\begin{syntax}
+domain-alignment-expression:
+  domain-expression `align' expression
+\end{syntax}
+
+The type of the resulting domain is the same as the original domain.
+In the case of an integer alignment value, the value of the resulting
+domain is computed by applying the integer value to each range in the
+value using the \chpl{align} operator.  In the case of a tuple
+alignment value, the resulting domain's value is computed by applying
+each tuple component to the corresponding range using the \chpl{align}
+operator.
 
 
 \subsection{Domain Slicing}
