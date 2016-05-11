@@ -526,8 +526,7 @@ proc range.safeCast(type t) where isRangeType(t) {
   if tmp.stridable {
     tmp._stride = this.stride;
   } else if this.stride != 1 {
-      halt("illegal safeCast from non-unit stride range to unstridable range");
-    }
+    halt("illegal safeCast from non-unit stride range to unstridable range");
   }
 
   tmp._low = this.low.safeCast(tmp.idxType);

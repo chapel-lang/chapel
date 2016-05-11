@@ -2749,7 +2749,7 @@ module ChapelArray {
       compilerError("index type mismatch in domain assignment");
     if isRectangularDom(a) && isRectangularDom(b) then
       if !a.stridable && b.stridable then
-        compilerError("stridable mismatch in domain assignment");
+        compilerError("cannot assign from a stridable domain to an unstridable domain without an explicit cast");
 
     if !isIrregularDom(a) && !isIrregularDom(b) {
       for e in a._value._arrs do {
