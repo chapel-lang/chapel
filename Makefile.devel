@@ -36,6 +36,9 @@ always-build-man: FORCE
 	$(MAKE) man; \
 	fi
 
+spec: FORCE
+	cd spec && $(MAKE)
+
 test: FORCE
 	cd test && start_test
 
