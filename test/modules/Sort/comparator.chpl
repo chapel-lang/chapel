@@ -6,19 +6,31 @@
  */
 
 use Sort;
+use Random;
 
 proc main() {
 
   // Array to sort
-  var Arr = [-1,-4, 2, 3];
+  var Arr = [-1,-4, 2, 3],
+   StrArr = ['anthony', 'david', 'Brad', 'ben'];
 
   // Correctness arrays
   const ArrAbsSorted = [-1, 2, 3, -4],
-           ArrSorted = [-4, -1, 2, 3];
+           ArrSorted = [-4, -1, 2, 3],
+        StrArrSorted = ['anthony', 'Brad', 'ben', 'david'];
 
   // Comparators
   const key = new keycomparator();
   const compare = new compcomparator();
+
+  /* Test data types */
+
+  // Strings
+  BubbleSort(StrArr);
+  checksort(StrArr, StrArrSorted, 'BubbleSort');
+
+
+  /* Test Sorts */
 
   // Bubble
   BubbleSort(Arr);
@@ -74,7 +86,7 @@ proc checksort(ref array, correct, sort:string, comparator:string='none') {
     writeln('Expected correct array:');
     writeln(correct);
   }
-  array = [-1,-4, 2, 3];
+  shuffle(array);
 }
 
 
@@ -86,11 +98,5 @@ proc keycomparator.key(a) { return abs(a); }
 /* Defines compare behavior, return 1, 0, or -1 */
 record compcomparator { }
 proc compcomparator.compare(a, b) {
-  if abs(a) > abs(b) {
-    return 1;
-  } else if abs(a) < abs(b) {
-    return -1;
-  } else {
-    return 0;
-  }
+  return abs(a) - abs(b);
 }
