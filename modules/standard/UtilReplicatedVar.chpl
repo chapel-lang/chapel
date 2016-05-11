@@ -112,8 +112,6 @@ private const rcDomainMap  = new ReplicatedDist(rcLocales);
 /* Use this domain to declare a user-level replicated variable,
    as shown :ref:`above <basic-usage>` . */
 const rcDomain     = rcDomainBase dmapped new dmap(rcDomainMap);
-// todo - remove private from rcCollectDomaim?  our examples use LocaleSpace instead
-private const rcCollectDomaim = rcLocales.domain;
 private param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped ReplicatedDist(an array of locales)'";
 
 private proc _rcTargetLocalesHelper(replicatedVar: [?D])
