@@ -1401,12 +1401,13 @@ module ChapelArray {
         return this;
       else if !tmpD.stridable && this.stridable {
         const inds = this.getIndices();
-        var unstridableInds: rank*range(stridable=false);
+        var unstridableInds: rank*range(tmpD.idxType, stridable=false);
 
         for param dim in 1..inds.size {
           if inds(dim).stride != 1 then
             halt("non-stridable domain assigned non-unit stride in dimension ", dim);
-          unstridableInds(dim) = inds(dim).safeCast(range(stridable=false));
+          unstridableInds(dim) = inds(dim).safeCast(range(tmpD.idxType,
+                                                          stridable=false));
         }
         tmpD.setIndices(unstridableInds);
         return tmpD;
@@ -1438,10 +1439,10 @@ module ChapelArray {
       return d;
     else if !tmpD.stridable && d.stridable {
       var inds = d.getIndices();
-      var unstridableInds: d.rank*range(stridable=false);
+      var unstridableInds: d.rank*range(tmpD.idxType, stridable=false);
 
       for param i in 1..tmpD.rank {
-        unstridableInds(i) = inds(i):range(stridable=false);
+        unstridableInds(i) = inds(i):range(tmpD.idxType, stridable=false);
       }
       tmpD.setIndices(unstridableInds);
       return tmpD;

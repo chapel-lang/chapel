@@ -518,7 +518,7 @@ module ChapelRange {
   // Range Casts
   //
 /* Cast a range to another range type. If the old type is stridable and the
-   new type is not stridable, ensure that the old stride was 1.
+   new type is not stridable, ensure at runtime that the old stride was 1.
  */
 pragma "no doc"
 proc range.safeCast(type t) where isRangeType(t) {
@@ -544,7 +544,7 @@ proc range.safeCast(type t) where isRangeType(t) {
 }
 
 /* Cast a range to a new range type.  If the old type was stridable and the
-   new type is not stridable, then assume the stride was 1 without checking.
+   new type is not stridable, then force the new stride to be 1.
  */
 pragma "no doc"
 proc _cast(type t, r: range(?)) where isRangeType(t) {
@@ -834,11 +834,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     // of assignment does not disable the POD optimization.
     // Although provided explicitly, this function is effectively trivial,
     // since it performs what is effectively a bit-wise copy.
-    // It effectively labels the function as trivial, even though this is not
-    // precisely true.  In the case of an assignment from a stridable to non-
-    // stridable range, there is a run-time check which will be missed when the
-    // optimization is applied.  The rest of the routine is trivial in the
-    // sense that it performs the equivalent of a bit-wise copy.
+    //
     // The POD optimization currently removes initCopy, autoCopy and destructor
     // calls whose arguments are of plain-old-data type.  Future applications
     // of this optimization may also remove assignment calls.
