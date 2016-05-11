@@ -240,17 +240,23 @@ class SparseBlockDom: BaseSparseDom {
   // stopgap to avoid accessing locDoms field (and returning an array)
   proc getLocDom(localeIdx) return locDoms(localeIdx);
 
-  var dummy:idxType;
-
   iter these() {
-    halt("Haven't implemented serial iteration yet");
-    yield dummy;
+    for locDom in locDoms do
+      // TODO Would want to do something like:
+      //on blk do
+      // But can't currently have yields in on clauses:
+      // invalid use of 'yield' within 'on' in serial iterator
+      for x in locDom.mySparseBlock._value.these() do
+        yield x;
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
-    coforall locDom in locDoms do on locDom {
-      for followThis in locDom.mySparseBlock._value.these(tag) do
-        yield followThis;
+    coforall (locDom,localeIndex) in zip(locDoms,dist.targetLocDom) {
+      on locDom {
+        for followThis in locDom.mySparseBlock._value.these(tag) {
+          yield (followThis, localeIndex);
+        }
+      }
     }
   }
 
@@ -266,8 +272,9 @@ class SparseBlockDom: BaseSparseDom {
   // natural composition and might help with my fears about how
   // stencil communication will be done on a per-locale basis.
   //
-  iter these(param tag: iterKind, followThis:(?,?,?)) where tag == iterKind.follower {
-    for i in followThis(1).these(tag, followThis) do
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
+    var (locFollowThis, localeIndex) = followThis;
+    for i in locFollowThis(1).these(tag, locFollowThis) do
       yield i;
   }
 
@@ -365,11 +372,18 @@ class SparseBlockArr: BaseArr {
     }
   }
 
-  var dummy: eltType;
-
   iter these() ref {
-    halt("Haven't implemented serial iteration yet");
-    yield dummy;
+    for locI in dom.dist.targetLocDom {
+      // TODO Would want to do something like:
+      //on locDom do
+      // But can't currently have yields in on clauses:
+      // invalid use of 'yield' within 'on' in serial iterator
+      var locDom = dom.locDoms[locI];
+      var locArrI = locArr[locI];
+      for x in locDom.mySparseBlock {
+        yield locArrI.myElems(x);
+      }
+    }
   }
 
   //
@@ -383,14 +397,10 @@ class SparseBlockArr: BaseArr {
   }
 
   iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
-    for i in followThis(1).these(tag, followThis) do
-      yield locArr[here.id].dsiAccess(i);
-
-    //    for e in myLocArr.myElems._value.these(followThis) do yield e;
-    /*
-    writeln("warning, yielding dummy");
-    yield dummy;
-    */
+    var (locFollowThis, localeIndex) = followThis;
+    for i in locFollowThis(1).these(tag, locFollowThis) {
+      yield locArr[localeIndex].dsiAccess(i);
+    }
   }
 
   proc dsiAccess(i: rank*idxType) ref {
