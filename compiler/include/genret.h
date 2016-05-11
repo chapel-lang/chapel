@@ -76,7 +76,7 @@ extern GenRet baseASTCodegenString(const char* str);
    to something else. Sometimes the code generator is required to do that, even
    though it does not normally make sense with the Chapel reference semantics.
 
-   Lastly, note that GenRet is implicitly convertable from
+   Lastly, note that GenRet is implicitly convertible from
    BaseAST* (code generate some Chapel thing)
    const char* (generate a string)
    int (generate an int)
