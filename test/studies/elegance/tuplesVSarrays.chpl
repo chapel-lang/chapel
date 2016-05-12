@@ -39,7 +39,7 @@ proc elegant(order, param subOrder, iterations): real {
 
   var total: real = 0;
 
-  for i in 1..iterations do
+  for 1..iterations do
     for (i,j) in Dom do
       for k in 1..subOrder do
         Array[i, j] += Array[i, j] * subArray[k, k];
@@ -65,7 +65,7 @@ proc performant(order, param subOrder, iterations): real {
 
   var total: real = 0;
 
-  for i in 1..iterations do
+  for 1..iterations do
     for (i,j) in Dom do
       for k in 1..subOrder do
         Array[i, j] += Array[i, j] * subArray[k][k];

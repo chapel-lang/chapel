@@ -3085,6 +3085,27 @@ module ChapelArray {
     return _newDomain(d);
   }
 
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_align(a:domain, b) { ... }
+   *
+   * because the parser renames the routine since 'align' is a keyword.
+   */
+  proc align(a: domain, b) {
+    var r: a.rank*range(a._value.idxType,
+                      BoundedRangeType.bounded,
+                      a.stridable);
+    var t = _makeIndexTuple(a.rank, b, expand=true);
+    for param i in 1..a.rank do
+      r(i) = a.dim(i) align t(i);
+    var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, a.stridable, r);
+    if !noRefCount then
+      if (d.linksDistribution()) then
+        d.dist.incRefCount();
+    return _newDomain(d);
+  }
+
   //
   // index for all opaque domains
   //
