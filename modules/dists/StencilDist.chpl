@@ -1741,9 +1741,9 @@ proc StencilArr.dsiLocalSubdomain() {
   return myLocArr.locDom.myBlock;
 }
 proc StencilDom.dsiLocalSubdomain() {
-  // TODO -- could be replaced by a privatized myLocDom in BlockDom
-  // as it is with BlockArr
-  var myLocDom:LocBlockDom(rank, idxType, stridable) = nil;
+  // TODO -- could be replaced by a privatized myLocDom in StencilDom
+  // as it is with StencilArr
+  var myLocDom:LocStencilDom(rank, idxType, stridable) = nil;
   for (loc, locDom) in zip(dist.targetLocales, locDoms) {
     if loc == here then
       myLocDom = locDom;
