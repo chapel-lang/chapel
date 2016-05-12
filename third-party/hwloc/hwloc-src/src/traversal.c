@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2010 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -221,13 +221,17 @@ hwloc_obj_type_sscanf(const char *string, hwloc_obj_type_t *typep, int *depthatt
   hwloc_obj_cache_type_t cachetypeattr = (hwloc_obj_cache_type_t) -1; /* unspecified */
   char *end;
 
+  /* never match the ending \0 since we want to match things like core:2 too.
+   * just use hwloc_strncasecmp() everywhere.
+   */
+
   /* types without depthattr */
   if (!hwloc_strncasecmp(string, "system", 2)) {
     type = HWLOC_OBJ_SYSTEM;
   } else if (!hwloc_strncasecmp(string, "machine", 2)) {
     type = HWLOC_OBJ_MACHINE;
-  } else if (!hwloc_strncasecmp(string, "node", 1)
-	     || !hwloc_strncasecmp(string, "numa", 1)) { /* matches node and numanode */
+  } else if (!hwloc_strncasecmp(string, "node", 2)
+	     || !hwloc_strncasecmp(string, "numa", 2)) { /* matches node and numanode */
     type = HWLOC_OBJ_NUMANODE;
   } else if (!hwloc_strncasecmp(string, "package", 2)
 	     || !hwloc_strncasecmp(string, "socket", 2)) { /* backward compat with v1.10 */
@@ -236,15 +240,22 @@ hwloc_obj_type_sscanf(const char *string, hwloc_obj_type_t *typep, int *depthatt
     type = HWLOC_OBJ_CORE;
   } else if (!hwloc_strncasecmp(string, "pu", 2)) {
     type = HWLOC_OBJ_PU;
-  } else if (!hwloc_strncasecmp(string, "misc", 2)) {
+  } else if (!hwloc_strncasecmp(string, "misc", 4)) {
     type = HWLOC_OBJ_MISC;
-  } else if (!hwloc_strncasecmp(string, "bridge", 2)
+  } else if (!hwloc_strncasecmp(string, "bridge", 4)
 	     || !hwloc_strncasecmp(string, "hostbridge", 6)
 	     || !hwloc_strncasecmp(string, "pcibridge", 5)) {
     type = HWLOC_OBJ_BRIDGE;
-  } else if (!hwloc_strncasecmp(string, "pci", 2)) {
+  } else if (!hwloc_strncasecmp(string, "pci", 3)) {
     type = HWLOC_OBJ_PCI_DEVICE;
-  } else if (!hwloc_strncasecmp(string, "os", 2)) {
+  } else if (!hwloc_strncasecmp(string, "os", 2)
+	     || !hwloc_strncasecmp(string, "bloc", 4)
+	     || !hwloc_strncasecmp(string, "net", 3)
+	     || !hwloc_strncasecmp(string, "openfab", 7)
+	     || !hwloc_strncasecmp(string, "dma", 3)
+	     || !hwloc_strncasecmp(string, "gpu", 3)
+	     || !hwloc_strncasecmp(string, "copro", 5)
+	     || !hwloc_strncasecmp(string, "co-pro", 6)) {
     type = HWLOC_OBJ_OS_DEVICE;
 
   /* types with depthattr */
@@ -403,7 +414,7 @@ hwloc_pci_class_string(unsigned short class_id)
 	case 0x0c01: return "ACCES";
 	case 0x0c02: return "SSA";
 	case 0x0c03: return "USB";
-	case 0x0c04: return "Fiber";
+	case 0x0c04: return "Fibre";
 	case 0x0c05: return "SMBus";
 	case 0x0c06: return "IB";
 	case 0x0c07: return "IPMI";

@@ -31,6 +31,7 @@ Chapel Documentation
    :maxdepth: 1
 
    Chapel Evolution <language/evolution>
+   Archived Language Specifications <language/archivedSpecs>
 
 Index
 -----

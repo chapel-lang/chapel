@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2010-2014 Inria.  All rights reserved.
+.\" Copyright © 2010-2016 Inria.  All rights reserved.
 .\" Copyright © 2009 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH HWLOC-CALC "1" "#HWLOC_DATE#" "#PACKAGE_VERSION#" "#PACKAGE_NAME#"
@@ -154,6 +154,12 @@ Command-line arguments and options are processed in order.
 For instance, it means that changing the type of input indexes
 with \fB\-\-li\fR or changing the input topology with \fB\-i\fR
 only affects the processing the following arguments.
+.
+.PP
+.B NOTE:
+hwloc-calc cannot manipulate NUMA memory node sets.
+It only manipulates CPU sets, which means it cannot do much
+about CPU-less NUMA nodes.
 .
 .PP
 .B NOTE:

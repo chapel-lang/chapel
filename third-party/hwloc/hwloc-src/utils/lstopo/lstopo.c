@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2012, 2015 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -270,6 +270,37 @@ lstopo_add_collapse_attributes(hwloc_topology_t topology)
     snprintf(text, sizeof(text), "%u", collapsed);
     hwloc_obj_add_info(collapser, "lstopoCollapse", text);
   }
+}
+
+static void
+lstopo_populate_userdata(hwloc_obj_t parent)
+{
+  hwloc_obj_t child;
+  struct lstopo_obj_userdata *save = malloc(sizeof(*save));
+
+  save->common.buffer = NULL; /* so that it is ignored on XML export */
+  save->common.next = parent->userdata;
+  save->fontsize = (unsigned) -1;
+  save->gridsize = (unsigned) -1;
+  parent->userdata = save;
+
+  for(child = parent->first_child; child; child = child->next_sibling)
+    lstopo_populate_userdata(child);
+}
+
+static void
+lstopo_destroy_userdata(hwloc_obj_t parent)
+{
+  hwloc_obj_t child;
+  struct lstopo_obj_userdata *save = parent->userdata;
+
+  if (save) {
+    parent->userdata = save->common.next;
+    free(save);
+  }
+
+  for(child = parent->first_child; child; child = child->next_sibling)
+    lstopo_destroy_userdata(child);
 }
 
 void usage(const char *name, FILE *where)
@@ -655,7 +686,7 @@ main (int argc, char *argv[])
     hwloc_topology_ignore_all_keep_structure(topology);
 
   if (input) {
-    err = hwloc_utils_enable_input_format(topology, input, input_format, loutput.verbose_mode > 1, callname);
+    err = hwloc_utils_enable_input_format(topology, input, &input_format, loutput.verbose_mode > 1, callname);
     if (err)
       return err;
   }
@@ -666,6 +697,38 @@ main (int argc, char *argv[])
       perror("Setting target pid");
       return EXIT_FAILURE;
     }
+  }
+
+  /* if the output format wasn't enforced, look at the filename */
+  if (filename && output_format == LSTOPO_OUTPUT_DEFAULT) {
+    if (!strcmp(filename, "-")
+	|| !strcmp(filename, "/dev/stdout")) {
+      output_format = LSTOPO_OUTPUT_CONSOLE;
+    } else {
+      char *dot = strrchr(filename, '.');
+      if (dot)
+        output_format = parse_output_format(dot+1, callname);
+      else {
+	fprintf(stderr, "Cannot infer output type for file `%s' without any extension, using default output.\n", filename);
+	filename = NULL;
+      }
+    }
+  }
+
+  /* if  the output format wasn't enforced, think a bit about what the user probably want */
+  if (output_format == LSTOPO_OUTPUT_DEFAULT) {
+    if (lstopo_show_cpuset
+        || lstopo_show_only != (hwloc_obj_type_t)-1
+        || loutput.verbose_mode != LSTOPO_VERBOSE_MODE_DEFAULT)
+      output_format = LSTOPO_OUTPUT_CONSOLE;
+  }
+
+  if (input_format == HWLOC_UTILS_INPUT_XML
+      && output_format == LSTOPO_OUTPUT_XML) {
+    /* must be after parsing output format and before loading the topology */
+    putenv("HWLOC_XML_USERDATA_NOT_DECODED=1");
+    hwloc_topology_set_userdata_import_callback(topology, hwloc_utils_userdata_import_cb);
+    hwloc_topology_set_userdata_export_callback(topology, hwloc_utils_userdata_export_cb);
   }
 
   err = hwloc_topology_load (topology);
@@ -696,30 +759,6 @@ main (int argc, char *argv[])
     free(restrictstring);
   }
 
-  /* if the output format wasn't enforced, look at the filename */
-  if (filename && output_format == LSTOPO_OUTPUT_DEFAULT) {
-    if (!strcmp(filename, "-")
-	|| !strcmp(filename, "/dev/stdout")) {
-      output_format = LSTOPO_OUTPUT_CONSOLE;
-    } else {
-      char *dot = strrchr(filename, '.');
-      if (dot)
-        output_format = parse_output_format(dot+1, callname);
-      else {
-	fprintf(stderr, "Cannot infer output type for file `%s' without any extension, using default output.\n", filename);
-	filename = NULL;
-      }
-    }
-  }
-
-  /* if  the output format wasn't enforced, think a bit about what the user probably want */
-  if (output_format == LSTOPO_OUTPUT_DEFAULT) {
-    if (lstopo_show_cpuset
-        || lstopo_show_only != (hwloc_obj_type_t)-1
-        || loutput.verbose_mode != LSTOPO_VERBOSE_MODE_DEFAULT)
-      output_format = LSTOPO_OUTPUT_CONSOLE;
-  }
-
   if (loutput.logical == -1) {
     if (output_format == LSTOPO_OUTPUT_CONSOLE)
       loutput.logical = 1;
@@ -729,6 +768,8 @@ main (int argc, char *argv[])
 
   loutput.topology = topology;
   loutput.file = NULL;
+
+  lstopo_populate_userdata(hwloc_get_root_obj(topology));
 
   if (output_format != LSTOPO_OUTPUT_XML && lstopo_collapse)
     lstopo_add_collapse_attributes(topology);
@@ -803,7 +844,8 @@ main (int argc, char *argv[])
       exit(EXIT_FAILURE);
   }
 
-  output_draw_clear(&loutput);
+  lstopo_destroy_userdata(hwloc_get_root_obj(topology));
+  hwloc_utils_userdata_free_recursive(hwloc_get_root_obj(topology));
   hwloc_topology_destroy (topology);
 
   for(i=0; i<lstopo_append_legends_nr; i++)
