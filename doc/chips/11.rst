@@ -5,14 +5,16 @@ Status:
   Rejected
 
 Authors:
-  Kyle Brady, Lydia Duncan, Michael Ferguson, Mike Noakes, Vassily Litvinov (for Syntax 2);
-  Vassily Litvinov (for Child Fields and Initialization Completion)
+  Kyle Brady, Lydia Duncan, Michael Ferguson, Mike Noakes, Vassily Litvinov
 
 Abstract
 --------
 
-This document contains the features we discussed as part of the
+This document contains some features we discussed as part of the
 initializer story and chose not to incorporate.
+
+.. contents:: Outline
+   :local:
 
 Rationale
 ---------
@@ -22,11 +24,8 @@ we considered a variety of features. Some of them were accepted
 and some of them were rejected. This document records some of
 the discussed-and-rejected features for posterity.
 
-Description
------------
-
 Alternative syntax for distinguishing Phase 1 and Phase 2 in an initializer
-***************************************************************************
+---------------------------------------------------------------------------
 
 We considered providing dedicated syntax for distinguishing Phase 1
 and Phase 2 in an initializer. This syntax, codenamed Syntax 2,
@@ -42,30 +41,19 @@ separated by the proposed "finalize" keyword.
      ... Phase 2 code ...
    }
 
-Certain pieces of this syntax could be omitted as follows:
+We considered allowing certain pieces of this syntax to be omitted
+in some cases:
 
 * The super.init() call, if it takes no arguments.
-
-* The Phase 1 block statement, if contains no statements.
-  In this case, the "finalize" keyword can also be omitted.
-  Default field initializations followed by super.init() call
-  with no arguments occur in this case.
-
-Here is an example of an initializer where only Phase 2 is
-specified explicitly:
-
-.. code-block:: chapel
-
-   proc init() {
-     ... Phase 2 code ...
-   }
+* One of the two block statements.
+* The "finalize" keyword.
 
 Syntax 2 has the advantage of visually-clear separation of the two
 phases. We did not incorporate it because it did not allow sharing
 variables or extending an if statement across the two phases.
 
 Child's fields could depend on parent's fields
-**********************************************
+----------------------------------------------
 
 We considered allowing child's fields to be initialized based on
 parent's fields. Below is one way to achieve this.
@@ -73,7 +61,10 @@ parent's fields. Below is one way to achieve this.
 The child's initializer could control where, in its Phase 1, the
 parent's Phase 1 is invoked. In other words, the parent's Phase 1
 would not necessarily come at the end of the child initializer's Phase 1.
-The following example shows that based on Syntax 2.
+If the child needs to access its parent's fields, it can invoke
+the parent's Phase 1 prior to such access.
+
+Here is an example, which is based on Syntax 2.
 
 .. code-block:: chapel
 
@@ -115,27 +106,28 @@ We did not incorporate this functionality because it adds complexity to
 how initialization occurs.
 
 
-Parent could complete initialization after child's initialization is complete
-*****************************************************************************
+Parent could have final control over the newly-created object
+-------------------------------------------------------------
 
-We considered allowing the parent class to perform final initialization
-actions after the child class(es) have established their initialization
-invariants.
-
-An example of such an action is adding the new object to a shared list.
+We considered giving the parent class the ability to exercise final control
+over the newly-created object. An example where this is important
+is if the new object must be be added to a shared list.
 If the list is concurrently accessible, it is important for all other
 invariants on the new object to have been established prior to such addition.
-In other words, this proposal gives the parent initializer "final control"
-over newly-created objects.
+This includes any actions performed in child class initializer(s).
+We did not incorporate the proposed feature because we preferred the user
+to perform such "final" actions outside of the initializer or explicitly
+in each child's initializer.
 
-One way to achieve this is by introducing the optional "lastly" phase.
-This phase in the parent initializer would be executed
-after all actions specified by child class(es) have completed.
+..
+ One way to achieve this is by introducing the optional "lastly" phase.
+ This phase in the parent initializer would be executed
+ after all actions specified by child class(es) have completed.
 
-The following example relies on Syntax 2:
+..
+ The following example relies on Syntax 2:
 
-.. code-block:: chapel
-
+..
    class Parent {
      proc init(...) {
        ... Phase 1 in Parent ...
@@ -151,18 +143,19 @@ The following example relies on Syntax 2:
      }
    }
 
-Another approach is to introduce "lastinit" methods.
-One "lastinit" method with 0 arguments could be optionally defined
-on each class.
+..
+ Another approach is to introduce "lastinit" methods.
+ One "lastinit" method with 0 arguments could be optionally defined
+ on each class.
 
-When defined, this method would be invoked on the newly-created object
-after all actions specified by its initializer(s) have completed.
-The "lastinit" method in the parent class would be invoked
-after all "lastinit" methods in the child class(es), if any,
-have completed. For example:
+..
+ When defined, this method would be invoked on the newly-created object
+ after all actions specified by its initializer(s) have completed.
+ The "lastinit" method in the parent class would be invoked
+ after all "lastinit" methods in the child class(es), if any,
+ have completed. For example:
 
-.. code-block:: chapel
-
+..
    class Parent {
      proc init(...) {
        ...
@@ -177,7 +170,3 @@ have completed. For example:
        ...
      }
    }
-
-We did not incorporate this functionality because we preferred the user
-to perform "final" actions outside of the initializer or explicitly
-in each child's initializer.
