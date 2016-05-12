@@ -235,6 +235,10 @@ hpl_performance:
   12/11/15:
     - Fixed string leak in DimensionalDist2D (#3013)
 
+init:
+  05/03/16:
+    - Fix ref-return intent bugs (#3795)
+
 is:
   09/05/14:
     - switched uses of locale.numCores to locale.maxTaskPar
@@ -407,12 +411,18 @@ prk-stencil:
     - Looping over range instead of domain for weight matrix (#3500)
   04/09/16:
     - blockDist for useStencilDist output matrix and more (#3705)
+  04/09/16:
+    - blockDist for useStencilDist output matrix and more (#3705)
+  05/07/16:
+    - Problem size increased from --order=1000 to --order=32000 (#3813)
 
 prk-stencil.xc-perf:
   04/08/16:
     - Looping over range instead of domain for weight matrix (#3500)
   04/09/16:
     - blockDist for useStencilDist output matrix and more (#3705)
+  05/07/16:
+    - Problem size increased from --order=1000 to --order=32000 (#3813)
 
 regexdna:
   10/07/14:
@@ -463,6 +473,9 @@ stencil:
     - machine related (no commits on the day before)
   03/24/15:
     - with CCE, bug fix to avoid vectorizing when not valid
+  04/27/16:
+    - text: Optimization for returning wide pointers (#3742)
+      config: Single node XC
 
 testSerialReductions:
   08/16/14:
