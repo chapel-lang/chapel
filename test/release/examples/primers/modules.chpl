@@ -64,11 +64,6 @@ module modToUse {
     var foobar = foo + bar;
   }
 
-  /* Note that since there is other code after the end of modToUse's definition,
-     modToUse is a submodule of the overarching file module "modules".
-  */
-
-
   module Inner2 {
     /* Since the module Inner2 is defined within modToUse, it can access the
        private variable hiddenFoo and the private function hiddenBaz.  However,
@@ -108,300 +103,303 @@ module Conflict {
   var another = false;
 }
 
+module MainModule {
+  proc main() {
+    writeln("Access from outside a module");
 
-proc main() {
-  writeln("Access from outside a module");
+    /* If a module is not the main module for a program, it is desirable for its
+       contents to be accessible to external modules.  There are several
+       strategies for accomplishing this:
 
-  /* If a module is not the main module for a program, it is desirable for its
-     contents to be accessible to external modules.  There are several
-     strategies for accomplishing this:
-
-     First, a symbol can be referenced explicitly - this is done using the
-     module name and a separating '.' as a prefix to the name of the symbol
-     desired.
-  */
-  var thriceFoo = 3 * modToUse.foo; // should be 36
-  writeln(thriceFoo);
-
-
-  {
-    /* If many of the module's symbols are desired, or the same symbol is
-       desired multiple times, then it is best to utilize what is known as a
-       "use statement".
+       First, a symbol can be referenced explicitly - this is done using the
+       module name and a separating '.' as a prefix to the name of the symbol
+       desired.
     */
-    use modToUse;
+    var thriceFoo = 3 * modToUse.foo; // should be 36
+    writeln(thriceFoo);
 
-    /* Use statements can be inserted at any lexical scope that contains
-       executable code.
 
-       A use statement makes all of the module's visible symbols available to
-       the scope which contains the use statement.  These symbols may then be
-       accessed without the module name prefix.
+    {
+      /* If many of the module's symbols are desired, or the same symbol is
+         desired multiple times, then it is best to utilize what is known as a
+         "use statement".
+      */
+      use modToUse;
 
-       In this case, bazBarFoo should store the result of calling modToUse.baz
-       on modToUse.bar and modToUse.foo, which is in this case '28'.
+      /* Use statements can be inserted at any lexical scope that contains
+         executable code.
+
+         A use statement makes all of the module's visible symbols available to
+         the scope which contains the use statement.  These symbols may then be
+         accessed without the module name prefix.
+
+         In this case, bazBarFoo should store the result of calling modToUse.baz
+         on modToUse.bar and modToUse.foo, which is in this case '28'.
+      */
+      var bazBarFoo = baz(bar, foo);
+      writeln(bazBarFoo);
+    }
+
+
+
+    /* Since the following line doesn't live within a scope that contains a
+       'use' of 'modToUse', it would generate an error if uncommented.  This is
+       because 'foo' cannot be directly referenced, and is not qualified with a
+       module name.
     */
-    var bazBarFoo = baz(bar, foo);
-    writeln(bazBarFoo);
+    // var twiceFoo = 2 * foo;
+
+
+
+    {
+      var bazBarFoo = baz(bar, foo);
+
+      /* Use statements apply to the entire scope in which they are defined.
+         Even if the use statement occurs after code which would directly refer
+         to its symbols, these references are still valid.
+
+         Thus, as in an earlier example, bazBarFoo should store the result of
+         calling modToUse.baz on modToUse.bar and modToUse.foo, which is in this
+         case '28'.
+      */
+      use modToUse;
+
+      writeln(bazBarFoo);
+    }
+
+
+    {
+      /* The symbols provided by a use statement are only considered when the
+         name in question cannot be resolved directly within the local scope.
+         Thus, if another bar were defined here, and an access was attempted,
+         the compiler would find the bar at this scope, rather than
+         modToUse.bar.
+      */
+      var bar = 4.0;
+
+      use modToUse;
+
+      writeln(bar);
+      // Will output the value of the bar defined in scope (which is '4.0'),
+      // rather than the value of modToUse.bar (which is '2')
+    }
+
+
+    var bar = false;
+    {
+      /* If a symbol cannot be resolved directly within the local scope, then
+         the symbols provided by a use statement are considered before the
+         symbols defined outside of the scope where the use statement applies.
+         Thus, if another bar were defined outside of these curly braces, and an
+         access was attempted, the compiler would find the bar from modToUse,
+         rather than the outer bar.
+      */
+
+      use modToUse;
+      writeln(bar);
+      // Will output the value of modToUse.bar (which is '2'), rather than the
+      // value of the bar defined outside of this scope (which is 'false')
+    }
+
+
+    {
+      /* Multiple modules may be used in the same use statement */
+      use modToUse, AnotherModule, ThirdModule;
+
+      if (a || b < 0) {
+        // Refers to AnotherModule.a (which is 'false') and ThirdModule.b (which
+        // is '-13.0')
+        writeln(foo); // Refers to modToUse.foo
+      } else {
+        writeln(bar); // Refers to modToUse.bar
+      } // Will output modToUse.foo (which is '12')
+    }
+
+
+    {
+      /* Equivalently, a scope may contain multiple use statements */
+      use modToUse;
+      use AnotherModule, ThirdModule;
+
+      writeln(a && foo > 15);
+      // outputs false (because AnotherModule.a is 'false' and modToUse.foo is
+      // '12')
+    }
+
+
+    {
+      /* In either case, the modules used in this way are considered at the same
+         scope.  This means that if two modules each define a symbol with the
+         same name, and both modules are used at the same scope, attempts to
+         access a symbol by that name will result in a naming conflict:
+      */
+      use modToUse, Conflict;
+
+      writeln(foo); // Outputs modToUse.foo ('12')
+      /* The following line would fail because both modToUse and Conflict define
+         a symbol named bar:
+      */
+      // writeln(bar);
+      writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
+    }
+
+    writeln();
+    writeln("Limiting a use");
+
+
+    {
+      /* To get around such conflicts, there are multiple strategies.  If only a
+         small number of symbols are desired from a particular module, you can
+         specify the symbols to bring in via an 'only' list.
+
+         Here, because of the 'only' clause in the 'use' of Conflict, Conflict's
+         'bar' is not directly accessible here.
+      */
+      use modToUse;
+      use Conflict only other, another;
+
+      writeln(foo); // Outputs modToUse.foo ('12')
+      writeln(bar); // Outputs modToUse.bar ('2')
+      writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
+    }
+
+
+    {
+      /* If every symbol other than the one which causes a conflict is desired,
+         you can specify the symbols to exclude via an 'except' list.
+      */
+      use Conflict;
+      use modToUse except bar;
+
+      writeln(foo); // Outputs modToUse.foo ('12')
+      writeln(bar); // Outputs '5' after output in Conflict.bar function
+      writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
+    }
+
+
+    {
+      /* If both symbols which conflict are desired, or if the use causes
+         symbols to be shadowed which are necessary, you can choose to rename a
+         symbol when including it via the 'as' keyword, so long as the new name
+         does not cause any conflicts with other included symbols.
+      */
+      use modToUse;
+      use Conflict only bar as boop;
+      writeln(bar); // Outputs modToUse.bar ('2')
+      writeln(boop); // Outputs '5' after output in Conflict.bar function
+    }
+
+    writeln();
+    writeln("Application to enums");
+
+    {
+      /* 'Use' statements can also be called on enums.  Normally to access one
+         of an enum's constants, you must provide a prefix of the enum name.
+         With a 'use' of that enum, such a prefix is no longer necessary.
+      */
+
+      enum color {red, blue, yellow};
+
+      // Normally you must use the enum name as a prefix
+      var aColor = color.blue;
+      writeln(aColor);
+
+      use color;
+
+      // The use statement allows you to access an enum's symbols without the
+      // prefix
+      var anotherColor = yellow; // color.yellow
+      writeln(anotherColor);
+
+      // All of the above rules for 'use' statements also apply to 'use's of
+      // enums
+    }
+
+    writeln();
+    writeln("Accessing modules from other files");
+
+    {
+      /* Modules that live outside of the file sometimes have special rules for
+         how to access them.  If the module you wish to access has the same name
+         as the file in which it lives, and this file is in the same directory
+         as your program, no additional steps are necessary.
+      */
+
+      use modulesHelper;
+
+      writeln(someVar); // Should be 19
+    }
+
+
+    {
+      /* When the module you wish to access is not named after the file in which
+         it lives, you must name the file as part of the compilation step:
+
+         chpl modules.chpl modulesHelper2.chpl
+      */
+
+      use anotherHelper;
+
+      writeln(someFunc()); // Should be 23
+
+      /* Note, the above will only compile if all the code after this closing
+         brace until the end of the main() function is removed or commented out.
+         A summary compilation line will be provided at the end
+      */
+    }
+
+
+    {
+      /* If the helper module also defines a main() function, or this module
+         does not, then you must specify on the command line at compilation time
+         which module should be the main module for the program, using the
+         --main-module flag:
+
+         chpl modules.chpl modulesHelper3.chpl --main-module MainModule
+      */
+
+      use helperWithMain;
+
+      writeln(someVar); // Should be 19
+
+      /* Note, the above will only compile if all the code after this closing
+         brace until the end of the main() function is removed or commented out,
+         as well as the code for accessing anotherHelper.  A summary compilation
+         line will be provided at the end
+      */
+    }
+
+
+    {
+      /* If the module you wish to use lives in a different directory, you must
+         specify the directory where it lives as part of compilation using the
+         -M flag.  The -M flag can take a relative or exact path.
+
+         chpl modules.chpl -M modulesPrimerDir/
+      */
+
+      use helperInAnotherDir;
+      writeln(someFunc()); // Should be 23
+
+      /* Note, the above will only compile if all the code for accessing
+         anotherHelper and helperWithMain is removed or commented out.  A
+         summary compilation line will be provided at the end
+      */
+    }
+
+    {
+      /* If the module you wish to use is one of the Chapel provided library
+         modules (living in $CHPL_HOME/modules/), then merely using the module
+         is sufficient for the program to compile
+      */
+
+      use IO;
+      writeln(iomode.r);
+    }
+
+    /* To compile all the examples in this file, use the command line:
+
+       chpl modules.chpl modulesHelper2.chpl modulesHelper3.chpl --main-module MainModule -M modulesPrimerDir/
+    */
   }
-
-
-
-  /* Since the following line doesn't live within a scope that contains a 'use'
-     of 'modToUse', it would generate an error if uncommented.  This is because
-     'foo' cannot be directly referenced, and is not qualified with a module
-     name.
-  */
-  // var twiceFoo = 2 * foo;
-
-
-
-  {
-    var bazBarFoo = baz(bar, foo);
-
-    /* Use statements apply to the entire scope in which they are defined.  Even
-       if the use statement occurs after code which would directly refer to its
-       symbols, these references are still valid.
-
-       Thus, as in an earlier example, bazBarFoo should store the result of
-       calling modToUse.baz on modToUse.bar and modToUse.foo, which is in this
-       case '28'.
-    */
-    use modToUse;
-
-    writeln(bazBarFoo);
-  }
-
-
-  {
-    /* The symbols provided by a use statement are only considered when the name
-       in question cannot be resolved directly within the local scope.  Thus, if
-       another bar were defined here, and an access was attempted, the compiler
-       would find the bar at this scope, rather than modToUse.bar.
-    */
-    var bar = 4.0;
-
-    use modToUse;
-
-    writeln(bar);
-    // Will output the value of the bar defined in scope (which is '4.0'),
-    // rather than the value of modToUse.bar (which is '2')
-  }
-
-
-  var bar = false;
-  {
-    /* If a symbol cannot be resolved directly within the local scope, then the
-       symbols provided by a use statement are considered before the symbols
-       defined outside of the scope where the use statement applies.  Thus, if
-       another bar were defined outside of these curly braces, and an access was
-       attempted, the compiler would find the bar from modToUse, rather than the
-       outer bar.
-    */
-
-    use modToUse;
-    writeln(bar);
-    // Will output the value of modToUse.bar (which is '2'), rather than the
-    // value of the bar defined outside of this scope (which is 'false')
-  }
-
-
-  {
-    /* Multiple modules may be used in the same use statement */
-    use modToUse, AnotherModule, ThirdModule;
-
-    if (a || b < 0) {
-      // Refers to AnotherModule.a (which is 'false') and ThirdModule.b (which
-      // is '-13.0')
-      writeln(foo); // Refers to modToUse.foo
-    } else {
-      writeln(bar); // Refers to modToUse.bar
-    } // Will output modToUse.foo (which is '12')
-  }
-
-
-  {
-    /* Equivalently, a scope may contain multiple use statements */
-    use modToUse;
-    use AnotherModule, ThirdModule;
-
-    writeln(a && foo > 15);
-    // outputs false (because AnotherModule.a is 'false' and modToUse.foo is
-    // '12')
-  }
-
-
-  {
-    /* In either case, the modules used in this way are considered at the same
-       scope.  This means that if two modules each define a symbol with the same
-       name, and both modules are used at the same scope, attempts to access a
-       symbol by that name will result in a naming conflict:
-    */
-    use modToUse, Conflict;
-
-    writeln(foo); // Outputs modToUse.foo ('12')
-    /* The following line would fail because both modToUse and Conflict define a
-       symbol named bar:
-    */
-    // writeln(bar);
-    writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
-  }
-
-  writeln();
-  writeln("Limiting a use");
-
-
-  {
-    /* To get around such conflicts, there are multiple strategies.  If only a
-       small number of symbols are desired from a particular module, you can
-       specify the symbols to bring in via an 'only' list.
-
-       Here, because of the 'only' clause in the 'use' of Conflict, Conflict's
-       'bar' is not directly accessible here.
-    */
-    use modToUse;
-    use Conflict only other, another;
-
-    writeln(foo); // Outputs modToUse.foo ('12')
-    writeln(bar); // Outputs modToUse.bar ('2')
-    writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
-  }
-
-
-  {
-    /* If every symbol other than the one which causes a conflict is desired,
-       you can specify the symbols to exclude via an 'except' list.
-    */
-    use Conflict;
-    use modToUse except bar;
-
-    writeln(foo); // Outputs modToUse.foo ('12')
-    writeln(bar); // Outputs '5' after output in Conflict.bar function
-    writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
-  }
-
-
-  {
-    /* If both symbols which conflict are desired, or if the use causes symbols
-       to be shadowed which are necessary, you can choose to rename a symbol
-       when including it via the 'as' keyword, so long as the new name does not
-       cause any conflicts with other included symbols.
-    */
-    use modToUse;
-    use Conflict only bar as boop;
-    writeln(bar); // Outputs modToUse.bar ('2')
-    writeln(boop); // Outputs '5' after output in Conflict.bar function
-  }
-
-  writeln();
-  writeln("Application to enums");
-
-  {
-    /* 'Use' statements can also be called on enums.  Normally to access one of
-       an enum's constants, you must provide a prefix of the enum name.  With a
-       'use' of that enum, such a prefix is no longer necessary.
-    */
-
-    enum color {red, blue, yellow};
-
-    // Normally you must use the enum name as a prefix
-    var aColor = color.blue;
-    writeln(aColor);
-
-    use color;
-
-    // The use statement allows you to access an enum's symbols without the
-    // prefix
-    var anotherColor = yellow; // color.yellow
-    writeln(anotherColor);
-
-    // All of the above rules for 'use' statements also apply to 'use's of enums
-  }
-
-  writeln();
-  writeln("Accessing modules from other files");
-
-  {
-    /* Modules that live outside of the file sometimes have special rules for
-       how to access them.  If the module you wish to access has the same name
-       as the file in which it lives, and this file is in the same directory as
-       your program, no additional steps are necessary.
-    */
-
-    use modulesHelper;
-
-    writeln(someVar); // Should be 19
-  }
-
-
-  {
-    /* When the module you wish to access is not named after the file in which
-       it lives, you must name the file as part of the compilation step:
-
-       chpl modules.chpl modulesHelper2.chpl
-    */
-
-    use anotherHelper;
-
-    writeln(someFunc()); // Should be 23
-
-    /* Note, the above will only compile if all the code after this closing
-       brace until the end of the main() function is removed or commented out.
-       A summary compilation line will be provided at the end
-    */
-  }
-
-
-  {
-    /* If the helper module also defines a main() function, or this module does
-       not, then you must specify on the command line at compilation time which
-       module should be the main module for the program, using the --main-module
-       flag:
-
-       chpl modules.chpl modulesHelper3.chpl --main-module modules
-    */
-
-    use helperWithMain;
-
-    writeln(someVar); // Should be 19
-
-    /* Note, the above will only compile if all the code after this closing
-       brace until the end of the main() function is removed or commented out,
-       as well as the code for accessing anotherHelper.  A summary compilation
-       line will be provided at the end
-    */
-  }
-
-
-  {
-    /* If the module you wish to use lives in a different directory, you must
-       specify the directory where it lives as part of compilation using the
-       -M flag.  The -M flag can take a relative or exact path.
-
-       chpl modules.chpl -M modulesPrimerDir/
-     */
-
-    use helperInAnotherDir;
-    writeln(someFunc()); // Should be 23
-
-    /* Note, the above will only compile if all the code for accessing
-       anotherHelper and helperWithMain is removed or commented out.  A summary
-       compilation line will be provided at the end
-    */
-  }
-
-  {
-    /* If the module you wish to use is one of the Chapel provided library
-       modules (living in $CHPL_HOME/modules/), then merely using the module
-       is sufficient for the program to compile
-    */
-
-    use IO;
-    writeln(iomode.r);
-  }
-
-  /* To compile all the examples in this file, use the command line:
-
-     chpl modules.chpl modulesHelper2.chpl modulesHelper3.chpl --main-module modules -M modulesPrimerDir/
-   */
 }
