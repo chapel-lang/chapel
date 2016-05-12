@@ -1,19 +1,19 @@
 /* The Computer Language Benchmarks Game
    http://shootout.alioth.debian.org/
 
-   contributed by Tom Hildebrandt, Brad Chamberlain, Lydia Duncan
+   contributed by Tom Hildebrandt, Brad Chamberlain, and Lydia Duncan
    derived from the GNU C version by Bonzini, Bartlett, and Mellor
 */
 
 use GMP;
 
-config const n = 50;                // Compute n digits of Pi, 50 by default
+config const n = 50;         // Compute n digits of pi, 50 by default
 
 proc main() {
   for (d,i) in zip(gen_digits(n), 1..) {
     write(d);
     if i % 10 == 0 then
-      writeln("\t:",i);
+      writeln("\t:", i);
   }
 }
 
