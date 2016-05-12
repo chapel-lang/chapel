@@ -557,8 +557,23 @@ module DefaultAssociative {
       }
     }
 
-    // value version
-    proc dsiAccess(idx : idxType, haveLock = false) const ref {
+    // value version for POD types
+    proc dsiAccess(idx : idxType, haveLock = false)
+    where !shouldReturnRvalueByConstRef(eltType) {
+      const shouldLock = dom.parSafe && !haveLock;
+      if shouldLock then dom.lockTable();
+      var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
+      if found {
+        if shouldLock then dom.unlockTable();
+        return data(slotNum);
+      } else {
+        halt("array index out of bounds: ", idx);
+        return data(0);
+      }
+    }
+    // const ref version for strings, records with copy ctor
+    proc dsiAccess(idx : idxType, haveLock = false) const ref
+    where shouldReturnRvalueByConstRef(eltType) {
       const shouldLock = dom.parSafe && !haveLock;
       if shouldLock then dom.lockTable();
       var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);

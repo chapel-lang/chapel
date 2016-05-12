@@ -12,6 +12,7 @@ HWLOC_top_builddir="@HWLOC_top_builddir@"
 assembler="$HWLOC_top_builddir/utils/hwloc/hwloc-assembler"
 HWLOC_top_srcdir="@HWLOC_top_srcdir@"
 SED="@SED@"
+EXEEXT="@EXEEXT@"
 
 HWLOC_PLUGINS_PATH=${HWLOC_top_builddir}/src
 export HWLOC_PLUGINS_PATH
@@ -46,7 +47,7 @@ $assembler $file \
 # filter ProcessName since it may be hwloc-info or lt-hwloc-info
 cat $file \
  | $SED -e '/<info name=\"hwlocVersion\" value=\"'$HWLOC_VERSION'\"\/>/d' \
- | $SED -e '/<info name=\"ProcessName\" value=\"hwloc-assembler\"\/>/d' -e '/<info name=\"ProcessName\" value=\"lt-hwloc-assembler\"\/>/d' \
+ | $SED -e '/<info name=\"ProcessName\" value=\"hwloc-assembler'$EXEEXT'\"\/>/d' -e '/<info name=\"ProcessName\" value=\"lt-hwloc-assembler'$EXEEXT'\"\/>/d' \
  > ${file}.tmp
 mv -f ${file}.tmp $file
 

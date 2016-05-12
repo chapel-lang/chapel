@@ -1,7 +1,0 @@
-semantic: initilizer depending on values at module use
-
-If I can fulfill module requirements at use time,
-why can't those requirements be used in an initializer?
-
-reductionex_module3.chpl:11: error: 'max' undeclared (first use this function)
-reductionex_module3.chpl:11: error: 'min' undeclared (first use this function)

@@ -666,15 +666,39 @@ class UserMapAssocArr: BaseArr {
   // TODO: Do we need a global bounds check here or in idxToLocaleind?
   //
   proc dsiAccess(i: idxType) ref {
-    const myLocArr = locArrs(here.id);
-    // TODO -- why doesn't this use the mapper?
-    // Why is it better to check the local hashtable?
-    local {
-      if myLocArr.locDom.myInds.member(i) then
-        return myLocArr.this(i);
+    const localeIndex = dom.dist.indexToLocaleIndex(i);
+    const locArr = locArrs[localeIndex];
+    if locArr.locale == here {
+      local {
+        return locArr[i];
+      }
     }
-    return locArrs(dom.dist.indexToLocaleIndex(i))(i);
+    return locArr[i];
   }
+  proc dsiAccess(i: idxType)
+  where !shouldReturnRvalueByConstRef(eltType) {
+    const localeIndex = dom.dist.indexToLocaleIndex(i);
+    const locArr = locArrs[localeIndex];
+    if locArr.locale == here {
+      local {
+        return locArr[i];
+      }
+    }
+    return locArr[i];
+  }
+  proc dsiAccess(i: idxType) const ref
+  where shouldReturnRvalueByConstRef(eltType) {
+    const localeIndex = dom.dist.indexToLocaleIndex(i);
+    const locArr = locArrs[localeIndex];
+    if locArr.locale == here {
+      local {
+        return locArr[i];
+      }
+    }
+    return locArr[i];
+  }
+
+
 
   //
   // sequential iterator over the array's elements
@@ -798,6 +822,16 @@ class LocUserMapAssocArr {
   proc this(i: idxType) ref {
     return myElems(i);
   }
+  proc this(i: idxType)
+  where !shouldReturnRvalueByConstRef(eltType) {
+    return myElems(i);
+  }
+  proc this(i: idxType) const ref
+  where shouldReturnRvalueByConstRef(eltType) {
+    return myElems(i);
+  }
+
+
 
   //
   // iterator over the elements owned by this locale

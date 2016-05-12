@@ -85,8 +85,8 @@ class Immediate { public:
   IF1_string_kind string_kind;
   uint32_t num_index;
   union {
-    // Unions are initalized based off the first element, so we need to have
-    // the largest thing first to make sure it is all zero initalized
+    // Unions are initialized based off the first element, so we need to have
+    // the largest thing first to make sure it is all zero initialized
 
     // complex values
     complex128 v_complex128;

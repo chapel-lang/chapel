@@ -124,6 +124,9 @@ all:
   03/17/16:
     - text: Switched gen compiler to gcc 5.1.0
       config: 16 node XC, Single node XC
+  05/05/16:
+    - text: ubuntu update to 16.04 (gcc upgraded to 5.3)
+      config: shootout
 
 AllCompTime:
   11/09/14:
