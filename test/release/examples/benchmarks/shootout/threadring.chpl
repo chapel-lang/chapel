@@ -6,20 +6,16 @@
 
 
 //
-// Note that this program uses the term 'thread' to refer to the
-// parallel entities in order to match the benchmark's description.
-// In Chapel, these are actually 'tasks' (in Chapel, a 'thread' is the
-// system-level resource with which language-level tasks are executed
-// (e.g., POSIX threads).
+// Note: This program uses 'thread' to refer to Chapel 'tasks'.
 //
 
 config const n = 1000,        // The number of token passes to perform
              nthreads = 503;  // the number of threads to use
 
 //
-// An array of per-thread synchronized integers representing mailboxes
-// for receiving the token.  By default each element will be 'empty'
-// causing reads to block until it becomes full.
+// An array of per-thread synchronized integers for receiving tokens.
+// By default elements are 'empty' causing reads to block until they
+// become 'full'.
 //
 var mailbox$: [1..nthreads] sync int;
 
@@ -32,8 +28,8 @@ proc main() {
   mailbox$[1] = 0;
 
   //
-  // Create a task per thread using a 'coforall' over the 'Threads'
-  // range.  Index 'tid' stores the thread's ID.
+  // Create a task per thread using a 'coforall' loop.  Index 'tid'
+  // stores the thread's ID.
   //
   coforall tid in 1..nthreads do
     passTokens(tid);
@@ -45,25 +41,16 @@ proc main() {
 proc passTokens(tid) {
   do {
     //
-    // Read the token value from this thread's mailbox.  If the
-    // mailbox is empty, the thread blocks until it's full.
+    // Read the number of token passes from our mailbox, blocking
+    // until it's 'full' and leaving it 'empty'.  Write the
+    // incremented value to the next thread's mailbox, making it
+    // 'full'.
     //
     const numPasses = mailbox$[tid];
-
-    //
-    // Increment the number of token passes and store in the next
-    // thread's mailbox.
-    //
     mailbox$[tid%nthreads+1] = numPasses+1;
 
-    //
-    // Have the thread that got the n'th token pass write its ID.
-    //
     if numPasses == n then
       writeln(tid);
 
-    //
-    // Keep looping until we've passed the token 'n' times.
-    //
   } while (numPasses < n);
 }
