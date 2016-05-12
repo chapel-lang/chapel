@@ -17,6 +17,7 @@ proc main() {
   // Correctness arrays
   const ArrAbsSorted = [-1, 2, 3, -4],
            ArrSorted = [-4, -1, 2, 3],
+        ArrRevSorted = [ 3, 2, -1, -4],
         StrArrSorted = ['Brad', 'anthony', 'ben', 'david'];
 
   // Comparators
@@ -26,53 +27,55 @@ proc main() {
   /* Test data types */
 
   // Strings
-  BubbleSort(StrArr);
-  checksort(StrArr, StrArrSorted, 'BubbleSort');
+  bubbleSort(StrArr);
+  checksort(StrArr, StrArrSorted, 'bubbleSort');
 
 
   /* Test Sorts */
 
-  // Bubble
-  BubbleSort(Arr);
-  checksort(Arr, ArrSorted, 'BubbleSort');
+  // bubble
+  bubbleSort(Arr);
+  checksort(Arr, ArrSorted, 'bubbleSort');
 
-  BubbleSort(Arr, comparator=key);
-  checksort(Arr, ArrAbsSorted, 'BubbleSort', 'key');
+  bubbleSort(Arr, comparator=key);
+  checksort(Arr, ArrAbsSorted, 'bubbleSort', 'key');
 
-  BubbleSort(Arr, comparator=compare);
-  checksort(Arr, ArrAbsSorted, 'BubbleSort', 'compare');
+  bubbleSort(Arr, comparator=compare);
+  checksort(Arr, ArrAbsSorted, 'bubbleSort', 'compare');
 
-  // Insertion
-  InsertionSort(Arr);
-  checksort(Arr, ArrSorted, 'InsertionSort');
+  // insertion
+  insertionSort(Arr);
+  checksort(Arr, ArrSorted, 'insertionSort');
 
-  InsertionSort(Arr, comparator=key);
-  checksort(Arr, ArrAbsSorted, 'InsertionSort', 'key');
+  insertionSort(Arr, comparator=key);
+  checksort(Arr, ArrAbsSorted, 'insertionSort', 'key');
 
-  InsertionSort(Arr, comparator=compare);
-  checksort(Arr, ArrAbsSorted, 'InsertionSort', 'compare');
+  insertionSort(Arr, comparator=compare);
+  checksort(Arr, ArrAbsSorted, 'insertionSort', 'compare');
 
   // Quick
-  QuickSort(Arr);
+  quickSort(Arr);
   checksort(Arr, ArrSorted, 'QuickSort');
 
-  QuickSort(Arr, comparator=key);
+  quickSort(Arr, comparator=key);
   checksort(Arr, ArrAbsSorted, 'QuickSort', 'key');
 
-  QuickSort(Arr, comparator=compare);
+  quickSort(Arr, comparator=compare);
   checksort(Arr, ArrAbsSorted, 'QuickSort', 'compare');
 
-  // Heap
-  HeapSort(Arr);
-  checksort(Arr, ArrSorted, 'HeapSort');
+  // heap
+  heapSort(Arr);
+  checksort(Arr, ArrSorted, 'heapSort');
 
-  HeapSort(Arr, comparator=key);
-  checksort(Arr, ArrAbsSorted, 'HeapSort', 'key');
+  heapSort(Arr, comparator=key);
+  checksort(Arr, ArrAbsSorted, 'heapSort', 'key');
 
-  HeapSort(Arr, comparator=compare);
-  checksort(Arr, ArrAbsSorted, 'HeapSort', 'compare');
+  heapSort(Arr, comparator=compare);
+  checksort(Arr, ArrAbsSorted, 'heapSort', 'compare');
 
   /* TODO -- SelectionSort testing when comparator support implemented */
+
+  /* Test deprecated sorts */
 
 }
 
