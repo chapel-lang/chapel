@@ -904,17 +904,18 @@ proc StencilArr.setup() {
           var SrcOffset : rank*idxType;
 
           var stay = true;
+          // TODO: this seems excessively complex, rewrite this.
           for i in 1..rank {
             if neighbor(i) < dom.dist.targetLocDom.low(i) {
               stay = stay && false;
               if !dom.periodic then break;
               neighbor(i) = dom.dist.targetLocDom.high(i);
-              SrcOffset(i) = dom.whole.high(i) - D.high(i);
+              SrcOffset(i) = dom.whole.dim(i).size;
             } else if neighbor(i) > dom.dist.targetLocDom.high(i) {
               stay = stay && false;
               if !dom.periodic then break;
               neighbor(i) = dom.dist.targetLocDom.low(i);
-              SrcOffset(i) = -dom.whole.high(i);
+              SrcOffset(i) = -dom.whole.dim(i).size;
             }
           }
           N = neighbor;
