@@ -384,15 +384,25 @@ qioerr qio_proc_communicate(
 
   if( threadsafe ) {
     // lock all three channels.
+    // but unlock them immediately and set them to NULL
+    // if they are already closed.
     if( input ) {
       err = qio_lock(&input->lock);
       if( err ) return err;
+      if( qio_channel_isclosed(false, input) ) {
+        qio_unlock(&input->lock);
+        input = NULL;
+      }
     }
     if( output ) {
       err = qio_lock(&output->lock);
       if( err ) {
         if( input ) qio_unlock(&input->lock);
         return err;
+      }
+      if( qio_channel_isclosed(false, output) ) {
+        qio_unlock(&output->lock);
+        output = NULL;
       }
     }
     if( error ) {
@@ -401,6 +411,10 @@ qioerr qio_proc_communicate(
         if( input ) qio_unlock(&input->lock);
         if( output ) qio_unlock(&output->lock);
         return err;
+      }
+      if( qio_channel_isclosed(false, error) ) {
+        qio_unlock(&error->lock);
+        error = NULL;
       }
     }
   }
