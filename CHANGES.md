@@ -919,7 +919,7 @@ New Features
 
 New Interoperability Features
 -----------------------------
-* inital support for Python->Chapel interoperability via PyChapel
+* initial support for Python->Chapel interoperability via PyChapel
   (see http://pychapel.readthedocs.org/ for more details)
 * added a prototype capability to embed external dependences to source via 'use'
   (e.g., use "foo.h", "-lfoo"; is like adding these to the 'chpl' command-line)
@@ -2429,7 +2429,7 @@ Third-Party Software Changes
 ----------------------------
 - updated to version 1.20 of GASNet
 - updated to version 1.9 of Qthreads
-- made the LLVM checkout script grab version 3.2 to ensure compatability
+- made the LLVM checkout script grab version 3.2 to ensure compatibility
 - removed the nanox tasking layer due to lack of support/champion
 
 Testing System
@@ -4221,7 +4221,7 @@ Bug Fixes/New Semantic Checks (for old semantics)
 - fixed a race in the creation of private, replicated distribution classes
 - fixed a bug in which tensor iteration resulted in internal errors
 - removed a subtle race condition in program startup
-- fixed a bug in which we called default constructrs by name
+- fixed a bug in which we called default constructors by name
 - fixed deletion of list elements in List module
 - added support for generating the implicit Program module in --html view
 

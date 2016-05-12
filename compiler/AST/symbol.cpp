@@ -3163,7 +3163,7 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   CallExpr* ctorCall = new CallExpr(PRIM_MOVE, new SymExpr(s), ctor);
 
-  // We need to initalize strings literals on every locale, so we make this an
+  // We need to initialize strings literals on every locale, so we make this an
   // exported function that will be called in the runtime
   if (initStringLiterals == NULL) {
     initStringLiterals = new FnSymbol("chpl__initStringLiterals");

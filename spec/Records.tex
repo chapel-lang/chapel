@@ -10,14 +10,14 @@ only one type throughout its lifetime.  Storage is allocated for a variable of
 record type when the variable declaration is executed, and the record variable
 is also initialized at that time.
 
-A record declaration creates a record type~\rsec{Record_Declarations}.  A
+A record declaration statement creates a record type~\rsec{Record_Declarations}.  A
 variable of record type contains all and only the fields defined by that type
 (\rsec{Record_Types}).  Value semantics imply that the type of a record variable
 is known at compile time (i.e. it is statically typed).  
 
-Records can be created through an explicit call to a record
-constructor, which allocates storage, initializes
-it and returns it.  
+A record can be created using the \chpl{new} operator, which
+allocates storage, initializes it via a call to a record constructor,
+and returns it.
 A record is also created upon a variable declaration of a record type.
 
 A record type is generic if it contains generic fields.  Generic record types
@@ -29,7 +29,7 @@ are discussed in detail in~\rsec{Generic_Types}.
 \index{declarations!records}
 \index{record@\chpl{record}}
 
-A record is defined with the following syntax:
+A record type is defined with the following syntax:
 \begin{syntax}
 record-declaration-statement:
   simple-record-declaration-statement
@@ -80,11 +80,11 @@ incongruous with the definition of a record.  Moreover, space would have to be
 allocated in this special case, to store the record's run-time type.
 \end{rationale}
 
-As in a class declarations, the body of a record declaration can contain
+As in a class declaration, the body of a record declaration can contain
 variable, iterator and method declarations as well as nested type declarations.
 
 If a record declaration contains a type alias or parameter field, or it contains
-a variable or constant without a specified type and without an initialization
+a variable or constant field without a specified type and without an initialization
 expression, then it declares a generic record type.  Generic record types are
 described in~\rsec{Generic_Types}.
 

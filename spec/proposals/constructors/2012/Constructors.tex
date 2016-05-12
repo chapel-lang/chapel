@@ -122,7 +122,7 @@ constructor; otherwise, a compile-time error is issued.
 
 The execution of a \chpl{new} expression allocates memory sufficient to hold the
 object being constructed.  This uninitialized object is passed as the receiver
-argument to the contructor named in the \chpl{new} expression.  The matching constructor
+argument to the constructor named in the \chpl{new} expression.  The matching constructor
 performs its initialization operations on the object (as a method invocation).
 The return value of the \chpl{new} expression is that same object after it has
 been modified by the constructor.  
@@ -747,7 +747,7 @@ constructor implementation is self-consistent in the presence of inheritance.
 Sync variables, domains and arrays have special assignment semantics defined
 in the internal library code whose invocation is arranged specially by the
 compiler.  Special behavior is arranged through pragmas (which add flags to classes and
-funtions), and also through the class/record structure used to represent types
+functions), and also through the class/record structure used to represent types
 which are known to the compiler.  
 
 \paragraph{Sync Variables} carry the pragmas "sync", "no default functions" and "no object",

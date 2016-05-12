@@ -36,6 +36,16 @@
 
 (require 'cc-mode)
 
+;; Work around "Symbol's function definition is void: set-difference"
+;; in emacs 24, at least through 24.5.  Per
+;; http://lists.gnu.org/archive/html/bug-gnu-emacs/2014-10/msg01175.html
+(eval-when-compile
+  (if (and (= emacs-major-version 24) (<= emacs-minor-version 5))
+      (require 'cl)))
+
+;; Need to exclude xemacs from some behavior
+(defvar running-xemacs (string-match "XEmacs\\|Lucid" emacs-version))
+
 ;; These are only required at compile time to get the sources for the
 ;; language constants.  (The cc-fonts require and the font-lock
 ;; related constants could additionally be put inside an
@@ -336,6 +346,11 @@ need for `chpl-font-lock-extra-types'.")
 (or chpl-mode-syntax-table
     (setq chpl-mode-syntax-table
 	  (funcall (c-lang-const c-make-mode-syntax-table chpl))))
+
+;; Nested block comments -- add "n" to the syntax table entry for "*"
+;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Flags.html#Syntax-Flags
+(if (not running-xemacs)
+    (modify-syntax-entry ?* ". 23n" chpl-mode-syntax-table))
 
 (defvar chpl-mode-abbrev-table nil
   "Abbreviation table used in chpl-mode buffers.")

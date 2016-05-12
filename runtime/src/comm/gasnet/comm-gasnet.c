@@ -557,9 +557,22 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        int ln, int32_t fn)
 {
   gasnet_handle_t ret;
+  int remote_in_segment;
 
   // Should be in the compiler macros file?
   chpl_vdebug_log_put_nb(addr, node, raddr, size, typeIndex, ln, fn);
+
+#ifdef GASNET_SEGMENT_EVERYTHING
+    remote_in_segment = 1;
+#else
+    remote_in_segment = chpl_comm_addr_gettable(node, raddr, size);
+#endif
+
+  if(!remote_in_segment) {
+    chpl_comm_put(addr, node, raddr, size, typeIndex, ln, fn);
+    ret = NULL;
+    return (chpl_comm_nb_handle_t) ret;
+  }
 
   ret = gasnet_put_nb_bulk(node, raddr, addr, size);
 
@@ -577,9 +590,22 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        int ln, int32_t fn)
 {
   gasnet_handle_t ret;
+  int remote_in_segment;
 
   // Visual Debug Support
   chpl_vdebug_log_get_nb(addr, node, raddr, size, typeIndex, ln, fn);
+
+#ifdef GASNET_SEGMENT_EVERYTHING
+    remote_in_segment = 1;
+#else
+    remote_in_segment = chpl_comm_addr_gettable(node, raddr, size);
+#endif
+
+  if(!remote_in_segment) {
+    chpl_comm_get(addr, node, raddr, size, typeIndex, ln, fn);
+    ret = NULL;
+    return (chpl_comm_nb_handle_t) ret;
+  }
 
   ret = gasnet_get_nb_bulk(addr, node, raddr, size);
 
