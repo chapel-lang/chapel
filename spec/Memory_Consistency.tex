@@ -225,7 +225,7 @@ be implemented in terms of \textit{load}, \textit{store}, and
 \label{memory_order}
 
 The memory order $<_m$ of SC atomic operations in a given task
-repsects program order as follows:
+respects program order as follows:
 
 \begin{itemize}
   \item If $A_{sc}(a)<_pA_{sc}(b)$ then $A_{sc}(a)<_mA_{sc}(b)$
@@ -465,7 +465,7 @@ preserve sequential program behavior:
 %% \end{itemize}
 
 %% \subsection{Mapping Chapel concepts to the C++11 memory model}
-%% sungeun: this subsection moved to the next section editted but
+%% sungeun: this subsection moved to the next section edited but
 %% comment out for use elsewhere
 %%
 
@@ -536,7 +536,7 @@ the memory order types.
 
 %% It is just as unreasonable to synchronize tasks with a non-atomic variable
 %% as it is to synchronize them with a \chpl{memory\_order\_relaxed} atomic
-%% variable. Both of these are disasterous for program correctness and should
+%% variable. Both of these are disastrous for program correctness and should
 %% be avoided. Note that advanced users can combine
 %% \chpl{memory\_order\_relaxed} with fences to synchronize tasks.
 
@@ -748,8 +748,8 @@ for i in 1..n {
 %% is a store, and it is not already constrained by the SC atomic operations, then
 %% there is a race condition.
 
-%(Corrolary 1: LLVM optimizations and C program optimizations are OK because C programs cannot reorder SC atomic ops)
-%(Corralary 2: Cache is OK because:
+%(Corollary 1: LLVM optimizations and C program optimizations are OK because C programs cannot reorder SC atomic ops)
+%(Corollary 2: Cache is OK because:
 % - any communication not mediated by atomics constitutes a data race
 % - use of SC atomics causes cache flush/invalidate)
 
@@ -872,7 +872,7 @@ cobegin {
 
 
 \begin{chapelexample}{atomicWaitFor.chpl}
-The main drawpack of the above example is that it prevents the thread
+The main drawback of the above example is that it prevents the thread
 executing the spin wait from doing other useful work. Atomic variables
 include a waitFor method that will block the calling thread until a read
 of the atomic value matches a particular value. In contrast to the spin

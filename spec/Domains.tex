@@ -328,7 +328,7 @@ is the declaration order of the corresponding enumeration constants.
 \index{domains!associative!literals}
 \index{domains!associative!initialization}
 
-Specification of an assocative domain literal value follows a similar syntax as 
+Specification of an associative domain literal value follows a similar syntax as
 rectangular domain literal values.  What differentiates the two are the types 
 of expressions specified in the comma separated list.  Use of values of a 
 type other than ranges will result in the construction of an associative domain.  
@@ -357,12 +357,12 @@ arrays as indices within an associative domain.
 \begin{openissue}
 Assignment of an associative domain literal results in the a warning message
 being printed altering the user that whole-domain assignment has been
-serialized. This results from the resize operation over assocative arrays not 
+serialized. This results from the resize operation over associative arrays not
 being parsafe. 
 \end{openissue}
 
 \begin{chapelexample}{associativeDomain.chpl}
-The following example illusrates construction of an associative domain
+The following example illustrates construction of an associative domain
 containing string indices "bar" and "foo".  Note that due to internal hashing 
 of indices the order in which the values of the associative domain are iterated
 is not the same as their specification order.
@@ -1259,5 +1259,5 @@ if \chpl{d2} contains indices which are not also in \chpl{d1}.
 proc requestCapacity(s: int)
 \end{protohead}
 \begin{protobody}
-Resizes the domain internal storage to hold at least \chpl{s} indicies.
+Resizes the domain internal storage to hold at least \chpl{s} indices.
 \end{protobody}
