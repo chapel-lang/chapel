@@ -129,7 +129,10 @@ proc defaultComparator.compare(a, b) {
 const defaultcomparator = new defaultComparator();
 
 /* Comparator built as the reverse of any provided comparator */
-record ReverseComparator { var comparator = defaultcomparator; }
+record ReverseComparator {
+  var comparator;
+  proc ReverseComparator(comparator:?rec=defaultcomparator) { }
+}
 proc ReverseComparator.compare(a, b) {
   use Reflection;
 

@@ -18,70 +18,145 @@ proc main() {
   const ArrAbsSorted = [-1, 2, 3, -4],
            ArrSorted = [-4, -1, 2, 3],
         ArrRevSorted = [ 3, 2, -1, -4],
+     ArrAbsRevSorted = [ -4, 3, 2, -1],
         StrArrSorted = ['Brad', 'anthony', 'ben', 'david'];
 
   // Comparators
-  const key = new keycomparator();
-  const compare = new compcomparator();
+  const key = new keycomparator(),
+        compare = new compcomparator(),
+        keycompare = new keycompcomparator(),
+        revkey = new ReverseComparator(key),
+        revcompare = new ReverseComparator(compare);
+
 
   /* Test data types */
 
   // Strings
-  bubbleSort(StrArr);
-  checksort(StrArr, StrArrSorted, 'bubbleSort');
+  quickSort(StrArr);
+  checkSort(StrArr, StrArrSorted, 'quickSort');
 
+  /* Default behavior */
+
+  // key method sorts by abs(a), while compare is normal sort
+  quickSort(Arr, comparator=keycompare);
+  checkSort(Arr, ArrAbsSorted, 'quickSort');
+
+  /* Reverse */
+
+  // Default reversecomparator
+  quickSort(Arr, comparator=reversecomparator);
+  checkSort(Arr, ArrRevSorted, 'quickSort');
+
+  // Reverse key comparator (absolute value)
+  quickSort(Arr, comparator=revkey);
+  checkSort(Arr, ArrAbsRevSorted, 'quickSort');
+
+  // Reverse compare comparator (absolute value)
+  quickSort(Arr, comparator=revcompare);
+  checkSort(Arr, ArrAbsRevSorted, 'quickSort');
 
   /* Test Sorts */
 
-  // bubble
+  // bubbleSort
   bubbleSort(Arr);
-  checksort(Arr, ArrSorted, 'bubbleSort');
+  checkSort(Arr, ArrSorted, 'bubbleSort');
 
   bubbleSort(Arr, comparator=key);
-  checksort(Arr, ArrAbsSorted, 'bubbleSort', 'key');
+  checkSort(Arr, ArrAbsSorted, 'bubbleSort', 'key');
 
   bubbleSort(Arr, comparator=compare);
-  checksort(Arr, ArrAbsSorted, 'bubbleSort', 'compare');
+  checkSort(Arr, ArrAbsSorted, 'bubbleSort', 'compare');
 
-  // insertion
+  // insertionSort
   insertionSort(Arr);
-  checksort(Arr, ArrSorted, 'insertionSort');
+  checkSort(Arr, ArrSorted, 'insertionSort');
 
   insertionSort(Arr, comparator=key);
-  checksort(Arr, ArrAbsSorted, 'insertionSort', 'key');
+  checkSort(Arr, ArrAbsSorted, 'insertionSort', 'key');
 
   insertionSort(Arr, comparator=compare);
-  checksort(Arr, ArrAbsSorted, 'insertionSort', 'compare');
+  checkSort(Arr, ArrAbsSorted, 'insertionSort', 'compare');
 
-  // Quick
+  // quickSort
   quickSort(Arr);
-  checksort(Arr, ArrSorted, 'QuickSort');
+  checkSort(Arr, ArrSorted, 'QuickSort');
 
   quickSort(Arr, comparator=key);
-  checksort(Arr, ArrAbsSorted, 'QuickSort', 'key');
+  checkSort(Arr, ArrAbsSorted, 'QuickSort', 'key');
 
   quickSort(Arr, comparator=compare);
-  checksort(Arr, ArrAbsSorted, 'QuickSort', 'compare');
+  checkSort(Arr, ArrAbsSorted, 'QuickSort', 'compare');
 
-  // heap
+  // heapSort
   heapSort(Arr);
-  checksort(Arr, ArrSorted, 'heapSort');
+  checkSort(Arr, ArrSorted, 'heapSort');
 
   heapSort(Arr, comparator=key);
-  checksort(Arr, ArrAbsSorted, 'heapSort', 'key');
+  checkSort(Arr, ArrAbsSorted, 'heapSort', 'key');
 
   heapSort(Arr, comparator=compare);
-  checksort(Arr, ArrAbsSorted, 'heapSort', 'compare');
+  checkSort(Arr, ArrAbsSorted, 'heapSort', 'compare');
 
-  /* TODO -- SelectionSort testing when comparator support implemented */
+  /* TODO -- selectionSort testing when comparator support implemented */
 
   /* Test deprecated sorts */
+  // TODO - remove these some day
+
+  // BubbleSort
+  BubbleSort(Arr);
+  checkSort(Arr, ArrSorted, 'BubbleSort');
+
+  BubbleSort(Arr, doublecheck=true);
+  checkSort(Arr, ArrSorted, 'BubbleSort');
+
+  BubbleSort(Arr, reverse=true);
+  checkSort(Arr, ArrRevSorted, 'BubbleSort');
+
+  // InsertionSort
+  InsertionSort(Arr);
+  checkSort(Arr, ArrSorted, 'InsertionSort');
+
+  InsertionSort(Arr, doublecheck=true);
+  checkSort(Arr, ArrSorted, 'InsertionSort');
+
+  InsertionSort(Arr, reverse=true);
+  checkSort(Arr, ArrRevSorted, 'InsertionSort');
+
+  // QuickSort
+  QuickSort(Arr);
+  checkSort(Arr, ArrSorted, 'QuickSort');
+
+  QuickSort(Arr, doublecheck=true);
+  checkSort(Arr, ArrSorted, 'QuickSort');
+
+  QuickSort(Arr, reverse=true);
+  checkSort(Arr, ArrRevSorted, 'QuickSort');
+
+  // HeapSort
+  HeapSort(Arr);
+  checkSort(Arr, ArrSorted, 'HeapSort');
+
+  HeapSort(Arr, doublecheck=true);
+  checkSort(Arr, ArrSorted, 'HeapSort');
+
+  HeapSort(Arr, reverse=true);
+  checkSort(Arr, ArrRevSorted, 'HeapSort');
+
+  // SelectionSort (not actually deprecated yet)
+  SelectionSort(Arr);
+  checkSort(Arr, ArrSorted, 'SelectionSort');
+
+  SelectionSort(Arr, doublecheck=true);
+  checkSort(Arr, ArrSorted, 'SelectionSort');
+
+  SelectionSort(Arr, reverse=true);
+  checkSort(Arr, ArrRevSorted, 'SelectionSort');
 
 }
 
 
 /* Checks array and resets values -- any output results in failure */
-proc checksort(ref array, correct, sort:string, comparator:string='none') {
+proc checkSort(ref array, correct, sort:string, comparator:string='none') {
   if !array.equals(correct) {
     writeln(sort, 'with comparator: ', comparator, ' failed');
     writeln('Incorrect array:');
@@ -102,4 +177,11 @@ proc keycomparator.key(a) { return abs(a); }
 record compcomparator { }
 proc compcomparator.compare(a, b) {
   return abs(a) - abs(b);
+}
+
+/* key method should take priority over compare method */
+record keycompcomparator { }
+proc keycompcomparator.key(a) { return abs(a); }
+proc keycompcomparator.compare(a, b) {
+  return a - b;
 }
