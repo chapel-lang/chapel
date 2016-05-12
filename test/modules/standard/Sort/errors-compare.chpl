@@ -14,24 +14,34 @@ proc main() {
   var comp = new comparator();
 
   // Test fails if this compiles
-  BubbleSort(Arr, comparator=comp);
+  bubbleSort(Arr, comparator=comp);
 
 }
 
+
 /* Broken keys */
+
+// Returns str
+record str { }
+
+proc str.compare(a, b) {
+  return 'foobar';
+}
+
 
 // Returns bool
 record boolean { }
 
-proc boolean.key(a) {
+proc boolean.compare(a, b) {
   return true;
 }
+
 
 // Return record 'foobar'
 record rec { }
 record foobar { };
 
-proc rec.key(a) {
+proc rec.compare(a, b) {
   return new foobar();
 }
 
