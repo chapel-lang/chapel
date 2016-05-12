@@ -591,9 +591,6 @@ const char* intentDescrString(IntentTag intent);
 // pass-by-reference intents are used.
 bool argMustUseCPtr(Type* t);
 
-void substituteVarargTupleRefs(BlockStmt* ast, int numArgs, ArgSymbol* formal,
-                               std::vector<ArgSymbol*>& varargFormals);
-
 extern bool localTempNames;
 
 extern HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;

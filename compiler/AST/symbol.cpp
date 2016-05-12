@@ -39,6 +39,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
+#include "resolution.h"
 
 #include "AstToText.h"
 #include "AstVisitor.h"
