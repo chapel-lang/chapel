@@ -92,11 +92,8 @@ module ThirdModule {
 
 
 module Conflict {
-  /* This parenthesis-less function shares a name with a symbol in modToUse. */
-  proc bar {
-    writeln("In Conflict.bar");
-    return 5;
-  }
+  /* This variable shares a name with a symbol in modToUse. */
+  var bar = 5;
 
   var other = 5.0 + 3i;
 
@@ -229,9 +226,12 @@ module MainModule {
 
     {
       /* In either case, the modules used in this way are considered at the same
-         scope.  This means that if two modules each define a symbol with the
-         same name, and both modules are used at the same scope, attempts to
-         access a symbol by that name will result in a naming conflict:
+         time (after symbols defined at this scope but before symbols defined
+         outside of it) - the ordering within a use statement or of use
+         statements does not affect the precedence of symbols that share a name.
+         This means that if two modules each define a symbol with the same name,
+         and both modules are used at the same scope, attempts to access a
+         symbol by that name will result in a naming conflict:
       */
       use modToUse, Conflict;
 
@@ -272,7 +272,7 @@ module MainModule {
       use modToUse except bar;
 
       writeln(foo); // Outputs modToUse.foo ('12')
-      writeln(bar); // Outputs '5' after output in Conflict.bar function
+      writeln(bar); // Outputs Conflict.bar ('5')
       writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
     }
 
@@ -286,7 +286,7 @@ module MainModule {
       use modToUse;
       use Conflict only bar as boop;
       writeln(bar); // Outputs modToUse.bar ('2')
-      writeln(boop); // Outputs '5' after output in Conflict.bar function
+      writeln(boop); // Outputs Conflict.bar ('5')
     }
 
     writeln();
