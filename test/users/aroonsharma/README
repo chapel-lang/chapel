@@ -9,8 +9,35 @@ Modulo Unrolling in Chapel" in PGAS 2014.
 These benchmarks originally compared different distributions, including
 a custom versions of Cyclic and Block Cyclic. These remain in this
 directory as a historical artifact but have been disabled from the
-tests.
+tests: CyclicZipOpt.chpl, MyBlockCyclic.chpl
+
 
 They are CyclicZipOpt.chpl and MyBlockCyclic.chpl. See the paper
 for the results of using these optimizations.
 
+
+For more efficient parallel testing, most tests have been grouped
+into subdirectories:
+
+LinearAlgebra/
+ 2mm
+ cholesky
+ lu
+ mvt
+ syr2k
+ syrk
+ trmm
+
+Stencil/
+ fdtd-2d
+ fdtd-apml
+ jacobi-1d
+ jacobi-2d
+ stencil9
+
+./
+ correlation
+ covariance
+ floyd-warshall
+ folding
+ pascal
