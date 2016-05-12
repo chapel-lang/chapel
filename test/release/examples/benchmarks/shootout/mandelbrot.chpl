@@ -1,8 +1,8 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Jacob Nelson
-   modified by Lydia Duncan, Brad Chamberlain, and Ben Harshbarger
+   contributed by Jacob Nelson, Lydia Duncan, Brad Chamberlain, and 
+   Ben Harshbarger
 */
 
 use DynamicIters;
@@ -18,9 +18,7 @@ type eltType = uint(bitsPerElt);   // the element type to store
 
 proc main() {
   const ydim = 0..#n,                          // the y dimension
-        xdim = 0..#divceilpos(n, bitsPerElt),  // the compacted x dimension
-        bitRange = 0..#bitsPerElt,             // the degree of compactness
-        iters = 1..maxIter;                    // the max # of iterations
+        xdim = 0..#divceilpos(n, bitsPerElt);  // the compacted x dimension
 
   var image : [ydim, xdim] eltType;            // the bitmap image
 
@@ -29,17 +27,16 @@ proc main() {
 
       var mask = 0: eltType;                   // zero out the mask
 
-      for off in bitRange {                    // for each bit in the element
+      for off in 0..#bitsPerElt {              // for each bit in the element
         const x = xelt*bitsPerElt + off;       // compute its logical location
 
         const Cr = 2.0*x/n - 1.5;              // floating point values
         const Ci = 2.0*y/n - 1.0;              //   to compute with
         var Zr, Zi, Tr, Ti = 0.0;
 
-        for i in iters {                       // for the max # of iterations
-          if (Tr + Ti > limit) {               // if we haven't converged
+        for i in 1..maxIter {                  // for the max # of iterations
+          if (Tr + Ti > limit) then            // if we haven't converged
             break;
-          }
           
           Zi = 2.0*Zr*Zi + Ci;                 // update floating point values
           Zr = Tr - Ti + Cr;
@@ -48,9 +45,8 @@ proc main() {
         }
 
         mask <<= 1;                            // shift the mask
-        if (Tr + Ti <= limit) {                // if below the limit,
+        if (Tr + Ti <= limit) then             // if below the limit,
           mask |= 0x1;                         // set the low bit to 1
-        }
       }
 
       image[y, xelt] = mask;                   // store the computed element
