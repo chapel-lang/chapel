@@ -411,8 +411,6 @@ prk-stencil:
     - Looping over range instead of domain for weight matrix (#3500)
   04/09/16:
     - blockDist for useStencilDist output matrix and more (#3705)
-  04/09/16:
-    - blockDist for useStencilDist output matrix and more (#3705)
   05/07/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
 
