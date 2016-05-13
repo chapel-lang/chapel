@@ -153,7 +153,10 @@ module MainModule {
 
       /* Use statements apply to the entire scope in which they are defined.
          Even if the use statement occurs after code which would directly refer
-         to its symbols, these references are still valid.
+         to its symbols, these references are still valid.  This is similar to
+         other Chapel forms of introducing symbols - for instance, class
+         declaration order does not prevent the first declared class from
+         referring to the second.
 
          Thus, as in an earlier example, bazBarFoo should store the result of
          calling modToUse.baz on modToUse.bar and modToUse.foo, which is in this
