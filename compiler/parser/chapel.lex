@@ -867,7 +867,7 @@ static void addCharString(char c) {
 
 static void addCharMaybeEscape(char c, bool canEscape) {
   int escape  = canEscape && !(isascii(c) && isprint(c));
-  int charlen = escape ? 4 : 1; // convert nonasci to \xNN
+  int charlen = escape ? 4 : 1; // convert nonascii to \xNN
 
   if (stringLen + charlen + 1 > stringBuffLen) {
     stringBuffLen = 2 * (stringBuffLen + charlen);
