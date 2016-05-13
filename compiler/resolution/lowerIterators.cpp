@@ -830,7 +830,7 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<BaseAST*> as
 // Q: What about yields in task functions?
 // A: Since this is done before flattenFunctions, task functions
 // are still nested in their respective iterators. So their yields
-// will be included in 'asts' and handled when 'fn' is the inclosing
+// will be included in 'asts' and handled when 'fn' is the enclosing
 // iterator.
 //
 static void localizeIteratorReturnSymbols() {
