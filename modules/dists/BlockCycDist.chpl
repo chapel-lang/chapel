@@ -552,7 +552,7 @@ iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind
     var stride = whole.dim(i).stride: idxType;
     var low = stride * followThis(i).low;
     var high = stride * followThis(i).high;
-    t(i) = (low..high by stride:int) + whole.dim(i).low;
+    t(i) = ((low..high by stride:int) + whole.dim(i).low).safeCast(t(i).type);
   }
   //  writeln(here.id, ": Changed it into: ", t);
   for i in {(...t)} {
@@ -859,7 +859,7 @@ iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iter
     var stride = dom.whole.dim(i).stride;
     var low = followThis(i).low * stride;
     var high = followThis(i).high * stride;
-    myFollowThis(i) = (low..high by stride) + dom.whole.dim(i).low;
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).low;
   }
   const myFollowThisDom = {(...myFollowThis)};

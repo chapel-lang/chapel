@@ -8,14 +8,14 @@ proc makeString( size:int, buf:c_void_ptr ) {
 
 class MyOperationsHandler : OperationsHandler {
   proc processOperations( size:int, buf:c_void_ptr ) {
-    writeln("in MyOperationsHandler.processOperations ",
-            makeString(size, buf));
+    writeln(makeString(size, buf),
+            " in MyOperationsHandler.processOperations");
   }
 }
 class OtherOperationsHandler : OperationsHandler {
   proc processOperations( size:int, buf:c_void_ptr ) {
-    writeln("in OtherOperationsHandler.processOperations ",
-            makeString(size, buf));
+    writeln(makeString(size, buf),
+            " in OtherOperationsHandler.processOperations");
   }
 }
 
@@ -33,47 +33,46 @@ proc do_operation(obj:OperationsHandler, mode:int(32), idx:int, size:int, buf:c_
                          mode, idx);
 }
 
+proc test_operation(obj:OperationsHandler, i:int)
 {
-  var a = new MyOperationsHandler();
-
-  var test = "hello";
-  var len = test.length;
-
-  var buf = test.c_str():c_void_ptr;
-
-  writeln("local: starting operations a a a");
-
-  do_operation(a, 0, 0, len, buf);
-  do_operation(a, 0, 0, len, buf);
-  do_operation(a, 0, 0, len, buf);
-
-  writeln("local: done operations");
+  var str = "hello" + i;
+  var len = str.length;
+  var buf = str.c_str():c_void_ptr;
+  do_operation(obj, 0, 0, len, buf);
 }
 
-if numLocales > 1 {
+if numLocales == 1 {
+  var a = new MyOperationsHandler();
+
+  writeln("a local: starting operations a a a");
+
+  test_operation(a, 1);
+  test_operation(a, 2);
+  test_operation(a, 3);
+
+  writeln("b local: done operations");
+}
+
+
+if numLocales == 2 {
   var a = new MyOperationsHandler();
 
   on Locales[1] {
     var b = new OtherOperationsHandler();
 
-    var test = "hello";
-    var len = test.length;
+    writeln("c 2 locales: starting operations a a b b a");
 
-    var buf = test.c_str():c_void_ptr;
+    test_operation(a, 1);
+    test_operation(a, 2);
+    test_operation(b, 3);
+    test_operation(b, 4);
+    test_operation(a, 5);
 
-    writeln("2 locales: starting operations a a b b a");
-
-    do_operation(a, 0, 0, len, buf);
-    do_operation(a, 0, 0, len, buf);
-    do_operation(b, 0, 0, len, buf);
-    do_operation(b, 0, 0, len, buf);
-    do_operation(a, 0, 0, len, buf);
-
-    writeln("2 locales: done operations");
+    writeln("d 2 locales: done operations");
   }
 }
 
-if numLocales > 2 {
+if numLocales == 3 {
   var a:MyOperationsHandler;
   var b:OtherOperationsHandler;
   
@@ -85,18 +84,13 @@ if numLocales > 2 {
     b = new OtherOperationsHandler();
   }
 
-  var test = "hello";
-  var len = test.length;
+  writeln("e 3 locales: starting operations a a b b a");
 
-  var buf = test.c_str():c_void_ptr;
+  test_operation(a, 1);
+  test_operation(a, 2);
+  test_operation(b, 3);
+  test_operation(b, 4);
+  test_operation(a, 5);
 
-  writeln("3 locales: starting operations a a b b a");
-
-  do_operation(a, 0, 0, len, buf);
-  do_operation(a, 0, 0, len, buf);
-  do_operation(b, 0, 0, len, buf);
-  do_operation(b, 0, 0, len, buf);
-  do_operation(a, 0, 0, len, buf);
-
-  writeln("3 locales: done operations");
+  writeln("f 3 locales: done operations");
 }

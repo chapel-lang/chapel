@@ -1,0 +1,7 @@
+before cast/assign unstridableRange=1..10
+before cast/assign stridableRange=1..20 by 2
+after cast/assign unstridableRange=1..20
+after cast/assign stridableRange=1..20 by 2
+after safeCast/assign unstridableRange=1..20
+after safeCast/assign stridableRangeUnit=1..20
+castAwayStridableRange.chpl:19: error: halt reached - illegal safeCast from non-unit stride range to unstridable range

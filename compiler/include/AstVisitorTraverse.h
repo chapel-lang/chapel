@@ -25,7 +25,7 @@
 //
 // AstVisitor is a pure virtual base class
 //
-//   A careful client of AstVisitor may want to take responsiblity for
+//   A careful client of AstVisitor may want to take responsibility for
 //   every virtual function.  In other cases this may seem onerous; for
 //   example a given transform might only operate on a single node type.
 //

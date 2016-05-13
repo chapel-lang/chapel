@@ -188,7 +188,7 @@ bool CollapseBlocks::enterCondStmt(CondStmt* node)
 
 /************************************ | *************************************
 *                                                                           *
-* The remaining definitions are simple "default do nothing" defintions      *
+* The remaining definitions are simple "default do nothing" definitions      *
 *                                                                           *
 ************************************* | ************************************/
 

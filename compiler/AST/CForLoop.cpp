@@ -91,7 +91,7 @@ CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop)
 }
 
 // Provide an abstraction around a requirement to find the CForLoop for
-// a BlockStmt that is presumed to be one of the header claiuses
+// a BlockStmt that is presumed to be one of the header clauses
 CForLoop* CForLoop::loopForClause(BlockStmt* clause)
 {
   CForLoop* retval = toCForLoop(clause->parentExpr);

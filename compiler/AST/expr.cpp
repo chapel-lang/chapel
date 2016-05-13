@@ -234,7 +234,7 @@ Expr* Expr::getNextExpr(Expr* expr) {
 // that contains 'this'
 
 // It is probably an error if there is no such BlockStmt.
-// Currently return NULL.  Consider throwing aninternal error in the future.
+// Currently return NULL.  Consider throwing an internal error in the future.
 BlockStmt* Expr::getScopeBlock() {
   Expr*      expr   = this->parentExpr;
   BlockStmt* retval = NULL;
@@ -2515,7 +2515,7 @@ void convertArgumentForCall(llvm::FunctionType *fnType,
     // (see canExpandIndirectArgument)
     // TODO - this should actually depend on the clang ABI,
     // or else we should find a way to disable the optimization in clang.
-    //   It should be possible to get the necessariy information from clang
+    //   It should be possible to get the necessary information from clang
     //   with cgModule->getTypes()->arrangeFunctionDeclaration(FunctionDecl)
 
 
@@ -2891,7 +2891,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCall(fnName, args);
 }
 
-/* Commented out to avoid an unsued function, this probably should be varargs
+/* Commented out to avoid an unused function, this probably should be varargs
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8)
@@ -4945,7 +4945,7 @@ GenRet CallExpr::codegen() {
       ret = codegenFieldPtr(get(1), get(2));
       // Used to only do addrOf if
       // !get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)
-      // but that unnaturaly depends on the type of the field.
+      // but that unnaturally depends on the type of the field.
       ret = codegenAddrOf(ret);
       break; }
     case PRIM_GET_SVEC_MEMBER: {

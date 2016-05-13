@@ -135,7 +135,7 @@ static PassInfo sPassList[] = {
                                 // _distribution records
   RUN(removeEmptyRecords),      // remove empty records
   RUN(localizeGlobals),         // pull out global constants from loop runs
-  RUN(loopInvariantCodeMotion), // move loop invarient code above loop runs
+  RUN(loopInvariantCodeMotion), // move loop invariant code above loop runs
   RUN(prune2),                  // prune AST of dead functions and types again
 
   RUN(returnStarTuplesByRefArgs),

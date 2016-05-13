@@ -484,6 +484,11 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
 
   mod->block->insertAtTail(new DefExpr(wrap_fn));
 
+  // Add start fence to wrapper if it was requested
+  // This supports --cache-remote and is set in createTaskFunctions
+  if (fn->hasFlag(FLAG_WRAPPER_NEEDS_START_FENCE))
+    wrap_fn->insertAtTail(new CallExpr(PRIM_START_RMEM_FENCE));
+
   // Create a call to the original function
   CallExpr *call_orig = new CallExpr(fn);
   bool first = true;
@@ -515,6 +520,11 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     ; // the caller will free the actual
   else
     wrap_fn->insertAtTail(callChplHereFree(wrap_c));
+
+  // Add finish fence to wrapper if it was requested
+  // This supports --cache-remote and is set in createTaskFunctions
+  if (fn->hasFlag(FLAG_WRAPPER_NEEDS_FINISH_FENCE))
+    wrap_fn->insertAtTail(new CallExpr(PRIM_FINISH_RMEM_FENCE));
 
   wrap_fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
@@ -1285,6 +1295,23 @@ static void insertEndCounts()
 }
 
 
+bool isDirectOnCall(FnSymbol* fn, CallExpr* call)
+{
+  if (fn->hasFlag(FLAG_ON)) {
+    // For an on block, the first argument is the target locale.
+
+    // The call is direct if this first argument
+    // is a SymExpr with the flag FLAG_DIRECT_ON_ARGUMENT.
+    if (SymExpr* se = toSymExpr(call->get(1))) {
+      if (se->var->hasFlag(FLAG_DIRECT_ON_ARGUMENT)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 // For each "nested" function created to represent remote execution, 
 // bundle args so they can be passed through a fork function.
 // Fork functions in general have the signature
@@ -1301,7 +1328,13 @@ static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions)
 
     forv_Vec(CallExpr, call, *fn->calledBy) {
       SET_LINENO(call);
-      bundleArgs(call, baData);
+      if (isDirectOnCall(fn, call))
+        // For a direct call, don't bundle the arguments
+        // leave the call directly invoking the on-function.
+        // On statements also need their first argument removed.
+        call->get(1)->remove();
+      else
+        bundleArgs(call, baData);
     }
 
     if (fn->hasFlag(FLAG_ON))
