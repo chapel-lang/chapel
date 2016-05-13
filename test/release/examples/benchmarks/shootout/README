@@ -41,8 +41,9 @@ Future work / TODO
 The following are a list of planned improvements to Chapel and/or our
 implementations that would benefit the codes:
 
-mandelbrot.chpl:
-----------------
+
+mandelbrot.chpl
+---------------
 o extend the dynamic() iterators for ranges to support domains and
   collapse the two nested loops into a single loop over a 2D domain.
 
@@ -53,3 +54,9 @@ o add an 'unroll' capability to loops and use it to unroll the 'for
 o have the compiler automatically optimize writes to 'stdout' in
   serial code segments to avoid the need to manually get a lock-free
   channel to it.
+
+
+threadring.chpl
+---------------
+o map Chapel's sync vars more directly down to Qthreads' sync vars
+  to avoid space and time overheads
