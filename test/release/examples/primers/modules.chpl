@@ -79,6 +79,15 @@ module Conflict {
   var another = false;
 }
 
+
+module DifferentArguments {
+  /* This function shares a name with a function in modToUse, but requires
+     different arguments */
+  proc baz(x) {
+    return x - 2;
+  }
+}
+
 module MainModule {
   proc main() {
     writeln("Access from outside a module");
@@ -171,7 +180,8 @@ module MainModule {
          symbols defined outside of the scope where the use statement applies.
          Thus, if another bar were defined outside of these curly braces, and an
          access was attempted, the compiler would find the bar from modToUse,
-         rather than the outer bar.
+         rather than the outer bar.  The bar from modToUse is said to be
+         "shadowing" the definition at the outer scope.
       */
 
       use modToUse;
@@ -239,6 +249,29 @@ module MainModule {
       */
       // writeln(bar);
       writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
+    }
+
+    {
+      /* When the symbol being accessed is the name of a function, the rules
+         become more complex.  If the two function definitions are overloads (or
+         define different arguments), then the best match will be found, no
+         matter where the function is defined relative to the other function
+         definitions.
+
+         More details on when overloading applies, when functions may shadow
+         other functions, etc. can be found in the relevant section of the
+         language specification.  They will not be covered further in this
+         primer.
+      */
+
+      use modToUse, DifferentArguments;
+
+      writeln(baz(2, 3));
+      // Accesses the function modToUse.baz using the two arguments.  Should
+      // output 2 * (2 + 3) or '10'
+      writeln(baz(3));
+      // Access the function DifferentArguments.baz using the single argument.
+      // Should output 3 - 1, or '1'
     }
 
     writeln();
