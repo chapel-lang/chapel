@@ -1,0 +1,4 @@
+perfkeys: Time:
+graphkeys: split
+ylabel: Time (seconds)
+graphtitle: Splitting a string on whitespace

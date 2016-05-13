@@ -1,6 +1,6 @@
 use Time;
 
-config const n = 1000000;
+config const n = 100000000;
 config const timing = true;
 
 // passing
@@ -16,8 +16,10 @@ if timing then tPassing.stop();
 // returning
 var tReturning: Timer;
 if timing then tReturning.start();
+var keepAlive: int;
 for i in 1..n {
   var s = send(i);
+  keepAlive += s.len;
 }
 if timing then tReturning.stop();
 
@@ -33,7 +35,7 @@ proc receive(test: string) {
   return test.len;
 }
 
-proc send(l: int) {
+proc send(l: int): string {
   var m = l % 3;
   if m == 0 {
     return "returning";
