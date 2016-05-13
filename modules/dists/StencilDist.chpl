@@ -877,7 +877,7 @@ proc StencilDom.setup() {
         myLocDom.myFluff = myLocDom.myBlock;
       }
 
-      if !zeroTuple(fluff) && whole.size > 0 {
+      if !zeroTuple(fluff) && myLocDom.myBlock.size > 0 {
         //
         // Recompute Src and Dest domains, later used to update fluff regions
         //
@@ -897,25 +897,16 @@ proc StencilDom.setup() {
             if zeroTuple(L) then continue; // Skip center
 
             var offset : rank*idxType;
-            // 'N' should always be in targetLocDom, so wrap around if needed
             for i in 1..rank {
-              if N(i) < dist.targetLocDom.low(i) {
-                N(i) = dist.targetLocDom.high(i);
-                offset(i) = whole.dim(i).size;
-              } else if N(i) > dist.targetLocDom.high(i) {
-                N(i) = dist.targetLocDom.low(i);
+              if S.dim(i).low > whole.dim(i).high then
                 offset(i) = -whole.dim(i).size;
-              }
+              else if S.dim(i).high < whole.dim(i).low then
+                offset(i) = whole.dim(i).size;
             }
-            //
-            // TODO: bharsh: there's an issue where resizing below the
-            // boundingBox violates one or more of the asserts below. Should
-            // that even be possible?
-            //
-            if dist.targetLocDom.member(localeIdx + L) then
-              assert(zeroTuple(offset));
+
             S = S.translate(offset);
-            assert(whole.member(S.low) && whole.member(S.high));
+            N = dist.targetLocsIdx(S.low);
+            assert(whole.member(S.low) && whole.member(S.high), "StencilDist: Failure to compute Src slice.");
             assert(dist.targetLocDom.member(N), "StencilDist: Error computing neighbor index.");
           }
         }
