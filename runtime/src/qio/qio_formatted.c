@@ -2656,9 +2656,20 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
   } else if( realfmt == 0 ) {
     if( precision < 0 ) {
       if( uppercase ) {
-        got = snprintf(buf, buf_sz, "%G", num);
+        // This if is necessary because if the number has
+        // 6 digits in the integer part, %g will not print
+        // the decimal part because the integer part have
+        // a number of digits equals to the standard precision.
+        // We use %.5e for maintain a precision of 6 digits
+        if(num >= 100000.0 && num < 1000000.0)
+          got = snprintf(buf, buf_sz, "%.5E", num);
+        else
+          got = snprintf(buf, buf_sz, "%G", num);
       } else {
-        got = snprintf(buf, buf_sz, "%g", num);
+        if(num >= 100000.0 && num < 1000000.0)
+          got = snprintf(buf, buf_sz, "%.5e", num);
+        else
+          got = snprintf(buf, buf_sz, "%g", num);
       }
     } else {
       if( uppercase ) {
