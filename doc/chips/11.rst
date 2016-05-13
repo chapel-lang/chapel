@@ -7,14 +7,14 @@ Status:
 Authors:
   Kyle Brady, Lydia Duncan, Michael Ferguson, Mike Noakes, Vassily Litvinov
 
+.. contents:: Outline
+   :local:
+
 Abstract
 --------
 
 This document contains some features we discussed as part of the
 initializer story and chose not to incorporate.
-
-.. contents:: Outline
-   :local:
 
 Rationale
 ---------
@@ -24,8 +24,11 @@ we considered a variety of features. Some of them were accepted
 and some of them were rejected. This document records some of
 the discussed-and-rejected features for posterity.
 
+Features
+--------
+
 Alternative syntax for distinguishing Phase 1 and Phase 2 in an initializer
----------------------------------------------------------------------------
+***************************************************************************
 
 We considered providing dedicated syntax for distinguishing Phase 1
 and Phase 2 in an initializer. This syntax, codenamed Syntax 2,
@@ -41,19 +44,19 @@ separated by the proposed "finalize" keyword.
      ... Phase 2 code ...
    }
 
-We considered allowing certain pieces of this syntax to be omitted
-in some cases:
-
-* The super.init() call, if it takes no arguments.
-* One of the two block statements.
-* The "finalize" keyword.
+The super.init() call can be omitted if it passes no arguments.
+The "finalize" keyword and the following block, if empty,
+can also be omitted.
 
 Syntax 2 has the advantage of visually-clear separation of the two
 phases. We did not incorporate it because it did not allow sharing
 variables or extending an if statement across the two phases.
+Also, we would like Phase 2 to be the default, and it felt
+unintuitive under Syntax 2.
+
 
 Child's fields could depend on parent's fields
-----------------------------------------------
+**********************************************
 
 We considered allowing child's fields to be initialized based on
 parent's fields. Below is one way to achieve this.
@@ -107,10 +110,11 @@ how initialization occurs.
 
 
 Parent could have final control over the newly-created object
--------------------------------------------------------------
+*************************************************************
 
 We considered giving the parent class the ability to exercise final control
-over the newly-created object. An example where this is important
+over the newly-created object via a "lastly" block.
+An example where this is important
 is if the new object must be be added to a shared list.
 If the list is concurrently accessible, it is important for all other
 invariants on the new object to have been established prior to such addition.
@@ -145,6 +149,7 @@ in each child's initializer.
 
 ..
  Another approach is to introduce "lastinit" methods.
+ This approach was not brought up with the team.
  One "lastinit" method with 0 arguments could be optionally defined
  on each class.
 
