@@ -260,6 +260,9 @@ class LocStencilDom {
   type idxType;
   param stridable: bool;
   var myBlock, myFluff: domain(rank, idxType, stridable);
+  var NeighDom: domain(rank);
+  var Dest, Src: [NeighDom] domain(rank, idxType, stridable);
+  var Neighs: [NeighDom] rank*idxType;
 }
 
 //
@@ -304,9 +307,6 @@ class LocStencilArr {
   const locDom: LocStencilDom(rank, idxType, stridable);
   var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
   var myElems: [locDom.myFluff] eltType;
-  var NeighDom: domain(rank);
-  var Dest, Src: [NeighDom] domain(rank, idxType);
-  var Neighs: [NeighDom] rank*idxType;
   var locRADLock: atomicflag; // This will only be accessed locally
                               // force the use of processor atomics
 
@@ -854,27 +854,71 @@ proc StencilDom.dsiLocalSlice(param stridable: bool, ranges) {
 }
 
 proc StencilDom.setup() {
-  if locDoms(dist.targetLocDom.low) == nil {
-    coforall localeIdx in dist.targetLocDom do {
-      on dist.targetLocales(localeIdx) {
-        locDoms(localeIdx) = new LocStencilDom(rank, idxType, stridable,
-                                             dist.getChunk(whole, localeIdx));
-        if !zeroTuple(fluff) && locDoms(localeIdx).myBlock.numIndices!=0 then {
-          locDoms(localeIdx).myFluff = locDoms(localeIdx).myBlock.expand(fluff);
-        }
-        else 
-          locDoms(localeIdx).myFluff = locDoms(localeIdx).myBlock;
+  coforall localeIdx in dist.targetLocDom do {
+    on dist.targetLocales(localeIdx) {
+      ref myLocDom = locDoms(localeIdx);
+
+      // Create a domain that points to the nearest neighboring locales
+      var nearest : rank*range;
+      for param i in 1..rank do nearest(i) = -1..1;
+      const ND : domain(rank) = nearest;
+
+      if myLocDom == nil {
+        myLocDom = new LocStencilDom(rank, idxType, stridable,
+                                             dist.getChunk(whole, localeIdx), NeighDom=ND);
+      } else {
+        myLocDom.myBlock = dist.getChunk(whole, localeIdx);
       }
-    }
-  } else {
-    coforall localeIdx in dist.targetLocDom do {
-      on dist.targetLocales(localeIdx) {
-        locDoms(localeIdx).myBlock = dist.getChunk(whole, localeIdx);
-        if !zeroTuple(fluff) && locDoms(localeIdx).myBlock.numIndices!=0 then {
-          locDoms(localeIdx).myFluff = locDoms(localeIdx).myBlock.expand(fluff);
+
+      if !zeroTuple(fluff) && myLocDom.myBlock.numIndices!=0 then {
+        myLocDom.myFluff = myLocDom.myBlock.expand(fluff);
+      }
+      else {
+        myLocDom.myFluff = myLocDom.myBlock;
+      }
+
+      if !zeroTuple(fluff) && whole.size > 0 {
+        //
+        // Recompute Src and Dest domains, later used to update fluff regions
+        //
+        for (S, D, off) in zip(myLocDom.Src, myLocDom.Dest, ND) {
+          D = myLocDom.myBlock.exterior(off * fluff);
+          assert(wholeFluff.member(D.low) && wholeFluff.member(D.high), "StencilDist: Error computing destination slice.");
+          if periodic then S = D;
         }
-        else
-          locDoms(localeIdx).myFluff = locDoms(localeIdx).myBlock;
+
+        for (N, L) in zip(myLocDom.Neighs, ND) {
+          if zeroTuple(L) then continue;
+          N = localeIdx + L;
+        }
+
+        if periodic {
+          for (S, D, N, L) in zip(myLocDom.Src, myLocDom.Dest, myLocDom.Neighs, ND) {
+            if zeroTuple(L) then continue; // Skip center
+
+            var offset : rank*idxType;
+            // 'N' should always be in targetLocDom, so wrap around if needed
+            for i in 1..rank {
+              if N(i) < dist.targetLocDom.low(i) {
+                N(i) = dist.targetLocDom.high(i);
+                offset(i) = whole.dim(i).size;
+              } else if N(i) > dist.targetLocDom.high(i) {
+                N(i) = dist.targetLocDom.low(i);
+                offset(i) = -whole.dim(i).size;
+              }
+            }
+            //
+            // TODO: bharsh: there's an issue where resizing below the
+            // boundingBox violates one or more of the asserts below. Should
+            // that even be possible?
+            //
+            if dist.targetLocDom.member(localeIdx + L) then
+              assert(zeroTuple(offset));
+            S = S.translate(offset);
+            assert(whole.member(S.low) && whole.member(S.high));
+            assert(dist.targetLocDom.member(N), "StencilDist: Error computing neighbor index.");
+          }
+        }
       }
     }
   }
@@ -954,50 +998,7 @@ proc StencilArr.setup() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       const locDom = dom.getLocDom(localeIdx);
- 
-      // -1..1 will point to nearest neighboring locales
-      const ND : domain(rank) = nearest;
-
-      locArr(localeIdx) = new LocStencilArr(eltType, rank, idxType, stridable, locDom, NeighDom=ND);
-
-      if !zeroTuple(dom.fluff) {
-        for ij in ND {
-          locArr(localeIdx).Dest[ij] = locDom.myBlock.exterior(ij * dom.fluff);
-          if dom.periodic then
-            locArr(localeIdx).Src = locArr(localeIdx).Dest;
-        }
-
-        for (S, D, N, L) in zip(locArr(localeIdx).Src, locArr(localeIdx).Dest, 
-            locArr(localeIdx).Neighs, locArr(localeIdx).NeighDom) {
-          if zeroTuple(L) then continue;
-
-          var neighbor = localeIdx + L;
-
-          // if periodic, we may need to offset when wrapping around
-          // assumption: initializes to all 0s
-          var SrcOffset : rank*idxType;
-
-          var stay = true;
-          // TODO: this seems excessively complex, rewrite this.
-          for i in 1..rank {
-            if neighbor(i) < dom.dist.targetLocDom.low(i) {
-              stay = stay && false;
-              if !dom.periodic then break;
-              neighbor(i) = dom.dist.targetLocDom.high(i);
-              SrcOffset(i) = dom.whole.dim(i).size;
-            } else if neighbor(i) > dom.dist.targetLocDom.high(i) {
-              stay = stay && false;
-              if !dom.periodic then break;
-              neighbor(i) = dom.dist.targetLocDom.low(i);
-              SrcOffset(i) = -dom.whole.dim(i).size;
-            }
-          }
-          N = neighbor;
-          if !dom.periodic && !stay then continue;
-          S = S.translate(SrcOffset);
-        }
-      }
-
+      locArr(localeIdx) = new LocStencilArr(eltType, rank, idxType, stridable, locDom);
       if thisid == here.id then
         myLocArr = locArr(localeIdx);
     }
@@ -1354,7 +1355,8 @@ iter _array.boundaries(param tag : iterKind) where tag == iterKind.standalone {
 iter StencilArr.dsiBoundaries() {
   for i in dom.dist.targetLocDom {
     var LSA = locArr[i];
-    for (D, N, L) in zip(LSA.Dest, LSA.Neighs, LSA.NeighDom) {
+    ref myLocDom = LSA.locDom;
+    for (D, N, L) in zip(myLocDom.Dest, myLocDom.Neighs, myLocDom.NeighDom) {
       const target = i + L;
       const low = dom.dist.targetLocDom.low;
       const high = dom.dist.targetLocDom.high;
@@ -1385,7 +1387,8 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
       var LSA = locArr[i];
-      forall (D, N, L) in zip(LSA.Dest, LSA.Neighs, LSA.NeighDom) {
+      ref myLocDom = LSA.locDom;
+      forall (D, N, L) in zip(myLocDom.Dest, myLocDom.Neighs, myLocDom.NeighDom) {
         const target = i + L;
         const low = dom.dist.targetLocDom.low;
         const high = dom.dist.targetLocDom.high;
@@ -1438,8 +1441,9 @@ proc StencilArr.dsiUpdateFluff() {
   if zeroTuple(dom.fluff) then return;
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
-      forall (S, D, N, L) in zip(locArr[i].Src, locArr[i].Dest, 
-          locArr[i].Neighs, locArr[i].NeighDom) {
+      ref myLocDom = locArr[i].locDom;
+      forall (S, D, N, L) in zip(myLocDom.Src, myLocDom.Dest,
+          myLocDom.Neighs, myLocDom.NeighDom) {
         if !zeroTuple(L) {
           if !dom.dist.targetLocDom.member(i+L) && dom.periodic then
             locArr[i].myElems[D] = locArr[N].myElems[S];
