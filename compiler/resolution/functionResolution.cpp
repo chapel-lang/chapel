@@ -336,6 +336,7 @@ static bool
 isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL);
 static bool
 usesOuterVars(FnSymbol* fn, Vec<FnSymbol*> &seen);
+static Type* resolveTypeAlias(SymExpr* se);
 static Expr* preFold(Expr* expr);
 static void foldEnumOp(int op, EnumSymbol *e1, EnumSymbol *e2, Immediate *imm);
 static bool isSubType(Type* sub, Type* super);
@@ -934,6 +935,10 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
 
   resolveBlockStmt(fn->retExprType);
   retType = fn->retExprType->body.tail->typeInfo();
+  if (SymExpr* se = toSymExpr(fn->retExprType->body.tail)) {
+    if (se->var->hasFlag(FLAG_TYPE_VARIABLE))
+      retType = resolveTypeAlias(se);
+  }
   fn->retType = retType;
 
   if (retType != dtUnknown) {
@@ -7760,7 +7765,7 @@ static void resolveTypedefedArgTypes(FnSymbol* fn)
       {
         if (se->var->hasFlag(FLAG_TYPE_VARIABLE))
         {
-          Type* type = resolveTypeAlias(toSymExpr(se));
+          Type* type = resolveTypeAlias(se);
           INT_ASSERT(type);
           formal->type = type;
         }
