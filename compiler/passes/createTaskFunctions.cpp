@@ -613,6 +613,55 @@ void createTaskFunctions(void) {
         bool needsMemFence = true;
         bool isBlockingOn = false;
 
+        if( block->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON) ) {
+          isBlockingOn = true;
+        }
+
+        if( isBlockingOn ) {
+          // Generate an if statement
+          // if ( chpl_doDirectExecuteOn( targetLocale ) )
+          //     call un-wrapped task function
+          // else
+          //     proceed as with chpl_executeOn/chpl_executeOnFast
+          //     fid call to wrapper function on a remote local
+          //     (possibly just a different sublocale)
+
+          VarSymbol* isDirectTmp = newTemp("isdirect", dtBool);
+          CallExpr* isCall;
+          isCall = new CallExpr("chpl_doDirectExecuteOn",
+                                block->blockInfoGet()->get(1)->copy() // target
+                               );
+
+          block->insertBefore(new DefExpr(isDirectTmp));
+          block->insertBefore(new CallExpr(PRIM_MOVE, isDirectTmp, isCall));
+
+          // Build comparison
+          SymExpr* isTrue = new SymExpr(isDirectTmp);
+
+          // Build true branch
+          CallExpr* directcall = new CallExpr(fn);
+
+          VarSymbol* dummyArg = newTemp("local_locale");
+          dummyArg->addFlag(FLAG_DIRECT_ON_ARGUMENT);
+          block->insertBefore(new DefExpr(dummyArg));
+          block->insertBefore(new CallExpr(PRIM_MOVE, dummyArg,
+                block->blockInfoGet()->get(1)->copy()));
+
+          directcall->insertAtTail(dummyArg);
+
+          // False branch is call.
+
+          // Build condition
+          CondStmt* cond = new CondStmt(isTrue, directcall, call);
+          // Add the condition which calls the outlined task function
+          // somehow.
+          block->insertBefore(cond);
+        } else {
+          // Add the call to the outlined task function.
+          block->insertBefore(call);
+        }
+
+
         if( fCacheRemote ) {
           Symbol* parent = block->parentSymbol;
           if( parent ) {
@@ -638,10 +687,6 @@ void createTaskFunctions(void) {
         block->insertBefore(new DefExpr(fn));
 
         if( fCacheRemote ) {
-          if( block->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON) ) {
-            isBlockingOn = true;
-          }
-
           /* We don't need to add a fence for the parent side of
              PRIM_BLOCK_BEGIN_ON
              PRIM_BLOCK_COBEGIN_ON
@@ -655,10 +700,9 @@ void createTaskFunctions(void) {
           // blocking on statement. Other statements, including cobegin,
           // coforall, begin handle this in upEndCount.
           if( needsMemFence && isBlockingOn )
-            block->insertBefore(new CallExpr("chpl_rmem_consist_release"));
+            call->insertBefore(new CallExpr("chpl_rmem_consist_release"));
         }
-        // Add the call to the outlined task function.
-        block->insertBefore(call);
+
         if( fCacheRemote ) {
           // Join barrier (acquire) is needed for a blocking on, and it
           // will make sure that writes in the on statement are available
@@ -666,7 +710,7 @@ void createTaskFunctions(void) {
           // doesn't make sense to acquire barrier after running them.
           // coforall, cobegin, and sync blocks do this in waitEndCount.
           if( needsMemFence && isBlockingOn )
-            block->insertBefore(new CallExpr("chpl_rmem_consist_acquire"));
+            call->insertAfter(new CallExpr("chpl_rmem_consist_acquire"));
         }
 
         block->blockInfoGet()->remove();
@@ -702,7 +746,7 @@ void createTaskFunctions(void) {
         fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
         fn->retType = dtVoid;
 
-        if (needsCapture(fn)) {
+        if (needsCapture(fn)) { // note: does not apply to blocking on stmts.
           hasTaskIntentClause = true;
 
           // Convert referenced variables to explicit arguments.
