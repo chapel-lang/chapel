@@ -27,13 +27,23 @@
     <info name="Foo" value="Bar"/>
     <object type="NUMANode" os_index="0" cpuset="0x0000000f" complete_cpuset="0x0000000f" online_cpuset="0x0000000f" allowed_cpuset="0x0000000f" nodeset="0x0" complete_nodeset="0x00000001" allowed_nodeset="0x0">
       <info name="Foo" value="Bar"/>
+      <userdata length="0"/>
+      <userdata length="1">a</userdata>
       <object type="Package" os_index="0" cpuset="0x0000000f" complete_cpuset="0x0000000f" online_cpuset="0x0000000f" allowed_cpuset="0x0000000f" nodeset="0x0" complete_nodeset="0x00000001" allowed_nodeset="0x0">
         <info name="CPUModel" value="Intel(R) Core(TM) i7 CPU       M 620  @ 2.67GHz"/>
         <info name="CPUType" value="x86_64"/>
         <info name="Foo2" value="Bar3"/>
+        <userdata name="MyName" length="16">0000000000000001</userdata>
+        <userdata name="EncodedShort0" length="0" encoding="base64"/>
         <object type="Cache" cpuset="0x0000000f" complete_cpuset="0x0000000f" online_cpuset="0x0000000f" allowed_cpuset="0x0000000f" nodeset="0x0" complete_nodeset="0x00000001" allowed_nodeset="0x0" cache_size="4194304" depth="3" cache_linesize="64" cache_associativity="16" cache_type="0">
           <info name="Foo" value="Bar"/>
           <object type="Cache" cpuset="0x00000005" complete_cpuset="0x00000005" online_cpuset="0x00000005" allowed_cpuset="0x00000005" nodeset="0x0" complete_nodeset="0x00000001" allowed_nodeset="0x0" cache_size="262144" depth="2" cache_linesize="64" cache_associativity="8" cache_type="0">
+            <userdata name="EncodedShort1" length="1" encoding="base64">rg==</userdata>
+            <userdata name="EncodedShort2" length="2" encoding="base64">ZH8=</userdata>
+            <userdata name="EncodedShort3" length="3" encoding="base64">f+B/</userdata>
+            <userdata name="EncodedShort4" length="4" encoding="base64">4H8AAA==</userdata>
+            <userdata name="EncodedLong0" length="128" encoding="base64">eK5kf+B/AAB4rmR/4H8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAtmR/4H8AAP////8AAAAA////fwAAAAA=</userdata>
+            <userdata name="EncodedLong1" length="127" encoding="base64">rmR/4H8AAHiuZH/gfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEC2ZH/gfwAA/////wAAAAD///9/AAAAAA==</userdata>
             <object type="Cache" cpuset="0x00000005" complete_cpuset="0x00000005" online_cpuset="0x00000005" allowed_cpuset="0x00000005" nodeset="0x0" complete_nodeset="0x00000001" allowed_nodeset="0x0" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="8" cache_type="1">
               <info name="Foo" value="Bar"/>
               <object type="Cache" cpuset="0x00000005" complete_cpuset="0x00000005" online_cpuset="0x00000005" allowed_cpuset="0x00000005" nodeset="0x0" complete_nodeset="0x00000001" allowed_nodeset="0x0" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="4" cache_type="2">
@@ -57,6 +67,11 @@
             <info name="Foo" value="Bar"/>
             <object type="Cache" cpuset="0x0000000a" complete_cpuset="0x0000000a" online_cpuset="0x0000000a" allowed_cpuset="0x0000000a" nodeset="0x0" complete_nodeset="0x00000001" allowed_nodeset="0x0" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="8" cache_type="1">
               <info name="Foo" value="Bar"/>
+              <userdata name="EncodedLong3" length="125" encoding="base64">ZH/gfwAAeK5kf+B/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQLZkf+B/AAD/////AAAAAP///38AAAA=</userdata>
+              <userdata name="EncodedLong4" length="124" encoding="base64">ZH/gfwAAeK5kf+B/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQLZkf+B/AAD/////AAAAAP///38AAA==</userdata>
+              <userdata name="EncodedLong5" length="123" encoding="base64">f+B/AAB4rmR/4H8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAtmR/4H8AAP////8AAAAA////fwAA</userdata>
+              <userdata name="EncodedLong6" length="122" encoding="base64">f+B/AAB4rmR/4H8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAtmR/4H8AAP////8AAAAA////fwA=</userdata>
+              <userdata name="EncodedLong7" length="121" encoding="base64">4H8AAHiuZH/gfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEC2ZH/gfwAA/////wAAAAD///9/AA==</userdata>
               <object type="Cache" cpuset="0x0000000a" complete_cpuset="0x0000000a" online_cpuset="0x0000000a" allowed_cpuset="0x0000000a" nodeset="0x0" complete_nodeset="0x00000001" allowed_nodeset="0x0" cache_size="32768" depth="1" cache_linesize="64" cache_associativity="4" cache_type="2">
                 <info name="Foo" value="Bar"/>
                 <object type="Core" os_index="2" cpuset="0x0000000a" complete_cpuset="0x0000000a" online_cpuset="0x0000000a" allowed_cpuset="0x0000000a" nodeset="0x0" complete_nodeset="0x00000001" allowed_nodeset="0x0">
@@ -76,6 +91,7 @@
     </object>
     <object type="Bridge" os_index="0" bridge_type="0-1" depth="0" bridge_pci="0000:[00-05]">
       <info name="Foo" value="Bar"/>
+      <userdata name="EncodedLong8" length="120" encoding="base64">4H8AAHiuZH/gfwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEC2ZH/gfwAA/////wAAAAD///9/</userdata>
       <object type="PCIDev" os_index="32" name="Intel Corporation Core Processor Integrated Graphics Controller" pci_busid="0000:00:02.0" pci_type="0300 [8086:0046] [0028:000a] 02" pci_link_speed="0.000000">
         <info name="PCIVendor" value="Intel Corporation"/>
         <info name="PCIDevice" value="Core Processor Integrated Graphics Controller"/>

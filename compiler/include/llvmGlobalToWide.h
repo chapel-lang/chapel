@@ -61,7 +61,7 @@
  * that, and set preservingFn to it, GlobalToWide will delete that function
  * when it finishes its work.
  *
- * It would be desireable for this pass to support wide pointers larger
+ * It would be desirable for this pass to support wide pointers larger
  * than 64 bits. However, in order to prevent data type layouts from
  * changing (in case e.g. offsets have been lowered to constants), it is
  * necessary to keep the global pointer size the same as the ultimate wide

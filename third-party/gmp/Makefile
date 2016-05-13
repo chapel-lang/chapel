@@ -12,23 +12,12 @@ GMP_UNPACKED_DIR = gmp-$(GMP_VERSION)
 GMP_TARBALL = $(GMP_UNPACKED_DIR)a.tar.bz2
 
 #
-# Cray X* builds are cross-compilations, as are Intel Phi KNC builds.
+# Cray X* builds are cross-compilations
 #
 GMP_CROSS_COMPILED=no
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_GMP_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
 GMP_CROSS_COMPILED=yes
-else ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
-CHPL_GMP_CFG_OPTIONS += --host=x86_64-unknown-linux-gnu
-GMP_CROSS_COMPILED=yes
-endif
-
-ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
-CHPL_GMP_CFG_OPTIONS += --disable-assembly
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),intel)
-CHPL_GMP_CFLAGS = -mmic
-CHPL_GMP_CXXFLAGS = -mmic
-endif
 endif
 
 #

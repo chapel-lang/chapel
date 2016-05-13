@@ -312,7 +312,7 @@ proc resid(R, V, U) {
 // the R array, accumulating the result into the U array.  The main
 // difference is that its weight array varies depending on the problem
 // size for some reason (maybe there was a bug in the early version of
-// the benchmark that has been preserved for backwards compatability?)
+// the benchmark that has been preserved for backwards compatibility?)
 
 proc psinv(U, R) {
   const c: coeff = initCValues();

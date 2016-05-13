@@ -91,7 +91,7 @@ CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop)
 }
 
 // Provide an abstraction around a requirement to find the CForLoop for
-// a BlockStmt that is presumed to be one of the header claiuses
+// a BlockStmt that is presumed to be one of the header clauses
 CForLoop* CForLoop::loopForClause(BlockStmt* clause)
 {
   CForLoop* retval = toCForLoop(clause->parentExpr);
@@ -415,7 +415,7 @@ std::string CForLoop::codegenCForLoopHeader(BlockStmt* block)
 
     // If inlining is off, the init, test, and incr are just functions and we
     // need to generate them inline so we use codegenValue. The semicolon is
-    // added so it can be replaced with the comma later. If inlinining is on
+    // added so it can be replaced with the comma later. If inlining is on
     // the test will be a <= and it also needs to be codegenned with
     // codegenValue.
     //
@@ -475,7 +475,7 @@ std::string CForLoop::codegenCForLoopHeader(BlockStmt* block)
   seg.erase(std::remove(seg.begin(), seg.end(), '\n'), seg.end());
 
   // remove the last character if any were generated (it's a trailing comma
-  // since we previously had an appropriate "trailing" semicolon
+  // since we previously had an appropriate "trailing" semicolon)
   if (seg.size () > 0)
     seg.resize (seg.size () - 1);
 

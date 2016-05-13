@@ -1646,6 +1646,7 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
   workingFn->addFlag(FLAG_EXPANDED_VARARGS);
 
   // Handle specified number of variable arguments.
+  // sym->var is not a VarSymbol e.g. in: proc f(param n, v...n)
   if (VarSymbol* nVar = toVarSymbol(sym->var)) {
     if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate) {
       VarSymbol* var       = new VarSymbol(formal->name);
@@ -1790,6 +1791,9 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
       }
 
       formal->defPoint->remove();
+    } else {
+      // Just documenting the current status.
+      INT_FATAL(formal, "unexpected non-VarSymbol");
     }
   }
 }
@@ -3351,7 +3355,7 @@ static bool isInConstructorLikeFunction(CallExpr* call) {
 }
 
 // Is the function of interest invoked from a constructor
-// or initialize(), with the constructor's or intialize's 'this'
+// or initialize(), with the constructor's or initialize's 'this'
 // as the receiver actual.
 static bool isInvokedFromConstructorLikeFunction(int stackIdx) {
   if (stackIdx > 0) {
@@ -5224,7 +5228,7 @@ static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
     bool unsafeGeneric = true;  // Assume the worst until proven otherwise
 
     //
-    // Grab the generic type's contructor if it has one.  Things like
+    // Grab the generic type's constructor if it has one.  Things like
     // classes and records should.  Things like 'integral' will not.
     //
     FnSymbol* typeCons = type->defaultTypeConstructor;

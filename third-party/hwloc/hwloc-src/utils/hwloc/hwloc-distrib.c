@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2014 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2010 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
     cpuset = malloc(n * sizeof(hwloc_bitmap_t));
 
     if (input) {
-      err = hwloc_utils_enable_input_format(topology, input, input_format, verbose, callname);
+      err = hwloc_utils_enable_input_format(topology, input, &input_format, verbose, callname);
       if (err)
 	return err;
     }

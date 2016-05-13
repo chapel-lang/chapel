@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Inria.  All rights reserved.
+ * Copyright © 2015-2016 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -10,7 +10,9 @@
 
 int hwloc_look_hardwired_fujitsu_k(struct hwloc_topology *topology)
 {
-  /* FIXME: what if a broken core is disabled? */
+  /* If a broken core gets disabled, its bit disappears and other core bits are NOT shifted towards 0.
+   * Node is not given to user job, not need to handle that case properly.
+   */
   unsigned i;
   hwloc_obj_t obj;
   hwloc_bitmap_t set;
@@ -67,7 +69,9 @@ int hwloc_look_hardwired_fujitsu_k(struct hwloc_topology *topology)
 
 int hwloc_look_hardwired_fujitsu_fx10(struct hwloc_topology *topology)
 {
-  /* FIXME: what if a broken core is disabled? */
+  /* If a broken core gets disabled, its bit disappears and other core bits are NOT shifted towards 0.
+   * Node is not given to user job, not need to handle that case properly.
+   */
   unsigned i;
   hwloc_obj_t obj;
   hwloc_bitmap_t set;
@@ -124,7 +128,9 @@ int hwloc_look_hardwired_fujitsu_fx10(struct hwloc_topology *topology)
 
 int hwloc_look_hardwired_fujitsu_fx100(struct hwloc_topology *topology)
 {
-  /* FIXME: what if a broken core is disabled? */
+  /* If a broken core gets disabled, its bit disappears and other core bits are NOT shifted towards 0.
+   * Node is not given to user job, not need to handle that case properly.
+   */
   unsigned i;
   hwloc_obj_t obj;
   hwloc_bitmap_t set;

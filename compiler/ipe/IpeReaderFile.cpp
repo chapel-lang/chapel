@@ -122,7 +122,7 @@ std::vector<DefExpr*> IpeReaderFile::readModules(const char* path, ModTag modTyp
   return retval;
 }
 
-// Return true if every expression is a module defintion
+// Return true if every expression is a module definition
 bool IpeReaderFile::onlyModuleDefs(std::vector<Expr*> exprList)
 {
   bool retval = true;

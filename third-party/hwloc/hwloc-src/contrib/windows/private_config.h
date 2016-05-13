@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009, 2011, 2012 CNRS.  All rights reserved.
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009, 2011, 2012, 2015 Université Bordeaux.  All rights reserved.
  * Copyright © 2009 Cisco Systems, Inc.  All rights reserved.
  * $COPYRIGHT$
@@ -77,7 +77,23 @@
 
 /* Define to 1 if you have the declaration of `strtoull', and to 0 if you
    don't. */
-#define HAVE_DECL_STRTOULL 1
+#define HAVE_DECL_STRTOULL 0
+
+/* Define to 1 if you have the declaration of `strcasecmp', and to 0 if you
+   don't. */
+#define HAVE_DECL_STRCASECMP 0
+
+/* Define to 1 if you have the declaration of `snprintf', and to 0 if you
+   don't. */
+#define HAVE_DECL_SNPRINTF 0
+
+/* Define to 1 if you have the declaration of `_strdup', and to 0 if you
+   don't. */
+#define HAVE_DECL__STRDUP 1
+
+/* Define to 1 if you have the declaration of `_putenv', and to 0 if you
+   don't. */
+#define HAVE_DECL__PUTENV 1
 
 /* Define to 1 if you have the declaration of `_SC_LARGE_PAGESIZE', and to 0
    if you don't. */
@@ -645,7 +661,7 @@
 
 
 /* Version number of package */
-#define HWLOC_VERSION "1.11.1"
+#define HWLOC_VERSION "1.11.3"
 #define VERSION HWLOC_VERSION
 
 /* Define to 1 if the X Window System is missing or not being used. */

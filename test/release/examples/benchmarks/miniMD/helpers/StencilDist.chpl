@@ -248,7 +248,7 @@ class LocStencilArr {
   }
 }
 
-proc makeZero(param rank : int) {
+private proc makeZero(param rank : int) {
   var ret : rank*int;
   return ret;
 }
@@ -317,6 +317,24 @@ proc Stencil.dsiAssign(other: this.type) {
       locDist(locid) = new LocStencil(rank, idxType, locid, boundingBoxDims,
                                     targetLocDomDims);
 }
+
+//
+// Stencil distributions are equivalent if they share the same bounding
+// box and target locale set.
+//
+proc Stencil.dsiEqualDMaps(that: Stencil(?)) {
+  return (this.boundingBox == that.boundingBox &&
+          this.targetLocales.equals(that.targetLocales) &&
+          this.fluff == that.fluff &&
+          this.periodic == that.periodic);
+}
+
+
+proc Stencil.dsiEqualDMaps(that) param {
+  return false;
+}
+
+
 
 proc Stencil.dsiClone() {
   return new Stencil(boundingBox, targetLocales,
@@ -685,7 +703,7 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).low:strType):idxType;
     var high = (stride * followThis(i).high:strType):idxType;
-    t(i) = (low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType;
+    t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -886,17 +904,18 @@ proc StencilArr.setup() {
           var SrcOffset : rank*idxType;
 
           var stay = true;
+          // TODO: this seems excessively complex, rewrite this.
           for i in 1..rank {
             if neighbor(i) < dom.dist.targetLocDom.low(i) {
               stay = stay && false;
               if !dom.periodic then break;
               neighbor(i) = dom.dist.targetLocDom.high(i);
-              SrcOffset(i) = dom.whole.high(i) - D.high(i);
+              SrcOffset(i) = dom.whole.dim(i).size;
             } else if neighbor(i) > dom.dist.targetLocDom.high(i) {
               stay = stay && false;
               if !dom.periodic then break;
               neighbor(i) = dom.dist.targetLocDom.low(i);
-              SrcOffset(i) = -dom.whole.high(i);
+              SrcOffset(i) = -dom.whole.dim(i).size;
             }
           }
           N = neighbor;
@@ -1000,16 +1019,34 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
 
+// ref version
 inline proc StencilArr.dsiAccess(i: rank*idxType) ref {
   return do_dsiAccess(true, i);
 }
-inline proc StencilArr.dsiAccess(i: rank*idxType) {
+// value version for POD types
+inline proc StencilArr.dsiAccess(i: rank*idxType)
+where !shouldReturnRvalueByConstRef(eltType) {
+  return do_dsiAccess(false, i);
+}
+// const ref version for types with copy-ctor
+inline proc StencilArr.dsiAccess(i: rank*idxType) const ref
+where shouldReturnRvalueByConstRef(eltType) {
   return do_dsiAccess(false, i);
 }
 
 
-proc StencilArr.dsiAccess(i: idxType...rank) ref
+// ref version
+inline proc StencilArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
+// value version for POD types
+inline proc StencilArr.dsiAccess(i: idxType...rank)
+where !shouldReturnRvalueByConstRef(eltType)
+  return dsiAccess(i);
+// const ref version for types with copy-ctor
+inline proc StencilArr.dsiAccess(i: idxType...rank) const ref
+where shouldReturnRvalueByConstRef(eltType)
+  return dsiAccess(i);
+
 
 iter StencilArr.these() ref {
   for i in dom do
@@ -1058,10 +1095,11 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).low * abs(stride):idxType;
     var high = followThis(i).high * abs(stride):idxType;
-    myFollowThis(i) = (low..high by stride) + dom.whole.dim(i).low by followThis(i).stride;
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).low;
   }
 
+  const myFollowThisDom = {(...myFollowThis)};
   if fast {
     //
     // TODO: The following is a buggy hack that will only work when we're
@@ -1077,24 +1115,23 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     //
     if arrSection.locale.id != here.id then
       arrSection = myLocArr;
+
+    //
+    // Slicing arrSection.myElems will require reference counts to be updated.
+    // If myElems is an array of arrays, the inner array's domain or dist may
+    // live on a different locale and require communication for reference
+    // counting. Simply put: don't slice inside a local block.
+    //
+    var chunk => arrSection.myElems(myFollowThisDom);
     local {
-      for e in arrSection.myElems((...myFollowThis)) do
-        yield e;
+      for i in chunk do yield i;
     }
   } else {
     //
     // we don't necessarily own all the elements we're following
     //
-    proc accessHelper(i) ref {
-      if myLocArr then local {
-        if myLocArr.locDom.member(i) then
-          return myLocArr.this(i);
-      }
-      return dsiAccess(i);
-    }
-    const myFollowThisDom = {(...myFollowThis)};
     for i in myFollowThisDom {
-      yield accessHelper(i);
+      yield dsiAccess(i);
     }
   }
 }
@@ -1242,7 +1279,7 @@ proc StencilArr.dsiRankChange(d, param newRank: int, param stridable: bool, args
   return alias;
 }
 
-inline proc zeroTuple(t) {
+private inline proc zeroTuple(t) {
   for param i in 1..t.size do 
     if t(i) != 0 then return false;
   return true;
@@ -1583,7 +1620,7 @@ proc StencilArr.doiBulkTransfer(B) {
           // once that is fixed.
           var dest = myLocArr.myElems._value.theData;
           const src = B._value.locArr[rid].myElems._value.theData;
-          __primitive("chpl_comm_get",
+          __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo)),
                       rid,
@@ -1606,7 +1643,7 @@ proc StencilArr.doiBulkTransfer(B) {
                                         );
           var dest = myLocArr.myElems._value.theData;
           const src = B._value.locArr[rid].myElems._value.theData;
-          __primitive("chpl_comm_get",
+          __primitive("chpl_comm_array_get",
                       __primitive("array_get", dest,
                                   myLocArr.myElems._value.getDataIndex(lo)),
                       dom.dist.targetLocales(rid).id,

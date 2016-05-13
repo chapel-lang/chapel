@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2014 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -266,12 +266,12 @@ int main(int argc, char *argv[])
       if (!strcmp(argv[0], "--number-of") || !strcmp(argv[0], "-N")) {
 	if (argc < 2) {
 	  usage(callname, stderr);
-	  return EXIT_SUCCESS;
+	  return EXIT_FAILURE;
 	}
 	if (hwloc_calc_type_depth(argv[1], &numberoftype, &numberofdepth) < 0) {
 	  fprintf(stderr, "unrecognized --number-of type or depth %s\n", argv[1]);
 	  usage(callname, stderr);
-	  return EXIT_SUCCESS;
+	  return EXIT_FAILURE;
 	}
 	argv++;
 	argc--;
@@ -280,12 +280,12 @@ int main(int argc, char *argv[])
       if (!strcmp(argv[0], "--intersect") || !strcmp(argv[0], "-I")) {
 	if (argc < 2) {
 	  usage(callname, stderr);
-	  return EXIT_SUCCESS;
+	  return EXIT_FAILURE;
 	}
 	if (hwloc_calc_type_depth(argv[1], &intersecttype, &intersectdepth) < 0) {
 	  fprintf(stderr, "unrecognized --intersect type or depth %s\n", argv[1]);
 	  usage(callname, stderr);
-	  return EXIT_SUCCESS;
+	  return EXIT_FAILURE;
 	}
 	argv++;
 	argc--;
@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
 	char *tmp, *next;
 	if (argc < 2) {
 	  usage(callname, stderr);
-	  return EXIT_SUCCESS;
+	  return EXIT_FAILURE;
 	}
 	hiernblevels = 1;
 	tmp = argv[1];
@@ -316,7 +316,7 @@ int main(int argc, char *argv[])
 	  if (hwloc_calc_type_depth(tmp, &hiertype[i], &hierdepth[i]) < 0) {
 	    fprintf(stderr, "unrecognized --hierarchical type or depth %s\n", tmp);
 	    usage(callname, stderr);
-	    return EXIT_SUCCESS;
+	    return EXIT_FAILURE;
 	  }
 	  tmp = next+1;
 	}
@@ -407,7 +407,7 @@ int main(int argc, char *argv[])
       hwloc_topology_set_flags(topology, flags);
       if (input) {
 	/* only update the input when actually using it */
-	err = hwloc_utils_enable_input_format(topology, input, input_format, verbose, callname);
+	err = hwloc_utils_enable_input_format(topology, input, &input_format, verbose, callname);
 	if (err)
 	  return err;
       }
@@ -417,7 +417,7 @@ int main(int argc, char *argv[])
     }
 
     cmdline_args++;
-    if (hwloc_calc_process_arg(topology, depth, argv[0], logicali, set, verbose) < 0)
+    if (hwloc_calc_process_arg(topology, depth, argv[0], logicali, set, 0, 0, verbose) < 0)
       fprintf(stderr, "ignored unrecognized argument %s\n", argv[0]);
 
  next:
@@ -452,7 +452,7 @@ int main(int argc, char *argv[])
       hwloc_topology_set_flags(topology, flags);
       if (input) {
 	/* only update the input when actually using it */
-	err = hwloc_utils_enable_input_format(topology, input, input_format, verbose, callname);
+	err = hwloc_utils_enable_input_format(topology, input, &input_format, verbose, callname);
 	if (err)
 	  return err;
       }
@@ -486,7 +486,7 @@ int main(int argc, char *argv[])
 	if (!token)
 	  break;
 	current = NULL;
-	if (hwloc_calc_process_arg(topology, depth, token, logicali, set, verbose) < 0)
+	if (hwloc_calc_process_arg(topology, depth, token, logicali, set, 0, 0, verbose) < 0)
 	  fprintf(stderr, "ignored unrecognized argument %s\n", token);
       }
       hwloc_calc_output(topology, outsep, set);

@@ -34,7 +34,7 @@
 #include <cstdio>
 
 //
-// Module level variables are allocted in a shared dynamic store
+// Module level variables are allocated in a shared dynamic store
 //
 char* IpeEnv::sStoreData = NULL;
 int   IpeEnv::sStoreTail =    0;
@@ -1150,7 +1150,7 @@ void IpeEnv::storeInteger(LcnSymbol* sym, IpeValue value)
     ptr = (long*) (sStoreData + sym->offset());
   }
 
-  // A dynamic envrionment
+  // A dynamic environment
 
   // A static  environment
 

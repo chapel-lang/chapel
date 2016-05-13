@@ -371,7 +371,9 @@ class CSRArr: BaseArr {
     else
       halt("attempting to assign a 'zero' value in a sparse array: ", ind);
   }
-  proc dsiAccess(ind: rank*idxType) {
+  // value version for POD types
+  proc dsiAccess(ind: rank*idxType)
+  where !shouldReturnRvalueByConstRef(eltType) {
     // make sure we're in the dense bounding box
     dom.boundsCheck(ind);
 
@@ -382,6 +384,20 @@ class CSRArr: BaseArr {
     else
       return irv;
   }
+  // const ref version for types with copy ctors
+  proc dsiAccess(ind: rank*idxType) const ref
+  where shouldReturnRvalueByConstRef(eltType) {
+    // make sure we're in the dense bounding box
+    dom.boundsCheck(ind);
+
+    // lookup the index and return the data or IRV
+    const (found, loc) = dom.find(ind);
+    if found then
+      return data(loc);
+    else
+      return irv;
+  }
+
 
 
   iter these() ref {

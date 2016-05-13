@@ -1,7 +1,7 @@
 bug: does not compile due to nil/NULL external class references
 
 When QIO was introduced, the original failure mode of this test was
-masked by another one.  The ChapeIO.chpl module can't currently handle
+masked by another one.  The ChapelIO.chpl module can't currently handle
 NULL/nil extern class references because they are not recognized as
 isClassType() (for better or worse) and then a method is called on
 them.  I mailed Michael Ferguson yesterday to alert him to this.  A
