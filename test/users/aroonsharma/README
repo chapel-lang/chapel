@@ -9,9 +9,7 @@ Modulo Unrolling in Chapel" in PGAS 2014.
 These benchmarks originally compared different distributions, including
 a custom versions of Cyclic and Block Cyclic. These remain in this
 directory as a historical artifact but have been disabled from the
-tests: CyclicZipOpt.chpl, MyBlockCyclic.chpl
-
-
+tests.
 They are CyclicZipOpt.chpl and MyBlockCyclic.chpl. See the paper
 for the results of using these optimizations.
 
