@@ -200,7 +200,7 @@ enum PrimitiveTag {
 
   PRIM_WIDE_GET_NODE,           // Get just the node portion of a wide pointer.
   PRIM_WIDE_GET_ADDR,           // Get just the address portion of a wide pointer.
-  PRIM_IS_WIDE_PTR,             // Returns true if the symbol is represented by a wide poitner.
+  PRIM_IS_WIDE_PTR,             // Returns true if the symbol is represented by a wide pointer.
 
   PRIM_ON_LOCALE_NUM,           // specify a particular localeID for an on clause.
 

@@ -56,7 +56,7 @@ static unsigned int deadModuleCount;
 // remove condStmts  with empty bodies
 // remove jumps to labels that immmediately follow
 //
-// This may require multiple passses to converge e.g.
+// This may require multiple passes to converge e.g.
 //
 // A block statement that contains an empty block statement
 //

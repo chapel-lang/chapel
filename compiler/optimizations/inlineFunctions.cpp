@@ -121,9 +121,9 @@ static bool canRemoveRefTemps(FnSymbol* fn) {
   return true;
 }
 
-// Search for the first assingment (a PRIM_MOVE) to a ref temp. If found, the
+// Search for the first assignment (a PRIM_MOVE) to a ref temp. If found, the
 // CallExpr doing the assignment will be returned, otherwise NULL. This works
-// because a ref temp's DefExpr and initial assignment are inserted togther
+// because a ref temp's DefExpr and initial assignment are inserted together
 // inside of insertReferenceTemps.
 static CallExpr* findRefTempInit(SymExpr* se) {
   Expr* expr = se->var->defPoint->next;

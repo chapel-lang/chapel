@@ -51,7 +51,7 @@ buf_read(char *pathname, char **buf, int *len) {
   *len = sb.st_size;
   *buf = (char*)MALLOC(*len + 2);
   (*buf)[*len] = 0;             /* terminator */
-  (*buf)[*len + 1] = 0;         /* sentinal */
+  (*buf)[*len + 1] = 0;         /* sentinel */
   read(fd, *buf, *len);
   close(fd);
   return *len;
