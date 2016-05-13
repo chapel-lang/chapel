@@ -849,7 +849,7 @@ Highlights
 * added support for vectorization of data parallel loops and operations
   (see '--vectorize' flag in 'man chpl')
 * optimized away communication code for module-scope variables and local arrays
-  (see release note slides at http://chapel.cray.com/download.html#releaseNotes)
+  (see release note slides at http://chapel.cray.com/releaseNotes.html)
 * added an early prototype interactive/interpreted mode for writing Chapel code
   (see doc/technotes/README.chpl-ipe.rst for more details)
 * initial support for Python->Chapel interoperability via PyChapel
