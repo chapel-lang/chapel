@@ -160,7 +160,7 @@ class LevelCFGhostRegion {
   //--------------------------------------------------------------------
   // Intended constructor signature is
   //    LevelCFGhostRegion( level, coarse_level ).
-  // The 'initalize' method is required instead of a proper constructor
+  // The 'initialize' method is required instead of a proper constructor
   // because grid_cf_ghost_regions depends on level.grids.
   //--------------------------------------------------------------------
   

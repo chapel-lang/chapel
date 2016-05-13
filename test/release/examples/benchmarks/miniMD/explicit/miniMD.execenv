@@ -3,5 +3,5 @@
 # Guard pages are expensive on Xeon Phi. See JIRA issue 160
 
 import os
-if os.getenv('CHPL_TARGET_ARCH', '') in ['knc', 'mic-knl']:
+if os.getenv('CHPL_TARGET_ARCH', '') in ['mic-knl']:
     print('QT_GUARD_PAGES=false')

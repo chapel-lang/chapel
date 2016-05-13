@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2014 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -360,7 +360,7 @@ hwloc_weight_long(unsigned long w)
 #endif /* HWLOC_BITS_PER_LONG == 64 */
 }
 
-#if !HAVE_DECL_STRTOULL
+#if !HAVE_DECL_STRTOULL && defined(HAVE_STRTOULL)
 unsigned long long int strtoull(const char *nptr, char **endptr, int base);
 #endif
 
@@ -378,5 +378,32 @@ static __hwloc_inline int hwloc_strncasecmp(const char *s1, const char *s2, size
   return 0;
 #endif
 }
+
+#ifdef HWLOC_WIN_SYS
+#  ifndef HAVE_SSIZE_T
+typedef SSIZE_T ssize_t;
+#  endif
+#  if !HAVE_DECL_STRTOULL && !defined(HAVE_STRTOULL)
+#    define strtoull _strtoui64
+#  endif
+#  ifndef S_ISREG
+#    define S_ISREG(m) ((m) & S_IFREG)
+#  endif
+#  ifndef S_ISDIR
+#    define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#  endif
+#  if !HAVE_DECL_STRCASECMP
+#    define strcasecmp _stricmp
+#  endif
+#  if !HAVE_DECL_SNPRINTF
+#    define snprintf _snprintf
+#  endif
+#  if HAVE_DECL__STRDUP
+#    define strdup _strdup
+#  endif
+#  if HAVE_DECL__PUTENV
+#    define putenv _putenv
+#  endif
+#endif
 
 #endif /* HWLOC_PRIVATE_MISC_H */

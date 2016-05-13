@@ -1,10 +1,13 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
  */
+
+#ifndef HWLOC_UTILS_MISC_H
+#define HWLOC_UTILS_MISC_H
 
 #include <private/autogen/config.h>
 #include <hwloc.h>
@@ -33,8 +36,8 @@ hwloc_utils_input_format_usage(FILE *where, int addspaces)
   fprintf (where, "                  %*sof another system\n",
 	   addspaces, " ");
 #endif
-  fprintf (where, "  --input \"n:2 2\"\n");
-  fprintf (where, "  -i \"n:2 2\"      %*sSimulate a fake hierarchy, here with 2 NUMA nodes of 2\n",
+  fprintf (where, "  --input \"node:2 2\"\n");
+  fprintf (where, "  -i \"node:2 2\"   %*sSimulate a fake hierarchy, here with 2 NUMA nodes of 2\n",
 	   addspaces, " ");
   fprintf (where, "                  %*sprocessors\n",
 	   addspaces, " ");
@@ -137,30 +140,30 @@ hwloc_utils_lookup_input_option(char *argv[], int argc, int *consumed_opts,
 static __hwloc_inline int
 hwloc_utils_enable_input_format(struct hwloc_topology *topology,
 				const char *input,
-				enum hwloc_utils_input_format input_format,
+				enum hwloc_utils_input_format *input_format,
 				int verbose, const char *callname)
 {
-  if (input_format == HWLOC_UTILS_INPUT_DEFAULT && !strcmp(input, "-.xml")) {
-    input_format = HWLOC_UTILS_INPUT_XML;
+  if (*input_format == HWLOC_UTILS_INPUT_DEFAULT && !strcmp(input, "-.xml")) {
+    *input_format = HWLOC_UTILS_INPUT_XML;
     input = "-";
   }
 
-  if (input_format == HWLOC_UTILS_INPUT_DEFAULT) {
+  if (*input_format == HWLOC_UTILS_INPUT_DEFAULT) {
     struct stat inputst;
     int err;
     err = stat(input, &inputst);
     if (err < 0) {
       if (verbose > 0)
 	printf("assuming `%s' is a synthetic topology description\n", input);
-      input_format = HWLOC_UTILS_INPUT_SYNTHETIC;
+      *input_format = HWLOC_UTILS_INPUT_SYNTHETIC;
     } else if (S_ISDIR(inputst.st_mode)) {
       if (verbose > 0)
 	printf("assuming `%s' is a file-system root\n", input);
-      input_format = HWLOC_UTILS_INPUT_FSROOT;
+      *input_format = HWLOC_UTILS_INPUT_FSROOT;
     } else if (S_ISREG(inputst.st_mode)) {
       if (verbose > 0)
 	printf("assuming `%s' is a XML file\n", input);
-      input_format = HWLOC_UTILS_INPUT_XML;
+      *input_format = HWLOC_UTILS_INPUT_XML;
     } else {
       fprintf (stderr, "Unrecognized input file: %s\n", input);
       usage (callname, stderr);
@@ -168,7 +171,7 @@ hwloc_utils_enable_input_format(struct hwloc_topology *topology,
     }
   }
 
-  switch (input_format) {
+  switch (*input_format) {
   case HWLOC_UTILS_INPUT_XML:
     if (!strcmp(input, "-"))
       input = "/dev/stdin";
@@ -283,3 +286,68 @@ hwloc_lstopo_show_summary(FILE *output, hwloc_topology_t topology)
     fprintf (output, "Special depth %d:\t%u %s (type #%u)\n",
 	     HWLOC_TYPE_DEPTH_OS_DEVICE, nbobjs, "OS Device", HWLOC_OBJ_OS_DEVICE);
 }
+
+
+/*************************
+ * Importing/exporting userdata buffers without understanding/decoding/modifying them
+ * Caller must putenv("HWLOC_XML_USERDATA_NOT_DECODED=1") before loading the topology.
+ */
+
+struct hwloc_utils_userdata {
+  char *name;
+  size_t length;
+  char *buffer; /* NULL if userdata entry in the list is not meant to be exported to XML (added by somebody else) */
+  struct hwloc_utils_userdata *next;
+};
+
+static __hwloc_inline void
+hwloc_utils_userdata_import_cb(hwloc_topology_t topology __hwloc_attribute_unused, hwloc_obj_t obj, const char *name, const void *buffer, size_t length)
+{
+  struct hwloc_utils_userdata *u, **up = (struct hwloc_utils_userdata **) &obj->userdata;
+  while (*up)
+    up = &((*up)->next);
+  *up = u = malloc(sizeof(struct hwloc_utils_userdata));
+  u->name = strdup(name);
+  u->length = length;
+  u->buffer = strdup(buffer);
+  u->next = NULL;
+}
+
+static __hwloc_inline void
+hwloc_utils_userdata_export_cb(void *reserved, hwloc_topology_t topology, hwloc_obj_t obj)
+{
+  struct hwloc_utils_userdata *u = obj->userdata;
+  while (u) {
+    if (u->buffer) /* not meant to be exported to XML (added by somebody else) */
+      hwloc_export_obj_userdata(reserved, topology, obj, u->name, u->buffer, u->length);
+    u = u->next;
+  }
+}
+
+/* must be called once the caller has removed its own userdata */
+static __hwloc_inline void
+hwloc_utils_userdata_free(hwloc_obj_t obj)
+{
+  struct hwloc_utils_userdata *u = obj->userdata, *next;
+  while (u) {
+    next = u->next;
+    assert(u->buffer);
+    free(u->name);
+    free(u->buffer);
+    free(u);
+    u = next;
+  }
+  obj->userdata = NULL;
+}
+
+/* must be called once the caller has removed its own userdata */
+static __hwloc_inline void
+hwloc_utils_userdata_free_recursive(hwloc_obj_t obj)
+{
+  hwloc_obj_t child;
+  hwloc_utils_userdata_free(obj);
+  for (child = obj->first_child; child; child = child->next_sibling)
+    hwloc_utils_userdata_free_recursive(child);
+}
+
+#endif /* HWLOC_UTILS_MISC_H */

@@ -168,14 +168,14 @@ typedef enum {
   FIND_EITHER = 0,
   FIND_REF,
   FIND_NOT_REF
-} fuction_exists_kind_t;
+} function_exists_kind_t;
 
 static FnSymbol* function_exists(const char* name,
                                  int numFormals,
                                  Type* formalType1 = NULL,
                                  Type* formalType2 = NULL,
                                  Type* formalType3 = NULL,
-                                 fuction_exists_kind_t kind=FIND_EITHER)
+                                 function_exists_kind_t kind=FIND_EITHER)
 {
   switch(numFormals)
   {
@@ -534,6 +534,8 @@ static void build_chpl_entry_points() {
     SET_LINENO(chpl_gen_main);
     if (mainHasArgs) {
       VarSymbol* converted_args = newTemp("_main_args");
+
+      converted_args->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
       chpl_gen_main->insertAtTail(new DefExpr(converted_args));
       chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,

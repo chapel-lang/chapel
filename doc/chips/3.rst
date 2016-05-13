@@ -46,7 +46,7 @@ Low-Level Bindings
 ------------------
 
 Every function in the libzmq core library will be avialable with Chapel's C
-compatability layer. However, Chapel code will need to use C interoperability
+compatibility layer. However, Chapel code will need to use C interoperability
 features to call these functions.
 
 I plan use the extern block syntax to populate Chapel programs with ZeroMQ

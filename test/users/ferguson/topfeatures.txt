@@ -38,7 +38,7 @@ First categorized by difficulty and then by priority.
 - Automatically unroll forall loops in order to emphasize to lower-level
   code generation that parallelism is possible. See "2 easy optimizations" 7/28/2011.
 - Remove performance penalties from over-enthusiastic expression of parallelism
-  (ie, inner forall loops only paralellize if not busy enough/not already parallel)
+  (ie, inner forall loops only parallelize if not busy enough/not already parallel)
   See "2 easy optimizations" 7/28/2011
 - Allow Chapel programmers to override low-level code generation for a block of
   iteration space - for example, they might know how to write the efficient

@@ -3350,7 +3350,7 @@ static bool isInConstructorLikeFunction(CallExpr* call) {
 }
 
 // Is the function of interest invoked from a constructor
-// or initialize(), with the constructor's or intialize's 'this'
+// or initialize(), with the constructor's or initialize's 'this'
 // as the receiver actual.
 static bool isInvokedFromConstructorLikeFunction(int stackIdx) {
   if (stackIdx > 0) {
@@ -5223,7 +5223,7 @@ static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
     bool unsafeGeneric = true;  // Assume the worst until proven otherwise
 
     //
-    // Grab the generic type's contructor if it has one.  Things like
+    // Grab the generic type's constructor if it has one.  Things like
     // classes and records should.  Things like 'integral' will not.
     //
     FnSymbol* typeCons = type->defaultTypeConstructor;

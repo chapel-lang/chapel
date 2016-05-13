@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2013, 2015 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -381,38 +381,23 @@ RECURSE_BEGIN(obj, border) \
 
 /* Dynamic programming */
 
-/* Per-object data: width and height of drawing for this object and sub-objects */
-struct dyna_save {
-  unsigned width;
-  unsigned height;
-  unsigned fontsize;
-  unsigned gridsize;
-};
-
 /* Save the computed size */
 #define DYNA_SAVE() do { \
-  if (!level->userdata) { \
-    struct dyna_save *save = malloc(sizeof(*save)); \
+    struct lstopo_obj_userdata *save = level->userdata; \
     save->width = *retwidth; \
     save->height = *retheight; \
     save->fontsize = fontsize; \
     save->gridsize = gridsize; \
-    level->userdata = save; \
-  } \
 } while (0)
 
 /* Check whether we already computed the size and we are not actually drawing, in that case return it */
 #define DYNA_CHECK() do { \
-  if (level->userdata && methods == &null_draw_methods) { \
-    struct dyna_save *save = level->userdata; \
+  if (methods == &null_draw_methods) { \
+    struct lstopo_obj_userdata *save = level->userdata; \
     if (save->fontsize == fontsize && save->gridsize == gridsize) { \
       *retwidth = save->width; \
       *retheight = save->height; \
       return; \
-    } else { \
-      /* Changed size, drop the existing computation */ \
-      free(level->userdata); \
-      level->userdata = NULL; \
     } \
   } \
 } while (0)
@@ -1254,7 +1239,7 @@ fig(hwloc_topology_t topology, struct draw_methods *methods, int logical, int le
       /* Display the hostname, but only if we're showing *this*
          system */
     if (hwloc_topology_is_thissystem(topology)) {
-#ifdef HWLOC_WIN_SYS
+#if defined(HWLOC_WIN_SYS) && !defined(__CYGWIN__)
       GetComputerName(hostname, &hostname_size);
 #else
       gethostname(hostname, hostname_size);
@@ -1368,9 +1353,19 @@ output_compute_pu_min_textwidth(struct lstopo_output *output)
   if (output->logical) {
     unsigned depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PU);
     lastpu = hwloc_get_obj_by_depth(topology, depth, hwloc_get_nbobjs_by_depth(topology, depth)-1);
-  } else {
+  } else if (hwloc_topology_get_topology_cpuset(topology)) {
     unsigned lastidx = hwloc_bitmap_last(hwloc_topology_get_topology_cpuset(topology));
     lastpu = hwloc_get_pu_obj_by_os_index(topology, lastidx);
+  } else {
+    /* no easy way to find the max os_index in custom topologies */
+    unsigned depth = hwloc_get_type_depth(topology, HWLOC_OBJ_PU);
+    hwloc_obj_t curpu = hwloc_get_obj_by_depth(topology, depth, 0);
+    lastpu = curpu;
+    while (curpu) {
+      if (curpu->os_index > lastpu->os_index)
+	lastpu = curpu;
+      curpu = curpu->next_cousin;
+    }
   }
 
   n = lstopo_obj_snprintf(text, sizeof(text), lastpu, output->logical);
@@ -1382,23 +1377,4 @@ output_draw(struct lstopo_output *output)
 {
   output_compute_pu_min_textwidth(output);
   fig(output->topology, output->methods, output->logical, output->legend, hwloc_get_root_obj(output->topology), output, 100, 0, 0);
-}
-
-static void
-draw_clear(hwloc_topology_t topology, hwloc_obj_t level)
-{
-  unsigned i;
-
-  free(level->userdata);
-  level->userdata = NULL;
-
-  for (i = 0; i < level->arity; i++)
-    draw_clear(topology, level->children[i]);
-}
-
-void
-output_draw_clear(struct lstopo_output *loutput)
-{
-  hwloc_topology_t topology = loutput->topology;
-  draw_clear(topology, hwloc_get_root_obj(topology));
 }

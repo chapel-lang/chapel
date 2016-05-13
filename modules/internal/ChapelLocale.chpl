@@ -320,7 +320,7 @@ module ChapelLocale {
   pragma "no doc"
   config param replicateRootLocale = true;
 
-  // The rootLocale needs to be initalized on all locales prior to
+  // The rootLocale needs to be initialized on all locales prior to
   // initializing the Locales array.  Unfortunately, the rootLocale
   // cannot be properly replicated until DefaultRectangular can be
   // initialized (as the private copies of the defaultDist are

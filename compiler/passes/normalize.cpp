@@ -1245,13 +1245,12 @@ static void init_typed_var(VarSymbol* var,
 
   if (isNoinit && !fUseNoinit) {
     // In the case where --no-use-noinit is thrown, we want to still use
-    // noinit in the module code (as the correct operation of strings and
-    // complexes depends on it).
+    // noinit in the module code (as the correct operation of complexes
+    // depends on it).
 
-    // Lydia note: The requirement for strings is expected to go away when
-    // our new string implementation is the default.  The requirement for
-    // complexes is expected to go away when we transition to constructors for
-    // all types instead of the _defaultOf function
+    // Lydia note: The requirement for complexes is expected to go away when
+    // we transition to constructors for all types instead of the _defaultOf
+    // function
     Symbol* moduleSource = var;
 
     while (!isModuleSymbol(moduleSource)  &&
@@ -1782,11 +1781,6 @@ static void change_method_into_constructor(FnSymbol* fn) {
 
   fn->name = ct->defaultInitializer->name;
   fn->addFlag(FLAG_CONSTRUCTOR);
-  // Hide the compiler-generated initializer
-  // which also serves as the default constructor.
-  // hilde sez: Try leaving this visible, but make it inferior in case of multiple matches
-  // (in disambiguateByMatch()).
-//  ct->defaultInitializer->addFlag(FLAG_INVISIBLE_FN);
 }
 
 // Note 1: Since param variables can only be of primitive or enumerated type,

@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2013-2015 Inria.  All rights reserved.
+.\" Copyright © 2013-2016 Inria.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH HWLOC-ANNOTATE "1" "#HWLOC_DATE#" "#PACKAGE_VERSION#" "#PACKAGE_NAME#"
 .SH NAME
@@ -31,6 +31,11 @@ If the info value is omitted, existing infos are replaced with nothing.
 \fB\-\-ci\fR
 Clear the existing info attributes in the target objects before annotating.
 If no new annotation has to be added after clearing, \fImode\fR should be
+set to \fInone\fR.
+.TP
+\fB\-\-cu\fR
+Clear the existing userdata from the target objects.
+If nothing else has to be performed after clearing, \fImode\fR should be
 set to \fInone\fR.
 .
 .\" **************************

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2010-2015 Inria.  All rights reserved.
+ * Copyright © 2010-2016 Inria.  All rights reserved.
  * Copyright © 2010-2013 Université Bordeaux
  * Copyright © 2010-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -21,6 +21,10 @@
 #include <private/misc.h>
 
 #include <private/cpuid-x86.h>
+
+#ifdef HAVE_VALGRIND_VALGRIND_H
+#include <valgrind/valgrind.h>
+#endif
 
 struct hwloc_x86_backend_data_s {
   unsigned nbprocs;
@@ -399,7 +403,7 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
   /* Get package/core/thread information from cpuid 0x0b
    * (Intel x2APIC)
    */
-  if (cpuid_type == intel && has_x2apic(features)) {
+  if (cpuid_type == intel && highest_cpuid >= 0x0b && has_x2apic(features)) {
     unsigned level, apic_nextshift, apic_number, apic_type, apic_id = 0, apic_shift = 0, id;
     for (level = 0; ; level++) {
       ecx = level;
@@ -514,7 +518,7 @@ hwloc_x86_add_cpuinfos(hwloc_obj_t obj, struct procinfo *info, int nodup)
 }
 
 /* Analyse information stored in infos, and build/annotate topology levels accordingly */
-static void summarize(struct hwloc_backend *backend, struct procinfo *infos, int fulldiscovery)
+static int summarize(struct hwloc_backend *backend, struct procinfo *infos, int fulldiscovery)
 {
   struct hwloc_topology *topology = backend->topology;
   struct hwloc_x86_backend_data_s *data = backend->private_data;
@@ -524,6 +528,8 @@ static void summarize(struct hwloc_backend *backend, struct procinfo *infos, int
   unsigned nbpackages = 0;
   int one = -1;
   unsigned next_group_depth = topology->next_group_depth;
+  int caches_added = 0;
+  hwloc_bitmap_t remaining_cpuset;
 
   for (i = 0; i < nbprocs; i++)
     if (infos[i].present) {
@@ -533,8 +539,10 @@ static void summarize(struct hwloc_backend *backend, struct procinfo *infos, int
 
   if (one == -1) {
     hwloc_bitmap_free(complete_cpuset);
-    return;
+    return 0;
   }
+
+  remaining_cpuset = hwloc_bitmap_alloc();
 
   /* Ideally, when fulldiscovery=0, we could add any object that doesn't exist yet.
    * But what if the x86 and the native backends disagree because one is buggy? Which one to trust?
@@ -543,18 +551,18 @@ static void summarize(struct hwloc_backend *backend, struct procinfo *infos, int
 
   /* Look for packages */
   if (fulldiscovery) {
-    hwloc_bitmap_t packages_cpuset = hwloc_bitmap_dup(complete_cpuset);
     hwloc_bitmap_t package_cpuset;
     hwloc_obj_t package;
 
-    while ((i = hwloc_bitmap_first(packages_cpuset)) != (unsigned) -1) {
+    hwloc_bitmap_copy(remaining_cpuset, complete_cpuset);
+    while ((i = hwloc_bitmap_first(remaining_cpuset)) != (unsigned) -1) {
       unsigned packageid = infos[i].packageid;
 
       package_cpuset = hwloc_bitmap_alloc();
       for (j = i; j < nbprocs; j++) {
         if (infos[j].packageid == packageid) {
           hwloc_bitmap_set(package_cpuset, j);
-          hwloc_bitmap_clr(packages_cpuset, j);
+          hwloc_bitmap_clr(remaining_cpuset, j);
         }
       }
       package = hwloc_alloc_setup_object(HWLOC_OBJ_PACKAGE, packageid);
@@ -567,7 +575,6 @@ static void summarize(struct hwloc_backend *backend, struct procinfo *infos, int
       hwloc_insert_object_by_cpuset(topology, package);
       nbpackages++;
     }
-    hwloc_bitmap_free(packages_cpuset);
 
   } else {
     /* Annotate packages previously-existing packages */
@@ -613,29 +620,29 @@ static void summarize(struct hwloc_backend *backend, struct procinfo *infos, int
 
   /* Look for Numa nodes inside packages */
   if (fulldiscovery) {
-    hwloc_bitmap_t nodes_cpuset = hwloc_bitmap_dup(complete_cpuset);
     hwloc_bitmap_t node_cpuset;
     hwloc_obj_t node;
 
-    while ((i = hwloc_bitmap_first(nodes_cpuset)) != (unsigned) -1) {
+    hwloc_bitmap_copy(remaining_cpuset, complete_cpuset);
+    while ((i = hwloc_bitmap_first(remaining_cpuset)) != (unsigned) -1) {
       unsigned packageid = infos[i].packageid;
       unsigned nodeid = infos[i].nodeid;
 
       if (nodeid == (unsigned)-1) {
-        hwloc_bitmap_clr(nodes_cpuset, i);
+        hwloc_bitmap_clr(remaining_cpuset, i);
 	continue;
       }
 
       node_cpuset = hwloc_bitmap_alloc();
       for (j = i; j < nbprocs; j++) {
 	if (infos[j].nodeid == (unsigned) -1) {
-	  hwloc_bitmap_clr(nodes_cpuset, j);
+	  hwloc_bitmap_clr(remaining_cpuset, j);
 	  continue;
 	}
 
         if (infos[j].packageid == packageid && infos[j].nodeid == nodeid) {
           hwloc_bitmap_set(node_cpuset, j);
-          hwloc_bitmap_clr(nodes_cpuset, j);
+          hwloc_bitmap_clr(remaining_cpuset, j);
         }
       }
       node = hwloc_alloc_setup_object(HWLOC_OBJ_NUMANODE, nodeid);
@@ -646,34 +653,33 @@ static void summarize(struct hwloc_backend *backend, struct procinfo *infos, int
           nodeid, node_cpuset);
       hwloc_insert_object_by_cpuset(topology, node);
     }
-    hwloc_bitmap_free(nodes_cpuset);
   }
 
   /* Look for Compute units inside packages */
   if (fulldiscovery) {
-    hwloc_bitmap_t units_cpuset = hwloc_bitmap_dup(complete_cpuset);
     hwloc_bitmap_t unit_cpuset;
     hwloc_obj_t unit;
 
-    while ((i = hwloc_bitmap_first(units_cpuset)) != (unsigned) -1) {
+    hwloc_bitmap_copy(remaining_cpuset, complete_cpuset);
+    while ((i = hwloc_bitmap_first(remaining_cpuset)) != (unsigned) -1) {
       unsigned packageid = infos[i].packageid;
       unsigned unitid = infos[i].unitid;
 
       if (unitid == (unsigned)-1) {
-        hwloc_bitmap_clr(units_cpuset, i);
+        hwloc_bitmap_clr(remaining_cpuset, i);
 	continue;
       }
 
       unit_cpuset = hwloc_bitmap_alloc();
       for (j = i; j < nbprocs; j++) {
 	if (infos[j].unitid == (unsigned) -1) {
-	  hwloc_bitmap_clr(units_cpuset, j);
+	  hwloc_bitmap_clr(remaining_cpuset, j);
 	  continue;
 	}
 
         if (infos[j].packageid == packageid && infos[j].unitid == unitid) {
           hwloc_bitmap_set(unit_cpuset, j);
-          hwloc_bitmap_clr(units_cpuset, j);
+          hwloc_bitmap_clr(remaining_cpuset, j);
         }
       }
       unit = hwloc_alloc_setup_object(HWLOC_OBJ_GROUP, unitid);
@@ -683,25 +689,24 @@ static void summarize(struct hwloc_backend *backend, struct procinfo *infos, int
           unitid, unit_cpuset);
       hwloc_insert_object_by_cpuset(topology, unit);
     }
-    hwloc_bitmap_free(units_cpuset);
   }
 
   /* Look for unknown objects */
   if (infos[one].otherids) {
     for (level = infos[one].levels-1; level <= infos[one].levels-1; level--) {
       if (infos[one].otherids[level] != UINT_MAX) {
-	hwloc_bitmap_t unknowns_cpuset = hwloc_bitmap_dup(complete_cpuset);
 	hwloc_bitmap_t unknown_cpuset;
 	hwloc_obj_t unknown_obj;
 
-	while ((i = hwloc_bitmap_first(unknowns_cpuset)) != (unsigned) -1) {
+	hwloc_bitmap_copy(remaining_cpuset, complete_cpuset);
+	while ((i = hwloc_bitmap_first(remaining_cpuset)) != (unsigned) -1) {
 	  unsigned unknownid = infos[i].otherids[level];
 
 	  unknown_cpuset = hwloc_bitmap_alloc();
 	  for (j = i; j < nbprocs; j++) {
 	    if (infos[j].otherids[level] == unknownid) {
 	      hwloc_bitmap_set(unknown_cpuset, j);
-	      hwloc_bitmap_clr(unknowns_cpuset, j);
+	      hwloc_bitmap_clr(remaining_cpuset, j);
 	    }
 	  }
 	  unknown_obj = hwloc_alloc_setup_object(HWLOC_OBJ_GROUP, unknownid);
@@ -714,36 +719,35 @@ static void summarize(struct hwloc_backend *backend, struct procinfo *infos, int
 	      level, unknownid, unknown_cpuset);
 	  hwloc_insert_object_by_cpuset(topology, unknown_obj);
 	}
-	hwloc_bitmap_free(unknowns_cpuset);
       }
     }
   }
 
   /* Look for cores */
   if (fulldiscovery) {
-    hwloc_bitmap_t cores_cpuset = hwloc_bitmap_dup(complete_cpuset);
     hwloc_bitmap_t core_cpuset;
     hwloc_obj_t core;
 
-    while ((i = hwloc_bitmap_first(cores_cpuset)) != (unsigned) -1) {
+    hwloc_bitmap_copy(remaining_cpuset, complete_cpuset);
+    while ((i = hwloc_bitmap_first(remaining_cpuset)) != (unsigned) -1) {
       unsigned packageid = infos[i].packageid;
       unsigned coreid = infos[i].coreid;
 
       if (coreid == (unsigned) -1) {
-        hwloc_bitmap_clr(cores_cpuset, i);
+        hwloc_bitmap_clr(remaining_cpuset, i);
 	continue;
       }
 
       core_cpuset = hwloc_bitmap_alloc();
       for (j = i; j < nbprocs; j++) {
 	if (infos[j].coreid == (unsigned) -1) {
-	  hwloc_bitmap_clr(cores_cpuset, j);
+	  hwloc_bitmap_clr(remaining_cpuset, j);
 	  continue;
 	}
 
         if (infos[j].packageid == packageid && infos[j].coreid == coreid) {
           hwloc_bitmap_set(core_cpuset, j);
-          hwloc_bitmap_clr(cores_cpuset, j);
+          hwloc_bitmap_clr(remaining_cpuset, j);
         }
       }
       core = hwloc_alloc_setup_object(HWLOC_OBJ_CORE, coreid);
@@ -752,7 +756,6 @@ static void summarize(struct hwloc_backend *backend, struct procinfo *infos, int
           coreid, core_cpuset);
       hwloc_insert_object_by_cpuset(topology, core);
     }
-    hwloc_bitmap_free(cores_cpuset);
   }
 
   /* Look for PUs */
@@ -780,10 +783,12 @@ static void summarize(struct hwloc_backend *backend, struct procinfo *infos, int
     for (type = 1; type <= 3; type++) {
       /* Look for caches of that type at level level */
       {
-	hwloc_bitmap_t caches_cpuset = hwloc_bitmap_dup(complete_cpuset);
 	hwloc_obj_t cache;
 
-	while ((i = hwloc_bitmap_first(caches_cpuset)) != (unsigned) -1) {
+	hwloc_bitmap_copy(remaining_cpuset, complete_cpuset);
+	while ((i = hwloc_bitmap_first(remaining_cpuset)) != (unsigned) -1) {
+	  hwloc_bitmap_t puset;
+	  int depth;
 
 	  for (l = 0; l < infos[i].numcaches; l++) {
 	    if (infos[i].cache[l].level == level && infos[i].cache[l].type == type)
@@ -791,17 +796,31 @@ static void summarize(struct hwloc_backend *backend, struct procinfo *infos, int
 	  }
 	  if (l == infos[i].numcaches) {
 	    /* no cache Llevel of that type in i */
-	    hwloc_bitmap_clr(caches_cpuset, i);
+	    hwloc_bitmap_clr(remaining_cpuset, i);
 	    continue;
 	  }
 
-	  if (fulldiscovery) {
-	    /* Add caches */
+	  puset = hwloc_bitmap_alloc();
+	  hwloc_bitmap_set(puset, i);
+	  depth = hwloc_get_cache_type_depth(topology, level,
+					     type == 1 ? HWLOC_OBJ_CACHE_DATA : type == 2 ? HWLOC_OBJ_CACHE_INSTRUCTION : HWLOC_OBJ_CACHE_UNIFIED);
+	  if (depth != HWLOC_TYPE_DEPTH_UNKNOWN)
+	    cache = hwloc_get_next_obj_covering_cpuset_by_depth(topology, puset, depth, NULL);
+	  else
+	    cache = NULL;
+	  hwloc_bitmap_free(puset);
+
+	  if (cache) {
+	    /* Found cache above that PU, annotate if no such attribute yet */
+	    if (!hwloc_obj_get_info_by_name(cache, "Inclusive"))
+	      hwloc_obj_add_info(cache, "Inclusive", infos[i].cache[l].inclusive ? "1" : "0");
+	    hwloc_bitmap_andnot(remaining_cpuset, remaining_cpuset, cache->cpuset);
+	  } else {
+	    /* Add the missing cache */
 	    hwloc_bitmap_t cache_cpuset;
 	    unsigned packageid = infos[i].packageid;
 	    unsigned cacheid = infos[i].cache[l].cacheid;
-	    /* Found a matching cache, now look for others sharing it */
-
+	    /* Now look for others sharing it */
 	    cache_cpuset = hwloc_bitmap_alloc();
 	    for (j = i; j < nbprocs; j++) {
 	      unsigned l2;
@@ -811,12 +830,12 @@ static void summarize(struct hwloc_backend *backend, struct procinfo *infos, int
 	      }
 	      if (l2 == infos[j].numcaches) {
 		/* no cache Llevel of that type in j */
-		hwloc_bitmap_clr(caches_cpuset, j);
+		hwloc_bitmap_clr(remaining_cpuset, j);
 		continue;
 	      }
 	      if (infos[j].packageid == packageid && infos[j].cache[l2].cacheid == cacheid) {
 		hwloc_bitmap_set(cache_cpuset, j);
-		hwloc_bitmap_clr(caches_cpuset, j);
+		hwloc_bitmap_clr(remaining_cpuset, j);
 	      }
 	    }
 	    cache = hwloc_alloc_setup_object(HWLOC_OBJ_CACHE, cacheid);
@@ -840,43 +859,19 @@ static void summarize(struct hwloc_backend *backend, struct procinfo *infos, int
 	    hwloc_debug_2args_bitmap("os L%u cache %u has cpuset %s\n",
 		level, cacheid, cache_cpuset);
 	    hwloc_insert_object_by_cpuset(topology, cache);
-
-	  } else {
-	    /* Annotate existing caches */
-	    hwloc_bitmap_t set = hwloc_bitmap_alloc();
-	    hwloc_obj_t cache = NULL;
-	    int depth;
-	    hwloc_bitmap_set(set, i);
-	    depth = hwloc_get_cache_type_depth(topology, level,
-					       type == 1 ? HWLOC_OBJ_CACHE_DATA : type == 2 ? HWLOC_OBJ_CACHE_INSTRUCTION : HWLOC_OBJ_CACHE_UNIFIED);
-	    if (depth != HWLOC_TYPE_DEPTH_UNKNOWN)
-	      cache = hwloc_get_next_obj_covering_cpuset_by_depth(topology, set, depth, NULL);
-	    hwloc_bitmap_free(set);
-	    if (cache) {
-	      /* Found cache above that PU, annotate if no such attribute yet */
-	      if (!hwloc_obj_get_info_by_name(cache, "Inclusive"))
-		hwloc_obj_add_info(cache, "Inclusive", infos[i].cache[l].inclusive ? "1" : "0");
-	      hwloc_bitmap_andnot(caches_cpuset, caches_cpuset, cache->cpuset);
-	    } else {
-	      /* No cache above that PU?! */
-	      hwloc_bitmap_clr(caches_cpuset, i);
-	    }
+	    caches_added++;
 	  }
 	}
-	hwloc_bitmap_free(caches_cpuset);
       }
     }
     level--;
   }
 
-  for (i = 0; i < nbprocs; i++) {
-    free(infos[i].cache);
-    if (infos[i].otherids)
-      free(infos[i].otherids);
-  }
-
+  hwloc_bitmap_free(remaining_cpuset);
   hwloc_bitmap_free(complete_cpuset);
   topology->next_group_depth = next_group_depth;
+
+  return fulldiscovery || caches_added;
 }
 
 static int
@@ -891,6 +886,7 @@ look_procs(struct hwloc_backend *backend, struct procinfo *infos, int fulldiscov
   hwloc_bitmap_t orig_cpuset = hwloc_bitmap_alloc();
   hwloc_bitmap_t set;
   unsigned i;
+  int ret = 0;
 
   if (get_cpubind(topology, orig_cpuset, HWLOC_CPUBIND_STRICT)) {
     hwloc_bitmap_free(orig_cpuset);
@@ -915,8 +911,9 @@ look_procs(struct hwloc_backend *backend, struct procinfo *infos, int fulldiscov
 
   if (!data->apicid_unique)
     fulldiscovery = 0;
-  summarize(backend, infos, fulldiscovery);
-  return fulldiscovery; /* success, but objects added only if fulldiscovery */
+  else
+    ret = summarize(backend, infos, fulldiscovery);
+  return ret;
 }
 
 #if defined HWLOC_FREEBSD_SYS && defined HAVE_CPUSET_SETID
@@ -988,12 +985,12 @@ int hwloc_look_x86(struct hwloc_backend *backend, int fulldiscovery)
   memset(&hooks, 0, sizeof(hooks));
   support.membind = &memsupport;
   hwloc_set_native_binding_hooks(&hooks, &support);
-  if (hooks.get_thisproc_cpubind && hooks.set_thisproc_cpubind) {
-    get_cpubind = hooks.get_thisproc_cpubind;
-    set_cpubind = hooks.set_thisproc_cpubind;
-  } else if (hooks.get_thisthread_cpubind && hooks.set_thisthread_cpubind) {
+  if (hooks.get_thisthread_cpubind && hooks.set_thisthread_cpubind) {
     get_cpubind = hooks.get_thisthread_cpubind;
     set_cpubind = hooks.set_thisthread_cpubind;
+  } else if (hooks.get_thisproc_cpubind && hooks.set_thisproc_cpubind) {
+    get_cpubind = hooks.get_thisproc_cpubind;
+    set_cpubind = hooks.set_thisproc_cpubind;
   } else {
     /* we need binding support if there are multiple PUs */
     if (nbprocs > 1)
@@ -1066,8 +1063,7 @@ int hwloc_look_x86(struct hwloc_backend *backend, int fulldiscovery)
   if (nbprocs == 1) {
     /* only one processor, no need to bind */
     look_proc(backend, &infos[0], highest_cpuid, highest_ext_cpuid, features, cpuid_type);
-    summarize(backend, infos, fulldiscovery);
-    ret = fulldiscovery;
+    ret = summarize(backend, infos, fulldiscovery);
   }
 
 out_with_os_state:
@@ -1075,7 +1071,12 @@ out_with_os_state:
 
 out_with_infos:
   if (NULL != infos) {
-      free(infos);
+    for (i = 0; i < nbprocs; i++) {
+      free(infos[i].cache);
+      if (infos[i].otherids)
+	free(infos[i].otherids);
+    }
+    free(infos);
   }
 
 out:
@@ -1089,6 +1090,13 @@ hwloc_x86_discover(struct hwloc_backend *backend)
   struct hwloc_topology *topology = backend->topology;
   int alreadypus = 0;
   int ret;
+
+#if HAVE_DECL_RUNNING_ON_VALGRIND
+  if (RUNNING_ON_VALGRIND) {
+    fprintf(stderr, "hwloc x86 backend cannot work under Valgrind, disabling.\n");
+    return 0;
+  }
+#endif
 
   data->nbprocs = hwloc_fallback_nbprocessors(topology);
 
@@ -1105,11 +1113,11 @@ hwloc_x86_discover(struct hwloc_backend *backend)
       goto fulldiscovery;
     }
 
-    /* several object types were added, we can't easily complete, just annotate a bit */
+    /* several object types were added, we can't easily complete, just do partial discovery */
     ret = hwloc_look_x86(backend, 0);
     if (ret)
       hwloc_obj_add_info(topology->levels[0][0], "Backend", "x86");
-    return 0;
+    return ret;
   } else {
     /* topology is empty, initialize it */
     hwloc_alloc_obj_cpusets(topology->levels[0][0]);

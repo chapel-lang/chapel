@@ -1,4 +1,4 @@
-# Copyright © 2009-2014 Inria.  All rights reserved.
+# Copyright © 2009-2016 Inria.  All rights reserved.
 # Copyright © 2009-2013 Université Bordeaux
 # Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -260,7 +260,6 @@ man3_object_types_DATA = \
         $(DOX_MAN_DIR)/man3/HWLOC_OBJ_PCI_DEVICE.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_OBJ_PACKAGE.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_OBJ_SYSTEM.3 \
-        $(DOX_MAN_DIR)/man3/HWLOC_OBJ_TYPE_MAX.3 \
         $(DOX_MAN_DIR)/man3/hwloc_obj_type_t.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_OBJ_CACHE_UNIFIED.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_OBJ_CACHE_DATA.3 \
@@ -365,10 +364,13 @@ man3_object_stringsdir = $(man3dir)
 man3_object_strings_DATA = \
         $(DOX_MAN_DIR)/man3/hwlocality_object_strings.3 \
         $(DOX_MAN_DIR)/man3/hwloc_obj_type_string.3 \
-        $(DOX_MAN_DIR)/man3/hwloc_obj_type_sscanf.3 \
         $(DOX_MAN_DIR)/man3/hwloc_obj_type_snprintf.3 \
         $(DOX_MAN_DIR)/man3/hwloc_obj_attr_snprintf.3 \
         $(DOX_MAN_DIR)/man3/hwloc_obj_cpuset_snprintf.3 \
+        $(DOX_MAN_DIR)/man3/hwloc_obj_type_sscanf.3
+
+man3_object_info_attrsdir = $(man3dir)
+man3_object_info_attrs_DATA = \
         $(DOX_MAN_DIR)/man3/hwloc_obj_get_info_by_name.3 \
         $(DOX_MAN_DIR)/man3/hwloc_obj_add_info.3
 
@@ -400,6 +402,7 @@ man3_membinding_DATA = \
         $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_MIXED.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_NEXTTOUCH.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_NOCPUBIND.3 \
+        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_BYNODESET.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_PROCESS.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_REPLICATE.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_STRICT.3 \
@@ -418,6 +421,7 @@ man3_membinding_DATA = \
         $(DOX_MAN_DIR)/man3/hwloc_set_area_membind_nodeset.3  \
         $(DOX_MAN_DIR)/man3/hwloc_get_area_membind.3 \
         $(DOX_MAN_DIR)/man3/hwloc_get_area_membind_nodeset.3  \
+        $(DOX_MAN_DIR)/man3/hwloc_get_area_memlocation.3 \
         $(DOX_MAN_DIR)/man3/hwloc_alloc.3 \
         $(DOX_MAN_DIR)/man3/hwloc_alloc_membind.3 \
         $(DOX_MAN_DIR)/man3/hwloc_alloc_membind_nodeset.3  \
@@ -716,6 +720,7 @@ $(man3_creation_DATA): $(DOX_TAG)
 $(man3_configuration_DATA): $(DOX_TAG)
 $(man3_levels_DATA): $(DOX_TAG)
 $(man3_object_strings_DATA): $(DOX_TAG)
+$(man3_object_info_attrs_DATA): $(DOX_TAG)
 $(man3_cpubinding_DATA): $(DOX_TAG)
 $(man3_membinding_DATA): $(DOX_TAG)
 $(man3_tinker_DATA): $(DOX_TAG)
@@ -784,8 +789,11 @@ $(HWLOC_top_srcdir)/README: $(DOX_TAG)
 	sed -n -f $(srcdir)/README.sed $(DOX_HTML_DIR)/index.html > $(DOX_HTML_README)
 	LC_ALL=C $(HWLOC_W3_GENERATOR) $(DOX_HTML_README) \
 	 | $(SED) -n -e 's/^   //' -e '/^Introduction$$/,$$p' \
-	 | $(SED) -e '/^--*-$$/,$$ d' \
+	 | $(SED) -e '/^Installation$$/,$$ d' \
 	 > $@
+	echo >> $@
+	echo >> $@
+	echo "See https://www.open-mpi.org/projects/hwloc/doc/ for more hwloc documentation." >> $@
 	rm -f $(DOX_HTML_README)
 
 else

@@ -178,27 +178,12 @@ class AbstractJob(object):
 
     @property
     def select_suffix(self):
-        """Returns suffix for select expression based instance attributes. For example,
-        if self.knc is True, returns `:Xeon_Phi` so reservation will
-        target KNC nodes. Returns empty string when self.knc is False.
+        """Returns suffix for select expression based instance attributes.
 
         :rtype: str
         :returns: select expression suffix, or empty string
         """
-        if self.knc:
-            return ':Xeon_Phi'
-        else:
-            return ''
-
-    target_arch = chpl_arch.get('target')
-    @property
-    def knc(self):
-        """Returns True when testing KNC (Xeon Phi).
-
-        :rtype: bool
-        :returns: True when testing KNC
-        """
-        return self.target_arch == 'knc'
+        return ''
 
     @property
     def knl(self):
@@ -207,22 +192,7 @@ class AbstractJob(object):
         :rtype: bool
         :returns: True when testing KNL
         """
-        return self.target_arch == 'mic-knl'
-
-    def work_around_knc_module_bug(self):
-        """Hack to unload the knc module before calling qsub in order to work
-        around a module bug. Note that this unloading of knc here is why the
-        above 'knc' method doesn't just return `chpl_arch.get('target') == knc`
-        but instead caches the value since unloading knc module means chpl_arch
-        will no longer return 'knc'
-        """
-        if self.knc:
-	    unload_knc_proc = subprocess.Popen(
-                ['modulecmd', 'python', 'unload', 'craype-intel-knc'],
-                stdout=subprocess.PIPE
-            )
-	    stdout, stderr = unload_knc_proc.communicate()
-	    exec stdout
+        return chpl_arch.get('target') == 'mic-knl'
 
     def _qsub_command_base(self, output_file):
         """Returns base qsub command, without any resource listing.
@@ -462,8 +432,6 @@ class AbstractJob(object):
         """
         if self.submit_bin != 'qsub':
             raise RuntimeError('_launch_qsub called for non-pbs job type!')
-
-        self.work_around_knc_module_bug()
 
         logging.info(
             'Starting {0} job "{1}" on {2} nodes with walltime {3} '
@@ -776,17 +744,12 @@ class PbsProJob(AbstractJob):
 
     @property
     def select_suffix(self):
-        """Returns suffix for select expression based instance attributes. For example,
-        if self.knc is True, returns `:accelerator_model=Xeon_Phi` so reservation will
-        target KNC nodes. Returns empty string when self.knc is False.
+        """Returns suffix for select expression based instance attributes.
 
         :rtype: str
         :returns: select expression suffix, or empty string
         """
-        if self.knc:
-            return ':accelerator_model=Xeon_Phi'
-        else:
-            return ''
+        return ''
 
     @classmethod
     def status(cls, job_id):
@@ -858,11 +821,8 @@ class PbsProJob(AbstractJob):
         elif num_locales > 0:
             select_stmt = select_pattern.format(num_locales)
 
-            # Do not set ncpus for knc. If running on knc, cpus are not needed
-            # on the system. Someday support for heterogeneous applications may
-            # exist, in which case ncpus will need to be set. For now, assume
-            # program will be launched onto knc only.
-            if self.num_cpus_resource is not None and not (self.knc or self.knl):
+            # Do not set ncpus for knl.
+            if self.num_cpus_resource is not None and not self.knl:
                 select_stmt += ':{0}={1}'.format(
                     self.num_cpus_resource, self.num_cpus)
 
