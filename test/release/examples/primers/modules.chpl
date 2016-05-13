@@ -54,29 +54,6 @@ module modToUse {
     return a + 3;
   }
 
-
-  /* A module defined within another module is called a nested module.  These
-     submodules can refer to symbols defined within their parent module, but
-     their parent module can't directly access the contents of the nested
-     module.  We will cover how to access the contents of other modules later in
-     this primer.
-  */
-  module Inner1 {
-    /* The variable foobar references modToUse's foo and bar variables. */
-    var foobar = foo + bar;
-  }
-
-  module Inner2 {
-    /* Since the module Inner2 is defined within modToUse, it can access the
-       private variable hiddenFoo and the private function hiddenBaz.  However,
-       any private symbol defined within Inner2 will not be visible within
-       scopes defined outside of Inner2.
-     */
-
-    private var innerOnly = -17;
-    var canSeeHidden = !hiddenFoo;
-  }
-
   // In the current implementation, private cannot be applied to type
   // definitions; type aliases, and declarations of enums, records, and
   // classes cannot be declared private.  Private also cannot be applied to
@@ -203,6 +180,22 @@ module MainModule {
       // value of the bar defined outside of this scope (which is 'false')
     }
 
+    {
+      /* Using nested modules combines accessing a module's symbols explicitly
+         and using a top-level module.  If the parent module(s) have not been
+         used in this scope, using the nested module will require explicitly
+         naming the full path to reach it.  Otherwise, there is no difference
+         between the use statement for a top-level module and that of a nested
+         module.
+
+         (see the module ContainsNesting and its submodules at the end of this
+         file for an example of a nested module)
+      */
+
+      use ContainsNesting.Inner1;
+
+      writeln(foobar); // Will output Inner1.foobar, or '14'
+    }
 
     {
       /* Multiple modules may be used in the same use statement */
@@ -319,5 +312,42 @@ module MainModule {
       // All of the above rules for 'use' statements also apply to 'use's of
       // enums
     }
+  }
+}
+
+module ContainsNesting {
+  var foo = 12;
+  var bar: int = 2;
+  private var hiddenFoo = false;
+
+  proc baz (x, y) {
+    return x * (x + y);
+  }
+
+  private proc hiddenBaz(a) {
+    writeln(a);
+    return a + 3;
+  }
+
+  /* A module defined within another module is called a nested module.  These
+     submodules can refer to symbols defined within their parent module, but
+     their parent module can't directly access the contents of the nested
+     module.
+  */
+  module Inner1 {
+    /* The variable foobar references ContainsNesting's foo and bar variables.
+     */
+    var foobar = foo + bar;
+  }
+
+  module Inner2 {
+    /* Since the module Inner2 is defined within ContainsNesting, it can access
+       the private variable hiddenFoo and the private function hiddenBaz.
+       However, any private symbol defined within Inner2 will not be visible
+       within scopes defined outside of Inner2.
+     */
+
+    private var innerOnly = -17;
+    var canSeeHidden = !hiddenFoo;
   }
 }
