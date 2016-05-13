@@ -421,6 +421,35 @@ module LocaleModel {
   extern proc chpl_task_setSubloc(subloc: int(32));
 
   //
+  // returns true if an executeOn can be handled directly
+  // by running the function in question.
+  // Applieds to execute on and execute on fast.
+  // When performing a blocking on, the compiler will emit this sequence:
+  //
+  //  if (chpl_doDirectExecuteOn(targetLocale))
+  //         onStatementBodyFunction( args ... );
+  //  else
+  //         chpl_executeOn / chpl_executeOnFast
+  //
+  export
+  proc chpl_doDirectExecuteOn(loc: chpl_localeID_t // target locale
+                             ):bool {
+    const dnode =  chpl_nodeFromLocaleID(loc);
+    const dsubloc =  chpl_sublocFromLocaleID(loc);
+
+    if (done != chpl_nodeID) {
+      return false; // need to move to different node
+    } else {
+      var origSubloc = chpl_task_getRequestedSubloc();
+      if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
+        return true;
+      } else {
+        return false; // need to move to different sublocale
+      }
+    }
+  }
+
+  //
   // regular "on"
   //
   pragma "insert line file info"
@@ -438,6 +467,7 @@ module LocaleModel {
       // run directly on this node
       var origSubloc = chpl_task_getRequestedSubloc();
       if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
+        assert(false); // should be handled by doDirectExecuteOn
         chpl_ftable_call(fn, args);
       } else {
         // move to a different sublocale
@@ -466,6 +496,7 @@ module LocaleModel {
     } else {
       var origSubloc = chpl_task_getRequestedSubloc();
       if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
+        assert(false); // should be handled by doDirectExecuteOn
         chpl_ftable_call(fn, args);
       } else {
         // move to a different sublocale
