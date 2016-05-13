@@ -190,13 +190,13 @@ refNecessary(SymExpr*                      se,
 // the AUTO_COPY/AUTO_DESTROY flags as necessary to enable the
 // callDestructors pass to operate correctly.
 //
-// As far as I can tell this switch is, at best, only lossely coupled to
+// As far as I can tell this switch is, at best, only loosely coupled to
 // the the setter param.   Most functions that return with ref-intent do
 // not inspect the setter param but I think that some portions of the
 // compiler assume that setter = true for the by-ref version and
 // setter = false for the by-value version.  If this is correct then there
 // could be programs in which the function replacement does not track the
-// setter paramc orrectly.
+// setter param correctly.
 //
 // Careful separation of "by-ref" behavior and the management of the
 // setter param will require additional effort.
