@@ -230,9 +230,9 @@ module MainModule {
 
 
     {
-      /* In either case, the modules used in this way are considered at the same
-         time (after symbols defined at this scope but before symbols defined
-         outside of it) - the ordering within a use statement or of use
+      /* In either case, the modules used in this way are considered in concert
+         (after symbols defined at this scope but before symbols defined outside
+         of it) - the ordering within a use statement or across multiple use
          statements does not affect the precedence of symbols that share a name.
          This means that if two modules each define a symbol with the same name,
          and both modules are used at the same scope, attempts to access a
