@@ -19,7 +19,9 @@
    module, and every symbol is associated with some module.  If all the code of
    a file is not enclosed in an explicit module, defined using the 'module'
    keyword, then the file itself is treated as a module with the same name as
-   the file (minus the .chpl suffix).
+   the file (minus the .chpl suffix).  The compiler can be directed to include
+   modules in separate files by naming them on the command line, utilizing the
+   -M flag, etc. (see the man page for exact details).
  */
 module modToUse {
 
@@ -317,92 +319,5 @@ module MainModule {
       // All of the above rules for 'use' statements also apply to 'use's of
       // enums
     }
-
-    writeln();
-    writeln("Accessing modules from other files");
-
-    {
-      /* Modules that live outside of the file sometimes have special rules for
-         how to access them.  If the module you wish to access has the same name
-         as the file in which it lives, and this file is in the same directory
-         as your program, no additional steps are necessary.
-      */
-
-      use modulesHelper;
-
-      writeln(someVar); // Should be 19
-    }
-
-
-    {
-      /* When the module you wish to access is not named after the file in which
-         it lives, you must name the file as part of the compilation step:
-
-         chpl modules.chpl modulesHelper2.chpl
-      */
-
-      use anotherHelper;
-
-      writeln(someFunc()); // Should be 23
-
-      /* Note, the above will only compile if all the code after this closing
-         brace until the end of the main() function is removed or commented out.
-         A summary compilation line will be provided at the end
-      */
-    }
-
-
-    {
-      /* If the helper module also defines a main() function, or this module
-         does not, then you must specify on the command line at compilation time
-         which module should be the main module for the program, using the
-         --main-module flag:
-
-         chpl modules.chpl modulesHelper3.chpl --main-module MainModule
-      */
-
-      use helperWithMain;
-
-      writeln(someVar); // Should be 19
-
-      /* Note, the above will only compile if all the code after this closing
-         brace until the end of the main() function is removed or commented out,
-         as well as the code for accessing anotherHelper.  A summary compilation
-         line will be provided at the end
-      */
-    }
-
-
-    {
-      /* If the module you wish to use lives in a different directory, you must
-         specify the directory where it lives as part of compilation using the
-         -M flag.  The -M flag can take a relative or exact path.
-
-         chpl modules.chpl -M modulesPrimerDir/
-      */
-
-      use helperInAnotherDir;
-      writeln(someFunc()); // Should be 23
-
-      /* Note, the above will only compile if all the code for accessing
-         anotherHelper and helperWithMain is removed or commented out.  A
-         summary compilation line will be provided at the end
-      */
-    }
-
-    {
-      /* If the module you wish to use is one of the Chapel provided library
-         modules (living in $CHPL_HOME/modules/), then merely using the module
-         is sufficient for the program to compile
-      */
-
-      use IO;
-      writeln(iomode.r);
-    }
-
-    /* To compile all the examples in this file, use the command line:
-
-       chpl modules.chpl modulesHelper2.chpl modulesHelper3.chpl --main-module MainModule -M modulesPrimerDir/
-    */
   }
 }
