@@ -1295,7 +1295,7 @@ static void insertEndCounts()
 }
 
 
-bool isDirectOnCall(FnSymbol* fn, CallExpr* call)
+static bool isDirectOnCall(FnSymbol* fn, CallExpr* call)
 {
   if (fn->hasFlag(FLAG_ON)) {
     // For an on block, the first argument is the target locale.
