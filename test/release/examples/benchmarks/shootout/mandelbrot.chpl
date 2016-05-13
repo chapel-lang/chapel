@@ -22,10 +22,10 @@ proc main() {
 
   var image : [ydim, xdim] eltType;            // the bitmap image
 
-  forall y in dynamic(ydim, chunkSize) {       // forall rows...
-    for xelt in xdim {                         //   forall column elements
+  forall y in dynamic(ydim, chunkSize) {       // for all rows...
+    for xelt in xdim {                         //   for each column element...
 
-      var mask = 0: eltType;                   // zero out the mask
+      var mask: eltType = 0;                   // zero out the mask
 
       for off in 0..#bitsPerElt {              // for each bit in the element
         const x = xelt*bitsPerElt + off;       // compute its logical location
@@ -34,7 +34,7 @@ proc main() {
         const Ci = 2.0*y/n - 1.0;              //   to compute with
         var Zr, Zi, Tr, Ti = 0.0;
 
-        for i in 1..maxIter {                  // for the max # of iterations
+        for 1..maxIter {                       // for the max # of iterations
           if (Tr + Ti > limit) then            // if we haven't converged
             break;
           
@@ -53,8 +53,10 @@ proc main() {
     }
   }
 
-  var f = openfd(1);                           // open a stdout file descriptor
-  var w = f.writer(iokind.native, locking=false);  // get a lock-free writer
+  //
+  // get a lock-free writer channel on 'stdout'
+  //
+  var w = openfd(1).writer(iokind.native, locking=false);
 
   w.writef("P4\n");                            // write the file header
   w.writef("%i %i\n", n, n);
