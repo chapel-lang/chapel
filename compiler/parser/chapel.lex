@@ -428,7 +428,7 @@ static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
       ParserContext context(scanner);
 
       yyText[0] = '\0';
-      yyerror(yyLloc, &context, "end-of-line in a string literal without a preceeding backslash");
+      yyerror(yyLloc, &context, "end-of-line in a string literal without a preceding backslash");
     } else {
       if (startCh == '\'' && c == '\"') {
         addCharString('\\');
