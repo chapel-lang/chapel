@@ -154,6 +154,8 @@ proc ReverseComparator.compare(a, b) {
 const reversecomparator = new ReverseComparator();
 
 
+/* Private method */
+
 /* Base compare method */
 private inline proc chpl_compare(a, b, comparator:?rec=defaultcomparator) {
   use Reflection;
@@ -169,8 +171,8 @@ private inline proc chpl_compare(a, b, comparator:?rec=defaultcomparator) {
   } else {
     compilerError("The comparator record requires a 'key(a)' or 'compare(a, b)' method");
   }
-
 }
+
 
 /*
     Check if a comparator was passed and confirm that it will work, otherwise
@@ -208,6 +210,74 @@ private proc chpl_check_comparator(comparator, a) {
 }
 
 
+/* Basic Functions */
+
+/*
+   Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
+
+   :arg Data: The array to be sorted
+   :type Data: [] `eltType`
+   :arg comparator: Record that redefines the comparison mechanism with one of
+      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
+
+ */
+proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where Dom.rank == 1 {
+  quickSort(Data, comparator=comparator);
+}
+
+
+/*
+   Check if `Data` is in sorted order
+
+   :arg Data: The array to verify
+   :type Data: [] `eltType`
+   :arg comparator: Record that redefines the comparison mechanism with one of
+      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
+
+ */
+proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator): bool {
+  chpl_check_comparator(comparator, Data(Dom.dim(1).low));
+  for i in Dom.low..Dom.high-1 do
+    if chpl_compare(Data(i+1), Data(i), comparator) < 0 then
+      return false;
+  return true;
+}
+
+
+//
+// This is a first draft "sorterator" which is designed to take some
+// other iterator/iterable and yield its elements, in sorted order.
+//
+// The main limitations in the current code are (1) it should put some
+// sort of constraint on 'x' to limit it to types for which this makes
+// sense; and (2) there should be some generic way to say "y is an
+// array of x's element type" (or to infer its element type) without
+// saying a priori how big it is.  Without these mods, the result is
+// that the sorterator works when it does and probably is confusing
+// when it doesn't.
+//
+/*
+   Yield the elements of argument `x` in sorted order.
+
+   :arg x: An iterable value to be sorted and yielded element by element
+   :type x: `iterable`
+   :arg comparator: Record that redefines the comparison mechanism with one of
+      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
+
+   :yields: The elements of x in sorted order
+   :ytype: x's element type
+
+ */
+iter sorted(x, comparator:?rec=defaultcomparator) {
+  var y = x;
+  quickSort(y, comparator=comparator);
+  for i in y do
+    yield i;
+}
+
+
+/* Sort Functions */
+
 /*
    Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
 
@@ -232,25 +302,6 @@ proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where 
       }
     }
   }
-}
-
-/*
-   Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: `bool`
-   :arg reverse: Sort in reverse numerical order
-   :type reverse: `bool`
-
- */
-proc BubbleSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  var comparator = if reverse then reversecomparator else defaultcomparator;
-  bubbleSort(Data, comparator);
-  if doublecheck then
-    if !isSorted(Data) then
-      halt("BubbleSort failed to sort: ", Data);
 }
 
 
@@ -303,26 +354,6 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where Do
 
 
 /*
-   Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: `bool`
-   :arg reverse: Sort in reverse numerical order
-   :type reverse: `bool`
-
- */
-proc HeapSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  var comparator = if reverse then reversecomparator else defaultcomparator;
-  heapSort(Data, comparator);
-  if doublecheck then
-    if !isSorted(Data) then
-      halt("HeapSort failed to sort: ", Data);
-}
-
-
-/*
    Sort the 1D array `Data` in-place using a sequential insertion sort algorithm.
 
    :arg Data: The array to be sorted
@@ -354,26 +385,6 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) whe
 
 
 /*
-   Sort the 1D array `Data` in-place using a sequential insertion sort algorithm.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: `bool`
-   :arg reverse: Sort in reverse numerical order
-   :type reverse: `bool`
-
- */
-proc InsertionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  var comparator = if reverse then reversecomparator else defaultcomparator;
-  insertionSort(Data, comparator);
-  if doublecheck then
-    if !isSorted(Data) then
-      halt("InsertionSort failed to sort: ", Data);
-}
-
-
-/*
    Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
 
    :arg Data: The array to be sorted
@@ -388,29 +399,6 @@ proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultcomparat
   chpl_check_comparator(comparator, Data(Dom.dim(1).low));
   _MergeSort(Data, minlen, comparator);
 }
-
-
-/*
-   Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg minlen: When the array size is less than `minlen` use insertion sort algorithm
-   :type minlen: `integral`
-   :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: `bool`
-   :arg reverse: Sort in reverse numerical order
-   :type reverse: `bool`
-
- */
-proc MergeSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  var comparator = if reverse then reversecomparator else defaultcomparator;
-  mergeSort(Data, minlen, comparator);
-  if doublecheck then
-    if !isSorted(Data) then
-      halt("MergeSort failed to sort: ", Data);
-}
-
 
 private proc _MergeSort(Data: [?Dom], minlen=16, comparator:?rec=defaultcomparator) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
@@ -515,27 +503,6 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultcomparat
 }
 
 
-/*
-   Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg minlen: When the array size is less than `minlen` use insertion sort algorithm
-   :type minlen: `integral`
-   :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: `bool`
-   :arg reverse: Sort in reverse numerical order
-   :type reverse: `bool`
-
- */
-proc QuickSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  var comparator = if reverse then reversecomparator else defaultcomparator;
-  quickSort(Data, minlen, comparator);
-  if doublecheck then
-    if !isSorted(Data) then
-      halt("QuickSort failed to sort: ", Data);
-}
-
 
 // TODO -- support comparators by implementing a reduce intent w/ comparators
 /*
@@ -561,7 +528,108 @@ proc SelectionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false
 }
 
 
-pragma "no doc"
+/* Deprecated Functions */
+
+/*
+   Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
+
+   :arg Data: The array to be sorted
+   :type Data: [] `eltType`
+   :arg doublecheck: Verify the array is correctly sorted before returning
+   :type doublecheck: `bool`
+   :arg reverse: Sort in reverse numerical order
+   :type reverse: `bool`
+
+ */
+proc BubbleSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+  var comparator = if reverse then reversecomparator else defaultcomparator;
+  bubbleSort(Data, comparator);
+  if doublecheck then
+    if !isSorted(Data) then
+      halt("BubbleSort failed to sort: ", Data);
+}
+
+/*
+   Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
+
+   :arg Data: The array to be sorted
+   :type Data: [] `eltType`
+   :arg minlen: When the array size is less than `minlen` use insertion sort algorithm
+   :type minlen: `integral`
+   :arg doublecheck: Verify the array is correctly sorted before returning
+   :type doublecheck: `bool`
+   :arg reverse: Sort in reverse numerical order
+   :type reverse: `bool`
+
+ */
+proc QuickSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+  var comparator = if reverse then reversecomparator else defaultcomparator;
+  quickSort(Data, minlen, comparator);
+  if doublecheck then
+    if !isSorted(Data) then
+      halt("QuickSort failed to sort: ", Data);
+}
+
+
+/*
+   Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
+
+   :arg Data: The array to be sorted
+   :type Data: [] `eltType`
+   :arg doublecheck: Verify the array is correctly sorted before returning
+   :type doublecheck: `bool`
+   :arg reverse: Sort in reverse numerical order
+   :type reverse: `bool`
+
+ */
+proc HeapSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+  var comparator = if reverse then reversecomparator else defaultcomparator;
+  heapSort(Data, comparator);
+  if doublecheck then
+    if !isSorted(Data) then
+      halt("HeapSort failed to sort: ", Data);
+}
+
+/*
+   Sort the 1D array `Data` in-place using a sequential insertion sort algorithm.
+
+   :arg Data: The array to be sorted
+   :type Data: [] `eltType`
+   :arg doublecheck: Verify the array is correctly sorted before returning
+   :type doublecheck: `bool`
+   :arg reverse: Sort in reverse numerical order
+   :type reverse: `bool`
+
+ */
+proc InsertionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+  var comparator = if reverse then reversecomparator else defaultcomparator;
+  insertionSort(Data, comparator);
+  if doublecheck then
+    if !isSorted(Data) then
+      halt("InsertionSort failed to sort: ", Data);
+}
+
+/*
+   Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
+
+   :arg Data: The array to be sorted
+   :type Data: [] `eltType`
+   :arg minlen: When the array size is less than `minlen` use insertion sort algorithm
+   :type minlen: `integral`
+   :arg doublecheck: Verify the array is correctly sorted before returning
+   :type doublecheck: `bool`
+   :arg reverse: Sort in reverse numerical order
+   :type reverse: `bool`
+
+ */
+proc MergeSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+  var comparator = if reverse then reversecomparator else defaultcomparator;
+  mergeSort(Data, minlen, comparator);
+  if doublecheck then
+    if !isSorted(Data) then
+      halt("MergeSort failed to sort: ", Data);
+}
+
 /*
    Verify that the array `Data` is in sorted order and halt if any element is
    out of order.
@@ -580,56 +648,6 @@ proc VerifySort(Data: [?Dom] ?eltType, param reverse=false) {
   } else {
     return isSorted(Data);
   }
-}
-
-
-/*
-   Check if `Data` is in sorted order
-
-   :arg Data: The array to verify
-   :type Data: [] `eltType`
-   :arg comparator: Record that redefines the comparison mechanism with one of
-      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
-
- */
-proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator): bool {
-  chpl_check_comparator(comparator, Data(Dom.dim(1).low));
-  for i in Dom.low..Dom.high-1 do
-    if chpl_compare(Data(i+1), Data(i), comparator) < 0 then
-      return false;
-  return true;
-}
-
-
-//
-// This is a first draft "sorterator" which is designed to take some
-// other iterator/iterable and yield its elements, in sorted order.
-//
-// The main limitations in the current code are (1) it should put some
-// sort of constraint on 'x' to limit it to types for which this makes
-// sense; and (2) there should be some generic way to say "y is an
-// array of x's element type" (or to infer its element type) without
-// saying a priori how big it is.  Without these mods, the result is
-// that the sorterator works when it does and probably is confusing
-// when it doesn't.
-//
-/*
-   Yield the elements of argument `x` in sorted order.
-
-   :arg x: An iterable value to be sorted and yielded element by element
-   :type x: `iterable`
-   :arg comparator: Record that redefines the comparison mechanism with one of
-      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
-
-   :yields: The elements of x in sorted order
-   :ytype: x's element type
-
- */
-iter sorted(x, comparator:?rec=defaultcomparator) {
-  var y = x;
-  quickSort(y, comparator=comparator);
-  for i in y do
-    yield i;
 }
 
 
