@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2011, 2013 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -433,7 +433,7 @@ hwloc_aix_get_sth_membind(hwloc_topology_t topology, rstype_t what, rsid_t who, 
 
   hwloc_bitmap_free(hwloc_set);
 
-  *policy = HWLOC_MEMBIND_DEFAULT;
+  *policy = HWLOC_MEMBIND_BIND;
   res = 0;
 
 out:

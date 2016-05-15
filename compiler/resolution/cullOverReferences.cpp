@@ -33,10 +33,10 @@ refNecessary(SymExpr*                      se,
 //
 // Should we switch to the "value" function?
 //
-// Generally we continue to so do for non-lvalue references when a value
-// is acceptable.  However functions that return strings prefer to use
-// the by-ref version so long as there is no specialization on
-// the setter param
+// Here the "value" function includes blank return intent
+// and also const ref return intent.
+//
+// Returning 'false' means to use the 'ref' return intent version.
 static bool
 shouldUseByValueFunction(FnSymbol*                     fn,
                          SymExpr*                      se,
@@ -51,8 +51,37 @@ refNecessary(SymExpr*                      se,
              Map<Symbol*, Vec<SymExpr*>*>& useMap) {
   Vec<SymExpr*>* defs = defMap.get(se->var);
 
-  if (defs && defs->n > 1)
-    return true;
+  if (defs && defs->n > 1) {
+    // If se is a reference that is written to,
+    // we need to keep the ref version.
+
+    // If it is not a reference, it's not clear why
+    // this code is being run...
+    INT_ASSERT(se->getValType() != se->typeInfo());
+
+    // We're only looking for things that set the value.
+    // We don't care about PRIM_MOVEs b/c they only set the reference.
+    // We do care about PRIM_ASSIGN or if the argument is passed
+    // to a function (typically = ) as ref, inout, or out argument.
+    bool valueIsSet = false;
+    for_defs(def, defMap, se->var) {
+      if (def->parentExpr) {
+        if (CallExpr* parentCall = toCallExpr(def->parentExpr)) {
+          if (parentCall->isPrimitive(PRIM_MOVE)) {
+            // Ignore this def
+            // We don't care about a PRIM_MOVE because it's setting
+            // a reference
+          } else {
+            valueIsSet = true;
+          }
+        }
+      }
+    }
+
+    if (valueIsSet) {
+      return true;
+    }
+  }
 
   for_uses(use, useMap, se->var) {
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
@@ -161,13 +190,13 @@ refNecessary(SymExpr*                      se,
 // the AUTO_COPY/AUTO_DESTROY flags as necessary to enable the
 // callDestructors pass to operate correctly.
 //
-// As far as I can tell this switch is, at best, only lossely coupled to
+// As far as I can tell this switch is, at best, only loosely coupled to
 // the the setter param.   Most functions that return with ref-intent do
 // not inspect the setter param but I think that some portions of the
 // compiler assume that setter = true for the by-ref version and
 // setter = false for the by-value version.  If this is correct then there
 // could be programs in which the function replacement does not track the
-// setter paramc orrectly.
+// setter param correctly.
 //
 // Careful separation of "by-ref" behavior and the management of the
 // setter param will require additional effort.
@@ -252,8 +281,23 @@ void cullOverReferences() {
         }
 
         if (lhs && useMap.get(lhs->var) && useMap.get(lhs->var)->n > 0) {
-          // If the LHS was used, set it based on the
+          // If the LHS was used, set it to the address of the
           // new temporary (which is the function return value)
+
+          FnSymbol* moveInFn = toFnSymbol(move->parentSymbol);
+          INT_ASSERT(moveInFn);
+          Symbol* retSymbol = moveInFn->getReturnSymbol();
+          // Check: are we adding a return of a local variable ?
+          for_uses(use, useMap, lhs->var) {
+            if (CallExpr* useCall = toCallExpr(use->parentExpr))
+              if (useCall->isPrimitive(PRIM_MOVE))
+                if (SymExpr* useCallLHS = toSymExpr(useCall->get(1)))
+                  if (useCallLHS->var == retSymbol) {
+                    USR_FATAL_CONT(move, "illegal expression to return by ref");
+                    USR_PRINT(refCall, "called function returns a value not a reference");
+                  }
+          }
+
           move->insertAfter(new CallExpr(PRIM_MOVE,
                                          lhs->var,
                                          new CallExpr(PRIM_ADDR_OF, tmp)));

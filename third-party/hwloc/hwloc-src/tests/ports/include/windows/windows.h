@@ -1,5 +1,5 @@
 /*
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * See COPYING in top-level directory.
  */
@@ -18,7 +18,8 @@ typedef uint64_t DWORDLONG;
 typedef DWORDLONG ULONGLONG, *PULONGLONG;
 typedef unsigned char BYTE, UCHAR;
 typedef unsigned short WORD, USHORT;
-typedef unsigned long ULONG_PTR, DWORD_PTR, DWORD, *PDWORD, *PDWORD_PTR;
+typedef unsigned int UINT, UINT_PTR, DWORD, *PDWORD, *LPDWORD;
+typedef unsigned long ULONG_PTR, DWORD_PTR, *PDWORD_PTR;
 typedef const char *LPCSTR;
 typedef int (*FARPROC)(void);
 typedef void *PVOID,*LPVOID;

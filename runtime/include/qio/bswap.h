@@ -65,7 +65,7 @@
 #  define REDO_BSWAP_64
 # endif
 // With the PGI compiler, there is a version of byteswap.h with that
-// check removed, so we always use the compatability 64-bit
+// check removed, so we always use the compatibility 64-bit
 // methods with PGI.
 # ifdef __PGI
 #  define REDO_BSWAP_64

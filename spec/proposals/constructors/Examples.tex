@@ -142,7 +142,7 @@ According to the proposal, these would result in the following AST:
 \end{numberedchapel}
 \noindent
 Note that the primitive \chpl{'move'} in the above code is intended to mean a bit-wise
-copy.  It corresponds to whatever primitive operation in the implmentation accomplishes
+copy.  It corresponds to whatever primitive operation in the implementation accomplishes
 this, so it is not tied to the deprecated \chpl{PRIM_MOVE} primitive.  Reference to its
 replacement \chpl{PRIM_ASSIGN} was avoided, because its representation in AST logging is
 \chpl{'='}, which suggests assignment.  Assignment in general means more than a
@@ -363,7 +363,7 @@ will give rise to the following AST:
   (call _construct__domain_2_int64_t_F G) // Calls domain(2,int(64),false)(noinit=true)
 \end{numberedchapel}
 \noindent
-For the domain labelled \chpl{D}, the type constructor supplies default values for the
+For the domain labeled \chpl{D}, the type constructor supplies default values for the
 \chpl{idxType} and \chpl{stridable} type parameters.  These are \chpl{int(64)} and
 \chpl{false}, respectively.  It then calls the default (i.e. zero-args) constructor
 through \chpl{_defaultOf()}.

@@ -11,6 +11,6 @@ This argument is not present if these last
 Interestingly, if these last 10 lines are put in their own file, it
 compiles.
 
-The _endCount argument is added in paralell.cpp.
+The _endCount argument is added in parallel.cpp.
 
 

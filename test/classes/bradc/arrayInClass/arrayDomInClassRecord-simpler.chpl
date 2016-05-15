@@ -20,7 +20,7 @@ writeln("myR is: ", myR);
 // after the user code has been called and in resolveAutoCopies().
 // For some reason when the resolution occurs this late in the game,
 // it doesn't get the dynamic dispatch correct and dispatches to the
-// pure virual function in the root base class.  I tried to reproduce
+// pure virtual function in the root base class.  I tried to reproduce
 // this in a standalone test with user-defined records and classes,
 // but had difficulty creating a similar type hierarchy that would
 // resolve a virtual function in resolveAutoCopies() but not

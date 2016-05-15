@@ -810,7 +810,7 @@ class CCodeGenConsumer : public ASTConsumer {
      // ASTConsumer override:
      // \brief Handle a pragma that emits a mismatch identifier and value to
      // the object file for the linker to work with.  Currently, this only
-     // exists tosupport Microsoft's #pragma detect_mismatch.
+     // exists to support Microsoft's #pragma detect_mismatch.
      virtual void HandleDetectMismatch(llvm::StringRef Name,
                                                llvm::StringRef Value) LLVM_CXX_OVERRIDE {
        Builder->AddDetectMismatch(Name, Value);
@@ -1913,7 +1913,7 @@ void makeBinaryLLVM(void) {
   // Start linker options with C args
   // This is important to get e.g. -O3 -march=native
   // since with LLVM we are doing link-time optimization.
-  // We know it's OK to inclued -I (e.g.) since we're calling
+  // We know it's OK to include -I (e.g.) since we're calling
   // clang++ to link so that it can optimize the .bc files.
   options = cargs;
 

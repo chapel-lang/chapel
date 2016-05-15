@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Copyright © 2009-2014 Inria.  All rights reserved.
+# Copyright © 2009-2016 Inria.  All rights reserved.
 # Copyright © 2009-2012 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 # Copyright © 2011-2012 Oracle and/or its affiliates.  All rights reserved.
@@ -479,6 +479,7 @@ HWLOC_W3_GENERATOR = @HWLOC_W3_GENERATOR@
 HWLOC_X11_CPPFLAGS = @HWLOC_X11_CPPFLAGS@
 HWLOC_X11_LIBS = @HWLOC_X11_LIBS@
 HWLOC_XML_LOCALIZED = @HWLOC_XML_LOCALIZED@
+HWLOC_runstatedir = @HWLOC_runstatedir@
 HWLOC_top_builddir = @HWLOC_top_builddir@
 HWLOC_top_srcdir = @HWLOC_top_srcdir@
 INSTALL = @INSTALL@
@@ -517,6 +518,7 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PDFLATEX = @PDFLATEX@
 PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
+RMPATH = @RMPATH@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -588,9 +590,10 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = $(HWLOC_CFLAGS)
+# Beware that files are not rebuilt automatically when reconfiguring with different paths in these flags.
 AM_CPPFLAGS = $(HWLOC_CPPFLAGS) -DHWLOC_INSIDE_LIBHWLOC \
 	-DHWLOC_PLUGINS_PATH=\"$(HWLOC_PLUGINS_PATH)\" \
-	$(am__append_30)
+	-DRUNSTATEDIR=\"$(HWLOC_runstatedir)\" $(am__append_30)
 AM_LDFLAGS = $(HWLOC_LDFLAGS)
 EXTRA_DIST = dolib.c $(am__append_32)
 

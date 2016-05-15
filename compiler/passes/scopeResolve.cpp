@@ -1111,7 +1111,7 @@ static void build_constructor(AggregateType* ct) {
           fieldNamesSet.set_add(superArg->sym->name);
 
           // Inserting each successive ancestor argument at the head in
-          // reverse-lexcial order results in all of the arguments appearing
+          // reverse-lexical order results in all of the arguments appearing
           // in lexical order, starting with those in the most ancient class
           // and ending with those in the most-derived class.
           fn->insertFormalAtHead(superArg);
@@ -1481,7 +1481,7 @@ static void resolveUnresolvedSymExprs()
   //  - import all C symbols at an earlier point
   //      (but that might add lots of unused garbage to the Chapel AST
   //       for e.g. #include <stdio.h>; and it might cause the C-to-Chapel
-  //       translater to need to handle more platform/compiler-specific stuff,
+  //       translator to need to handle more platform/compiler-specific stuff,
   //       and it might lead to extra naming conflicts).
   forv_Vec(UnresolvedSymExpr, unresolvedSymExpr, gUnresolvedSymExprs) {
     // Only try resolving symbols that are new after last attempt.
@@ -2584,7 +2584,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
           } else {
             std::map<const char*, const char*>::iterator innerIt = renamed.find(it->second);
             if (innerIt != renamed.end()) {
-              // We found this symobl in the renamed list and the outer
+              // We found this symbol in the renamed list and the outer
               // renamed list so add the outer use's new name as the key, and
               // our old name as the old name to use.
               newRenamed[it->first] = innerIt->second;
@@ -2605,7 +2605,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
       }
     } else {
       // The inner use did not specify an 'except' or 'only' list,
-      // so propogate our 'only' list and/or renamed list to it.
+      // so propagate our 'only' list and/or renamed list to it.
       UseStmt* newUse = copy();
       for_vector(const char, toInclude, outer->named) {
         newUse->named.push_back(toInclude);

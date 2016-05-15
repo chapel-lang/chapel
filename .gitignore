@@ -389,6 +389,8 @@ test/separate_compilation/jturner/libsimplefloat.so.a
 test/separate_compilation/jturner/libsubclass.so.a
 
 /test/studies/590o/alexco/*.txt
+/test/studies/IMSuite/leader_elect_lcr/outputleader_elect_lcr_*.txt
+/test/studies/IMSuite/vertexColor/outputvertexColoring*.txt
 /test/studies/amr/**/_output
 /test/studies/amr/**/*.tmp.save
 /test/studies/dijkstra/RtsGraph_out.txt

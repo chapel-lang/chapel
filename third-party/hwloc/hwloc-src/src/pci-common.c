@@ -1,5 +1,5 @@
 /*
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -8,6 +8,7 @@
 #include <hwloc/plugins.h>
 #include <private/private.h>
 #include <private/debug.h>
+#include <private/misc.h>
 
 #ifdef HWLOC_DEBUG
 static void

@@ -344,7 +344,7 @@ Expr* ParamForLoop::getNextExpr(Expr* expr)
 
    * Inserts the body before the expression beforeHere
    * i should be a loop variable index (used to label iterations)
-   * Assumes that map already contains the mapping redifining
+   * Assumes that map already contains the mapping redefining
      the index variable.
    * continueSym is the symbol for the loop's continue label.
      This function will replace that with a new continue label

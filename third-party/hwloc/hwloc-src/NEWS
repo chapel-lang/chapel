@@ -19,8 +19,55 @@ in v0.9.1).
 
 Version 1.11.3
 --------------
-* Fix /proc/mounts parsing on Linux by using mntent.h.
-  Thanks to Nathan Hjelm for reporting the issue.
+* Bug fixes
+  + Fix a memory leak on Linux S/390 hosts with books.
+  + Fix /proc/mounts parsing on Linux by using mntent.h.
+    Thanks to Nathan Hjelm for reporting the issue.
+  + Fix a x86 infinite loop on VMware due to the x2APIC feature being
+    advertised without actually being fully supported.
+    Thanks to Jianjun Wen for reporting the problem and testing the patch.
+  + Fix the return value of hwloc_alloc() on mmap() failure.
+    Thanks to Hugo Brunie for reporting the issue.
+  + Fix the return value of command-line tools in some error cases.
+  + Do not break individual thread bindings during x86 backend discovery in a
+    multithreaded process. Thanks to Farouk Mansouri for the report.
+  + Fix hwloc-bind --membind for CPU-less NUMA nodes.
+  + Fix some corner cases in the XML export/import of application userdata.
+* API Improvements
+  + Add HWLOC_MEMBIND_BYNODESET flag so that membind() functions accept
+    either cpusets or nodesets.
+  + Add hwloc_get_area_memlocation() to check where pages are actually
+    allocated. Only implemented on Linux for now.
+    - There's no _nodeset() variant, but the new flag HWLOC_MEMBIND_BYNODESET
+      is supported.
+  + Make hwloc_obj_type_sscanf() parse back everything that may be outputted
+    by hwloc_obj_type_snprintf().
+* Detection Improvements
+  + Allow the x86 backend to add missing cache levels, so that it completes
+    what the Solaris backend lacks.
+    Thanks to Ryan Zezeski for reporting the issue.
+  + Do not filter-out FibreChannel PCI adapters by default anymore.
+    Thanks to Matt Muggeridge for the report.
+  + Add support for CUDA compute capability 6.x.
+* Tools
+  + Add --support to hwloc-info to list supported features, just like with
+    hwloc_topology_get_support().
+    - Also add --objects and --topology to explicitly switch between the
+      default modes.
+  + Add --tid to let hwloc-bind operate on individual threads on Linux.
+  + Add --nodeset to let hwloc-bind report memory binding as NUMA node sets.
+  + hwloc-annotate and lstopo don't drop application userdata from XMLs anymore.
+    - Add --cu to hwloc-annotate to drop these application userdata.
+  + Make the hwloc-dump-hwdata dump directory configurable through configure
+    options such as --runstatedir or --localstatedir.
+* Misc Improvements
+  + Add systemd service template contrib/systemd/hwloc-dump-hwdata.service
+    for launching hwloc-dump-hwdata at boot on Linux.
+    Thanks to Grzegorz Andrejczuk.
+  + Add HWLOC_PLUGINS_BLACKLIST environment variable to prevent some plugins
+    from being loaded. Thanks to Alexandre Denis for the suggestion.
+  + Small improvements for various Windows build systems,
+    thanks to Jonathan L Peyton and Marco Atzeri.
 
 
 Version 1.11.2

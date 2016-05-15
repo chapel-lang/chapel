@@ -1,9 +1,11 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009 inria.  All rights reserved.
+ * Copyright © 2009-2016 Inria.  All rights reserved.
  * Copyright © 2009 Université Bordeaux
  * See COPYING in top-level directory.
  */
+
+#include <private/autogen/config.h>
 
 #include <stdlib.h>
 #include <stdio.h>

@@ -213,7 +213,7 @@ static Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
 static Map<Type*,FnSymbol*> runtimeTypeToValueMap; // convertRuntimeTypeToValue
 
 static std::map<std::string, std::pair<AggregateType*, FnSymbol*> > functionTypeMap; // lookup table/cache for function types and their representative parents
-static std::map<FnSymbol*, FnSymbol*> functionCaptureMap; //loopup table/cache for function captures
+static std::map<FnSymbol*, FnSymbol*> functionCaptureMap; //lookup table/cache for function captures
 
 // map of compiler warnings that may need to be reissued for repeated
 // calls; the inner compiler warning map is from the compilerWarning
@@ -1641,6 +1641,7 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
   workingFn->addFlag(FLAG_EXPANDED_VARARGS);
 
   // Handle specified number of variable arguments.
+  // sym->var is not a VarSymbol e.g. in: proc f(param n, v...n)
   if (VarSymbol* nVar = toVarSymbol(sym->var)) {
     if (nVar->type == dtInt[INT_SIZE_DEFAULT] && nVar->immediate) {
       VarSymbol* var       = new VarSymbol(formal->name);
@@ -1785,6 +1786,9 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
       }
 
       formal->defPoint->remove();
+    } else {
+      // Just documenting the current status.
+      INT_FATAL(formal, "unexpected non-VarSymbol");
     }
   }
 }
@@ -1826,7 +1830,7 @@ expandVarArgs(FnSymbol* origFn, int numActuals) {
     // Adding 'ref' intent to the "ret" arg of
     //  inline proc =(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }
     // in SysBasic.chpl:150 causes a segfault.
-    // The addition of the arg->type test in the folloiwng conditional is a
+    // The addition of the arg->type test in the following conditional is a
     // workaround.
     // A better approach would be to add a check that each formal of a function
     // has a type (if that can be expected) and then fix the fault where it occurs.
@@ -2762,7 +2766,7 @@ printResolutionErrorUnresolved(
       USR_PRINT(call, "did you forget the 'new' keyword?");
   }
   if( developer ) {
-    // Should this be controled another way?
+    // Should this be controlled another way?
     USR_FATAL_CONT(call, "unresolved call had id %i", call->id);
   }
   USR_STOP();
@@ -3346,7 +3350,7 @@ static bool isInConstructorLikeFunction(CallExpr* call) {
 }
 
 // Is the function of interest invoked from a constructor
-// or initialize(), with the constructor's or intialize's 'this'
+// or initialize(), with the constructor's or initialize's 'this'
 // as the receiver actual.
 static bool isInvokedFromConstructorLikeFunction(int stackIdx) {
   if (stackIdx > 0) {
@@ -5219,7 +5223,7 @@ static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
     bool unsafeGeneric = true;  // Assume the worst until proven otherwise
 
     //
-    // Grab the generic type's contructor if it has one.  Things like
+    // Grab the generic type's constructor if it has one.  Things like
     // classes and records should.  Things like 'integral' will not.
     //
     FnSymbol* typeCons = type->defaultTypeConstructor;
@@ -7440,7 +7444,7 @@ child for that class, passing that same method 'fn'.
 addToVirtualMaps adds to the virtual maps all methods
 in that dispatch child that could override the above 'fn'.
 
-These functions go down the inheritance heirarchy because in the current
+These functions go down the inheritance hierarchy because in the current
 language, a call to a class with static type could dispatch to any child call.
 If calling an arbitrary super method is supported, a call to an object of static
 child type could end up calling something in the parent.
@@ -7622,7 +7626,7 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
 }
 
 
-// Add overrides of fn to virtual maps down the inheritance heirarchy
+// Add overrides of fn to virtual maps down the inheritance hierarchy
 static void
 addAllToVirtualMaps(FnSymbol* fn, AggregateType* pct) {
   forv_Vec(Type, t, pct->dispatchChildren) {
@@ -8091,7 +8095,7 @@ static void resolveDynamicDispatches() {
   // remove entries in virtualChildrenMap that are not in
   // virtualMethodTable. When a parent has a generic method and
   // a subclass has a specific one, the virtualChildrenMap might
-  // get multilpe entries while the logic above with childSet
+  // get multiple entries while the logic above with childSet
   // ensures that the virtualMethodTable only has one entry.
   filterVirtualChildren();
 
@@ -9098,7 +9102,7 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
 
   block->insertAtTail(new CallExpr(PRIM_RETURN, var));
 
-  // Replace the body of the orignal chpl__buildRuntime...Type() function.
+  // Replace the body of the original chpl__buildRuntime...Type() function.
   fn->body->replace(block);
 }
 

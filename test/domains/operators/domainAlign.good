@@ -1,0 +1,3 @@
+D is: {0..10, 0..10 by 2}
+D2 is: {0..10 by 2 align 1, 0..10 by 2}
+D3 is: {0..10 by 2 align 1, 0..10 by 2 align 1}

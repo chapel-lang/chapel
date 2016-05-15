@@ -273,6 +273,12 @@ module ChapelArray {
       return new _distribution(value, value);
   }
 
+  // Run-time type support
+  //
+  // NOTE: the bodies of functions marked with runtime type init fn such as
+  // chpl__buildDomainRuntimeType and chpl__buildArrayRuntimeType are replaced
+  // by the compiler to just create a record storing the arguments. The body
+  // is moved by the compiler to convertRuntimeTypeToValue.
 
   //
   // Support for domain types
@@ -385,6 +391,9 @@ module ChapelArray {
 
     //Size the domain appropriately for the number of keys
     //This prevents expensive resizing as keys are added.
+    // Note that k/2 is the number of keys, since the tuple
+    // passed to this function has 2 elements (key and value)
+    // for each array element.
     D.requestCapacity(k/2);
     var A : [D] valType;
 
@@ -559,7 +568,7 @@ module ChapelArray {
 
   proc chpl__isRectangularDomType(type domainType) param {
     var dom: domainType;
-    return isRectangularDom(dom);
+    return isDomainType(domainType) && isRectangularDom(dom);
   }
 
   proc chpl__isSparseDomType(type domainType) param {
@@ -801,6 +810,11 @@ module ChapelArray {
     }
 
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
+    // the locale grid
+    proc targetLocales() {
+      return _value.dsiTargetLocales();
+    }
   }  // record _distribution
 
   inline proc ==(d1: _distribution(?), d2: _distribution(?)) {
@@ -1021,7 +1035,11 @@ module ChapelArray {
       _value.dsiRemove(i);
     }
 
-    pragma "no doc"
+    /* Request space for a particular number of values in an
+       domain.
+
+       Currently only applies to associative domains.
+     */
     proc requestCapacity(i) {
 
       if i < 0 {
@@ -1382,7 +1400,98 @@ module ChapelArray {
 
     pragma "no doc"
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
+    /* Cast a rectangular domain to another rectangular domain type.
+       If the old type is stridable and the new type is not stridable,
+       ensure that the stride was 1.
+     */
+    proc safeCast(type t)
+      where chpl__isRectangularDomType(t) && isRectangularDom(this) {
+      const tmpD: t;
+      if tmpD.rank != this.rank then
+        compilerError("rank mismatch in cast");
+      if tmpD.idxType != this.idxType then
+        compilerError("idxType mismatch in cast");
+      if tmpD.stridable == this.stridable then
+        return this;
+      else if !tmpD.stridable && this.stridable {
+        const inds = this.getIndices();
+        var unstridableInds: rank*range(tmpD.idxType, stridable=false);
+
+        for param dim in 1..inds.size {
+          if inds(dim).stride != 1 then
+            halt("non-stridable domain assigned non-unit stride in dimension ", dim);
+          unstridableInds(dim) = inds(dim).safeCast(range(tmpD.idxType,
+                                                          stridable=false));
+        }
+        tmpD.setIndices(unstridableInds);
+        return tmpD;
+      } else /* if tmpD.stridable && !this.stridable */ {
+        tmpD = this;
+        return tmpD;
+      }
+    }
+
+    // the locale grid
+    proc targetLocales() {
+      return _value.dsiTargetLocales();
+    }
+
+    /* Return true if the local subdomain can be represented as a single
+       domain. Otherwise return false. */
+    proc hasSingleLocalSubdomain() param {
+      return _value.dsiHasSingleLocalSubdomain();
+    }
+
+    /* Return the subdomain that is local to the current locale */
+    proc localSubdomain() {
+      if !_value.dsiHasSingleLocalSubdomain() then
+        compilerError("Domain's local domain is not a single domain");
+      return _value.dsiLocalSubdomain();
+    }
+
+    /* Yield the subdomains that are local to the current locale */
+    iter localSubdomains() {
+      if _value.dsiHasSingleLocalSubdomain() then
+        yield _value.dsiLocalSubdomain();
+      else
+        for d in _value.dsiLocalSubdomains() do yield d;
+    }
   }  // record _domain
+
+  /* Cast a rectangular domain to a new rectangular domain type.  If the old
+     type was stridable and the new type is not stridable then assume the
+     stride was 1 without checking.
+
+     For example:
+     {1..10 by 2}:domain(stridable=false)
+
+     results in the domain '{1..10}'
+   */
+  pragma "no doc"
+  proc _cast(type t, d: domain) where chpl__isRectangularDomType(t) && isRectangularDom(d) {
+    const tmpD: t;
+    if tmpD.rank != d.rank then
+      compilerError("rank mismatch in cast");
+    if tmpD.idxType != d.idxType then
+      compilerError("idxType mismatch in cast");
+
+    if tmpD.stridable == d.stridable then
+      return d;
+    else if !tmpD.stridable && d.stridable {
+      var inds = d.getIndices();
+      var unstridableInds: d.rank*range(tmpD.idxType, stridable=false);
+
+      for param i in 1..tmpD.rank {
+        unstridableInds(i) = inds(i):range(tmpD.idxType, stridable=false);
+      }
+      tmpD.setIndices(unstridableInds);
+      return tmpD;
+    } else /* if tmpD.stridable && !d.stridable */ {
+      tmpD = d;
+      return tmpD;
+    }
+  }
 
   proc chpl_countDomHelp(dom, counts) {
     var ranges = dom.dims();
@@ -2675,6 +2784,14 @@ module ChapelArray {
   }
 
   proc =(ref a: domain, b: domain) {
+    if a.rank != b.rank then
+      compilerError("rank mismatch in domain assignment");
+    if a.idxType != b.idxType then
+      compilerError("index type mismatch in domain assignment");
+    if isRectangularDom(a) && isRectangularDom(b) then
+      if !a.stridable && b.stridable then
+        compilerError("cannot assign from a stridable domain to an unstridable domain without an explicit cast");
+
     if !isIrregularDom(a) && !isIrregularDom(b) {
       for e in a._value._arrs do {
         on e do e.dsiReallocate(b);
@@ -3035,6 +3152,27 @@ module ChapelArray {
     for param i in 1..a.rank do
       r(i) = a.dim(i) by t(i);
     var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, true, r);
+    if !noRefCount then
+      if (d.linksDistribution()) then
+        d.dist.incRefCount();
+    return _newDomain(d);
+  }
+
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_align(a:domain, b) { ... }
+   *
+   * because the parser renames the routine since 'align' is a keyword.
+   */
+  proc align(a: domain, b) {
+    var r: a.rank*range(a._value.idxType,
+                      BoundedRangeType.bounded,
+                      a.stridable);
+    var t = _makeIndexTuple(a.rank, b, expand=true);
+    for param i in 1..a.rank do
+      r(i) = a.dim(i) align t(i);
+    var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, a.stridable, r);
     if !noRefCount then
       if (d.linksDistribution()) then
         d.dist.incRefCount();

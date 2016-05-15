@@ -50,7 +50,7 @@ module CString {
   // We can't use the catch-all initCopy or autoCopy because of the
   // transformation of c_strings into string for generic parameters
   // TODO: cant specify return type or else we run into a bug were we do an
-  //       assignment out of these fuctions, causing acess to uninitalized
+  //       assignment out of these functions, causing access to uninitialized
   //       memory for c_string_copy
   pragma "init copy fn"
   inline proc chpl__initCopy(x: c_string) : c_string {
