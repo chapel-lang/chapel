@@ -1989,9 +1989,8 @@ buildClassDefExpr(const char* name,
                   const char* docs) {
   AggregateType* ct = toAggregateType(type);
   // Hook the string type in the modules
-  // We have to do this here so we can reason about dtString as soon as
-  // possible in the compiler. gatherWellKnownTypes runs too late to be of use
-  // to us.
+  // to avoid duplication with dtString created in initPrimitiveTypes().
+  // gatherWellKnownTypes runs too late to help.
   if (strcmp("string", name) == 0) {
     *dtString = *ct;
     // These fields get overwritten with `ct` by the assignment. These fields are

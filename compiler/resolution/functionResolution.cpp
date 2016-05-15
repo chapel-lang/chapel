@@ -378,6 +378,7 @@ static void insertDynamicDispatchCalls();
 static Type* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
 static void initializeClass(Expr* stmt, Symbol* sym);
+static void ensureAndResolveInitStringLiterals();
 static void handleRuntimeTypes();
 static void pruneResolvedTree();
 static void removeCompilerWarnings();
@@ -7852,7 +7853,7 @@ resolve() {
 
   // Resolve the string literal constructors after everything else since new
   // ones may be created during postFold
-  resolveFns(initStringLiterals);
+  ensureAndResolveInitStringLiterals();
 
   handleRuntimeTypes();
 
@@ -8615,6 +8616,15 @@ initializeClass(Expr* stmt, Symbol* sym) {
       }
     }
   }
+}
+
+
+static void ensureAndResolveInitStringLiterals() {
+  if (!initStringLiterals) {
+    INT_ASSERT(fMinimalModules);
+    createInitStringLiterals();
+  }
+  resolveFns(initStringLiterals);
 }
 
 

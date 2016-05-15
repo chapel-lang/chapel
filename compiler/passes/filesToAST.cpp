@@ -211,5 +211,11 @@ static void gatherWellKnownTypes() {
     }
 
     USR_STOP();
+  } else {
+    if (dtString->symbol == NULL) {
+      // This means there was no declaration of the string type.
+      gAggregateTypes.remove(gAggregateTypes.index(dtString));
+      delete dtString;
+    }
   }
 }
