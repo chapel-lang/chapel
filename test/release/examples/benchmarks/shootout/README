@@ -56,6 +56,16 @@ o have the compiler automatically optimize writes to 'stdout' in
   channel to it.
 
 
+pidigits.chpl
+-------------
+o promote mpz_t types to a record-based implementation with:
+  - a better name
+  - arithmetic operators defined for it
+  - automatic memory reclamation when it leaves scope
+  - support for native Chapel types rather than exposing C types
+    (using safecasts at any downward-facing interfaces)
+
+
 threadring.chpl
 ---------------
 o map Chapel's sync vars more directly down to Qthreads' sync vars
