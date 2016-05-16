@@ -994,7 +994,7 @@ static void checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn) {
 }
 
 //
-// Set up ancors, if not already, so we can add reduction-related code
+// Set up anchors, if not already, so we can add reduction-related code
 // via refRef->insertBefore() within 'fn'.
 //
 // "redRef" is short for "reference for reduction".
@@ -1024,7 +1024,7 @@ void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2)
 }
 
 //
-// We won't need the redRef ancors any more. Remove them if we set them up.
+// We won't need the redRef anchors any more. Remove them if we set them up.
 //
 void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
   if (!redRef1) return;
