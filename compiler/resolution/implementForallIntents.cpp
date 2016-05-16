@@ -354,7 +354,7 @@ static void addActualsTo_toLeader(Symbol* serIterSym, int& numLeaderActuals,
     } else {
       Symbol* actual = ovar;
       if (isReduce) {
-        // pass chpl__reduceGlob insetad
+        // pass chpl__reduceGlob instead
         actual = globalOp;
       } else if (isReferenceType(ovar->type)) {
         // If it is a reference, dereference it. E.g. m-lsms.chpl (-nl 1?).
@@ -449,7 +449,7 @@ static void insertExtractFromYieldAtHead(BlockStmt* block, int ix,
 // Strictly speaking, a copy constructor aka chpl__initCopy()
 // needs to be invoked from tuple component into the shadow variable,
 // then the tuple component should be destructed.
-// We forego these two operations, simply transfering the bits,
+// We forego these two operations, simply transferring the bits,
 // because the cases where that matters are going to be rare.
 //
 static void extractFromLeaderYield(CallExpr* lcCall, int ix,
@@ -712,7 +712,7 @@ void implementForallIntents1(DefExpr* defChplIter)
   //  - forallBody2 == NULL
   //  - forallBody1->byrefVars is what forallBody2->byrefVars is above
   //
-  // - In all three cases, the user-speicified contents of the 'with' clause
+  // - In all three cases, the user-specified contents of the 'with' clause
   //   are appended to forallBody1/2->byrefVars specified above
   //
   // - Standalone case:

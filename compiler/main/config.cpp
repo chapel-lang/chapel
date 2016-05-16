@@ -54,7 +54,7 @@ void checkConfigs() {
 // This function is designed to convert a name/value pair of C strings in to
 // corresponding AST that is then inserted into the "configMap".
 //
-// This is currently acheived by synthesizing a chapel statement as a string,
+// This is currently achieved by synthesizing a chapel statement as a string,
 // invoking the parser, and then extracting the desired portion of the result.
 // This means that this function has some knowledge of the structure of the
 // generated AST

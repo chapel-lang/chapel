@@ -2,6 +2,6 @@ Possible long-term things to do in the language
 -----------------------------------------------
 
 * permit uninstantiated generic classes to be returned from a function
-  see test/userse/thom/returnGeneric.chpl for example, and its
+  see test/users/thom/returnGeneric.chpl for example, and its
   (retired) future file for notes on challenges.
 

@@ -875,7 +875,7 @@ buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
-  Expr* stmt = NULL; // Initialized by buldSerialIteratorFn
+  Expr* stmt = NULL; // Initialized by buildSerialIteratorFn
   buildSerialIteratorFn(fn, iteratorName, expr, cond, indices, zippered, stmt);
 
   return new CallExpr(new DefExpr(fn));
@@ -1174,7 +1174,7 @@ static void setupForallIntents(CallExpr* withClause,
 
 /*
  * Build a forall loop that has only one level instead of a nested leader
- * follower loop. This single level loop will be handled similarily to
+ * follower loop. This single level loop will be handled similarly to
  * the leader loop in a leader/follower based forall.
  */
 static BlockStmt*
