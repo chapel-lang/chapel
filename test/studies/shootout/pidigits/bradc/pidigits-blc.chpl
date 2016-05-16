@@ -7,7 +7,7 @@
 
 use GMP;
 
-config const n = 50;                // Compute n digits of Pi, 50 by default
+config const n = 50;                // Compute n digits of Pi, 27 by default
 
 var numer, accum, denom, tmp1, tmp2: mpz_t;
 //
@@ -27,6 +27,8 @@ proc main() {
   // TODO: make our GMP methods accept uints, ints, etc. of various sizes so
   // that the user doesn't need to know C types?
 
+  param digitsPerLine = 10;
+
   //
   // extract and print n digits
   //
@@ -37,6 +39,16 @@ proc main() {
 
     if i % 10 == 0 then
       writeln("\t:", i);
+  }
+
+  //
+  // Pad out any trailing digits for the final line
+  //
+  const leftover = n%digitsPerLine;
+  if (leftover) {
+    for leftover..digitsPerLine do
+      write(" ");
+    writeln("\t:", n);
   }
 
   //

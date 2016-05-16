@@ -10,10 +10,19 @@ use GMP;
 config const n = 50;                // Compute n digits of Pi, 50 by default
 
 proc main() {
+  param digitsPerLine = 10;
+
   for (d,i) in zip(gen_digits(n), 1..) {
     write(d);
-    if i % 10 == 0 then
+    if i % digitsPerLine == 0 then
       writeln("\t:",i);
+  }
+
+  const leftover = n%digitsPerLine;
+  if (leftover) {
+    for leftover..digitsPerLine do
+      write(" ");
+    writeln("\t:", n);
   }
 }
 
