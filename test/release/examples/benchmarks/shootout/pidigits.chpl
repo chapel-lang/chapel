@@ -53,7 +53,7 @@ iter gen_digits(numDigits) {
         // Compute the next term
         //
         mpz_addmul_ui(accum, numer, 2);    // accum += numer * 2
-        mpz_mul_ui(accum, accum, k2);	   // accum *= (2k+1)
+        mpz_mul_ui(accum, accum, k2);      // accum *= (2k+1)
         mpz_mul_ui(denom, denom, k2);      // denom *= (2k+1)
         mpz_mul_ui(numer, numer, k);       // numer *= k
 
