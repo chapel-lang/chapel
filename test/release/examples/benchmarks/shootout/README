@@ -55,6 +55,11 @@ o have the compiler automatically optimize writes to 'stdout' in
   serial code segments to avoid the need to manually get a lock-free
   channel to it.
 
+o explore expressing the complex values using Chapel's 'complex' type,
+  even if it means plucking C.re and C.im out and operating on them
+  directly rather than using higher-level complex operations to avoid
+  overheads associated with using cleaner complex operations.
+
 
 pidigits.chpl
 -------------
