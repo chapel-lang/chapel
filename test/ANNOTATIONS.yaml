@@ -404,6 +404,10 @@ parOpEquals:
   02/28/15:
     - (no-local) Move the check for src==dst from comm_get to array op= (#1410)
 
+pidigits:
+  05/16/16:
+    - switched release version to use ledrug algorithm
+
 prk-stencil:
   02/14/16:
     - Improved performance on PRK-stencil (#3288)
