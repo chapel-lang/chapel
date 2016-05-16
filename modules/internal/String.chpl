@@ -99,6 +99,11 @@ module String {
 
   private config param debugStrings = false;
 
+  enum StrFmt {
+    ASCII,
+    UTF8
+  }
+
   //
   // String Implementation
   //
@@ -108,6 +113,8 @@ module String {
   pragma "ignore noinit"
   pragma "no default functions" // avoid the default (read|write)This routines
   record string {
+    param fmt: StrFmt;
+
     pragma "no doc"
     var len: int = 0; // length of string in bytes
     pragma "no doc"
@@ -130,6 +137,9 @@ module String {
       of a shallow copy.
      */
     proc string(s: string, owned: bool = true) {
+      if fmt == StrFmt.UTF8 then
+        compilerError("utf-8 strings are not yet supported");
+
       const sRemote = s.locale_id != chpl_nodeID;
       const sLen = s.len;
       this.owned = owned;
@@ -165,7 +175,10 @@ module String {
       the user to ensure that the underlying buffer is not freed if the
       `c_string` is not copied in.
      */
-    proc string(cs: c_string, owned: bool = true, needToCopy:  bool = true) {
+    proc string(cs: c_string, owned: bool = true, needToCopy: bool = true) {
+      if fmt == StrFmt.UTF8 then
+        compilerError("utf-8 strings are not yet supported");
+
       this.owned = owned;
       const cs_len = cs.length;
       this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
@@ -184,6 +197,9 @@ module String {
     // This constructor can cause a leak if owned = false and needToCopy = true
     proc string(buff: bufferType, length: int, size: int,
                 owned: bool = true, needToCopy: bool = true) {
+      if fmt == StrFmt.UTF8 then
+        compilerError("utf-8 strings are not yet supported");
+
       this.owned = owned;
       this.reinitString(buff, length, size, needToCopy);
     }
