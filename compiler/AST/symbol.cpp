@@ -3059,7 +3059,7 @@ std::string unescapeString(const char* const str, BaseAST *astForError) {
       continue;
     }
 
-    // handle \ ecapes
+    // handle \ escapes
     nextChar = str[pos++];
     switch(nextChar) {
       case '\'':
@@ -3120,7 +3120,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   SET_LINENO(stringLiteralModule);
 
   // Hash the string and return an existing symbol if found.
-  // Aka. uniqify all string literals
+  // Aka. uniquify all string literals
   Immediate imm;
   imm.const_kind = CONST_KIND_STRING;
   imm.string_kind = STRING_KIND_STRING;
@@ -3391,7 +3391,7 @@ immediate_type(Immediate *imm) {
       } else if (imm->string_kind == STRING_KIND_C_STRING) {
         return dtStringC;
       } else {
-        INT_FATAL("unhandled string immedate type");
+        INT_FATAL("unhandled string immediate type");
         break;
       }
     }

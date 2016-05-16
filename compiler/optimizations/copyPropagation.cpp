@@ -97,7 +97,7 @@
 //#
 //# We create a simple map from reference variables to the variable to which
 //# each refers.  When a reference is potentially or actually dereferenced, the
-//# referent needs to be invalidated using the standard algoritm.
+//# referent needs to be invalidated using the standard algorithm.
 //#
 //# The reference map is created at the beginning of the function and lasts for
 //# the entire function.
@@ -330,7 +330,7 @@ static bool isDef(SymExpr* se)
       if (se == call->get(1))
         if (!se->typeInfo()->symbol->hasFlag(FLAG_REF))
           // We select just the case where the referent is passed by value,
-          // because in the other case, the address of the objet is not
+          // because in the other case, the address of the object is not
           // returned, so that means that the address (i.e. the value of the
           // reference variable) does not change.
           return true;
@@ -427,7 +427,7 @@ static bool isUse(SymExpr* se)
       if (se == call->get(1))
       {
         if (se->typeInfo()->symbol->hasFlag(FLAG_REF))
-          // If two refs are equal, then one may subsitute for the other.
+          // If two refs are equal, then one may substitute for the other.
           return true;
         return false;
       }
@@ -673,7 +673,7 @@ static void removeKilledSymbols(std::vector<SymExpr*>& symExprs,
     // If se was in a (deref se) replaced by the value se points to, then se
     // has been removed from the tree.
     // At present, we assume the value is "just" a value, that reading it is
-    // not a defintion.  So here it can be ignored.
+    // not a definition.  So here it can be ignored.
     if (! se->parentExpr)
       continue;
 
