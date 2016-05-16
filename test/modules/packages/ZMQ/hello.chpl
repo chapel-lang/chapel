@@ -31,9 +31,11 @@ proc main(args: [] string) {
 
 proc Launcher(exec: string) {
   var toFlag = "--to=" + to;
-  var master = spawn(["master", "--mode=Master", toFlag],
+  var master = spawn(["master", "--mode=Master",
+                      "--memLeaks=" + memLeaks:string, toFlag],
                      env=env, executable=exec);
-  var worker = spawn(["worker", "--mode=Worker"],
+  var worker = spawn(["worker", "--mode=Worker",
+                      "--memLeaks=" + memLeaks:string],
                      env=env, executable=exec);
   master.communicate();
   worker.communicate();

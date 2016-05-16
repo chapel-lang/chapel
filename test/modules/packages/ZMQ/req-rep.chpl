@@ -45,8 +45,12 @@ proc main(args: [] string) {
 }
 
 proc Launcher(exec: string) {
-  var master = spawn(["master", "--mode=Master"], env=env, executable=exec);
-  var worker = spawn(["worker", "--mode=Worker"], env=env, executable=exec);
+  var master = spawn(["master", "--mode=Master",
+                      "--memLeaks=" + memLeaks:string],
+                     env=env, executable=exec);
+  var worker = spawn(["worker", "--mode=Worker",
+                      "--memLeaks=" + memLeaks:string],
+                     env=env, executable=exec);
   master.communicate();
   worker.communicate();
 }
