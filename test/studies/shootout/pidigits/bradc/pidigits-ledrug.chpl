@@ -76,7 +76,7 @@ iter gen_digits(numDigits) {
   }
 
   //
-  // Free memory associated with multi-precision valuesx
+  // Clean up when done
   //
   mpz_clear(numer);
   mpz_clear(denom);
