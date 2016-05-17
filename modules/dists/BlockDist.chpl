@@ -260,6 +260,7 @@ class Block : BaseDist {
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
+  type layoutType = DefaultDist;
   var pid: int = -1; // privatized object id (this should be factored out)
 }
 
@@ -290,7 +291,8 @@ class BlockDom: BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;
-  const dist: Block(rank, idxType);
+  type layoutType = DefaultDist;
+  const dist: Block(rank, idxType, layoutType);
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
@@ -327,8 +329,9 @@ class BlockArr: BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
+  type layoutType;
   var doRADOpt: bool = defaultDoRADOpt;
-  var dom: BlockDom(rank, idxType, stridable);
+  var dom: BlockDom(rank, idxType, stridable, layoutType);
   var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
   var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
@@ -377,7 +380,8 @@ proc Block.Block(boundingBox: domain,
                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
                 dataParMinGranularity=getDataParMinGranularity(),
                 param rank = boundingBox.rank,
-                type idxType = boundingBox.idxType) {
+                type idxType = boundingBox.idxType,
+                type layoutType = DefaultDist) {
   if rank != boundingBox.rank then
     compilerError("specified Block rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
@@ -475,7 +479,8 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   if rank != this.rank then
     compilerError("Block domain rank does not match distribution's");
 
-  var dom = new BlockDom(rank=rank, idxType=idxType, dist=this, stridable=stridable);
+  var dom = new BlockDom(rank=rank, idxType=idxType, dist=this,
+      stridable=stridable, layoutType=layoutType);
   dom.setup();
   if debugBlockDist {
     writeln("Creating new Block domain:");
@@ -485,7 +490,8 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
 }
 
 proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
-  return new SparseBlockDom(rank=rank, idxType=idxType, dist=this, parentDom=dom, whole=dom._value.whole);
+  return new SparseBlockDom(rank=rank, idxType=idxType, layoutType=layoutType, 
+      dist=this, parentDom=dom, whole=dom._value.whole);
 }
 
 //
@@ -834,7 +840,8 @@ proc BlockDom.dsiSerialWrite(x) {
 // how to allocate a new array over this domain
 //
 proc BlockDom.dsiBuildArray(type eltType) {
-  var arr = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+  var arr = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
+      stridable=stridable, layoutType=layoutType, dom=this);
   arr.setup();
   return arr;
 }
@@ -1364,7 +1371,8 @@ proc LocBlockArr.this(i) ref {
 //
 proc Block.Block(other: Block, privateData,
                 param rank = other.rank,
-                type idxType = other.idxType) {
+                type idxType = other.idxType,
+                type layoutType = DefaultDist) {
   boundingBox = {(...privateData(1))};
   targetLocDom = {(...privateData(2))};
   dataParTasksPerLocale = privateData(3);
