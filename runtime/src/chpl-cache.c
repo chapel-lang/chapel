@@ -309,7 +309,8 @@ use.
 
 // How big is each ops payload?
 // Should be a multiple of 8
-#define OPS_PAYLOAD 880
+//#define OPS_PAYLOAD 880
+#define OPS_PAYLOAD (880*2)
 
 // see cache_create - the number of
 //  * top entries
@@ -403,7 +404,7 @@ static void print_time(void)
   struct timespec t;
 
   clock_gettime(CLOCK_REALTIME, &t);
-  printf("%li.%09li ", t.tv_sec, t.tv_nsec);
+  printf("%d %li.%09li ", t.tv_sec, t.tv_nsec, chpl_nodeID);
 }
 
 static long time_duration(const struct timespec* t1, const struct timespec* t2)
@@ -1994,9 +1995,10 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
       struct ops_entry_s* ops = entry->ops;
       chpl_comm_nb_ops_handle_t* handle_toset = NULL;
 
-      TIME_PRINT(("chpl_comm_start_ops(%i, %p, %i)\n",
+      TIME_PRINT(("chpl_comm_start_ops(%i, %p, %i) with masx %i\n",
              entry->node, (void*) &ops->op,
-             (int) ops->op.payload_size));
+             (int) ops->op.payload_size,
+             op));
 
       // Get a slot for the handle and update sequence number.
       ops->max_ops_sequence_number = pending_push_ops(cache, &handle_toset);
