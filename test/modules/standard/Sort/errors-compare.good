@@ -1,0 +1,2 @@
+$CHPL_HOME/modules/packages/Sort.chpl:nnnn: In function 'bubbleSort':
+$CHPL_HOME/modules/packages/Sort.chpl:nnnn: error: The compare method must return a numeric type
