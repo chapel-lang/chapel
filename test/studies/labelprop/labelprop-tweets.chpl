@@ -47,6 +47,10 @@ config var seed = 0;
 config const maxiter = 20;
 config const output = true;
 config const parallel = true;
+config const copyfiles = false;
+config const maxfiles = max(int);
+config const buildset = true;
+config const buildgraph = true;
 
 param distributed = if CHPL_COMM == "none" then false
                     else true;
@@ -77,10 +81,10 @@ proc main(args:[] string) {
     if isDir(arg) {
       // Go through files in directories.
       for f in findfiles(arg, true) {
-        todo.append(f);
+        if todo.size < maxfiles then todo.append(f);
       }
     } else {
-      todo.append(arg);
+      if todo.size < maxfiles then todo.append(arg);
     }
   }
 
@@ -116,15 +120,58 @@ proc run(todo:list(string), Pairs) {
 
   todo.destroy();
 
+  if copyfiles {
+    t.copy.start();
+    forall f in allfiles {
+      on f {
+        var from = f;
+        var base = basename(f);
+        var uname:c_string;
+        sys_getenv(c"USER", uname);
+        var to = "/tmp/" + uname + base;
+        if progress then writeln("locale ", here.id, " copying ", from, " to ", to);
+        //copy(from, to);
+        var sub = spawn(["cp", from, to]);
+        sub.wait();
+        if progress then writeln("locale ", here.id, " done copying");
+        f = to;
+      }
+    }
+    t.copy.stop();
+  }
+
+
+
+  if buildset then
+    writeln("parse+set build on ", numLocales, " locales");
+  else
+    writeln("parse on ", numLocales, " locales");
+
   t.parse.start();
   forall f in allfiles {
     // TODO -- performance/scalability
     // we don't want to lock/unlock the hashtable
     // every time we add an entry. Appends could
     // be aggregated.
-    process_json(f, Pairs);
+
+    const fname_copy = f; // avoids problems with \0 missing
+    process_json(fname_copy, Pairs);
+
+    //process_json(f, Pairs);
   }
   t.parse.stop();
+
+  writeln("done parsing");
+  if copyfiles {
+    for f in allfiles {
+      on f {
+        if progress then writeln("locale ", here.id, " removing ", f);
+        const fname_copy = f; // avoids problems with \0 missing
+        var err:syserr;
+        remove(error=err, fname_copy);
+      }
+    }
+  }
 
   if verbose {
     if distributed {
@@ -141,7 +188,10 @@ proc run(todo:list(string), Pairs) {
   if verbose then
     writeln("the maximum user id was ", max_user_id.read());
 
-  create_and_analyze_graph(Pairs);
+  if buildgraph then
+    create_and_analyze_graph(Pairs);
+
+  writeln("Pairs.size is ", Pairs.size);
 }
 
 record TweetUser {
@@ -193,7 +243,9 @@ proc process_json(logfile:channel, fname:string, Pairs) {
         // Add (id, other_id) to Pairs,
         // but leave out self-mentions
         if id != other_id {
-          Pairs += (id, other_id);
+          if buildset {
+            Pairs += (id, other_id);
+          }
         }
       }
       ntweets += 1;
@@ -239,13 +291,35 @@ proc process_json(logfile:channel, fname:string, Pairs) {
 proc process_json(fname: string, Pairs)
 {
 
+  if progress then writeln("locale ", here.id, " in process_json file is ", fname);
+
   var last3chars = fname[fname.length-2..fname.length];
   if last3chars == ".gz" {
-    var sub = spawn(["gunzip", "-c", fname], stdout=PIPE);
-    process_json(sub.stdout, fname, Pairs);
-  } else {
-    var logfile = openreader(fname);
+    //var sub = spawn(["gunzip", "-c", fname], stdout=PIPE);
+    //process_json(sub.stdout, fname, Pairs);
+
+    var nogz = fname[1..fname.length-3];
+
+    var base = basename(nogz);
+    var uname:c_string;
+    sys_getenv(c"USER", uname);
+    var to = "/tmp/" + uname + base;
+
+    var sub = spawnshell("gunzip --stdout " + fname + " > " + to);
+    sub.wait();
+ 
+    var fi = open(to, iomode.r);
+    var logfile = fi.reader();
     process_json(logfile, fname, Pairs);
+    fi.close();
+
+    remove(to);
+
+  } else {
+    var fi = open(fname, iomode.r);
+    var logfile = fi.reader();
+    process_json(logfile, fname, Pairs);
+    fi.close();
   }
 }
 
@@ -259,7 +333,7 @@ record Triple {
 
 proc create_and_analyze_graph(Pairs)
 {
-  if progress {
+  if true {
     writeln("finding mutual mentions");
 
     writeln(Pairs.size, " pairs / ",
@@ -273,7 +347,8 @@ proc create_and_analyze_graph(Pairs)
   // Build idToNode
   var userIds:domain(int);
 
-  forall (id, other_id) in Pairs with (ref userIds) {
+  var nmutual = 0;
+  forall (id, other_id) in Pairs with (ref userIds, + reduce nmutual) {
     if Pairs.member( (other_id, id) ) {
       //writeln("Reciprocal match! ", (id, other_id) );
 
@@ -281,9 +356,13 @@ proc create_and_analyze_graph(Pairs)
       userIds += id;
       // Not necessary to add other_id now since we will
       // add it when processing (other_id, id)
+      if id < other_id then
+        nmutual += 1;
     }
   }
   t.mutualmentions.stop();
+
+  writeln("total mutual mentions ", nmutual);
 
   if progress then
     writeln(userIds.size, " users");
@@ -322,9 +401,33 @@ proc create_and_analyze_graph(Pairs)
   if progress then
     writeln("creating triples");
 
+  t.createtriples.start();
+
+
+  // TODO - this is very slow:
+  /*
   var triples = [(id, other_id) in Pairs]
                    if id < other_id && Pairs.member( (other_id, id) ) then
                      new Triple(idToNode[id], idToNode[other_id]);
+                     */
+
+  // TODO - this is still slow, but it's faster
+  var idx : atomic int;
+  idx.write(1);
+  var triples:[1..#nmutual] Triple;
+  forall (id, other_id) in Pairs {
+    if id < other_id && Pairs.member( (other_id, id) ) {
+      var got_idx = idx.fetchAdd(1, memory_order_relaxed);
+      triples[got_idx] = new Triple(idToNode[id], idToNode[other_id]);
+    }
+  }
+
+  // TODO - would like to write it with a zip of assoc and non-assoc
+  // (but then where would be the conditional? Adding dummy nodes e.g.?)
+
+  // A parallel scan might also work... but scan is currently serial.
+
+  t.createtriples.stop();
 
   if printall {
     writeln("triples are:");
@@ -655,7 +758,10 @@ class MinMapper{
     var (x, y) = ind;
     var m = min(x, y);
     var h: int = _gen_key(m);
-    const numlocs = targetLocs.domain.size;
+// This statement runs a fence because of domain
+// reference counting. Boo.
+//    const numlocs = targetLocs.domain.size;
+    const numlocs = targetLocs.size;
     return h % numlocs;
   }
 }
@@ -677,7 +783,7 @@ proc first_sort(Data: [?Dom] ?eltType) where Dom.rank == 1 {
 }
 
 record timings {
-  var total, parse, graph, mutualmentions, compactids, maxnid, buildgraph, cca, partition, labelprop: Timer;
+  var total, copy, parse, graph, mutualmentions, compactids, createtriples, maxnid, buildgraph, cca, partition, labelprop: Timer;
   var buildgraphcomponents: graphtimings;
 }
 
@@ -688,11 +794,13 @@ proc timings.print() {
            m = 1000000.0;
 
   writeln("Timings:");
+  if copyfiles then writeln("copy files in ", copy.elapsed(), " s");
   writeln("parsed ", nlines, " lines in ", parse.elapsed(), " s");
   writeln("created graph in   ", graph.elapsed(), " s");
   writeln("graph components:");
   writeln("  mutual mentions: ", mutualmentions.elapsed(), " s");
   writeln("  compact ids    : ", compactids.elapsed(), " s");
+  writeln("  create triples : ", createtriples.elapsed(), " s");
   writeln("  max nid        : ", maxnid.elapsed(), " s");
   writeln("  build graph    : ", buildgraph.elapsed(), " s");
   buildgraphcomponents.print();
