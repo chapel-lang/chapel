@@ -3113,11 +3113,22 @@ HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
 FnSymbol* initStringLiterals = NULL;
 
+void createInitStringLiterals() {
+  SET_LINENO(stringLiteralModule);
+  initStringLiterals = new FnSymbol("chpl__initStringLiterals");
+  // We need to initialize strings literals on every locale, so we make this an
+  // exported function that will be called in the runtime
+  initStringLiterals->addFlag(FLAG_EXPORT);
+  initStringLiterals->addFlag(FLAG_LOCAL_ARGS);
+  initStringLiterals->retType = dtVoid;
+  initStringLiterals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
+}
+
 // Note that string immediate values are stored
 // with C escapes - that is newline is 2 chars \ n
 // so this function expects a string that could be in "" in C
 VarSymbol *new_StringSymbol(const char *str) {
-  SET_LINENO(stringLiteralModule);
 
   // Hash the string and return an existing symbol if found.
   // Aka. uniquify all string literals
@@ -3172,16 +3183,8 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   CallExpr* ctorCall = new CallExpr(PRIM_MOVE, new SymExpr(s), ctor);
 
-  // We need to initialize strings literals on every locale, so we make this an
-  // exported function that will be called in the runtime
-  if (initStringLiterals == NULL) {
-    initStringLiterals = new FnSymbol("chpl__initStringLiterals");
-    initStringLiterals->addFlag(FLAG_EXPORT);
-    initStringLiterals->addFlag(FLAG_LOCAL_ARGS);
-    initStringLiterals->retType = dtVoid;
-    initStringLiterals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-    stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
-  }
+  if (initStringLiterals == NULL)
+    createInitStringLiterals();
 
   initStringLiterals->insertBeforeReturn(new DefExpr(cptrTemp));
   initStringLiterals->insertBeforeReturn(cptrCall);
