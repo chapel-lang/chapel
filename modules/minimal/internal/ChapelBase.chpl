@@ -22,8 +22,6 @@
 
 module ChapelBase {
 
-  pragma "default string value" extern var defaultStringValue: string = noinit;
-
   //
   // internal reference type
   //
@@ -34,19 +32,4 @@ module ChapelBase {
     var _val;
   }
 
-  pragma "compiler generated"
-  pragma "init copy fn"
-  inline proc chpl__initCopy(a) {
-    // Currently, string representations are shared.
-    // (See note on proc =(a:string, b:string) above.)
-      return a;
-  }
-
-  pragma "donor fn"
-  pragma "auto copy fn"
-  inline proc chpl__autoCopy(x) return chpl__initCopy(x);
-
-  inline proc chpl__autoDestroy(x: ?t) {
-    __primitive("call destructor", x);
-  }
 }

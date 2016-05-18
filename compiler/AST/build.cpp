@@ -1599,7 +1599,7 @@ buildReduceScanPreface2(FnSymbol* fn, Symbol* eltType, Symbol* globalOp,
 static void addElseClauseForSerialIter(BlockStmt* forall, Expr* opExpr,
                                        VarSymbol* data,
                                        VarSymbol* result, VarSymbol* globalOp,
-                                       VarSymbol* index, bool zippered)
+                                       UnresolvedSymExpr* index, bool zippered)
 {
   CondStmt* if1 = toCondStmt(forall->body.head);
   INT_ASSERT(if1);
@@ -1609,10 +1609,10 @@ static void addElseClauseForSerialIter(BlockStmt* forall, Expr* opExpr,
   // construction of 'serialBlock' is copied from buildReduceExpr()
   BlockStmt* serialBlock = buildChapelStmt();
 
-  serialBlock->insertAtTail(ForLoop::buildForLoop(new SymExpr(index),
+  serialBlock->insertAtTail(ForLoop::buildForLoop(index->copy(),
                                                   new SymExpr(data),
                                                   new BlockStmt(new CallExpr(new CallExpr(".", globalOp,
-                                                                                          new_CStringSymbol("accumulate")), index)),
+                                                                                          new_CStringSymbol("accumulate")), index->copy())),
                                                   false,
                                                   zippered));
 
@@ -1692,20 +1692,19 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
   Expr* resultType = new_Expr("'typeof'(.(%S, 'generate')())", globalOp);
   fn->insertAtTail(new DefExpr(result, NULL, resultType));
 
-  VarSymbol* index  = newTemp("chpl_reduceIndexVar");
-  fn->insertAtTail(new DefExpr(index));
+  UnresolvedSymExpr* index  = new UnresolvedSymExpr("chpl_reduceIndexVar");
   INT_ASSERT(!opUnr->inTree()); // that way we can use it below; todo - remove
 
   BlockStmt* loopBody = new BlockStmt();
   loopBody->insertAtTail(new CallExpr("=", result,
-                                      new CallExpr(opFun, result, index)));
+                                      new CallExpr(opFun, result, index->copy())));
 
   // useThisGlobalOp argument lets us handle the case where the result type
   // differs from eltType, e.g. + reduce over booleans
   // as in test/trivial/deitz/monte.chpl
 
   BlockStmt* forall = buildForallLoopStmt(
-    new SymExpr(index), // indices
+    index->copy(),      // indices
     new SymExpr(data),  // iterExpr
     new CallExpr(PRIM_ACTUALS_LIST, opUnr, result), // byref_vars
     loopBody, // loopBody
@@ -1714,7 +1713,8 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
   );
 
   addElseClauseForSerialIter(forall, opExpr->copy(), data,
-                             result, globalOp, index, zippered);
+                             result, globalOp, index->copy(), zippered);
+  // 'index' will be GC-ed
 
   fn->insertAtTail(forall);
   fn->insertAtTail(new CallExpr(PRIM_RETURN, result));
@@ -1989,9 +1989,8 @@ buildClassDefExpr(const char* name,
                   const char* docs) {
   AggregateType* ct = toAggregateType(type);
   // Hook the string type in the modules
-  // We have to do this here so we can reason about dtString as soon as
-  // possible in the compiler. gatherWellKnownTypes runs too late to be of use
-  // to us.
+  // to avoid duplication with dtString created in initPrimitiveTypes().
+  // gatherWellKnownTypes runs too late to help.
   if (strcmp("string", name) == 0) {
     *dtString = *ct;
     // These fields get overwritten with `ct` by the assignment. These fields are
