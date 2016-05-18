@@ -274,9 +274,11 @@ module DefaultSparse {
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.member(ind)) {
-          writeln("On locale ", here.id);
-          writeln("In dsiAccess, got index ", ind);
-          writeln("dom.parentDom = ", dom.parentDom);
+          if debugDefaultSparse {
+            writeln("On locale ", here.id);
+            writeln("In dsiAccess, got index ", ind);
+            writeln("dom.parentDom = ", dom.parentDom);
+          }
 
           halt("array index out of bounds: ", ind);
         }
