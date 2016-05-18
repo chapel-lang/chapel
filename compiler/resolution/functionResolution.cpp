@@ -308,6 +308,7 @@ getVisibleFunctions(BlockStmt* block,
 static Expr* resolve_type_expr(Expr* expr);
 static void makeNoop(CallExpr* call);
 static void resolveDefaultGenericType(CallExpr* call);
+static void resolveDefaultGenericTypeSymExpr(SymExpr* se);
 
 static void
 gatherCandidates(Vec<ResolutionCandidate*>& candidates,
@@ -935,9 +936,22 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
 
   resolveBlockStmt(fn->retExprType);
   retType = fn->retExprType->body.tail->typeInfo();
+
   if (SymExpr* se = toSymExpr(fn->retExprType->body.tail)) {
+    // Try resolving global type aliases
     if (se->var->hasFlag(FLAG_TYPE_VARIABLE))
       retType = resolveTypeAlias(se);
+
+    // Try resolving records/classes with default types
+    // e.g. range
+    resolveDefaultGenericTypeSymExpr(se);
+    // re-read the last expr's type since resolveDefaultGenericTypeSymExpr
+    // replaces it.
+    retType = fn->retExprType->body.tail->typeInfo();
+
+    if (retType->symbol->hasFlag(FLAG_GENERIC))
+      USR_FATAL_CONT(fn->retExprType, "illegal generic return type %s",
+                     toString(retType));
   }
   fn->retType = retType;
 
@@ -2684,9 +2698,7 @@ printResolutionErrorUnresolved(
 
   if (!strcmp("_cast", info->name)) {
     if (!info->actuals.head()->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL_CONT(call, "illegal cast to non-type",
-                     toString(info->actuals.v[1]->type),
-                     toString(info->actuals.v[0]->type));
+      USR_FATAL_CONT(call, "illegal cast to non-type");
     } else {
       USR_FATAL_CONT(call, "illegal cast from %s to %s",
                      toString(info->actuals.v[1]->type),
@@ -3521,31 +3533,36 @@ static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
 //   extern var x: c_ptr(c_int)
 // which do not work in the usual order of resolution.
 static void
+resolveDefaultGenericTypeSymExpr(SymExpr* te) {
+  if (TypeSymbol* ts = toTypeSymbol(te->var)) {
+    if (AggregateType* ct = toAggregateType(ts->type)) {
+      if (ct->symbol->hasFlag(FLAG_GENERIC)) {
+        CallExpr* cc = new CallExpr(ct->defaultTypeConstructor->name);
+        te->replace(cc);
+        resolveCall(cc);
+        cc->replace(new SymExpr(cc->typeInfo()->symbol));
+      }
+    }
+  }
+  if (VarSymbol* vs = toVarSymbol(te->var)) {
+    // Fix for complicated extern vars like
+    // extern var x: c_ptr(c_int);
+    if( vs->hasFlag(FLAG_EXTERN) && vs->hasFlag(FLAG_TYPE_VARIABLE) &&
+        vs->defPoint && vs->defPoint->init &&
+        vs->getValType() == dtUnknown ) {
+      vs->type = resolveTypeAlias(te);
+    }
+  }
+}
+
+static void
 resolveDefaultGenericType(CallExpr* call) {
   SET_LINENO(call);
   for_actuals(actual, call) {
     if (NamedExpr* ne = toNamedExpr(actual))
       actual = ne->actual;
     if (SymExpr* te = toSymExpr(actual)) {
-      if (TypeSymbol* ts = toTypeSymbol(te->var)) {
-        if (AggregateType* ct = toAggregateType(ts->type)) {
-          if (ct->symbol->hasFlag(FLAG_GENERIC)) {
-            CallExpr* cc = new CallExpr(ct->defaultTypeConstructor->name);
-            te->replace(cc);
-            resolveCall(cc);
-            cc->replace(new SymExpr(cc->typeInfo()->symbol));
-          }
-        }
-      }
-      if (VarSymbol* vs = toVarSymbol(te->var)) {
-        // Fix for complicated extern vars like
-        // extern var x: c_ptr(c_int);
-        if( vs->hasFlag(FLAG_EXTERN) && vs->hasFlag(FLAG_TYPE_VARIABLE) &&
-            vs->defPoint && vs->defPoint->init &&
-            vs->getValType() == dtUnknown ) {
-          vs->type = resolveTypeAlias(te);
-        }
-      }
+      resolveDefaultGenericTypeSymExpr(te);
     }
   }
 }
