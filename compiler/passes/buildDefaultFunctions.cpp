@@ -497,10 +497,18 @@ static void build_chpl_entry_points() {
   // It invokes the user's code.
   //
   chpl_gen_main = new FnSymbol("chpl_gen_main");
-
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_arg", dtMainArgument);
-  chpl_gen_main->insertFormalAtTail(arg);
   chpl_gen_main->retType = dtInt[INT_SIZE_64];
+  ArgSymbol* arg = NULL;
+
+  if (dtMainArgument) {
+    arg = new ArgSymbol(INTENT_BLANK, "_arg", dtMainArgument);
+    chpl_gen_main->insertFormalAtTail(arg);
+  } else {
+    // Otherwise gatherWellKnownTypes() would have generated an error.
+    INT_ASSERT(fMinimalModules);
+    if (mainHasArgs)
+      USR_FATAL("main() has arguments while 'chpl_main_argument' is not declared");
+  }
 
   chpl_gen_main->cname = "chpl_gen_main";
   chpl_gen_main->addFlag(FLAG_EXPORT);  // chpl_gen_main is always exported.

@@ -1294,10 +1294,24 @@ codegen_config() {
   }
 }
 
+static void adjustGenMainArg() {
+  if (dtMainArgument)
+    return;
+  SET_LINENO(chpl_gen_main);
+  dtMainArgument = new AggregateType(AGGREGATE_RECORD);
+  TypeSymbol* ts = new TypeSymbol("chpl_main_argument", dtMainArgument);
+  ts->addFlag(FLAG_EXTERN);
+  chpl_gen_main->defPoint->insertBefore(new DefExpr(dtMainArgument->symbol));
+  ArgSymbol* arg = new ArgSymbol(INTENT_CONST_REF, "_arg", dtMainArgument);
+  chpl_gen_main->insertFormalAtTail(arg);
+}
+
 
 void codegen(void) {
   if (no_codegen)
     return;
+
+  adjustGenMainArg();
 
   if( fLLVMWideOpt ) {
     // --llvm-wide-opt is picky about other settings.
