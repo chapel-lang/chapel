@@ -64,7 +64,8 @@ module DefaultAssociative {
       extern proc sizeof(type t):size_t;
 
       //extern proc printf(fmt:c_string, sz:c_int);
-      //printf("IN PROCESS size=%i\n", size:c_int);
+      //extern proc printf(fmt:c_string, id:c_int, sz:c_int);
+      //printf("%i IN PROCESS size=%i\n", here.id:c_int, size:c_int);
 
 // Why do I seem to need to use this primitive?
       var ptr:c_ptr(idxType) = __primitive("cast", c_ptr(idxType), buf);
