@@ -231,6 +231,8 @@ proc process_json(logfile:channel, fname:string, Pairs) {
   if progress then
     writeln(fname, " : processing");
 
+  var localPairs: domain( (int, int), parSafe=false );
+
   while true {
     got = logfile.readf("%~jt", tweet, error=err);
     if got && !err {
@@ -244,7 +246,7 @@ proc process_json(logfile:channel, fname:string, Pairs) {
         // but leave out self-mentions
         if id != other_id {
           if buildset {
-            Pairs += (id, other_id);
+            localPairs += (id, other_id);
           }
         }
       }
@@ -272,6 +274,10 @@ proc process_json(logfile:channel, fname:string, Pairs) {
   }
 
   logfile.close();
+
+  for p in localPairs.sorted(new DestinationComparator()) {
+    Pairs += p;
+  }
 
   if progress then
     writeln(fname, " : ",
@@ -763,6 +769,15 @@ class MinMapper{
 //    const numlocs = targetLocs.domain.size;
     const numlocs = targetLocs.size;
     return h % numlocs;
+  }
+}
+
+record DestinationComparator{
+  proc key(p) {
+    var (x,y) = p;
+    var m = min(x,y);
+    var h: int = _gen_key(m);
+    return (h+here.id) % numLocales;
   }
 }
 
