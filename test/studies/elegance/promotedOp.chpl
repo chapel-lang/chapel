@@ -50,7 +50,7 @@ proc performant(order, iterations): real {
 
   t.start();
 
-  for i in 1..iterations {
+  for 1..iterations {
     forall (i,j) in Dom {
       Array[i, j] += 1.0;
     }

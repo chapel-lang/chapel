@@ -191,7 +191,7 @@ extern char compileVersion[64];
 extern bool fMinimalModules;
 
 // Set to true if we want to use the experimental
-// Interactive Programming Environmment (IPE) mode.
+// Interactive Programming Environment (IPE) mode.
 extern bool fUseIPE;
 
 #endif

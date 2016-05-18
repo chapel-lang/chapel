@@ -328,7 +328,7 @@ is the declaration order of the corresponding enumeration constants.
 \index{domains!associative!literals}
 \index{domains!associative!initialization}
 
-Specification of an assocative domain literal value follows a similar syntax as 
+Specification of an associative domain literal value follows a similar syntax as
 rectangular domain literal values.  What differentiates the two are the types 
 of expressions specified in the comma separated list.  Use of values of a 
 type other than ranges will result in the construction of an associative domain.  
@@ -357,12 +357,12 @@ arrays as indices within an associative domain.
 \begin{openissue}
 Assignment of an associative domain literal results in the a warning message
 being printed altering the user that whole-domain assignment has been
-serialized. This results from the resize operation over assocative arrays not 
+serialized. This results from the resize operation over associative arrays not
 being parsafe. 
 \end{openissue}
 
 \begin{chapelexample}{associativeDomain.chpl}
-The following example illusrates construction of an associative domain
+The following example illustrates construction of an associative domain
 containing string indices "bar" and "foo".  Note that due to internal hashing 
 of indices the order in which the values of the associative domain are iterated
 is not the same as their specification order.
@@ -686,6 +686,7 @@ domain-expression:
   domain-name
   domain-assignment-expression
   domain-striding-expression
+  domain-alignment-expression
   domain-slice-expression
 
 domain-literal:
@@ -747,6 +748,31 @@ applying the integer value to each range in the value using the
 \chpl{by} operator.  In the case of a tuple stride value, the resulting
 domain's value is computed by applying each tuple component to the
 corresponding range using the \chpl{by} operator.
+
+
+\subsection{Domain Alignment}
+\label{Domain_Alignment}
+\index{domains!alignment}
+\index{align@\chpl{align}!on rectangular domains}
+\index{operators!align (domain)@\chpl{align} (domain)}
+
+The \chpl{align} operator can be applied to a rectangular domain value in
+order to change the alignment of a rectangular domain value.  The right-hand
+operand to the \chpl{align} operator can either be an integral value or
+an integral tuple whose size matches the domain's rank.
+
+\begin{syntax}
+domain-alignment-expression:
+  domain-expression `align' expression
+\end{syntax}
+
+The type of the resulting domain is the same as the original domain.
+In the case of an integer alignment value, the value of the resulting
+domain is computed by applying the integer value to each range in the
+value using the \chpl{align} operator.  In the case of a tuple
+alignment value, the resulting domain's value is computed by applying
+each tuple component to the corresponding range using the \chpl{align}
+operator.
 
 
 \subsection{Domain Slicing}
@@ -1233,5 +1259,5 @@ if \chpl{d2} contains indices which are not also in \chpl{d1}.
 proc requestCapacity(s: int)
 \end{protohead}
 \begin{protobody}
-Resizes the domain internal storage to hold at least \chpl{s} indicies.
+Resizes the domain internal storage to hold at least \chpl{s} indices.
 \end{protobody}

@@ -183,7 +183,7 @@ void WhileStmt::checkConstLoops()
             // folding ...
             else if (SymExpr* moveSrc = toSymExpr(outerCall->get(2)))
             {
-              // ... in which case, we exprect it to be a literal 'true' or 'false'.
+              // ... in which case, we expect it to be a literal 'true' or 'false'.
               if (moveSrc->var == gTrue)
               {
                 // while true do ... ;  -- probably OK.
@@ -230,7 +230,7 @@ void WhileStmt::checkConstLoops()
     INT_FATAL(tmpVar, "The loop condition variable could not be converted to a VarSymbol.");
 }
 
-// Find a defintion of the condition variable in the body of the loop.
+// Find a definition of the condition variable in the body of the loop.
 // Returns null if no such expression is found.
 SymExpr* WhileStmt::getWhileCondDef(VarSymbol* condSym)
 {

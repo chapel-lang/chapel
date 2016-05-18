@@ -471,7 +471,7 @@ buildZip1(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   } else {
     // ParamForLoops should have been removed during resolution.
     // DoWhileLoops are not treated as singleLoop iterators.
-    // ForLoops should have been replaceed in expandForLoop().
+    // ForLoops should have been replaced in expandForLoop().
     INT_FATAL(singleLoop, "Unexpected singleLoop iterator type");
   }
 
@@ -589,7 +589,7 @@ buildZip3(IteratorInfo* ii, Vec<BaseAST*>& asts, BlockStmt* singleLoop) {
   } else {
     // ParamForLoops should have been removed during resolution.
     // DoWhileLoops are not treated as singleLoop iterators.
-    // ForLoops should have been replaceed in expandForLoop().
+    // ForLoops should have been replaced in expandForLoop().
     INT_FATAL(singleLoop, "Unexpected singleLoop iterator type");
   }
 

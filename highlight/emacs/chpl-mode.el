@@ -43,6 +43,8 @@
   (if (and (= emacs-major-version 24) (<= emacs-minor-version 5))
       (require 'cl)))
 
+;; Need to exclude xemacs from some behavior
+(defvar running-xemacs (string-match "XEmacs\\|Lucid" emacs-version))
 
 ;; These are only required at compile time to get the sources for the
 ;; language constants.  (The cc-fonts require and the font-lock
@@ -344,6 +346,11 @@ need for `chpl-font-lock-extra-types'.")
 (or chpl-mode-syntax-table
     (setq chpl-mode-syntax-table
 	  (funcall (c-lang-const c-make-mode-syntax-table chpl))))
+
+;; Nested block comments -- add "n" to the syntax table entry for "*"
+;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Syntax-Flags.html#Syntax-Flags
+(if (not running-xemacs)
+    (modify-syntax-entry ?* ". 23n" chpl-mode-syntax-table))
 
 (defvar chpl-mode-abbrev-table nil
   "Abbreviation table used in chpl-mode buffers.")

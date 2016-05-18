@@ -302,7 +302,8 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
             fprintf(hdrfile, "(chpl_fn_p)NULL");
             n++;
           }
-          comma = true;
+          if (maxVMT > 0)
+            comma = true;
         }
       }
     }
@@ -644,7 +645,7 @@ static void protectNameFromC(Symbol* sym) {
   //
   // For now, we only rename our user and standard symbols.  Internal
   // modules symbols should arguably similarly be protected, to ensure
-  // that we haven't inadvertantly used a name that some user library
+  // that we haven't inadvertently used a name that some user library
   // will; most file-level symbols should be protected by 'chpl_' or
   // somesuch, but of course local symbols may not be, and can cause
   // conflicts (at present, a local variable named 'socket' would).
@@ -704,7 +705,7 @@ static void protectNameFromC(Symbol* sym) {
   //
   // Can we free this given how we create names?  free() doesn't like
   // const char*, I don't want to just cast it away, and I'm not
-  // certain we can assume it isn't aliased to someting else, like
+  // certain we can assume it isn't aliased to something else, like
   // sym->name...  In other cases, we seem to leak old names as
   // well... :P
   //
@@ -1352,7 +1353,7 @@ void codegen(void) {
   if( llvmCodegen ) {
 #ifdef HAVE_LLVM
     if( fHeterogeneous )
-      INT_FATAL("fHeretogeneous not yet supported with LLVM");
+      INT_FATAL("fHeterogeneous not yet supported with LLVM");
 
     prepareCodegenLLVM();
 #endif

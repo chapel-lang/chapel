@@ -1118,7 +1118,7 @@ makeHeapAllocations() {
             // avoid leaks (TODO), it is better than the previous
             // version of this code that would remove all autodestroy
             // calls in this conditional.  See the commit message for
-            // this commenet for more detail.
+            // this comment for more detail.
             //
             call->remove();
           } else if (actual_to_formal(use)->type == heapType) {

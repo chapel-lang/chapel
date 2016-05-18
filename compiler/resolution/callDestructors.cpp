@@ -313,7 +313,7 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
 // but fails to insert the required autoCopy.
 //
 // This transformation adds a move/autoCopy statement immediately after
-// the targetted statement.  The <dst> symbol is updated in place in the
+// the targeted statement.  The <dst> symbol is updated in place in the
 // new statement
 //
 //
@@ -606,7 +606,7 @@ replacementHelper(CallExpr* focalPt, VarSymbol* oldSym, Symbol* newSym,
 //
 // This effectively replaces return-by-value from the given function into
 // return-by-reference through the new argument.  It allows the result to be
-// written directly into sapce allocated in the caller, thus avoiding a
+// written directly into space allocated in the caller, thus avoiding a
 // verbatim copy.
 //
 static FnSymbol*
