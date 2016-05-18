@@ -216,6 +216,7 @@ static void gatherWellKnownTypes() {
       // This means there was no declaration of the string type.
       gAggregateTypes.remove(gAggregateTypes.index(dtString));
       delete dtString;
+      dtString = NULL;
     }
   }
 }
