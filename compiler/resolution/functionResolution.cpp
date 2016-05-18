@@ -1686,7 +1686,8 @@ static void replaceVarargAccess(CallExpr* parent, SymExpr* se,
 //
 // Is 'parent' the call 'se'.size?
 //
-static bool isVarargSizeExpr(SymExpr* se, CallExpr* parent) {
+static bool isVarargSizeExpr(SymExpr* se, CallExpr* parent)
+{
   if (parent->isNamed("size"))
     // Is 'parent' a method call?
     if (parent->numActuals() == 2)
@@ -1895,77 +1896,76 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
         }
       }
 
-     // odd indentation to avoid revision diffs on the body of this 'if'
-     if (needTupleInBody) {
+      if (needTupleInBody) {
 
-      // MDN 2016/02/01. Enable special handling for strings with blank intent
+        // MDN 2016/02/01. Enable special handling for strings with blank intent
 
-      // If the original formal is a string with blank intent then the
-      // new formals appear to be strings with blank intent.  However
-      // the resolver is about to update these to be const ref intent.
-      //
-      // Currently this will cause the tuple to appear to be a tuple
-      // ref(String) which is not supported.
-      //
-      // Insert local copies that can be used for the tuple
+        // If the original formal is a string with blank intent then the
+        // new formals appear to be strings with blank intent.  However
+        // the resolver is about to update these to be const ref intent.
+        //
+        // Currently this will cause the tuple to appear to be a tuple
+        // ref(String) which is not supported.
+        //
+        // Insert local copies that can be used for the tuple
 
-      if (isString(formal->type) && formal->intent == INTENT_BLANK) {
-        DefExpr* varDefn = new DefExpr(var);
-        Expr*    tail    = NULL;
+        if (isString(formal->type) && formal->intent == INTENT_BLANK) {
+          DefExpr* varDefn = new DefExpr(var);
+          Expr*    tail    = NULL;
 
-        // Insert the new locals
-        for (int i = 0; i < n; i++) {
-          const char* localName = astr("_e", istr(i + n), "_", formal->name);
-          VarSymbol*  local     = newTemp(localName, formal->type);
-          DefExpr*    defn      = new DefExpr(local);
+          // Insert the new locals
+          for (int i = 0; i < n; i++) {
+            const char* localName = astr("_e", istr(i + n), "_", formal->name);
+            VarSymbol*  local     = newTemp(localName, formal->type);
+            DefExpr*    defn      = new DefExpr(local);
 
-          if (tail == NULL)
-            workingFn->insertAtHead(defn);
-          else
-            tail->insertAfter(defn);
+            if (tail == NULL)
+              workingFn->insertAtHead(defn);
+            else
+              tail->insertAfter(defn);
 
-          tail = defn;
+            tail = defn;
+          }
+
+          // Insert the definition for the tuple
+          tail->insertAfter(varDefn);
+          tail = varDefn;
+
+          // Insert the copies from the blank-intent strings to the locals
+          // Update the arguments to the tuple call
+          for (int i = 1; i <= n; i++) {
+            DefExpr*  localDefn = toDefExpr(workingFn->body->body.get(i));
+            Symbol*   local     = localDefn->sym;
+            SymExpr*  localExpr = new SymExpr(local);
+
+            SymExpr*  tupleArg  = toSymExpr(tupleCall->get(i + 1));
+            SymExpr*  copyArg   = tupleArg->copy();
+
+            CallExpr* moveExpr  = new CallExpr(PRIM_MOVE, localExpr, copyArg);
+
+            tupleArg->var = local;
+
+            tail->insertAfter(moveExpr);
+            tail = moveExpr;
+          }
+
+          tail->insertAfter(new CallExpr(PRIM_MOVE, var, tupleCall));
+        } else {
+          workingFn->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall));
+          workingFn->insertAtHead(new DefExpr(var));
         }
 
-        // Insert the definition for the tuple
-        tail->insertAfter(varDefn);
-        tail = varDefn;
-
-        // Insert the copies from the blank-intent strings to the locals
-        // Update the arguments to the tuple call
-        for (int i = 1; i <= n; i++) {
-          DefExpr*  localDefn = toDefExpr(workingFn->body->body.get(i));
-          Symbol*   local     = localDefn->sym;
-          SymExpr*  localExpr = new SymExpr(local);
-
-          SymExpr*  tupleArg  = toSymExpr(tupleCall->get(i + 1));
-          SymExpr*  copyArg   = tupleArg->copy();
-
-          CallExpr* moveExpr  = new CallExpr(PRIM_MOVE, localExpr, copyArg);
-
-          tupleArg->var = local;
-
-          tail->insertAfter(moveExpr);
-          tail = moveExpr;
+        if (workingFn->hasFlag(FLAG_PARTIAL_COPY)) {
+          // If this is a partial copy, store the mapping for substitution later.
+          workingFn->partialCopyMap.put(formal, var);
+        } else {
+          // Otherwise, do the substitution now.
+          subSymbol(workingFn->body, formal, var);
         }
-
-        tail->insertAfter(new CallExpr(PRIM_MOVE, var, tupleCall));
       } else {
-        workingFn->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall));
-        workingFn->insertAtHead(new DefExpr(var));
+        // !needTupleInBody
+        substituteVarargTupleRefs(workingFn->body, n, formal, varargFormals);
       }
-
-      if (workingFn->hasFlag(FLAG_PARTIAL_COPY)) {
-        // If this is a partial copy, store the mapping for substitution later.
-        workingFn->partialCopyMap.put(formal, var);
-      } else {
-        // Otherwise, do the substitution now.
-        subSymbol(workingFn->body, formal, var);
-      }
-     } else {
-      // !needTupleInBody
-      substituteVarargTupleRefs(workingFn->body, n, formal, varargFormals);
-     }
 
       if (workingFn->where) {
         if (needVarArgTupleAsWhole(workingFn->where, n, formal)) {
