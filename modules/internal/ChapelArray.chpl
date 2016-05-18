@@ -1392,8 +1392,8 @@ module ChapelArray {
 
     // associative array interface
     /* Yield the domain indices in sorted order */
-    iter sorted() {
-      for i in _value.dsiSorted() {
+    iter sorted(comparator:?t = defaultcomparator) {
+      for i in _value.dsiSorted(comparator) {
         yield i;
       }
     }
