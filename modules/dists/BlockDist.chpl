@@ -329,7 +329,7 @@ class BlockArr: BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
-  type layoutType;
+  type layoutType = DefaultDist;
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: BlockDom(rank, idxType, stridable, layoutType);
   var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
