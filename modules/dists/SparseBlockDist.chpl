@@ -195,6 +195,17 @@ class SparseBlockDom: BaseSparseDom {
       yield i;
   }
 
+  iter these(param tag: iterKind) where tag == iterKind.standalone {
+    coforall locDom in locDoms {
+      on locDom {
+        for i in locDom.mySparseBlock._value.these(tag) {
+          yield i;
+        }
+      }
+    }
+  }
+
+
   proc dsiDims() return whole.dims();
 
   proc dsiMember(ind) {
@@ -314,6 +325,16 @@ class SparseBlockArr: BaseArr {
       yield locArr[localeIndex].dsiAccess(i);
     }
   }
+
+  iter these(param tag: iterKind) ref where tag == iterKind.standalone {
+    coforall locA in locArr do on locArr {
+      // forward to sparse standalone iterator
+      for i in locA.myElems._value.these(tag) {
+        yield i;
+      }
+    }
+  }
+
 
   proc dsiAccess(i: rank*idxType) ref {
     //    local { // TODO: Turn back on once privatization is on
