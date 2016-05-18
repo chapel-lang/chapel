@@ -354,7 +354,7 @@ static void addActualsTo_toLeader(Symbol* serIterSym, int& numLeaderActuals,
     } else {
       Symbol* actual = ovar;
       if (isReduce) {
-        // pass chpl__reduceGlob insetad
+        // pass chpl__reduceGlob instead
         actual = globalOp;
       } else if (isReferenceType(ovar->type)) {
         // If it is a reference, dereference it. E.g. m-lsms.chpl (-nl 1?).
@@ -449,7 +449,7 @@ static void insertExtractFromYieldAtHead(BlockStmt* block, int ix,
 // Strictly speaking, a copy constructor aka chpl__initCopy()
 // needs to be invoked from tuple component into the shadow variable,
 // then the tuple component should be destructed.
-// We forego these two operations, simply transfering the bits,
+// We forego these two operations, simply transferring the bits,
 // because the cases where that matters are going to be rare.
 //
 static void extractFromLeaderYield(CallExpr* lcCall, int ix,
@@ -712,7 +712,7 @@ void implementForallIntents1(DefExpr* defChplIter)
   //  - forallBody2 == NULL
   //  - forallBody1->byrefVars is what forallBody2->byrefVars is above
   //
-  // - In all three cases, the user-speicified contents of the 'with' clause
+  // - In all three cases, the user-specified contents of the 'with' clause
   //   are appended to forallBody1/2->byrefVars specified above
   //
   // - Standalone case:
@@ -994,7 +994,7 @@ static void checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn) {
 }
 
 //
-// Set up ancors, if not already, so we can add reduction-related code
+// Set up anchors, if not already, so we can add reduction-related code
 // via refRef->insertBefore() within 'fn'.
 //
 // "redRef" is short for "reference for reduction".
@@ -1024,7 +1024,7 @@ void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2)
 }
 
 //
-// We won't need the redRef ancors any more. Remove them if we set them up.
+// We won't need the redRef anchors any more. Remove them if we set them up.
 //
 void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
   if (!redRef1) return;

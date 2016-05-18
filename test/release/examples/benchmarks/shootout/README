@@ -34,3 +34,44 @@ be run in correctness or performance modes using the Chapel testing
 system (see $CHPL_HOME/util/sub_test).
 
 Note that chameneosredux.chpl has non-deterministic output.
+
+
+Future work / TODO
+==================
+The following are a list of planned improvements to Chapel and/or our
+implementations that would benefit the codes:
+
+
+mandelbrot.chpl
+---------------
+o extend the dynamic() iterators for ranges to support domains and
+  collapse the two nested loops into a single loop over a 2D domain.
+
+o add an 'unroll' capability to loops and use it to unroll the 'for
+  off ...' loop which is about twice as fast with manual unrolling.
+  (we weren't willing to unroll it manually in this version)
+
+o have the compiler automatically optimize writes to 'stdout' in
+  serial code segments to avoid the need to manually get a lock-free
+  channel to it.
+
+o explore expressing the complex values using Chapel's 'complex' type,
+  even if it means plucking C.re and C.im out and operating on them
+  directly rather than using higher-level complex operations to avoid
+  overheads associated with using cleaner complex operations.
+
+
+pidigits.chpl
+-------------
+o promote mpz_t types to a record-based implementation with:
+  - a better name
+  - arithmetic operators defined for it
+  - automatic memory reclamation when it leaves scope
+  - support for native Chapel types rather than exposing C types
+    (using safecasts at any downward-facing interfaces)
+
+
+threadring.chpl
+---------------
+o map Chapel's sync vars more directly down to Qthreads' sync vars
+  to avoid space and time overheads

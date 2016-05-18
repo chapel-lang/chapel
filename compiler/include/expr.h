@@ -161,7 +161,7 @@ class UnresolvedSymExpr : public Expr {
 
 
 
-// Note -- isCallExpr() retuns true for CallExpr and also
+// Note -- isCallExpr() returns true for CallExpr and also
 // ContextCallExpr. Therefore, it is important to use toCallExpr()
 // instead of casting to CallExpr* directly.
 class CallExpr : public Expr {

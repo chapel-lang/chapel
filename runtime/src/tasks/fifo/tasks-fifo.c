@@ -379,7 +379,6 @@ void chpl_task_init(void) {
   if (blockreport) {
     progress_cnt = 0;
     chpl_thread_mutexInit(&block_report_lock);
-    initializeLockReportForThread();
   }
 
   if (blockreport || taskreport) {
@@ -404,6 +403,10 @@ static void* do_callMain(void* arg) {
 
   // make sure this thread has thread-private data.
   setup_main_thread_private_data();
+
+  // make sure that the lock report is set up.
+  if (blockreport)
+    initializeLockReportForThread();
 
   chpl_main();
   return NULL;

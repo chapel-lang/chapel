@@ -568,7 +568,7 @@ module ChapelArray {
 
   proc chpl__isRectangularDomType(type domainType) param {
     var dom: domainType;
-    return isRectangularDom(dom);
+    return isDomainType(domainType) && isRectangularDom(dom);
   }
 
   proc chpl__isSparseDomType(type domainType) param {
@@ -1403,9 +1403,47 @@ module ChapelArray {
 
     pragma "no doc"
     proc defaultSparseDist {
-      // We assume here a distribution is the same as a dense one
-      // This function would need to be updated if that changed.
+      // For now, this function just returns the same distribution
+      // as the dense one. That works for:
+      //  * sparse subdomains of defaultDist arrays (they use defaultDist)
+      //  * sparse subdomains of Block distributed arrays (they use Block)
+      // However, it is likely that DSI implementations will need to be
+      // able to further customize this behavior. In particular, we
+      // could add e.g. dsiDefaultSparseDist to the DSI interface
+      // and have this function use _value.dsiDefaultSparseDist()
+      // (or perhaps _value.dist.dsiDefaultSparseDist() ).
       return _getDistribution(_value.dist);
+    }
+
+    /* Cast a rectangular domain to another rectangular domain type.
+       If the old type is stridable and the new type is not stridable,
+       ensure that the stride was 1.
+     */
+    proc safeCast(type t)
+      where chpl__isRectangularDomType(t) && isRectangularDom(this) {
+      const tmpD: t;
+      if tmpD.rank != this.rank then
+        compilerError("rank mismatch in cast");
+      if tmpD.idxType != this.idxType then
+        compilerError("idxType mismatch in cast");
+      if tmpD.stridable == this.stridable then
+        return this;
+      else if !tmpD.stridable && this.stridable {
+        const inds = this.getIndices();
+        var unstridableInds: rank*range(tmpD.idxType, stridable=false);
+
+        for param dim in 1..inds.size {
+          if inds(dim).stride != 1 then
+            halt("non-stridable domain assigned non-unit stride in dimension ", dim);
+          unstridableInds(dim) = inds(dim).safeCast(range(tmpD.idxType,
+                                                          stridable=false));
+        }
+        tmpD.setIndices(unstridableInds);
+        return tmpD;
+      } else /* if tmpD.stridable && !this.stridable */ {
+        tmpD = this;
+        return tmpD;
+      }
     }
 
     // the locale grid
@@ -1434,6 +1472,40 @@ module ChapelArray {
         for d in _value.dsiLocalSubdomains() do yield d;
     }
   }  // record _domain
+
+  /* Cast a rectangular domain to a new rectangular domain type.  If the old
+     type was stridable and the new type is not stridable then assume the
+     stride was 1 without checking.
+
+     For example:
+     {1..10 by 2}:domain(stridable=false)
+
+     results in the domain '{1..10}'
+   */
+  pragma "no doc"
+  proc _cast(type t, d: domain) where chpl__isRectangularDomType(t) && isRectangularDom(d) {
+    const tmpD: t;
+    if tmpD.rank != d.rank then
+      compilerError("rank mismatch in cast");
+    if tmpD.idxType != d.idxType then
+      compilerError("idxType mismatch in cast");
+
+    if tmpD.stridable == d.stridable then
+      return d;
+    else if !tmpD.stridable && d.stridable {
+      var inds = d.getIndices();
+      var unstridableInds: d.rank*range(tmpD.idxType, stridable=false);
+
+      for param i in 1..tmpD.rank {
+        unstridableInds(i) = inds(i):range(tmpD.idxType, stridable=false);
+      }
+      tmpD.setIndices(unstridableInds);
+      return tmpD;
+    } else /* if tmpD.stridable && !d.stridable */ {
+      tmpD = d;
+      return tmpD;
+    }
+  }
 
   proc chpl_countDomHelp(dom, counts) {
     var ranges = dom.dims();
@@ -2403,8 +2475,6 @@ module ChapelArray {
   }
 
 
-
-
   //
   // isXxxType, isXxxValue
   //
@@ -2726,6 +2796,14 @@ module ChapelArray {
   }
 
   proc =(ref a: domain, b: domain) {
+    if a.rank != b.rank then
+      compilerError("rank mismatch in domain assignment");
+    if a.idxType != b.idxType then
+      compilerError("index type mismatch in domain assignment");
+    if isRectangularDom(a) && isRectangularDom(b) then
+      if !a.stridable && b.stridable then
+        compilerError("cannot assign from a stridable domain to an unstridable domain without an explicit cast");
+
     if !isIrregularDom(a) && !isIrregularDom(b) {
       for e in a._value._arrs do {
         on e do e.dsiReallocate(b);
@@ -3086,6 +3164,27 @@ module ChapelArray {
     for param i in 1..a.rank do
       r(i) = a.dim(i) by t(i);
     var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, true, r);
+    if !noRefCount then
+      if (d.linksDistribution()) then
+        d.dist.incRefCount();
+    return _newDomain(d);
+  }
+
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_align(a:domain, b) { ... }
+   *
+   * because the parser renames the routine since 'align' is a keyword.
+   */
+  proc align(a: domain, b) {
+    var r: a.rank*range(a._value.idxType,
+                      BoundedRangeType.bounded,
+                      a.stridable);
+    var t = _makeIndexTuple(a.rank, b, expand=true);
+    for param i in 1..a.rank do
+      r(i) = a.dim(i) align t(i);
+    var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, a.stridable, r);
     if !noRefCount then
       if (d.linksDistribution()) then
         d.dist.incRefCount();

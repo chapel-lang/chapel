@@ -568,6 +568,8 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
                              IF1_complex_type size=COMPLEX_SIZE_128);
 
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
+
+void createInitStringLiterals();
 void resetTempID();
 FlagSet getRecordWrappedFlags(Symbol* s);
 FlagSet getSyncFlags(Symbol* s);

@@ -20,10 +20,9 @@
 //
 // The SparseBlock distribution is defined with six classes:
 //
-//   SparseBlock       : distribution class
+//   Block             : (from BlockDist) distribution class
 //   SparseBlockDom    : domain class
 //   SparseBlockArr    : array class
-//   LocSparseBlock    : local distribution class (per-locale instances)
 //   LocSparseBlockDom : local domain class (per-locale instances)
 //   LocSparseBlockArr : local array class (per-locale instances)
 //
@@ -63,78 +62,8 @@ config const disableAliasedBulkTransfer = true;
 
 config param sanityCheckDistribution = false;
 
-//
-// SparseBlock Distribution Class
-//
-//   The fields dataParTasksPerLocale, dataParIgnoreRunningTasks, and
-//   dataParMinGranularity can be changed, but changes are
-//   not reflected in privatized copies of this distribution.  Perhaps
-//   this is a feature, not a bug?!
-//
-// rank : generic rank that must match the rank of domains and arrays
-//        declared over this distribution
-//
-// idxType: generic index type that must match the index type of
-//          domains and arrays declared over this distribution
-//
-// boundingBox: a non-distributed domain defining a bounding box used
-//              to partition the space of all indices across the array
-//              of target locales; the indices inside the bounding box
-//              are partitioned "evenly" across the locales and
-//              indices outside the bounding box are mapped to the
-//              same locale as the nearest index inside the bounding
-//              box
-//
-// targetLocDom: a non-distributed domain over which the array of
-//               target locales and the array of local distribution
-//               classes are defined
-//
-// targetLocales: a non-distributed array containing the target
-//                locales to which this distribution partitions indices
-//                and data
-//
-// locDist: a non-distributed array of local distribution classes
-//
-// dataParTasksPerLocale: an integer that specifies the number of tasks to
-//                        use on each locale when iterating in parallel over
-//                        a SparseBlock-distributed domain or array
-//
-// dataParIgnoreRunningTasks: a boolean what dictates whether the number of
-//                            task use on each locale should be limited
-//                            by the available parallelism
-//
-// dataParMinGranularity: the minimum required number of elements per
-//                        task created
-//
-/*
-class SparseBlock : BaseDist {
-  param rank: int;
-  type idxType = int;
-  var boundingBox: domain(rank, idxType);
-  var targetLocDom: domain(rank);
-  var targetLocales: [targetLocDom] locale;
-  var locDist: [targetLocDom] LocSparseBlock(rank, idxType);
-  var dataParTasksPerLocale: int;
-  var dataParIgnoreRunningTasks: bool;
-  var dataParMinGranularity: int;
-  var pid: int = -1; // privatized object id (this should be factored out)
-}
-*/
-
-//
-// Local SparseBlock Distribution Class
-//
-// rank : generic rank that matches SparseBlock.rank
-// idxType: generic index type that matches SparseBlock.idxType
-// myChunk: a non-distributed domain that defines this locale's indices
-//
-/*
-class LocSparseBlock {
-  param rank: int;
-  type idxType;
-  const myChunk: domain(rank, idxType);
-}
-*/
+// There is no SparseBlock distribution class. Instead, we
+// just use Block.
 
 //
 // SparseBlock Domain Class
@@ -265,23 +194,22 @@ class SparseBlockDom: BaseSparseDom {
     }
   }
 
-  //
-  // TODO: Abstract the addition of low into a function?
-  // Note relationship between this operation and the
-  // order/position functions -- any chance for creating similar
-  // support? (esp. given how frequent this seems likely to be?)
-  //
-  // TODO: Is there some clever way to invoke the leader/follower
-  // iterator on the local blocks in here such that the per-core
-  // parallelism is expressed at that level?  Seems like a nice
-  // natural composition and might help with my fears about how
-  // stencil communication will be done on a per-locale basis.
-  //
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     var (locFollowThis, localeIndex) = followThis;
     for i in locFollowThis(1).these(tag, locFollowThis) do
       yield i;
   }
+
+  iter these(param tag: iterKind) where tag == iterKind.standalone {
+    coforall locDom in locDoms {
+      on locDom {
+        for i in locDom.mySparseBlock._value.these(tag) {
+          yield i;
+        }
+      }
+    }
+  }
+
 
   proc dsiDims() return whole.dims();
 
@@ -409,11 +337,6 @@ class SparseBlockArr: BaseArr {
     }
   }
 
-  //
-  // TODO: Rewrite this to reuse more of the global domain iterator
-  // logic?  (e.g., can we forward the forall to the global domain
-  // somehow?
-  //
   iter these(param tag: iterKind) where tag == iterKind.leader {
     for followThis in dom.these(tag) do
       yield followThis;
@@ -425,6 +348,16 @@ class SparseBlockArr: BaseArr {
       yield locArr[localeIndex].dsiAccess(i);
     }
   }
+
+  iter these(param tag: iterKind) ref where tag == iterKind.standalone {
+    coforall locA in locArr do on locArr {
+      // forward to sparse standalone iterator
+      for i in locA.myElems._value.these(tag) {
+        yield i;
+      }
+    }
+  }
+
 
   proc dsiAccess(i: rank*idxType) ref {
     //    local { // TODO: Turn back on once privatization is on
@@ -504,290 +437,10 @@ class LocSparseBlockArr {
   }
 }
 
-//
-// SparseBlock constructor for clients of the SparseBlock distribution
-//
 /*
-proc SparseBlock.SparseBlock(boundingBox: domain,
-                targetLocales: [] locale = Locales,
-                dataParTasksPerLocale=getDataParTasksPerLocale(),
-                dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
-                dataParMinGranularity=getDataParMinGranularity(),
-                param rank = boundingBox.rank,
-                type idxType = boundingBox.idxType) {
-  if rank != boundingBox.rank then
-    compilerError("specified SparseBlock rank != rank of specified bounding box");
-  if idxType != boundingBox.idxType then
-    compilerError("specified SparseBlock index type != index type of specified bounding box");
 
-  this.boundingBox = boundingBox;
-
-  setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
-
-  const boundingBoxDims = boundingBox.dims();
-  const targetLocDomDims = targetLocDom.dims();
-  coforall locid in targetLocDom do
-    on this.targetLocales(locid) do
-      locDist(locid) =  new LocSparseBlock(rank, idxType, locid, boundingBoxDims,
-                                     targetLocDomDims);
-
-  // NOTE: When these knobs stop using the global defaults, we will need
-  // to add checks to make sure dataParTasksPerLocale<0 and
-  // dataParMinGranularity<0
-  this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numCores
-                               else dataParTasksPerLocale;
-  this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
-  this.dataParMinGranularity = dataParMinGranularity;
-
-  if debugSparseBlockDist {
-    writeln("Creating new SparseBlock distribution:");
-    dsiDisplayRepresentation();
-  }
-}
-
-proc SparseBlock.dsiAssign(other: this.type) {
-  coforall locid in targetLocDom do
-    on targetLocales(locid) do
-      delete locDist(locid);
-  boundingBox = other.boundingBox;
-  targetLocDom = other.targetLocDom;
-  targetLocales = other.targetLocales;
-  dataParTasksPerLocale = other.dataParTasksPerLocale;
-  dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
-  dataParMinGranularity = other.dataParMinGranularity;
-  const boundingBoxDims = boundingBox.dims();
-  const targetLocDomDims = targetLocDom.dims();
-  coforall locid in targetLocDom do
-    on targetLocales(locid) do
-      locDist(locid) = new LocSparseBlock(rank, idxType, locid, boundingBoxDims,
-                                    targetLocDomDims);
-}
-
-proc SparseBlock.dsiClone() {
-  return new SparseBlock(boundingBox, targetLocales,
-                   dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity);
-}
-
-proc SparseBlock.dsiDestroyDistClass() {
-  coforall ld in locDist do {
-    on ld do
-      delete ld;
-  }
-}
-
-proc SparseBlock.dsiDisplayRepresentation() {
-  writeln("boundingBox = ", boundingBox);
-  writeln("targetLocDom = ", targetLocDom);
-  writeln("targetLocales = ", for tl in targetLocales do tl.id);
-  writeln("dataParTasksPerLocale = ", dataParTasksPerLocale);
-  writeln("dataParIgnoreRunningTasks = ", dataParIgnoreRunningTasks);
-  writeln("dataParMinGranularity = ", dataParMinGranularity);
-  for tli in targetLocDom do
-    writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
-}
-
-proc SparseBlock.dsiNewRectangularDom(param rank: int, type idxType,
-                              param stridable: bool) {
-  if idxType != this.idxType then
-    compilerError("SparseBlock domain index type does not match distribution's");
-  if rank != this.rank then
-    compilerError("SparseBlock domain rank does not match distribution's");
-
-  var dom = new SparseBlockDom(rank=rank, idxType=idxType, dist=this, stridable=stridable);
-  dom.setup();
-  if debugSparseBlockDist {
-    writeln("Creating new SparseBlock domain:");
-    dom.dsiDisplayRepresentation();
-  }
-  return dom;
-}
-
-//
-// output distribution
-//
-proc SparseBlock.writeThis(x) {
-  x.writeln("SparseBlock");
-  x.writeln("-------");
-  x.writeln("distributes: ", boundingBox);
-  x.writeln("across locales: ", targetLocales);
-  x.writeln("indexed via: ", targetLocDom);
-  x.writeln("resulting in: ");
-  for locid in targetLocDom do
-    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id, " owns chunk: ", locDist(locid).myChunk);
-}
-
-proc SparseBlock.dsiIndexToLocale(ind: idxType) where rank == 1 {
-  return targetLocales(targetLocsIdx(ind));
-}
-
-proc SparseBlock.dsiIndexToLocale(ind: rank*idxType) where rank > 1 {
-  return targetLocales(targetLocsIdx(ind));
-}
-
-//
-// compute what chunk of inds is owned by a given locale -- assumes
-// it's being called on the locale in question
-//
-proc SparseBlock.getChunk(inds, locid) {
-  // use domain slicing to get the intersection between what the
-  // locale owns and the domain's index set
-  //
-  // TODO: Should this be able to be written as myChunk[inds] ???
-  //
-  // TODO: Does using David's detupling trick work here?
-  //
-  const chunk = locDist(locid).myChunk((...inds.getIndices()));
-  if sanityCheckDistribution then
-    if chunk.numIndices > 0 {
-      if targetLocsIdx(chunk.low) != locid then
-        writeln("[", here.id, "] ", chunk.low, " is in my chunk but maps to ",
-                targetLocsIdx(chunk.low));
-      if targetLocsIdx(chunk.high) != locid then
-        writeln("[", here.id, "] ", chunk.high, " is in my chunk but maps to ",
-                targetLocsIdx(chunk.high));
-    }
-  return chunk;
-}
-
-//
-// get the index into the targetLocales array for a given distributed index
-//
-proc SparseBlock.targetLocsIdx(ind: idxType) where rank == 1 {
-  return targetLocsIdx(tuple(ind));
-}
-
-proc SparseBlock.targetLocsIdx(ind: rank*idxType) {
-  var result: rank*int;
-  for param i in 1..rank do
-    result(i) = max(0, min((targetLocDom.dim(i).length-1):int,
-                           (((ind(i) - boundingBox.dim(i).low) *
-                             targetLocDom.dim(i).length:idxType) /
-                            boundingBox.dim(i).length):int));
-  return if rank == 1 then result(1) else result;
-}
-
-proc SparseBlock.dsiCreateReindexDist(newSpace, oldSpace) {
-  proc anyStridable(space, param i=1) param
-    return if i == space.size then space(i).stridable
-           else space(i).stridable || anyStridable(space, i+1);
-
-  // Should this error be in ChapelArray or not an error at all?
-  if newSpace(1).idxType != oldSpace(1).idxType then
-    compilerError("index type of reindex domain must match that of original domain");
-  if anyStridable(newSpace) || anyStridable(oldSpace) then
-    compilerWarning("reindexing stridable SparseBlock arrays is not yet fully supported");
-
-  /* To shift the bounding box, we must perform the following operation for
-   *  each dimension:
-   *
-   *   bbox(r).low - (oldSpace(r).low - newSpace(r).low)
-   *   bbox(r).high - (oldSpace(r).low - newSpace(r).low)
-   *
-   * The following is guaranteed on entry:
-   *
-   *   oldSpace(r).low-newSpace(r).low = oldSpace(r).high-newSpace(r).high
-   *
-   * We need to be able to do this without going out of range of the index
-   *  type.  The approach we take is to check if there is a way to perform
-   *  the calculation without having any of the intermediate results go out
-   *  of range.
-   *
-   *    newBbLow = bbLow - (oldLow - newLow)
-   *    newBbLow = bbLow - oldLow + newLow
-   *
-   * Can be performed as:
-   *
-   *    t = oldLow-newLow;
-   *    newBbLow = bbLow-t;
-   * or
-   *    t = bbLow-oldLow;
-   *    newBbLow = t+newLow;
-   * or
-   *    t = bbLow+newLow;
-   *    newBbLow = t-oldLow;
-   *
-   */
-  proc adjustBound(bbound, oldBound, newBound) {
-    var t: bbound.type;
-    if safeSub(oldBound, newBound) {
-      t = oldBound-newBound;
-      if safeSub(bbound, t) {
-        return (bbound-t, true);
-      }
-    }
-    if safeSub(bbound, oldBound) {
-      t = bbound-oldBound;
-      if safeAdd(t, newBound) {
-        return (t+newBound, true);
-      }
-    }
-    if safeAdd(bbound, newBound) {
-      t = bbound+newBound;
-      if safeSub(t, oldBound) {
-        return(t-oldBound, true);
-      }
-    }
-    return (bbound, false);
-  }
-
-  var myNewBbox = boundingBox.dims();
-  for param r in 1..rank {
-    var oldLow = oldSpace(r).low;
-    var newLow = newSpace(r).low;
-    var oldHigh = oldSpace(r).high;
-    var newHigh = newSpace(r).high;
-    var valid: bool;
-    if oldLow != newLow {
-      (myNewBbox(r)._base._low,valid) = adjustBound(myNewBbox(r).low,oldLow,newLow);
-      if !valid then // try with high
-        (myNewBbox(r)._base._low,valid) = adjustBound(myNewBbox(r).low,oldHigh,newHigh);
-      if !valid then
-        halt("invalid reindex for SparseBlock: distribution bounding box (low) out of range in dimension ", r);
-
-      (myNewBbox(r)._base._high,valid) = adjustBound(myNewBbox(r).high,oldHigh,newHigh);
-      if !valid then
-        (myNewBbox(r)._base._high,valid) = adjustBound(myNewBbox(r).high,oldLow,newLow);
-      if !valid then // try with low
-        halt("invalid reindex for SparseBlock: distribution bounding box (high) out of range in dimension ", r);
-    }
-  }
-  var d = {(...myNewBbox)};
-  var newDist = new SparseBlock(d, targetLocales,
-                          dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                          dataParMinGranularity);
-  return newDist;
-}
-
-/*
-proc LocSparseBlock.LocSparseBlock(param rank: int,
-                      type idxType,
-                      locid, // the locale index from the target domain
-                      boundingBox: rank*range(idxType),
-                      targetLocBox: rank*range) {
-  if rank == 1 {
-    const lo = boundingBox(1).low;
-    const hi = boundingBox(1).high;
-    const numelems = hi - lo + 1;
-    const numlocs = targetLocBox(1).length;
-    const (blo, bhi) = _computeSparseBlock(numelems, numlocs, locid,
-                                     max(idxType), min(idxType), lo);
-    myChunk = {blo..bhi};
-  } else {
-    var tuple: rank*range(idxType);
-    for param i in 1..rank {
-      const lo = boundingBox(i).low;
-      const hi = boundingBox(i).high;
-      const numelems = hi - lo + 1;
-      const numlocs = targetLocBox(i).length;
-      const (blo, bhi) = _computeSparseBlock(numelems, numlocs, locid(i),
-                                       max(idxType), min(idxType), lo);
-      tuple(i) = blo..bhi;
-    }
-    myChunk = {(...tuple)};
-  }
-}
-*/
+Some old code that might be useful to draw from as this
+module is improved.
 
 proc SparseBlockDom.dsiNewSpsSubDom(parentDomVal) {
   return new SparseBlockDom(rank, idxType, dist, parentDomVal);
@@ -1109,51 +762,6 @@ proc LocSparseBlockArr.this(i) ref {
   return myElems(i);
 }
 
-//
-// Privatization
-//
-proc SparseBlock.SparseBlock(other: SparseBlock, privateData,
-                param rank = other.rank,
-                type idxType = other.idxType) {
-  boundingBox = {(...privateData(1))};
-  targetLocDom = {(...privateData(2))};
-  dataParTasksPerLocale = privateData(3);
-  dataParIgnoreRunningTasks = privateData(4);
-  dataParMinGranularity = privateData(5);
-
-  for i in targetLocDom {
-    targetLocales(i) = other.targetLocales(i);
-    locDist(i) = other.locDist(i);
-  }
-}
-
-// TODO: Will want to privatize eventually
-
-proc SparseBlock.dsiSupportsPrivatization() param return false;
-
-proc SparseBlock.dsiGetPrivatizeData() {
-  writeln("In getPrivatizeData");
-  return (boundingBox.dims(), targetLocDom.dims(),
-          dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
-}
-
-proc SparseBlock.dsiPrivatize(privatizeData) {
-  writeln("In dsiPrivatize");
-  return new SparseBlock(this, privatizeData);
-}
-
-proc SparseBlock.dsiGetReprivatizeData() { writeln("In dsiGetReprivatizeData"); return boundingBox.dims(); }
-
-proc SparseBlock.dsiReprivatize(other, reprivatizeData) {
-  writeln("In dsiReprivatize");
-  boundingBox = {(...reprivatizeData)};
-  targetLocDom = other.targetLocDom;
-  targetLocales = other.targetLocales;
-  locDist = other.locDist;
-  dataParTasksPerLocale = other.dataParTasksPerLocale;
-  dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
-  dataParMinGranularity = other.dataParMinGranularity;
-}
 */
 
 //

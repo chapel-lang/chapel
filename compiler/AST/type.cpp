@@ -1655,7 +1655,7 @@ DefExpr* defineObjectClass() {
                                NULL);
 
   retval->sym->addFlag(FLAG_OBJECT_CLASS);
-  retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResovedTree().
+  retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResolvedTree().
   retval->sym->addFlag(FLAG_NO_OBJECT);
 
   return retval;
