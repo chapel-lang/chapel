@@ -1,9 +1,0 @@
-*.chpl           : test source file
-*.comm-none.good : expected output for CHPL_COMM==none (single locale)
-*.good           : expected output for CHPL_COMM!=none when running with
-                   NUMLOCALES locales
-NUMLOCALES       : the number of locales to run on for CHPL_COMM!=none
-                   testing
-
-blockSparse1.*   : a simple 1D test of the block-sparse distribution
-blockSparse2.*   : a simple 2D test of the block-sparse distribution
