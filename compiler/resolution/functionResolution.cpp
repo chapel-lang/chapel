@@ -326,7 +326,7 @@ static void insertFormalTemps(FnSymbol* fn);
 static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars);
 
 static Expr* dropUnnecessaryCast(CallExpr* call);
-static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *name);
+static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *name, Type *retType);
 static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, AggregateType *parent, AList &arg_list, bool isFormal, Type *retType);
 static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType);
 static AggregateType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *call);
@@ -4710,7 +4710,7 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
   happen to share the same function type.  By using the parent class we can assign new values onto variable that match the function type
   but may currently be pointing at a different function.
 */
-static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *name) {
+static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *name, Type *retType) {
   AggregateType *parent = new AggregateType(AGGREGATE_CLASS);
   TypeSymbol *parent_ts = new TypeSymbol(name, parent);
 
@@ -4722,9 +4722,41 @@ static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *
 
   parent->dispatchParents.add(dtObject);
   dtObject->dispatchChildren.add(parent);
+
   VarSymbol* parent_super = new VarSymbol("super", dtObject);
   parent_super->addFlag(FLAG_SUPER_CLASS);
   parent->fields.insertAtHead(new DefExpr(parent_super));
+
+  // Add a "getter" method that returns the return type of the function
+  //
+  //   * The return type itself is not actually stored as a member variable
+  //
+  //   * A function that returns void will similarly cause a call to retType
+  //     to return void, which is to say it doesn't return anything.  This is
+  //     maybe not terribly intuitive to the user, but should be resolved
+  //     when "void" becomes a fully-featured type.
+  FnSymbol* rtGetter = new FnSymbol("retType");
+  rtGetter->addFlag(FLAG_NO_IMPLICIT_COPY);
+  rtGetter->addFlag(FLAG_INLINE);
+  rtGetter->retTag = RET_TYPE;
+  rtGetter->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", parent);
+  _this->addFlag(FLAG_ARG_THIS);
+  rtGetter->insertFormalAtTail(_this);
+  rtGetter->insertAtTail(new CallExpr(PRIM_RETURN, retType->symbol));
+
+  DefExpr* def = new DefExpr(rtGetter);
+  parent->symbol->defPoint->insertBefore(def);
+  normalize(rtGetter);
+  parent->methods.add(rtGetter);
+  rtGetter->addFlag(FLAG_METHOD);
+  rtGetter->addFlag(FLAG_METHOD_PRIMARY);
+  rtGetter->cname = astr("chpl_get_", parent->symbol->cname, "_",
+                         rtGetter->cname);
+  rtGetter->addFlag(FLAG_NO_PARENS);
+  rtGetter->_this = _this;
+
   build_constructors(parent);
   buildDefaultDestructor(parent);
 
@@ -4874,7 +4906,7 @@ static AggregateType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExp
     parent = functionTypeMap[parent_name].first;
 
   } else {
-    parent                  = createAndInsertFunParentClass(call, parent_name.c_str());
+    parent                  = createAndInsertFunParentClass(call, parent_name.c_str(), retType);
     FnSymbol* parent_method = createAndInsertFunParentMethod(call, parent, arg_list, false, retType);
 
     functionTypeMap[parent_name] = std::pair<AggregateType*, FnSymbol*>(parent, parent_method);
@@ -4928,7 +4960,7 @@ createFunctionAsValue(CallExpr *call) {
     thisParentMethod = ctfs.second;
   }
   else {
-    parent = createAndInsertFunParentClass(call, parent_name.c_str());
+    parent = createAndInsertFunParentClass(call, parent_name.c_str(), captured_fn->retType);
     thisParentMethod = createAndInsertFunParentMethod(call, parent, captured_fn->formals, true, captured_fn->retType);
     functionTypeMap[parent_name] = std::pair<AggregateType*, FnSymbol*>(parent, thisParentMethod);
   }
