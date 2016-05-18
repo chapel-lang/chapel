@@ -1413,6 +1413,7 @@ module ChapelArray {
       // and have this function use _value.dsiDefaultSparseDist()
       // (or perhaps _value.dist.dsiDefaultSparseDist() ).
       return _getDistribution(_value.dist);
+    }
 
     /* Cast a rectangular domain to another rectangular domain type.
        If the old type is stridable and the new type is not stridable,
@@ -2472,8 +2473,6 @@ module ChapelArray {
     //
     return && reduce (this == that);
   }
-
-
 
 
   //
