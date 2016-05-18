@@ -20,10 +20,9 @@
 //
 // The SparseBlock distribution is defined with six classes:
 //
-//   SparseBlock       : distribution class
+//   Block             : (from BlockDist) distribution class
 //   SparseBlockDom    : domain class
 //   SparseBlockArr    : array class
-//   LocSparseBlock    : local distribution class (per-locale instances)
 //   LocSparseBlockDom : local domain class (per-locale instances)
 //   LocSparseBlockArr : local array class (per-locale instances)
 //
