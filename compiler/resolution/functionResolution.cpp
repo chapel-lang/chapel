@@ -943,16 +943,15 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
     if (se->var->hasFlag(FLAG_TYPE_VARIABLE))
       retType = resolveTypeAlias(se);
 
-    // Try resolving records/classes with default types
-    // e.g. range
-    resolveDefaultGenericTypeSymExpr(se);
-    // re-read the last expr's type since resolveDefaultGenericTypeSymExpr
-    // replaces it.
-    retType = fn->retExprType->body.tail->typeInfo();
-
-    if (retType->symbol->hasFlag(FLAG_GENERIC))
-      USR_FATAL_CONT(fn->retExprType, "illegal generic return type %s",
-                     toString(retType));
+    if (retType->symbol->hasFlag(FLAG_GENERIC)) {
+      SET_LINENO(fn->retExprType->body.tail);
+      // Try resolving records/classes with default types
+      // e.g. range
+      resolveDefaultGenericTypeSymExpr(se);
+      // re-read the last expr's type since resolveDefaultGenericTypeSymExpr
+      // replaces it.
+      retType = fn->retExprType->body.tail->typeInfo();
+    }
   }
   fn->retType = retType;
 
