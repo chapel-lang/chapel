@@ -1,3 +1,4 @@
 strassen.chpl:12: In function 'getInstance':
-strassen.chpl:12: error: unresolved type specifier 'Strassen()'
-strassen.chpl:18: note: candidates are: Strassen(type n)
+strassen.chpl:12: error: illegal generic return type Strassen
+strassen.chpl:14: error: unresolved call 'Strassen(int(64))'
+strassen.chpl:18: note: candidates are: Strassen(name, hasBeenRun, n)
