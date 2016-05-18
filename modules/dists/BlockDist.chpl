@@ -41,6 +41,7 @@
 use DSIUtil;
 use ChapelUtil;
 use CommDiagnostics;
+use SparseBlockDist;
 
 //
 // These flags are used to output debug information and run extra
@@ -483,6 +484,10 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   return dom;
 }
 
+proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
+  return new SparseBlockDom(rank=rank, idxType=idxType, dist=this, parentDom=dom, whole=dom._value.whole);
+}
+
 //
 // output distribution
 //
@@ -501,7 +506,7 @@ proc Block.dsiIndexToLocale(ind: idxType) where rank == 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
-proc Block.dsiIndexToLocale(ind: rank*idxType) where rank > 1 {
+proc Block.dsiIndexToLocale(ind: rank*idxType) {
   return targetLocales(targetLocsIdx(ind));
 }
 
@@ -667,6 +672,7 @@ proc LocBlock.LocBlock(param rank: int,
     myChunk = {(...inds)};
   }
 }
+
 
 proc BlockDom.dsiMyDist() return dist;
 
