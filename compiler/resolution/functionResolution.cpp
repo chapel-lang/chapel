@@ -4712,21 +4712,6 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
   but may currently be pointing at a different function.
 */
 static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *name, Type *retType) {
-  AggregateType *parent = new AggregateType(AGGREGATE_CLASS);
-  TypeSymbol *parent_ts = new TypeSymbol(name, parent);
-
-  parent_ts->addFlag(FLAG_FUNCTION_CLASS);
-
-  // Because this function type needs to be globally visible (because we don't know the modules it will be passed to), we put
-  // it at the highest scope
-  theProgram->block->body.insertAtTail(new DefExpr(parent_ts));
-
-  parent->dispatchParents.add(dtObject);
-  dtObject->dispatchChildren.add(parent);
-
-  VarSymbol* parent_super = new VarSymbol("super", dtObject);
-  parent_super->addFlag(FLAG_SUPER_CLASS);
-  parent->fields.insertAtHead(new DefExpr(parent_super));
 
   // Add a "getter" method that returns the return type of the function
   //
@@ -4736,32 +4721,41 @@ static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *
   //     to return void, which is to say it doesn't return anything.  This is
   //     maybe not terribly intuitive to the user, but should be resolved
   //     when "void" becomes a fully-featured type.
-  FnSymbol* rtGetter = new FnSymbol("retType");
-  rtGetter->addFlag(FLAG_NO_IMPLICIT_COPY);
-  rtGetter->addFlag(FLAG_INLINE);
-  rtGetter->retTag = RET_TYPE;
-  rtGetter->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
 
-  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", parent);
-  _this->addFlag(FLAG_ARG_THIS);
-  rtGetter->insertFormalAtTail(_this);
-  rtGetter->insertAtTail(new CallExpr(PRIM_RETURN, retType->symbol));
+  FnSymbol* rtGetterSymbol =
+    buildFunctionSymbol(
+      buildFunctionFormal(NULL, NULL),
+      "retType", INTENT_BLANK, NULL);
+  rtGetterSymbol->addFlag(FLAG_INLINE);
+  rtGetterSymbol->addFlag(FLAG_NO_PARENS);
 
-  DefExpr* def = new DefExpr(rtGetter);
-  parent->symbol->defPoint->insertBefore(def);
-  normalize(rtGetter);
-  parent->methods.add(rtGetter);
-  rtGetter->addFlag(FLAG_METHOD);
-  rtGetter->addFlag(FLAG_METHOD_PRIMARY);
-  rtGetter->cname = astr("chpl_get_", parent->symbol->cname, "_",
-                         rtGetter->cname);
-  rtGetter->addFlag(FLAG_NO_PARENS);
-  rtGetter->_this = _this;
+  BlockStmt* rtGetterBlock =
+    buildFunctionDecl(
+      rtGetterSymbol, RET_TYPE, NULL, NULL,
+      new BlockStmt(new CallExpr(PRIM_RETURN, retType->symbol), BLOCK_TYPE),
+      NULL);
 
-  build_constructors(parent);
-  buildDefaultDestructor(parent);
+  DefExpr* fcfClassDefExpr =
+    buildClassDefExpr(name, NULL, new AggregateType(AGGREGATE_CLASS), NULL,
+                      rtGetterBlock, FLAG_UNKNOWN, NULL);
+  fcfClassDefExpr->sym->addFlag(FLAG_FUNCTION_CLASS);
 
-  return parent;
+  AggregateType* fcfClassType = toAggregateType(fcfClassDefExpr->sym->type);
+  add_root_type(fcfClassType);
+
+  // Because this function type needs to be globally visible (because we don't know the modules it will be passed to), we put
+  // it at the highest scope
+  theProgram->block->insertAtTail(fcfClassDefExpr);
+
+  build_constructors(fcfClassType);
+  buildDefaultDestructor(fcfClassType);
+
+  normalize(fcfClassDefExpr);
+  normalize(fcfClassType);
+  normalize(rtGetterSymbol);
+  normalize(rtGetterBlock);
+
+  return fcfClassType;
 }
 
 /*
