@@ -13,7 +13,8 @@ const pi = 3.141592653589793,
 
 
 //
-// a record representing one of the bodies in the solar system
+// a record for representing the position, velocity, and mass of
+// bodies in the solar system
 //
 record body {
   var pos: 3*real;
@@ -129,7 +130,8 @@ proc energy() {
 }
 
 //
-// a helper routine to compute the sum of squares of a 3-tuple's components
+// compute the sum of squares of a 3-tuple's elements
 //
-inline proc sumOfSquares(x)
+inline proc sumOfSquares(x) {
   return x(1)**2 + x(2)**2 + x(3)**2;
+}
