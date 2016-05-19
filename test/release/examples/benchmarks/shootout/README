@@ -31,7 +31,8 @@ repository under the test/studies/shootout/ directory.
 
 The provided Makefile can be used to compile the programs, or they can
 be run in correctness or performance modes using the Chapel testing
-system (see $CHPL_HOME/util/start_test).
+system.  (See doc/developer/bestPractices/TestSystem.rst in the Chapel
+git repository: http://github.com/chapel-lang/chapel)
 
 Note that chameneosredux.chpl has non-deterministic output.
 
