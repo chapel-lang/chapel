@@ -61,6 +61,21 @@ o explore expressing the complex values using Chapel's 'complex' type,
   overheads associated with using cleaner complex operations.
 
 
+nbody.chpl
+----------
+o explore possibility of enabling vectorization (perhaps by applying
+  'vectorizeOnly() to tuple operations?)
+  - explore padding to better align velocity field
+
+o have compiler eliminate inner multiplies
+
+o moving 'ref b[1] = bodies[i]' up to outer loop doesn't seem to help,
+  why is that?
+
+o as initializers are enabled, change 'mass' from 'var' to 'const'
+  field
+
+
 pidigits.chpl
 -------------
 o promote mpz_t types to a record-based implementation with:
