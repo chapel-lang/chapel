@@ -1,0 +1,13 @@
+bug: program crashes upon dmap() and for-expression
+
+It is an uncommon pattern: dmap() followed by a 'for' expression
+on one of the fields.
+
+The test runs clean under valgrind, still producing the same
+negative-reference-count error.
+
+The error should be resolved once we eliminate reference counts.
+After that the test will still be useful IMO because it will still
+exercise proper allocation/deallocation of all objects involved.
+
+Once the test runs cleanly, we should remove the .skipif.

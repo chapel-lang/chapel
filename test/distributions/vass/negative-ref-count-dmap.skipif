@@ -1,0 +1,12 @@
+# This test may behaves differently under various configurations,
+# so test it under the default configuration only.
+# Should be OK with valgrind.
+#
+# Remove this .skipif once the test passes.
+#
+CHPL_COMM != none
+COMPOPTS <= --baseline
+COMPOPTS <= --no-local
+CHPL_TEST_PERF == on
+#CHPL_TEST_VGRND_EXE == on
+CHPL_TARGET_PLATFORM != linux64
