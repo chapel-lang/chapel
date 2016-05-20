@@ -51,17 +51,6 @@ use BlockDist;
 config param debugSparseBlockDist = false;
 config param debugSparseBlockDistBulkTransfer = false;
 
-// This flag is used to enable bulk transfer when aliased arrays are
-// involved.  Currently, aliased arrays are not eligible for the
-// optimization due to a bug in bulk transfer for rank changed arrays
-// in which the last (right-most) dimension is collapsed.  Disabling
-// the optimization for all aliased arrays is very conservative, so
-// we provide this flag to allow the user to override the decision,
-// with the caveat that it will likely not work for the above case.
-config const disableAliasedBulkTransfer = true;
-
-config param sanityCheckDistribution = false;
-
 // There is no SparseBlock distribution class. Instead, we
 // just use Block.
 

@@ -20,7 +20,7 @@ At present, this directory contains the following codes:
     meteor-fast.chpl    : A less readable, but much faster version of meteor.
     nbody.chpl          : Performs an n-body simulation of the Jovian planets
     pidigits.chpl       : Computes digits of pi using GMP, if available
-    regexdna            : Performs DNA matching
+    regexdna.chpl       : Performs DNA matching
     spectralnorm.chpl   : Calculates the spectral norm of an infinite matrix
     threadring.chpl     : Passes a token between a large number of threads
 
@@ -31,7 +31,8 @@ repository under the test/studies/shootout/ directory.
 
 The provided Makefile can be used to compile the programs, or they can
 be run in correctness or performance modes using the Chapel testing
-system (see $CHPL_HOME/util/sub_test).
+system.  (See doc/developer/bestPractices/TestSystem.rst in the Chapel
+git repository: http://github.com/chapel-lang/chapel)
 
 Note that chameneosredux.chpl has non-deterministic output.
 
@@ -59,6 +60,28 @@ o explore expressing the complex values using Chapel's 'complex' type,
   even if it means plucking C.re and C.im out and operating on them
   directly rather than using higher-level complex operations to avoid
   overheads associated with using cleaner complex operations.
+
+
+nbody.chpl
+----------
+o explore possibility of enabling vectorization (perhaps by applying
+  'vectorizeOnly() to tuple operations?)
+  - explore padding to better align velocity field
+
+o have compiler eliminate inner multiplies
+
+o support sum-of-squares library function for all tuples?  (collections?)
+  Improve and lean on Norm module more?  Optimize reductions so that
+  they could be used for sum of squares without penalty?
+
+o moving 'ref b1 = bodies[i]' up to outer loop doesn't seem to help,
+  why is that?  Also const vs. ref for bodies[i] in energy computation?
+
+o have compiler eliminate and hoist common subexpressions better so
+  that b1/b2 refs/consts aren't necessary for good performance.
+
+o as initializers are enabled, change 'mass' from 'var' to 'const'
+  field
 
 
 pidigits.chpl
