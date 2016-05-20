@@ -2,6 +2,7 @@
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Albert Sidelnik and Brad Chamberlain
+   derived from the Java version by Mark C. Lewis and Chad Whipkey
 */
 
 
@@ -36,7 +37,7 @@ var bodies = [/* sun */
                                7.69901118419740425e-03 * daysPerYear,
                               -6.90460016972063023e-05 * daysPerYear),
                       mass =   9.54791938424326609e-04 * solarMass),
-  
+
               /* saturn */
               new body(pos = ( 8.34336671824457987e+00,
                                4.12479856412430479e+00,
@@ -98,12 +99,12 @@ proc advance(dt) {
 
       const dpos = b1.pos - b2.pos,
             mag = dt / sqrt(sumOfSquares(dpos))**3;
-        
+
       b1.vel -= dpos * b2.mass * mag;
       b2.vel += dpos * b1.mass * mag;
     }
   }
-  
+
   for b in bodies do
     b.pos += dt * b.vel;
 }
@@ -113,19 +114,19 @@ proc advance(dt) {
 //
 proc energy() {
   var e = 0.0;
-  
+
   for i in 1..numBodies {
     const b1 = bodies[i];
-    
+
     e += 0.5 * b1.mass * sumOfSquares(b1.vel);
-    
+
     for j in i+1..numBodies {
       const b2 = bodies[j];
-      
+
       e -= (b1.mass * b2.mass) / sqrt(sumOfSquares(b1.pos - b2.pos));
     }
   }
-  
+
   return e;
 }
 
