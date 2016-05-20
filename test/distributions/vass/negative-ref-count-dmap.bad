@@ -1,0 +1,4 @@
+77777777
+0
+88888888
+negative-ref-count-dmap.chpl:10: error: halt reached - domain reference count is negative!
