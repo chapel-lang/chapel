@@ -1372,7 +1372,7 @@ proc LocBlockArr.this(i) ref {
 proc Block.Block(other: Block, privateData,
                 param rank = other.rank,
                 type idxType = other.idxType,
-                type layoutType = DefaultDist) {
+                type layoutType = other.layoutType) {
   boundingBox = {(...privateData(1))};
   targetLocDom = {(...privateData(2))};
   dataParTasksPerLocale = privateData(3);
@@ -1414,7 +1414,8 @@ proc BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc BlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
-  var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
+  var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable,
+      layoutType=layoutType, dist=privdist);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
   c.whole = {(...privatizeData(2))};
