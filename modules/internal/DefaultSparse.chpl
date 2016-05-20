@@ -235,6 +235,10 @@ module DefaultSparse {
         add_help(ind);
       }
     }
+
+    proc bulkAdd(inds: [] rank*idxType, sorted=false, noDuplicate=false){
+      compilerError("bulkAdd not implemented for default sparse domains yet.");
+    }
   
     proc dsiRemove(ind: rank*idxType) {
       if (rank == 1) {

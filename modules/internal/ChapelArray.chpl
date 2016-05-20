@@ -1030,6 +1030,11 @@ module ChapelArray {
       _value.dsiAdd(i);
     }
 
+    proc bulkAdd(inds: [] _value.rank*_value.idxType, sorted=false,
+        noDuplicate=false) where isSparseDom(this) {
+      _value.bulkAdd(inds, sorted, noDuplicate);
+    }
+
     /* Remove index ``i`` from this domain */
     proc remove(i) {
       _value.dsiRemove(i);
