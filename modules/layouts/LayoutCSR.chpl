@@ -287,6 +287,121 @@ class CSRDom: BaseSparseDom {
     }
   }
 
+  proc bulkAdd(inds: [] rank*idxType){
+    //preprocess - sort - eliminate duplicates
+
+    var numAdded = inds.size;
+
+    /*writeln("Going to add ", numAdded, " indices");*/
+    //find individual insert points
+    //and eliminate duplicates between inds and dom
+    var indivInsertPts: [{0..#numAdded}] int;
+    var actualInsertPts: [{0..#numAdded}] int; //where to put in newdom
+
+    //eliminate duplicates --assumes sorted
+    var lastInd = (-1,-1);
+    for (i, p) in zip(inds, indivInsertPts)  {
+      if i == lastInd {
+        p = -1;
+      }
+      else {
+        lastInd = i;
+      }
+    }
+
+    forall (i,p) in zip(inds, indivInsertPts) {
+      if p != -1 { //don't do anything if it's duplicate
+        const (found, insertPt) = find(i);
+        p = if found then -1 else insertPt; //mark as duplicate
+      }
+    }
+    /*writeln("indivInsertPts: ", indivInsertPts);*/
+
+    //shift insert points for bulk addition
+    //previous indexes that are added will cause a shift in the next indexes
+    var actualAddCnt = 0;
+    for (ip, ap) in zip(indivInsertPts, actualInsertPts) {
+      if ip != -1 {
+        ap = ip + actualAddCnt;
+        actualAddCnt += 1;
+      }
+      else ap = ip;
+    }
+    /*writeln("actualInsertPts: ", actualInsertPts);*/
+    const oldnnz = nnz;
+    nnz += actualAddCnt;
+
+    //grow nnzDom if necessary
+    if (nnz > nnzDomSize) {
+      nnzDomSize = (exp2(log2(nnz)+1.0)):int;
+
+      nnzDom = {1..nnzDomSize};
+    }
+
+    //linearly fill the new colIdx from backwards
+    var newIndIdx = actualInsertPts.size-1; //index into new indices
+    var oldIndIdx = oldnnz; //index into old indices
+    var newLoc = actualInsertPts[newIndIdx]; //its position-to-be in new dom
+    while newLoc == -1 {
+      newIndIdx -= 1;
+      newLoc = actualInsertPts[newIndIdx];
+    }
+
+    for i in 1..nnz by -1 {
+      /*writeln("Picking ", i, "th elem. newLoc=",newLoc," oldIndIdx=",oldIndIdx,*/
+          /*" newIndIdx=",newIndIdx);*/
+      if oldIndIdx >= 1 && i > newLoc {
+        //shift from old values
+        colIdx[i] = colIdx[oldIndIdx];
+        oldIndIdx -= 1;
+      }
+      else if newIndIdx >= 0 && i == newLoc {
+        //put the new guy in
+        colIdx[i] = inds[newIndIdx][2];
+        newIndIdx -= 1;
+        if newIndIdx >= 0 then 
+          newLoc = actualInsertPts[newIndIdx];
+        else
+          newLoc = -2; //finished new set
+        while newLoc == -1 {
+          newIndIdx -= 1;
+          newLoc = actualInsertPts[newIndIdx];
+        }
+      }
+      else halt("Something went wrong");
+
+      //we can break if newIndIdx = -1 ?
+    }
+
+    //aggregated row shift
+    var prevRow = parentDom.dim(1).low;
+    var row: int;
+    var rowCnt = 0;
+    for (ind, p) in zip(inds, indivInsertPts)  {
+      if p == -1 then continue;
+      row = ind[1];
+      if row == prevRow then rowCnt += 1;
+      else {
+        /*writeln(rowCnt, " nnz in row ", prevRow);*/
+        rowStart[prevRow+1] += rowCnt;
+        if row - prevRow > 1 {
+          for i in prevRow+2..row{
+            rowStart[i] += rowCnt;
+          }
+        }
+        /*rowCnt = 0;*/
+        rowCnt += 1;
+        prevRow = row;
+      }
+    }
+    for i in prevRow+1..rowDom.high{
+        rowStart[i] += rowCnt;
+    }
+
+    /*writeln("Bulk add finished");*/
+    /*writeln(rowStart, "\n", colIdx);*/
+  }
+
   proc dsiRemove(ind: rank*idxType) {
     // find position in nnzDom to remove old index
     const (found, insertPt) = find(ind);
