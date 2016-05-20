@@ -98,7 +98,7 @@ Forwarding Environment Variables
 
 Chapel launchers generally arrange for environment variables to be
 forwarded to worker processes. However, this strategy is not always
-reliable. The remote system may ovrride some environment variables, and
+reliable. The remote system may override some environment variables, and
 some launchers might not correctly forward all environment variables.  In
 particular, the amudprun launcher will not forward environment variables
 containing backticks (`).

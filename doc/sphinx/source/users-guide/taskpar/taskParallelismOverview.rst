@@ -80,6 +80,6 @@ time, all your tasks should run in parallel.
 When the number of tasks created by a Chapel program exceeds the
 amount of hardware parallelism available, tasks will typically be
 multiplexed across the available hardware over time.  The specifics
-depend on how tasks are implementated by the runtime library; again,
+depend on how tasks are implemented by the runtime library; again,
 see :ref:`readme-tasks` for further details if you're curious to
 understand task scheduling in more detail.
