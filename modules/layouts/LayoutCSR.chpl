@@ -18,6 +18,7 @@
  */
 
 config param debugCSR = false;
+use Sort;
 
 // In the following, I insist on SUBdomains because
 // I have not seen us test a non-"sub" CSR domain
@@ -287,10 +288,8 @@ class CSRDom: BaseSparseDom {
     }
   }
 
-  proc bulkAdd(inds: [] rank*idxType){
-    //preprocess - sort - eliminate duplicates
-
-    var numAdded = inds.size;
+  proc bulkAdd(inds: [] rank*idxType, sorted=false, noDuplicate=false){
+    var numAdded = inds.size; //maybe remove this var
 
     /*writeln("Going to add ", numAdded, " indices");*/
     //find individual insert points
@@ -298,14 +297,33 @@ class CSRDom: BaseSparseDom {
     var indivInsertPts: [{0..#numAdded}] int;
     var actualInsertPts: [{0..#numAdded}] int; //where to put in newdom
 
+    if !sorted then QuickSort(inds);
+
     //eliminate duplicates --assumes sorted
-    var lastInd = (-1,-1);
-    for (i, p) in zip(inds, indivInsertPts)  {
-      if i == lastInd {
-        p = -1;
+    if !noDuplicate {
+      //make sure lastInd != inds[inds.domain.low]
+      var lastInd = inds[inds.domain.low] + (1,0); 
+      for (i, p) in zip(inds, indivInsertPts)  {
+        if i == lastInd {
+          p = -1;
+        }
+        else {
+          lastInd = i;
+        }
       }
-      else {
-        lastInd = i;
+    }
+
+    //verify sorted and no duplicates if not --fast
+    if boundsChecking {
+      VerifySort(inds, "bulkAdd: Data is not sorted, call the function with \
+              sorted=false");
+
+      //check duplicates assuming sorted
+      const indsStart = inds.domain.low;
+      const indsEnd = inds.domain.high;
+      var lastInd = inds[indsStart];
+      for i in indsStart+1..indsEnd {
+        if inds[i] == lastInd then halt("There are duplicates"); 
       }
     }
 
