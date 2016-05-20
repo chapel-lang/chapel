@@ -6,7 +6,11 @@ const d1 = {1..4};
 proc main() {
   var bd1 = new Block(d1);
   var dm1 = new dmap(bd1);
-  writeln(77777777);
-  writeln(for tl in bd1.targetLocales do tl.id);
-  writeln(88888888);
+
+  if bd1.pid >= -1 then  // dereference bd1, doesn't matter how
+    writeln("test: bd1 dereference OK");
+
+  // we want 'dm1' to wrap 'bd1' directoy
+  if bd1 == dm1._value then
+    writeln("test: bd1 wrap OK");
 }
