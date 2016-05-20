@@ -70,8 +70,15 @@ o explore possibility of enabling vectorization (perhaps by applying
 
 o have compiler eliminate inner multiplies
 
-o moving 'ref b[1] = bodies[i]' up to outer loop doesn't seem to help,
-  why is that?
+o support sum-of-squares library function for all tuples?  (collections?)
+  Improve and lean on Norm module more?  Optimize reductions so that
+  they could be used for sum of squares without penalty?
+
+o moving 'ref b1 = bodies[i]' up to outer loop doesn't seem to help,
+  why is that?  Also const vs. ref for bodies[i] in energy computation?
+
+o have compiler eliminate and hoist common subexpressions better so
+  that b1/b2 refs/consts aren't necessary for good performance.
 
 o as initializers are enabled, change 'mass' from 'var' to 'const'
   field
