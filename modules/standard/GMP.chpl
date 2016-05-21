@@ -296,7 +296,7 @@ module GMP {
   extern proc mpz_divisible_ui_p(ref N: mpz_t, D:c_ulong):c_int;
   extern proc mpz_divisible_2exp_p(ref N: mpz_t, B:c_ulong):c_int;
 
-  extern proc mpz_conguent_p(ref N: mpz_t, ref C:mpz_t, ref D:mpz_t):c_int;
+  extern proc mpz_congruent_p(ref N: mpz_t, ref C:mpz_t, ref D:mpz_t):c_int;
   extern proc mpz_congruent_ui_p(ref N: mpz_t, C:c_ulong, D:c_ulong):c_int;
   extern proc mpz_congruent_2exp_p(ref N: mpz_t, ref C:mpz_t, B:c_int):c_int;
 
