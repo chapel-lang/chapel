@@ -2150,7 +2150,7 @@ module ChapelArray {
       return this[this.domain.high];
     }
 
-    /* Return a range that is grown or shrunk from r to accomodate 'r2' */
+    /* Return a range that is grown or shrunk from r to accommodate 'r2' */
     pragma "no doc"
     inline proc resizeAllocRange(r: range, r2: range, factor=arrayAsVecGrowthFactor, param direction=1, param grow=1) {
       // This should only be called for 1-dimensional arrays
