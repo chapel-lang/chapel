@@ -62,7 +62,7 @@ provide versions which are optimized for particular environments. Not Covered.
 
 JAMA is by no means a complete linear algebra environment. For example, 
 there are no provisions for matrices with particular structure (e.g., 
-banded, sparse) or for more specialized decompositions (e.g. Shur, 
+banded, sparse) or for more specialized decompositions (e.g. Schur, 
 generalized eigenvalue). Complex matrices are not included. It is not our 
 intention to ignore these important problems. We expect that some of these 
 (e.g. complex) will be addressed in future versions. It is our intent that 
