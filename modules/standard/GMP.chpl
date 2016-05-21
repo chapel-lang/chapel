@@ -30,7 +30,7 @@ Multiple Precision Arithmetic Library) module in Chapel.  It should be
 considered incomplete in that (a) only a subset of the full GMP interface is
 supported, and (b) the performance is currently lacking due to extraneous
 copies in the Chapel code that have not yet been optimized away.  If there is
-sufficient interest, this protype can be expanded to support the full GMP
+sufficient interest, this prototype can be expanded to support the full GMP
 interface and performance.
 
 This prototype GMP module has been used to implement a port of the standard GMP
@@ -173,7 +173,7 @@ module GMP {
   extern const mp_bits_per_limb: c_int;
 
   /* All these external functions are ref, which may
-     seem suprising. They are that way because identity
+     seem surprising. They are that way because identity
      matters and they may get reallocated otherwise;
      ref is currently the only way to avoid that.
    
@@ -456,9 +456,9 @@ module GMP {
     The checks are controlled by the compiler options ``--[no-]cast-checks``,
     ``--fast``, etc.
 
-    TODO: When a Chapel will not safely cast to a C type, it would be better to
-    promte the Chapel value to a BigInt, then run the operation on that
-    BigInt. This would make the BigInt interface consistent across all
+    TODO: When a Chapel type will not safely cast to a C type, it would be
+    better to promote the Chapel value to a BigInt, then run the operation on
+    that BigInt. This would make the BigInt interface consistent across all
     platforms (already true today) _and_ always work regardless of platform
     (not true today).
    */
