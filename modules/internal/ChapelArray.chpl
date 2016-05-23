@@ -158,9 +158,9 @@ module ChapelArray {
 
   proc _newPrivatizedClass(value) {
 
-    var n = numPrivateObjects.fetchAdd(1);
+    const n = numPrivateObjects.fetchAdd(1);
 
-    var hereID = here.id;
+    const hereID = here.id;
     const privatizeData = value.dsiGetPrivatizeData();
     on Locales[0] do
       _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
@@ -189,8 +189,8 @@ module ChapelArray {
   }
 
   proc _reprivatize(value) {
-    var pid = value.pid;
-    var hereID = here.id;
+    const pid = value.pid;
+    const hereID = here.id;
     const reprivatizeData = value.dsiGetReprivatizeData();
     on Locales[0] do
       _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
