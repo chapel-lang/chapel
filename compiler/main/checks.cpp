@@ -33,7 +33,7 @@
 //
 
 static void check_afterEveryPass(); // Checks to be performed after every pass.
-static void check_afterScopeResolve(); // Checks to be performeed after the
+static void check_afterScopeResolve(); // Checks to be performed after the
                                        // scopeResolve pass.
 static void check_afterNormalization(); // Checks to be performed after
                                         // normalization.
@@ -251,7 +251,7 @@ void check_scalarReplace()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
-  // Suggestion: Ensure no constant expresions.
+  // Suggestion: Ensure no constant expressions.
 }
 
 void check_refPropagation()

@@ -1102,18 +1102,18 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       }
 
       // NOAKES 2015/02/09 Treating all calls with 2 actuals as binary operators
-      // Lydia 2015/02/17 ... except homogenuous tuple inner workings.
+      // Lydia 2015/02/17 ... except homogeneous tuple inner workings.
       else if (expr->numActuals() == 2)
       {
         UnresolvedSymExpr* name     = toUnresolvedSymExpr(expr->baseExpr);
         if (printingType && strcmp(name->unresolved, "*") == 0)
         {
-          // This is not a multiply, it's the symbol for a homogenuous tuple.
+          // This is not a multiply, it's the symbol for a homogeneous tuple.
 
           // I found that some multiplies would match this (even though they
           // really should be PRIM_MULT), so we must rely on context to
           // differentiate between the two cases: if we're in a type expression,
-          // either something has gone terribly wrong or a homogenuous tuple is
+          // either something has gone terribly wrong or a homogeneous tuple is
           // intended.  If we're in another expression, it's more likely to be
           // a multiply.
           appendExpr(expr->get(1), printingType);

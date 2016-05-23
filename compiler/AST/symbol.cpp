@@ -2899,12 +2899,21 @@ void ModuleSymbol::accept(AstVisitor* visitor) {
 
 void ModuleSymbol::addDefaultUses() {
   if (modTag != MOD_INTERNAL) {
-    UnresolvedSymExpr* modRef = 0;
+    ModuleSymbol* parentModule = toModuleSymbol(this->defPoint->parentSymbol);
+    assert (parentModule != NULL);
 
-    SET_LINENO(this);
+    //
+    // Don't insert 'use ChapelStandard' for nested user modules.
+    // They should get their ChapelStandard symbols from their parent.
+    //
+    if (parentModule->modTag != MOD_USER) {
+      //      printf("Inserting use of ChapelStandard into %s\n", name);
 
-    modRef = new UnresolvedSymExpr("ChapelStandard");
-    block->insertAtHead(new UseStmt(modRef));
+      SET_LINENO(this);
+
+      UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStandard");
+      block->insertAtHead(new UseStmt(modRef));
+    }
 
   // We don't currently have a good way to fetch the root module by name.
   // Insert it directly rather than by name
@@ -3050,7 +3059,7 @@ std::string unescapeString(const char* const str, BaseAST *astForError) {
       continue;
     }
 
-    // handle \ ecapes
+    // handle \ escapes
     nextChar = str[pos++];
     switch(nextChar) {
       case '\'':
@@ -3104,14 +3113,25 @@ HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
 FnSymbol* initStringLiterals = NULL;
 
+void createInitStringLiterals() {
+  SET_LINENO(stringLiteralModule);
+  initStringLiterals = new FnSymbol("chpl__initStringLiterals");
+  // We need to initialize strings literals on every locale, so we make this an
+  // exported function that will be called in the runtime
+  initStringLiterals->addFlag(FLAG_EXPORT);
+  initStringLiterals->addFlag(FLAG_LOCAL_ARGS);
+  initStringLiterals->retType = dtVoid;
+  initStringLiterals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
+}
+
 // Note that string immediate values are stored
 // with C escapes - that is newline is 2 chars \ n
 // so this function expects a string that could be in "" in C
 VarSymbol *new_StringSymbol(const char *str) {
-  SET_LINENO(stringLiteralModule);
 
   // Hash the string and return an existing symbol if found.
-  // Aka. uniqify all string literals
+  // Aka. uniquify all string literals
   Immediate imm;
   imm.const_kind = CONST_KIND_STRING;
   imm.string_kind = STRING_KIND_STRING;
@@ -3163,16 +3183,8 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   CallExpr* ctorCall = new CallExpr(PRIM_MOVE, new SymExpr(s), ctor);
 
-  // We need to initialize strings literals on every locale, so we make this an
-  // exported function that will be called in the runtime
-  if (initStringLiterals == NULL) {
-    initStringLiterals = new FnSymbol("chpl__initStringLiterals");
-    initStringLiterals->addFlag(FLAG_EXPORT);
-    initStringLiterals->addFlag(FLAG_LOCAL_ARGS);
-    initStringLiterals->retType = dtVoid;
-    initStringLiterals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-    stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
-  }
+  if (initStringLiterals == NULL)
+    createInitStringLiterals();
 
   initStringLiterals->insertBeforeReturn(new DefExpr(cptrTemp));
   initStringLiterals->insertBeforeReturn(cptrCall);
@@ -3382,7 +3394,7 @@ immediate_type(Immediate *imm) {
       } else if (imm->string_kind == STRING_KIND_C_STRING) {
         return dtStringC;
       } else {
-        INT_FATAL("unhandled string immedate type");
+        INT_FATAL("unhandled string immediate type");
         break;
       }
     }

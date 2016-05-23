@@ -184,7 +184,7 @@ ModuleSymbol* parseFile(const char* filename,
       stopCountingFileTokens(context.scanner);
     }
 
-    // Cleanup after the paser
+    // Cleanup after the parser
     yypstate_delete(parser);
 
     // Cleanup after the lexer
@@ -392,7 +392,7 @@ BlockStmt* parseString(const char* string,
   chplParseString    = false;
   chplParseStringMsg = NULL;
 
-  // Cleanup after the paser
+  // Cleanup after the parser
   yypstate_delete(parser);
 
   // Cleanup after the lexer

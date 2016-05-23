@@ -41,6 +41,7 @@
 use DSIUtil;
 use ChapelUtil;
 use CommDiagnostics;
+use SparseBlockDist;
 
 //
 // These flags are used to output debug information and run extra
@@ -483,6 +484,10 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   return dom;
 }
 
+proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
+  return new SparseBlockDom(rank=rank, idxType=idxType, dist=this, parentDom=dom, whole=dom._value.whole);
+}
+
 //
 // output distribution
 //
@@ -501,7 +506,7 @@ proc Block.dsiIndexToLocale(ind: idxType) where rank == 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
-proc Block.dsiIndexToLocale(ind: rank*idxType) where rank > 1 {
+proc Block.dsiIndexToLocale(ind: rank*idxType) {
   return targetLocales(targetLocsIdx(ind));
 }
 
@@ -668,6 +673,7 @@ proc LocBlock.LocBlock(param rank: int,
   }
 }
 
+
 proc BlockDom.dsiMyDist() return dist;
 
 proc BlockDom.dsiDisplayRepresentation() {
@@ -810,7 +816,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).low:strType):idxType;
     var high = (stride * followThis(i).high:strType):idxType;
-    t(i) = (low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType;
+    t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -1100,7 +1106,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).low * abs(stride):idxType;
     var high = followThis(i).high * abs(stride):idxType;
-    myFollowThis(i) = (low..high by stride) + dom.whole.dim(i).low by followThis(i).stride;
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).low;
   }
 

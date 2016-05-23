@@ -423,7 +423,7 @@ toplevel_stmt_ls:
 | toplevel_stmt_ls toplevel_stmt       { $1->appendChapelStmt($2); context->generatedStmt = $1; resetTempID(); }
 ;
 
-// Switch between plain statements and those preceeded by pragmas
+// Switch between plain statements and those preceded by pragmas
 // %type <pblockstmt> toplevel_stmt
 toplevel_stmt:
    stmt
@@ -1320,7 +1320,7 @@ type_level_expr:
 | TSUBDOMAIN TLP opt_actual_ls TRP
     { $$ = new CallExpr("chpl__buildSubDomainType", $3); }
 | TSPARSE TSUBDOMAIN TLP opt_actual_ls TRP
-    { $$ = new CallExpr("chpl__buildSparseDomainRuntimeType", new UnresolvedSymExpr("defaultDist"), $4); }
+    { $$ = new CallExpr("chpl__buildSparseDomainRuntimeType", buildDotExpr($4->copy(), "defaultSparseDist"), $4); }
 | TATOMIC expr
     { $$ = new CallExpr("chpl__atomicType", $2); }
 | TSYNC expr
@@ -1394,7 +1394,7 @@ nil_expr:
   TNIL      { $$ = new SymExpr(gNil); }
 ;
 
-/* Expressions permited at the statment level as <stmt_level_expr> TSEMI.
+/* Expressions permitted at the statement level as <stmt_level_expr> TSEMI.
    Keeping stmt_level_expr from appearing in any other expression productions
    was done intentionally to allow for easier promotion/demotion of expressions
    to the statement level. */

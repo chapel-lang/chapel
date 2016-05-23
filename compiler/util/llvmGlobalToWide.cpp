@@ -1201,7 +1201,7 @@ namespace {
         
         if( debugPassOne ) {
           // Wait until we have converted the argument types since
-          // we might rename them... before duming the fn.
+          // we might rename them... before dumping the fn.
           F->dump();
           errs() << "-----------------------------\n";
         }
@@ -1663,7 +1663,7 @@ namespace {
         F->eraseFromParent();
       }
 
-      // Delete the dummy depedencies preserving function
+      // Delete the dummy dependencies preserving function
       Constant* cf = info->preservingFn;
       if( cf ) {
         Function* f = dyn_cast<Function>(cf);
@@ -1937,7 +1937,7 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
     }
 
     if (st->isLiteral()) {
-      // literal struct types are equivalent by strucutre (vs name)
+      // literal struct types are equivalent by structure (vs name)
       newStruct = StructType::get(context, fields, st->isPacked());
     } else {
       // Named structure types -- set the body.
