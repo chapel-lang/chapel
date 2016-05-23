@@ -271,7 +271,7 @@ module MainModule {
       // output 2 * (2 + 3) or '10'
       writeln(baz(3));
       // Access the function DifferentArguments.baz using the single argument.
-      // Should output 3 - 1, or '1'
+      // Should output 3 - 2, or '1'
     }
 
     writeln();
