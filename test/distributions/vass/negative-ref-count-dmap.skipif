@@ -1,0 +1,4 @@
+# run only under valgrind
+# otherwise the outcome will probably fluctuate
+# Remove this .skipif once the test works correctly.
+CHPL_TEST_VGRND_EXE != on

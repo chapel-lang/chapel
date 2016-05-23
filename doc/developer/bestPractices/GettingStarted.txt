@@ -78,5 +78,5 @@ project via the following steps:
   sanity checks, and nightly correctness and performance regression
   testing.  See TestSystem.rst in this directory for an introduction.
 
-* Get aquainted with the compiler architecture via the compiler
+* Get acquainted with the compiler architecture via the compiler
   overview document in $CHPL_HOME/doc/developer/compilerOverview/
