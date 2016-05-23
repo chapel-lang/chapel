@@ -298,7 +298,7 @@ module GMP {
 
   extern proc mpz_congruent_p(ref N: mpz_t, ref C:mpz_t, ref D:mpz_t):c_int;
   extern proc mpz_congruent_ui_p(ref N: mpz_t, C:c_ulong, D:c_ulong):c_int;
-  extern proc mpz_congruent_2exp_p(ref N: mpz_t, ref C:mpz_t, B:c_int):c_int;
+  extern proc mpz_congruent_2exp_p(ref N: mpz_t, ref C:mpz_t, B:c_ulong):c_int;
 
   // Exponentiation Functions
   extern proc mpz_powm(ref ROP: mpz_t, ref BASE: mpz_t, ref EXP: mpz_t, ref MOD: mpz_t);
@@ -981,7 +981,7 @@ module GMP {
       var ret:c_int;
       on this {
         var (ccopy,c_) = c.maybeCopy();
-        ret=mpz_congruent_2exp_p(this.mpz, c, b.safeCast(c_ulong));
+        ret=mpz_congruent_2exp_p(this.mpz, c_.mpz, b.safeCast(c_ulong));
         if ccopy then delete c_;
       }
       return ret.safeCast(int);
