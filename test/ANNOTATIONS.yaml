@@ -443,7 +443,7 @@ prk-stencil.xc-perf:
 
 ra:
   05/13/16:
-    - stridable ranges and domains safeCasts, compiler error, etc. (#3778)
+    - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
       config: Single node XC
 
 regexdna:
@@ -502,7 +502,7 @@ stencil:
 
 stream:
   05/13/16:
-    - stridable ranges and domains safeCasts, compiler error, etc. (#3778)
+    - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
       config: Single node XC
 
 testSerialReductions:
