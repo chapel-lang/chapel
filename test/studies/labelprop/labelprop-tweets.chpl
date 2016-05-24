@@ -249,6 +249,7 @@ proc process_json(logfile:channel, fname:string, Pairs) {
           if buildset {
             //localPairs += (id, other_id);
             localPairs.push_back( (id, other_id) );
+            //Pairs += (id, other_id);
           }
         }
       }
