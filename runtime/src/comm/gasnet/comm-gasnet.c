@@ -530,7 +530,9 @@ void AM_signal_ops(gasnet_token_t token,
   completion_handle = (chpl_comm_nb_ops_handle_t*) get_ptr_from_args(a0, a1);
   freeme = get_ptr_from_args(f0, f1);
 
-  if( freeme ) chpl_mem_free(freeme, 0, 0);
+  if( freeme ) {
+    chpl_mem_free(freeme, 0, 0);
+  }
 
   *completion_handle = 1;
   // TODO -- does this need some kind of fence? Should done be atomic?

@@ -1702,11 +1702,6 @@ int find_in_ops(struct rdcache_s* tree, struct ops_entry_s* entry)
   for( cur = head; cur; cur = cur->next ) {
     if( cur == entry ) return 1;
   }
-  // Not there? check the inflight list.
-  head = tree->ops_inflight_head;
-  for( cur = head; cur; cur = cur->next ) {
-    if( cur == entry ) return 1;
-  }
   return 0;
 }
 
@@ -1859,8 +1854,6 @@ void validate_cache(struct rdcache_s* tree)
     struct ops_entry_s* cur;
     int forward_count = 0;
     int reverse_count = 0;
-    int with_entry_count = 0;
-    int without_entry_count = 0;
 
     for( cur = tree->ops_lru_head; cur; cur = cur->next ) {
       if( cur->next ) assert(cur->next->prev == cur);
