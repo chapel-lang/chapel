@@ -73,12 +73,17 @@ module DefaultAssociative {
       var i = 0;
       var offset = 0;
       if parSafe then dom.lockTable();
+      
+      var newsize = dom.numEntries.read() + (size/eltSize);
+      dom._resizeIfNeeded(newsize);
+ 
 // Why can't I use request capacity?
 // It seems to change the result? Losing a small number of elements?
 //      dom.dsiRequestCapacity(dom.dsiNumIndices + size/eltSize, haveLock=true);
       while offset < size {
         //writeln("Adding ", ptr[i], " size is ", dom.dsiNumIndices);
-        dom.dsiAddInternal(ptr[i], haveLock=true);
+//        dom.dsiAddInternal(ptr[i], haveLock=true);
+        dom._doadd(ptr[i]);
         //printf("%i\n", ptr[i]:c_int);
         offset += eltSize;
         i += 1;
@@ -380,7 +385,30 @@ module DefaultAssociative {
      else
        dsiAddInternal(idx);
    }
+   proc dsiAdd(arr: [?Dom] idxType, subrange) where Dom.rank == 1 {
+     // TODO -- what should we do in the aggregation case?
+     on this {
+       // TODO -- try other versions, like relying
+       // on cache to get locArr data.
+       var locArr = arr[subrange];
+       //writeln("On ", here.id, " adding ", locArr.size);
+       const shouldLock = parSafe;
+       if shouldLock then lockTable();
+       var findAgain = shouldLock;
+       var newsize = numEntries.read() + subrange.size;
+        //writeln("before resize ", numEntries.read(), " / ", tableSize, " taken");
+       _resizeIfNeeded(newsize);
+        //writeln("after resize ", numEntries.read(), " / ", tableSize, " taken");
+       for idx in subrange {
+         _add(locArr[idx], -1);
+       }
+       if shouldLock then unlockTable();
+     }
+   }
 
+    proc _doadd(idx: idxType) {
+      _add(idx, -1);
+    }
     // This routine adds new indices without checking the table size and
     //  is thus appropriate for use by routines like _resize().
     //
@@ -512,22 +540,49 @@ module DefaultAssociative {
     //
     // Internal interface (private)
     //
-    // NOTE: Calls to this routine assume that the tableLock has been acquired.
+    // NOTE: Calls to these _resize routines assume that the tableLock
+    // has been acquired.
     //
+    proc _resizeIfNeeded(numKeys:int) {
+      var threshold = (numKeys + 1) * 2;
+      if threshold >= tableSize {
+        // Find the new prime to use.
+        var prime = 0;
+        var primeLoc = 0;
+        for i in 1..chpl__primes.size {
+          if chpl__primes(i) > threshold {
+            prime = chpl__primes(i);
+            primeLoc = i;
+            break;
+          }
+        }
+        _resize(primeIndex=primeLoc);
+      }
+    }
+
     proc _resize(grow:bool) {
+      //writeln("in resize grow=", grow, " sz=", tableSizeNum);
       if postponeResize then return;
+      var primeIndex = tableSizeNum;
+      primeIndex += if grow then 1 else -1;
+      _resize(primeIndex=primeIndex);
+    }
+
+    proc _resize(primeIndex:int) {
+      //writeln("in resize index=", primeIndex, " v=", chpl__primes(primeIndex));
       // back up the arrays
       _backupArrays();
   
       // copy the table (TODO: could use swap between two versions)
       var copyDom = tableDom;
       var copyTable: [copyDom] chpl_TableEntry(idxType) = table;
-  
+ 
       // grow original table
       tableDom = {0..(-1:chpl_table_index_type)}; // non-preserving resize
       numEntries.write(0); // reset, because the adds below will re-set this
-      tableSizeNum += if grow then 1 else -1;
+      tableSizeNum = primeIndex;
       if tableSizeNum > chpl__primes.size then halt("associative array exceeds maximum size");
+      if tableSizeNum <= 0 then halt("invalid prime index");
       tableSize = chpl__primes(tableSizeNum);
       tableDom = {0..tableSize-1};
   

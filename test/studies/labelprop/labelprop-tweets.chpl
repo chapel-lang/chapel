@@ -185,13 +185,13 @@ proc run(todo:list(string), Pairs) {
     }
   }
 
+  writeln("Pairs.size is ", Pairs.size);
+
   if verbose then
     writeln("the maximum user id was ", max_user_id.read());
 
   if buildgraph then
     create_and_analyze_graph(Pairs);
-
-  writeln("Pairs.size is ", Pairs.size);
 }
 
 record TweetUser {
@@ -231,7 +231,8 @@ proc process_json(logfile:channel, fname:string, Pairs) {
   if progress then
     writeln(fname, " : processing");
 
-  var localPairs: domain( (int, int), parSafe=false );
+  //var localPairs: domain( (int, int), parSafe=false );
+  var localPairs: [1..0] (int, int);
 
   while true {
     got = logfile.readf("%~jt", tweet, error=err);
@@ -246,7 +247,8 @@ proc process_json(logfile:channel, fname:string, Pairs) {
         // but leave out self-mentions
         if id != other_id {
           if buildset {
-            localPairs += (id, other_id);
+            //localPairs += (id, other_id);
+            localPairs.push_back( (id, other_id) );
           }
         }
       }
@@ -275,9 +277,14 @@ proc process_json(logfile:channel, fname:string, Pairs) {
 
   logfile.close();
 
-  for p in localPairs.sorted(new DestinationComparator()) {
+//  for p in localPairs.sorted(new DestinationComparator()) {
+//    Pairs += p;
+//  }
+
+  quickSort(localPairs, comparator=new DestinationComparator());
+  for p in localPairs do
     Pairs += p;
-  }
+//  Pairs._value.dsiAddSorted(localPairs);
 
   if progress then
     writeln(fname, " : ",
