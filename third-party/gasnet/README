@@ -31,15 +31,3 @@ The structure of this directory is as follows:
     $CHPL_TARGET_PLATFORM-$CHPL_TARGET_COMPILER-$CHPL_TARGET_ARCH/
       seg-$CHPL_GASNET_SEGMENT/
         nodbg/
-
-To update GASNet versions do:
-- un-tarball the new GASNet version into the directory it specifies, for
-  example GASNet-1.26.3
-- git rm -r gasnet-src
-- mv GASNet-1.26.3 gasnet-src
-- git add --force gasnet-src
-  (the '--force' is needed so that it ignores our .gitignore)
-- commit
-- update the new sources by re-applying any needed patches (see above)
-- commit
-- PR, merge, etc.

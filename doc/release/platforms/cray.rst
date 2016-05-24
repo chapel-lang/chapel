@@ -852,7 +852,7 @@ Known Constraints and Bugs
   platforms, resulting in an internal Chapel error or a GASNet
   initialization error such as::
 
-     node 1 log gasnetc_init_segment() at /path/to/chapel/third-party/gasnet/GASNet-1.22.0/gemini-conduit/gasnet_gemini.c:562: MemRegister segment fault 8 at  0x2aab6ae00000 60000000, code GNI_RC_ERROR_RESOURCE
+     ``node 1 log gasnetc_init_segment() at $CHPL_HOME/third-party/gasnet/gasnet-src/gemini-conduit/gasnet_gemini.c:<line#>: MemRegister segment fault 8 at  0x2aab6ae00000 60000000, code GNI_RC_ERROR_RESOURCE``
 
   If your Chapel program exits with such an error, try setting the
   environment variable ``CHPL_RT_MAX_HEAP_SIZE`` or ``GASNET_MAX_SEGSIZE`` to a
@@ -860,7 +860,7 @@ Known Constraints and Bugs
   For more information, refer to the discussion of ``CHPL_RT_MAX_HEAP_SIZE``
   above and/or the discussion of ``GASNET_MAX_SEGSIZE`` here::
 
-     $CHPL_HOME/third-party/gasnet/GASNet-*/README
+     ``$CHPL_HOME/third-party/gasnet/gasnet-src/README``
 
 
 ---------------
