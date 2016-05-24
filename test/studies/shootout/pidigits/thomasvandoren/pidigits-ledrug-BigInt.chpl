@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://shootout.alioth.debian.org/
+   http://benchmarksgame.alioth.debian.org
 
    contributed by Tom Hildebrandt, Brad Chamberlain, Lydia Duncan,
    and Thomas Van Doren
