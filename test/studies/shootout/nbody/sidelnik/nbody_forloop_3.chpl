@@ -2,7 +2,7 @@
  * In addition, we're able to remove some explicit index variables
  *
  * The Great Computer Language Shootout
- * http://shootout.alioth.debian.org/
+ * http://benchmarksgame.alioth.debian.org
  *
  * contributed by Albert Sidelnik
  *
