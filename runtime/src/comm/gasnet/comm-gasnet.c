@@ -456,9 +456,11 @@ static void do_ops_wrapper(chpl_op_t *ops) {
   {
     c_nodeid_t requesting_node = ops->comm_private.requesting_node;
     void* ack = (void*) ops->comm_private.completion;
-    GASNET_Safe(gasnet_AMRequestShort2(requesting_node,
+    void* freeme = (void*) ops->comm_private.free_this;
+    GASNET_Safe(gasnet_AMRequestShort4(requesting_node,
                                        SIGNAL_OPS,
-                                       AckArg0(ack), AckArg1(ack)));
+                                       AckArg0(ack), AckArg1(ack),
+                                       AckArg0(freeme), AckArg1(freeme)));
   }
 
   // Free the request buffer
@@ -492,9 +494,11 @@ static void do_ops_large_wrapper(chpl_op_t *ops) {
   {
     c_nodeid_t requesting_node = ops->comm_private.requesting_node;
     void* ack = (void*) ops->comm_private.completion;
-    GASNET_Safe(gasnet_AMRequestShort2(requesting_node,
+    void* freeme = (void*) ops->comm_private.free_this;
+    GASNET_Safe(gasnet_AMRequestShort4(requesting_node,
                                        SIGNAL_OPS,
-                                       AckArg0(ack), AckArg1(ack)));
+                                       AckArg0(ack), AckArg1(ack),
+                                       AckArg0(freeme), AckArg1(freeme)));
   }
 
   // Free the request buffer
@@ -518,10 +522,15 @@ void AM_do_ops_large(gasnet_token_t token, void* buf, size_t nbytes) {
 
 static
 void AM_signal_ops(gasnet_token_t token,
-                   gasnet_handlerarg_t a0, gasnet_handlerarg_t a1) {
+                   gasnet_handlerarg_t a0, gasnet_handlerarg_t a1,
+                   gasnet_handlerarg_t f0, gasnet_handlerarg_t f1) {
   chpl_comm_nb_ops_handle_t *completion_handle;
+  void *freeme;
 
   completion_handle = (chpl_comm_nb_ops_handle_t*) get_ptr_from_args(a0, a1);
+  freeme = get_ptr_from_args(f0, f1);
+
+  if( freeme ) chpl_mem_free(freeme, 0, 0);
 
   *completion_handle = 1;
   // TODO -- does this need some kind of fence? Should done be atomic?
@@ -1522,7 +1531,7 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
 }
 
 
-void chpl_comm_start_ops(c_nodeid_t node, chpl_op_t *ops,
+void chpl_comm_start_ops(c_nodeid_t node, chpl_op_t *ops, int free_ops,
                          chpl_comm_nb_ops_handle_t *handle)
 {
   size_t  nbytes = sizeof(chpl_op_t) + ops->payload_size;
@@ -1550,6 +1559,8 @@ void chpl_comm_start_ops(c_nodeid_t node, chpl_op_t *ops,
     ops->comm_private.arg = &ops->payload;
     // Set the requesting node
     ops->comm_private.requesting_node = chpl_nodeID;
+    // Set the pointer to free if any
+    ops->comm_private.free_this = (free_ops)?(ops):(NULL);
     // Set the requested serial state.
     ops->comm_private.serial_state = chpl_task_getSerial();
 

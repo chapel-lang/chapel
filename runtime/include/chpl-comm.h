@@ -364,7 +364,10 @@ typedef struct _chpl_op {
 // handle must point to memory storing a chpl_comm_nb_ops_handle_t
 // that can be used to indicate completion. It must be heap-registered
 // and may not move after this call, until completion.
-void chpl_comm_start_ops(c_nodeid_t node, chpl_op_t *ops,
+//
+// if free_ops is set, the runtime will call chpl_free(ops)
+// once it is safe to do so. 
+void chpl_comm_start_ops(c_nodeid_t node, chpl_op_t *ops, int free_ops,
                          chpl_comm_nb_ops_handle_t *handle);
 
 

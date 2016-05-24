@@ -102,7 +102,20 @@ module DefaultAssociative {
       enqueue_operation(this:OperationsHandler, 0, 0,
                         sizeof(idxType):int, idx_copy_ptr:c_void_ptr);
     }
+    proc enqueueAdds(arr: [?Dom] idxType, subrange) where Dom.rank == 1 {
 
+      //extern proc printf(fmt:c_string, sz:c_int);
+      //printf("IN ENQUEUE v=%i\n", idx:c_int);
+
+
+      extern proc sizeof(type t):size_t;
+      var idx_copy_ptr = c_ptrTo(arr[subrange.low]);
+      var n = subrange.size;
+      enqueue_operation(this:OperationsHandler, 0, 0,
+                        n*sizeof(idxType):int, idx_copy_ptr:c_void_ptr);
+    }
+
+ 
     // This flush call isn't actually necessary as
     // long as we lock the table
     proc flush() {
@@ -386,8 +399,11 @@ module DefaultAssociative {
        dsiAddInternal(idx);
    }
    proc dsiAdd(arr: [?Dom] idxType, subrange) where Dom.rank == 1 {
-     // TODO -- what should we do in the aggregation case?
-     on this {
+     if defaultAssocAggregation then
+       this.opHandler.enqueueAdds(arr, subrange);
+     else {
+
+      on this {
        // TODO -- try other versions, like relying
        // on cache to get locArr data.
        var locArr = arr[subrange];
@@ -401,8 +417,10 @@ module DefaultAssociative {
         //writeln("after resize ", numEntries.read(), " / ", tableSize, " taken");
        for idx in subrange {
          _add(locArr[idx], -1);
+//         _add(arr[idx], -1);
        }
        if shouldLock then unlockTable();
+      }
      }
    }
 

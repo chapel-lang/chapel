@@ -320,7 +320,7 @@ class UserMapAssocDom: BaseAssociativeDom {
     cur = start;
 
     // TODO -- is this sync/begin helping?
-    sync { 
+    /*sync*/ { 
       while cur <= end {
         // Find the range of keys that map to the same locale.
         var dst = dist.indexToLocaleIndex(arr[cur]);
@@ -329,7 +329,7 @@ class UserMapAssocDom: BaseAssociativeDom {
           next += 1;
         }
         // Now send cur .. next - 1 to the destination.
-        begin {
+        /*begin*/ {
           locDoms[dst].myInds._value.dsiAdd(arr, cur..next-1);
         }
         cur = next;

@@ -28,6 +28,7 @@ struct chpl_op_comm_use_s {
   chpl_comm_nb_ops_handle_t *completion;
   void *arg;
   c_nodeid_t requesting_node;
+  void *free_this;
   int serial_state;
 };
 

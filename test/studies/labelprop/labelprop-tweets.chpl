@@ -282,9 +282,9 @@ proc process_json(logfile:channel, fname:string, Pairs) {
 //  }
 
   quickSort(localPairs, comparator=new DestinationComparator());
-  for p in localPairs do
-    Pairs += p;
-//  Pairs._value.dsiAddSorted(localPairs);
+//  for p in localPairs do
+//    Pairs += p;
+  Pairs._value.dsiAddSorted(localPairs);
 
   if progress then
     writeln(fname, " : ",
@@ -818,6 +818,7 @@ proc timings.print() {
   writeln("Timings:");
   if copyfiles then writeln("copy files in ", copy.elapsed(), " s");
   writeln("parsed ", nlines, " lines in ", parse.elapsed(), " s");
+  writeln("that's ", nlines / parse.elapsed() / 1000.0, " K tweets/s");
   writeln("created graph in   ", graph.elapsed(), " s");
   writeln("graph components:");
   writeln("  mutual mentions: ", mutualmentions.elapsed(), " s");

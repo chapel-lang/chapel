@@ -189,11 +189,11 @@ void chpl_gen_comm_start_op(c_nodeid_t node, c_sublocid_t subloc,
 
     memcpy(&op->payload, args, args_size);
 
-    chpl_comm_start_ops(node, op, handle);
+    chpl_comm_start_ops(node, op, /*free op */ 1, handle);
 
     chpl_wait_op(handle);
 
-    chpl_mem_free(buf, 0, 0);
+    // runtime will free buf/op
   }
 }
 
