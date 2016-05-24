@@ -3139,14 +3139,8 @@ module ChapelArray {
   }
 
   proc =(ref a: [], b: _desync(a.eltType)) {
-    if isRectangularArr(a) {
-      forall e in a do
-        e = b;
-    } else {
-      compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
-      for e in a do
-        e = b;
-    }
+    forall e in a do
+      e = b;
   }
 
   /*
