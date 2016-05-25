@@ -4,6 +4,8 @@
 //
 require "Foo.chpl";
 
+writeln("In useModAsString3's init");
+
 proc foo() {
   writeln("In useModAsString.chpl's foo");
 }
@@ -11,4 +13,5 @@ proc foo() {
 
 proc main() {
   foo();
+  Foo.foo();  // use a fully-qualified reference to Foo's foo()
 }
