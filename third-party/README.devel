@@ -2,10 +2,10 @@
 Chapel third-party developer instructions
 =========================================
 
-For certain third-party packages, currently gasnet, hwloc, and jemalloc,
-the contents of the package are in third-party/<package>/<package>-src/.
-Version updates for those should be done as follows.  Using GASNet as an
-example, and assuming the CWD is third-party/gasnet/:
+For certain third-party packages the un-tarballed package contents are
+in third-party/<package>/<package>-src/.  Version updates for those
+should be done as follows, using GASNet as an example and assuming the
+CWD is third-party/gasnet/:
 
 1. un-tarball the new package version into the directory it specifies,
    for example GASNet-1.26.3
@@ -22,7 +22,7 @@ example, and assuming the CWD is third-party/gasnet/:
 For other third-party packages the un-tarballed package contents are in
 third-party/<package>/<package>-<version>/.  This is our older layout
 and we're moving away from it, but some packages still use it.  Version
-updates are done as follows.  Using Qthreads as an example, and assuming
+updates are done as follows, using Qthreads as an example and assuming
 the CWD is third-party/qthread/:
 
 1. un-tarball the new package version into the directory it specifies,
@@ -36,6 +36,5 @@ the CWD is third-party/qthread/:
 6. git rm the old package dir
 7. PR, merge, etc.
 
-(Note, however, that Qthreads is not a perfect example here since it's
-not really released in "versions" currently.  But as an example it works
-fine.)
+(Note that Qthreads is not perfect here since it's not really released
+in "versions" currently.  But as an example it's good enough.)
