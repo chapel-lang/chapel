@@ -174,6 +174,8 @@ module DefaultAssociative {
     var opHandler:DefaultAssociativeDomOperationsHandler(idxType, parSafe);
 
     inline proc lockTable(param onlyLocalFence=false) {
+      extern proc chpl_cache_startall();
+
       if onlyLocalFence {
         // TODO: This is a hack to turn off cache flush
         // Right solution is to make tableLock only a local
@@ -185,6 +187,24 @@ module DefaultAssociative {
         // This one shouldn't flush the remote data cache
         while tableLock.testAndSet(order=memory_order_relaxed) do
           chpl_task_yield();
+
+        // The below has intermediate performance:
+
+        /*
+        // If there is contention, start operations
+        // because remote nodes might make progress while
+        // we are contended.
+        if !tableLock.testAndSet(order=memory_order_relaxed) then
+          return;
+
+        // Otherwise, try starting remote operations 
+        while tableLock.testAndSet(order=memory_order_relaxed) {
+          chpl_task_yield();
+          //chpl_cache_startall(); doesn't help
+          chpl_rmem_consist_release();
+        }
+        */
+
       } else {
         // This one needs to flush the remote data cache
         while tableLock.testAndSet() do

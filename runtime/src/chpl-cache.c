@@ -3362,6 +3362,16 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
   // Do nothing if cache is not enabled.
 }
 
+void chpl_cache_startall()
+{
+  if( chpl_cache_enabled() ) {
+    struct rdcache_s* cache = tls_cache_remote_data();
+    chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+
+    cache_start_all(cache);
+  }
+}
+
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t typeIndex,
                          int ln, int32_t fn)
