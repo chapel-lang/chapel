@@ -29,7 +29,7 @@ Besides the functions defined here, the Chapel Language specification
 defines other operations available on tuples: indexing, iteration,
 assignment, and unary, binary, and relational operators.
 
-The following method is also availble:
+The following method is also available:
 
   .. code-block:: chapel
 

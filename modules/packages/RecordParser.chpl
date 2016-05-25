@@ -145,7 +145,7 @@ class RecordReader {
      this RecordReader.
 
      The created regular expression will search for
-     ``<fieldName1> <spaces> <vieldValue1> <spaces>``
+     ``<fieldName1> <spaces> <fieldValue1> <spaces>``
   */
   proc createRegexp() {
     // This is a VERY loose regex, and therefore could lead to errors unless the
