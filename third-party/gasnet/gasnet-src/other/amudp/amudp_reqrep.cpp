@@ -257,11 +257,17 @@ static int sourceAddrToId(ep_t ep, en_t sourceAddr) {
     int totalBytesDrained = 0;
     while (1) {
       IOCTL_FIONREAD_ARG_T bytesAvail = 0;
-      if_pf (SOCK_ioctlsocket(ep->s, _FIONREAD, &bytesAvail) == SOCKET_ERROR)
-        AMUDP_RETURN_ERRFR(RESOURCE, "ioctlsocket()", sockErrDesc());
+      #if PLATFORM_OS_CYGWIN || PLATFORM_OS_FREEBSD
+        // bug 3284: ioctl(FIONREAD) always returns error on Cygwin 2.5
+        // bug 2827: and it permanently truncates datagrams over 600 bytes on FreeBSD
+        if (inputWaiting(ep->s)) bytesAvail = AMUDP_MAXBULK_NETWORK_MSG;
+      #else
+        if_pf (SOCK_ioctlsocket(ep->s, _FIONREAD, &bytesAvail) == SOCKET_ERROR)
+          AMUDP_RETURN_ERRFR(RESOURCE, "ioctlsocket()", sockErrDesc());
+      #endif
       if (bytesAvail == 0) break; 
 
-      #if BROKEN_IOCTL && USE_TRUE_BULK_XFERS
+      #if BROKEN_IOCTL && USE_TRUE_BULK_XFERS && !PLATFORM_OS_CYGWIN && !PLATFORM_OS_FREEBSD
         if ((int)bytesAvail > AMUDP_MAX_NETWORK_MSG) { 
           /* this workaround is a HACK that lets us decide if we truly have a bulk message */
           static char *junk = NULL;
@@ -656,7 +662,7 @@ void AMUDP_processPacket(amudp_buf_t *basicbuf, int isloopback) {
   ep_t const ep = status->dest;
   int const sourceID = status->sourceId;
   int const numargs = AMUDP_MSG_NUMARGS(msg);
-  int seqnum = AMUDP_MSG_SEQNUM(msg);
+  uint8_t seqnum = AMUDP_MSG_SEQNUM(msg);
   uint16_t instance = AMUDP_MSG_INSTANCE(msg);
   int const isrequest = AMUDP_MSG_ISREQUEST(msg);
   amudp_category_t const cat = AMUDP_MSG_CATEGORY(msg);
@@ -680,7 +686,7 @@ void AMUDP_processPacket(amudp_buf_t *basicbuf, int isloopback) {
             AMUDP_ReleaseBulkBuffer(ep, basicreqbuf->status.bulkBuffer);
             basicreqbuf->status.bulkBuffer = NULL;
           }
-          desc->seqNum = (uint8_t)!(desc->seqNum);
+          desc->seqNum = AMUDP_SEQNUM_INC(desc->seqNum);
           ep->perProcInfo[sourceID].instanceHint = instance;
         }
       }
@@ -747,10 +753,18 @@ void AMUDP_processPacket(amudp_buf_t *basicbuf, int isloopback) {
   if_pf (sourceID < 0) AMUDP_REFUSEMESSAGE(EBADENDPOINT);
 
   if (!isloopback) {
+    static const char *OOOwarn = "Detected arrival of out-of-order %s!\n"
+      " It appears your system is delivering IP packets out-of-order between worker nodes,\n"
+      " most likely due to striping over multiple adapters or links.\n"
+      " This might (rarely) lead to corruption of AMUDP traffic.";
     /* check sequence number to see if this is a new request/reply or a duplicate */
     if (isrequest) {
       amudp_bufdesc_t *desc = GET_REP_DESC(ep, sourceID, instance);
       if_pf (seqnum != desc->seqNum) { 
+        if_pf (AMUDP_SEQNUM_INC(seqnum) != desc->seqNum && OOOwarn) {
+          AMUDP_Warn(OOOwarn, "request");
+          OOOwarn = NULL;
+        }
         /*  request resent or reply got dropped - resend reply */
         amudp_buf_t *replybuf = GET_REP_BUF(ep, sourceID, instance);
         AMUDP_assert(replybuf != NULL);
@@ -782,6 +796,10 @@ void AMUDP_processPacket(amudp_buf_t *basicbuf, int isloopback) {
     } else {
       amudp_bufdesc_t *desc = GET_REQ_DESC(ep, sourceID, instance);
       if (seqnum != desc->seqNum) { /*  duplicate reply, we already ran handler - ignore it */
+        if_pf (AMUDP_SEQNUM_INC(seqnum) != desc->seqNum && OOOwarn) {
+          AMUDP_Warn(OOOwarn, "reply");
+          OOOwarn = NULL;
+        }
         #if AMUDP_DEBUG_VERBOSE
           AMUDP_Warn("Ignoring a duplicate reply.");
         #endif
@@ -801,7 +819,7 @@ void AMUDP_processPacket(amudp_buf_t *basicbuf, int isloopback) {
           AMUDP_ReleaseBulkBuffer(ep, basicreqbuf->status.bulkBuffer);
           basicreqbuf->status.bulkBuffer = NULL;
         }
-        desc->seqNum = (uint8_t)!(desc->seqNum); 
+        desc->seqNum = AMUDP_SEQNUM_INC(desc->seqNum);
         ep->perProcInfo[sourceID].instanceHint = instance;
         #if AMUDP_COLLECT_LATENCY_STATS && AMUDP_COLLECT_STATS
           { /* gather some latency statistics */
@@ -813,7 +831,7 @@ void AMUDP_processPacket(amudp_buf_t *basicbuf, int isloopback) {
           }
         #endif
       } else { /* request timed out and we decided it was undeliverable, then a reply arrived */
-        desc->seqNum = (uint8_t)!(desc->seqNum); /* toggle the seq num */
+        desc->seqNum = AMUDP_SEQNUM_INC(desc->seqNum);
         /* TODO: seq numbers may get out of sync on timeout 
          * if request got through but replies got lost 
          * we also may do bad things if a reply to an undeliverable message 
@@ -928,7 +946,7 @@ void AMUDP_processPacket(amudp_buf_t *basicbuf, int isloopback) {
       }
       if (isrequest) { /*  message was a request, alternate the reply sequence number so duplicates of this request get ignored */
         amudp_bufdesc_t *desc = GET_REP_DESC(ep, sourceID, instance);
-        desc->seqNum = (uint8_t)!(desc->seqNum);
+        desc->seqNum = AMUDP_SEQNUM_INC(desc->seqNum);
       }
     }
   }

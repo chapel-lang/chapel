@@ -514,6 +514,7 @@ int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
         case 'N': case 'n': replacement = nproc_str; break;
         case 'C': case 'c': replacement = workercmd; break;
         case 'D': case 'd': replacement = cwd; break;
+        case 'P': case 'p': replacement = argv[0]; break;
         case '%': replacement = "%"; break;
         default: replacement = "";
       }

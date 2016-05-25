@@ -66,7 +66,13 @@ static size_t fhi_MaxRegionSize;
 #ifdef FIREHOSE_CLIENT_T
   #define FH_CP_CLIENT(A,B) (A)->client = (B)->client
 #else
-  #define FH_CP_CLIENT(A,B)
+  #define FH_CP_CLIENT(A,B) ((void)0)
+#endif
+
+#if !defined FH_MAY_MERGE
+  #define FH_MAY_MERGE(C)   1
+#elif !defined FIREHOSE_CLIENT_T
+  #error "Cannot define FH_MAY_MERGE without FIREHOSE_CLIENT_T"
 #endif
 
 /* Assumes node field is correct */
@@ -628,7 +634,7 @@ fhi_merge_regions(firehose_region_t *pin_region)
     if (space_avail && GASNETT_PREDICT_TRUE(addr + len != 0) /* avoid wrap around */) {
 	uintptr_t next_addr = addr + len;
 	bd = fh_bucket_lookup(gasneti_mynode, next_addr);
-	if (bd != NULL) {
+	if (bd && FH_MAY_MERGE(&bd->priv->client)) {
 	    uintptr_t end_addr = fh_priv_end(bd->priv) + 1;
 	    gasneti_assert(end_addr > next_addr);
 
@@ -645,7 +651,7 @@ fhi_merge_regions(firehose_region_t *pin_region)
     /* Look to merge w/ predecessor */
     if (space_avail && GASNETT_PREDICT_TRUE(addr != 0) /* avoid wrap around */) {
 	bd = fh_bucket_lookup(gasneti_mynode, addr - FH_BUCKET_SIZE);
-	if (bd != NULL) {
+	if (bd && FH_MAY_MERGE(&bd->priv->client)) {
 	    const firehose_private_t *priv = bd->priv;
 
 	    gasneti_assert(priv != NULL);
@@ -684,7 +690,7 @@ fhi_wait_for_one(const firehose_private_t *priv) {
 	    gasneti_assert(num_unpin == 1);
 	    num_unpin += fh_clean_covered_local(FH_MAX_UNPIN_LOC - num_unpin, unpin_regions + num_unpin);
 	    FH_TABLE_UNLOCK;
-	    firehose_move_callback(gasneti_mynode, unpin_regions, 1, NULL, 0);
+	    firehose_move_callback(gasneti_mynode, unpin_regions, num_unpin, NULL, 0);
 	    FH_TABLE_LOCK;
 	}
 #ifdef DEBUG_LOCAL_TABLE

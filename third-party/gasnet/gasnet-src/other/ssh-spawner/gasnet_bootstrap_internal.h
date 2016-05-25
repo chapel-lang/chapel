@@ -18,4 +18,10 @@ extern void gasneti_bootstrapBroadcast_ssh(void *src, size_t len, void *dest, in
 extern void gasneti_bootstrapSNodeBroadcast_ssh(void *src, size_t len, void *dest, int rootnode);
 extern void gasneti_bootstrapCleanup_ssh(void);
 
+#if GASNET_BLCR
+extern int gasneti_bootstrapPreCheckpoint_ssh(int fd);
+extern int gasneti_bootstrapPostCheckpoint_ssh(int fd, int is_restart);
+extern int gasneti_bootstrapRollback_ssh(const char *dir);
+#endif
+
 #endif

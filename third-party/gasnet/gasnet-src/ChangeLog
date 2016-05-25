@@ -2,6 +2,66 @@ GASNet ChangeLog
 ----------------
 
 ----------------------------------------------------------------------
+05-23-2016 :  Release 1.26.3
+
+* This release fixes three significant bugs affecting udp-conduit:
+  - Out-of-order delivery of UDP messages (which can occur on networks
+    with multiple paths) was going undetected and could lead to silent
+    loss and/or erroneous redelivery of AMs in the presence of
+    retransmissions (caused by packet loss or high network load).
+  - On Cygwin 2.5 (2016-04-11 and later), ioctl(FIONREAD) always returns
+    failure, rendering udp-conduit entirely unusable on that platform.
+  - On FreeBSD, ioctl(FIONREAD) may truncate long datagrams to around
+    600 bytes, rendering udp-conduit unusable on that platform.
+
+----------------------------------------------------------------------
+05-12-2016 :  Release 1.26.2
+
+* Cray uGNI (gemini- and aries-conduits)
+  - Allow configure and build without use of the Cray wrapper compilers
+  - Use Cray's UDREG library to ammortize cost of dynamic registration
+  - Maximum supported process count doubled to 2^24 (16 million)
+  - Maximum AM Medium payload increased from 960 to 4032 bytes without
+    a corresponding increase in the buffer allocation footprint
+  - Maximum AM Long payload raised to 8MB on Aries (still 1MB on Gemini)
+  - Multiple changes to reduce startup overheads
+  - Fixes for C99 code compilance
+
+* InfiniBand Verbs (ibv-conduit)
+  - Fix a (rare) leak in the firehose dynamic memory registration library
+    which could have lead to resource exhaustion in applications with
+    large memory usage.
+  - Fix link failures with "--enable-ibv-conn-thread --disable-ibv-rcv-thread"
+  - Move some internal data to shared memory (keeping one copy per node)
+
+* Libfabric (ofi-conduit)
+  - Fixes to enable use of the "psm" provider
+  - Fixes for C99 code compilance
+
+* Portable UDP (udp-conduit)
+  - Support '%P' expansion (for arg[0]) in CSPAWN_CMD
+
+* Intra-node Shared Memory (PSHM)
+  - Delay cross-mapping of segments until gasnet_attach() to avoid a temporary
+    over-commit of resources (fixes bug 3277 and possibly others).
+
+* Platform support/portability
+  - Improved support for Cygwin-2.5
+
+* Berkeley Lab Checkpoint/Restart (BLCR)
+  This release is the first to include (experimental) support for
+  system-level checkpoint and restart using BLCR
+  - Support is currently only available in ibv- and udp-conduits
+  - See other/blcr/README-blcr for more information
+
+* General and Misc.
+  - Multiple changes to reduce startup overheads
+  - Fix gasnetrun_* scripts for perl's deprecation of POSIX::tmpnam()
+  - Fix code in test.h for --enable-segment-everything with large node count
+  - The cross-configure-intel-mic script has ben renamed to ...-knc to
+    more accurately identify the target and to avoid confusion with knl
+
+----------------------------------------------------------------------
 10-27-2015 :  Release 1.26.0
 
 * New conduits (network APIs) added:

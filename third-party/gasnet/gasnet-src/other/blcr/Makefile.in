@@ -15,11 +15,12 @@
 
 @SET_MAKE@
 
-# Description: Makefile for GASNet MXM conduit
-# Copyright (c)  2002, Dan Bonachea <bonachea@cs.berkeley.edu>
-# Copyright (c)  2011, Mellanox Technologies LTD. All rights reserved.
+# Description: Makefile for GASNet other/blcr
+# Copyright 2016, Regents of the University of California
 # Terms of use are as specified in license.txt
 
+# No objects are built here, but we need a proper Makefile.am
+# to handle the built blck.mak and installation of docs.
 VPATH = @srcdir@
 am__make_dryrun = \
   { \
@@ -57,9 +58,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = mxm-conduit
-DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(srcdir)/conduit.mak.in
+subdir = other/blcr
+DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(srcdir)/blcr.mak.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/other/plpa/config/acinclude.m4 \
 	$(top_srcdir)/acinclude.m4 $(top_srcdir)/configure.in
@@ -67,62 +68,10 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(SHELL) $(top_srcdir)/config-aux/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/gasnet_config.h
-CONFIG_CLEAN_FILES = conduit.mak
+CONFIG_CLEAN_FILES = blcr.mak
 CONFIG_CLEAN_VPATH_FILES =
-am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
-am__vpath_adj = case $$p in \
-    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
-    *) f=$$p;; \
-  esac;
-am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
-am__install_max = 40
-am__nobase_strip_setup = \
-  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
-am__nobase_strip = \
-  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
-am__nobase_list = $(am__nobase_strip_setup); \
-  for p in $$list; do echo "$$p $$p"; done | \
-  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
-  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
-    if (++n[$$2] == $(am__install_max)) \
-      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
-    END { for (dir in files) print dir, files[dir] }'
-am__base_list = \
-  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
-  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__uninstall_files_from_dir = { \
-  test -z "$$files" \
-    || { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
-    || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
-         $(am__cd) "$$dir" && rm -f $$files; }; \
-  }
-am__installdirs = "$(DESTDIR)$(libdir)"
-LIBRARIES = $(lib_LIBRARIES)
-ARFLAGS = cru
-libgasnet_mxm_par_a_AR = $(AR) $(ARFLAGS)
-libgasnet_mxm_par_a_LIBADD =
-am_libgasnet_mxm_par_a_OBJECTS =
-libgasnet_mxm_par_a_OBJECTS = $(am_libgasnet_mxm_par_a_OBJECTS)
-libgasnet_mxm_parsync_a_AR = $(AR) $(ARFLAGS)
-libgasnet_mxm_parsync_a_LIBADD =
-am_libgasnet_mxm_parsync_a_OBJECTS =
-libgasnet_mxm_parsync_a_OBJECTS =  \
-	$(am_libgasnet_mxm_parsync_a_OBJECTS)
-libgasnet_mxm_seq_a_AR = $(AR) $(ARFLAGS)
-libgasnet_mxm_seq_a_LIBADD =
-am_libgasnet_mxm_seq_a_OBJECTS =
-libgasnet_mxm_seq_a_OBJECTS = $(am_libgasnet_mxm_seq_a_OBJECTS)
-DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
-COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-CCLD = $(CC)
-LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libgasnet_mxm_par_a_SOURCES) \
-	$(libgasnet_mxm_parsync_a_SOURCES) \
-	$(libgasnet_mxm_seq_a_SOURCES)
-DIST_SOURCES = $(libgasnet_mxm_par_a_SOURCES) \
-	$(libgasnet_mxm_parsync_a_SOURCES) \
-	$(libgasnet_mxm_seq_a_SOURCES)
+SOURCES =
+DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -380,6 +329,7 @@ cxxLDFLAGS = @cxxLDFLAGS@
 cxxLIBS = @cxxLIBS@
 datadir = @datadir@
 datarootdir = @datarootdir@
+@NEED_DOCDIR_TRUE@docdir = $(datadir)/doc/GASNet
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
@@ -425,92 +375,13 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 yod = @yod@
 AUTOMAKE_OPTIONS = foreign 1.4
-CONDUIT_NAME = mxm
-@MXM_BOOTSTRAP_SSH_TRUE@ssh_defines = -DHAVE_SSH_SPAWNER
-@MXM_BOOTSTRAP_SSH_TRUE@ssh_srcdir = $(top_srcdir)/other/ssh-spawner
-@MXM_BOOTSTRAP_SSH_TRUE@ssh_sources = $(ssh_srcdir)/gasnet_bootstrap_ssh.c
-@MXM_BOOTSTRAP_SSH_TRUE@ssh_deps = $(ssh_srcdir)/*.h
-@MXM_BOOTSTRAP_MPI_TRUE@mpi_defines = -DHAVE_MPI_SPAWNER
-@MXM_BOOTSTRAP_MPI_TRUE@mpi_srcdir = $(top_srcdir)/other/mpi-spawner
-@MXM_BOOTSTRAP_MPI_TRUE@mpi_deps = $(mpi_srcdir)/*.h $(mpi_srcdir)/*.c
-# We must compile this one object with MPI_CC.
-@MXM_BOOTSTRAP_MPI_TRUE@mpi_special_objs = $(builddir)/gasnet_bootstrap_mpi-$(THREAD_MODEL).o
-@HAVE_BOOTSTRAP_PMI_TRUE@pmi_cppflags = -DHAVE_PMI_SPAWNER @PMI_SPAWNER_INCLUDES@
-@HAVE_BOOTSTRAP_PMI_TRUE@pmi_srcdir = $(top_srcdir)/other/pmi-spawner
-@HAVE_BOOTSTRAP_PMI_TRUE@pmi_sources = $(pmi_srcdir)/gasnet_bootstrap_pmi.c
-@HAVE_BOOTSTRAP_PMI_TRUE@pmi_deps = $(pmi_srcdir)/*.h
+SUBDIRS = .
+@BLCR_ENABLED_TRUE@docs = README-blcr
+EXTRA_DIST = \
+	gasnet_blcr.h     \
+	gasnet_blcr.c     \
+	README-blcr
 
-# any conduit-specific subdirectories containing Makefile.am's
-SUBDIRS = contrib
-
-# complete list of files in the conduit directory
-# include all headers, documentation, etc. 
-# and any subdirectories not containing Makefile.am's
-CONDUIT_FILELIST = \
-      gasnet_core.c          \
-      gasnet_core_connect.c  \
-      gasnet_core_sndrcv.c   \
-      gasnet_core.h          \
-      gasnet_core_fwd.h      \
-      gasnet_core_help.h     \
-      gasnet_core_internal.h \
-      gasnet_extended.c      \
-      gasnet_extended_fwd.h  \
-      gasnet_mxm_req.h       \
-      license.txt
-
-
-# list of conduit core and extended .c source files 
-# to be compiled into libgasnet on the compiler command line
-CONDUIT_SOURCELIST = \
-      $(srcdir)/gasnet_core.c         \
-      $(srcdir)/gasnet_core_connect.c \
-      $(srcdir)/gasnet_core_sndrcv.c  \
-      $(srcdir)/gasnet_extended.c     \
-      $(fca_sourcelist) $(ssh_sources) $(pmi_sources)
-
-
-# additional -I or -D directives needed by this specific conduit
-# other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = @MXM_INCLUDE@  $(ssh_defines) $(pmi_cppflags) $(mpi_defines) $(fca_extralibcflags)
-
-# additional conduit header files to install from external, non-standard directories
-CONDUIT_EXTRAHEADERS = $(fca_extraheaders)
-
-# headers selected by default rules that should NOT be installed
-CONDUIT_PRIVATEHEADERS = $(fca_privheaders) gasnet_mxm_req.h
-
-# additional file dependencies not mentioned elsewhere 
-# that should force libgasnet rebuild on update
-CONDUIT_EXTRADEPS = $(ssh_deps) $(pmi_deps) $(mpi_deps) $(fca_extradeps)
-
-# additional object files to be included in libgasnet that need to be compiled 
-# using a special, conduit-specific command. These should also be included as
-# forced targets in this file, and should probably use LIBINCLUDES/LIBDEFINES
-CONDUIT_SPECIAL_OBJS = $(mpi_special_objs) $(fca_special_objs)
-
-# the default job spawn command to be used for "make run-tests"
-# The following substitutions are performed:
-#   %P = program executable name
-#   %N = requested node count
-#   %A = program arguments
-#   %Q = program arguments w/ an extra level of quotes
-#   %D = the current working directory
-#   %H = hostfile (if any)
-CONDUIT_RUNCMD = @TOP_BUILDDIR@/mxm-conduit/contrib/gasnetrun_mxm -np %N %P %A
-
-# conduit-specific tests in ../tests directory
-CONDUIT_TESTS = testhello
-
-# -------- Do not modify anything below this line --------
-@BUILD_SEQ_LIBS_TRUE@libgasnet_mxm_seq_a_SOURCES = 
-@BUILD_SEQ_LIBS_TRUE@libraries_seq = libgasnet-mxm-seq.a
-@BUILD_PAR_LIBS_TRUE@libgasnet_mxm_par_a_SOURCES = 
-@BUILD_PAR_LIBS_TRUE@libraries_par = libgasnet-mxm-par.a
-@BUILD_PARSYNC_LIBS_TRUE@libgasnet_mxm_parsync_a_SOURCES = 
-@BUILD_PARSYNC_LIBS_TRUE@libraries_parsync = libgasnet-mxm-parsync.a
-libraries = $(libraries_seq) $(libraries_par) $(libraries_parsync)
-@USE_MXM_CONDUIT_TRUE@lib_LIBRARIES = $(libraries) 
 all: all-recursive
 
 .SUFFIXES:
@@ -523,9 +394,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign mxm-conduit/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign other/blcr/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign mxm-conduit/Makefile
+	  $(AUTOMAKE) --foreign other/blcr/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -544,45 +415,8 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-conduit.mak: $(top_builddir)/config.status $(srcdir)/conduit.mak.in
+blcr.mak: $(top_builddir)/config.status $(srcdir)/blcr.mak.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-install-libLIBRARIES: $(lib_LIBRARIES)
-	@$(NORMAL_INSTALL)
-	@list='$(lib_LIBRARIES)'; test -n "$(libdir)" || list=; \
-	list2=; for p in $$list; do \
-	  if test -f $$p; then \
-	    list2="$$list2 $$p"; \
-	  else :; fi; \
-	done; \
-	test -z "$$list2" || { \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(libdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(libdir)" || exit 1; \
-	  echo " $(INSTALL_DATA) $$list2 '$(DESTDIR)$(libdir)'"; \
-	  $(INSTALL_DATA) $$list2 "$(DESTDIR)$(libdir)" || exit $$?; }
-	@$(POST_INSTALL)
-	@list='$(lib_LIBRARIES)'; test -n "$(libdir)" || list=; \
-	for p in $$list; do \
-	  if test -f $$p; then \
-	    $(am__strip_dir) \
-	    echo " ( cd '$(DESTDIR)$(libdir)' && $(RANLIB) $$f )"; \
-	    ( cd "$(DESTDIR)$(libdir)" && $(RANLIB) $$f ) || exit $$?; \
-	  else :; fi; \
-	done
-
-uninstall-libLIBRARIES:
-	@$(NORMAL_UNINSTALL)
-	@list='$(lib_LIBRARIES)'; test -n "$(libdir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(libdir)'; $(am__uninstall_files_from_dir)
-
-clean-libLIBRARIES:
-	-test -z "$(lib_LIBRARIES)" || rm -f $(lib_LIBRARIES)
-
-mostlyclean-compile:
-	-rm -f *.$(OBJEXT)
-
-distclean-compile:
-	-rm -f *.tab.c
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run `make' without going through this Makefile.
@@ -776,13 +610,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-recursive
-@USE_MXM_CONDUIT_FALSE@all-local:
-all-am: Makefile $(LIBRARIES) all-local
+all-am: Makefile
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(libdir)"; do \
-	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
-	done
 install: install-recursive
 install-exec: install-exec-recursive
 install-data: install-data-recursive
@@ -813,17 +643,14 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-@USE_MXM_CONDUIT_FALSE@uninstall-local:
-@USE_MXM_CONDUIT_FALSE@install-data-local:
-@USE_MXM_CONDUIT_FALSE@clean-local:
+@BLCR_ENABLED_FALSE@install-data-local:
 clean: clean-recursive
 
-clean-am: clean-generic clean-libLIBRARIES clean-local mostlyclean-am
+clean-am: clean-generic mostlyclean-am
 
 distclean: distclean-recursive
 	-rm -f Makefile
-distclean-am: clean-am distclean-compile distclean-generic \
-	distclean-tags
+distclean-am: clean-am distclean-generic distclean-tags
 
 dvi: dvi-recursive
 
@@ -843,7 +670,7 @@ install-dvi: install-dvi-recursive
 
 install-dvi-am:
 
-install-exec-am: install-libLIBRARIES
+install-exec-am:
 
 install-html: install-html-recursive
 
@@ -871,7 +698,7 @@ maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-recursive
 
-mostlyclean-am: mostlyclean-compile mostlyclean-generic
+mostlyclean-am: mostlyclean-generic
 
 pdf: pdf-recursive
 
@@ -881,47 +708,31 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-libLIBRARIES uninstall-local
+uninstall-am:
 
 .MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) ctags-recursive \
 	install-am install-strip tags-recursive
 
 .PHONY: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) CTAGS GTAGS \
-	all all-am all-local check check-am clean clean-generic \
-	clean-libLIBRARIES clean-local ctags ctags-recursive distclean \
-	distclean-compile distclean-generic distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-data install-data-am install-data-local install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am \
-	install-libLIBRARIES install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs installdirs-am maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic pdf pdf-am ps ps-am tags tags-recursive \
-	uninstall uninstall-am uninstall-libLIBRARIES uninstall-local
+	all all-am check check-am clean clean-generic ctags \
+	ctags-recursive distclean distclean-generic distclean-tags \
+	distdir dvi dvi-am html html-am info info-am install \
+	install-am install-data install-data-am install-data-local \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs installdirs-am maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
+	pdf-am ps ps-am tags tags-recursive uninstall uninstall-am
 
 
-@FCA_ENABLED_TRUE@include $(top_builddir)/other/fca/fca.mak
-@MXM_BOOTSTRAP_MPI_TRUE@$(builddir)/gasnet_bootstrap_mpi-$(THREAD_MODEL).o: force
-@MXM_BOOTSTRAP_MPI_TRUE@	@MPI_CC@ @MPI_CFLAGS@ $(LIBDEFINES) $(CONDUIT_EXTRALIBCFLAGS) $(LIBINCLUDES) \
-@MXM_BOOTSTRAP_MPI_TRUE@		-o $@ -c $(mpi_srcdir)/gasnet_bootstrap_mpi.c
-
-include $(top_builddir)/other/Makefile-conduit.mak
-
-libgasnet-mxm-seq.a: $(libgasnet_dependencies)
-	@$(MAKE) do-libgasnet-seq
-
-libgasnet-mxm-par.a: $(libgasnet_dependencies)
-	@$(MAKE) do-libgasnet-par
-
-libgasnet-mxm-parsync.a: $(libgasnet_dependencies)
-	@$(MAKE) do-libgasnet-parsync
-@USE_MXM_CONDUIT_TRUE@all-local: $(lib_LIBRARIES) $(makefile_fragments)
-@USE_MXM_CONDUIT_TRUE@clean-local: do-clean-local
-@USE_MXM_CONDUIT_TRUE@install-data-local: do-install-data-local
-@USE_MXM_CONDUIT_TRUE@uninstall-local: do-uninstall-local
-@USE_MXM_CONDUIT_FALSE@$(top_srcdir)/gasnet.h: do-error
+all: blcr.mak
+@BLCR_ENABLED_TRUE@install-data-local:
+@BLCR_ENABLED_TRUE@	$(mkinstalldirs) $(DESTDIR)$(docdir)
+@BLCR_ENABLED_TRUE@	for f in $(docs); do \
+@BLCR_ENABLED_TRUE@          $(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(docdir)/ || exit $$? ; \
+@BLCR_ENABLED_TRUE@        done
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -15,7 +15,7 @@ EXTRA_DIST = $(dotpl_DATA) $(vg_DATA) \
 	cross-configure-crayxt-linux \
 	cross-configure-crayxe-linux \
 	cross-configure-crayxc-linux \
-	cross-configure-intel-mic \
+	cross-configure-intel-knc \
 	crayxt-nptl-pthread-patch
 # exclude these from distribution for now
 #	cross-configure-k42ppc64 \

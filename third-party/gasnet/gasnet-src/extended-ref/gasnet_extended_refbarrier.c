@@ -809,6 +809,7 @@ void gasnete_amdbarrier_kick(gasnete_coll_team_t team) {
   if (gasnet_hsl_trylock(&barrier_data->amdbarrier_lock))
     return; /* another thread is currently in kick */
 
+  {
     step = barrier_data->amdbarrier_step;
     phase = barrier_data->amdbarrier_phase;
 
@@ -865,6 +866,8 @@ void gasnete_amdbarrier_kick(gasnete_coll_team_t team) {
       */
       barrier_data->amdbarrier_step = cursor;
     } 
+  }
+
   gasnet_hsl_unlock(&barrier_data->amdbarrier_lock);
 
   for ( ; numsteps; numsteps--) {
@@ -2383,6 +2386,7 @@ void gasnete_barrier_init(void) {
   team->myrank = gasneti_mynode;
   team->total_ranks = gasneti_nodes;
   team->rel2act_map = (gasnet_node_t *)gasneti_malloc(sizeof(gasnet_node_t)*gasneti_nodes);
+  gasneti_leak(team->rel2act_map);
   for (i=0; i<gasneti_nodes; i++)
     team->rel2act_map[i] = i;
   if (gasneti_nodes > 1) {
@@ -2390,6 +2394,7 @@ void gasnete_barrier_init(void) {
     for (i=1; i<gasneti_nodes; i*=2) ++count;
     team->peers.num = count;
     team->peers.fwd = gasneti_malloc(sizeof(gasnet_node_t) * count);
+    gasneti_leak(team->peers.fwd);
     for (i=0; i<count; i++) {
       unsigned int dist = 1 << i;
       team->peers.fwd[i] = (gasneti_mynode + dist) % gasneti_nodes;
@@ -2402,6 +2407,7 @@ void gasnete_barrier_init(void) {
     for (i=1; i<gasneti_nodemap_global_count; i*=2) ++count;
     team->supernode_peers.num = count;
     team->supernode_peers.fwd = gasneti_malloc(sizeof(gasnet_node_t) * count);
+    gasneti_leak(team->supernode_peers.fwd);
     for (i=0; i<count; i++) {
       unsigned int dist = 1 << i;
       unsigned int peer = (gasneti_nodemap_global_rank + dist) % gasneti_nodemap_global_count;

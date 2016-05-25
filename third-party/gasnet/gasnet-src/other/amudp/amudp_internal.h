@@ -613,6 +613,10 @@ extern int myrecvfrom(SOCKET s, char * buf, int len, int flags,
   #define tickspersec               1000000
 #endif
 //------------------------------------------------------------------------------------
+// checkpoint/restart
+extern int AMUDP_SPMDRestartActive;
+
+//------------------------------------------------------------------------------------
 
 SOCK_END_EXTERNC
 

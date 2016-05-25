@@ -57,7 +57,6 @@ static struct gasneti_pshm_info {
 void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_sz) {
   size_t vnetsz, mmapsz;
   int discontig = 0;
-  gasneti_pshm_rank_t *pshm_max_nodes;
   gasnet_node_t i;
 #if !GASNET_CONDUIT_SMP
   gasnet_node_t j;
@@ -65,42 +64,27 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
 
   gasneti_assert(snodebcastfn != NULL);  /* NULL snodebcastfn no longer supported */
 
-  /* Testing if the number of PSHM nodes is always smaller than GASNETI_PSHM_MAX_NODES */
-  pshm_max_nodes = gasneti_calloc(gasneti_nodes, sizeof(gasneti_pshm_rank_t));
-  for(i=0; i<gasneti_nodes; i++){
-    /* Note combination of post-increment and == guard against overflow */
-    if ((pshm_max_nodes[gasneti_nodemap[i]]++) == GASNETI_PSHM_MAX_NODES){
-      if (gasneti_mynode == gasneti_nodemap[i]){
-        gasneti_fatalerror("PSHM nodes requested on node '%s' exceeds maximum (%d)\n", 
-                        gasneti_gethostname(), GASNETI_PSHM_MAX_NODES);
-      } else {
-        gasneti_fatalerror("PSHM nodes requested on some node exceeds maximum (%d)\n", 
-                        GASNETI_PSHM_MAX_NODES);
-      }
-    }
-  }
-  gasneti_free(pshm_max_nodes);
+  gasneti_assert_always(gasneti_nodemap_local_count <= GASNETI_PSHM_MAX_NODES);
     
   gasneti_pshm_nodes = gasneti_nodemap_local_count;
-  gasneti_pshm_firstnode = gasneti_nodemap[gasneti_mynode];
   gasneti_pshm_mynode = gasneti_nodemap_local_rank;
+  gasneti_pshm_firstnode = gasneti_nodemap_local[0];
 
 #if GASNET_CONDUIT_SMP
   gasneti_assert(gasneti_pshm_nodes == gasneti_nodes);
-  gasneti_assert(gasneti_pshm_firstnode == 0);
   gasneti_assert(gasneti_pshm_mynode == gasneti_mynode);
+  gasneti_assert(gasneti_pshm_firstnode == 0);
 #else
-  gasneti_assert(gasneti_nodemap[0] == 0);
-  for (i=1; i<gasneti_nodes; ++i) {
-    /* Determine if supernode members are numbered contiguously */
-    if (gasneti_nodemap[i-1] > gasneti_nodemap[i]) {
+  /* Determine if local supernode members are numbered contiguously */
+  for (i = 1; i < gasneti_nodemap_local_count; ++i) {
+    if (gasneti_nodemap_local[i] != gasneti_pshm_firstnode + i) {
       discontig = 1;
       break;
     }
   }
 #endif
 
-  gasneti_assert(gasneti_pshm_supernodes > 0);
+  gasneti_assert(gasneti_nodemap_global_count > 0);
 
   /* compute size of vnet shared memory region */
   vnetsz = gasneti_pshmnet_memory_needed(gasneti_pshm_nodes); 
@@ -108,7 +92,7 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
   { /* gasneti_pshm_info contains multiple variable-length arrays in the same space */
     size_t info_sz;
     /* space for gasneti_pshm_firsts: */
-    info_sz = gasneti_pshm_supernodes * sizeof(gasnet_node_t);
+    info_sz = gasneti_nodemap_global_count * sizeof(gasnet_node_t);
     /* optional space for gasneti_pshm_rankmap: */
     if (discontig) {
       info_sz = GASNETI_ALIGNUP(info_sz, sizeof(gasneti_pshm_rank_t));
@@ -166,9 +150,9 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
   gasneti_pshmnet_bootstrapBarrier();
   {
     uintptr_t addr = (uintptr_t)&gasneti_pshm_info->early_barrier;
-    /* gasneti_pshm_firsts, an array of gasneti_pshm_supernodes*sizeof(gasnet_node_t): */
+    /* gasneti_pshm_firsts, an array of gasneti_nodemap_global_count*sizeof(gasnet_node_t): */
     gasneti_pshm_firsts = (gasnet_node_t *)addr;
-    addr += gasneti_pshm_supernodes * sizeof(gasnet_node_t);
+    addr += gasneti_nodemap_global_count * sizeof(gasnet_node_t);
     /* optional rankmap: */
     if (discontig) {
       addr = GASNETI_ALIGNUP(addr, sizeof(gasneti_pshm_rank_t));
@@ -189,14 +173,14 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
     if (gasneti_nodemap[i] == i) {
       if (!gasneti_pshm_mynode) gasneti_pshm_firsts[j] = i;
       j += 1;
-      gasneti_assert(j <= gasneti_pshm_supernodes);
+      gasneti_assert(j <= gasneti_nodemap_global_count);
     }
   }
 #endif
 #if GASNET_DEBUG
   /* Validate gasneti_pshm_firsts[] */
   if (gasneti_pshm_mynode == 0) {
-    for (i=0; i<gasneti_pshm_supernodes; ++i) {
+    for (i=0; i<gasneti_nodemap_global_count; ++i) {
       gasneti_assert(!i || (gasneti_pshm_firsts[i] > gasneti_pshm_firsts[i-1]));
       gasneti_assert(gasneti_nodemap[gasneti_pshm_firsts[i]] == gasneti_pshm_firsts[i]);
     }

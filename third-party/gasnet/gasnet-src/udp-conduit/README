@@ -175,6 +175,7 @@ performing the spawn, upon which the following substitutions are performed:
   %D => the current working directory
   %% => %
   %M => optional list of servers taken from CSPAWN_SERVERS (the first nproc are passed)
+  %P => the program name as invoked (the orignal argv[0])
 
 The custom command specified by CSPAWN_CMD is invoked exactly once at startup,
 and is responsible for starting all the %N remote worker processes and having

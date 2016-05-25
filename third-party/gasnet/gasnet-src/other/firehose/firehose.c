@@ -163,8 +163,7 @@ firehose_init(uintptr_t max_pinnable_memory,
 #define FH_REQUEST_ALLOC_PERIDX	256
 #define FH_REQUEST_ALLOC_MAXIDX	256
 static firehose_request_t	*fh_request_bufs[FH_REQUEST_ALLOC_MAXIDX] = { 0 };
-
-extern int fh_dacount;
+static int			 fh_request_bufidx = 0;
 
 /*
  * XXX should call from gasnet_exit(), fatal or not
@@ -175,7 +174,8 @@ firehose_fini()
 {
 	int	i;
 
-	/* Acquire the lock(s) and DO NOT release */
+	/* Acquire the lock(s)
+	 * DO NOT release unless FIREHOSE_INIT_FLAG_MAY_REINIT */
 	FH_TABLE_LOCK;
 #ifndef FH_POLL_NOOP
 	FH_POLLQ_LOCK;
@@ -204,7 +204,17 @@ firehose_fini()
 		if (fh_request_bufs[i] == NULL)
 			break;
 		gasneti_free(fh_request_bufs[i]);
+		fh_request_bufs[i] = NULL;
 	}
+        fh_request_freehead = NULL;
+        fh_request_bufidx = 0;
+
+        if (fhi_InitFlags & FIREHOSE_INIT_FLAG_MAY_REINIT) {
+#ifndef FH_POLL_NOOP
+                FH_POLLQ_UNLOCK;
+#endif
+                FH_TABLE_UNLOCK;
+        }
 
 	return;
 }
@@ -572,7 +582,6 @@ fh_free_completion_callback(fh_completion_callback_t *cc)
  * latter case, allocation is done using a freelist allocator and the internal
  * pointer is used to link the request_t.
  */
-static int			 fh_request_bufidx = 0;
 
 static firehose_request_t *
 fh_request_new(firehose_request_t *ureq, int block)
