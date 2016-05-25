@@ -11,6 +11,9 @@ to the Chapel team at chapel-bugs@lists.sourceforge.net, as the cause
 is most likely due to Chapel's use of GASNet and not the GASNet
 library itself.
 
+Chapel modifications to GASNet
+==============================
+
 The modifications that we have made to the official GASNet release are
 as follows:
 
@@ -21,16 +24,8 @@ as follows:
   developers, and has been exceedingly useful for the Chapel development
   team.
 
-The structure of this directory is as follows:
-
-./
-  Makefile        : a Makefile to help build GASNet for Chapel's use
-  README          : this file
-  gasnet-src/     : the current GASNet release
-  install/        : as GASNet is built it will be installed here:
-    $CHPL_TARGET_PLATFORM-$CHPL_TARGET_COMPILER-$CHPL_TARGET_ARCH/
-      seg-$CHPL_GASNET_SEGMENT/
-        nodbg/
+Upgrading GASNet versions
+=========================
 
 The directory $CHPL_HOME/third-party/gasnet/gasnet-src/ contains the
 un-tarballed GASNet package contents.  Version updates should be done as
