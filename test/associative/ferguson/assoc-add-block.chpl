@@ -5,7 +5,8 @@ use BlockDist;
 
 config const n = 10000;
 config const checkMemberOnAdd = false;
-//config const timing = false;
+config const timing = false;
+config const verify = true;
 
 class MyMapper{
   proc indexToLocaleIndex(ind, targetLocs: [] locale) : int {
@@ -24,15 +25,15 @@ proc run() {
   var Dist = new UserMapAssoc(idxType=int, mapper = new MyMapper());
   var d:domain(int) dmapped new dmap(Dist);
 
+  forall (i, n) in zip(BlockSpace, numbers) {
+    n = i;
+  }
+
   resetCommDiagnostics();
   startCommDiagnostics();
 
   var t: Timer;
   t.start();
-
-  forall (i, n) in zip(BlockSpace, numbers) {
-    n = i;
-  }
 
   forall n in numbers with (ref d) {
     d += n;
@@ -42,21 +43,24 @@ proc run() {
 
   stopCommDiagnostics();
 
-  writeln("Adding ", n, " elements took ", t.elapsed());
+  if timing then
+    writeln("Adding ", n, " elements took ", t.elapsed());
 
   writeln(getCommDiagnostics());
 
   writeln("d.size is ", d.size);
 
-  for i in 1..n {
-    if !d.member(i) then
-      writeln("Error: d does not contain ", i);
-  }
+  if verify {
+    for i in 1..n {
+      if !d.member(i) then
+        writeln("Error: d does not contain ", i);
+    }
 
-  var i = 1;
-  for j in d.sorted() {
-    assert(j == i);
-    i += 1;
+    var i = 1;
+    for j in d.sorted() {
+      assert(j == i);
+      i += 1;
+    }
   }
 }
 

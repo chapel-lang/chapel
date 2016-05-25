@@ -51,6 +51,8 @@ config const copyfiles = false;
 config const maxfiles = max(int);
 config const buildset = true;
 config const buildgraph = true;
+config const localarray = true;
+config const bulkadd = true;
 
 param distributed = if CHPL_COMM == "none" then false
                     else true;
@@ -248,8 +250,11 @@ proc process_json(logfile:channel, fname:string, Pairs) {
         if id != other_id {
           if buildset {
             //localPairs += (id, other_id);
-            localPairs.push_back( (id, other_id) );
-            //Pairs += (id, other_id);
+            if localarray {
+              localPairs.push_back( (id, other_id) );
+            } else {
+              Pairs += (id, other_id);
+            }
           }
         }
       }
@@ -282,10 +287,16 @@ proc process_json(logfile:channel, fname:string, Pairs) {
 //    Pairs += p;
 //  }
 
-  quickSort(localPairs, comparator=new DestinationComparator());
-//  for p in localPairs do
-//    Pairs += p;
-  Pairs._value.dsiAddSorted(localPairs);
+  if localarray {
+    if bulkadd {
+      quickSort(localPairs, comparator=new DestinationComparator());
+      Pairs._value.dsiAddSorted(localPairs);
+    } else {
+      quickSort(localPairs, comparator=new DestinationComparator());
+      for p in localPairs do
+        Pairs += p;
+    }
+  }
 
   if progress then
     writeln(fname, " : ",

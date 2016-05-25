@@ -64,8 +64,9 @@ module DefaultAssociative {
       extern proc sizeof(type t):size_t;
 
       //extern proc printf(fmt:c_string, sz:c_int);
-      extern proc printf(fmt:c_string, id:c_int, sz:c_int);
-      printf("%i IN  PROCESS size=%i\n", here.id:c_int, size:c_int);
+
+      //extern proc printf(fmt:c_string, id:c_int, sz:c_int);
+      //printf("%i IN  PROCESS size=%i\n", here.id:c_int, size:c_int);
 
 // Why do I seem to need to use this primitive?
       var ptr:c_ptr(idxType) = __primitive("cast", c_ptr(idxType), buf);
@@ -77,6 +78,10 @@ module DefaultAssociative {
       // resize if needed
       // - flush rdata cache if we will resize
       // - take lock either way
+
+      // Does this help performance?
+      //chpl_rmem_consist_fence(order=memory_order_seq_cst);
+
       dom._resizeIfNeeded(newkeys, takeLock=parSafe);
  
 
@@ -97,7 +102,7 @@ module DefaultAssociative {
         dom.tableLock.clear(order=memory_order_relaxed);
       }
 
-      printf("%i END PROCESS size=%i\n", here.id:c_int, size:c_int);
+      //printf("%i END PROCESS size=%i\n", here.id:c_int, size:c_int);
     }
     proc enqueueAdd(idx: idxType) {
 

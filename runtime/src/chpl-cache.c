@@ -302,13 +302,15 @@ use.
 #define MIN_CACHE_DATA_SIZE (1024*1024)
 #define MAX_CACHE_DATA_SIZE (256*1024*1024)
 
-// How many pending operations can we have at once?
+// How many in-flight operations can we have at once?
 // This should be a multiple of 8, or code in cache_create
 // should be adjusted to add padding
 #define MAX_PENDING 32
 
 // How big is each ops payload?
 // Should be a multiple of 8
+// 880 fits within 952 bytes < gemini/gasnet medium AM
+// but seems to be slower for some reason
 //#define OPS_PAYLOAD 880
 #define OPS_PAYLOAD (880*2)
 
@@ -777,6 +779,8 @@ struct rdcache_s* cache_create(void) {
   unsigned int pending_len = MAX_PENDING; 
   unsigned char* buffer;
   unsigned char* pages;
+
+  //printf("chpl_op_t will be %li bytes\n", OPS_PAYLOAD+sizeof(chpl_op_t));
 
   cache_pages = CACHE_PAGES_PER_NODE * chpl_numNodes;
   if( cache_pages < MIN_CACHE_DATA_SIZE/CACHEPAGE_SIZE )
@@ -2018,11 +2022,10 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
       struct ops_entry_s* ops = entry->ops;
       chpl_comm_nb_ops_handle_t* handle_toset = NULL;
 
-      //TIME_PRINT(
-      printf("%i chpl_comm_start_ops(%i, %p, %i) with masx %i\n",
+      TIME_PRINT(("%i chpl_comm_start_ops(%i, %p, %i) with masx %i\n",
              chpl_nodeID, entry->node, (void*) &ops->op,
              (int) ops->op.payload_size,
-             op); //);
+             op));
 
       // Get a slot for the handle and update sequence number.
       ops->max_ops_sequence_number = pending_push_ops(cache, &handle_toset);
@@ -2543,6 +2546,9 @@ void cache_start_op(struct rdcache_s* cache,
 
     // Start the operations and initialize the handle.
     chpl_comm_start_ops(entry->node, op, /*free op? */ 1, handle_toset);
+
+    // Does this help performance?
+    //wait_for(cache, entry->max_ops_sequence_number);
   }
 
 
