@@ -2018,10 +2018,11 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
       struct ops_entry_s* ops = entry->ops;
       chpl_comm_nb_ops_handle_t* handle_toset = NULL;
 
-      TIME_PRINT(("chpl_comm_start_ops(%i, %p, %i) with masx %i\n",
-             entry->node, (void*) &ops->op,
+      //TIME_PRINT(
+      printf("%i chpl_comm_start_ops(%i, %p, %i) with masx %i\n",
+             chpl_nodeID, entry->node, (void*) &ops->op,
              (int) ops->op.payload_size,
-             op));
+             op); //);
 
       // Get a slot for the handle and update sequence number.
       ops->max_ops_sequence_number = pending_push_ops(cache, &handle_toset);

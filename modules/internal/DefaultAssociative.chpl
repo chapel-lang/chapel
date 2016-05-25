@@ -64,19 +64,22 @@ module DefaultAssociative {
       extern proc sizeof(type t):size_t;
 
       //extern proc printf(fmt:c_string, sz:c_int);
-      //extern proc printf(fmt:c_string, id:c_int, sz:c_int);
-      //printf("%i IN PROCESS size=%i\n", here.id:c_int, size:c_int);
+      extern proc printf(fmt:c_string, id:c_int, sz:c_int);
+      printf("%i IN  PROCESS size=%i\n", here.id:c_int, size:c_int);
 
 // Why do I seem to need to use this primitive?
       var ptr:c_ptr(idxType) = __primitive("cast", c_ptr(idxType), buf);
       const eltSize = sizeof(idxType):int;
       var i = 0;
       var offset = 0;
-      if parSafe then dom.lockTable();
-      
-      var newsize = dom.numEntries.read() + (size/eltSize);
-      dom._resizeIfNeeded(newsize);
+     
+      var newkeys = size/eltSize;
+      // resize if needed
+      // - flush rdata cache if we will resize
+      // - take lock either way
+      dom._resizeIfNeeded(newkeys, takeLock=parSafe);
  
+
 // Why can't I use request capacity?
 // It seems to change the result? Losing a small number of elements?
 //      dom.dsiRequestCapacity(dom.dsiNumIndices + size/eltSize, haveLock=true);
@@ -88,7 +91,13 @@ module DefaultAssociative {
         offset += eltSize;
         i += 1;
       }
-      if parSafe then dom.unlockTable();
+      if parSafe {
+        // See above.
+        // dom.unlockTable();
+        dom.tableLock.clear(order=memory_order_relaxed);
+      }
+
+      printf("%i END PROCESS size=%i\n", here.id:c_int, size:c_int);
     }
     proc enqueueAdd(idx: idxType) {
 
@@ -146,12 +155,32 @@ module DefaultAssociative {
   
     var opHandler:DefaultAssociativeDomOperationsHandler(idxType, parSafe);
 
-    inline proc lockTable() {
-      while tableLock.testAndSet() do chpl_task_yield();
+    inline proc lockTable(param onlyLocalFence=false) {
+      if onlyLocalFence {
+        // TODO: This is a hack to turn off cache flush
+        // Right solution is to make tableLock only a local
+        // lock (not flush the cache) and add such scope arguments
+        // to atomic operations (See LLVM atomic for inspiration).
+        // Don't know if table lock can always be this way or
+        // it should just do it in this routine.
+
+        // This one shouldn't flush the remote data cache
+        while tableLock.testAndSet(order=memory_order_relaxed) do
+          chpl_task_yield();
+      } else {
+        // This one needs to flush the remote data cache
+        while tableLock.testAndSet() do
+          chpl_task_yield();
+      }
     }
   
-    inline proc unlockTable() {
-      tableLock.clear();
+    inline proc unlockTable(param onlyLocalFence=false) {
+      if onlyLocalFence {
+        // Hack - see lockTable
+        tableLock.clear(order=memory_order_relaxed);
+      } else {
+        tableLock.clear();
+      }
     }
   
     // TODO: An ugly [0..-1] domain appears several times in the code --
@@ -411,9 +440,8 @@ module DefaultAssociative {
        const shouldLock = parSafe;
        if shouldLock then lockTable();
        var findAgain = shouldLock;
-       var newsize = numEntries.read() + subrange.size;
         //writeln("before resize ", numEntries.read(), " / ", tableSize, " taken");
-       _resizeIfNeeded(newsize);
+       _resizeIfNeeded(subrange.size, takeLock=false);
         //writeln("after resize ", numEntries.read(), " / ", tableSize, " taken");
        for idx in subrange {
          _add(locArr[idx], -1);
@@ -439,7 +467,7 @@ module DefaultAssociative {
       if foundSlot {
         table[slotNum].status = chpl__hash_status.full;
         table[slotNum].idx = idx;
-        numEntries.add(1);
+        numEntries.add(1, order=memory_order_relaxed);
         //writeln("Adding 1 to num entries");
       } else {
         if (slotNum < 0) {
@@ -549,7 +577,7 @@ module DefaultAssociative {
       for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do
         tableCopy(tmp) = table[slot].idx;
   
-      quickSort(tableCopy, comparator=comparator);
+      sort(tableCopy, comparator=comparator);
   
       for ind in tableCopy do
         yield ind;
@@ -561,21 +589,36 @@ module DefaultAssociative {
     // NOTE: Calls to these _resize routines assume that the tableLock
     // has been acquired.
     //
-    proc _resizeIfNeeded(numKeys:int) {
+    proc _resizeIfNeeded(newKeys:int, param takeLock = false) {
+      // First, try to lock and find there is enough space.
+      if takeLock then lockTable(onlyLocalFence=true);
+      var numKeys = numEntries.read(order=memory_order_relaxed) + newKeys;
       var threshold = (numKeys + 1) * 2;
-      if threshold >= tableSize {
-        // Find the new prime to use.
-        var prime = 0;
-        var primeLoc = 0;
-        for i in 1..chpl__primes.size {
-          if chpl__primes(i) > threshold {
-            prime = chpl__primes(i);
-            primeLoc = i;
-            break;
-          }
-        }
-        _resize(primeIndex=primeLoc);
+      if threshold < tableSize {
+        return;
       }
+
+      // If there wasn't enough space, release the lock and
+      // try again with a full rdata cache fence
+      if takeLock then unlockTable(onlyLocalFence=true);
+
+      // Need this one to flush rdata cache
+      // so that the resize process can cause other
+      // flushes without deadlocking us.
+      if takeLock then lockTable(onlyLocalFence=false);
+      numKeys = numEntries.read() + newKeys;
+      threshold = (numKeys + 1) * 2;
+      // Find the new prime to use.
+      var prime = 0;
+      var primeLoc = 0;
+      for i in 1..chpl__primes.size {
+        if chpl__primes(i) > threshold {
+          prime = chpl__primes(i);
+          primeLoc = i;
+          break;
+        }
+      }
+      _resize(primeIndex=primeLoc);
     }
 
     proc _resize(grow:bool) {

@@ -362,7 +362,7 @@ class UserMapAssocDom: BaseAssociativeDom {
     // TODO
   }
 
-  iter dsiSorted() {
+  iter dsiSorted(comparator:?t) {
     // This function creates a local copy of an entire distributed
     // data structure, which is probably a bad idea.
     // Alternatives include:
@@ -395,7 +395,7 @@ class UserMapAssocDom: BaseAssociativeDom {
       }
     }
 
-    QuickSort(tableCopy);
+    sort(tableCopy, comparator=comparator);
 
     for ind in tableCopy do
       yield ind;
