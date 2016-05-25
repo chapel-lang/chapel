@@ -31,15 +31,13 @@ static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                                 Map<Symbol*, Vec<SymExpr*>*>& useMap);
 
+static void buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet);
+
 static bool isSafeToDeref(Symbol*                       ref,
                           Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
                           Vec<Symbol*>*                 visited,
                           Symbol*                       safeSettableField);
-
-static void buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet);
-
-static bool isSufficientlyConst(ArgSymbol* arg);
 
 /************************************* | **************************************
 *                                                                             *
@@ -164,102 +162,172 @@ static bool isSafeToDerefField(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 *                                                                             *
 ************************************** | *************************************/
 
+static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                            Map<Symbol*, Vec<SymExpr*>*>& useMap,
+                            Vec<FnSymbol*>&               syncFns,
+                            FnSymbol*                     fn,
+                            ArgSymbol*                    arg);
+
+static bool isSufficientlyConst(ArgSymbol* arg);
+
+static bool isSafeToDerefArg(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                             Map<Symbol*, Vec<SymExpr*>*>& useMap,
+                             Symbol*                       arg);
+
+static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
+                          FnSymbol*                     fn,
+                          ArgSymbol*                    arg);
+
 static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                                 Map<Symbol*, Vec<SymExpr*>*>& useMap) {
-  Vec<FnSymbol*> syncAccessFunctionSet;
-  Vec<FnSymbol*> taskFunctions;
+  Vec<FnSymbol*> syncSet;
 
-  buildSyncAccessFunctionSet(syncAccessFunctionSet);
+  buildSyncAccessFunctionSet(syncSet);
 
-  // Collect the task functions for processing.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (isTaskFun(fn)) {
-      taskFunctions.add(fn);
 
+    if (isTaskFun(fn)) {
       // Would need to flatten them if they are not already.
       INT_ASSERT(isGlobal(fn));
-    }
-  }
 
-  //
-  // change reference type fields in loop body argument classes
-  // (created when transforming recursive leader iterators into
-  // recursive functions) to value type fields if safe
-  //
-  forv_Vec(FnSymbol, fn, taskFunctions) {
-
-    //
-    // For each reference arg that is safe to dereference
-    //
-    for_formals(arg, fn) {
-      // Iif this function accesses sync vars and the argument is not
-      // const, then we cannot remote value forward the argument due
-      // to the fence implied by the sync var accesses */
-      if (syncAccessFunctionSet.set_in(fn) && !isSufficientlyConst(arg)) {
-
-
-      // If this argument is a reference atomic type, we need to preserve
-      // reference semantics, i.e. that the referenced atomic gets updated.
-      // Therefore, dereferencing a ref atomic and forwarding its value is not
-      // what we want.  That is, all atomics implicitly disable remote value
-      // forwarding.
-      // See resolveFormals() [functionResolution.cpp:839] for where we decide
-      // to convert atomic formals to ref formals.
-      } else if (isAtomicType(arg->type)) {
-
-
-      } else if (arg->type->symbol->hasFlag(FLAG_REF) &&
-                 isSafeToDeref(arg, defMap, useMap, NULL, NULL)) {
-
-        // Dereference the arg type.
-        Type* prevArgType = arg->type;
-
-        arg->type = arg->getValType();
-
-        forv_Vec(CallExpr, call, *fn->calledBy) {
-          // Find actual for arg.
-          SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
-
-          INT_ASSERT(actual && actual->var->type == prevArgType);
-          SET_LINENO(actual);
-
-          //
-          // Insert de-reference temp of value.
-          //
-          VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
-
-          call->insertBefore(new DefExpr(deref));
-          call->insertBefore(new CallExpr(PRIM_MOVE,
-                                          deref,
-                                          new CallExpr(PRIM_DEREF, actual->var)));
-          actual->replace(new SymExpr(deref));
-        }
-
-        // Insert re-reference temps at use points.
-        for_uses(use, useMap, arg) {
-          SET_LINENO(use);
-
-          CallExpr* call = toCallExpr(use->parentExpr);
-
-          if (call && call->isPrimitive(PRIM_DEREF)) {
-            call->replace(new SymExpr(arg));
-
-          } else if (call && call->isPrimitive(PRIM_MOVE)) {
-            use->replace(new CallExpr(PRIM_ADDR_OF, arg));
-
-          } else {
-            Expr*      stmt   = use->getStmtExpr();
-            VarSymbol* reref = newTemp("rvfRerefTmp", prevArgType);
-
-            stmt->insertBefore(new DefExpr(reref));
-            stmt->insertBefore(new CallExpr(PRIM_MOVE,
-                                            reref,
-                                            new CallExpr(PRIM_ADDR_OF, arg)));
-
-            use->replace(new SymExpr(reref));
-          }
+      // For each reference arg that is safe to dereference
+      for_formals(arg, fn) {
+        if (canForwardValue(defMap, useMap, syncSet, fn, arg)) {
+          updateTaskArg(useMap, fn, arg);
         }
       }
+    }
+  }
+}
+
+static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                            Map<Symbol*, Vec<SymExpr*>*>& useMap,
+                            Vec<FnSymbol*>&               syncFns,
+                            FnSymbol*                     fn,
+                            ArgSymbol*                    arg) {
+  bool retval = false;
+
+  // If this function accesses sync vars and the argument is not
+  // const, then we cannot remote value forward the argument due
+  // to the fence implied by the sync var accesses */
+  if (syncFns.set_in(fn) && isSufficientlyConst(arg) == false) {
+    retval = false;
+
+  // If this argument is a reference atomic type, we need to preserve
+  // reference semantics, i.e. that the referenced atomic gets updated.
+  // Therefore, dereferencing a ref atomic and forwarding its value is not
+  // what we want.  That is, all atomics implicitly disable remote value
+  // forwarding.
+  // See resolveFormals() [functionResolution.cpp:839] for where we decide
+  // to convert atomic formals to ref formals.
+  } else if (isAtomicType(arg->type)) {
+    retval = false;
+
+  } else if (arg->type->symbol->hasFlag(FLAG_REF)  == true &&
+             isSafeToDerefArg(defMap, useMap, arg) == true) {
+    retval = true;
+
+  } else {
+    retval = false;
+  }
+
+  return retval;
+}
+
+static bool isSufficientlyConst(ArgSymbol* arg) {
+  Type* argValType = arg->getValType();
+  bool  retval     = false;
+
+  // Arg is an array, so it's sufficiently constant (because this
+  // refers to the descriptor, not the array's values
+  if (argValType->symbol->hasFlag(FLAG_ARRAY)) {
+    retval = true;
+
+  //
+  // See if this argument is 'const in'; if it is, it's a good candidate for
+  // remote value forwarding.  My current thinking is that we should not
+  // forward 'const ref' arguments because the const-ness only means that the
+  // callee will not modify them, not that the caller won't.
+
+  // If someone can successfully argue that I'm being too conservative, I'm
+  // open to that.  My thinking is that I'd rather find a case that we think
+  // we could be r.v.f.'ing later on than to have to chase down a race
+  // condition due to optimizing too aggressively.
+  //
+  // Why the additional check against 'ref' types?  Because some
+  // compiler-created arguments currently indicate ref-ness only via
+  // the type and not the intent.  See the big comment I added in
+  // addVarsToFormals() (flattenFunctions.cpp) in this same commit for
+  // an example.  A case that currently fails without this test is:
+  //
+  //     test/multilocale/bradc/needMultiLocales/remoteReal.chpl
+  //
+  } else if (arg->intent == INTENT_CONST_IN  &&
+             !arg->type->symbol->hasFlag(FLAG_REF)) {
+    retval = true;
+
+  // otherwise, conservatively assume it varies
+  } else {
+    retval = false;
+  }
+
+  return retval;
+}
+
+static bool isSafeToDerefArg(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                             Map<Symbol*, Vec<SymExpr*>*>& useMap,
+                             Symbol*                       arg) {
+  return isSafeToDeref(arg, defMap, useMap, NULL, NULL);
+}
+
+static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
+                          FnSymbol*                     fn,
+                          ArgSymbol*                    arg) {
+  // Dereference the arg type.
+  Type* prevArgType = arg->type;
+
+  arg->type = arg->getValType();
+
+  forv_Vec(CallExpr, call, *fn->calledBy) {
+    // Find actual for arg.
+    SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
+
+    INT_ASSERT(actual && actual->var->type == prevArgType);
+    SET_LINENO(actual);
+
+    // Insert de-reference temp of value.
+    VarSymbol* deref = newTemp("rvfDerefTmp", arg->type);
+
+    call->insertBefore(new DefExpr(deref));
+    call->insertBefore(new CallExpr(PRIM_MOVE,
+                                    deref,
+                                    new CallExpr(PRIM_DEREF, actual->var)));
+
+    actual->replace(new SymExpr(deref));
+  }
+
+  // Insert re-reference temps at use points.
+  for_uses(use, useMap, arg) {
+    SET_LINENO(use);
+
+    CallExpr* call = toCallExpr(use->parentExpr);
+
+    if (call && call->isPrimitive(PRIM_DEREF)) {
+      call->replace(new SymExpr(arg));
+
+    } else if (call && call->isPrimitive(PRIM_MOVE)) {
+      use->replace(new CallExpr(PRIM_ADDR_OF, arg));
+
+    } else {
+      Expr*      stmt   = use->getStmtExpr();
+      VarSymbol* reref = newTemp("rvfRerefTmp", prevArgType);
+
+      stmt->insertBefore(new DefExpr(reref));
+      stmt->insertBefore(new CallExpr(PRIM_MOVE,
+                                      reref,
+                                      new CallExpr(PRIM_ADDR_OF, arg)));
+
+      use->replace(new SymExpr(reref));
     }
   }
 }
@@ -424,52 +492,4 @@ static bool isSafeToDeref(Symbol*                       ref,
   }
 
   return true;
-}
-
-
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static bool isSufficientlyConst(ArgSymbol* arg) {
-  Type* argValType = arg->getValType();
-  bool  retval     = false;
-
-  if (argValType->symbol->hasFlag(FLAG_ARRAY)) {
-    // Arg is an array, so it's sufficiently constant (because this
-    // refers to the descriptor, not the array's values\n");
-    retval = true;
-
-  //
-  // See if this argument is 'const in'; if it is, it's a good
-  // candidate for remote value forwarding.  My current thinking is
-  // that we should not forward 'const ref' arguments because the
-  // const-ness only means that the callee will not modify them, not
-  // that the caller won't.  If someone can successfully argue that
-  // I'm being too conservative, I'm open to that.  My thinking is
-  // that I'd rather find a case that we think we could be r.v.f.'ing
-  // later on than to have to chase down a race condition due to
-  // optimizing too aggressively.
-  //
-  // Why the additional check against 'ref' types?  Because some
-  // compiler-created arguments currently indicate ref-ness only via
-  // the type and not the intent.  See the big comment I added in
-  // addVarsToFormals() (flattenFunctions.cpp) in this same commit for
-  // an example.  A case that currently fails without this test is:
-  //
-  //     test/multilocale/bradc/needMultiLocales/remoteReal.chpl
-  //
-  } else if (arg->intent == INTENT_CONST_IN  &&
-             !arg->type->symbol->hasFlag(FLAG_REF)) {
-    retval = true;
-
-  // otherwise, conservatively assume it varies
-  } else {
-    retval = false;
-  }
-
-  return retval;
 }
