@@ -199,7 +199,7 @@ where tag == iterKind.leader
   if c.length == 0 then halt("The range is empty");
   if nTasks == 1 then {
     if debugDynamicIters then
-      writeln("Guided Iterator: serial execution because there is not enoguh work");
+      writeln("Guided Iterator: serial execution because there is not enough work");
     yield (remain,); 
   }
 
@@ -383,7 +383,7 @@ where tag == iterKind.leader
         if debugDynamicIters then 
           writeln("Entering at Stealing phase in tid ", tid," with victim ", victim, " using method of Stealing ", methodStealing);
 
-        // Perform the spliting at the victim remaining range
+        // Perform the splitting at the victim remaining range
 
         if methodStealing == Method.RoundRobin {
           if moreLocalWork[victim] then {
