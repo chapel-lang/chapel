@@ -72,38 +72,17 @@ void remoteValueForwarding() {
 *                                                                             *
 ************************************** | *************************************/
 
+static bool isSafeToDerefField(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                               Map<Symbol*, Vec<SymExpr*>*>& useMap,
+                               Symbol*                       field);
+
 static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                                   Map<Symbol*, Vec<SymExpr*>*>& useMap) {
   forv_Vec(AggregateType, ct, gAggregateTypes) {
     if (ct->symbol->hasFlag(FLAG_LOOP_BODY_ARGUMENT_CLASS)) {
       for_fields(field, ct) {
         if (field->type->symbol->hasFlag(FLAG_REF)) {
-          INT_ASSERT(!defMap.get(field));
-
-          bool safeToDeref = true;
-
-          for_uses(use, useMap, field) {
-            CallExpr* call = toCallExpr(use->parentExpr);
-
-            INT_ASSERT(call);
-
-            if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-              CallExpr* move = toCallExpr(call->parentExpr);
-              SymExpr*  lhs  = toSymExpr(move->get(1));
-
-              INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-              INT_ASSERT(lhs);
-
-              if (!isSafeToDeref(lhs->var, defMap, useMap, NULL, field)) {
-                safeToDeref = false;
-                break;
-              }
-            } else if (!call->isPrimitive(PRIM_SET_MEMBER)) {
-              INT_FATAL(field, "unexpected case");
-            }
-          }
-
-          if (safeToDeref) {
+          if (isSafeToDerefField(defMap, useMap, field) == true) {
             Type* vt = field->getValType();
 
             for_uses(use, useMap, field) {
@@ -113,20 +92,24 @@ static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
               SET_LINENO(call);
 
               if (call->isPrimitive(PRIM_SET_MEMBER)) {
-                Symbol* tmp = newTemp(vt);
+                Symbol*   tmp   = newTemp(vt);
+                Expr*     value = call->get(3)->remove();
+                CallExpr* deref = new CallExpr(PRIM_DEREF, value);
 
                 call->insertBefore(new DefExpr(tmp));
-                call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, call->get(3)->remove())));
+                call->insertBefore(new CallExpr(PRIM_MOVE, tmp, deref));
+
                 call->insertAtTail(tmp);
 
               } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-                CallExpr* move = toCallExpr(call->parentExpr);
-                Symbol*   tmp  = newTemp(vt);
+                CallExpr* move  = toCallExpr(call->parentExpr);
+                Symbol*   tmp   = newTemp(vt);
+                Expr*     value = call->remove();
 
                 INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
 
                 move->insertBefore(new DefExpr(tmp));
-                move->insertBefore(new CallExpr(PRIM_MOVE, tmp, call->remove()));
+                move->insertBefore(new CallExpr(PRIM_MOVE, tmp, value));
 
                 move->insertAtTail(new CallExpr(PRIM_ADDR_OF, tmp));
 
@@ -141,6 +124,38 @@ static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
       }
     }
   }
+}
+
+static bool isSafeToDerefField(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                               Map<Symbol*, Vec<SymExpr*>*>& useMap,
+                               Symbol*                       field) {
+  bool retval = true;
+
+  INT_ASSERT(!defMap.get(field));
+
+  for_uses(use, useMap, field) {
+    CallExpr* call = toCallExpr(use->parentExpr);
+
+    INT_ASSERT(call);
+
+    if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true) {
+      CallExpr* move = toCallExpr(call->parentExpr);
+      SymExpr*  lhs  = toSymExpr(move->get(1));
+
+      INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+      INT_ASSERT(lhs);
+
+      if (isSafeToDeref(lhs->var, defMap, useMap, NULL, field) == false) {
+        retval = false;
+        break;
+      }
+
+    } else if (call->isPrimitive(PRIM_SET_MEMBER) == false) {
+      INT_FATAL(field, "unexpected case");
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
