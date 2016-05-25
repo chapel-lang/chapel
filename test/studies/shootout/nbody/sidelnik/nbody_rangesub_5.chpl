@@ -1,7 +1,7 @@
 /* nbody_vector + range substitution
  *
  * The Great Computer Language Shootout
- * http://shootout.alioth.debian.org/
+ * http://benchmarksgame.alioth.debian.org
  *
  * contributed by Albert Sidelnik
  *
