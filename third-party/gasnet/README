@@ -26,7 +26,7 @@ The structure of this directory is as follows:
 ./
   Makefile        : a Makefile to help build GASNet for Chapel's use
   README          : this file
-  GASNet-1.*.*/   : the current GASNet release
+  gasnet-src/     : the current GASNet release
   install/        : as GASNet is built it will be installed here:
     $CHPL_TARGET_PLATFORM-$CHPL_TARGET_COMPILER-$CHPL_TARGET_ARCH/
       seg-$CHPL_GASNET_SEGMENT/

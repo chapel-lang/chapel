@@ -147,7 +147,7 @@ To run Chapel on multiple locales, the following steps are required:
 
       #. For other options, please refer to:
 
-         ``$CHPL_HOME/third-party/gasnet/GASNet-1.*.*/udp-conduit/README``
+         ``$CHPL_HOME/third-party/gasnet/gasnet-src/udp-conduit/README``
 
    #. If you are using GASNet's ibv conduit, configure the environment to
       launch program instances.  We have experience with these configurations:
@@ -184,7 +184,7 @@ To run Chapel on multiple locales, the following steps are required:
          other options, including configuring to launch through MPI,
          please refer to:
 
-         ``$CHPL_HOME/third-party/gasnet/GASNet-1.*.*/ibv-conduit/README``
+         ``$CHPL_HOME/third-party/gasnet/gasnet-src/ibv-conduit/README``
 
    #. If you are trying to debug job launch, try adding ``-v`` to your
       program's command line and set:
