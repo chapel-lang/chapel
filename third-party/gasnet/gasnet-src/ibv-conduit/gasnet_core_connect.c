@@ -280,36 +280,6 @@ gasnetc_xrc_modify_qp(
   return retval;
 }
 
-/* Perform a supernode-scoped broadcast from first node of the supernode.
-   Note that 'src' must be a valid address on ALL callers.
- */
-static void
-gasnetc_supernode_bcast(void *src, size_t len, void *dst) {
-  #if GASNET_PSHM
-    /* Can do w/ just supernode-scoped broadcast */
-    gasneti_assert(gasneti_request_pshmnet != NULL);
-    gasneti_pshmnet_bootstrapBroadcast(gasneti_request_pshmnet, src, len, dst, 0);
-  #else
-    /* Need global Exchange when PSHM is not available */
-    /* TODO: If/when is one Bcast per supernode cheaper than 1 Exchange? */
-    /* TODO: Push this case down to the Bootstrap support? */
-    void *all_data = gasneti_malloc(gasneti_nodes * len);
-    void *my_dst = (void *)((uintptr_t )all_data + (len * gasneti_nodemap_local[0]));
-    gasneti_bootstrapExchange(src, len, all_data);
-    memcpy(dst, my_dst, len);
-    gasneti_free(all_data);
-  #endif
-}
-
-static void
-gasnetc_supernode_barrier(void) {
-  #if GASNET_PSHM
-    gasneti_pshmnet_bootstrapBarrier();
-  #else
-    gasneti_bootstrapBarrier();
-  #endif
-}
-
 /* XXX: Requires that at least the first call is collective */
 static char*
 gasnetc_xrc_tmpname(uint16_t mylid, int index) {
@@ -332,7 +302,7 @@ gasnetc_xrc_tmpname(uint16_t mylid, int index) {
 
     /* Get PID of first proc per supernode */
     pid = getpid(); /* Redundant, but harmless on other processes */
-    gasnetc_supernode_bcast(&pid, sizeof(pid), &pid);
+    gasneti_pshmnet_bootstrapBroadcast(gasneti_request_pshmnet, &pid, sizeof(pid), &pid, 0);
   }
 
   filename = gasneti_malloc(tmpdir_len + filename_len);
@@ -347,13 +317,12 @@ gasnetc_xrc_tmpname(uint16_t mylid, int index) {
   return filename;
 }
 
-/* Create an XRC domain per HCA (once per supernode) and a shared memory file */
+/* Create an XRC domain per HCA (once per supernode) and a shared RCV QPN table */
 /* XXX: Requires that the call is collective */
 extern int
-gasnetc_xrc_init(void) {
+gasnetc_xrc_init(void **shared_mem_p) {
   const uint16_t mylid = gasnetc_port_tbl[0].port.lid;
-  char *filename[GASNETC_IB_MAX_HCAS+1];
-  size_t flen;
+  char *filename[GASNETC_IB_MAX_HCAS];
   int index, fd;
 
   /* Use per-supernode filename to create common XRC domain once per HCA */
@@ -380,32 +349,15 @@ gasnetc_xrc_init(void) {
     (void) close(fd);
   }
 
-  /* Use one more per-supernode filename to create common shared memory file */
-  /* TODO: Should PSHM combine this w/ the AM segment? */
-  gasneti_assert(index == gasnetc_num_hcas);
-  filename[index] = gasnetc_xrc_tmpname(mylid, index);
-  fd = open(filename[index], O_CREAT|O_RDWR, S_IWUSR|S_IRUSR);
-  if (fd < 0) {
-    gasneti_fatalerror("failed to create xrc shared memory file '%s': %d:%s", filename[index], errno, strerror(errno));
-  }
-  flen = GASNETI_PAGE_ALIGNUP(sizeof(uint32_t) * gasneti_nodes * gasnetc_alloc_qps);
-  if (ftruncate(fd, flen) < 0) {
-    gasneti_fatalerror("failed to resize xrc shared memory file '%s': %d:%s", filename[index], errno, strerror(errno));
-  }
-  /* XXX: Is there anything else that can/should be packed into the same shared memory file? */
-  gasnetc_xrc_rcv_qpn = (uint32_t *)mmap(NULL, flen, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-  if (gasnetc_xrc_rcv_qpn == MAP_FAILED) {
-    gasneti_fatalerror("failed to mmap xrc shared memory file '%s': %d:%s", filename[index], errno, strerror(errno));
-  }
-  (void) close(fd);
-
   /* Clean up once everyone is done w/ all files */
-  gasnetc_supernode_barrier();
+  gasneti_pshmnet_bootstrapBarrier();
   GASNETC_FOR_ALL_HCA_INDEX(index) {
     (void)unlink(filename[index]); gasneti_free(filename[index]);
   }
-  gasneti_assert(index == gasnetc_num_hcas);
-  (void)unlink(filename[index]); gasneti_free(filename[index]);
+
+  /* Place RCV QPN table in shared memory */
+  gasnetc_xrc_rcv_qpn = (uint32_t *)(*shared_mem_p);
+  *shared_mem_p = (void *)GASNETI_ALIGNUP(gasnetc_xrc_rcv_qpn + gasneti_nodes * gasnetc_alloc_qps, GASNETI_CACHE_LINE_BYTES);
 
   /* Allocate SND QP table */
   gasnetc_xrc_snd_qp = gasneti_calloc(gasneti_nodemap_global_count * gasnetc_alloc_qps,
@@ -883,14 +835,17 @@ static gasneti_semaphore_t conn_ud_sema;
 static gasneti_semaphore_t *conn_ud_sema_p = &conn_ud_sema;
 #define conn_sema_up      gasneti_semaphore_up
 #define conn_sema_trydown gasneti_semaphore_trydown
+#define conn_sema_partial gasneti_semaphore_trydown_partial
 #else
 static gasnetc_sema_t *conn_ud_sema_p = NULL;
 #define conn_sema_up      gasnetc_sema_up
 #define conn_sema_trydown gasnetc_sema_trydown
+#define conn_sema_partial gasnetc_sema_trydown_partial
 #endif
 
 /* TODO: group the following into a UD-endpoint struct */
 static struct ibv_qp * conn_ud_qp = NULL;
+static gasnetc_memreg_t conn_ud_reg;
 static gasnetc_port_info_t *conn_ud_port = NULL;
 static gasnetc_hca_t *conn_ud_hca = NULL;
 static int conn_ud_msg_sz = -1;
@@ -1191,9 +1146,7 @@ static int conn_snd_poll(void)
   int rc;
 
   rc = ibv_poll_cq(conn_ud_snd_cq, 1, &comp);
-  if (GASNETC_IS_EXITING()) {
-    /* shutdown in another thread */
-  } else if (rc == 1) {
+  if (rc == 1) {
     if_pf (comp.status != IBV_WC_SUCCESS) {
       gasneti_fatalerror("failed dynamic connection send work request");
     } else if_pf(comp.opcode != IBV_WC_SEND) {
@@ -1201,6 +1154,8 @@ static int conn_snd_poll(void)
     }
     gasnetc_conn_snd_wc(&comp);
     return 1;
+  } else if (GASNETC_IS_EXITING()) {
+    /* shutdown in another thread */
   } else if (rc != 0) {
     gasneti_fatalerror("failed dynamic connection send cq poll");
   }
@@ -1225,7 +1180,6 @@ gasnetc_qp_setup_ud(gasnetc_port_info_t *port, int fully_connected)
     uint32_t gasnetc_conn_qpn = 0;
     struct ibv_qp_attr qp_attr;
     enum ibv_qp_attr_mask qp_mask;
-    gasnetc_memreg_t mem_reg;
     struct ibv_cq *send_cq, *recv_cq;
     uint32_t my_qkey = 0;
     uintptr_t addr;
@@ -1317,8 +1271,10 @@ gasnetc_qp_setup_ud(gasnetc_port_info_t *port, int fully_connected)
   }
 
     /* Exchange the qpns */
-    conn_remote_ud_qpn = gasneti_malloc(gasneti_nodes * sizeof(uint32_t));
-    gasneti_leak(conn_remote_ud_qpn);
+    if (NULL == conn_remote_ud_qpn) {
+      conn_remote_ud_qpn = gasneti_malloc(gasneti_nodes * sizeof(uint32_t));
+      gasneti_leak(conn_remote_ud_qpn);
+    }
     gasneti_bootstrapExchange(&gasnetc_conn_qpn, sizeof(gasnetc_conn_qpn), conn_remote_ud_qpn);
 
     /* Generate a per-job QKey from the qpns.
@@ -1333,13 +1289,13 @@ gasnetc_qp_setup_ud(gasnetc_port_info_t *port, int fully_connected)
     /* Allocate pinned memory */
     { const size_t size = GASNETI_PAGE_ALIGNUP((max_send_wr * send_sz) + /* XXX: Omit send if inline */
                                                (max_recv_wr * recv_sz));
-      void *buf = gasneti_mmap(size);
-      if_pf (MAP_FAILED == buf) {
+      void *buf = gasnetc_mmap(size);
+      if_pf (GASNETC_MMAP_FAILED == buf) {
         gasneti_fatalerror("Failed to allocate memory for dynamic connection setup");
       }
 
       rc = gasnetc_pin(conn_ud_hca, buf, size,
-                       IBV_ACCESS_LOCAL_WRITE, &mem_reg);
+                       IBV_ACCESS_LOCAL_WRITE, &conn_ud_reg);
       GASNETC_IBV_CHECK(rc, "while pinning memory for dynamic connection setup");
 
       addr = (uintptr_t)buf;
@@ -1355,11 +1311,13 @@ gasnetc_qp_setup_ud(gasnetc_port_info_t *port, int fully_connected)
     GASNETC_IBV_CHECK(rc, "from ibv_modify_qp(UD INIT)");
 
     /* Post RCVs */
-    { gasnetc_ud_rcv_desc_t *desc;
+    { static gasnetc_ud_rcv_desc_t *desc;
       int i;
 
-      desc = gasneti_calloc(max_recv_wr, sizeof(gasnetc_ud_rcv_desc_t));
-      gasneti_leak(desc);
+      if (NULL == desc) {
+        desc = gasneti_calloc(max_recv_wr, sizeof(gasnetc_ud_rcv_desc_t));
+        gasneti_leak(desc);
+      }
       for (i = 0; i < max_recv_wr; ++i, ++desc, addr += recv_sz) {
         desc->wr.num_sge = 1;
         desc->wr.sg_list = &desc->sg;
@@ -1367,9 +1325,10 @@ gasnetc_qp_setup_ud(gasnetc_port_info_t *port, int fully_connected)
         desc->wr.next    = NULL;
         desc->sg.length  = recv_sz;
         desc->sg.addr    = addr;
-        desc->sg.lkey    = mem_reg.handle->lkey;
+        desc->sg.lkey    = conn_ud_reg.handle->lkey;
         gasnetc_rcv_post_ud(desc);
       }
+      desc -= max_recv_wr;
     }
 
     /* INIT -> RTR */
@@ -1386,11 +1345,13 @@ gasnetc_qp_setup_ud(gasnetc_port_info_t *port, int fully_connected)
     GASNETC_IBV_CHECK(rc, "from ibv_modify_qp(UD RTS)");
 
     /* Create SNDs */
-    { gasnetc_ud_snd_desc_t *desc;
+    { static gasnetc_ud_snd_desc_t *desc;
       int i;
 
-      desc = gasneti_calloc(max_send_wr, sizeof(gasnetc_ud_snd_desc_t));
-      gasneti_leak(desc);
+      if (NULL == desc) {
+        desc = gasneti_calloc(max_send_wr, sizeof(gasnetc_ud_snd_desc_t));
+        gasneti_leak(desc);
+      }
       for (i = 0; i < max_send_wr; ++i, ++desc, addr += send_sz) {
         desc->wr.num_sge = 1;
         desc->wr.sg_list = &desc->sg;
@@ -1403,9 +1364,10 @@ gasnetc_qp_setup_ud(gasnetc_port_info_t *port, int fully_connected)
         desc->sg.length = ~0;
       #endif  
         desc->sg.addr   = addr;
-        desc->sg.lkey   = mem_reg.handle->lkey;
+        desc->sg.lkey   = conn_ud_reg.handle->lkey;
         gasneti_lifo_push(&conn_snd_freelist, desc);
       }
+      desc -= max_send_wr;
     }
 
     /* "warmup" the timers to ensure we don't pay the potentially high cost
@@ -2204,10 +2166,13 @@ gasnetc_connect_static(void)
 
   /* Allocate the dense CEP table and populate the node2cep table. */
   {
-    gasnetc_cep_t *cep_table = (gasnetc_cep_t *)
-      gasnett_malloc_aligned(GASNETI_CACHE_LINE_BYTES,
-                             static_nodes * gasnetc_alloc_qps * sizeof(gasnetc_cep_t));
-    gasneti_leak_aligned(cep_table);
+    static gasnetc_cep_t *cep_table;
+    if (NULL == cep_table) {
+      cep_table = (gasnetc_cep_t *)
+        gasnett_malloc_aligned(GASNETI_CACHE_LINE_BYTES,
+                               static_nodes * gasnetc_alloc_qps * sizeof(gasnetc_cep_t));
+      gasneti_leak_aligned(cep_table);
+    }
     for (node = 0, cep = cep_table; node < gasneti_nodes; ++node) { /* NOT randomized */
       if (!GASNETC_IS_REMOTE_NODE(node)) continue;
       gasnetc_node2cep[node] = cep;
@@ -2324,10 +2289,12 @@ gasnetc_connect_init(void)
 
   /* Allocate node->cep lookup table */
   { size_t size = gasneti_nodes*sizeof(gasnetc_cep_t *);
-    gasnetc_node2cep = (gasnetc_cep_t **)
-      gasnett_malloc_aligned(GASNETI_CACHE_LINE_BYTES, size);
+    if (NULL == gasnetc_node2cep) {
+      gasnetc_node2cep = (gasnetc_cep_t **)
+        gasnett_malloc_aligned(GASNETI_CACHE_LINE_BYTES, size);
+      gasneti_leak_aligned(gasnetc_node2cep);
+    }
     memset(gasnetc_node2cep, 0, size);
-    gasneti_leak_aligned(gasnetc_node2cep);
   }
 
   if_pf (!gasnetc_remote_nodes) {
@@ -2535,19 +2502,12 @@ dump_conn_done(int fd)
 
 /* ------------------------------------------------------------------------------------ */
 
-/* Fini currently stops the progress thread
-   and optionally dumps the connection table. */
+/* Fini optionally dumps the connection table and connect stats. */
 extern int
 gasnetc_connect_fini(void)
 {
   gasnet_node_t n, count = 0;
   int fd = -1;
-
-#if GASNETC_USE_CONN_THREAD
-  if (conn_thread.fn == gasnetc_conn_thread) {
-    gasnetc_stop_progress_thread(&conn_thread);
-  }
-#endif
 
   /* Open file replacing any '%' in filename with node number */
   { const char *envstr = gasnetc_connectfile_out;
@@ -2600,13 +2560,37 @@ gasnetc_connect_fini(void)
 /* ------------------------------------------------------------------------------------ */
 
 #if GASNETC_IBV_SHUTDOWN
-/* Shutdown destroys all QPs
-   It must be called (confusingly enough) after Fini. */
+/* Shutdown stops the progress thread (if any) and destroys all QPs. */
 extern void 
 gasnetc_connect_shutdown(void) {
-  int retries = 5;
+  const int retries = 5;
+  int trial;
 
-  do { /* TODO: try to actually DRAIN sends instead of looping */
+  /* Stop progress thread */
+#if GASNETC_USE_CONN_THREAD
+  if (conn_thread.fn == gasnetc_conn_thread) {
+    gasnetc_stop_progress_thread(&conn_thread, 1);
+  }
+#endif
+
+  /* Drain any outstanding sends */
+  #if GASNETC_USE_CONN_THREAD
+    if (conn_ud_snd_cq) {
+      int remain = gasnetc_ud_snds;
+      while (remain) {
+        GASNETI_WAITHOOK();
+        conn_snd_poll();
+        remain -= conn_sema_partial(conn_ud_sema_p, remain);
+      }
+    }
+  #else
+    /* conn_ud_hca->snd_cq, if any, has already been drained */
+    gasneti_assert((NULL == conn_ud_sema_p) ||
+                   (0 == gasneti_semaphore_read(conn_ud_sema_p)));
+  #endif
+
+  /* TODO: is this retry loop still necessary? */
+  for (trial = 0; trial < retries; ++trial) {
     int failed = 0;
     int node, qpi;
 
@@ -2615,6 +2599,18 @@ gasnetc_connect_shutdown(void) {
       if (!cep) continue;
 
       for (qpi = 0; qpi < gasnetc_alloc_qps; ++qpi, ++cep) {
+      #if GASNETC_IBV_XRC
+        if (gasnetc_use_xrc) {
+          gasnetc_xrc_snd_qp_t *xrc_snd_qp = qpi + GASNETC_NODE2SND_QP(node);
+          if (xrc_snd_qp->handle) {
+            if (0 == ibv_destroy_qp(xrc_snd_qp->handle)) {
+              xrc_snd_qp->handle = NULL;
+            } else {
+              failed = 1;
+            }
+          }
+        } else
+      #endif
         if (cep->qp_handle) {
           if (0 == ibv_destroy_qp(cep->qp_handle)) {
             cep->qp_handle = NULL;
@@ -2625,20 +2621,72 @@ gasnetc_connect_shutdown(void) {
       }
     }
 
+  #if GASNETC_IBV_XRC
+    if (gasnetc_use_xrc) {
+      for (node = 0; node < gasneti_nodes; ++node) {
+        gasnetc_cep_t *cep = GASNETC_NODE2CEP(node);
+        if (cep) {
+          const int cep_idx = node * gasnetc_alloc_qps;
+          gasneti_atomic32_t *rcv_qpn_p = (gasneti_atomic32_t *)(&gasnetc_xrc_rcv_qpn[cep_idx]);
+          for (qpi = 0; qpi < gasnetc_alloc_qps; ++qpi, ++cep, ++rcv_qpn_p) {
+            uint32_t rcv_qpn = gasneti_atomic32_read(rcv_qpn_p,  0);
+            if (rcv_qpn > 1) {
+            #if GASNETC_IBV_XRC_OFED
+              int ret = ibv_destroy_qp(cep->rcv_qp);
+              GASNETC_IBV_CHECK(ret, "from ibv_destroy_qp(rcv_qp)");
+            #elif GASNETC_IBV_XRC_MLNX
+              int ret = ibv_unreg_xrc_rcv_qp(cep->hca->xrc_domain, rcv_qpn);
+              GASNETC_IBV_CHECK(ret, "ibv_unreg_xrc_rcv_qp(rcv_qpn)");
+            #endif
+            }
+          }
+        }
+      }
+    }
+  #endif
+
     if (conn_ud_qp) {
       if (0 == ibv_destroy_qp(conn_ud_qp)) {
         conn_ud_qp = NULL;
+        gasnetc_unpin(conn_ud_hca, &conn_ud_reg);
+        gasnetc_unmap(&conn_ud_reg);
+        gasneti_lifo_init(&conn_snd_freelist);
       } else {
         failed = 1;
       }
     }
 
-#if GASNETC_IBV_XRC
-#error "Do not yet support GASNETC_IBV_SHUTDOWN && GASNETC_IBV_XRC"
-#endif
+  #if GASNETC_USE_CONN_THREAD
+    if (conn_ud_snd_cq) {
+      if (0 == ibv_destroy_cq(conn_ud_snd_cq)) {
+        conn_ud_snd_cq = NULL;
+      } else {
+        failed = 1;
+      }
+    }
+    if (conn_ud_rcv_cq) {
+      if (0 == ibv_destroy_cq(conn_ud_rcv_cq)) {
+        conn_ud_rcv_cq = NULL;
+      } else {
+        failed = 1;
+      }
+    }
+    if (conn_thread.compl) {
+      if (0 == ibv_destroy_comp_channel(conn_thread.compl)) {
+        conn_thread.compl = NULL;
+      } else {
+        failed = 1;
+      }
+    }
+  #endif
 
     if (!failed) break;
-    else sleep(1);
-  } while (--retries);
+
+    GASNETI_TRACE_PRINTF(C, ("Connection shutdown attempt %d failed.  Sleeping 1 second.", trial));
+    sleep(1);
+  }
+  if (trial == retries) {
+    GASNETI_TRACE_PRINTF(C, ("Connection shutdown failed after %d attempts.", retries));
+  }
 } /* gasnetc_connect_shutdown */
 #endif  /* GASNETC_IBV_SHUTDOWN */

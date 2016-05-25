@@ -7,6 +7,9 @@
 #include <gasnet_internal.h>
 #include <gasnet_handler.h>
 #include <gasnet_core_internal.h>
+#if GASNET_BLCR
+#include <gasnet_blcr.h>
+#endif
 
 #include <amudp_spmd.h>
 
@@ -26,15 +29,16 @@ static void gasnetc_on_exit(int, void*);
 static void gasnetc_atexit(void);
 #endif
 
+static uint64_t gasnetc_networkpid;
 eb_t gasnetc_bundle;
 ep_t gasnetc_endpoint;
 
 gasneti_mutex_t gasnetc_AMlock = GASNETI_MUTEX_INITIALIZER; /*  protect access to AMUDP */
 volatile int gasnetc_AMLockYield = 0;
 
-#if GASNET_PSHM
+#ifdef GASNETC_MAX_NUMHANDLERS
   gasneti_handler_fn_t gasnetc_handler[GASNETC_MAX_NUMHANDLERS]; /* shadow handler table */
-#endif /* GASNET_PSHM */
+#endif /* GASNETC_MAX_NUMHANDLERS */
 
 #if GASNET_TRACE
   extern void gasnetc_enteringHandler_hook(amudp_category_t cat, int isReq, int handlerId, void *token, 
@@ -219,7 +223,7 @@ static int gasnetc_init(int *argc, char ***argv) {
     /*  perform job spawn */
     retval = AMUDP_SPMDStartup(argc, argv, 
       0, 0, NULL, /* dummies */
-      NULL, &gasnetc_bundle, &gasnetc_endpoint);
+      &gasnetc_networkpid, &gasnetc_bundle, &gasnetc_endpoint);
     if (retval != AM_OK) INITERR(RESOURCE, "slave AMUDP_SPMDStartup() failed");
     gasneti_init_done = 1; /* enable early to allow tracing */
 
@@ -263,6 +267,11 @@ static int gasnetc_init(int *argc, char ***argv) {
       /* segment is everything - nothing to do */
     #else
       #error Bad segment config
+    #endif
+
+    #if GASNET_BLCR
+      gasneti_checkpoint_guid = gasnetc_networkpid;
+      gasneti_checkpoint_init(NULL);
     #endif
 
   AMUNLOCK();
@@ -334,8 +343,8 @@ static int gasnetc_reghandlers(gasnet_handlerentry_t *table, int numentries,
     /* register the handler */
     if (AM_SetHandler(gasnetc_endpoint, (handler_t)newindex, table[i].fnptr) != AM_OK) 
       GASNETI_RETURN_ERRR(RESOURCE, "AM_SetHandler() failed while registering handlers");
-#if GASNET_PSHM
-    /* Maintain a shadown handler table for AMPSHM */
+#ifdef GASNETC_MAX_NUMHANDLERS
+    /* Maintain a shadow handler table */
     gasnetc_handler[(gasnet_handler_t)newindex] = (gasneti_handler_fn_t)table[i].fnptr;
 #endif
 
@@ -385,8 +394,8 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
 
     /* ------------------------------------------------------------------------------------ */
     /*  register handlers */
-#if GASNET_PSHM
-    /* Initialize AMPSHM's shadow handler table */
+#ifdef GASNETC_MAX_NUMHANDLERS
+    /* Initialize shadow handler table */
     { int i;
       for (i=0; i<GASNETC_MAX_NUMHANDLERS; i++)
           gasnetc_handler[i]=(gasneti_handler_fn_t)&gasneti_defaultAMHandler;
@@ -996,6 +1005,67 @@ extern int  gasnetc_hsl_trylock(gasnet_hsl_t *hsl) {
   }
 #endif
 
+/* ------------------------------------------------------------------------------------ */
+/*
+  Checkpoint/restart
+  ==================
+  thin wrappers around AMUDP-level support
+*/
+
+#if GASNET_BLCR
+
+/* NON-collective checkpoint request */
+int gasnet_checkpoint(const char *dir) {
+  int i, rc;
+
+  gasneti_flush_streams();
+
+  AMLOCK();
+  rc = AMUDP_SPMDCheckpoint(&gasnetc_bundle, &gasnetc_endpoint, dir);
+  if (rc > 0) {
+    /* Handlers */
+    for (i=0; i<GASNETC_MAX_NUMHANDLERS; i++) {
+      if (gasnetc_handler[i] != (gasneti_handler_fn_t)&gasneti_defaultAMHandler) {
+        AM_SetHandler(gasnetc_endpoint, (handler_t)i, gasnetc_handler[i]);
+        /* BLCR-TODO: error-checking */
+      }
+    }
+
+    /* Segment */
+    i = AM_SetSeg(gasnetc_endpoint,
+                  gasneti_seginfo[gasneti_mynode].addr,
+                  gasneti_seginfo[gasneti_mynode].size);
+    /* BLCR-TODO: error-checking */
+
+    #if GASNET_TRACE
+      if (GASNETI_TRACE_ENABLED(A))
+        GASNETI_AM_SAFE(AMUDP_SetHandlerCallbacks(gasnetc_endpoint,
+          gasnetc_enteringHandler_hook, gasnetc_leavingHandler_hook));
+    #endif
+  }
+  AMUNLOCK();
+
+#if GASNET_DEBUG_VERBOSE
+  fprintf(stderr, "Node %d %s checkpoint\n", gasneti_mynode, rc?"restart from":"continue after");
+#endif
+
+  return rc;
+}
+
+/* Collective checkpoint request */
+
+int gasnet_all_checkpoint(const char *dir_arg) {
+  const char *dir;
+  int rc;
+  dir = gasneti_checkpoint_dir(dir_arg);
+  gasnet_barrier(0, GASNET_BARRIERFLAG_ANONYMOUS);
+  rc = gasnet_checkpoint(dir);
+  if (!dir_arg) gasneti_free((void*)dir);
+  gasnet_barrier(0, GASNET_BARRIERFLAG_ANONYMOUS);
+  return rc;
+}
+
+#endif /* GASNET_BLCR */
 /* ------------------------------------------------------------------------------------ */
 /*
   Private Handlers:

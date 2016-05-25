@@ -905,6 +905,61 @@ void gasneti_nodemap_trivial(void) {
   for (i = 0; i < gasneti_nodes; ++i) gasneti_nodemap[i] = i;
 }
 
+/* Wrapper around gethostid() */
+extern uint32_t gasneti_gethostid(void) {
+    static uint32_t myid = 0;
+
+    if_pf (!myid) {
+    #if PLATFORM_OS_CYGWIN
+      /* gethostid() is known to be unreliable - we'll hash the hostname */
+    #elif HAVE_GETHOSTID
+      myid = (uint32_t)gethostid();
+    #endif
+
+      /* Fall back to hashing the hostname if the hostid is obviously invalid */
+      if (!myid || !(~myid)        /* 0.0.0.0 or 255.255.255.255 */
+          || (myid == 0x7f000001)  /* All 12 distinct permutations of 127.0.0.1: */
+          || (myid == 0x7f000100)
+          || (myid == 0x7f010000)
+          || (myid == 0x007f0001)
+          || (myid == 0x007f0100)
+          || (myid == 0x017f0000)
+          || (myid == 0x00007f01)
+          || (myid == 0x00017f00)
+          || (myid == 0x01007f00)
+          || (myid == 0x0000017f)
+          || (myid == 0x0001007f)
+          || (myid == 0x0100007f)) {
+        /* NOTE: gasneti_checksum() is too weak
+         * e.g. "4001.0004" and "1001.0001" hash the same, and when
+         * we fold down to 32-bits the problem would get even worse.
+         * At 32-bits the cancellation is at period 4, so that names
+         * "c03-00", "c13-01" and "c23-02" share the same hash, as
+         * would the pair "172.16.0.6" and "172.18.0.8".
+         */
+        const char *myname = gasneti_gethostname();
+        const uint8_t *buf = (uint8_t *)myname;
+        size_t len = strlen(myname);
+        uint64_t csum = 0;
+        int i;
+        for (i=0;i<len;i++) {
+          uint8_t c = *(buf++);
+          /* The "c = ..." squeezes ASCII down to 6 bits, while encoding
+           * all chars valid in hostnames and IP addresses (IPV4 and IPV6).
+           * A unique value is assigned to each of the digits, the lower
+           * case letters, '-', '.' and ':'.  The upper case letters map
+           * to the same values as the corresponding lower-case.
+           */
+          c = ((c & 0x40) >> 1) | (c & 0x1f);
+          csum = ((csum << 6) | ((csum >> 58) & 0x3F)) ^ c;
+        }
+        myid = GASNETI_HIWORD(csum) ^ GASNETI_LOWORD(csum);
+      }
+    }
+
+    return myid;
+}
+
 /* Platform-depended default nodemap constructor
  * Used when no conduit-specific IDs are provided.
  */
@@ -947,36 +1002,9 @@ static void gasneti_nodemap_dflt(gasneti_bootstrapExchangefn_t exchangefn) {
     gasneti_nodemap_trivial();
 #else
     /* Construct nodemap from gethostid and conduit-provided exchangefn 
-     * gethostid() from Single Unix Specification (IEEE Std 1003.1-2001)
-     * spec says return type is long, but that the result is 32 bits.
-     * AIX and others have int.
      */
     uint32_t *allids = gasneti_malloc(gasneti_nodes * sizeof(uint32_t));
-  #if PLATFORM_OS_CYGWIN
-    uint32_t myid = 0; /* gethostid() is known to be unreliable - we'll hash the hostname */
-  #else
-    uint32_t myid = (uint32_t)gethostid();
-  #endif
-
-    /* Fall back to hashing the hostname if the hostid is obviously invalid */
-    if (!myid || !(~myid)        /* 0.0.0.0 or 255.255.255.255 */
-        || (myid == 0x7f000001)  /* All 12 distinct permutations of 127.0.0.1: */
-        || (myid == 0x7f000100)
-        || (myid == 0x7f010000)
-        || (myid == 0x007f0001)
-        || (myid == 0x007f0100)
-        || (myid == 0x017f0000)
-        || (myid == 0x00007f01)
-        || (myid == 0x00017f00)
-        || (myid == 0x01007f00)
-        || (myid == 0x0000017f)
-        || (myid == 0x0001007f)
-        || (myid == 0x0100007f)
-       ) {
-      const char *myname = gasneti_gethostname();
-      uint64_t csum = gasneti_checksum(myname, strlen(myname));
-      myid = GASNETI_HIWORD(csum) ^ GASNETI_LOWORD(csum);
-    }
+    uint32_t myid = gasneti_gethostid();
   
     gasneti_assert(exchangefn);
     (*exchangefn)(&myid, sizeof(uint32_t), allids);
@@ -1009,7 +1037,8 @@ static void gasneti_nodemap_dflt(gasneti_bootstrapExchangefn_t exchangefn) {
  *   gasneti_nodemap_global_count
  *   gasneti_nodemap_global_rank
  *
- * NOTE: may modify gasneti_nodemap[] if env var GASNET_SUPERNODE_MAXSIZE is set.
+ * NOTE: may modify gasneti_nodemap[] if env var GASNET_SUPERNODE_MAXSIZE is set,
+ *        or if gasneti_nodemap_local_count would exceed GASNETI_PSHM_MAX_NODES.
  * TODO: splitting by socket or other criteria for/with GASNET_SUPERNODE_MAXSIZE.
  * TODO: keep widths around for conduits to use? (ibv and gemini both use)
  */
@@ -1051,7 +1080,11 @@ extern void gasneti_nodemapParse(void) {
   }
   limit = gasneti_nodes;
  #else
-  if (limit <= 0) limit = gasneti_nodes;
+  if (limit <= 0) {
+     limit = GASNETI_PSHM_MAX_NODES;
+  } else if (limit > GASNETI_PSHM_MAX_NODES) {
+     gasneti_fatalerror("GASNET_SUPERNODE_MAXSIZE %d exceeds GASNETI_PSHM_MAX_NODES (%d)", limit, GASNETI_PSHM_MAX_NODES);
+  }
  #endif
 #else
   limit = 1; /* No PSHM */

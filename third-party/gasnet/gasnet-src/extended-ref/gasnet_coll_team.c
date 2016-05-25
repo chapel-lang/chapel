@@ -252,7 +252,7 @@ void gasnete_coll_team_init(gasnet_team_handle_t team,
     supernodes[0] = node_vector[1];
     for (i = 1; i < total_ranks; ++i) {
       if (node_vector[2*i] != node_vector[2*(i-1)]) {
-        if (node_vector[2*i] == gasneti_pshm_mysupernode) rank = count;
+        if (node_vector[2*i] == gasneti_nodemap_global_rank) rank = count;
         supernodes[count] = node_vector[2*i+1];
         ++count;
       }

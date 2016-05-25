@@ -42,10 +42,6 @@ static addr_table_t  *addr_table;
 
 static gasneti_lifo_head_t ofi_am_pool = GASNETI_LIFO_INITIALIZER;
 
-#define OFI_AM_MAX_DATA_LENGTH                                        \
-  GASNETI_ALIGNUP(GASNETI_ALIGNUP(sizeof(gasnet_handlerarg_t) *		  \
-			  gasnet_AMMaxArgs(), GASNETI_MEDBUF_ALIGNMENT) +		  \
-		  	  gasnet_AMMaxMedium(), GASNETI_MEDBUF_ALIGNMENT)
 #define OFI_AM_NUM_BLOCK 	8
 #define OFI_AM_BLOCK_SIZE 	1*1024*1024
 
@@ -89,7 +85,7 @@ int gasnetc_ofi_init(int *argc, char ***argv,
 {
   int ret = GASNET_OK;
   int result = GASNET_ERR_NOT_INIT;
-  struct fi_info		*rdma_hints, *am_hints, *rdma_info, *am_info;
+  struct fi_info		*hints, *info;
   struct fi_cq_attr   	cq_attr 	= {0};
   struct fi_av_attr   	av_attr 	= {0};
   char   sockname[256], *alladdrs;
@@ -147,69 +143,54 @@ int gasnetc_ofi_init(int *argc, char ***argv,
   /* OFI initialization */
 
   /* Alloc hints*/
-  rdma_hints = fi_allocinfo();
-  if (!rdma_hints) gasneti_fatalerror("fi_allocinfo for rdma_hints failed\n");
-  am_hints = fi_allocinfo();
-  if (!am_hints) gasneti_fatalerror("fi_allocinfo for am_hints failed\n");
+  hints = fi_allocinfo();
+  if (!hints) gasneti_fatalerror("fi_allocinfo for hints failed\n");
 
   /* caps: fabric interface capabilities */
-  rdma_hints->caps			= FI_RMA;		/* RMA read/write operations */
+  hints->caps			= FI_RMA;		/* RMA read/write operations */
+  hints->caps         |= FI_MSG;       /* send/recv messages */
+  hints->caps         |= FI_MULTI_RECV; /* support posting multi-recv
+												buffer */
   /* mode: convey requirements for application to use fabric interfaces */
-  rdma_hints->mode			= FI_CONTEXT;	/* fi_context is used for per
+  hints->mode			= FI_CONTEXT;	/* fi_context is used for per
 											   operation context parameter */
   /* addr_format: expected address format for AV/CM calls */
-  rdma_hints->addr_format		= FI_FORMAT_UNSPEC;
-  rdma_hints->tx_attr->op_flags	= FI_DELIVERY_COMPLETE|FI_COMPLETION;
-  rdma_hints->ep_attr->type		= FI_EP_RDM; /* Reliable datagram */
-  rdma_hints->domain_attr->threading
-	  							= FI_THREAD_SAFE;
-  rdma_hints->domain_attr->control_progress 
-	  							= FI_PROGRESS_AUTO;
+  hints->addr_format		= FI_FORMAT_UNSPEC;
+  hints->tx_attr->op_flags	= FI_DELIVERY_COMPLETE|FI_COMPLETION;
+  hints->rx_attr->op_flags	= FI_MULTI_RECV|FI_COMPLETION;
+  hints->ep_attr->type		= FI_EP_RDM; /* Reliable datagram */
+  hints->domain_attr->threading			= FI_THREAD_DOMAIN;
+  hints->domain_attr->control_progress	= FI_PROGRESS_AUTO;
   /* resource_mgmt: FI_RM_ENABLED - provider protects against overrunning 
 	 local and remote resources. */
-  rdma_hints->domain_attr->resource_mgmt	
-	  							= FI_RM_ENABLED;
+  hints->domain_attr->resource_mgmt		= FI_RM_ENABLED;
   /* av_type: type of address vectores that are usable with this domain */
-  rdma_hints->domain_attr->av_type
-	  							= FI_AV_TABLE; /* type AV index */
+  hints->domain_attr->av_type			= FI_AV_TABLE; /* type AV index */
 
-  ret = fi_getinfo(OFI_CONDUIT_VERSION, NULL, NULL, 0ULL, rdma_hints, &rdma_info);
+  ret = fi_getinfo(OFI_CONDUIT_VERSION, NULL, NULL, 0ULL, hints, &info);
   if (FI_SUCCESS != ret) gasneti_fatalerror("fi_getinfo failed: %d\n", ret);
-  if (rdma_info == NULL) gasneti_fatalerror("fi_getinfo didn't find any providers for rdma\n");
-
-  /* Hints for Active Message requirements */
-  am_hints->caps				= FI_MSG; 		/* send/recv messages */
-  am_hints->caps				|= FI_MULTI_RECV; /* support posting multi-recv buffer */
-  am_hints->mode				= FI_CONTEXT;                                	/* Reliable datagram */
-  am_hints->addr_format			= FI_FORMAT_UNSPEC;
-  am_hints->tx_attr->op_flags	= FI_DELIVERY_COMPLETE|FI_COMPLETION;
-  am_hints->rx_attr->op_flags	= FI_MULTI_RECV|FI_COMPLETION;	
-  am_hints->ep_attr->type		= FI_EP_RDM; /* Reliable datagram */
-  am_hints->domain_attr->threading			= FI_THREAD_SAFE;
-  am_hints->domain_attr->control_progress	= FI_PROGRESS_AUTO;
-  /* Enable resource management: provider protects against overrunning local and
-   * remote resources. */
-  am_hints->domain_attr->resource_mgmt		= FI_RM_ENABLED;
-  am_hints->domain_attr->av_type			= FI_AV_TABLE; /* type AV index */
-
-  ret = fi_getinfo(OFI_CONDUIT_VERSION, NULL, NULL, 0ULL, am_hints, &am_info);
-  if (FI_SUCCESS != ret) gasneti_fatalerror("fi_getinfo failed: %d\n", ret);
-  if (am_info == NULL) gasneti_fatalerror("fi_getinfo didn't find any providers for active message\n");
+  if (info == NULL) gasneti_fatalerror("fi_getinfo didn't find any providers for rdma\n");
 
   /* Open the fabric provider */
-  ret = fi_fabric(rdma_info->fabric_attr, &gasnetc_ofi_fabricfd, NULL);
+  ret = fi_fabric(info->fabric_attr, &gasnetc_ofi_fabricfd, NULL);
   if (FI_SUCCESS != ret) gasneti_fatalerror("fi_fabric failed: %d\n", ret);
 
   /* Open a fabric access domain, also referred to as a resource domain */
-  ret = fi_domain(gasnetc_ofi_fabricfd, rdma_info, &gasnetc_ofi_domainfd, NULL);
+  ret = fi_domain(gasnetc_ofi_fabricfd, info, &gasnetc_ofi_domainfd, NULL);
   if (FI_SUCCESS != ret) gasneti_fatalerror("fi_domain failed: %d\n", ret);
 
   /* Allocate a new active endpoint for RDMA operations */
-  ret = fi_endpoint(gasnetc_ofi_domainfd, rdma_info, &gasnetc_ofi_rdma_epfd, NULL);
+  info->caps      = FI_RMA;       /* RMA read/write operations */
+  info->rx_attr->op_flags = 0;
+  ret = fi_endpoint(gasnetc_ofi_domainfd, info, &gasnetc_ofi_rdma_epfd, NULL);
   if (FI_SUCCESS != ret) gasneti_fatalerror("fi_endpoint for rdma failed: %d\n", ret);
 
   /* Allocate a new active endpoint for AM operations */
-  ret = fi_endpoint(gasnetc_ofi_domainfd, am_info, &gasnetc_ofi_am_epfd, NULL);
+  info->caps          = FI_MSG;       /* send/recv messages */
+  info->caps          |= FI_MULTI_RECV; /* support posting multi-recv
+												buffer */
+  info->rx_attr->op_flags = FI_MULTI_RECV|FI_COMPLETION;
+  ret = fi_endpoint(gasnetc_ofi_domainfd, info, &gasnetc_ofi_am_epfd, NULL);
   if (FI_SUCCESS != ret) gasneti_fatalerror("fi_endpoint for am failed: %d\n", ret);
 
   /* Allocate a new completion queue for RDMA operations */
@@ -249,7 +230,7 @@ int gasnetc_ofi_init(int *argc, char ***argv,
   av_attr.type        = FI_AV_MAP;
   addr_table          = (addr_table_t*)gasneti_malloc(gasneti_nodes * 2 * sizeof(conn_entry_t) + sizeof(addr_table_t));
   addr_table->size    = gasneti_nodes * 2;
-  mapped_table        = (conn_entry_t*)addr_table->table;
+  mapped_table        = addr_table->table;
 #else
   av_attr.type        = FI_AV_TABLE;
   mapped_table        = NULL;
@@ -285,8 +266,7 @@ int gasnetc_ofi_init(int *argc, char ***argv,
   }
   gasneti_free(alladdrs);
 
-  fi_freeinfo(rdma_hints);
-  fi_freeinfo(am_hints);
+  fi_freeinfo(hints);
 
   return ret;
 }
@@ -468,6 +448,19 @@ void gasnetc_ofi_release_am(struct fi_cq_data_entry *re, void *buf)
 	gasneti_lifo_push(&ofi_am_pool, header);
 }
 
+/* Get a send buffer */
+GASNETI_INLINE(gasnetc_ofi_am_header)
+ofi_am_buf_t *gasnetc_ofi_am_header(void)
+{
+	ofi_am_buf_t *header = gasneti_lifo_pop(&ofi_am_pool);
+	if_pf (NULL == header) {
+		header = gasneti_malloc(sizeof(ofi_am_buf_t));
+		header->callback = gasnetc_ofi_release_am;
+		gasneti_leak(header);
+	}
+    return header;
+}
+
 /*------------------------------------------------
  * Pre-post or pin-down memory
  * ----------------------------------------------*/
@@ -646,13 +639,7 @@ int gasnetc_ofi_am_send_short(gasnet_node_t dest, gasnet_handler_t handler,
 	ofi_am_send_buf_t *sendbuf;
 
 	/* Get a send buffer */
-	/* If no available buffer, blocking poll */
-	header = gasneti_lifo_pop(&ofi_am_pool);
-	if (NULL == header) {
-		header = gasneti_malloc(sizeof(ofi_am_buf_t) + OFI_AM_MAX_DATA_LENGTH);
-		header->callback = gasnetc_ofi_release_am;
-		gasneti_leak(header);
-	}
+	header = gasnetc_ofi_am_header();
 
 	/* Fill in the arguments */
 	sendbuf = &header->sendbuf;
@@ -714,13 +701,7 @@ int gasnetc_ofi_am_send_medium(gasnet_node_t dest, gasnet_handler_t handler,
 	gasneti_assert (nbytes <= gasnet_AMMaxMedium());
 
 	/* Get a send buffer */
-	/* If no available buffer, blocking poll */
-	header = gasneti_lifo_pop(&ofi_am_pool);
-	if (NULL == header) {
-		header = gasneti_malloc(sizeof(ofi_am_buf_t) + OFI_AM_MAX_DATA_LENGTH);
-		header->callback = gasnetc_ofi_release_am;
-		gasneti_leak(header);
-	}
+	header = gasnetc_ofi_am_header();
 
 	/* Fill in the arguments */
 	sendbuf = &header->sendbuf;
@@ -790,13 +771,7 @@ int gasnetc_ofi_am_send_long(gasnet_node_t dest, gasnet_handler_t handler,
 		gasneti_assert (nbytes <= gasnet_AMMaxLongReply());
 
 	/* Get a send buffer */
-	/* If no available buffer, blocking poll */
-	header = gasneti_lifo_pop(&ofi_am_pool);
-	if (NULL == header) {
-		header = gasneti_malloc(sizeof(ofi_am_buf_t) + OFI_AM_MAX_DATA_LENGTH);
-		header->callback = gasnetc_ofi_release_am;
-		gasneti_leak(header);
-	}
+	header = gasnetc_ofi_am_header();
 
 	/* Fill in the arguments */
 	sendbuf = &header->sendbuf;

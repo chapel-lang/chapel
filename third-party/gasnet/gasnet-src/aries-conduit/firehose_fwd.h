@@ -36,5 +36,20 @@ firehose_remotecallback_args_t;
 /* since victim fifo is large try hard to cleanup */
 #define FH_CLEAN_COVERED_AGGRESSIVE
 
+/* Mark a client_t as invalid (for caching of failures) */
+/* Zeroing of qword2 is enough, since it holds the (non-zero) length. */
+GASNETI_ALWAYS_INLINE(gasneti_invalidate_client_t)
+void gasneti_invalidate_client_t(firehose_client_t *client) {
+  client->qword2 = 0;
+}
+
+/* Check the validity of a client_t */
+GASNETI_ALWAYS_INLINE(gasneti_valid_client_t)
+int gasneti_valid_client_t(const firehose_client_t *client) {
+  return (0 != client->qword2);
+}
+
+/* May merge a region if and only if the client_t is valid */
+#define FH_MAY_MERGE gasneti_valid_client_t
 
 #endif

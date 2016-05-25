@@ -416,9 +416,16 @@ firehose_init(uintptr_t max_pinnable_memory,
  *   only if you believe that the system does not cleanup properly when
  *   a process exits.
  *   CURRENTLY ONLY IMPLEMENTED FOR FIREHOSE-REGION
+ *
+ * FIREHOSE_INIT_FLAG_MAY_REINIT
+ *   If this flag is set, firehose_fini() will leave the state suitable
+ *   for a possible subsequent call to firehose_init() with the same
+ *   flags as the initial call.  Without this flag any call make to
+ *   firehose_init() after firehose_fini() has undefined behavior.
  */
 #define FIREHOSE_INIT_FLAG_LOCAL_ONLY		0x01
 #define FIREHOSE_INIT_FLAG_UNPIN_ON_FINI	0x02
+#define FIREHOSE_INIT_FLAG_MAY_REINIT		0x04
 
 /************************
  * Firehose Finalization

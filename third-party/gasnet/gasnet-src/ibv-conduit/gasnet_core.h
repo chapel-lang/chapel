@@ -130,7 +130,12 @@ typedef struct _gasnet_hsl_t {
   ==========================
 */
 
-#define GASNETC_BUFSZ		4096
+/* If you change GASNETC_BUFSZ then you probably want to also
+ * adjust GASNETC_PUTINMOVE_LIMIT_MAX in firehose_fwd.h
+ */
+#ifndef GASNETC_BUFSZ
+  #define GASNETC_BUFSZ         4096
+#endif
 
 #if GASNETI_STATS_OR_TRACE
   #define GASNETC_HDR_TIMESTAMP	8
@@ -175,6 +180,13 @@ extern int gasnetc_AMGetMsgSource(gasnet_token_t token, gasnet_node_t *srcindex)
 
 #define GASNET_BLOCKUNTIL(cond) gasneti_polluntil(cond)
 
+/* ------------------------------------------------------------------------------------ */
+#ifdef GASNETI_BLCR_ENABLED
+/* Collective checkpoints */
+extern int gasnet_all_checkpoint(const char *dir);
+extern int gasnet_all_rollback(const char *dir);
+#define GASNET_BLCR 1
+#endif
 /* ------------------------------------------------------------------------------------ */
 
 GASNETI_END_EXTERNC

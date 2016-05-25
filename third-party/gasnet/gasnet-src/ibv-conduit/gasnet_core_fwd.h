@@ -15,7 +15,7 @@
   #error "VAPI-conduit is no longer supported"
 #endif
 
-#define GASNET_CORE_VERSION      1.16
+#define GASNET_CORE_VERSION      1.17
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         IBV
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -131,5 +131,9 @@ typedef uint8_t gasnet_handler_t;
   #define GASNETC_PTHREAD_CREATE_OVERRIDE(create_fn, thread, attr, start_routine, arg) \
 	gasnetc_pthread_create(create_fn, thread, attr, start_routine, arg)
 #endif
+
+extern void gasnetc_amrdma_balance(void);
+#define GASNETC_PROGRESSFNS_LIST(FN) \
+  FN(gasnetc_pf_amrdma, COUNTED, gasnetc_amrdma_balance)
 
 #endif

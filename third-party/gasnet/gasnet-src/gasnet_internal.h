@@ -664,6 +664,8 @@ extern void gasneti_defaultAMHandler(gasnet_token_t token);
 /* ------------------------------------------------------------------------------------ */
 /* nodemap data and functions */
 
+extern uint32_t gasneti_gethostid(void);
+
 extern gasnet_node_t *gasneti_nodemap;
 
 typedef struct gasneti_nodegrp_s {

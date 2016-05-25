@@ -846,10 +846,6 @@ extern gasneti_pshm_rank_t gasneti_pshm_nodes;  /* # nodes in my supernode */
 extern gasneti_pshm_rank_t gasneti_pshm_mynode; /* my 0-based rank in supernode */
 extern gasnet_node_t gasneti_pshm_firstnode;    /* lowest node # in supernode */
 
-/* # of supernodes */
-#define gasneti_pshm_supernodes (0+gasneti_nodemap_global_count)
-/* my supernode's 0-based rank among supernodes */
-#define gasneti_pshm_mysupernode (0+gasneti_nodemap_global_rank)
 /* vector of first node within each supernode */
 extern gasnet_node_t *gasneti_pshm_firsts;
 

@@ -11,9 +11,10 @@
 GASNET_LD_OVERRIDE = @CXX@
 GASNET_LDFLAGS_OVERRIDE = @CXXFLAGS@ @LDFLAGS@ @cxxLDFLAGS@
 
+CONDUIT_LIBDIRS = @BLCR_LIBDIR@
+CONDUIT_LIBS = -lamudp @GASNET_UDP_LIBS@ @BLCR_LIBS@
+
 # hooks for using AMUDP library from within build tree ###NOINSTALL###
 # (nothing additional required for installed copy)     ###NOINSTALL###
 CONDUIT_INCLUDES = -I@TOP_SRCDIR@/other/amudp          ###NOINSTALL###
-CONDUIT_LIBDIRS =  -L@TOP_BUILDDIR@/other/amudp        ###NOINSTALL###
-
-CONDUIT_LIBS = -lamudp @GASNET_UDP_LIBS@
+CONDUIT_LIBDIRS = -L@TOP_BUILDDIR@/other/amudp @BLCR_LIBDIR@ ###NOINSTALL###

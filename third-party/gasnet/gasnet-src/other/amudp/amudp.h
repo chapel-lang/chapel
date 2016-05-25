@@ -22,7 +22,7 @@
 #define _STRINGIFY_HELPER(x) #x
 #define _STRINGIFY(x) _STRINGIFY_HELPER(x)
 
-#define AMUDP_LIBRARY_VERSION      3.9
+#define AMUDP_LIBRARY_VERSION      3.11
 #define AMUDP_LIBRARY_VERSION_STR  _STRINGIFY(AMUDP_LIBRARY_VERSION)
 
 /* naming policy:
@@ -59,6 +59,9 @@
 #ifndef AMUDP_COLLECT_LATENCY_STATS
 #define AMUDP_COLLECT_LATENCY_STATS   1
 #endif
+
+#define AMUDP_PROCID_NEXT -1  /* Use next unallocated procid */
+#define AMUDP_PROCID_ALLOC -2 /* Allocate and return next procis, but do not bootstrap */
 /* ------------------------------------------------------------------------------------ */
 /* Simple user-visible types */
 
@@ -91,9 +94,8 @@ typedef uint64_t amudp_cputick_t;
  * 2:   request vs. reply 
  * 3-7: numargs
  * message instance:
- * 0:    sequence number
- * 1-10: instance number
- * 11-15: reserved
+ * 0-5:  sequence number
+ * 6-15: instance number
  */
 typedef unsigned char amudp_flag_t;
 typedef enum {
@@ -103,6 +105,9 @@ typedef enum {
   amudp_NumCategories=3
 } amudp_category_t;
 
+#define AMUDP_SEQNUM_BITS         6
+#define AMUDP_SEQNUM_MASK         0x3F
+#define AMUDP_SEQNUM_INC(v)       ((uint8_t)( (((uint8_t)(v))+1) & AMUDP_SEQNUM_MASK))
 #define AMUDP_MSG_SETFLAGS(pmsg, isreq, cat, numargs, seqnum, instance) do { \
    (pmsg)->flags = (amudp_flag_t) (                                          \
                    (((numargs) & 0x1F) << 3)                                 \
@@ -110,15 +115,15 @@ typedef enum {
                  |  ((cat) & 0x3)                                            \
                  );                                                          \
    (pmsg)->_instance = (uint16_t) (                                          \
-                   ((seqnum) & 0x1)                                          \
-                 | (((instance) & 0x3FF) << 1)                               \
+                   ((seqnum) & AMUDP_SEQNUM_MASK)                            \
+                 | (((instance) & 0x3FF) << AMUDP_SEQNUM_BITS)               \
                  );                                                          \
   } while (0)
 #define AMUDP_MSG_NUMARGS(pmsg)   ( ( ((unsigned char)(pmsg)->flags) >> 3 ) & 0x1F)
 #define AMUDP_MSG_ISREQUEST(pmsg) (!!(((unsigned char)(pmsg)->flags) & 0x4))
 #define AMUDP_MSG_CATEGORY(pmsg)  ((amudp_category_t)((pmsg)->flags & 0x3))
-#define AMUDP_MSG_SEQNUM(pmsg)    (((unsigned char)(pmsg)->_instance) & 0x1)
-#define AMUDP_MSG_INSTANCE(pmsg)  ((uint16_t)((pmsg)->_instance >> 1))
+#define AMUDP_MSG_SEQNUM(pmsg)    (((uint8_t)(pmsg)->_instance) & AMUDP_SEQNUM_MASK)
+#define AMUDP_MSG_INSTANCE(pmsg)  ((uint16_t)((pmsg)->_instance >> AMUDP_SEQNUM_BITS))
 
 /* active message header & meta info fields */
 typedef struct {

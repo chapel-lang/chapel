@@ -101,8 +101,9 @@ gasnett_atomic_t pong_recvd;
 void ping_medhandler(gasnet_token_t token, void *buf, size_t nbytes, 
                      gasnet_handlerarg_t iter, gasnet_handlerarg_t chunkidx) {
   INIT_CHECKS();
-  validate_chunk("Medium Request", buf, nbytes, iter, chunkidx);
+  validate_chunk("Medium Request (pre-reply)", buf, nbytes, iter, chunkidx);
   GASNET_Safe(gasnet_AMReplyMedium2(token, hidx_pong_medhandler, buf, nbytes, iter, chunkidx));
+  validate_chunk("Medium Request (post-reply)", buf, nbytes, iter, chunkidx);
 }
 void pong_medhandler(gasnet_token_t token, void *buf, size_t nbytes,
                      gasnet_handlerarg_t iter, gasnet_handlerarg_t chunkidx) {
