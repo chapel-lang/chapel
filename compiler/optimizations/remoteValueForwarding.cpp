@@ -36,7 +36,6 @@ static void buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet);
 static bool isSafeToDeref(Symbol*                       ref,
                           Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          Vec<Symbol*>*                 visited,
                           Symbol*                       safeSettableField);
 
 /************************************* | **************************************
@@ -143,7 +142,7 @@ static bool isSafeToDerefField(Map<Symbol*, Vec<SymExpr*>*>& defMap,
       INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
       INT_ASSERT(lhs);
 
-      if (isSafeToDeref(lhs->var, defMap, useMap, NULL, field) == false) {
+      if (isSafeToDeref(lhs->var, defMap, useMap, field) == false) {
         retval = false;
         break;
       }
@@ -277,7 +276,7 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
 static bool isSafeToDerefArg(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                              Map<Symbol*, Vec<SymExpr*>*>& useMap,
                              Symbol*                       arg) {
-  return isSafeToDeref(arg, defMap, useMap, NULL, NULL);
+  return isSafeToDeref(arg, defMap, useMap, NULL);
 }
 
 static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
@@ -432,62 +431,74 @@ static void buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
 static bool isSafeToDeref(Symbol*                       ref,
                           Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          Vec<Symbol*>*                 visited,
+                          Symbol*                       safeSettableField,
+                          Vec<Symbol*>&                 visited);
+
+
+static bool isSafeToDeref(Symbol*                       ref,
+                          Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                          Map<Symbol*, Vec<SymExpr*>*>& useMap,
                           Symbol*                       safeSettableField) {
-  if (!visited) {
-    Vec<Symbol*> newVisited;
+  Vec<Symbol*> visited;
 
-    return isSafeToDeref(ref, defMap, useMap, &newVisited, safeSettableField);
-  }
+  return isSafeToDeref(ref, defMap, useMap, safeSettableField, visited);
+}
 
-  if (visited->set_in(ref)) {
-    return true;
-  }
+static bool isSafeToDeref(Symbol*                       ref,
+                          Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                          Map<Symbol*, Vec<SymExpr*>*>& useMap,
+                          Symbol*                       safeSettableField,
+                          Vec<Symbol*>&                 visited) {
+  if (visited.set_in(ref) == false) {
+    visited.set_add(ref);
 
-  visited->set_add(ref);
+    int numDefs = (defMap.get(ref)) ? defMap.get(ref)->n : 0;
 
-  int numDefs = (defMap.get(ref)) ? defMap.get(ref)->n : 0;
+    if ((isArgSymbol(ref) && numDefs > 0) || numDefs > 1) {
+      return false;
+    }
 
-  if ((isArgSymbol(ref) && numDefs > 0) || numDefs > 1) {
-    return false;
-  }
+    for_uses(use, useMap, ref) {
+      if (CallExpr* call = toCallExpr(use->parentExpr)) {
+        if (call->isResolved()) {
+          ArgSymbol* arg = actual_to_formal(use);
 
-  for_uses(use, useMap, ref) {
-    if (CallExpr* call = toCallExpr(use->parentExpr)) {
-      if (call->isResolved()) {
-        ArgSymbol* arg = actual_to_formal(use);
+          if (isSafeToDeref(arg,
+                            defMap,
+                            useMap,
+                            safeSettableField,
+                            visited) == false) {
+            return false;
+          }
 
-        if (!isSafeToDeref(arg, defMap, useMap, visited, safeSettableField)) {
-          return false;
+        } else if (call->isPrimitive(PRIM_MOVE)) {
+          SymExpr* newRef = toSymExpr(call->get(1));
+
+          INT_ASSERT(newRef);
+
+          if (isSafeToDeref(newRef->var,
+                            defMap,
+                            useMap,
+                            safeSettableField,
+                            visited) == false) {
+            return false;
+          }
+
+        } else if (call->isPrimitive(PRIM_SET_MEMBER) && safeSettableField) {
+          SymExpr* se = toSymExpr(call->get(2));
+
+          INT_ASSERT(se);
+
+          if (se->var != safeSettableField) {
+            return false;
+          }
+
+        } else if (!call->isPrimitive(PRIM_DEREF)) {
+          return false; // what does this preclude? can this be an assert?
         }
-
-      } else if (call->isPrimitive(PRIM_MOVE)) {
-        SymExpr* newRef = toSymExpr(call->get(1));
-
-        INT_ASSERT(newRef);
-
-        if (!isSafeToDeref(newRef->var,
-                           defMap,
-                           useMap,
-                           visited,
-                           safeSettableField)) {
-          return false;
-        }
-
-      } else if (call->isPrimitive(PRIM_SET_MEMBER) && safeSettableField) {
-        SymExpr* se = toSymExpr(call->get(2));
-
-        INT_ASSERT(se);
-
-        if (se->var != safeSettableField) {
-          return false;
-        }
-
-      } else if (!call->isPrimitive(PRIM_DEREF)) {
-        return false; // what cases does this preclude? can this be an assert?
+      } else {
+        return false; // what does this preclude? can this be an assert?
       }
-    } else {
-      return false; // what cases does this preclude? can this be an assert?
     }
   }
 
