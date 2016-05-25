@@ -33,10 +33,10 @@ static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
 static void buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet);
 
-static bool isSafeToDeref(Symbol*                       ref,
-                          Map<Symbol*, Vec<SymExpr*>*>& defMap,
+static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          Symbol*                       safeSettableField);
+                          Symbol*                       field,
+                          Symbol*                       ref);
 
 /************************************* | **************************************
 *                                                                             *
@@ -142,7 +142,7 @@ static bool isSafeToDerefField(Map<Symbol*, Vec<SymExpr*>*>& defMap,
       INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
       INT_ASSERT(lhs);
 
-      if (isSafeToDeref(lhs->var, defMap, useMap, field) == false) {
+      if (isSafeToDeref(defMap, useMap, field, lhs->var) == false) {
         retval = false;
         break;
       }
@@ -276,7 +276,7 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
 static bool isSafeToDerefArg(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                              Map<Symbol*, Vec<SymExpr*>*>& useMap,
                              Symbol*                       arg) {
-  return isSafeToDeref(arg, defMap, useMap, NULL);
+  return isSafeToDeref(defMap, useMap, NULL, arg);
 }
 
 static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
@@ -421,40 +421,48 @@ static void buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
 * the reference is a simple dereference or is passed or moved to another      *
 * reference that is safe to dereference.                                      *
 *                                                                             *
-* The argument safeSettableField is used to ignore SET_MEMBER when testing    *
-* whether a reference field can be replaced with a value; this handles the    *
-* case where the reference field is reassigned to itself (probably of another *
-* instance)                                                                   *
+* The argument <field> is used to ignore SET_MEMBER when testing whether a    *
+* a reference field can be replaced with a value; this handles the case where *
+* the reference field is reassigned to itself (probably of another instance)  *
 *                                                                             *
 ************************************** | *************************************/
 
-static bool isSafeToDeref(Symbol*                       ref,
-                          Map<Symbol*, Vec<SymExpr*>*>& defMap,
+static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          Symbol*                       safeSettableField,
+                          Symbol*                       field,
+                          Symbol*                       ref,
                           Vec<Symbol*>&                 visited);
-
 
 static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          Symbol*                       safeSettableField,
+                          Symbol*                       field,
                           Symbol*                       ref,
                           Vec<Symbol*>&                 visited,
                           SymExpr*                      use);
 
-static bool isSafeToDeref(Symbol*                       ref,
-                          Map<Symbol*, Vec<SymExpr*>*>& defMap,
+
+
+
+//
+// Implement the start of the recursion
+//
+static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          Symbol*                       safeSettableField) {
+                          Symbol*                       field,
+                          Symbol*                       ref) {
   Vec<Symbol*> visited;
 
-  return isSafeToDeref(ref, defMap, useMap, safeSettableField, visited);
+  return isSafeToDeref(defMap, useMap, field, ref, visited);
 }
 
-static bool isSafeToDeref(Symbol*                       ref,
-                          Map<Symbol*, Vec<SymExpr*>*>& defMap,
+
+//
+// The recursive loop
+//
+static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          Symbol*                       safeSettableField,
+                          Symbol*                       field,
+                          Symbol*                       ref,
                           Vec<Symbol*>&                 visited) {
   bool retval = true;
 
@@ -473,7 +481,7 @@ static bool isSafeToDeref(Symbol*                       ref,
       for_uses(use, useMap, ref) {
         if (isSafeToDeref(defMap,
                           useMap,
-                          safeSettableField,
+                          field,
                           ref,
                           visited,
                           use) == false) {
@@ -487,9 +495,12 @@ static bool isSafeToDeref(Symbol*                       ref,
   return retval;
 }
 
+//
+// Helper when looping over the uses of a ref-var
+//
 static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          Symbol*                       safeSettableField,
+                          Symbol*                       field,
                           Symbol*                       ref,
                           Vec<Symbol*>&                 visited,
                           SymExpr*                      use) {
@@ -499,26 +510,26 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
     if (call->isResolved()) {
       ArgSymbol* arg = actual_to_formal(use);
 
-      retval = isSafeToDeref(arg, defMap, useMap, safeSettableField, visited);
+      retval = isSafeToDeref(defMap, useMap, field, arg, visited);
 
     } else if (call->isPrimitive(PRIM_MOVE)) {
       SymExpr* newRef = toSymExpr(call->get(1));
 
       INT_ASSERT(newRef);
 
-      retval = isSafeToDeref(newRef->var,
-                             defMap,
+      retval = isSafeToDeref(defMap,
                              useMap,
-                             safeSettableField,
+                             field,
+                             newRef->var,
                              visited);
 
     } else if (call->isPrimitive(PRIM_SET_MEMBER) == true &&
-               safeSettableField                  != NULL) {
+               field                              != NULL) {
       SymExpr* se = toSymExpr(call->get(2));
 
       INT_ASSERT(se);
 
-      if (se->var != safeSettableField) {
+      if (se->var != field) {
         retval = false;
       }
 
