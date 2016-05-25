@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,20 +17,51 @@
  * limitations under the License.
  */
 
+#include "optimizations.h"
+
 #include "astutil.h"
 #include "expr.h"
-#include "optimizations.h"
 #include "stmt.h"
-
 
 //#define DEBUG_SYNC_ACCESS_FUNCTION_SET
 
+static void remoteValueForwarding(Vec<FnSymbol*>& fns);
 
-//
-// Compute set of functions that access sync variables.
-//
-static void
-buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
+//#define DEBUG_SYNC_ACCESS_FUNCTION_SET
+
+/************************************* | **************************************
+*                                                                             *
+* Convert reference args into values if they are only read and reading them   *
+* early does not violate program semantics.                                   *
+*                                                                             *
+* pre-condition: the call graph is computed                                   *
+*                                                                             *
+************************************** | *************************************/
+
+void remoteValueForwarding() {
+
+  Vec<FnSymbol*> taskFunctions;
+
+  // Collect the task functions for processing.
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (isTaskFun(fn)) {
+      taskFunctions.add(fn);
+
+      // Would need to flatten them if they are not already.
+      INT_ASSERT(isGlobal(fn));
+    }
+  }
+
+  remoteValueForwarding(taskFunctions);
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Compute set of functions that access sync variables.                        *
+*                                                                             *
+************************************** | *************************************/
+
+static void buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
   Vec<FnSymbol*> syncAccessFunctionVec;
 
   //
@@ -198,8 +229,7 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
 //
 // pre-condition: the call graph is computed
 //
-void
-remoteValueForwarding(Vec<FnSymbol*>& fns) {
+static void remoteValueForwarding(Vec<FnSymbol*>& fns) {
   if (fNoRemoteValueForwarding)
     return;
 
