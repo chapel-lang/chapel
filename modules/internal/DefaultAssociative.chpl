@@ -73,18 +73,28 @@ module DefaultAssociative {
       const eltSize = sizeof(idxType):int;
       var i = 0;
       var offset = 0;
-     
+
       var newkeys = size/eltSize;
       // resize if needed
       // - flush rdata cache if we will resize
       // - take lock either way
 
-      // Does this help performance?
-      //chpl_rmem_consist_fence(order=memory_order_seq_cst);
+      // This helps performance for cache+bulk add but I can't understand why
+      var localLock = size < 880*2;
+      //var localLock = true;
+      if localLock {
+        dom._resizeIfNeeded(newkeys, takeLock=parSafe);
+      } else {
+        // This doesn't help
+        //chpl_rmem_consist_release();
+        //dom._resizeIfNeeded(newkeys, takeLock=parSafe);
 
-      dom._resizeIfNeeded(newkeys, takeLock=parSafe);
+        // this does
+        dom.lockTable();
+        dom._resizeIfNeeded(newkeys, takeLock=false);
+      }
+
  
-
 // Why can't I use request capacity?
 // It seems to change the result? Losing a small number of elements?
 //      dom.dsiRequestCapacity(dom.dsiNumIndices + size/eltSize, haveLock=true);
@@ -99,7 +109,7 @@ module DefaultAssociative {
       if parSafe {
         // See above.
         // dom.unlockTable();
-        dom.tableLock.clear(order=memory_order_relaxed);
+        dom.unlockTable(onlyLocalFence=true);
       }
 
       //printf("%i END PROCESS size=%i\n", here.id:c_int, size:c_int);
@@ -120,6 +130,9 @@ module DefaultAssociative {
 
       //extern proc printf(fmt:c_string, sz:c_int);
       //printf("IN ENQUEUE v=%i\n", idx:c_int);
+
+      // Does this help performance? No.
+      //chpl_rmem_consist_fence(order=memory_order_seq_cst);
 
 
       extern proc sizeof(type t):size_t;
@@ -178,7 +191,7 @@ module DefaultAssociative {
           chpl_task_yield();
       }
     }
-  
+
     inline proc unlockTable(param onlyLocalFence=false) {
       if onlyLocalFence {
         // Hack - see lockTable
@@ -443,10 +456,11 @@ module DefaultAssociative {
        var locArr = arr[subrange];
        //writeln("On ", here.id, " adding ", locArr.size);
        const shouldLock = parSafe;
-       if shouldLock then lockTable();
-       var findAgain = shouldLock;
+       _resizeIfNeeded(subrange.size, takeLock=shouldLock);
+       //if shouldLock then lockTable();
+       //_resizeIfNeeded(subrange.size, takeLock=false);
+
         //writeln("before resize ", numEntries.read(), " / ", tableSize, " taken");
-       _resizeIfNeeded(subrange.size, takeLock=false);
         //writeln("after resize ", numEntries.read(), " / ", tableSize, " taken");
        for idx in subrange {
          _add(locArr[idx], -1);
@@ -476,7 +490,7 @@ module DefaultAssociative {
         //writeln("Adding 1 to num entries");
       } else {
         if (slotNum < 0) {
-          halt("couldn't add ", idx, " -- ", numEntries.read(), " / ", tableSize, " taken");
+          halt("couldn't add ", idx, " -- ", numEntries.read(order=memory_order_relaxed), " / ", tableSize, " taken");
           return -1;
         }
         // otherwise, re-adding an index that's already in there
@@ -594,25 +608,23 @@ module DefaultAssociative {
     // NOTE: Calls to these _resize routines assume that the tableLock
     // has been acquired.
     //
-    proc _resizeIfNeeded(newKeys:int, param takeLock = false) {
-      // First, try to lock and find there is enough space.
-      if takeLock then lockTable(onlyLocalFence=true);
+    proc _resizeIfNeeded(newKeys:int, param takeLock=false) {
+      if takeLock then
+        lockTable(onlyLocalFence=true);
+
       var numKeys = numEntries.read(order=memory_order_relaxed) + newKeys;
       var threshold = (numKeys + 1) * 2;
       if threshold < tableSize {
         return;
       }
 
-      // If there wasn't enough space, release the lock and
-      // try again with a full rdata cache fence
-      if takeLock then unlockTable(onlyLocalFence=true);
+      if takeLock {
+        unlockTable(onlyLocalFence=true);
+        lockTable(onlyLocalFence=false);
+        numKeys = numEntries.read(order=memory_order_relaxed) + newKeys;
+        threshold = (numKeys + 1) * 2;
+      }
 
-      // Need this one to flush rdata cache
-      // so that the resize process can cause other
-      // flushes without deadlocking us.
-      if takeLock then lockTable(onlyLocalFence=false);
-      numKeys = numEntries.read() + newKeys;
-      threshold = (numKeys + 1) * 2;
       // Find the new prime to use.
       var prime = 0;
       var primeLoc = 0;

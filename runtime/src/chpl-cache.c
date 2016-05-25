@@ -2547,8 +2547,9 @@ void cache_start_op(struct rdcache_s* cache,
     // Start the operations and initialize the handle.
     chpl_comm_start_ops(entry->node, op, /*free op? */ 1, handle_toset);
 
-    // Does this help performance?
+    // Does this help performance? No...
     //wait_for(cache, entry->max_ops_sequence_number);
+    //chpl_wait_op(handle_toset);
   }
 
 
