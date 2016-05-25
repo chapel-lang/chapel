@@ -435,6 +435,13 @@ static bool isSafeToDeref(Symbol*                       ref,
                           Vec<Symbol*>&                 visited);
 
 
+static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                          Map<Symbol*, Vec<SymExpr*>*>& useMap,
+                          Symbol*                       safeSettableField,
+                          Symbol*                       ref,
+                          Vec<Symbol*>&                 visited,
+                          SymExpr*                      use);
+
 static bool isSafeToDeref(Symbol*                       ref,
                           Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
@@ -449,58 +456,80 @@ static bool isSafeToDeref(Symbol*                       ref,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
                           Symbol*                       safeSettableField,
                           Vec<Symbol*>&                 visited) {
-  if (visited.set_in(ref) == false) {
-    visited.set_add(ref);
+  bool retval = true;
 
+  if (visited.set_in(ref) == false) {
     int numDefs = (defMap.get(ref)) ? defMap.get(ref)->n : 0;
 
-    if ((isArgSymbol(ref) && numDefs > 0) || numDefs > 1) {
-      return false;
-    }
+    visited.set_add(ref);
 
-    for_uses(use, useMap, ref) {
-      if (CallExpr* call = toCallExpr(use->parentExpr)) {
-        if (call->isResolved()) {
-          ArgSymbol* arg = actual_to_formal(use);
+    if (isArgSymbol(ref) && numDefs > 0) {
+      retval = false;
 
-          if (isSafeToDeref(arg,
-                            defMap,
-                            useMap,
-                            safeSettableField,
-                            visited) == false) {
-            return false;
-          }
+    } else if (numDefs > 1) {
+      retval = false;
 
-        } else if (call->isPrimitive(PRIM_MOVE)) {
-          SymExpr* newRef = toSymExpr(call->get(1));
-
-          INT_ASSERT(newRef);
-
-          if (isSafeToDeref(newRef->var,
-                            defMap,
-                            useMap,
-                            safeSettableField,
-                            visited) == false) {
-            return false;
-          }
-
-        } else if (call->isPrimitive(PRIM_SET_MEMBER) && safeSettableField) {
-          SymExpr* se = toSymExpr(call->get(2));
-
-          INT_ASSERT(se);
-
-          if (se->var != safeSettableField) {
-            return false;
-          }
-
-        } else if (!call->isPrimitive(PRIM_DEREF)) {
-          return false; // what does this preclude? can this be an assert?
+    } else {
+      for_uses(use, useMap, ref) {
+        if (isSafeToDeref(defMap,
+                          useMap,
+                          safeSettableField,
+                          ref,
+                          visited,
+                          use) == false) {
+          retval = false;
+          break;
         }
-      } else {
-        return false; // what does this preclude? can this be an assert?
       }
     }
   }
 
-  return true;
+  return retval;
 }
+
+static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                          Map<Symbol*, Vec<SymExpr*>*>& useMap,
+                          Symbol*                       safeSettableField,
+                          Symbol*                       ref,
+                          Vec<Symbol*>&                 visited,
+                          SymExpr*                      use) {
+  bool retval = true;
+
+  if (CallExpr* call = toCallExpr(use->parentExpr)) {
+    if (call->isResolved()) {
+      ArgSymbol* arg = actual_to_formal(use);
+
+      retval = isSafeToDeref(arg, defMap, useMap, safeSettableField, visited);
+
+    } else if (call->isPrimitive(PRIM_MOVE)) {
+      SymExpr* newRef = toSymExpr(call->get(1));
+
+      INT_ASSERT(newRef);
+
+      retval = isSafeToDeref(newRef->var,
+                             defMap,
+                             useMap,
+                             safeSettableField,
+                             visited);
+
+    } else if (call->isPrimitive(PRIM_SET_MEMBER) == true &&
+               safeSettableField                  != NULL) {
+      SymExpr* se = toSymExpr(call->get(2));
+
+      INT_ASSERT(se);
+
+      if (se->var != safeSettableField) {
+        retval = false;
+      }
+
+    } else if (!call->isPrimitive(PRIM_DEREF)) {
+      retval = false; // what does this preclude? can this be an assert?
+    }
+
+  } else {
+    retval = false; // what does this preclude? can this be an assert?
+  }
+
+  return retval;
+}
+
