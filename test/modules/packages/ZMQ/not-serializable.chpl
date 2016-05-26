@@ -18,4 +18,3 @@ var context = new ZMQ.Context();
 var socket = context.socket(ZMQ.PUSH);
 socket.bind("tcp://*:5555");
 socket.send(foo);
-delete context;

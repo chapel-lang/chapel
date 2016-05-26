@@ -17,9 +17,6 @@
  * limitations under the License.
  */
 
-// ZMQ.version
-// libzmq version 4.0.*
-
 /*
   Module ZMQ: Chapel bindings for the ZeroMQ Messaging Library
 */
@@ -155,125 +152,183 @@ module ZMQ {
     return (major:int, minor:int, patch:int);
   }
 
-  /*
-    ZMQ.Context
+  pragma "no doc"
+  class RefCountBase {
+    var refcnt: atomic int;
 
-    The ZMQ Context class maintains a vector of child sockets.  This allows
-    users to delete the Context object without managing the closure and
-    deletion of Sockets created from this Context.
+    proc incRefCount() {
+      refcnt.add(1);
+    }
 
-    In ZMQ's C API, context "objects" are thread safe. The lock internal to
-    this Chapel class is only used to serialize accesses to the vector-style
-    array of child sockets.
-  */
-  class Context {
+    proc decRefCount() {
+      return refcnt.fetchSub(1);
+    }
 
-    // Member Elements
+    proc getRefCount() {
+      return refcnt.peek();
+    }
+
+  } // class RefCountBase
+
+  pragma "no doc"
+  class ContextClass: RefCountBase {
     var ctx: c_void_ptr;
-    var socks: [1..0] Socket;
-    var lock: sync bool;
 
-    // Constructor
-    proc Context() {
+    proc ContextClass() {
       this.ctx = zmq_ctx_new();
       if this.ctx == nil {
         var errmsg = zmq_strerror(errno):string;
-        writef("Error in Context(): %s\n", errmsg);
+        halt("Error in ContextClass(): %s\n", errmsg);
       }
     }
 
-    // Destructor
-    pragma "no doc"
-    proc ~Context() {
-      // Close any open sockets
-      for sock in socks do
-        delete sock;
-      // Terminate the context
+    proc ~ContextClass() {
       var ret = zmq_ctx_term(this.ctx):int;
       if ret == -1 {
         var errmsg = zmq_strerror(errno):string;
-        writef("Error in ~Context(): %s\n", errmsg);
+        halt("Error in ~ContextClass(): %s\n", errmsg);
+      }
+    }
+  } // class ContextClass
+
+  /*
+    ZeroMQ context
+   */
+  record Context {
+    pragma "no doc"
+    var classRef: ContextClass;
+
+    proc Context() {
+      acquire(new ContextClass());
+    }
+
+    pragma "no doc"
+    proc ~Context() {
+      release();
+    }
+
+    pragma "no doc"
+    proc acquire(newRef: ContextClass) {
+      classRef = newRef;
+      classRef.incRefCount();
+    }
+
+    pragma "no doc"
+    proc acquire() {
+      classRef.incRefCount();
+    }
+
+    pragma "no doc"
+    proc release() {
+      var rc = classRef.decRefCount();
+      if rc == 1 {
+        delete classRef;
+        classRef = nil;
       }
     }
 
-    // socket()
-    proc socket(socktype: int, parSafe: bool = true,
-                linger: int = -1): Socket{
-      var sock = new Socket(this, socktype, parSafe, linger);
-      this.lock = true;
-      this.socks.push_back(sock);
-      this.lock;
+    proc socket(sockType: int) {
+      var sock = new Socket(this, sockType);
       return sock;
     }
 
-  } // class Context
+  } // record Context
 
-  /*
-    ZMQ.Socket
+  pragma "no doc"
+  pragma "init copy fn"
+  proc chpl__initCopy(x: Context) {
+    x.acquire();
+    return x;
+  }
 
-    Design Notes:
+  pragma "no doc"
+  pragma "auto copy fn"
+  proc chpl__autoCopy(x: Context) {
+    x.acquire();
+    return x;
+  }
 
-    - Do not delete Socket objects; they are deleted when the parent
-      Context object is deleted, however, they can be closed early.
+  proc =(ref lhs: Context, rhs: Context) {
+    if lhs.classRef != nil then
+      lhs.release();
+    lhs.acquire(rhs.classRef);
+  }
 
-    Questions:
-
-    - Should the parSafe lock be a *counting* lock, so that Socket member
-      functions can call their own locking methods?
-
-  */
-  class Socket {
-
-    // Member Elements
-    const parSafe: bool = true;
-    var lock: sync bool;
+  pragma "no doc"
+  class SocketClass: RefCountBase {
     var socket: c_void_ptr;
-    var context: Context;
 
-    // Constructor
-    proc Socket(ctx: Context, socktype: int, parSafe: bool,
-                linger: int = -1) {
-      this.context = ctx;
-      this.socket = zmq_socket(ctx.ctx, socktype:c_int);
+    proc SocketClass(ctx: Context, sockType: int) {
+      this.socket = zmq_socket(ctx.classRef.ctx, sockType:c_int);
       if this.socket == nil {
         var errmsg = zmq_strerror(errno):string;
-        writef("Error in Socket(): %s\n", errmsg);
-      }
-      // Not calling Socket.setsockopt() due to non-recursive binary locking
-      var val = linger:c_int;
-      var ret = zmq_setsockopt(this.socket, ZMQ_LINGER,
-                               c_ptrTo(val):c_void_ptr,
-                               numBytes(c_int):size_t):int;
-      if ret == -1 {
-        var errmsg = zmq_strerror(errno):string;
-        writef("Error in Socket() setting ZMQ_LINGER: %s\n", errmsg);
+        halt("Error in SocketClass(): %s\n", errmsg);
       }
     }
 
-    // Destructor
+    proc ~SocketClass() {
+      var ret = zmq_close(socket):int;
+      if ret == -1 {
+        var errmsg = zmq_strerror(errno):string;
+        halt("Error in Socket.close(): %s\n", errmsg);
+      }
+      socket = c_nil;
+    }
+  }
+
+  /*
+    ZeroMQ socket
+   */
+  record Socket {
+    pragma "no doc"
+    var classRef: SocketClass;
+
+    pragma "no doc"
+    var context: Context;
+
+    proc Socket(ctx: Context, sockType: int) {
+      context = ctx;
+      acquire(new SocketClass(ctx, sockType));
+    }
+
     pragma "no doc"
     proc ~Socket() {
-      if this.socket != nil then
-        this.close();
+      release();
+    }
+
+    pragma "no doc"
+    proc acquire(newRef: SocketClass) {
+      classRef = newRef;
+      classRef.incRefCount();
+    }
+
+    pragma "no doc"
+    proc acquire() {
+      classRef.incRefCount();
+    }
+
+    pragma "no doc"
+    proc release() {
+      var rc = classRef.decRefCount();
+      if rc == 1 {
+        delete classRef;
+        classRef = nil;
+      }
     }
 
     // close
     proc close() {
-      if this.parSafe then this.lock = true;
       var ret = zmq_close(this.socket):int;
       if ret == -1 {
         var errmsg = zmq_strerror(errno):string;
         writef("Error in Socket.close(): %s\n", errmsg);
       }
       this.socket = c_nil;
-      if this.parSafe then this.lock;
     }
 
     // connect
     proc connect(endpoint: string) {
-      if this.parSafe then this.lock = true;
-      var ret = zmq_connect(this.socket, endpoint.c_str());
-      if this.parSafe then this.lock;
+      var ret = zmq_connect(classRef.socket, endpoint.c_str());
       if ret == -1 {
         var errmsg = zmq_strerror(errno):string;
         writef("Error in Socket.connect(): %s\n", errmsg);
@@ -282,28 +337,49 @@ module ZMQ {
 
     // bind
     proc bind(endpoint: string) {
-      if this.parSafe then this.lock = true;
-      var ret = zmq_bind(this.socket, endpoint.c_str());
-      if this.parSafe then this.lock;
+      var ret = zmq_bind(classRef.socket, endpoint.c_str());
       if ret == -1 {
         var errmsg = zmq_strerror(errno):string;
-        writef("Error in Socket.bind(): %s\n", errmsg);
+        halt("Error in Socket.bind(): ", errmsg);
       }
     }
 
     // setsockopt
     proc setsockopt(option: int, value: ?T) where isPODType(T) {
-      if this.parSafe then this.lock = true;
       var copy: T = value;
-      var ret = zmq_setsockopt(this.socket, option:c_int,
+      var ret = zmq_setsockopt(classRef.socket, option:c_int,
                                c_ptrTo(copy):c_void_ptr,
                                numBytes(T)): int;
       if ret == -1 {
         var errmsg = zmq_strerror(errno):string;
-        writef("Error in Socket.setsockopt(): %s\n", errmsg);
+        halt("Error in Socket.setsockopt(): ", errmsg);
       }
-      if this.parSafe then this.lock;
     }
+
+    pragma "no doc"
+    proc setsockopt(option: int, value: string) {
+      var ret = zmq_setsockopt(classRef.socket, option:c_int,
+                               value.c_str():c_void_ptr,
+                               value.length:size_t): int;
+      if ret == -1 {
+        var errmsg = zmq_strerror(errno):string;
+        halt("Error in Socket.setsockopt(): ", errmsg);
+      }
+    }
+
+    /*
+    pragma "no doc"
+    proc setsockopt(option: int) {
+      if option != SUBSCRIBE then
+        halt("setsockopt()");
+      var ret = zmq_setsockopt(classRef.socket, option:c_int,
+                               classRef.socket, 0:size_t): int;
+      if ret == -1 {
+        var errmsg = zmq_strerror(errno):string;
+        halt("Error in Socket.setsockopt(): ", errmsg);
+      }
+    }
+    */
 
     // ZMQ serialization checker
     pragma "no doc"
@@ -333,7 +409,7 @@ module ZMQ {
       // message part 1, length
       send(data.length:uint, ZMQ_SNDMORE | flags);
       // message part 2, string
-      while (-1 == zmq_send(this.socket, data.c_str():c_void_ptr,
+      while (-1 == zmq_send(classRef.socket, data.c_str():c_void_ptr,
                             data.length:size_t,
                             (ZMQ_DONTWAIT | flags):c_int)) {
         if errno == EAGAIN then
@@ -349,7 +425,7 @@ module ZMQ {
     pragma "no doc"
     proc send(data: ?T, flags: int = 0) where isNumericType(T) {
       var temp = data;
-      while (-1 == zmq_send(this.socket, c_ptrTo(temp):c_void_ptr,
+      while (-1 == zmq_send(classRef.socket, c_ptrTo(temp):c_void_ptr,
                             numBytes(T):size_t,
                             (ZMQ_DONTWAIT | flags):c_int)) {
         if errno == EAGAIN then
@@ -399,7 +475,7 @@ module ZMQ {
       var buf = c_calloc(uint(8), (len+1):size_t);
       var str = new string(buff=buf, length=len, size=len+1,
                            owned=true, needToCopy=false);
-      while (-1 == zmq_recv(this.socket, buf:c_void_ptr, len:size_t,
+      while (-1 == zmq_recv(classRef.socket, buf:c_void_ptr, len:size_t,
                             (ZMQ_DONTWAIT | flags):c_int)) {
         if errno == EAGAIN then
           chpl_task_yield();
@@ -415,7 +491,7 @@ module ZMQ {
     pragma "no doc"
     proc recv(type T, flags: int = 0) where isNumericType(T) {
       var data: T;
-      while (-1 == zmq_recv(this.socket, c_ptrTo(data):c_void_ptr,
+      while (-1 == zmq_recv(classRef.socket, c_ptrTo(data):c_void_ptr,
                             numBytes(T):size_t,
                             (ZMQ_DONTWAIT | flags):c_int)) {
         if errno == EAGAIN then
@@ -443,6 +519,27 @@ module ZMQ {
       return data;
     }
 
-  } // class Socket
+  } // record Socket
+
+  pragma "no doc"
+  pragma "init copy fn"
+  proc chpl__initCopy(x: Socket) {
+    x.acquire();
+    return x;
+  }
+
+  pragma "no doc"
+  pragma "auto copy fn"
+  proc chpl__autoCopy(x: Socket) {
+    x.acquire();
+    return x;
+  }
+
+  pragma "no doc"
+  proc =(ref lhs: Socket, rhs: Socket) {
+    if lhs.classRef != nil then
+      lhs.release();
+    lhs.acquire(rhs.classRef);
+  }
 
 } // module ZMQ

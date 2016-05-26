@@ -90,8 +90,6 @@ proc Master() {
     val.d.b = val.d.b.toTitle();
     socket.send(val);
   }
-
-  delete context;
 }
 
 proc Worker() {
@@ -130,6 +128,4 @@ proc Worker() {
     val = socket.recv(Foo);
     writeln("val = ", val);
   }
-
-  delete context;
 }

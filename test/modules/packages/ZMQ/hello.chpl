@@ -42,17 +42,15 @@ proc Launcher(exec: string) {
 }
 
 proc Master() {
-  var context = new ZMQ.Context();
+  var context: Context;
   var socket = context.socket(ZMQ.PUSH);
   socket.bind("tcp://*:5555");
   socket.send(to);
-  delete context;
 }
 
 proc Worker() {
-  var context = new ZMQ.Context();
+  var context: Context;
   var socket = context.socket(ZMQ.PULL);
   socket.connect("tcp://localhost:5555");
   writeln("Hello, ", socket.recv(string));
-  delete context;
 }
