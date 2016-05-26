@@ -74,7 +74,7 @@ def run_command(command, stdout=True, stderr=False):
             "command `{0}` failed - output was \n{1}".format(command,
                                                              output[1]))
     else:
-        output = (str(output[0]), str(output[1]))
+        output = (output[0].decode(), output[1].decode())
         if stdout and stderr:
             return output
         elif stdout:
