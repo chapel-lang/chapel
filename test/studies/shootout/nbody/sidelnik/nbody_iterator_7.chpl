@@ -1,6 +1,6 @@
 /* nbody_reductions + triangle_iterator
  *
- * The Great Computer Language Shootout
+ * The Great Computer Language Benchmarks Game
  * http://benchmarksgame.alioth.debian.org
  *
  * contributed by Albert Sidelnik

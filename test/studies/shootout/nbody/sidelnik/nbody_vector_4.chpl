@@ -2,7 +2,7 @@
  * We also shorten exponential functions using the shorthand
  * operator.
  *
- * The Great Computer Language Shootout
+ * The Great Computer Language Benchmarks Game
  * http://benchmarksgame.alioth.debian.org
  *
  * contributed by Albert Sidelnik
