@@ -1,7 +1,7 @@
 /* nbody_record + shorter (cleaner) for loops.
  * In addition, we're able to remove some explicit index variables
  *
- * The Great Computer Language Benchmarks Game
+ * The Computer Language Benchmarks Game
  * http://benchmarksgame.alioth.debian.org
  *
  * contributed by Albert Sidelnik
