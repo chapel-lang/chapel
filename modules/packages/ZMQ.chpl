@@ -18,7 +18,112 @@
  */
 
 /*
-  Module ZMQ: Chapel bindings for the ZeroMQ Messaging Library
+
+Lightweight messaging with ZeroMQ (or ØMQ)
+
+This module provides high-level Chapel bindings to the
+`ZeroMQ messaging library <http://zeromq.org/>`_.
+
+Dependencies
+------------
+
+The ZMQ module in Chapel is dependent on ZeroMQ.  For information on how to
+install ZeroMQ, see the
+`ZeroMQ installation instructions <http://zeromq.org/intro:get-the-software>`_.
+
+.. note::
+
+   Chapel's support for ZeroMQ is a work in progress and may not (yet) support
+   the full functionality of the ZeroMQ C API.
+
+.. note::
+
+   Chapel's ZMQ module was developed for compatibility with ZeroMQ v4.x.
+
+Using ZMQ in Chapel
+-------------------
+
+Contexts
+++++++++
+
+In ZeroMQ proper, a `context` is an opaque, thread-safe handle to manage
+ØMQ's resources within a process.  Typically, a process will allocate only one
+context, although more than one context per process is allowable
+`[ref] <http://zguide.zeromq.org/page:all#Getting-the-Context-Right>`__.
+
+In Chapel, a :record:`Context` is a reference-counted wrapper around the
+underlying ØMQ context. To create a context, it is sufficient to write:
+
+.. code-block:: chapel
+
+   var context: Context;
+
+Sockets
++++++++
+
+In ZeroMQ, a `socket` is an opaque handle to an asynchronous, message-based
+communication channel that is "typed" to provide one of a series of common
+communication patterns (i.e., the socket type).
+
+In Chapel, as with a :record:`Context`, a :record:`Socket` is a
+reference-counted wrapper around the underlying ØMQ socket.  Sockets are
+created via :proc:`Context.socket()` and maintain a reference to the parent
+context, so that the parent context may go out of scope and the context will
+not be reclaimed while any sockets are still in use.
+
+.. note::
+
+   As with ØMQ's C API, a :record:`Socket` object is not thread safe.
+   (This is not set in stone and may be revised in a future ZMQ module.)
+
+A :record:`Socket` may be one of the socket types in the following list of
+compatible pairs of socket types
+`[ref] <http://zguide.zeromq.org/page:all#Messaging-Patterns>`__:
+
+* :const:`PUB`  and :const:`SUB`
+* :const:`REQ`  and :const:`REP`
+* :const:`PUSH` and :const:`PULL`
+
+.. code-block:: chapel
+
+   // create a PUB socket
+   var context: Context;
+   var socket = context.socket(ZMQ.PUB);
+
+Examples
+--------
+
+Example 1: "Hello, World"
++++++++++++++++++++++++++
+
+This "Hello, World" example demonstrates a :const:`PUSH`-:const:`PULL` socket
+pair
+
+.. code-block:: chapel
+
+   // pusher.chpl
+   use ZMQ;
+   config const to: string = "world!";
+   var context: Context;
+   var socket = context.socket(ZMQ.PUSH);
+   socket.bind("tcp://*:5555"); // */
+   socket.send(to);
+
+.. code-block:: chapel
+
+   // puller.chpl
+   use ZMQ;
+   var context: Context;
+   var socket = context.socket(ZMQ.PULL);
+   socket.connect("tcp://localhost:5555");
+   writeln("Hello, ", socket.recv(string));
+
+References
+----------
+
+* `ZeroMQ C API Reference <http://api.zeromq.org/>`_
+* `ZeroMQ, The Guide <http://zguide.zeromq.org/page:all>`_
+
 */
 module ZMQ {
 
@@ -29,6 +134,7 @@ module ZMQ {
   private extern var errno: c_int;
 
   // Types
+  pragma "no doc"
   extern type zmq_msg_t;
 
   // C API
@@ -72,8 +178,17 @@ module ZMQ {
   private extern const ZMQ_XPUB: c_int;
   private extern const ZMQ_XSUB: c_int;
   private extern const ZMQ_STREAM: c_int;
+
+  /*
+    The publisher socket type for a publish-subscribe messaging pattern.
+   */
   const PUB  = ZMQ_PUB;
+
+  /*
+    The subscriber socket type for a publish-subscribe messaging pattern.
+   */
   const SUB  = ZMQ_SUB;
+
   const REQ  = ZMQ_REQ;
   const REP  = ZMQ_REP;
   const PUSH = ZMQ_PUSH;
@@ -248,6 +363,7 @@ module ZMQ {
     return x;
   }
 
+  pragma "no doc"
   proc =(ref lhs: Context, rhs: Context) {
     if lhs.classRef != nil then
       lhs.release();
