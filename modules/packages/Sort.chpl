@@ -131,7 +131,7 @@ reverse the default sorting order.
   var Array = [-1, -4, 2, 3];
 
   // Using module-defined 'reverseComparator'
-  sort(Array, comprator=reverseComparator)
+  sort(Array, comparator=reverseComparator)
 
   // This will output: 3, 2, -1, -4
   writeln(Array);
