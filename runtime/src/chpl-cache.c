@@ -511,7 +511,7 @@ struct cache_entry_s {
   uint64_t valid_lines[CACHE_LINES_PER_PAGE_BITMASK_WORDS];
   // dirty info if this cache page is dirty, NULL otherwise.
   struct dirty_entry_s* dirty;
-  // What is the mininimum sequence number stored in this cache entry?
+  // What is the minimum sequence number stored in this cache entry?
   // If we ran an acquire fence, we need to check that nothing in a cache line is too old.
   cache_seqn_t min_sequence_number;
   // If there are pending puts or prefetches for this cache entry, what is
@@ -724,7 +724,7 @@ struct rdcache_s* cache_create(void) {
   buffer = chpl_malloc(total_size);
   allocated_size = total_size;
 
-  // Now divy up the portions...
+  // Now divvy up the portions...
   total_size = 0;
   c = (struct rdcache_s*) (buffer + total_size);
   total_size += sizeof(struct rdcache_s);
@@ -2278,7 +2278,7 @@ void cache_get(struct rdcache_s* cache,
   ra_next_line = ra_last_line + CACHELINE_SIZE;
 
   // If the request is too large to reasonably fit in the cache, limit
-  // the amount of data prefeteched. (or do nothing?)
+  // the amount of data prefetched. (or do nothing?)
   if( isprefetch && (ra_last_page-ra_first_page)/CACHEPAGE_SIZE+1 > MAX_PAGES_PER_PREFETCH ) {
     ra_last_page = ra_first_page + CACHEPAGE_SIZE*MAX_PAGES_PER_PREFETCH;
   }
