@@ -74,6 +74,8 @@ not be reclaimed while any sockets are still in use.
 .. note::
 
    As with ØMQ's C API, a :record:`Socket` object is not thread safe.
+   That is, a :record:`Socket` object should not be accessed concurrently by
+   multiple Chapel tasks.
    (This is not set in stone and may be revised in a future ZMQ module.)
 
 A :record:`Socket` may be one of the socket types in the following list of
@@ -90,14 +92,39 @@ compatible pairs of socket types
    var context: Context;
    var socket = context.socket(ZMQ.PUB);
 
+Sending and Receiving Messages
+++++++++++++++++++++++++++++++
+
+In Chapel, sending or receiving messages on a :record:`Socket` uses
+`multipart messages <http://zguide.zeromq.org/page:all#Multipart-Messages>`_
+and the :chpl:mod:`Reflection` module to serialize primitive and user-defined
+data types.
+
+Sending a message is as simple as passing the object to send as the argument
+to :proc:`Socket.send()`.  Receiving a message requires that the type to be
+received be passed as the argument to :proc:`Socket.recv()`.
+In either case, if the object sent or type to be received cannot be serialized
+by ZMQ, the following error shall be produced at compile time.
+
+.. code-block:: chapel
+
+   // send or receive an int
+   var val = 42;
+   socket.send(val);
+   val = socket.recv(int);
+
+   // error: Type "Foo" is not serializable by ZMQ
+   class Foo { var val: int; }
+   socket.recv(Foo);
+
 Examples
 --------
 
-Example 1: "Hello, World"
+Example: "Hello, World"
 +++++++++++++++++++++++++
 
 This "Hello, World" example demonstrates a :const:`PUSH`-:const:`PULL` socket
-pair
+pair in two Chapel programs that exchange a single string message.
 
 .. code-block:: chapel
 
