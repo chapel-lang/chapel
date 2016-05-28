@@ -4277,8 +4277,11 @@ static void resolveMove(CallExpr* call) {
       }
     }
   }
-  if (rhsType == dtUnknown)
+  if (rhsType == dtUnknown) {
+    list_view(call);
+    list_view(rhs);
     USR_FATAL(call, "unable to resolve type");
+  }
 
   if (rhsType == dtNil && lhsType != dtNil && !isClass(lhsType))
     USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
@@ -4939,6 +4942,8 @@ createFunctionAsValue(CallExpr *call) {
   resolveFormals(captured_fn);
   resolveFnForCall(captured_fn, call);
 
+  return new SymExpr(captured_fn);
+  
   AggregateType *parent;
   FnSymbol *thisParentMethod;
 
@@ -5619,8 +5624,13 @@ preFold(Expr* expr) {
       } else
         USR_FATAL(call, "invalid query -- queried field must be a type or parameter");
     } else if (call->isPrimitive(PRIM_CAPTURE_FN)) {
-      result = createFunctionAsValue(call);
-      call->replace(result);
+      //      if (false) {
+        result = createFunctionAsValue(call);
+        call->replace(result);
+        //      } else {
+        //        result = call->get(1)->remove();
+        //        call->replace(result);
+        //      }
 
     } else if (call->isPrimitive(PRIM_GET_COMPILER_VAR)) {
 
@@ -6584,8 +6594,9 @@ postFold(Expr* expr) {
       }
     } else if (call->isPrimitive(PRIM_CAST)) {
       Type* t= call->get(1)->typeInfo();
-      if (t == dtUnknown)
+      if (t == dtUnknown) {
         INT_FATAL(call, "Unable to resolve type");
+      }
       call->get(1)->replace(new SymExpr(t->symbol));
     } else if (call->isPrimitive("string_compare")) {
       SymExpr* lhs = toSymExpr(call->get(1));

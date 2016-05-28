@@ -191,7 +191,6 @@ FnSymbol* Symbol::getFnSymbol() {
   return NULL;
 }
 
-
 bool Symbol::hasFlag(Flag flag) const {
   CHECK_FLAG(flag);
   return flags[flag];
@@ -1481,6 +1480,12 @@ FnSymbol::~FnSymbol() {
   delete basicBlocks; basicBlocks = 0;
   if (calledBy)
     delete calledBy;
+}
+
+
+Type* FnSymbol::typeInfo() {
+  printf("In FnSymbol::typeInfo()\n");
+  return dtCVoidPtr;
 }
 
 
