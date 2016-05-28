@@ -2,9 +2,7 @@ proc foo() {
   writeln("Hello!");
 }
 
-proc bar(f) {
-  f();
-}
+extern proc bar(f);
 
 bar(foo);
 

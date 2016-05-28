@@ -365,7 +365,7 @@ class FnSymbol : public Symbol {
   FnSymbol(const char* initName);
   ~FnSymbol();
 
-  Type* typeInfo();                 
+  //  Type* typeInfo();                 
   void            verify();
   virtual void    accept(AstVisitor* visitor);
 

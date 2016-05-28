@@ -1482,11 +1482,12 @@ FnSymbol::~FnSymbol() {
     delete calledBy;
 }
 
-
+/*
 Type* FnSymbol::typeInfo() {
   printf("In FnSymbol::typeInfo()\n");
   return dtCVoidPtr;
 }
+*/
 
 
 void FnSymbol::verify() {
