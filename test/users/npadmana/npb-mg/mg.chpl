@@ -21,6 +21,7 @@ const ProblemSizes : [NPB.S..NPB.C] int = [32, 256, 256, 512],
 
 config const NPBClass : NPB = NPB.S;
 config const debug=false;
+config const verifyOnly=false;
 
 param Ndim=3;
 
@@ -76,17 +77,21 @@ proc main() {
 
   timeit.stop();
 
-  writef("The L2 norm of the residual is : %20.15er\n",nR);
-  writef("The expected L2 norm of the residual is : %20.15er\n",verify);
-  writef("The fractional error is : %20.15er\n",err);
+  if verifyOnly {
+    writef("The L2 norm of the residual is : %20.15er\n",nR);
+    writef("The expected L2 norm of the residual is : %20.15er\n",verify);
+    writef("The fractional error is : %20.15er\n",err);
+  }
 
   if (err < fracGoal) {
     writeln("VERIFICATION SUCCESSFUL");
   } else {
     writeln("VERIFICATION FAILED");
   }
-  writeln("Elapsed time (seconds):", timeit.elapsed());
-  writeln("Fluff time :", fluffTime.elapsed());
+  if verifyOnly {
+    writeln("Elapsed time (seconds):", timeit.elapsed());
+    writeln("Fluff time :", fluffTime.elapsed());
+  }
 
   for il in Levels do delete il;
   
