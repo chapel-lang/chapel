@@ -362,7 +362,7 @@ module DefaultAssociative {
           halt("Requested capacity (", numKeys, ") exceeds maximum size");
         }
 
-        //Changing underlying strucure, time for locking
+        //Changing underlying structure, time for locking
         if parSafe then lockTable();
         if entries > 0 {
           // Slow path: back up required

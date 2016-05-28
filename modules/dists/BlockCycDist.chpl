@@ -278,7 +278,7 @@ class BlockCyclic : BaseDist {
     // the number of locales in that dimension times the blocksize.
     // I think this is more akin to what cyclic does.  So the
     // current test is shallower, indicating whether they were
-    // paramterized the same, but not whether they distribute
+    // parameterized the same, but not whether they distribute
     // the same.
     //
     return (this.lowIdx == that.lowIdx &&

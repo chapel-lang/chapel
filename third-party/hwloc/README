@@ -9,3 +9,9 @@ convenience and was obtained from:
 
 Any Chapel issues that seem to be related to hwloc should be directed
 to the Chapel team at chapel-bugs@lists.sourceforge.net.
+
+In addition to the base 1.11.3 version, we have applied a modified
+patch taken from master in order fix a build issue when $CHPL_HOME
+contains an "@" symbol:
+
+  https://github.com/open-mpi/hwloc/commit/7526599
