@@ -325,6 +325,11 @@ class CSRDom: BaseSparseDom {
       for i in indsStart+1..indsEnd {
         if inds[i] == lastInd then halt("There are duplicates"); 
       }
+
+      for i in inds do
+        if !parentDom.member(i) then 
+          halt("Out-of-bounds index for sparse subdomain");
+      
     }
 
     forall (i,p) in zip(inds, indivInsertPts) {
