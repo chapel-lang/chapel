@@ -77,7 +77,7 @@ proc main() {
 
   timeit.stop();
 
-  if verifyOnly {
+  if !verifyOnly {
     writef("The L2 norm of the residual is : %20.15er\n",nR);
     writef("The expected L2 norm of the residual is : %20.15er\n",verify);
     writef("The fractional error is : %20.15er\n",err);
@@ -88,7 +88,7 @@ proc main() {
   } else {
     writeln("VERIFICATION FAILED");
   }
-  if verifyOnly {
+  if !verifyOnly {
     writeln("Elapsed time (seconds):", timeit.elapsed());
     writeln("Fluff time :", fluffTime.elapsed());
   }
