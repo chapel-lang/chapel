@@ -280,7 +280,7 @@ inline proc stencilConvolve(dest : [?Dom] real, const ref src : []real, const w 
               src.localAccess[i1,j1+1,k1]+src.localAccess[i1,j1-1,k1];
             var val2 = src.localAccess[i1+1,j1+1,k1]+src.localAccess[i1-1,j1+1,k1]+
               src.localAccess[i1+1,j1-1,k1]+src.localAccess[i1-1,j1-1,k1];
-            dest[i1,j1,k1] += w0*val + w1*val1 + w2*val2;
+            dest.localAccess[i1,j1,k1] += w0*val + w1*val1 + w2*val2;
             var tmp = w1*val + w2*val1 + w3*val2;
             dest.localAccess[i1,j1,k1-1] += tmp;
             dest.localAccess[i1,j1,k1+1] += tmp;
