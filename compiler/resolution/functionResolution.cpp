@@ -4931,18 +4931,13 @@ createFunctionAsValue(CallExpr *call) {
 
   FnSymbol* captured_fn = visibleFns.head();
 
-  //Check to see if we've already cached the capture somewhere
-  if (functionCaptureMap.find(captured_fn) != functionCaptureMap.end()) {
-    return new CallExpr(functionCaptureMap[captured_fn]);
-  }
-
-  resolveFormals(captured_fn);
-  resolveFnForCall(captured_fn, call);
-
+  bool cFunctionPtr = false;
+  
   //
   // If the capture call has two arguments, it implies that we added a
   // sentinel in scopeResolve.cpp because we detected a call to
-  // c_fnPtrTo()).
+  // c_fnPtrTo()).  So this should just be a simple function pointer,
+  // not a Chapel first-class function.
   //
   if (call->numActuals() == 2) {
     //
@@ -4953,9 +4948,29 @@ createFunctionAsValue(CallExpr *call) {
     assert(se->var == gTrue);
 
     //
-    // When all we need is a C pointer, we can cut out here, returning
-    // a reference to the function symbol.
+    // remember that we're in the C function pointer case
     //
+    cFunctionPtr = true;
+  } else {
+    //
+    // If we're not doing a C function pointer, we can re-use the
+    // cached first-class function information from an earlier call if
+    // there was one, so check to see if we've already cached the
+    // capture somewhere
+    //
+    if (functionCaptureMap.find(captured_fn) != functionCaptureMap.end()) {
+      return new CallExpr(functionCaptureMap[captured_fn]);
+    }
+  }
+
+  resolveFormals(captured_fn);
+  resolveFnForCall(captured_fn, call);
+
+  //
+  // When all we need is a C pointer, we can cut out here, returning
+  // a reference to the function symbol.
+  //
+  if (cFunctionPtr) {
     return new SymExpr(captured_fn);
   }
   //

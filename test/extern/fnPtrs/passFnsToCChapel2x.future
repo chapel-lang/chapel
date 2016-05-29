@@ -1,4 +1,0 @@
-bug: can't pass Chapel fcf's to extern C routines
-
-It seems that once Chapel has made a fcf for a routine, it isn't
-possible to pass it to a C routine anymore... :(
