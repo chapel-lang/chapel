@@ -1,3 +1,5 @@
+require 'testit.h';
+
 proc foo() {
   writeln("Hello!");
 }
