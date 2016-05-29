@@ -1,4 +1,4 @@
-require 'testit.h';
+require 'externCFns.h';
 
 proc foo() {
   writeln("Hello!");
@@ -12,5 +12,3 @@ proc baz(f) {
 
 bar(c_fnPtrTo(foo));
 baz(foo);
-
-//foo();
