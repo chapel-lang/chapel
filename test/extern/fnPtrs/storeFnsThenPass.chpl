@@ -1,7 +1,7 @@
-require 'testit.h';
+require 'externCFns.h';
 
 proc foo() {
-  writeln("Hi!");
+  writeln("Hello!");
 }
 
 extern proc bar(f);
