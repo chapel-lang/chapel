@@ -34,7 +34,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "view.h"
 
 #include <algorithm>
 #include <map>

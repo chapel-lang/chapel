@@ -44,6 +44,7 @@
 #include "symbol.h"
 #include "WhileStmt.h"
 #include "../ifa/prim_data.h"
+#include "view.h"
 
 #include <inttypes.h>
 #include <map>
