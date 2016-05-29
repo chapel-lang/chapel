@@ -1,0 +1,2 @@
+passFnsToCChapel2x.chpl:15: error: unresolved call 'c_fnPtrTo(chpl__fcf_type_void_void)'
+$CHPL_HOME/modules/internal/CPtr.chpl:216: note: candidates are: c_fnPtrTo(x: c_fn_ptr)
