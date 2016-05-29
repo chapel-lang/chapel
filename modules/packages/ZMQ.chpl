@@ -133,8 +133,10 @@ pair in two Chapel programs that exchange a single string message.
    config const to: string = "world!";
    var context: Context;
    var socket = context.socket(ZMQ.PUSH);
-   socket.bind("tcp://*:5555"); // */
+   socket.bind("tcp://*:5555");
    socket.send(to);
+
+.. (comment) the above started a nested comment, so here we end it */
 
 .. code-block:: chapel
 
@@ -227,6 +229,7 @@ module ZMQ {
   private extern const ZMQ_SUBSCRIBE: c_int;
   const SUBSCRIBE = ZMQ_SUBSCRIBE;
   private extern const ZMQ_UNSUBSCRIBE: c_int;
+  const UNSUBSCRIBE = ZMQ_UNSUBSCRIBE;
   private extern const ZMQ_RATE: c_int;
   private extern const ZMQ_RECOVERY_IVL: c_int;
   private extern const ZMQ_SNDBUF: c_int;
@@ -236,6 +239,7 @@ module ZMQ {
   private extern const ZMQ_EVENTS: c_int;
   private extern const ZMQ_TYPE: c_int;
   private extern const ZMQ_LINGER: c_int;
+  const LINGER = ZMQ_LINGER;
   private extern const ZMQ_RECONNECT_IVL: c_int;
   private extern const ZMQ_BACKLOG: c_int;
   private extern const ZMQ_RECONNECT_IVL_MAX: c_int;
@@ -281,6 +285,9 @@ module ZMQ {
   private extern const ZMQ_NULL: c_int;
   private extern const ZMQ_PLAIN: c_int;
   private extern const ZMQ_CURVE: c_int;
+
+  pragma "no doc"
+  const unset = -42;
 
   /*
     Query the ZMQ library version.
@@ -340,6 +347,9 @@ module ZMQ {
     pragma "no doc"
     var classRef: ContextClass;
 
+    /*
+      Create a ZMQ context.
+     */
     proc Context() {
       acquire(new ContextClass());
     }
@@ -369,7 +379,14 @@ module ZMQ {
       }
     }
 
-    proc socket(sockType: int) {
+    /*
+      Create a :record:`Socket` of type `sockType` from this context.
+
+      :arg sockType: The ZMQ socket type to be created;
+          e.g., :const:`PUB`, :const:`PUSH`, etc.
+      :type sockType: `int`
+     */
+    proc socket(sockType: int): Socket {
       var sock = new Socket(this, sockType);
       return sock;
     }
@@ -413,7 +430,7 @@ module ZMQ {
       var ret = zmq_close(socket):int;
       if ret == -1 {
         var errmsg = zmq_strerror(errno):string;
-        halt("Error in Socket.close(): %s\n", errmsg);
+        halt("Error in ~SocketClass(): %s\n", errmsg);
       }
       socket = c_nil;
     }
@@ -429,6 +446,7 @@ module ZMQ {
     pragma "no doc"
     var context: Context;
 
+    pragma "no doc"
     proc Socket(ctx: Context, sockType: int) {
       context = ctx;
       acquire(new SocketClass(ctx, sockType));
@@ -459,31 +477,46 @@ module ZMQ {
       }
     }
 
-    // close
-    proc close() {
-      var ret = zmq_close(this.socket):int;
+    /*
+      Close the socket.
+
+      :arg linger: Optional argument to specify the linger period for the
+          socket prior to closing.  If -1, then the linger period is infinite;
+          if non-negative, then the linger period shall be set to the specified
+          value (in milliseconds).
+      :type linger: `int`
+     */
+    proc close(linger: int = unset) {
+      if linger != unset then
+        setsockopt(LINGER, linger:c_int);
+      var ret = zmq_close(classRef.socket):int;
       if ret == -1 {
         var errmsg = zmq_strerror(errno):string;
         writef("Error in Socket.close(): %s\n", errmsg);
       }
-      this.socket = c_nil;
+      classRef.socket = c_nil;
     }
 
-    // connect
-    proc connect(endpoint: string) {
-      var ret = zmq_connect(classRef.socket, endpoint.c_str());
-      if ret == -1 {
-        var errmsg = zmq_strerror(errno):string;
-        writef("Error in Socket.connect(): %s\n", errmsg);
-      }
-    }
-
-    // bind
+    /*
+      Bind the socket to the specified local `endpoint` and accept incoming
+      connections.
+     */
     proc bind(endpoint: string) {
       var ret = zmq_bind(classRef.socket, endpoint.c_str());
       if ret == -1 {
         var errmsg = zmq_strerror(errno):string;
         halt("Error in Socket.bind(): ", errmsg);
+      }
+    }
+
+    /*
+      Connect the socket to the specified `endpoint`.
+     */
+    proc connect(endpoint: string) {
+      var ret = zmq_connect(classRef.socket, endpoint.c_str());
+      if ret == -1 {
+        var errmsg = zmq_strerror(errno):string;
+        writef("Error in Socket.connect(): %s\n", errmsg);
       }
     }
 
@@ -509,20 +542,6 @@ module ZMQ {
         halt("Error in Socket.setsockopt(): ", errmsg);
       }
     }
-
-    /*
-    pragma "no doc"
-    proc setsockopt(option: int) {
-      if option != SUBSCRIBE then
-        halt("setsockopt()");
-      var ret = zmq_setsockopt(classRef.socket, option:c_int,
-                               classRef.socket, 0:size_t): int;
-      if ret == -1 {
-        var errmsg = zmq_strerror(errno):string;
-        halt("Error in Socket.setsockopt(): ", errmsg);
-      }
-    }
-    */
 
     // ZMQ serialization checker
     pragma "no doc"
