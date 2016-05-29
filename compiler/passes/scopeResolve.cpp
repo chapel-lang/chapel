@@ -34,6 +34,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "view.h"
 
 #include <algorithm>
 #include <map>
@@ -1548,6 +1549,23 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
 
           unresolvedSymExpr->replace(prim_capture_fn);
           prim_capture_fn->insertAtTail(unresolvedSymExpr);
+          //
+          // If we detect that this function reference is within a
+          // c_fnPtrTo() call then we only need a C pointer to the
+          // function, not a full Chapel first-class function (which
+          // can capture variables).  We'll mark this so that function
+          // resolution can distinguish by adding a second sentinel
+          // argument to the PRIM_CAPTURE_FN call ('true',
+          // arbitrarily).  We could alternatively add another
+          // primitive to distinguish the C case, but for most
+          // intents, it behaves identically to PRIM_CAPTURE_FN, so
+          // this seemed like a waste of a primitive...
+          //
+          // TODO: Can we avoid strcmp or ensure it's "our" fn?
+          //
+          if (call && call->isNamed("c_fnPtrTo")) {
+            prim_capture_fn->insertAtTail(gTrue);
+          }
 
           // Don't do it again if for some reason we return
           // to trying to resolve this symbol.

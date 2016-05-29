@@ -44,7 +44,6 @@
 #include "symbol.h"
 #include "WhileStmt.h"
 #include "../ifa/prim_data.h"
-#include "view.h"
 
 #include <inttypes.h>
 #include <map>
@@ -4939,18 +4938,28 @@ createFunctionAsValue(CallExpr *call) {
   resolveFormals(captured_fn);
   resolveFnForCall(captured_fn, call);
 
-  if (call->parentExpr && call->parentExpr->next && call->parentExpr->next->next) {
-    //    list_view(call);
-    CallExpr* nextAssign = toCallExpr(call->parentExpr->next->next);
-    if (nextAssign && nextAssign->isPrimitive(PRIM_MOVE)) {
-      //      list_view(nextAssign);
-      CallExpr * rhsExpr = toCallExpr(nextAssign->get(2));
-      //      list_view(rhsExpr);
-      if (rhsExpr->isNamed("c_FnPtrTo")) {
-        return new SymExpr(captured_fn);
-      }
-    }
+  //
+  // If the capture call has two arguments, it implies that we added a
+  // sentinel in scopeResolve.cpp because we detected a call to
+  // c_fnPtrTo()).
+  //
+  if (call->numActuals() == 2) {
+    //
+    // Assert that the sentinel is "true" as expected.
+    //
+    SymExpr* se = toSymExpr(call->get(2));
+    assert(se);
+    assert(se->var == gTrue);
+
+    //
+    // When all we need is a C pointer, we can cut out here, returning
+    // a reference to the function symbol.
+    //
+    return new SymExpr(captured_fn);
   }
+  //
+  // Otherwise, we need to create a Chapel first-class function (fcf)...
+  //
 
   AggregateType *parent;
   FnSymbol *thisParentMethod;
