@@ -213,7 +213,7 @@ module CPtr {
     return c_pointer_return(x);
   }
 
-  inline proc c_FnPtrTo(x: c_fn_ptr) {
+  inline proc c_fnPtrTo(x: c_fn_ptr) {
     return x;
   }
   proc c_fn_ptr.this() {

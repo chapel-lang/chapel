@@ -10,7 +10,7 @@ proc baz(f) {
   f();
 }
 
-baz(c_FnPtrTo(foo));
+baz(c_fnPtrTo(foo));
 bar(foo);
 
 
