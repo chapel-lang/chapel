@@ -21,10 +21,11 @@ c2chapel['long'] = 'c_long'
 c2chapel['char'] = 'c_char'
 c2chapel['void'] = None
 # BLAS specific types
-cblastypes = ['ORDER','TRANSPOSE','UPLO','DIAG','SIDE','INDEX']
-for itype in cblastypes :
-    ss = 'CBLAS_'+itype
-    c2chapel[ss] = ss
+c2chapel['CBLAS_INDEX']='CBLAS_INDEX';
+#cblastypes = ['ORDER','TRANSPOSE','UPLO','DIAG','SIDE','INDEX']
+#for itype in cblastypes :
+#    ss = 'CBLAS_'+itype
+#    c2chapel[ss] = ss
 
 
 quals = {}
@@ -47,16 +48,15 @@ def typeDecl2Chapel(decl, varname=None, isArray=False, isPtr=False):
     # Cases
     if isinstance(tmp, c_ast.IdentifierType):
         name = tmp.names[0]
+        if name not in c2chapel.keys() :
+           raise c_parser.ParseError("Unknown type % at %s"%(name,decl.coord))
+        chapeltype = c2chapel[name]
     elif isinstance(tmp, c_ast.Enum):
-        name = tmp.name
+        chapeltype=None
     else : 
         decl.show()
         print type(tmp)
         raise c_parser.ParseError("Unable to parse type declaration at %s"%decl.coord)
-
-    if name not in c2chapel.keys() :
-        raise c_parser.ParseError("Unknown type % at %s"%(name,decl.coord))
-    chapeltype = c2chapel[name]
     if isArray:
         chapeltype = "[]"+chapeltype
     if chapeltype is not None :
