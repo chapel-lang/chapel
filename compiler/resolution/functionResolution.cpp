@@ -4931,8 +4931,12 @@ createFunctionAsValue(CallExpr *call) {
 
   FnSymbol* captured_fn = visibleFns.head();
 
+  //
+  // Is this a case where we need a C function pointer or a Chapel
+  // first-class function / closure?
+  //
   bool cFunctionPtr = false;
-  
+
   //
   // If the capture call has two arguments, it implies that we added a
   // sentinel in scopeResolve.cpp because we detected a call to
