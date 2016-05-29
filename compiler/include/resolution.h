@@ -21,6 +21,7 @@
 #define _RESOLUTION_H_
 
 #include "baseAST.h"
+#include <vector>
 #include <map>
 
 class CallInfo;
@@ -47,6 +48,7 @@ const char* toString(CallInfo* info);
 const char* toString(FnSymbol* fn);
 
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
+void substituteVarargTupleRefs(BlockStmt* ast, int numArgs, ArgSymbol* formal, std::vector<ArgSymbol*>& varargFormals);
 
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(CallExpr* call);
