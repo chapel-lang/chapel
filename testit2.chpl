@@ -4,13 +4,14 @@ proc foo() {
   writeln("Hello!");
 }
 
-extern proc bar(f);
+extern proc bar(f:c_fn_ptr);
 
 proc baz(f) {
   f();
 }
 
-bar(c_FnPtrTo(foo));
-baz(foo);
+baz(c_FnPtrTo(foo));
+bar(foo);
+
 
 //foo();

@@ -4942,7 +4942,24 @@ createFunctionAsValue(CallExpr *call) {
   resolveFormals(captured_fn);
   resolveFnForCall(captured_fn, call);
 
+  if (call->parentExpr && call->parentExpr->next && call->parentExpr->next->next) {
+    list_view(call);
+    CallExpr* nextAssign = toCallExpr(call->parentExpr->next->next);
+    if (nextAssign && nextAssign->isPrimitive(PRIM_MOVE)) {
+      list_view(nextAssign);
+      CallExpr * rhsExpr = toCallExpr(nextAssign->get(2));
+      list_view(rhsExpr);
+      if (rhsExpr->isNamed("c_FnPtrTo")) {
+        return new SymExpr(captured_fn);
+      }
+    }
+  }
+    
+  /*  
+  list_view(call->parentExpr->next->next);
+  
   return new SymExpr(captured_fn);
+  */
   
   AggregateType *parent;
   FnSymbol *thisParentMethod;

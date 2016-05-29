@@ -1540,15 +1540,27 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
       if (parent) {
         CallExpr *call = toCallExpr(parent);
 
-        if (((call) && (call->baseExpr != unresolvedSymExpr)) || (!call)) {
+        if (((call) && (((call->baseExpr != unresolvedSymExpr) /*&&
+                                                                 !call->isNamed("c_ptrTo")*/))) ||
+            (!call)) {
           //If the function is being used as a first-class value, handle
           // this with a primitive and unwrap the primitive later in
           // functionResolution
-          CallExpr *prim_capture_fn = new CallExpr(PRIM_CAPTURE_FN);
+          CallExpr *prim_capture_fn = //((call && call->isNamed("c_ptrTo")) ?
+                                      // new CallExpr(PRIM_CAPTURE_C_FN) :
+                                       new CallExpr(PRIM_CAPTURE_FN);
+          /*
+          if (call->isNamed("c_ptrTo")) {
+            call->replace(prim_capture_fn);
+            prim_capture_fn->insertAtTail(call);
+          } else {
+          */
+            unresolvedSymExpr->replace(prim_capture_fn);
+            prim_capture_fn->insertAtTail(unresolvedSymExpr);
+            //          }
 
-          unresolvedSymExpr->replace(prim_capture_fn);
-          prim_capture_fn->insertAtTail(unresolvedSymExpr);
-
+          // TODO: Brad, only do this in fcf version?
+          
           // Don't do it again if for some reason we return
           // to trying to resolve this symbol.
           skipSet.set_add(unresolvedSymExpr);

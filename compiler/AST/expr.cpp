@@ -499,7 +499,7 @@ SymExpr* SymExpr::copyInner(SymbolMap* map) {
 
 Type* SymExpr::typeInfo(void) {
   if (toFnSymbol(var)) {
-    return dtCVoidPtr;
+    return dtCFnPtr;
   } else {
     return var->type;
   }

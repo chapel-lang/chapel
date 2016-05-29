@@ -10,7 +10,11 @@ proc baz(f) {
   f();
 }
 
-bar(c_FnPtrTo(foo));
-baz(foo);
+var x = c_FnPtrTo(foo);
+var y = foo:
 
-//foo();
+compilerWarning(x.type:string);
+  
+bar(x);
+baz(y);
+ 
