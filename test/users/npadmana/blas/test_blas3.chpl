@@ -28,5 +28,14 @@ proc test_dgemm() {
         alpha, A[0,0], k, B[0,0], n, beta, C[0,0], n);
   forall (i,j) in D.domain do D[i,j] = alpha*(+ reduce (A[i,..]*B[..,j]));
   var err = max reduce abs(C-D);
-  if err > errorThreshold then writeln("FAILED dgemm");
+  printPass(err, "dgemm");
+}
+
+
+proc printPass(err, case) {
+  if err > errorThreshold {
+    writeln("FAILED ",case);
+  } else {
+    writeln("PASSED ",case);
+  }
 }
