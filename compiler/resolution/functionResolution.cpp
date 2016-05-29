@@ -4277,11 +4277,8 @@ static void resolveMove(CallExpr* call) {
       }
     }
   }
-  if (rhsType == dtUnknown) {
-    list_view(call);
-    list_view(rhs);
+  if (rhsType == dtUnknown)
     USR_FATAL(call, "unable to resolve type");
-  }
 
   if (rhsType == dtNil && lhsType != dtNil && !isClass(lhsType))
     USR_FATAL(userCall(call), "type mismatch in assignment from nil to %s",
@@ -4943,24 +4940,18 @@ createFunctionAsValue(CallExpr *call) {
   resolveFnForCall(captured_fn, call);
 
   if (call->parentExpr && call->parentExpr->next && call->parentExpr->next->next) {
-    list_view(call);
+    //    list_view(call);
     CallExpr* nextAssign = toCallExpr(call->parentExpr->next->next);
     if (nextAssign && nextAssign->isPrimitive(PRIM_MOVE)) {
-      list_view(nextAssign);
+      //      list_view(nextAssign);
       CallExpr * rhsExpr = toCallExpr(nextAssign->get(2));
-      list_view(rhsExpr);
+      //      list_view(rhsExpr);
       if (rhsExpr->isNamed("c_FnPtrTo")) {
         return new SymExpr(captured_fn);
       }
     }
   }
-    
-  /*  
-  list_view(call->parentExpr->next->next);
-  
-  return new SymExpr(captured_fn);
-  */
-  
+
   AggregateType *parent;
   FnSymbol *thisParentMethod;
 
@@ -5641,13 +5632,8 @@ preFold(Expr* expr) {
       } else
         USR_FATAL(call, "invalid query -- queried field must be a type or parameter");
     } else if (call->isPrimitive(PRIM_CAPTURE_FN)) {
-      //      if (false) {
-        result = createFunctionAsValue(call);
-        call->replace(result);
-        //      } else {
-        //        result = call->get(1)->remove();
-        //        call->replace(result);
-        //      }
+      result = createFunctionAsValue(call);
+      call->replace(result);
 
     } else if (call->isPrimitive(PRIM_GET_COMPILER_VAR)) {
 
@@ -6611,9 +6597,8 @@ postFold(Expr* expr) {
       }
     } else if (call->isPrimitive(PRIM_CAST)) {
       Type* t= call->get(1)->typeInfo();
-      if (t == dtUnknown) {
+      if (t == dtUnknown)
         INT_FATAL(call, "Unable to resolve type");
-      }
       call->get(1)->replace(new SymExpr(t->symbol));
     } else if (call->isPrimitive("string_compare")) {
       SymExpr* lhs = toSymExpr(call->get(1));

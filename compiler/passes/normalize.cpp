@@ -410,7 +410,6 @@ checkUseBeforeDefs() {
                 (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
                 call->get(1) == sym)
               continue; // We already handled this case above.
-            //            if ((!call || (call->baseExpr != sym && !call->isPrimitive(PRIM_CAPTURE_FN) && !call->isPrimitive(PRIM_CAPTURE_C_FN)) && sym->unresolved) {
             if ((!call || (call->baseExpr != sym && !call->isPrimitive(PRIM_CAPTURE_FN))) && sym->unresolved) {
               if (!undeclared.set_in(sym->unresolved)) {
                 if (!toFnSymbol(fn->defPoint->parentSymbol)) {

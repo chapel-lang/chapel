@@ -362,10 +362,9 @@ class FnSymbol : public Symbol {
   /// Number of formals before tuple type constructor formals are added.
   int numPreTupleFormals;
 
-  FnSymbol(const char* initName);
-  ~FnSymbol();
+                  FnSymbol(const char* initName);
+                 ~FnSymbol();
 
-  //  Type* typeInfo();                 
   void            verify();
   virtual void    accept(AstVisitor* visitor);
 
