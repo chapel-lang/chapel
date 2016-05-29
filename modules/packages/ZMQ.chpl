@@ -447,6 +447,11 @@ module ZMQ {
     var context: Context;
 
     pragma "no doc"
+    proc Socket() {
+      compilerError("Cannot create Socket directly; try Context.socket()");
+    }
+
+    pragma "no doc"
     proc Socket(ctx: Context, sockType: int) {
       context = ctx;
       acquire(new SocketClass(ctx, sockType));
