@@ -17,8 +17,8 @@ module BLAS {
 
   // Define the external types
   // These are C enums
-  extern type CBLAS_ORDER;
-  extern type CBLAS_TRANSPOSE;
+  extern type CBLAS_ORDER = c_int;
+  extern type CBLAS_TRANSPOSE = c_int;
   extern type CBLAS_UPLO;
   extern type CBLAS_DIAG;
   extern type CBLAS_SIDE;
@@ -158,7 +158,7 @@ module BLAS {
     extern proc cblas_ssyr2k (Order: CBLAS_ORDER, Uplo: CBLAS_UPLO, Trans: CBLAS_TRANSPOSE, N: c_int, K: c_int, alpha: c_float, ref A: c_float, lda: c_int, ref B: c_float, ldb: c_int, beta: c_float, ref C: c_float, ldc: c_int);
     extern proc cblas_strmm (Order: CBLAS_ORDER, Side: CBLAS_SIDE, Uplo: CBLAS_UPLO, TransA: CBLAS_TRANSPOSE, Diag: CBLAS_DIAG, M: c_int, N: c_int, alpha: c_float, ref A: c_float, lda: c_int, ref B: c_float, ldb: c_int);
     extern proc cblas_strsm (Order: CBLAS_ORDER, Side: CBLAS_SIDE, Uplo: CBLAS_UPLO, TransA: CBLAS_TRANSPOSE, Diag: CBLAS_DIAG, M: c_int, N: c_int, alpha: c_float, ref A: c_float, lda: c_int, ref B: c_float, ldb: c_int);
-    extern proc cblas_dgemm (Order: CBLAS_ORDER, TransA: CBLAS_TRANSPOSE, TransB: CBLAS_TRANSPOSE, M: c_int, N: c_int, K: c_int, alpha: c_double, ref A: c_double, lda: c_int, ref B: c_double, ldb: c_int, beta: c_double, ref C: c_double, ldc: c_int);
+    extern proc cblas_dgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, alpha: c_double, ref A: c_double, lda: c_int, ref B: c_double, ldb: c_int, beta: c_double, ref C: c_double, ldc: c_int);
     extern proc cblas_dsymm (Order: CBLAS_ORDER, Side: CBLAS_SIDE, Uplo: CBLAS_UPLO, M: c_int, N: c_int, alpha: c_double, ref A: c_double, lda: c_int, ref B: c_double, ldb: c_int, beta: c_double, ref C: c_double, ldc: c_int);
     extern proc cblas_dsyrk (Order: CBLAS_ORDER, Uplo: CBLAS_UPLO, Trans: CBLAS_TRANSPOSE, N: c_int, K: c_int, alpha: c_double, ref A: c_double, lda: c_int, beta: c_double, ref C: c_double, ldc: c_int);
     extern proc cblas_dsyr2k (Order: CBLAS_ORDER, Uplo: CBLAS_UPLO, Trans: CBLAS_TRANSPOSE, N: c_int, K: c_int, alpha: c_double, ref A: c_double, lda: c_int, ref B: c_double, ldb: c_int, beta: c_double, ref C: c_double, ldc: c_int);
