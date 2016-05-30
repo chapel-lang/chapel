@@ -1478,16 +1478,10 @@ module ChapelArray {
     }
   }  // record _domain
 
-  proc +=(ref sd: _domain, inds: sd._value.rank*sd._value.idxType ) 
+  proc +=(ref sd: domain, inds: [] sd._value.rank*sd._value.idxType ) 
     where isSparseDom(sd) {
 
-    sd.add(inds);
-  }
-
-  proc +=(ref sd: _domain, inds: [] sd._value.rank*sd._value.idxType ) 
-    where isSparseDom(sd) {
-
-    sd._value.bulkAdd(inds, false, false);
+    sd.bulkAdd(inds, false, false);
   }
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old
