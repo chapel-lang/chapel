@@ -27,7 +27,7 @@
 //   LocSparseBlockArr : local array class (per-locale instances)
 //
 // When a distribution, domain, or array class instance is created, a
-// correponding local class instance is created on each locale that is
+// corresponding local class instance is created on each locale that is
 // mapped to by the distribution.
 //
 
@@ -484,7 +484,7 @@ proc SparseBlock.dsiCreateRankChangeDist(param newRank: int, args) {
 
   for param i in 1..rank {
     if isCollapsedDimension(args(i)) {
-      // set indicies that are out of bounds to the bounding box low or high.
+      // set indices that are out of bounds to the bounding box low or high.
       collapsedBbox(i) = if args(i) < boundingBox.dim(i).low then boundingBox.dim(i).low else if args(i) > boundingBox.dim(i).high then boundingBox.dim(i).high else args(i);
       collapsedLocs(i) = collapsedLocInd(i);
     } else {

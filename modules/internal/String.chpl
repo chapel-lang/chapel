@@ -1038,7 +1038,7 @@ module String {
     /*
      Checks if all the characters in the string are digits (0-9).
 
-      :returns: * `true`  -- when the characters are ditits.
+      :returns: * `true`  -- when the characters are digits.
                 * `false` -- otherwise
      */
     proc isDigit() : bool {

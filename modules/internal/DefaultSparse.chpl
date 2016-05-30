@@ -423,7 +423,7 @@ module DefaultSparse {
     }
 
     proc dsiTargetLocales() {
-      compilerError("targetLocales is unsuppported by sparse domains");
+      compilerError("targetLocales is unsupported by sparse domains");
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;

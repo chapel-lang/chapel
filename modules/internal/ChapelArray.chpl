@@ -158,9 +158,9 @@ module ChapelArray {
 
   proc _newPrivatizedClass(value) {
 
-    var n = numPrivateObjects.fetchAdd(1);
+    const n = numPrivateObjects.fetchAdd(1);
 
-    var hereID = here.id;
+    const hereID = here.id;
     const privatizeData = value.dsiGetPrivatizeData();
     on Locales[0] do
       _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
@@ -189,8 +189,8 @@ module ChapelArray {
   }
 
   proc _reprivatize(value) {
-    var pid = value.pid;
-    var hereID = here.id;
+    const pid = value.pid;
+    const hereID = here.id;
     const reprivatizeData = value.dsiGetReprivatizeData();
     on Locales[0] do
       _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
@@ -2150,7 +2150,7 @@ module ChapelArray {
       return this[this.domain.high];
     }
 
-    /* Return a range that is grown or shrunk from r to accomodate 'r2' */
+    /* Return a range that is grown or shrunk from r to accommodate 'r2' */
     pragma "no doc"
     inline proc resizeAllocRange(r: range, r2: range, factor=arrayAsVecGrowthFactor, param direction=1, param grow=1) {
       // This should only be called for 1-dimensional arrays
@@ -3139,14 +3139,8 @@ module ChapelArray {
   }
 
   proc =(ref a: [], b: _desync(a.eltType)) {
-    if isRectangularArr(a) {
-      forall e in a do
-        e = b;
-    } else {
-      compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
-      for e in a do
-        e = b;
-    }
+    forall e in a do
+      e = b;
   }
 
   /*
