@@ -71,13 +71,16 @@ module myMPI {
   var _mpi : _initMPI;
 
   if autoInitMPI {
+    writeln("Attempting to auto-initialize MPI.....");
     var flag : c_int;
     C_MPI.MPI_Initialized(flag);
     if flag==0 {
+      writeln("Initializing MPI....");
       _mpi.doinit = true;
       initialize();
     } else {
       var provided : c_int;
+      writeln("MPI already initialized.....");
       C_MPI.MPI_Query_thread(provided);
       if (provided != MPI_THREAD_SERIALIZED) && (provided != MPI_THREAD_MULTIPLE) {
         writeln("Unable to get a high enough MPI thread support");
@@ -90,13 +93,16 @@ module myMPI {
 
   /* Helper routine that also sets worldRank and worldSize */
   proc initialize() {
-    var provided : c_int;
-    C_MPI.MPI_Init_thread(0,0,MPI_THREAD_SERIALIZED,provided);
-    setRankAndSize();
-    if (provided != MPI_THREAD_SERIALIZED) && (provided != MPI_THREAD_MULTIPLE) {
-      writeln("Unable to get a high enough MPI thread support");
-      C_MPI.MPI_Abort(MPI_COMM_WORLD, 10);
+    coforall loc in Locales do on loc {
+      var provided : c_int;
+      C_MPI.MPI_Init_thread(0,0,MPI_THREAD_SERIALIZED,provided);
+      if (provided != MPI_THREAD_SERIALIZED) && (provided != MPI_THREAD_MULTIPLE) {
+        writeln("Unable to get a high enough MPI thread support");
+        C_MPI.MPI_Abort(MPI_COMM_WORLD, 10);
+      }
+      C_MPI.MPI_Barrier(MPI_COMM_WORLD);
     }
+    setRankAndSize();
   }
 
 
