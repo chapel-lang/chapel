@@ -1030,6 +1030,11 @@ module ChapelArray {
       _value.dsiAdd(i);
     }
 
+    proc bulkAdd(inds: [] _value.rank*_value.idxType, sorted=false,
+        noDuplicate=false) where isSparseDom(this) {
+      _value.bulkAdd(inds, sorted, noDuplicate);
+    }
+
     /* Remove index ``i`` from this domain */
     proc remove(i) {
       _value.dsiRemove(i);
@@ -1472,6 +1477,12 @@ module ChapelArray {
         for d in _value.dsiLocalSubdomains() do yield d;
     }
   }  // record _domain
+
+  proc +=(ref sd: domain, inds: [] sd._value.rank*sd._value.idxType ) 
+    where isSparseDom(sd) {
+
+    sd.bulkAdd(inds, false, false);
+  }
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old
      type was stridable and the new type is not stridable then assume the
