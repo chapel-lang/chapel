@@ -418,9 +418,10 @@ class CSRDom: BaseSparseDom {
     for i in prevRow+1..rowDom.high{
         rowStart[i] += rowCnt;
     }
-
-    /*writeln("Bulk add finished");*/
-    /*writeln(rowStart, "\n", colIdx);*/
+    //TODO There is a call to sparseShiftArray for all arras subscribed to this
+    //domain in dsiAdd. I couldn't find a case where that would be necessary for
+    //this bulkAdd(ie it might be necassry, but so far it worked fine without
+    //it). Needs to be investigated further.
   }
 
   proc dsiRemove(ind: rank*idxType) {
