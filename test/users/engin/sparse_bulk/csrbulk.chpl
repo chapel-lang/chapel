@@ -23,7 +23,7 @@ for t in 0..#numTrials {
   time.start();
   for i in inds do i = ((r.getNext()*N):int, (r.getNext()*N):int);
   if bulk {
-    SD.bulkAdd(inds);
+    SD += inds;
   }
   else {
     for i in inds {

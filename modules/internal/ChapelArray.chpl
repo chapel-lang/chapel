@@ -1478,6 +1478,18 @@ module ChapelArray {
     }
   }  // record _domain
 
+  proc +=(ref sd: _domain, inds: sd._value.rank*sd._value.idxType ) 
+    where isSparseDom(sd) {
+
+    sd.add(inds);
+  }
+
+  proc +=(ref sd: _domain, inds: [] sd._value.rank*sd._value.idxType ) 
+    where isSparseDom(sd) {
+
+    sd._value.bulkAdd(inds, false, false);
+  }
+
   /* Cast a rectangular domain to a new rectangular domain type.  If the old
      type was stridable and the new type is not stridable then assume the
      stride was 1 without checking.

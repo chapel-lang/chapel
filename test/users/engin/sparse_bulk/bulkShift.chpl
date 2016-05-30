@@ -16,15 +16,15 @@ toAdd2[1] = (1,1);
 var SD: sparse subdomain(D);// dmapped new dmap(new CSR());
 var arr: [SD] int;
 
-SD.add((0,0));
+SD += (0,0);
 
 arr[0,0] = 5;
 
-SD.bulkAdd(toAdd);
+SD += toAdd;
 
 arr[2,2] = 10;
 
-SD.bulkAdd(toAdd2);
+SD += toAdd2;
 
 arr[2,4] = 25;
 arr[1,1] = 7;
