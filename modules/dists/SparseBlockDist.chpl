@@ -121,6 +121,29 @@ class SparseBlockDom: BaseSparseDom {
     dsiAdd((ind,));
   }
 
+  proc bulkAdd(inds: [] rank*idxType, sorted=false, duplicate=false){
+    for l in locDoms do writeln(l.parentDom);
+
+    var indLists: [LocaleSpace] list(rank*idxType);
+    for i in inds {
+      for (l_id,l) in zip(0.., locDoms) {
+        if l.parentDom.member(i) {
+          indLists[l_id].append(i);
+        }
+      }
+    }
+
+    for (lDom,inds) in zip(locDoms, indLists) {
+      var indArr: [{0..#inds.length}] rank*idxType;
+      for (i,l) in zip(indArr, inds) do
+        for (ii,ll) in zip(i,l) do ii=ll;
+      lDom.mySparseBlock.bulkAdd(indArr, true, true);
+    } 
+
+
+    /*halt("Not implemented");*/
+  }
+
   //
   // output domain
   //

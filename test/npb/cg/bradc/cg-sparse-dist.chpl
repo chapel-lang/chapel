@@ -38,10 +38,20 @@ config const numTrials = 1,
 proc main() {
   const DenseSpace = {1..n, 1..n} dmapped Block({1..n, 1..n},
                       layoutType=layoutType);
-  const MatrixSpace: sparse subdomain(DenseSpace)
-                   = genAIndsSorted(elemType, n, nonzer, shift);
+  var MatrixSpace: sparse subdomain(DenseSpace); 
+
+  var cnt = 0;
+  for ind in genAIndsSorted(elemType, n, nonzer, shift) do cnt += 1;
+
+  var tmp_arr: [{0..#cnt}] 2*int;
+
+  for (t,i) in zip(tmp_arr, genAIndsSorted(elemType, n, nonzer, shift)) {
+    t = i;
+  }
+  MatrixSpace._value.bulkAdd(tmp_arr, true, true); 
   var A: [MatrixSpace] elemType;
 
+  writeln("Created sparse domain successfully");
   for (ind, v) in makea(elemType, n, nonzer, shift) {
     A(ind) += v;
   }
