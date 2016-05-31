@@ -1,5 +1,5 @@
 module BLAS {
-  
+
   use SysCTypes;
   require "cblas.h",'-lblas';
 
@@ -13,6 +13,59 @@ module BLAS {
     assert(sizeof(CBLAS_INDEX) == sizeof(size_t));
   }
 
+  /* Level 3 BLAS */
+
+  /* GEMM : Matrix multiplication
+  */
+  proc gemm(A : [?Adom], B : [?Bdom], C : [?Cdom],
+    alpha, beta,
+    transA : bool = false, transB : bool = false,
+    rowMajor : bool = true,
+    ldA : int = 0, ldB : int = 0, ldC : int = 0)
+    where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
+  {
+    // Types
+    param eltType = A.eltType;
+
+    // Determine sizes
+    var m = Cdom.dim(1).size : c_int,
+        n = Cdom.dim(2).size : c_int,
+        k : c_int;
+    if transA then k = Adom.dim(1).size; else k = Adom.dim(2).size;
+
+    // Set various parameters
+    var order : CBLAS_ORDER = CblasRowMajor;
+    if !rowMajor then order = CblasColMajor;
+    var opA : CBLAS_TRANSPOSE = CblasNoTrans,
+        opB : CBLAS_TRANSPOSE = CblasNoTrans;
+    if transA then opA = CblasTrans;
+    if transB then opB = CblasTrans;
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, rowMajor, ldA),
+        _ldB = getLeadingDim(Bdom, rowMajor, ldB),
+        _ldC = getLeadingDim(Cdom, rowMajor, ldC);
+
+    select eltType {
+      when real(32) {
+        // sgemm
+      }
+      when real(64) {
+        // dgemm
+      }
+    }
+
+  }
+
+
+  // Helper function
+  inline proc getLeadingDim(ADom : domain(2), rowMajor : bool, ldA : int) : c_int {
+    var _ldA = ldA : c_int;
+    if ldA==0 {
+      if rowMajor then _ldA = Adom.dim(2).size; else _ldA = Adom.dim(1).size;
+    }
+    return _ldA;
+  }
 
 
   // Define the external types
@@ -35,7 +88,7 @@ module BLAS {
                CblasUnit : CBLAS_DIAG;
   extern const CblasLeft : CBLAS_SIDE,
                CblasRight : CBLAS_SIDE;
-  
+
 
 
   module C_BLAS {
