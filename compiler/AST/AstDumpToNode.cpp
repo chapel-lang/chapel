@@ -916,6 +916,28 @@ bool AstDumpToNode::enterCallExpr(CallExpr* node)
 //
 //
 
+bool AstDumpToNode::enterContextCallExpr(ContextCallExpr* node)
+{
+  enterNode(node);
+
+  mOffset = mOffset + 2;
+
+  for_alist(expr, node->options) {
+    newline();
+    expr->accept(this);
+  }
+
+  mOffset = mOffset - 2;
+  newline();
+  exitNode(node);
+
+  return false;
+}
+
+//
+//
+//
+
 bool AstDumpToNode::enterNamedExpr(NamedExpr* node)
 {
   enterNode(node);
