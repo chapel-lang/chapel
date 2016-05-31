@@ -25,13 +25,14 @@ module BLAS {
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
     // Types
-    param eltType = A.eltType;
+    type eltType = A.eltType;
 
     // Determine sizes
     var m = Cdom.dim(1).size : c_int,
         n = Cdom.dim(2).size : c_int,
         k : c_int;
-    if transA then k = Adom.dim(1).size; else k = Adom.dim(2).size;
+    if transA then k = Adom.dim(1).size : c_int;
+              else k = Adom.dim(2).size : c_int;
 
     // Set various parameters
     var order : CBLAS_ORDER = CblasRowMajor;
@@ -49,9 +50,13 @@ module BLAS {
     select eltType {
       when real(32) {
         // sgemm
+        cblas_sgemm(order, opA, opB, m, n, k,
+          alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
       }
       when real(64) {
         // dgemm
+        cblas_dgemm(order, opA, opB, m, n, k,
+          alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
       }
     }
 
@@ -59,10 +64,11 @@ module BLAS {
 
 
   // Helper function
-  inline proc getLeadingDim(ADom : domain(2), rowMajor : bool, ldA : int) : c_int {
+  inline proc getLeadingDim(Adom : domain(2), rowMajor : bool, ldA : int) : c_int {
     var _ldA = ldA : c_int;
     if ldA==0 {
-      if rowMajor then _ldA = Adom.dim(2).size; else _ldA = Adom.dim(1).size;
+      if rowMajor then _ldA = Adom.dim(2).size : c_int;
+                  else _ldA = Adom.dim(1).size : c_int;
     }
     return _ldA;
   }
