@@ -62,13 +62,17 @@ module BLAS {
       }
       when complex(64) {
         // cgemm
+        var alpha1 = alpha : complex(64),
+            beta1 = beta : complex(64);
         cblas_cgemm(order, _opA, _opB, m, n, k,
-          alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
+          alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta1, C[Cdom.low],_ldC);
       }
       when complex(128) {
         // zgemm
+        var alpha1 = alpha : complex(128),
+            beta1 = beta : complex(128);
         cblas_zgemm(order, _opA, _opB, m, n, k,
-          alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
+          alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta1, C[Cdom.low],_ldC);
       }
       otherwise {
         halt("Unknown type in gemm");
