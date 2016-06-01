@@ -1483,14 +1483,14 @@ module ChapelArray {
     }
   }  // record _domain
 
-  proc +=(ref sd: domain, inds: [] sd._value.idxType) 
-    where sd._value.rank == 1 && isSparseDom(sd) {
+  proc +=(ref sd: domain, inds: [] sd.idxType) 
+    where isSparseDom(sd) && sd.rank == 1{
     
     sd.bulkAdd(inds, false, false);
   }
 
-  proc +=(ref sd: domain, inds: [] sd._value.rank*sd._value.idxType ) 
-    where sd._value.rank > 1 && isSparseDom(sd) {
+  proc +=(ref sd: domain, inds: [] sd.rank*sd.idxType ) 
+    where isSparseDom(sd) && sd.rank > 1 {
 
     sd.bulkAdd(inds, false, false);
   }
@@ -1501,7 +1501,7 @@ module ChapelArray {
   proc +=(ref sd: domain, d: domain) 
     where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
 
-    type _idxType = if sd._value.rank==1 then int else sd._value.rank*int;
+    type _idxType = if sd.rank==1 then int else sd.rank*int;
     const indCount = d._value.dsiNumIndices;
     const arr: [{0..#indCount}] _idxType;
   
