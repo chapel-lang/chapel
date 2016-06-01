@@ -22,29 +22,33 @@ proc test_gemm_helper(type t) {
       tests = 0;
   const errorThreshold = blasError(t);
 
-  const m = 10 : c_int,
-        n = 7 : c_int,
-        k = 7 : c_int;
-  // Test dgemm -- do this with an array that isn't square
-  var A : [{0.. #m, 0.. #k}]t,
-      B : [{0.. #k, 0.. #n}]t,
-      C : [{0.. #m, 0.. #n}]t,
-      D : [{0.. #m, 0.. #n}]t;
+  {
+    const m = 10 : c_int,
+          n = 7 : c_int,
+          k = 7 : c_int;
+    // Test dgemm -- do this with an array that isn't square
+    var A : [{0.. #m, 0.. #k}]t,
+        B : [{0.. #k, 0.. #n}]t,
+        C : [{0.. #m, 0.. #n}]t,
+        D : [{0.. #m, 0.. #n}]t;
 
-  fillRandom(A);
-  fillRandom(B);
-  C = 0 : t;
-  const alpha = 2.0:t,
-        beta = 0.0:t;
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    rng.fillRandom(A);
+    rng.fillRandom(B);
+    rng.fillRandom(C);
+    D = C;
+    const alpha = rng.getNext(),
+          beta = rng.getNext();
 
-  gemm(A,B,C,alpha,beta);
-  forall (i,j) in D.domain do D[i,j] = alpha*(+ reduce (A[i,..]*B[..,j]));
-  var err = max reduce abs(C-D);
-  if err > errorThreshold {
-    failed += 1;
-    writef("%sgemm : Failure on test %i : %r\n",blasPrefix(t), tests, err);
-  } else {
-    passed += 1; 
+    gemm(A,B,C,alpha,beta);
+    forall (i,j) in D.domain do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[i,..]*B[..,j]));
+    var err = max reduce abs(C-D);
+    if err > errorThreshold {
+      failed += 1;
+      writef("%sgemm : Failure on test %i : %r\n",blasPrefix(t), tests, err);
+    } else {
+      passed += 1; 
+    }
   }
 
   writef("%sgemm : %i PASSED, %i FAILED \n", blasPrefix(t), passed, failed);
