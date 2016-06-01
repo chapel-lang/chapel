@@ -1504,8 +1504,9 @@ module ChapelArray {
     type _idxType = if sd._value.rank==1 then int else sd._value.rank*int;
     const indCount = d._value.dsiNumIndices;
     const arr: [{0..#indCount}] _idxType;
-
-    forall (a,i) in zip (arr,d) do a=i;
+  
+    //this could be a parallel loop. but ranks don't match -- doesn't compile
+    for (a,i) in zip(arr,d) do a=i;
 
     sd.bulkAdd(arr, true, true);
   }
