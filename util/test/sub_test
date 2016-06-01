@@ -128,6 +128,7 @@
 
 from __future__ import with_statement
 
+import execution_limiter
 import sys, os, subprocess, string, signal
 import operator
 import select, fcntl
@@ -1785,107 +1786,115 @@ for testname in testsrc:
             # Run program (with timeout)
             #
             for count in xrange(numTrials):
-                exectimeout = False  # 'exectimeout' is specific to one trial of one execopt setting
-                launcher_error = ''  # used to suppress output/timeout errors whose root cause is a launcher error
-                sys.stdout.write('[Executing program %s %s'%(cmd, ' '.join(args)))
-                if redirectin:
-                    sys.stdout.write(' < %s'%(redirectin))
-                sys.stdout.write(']\n')
-                sys.stdout.flush()
+                exec_limiter = execution_limiter.NoLock()
+                if os.getenv("CHPL_TEST_LIMIT_RUNNING_EXECUTABLES") is not None:
+                    exec_name = os.path.join(localdir, test_filename)
+                    exec_limiter = execution_limiter.FileLock(exec_name, timeout)
 
-                execStart = time.time()
-                if useLauncherTimeout:
-                    if redirectin == None:
-                        my_stdin = None
+                with exec_limiter:
+                    exectimeout = False  # 'exectimeout' is specific to one trial of one execopt setting
+                    launcher_error = ''  # used to suppress output/timeout errors whose root cause is a launcher error
+                    sys.stdout.write('[Executing program %s %s'%(cmd, ' '.join(args)))
+                    if redirectin:
+                        sys.stdout.write(' < %s'%(redirectin))
+                    sys.stdout.write(']\n')
+                    sys.stdout.flush()
+
+                    execStart = time.time()
+                    if useLauncherTimeout:
+                        if redirectin == None:
+                            my_stdin = None
+                        else:
+                            my_stdin=file(redirectin, 'r')
+                        test_command = [cmd] + args + LauncherTimeoutArgs(timeout)
+                        p = subprocess.Popen(test_command,
+                                            env=dict(os.environ.items() + testenv.items()),
+                                            stdin=my_stdin,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.STDOUT)
+                        output = p.communicate()[0]
+                        status = p.returncode
+
+                        if re.search('slurmstepd: Munge decode failed: Expired credential', output, re.IGNORECASE) != None:
+                            launcher_error = 'Jira 18 -- Expired slurm credential for'
+                        elif re.search('output file from job .* does not exist', output, re.IGNORECASE) != None:
+                            launcher_error = 'Jira 17 -- Missing output file for'
+                        elif re.search('aprun: Unexpected close of the apsys control connection', output, re.IGNORECASE) != None:
+                            launcher_error = 'Jira 193 -- Unexpected close of apsys for'
+                        elif (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or
+                              re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None):
+                            exectimeout = True
+                            launcher_error = 'Timed out executing program'
+
+                        if launcher_error:
+                            sys.stdout.write('%s[Error: %s %s/%s'%
+                                            (futuretest, launcher_error, localdir, test_filename))
+                            printTestVariation(compoptsnum, compoptslist,
+                                               execoptsnum, execoptslist);
+                            sys.stdout.write(']\n')
+                            sys.stdout.write('[Execution output was as follows:]\n')
+                            sys.stdout.write(trim_output(output))
+
+                    elif useTimedExec:
+                        wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
+
+                        if redirectin == None:
+                            my_stdin = sys.stdin
+                        else:
+                            my_stdin = file(redirectin, 'r')
+                        p = subprocess.Popen([timedexec, str(timeout), wholecmd],
+                                            env=dict(os.environ.items() + testenv.items()),
+                                            stdin=my_stdin,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.STDOUT)
+                        output = p.communicate()[0]
+                        status = p.returncode
+
+                        if status == 222:
+                            exectimeout = True
+                            sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
+                                            (futuretest, localdir, test_filename))
+                            printTestVariation(compoptsnum, compoptslist,
+                                               execoptsnum, execoptslist);
+                            sys.stdout.write(']\n')
+                            sys.stdout.write('[Execution output was as follows:]\n')
+                            sys.stdout.write(trim_output(output))
+                        else:
+                            # for perf runs print out the 5 processes with the
+                            # highest cpu usage. This should help identify if other
+                            # processes might have interfered with a test.
+                            if perftest:
+                                print('[Reporting processes with top 5 highest cpu usages]')
+                                sys.stdout.flush()
+                                psCom = 'ps ax -o user,pid,pcpu,command '
+                                subprocess.call(psCom + '| head -n 1', shell=True)
+                                subprocess.call(psCom + '| tail -n +2 | sort -r -k 3 | head -n 5', shell=True)
+
+
                     else:
-                        my_stdin=file(redirectin, 'r')
-                    test_command = [cmd] + args + LauncherTimeoutArgs(timeout)
-                    p = subprocess.Popen(test_command,
-                                        env=dict(os.environ.items() + testenv.items()),
-                                        stdin=my_stdin,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT)
-                    output = p.communicate()[0]
-                    status = p.returncode
+                        if redirectin == None:
+                            my_stdin = None
+                        else:
+                            my_stdin=file(redirectin, 'r')
+                        p = subprocess.Popen([cmd]+args,
+                                            env=dict(os.environ.items() + testenv.items()),
+                                            stdin=my_stdin,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.STDOUT)
+                        try:
+                            output = SuckOutputWithTimeout(p.stdout, timeout)
+                        except ReadTimeoutException:
+                            exectimeout = True
+                            sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
+                                            (futuretest, localdir, test_filename))
+                            printTestVariation(compoptsnum, compoptslist,
+                                               execoptsnum, execoptslist);
+                            sys.stdout.write(']\n')
+                            KillProc(p, killtimeout)
 
-                    if re.search('slurmstepd: Munge decode failed: Expired credential', output, re.IGNORECASE) != None:
-                        launcher_error = 'Jira 18 -- Expired slurm credential for'
-                    elif re.search('output file from job .* does not exist', output, re.IGNORECASE) != None:
-                        launcher_error = 'Jira 17 -- Missing output file for'
-                    elif re.search('aprun: Unexpected close of the apsys control connection', output, re.IGNORECASE) != None:
-                        launcher_error = 'Jira 193 -- Unexpected close of apsys for'
-                    elif (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or
-                          re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None):
-                        exectimeout = True
-                        launcher_error = 'Timed out executing program'
+                        status = p.returncode
 
-                    if launcher_error:
-                        sys.stdout.write('%s[Error: %s %s/%s'%
-                                        (futuretest, launcher_error, localdir, test_filename))
-                        printTestVariation(compoptsnum, compoptslist,
-                                           execoptsnum, execoptslist);
-                        sys.stdout.write(']\n')
-                        sys.stdout.write('[Execution output was as follows:]\n')
-                        sys.stdout.write(trim_output(output))
-
-                elif useTimedExec:
-                    wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
-
-                    if redirectin == None:
-                        my_stdin = sys.stdin
-                    else:
-                        my_stdin = file(redirectin, 'r')
-                    p = subprocess.Popen([timedexec, str(timeout), wholecmd],
-                                        env=dict(os.environ.items() + testenv.items()),
-                                        stdin=my_stdin,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT)
-                    output = p.communicate()[0]
-                    status = p.returncode
-
-                    if status == 222:
-                        exectimeout = True
-                        sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
-                                        (futuretest, localdir, test_filename))
-                        printTestVariation(compoptsnum, compoptslist,
-                                           execoptsnum, execoptslist);
-                        sys.stdout.write(']\n')
-                        sys.stdout.write('[Execution output was as follows:]\n')
-                        sys.stdout.write(trim_output(output))
-                    else:
-                        # for perf runs print out the 5 processes with the
-                        # highest cpu usage. This should help identify if other
-                        # processes might have interfered with a test.
-                        if perftest:
-                            print('[Reporting processes with top 5 highest cpu usages]')
-                            sys.stdout.flush()
-                            psCom = 'ps ax -o user,pid,pcpu,command '
-                            subprocess.call(psCom + '| head -n 1', shell=True)
-                            subprocess.call(psCom + '| tail -n +2 | sort -r -k 3 | head -n 5', shell=True)
-
-
-                else:
-                    if redirectin == None:
-                        my_stdin = None
-                    else:
-                        my_stdin=file(redirectin, 'r')
-                    p = subprocess.Popen([cmd]+args,
-                                        env=dict(os.environ.items() + testenv.items()),
-                                        stdin=my_stdin,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT)
-                    try:
-                        output = SuckOutputWithTimeout(p.stdout, timeout)
-                    except ReadTimeoutException:
-                        exectimeout = True
-                        sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
-                                        (futuretest, localdir, test_filename))
-                        printTestVariation(compoptsnum, compoptslist,
-                                           execoptsnum, execoptslist);
-                        sys.stdout.write(']\n')
-                        KillProc(p, killtimeout)
-
-                    status = p.returncode
+                # executable is done running
 
                 elapsedExecTime = time.time() - execStart
                 test_name = os.path.join(localdir, test_filename)
