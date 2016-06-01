@@ -13,13 +13,17 @@ module BLAS {
     assert(sizeof(CBLAS_INDEX) == sizeof(size_t));
   }
 
+  /* Convenience */
+  enum Op {N, T, H}; // NoTranspose, Transpose, Adjoint
+  const _BlasOp : [Op.N..Op.H] CBLAS_TRANSPOSE = [CblasNoTrans, CblasTrans, CblasConjTrans];
+
   /* Level 3 BLAS */
 
   /* GEMM : Matrix multiplication
   */
   proc gemm(A : [?Adom], B : [?Bdom], C : [?Cdom],
     alpha, beta,
-    transA : bool = false, transB : bool = false,
+    opA : Op = Op.N, opB : Op = Op.N,
     rowMajor : bool = true,
     ldA : int = 0, ldB : int = 0, ldC : int = 0)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
@@ -31,16 +35,14 @@ module BLAS {
     var m = Cdom.dim(1).size : c_int,
         n = Cdom.dim(2).size : c_int,
         k : c_int;
-    if transA then k = Adom.dim(1).size : c_int;
-              else k = Adom.dim(2).size : c_int;
+    if opA > Op.N then k = Adom.dim(1).size : c_int;
+                  else k = Adom.dim(2).size : c_int;
 
     // Set various parameters
     var order : CBLAS_ORDER = CblasRowMajor;
     if !rowMajor then order = CblasColMajor;
-    var opA : CBLAS_TRANSPOSE = CblasNoTrans,
-        opB : CBLAS_TRANSPOSE = CblasNoTrans;
-    if transA then opA = CblasTrans;
-    if transB then opB = CblasTrans;
+    var _opA = _BlasOp[opA],
+        _opB = _BlasOp[opB];
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, rowMajor, ldA),
@@ -50,13 +52,26 @@ module BLAS {
     select eltType {
       when real(32) {
         // sgemm
-        cblas_sgemm(order, opA, opB, m, n, k,
+        cblas_sgemm(order, _opA, _opB, m, n, k,
           alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
       }
       when real(64) {
         // dgemm
-        cblas_dgemm(order, opA, opB, m, n, k,
+        cblas_dgemm(order, _opA, _opB, m, n, k,
           alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
+      }
+      when complex(64) {
+        // cgemm
+        cblas_cgemm(order, _opA, _opB, m, n, k,
+          alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
+      }
+      when complex(128) {
+        // zgemm
+        cblas_zgemm(order, _opA, _opB, m, n, k,
+          alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
+      }
+      otherwise {
+        halt("Unknown type in gemm");
       }
     }
 
@@ -94,7 +109,6 @@ module BLAS {
                CblasUnit : CBLAS_DIAG;
   extern const CblasLeft : CBLAS_SIDE,
                CblasRight : CBLAS_SIDE;
-
 
 
   module C_BLAS {
