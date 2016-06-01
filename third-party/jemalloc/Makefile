@@ -31,6 +31,11 @@ endif
 CHPL_JEMALLOC_CFG_OPTIONS += --prefix=$(JEMALLOC_INSTALL_DIR) \
 			     --with-jemalloc-prefix=je_
 
+# As an optimization, use jemalloc's decay-based purging instead of the
+# default ratio-based purging
+CHPL_JEMALLOC_CFG_OPTIONS += --with-malloc-conf=purge:decay
+
+
 # jemalloc wants you to set EXTRA_CFLAGS instead of CFLAGS:
 #  """
 #  EXTRA_CFLAGS="?"

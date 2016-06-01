@@ -9,11 +9,11 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test performance of using native qthread sync vars
+# Test performance of jemalloc's decay-based purging
 GITHUB_USER=ronawho
-GITHUB_BRANCH=fast-syncvars
-SHORT_NAME=syncvar
-START_DATE=05/21/16
+GITHUB_BRANCH=jemalloc-decay-based-purging
+SHORT_NAME=decay-purge
+START_DATE=05/28/16
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

@@ -579,9 +579,9 @@ uninstall-am: uninstall-nodist_pkgdataDATA
 @HWLOC_HAVE_LINUX_TRUE@hwloc-dump-hwdata.service: hwloc-dump-hwdata.service.in Makefile
 @HWLOC_HAVE_LINUX_TRUE@	@echo Creating $@...
 @HWLOC_HAVE_LINUX_TRUE@	@ $(SED) \
-@HWLOC_HAVE_LINUX_TRUE@	  -e 's@#SBINDIR#@'$(sbindir)'@g' \
-@HWLOC_HAVE_LINUX_TRUE@	  -e 's@#RUNSTATEDIR#@'$(HWLOC_runstatedir)'@g' \
-@HWLOC_HAVE_LINUX_TRUE@	  -e 's@#RMPATH#@'$(RMPATH)'@g' \
+@HWLOC_HAVE_LINUX_TRUE@	  -e 's/#SBINDIR#/$(subst /,\/,$(sbindir))/g' \
+@HWLOC_HAVE_LINUX_TRUE@	  -e 's/#RUNSTATEDIR#/$(subst /,\/,$(HWLOC_runstatedir))/g' \
+@HWLOC_HAVE_LINUX_TRUE@	  -e 's/#RMPATH#/$(subst /,\/,$(RMPATH))/g' \
 @HWLOC_HAVE_LINUX_TRUE@	  > $@ < $<
 
 @HWLOC_HAVE_LINUX_TRUE@distclean-local:

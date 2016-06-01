@@ -753,7 +753,7 @@ module ChapelIO {
   // Convert 'x' to a string just the way it would be written out.
   //
   // This is marked as compiler generated so it doesn't take precedence over
-  // genereated casts for types like enums
+  // generated casts for types like enums
   //
   // This version only applies to non-primitive types
   // (primitive types should support :string directly)

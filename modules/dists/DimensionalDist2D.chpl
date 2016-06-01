@@ -105,7 +105,7 @@ the mapping is obtained using the dimension specifier:
 
 The following code declares a domain ``D`` distributed
 using a 2D Dimensional distribution that
-replicates over 2 locales (when available) in the first dimemsion
+replicates over 2 locales (when available) in the first dimension
 and distributes using block-cyclic distribution in the second dimension.
 
   .. code-block:: chapel
@@ -481,7 +481,7 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
   _traceddd(this, ".dsiPrivatize on ", here.id);
 
   // ensure we get a local copy of targetLocales
-  // todo - provide the following as utilty functions (for domains, arrays)
+  // todo - provide the following as utility functions (for domains, arrays)
   const pdTargetLocales = privatizeData(1);
   const privTargetIds: domain(pdTargetLocales.domain.rank,
                               pdTargetLocales.domain.idxType,

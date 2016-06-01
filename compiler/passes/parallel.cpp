@@ -96,7 +96,7 @@ typedef struct {
 static BundleArgsFnData bundleArgsFnDataInit = { true, NULL, NULL };
 
 static void insertEndCounts();
-static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions);
+static void passArgsToNestedFns();
 static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData);
 static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn, Symbol* taskList, Symbol* taskListNode);
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec);
@@ -1233,23 +1233,10 @@ reprivatizeIterators() {
 }
 
 
-void
-parallel(void) {
-  Vec<FnSymbol*> taskFunctions;
-
-  // Collect the task functions for processing.
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (isTaskFun(fn)) {
-      taskFunctions.add(fn);
-      // Would need to flatten them if they are not already.
-      INT_ASSERT(isGlobal(fn));
-    }
-  }
-
+void parallel() {
   compute_call_sites();
 
-  // TODO: Move this into a separate pass.
-  remoteValueForwarding(taskFunctions);
+  remoteValueForwarding();
 
   reprivatizeIterators();
 
@@ -1257,7 +1244,7 @@ parallel(void) {
 
   insertEndCounts();
 
-  passArgsToNestedFns(taskFunctions);
+  passArgsToNestedFns();
 }
 
 
@@ -1294,7 +1281,6 @@ static void insertEndCounts()
   }
 }
 
-
 static bool isDirectOnCall(FnSymbol* fn, CallExpr* call)
 {
   if (fn->hasFlag(FLAG_ON)) {
@@ -1312,43 +1298,52 @@ static bool isDirectOnCall(FnSymbol* fn, CallExpr* call)
   return false;
 }
 
-// For each "nested" function created to represent remote execution, 
+// For each "nested" function created to represent remote execution,
 // bundle args so they can be passed through a fork function.
+//
 // Fork functions in general have the signature
-//  fork(int32_t destNode, void (*)(void* args), void* args, ...);
+//    fork(int32_t destNode, void (*)(void* args), void* args, ...);
+//
 // In Chapel, we wrap the arguments passed to the nested function in an object
 // whose type is just a list of the arguments passed to the nested function.
-// Those arguments consist of variables in the scope of the nested function call
-// that are accessed within the body of the nested function (recursively, of course).
-static void passArgsToNestedFns(Vec<FnSymbol*>& nestedFunctions)
-{
-  forv_Vec(FnSymbol, fn, nestedFunctions) {
+// Those arguments consist of variables in the scope of the nested function
+// call that are accessed within the body of the nested function (recursively,
+// of course).
+static void passArgsToNestedFns() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (isTaskFun(fn)) {
+      BundleArgsFnData baData = bundleArgsFnDataInit;
 
-    BundleArgsFnData baData = bundleArgsFnDataInit;
+      // Would need to flatten them if they are not already.
+      INT_ASSERT(isGlobal(fn));
 
-    forv_Vec(CallExpr, call, *fn->calledBy) {
-      SET_LINENO(call);
-      if (isDirectOnCall(fn, call))
-        // For a direct call, don't bundle the arguments
-        // leave the call directly invoking the on-function.
-        // On statements also need their first argument removed.
-        call->get(1)->remove();
-      else
-        bundleArgs(call, baData);
-    }
+      forv_Vec(CallExpr, call, *fn->calledBy) {
+        SET_LINENO(call);
 
-    if (fn->hasFlag(FLAG_ON))
-    {
-      // Now we can remove the dummy locale arg from the on_fn
-      DefExpr* localeArg = toDefExpr(fn->formals.get(1));
-      std::vector<SymExpr*> symExprs;
-      collectSymExprs(fn->body, symExprs);
-      for_vector(SymExpr, sym, symExprs)
-      {
-        if (sym->var->defPoint == localeArg)
-          sym->getStmtExpr()->remove();
+        if (isDirectOnCall(fn, call))
+          // For a direct call, don't bundle the arguments
+          // leave the call directly invoking the on-function.
+          // On statements also need their first argument removed.
+          call->get(1)->remove();
+        else
+          bundleArgs(call, baData);
       }
-      localeArg->remove();
+
+      if (fn->hasFlag(FLAG_ON)) {
+        // Now we can remove the dummy locale arg from the on_fn
+        DefExpr*              localeArg = toDefExpr(fn->formals.get(1));
+        std::vector<SymExpr*> symExprs;
+
+        collectSymExprs(fn->body, symExprs);
+
+        for_vector(SymExpr, sym, symExprs) {
+          if (sym->var->defPoint == localeArg) {
+            sym->getStmtExpr()->remove();
+          }
+        }
+
+        localeArg->remove();
+      }
     }
   }
 }
