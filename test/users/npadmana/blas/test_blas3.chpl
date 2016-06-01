@@ -50,6 +50,7 @@ proc test_gemm_helper(type t) {
     } else {
       passed += 1; 
     }
+    tests+=1;
   }
 
   // Try transposing A
@@ -80,6 +81,7 @@ proc test_gemm_helper(type t) {
     } else {
       passed += 1; 
     }
+    tests+=1;
   }
 
   // Try hermitian conjugate of B
@@ -110,6 +112,40 @@ proc test_gemm_helper(type t) {
     } else {
       passed += 1; 
     }
+    tests+=1;
+  }
+
+  // Test leading dimension of array
+  {
+    const m = 10 : c_int,
+          n = 7 : c_int,
+          k = 7 : c_int,
+          ld = 20 : c_int;
+    // Test dgemm -- do this with an array that isn't square
+    var A : [{0.. #m, 0.. #ld}]t,
+        B : [{0.. #k, 0.. #ld}]t,
+        C : [{0.. #m, 0.. #ld}]t,
+        D : [{0.. #m, 0.. #ld}]t;
+
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    rng.fillRandom(A);
+    rng.fillRandom(B);
+    rng.fillRandom(C);
+    D = C;
+    const alpha = rng.getNext(),
+          beta = rng.getNext();
+
+    gemm(A[..,0.. #k],B[..,0.. #n],C[..,0.. #n],alpha,beta, ldA=ld, ldB=ld,ldC=ld);
+    forall (i,j) in {0.. #m, 0.. #n} do 
+      D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[i,0.. #k]*B[..,j]));
+    var err = max reduce abs(C-D);
+    if err > errorThreshold {
+      failed += 1;
+      writef("%sgemm : Failure on test %i : %r\n",blasPrefix(t), tests, err);
+    } else {
+      passed += 1; 
+    }
+    tests+=1;
   }
 
 
