@@ -181,7 +181,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, int32_t dstlocal
 
   assert(dstlocale==0);
 
-  //Only count[0] and strides are meassured in number of bytes.
+  //Only count[0] and strides are measured in number of bytes.
   cnt[0] = count[0] * elemSize;
   if (strlvls>0) {
     srcstr[0] = srcstrides[0] * elemSize;
@@ -334,7 +334,7 @@ void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, int32_t srclocal
 
   assert(srclocale==0);
 
-  //Only count[0] and strides are meassured in number of bytes.
+  //Only count[0] and strides are measured in number of bytes.
   cnt[0] = count[0] * elemSize;
   if (strlvls>0) {
     srcstr[0] = srcstrides[0] * elemSize;

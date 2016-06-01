@@ -1756,7 +1756,7 @@ int32_t qio_skip_json_string_unlocked(qio_channel_t* restrict ch)
   }
 }
 
-// Read and skip an abitrary JSON field, not counting a following ,
+// Read and skip an arbitrary JSON field, not counting a following ,
 // Returns the last character read, or
 // negative for a negative error code.
 int32_t qio_skip_json_field_unlocked(qio_channel_t* restrict ch)
@@ -1860,7 +1860,7 @@ unlock:
 // Always do case insensitive reading; the characters here should be
 // lower case.
 typedef struct number_reading_state_s {
-  int base; // 0 means 0b 0x supported; othewise particular base 2,10,16
+  int base; // 0 means 0b 0x supported; otherwise particular base 2,10,16
 
   char allow_base; // allow 0b or 0x when base == 2 or == 16 respectively
                    // (these are always allowed when base == 0)
@@ -2847,7 +2847,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
 
       needspoint = 1;
       if( got < size ) {
-        // If we have suceeded at putting the number in dst,
+        // If we have succeeded at putting the number in dst,
         // go about figuring out if we need to add .0
         // If not - we will assume we need it for the purpose
         // of reserving temporary space.
@@ -3058,7 +3058,7 @@ qioerr qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, c
     char* tmp = NULL;
     char tmp_onstack[MAX_ON_STACK];
 
-    // Store it in a tempory variable and then
+    // Store it in a temporary variable and then
     // copy that in to the buffer.
     MAYBE_STACK_ALLOC(char, max, tmp, tmp_onstack);
     if( ! tmp ) {
@@ -3165,7 +3165,7 @@ qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* rest
     char* buf = NULL;
     char buf_onstack[MAX_ON_STACK];
 
-    // Store it in a tempory variable and then
+    // Store it in a temporary variable and then
     // copy that in to the buffer.
     MAYBE_STACK_ALLOC(char, max, buf, buf_onstack);
     if( ! buf ) {
@@ -4276,7 +4276,7 @@ qioerr qio_conv_parse(c_string fmt,
           }
         }
 
-        // s conversions without follwing encoding type must have a width.
+        // s conversions without following encoding type must have a width.
         if( type == 's' && width == WIDTH_NOT_SET ) {
           QIO_GET_CONSTANT_ERROR(err, EINVAL, "Binary s conversion must have a width");
           goto done;

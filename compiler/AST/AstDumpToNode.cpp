@@ -684,7 +684,7 @@ bool AstDumpToNode::enterDefExpr(DefExpr* node)
       isFnSymbol(node->sym)     == false &&
       isArgSymbol(node->sym)    == false)
   {
-    fputs(compact ? " sym:  " : " sym:  ", mFP);
+    fputs(" sym:  ", mFP);
 
     if (compact == false)
       mOffset = mOffset + 39;
@@ -923,10 +923,10 @@ bool AstDumpToNode::enterCallExpr(CallExpr* node)
   if (FnSymbol* fn = node->theFnSymbol())
   {
     if (fn->hasFlag(FLAG_BEGIN_BLOCK))
-      write("begin");
+      write(" begin");
 
-    else if (fn->hasFlag(FLAG_ON_BLOCK))
-      write("on");
+    if (fn->hasFlag(FLAG_ON_BLOCK))
+      write(" on");
   }
 
   if (compact)
@@ -1774,7 +1774,7 @@ int AstDumpToNode::writeType(Type* type, bool announce) const
 
   if (announce)
   {
-    fputs(compact ? " type: " : " type: ", mFP);
+    fputs(" type: ", mFP);
 
     len = (compact == true) ? 7 : 7;
   }
