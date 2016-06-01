@@ -2,41 +2,68 @@ use Random;
 use BLAS;
 use C_BLAS;
 
-config const errorThreshold = 1.e-10;
+config const errorThresholdDouble = 1.e-10;
+config const errorThresholdSingle = 1.e-5;
 
 proc main() {
-  test_dgemm();
+  test_gemm();
 }
 
-proc test_dgemm() {
+proc test_gemm() {
+  test_gemm_helper(real(32));
+  test_gemm_helper(real(64));
+  test_gemm_helper(complex(64));
+  test_gemm_helper(complex(128));
+}
+
+proc test_gemm_helper(type t) {
+  var passed = 0, 
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+
   const m = 10 : c_int,
         n = 7 : c_int,
         k = 7 : c_int;
   // Test dgemm -- do this with an array that isn't square
-  var A : [{0.. #m, 0.. #k}]real,
-      B : [{0.. #k, 0.. #n}]real,
-      C : [{0.. #m, 0.. #n}]real,
-      D : [{0.. #m, 0.. #n}]real;
+  var A : [{0.. #m, 0.. #k}]t,
+      B : [{0.. #k, 0.. #n}]t,
+      C : [{0.. #m, 0.. #n}]t,
+      D : [{0.. #m, 0.. #n}]t;
 
   fillRandom(A);
   fillRandom(B);
-  C = 0;
-  const alpha = 2.0,
-        beta = 0.0;
+  C = 0 : t;
+  const alpha = 2.0:t,
+        beta = 0.0:t;
 
-  //cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k,
-  //      alpha, A[0,0], k, B[0,0], n, beta, C[0,0], n);
   gemm(A,B,C,alpha,beta);
   forall (i,j) in D.domain do D[i,j] = alpha*(+ reduce (A[i,..]*B[..,j]));
   var err = max reduce abs(C-D);
-  printPass(err, "dgemm");
+  if err > errorThreshold {
+    failed += 1;
+    writef("%sgemm : Failure on test %i : %r\n",blasPrefix(t), tests, err);
+  } else {
+    passed += 1; 
+  }
+
+  writef("%sgemm : %i PASSED, %i FAILED \n", blasPrefix(t), passed, failed);
 }
 
+proc blasError(type t) {
+  select t {
+    when real(32) do return errorThresholdSingle;
+    when real(64) do return errorThresholdDouble;
+    when complex(64) do return errorThresholdSingle;
+    when complex(128) do return errorThresholdDouble;
+  }
+}
 
-proc printPass(err, case) {
-  if err > errorThreshold {
-    writeln("FAILED ",case);
-  } else {
-    writeln("PASSED ",case);
+proc blasPrefix(type t) {
+  select t {
+    when real(32) do return "s";
+    when real(64) do return "d";
+    when complex(64) do return "c";
+    when complex(128) do return "z";
   }
 }
