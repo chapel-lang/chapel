@@ -466,7 +466,7 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Vec<Symbol*>&                 visited) {
   bool retval = true;
 
-  if (visited.set_in(ref) == false) {
+  if (visited.set_in(ref) == NULL) {
     int numDefs = (defMap.get(ref)) ? defMap.get(ref)->n : 0;
 
     visited.set_add(ref);
