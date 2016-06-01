@@ -8,7 +8,7 @@
  * contributed by Albert Sidelnik
  *
 */
-config var n = 10000;
+config var n = 500;
 param PI = 3.141592653589793;
 const solar_mass = (4 * PI * PI);
 param days_per_year = 365.24;
