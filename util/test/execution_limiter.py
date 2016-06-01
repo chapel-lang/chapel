@@ -40,9 +40,9 @@ class FileLock():
 
     # simple backoff sleep, so that we have relatively fast latency for a bunch
     # of quick running tests, but don't poll the machine continuously if a test
-    # is taking a while to run.
-    sleep_time = .1
-    def _backoff_sleep(self, max_sleep=.5, backoff_factor=1.1):
+    # is taking a while to run. see #3928 for why the times/backoff were chosen
+    sleep_time = .02
+    def _backoff_sleep(self, max_sleep=.5, backoff_factor=1.3):
 	time.sleep(self.sleep_time)
 	if self.sleep_time < max_sleep:
 	    self.sleep_time *= backoff_factor
