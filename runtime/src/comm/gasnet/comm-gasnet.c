@@ -1066,7 +1066,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 
         local_buf = chpl_mem_alloc(buf_sz, CHPL_RT_MD_COMM_XMIT_RCV_BUF, 0, 0);
 #ifdef GASNET_SEGMENT_EVERYTHING
-        // local_buf is definately in our segment
+        // local_buf is definitely in our segment
 #else
         assert(chpl_comm_addr_gettable(chpl_nodeID, local_buf, buf_sz));
 #endif
@@ -1117,7 +1117,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 }
 
 //
-// This is an adaptor from Chapel code to GASNet's gasnet_gets_bulk. It does:
+// This is an adapter from Chapel code to GASNet's gasnet_gets_bulk. It does:
 // * convert count[0] and all of 'srcstr' and 'dststr' from counts of element
 //   to counts of bytes,
 //
@@ -1182,7 +1182,7 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
   gasnet_gets_bulk(dstaddr, dststr, srcnode, srcaddr, srcstr, cnt, strlvls); 
 }
 
-// See the comment for cmpl_comm_gets().
+// See the comment for chpl_comm_gets().
 void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_id, 
                          void* srcaddr, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
@@ -1331,7 +1331,7 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
       chpl_memcpy(&(info->arg), arg, arg_size);
   } else {
     // If the arg bundle is too large to fit in fork_t (i.e. passArg == false), 
-    // Copy the args into auxilliary memory and pass a pointer to this instead.
+    // Copy the args into auxiliary memory and pass a pointer to this instead.
     argCopy = chpl_mem_allocMany(1, arg_size,
                                  CHPL_RT_MD_COMM_FRK_SND_ARG, 0, 0);
     chpl_memcpy(argCopy, arg, arg_size);

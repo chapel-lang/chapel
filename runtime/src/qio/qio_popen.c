@@ -148,7 +148,7 @@ static qioerr setup_actions(
     -1 -> use the existing stdin/stdout
     -2 -> close the file descriptor
     -3 -> create a pipe and return the parent's end
-    >0 -> use this file discriptor
+    >0 -> use this file descriptor
    When this function returns, any file descriptors with a negative
    value indicating a pipe should be created (-3)
    will have their value replaced with the new pipe file descriptor.

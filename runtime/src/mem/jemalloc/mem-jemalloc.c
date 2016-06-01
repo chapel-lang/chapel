@@ -305,7 +305,7 @@ void chpl_mem_layerInit(void) {
 
   // If we have a shared heap, initialize our shared heap. This will take care
   // of initializing jemalloc. If we're not using a shared heap, do a first
-  // allocation to allow jemaloc to set up:
+  // allocation to allow jemalloc to set up:
   //
   //   jemalloc 4.2.0 man: "Once, when the first call is made to one of the
   //   memory allocation routines, the allocator initializes its internals"
