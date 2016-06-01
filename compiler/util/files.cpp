@@ -277,7 +277,16 @@ void openCFile(fileinfo* fi, const char* name, const char* ext) {
 
 void closeCFile(fileinfo* fi, bool beautifyIt) {
   fclose(fi->fptr);
-  if (beautifyIt && saveCDir[0])
+  //
+  // We should beautify if (1) we were asked to and (2) either (a) we
+  // were asked to save the C code or (b) we're debugging and were
+  // asked to codegen cpp #line information.
+  //
+  // TODO: With some refactoring, we could simply do the #line part of
+  // beautify without also improving indentation and such which could
+  // save some time.
+  //
+  if (beautifyIt && (saveCDir[0] || (debugCCode && printCppLineno)))
     beautify(fi);
 }
 
