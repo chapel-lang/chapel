@@ -243,7 +243,7 @@ module DefaultSparse {
               " (expected to be within ", parentDom, ")");
     }
 
-    proc bulkAdd(inds: [] rank*idxType, sorted=false, noDuplicate=false){
+    proc bulkAdd(inds: [] index(rank, idxType), sorted=false, noDuplicate=false){
       var numAdded = inds.size; //maybe remove this var
 
       /*writeln("Going to add ", numAdded, " indices");*/
@@ -257,7 +257,7 @@ module DefaultSparse {
       //eliminate duplicates --assumes sorted
       if !noDuplicate {
         //make sure lastInd != inds[inds.domain.low]
-        var lastInd = inds[inds.domain.low] + (1,0); 
+        var lastInd = inds[inds.domain.low] + 1; 
         for (i, p) in zip(inds, indivInsertPts)  {
           if i == lastInd {
             p = -1;
@@ -281,11 +281,14 @@ module DefaultSparse {
           if inds[i] == lastInd then halt("There are duplicates"); 
         }
 
-        for i in inds do boundsCheck(i);
+        //couldn't use boundsCheck because of 1D indices -- they are not 1tuple
+        for i in inds do
+          if !parentDom.member(i) then
+            halt("Index out of bounds");
 
       }
 
-      forall (i,p) in zip(inds, indivInsertPts) {
+      for (i,p) in zip(inds, indivInsertPts) {
         if p != -1 { //don't do anything if it's duplicate
           const (found, insertPt) = find(i);
           p = if found then -1 else insertPt; //mark as duplicate
@@ -341,6 +344,7 @@ module DefaultSparse {
             newLoc = -2; //finished new set
           while newLoc == -1 {
             newIndIdx -= 1;
+            if newIndIdx == -1 then break; //there were duplicates -- now done
             newLoc = actualInsertPts[newIndIdx];
           }
         }

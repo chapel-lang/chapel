@@ -1030,8 +1030,13 @@ module ChapelArray {
       _value.dsiAdd(i);
     }
 
+    proc bulkAdd(inds: [] _value.idxType, sorted=false,
+        noDuplicate=false) where isSparseDom(this) && _value.rank==1 {
+      _value.bulkAdd(inds, sorted, noDuplicate);
+    }
+
     proc bulkAdd(inds: [] _value.rank*_value.idxType, sorted=false,
-        noDuplicate=false) where isSparseDom(this) {
+        noDuplicate=false) where isSparseDom(this) && _value.rank>1{
       _value.bulkAdd(inds, sorted, noDuplicate);
     }
 
@@ -1478,10 +1483,31 @@ module ChapelArray {
     }
   }  // record _domain
 
+  proc +=(ref sd: domain, inds: [] sd._value.idxType) 
+    where sd._value.rank == 1 && isSparseDom(sd) {
+    
+    sd.bulkAdd(inds, false, false);
+  }
+
   proc +=(ref sd: domain, inds: [] sd._value.rank*sd._value.idxType ) 
-    where isSparseDom(sd) {
+    where sd._value.rank > 1 && isSparseDom(sd) {
 
     sd.bulkAdd(inds, false, false);
+  }
+
+  /*
+    Currently this is not optimized for addition of a sparse
+  */
+  proc +=(ref sd: domain, d: domain) 
+    where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
+
+    type _idxType = if sd._value.rank==1 then int else sd._value.rank*int;
+    const indCount = d._value.dsiNumIndices;
+    const arr: [{0..#indCount}] _idxType;
+
+    forall (a,i) in zip (arr,d) do a=i;
+
+    sd.bulkAdd(arr, true, true);
   }
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old
