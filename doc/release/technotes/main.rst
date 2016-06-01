@@ -35,7 +35,7 @@ For most uses, Chapel's existing config variable support is useful and
 easy; occasionally, however, one wants to fully control argument
 processing.
 
-If a progam's main() function is declared to take no arguments, Chapel
+If a program's main() function is declared to take no arguments, Chapel
 will behave as it traditionally has -- built-in flags and config
 settings will be handled and unrecognized flags will trigger an error.
 

@@ -1401,6 +1401,20 @@ module ChapelArray {
     pragma "no doc"
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 
+    pragma "no doc"
+    proc defaultSparseDist {
+      // For now, this function just returns the same distribution
+      // as the dense one. That works for:
+      //  * sparse subdomains of defaultDist arrays (they use defaultDist)
+      //  * sparse subdomains of Block distributed arrays (they use Block)
+      // However, it is likely that DSI implementations will need to be
+      // able to further customize this behavior. In particular, we
+      // could add e.g. dsiDefaultSparseDist to the DSI interface
+      // and have this function use _value.dsiDefaultSparseDist()
+      // (or perhaps _value.dist.dsiDefaultSparseDist() ).
+      return _getDistribution(_value.dist);
+    }
+
     /* Cast a rectangular domain to another rectangular domain type.
        If the old type is stridable and the new type is not stridable,
        ensure that the stride was 1.
@@ -2459,8 +2473,6 @@ module ChapelArray {
     //
     return && reduce (this == that);
   }
-
-
 
 
   //
