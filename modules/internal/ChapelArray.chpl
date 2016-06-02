@@ -1502,7 +1502,7 @@ module ChapelArray {
     where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
 
     type _idxType = if sd.rank==1 then int else sd.rank*int;
-    const indCount = d._value.dsiNumIndices;
+    const indCount = d.numIndices;
     const arr: [{0..#indCount}] _idxType;
   
     //this could be a parallel loop. but ranks don't match -- doesn't compile
