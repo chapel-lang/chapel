@@ -266,7 +266,7 @@ module DefaultSparse {
         const indsEnd = inds.domain.high;
         var lastInd = inds[indsStart];
         for i in indsStart+1..indsEnd {
-          if inds[i] == lastInd then halt("There are duplicates, call the
+          if inds[i] == lastInd then halt("There are duplicates, call the \
               function with noDuplicate=false"); 
         }
 
