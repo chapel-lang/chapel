@@ -15,7 +15,7 @@ const denseChunk = {1..3, 5..7};
 
 SparseDom += denseChunk; //not sure if this would work
 
-for (d,a) in zip(SparseDom, SparseMat) do a=d[1]+d[2];
+for i in denseChunk do SparseMat[i]=i[1]+i[2];
 
 writeln("Dense chunk:");
 for i in ParentDom.dim(1) {
@@ -30,7 +30,7 @@ var stridedChunk = {1..6 by 2, 1..3};
 
 SparseDom += stridedChunk;
 
-for (d,a) in zip(SparseDom, SparseMat) do a=d[1]+d[2];
+for i in stridedChunk do SparseMat[i]=i[1]+i[2];
 
 writeln("Dense + strided chunk:");
 for i in ParentDom.dim(1) {
@@ -49,7 +49,7 @@ for i in ParentDom.dim(1) {
 
 SparseDom += diagIndArr;
 
-for (d,a) in zip(SparseDom, SparseMat) do a=d[1]+d[2];
+for i in diagIndArr do SparseMat[i]=i[1]+i[2];
 
 writeln("Chunks + Diagonals:");
 for i in ParentDom.dim(1) {

@@ -236,17 +236,9 @@ module DefaultSparse {
       }
     }
 
-    proc boundsCheck(ind: rank*idxType):void {
-      if boundsChecking then
-        if !(parentDom.member(ind)) then
-          halt("COO domain/array index out of bounds: ", ind,
-              " (expected to be within ", parentDom, ")");
-    }
-
     proc bulkAdd(inds: [] index(rank, idxType), sorted=false, noDuplicate=false){
       var numAdded = inds.size; //maybe remove this var
 
-      /*writeln("Going to add ", numAdded, " indices");*/
       //find individual insert points
       //and eliminate duplicates between inds and dom
       var indivInsertPts: [{0..#numAdded}] int;
@@ -259,12 +251,8 @@ module DefaultSparse {
         //make sure lastInd != inds[inds.domain.low]
         var lastInd = inds[inds.domain.low] + 1; 
         for (i, p) in zip(inds, indivInsertPts)  {
-          if i == lastInd {
-            p = -1;
-          }
-          else {
-            lastInd = i;
-          }
+          if i == lastInd then p = -1;
+          else lastInd = i;
         }
       }
 
@@ -294,7 +282,6 @@ module DefaultSparse {
           p = if found then -1 else insertPt; //mark as duplicate
         }
       }
-      /*writeln("indivInsertPts: ", indivInsertPts);*/
 
       //shift insert points for bulk addition
       //previous indexes that are added will cause a shift in the next indexes
@@ -306,7 +293,7 @@ module DefaultSparse {
         }
         else ap = ip;
       }
-      /*writeln("actualInsertPts: ", actualInsertPts);*/
+
       const oldnnz = nnz;
       nnz += actualAddCnt;
 
@@ -326,12 +313,13 @@ module DefaultSparse {
         newLoc = actualInsertPts[newIndIdx];
       }
 
+      var arrShiftMap: [{1..oldnnz}] int; //to map where data goes
+
       for i in 1..nnz by -1 {
-        /*writeln("Picking ", i, "th elem. newLoc=",newLoc," oldIndIdx=",oldIndIdx,*/
-        /*" newIndIdx=",newIndIdx);*/
         if oldIndIdx >= 1 && i > newLoc {
           //shift from old values
           indices[i] = indices[oldIndIdx];
+          arrShiftMap[oldIndIdx] = i;
           oldIndIdx -= 1;
         }
         else if newIndIdx >= 0 && i == newLoc {
@@ -349,13 +337,10 @@ module DefaultSparse {
           }
         }
         else halt("Something went wrong");
-
-        //we can break if newIndIdx = -1 ?
       }
-      //TODO There is a call to sparseShiftArray for all arras subscribed to this
-      //domain in dsiAdd. I couldn't find a case where that would be necessary for
-      //this bulkAdd(ie it might be necassry, but so far it worked fine without
-      //it). Needs to be investigated further.
+
+      for a in _arrs do 
+        a.sparseBulkShiftArray(arrShiftMap, oldnnz);
     }
 
     proc dsiRemove(ind: rank*idxType) {
@@ -526,6 +511,21 @@ module DefaultSparse {
 
     proc IRV ref {
       return irv;
+    }
+
+    proc sparseBulkShiftArray(shiftMap, oldnnz){
+      var newIdx: int;
+      var prevNewIdx = 1;
+      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(1) by -1) {
+        newIdx = shiftMap[_newIdx];
+        data[newIdx] = data[i];
+        
+        //fill IRV up to previously added nnz
+        for emptyIndex in newIdx+1..prevNewIdx-1 do data[emptyIndex] = irv;
+        prevNewIdx = newIdx;
+      }
+      //fill the initial added space with IRV
+      for i in 1..prevNewIdx-1 do data[i] = irv;
     }
 
     proc sparseShiftArray(shiftrange, initrange) {
