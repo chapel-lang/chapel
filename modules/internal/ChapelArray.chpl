@@ -1036,7 +1036,7 @@ module ChapelArray {
     }
 
     proc bulkAdd(inds: [] _value.rank*_value.idxType, sorted=false,
-        noDuplicate=false) where isSparseDom(this) && _value.rank>1{
+        noDuplicate=false) where isSparseDom(this) && _value.rank>1 {
       _value.bulkAdd(inds, sorted, noDuplicate);
     }
 
@@ -1484,7 +1484,7 @@ module ChapelArray {
   }  // record _domain
 
   proc +=(ref sd: domain, inds: [] sd.idxType) 
-    where isSparseDom(sd) && sd.rank == 1{
+    where isSparseDom(sd) && sd.rank == 1 {
     
     sd.bulkAdd(inds, false, false);
   }

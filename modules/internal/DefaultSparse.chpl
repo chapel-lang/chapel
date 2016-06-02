@@ -513,6 +513,11 @@ module DefaultSparse {
       return irv;
     }
 
+    // shifts data array according to shiftMap where shiftMap[i] is the new index 
+    // of the ith element of the array. Called at the end of bulkAdd to move the
+    // existing items in data array and initialize new indices with irv.
+    // oldnnz is the number of elements in the array. As the function is called 
+    // at the end of bulkAdd, it is almost certain that oldnnz!=data.size
     proc sparseBulkShiftArray(shiftMap, oldnnz){
       var newIdx: int;
       var prevNewIdx = 1;
@@ -528,6 +533,7 @@ module DefaultSparse {
       for i in 1..prevNewIdx-1 do data[i] = irv;
     }
 
+    // shift data array after single index addition. Fills the new index with irv
     proc sparseShiftArray(shiftrange, initrange) {
       for i in initrange {
         data(i) = irv;
