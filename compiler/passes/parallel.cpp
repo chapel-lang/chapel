@@ -437,14 +437,48 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   baData.firstCall = false;
 }
 
+static CallExpr* helpFindDownEndCount(BlockStmt* block)
+{
+  Expr* cur = block->body.last();
+
+  while (cur && (isCallExpr(cur) || isDefExpr(cur) || isBlockStmt(cur))) {
+    if (CallExpr* call = toCallExpr(cur)) {
+      if (call->isResolved())
+        if (strcmp(call->resolvedFunction()->name, "_downEndCount") == 0)
+          return call;
+    } else if (BlockStmt* inner = toBlockStmt(cur)) {
+      // Need to handle local blocks since the compiler
+      // sometimes places end count inside one.
+
+      // Stop for any actual loop
+      if (block->isLoopStmt()) break;
+
+      // Check inside the block.
+      CallExpr* got = helpFindDownEndCount(inner);
+      if (got) return got;
+    }
+
+    cur = cur->prev;
+  }
+
+  return NULL;
+}
+
+// Finds downEndCount CallExpr or returns NULL.
+static CallExpr* findDownEndCount(FnSymbol* fn)
+{
+  return helpFindDownEndCount(fn->body);
+}
+
 
 static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* wrap_c, AggregateType* ctype)
 {
   if (fn->hasFlag(FLAG_NON_BLOCKING) ||
       fn->hasEitherFlag(FLAG_BEGIN, FLAG_COBEGIN_OR_COFORALL)) {
-    CallExpr* downEndCount = fn->findDownEndCountOrReturn();
+    CallExpr* downEndCount = findDownEndCount(fn);
     // We should have found a downEndCount for non-blocking task/on fns
-    INT_ASSERT(!downEndCount->isPrimitive(PRIM_RETURN));
+    INT_ASSERT(downEndCount);
+
     // Move the downEndCount to the wrapper function.
 
     FnSymbol* downEndCountFn = downEndCount->resolvedFunction();

@@ -2204,67 +2204,6 @@ FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
   ret->insertBefore(ast);
 }
 
-
-static
-CallExpr* helpFindDownEndCount(BlockStmt* block)
-{
-  Expr* cur = block->body.last();
-
-  while (cur && (isCallExpr(cur) || isDefExpr(cur) || isBlockStmt(cur))) {
-    if (CallExpr* call = toCallExpr(cur)) {
-      if (call->isResolved())
-        if (strcmp(call->resolvedFunction()->name, "_downEndCount") == 0)
-          return call;
-    } else if (BlockStmt* inner = toBlockStmt(cur)) {
-      // Need to handle local blocks since the compiler
-      // sometimes places end count inside one.
-
-      // Stop for any actual loop
-      if (block->isLoopStmt()) break;
-
-      // Check inside the block.
-      CallExpr* got = helpFindDownEndCount(inner);
-      if (got) return got;
-    }
-
-    cur = cur->prev;
-  }
-
-  return NULL;
-}
-
-// Finds downEndCount CallExpr or returns NULL.
-CallExpr*
-FnSymbol::findDownEndCount()
-{
-  return helpFindDownEndCount(body);
-}
-
-
-CallExpr*
-FnSymbol::findDownEndCountOrReturn() {
-  CallExpr* ret = toCallExpr(body->body.last());
-
-  if (!ret || !ret->isPrimitive(PRIM_RETURN))
-    INT_FATAL(this, "function is not normal");
-
-  CallExpr* end = findDownEndCount();
-
-  if (end) return end;
-  // Otherwise, no _downEndCount() call, so just use the return
-  return ret;
-}
-
-// Inserts the given ast ahead of the _downEndCount call at the end of this
-// function, if present.  Otherwise, inserts it ahead of the return.
-void
-FnSymbol::insertBeforeDownEndCount(Expr* ast) {
-  Expr* downEndCountOrReturn = findDownEndCountOrReturn();
-
-  downEndCountOrReturn->insertBefore(ast);
-}
-
-
 void
 FnSymbol::insertFormalAtHead(BaseAST* ast) {
   Expr* toInsert = NULL;
