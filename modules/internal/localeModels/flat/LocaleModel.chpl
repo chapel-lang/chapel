@@ -388,7 +388,9 @@ module LocaleModel {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
       // don't call the runtime execute_on function if we can stay local
-      assert(false); // should be handled by doDirectExecuteOn
+      // one day, we could rely on this always being handled
+      // by the compiler's use of doDirectExecuteOn, but for now
+      // the compiler calls this version in some cases.
       chpl_ftable_call(fn, args);
     } else {
       chpl_comm_execute_on(node, chpl_sublocFromLocaleID(loc),
@@ -410,7 +412,6 @@ module LocaleModel {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
       // don't call the runtime fast execute_on function if we can stay local
-      assert(false); // should be handled by doDirectExecuteOn
       chpl_ftable_call(fn, args);
     } else {
       chpl_comm_execute_on_fast(node, chpl_sublocFromLocaleID(loc),

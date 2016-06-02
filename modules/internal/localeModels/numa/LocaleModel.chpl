@@ -486,7 +486,6 @@ module LocaleModel {
       // run directly on this node
       var origSubloc = chpl_task_getRequestedSubloc();
       if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
-        assert(false); // should be handled by doDirectExecuteOn
         chpl_ftable_call(fn, args);
       } else {
         // move to a different sublocale
@@ -515,7 +514,6 @@ module LocaleModel {
     } else {
       var origSubloc = chpl_task_getRequestedSubloc();
       if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
-        assert(false); // should be handled by doDirectExecuteOn
         chpl_ftable_call(fn, args);
       } else {
         // move to a different sublocale

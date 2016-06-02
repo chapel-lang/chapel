@@ -609,15 +609,18 @@ void createTaskFunctions(void) {
         INT_ASSERT(isTaskFun(fn));
         CallExpr* call = new CallExpr(fn);
 
-        // These variables are only used if fCacheRemote is set.
-        bool needsMemFence = true;
+        bool needsMemFence = true; // only used with fCacheRemote
         bool isBlockingOn = false;
+        bool isInIterator = false;
 
         if( block->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON) ) {
           isBlockingOn = true;
         }
+        if (FnSymbol* pfn = toFnSymbol(block->parentSymbol)) {
+          isInIterator = pfn->isIterator();
+        }
 
-        if( isBlockingOn ) {
+        if( isBlockingOn && !isInIterator) {
           // Generate an if statement
           // if ( chpl_doDirectExecuteOn( targetLocale ) )
           //     call un-wrapped task function
@@ -625,6 +628,12 @@ void createTaskFunctions(void) {
           //     proceed as with chpl_executeOn/chpl_executeOnFast
           //     fid call to wrapper function on a remote local
           //     (possibly just a different sublocale)
+          //
+          // This is called the "direct on" optimization.
+          //
+          // TODO: This is disabled for iterators for now in order to avoid
+          // interfering with iterator inlining and to avoid an assertion error
+          // in lowerIterators.
 
           VarSymbol* isDirectTmp = newTemp("isdirect", dtBool);
           CallExpr* isCall;
