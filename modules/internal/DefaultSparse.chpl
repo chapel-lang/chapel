@@ -277,8 +277,8 @@ module DefaultSparse {
 
       }
 
-      for (i,p) in zip(inds, indivInsertPts) {
-        if p != -1 { //don't do anything if it's duplicate
+      forall (i,p) in zip(inds, indivInsertPts) {
+        if noDuplicate || p != -1 { //don't do anything if it's duplicate
           const (found, insertPt) = find(i);
           p = if found then -1 else insertPt; //mark as duplicate
         }
