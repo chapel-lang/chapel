@@ -4,7 +4,7 @@ These tests are an implementation of the examples here :
   https://computing.llnl.gov/tutorials/mpi/
 
 Each test is in a separate procedure, each of which ends with an
- MPI_Barrier (this is especially important since, in some cases, 
+ MPI_Barrier (this is especially important since, in some cases,
  we only use a subset of the ranks).
 
 */
@@ -12,7 +12,7 @@ Each test is in a separate procedure, each of which ends with an
 /* This initializes MPI by default, you can turn
 that off with the autoInitMPI parameter
  */
-use MPI; 
+use MPI;
 use C_MPI; // Include the C-API, to reduce verbosity of the code.
 use Random;
 
@@ -39,7 +39,8 @@ proc main() {
 
 proc hello() {
   /* Simple test of MPI initialization */
-  writef("This is rank %i of %i processes saying Hello, Chapel!\n",worldRank, worldSize);
+  writef("HELLO : %i : This is rank %i of %i processes saying Hello, Chapel!\n",worldRank,
+            worldRank, worldSize);
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
@@ -61,7 +62,7 @@ proc point2point() {
 
     var count = stat.getCount(MPI_DOUBLE);
 
-    writef("Task %i: Received %i pi=%r from task %i with tag %i\n",
+    writef("P2P : Task %i: Received %i pi=%r from task %i with tag %i\n",
         worldRank, count, recvpi, stat.MPI_SOURCE, stat.MPI_TAG);
   }
   MPI_Barrier(MPI_COMM_WORLD);
@@ -90,7 +91,7 @@ proc ring() {
 
   MPI_Waitall(4, requests, status);
 
-  writef("Rank %i recieved %i from the left, and %i from the right\n",worldRank, buf[1], buf[2]);
+  writef("RING : Rank %i recieved %i from the left, and %i from the right\n",worldRank, buf[1], buf[2]);
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
@@ -112,7 +113,7 @@ proc pi() {
 
   if worldRank==0 {
     summ *= 4/worldSize;
-    writef("I estimate pi to be %r\n",summ);
+    writef("PI : I estimate pi to be %5.2r\n",summ);
   }
   MPI_Barrier(MPI_COMM_WORLD);
 }
@@ -128,7 +129,7 @@ proc test_scatter() {
   // Use MPI Scatter
   {
     MPI_Scatter(arr[0,0], 4, MPI_FLOAT, recbuf[0], 4, MPI_FLOAT, 0, MPI_COMM_WORLD);
-    writef("Rank %i :",worldRank); writeln(recbuf);
+    writef("SCATTER1 : Rank %i :",worldRank); writeln(recbuf);
     MPI_Barrier(MPI_COMM_WORLD);
   }
 
@@ -145,7 +146,7 @@ proc test_scatter() {
       for irank in 0.. #worldSize do MPI_Send(arr[irank,0], 1, rowtype, irank, 1, MPI_COMM_WORLD);
     }
     MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
-    writef("Rank %i :",worldRank); writeln(recbuf);
+    writef("SCATTER2 : Rank %i :",worldRank); writeln(recbuf);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Type_free(rowtype);
   }
@@ -162,7 +163,7 @@ proc test_scatter() {
       for irank in 0.. #worldSize do MPI_Send(arr[0,irank], 1, coltype, irank, 1, MPI_COMM_WORLD);
     }
     MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
-    writef("Rank %i :",worldRank); writeln(recbuf);
+    writef("SCATTER3 : Rank %i :",worldRank); writeln(recbuf);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Type_free(coltype);
   }
@@ -183,7 +184,7 @@ proc test_scatter() {
       for irank in 0.. #worldSize do MPI_Send(arr2[0], 1, indextype, irank, 1, MPI_COMM_WORLD);
     }
     MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
-    writef("Rank %i :",worldRank); writeln(recbuf);
+    writef("SCATTER4 : Rank %i :",worldRank); writeln(recbuf);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Type_free(indextype);
   }
@@ -191,7 +192,7 @@ proc test_scatter() {
 }
 
 
-/* Test structure derived type. 
+/* Test structure derived type.
 
 Note that this particular function is deprecated in MPI-1.1
 */
@@ -213,7 +214,7 @@ proc test_structure() {
   MPI_Type_struct(2, block, offsets, oldtype, ptype);
   MPI_Type_commit(ptype);
 
-  
+
   var a : [0.. #10] Particle;
   if worldRank==0 {
     for (i1, p1) in zip(0.. , a) {
@@ -228,20 +229,20 @@ proc test_structure() {
 
   MPI_Bcast(a[0], 10, ptype, 0, MPI_COMM_WORLD);
 
-  writeln("Rank : ", worldRank, " : ", a[3]);
+  writeln("TYPE : Rank : ", worldRank, " : ", a[3]);
 
   MPI_Type_free(ptype);
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
-/* Test Allgather 
+/* Test Allgather
 
 */
 proc test_allgather() {
   var ranks : [0.. #worldSize]c_int;
-  
+
   MPI_Allgather(worldRank, 1, MPI_INT, ranks[0], 1, MPI_INT, MPI_COMM_WORLD);
-  writeln("Rank ", worldRank, " : ", ranks);
+  writeln("ALLGATHER : Rank ", worldRank, " : ", ranks);
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
@@ -250,7 +251,7 @@ proc test_newcomm() {
   var comm : MPI_Comm,
       ranks1 : [0..1]c_int = [0:c_int, 1:c_int],
       ranks2 : [0..1]c_int = [2:c_int, 3:c_int],
-      sum : c_int, 
+      sum : c_int,
       newrank : c_int,
       origgrp, newgrp : MPI_Group;
 
@@ -265,6 +266,6 @@ proc test_newcomm() {
 
   MPI_Comm_rank(comm, newrank);
 
-  writef("Rank = %i, new rank = %i, sum = %i\n",worldRank, newrank, sum);
+  writef("ALLGATHER : Rank = %i, new rank = %i, sum = %i\n",worldRank, newrank, sum);
   MPI_Barrier(MPI_COMM_WORLD);
 }
