@@ -759,7 +759,7 @@ typedef struct qio_truncate_info_ {
 } qio_truncate_info_t;
 
 // Quote a string according to a style (we have this one for some error
-// situations in which it's undesireable to use the stdout channel
+// situations in which it's undesirable to use the stdout channel
 // because of e.g. Chapel module initialization order)
 qioerr qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, const char** out, qio_truncate_info_t* ti);
 // like qio_quote_string, but only get length information.
