@@ -223,8 +223,6 @@ module CPtr {
     compilerError("Can't call a C function pointer within Chapel");
   }
 
-  //  inline proc c_FnPtrTo(
-
   private extern const CHPL_RT_MD_ARRAY_ELEMENTS:chpl_mem_descInt_t;
 
   private inline proc c_sizeof(type x): size_t {
