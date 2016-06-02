@@ -1030,7 +1030,7 @@ module ChapelArray {
       _value.dsiAdd(i);
     }
 
-    proc __getActualInsertPts(inds: [] index(rank, idxType), sorted, noDuplicate) 
+    proc __getActualInsertPts(inds: [] index(rank, idxType), isSorted, isUnique) 
                                               where isSparseDom(this) {
 
       var numAdded = inds.size; //maybe remove this var
@@ -1040,10 +1040,10 @@ module ChapelArray {
       var indivInsertPts: [{0..#numAdded}] int;
       var actualInsertPts: [{0..#numAdded}] int; //where to put in newdom
 
-      if !sorted then QuickSort(inds);
+      if !isSorted then QuickSort(inds);
 
       //eliminate duplicates --assumes sorted
-      if !noDuplicate {
+      if !isUnique {
         //make sure lastInd != inds[inds.domain.low]
         var lastInd = inds[inds.domain.low] + 1; 
         for (i, p) in zip(inds, indivInsertPts)  {
@@ -1055,7 +1055,7 @@ module ChapelArray {
       //verify sorted and no duplicates if not --fast
       if boundsChecking {
         VerifySort(inds, "bulkAdd: Data is not sorted, call the function with \
-            sorted=false");
+            isSorted=false");
 
         //check duplicates assuming sorted
         const indsStart = inds.domain.low;
@@ -1063,7 +1063,7 @@ module ChapelArray {
         var lastInd = inds[indsStart];
         for i in indsStart+1..indsEnd {
           if inds[i] == lastInd then halt("There are duplicates, call the \
-              function with noDuplicate=false"); 
+              function with isUnique=false"); 
         }
 
         for i in inds do _value.boundsCheck(i);
@@ -1071,7 +1071,7 @@ module ChapelArray {
       }
 
       forall (i,p) in zip(inds, indivInsertPts) {
-        if noDuplicate || p != -1 { //don't do anything if it's duplicate
+        if isUnique || p != -1 { //don't do anything if it's duplicate
           const (found, insertPt) = _value.find(i);
           p = if found then -1 else insertPt; //mark as duplicate
         }
@@ -1094,20 +1094,20 @@ module ChapelArray {
 
     }
 
-    proc bulkAdd(inds: [] _value.idxType, sorted=false,
-        noDuplicate=false) where isSparseDom(this) && _value.rank==1 {
+    proc bulkAdd(inds: [] _value.idxType, isSorted=false,
+        isUnique=false) where isSparseDom(this) && _value.rank==1 {
 
       const (actualInsertPts, actualAddCnt) =
-          __getActualInsertPts(inds,sorted,noDuplicate);
+          __getActualInsertPts(inds, isSorted, isUnique);
 
       _value.bulkAdd(inds, actualInsertPts, actualAddCnt);
     }
 
-    proc bulkAdd(inds: [] _value.rank*_value.idxType, sorted=false,
-        noDuplicate=false) where isSparseDom(this) && _value.rank>1 {
+    proc bulkAdd(inds: [] _value.rank*_value.idxType, isSorted=false,
+        isUnique=false) where isSparseDom(this) && _value.rank>1 {
 
       const (actualInsertPts, actualAddCnt) =
-          __getActualInsertPts(inds,sorted,noDuplicate);
+          __getActualInsertPts(inds, isSorted, isUnique);
 
       _value.bulkAdd(inds, actualInsertPts, actualAddCnt);
     }
