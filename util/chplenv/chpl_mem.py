@@ -21,9 +21,10 @@ def get(flag='host'):
             compiler_val = chpl_compiler.get('target')
 
             cygwin = platform_val.startswith('cygwin')
+            pgi = 'pgi' in compiler_val
             gnu_darwin = platform_val == 'darwin' and compiler_val == 'gnu'
 
-            if cygwin or gnu_darwin:
+            if cygwin or pgi or gnu_darwin:
                 mem_val = 'cstdlib'
             else:
                 mem_val = 'jemalloc'

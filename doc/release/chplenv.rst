@@ -380,8 +380,9 @@ CHPL_MEM
         ========= =======================================================
 
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
-   If the target platform is ``cygwin*``, or the target platform is
-   ``darwin`` and the target compiler is ``gnu`` it defaults to ``cstdlib``
+   If the target platform is ``cygwin*``, the target compiler is ``*pgi``,
+   or the target platform is ``darwin`` and the target compiler is ``gnu``
+   it defaults to ``cstdlib``
 
 
 .. _readme-chplenv.CHPL_LAUNCHER:
