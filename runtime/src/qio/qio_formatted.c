@@ -1756,7 +1756,7 @@ int32_t qio_skip_json_string_unlocked(qio_channel_t* restrict ch)
   }
 }
 
-// Read and skip an abitrary JSON field, not counting a following ,
+// Read and skip an arbitrary JSON field, not counting a following ,
 // Returns the last character read, or
 // negative for a negative error code.
 int32_t qio_skip_json_field_unlocked(qio_channel_t* restrict ch)
@@ -1860,7 +1860,7 @@ unlock:
 // Always do case insensitive reading; the characters here should be
 // lower case.
 typedef struct number_reading_state_s {
-  int base; // 0 means 0b 0x supported; othewise particular base 2,10,16
+  int base; // 0 means 0b 0x supported; otherwise particular base 2,10,16
 
   char allow_base; // allow 0b or 0x when base == 2 or == 16 respectively
                    // (these are always allowed when base == 0)
@@ -2589,6 +2589,28 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   return i;
 }
 
+//This function finds where the last non-zero digit
+//is in the decimal part of an exponential number.
+//
+//This will be used in _ftoa_core for resolve a
+//a problem about trailing zeroes.
+static int _find_prec(char *buf, int len){
+  int dp_index = 0;
+  int last_dig = 0;
+  int index = 0;
+
+  //Find where the decimal point is
+  while( dp_index < len && buf[dp_index++] != '.');
+
+  //Explore the decimal part for find where the
+  //last non-zero digit is.
+  for( index = dp_index; index < len && buf[index] != 'e'; index++ ){
+    if( buf[index] != '0' )
+      last_dig = index - dp_index + 1;
+  }
+  return last_dig;
+}
+
 // Converts num to a string in buf, returns the number
 // of bytes that would be used if space permits (not including null)
 // or -1 on error
@@ -2656,9 +2678,32 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
   } else if( realfmt == 0 ) {
     if( precision < 0 ) {
       if( uppercase ) {
-        got = snprintf(buf, buf_sz, "%G", num);
+        // This if is necessary because if the number has
+        // 6 digits in the integer part, %g will not print
+        // the decimal part because the integer part have
+        // a number of digits equals to the standard precision.
+        if(num >= 100000.0 && num < 1000000.0){
+          got = snprintf(buf, buf_sz, "%.5E", num);
+          //Since we force the %.5e for maintain a precision of
+          //6 digits, the output could include some trailing zeroes.
+          //With _find_prec, we find how much digits we need.
+          //
+          //It can also be done starting from the number itself
+          //but this way avoids to deal with the loss of precision
+          //caused by floating point representation
+          if(buf_sz > 0)
+            got = snprintf(buf, buf_sz, "%.*E",_find_prec(buf, got), num);
+        }
+        else
+          got = snprintf(buf, buf_sz, "%G", num);
       } else {
-        got = snprintf(buf, buf_sz, "%g", num);
+        if(num >= 100000.0 && num < 1000000.0){
+          got = snprintf(buf, buf_sz, "%.5e", num);
+          if(buf_sz > 0)
+            got = snprintf(buf, buf_sz, "%.*e",_find_prec(buf, got), num);
+        }
+        else
+          got = snprintf(buf, buf_sz, "%g", num);
       }
     } else {
       if( uppercase ) {
@@ -2802,7 +2847,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
 
       needspoint = 1;
       if( got < size ) {
-        // If we have suceeded at putting the number in dst,
+        // If we have succeeded at putting the number in dst,
         // go about figuring out if we need to add .0
         // If not - we will assume we need it for the purpose
         // of reserving temporary space.
@@ -3013,7 +3058,7 @@ qioerr qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, c
     char* tmp = NULL;
     char tmp_onstack[MAX_ON_STACK];
 
-    // Store it in a tempory variable and then
+    // Store it in a temporary variable and then
     // copy that in to the buffer.
     MAYBE_STACK_ALLOC(char, max, tmp, tmp_onstack);
     if( ! tmp ) {
@@ -3120,7 +3165,7 @@ qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* rest
     char* buf = NULL;
     char buf_onstack[MAX_ON_STACK];
 
-    // Store it in a tempory variable and then
+    // Store it in a temporary variable and then
     // copy that in to the buffer.
     MAYBE_STACK_ALLOC(char, max, buf, buf_onstack);
     if( ! buf ) {
@@ -4231,7 +4276,7 @@ qioerr qio_conv_parse(c_string fmt,
           }
         }
 
-        // s conversions without follwing encoding type must have a width.
+        // s conversions without following encoding type must have a width.
         if( type == 's' && width == WIDTH_NOT_SET ) {
           QIO_GET_CONSTANT_ERROR(err, EINVAL, "Binary s conversion must have a width");
           goto done;

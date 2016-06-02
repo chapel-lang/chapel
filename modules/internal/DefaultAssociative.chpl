@@ -564,7 +564,7 @@ module DefaultAssociative {
           halt("Requested capacity (", numKeys, ") exceeds maximum size");
         }
 
-        //Changing underlying strucure, time for locking
+        //Changing underlying structure, time for locking
         if shouldLock then lockTable();
         if entries > 0 {
           if tableSize==prime {

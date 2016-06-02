@@ -19,7 +19,7 @@
 
 
 // Merges sequences of loads or sequences of stores
-// on adress space(globalSpace) into memcpy operations so
+// on address space(globalSpace) into memcpy operations so
 // that we can do fewer puts or gets. For example
 // %i1 = getelementptr ... %p, ..., 1
 // %i2 = getelementptr ... %p, ..., 2

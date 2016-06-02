@@ -90,6 +90,13 @@ bool AstLogger::enterCallExpr(CallExpr* node) {
 void AstLogger::exitCallExpr(CallExpr* node) {
 }
 
+bool AstLogger::enterContextCallExpr(ContextCallExpr* node) {
+  return true;
+}
+
+void AstLogger::exitContextCallExpr(ContextCallExpr* node) {
+}
+
 bool AstLogger::enterDefExpr(DefExpr* node) {
   return true;
 }

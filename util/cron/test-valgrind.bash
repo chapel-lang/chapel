@@ -7,6 +7,8 @@ source $CWD/common.bash
 source $CWD/common-fifo.bash
 source $CWD/common-valgrind.bash
 
+export CHPL_MEM=cstdlib
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="valgrind"
 
 $CWD/nightly -cron ${nightly_args}

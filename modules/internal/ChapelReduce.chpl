@@ -75,7 +75,7 @@ module ChapelReduce {
     var value: chpl__sumType(eltType);
 
     // Rely on the default value of the desired type.
-    // Todo: is this efficnent when that is an array?
+    // Todo: is this efficient when that is an array?
     proc identity {
       var x: chpl__sumType(eltType); return x;
     }

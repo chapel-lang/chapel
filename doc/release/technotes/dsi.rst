@@ -125,7 +125,7 @@ class ``GlobalDistribution``
 .. method:: proc GlobalDistribution.dsiEqualDMaps(that: /*some other GlobalDistribution*/): bool
 
   Return whether or not the two domain maps are "equal" (specify the
-  same distribution).  This is invoked when ``==`` is appled to two
+  same distribution).  This is invoked when ``==`` is applied to two
   domain maps.
 
 
@@ -364,7 +364,7 @@ B. Follower Yield Order
 
 .. method:: iter GlobalDomain.these(param tag) where tag == iterKind.standalone
 
-  A "standlone" parallel iterator. It is optional. If it is provided,
+  A "standalone" parallel iterator. It is optional. If it is provided,
   it is used in non-zippered "forall" loops
   instead of a combination of leader+follower iterators.
 

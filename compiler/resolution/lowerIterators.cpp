@@ -830,7 +830,7 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<BaseAST*> as
 // Q: What about yields in task functions?
 // A: Since this is done before flattenFunctions, task functions
 // are still nested in their respective iterators. So their yields
-// will be included in 'asts' and handled when 'fn' is the inclosing
+// will be included in 'asts' and handled when 'fn' is the enclosing
 // iterator.
 //
 static void localizeIteratorReturnSymbols() {
@@ -1676,7 +1676,7 @@ expandForLoop(ForLoop* forLoop) {
     // iterator.  In either case, it seems like a bad idea to try to perform
     // inlineSingleYieldIterator() on the same forLoop.  That is the reason for
     // the unequivocal "else".
-    // To try the other olternative, replace the following line with:
+    // To try the other alternative, replace the following line with:
     // if (!converted && canInlineSingleYieldIterator(iterator) &&
     else if (canInlineSingleYieldIterator(iterator) &&
             (iterator->type->dispatchChildren.n == 0 ||
@@ -1701,7 +1701,7 @@ expandForLoop(ForLoop* forLoop) {
     //     zip2(_iterator);
     //     // Bounds checks inserted here.
     //     zip3(_iterator1); zip3(_iterator2);
-    //     more = hasMore(itertor1);
+    //     more = hasMore(iterator1);
     //   }
     //   zip4(_iterator2); zip4(_iterator1);
     // In zippered iterators, each clause may contain multiple calls to zip1(),
@@ -1783,7 +1783,7 @@ expandForLoop(ForLoop* forLoop) {
           }
 
         } else if (!fNoBoundsChecks) {
-          // for all but the first iterator add checks at the begining of each loop run
+          // for all but the first iterator add checks at the beginning of each loop run
           // and a final one after to make sure the other iterators don't finish before
           // the "leader" and they don't have more afterwards.
           VarSymbol* hasMore    = newTemp("hasMore",    dtBool);
@@ -2007,10 +2007,10 @@ static void addCrossedFreeIteratorCalls(GotoStmt* stmt)
 //
 static void addCrossedFreeIteratorCalls()
 {
-  // Walk all goto statments.
+  // Walk all goto statements.
   forv_Vec(GotoStmt, stmt, gGotoStmts)
   {
-    // Ignore goto statments that are not in the tree.
+    // Ignore goto statements that are not in the tree.
     if (!stmt->parentSymbol)
       continue;
 

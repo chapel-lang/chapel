@@ -3900,13 +3900,13 @@ void CallExpr::prettyPrint(std::ostream *o) {
         if (array && expr == argList.last()) {
           *o << "] ";
         } else {
-          *o << ", "; 
-        }     
+          *o << ", ";
+        }
       }
-      expr->prettyPrint(o);         
+      expr->prettyPrint(o);
     }
     if (array && argList.first() == argList.last())
-      *o << "]"; 
+      *o << "]";
   }
   if (!array && !unusual) {
     *o << ")";
@@ -5866,8 +5866,14 @@ ContextCallExpr::verify() {
 }
 
 void ContextCallExpr::accept(AstVisitor* visitor) {
-  for_alist(expr, options)
-    expr->accept(visitor);
+  if (visitor->enterContextCallExpr(this) == true) {
+
+    for_alist(expr, options) {
+      expr->accept(visitor);
+    }
+
+    visitor->exitContextCallExpr(this);
+  }
 }
 
 Type* ContextCallExpr::typeInfo() {

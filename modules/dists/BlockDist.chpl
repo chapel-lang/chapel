@@ -28,7 +28,7 @@
 //   LocBlockArr : local array class (per-locale instances)
 //
 // When a distribution, domain, or array class instance is created, a
-// correponding local class instance is created on each locale that is
+// corresponding local class instance is created on each locale that is
 // mapped to by the distribution.
 //
 
@@ -41,6 +41,7 @@
 use DSIUtil;
 use ChapelUtil;
 use CommDiagnostics;
+use SparseBlockDist;
 
 //
 // These flags are used to output debug information and run extra
@@ -483,6 +484,10 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   return dom;
 }
 
+proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
+  return new SparseBlockDom(rank=rank, idxType=idxType, dist=this, parentDom=dom, whole=dom._value.whole);
+}
+
 //
 // output distribution
 //
@@ -501,7 +506,7 @@ proc Block.dsiIndexToLocale(ind: idxType) where rank == 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
-proc Block.dsiIndexToLocale(ind: rank*idxType) where rank > 1 {
+proc Block.dsiIndexToLocale(ind: rank*idxType) {
   return targetLocales(targetLocsIdx(ind));
 }
 
@@ -668,6 +673,7 @@ proc LocBlock.LocBlock(param rank: int,
   }
 }
 
+
 proc BlockDom.dsiMyDist() return dist;
 
 proc BlockDom.dsiDisplayRepresentation() {
@@ -724,7 +730,7 @@ proc Block.dsiCreateRankChangeDist(param newRank: int, args) {
 
   for param i in 1..rank {
     if isCollapsedDimension(args(i)) {
-      // set indicies that are out of bounds to the bounding box low or high.
+      // set indices that are out of bounds to the bounding box low or high.
       collapsedBbox(i) = if args(i) < boundingBox.dim(i).low then boundingBox.dim(i).low else if args(i) > boundingBox.dim(i).high then boundingBox.dim(i).high else args(i);
       collapsedLocs(i) = collapsedLocInd(i);
     } else {

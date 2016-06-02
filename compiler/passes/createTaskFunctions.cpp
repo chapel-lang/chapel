@@ -172,21 +172,21 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   VarSymbol* eltType = newTemp("redEltType");
   eltType->addFlag(FLAG_MAYBE_TYPE);
 
-  Expr* headAncor = call;
-  if (isCoforall) headAncor = headAncor->parentExpr;
-  headAncor->insertBefore(new DefExpr(eltType));
-  headAncor->insertBefore("'move'(%S, 'typeof'(%S))", eltType, origSym);
-  headAncor->insertBefore(new DefExpr(globalOp));
+  Expr* headAnchor = call;
+  if (isCoforall) headAnchor = headAnchor->parentExpr;
+  headAnchor->insertBefore(new DefExpr(eltType));
+  headAnchor->insertBefore("'move'(%S, 'typeof'(%S))", eltType, origSym);
+  headAnchor->insertBefore(new DefExpr(globalOp));
   CallExpr* newOp = new CallExpr(reduceType->type->defaultInitializer->name,
                               new NamedExpr("eltType", new SymExpr(eltType)));
-  headAncor->insertBefore(new CallExpr(PRIM_MOVE, globalOp, newOp));
+  headAnchor->insertBefore(new CallExpr(PRIM_MOVE, globalOp, newOp));
 
-  Expr* tailAncor = findTailInsertionPoint(call, isCoforall);
+  Expr* tailAnchor = findTailInsertionPoint(call, isCoforall);
   // Doing insertAfter() calls in reverse order.
-  // Can't insertBefore() on tailAncor->next - that can be NULL.
-  tailAncor->insertAfter("'delete'(%S)",
+  // Can't insertBefore() on tailAnchor->next - that can be NULL.
+  tailAnchor->insertAfter("'delete'(%S)",
                          globalOp);
-  tailAncor->insertAfter("'='(%S, generate(%S,%S))",
+  tailAnchor->insertAfter("'='(%S, generate(%S,%S))",
                          origSym, gMethodToken, globalOp);
 
   ArgSymbol* parentOp = new ArgSymbol(INTENT_BLANK, "reduceParent", dtUnknown);

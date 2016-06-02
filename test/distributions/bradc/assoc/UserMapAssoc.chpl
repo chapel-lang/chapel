@@ -776,7 +776,7 @@ class UserMapAssocArr: BaseArr {
       yield i;
   }
 
-  iter these(param tag: iterKind, followThis) ref where tag == iterKind.standalone {
+  iter these(param tag: iterKind) ref where tag == iterKind.standalone {
     coforall locArr in locArrs do on locArr {
       // Forward to associative array standalone iterator
       for i in locArr.myElems._value.these(tag) {

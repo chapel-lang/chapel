@@ -3135,7 +3135,7 @@ static char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
       ParserContext context(scanner);
 
       yyText[0] = '\0';
-      yyerror(yyLloc, &context, "end-of-line in a string literal without a preceeding backslash");
+      yyerror(yyLloc, &context, "end-of-line in a string literal without a preceding backslash");
     } else {
       if (startCh == '\'' && c == '\"') {
         addCharString('\\');
@@ -3574,7 +3574,7 @@ static void addCharString(char c) {
 
 static void addCharMaybeEscape(char c, bool canEscape) {
   int escape  = canEscape && !(isascii(c) && isprint(c));
-  int charlen = escape ? 4 : 1; // convert nonasci to \xNN
+  int charlen = escape ? 4 : 1; // convert nonascii to \xNN
 
   if (stringLen + charlen + 1 > stringBuffLen) {
     stringBuffLen = 2 * (stringBuffLen + charlen);

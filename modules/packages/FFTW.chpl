@@ -112,7 +112,7 @@ module FFTW {
   // TODO: Can we have the plan_dft() routine below take in native
   // Chapel types without changing the external C constants from
   // type c_int?  Probably given that Chapel's int will be >=
-  // C's int for the forseeable future.  See also the TODO above
+  // C's int for the foreseeable future.  See also the TODO above
   // about whether we'd want to represent those constants using
   // more native Chapel types anyway.
 
@@ -382,7 +382,7 @@ module FFTW {
 
   // Direction flags
 
-  /* Request a forward transform (i.e., use a negative exponent in the tranform). */
+  /* Request a forward transform (i.e., use a negative exponent in the transform). */
   extern const FFTW_FORWARD : c_int;
   /* Request a backward transform (i.e., use a positive exponent in the transform). */
   extern const FFTW_BACKWARD : c_int;
