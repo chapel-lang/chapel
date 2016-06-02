@@ -148,6 +148,13 @@ module DefaultSparse {
       return found;
     }
 
+    proc boundsCheck(ind: index(rank, idxType)):void {
+      if boundsChecking then
+        if !(parentDom.member(ind)) then
+          halt("DefaultSparse domain/array index out of bounds: ", ind,
+              " (expected to be within ", parentDom, ")");
+    }
+
     proc add_help(ind) {
       // find position in nnzDom to insert new index
       const (found, insertPt) = find(ind);
@@ -270,10 +277,7 @@ module DefaultSparse {
               function with noDuplicate=false"); 
         }
 
-        //couldn't use boundsCheck because of 1D indices -- they are not 1tuple
-        for i in inds do
-          if !parentDom.member(i) then
-            halt("Index out of bounds:", i);
+        for i in inds do boundsCheck(i);
 
       }
 
