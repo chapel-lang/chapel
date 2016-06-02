@@ -368,12 +368,15 @@ class CSRDom: BaseSparseDom {
       newLoc = actualInsertPts[newIndIdx];
     }
 
+    var arrShiftMap: [{1..oldnnz}] int; //to map where data goes
+
     for i in 1..nnz by -1 {
       /*writeln("Picking ", i, "th elem. newLoc=",newLoc," oldIndIdx=",oldIndIdx,*/
           /*" newIndIdx=",newIndIdx);*/
       if oldIndIdx >= 1 && i > newLoc {
         //shift from old values
         colIdx[i] = colIdx[oldIndIdx];
+        arrShiftMap[oldIndIdx] = i;
         oldIndIdx -= 1;
       }
       else if newIndIdx >= 0 && i == newLoc {
@@ -418,10 +421,8 @@ class CSRDom: BaseSparseDom {
     for i in prevRow+1..rowDom.high{
         rowStart[i] += rowCnt;
     }
-    //TODO There is a call to sparseShiftArray for all arras subscribed to this
-    //domain in dsiAdd. I couldn't find a case where that would be necessary for
-    //this bulkAdd(ie it might be necassry, but so far it worked fine without
-    //it). Needs to be investigated further.
+    for a in _arrs do 
+      a.sparseBulkShiftArray(arrShiftMap, oldnnz);
   }
 
   proc dsiRemove(ind: rank*idxType) {
@@ -568,6 +569,21 @@ class CSRArr: BaseArr {
 
   proc IRV ref {
     return irv;
+  }
+
+  proc sparseBulkShiftArray(shiftMap, oldnnz){
+    var newIdx: int;
+    var prevNewIdx = 1;
+    for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(1) by -1) {
+      newIdx = shiftMap[_newIdx];
+      data[newIdx] = data[i];
+
+      //fill IRV up to previously added nnz
+      for emptyIndex in newIdx+1..prevNewIdx-1 do data[emptyIndex] = irv;
+      prevNewIdx = newIdx;
+    }
+    //fill the initial added space with IRV
+    for i in 1..prevNewIdx-1 do data[i] = irv;
   }
 
   proc sparseShiftArray(shiftrange, initrange) {
