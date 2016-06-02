@@ -1030,7 +1030,9 @@ module ChapelArray {
       _value.dsiAdd(i);
     }
 
-    proc __getActualInsertPts(inds: [] index(rank, idxType), sorted, noDuplicate) {
+    proc __getActualInsertPts(inds: [] index(rank, idxType), sorted, noDuplicate) 
+                                              where isSparseDom(this) {
+
       var numAdded = inds.size; //maybe remove this var
 
       //find individual insert points

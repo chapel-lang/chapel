@@ -288,8 +288,7 @@ class CSRDom: BaseSparseDom {
     }
   }
 
-  proc bulkAdd(inds: [] rank*idxType, sorted, noDuplicate, actualInsertPts,
-      actualAddCnt){
+  proc bulkAdd(inds: [] rank*idxType, actualInsertPts, actualAddCnt){
 
     const oldnnz = nnz;
     nnz += actualAddCnt;

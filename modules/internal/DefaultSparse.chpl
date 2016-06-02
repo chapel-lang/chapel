@@ -243,8 +243,7 @@ module DefaultSparse {
       }
     }
 
-    proc bulkAdd(inds: [] index(rank, idxType), sorted, noDuplicate,
-        actualInsertPts, actualAddCnt){
+    proc bulkAdd(inds: [] index(rank, idxType), actualInsertPts, actualAddCnt){
 
       const oldnnz = nnz;
       nnz += actualAddCnt;
