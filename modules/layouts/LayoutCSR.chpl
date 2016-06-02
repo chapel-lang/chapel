@@ -291,7 +291,6 @@ class CSRDom: BaseSparseDom {
   proc bulkAdd(inds: [] rank*idxType, sorted=false, noDuplicate=false){
     var numAdded = inds.size; //maybe remove this var
 
-    /*writeln("Going to add ", numAdded, " indices");*/
     //find individual insert points
     //and eliminate duplicates between inds and dom
     var indivInsertPts: [{0..#numAdded}] int;
@@ -304,12 +303,8 @@ class CSRDom: BaseSparseDom {
       //make sure lastInd != inds[inds.domain.low]
       var lastInd = inds[inds.domain.low] + (1,0); 
       for (i, p) in zip(inds, indivInsertPts)  {
-        if i == lastInd {
-          p = -1;
-        }
-        else {
-          lastInd = i;
-        }
+        if i == lastInd then p = -1;
+        else lastInd = i;
       }
     }
 
@@ -336,7 +331,6 @@ class CSRDom: BaseSparseDom {
         p = if found then -1 else insertPt; //mark as duplicate
       }
     }
-    /*writeln("indivInsertPts: ", indivInsertPts);*/
 
     //shift insert points for bulk addition
     //previous indexes that are added will cause a shift in the next indexes
@@ -371,8 +365,6 @@ class CSRDom: BaseSparseDom {
     var arrShiftMap: [{1..oldnnz}] int; //to map where data goes
 
     for i in 1..nnz by -1 {
-      /*writeln("Picking ", i, "th elem. newLoc=",newLoc," oldIndIdx=",oldIndIdx,*/
-          /*" newIndIdx=",newIndIdx);*/
       if oldIndIdx >= 1 && i > newLoc {
         //shift from old values
         colIdx[i] = colIdx[oldIndIdx];
@@ -394,7 +386,6 @@ class CSRDom: BaseSparseDom {
       }
       else halt("Something went wrong");
 
-      //we can break if newIndIdx = -1 ?
     }
 
     //aggregated row shift
@@ -413,7 +404,6 @@ class CSRDom: BaseSparseDom {
             rowStart[i] += rowCnt;
           }
         }
-        /*rowCnt = 0;*/
         rowCnt += 1;
         prevRow = row;
       }
