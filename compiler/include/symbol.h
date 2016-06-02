@@ -396,6 +396,8 @@ class FnSymbol : public Symbol {
 
   void            insertBeforeReturn(Expr* ast);
   void            insertBeforeReturnAfterLabel(Expr* ast);
+  CallExpr*       findDownEndCount();
+  CallExpr*       findDownEndCountOrReturn();
   void            insertBeforeDownEndCount(Expr* ast);
 
   void            insertFormalAtHead(BaseAST* ast);
