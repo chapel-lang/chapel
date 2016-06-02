@@ -266,7 +266,8 @@ module DefaultSparse {
         const indsEnd = inds.domain.high;
         var lastInd = inds[indsStart];
         for i in indsStart+1..indsEnd {
-          if inds[i] == lastInd then halt("There are duplicates"); 
+          if inds[i] == lastInd then halt("There are duplicates, call the
+              function with noDuplicate=false"); 
         }
 
         //couldn't use boundsCheck because of 1D indices -- they are not 1tuple
