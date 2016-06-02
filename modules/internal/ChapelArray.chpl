@@ -1030,14 +1030,84 @@ module ChapelArray {
       _value.dsiAdd(i);
     }
 
+    proc __getActualInsertPts(inds: [] index(rank, idxType), sorted, noDuplicate) {
+      var numAdded = inds.size; //maybe remove this var
+
+      //find individual insert points
+      //and eliminate duplicates between inds and dom
+      var indivInsertPts: [{0..#numAdded}] int;
+      var actualInsertPts: [{0..#numAdded}] int; //where to put in newdom
+
+      if !sorted then QuickSort(inds);
+
+      //eliminate duplicates --assumes sorted
+      if !noDuplicate {
+        //make sure lastInd != inds[inds.domain.low]
+        var lastInd = inds[inds.domain.low] + 1; 
+        for (i, p) in zip(inds, indivInsertPts)  {
+          if i == lastInd then p = -1;
+          else lastInd = i;
+        }
+      }
+
+      //verify sorted and no duplicates if not --fast
+      if boundsChecking {
+        VerifySort(inds, "bulkAdd: Data is not sorted, call the function with \
+            sorted=false");
+
+        //check duplicates assuming sorted
+        const indsStart = inds.domain.low;
+        const indsEnd = inds.domain.high;
+        var lastInd = inds[indsStart];
+        for i in indsStart+1..indsEnd {
+          if inds[i] == lastInd then halt("There are duplicates, call the \
+              function with noDuplicate=false"); 
+        }
+
+        for i in inds do _value.boundsCheck(i);
+
+      }
+
+      forall (i,p) in zip(inds, indivInsertPts) {
+        if noDuplicate || p != -1 { //don't do anything if it's duplicate
+          const (found, insertPt) = _value.find(i);
+          p = if found then -1 else insertPt; //mark as duplicate
+        }
+      }
+
+      //shift insert points for bulk addition
+      //previous indexes that are added will cause a shift in the next indexes
+      var actualAddCnt = 0;
+
+      //NOTE: this can also be done with scan
+      for (ip, ap) in zip(indivInsertPts, actualInsertPts) {
+        if ip != -1 {
+          ap = ip + actualAddCnt;
+          actualAddCnt += 1;
+        }
+        else ap = ip;
+      }
+
+      return (actualInsertPts, actualAddCnt);
+
+    }
+
     proc bulkAdd(inds: [] _value.idxType, sorted=false,
         noDuplicate=false) where isSparseDom(this) && _value.rank==1 {
-      _value.bulkAdd(inds, sorted, noDuplicate);
+
+      const (actualInsertPts, actualAddCnt) =
+          __getActualInsertPts(inds,sorted,noDuplicate);
+
+      _value.bulkAdd(inds, sorted, noDuplicate, actualInsertPts, actualAddCnt);
     }
 
     proc bulkAdd(inds: [] _value.rank*_value.idxType, sorted=false,
         noDuplicate=false) where isSparseDom(this) && _value.rank>1 {
-      _value.bulkAdd(inds, sorted, noDuplicate);
+
+      const (actualInsertPts, actualAddCnt) =
+          __getActualInsertPts(inds,sorted,noDuplicate);
+
+      _value.bulkAdd(inds, sorted, noDuplicate, actualInsertPts, actualAddCnt);
     }
 
     /* Remove index ``i`` from this domain */

@@ -288,61 +288,9 @@ class CSRDom: BaseSparseDom {
     }
   }
 
-  proc bulkAdd(inds: [] rank*idxType, sorted=false, noDuplicate=false){
-    var numAdded = inds.size; //maybe remove this var
+  proc bulkAdd(inds: [] rank*idxType, sorted, noDuplicate, actualInsertPts,
+      actualAddCnt){
 
-    //find individual insert points
-    //and eliminate duplicates between inds and dom
-    var indivInsertPts: [{0..#numAdded}] int;
-    var actualInsertPts: [{0..#numAdded}] int; //where to put in newdom
-
-    if !sorted then QuickSort(inds);
-
-    //eliminate duplicates --assumes sorted
-    if !noDuplicate {
-      //make sure lastInd != inds[inds.domain.low]
-      var lastInd = inds[inds.domain.low] + (1,0); 
-      for (i, p) in zip(inds, indivInsertPts)  {
-        if i == lastInd then p = -1;
-        else lastInd = i;
-      }
-    }
-
-    //verify sorted and no duplicates if not --fast
-    if boundsChecking {
-      VerifySort(inds, "bulkAdd: Data is not sorted, call the function with \
-              sorted=false");
-
-      //check duplicates assuming sorted
-      const indsStart = inds.domain.low;
-      const indsEnd = inds.domain.high;
-      var lastInd = inds[indsStart];
-      for i in indsStart+1..indsEnd {
-        if inds[i] == lastInd then halt("There are duplicates"); 
-      }
-
-      for i in inds do boundsCheck(i);
-      
-    }
-
-    forall (i,p) in zip(inds, indivInsertPts) {
-      if p != -1 { //don't do anything if it's duplicate
-        const (found, insertPt) = find(i);
-        p = if found then -1 else insertPt; //mark as duplicate
-      }
-    }
-
-    //shift insert points for bulk addition
-    //previous indexes that are added will cause a shift in the next indexes
-    var actualAddCnt = 0;
-    for (ip, ap) in zip(indivInsertPts, actualInsertPts) {
-      if ip != -1 {
-        ap = ip + actualAddCnt;
-        actualAddCnt += 1;
-      }
-      else ap = ip;
-    }
-    /*writeln("actualInsertPts: ", actualInsertPts);*/
     const oldnnz = nnz;
     nnz += actualAddCnt;
 
@@ -392,7 +340,7 @@ class CSRDom: BaseSparseDom {
     var prevRow = parentDom.dim(1).low;
     var row: int;
     var rowCnt = 0;
-    for (ind, p) in zip(inds, indivInsertPts)  {
+    for (ind, p) in zip(inds, actualInsertPts)  {
       if p == -1 then continue;
       row = ind[1];
       if row == prevRow then rowCnt += 1;
