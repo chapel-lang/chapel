@@ -1100,7 +1100,7 @@ module ChapelArray {
       const (actualInsertPts, actualAddCnt) =
           __getActualInsertPts(inds,sorted,noDuplicate);
 
-      _value.bulkAdd(inds, sorted, noDuplicate, actualInsertPts, actualAddCnt);
+      _value.bulkAdd(inds, actualInsertPts, actualAddCnt);
     }
 
     proc bulkAdd(inds: [] _value.rank*_value.idxType, sorted=false,
@@ -1109,7 +1109,7 @@ module ChapelArray {
       const (actualInsertPts, actualAddCnt) =
           __getActualInsertPts(inds,sorted,noDuplicate);
 
-      _value.bulkAdd(inds, sorted, noDuplicate, actualInsertPts, actualAddCnt);
+      _value.bulkAdd(inds, actualInsertPts, actualAddCnt);
     }
 
     /* Remove index ``i`` from this domain */
