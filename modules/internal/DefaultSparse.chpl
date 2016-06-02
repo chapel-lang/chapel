@@ -287,6 +287,8 @@ module DefaultSparse {
       //shift insert points for bulk addition
       //previous indexes that are added will cause a shift in the next indexes
       var actualAddCnt = 0;
+
+      //NOTE: this can also be done with scan
       for (ip, ap) in zip(indivInsertPts, actualInsertPts) {
         if ip != -1 {
           ap = ip + actualAddCnt;
