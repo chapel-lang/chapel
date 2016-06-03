@@ -59,7 +59,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
     return (0,-1);
   assert(numChunks > 0);
 
-  // Dimension to parallelize (eventually should "block" thespace)
+  // Dimension to parallelize (eventually should "block" the space)
   var parDim = -1;
   var maxDim = -1;
   var maxElems = min(EC);
