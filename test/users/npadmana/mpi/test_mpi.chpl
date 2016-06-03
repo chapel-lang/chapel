@@ -30,7 +30,7 @@ proc main() {
       MPI_Barrier(MPI_COMM_WORLD);
       spmd();
     }
-    writeln("We're back in the main Chapel program now.....")
+    writeln("We're back in the main Chapel program now.....");
   }
 }
 
