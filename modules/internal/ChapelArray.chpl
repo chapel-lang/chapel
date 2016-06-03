@@ -1517,8 +1517,8 @@ module ChapelArray {
       const indsEnd = inds.domain.high;
       var lastInd = inds[indsStart];
       for i in indsStart+1..indsEnd {
-        if inds[i] == lastInd then halt("There are duplicates, call the \
-            function with isUnique=false"); 
+        if inds[i] == lastInd && indivInsertPts[i] != -1 then 
+          halt("There are duplicates, call the function with isUnique=false"); 
       }
 
       for i in inds do d.boundsCheck(i);
@@ -1574,7 +1574,7 @@ module ChapelArray {
     //this could be a parallel loop. but ranks don't match -- doesn't compile
     for (a,i) in zip(arr,d) do a=i;
 
-    sd.bulkAdd(arr, true, true);
+    sd._value.dsiBulkAdd(arr, true, true, false);
   }
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old

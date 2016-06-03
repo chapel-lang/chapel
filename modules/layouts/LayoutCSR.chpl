@@ -321,6 +321,7 @@ class CSRDom: BaseSparseDom {
     var newLoc = actualInsertPts[newIndIdx]; //its position-to-be in new dom
     while newLoc == -1 {
       newIndIdx -= 1;
+      if newIndIdx == -1 then break; //there were duplicates -- now done
       newLoc = actualInsertPts[newIndIdx];
     }
 
@@ -343,6 +344,7 @@ class CSRDom: BaseSparseDom {
           newLoc = -2; //finished new set
         while newLoc == -1 {
           newIndIdx -= 1;
+          if newIndIdx == -1 then break; //there were duplicates -- now done
           newLoc = actualInsertPts[newIndIdx];
         }
       }
