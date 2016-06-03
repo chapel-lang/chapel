@@ -30,56 +30,66 @@ Comparators
 Comparators allow sorting data by a mechanism other than the
 default comparison of array elements. To use a comparator, define a
 record with either a ``key(a)`` or ``compare(a, b)`` method, and pass an
-instance of that record to the sort function.
+instance of that record to the sort function (examples shown below).
 
-Most sort routines support comparators, which is denoted by their function
-signature.
+If both methods are implemented on the record passed as the comparator, the
+``key(a)`` method will take priority over the ``compare(a, b)`` method.
 
-The ``key(a)`` method accepts 1 argument with the array ``eltType`` and
-returns a value that must support all numeric operations.
+Nearly all sort routines support comparators, which is denoted by their
+function signature.
+
+Key Comparator
+~~~~~~~~~~~~~~
+
+The ``key(a)`` method accepts 1 argument, which will be an element from the
+array being sorted. The value returned should support numeric operations.
 
 The default key method would look like this:
 
 .. code-block:: chapel
 
-  proc default.key(a) {
+  proc DefaultComparator.key(a) {
     return a;
   }
 
 
-As an example, if we want to sort an array by the absolute values of its
-elements, we can use the following comparator record with a key method:
+As an example, if the user wants to sort an array by the absolute values of its
+elements, the user can define a comparator with a key method as follows:
 
 .. code-block:: chapel
 
   var Array = [-1, -4, 2, 3];
 
   // Empty record serves as comparator
-  record comparator { }
+  record Comparator { }
 
   // key method maps an element to the value to be used for comparison
-  proc comparator.key(a) { return abs(a); }
+  proc Comparator.key(a) { return abs(a); }
 
-  myComparator = new comparator();
+  var absComparator: Comparator;
 
-  QuickSort(Array, comparator=myComparator);
+  QuickSort(Array, comparator=absComparator);
 
   // This will output: -1, 2, 3, -4
   writeln(Array);
 
 
-The ``compare(a, b)`` method accepts 2 arguments of the data ``eltType`` and
-returns an integer indicating how a and b compare to each other. It should return:
+Compare Comparator
+~~~~~~~~~~~~~~~~~~
+
+The ``compare(a, b)`` method accepts 2 arguments, which will be 2 elements from
+the array being sorted. The return value should be an integer indicating how a
+and b compare to each other, as shown below:
 
   * > 0 if ``a > b``
   * 0 if ``a == b``
   * < 0 if ``a < b``
 
-The default compare method would look like this:
+The default compare method for a numeric type would look like this:
 
 .. code-block:: chapel
 
-    proc default.compare(a, b) {
+    proc DefaultComparator.compare(a, b) {
       return a - b;
     }
 
@@ -92,83 +102,87 @@ implemented with a compare method:
   var Array = [-1, -4, 2, 3];
 
   // Empty record serves as comparator
-  record comparator { }
+  record Comparator { }
 
   // compare method defines how 2 elements are compared
-  proc comparator.compare(a, b) {
+  proc Comparator.compare(a, b) {
     return abs(a) - abs(b);
   }
 
-  myComparator = new comparator();
+  var absComparator: Comparator;
 
-  QuickSort(Array, comparator=myComparator);
+  QuickSort(Array, comparator=absComparator);
 
   // This will output: -1, 2, 3, -4
   writeln(Array);
 
-If both methods are implemented on the record passed as the comparator, the
-``key(a)`` method will take priority over the ``compare(a, b)`` method.
+Reverse Comparator
+~~~~~~~~~~~~~~~~~~
+
+Sort functions in Chapel do not have a ``reverse`` argument. Instead, reverse
+sorting is handled through the comparator interface.
+
+A module-defined :const:`reversecomparator` can be passed to a sort function to
+reverse the default sorting order.
+
+.. code-block:: chapel
+
+  var Array = [-1, -4, 2, 3];
+
+  // Using module-defined 'reversecomparator'
+  QuickSort(Array, comprator=reversecomparator)
+
+  // This will output: 3, 2, -1, -4
+  writeln(Array);
+
+
+To reverse the sort order of a user-defined comparator, pass the user-defined
+comparator to the constructor of the module-defined
+:record:`ReverseComparator` record, which can be passed to the sort function.
+
+.. code-block:: chapel
+
+  var Array = [-1, -4, 2, 3];
+
+  // Empty record serves as comparator
+  record Comparator { }
+
+  // compare method defines how 2 elements are compared
+  proc Comparator.compare(a, b) {
+    return abs(a) - abs(b);
+  }
+
+  var absReverseComparator: ReverseComparator(Comparator);
+
+  QuickSort(Array, comparator=absReverseComparator);
+
+  // This will output: -4, 3, 2, -1
+  writeln(Array);
 
  */
-
 module Sort {
 
-/* Comparators */
 
-/* Empty record to serve as default comparator value in function arguments */
-record DefaultComparator {
-  /* Default comparator compare method */
+/* Module-defined comparators */
 
-  proc compare(a, b) {
-    if isNumericType(a.type) && isNumericType(b.type) {
-      return a - b;
-    }
-
-    if a < b { return -1; }
-    else if b < a { return 1; }
-    else return 0;
-  }
-}
-
-/* Default comparator */
+/*
+  Instance of :record:`DefaultComparator` used as default ``comparator=``
+  argument when no comparator is passed to a sort function
+*/
 const defaultcomparator: DefaultComparator;
 
-/* Comparator built as the reverse of any provided comparator */
-record ReverseComparator {
-  var comparator;
-
-  /* Constructor */
-  proc ReverseComparator(comparator:?rec=defaultcomparator) {}
-
-  /* Reverse compare method */
-  proc compare(a, b) {
-    use Reflection;
-
-    chpl_check_comparator(this.comparator, a);
-
-    // Key defined
-    if canResolveMethod(this.comparator, "key", a) && canResolveMethod(this.comparator, "key", b) {
-      const A = this.comparator.key(a),
-            B = this.comparator.key(b);
-      if B < A { return -1; }
-      else if A < B { return 1; }
-      else return 0;
-
-    } else if canResolveMethod(this.comparator, "compare", a, b) && canResolveMethod(this.comparator, "compare", a, b) {
-      return this.comparator.compare(b, a);
-    }
-  }
-}
 
 
-
-/* Default reverse comparator */
+/*
+   Instance of :record:`ReverseComparator`. Pass this as the ``comparator=``
+   argument of a sort function to reverse the sort order.
+ */
 const reversecomparator: ReverseComparator(DefaultComparator);
 
 
 /* Private methods */
 
-/* Base compare method */
+/* Base compare method of all sort functions */
 private inline proc chpl_compare(a, b, comparator:?rec=defaultcomparator) {
   use Reflection;
 
@@ -190,7 +204,6 @@ private inline proc chpl_compare(a, b, comparator:?rec=defaultcomparator) {
     Check if a comparator was passed and confirm that it will work, otherwise
     throw a compile-time error.
 
-    :arg comparator: Comparator record with 'key(a)' or 'compare(a,b)' method
     :arg a: Sample data passed to confirm that comparator methods can resolve
     :arg comparator: Record that redefines the comparison mechanism with one of
       the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
@@ -225,7 +238,7 @@ private proc chpl_check_comparator(comparator, a) {
 /* Basic Functions */
 
 /*
-   Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
+   Sort the array `Data` in-place using a sequential quick sort algorithm.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
@@ -239,13 +252,14 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where Dom.ra
 
 
 /*
-   Check if `Data` is in sorted order
+   Check if array `Data` is in sorted order
 
    :arg Data: The array to verify
    :type Data: [] `eltType`
    :arg comparator: Record that redefines the comparison mechanism with one of
       the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
-
+   :returns: ``true`` if array is sorted
+   :rtype: `bool`
  */
 proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator): bool {
   chpl_check_comparator(comparator, Data(Dom.dim(1).low));
@@ -269,7 +283,8 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator): bool {
 // when it doesn't.
 //
 /*
-   Yield the elements of argument `x` in sorted order.
+   Yield the elements of argument `x` in sorted order, using the quick sort
+   algorithm.
 
    :arg x: An iterable value to be sorted and yielded element by element
    :type x: `iterable`
@@ -515,7 +530,6 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultcomparat
 }
 
 
-
 // TODO -- support comparators by implementing a reduce intent w/ comparators
 /*
    Sort the 1D array `Data` in-place using a sequential selection sort
@@ -540,9 +554,95 @@ proc SelectionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false
 }
 
 
-/* Deprecated Functions */
+/* Comparators */
+
+/* Default comparator used in sort functions.*/
+record DefaultComparator {
+
+  /*
+   Default compare method used in sort functions.
+
+   :arg a: Array element
+   :type a: `eltType`
+   :arg b: Array element
+   :type b: `eltType`
+   :returns: 1 if ``b < a``
+   :returns: 0 if ``a == b``
+   :returns: -1 if ``a < b``
+
+   */
+  proc compare(a, b) {
+    if isNumericType(a.type) && isNumericType(b.type) {
+      return a - b;
+    }
+
+    if a < b { return -1; }
+    else if b < a { return 1; }
+    else return 0;
+  }
+}
+
+/* Reverse comparator built from another comparator.*/
+record ReverseComparator {
+
+  /* Generic comparator defined in constructor.*/
+  var comparator;
+
+  /*
+   Constructor - builds a comparator with a compare method that reverses the sort order of
+   the argument-provided comparator.
+
+   :arg comparator: Record that redefines the comparison mechanism with one of
+      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
+
+   */
+  proc ReverseComparator(comparator:?rec=defaultcomparator) {}
+
+  /*
+   Reversed compare method defined based on ``comparator.key`` if defined,
+   otherwise ``comparator.compare``.
+
+   :arg a: Array element
+   :type a: `eltType`
+   :arg b: Array element
+   :type b: `eltType`
+   :returns: -1 if ``b < a``
+   :returns: 0 if ``a == b``
+   :returns: 1 if ``a < b``
+   */
+  proc compare(a, b) {
+    use Reflection;
+
+    chpl_check_comparator(this.comparator, a);
+
+    // Key defined
+    if canResolveMethod(this.comparator, "key", a) && canResolveMethod(this.comparator, "key", b) {
+      const A = this.comparator.key(a),
+            B = this.comparator.key(b);
+      if B < A { return -1; }
+      else if A < B { return 1; }
+      else return 0;
+
+    // Compare defined
+    } else if canResolveMethod(this.comparator, "compare", a, b) && canResolveMethod(this.comparator, "compare", a, b) {
+      return this.comparator.compare(b, a);
+    } else {
+      compilerError("The comparator record requires a 'key(a)' or 'compare(a, b)' method");
+    }
+  }
+}
+
 
 /*
+   Deprecated Functions
+   TODO - print deprecation msg and possibly remove by 1.14.0
+ */
+
+/*
+
+   .. warning::
+        As of release 1.14.0, replaced by :proc:`bubbleSort`
+
    Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
 
    :arg Data: The array to be sorted
@@ -562,6 +662,9 @@ proc BubbleSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) w
 }
 
 /*
+   .. warning::
+        As of release 1.14.0, replaced by :proc:`quickSort`
+
    Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
 
    :arg Data: The array to be sorted
@@ -584,6 +687,9 @@ proc QuickSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param revers
 
 
 /*
+   .. warning::
+        As of release 1.14.0, replaced by :proc:`heapSort`
+
    Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
 
    :arg Data: The array to be sorted
@@ -603,6 +709,10 @@ proc HeapSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) whe
 }
 
 /*
+
+   .. warning::
+        As of release 1.14.0, replaced by :proc:`insertionSort`
+
    Sort the 1D array `Data` in-place using a sequential insertion sort algorithm.
 
    :arg Data: The array to be sorted
@@ -622,6 +732,10 @@ proc InsertionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false
 }
 
 /*
+
+   .. warning::
+        As of release 1.14.0, replaced by :proc:`mergeSort`
+
    Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
 
    :arg Data: The array to be sorted
@@ -643,6 +757,10 @@ proc MergeSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param revers
 }
 
 /*
+
+   .. warning::
+        As of release 1.14.0, replaced by :proc:`isSorted`
+
    Verify that the array `Data` is in sorted order and halt if any element is
    out of order.
 
