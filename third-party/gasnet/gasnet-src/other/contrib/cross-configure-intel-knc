@@ -1,6 +1,6 @@
 #!/bin/sh
 
-## Cross configure script for Intel MIC
+## Cross configure script for first-generation Intel MIC (Knights Corner / KNC)
 
 ## Target specific NOTES:
 ##

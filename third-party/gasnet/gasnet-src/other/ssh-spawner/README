@@ -13,29 +13,10 @@ Configure Options:
     option is disabled for kernels prior to 2.6.0, and can also be
     explicitly disabled at configure time.
 
-  --with-ssh-{cmd,options,nodefile,rate}=<VALUE>
+  --with-ssh-{cmd,options,nodefile}=<VALUE>
     These control the default values used when the corresponding
     environment variables are not set.  These environment variables
     are documented below.
-
-  --with-ssh-topology={flat,nary[:<N>]} (default is "flat")
-    This sets the topology used for the ssh connections.
-
-    The value "flat" uses an implementation in which the initial
-    "master" process is NOT a GASNet process, but is the parent
-    of ALL of the ssh processes.  This approach is not scalable
-    due to the number of TCP sockets required.  However, if run
-    from a "service node" it is usable even when ssh among the
-    compute nodes is not possible.
-
-    The value "nary" uses a tree with GASNet node 0 as the root
-    and a default out-degree set by the optional suffix.  For
-    instance "nary:2" uses a binary tree.  This implementation
-    is more scalable (in both time and sockets) than the "flat"
-    one, but requires that ssh among compute nodes is permitted.
-    There is still a "master" process that is the parent of
-    GASNet node 0, allowing for the possibility that the job is
-    started on a "service node".
 
 Environment Variables: (may be controlled by a wrapper script)
 
@@ -76,10 +57,10 @@ Environment Variables: (may be controlled by a wrapper script)
   single and double) and backslash as most shells.  A default
   value may be configured using --with-ssh-options=<VALUE>.
 
-+ The environment variable GASNET_SSH_RATE can be set to
-  limit the number of ssh connections per second to any given
++ The environment variable GASNET_SSH_OUT_DEGREE can be used to
+  limit the number of out-going ssh connections from any given
   host. The value 0 means no limit is imposed.
-  Default value is 20.
+  Default value is 32.
 
 + The environment variable GASNET_SSH_REMOTE_PATH can be set to
   specify the working directory (defaults to current).
@@ -92,13 +73,6 @@ Environment Variables: (may be controlled by a wrapper script)
   OpenSSH to disable them and speed the connection process (except
   where the agent forwarding is needed for authorization).
 
-+ If the "nary" topology was selected at configure time, then the
-  environment variable GASNET_SSH_OUT_DEGREE can be used to set
-  the degree of the N-ary tree.  A value of 0 is equivalent to an
-  unlimited value (but is NOT the same as the "flat" topology
-  since process 0, rather then the master process, is the parent
-  of the other processes).
-  
 
 Command-line Usage:
 
@@ -106,13 +80,15 @@ If running a UPC or Titanium application, then language-specific
 commands upcrun or tirun should be used instead.  In other cases
 it is advisable to use a GASNet conduit-specific spawner script
 such as gasnetrun_ibv or gasnetrun_mxm.  However, if you find
-you must use the ssh-spawner directly, the following apply:
+you *must* use the ssh-spawner directly:
 
-+ usage summary:
-    your_app [-v] N[:M] [--] [args ...]
-  where N is the number of processes to run, and M is the number of
-  nodes/hosts over which the processes will be distributed.  If only
-  N is given, then M=N by default.
+    your_app -GASNET-SPAWN-master N[:M] -- [args ...]
+
+where N is the number of processes to run, and M is the number of
+nodes/hosts over which the processes will be distributed.  If only
+N is given, then M=N by default.  For more complete usage info:
+
+    your_app -GASNET-SPAWN-master
 
 
 Troubleshooting:
@@ -136,20 +112,17 @@ compute nodes, but this is not required.
   with numbers over 1024) from a compute node to the master node and
   and among compute nodes.
 
-+ Resolution for all given hostnames must be possible from both the
-  master node and the compute nodes if the NARY topology is used.
-  In all cases the compute nodes must be capable of resolving the
-  hostname of the master.
++ Resolution of hostnames for the master and all compute nodes must
+  be possible from both the master node and the compute nodes.
 
-+ If you see errors starting a large number of processes per node,
-  but have no trouble with a lesser number, then you may need to
-  raise one or both of the following in your sshd's configuration:
-    MaxSessions 
-    MaxStartups
-  If you do not have the ability to change these, a lower value
-  of the GASNET_SSH_RATE environment variable may allow you to
-  work-around a too small value of MaxStartups.
 
 GASNet Developers:
 
 See ibv-conduit for an example of how to use this code in a conduit.
+In particular the call to gasneti_bootstrapInit_ssh() in
+gasnet_core.c, and the contrib/gasnetrun_ibv.pl script.  The perl
+script passes the spawner's arguments in an environment variable and
+the argv for the application via an open temporary file.  This scheme
+allows one to support GASNet applications which may call
+gasnet_init(NULL, NULL), which cannot work with the spawner aguments
+passed on the command line.

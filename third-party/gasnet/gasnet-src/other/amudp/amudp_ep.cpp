@@ -404,6 +404,9 @@ static int AMUDP_FreeEndpointResource(ep_t ep) {
     AMUDP_UETH_endpoint = NULL;
   #else
     /*  close UDP port */
+   #ifdef AMUDP_BLCR_ENABLED
+    if (AMUDP_SPMDRestartActive) { /* it is already gone */ } else
+   #endif
     if (closesocket(ep->s) == SOCKET_ERROR) return FALSE;
   #endif
   return TRUE;

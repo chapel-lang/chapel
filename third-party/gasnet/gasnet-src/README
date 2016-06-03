@@ -222,9 +222,10 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
     * Linux/PowerPC-HFI/{xlc,gcc}/32: smp, mpi, udp, pami &
     * Linux/PPC64le/gcc/{32,64}:     smp, udp, #
 
-    * Linux/MIPS/gcc/{32,64}:       smp, udp, #
+    * Linux/MIPS/gcc/{32,n32,64}:       smp, udp, #
+    * Linux/MIPS64el/gcc/{32,n32,64}:   smp, udp, #
 
-    * Linux/SGI-Altix-IA64/{gcc,IntelC}/64: smp, mpi, udp, shmem &
+    * Linux/SGI-Altix-IA64/{gcc,IntelC}/64: smp, mpi, udp, shmem
     * Linux/SGI-Altix-Xeon/{gcc,IntelC}/64: smp, mpi, udp, shmem
 
     * FreeBSD/{x86,amd64}/{gcc,clang}/{32,64}: smp, mpi
@@ -252,7 +253,7 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
 
     * Linux/Cray-XD1/{gcc,PGI}/64: smp, mpi &
 
-    * CNK/IBM-BlueGeneQ-PowerPC/{gcc,xlc}/64: smp, mpi, pami
+    * CNK/IBM-BlueGeneQ-PowerPC/{gcc,xlc,clang}/64: smp, mpi, pami
  
     * MTX/Cray-MTA/CrayMTAC/64: smp, udp &
  

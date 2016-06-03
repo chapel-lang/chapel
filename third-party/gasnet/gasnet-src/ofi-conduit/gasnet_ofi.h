@@ -15,6 +15,12 @@
 #include <rdma/fi_cm.h>
 #include <rdma/fi_errno.h>
 
+#define OFI_AM_MAX_DATA_LENGTH \
+  GASNETI_ALIGNUP_NOASSERT(gasnet_AMMaxMedium() + \
+                           GASNETI_ALIGNUP_NOASSERT(sizeof(gasnet_handlerarg_t) * gasnet_AMMaxArgs(), \
+                                                    GASNETI_MEDBUF_ALIGNMENT), \
+                           GASNETI_MEDBUF_ALIGNMENT)
+
 /* Want true atomic operations only in PAR mode, not PARSYNC or SEQ.
    However, "weak" atomics treat PARSYNC the same as PAR.  So, we
    "roll our own" set of "paratomic" ops using the provided sets of
@@ -55,13 +61,8 @@ fid_cq_t        gasnetc_ofi_am_rcqfd;
 typedef void*                     conn_entry_t;
 typedef struct
 {
-  conn_entry_t dest;
-}addr_entry_t;
-
-typedef struct
-{
   int               	size;
-  addr_entry_t 			table[0];
+  conn_entry_t 			table[];
 }addr_table_t;
 
 typedef enum OFI_OP_TYPE {
@@ -92,7 +93,8 @@ typedef struct ofi_am_send_buf {
   uint8_t 				argnum;
   void 					*dest_ptr;
   size_t 				nbytes;
-  uint8_t 				data[] __attribute__((aligned(GASNETI_MEDBUF_ALIGNMENT)));
+  uint8_t 				data[OFI_AM_MAX_DATA_LENGTH]
+                            __attribute__((aligned(GASNETI_MEDBUF_ALIGNMENT)));
 } ofi_am_send_buf_t;
 
 typedef struct ofi_am_buf {

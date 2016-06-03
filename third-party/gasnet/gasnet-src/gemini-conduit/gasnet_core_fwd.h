@@ -11,7 +11,7 @@
 #ifndef _GASNET_CORE_FWD_H
 #define _GASNET_CORE_FWD_H
 
-#define GASNET_CORE_VERSION      0.3
+#define GASNET_CORE_VERSION      0.4
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #if defined GASNET_CONDUIT_GEMINI
   #define GASNET_CORE_NAME       GEMINI
@@ -24,9 +24,9 @@
 #define GASNET_CONDUIT_NAME      GASNET_CORE_NAME
 #define GASNET_CONDUIT_NAME_STR  _STRINGIFY(GASNET_CONDUIT_NAME)
 
-/* Aries supports only 24 bits of inst_id and we steal one bit for ACKs */
-#define GASNET_MAXNODES 0x800000
-#define GASNETC_LOG2_MAXNODES 23
+/* Aries supports only 24 bits of inst_id */
+#define GASNET_MAXNODES 0x1000000
+#define GASNETC_LOG2_MAXNODES 24
 
   /* GASNET_PSHM defined 1 if this conduit supports PSHM. leave undefined otherwise. */
 #if GASNETI_PSHM_ENABLED
@@ -112,5 +112,8 @@ extern int gasnetc_pthread_create(gasnetc_pthread_create_fn_t *create_fn, pthrea
 
 extern void gasnetc_fatalsignal_callback(int sig);
 #define GASNETC_FATALSIGNAL_CALLBACK(sig) gasnetc_fatalsignal_callback(sig)
+
+extern void gasnetc_trace_finish(void);
+#define GASNETC_TRACE_FINISH() gasnetc_trace_finish()
 
 #endif

@@ -20,6 +20,13 @@ def default_uniq_cfg_path():
                                               get_lcd=utils.using_chapel_module()))
 
 #
+# Returns the path to the packages install directory
+#
+@memoize
+def get_cfg_install_path(pkg, ucp=default_uniq_cfg_path()):
+    return os.path.join(utils.get_chpl_home(), 'third-party', pkg, 'install', ucp)
+
+#
 # Return libraries and other options mentioned in the old_library and
 # dependency_libs entries in a libtool .la file, recursively searching
 # other .la files encountered there.
@@ -61,13 +68,8 @@ def default_get_link_args(pkg, ucp='', libs=[]):
     all_args = []
     for lib_arg in libs:
         if lib_arg.endswith('.la'):
-            all_args.extend(handle_la(os.path.join(utils.get_chpl_home(),
-                                                   'third-party',
-                                                   pkg,
-                                                   'install',
-                                                   ucp,
-                                                   'lib',
-                                                   lib_arg)))
+            la = os.path.join(get_cfg_install_path(pkg, ucp), 'lib', lib_arg)
+            all_args.extend(handle_la(la))
         else:
             all_args.append(lib_arg)
     return all_args

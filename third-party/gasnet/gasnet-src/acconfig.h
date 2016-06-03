@@ -220,6 +220,10 @@
 #undef GASNET_FCA_ENABLED
 #undef GASNETI_FCA_HOME
 
+/* BLCR support, path and features */
+#undef GASNETI_BLCR_ENABLED
+#undef GASNETI_BLCR_BINDIR
+
 /* support for backtracing */
 #undef HAVE_EXECINFO_H
 #undef HAVE_BACKTRACE
@@ -273,6 +277,9 @@
 
 /* gcc support for "U" and "h" register classes on SPARC32 */
 #undef GASNETI_HAVE_SPARC32_64BIT_ASM
+
+/* has _builtin_ctz */
+#undef HAVE_BUILTIN_CTZ
 
 /* has __builtin_expect */
 #undef HAVE_BUILTIN_EXPECT
@@ -381,6 +388,7 @@
 /* GASNet {gemini,aries}-conduit settings */
 #undef GASNETC_GNI_MAX_MEDIUM
 #undef GASNETC_GNI_MULTI_DOMAIN
+#undef GASNETC_GNI_UDREG
 #undef GASNETC_GNI_FIREHOSE
 
 /* GASNet ibv-conduit features and bug work-arounds */
@@ -397,12 +405,7 @@
 #undef GASNETI_DEFAULT_SSH_CMD
 #undef GASNETI_DEFAULT_SSH_OPTIONS
 #undef GASNETI_DEFAULT_SSH_NODEFILE
-#undef GASNETI_DEFAULT_SSH_RATE
-
-/* Settings for ssh-spawner */
-#undef GASNETI_SSH_TOPO_FLAT
-#undef GASNETI_SSH_TOPO_NARY
-#undef GASNETI_SSH_NARY_DEGREE
+#undef GASNETI_DEFAULT_SSH_OUT_DEGREE
 
 /* Support for pmi-spawner */
 #undef HAVE_PMI_H

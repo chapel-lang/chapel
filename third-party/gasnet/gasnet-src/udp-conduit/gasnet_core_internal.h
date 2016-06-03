@@ -113,8 +113,10 @@ const char *gasneti_AMErrorName(int errval) {
 /* add new core API handlers here and to the bottom of gasnet_core.c */
 
 /* ------------------------------------------------------------------------------------ */
-#if GASNET_PSHM
+#if GASNET_PSHM || defined(GASNETI_BLCR_ENABLED)
+/* Shadow AM table for PSHM and for Checkpoint/Restart */
 #define GASNETC_MAX_NUMHANDLERS 256
+#include <gasnet_handler.h>
 extern gasneti_handler_fn_t gasnetc_handler[GASNETC_MAX_NUMHANDLERS];
 #endif
 

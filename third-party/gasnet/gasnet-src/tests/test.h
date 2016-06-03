@@ -181,7 +181,15 @@ static int _test_rand(int low, int high) {
   int result;
   assert(low <= high);
   assert(low <= high+1); /* We will overflow otherwise */
+#ifndef TEST_NO_FP_RAND
   result = low+(int)(((double)(high-low+1))*rand()/(RAND_MAX+1.0));
+#else
+  { int bin_count = high - low + 1;
+    unsigned int bin_width = ((unsigned int)RAND_MAX + 1) / (unsigned int)bin_count;
+    do { result = rand() / bin_width; } while (result >= bin_count);
+    result += low;
+  }
+#endif
   assert(result >= low && result <= high);
   return result;
 }
@@ -732,12 +740,11 @@ static void TEST_DEBUGPERFORMANCE_WARNING(void) {
     gasnett_atomic_increment(&_test_seggather_done, GASNETT_ATOMIC_REL);
   }
   static int _test_segbcast_idx;
-  static int _test_segbcast_done = 0;
-  static void _test_segbcast(gasnet_token_t token, void *buf, size_t nbytes) {
-    assert(nbytes == sizeof(gasnet_seginfo_t)*gasnet_nodes());
-    memcpy(_test_seginfo, buf, nbytes);
-    gasnett_local_wmb();
-    _test_segbcast_done = 1;
+  static gasnett_atomic_t _test_segbcast_count = gasnett_atomic_init(0);
+  static void _test_segbcast(gasnet_token_t token, void *buf, size_t nbytes, gasnet_handlerarg_t idx) {
+    void *dst = (void*)((uintptr_t)_test_seginfo + idx * gasnet_AMMaxMedium());
+    memcpy(dst, buf, nbytes);
+    gasnett_atomic_increment(&_test_segbcast_count, GASNETT_ATOMIC_REL);
   }
   static int _test_attach(gasnet_handlerentry_t *table, int numentries, uintptr_t segsize, uintptr_t minheapoffset) {
     #ifdef TEST_SEGSZ_EXPR
@@ -781,13 +788,25 @@ static void TEST_DEBUGPERFORMANCE_WARNING(void) {
     myseg.size = TEST_SEGSZ;
     BARRIER();
     GASNET_Safe(gasnet_AMRequestMedium0(0, _test_seggather_idx, &myseg, sizeof(gasnet_seginfo_t)));
-    if (gasnet_mynode() == 0) {
-      GASNET_BLOCKUNTIL((int)gasnett_atomic_read(&_test_seggather_done, 0) == (int)gasnet_nodes());
-      for (i=0; i < (int)gasnet_nodes(); i++) {
-        GASNET_Safe(gasnet_AMRequestMedium0(i, _test_segbcast_idx, _test_seginfo, gasnet_nodes()*sizeof(gasnet_seginfo_t)));
+    { const size_t total_bytes = gasnet_nodes()*sizeof(gasnet_seginfo_t);
+      const size_t msg_bytes = gasnet_AMMaxMedium();
+      const int msg_count = (total_bytes + msg_bytes - 1) / msg_bytes;
+      if (gasnet_mynode() == 0) {
+        size_t remain = total_bytes;
+        void *payload = _test_seginfo;
+        int idx;
+        GASNET_BLOCKUNTIL((int)gasnett_atomic_read(&_test_seggather_done, 0) == (int)gasnet_nodes());
+        for (idx = 0; idx < msg_count; ++idx) {
+          const size_t nbytes = MIN(remain, msg_bytes);
+          for (i=0; i < (int)gasnet_nodes(); i++) {
+            GASNET_Safe(gasnet_AMRequestMedium1(i, _test_segbcast_idx, payload, nbytes, idx));
+          }
+          remain -= nbytes;
+          payload = (void*)((uintptr_t)payload + nbytes);
+        }
       }
+      GASNET_BLOCKUNTIL((int)gasnett_atomic_read(&_test_segbcast_count, 0) == msg_count);
     }
-    GASNET_BLOCKUNTIL(_test_segbcast_done);
     BARRIER();
     for (i=0; i < (int)gasnet_nodes(); i++) {
       assert_always(_test_seginfo[i].size >= TEST_SEGSZ);

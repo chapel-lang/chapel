@@ -14,6 +14,7 @@ AUTOMAKE_OPTIONS = foreign 1.4
 CONDUITMODE_SUBDIRS = \
         ammpi      \
 	amudp	   \
+	blcr       \
 	contrib    \
 	firehose   \
 	fca	   \

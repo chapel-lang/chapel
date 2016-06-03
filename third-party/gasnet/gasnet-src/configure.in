@@ -33,7 +33,7 @@ AC_VALIDATE_CACHED_SYSTEM_TUPLE
 dnl Public release version packaging identifier:
 AC_DEFUN([GASNET_RELEASE_VERSION_MAJOR_D],[1])
 AC_DEFUN([GASNET_RELEASE_VERSION_MINOR_D],[26])
-AC_DEFUN([GASNET_RELEASE_VERSION_PATCH_D],[0])
+AC_DEFUN([GASNET_RELEASE_VERSION_PATCH_D],[3])
 dnl GASNet spec version:
 AC_DEFUN([GASNET_SPEC_VERSION_MAJOR_D],[1])
 AC_DEFUN([GASNET_SPEC_VERSION_MINOR_D],[8])
@@ -196,6 +196,40 @@ AC_SUBST(GASNETI_PTR_BITS)
 
 GASNET_IF_ENABLED_NOHELP(arch-altix, [force_arch_altix=yes])
 GASNET_IF_ENABLED_NOHELP(arch-ibmpe, [force_arch_ibmpe=yes])
+
+##
+# Look for a Cray-provided header allowing for the possibility we are not using Cray's wrapper compiler
+# There are two distinct "success" cases:
+# 1) The header is found w/o any extra CPPFLAGS
+# 2) The system is a Cray and the header is found only when the env var named by the 2nd arg is appended to CPPFLAGS
+# GASNET_CHECK_CRAY_HEADER(header, includes_var [, action-on-success-1] [, action-on-success-2] [, action-on-failure])
+AC_DEFUN([GASNET_CHECK_CRAY_HEADER],[
+  pushdef([cvname],ac_cv_header_[]translit($1,'.-','__'))  dnl Any others?
+  AC_CHECK_HEADERS([$1], [$3], [
+    if expr "$target" : ".*-cnl-" >/dev/null; then
+      AC_MSG_CHECKING([for [\$]$2 in the environment])
+      if test "${$2+set}" = set; then
+        AC_MSG_RESULT([yes (rechecking there for $1)])
+        unset cvname
+        GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS ${$2}")
+        AC_CHECK_HEADERS([$1]) dnl Any action passed here could not set CPPFLAGS
+        GASNET_POPVAR(CPPFLAGS)
+        if test $cvname = yes; then
+          :
+          $4
+        fi
+      else
+        AC_MSG_RESULT(no)
+      fi
+    fi
+    if test $cvname = no; then
+      :
+      $5
+    fi
+    cvname=no  dnl Otherwise recheck makes wrong choice
+  ])
+  popdef([cvname])
+])
 
 ### 
 #
@@ -1049,7 +1083,7 @@ case "$target_os" in
                           GASNET_THREAD_LIBS="-lpthread"])
 	;;
   cygwin*) 
-	GASNET_THREAD_DEFINES="-D_REENTRANT"
+	GASNET_THREAD_DEFINES="-D_REENTRANT -D_XOPEN_SOURCE=500 -D_DEFAULT_SOURCE"
         GASNET_THREAD_LIBS=""
 	;;
   darwin*) 
@@ -1363,19 +1397,33 @@ if test "$enabled_pshm" != no; then
    [enabled_pshm_xpmem=yes])
  if test "$enabled_pshm_xpmem$with_pshm" = yesno; then
   GASNET_PUSHVAR(LIBS,"")
-  AC_SEARCH_LIBS(xpmem_get, xpmem, [
-    AC_CHECK_HEADERS([xpmem.h sn/xpmem.h], [
+  GASNET_PUSHVAR(LDFLAGS,"")
+  GASNET_PUSHVAR(CPPFLAGS,"")
+  GASNET_CHECK_CRAY_HEADER([xpmem.h], [CRAY_XPMEM_INCLUDE_OPTS], [
+      found_xpmem_h=yes
+    ],[
+      found_xpmem_h=yes
+      CPPFLAGS="$CRAY_XPMEM_INCLUDE_OPTS "  dnl The trailing space is required
+      LDFLAGS="$CRAY_XPMEM_POST_LINK_OPTS " dnl The trailing space is required
+    ],[
+      AC_CHECK_HEADERS([sn/xpmem.h], [found_xpmem_h=yes], [found_xpmem_h=no])
+    ])
+  if test $found_xpmem_h = yes; then
+    AC_SEARCH_LIBS(xpmem_get, xpmem, [
       if test $have_hugetlbfs = yes; then
         LIBS="$LIBS $HUGETLBFS_LIBS"
         AC_DEFINE(GASNETI_USE_HUGETLBFS)
       fi
-      GASNET_PSHM_LIBS=$LIBS
+      SYS_HEADER_BLD="$CPPFLAGS$SYS_HEADER_BLD"
+      GASNET_PSHM_LIBS="$LDFLAGS$LIBS"
       AC_CHECK_FUNCS([xpmem_make_2])
       AC_DEFINE(GASNETI_PSHM_XPMEM)
       with_pshm=xpmem
     ])
-  ])
+  fi
   GASNET_POPVAR(LIBS)
+  GASNET_POPVAR(LDFLAGS)
+  GASNET_POPVAR(CPPFLAGS)
  fi
 
  # Fourth check is for gloal heap
@@ -1747,6 +1795,12 @@ GASNET_TRY_CACHE_RUN_WITHCC(for x86 pause instruction,x86_pause_instruction, [
 #    AC_MSG_RESULT(yes)
 #], [AC_MSG_RESULT(no)])
 GASNET_POPVAR(CFLAGS)
+
+## Misc. builtins (e.g. for bit manipilation)
+
+GASNET_TRY_CACHE_LINK(for __builtin_ctz, cc_has_builtin_ctz,
+  [int x;], [__builtin_ctz(x);],
+  AC_DEFINE(HAVE_BUILTIN_CTZ))
 
 #---------------------------------------------------------------------------------------------------------------
 # Linux's PR_SET_PDEATHSIG of interest to both smp-conduit and ssh-spawer
@@ -3274,6 +3328,10 @@ if test "$enabled_ibv" = yes; then
       if test "x$force_ibv_xrc" = xyes; then
         GASNET_MSG_ERROR([IBV XRC support was requested with --enable-ibv-xrc but requires SRQ support which has been disabled])
       fi
+    elif test "x$with_pshm" = xno; then
+      if test "x$force_ibv_xrc" = xyes; then
+        GASNET_MSG_ERROR([IBV XRC support was requested with --enable-ibv-xrc but requires PSHM support which is not enabled])
+      fi
     elif test "$enabled_ibv_xrc" = yes; then
       GASNET_PUSHVAR(LIBS,"$LIBS -L$IBV_LIBDIR $IBV_LIBS $GASNET_THREAD_LIBS")
       AC_CHECK_FUNCS([ibv_open_xrc_domain ibv_cmd_open_xrcd], [have_ibv_xrc=yes], [have_ibv_xrc=no])
@@ -3291,7 +3349,7 @@ AC_SUBST(IBV_LIBCFLAGS)
 AM_CONDITIONAL(USE_IBV_CONDUIT, test "$have_ibv" = yes)
 AM_CONDITIONAL(IBV_BOOTSTRAP_SSH, test "$have_fork" = yes)
 AM_CONDITIONAL(IBV_BOOTSTRAP_MPI, test "$have_mpi_compat" = yes)	# Option to omit MPI support?
-AM_CONDITIONAL(IBV_RCV_THREAD,test "$enabled_ibv_rcv_thread" = yes)
+AM_CONDITIONAL(IBV_SEQ_THREADS, test "$enabled_ibv_rcv_thread$enabled_ibv_conn_thread" != nono)
 CONDUIT_END([test "$have_ibv" = yes])
 
 #--------------------------------------------------------------------------------------------------------
@@ -3317,11 +3375,21 @@ if test ${gni_network}:${enabled_[]lowername} = lowername[]:yes; then
   GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS ${GNI_INCLUDES}")
   GASNET_PUSHVAR(LIBS,"$LIBS ${GNI_LIBS}")
 
-  # These duplicate part of the "working Gemini/Aries configuration" probe.
-  # However, failing on these can help distinguish which module is missing/broken.
-  # Also $have_pmi_cray_h squashes later probe for pmi.h
-  AC_CHECK_HEADERS(pmi_cray.h, [have_pmi_cray_h=1], [have_[]lowername=no])
-  AC_CHECK_HEADERS(gni_pub.h, [:], [have_[]lowername=no])
+  # Look for pmi_cray.h, allowing for the possibility we are not using the wrapper compiler
+  # Setting $have_pmi_cray squashes a later probe for pmi.h:
+  GASNET_CHECK_CRAY_HEADER([pmi_cray.h],[CRAY_PMI_INCLUDE_OPTS],[
+      have_pmi_cray_h=yes
+    ],[
+      have_pmi_cray_h=yes
+      GNI_INCLUDES="$GNI_INCLUDES $CRAY_PMI_INCLUDE_OPTS"
+      GNI_LIBS="$GNI_LIBS $CRAY_PMI_POST_LINK_OPTS -lpmi"
+    ])
+
+  # Look for gni_pub.h, allowing for the possibility we are not using the wrapper compiler
+  GASNET_CHECK_CRAY_HEADER([gni_pub.h],[CRAY_GNI_HEADERS_INCLUDE_OPTS],[:],[
+      GNI_INCLUDES="$GNI_INCLUDES $CRAY_GNI_HEADERS_INCLUDE_OPTS"
+      GNI_LIBS="$GNI_LIBS $CRAY_UGNI_POST_LINK_OPTS -lugni"
+    ])
 
   if test $have_[]lowername = yes; then
     # PSHM must be XPMEM, HUGETLBFS or none.
@@ -3344,7 +3412,12 @@ if test ${gni_network}:${enabled_[]lowername} = lowername[]:yes; then
     esac
   fi
 
+  GASNET_POPVAR(LIBS)
+  GASNET_POPVAR(CPPFLAGS)
+
   if test $have_[]lowername = yes; then
+    GASNET_PUSHVAR(LIBS,"$LIBS ${GNI_LIBS}")
+    GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS ${GNI_INCLUDES}")
     GASNET_TRY_CACHE_LINK(for working $1 configuration, lowername[]_works, [
       #include <stddef.h>
       #include <stdint.h>
@@ -3356,26 +3429,47 @@ if test ${gni_network}:${enabled_[]lowername} = lowername[]:yes; then
 
       int localranks;
       int ret = PMI_Get_numpes_on_smp(&localranks); /* Cray extension */
-    ], [ : ], [ have_gemini=no; GASNET_ERR_SAVE() ] )
+    ], [ : ], [ have_[]lowername=no; GASNET_ERR_SAVE() ] )
+    AC_SUBST(GNI_LIBS)
+    AC_SUBST(GNI_INCLUDES)
+    GASNET_POPVAR(LIBS)
+    GASNET_POPVAR(CPPFLAGS)
   fi
 
-  GASNET_POPVAR(LIBS)
-  GASNET_POPVAR(CPPFLAGS)
+  GASNET_IF_ENABLED_WITH_AUTO(gni-udreg,
+     [Use Cray's UDREG to cache memory registration on Aries and Gemini (enabled by default if available)],
+     [gni_udreg=yes], [gni_udreg=no], [gni_udreg=probe])
+  if test $gni_udreg != no; then
+    # Look for udreg_pub.h, allowing for the possibility we are not using the wrapper compiler
+    GASNET_CHECK_CRAY_HEADER([udreg_pub.h],[CRAY_UDREG_INCLUDE_OPTS],[
+        AC_DEFINE(GASNETC_GNI_UDREG)
+      ],[
+        AC_DEFINE(GASNETC_GNI_UDREG)
+        GNI_INCLUDES="$GNI_INCLUDES $CRAY_UDREG_INCLUDE_OPTS"
+        GNI_LIBS="$GNI_LIBS $CRAY_UDREG_POST_LINK_OPTS -ludreg"
+      ],[
+        if test "$gni_udreg" = yes; then
+          GASNET_ERR_SAVE()
+          AC_MSG_ERROR([--enable-gni-udreg was passed but udreg_pub.h header was not found])
+        fi
+      ])
+  fi
 
   GASNET_WITH(gni-max-medium,
-     [gasnet_AMMaxMedium() for Gemini and Aries conduits (default 960)],
+     [gasnet_AMMaxMedium() for Gemini and Aries conduits (default 4032)],
      [if expr "$withval" : '[[0-9]]*$' >/dev/null 2>&1 && \
          expr \( "$withval" / 64 \) \* 64 = "$withval" >/dev/null 2>&1 &&
-         expr "$withval" '>=' 512  >/dev/null 2>&1 ; then
+         expr "$withval" '>=' 512  >/dev/null 2>&1 &&
+         expr "$withval" '<' 65536  >/dev/null 2>&1 ; then
         gni_max_medium="$withval"
       else
         GASNET_ERR_SAVE()
-        AC_MSG_ERROR([--with-gni-max-medium="$withval" is not legal.  Value must be a multiple of 64 and no smaller than 512])
+        AC_MSG_ERROR([--with-gni-max-medium="$withval" is not legal.  Value must be a multiple of 64, between 512 and 65472, inclusive.])
       fi
      ],
      [GASNET_ERR_SAVE()
       AC_MSG_ERROR([--with-gni-max-medium must be a multiple of 64 and no smaller than 512])],
-     [gni_max_medium=960])
+     [gni_max_medium=4032])
   AC_DEFINE_UNQUOTED(GASNETC_GNI_MAX_MEDIUM, [$gni_max_medium])
 
   GASNET_IF_ENABLED(gni-multi-domain, [Use experimental multi-domain support in PAR builds of Gemini and Aries conduits], [AC_DEFINE(GASNETC_GNI_MULTI_DOMAIN)])
@@ -3771,6 +3865,12 @@ else
   AC_DEFINE_UNQUOTED(GASNET_SOCKLEN_T, $gasnet_cv_socklen_t)
 fi
 
+# Prefer setpgid(), but unless cross-compiling we can use setpgrp()
+AC_CHECK_FUNCS(setpgid)
+if test "$cross_compiling" = "no" ; then
+  AC_CHECK_FUNCS(setpgrp, [AC_FUNC_SETPGRP()])
+fi
+
 GASNET_WITH(ssh-cmd,
    [default value for GASNET_SSH_CMD environment variable (default "ssh")],
    [case "$withval" in
@@ -3801,46 +3901,27 @@ GASNET_WITH(ssh-nodefile,
    [gasnet_ssh_nodefile=""])
 AC_DEFINE_UNQUOTED(GASNETI_DEFAULT_SSH_NODEFILE, "$gasnet_ssh_nodefile")
 
-GASNET_WITH(ssh-rate,
-   [default value for GASNET_SSH_RATE environment variable (defaults to 0 - no rate limit)],
+GASNET_WITH(ssh-out-degree,
+   [default value for GASNET_SSH_OUT_DEGREE environment variable (defaults to 32)],
    [case "$withval" in
-      yes|no) AC_MSG_ERROR([--with-ssh-rate requires an argument]) ;;
-           *) if expr "$withval" : '[[0-9]]*$' >/dev/null; then
-                gasnet_ssh_rate="$withval"
-              else
-                AC_MSG_ERROR([--with-ssh-rate argument "$withval" is not a non-negative integer])
-              fi
-              ;;
-    esac],
-   [AC_MSG_ERROR([--with-ssh-rate requires an argument])],
-   [gasnet_ssh_rate="0"])
-AC_DEFINE_UNQUOTED(GASNETI_DEFAULT_SSH_RATE, "$gasnet_ssh_rate")
-    
-GASNET_WITH(ssh-topology,
-   [connection topology when using ssh-spawner ("flat" or "nary[[:N]]", where default is "flat")],
-   [case "$withval" in
-         flat) AC_DEFINE(GASNETI_SSH_TOPO_FLAT) ;;
-         nary) AC_DEFINE(GASNETI_SSH_TOPO_NARY) ;;
-       nary:*) tmpval=`echo $withval | cut -d: -f2-`
-               if expr "${tmpval}" : '[[1-9]][[0-9]]*$' >/dev/null; then
-                 AC_DEFINE(GASNETI_SSH_TOPO_NARY)
-                 AC_DEFINE_UNQUOTED(GASNETI_SSH_NARY_DEGREE, $tmpval)
-               else
-                 AC_MSG_ERROR([--with-ssh-topology nary: suffix "$tmpval" is not a positive integer])
-               fi
-               ;;
-          yes) AC_MSG_ERROR([--with-ssh-topology requires an argument]) ;;
-            *) AC_MSG_ERROR([--with-ssh-topology argument "$withval" is not a valid choice]) ;;
-    esac],
-   [AC_MSG_ERROR([--with-ssh-topology requires an argument])],
-   [AC_DEFINE(GASNETI_SSH_TOPO_FLAT)])
+      yes|no) AC_MSG_ERROR([--with-ssh-out-degree requires a non-negative integer argument]) ;;
+    esac
+    if expr "${withval}" : "[[0-9]][[0-9]]*" >/dev/null; then
+      gasnet_ssh_out_degree="$withval"
+    else
+      AC_MSG_ERROR([--with-ssh-out-degree requires a non-negative integer argument])
+    fi],
+   [AC_MSG_ERROR([--with-ssh-out-degree requires a non-negative  integer argument])],
+   [gasnet_ssh_out_degree=32])
+AC_DEFINE_UNQUOTED(GASNETI_DEFAULT_SSH_OUT_DEGREE, $gasnet_ssh_out_degree)
+
 
 # Things for pmi-spawner
 
 GASNET_WITH(pmi, [path to PMI headers and libs],
             [with_pmi="$withval"; force_pmi=yes], [with_pmi=no], [with_pmi='/usr'])
 have_pmi=no
-if test -n "$have_pmi_cray_h" ; then
+if test -n "$have_pmi_cray_h"; then
   with_pmi='no'
   have_pmi='yes'
 elif test "$with_pmi" = yes; then
@@ -3848,7 +3929,16 @@ elif test "$with_pmi" = yes; then
 fi
 
 if test "$with_pmi" != 'no'; then
+  GASNET_WITH(pmi-libdir, [PMI library directory (if not in default location)],
+   [case "$withval" in
+      yes|no) AC_MSG_ERROR([--with-pmi-libdir requires an argument]) ;;
+           *) PMI_SPAWNER_LIBDIR="-L$withval" ;;
+    esac],
+   [AC_MSG_ERROR([--with-pmi-libdir requires an argument])]
+  )
   if test "$with_pmi" = '/usr'; then
+    : # Nothing to do
+  elif test -n "${PMI_SPAWNER_LIBDIR+set}" ; then
     : # Nothing to do
   elif test -d "${with_pmi}/lib${GASNETI_PTR_BITS}/."; then
     PMI_SPAWNER_LIBDIR="-L${with_pmi}/lib${GASNETI_PTR_BITS}"
@@ -4569,6 +4659,9 @@ GASNET_WITH(tool-prefix, [Naming prefix to use for contributed tools],
 AC_SUBST(TOOL_PREFIX)
 
 dnl GASNET_TOOLSONLY_FALSE_BEGIN
+########################################################################
+# Optional "third-party" libraries
+
 ##                        FCA SUPPORT
 GASNET_IF_ENABLED_WITH_AUTO(fca, [Enable/disable FCA for acceleration of collectives (auto-detected)],
   [enable_fca=yes;force_fca=yes],
@@ -4657,6 +4750,88 @@ AC_SUBST([FCA_INCLUDES])
 AC_SUBST([FCA_LIBDIR])
 AC_SUBST([FCA_LIBS])
 AM_CONDITIONAL(FCA_ENABLED, test "$have_fca" = "yes")
+
+GASNET_IF_ENABLED_WITH_AUTO(blcr, [Enable/disable BLCR for process checkpoints (auto-detected)],
+  [enable_blcr=yes;force_blcr=yes],
+  [enable_blcr=no],
+  [enable_blcr=probe])
+case "$target_os" in
+  linux*) ;;
+  *) if test "x$force_blcr" = 'xyes'; then
+       GASNET_MSG_WARN([Ignoring --enable-blcr on a non-linux platform])
+       unset force_blcr
+     fi
+     enable_blcr=no
+     ;;
+esac
+if test "$enable_blcr" != 'no'; then
+  have_blcr=yes
+  GASNET_WITH(blcr, [Specify the BLCR install directory],
+        [if test "$withval" = 'yes'; then
+           GASNET_MSG_ERROR(["--with-blcr requires an argument (BLCR install directory)"])
+         fi
+         blcrdir="$withval"
+        ])
+
+  AC_MSG_CHECKING([for BLCR include directory])
+  blcrinc=${blcrdir:-/usr}/include
+  if test -r "${blcrinc}/libcr.h"; then
+    AC_MSG_RESULT([$blcrinc])
+  else
+    AC_MSG_RESULT([not found])
+    have_blcr=no
+  fi
+
+  AC_MSG_CHECKING([for BLCR lib directory])
+  blcrlib1=${blcrdir:-/usr}/lib${GASNETI_PTR_BITS}
+  blcrlib2=${blcrdir:-/usr}/lib
+  if test -r "${blcrlib1}/libcr.a" || test -r "${blcrlib1}/libcr.so"; then
+    blcrlib="$blcrlib1"
+  elif test -r "${blcrlib2}/libcr.a" || test -r "${blcrlib2}/libcr.so"; then
+    blcrlib="$blcrlib2"
+  else
+    blcrlib='not found'
+    have_blcr=no
+  fi
+  AC_MSG_RESULT([$blcrlib])
+
+  AC_MSG_CHECKING([for BLCR bin directory])
+  blcrbin=${blcrdir:-/usr}/bin
+  if test -x "${blcrbin}/cr_checkpoint"; then
+    : # OK
+  else
+    blcrbin='not found'
+    have_blcr=no
+  fi
+  AC_MSG_RESULT([$blcrbin])
+
+  if test "$force_blcr$have_blcr" = yesno; then
+    if test "${blcrdir+set}" = set ; then
+      GASNET_MSG_ERROR([User requested --enable-blcr but BLCR support could not be found in $blcrdir])
+    else
+      GASNET_MSG_ERROR([User requested --enable-blcr but BLCR support could not be found.  Perhaps you need to pass --with-blcr=DIRECTORY ?])
+    fi
+  elif test "$have_blcr" = yes; then
+    if test "${blcrinc+set}" = set ; then
+      BLCR_CPPFLAGS="-I${blcrinc}"
+    fi
+    if test "${blcrdir+set}" = set ; then
+      BLCR_LIBDIR="-L${blcrlib}"
+    fi
+    BLCR_BINDIR="${blcrbin}"
+    AC_DEFINE_UNQUOTED(GASNETI_BLCR_BINDIR,"$blcrbin")
+    BLCR_LIBS='-lcr'
+    AC_DEFINE(GASNETI_BLCR_ENABLED)
+  fi
+else
+  have_blcr=no
+fi
+AC_SUBST(BLCR_CPPFLAGS)
+AC_SUBST(BLCR_LIBDIR)
+AC_SUBST(BLCR_LIBS)
+AC_SUBST(BLCR_BINDIR)
+AM_CONDITIONAL(BLCR_ENABLED, test "$have_blcr" = "yes")
+
 dnl GASNET_TOOLSONLY_FALSE_END
 
 ########################################################################
@@ -4688,6 +4863,7 @@ cat >>$CONDUIT_LIST <<EOF
   Segment config:         $segconfig
   PSHM support:           $with_pshm
   FCA support:            $have_fca
+  BLCR support:           $have_blcr
 EOF
 else
 cat >>$CONDUIT_LIST <<EOF
@@ -4774,6 +4950,8 @@ other/firehose/Makefile
 other/firehose/firehose.mak
 other/fca/Makefile
 other/fca/fca.mak
+other/blcr/Makefile
+other/blcr/blcr.mak
 dnl GASNET_TOOLSONLY_FALSE_END
 
 other/Makefile

@@ -300,7 +300,7 @@ void chpl_vdebug_log_put(void* addr, c_nodeid_t node, void* raddr,
 // Record>  get: time.sec dstNodeId srcNodeId commTaskId addr raddr elemsize 
 //               typeIndex length lineNumber fileName
 //
-// Note:  dstNodeId is for the node makeing the request
+// Note:  dstNodeId is for the node making the request
 
 void chpl_vdebug_log_get(void* addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t typeIndex,
@@ -340,7 +340,7 @@ void  chpl_vdebug_log_put_strd(void* dstaddr, void* dststrides, c_nodeid_t dstno
 // Record>  st_get: time.sec dstNodeId srcNodeId commTaskId addr raddr elemsize 
 //                  typeIndex length lineNumber fileName
 //
-// Note:  dstNode is node makeing request for get
+// Note:  dstNode is node making request for get
 
 void chpl_vdebug_log_get_strd(void* dstaddr, void* dststrides, c_nodeid_t srcnode_id,
                               void* srcaddr, void* srcstrides, void* count,

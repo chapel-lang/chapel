@@ -7,6 +7,8 @@
 #include <gasnet_internal.h>
 #include <gasnet_core_internal.h>
 
+#include <unistd.h>
+#include <fcntl.h>
 #include <errno.h>
 
 /* If too many problems, one can disable here. */
@@ -47,15 +49,6 @@ int gasnetc_thread_dummy = 1;
   #define my_cancel_deferred() ((void)0)
 #endif
 
-GASNETI_INLINE(gasnetc_testcancel)
-void gasnetc_testcancel(gasnetc_progress_thread_t * const pthr_p) {
-  const int save_errno = errno;
-  pthread_testcancel(); /* yes, we check even if we won't call cancel ourselves */
-  errno = save_errno;
-  gasneti_sync_reads();
-  if_pf (pthr_p->done || GASNETC_IS_EXITING()) pthread_exit(NULL);
-}
-
 static void * gasnetc_progress_thread(void *arg)
 {
   gasnetc_progress_thread_t * const pthr_p  = arg;
@@ -64,10 +57,21 @@ static void * gasnetc_progress_thread(void *arg)
   void (* const fn)(struct ibv_wc *, void *)= pthr_p->fn;
   void * const fn_arg                       = pthr_p->fn_arg;
   const uint64_t min_us                     = pthr_p->min_us;
+  int fd = compl_hndl->fd;
+  fd_set readfds;
 
-  my_cleanup_push(my_cleanup, fn_arg);
+  /* Setup completion channel for non-blocking access.
+   * This way pthread_cancel() never needs to interrupt ibv calls.
+   */
+  if (0 > fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK)) {
+    gasneti_fatalerror("Could not set ibv completion channel to non-blocking mode");
+  }
+  FD_ZERO(&readfds);
+  FD_SET(fd, &readfds);
+
+  my_cleanup_push(my_cleanup, arg);
   my_cancel_deferred();
-  my_cancel_enable();
+  my_cancel_disable();
 
   while (!pthr_p->done) {
     struct ibv_wc comp;
@@ -77,9 +81,7 @@ static void * gasnetc_progress_thread(void *arg)
     if (rc == 1) {
       gasneti_assert((comp.opcode == IBV_WC_RECV) ||
 		     (comp.status != IBV_WC_SUCCESS));
-      my_cancel_disable();
       (fn)(&comp, fn_arg);
-      my_cancel_enable();
 
       /* Throttle thread's rate */
       if_pf (min_us) {
@@ -87,6 +89,7 @@ static void * gasnetc_progress_thread(void *arg)
         if_pt (prev) {
           uint64_t elapsed = gasneti_ticks_to_us(gasneti_ticks_now() - prev);
     
+          my_cancel_enable();
           while (elapsed < min_us) {
           #if HAVE_NANOSLEEP
             uint64_t ns_delay = 1000 * (min_us - elapsed);
@@ -110,40 +113,38 @@ static void * gasnetc_progress_thread(void *arg)
             tv.tv_usec = us_delay % 1000000L;
             select(0, NULL, NULL, NULL, &tv);
           #endif
-            /* sleeping call could have been interrupted */
-            gasnetc_testcancel(pthr_p);
             elapsed = gasneti_ticks_to_us(gasneti_ticks_now() - prev);
           }
+          pthread_testcancel();
+          my_cancel_disable();
         }
         pthr_p->prev_time = gasneti_ticks_now();
       }
     } else if (rc == 0) {
       struct ibv_cq * the_cq;
       void *the_ctx;
+      int rc;
 
       /* block for event on the empty CQ */
-      rc = ibv_get_cq_event(compl_hndl, &the_cq, &the_ctx);
-      if_pf (0 != rc) {
-        gasnetc_testcancel(pthr_p);
-        GASNETC_IBV_CHECK(rc, "while blocked for CQ event");
-        /* Not reached */
-      }
-      gasneti_assert(the_cq == cq_hndl);
+      my_cancel_enable();
+      FD_SET(fd, &readfds); /* should never *not* be set */
+      do {
+        rc = select(fd+1, &readfds, NULL, NULL, NULL);
+        if_pf (pthr_p->done) pthread_exit(NULL);
+      } while ((rc < 0) && (errno == EINTR));
+      my_cancel_disable();
 
-      /* ack the event and rearm */
+      /* get the cq event, ack it, and rearm */
+      rc = ibv_get_cq_event(compl_hndl, &the_cq, &the_ctx);
+      GASNETC_IBV_CHECK(rc, "from ibv_get_cq_event");
+      gasneti_assert(the_cq == cq_hndl);
       ibv_ack_cq_events(cq_hndl, 1);
       rc = ibv_req_notify_cq(cq_hndl, 0);
-      if_pf (0 != rc) {
-        gasnetc_testcancel(pthr_p);
-        GASNETC_IBV_CHECK(rc, "while requesting CQ events");
-        /* Not reached */
-      }
+      GASNETC_IBV_CHECK(rc, "from ibv_req_notify_cq");
 
       /* loop to poll for the new completion */
     } else {
-      gasnetc_testcancel(pthr_p);
       GASNETC_IBV_CHECK(rc, "from ibv_poll_cq in async thread");
-      /* Not reached */
     }
   }
 
@@ -205,16 +206,24 @@ gasnetc_spawn_progress_thread(gasnetc_progress_thread_t *pthr_p)
 }
 
 extern void
-gasnetc_stop_progress_thread(gasnetc_progress_thread_t *pthr_p)
+gasnetc_stop_progress_thread(gasnetc_progress_thread_t *pthr_p, int block)
 {
-  if (pthread_self() == pthr_p->thread_id) return; /* no suicides */
+  pthread_t tid = pthr_p->thread_id;
+  if (pthread_self() == tid) return; /* no suicides */
   if (pthr_p->done) return; /* no "over kill" */
   pthr_p->done = 1;
   gasneti_sync_writes();
 #if GASNETC_THREAD_CANCEL
-  (void)pthread_cancel(pthr_p->thread_id); /* ignore failure */
+  (void)pthread_cancel(tid); /* ignore failure */
 #endif
   GASNETI_TRACE_PRINTF(I, ("Requested termination of progress thread with id 0x%lx",
-                           (unsigned long)(uintptr_t)(pthr_p->thread_id)));
+                           (unsigned long)(uintptr_t)(tid)));
+  if (block) {
+    (void)pthread_join(tid, NULL);
+    GASNETI_TRACE_PRINTF(I, ("Joined progress thread with id 0x%lx",
+                             (unsigned long)(uintptr_t)(tid)));
+  } else {
+    (void)pthread_detach(tid);
+  }
 }
 #endif

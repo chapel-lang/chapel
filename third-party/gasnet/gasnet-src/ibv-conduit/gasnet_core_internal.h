@@ -29,7 +29,9 @@
 /* TODO: flatten these? */
   #if HAVE_IBV_SRQ
     #define GASNETC_IBV_SRQ 1
-    #if HAVE_IBV_CMD_OPEN_XRCD
+    #if !GASNET_PSHM
+      #undef GASNETC_IBV_XRC
+    #elif HAVE_IBV_CMD_OPEN_XRCD
       #define GASNETC_IBV_XRC 1
       #define GASNETC_IBV_XRC_OFED 1
       typedef struct ibv_xrcd gasnetc_xrcd_t;
@@ -39,10 +41,6 @@
       typedef struct ibv_xrc_domain gasnetc_xrcd_t;
     #endif
   #endif
-
-#if HAVE_MMAP
-  #include <sys/mman.h> /* For MAP_FAILED */
-#endif
 
 /*  whether or not to use spin-locking for HSL's */
 #define GASNETC_HSL_SPINLOCK 1
@@ -89,8 +87,9 @@ extern gasneti_atomic_t gasnetc_exit_running;
  * However, a least Solaris 11.2 has been seen to eventually begin returning
  * ENOSPC from ibv_create_cq() after a few thousand tests have run.
  * So, we will make a best-effort to at least destroy QPs and CQs.
+ * This is also needed for BLCR-based checkpoint/restart suport.
  */
-#if PLATFORM_OS_SOLARIS
+#if PLATFORM_OS_SOLARIS || GASNET_BLCR || GASNET_DEBUG
   #define GASNETC_IBV_SHUTDOWN 1
   extern void gasnetc_connect_shutdown(void);
 #endif
@@ -110,6 +109,8 @@ extern gasneti_atomic_t gasnetc_exit_running;
 #define _hidx_gasnetc_exit_reph               (GASNETC_HANDLER_BASE+6)
 #define _hidx_gasnetc_sys_barrier_reqh        (GASNETC_HANDLER_BASE+7)
 #define _hidx_gasnetc_sys_exchange_reqh       (GASNETC_HANDLER_BASE+8)
+#define _hidx_gasnetc_sys_flush_reph          (GASNETC_HANDLER_BASE+9)
+#define _hidx_gasnetc_sys_close_reqh          (GASNETC_HANDLER_BASE+10)
 /* add new core API handlers here and to the bottom of gasnet_core.c */
 
 #ifndef GASNETE_HANDLER_BASE
@@ -293,6 +294,8 @@ typedef union {
 #define gasnetc_sema_up           gasneti_cons_sema(GASNETC_PARSEQ,up)
 #define gasnetc_sema_up_n         gasneti_cons_sema(GASNETC_PARSEQ,up_n)
 #define gasnetc_sema_trydown      gasneti_cons_sema(GASNETC_PARSEQ,trydown)
+#define gasnetc_sema_trydown_partial \
+                                  gasneti_cons_sema(GASNETC_PARSEQ,trydown_partial)
 
 #define GASNETC_LIFO_INITIALIZER  GASNETI_CONS_LIFO(GASNETC_PARSEQ,INITIALIZER)
 #define gasnetc_lifo_head_t       gasneti_cons_lifo(GASNETC_PARSEQ,head_t)
@@ -314,6 +317,26 @@ typedef gasnetc_cons_atomic(val_t)        gasnetc_atomic_val_t;
 #define gasnetc_atomic_swap               gasnetc_cons_atomic(swap)
 #define gasnetc_atomic_add                gasnetc_cons_atomic(add)
 #define gasnetc_atomic_subtract           gasnetc_cons_atomic(subtract)
+
+/* ------------------------------------------------------------------------------------ */
+/* Wrap mmap and munmap so we can do without them if required */
+
+#if HAVE_MMAP
+  #include <sys/mman.h> /* For MAP_FAILED */
+  #define GASNETC_MMAP_FAILED        MAP_FAILED
+  #define gasnetc_mmap(_size)        gasneti_mmap(_size)
+  #define gasnetc_munmap(_ptr,_size) gasneti_munmap(_ptr,_size)
+#else
+  #define GASNETI_MMAP_GRANULARITY   (((size_t)1)<<22)  /* 4 MB */
+  #define GASNETI_MMAP_LIMIT         (((size_t)1)<<31)  /* 2 GB */
+  #define GASNETC_MMAP_FAILED        NULL
+  extern int gasnetc_munmap(void *addr, size_t size); 
+  GASNETI_INLINE(gasnetc_mmap)
+  void *gasnetc_mmap(size_t size) {
+    void *result;
+    return posix_memalign(&result, GASNET_PAGESIZE, size) ? GASNETC_MMAP_FAILED : result;
+  }
+#endif
 
 /* ------------------------------------------------------------------------------------ */
 /* Type and ops for rdma counters */
@@ -356,32 +379,6 @@ void gasnetc_counter_wait(gasnetc_counter_t *counter, int handler_context) {
 } 
 
 /* ------------------------------------------------------------------------------------ */
-/* System AM Request/Reply Functions
- * These can be called between init and attach.
- * They have an optional counter allowing one to test/block for local completion.
- */
-
-extern int gasnetc_RequestSysShort(gasnet_node_t dest,
-                                   gasnetc_atomic_t *completed, /* counter for local completion */
-                                   gasnet_handler_t handler,
-                                   int numargs, ...);
-extern int gasnetc_RequestSysMedium(gasnet_node_t dest,
-                                    gasnetc_atomic_t *completed, /* counter for local completion */
-                                    gasnet_handler_t handler,
-                                    void *source_addr, size_t nbytes,
-                                    int numargs, ...);
-
-extern int gasnetc_ReplySysShort(gasnet_token_t token,
-                                 gasnetc_atomic_t *completed, /* counter for local completion */
-                                 gasnet_handler_t handler,
-                                 int numargs, ...);
-extern int gasnetc_ReplySysMedium(gasnet_token_t token,
-                                  gasnetc_atomic_t *completed, /* counter for local completion */
-                                  gasnet_handler_t handler,
-                                  void *source_addr, size_t nbytes,
-                                  int numargs, ...);
-
-/* ------------------------------------------------------------------------------------ */
 
 #if (GASNETC_IB_MAX_HCAS > 1)
   #define GASNETC_FOR_ALL_HCA_INDEX(h)	for (h = 0; h < gasnetc_num_hcas; ++h)
@@ -410,11 +407,25 @@ typedef struct {
 	uint32_t	immediate_data;
 } gasnetc_amrdma_hdr_t;
 
+/* GASNETC_AMRDMA_SZ must a power-of-2, and GASNETC_AMRDMA_SZ_LG2 its base-2 logarithm.
+ * GASNETC_AMRDMA_SZ can safely be smaller or larger than GASNETC_BUFSZ.
+ * However space is wasted if larger than 2^ceil(log_2(GASNETC_BUFSZ)).
+ */
+#if defined(GASNETC_AMRDMA_SZ)
+  /* Keep existing defn */
+#elif (GASNETC_BUFSZ >  2048)
+  #define GASNETC_AMRDMA_SZ     4096
+  #define GASNETC_AMRDMA_SZ_LG2 12
+#elif (GASNETC_BUFSZ >  1024)
+  #define GASNETC_AMRDMA_SZ     2048
+  #define GASNETC_AMRDMA_SZ_LG2 11
+#else /* GASNETC_BUFSZ is never less than 512 */
+  #define GASNETC_AMRDMA_SZ     1024
+  #define GASNETC_AMRDMA_SZ_LG2 10
+#endif
 #define GASNETC_AMRDMA_HDRSZ    sizeof(gasnetc_amrdma_hdr_t)
-#define GASNETC_AMRDMA_SZ	4096 /* Keep to a power-of-2 */  /* XXX: should determine automatically */
-#define GASNETC_AMRDMA_SZ_LG2	12 /* log-base-2(GASNETC_AMRDMA_SZ) */
 #define GASNETC_AMRDMA_PAD      (GASNETI_ALIGNUP(GASNETC_AMRDMA_HDRSZ,SIZEOF_VOID_P) - GASNETC_AMRDMA_HDRSZ)
-#define GASNETC_AMRDMA_LIMIT_MAX (GASNETC_AMRDMA_SZ - GASNETC_AMRDMA_HDRSZ - GASNETC_AMRDMA_PAD)
+#define GASNETC_AMRDMA_LIMIT_MAX (MIN(GASNETC_BUFSZ,GASNETC_AMRDMA_SZ) - GASNETC_AMRDMA_HDRSZ - GASNETC_AMRDMA_PAD)
 typedef char gasnetc_amrdma_buf_t[GASNETC_AMRDMA_SZ];
 
 #define GASNETC_DEFAULT_AMRDMA_MAX_PEERS 32
@@ -464,6 +475,9 @@ typedef struct {
 #if GASNETC_PIN_SEGMENT
   uint32_t        *seg_lkeys;
   uint32_t	*rkeys;	/* RKey(s) registered at attach time */
+  #if GASNETC_IBV_SHUTDOWN
+    gasnetc_memreg_t    *seg_regs;
+  #endif
 #endif
 #if GASNETC_IBV_SRQ
   struct ibv_srq	*rqst_srq;
@@ -506,9 +520,7 @@ typedef struct {
   struct {
     gasnetc_atomic_t		count;
     gasnetc_atomic_val_t	mask;
-#if GASNETC_ANY_PAR
-    gasneti_atomic_t		lock;
-#endif
+    gasneti_atomic_t		state;
     gasnetc_atomic_val_t	floor;
     gasnetc_amrdma_balance_tbl_t *table;
   }	  amrdma_balance;
@@ -604,7 +616,7 @@ typedef struct {
 
 /* Routines in gasnet_core_connect.c */
 #if GASNETC_IBV_XRC
-extern int gasnetc_xrc_init(void);
+extern int gasnetc_xrc_init(void **shared_mem_p);
 #endif
 extern int gasnetc_connect_init(void);
 extern int gasnetc_connect_fini(void);
@@ -621,11 +633,15 @@ extern int gasnetc_create_cq(struct ibv_context *, int,
                              gasnetc_progress_thread_t *);
 extern int gasnetc_sndrcv_limits(void);
 extern int gasnetc_sndrcv_init(void);
+extern void gasnetc_sys_flush_reph(gasnet_token_t, gasnet_handlerarg_t);
+extern void gasnetc_sys_close_reqh(gasnet_token_t);
+extern void gasnetc_sndrcv_quiesce(void);
+extern int gasnetc_sndrcv_shutdown(void);
 extern void gasnetc_sndrcv_init_peer(gasnet_node_t node, gasnetc_cep_t *cep);
 extern void gasnetc_sndrcv_init_inline(void);
 extern void gasnetc_sndrcv_attach_peer(gasnet_node_t node, gasnetc_cep_t *cep);
 extern void gasnetc_sndrcv_start_thread(void);
-extern void gasnetc_sndrcv_stop_thread(void);
+extern void gasnetc_sndrcv_stop_thread(int block);
 extern gasnetc_amrdma_send_t *gasnetc_amrdma_send_alloc(uint32_t rkey, void *addr);
 extern gasnetc_amrdma_recv_t *gasnetc_amrdma_recv_alloc(gasnetc_hca_t *hca);
 extern void gasnetc_sndrcv_poll(int handler_context);
@@ -657,13 +673,13 @@ extern int gasnetc_rdma_getv(gasnetc_epid_t epid, void *src_ptr, size_t dstcount
 /* Routines in gasnet_core_thread.c */
 #if GASNETI_CONDUIT_THREADS
 extern void gasnetc_spawn_progress_thread(gasnetc_progress_thread_t *pthr);
-extern void gasnetc_stop_progress_thread(gasnetc_progress_thread_t *pthr);
+extern void gasnetc_stop_progress_thread(gasnetc_progress_thread_t *pthr, int block);
 #endif
 
 /* General routines in gasnet_core.c */
 extern int gasnetc_pin(gasnetc_hca_t *hca, void *addr, size_t size, enum ibv_access_flags acl, gasnetc_memreg_t *reg);
 extern void gasnetc_unpin(gasnetc_hca_t *hca, gasnetc_memreg_t *reg);
-#define gasnetc_unmap(reg)	gasneti_munmap((void *)((reg)->addr), (reg)->len)
+#define gasnetc_unmap(reg)	gasnetc_munmap((void *)((reg)->addr), (reg)->len)
 
 /* Bootstrap support */
 extern void (*gasneti_bootstrapFini_p)(void);
@@ -680,6 +696,10 @@ extern void (*gasneti_bootstrapCleanup_p)(void);
 #define gasneti_bootstrapCleanup        (*gasneti_bootstrapCleanup_p)
 extern void gasneti_bootstrapBarrier(void);
 extern void gasneti_bootstrapExchange(void *src, size_t len, void *dest);
+
+/* Explicitly native Barrier and Exchange: */
+extern void gasnetc_bootstrapBarrier_ib(void);
+extern void gasnetc_bootstrapExchange_ib(void *src, size_t len, void *dest);
 
 /* Global configuration variables */
 extern int		gasnetc_op_oust_limit;
@@ -755,5 +775,32 @@ extern gasnet_node_t            gasnetc_remote_nodes;
 #if GASNETC_DYNAMIC_CONNECT
   extern gasnetc_sema_t         gasnetc_zero_sema;
 #endif
+
+/* ------------------------------------------------------------------------------------ */
+/* System AM Request/Reply Functions
+ * These can be called between init and attach.
+ * They have an optional counter allowing one to test/block for local completion,
+ * and take an epid a dest to optionally allow selection of a specific QP.
+ */
+
+extern int gasnetc_RequestSysShort(gasnetc_epid_t dest,
+                                   gasnetc_atomic_t *completed, /* counter for local completion */
+                                   gasnet_handler_t handler,
+                                   int numargs, ...);
+extern int gasnetc_RequestSysMedium(gasnetc_epid_t dest,
+                                    gasnetc_atomic_t *completed, /* counter for local completion */
+                                    gasnet_handler_t handler,
+                                    void *source_addr, size_t nbytes,
+                                    int numargs, ...);
+
+extern int gasnetc_ReplySysShort(gasnet_token_t token,
+                                 gasnetc_atomic_t *completed, /* counter for local completion */
+                                 gasnet_handler_t handler,
+                                 int numargs, ...);
+extern int gasnetc_ReplySysMedium(gasnet_token_t token,
+                                  gasnetc_atomic_t *completed, /* counter for local completion */
+                                  gasnet_handler_t handler,
+                                  void *source_addr, size_t nbytes,
+                                  int numargs, ...);
 
 #endif

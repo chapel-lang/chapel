@@ -363,6 +363,56 @@
   #ifndef GASNETT_USE_GCC_ATTRIBUTE_FORMAT_FUNCPTR_ARG
     #define GASNETT_USE_GCC_ATTRIBUTE_FORMAT_FUNCPTR_ARG GASNETI_HAVE_CXX_ATTRIBUTE_FORMAT_FUNCPTR_ARG
   #endif
+#elif defined(__has_attribute)
+  /* Compiler provides the ability to probe attributes at compile time.
+   * The following are omitted because the probes are context dependent:
+   *    GASNETI_HAVE_ATTRIBUTE_UNUSED_TYPEDEF
+   *    GASNETT_USE_GCC_ATTRIBUTE_FORMAT_FUNCPTR
+   *    GASNETT_USE_GCC_ATTRIBUTE_FORMAT_FUNCPTR_ARG
+   */
+  #define GASNETI_HAVE_GCC_ATTRIBUTE 1
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_ALWAYSINLINE
+    #define GASNETT_USE_GCC_ATTRIBUTE_ALWAYSINLINE __has_attribute(__alwaysinline__)
+  #endif
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_NOINLINE
+    #define GASNETT_USE_GCC_ATTRIBUTE_NOINLINE __has_attribute(__noinline__)
+  #endif
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_MALLOC
+    #define GASNETT_USE_GCC_ATTRIBUTE_MALLOC __has_attribute(__malloc__)
+  #endif
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_WARNUNUSEDRESULT
+    #define GASNETT_USE_GCC_ATTRIBUTE_WARNUNUSEDRESULT __has_attribute(__warn_unused_result__)
+  #endif
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_USED
+    #define GASNETT_USE_GCC_ATTRIBUTE_USED __has_attribute(__used__)
+  #endif
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_UNUSED
+    #define GASNETT_USE_GCC_ATTRIBUTE_UNUSED __has_attribute(__unused__)
+  #endif
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_MAYALIAS
+    #define GASNETT_USE_GCC_ATTRIBUTE_MAYALIAS __has_attribute(__may_alias__)
+  #endif
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_NORETURN
+    #define GASNETT_USE_GCC_ATTRIBUTE_NORETURN __has_attribute(__noreturn__)
+  #endif
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_PURE
+    #define GASNETT_USE_GCC_ATTRIBUTE_PURE __has_attribute(__pure__)
+  #endif
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_CONST
+    #define GASNETT_USE_GCC_ATTRIBUTE_CONST __has_attribute(__const__)
+  #endif
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_HOT
+    #define GASNETT_USE_GCC_ATTRIBUTE_HOT __has_attribute(__hot__)
+  #endif
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_COLD
+    #define GASNETT_USE_GCC_ATTRIBUTE_COLD __has_attribute(__cold__)
+  #endif
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_DEPRECATED
+    #define GASNETT_USE_GCC_ATTRIBUTE_DEPRECATED __has_attribute(__deprecated__)
+  #endif
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_FORMAT
+    #define GASNETT_USE_GCC_ATTRIBUTE_FORMAT __has_attribute(__format__)
+  #endif
 #endif
 
 /* GASNETI_WARN_UNUSED_RESULT: warn if function's return value is ignored */

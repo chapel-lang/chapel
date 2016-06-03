@@ -71,8 +71,8 @@ extern gasnetc_exitcode_t *gasnetc_exitcodes;
 /* ------------------------------------------------------------------------------------ */
 /* Bootstrap collective operations */
 
-void gasnetc_bootstrapBarrier(void);
-void gasnetc_bootstrapExchange(void *src, size_t len, void *dest);
+void gasnetc_bootstrapBarrier_gni(void);
+void gasnetc_bootstrapExchange_gni(void *src, size_t len, void *dest);
 
 /* ------------------------------------------------------------------------------------ */
 /* AuxSeg setup for registered bounce  and post descriptors*/

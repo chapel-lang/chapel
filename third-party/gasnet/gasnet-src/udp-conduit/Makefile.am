@@ -8,6 +8,11 @@ AUTOMAKE_OPTIONS = foreign 1.4
 
 CONDUIT_NAME=udp
 
+## BLCR
+if BLCR_ENABLED
+include $(top_builddir)/other/blcr/blcr.mak
+endif
+
 # any conduit-specific subdirectories containing Makefile.am's
 SUBDIRS = .
 
@@ -24,25 +29,31 @@ CONDUIT_FILELIST =           \
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiled command line
 CONDUIT_SOURCELIST =          \
+      $(blcr_sourcelist)      \
       $(srcdir)/gasnet_core.c \
       $(top_srcdir)/extended-ref/gasnet_extended.c 
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = -I$(top_srcdir)/other/amudp
+CONDUIT_EXTRALIBCFLAGS = -I$(top_srcdir)/other/amudp $(blcr_extralibcflags)
 
 # additional conduit header files to install from external, non-standard directories
 CONDUIT_EXTRAHEADERS = \
+	$(blcr_extraheaders)               \
 	$(top_srcdir)/other/amudp/amudp.h  \
 	$(top_srcdir)/other/amudp/socket.h \
 	$(top_srcdir)/other/amudp/ueth.h
 
 # headers selected by default rules that should NOT be installed
-CONDUIT_PRIVATEHEADERS =
+CONDUIT_PRIVATEHEADERS = \
+	$(blcr_privheaders)
 
 # additional file dependencies not mentioned elsewhere 
 # that should force libgasnet rebuild on update
-CONDUIT_EXTRADEPS = $(top_builddir)/other/amudp/libamudp.a $(top_srcdir)/other/amudp/*.h
+CONDUIT_EXTRADEPS = \
+	$(blcr_extradeps)                      \
+	$(top_builddir)/other/amudp/libamudp.a \
+	$(top_srcdir)/other/amudp/*.h 
 
 $(top_builddir)/other/amudp/libamudp.a: force
 	cd $(top_builddir)/other/amudp && $(MAKE) libamudp.a
@@ -50,7 +61,8 @@ $(top_builddir)/other/amudp/libamudp.a: force
 # additional object files to be included in libgasnet that need to be compiled 
 # using a special, conduit-specific command. These should also be included as
 # forced targets in this file, and should probably use LIBINCLUDES/LIBDEFINES
-CONDUIT_SPECIAL_OBJS =
+CONDUIT_SPECIAL_OBJS = \
+	$(blcr_special_objs)
 
 # the default job spawn command to be used for "make run-tests"
 # The following substitutions are performed:
