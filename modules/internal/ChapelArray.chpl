@@ -1095,21 +1095,43 @@ module ChapelArray {
     }
 
     proc bulkAdd(inds: [] _value.idxType, isSorted=false,
-        isUnique=false) where isSparseDom(this) && _value.rank==1 {
+        isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank==1 {
 
-      const (actualInsertPts, actualAddCnt) =
+      if !isSorted && preserveInds {
+        var _inds = inds;
+        const (actualInsertPts, actualAddCnt) =
+          __getActualInsertPts(_inds, isSorted, isUnique);
+
+        _value.bulkAdd(_inds, actualInsertPts, actualAddCnt);
+      }
+      else {
+        const (actualInsertPts, actualAddCnt) =
           __getActualInsertPts(inds, isSorted, isUnique);
 
-      _value.bulkAdd(inds, actualInsertPts, actualAddCnt);
+        _value.bulkAdd(inds, actualInsertPts, actualAddCnt);
+      }
     }
 
     proc bulkAdd(inds: [] _value.rank*_value.idxType, isSorted=false,
-        isUnique=false) where isSparseDom(this) && _value.rank>1 {
+        isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank>1 {
 
-      const (actualInsertPts, actualAddCnt) =
+      if !isSorted && preserveInds {
+        var _inds = inds;
+        const (actualInsertPts, actualAddCnt) =
+          __getActualInsertPts(_inds, isSorted, isUnique);
+
+        _value.bulkAdd(_inds, actualInsertPts, actualAddCnt);
+      }
+      else {
+        const (actualInsertPts, actualAddCnt) =
           __getActualInsertPts(inds, isSorted, isUnique);
 
-      _value.bulkAdd(inds, actualInsertPts, actualAddCnt);
+        _value.bulkAdd(inds, actualInsertPts, actualAddCnt);
+      }
+      /*const (actualInsertPts, actualAddCnt) =*/
+          /*__getActualInsertPts(inds, isSorted, isUnique);*/
+
+      /*_value.bulkAdd(inds, actualInsertPts, actualAddCnt);*/
     }
 
     /* Remove index ``i`` from this domain */
@@ -1558,13 +1580,13 @@ module ChapelArray {
   proc +=(ref sd: domain, inds: [] sd.idxType) 
     where isSparseDom(sd) && sd.rank == 1 {
     
-    sd.bulkAdd(inds, false, false);
+    sd.bulkAdd(inds, false, false, true);
   }
 
   proc +=(ref sd: domain, inds: [] sd.rank*sd.idxType ) 
     where isSparseDom(sd) && sd.rank > 1 {
 
-    sd.bulkAdd(inds, false, false);
+    sd.bulkAdd(inds, false, false, true);
   }
 
   /*
