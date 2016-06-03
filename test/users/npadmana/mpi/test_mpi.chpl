@@ -19,6 +19,7 @@ use Random;
 const requiredSize = 4;
 
 proc main() {
+  const worldSize = commSize();
   if requiredSize != worldSize {
     writef("Please run with at least %i ranks..\n",requiredSize);
     MPI_Abort(MPI_COMM_WORLD, 10);
@@ -39,6 +40,8 @@ proc main() {
 
 proc hello() {
   /* Simple test of MPI initialization */
+  const worldRank = commRank(),
+        worldSize = commSize();
   writef("HELLO : %i : This is rank %i of %i processes saying Hello, Chapel!\n",worldRank,
             worldRank, worldSize);
   MPI_Barrier(MPI_COMM_WORLD);
@@ -47,6 +50,8 @@ proc hello() {
 /* Simple blocking point-to-point communication */
 proc point2point() {
 
+  const worldRank = commRank(),
+        worldSize = commSize();
   if worldRank < 2 {
     var recvpi : real = 0.0,
         sendpi : real = 3.1415926;
@@ -71,6 +76,8 @@ proc point2point() {
 /* Non-blocking communication in a ring */
 proc ring() {
 
+  const worldRank = commRank(),
+        worldSize = commSize();
   var left = mod(worldRank-1, worldSize);
   var right = mod(worldRank+1, worldSize);
   var toleft : c_int = 1;
@@ -97,6 +104,8 @@ proc ring() {
 
 /* Compute pi -- test MPI_Reduce */
 proc pi() {
+  const worldRank = commRank(),
+        worldSize = commSize();
   const N=10000;
   var x : [0.. #N] real;
   var y : [0.. #N] real;
@@ -120,6 +129,8 @@ proc pi() {
 
 /* Test scatters. */
 proc test_scatter() {
+  const worldRank = commRank(),
+        worldSize = commSize();
   var arr : [{0..3,0..3}]real(32);
   forall (i,j) in arr.domain {
     arr[i,j] = (i*4 + j):real(32);
@@ -197,6 +208,8 @@ proc test_scatter() {
 Note that this particular function is deprecated in MPI-1.1
 */
 proc test_structure() {
+  const worldRank = commRank(),
+        worldSize = commSize();
   record Particle {
     var x, y, z, vel : real;
     var n, typ : int;
@@ -239,6 +252,8 @@ proc test_structure() {
 
 */
 proc test_allgather() {
+  const worldRank = commRank(),
+        worldSize = commSize();
   var ranks : [0.. #worldSize]c_int;
 
   MPI_Allgather(worldRank, 1, MPI_INT, ranks[0], 1, MPI_INT, MPI_COMM_WORLD);
@@ -248,6 +263,8 @@ proc test_allgather() {
 
 /* MPI make communicator */
 proc test_newcomm() {
+  const worldRank = commRank(),
+        worldSize = commSize();
   var comm : MPI_Comm,
       ranks1 : [0..1]c_int = [0:c_int, 1:c_int],
       ranks2 : [0..1]c_int = [2:c_int, 3:c_int],
