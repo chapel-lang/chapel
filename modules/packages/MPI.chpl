@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,7 +19,7 @@
 
 /* MPI Bindings for Chapel.
 
-These implement the C-API for the MPI 1.1 standard. We currently do not support the following 
+These implement the C-API for the MPI 1.1 standard. We currently do not support the following
 routines ::
 
       MPI_Op_create
@@ -29,7 +29,15 @@ routines ::
       MPI_Keyval_create
       MPI_Keyval_free
 
-since all of these are built around user-defined handlers, that we support.
+since all of these are built around user-defined handlers, that we do not support.
+
+The package uses two boolean config constants :
+``autoInitMPI`` and ``requireThreadedMPI``. The first automatically initializes
+MPI (if not already initialized by the runtime), and shuts it down as well.
+The second ensures that MPI can at least the MPI_THREAD_SERIALIZED mode, and will
+abort if not. This is not necessary if you are running local Chapel+MPI, but is
+likely to be necessary if you run in mixed Chapel-MPI mode. Both of these
+are true by default.
 
 .. note::
   #. Pointer arguments are written as `ref` arguments, so no casting to a ``c_ptr``
@@ -38,39 +46,91 @@ since all of these are built around user-defined handlers, that we support.
      in which case we write it using an array form.
   #. Some MPI-1.1 functions were deprecated in MPI-2. These should be updated in the future, but
      are still present in this version.
-  #. We represent MPI_Aint by ptrdiff. If this is not the correct size, there will be an assertion 
+  #. We represent MPI_Aint by ptrdiff. If this is not the correct size, there will be an assertion
      failure in the code.
 */
 module MPI {
   use SysCTypes;
   require "mpi.h";
 
-  /* Automatically initialize, and define
-   worldSize and worldRank, since we will
-   likely use those often. 
-
-   You are still responsible for calling MPI_Finalize,
-   until Chapel has a module termination scheme.
-   */
+  /* Configuration constants */
   config const autoInitMPI=true;
+  config const requireThreadedMPI=true;
+  config const debugMPI=false;
 
-  /* Define module level variables with the rank and
-   size in MPI_COMM_WORLD */
-  var worldRank, worldSize : c_int;
+  record _initMPI {
+    var doinit : bool = false;
+
+    proc ~_initMPI() {
+      if doinit {
+        coforall loc in Locales do
+          on loc {
+            if debugMPI then writeln("Calling MPI_Finalize....");
+            C_MPI.MPI_Finalize();
+          }
+      }
+    }
+  }
+
+  var _mpi : _initMPI;
 
   if autoInitMPI {
+    if debugMPI then writeln("Attempting to auto-initialize MPI.....");
     var flag : c_int;
     C_MPI.MPI_Initialized(flag);
-    if flag==0 then initialize();
+    if flag==0 {
+      if debugMPI then writeln("Initializing MPI....");
+      _mpi.doinit = true;
+      initialize();
+    } else {
+      var provided : c_int;
+      if debugMPI then writeln("MPI already initialized.....");
+      C_MPI.MPI_Query_thread(provided);
+      if (provided != MPI_THREAD_SERIALIZED) && (provided != MPI_THREAD_MULTIPLE) {
+        if debugMPI then writeln("Unable to get a high enough MPI thread support");
+        if requireThreadedMPI then C_MPI.MPI_Abort(MPI_COMM_WORLD, 10);
+      }
+    }
   }
+
 
   /* Helper routine that also sets worldRank and worldSize */
   proc initialize() {
-      C_MPI.MPI_Init(0,0);
-      C_MPI.MPI_Comm_size(MPI_COMM_WORLD, worldSize);
-      C_MPI.MPI_Comm_rank(MPI_COMM_WORLD, worldRank);
+    coforall loc in Locales do on loc {
+      var provided : c_int;
+      C_MPI.MPI_Init_thread(0,0,MPI_THREAD_SERIALIZED,provided);
+      if (provided != MPI_THREAD_SERIALIZED) &&
+         (provided != MPI_THREAD_MULTIPLE) &&
+         requireThreadedMPI
+      {
+        writeln("Unable to get a high enough MPI thread support");
+        C_MPI.MPI_Abort(MPI_COMM_WORLD, 10);
+      }
+      C_MPI.MPI_Barrier(MPI_COMM_WORLD);
+    }
   }
 
+  /* commRank(comm)
+
+     Wrapper to get the rank of the communicator comm.
+     Defaults to MPI_COMM_WORLD, if no communicator is passed in.
+     */
+  proc commRank(comm : MPI_Comm = MPI_COMM_WORLD) : c_int {
+    var rank : c_int;
+    C_MPI.MPI_Comm_rank(comm, rank);
+    return rank;
+  }
+
+  /* commSize(comm)
+
+     Wrapper to get the size of the communicator comm.
+     Defaults to MPI_COMM_WORLD, if no communicator is passed in.
+     */
+  proc commSize(comm : MPI_Comm = MPI_COMM_WORLD) : c_int {
+    var size : c_int;
+    C_MPI.MPI_Comm_size(comm, size);
+    return size;
+  }
 
   /* A wrapper around MPI_Status. Only the defined fields are exposed */
   extern record MPI_Status {
@@ -86,7 +146,7 @@ module MPI {
     C_MPI.MPI_Get_count(this, tt, count);
     return count : int;
   }
-    
+
 
   /******************************
     Defined Constants and Datatypes
@@ -109,11 +169,16 @@ module MPI {
     assert(sizeof(MPI_Aint) == sizeof(c_ptrdiff));
   }
 
+  /* MPI Thread support */
+  extern const MPI_THREAD_SINGLE : c_int;
+  extern const MPI_THREAD_FUNNELED : c_int;
+  extern const MPI_THREAD_SERIALIZED : c_int;
+  extern const MPI_THREAD_MULTIPLE : c_int;
 
   // TODO : Not explicitly found in the spec
   extern type MPI_Errhandler = opaque;
 
-  /* Return codes. 
+  /* Return codes.
      We define these to be `c_int`.
      */
 
@@ -139,8 +204,8 @@ module MPI {
   extern const MPI_ERR_IN_STATUS : c_int;
   extern const MPI_ERR_LASTCODE : c_int;
 
-  /* Assorted constants. 
-  TODO : These are defined as opaque, but probably 
+  /* Assorted constants.
+  TODO : These are defined as opaque, but probably
   could be more specific.
   */
   extern const MPI_BOTTOM : opaque;
@@ -155,7 +220,7 @@ module MPI {
   extern const MPI_ERRORS_ARE_FATAL : MPI_Errhandler;
   extern const MPI_ERRORS_RETURN : MPI_Errhandler;
 
-  /* Maximum sizes for strings. 
+  /* Maximum sizes for strings.
   TODO: Are these correctly defined?
   */
   extern const MPI_MAX_PROCESSOR_NAME : c_int;
@@ -202,12 +267,12 @@ module MPI {
   extern const MPI_SIMILAR : c_int;
   extern const MPI_UNEQUAL : c_int;
 
-  /* Environmental inquiry keys */ 
+  /* Environmental inquiry keys */
   // These appear to be C enums or defines....
-  extern const MPI_TAG_UB : c_int; 
-  extern const MPI_IO : c_int; 
-  extern const MPI_HOST : c_int; 
-  extern const MPI_WTIME_IS_GLOBAL : c_int; 
+  extern const MPI_TAG_UB : c_int;
+  extern const MPI_IO : c_int;
+  extern const MPI_HOST : c_int;
+  extern const MPI_WTIME_IS_GLOBAL : c_int;
 
   /* Collective operations */
   extern const MPI_MAX : MPI_Op;
@@ -224,7 +289,7 @@ module MPI {
   extern const MPI_LXOR : MPI_Op;
 
   /*
-   C-API 
+   C-API
 
    We wrap all of these into a ``C_MPI`` submodule,
    since we likely will add in some helper routines
@@ -238,25 +303,29 @@ module MPI {
    and let the compiler do all the munging */
   extern proc MPI_Init(argc, argv);
 
+  /* Special cases, for threading support */
+  extern proc MPI_Init_thread(argc, argv, required : c_int, ref provided : c_int) : c_int;
+  extern proc MPI_Query_thread(ref provided : c_int) : c_int;
+
 
   /* Collective commands */
   extern proc MPI_Barrier (comm: MPI_Comm): c_int;
   extern proc MPI_Bcast (ref buffer, count: c_int, datatype: MPI_Datatype, root: c_int, comm: MPI_Comm): c_int;
-  extern proc MPI_Gather (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype, 
+  extern proc MPI_Gather (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype,
       ref recvbuf, recvcount: c_int, recvtype: MPI_Datatype, root: c_int, comm: MPI_Comm): c_int;
-  extern proc MPI_Gatherv (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype, 
+  extern proc MPI_Gatherv (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype,
       ref recvbuf, ref recvcounts: c_int, ref displs: c_int, recvtype: MPI_Datatype, root: c_int, comm: MPI_Comm): c_int;
-  extern proc MPI_Scatter (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype, 
+  extern proc MPI_Scatter (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype,
       ref recvbuf, recvcount: c_int, recvtype: MPI_Datatype, root: c_int, comm: MPI_Comm): c_int;
-  extern proc MPI_Scatterv (ref sendbuf, ref sendcounts: c_int, ref displs: c_int, sendtype: MPI_Datatype, 
+  extern proc MPI_Scatterv (ref sendbuf, ref sendcounts: c_int, ref displs: c_int, sendtype: MPI_Datatype,
       ref recvbuf, recvcount: c_int, recvtype: MPI_Datatype, root: c_int, comm: MPI_Comm): c_int;
-  extern proc MPI_Allgather (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype, 
+  extern proc MPI_Allgather (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype,
       ref recvbuf, recvcount: c_int, recvtype: MPI_Datatype, comm: MPI_Comm): c_int;
-  extern proc MPI_Allgatherv (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype, 
+  extern proc MPI_Allgatherv (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype,
       ref recvbuf, ref recvcounts: c_int, ref displs: c_int, recvtype: MPI_Datatype, comm: MPI_Comm): c_int;
-  extern proc MPI_Alltoall (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype, 
+  extern proc MPI_Alltoall (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype,
       ref recvbuf, recvcount: c_int, recvtype: MPI_Datatype, comm: MPI_Comm): c_int;
-  extern proc MPI_Alltoallv (ref sendbuf, ref sendcounts: c_int, ref sdispls: c_int, sendtype: MPI_Datatype, 
+  extern proc MPI_Alltoallv (ref sendbuf, ref sendcounts: c_int, ref sdispls: c_int, sendtype: MPI_Datatype,
       ref recvbuf, ref recvcounts: c_int, ref rdispls: c_int, recvtype: MPI_Datatype, comm: MPI_Comm): c_int;
   extern proc MPI_Reduce (ref sendbuf, ref recvbuf, count: c_int, datatype: MPI_Datatype, op: MPI_Op, root: c_int, comm: MPI_Comm): c_int;
   extern proc MPI_Allreduce (ref sendbuf, ref recvbuf, count: c_int, datatype: MPI_Datatype, op: MPI_Op, comm: MPI_Comm): c_int;
@@ -275,7 +344,7 @@ module MPI {
   extern proc MPI_Initialized (ref flag: c_int): c_int;
   extern proc MPI_Abort (comm: MPI_Comm, errorcode: c_int): c_int;
 
-  /* Groups, communicators etc ... */ 
+  /* Groups, communicators etc ... */
   extern proc MPI_Group_size (group: MPI_Group, ref size: c_int): c_int;
   extern proc MPI_Group_rank (group: MPI_Group, ref rank: c_int): c_int;
   extern proc MPI_Group_translate_ranks (group1: MPI_Group, n: c_int, ref ranks1: c_int, group2: MPI_Group, ref ranks2: c_int): c_int;
@@ -299,7 +368,7 @@ module MPI {
   extern proc MPI_Comm_test_inter (comm: MPI_Comm, ref flag: c_int): c_int;
   extern proc MPI_Comm_remote_size (comm: MPI_Comm, ref size: c_int): c_int;
   extern proc MPI_Comm_remote_group (comm: MPI_Comm, ref group: MPI_Group): c_int;
-  extern proc MPI_Intercomm_create (local_comm: MPI_Comm, local_leader: c_int, peer_comm: MPI_Comm, 
+  extern proc MPI_Intercomm_create (local_comm: MPI_Comm, local_leader: c_int, peer_comm: MPI_Comm,
       remote_leader: c_int, tag: c_int, ref newintercomm: MPI_Comm): c_int;
   extern proc MPI_Intercomm_merge (intercomm: MPI_Comm, high: c_int, ref newintracomm: MPI_Comm): c_int;
   extern proc MPI_Attr_put (comm: MPI_Comm, keyval: c_int, ref attribute_val): c_int;
@@ -327,9 +396,9 @@ module MPI {
   extern proc MPI_Testany (count: c_int, array_of_requests: []MPI_Request, ref iindex : c_int, ref flag: c_int, ref status: MPI_Status): c_int;
   extern proc MPI_Waitall (count: c_int, array_of_requests: []MPI_Request, array_of_statuses: []MPI_Status): c_int;
   extern proc MPI_Testall (count: c_int, array_of_requests: []MPI_Request, ref flag: c_int, array_of_statuses: []MPI_Status): c_int;
-  extern proc MPI_Waitsome (incount: c_int, array_of_requests: []MPI_Request, 
+  extern proc MPI_Waitsome (incount: c_int, array_of_requests: []MPI_Request,
       ref outcount: c_int, array_of_indices: []c_int, array_of_statuses: []MPI_Status): c_int;
-  extern proc MPI_Testsome (incount: c_int, array_of_requests: []MPI_Request, 
+  extern proc MPI_Testsome (incount: c_int, array_of_requests: []MPI_Request,
       ref outcount: c_int, array_of_indices: []c_int, array_of_statuses: []MPI_Status): c_int;
   extern proc MPI_Iprobe (source: c_int, tag: c_int, comm: MPI_Comm, ref flag: c_int, ref status: MPI_Status): c_int;
   extern proc MPI_Probe (source: c_int, tag: c_int, comm: MPI_Comm, ref status: MPI_Status): c_int;
@@ -342,18 +411,18 @@ module MPI {
   extern proc MPI_Recv_init (ref buf, count: c_int, datatype: MPI_Datatype, source: c_int, tag: c_int, comm: MPI_Comm, ref request: MPI_Request): c_int;
   extern proc MPI_Start (ref request: MPI_Request): c_int;
   extern proc MPI_Startall (count: c_int, array_of_requests: []MPI_Request): c_int;
-  extern proc MPI_Sendrecv (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype, dest: c_int, sendtag: c_int, 
+  extern proc MPI_Sendrecv (ref sendbuf, sendcount: c_int, sendtype: MPI_Datatype, dest: c_int, sendtag: c_int,
       ref recvbuf, recvcount: c_int, recvtype: MPI_Datatype, source: c_int, recvtag: MPI_Datatype, comm: MPI_Comm, ref status: MPI_Status): c_int;
-  extern proc MPI_Sendrecv_replace (ref buf, count: c_int, datatype: MPI_Datatype, dest: c_int, sendtag: c_int, 
+  extern proc MPI_Sendrecv_replace (ref buf, count: c_int, datatype: MPI_Datatype, dest: c_int, sendtag: c_int,
       source: c_int, recvtag: c_int, comm: MPI_Comm, ref status: MPI_Status): c_int;
   extern proc MPI_Type_contiguous (count: c_int, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
   extern proc MPI_Type_vector (count: c_int, blocklength: c_int, stride: c_int, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
   extern proc MPI_Type_hvector (count: c_int, blocklength: c_int, stride: MPI_Aint, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
-  extern proc MPI_Type_indexed (count: c_int, array_of_blocklengths: []c_int, 
+  extern proc MPI_Type_indexed (count: c_int, array_of_blocklengths: []c_int,
       array_of_displacements: []c_int, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
-  extern proc MPI_Type_hindexed (count: c_int, array_of_blocklengths: []c_int, 
+  extern proc MPI_Type_hindexed (count: c_int, array_of_blocklengths: []c_int,
       array_of_displacements: []MPI_Aint, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
-  extern proc MPI_Type_struct (count: c_int, array_of_blocklengths: []c_int, 
+  extern proc MPI_Type_struct (count: c_int, array_of_blocklengths: []c_int,
       array_of_displacements: []MPI_Aint, array_of_types: []MPI_Datatype, ref newtype: MPI_Datatype): c_int;
   extern proc MPI_Address (ref location, ref address: MPI_Aint): c_int;
   extern proc MPI_Type_extent (datatype: MPI_Datatype, ref extent: MPI_Aint): c_int;

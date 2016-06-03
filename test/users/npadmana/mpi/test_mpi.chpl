@@ -33,8 +33,6 @@ proc main() {
   test_structure();
   test_allgather();
   test_newcomm();
-
-  MPI_Finalize();
 }
 
 
@@ -76,8 +74,8 @@ proc point2point() {
 /* Non-blocking communication in a ring */
 proc ring() {
 
-  const worldRank = commRank(),
-        worldSize = commSize();
+  var worldRank = commRank(),
+      worldSize = commSize();
   var left = mod(worldRank-1, worldSize);
   var right = mod(worldRank+1, worldSize);
   var toleft : c_int = 1;
@@ -252,8 +250,8 @@ proc test_structure() {
 
 */
 proc test_allgather() {
-  const worldRank = commRank(),
-        worldSize = commSize();
+  var worldRank = commRank(),
+      worldSize = commSize();
   var ranks : [0.. #worldSize]c_int;
 
   MPI_Allgather(worldRank, 1, MPI_INT, ranks[0], 1, MPI_INT, MPI_COMM_WORLD);
@@ -263,8 +261,8 @@ proc test_allgather() {
 
 /* MPI make communicator */
 proc test_newcomm() {
-  const worldRank = commRank(),
-        worldSize = commSize();
+  var worldRank = commRank(),
+      worldSize = commSize();
   var comm : MPI_Comm,
       ranks1 : [0..1]c_int = [0:c_int, 1:c_int],
       ranks2 : [0..1]c_int = [2:c_int, 3:c_int],
