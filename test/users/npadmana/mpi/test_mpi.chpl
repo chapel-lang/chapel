@@ -16,9 +16,25 @@ use MPI;
 use C_MPI; // Include the C-API, to reduce verbosity of the code.
 use Random;
 
+config const localChapel=false;
+
 const requiredSize = 4;
 
 proc main() {
+  if localChapel {
+    spmd();
+  } else {
+    writeln("This is the main Chapel program....");
+    coforall loc in Locales do on loc {
+      writef("000 : This is Chapel locale %i saying Hello, MPI!\n", here.id);
+      MPI_Barrier(MPI_COMM_WORLD);
+      spmd();
+    }
+    writeln("We're back in the main Chapel program now.....")
+  }
+}
+
+proc spmd() {
   const worldSize = commSize();
   if requiredSize != worldSize {
     writef("Please run with at least %i ranks..\n",requiredSize);

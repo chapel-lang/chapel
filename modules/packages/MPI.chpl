@@ -65,6 +65,7 @@ module MPI {
       if doinit {
         coforall loc in Locales do
           on loc {
+            // TODO : Need a gasnet barrier here???
             if debugMPI then writeln("Calling MPI_Finalize....");
             C_MPI.MPI_Finalize();
           }
@@ -86,9 +87,12 @@ module MPI {
       var provided : c_int;
       if debugMPI then writeln("MPI already initialized.....");
       C_MPI.MPI_Query_thread(provided);
-      if (provided != MPI_THREAD_SERIALIZED) && (provided != MPI_THREAD_MULTIPLE) {
-        if debugMPI then writeln("Unable to get a high enough MPI thread support");
-        if requireThreadedMPI then C_MPI.MPI_Abort(MPI_COMM_WORLD, 10);
+      if (provided != MPI_THREAD_SERIALIZED) &&
+         (provided != MPI_THREAD_MULTIPLE) &&
+         requireThreadedMPI
+      {
+        writeln("Unable to get a high enough MPI thread support");
+        C_MPI.MPI_Abort(MPI_COMM_WORLD, 10);
       }
     }
   }
@@ -97,6 +101,7 @@ module MPI {
   /* Helper routine that also sets worldRank and worldSize */
   proc initialize() {
     coforall loc in Locales do on loc {
+      // TODO : Need a gasnet barrier here???
       var provided : c_int;
       C_MPI.MPI_Init_thread(0,0,MPI_THREAD_SERIALIZED,provided);
       if (provided != MPI_THREAD_SERIALIZED) &&
