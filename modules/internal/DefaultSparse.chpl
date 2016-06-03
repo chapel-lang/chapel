@@ -243,7 +243,22 @@ module DefaultSparse {
       }
     }
 
-    proc bulkAdd(inds: [] index(rank, idxType), actualInsertPts, actualAddCnt){
+    proc dsiBulkAdd(inds: [] index(rank, idxType),
+        isSorted=false, isUnique=false, preserveInds=true){
+
+      if !isSorted && preserveInds {
+        var _inds = inds;
+        bulkAdd_help(_inds, isSorted, isUnique); 
+      }
+      else {
+        bulkAdd_help(inds, isSorted, isUnique);
+      }
+    }
+
+    proc bulkAdd_help(inds: [] index(rank, idxType), isSorted=false, isUnique=false){
+
+      const (actualInsertPts, actualAddCnt) =
+        __getActualInsertPts(this, inds, isSorted, isUnique);
 
       const oldnnz = nnz;
       nnz += actualAddCnt;
