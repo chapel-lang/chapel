@@ -456,7 +456,7 @@ module LocaleModel {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
 
-    if (done != chpl_nodeID) {
+    if (dnode != chpl_nodeID) {
       return false; // need to move to different node
     } else {
       var origSubloc = chpl_task_getRequestedSubloc();
