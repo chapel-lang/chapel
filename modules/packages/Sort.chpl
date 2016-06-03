@@ -116,45 +116,57 @@ module Sort {
 /* Comparators */
 
 /* Empty record to serve as default comparator value in function arguments */
-record defaultComparator{ }
-proc defaultComparator.compare(a, b) {
-  if isNumericType(a.type) && isNumericType(b.type) {
-    return a - b;
-  }
+record DefaultComparator {
+  /* Default comparator compare method */
 
-  if a < b { return -1; }
-  else if b < a { return 1; }
-  else return 0;
+  proc compare(a, b) {
+    if isNumericType(a.type) && isNumericType(b.type) {
+      return a - b;
+    }
+
+    if a < b { return -1; }
+    else if b < a { return 1; }
+    else return 0;
+  }
 }
-const defaultcomparator = new defaultComparator();
+
+/* Default comparator */
+const defaultcomparator: DefaultComparator;
 
 /* Comparator built as the reverse of any provided comparator */
 record ReverseComparator {
   var comparator;
-  proc ReverseComparator(comparator:?rec=defaultcomparator) { }
-}
-proc ReverseComparator.compare(a, b) {
-  use Reflection;
 
-  // Confirm comparator is valid
-  chpl_check_comparator(comparator, a);
+  /* Constructor */
+  proc ReverseComparator(comparator:?rec=defaultcomparator) {}
 
-  // Use comparator.key(a) if is defined by user
-  if canResolveMethod(comparator, "key", a) && canResolveMethod(comparator, "key", b) {
-    if comparator.key(a) < comparator.key(b) { return 1; }
-    else if comparator.key(b) < comparator.key(a) { return -1; }
-    else return 0;
+  /* Reverse compare method */
+  proc compare(a, b) {
+    use Reflection;
+
+    chpl_check_comparator(this.comparator, a);
+
+    // Key defined
+    if canResolveMethod(this.comparator, "key", a) && canResolveMethod(this.comparator, "key", b) {
+      const A = this.comparator.key(a),
+            B = this.comparator.key(b);
+      if B < A { return -1; }
+      else if A < B { return 1; }
+      else return 0;
+
+    } else if canResolveMethod(this.comparator, "compare", a, b) && canResolveMethod(this.comparator, "compare", a, b) {
+      return this.comparator.compare(b, a);
+    }
   }
-
-  // Use comparator.compare(a, b) if is defined by user
-  if canResolveMethod(comparator, "compare", a, b) {
-    return -comparator.compare(a, b);
-  }
 }
-const reversecomparator = new ReverseComparator();
 
 
-/* Private method */
+
+/* Default reverse comparator */
+const reversecomparator: ReverseComparator(DefaultComparator);
+
+
+/* Private methods */
 
 /* Base compare method */
 private inline proc chpl_compare(a, b, comparator:?rec=defaultcomparator) {
@@ -187,7 +199,7 @@ private inline proc chpl_compare(a, b, comparator:?rec=defaultcomparator) {
 private proc chpl_check_comparator(comparator, a) {
   use Reflection;
 
-  if comparator.type == defaultComparator {}
+  if comparator.type == DefaultComparator {}
   // Check for valid comaparator methods
   else if canResolveMethod(comparator, "compare", a, a) {
     // Check return type of compare
