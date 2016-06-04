@@ -4932,39 +4932,26 @@ createFunctionAsValue(CallExpr *call) {
   FnSymbol* captured_fn = visibleFns.head();
 
   //
-  // Is this a case where we need a C function pointer or a Chapel
-  // first-class function / closure?
+  // Is this a case where we need a C function pointer? (vs. a Chapel
+  // first-class function / closure?)
   //
   bool cFunctionPtr = false;
 
-  //
-  // If the capture call has two arguments, it implies that we added a
-  // sentinel in scopeResolve.cpp because we detected a call to
-  // c_ptrTo()).  So this should just be a simple function pointer,
-  // not a Chapel first-class function.
-  //
-  if (call->numActuals() == 2) {
+  if (call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL)) {
     //
-    // Assert that the sentinel is "true" as expected.
-    //
-    SymExpr* se = toSymExpr(call->get(2));
-    assert(se);
-    assert(se->var == gTrue);
-
-    //
-    // remember that we're in the C function pointer case
-    //
-    cFunctionPtr = true;
-  } else {
-    //
-    // If we're not doing a C function pointer, we can re-use the
+    // If we're doing a Chapel first-class function, we can re-use the
     // cached first-class function information from an earlier call if
     // there was one, so check to see if we've already cached the
-    // capture somewhere
+    // capture somewhere.
     //
     if (functionCaptureMap.find(captured_fn) != functionCaptureMap.end()) {
       return new CallExpr(functionCaptureMap[captured_fn]);
     }
+  } else {
+    //
+    // remember that we're in the C function pointer case for later
+    //
+    cFunctionPtr = true;
   }
 
   resolveFormals(captured_fn);
@@ -5660,7 +5647,8 @@ preFold(Expr* expr) {
         call->replace(new CallExpr(PRIM_TYPEOF, tmp));
       } else
         USR_FATAL(call, "invalid query -- queried field must be a type or parameter");
-    } else if (call->isPrimitive(PRIM_CAPTURE_FN)) {
+    } else if (call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) ||
+               call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)) {
       result = createFunctionAsValue(call);
       call->replace(result);
 

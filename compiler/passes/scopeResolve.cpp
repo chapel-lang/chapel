@@ -1541,30 +1541,25 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
         CallExpr *call = toCallExpr(parent);
 
         if (((call) && (call->baseExpr != unresolvedSymExpr)) || (!call)) {
-          //If the function is being used as a first-class value, handle
-          // this with a primitive and unwrap the primitive later in
-          // functionResolution
-          CallExpr *prim_capture_fn = new CallExpr(PRIM_CAPTURE_FN);
-
-          unresolvedSymExpr->replace(prim_capture_fn);
-          prim_capture_fn->insertAtTail(unresolvedSymExpr);
           //
           // If we detect that this function reference is within a
           // c_ptrTo() call then we only need a C pointer to the
           // function, not a full Chapel first-class function (which
-          // can capture variables).  We'll mark this so that function
-          // resolution can distinguish by adding a second sentinel
-          // argument to the PRIM_CAPTURE_FN call ('true',
-          // arbitrarily).  We could alternatively add another
-          // primitive to distinguish the C case, but for most
-          // intents, it behaves identically to PRIM_CAPTURE_FN, so
-          // this seemed like a waste of a primitive...
+          // can capture variables).
           //
           // TODO: Can we avoid strcmp or ensure it's "our" fn?
-          //
-          if (call && call->isNamed("c_ptrTo")) {
-            prim_capture_fn->insertAtTail(gTrue);
-          }
+          // 
+          bool captureForC = (call && call->isNamed("c_ptrTo"));
+
+          //If the function is being used as a first-class value, handle
+          // this with a primitive and unwrap the primitive later in
+          // functionResolution
+          CallExpr *prim_capture_fn = new CallExpr(captureForC ?
+                                                   PRIM_CAPTURE_FN_FOR_C :
+                                                   PRIM_CAPTURE_FN_FOR_CHPL);
+
+          unresolvedSymExpr->replace(prim_capture_fn);
+          prim_capture_fn->insertAtTail(unresolvedSymExpr);
 
           // Don't do it again if for some reason we return
           // to trying to resolve this symbol.
