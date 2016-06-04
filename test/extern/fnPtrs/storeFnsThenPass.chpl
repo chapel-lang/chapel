@@ -15,4 +15,3 @@ var y = foo;
   
 bar(x);
 baz(y);
- 
