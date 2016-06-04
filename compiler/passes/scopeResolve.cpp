@@ -1550,7 +1550,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
           prim_capture_fn->insertAtTail(unresolvedSymExpr);
           //
           // If we detect that this function reference is within a
-          // c_fnPtrTo() call then we only need a C pointer to the
+          // c_ptrTo() call then we only need a C pointer to the
           // function, not a full Chapel first-class function (which
           // can capture variables).  We'll mark this so that function
           // resolution can distinguish by adding a second sentinel
@@ -1562,7 +1562,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
           //
           // TODO: Can we avoid strcmp or ensure it's "our" fn?
           //
-          if (call && call->isNamed("c_fnPtrTo")) {
+          if (call && call->isNamed("c_ptrTo")) {
             prim_capture_fn->insertAtTail(gTrue);
           }
 

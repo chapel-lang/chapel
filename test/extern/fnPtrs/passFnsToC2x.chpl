@@ -10,5 +10,5 @@ proc baz(f) {
   f();
 }
 
-bar(c_fnPtrTo(foo));
-bar(c_fnPtrTo(foo));
+bar(c_ptrTo(foo));
+bar(c_ptrTo(foo));

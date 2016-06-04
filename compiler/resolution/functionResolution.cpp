@@ -4940,7 +4940,7 @@ createFunctionAsValue(CallExpr *call) {
   //
   // If the capture call has two arguments, it implies that we added a
   // sentinel in scopeResolve.cpp because we detected a call to
-  // c_fnPtrTo()).  So this should just be a simple function pointer,
+  // c_ptrTo()).  So this should just be a simple function pointer,
   // not a Chapel first-class function.
   //
   if (call->numActuals() == 2) {

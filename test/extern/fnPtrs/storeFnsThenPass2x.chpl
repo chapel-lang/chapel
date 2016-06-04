@@ -10,9 +10,9 @@ proc baz(f) {
   f();
 }
 
-var x = c_fnPtrTo(foo);
+var x = c_ptrTo(foo);
 var y = foo;
-var z = c_fnPtrTo(foo);
+var z = c_ptrTo(foo);
 var w = foo;
   
 bar(x);

@@ -13,6 +13,6 @@ proc baz(f) {
 }
 
 if cPtrToChapel then
-  baz(c_fnPtrTo(foo));
+  baz(c_ptrTo(foo));
 else
   bar(foo);
