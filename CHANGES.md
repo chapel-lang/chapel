@@ -663,7 +663,7 @@ Compiler Flags (see 'man chpl' for details)
 Execution Flags
 ---------------
 * added a --memLeaksByDesc flag to track only certain memory categories
-* made --memLeaks[ByDesc] be governed by the --memTreshold flag
+* made --memLeaks[ByDesc] be governed by the --memThreshold flag
 
 Error Message Improvements
 --------------------------
@@ -1022,7 +1022,7 @@ Third-Party Software Changes
 * updated the bundled version of llvm to 3.6.0
 * upgraded the bundled version of dygraphs to version 1.1.0
 * added support for dynamically installing Python packages required by 'chpldoc'
-  (see 'chpldov-venv' in third-party/README)
+  (see 'chpldoc-venv' in third-party/README)
 * rearchitected scripting framework for third-party dependences
 * made the re2 build do a better job of propagating errors back to the Makefiles
 * changed Qthreads to avoid using guard pages when mprotect() won't work
@@ -1289,7 +1289,7 @@ Highlights
 * numerous bug fixes
   (see 'Bug Fixes' below)
 * many test system improvements including C-based testing and external timers
-  (see 'Testing Sytem' and 'Performance Testing/Graphing System' below)
+  (see 'Testing System' and 'Performance Testing/Graphing System' below)
 * many developer process improvements such as GitHub, Travis, Coverity, Jenkins
   (see 'Developer-oriented Changes: Process Changes' below)
 * many other developer-oriented improvements and refactorings
@@ -1454,7 +1454,7 @@ Example Codes
 * removed some CHPL_RT knob-fiddling from the thread-ring benchmark
 * fixed the portability of the pidigits benchmark to 32-bit systems
   (see examples/benchmarks/shootout/pidigits.chpl)  
-* updated the fileIO primer to utilize/demontrate whole-array I/O
+* updated the fileIO primer to utilize/demonstrate whole-array I/O
   (see examples/primers/fileIO.chpl)
 * improved the locking strategy used in verification for the HPCC RA benchmark
 * removed the unnecessary locking and error tolerance from ra-atomics.chpl
@@ -1713,7 +1713,7 @@ Environment Changes
 * made CHPL_*_COMPILER default to 'clang' for CHPL_*_PLATFORM 'darwin'
 * made CHPL_TASKS default to 'qthreads' when CHPL_LOCALE_MODEL == 'numa'
 * made CHPL_HWLOC default to 'hwloc' when CHPL_TASKS = 'qthreads'
-* established a 1:1 correspondance between CHPL_TASKS and CHPL_THREADS options
+* established a 1:1 correspondence between CHPL_TASKS and CHPL_THREADS options
 * deprecated the user-controlled CHPL_THREADS environment variable
 * removed support for CHPL_TASKS=none due to lack of significant utility
 * made GASNet use the 'large' segment by default for the 'ibv' conduit
@@ -1842,7 +1842,7 @@ Locale Model Improvements
 
 Memory Improvements
 -------------------
-* reduced compiler-introduced memory leaks, particulary in I/O code
+* reduced compiler-introduced memory leaks, particularly in I/O code
 * reduced memory usage due to compiler-introduced copies on primitive types
 * improved the reclamation of arrays of sync/single variables
 * moved the end-of-program memory reporting to a point after the runtime exits
@@ -1967,7 +1967,7 @@ Internal/Developer-oriented
 * removed no-longer-necessary _ensure_reference_type() feature
 * changed extern routines that take string arguments to take 'c_string' instead
 * changed extern routines that take 'inout' arguments to 'ref' when appropriate
-* numerous refactorings of the compiler code for clarity and/or effiency
+* numerous refactorings of the compiler code for clarity and/or efficiency
 
 
 =============
@@ -2018,7 +2018,7 @@ Semantic Changes / Changes to Chapel Language
   (e.g., 'range(int(8))' is now a supported type)
 - added operator support for pairs of small int/uint types
   (e.g., 'int(8) + int(8)' now generates an int(8) rather than int(32))
-- added operator support for homogenous tuple/scalar pairs
+- added operator support for homogeneous tuple/scalar pairs
   (e.g., (1,2,3) + 1 => (2,3,4))
 - extended the member() method on domains to support varargs as well as tuples
   (e.g., 'var D = {1..n, 1..n};' supports 'D.member(i,j)' and 'D.member((i,j))')
@@ -2245,7 +2245,7 @@ Highlights (see entries in subsequent categories for details)
 - added support for injecting C declarations into Chapel via "extern blocks"
 - added support for associative domain/array literals
 - added a capability for main() to take arguments and return a status value
-- added support for iteration over homogenous tuples
+- added support for iteration over homogeneous tuples
 - performance improvements related to stack-allocated and constant variables
 - improved bulk transfer optimization (use -s useBulkTransferStride to enable)
 - significant improvements to the Chapel version of LULESH
@@ -2269,7 +2269,7 @@ Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 - added support for injecting C declarations into Chapel via "extern blocks"
   (see "Support for Extern Blocks" section of doc/technotes/README.extern)
-- added support for iteration over homogenous tuples
+- added support for iteration over homogeneous tuples
   (see "Tuples" section of the Chapel spec)
 - added a capability for main() to take arguments and return a status value
   (see doc/technotes/README.main)
@@ -2672,7 +2672,7 @@ Performance Improvements
 
 Runtime Library Changes
 -----------------------
-- added support for MassiveThreads-based tasking (courtesey U Tokyo)
+- added support for MassiveThreads-based tasking (courtesy U Tokyo)
   (see doc/README.tasks)
 - added the ability to implement atomic variables using network-based AMOs
 - made counters used for communication diagnostics 64 bits to avoid overflow
@@ -2864,11 +2864,11 @@ Third-Party Software Changes
 
 Testing System
 --------------
-- added the ability for a skipf file to check for substrings in an env. variable
+- added the ability for a skipif file to check for substrings in an env. variable
 - fixed several bugs in the testing system:
   - when using named .good files in compopts files
   - when using multiple compopts files and no execopts files
-  - in the generation of perforamnce data filenames
+  - in the generation of performance data filenames
 - condensed how compilation/execution options are identified in testing logs
 - added a --logtmp flag to start_test to support single-node parallelism
 
@@ -3415,7 +3415,7 @@ Semantic Changes/Changes to Chapel Language
 - added min()/max() functions for tuples that fill the tuple with min/max vals
   (see 'Tuples' chapter of language spec)
 - added isTupleType(type t) param function that tells whether t is a tuple
-- made a dataParTasksPerLocale value of '0' evalute to here.numCores
+- made a dataParTasksPerLocale value of '0' evaluate to here.numCores
 - converted dataParMinGranularity from a uint to an int and made its default '1'
 - made numBits/numBytes for default-width bools generate a compiler error
 
@@ -3684,7 +3684,7 @@ Semantic Changes/Changes to Chapel Language
 - added support for 1-tuple detupled variable declarations for completeness
   (e.g., in 'var (x): 1*int;', x is of type 'int')
 - redefined assignments to evaluate the left-hand side before the right
-  (e.g., in 'x = y;', x is evaluted first and then y)
+  (e.g., in 'x = y;', x is evaluated first and then y)
 
 Newly Implemented Features
 --------------------------
@@ -3876,7 +3876,7 @@ Error Message Improvements
 Compiler Analysis and Optimizations/Performance of Generated Code
 -----------------------------------------------------------------
 - turned on optimizations of on-clauses by default (--optimize-on-clauses)
-- re-implemented homogenous tuples to use C arrays rather than structs
+- re-implemented homogeneous tuples to use C arrays rather than structs
 - generated new loop idioms to replace fragile static alignment analysis
 - Cyclic distributions now result in similar performance to Block for e.p. codes
 - added the ability to use a virtual method table for dynamic dispatch
@@ -4214,7 +4214,7 @@ Bug Fixes/New Semantic Checks (for old semantics)
 - fixed a bug in which generic fields were incorrectly aliased in constructors
 - fixed a bug in which we were accidentally supporting illegal parameter casts
 - fixed a bug in which string parameter members broke the compile
-- fixed a bug in which indices were inadvertantly shared/non-local in promotions
+- fixed a bug in which indices were inadvertently shared/non-local in promotions
 - fixed a bug in which pbs launchers did not work with shell prompts ending in $
 - fixed a bug in which the compiler attempted to clone external functions
 - for Cray XT, fixed default setting of GASNET_MAX_SEGSIZE to specify size in KB
@@ -4242,7 +4242,7 @@ Cleanup of Generated Code
 Testing system
 --------------
 - improved precedence of execution options specified via .execopts or EXECOPTS
-- made parallel testint place -nl x flags at the end of the command line
+- made parallel testing place -nl x flags at the end of the command line
 - added support for PVM-based testing to the test script
 
 Internal
@@ -4777,7 +4777,7 @@ Compiler Flags
 - added new flags (see chpl man page for details)
   --[no-]ieee-float controls the strictness of IEEE floating point operations
   --fast flag turns on optimizations & disables runtime checks and IEEE floats
-  --explain-instantiation describes the instantations of functions/types
+  --explain-instantiation describes the instantiations of functions/types
 
 Generated Code Flags
 --------------------
@@ -5100,7 +5100,7 @@ Changes to Chapel Language
   - +, -, *, / operators supported for range/scalar combinations
 - added coforall loop construct for expressing explicit task parallelism
   e.g., "coforall 1..4 do ..." will create four explicit tasks
-- removed "iterator" keyowrd -- iterators are now functions that contain yields
+- removed "iterator" keyword -- iterators are now functions that contain yields
 - added support for defining a default ("these") iterator for classes/records
 - added support for creating array aliases
   e.g., "var Amid => A[2..n-1, 2..n-1];" creates an alias, Amid, to the slice
@@ -5237,7 +5237,7 @@ Compiler Flags
 - added --explain-call flag that helps describe how a function call is resolved
 - added --baseline flag to disable all compiler optimizations
 - added --no-flow-analysis flag that disables all flow-based optimizations
-- added --no-warnings flag to diable all compiler warnings
+- added --no-warnings flag to disable all compiler warnings
 - added --no-single-loop-iterator-opt flag to disable 1-loop iterator rewrites
 - added --no-expand-iterators-inline-opt flag to disable iterator inlining
 - removed --unoptimized flag
