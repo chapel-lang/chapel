@@ -117,6 +117,44 @@ class SparseBlockDom: BaseSparseDom {
     dsiAdd((ind,));
   }
 
+  proc dsiBulkAdd(inds: [] rank*idxType, isSorted=false, isUnique=false,
+      preserveInds=true){
+  
+    if !isSorted && preserveInds {
+      var _inds = inds;
+      bulkAdd_help(_inds, isSorted, isUnique); 
+    }
+    else {
+      bulkAdd_help(inds, isSorted, isUnique);
+    }
+  }
+
+  proc bulkAdd_help(inds: [] rank*idxType, isSorted=false, isUnique=false) {
+    use PrivateDist;
+    use Sort;
+    
+    if !isSorted then
+      QuickSort(inds);
+
+    //create local index arrays
+    var localIndexes: [PrivateSpace] [inds.domain] rank*idxType;
+
+    //find indexes that needs to go to each locale
+    coforall localeIdx in dist.targetLocDom do {
+      var locCnt = 0;
+      for i in inds {
+        if locDoms[localeIdx].parentDom.member(i) {
+          localIndexes[here.id][locCnt] = i;
+          locCnt += 1;
+        }
+      }
+
+      //call bulkAdds
+      locDoms[localeIdx].mySparseBlock.bulkAdd(localIndexes[here.id][0..#locCnt], 
+          true, false, false); 
+    }
+  }
+
   //
   // output domain
   //
