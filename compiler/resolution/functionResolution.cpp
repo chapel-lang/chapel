@@ -4931,12 +4931,6 @@ createFunctionAsValue(CallExpr *call) {
 
   FnSymbol* captured_fn = visibleFns.head();
 
-  //
-  // Is this a case where we need a C function pointer? (vs. a Chapel
-  // first-class function / closure?)
-  //
-  bool cFunctionPtr = false;
-
   if (call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL)) {
     //
     // If we're doing a Chapel first-class function, we can re-use the
@@ -4947,11 +4941,6 @@ createFunctionAsValue(CallExpr *call) {
     if (functionCaptureMap.find(captured_fn) != functionCaptureMap.end()) {
       return new CallExpr(functionCaptureMap[captured_fn]);
     }
-  } else {
-    //
-    // remember that we're in the C function pointer case for later
-    //
-    cFunctionPtr = true;
   }
 
   resolveFormals(captured_fn);
@@ -4961,7 +4950,7 @@ createFunctionAsValue(CallExpr *call) {
   // When all we need is a C pointer, we can cut out here, returning
   // a reference to the function symbol.
   //
-  if (cFunctionPtr) {
+  if (call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)) {
     return new SymExpr(captured_fn);
   }
   //
