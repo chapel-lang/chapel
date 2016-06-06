@@ -141,17 +141,19 @@ class SparseBlockDom: BaseSparseDom {
 
     //find indexes that needs to go to each locale
     coforall localeIdx in dist.targetLocDom do {
-      var locCnt = 0;
-      for i in inds {
-        if locDoms[localeIdx].parentDom.member(i) {
-          localIndexes[here.id][locCnt] = i;
-          locCnt += 1;
+      on dist.targetLocales(localeIdx) do {
+        var locCnt = 0;
+        for i in inds {
+          if locDoms[localeIdx].parentDom.member(i) {
+            localIndexes[here.id][locCnt] = i;
+            locCnt += 1;
+          }
         }
-      }
 
-      //call bulkAdds
-      locDoms[localeIdx].mySparseBlock.bulkAdd(localIndexes[here.id][0..#locCnt], 
-          true, false, false); 
+        //call bulkAdds
+        locDoms[localeIdx].mySparseBlock.bulkAdd(localIndexes[here.id][0..#locCnt], 
+            true, false, false); 
+      }
     }
   }
 
