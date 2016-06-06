@@ -154,6 +154,113 @@ where tag == iterKind.follower
   }
 }
 
+//************************* Multidimensional Dynamic iterator
+/*
+
+  :arg c: The domain to iterate over. The rank of the domain must be greater 
+          than one. If using a 1d domain, the user should use the existing
+          dynamic iterators (use DynamicIters). 
+  :type c: `domain`
+
+  :arg chunkSize: The size of chunks to be yielded to each thread. Must be
+                  greater than zero
+  :type chunkSize: `int`
+
+  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument
+                 has the value 0, it will use the value indicated by
+                 ``dataParTasksPerLocale``.
+  :type numTasks: `int`
+
+  :arg parDim: The index of the dimension to parallelize across. Must be > 0.
+                Must be <= the rank of the domain ``c``. Defaults to 1. 
+  :type parDim: `int`
+
+  :yields: Slices of the domain ``c``
+
+  Given an input domain ``c``, each task is assigned slices of ``c``. The
+  chunks each have ``chunkSize`` slices in them (or the remaining iterations
+   if there are fewer than ``chunkSize``). This continues until there are no 
+   remaining iterations in the dimension of ``c`` indicated by ``parDim``. 
+
+  LIMITATIONS:
+  user can select parDim, but only if they also define numTasks (even to 0)
+    should parDim be a non-default param?
+  explicitly types the ranges (so they will likely only work with ints)
+  May or may not properly lead/follow with other domain iterators
+*/
+
+//This is the serial version of this iterator
+iter dynamic(c:domain, chunkSize:int, numTasks:int=0, parDim:int=1) 
+{
+  if debugDynamicIters then
+    writeln("Serial Multidimensional Dynamic Iterator, working with domain: ", c);
+  
+  var yieldTuple :c.rank * int;
+  for yieldTuple in c do yield yieldTuple;
+}
+
+
+//this is the leader
+iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int=0, parDim : int = 1) 
+  where tag == iterKind.leader 
+  {
+    //caller's responsibility to use a valid chunk size
+    assert(chunkSize > 0);
+
+    //caller's responsibility to use a valid domain
+    assert(c.rank > 1);
+
+    //caller's responsibility to use a valid parDim
+    assert(parDim <= c.rank);
+    assert(parDim > 0);
+
+    var parDimDim : range = c.dim(parDim);
+    var parDimOffset : int = c.dim(parDim).low;
+    forall i in dynamic(parDimDim, chunkSize, numTasks)
+    {
+      type dType = c.type;
+      //Set the new range based on what the dynamic 1d iterator yields
+      var newRange : range = i..i;
+      //adjust the new range to account for the densified offset
+      newRange -= parDimOffset;
+
+      //does the same thing as densify, but densify makes a stridable domain,
+      // which mismatches here if c (and thus dType) is non-stridable
+      var tempDom : dType = computeZeroBasedDomain(c);
+
+      //rank-change slice the domain along parDim
+      var tempTup = tempDom.dims();
+      //change the value of the parDim elem of the tuple to the new range
+      tempTup(parDim) = newRange;
+
+      yield tempTup;
+    }
+  }
+
+//Follower
+iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int, parDim:int, followThis)
+where tag == iterKind.follower
+{
+    type rType = c.type;
+    var d:rType = followThis;
+    var tempTup : followThis.size * range  = followThis;
+
+    //manually undensify (reindex) the tuple, because the domains no longer
+    //match after being rank-change sliced.
+    for k in 1..followThis.size do
+    {
+      tempTup(k) += c.dim(k).low;
+    }
+    const current : rType = tempTup;
+
+    if debugDynamicIters then{
+      writeln("Follower received domain ",followThis, "\nshifting to ",current);
+    }
+    var i : c.rank * int;
+    for i in current do {
+      yield i;
+    }
+}
 
 //************************* Guided iterator
 
