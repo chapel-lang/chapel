@@ -10,6 +10,7 @@ proc main() {
   test_symm();
   test_hemm();
   test_syrk();
+  test_syr2k();
 }
 
 proc test_gemm() {
@@ -38,6 +39,12 @@ proc test_syrk() {
   test_syrk_helper(complex(128));
 }
 
+proc test_syr2k() {
+  test_syr2k_helper(real(32));
+  test_syr2k_helper(real(64));
+  test_syr2k_helper(complex(64));
+  test_syr2k_helper(complex(128));
+}
 
 proc test_gemm_helper(type t) {
   var passed = 0,
@@ -365,6 +372,78 @@ proc test_syrk_helper(type t) {
     syrk(A, C, alpha, beta, uplo=CblasLower, trans=Op.T);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opA=Op.T);
+    zeroTri(C, zeroLow=false);
+    zeroTri(D, zeroLow=false);
+    err = max reduce abs(C-D);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+  }
+  writef("%s : %i PASSED, %i FAILED \n", name, passed, failed);
+}
+
+proc test_syr2k_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%ssyr2k".format(blasPrefix(t));
+
+  // Simple tests 1 & 2
+  {
+    const n = 10 : c_int;
+    // Test dgemm -- do this with an array that isn't square
+    var A : [{0.. #n, 0.. #n}]t,
+        B : [{0.. #n, 0.. #n}]t,
+        C : [{0.. #n, 0.. #n}]t,
+        D : [{0.. #n, 0.. #n}]t;
+
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    rng.fillRandom(A);
+    rng.fillRandom(B);
+    rng.fillRandom(C);
+    makeSymm(C);
+    var saveC = C;
+    D = C;
+    const alpha = rng.getNext(),
+          beta = rng.getNext();
+
+    var one = 1 : t;
+    syr2k(A, B, C, alpha, beta, uplo=CblasUpper, trans=Op.N);
+    // Do a direct multiplication as a test
+    gemm(A,B,D,alpha,beta,opB=Op.T);
+    gemm(B,A,D,alpha,one,opB=Op.T);
+    zeroTri(C, zeroLow=true);
+    zeroTri(D, zeroLow=true);
+    var err = max reduce abs(C-D);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    C = saveC;
+    D = saveC;
+    syr2k(A, B, C, alpha, beta, uplo=CblasLower, trans=Op.N);
+    // Do a direct multiplication as a test
+    gemm(A,B,D,alpha,beta,opB=Op.T);
+    gemm(B,A,D,alpha,one,opB=Op.T);
+    zeroTri(C, zeroLow=false);
+    zeroTri(D, zeroLow=false);
+    err = max reduce abs(C-D);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    C = saveC;
+    D = saveC;
+    syr2k(A, B, C, alpha, beta, uplo=CblasUpper, trans=Op.T);
+    // Do a direct multiplication as a test
+    gemm(A,B,D,alpha,beta,opA=Op.T);
+    gemm(B,A,D,alpha,one,opA=Op.T);
+    zeroTri(C, zeroLow=true);
+    zeroTri(D, zeroLow=true);
+    err = max reduce abs(C-D);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    C = saveC;
+    D = saveC;
+    syr2k(A, B, C, alpha, beta, uplo=CblasLower, trans=Op.T);
+    // Do a direct multiplication as a test
+    gemm(A,B,D,alpha,beta,opA=Op.T);
+    gemm(B,A,D,alpha,one,opA=Op.T);
     zeroTri(C, zeroLow=false);
     zeroTri(D, zeroLow=false);
     err = max reduce abs(C-D);

@@ -242,6 +242,68 @@ module BLAS {
     }
 
   }
+
+
+  /* SYR2K :
+  */
+  proc syr2k(A : [?Adom],  B : [?Bdom], C : [?Cdom],
+    alpha, beta,
+    uplo : CBLAS_UPLO = CblasUpper,  trans : Op = Op.N,
+    rowMajor : bool = true,
+    ldA : int = 0,  ldB : int = 0, ldC : int = 0)
+    where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
+  {
+    // Types
+    type eltType = A.eltType;
+
+    // Determine sizes
+    var n = Cdom.dim(1).size : c_int;
+    var k : c_int;
+    if trans == Op.N then k = Adom.dim(2).size : c_int;
+                     else k = Adom.dim(1).size : c_int;
+    var _trans = _BlasOp[trans];
+
+    // Set various parameters
+    var order : CBLAS_ORDER = CblasRowMajor;
+    if !rowMajor then order = CblasColMajor;
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, rowMajor, ldA),
+        _ldB = getLeadingDim(Bdom, rowMajor, ldB),
+        _ldC = getLeadingDim(Cdom, rowMajor, ldC);
+
+    select eltType {
+      when real(32) {
+        // ssymm
+        cblas_ssyr2k(order, uplo, _trans, n, k,
+          alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
+      }
+      when real(64) {
+        // dsymm
+        cblas_dsyr2k(order, uplo, _trans, n, k,
+          alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
+      }
+      when complex(64) {
+        // csymm
+        var alpha1 = alpha : complex(64),
+            beta1 = beta : complex(64);
+        cblas_csyr2k(order, uplo, _trans, n, k,
+          alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta1, C[Cdom.low],_ldC);
+      }
+      when complex(128) {
+        // zsymm
+        var alpha1 = alpha : complex(128),
+            beta1 = beta : complex(128);
+        cblas_zsyr2k(order, uplo, _trans, n, k,
+          alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta1, C[Cdom.low],_ldC);
+      }
+      otherwise {
+        halt("Unknown type in syr2k");
+      }
+    }
+
+  }
+
   // Helper function
   inline proc getLeadingDim(Adom : domain(2), rowMajor : bool, ldA : int) : c_int {
     var _ldA = ldA : c_int;
