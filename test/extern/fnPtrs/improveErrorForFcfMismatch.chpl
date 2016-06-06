@@ -1,5 +1,3 @@
-config param cPtrToChapel: bool = true;
-
 require 'testit.h';
 
 proc foo() {
@@ -12,7 +10,4 @@ proc baz(f) {
   f();
 }
 
-if cPtrToChapel then
-  baz(c_ptrTo(foo));
-else
-  bar(foo);
+bar(foo);

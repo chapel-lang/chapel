@@ -213,7 +213,7 @@ module CPtr {
     return c_pointer_return(x);
   }
 
-  inline proc c_fnPtrTo(x: c_fn_ptr) {
+  inline proc c_ptrTo(x: c_fn_ptr) {
     return x;
   }
   proc c_fn_ptr.this() {
@@ -222,6 +222,7 @@ module CPtr {
   proc c_fn_ptr.this(args...) {
     compilerError("Can't call a C function pointer within Chapel");
   }
+
 
   private extern const CHPL_RT_MD_ARRAY_ELEMENTS:chpl_mem_descInt_t;
 

@@ -11,5 +11,5 @@ proc baz(f) {
   writeln("Chapel callsite got: ", f(33));
 }
 
-barIntInt(c_fnPtrTo(foo));
+barIntInt(c_ptrTo(foo));
 baz(foo);
