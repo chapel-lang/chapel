@@ -209,21 +209,25 @@ private inline proc chpl_compare(a, b, comparator:?rec=defaultcomparator) {
       the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
 
  */
-private proc chpl_check_comparator(comparator, a) {
+private proc chpl_check_comparator(comparator, type eltType) {
   use Reflection;
+
+  // Dummy data for checking method resolution
+  // This may need updating when constructors support non-default args
+  const data: eltType;
 
   if comparator.type == DefaultComparator {}
   // Check for valid comaparator methods
-  else if canResolveMethod(comparator, "compare", a, a) {
+  else if canResolveMethod(comparator, "compare", data, data) {
     // Check return type of compare
-    type comparetype = comparator.compare(a, a).type;
+    type comparetype = comparator.compare(data, data).type;
     if !(isNumericType(comparetype)) {
       compilerError("The compare method must return a numeric type");
     }
   }
-  else if canResolveMethod(comparator, "key", a) {
+  else if canResolveMethod(comparator, "key", data) {
     // Check return type of key
-    type keytype = comparator.key(a).type;
+    type keytype = comparator.key(data).type;
     if !(isNumericType(keytype) || isStringType(keytype)) {
       compilerError("The key method must return a numeric or string type");
     }
@@ -262,7 +266,7 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where Dom.ra
    :rtype: `bool`
  */
 proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator): bool {
-  chpl_check_comparator(comparator, Data(Dom.dim(1).low));
+  chpl_check_comparator(comparator, eltType);
   for i in Dom.low..Dom.high-1 do
     if chpl_compare(Data(i+1), Data(i), comparator) < 0 then
       return false;
@@ -315,7 +319,7 @@ iter sorted(x, comparator:?rec=defaultcomparator) {
 
  */
 proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where Dom.rank == 1 {
-  chpl_check_comparator(comparator, Data(Dom.dim(1).low));
+  chpl_check_comparator(comparator, eltType);
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   var swapped = true;
@@ -342,7 +346,7 @@ proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where 
 
  */
 proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where Dom.rank == 1 {
-  chpl_check_comparator(comparator, Data(Dom.dim(1).low));
+  chpl_check_comparator(comparator, eltType);
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   const len = Dom.dim(1).size;
@@ -390,7 +394,7 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where Do
 
  */
 proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where Dom.rank == 1 {
-  chpl_check_comparator(comparator, Data(Dom.dim(1).low));
+  chpl_check_comparator(comparator, eltType);
   const lo = Dom.low;
   for i in Dom {
     const ithVal = Data(i);
@@ -423,7 +427,7 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) whe
 
  */
 proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultcomparator) where Dom.rank == 1 {
-  chpl_check_comparator(comparator, Data(Dom.dim(1).low));
+  chpl_check_comparator(comparator, eltType);
   _MergeSort(Data, minlen, comparator);
 }
 
@@ -484,7 +488,7 @@ private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, comparator:?rec=def
 
  */
 proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultcomparator) where Dom.rank == 1 {
-  chpl_check_comparator(comparator, Data(Dom.dim(1).low));
+  chpl_check_comparator(comparator, eltType);
   // grab obvious indices
   const lo = Dom.low,
         hi = Dom.high,
@@ -613,7 +617,7 @@ record ReverseComparator {
   proc compare(a, b) {
     use Reflection;
 
-    chpl_check_comparator(this.comparator, a);
+    chpl_check_comparator(this.comparator, a.type);
 
     // Key defined
     if canResolveMethod(this.comparator, "key", a) && canResolveMethod(this.comparator, "key", b) {
