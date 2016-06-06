@@ -81,6 +81,64 @@ module BLAS {
 
   }
 
+  /* SYMM : Matrix multiplication with a symmetric matrix A
+  */
+  proc symm(A : [?Adom], B : [?Bdom], C : [?Cdom],
+    alpha, beta,
+    uplo : CBLAS_UPLO = CblasUpper,  side : CBLAS_SIDE = CblasLeft,
+    rowMajor : bool = true,
+    ldA : int = 0, ldB : int = 0, ldC : int = 0)
+    where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
+  {
+    // Types
+    type eltType = A.eltType;
+
+    // Determine sizes
+    var m = Cdom.dim(1).size : c_int,
+        n = Cdom.dim(2).size : c_int;
+
+    // Set various parameters
+    var order : CBLAS_ORDER = CblasRowMajor;
+    if !rowMajor then order = CblasColMajor;
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, rowMajor, ldA),
+        _ldB = getLeadingDim(Bdom, rowMajor, ldB),
+        _ldC = getLeadingDim(Cdom, rowMajor, ldC);
+
+    select eltType {
+      when real(32) {
+        // ssymm
+        cblas_ssymm(order, side, uplo, m, n,
+          alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
+      }
+      when real(64) {
+        // dsymm
+        cblas_dsymm(order, side, uplo, m, n,
+          alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
+      }
+      when complex(64) {
+        // csymm
+        var alpha1 = alpha : complex(64),
+            beta1 = beta : complex(64);
+        cblas_csymm(order, side, uplo, m, n,
+          alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta1, C[Cdom.low],_ldC);
+      }
+      when complex(128) {
+        // zsymm
+        var alpha1 = alpha : complex(128),
+            beta1 = beta : complex(128);
+        cblas_zsymm(order, side, uplo, m, n,
+          alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta1, C[Cdom.low],_ldC);
+      }
+      otherwise {
+        halt("Unknown type in symm");
+      }
+    }
+
+  }
+
+
 
   // Helper function
   inline proc getLeadingDim(Adom : domain(2), rowMajor : bool, ldA : int) : c_int {
