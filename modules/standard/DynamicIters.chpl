@@ -232,9 +232,8 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int=0, parDim
       var tempTup = tempDom.dims();
       //change the value of the parDim elem of the tuple to the new range
       tempTup(parDim) = newRange;
-      tempDom = tempTup; //tempDom is a domain of the same type as c
 
-      yield (tempDom,);
+      yield tempTup;
     }
   }
 
@@ -243,12 +242,12 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int, parDim:i
 where tag == iterKind.follower
 {
     type rType = c.type;
-    var d:rType = followThis(1);
-    var tempTup : followThis(1).rank * range  = followThis(1).dims();
+    var d:rType = followThis;
+    var tempTup : followThis.size * range  = followThis;
 
     //manually undensify (reindex) the tuple, because the domains no longer
     //match after being rank-change sliced.
-    for k in 1..followThis(1).rank do
+    for k in 1..followThis.size do
     {
       tempTup(k) += c.dim(k).low;
     }
