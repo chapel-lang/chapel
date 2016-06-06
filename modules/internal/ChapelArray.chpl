@@ -1485,6 +1485,7 @@ module ChapelArray {
     }
   }  // record _domain
 
+  // this is a helper function for bulkAdd functions in sparse subdomains.
   proc __getActualInsertPts(d, inds, 
       isSorted, isUnique) /* where isSparseDom(d) */ {
 
