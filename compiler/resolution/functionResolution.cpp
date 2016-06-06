@@ -4931,13 +4931,31 @@ createFunctionAsValue(CallExpr *call) {
 
   FnSymbol* captured_fn = visibleFns.head();
 
-  //Check to see if we've already cached the capture somewhere
-  if (functionCaptureMap.find(captured_fn) != functionCaptureMap.end()) {
-    return new CallExpr(functionCaptureMap[captured_fn]);
+  if (call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL)) {
+    //
+    // If we're doing a Chapel first-class function, we can re-use the
+    // cached first-class function information from an earlier call if
+    // there was one, so check to see if we've already cached the
+    // capture somewhere.
+    //
+    if (functionCaptureMap.find(captured_fn) != functionCaptureMap.end()) {
+      return new CallExpr(functionCaptureMap[captured_fn]);
+    }
   }
 
   resolveFormals(captured_fn);
   resolveFnForCall(captured_fn, call);
+
+  //
+  // When all we need is a C pointer, we can cut out here, returning
+  // a reference to the function symbol.
+  //
+  if (call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)) {
+    return new SymExpr(captured_fn);
+  }
+  //
+  // Otherwise, we need to create a Chapel first-class function (fcf)...
+  //
 
   AggregateType *parent;
   FnSymbol *thisParentMethod;
@@ -5618,7 +5636,8 @@ preFold(Expr* expr) {
         call->replace(new CallExpr(PRIM_TYPEOF, tmp));
       } else
         USR_FATAL(call, "invalid query -- queried field must be a type or parameter");
-    } else if (call->isPrimitive(PRIM_CAPTURE_FN)) {
+    } else if (call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) ||
+               call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)) {
       result = createFunctionAsValue(call);
       call->replace(result);
 

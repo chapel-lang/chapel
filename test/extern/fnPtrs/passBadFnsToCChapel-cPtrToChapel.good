@@ -1,0 +1,2 @@
+passBadFnsToCChapel.chpl:11: In function 'baz':
+passBadFnsToCChapel.chpl:12: error: Can't call a C function pointer within Chapel
