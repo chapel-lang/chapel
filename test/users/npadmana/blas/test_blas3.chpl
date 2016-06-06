@@ -8,6 +8,7 @@ config const errorThresholdSingle = 1.e-5;
 proc main() {
   test_gemm();
   test_symm();
+  test_hemm();
 }
 
 proc test_gemm() {
@@ -215,6 +216,89 @@ proc test_symm_helper(type t) {
   writef("%s : %i PASSED, %i FAILED \n", name, passed, failed);
 }
 
+proc test_hemm() {
+  test_hemm_helper(complex(64));
+  test_hemm_helper(complex(128));
+}
+
+
+proc test_hemm_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%shemm".format(blasPrefix(t));
+
+  // Simple tests 1 & 2
+  {
+    const m = 10 : c_int,
+          n = 7 : c_int;
+    // Test dgemm -- do this with an array that isn't square
+    var A : [{0.. #m, 0.. #m}]t,
+        B : [{0.. #m, 0.. #n}]t,
+        C : [{0.. #m, 0.. #n}]t,
+        D : [{0.. #m, 0.. #n}]t;
+
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    rng.fillRandom(A);
+    makeHerm(A);
+    rng.fillRandom(B);
+    rng.fillRandom(C);
+    var saveC = C;
+    D = C;
+    const alpha = rng.getNext(),
+          beta = rng.getNext();
+
+    hemm(A, B, C, alpha, beta, uplo=CblasUpper, side=CblasLeft);
+    // Do a direct multiplication as a test
+    gemm(A,B,D,alpha,beta);
+    var err = max reduce abs(C-D);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    C = saveC;
+    hemm(A, B, C, alpha, beta, uplo=CblasLower, side=CblasLeft);
+    // Do a direct multiplication as a test
+    err = max reduce abs(C-D);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+  }
+
+  // Simple tests 3 & 4
+  {
+    const m = 10 : c_int,
+          n = 7 : c_int;
+    // Test dgemm -- do this with an array that isn't square
+    var A : [{0.. #n, 0.. #n}]t,
+        B : [{0.. #m, 0.. #n}]t,
+        C : [{0.. #m, 0.. #n}]t,
+        D : [{0.. #m, 0.. #n}]t;
+
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    rng.fillRandom(A);
+    makeHerm(A);
+    rng.fillRandom(B);
+    rng.fillRandom(C);
+    var saveC = C;
+    D = C;
+    const alpha = rng.getNext(),
+          beta = rng.getNext();
+
+    hemm(A, B, C, alpha, beta, uplo=CblasUpper, side=CblasRight);
+    // Do a direct multiplication as a test
+    gemm(B,A,D,alpha,beta);
+    var err = max reduce abs(C-D);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    C = saveC;
+    hemm(A, B, C, alpha, beta, uplo=CblasLower, side=CblasRight);
+    // Do a direct multiplication as a test
+    err = max reduce abs(C-D);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+  }
+  writef("%s : %i PASSED, %i FAILED \n", name, passed, failed);
+}
+
 proc trackErrors(name, err, errorThreshold, ref passed, ref failed, ref tests) {
   if err > errorThreshold {
     failed += 1;
@@ -252,6 +336,15 @@ proc makeSymm(A : [?Adom]) {
   }
 }
 
+// Make a hermitian matrix
+// This does this explicitly, by making the lower triangular portion
+// equal to the upper triangular
+proc makeHerm(A : [?Adom]) {
+  for (i,j) in Adom {
+    if i < j then A[i,j] = conjg(A[j,i]);
+    if i==j then A[i,i] = A[i,i].re;
+  }
+}
 
 // No-ops when conjugating real numbers...
 inline proc conjg(x : real(32)) {
