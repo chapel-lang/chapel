@@ -3571,63 +3571,55 @@ resolveDefaultGenericType(CallExpr* call) {
 
 
 static void
+doGatherCandidates(Vec<ResolutionCandidate*>& candidates,
+                 Vec<FnSymbol*>& visibleFns,
+                 CallInfo& info,
+                 bool compilerGenerated) {
+
+  forv_Vec(FnSymbol, visibleFn, visibleFns) {
+    // Only consider user functions or compiler-generated functions
+    if (visibleFn->hasFlag(FLAG_COMPILER_GENERATED) == compilerGenerated) {
+
+      // Some expressions might resolve to methods without parenthesis.
+      // If the call is marked with methodTag, it indicates the called
+      // function should be a no-parens function or a type constructor.
+      // (a type constructor call without parens uses default arguments)
+      if (info.call->methodTag) {
+        if (visibleFn->hasEitherFlag(FLAG_NO_PARENS, FLAG_TYPE_CONSTRUCTOR)) {
+          // OK
+        } else {
+          // Skip this candidate
+          continue;
+        }
+      }
+
+      if (fExplainVerbose &&
+          ((explainCallLine && explainCallMatch(info.call)) ||
+           info.call->id == explainCallID))
+      {
+        USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
+        if( info.call->id == breakOnResolveID ) {
+          gdbShouldBreakHere();
+        }
+      }
+
+      filterCandidate(candidates, visibleFn, info);
+    }
+  }
+}
+
+
+static void
 gatherCandidates(Vec<ResolutionCandidate*>& candidates,
                  Vec<FnSymbol*>& visibleFns,
                  CallInfo& info) {
 
   // Search user-defined (i.e. non-compiler-generated) functions first.
-  forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    if (visibleFn->hasFlag(FLAG_COMPILER_GENERATED)) {
-      continue;
-    }
+  doGatherCandidates(candidates, visibleFns, info, false);
 
-    if (info.call->methodTag &&
-        ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||
-           visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR))) {
-      continue;
-    }
-
-    if (fExplainVerbose &&
-        ((explainCallLine && explainCallMatch(info.call)) ||
-         info.call->id == explainCallID))
-    {
-      USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
-      if( info.call->id == breakOnResolveID ) {
-        gdbShouldBreakHere();
-      }
-    }
-
-    filterCandidate(candidates, visibleFn, info);
-  }
-
-  // Return if we got a successful match with user-defined functions.
-  if (candidates.n) {
-    return;
-  }
-
-  // No.  So search compiler-defined functions.
-  forv_Vec(FnSymbol, visibleFn, visibleFns) {
-    if (!visibleFn->hasFlag(FLAG_COMPILER_GENERATED)) {
-      continue;
-    }
-
-    if (info.call->methodTag &&
-        ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||
-           visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR))) {
-      continue;
-    }
-
-    if (fExplainVerbose &&
-        ((explainCallLine && explainCallMatch(info.call)) ||
-         info.call->id == explainCallID))
-    {
-      USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
-      if( info.call->id == breakOnResolveID ) {
-        gdbShouldBreakHere();
-      }
-    }
-
-    filterCandidate(candidates, visibleFn, info);
+  // If no results, try again with any compiler-generated candidates.
+  if (candidates.n == 0) {
+    doGatherCandidates(candidates, visibleFns, info, true);
   }
 }
 
