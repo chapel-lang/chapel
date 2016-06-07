@@ -2524,6 +2524,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
       // Handles case where inner use has an 'except' list, or is
       // just a plain use.  The use returned will have a (longer) 'except'
       // list.
+      SET_LINENO(this);
       UseStmt* newUse = copy();
       for_vector(const char, toExclude, outer->named) {
         newUse->named.push_back(toExclude);
@@ -2618,6 +2619,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
     } else {
       // The inner use did not specify an 'except' or 'only' list,
       // so propagate our 'only' list and/or renamed list to it.
+      SET_LINENO(this);
       UseStmt* newUse = copy();
       for_vector(const char, toInclude, outer->named) {
         newUse->named.push_back(toInclude);
