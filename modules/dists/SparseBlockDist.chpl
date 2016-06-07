@@ -118,7 +118,7 @@ class SparseBlockDom: BaseSparseDom {
     dsiAdd((ind,));
   }
 
-  proc dsiBulkAdd(inds: [] rank*idxType, isSorted=false, isUnique=false,
+  proc dsiBulkAdd(inds: [] index(rank, idxType), isSorted=false, isUnique=false,
       preserveInds=true){
   
     if !isSorted && preserveInds {
@@ -130,13 +130,13 @@ class SparseBlockDom: BaseSparseDom {
     }
   }
 
-  proc bulkAdd_help(inds: [] rank*idxType, isSorted=false, isUnique=false) {
+  proc bulkAdd_help(inds: [] index(rank,idxType), isSorted=false, isUnique=false) {
 
     if bulkAddMemoize {
       if !isSorted then
         QuickSort(inds);
 
-      var localIndexes: [dist.targetLocDom] [inds.domain] rank*idxType;
+      var localIndexes: [dist.targetLocDom] [inds.domain] index(rank,idxType);
       var localIndexCnts: [dist.targetLocDom] int =
         inds.domain.low;
 
