@@ -141,6 +141,8 @@ module ChapelArray {
   // likely be on locale 0
   pragma "no doc"
   var numPrivateObjects: atomic_int64;
+  pragma "no doc"
+  param nullPid = -1;
 
   pragma "no doc"
   config param debugBulkTransfer = false;
@@ -155,8 +157,25 @@ module ChapelArray {
   pragma "privatized class"
   proc _isPrivatized(value) param
     return !_local && ((_privatization && value.dsiSupportsPrivatization()) || value.dsiRequiresPrivatization());
+    // Note - _local=true means --local / single locale
+    // _privatization is controled by --[no-]privatization
+    // privatization required, not optional, for PrivateDist
 
-  proc _newPrivatizedClass(value) {
+  // MPF - This simple implementation of privitization has some drawbacks:
+  // 1) Creating a new privitized object necessarily does something on all
+  //     locales; this would be surprising if the user explicitly requested
+  //     a Block array on 2 locales for example.
+  // 2) Privitized object ids are managed by Locale 0 in a way that,
+  //    while relatively low overhead, adds work to Locale 0 that is not
+  //    present on the other locales, and again would be surprising if
+  //    a Block array were created over other locales only (say, Locales[2] and
+  //    Locales[3]).
+
+  // Given a dsi Dist/Dom/Array, create an pid integer identifying the
+  // privatized version on all locales; and populate each locale
+  // with a privatized value that can be retrieved by the pid
+  // without communication.
+  proc _newPrivatizedClass(value) : int {
 
     const n = numPrivateObjects.fetchAdd(1);
 
@@ -186,6 +205,34 @@ module ChapelArray {
     }
 
     return n;
+  }
+
+  // original is the value this method shouldn't free, because it's the
+  // canonical verison. The rest are copies on other locales.
+  proc _freePrivatizedClass(pid:int, original)
+  {
+    on Locales[0] do
+      _freePrivatizedClassHelp(pid, original);
+
+    proc _freePrivatizedClassHelp(pid, original) {
+      var prv = chpl_getPrivatizedCopy(object, pid);
+      if prv != original then
+        delete prv;
+
+      chpl_clearPrivatizedClass(pid);
+
+      cobegin {
+        if chpl_localeTree.left then
+          on chpl_localeTree.left do
+            _freePrivatizedClassHelp(pid, original);
+        if chpl_localeTree.right then
+          on chpl_localeTree.right do
+            _freePrivatizedClassHelp(pid, original);
+      }
+    }
+
+
+    chpl_clearPrivatizedClass(pid);
   }
 
   proc _reprivatize(value) {
@@ -242,35 +289,42 @@ module ChapelArray {
     if _isPrivatized(value) then
       return new _array(_newPrivatizedClass(value), value);
     else
-      return new _array(value, value);
+      return new _array(nullPid, value);
+  }
+
+  proc _getArray(value) {
+    if _isPrivatized(value) then
+      return new _array(_newPrivatizedClass(value), value, _unowned=true);
+    else
+      return new _array(nullPid, value, _unowned=true);
   }
 
   proc _newDomain(value) {
     if _isPrivatized(value) then
       return new _domain(_newPrivatizedClass(value), value);
     else
-      return new _domain(value, value);
+      return new _domain(nullPid, value);
   }
 
   proc _getDomain(value) {
     if _isPrivatized(value) then
-      return new _domain(value.pid, value);
+      return new _domain(value.pid, value, _unowned=true);
     else
-      return new _domain(value, value);
+      return new _domain(nullPid, value, _unowned=true);
   }
 
   proc _newDistribution(value) {
     if _isPrivatized(value) then
       return new _distribution(_newPrivatizedClass(value), value);
     else
-      return new _distribution(value, value);
+      return new _distribution(nullPid, value);
   }
 
   proc _getDistribution(value) {
     if _isPrivatized(value) then
-      return new _distribution(value.pid, value);
+      return new _distribution(value.pid, value, _unowned=true);
     else
-      return new _distribution(value, value);
+      return new _distribution(nullPid, value, _unowned=true);
   }
 
   // Run-time type support
@@ -713,36 +767,36 @@ module ChapelArray {
   pragma "ignore noinit"
   pragma "no doc"
   record _distribution {
-    var _value;
-    var _valueType;
+    var _pid:int;  // only used when privatized
+    var _baseDist; // generic, but an instance of a subclass of BaseDist
+    var _unowned:bool; // 'true' for the result of 'getDistribution',
+                       // in which case, the record destructor should
+                       // not attempt to delete the _baseDist.
 
     // Never, ever create a distribution directly.
     // Always call _newDistribution() to obtain  one.
-    proc _distribution(_value, _valueType) { }
+    proc _distribution(_pid, _baseDist) { }
 
     inline proc _value {
-      if _isPrivatized(_valueType) {
-        return chpl_getPrivatizedCopy(_valueType.type, _value);
+      if _isPrivatized(_baseDist) {
+        return chpl_getPrivatizedCopy(_baseDist.type, _pid);
       } else {
-        return _value;
+        return _baseDist;
       }
     }
 
-    // Destruction of a distribution causes its ref count to be decremented by 1.
-    // If the count reaches zero, then the contained implementation (_value) is
-    // destroyed.
     proc ~_distribution() {
-     if !noRefCount {
-      if !_isPrivatized(_valueType) {
+      if ! _unowned {
         on _value {
-          var cnt = _value.destroyDist();
+          // How many domains refer to this distribution?
+          var cnt = _baseDist.destroyDist();
           if cnt == 0 {
-            _value.dsiDestroyDistClass();
-            delete _value;
+            // Free the main _baseDist
+            _baseDist.dsiDestroyDistClass();
+            delete _baseDist;
           }
         }
       }
-     }
     }
 
     proc clone() {
@@ -753,8 +807,6 @@ module ChapelArray {
       var x = _value.dsiNewRectangularDom(rank, idxType, stridable);
       if x.linksDistribution() {
         _value.add_dom(x);
-        if !noRefCount then
-          _value.incRefCount();
       }
       return x;
     }
@@ -763,8 +815,6 @@ module ChapelArray {
       var x = _value.dsiNewAssociativeDom(idxType, parSafe);
       if x.linksDistribution() {
         _value.add_dom(x);
-        if !noRefCount then
-          _value.incRefCount();
       }
       return x;
     }
@@ -774,8 +824,6 @@ module ChapelArray {
       var x = _value.dsiNewAssociativeDom(idxType, parSafe);
       if x.linksDistribution() {
         _value.add_dom(x);
-        if !noRefCount then
-          _value.incRefCount();
       }
       const enumTuple = chpl_enum_enumerate(idxType);
       for param i in 1..enumTuple.size do
@@ -787,8 +835,6 @@ module ChapelArray {
       var x = _value.dsiNewOpaqueDom(idxType, parSafe);
       if x.linksDistribution() {
         _value.add_dom(x);
-        if !noRefCount then
-          _value.incRefCount();
       }
       return x;
     }
@@ -797,8 +843,6 @@ module ChapelArray {
       var x = _value.dsiNewSparseDom(rank, idxType, dom);
       if x.linksDistribution() {
         _value.add_dom(x);
-        if !noRefCount then
-          _value.incRefCount();
       }
       return x;
     }
@@ -848,29 +892,31 @@ module ChapelArray {
   pragma "has runtime type"
   pragma "ignore noinit"
   record _domain {
-    var _value;     // stores domain class, may be privatized
-    var _valueType; // stores type of privatized domains
+    var _pid:int; // only used when privatized
+    var _baseDom; // generic, but an instance of a subclass of BaseDom
+    var _unowned:bool; // 'true' for the result of 'getDomain'
+                       // in which case, the record destructor should
+                       // not attempt to delete the _baseDom.
     var _promotionType: index(rank, _value.idxType);
 
     inline proc _value {
-      if _isPrivatized(_valueType) {
-        return chpl_getPrivatizedCopy(_valueType.type, _value);
+      if _isPrivatized(_baseDom) {
+        return chpl_getPrivatizedCopy(_baseDom.type, _pid);
       } else {
-        return _value;
+        return _baseDom;
       }
     }
 
     pragma "no doc"
     proc ~_domain () {
-     if !noRefCount {
-      if !_isPrivatized(_valueType) {
+      if ! _unowned {
         on _value {
-          var cnt = _value.destroyDom();
+          // How many arrays refer to this domain?
+          var cnt = _baseDom.destroyDom();
           if cnt == 0 then
-            delete _value;
+            delete _baseDom;
         }
       }
-     }
     }
 
     /* Return the domain map that implements this domain */
@@ -1007,8 +1053,6 @@ module ChapelArray {
       pragma "dont disable remote value forwarding"
       proc help() {
         _value.add_arr(x);
-        if !noRefCount then
-          _value.incRefCount();
       }
       help();
       return _newArray(x);
@@ -1353,7 +1397,7 @@ module ChapelArray {
     pragma "no doc"
     proc setIndices(x) {
       _value.dsiSetIndices(x);
-      if _isPrivatized(_valueType) {
+      if _isPrivatized(_baseDom) {
         _reprivatize(_value);
       }
     }
@@ -1681,13 +1725,16 @@ module ChapelArray {
     return true;
   }
 
+  // TODO -- slices?
+
   // Array wrapper record
   pragma "array"
   pragma "has runtime type"
   pragma "ignore noinit"
   record _array {
-    var _value;     // stores array class, may be privatized
-    var _valueType; // stores type of privatized arrays
+    var _pid:int;  // only used when privatized
+    var _baseArr; // generic, but an instance of a subclass of BaseArr
+    var _unowned:bool;
     var _promotionType: _value.eltType;
 
     pragma "no doc"
@@ -1697,32 +1744,22 @@ module ChapelArray {
     }
 
     inline proc _value {
-      if _isPrivatized(_valueType) {
-        return chpl_getPrivatizedCopy(_valueType.type, _value);
+      if _isPrivatized(_baseArr) {
+        return chpl_getPrivatizedCopy(_baseArr.type, _pid);
       } else {
-        return _value;
+        return _baseArr;
       }
     }
 
-    //
-    // Note that the destructor may be called multiple times for
-    // a given array, corresponding to cases in which it's
-    // autodestroyed multiple times; only the case that brings
-    // the reference count to zero is the one that should
-    // actually free the array.
-    //
     proc ~_array() {
-     if !noRefCount {
-      if !_isPrivatized(_valueType) {
+      if ! _unowned {
         on _value {
           var cnt = _value.destroyArr();
           if cnt == 0 then {
-            chpl_decRefCountsForDomainsInArrayEltTypes(_value.eltType);
             delete _value;
           }
         }
       }
-     }
     }
 
     /* The type of elements contained in the array */
@@ -1947,7 +1984,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     proc newAlias() {
       var x = _value;
-      return _newArray(x);
+      return _getArray(x);
     }
 
     //
@@ -2788,7 +2825,7 @@ module ChapelArray {
           a._value.incRefCount();
       } else
         a._value.dsiAssign(b._value);
-      if _isPrivatized(a._valueType) then
+      if _isPrivatized(a._baseDist) then
         _reprivatize(a._value);
     } else {
       halt("assignment to distributions with declared domains is not yet supported");
@@ -3223,8 +3260,10 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(a: _distribution) {
-    pragma "no copy" var b = chpl__autoCopy(a.clone());
+    pragma "no copy" var b = a.clone();
     return b;
+    // Sadly, this makes an infinite loop..
+    //return a.clone();
   }
 
   pragma "init copy fn"
@@ -3259,6 +3298,13 @@ module ChapelArray {
     return b;
   }
 
+   pragma "auto copy fn" proc chpl__autoCopy(x: []) {
+    pragma "no copy" var b = new _array(x._pid, x._baseArr, true);
+    return b;
+  }
+
+
+ 
   //
   // Noakes 2015/11/05
   //

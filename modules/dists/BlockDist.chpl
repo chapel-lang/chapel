@@ -260,7 +260,7 @@ class Block : BaseDist {
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
-  var pid: int = -1; // privatized object id (this should be factored out)
+  //var pid: int = -1; // privatized object id (this should be factored out)
 }
 
 //
@@ -293,7 +293,7 @@ class BlockDom: BaseRectangularDom {
   const dist: Block(rank, idxType);
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
+  //var pid: int = -1; // privatized object id (this should be factored out)
 }
 
 //
@@ -331,7 +331,7 @@ class BlockArr: BaseArr {
   var dom: BlockDom(rank, idxType, stridable);
   var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
   var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
+  //var pid: int = -1; // privatized object id (this should be factored out)
   const SENTINEL = max(rank*idxType);
 }
 

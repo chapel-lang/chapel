@@ -1005,6 +1005,7 @@ module ChapelBase {
   pragma "init copy fn"
   inline proc chpl__initCopy(x) return x;
 
+  /*
   pragma "dont disable remote value forwarding"
   pragma "removable auto copy"
   pragma "donor fn"
@@ -1028,7 +1029,7 @@ module ChapelBase {
     if !noRefCount then x._value.incRefCount();
     return x;
   }
-
+  */
 
   pragma "compiler generated"
   pragma "donor fn"
@@ -1067,6 +1068,8 @@ module ChapelBase {
   inline proc chpl__autoDestroy(ir: _iteratorRecord) {
     // body inserted during call destructors pass
   }
+
+  /*
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
   proc chpl__autoDestroy(x: _distribution) {
@@ -1081,7 +1084,7 @@ module ChapelBase {
   pragma "removable auto destroy"
   proc chpl__autoDestroy(x: []) {
     __primitive("call destructor", x);
-  }
+  }*/
 
   // = for c_void_ptr
   inline proc =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }

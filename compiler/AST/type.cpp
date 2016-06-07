@@ -2013,7 +2013,7 @@ bool isUserDefinedRecord(Type* type) {
     } else if (sym->hasFlag(FLAG_RANGE)              == true) {
 
     // Not a distribution
-    } else if (sym->hasFlag(FLAG_DISTRIBUTION)       == true) {
+/*    } else if (sym->hasFlag(FLAG_DISTRIBUTION)       == true) {
 
     // Not a domain
     } else if (sym->hasFlag(FLAG_DOMAIN)             == true) {
@@ -2021,7 +2021,7 @@ bool isUserDefinedRecord(Type* type) {
     // Not an array or an array alias
     } else if (sym->hasFlag(FLAG_ARRAY)              == true ||
                sym->hasFlag(FLAG_ARRAY_ALIAS)        == true) {
-
+*/
     // Not an atomic type
     } else if (sym->hasFlag(FLAG_ATOMIC_TYPE)        == true) {
 

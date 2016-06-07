@@ -66,6 +66,10 @@ module DefaultRectangular {
 
     proc dsiEqualDMaps(d:DefaultDist) param return true;
     proc dsiEqualDMaps(d) param return false;
+    
+    proc trackDomains() param return false;
+    proc dsiTrackDomains()     return false;
+ 
   }
   
   //
@@ -100,6 +104,10 @@ module DefaultRectangular {
       this.dist = dist;
     }
 
+    proc dsiMyDist() {
+      return dist;
+    }
+ 
     proc dsiDisplayRepresentation() {
       writeln("ranges = ", ranges);
     }
@@ -166,8 +174,8 @@ module DefaultRectangular {
                minIndicesPerTask = dataParMinGranularity,
                offset=createTuple(rank, idxType, 0:idxType))
       where tag == iterKind.standalone && !localeModelHasSublocales {
-      if chpl__testParFlag then
-        chpl__testPar("default rectangular domain standalone invoked on ", ranges);
+      /*if chpl__testParFlag then
+        chpl__testPar("default rectangular domain standalone invoked on ", ranges);*/
       if debugDefaultDist then
         writeln("*** In domain standalone code:");
 
@@ -405,8 +413,8 @@ module DefaultRectangular {
         return if i == rangeTuple.size then rangeTuple(i).stridable
                else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
-      if chpl__testParFlag then
-        chpl__testPar("default rectangular domain follower invoked on ", followThis);
+      /*if chpl__testParFlag then
+        chpl__testPar("default rectangular domain follower invoked on ", followThis);*/
       if debugDefaultDist then
         writeln("In domain follower code: Following ", followThis);
 

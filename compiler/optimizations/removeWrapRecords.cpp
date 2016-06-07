@@ -38,6 +38,9 @@ static Type* getWrapRecordBaseType(Type* type);
 //
 void
 removeWrapRecords() {
+
+  return; // TODO -- disabled.
+
   //
   // do not remove wrap records if dead code elimination is disabled
   // (or weakened because inlining or copy propagation is disabled)

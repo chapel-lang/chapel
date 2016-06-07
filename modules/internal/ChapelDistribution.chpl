@@ -31,22 +31,45 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _distCnt: atomic_refcnt; // distribution reference count
-    var _doms: list(BaseDom);   // domains declared over this distribution
-    var _domsLock: atomicflag;  //   and lock for concurrent access
+    var _distCnt: atomic_refcnt;  // distribution reference count
+    var _doms: list(BaseDom);     // domains declared over this distribution
+    var _domsLock: atomicflag;    //   and lock for concurrent access
+    var _free_when_no_doms: bool; // true when the original _distribution
+                                  // has been destroyed
+    var pid:int = -1; // privatized ID, if privitization is supported
   
+    proc ~BaseDist() {
+      if _isPrivatized(this) && pid >= 0 then
+        _freePrivatizedClass(pid, this);
+    }
+
+    // Returns 0 if the distribution class should be destroyed
     pragma "dont disable remote value forwarding"
     proc destroyDist(): int {
-      compilerAssert(!noRefCount);
-      return decRefCount();
+      var count = 0;
+      if dsiTrackDomains() {
+        on this {
+          _lock_doms();
+          // Set a flag to indicate it should be freed when _doms
+          // becomes empty
+          _free_when_no_doms = true;
+          count = _doms.size;
+          _unlock_doms();
+        }
+      }
+      return count;
     }
   
-    inline proc remove_dom(x) {
+    // Returns 0 if the distribution class should be destroyed
+    inline proc remove_dom(x): int {
+      var count = -1;
       on this {
         _lock_doms();
         _doms.remove(x);
+        count = _doms.size;
         _unlock_doms();
       }
+      return count;
     }
   
     inline proc add_dom(x) {
@@ -109,6 +132,15 @@ module ChapelDistribution {
     proc dsiDestroyDistClass() { }
   
     proc dsiDisplayRepresentation() { }
+
+    // false for default distribution so that we don't increment the
+    // default distribution's reference count and add domains to the
+    // default distribution's list of domains
+    // AKA tracks domains
+    proc trackDomains() param return true;
+  
+    // dynamically-dispatched counterpart of linksDistribution
+    proc dsiTrackDomains() return true;
   }
   
   //
@@ -119,37 +151,57 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _domCnt: atomic_refcnt; // domain reference count
+    //var _domCnt: atomic_refcnt; // domain reference count
     var _arrs: list(BaseArr);  // arrays declared over this domain
     var _arrsLock: atomicflag; //   and lock for concurrent access
+    var _free_when_no_arrs: bool;
+    var pid:int = -1; // privatized ID, if privitization is supported
   
+    proc ~BaseDom() {
+      if _isPrivatized(this) && pid >= 0 then
+        _freePrivatizedClass(pid, this);
+    }
+
     proc dsiMyDist(): BaseDist {
       halt("internal error: dsiMyDist is not implemented");
       return nil;
     }
   
+    // Returns the number of arrays over this domain
+    // (it should be deleted when this returns 0)
     pragma "dont disable remote value forwarding"
     proc destroyDom(): int {
-      compilerAssert(!noRefCount);
-      var cnt = decRefCount();
-      if cnt == 0 && dsiLinksDistribution() {
-          var dist = dsiMyDist();
-          on dist {
-            local dist.remove_dom(this);
-            var cnt = dist.destroyDist();
-            if cnt == 0 then
-              delete dist;
-          }
+      // TODO -- remove dsiLinksDistribution
+      assert( dsiMyDist().dsiTrackDomains() == dsiLinksDistribution() );
+
+      var arr_count = 0;
+      var dist = dsiMyDist();
+      on dist {
+        if dsiLinksDistribution() {
+          var cnt = -1;
+          local cnt = dist.remove_dom(this);
+          if cnt == 0 then
+            delete dist;
+        }
+
+        // Now manage the arrays
+        _lock_arrs();
+        arr_count = _arrs.size;
+        _free_when_no_arrs = true;
+        _unlock_arrs();
       }
-      return cnt;
+      return arr_count;
     }
   
-    inline proc remove_arr(x) {
+    inline proc remove_arr(x): int {
+      var count = -1;
       on this {
         _lock_arrs();
         _arrs.remove(x);
+        count = _arrs.size;
         _unlock_arrs();
       }
+      return count;
     }
   
     inline proc add_arr(x) {
@@ -188,19 +240,6 @@ module ChapelDistribution {
         arr._preserveArrayElement(oldslot, newslot);
     }
   
-    inline proc incRefCount(cnt=1) {
-      compilerAssert(!noRefCount);
-      _domCnt.inc(cnt);
-    }
-
-    inline proc decRefCount() {
-      compilerAssert(!noRefCount);
-      const cnt = _domCnt.dec(); //_domCnt.fetchSub(1)-1;
-      if cnt < 0 then
-          halt("domain reference count is negative!");
-      return cnt;
-    }
-
     proc dsiSupportsPrivatization() param return false;
     proc dsiRequiresPrivatization() param return false;
   
@@ -211,11 +250,15 @@ module ChapelDistribution {
   
     // dynamically-dispatched counterpart of linksDistribution
     proc dsiLinksDistribution() return true;
-  
+ 
     proc dsiDisplayRepresentation() { }
   }
   
   class BaseRectangularDom : BaseDom {
+    proc ~BaseRectangularDom() {
+      // this is a bug workaround
+    }
+
     proc dsiClear() {
       halt("clear not implemented for this distribution");
     }
@@ -234,6 +277,10 @@ module ChapelDistribution {
   }
   
   class BaseSparseDom : BaseDom {
+    proc ~BaseSparseDom() {
+      // this is a bug workaround
+    }
+ 
     proc dsiClear() {
       halt("clear not implemented for this distribution");
     }
@@ -244,6 +291,10 @@ module ChapelDistribution {
   }
   
   class BaseAssociativeDom : BaseDom {
+    proc ~BaseAssociativeDom() {
+      // this is a bug workaround
+    }
+ 
     proc dsiClear() {
       halt("clear not implemented for this distribution");
     }
@@ -254,6 +305,10 @@ module ChapelDistribution {
   }
   
   class BaseOpaqueDom : BaseDom {
+    proc ~BaseOpaqueDom() {
+      // this is a bug workaround
+    }
+ 
     proc dsiClear() {
       halt("clear not implemented for this distribution");
     }
@@ -273,7 +328,13 @@ module ChapelDistribution {
     // atomics are available
     var _arrCnt: atomic_refcnt; // array reference count
     var _arrAlias: BaseArr;    // reference to base array if an alias
+    var pid:int = -1; // privatized ID, if privitization is supported
   
+    proc ~BaseArr() {
+      if _isPrivatized(this) && pid >= 0 then
+        _freePrivatizedClass(pid, this);
+    }
+
     proc dsiStaticFastFollowCheck(type leadType) param return false;
   
     proc dsiGetBaseDom(): BaseDom {
@@ -283,29 +344,18 @@ module ChapelDistribution {
   
     pragma "dont disable remote value forwarding"
     proc destroyArr(): int {
-      compilerAssert(!noRefCount);
-      var cnt = decRefCount();
-      if cnt == 0 {
-        if _arrAlias {
-          on _arrAlias {
-            var cnt = _arrAlias.destroyArr();
-            if cnt == 0 then
-              delete _arrAlias;
-          }
-        } else {
-          dsiDestroyData();
-        }
+      // TODO - any action to take for slices/ _arrAlias?
+
+      dsiDestroyData();
+
+      var dom = dsiGetBaseDom();
+      on dom {
+        var cnt = -1;
+        local cnt = dom.remove_arr(this);
+        if cnt == 0 then
+          delete dom;
       }
-      if cnt == 0 {
-          var dom = dsiGetBaseDom();
-          on dom {
-            local dom.remove_arr(this);
-            var cnt = dom.destroyDom();
-            if cnt == 0 then
-              delete dom;
-          }
-      }
-      return cnt;
+      return 0;
     }
   
     proc dsiDestroyData() { }

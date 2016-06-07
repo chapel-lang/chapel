@@ -773,6 +773,8 @@ module ChapelIO {
   // will output a message to indicate that a portion of the code has been
   // parallelized.
   //
+
+  /*
   pragma "no doc"
   config param chpl__testParFlag = false;
   pragma "no doc"
@@ -798,5 +800,6 @@ module ChapelIO {
       writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
     }
   }
+  */
 
 }
