@@ -103,6 +103,19 @@ module CPtr {
       return __primitive("cast", t, nil);
   }
 
+  pragma "compiler generated"
+  pragma "no doc"
+  inline proc _defaultOf(type t) where t == c_fn_ptr {
+      return __primitive("cast", t, nil);
+  }
+
+  pragma "no doc"
+  inline proc =(ref a:c_fn_ptr, b:_nilType) { __primitive("=", a, c_nil); }
+
+  pragma "no doc"
+  inline proc =(ref a:c_fn_ptr, b:c_fn_ptr) { __primitive("=", a, b); }
+
+
 
   pragma "no doc"
   inline proc ==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
