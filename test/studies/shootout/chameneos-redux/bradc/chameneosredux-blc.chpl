@@ -219,9 +219,8 @@ inline proc getNewColor(myColor, otherColor) {
     when red do
       return (if otherColor == blue then yellow else blue);
 
-    otherwise {
+    otherwise
       return (if otherColor == blue then red else blue);
-    }
   }
 }
 
