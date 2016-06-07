@@ -25,7 +25,7 @@ distributed memory execution.
 1) Make sure that your shell is in the directory containing this
    ``QUICKSTART.rst`` file.  For example:
 
-        ``cd ~/chapel-1.13.0``
+        ``cd ~/chapel-1.13.1``
 
 
 2) Set up your environment to use Chapel in "Quick Start" mode:
