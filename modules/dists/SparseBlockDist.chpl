@@ -193,16 +193,13 @@ class SparseBlockDom: BaseSparseDom {
       var localIndexCnts: [dist.targetLocDom] int =
         inds.domain.low;
       
-      /*var (nHits, nMisses) = (0, 0);*/
       var lastLocaleIndexCache = dist.targetLocDom.low;
       for i in inds {
         if locDoms[lastLocaleIndexCache].parentDom.member(i) {
-          /*nHits += 1;*/
           localIndexes[lastLocaleIndexCache][localIndexCnts[lastLocaleIndexCache]] = i;
           localIndexCnts[lastLocaleIndexCache] += 1;
         }
         else {
-          /*nMisses += 1;*/
           for localeIndex in dist.targetLocDom {
             if locDoms[localeIndex].parentDom.member(i) {
               localIndexes[localeIndex][localIndexCnts[localeIndex]] = i;
@@ -213,7 +210,6 @@ class SparseBlockDom: BaseSparseDom {
           }
         }
       }
-      /*writeln(nHits, ":", nMisses);*/
 
       coforall localeIdx in dist.targetLocDom do {
         on dist.targetLocales(localeIdx) do {

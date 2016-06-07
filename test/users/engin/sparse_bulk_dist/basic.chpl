@@ -16,7 +16,5 @@ for i in 0..#N {
 }
 
 SparseDom += inds;
-/*SparseDom.bulkAdd(inds);*/
-
 
 for i in SparseDom do writeln(i);
