@@ -179,8 +179,8 @@ where tag == iterKind.follower
 
   Given an input domain ``c``, each task is assigned slices of ``c``. The
   chunks each have ``chunkSize`` slices in them (or the remaining iterations
-   if there are fewer than ``chunkSize``). This continues until there are no 
-   remaining iterations in the dimension of ``c`` indicated by ``parDim``. 
+  if there are fewer than ``chunkSize``). This continues until there are no 
+  remaining iterations in the dimension of ``c`` indicated by ``parDim``. 
 
   LIMITATIONS:
   explicitly types the ranges (so they will likely only work with ints)
