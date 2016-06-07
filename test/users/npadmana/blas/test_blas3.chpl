@@ -13,6 +13,7 @@ proc main() {
   test_herk();
   test_syr2k();
   test_her2k();
+  test_trmm();
 }
 
 proc test_gemm() {
@@ -58,6 +59,12 @@ proc test_her2k() {
   test_her2k_helper(complex(128));
 }
 
+proc test_trmm() {
+  test_trmm_helper(real(32));
+  test_trmm_helper(real(64));
+  test_trmm_helper(complex(64));
+  test_trmm_helper(complex(128));
+}
 proc test_gemm_helper(type t) {
   var passed = 0,
       failed = 0,
@@ -608,6 +615,66 @@ proc test_her2k_helper(type t) {
   writef("%s : %i PASSED, %i FAILED \n", name, passed, failed);
 }
 
+// TODO : There are many possibilities for trmm. We test a few of them, randomly
+// chosen. We may need to add more.
+proc test_trmm_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%strmm".format(blasPrefix(t));
+
+  // Simple tests 1 & 2
+  {
+    const n = 10 : c_int;
+    // Test dgemm -- do this with an array that isn't square
+    var A : [{0.. #n, 0.. #n}]t,
+        B : [{0.. #n, 0.. #n}]t,
+        C : [{0.. #n, 0.. #n}]t;
+
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    rng.fillRandom(B);
+    var saveB = B;
+    const alpha = rng.getNext();
+
+    var zero = 0 : t;
+    fillRandom(A);
+    zeroTri(A, zeroLow=true);
+    trmm(A, B, alpha, uplo=CblasUpper, trans=Op.N, side=CblasLeft);
+    // Do a direct multiplication as a test
+    gemm(A,saveB,C,alpha,zero);
+    var err = max reduce abs(B-C);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    fillRandom(A);
+    B = saveB;
+    zeroTri(A, zeroLow=false);
+    trmm(A, B, alpha, uplo=CblasLower, trans=Op.N, side=CblasLeft);
+    // Do a direct multiplication as a test
+    gemm(A,saveB,C,alpha,zero);
+    err = max reduce abs(B-C);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    fillRandom(A);
+    B = saveB;
+    zeroTri(A, zeroLow=true);
+    trmm(A, B, alpha, uplo=CblasUpper, trans=Op.N, side=CblasRight);
+    // Do a direct multiplication as a test
+    gemm(saveB,A,C,alpha,zero);
+    err = max reduce abs(B-C);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    fillRandom(A);
+    B = saveB;
+    zeroTri(A, zeroLow=true);
+    trmm(A, B, alpha, uplo=CblasUpper, trans=Op.T, side=CblasRight);
+    // Do a direct multiplication as a test
+    gemm(saveB,A,C,alpha,zero,opB=Op.T);
+    err = max reduce abs(B-C);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+  }
+  writef("%s : %i PASSED, %i FAILED \n", name, passed, failed);
+}
 
 
 proc trackErrors(name, err, errorThreshold, ref passed, ref failed, ref tests) {
