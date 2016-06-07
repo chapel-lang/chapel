@@ -614,7 +614,7 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
 {
   SET_LINENO(fn);
   FnSymbol* newFn = fn->copy();
-  ArgSymbol* arg = new ArgSymbol(blankIntentForType(useFn->retType->refType), "_retArg", useFn->retType->refType);
+  ArgSymbol* arg = new ArgSymbol(blankIntentForType(useFn->retType->refType), "_retArg_old_clone", useFn->retType->refType);
   arg->addFlag(FLAG_RETARG);
   newFn->insertFormalAtTail(arg);
   newFn->addFlag(FLAG_FN_RETARG);

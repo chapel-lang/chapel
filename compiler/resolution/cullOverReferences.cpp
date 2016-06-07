@@ -320,6 +320,7 @@ void cullOverReferences() {
 
   freeDefUseMaps(defMap, useMap);
 
+  /*
   //
   // remove references to array wrapper records, domain wrapper
   // records, and iterator records; otherwise we can end up returning
@@ -378,4 +379,5 @@ void cullOverReferences() {
         call->primitive = primitives[PRIM_ARRAY_GET_VALUE];
     }
   }
+  */
 }
