@@ -12,6 +12,28 @@ module BLAS {
     extern proc sizeof(type t): size_t;
     assert(sizeof(CBLAS_INDEX) == sizeof(size_t));
   }
+  
+  // Define the external types
+  // These are C enums, so we define these as c_ints;
+  extern type CBLAS_ORDER = c_int;
+  extern type CBLAS_TRANSPOSE = c_int;
+  extern type CBLAS_UPLO = c_int;
+  extern type CBLAS_DIAG = c_int;
+  extern type CBLAS_SIDE = c_int;
+
+  // Constants
+  extern const CblasRowMajor : CBLAS_ORDER,
+               CblasColMajor : CBLAS_ORDER;
+  extern const CblasNoTrans : CBLAS_TRANSPOSE,
+               CblasTrans   : CBLAS_TRANSPOSE,
+               CblasConjTrans : CBLAS_TRANSPOSE;
+  extern const CblasUpper : CBLAS_UPLO,
+               CblasLower : CBLAS_UPLO;
+  extern const CblasNonUnit : CBLAS_DIAG,
+               CblasUnit : CBLAS_DIAG;
+  extern const CblasLeft : CBLAS_SIDE,
+               CblasRight : CBLAS_SIDE;
+
 
   /* Convenience */
   enum Op {N, T, H}; // NoTranspose, Transpose, Adjoint
@@ -412,27 +434,6 @@ module BLAS {
     return _ldA;
   }
 
-
-  // Define the external types
-  // These are C enums, so we define these as c_ints;
-  extern type CBLAS_ORDER = c_int;
-  extern type CBLAS_TRANSPOSE = c_int;
-  extern type CBLAS_UPLO = c_int;
-  extern type CBLAS_DIAG = c_int;
-  extern type CBLAS_SIDE = c_int;
-
-  // Constants
-  extern const CblasRowMajor : CBLAS_ORDER,
-               CblasColMajor : CBLAS_ORDER;
-  extern const CblasNoTrans : CBLAS_TRANSPOSE,
-               CblasTrans   : CBLAS_TRANSPOSE,
-               CblasConjTrans : CBLAS_TRANSPOSE;
-  extern const CblasUpper : CBLAS_UPLO,
-               CblasLower : CBLAS_UPLO;
-  extern const CblasNonUnit : CBLAS_DIAG,
-               CblasUnit : CBLAS_DIAG;
-  extern const CblasLeft : CBLAS_SIDE,
-               CblasRight : CBLAS_SIDE;
 
 
   module C_BLAS {
