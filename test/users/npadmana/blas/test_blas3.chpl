@@ -10,6 +10,7 @@ proc main() {
   test_symm();
   test_hemm();
   test_syrk();
+  test_herk();
   test_syr2k();
 }
 
@@ -37,6 +38,11 @@ proc test_syrk() {
   test_syrk_helper(real(64));
   test_syrk_helper(complex(64));
   test_syrk_helper(complex(128));
+}
+
+proc test_herk() {
+  test_herk_helper(complex(64));
+  test_herk_helper(complex(128));
 }
 
 proc test_syr2k() {
@@ -379,6 +385,75 @@ proc test_syrk_helper(type t) {
   }
   writef("%s : %i PASSED, %i FAILED \n", name, passed, failed);
 }
+
+proc test_herk_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%sherk".format(blasPrefix(t));
+
+  // Simple tests 1 & 2
+  {
+    const n = 10 : c_int;
+    // Test dgemm -- do this with an array that isn't square
+    var A : [{0.. #n, 0.. #n}]t,
+        C : [{0.. #n, 0.. #n}]t,
+        D : [{0.. #n, 0.. #n}]t;
+
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    rng.fillRandom(A);
+    var B = A;
+    rng.fillRandom(C);
+    makeHerm(C);
+    var saveC = C;
+    D = C;
+    // HERK uses real alpha and beta -- just grab the real and imaginary parts
+    var tmp = rng.getNext();
+    const alpha = tmp.re,
+          beta = tmp.im;
+
+    herk(A, C, alpha, beta, uplo=CblasUpper, trans=Op.N);
+    // Do a direct multiplication as a test
+    gemm(A,B,D,alpha,beta,opB=Op.H);
+    zeroTri(C, zeroLow=true);
+    zeroTri(D, zeroLow=true);
+    var err = max reduce abs(C-D);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    C = saveC;
+    D = saveC;
+    herk(A, C, alpha, beta, uplo=CblasLower, trans=Op.N);
+    // Do a direct multiplication as a test
+    gemm(A,B,D,alpha,beta,opB=Op.H);
+    zeroTri(C, zeroLow=false);
+    zeroTri(D, zeroLow=false);
+    err = max reduce abs(C-D);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    C = saveC;
+    D = saveC;
+    herk(A, C, alpha, beta, uplo=CblasUpper, trans=Op.H);
+    // Do a direct multiplication as a test
+    gemm(A,B,D,alpha,beta,opA=Op.H);
+    zeroTri(C, zeroLow=true);
+    zeroTri(D, zeroLow=true);
+    err = max reduce abs(C-D);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    C = saveC;
+    D = saveC;
+    herk(A, C, alpha, beta, uplo=CblasLower, trans=Op.H);
+    // Do a direct multiplication as a test
+    gemm(A,B,D,alpha,beta,opA=Op.H);
+    zeroTri(C, zeroLow=false);
+    zeroTri(D, zeroLow=false);
+    err = max reduce abs(C-D);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+  }
+  writef("%s : %i PASSED, %i FAILED \n", name, passed, failed);
+}
+
 
 proc test_syr2k_helper(type t) {
   var passed = 0,
