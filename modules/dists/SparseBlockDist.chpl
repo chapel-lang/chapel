@@ -50,6 +50,7 @@ use BlockDist;
 //
 config param debugSparseBlockDist = false;
 config param debugSparseBlockDistBulkTransfer = false;
+config param bulkAddHelper=0;
 
 // There is no SparseBlock distribution class. Instead, we
 // just use Block.
@@ -130,29 +131,96 @@ class SparseBlockDom: BaseSparseDom {
   }
 
   proc bulkAdd_help(inds: [] rank*idxType, isSorted=false, isUnique=false) {
-    use PrivateDist;
-    use Sort;
-    
-    if !isSorted then
-      QuickSort(inds);
 
-    //create local index arrays
-    var localIndexes: [PrivateSpace] [inds.domain] rank*idxType;
+    if bulkAddHelper == 0 { 
+      use PrivateDist;
+      use Sort;
 
-    //find indexes that needs to go to each locale
-    coforall localeIdx in dist.targetLocDom do {
-      on dist.targetLocales(localeIdx) do {
-        var locCnt = 0;
-        for i in inds {
-          if locDoms[localeIdx].parentDom.member(i) {
-            localIndexes[here.id][locCnt] = i;
-            locCnt += 1;
+      if !isSorted then
+        QuickSort(inds);
+
+      //create local index arrays
+      var localIndexes: [PrivateSpace] [inds.domain] rank*idxType;
+
+      //find indexes that needs to go to each locale
+      coforall localeIdx in dist.targetLocDom do {
+        on dist.targetLocales(localeIdx) do {
+          var locCnt = 0;
+          for i in inds {
+            if locDoms[localeIdx].parentDom.member(i) {
+              localIndexes[here.id][locCnt] = i;
+              locCnt += 1;
+            }
+          }
+
+          //call bulkAdds
+          locDoms[localeIdx].mySparseBlock.bulkAdd(localIndexes[here.id][0..#locCnt], 
+              true, false, false); 
+        }
+      }
+    }
+    else if bulkAddHelper == 1 {
+      if !isSorted then
+        QuickSort(inds);
+
+      var localIndexes: [dist.targetLocDom] [inds.domain] rank*idxType;
+      var localIndexCnts: [dist.targetLocDom] int =
+        inds.domain.low;
+
+      for i in inds {
+        for localeIndex in dist.targetLocDom {
+          if locDoms[localeIndex].parentDom.member(i) {
+            localIndexes[localeIndex][localIndexCnts[localeIndex]] = i;
+            localIndexCnts[localeIndex] += 1;
           }
         }
+      }
 
-        //call bulkAdds
-        locDoms[localeIdx].mySparseBlock.bulkAdd(localIndexes[here.id][0..#locCnt], 
-            true, false, false); 
+      coforall localeIdx in dist.targetLocDom do {
+        on dist.targetLocales(localeIdx) do {
+          const locCnt = localIndexCnts[localeIdx];
+          locDoms[localeIdx].mySparseBlock.bulkAdd(localIndexes[localeIdx][0..#locCnt], 
+              true, false, false); 
+        }
+      }
+    }
+    else if bulkAddHelper == 2 {
+
+      if !isSorted then
+        QuickSort(inds);
+
+      var localIndexes: [dist.targetLocDom] [inds.domain] rank*idxType;
+      var localIndexCnts: [dist.targetLocDom] int =
+        inds.domain.low;
+      
+      /*var (nHits, nMisses) = (0, 0);*/
+      var lastLocaleIndexCache = dist.targetLocDom.low;
+      for i in inds {
+        if locDoms[lastLocaleIndexCache].parentDom.member(i) {
+          /*nHits += 1;*/
+          localIndexes[lastLocaleIndexCache][localIndexCnts[lastLocaleIndexCache]] = i;
+          localIndexCnts[lastLocaleIndexCache] += 1;
+        }
+        else {
+          /*nMisses += 1;*/
+          for localeIndex in dist.targetLocDom {
+            if locDoms[localeIndex].parentDom.member(i) {
+              localIndexes[localeIndex][localIndexCnts[localeIndex]] = i;
+              localIndexCnts[localeIndex] += 1;
+              lastLocaleIndexCache = localeIndex;
+              break;
+            }
+          }
+        }
+      }
+      /*writeln(nHits, ":", nMisses);*/
+
+      coforall localeIdx in dist.targetLocDom do {
+        on dist.targetLocales(localeIdx) do {
+          const locCnt = localIndexCnts[localeIdx];
+          locDoms[localeIdx].mySparseBlock.bulkAdd(localIndexes[localeIdx][0..#locCnt], 
+              true, false, false); 
+        }
       }
     }
   }
