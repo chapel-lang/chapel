@@ -154,12 +154,11 @@ where tag == iterKind.follower
   }
 }
 
-//************************* Multidimensional Dynamic iterator
+//************************* Dynamic domain iterator
 /*
 
   :arg c: The domain to iterate over. The rank of the domain must be greater 
-          than one. If using a 1d domain, the user should use the existing
-          dynamic iterators (use DynamicIters). 
+          than zero.
   :type c: `domain`
 
   :arg chunkSize: The size of chunks to be yielded to each thread. Must be
@@ -182,23 +181,20 @@ where tag == iterKind.follower
   if there are fewer than ``chunkSize``). This continues until there are no 
   remaining iterations in the dimension of ``c`` indicated by ``parDim``. 
 
-  LIMITATIONS:
-  needs more testing with strided ranges
-  May or may not properly lead/follow with other domain iterators
+  This iterator can be called in serial and zippered contexts.
 */
 
 //This is the serial version of this iterator
 iter dynamic(c:domain, chunkSize:int, numTasks:int=0, parDim:int=1) 
 {
   if debugDynamicIters then
-    writeln("Serial Multidimensional Dynamic Iterator, working with domain: ", c);
+    writeln("Serial Dynamic Domain Iterator, working with domain: ", c);
   
-
   for yieldTuple in c do yield yieldTuple;
 }
 
-
-//this is the leader
+//Leader
+pragma "no doc"
 iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int=0, parDim : int = 1) 
   where tag == iterKind.leader 
   {
@@ -234,6 +230,7 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int=0, parDim
   }
 
 //Follower
+pragma "no doc"
 iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {
