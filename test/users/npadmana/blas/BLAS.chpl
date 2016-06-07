@@ -353,6 +353,55 @@ module BLAS {
 
   }
 
+  /* HER2K :
+  */
+  proc her2k(A : [?Adom],  B : [?Bdom], C : [?Cdom],
+    alpha, beta,
+    uplo : CBLAS_UPLO = CblasUpper,  trans : Op = Op.N,
+    rowMajor : bool = true,
+    ldA : int = 0,  ldB : int = 0, ldC : int = 0)
+    where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
+  {
+    // Types
+    type eltType = A.eltType;
+
+    // Determine sizes
+    var n = Cdom.dim(1).size : c_int;
+    var k : c_int;
+    if trans == Op.N then k = Adom.dim(2).size : c_int;
+                     else k = Adom.dim(1).size : c_int;
+    var _trans = _BlasOp[trans];
+
+    // Set various parameters
+    var order : CBLAS_ORDER = CblasRowMajor;
+    if !rowMajor then order = CblasColMajor;
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, rowMajor, ldA),
+        _ldB = getLeadingDim(Bdom, rowMajor, ldB),
+        _ldC = getLeadingDim(Cdom, rowMajor, ldC);
+
+    select eltType {
+      when complex(64) {
+        var alpha1 = alpha : complex(64),
+            beta1 = beta : real(32);
+        cblas_cher2k(order, uplo, _trans, n, k,
+          alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta1, C[Cdom.low],_ldC);
+      }
+      when complex(128) {
+        var alpha1 = alpha : complex(128),
+            beta1 = beta : real(64);
+        cblas_zher2k(order, uplo, _trans, n, k,
+          alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta1, C[Cdom.low],_ldC);
+      }
+      otherwise {
+        halt("Unknown type in her2k");
+      }
+    }
+
+  }
+
+
   // Helper function
   inline proc getLeadingDim(Adom : domain(2), rowMajor : bool, ldA : int) : c_int {
     var _ldA = ldA : c_int;
