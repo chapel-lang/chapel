@@ -5,7 +5,7 @@
 # whether tests like this should be suppressed or skipped. For now we
 # suppress with the argument that we're testing that --fast actually
 # turns our checks off. Note that we don't just turn checks on in the
-# comopts since we wouldn't be testing the default behavior, and
+# compopts since we wouldn't be testing the default behavior, and
 # wouldn't be able to verify that checks are enabled by default. 
 
 COMPOPTS <= --fast
