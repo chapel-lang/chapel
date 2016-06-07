@@ -242,7 +242,7 @@ private proc chpl_check_comparator(comparator, type eltType) {
 /* Basic Functions */
 
 /*
-   Sort the array `Data` in-place using a sequential quick sort algorithm.
+   Convenience wrapper around :proc:`quickSort`.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
@@ -539,6 +539,10 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultcomparat
    Sort the 1D array `Data` in-place using a sequential selection sort
    algorithm.
 
+   .. warning::
+        SelectionSort will be deprecated for a comparator-supported
+        ``selectionSort`` in the future.
+
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
    :arg doublecheck: Verify the array is correctly sorted before returning
@@ -638,6 +642,7 @@ record ReverseComparator {
    TODO - print deprecation msg and possibly remove by 1.14.0
  */
 
+pragma "no doc"
 /*
 
    .. warning::
@@ -654,6 +659,7 @@ record ReverseComparator {
 
  */
 proc BubbleSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+  //writeln("Deprecation warning: BubbleSort replaced by bubbleSort");
   var comparator = if reverse then reversecomparator else defaultcomparator;
   bubbleSort(Data, comparator);
   if doublecheck then
@@ -661,6 +667,8 @@ proc BubbleSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) w
       halt("BubbleSort failed to sort: ", Data);
 }
 
+
+pragma "no doc"
 /*
    .. warning::
         As of release 1.14.0, replaced by :proc:`quickSort`
@@ -678,6 +686,7 @@ proc BubbleSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) w
 
  */
 proc QuickSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+  //writeln("Deprecation warning: QuickSort replaced by quickSort");
   var comparator = if reverse then reversecomparator else defaultcomparator;
   quickSort(Data, minlen, comparator);
   if doublecheck then
@@ -686,6 +695,7 @@ proc QuickSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param revers
 }
 
 
+pragma "no doc"
 /*
    .. warning::
         As of release 1.14.0, replaced by :proc:`heapSort`
@@ -701,6 +711,7 @@ proc QuickSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param revers
 
  */
 proc HeapSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+  //writeln("Deprecation warning: HeapSort replaced by heapSort");
   var comparator = if reverse then reversecomparator else defaultcomparator;
   heapSort(Data, comparator);
   if doublecheck then
@@ -708,6 +719,8 @@ proc HeapSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) whe
       halt("HeapSort failed to sort: ", Data);
 }
 
+
+pragma "no doc"
 /*
 
    .. warning::
@@ -724,6 +737,7 @@ proc HeapSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) whe
 
  */
 proc InsertionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+  //writeln("Deprecation warning: InsertionSort replaced by insertionSort");
   var comparator = if reverse then reversecomparator else defaultcomparator;
   insertionSort(Data, comparator);
   if doublecheck then
@@ -731,6 +745,8 @@ proc InsertionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false
       halt("InsertionSort failed to sort: ", Data);
 }
 
+
+pragma "no doc"
 /*
 
    .. warning::
@@ -749,6 +765,7 @@ proc InsertionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false
 
  */
 proc MergeSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+  //writeln("Deprecation warning: MergeSort replaced by mergeSort");
   var comparator = if reverse then reversecomparator else defaultcomparator;
   mergeSort(Data, minlen, comparator);
   if doublecheck then
@@ -756,6 +773,8 @@ proc MergeSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param revers
       halt("MergeSort failed to sort: ", Data);
 }
 
+
+pragma "no doc"
 /*
 
    .. warning::
@@ -773,6 +792,7 @@ proc MergeSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param revers
 
  */
 proc VerifySort(Data: [?Dom] ?eltType, param reverse=false) {
+  //writeln("Deprecation warning: VerifySort replaced by isSorted");
   if reverse {
     return isSorted(Data, reversecomparator);
   } else {
