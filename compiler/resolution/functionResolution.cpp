@@ -3552,33 +3552,37 @@ static void
 doGatherCandidates(Vec<ResolutionCandidate*>& candidates,
                  Vec<FnSymbol*>& visibleFns,
                  CallInfo& info,
-                 bool onlyUser) {
+                 bool compilerGenerated) {
 
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
     // Only consider user functions or compiler-generated functions
-    if (onlyUser) {
-      if (visibleFn->hasFlag(FLAG_COMPILER_GENERATED)) continue;
-    } else {
-      if (!visibleFn->hasFlag(FLAG_COMPILER_GENERATED)) continue;
-    }
+    if (visibleFn->hasFlag(FLAG_COMPILER_GENERATED) == compilerGenerated) {
 
-    if (info.call->methodTag &&
-        ! (visibleFn->hasFlag(FLAG_NO_PARENS) ||
-           visibleFn->hasFlag(FLAG_TYPE_CONSTRUCTOR))) {
-      continue;
-    }
-
-    if (fExplainVerbose &&
-        ((explainCallLine && explainCallMatch(info.call)) ||
-         info.call->id == explainCallID))
-    {
-      USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
-      if( info.call->id == breakOnResolveID ) {
-        gdbShouldBreakHere();
+      // Some expressions might resolve to methods without parenthesis.
+      // If the call is marked with methodTag, it indicates the called
+      // function should be a no-parens function or a type constructor.
+      // (a type constructor call without parens uses default arguments)
+      if (info.call->methodTag) {
+        if (visibleFn->hasEitherFlag(FLAG_NO_PARENS, FLAG_TYPE_CONSTRUCTOR)) {
+          // OK
+        } else {
+          // Skip this candidate
+          continue;
+        }
       }
-    }
 
-    filterCandidate(candidates, visibleFn, info);
+      if (fExplainVerbose &&
+          ((explainCallLine && explainCallMatch(info.call)) ||
+           info.call->id == explainCallID))
+      {
+        USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
+        if( info.call->id == breakOnResolveID ) {
+          gdbShouldBreakHere();
+        }
+      }
+
+      filterCandidate(candidates, visibleFn, info);
+    }
   }
 }
 
@@ -3589,15 +3593,12 @@ gatherCandidates(Vec<ResolutionCandidate*>& candidates,
                  CallInfo& info) {
 
   // Search user-defined (i.e. non-compiler-generated) functions first.
-  doGatherCandidates(candidates, visibleFns, info, /*onlyUser*/ true);
+  doGatherCandidates(candidates, visibleFns, info, false);
 
-  // Return if we got a successful match with user-defined functions.
-  if (candidates.n) {
-    return;
+  // If no results, try again with any compiler-generated candidates.
+  if (candidates.n == 0) {
+    doGatherCandidates(candidates, visibleFns, info, true);
   }
-
-  // No.  So search compiler-defined functions.
-  doGatherCandidates(candidates, visibleFns, info, /*onlyUser*/ false);
 }
 
 
