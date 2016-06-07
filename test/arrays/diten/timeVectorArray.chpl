@@ -145,7 +145,7 @@ proc timeRunList(r: Runner, ref L: list(int)) {
   return t.elapsed();
 }
 
-proc isSorted(A, n) {
+proc isSorted(A: [] int, n:int): bool {
   var prev = A[1];
   for i in 1..n {
     if prev > A[i] then return false;

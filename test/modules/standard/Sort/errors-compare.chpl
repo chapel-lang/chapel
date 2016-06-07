@@ -1,5 +1,5 @@
 /*
- *  Tests compile errors upon passing a non-string/numeric comparator.key(a)
+ *  Tests compile errors upon passing a non-string/numeric comparator.compare(a, b)
  */
 
 use Sort;
