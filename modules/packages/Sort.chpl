@@ -85,7 +85,7 @@ and b compare to each other, as shown below:
   * 0 if ``a == b``
   * < 0 if ``a < b``
 
-The default compare method for a numeric type would look like this:
+The default compare method for a numeric signed type would look like this:
 
 .. code-block:: chapel
 
@@ -575,11 +575,7 @@ record DefaultComparator {
    :returns: -1 if ``a < b``
 
    */
-  proc compare(a, b) {
-    if isNumericType(a.type) && isNumericType(b.type) {
-      return a - b;
-    }
-
+  proc compare(a:?t, b) {
     if a < b { return -1; }
     else if b < a { return 1; }
     else return 0;
