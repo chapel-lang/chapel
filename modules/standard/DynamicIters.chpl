@@ -175,7 +175,7 @@ where tag == iterKind.follower
                 Must be <= the rank of the domain ``c``. Defaults to 1. 
   :type parDim: `int`
 
-  :yields: Slices of the domain ``c``
+  :yields: Indices of the domain ``c`` as a tuple of ranges
 
   Given an input domain ``c``, each task is assigned slices of ``c``. The
   chunks each have ``chunkSize`` slices in them (or the remaining iterations
@@ -183,8 +183,6 @@ where tag == iterKind.follower
    remaining iterations in the dimension of ``c`` indicated by ``parDim``. 
 
   LIMITATIONS:
-  user can select parDim, but only if they also define numTasks (even to 0)
-    should parDim be a non-default param?
   explicitly types the ranges (so they will likely only work with ints)
   May or may not properly lead/follow with other domain iterators
 */
@@ -205,14 +203,14 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int=0, parDim
   where tag == iterKind.leader 
   {
     //caller's responsibility to use a valid chunk size
-    assert(chunkSize > 0);
+    assert(chunkSize > 0, "Chunk size must be greater than zero");
 
     //caller's responsibility to use a valid domain
-    assert(c.rank > 1);
+    assert(c.rank > 0, "Must use a valid domain");
 
     //caller's responsibility to use a valid parDim
-    assert(parDim <= c.rank);
-    assert(parDim > 0);
+    assert(parDim <= c.rank, "parDim must be a dimension of the domain");
+    assert(parDim > 0, "parDim must be a positive integer");
 
     var parDimDim : range = c.dim(parDim);
     var parDimOffset : int = c.dim(parDim).low;
