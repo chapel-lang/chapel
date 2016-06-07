@@ -7885,7 +7885,6 @@ resolve() {
   resolved = true;
 }
 
-#include "AstDumpToNode.h"
 static void unmarkDefaultedGenerics() {
   //
   // make it so that arguments with types that have default values for
@@ -7899,8 +7898,6 @@ static void unmarkDefaultedGenerics() {
       continue;
 
     bool unmark = fn->hasFlag(FLAG_GENERIC);
-    //bool debug = fn->id == 29011;
-    //if (debug) printf("unmark = %d\n", unmark);
     for_formals(formal, fn) {
       if (formal->type->hasGenericDefaults) {
         if (!formal->hasFlag(FLAG_MARKED_GENERIC) &&
@@ -7918,10 +7915,6 @@ static void unmarkDefaultedGenerics() {
       }
     }
     if (unmark) {
-      //AstDumpToNode logger(stdout);
-      //fn->accept(&logger);
-      //printf("\n");
-
       fn->removeFlag(FLAG_GENERIC);
       //INT_ASSERT(false);
     }
