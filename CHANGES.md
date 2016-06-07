@@ -38,7 +38,7 @@ Memory Improvements
 
 
 ==============
-version 1.13.0
+version 1.13.1 (PRE-RELEASE)
 ==============
 
 Sixteenth public release of Chapel, April 7, 2016
