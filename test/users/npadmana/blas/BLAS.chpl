@@ -475,6 +475,59 @@ module BLAS {
 
   }
 
+  /* TRSM
+  */
+  proc trsm(A : [?Adom],  B : [?Bdom],
+    alpha,
+    uplo : CBLAS_UPLO = CblasUpper,  trans : Op = Op.N,
+    side : CBLAS_SIDE = CblasLeft, diag : CBLAS_DIAG = CblasNonUnit,
+    rowMajor : bool = true,
+    ldA : int = 0,  ldB : int = 0)
+    where (Adom.rank == 2) && (Bdom.rank==2)
+  {
+    // Types
+    type eltType = A.eltType;
+
+    // Determine sizes
+    var m = Bdom.dim(1).size : c_int,
+        n = Bdom.dim(2).size : c_int;
+    var _trans = _BlasOp[trans];
+
+    // Set various parameters
+    var order : CBLAS_ORDER = CblasRowMajor;
+    if !rowMajor then order = CblasColMajor;
+
+    // Set strides if necessary
+    var _ldA = getLeadingDim(Adom, rowMajor, ldA),
+        _ldB = getLeadingDim(Bdom, rowMajor, ldB);
+
+    select eltType {
+      when real(32) {
+        cblas_strsm(order, side, uplo, _trans, diag,
+          m, n, alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB);
+      }
+      when real(64) {
+        cblas_dtrsm(order, side, uplo, _trans, diag,
+          m, n, alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB);
+      }
+      when complex(64) {
+        var alpha1 = alpha : complex(64);
+        cblas_ctrsm(order, side, uplo, _trans, diag,
+          m, n, alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB);
+      }
+      when complex(128) {
+        var alpha1 = alpha : complex(128);
+        cblas_ztrsm(order, side, uplo, _trans, diag,
+          m, n, alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB);
+      }
+      otherwise {
+        halt("Unknown type in trsm");
+      }
+    }
+
+  }
+
+
   // Helper function
   inline proc getLeadingDim(Adom : domain(2), rowMajor : bool, ldA : int) : c_int {
     var _ldA = ldA : c_int;

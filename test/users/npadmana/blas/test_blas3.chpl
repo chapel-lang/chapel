@@ -14,6 +14,7 @@ proc main() {
   test_syr2k();
   test_her2k();
   test_trmm();
+  test_trsm();
 }
 
 proc test_gemm() {
@@ -65,6 +66,14 @@ proc test_trmm() {
   test_trmm_helper(complex(64));
   test_trmm_helper(complex(128));
 }
+
+proc test_trsm() {
+  test_trsm_helper(real(32));
+  test_trsm_helper(real(64));
+  test_trsm_helper(complex(64));
+  test_trsm_helper(complex(128));
+}
+
 proc test_gemm_helper(type t) {
   var passed = 0,
       failed = 0,
@@ -676,6 +685,81 @@ proc test_trmm_helper(type t) {
   writef("%s : %i PASSED, %i FAILED \n", name, passed, failed);
 }
 
+// TODO : There are many possibilities for trsm. We test a few of them, randomly
+// chosen. We may need to add more.
+// We need to be more careful with setting up the problem here; we don't want
+// poorly conditioned solutions. We try to get around this by regularizing the
+// A matrix with a relatively large diagonal term.
+proc test_trsm_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%strsm".format(blasPrefix(t));
+
+  // Simple tests 1 & 2
+  {
+    const n = 10 : c_int;
+    // Test dgemm -- do this with an array that isn't square
+    var A : [{0.. #n, 0.. #n}]t,
+        B : [{0.. #n, 0.. #n}]t,
+        C : [{0.. #n, 0.. #n}]t,
+        Id : [{0.. #n, 0.. #n}]t;
+
+    makeUnit(Id, 5.0);
+
+    var rng = makeRandomStream(eltType=t,algorithm=RNG.PCG);
+    rng.fillRandom(B);
+    var saveB = B;
+    const alpha = rng.getNext();
+
+    var zero = 0 : t,
+        one = 1 : t;
+    fillRandom(A);
+    A += Id;
+    zeroTri(A, zeroLow=true);
+    trsm(A, B, alpha, uplo=CblasUpper, trans=Op.N, side=CblasLeft);
+    // Do a direct multiplication as a test
+    C = zero;
+    gemm(A,B,C,one,zero);
+    var err = max reduce abs(alpha*saveB-C);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    fillRandom(A);
+    A += Id;
+    B = saveB;
+    zeroTri(A, zeroLow=false);
+    trsm(A, B, alpha, uplo=CblasLower, trans=Op.N, side=CblasLeft);
+    // Do a direct multiplication as a test
+    C = zero;
+    gemm(A,B,C,one,zero);
+    err = max reduce abs(alpha*saveB-C);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    fillRandom(A);
+    A += Id;
+    B = saveB;
+    zeroTri(A, zeroLow=true);
+    trsm(A, B, alpha, uplo=CblasUpper, trans=Op.N, side=CblasRight);
+    // Do a direct multiplication as a test
+    C = zero;
+    gemm(B,A,C,one,zero);
+    err = max reduce abs(alpha*saveB-C);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    fillRandom(A);
+    A += Id;
+    B = saveB;
+    zeroTri(A, zeroLow=true);
+    trsm(A, B, alpha, uplo=CblasUpper, trans=Op.T, side=CblasRight);
+    // Do a direct multiplication as a test
+    C = zero;
+    gemm(B,A,C,one,zero,opB=Op.T);
+    err = max reduce abs(alpha*saveB-C);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+  }
+  writef("%s : %i PASSED, %i FAILED \n", name, passed, failed);
+}
 
 proc trackErrors(name, err, errorThreshold, ref passed, ref failed, ref tests) {
   if err > errorThreshold {
@@ -731,6 +815,17 @@ proc zeroTri(A:[?Adom], zeroLow:bool=true) {
   forall (i,j) in Adom {
     if (i > j) & zeroLow then A[i,j] = zero;
     if (i < j) & !zeroLow then A[i,j] = zero;
+  }
+}
+
+// Make identity matrix
+proc makeUnit(A : [?Adom], val:real = 1.0) {
+  type t = A.eltType;
+  const zero = 0 : t;
+  const diag = (val*1) : t;
+  forall (i,j) in Adom {
+    if (i!=j) then A[i,j] = zero;
+              else A[i,i] = diag;
   }
 }
 
