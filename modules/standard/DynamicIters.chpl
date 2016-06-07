@@ -175,7 +175,7 @@ where tag == iterKind.follower
                 Must be <= the rank of the domain ``c``. Defaults to 1. 
   :type parDim: `int`
 
-  :yields: Indices of the domain ``c`` as a tuple of ranges
+  :yields: Indices of the domain ``c``
 
   Given an input domain ``c``, each task is assigned slices of ``c``. The
   chunks each have ``chunkSize`` slices in them (or the remaining iterations
@@ -183,7 +183,7 @@ where tag == iterKind.follower
   remaining iterations in the dimension of ``c`` indicated by ``parDim``. 
 
   LIMITATIONS:
-  explicitly types the ranges (so they will likely only work with ints)
+  needs more testing with strided ranges
   May or may not properly lead/follow with other domain iterators
 */
 
@@ -193,7 +193,7 @@ iter dynamic(c:domain, chunkSize:int, numTasks:int=0, parDim:int=1)
   if debugDynamicIters then
     writeln("Serial Multidimensional Dynamic Iterator, working with domain: ", c);
   
-  var yieldTuple :c.rank * int;
+
   for yieldTuple in c do yield yieldTuple;
 }
 
@@ -212,16 +212,14 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int=0, parDim
     assert(parDim <= c.rank, "parDim must be a dimension of the domain");
     assert(parDim > 0, "parDim must be a positive integer");
 
-    var parDimDim : range = c.dim(parDim);
-    var parDimOffset : int = c.dim(parDim).low;
-    forall i in dynamic(parDimDim, chunkSize, numTasks)
-    {
-      type dType = c.type;
-      //Set the new range based on what the dynamic 1d iterator yields
-      var newRange : range = i..i;
-      //adjust the new range to account for the densified offset
-      newRange -= parDimOffset;
+    var parDimDim = c.dim(parDim);
+    var parDimOffset = c.dim(parDim).low;
 
+    for i in dynamic(tag=iterKind.leader, parDimDim, chunkSize, numTasks) {
+      //Set the new range based on the tuple the dynamic 1d iterator yields
+      var newRange = i(1);
+    
+      type dType = c.type;
       //does the same thing as densify, but densify makes a stridable domain,
       // which mismatches here if c (and thus dType) is non-stridable
       var tempDom : dType = computeZeroBasedDomain(c);
@@ -239,25 +237,9 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int=0, parDim
 iter dynamic(param tag:iterKind, c:domain, chunkSize:int, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {
-    type rType = c.type;
-    var d:rType = followThis;
-    var tempTup : followThis.size * range  = followThis;
-
-    //manually undensify (reindex) the tuple, because the domains no longer
-    //match after being rank-change sliced.
-    for k in 1..followThis.size do
-    {
-      tempTup(k) += c.dim(k).low;
-    }
-    const current : rType = tempTup;
-
-    if debugDynamicIters then{
-      writeln("Follower received domain ",followThis, "\nshifting to ",current);
-    }
-    var i : c.rank * int;
-    for i in current do {
-      yield i;
-    }
+  //Invoke the default rectangular domain follower iterator
+  for i in c._value.these(tag=iterKind.follower, followThis=followThis) do
+    yield i;
 }
 
 //************************* Guided iterator
