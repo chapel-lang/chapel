@@ -32,28 +32,28 @@ proc main() {
   /* Test data types */
 
   // Strings
-  quickSort(StrArr);
-  checkSort(StrArr, StrArrSorted, 'quickSort');
+  sort(StrArr);
+  checkSort(StrArr, StrArrSorted, 'sort');
 
   /* Default behavior */
 
   // key method sorts by abs(a), while compare is normal sort
-  quickSort(Arr, comparator=keycompare);
-  checkSort(Arr, ArrAbsSorted, 'quickSort');
+  sort(Arr, comparator=keycompare);
+  checkSort(Arr, ArrAbsSorted, 'sort');
 
   /* Reverse */
 
   // Default reversecomparator
-  quickSort(Arr, comparator=reversecomparator);
-  checkSort(Arr, ArrRevSorted, 'quickSort');
+  sort(Arr, comparator=reverseComparator);
+  checkSort(Arr, ArrRevSorted, 'sort');
 
   // Reverse key comparator (absolute value)
-  quickSort(Arr, comparator=revkey);
-  checkSort(Arr, ArrAbsRevSorted, 'quickSort');
+  sort(Arr, comparator=revkey);
+  checkSort(Arr, ArrAbsRevSorted, 'sort');
 
   // Reverse compare comparator (absolute value)
-  quickSort(Arr, comparator=revcompare);
-  checkSort(Arr, ArrAbsRevSorted, 'quickSort');
+  sort(Arr, comparator=revcompare);
+  checkSort(Arr, ArrAbsRevSorted, 'sort');
 
   /* Test Sorts */
 

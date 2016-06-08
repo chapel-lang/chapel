@@ -68,7 +68,7 @@ elements, the user can define a comparator with a key method as follows:
 
   var absComparator: Comparator;
 
-  QuickSort(Array, comparator=absComparator);
+  sort(Array, comparator=absComparator);
 
   // This will output: -1, 2, 3, -4
   writeln(Array);
@@ -111,7 +111,7 @@ implemented with a compare method:
 
   var absComparator: Comparator;
 
-  QuickSort(Array, comparator=absComparator);
+  sort(Array, comparator=absComparator);
 
   // This will output: -1, 2, 3, -4
   writeln(Array);
@@ -122,15 +122,15 @@ Reverse Comparator
 Sort functions in Chapel do not have a ``reverse`` argument. Instead, reverse
 sorting is handled through the comparator interface.
 
-A module-defined :const:`reversecomparator` can be passed to a sort function to
+A module-defined :const:`reverseComparator` can be passed to a sort function to
 reverse the default sorting order.
 
 .. code-block:: chapel
 
   var Array = [-1, -4, 2, 3];
 
-  // Using module-defined 'reversecomparator'
-  QuickSort(Array, comprator=reversecomparator)
+  // Using module-defined 'reverseComparator'
+  sort(Array, comprator=reverseComparator)
 
   // This will output: 3, 2, -1, -4
   writeln(Array);
@@ -154,7 +154,7 @@ comparator to the constructor of the module-defined
 
   var absReverseComparator: ReverseComparator(Comparator);
 
-  QuickSort(Array, comparator=absReverseComparator);
+  sort(Array, comparator=absReverseComparator);
 
   // This will output: -4, 3, 2, -1
   writeln(Array);
@@ -169,7 +169,7 @@ module Sort {
   Instance of :record:`DefaultComparator` used as default ``comparator=``
   argument when no comparator is passed to a sort function
 */
-const defaultcomparator: DefaultComparator;
+const defaultComparator: DefaultComparator;
 
 
 
@@ -177,13 +177,13 @@ const defaultcomparator: DefaultComparator;
    Instance of :record:`ReverseComparator`. Pass this as the ``comparator=``
    argument of a sort function to reverse the sort order.
  */
-const reversecomparator: ReverseComparator(DefaultComparator);
+const reverseComparator: ReverseComparator(DefaultComparator);
 
 
 /* Private methods */
 
 /* Base compare method of all sort functions */
-private inline proc chpl_compare(a, b, comparator:?rec=defaultcomparator) {
+private inline proc chpl_compare(a, b, comparator:?rec=defaultComparator) {
   use Reflection;
 
   // TODO -- In cases where values are larger than keys, it may be faster to
@@ -250,7 +250,7 @@ private proc chpl_check_comparator(comparator, type eltType) {
       the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
 
  */
-proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where Dom.rank == 1 {
+proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
   quickSort(Data, comparator=comparator);
 }
 
@@ -265,7 +265,7 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where Dom.ra
    :returns: ``true`` if array is sorted
    :rtype: `bool`
  */
-proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator): bool {
+proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
   chpl_check_comparator(comparator, eltType);
   for i in Dom.low..Dom.high-1 do
     if chpl_compare(Data(i+1), Data(i), comparator) < 0 then
@@ -299,7 +299,7 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator): bool {
    :ytype: x's element type
 
  */
-iter sorted(x, comparator:?rec=defaultcomparator) {
+iter sorted(x, comparator:?rec=defaultComparator) {
   var y = x;
   quickSort(y, comparator=comparator);
   for i in y do
@@ -318,7 +318,7 @@ iter sorted(x, comparator:?rec=defaultcomparator) {
       the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
 
  */
-proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where Dom.rank == 1 {
+proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
   chpl_check_comparator(comparator, eltType);
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
@@ -345,7 +345,7 @@ proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where 
       the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
 
  */
-proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where Dom.rank == 1 {
+proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
   chpl_check_comparator(comparator, eltType);
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
@@ -366,7 +366,7 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where Do
     SiftDown(lo, end, comparator);
   }
 
-  proc SiftDown(start, end, comparator:?rec=defaultcomparator) where isRecord(rec) {
+  proc SiftDown(start, end, comparator:?rec=defaultComparator) where isRecord(rec) {
     var root = start;
     while (root * 2 + 1 - lo <= end) {
       const child = root * 2 + 1 - lo;
@@ -393,7 +393,7 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where Do
       the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
 
  */
-proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) where Dom.rank == 1 {
+proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
   chpl_check_comparator(comparator, eltType);
   const lo = Dom.low;
   for i in Dom {
@@ -426,12 +426,12 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultcomparator) whe
       the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
 
  */
-proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultcomparator) where Dom.rank == 1 {
+proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) where Dom.rank == 1 {
   chpl_check_comparator(comparator, eltType);
   _MergeSort(Data, minlen, comparator);
 }
 
-private proc _MergeSort(Data: [?Dom], minlen=16, comparator:?rec=defaultcomparator) where Dom.rank == 1 {
+private proc _MergeSort(Data: [?Dom], minlen=16, comparator:?rec=defaultComparator) where Dom.rank == 1 {
   const lo = Dom.dim(1).low;
   const hi = Dom.dim(1).high;
   if hi-lo < minlen {
@@ -451,7 +451,7 @@ private proc _MergeSort(Data: [?Dom], minlen=16, comparator:?rec=defaultcomparat
 }
 
 
-private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, comparator:?rec=defaultcomparator) {
+private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, comparator:?rec=defaultComparator) {
   var a1 = A1.domain.dim(1).low;
   const a1hi = A1.domain.dim(1).high;
   var a2 = A2.domain.dim(1).low;
@@ -487,7 +487,7 @@ private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, comparator:?rec=def
       the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
 
  */
-proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultcomparator) where Dom.rank == 1 {
+proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) where Dom.rank == 1 {
   chpl_check_comparator(comparator, eltType);
   // grab obvious indices
   const lo = Dom.low,
@@ -600,7 +600,7 @@ record ReverseComparator {
       the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
 
    */
-  proc ReverseComparator(comparator:?rec=defaultcomparator) {}
+  proc ReverseComparator(comparator:?rec=defaultComparator) {}
 
   /*
    Reversed compare method defined based on ``comparator.key`` if defined,
@@ -660,7 +660,7 @@ pragma "no doc"
  */
 proc BubbleSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   //writeln("Deprecation warning: BubbleSort replaced by bubbleSort");
-  var comparator = if reverse then reversecomparator else defaultcomparator;
+  var comparator = if reverse then reverseComparator else defaultComparator;
   bubbleSort(Data, comparator);
   if doublecheck then
     if !isSorted(Data) then
@@ -687,7 +687,7 @@ pragma "no doc"
  */
 proc QuickSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   //writeln("Deprecation warning: QuickSort replaced by quickSort");
-  var comparator = if reverse then reversecomparator else defaultcomparator;
+  var comparator = if reverse then reverseComparator else defaultComparator;
   quickSort(Data, minlen, comparator);
   if doublecheck then
     if !isSorted(Data) then
@@ -712,7 +712,7 @@ pragma "no doc"
  */
 proc HeapSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   //writeln("Deprecation warning: HeapSort replaced by heapSort");
-  var comparator = if reverse then reversecomparator else defaultcomparator;
+  var comparator = if reverse then reverseComparator else defaultComparator;
   heapSort(Data, comparator);
   if doublecheck then
     if !isSorted(Data) then
@@ -738,7 +738,7 @@ pragma "no doc"
  */
 proc InsertionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   //writeln("Deprecation warning: InsertionSort replaced by insertionSort");
-  var comparator = if reverse then reversecomparator else defaultcomparator;
+  var comparator = if reverse then reverseComparator else defaultComparator;
   insertionSort(Data, comparator);
   if doublecheck then
     if !isSorted(Data) then
@@ -766,7 +766,7 @@ pragma "no doc"
  */
 proc MergeSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
   //writeln("Deprecation warning: MergeSort replaced by mergeSort");
-  var comparator = if reverse then reversecomparator else defaultcomparator;
+  var comparator = if reverse then reverseComparator else defaultComparator;
   mergeSort(Data, minlen, comparator);
   if doublecheck then
     if !isSorted(Data) then
@@ -794,7 +794,7 @@ pragma "no doc"
 proc VerifySort(Data: [?Dom] ?eltType, param reverse=false) {
   //writeln("Deprecation warning: VerifySort replaced by isSorted");
   if reverse {
-    return isSorted(Data, reversecomparator);
+    return isSorted(Data, reverseComparator);
   } else {
     return isSorted(Data);
   }
