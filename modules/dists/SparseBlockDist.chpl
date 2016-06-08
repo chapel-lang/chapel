@@ -146,25 +146,17 @@ class SparseBlockDom: BaseSparseDom {
           localIndexCnts[lastLocaleIndexCache] += 1;
         }
         else {
-          for localeIndex in dist.targetLocDom {
-            if locDoms[localeIndex].parentDom.member(i) {
-              localIndexes[localeIndex][localIndexCnts[localeIndex]] = i;
-              localIndexCnts[localeIndex] += 1;
-              lastLocaleIndexCache = localeIndex;
-              break;
-            }
-          }
+          const localeIndex = dist.targetLocsIdx(i);
+          localIndexes[localeIndex][localIndexCnts[localeIndex]] = i;
+          localIndexCnts[localeIndex] += 1;
         }
       }
     }
     else {
       for i in inds {
-        for localeIndex in dist.targetLocDom {
-          if locDoms[localeIndex].parentDom.member(i) {
-            localIndexes[localeIndex][localIndexCnts[localeIndex]] = i;
-            localIndexCnts[localeIndex] += 1;
-          }
-        }
+        const localeIndex = dist.targetLocsIdx(i);
+        localIndexes[localeIndex][localIndexCnts[localeIndex]] = i;
+        localIndexCnts[localeIndex] += 1;
       }
     }
     coforall localeIdx in dist.targetLocDom do {
