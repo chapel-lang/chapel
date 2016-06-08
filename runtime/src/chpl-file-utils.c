@@ -282,7 +282,7 @@ qioerr chpl_fs_mkdir(const char* name, int mode, int parents) {
     int index;
     struct stat statRes;
     // We don't actually care about the full result of the stat calls, merely
-    // the existance and state of the directory being accessed.
+    // the existence and state of the directory being accessed.
     while (name[len-1] == '/') {
       // In case the caller, in their infinite wisdom, decides to send
       // a directory name of the form "foo///////".
@@ -321,7 +321,7 @@ qioerr chpl_fs_mkdir(const char* name, int mode, int parents) {
     tmp[len] = '\0';
     exitStatus = mkdir(tmp, mode);
     if (exitStatus && errno == EEXIST) {
-      // If we encounted EEXIST when creating the last directory, ignore it.
+      // If we encountered EEXIST when creating the last directory, ignore it.
       // This behavior is consistent with the command line mkdir -p behavior.
       exitStatus = 0;
     }

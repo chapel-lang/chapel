@@ -1,5 +1,5 @@
 //Binary-Tree Shootout
-//http://shootout.alioth.debian.org
+//http://benchmarksgame.alioth.debian.org
 //Casey Battaglino
 
 use DynamicIters;
