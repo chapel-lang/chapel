@@ -1,2 +1,0 @@
--slayoutType=DefaultDist cg-makea.chpl -O
--slayoutType=CSR cg-makea.chpl -O
