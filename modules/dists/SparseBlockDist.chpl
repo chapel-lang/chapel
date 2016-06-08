@@ -135,8 +135,8 @@ class SparseBlockDom: BaseSparseDom {
     if !isSorted then
       QuickSort(inds);
 
-    var localIndexSize = inds.size/numLocales;
-    var localIndexDom = {0..#localIndexSize};
+    var localIndexInitSize = inds.size/numLocales;
+    var localIndexDom = {0..#localIndexInitSize};
 
     var localIndexes: [dist.targetLocDom] [localIndexDom] index(rank,idxType);
     var localIndexCnts: [dist.targetLocDom] int =
@@ -172,8 +172,7 @@ class SparseBlockDom: BaseSparseDom {
     proc addToLocalIndexes(idx, locId) {
 
       if localIndexes[locId].size <= localIndexCnts[locId] {
-        localIndexSize *= 2;
-        localIndexDom = {0..#localIndexSize};
+        localIndexDom = {0..#localIndexes[locId].size*2};
       }
       
       localIndexes[locId][localIndexCnts[locId]] = idx;
