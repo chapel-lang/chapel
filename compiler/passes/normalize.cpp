@@ -1759,7 +1759,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   // No constructors for records? <hilde>
   AggregateType* ct = toAggregateType(fn->getFormal(2)->type);
   if (!ct)
-    INT_FATAL(fn, "constructor on non-class type");
+    INT_FATAL(fn, "initializer on non-class type");
 
   // Call the initializer, passing in just the generic arguments.
   // This call ensures that the object is default-initialized before the user's
