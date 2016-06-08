@@ -173,7 +173,6 @@ module Sort {
 const defaultComparator: DefaultComparator;
 
 
-
 /*
    Instance of :record:`ReverseComparator`. Pass this as the ``comparator=``
    argument of a sort function to reverse the sort order.
@@ -292,9 +291,15 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
 // that the sorterator works when it does and probably is confusing
 // when it doesn't.
 //
+// TODO - Make standalone or leader/follower parallel iterator
 /*
-   Yield the elements of argument `x` in sorted order, using the quick sort
+   Yield the elements of argument `x` in sorted order, using sort
    algorithm.
+
+   .. note:
+
+      This is currently implemented as a serial iterator, but will eventually
+      support parallel iteration.
 
    :arg x: An iterable value to be sorted and yielded element by element
    :type x: `iterable`
@@ -805,6 +810,4 @@ proc VerifySort(Data: [?Dom] ?eltType, param reverse=false) {
     return isSorted(Data);
   }
 }
-
-
-}
+} // Sort Module
