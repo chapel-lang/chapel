@@ -84,7 +84,7 @@ module MatrixMarket {
       var headers_written:bool;
       var last_rowno:int;
 
-      proc MMWriter(const fname:string) {
+      proc MMWriter(type eltype, const fname:string) {
          fd = open(fname, iomode.cw, iokind.native);
          fout = fd.writer(start=0);
          headers_written=false;
