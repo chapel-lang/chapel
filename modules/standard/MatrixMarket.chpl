@@ -19,11 +19,7 @@
 
 module MatrixMarket {
 
-  use FileSystem;
-  use Math;
   use IO;
-  use Sys;
-  use List;
 
   enum MMCoordFormat { Coordinate, Array }
   enum MMTypes { Real, Complex, Pattern }
