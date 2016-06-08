@@ -1033,11 +1033,15 @@ module ChapelArray {
     proc bulkAdd(inds: [] _value.idxType, isSorted=false,
         isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank==1 {
 
+      if inds.size == 0 then return;
+
       _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
     }
 
     proc bulkAdd(inds: [] _value.rank*_value.idxType, isSorted=false,
         isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank>1 {
+
+      if inds.size == 0 then return;
 
       _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
     }
@@ -1553,11 +1557,15 @@ module ChapelArray {
   proc +=(ref sd: domain, inds: [] sd.idxType) 
     where isSparseDom(sd) && sd.rank == 1 {
     
+    if inds.size == 0 then return;
+
     sd._value.dsiBulkAdd(inds);
   }
 
   proc +=(ref sd: domain, inds: [] sd.rank*sd.idxType ) 
     where isSparseDom(sd) && sd.rank > 1 {
+
+    if inds.size == 0 then return;
 
     sd._value.dsiBulkAdd(inds);
   }
@@ -1567,6 +1575,8 @@ module ChapelArray {
   */
   proc +=(ref sd: domain, d: domain) 
     where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
+
+    if d.size == 0 then return;
 
     type _idxType = if sd.rank==1 then int else sd.rank*int;
     const indCount = d.numIndices;
