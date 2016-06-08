@@ -2,7 +2,8 @@
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Lydia Duncan, Albert Sidelnik, and Brad Chamberlain
-   derived from the C version by Sebastien Loisel
+   derived from the GNU C version by Sebastien Loisel and the C# version
+   by Isaac Gouy
 */
 
 config const n = 500;           // the size of A (n x n), u and v (n-vectors)
