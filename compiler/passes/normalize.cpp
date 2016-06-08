@@ -1751,7 +1751,8 @@ static void change_method_into_constructor(FnSymbol* fn) {
 
   // Now check that the function name matches the name of the type
   // attached to 'this'.
-  if (strcmp(fn->getFormal(2)->type->symbol->name, fn->name))
+  if (strcmp(fn->getFormal(2)->type->symbol->name, fn->name) &&
+      strcmp(fn->name, "init"))
     return;
 
   // The type must be a class type.
