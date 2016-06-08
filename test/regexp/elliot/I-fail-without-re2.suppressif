@@ -1,0 +1,4 @@
+# Some configs don't support re2
+
+# build fails with "sfence not supported"
+CHPL_TARGET_ARCH==knc

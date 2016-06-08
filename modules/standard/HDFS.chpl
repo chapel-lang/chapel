@@ -403,10 +403,7 @@ proc hdfsChapelConnect(path: string, port: int): hdfsChapelFileSystem {
   forall loc in Locales {
     on loc {
       var err: syserr;
-      // TODO XXX: HACK: this accessing of locale.id copies the string onto this locale...
-      // If you get rid of this IT WILL BREAK. (at least as strings currently stand)
-      var hack = path.locale.id;
-      const tmpstr = path;
+      const tmpstr = path.localize();
       rcLocal(ret._internal_file) = hdfsChapelConnect(err, tmpstr.c_str(), port);
       if err then ioerror(err, "Unable to connect to HDFS", tmpstr);
     }
@@ -501,7 +498,7 @@ proc open(out error:syserr, path:string, mode:iomode, hints:iohints=IOHINT_NONE,
 proc hdfsChapelFileSystem_local.hdfs_chapel_open(path:string, mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
   var err:syserr = ENOERR;
   var ret = open(err, path, mode, hints, style, this._internal_);
-  if err then ioerror(err, "in foreign open", path);
+  if err then ioerror(err, "in foreign open", path.localize().c_str());
   return ret;
 }
 
@@ -519,7 +516,7 @@ proc hdfs_chapel_connect(path:string, port: int): hdfsChapelFileSystem_local{
 
   var err: syserr;
   var ret = hdfs_chapel_connect(err, path, port);
-  if err then ioerror(err, "Unable to connect to HDFS", path);
+  if err then ioerror(err, "Unable to connect to HDFS", path.localize().c_str());
   return ret;
 }
 
@@ -527,7 +524,7 @@ pragma "no doc"
 proc hdfs_chapel_connect(out error:syserr, path:string, port: int): hdfsChapelFileSystem_local{
   var ret:hdfsChapelFileSystem_local;
   ret.home = here;
-  error = hdfs_connect(ret._internal_, path.c_str(), port);
+  error = hdfs_connect(ret._internal_, path.localize().c_str(), port);
   return ret;
 }
 
@@ -537,7 +534,7 @@ proc getHosts(f: file) {
   var ret_num: c_int;
   var arr: char_ptr_ptr = hdfs_alloc_array(numLocales);
   for loc in Locales {
-    hdfs_create_locale_mapping(arr, loc.id, loc.name.c_str());
+    hdfs_create_locale_mapping(arr, loc.id, loc.name.localize().c_str());
   }
   var err = hdfs_get_owners(f._file_internal, ret._internal_, ret_num, arr, numLocales);
   if err then ioerror(err, "Unable to get owners for HDFS file");

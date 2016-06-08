@@ -1,0 +1,5 @@
+-serrorCase=0
+-serrorCase=1 # intents-error.good
+-serrorCase=2 # intents-error2.good
+-serrorCase=3 # intents-error3.good
+-serrorCase=4 # intents-error4.good

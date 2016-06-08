@@ -1,2 +1,0 @@
-intents.chpl:11: error: unresolved call 'fo("hi")'
-intents.chpl:5: note: candidates are: fo(out s: string)

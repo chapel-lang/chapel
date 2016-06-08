@@ -49,8 +49,9 @@ proc realPath(out error: syserr, name: string): string {
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string_copy): syserr;
 
   var res: c_string_copy;
-  error = chpl_fs_realpath(name.c_str(), res);
-  return toString(res);
+  error = chpl_fs_realpath(name.localize().c_str(), res);
+  var len = res.length;
+  return new string(res:c_ptr(uint(8)), len, len+1, owned=true, needToCopy=false);
 }
 
 /* Given a path `name`, attempts to determine the canonical path referenced.
@@ -86,7 +87,8 @@ proc file.realPath(out error: syserr): string {
     return "";
   }
   error = chpl_fs_realpath_file(_file_internal, res);
-  return toString(res);
+  var len = res.length;
+  return new string(res:c_ptr(uint(8)), len, len+1, owned=true, needToCopy=false);
 }
 
 /* Determines the canonical path referenced by the :type:`~IO.file` record

@@ -105,6 +105,13 @@ module Spawn {
                                    ref pid:int(64)):syserr;
   private extern proc qio_waitpid(pid:int(64),
     blocking:c_int, ref done:c_int, ref exitcode:c_int):syserr;
+  private extern proc qio_proc_communicate(threadsafe:c_int,
+                                           input_file:qio_file_ptr_t,
+                                           input:qio_channel_ptr_t,
+                                           output_file:qio_file_ptr_t,
+                                           output:qio_channel_ptr_t,
+                                           error_file:qio_file_ptr_t,
+                                           error:qio_channel_ptr_t):syserr;
 
   // When spawning, we need to allocate the command line
   // and environment to spawn with the C allocator (instead
@@ -310,9 +317,9 @@ module Spawn {
              stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
              param kind=iokind.dynamic, param locking=true)
   {
-    var stdin_fd:c_int;
-    var stdout_fd:c_int;
-    var stderr_fd:c_int;
+    var stdin_fd:c_int = QIO_FD_FORWARD;
+    var stdout_fd:c_int = QIO_FD_FORWARD;
+    var stderr_fd:c_int = QIO_FD_FORWARD;
     var stdin_pipe = false;
     var stdout_pipe = false;
     var stderr_pipe = false;
@@ -511,7 +518,9 @@ module Spawn {
     var args = [command];
     if shellarg != "" then args.push_front(shellarg);
     args.push_front(executable);
-    return spawn(args, env, executable, kind=kind, locking=locking);
+    return spawn(args, env, executable,
+                 stdin=stdin, stdout=stdout, stderr=stderr,
+                 kind=kind, locking=locking);
   }
 
   /*
@@ -537,28 +546,40 @@ module Spawn {
     returns, :attr:`~subprocess.running` is `false` and
     :attr:`~subprocess.exit_status` stores the exit code returned
     by the subprocess.
-     
+
+    If `buffer` is `true`, then this call will handle cases in which
+    stdin, stdout, or stderr for the child process is :const:`PIPE` by writing
+    any input to the child process and buffering up the output of the child
+    process as necessary while waiting for it to terminate. It will do
+    so in the same manner as :proc:`subprocess.communicate`.
+
+
     .. note::
      
-        Use :proc:`subprocess.communicate` instead of this function when using
-        :const:`PIPE` for stdin, stdout, or stderr.  This function does not try
-        to send any buffered input to the child process and so could result in
-        a hang if the child process is waiting for input to finish. Similarly,
-        this function does not consume the output from the child process and so
-        the child process could hang while waiting to write data to its output
-        while the parent process is waiting for it to complete (and not
-        consuming its output).
+        Do not use `buffer` `false` when using :const:`PIPE` for stdin,
+        stdout, or stderr.  If `buffer` is `false`, this function does not
+        try to send any buffered input to the child process and so could result
+        in a hang if the child process is waiting for input to finish.
+        Similarly, this function does not consume the output from the child
+        process and so the child process could hang while waiting to write data
+        to its output while the parent process is waiting for it to complete
+        (and not consuming its output).
 
     :arg error: optional argument to capture any error encountered
                 when waiting for the child process.
    */
-  proc subprocess.wait(out error:syserr) {
+  proc subprocess.wait(out error:syserr, buffer=true) {
+
+    if buffer {
+      this.communicate(error);
+      return;
+    }
 
     error = this.spawn_error;
     if !running then return;
 
     on home {
-      
+
       // Close stdin.
       if this.stdin_pipe {
         // send data to stdin
@@ -567,7 +588,7 @@ module Spawn {
         this.stdin_file.close(error=error);
       }
 
-      // check if child process has terminated.
+      // wait for child process to terminate
       var done:c_int = 0;
       var exitcode:c_int = 0;
       error = qio_waitpid(pid, 1, done, exitcode);
@@ -575,15 +596,24 @@ module Spawn {
         this.running = false;
         this.exit_status = exitcode;
       }
+
+      // Close stdout/stderr files.
+      if this.stdout_pipe {
+        this.stdout_file.close(error=error);
+      }
+      if this.stderr_pipe {
+        this.stderr_file.close(error=error);
+      }
+
     }
   }
 
   // documented in the out error version
   pragma "no doc"
-  proc subprocess.wait() {
+  proc subprocess.wait(buffer=true) {
     var err:syserr = ENOERR;
 
-    this.wait(error=err);
+    this.wait(error=err, buffer=buffer);
     if err then halt("Error in subprocess.wait: " + errorToString(err));
   }
 
@@ -606,13 +636,30 @@ module Spawn {
   proc subprocess.communicate(out error:syserr) {
     
     on home {
-      stdin._commit();
+      if this.stdin_pipe {
+        // send data to stdin
+        if this.stdin_buffering then this.stdin._commit();
+      }
 
       error = qio_proc_communicate(
-        locking, 
+        locking,
+        stdin_file._file_internal,
         stdin._channel_internal,
+        stdout_file._file_internal,
         stdout._channel_internal,
+        stderr_file._file_internal,
         stderr._channel_internal);
+    }
+
+    if !error {
+      // wait for child process to terminate
+      var done:c_int = 0;
+      var exitcode:c_int = 0;
+      error = qio_waitpid(pid, 1, done, exitcode);
+      if done {
+        this.running = false;
+        this.exit_status = exitcode;
+      }
     }
   }
 
@@ -621,7 +668,7 @@ module Spawn {
   proc subprocess.communicate() {
     var err:syserr = ENOERR;
 
-    this.wait(error=err);
+    this.communicate(error=err);
     if err then halt("Error in subprocess.communicate: " + errorToString(err));
   }
 

@@ -1,4 +1,0 @@
-#! /usr/bin/env bash
-
-str='remote address is not known to the NIC'
-grep "$str" < $2  |  sed "s/.*\($str\).*/\1/" > $2.tmp  &&  mv $2.tmp $2

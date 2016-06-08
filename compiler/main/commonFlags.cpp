@@ -31,11 +31,11 @@ bool fPrintVersion = false;
 bool fRungdb = false;
 bool fRunlldb = false;
 
-void driverSetHelpTrue(const ArgumentState* state, const char* unused) {
+void driverSetHelpTrue(const ArgumentDescription* desc, const char* unused) {
   fPrintHelp = true;
 }
 
-void driverSetDevelSettings(const ArgumentState* state, const char* arg_unused) {
+void driverSetDevelSettings(const ArgumentDescription* desc, const char* arg_unused) {
   // have to handle both cases since this will be called with --devel
   // and --no-devel
   if (developer) {

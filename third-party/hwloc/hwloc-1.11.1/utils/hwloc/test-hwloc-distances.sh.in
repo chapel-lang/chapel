@@ -1,0 +1,66 @@
+#!/bin/sh
+#-*-sh-*-
+
+#
+# Copyright © 2012-2014 Inria.  All rights reserved.
+# See COPYING in top-level directory.
+#
+
+HWLOC_top_builddir="@HWLOC_top_builddir@"
+distances="$HWLOC_top_builddir/utils/hwloc/hwloc-distances"
+HWLOC_top_srcdir="@HWLOC_top_srcdir@"
+
+HWLOC_PLUGINS_PATH=${HWLOC_top_builddir}/src
+export HWLOC_PLUGINS_PATH
+
+# make sure we use default numeric formats
+LANG=C
+LC_ALL=C
+export LANG LC_ALL
+
+: ${TMPDIR=/tmp}
+{
+  tmp=`
+    (umask 077 && mktemp -d "$TMPDIR/fooXXXXXX") 2>/dev/null
+  ` &&
+  test -n "$tmp" && test -d "$tmp"
+} || {
+  tmp=$TMPDIR/foo$$-$RANDOM
+  (umask 077 && mkdir "$tmp")
+} || exit $?
+file="$tmp/test-hwloc-distances.output"
+
+set -e
+(
+  $distances -i "pu:4"
+  echo
+
+  HWLOC_Package_DISTANCES=0,1:23.4,45.6,0.456,0.00003
+  export HWLOC_Package_DISTANCES
+  $distances -i "pack:2 pu:2" -p
+  HWLOC_Package_DISTANCES=none
+  echo
+
+  HWLOC_PU_DISTANCES=0-15:2*2*4
+  export HWLOC_PU_DISTANCES
+  $distances -i "core:8 pu:2" -l
+  HWLOC_PU_DISTANCES=none
+  echo
+
+  HWLOC_PU_DISTANCES=0,2,4,1,3,5,6,8,10,7,9,11:2*2*3
+  export HWLOC_PU_DISTANCES
+  HWLOC_Core_DISTANCES=0-3:2*2
+  export HWLOC_Core_DISTANCES
+  $distances -i "core:4 pu:6" -p
+  HWLOC_PU_DISTANCES=none
+  HWLOC_Core_DISTANCES=none
+  echo
+
+  HWLOC_NUMANode_DISTANCES=4-7:2*2
+  export HWLOC_NUMANode_DISTANCES
+  $distances -i "machine:4 node:4 pu:2" -l
+  HWLOC_NUMANode_DISTANCES=none
+  echo
+) > "$file"
+diff @HWLOC_DIFF_U@ $HWLOC_top_srcdir/utils/hwloc/test-hwloc-distances.output "$file"
+rm -rf "$tmp"

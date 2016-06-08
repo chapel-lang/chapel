@@ -1101,6 +1101,7 @@ static void redirectToNewIOI(ForLoop* eflopiLoop) {
 
 // Handle a yield within propagateExtraLeaderArgs().
 static void propagateThroughYield(CallExpr* rcall,
+                                  FnSymbol* parentFn,
                                   int numExtraArgs,
                                   VarSymbol* retSym,
                                   Symbol* extraActuals[],
@@ -1191,8 +1192,7 @@ static void propagateThroughYield(CallExpr* rcall,
       } else {
         if (!svar) {
           INT_ASSERT(!nested); // nested case is handled above
-          setupRedRefs(toFnSymbol(rcall->parentSymbol),
-                       nested, redRef1, redRef2);
+          setupRedRefs(parentFn, nested, redRef1, redRef2);
           // Todo: skip these additions if the current 'rcall' yield
           // is going to be compiled away, e.g. if it is
           // within a param conditional on a not-taken branch.
@@ -1222,6 +1222,18 @@ static void propagateThroughYield(CallExpr* rcall,
   if (eflopiHelper)
     eflopiMap[eflopiCall] = eflopiHelper;
 }
+
+static void propagateRecursively(FnSymbol* parentFn,
+                                 FnSymbol* currentFn,
+                                 int numExtraArgs,
+                                 VarSymbol* retSym,
+                                 Symbol* extraActuals[],
+                                 Symbol* extraFormals[],
+                                 Symbol* shadowVars[],
+                                 bool reduceArgs[],
+                                 bool nested,
+                                 Expr*& redRef1,
+                                 Expr*& redRef2);
 
 //
 // Propagate 'extraActuals' through the task constructs, implementing
@@ -1302,25 +1314,46 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
     }
   }
 
-  // Propagate recursively into task functions and yields.
+  propagateRecursively(fn, fn, numExtraArgs, retSym,
+                       extraActuals, extraFormals, shadowVars, reduceArgs,
+                       nested, redRef1, redRef2);
+
+  cleanupRedRefs(redRef1, redRef2);
+}
+
+// Propagate recursively into task functions and yields.
+static void propagateRecursively(FnSymbol* parentFn,
+                                 FnSymbol* currentFn,
+                                 int numExtraArgs,
+                                 VarSymbol* retSym,
+                                 Symbol* extraActuals[],
+                                 Symbol* extraFormals[],
+                                 Symbol* shadowVars[],
+                                 bool reduceArgs[],
+                                 bool nested,
+                                 Expr*& redRef1,
+                                 Expr*& redRef2)
+{                                 
   std::vector<CallExpr*> rCalls;
-  collectMyCallExprs(fn, rCalls, fn);
+  collectMyCallExprs(currentFn, rCalls, currentFn);
+
   for_vector(CallExpr, rcall, rCalls) {
     if (rcall->isPrimitive(PRIM_YIELD)) {
-      INT_ASSERT(fn == rcall->parentSymbol); // no need to pass 'fn'
-      propagateThroughYield(rcall, numExtraArgs, retSym,
+
+      propagateThroughYield(rcall, parentFn, numExtraArgs, retSym,
                             extraActuals, extraFormals,
                             shadowVars, reduceArgs,
                             nested, redRef1, redRef2);
 
     } else if (FnSymbol* tfn = resolvedToTaskFun(rcall)) {
+     if (needsCapture(tfn)) {
       // 'rcall' better be the only call to 'tfn'.
       // The following assert is a weak assurance of that.
       // For a strong assurance, we could additionally build a set of task
       // functions, calls to which we have seen.
       // OTOH our normal call verification should suffice: it will fail
       // the first propagated call if a second call propagates to same tfn.
-      INT_ASSERT(tfn->defPoint->parentSymbol == fn);
+      INT_ASSERT(tfn->defPoint->parentSymbol == currentFn);
 
       if (tfn->hasFlag(FLAG_BEGIN)) {
         // (A) Reduce intents do not make sense when a 'begin' outlives
@@ -1345,10 +1378,14 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
         propagateExtraLeaderArgs(rcall, retSym, numExtraArgs,
                                  extraFormals, reduceArgs, true);
       }
+     } else {
+      // !needsCapture(tfn) => descend into 'tfn' without argument intents.
+      propagateRecursively(parentFn, tfn, numExtraArgs, retSym,
+                           extraActuals, extraFormals, shadowVars, reduceArgs,
+                           nested, redRef1, redRef2);
+     }
     }
   }
-
-  cleanupRedRefs(redRef1, redRef2);
 }
 
 //

@@ -30,7 +30,6 @@ callDestructors :
 lowerIterators :
 parallel :
 prune :
-complex2record :
 bulkCopyRecords :
 removeUnnecessaryAutoCopyCalls :
 inlineFunctions :

@@ -31,6 +31,7 @@
 #include "caches.h"
 #include "callInfo.h"
 #include "CForLoop.h"
+#include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"
@@ -49,6 +50,7 @@
 #include <map>
 #include <sstream>
 #include <vector>
+#include <string>
 
 // Allow disambiguation tracing to be controlled by the command-line option
 // --explain-verbose.
@@ -988,6 +990,10 @@ resolveFormals(FnSymbol* fn) {
         // Already a ref type, so done.
         continue;
 
+      // Don't pass dtString params in by reference
+      if(formal->type == dtString && formal->hasFlag(FLAG_INSTANTIATED_PARAM))
+        continue;
+
       if (formal->intent == INTENT_INOUT ||
           formal->intent == INTENT_OUT ||
           formal->intent == INTENT_REF ||
@@ -1246,6 +1252,9 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
         if (fits_in_uint(get_width(formalType), var->immediate))
           return true;
   }
+  if (formalType == dtStringC && actualType == dtString)
+    if (actualSym && actualSym->isImmediate())
+      return true;
   return false;
 }
 
@@ -1286,13 +1295,13 @@ canCoerce(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn, b
   }
   if (actualType->symbol->hasFlag(FLAG_REF))
     return canDispatch(actualType->getValType(), NULL, formalType, fn, promotes);
-  if (// isLcnSymbol(actualSym) && // What does this exclude?
-      actualType == dtStringC && formalType == dtString)
-    return true;
-  if (formalType == dtStringC && actualType == dtStringCopy)
+  if (formalType == dtString && actualType == dtStringC)
     return true;
   if (formalType == dtString && actualType == dtStringCopy)
     return true;
+  if (formalType == dtStringC && actualType == dtStringCopy)
+    return true;
+
   return false;
 }
 
@@ -1489,21 +1498,20 @@ computeGenericSubs(SymbolMap &subs,
 
       if (alignedActuals.v[i]) {
         if (Type* type = getInstantiationType(alignedActuals.v[i]->type, formal->type)) {
-          // String literal actuals aligned with non-param generic
-          // formals of type dtAny will result in an instantiation of
-          // a dtString formal.  This is in line with variable
-          // declarations with non-typed initializing expressions and
-          // non-param formals with string literal default expressions
-          // (see fix_def_expr() and hack_resolve_types() in
-          // normalize.cpp). This conversion is not performed for extern
-          // functions.
-          if ((!fn->hasFlag(FLAG_EXTERN)) && (formal->type == dtAny) &&
-              (!formal->hasFlag(FLAG_PARAM)) && (type == dtStringC) &&
-              (alignedActuals.v[i]->type == dtStringC) &&
-              (alignedActuals.v[i]->isImmediate()))
-            subs.put(formal, dtString->symbol);
-          else
+          // String literal actuals aligned with non-param generic formals of
+          // type dtAny will result in an instantiation of dtStringC when the
+          // function is extern. In other words, let us write:
+          //   extern proc foo(str);
+          //   foo("bar");
+          // and pass "bar" as a c_string instead of a string
+          if (fn->hasFlag(FLAG_EXTERN) && (formal->type == dtAny) &&
+              (!formal->hasFlag(FLAG_PARAM)) && (type == dtString) &&
+              (alignedActuals.v[i]->type == dtString) &&
+              (alignedActuals.v[i]->isImmediate())) {
+            subs.put(formal, dtStringC->symbol);
+          } else {
             subs.put(formal, type->symbol);
+          }
         }
       } else if (formal->defaultExpr) {
 
@@ -2020,6 +2028,11 @@ static bool paramWorks(Symbol* actual, Type* formalType) {
     }
     if (is_uint_type(formalType)) {
       return fits_in_uint(get_width(formalType), imm);
+    }
+    if (imm->const_kind == CONST_KIND_STRING) {
+      if (formalType == dtStringC && actual->type == dtString) {
+        return true;
+      }
     }
   }
 
@@ -2618,6 +2631,8 @@ static void issueCompilerError(CallExpr* call) {
     INT_ASSERT(var && var->immediate && var->immediate->const_kind == CONST_KIND_STRING);
     str = astr(str, var->immediate->v_string);
   }
+  // collapse newlines and other escape sequences before printing
+  str = astr(unescapeString(str).c_str());
   if (call->isPrimitive(PRIM_ERROR)) {
     USR_FATAL(from, "%s", str);
   } else {
@@ -2665,7 +2680,7 @@ static Map<BlockStmt*,BlockStmt*> visibilityBlockCache;
 static Vec<BlockStmt*> standardModuleSet;
 
 //
-// return true if expr is a CondStmt with chpl__tryToken as its condition 
+// return true if expr is a CondStmt with chpl__tryToken as its condition
 //
 static bool isTryTokenCond(Expr* expr) {
   CondStmt* cond = toCondStmt(expr);
@@ -3161,7 +3176,7 @@ static Symbol* getBaseSymForConstCheck(CallExpr* call) {
   INT_ASSERT(baseExpr); // otherwise, cannot do the checking
   return baseExpr->var;
 }
- 
+
 
 // If 'call' is an access to a const thing, for example a const field
 // or a field of a const record, set const flag(s) on the symbol
@@ -3391,6 +3406,7 @@ resolveCall(CallExpr* call)
      case PRIM_TYPE_INIT:
      case PRIM_INIT:                resolveDefaultGenericType(call);    break;
      case PRIM_NO_INIT:             resolveDefaultGenericType(call);    break;
+     case PRIM_COERCE:              resolveDefaultGenericType(call);    break;
      case PRIM_NEW:                 resolveNew(call);                   break;
     }
   }
@@ -3976,6 +3992,41 @@ static void resolveMove(CallExpr* call) {
                                     isChplHereAlloc ? lhs->type->symbol :
                                     lhsBaseType->symbol, tmp));
   }
+
+  // Fix up PRIM_COERCE : remove it if it has a param RHS.
+  CallExpr* rhsCall = toCallExpr(rhs);
+
+  if (rhsCall && rhsCall->isPrimitive(PRIM_COERCE)) {
+    SymExpr* toCoerceSE = toSymExpr(rhsCall->get(1));
+    if (toCoerceSE) {
+      Symbol* toCoerceSym = toCoerceSE->var;
+      bool promotes = false;
+      // This transformation is normally handled in insertCasts
+      // but we need to do it earlier for parameters. We can't just
+      // call insertCasts here since that would dramatically change the
+      // resolution order (and would be apparently harder to get working).
+      if (toCoerceSym->isParameter() ||
+          toCoerceSym->hasFlag(FLAG_TYPE_VARIABLE) ) {
+        // Can we coerce from the argument to the function return type?
+        // Note that rhsType here is the function return type (since
+        // that is what the primitive returns as its type).
+        if (toCoerceSym->type == rhsType ||
+            canParamCoerce(toCoerceSym->type, toCoerceSym, rhsType)) {
+          // Replacing the arguments to the move works, but for
+          // some reason replacing the whole move doesn't.
+          call->get(1)->replace(new SymExpr(lhs));
+          call->get(2)->replace(new SymExpr(toCoerceSym));
+        } else if (canCoerce(toCoerceSym->type, toCoerceSym, rhsType,
+                             NULL, &promotes)) {
+          // any case that doesn't param coerce but does coerce will
+          // be handled in insertCasts later.
+        } else {
+          USR_FATAL(userCall(call), "type mismatch in return from %s to %s",
+                    toString(toCoerceSym->type), toString(rhsType));
+        }
+      }
+    }
+  }
 }
 
 
@@ -4067,6 +4118,7 @@ formalRequiresTemp(ArgSymbol* formal) {
 static void
 insertFormalTemps(FnSymbol* fn) {
   SymbolMap formals2vars;
+
   for_formals(formal, fn) {
     if (formalRequiresTemp(formal)) {
       SET_LINENO(formal);
@@ -4074,6 +4126,7 @@ insertFormalTemps(FnSymbol* fn) {
       formals2vars.put(formal, tmp);
     }
   }
+
   if (formals2vars.n > 0) {
     // The names of formals in the body of this function are replaced with the
     // names of their corresponding local temporaries.
@@ -4102,7 +4155,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
   // Enumerate the formals that have local temps.
   form_Map(SymbolMapElem, e, formals2vars) {
     ArgSymbol* formal = toArgSymbol(e->key); // Get the formal.
-    Symbol* tmp = e->value; // Get the temp.
+    Symbol*    tmp    = e->value; // Get the temp.
 
     SET_LINENO(formal);
 
@@ -4110,6 +4163,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
     // whether tmp owns its value or not.  That is, push setting these flags
     // (or not) into the cases below, as appropriate.
     Type* formalType = formal->type->getValType();
+
     if ((formal->intent == INTENT_BLANK ||
          formal->intent == INTENT_CONST ||
          formal->intent == INTENT_CONST_IN) &&
@@ -4140,21 +4194,32 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
      case INTENT_OUT:
       if (formal->defaultExpr && formal->defaultExpr->body.tail->typeInfo() != dtTypeDefaultToken) {
         BlockStmt* defaultExpr = formal->defaultExpr->copy();
+
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, defaultExpr->body.tail->remove()));
         fn->insertAtHead(defaultExpr);
       } else {
-        VarSymbol* refTmp = newTemp("_formal_ref_tmp_");
+        VarSymbol* refTmp  = newTemp("_formal_ref_tmp_");
         VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
+
         typeTmp->addFlag(FLAG_MAYBE_TYPE);
-        fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, typeTmp)));
+
+        fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp,     new CallExpr(PRIM_INIT, typeTmp)));
         fn->insertAtHead(new CallExpr(PRIM_MOVE, typeTmp, new CallExpr(PRIM_TYPEOF, refTmp)));
-        fn->insertAtHead(new CallExpr(PRIM_MOVE, refTmp, new CallExpr(PRIM_DEREF, formal)));
+        fn->insertAtHead(new CallExpr(PRIM_MOVE, refTmp,  new CallExpr(PRIM_DEREF, formal)));
         fn->insertAtHead(new DefExpr(refTmp));
         fn->insertAtHead(new DefExpr(typeTmp));
       }
+
+      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      tmp->addFlag(FLAG_FORMAL_TEMP);
       break;
 
      case INTENT_INOUT:
+      fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, new CallExpr("chpl__initCopy", formal)));
+      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      tmp->addFlag(FLAG_FORMAL_TEMP);
+      break;
+
      case INTENT_IN:
      case INTENT_CONST_IN:
       // TODO: Adding a formal temp for INTENT_CONST_IN is conservative.
@@ -4248,7 +4313,7 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
     INT_FATAL("dropUnnecessaryCasts called on non _cast call");
 
   if (SymExpr* sym = toSymExpr(call->get(2))) {
-    if (VarSymbol* var = toVarSymbol(sym->var)) {
+    if (LcnSymbol* var = toLcnSymbol(sym->var)) {
       if (SymExpr* sym = toSymExpr(call->get(1))) {
         Type* oldType = var->type;
         Type* newType = sym->var->type;
@@ -5101,6 +5166,28 @@ preFold(Expr* expr) {
     } else if (call->isPrimitive(PRIM_CAPTURE_FN)) {
       result = createFunctionAsValue(call);
       call->replace(result);
+
+    } else if (call->isPrimitive(PRIM_GET_COMPILER_VAR)) {
+
+      // Resolving Primitive PRIM_GET_COMPILER_VAR
+      Immediate* chplEnv = toVarSymbol(toSymExpr(call->get(1))->var)->immediate;
+      std::string envKey;
+
+      // Check if this immediate is a string
+      if (chplEnv->const_kind == CONST_KIND_STRING) {
+        envKey = chplEnv->v_string;
+      } else {
+        USR_FATAL(call, "expected immediate of type string");
+      }
+
+      // Check if string is in envMap, and replace result with mapped value
+      if (envMap.find(envKey) != envMap.end()) {
+        result = new SymExpr(new_CStringSymbol(envMap[envKey]));
+        call->replace(result);
+      } else {
+        USR_FATAL(call, "primitive string does not match any environment variable");
+      }
+
     } else if (call->isPrimitive(PRIM_CREATE_FN_TYPE)) {
       AggregateType *parent = createOrFindFunTypeFromAnnotation(call->argList, call);
 
@@ -5138,7 +5225,7 @@ preFold(Expr* expr) {
                      is_bool_type(oldType)) &&
                     (is_int_type(newType) || is_uint_type(newType) ||
                      is_bool_type(newType) || is_enum_type(newType) ||
-                     (newType == dtStringC))) {
+                     newType == dtString || newType == dtStringC)) {
                   VarSymbol* typevar = toVarSymbol(newType->defaultValue);
                   EnumType* typeenum = toEnumType(newType);
                   if (typevar) {
@@ -5148,6 +5235,13 @@ preFold(Expr* expr) {
                     Immediate coerce = *typevar->immediate;
                     coerce_immediate(var->immediate, &coerce);
                     result = new SymExpr(new_ImmediateSymbol(&coerce));
+                    call->replace(result);
+                  } else if (newType == dtString) {
+                    // typevar will be null for dtString so we need a special
+                    // case.
+                    Immediate coerce = Immediate("", STRING_KIND_STRING);
+                    coerce_immediate(var->immediate, &coerce);
+                    result = new SymExpr(new_StringSymbol(coerce.v_string));
                     call->replace(result);
                   } else if (typeenum) {
                     int64_t value, count = 0;
@@ -5172,14 +5266,20 @@ preFold(Expr* expr) {
                   } else {
                     INT_FATAL("unexpected case in cast_fold");
                   }
+                } else if (oldType == dtString && newType == dtStringC) {
+                  result = new SymExpr(new_CStringSymbol(var->immediate->v_string));
+                  call->replace(result);
                 }
               }
             }
           } else if (EnumSymbol* enumSym = toEnumSymbol(sym->var)) {
             if (SymExpr* sym = toSymExpr(call->get(1))) {
               Type* newType = sym->var->type;
-              if (newType == dtStringC) {
+              if (newType == dtString) {
                 result = new SymExpr(new_StringSymbol(enumSym->name));
+                call->replace(result);
+              } else if (newType == dtStringC) {
+                result = new SymExpr(new_CStringSymbol(enumSym->name));
                 call->replace(result);
               }
             }
@@ -5568,8 +5668,9 @@ preFold(Expr* expr) {
       call->replace(result);
     } else if (call->isPrimitive(PRIM_IS_STAR_TUPLE_TYPE)) {
       Type* tupleType = call->get(1)->typeInfo();
-      INT_ASSERT(tupleType->symbol->hasFlag(FLAG_TUPLE));
-      if (tupleType->symbol->hasFlag(FLAG_STAR_TUPLE))
+      // If the type isn't a tuple, it definitely isn't a homogenous tuple!
+      if (tupleType->symbol->hasFlag(FLAG_TUPLE) &&
+          tupleType->symbol->hasFlag(FLAG_STAR_TUPLE))
         result = new SymExpr(gTrue);
       else
         result = new SymExpr(gFalse);
@@ -5963,7 +6064,10 @@ postFold(Expr* expr) {
       if (lhs->var->isParameter() && rhs->var->isParameter()) {
         const char* lstr = get_string(lhs);
         const char* rstr = get_string(rhs);
-        result = new SymExpr(new_StringSymbol(astr(lstr, rstr)));
+        if (lhs->var->type == dtString)
+          result = new SymExpr(new_StringSymbol(astr(lstr, rstr)));
+        else
+          result = new SymExpr(new_CStringSymbol(astr(lstr, rstr)));
         call->replace(result);
       }
     } else if (call->isPrimitive("string_length")) {
@@ -6272,7 +6376,12 @@ resolveExpr(Expr* expr) {
         !sym->var->hasFlag(FLAG_TYPE_VARIABLE)) {
 
       if (AggregateType* ct = toAggregateType(sym->typeInfo())) {
-        if (!ct->symbol->hasFlag(FLAG_GENERIC) &&
+        // Don't try to resolve the defaultTypeConstructor for string literals
+        // (resolution ordering issue, string literals are encountered too early
+        // on and we don't know enough to be able to resolve them at that point)
+        if (!(ct == dtString && (sym->var->isParameter() ||
+                                 sym->var->hasFlag(FLAG_INSTANTIATED_PARAM))) &&
+            !ct->symbol->hasFlag(FLAG_GENERIC) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
             !ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
           resolveFormals(ct->defaultTypeConstructor);
@@ -6366,25 +6475,97 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
         if (SymExpr* lhs = toSymExpr(call->get(1))) {
           Type* lhsType = lhs->var->type;
           if (lhsType != dtUnknown) {
-          Expr* rhs = call->get(2);
-          Type* rhsType = rhs->typeInfo();
-          if (rhsType != lhsType &&
-              rhsType->refType != lhsType &&
-              rhsType != lhsType->refType) {
-            SET_LINENO(rhs);
-            rhs->remove();
-            Symbol* tmp = NULL;
-            if (SymExpr* se = toSymExpr(rhs)) {
-              tmp = se->var;
-            } else {
-              tmp = newTemp("_cast_tmp_", rhs->typeInfo());
-              call->insertBefore(new DefExpr(tmp));
-              call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
+            Expr* rhs = call->get(2);
+            Type* rhsType = rhs->typeInfo();
+            CallExpr* rhsCall = toCallExpr(rhs);
+
+            if (rhsCall && rhsCall->isPrimitive(PRIM_COERCE)) {
+              rhsType = rhsCall->get(1)->typeInfo();
             }
-            CallExpr* cast = new CallExpr("_cast", lhsType->symbol, tmp);
-            call->insertAtTail(cast);
-            casts.add(cast);
-          }
+
+            // would this be simpler with getValType?
+            bool typesDiffer = (rhsType != lhsType &&
+                                rhsType->refType != lhsType &&
+                                rhsType != lhsType->refType);
+
+            SET_LINENO(rhs);
+
+            // Generally, we want to add casts for PRIM_MOVE that have two
+            // different types. This function also handles PRIM_COERCE on the
+            // right-hand side by either removing the PRIM_COERCE entirely if
+            // the types are the same, or by using a = call if the types are
+            // different. It could use a _cast call if the types are different,
+            // but the = call works better in cases where an array is returned.
+
+            if (rhsCall && rhsCall->isPrimitive(PRIM_COERCE)) {
+              // handle move lhs, coerce rhs
+              SymExpr* fromExpr = toSymExpr(rhsCall->get(1));
+              SymExpr* fromTypeExpr = toSymExpr(rhsCall->get(2));
+              Symbol* from = fromExpr->var;
+              Symbol* fromType = fromTypeExpr->var;
+              Symbol* to = lhs->var;
+
+              // Check that lhsType == the result of coercion
+              INT_ASSERT(lhsType == rhsCall->typeInfo());
+
+              if (!typesDiffer) {
+                // types are the same. remove coerce and
+                // handle reference level adjustments. No cast necessary.
+
+                if (rhsType == lhsType)
+                  rhs = new SymExpr(from);
+                else if (rhsType == lhsType->refType)
+                  rhs = new CallExpr(PRIM_DEREF, new SymExpr(from));
+                else if (rhsType->refType == lhsType)
+                  rhs = new CallExpr(PRIM_ADDR_OF, new SymExpr(from));
+
+                CallExpr* move = new CallExpr(PRIM_MOVE, to, rhs);
+                call->replace(move);
+                casts.add(move);
+              } else {
+
+                // Use = if the types differ.  This should cause the 'from'
+                // value to be coerced to 'to' if possible or result in an
+                // compilation error. We use = here (vs _cast) in order to work
+                // better with returning arrays. We could probably use _cast
+                // instead of = if fromType does not have a runtime type.
+
+                CallExpr* init = new CallExpr(PRIM_NO_INIT, fromType);
+                CallExpr* moveInit = new CallExpr(PRIM_MOVE, to, init);
+                call->insertBefore(moveInit);
+
+                // By resolving =, we will generate an error if from cannot be
+                // coerced into to.
+                CallExpr* assign = new CallExpr("=", to, from);
+                call->insertBefore(assign);
+
+                // Resolve each of the new CallExprs They need to be resolved
+                // separately since resolveExpr does not recurse.
+                resolveExpr(init);
+                resolveExpr(moveInit);
+                resolveExpr(assign);
+
+                // We've replaced the move with no-init/assign, so remove it.
+                call->remove();
+              }
+            } else {
+              // handle adding casts for a regular PRIM_MOVE
+
+              if (typesDiffer) {
+                // Add a cast if the types don't match
+                Symbol* tmp = NULL;
+                if (SymExpr* se = toSymExpr(rhs)) {
+                  tmp = se->var;
+                } else {
+                  tmp = newTemp("_cast_tmp_", rhs->typeInfo());
+                  call->insertBefore(new DefExpr(tmp));
+                  call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
+                }
+                CallExpr* cast = new CallExpr("_cast", lhsType->symbol, tmp);
+                rhs->replace(cast);
+                casts.add(cast);
+              }
+            }
           }
         }
       }
@@ -7095,6 +7276,10 @@ resolve() {
   insertDynamicDispatchCalls();
   insertReturnTemps();
 
+  // Resolve the string literal constructors after everything else since new
+  // ones may be created during postFold
+  resolveFns(initStringLiterals);
+
   handleRuntimeTypes();
 
   pruneResolvedTree();
@@ -7204,6 +7389,12 @@ static void resolveUses(ModuleSymbol* mod)
 static void resolveExports() {
   // We need to resolve any additional functions that will be exported.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn == initStringLiterals) {
+      // initStringLiterals is exported but is explicitly resolved last since
+      // code may be added to it in postFold calls while resolving other
+      // functions
+      continue;
+    }
     if (fn->hasFlag(FLAG_EXPORT)) {
       SET_LINENO(fn);
       resolveFormals(fn);
@@ -7836,6 +8027,8 @@ static void removeUnusedFunctions() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) continue;
     if (fn->defPoint && fn->defPoint->parentSymbol) {
+      if (fn->defPoint->parentSymbol == stringLiteralModule) continue;
+
       if (! fn->isResolved() || fn->retTag == RET_PARAM) {
         clearDefaultInitFns(fn);
         fn->defPoint->remove();
@@ -8424,8 +8617,9 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts)
             INT_ASSERT(field);
             VarSymbol* tmp = newTemp("_runtime_type_tmp_", field->type);
             call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp,
-                                                           new CallExpr(PRIM_GET_MEMBER_VALUE, se->var, field)));
+            call->getStmtExpr()->insertBefore(
+                new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                                          se->var, field)));
             if (formal->hasFlag(FLAG_TYPE_VARIABLE))
               tmp->addFlag(FLAG_TYPE_VARIABLE);
             runtimeTypeToValueCall->insertAtTail(tmp);

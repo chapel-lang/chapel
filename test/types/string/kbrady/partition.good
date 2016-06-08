@@ -1,0 +1,5 @@
+(foo, -, bar baz gob)
+(, -, foo bar baz gob)
+(foo bar baz gob, -, )
+(foo, -, bar-baz gob)
+(foo bar baz gob, , )

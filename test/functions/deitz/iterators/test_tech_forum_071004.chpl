@@ -1,7 +1,7 @@
 iter iter_string_chars(s: string) {
   var i = 1, limit = s.length;
   while i <= limit {
-    yield s.substring(i);
+    yield s[i];
     i += 1;
   }
 }
@@ -35,7 +35,7 @@ proc IC.next() {
   label L1 i = 1;
   limit = length(s);
   while i <= limit {
-    value = s.substring(i);
+    value = s[i];
     cursor = 2;
     return;
     label L2 i += 1;
@@ -48,14 +48,14 @@ proc IC.next() {
     i = 1;
     limit = s.length;
     if i <= limit {
-      value = s.substring(i);
+      value = s[i];
       cursor = 2;
       return;
     }
   } else if cursor == 2 {
     i += 1;
     if i <= limit {
-      value = s.substring(i);
+      value = s[i];
       cursor = 2;
       return;
     }
@@ -69,7 +69,7 @@ proc special_fun_string_chars(s: string) {
   ic.limit = ic.s.length;
   ic.cursor = ic.i <= ic.limit;
   if ic.cursor then
-    ic.value = ic.s.substring(ic.i);
+    ic.value = ic.s[ic.i];
   return ic;
 }
 
@@ -77,7 +77,7 @@ proc IC.special_next() {
   i += 1;
   cursor = i <= limit;
   if cursor then
-    value = s.substring(i);
+    value = s[i];
 }
 
 var ic = fun_string_chars("ABC");

@@ -8,18 +8,18 @@ var lock: sync int = 0;
 
 proc main {
   forall z in AllIndices with (ref StartIndices, ref EndIndices) do {
-    if sourceText.substring[z] == '<' then {
+    if sourceText[z] == '<' then {
       lock;
       StartIndices += z;
-      if z > 1 && sourceText.substring[z-1] != ">" then
+      if z > 1 && sourceText[z-1] != ">" then
       EndIndices += z-1;
       lock = 0;
     }
-    else if sourceText.substring[z] == '>' then {
+    else if sourceText[z] == '>' then {
       lock;
       EndIndices += z;
       if z < (sourceText.length) &&
-      sourceText.substring[z+1] != "<"  then StartIndices +=
+      sourceText[z+1] != "<"  then StartIndices +=
       z+1;
       lock = 0;
     }

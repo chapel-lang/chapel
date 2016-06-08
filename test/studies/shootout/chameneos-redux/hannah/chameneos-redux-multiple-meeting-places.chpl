@@ -230,7 +230,7 @@ proc printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
 proc spellInt(n : int) {
   var s : string = n:string;
   for i in 1..s.length {
-    write(" ", (s.substring(i):int + 1):digit);
+    write(" ", (s[i]:int + 1):digit);
   }
   writeln();
 }

@@ -18,7 +18,7 @@ z is 1.65 + 1.8i and requires 64 bits
 z is 1.65 + 1.8i and requires 64 bits
 z is -1.92 + 1.76i and requires 64 bits
 z is -1.92 + 1.76i and requires 64 bits
-z is 0.852055 + 0.00547948i and requires 64 bits
+z is 0.8521 + 0.005479i and requires 64 bits
 z is 0.622642 - 0.679245i and requires 64 bits
 z is 0.733333 + 0.8i and requires 64 bits
 z is 0.724528 + 0.664151i and requires 64 bits
@@ -43,7 +43,7 @@ z is 1.65 + 1.8i and requires 128 bits
 z is 1.65 + 1.8i and requires 128 bits
 z is -1.92 + 1.76i and requires 128 bits
 z is -1.92 + 1.76i and requires 128 bits
-z is 0.852055 + 0.00547945i and requires 128 bits
+z is 0.8521 + 0.005479i and requires 128 bits
 z is 0.622642 - 0.679245i and requires 128 bits
 z is 0.733333 + 0.8i and requires 128 bits
 z is 0.724528 + 0.664151i and requires 128 bits

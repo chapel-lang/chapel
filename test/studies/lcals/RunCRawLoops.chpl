@@ -340,6 +340,7 @@ module RunCRawLoops {
           }
         }
         copyTimer(stat, ilength, ltimer);
+        delete ltimer;
       }
     }
   }

@@ -59,7 +59,7 @@ def print_mode(mode='list'):
         print_var('CHPL_LOCALE_MODEL', locale_model, mode, 'loc')
 
     comm = chpl_comm.get()
-    print_var('CHPL_COMM', comm, mode, 'comm', ('runtime',))
+    print_var('CHPL_COMM', comm, mode, 'comm', ('runtime', 'launcher'))
     if m == 'make' or (comm != 'none' and comm != 'ugni'):
         comm_substrate = chpl_comm_substrate.get()
         print_var('  CHPL_COMM_SUBSTRATE', comm_substrate, mode, filters=('runtime',))
@@ -69,10 +69,6 @@ def print_mode(mode='list'):
 
     tasks = chpl_tasks.get()
     print_var('CHPL_TASKS', tasks, mode, 'tasks', ('runtime', 'launcher'))
-
-    if m == 'make':
-        threads = chpl_threads.get()
-        print_var('CHPL_THREADS', threads, mode, 'threads')
 
     launcher = chpl_launcher.get()
     print_var('CHPL_LAUNCHER', launcher, mode, 'launch', ('launcher',))
@@ -94,7 +90,7 @@ def print_mode(mode='list'):
 
     atomics = chpl_atomics.get()
     print_var('CHPL_ATOMICS', atomics, mode, 'atomics', ('runtime', 'launcher'))
-    if comm != 'none' or mode == 'simple':
+    if (mode != 'runtime' and mode != 'make' and mode != 'launcher') and comm != 'none' or mode == 'simple':
         net_atomics = chpl_atomics.get('network')
         print_var('  CHPL_NETWORK_ATOMICS', net_atomics, mode, filters=('runtime', 'launcher'))
 
@@ -150,6 +146,12 @@ def print_mode(mode='list'):
                   mode, filters=('runtime',))
         if hwloc == 'hwloc':
             link_args_3p.extend(chpl_3p_hwloc_configs.get_link_args())
+
+        print_var('  CHPL_JEMALLOC_UNIQ_CFG_PATH',
+                  chpl_3p_jemalloc_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        if target_mem == 'jemalloc':
+            link_args_3p.extend(chpl_3p_jemalloc_configs.get_link_args())
 
         print_var('  CHPL_MASSIVETHREADS_UNIQ_CFG_PATH',
                   chpl_3p_massivethreads_configs.get_uniq_cfg_path(),

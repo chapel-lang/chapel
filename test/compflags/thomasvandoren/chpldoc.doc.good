@@ -6,6 +6,7 @@ Documentation Options:
       --author <author>               Documentation author string.
       --comment-style <indicator>     Only includes comments that start with
                                       <indicator>
+      --process-used-modules          Also parse and document 'use'd modules
       --save-sphinx <directory>       Save generated Sphinx project in
                                       directory
       --text-only                     Generate text documentation only

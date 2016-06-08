@@ -28,11 +28,11 @@ module MemTracking
     memLeaks: bool = false,
     memMax: uint = 0,
     memThreshold: uint = 0,
-    memLog: c_string = "";
+    memLog: string;
 
   pragma "no auto destroy"
   config const
-    memLeaksLog: c_string = "";
+    memLeaksLog: string;
 
   /* Causes the contents of the memory tracking array to be printed at the end
      of the program.
@@ -49,17 +49,11 @@ module MemTracking
   */
   pragma "no auto destroy"
   config const
-    memLeaksByDesc: c_string = "";
+    memLeaksByDesc: string;
 
   // Safely cast to size_t instances of memMax and memThreshold.
   const cMemMax = memMax.safeCast(size_t),
     cMemThreshold = memThreshold.safeCast(size_t);
-
-  // Globally accessible copy of the corresponding c_string consts
-  use NewString;
-  const s_memLeaksByDesc: string_rec = memLeaksByDesc;
-  const s_memLog: string_rec = memLog;
-  const s_memLeaksLog: string_rec = memLeaksLog;
 
   //
   // This communicates the settings of the various memory tracking
@@ -91,26 +85,37 @@ module MemTracking
     ret_memThreshold = cMemThreshold;
 
     if (here.id != 0) {
-      // These c_strings are going to be leaked
-      if s_memLeaksByDesc.len != 0 then
-        ret_memLeaksByDesc = remoteStringCopy(s_memLeaksByDesc.home.id,
-                                      s_memLeaksByDesc.base,
-                                      s_memLeaksByDesc.len);
-      else ret_memLeaksByDesc = "";
-      if s_memLog.len != 0 then
-        ret_memLog = remoteStringCopy(s_memLog.home.id,
-                                      s_memLog.base,
-                                      s_memLog.len);
-      else ret_memLog = "";
-      if s_memLeaksLog.len != 0 then
-        ret_memLeaksLog = remoteStringCopy(s_memLeaksLog.home.id,
-                                           s_memLeaksLog.base,
-                                           s_memLeaksLog.len);
-      else ret_memLeaksLog = "";
-    } else {
-      ret_memLeaksByDesc = memLeaksByDesc;
-      ret_memLog = memLog;
-      ret_memLeaksLog = memLeaksLog;
+      if memLeaksByDesc.length != 0 {
+        var local_memLeaksByDesc = memLeaksByDesc;
+        // Intentionally leak the string to persist the underlying buffer
+        local_memLeaksByDesc.owned = false;
+        ret_memLeaksByDesc = local_memLeaksByDesc.c_str();
+      } else {
+        ret_memLeaksByDesc = nil;
+      }
+
+      if memLog.length != 0 {
+        var local_memLog = memLog;
+        // Intentionally leak the string to persist the underlying buffer
+        local_memLog.owned = false;
+        ret_memLog = local_memLog.c_str();
+      } else {
+        ret_memLog = nil;
+      }
+
+      if memLeaksLog.length != 0 {
+        var local_memLeaksLog = memLeaksLog;
+        // Intentionally leak the string to persist the underlying buffer
+        local_memLeaksLog.owned = false;
+        ret_memLeaksLog = local_memLeaksLog.c_str();
+      } else {
+        ret_memLeaksLog = nil;
+      }
+
+     } else {
+      ret_memLeaksByDesc = memLeaksByDesc.c_str();
+      ret_memLog = memLog.c_str();
+      ret_memLeaksLog = memLeaksLog.c_str();
     }
   }
 }

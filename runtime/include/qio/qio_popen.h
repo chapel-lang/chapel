@@ -54,9 +54,12 @@ qioerr qio_waitpid(int64_t pid,
 
 qioerr qio_proc_communicate(
     const int threadsafe,
-    qio_channel_t* restrict input,
-    qio_channel_t* restrict output,
-    qio_channel_t* restrict error);
+    qio_file_t* input_file,
+    qio_channel_t* input,
+    qio_file_t* output_file,
+    qio_channel_t* output,
+    qio_file_t* error_file,
+    qio_channel_t* error);
 
 
 #ifdef __cplusplus

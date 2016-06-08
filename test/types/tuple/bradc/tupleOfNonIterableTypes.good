@@ -1,0 +1,1 @@
+tupleOfNonIterableTypes.chpl:3: error: cannot iterate over values of type R

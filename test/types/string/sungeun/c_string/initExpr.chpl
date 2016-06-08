@@ -17,7 +17,7 @@ checkType(D.idxType);
 var D1: domain(string) = { "blah", "blah2" };
 checkType(D1.idxType);
 
-var D2: domain(string) = { toString("blah"), "blah2" };
+var D2: domain(string) = { "blah":string, "blah2" };
 checkType(D2.idxType);
 
 // arrays

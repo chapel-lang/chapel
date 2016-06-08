@@ -1,0 +1,63 @@
+x: Hello, hello, hello
+c: cccccccccccccccccccccccccccc
+
+x.___("Hello")
+count: 1
+find: 1
+rfind: 1
+
+x.___("Hello", 2..)
+count: 0
+find: 0
+rfind: 0
+
+x.___("hello")
+count: 2
+find: 8
+rfind: 15
+
+x.___("hello", 14..)
+count: 1
+find: 15
+rfind: 15
+
+c.___("c")
+count: 28
+find: 1
+rfind: 28
+
+c.___("c", ..9)
+count: 9
+find: 1
+rfind: 9
+
+c.___("C")
+count: 0
+find: 0
+rfind: 0
+
+c.___("C", 5..9)
+count: 0
+find: 0
+rfind: 0
+
+x.___("")
+count: 20
+find: 0
+rfind: 20
+
+x.___("", 9..15)
+count: 8
+find: 0
+rfind: 8
+
+"".___(x)
+count: 0
+find: 0
+rfind: 0
+
+"".___("")
+count: 1
+find: 0
+rfind: 0
+

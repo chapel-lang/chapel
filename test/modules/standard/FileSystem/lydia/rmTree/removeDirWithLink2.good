@@ -1,0 +1,11 @@
+Creating a symlink
+hasLink2 exists: true
+hasLink2/amALink exists: true
+linksSrc2/inner exists: true
+linksSrc2/inner/depths.txt exists: true
+Post rmTree call
+hasLink2 exists: false
+hasLink2/amALink exists: false
+linksSrc2/inner exists: true
+linksSrc2/inner/depths.txt exists: true
+Far over the Misty Mountains cold

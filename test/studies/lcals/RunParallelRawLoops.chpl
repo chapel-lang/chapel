@@ -492,6 +492,7 @@ module RunParallelRawLoops {
           }
         }
         copyTimer(stat, ilength, ltimer);
+        delete ltimer;
       }
     }
   }

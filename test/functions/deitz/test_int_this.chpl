@@ -1,2 +1,2 @@
 var i = 987;
-writeln((i:string).substring(2));
+writeln((i:string)[2]);

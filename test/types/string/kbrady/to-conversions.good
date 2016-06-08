@@ -1,0 +1,30 @@
+abcdefghijklmnopqrstuvwxyz:
+    toUpper: ABCDEFGHIJKLMNOPQRSTUVWXYZ
+    toLower: abcdefghijklmnopqrstuvwxyz
+    toTitle: Abcdefghijklmnopqrstuvwxyz
+    capitalize: Abcdefghijklmnopqrstuvwxyz
+ABCDEFGHIJKLMNOPQRSTUVWXYZ:
+    toUpper: ABCDEFGHIJKLMNOPQRSTUVWXYZ
+    toLower: abcdefghijklmnopqrstuvwxyz
+    toTitle: Abcdefghijklmnopqrstuvwxyz
+    capitalize: Abcdefghijklmnopqrstuvwxyz
+The quick Brown FOX:
+    toUpper: THE QUICK BROWN FOX
+    toLower: the quick brown fox
+    toTitle: The Quick Brown Fox
+    capitalize: The quick brown fox
+ fooBAR:
+    toUpper:  FOOBAR
+    toLower:  foobar
+    toTitle:  Foobar
+    capitalize:  foobar
+:
+    toUpper: 
+    toLower: 
+    toTitle: 
+    capitalize: 
+--------:
+    toUpper: --------
+    toLower: --------
+    toTitle: --------
+    capitalize: --------

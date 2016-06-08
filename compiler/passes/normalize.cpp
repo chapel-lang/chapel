@@ -305,8 +305,9 @@ void normalize(BaseAST* base) {
 
   for_vector(Symbol, symbol2, symbols) {
     if (VarSymbol* var = toVarSymbol(symbol2))
-      if (isFnSymbol(var->defPoint->parentSymbol))
-        fix_def_expr(var);
+      if (FnSymbol* fn = toFnSymbol(var->defPoint->parentSymbol))
+        if (fn != stringLiteralModule->initFn)
+          fix_def_expr(var);
   }
 
   calls.clear();
@@ -391,7 +392,8 @@ checkUseBeforeDefs() {
                   (sym->var->defPoint->parentSymbol == fn ||
                    (sym->var->defPoint->parentSymbol == mod && mod->initFn == fn))) {
                 if (!defined.set_in(sym->var) && !undefined.set_in(sym->var)) {
-                  if (!sym->var->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN)) {
+                  if (!sym->var->hasEitherFlag(FLAG_ARG_THIS,FLAG_EXTERN) &&
+                      !sym->var->hasFlag(FLAG_TEMP)) {
                     USR_FATAL_CONT(sym, "'%s' used before defined (first used here)", sym->var->name);
                     undefined.set_add(sym->var);
                   }
@@ -541,12 +543,10 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, new CallExpr(PRIM_ADDR_OF, ret_expr)));
   else if (fn->retExprType)
   {
-    ret->insertBefore(new CallExpr("=", retval, ret_expr));
-    // Using assignment creates a new copy, which transfers ownership of *a*
-    // copy to the return value variable.
-    // Contrast this with a move, which merely shares ownership between the
-    // bitwise copies of the object.
-    retval->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    // This is the case for a declared return type.
+    ret->insertBefore(new CallExpr(PRIM_MOVE, retval,
+                      new CallExpr(PRIM_COERCE, ret_expr,
+                        fn->retExprType->body.tail->copy())));
   }
   else if (!fn->hasFlag(FLAG_WRAPPER) && strcmp(fn->name, "iteratorIndex") &&
            strcmp(fn->name, "iteratorIndexHelp"))
@@ -576,7 +576,7 @@ returnTypeIsArray(BlockStmt* retExprType)
 
 
 // Following normalization, each function contains only one return statement
-// preceded by a label.  The first half of the function counts the 
+// preceded by a label.  The first half of the function counts the
 // total number of returns and the number of void returns.
 // The big IF beginning with if (rets.n == 1) determines if the function
 // is already normal.
@@ -590,11 +590,15 @@ static void normalize_returns(FnSymbol* fn) {
   int numVoidReturns = 0;
   int numYields = 0;
   bool isIterator = fn->isIterator();
-  collectMyCallExprs(fn, calls, fn); // ones not in a nested function
+
+  collectMyCallExprs(fn, calls, fn); // calls not in a nested function
+
   for_vector(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_RETURN)) {
       rets.add(call);
+
       theRet = call;
+
       if (is_void_return(call))
           numVoidReturns++;
     }
@@ -605,7 +609,7 @@ static void normalize_returns(FnSymbol* fn) {
   }
 
   // If an iterator, then there is at least one nonvoid return-or-yield.
-  INT_ASSERT(!isIterator || rets.n > numVoidReturns); // done in semanticChecks
+  INT_ASSERT(!isIterator || rets.n > numVoidReturns);
 
   // Check if this function's returns are already normal.
   if (rets.n - numYields == 1) {
@@ -617,25 +621,25 @@ static void normalize_returns(FnSymbol* fn) {
             !strcmp("=", fn->name) ||
             !strcmp("_init", fn->name) ||
             !strcmp("_ret", se->var->name)) {
-          return;   // Yup.
+          return;
         }
       }
     }
   }
 
   // Add a void return if needed.
-  if (rets.n == 0)
-  {
-    if (fn->retExprType == NULL)
-    {
+  if (rets.n == 0) {
+    if (fn->retExprType == NULL) {
       fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
       return;
     }
   }
 
-  LabelSymbol* label = new LabelSymbol(astr("_end_", fn->name));
+  LabelSymbol* label  = new LabelSymbol(astr("_end_", fn->name));
+  VarSymbol*   retval = NULL;
+
   fn->insertAtTail(new DefExpr(label));
-  VarSymbol* retval = NULL;
+
   // If a proc has a void return, do not return any values ever.
   // (Types are not resolved yet, so we judge by presence of "void returns"
   // i.e. returns with no expr. See also a related check in semanticChecks.)
@@ -644,58 +648,53 @@ static void normalize_returns(FnSymbol* fn) {
   } else {
     // Handle declared return type.
     retval = newTemp("ret", fn->retType);
+
+    retval->addFlag(FLAG_RVV);
+
     if (fn->retTag == RET_PARAM)
       retval->addFlag(FLAG_PARAM);
+
     if (fn->retTag == RET_TYPE)
       retval->addFlag(FLAG_TYPE_VARIABLE);
+
     if (fn->hasFlag(FLAG_MAYBE_TYPE))
       retval->addFlag(FLAG_MAYBE_TYPE);
+
     // If the function has a specified return type (and is not a var function),
     // declare and initialize the return value up front,
     // and set the specified_return_type flag.
     if (fn->retExprType && fn->retTag != RET_REF) {
       BlockStmt* retExprType = fn->retExprType->copy();
+
       if (isIterator)
         if (SymExpr* lastRTE = toSymExpr(retExprType->body.tail))
           if (TypeSymbol* retSym = toTypeSymbol(lastRTE->var))
             if (retSym->type == dtVoid)
-              USR_FATAL_CONT(fn, "an iterator's return type cannot be 'void'; if specified, it must be the type of the expressions the iterator yields");
+              USR_FATAL_CONT(fn,
+                             "an iterator's return type cannot be 'void'; "
+                             "if specified, it must be the type of the "
+                             "expressions the iterator yields");
+
       fn->addFlag(FLAG_SPECIFIED_RETURN_TYPE);
-// I recommend a rework of function representation in the AST.
-// Because we strip type information off of variable declarations and use 
-// the type of the initializer instead, initialization is obligatory.
-// I think we should definitely heed the declared type.  
-// Then at least these two lines can go away, and other simplifications may
-// follow.
+
+      // I recommend a rework of function representation in the AST.
+      // Because we strip type information off of variable declarations and
+      // use the type of the initializer instead, initialization is obligatory.
+      // I think we should heed the declared type.
+      // Then at least these two lines can go away, and other simplifications
+      // may follow.
+
       // We do not need to do this for iterators returning arrays
-      // because it adds initialization code that is later removed.  
+      // because it adds initialization code that is later removed.
       // Also, we want arrays returned from iterators to behave like
       // references, so we add the 'var' return intent here.
       if (fn->isIterator() &&
           returnTypeIsArray(retExprType))
-        // Treat iterators returning arrays as if they are always returned by ref.
+        // Treat iterators returning arrays as if they are always returned
+        // by ref.
         fn->retTag = RET_REF;
-      else
-      {
-        CallExpr* initExpr;
-        // In most cases, we do not need to default initialize the return temps,
-        // as they will be assigned to before they are returned.  We cannot
-        // check against the specific types that do not allow the use of noinit
-        // here (that happens in function resolution), but we do know whether
-        // the function expects a param or type variable as its result and these
-        // cases would become confused if noinit was used with them (since
-        // noinit is not allowed on param or type variables).  So default
-        // initialize in those cases but in all others insert noinit and trust
-        // it will be handled correctly for types that do not allow it.
-        if (fn->retTag == RET_PARAM || fn->retTag == RET_TYPE) {
-          initExpr = new CallExpr(PRIM_INIT, retExprType->body.tail->remove());
-        } else {
-          initExpr = new CallExpr(PRIM_NO_INIT,
-                                  retExprType->body.tail->remove());
-        }
-        fn->insertAtHead(new CallExpr(PRIM_MOVE, retval, initExpr));
-      }
     }
+
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new CallExpr(PRIM_RETURN, retval));
   }
@@ -703,12 +702,14 @@ static void normalize_returns(FnSymbol* fn) {
   // Now, for each return statement appearing in the function body,
   // move the value of its body into the declared return value.
   bool label_is_used = false;
+
   forv_Vec(CallExpr, ret, rets) {
     SET_LINENO(ret);
+
     if (isIterator) {
       INT_ASSERT(!!retval);
 
-      // Three cases: 
+      // Three cases:
       // (1) yield expr; => mov _ret expr; yield _ret;
       // (2) return; => goto end_label;
       // (3) return expr; -> mov _ret expr; yield _ret; goto end_label;
@@ -716,9 +717,11 @@ static void normalize_returns(FnSymbol* fn) {
       if (!is_void_return(ret)) { // Cases 1 and 3
         // insert MOVE(retval,ret_expr)
         insertRetMove(fn, retval, ret);
+
         // insert YIELD(retval)
         ret->insertBefore(new CallExpr(PRIM_YIELD, retval));
       }
+
       if (ret->isPrimitive(PRIM_YIELD)) // Case 1 only.
           // it's a yield => no goto; need to remove the original node
           ret->remove();
@@ -736,6 +739,7 @@ static void normalize_returns(FnSymbol* fn) {
         // insert MOVE(retval,ret_expr)
         insertRetMove(fn, retval, ret);
       }
+
       // replace with GOTO(label)
       if (ret->next != label->defPoint) {
         ret->replace(new GotoStmt(GOTO_RETURN, label));
@@ -745,6 +749,7 @@ static void normalize_returns(FnSymbol* fn) {
       }
     }
   }
+
   if (!label_is_used)
     label->defPoint->remove();
 }
@@ -857,16 +862,16 @@ static void applyGetterTransform(CallExpr* call) {
 
 static void insert_call_temps(CallExpr* call)
 {
-  // Ignore call if it is not in the tree.
-  if (!call->parentExpr || !call->getStmtExpr())
-    return;
-
   Expr* stmt = call->getStmtExpr();
+
+  // Ignore call if it is not in the tree.
+  if (call->parentExpr == NULL || stmt == NULL)
+    return;
 
   // Call is already at statement level, so no need to flatten.
   if (call == stmt)
     return;
-  
+
   if (toDefExpr(call->parentExpr))
     return;
 
@@ -879,21 +884,38 @@ static void insert_call_temps(CallExpr* call)
 
   // TODO: Check if we need a call temp for PRIM_ASSIGN.
   CallExpr* parentCall = toCallExpr(call->parentExpr);
+
   if (parentCall && (parentCall->isPrimitive(PRIM_MOVE) ||
                      parentCall->isPrimitive(PRIM_NEW)))
     return;
 
   SET_LINENO(call);
+
   VarSymbol* tmp = newTemp("call_tmp");
+
   if (!parentCall || !parentCall->isNamed("chpl__initCopy"))
     tmp->addFlag(FLAG_EXPR_TEMP);
+
   if (call->isPrimitive(PRIM_NEW))
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+
   if (call->isPrimitive(PRIM_TYPEOF))
     tmp->addFlag(FLAG_TYPE_VARIABLE);
+
+  // NOAKES 2015/11/02
+  //   The expansion of _build_tuple() creates temps that need to be
+  //   autoDestroyed.  This is a short-cut to arrange for that to occur.
+  //   A better long term solution would be preferred
+  if (call->isNamed("chpl__initCopy")       == true &&
+      parentCall                            != NULL &&
+      parentCall->isNamed("_build_tuple")   == true)
+    tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
   tmp->addFlag(FLAG_MAYBE_PARAM);
   tmp->addFlag(FLAG_MAYBE_TYPE);
+
   call->replace(new SymExpr(tmp));
+
   stmt->insertBefore(new DefExpr(tmp));
   stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
 }
@@ -1191,33 +1213,9 @@ static void init_untyped_var(VarSymbol* var, Expr* init, Expr* stmt, VarSymbol* 
     if (initCall && initCall->isPrimitive(PRIM_NEW)) {
       stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, init->remove()));
     } else {
-      // Non-param variables initialized with a string literal but
-      // without a type are assumed to be of type string.  This case
-      // must be handled here, rather than in resolution because we
-      // cannot recognize this situtation easily (if at all) during
-      // resolution due to PRIM_INIT handling.
-      //
-      // Note that we have to do a similar thing during scope resolve
-      // when building default type constructors.
-      if ((toSymExpr(init) && (toSymExpr(init)->typeInfo() == dtStringC)) &&
-          !var->hasFlag(FLAG_PARAM)) {
-        // This logic is the same as the case above under 'if (type)',
-        // but simplified for this specific case.
-        SET_LINENO(stmt);
-        VarSymbol* typeTemp = newTemp("type_tmp");
-        stmt->insertBefore(new DefExpr(typeTemp));
-        CallExpr* newInit;
-        newInit = new CallExpr(PRIM_MOVE, typeTemp,
-                               new CallExpr(PRIM_INIT, new SymExpr(dtString->
-                                                                   symbol)));
-        stmt->insertBefore(newInit);
-        stmt->insertAfter(new CallExpr(PRIM_MOVE, constTemp, typeTemp));
-        stmt->insertAfter(new CallExpr("=", typeTemp, init->remove()));
-      } else {
-        stmt->insertAfter(
-          new CallExpr(PRIM_MOVE, constTemp,
-            new CallExpr("chpl__initCopy", init->remove())));
-      }
+      stmt->insertAfter(
+        new CallExpr(PRIM_MOVE, constTemp,
+          new CallExpr("chpl__initCopy", init->remove())));
     }
 }
 
@@ -1232,13 +1230,6 @@ static void hack_resolve_types(ArgSymbol* arg) {
           se = toSymExpr(arg->defaultExpr->body.tail);
         if (!se || se->var != gTypeDefaultToken) {
           SET_LINENO(arg->defaultExpr);
-          if ((arg->intent != INTENT_PARAM) &&
-              se && se->var->isImmediate() &&
-              toVarSymbol(se->var)->immediate->const_kind == CONST_KIND_STRING) {
-            // String literal default expressions for non-param
-            // generic formals are converted to strings.
-            arg->defaultExpr->body.insertAtTail(new CallExpr("toString", arg->defaultExpr->body.tail->remove()));
-          }
           arg->typeExpr = arg->defaultExpr->copy();
           insert_help(arg->typeExpr, NULL, arg);
         }

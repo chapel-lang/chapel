@@ -1,2 +1,2 @@
-$CHPL_HOME/modules/internal/String.chpl:148: error: unable to resolve return type of function '_cast'
-$CHPL_HOME/modules/internal/String.chpl:149: error: called recursively at this point
+cast_enum_weird_4.chpl:1: In function 'f':
+cast_enum_weird_4.chpl:6: error: illegal cast from string to E

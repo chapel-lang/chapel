@@ -495,6 +495,7 @@ module RunVectorizeOnlyRawLoops {
           }
         }
         copyTimer(stat, ilength, ltimer);
+        delete ltimer;
       }
     }
   }

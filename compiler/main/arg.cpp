@@ -481,7 +481,7 @@ static void ApplyValue(const ArgumentState*       state,
   }
 
   if (desc->pfn)
-    desc->pfn(state, value);
+    desc->pfn(desc, value);
 }
 
 /************************************* | **************************************
@@ -705,7 +705,7 @@ static void process_arg(const ArgumentState*       state,
   }
 
   if (desc->pfn)
-    desc->pfn(state, arg);
+    desc->pfn(desc, arg);
 }
 
 static void bad_flag(const char* flag)

@@ -1,6 +1,6 @@
 use Sys;
 
-const ENV_VAR = "QQ62ZZ21Q".c_str();
+const ENV_VAR = c"QQ62ZZ21Q";
 
 proc main()
 {

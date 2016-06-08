@@ -52,9 +52,9 @@ util/chplenv/chpl_tasks.py:
   Chapel target architecture, you will need to change this file to
   select your model under the appropriate circumstances.
 
-util/chplenv/chpl_threads.py:
-  Add code to select the appropriate threading model for your new
-  tasking model.
+make/tasks/Makefile.<wonderful>:
+  Define CHPL_MAKE_THREADS to the appropriate threading model for
+  your new tasking model and add any include paths
 
 Finally, you have to actually implement your new tasking model.
 

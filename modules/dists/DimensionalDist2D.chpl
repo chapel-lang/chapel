@@ -1004,8 +1004,10 @@ proc DimensionalDom.dsiBuildArray(type eltType)
 //== dsiAccess
 
 proc DimensionalArr.dsiAccess(indexx: dom.indexT) ref: eltType {
-  _traceddc(traceDimensionalDist || traceDimensionalDistDsiAccess,
-            this, ".dsiAccess", indexx);
+  if traceDimensionalDist || traceDimensionalDistDsiAccess {
+    _traceddc(traceDimensionalDist || traceDimensionalDistDsiAccess,
+              this, ".dsiAccess", indexx);
+  }
 
   if !isTuple(indexx) || indexx.size != 2 then
     compilerError("DimensionalDist2D presently supports only indexing with",

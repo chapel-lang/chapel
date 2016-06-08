@@ -149,7 +149,7 @@ CHPL_*_COMPILER
         gnu                The GNU compiler suite -- gcc and g++
         ibm                The IBM compiler suite -- xlc and xlC
         intel              The Intel compiler suite -- icc and icpc
-        pgi                The PGI compiler suite -- pgcc and pgCC
+        pgi                The PGI compiler suite -- pgcc and pgc++
         =================  ===================================================
 
    The default for ``CHPL_*_COMPILER`` depends on the value of the corresponding
@@ -318,12 +318,6 @@ CHPL_TASKS
 
      * target platform is ``cygwin*``
      * target platform is ``netbsd*``
-     * target compiler is ``cray-prgenv-cray``
-     * target architecture is ``knc``
-
-   The latter two apply independent of whether you are building Chapel
-   yourself or using the pre-built module on a Cray XC or XE\ |trade|
-   system.
 
    .. note::
      Note that the Chapel ``util/quickstart/setchplenv.*`` source scripts set
@@ -370,6 +364,7 @@ CHPL_MEM
         ========= =======================================================
         cstdlib   use the standard C malloc/free commands
         dlmalloc  use Doug Lea's memory allocation package
+        jemalloc  use Jason Evan's memory allocation package
         tcmalloc  use the tcmalloc package from Google Performance Tools
         ========= =======================================================
 
@@ -476,13 +471,11 @@ CHPL_HWLOC
        ======= ==============================================================
 
    If unset, ``CHPL_HWLOC`` defaults to ``hwloc`` if :ref:`CHPL_TASKS` is
-   ``qthreads``, unless the target platform is knc.  In all other cases it
-   defaults to ``none``.  In the unlikely event the bundled hwloc distribution
-   does not build successfully, it should still be possible to use qthreads.
-   Manually set ``CHPL_HWLOC`` to ``none`` and rebuild in this case (and please
-   file a bug with the Chapel team.)  Building without hwloc should not have a
-   large performance impact when :ref:`CHPL_LOCALE_MODEL` is ``flat`` but will
-   drastically hurt performance for ``numa``.
+   ``qthreads``.  In all other cases it defaults to ``none``.  In the unlikely
+   event the bundled hwloc distribution does not build successfully, it should
+   still be possible to use qthreads.  To do this, manually set ``CHPL_HWLOC``
+   to ``none`` and rebuild (and please file a bug with the Chapel team.) Note
+   that building without hwloc will have a negative impact on performance.
 
 
 CHPL_REGEXP
@@ -525,7 +518,8 @@ CHPL_AUX_FILESYS
        Value  Description
        ====== =================================================
        none   only support traditional Linux filesystems
-       hdfs   also support HDFS filesystems
+       hdfs   also support HDFS filesystems using Apache Hadoop libhdfs
+       hdfs3  support for HDFS filesystems using Pivotal libhdfs3
        curl   also support CURL as a filesystem interface
        ====== =================================================
 

@@ -1445,7 +1445,12 @@ namespace {
           }
 
           Constant *init = ConstantExpr::getPointerCast(gv, new_type);
-#if HAVE_LLVM_VER >= 35
+#if HAVE_LLVM_VER >= 37
+          GlobalAlias *new_alias = GlobalAlias::create(
+              llvm::PointerType::get(new_type, 0 /*addr space*/ ),
+              ga->getLinkage(),
+              "", init, &M);
+#elif HAVE_LLVM_VER >= 35
           GlobalAlias *new_alias = GlobalAlias::create(new_type,
               0, // address space
               ga->getLinkage(),

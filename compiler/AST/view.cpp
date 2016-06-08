@@ -337,6 +337,11 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
 
   AST_CHILDREN_CALL(ast, view_ast, number, mark, indent+2);
 
+  if (DefExpr* def = toDefExpr(ast)) {
+    printf(" ");
+    writeFlags(stdout, def->sym);
+  }
+
   if (toExpr(ast))
     printf(")");
 }

@@ -124,6 +124,9 @@ Building Chapel for a Cray System from Source
        PrgEnv-intel
        PrgEnv-pgi
 
+   For PrgEnv-cray we recommend using CCE 8.4 or newer for best performance.
+   This allows us to build our recommended third-party packages (i.e. allows
+   us to default to CHPL_TASKS=qthreads instead of CHPL_TASKS=fifo)
 
 4) By default, ``g++`` will be used to compile code that runs on the login
    node, such as the Chapel compiler and launcher code.  Optionally, you can
@@ -132,16 +135,14 @@ Building Chapel for a Cray System from Source
 
      :``gnu``: the GNU compiler suite -- ``gcc`` and ``g++``
      :``intel``: the Intel compiler suite -- ``icc`` and ``icpc``
-     :``pgi``: the PGI compiler suite -- ``pgcc`` and ``pgCC``
+     :``pgi``: the PGI compiler suite -- ``pgcc`` and ``pgc++``
 
 
 5) Optionally, set one or more of the following environment variables to
    configure the Chapel build.  These are described in greater detail in
    :ref:`readme-chplenv`.
 
-     :``CHPL_TASKS``: tasking implementation, default ``fifo`` when using
-                      target compiler ``cray-prgenv-cray``, otherwise
-                      ``qthreads``
+     :``CHPL_TASKS``: tasking implementation, default ``qthreads``
      :``CHPL_COMM``: communication implementation, default ``gasnet``
 
    Other configuration environment variables such as ``CHPL_MEM`` can also
@@ -197,9 +198,7 @@ Using Chapel on a Cray System
    select a Chapel configuration.  These are described in greater detail
    in :ref:`readme-chplenv`.
 
-     :``CHPL_TASKS``: tasking implementation, default ``fifo`` with target
-                      compiler ``cray-prgenv-cray``, ``muxed`` on Cray
-                      XC/XE with pre-built module, otherwise ``qthreads``
+     :``CHPL_TASKS``: tasking implementation, default ``qthreads``
      :``CHPL_COMM``: communication implementation, default ``ugni`` on Cray
                      XC/XE with pre-built module, else ``gasnet``
 

@@ -542,7 +542,7 @@ createArgBundleFreeFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
   if (addedRecursiveCall) {
     Symbol* cond = newTemp("cond", dtBool);
     argBundleFreeFn->insertAtHead(new CondStmt(new SymExpr(cond), block));
-    argBundleFreeFn->insertAtHead(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)))));
+    argBundleFreeFn->insertAtHead(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap[loopBodyFnWrapper]))));
     argBundleFreeFn->insertAtHead(new DefExpr(cond));
   }
 }
@@ -642,7 +642,7 @@ createArgBundleCopyFn(AggregateType* ct, FnSymbol* loopBodyFnWrapper) {
   //  { <body_as_defined_above> }
   Symbol* cond = newTemp(dtBool);
   argBundleCopyFn->insertBeforeReturn(new DefExpr(cond));
-  argBundleCopyFn->insertBeforeReturn(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)))));
+  argBundleCopyFn->insertBeforeReturn(new CallExpr(PRIM_MOVE, cond, new CallExpr(PRIM_EQUAL, loopBodyFnIDArg, new_IntSymbol(ftableMap[loopBodyFnWrapper]))));
   argBundleCopyFn->insertBeforeReturn(new CondStmt(new SymExpr(cond), block));
 }
 
@@ -1050,7 +1050,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   parent->defPoint->insertBefore(new DefExpr(loopBodyFnWrapper));
 
   ftableVec.add(loopBodyFnWrapper);
-  ftableMap.put(loopBodyFnWrapper, ftableVec.n-1);
+  ftableMap[loopBodyFnWrapper] = ftableVec.n-1;
 
   //
   // insert a call to the iterator function (using iterator as a
@@ -1061,7 +1061,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   //
   Symbol*    ic             = forLoop->iteratorGet()->var;
   FnSymbol*  iterator       = getTheIteratorFn(ic);
-  CallExpr*  iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap.get(loopBodyFnWrapper)));
+  CallExpr*  iteratorFnCall = new CallExpr(iterator, ic, new_IntSymbol(ftableMap[loopBodyFnWrapper]));
 
   // replace function in iteratorFnCall with iterator function once that is created
   CallExpr*  loopBodyFnCall = new CallExpr(loopBodyFn, gVoid);

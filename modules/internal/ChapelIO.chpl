@@ -211,7 +211,7 @@ written.
     proc writePrimitive(x) {
       var s = x:string;
       // only save the first letter
-      data += s.substring(1);
+      data += s[1];
     }
 
     // writeThis will be called when
@@ -411,9 +411,9 @@ module ChapelIO {
             var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
             var eq:ioLiteral;
             if st == QIO_AGGREGATE_FORMAT_JSON {
-              eq = new ioLiteral(__primitive("field num to name", t, i) + " : ");
+              eq = new ioLiteral(__primitive("field num to name", t, i) + c" : ");
             } else {
-              eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+              eq = new ioLiteral(__primitive("field num to name", t, i) + c" = ");
             }
             write(eq);
           }
@@ -435,9 +435,9 @@ module ChapelIO {
               var st = styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
               var eq:ioLiteral;
               if st == QIO_AGGREGATE_FORMAT_JSON {
-                eq = new ioLiteral(__primitive("field num to name", t, i) + " : ");
+                eq = new ioLiteral(__primitive("field num to name", t, i) + c" : ");
               } else {
-                eq = new ioLiteral(__primitive("field num to name", t, i) + " = ");
+                eq = new ioLiteral(__primitive("field num to name", t, i) + c" = ");
               }
               write(eq);
             }
@@ -465,7 +465,7 @@ module ChapelIO {
         if st == QIO_AGGREGATE_FORMAT_JSON {
           start = new ioLiteral("{");
         } else if st == QIO_AGGREGATE_FORMAT_CHPL {
-          start = new ioLiteral("new " + typeToString(t) + "(");
+          start = new ioLiteral("new " + typeToString(t).c_str() + "(");
         } else {
           // the default 'braces' type
           if isClassType(t) {
@@ -828,11 +828,7 @@ module ChapelIO {
    */
   inline proc Reader.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
   {
-    /***
-    var iolit = new ioLiteral(lit.c_str(), ignoreWhiteSpace);
-    this.readwrite(iolit);
-    ***/
-    this.readWriteLiteral(lit.c_str(), ignoreWhiteSpace);
+    this.readWriteLiteral(lit.localize().c_str(), ignoreWhiteSpace);
   }
   pragma "no doc"
   inline proc Reader.readWriteLiteral(lit:c_string, ignoreWhiteSpace=true)
@@ -845,11 +841,7 @@ module ChapelIO {
    */
   inline proc Writer.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
   {
-    /***
-    var iolit = new ioLiteral(lit.c_str(), ignoreWhiteSpace);
-    this.readwrite(iolit);
-    ***/
-    this.readWriteLiteral(lit.c_str(), ignoreWhiteSpace);
+    this.readWriteLiteral(lit.localize().c_str(), ignoreWhiteSpace);
   }
   pragma "no doc"
   inline proc Writer.readWriteLiteral(lit:c_string, ignoreWhiteSpace=true)
@@ -880,7 +872,7 @@ module ChapelIO {
      if any, then exits the program.
    */
   proc halt() {
-    __primitive("chpl_error", "halt reached");
+    __primitive("chpl_error", c"halt reached");
   }
 
   /*
@@ -889,12 +881,12 @@ module ChapelIO {
      if any, then exits the program.
    */
   proc halt(s:string) {
-    halt(s.c_str());
+    halt(s.localize().c_str());
   }
 
   pragma "no doc"
   proc halt(s:c_string) {
-    __primitive("chpl_error", "halt reached - " + s);
+    __primitive("chpl_error", c"halt reached - " + s);
   }
  
   /*
@@ -903,9 +895,9 @@ module ChapelIO {
      if any, then exits the program.
    */
   proc halt(args ...?numArgs) {
-    var tmpstring: c_string;
+    var tmpstring: string;
     tmpstring.write((...args));
-    __primitive("chpl_error", "halt reached - " + tmpstring);
+    __primitive("chpl_error", c"halt reached - " + tmpstring.c_str());
   }
   
   /*
@@ -913,7 +905,7 @@ module ChapelIO {
     in the Chapel source, followed by the argument(s) to the call.
   */
   proc warning(s:string) {
-    warning(s.c_str());
+    warning(s.localize().c_str());
   }
 
   pragma "no doc"
@@ -954,82 +946,24 @@ module ChapelIO {
   /* Writer that can save output to a string
    */
   class StringWriter: Writer {
-    pragma "no doc"
-    var s: c_string_copy; // Should be initialized to NULL.
-    pragma "no doc"
-    proc StringWriter(x:c_string) {
-      this.s = __primitive("string_copy", x);
+    var s: string; // Should be initialized to NULL.
+    proc StringWriter(x:string) {
+      this.s = x;
     }
     pragma "no doc"
     proc writePrimitive(x) {
-      // TODO: Implement += so it consumes a c_string_copy LHS.
-      var aug = x:c_string_copy;
-      this.s += aug;      // The update frees this.s before overwriting it.
-      chpl_free_c_string_copy(aug);
-    }
-    pragma "no doc"
-    proc ~StringWriter() {
-      chpl_free_c_string_copy(this.s);
-      __primitive("=", this.s, _nullString);
+      this.s += x:string;
     }
   }
   
-  // Convert 'x' to a string just the way it would be written out.
-  // Includes Writer.write, with modifications (for simplicity; to avoid 'on').
-  pragma "no doc"
-  proc _cast(type t, x) where t == c_string_copy {
-    //proc isNilObject(o: object) return o == nil;
-    //proc isNilObject(o) param return false;
-    const w = new StringWriter();
-    //if isNilObject(x) then "nil".writeThis(w);
-    //else                   x.writeThis(w);
-    w.write(x);
-    const result = w.s;
-    __primitive("=", w.s, _nullString);
-    delete w;
-    return result;
-  }
-  
-  pragma "dont disable remote value forwarding"
-  pragma "no doc"
-  proc ref c_string.write(args ...?n) {
-    var sc = new StringWriter(this);
-    sc.write((...args));
-    // We need to copy this string because the destructor call below frees it
-    this = sc.s;
-    // This is required to prevent double-deletion.
-    __primitive("=", sc.s, _nullString);
-    delete sc;
-  }
-  
-  /* Write each argument by appending to the string.
-   */
   pragma "dont disable remote value forwarding"
   proc ref string.write(args ...?n) {
-    var sc = new StringWriter(this.c_str());
+    var sc = new StringWriter(this);
     sc.write((...args));
-    this = toString(sc.s);
-    // This is required to prevent double-deletion.
-    __primitive("=", sc.s, _nullString);
+    this = sc.s;
     delete sc;
   }
-  
- 
-  pragma "no doc"
-  proc _getoutputformat(s: c_string):c_string {
-    var sn = s.length;
-    var afterdot = false;
-    var dplaces = 0;
-    for i in 1..sn {
-      var ss = s.substring(i);
-      if ((ss == '#') & afterdot) then dplaces += 1;
-      if (ss == '.') then afterdot=true;
-      chpl_free_c_string_copy(ss);
-    }
-    // FIX ME: leak c_string due to concatenation
-    return("%" + sn + "." + dplaces + "f");
-  }
-  
+
   //
   // When this flag is used during compilation, calls to chpl__testPar
   // will output a message to indicate that a portion of the code has been

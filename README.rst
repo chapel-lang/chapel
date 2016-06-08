@@ -37,9 +37,11 @@ capabilities in the interest of a simple and clean build.
 
 
 0) See `prereqs.rst`_ for more information about packages you
-   might need to have installed for Chapel to work.
+   might need to have installed for Chapel to work. Download
+   a Chapel source release from `download.html`_ if you haven't already.
 
 .. _prereqs.rst: http://chapel.cray.com/docs/1.12/usingchapel/prereqs.html
+.. _download.html: http://chapel.cray.com/download.html
 
 
 
@@ -171,13 +173,15 @@ What's next?
     reporting bugs                              `bugs.rst`_
     Chapel modes for emacs and vim              ``etc/README.md``
     example Chapel programs                     ``examples/README``
-    a quick reference for Chapel syntax         ``doc/quickReference.pdf``
-    the Chapel language specification           ``doc/chapelLanguageSpec.pdf``
+    a quick reference for Chapel syntax         `doc/quickReference.pdf`_
+    the Chapel language specification           `doc/chapelLanguageSpec.pdf`_
     other Chapel Documentation                  `chapel.cray.com/docs`_
     third-party software that we use            ``third-party/README``
 =============================================== =====================================
 
 
+.. _doc/quickReference.pdf: http://chapel.cray.com/spec/quickReference.pdf
+.. _doc/chapelLanguageSpec.pdf: http://chapel.cray.com/spec/spec-0.98.pdf
 .. _chapel.cray.com/docs: http://chapel.cray.com/docs/1.12/
 .. _building.rst: http://chapel.cray.com/docs/1.12/usingchapel/building.html
 .. _compiling.rst: http://chapel.cray.com/docs/1.12/usingchapel/compiling.html

@@ -27,6 +27,9 @@
 #include <stdlib.h>
 #include <stddef.h> // for ptrdiff_t
 #include <sys/time.h> // for struct timeval
+#ifndef __cplusplus
+#include <complex.h>
+#endif
 
 // C types usable from Chapel.
 typedef char c_char;
@@ -200,9 +203,11 @@ typedef float               _real32;
 typedef double              _real64;
 typedef float               _imag32;
 typedef double              _imag64;
-typedef struct __complex64 { _real32 re; _real32 im; } _complex64;
-typedef struct __complex128 { _real64 re; _real64 im; } _complex128;
-typedef int64_t              _symbol;
+#ifndef __cplusplus
+typedef float complex       _complex64;
+typedef double complex      _complex128;
+#endif
+typedef int64_t             _symbol;
 
 // macros for Chapel min/max -> C stdint.h or values.h min/max
 #define MIN_INT8            INT8_MIN
@@ -238,6 +243,50 @@ typedef struct chpl_main_argument_s {
   const char **argv;
   int32_t return_value;
 } chpl_main_argument;
+
+#ifndef __cplusplus
+_complex128 _chpl_complex128(_real64 re, _real64 im);
+_complex64 _chpl_complex64(_real32 re, _real32 im);
+
+_real64* complex128GetRealRef(_complex128* cplx);
+_real64* complex128GetImagRef(_complex128* cplx);
+_real32* complex64GetRealRef(_complex64* cplx);
+_real32* complex64GetImagRef(_complex64* cplx);
+
+/* 128 bit complex operators for LLVM use */
+static inline _complex128 complexMultiply128(_complex128 c1, _complex128 c2) {
+  return c1*c2;
+}
+static inline _complex128 complexDivide128(_complex128 c1, _complex128 c2) {
+  return c1/c2;
+}
+static inline _complex128 complexAdd128(_complex128 c1, _complex128 c2) {
+  return c1+c2;
+}
+static inline _complex128 complexSubtract128(_complex128 c1, _complex128 c2) {
+  return c1-c2;
+}
+static inline _complex128 complexUnaryMinus128(_complex128 c1) {
+  return -c1;
+}
+
+/* 64 bit complex operators for LLVM use */
+static inline _complex64 complexMultiply64(_complex64 c1, _complex64 c2) {
+  return c1*c2;
+}
+static inline _complex64 complexDivide64(_complex64 c1, _complex64 c2) {
+  return c1/c2;
+}
+static inline _complex64 complexAdd64(_complex64 c1, _complex64 c2) {
+  return c1+c2;
+}
+static inline _complex64 complexSubtract64(_complex64 c1, _complex64 c2) {
+  return c1-c2;
+}
+static inline _complex64 complexUnaryMinus64(_complex64 c1) {
+  return -c1;
+}
+#endif
 
 /* This should be moved somewhere else, but where is the question */
 const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i);

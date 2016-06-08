@@ -1,7 +1,17 @@
 language: c
+os:
+  - linux
+  - osx
 compiler:
   - gcc
   - clang
+
+matrix:
+  exclude:
+    - os: osx
+      compiler: gcc
+
+
 script:
   - ./util/buildRelease/smokeTest
 
@@ -12,8 +22,4 @@ env:
   - CHPL_DEVELOPER=true QTHREAD_AFFINITY=no
   - NIGHTLY_TEST_SETTINGS=true QTHREAD_AFFINITY=no
 
-addons:
-  apt:
-    packages:
-      - tcsh
 sudo: false

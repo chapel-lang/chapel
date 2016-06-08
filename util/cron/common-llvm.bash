@@ -26,4 +26,4 @@ fi
 # Run examples and test/extern/ferguson/.
 export CHPL_NIGHTLY_TEST_DIRS="extern/ferguson"
 
-nightly_args="-llvm"
+nightly_args="${nightly_args} -llvm"

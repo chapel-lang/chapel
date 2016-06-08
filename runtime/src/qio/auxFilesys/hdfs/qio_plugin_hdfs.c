@@ -147,10 +147,35 @@ qioerr hdfs_preadv (void* file, const struct iovec *vector, int count, off_t off
 
   STARTING_SLOW_SYSCALL;
 
+#ifdef HDFS3
+
+  const hdfs_file orig_hfl = *to_hdfs_file(file);
+  const hdfs_fs orig_hfs = *to_hdfs_fs(fs);
+
+  hdfsFS hfs = hdfsConnect(orig_hfs.fs_name, orig_hfs.fs_port);
+  hdfsFile hfl = hdfsOpenFile(hfs, orig_hfl.pathnm, O_RDONLY, 0, 0, 0);
+
+  //assert connection
+  CREATE_ERROR((hfs == NULL), err_out, ECONNREFUSED, "Unable to read HDFS file", error);
+
+  if(hfl == NULL) {
+    err_out = qio_mkerror_errno();
+    goto error;
+  }
+
+#endif
+
   err_out = 0;
   got_total = 0;
   for(i = 0; i < count; i++) {
+
+#ifdef HDFS3
+    hdfsSeek(hfs, hfl, offset+got_total);
+    got = hdfsRead(hfs, hfl, (void*)vector[i].iov_base, vector[i].iov_len);
+#else
     got = hdfsPread(to_hdfs_fs(fs)->hfs, to_hdfs_file(file)->file, offset + got_total, (void*)vector[i].iov_base, vector[i].iov_len);
+#endif
+
     if( got != -1 ) {
       got_total += got;
     } else {
@@ -167,8 +192,20 @@ qioerr hdfs_preadv (void* file, const struct iovec *vector, int count, off_t off
 
   *num_read_out = got_total;
 
+#ifdef HDFS3
+  got = hdfsCloseFile(hfs, hfl);
+  if(got == -1) { err_out = qio_mkerror_errno(); }
+
+  got = hdfsDisconnect(hfs);
+  if(got == -1) { err_out = qio_mkerror_errno(); }
+
+#endif
+
   DONE_SLOW_SYSCALL;
 
+#ifdef HDFS3
+error:
+#endif
   return err_out;
 }
 
@@ -259,7 +296,7 @@ qioerr hdfs_open(void** fd, const char* path, int* flags, mode_t mode, qio_hint_
   // assert that we connected
   CREATE_ERROR((to_hdfs_fs(fs)->hfs == NULL), err_out, ECONNREFUSED,"Unable to open HDFS file", error);
 
-  fl->file =  hdfsOpenFile(to_hdfs_fs(fs)->hfs, path, *flags, 0, 0, 0);
+  fl->file = hdfsOpenFile(to_hdfs_fs(fs)->hfs, path, *flags, 0, 0, 0);
 
   // Assert that we opened the file
   if (fl->file == NULL) {
@@ -296,7 +333,8 @@ qioerr hdfs_seek(void* fl, off_t offset, int whence, off_t* offset_out, void* fs
   qioerr err_out = 0;
 
   // We cannot seek unless we are in read mode! (HDFS restriction)
-  if (to_hdfs_file(fl)->file->type != INPUT)
+  //if (to_hdfs_file(fl)->file->type != INPUT)
+  if(!hdfsFileIsOpenForRead(to_hdfs_file(fl)->file)) // hdfs provides a function for this already
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Seeking is not supported in write mode in HDFS");
 
   STARTING_SLOW_SYSCALL;

@@ -70,6 +70,7 @@ pragma "atomic module"
 module Atomics {
 
   use MemConsistency;
+  use ChapelEnv;
 
   extern type atomic_int_least8_t;
   extern type atomic_int_least16_t;

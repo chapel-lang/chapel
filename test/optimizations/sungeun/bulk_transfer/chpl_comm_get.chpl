@@ -5,7 +5,7 @@ var A: [1..n] int = 777;
 var B: [1..n] int = -1;
 var Ad = A._value.theData;
 var Bd = B._value.theData;
-__primitive("chpl_comm_get",
+__primitive("chpl_comm_array_get",
             __primitive("array_get", Bd, B._value.getDataIndex(1)),
             0,
             __primitive("array_get", Ad, A._value.getDataIndex(1)),
@@ -18,7 +18,7 @@ for i in B.domain do
 on Locales(numLocales-1) {
   var C: [1..n] int = -1;
   var Cd = C._value.theData;
-  __primitive("chpl_comm_get",
+  __primitive("chpl_comm_array_get",
               __primitive("array_get", Cd, C._value.getDataIndex(1)),
               0,
               __primitive("array_get", Ad, A._value.getDataIndex(1)),
@@ -36,7 +36,7 @@ on Locales(numLocales-1) {
   on Locales(0) {
     var E: [1..n] int = -1;
     var Ed = E._value.theData;
-    __primitive("chpl_comm_get",
+    __primitive("chpl_comm_array_get",
                 __primitive("array_get", Ed, E._value.getDataIndex(1)),
                 numLocales-1,
                 __primitive("array_get", Dd, D._value.getDataIndex(1)),

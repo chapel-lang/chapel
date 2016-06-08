@@ -47,7 +47,7 @@ proc lcs_length(s1: string, s2: string, b, c) {
   var n = (s2.length);
   for i in 1..m {
     for j in 1..n {
-      if s1.substring(i) == s2.substring(j) {
+      if s1[i] == s2[j] {
         c(i,j) = c((i,j) + northwest) + 1;
         b(i,j) = northwest;
       } else if (c((i,j) + north) >= c((i,j) + west)) {
@@ -72,7 +72,7 @@ proc print_lcs(b, X, field: (int, int)) {
 
   if (b(field) == northwest) {
     print_lcs(b, X, field + b(field));
-    write(X.substring(i));
+    write(X[i]);
   } else {
     print_lcs(b, X, field + b(field));
   }

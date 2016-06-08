@@ -33,16 +33,16 @@ var parsedElements: [AllPairs] single XmlElement;
 
 proc main {
   forall z in AllIndices with (ref StartIndices, ref EndIndices) do {
-    if sourceText.substring[z] == '<' then {
+    if sourceText[z] == '<' then {
       lock;
       StartIndices += z;
-      if z > 1 && sourceText.substring[z-1] != ">" then EndIndices += z-1;
+      if z > 1 && sourceText[z-1] != ">" then EndIndices += z-1;
       lock = 0;
     }
-    else if sourceText.substring[z] == '>' then {
+    else if sourceText[z] == '>' then {
       lock;
       EndIndices += z;
-      if z < (sourceText.length) && sourceText.substring[z+1] != "<" then StartIndices += z+1;
+      if z < (sourceText.length) && sourceText[z+1] != "<" then StartIndices += z+1;
       lock = 0;
     }
   }
@@ -76,7 +76,7 @@ proc hasIndex(start, stop, indices) {
 
 proc hasSpace(str) {
   for i in 1..(str.length) do
-     if str.substring(i) == " " then return true;
+     if str[i] == " " then return true;
   return false;
 }
 
@@ -87,28 +87,28 @@ proc processTag(i,j) {
     writeln("\t[", i, "--", j, "] = Invalid range!");
     return;
   }
-  writeln("\t[", i, "--", j, "] = ", sourceText.substring[i..j]);
+  writeln("\t[", i, "--", j, "] = ", sourceText[i..j]);
   if (!(hasIndex(i+1, j, StartIndices) || hasIndex(i, j-1, EndIndices)) &&
-      (sourceText.substring(i) != "<" && sourceText.substring(j) != ">")) then {
+      (sourceText[i] != "<" && sourceText[j] != ">")) then {
     /* all text? assumes all entities are escaped*/
-    var elt = new XmlPCData(j-i+1, sourceText.substring[i..j]);
+    var elt = new XmlPCData(j-i+1, sourceText[i..j]);
     parsedElements(i,j) = elt;
     writeln("PCData : ", elt.data);
     return;
   }
-  if (sourceText.substring(i) != "<" || sourceText.substring(j) != ">") {
+  if (sourceText[i] != "<" || sourceText[j] != ">") {
     /* can't be PCData, and isn't a tag */
     parsedElements(i,j) = nil;
     writeln("Not a legitimate tag or PCdata");
     return;
   }
   var stop = max reduce ([x in StartIndices] if x < j then x);
-  if (stop == i && sourceText.substring[j-1] == "/" && sourceText.substring[i+1] != " ") {
+  if (stop == i && sourceText[j-1] == "/" && sourceText[i+1] != " ") {
     /* at a self-closing tag? */
     var name : string = "";
     for stop in i+2..j-2 do
-      if sourceText.substring[stop] == ' ' {
-        name = sourceText.substring[i+1..stop-1];
+      if sourceText[stop] == ' ' {
+        name = sourceText[i+1..stop-1];
         break;
       }
     var elt = new XmlTag(j-i+1, name);
@@ -116,7 +116,7 @@ proc processTag(i,j) {
     writeln("Self-closed : ", elt.name);
     return;
   }
-  if (sourceText.substring[stop+1] != "/") then {
+  if (sourceText[stop+1] != "/") then {
     /* are we at an end tag? */
     parsedElements(i,j) = nil;
     writeln("Not ending with end tag");
@@ -128,17 +128,17 @@ proc processTag(i,j) {
     writeln("Empty tag");
     return;
   }
-  var tagName = sourceText.substring[stop+2..j-1];
+  var tagName = sourceText[stop+2..j-1];
   var tagLen = tagName.length;
   if (hasSpace(tagName)) {
     parsedElements(i,j) = nil;
     writeln("End tag has spaces in it");
     return;
   }
-  if (!(sourceText.substring[i+1..(i+tagLen)] == tagName &&
-        (sourceText.substring[i+1 + tagLen] == " " ||
-         sourceText.substring[i+1 + tagLen] == ">"))) {
-    writeln("Start and end tags disagree : '", sourceText.substring[i+1..(i+tagLen)], "' <=> '", tagName, "'");
+  if (!(sourceText[i+1..(i+tagLen)] == tagName &&
+        (sourceText[i+1 + tagLen] == " " ||
+         sourceText[i+1 + tagLen] == ">"))) {
+    writeln("Start and end tags disagree : '", sourceText[i+1..(i+tagLen)], "' <=> '", tagName, "'");
     parsedElements(i,j) = nil;
     return;
   }
@@ -169,7 +169,7 @@ proc processTag(i,j) {
   parsedElements(i,j) = elt;
   writeln("[", i, "-", j, "] = ELEMENT(", tagName, ")");
   /*
-    writeln("(", i, ", ", j, ") => ", sourceText.substring[i..j]);
+    writeln("(", i, ", ", j, ") => ", sourceText[i..j]);
     }*/
   return;
 }

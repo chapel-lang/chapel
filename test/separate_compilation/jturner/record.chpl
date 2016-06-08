@@ -4,7 +4,8 @@ record Foo {
 }
 
 export proc dothis(r : Foo) : Foo {
-  r.x = r.x + 1;
-  r.y = r.y + 2;
-  return r;
+  var ret:Foo;
+  ret.x = r.x + 1;
+  ret.y = r.y + 2;
+  return ret;
 }

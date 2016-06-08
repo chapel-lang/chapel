@@ -112,6 +112,7 @@ module RunBRawLoops {
           }
         }
         copyTimer(stat, ilength, ltimer);
+        delete ltimer;
       }
     }
   }

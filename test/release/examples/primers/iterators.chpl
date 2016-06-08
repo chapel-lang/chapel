@@ -15,28 +15,52 @@
 // fibonacci - generates the first n Fibonacci numbers
 //
 // The state of the iterator is stored in the tuple (current, next).
-// Each time the iterator runs, it returns the current Fibonacci number,
-// and then updates the state to the next one.
+// Each time the yield statement is reached, it yields, or generates,
+// the current Fibonacci number. It then updates the state to the next one.
+//
 iter fibonacci(n: int) {
-  var (current, next) = (0, 1);
+  var (current, next) = (0, 1); // same as: var current = 0, next = 1;
   for 1..n {
     yield current;
-      // The first time this iterator is run, it proceeds this far
-      // and then yields (returns) the first value of current (== 0),
-      // and its state is preserved.
-      // The next time it is called, execution resumes here.
-      // It continues until another yield is reached.
-      // If the iterator completes or encounters a return statement,
-      // execution of the enclosing loop terminates immediately.
+      // When this iterator runs, it proceeds this far
+      // and then yields (generates) the first value of current (== 0).
+      // current and next are saved. The control and the yielded value
+      // are passed into the loop body, and one loop iteration executes.
+      //
+      // When the iteration completes, execution resumes here
+      // and continues until another yield is reached, etc.
+      //
+      // This statement updates current and next from their saved values.
     (current, next) = (next, current + next);
   }
 }
 
 //
+// An iterator is typically invoked in a loop.
+// Whenever iterator's yield statement is executed, the loop's index variable
+// is initialized with the yielded value and the loop body is executed
+// for a single iteration.
+//
+// When the iterator completes or encounters a return statement,
+// execution of the loop terminates (no more iterations occur).
+//
+write("The first few Fibonacci numbers are: ");
+for indexVar in fibonacci(10) do
+  write(indexVar, ", ");
+writeln("...");
+writeln();
+
+//
 // This example uses zipper iteration to iterate over the unbounded range 1..
 // and the fibonacci iterator with n set to ten.
+// Ranges, as well as arrays and domains, can be used as iterators in loops.
+//
 // Zipper iteration means that each iterator is advanced to the next yield
-// and the two values they return are returned as a tuple.
+// and the two values they yield are combined into a tuple.
+//
+// A zippered loop can have a single index variable, which will be a tuple,
+// or a tuple of variables like (i,j), each of which is initialized
+// with the value yielded by the corresponding iterator.
 //
 writeln("Fibonacci Numbers");
 for (i, j) in zip(1.., fibonacci(10)) {

@@ -160,6 +160,8 @@ module main {
     writeln("\n freeLoopSuiteRunInfo...");
     freeLoopSuiteRunInfo();
     writeln("\n DONE!!! ");
+    delete run_variant_names;
+    delete run_variants;
   }
 
   proc computeStats(ilv: int, loop_stats: vector(LoopStat), do_fom: bool) {
@@ -323,7 +325,7 @@ module main {
     var len_id = new vector(string);
     len_id.resize(suite_run_info.loop_length_names.size());
     for ilen in 0..#len_id.size() {
-      len_id[ilen] = suite_run_info.loop_length_names[ilen].substring(1);
+      len_id[ilen] = suite_run_info.loop_length_names[ilen][1];
     }
 
     var ver_info = buildVersionInfo();
@@ -431,9 +433,11 @@ module main {
           }
         }
       }
+      delete ref_mean;
     }
     outchannel.write(dash_line);
     outchannel.write("\n\n\n");
+    delete len_id;
   }
 
   proc buildVersionInfo() {
@@ -465,7 +469,7 @@ module main {
 
     len_id.resize(suite_run_info.loop_length_names.size());
     for ilen in 0..#len_id.size() {
-      len_id[ilen] = suite_run_info.loop_length_names[ilen].substring(1);
+      len_id[ilen] = suite_run_info.loop_length_names[ilen][1];
     }
 
 
@@ -539,9 +543,11 @@ module main {
           }
         }
       }
+      delete ref_chksum;
     }
     outchannel.write(dash_line);
     outchannel.write("\n\n\n");
+    delete len_id;
   }
 
   proc generateFOMReport(run_loop_variants: vector(string),
@@ -549,9 +555,11 @@ module main {
   }
 
   proc freeLoopData() {
+    delete s_loop_data;
   }
 
   proc freeLoopSuiteRunInfo() {
+    delete getLoopSuiteRunInfo();
   }
 
   proc runLoopVariant(lvid: LoopVariantID, run_loop:[] bool, ilength: LoopLength) {
@@ -660,18 +668,18 @@ module main {
     var suite_info = getLoopSuiteRunInfo();
     var ref_loop_stat = suite_info.ref_loop_stat;
 
-    var lstat0 = new LoopStat(suite_info.num_loop_lengths);
+    var lstat0: LoopStat;
 
     writeln("\n computeReferenceLoopTimes...");
 
-    lstat0 = ref_loop_stat; // ???
+    lstat0 = ref_loop_stat;
 
     for ilen in 0..#LoopLength.NUM_LENGTHS {
       runReferenceLoop0(lstat0, ilen);
     }
 
-    var lstat1 = new LoopStat(suite_info.num_loop_lengths);
-    lstat1 = ref_loop_stat; // ???
+    var lstat1: LoopStat;
+    lstat1 = ref_loop_stat;
 
     for ilen in 0..#LoopLength.NUM_LENGTHS {
       runReferenceLoop1(lstat1, ilen);
@@ -744,8 +752,7 @@ module main {
       suite_info.fom_rate[ilv].resize(LoopLength.NUM_LENGTHS);
     }
 
-    var shared_loop_length = new vector(int);
-    shared_loop_length.resize(LoopLength.NUM_LENGTHS);
+    var shared_loop_length: [0..#LoopLength.NUM_LENGTHS] int;
     shared_loop_length[LoopLength.LONG]   = (44217 * loop_length_factor):int;
     shared_loop_length[LoopLength.MEDIUM] = (5001 * loop_length_factor):int;
     shared_loop_length[LoopLength.SHORT]  = (171 * loop_length_factor):int;
@@ -1181,8 +1188,9 @@ module main {
         suite_info.getLoopStats(run_variant_names[ilv]).push_back(loop_stat);
       }
     }
-
     defineReferenceLoopRunInfo();
     s_loop_data = new LoopData(max(max_loop_length, suite_info.ref_loop_stat.loop_length[LoopLength.LONG]));
+
+    delete run_variant_names;
   }
 }

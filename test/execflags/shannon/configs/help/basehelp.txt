@@ -30,8 +30,8 @@ Built-in config vars:
                    memLeaks: bool
                      memMax: uint(64)
                memThreshold: uint(64)
-                     memLog: c_string
-                memLeaksLog: c_string
-             memLeaksByDesc: c_string
+                     memLog: string
+                memLeaksLog: string
+             memLeaksByDesc: string
                  numLocales: int(64)
 

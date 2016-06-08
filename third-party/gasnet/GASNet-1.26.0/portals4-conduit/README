@@ -1,0 +1,189 @@
+GASNet portals4-conduit documentation -*- text -*-
+Brian Barrett <bwbarre@sandia.gov>
+
+User Information:
+-----------------
+
+Portals 4 is the next generation network programming interface developed
+at Sandia National Laboratories, building on the lessons learned from the
+Portals 3.3 specification.  Information on Portals, including a copy of
+the specification,  can be found at the Sandia Portals page:
+
+  http://www.cs.sandia.gov/Portals/
+
+A reference implementation of Portals 4.0 which runs over InfiniBand and
+UDP is available at:
+
+  https://code.google.com/p/portals4/
+
+Recognized environment variables:
+---------------------------------
+
+* All the standard GASNet environment variables (see top-level README)
+
+GASNET_AM_BUFFER_SIZE=<size>
+  Size of each bounce buffer, in bytes, for receiving active messages.
+  Default is 1MB.  This, combined with GASNET_AM_NUM_ENTRIES,
+  determines how much memory per process is set aside for receiving
+  active messages.  Increasing this value may help performance if
+  frequent retransmissions are necessary, but it is likely that
+  increasing GASNET_AM_NUM_ENTRIES will be more fruitful.
+
+  Note that, unlike many interfaces, Portals 4 does not require a
+  buffer per active messages.  Instead, active messages are tightly
+  packed into a receive buffer until the buffer fills.  So 16 entries
+  of 1MB means that the conduit can receive approximately 256k
+  messages of 16 arguments.
+
+GASNET_AM_NUM_ENTRIES=<count>
+  Number of bounce buffers that should be used for receiving active
+  messages.  Default is 16.  Increasing this value may help
+  performance if frequent retransmissions are necessary.  See 
+  note in GASNET_AM_BUFFER_SIZE regarding receive buffer sizing.
+
+GASNET_AM_EVENT_QUEUE_LENGTH=<count>
+  Number of event queue entries in the send and receive event queues
+  for active messages.  Default is 8192 and the value should be a
+  multiple of two.  The number of outstanding outgoing active messages
+  is limited by this queue length, with one entry required for every
+  short / medium active message and two entries required for every
+  long active message.  The number of queued received active messages
+  is similarly limited.
+
+GASNET_EXTENDED_EVENT_QUEUE_LENGTH=<count>
+  Number of event queue entries in the event queue used for extended
+  API communication.  One entry is required for each outstanding put
+  or get operation at the initiator and no resources are required on
+  the target.  The default is 8192.
+
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+* Portals 4 implementations which do not support creating a memory
+  descriptor to bind all of memory may set two configure-time flags to
+  activate a workaround:
+    --with-portals4-max-md-size=SIZE
+    --with-portals4-max-va-size=SIZE
+  SIZE should be the Log2 of the size in bytes of the largest memory
+  space that can be covered by a memory descriptor and the largest
+  user-accessible virtual address.  In general, these arguments should
+  not be needed.
+
+Known problems:
+---------------
+
+* See the Berkeley UPC Bugzilla server for details on known bugs.
+
+Future work:
+------------
+
+* Optimization
+* Use counting events to track implicit handle events
+* Improved cleanup handling
+* Native barrier support
+
+==============================================================================
+
+Design Overview:
+----------------
+
+Core API:
+
+* Usage of Portals header fields...
+ header data: op count
+ match bits used on AM_PT
+   0 1 23 4567 0 1234567 0 1234567 01234567 01234567 01234567 01234567 01234567
+  | | |  |      |         |             payload length
+   ^ ^ ^    ^      ^
+   | | |    |      +--- handler id
+   | | |    +--- AM argument count
+   | | +--- Protocol: AM_SHORT, AM_MEDIUM, AM_LONG, or AM_LONG_PACKED
+   | +--- Request/Response: AM_REQUEST or AM_REPLY (0 if LONG_DATA) 
+   +-- Type: ACTIVE_MESSAGE or LONG_DATA
+
+* Short messages:
+   Type: ACTIVE_MESSAGE
+   Req/Rep: as specified
+   Protocol: AM_SHORT
+   AM argument count: as specied
+   handler id: as specified
+   payload length: 0
+   data:
+     <AM argument count * 4 bytes of arguments>
+
+* Medium messages:
+   Type: ACTIVE_MESSAGE
+   Req/Rep: as specified
+   Protocol: AM_MEDIUM
+   AM argument count: as specied
+   handler id: as specified
+   payload length: as specified (nbytes)
+   data:
+     <AM argument count * 4 bytes of arguments>
+     <nbytes of payload>
+
+* Long Packable messages (nbytes < 2048 - 8)
+   Type: ACTIVE_MESSAGE
+   Req/Rep: as specified
+   Protocol: AM_LONG_PACKED
+   AM argument count: as specied
+   handler id: as specified
+   payload length: as specified (nbytes)
+   data:
+     <AM argument count * 4 bytes of arguments>
+     <uint64_t remote address>
+     <nbytes of payload>
+
+* Long Messages
+   Type: ACTIVE_MESSAGE
+   Req/Rep: as specified
+   Protocol: AM_LONG
+   AM argument count: as specied
+   handler id: as specified
+   payload length: 0;
+   data:
+     <AM argument count * 4 bytes of arguments>
+
+   Type: LONG_DATA
+   Req/Rep: as specified
+   Protocol: AM_LONG
+   AM argument count: 0
+   handler id: 0
+   payload length: 0
+   data:
+     <nbytes of data delivered direcly to target address>
+
+   Note that the start + offset in the LONG_DATA gives you the remote
+   address for the active message callback.
+
+
+Source side message Notes:
+  The extended API messages are not associated with a source-side
+  fragment.  Therefore, we use the top 4 bits of the virtual address
+  to record the type of operation (active message, long data for
+  active message, explicit handle extended, or implicit handle
+  extended).  The remainder of the user_ptr is the actual virtual
+  address for the fragment (active message) or operation handle.
+
+
+Extended API:
+  The extended API is implemented using list entries instead of the
+  match list entries used by the core API, for higher message rate.
+  The target side generates no events unless an error has occurred.
+  The source side is rate limited by the size of the event queue,
+  although the default event queue should be large enough to cover the
+  maximum number of operations that can be in flight for current
+  hardware.
+
+  The Portals 4 conduit was designed with an end-to-end reliability
+  protocol in mind.  In these implementations, the SEND event will
+  arrive only shortly (probably simultaneously from the view of the
+  process) before the ACK event.  Therefore, we wait for the ACK event
+  rather than the SEND event to wait for local completion.  Modifying
+  the EOP case to support releasing local-completion blocking calls at
+  the SEND event would be straight-forward.  The IOP case would be
+  slightly harder, since the IOP associated with an event is also
+  associated with all other operations launched in that thread.  One
+  solution would be to use counting events for remote completion and
+  then the SEND event could have a pointer to a completion word.

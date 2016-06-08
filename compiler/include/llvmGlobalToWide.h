@@ -24,7 +24,6 @@
 
 #include "llvmUtil.h"
 
-#include "llvm/PassManager.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallPtrSet.h"
 

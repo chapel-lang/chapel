@@ -32,9 +32,10 @@
 #include <limits.h>
 #include <sys/mman.h>
 
+#include <ctype.h>
 #include <assert.h>
 
-// 64kb blocks... note tile64 page size is 64K
+// 64kb blocks...
 // this really should be a multiple of page size...
 // but we can't know page size at compile time
 size_t qbytes_iobuf_size = 64*1024;
@@ -94,6 +95,23 @@ void debug_print_bytes(qbytes_t* b)
   fprintf(stderr, "bytes %p: data=%p len=%lli ref_cnt=%" PRIu64 " free_function=%p flags=%i\n",
           b, b->data, (long long int) b->len, DO_GET_REFCNT(b),
           b->free_function, b->flags);
+}
+
+void debug_print_iovec(const struct iovec* iov, int iovcnt, size_t maxbytes)
+{
+  int i;
+  size_t j;
+  size_t nb = 0;
+  for( i = 0; i < iovcnt; i++ ) {
+    for( j = 0; j < iov[i].iov_len && nb < maxbytes; j++,nb++) {
+      char* buf = (char*) iov[i].iov_base;
+      char c = '.';
+      if (isprint(buf[j]))
+        c = buf[j];
+      printf("%c", c);
+    }
+  }
+  printf("\n");
 }
 
 // On return the ref count is 1.

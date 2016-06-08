@@ -41,7 +41,7 @@ endif
 ifeq ($(COMP_GEN_FLOAT_OPT), -1)
   MAKE_COMP_GEN_CFLAGS += $(IEEE_FLOAT_GEN_CFLAGS)
 endif
-# COMP_GEN_FLOAT_OPT = -1 -> IEEE lax, optimize please
+# COMP_GEN_FLOAT_OPT = 1 -> IEEE lax, optimize please
 ifeq ($(COMP_GEN_FLOAT_OPT), 1)
   MAKE_COMP_GEN_CFLAGS += $(FAST_FLOAT_GEN_CFLAGS)
 endif

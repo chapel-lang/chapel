@@ -232,6 +232,9 @@ string
 isString
 isStringValue
 isStringType
+isRecord
+isRecordValue
+isRecordType
 isPrimitive
 isPrimitiveValue
 isPrimitiveType

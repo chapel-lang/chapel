@@ -28,6 +28,11 @@ DESCRIPTION
                     sequence used to distinguish a documentation comment
                     from a normal one (defaults to '/*' if unspecified).
 
+  --process-used-modules  By default, chpldoc  only generates documentation
+                    for the source file(s) named on the command-line. When
+                    this flag is thrown, modules that it 'use's are also
+                    parsed and processed.
+
   --save-sphinx <directory>  Save generated Sphinx project in directory.
 
   --text-only       Generate text based documentation instead of HTML. Takes precedence over --[no-]html

@@ -140,6 +140,7 @@ clean: FORCE
 	cd runtime && $(MAKE) clean
 	cd third-party && $(MAKE) clean
 	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) clean
+	rm -f util/chplenv/*.pyc
 
 cleanall: FORCE
 	cd compiler && $(MAKE) cleanall
@@ -147,6 +148,7 @@ cleanall: FORCE
 	cd runtime && $(MAKE) cleanall
 	cd third-party && $(MAKE) cleanall
 	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) cleanall
+	rm -f util/chplenv/*.pyc
 
 cleandeps: FORCE
 	cd compiler && $(MAKE) cleandeps
@@ -161,6 +163,7 @@ clobber: FORCE
 	-@[ -d doc/sphinx ] && cd doc/sphinx && $(MAKE) clobber
 	rm -rf bin
 	rm -rf lib
+	rm -f util/chplenv/*.pyc
 
 depend:
 	@echo "make depend has been deprecated for the time being"

@@ -1,4 +1,4 @@
 var str = "abcdefghijklm";
 
-writeln("str.substring(13..14) = ", str.substring(13..14));
-writeln("str.substring(13..16) = ", str.substring(13..16));
+writeln("str[12..13] = ", str[12..13]);
+writeln("str[12..16] = ", str[12..16]);

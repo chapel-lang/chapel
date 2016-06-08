@@ -21,11 +21,11 @@ iter glob(pattern:string, flags:int, expand:bool = false, recursive:bool = false
             tx = wordexp_index(glb, i);
             if recursive {
                 if chpl_isdir(tx) == 1 {
-                    const pth = toString(tx) + "/";
+                    const pth = tx:string + "/";
                     for fl in glob(pattern, flags, expand, recursive, pth) do
                         yield fl;
-                } else yield toString(tx);
-            } else yield toString(tx);
+                } else yield tx:string;
+            } else yield tx:string;
         }
     } else { // else, use glob
         var glb:glob_t;
@@ -34,11 +34,11 @@ iter glob(pattern:string, flags:int, expand:bool = false, recursive:bool = false
             tx = glob_index(glb, i);
             if recursive {
                 if chpl_isdir(tx) == 1 {
-                    const pth = toString(tx) + "/";
+                    const pth = tx:string + "/";
                     for fl in glob(pattern, flags, expand, recursive, pth) do
                         yield fl;
-                } else yield toString(tx);
-            } else yield toString(tx);
+                } else yield tx:string;
+            } else yield tx:string;
         }
     }
 }
@@ -57,7 +57,7 @@ where tag == iterKind.leader {
       tx = wordexp_index(glb, i);
       if (recursive && chpl_isdir(tx) == 1) {
         dirBuff += tx;
-      } else yield toString(tx);
+      } else yield tx:string;
     }
   } else { // else, use glob
     var glb:glob_t;
@@ -67,7 +67,7 @@ where tag == iterKind.leader {
       tx = glob_index(glb, i);
       if recursive && chpl_isdir(tx) == 1 {
         dirBuff += tx;
-      } else yield toString(tx);
+      } else yield tx:string;
     }
   }
   // Now spawn off tasks for each dir

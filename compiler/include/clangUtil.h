@@ -57,8 +57,9 @@ class LayeredValueTable
 {
   private:
     struct Storage {
-      // note: this following nested struct should be a union
-      // since only one of the following is necessary?
+      // We use both the cTypeDecl and cValueDecl fields
+      // in some situations. (e.g. struct stat vs fn stat).
+      // Generally only one field will be set.
       struct s_u {
         llvm::Value *value;
         llvm::BasicBlock *block;
@@ -66,7 +67,8 @@ class LayeredValueTable
         // Note that clang will cache clang->llvm for types, at least
         // It would be possible for us to cache everything here
         // but that is probably redundant.
-        clang::NamedDecl *cdecl;
+        clang::TypeDecl *cTypeDecl;
+        clang::ValueDecl *cValueDecl;
         // Macros get stored here.
         VarSymbol* chplVar;
       } u;
@@ -81,7 +83,8 @@ class LayeredValueTable
         u.value = NULL;
         u.block = NULL;
         u.type = NULL;
-        u.cdecl = NULL;
+        u.cTypeDecl = NULL;
+        u.cValueDecl = NULL;
         u.chplVar = NULL;
         isLVPtr = GEN_VAL;
         isUnsigned = false;
@@ -89,8 +92,8 @@ class LayeredValueTable
       }
     };
    
-    typedef llvm::StringMap<Storage> map_type;
-    typedef std::list<map_type> layers_type;
+    typedef llvm::StringMap<Storage> map_type;//just map, key is string, value is Storage
+    typedef std::list<map_type> layers_type;// each element of the list is a map
     typedef layers_type::iterator layer_iterator;
     typedef map_type::iterator value_iterator;
     
@@ -111,7 +114,7 @@ class LayeredValueTable
     GenRet getValue(llvm::StringRef name);
     llvm::BasicBlock *getBlock(llvm::StringRef name);
     llvm::Type *getType(llvm::StringRef name);
-    clang::NamedDecl* getCDecl(llvm::StringRef name);
+    void getCDecl(llvm::StringRef name, clang::TypeDecl** cTypeOut, clang::ValueDecl** cValueOut);
     VarSymbol* getVarSymbol(llvm::StringRef name);
  
     bool isAlreadyInChapelAST(llvm::StringRef name);
@@ -132,7 +135,9 @@ void finishCodegenLLVM();
 void runClang(const char* just_parse_filename);
 
 bool lookupInExternBlock(ModuleSymbol* module, const char* name,
-                             clang::NamedDecl** cDecl, Type** chplType);
+                         clang::TypeDecl** cTypeOut,
+                         clang::ValueDecl** cValueOut,
+                         Type** chplTypeOut);
 bool alreadyConvertedExtern(ModuleSymbol* module, const char* name);
 bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name);
 

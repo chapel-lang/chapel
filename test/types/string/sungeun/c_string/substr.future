@@ -1,0 +1,1 @@
+Bug: Indexing string literals results in a syntax error.

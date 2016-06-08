@@ -1,1 +1,2 @@
-metaprog2.chpl:7: error: returning a runtime value from a param function
+metaprog2.chpl:2: In function 'calPI':
+metaprog2.chpl:7: error: Initializing parameter 'ret' to value not known at compile time

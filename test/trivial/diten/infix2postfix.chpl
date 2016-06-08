@@ -53,7 +53,7 @@ proc infix2postfix(str: string) {
 
   for i in 1..(str.length) {
     var ch: string;
-    var s = str.substring(i);
+    var s = str[i];
     select s {
       when " ", "\t" do { /* ignore whitespace */ }
       when "+", "-", "*", "/" {
@@ -94,7 +94,7 @@ proc infix2postfix(str: string) {
 proc postfixEval(str: string) {
   var stack: Stack;
   for i in 1..(str.length) {
-    var s: string = str.substring(i);
+    var s: string = str[i];
     select s {
       when "0","1","2","3","4","5","6","7","8","9" {
         stack.push(s);

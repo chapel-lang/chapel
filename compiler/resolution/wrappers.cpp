@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2015 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -482,13 +482,16 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
   TypeSymbol* fts = formal->type->symbol;
   CallExpr* castCall;
   VarSymbol* castTemp = newTemp("coerce_tmp"); // ..., formal->type ?
+
   castTemp->addFlag(FLAG_COERCE_TEMP);
+
   // gotta preserve this-ness, so can write to this's fields in constructors
   if (actualSym->hasFlag(FLAG_ARG_THIS) &&
       isDispatchParent(actualSym->type, formal->type))
     castTemp->addFlag(FLAG_ARG_THIS);
 
   Expr* newActual = new SymExpr(castTemp);
+
   if (NamedExpr* namedActual = toNamedExpr(prevActual)) {
     // preserve the named portion
     Expr* newCurrActual = namedActual->actual;
@@ -573,9 +576,13 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
     castCall = NULL;
   }
 
-  if (castCall == NULL)
+  if (castCall == NULL) {
     // the common case
     castCall = new CallExpr("_cast", fts, prevActual);
+
+    if (isString(fts))
+      castTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  }
 
   // move the result to the temp
   CallExpr* castMove = new CallExpr(PRIM_MOVE, castTemp, castCall);
@@ -664,8 +671,18 @@ void coerceActuals(FnSymbol* fn, CallInfo* info) {
       c2 = false;
       Type* actualType = actualSym->type;
       if (needToAddCoercion(actualType, actualSym, formalType, fn)) {
-        // addArgCoercion() updates currActual, actualSym, c2
-        addArgCoercion(fn, info->call, formal, currActual, actualSym, c2);
+        if (formalType == dtStringC && actualType == dtString && actualSym->isImmediate()) {
+          // We do this swap since we know the string is a valid literal
+          // There also is no cast defined for string->c_string on purpose (you
+          // need to use .c_str()) so the common case below does not work.
+          VarSymbol *var = toVarSymbol(actualSym);
+          SymExpr *newActual = new SymExpr(new_CStringSymbol(var->immediate->v_string));
+          currActual->replace(newActual);
+          currActual = newActual;
+        } else {
+          // addArgCoercion() updates currActual, actualSym, c2
+          addArgCoercion(fn, info->call, formal, currActual, actualSym, c2);
+        }
       }
     } while (c2 && --checksLeft > 0);
 

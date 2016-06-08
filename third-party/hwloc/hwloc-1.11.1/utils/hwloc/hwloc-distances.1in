@@ -1,0 +1,124 @@
+.\" -*- nroff -*-
+.\" Copyright © 2012-2014 Inria.  All rights reserved.
+.\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
+.\" See COPYING in top-level directory.
+.TH HWLOC-DISTANCES "1" "#HWLOC_DATE#" "#PACKAGE_VERSION#" "#PACKAGE_NAME#"
+.SH NAME
+hwloc-distances \- Displays distance matrices
+.
+.\" **************************
+.\"    Synopsis Section
+.\" **************************
+.SH SYNOPSIS
+.B hwloc-distances
+[\fIoptions\fR]
+.
+.\" **************************
+.\"    Options Section
+.\" **************************
+.SH OPTIONS
+.TP
+\fB\-l\fR \fB\-\-logical\fR
+Display hwloc logical indexes (default) instead of physical/OS indexes.
+.TP
+\fB\-p\fR \fB\-\-physical\fR
+Display OS/physical indexes instead of hwloc logical indexes.
+.TP
+\fB\-i\fR <file>, \fB\-\-input\fR <file>
+Read topology from XML file <file> (instead of discovering the
+topology on the local machine).  If <file> is "\-", the standard input
+is used.  XML support must have been compiled in to hwloc for this
+option to be usable.
+.TP
+\fB\-i\fR <directory>, \fB\-\-input\fR <directory>
+Read topology from the chroot specified by <directory> (instead of
+discovering the topology on the local machine).  This option is
+generally only available on Linux.  The chroot was usually created
+by gathering another machine topology with hwloc-gather-topology.
+.TP
+\fB\-i\fR <specification>, \fB\-\-input\fR <specification>
+Simulate a fake hierarchy (instead of discovering the topology on the
+local machine). If <specification> is "node:2 pu:3", the topology will
+contain two NUMA nodes with 3 processing units in each of them.
+The <specification> string must end with a number of PUs.
+.TP
+\fB\-\-if\fR <format>, \fB\-\-input\-format\fR <format>
+Enforce the input in the given format, among \fBxml\fR, \fBfsroot\fR
+and \fBsynthetic\fR.
+.TP
+\fB\-\-restrict\fR <cpuset>
+Restrict the topology to the given cpuset.
+.TP
+\fB\-\-whole\-system\fR
+Do not consider administration limitations.
+.TP
+\fB\-v\fR \fB\-\-verbose\fR
+Verbose messages.
+.TP
+\fB\-\-version\fR
+Report version and exit.
+.
+.\" **************************
+.\"    Description Section
+.\" **************************
+.SH DESCRIPTION
+.
+hwloc-distances displays also distance matrices attached to the topology.
+The value in the i-th row and j-th column is the distance from
+object #i to object #j.
+.
+.PP
+Unless defined by the user, matrices currently always contain relative
+latencies between NUMA nodes (which may or may not be accurate).
+See the definition of \fIstruct hwloc_distances_s\fR in \fIinclude/hwloc.h\fR
+or the documentation for details.
+.
+.PP
+These latencies are normalized to the latency of a local (non-NUMA) access.
+Hence 3.5 in row #i column #j means that the latency from cores in NUMA node
+#i to memory in NUMA node #j is 3.5 higher than the latency from cores
+to their local memory.
+.
+A breadth-first traversal of the topology is performed starting from
+the root to find all distance matrices.
+.
+.PP
+.B NOTE:
+lstopo may also display distance matrices in its verbose textual output.
+However lstopo only prints matrices that cover the entire topology while
+hwloc-distances also displays matrices that ignore part of the topology.
+.
+.\" **************************
+.\"    Examples Section
+.\" **************************
+.SH EXAMPLES
+.PP
+On a quad-package opteron machine:
+
+    $ hwloc-distances
+    Latency matrix between 4 NUMANodes (depth 2) by logical indexes:
+      index     0     1     2     3
+          0 1.000 1.600 2.200 2.200
+          1 1.600 1.000 2.200 2.200
+          2 2.200 2.200 1.000 1.600
+          3 2.200 2.200 1.600 1.000
+.
+.
+.\" **************************
+.\"    Return value section
+.\" **************************
+.SH RETURN VALUE
+Upon successful execution, hwloc-distances returns 0.
+.
+.PP
+hwloc-distances will return nonzero if any kind of error occurs, such as
+(but not limited to) failure to parse the command line.
+.
+.\" **************************
+.\"    See also section
+.\" **************************
+.SH SEE ALSO
+.
+.ft R
+hwloc(7), lstopo(1)
+.sp

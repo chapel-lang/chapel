@@ -1,0 +1,5 @@
+emptyFolder exists and is empty: true
+destFolder exists: false
+emptyFolder exists: false
+destFolder exists: true
+destFolder is empty: true

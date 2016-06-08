@@ -1,0 +1,2 @@
+intents.chpl:44: error: unresolved call 'fr(c_string)'
+intents.chpl:9: note: candidates are: fr(ref s: string)

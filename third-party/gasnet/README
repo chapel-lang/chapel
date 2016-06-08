@@ -11,8 +11,8 @@ to the Chapel team at chapel-bugs@lists.sourceforge.net, as the cause
 is most likely due to Chapel's use of GASNet and not the GASNet
 library itself.
 
-The modifications that we have made to the official GASNet 1.24.0
-release are as follows:
+The modifications that we have made to the official GASNet release are
+as follows:
 
 * Added support for launching an xterm window running gdb in the udp
   active messages layer if the environment variable CHPL_COMM_USE_GDB
@@ -27,6 +27,6 @@ The structure of this directory is as follows:
   README          : this file
   GASNet-1.*.*/   : the current GASNet release
   install/        : as GASNet is built it will be installed here:
-    $CHPL_TARGET_PLATFORM-$CHPL_TARGET_COMPILER/
+    $CHPL_TARGET_PLATFORM-$CHPL_TARGET_COMPILER-$CHPL_TARGET_ARCH/
       seg-$CHPL_GASNET_SEGMENT/
         nodbg/

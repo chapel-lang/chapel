@@ -208,12 +208,8 @@ static void addPrintModInitOrder(FnSymbol* fn)
   Expr *es1 = buildCStringLiteral(s1);
   Expr *es2 = buildCStringLiteral(s2);
   Expr *elen = buildIntLiteral(lenStr);
-  CallExpr* s1Init = new CallExpr(PRIM_MOVE, new SymExpr(s1tmp),
-                                  new CallExpr(PRIM_C_STRING_FROM_STRING,
-                                               es1));
-  CallExpr* s2Init = new CallExpr(PRIM_MOVE, new SymExpr(s2tmp),
-                                  new CallExpr(PRIM_C_STRING_FROM_STRING,
-                                               es2));
+  CallExpr* s1Init = new CallExpr(PRIM_MOVE, new SymExpr(s1tmp), es1);
+  CallExpr* s2Init = new CallExpr(PRIM_MOVE, new SymExpr(s2tmp), es2);
   CallExpr *printModInit = new CallExpr(gPrintModuleInitFn,
                                         new SymExpr(s1tmp),
                                         new SymExpr(s2tmp), elen);

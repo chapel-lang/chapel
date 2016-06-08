@@ -9,29 +9,26 @@ module unitTest {
       {
         const s: t = "substring";
         if useExpr {
-          writeMe(s.substring(i));
+          writeMe(s[i]);
         } else {
-          const ss = s.substring(i);
+          const ss = s[i];
           writeMe(ss);
         }
       }
       checkMemLeaks(m0);
     }
 
-    var idx = -3;
+    var idx = 3;
     substringHelp(idx);
-    var slice = idx..#abs(idx);
+
+    var slice = ..idx;
     substringHelp(slice);
 
-    idx = 3;
-    substringHelp(idx);
-    slice = idx..#idx;
-    substringHelp(slice);
+    var slice2 = idx..#idx;
+    substringHelp(slice2);
 
-    idx = 300;
-    substringHelp(idx);
-    slice = idx..#idx;
-    substringHelp(slice);
+    var slice3 = idx..;
+    substringHelp(slice3);
   }
 
   proc substringRemote(type t, useExpr=false) {
@@ -43,17 +40,17 @@ module unitTest {
         const s0: t = "substring";
         on Locales[numLocales-1] {
           if useExpr {
-            writeMe(s0.substring(i));
+            writeMe(s0[i]);
           } else {
-            const ss = s0.substring(i);
+            const ss = s0[i];
             writeMe(ss);
           }
           const s1: t = "substring";
           on Locales[0] {
             if useExpr {
-              writeMe(s1.substring(i));
+              writeMe(s1[i]);
             } else {
-              const ss = s1.substring(i);
+              const ss = s1[i];
               writeMe(ss);
             }
           }
@@ -62,20 +59,17 @@ module unitTest {
       checkMemLeaks(m0);
     }
 
-    var idx = -3;
+    var idx = 3;
     substringHelp(idx);
-    var slice = idx..#abs(idx);
+
+    var slice = ..idx;
     substringHelp(slice);
 
-    idx = 3;
-    substringHelp(idx);
-    slice = idx..#idx;
-    substringHelp(slice);
+    var slice2 = idx..#idx;
+    substringHelp(slice2);
 
-    idx = 300;
-    substringHelp(idx);
-    slice = idx..#idx;
-    substringHelp(slice);
+    var slice3 = idx..;
+    substringHelp(slice3);
   }
 
   proc doIt(type t) {

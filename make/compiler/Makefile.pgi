@@ -22,7 +22,7 @@
 #
 # Tools
 #
-CXX = pgCC
+CXX = pgc++
 CC = pgcc
 
 RANLIB = ranlib

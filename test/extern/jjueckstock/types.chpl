@@ -31,7 +31,7 @@ use C;
 //NOTE: either C.my_struct or my_struct will work with the use C; statement.
 var strct: C.my_struct = new my_struct(42, "bar".c_str());
 writeln(strct.foo);
-writeln(toString(strct.bar));
+writeln(strct.bar:string);
 
 //NOTE: due to an issue with the way Chapel implements type aliases,
 //

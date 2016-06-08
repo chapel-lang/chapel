@@ -81,17 +81,15 @@ extern const int chpl_heterogeneous;
 // wait for the GET to complete. The destination buffer must not be modified
 // before the request completes (after waiting on the returned handle)
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
-                                     size_t elemSize, int32_t typeIndex,
-                                     size_t len,
-                                     int ln, c_string fn);
+                                       size_t size, int32_t typeIndex,
+                                       int ln, c_string fn);
 
 // Do a PUT in a nonblocking fashion, returning a handle which can be used to
 // wait for the PUT to complete. The source buffer must not be modified before
 // the request completes (after waiting on the returned handle)
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
-                                    size_t elemSize, int32_t typeIndex,
-                                    size_t len,
-                                    int ln, c_string fn);
+                                       size_t size, int32_t typeIndex,
+                                       int ln, c_string fn);
 
 // Returns nonzero iff the handle has already been waited for and has
 // been cleared out in a call to chpl_comm_{wait,try}_some.
@@ -261,7 +259,7 @@ void chpl_comm_exit(int all, int status);
 //   size and locale are part of p
 //
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                    size_t elemSize, int32_t typeIndex, size_t len,
+                    size_t size, int32_t typeIndex,
                     int ln, c_string fn);
 
 //
@@ -272,7 +270,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 //   size and locale are part of p
 //
 void  chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                    size_t elemSize, int32_t typeIndex, size_t len,
+                    size_t size, int32_t typeIndex,
                     int ln, c_string fn);
 
 //
@@ -307,8 +305,8 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, int32_t srclocale,
 // a locally-allocated char[] and the locale field is set to "here".
 // The local char[] buffer is leaked. :(
 //
-void chpl_gen_comm_wide_string_get(void* addr,
-  c_nodeid_t node, void* raddr, size_t elemSize, int32_t typeIndex, size_t len,
+void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
+                                   size_t size, int32_t typeIndex,
                                    int ln, c_string fn);
 
 //

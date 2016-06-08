@@ -2,14 +2,14 @@
 #
 # all:
 #   mm/dd/yy:
-#     - example annotation 1
+#     - example annotation text 1 (#PR)
 #
 # group:
 #   mm/dd/yy:
-#     - example annotation 2
-#     - example annotation 3
+#     - example annotation text 2 (#PR)
+#     - example annotation text 3 (#PR)
 #   mm/dd/yy:
-#     - text: example annotation 4
+#     - text: example annotation text 4 (#PR)
 #       config: [config1, config2]
 #
 #
@@ -22,6 +22,11 @@
 # if the current configuration is in the configuration list. Note
 # that in this form, the 'config:' line does not (cannot) have a
 # leading '-' sign.
+#
+# The date listed should be day the impact of a change is seen, not
+# the day of the commit. e.g. if a commit was made on 11/11/11, the
+# date listed should be 11/12/11 (assuming testing ran successfully
+# that night, otherwise use the first day when testing runs again.)
 #
 # Groups are listed in case insensitive alphabetical order
 #
@@ -84,8 +89,21 @@ all:
     - text: ubuntu update to 15.04 (gcc upgraded to 4.9.2)
       config: shootout
   10/19/15:
-    - text: simplification of comm domain descriptor management
+    - text: can't repro old performance
       config: 16 node XC
+  10/29/15:
+    - PR 2850 to split up and inline BlockArr.dsiAccess
+  11/19/15:
+    - text: ubuntu update to 15.10 (gcc upgraded to 5.2)
+      config: shootout
+  12/05/15:
+    - text: improve comm=ugni comm domain handling
+      config: 16 node XC
+  12/08/15:
+    - text: default to qthreads+hwloc for cce (#2972)
+      config: Single node XC
+  12/09/15:
+    - Added record-based strings (#2884)
 
 AllCompTime:
   11/09/14:
@@ -107,6 +125,8 @@ assign.1024:
 bfs:
   09/25/14:
     - addition of octal to, reformatting of format printing.
+  10/29/15:
+    - Difficult to consistently replicate
 
 binary-trees:
   12/05/14:
@@ -168,6 +188,13 @@ ft:
 ft-a:
   09/05/14:
     - switched uses of locale.numCores to locale.maxTaskPar
+hpl:
+  12/11/15:
+    - Fixed string leak in DimensionalDist2D (#3013)
+
+hpl_performance:
+  12/11/15:
+    - Fixed string leak in DimensionalDist2D (#3013)
 
 is:
   09/05/14:
@@ -215,12 +242,16 @@ mandelbrot:
     - Bulk IO optimization
   09/05/14:
     - maxTaskPar change delayed fifo->qthreads performance hit
+  11/11/15:
+    - Initial commit of C complexes
 
 mandelbrot-extras:
   01/03/14:
     - Chapel level improvement by using a nonlocking writer
   09/05/14:
     - maxTaskPar change delayed fifo->qthreads performance hit
+  11/11/15:
+    - Initial commit of C complexes
 
 memleaks:
   11/13/13:
@@ -241,12 +272,20 @@ memleaks:
     - Closed sync/single leaks
   06/05/15:
     - Nikhil's k-d tests added to repository
+  12/11/15:
+    - Fixed string leak in DimensionalDist2D (#3013)
+  12/13/15:
+    - Fixed string memory leak resulting from redundant autoCopies (#3023)
 
 memleaksfull:
   07/08/14:
     - Conversion of knucleotide-forall and -coforall to read input line-by-line (23733).
   07/10/14:
     - Included tests that leak only string data in the Number of Tests with Leaks (r23785).
+  12/11/15:
+    - Fixed string leak in DimensionalDist2D (#3013)
+  12/13/15:
+    - Fixed string memory leak resulting from redundant autoCopies (#3023)
 
 meteor:
   12/18/13:
@@ -279,10 +318,16 @@ parOpEquals:
 regexdna:
   10/07/14:
     - Add c_string_copy type
+  11/29/15:
+    - started building re2 with optimizations (#2930)
+  12/13/15:
+    - Fixed string memory leak resulting from redundant autoCopies (#3023)
 
 revcomp:
   05/11/15:
     - various qio changes motivated by cygwin failures (#1943)
+  10/29/15:
+    - Difficult to consistently replicate
 
 spectralnorm:
   01/21/15:

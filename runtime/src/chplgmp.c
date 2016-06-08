@@ -57,7 +57,9 @@ void chpl_gmp_get_mpz(mpz_t ret, int64_t src_locale, __mpz_struct from)
   ret[0]._mp_size = from._mp_size;
 
   // Next, use GASNET to move the pointer data.
-  chpl_gen_comm_get( ret[0]._mp_d, src_locale, from._mp_d, sizeof(mp_limb_t), CHPL_TYPE_uint64_t, ret[0]._mp_alloc, __LINE__, __FILE__);
+  chpl_gen_comm_get(ret[0]._mp_d, src_locale, from._mp_d,
+                    sizeof(mp_limb_t) * ret[0]._mp_alloc, CHPL_TYPE_uint64_t,
+                    __LINE__, __FILE__);
 
   //gmp_printf("got %Zd\n", ret);
 }
@@ -90,7 +92,7 @@ c_string_copy chpl_gmp_mpz_get_str(int base, mpz_t x)
 {
   size_t len = mpz_sizeinbase(x, base);
 
-  char* str = (char*)chpl_mem_calloc(len+1, CHPL_RT_MD_GLOM_STRINGS_DATA, 0, 0);
+  char* str = (char*)chpl_mem_calloc(1, len+1, CHPL_RT_MD_GLOM_STRINGS_DATA, 0, 0);
 
   mpz_get_str(str, base, x);
 

@@ -983,12 +983,20 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   const myFollowThis = {(...t)};
   if fast {
     const arrSection = locArr(dom.dist.targetLocsIdx(myFollowThis.low));
+
+    //
+    // Slicing arrSection.myElems will require reference counts to be updated.
+    // If myElems is an array of arrays, the inner array's domain or dist may
+    // live on a different locale and require communication for reference
+    // counting. Simply put: don't slice inside a local block.
+    //
+    // TODO: Can myLocArr be used here to simplify things?
+    //
+    var chunk => arrSection.myElems(myFollowThis);
     if arrSection.locale.id == here.id then local {
-      for e in arrSection.myElems(myFollowThis) do
-        yield e;
+      for i in chunk do yield i;
     } else {
-      for e in arrSection.myElems(myFollowThis) do
-        yield e;
+      for i in chunk do yield i;
     }
   } else {
     proc accessHelper(i) ref {

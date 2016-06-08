@@ -425,6 +425,137 @@ OPTIONS
 
   --version       Print the version number of the compiler.
 
+  Primary Configuration Options
+
+  --home <path>                   Specify the location of the Chapel
+                                  installation directory. This flag corresponds
+                                  with and overrides the $CHPL_HOME environment
+                                  variable.
+
+  --atomics <atomics-impl>        Specify the implementation to use for
+                                  Chapel's atomic variables. This flag
+                                  corresponds with and overrides the
+                                  $CHPL_ATOMICS environment variable. (defaults
+                                  to a best guess based on
+                                  $CHPL_TARGET_COMPILER, $CHPL_TARGET_PLATFORM,
+                                  and $CHPL_COMM)
+
+  --network-atomics <network>     Specify the network atomics implementation
+                                  for all atomic variables. This flag
+                                  corresponds with and overrides the
+                                  $CHPL_NETWORK_ATOMICS environment variable
+                                  (defaults to best guess based on $CHPL_COMM).
+
+  --aux-filesys <aio-system>      Specify runtime support for additional file
+                                  systems. This flag corresponds with and
+                                  overrides the $CHPL_AUX_FILESYS environment
+                                  variable (defaults to 'none').
+
+  --comm <comm-impl>              Specify the communication implementation to
+                                  use for inter-locale data transfers. This
+                                  flag corresponds with and overrides the
+                                  $CHPL_COMM environment variable (defaults to
+                                  'none').
+
+  --comm-substrate <conduit>      Specify the communication conduit for the
+                                  communication implementation. This flag
+                                  corresponds with and overrides the
+                                  $CHPL_COMM_SUBSTRATE environment variable
+                                  (defaults to best guess based on
+                                  $CHPL_TARGET_PLATFORM).
+
+  --gasnet-segment <segment>      Specify memory segment to use with GASNet.
+                                  This flag corresponds with and overrides the
+                                  $CHPL_GASNET_SEGMENT environment variable.
+                                  (defaults to best guess based on
+                                  $CHPL_COMM_SUBSTRATE).
+
+  --gmp <gmp-version>             Specify the GMP library implementation to be
+                                  used by the GMP module. This flag corresponds
+                                  with and overrides the $CHPL_GMP environment
+                                  variable (defaults to best guess based on
+                                  $CHPL_TARGET_PLATFORM and whether you've
+                                  built the included GMP library in the
+                                  third-party directory).
+
+  --hwloc <hwloc-impl>            Specify whether or not to use the hwloc
+                                  library. This flag corresponds with and
+                                  overrides the $CHPL_HWLOC environment
+                                  variable (defaults to a best guess based on
+                                  whether you've built the included library in
+                                  the third-party hwloc directory).
+
+  --launcher <launcher-system>    Specify the launcher, if any, used to start
+                                  job execution. This flag corresponds with and
+                                  overrides the $CHPL_LAUNCHER environment
+                                  variable (defaults to a best guess based on
+                                  $CHPL_COMM and $CHPL_TARGET_PLATFORM).
+
+  --locale-model <locale-model>   Specify the locale model to use for
+                                  describing your locale architecture. This
+                                  flag corresponds with and overrides the
+                                  $CHPL_LOCALE_MODEL environment variable
+                                  (defaults to 'flat').
+
+  --make <make utility>           Specify the GNU compatible make utility. This
+                                  flag corresponds with and overrides the
+                                  $CHPL_MAKE environment variable (defaults to
+                                  a best guess based on $CHPL_HOST_PLATFORM).
+
+  --mem <mem-impl>                Specify the memory allocator used for dynamic
+                                  memory management. This flag corresponds with
+                                  and overrides the $CHPL_MEM environment
+                                  variable (defaults to a best guess based on
+                                  $CHPL_COMM).
+
+  --regexp <regexp>               Specify the regular expression library to
+                                  use. This flag corresponds with and overrides
+                                  the $CHPL_REGEXP environment variable
+                                  (defaults to 'none' or 're2' if you've
+                                  installed the re2 package in the third-party
+                                  directory).
+
+  --target-arch <architecture>    Specify the architecture that the compiled
+                                  executable will be specialized to when
+                                  --specialize is enabled. This flag
+                                  corresponds with and overrides the
+                                  $CHPL_TARGET_ARCH environment variable
+                                  (defaults to a best guess based on
+                                  $CHPL_COMM, $CHPL_TARGET_COMPILER, and
+                                  $CHPL_TARGET_PLATFORM).
+
+  --target-compiler <compiler>    Specify the compiler suite that should be
+                                  used to build the generated C code for a
+                                  Chapel program and the Chapel runtime. This
+                                  flag corresponds with and overrides the
+                                  $CHPL_TARGET_COMPILER environment variable
+                                  (defaults to a best guess based on
+                                  $CHPL_HOST_PLATFORM, $CHPL_TARGET_PLATFORM,
+                                  and $CHPL_HOST_COMPILER).
+
+  --target-platform <platform>    Specify the platform on which the target
+                                  executable is to be run for the purposes of
+                                  cross-compiling. This flag corresponds with
+                                  and overrides the $CHPL_TARGET_PLATFORM
+                                  environment variable (defaults to
+                                  $CHPL_HOST_PLATFORM).
+
+  --tasks <task-impl>             Specify the tasking layer to use for
+                                  implementing tasks. This flag corresponds
+                                  with and overrides the $CHPL_TASKS
+                                  environment variable (defaults to a best
+                                  guess based on $CHPL_TARGET_PLATFORM).
+
+  --timers <timer-impl>           Specify a timer implementation to be used by
+                                  the Time module. This flag corresponds with
+                                  and overrides the $CHPL_TIMERS environment
+                                  variable (defaults to 'generic').
+
+  --wide-pointers <format>        Specify the wide pointer format format. This
+                                  flag corresponds with and overrides the
+                                  $CHPL_WIDE_POINTERS environment variable
+                                  (defaults to 'struct').
+
 ENVIRONMENT VARIABLES FOR OPTIONS
 
   Most compiler command-line options have an environment variable that can
@@ -460,87 +591,21 @@ ENVIRONMENT
   settings (as explicitly set and inferred). Some of the most
   commonly-used environment variables are summarized here.
 
-  CHPL_HOME           Specifies the location of the Chapel installation directory.
+  CHPL_DEVELOPER      When set, build and compile in developer mode,
+                      which generates line numbers in internal module
+                      code and throws extra warning flags when
+                      compiling the generated C code.
 
   CHPL_HOST_PLATFORM  Specifies the platform on which the Chapel compiler is
                       running (defaults to our best guess).
 
-  CHPL_TARGET_PLATFORM   Specifies the platform on which the target executable
-                         is to be run for the purposes of cross-compiling
-                         (defaults to $CHPL_HOST_PLATFORM).
 
   CHPL_HOST_COMPILER  Specifies the compiler suite that should be used
                       to build the Chapel compiler (defaults to a best
                       guess based on $CHPL_HOST_PLATFORM).
 
-  CHPL_TARGET_COMPILER  Specifies the compiler suite that should be used
-                      to build the generated C code for a Chapel program
-                      and the Chapel runtime (defaults to a best guess
-                      based on $CHPL_HOST_PLATFORM, $CHPL_TARGET_PLATFORM,
-                      and $CHPL_HOST_COMPILER).
-
-  CHPL_TARGET_ARCH    Specifies the architecture that the compiled executable
-                      will be specialized to when --specialize is enabled
-                      (defaults to a best guess based on $CHPL_COMM,
-                      $CHPL_TARGET_COMPILER, and $CHPL_TARGET_PLATFORM).
-
-  CHPL_LOCALE_MODEL   Specifies the locale model to use for describing
-                      your locale architecture (defaults to 'flat')
-
-  CHPL_COMM           Specifies the communication layer to use for
-                      inter-locale data transfers (defaults to 'none').
-
-  CHPL_TASKS          Specifies the tasking layer to use for implementing
-                      tasks (defaults to a best guess based on
-                      $CHPL_TARGET_PLATFORM).
-
-  CHPL_LAUNCHER       Specifies the launcher, if any, used to start job
-                      execution (defaults to a best guess based on
-                      $CHPL_COMM and $CHPL_TARGET_PLATFORM).
-
-  CHPL_TIMERS         Specifies a timer implementation to be used by
-                      the Time module (defaults to 'generic').
-
-  CHPL_MEM            Specifies the memory allocator used for dynamic memory
-                      management (defaults to a best guess based on $CHPL_COMM).
-
-  CHPL_MAKE           Specifies the GNU compatible make utility
-                      (defaults to a best guess based on
-                      $CHPL_HOST_PLATFORM).
-
-  CHPL_ATOMICS        Specifies the implementation to use for Chapel's atomic
-                      variables (defaults to a best guess based on
-                      $CHPL_TARGET_COMPILER, $CHPL_TARGET_PLATFORM, and
-                      $CHPL_COMM).
-
-  CHPL_GMP            Specifies the GMP library implementation to be
-                      used by the GMP module (defaults to a best guess
-                      based on $CHPL_TARGET_PLATFORM and whether
-                      you've built the included GMP library in the
-                      third-party directory).
-
-  CHPL_HWLOC          Specifies whether or not to use the hwloc library
-                      (defaults to a best guess based on whether you've
-                      built the included library in the third-party
-                      hwloc directory).
-
-  CHPL_REGEXP         Specifies the regular expression library to use
-                      (defaults to 'none' or 're2' if you've installed
-                      the re2 package in the third-party directory).
-
-  CHPL_WIDE_POINTERS  Specifies the wide porter format format
-                      (defaults to 'struct').
-
-  CHPL_LLVM           When set to 'llvm', use the LLVM/Clang back-end
-                      (defaults to 'none').
-
-  CHPL_AUX_FILESYS    Specify runtime support for additional file
-                      systems (defaults to 'none').
-
-  CHPL_DEVELOPER      When set, build and compile in developer mode,
-                      which generates line numbers in internal module
-                      code and throws extra warning flags when
-                      compiling the generated C code.
+  CHPL_LLVM           Specifies whether or not to build the LLVM back-end to
+                      the Chapel compiler.
 
   CHPL_MODULE_PATH    Specifies a list of colon-separated directories to be
                       added to the module search path. The module search path

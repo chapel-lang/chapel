@@ -556,7 +556,7 @@ module ChapelRange {
   /* private */ proc range.alignLow() 
   {
     if this.isAmbiguous() then
-      __primitive("chpl_error", "alignLow -- Cannot be applied to a range with ambiguous alignment.");
+      __primitive("chpl_error", c"alignLow -- Cannot be applied to a range with ambiguous alignment.");
   
     if stridable then _low = this.alignedLow;
     return this;
@@ -567,7 +567,7 @@ module ChapelRange {
   /* private */ proc range.alignHigh()
   {
     if this.isAmbiguous() then
-      __primitive("chpl_error", "alignHigh -- Cannot be applied to a range with ambiguous alignment.");
+      __primitive("chpl_error", c"alignHigh -- Cannot be applied to a range with ambiguous alignment.");
   
     if stridable then _high = this.alignedHigh;
     return this;
@@ -593,7 +593,7 @@ module ChapelRange {
   proc range.indexOrder(i: idxType)
   {
     if this.isAmbiguous() then
-      __primitive("chpl_error", "indexOrder -- Undefined on a range with ambiguous alignment.");
+      __primitive("chpl_error", c"indexOrder -- Undefined on a range with ambiguous alignment.");
   
     if ! member(i) then return (-1):idxType;
     if ! stridable then return i - _low;
@@ -872,12 +872,12 @@ module ChapelRange {
 
     if boundsChecking {
       if step == 0 then
-        __primitive("chpl_error", "the step argument of the 'by' operator is zero");
+        __primitive("chpl_error", c"the step argument of the 'by' operator is zero");
 
       if chpl_need_to_check_step(step, strType) &&
          step > (max(strType):step.type)
       then
-        __primitive("chpl_error", "the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + typeToString(strType));
+        __primitive("chpl_error", c"the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + typeToString(strType));
     }
   }
 
@@ -980,7 +980,7 @@ module ChapelRange {
       var st2 = abs(other.stride);
       var (g,x) = chpl__extendedEuclid(st1, st2);
       if g > 1 then
-        __primitive("chpl_error", "Cannot slice ranges with ambiguous alignments unless their strides are relatively prime.");
+        __primitive("chpl_error", c"Cannot slice ranges with ambiguous alignments unless their strides are relatively prime.");
   
       // OK, we can combine these two ranges, but the result is marked as ambiguous.
       ambig = true;
@@ -1089,7 +1089,7 @@ module ChapelRange {
 
   proc chpl_count_help(r, count: integral) {
     if r.isAmbiguous() then
-      __primitive("chpl_error", "count -- Cannot count off elements from a range which is ambiguously aligned.");
+      __primitive("chpl_error", c"count -- Cannot count off elements from a range which is ambiguously aligned.");
 
     type resultType = r.idxType;
     type strType = indexToStrideType(resultType);
@@ -1371,7 +1371,7 @@ module ChapelRange {
       halt("iteration over range that has no first index");
 
     if this.isAmbiguous() then
-      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+      __primitive("chpl_error", c"these -- Attempt to iterate over a range with ambiguous alignment.");
 
     // This iterator could be split into different cases depending on the
     // stride like the bounded iterators. However, all that gets you is the
@@ -1396,7 +1396,7 @@ module ChapelRange {
       if boundsChecking then checkIfIterWillOverflow();
 
       if this.isAmbiguous() then
-        __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+        __primitive("chpl_error", c"these -- Attempt to iterate over a range with ambiguous alignment.");
 
       // must use first/last since we have no knowledge of stride
       // must check if low > high (something like 10..1) because of the !=
@@ -1459,7 +1459,7 @@ module ChapelRange {
   pragma "no doc"
   iter range.generalIterator() {
     if this.isAmbiguous() then
-      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+      __primitive("chpl_error", c"these -- Attempt to iterate over a range with ambiguous alignment.");
 
     var i: idxType;
     const start = this.first;
@@ -1486,7 +1486,7 @@ module ChapelRange {
       compilerError("parallel iteration is not supported over unbounded ranges");
     }
     if this.isAmbiguous() {
-      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+      __primitive("chpl_error", c"these -- Attempt to iterate over a range with ambiguous alignment.");
     }
     if debugChapelRange {
       writeln("*** In range standalone iterator:");
@@ -1535,7 +1535,7 @@ module ChapelRange {
       compilerError("parallel iteration is not supported over unbounded ranges");
 
     if this.isAmbiguous() then
-      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+      __primitive("chpl_error", c"these -- Attempt to iterate over a range with ambiguous alignment.");
 
     if debugChapelRange then
       writeln("*** In range leader:"); // ", this);
@@ -1629,7 +1629,7 @@ module ChapelRange {
   iter range.these(param tag: iterKind, followThis) where tag == iterKind.follower
   {
     if this.isAmbiguous() then
-      __primitive("chpl_error", "these -- Attempt to iterate over a range with ambiguous alignment.");
+      __primitive("chpl_error", c"these -- Attempt to iterate over a range with ambiguous alignment.");
 
     if boundedType == BoundedRangeType.boundedNone then
       compilerError("iteration over a range with no bounds");
@@ -1743,7 +1743,25 @@ module ChapelRange {
   //################################################################################
   //# Utilities
   //#
-  
+
+  proc _cast(type t, x: range(?)) where t == string {
+    var ret: string;
+
+    if x.hasLowBound() then
+      ret += x.low;
+    ret += "..";
+    if x.hasHighBound() then
+      ret += x.high;
+    if x.stride != 1 then
+      ret += " by " + x.stride;
+
+    // Write out the alignment only if it differs from natural alignment.
+    // We take alignment modulo the stride for consistency.
+    if !(x.isNaturallyAligned()) then
+        ret += " align " + chpl__mod(x._alignment, x.stride);
+    return ret;
+  }
+
   // Write implementation for ranges
   pragma "no doc"
   proc ref range.readWriteThis(f)

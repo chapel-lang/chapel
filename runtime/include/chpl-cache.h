@@ -64,13 +64,13 @@ void chpl_cache_release(int ln, c_string fn)
 // These are the functions that the generated code should be eventually
 // calling on a put or a get.
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                         size_t elemSize, int32_t typeIndex, size_t len,
+                         size_t size, int32_t typeIndex,
                          int ln, c_string fn);
 void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                         size_t elemSize, int32_t typeIndex, size_t len,
+                         size_t size, int32_t typeIndex,
                          int ln, c_string fn);
 void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
-                              size_t elemSize, int32_t typeIndex, size_t len,
+                              size_t size, int32_t typeIndex,
                               int ln, c_string fn);
 void  chpl_cache_comm_get_strd(
                    void *addr, void *dststr, c_nodeid_t node, void *raddr,

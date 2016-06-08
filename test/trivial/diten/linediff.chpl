@@ -13,7 +13,7 @@ proc main(){
     return;
 
   for i in 1..minlength {
-    if s1.substring(i) != s2.substring(i) then
+    if s1[i] != s2[i] then
       temp_str = temp_str + '|';
     else
       temp_str = temp_str + '-';

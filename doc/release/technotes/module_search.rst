@@ -21,7 +21,6 @@ The module search paths are initialized as follows:
 
     * Internal
         * ``$CHPL_HOME/modules/internal/localeModels/$CHPL_LOCALE_MODEL``
-        * ``$CHPL_HOME/modules/internal/threads/$CHPL_THREADS``
         * ``$CHPL_HOME/modules/internal/tasks/$CHPL_TASKS``
         * ``$CHPL_HOME/modules/internal/comm/$CHPL_COMM``
         * ``$CHPL_HOME/modules/internal``

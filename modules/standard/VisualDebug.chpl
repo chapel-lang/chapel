@@ -83,9 +83,9 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
 
      /* Do the op at the root  */
      select what {
-         when vis_op.v_start    do chpl_vdebug_start (name.c_str(), time);
+         when vis_op.v_start    do chpl_vdebug_start (name.localize().c_str(), time);
          when vis_op.v_stop     do chpl_vdebug_stop ();
-         when vis_op.v_tag      do chpl_vdebug_tag (name.c_str());
+         when vis_op.v_tag      do chpl_vdebug_tag (name.localize().c_str());
          when vis_op.v_pause    do chpl_vdebug_pause ();
      }
 }
@@ -104,7 +104,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
   proc startVdebug ( rootname : string ) {
     var now = chpl_now_time();
     //coforall l in Locales do
-    //  on l do chpl_vdebug_start (rootname.c_str(), now);
+    //  on l do chpl_vdebug_start (rootname.localize().c_str(), now);
     VDebugTree (vis_op.v_start, rootname, now);
   }
 
@@ -115,8 +115,8 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
 */
   proc tagVdebug ( tagname : string ) {
     //coforall l in Locales[1..] do
-    //  on l do chpl_vdebug_tag (tagname.c_str(), 0);
-    //chpl_vdebug_tag (tagname.c_str(), 0);
+    //  on l do chpl_vdebug_tag (tagname.localize().c_str(), 0);
+    //chpl_vdebug_tag (tagname.localize().c_str(), 0);
     VDebugTree (vis_op.v_tag, tagname, 0);
   }
 
@@ -135,8 +135,8 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
 */
   proc pauseVdebug () {
     //coforall l in Locales[1..] do
-    //  on l do chpl_vdebug_tag (tagname.c_str(), 1);
-    //chpl_vdebug_tag(tagname.c_str(), 1);
+    //  on l do chpl_vdebug_tag (tagname.localize().c_str(), 1);
+    //chpl_vdebug_tag(tagname.localize().c_str(), 1);
     VDebugTree (vis_op.v_pause, "", 0);
   }
 

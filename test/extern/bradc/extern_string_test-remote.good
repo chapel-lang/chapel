@@ -1,2 +1,2 @@
 returned string return string test
-extern_string_test-remote.chpl:7: error: cannot access remote data in local block
+returned string arg return string arg test

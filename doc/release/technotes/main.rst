@@ -7,7 +7,7 @@ Support for main() Functions
 After running module initialization code (top-level statements in
 modules), a Chapel program will start executing from the entry point,
 a function named main().  Chapel's main() function has typically taken
-no arguments and had to return type.  This README describes initial
+no arguments and had no return type.  This README describes initial
 support for returning a status value and making main() take arbitrary
 command-line arguments.
 

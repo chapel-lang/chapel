@@ -263,7 +263,6 @@ Functions and Iterators
   for the type.
   # functions/vass/paramret-1.future
   # functions/vass/paramret-diten.future
-  # users/bartosz/paramfn2.future
 - Var functions returning multiple class types should be illegal, but
   instead they are compiled and result in runtime error.
   # functions/diten/varFnRetClasses.future
@@ -335,9 +334,6 @@ Strings
 - Implicit conversion of c_string to string does not work for ref,
   out, or inout intents.
   # types/string/sungeun/c_string/intents.future
-- Implicit conversion of string literals returned from functions does
-  not work.
-  # types/string/sungeun/c_string/returnString.future
 - c_string variable are sometimes copied to remote locales.
   # types/string/sungeun/c_string/multilocale/c_str_on_remote_global_string.future
   # types/string/sungeun/c_string/multilocale/remote_assign_c_string.future
@@ -595,6 +591,8 @@ Domain Maps, Domains and Arrays
   # functions/iterators/bradc/badzip/misZipArrays.future
 - Arrays of subdomains may not work.
   # users/jglewis/bfs_102207/driver_breadth_first_search.future
+- Indexing of array literals may be mis-parsed.
+  # arrays/vass/literal-indexing.future
 - Arrays declared over domains with negative strides may result in errors.
   # users/weili/arrNegDom-blc.future
   # users/weili/arrNegDom2.future
@@ -840,6 +838,8 @@ Miscellaneous
   # types/tuple/stonea/returnArrayTuple.future
 - Comm=ugni network atomic ops fail for vars on tasks=qthreads stacks
   # runtime/gbt/atomic-on-stack.future
+- Indexing string literals results in a parse error
+  # types/string/sungeun/c_string/substr.future
 
 
 Performance
@@ -888,11 +888,6 @@ Developer
 
 LLVM (experimental)
 -------------------
-- Extern C blocks do not properly handle C "void *" types.
-  # extern/tzakian/void_ptr.future
-- The LLVM backend does not properly handle C macros (and for that
-  reason will not work with GMP)
-
 
 Multi-locale/GASNet executions
 ------------------------------

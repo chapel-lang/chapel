@@ -52,7 +52,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct ArgumentState;
 struct ArgumentDescription;
 
-typedef void ArgumentFunction(const ArgumentState* state, const char* arg);
+typedef void ArgumentFunction(const ArgumentDescription* desc, const char* arg);
 
 struct ArgumentState
 {
