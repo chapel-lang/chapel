@@ -652,7 +652,7 @@ timeoutsuffix  = PerfSfx('timeout')   # .timeout  or .perftimeout  or ...
 # sys.stdout.write('perftest=%d perflabel=%s\n'%(perftest,perflabel))
 
 # Get global timeout
-if os.getenv('CHPL_TEST_VGRND_COMP')=='on':
+if os.getenv('CHPL_TEST_VGRND_COMP')=='on' or os.getenv('CHPL_TEST_VGRND_EXE')=='on':
     globalTimeout=1000
 else:
     globalTimeout=300

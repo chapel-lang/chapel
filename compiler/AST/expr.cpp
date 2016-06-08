@@ -498,7 +498,11 @@ SymExpr* SymExpr::copyInner(SymbolMap* map) {
 }
 
 Type* SymExpr::typeInfo(void) {
-  return var->type;
+  if (toFnSymbol(var)) {
+    return dtCFnPtr;
+  } else {
+    return var->type;
+  }
 }
 
 
@@ -3355,7 +3359,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
   if( (to_ptr.isLVPtr != GEN_WIDE_PTR && from.isLVPtr != GEN_WIDE_PTR )) {
     // Neither is wide.
     if( isStarTuple ) {
-      // Homogenous tuples are pointers even when GEN_VAL is set.
+      // Homogeneous tuples are pointers even when GEN_VAL is set.
       // Homogeneous tuples are copied specially
       if ( !fNoTupleCopyOpt &&
            starTupleLength <= tuple_copy_limit &&
@@ -4259,7 +4263,7 @@ GenRet CallExpr::codegen() {
          case PRIM_GET_SVEC_MEMBER:
          {
           if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-            /* Get a pointer to the i'th element of a homogenous tuple */
+            /* Get a pointer to the i'th element of a homogeneous tuple */
             GenRet elemPtr =
               codegenElementPtr(call->get(1),codegenExprMinusOne(call->get(2)));
             INT_ASSERT( elemPtr.isLVPtr == GEN_WIDE_PTR );

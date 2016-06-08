@@ -1,7 +1,7 @@
 /* nbody_rangesub + explicit reductions
  *
- * The Great Computer Language Shootout
- * http://shootout.alioth.debian.org/
+ * The Computer Language Benchmarks Game
+ * http://benchmarksgame.alioth.debian.org
  *
  * contributed by Albert Sidelnik
  *

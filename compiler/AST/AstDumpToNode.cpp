@@ -1564,6 +1564,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
   else if (VarSymbol* var = toVarSymbol(sym))
   {
     enterNode(sym);
+
     fprintf(mFP, " ");
 
     if (var->immediate == 0)
@@ -1693,38 +1694,47 @@ void AstDumpToNode::ast_symbol(Symbol* sym, bool def)
           fprintf(mFP, "intent:       in");
           newline();
           break;
+
         case INTENT_INOUT:
           fprintf(mFP, "intent:       inout");
           newline();
           break;
+
         case INTENT_OUT:
           fprintf(mFP, "intent:       out");
           newline();
           break;
+
         case INTENT_CONST:
           fprintf(mFP, "intent:       const");
           newline();
           break;
+
         case INTENT_CONST_IN:
           fprintf(mFP, "intent:       const in");
           newline();
           break;
+
         case INTENT_CONST_REF:
           fprintf(mFP, "intent:       const ref");
           newline();
           break;
+
         case INTENT_REF:
           fprintf(mFP, "intent:       ref");
           newline();
           break;
+
         case INTENT_PARAM:
           fprintf(mFP, "intent:       param");
           newline();
           break;
+
         case INTENT_TYPE:
           fprintf(mFP, "intent:       type");
           newline();
           break;
+
         case INTENT_BLANK:
           fprintf(mFP, "intent:       blank");
           newline();
@@ -1746,6 +1756,11 @@ void AstDumpToNode::ast_symbol(Symbol* sym, bool def)
   else if (mod->name != 0 && sym->name == 0)
   {
     fprintf(mFP, "name:         %s.%s", mod->name, "??");
+  }
+
+  else if (def == true)
+  {
+    fprintf(mFP, "name:         %s", sym->name);
   }
 
   else
@@ -1776,7 +1791,7 @@ int AstDumpToNode::writeType(Type* type, bool announce) const
   {
     fputs(" type: ", mFP);
 
-    len = (compact == true) ? 7 : 7;
+    len = 7;
   }
 
   if (false)
