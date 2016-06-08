@@ -3,11 +3,14 @@ use LayoutCSR;
 
 config const N = 16;
 
-const FullDom = {0..#N, 0..#N} dmapped Block({0..#N, 0..#N});
 
 config type layoutType = DefaultDist;
 var layout = new layoutType;
-var FullSparseDom: sparse subdomain(FullDom) dmapped new dmap(layout);
+
+const FullDom = {0..#N, 0..#N} dmapped Block({0..#N, 0..#N},
+    layoutType=layoutType);
+
+var FullSparseDom: sparse subdomain(FullDom);
 var FullSparseArr: [FullSparseDom] int;
 
 //define a hardcoded DefaultSparse subdomain for second quadrant

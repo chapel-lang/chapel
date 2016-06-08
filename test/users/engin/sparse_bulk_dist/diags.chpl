@@ -1,8 +1,10 @@
 use BlockDist;
+use LayoutCSR;
 
 config const N = 8;
-
-const ParentDom = {0..#N, 0..#N} dmapped Block({0..#N, 0..#N});
+config type layoutType = DefaultDist;
+const ParentDom = {0..#N, 0..#N} dmapped Block({0..#N, 0..#N},
+    layoutType=layoutType);
 var SparseDom: sparse subdomain(ParentDom);
 var SparseMat: [SparseDom] int;
 var diagInds: [{0..#N*2}] 2*int;
@@ -18,6 +20,7 @@ forall i in SparseMat do i = i.locale.id+1;
 
 for i in ParentDom.dim(1) {
   for j in ParentDom.dim(2) {
+    writeln("********************************");
     write(SparseMat[i, j], " ");
   }
   writeln();
