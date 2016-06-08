@@ -1774,7 +1774,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
     }
     if (!arg) {
       if (!defaultTypeConstructorArg->defaultExpr)
-        USR_FATAL_CONT(fn, "constructor for class '%s' requires a generic argument called '%s'", ct->symbol->name, defaultTypeConstructorArg->name);
+        USR_FATAL_CONT(fn, "initializer for class '%s' requires a generic argument called '%s'", ct->symbol->name, defaultTypeConstructorArg->name);
     } else {
       call->insertAtTail(new NamedExpr(arg->name, new SymExpr(arg)));
     }
