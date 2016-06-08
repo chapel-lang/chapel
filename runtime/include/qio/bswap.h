@@ -51,7 +51,7 @@
 // They are implemented in terms of e.g. __bswap_16, which may be
 // a function or a macro.
 //
-// Unfortunately, when using GLIBC with a complier other than GCC,
+// Unfortunately, when using GLIBC with a compiler other than GCC,
 // such as PGI, Cray or Intel compilers, __bswap_64 will not be
 // defined (even though htobe64 is).
 // There is a check in glibc for #if defined __GNUC__ && __GNUC__ >= 2

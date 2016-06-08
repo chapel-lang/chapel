@@ -647,7 +647,7 @@ err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
     buf->f_ffree   = safe_inode_cast(tmp.f_ffree);
     buf->f_namelen = safe_inode_cast(MNAMELEN);
 #else // linux or cygwin
-    // We don't have to deal with possible conversion from signed to unsiged
+    // We don't have to deal with possible conversion from signed to unsigned
     // numbers here, since in linux the field will be set to 0 if it is
     // undefined for the FS. Since we know the field is >= 0 we can get rid of
     // all the branching logic that we had for apple

@@ -52,7 +52,7 @@ tuple.  If a programmer requires a non-parameter value to define a
 data structure, an array may be a better choice.
 \end{rationale}
 
-\begin{chapelexample}{homogenous.chpl}
+\begin{chapelexample}{homogeneous.chpl}
 The statement
 \begin{chapel}
 var x1: (string, real),
@@ -226,7 +226,7 @@ since the type of an expression must be statically known.
 
 % FYI: Similar to text regarding array iteration.  Slightly less
 % similar for domain iteration.
-Only homogenous tuples support iteration via
+Only homogeneous tuples support iteration via
 standard \chpl{for}, \chpl{forall} and \chpl{coforall} loops.  These loops
 iterate over all of the tuple's elements.  A loop of the form:
 
@@ -236,7 +236,7 @@ iterate over all of the tuple's elements.  A loop of the form:
   ...e...
 \end{chapel}
 
-where t is a homogenous tuple of size \chpl{n}, is semantically
+where t is a homogeneous tuple of size \chpl{n}, is semantically
 equivalent to:
 
 % This is difficult to capture in a test program
@@ -667,7 +667,7 @@ The binary operators \chpl{\+}, \chpl{\-}, \chpl{\*}, \chpl{\/}, \chpl{\%},
 are overloaded on tuples by applying them to pairs of the respective
 argument components and returning the results as a new tuple.  The
 sizes of the two argument tuples must be the same.  These operators
-are also defined for homogenous tuples and scalar values of matching
+are also defined for homogeneous tuples and scalar values of matching
 type.
 
 The size of the result tuple is the same as the argument tuple(s).

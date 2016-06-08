@@ -1030,9 +1030,20 @@ module ChapelArray {
       _value.dsiAdd(i);
     }
 
-    proc bulkAdd(inds: [] _value.rank*_value.idxType, sorted=false,
-        noDuplicate=false) where isSparseDom(this) {
-      _value.bulkAdd(inds, sorted, noDuplicate);
+    proc bulkAdd(inds: [] _value.idxType, isSorted=false,
+        isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank==1 {
+
+      if inds.size == 0 then return;
+
+      _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
+    }
+
+    proc bulkAdd(inds: [] _value.rank*_value.idxType, isSorted=false,
+        isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank>1 {
+
+      if inds.size == 0 then return;
+
+      _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
     }
 
     /* Remove index ``i`` from this domain */
@@ -1478,10 +1489,103 @@ module ChapelArray {
     }
   }  // record _domain
 
-  proc +=(ref sd: domain, inds: [] sd._value.rank*sd._value.idxType ) 
-    where isSparseDom(sd) {
+  // this is a helper function for bulkAdd functions in sparse subdomains.
+  proc __getActualInsertPts(d, inds, 
+      isSorted, isUnique) /* where isSparseDom(d) */ {
 
-    sd.bulkAdd(inds, false, false);
+    var numAdded = inds.size; //maybe remove this var
+
+    //find individual insert points
+    //and eliminate duplicates between inds and dom
+    var indivInsertPts: [{0..#numAdded}] int;
+    var actualInsertPts: [{0..#numAdded}] int; //where to put in newdom
+
+    if !isSorted then QuickSort(inds);
+
+    //eliminate duplicates --assumes sorted
+    if !isUnique {
+      //make sure lastInd != inds[inds.domain.low]
+      var lastInd = inds[inds.domain.low] + 1; 
+      for (i, p) in zip(inds, indivInsertPts)  {
+        if i == lastInd then p = -1;
+        else lastInd = i;
+      }
+    }
+
+    //verify sorted and no duplicates if not --fast
+    if boundsChecking {
+      VerifySort(inds, "bulkAdd: Data is not sorted, call the function with \
+          isSorted=false");
+
+      //check duplicates assuming sorted
+      const indsStart = inds.domain.low;
+      const indsEnd = inds.domain.high;
+      var lastInd = inds[indsStart];
+      for i in indsStart+1..indsEnd {
+        if inds[i] == lastInd && indivInsertPts[i] != -1 then 
+          halt("There are duplicates, call the function with isUnique=false"); 
+      }
+
+      for i in inds do d.boundsCheck(i);
+
+    }
+
+    forall (i,p) in zip(inds, indivInsertPts) {
+      if isUnique || p != -1 { //don't do anything if it's duplicate
+        const (found, insertPt) = d.find(i);
+        p = if found then -1 else insertPt; //mark as duplicate
+      }
+    }
+
+    //shift insert points for bulk addition
+    //previous indexes that are added will cause a shift in the next indexes
+    var actualAddCnt = 0;
+
+    //NOTE: this can also be done with scan
+    for (ip, ap) in zip(indivInsertPts, actualInsertPts) {
+      if ip != -1 {
+        ap = ip + actualAddCnt;
+        actualAddCnt += 1;
+      }
+      else ap = ip;
+    }
+
+    return (actualInsertPts, actualAddCnt);
+
+  }
+
+  proc +=(ref sd: domain, inds: [] sd.idxType) 
+    where isSparseDom(sd) && sd.rank == 1 {
+    
+    if inds.size == 0 then return;
+
+    sd._value.dsiBulkAdd(inds);
+  }
+
+  proc +=(ref sd: domain, inds: [] sd.rank*sd.idxType ) 
+    where isSparseDom(sd) && sd.rank > 1 {
+
+    if inds.size == 0 then return;
+
+    sd._value.dsiBulkAdd(inds);
+  }
+
+  /*
+    Currently this is not optimized for addition of a sparse
+  */
+  proc +=(ref sd: domain, d: domain) 
+    where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
+
+    if d.size == 0 then return;
+
+    type _idxType = if sd.rank==1 then int else sd.rank*int;
+    const indCount = d.numIndices;
+    const arr: [{0..#indCount}] _idxType;
+  
+    //this could be a parallel loop. but ranks don't match -- doesn't compile
+    for (a,i) in zip(arr,d) do a=i;
+
+    sd._value.dsiBulkAdd(arr, true, true, false);
   }
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old

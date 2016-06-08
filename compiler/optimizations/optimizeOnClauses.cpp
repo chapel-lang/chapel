@@ -270,7 +270,8 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
 
   case PRIM_WHEN:
   case PRIM_INT_ERROR:
-  case PRIM_CAPTURE_FN:
+  case PRIM_CAPTURE_FN_FOR_C:
+  case PRIM_CAPTURE_FN_FOR_CHPL:
   case PRIM_CREATE_FN_TYPE:
 
   case PRIM_NUM_FIELDS:

@@ -148,6 +148,13 @@ module DefaultSparse {
       return found;
     }
 
+    proc boundsCheck(ind: index(rank, idxType)):void {
+      if boundsChecking then
+        if !(parentDom.member(ind)) then
+          halt("DefaultSparse domain/array index out of bounds: ", ind,
+              " (expected to be within ", parentDom, ")");
+    }
+
     proc add_help(ind) {
       // find position in nnzDom to insert new index
       const (found, insertPt) = find(ind);
@@ -236,74 +243,23 @@ module DefaultSparse {
       }
     }
 
-    proc boundsCheck(ind: rank*idxType):void {
-      if boundsChecking then
-        if !(parentDom.member(ind)) then
-          halt("COO domain/array index out of bounds: ", ind,
-              " (expected to be within ", parentDom, ")");
+    proc dsiBulkAdd(inds: [] index(rank, idxType),
+        isSorted=false, isUnique=false, preserveInds=true){
+
+      if !isSorted && preserveInds {
+        var _inds = inds;
+        bulkAdd_help(_inds, isSorted, isUnique); 
+      }
+      else {
+        bulkAdd_help(inds, isSorted, isUnique);
+      }
     }
 
-    proc bulkAdd(inds: [] rank*idxType, sorted=false, noDuplicate=false){
-      var numAdded = inds.size; //maybe remove this var
+    proc bulkAdd_help(inds: [] index(rank, idxType), isSorted=false, isUnique=false){
 
-      /*writeln("Going to add ", numAdded, " indices");*/
-      //find individual insert points
-      //and eliminate duplicates between inds and dom
-      var indivInsertPts: [{0..#numAdded}] int;
-      var actualInsertPts: [{0..#numAdded}] int; //where to put in newdom
+      const (actualInsertPts, actualAddCnt) =
+        __getActualInsertPts(this, inds, isSorted, isUnique);
 
-      if !sorted then QuickSort(inds);
-
-      //eliminate duplicates --assumes sorted
-      if !noDuplicate {
-        //make sure lastInd != inds[inds.domain.low]
-        var lastInd = inds[inds.domain.low] + (1,0); 
-        for (i, p) in zip(inds, indivInsertPts)  {
-          if i == lastInd {
-            p = -1;
-          }
-          else {
-            lastInd = i;
-          }
-        }
-      }
-
-      //verify sorted and no duplicates if not --fast
-      if boundsChecking {
-        VerifySort(inds, "bulkAdd: Data is not sorted, call the function with \
-            sorted=false");
-
-        //check duplicates assuming sorted
-        const indsStart = inds.domain.low;
-        const indsEnd = inds.domain.high;
-        var lastInd = inds[indsStart];
-        for i in indsStart+1..indsEnd {
-          if inds[i] == lastInd then halt("There are duplicates"); 
-        }
-
-        for i in inds do boundsCheck(i);
-
-      }
-
-      forall (i,p) in zip(inds, indivInsertPts) {
-        if p != -1 { //don't do anything if it's duplicate
-          const (found, insertPt) = find(i);
-          p = if found then -1 else insertPt; //mark as duplicate
-        }
-      }
-      /*writeln("indivInsertPts: ", indivInsertPts);*/
-
-      //shift insert points for bulk addition
-      //previous indexes that are added will cause a shift in the next indexes
-      var actualAddCnt = 0;
-      for (ip, ap) in zip(indivInsertPts, actualInsertPts) {
-        if ip != -1 {
-          ap = ip + actualAddCnt;
-          actualAddCnt += 1;
-        }
-        else ap = ip;
-      }
-      /*writeln("actualInsertPts: ", actualInsertPts);*/
       const oldnnz = nnz;
       nnz += actualAddCnt;
 
@@ -320,15 +276,17 @@ module DefaultSparse {
       var newLoc = actualInsertPts[newIndIdx]; //its position-to-be in new dom
       while newLoc == -1 {
         newIndIdx -= 1;
+        if newIndIdx == -1 then break; //there were duplicates -- now done
         newLoc = actualInsertPts[newIndIdx];
       }
 
+      var arrShiftMap: [{1..oldnnz}] int; //to map where data goes
+
       for i in 1..nnz by -1 {
-        /*writeln("Picking ", i, "th elem. newLoc=",newLoc," oldIndIdx=",oldIndIdx,*/
-        /*" newIndIdx=",newIndIdx);*/
         if oldIndIdx >= 1 && i > newLoc {
           //shift from old values
           indices[i] = indices[oldIndIdx];
+          arrShiftMap[oldIndIdx] = i;
           oldIndIdx -= 1;
         }
         else if newIndIdx >= 0 && i == newLoc {
@@ -341,17 +299,15 @@ module DefaultSparse {
             newLoc = -2; //finished new set
           while newLoc == -1 {
             newIndIdx -= 1;
+            if newIndIdx == -1 then break; //there were duplicates -- now done
             newLoc = actualInsertPts[newIndIdx];
           }
         }
         else halt("Something went wrong");
-
-        //we can break if newIndIdx = -1 ?
       }
-      //TODO There is a call to sparseShiftArray for all arras subscribed to this
-      //domain in dsiAdd. I couldn't find a case where that would be necessary for
-      //this bulkAdd(ie it might be necassry, but so far it worked fine without
-      //it). Needs to be investigated further.
+
+      for a in _arrs do 
+        a.sparseBulkShiftArray(arrShiftMap, oldnnz);
     }
 
     proc dsiRemove(ind: rank*idxType) {
@@ -524,6 +480,27 @@ module DefaultSparse {
       return irv;
     }
 
+    // shifts data array according to shiftMap where shiftMap[i] is the new index 
+    // of the ith element of the array. Called at the end of bulkAdd to move the
+    // existing items in data array and initialize new indices with irv.
+    // oldnnz is the number of elements in the array. As the function is called 
+    // at the end of bulkAdd, it is almost certain that oldnnz!=data.size
+    proc sparseBulkShiftArray(shiftMap, oldnnz){
+      var newIdx: int;
+      var prevNewIdx = 1;
+      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(1) by -1) {
+        newIdx = shiftMap[_newIdx];
+        data[newIdx] = data[i];
+        
+        //fill IRV up to previously added nnz
+        for emptyIndex in newIdx+1..prevNewIdx-1 do data[emptyIndex] = irv;
+        prevNewIdx = newIdx;
+      }
+      //fill the initial added space with IRV
+      for i in 1..prevNewIdx-1 do data[i] = irv;
+    }
+
+    // shift data array after single index addition. Fills the new index with irv
     proc sparseShiftArray(shiftrange, initrange) {
       for i in initrange {
         data(i) = irv;
