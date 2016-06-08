@@ -79,6 +79,7 @@ module MatrixMarket {
    }
 
    class MMWriter {
+      type eltype;
       var HEADER_LINE = "%%MatrixMarket matrix coordinate real general\n"; // currently the only supported MM format in this module
 
       var fd:file;
@@ -94,6 +95,13 @@ module MatrixMarket {
       }
 
       proc write_headers(nrows, ncols, nnz=-1) {
+         if eltype == int {
+           HEADER_LINE = HEADER_LINE.replace("real", "pattern");
+         }
+         else if eltype == complex {
+           HEADER_LINE = HEADER_LINE.replace("real", "complex");
+         }
+
          fout.write(HEADER_LINE);
          fout.write("%\n");
 
@@ -131,8 +139,8 @@ module MatrixMarket {
       proc ~MMWriter() { this.close(); }
    }
 
-proc mmwrite(const fname:string, mat:[?Dmat] real, _num_cols=-1) where mat.domain.rank == 2 {
-   var mw = new MMWriter(fname);
+proc mmwrite(const fname:string, mat:[?Dmat] ?T, _num_cols=-1) where mat.domain.rank == 2 {
+   var mw = new MMWriter(T, fname);
    mw.write_headers(-1,-1,-1);
    var (ncols, nnz) = (0,0);
    var (nrows, poslast) = (-1,-1);
@@ -322,6 +330,10 @@ class MMReader {
    proc ~MMReader() { this.close(); }
 }
 
+/* Read a dense Matrix Market file
+     :arg eltype: user provides (needs to know) the type of information stored
+     :type type eltype
+ */
 proc mmread(type eltype, const fname:string) {
    var mr = new MMReader(fname);
    var toret = mr.read_domain_from_file(eltype);
@@ -329,6 +341,10 @@ proc mmread(type eltype, const fname:string) {
    return toret;
 }
 
+/* Read a sparse Matrix Market file
+     :arg eltype: user provides (needs to know) the type of information stored
+     :type type eltype
+ */
 proc mmreadsp(type eltype, const fname:string) {
    var mr = new MMReader(fname);
    var toret = mr.read_spdomain_from_file(eltype);
