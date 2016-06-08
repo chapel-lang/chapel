@@ -5,7 +5,6 @@ config const N = 16;
 
 
 config type layoutType = DefaultDist;
-var layout = new layoutType;
 
 const FullDom = {0..#N, 0..#N} dmapped Block({0..#N, 0..#N},
     layoutType=layoutType);

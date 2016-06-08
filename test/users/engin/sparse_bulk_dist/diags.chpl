@@ -20,7 +20,6 @@ forall i in SparseMat do i = i.locale.id+1;
 
 for i in ParentDom.dim(1) {
   for j in ParentDom.dim(2) {
-    writeln("********************************");
     write(SparseMat[i, j], " ");
   }
   writeln();
