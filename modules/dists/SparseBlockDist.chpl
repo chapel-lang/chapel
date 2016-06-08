@@ -140,7 +140,7 @@ class SparseBlockDom: BaseSparseDom {
     if !isSorted then
       QuickSort(inds);
 
-    var localIndexInitSize = min(1, inds.size/numLocales);
+    var localIndexInitSize = max(1, inds.size/numLocales);
     var localIndexDom = {0..#localIndexInitSize};
 
     var localIndexes: [dist.targetLocDom] [localIndexDom] index(rank,idxType);
