@@ -343,7 +343,7 @@ proc Stencil.Stencil(boundingBox: domain,
   if idxType != boundingBox.idxType then
     compilerError("specified Stencil index type != index type of specified bounding box");
 
-  this.boundingBox = boundingBox;
+  this.boundingBox = boundingBox : domain(rank, idxType, stridable=false);
   this.fluff = fluff;
 
   // can't have periodic if there's no fluff
@@ -351,7 +351,7 @@ proc Stencil.Stencil(boundingBox: domain,
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
 
-  const boundingBoxDims = boundingBox.dims();
+  const boundingBoxDims = this.boundingBox.dims();
   const targetLocDomDims = targetLocDom.dims();
   coforall locid in targetLocDom do
     on this.targetLocales(locid) do
