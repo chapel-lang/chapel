@@ -132,14 +132,13 @@ class SparseBlockDom: BaseSparseDom {
 
   proc bulkAdd_help(inds: [] index(rank,idxType), isSorted=false, isUnique=false) {
 
+    if !isSorted then
+      QuickSort(inds);
+
+    var localIndexes: [dist.targetLocDom] [inds.domain] index(rank,idxType);
+    var localIndexCnts: [dist.targetLocDom] int =
+      inds.domain.low;
     if bulkAddMemoize {
-      if !isSorted then
-        QuickSort(inds);
-
-      var localIndexes: [dist.targetLocDom] [inds.domain] index(rank,idxType);
-      var localIndexCnts: [dist.targetLocDom] int =
-        inds.domain.low;
-
       var lastLocaleIndexCache = dist.targetLocDom.low;
       for i in inds {
         if locDoms[lastLocaleIndexCache].parentDom.member(i) {
@@ -157,23 +156,8 @@ class SparseBlockDom: BaseSparseDom {
           }
         }
       }
-
-      coforall localeIdx in dist.targetLocDom do {
-        on dist.targetLocales(localeIdx) do {
-          const locCnt = localIndexCnts[localeIdx];
-          locDoms[localeIdx].mySparseBlock.bulkAdd(localIndexes[localeIdx][0..#locCnt], 
-              true, false, false); 
-        }
-      }
     }
     else {
-      if !isSorted then
-        QuickSort(inds);
-
-      var localIndexes: [dist.targetLocDom] [inds.domain] rank*idxType;
-      var localIndexCnts: [dist.targetLocDom] int =
-        inds.domain.low;
-
       for i in inds {
         for localeIndex in dist.targetLocDom {
           if locDoms[localeIndex].parentDom.member(i) {
@@ -182,13 +166,12 @@ class SparseBlockDom: BaseSparseDom {
           }
         }
       }
-
-      coforall localeIdx in dist.targetLocDom do {
-        on dist.targetLocales(localeIdx) do {
-          const locCnt = localIndexCnts[localeIdx];
-          locDoms[localeIdx].mySparseBlock.bulkAdd(localIndexes[localeIdx][0..#locCnt], 
-              true, false, false); 
-        }
+    }
+    coforall localeIdx in dist.targetLocDom do {
+      on dist.targetLocales(localeIdx) do {
+        const locCnt = localIndexCnts[localeIdx];
+        locDoms[localeIdx].mySparseBlock.bulkAdd(localIndexes[localeIdx][0..#locCnt], 
+            true, false, false); 
       }
     }
   }
