@@ -42,7 +42,8 @@ Key Comparator
 ~~~~~~~~~~~~~~
 
 The ``key(a)`` method accepts 1 argument, which will be an element from the
-array being sorted. The value returned should support numeric operations.
+array being sorted. The value returned should support numeric operations or be
+a string.
 
 The default key method would look like this:
 
@@ -242,7 +243,12 @@ private proc chpl_check_comparator(comparator, type eltType) {
 /* Basic Functions */
 
 /*
-   Convenience wrapper around :proc:`quickSort`.
+   General purpose sorting interface.
+
+   .. note:
+
+      This method calls a sequential quickSort but it will call faster algorithms
+      once they are implemented.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
