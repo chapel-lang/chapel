@@ -121,8 +121,26 @@ module MatrixMarket {
 
       proc write_vector(i:int, jvec:[?Djvec] ?T) where Djvec.rank == 1 {
          assert(last_rowno < i, "rows %i and %i not in sequential order!", last_rowno, i);
-         for (j,w) in zip(Djvec, jvec) {
-            if abs(w) > 1e-12 { fout.writef("%i %i %s\n", i, j, w); }
+         var wfmt = "%i %i ";
+
+         if T == complex {
+           wfmt = wfmt + "%r %r\n";
+           for (j,w) in zip(Djvec, jvec) {
+             fout.writef(wfmt, i, j, w.re, w.im);
+           }
+ 
+         }
+         else if T == int {
+           wfmt = wfmt + "%d\n";
+           for (j,w) in zip(Djvec, jvec) {
+             if abs(w) > 1e-12 { fout.writef(wfmt, i, j, w); }
+           }
+         }
+         else if T == real {
+           wfmt = wfmt + "%r\n";
+           for (j,w) in zip(Djvec, jvec) {
+             if w > 0 { fout.writef(wfmt, i, j, w); }
+           }
          }
 
          last_rowno = i;
@@ -216,7 +234,7 @@ class MMReader {
           var wr:real;
           var wi:real;
           done = fin.readf(fmtstr, i, j, wr, wi);
-          var w:complex = wr + wi:imag;
+          const w:complex = wr + wi:imag;
           if done { spDom += (i,j); toret(i,j) = w; }
         }
 
