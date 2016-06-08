@@ -17,21 +17,66 @@
  * limitations under the License.
  */
 
-/*
-This code is based on the gensim implementation of the matrix market file format for matrices - it can currently store real/general matrixmarket data sets to disk. code was unit tested against the gensim implementation
-*/
-
 module MatrixMarket {
 
-   use FileSystem;
-   use Math;
-   use IO;
-   use Sys;
-   use List;
+  use FileSystem;
+  use Math;
+  use IO;
+  use Sys;
+  use List;
 
-/* extern var PROT_READ:c_int;
-extern var MAP_SHARED:c_int;
-extern var MAP_FILE:c_int; */
+  enum MMCoordFormat { Coordinate, Array }
+  enum MMTypes { Real, Complex, Pattern }
+  enum MMFormat { Symmetric, General }
+
+  record MMInfo {
+    var mm_coordfmt:MMCoordFormat;
+    var mm_types:MMTypes;
+    var mm_fmt : MMFormat;
+  }
+
+  proc initMMInfo(const headerfields:[] string) {
+    assert(headerfields(1) == "%%MatrixMarket", "Improperly formatted MatrixMarket file");
+    assert(headerfields(2) == "matrix", "Improperly formatted MatrixMarket file");
+
+    var toret:MMInfo;
+
+    if headerfields(3) == "coordinate" {
+      toret.mm_coordfmt = MMCoordFormat.Coordinate;
+    }
+    else if headerfields(3) == "array" {
+      toret.mm_coordfmt = MMCoordFormat.Array;
+    }
+    else {
+      assert(false, "Improperly formatted MatrixMarket file");
+    }
+
+    if headerfields(4) == "real" {
+      toret.mm_types = MMTypes.Real;
+    }
+    else if headerfields(4) == "complex" {
+      toret.mm_types = MMTypes.Complex;
+    }
+    else if headerfields(4) == "pattern" {
+      toret.mm_types = MMTypes.Pattern;
+    }
+    else {
+      assert(false, "Improperly formatted MatrixMarket file");
+    }
+
+    headerfields(5) = headerfields(5).strip("\n");
+    if headerfields(5) == "general" {
+      toret.mm_fmt = MMFormat.General;
+    }
+    else if headerfields(5) == "symmetric" {
+      toret.mm_fmt = MMFormat.Symmetric;
+    }
+    else {
+      assert(false, "Improperly formatted MatrixMarket file");
+    }
+
+    return toret;
+   }
 
    class MMWriter {
       var HEADER_LINE = "%%MatrixMarket matrix coordinate real general\n"; // currently the only supported MM format in this module
@@ -111,6 +156,7 @@ proc mmwrite(const fname:string, mat:[?Dmat] real, _num_cols=-1) where mat.domai
 class MMReader {
    var fd:file;
    var fin:channel(false, iokind.dynamic, true);
+   var finfo:MMInfo;
 
    proc MMReader(const fname:string) {
       fd = open(fname, iomode.r, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
@@ -118,20 +164,26 @@ class MMReader {
    }
 
    proc read_header() {
-      var header:string;
-      assert(fin.readline(header) == true, "MMReader I/O error!");
-      assert(header == "%%MatrixMarket matrix coordinate real general\n", "attempted to load an unsupported file");
+     var header:string;
+     assert(fin.readline(header) == true, "MMReader I/O error!");
 
-      // test for files that have a % beneath the matrix market format header
-      var percentfound:string;
-      var offset = fin._offset();
-      fin.readline(percentfound);
+     const headerfields = [ s in header.split(" ") ] s;
+     this.finfo = initMMInfo(headerfields);
 
-      // didn't find a precentage, rewind channel by length of read string...
-      if percentfound != "%\n" {
+     // test for files that have a % beneath the matrix market format header
+     var pctflag = false;
+     while !pctflag {
+       var percentfound:string;
+       var offset = fin._offset();
+       fin.readline(percentfound);
+
+       // didn't find a precentage, rewind channel by length of read string...
+       if !percentfound.find("%") {
          fin.close();
          fin = fd.reader(start=offset, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
-      }
+         pctflag = true;
+       }
+     }
    }
 
    proc read_matrix_info() {
@@ -141,29 +193,125 @@ class MMReader {
       return (nrows, ncols, nnz);
    }
 
-   iter read_data() {
+   proc read_dense_info() {
+      var nrows, ncols:int;
+      var done = fin.readf("%i %i", nrows, ncols);
+      assert(done == true, "error reading matrix market file's information");
+      return (nrows, ncols);
+   }
+
+   proc read_sparse_data(toret:[] ?T, spDom:domain) {
       var done:bool = true;
-      while done {
-         var i, j:int;
-         var w:real;
-         done = fin.readf("%i %i %r\n", i, j, w);
-         if done { yield (i,j,w); }
+      var tfmt :string;
+
+      if T == complex {
+        tfmt = "%r %r";
+        const fmtstr = "%i %i " + tfmt + "\n";
+        while done {
+          var i, j:int;
+          var wr:real;
+          var wi:real;
+          done = fin.readf(fmtstr, i, j, wr, wi);
+          var w:complex = wr + wi:imag;
+          if done { spDom += (i,j); toret(i,j) = w; }
+        }
+
+      }
+      else {
+        if T == real { 
+          tfmt = "%r";
+        }
+        else if T == int {
+          tfmt = "%d";
+        }
+
+        const fmtstr = "%i %i " + tfmt + "\n";
+        while done {
+          var i, j:int;
+          var w: T;
+          done = fin.readf(fmtstr, i, j, w);
+          if done { spDom += (i,j); toret(i,j) = w; }
+        }
       }
    }
 
-   proc read_file() {
-      read_header();
-      var (nrows, ncols, nnz) = read_matrix_info();
+   proc read_dense_data(toret:[] ?T) {
+      var tfmt :string;
 
-      var Dtoret = {1..nrows, 1..ncols}; // maybe look for sparse matrix support here?
-      var toret:[Dtoret] real;
-
-      // TODO: parallelizing this read would be nice...
-      for (i,j,w) in read_data() {
-         toret(i,j) = w;
+      if T == complex {
+        tfmt = "%r %r";
+        for i in toret.domain {
+          var wr:real;
+          var wi:real;
+          fin.readf(tfmt, wr, wi);
+          var w:complex = wr + wi:imag;
+          toret(i) = w;
+        }
       }
+      else {
+        if T == real {
+          tfmt = "%r";
+        }
+        else if T == int {
+          tfmt = "%d";
+        }
 
-      return toret;
+        for i in toret.domain {
+          var w:T;
+          fin.readf(tfmt, w);
+          toret(i) = w;
+        }
+      }
+   }
+
+   proc read_domain_from_file(type eltype) {
+     read_header();
+     var nrows, ncols:int;
+
+
+     if finfo.mm_coordfmt == MMCoordFormat.Array {
+       (nrows, ncols) = read_dense_info();
+     }
+     else if finfo.mm_coordfmt == MMCoordFormat.Coordinate {
+       var nnz:int;
+       (nrows, ncols, nnz) = read_matrix_info();
+     }
+
+     var Dtoret = {1..nrows, 1..ncols};
+     var toret : [Dtoret] eltype;
+
+     if finfo.mm_types == MMTypes.Real { assert(eltype == real, "expected real, data in file is not real"); }
+     if finfo.mm_types == MMTypes.Complex { assert(eltype == complex, "expected complex, data in file is not complex"); }
+     if finfo.mm_types == MMTypes.Pattern { assert(eltype == int, "expected int, data in file is not int"); }
+
+     read_dense_data(toret);
+     return toret;
+   }
+
+   proc read_spdomain_from_file(type eltype) {
+     read_header();
+     var nrows, ncols:int;
+
+     var Dtoret : domain(2);
+
+     if finfo.mm_coordfmt == MMCoordFormat.Array {
+       (nrows, ncols) = read_dense_info();
+     }
+     else if finfo.mm_coordfmt == MMCoordFormat.Coordinate {
+       var nnz:int;
+       (nrows, ncols, nnz) = read_matrix_info();
+     }
+
+     Dtoret = {1..nrows, 1..ncols};
+     var spDom : sparse subdomain(Dtoret);
+     var toret : [spDom] eltype;
+
+     if finfo.mm_types == MMTypes.Real { assert(eltype == real, "expected real, data in file is not real"); }
+     if finfo.mm_types == MMTypes.Complex { assert(eltype == complex, "expected complex, data in file is not complex"); }
+     if finfo.mm_types == MMTypes.Pattern { assert(eltype == int, "expected int, data in file is not int"); }
+
+     read_sparse_data(toret, spDom);
+     return toret;
    }
 
    proc close() { 
@@ -174,9 +322,16 @@ class MMReader {
    proc ~MMReader() { this.close(); }
 }
 
-proc mmread(const fname:string) {
+proc mmread(type eltype, const fname:string) {
    var mr = new MMReader(fname);
-   var toret = mr.read_file();
+   var toret = mr.read_domain_from_file(eltype);
+   delete mr;
+   return toret;
+}
+
+proc mmreadsp(type eltype, const fname:string) {
+   var mr = new MMReader(fname);
+   var toret = mr.read_spdomain_from_file(eltype);
    delete mr;
    return toret;
 }
