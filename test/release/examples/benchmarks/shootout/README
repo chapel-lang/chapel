@@ -43,6 +43,42 @@ The following are a list of planned improvements to Chapel and/or our
 implementations that would benefit the codes:
 
 
+binarytrees.chpl
+----------------
+o What would it take to make Chapel better at inferring the type of
+  recursive functions, at least in simple cases?
+
+o Related: the type function Tree.build() could be made into a
+  constructor except that the compiler can't resolve the return type
+  of the constructor because it's recursive (which is silly since it's
+  a constructor) yet we can't declare the return type because it's a
+  constructor.  I.e., wouldn't it be nice to write:
+
+    proc Tree(item, depth) {
+      this.item = item;
+      if depth {
+        left = new Tree(2*item-1, depth-1);
+        right = new Tree(2*item-1, depth-1);
+      }
+    }
+
+
+chameneosredux.chpl
+-------------------
+o Chapel has discussed supporting some standard record-wrapped class
+  types in order to avoid the need to use 'new' and 'delete' while
+  still supporting "single logical instance" semantics.  It seems that
+  both the meeting place and chameneos population would benefit from
+  this in terms of avoiding the cleanup steps.
+
+o Once we better distinguish between initialization and assignment in
+  Chapel, we should add support for initializing atomic variables.  In
+  this program, it would permit us to replace the constructor with a
+  field initializer, which would be nice.  The question has also been
+  raised "should we allow assignments to/from atomic variables?" in
+  which case we could do it even sooner.
+
+
 mandelbrot.chpl
 ---------------
 o extend the dynamic() iterators for ranges to support domains and
@@ -92,6 +128,27 @@ o promote mpz_t types to a record-based implementation with:
   - automatic memory reclamation when it leaves scope
   - support for native Chapel types rather than exposing C types
     (using safecasts at any downward-facing interfaces)
+
+
+spectralnorm.chpl
+-----------------
+o spectral norm really wants partial reductions... :(
+
+o open question: What would it take to efficiently have the helper
+  routines return the result they're computing rather than taking it
+  in as an input argument?
+
+o similarly, what could we do to not pass 'tmp' in as an input
+  argument?  Static variables?
+
+o do we have an opportunity to take advantage of vectorization?
+  (could it be as simple as 'vectorizeOnly-ing' the reduction loops?
+
+o are our reductions overly heavyweight in the serial case?  (e.g., do
+  we still use synchronized values?)  What could we do to improve
+  them?
+
+o are the domain queries costing us more than we'd like?
 
 
 threadring.chpl
