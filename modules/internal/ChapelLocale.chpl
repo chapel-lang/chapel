@@ -460,7 +460,7 @@ module ChapelLocale {
   pragma "no doc"
   proc chpl_init_rootLocale() {
     origRootLocale = new RootLocale();
-    (origRootLocale:RootLocale).init();
+    (origRootLocale:RootLocale).startInit();
   }
 
   // This function sets up a private copy of rootLocale by replicating
