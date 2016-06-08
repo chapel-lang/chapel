@@ -38,11 +38,9 @@ proc main() {
 
 proc spmd() {
   var send, recv : c_int;
-  if deadlock then writef("Locale %i : This is inside the SPMD part of the code\n",here.id);
-  chapelPause();
+  writef("Locale %i : This is inside the SPMD part of the code\n",here.id);
   send = commRank();
-  recv = 0;
+  chapelPause();
   MPI_Allreduce(send, recv, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
   writef("Chapel locale %i, MPI rank %i : reports a sum of %i \n",here.id,send,recv);
-  chapelPause();
 }
