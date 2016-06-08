@@ -2,3 +2,6 @@ param-detuple.chpl:8: In function 'p2':
 param-detuple.chpl:9: warning: param proc
 param-detuple.chpl:8: In function 'p2':
 param-detuple.chpl:9: warning: param proc
+$CHPL_HOME/modules/internal/ChapelBase.chpl: In function 'compilerError':
+$CHPL_HOME/modules/internal/ChapelBase.chpl: warning: compiler diagnostic depth value exceeds call stack depth
+param-detuple.chpl:14: error: assert failed - done
