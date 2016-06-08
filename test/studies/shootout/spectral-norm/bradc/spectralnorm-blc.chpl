@@ -48,5 +48,5 @@ proc multiplyAtv(v: [?Dv], Atv: [?DAtv]) {
 // Compute element i,j of the conceptually infinite matrix A.
 //
 inline proc A(i, j) {
-  return 1.0 / ((((i + j) * (i + j + 1)) / 2) + i + 1);
+  return 1.0 / ((((i+j) * (i+j+1)) / 2) + i + 1);
 }
