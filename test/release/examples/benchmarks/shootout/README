@@ -43,6 +43,28 @@ The following are a list of planned improvements to Chapel and/or our
 implementations that would benefit the codes:
 
 
+binarytrees.chpl
+----------------
+o What would it take to make Chapel better at inferring the type of
+  recursive functions, at least in simple cases?
+
+
+chameneosredux.chpl
+-------------------
+o Chapel has discussed supporting some standard record-wrapped class
+  types in order to avoid the need to use 'new' and 'delete' while
+  still supporting "single logical instance" semantics.  It seems that
+  both the meeting place and chameneos population would benefit from
+  this in terms of avoiding the cleanup steps.
+
+o Once we better distinguish between initialization and assignment in
+  Chapel, we should add support for initializing atomic variables.  In
+  this program, it would permit us to replace the constructor with a
+  field initializer, which would be nice.  The question has also been
+  raised "should we allow assignments to/from atomic variables?" in
+  which case we could do it even sooner.
+
+
 mandelbrot.chpl
 ---------------
 o extend the dynamic() iterators for ranges to support domains and
