@@ -232,10 +232,11 @@ and arrays in the same way that the like-named config constants
 control data parallelism for ranges and default-distributed domains
 and arrays.
 
-The ``rank`` and ``idxType`` arguments are inferred from the
-``boundingBox`` argument unless explicitly set.
-They must match the rank and index type of the domains
-"dmapped" using that Block instance.
+The ``rank`` and ``idxType`` arguments are inferred from the ``boundingBox``
+argument unless explicitly set.  They must match the rank and index type of the
+domains "dmapped" using that Block instance. If the ``boundingBox`` argument is
+a stridable domain, the stride information will be ignored and the
+``boundingBox`` will only use the lo..hi bounds.
 
 
 **Data-Parallel Iteration**
@@ -383,11 +384,11 @@ proc Block.Block(boundingBox: domain,
   if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
 
-  this.boundingBox = boundingBox;
+  this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
 
-  const boundingBoxDims = boundingBox.dims();
+  const boundingBoxDims = this.boundingBox.dims();
   const targetLocDomDims = targetLocDom.dims();
   coforall locid in targetLocDom do
     on this.targetLocales(locid) do

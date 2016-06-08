@@ -238,8 +238,11 @@ class CSRDom: BaseSparseDom {
   }
 
   proc dsiMember(ind: rank*idxType) {
-    const (found, loc) = find(ind);
-    return found;
+    if parentDom.member(ind) {
+      const (found, loc) = find(ind);
+      return found;
+    }
+    return false;
   }
 
   proc dsiAdd(ind: rank*idxType) {
