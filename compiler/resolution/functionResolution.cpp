@@ -6924,7 +6924,7 @@ resolveExpr(Expr* expr) {
     }
 
     if (tryFailure) {
-      if (tryStack.tail()->parentSymbol == fn) {
+      if (tryStack.n > 0 && tryStack.tail()->parentSymbol == fn) {
         // The code in the 'true' branch of a tryToken conditional has failed
         // to resolve fully. Roll the callStack back to the function where
         // the nearest tryToken conditional is and replace the entire
@@ -6944,6 +6944,8 @@ resolveExpr(Expr* expr) {
 
         if (!block->prev)
           block->insertBefore(new CallExpr(PRIM_NOOP));
+
+        tryFailure = false;
 
         return block->prev;
       } else {
