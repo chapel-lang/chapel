@@ -13,8 +13,8 @@ proc main() {
   u = 1.0;
 
   for 1..10 {                   // For 10 iterations...
-    multiplyAtAv(u, tmp, v);    // ...compute     v = A^T*A*u
-    multiplyAtAv(v, tmp, u);    // ...followed by u = A^T*A*v
+    multiplyAtAv(u, tmp, v);    // ...compute:     v = A^T*A*u
+    multiplyAtAv(v, tmp, u);    // ...followed by: u = A^T*A*v
   }
 
   writef("%.9dr\n", sqrt(+ reduce (u*v) / + reduce (v*v)));
