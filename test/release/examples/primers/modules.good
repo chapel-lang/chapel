@@ -4,7 +4,6 @@ Access from outside a module
 28
 4.0
 2
-14
 12
 false
 12
@@ -25,3 +24,5 @@ Limiting a use
 Application to enums
 blue
 yellow
+
+14

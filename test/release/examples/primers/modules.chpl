@@ -33,10 +33,11 @@ module modToUse {
   var bar: int = 2;
 
   /* A symbol can be declared "private" - this means that only code defined
-     within the same scope as the definition of this symbol can access it.
+     within the same scope as the definition of this symbol (including code in
+     nested scopes) can access it.
 
      Here, hiddenFoo is a private global variable, which is only accessible by
-     symbols defined within modToUse
+     symbols contained in modToUse
   */
   private var hiddenFoo = false;
 
@@ -47,7 +48,7 @@ module modToUse {
   }
 
   /* hiddenBaz is a private function, which is also only accessible by symbols
-     defined within modToUse.
+     contained in modToUse.
   */
   private proc hiddenBaz(a) {
     writeln(a);
@@ -81,7 +82,7 @@ module Conflict {
 
 
 module DifferentArguments {
-  /* This function shares a name with a function in modToUse, but requires
+  /* This function shares a name with a function in modToUse, but takes
      different arguments */
   proc baz(x) {
     return x - 2;
@@ -105,24 +106,28 @@ module MainModule {
 
 
     {
-      /* If many of the module's symbols are desired, or the same symbol is
-         desired multiple times, then it is best to utilize what is known as a
-         "use statement".
+      /* If several of the module's symbols are desired, or the same symbol is
+         desired multiple times, then it can be convenient to utilize what is
+         known as a "use statement".
       */
       use modToUse;
 
-      /* Use statements can be inserted at any lexical scope that contains
+      /* 'use' statements can be inserted at any lexical scope that contains
          executable code.
 
-         A use statement makes all of the module's visible symbols available to
-         the scope which contains the use statement.  These symbols may then be
-         accessed without the module name prefix.
+         A 'use' statement makes all of the module's visible symbols available
+         to the scope that contains the 'use' statement.  These symbols may then
+         be accessed without the module name prefix.
 
          In this case, bazBarFoo should store the result of calling modToUse.baz
          on modToUse.bar and modToUse.foo, which is in this case '28'.
       */
       var bazBarFoo = baz(bar, foo);
       writeln(bazBarFoo);
+
+      /* Since 'use' statements only affect their containing scope, when we
+         leave a scope like this, we revert to requiring fully-qualified names
+      */
     }
 
 
@@ -139,16 +144,16 @@ module MainModule {
     {
       var bazBarFoo = baz(bar, foo);
 
-      /* Use statements apply to the entire scope in which they are defined.
-         Even if the use statement occurs after code which would directly refer
-         to its symbols, these references are still valid.  This is similar to
-         other Chapel forms of introducing symbols - for instance, class
-         declaration order does not prevent the first declared class from
-         referring to the second.
+      /* 'use' statements apply to the entire scope in which they are defined.
+         Even if the 'use' statement occurs after code which would directly
+         refer to its symbols, these references are still valid.  This is
+         similar to other Chapel forms of introducing symbols - for instance,
+         class declaration order does not prevent a class declared earlier from
+         referring to one declared later.
 
          Thus, as in an earlier example, bazBarFoo should store the result of
-         calling modToUse.baz on modToUse.bar and modToUse.foo, which is in this
-         case '28'.
+         calling modToUse.baz on modToUse.bar and modToUse.foo, which is again
+         '28'.
       */
       use modToUse;
 
@@ -157,58 +162,44 @@ module MainModule {
 
 
     {
-      /* The symbols provided by a use statement are only considered when the
+      /* The symbols provided by a 'use' statement are only considered when the
          name in question cannot be resolved directly within the local scope.
-         Thus, if another bar were defined here, and an access was attempted,
-         the compiler would find the bar at this scope, rather than
-         modToUse.bar.
+         Thus, because another bar is defined here, the compiler will find the
+         bar at this scope when resolving the access within the writeln, rather
+         than modToUse.bar.
       */
       var bar = 4.0;
 
       use modToUse;
 
       writeln(bar);
-      // Will output the value of the bar defined in scope (which is '4.0'),
-      // rather than the value of modToUse.bar (which is '2')
+      // Will output the value of the bar defined in this scope (which is
+      // '4.0'), rather than the value of modToUse.bar (which is '2')
     }
 
 
-    var bar = false;
     {
-      /* If a symbol cannot be resolved directly within the local scope, then
-         the symbols provided by a use statement are considered before the
-         symbols defined outside of the scope where the use statement applies.
-         Thus, if another bar were defined outside of these curly braces, and an
-         access was attempted, the compiler would find the bar from modToUse,
-         rather than the outer bar.  The bar from modToUse is said to be
-         "shadowing" the definition at the outer scope.
-      */
+      var bar = false;
+      {
+        /* If a symbol cannot be resolved directly within the local scope, then
+           the symbols provided by a 'use' statement are considered before the
+           symbols defined outside of the scope where the 'use' statement
+           applies.  Thus, because the other bar was defined outside of these
+           curly braces, the compiler will find the bar from modToUse when
+           resolving the access within the writeln, rather than the outer bar.
+           The bar from modToUse is said to be "shadowing" the definition at the
+           outer scope.
+        */
 
-      use modToUse;
-      writeln(bar);
-      // Will output the value of modToUse.bar (which is '2'), rather than the
-      // value of the bar defined outside of this scope (which is 'false')
+        use modToUse;
+        writeln(bar);
+        // Will output the value of modToUse.bar (which is '2'), rather than the
+        // value of the bar defined outside of this scope (which is 'false')
+      }
     }
 
     {
-      /* Using nested modules combines accessing a module's symbols explicitly
-         and using a top-level module.  If the parent module(s) have not been
-         used in this scope, using the nested module will require explicitly
-         naming the full path to reach it.  Otherwise, there is no difference
-         between the use statement for a top-level module and that of a nested
-         module.
-
-         (see the module ContainsNesting and its submodules at the end of this
-         file for an example of a nested module)
-      */
-
-      use ContainsNesting.Inner1;
-
-      writeln(foobar); // Will output Inner1.foobar, or '14'
-    }
-
-    {
-      /* Multiple modules may be used in the same use statement */
+      /* Multiple modules may be used in the same 'use' statement */
       use modToUse, AnotherModule, ThirdModule;
 
       if (a || b < 0) {
@@ -222,7 +213,7 @@ module MainModule {
 
 
     {
-      /* Equivalently, a scope may contain multiple use statements */
+      /* Equivalently, a scope may contain multiple 'use' statements */
       use modToUse;
       use AnotherModule, ThirdModule;
 
@@ -235,7 +226,7 @@ module MainModule {
     {
       /* In either case, the modules used in this way are considered in concert
          (after symbols defined at this scope but before symbols defined outside
-         of it) - the ordering within a use statement or across multiple use
+         of it) - the ordering within a 'use' statement or across multiple 'use'
          statements does not affect the precedence of symbols that share a name.
          This means that if two modules each define a symbol with the same name,
          and both modules are used at the same scope, attempts to access a
@@ -296,8 +287,8 @@ module MainModule {
 
 
     {
-      /* If every symbol other than the one which causes a conflict is desired,
-         you can specify the symbols to exclude via an 'except' list.
+      /* Using an 'except' list will cause every symbol other than the ones
+         listed to be available.
       */
       use Conflict;
       use modToUse except bar;
@@ -309,7 +300,7 @@ module MainModule {
 
 
     {
-      /* If both symbols which conflict are desired, or if the use causes
+      /* If both symbols which conflict are desired, or if the 'use' causes
          symbols to be shadowed which are necessary, you can choose to rename a
          symbol when including it via the 'as' keyword, so long as the new name
          does not cause any conflicts with other included symbols.
@@ -324,31 +315,55 @@ module MainModule {
     writeln("Application to enums");
 
     {
-      /* 'Use' statements can also be called on enums.  Normally to access one
+      /* 'use' statements can also be called on enums.  Normally to access one
          of an enum's constants, you must provide a prefix of the enum name.
          With a 'use' of that enum, such a prefix is no longer necessary.
       */
 
       enum color {red, blue, yellow};
 
-      // Normally you must use the enum name as a prefix
-      var aColor = color.blue;
-      writeln(aColor);
+      {
+        // Normally you must prefix the constant with the name of the enum
+        var aColor = color.blue;
+        writeln(aColor);
+      }
 
-      use color;
+      {
+        use color;
 
-      // The use statement allows you to access an enum's symbols without the
-      // prefix
-      var anotherColor = yellow; // color.yellow
-      writeln(anotherColor);
+        // The 'use' statement allows you to access an enum's symbols without
+        // the prefix
+        var anotherColor = yellow; // color.yellow
+        writeln(anotherColor);
+      }
 
-      // All of the above rules for 'use' statements also apply to 'use's of
+      // All of the above rules for using modules also apply to using
       // enums
     }
+
+    writeln();
+
+    {
+      /* To return to modules, using nested modules combines accessing a
+         module's symbols explicitly and using a top-level module.  If the
+         parent module(s) have not been used in this scope, using the nested
+         module will require explicitly naming the full path to reach it.
+         Otherwise, there is no difference between the 'use' statement for a
+         top-level module and that of a nested module.
+
+         (see the module OuterNested and its submodules for an example of a
+         nested module)
+      */
+
+      use OuterNested.Inner1;
+
+      writeln(foobar); // Will output Inner1.foobar, or '14'
+    }
+
   }
 }
 
-module ContainsNesting {
+module OuterNested {
   var foo = 12;
   var bar: int = 2;
   private var hiddenFoo = false;
@@ -365,17 +380,17 @@ module ContainsNesting {
   /* A module defined within another module is called a nested module.  These
      submodules can refer to symbols defined within their parent module, but
      their parent module can't directly access the contents of the nested
-     module.
+     module without a 'use' statement or fully qualified name.
   */
   module Inner1 {
-    /* The variable foobar references ContainsNesting's foo and bar variables.
+    /* The variable foobar references OuterNested's 'foo' and 'bar' variables.
      */
     var foobar = foo + bar;
   }
 
   module Inner2 {
-    /* Since the module Inner2 is defined within ContainsNesting, it can access
-       the private variable hiddenFoo and the private function hiddenBaz.
+    /* Since the module Inner2 is defined within OuterNested, it can access
+       the private variable 'hiddenFoo' and the private function 'hiddenBaz'.
        However, any private symbol defined within Inner2 will not be visible
        within scopes defined outside of Inner2.
      */
