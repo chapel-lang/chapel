@@ -198,8 +198,12 @@ class feature_sets(object):
 
     @classmethod
     def find(sets, vendor, features):
+        def remove_punctuation(s):
+            exclude = set(punctuation)
+            return  ''.join(ch for ch in s if ch not in exclude)
+
         # remove all punctuation and split into a list
-        system_features = features.lower().translate(None, punctuation).split()
+        system_features = remove_punctuation(features.lower()).split()
 
         options = []
         if "genuineintel" == vendor.lower():
@@ -316,7 +320,7 @@ def get(location, map_to_compiler=False, get_lcd=False):
     if comm_val == 'none' and ('linux' in platform_val or
                                platform_val == 'darwin' or
                                platform_val.startswith('cygwin')):
-        if arch:
+        if arch and arch not in  ['none', 'unknown', 'native']:
             if location == 'host':
                 # when a user supplies an architecture, and it seems reasonable
                 # to double check their choice we do so. This will only
