@@ -75,6 +75,7 @@ class SparseBlockDom: BaseSparseDom {
   var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
 
+
   proc initialize() {
     setup();
     //    writeln("Exiting initialize");
@@ -130,10 +131,43 @@ class SparseBlockDom: BaseSparseDom {
     }
   }
 
+  // Tried to put this record in the function and the if statement, but got a
+  // segfault from the compiler.
+  record TargetLocaleComparator {
+
+    // I wish I could return tuple from key function. There are checks to see
+    // if the type of the function is numeric/string. Maybe there should be
+    // isComparable that can do recursive checks for at least tuples of
+    // numericals/strings/comparables.
+    // In general being able to return tuples from key() can enable sorting with
+    // multiple keys.
+
+    //proc key(a: index(rank, idxType)) { 
+    //  return dist.targetLocales[dist.targetLocsIdx(a)].id; 
+    //}
+
+    proc compare(a: index(rank, idxType), b: index(rank, idxType)) {
+      var locDif = dist.targetLocales[dist.targetLocsIdx(a)].id -
+        dist .targetLocales[dist.targetLocsIdx(b)].id;
+
+      if locDif != 0 then return locDif;
+
+      if a < b then return -1;
+      if a > b then return 1;
+      return 0;
+    }
+  }
+
   proc bulkAdd_help(inds: [] index(rank,idxType), isSorted=false, isUnique=false) {
 
-    if !isSorted then
-      QuickSort(inds);
+    if !isSorted {
+
+      // without _new_ krecord functions throw null deref. It doesn't seem to be 
+      // able to deref _outer_ ? I think it has something to do with memory
+      // allocation for classes vs records, but I cannot explain
+      var comp = new TargetLocaleComparator;
+      sort(inds, comparator=comp);
+    }
 
     var localIndexInitSize = max(1, inds.size/numLocales);
     var localIndexDom = {0..#localIndexInitSize};
