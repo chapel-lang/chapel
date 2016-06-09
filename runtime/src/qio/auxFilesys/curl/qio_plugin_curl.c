@@ -163,9 +163,9 @@ size_t read_data(void *ptr, size_t size, size_t nmemb, void *userp)
   return ret->total_read;
 }
 
-// Write from curl to a string. Note that userdata is a str_t, since nuch as we have
-// to keep track of how much we read in  buf_writer, we have to keep track of how
-// long our string is so that we cann lengthen it via realloc as we need to.
+// Write from curl to a string. Note that userdata is a str_t, since much as we have
+// to keep track of how much we read in buf_writer, we have to keep track of how
+// long our string is so that we can lengthen it via realloc as we need to.
 static
 size_t chpl_curl_write_string(void *contents, size_t size, size_t nmemb, void *userp)
 {

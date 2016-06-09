@@ -1521,6 +1521,9 @@ void initPrimitiveTypes() {
   dtCVoidPtr   = createPrimitiveType("c_void_ptr", "c_void_ptr" );
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gOpaque;
+  dtCFnPtr = createPrimitiveType("c_fn_ptr", "c_fn_ptr");
+  dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
+  dtCFnPtr->defaultValue = gOpaque;
   CREATE_DEFAULT_SYMBOL(dtCVoidPtr, gCVoidPtr, "_nullVoidPtr");
   gCVoidPtr->cname = "NULL";
   gCVoidPtr->addFlag(FLAG_EXTERN);

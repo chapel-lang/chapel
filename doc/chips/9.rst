@@ -101,18 +101,18 @@ as a package.
   license = "Apache-2.0"
   description = "Native bindings to liblapack"
 
-  requries = ["liblapack"]
+  requires = ["liblapack"]
   links = "lapack"
-  includes = "lpacke.h"
+  includes = "lapacke.h"
 
 Things to note:
   * ``requires`` is a list of nix packages to be in the environment when
-    building your program, its recommended to provide these, but they may not
+    building your program.  It's recommended to provide these, but they may not
     be used.
   * ``links`` is the library that is expected to be on your search path and will
-    be added to the compile line
+    be added to the compile line.
   * ``includes`` is the header file that is expected to be on your search path
-    and will be added to the compile line
+    and will be added to the compile line.
 
 
 This could then be used in a projects like this:

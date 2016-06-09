@@ -62,7 +62,7 @@ qioerr chpl_fs_realpath(const char* path, const char **shortened);
 qioerr chpl_fs_realpath_file(qio_file_t* path, const char **shortened);
 
 // Renames the file from oldname to newname, returning a qioerr if one
-// occured.
+// occurred.
 qioerr chpl_fs_rename(const char* oldname, const char* newname);
 // Removes the file specified, returning a qioerr if one occurred
 qioerr chpl_fs_remove(const char* name);

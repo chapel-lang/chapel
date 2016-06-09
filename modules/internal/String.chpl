@@ -799,7 +799,7 @@ module String {
     }
 
     /*
-      Same as the varargs version, but with a homogenous tuple of strings.
+      Same as the varargs version, but with a homogeneous tuple of strings.
 
       .. code-block:: chapel
 
