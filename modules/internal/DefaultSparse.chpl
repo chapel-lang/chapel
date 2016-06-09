@@ -244,14 +244,14 @@ module DefaultSparse {
     }
 
     proc dsiBulkAdd(inds: [] index(rank, idxType),
-        isIndsSorted=false, isIndsUnique=false, preserveInds=true){
+        isSorted=false, isUnique=false, preserveInds=true){
 
-      if !isIndsSorted && preserveInds {
+      if !isSorted && preserveInds {
         var _inds = inds;
-        bulkAdd_help(_inds, isIndsSorted, isIndsUnique); 
+        bulkAdd_help(_inds, isSorted, isUnique); 
       }
       else {
-        bulkAdd_help(inds, isIndsSorted, isIndsUnique);
+        bulkAdd_help(inds, isSorted, isUnique);
       }
     }
 
@@ -259,7 +259,7 @@ module DefaultSparse {
         isUnique=false){
 
       const (actualInsertPts, actualAddCnt) =
-        __getActualInsertPts(this, inds, isIndsSorted, isIndsUnique);
+        __getActualInsertPts(this, inds, isSorted, isUnique);
 
       const oldnnz = nnz;
       nnz += actualAddCnt;
