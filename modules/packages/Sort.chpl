@@ -42,8 +42,8 @@ Key Comparator
 ~~~~~~~~~~~~~~
 
 The ``key(a)`` method accepts 1 argument, which will be an element from the
-array being sorted. The value returned should support numeric operations or be
-a string.
+array being sorted. The return type should support the ``<`` operator, since
+that is what the base ``compare`` method of all sort algorithms uses by default.
 
 The default key method would look like this:
 
@@ -217,20 +217,19 @@ private proc chpl_check_comparator(comparator, type eltType) {
   const data: eltType;
 
   if comparator.type == DefaultComparator {}
-  // Check for valid comaparator methods
+  // Check for valid comparator methods
   else if canResolveMethod(comparator, "compare", data, data) {
     // Check return type of compare
     type comparetype = comparator.compare(data, data).type;
-    if !(isNumericType(comparetype)) {
+    if !(isNumericType(comparetype)) then
       compilerError("The compare method must return a numeric type");
-    }
   }
   else if canResolveMethod(comparator, "key", data) {
     // Check return type of key
-    type keytype = comparator.key(data).type;
-    if !(isNumericType(keytype) || isStringType(keytype)) {
-      compilerError("The key method must return a numeric or string type");
-    }
+    const keydata = comparator.key(data);
+    type keytype = keydata.type;
+    if !(canResolve("<", keydata, keydata)) then
+      compilerError("The key method must return an object that supports the '<' function");
   }
   else {
     // If we make it this far, the passed comparator was defined incorrectly
@@ -338,7 +337,7 @@ proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where 
   while (swapped) {
     swapped = false;
     for i in lo..hi-1 {
-      if chpl_compare(Data(i), Data(i+1), comparator) >= 0 {
+      if chpl_compare(Data(i), Data(i+1), comparator) > 0 {
         Data(i) <=> Data(i+1);
         swapped = true;
       }
@@ -590,7 +589,7 @@ record DefaultComparator {
    :returns: -1 if ``a < b``
 
    */
-  proc compare(a:?t, b) {
+  proc compare(a, b) {
     if a < b { return -1; }
     else if b < a { return 1; }
     else return 0;

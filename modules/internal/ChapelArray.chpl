@@ -1516,6 +1516,9 @@ module ChapelArray {
 
     //verify sorted and no duplicates if not --fast
     if boundsChecking {
+      // TODO there seems to be a bug while resolving Sort.isSorted, therefore
+      // for this function the argument is still isIndsSorted, instead of
+      // isSorted. This should be changed when Sort.isSorted is working.
       if !isSorted(inds) then
         halt("bulkAdd: Data not sorted, call the function with isSorted=false");
 
