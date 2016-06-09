@@ -113,19 +113,6 @@ module ChapelDistribution {
       compilerError("sparse domains not supported by this distribution");
     }
   
-    inline proc incRefCount(cnt=1) {
-      compilerAssert(!noRefCount);
-      _distCnt.inc(cnt);
-    }
-
-    inline proc decRefCount() {
-      compilerAssert(!noRefCount);
-      const cnt = _distCnt.dec();
-      if cnt < 0 then
-          halt("distribution reference count is negative!");
-      return cnt;
-    }
-
     proc dsiSupportsPrivatization() param return false;
     proc dsiRequiresPrivatization() param return false;
   
@@ -411,19 +398,6 @@ module ChapelDistribution {
       halt("_preserveArrayElement() not supported for non-associative arrays");
     }
   
-    inline proc incRefCount(cnt=1) {
-      compilerAssert(!noRefCount);
-      _arrCnt.inc(cnt);
-    }
-
-    inline proc decRefCount() {
-      compilerAssert(!noRefCount);
-      const cnt = _arrCnt.dec(); //_arrCnt.fetchSub(1)-1;
-      if cnt < 0 then
-          halt("array reference count is negative!");
-      return cnt;
-    }
-
     proc dsiSupportsAlignedFollower() param return false;
   
     proc dsiSupportsPrivatization() param return false;

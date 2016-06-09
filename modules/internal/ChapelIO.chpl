@@ -774,7 +774,6 @@ module ChapelIO {
   // parallelized.
   //
 
-  /*
   pragma "no doc"
   config param chpl__testParFlag = false;
   pragma "no doc"
@@ -800,6 +799,5 @@ module ChapelIO {
       writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
     }
   }
-  */
 
 }
