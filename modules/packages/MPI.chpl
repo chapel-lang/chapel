@@ -41,13 +41,14 @@ are true by default.
 
 If you are using the MPI conduit on GASNet, you will need to select the threading
 mode for MPI (if you are running in mixed mode). To do so, set AMMPI_MPI_THREAD=MULTIPLE
-in your environment.
+in your environment. On Cray systems, you might need to set
+```MPICH_MAX_THREAD_SAFETY``` to ```MULTIPLE```.
 
 A useful idiom for mixing Chapel and MPI code is :
 ```
  mpiBarrier();
  local {
-   <local Chapel code + MPI calls can go here. Make sure the last MPI call is 
+   <local Chapel code + MPI calls can go here. Make sure the last MPI call is
     blocking or a barrier>
     }
 ```
@@ -156,7 +157,7 @@ module MPI {
   }
 
   /* mpiBarrier()
-    
+
     A convenience function that calls MPIFlush on a module barrier. This is
     executed on MPI_COMM_WORLD.
    */
@@ -166,7 +167,7 @@ module MPI {
 
   /* Barrier.MPIFlush
 
-     Add a new method to Barrier; this will both apply a Chapel barrier, and then 
+     Add a new method to Barrier; this will both apply a Chapel barrier, and then
      flush any remaining GASNet MPI commands. This is useful for eg. the mpi conduit
      for gasnet.
   */
