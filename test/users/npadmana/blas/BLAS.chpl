@@ -1,7 +1,35 @@
+/*
+
+Compiling with BLAS
+-------------------
+
+In order to compile with the BLAS libraries, you will need
+BLAS and CBLAS (C wrappers to BLAS) installed on your system. You
+will also need to know the location of the cblas.h header file,
+as well as the BLAS libraries you need to link in (and where they
+are, if they're not in a standard location).
+
+We recommend using a version of BLAS optimized for your system
+to get the best performance.
+
+As an example, with OpenBLAS :
+.. code-block:: sh
+
+    chpl -I$PATH_TO_CBLAS_DIR \
+         -L$PATH_TO_BLAS_LIBS -lblas source.chpl
+
+You may need additional of different libraries. For instance, if you
+use ATLAS, you will likely need to also add a -latlas to the above
+command. We strongly recommend referring to the documentation for the
+version of BLAS you have.
+
+*/
+
+
 module BLAS {
 
   use SysCTypes;
-  require "cblas.h",'-lblas';
+  require "cblas.h";
 
   extern type CBLAS_INDEX = size_t;
 
