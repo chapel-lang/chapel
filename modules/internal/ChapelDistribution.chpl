@@ -333,7 +333,9 @@ module ChapelDistribution {
     proc destroyArr(): int {
       // TODO - any action to take for slices/ _arrAlias?
 
-      dsiDestroyData();
+      if _arrAlias == nil {
+        dsiDestroyData();
+      }
 
       var dom = dsiGetBaseDom();
       on dom {
@@ -342,6 +344,7 @@ module ChapelDistribution {
         if cnt == 0 then
           delete dom;
       }
+
       return 0;
     }
   

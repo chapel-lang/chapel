@@ -6370,9 +6370,9 @@ requiresImplicitDestroy(CallExpr* call) {
 
         // Return type is a record (which includes array, record, and
         // dist) or a ref counted type that is passed by reference
-        (isRecord(fn->retType) ||
+        (isRecord(fn->retType) /*||
          (fn->retType->symbol->hasFlag(FLAG_REF) &&
-          isRefCountedType(fn->retType->getValType()))) &&
+          isRefCountedType(fn->retType->getValType()))*/) &&
 
         // These are special functions where we don't want to destroy
         // the result

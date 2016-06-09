@@ -939,9 +939,9 @@ module ChapelArray {
         r(i) = _value.dsiDim(i)(ranges(i));
       }
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType, stridable, r);
-      if !noRefCount then
-        if d.linksDistribution() then
-          d.dist.incRefCount();
+      //if !noRefCount then
+      //  if d.linksDistribution() then
+      //    d.dist.incRefCount();
       return _newDomain(d);
     }
 
@@ -1168,9 +1168,9 @@ module ChapelArray {
 
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      if !noRefCount then
-        if (d.linksDistribution()) then
-          d.dist.incRefCount();
+      //if !noRefCount then
+      //  if (d.linksDistribution()) then
+      //    d.dist.incRefCount();
       return _newDomain(d);
     }
 
@@ -1183,9 +1183,9 @@ module ChapelArray {
         ranges(i) = dim(i).expand(off);
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      if !noRefCount then
-        if (d.linksDistribution()) then
-          d.dist.incRefCount();
+      //if !noRefCount then
+      //  if (d.linksDistribution()) then
+      //    d.dist.incRefCount();
       return _newDomain(d);
     }
 
@@ -1215,9 +1215,9 @@ module ChapelArray {
         ranges(i) = dim(i).exterior(off(i));
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      if !noRefCount then
-        if (d.linksDistribution()) then
-          d.dist.incRefCount();
+      //if !noRefCount then
+      //  if (d.linksDistribution()) then
+      //    d.dist.incRefCount();
       return _newDomain(d);
     }
 
@@ -1264,9 +1264,9 @@ module ChapelArray {
       }
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      if !noRefCount then
-        if (d.linksDistribution()) then
-          d.dist.incRefCount();
+      //if !noRefCount then
+      //  if (d.linksDistribution()) then
+      //    d.dist.incRefCount();
       return _newDomain(d);
     }
 
@@ -1314,9 +1314,9 @@ module ChapelArray {
         ranges(i) = _value.dsiDim(i).translate(off(i));
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      if !noRefCount then
-        if (d.linksDistribution()) then
-          d.dist.incRefCount();
+      //if !noRefCount then
+      //  if (d.linksDistribution()) then
+      //    d.dist.incRefCount();
       return _newDomain(d);
      }
 
@@ -1339,9 +1339,9 @@ module ChapelArray {
         ranges(i) = dim(i).chpl__unTranslate(off(i));
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      if !noRefCount then
-        if (d.linksDistribution()) then
-          d.dist.incRefCount();
+      //if !noRefCount then
+      //  if (d.linksDistribution()) then
+      //    d.dist.incRefCount();
       return _newDomain(d);
     }
 
@@ -1688,12 +1688,6 @@ module ChapelArray {
     var _unowned:bool;
     var _promotionType: _value.eltType;
 
-    pragma "no doc"
-    proc initialize() {
-     if !noRefCount then
-      chpl_incRefCountsForDomainsInArrayEltTypes(_value.eltType);
-    }
-
     inline proc _value {
       if _isPrivatized(_instance) {
         return chpl_getPrivatizedCopy(_instance.type, _pid);
@@ -1842,16 +1836,17 @@ module ChapelArray {
     proc this(ranges: range(?) ...rank) {
       if boundsChecking then
         checkSlice((... ranges));
-      var d = _dom((...ranges));
+      // dsiSlice takes ownership of d._value
+      pragma "no auto destroy" var d = _dom((...ranges));
       var a = _value.dsiSlice(d._value);
       a._arrAlias = _value;
-      pragma "dont disable remote value forwarding"
-      proc help() {
-        d._value.incRefCount();
-        a._arrAlias.incRefCount();
-      }
-      if !noRefCount then
-        help();
+      //pragma "dont disable remote value forwarding"
+      //proc help() {
+      //  d._value.incRefCount();
+      //  a._arrAlias.incRefCount();
+      //}
+      //if !noRefCount then
+      //  help();
       return _newArray(a);
     }
 
@@ -1863,12 +1858,12 @@ module ChapelArray {
       var ranges = _getRankChangeRanges(args);
       param rank = ranges.size, stridable = chpl__anyStridable(ranges);
       var d = _dom((...args));
-      if !noRefCount then
-        d._value.incRefCount();
+      //if !noRefCount then
+      //  d._value.incRefCount();
       var a = _value.dsiRankChange(d._value, rank, stridable, args);
       a._arrAlias = _value;
-      if !noRefCount then
-        a._arrAlias.incRefCount();
+      //if !noRefCount then
+      //  a._arrAlias.incRefCount();
       return _newArray(a);
     }
 
@@ -2023,13 +2018,13 @@ module ChapelArray {
       var newDom = {(...d.dims())} dmapped newDist;
       var x = _value.dsiReindex(newDom._value);
       x._arrAlias = _value;
-      pragma "dont disable remote value forwarding"
-      proc help() {
-        newDom._value.incRefCount();
-        x._arrAlias.incRefCount();
-      }
-      if !noRefCount then
-        help();
+      //pragma "dont disable remote value forwarding"
+      //proc help() {
+      //  newDom._value.incRefCount();
+      //  x._arrAlias.incRefCount();
+      //}
+      //if !noRefCount then
+      //  help();
       return _newArray(x);
     }
 
@@ -2772,8 +2767,8 @@ module ChapelArray {
       // solution, but it resolves the immediate problem in
       // test_distribution_syntax2.chpl (compiled with CHPL_COMM=none).
       if a._value == b._value {
-        if !noRefCount then
-          a._value.incRefCount();
+        //if !noRefCount then
+        //  a._value.incRefCount();
       } else
         a._value.dsiAssign(b._value);
       if _isPrivatized(a._instance) then
@@ -3146,9 +3141,9 @@ module ChapelArray {
     for param i in 1..a.rank do
       r(i) = a.dim(i) by t(i);
     var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, true, r);
-    if !noRefCount then
-      if (d.linksDistribution()) then
-        d.dist.incRefCount();
+    //if !noRefCount then
+    //  if (d.linksDistribution()) then
+    //    d.dist.incRefCount();
     return _newDomain(d);
   }
 
@@ -3167,9 +3162,9 @@ module ChapelArray {
     for param i in 1..a.rank do
       r(i) = a.dim(i) align t(i);
     var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, a.stridable, r);
-    if !noRefCount then
-      if (d.linksDistribution()) then
-        d.dist.incRefCount();
+    //if !noRefCount then
+    //  if (d.linksDistribution()) then
+    //    d.dist.incRefCount();
     return _newDomain(d);
   }
 
