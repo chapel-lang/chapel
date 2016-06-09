@@ -61,7 +61,7 @@ master_doc = 'index'
 shortversion = 1.13
 
 # The full version, including alpha/beta/rc tags.
-release = '1.13.0'
+release = '1.13.1'
 
 # General information about the project.
 project = u'Chapel Documentation {0}'.format(shortversion)

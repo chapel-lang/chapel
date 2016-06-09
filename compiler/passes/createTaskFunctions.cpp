@@ -609,9 +609,67 @@ void createTaskFunctions(void) {
         INT_ASSERT(isTaskFun(fn));
         CallExpr* call = new CallExpr(fn);
 
-        // These variables are only used if fCacheRemote is set.
-        bool needsMemFence = true;
+        bool needsMemFence = true; // only used with fCacheRemote
         bool isBlockingOn = false;
+        bool isInIterator = false;
+
+        if( block->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON) ) {
+          isBlockingOn = true;
+        }
+        if (FnSymbol* pfn = toFnSymbol(block->parentSymbol)) {
+          isInIterator = pfn->isIterator();
+        }
+
+        if( isBlockingOn && !isInIterator) {
+          // Generate an if statement
+          // if ( chpl_doDirectExecuteOn( targetLocale ) )
+          //     call un-wrapped task function
+          // else
+          //     proceed as with chpl_executeOn/chpl_executeOnFast
+          //     fid call to wrapper function on a remote local
+          //     (possibly just a different sublocale)
+          //
+          // This is called the "direct on" optimization.
+          //
+          // TODO: This is disabled for iterators for now in order to avoid
+          // interfering with iterator inlining and to avoid an assertion error
+          // in lowerIterators.
+
+          VarSymbol* isDirectTmp = newTemp("isdirect", dtBool);
+          CallExpr* isCall;
+          isCall = new CallExpr("chpl_doDirectExecuteOn",
+                                block->blockInfoGet()->get(1)->copy() // target
+                               );
+
+          block->insertBefore(new DefExpr(isDirectTmp));
+          block->insertBefore(new CallExpr(PRIM_MOVE, isDirectTmp, isCall));
+
+          // Build comparison
+          SymExpr* isTrue = new SymExpr(isDirectTmp);
+
+          // Build true branch
+          CallExpr* directcall = new CallExpr(fn);
+
+          VarSymbol* dummyArg = newTemp("local_locale");
+          dummyArg->addFlag(FLAG_DIRECT_ON_ARGUMENT);
+          block->insertBefore(new DefExpr(dummyArg));
+          block->insertBefore(new CallExpr(PRIM_MOVE, dummyArg,
+                block->blockInfoGet()->get(1)->copy()));
+
+          directcall->insertAtTail(dummyArg);
+
+          // False branch is call.
+
+          // Build condition
+          CondStmt* cond = new CondStmt(isTrue, directcall, call);
+          // Add the condition which calls the outlined task function
+          // somehow.
+          block->insertBefore(cond);
+        } else {
+          // Add the call to the outlined task function.
+          block->insertBefore(call);
+        }
+
 
         if( fCacheRemote ) {
           Symbol* parent = block->parentSymbol;
@@ -638,10 +696,6 @@ void createTaskFunctions(void) {
         block->insertBefore(new DefExpr(fn));
 
         if( fCacheRemote ) {
-          if( block->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON) ) {
-            isBlockingOn = true;
-          }
-
           /* We don't need to add a fence for the parent side of
              PRIM_BLOCK_BEGIN_ON
              PRIM_BLOCK_COBEGIN_ON
@@ -655,10 +709,9 @@ void createTaskFunctions(void) {
           // blocking on statement. Other statements, including cobegin,
           // coforall, begin handle this in upEndCount.
           if( needsMemFence && isBlockingOn )
-            block->insertBefore(new CallExpr("chpl_rmem_consist_release"));
+            call->insertBefore(new CallExpr("chpl_rmem_consist_release"));
         }
-        // Add the call to the outlined task function.
-        block->insertBefore(call);
+
         if( fCacheRemote ) {
           // Join barrier (acquire) is needed for a blocking on, and it
           // will make sure that writes in the on statement are available
@@ -666,7 +719,7 @@ void createTaskFunctions(void) {
           // doesn't make sense to acquire barrier after running them.
           // coforall, cobegin, and sync blocks do this in waitEndCount.
           if( needsMemFence && isBlockingOn )
-            block->insertBefore(new CallExpr("chpl_rmem_consist_acquire"));
+            call->insertAfter(new CallExpr("chpl_rmem_consist_acquire"));
         }
 
         block->blockInfoGet()->remove();
@@ -678,7 +731,12 @@ void createTaskFunctions(void) {
           // from re-using cached elements from another task. This could
           // conceivably be handled by the tasking layer, but they already
           // have enough to worry about...
-          fn->insertAtTail(new CallExpr(PRIM_START_RMEM_FENCE));
+
+          // In order to support direct calls for on statements
+          // with a target that is local, instead of adding
+          // the fence to the task function, we instruct
+          // create_block_fn_wrapper to do it on our behalf.
+          fn->addFlag(FLAG_WRAPPER_NEEDS_START_FENCE);
         }
 
         // This block becomes the body of the new function.
@@ -695,14 +753,18 @@ void createTaskFunctions(void) {
           // here for a blocking on statement. We don't add it redundantly
           // because other parts of the compiler rely on finding _downEndCount
           // at the end of certain functions.
+
+          // As with FLAG_WRAPPER_NEEDS_START_FENCE above,
+          // ask create_block_fn_wrapper to add the fence if it
+          // is needed.
           if( isBlockingOn )
-            fn->insertAtTail(new CallExpr(PRIM_FINISH_RMEM_FENCE));
+            fn->addFlag(FLAG_WRAPPER_NEEDS_FINISH_FENCE);
         }
 
         fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
         fn->retType = dtVoid;
 
-        if (needsCapture(fn)) {
+        if (needsCapture(fn)) { // note: does not apply to blocking on stmts.
           hasTaskIntentClause = true;
 
           // Convert referenced variables to explicit arguments.

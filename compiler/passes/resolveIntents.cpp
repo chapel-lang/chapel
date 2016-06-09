@@ -44,6 +44,7 @@ static IntentTag constIntentForType(Type* t) {
              t == dtStringC ||
              t == dtStringCopy ||
              t == dtCVoidPtr ||
+             t == dtCFnPtr ||
              t->symbol->hasFlag(FLAG_EXTERN)) {
     return INTENT_CONST_IN;
   }
@@ -66,6 +67,7 @@ IntentTag blankIntentForType(Type* t) {
              t == dtStringC ||
              t == dtStringCopy ||
              t == dtCVoidPtr ||
+             t == dtCFnPtr ||
              isClass(t) ||
              isRecord(t) ||
              isUnion(t) ||

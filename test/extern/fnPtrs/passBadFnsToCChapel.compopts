@@ -1,0 +1,2 @@
+-s cPtrToChapel=true  # passBadFnsToCChapel-cPtrToChapel.good
+-s cPtrToChapel=false # passBadFnsToCChapel-ChapelFcfToC.good

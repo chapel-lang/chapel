@@ -23,7 +23,7 @@ if timing then tCount.stop();
 // replace
 var tReplace: Timer;
 if timing then tReplace.start();
-search.replace("ear", "hear");
+search.replace("searchsearchsearchsearch", "sea");
 if timing then tReplace.stop();
 
 if timing {

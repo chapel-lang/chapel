@@ -1,5 +1,5 @@
 # Copyright © 2009-2016 Inria.  All rights reserved.
-# Copyright © 2009-2012, 2014 Université Bordeaux
+# Copyright © 2009-2012, 2014, 2016 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 #
 # See COPYING in top-level directory.
@@ -125,7 +125,7 @@ endif HWLOC_HAVE_LINUX
 	@ $(SED) -e 's/#PACKAGE_NAME#/@PACKAGE_NAME@/g' \
 	  -e 's/#PACKAGE_VERSION#/@PACKAGE_VERSION@/g' \
 	  -e 's/#HWLOC_DATE#/@HWLOC_RELEASE_DATE@/g' \
-	  -e 's@#RUNSTATEDIR#@'$(HWLOC_runstatedir)'@g' \
+	  -e 's/#RUNSTATEDIR#/$(subst /,\/,$(HWLOC_runstatedir))/g' \
 	  > $@ < $<
 
 .3in.3:

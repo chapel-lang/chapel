@@ -343,6 +343,10 @@ module ChapelDistribution {
     proc sparseShiftArrayBack(shiftrange) {
       halt("sparseShiftArrayBack not supported for non-sparse arrays");
     }
+
+    proc sparseBulkShiftArray(shiftMap, oldnnz) {
+      halt("sparseBulkShiftArray not supported for non-sparse arrays");
+    }
   
     // methods for associative arrays
     proc clearEntry(idx, haveLock:bool = false) {

@@ -276,8 +276,8 @@ program will halt.
     }
 
 
-Implementaion Notes
--------------------
+Implementation Notes
+--------------------
 
 Since this error handling strategy is based off returning either the value or
 an error, better support for union types in chapel may be necessary.

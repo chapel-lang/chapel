@@ -8,6 +8,8 @@ mv $outfile $outfile.save
 # 'head -2' is to keep only what comes from the first anticipated error
 # this should increase the determinism of the output, for .bad
 #
-grep -E 'Invalid read|Address 0x.* is' $outfile.save | head -2 \
-| sed 's@^.*Invalid read@Invalid read@; s@^.*Address .* is@Address xxx is@' \
+grep -E 'Invalid read|Address 0x.* is' $outfile.save | head -2 | \
+sed 's@^.*Invalid read@Invalid read@' | \
+sed 's@^.*Address .* is@Address xxx is@' | \
+sed 's@size .* free@size xxx free@' \
 > $outfile

@@ -193,7 +193,7 @@ proc chmod(out error: syserr, name: string, mode: int) {
    Will halt with an error message if one is detected
 
    :arg name: The name of the file or directory whose permissions should be
-              alterred.
+              altered.
    :type name: `string`
    :arg mode: The permissions desired for the file or directory in question.
               See description of :const:`S_IRUSR`, for instance, for potential
@@ -1090,7 +1090,7 @@ proc mkdir(name: string, mode: int = 0o777, parents: bool=false) {
 pragma "no doc"
 proc moveDir(out error: syserr, src: string, dest: string) {
   var destExists = exists(error, dest);
-  // Did some error occurred in checking the existance of dest, perhaps a
+  // Did some error occur in checking the existence of dest, perhaps a
   // permissions error?  If so, return.
   if (error != ENOERR) then return;
 
@@ -1104,7 +1104,7 @@ proc moveDir(out error: syserr, src: string, dest: string) {
     if (aFile) {
       // dest is a file, we can't move src within it!
       error = ENOTDIR;
-      // Note: Python gives EEXISTS in this case, but I think ENOTDIR is
+      // Note: Python gives EEXIST in this case, but I think ENOTDIR is
       // clearer.
     } else if (aDir) {
       if (sameFile(src, dest)) {

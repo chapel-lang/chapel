@@ -346,11 +346,11 @@ module DefaultAssociative {
       if entries < numKeys {
 
         //Find the first suitable prime
-        var threshhold = (numKeys + 1) * 2;
+        var threshold = (numKeys + 1) * 2;
         var prime = 0;
         var primeLoc = 0;
         for i in 1..chpl__primes.size {
-            if chpl__primes(i) > threshhold {
+            if chpl__primes(i) > threshold {
               prime = chpl__primes(i);
               primeLoc = i;
               break;
@@ -362,7 +362,7 @@ module DefaultAssociative {
           halt("Requested capacity (", numKeys, ") exceeds maximum size");
         }
 
-        //Changing underlying strucure, time for locking
+        //Changing underlying structure, time for locking
         if parSafe then lockTable();
         if entries > 0 {
           // Slow path: back up required

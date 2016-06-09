@@ -241,7 +241,8 @@ void checkPrimitives()
      case PRIM_HEAP_BROADCAST_GLOBAL_VARS:
      case PRIM_PRIVATE_BROADCAST:
      case PRIM_INT_ERROR:
-     case PRIM_CAPTURE_FN:
+     case PRIM_CAPTURE_FN_FOR_CHPL:
+     case PRIM_CAPTURE_FN_FOR_C:
      case PRIM_CREATE_FN_TYPE:
      case PRIM_STRING_COPY:
      case PRIM_CAST_TO_VOID_STAR:       // Cast the object argument to void*.

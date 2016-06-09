@@ -62,7 +62,7 @@ provide versions which are optimized for particular environments. Not Covered.
 
 JAMA is by no means a complete linear algebra environment. For example, 
 there are no provisions for matrices with particular structure (e.g., 
-banded, sparse) or for more specialized decompositions (e.g. Shur, 
+banded, sparse) or for more specialized decompositions (e.g. Schur, 
 generalized eigenvalue). Complex matrices are not included. It is not our 
 intention to ignore these important problems. We expect that some of these 
 (e.g. complex) will be addressed in future versions. It is our intent that 
@@ -1262,7 +1262,7 @@ class EigenvalueDecomposition {
    and a permutation vector piv of length m so that A(piv,:) = L*U.
    If m < n, then L is m-by-m and U is m-by-n.
 
-   The LU decompostion with pivoting always exists, even if the matrix is
+   The LU decomposition with pivoting always exists, even if the matrix is
    singular, so the constructor will never fail.  The primary use of the
    LU decomposition is in the solution of square systems of simultaneous
    linear equations.  This will fail if isNonsingular() returns false.
@@ -1487,7 +1487,7 @@ class LUDecomposition {
 
 /* Generate identity matrix
      m    Number of rows.
-     n    Number of colums.
+     n    Number of columns.
      returns An m-by-n matrix with ones on the diagonal and zeros elsewhere.
 */
 
@@ -1549,7 +1549,7 @@ class Matrix {
 
    /* Construct an m-by-n matrix of zeros. 
         m    Number of rows.
-        n    Number of colums.
+        n    Number of columns.
    */
 
    proc Matrix (m:int, n: int) {
@@ -1560,7 +1560,7 @@ class Matrix {
 
    /* Construct an m-by-n constant matrix.
         m    Number of rows.
-        n    Number of colums.
+        n    Number of columns.
         s    Fill the matrix with this scalar value.
    */
 
@@ -1606,7 +1606,7 @@ class Matrix {
    /* Construct a matrix quickly without checking arguments.
         A    Two-dimensional array of doubles.
         m    Number of rows.
-        n    Number of colums.
+        n    Number of columns.
    */
 
    proc Matrix (A:[?aDom] real, m:int, n:int) where aDom.rank == 2 {
@@ -2239,7 +2239,7 @@ class Matrix {
 
    /* Generate matrix with random elements
    m    Number of rows.
-   n    Number of colums.
+   n    Number of columns.
    return     An m-by-n matrix with uniformly distributed random elements.
    */
 
@@ -2274,7 +2274,7 @@ proc random (m, n:int) {
    orthogonal matrix Q and an n-by-n upper triangular matrix R so that
    A = Q*R.
 
-   The QR decompostion always exists, even if the matrix does not have
+   The QR decomposition always exists, even if the matrix does not have
    full rank, so the constructor will never fail.  The primary use of the
    QR decomposition is in the least squares solution of nonsquare systems
    of simultaneous linear equations.  This will fail if isFullRank()
@@ -2493,7 +2493,7 @@ class QRDecomposition {
    The singular values, sigma[k] = S[k,k], are ordered so that
    sigma[0] >= sigma[1] >= ... >= sigma[n-1].
    
-   The singular value decompostion always exists, so the constructor will
+   The singular value decomposition always exists, so the constructor will
    never fail.  The matrix condition number and the effective numerical
    rank can be computed from this decomposition.
 */
