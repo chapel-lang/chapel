@@ -152,7 +152,7 @@ extern int AMMPI_SPMDSetThreadMode(int usingthreads, const char **provided_level
   }
   #if MPI_VERSION >= 2 || (defined(MPI_THREAD_SINGLE) && defined(MPI_THREAD_SERIALIZED))
     { /* init MPI and tell it to be thread-safe */
-      int required = (usingthreads ? MPI_THREAD_MULTIPLE : MPI_THREAD_SINGLE);
+      int required = (usingthreads ? MPI_THREAD_SERIALIZED : MPI_THREAD_SINGLE);
       int provided = -1;
       MPI_SAFE(MPI_Init_thread(argc, argv, required, &provided));
       switch (provided) {
