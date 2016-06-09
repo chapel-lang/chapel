@@ -120,7 +120,7 @@ proc ring() {
 proc pi() {
   const worldRank = commRank(),
         worldSize = commSize();
-  const N=10000;
+  const N=50000;
   var x : [0.. #N] real;
   var y : [0.. #N] real;
 
@@ -168,9 +168,16 @@ proc test_scatter() {
     MPI_Type_commit(rowtype);
 
     if worldRank==0 {
-      for irank in 0.. #worldSize do MPI_Send(arr[irank,0], 1, rowtype, irank, 1, MPI_COMM_WORLD);
+      for irank in 0.. #worldSize {
+        if irank == 0 {
+          recbuf = arr[0,..];
+        } else {
+          MPI_Send(arr[irank,0], 1, rowtype, irank, 1, MPI_COMM_WORLD);
+        }
+      }
+    } else {
+      MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
     }
-    MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
     writef("SCATTER2 : Rank %i :",worldRank); writeln(recbuf);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Type_free(rowtype);
@@ -185,9 +192,16 @@ proc test_scatter() {
     MPI_Type_commit(coltype);
 
     if worldRank==0 {
-      for irank in 0.. #worldSize do MPI_Send(arr[0,irank], 1, coltype, irank, 1, MPI_COMM_WORLD);
+      for irank in 0.. #worldSize {
+        if irank == 0 {
+          recbuf = arr[..,0];
+        } else {
+          MPI_Send(arr[0, irank], 1, coltype, irank, 1, MPI_COMM_WORLD);
+        }
+      }
+    } else {
+      MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
     }
-    MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
     writef("SCATTER3 : Rank %i :",worldRank); writeln(recbuf);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Type_free(coltype);
@@ -206,9 +220,17 @@ proc test_scatter() {
     MPI_Type_commit(indextype);
 
     if worldRank==0 {
-      for irank in 0.. #worldSize do MPI_Send(arr2[0], 1, indextype, irank, 1, MPI_COMM_WORLD);
+      for irank in 0.. #worldSize {
+        if irank == 0 {
+          recbuf[0.. #2] = arr2[5.. #2];
+          recbuf[2.. #2] = arr2[12.. #2];
+        } else {
+          MPI_Send(arr2[0], 1, indextype, irank, 1, MPI_COMM_WORLD);
+        }
+      }
+    } else {
+      MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
     }
-    MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
     writef("SCATTER4 : Rank %i :",worldRank); writeln(recbuf);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Type_free(indextype);
