@@ -796,18 +796,22 @@ pragma "no doc"
 
    :arg Data: The array to verify
    :type Data: [] `eltType`
+   :arg str: string to print while halting if an element is out of order
+   :type str: string
    :arg reverse: if true, expect the values to be sorted in reverse.
    :type reverse: `bool`
-   :arg comparator: Record that redefines the comparison mechanism with one of
-      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
 
  */
-proc VerifySort(Data: [?Dom] ?eltType, param reverse=false) {
+proc VerifySort(Data: [?Dom] ?eltType, str: string, param reverse=false) {
   //writeln("Deprecation warning: VerifySort replaced by isSorted");
   if reverse {
-    return isSorted(Data, reverseComparator);
+    for i in Dom.low..Dom.high-1 do
+      if Data[i] < Data[i+1] then
+        halt(str, " did not sort properly (", i, "): ", Data);
   } else {
-    return isSorted(Data);
+    for i in Dom.low..Dom.high-1 do
+      if Data[i+1] < Data[i] then
+        halt(str, " did not sort properly (", i, "): ", Data);
   }
 }
 } // Sort Module
