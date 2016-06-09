@@ -42,8 +42,8 @@ Key Comparator
 ~~~~~~~~~~~~~~
 
 The ``key(a)`` method accepts 1 argument, which will be an element from the
-array being sorted. The value returned should support numeric operations or be
-a string.
+array being sorted. The return type should support the ``<`` operator, since
+that is what the base ``compare`` method of all sort algorithms uses by default.
 
 The default key method would look like this:
 
