@@ -8371,7 +8371,7 @@ static void resolveRecordInitializers() {
       // code
       Symbol* tmp = newTemp("_distribution_tmp_");
       init->getStmtExpr()->insertBefore(new DefExpr(tmp));
-      CallExpr* classCall = new CallExpr(type->getField("_valueType")->type->defaultInitializer);
+      CallExpr* classCall = new CallExpr(type->getField("_instance")->type->defaultInitializer);
       CallExpr* move = new CallExpr(PRIM_MOVE, tmp, classCall);
       init->getStmtExpr()->insertBefore(move);
       resolveCallAndCallee(classCall);
@@ -9475,7 +9475,7 @@ fixTypeNames(AggregateType* ct)
     ct->symbol->name = astr("domain", ct->symbol->name+strlen(default_domain_name));
   }
   if (isRecordWrappedType(ct)) {
-    ct->symbol->name = ct->getField("_valueType")->type->symbol->name;
+    ct->symbol->name = ct->getField("_instance")->type->symbol->name;
   }
 }
 

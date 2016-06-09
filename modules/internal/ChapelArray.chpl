@@ -768,20 +768,20 @@ module ChapelArray {
   pragma "no doc"
   record _distribution {
     var _pid:int;  // only used when privatized
-    var _baseDist; // generic, but an instance of a subclass of BaseDist
+    var _instance; // generic, but an instance of a subclass of BaseDist
     var _unowned:bool; // 'true' for the result of 'getDistribution',
                        // in which case, the record destructor should
-                       // not attempt to delete the _baseDist.
+                       // not attempt to delete the _instance.
 
     // Never, ever create a distribution directly.
     // Always call _newDistribution() to obtain  one.
-    proc _distribution(_pid, _baseDist) { }
+    //proc _distribution(_pid, _instance) { }
 
     inline proc _value {
-      if _isPrivatized(_baseDist) {
-        return chpl_getPrivatizedCopy(_baseDist.type, _pid);
+      if _isPrivatized(_instance) {
+        return chpl_getPrivatizedCopy(_instance.type, _pid);
       } else {
-        return _baseDist;
+        return _instance;
       }
     }
 
@@ -789,11 +789,11 @@ module ChapelArray {
       if ! _unowned {
         on _value {
           // How many domains refer to this distribution?
-          var cnt = _baseDist.destroyDist();
+          var cnt = _instance.destroyDist();
           if cnt == 0 {
-            // Free the main _baseDist
-            _baseDist.dsiDestroyDistClass();
-            delete _baseDist;
+            // Free the main _instance
+            _instance.dsiDestroyDistClass();
+            delete _instance;
           }
         }
       }
@@ -893,17 +893,17 @@ module ChapelArray {
   pragma "ignore noinit"
   record _domain {
     var _pid:int; // only used when privatized
-    var _baseDom; // generic, but an instance of a subclass of BaseDom
+    var _instance; // generic, but an instance of a subclass of BaseDom
     var _unowned:bool; // 'true' for the result of 'getDomain'
                        // in which case, the record destructor should
-                       // not attempt to delete the _baseDom.
+                       // not attempt to delete the _instance.
     var _promotionType: index(rank, _value.idxType);
 
     inline proc _value {
-      if _isPrivatized(_baseDom) {
-        return chpl_getPrivatizedCopy(_baseDom.type, _pid);
+      if _isPrivatized(_instance) {
+        return chpl_getPrivatizedCopy(_instance.type, _pid);
       } else {
-        return _baseDom;
+        return _instance;
       }
     }
 
@@ -912,9 +912,9 @@ module ChapelArray {
       if ! _unowned {
         on _value {
           // How many arrays refer to this domain?
-          var cnt = _baseDom.destroyDom();
+          var cnt = _instance.destroyDom();
           if cnt == 0 then
-            delete _baseDom;
+            delete _instance;
         }
       }
     }
@@ -1397,7 +1397,7 @@ module ChapelArray {
     pragma "no doc"
     proc setIndices(x) {
       _value.dsiSetIndices(x);
-      if _isPrivatized(_baseDom) {
+      if _isPrivatized(_instance) {
         _reprivatize(_value);
       }
     }
@@ -1733,7 +1733,7 @@ module ChapelArray {
   pragma "ignore noinit"
   record _array {
     var _pid:int;  // only used when privatized
-    var _baseArr; // generic, but an instance of a subclass of BaseArr
+    var _instance; // generic, but an instance of a subclass of BaseArr
     var _unowned:bool;
     var _promotionType: _value.eltType;
 
@@ -1744,10 +1744,10 @@ module ChapelArray {
     }
 
     inline proc _value {
-      if _isPrivatized(_baseArr) {
-        return chpl_getPrivatizedCopy(_baseArr.type, _pid);
+      if _isPrivatized(_instance) {
+        return chpl_getPrivatizedCopy(_instance.type, _pid);
       } else {
-        return _baseArr;
+        return _instance;
       }
     }
 
@@ -2825,7 +2825,7 @@ module ChapelArray {
           a._value.incRefCount();
       } else
         a._value.dsiAssign(b._value);
-      if _isPrivatized(a._baseDist) then
+      if _isPrivatized(a._instance) then
         _reprivatize(a._value);
     } else {
       halt("assignment to distributions with declared domains is not yet supported");
@@ -3299,7 +3299,7 @@ module ChapelArray {
   }
 
    pragma "auto copy fn" proc chpl__autoCopy(x: []) {
-    pragma "no copy" var b = new _array(x._pid, x._baseArr, true);
+    pragma "no copy" var b = new _array(x._pid, x._instance, true);
     return b;
   }
 
