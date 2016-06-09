@@ -38,18 +38,27 @@
   #define DEBUG_PRINTF(...)
 #endif
 
+// Is the primitive function fast (ie, could it be run in a signal handler)
+#define IS_FAST 2
+// Is the primitive function communication-free?
+#define IS_LOCAL 1
+#define NO_OPT 0
+
 //
-// Return true if this primitive function is safe for fast on optimization
-// (e.g., no communication, no sync/single accesses)
+// Return IS_FAST or IS_LOCAL or NO_OPT
+// IS_FAST -> safe for fast on optimization (e.g., no communication, no sync/single accesses)
+// IS_LOCAL -> safe to remove --cache-remote fences since it's
 //
-static bool
+// IS_FAST implies IS_LOCAL.
+//
+static int
 isFastPrimitive(CallExpr *call, bool isLocal) {
   INT_ASSERT(call->primitive);
   // Check primitives for communication
   switch (call->primitive->tag) {
   case PRIM_UNKNOWN:
     // TODO: Return true for PRIM_UNKNOWNs that are side-effect free
-    return false;
+    return 0;
 
   case PRIM_NOOP:
   case PRIM_REF_TO_STRING:
@@ -111,7 +120,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_GET_USER_LINE:
   case PRIM_GET_USER_FILE:
     DEBUG_PRINTF(" *** OK (default): %s\n", call->primitive->name);
-    return true;
+    return IS_FAST;
 
   case PRIM_MOVE:
   case PRIM_ASSIGN:
@@ -129,13 +138,13 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
       if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
           !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         DEBUG_PRINTF(" *** OK (PRIM_MOVE 1): %s\n", call->primitive->name);
-        return true;
+        return IS_FAST;
       }
     } else {
       DEBUG_PRINTF(" *** OK (PRIM_MOVE 2): %s\n", call->primitive->name);
       // Not necessarily true, but we return true because
       // the callExpr will be checked in the calling function
-      return true;
+      return IS_FAST;
     }
     break;
 
@@ -149,7 +158,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
           call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
       DEBUG_PRINTF(" *** OK (PRIM_WIDE_GET_LOCALE, etc.): %s\n",
                    call->primitive->name);
-      return true;
+      return IS_FAST;
     }
     break;
 
@@ -158,7 +167,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_GET_MEMBER_VALUE:
   case PRIM_GET_SVEC_MEMBER_VALUE:
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-      return true;
+      return IS_FAST;
       DEBUG_PRINTF(" *** OK (PRIM_SET_UNION_ID, etc.): %s\n",
                    call->primitive->name);
     }
@@ -175,7 +184,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       DEBUG_PRINTF(" *** OK (PRIM_ARRAY_SET, etc.): %s\n",
                    call->primitive->name);
-      return true;
+      return IS_FAST;
     }
     break;
 
@@ -185,7 +194,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
         !call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       DEBUG_PRINTF(" *** OK (PRIM_DEREF, etc.): %s\n", call->primitive->name);
-      return true;
+      return IS_FAST;
     }
     break;
 
@@ -197,7 +206,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_CHPL_COMM_GET_STRD:
   case PRIM_CHPL_COMM_PUT_STRD:
     // These may involve communication, so are deemed slow.
-    return false;
+    return NO_OPT;
 
   case PRIM_SYNC_INIT: // Maybe fast?
   case PRIM_SYNC_DESTROY: // Maybe fast?
@@ -226,7 +235,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_SINGLE_READXX:
   case PRIM_SINGLE_IS_FULL:
    // These may block, so are deemed slow.
-   return false;
+   return NO_OPT;
 
   case PRIM_NEW:
   case PRIM_INIT:
@@ -287,15 +296,16 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   case PRIM_BLOCK_DOWHILE_LOOP:
   case PRIM_BLOCK_FOR_LOOP:
   case PRIM_BLOCK_C_FOR_LOOP:
-    return true;
+    return IS_FAST;
  
-   // These don't block in the Chapel sense, but they may require a system
-    // call so we don't consider them eligible.
+    // These don't block in the Chapel sense, but they may require a system
+    // call so we don't consider them fast-eligible.
+    // However, they are communication free.
     //
   case PRIM_ARRAY_ALLOC:
   case PRIM_ARRAY_FREE:
   case PRIM_ARRAY_FREE_ELTS:
-    return false;
+    return IS_LOCAL;
 
     // Temporarily unclassified (legacy) cases.
     // These formerly defaulted to false (slow), so we leave them
@@ -320,7 +330,8 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
     break;
   }
 
-  return isLocal;
+  if (isLocal) return IS_FAST;
+  return NO_OPT;
 }
 
 static bool
@@ -337,20 +348,31 @@ inLocalBlock(CallExpr *call) {
   return false;
 }
 
-static bool
+static int
 markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
+
+  if( fn->id == 974467 || fn->id == 560784 || fn->id == 560844 || fn->id == 974527 )
+    gdbShouldBreakHere();
+
   if (fn->hasFlag(FLAG_FAST_ON))
-    return true;
+    return IS_FAST;
 
+  // MPF - this seems surprising to me? Why would declaring a function
+  // with export mean that it is fast?
   if (fn->hasFlag(FLAG_EXPORT))
-    return true;
+    return IS_FAST;
 
+  bool maybefast = true;
   if (fn->hasFlag(FLAG_EXTERN) && !fn->hasFlag(FLAG_FAST_ON_SAFE_EXTERN)) {
-    return false;
+    maybefast = false;
+  }
+  if (fn->hasFlag(FLAG_EXTERN) && !fn->hasFlag(FLAG_LOCAL_FN)) {
+    return NO_OPT;
   }
 
+
   if (fn->hasFlag(FLAG_NON_BLOCKING))
-    return false;
+    maybefast = false;
 
   visited->add_exclusive(fn);
 
@@ -370,17 +392,20 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
           call->isResolved()->removeFlag(FLAG_FAST_ON);
           DEBUG_PRINTF("%d: recurse FAILED (nested on block, id=%d).\n",
                        recurse-1, call->id);
-          return false;
+          return isLocal?IS_LOCAL:NO_OPT;
         }
         if (!visited->in(call->isResolved())) {
           DEBUG_PRINTF("%d: recurse %p (block=%p, id=%d)\n", recurse-1,
                        call->isResolved(), call->isResolved()->body,
                        call->isResolved()->id);
           DEBUG_PRINTF("\tlength=%d\n", call->isResolved()->body->length());
-          if (!markFastSafeFn(call->isResolved(), recurse-1, visited)) {
-            DEBUG_PRINTF("%d: recurse FAILED (id=%d).\n", recurse-1, call->id);
-            return false;
-          }
+          int is = markFastSafeFn(call->isResolved(), recurse-1, visited);
+          if (is == IS_LOCAL)
+            maybefast = false;
+          else if (is == NO_OPT && isLocal)
+            maybefast = false;
+          else if (is == NO_OPT)
+            return NO_OPT;
         } else {
           DEBUG_PRINTF("%d: recurse ALREADY VISITED %p (id=%d)\n", recurse-1,
                        call->isResolved(), call->isResolved()->id);
@@ -392,17 +417,27 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
         DEBUG_PRINTF("%d: recurse FAILED (%s, id=%d).\n", recurse-1,
                      recurse == 1 ? "too deep" : "function not resolved",
                      call->id);
-        return false;
+        return NO_OPT;
       }
-    } else if (isFastPrimitive(call, isLocal)) {
-      DEBUG_PRINTF(" (FAST primitive CALL)\n");
+    } else if (int is = isFastPrimitive(call, isLocal)) {
+      if (is == IS_FAST)
+        DEBUG_PRINTF(" (FAST primitive CALL)\n");
+      else
+        maybefast = false;
     } else {
       DEBUG_PRINTF("%d: FAILED (non-FAST primitive CALL: %s, id=%d)\n",
                    recurse-1, call->primitive->name, call->id);
-      return false;
+      return NO_OPT;
     }
   }
-  return true;
+
+  if (maybefast) {
+    fn->addFlag(FLAG_FAST_ON);
+    return IS_FAST;
+  } else {
+    fn->addFlag(FLAG_LOCAL_FN);
+    return IS_LOCAL;
+  }
 }
 
 
@@ -411,30 +446,77 @@ optimizeOnClauses(void) {
   if (fNoOptimizeOnClauses)
     return;
 
+  // If we're not using locks, the extern functions in
+  // atomics are local and safe for fast on.
+  if (0 != strcmp(CHPL_ATOMICS, "locks")) {
+    forv_Vec(ModuleSymbol, module, gModuleSymbols) {
+      if( module->hasFlag(FLAG_ATOMIC_MODULE) ) {
+        Vec<FnSymbol*> moduleFunctions = module->getTopLevelFunctions(true);
+        forv_Vec(FnSymbol, fn, moduleFunctions) {
+          if( fn->hasFlag(FLAG_EXTERN) ) {
+            fn->addFlag(FLAG_FAST_ON_SAFE_EXTERN);
+            fn->addFlag(FLAG_LOCAL_FN);
+          }
+        }
+      }
+    }
+  }
+
   compute_call_sites();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fn->hasFlag(FLAG_ON_BLOCK))
-      continue;
-    DEBUG_PRINTF("%p (%s in %s:%d): FLAG_ON_BLOCK (block=%p, id=%d)\n",
+    /*DEBUG_PRINTF("%p (%s in %s:%d): FLAG_ON_BLOCK (block=%p, id=%d)\n",
                  fn, fn->cname,
                  toModuleSymbol(fn->defPoint->parentSymbol)->filename,
                  fn->linenum(), fn->body, fn->id);
     DEBUG_PRINTF("\tlength=%d\n", fn->body->length());
+    */
     Vec<FnSymbol*> visited;
 
-    if (markFastSafeFn(fn, optimize_on_clause_limit, &visited)) {
-      DEBUG_PRINTF("\t[CANDIDATE FOR FAST FORK]\n");
-      fn->addFlag(FLAG_FAST_ON);
+    int is = markFastSafeFn(fn, optimize_on_clause_limit, &visited);
 
-      if (fReportOptimizedOn) {
-        ModuleSymbol *mod = toModuleSymbol(fn->defPoint->parentSymbol);
-        INT_ASSERT(mod);
-        if (developer ||
-            ((mod->modTag != MOD_INTERNAL) && (mod->modTag != MOD_STANDARD))) {
-          printf("Optimized on clause (%s) in module %s (%s:%d)\n",
-                 fn->cname, mod->name, fn->fname(), fn->linenum());
+    if (is == IS_FAST && !fn->hasFlag(FLAG_ON_BLOCK))
+      is = IS_LOCAL;
+    if (is == IS_LOCAL)
+      if (!fn->hasEitherFlag(FLAG_WRAPPER_NEEDS_START_FENCE,
+                             FLAG_WRAPPER_NEEDS_FINISH_FENCE))
+        is = NO_OPT;
+
+    if (is == IS_FAST) {
+      DEBUG_PRINTF("\t[CANDIDATE FOR FAST FORK]\n");
+    }
+    if (is == IS_FAST || is == IS_LOCAL) {
+      DEBUG_PRINTF("\t[CANDIDATE FOR RMEM_FENCE REMOVAL FN]\n");
+
+      // If the function is marked local, remove
+      // PRIM_START_RMEM_FENCE / PRIM_FINISH_RMEM_FENCE
+      // from the wrapper.
+      std::vector<CallExpr*> calls;
+
+      collectCallExprs(fn, calls);
+
+      for_vector(CallExpr, call, calls) {
+        if (call->isPrimitive(PRIM_START_RMEM_FENCE) ||
+            call->isPrimitive(PRIM_FINISH_RMEM_FENCE)) {
+          call->remove();
         }
+      }
+    }
+
+
+    if (is != NO_OPT && fReportOptimizedOn) {
+      ModuleSymbol *mod = toModuleSymbol(fn->defPoint->parentSymbol);
+      INT_ASSERT(mod);
+      if (developer ||
+          ((mod->modTag != MOD_INTERNAL) && (mod->modTag != MOD_STANDARD))) {
+        if (is == IS_FAST) {
+          printf("Optimized on clause (%s) in module %s (%s:%d)\n",
+               fn->cname, mod->name, fn->fname(), fn->linenum());
+        } else {
+          printf("Optimized rmem fence (%s) in module %s (%s:%d)\n",
+               fn->cname, mod->name, fn->fname(), fn->linenum());
+        }
+        if (developer) printf("(id %i)\n", fn->id);
       }
     }
   }
