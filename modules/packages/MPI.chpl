@@ -167,17 +167,21 @@ module MPI {
      for gasnet.
   */
   proc Barrier.MPIFlush(t : real = 0.01, comm : MPI_Comm = MPI_COMM_WORLD) {
-    this.barrier();
+    if numLocales > 1 {
+      this.barrier();
 
-    // Flush any remaining requests from eg. the MPI backend
-    var req : MPI_Request;
-    var status : MPI_Status;
-    var flag : c_int = 0 : c_int;
-    C_MPI.MPI_Ibarrier(comm, req);
-    while true {
-      C_MPI.MPI_Test(req, flag, status);
-      if flag!=0 then break;
-      sleep(t, unit = TimeUnits.microseconds);
+      // Flush any remaining requests from eg. the MPI backend
+      var req : MPI_Request;
+      var status : MPI_Status;
+      var flag : c_int = 0 : c_int;
+      C_MPI.MPI_Ibarrier(comm, req);
+      while true {
+        C_MPI.MPI_Test(req, flag, status);
+        if flag!=0 then break;
+        sleep(t, unit = TimeUnits.microseconds);
+      }
+    } else {
+      C_MPI.MPI_Barrier(comm);
     }
   }
 
