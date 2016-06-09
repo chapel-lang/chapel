@@ -50,7 +50,6 @@ use BlockDist;
 //
 config param debugSparseBlockDist = false;
 config param debugSparseBlockDistBulkTransfer = false;
-config param bulkAddMemoize = true;
 
 // There is no SparseBlock distribution class. Instead, we
 // just use Block.
@@ -162,14 +161,13 @@ class SparseBlockDom: BaseSparseDom {
 
     if !isSorted {
 
-      // without _new_ krecord functions throw null deref. It doesn't seem to be 
+      // without _new_ record functions throw null deref. It doesn't seem to be 
       // able to deref _outer_ ? I think it has something to do with memory
       // allocation for classes vs records, but I cannot explain
       var comp = new TargetLocaleComparator;
       sort(inds, comparator=comp);
     }
 
-    /*var done: [dist.targetLocDom] atomic bool;*/
     var active : atomic int;
     var firstIndex = inds.domain.low;
     var curLoc = dist.targetLocsIdx(inds[inds.domain.low]);
@@ -189,8 +187,8 @@ class SparseBlockDom: BaseSparseDom {
     proc spawnBulkAdd(indsRange: range, loc){
       active.add(1);
       begin on dist.targetLocales(loc) {
-        locDoms[loc].mySparseBlock.bulkAdd(inds[indsRange], true,
-            false);
+        locDoms[loc].mySparseBlock.bulkAdd(inds[indsRange], isSorted=true,
+            isUnique=false);
         active.sub(1); 
       }
     }
