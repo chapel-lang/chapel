@@ -806,11 +806,11 @@ proc VerifySort(Data: [?Dom] ?eltType, str: string, param reverse=false) {
   //writeln("Deprecation warning: VerifySort replaced by isSorted");
   if reverse {
     for i in Dom.low..Dom.high-1 do
-      if Data[i+1] < Data[i] then
+      if Data[i] < Data[i+1] then
         halt(str, " did not sort properly (", i, "): ", Data);
   } else {
     for i in Dom.low..Dom.high-1 do
-      if Data[i+1] > Data[i] then
+      if Data[i+1] < Data[i] then
         halt(str, " did not sort properly (", i, "): ", Data);
   }
 }
