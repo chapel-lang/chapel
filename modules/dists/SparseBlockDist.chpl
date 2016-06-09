@@ -177,24 +177,23 @@ class SparseBlockDom: BaseSparseDom {
     for i in inds.domain {
       const _tmpLoc = dist.targetLocsIdx(inds[i]);
       if _tmpLoc != curLoc {
-        active.add(1);
-        begin on dist.targetLocales(curLoc) {
-          locDoms[curLoc].mySparseBlock.bulkAdd(inds[firstIndex..i-1], true,
-              false);
-          active.sub(1);
-        }
+        spawnBulkAdd(firstIndex..i-1, curLoc);
         curLoc = _tmpLoc;
         firstIndex = i;
       }
     }
-    active.add(1);
-    begin on dist.targetLocales(curLoc) {
-      locDoms[curLoc].mySparseBlock.bulkAdd(inds[firstIndex..inds.domain.high], true,
-          false);
-      active.sub(1); 
-    }
+    spawnBulkAdd(firstIndex..inds.domain.high, curLoc);
 
     active.waitFor(0);
+
+    proc spawnBulkAdd(indsRange: range, loc){
+      active.add(1);
+      begin on dist.targetLocales(loc) {
+        locDoms[loc].mySparseBlock.bulkAdd(inds[indsRange], true,
+            false);
+        active.sub(1); 
+      }
+    }
   }
 
   //
