@@ -39,6 +39,10 @@ abort if not. This is not necessary if you are running local Chapel+MPI, but is
 likely to be necessary if you run in mixed Chapel-MPI mode. Both of these
 are true by default.
 
+If you are using the MPI conduit on GASNet, you will need to select the threading
+mode for MPI (if you are running in mixed mode). To do so, set AMMPI_MPI_THREAD=MULTIPLE
+in your environment.
+
 A useful idiom for mixing Chapel and MPI code is :
 ```
  mpiBarrier();
