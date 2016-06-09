@@ -34,10 +34,21 @@ since all of these are built around user-defined handlers, that we do not suppor
 The package uses two boolean config constants :
 ``autoInitMPI`` and ``requireThreadedMPI``. The first automatically initializes
 MPI (if not already initialized by the runtime), and shuts it down as well.
-The second ensures that MPI can at least the MPI_THREAD_SERIALIZED mode, and will
+The second ensures that MPI is running in MPI_THREAD_MULTIPLE mode, and will
 abort if not. This is not necessary if you are running local Chapel+MPI, but is
 likely to be necessary if you run in mixed Chapel-MPI mode. Both of these
 are true by default.
+
+A useful idiom for mixing Chapel and MPI code is :
+```
+ mpiBarrier();
+ local {
+   <local Chapel code + MPI calls can go here. Make sure the last MPI call is 
+    blocking or a barrier>
+    }
+```
+The local block ensures that there is no communication inside that might conflict with
+the MPI calls.
 
 .. note::
   #. Pointer arguments are written as `ref` arguments, so no casting to a ``c_ptr``
@@ -53,6 +64,9 @@ module MPI {
   use SysCTypes;
   require "mpi.h";
 
+  use Barrier;
+  use Time;
+
   /* Configuration constants */
   config const autoInitMPI=true;
   config const requireThreadedMPI=true;
@@ -60,6 +74,7 @@ module MPI {
 
   record _initMPI {
     var doinit : bool = false;
+    var barr : Barrier = new Barrier(numLocales, reusable=true);
 
     proc ~_initMPI() {
       if doinit {
@@ -70,6 +85,7 @@ module MPI {
             C_MPI.MPI_Finalize();
           }
       }
+      delete barr;
     }
   }
 
@@ -87,9 +103,6 @@ module MPI {
       var provided : c_int;
       if debugMPI then writeln("MPI already initialized.....");
       C_MPI.MPI_Query_thread(provided);
-      //if (provided != MPI_THREAD_SERIALIZED) &&
-      //   (provided != MPI_THREAD_MULTIPLE) &&
-      //   requireThreadedMPI
       if (provided != MPI_THREAD_MULTIPLE) &&
          requireThreadedMPI
       {
@@ -106,9 +119,6 @@ module MPI {
       // TODO : Need a gasnet barrier here???
       var provided : c_int;
       C_MPI.MPI_Init_thread(0,0,MPI_THREAD_MULTIPLE,provided);
-      //if (provided != MPI_THREAD_SERIALIZED) &&
-      //   (provided != MPI_THREAD_MULTIPLE) &&
-      //   requireThreadedMPI
       if (provided != MPI_THREAD_MULTIPLE) &&
          requireThreadedMPI
       {
@@ -140,6 +150,37 @@ module MPI {
     C_MPI.MPI_Comm_size(comm, size);
     return size;
   }
+
+  /* mpiBarrier()
+    
+    A convenience function that calls MPIFlush on a module barrier. This is
+    executed on MPI_COMM_WORLD.
+   */
+  proc mpiBarrier() {
+    _mpi.barr.MPIFlush();
+  }
+
+  /* Barrier.MPIFlush
+
+     Add a new method to Barrier; this will both apply a Chapel barrier, and then 
+     flush any remaining GASNet MPI commands. This is useful for eg. the mpi conduit
+     for gasnet.
+  */
+  proc Barrier.MPIFlush(t : real = 0.01, comm : MPI_Comm = MPI_COMM_WORLD) {
+    this.barrier();
+
+    // Flush any remaining requests from eg. the MPI backend
+    var req : MPI_Request;
+    var status : MPI_Status;
+    var flag : c_int = 0 : c_int;
+    C_MPI.MPI_Ibarrier(comm, req);
+    while true {
+      C_MPI.MPI_Test(req, flag, status);
+      if flag!=0 then break;
+      sleep(t, unit = TimeUnits.microseconds);
+    }
+  }
+
 
   /* A wrapper around MPI_Status. Only the defined fields are exposed */
   extern record MPI_Status {
@@ -315,7 +356,7 @@ module MPI {
   /* Special cases, for threading support */
   extern proc MPI_Init_thread(argc, argv, required : c_int, ref provided : c_int) : c_int;
   extern proc MPI_Query_thread(ref provided : c_int) : c_int;
-
+  extern proc MPI_Ibarrier(comm : MPI_Comm, ref request : MPI_Request) : c_int;
 
   /* Collective commands */
   extern proc MPI_Barrier (comm: MPI_Comm): c_int;
