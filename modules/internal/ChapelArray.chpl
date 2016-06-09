@@ -1030,20 +1030,20 @@ module ChapelArray {
       _value.dsiAdd(i);
     }
 
-    proc bulkAdd(inds: [] _value.idxType, isSorted=false,
-        isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank==1 {
+    proc bulkAdd(inds: [] _value.idxType, isIndsSorted=false,
+        isIndsUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank==1 {
 
       if inds.size == 0 then return;
 
-      _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
+      _value.dsiBulkAdd(inds, isIndsSorted, isIndsUnique, preserveInds);
     }
 
-    proc bulkAdd(inds: [] _value.rank*_value.idxType, isSorted=false,
-        isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank>1 {
+    proc bulkAdd(inds: [] _value.rank*_value.idxType, isIndsSorted=false,
+        isIndsUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank>1 {
 
       if inds.size == 0 then return;
 
-      _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
+      _value.dsiBulkAdd(inds, isIndsSorted, isIndsUnique, preserveInds);
     }
 
     /* Remove index ``i`` from this domain */
@@ -1491,7 +1491,7 @@ module ChapelArray {
 
   // this is a helper function for bulkAdd functions in sparse subdomains.
   proc __getActualInsertPts(d, inds, 
-      isSorted, isUnique) /* where isSparseDom(d) */ {
+      isIndsSorted, isIndsUnique) /* where isSparseDom(d) */ {
 
     var numAdded = inds.size; //maybe remove this var
 
@@ -1500,10 +1500,10 @@ module ChapelArray {
     var indivInsertPts: [{0..#numAdded}] int;
     var actualInsertPts: [{0..#numAdded}] int; //where to put in newdom
 
-    if !isSorted then QuickSort(inds);
+    if !isIndsSorted then sort(inds);
 
     //eliminate duplicates --assumes sorted
-    if !isUnique {
+    if !isIndsUnique {
       //make sure lastInd != inds[inds.domain.low]
       var lastInd = inds[inds.domain.low] + 1; 
       for (i, p) in zip(inds, indivInsertPts)  {
@@ -1514,8 +1514,8 @@ module ChapelArray {
 
     //verify sorted and no duplicates if not --fast
     if boundsChecking {
-      VerifySort(inds, "bulkAdd: Data is not sorted, call the function with \
-          isSorted=false");
+      if !isSorted(inds) then
+        halt("bulkAdd: Data not sorted, call the function with isIndsSorted=false");
 
       //check duplicates assuming sorted
       const indsStart = inds.domain.low;
@@ -1523,7 +1523,7 @@ module ChapelArray {
       var lastInd = inds[indsStart];
       for i in indsStart+1..indsEnd {
         if inds[i] == lastInd && indivInsertPts[i] != -1 then 
-          halt("There are duplicates, call the function with isUnique=false"); 
+          halt("There are duplicates, call the function with isIndsUnique=false"); 
       }
 
       for i in inds do d.boundsCheck(i);
@@ -1531,7 +1531,7 @@ module ChapelArray {
     }
 
     forall (i,p) in zip(inds, indivInsertPts) {
-      if isUnique || p != -1 { //don't do anything if it's duplicate
+      if isIndsUnique || p != -1 { //don't do anything if it's duplicate
         const (found, insertPt) = d.find(i);
         p = if found then -1 else insertPt; //mark as duplicate
       }
