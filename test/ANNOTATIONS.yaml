@@ -134,6 +134,8 @@ all:
     - KACE removed from systems.  Should see less noise after this day.
   05/31/16:
     - Enable jemalloc's decay-based purging (#3926)
+  06/06/16:
+    - Avoid allocating arg bundles for local on statements (#3890)
 
 AllCompTime:
   11/09/14:
