@@ -808,7 +808,7 @@ proc VerifySort(Data: [?Dom] ?eltType, str: string, param reverse=false) {
     for i in Dom.low..Dom.high-1 do
       if Data[i+1] < Data[i] then
         halt(str, " did not sort properly (", i, "): ", Data);
-  else {
+  } else {
     for i in Dom.low..Dom.high-1 do
       if Data[i+1] > Data[i] then
         halt(str, " did not sort properly (", i, "): ", Data);
