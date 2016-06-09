@@ -480,71 +480,22 @@ module ChapelArray {
   proc chpl__convertValueToRuntimeType(arr: []) type
     return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
 
+  /*
+   used for array alias formal reindexing
+     -> identify code pattern with test?
   proc chpl__getDomainFromArrayType(type arrayType) {
     var A: arrayType;
     pragma "no copy" var D = A.domain;
-    pragma "dont disable remote value forwarding"
-    proc help() {
-      D._value.incRefCount();
-    }
-    if !noRefCount then
-      help();
     return D;
   }
+  */
 
-
-  //
-  // These routines increment and decrement the reference count
-  // for a domain that is part of an array's element type.
-  // Prior to introducing these routines and calls, we would
-  // increment/decrement the reference count based on the
-  // number of indices in the outer domain instead; this could
-  // cause the domain to be deallocated prematurely in the
-  // case the the outer domain was empty.  For example:
-  //
+  // TODO -- 
   //   var D = {1..0};   // start empty; we'll resize later
   //   var A: [D] [1..2] real;
   //
-  // The anonymous domain {1..2} must be kept alive as a result
-  // of being part of A's type even though D is initially empty.
-  // Thus, {1..2} should remain alive as long as A is.  By
-  // incrementing and decrementing its reference counts based
-  // on A's lifetime rather than the number of elements in domain
-  // D, we ensure that is kept alive.  See
-  // test/users/bugzilla/bug794133/ for more details and examples.
-  //
-  proc chpl_incRefCountsForDomainsInArrayEltTypes(type eltType) {
-    compilerAssert(!noRefCount);
-    if (isArrayType(eltType)) {
-      var ev: eltType;
-      ev.domain._value.incRefCount();
-      //
-      // In addition to incrementing the domain's reference, count, we also
-      // have to increment the distribution's.  The primary motivation for
-      // this at present is:
-      //
-      //   test/arrays/deitz/part4/test_array_of_associative_arrays.chpl
-      //
-      // and we suspect that once the reference counting code is cleaned up,
-      // this can be too.  See this comment's commit message for more
-      // details.
-      //
-      ev.domain.dist._value.incRefCount();
-      chpl_incRefCountsForDomainsInArrayEltTypes(ev.eltType);
-    }
-  }
+  // previously handled by chpl_incRefCountsForDomainsInArrayEltTypes
 
-  proc chpl_decRefCountsForDomainsInArrayEltTypes(type eltType) {
-    compilerAssert(!noRefCount);
-    if (isArrayType(eltType)) {
-      var ev: eltType;
-      const refcount = ev.domain._value.destroyDom();
-      if !noRefCount then
-        if refcount == 0 then
-          delete ev.domain._value;
-      chpl_decRefCountsForDomainsInArrayEltTypes(ev.eltType);
-    }
-  }
 
   //
   // Support for subdomain types
