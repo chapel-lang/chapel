@@ -16,22 +16,16 @@ use MPI;
 use C_MPI; // Include the C-API, to reduce verbosity of the code.
 use Random;
 
-config const localChapel=false;
-
 const requiredSize = 4;
 
 proc main() {
-  if localChapel {
+  writeln("This is the main Chapel program....");
+  coforall loc in Locales do on loc {
+    writef("000 : This is Chapel locale %i saying Hello, MPI!\n", here.id);
+    mpiBarrier();
     spmd();
-  } else {
-    writeln("This is the main Chapel program....");
-    coforall loc in Locales do on loc {
-      writef("000 : This is Chapel locale %i saying Hello, MPI!\n", here.id);
-      MPI_Barrier(MPI_COMM_WORLD);
-      spmd();
-    }
-    writeln("We're back in the main Chapel program now.....");
   }
+  writeln("We're back in the main Chapel program now.....");
 }
 
 proc spmd() {
@@ -58,7 +52,7 @@ proc hello() {
         worldSize = commSize();
   writef("HELLO : %i : This is rank %i of %i processes saying Hello, Chapel!\n",worldRank,
             worldRank, worldSize);
-  MPI_Barrier(MPI_COMM_WORLD);
+  mpiBarrier();
 }
 
 /* Simple blocking point-to-point communication */
@@ -84,7 +78,7 @@ proc point2point() {
     writef("P2P : Task %i: Received %i pi=%r from task %i with tag %i\n",
         worldRank, count, recvpi, stat.MPI_SOURCE, stat.MPI_TAG);
   }
-  MPI_Barrier(MPI_COMM_WORLD);
+  mpiBarrier();
 }
 
 /* Non-blocking communication in a ring */
@@ -113,7 +107,7 @@ proc ring() {
   MPI_Waitall(4, requests, status);
 
   writef("RING : Rank %i recieved %i from the left, and %i from the right\n",worldRank, buf[1], buf[2]);
-  MPI_Barrier(MPI_COMM_WORLD);
+  mpiBarrier();
 }
 
 /* Compute pi -- test MPI_Reduce */
@@ -138,7 +132,7 @@ proc pi() {
     summ *= 4/worldSize;
     writef("PI : I estimate pi to be %5.2r\n",summ);
   }
-  MPI_Barrier(MPI_COMM_WORLD);
+  mpiBarrier();
 }
 
 /* Test scatters. */
@@ -155,7 +149,7 @@ proc test_scatter() {
   {
     MPI_Scatter(arr[0,0], 4, MPI_FLOAT, recbuf[0], 4, MPI_FLOAT, 0, MPI_COMM_WORLD);
     writef("SCATTER1 : Rank %i :",worldRank); writeln(recbuf);
-    MPI_Barrier(MPI_COMM_WORLD);
+    mpiBarrier();
   }
 
   // Use a contiguous data type
@@ -179,7 +173,7 @@ proc test_scatter() {
       MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
     }
     writef("SCATTER2 : Rank %i :",worldRank); writeln(recbuf);
-    MPI_Barrier(MPI_COMM_WORLD);
+    mpiBarrier();
     MPI_Type_free(rowtype);
   }
 
@@ -203,7 +197,7 @@ proc test_scatter() {
       MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
     }
     writef("SCATTER3 : Rank %i :",worldRank); writeln(recbuf);
-    MPI_Barrier(MPI_COMM_WORLD);
+    mpiBarrier();
     MPI_Type_free(coltype);
   }
 
@@ -232,7 +226,7 @@ proc test_scatter() {
       MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
     }
     writef("SCATTER4 : Rank %i :",worldRank); writeln(recbuf);
-    MPI_Barrier(MPI_COMM_WORLD);
+    mpiBarrier();
     MPI_Type_free(indextype);
   }
 
@@ -281,7 +275,7 @@ proc test_structure() {
   writeln("TYPE : Rank : ", worldRank, " : ", a[3]);
 
   MPI_Type_free(ptype);
-  MPI_Barrier(MPI_COMM_WORLD);
+  mpiBarrier();
 }
 
 /* Test Allgather
@@ -294,7 +288,7 @@ proc test_allgather() {
 
   MPI_Allgather(worldRank, 1, MPI_INT, ranks[0], 1, MPI_INT, MPI_COMM_WORLD);
   writeln("ALLGATHER : Rank ", worldRank, " : ", ranks);
-  MPI_Barrier(MPI_COMM_WORLD);
+  mpiBarrier();
 }
 
 /* MPI make communicator */
@@ -320,5 +314,5 @@ proc test_newcomm() {
   MPI_Comm_rank(comm, newrank);
 
   writef("ALLGATHER : Rank = %i, new rank = %i, sum = %i\n",worldRank, newrank, sum);
-  MPI_Barrier(MPI_COMM_WORLD);
+  mpiBarrier();
 }
