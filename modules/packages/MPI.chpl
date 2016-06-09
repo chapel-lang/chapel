@@ -71,17 +71,35 @@ module MPI {
 
   use Barrier;
   use Time;
+  use UtilReplicatedVar;
 
   /* Configuration constants */
   config const autoInitMPI=true;
   config const requireThreadedMPI=true;
   config const debugMPI=false;
 
+  /* Define a new communicator that directly maps to Chapel locales.
+  This is just a reordering of MPI_COMM_WORLD, which you are, of course,
+  free to continue to use. This just guarantees that locale ids and MPI
+  ranks agree.
+
+  Since this is a replicated variable, you must use CHPL_COMM_WORLD(1)
+  in your code.
+  */
+  var CHPL_COMM_WORLD : [rcDomain] MPI_Comm;
+  rcReplicate(CHPL_COMM_WORLD, MPI_COMM_NULL);
+
   record _initMPI {
     var doinit : bool = false;
+    var freeChplComm : bool = false;
     var barr : Barrier = new Barrier(numLocales, reusable=true);
 
     proc ~_initMPI() {
+      if freeChplComm {
+        coforall loc in Locales do on loc {
+          C_MPI.MPI_Comm_free(CHPL_COMM_WORLD(1));
+        }
+      }
       if doinit {
         coforall loc in Locales do
           on loc {
@@ -114,6 +132,7 @@ module MPI {
         writeln("Unable to get a high enough MPI thread support");
         C_MPI.MPI_Abort(MPI_COMM_WORLD, 10);
       }
+      setChplComm();
     }
   }
 
@@ -132,6 +151,14 @@ module MPI {
       }
       C_MPI.MPI_Barrier(MPI_COMM_WORLD);
     }
+    setChplComm();
+  }
+
+  proc setChplComm() {
+    coforall loc in Locales do on loc {
+      C_MPI.MPI_Comm_split(MPI_COMM_WORLD, 0, here.id : c_int, CHPL_COMM_WORLD(1));
+    }
+    _mpi.freeChplComm = true;
   }
 
   /* commRank(comm)
@@ -318,6 +345,7 @@ module MPI {
   /* Reserved communicators */
   extern const MPI_COMM_WORLD : MPI_Comm;
   extern const MPI_COMM_SELF : MPI_Comm;
+  extern const MPI_COMM_NULL : MPI_Comm;
 
   /* Communicator/ Group comparisons */
   // These all appear to be C integers in MPI code

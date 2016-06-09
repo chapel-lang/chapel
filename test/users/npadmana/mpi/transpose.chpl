@@ -47,7 +47,7 @@ proc main() {
       // We could make this multi-threaded
       for i in 0.. #n1 {
         var ndx = low + (i,0);
-        MPI_Alltoall(A.localAccess[ndx], n1, MPI_INT, At.localAccess[ndx], n1, MPI_INT, MPI_COMM_WORLD);
+        MPI_Alltoall(A.localAccess[ndx], n1, MPI_INT, At.localAccess[ndx], n1, MPI_INT, CHPL_COMM_WORLD(1));
       }
       // Local transposes
       var d1 = {0.. #N1, 0.. #N1};
