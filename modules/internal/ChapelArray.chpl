@@ -488,6 +488,14 @@ module ChapelArray {
     pragma "no copy" var D = A.domain;
     return D;
   }
+
+    [Error matching compiler output for arrays/deitz/test_remote_block_slicing]
+   [Error matching compiler output for arrays/deitz/test_remote_cyclic_slicing]
+   [Error matching compiler output for arrays/deitz/part4/test_array_alias_field]
+   [Error matching compiler output for arrays/deitz/part6/test_block_slice_forall]
+   [Error matching compiler output for arrays/deitz/part6/test_block_slice_reduce]
+   [Error matching compiler output for arrays/diten/assignBlockSlice]
+   [Error matching compiler output for arrays/diten/strideBlock]
   */
 
   // TODO -- 
