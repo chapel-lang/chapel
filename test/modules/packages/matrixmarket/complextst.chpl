@@ -1,5 +1,5 @@
 use MatrixMarket;
-config const filename : string;
+const filename : string = "complexsp.mtx";
 
 var o = mmreadsp(complex, filename);
 writeln(o);
