@@ -292,21 +292,21 @@ class CSRDom: BaseSparseDom {
   }
 
   proc dsiBulkAdd(inds: [] index(rank, idxType),
-      isSorted=false, isUnique=false, preserveInds=true){
+      isIndsSorted=false, isIndsUnique=false, preserveInds=true){
 
-    if !isSorted && preserveInds {
+    if !isIndsSorted && preserveInds {
       var _inds = inds;
-      bulkAdd_help(_inds, isSorted, isUnique); 
+      bulkAdd_help(_inds, isIndsSorted, isIndsUnique); 
     }
     else {
-      bulkAdd_help(inds, isSorted, isUnique);
+      bulkAdd_help(inds, isIndsSorted, isIndsUnique);
     }
   }
 
-  proc bulkAdd_help(inds: [] rank*idxType, isSorted=false, isUnique=false){
+  proc bulkAdd_help(inds: [] rank*idxType, isIndsSorted=false, isIndsUnique=false){
 
     const (actualInsertPts, actualAddCnt) =
-      __getActualInsertPts(this, inds, isSorted, isUnique);
+      __getActualInsertPts(this, inds, isIndsSorted, isIndsUnique);
 
     const oldnnz = nnz;
     nnz += actualAddCnt;
