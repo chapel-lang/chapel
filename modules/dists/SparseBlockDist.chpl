@@ -169,50 +169,87 @@ class SparseBlockDom: BaseSparseDom {
       sort(inds, comparator=comp);
     }
 
-    var localIndexInitSize = max(1, inds.size/numLocales);
-    var localIndexDom = {0..#localIndexInitSize};
+    /*var done: [dist.targetLocDom] atomic bool;*/
+    var active : atomic int;
+    var firstIndex = inds.domain.low;
+    var curLoc = dist.targetLocsIdx(inds[inds.domain.low]);
 
-    var localIndexes: [dist.targetLocDom] [localIndexDom] index(rank,idxType);
-    var localIndexCnts: [dist.targetLocDom] int =
-      inds.domain.low;
-
-    if bulkAddMemoize {
-      var lastLocaleIndexCache = dist.targetLocDom.low;
-      for i in inds {
-        if locDoms[lastLocaleIndexCache].parentDom.member(i) {
-          addToLocalIndexes(i,lastLocaleIndexCache);
+    for i in inds.domain {
+      const _tmpLoc = dist.targetLocsIdx(inds[i]);
+      if _tmpLoc != curLoc {
+        active.add(1);
+        begin on dist.targetLocales(curLoc) {
+          /*writeln("Adding on locale ", here.id, " btw ", firstIndex..i-1);*/
+          /*writeln(inds[firstIndex..i-1]);*/
+          locDoms[curLoc].mySparseBlock.bulkAdd(inds[firstIndex..i-1], true,
+              false);
+          /*writeln("Returned");*/
+          /*done[curLoc].write(true);*/
+          active.sub(1);
         }
-        else {
-          const localeIndex = dist.targetLocsIdx(i);
-          addToLocalIndexes(i, localeIndex);
-        }
+        curLoc = _tmpLoc;
+        firstIndex = i;
       }
     }
-    else {
-      for i in inds {
-        const localeIndex = dist.targetLocsIdx(i);
-        addToLocalIndexes(i, localeIndex);
-      }
-    }
-    coforall localeIdx in dist.targetLocDom do {
-      on dist.targetLocales(localeIdx) do {
-        const locCnt = localIndexCnts[localeIdx];
-        locDoms[localeIdx].mySparseBlock.bulkAdd(localIndexes[localeIdx][0..#locCnt], 
-            true, false, false); 
-      }
+    active.add(1);
+    begin on dist.targetLocales(curLoc) {
+      /*writeln("Adding on locale ", here.id, " btw ",*/
+          /*firstIndex..inds.domain.high);*/
+      /*writeln(inds[firstIndex..inds.domain.high]);*/
+      locDoms[curLoc].mySparseBlock.bulkAdd(inds[firstIndex..inds.domain.high], true,
+          false);
+      /*writeln("Returned");*/
+      /*done[curLoc].write(true);*/
+      active.sub(1); 
     }
 
-    // helper to grow localIndexes array if necessary
-    proc addToLocalIndexes(idx, locId) {
+    /*for d in done do d.waitFor(true);*/
+    active.waitFor(0);
 
-      if localIndexes[locId].size <= localIndexCnts[locId] {
-        localIndexDom = {0..#localIndexes[locId].size*2};
-      }
+    /*var localIndexInitSize = max(1, inds.size/numLocales);*/
+    /*var localIndexDom = {0..#localIndexInitSize};*/
+
+    /*var localIndexes: [dist.targetLocDom] [localIndexDom] index(rank,idxType);*/
+    /*var localIndexCnts: [dist.targetLocDom] int =*/
+      /*inds.domain.low;*/
+
+    /*if bulkAddMemoize {*/
+      /*var lastLocaleIndexCache = dist.targetLocDom.low;*/
+      /*for i in inds {*/
+        /*if locDoms[lastLocaleIndexCache].parentDom.member(i) {*/
+          /*addToLocalIndexes(i,lastLocaleIndexCache);*/
+        /*}*/
+        /*else {*/
+          /*const localeIndex = dist.targetLocsIdx(i);*/
+          /*addToLocalIndexes(i, localeIndex);*/
+        /*}*/
+      /*}*/
+    /*}*/
+    /*else {*/
+      /*for i in inds {*/
+        /*const localeIndex = dist.targetLocsIdx(i);*/
+        /*addToLocalIndexes(i, localeIndex);*/
+      /*}*/
+    /*}*/
+    /*coforall localeIdx in dist.targetLocDom do {*/
+      /*on dist.targetLocales(localeIdx) do {*/
+        /*const locCnt = localIndexCnts[localeIdx];*/
+        /*locDoms[localeIdx].mySparseBlock.bulkAdd(localIndexes[localeIdx][0..#locCnt], */
+            /*true, false, false); */
+      /*}*/
+    /*}*/
+
+    /*// helper to grow localIndexes array if necessary*/
+    /*proc addToLocalIndexes(idx, locId) {*/
+
+      /*if localIndexes[locId].size <= localIndexCnts[locId] {*/
+        /*localIndexDom = {0..#localIndexes[locId].size*2};*/
+      /*}*/
       
-      localIndexes[locId][localIndexCnts[locId]] = idx;
-      localIndexCnts[locId] += 1;
+      /*localIndexes[locId][localIndexCnts[locId]] = idx;*/
+      /*localIndexCnts[locId] += 1;*/
       
-    }
+    /*}*/
   }
 
   //
