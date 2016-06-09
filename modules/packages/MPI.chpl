@@ -44,6 +44,14 @@ mode for MPI (if you are running in mixed mode). To do so, set AMMPI_MPI_THREAD=
 in your environment. On Cray systems, you might need to set
 ```MPICH_MAX_THREAD_SAFETY``` to ```MULTIPLE```.
 
+The GASNet runtime, and therefore Chapel, makes no guarantees that the MPI
+ranks will match the GASNet locales. This module creates a new MPI communicator
+CHPL_COMM_WORLD that ensures that this mapping is true. This is a replicated
+variable, so it is used as CHPL_COMM_WORLD(1), as in :
+```
+    MPI_Send(...., CHPL_COMM_WORLD(1));
+```
+
 A useful idiom for mixing Chapel and MPI code is :
 ```
  mpiBarrier();
