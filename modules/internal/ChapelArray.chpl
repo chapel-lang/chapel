@@ -1490,15 +1490,17 @@ module ChapelArray {
   }  // record _domain
 
   // this is a helper function for bulkAdd functions in sparse subdomains.
+  // NOTE:it assumes that nnz array of the sparse domain has non-negative 
+  // indices. If, for some reason it changes, this function and bulkAdds have to
+  // be refactored. (I think it is a safe assumption at this point and keeps the
+  // function a bit cleaner than some other approach. -Engin)
   proc __getActualInsertPts(d, inds, 
       isSorted, isUnique) /* where isSparseDom(d) */ {
 
-    var numAdded = inds.size; //maybe remove this var
-
     //find individual insert points
     //and eliminate duplicates between inds and dom
-    var indivInsertPts: [{0..#numAdded}] int;
-    var actualInsertPts: [{0..#numAdded}] int; //where to put in newdom
+    var indivInsertPts: [inds.domain] int;
+    var actualInsertPts: [inds.domain] int; //where to put in newdom
 
     if !isSorted then QuickSort(inds);
 
