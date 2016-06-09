@@ -2589,6 +2589,28 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   return i;
 }
 
+//This function finds where the last non-zero digit
+//is in the decimal part of an exponential number.
+//
+//This will be used in _ftoa_core for resolve a
+//a problem about trailing zeroes.
+static int _find_prec(char *buf, int len){
+  int dp_index = 0;
+  int last_dig = 0;
+  int index = 0;
+
+  //Find where the decimal point is
+  while( dp_index < len && buf[dp_index++] != '.');
+
+  //Explore the decimal part for find where the
+  //last non-zero digit is.
+  for( index = dp_index; index < len && buf[index] != 'e'; index++ ){
+    if( buf[index] != '0' )
+      last_dig = index - dp_index + 1;
+  }
+  return last_dig;
+}
+
 // Converts num to a string in buf, returns the number
 // of bytes that would be used if space permits (not including null)
 // or -1 on error
@@ -2656,9 +2678,32 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
   } else if( realfmt == 0 ) {
     if( precision < 0 ) {
       if( uppercase ) {
-        got = snprintf(buf, buf_sz, "%G", num);
+        // This if is necessary because if the number has
+        // 6 digits in the integer part, %g will not print
+        // the decimal part because the integer part have
+        // a number of digits equals to the standard precision.
+        if(num >= 100000.0 && num < 1000000.0){
+          got = snprintf(buf, buf_sz, "%.5E", num);
+          //Since we force the %.5e for maintain a precision of
+          //6 digits, the output could include some trailing zeroes.
+          //With _find_prec, we find how much digits we need.
+          //
+          //It can also be done starting from the number itself
+          //but this way avoids to deal with the loss of precision
+          //caused by floating point representation
+          if(buf_sz > 0)
+            got = snprintf(buf, buf_sz, "%.*E",_find_prec(buf, got), num);
+        }
+        else
+          got = snprintf(buf, buf_sz, "%G", num);
       } else {
-        got = snprintf(buf, buf_sz, "%g", num);
+        if(num >= 100000.0 && num < 1000000.0){
+          got = snprintf(buf, buf_sz, "%.5e", num);
+          if(buf_sz > 0)
+            got = snprintf(buf, buf_sz, "%.*e",_find_prec(buf, got), num);
+        }
+        else
+          got = snprintf(buf, buf_sz, "%g", num);
       }
     } else {
       if( uppercase ) {
