@@ -919,11 +919,13 @@ void setupClang(GenInfo* info, std::string mainFile)
     // Make sure we include clang's internal header dir
 #if HAVE_LLVM_VER >= 34
     SmallString<128> P;
+    SmallString<128> P2; // avoids a valgrind overlapping memcpy
+
     P = clangexe;
     // Remove /clang from foo/bin/clang
-    P = sys::path::parent_path(P);
+    P2 = sys::path::parent_path(P);
     // Remove /bin   from foo/bin
-    P = sys::path::parent_path(P);
+    P = sys::path::parent_path(P2);
 
     if( ! P.equals("") ) {
       // Get foo/lib/clang/<version>/

@@ -10,14 +10,11 @@ source $CWD/common-perf.bash
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
 # Test performance of jemalloc's decay-based purging
-GITHUB_USER=ronawho
-GITHUB_BRANCH=jemalloc-decay-based-purging
-SHORT_NAME=decay-purge
-START_DATE=05/28/16
 
-git branch -D $GITHUB_USER-$GITHUB_BRANCH
-git checkout -b $GITHUB_USER-$GITHUB_BRANCH
-git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
+export CHPL_JEMALLOC_MORE_CFG_OPTIONS="--disable-stats --disable-fill --disable-valgrind"
+SHORT_NAME=minimal-jemalloc
+START_DATE=06/03/16
+
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 5 -startdate $START_DATE"

@@ -87,7 +87,7 @@ typedef struct addrinfo* sys_addrinfo_ptr_t;
 //  struct addrinfo addr_info;
 //} sys_addrinfo_t;
 
-/* Wrap system calls to return error seperately,
+/* Wrap system calls to return error separately,
  * to run them in a pthread, and to use a fixed-length sys_sockaddr
  * to simplify programming.
  *

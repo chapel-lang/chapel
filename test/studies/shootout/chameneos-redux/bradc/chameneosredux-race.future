@@ -1,0 +1,4 @@
+bug: race condition
+
+The removal of a seemingly innocuous '+= 0' operation seems to lead
+to a race with the Intel compiler when compiling -O2.
