@@ -460,10 +460,7 @@ void ReturnByRef::addCall(CallExpr* call)
 
 void ReturnByRef::transform()
 {
-  // Update the function
-  transformFunction(mFunction);
-
-  // And all of the call sites
+  // Transform all of the call sites
   for (size_t i = 0; i < mCalls.size(); i++)
   {
     CallExpr* call   = mCalls[i];
@@ -485,6 +482,9 @@ void ReturnByRef::transform()
       INT_ASSERT(false);
     }
   }
+
+  // Then update the function
+  transformFunction(mFunction);
 }
 
 //
