@@ -48,21 +48,24 @@ module LCALSChecksums {
   proc checkChecksums(run_variants: [] bool, run_loop: [] bool, run_loop_length: [] bool) {
     var suite_run_info = getLoopSuiteRunInfo();
     for variant in run_variants.domain {
+      const varStr = (variant:string).toLower();
       for loopKernel in chpl_enumerate(LoopKernelID) {
+        const kerStr = (loopKernel:string).toLower();
         var stat = suite_run_info.getLoopStats(variant)[loopKernel];
         for length in chpl_enumerate(LoopLength) {
+          const lenStr = (length:string).toLower();
           if run_loop[loopKernel] && stat.loop_is_run && stat.loop_run_count[length] > 0 {
             if run_loop_length[length] {
               const diff = abs(Checksums[loopKernel](1+length:int) - stat.loop_chksum[length]);
               if diff > checksumTolerence {
-                writeln((loopKernel, length),
-                        " Fail (expected, computed) = ",
+                writeln("FAIL: ", (varStr, kerStr, lenStr),
+                        " (expected, computed) = ",
                         (Checksums[loopKernel](1+length:int),
                          stat.loop_chksum[length]),
                         " difference: ", diff);
               } else if noisyChecksumChecks {
-                writeln((loopKernel, length),
-                        " Pass (expected, computed) = ",
+                writeln("PASS: ", (varStr, kerStr, lenStr),
+                        " (expected, computed) = ",
                         (Checksums[loopKernel](1+length:int),
                          stat.loop_chksum[length]), " difference: ", diff);
               }

@@ -1207,6 +1207,9 @@ for testname in testsrc:
             # cf. for execoptslist no warning is issued
             sys.stdout.write('[Warning: ignoring an empty compopts file %s]\n'%(test_filename+compoptssuffix))
 
+    compoptslist = compoptslist or list(' ')
+    directoryCompopts = directoryCompopts or list(' ')
+
     # Merge global compopts list with local compopts.
     # Use the "product" of the two if they are both provided.
     usecompoptslist = [ ]
