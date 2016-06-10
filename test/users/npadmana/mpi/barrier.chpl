@@ -8,24 +8,15 @@ proc main() {
 }
 
 proc send() {
-  var sendBarrier : LocaleBarrier;
+  var sendBarrier = new LocaleBarrier();
   coforall loc in Locales do on loc {
-    writeln(sendBarrier.locale.id);
-    //sendBarrier.barrier();
+    sendBarrier.barrier();
   }
-}
-
-proc yieldWait(x, val, str="") {
-  while true {
-    var foo = x.peek();
-    if foo==val then break;
-    sleep(0.001);
-    writeln(str," ",here.id,' ',foo);
-  }
+  delete sendBarrier;
 }
 
 /* A Chapel barrier */
-record LocaleBarrier {
+class LocaleBarrier {
   var count : atomic int;
   var done : atomic bool;
 
@@ -37,27 +28,22 @@ record LocaleBarrier {
   /* The barrier...
   */
   proc barrier() {
-    writeln(this.locale.id," ",here.id);
     if this.locale != here {
-//      on this do {
-        //done.waitFor(false);
-        yieldWait(done, false,"A0");
+      on this do {
+        done.waitFor(false);
         count.sub(1);
-        //done.waitFor(true);
-        yieldWait(done, true,"A1");
+        done.waitFor(true);
         count.add(1);
-//      }
+      }
    } else {
-      //local {
+      local {
         count.sub(1);
-        //count.waitFor(0);
-        yieldWait(count, 0,"B0");
+        count.waitFor(0);
         done.write(true);
         count.add(1);
-        //count.waitFor(numLocales);
-        yieldWait(count, numLocales,"B1");
+        count.waitFor(numLocales);
         done.clear();
-      //}
+      }
     }
   }
 }
