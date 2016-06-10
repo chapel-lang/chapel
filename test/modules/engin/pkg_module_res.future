@@ -7,8 +7,8 @@ standard modules does not apply seamlessly to the package modules here
 
 More details - quoting Lydia:
 what is broken is explicit naming of functions defined within a package module.
-Line 7 works just fine, and line 8 is broken in all cases where a function in a
-standard module is explicitly named, even those without use statements.
+Line 15 works just fine, and line 16 is broken in all cases where a function in 
+a standard module is explicitly named, even those without use statements.
 
 Link to the PR:
 https://github.com/chapel-lang/chapel/pull/4021
