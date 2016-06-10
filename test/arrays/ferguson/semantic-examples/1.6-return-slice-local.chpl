@@ -1,4 +1,4 @@
-use myrecord;
+use samples;
 proc f() {
   var A:[1..4] R;
   return A[2..3];
