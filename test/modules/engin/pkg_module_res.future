@@ -1,0 +1,6 @@
+bug: function resolution on package modules
+
+Lydia's comment on the issue:
+we suspect the problem lies with the creation of the visibleFunctionMap during
+functionResolution but are confused as to why the behavior that works for the
+standard modules does not apply seamlessly to the package modules here
