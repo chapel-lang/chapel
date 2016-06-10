@@ -1,4 +1,4 @@
-use myrecord;
+use samples;
 
 proc xform(arg) {
   arg[1].x += 1;
