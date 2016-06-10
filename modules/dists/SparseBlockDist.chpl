@@ -40,7 +40,6 @@
 use DSIUtil;
 use ChapelUtil;
 use BlockDist;
-use Time;
 //
 // These flags are used to output debug information and run extra
 // checks when using SparseBlock.  Should these be promoted so that they can
