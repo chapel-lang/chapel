@@ -40,7 +40,7 @@
 use DSIUtil;
 use ChapelUtil;
 use BlockDist;
-
+use Time;
 //
 // These flags are used to output debug information and run extra
 // checks when using SparseBlock.  Should these be promoted so that they can
@@ -50,7 +50,7 @@ use BlockDist;
 //
 config param debugSparseBlockDist = false;
 config param debugSparseBlockDistBulkTransfer = false;
-
+config param bulkAddAsync = true;
 // There is no SparseBlock distribution class. Instead, we
 // just use Block.
 
@@ -133,32 +133,15 @@ class SparseBlockDom: BaseSparseDom {
   // Tried to put this record in the function and the if statement, but got a
   // segfault from the compiler.
   record TargetLocaleComparator {
-
-    // I wish I could return tuple from key function. There are checks to see
-    // if the type of the function is numeric/string. Maybe there should be
-    // isComparable that can do recursive checks for at least tuples of
-    // numericals/strings/comparables.
-    // In general being able to return tuples from key() can enable sorting with
-    // multiple keys.
-
-    //proc key(a: index(rank, idxType)) { 
-    //  return dist.targetLocales[dist.targetLocsIdx(a)].id; 
-    //}
-
-    proc compare(a: index(rank, idxType), b: index(rank, idxType)) {
-      var locDif = dist.targetLocales[dist.targetLocsIdx(a)].id -
-        dist .targetLocales[dist.targetLocsIdx(b)].id;
-
-      if locDif != 0 then return locDif;
-
-      if a < b then return -1;
-      if a > b then return 1;
-      return 0;
+    proc key(a: index(rank, idxType)) { 
+      return (dist.targetLocsIdx(a), a); 
     }
   }
 
   proc bulkAdd_help(inds: [] index(rank,idxType), isSorted=false, isUnique=false) {
 
+    var t = new Timer();
+    t.start();
     if !isSorted {
 
       // without _new_ record functions throw null deref. It doesn't seem to be 
@@ -167,23 +150,52 @@ class SparseBlockDom: BaseSparseDom {
       var comp = new TargetLocaleComparator;
       sort(inds, comparator=comp);
     }
+    t.stop();
+    write(t.elapsed(), " ");
+    t.clear();
 
+    t.start();
     var active : atomic int;
-    var firstIndex = inds.domain.low;
-    var curLoc = dist.targetLocsIdx(inds[inds.domain.low]);
 
-    for i in inds.domain {
-      const _tmpLoc = dist.targetLocsIdx(inds[i]);
-      if _tmpLoc != curLoc {
-        spawnBulkAdd(firstIndex..i-1, curLoc);
-        curLoc = _tmpLoc;
-        firstIndex = i;
+    if !bulkAddAsync {
+      var locIndexRanges: [dist.targetLocDom] range;
+
+      var firstIndex = inds.domain.low;
+      var curLoc = dist.targetLocsIdx(inds[inds.domain.low]);
+
+      for i in inds.domain {
+        const _tmpLoc = dist.targetLocsIdx(inds[i]);
+        if _tmpLoc != curLoc {
+          locIndexRanges[curLoc] = firstIndex..i-1;
+          curLoc = _tmpLoc;
+          firstIndex = i;
+        }
       }
+      locIndexRanges[curLoc] = firstIndex..inds.domain.high;
+
+      coforall localeIdx in dist.targetLocDom do
+        on dist.targetLocales[localeIdx] do
+          locDoms[localeIdx].mySparseBlock.bulkAdd(inds[locIndexRanges[localeIdx]],
+              isSorted=true, isUnique=false);
     }
-    spawnBulkAdd(firstIndex..inds.domain.high, curLoc);
+    else {
+      var firstIndex = inds.domain.low;
+      var curLoc = dist.targetLocsIdx(inds[inds.domain.low]);
 
-    active.waitFor(0);
+      for i in inds.domain {
+        const _tmpLoc = dist.targetLocsIdx(inds[i]);
+        if _tmpLoc != curLoc {
+          spawnBulkAdd(firstIndex..i-1, curLoc);
+          curLoc = _tmpLoc;
+          firstIndex = i;
+        }
+      }
+      spawnBulkAdd(firstIndex..inds.domain.high, curLoc);
 
+      active.waitFor(0);
+    }
+    t.stop();
+    write(t.elapsed(), "\n");
     proc spawnBulkAdd(indsRange: range, loc){
       active.add(1);
       begin on dist.targetLocales(loc) {
