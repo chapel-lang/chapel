@@ -36,9 +36,26 @@ module BLAS {
 
 
   /* Convenience */
-  enum Op {N, T, H}; // NoTranspose, Transpose, Adjoint
+  enum Order {Row=101:c_int, Col=102};
+  enum Op {N=111:c_int, T=112:c_int, H=113:c_int}; // NoTranspose, Transpose, Adjoint
+  enum Uplo {Upper=121:c_int, Lower=122:c_int};
+  enum Diag {NonUnit=131:c_int, Unit=132:c_int};
+  enum Side {Left=141:c_int, Right=142:c_int};
   const _BlasOp : [Op.N..Op.H] CBLAS_TRANSPOSE = [CblasNoTrans, CblasTrans, CblasConjTrans];
 
+  {
+    assert(Order.Row:c_int == CblasRowMajor);
+    assert(Order.Col:c_int == CblasColMajor);
+    assert(Op.N:c_int == CblasNoTrans);
+    assert(Op.T:c_int == CblasTrans);
+    assert(Op.H:c_int == CblasConjTrans);
+    assert(Uplo.Upper:c_int == CblasUpper);
+    assert(Uplo.Lower:c_int == CblasLower);
+    assert(Diag.NonUnit:c_int == CblasNonUnit);
+    assert(Diag.Unit:c_int == CblasUnit);
+    assert(Side.Left:c_int == CblasLeft);
+    assert(Side.Right:c_int == CblasRight);
+  }
   /* Level 3 BLAS */
 
   /* GEMM : Matrix multiplication
@@ -74,26 +91,26 @@ module BLAS {
     select eltType {
       when real(32) {
         // sgemm
-        cblas_sgemm(order, _opA, _opB, m, n, k,
+        cblas_sgemm(order, opA, opB, m, n, k,
           alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
       }
       when real(64) {
         // dgemm
-        cblas_dgemm(order, _opA, _opB, m, n, k,
+        cblas_dgemm(order, opA, opB, m, n, k,
           alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
       }
       when complex(64) {
         // cgemm
         var alpha1 = alpha : complex(64),
             beta1 = beta : complex(64);
-        cblas_cgemm(order, _opA, _opB, m, n, k,
+        cblas_cgemm(order, opA, opB, m, n, k,
           alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta1, C[Cdom.low],_ldC);
       }
       when complex(128) {
         // zgemm
         var alpha1 = alpha : complex(128),
             beta1 = beta : complex(128);
-        cblas_zgemm(order, _opA, _opB, m, n, k,
+        cblas_zgemm(order, opA, opB, m, n, k,
           alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta1, C[Cdom.low],_ldC);
       }
       otherwise {
