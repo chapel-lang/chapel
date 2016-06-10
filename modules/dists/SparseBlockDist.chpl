@@ -50,7 +50,6 @@ use Time;
 //
 config param debugSparseBlockDist = false;
 config param debugSparseBlockDistBulkTransfer = false;
-config param bulkAddAsync = true;
 // There is no SparseBlock distribution class. Instead, we
 // just use Block.
 
@@ -140,8 +139,6 @@ class SparseBlockDom: BaseSparseDom {
 
   proc bulkAdd_help(inds: [] index(rank,idxType), isSorted=false, isUnique=false) {
 
-    var t = new Timer();
-    t.start();
     if !isSorted {
 
       // without _new_ record functions throw null deref. It doesn't seem to be 
@@ -150,52 +147,24 @@ class SparseBlockDom: BaseSparseDom {
       var comp = new TargetLocaleComparator;
       sort(inds, comparator=comp);
     }
-    t.stop();
-    write(t.elapsed(), " ");
-    t.clear();
 
-    t.start();
     var active : atomic int;
 
-    if !bulkAddAsync {
-      var locIndexRanges: [dist.targetLocDom] range;
+    var firstIndex = inds.domain.low;
+    var curLoc = dist.targetLocsIdx(inds[inds.domain.low]);
 
-      var firstIndex = inds.domain.low;
-      var curLoc = dist.targetLocsIdx(inds[inds.domain.low]);
-
-      for i in inds.domain {
-        const _tmpLoc = dist.targetLocsIdx(inds[i]);
-        if _tmpLoc != curLoc {
-          locIndexRanges[curLoc] = firstIndex..i-1;
-          curLoc = _tmpLoc;
-          firstIndex = i;
-        }
+    for i in inds.domain {
+      const _tmpLoc = dist.targetLocsIdx(inds[i]);
+      if _tmpLoc != curLoc {
+        spawnBulkAdd(firstIndex..i-1, curLoc);
+        curLoc = _tmpLoc;
+        firstIndex = i;
       }
-      locIndexRanges[curLoc] = firstIndex..inds.domain.high;
-
-      coforall localeIdx in dist.targetLocDom do
-        on dist.targetLocales[localeIdx] do
-          locDoms[localeIdx].mySparseBlock.bulkAdd(inds[locIndexRanges[localeIdx]],
-              isSorted=true, isUnique=false);
     }
-    else {
-      var firstIndex = inds.domain.low;
-      var curLoc = dist.targetLocsIdx(inds[inds.domain.low]);
+    spawnBulkAdd(firstIndex..inds.domain.high, curLoc);
 
-      for i in inds.domain {
-        const _tmpLoc = dist.targetLocsIdx(inds[i]);
-        if _tmpLoc != curLoc {
-          spawnBulkAdd(firstIndex..i-1, curLoc);
-          curLoc = _tmpLoc;
-          firstIndex = i;
-        }
-      }
-      spawnBulkAdd(firstIndex..inds.domain.high, curLoc);
+    active.waitFor(0);
 
-      active.waitFor(0);
-    }
-    t.stop();
-    write(t.elapsed(), "\n");
     proc spawnBulkAdd(indsRange: range, loc){
       active.add(1);
       begin on dist.targetLocales(loc) {
