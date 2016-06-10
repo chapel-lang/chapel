@@ -1,7 +1,9 @@
-var A:[1..3] int;
+use myrecord;
 
 proc f(arg) {
-  return arg; // copy created as part of returning
+  return arg;
 }
 
+var A:[1..3] R;
 writeln(f(A));
+

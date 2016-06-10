@@ -1,4 +1,4 @@
-
+// This one is a sanity check
 config const n = 1;
 
 proc createArray() {

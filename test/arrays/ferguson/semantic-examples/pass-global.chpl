@@ -1,8 +1,9 @@
-var globalArray: [1..10000] real;
+use myrecord;
+var globalArray: [1..2] R;
 proc returnGlobalArray() {
  return globalArray;
 }
-proc consumesArray(A:[] real) {
+proc consumesArray(A:[] R) {
  writeln(A[1]);
 }
-consumesArray(returnExistingArray());
+consumesArray(returnGlobalArray());
