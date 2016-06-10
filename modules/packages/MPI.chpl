@@ -77,8 +77,6 @@ module MPI {
   use SysCTypes;
   require "mpi.h";
 
-  use Barrier;
-  use Time;
   use UtilReplicatedVar;
 
   /* Configuration constants */
@@ -100,7 +98,7 @@ module MPI {
   record _initMPI {
     var doinit : bool = false;
     var freeChplComm : bool = false;
-    var barr : Barrier = new Barrier(numLocales, reusable=true);
+    var wall : LocaleBarrier;
 
     proc ~_initMPI() {
       if freeChplComm {
@@ -116,7 +114,6 @@ module MPI {
             C_MPI.MPI_Finalize();
           }
       }
-      delete barr;
     }
   }
 
@@ -197,33 +194,42 @@ module MPI {
     executed on MPI_COMM_WORLD.
    */
   proc mpiBarrier() {
-    _mpi.barr.MPIFlush();
+    _mpi.wall.barrier();
   }
 
-  /* Barrier.MPIFlush
+  /* A Chapel barrier */
+  record LocaleBarrier {
+    var count : atomic int;
+    var done : atomic bool;
 
-     Add a new method to Barrier; this will both apply a Chapel barrier, and then
-     flush any remaining GASNet MPI commands. This is useful for eg. the mpi conduit
-     for gasnet.
-  */
-  proc Barrier.MPIFlush(t : real = 0.01, comm : MPI_Comm = MPI_COMM_WORLD) {
-    if numLocales > 1 {
-      this.barrier();
+    proc LocaleBarrier() {
+      count.write(numLocales);
+      done.clear();
+    }
 
-      // Flush any remaining requests from eg. the MPI backend
-      var req : MPI_Request;
-      var status : MPI_Status;
-      var flag : c_int = 0 : c_int;
-      C_MPI.MPI_Ibarrier(comm, req);
-      while true {
-        C_MPI.MPI_Test(req, flag, status);
-        if flag!=0 then break;
-        sleep(t, unit = TimeUnits.microseconds);
+    /* The barrier... 
+    */
+    proc barrier() {
+      if this.locale != here {
+        on this do {
+          done.waitFor(false);
+          count.sub(1);
+          done.waitFor(true);
+          count.add(1);
+        }
+      } else {
+        local {
+          count.sub(1);
+          count.waitFor(0);
+          done.write(true);
+          count.add(1);
+          count.waitFor(numLocales);
+          done.clear();
+        }
       }
-    } else {
-      C_MPI.MPI_Barrier(comm);
     }
   }
+
 
 
   /* A wrapper around MPI_Status. Only the defined fields are exposed */
