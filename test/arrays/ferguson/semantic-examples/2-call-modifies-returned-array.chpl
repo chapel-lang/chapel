@@ -18,4 +18,9 @@ setToTwo(returnGlobalArray());
 
 writeln("globalArray is now ", globalArray);
 writeln(globalArray);
+// Does this output 0 or 2 ?
+// In other words, did returnGlobalArray return the elements by
+// value or reference?
 
+// Compare with the record version, call-modifies-returned-record.chpl, which
+// results in a compilation error.
