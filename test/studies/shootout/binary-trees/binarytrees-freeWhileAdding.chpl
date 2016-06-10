@@ -2,19 +2,20 @@
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Casey Battaglino, Ben Harshbarger, and Brad Chamberlain
+   derived from the GNU C version by Jeremy Zerfas
 */
 
 
-use DynamicIters;            // get access to the dynamic() iterator
+use DynamicIters;
 
-config const n = 10;         // the maximum tree depth (if > 5)
+config const n = 10;         // the maximum tree depth
 
 proc main() {
   const minDepth = 4,                      // the shallowest tree
         maxDepth = max(minDepth + 2, n),   // the deepest normal tree
         strDepth = maxDepth + 1,           // the depth of the "stretch" tree
         depths = minDepth..maxDepth by 2;  // the range of depths to create
-  var stats: [depths] (int,int);         // stores statistics for the trees
+  var stats: [depths] (int,int);           // stores statistics for the trees
 
   //
   // Create the "stretch" tree, checksum it, print its stats, and free it.
@@ -82,7 +83,7 @@ class Tree {
   //
   proc sum(): int {
     var sum = item;
-    if (left) {
+    if left {
       sum += left.sum() - right.sum();
       delete left;
       delete right;
