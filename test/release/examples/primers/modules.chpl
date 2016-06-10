@@ -344,15 +344,11 @@ module MainModule {
     writeln();
 
     {
-      /* To return to modules, using nested modules combines accessing a
-         module's symbols explicitly and using a top-level module.  If the
-         parent module(s) have not been used in this scope, using the nested
-         module will require explicitly naming the full path to reach it.
-         Otherwise, there is no difference between the 'use' statement for a
-         top-level module and that of a nested module.
-
-         (see the module OuterNested and its submodules for an example of a
-         nested module)
+      /* A 'use' of a nested module (see the module OuterNested and its
+         submodules for an example of a nested module) is similar to that of a
+         top-level module.  Its name is treated like any other visible symbol in
+         the outer module, so if the outer module has not been used then the
+         inner module must be explicitly named.
       */
 
       use OuterNested.Inner1;
