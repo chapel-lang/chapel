@@ -50,9 +50,7 @@
 *   1) Modifies the function rather than creating a clone                     *
 *   2) Does not fold any other code in to the tail                            *
 *                                                                             *
-* This implementation should be broadly applicable to record-like types but   *
-* is only applied to the new string-as-record type during the initial         *
-* integration.                                                                *
+* This implementation should be broadly applicable to record-like types.      *
 *                                                                             *
 ************************************** | *************************************/
 
