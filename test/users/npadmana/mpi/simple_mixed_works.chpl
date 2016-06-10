@@ -1,10 +1,7 @@
 use MPI;
 use C_MPI;
-use UtilReplicatedVar;
 
-//var b : Barrier;
-
-class LocaleBarrier {
+record LocaleBarrier {
   var count : atomic int;
   var done : atomic bool;
 
@@ -41,8 +38,6 @@ var b : LocaleBarrier;
 
 proc main() {
 
-  b = new LocaleBarrier();
-
   writeln("This is a mixed multilocale Chapel+MPI program");
   writeln("We are currently in the main thread.....");
 
@@ -54,8 +49,6 @@ proc main() {
     }
 
   writeln("Back in the main thread....");
-
-  delete b;
 
 }
 
