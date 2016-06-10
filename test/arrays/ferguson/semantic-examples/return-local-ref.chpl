@@ -1,5 +1,6 @@
+use myrecord;
 proc f() ref {
-  var localArray:[1..100] int;
+  var localArray:[1..2] R;
   return localArray;
 }
 

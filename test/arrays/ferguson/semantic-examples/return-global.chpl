@@ -1,6 +1,10 @@
-var globalArray: [1..10000] real;
+use myrecord;
+
+var globalArray: [1..2] R;
 proc returnGlobalArray() {
  return globalArray;
 }
-var A = returnGlobalArray();
-
+proc run() {
+  var A = returnGlobalArray();
+}
+run();
