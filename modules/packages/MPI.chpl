@@ -42,18 +42,18 @@ Compiler wrappers
 Using MPI requires pointing the compiler to the location of the
 MPI headers, and including the appropriate MPI libraries. This is
 often done by using compiler wrappers like "mpicc". Setting
-CHPL_TARGET_COMPILER=mpi-gnu and CHPL_TARGET_ARCH=none will
+``CHPL_TARGET_COMPILER=mpi-gnu`` and ``CHPL_TARGET_ARCH=none`` will
 get Chapel to use these compilers.
 
 Note that on Cray systems, this is not necessary, since the default
 compilers include the necessary MPI information.
 
 .. note ::
-  #.Currently, we only support the gnu compilers wrapped by MPI. We expect
-  to broaden this class in the future.
-  #.The current scripts fail to correctly determine the architecture for
-  the mpi-gnu suite, hence CHPL_TARGET_ARCH=none. We expect this to be
-  fixed in the future.
+  #. Currently, we only support the gnu compilers wrapped by MPI. We expect
+     to broaden this class in the future.
+  #. The current scripts fail to correctly determine the architecture for
+     the mpi-gnu suite, hence ``CHPL_TARGET_ARCH=none``. We expect this to be
+     fixed in the future.
 
 Interoperability Modes
 ----------------------
@@ -66,26 +66,26 @@ MPI; Chapel is just used to provide local parallelism. Furthermore,
 in this mode, Chapel locales do not map to MPI ranks at all; the program
 just sees a single locale.
 Note that the same caveats that apply to OpenMP+MPI
-programming apply here : for instance, MPI must be initialized with the
+programming apply here. For instance, MPI must be initialized with the
 appropriate thread support (see below).
 
 The second mode of operation is where both Chapel and MPI communications
 may be mixed. This allows the user to use optimized/convenient MPI routines
 when desired, while having access to the Chapel PGAS model. Using this
-model requires ::
+model requires
 
-  #. The MPI library should (and in many cases must) support the MPI_THREAD_MULTIPLE
-  support level for threads. This is needed if the user plans on making
-  MPI calls from multiple threads. It is necessary when using the mpi-conduit
-  for GASNet, since the GASNet library may make simultaneous MPI calls.
-  Currently, the MPICH library (and its derivatives) appear to have the
-  most robust support for this.
-  #. CHPL_TASKS must be set to fifo.
+1. The MPI library should (and in many cases must) support the MPI_THREAD_MULTIPLE
+   support level for threads. This is needed if the user plans on making
+   MPI calls from multiple threads. It is necessary when using the mpi-conduit
+   for GASNet, since the GASNet library may make simultaneous MPI calls.
+   Currently, the MPICH library (and its derivatives) appear to have the
+   most robust support for this.
+2. ``CHPL_TASKS`` must be set to ``fifo``.
 
-This second mode has been tried on ::
+This second mode has been tried on
 
-  Linux, with the mpi-conduit for GASNet
-  Cray XC, with the aries conduit for GASNet
+1. Linux, with the mpi-conduit for GASNet
+2. Cray XC, with the aries conduit for GASNet
 
 
 Environment Variables and Module Constants
@@ -102,18 +102,16 @@ are true by default.
 If you are using the MPI conduit on GASNet, you will need to select the threading
 mode for MPI (if you are running in mixed mode). To do so, set AMMPI_MPI_THREAD=MULTIPLE
 in your environment. On Cray systems, you might need to set
-```MPICH_MAX_THREAD_SAFETY``` to ```MULTIPLE```.
+``MPICH_MAX_THREAD_SAFETY`` to ``MULTIPLE``.
 
 Communicators
 -------------
 
 The GASNet runtime, and therefore Chapel, makes no guarantees that the MPI
 ranks will match the GASNet locales. This module creates a new MPI communicator
-CHPL_COMM_WORLD that ensures that this mapping is true. This is a replicated
-variable, so it is used as CHPL_COMM_WORLD(1), as in :
-```
-    MPI_Send(...., CHPL_COMM_WORLD(1));
-```
+``CHPL_COMM_WORLD`` that ensures that this mapping is true. This is a replicated
+variable, so it is used as ``CHPL_COMM_WORLD(1)``, as in
+``MPI_Send(...., CHPL_COMM_WORLD(1))``
 Note that this is only set in mixed Chapel-MPI mode. If numLocales is 1, then
 CHPL_COMM_WORLD(1) is set to MPI_COMM_NULL, and will cause an MPI error if used.
 
