@@ -98,9 +98,10 @@ module MPI {
   record _initMPI {
     var doinit : bool = false;
     var freeChplComm : bool = false;
-    var wall : LocaleBarrier;
+    var wall = new LocaleBarrier();
 
     proc ~_initMPI() {
+      delete wall;
       if freeChplComm {
         coforall loc in Locales do on loc {
           C_MPI.MPI_Comm_free(CHPL_COMM_WORLD(1));
@@ -198,7 +199,7 @@ module MPI {
   }
 
   /* A Chapel barrier */
-  record LocaleBarrier {
+  class LocaleBarrier {
     var count : atomic int;
     var done : atomic bool;
 
@@ -207,7 +208,7 @@ module MPI {
       done.clear();
     }
 
-    /* The barrier... 
+    /* The barrier...
     */
     proc barrier() {
       if this.locale != here {
