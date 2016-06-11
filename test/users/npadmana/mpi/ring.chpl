@@ -1,9 +1,14 @@
 use MPI;
 use C_MPI;
 use Time;
+use Barrier;
+
+enum BarrierType {None, Chapel, MPI};
 
 config const sendSleep=2;
 config const recvSleep=0;
+config const useBarrier = BarrierType.None;
+
 
 proc main() {
   writeln("This is the main program");
@@ -15,7 +20,7 @@ proc main() {
 }
 
 proc send() {
-  var sendBarrier = new LocaleBarrier();
+  var sendBarrier = new Barrier(numLocales);
   coforall loc in Locales do on loc {
     var rank = here.id : c_int,
     size = numLocales : c_int;
@@ -24,6 +29,11 @@ proc send() {
 
     writef("Rank %i sending to %i \n",rank, dest);
     sleep(sendSleep);
+    select useBarrier {
+      when BarrierType.Chapel do sendBarrier.barrier();
+      when BarrierType.MPI do MPI_Barrier(CHPL_COMM_WORLD(1));
+      otherwise;
+    }
     sendBarrier.barrier();
     MPI_Send(rank, 1, MPI_INT, dest, 0, CHPL_COMM_WORLD(1));
     writef("Rank %i done sending...\n",rank);
@@ -32,7 +42,7 @@ proc send() {
 }
 
 proc recv() {
-  var recvBarrier = new LocaleBarrier;
+  var recvBarrier = new Barrier(numLocales);
   coforall loc in Locales do on loc {
     var rank = here.id : c_int,
     size = numLocales : c_int;
@@ -42,6 +52,11 @@ proc recv() {
     writef("Rank %i receiving from %i \n",rank, src);
     sleep(recvSleep);
     recvBarrier.barrier();
+    select useBarrier {
+      when BarrierType.Chapel do recvBarrier.barrier();
+      when BarrierType.MPI do MPI_Barrier(CHPL_COMM_WORLD(1));
+      otherwise;
+    }
     var status : MPI_Status;
     MPI_Recv(val, 1, MPI_INT, src, 0, CHPL_COMM_WORLD(1), status);
     writef("Rank %i received %i from the left.\n", rank, val);

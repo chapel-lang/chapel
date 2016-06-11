@@ -1,8 +1,6 @@
 use MPI;
 use C_MPI;
 
-config const deadlock=true;
-
 proc main() {
 
   writeln("This is a mixed multilocale Chapel+MPI program");
@@ -22,12 +20,9 @@ proc main() {
 proc spmd() {
   var send, recv : c_int;
   writef("Locale %i : This is inside the SPMD part of the code\n",here.id);
-  
-  // The following idiom is useful 
-  mpiBarrier();
-  local {
-    send = commRank();
-    MPI_Allreduce(send, recv, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-  }
+
+  // The following idiom is useful
+  send = commRank();
+  MPI_Allreduce(send, recv, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
   writef("Chapel locale %i, MPI rank %i : reports a sum of %i \n",here.id,send,recv);
 }

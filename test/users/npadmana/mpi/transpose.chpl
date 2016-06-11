@@ -41,21 +41,18 @@ proc main() {
   coforall loc in Locales do on loc {
     var myspace = Space.localSubdomain();
     var low = myspace.low;
-    mpiBarrier();
-    local {
-      var n1 = N1 : c_int;
-      // We could make this multi-threaded
-      for i in 0.. #n1 {
-        var ndx = low + (i,0);
-        MPI_Alltoall(A.localAccess[ndx], n1, MPI_INT, At.localAccess[ndx], n1, MPI_INT, CHPL_COMM_WORLD(1));
-      }
-      // Local transposes
-      var d1 = {0.. #N1, 0.. #N1};
-      forall i in 0.. #numLocales {
-        var off = low + (0,i*N1);
-        for (i,j) in d1 {
-          if (i > j) then At.localAccess[(i,j)+off] <=> At.localAccess[(j,i)+off];
-        }
+    var n1 = N1 : c_int;
+    // We could make this multi-threaded
+    for i in 0.. #n1 {
+      var ndx = low + (i,0);
+      MPI_Alltoall(A.localAccess[ndx], n1, MPI_INT, At.localAccess[ndx], n1, MPI_INT, CHPL_COMM_WORLD(1));
+    }
+    // Local transposes
+    var d1 = {0.. #N1, 0.. #N1};
+    forall i in 0.. #numLocales {
+      var off = low + (0,i*N1);
+      for (i,j) in d1 {
+        if (i > j) then At.localAccess[(i,j)+off] <=> At.localAccess[(j,i)+off];
       }
     }
   }
