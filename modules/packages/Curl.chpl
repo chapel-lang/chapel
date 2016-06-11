@@ -392,7 +392,7 @@ proc file.perform():bool {
     err = chpl_curl_perform(this._file_internal);
   }
 
-  if err then ioerror(err, "in file.peform()");
+  if err then ioerror(err, "in file.perform()");
   return true;
 }
 

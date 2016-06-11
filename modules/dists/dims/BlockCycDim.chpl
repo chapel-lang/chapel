@@ -387,7 +387,7 @@ on each locale, then starts over:
  // the pair (locNo(j), storageOff(j)) is unique for each integer j
  storageOff(i) = cycNo(i) * blockSize + locOff(i)
 
-Advdanced: compress the storage based on the above advanced property,
+Advanced: compress the storage based on the above advanced property,
 which implies that:
  the pair (locNo(i), storageOff(i) div |wSt|) is unique
  for each 'i' - member of 'whole'.
@@ -418,7 +418,7 @@ to stay the same throughout the life of a domain descriptor.
 (This is so that our storage indices remain consistent - which is
 useful to implement Chapel's preservation of array contents upon
 domain assignments.)
-This implies that the same cycAdj should accomodate wLo for any
+This implies that the same cycAdj should accommodate wLo for any
 domain bounds that can be assigned to our domain descriptor.
 That may not be convenient in practice.
 */

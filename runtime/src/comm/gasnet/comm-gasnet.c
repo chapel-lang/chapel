@@ -390,7 +390,7 @@ static void AM_exit_any(gasnet_token_t token, void* buf, size_t nbytes) {
 // This global and routine are used to broadcast the seginfo_table at the outset
 // of the program's execution.  It is designed to only be used once.  This code
 // was modeled after the _test_segbcast() routine in
-// third-party/gasnet/GASNet-*/tests/test.h
+// third-party/gasnet/gasnet-src/tests/test.h
 //
 static int bcast_seginfo_done = 0;
 static void AM_bcast_seginfo(gasnet_token_t token, void *buf, size_t nbytes) {
@@ -451,9 +451,22 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        int ln, int32_t fn)
 {
   gasnet_handle_t ret;
+  int remote_in_segment;
 
   // Should be in the compiler macros file?
   chpl_vdebug_log_put_nb(addr, node, raddr, size, typeIndex, ln, fn);
+
+#ifdef GASNET_SEGMENT_EVERYTHING
+    remote_in_segment = 1;
+#else
+    remote_in_segment = chpl_comm_addr_gettable(node, raddr, size);
+#endif
+
+  if(!remote_in_segment) {
+    chpl_comm_put(addr, node, raddr, size, typeIndex, ln, fn);
+    ret = NULL;
+    return (chpl_comm_nb_handle_t) ret;
+  }
 
   ret = gasnet_put_nb_bulk(node, raddr, addr, size);
 
@@ -471,9 +484,22 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        int ln, int32_t fn)
 {
   gasnet_handle_t ret;
+  int remote_in_segment;
 
   // Visual Debug Support
   chpl_vdebug_log_get_nb(addr, node, raddr, size, typeIndex, ln, fn);
+
+#ifdef GASNET_SEGMENT_EVERYTHING
+    remote_in_segment = 1;
+#else
+    remote_in_segment = chpl_comm_addr_gettable(node, raddr, size);
+#endif
+
+  if(!remote_in_segment) {
+    chpl_comm_get(addr, node, raddr, size, typeIndex, ln, fn);
+    ret = NULL;
+    return (chpl_comm_nb_handle_t) ret;
+  }
 
   ret = gasnet_get_nb_bulk(addr, node, raddr, size);
 
@@ -612,7 +638,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   //
   // The following call has no real effect on the .addr and .size
   // fields for GASNET_SEGMENT_EVERYTHING, but is recommended to be
-  // used anyway (see third-party/gasnet/GASNet-version/tests/test.h)
+  // used anyway (see third-party/gasnet/gasnet-src/tests/test.h)
   // in order to ensure that the seginfo_table array is initialized
   // appropriately on all locales.
   //
@@ -626,7 +652,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   // be stored at the same address in all instances of the executable
   // (something that is typically true, but turns out not to be on,
   // for example, OS X Lion).  This technique was modeled after the
-  // _test_attach() routine from third-party/gasnet/GASNET-version/tests/test.h
+  // _test_attach() routine from third-party/gasnet/gasnet-src/tests/test.h
   // but is significantly simplified for our purposes.
   //
   if (chpl_nodeID == 0) {
@@ -1040,7 +1066,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 
         local_buf = chpl_mem_alloc(buf_sz, CHPL_RT_MD_COMM_XMIT_RCV_BUF, 0, 0);
 #ifdef GASNET_SEGMENT_EVERYTHING
-        // local_buf is definately in our segment
+        // local_buf is definitely in our segment
 #else
         assert(chpl_comm_addr_gettable(chpl_nodeID, local_buf, buf_sz));
 #endif
@@ -1091,7 +1117,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 }
 
 //
-// This is an adaptor from Chapel code to GASNet's gasnet_gets_bulk. It does:
+// This is an adapter from Chapel code to GASNet's gasnet_gets_bulk. It does:
 // * convert count[0] and all of 'srcstr' and 'dststr' from counts of element
 //   to counts of bytes,
 //
@@ -1156,7 +1182,7 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
   gasnet_gets_bulk(dstaddr, dststr, srcnode, srcaddr, srcstr, cnt, strlvls); 
 }
 
-// See the comment for cmpl_comm_gets().
+// See the comment for chpl_comm_gets().
 void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_id, 
                          void* srcaddr, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
@@ -1305,7 +1331,7 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
       chpl_memcpy(&(info->arg), arg, arg_size);
   } else {
     // If the arg bundle is too large to fit in fork_t (i.e. passArg == false), 
-    // Copy the args into auxilliary memory and pass a pointer to this instead.
+    // Copy the args into auxiliary memory and pass a pointer to this instead.
     argCopy = chpl_mem_allocMany(1, arg_size,
                                  CHPL_RT_MD_COMM_FRK_SND_ARG, 0, 0);
     chpl_memcpy(argCopy, arg, arg_size);

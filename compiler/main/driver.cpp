@@ -490,7 +490,6 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoInline = false;
   fNoInlineIterators = false;
   fNoOptimizeLoopIterators = false;
-  fNoVectorize = false;
   fNoLiveAnalysis = false;
   fNoRemoteValueForwarding = false;
   fNoRemoveCopyCalls = false;

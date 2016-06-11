@@ -489,7 +489,7 @@ void ReturnByRef::transform()
 
 //
 // Transform a call to a function that returns a record to be a call
-// to a revied function that does not return a value and that accepts
+// to a revised function that does not return a value and that accepts
 // a reference to the destination i.e.
 //
 // replace

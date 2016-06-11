@@ -190,7 +190,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // corresponding env var. e.g. you have to use '--output=%j.out to
   // have the output file be <jobid>.out, but when we copy the tmp file
   // to the real output file, the %j and other formatters aren't
-  // available so we have to use the equivelent slurm env var
+  // available so we have to use the equivalent slurm env var
   // (SLURM_JOB_ID.) The env vars can't be used when specifying --output
   // because they haven't been initialized yet
   char* bufferStdout    = getenv("CHPL_LAUNCHER_SLURM_BUFFER_STDOUT");

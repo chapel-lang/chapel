@@ -1754,7 +1754,7 @@ qioerr qio_shortest_path(qio_file_t* file, const char** path_out, const char* pa
   err = qio_relative_path(&relpath, cwd, path_in);
 
   // If relpath is NULL, err should have been non-zero.
-  // This line is here to quiety Coverity.
+  // This line is here to quiet Coverity.
   if( !relpath ) err = QIO_ENOMEM;
 
   qio_free((void*) cwd); cwd = NULL;
@@ -2503,7 +2503,7 @@ qioerr _qio_buffered_behind(qio_channel_t* ch, int flushall)
 
   // If we are a FILE* type buffer, we want to automatically
   // flush after every write, so that C I/O can be intermixed
-  // with QIO calls. This is (obviously) not the most perfomant way to do
+  // with QIO calls. This is (obviously) not the most performant way to do
   // it, but we expect this to be used with stdout/stderr mostly,
   // where timely updating (e.g. line-buffering) is more important
   // than total speed.
@@ -4023,7 +4023,7 @@ qioerr _qio_channel_read_bits_slow(qio_channel_t* restrict ch, uint64_t* restric
     tmp_bits = buf << part_two;
     tmp_live = 8*tmp_read - part_two;
 
-    // Now we havn't read ahead any bytes beyond
+    // Now we haven't read ahead any bytes beyond
     // where we'd expect byte-I/O to truncate us
     tmp_read = 0;
 

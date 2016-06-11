@@ -419,7 +419,7 @@ module Random {
 
 
   /*
-     Permuted Linear Congurential Random Number Generator
+     Permuted Linear Congruential Random Number Generator
 
      This module provides PCG random number generation routines.
      See http://www.pcg-random.org/
@@ -495,7 +495,7 @@ module Random {
       is computed will be computed with a different ganged-together RNG.
       This strategy is meant to avoid statistical bias. While we have tested
       this strategy to our satisfaction, it has not been subject to rigorous
-      analysis and may have undesireable statistical properties.
+      analysis and may have undesirable statistical properties.
 
       When generating a real, imaginary, or complex number, this implementation
       uses the strategy of generating a 64-bit unsigned integer and then
@@ -619,7 +619,7 @@ module Random {
         Returns the next value in the random stream.
 
         Generated reals are in [0,1] - both 0.0 and 1.0 are possible values.
-        Imaginary numbers are analagously in [0i, 1i]. Complex numbers will
+        Imaginary numbers are analogously in [0i, 1i]. Complex numbers will
         consist of a generated real and imaginary part, so 0.0+0.0i and 1.0+1.0i
         are possible.
 
@@ -728,8 +728,8 @@ module Random {
 
         if arr.domain.rank != 1 then
           compilerError("Shuffle requires 1-D array");
-        //if arr.domain.type.strideable then
-        //  compilerError("Shuffle requires non-strideable 1-D array");
+        //if arr.domain.type.stridable then
+        //  compilerError("Shuffle requires non-stridable 1-D array");
 
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
@@ -757,8 +757,8 @@ module Random {
 
         if arr.domain.rank != 1 then
           compilerError("Permutation requires 1-D array");
-        //if arr.domain.dim(1).strideable then
-        //  compilerError("Permutation requires non-strideable 1-D array");
+        //if arr.domain.dim(1).stridable then
+        //  compilerError("Permutation requires non-stridable 1-D array");
 
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
@@ -1366,7 +1366,7 @@ module Random {
         var tmpinc:uint(64);
         var r:uint(32);
 
-        // Keepy trying until we get a random number that is within the bounds.
+        // Keep trying until we get a random number that is within the bounds.
         while true {
           r = random(inc);
           if r >= threshold then

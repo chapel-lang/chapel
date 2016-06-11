@@ -60,7 +60,7 @@ related functions:
   writeln(tmp);       // prints 0
 
 
-In some cases, when migrating code over to the new functionatity,
+In some cases, when migrating code over to the new functionality,
 it is useful to put the old ref return intent function into a
 helper function with an explicit param `setter` argument, and then to
 call that function from the getter or setter.

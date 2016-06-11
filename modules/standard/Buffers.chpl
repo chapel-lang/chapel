@@ -560,7 +560,7 @@ module Buffers {
     return new buffer_range(this.start(), this.end());
   }
 
-  /* Advance a :record:`buffer_iterator` to the next contigous
+  /* Advance a :record:`buffer_iterator` to the next contiguous
      memory region stored therein
 
      :arg it: the buffer iterator to advance
@@ -573,7 +573,7 @@ module Buffers {
     }
   }
 
-  /* Advance a :record:`buffer_iterator` to the previous contigous
+  /* Advance a :record:`buffer_iterator` to the previous contiguous
      memory region stored therein
 
      :arg it: the buffer iterator to advance

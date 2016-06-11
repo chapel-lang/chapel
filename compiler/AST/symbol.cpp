@@ -39,6 +39,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
+#include "resolution.h"
 
 #include "AstToText.h"
 #include "AstVisitor.h"
@@ -1466,6 +1467,7 @@ FnSymbol::FnSymbol(const char* initName) :
   codegenUniqueNum(1),
   doc(NULL),
   partialCopySource(NULL),
+  varargOldFormal(NULL),
   retSymbol(NULL)
 {
   substitutions.clear();
@@ -1767,6 +1769,15 @@ void FnSymbol::finalizeCopy(void) {
      * replacements.
      */
     update_symbols(this, map);
+
+    // Replace vararg formal if appropriate.
+    if (this->varargOldFormal) {
+      substituteVarargTupleRefs(this->body, this->varargNewFormals.size(),
+                                this->varargOldFormal, this->varargNewFormals);
+      // Done, clean up.
+      this->varargOldFormal = NULL;
+      this->varargNewFormals.clear();
+    }
 
     // Clean up book keeping information.
     this->partialCopyMap.clear();
@@ -2203,35 +2214,6 @@ FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
     INT_FATAL(this, "function is not normal");
   ret->insertBefore(ast);
 }
-
-
-// Inserts the given ast ahead of the _downEndCount call at the end of this
-// function, if present.  Otherwise, inserts it ahead of the return.
-void
-FnSymbol::insertBeforeDownEndCount(Expr* ast) {
-  CallExpr* ret = toCallExpr(body->body.last());
-
-  if (!ret || !ret->isPrimitive(PRIM_RETURN))
-    INT_FATAL(this, "function is not normal");
-
-  Expr* prev = ret->prev;
-
-  while (isBlockStmt(prev))
-    prev = toBlockStmt(prev)->body.last();
-
-  CallExpr* last = toCallExpr(prev);
-
-  if (last               &&
-      last->isResolved() &&
-      strcmp(last->isResolved()->name, "_downEndCount") == 0) {
-    last->insertBefore(ast);
-
-  } else {
-    // No _downEndCount() call, so insert the ast before the return.
-    ret->insertBefore(ast);
-  }
-}
-
 
 void
 FnSymbol::insertFormalAtHead(BaseAST* ast) {
