@@ -327,7 +327,7 @@ static void insertFormalTemps(FnSymbol* fn);
 static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars);
 
 static Expr* dropUnnecessaryCast(CallExpr* call);
-static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *name, Type *retType);
+static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *name);
 static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, AggregateType *parent, AList &arg_list, bool isFormal, Type *retType);
 static std::string buildParentName(AList &arg_list, bool isFormal, Type *retType);
 static AggregateType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExpr *call);
@@ -4928,7 +4928,7 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
   happen to share the same function type.  By using the parent class we can assign new values onto variable that match the function type
   but may currently be pointing at a different function.
 */
-static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *name, Type *retType) {
+static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *name) {
   AggregateType *parent = new AggregateType(AGGREGATE_CLASS);
   TypeSymbol *parent_ts = new TypeSymbol(name, parent);
 
@@ -5170,7 +5170,7 @@ static AggregateType* createOrFindFunTypeFromAnnotation(AList &arg_list, CallExp
     parent = functionTypeMap[parent_name].first;
 
   } else {
-    parent                  = createAndInsertFunParentClass(call, parent_name.c_str(), retType);
+    parent                  = createAndInsertFunParentClass(call, parent_name.c_str());
     FnSymbol* parent_method = createAndInsertFunParentMethod(call, parent, arg_list, false, retType);
 
     functionTypeMap[parent_name] = std::pair<AggregateType*, FnSymbol*>(parent, parent_method);
@@ -5242,7 +5242,7 @@ createFunctionAsValue(CallExpr *call) {
     thisParentMethod = ctfs.second;
   }
   else {
-    parent = createAndInsertFunParentClass(call, parent_name.c_str(), captured_fn->retType);
+    parent = createAndInsertFunParentClass(call, parent_name.c_str());
     thisParentMethod = createAndInsertFunParentMethod(call, parent, captured_fn->formals, true, captured_fn->retType);
     functionTypeMap[parent_name] = std::pair<AggregateType*, FnSymbol*>(parent, thisParentMethod);
   }
