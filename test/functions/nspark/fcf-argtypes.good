@@ -1,12 +1,12 @@
-retType  = int(64)
 argTypes = 1*int(64)
+retType  = int(64)
 55
 
-retType  = R
 argTypes = (int(64),real(64))
+retType  = R
 (a = 42, b = 13.0)
 
-retType  = string
 argTypes = (string,int(64))
+retType  = string
 thirteen = 13
 
