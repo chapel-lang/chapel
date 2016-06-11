@@ -150,10 +150,8 @@ module MPI {
   record _initMPI {
     var doinit : bool = false;
     var freeChplComm : bool = false;
-    var wall = new LocaleBarrier();
 
     proc ~_initMPI() {
-      delete wall;
       if freeChplComm {
         coforall loc in Locales do on loc {
           C_MPI.MPI_Comm_free(CHPL_COMM_WORLD(1));
@@ -242,49 +240,6 @@ module MPI {
     C_MPI.MPI_Comm_size(comm, size);
     return size;
   }
-
-  /* mpiBarrier()
-
-    A convenience function that calls MPIFlush on a module barrier. This is
-    executed on MPI_COMM_WORLD.
-   */
-  proc mpiBarrier() {
-    _mpi.wall.barrier();
-  }
-
-  /* A Chapel barrier */
-  class LocaleBarrier {
-    var count : atomic int;
-    var done : atomic bool;
-
-    proc LocaleBarrier() {
-      count.write(numLocales);
-      done.clear();
-    }
-
-    /* The barrier...
-    */
-    proc barrier() {
-      if this.locale != here {
-        on this do {
-          done.waitFor(false);
-          count.sub(1);
-          done.waitFor(true);
-          count.add(1);
-        }
-      } else {
-        local {
-          count.sub(1);
-          count.waitFor(0);
-          done.write(true);
-          count.add(1);
-          count.waitFor(numLocales);
-          done.clear();
-        }
-      }
-    }
-  }
-
 
 
   /* A wrapper around MPI_Status. Only the defined fields are exposed */
