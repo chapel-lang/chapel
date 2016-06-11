@@ -3488,17 +3488,21 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
 }
 
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
+CallExpr::CallExpr(BaseAST* base,
+                   BaseAST* arg1,
+                   BaseAST* arg2,
+                   BaseAST* arg3,
+                   BaseAST* arg4,
+                   BaseAST* arg5) :
   Expr(E_CallExpr),
+  primitive(NULL),
   baseExpr(NULL),
   argList(),
-  primitive(NULL),
   partialTag(false),
   methodTag(false),
   square(false)
@@ -3510,77 +3514,112 @@ CallExpr::CallExpr(BaseAST* base, BaseAST* arg1, BaseAST* arg2,
   } else {
     INT_FATAL(this, "Bad baseExpr in CallExpr constructor");
   }
+
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
   callExprHelper(this, arg5);
+
   argList.parent = this;
+
   gCallExprs.add(this);
 }
 
 
-CallExpr::CallExpr(PrimitiveOp *prim, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
+CallExpr::CallExpr(PrimitiveOp* prim,
+                   BaseAST*     arg1,
+                   BaseAST*     arg2,
+                   BaseAST*     arg3,
+                   BaseAST*     arg4,
+                   BaseAST*     arg5) :
   Expr(E_CallExpr),
-  baseExpr(NULL),
-  argList(),
   primitive(prim),
-  partialTag(false),
-  methodTag(false),
-  square(false)
-{
-  callExprHelper(this, arg1);
-  callExprHelper(this, arg2);
-  callExprHelper(this, arg3);
-  callExprHelper(this, arg4);
-  callExprHelper(this, arg5);
-  argList.parent = this;
-  gCallExprs.add(this);
-}
-
-CallExpr::CallExpr(PrimitiveTag prim, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
-  Expr(E_CallExpr),
   baseExpr(NULL),
   argList(),
-  primitive(primitives[prim]),
   partialTag(false),
   methodTag(false),
-  square(false)
-{
+  square(false) {
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
   callExprHelper(this, arg5);
+
   argList.parent = this;
+
+  gCallExprs.add(this);
+}
+
+CallExpr::CallExpr(PrimitiveTag prim,
+                   BaseAST*     arg1,
+                   BaseAST*     arg2,
+                   BaseAST*     arg3,
+                   BaseAST*     arg4,
+                   BaseAST*     arg5) :
+  Expr(E_CallExpr),
+  primitive(primitives[prim]),
+  baseExpr(NULL),
+  argList(),
+  partialTag(false),
+  methodTag(false),
+  square(false) {
+  callExprHelper(this, arg1);
+  callExprHelper(this, arg2);
+  callExprHelper(this, arg3);
+  callExprHelper(this, arg4);
+  callExprHelper(this, arg5);
+
+  argList.parent = this;
+
   gCallExprs.add(this);
 }
 
 
-CallExpr::CallExpr(const char* name, BaseAST* arg1, BaseAST* arg2,
-                   BaseAST* arg3, BaseAST* arg4, BaseAST* arg5) :
+CallExpr::CallExpr(const char* name,
+                   BaseAST*    arg1,
+                   BaseAST*    arg2,
+                   BaseAST*    arg3,
+                   BaseAST*    arg4,
+                   BaseAST*    arg5) :
   Expr(E_CallExpr),
+  primitive(NULL),
   baseExpr(new UnresolvedSymExpr(name)),
   argList(),
-  primitive(NULL),
   partialTag(false),
   methodTag(false),
-  square(false)
-{
+  square(false) {
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
   callExprHelper(this, arg3);
   callExprHelper(this, arg4);
   callExprHelper(this, arg5);
+
   argList.parent = this;
+
   gCallExprs.add(this);
 }
 
 
-CallExpr::~CallExpr() { }
+CallExpr::~CallExpr() {
+}
 
+
+bool CallExpr::isEmpty() const {
+  return primitive == NULL && baseExpr == NULL;
+}
+
+bool CallExpr::isPrimitive() const {
+  return primitive != NULL;
+}
+
+bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
+  return primitive && primitive->tag == primitiveTag;
+}
+
+bool CallExpr::isPrimitive(const char* primitiveName) const {
+  return primitive && !strcmp(primitive->name, primitiveName);
+}
 
 Expr* CallExpr::getFirstChild() {
   Expr* retval = NULL;
@@ -3620,35 +3659,49 @@ Expr* CallExpr::getNextExpr(Expr* expr) {
 
 void CallExpr::verify() {
   Expr::verify();
+
   if (astTag != E_CallExpr) {
     INT_FATAL(this, "Bad CallExpr::astTag");
   }
+
   if (! parentExpr)
     INT_FATAL(this, "Every CallExpr is expected to have a parentExpr");
+
   if (argList.parent != this)
     INT_FATAL(this, "Bad AList::parent in CallExpr");
+
   if (baseExpr && baseExpr->parentExpr != this)
     INT_FATAL(this, "Bad baseExpr::parent in CallExpr");
+
   if (normalized && isPrimitive(PRIM_RETURN)) {
-    FnSymbol* fn = toFnSymbol(parentSymbol);
-    SymExpr* sym = toSymExpr(get(1));
+    FnSymbol* fn  = toFnSymbol(parentSymbol);
+    SymExpr*  sym = toSymExpr(get(1));
+
     if (!fn)
       INT_FATAL(this, "Return is not in a function.");
+
     if (fn->body->body.last() != this)
       INT_FATAL(this, "Return is in middle of function.");
+
     if (!sym)
       INT_FATAL(this, "Return does not return a symbol.");
   }
+
   for_actuals(actual, this) {
     if (actual->parentExpr != this)
       INT_FATAL(this, "Bad CallExpr::argList::parentExpr");
-    if (isSymExpr(actual) && toSymExpr(actual)->var == gMethodToken &&
+
+    if (isSymExpr(actual)                      &&
+        toSymExpr(actual)->var == gMethodToken &&
         actual != this->get(1))
-      INT_FATAL(this, "If present, the method token must be the first argument.");
+      INT_FATAL(this,
+                "If present, the method token must be the first argument.");
   }
+
   if (primitive) {
     if (!(PRIM_UNKNOWN <= primitive->tag && primitive->tag < NUM_KNOWN_PRIMS))
       INT_FATAL(this, "invalid primitive->tag");
+
     switch (primitive->tag) {
     case PRIM_BLOCK_PARAM_LOOP:
     case PRIM_BLOCK_WHILEDO_LOOP:
@@ -3681,61 +3734,61 @@ void CallExpr::verify() {
   }
 }
 
+CallExpr* CallExpr::copyInner(SymbolMap* map) {
+  CallExpr* _this = 0;
 
-CallExpr*
-CallExpr::copyInner(SymbolMap* map) {
-  CallExpr *_this = 0;
   if (primitive)
     _this = new CallExpr(primitive);
   else
     _this = new CallExpr(COPY_INT(baseExpr));
+
   for_actuals(expr, this)
     _this->insertAtTail(COPY_INT(expr));
-  _this->primitive = primitive;
+
+  _this->primitive  = primitive;
   _this->partialTag = partialTag;
-  _this->methodTag = methodTag;
-  _this->square = square;
+  _this->methodTag  = methodTag;
+  _this->square     = square;
+
   return _this;
 }
 
 
-void CallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
-  if (old_ast == baseExpr) {
-    baseExpr = new_ast;
+void CallExpr::replaceChild(Expr* oldAst, Expr* newAst) {
+  if (oldAst == baseExpr) {
+    baseExpr = newAst;
   } else {
     INT_FATAL(this, "Unexpected case in CallExpr::replaceChild");
   }
 }
 
 
-void
-CallExpr::insertAtHead(BaseAST* ast) {
+void CallExpr::insertAtHead(BaseAST* ast) {
   Expr *toInsert;
+
   if (Symbol* a = toSymbol(ast))
     toInsert = new SymExpr(a);
   else
     toInsert = toExpr(ast);
+
   argList.insertAtHead(toInsert);
+
   parent_insert_help(this, toInsert);
 }
 
 
-void
-CallExpr::insertAtTail(BaseAST* ast) {
+void CallExpr::insertAtTail(BaseAST* ast) {
   Expr *toInsert;
+
   if (Symbol* a = toSymbol(ast))
     toInsert = new SymExpr(a);
   else
     toInsert = toExpr(ast);
+
   argList.insertAtTail(toInsert);
+
   parent_insert_help(this, toInsert);
 }
-
-
-bool CallExpr::isEmpty() const {
-  return primitive == NULL && baseExpr == NULL;
-}
-
 
 // MDN 2016/01/29: This will become a predicate
 FnSymbol* CallExpr::isResolved() const {
@@ -3798,11 +3851,13 @@ FnSymbol* CallExpr::theFnSymbol() const {
 
 bool CallExpr::isNamed(const char* name) {
   if (SymExpr* base = toSymExpr(baseExpr))
-    if (!strcmp(base->var->name, name))
+    if (strcmp(base->var->name, name) == 0)
       return true;
+
   if (UnresolvedSymExpr* base = toUnresolvedSymExpr(baseExpr))
-    if (!strcmp(base->unresolved, name))
+    if (strcmp(base->unresolved, name) == 0)
       return true;
+
   return false;
 }
 
@@ -3819,10 +3874,13 @@ Expr* CallExpr::get(int index) const {
 
 FnSymbol* CallExpr::findFnSymbol(void) {
   FnSymbol* fn = NULL;
+
   if (SymExpr* variable = toSymExpr(baseExpr))
     fn = toFnSymbol(variable->var);
+
   if (!fn)
     INT_FATAL(this, "Cannot find FnSymbol in CallExpr");
+
   return fn;
 }
 
@@ -3830,8 +3888,10 @@ FnSymbol* CallExpr::findFnSymbol(void) {
 Type* CallExpr::typeInfo(void) {
   if (primitive)
     return primitive->returnInfo(this);
+
   else if (isResolved())
     return isResolved()->retType;
+
   else
     return dtUnknown;
 }
@@ -3872,10 +3932,11 @@ void CallExpr::prettyPrint(std::ostream *o) {
           }
           expr->prettyPrint(o);
         }
-      } else if (strcmp(expr->unresolved, "chpl__buildArrayRuntimeType") == 0) {
+      } else if (strcmp(expr->unresolved,
+                        "chpl__buildArrayRuntimeType") == 0) {
         *o << "[";
         array = true;
-      } else if (strcmp(expr->unresolved, 
+      } else if (strcmp(expr->unresolved,
                         "chpl__buildDomainRuntimeType") == 0) {
         *o << "domain(";
         argList.last()->prettyPrint(o);
@@ -3898,6 +3959,7 @@ void CallExpr::prettyPrint(std::ostream *o) {
 
   if (!array && !unusual)
     *o << "(";
+
   if (!unusual) {
     for_alist(expr, argList) {
       if (expr != argList.first()) {
@@ -3909,9 +3971,11 @@ void CallExpr::prettyPrint(std::ostream *o) {
       }
       expr->prettyPrint(o);
     }
+
     if (array && argList.first() == argList.last())
       *o << "]";
   }
+
   if (!array && !unusual) {
     *o << ")";
   }
@@ -5807,22 +5871,10 @@ GenRet CallExpr::codegen() {
   return ret;
 }
 
-bool CallExpr::isPrimitive() const {
-  return primitive != NULL;
-}
-
-bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
-  return primitive && primitive->tag == primitiveTag;
-}
-
-bool CallExpr::isPrimitive(const char* primitiveName) const {
-  return primitive && !strcmp(primitive->name, primitiveName);
-}
-
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 ContextCallExpr::ContextCallExpr() :
   Expr(E_ContextCallExpr),
