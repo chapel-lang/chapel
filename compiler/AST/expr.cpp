@@ -5961,7 +5961,7 @@ GenRet CallExpr::codegenPrimitive() {
 
       // call GLOBAL_FN_GLOBAL_TO_WIDE dummy function
       llvm::Function* fn = getGlobalToWideFn(gGenInfo->module,
-                                             &info->globalToWideInfo,
+                                             &gGenInfo->globalToWideInfo,
                                              ptr_wide_ptr_ty);
 
       INT_ASSERT(fn);
