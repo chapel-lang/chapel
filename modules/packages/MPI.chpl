@@ -31,6 +31,66 @@ routines ::
 
 since all of these are built around user-defined handlers, that we do not support.
 
+We also include a few functions that are in later MPI standards. These are ::
+
+      MPI_Init_thread (and related constants)
+      MPI_Ibarrier
+
+Compiler wrappers
+-----------------
+
+Using MPI requires pointing the compiler to the location of the
+MPI headers, and including the appropriate MPI libraries. This is
+often done by using compiler wrappers like "mpicc". Setting
+CHPL_TARGET_COMPILER=mpi-gnu and CHPL_TARGET_ARCH=none will
+get Chapel to use these compilers.
+
+Note that on Cray systems, this is not necessary, since the default
+compilers include the necessary MPI information.
+
+.. note ::
+  #.Currently, we only support the gnu compilers wrapped by MPI. We expect
+  to broaden this class in the future.
+  #.The current scripts fail to correctly determine the architecture for
+  the mpi-gnu suite, hence CHPL_TARGET_ARCH=none. We expect this to be
+  fixed in the future.
+
+Interoperability Modes
+----------------------
+
+We envision two modes in which Chapel and MPI can interoperate with
+one another. The first of these is Chapel (local)+MPI. This has no
+constraints on the setup of Chapel and MPI, and is conceptually the same
+as OpenMP+MPI programming. All communication here is handled by
+MPI; Chapel is just used to provide local parallelism. Furthermore,
+in this mode, Chapel locales do not map to MPI ranks at all; the program
+just sees a single locale.
+Note that the same caveats that apply to OpenMP+MPI
+programming apply here : for instance, MPI must be initialized with the
+appropriate thread support (see below).
+
+The second mode of operation is where both Chapel and MPI communications
+may be mixed. This allows the user to use optimized/convenient MPI routines
+when desired, while having access to the Chapel PGAS model. Using this
+model requires ::
+
+  #. The MPI library should (and in many cases must) support the MPI_THREAD_MULTIPLE
+  support level for threads. This is needed if the user plans on making
+  MPI calls from multiple threads. It is necessary when using the mpi-conduit
+  for GASNet, since the GASNet library may make simultaneous MPI calls.
+  Currently, the MPICH library (and its derivatives) appear to have the
+  most robust support for this.
+  #. CHPL_TASKS must be set to fifo.
+
+This second mode has been tried on ::
+
+  Linux, with the mpi-conduit for GASNet
+  Cray XC, with the aries conduit for GASNet
+
+
+Environment Variables and Module Constants
+------------------------------------------
+
 The package uses two boolean config constants :
 ``autoInitMPI`` and ``requireThreadedMPI``. The first automatically initializes
 MPI (if not already initialized by the runtime), and shuts it down as well.
@@ -44,6 +104,9 @@ mode for MPI (if you are running in mixed mode). To do so, set AMMPI_MPI_THREAD=
 in your environment. On Cray systems, you might need to set
 ```MPICH_MAX_THREAD_SAFETY``` to ```MULTIPLE```.
 
+Communicators
+-------------
+
 The GASNet runtime, and therefore Chapel, makes no guarantees that the MPI
 ranks will match the GASNet locales. This module creates a new MPI communicator
 CHPL_COMM_WORLD that ensures that this mapping is true. This is a replicated
@@ -51,17 +114,8 @@ variable, so it is used as CHPL_COMM_WORLD(1), as in :
 ```
     MPI_Send(...., CHPL_COMM_WORLD(1));
 ```
-
-A useful idiom for mixing Chapel and MPI code is :
-```
- mpiBarrier();
- local {
-   <local Chapel code + MPI calls can go here. Make sure the last MPI call is
-    blocking or a barrier>
-    }
-```
-The local block ensures that there is no communication inside that might conflict with
-the MPI calls.
+Note that this is only set in mixed Chapel-MPI mode. If numLocales is 1, then
+CHPL_COMM_WORLD(1) is set to MPI_COMM_NULL, and will cause an MPI error if used.
 
 .. note::
   #. Pointer arguments are written as `ref` arguments, so no casting to a ``c_ptr``
@@ -161,10 +215,12 @@ module MPI {
   }
 
   proc setChplComm() {
-    coforall loc in Locales do on loc {
-      C_MPI.MPI_Comm_split(MPI_COMM_WORLD, 0, here.id : c_int, CHPL_COMM_WORLD(1));
+    if numLocales > 1 {
+      coforall loc in Locales do on loc {
+        C_MPI.MPI_Comm_split(MPI_COMM_WORLD, 0, here.id : c_int, CHPL_COMM_WORLD(1));
+      }
+      _mpi.freeChplComm = true;
     }
-    _mpi.freeChplComm = true;
   }
 
   /* commRank(comm)
