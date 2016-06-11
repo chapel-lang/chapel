@@ -2968,31 +2968,6 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCall(fnName, args);
 }
 
-static 
-GenRet codegenBasicPrimitiveExpr(CallExpr* call) {
-  std::vector<GenRet> args;
-
-  for_actuals(actual, call) {
-    GenRet gen = actual;
-
-    // Make wide pointers/classes local
-    if (actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-        actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))
-      gen = codegenRaddr(gen);
-
-    // Dereference reference or now-local wide reference
-    if (actual->typeInfo()->symbol->hasFlag(FLAG_REF) ||
-        actual->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))
-      gen = codegenDeref(gen);
-
-    gen = codegenValue(gen);
-    args.push_back(gen);
-  }
- 
-  return codegenCallExpr(call->primitive->name, args);
-}
-
-
 static
 GenRet codegenZero()
 {
@@ -4109,7 +4084,7 @@ GenRet CallExpr::codegen() {
   if (primitive) {
     switch (primitive->tag) {
     case PRIM_UNKNOWN:
-      ret = codegenBasicPrimitiveExpr(this);
+      ret = codegenBasicPrimitiveExpr();
       break;
     case PRIM_ARRAY_SET:
     case PRIM_ARRAY_SET_FIRST:
@@ -5558,7 +5533,7 @@ GenRet CallExpr::codegen() {
         cpyFrom.isLVPtr = GEN_VAL; // Prevent &(char*) syntax.
         ret = codegenCallExpr("chpl_wide_string_copy", cpyFrom, get(2), get(3));
       } else
-        ret = codegenBasicPrimitiveExpr(this);
+        ret = codegenBasicPrimitiveExpr();
       break;
     }
     case PRIM_CAST_TO_VOID_STAR:
@@ -5577,11 +5552,11 @@ GenRet CallExpr::codegen() {
     }
     case PRIM_RT_ERROR:
     case PRIM_RT_WARNING:
-      ret = codegenBasicPrimitiveExpr(this);
+      ret = codegenBasicPrimitiveExpr();
       break;
     case PRIM_START_RMEM_FENCE:
     case PRIM_FINISH_RMEM_FENCE:
-      ret = codegenBasicPrimitiveExpr(this);
+      ret = codegenBasicPrimitiveExpr();
       break;
     case PRIM_NEW_PRIV_CLASS:
     {
@@ -5703,7 +5678,7 @@ GenRet CallExpr::codegen() {
       break;
     }
     case PRIM_LOOKUP_FILENAME:
-      ret = codegenBasicPrimitiveExpr(this);
+      ret = codegenBasicPrimitiveExpr();
       break;
     case NUM_KNOWN_PRIMS:
       INT_FATAL(this, "impossible");
@@ -5869,6 +5844,29 @@ GenRet CallExpr::codegen() {
     info->cStatements.push_back(ret.c + ";\n");
 
   return ret;
+}
+
+GenRet CallExpr::codegenBasicPrimitiveExpr() const {
+  std::vector<GenRet> args;
+
+  for_alist(actual, argList) {
+    GenRet  gen  = actual;
+    Symbol* type = actual->typeInfo()->symbol;
+
+    // Make wide pointers/classes local
+    if (type->hasFlag(FLAG_WIDE_CLASS) || type->hasFlag(FLAG_WIDE_REF))
+      gen = codegenRaddr(gen);
+
+    // Dereference reference or now-local wide reference
+    if (type->hasFlag(FLAG_REF)        || type->hasFlag(FLAG_WIDE_REF))
+      gen = codegenDeref(gen);
+
+    gen = codegenValue(gen);
+
+    args.push_back(gen);
+  }
+
+  return codegenCallExpr(primitive->name, args);
 }
 
 /************************************* | **************************************

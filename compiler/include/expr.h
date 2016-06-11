@@ -243,6 +243,10 @@ public:
   int             numActuals()                                           const;
   Expr*           get(int index)                                         const;
   FnSymbol*       findFnSymbol();
+
+
+private:
+  GenRet          codegenBasicPrimitiveExpr()                            const;
 };
 
 // For storing several call expressions, where
