@@ -254,6 +254,8 @@ private:
   void            codegenInvokeTaskFun(const char* name);
 
   GenRet          codegenBasicPrimitiveExpr()                            const;
+
+  bool            isExternStarTuple(Symbol* formal, Expr* actual)        const;
 };
 
 // For storing several call expressions, where

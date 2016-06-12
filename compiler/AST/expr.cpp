@@ -4112,9 +4112,7 @@ GenRet CallExpr::codegen() {
             arg.isLVPtr                                == GEN_WIDE_PTR) {
           arg = codegenRaddr(codegenValue(arg));
 
-        } else if (formal->type->symbol->hasFlag(FLAG_REF)                              &&
-                   formal->type->symbol->getValType()->symbol->hasFlag(FLAG_STAR_TUPLE) &&
-                   actualType->symbol->hasFlag(FLAG_REF) ) {
+        } else if (isExternStarTuple(formal, actual) == true) {
           // In C, a fixed-size-array lvalue is already a pointer,
           // so we deref here. But for LLVM, if we deref we will
           // end up passing the tuple by value, which is not right.
@@ -4228,17 +4226,20 @@ GenRet CallExpr::codegenPrimitive() {
     INT_ASSERT(dst.isLVPtr);
 
     if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      Type*  eltType = getDataClassType(get(1)->typeInfo()->getField("addr")->type->symbol)->typeInfo();
-      GenRet locale  = codegenRlocale(dst);
-      GenRet call    = codegenCallExpr("chpl_wide_array_alloc",
-                                       codegenRnode(dst),
-                                       codegenValue(get(3)),
-                                       codegenSizeof(eltType),
-                                       get(4),
-                                       get(5));
+      Symbol* addr    = get(1)->typeInfo()->getField("addr");
+      Type*   eltType = getDataClassType(addr->type->symbol)->typeInfo();
+      GenRet  locale  = codegenRlocale(dst);
+      GenRet  call    = codegenCallExpr("chpl_wide_array_alloc",
+                                        codegenRnode(dst),
+                                        codegenValue(get(3)),
+                                        codegenSizeof(eltType),
+                                        get(4),
+                                        get(5));
 
       call.chplType = get(1)->typeInfo();
-      alloced       = codegenAddrOf(codegenWideAddr(locale, call, call.chplType));
+      alloced       = codegenAddrOf(codegenWideAddr(locale,
+                                                    call,
+                                                    call.chplType));
 
     } else {
       Type* eltType = getDataClassType(get(1)->typeInfo()->symbol)->typeInfo();
@@ -4289,8 +4290,8 @@ GenRet CallExpr::codegenPrimitive() {
     ret = codegenPrimMove();
     break;
 
-  // We list the special cases handled in the PRIM_MOVE switch above, so we don't
-  // trigger the "should these still be in the AST?" error.
+  // We list the special cases handled in the PRIM_MOVE switch above,
+  // so we don't trigger the "should these still be in the AST?" error.
   case PRIM_DEREF:
   case PRIM_GET_SVEC_MEMBER_VALUE:
   case PRIM_GET_MEMBER_VALUE:
@@ -4456,7 +4457,8 @@ GenRet CallExpr::codegenPrimitive() {
       GenRet b      = get(2);
       GenRet addrNe = codegenNotEquals(codegenRaddr(a), codegenRaddr(b));
       GenRet locNe  = codegenNotEquals(codegenRnode(a), codegenRnode(b));
-      GenRet rh     = codegenLogicalAnd(codegenIsNotZero(codegenRaddr(a)), locNe);
+      GenRet rh     = codegenLogicalAnd(codegenIsNotZero(codegenRaddr(a)),
+                                        locNe);
       GenRet ne     = codegenLogicalOr(addrNe, rh);
 
       ret = codegenIsZero(ne);
@@ -4485,7 +4487,8 @@ GenRet CallExpr::codegenPrimitive() {
       GenRet b      = get(2);
       GenRet addrNe = codegenNotEquals(codegenRaddr(a), codegenRaddr(b));
       GenRet locNe  = codegenNotEquals(codegenRnode(a), codegenRnode(b));
-      GenRet rh     = codegenLogicalAnd(codegenIsNotZero(codegenRaddr(a)), locNe);
+      GenRet rh     = codegenLogicalAnd(codegenIsNotZero(codegenRaddr(a)),
+                                        locNe);
 
       ret = codegenLogicalOr(addrNe, rh);
 
@@ -4511,10 +4514,11 @@ GenRet CallExpr::codegenPrimitive() {
       ret.c = "(" + a.c + " <= " + b.c + ")";
     } else {
 #ifdef HAVE_LLVM
-      PromotedPair values = convertValuesToLarger(a.val,
-                                                  b.val,
-                                                  is_signed(get(1)->typeInfo()),
-                                                  is_signed(get(2)->typeInfo()));
+      PromotedPair values = convertValuesToLarger(
+                                   a.val,
+                                   b.val,
+                                   is_signed(get(1)->typeInfo()),
+                                   is_signed(get(2)->typeInfo()));
 
       if (values.a->getType()->isFPOrFPVectorTy()) {
         ret.val = gGenInfo->builder->CreateFCmpOLE(values.a, values.b);
@@ -4539,10 +4543,11 @@ GenRet CallExpr::codegenPrimitive() {
       ret.c = "(" + a.c + " >= " + b.c + ")";
     } else {
 #ifdef HAVE_LLVM
-      PromotedPair values = convertValuesToLarger(a.val,
-                                                  b.val,
-                                                  is_signed(get(1)->typeInfo()),
-                                                  is_signed(get(2)->typeInfo()));
+      PromotedPair values = convertValuesToLarger(
+                                   a.val,
+                                   b.val,
+                                   is_signed(get(1)->typeInfo()),
+                                   is_signed(get(2)->typeInfo()));
 
       if (values.a->getType()->isFPOrFPVectorTy()) {
         ret.val = gGenInfo->builder->CreateFCmpOGE(values.a, values.b);
@@ -4567,10 +4572,11 @@ GenRet CallExpr::codegenPrimitive() {
       ret.c = "(" + a.c + " < " + b.c + ")";
     } else {
 #ifdef HAVE_LLVM
-      PromotedPair values = convertValuesToLarger(a.val,
-                                                  b.val,
-                                                  is_signed(get(1)->typeInfo()),
-                                                  is_signed(get(2)->typeInfo()));
+      PromotedPair values = convertValuesToLarger(
+                                   a.val,
+                                   b.val,
+                                   is_signed(get(1)->typeInfo()),
+                                   is_signed(get(2)->typeInfo()));
 
       if (values.a->getType()->isFPOrFPVectorTy()) {
         ret.val = gGenInfo->builder->CreateFCmpOLT(values.a, values.b);
@@ -4595,10 +4601,11 @@ GenRet CallExpr::codegenPrimitive() {
       ret.c = "(" + a.c + " > " + b.c + ")";
     } else {
 #ifdef HAVE_LLVM
-      PromotedPair values = convertValuesToLarger(a.val,
-                                                  b.val,
-                                                  is_signed(get(1)->typeInfo()),
-                                                  is_signed(get(2)->typeInfo()));
+      PromotedPair values = convertValuesToLarger(
+                                   a.val,
+                                   b.val,
+                                   is_signed(get(1)->typeInfo()),
+                                   is_signed(get(2)->typeInfo()));
 
       if (values.a->getType()->isFPOrFPVectorTy()) {
         ret.val = gGenInfo->builder->CreateFCmpOGT(values.a, values.b);
@@ -4721,17 +4728,25 @@ GenRet CallExpr::codegenPrimitive() {
         ret = codegenUseGlobal("MIN_UINT" + numToString(get_width(t)));
 
       } else if (is_real_type( t)) {
-        ret = codegenNeg(codegenUseGlobal("MAX_FLOAT" + numToString(get_width(t))));
+        std::string width = numToString(get_width(t));
+
+        ret = codegenNeg(codegenUseGlobal("MAX_FLOAT" + width));
 
       } else if (is_imag_type( t)) {
-        ret = codegenNeg(codegenUseGlobal("MAX_FLOAT" + numToString(get_width(t))));
+        std::string width = numToString(get_width(t));
+
+        ret = codegenNeg(codegenUseGlobal("MAX_FLOAT" + width));
 
       } else if (is_complex_type( t)) {
-        std::string fname = "_chpl_complex" + numToString(get_width(t));
+        std::string width     = numToString(get_width(t));
+        std::string halfWidth = numToString(get_width(t) / 2);
+
+        std::string fname     = "_chpl_complex" + width;
+        std::string maxFloat  = "MAX_FLOAT"     + halfWidth;
 
         ret = codegenCallExpr(fname.c_str(),
-                              codegenNeg(codegenUseGlobal("MAX_FLOAT" + numToString(get_width(t) / 2))),
-                              codegenNeg(codegenUseGlobal("MAX_FLOAT" + numToString(get_width(t) / 2))));
+                              codegenNeg(codegenUseGlobal(maxFloat)),
+                              codegenNeg(codegenUseGlobal(maxFloat)));
 
       } else {
         INT_FATAL( t, "cannot do min on supplied type");
@@ -4760,11 +4775,17 @@ GenRet CallExpr::codegenPrimitive() {
         ret = codegenUseGlobal("MAX_FLOAT" + numToString(get_width(t)));
 
       } else if (is_complex_type( t)) {
-        std::string fname = "_chpl_complex" + numToString(get_width(t));
+        std::string width     = numToString(get_width(t));
+        std::string halfWidth = numToString(get_width(t) / 2);
+
+        std::string fname     = "_chpl_complex" + width;
+        std::string maxFloat  = "MAX_FLOAT"     + halfWidth;
+
+
 
         ret = codegenCallExpr(fname.c_str(),
-                              codegenUseGlobal("MAX_FLOAT" + numToString(get_width(t)/2)),
-                              codegenUseGlobal("MAX_FLOAT" + numToString(get_width(t)/2)));
+                              codegenUseGlobal(maxFloat),
+                              codegenUseGlobal(maxFloat));
       } else {
         INT_FATAL( t, "cannot do max on supplied type");
       }
@@ -4917,12 +4938,14 @@ GenRet CallExpr::codegenPrimitive() {
 
   case PRIM_LOCAL_CHECK: {
     // arguments are (wide ptr, line, function/file, error string)
+    Symbol* lhsType = get(1)->typeInfo()->symbol;
 
-    if (get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) == true) {
-      const char* error;
+    if (lhsType->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) == true) {
+      const char* error = NULL;
+      Symbol*     addr  = get(1)->typeInfo()->getField("addr");
 
-      if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)                           == true &&
-          get(1)->typeInfo()->getField("addr")->typeInfo()->symbol->hasFlag(FLAG_EXTERN) == true) {
+      if (lhsType->hasFlag(FLAG_WIDE_CLASS)              == true &&
+          addr->typeInfo()->symbol->hasFlag(FLAG_EXTERN) == true) {
         error = "cannot pass non-local extern class to extern procedure";
 
       } else {
@@ -4942,13 +4965,14 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_SYNC_INIT:
-  case PRIM_SYNC_DESTROY:{
-    GenRet fieldPtr = codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux"));
-
-    codegenCall(primitive->tag == PRIM_SYNC_INIT ? "chpl_sync_initAux" : "chpl_sync_destroyAux",
-                fieldPtr);
+    codegenCall("chpl_sync_initAux",
+                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
     break;
-  }
+
+  case PRIM_SYNC_DESTROY:
+    codegenCall("chpl_sync_destroyAux",
+                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
+    break;
 
   case PRIM_SYNC_LOCK:
     codegenCall("chpl_sync_lock",
@@ -4985,8 +5009,12 @@ GenRet CallExpr::codegenPrimitive() {
     break;
 
   case PRIM_SINGLE_INIT:
+    codegenCall("chpl_single_initAux",
+                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
+    break;
+
   case PRIM_SINGLE_DESTROY:
-    codegenCall(primitive->tag == PRIM_SINGLE_INIT ? "chpl_single_initAux" : "chpl_single_destroyAux",
+    codegenCall("chpl_single_destroyAux",
                 codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
     break;
 
@@ -5539,7 +5567,10 @@ GenRet CallExpr::codegenPrimitive() {
 
     if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       cpyFrom.isLVPtr = GEN_VAL; // Prevent &(char*) syntax.
-      ret             = codegenCallExpr("chpl_wide_string_copy", cpyFrom, get(2), get(3));
+      ret             = codegenCallExpr("chpl_wide_string_copy",
+                                        cpyFrom,
+                                        get(2),
+                                        get(3));
     } else
       ret = codegenBasicPrimitiveExpr();
 
@@ -5636,7 +5667,8 @@ GenRet CallExpr::codegenPrimitive() {
 
       returnType = llvm::Type::getVoidTy(gGenInfo->module->getContext());
 
-      llvm::Type*              argt;
+      llvm::Type*              argt   = NULL;
+      llvm::FunctionType*      fnType = NULL;
 
       argt = get(2)->typeInfo()->codegen().type;
 
@@ -5652,12 +5684,13 @@ GenRet CallExpr::codegenPrimitive() {
 
       argumentTypes.push_back(argt);
 
-      llvm::FunctionType* fnType = llvm::FunctionType::get(returnType,
-                                                           argumentTypes,
-                                                           /* is var arg */ false);
+      fnType = llvm::FunctionType::get(returnType,
+                                       argumentTypes,
+                                       /* is var arg */ false);
 
       // OK, now cast to the fnType.
-      fngen.val = gGenInfo->builder->CreateBitCast(fnPtr, fnType->getPointerTo());
+      fngen.val = gGenInfo->builder->CreateBitCast(fnPtr,
+                                                   fnType->getPointerTo());
 #endif
     }
 
@@ -5693,10 +5726,12 @@ GenRet CallExpr::codegenPrimitive() {
     INT_ASSERT(fn);
 
     {
-      GenRet i           = codegenValue(get(2));    // the cid
-      GenRet j           = new_IntSymbol(virtualMethodMap.get(fn), INT_SIZE_64);
-      INT_ASSERT(gMaxVMT >= 0);
+      GenRet  i           = codegenValue(get(2));    // the cid
+      int64_t fnId       = virtualMethodMap.get(fn);
+      GenRet j           = new_IntSymbol(fnId,    INT_SIZE_64);
       GenRet maxVMTConst = new_IntSymbol(gMaxVMT, INT_SIZE_64);
+
+      INT_ASSERT(gMaxVMT >= 0);
 
       // indexExpr = maxVMT * i + j
       index = codegenAdd(codegenMul(maxVMTConst, i), j);
@@ -5715,7 +5750,8 @@ GenRet CallExpr::codegenPrimitive() {
       fnPtrPtr = gGenInfo->builder->CreateInBoundsGEP(table.val, GEPLocs);
       llvm::Instruction* fnPtrV = gGenInfo->builder->CreateLoad(fnPtrPtr);
       // Tell TBAA vmtable loads don't alias anything else, are constant
-      fnPtrV->setMetadata(llvm::LLVMContext::MD_tbaa, gGenInfo->tbaaVmtableNode);
+      fnPtrV->setMetadata(llvm::LLVMContext::MD_tbaa,
+                          gGenInfo->tbaaVmtableNode);
       fnPtr.val = fnPtrV;
 #endif
     }
@@ -5859,7 +5895,10 @@ bool CallExpr::codegenPrimMoveSpecial() {
         }
 
       } else {
-        codegenAssign(get(1), codegen_prim_get_real(rhs->get(1), rhs->get(1)->typeInfo(), isReal));
+        codegenAssign(get(1),
+                      codegen_prim_get_real(rhs->get(1),
+                                            rhs->get(1)->typeInfo(),
+                                            isReal));
       }
 
       break;
@@ -5901,10 +5940,11 @@ bool CallExpr::codegenPrimMoveSpecial() {
 
         if (se->var->hasFlag(FLAG_SUPER_CLASS)) {
           // We're getting the super class pointer.
-          GenRet srcwide = rhs->get(1);
-          GenRet addr    = codegenCast(get(1)->typeInfo()->getField("addr")->type,
-                                       codegenRaddr(srcwide));
-          GenRet ref     =  codegenAddrOf(codegenWideAddrWithAddr(srcwide, addr));
+          GenRet srcwide  = rhs->get(1);
+          Type*  addrType = get(1)->typeInfo()->getField("addr")->type;
+          GenRet addr     = codegenCast(addrType, codegenRaddr(srcwide));
+          GenRet ref      =  codegenAddrOf(codegenWideAddrWithAddr(srcwide,
+                                                                   addr));
 
           codegenAssign(get(1), ref);
         } else {
@@ -5955,10 +5995,13 @@ bool CallExpr::codegenPrimMoveSpecial() {
         codegenAssign(get(1), codegenAddrOf(codegenFieldPtr(rhs->get(1), se)));
 
       }  else if (get(1)->getValType() != rhs->get(2)->typeInfo()) {
-        // get a narrow reference to the actual 'addr' field of the wide pointer
+        // get a narrow reference to the actual 'addr' field
+        // of the wide pointer
         GenRet getField = codegenFieldPtr(rhs->get(1), se);
 
-        codegenAssign(get(1), codegenAddrOf(codegenWideThingField(getField, WIDE_GEP_ADDR)));
+        codegenAssign(get(1),
+                      codegenAddrOf(codegenWideThingField(getField,
+                                                          WIDE_GEP_ADDR)));
 
       } else {
         retval = false;
@@ -5970,7 +6013,8 @@ bool CallExpr::codegenPrimMoveSpecial() {
     case PRIM_GET_SVEC_MEMBER: {
       if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         /* Get a pointer to the i'th element of a homogeneous tuple */
-        GenRet elemPtr = codegenElementPtr(rhs->get(1),codegenExprMinusOne(rhs->get(2)));
+        GenRet elemPtr = codegenElementPtr(rhs->get(1),
+                                           codegenExprMinusOne(rhs->get(2)));
 
         INT_ASSERT( elemPtr.isLVPtr == GEN_WIDE_PTR );
 
@@ -5979,9 +6023,12 @@ bool CallExpr::codegenPrimMoveSpecial() {
         codegenAssign(get(1), elemPtr);
 
       } else if (get(1)->getValType() != rhs->getValType()) {
-        GenRet getElem = codegenElementPtr(rhs->get(1), codegenExprMinusOne(rhs->get(2)));
+        GenRet getElem = codegenElementPtr(rhs->get(1),
+                                           codegenExprMinusOne(rhs->get(2)));
 
-        codegenAssign(get(1), codegenAddrOf(codegenWideThingField(getElem, WIDE_GEP_ADDR)));
+        codegenAssign(get(1),
+                      codegenAddrOf(codegenWideThingField(getElem,
+                                                          WIDE_GEP_ADDR)));
 
       } else {
         retval = false;
@@ -6010,32 +6057,27 @@ bool CallExpr::codegenPrimMoveSpecial() {
     case PRIM_ARRAY_GET: {
       /* Get a pointer to the i'th array element */
       // ('_array_get' array idx)
-      if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        codegenAssign(get(1),
-                      codegenAddrOf(codegenElementPtr(rhs->get(1), rhs->get(2))));
+      GenRet elem = codegenElementPtr(rhs->get(1), rhs->get(2));
+      GenRet ref  = codegenAddrOf(elem);
 
-      } else if( get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS)) {
+      if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        codegenAssign(get(1), ref);
+
+      } else if (get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,
+                                                           FLAG_WIDE_CLASS)) {
         // resulting reference is wide, but the array is local.
         // This can happen with c_ptr for extern integration...
-        codegenAssign(get(1),
-                      codegenAddrOf(codegenWideHere(codegenAddrOf(codegenElementPtr(rhs->get(1), rhs->get(2))))));
+        codegenAssign(get(1), codegenAddrOf(codegenWideHere(ref)));
 
       } else {
-        codegenAssign(get(1),
-                      codegenAddrOf(codegenElementPtr(rhs->get(1), rhs->get(2))));
+        codegenAssign(get(1), ref);
       }
 
       break;
     }
 
     case PRIM_ARRAY_GET_VALUE: {
-      if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        codegenAssign(get(1),
-                      codegenElementPtr(rhs->get(1), rhs->get(2)));
-      } else {
-        codegenAssign(get(1),
-                      codegenElementPtr(rhs->get(1), rhs->get(2)));
-      }
+      codegenAssign(get(1), codegenElementPtr(rhs->get(1), rhs->get(2)));
 
       break;
     }
@@ -6056,9 +6098,9 @@ bool CallExpr::codegenPrimMoveSpecial() {
       //   rhs->get(1)->chpl_class_id == chpl__cid_"rhs->get(2)"
       if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         GenRet tmp = codegenFieldCidPtr(rhs->get(1));
-        codegenAssign(
-                      get(1),
-                      codegenEquals(tmp, codegenUseCid(rhs->get(2)->typeInfo())));
+        GenRet cid = codegenUseCid(rhs->get(2)->typeInfo());
+
+        codegenAssign(get(1), codegenEquals(tmp, cid));
 
       } else {
         retval = false;
@@ -6088,6 +6130,7 @@ bool CallExpr::codegenPrimMoveSpecial() {
         tmp = codegenWideAddrWithAddr(tmp,
                                       codegenCast(rhs->get(1)->typeInfo(),
                                                   codegenRaddr(tmp)));
+
         codegenAssign(get(1), codegenAddrOf(tmp));
 
       } else {
@@ -6107,7 +6150,10 @@ bool CallExpr::codegenPrimMoveSpecial() {
         GenRet cast         = codegenCast(type, wideFromAddr);
         GenRet nul          = codegenCast(type, codegenNullPointer());
         GenRet addr         = codegenTernary(ok, cast, nul);
-        GenRet wide         = codegenAddrOf(codegenWideAddrWithAddr(wideFrom, addr, rhs->typeInfo()));
+        GenRet wide         = codegenAddrOf(codegenWideAddrWithAddr(
+                                                       wideFrom,
+                                                       addr,
+                                                       rhs->typeInfo()));
 
         codegenAssign(get(1), wide);
 
@@ -6230,6 +6276,23 @@ GenRet CallExpr::codegenBasicPrimitiveExpr() const {
   }
 
   return codegenCallExpr(primitive->name, args);
+}
+
+bool CallExpr::isExternStarTuple(Symbol* formal, Expr* actual) const {
+  Symbol* formalSym  = formal->type->symbol;
+  Symbol* formalVal  = formalSym->getValType()->symbol;
+
+  Type*   actualType = actual->typeInfo();
+  Symbol* actualSym  = actualType->symbol;
+
+  bool  retval       = false;
+
+  if (formalSym->hasFlag(FLAG_REF)        == true &&
+      formalVal->hasFlag(FLAG_STAR_TUPLE) == true &&
+      actualSym->hasFlag(FLAG_REF)        == true)
+    retval = true;
+
+  return retval;
 }
 
 /************************************* | **************************************
