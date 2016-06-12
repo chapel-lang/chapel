@@ -4068,177 +4068,110 @@ static GenRet codegen_prim_get_real(GenRet arg, Type* type, bool real) {
  *    (even though that is not allowed in Chapel).
  */
 GenRet CallExpr::codegen() {
-  GenRet ret;
-  GenInfo* info = gGenInfo;
-  FILE* c = info->cfile;
   SET_LINENO(this);
 
-  // Note (for debugging), function name is in parentSymbol->cname.
+  FnSymbol* fn = isResolved();
+  GenRet    ret;
 
+  // Note (for debugging), function name is in parentSymbol->cname.
   if (id == breakOnCodegenID)
     gdbShouldBreakHere();
 
   if (getStmtExpr() && getStmtExpr() == this)
     codegenStmt(this);
 
-  if (primitive) {
+  if (primitive                                          != NULL)  {
     return codegenPrimitive();
-  }
 
-  FnSymbol* fn = isResolved();
-  INT_ASSERT(fn);
+  } else if (fn->hasFlag(FLAG_ON_BLOCK)                  == true)  {
+    codegenInvokeOnFun();
 
-  // Process a begin/cobegin/coforall, i.e. local task creation.
-  bool gotBCbCf = false;
-  const char* genFnName = NULL;
+  } else if (fn->hasFlag(FLAG_BEGIN_BLOCK)               == true)  {
+    codegenInvokeTaskFun("chpl_taskListAddBegin");
 
-  if (fn->hasFlag(FLAG_BEGIN_BLOCK) && !fn->hasFlag(FLAG_ON_BLOCK)) {
-    // got a wrapper for a local 'begin' task fn (no 'on')
-    gotBCbCf = true;
-    genFnName = "chpl_taskListAddBegin";
-  } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) && !fn->hasFlag(FLAG_ON_BLOCK)) {
-    // got a wrapper for a local 'cobegin' or 'coforall' task fn (no 'on')
-    gotBCbCf = true;
-    genFnName = "chpl_taskListAddCoStmt";
-  }
-  if (gotBCbCf) {
-    // get(1) is a ref/wide ref to a task list value
-    // get(2) is the node ID owning the task list
-    // get(3) is a buffer containing bundled arguments
-    // get(4) is the buffer's length (unused for task fns)
-    // get(5) is a dummy class type for the argument bundle
+  } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) == true)  {
+    codegenInvokeTaskFun("chpl_taskListAddCoStmt");
 
-    GenRet taskList = codegenValue(get(1));
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-      taskList = codegenRaddr(taskList);
-    }
-    GenRet taskListNode = codegenValue(get(2));
-    GenRet taskBundle = codegenValue(get(3));
+  } else if (fn->hasFlag(FLAG_NO_CODEGEN)                == false) {
+    std::vector<GenRet> args(numActuals());
+    GenRet              base = baseExpr->codegen();
+    int                 i    = 0;
 
-    std::vector<GenRet> args(7);
-    args[0] = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
-    args[1] = new_IntSymbol(ftableMap[fn], INT_SIZE_64);
-    args[2] = codegenCastToVoidStar(taskBundle);
-    args[3] = taskList;
-    args[4] = codegenValue(taskListNode);
-    args[5] = fn->linenum();
-    args[6] = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
+    for_formals_actuals(formal, actual, this) {
+      SymExpr* se         = toSymExpr(actual);
+      Type*    actualType = actual->typeInfo();
+      GenRet   arg        = actual;
 
-    genComment(fn->cname, true);
-    codegenCall(genFnName, args);
-    return ret;
-  } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
-    // get(1) is the locale
-    // get(2) is a buffer containing bundled arguments
-    // get(3) is a the size of the buffer
-    // get(4) is a dummy class type for the argument bundle
-
-    const char* fname = NULL;
-    if (fn->hasFlag(FLAG_NON_BLOCKING))
-      fname = "chpl_executeOnNB";
-    else if (fn->hasFlag(FLAG_FAST_ON))
-      fname = "chpl_executeOnFast";
-    else
-      fname = "chpl_executeOn";
-
-    GenRet locale_id = get(1);
-
-    std::vector<GenRet> args(6);
-    args[0] = codegenLocalAddrOf(locale_id);
-    args[1] = new_IntSymbol(ftableMap[fn], INT_SIZE_32);
-    args[2] = get(2);
-    args[3] = get(3);
-    args[4] = fn->linenum();
-    args[5] = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
-
-    genComment(fn->cname, true);
-    codegenCall(fname, args);
-    return ret;
-  }
-
-  // Do not code generate calls to functions marked FLAG_NO_CODEGEN.
-  if (fn->hasFlag(FLAG_NO_CODEGEN)) return ret;
-
-  GenRet base = baseExpr->codegen();
-
-  std::vector<GenRet> args(numActuals());
-
-  int i = 0;
-  for_formals_actuals(formal, actual, this) {
-    Type* actualType = actual->typeInfo();
-
-    GenRet arg;
-
-    arg = actual;
-
-    SymExpr* se = toSymExpr(actual);
-    if (se && isFnSymbol(se->var))
-      arg = codegenCast("chpl_fn_p", arg);
-
-    // Handle passing strings to externs
-    if (fn->hasFlag(FLAG_EXTERN)) {
-      if( actualType->symbol->hasFlag(FLAG_WIDE_REF) ||
-               arg.isLVPtr == GEN_WIDE_PTR) {
-        arg = codegenRaddr(codegenValue(arg));
-      } else if (formal->type->symbol->hasFlag(FLAG_REF) &&
-                 formal->type->symbol->getValType()->symbol->
-                    hasFlag(FLAG_STAR_TUPLE) &&
-                 actualType->symbol->hasFlag(FLAG_REF) ) {
-        // In C, a fixed-size-array lvalue is already a pointer,
-        // so we deref here. But for LLVM, if we deref we will
-        // end up passing the tuple by value, which is not right.
-        if( c ) arg = codegenDeref(arg);
+      if (se && isFnSymbol(se->var)) {
+        arg = codegenCast("chpl_fn_p", arg);
       }
-    }
 
-    args[i] = arg;
+      // Handle passing strings to externs
+      if (fn->hasFlag(FLAG_EXTERN)) {
+        if (actualType->symbol->hasFlag(FLAG_WIDE_REF) == true ||
+            arg.isLVPtr                                == GEN_WIDE_PTR) {
+          arg = codegenRaddr(codegenValue(arg));
 
-    i++;
-  }
-
-  // handle any special cases for which
-  // bool isBuiltinExternCFunction(const char* cname) returns true.
-  //
-  // special case: for CallExpr sizeof(..)
-  FnSymbol* fsym = isResolved();
-
-  if (!c                         &&
-      fsym                       &&
-      fsym->hasFlag(FLAG_EXTERN) &&
-      strcmp(fsym->name, "sizeof") == 0) {
-#ifdef HAVE_LLVM
-    if (args[0].type)
-      return codegenSizeof(args[0].type);
-    else
-      return codegenSizeof(codegenValue(args[0]).val->getType());
-#endif
-  }
-
-  //INT_ASSERT(base);
-  ret = codegenCallExpr(base, args, fn, true);
-
-  if (!c) {
-#ifdef HAVE_LLVM
-    // We might have to convert the return from the function
-    // if clang did some structure-expanding.
-    if( this->typeInfo() != dtVoid ) {
-      GenRet ty = this->typeInfo();
-
-      INT_ASSERT(ty.type);
-
-      if( ty.type != ret.val->getType() ) {
-        llvm::Value* converted = convertValueToType(ret.val, ty.type, false, true);
-
-        INT_ASSERT(converted);
-
-        ret.val = converted;
+        } else if (formal->type->symbol->hasFlag(FLAG_REF)                              &&
+                   formal->type->symbol->getValType()->symbol->hasFlag(FLAG_STAR_TUPLE) &&
+                   actualType->symbol->hasFlag(FLAG_REF) ) {
+          // In C, a fixed-size-array lvalue is already a pointer,
+          // so we deref here. But for LLVM, if we deref we will
+          // end up passing the tuple by value, which is not right.
+          if (gGenInfo->cfile != NULL)
+            arg = codegenDeref(arg);
+        }
       }
-    }
-#endif
-  }
 
-  if (c && getStmtExpr() && getStmtExpr() == this)
-    info->cStatements.push_back(ret.c + ";\n");
+      args[i] = arg;
+      i       = i + 1;
+    }
+
+    if (gGenInfo->cfile != NULL) {
+      ret = codegenCallExpr(base, args, fn, true);
+
+      if (getStmtExpr() && getStmtExpr() == this)
+        gGenInfo->cStatements.push_back(ret.c + ";\n");
+
+    } else {
+      // handle any special cases for which
+      // bool isBuiltinExternCFunction(const char* cname) returns true.
+      //
+      // special case: for CallExpr sizeof(..)
+      if (fn->hasFlag(FLAG_EXTERN)   == true &&
+          strcmp(fn->name, "sizeof") == 0) {
+#ifdef HAVE_LLVM
+        if (args[0].type)
+          return codegenSizeof(args[0].type);
+        else
+          return codegenSizeof(codegenValue(args[0]).val->getType());
+#endif
+      }
+
+      ret = codegenCallExpr(base, args, fn, true);
+
+#ifdef HAVE_LLVM
+      // We might have to convert the return from the function
+      // if clang did some structure-expanding.
+      if (this->typeInfo() != dtVoid) {
+        GenRet ty = this->typeInfo();
+
+        INT_ASSERT(ty.type);
+
+        if (ty.type != ret.val->getType()) {
+          llvm::Value* converted = convertValueToType(ret.val,
+                                                      ty.type,
+                                                      false,
+                                                      true);
+
+          INT_ASSERT(converted);
+
+          ret.val = converted;
+        }
+      }
+#endif
+    }
+  }
 
   return ret;
 }
@@ -6211,6 +6144,69 @@ bool CallExpr::codegenPrimMoveSpecial() {
   }
 
   return retval;
+}
+
+void CallExpr::codegenInvokeOnFun() {
+  FnSymbol*           fn       = isResolved();
+  GenRet              localeId = get(1);
+  const char*         fname    = NULL;
+  std::vector<GenRet> args(6);
+
+  // get(1) is the locale
+  // get(2) is a buffer containing bundled arguments
+  // get(3) is a the size of the buffer
+  // get(4) is a dummy class type for the argument bundle
+
+  if (fn->hasFlag(FLAG_NON_BLOCKING))
+    fname = "chpl_executeOnNB";
+
+  else if (fn->hasFlag(FLAG_FAST_ON))
+    fname = "chpl_executeOnFast";
+
+  else
+    fname = "chpl_executeOn";
+
+  args[0] = codegenLocalAddrOf(localeId);
+  args[1] = new_IntSymbol(ftableMap[fn], INT_SIZE_32);
+  args[2] = get(2);
+  args[3] = get(3);
+  args[4] = fn->linenum();
+  args[5] = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
+
+  genComment(fn->cname, true);
+  codegenCall(fname, args);
+}
+
+void CallExpr::codegenInvokeTaskFun(const char* name) {
+  FnSymbol*           fn            = isResolved();
+  GenRet              taskList      = codegenValue(get(1));
+  GenRet              taskListNode;
+  GenRet              taskBundle;
+
+  std::vector<GenRet> args(7);
+
+  // get(1) is a ref/wide ref to a task list value
+  // get(2) is the node ID owning the task list
+  // get(3) is a buffer containing bundled arguments
+  // get(4) is the buffer's length (unused for task fns)
+  // get(5) is a dummy class type for the argument bundle
+  if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+    taskList = codegenRaddr(taskList);
+  }
+
+  taskListNode = codegenValue(get(2));
+  taskBundle   = codegenValue(get(3));
+
+  args[0]      = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
+  args[1]      = new_IntSymbol(ftableMap[fn], INT_SIZE_64);
+  args[2]      = codegenCastToVoidStar(taskBundle);
+  args[3]      = taskList;
+  args[4]      = codegenValue(taskListNode);
+  args[5]      = fn->linenum();
+  args[6]      = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
+
+  genComment(fn->cname, true);
+  codegenCall(name, args);
 }
 
 GenRet CallExpr::codegenBasicPrimitiveExpr() const {

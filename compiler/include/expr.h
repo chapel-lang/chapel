@@ -250,6 +250,9 @@ private:
   GenRet          codegenPrimMove();
   bool            codegenPrimMoveSpecial();
 
+  void            codegenInvokeOnFun();
+  void            codegenInvokeTaskFun(const char* name);
+
   GenRet          codegenBasicPrimitiveExpr()                            const;
 };
 
