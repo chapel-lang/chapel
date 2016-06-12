@@ -247,6 +247,7 @@ public:
 
 private:
   GenRet          codegenPrimitive();
+  GenRet          codegenPrimMove();
   GenRet          codegenBasicPrimitiveExpr()                            const;
 };
 
