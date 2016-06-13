@@ -405,7 +405,6 @@ class SparseBlockArr: BaseArr {
         return myLocArr.dsiAccess(i);
         //      }
     }
-            // writeln("In general case, and finding that locale is ", dom.dist.targetLocsIdx(i));
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
   }
   proc dsiAccess(i: rank*idxType)
@@ -415,7 +414,6 @@ class SparseBlockArr: BaseArr {
         return myLocArr.dsiAccess(i);
         //      }
     }
-            // writeln("In general case, and finding that locale is ", dom.dist.targetLocsIdx(i));
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
   }
   proc dsiAccess(i: rank*idxType) const ref
@@ -425,7 +423,6 @@ class SparseBlockArr: BaseArr {
         return myLocArr.dsiAccess(i);
         //      }
     }
-            // writeln("In general case, and finding that locale is ", dom.dist.targetLocsIdx(i));
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
   }
 

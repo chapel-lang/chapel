@@ -93,7 +93,6 @@ class CSRDom: BaseSparseDom {
     rowRange = parentDom.dim(1);
     colRange = parentDom.dim(2);
     rowDom = {rowRange.low..rowRange.high+1};
-    /*writeln("CSR creating rowDom: ", rowDom);*/
     nnzDomSize = nnz;
     nnzDom = {1..nnzDomSize};
     dsiClear();
@@ -227,8 +226,6 @@ class CSRDom: BaseSparseDom {
   }
 
   proc rowStop(row) {
-    /*writeln("rowdom in ", here.id, " ", rowDom);*/
-    /*writeln("\t\t\tL", here.id, " rowStop(",row,")");*/
     return rowStart(row+1)-1;
   }
 
@@ -463,7 +460,6 @@ class CSRArr: BaseArr {
     // make sure we're in the dense bounding box
     dom.boundsCheck(ind);
 
-    /*writeln("\tCSRArr dsiAccess L", here.id, " : ", ind);*/
     // lookup the index and return the data or IRV
     const (found, loc) = dom.find(ind);
     if found then
@@ -477,7 +473,6 @@ class CSRArr: BaseArr {
     // make sure we're in the dense bounding box
     dom.boundsCheck(ind);
 
-    /*writeln("\tCSRArr dsiAccess L", here.id, " : ", ind);*/
     // lookup the index and return the data or IRV
     const (found, loc) = dom.find(ind);
     if found then
@@ -491,7 +486,6 @@ class CSRArr: BaseArr {
     // make sure we're in the dense bounding box
     dom.boundsCheck(ind);
 
-    /*writeln("\tCSRArr dsiAccess L", here.id, " : ", ind);*/
     // lookup the index and return the data or IRV
     const (found, loc) = dom.find(ind);
     if found then
