@@ -42,7 +42,7 @@ use DSIUtil;
 use ChapelUtil;
 use CommDiagnostics;
 use SparseBlockDist;
-
+use LayoutCSR;
 //
 // These flags are used to output debug information and run extra
 // checks when using Block.  Should these be promoted so that they can
@@ -387,6 +387,8 @@ proc Block.Block(boundingBox: domain,
     compilerError("specified Block rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
+  if rank != 2 && sparseLayoutType == CSR then 
+    compilerError("CSR layout is only supported for 2 dimensional domains");
 
   this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
 
