@@ -248,14 +248,14 @@ public:
 private:
   GenRet          codegenPrimitive();
   GenRet          codegenPrimMove();
-  bool            codegenPrimMoveSpecial();
+  bool            codegenPrimMoveRhsIsSpecialPrimop();
 
   void            codegenInvokeOnFun();
   void            codegenInvokeTaskFun(const char* name);
 
   GenRet          codegenBasicPrimitiveExpr()                            const;
 
-  bool            isExternStarTuple(Symbol* formal, Expr* actual)        const;
+  bool            isRefExternStarTuple(Symbol* formal, Expr* actual)     const;
 };
 
 // For storing several call expressions, where

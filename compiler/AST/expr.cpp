@@ -4081,7 +4081,7 @@ GenRet CallExpr::codegen() {
     codegenStmt(this);
 
   if (primitive                                          != NULL)  {
-    return codegenPrimitive();
+    ret = codegenPrimitive();
 
   } else if (fn->hasFlag(FLAG_ON_BLOCK)                  == true)  {
     codegenInvokeOnFun();
@@ -4112,7 +4112,7 @@ GenRet CallExpr::codegen() {
             arg.isLVPtr                                == GEN_WIDE_PTR) {
           arg = codegenRaddr(codegenValue(arg));
 
-        } else if (isExternStarTuple(formal, actual) == true) {
+        } else if (isRefExternStarTuple(formal, actual) == true) {
           // In C, a fixed-size-array lvalue is already a pointer,
           // so we deref here. But for LLVM, if we deref we will
           // end up passing the tuple by value, which is not right.
@@ -4755,6 +4755,7 @@ GenRet CallExpr::codegenPrimitive() {
     } else {
       INT_FATAL( t, "not arithmetic type");
     }
+
     break;
   }
 
@@ -5807,8 +5808,9 @@ GenRet CallExpr::codegenPrimMove() {
   if (get(1)->typeInfo() == dtVoid) {
     ret = get(2)->codegen();
 
-  } else if (codegenPrimMoveSpecial() == true) {
-    // Codegen has been handled.  No more activity here
+  // Is the RHS a primop with special case handling?
+  } else if (codegenPrimMoveRhsIsSpecialPrimop() == true) {
+    // Codegen has been handled.  No more activity here.
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true  &&
              get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == false) {
@@ -5853,13 +5855,11 @@ GenRet CallExpr::codegenPrimMove() {
   return ret;
 }
 
-bool CallExpr::codegenPrimMoveSpecial() {
+bool CallExpr::codegenPrimMoveRhsIsSpecialPrimop() {
   CallExpr* rhs    = toCallExpr(get(2));
   bool      retval = false;
 
   if (rhs != NULL && rhs->primitive) {
-    retval = true;
-
     switch (rhs->primitive->tag) {
     case PRIM_GET_REAL:
     case PRIM_GET_IMAG: {
@@ -5901,6 +5901,7 @@ bool CallExpr::codegenPrimMoveSpecial() {
                                             isReal));
       }
 
+      retval = true;
       break;
     }
 
@@ -5917,18 +5918,19 @@ bool CallExpr::codegenPrimMoveSpecial() {
         INT_ASSERT(valueType == get(1)->typeInfo());
 
         // set get(1) = *(rhs->get(1));
-        codegenAssign(get(1),codegenDeref(rhs->get(1)));
+        codegenAssign(get(1), codegenDeref(rhs->get(1)));
 
       } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
         // star tuple retval in codegenAssign
         // set get(1) = *(rhs->get(1));
-        codegenAssign(get(1),codegenDeref(rhs->get(1)));
+        codegenAssign(get(1), codegenDeref(rhs->get(1)));
 
       } else {
         // set get(1) = *(rhs->get(1));
-        codegenAssign(get(1),codegenDeref(rhs->get(1)));
+        codegenAssign(get(1), codegenDeref(rhs->get(1)));
       }
 
+      retval = true;
       break;
     }
 
@@ -5936,51 +5938,44 @@ bool CallExpr::codegenPrimMoveSpecial() {
       SymExpr* se = toSymExpr(rhs->get(2));
 
       if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        INT_ASSERT(se);
-
         if (se->var->hasFlag(FLAG_SUPER_CLASS)) {
           // We're getting the super class pointer.
           GenRet srcwide  = rhs->get(1);
           Type*  addrType = get(1)->typeInfo()->getField("addr")->type;
           GenRet addr     = codegenCast(addrType, codegenRaddr(srcwide));
-          GenRet ref      =  codegenAddrOf(codegenWideAddrWithAddr(srcwide,
-                                                                   addr));
+          GenRet ref      = codegenAddrOf(codegenWideAddrWithAddr(srcwide,
+                                                                  addr));
 
           codegenAssign(get(1), ref);
+
         } else {
           codegenAssign(get(1), codegenFieldPtr(rhs->get(1), se));
         }
 
       } else if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-        INT_ASSERT(se);
-
         // codegenAssign will dereference.
         codegenAssign(get(1), codegenFieldPtr(rhs->get(1), se));
 
       } else if (get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-        INT_ASSERT(se);
-
         // codegenAssign will handle star tuple
         codegenAssign(get(1), codegenFieldPtr(rhs->get(1), se));
 
+      } else if (se->var->hasFlag(FLAG_SUPER_CLASS)) {
+        // We're getting the super class pointer.
+        GenRet ref = codegenFieldPtr(rhs->get(1), se);
+
+        // Now we have a field pointer to object->super, but
+        // the pointer to super *is* actually the value of
+        // the super class. So we just set isPtr to Value.
+        ref.isLVPtr = GEN_VAL;
+
+        codegenAssign(get(1), ref);
+
       } else {
-        INT_ASSERT(se);
-
-        if (se->var->hasFlag(FLAG_SUPER_CLASS)) {
-          // We're getting the super class pointer.
-          GenRet ref = codegenFieldPtr(rhs->get(1), se);
-          // Now we have a field pointer to object->super, but
-          // the pointer to super *is* actually the value of
-          // the super class. So we just set isPtr to Value.
-          ref.isLVPtr = GEN_VAL;
-
-          codegenAssign(get(1), ref);
-
-        } else {
-          codegenAssign(get(1), codegenFieldPtr(rhs->get(1), se));
-        }
+        codegenAssign(get(1), codegenFieldPtr(rhs->get(1), se));
       }
 
+      retval = true;
       break;
     }
 
@@ -5994,7 +5989,9 @@ bool CallExpr::codegenPrimMoveSpecial() {
 
         codegenAssign(get(1), codegenAddrOf(codegenFieldPtr(rhs->get(1), se)));
 
-      }  else if (get(1)->getValType() != rhs->get(2)->typeInfo()) {
+        retval = true;
+
+      } else if (get(1)->getValType() != rhs->get(2)->typeInfo()) {
         // get a narrow reference to the actual 'addr' field
         // of the wide pointer
         GenRet getField = codegenFieldPtr(rhs->get(1), se);
@@ -6003,8 +6000,7 @@ bool CallExpr::codegenPrimMoveSpecial() {
                       codegenAddrOf(codegenWideThingField(getField,
                                                           WIDE_GEP_ADDR)));
 
-      } else {
-        retval = false;
+        retval = true;
       }
 
       break;
@@ -6022,6 +6018,8 @@ bool CallExpr::codegenPrimMoveSpecial() {
 
         codegenAssign(get(1), elemPtr);
 
+        retval = true;
+
       } else if (get(1)->getValType() != rhs->getValType()) {
         GenRet getElem = codegenElementPtr(rhs->get(1),
                                            codegenExprMinusOne(rhs->get(2)));
@@ -6030,8 +6028,7 @@ bool CallExpr::codegenPrimMoveSpecial() {
                       codegenAddrOf(codegenWideThingField(getElem,
                                                           WIDE_GEP_ADDR)));
 
-      } else {
-        retval = false;
+        retval = true;
       }
 
       break;
@@ -6051,6 +6048,7 @@ bool CallExpr::codegenPrimMoveSpecial() {
                                         codegenExprMinusOne(rhs->get(2))));
       }
 
+      retval = true;
       break;
     }
 
@@ -6073,21 +6071,21 @@ bool CallExpr::codegenPrimMoveSpecial() {
         codegenAssign(get(1), ref);
       }
 
+      retval = true;
       break;
     }
 
     case PRIM_ARRAY_GET_VALUE: {
       codegenAssign(get(1), codegenElementPtr(rhs->get(1), rhs->get(2)));
 
+      retval = true;
       break;
     }
 
     case PRIM_GET_UNION_ID: {
       if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         codegenAssign(get(1), codegenFieldUidPtr(rhs->get(1)));
-
-      } else {
-        retval = false;
+        retval = true;
       }
 
       break;
@@ -6101,9 +6099,7 @@ bool CallExpr::codegenPrimMoveSpecial() {
         GenRet cid = codegenUseCid(rhs->get(2)->typeInfo());
 
         codegenAssign(get(1), codegenEquals(tmp, cid));
-
-      } else {
-        retval = false;
+        retval = true;
       }
 
       break;
@@ -6114,9 +6110,7 @@ bool CallExpr::codegenPrimMoveSpecial() {
         GenRet tmp = codegenFieldCidPtr(rhs->get(1));
 
         codegenAssign(get(1), tmp);
-
-      } else {
-        retval = false;
+        retval = true;
       }
 
       break;
@@ -6132,9 +6126,7 @@ bool CallExpr::codegenPrimMoveSpecial() {
                                                   codegenRaddr(tmp)));
 
         codegenAssign(get(1), codegenAddrOf(tmp));
-
-      } else {
-        retval = false;
+        retval = true;
       }
 
       break;
@@ -6156,9 +6148,7 @@ bool CallExpr::codegenPrimMoveSpecial() {
                                                        rhs->typeInfo()));
 
         codegenAssign(get(1), wide);
-
-      } else {
-        retval = false;
+        retval = true;
       }
 
       break;
@@ -6172,13 +6162,18 @@ bool CallExpr::codegenPrimMoveSpecial() {
       }
 
       codegenAssign(get(1), r);
+
+      retval = true;
       break;
     }
 
     case PRIM_ON_LOCALE_NUM: {
       // This primitive expects an argument of type chpl_localeID_t.
       INT_ASSERT(rhs->get(1)->typeInfo() == dtLocaleID);
+
       codegenAssign(get(1), rhs->get(1));
+
+      retval = true;
       break;
     }
 
@@ -6220,6 +6215,7 @@ void CallExpr::codegenInvokeOnFun() {
   args[5] = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
 
   genComment(fn->cname, true);
+
   codegenCall(fname, args);
 }
 
@@ -6252,6 +6248,7 @@ void CallExpr::codegenInvokeTaskFun(const char* name) {
   args[6]      = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
 
   genComment(fn->cname, true);
+
   codegenCall(name, args);
 }
 
@@ -6278,7 +6275,7 @@ GenRet CallExpr::codegenBasicPrimitiveExpr() const {
   return codegenCallExpr(primitive->name, args);
 }
 
-bool CallExpr::isExternStarTuple(Symbol* formal, Expr* actual) const {
+bool CallExpr::isRefExternStarTuple(Symbol* formal, Expr* actual) const {
   Symbol* formalSym  = formal->type->symbol;
   Symbol* formalVal  = formalSym->getValType()->symbol;
 
