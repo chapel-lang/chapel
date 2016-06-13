@@ -491,8 +491,9 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
 }
 
 proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
-  return new SparseBlockDom(rank=rank, idxType=idxType, sparseLayoutType=sparseLayoutType, 
-      dist=this, parentDom=dom, whole=dom._value.whole);
+  return new SparseBlockDom(rank=rank, idxType=idxType, 
+      sparseLayoutType=sparseLayoutType, dist=this, parentDom=dom, 
+      whole=dom._value.whole);
 }
 
 //

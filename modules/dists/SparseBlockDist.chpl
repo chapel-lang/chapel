@@ -91,9 +91,7 @@ class SparseBlockDom: BaseSparseDom {
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
          /*writeln("Creating LSBD with chunk: ", dist.getChunk(whole, localeIdx));*/
          locDoms(localeIdx) = new LocSparseBlockDom(rank, idxType, stridable,
-                                                      sparseLayoutType,
-                                                     dist.getChunk(whole,
-                                                       localeIdx));
+             sparseLayoutType, dist.getChunk(whole,localeIdx));
           //                    writeln("Back on ", here.id);
         }
       }
@@ -362,7 +360,8 @@ class SparseBlockArr: BaseArr {
   var dom; //: SparseBlockDom(rank, idxType, stridable);
   var locArr: [dom.dist.targetLocDom] LocSparseBlockArr(eltType, rank, idxType,
       stridable, sparseLayoutType);
-  var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable, sparseLayoutType);
+  var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable, 
+      sparseLayoutType);
   var pid: int = -1; // privatized object id (this should be factored out)
 
   proc setup() {
