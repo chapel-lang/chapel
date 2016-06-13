@@ -147,29 +147,25 @@ class SparseBlockDom: BaseSparseDom {
       sort(inds, comparator=comp);
     }
 
-    var active : atomic int;
-
     var firstIndex = inds.domain.low;
     var curLoc = dist.targetLocsIdx(inds[inds.domain.low]);
 
-    for i in inds.domain {
-      const _tmpLoc = dist.targetLocsIdx(inds[i]);
-      if _tmpLoc != curLoc {
-        spawnBulkAdd(firstIndex..i-1, curLoc);
-        curLoc = _tmpLoc;
-        firstIndex = i;
+    sync {
+      for i in inds.domain {
+        const _tmpLoc = dist.targetLocsIdx(inds[i]);
+        if _tmpLoc != curLoc {
+          spawnBulkAdd(firstIndex..i-1, curLoc);
+          curLoc = _tmpLoc;
+          firstIndex = i;
+        }
       }
+      spawnBulkAdd(firstIndex..inds.domain.high, curLoc);
     }
-    spawnBulkAdd(firstIndex..inds.domain.high, curLoc);
-
-    active.waitFor(0);
 
     proc spawnBulkAdd(indsRange: range, loc){
-      active.add(1);
       begin on dist.targetLocales(loc) {
         locDoms[loc].mySparseBlock.bulkAdd(inds[indsRange], isSorted=true,
             isUnique=false);
-        active.sub(1); 
       }
     }
   }
