@@ -20,6 +20,7 @@
 module MatrixMarket {
 
   use IO;
+  use LayoutCSR;
 
   enum MMCoordFormat { Coordinate, Array }
   enum MMTypes { Real, Complex, Pattern }
@@ -76,7 +77,7 @@ module MatrixMarket {
 
    class MMWriter {
       type eltype;
-      var HEADER_LINE = "%%MatrixMarket matrix coordinate real general\n"; // currently the only supported MM format in this module
+      var HEADER_LINE : string = "%%MatrixMarket matrix coordinate real general\n"; // currently the only supported MM format in this module
 
       var fd:file;
       var fout:channel(true, iokind.dynamic, true);
@@ -114,57 +115,47 @@ module MatrixMarket {
       }
 
       proc fake_headers(nrows, ncols, nnz) {
-         var tfout = fd.writer(start=HEADER_LINE.size);
+         var tfout = fd.writer(start=HEADER_LINE.length);
          tfout.writef("%i %i %i", nrows, ncols, nnz);
          tfout.close();
       }
 
-      proc write_vector(i:int, jvec:[?Djvec] ?T) where Djvec.rank == 1 {
-         assert(last_rowno < i, "rows %i and %i not in sequential order!", last_rowno, i);
+      proc write_coord(i:int, j:int, val:?T) {
+         assert(last_rowno <= i, "rows %i and %i not in sequential order!", last_rowno, i);
          var wfmt = "%i %i ";
 
          if T == complex {
            wfmt = wfmt + "%r %r\n";
-           for (j,w) in zip(Djvec, jvec) {
-             fout.writef(wfmt, i, j, w.re, w.im);
-           }
- 
+           fout.writef(wfmt, i, j, val.re, val.im);
          }
          else if T == int {
            wfmt = wfmt + "%d\n";
-           for (j,w) in zip(Djvec, jvec) {
-             if abs(w) > 1e-12 { fout.writef(wfmt, i, j, w); }
-           }
+           if abs(val) > 1e-12 { fout.writef(wfmt, i, j, val); }
          }
          else if T == real {
            wfmt = wfmt + "%r\n";
-           for (j,w) in zip(Djvec, jvec) {
-             if w > 0 { fout.writef(wfmt, i, j, w); }
-           }
+           if val > 0 { fout.writef(wfmt, i, j, val); }
          }
 
          last_rowno = i;
-         var ret:(int,int);
-         if jvec.size < 1 { ret = (-1, 0); } else { ret = (Djvec.size, jvec.size); }
-         return ret;
       }
 
       proc close() { fout.close(); fd.close(); }
       proc ~MMWriter() { this.close(); }
    }
 
-proc mmwrite(const fname:string, mat:[?Dmat] ?T, _num_cols=-1) where mat.domain.rank == 2 {
+
+proc mmwrite(const fname:string, mat:[?Dmat] ?T, _num_cols=-1) where Dmat.rank == 2 {
    var mw = new MMWriter(T, fname);
    mw.write_headers(-1,-1,-1);
    var (ncols, nnz) = (0,0);
    var (nrows, poslast) = (-1,-1);
    var n_cols = _num_cols;
-   for r in 1..Dmat.high(1) {
-      var row = mat(r,..);
-      var (max_id, veclen) = mw.write_vector(r, row);
-      n_cols = max(n_cols, max_id);
-      nnz += veclen;
-      ncols = r;
+   for (i,j) in Dmat {
+      mw.write_coord(i, j, mat(i,j));
+      n_cols = max(n_cols, j);
+      nnz += 1;
+      ncols = j;
    }
 
    nrows = mw.last_rowno;
@@ -231,10 +222,9 @@ class MMReader {
         const fmtstr = "%i %i " + tfmt + "\n";
         while done {
           var i, j:int;
-          var wr:real;
-          var wi:real;
+          var wr, wi:real;
           done = fin.readf(fmtstr, i, j, wr, wi);
-          const w:complex = wr + wi:imag;
+          const w:complex = (wr, wi):complex;
           if done { spDom += (i,j); toret(i,j) = w; }
         }
 
@@ -266,7 +256,7 @@ class MMReader {
           var wr:real;
           var wi:real;
           fin.readf(tfmt, wr, wi);
-          var w:complex = wr + wi:imag;
+          var w:complex = (wr, wi):complex;
           toret(i) = w;
         }
       }
@@ -325,7 +315,7 @@ class MMReader {
      }
 
      Dtoret = {1..nrows, 1..ncols};
-     var spDom : sparse subdomain(Dtoret);
+     var spDom : sparse subdomain(Dtoret) dmapped CSR();
      var toret : [spDom] eltype;
 
      if finfo.mm_types == MMTypes.Real { assert(eltype == real, "expected real, data in file is not real"); }
