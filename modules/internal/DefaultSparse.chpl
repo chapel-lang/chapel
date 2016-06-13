@@ -48,6 +48,14 @@ module DefaultSparse {
     }
 
     proc dsiNumIndices return nnz;
+    proc dsiLow return parentDom.low;
+    proc dsiHigh return parentDom.high;
+    proc dsiStride return parentDom.stride;
+    proc dsiAlignment return parentDom.alignment;
+    proc dsiFirst return parentDom.first;
+    proc dsiLast return parentDom.last;
+    proc dsiAlignedLow return parentDom.alignedLow;
+    proc dsiAlignedHigh return parentDom.alignedHigh;
 
     proc dsiBuildArray(type eltType)
       return new DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
