@@ -3,12 +3,12 @@ use LayoutCSR;
 
 config const N = 9;
 
-config type layoutType = DefaultDist;
+config type sparseLayoutType = DefaultDist;
 
 const ParentDom = {0..#N, 0..#N} dmapped Block({0..#N, 0..#N},
-    layoutType=layoutType);
+    sparseLayoutType=sparseLayoutType);
 
-const layout = new layoutType;
+const layout = new sparseLayoutType;
 var SparseDom: sparse subdomain(ParentDom);
 
 var SparseArr: [SparseDom] int;

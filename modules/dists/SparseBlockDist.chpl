@@ -69,12 +69,12 @@ class SparseBlockDom: BaseSparseDom {
   param rank: int;
   type idxType;
   param stridable: bool = false;  // TODO: remove default value eventually
-  type layoutType = DefaultDist;
-  const dist: Block(rank, idxType, layoutType);
+  type sparseLayoutType = DefaultDist;
+  const dist: Block(rank, idxType, sparseLayoutType);
   var parentDom;
   const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable,
-      layoutType);
+      sparseLayoutType);
   var pid: int = -1; // privatized object id (this should be factored out)
 
   proc initialize() {
@@ -91,7 +91,7 @@ class SparseBlockDom: BaseSparseDom {
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
          /*writeln("Creating LSBD with chunk: ", dist.getChunk(whole, localeIdx));*/
          locDoms(localeIdx) = new LocSparseBlockDom(rank, idxType, stridable,
-                                                      layoutType,
+                                                      sparseLayoutType,
                                                      dist.getChunk(whole,
                                                        localeIdx));
           //                    writeln("Back on ", here.id);
@@ -221,7 +221,7 @@ class SparseBlockDom: BaseSparseDom {
   proc dsiBuildArray(type eltType) {
     /*writeln("Creating a new array with dom", this);*/
     var arr = new SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType,
-        stridable=stridable, layoutType=layoutType, dom=this);
+        stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this);
     arr.setup();
     return arr;
   }
@@ -310,9 +310,9 @@ class LocSparseBlockDom {
   param rank: int;
   type idxType;
   param stridable: bool;
-  type layoutType = DefaultDist;
+  type sparseLayoutType = DefaultDist;
   var parentDom: domain(rank, idxType, stridable);
-  var sparseDist = new layoutType; //unresolved call workaround
+  var sparseDist = new sparseLayoutType; //unresolved call workaround
   var mySparseBlock: sparse subdomain(parentDom) dmapped new dmap(sparseDist);
 
   proc initialize() {
@@ -358,11 +358,11 @@ class SparseBlockArr: BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
-  type layoutType = DefaultDist;
+  type sparseLayoutType = DefaultDist;
   var dom; //: SparseBlockDom(rank, idxType, stridable);
   var locArr: [dom.dist.targetLocDom] LocSparseBlockArr(eltType, rank, idxType,
-      stridable, layoutType);
-  var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable, layoutType);
+      stridable, sparseLayoutType);
+  var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable, sparseLayoutType);
   var pid: int = -1; // privatized object id (this should be factored out)
 
   proc setup() {
@@ -372,7 +372,7 @@ class SparseBlockArr: BaseArr {
         const locDom = dom.getLocDom(localeIdx);
         /*writeln(here.id, " setting up ", locDom);*/
         locArr(localeIdx) = new LocSparseBlockArr(eltType, rank, idxType,
-            stridable, layoutType, locDom);
+            stridable, sparseLayoutType, locDom);
         if thisid == here.id then
           myLocArr = locArr(localeIdx);
       }
@@ -484,8 +484,8 @@ class LocSparseBlockArr {
   param rank: int;
   type idxType;
   param stridable: bool;
-  type layoutType = DefaultDist;
-  const locDom: LocSparseBlockDom(rank, idxType, stridable, layoutType);
+  type sparseLayoutType = DefaultDist;
+  const locDom: LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType);
   var myElems: [locDom.mySparseBlock] eltType;
 
   proc dsiAccess(i) ref {

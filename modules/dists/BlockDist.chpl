@@ -261,7 +261,7 @@ class Block : BaseDist {
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
-  type layoutType = DefaultDist;
+  type sparseLayoutType = DefaultDist;
   var pid: int = -1; // privatized object id (this should be factored out)
 }
 
@@ -292,8 +292,8 @@ class BlockDom: BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;
-  type layoutType = DefaultDist;
-  const dist: Block(rank, idxType, layoutType);
+  type sparseLayoutType = DefaultDist;
+  const dist: Block(rank, idxType, sparseLayoutType);
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
@@ -330,9 +330,9 @@ class BlockArr: BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
-  type layoutType = DefaultDist;
+  type sparseLayoutType = DefaultDist;
   var doRADOpt: bool = defaultDoRADOpt;
-  var dom: BlockDom(rank, idxType, stridable, layoutType);
+  var dom: BlockDom(rank, idxType, stridable, sparseLayoutType);
   var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
   var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
@@ -382,7 +382,7 @@ proc Block.Block(boundingBox: domain,
                 dataParMinGranularity=getDataParMinGranularity(),
                 param rank = boundingBox.rank,
                 type idxType = boundingBox.idxType,
-                type layoutType = DefaultDist) {
+                type sparseLayoutType = DefaultDist) {
   if rank != boundingBox.rank then
     compilerError("specified Block rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
@@ -481,7 +481,7 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
     compilerError("Block domain rank does not match distribution's");
 
   var dom = new BlockDom(rank=rank, idxType=idxType, dist=this,
-      stridable=stridable, layoutType=layoutType);
+      stridable=stridable, sparseLayoutType=sparseLayoutType);
   dom.setup();
   if debugBlockDist {
     writeln("Creating new Block domain:");
@@ -491,7 +491,7 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
 }
 
 proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
-  return new SparseBlockDom(rank=rank, idxType=idxType, layoutType=layoutType, 
+  return new SparseBlockDom(rank=rank, idxType=idxType, sparseLayoutType=sparseLayoutType, 
       dist=this, parentDom=dom, whole=dom._value.whole);
 }
 
@@ -842,7 +842,7 @@ proc BlockDom.dsiSerialWrite(x) {
 //
 proc BlockDom.dsiBuildArray(type eltType) {
   var arr = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-      stridable=stridable, layoutType=layoutType, dom=this);
+      stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this);
   arr.setup();
   return arr;
 }
@@ -1373,7 +1373,7 @@ proc LocBlockArr.this(i) ref {
 proc Block.Block(other: Block, privateData,
                 param rank = other.rank,
                 type idxType = other.idxType,
-                type layoutType = other.layoutType) {
+                type sparseLayoutType = other.sparseLayoutType) {
   boundingBox = {(...privateData(1))};
   targetLocDom = {(...privateData(2))};
   dataParTasksPerLocale = privateData(3);
@@ -1416,7 +1416,7 @@ proc BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 proc BlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
   var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable,
-      layoutType=layoutType, dist=privdist);
+      sparseLayoutType=sparseLayoutType, dist=privdist);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
   c.whole = {(...privatizeData(2))};
@@ -1438,7 +1438,7 @@ proc BlockArr.dsiGetPrivatizeData() return dom.pid;
 proc BlockArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
   var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-      stridable=stridable, layoutType=layoutType, dom=privdom);
+      stridable=stridable, sparseLayoutType=sparseLayoutType, dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);
     if c.locArr(localeIdx).locale.id == here.id then

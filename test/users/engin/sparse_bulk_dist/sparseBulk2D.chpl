@@ -3,9 +3,9 @@ use LayoutCSR;
 
 config const N = 8;
 
-config type layoutType = DefaultDist;
+config type sparseLayoutType = DefaultDist;
 const ParentDom = {0..#N, 0..#N} dmapped Block({0..#N, 0..#N},
-    layoutType=layoutType);
+    sparseLayoutType=sparseLayoutType);
 
 var SparseDom: sparse subdomain(ParentDom);
 

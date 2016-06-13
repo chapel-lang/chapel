@@ -5,10 +5,10 @@ use Random;
 config const N = 8;
 const dimRange = 0..#N;
 
-config type layoutType = DefaultDist;
+config type sparseLayoutType = DefaultDist;
 
 const ParentDom = {dimRange, dimRange} dmapped Block({dimRange, dimRange},
-    layoutType=layoutType);
+    sparseLayoutType=sparseLayoutType);
 
 
 var SparseDom: sparse subdomain(ParentDom);
