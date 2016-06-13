@@ -217,7 +217,6 @@ class SparseBlockDom: BaseSparseDom {
   // how to allocate a new array over this domain
   //
   proc dsiBuildArray(type eltType) {
-    /*writeln("Creating a new array with dom", this);*/
     var arr = new SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType,
         stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this);
     arr.setup();
@@ -369,7 +368,6 @@ class SparseBlockArr: BaseArr {
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocales(localeIdx) {
         const locDom = dom.getLocDom(localeIdx);
-        /*writeln(here.id, " setting up ", locDom);*/
         locArr(localeIdx) = new LocSparseBlockArr(eltType, rank, idxType,
             stridable, sparseLayoutType, locDom);
         if thisid == here.id then
@@ -415,10 +413,8 @@ class SparseBlockArr: BaseArr {
 
 
   proc dsiAccess(i: rank*idxType) ref {
-    /*writeln("SparseBlockArr dsiAccess L", here.id, " : ", i);*/
     //    local { // TODO: Turn back on once privatization is on
       if myLocArr != nil && myLocArr.locDom.dsiMember(i) {
-        /*writeln("\t\t\t\t\tXXX L", here.id, " trying local: ", i);*/
         return myLocArr.dsiAccess(i);
         //      }
     }
@@ -427,10 +423,8 @@ class SparseBlockArr: BaseArr {
   }
   proc dsiAccess(i: rank*idxType)
   where !shouldReturnRvalueByConstRef(eltType) {
-    /*writeln("SparseBlockArr dsiAccess L", here.id, " : ", i);*/
     //    local { // TODO: Turn back on once privatization is on
       if myLocArr != nil && myLocArr.locDom.dsiMember(i) {
-        /*writeln("\t\t\t\t\tXXX trying local: ", i);*/
         return myLocArr.dsiAccess(i);
         //      }
     }
@@ -439,10 +433,8 @@ class SparseBlockArr: BaseArr {
   }
   proc dsiAccess(i: rank*idxType) const ref
   where shouldReturnRvalueByConstRef(eltType) {
-    /*writeln("SparseBlockArr dsiAccess L", here.id, " : ", i);*/
     //    local { // TODO: Turn back on once privatization is on
       if myLocArr != nil && myLocArr.locDom.dsiMember(i) {
-        /*writeln("\t\t\t\t\tXXX trying local: ", i);*/
         return myLocArr.dsiAccess(i);
         //      }
     }
@@ -488,18 +480,14 @@ class LocSparseBlockArr {
   var myElems: [locDom.mySparseBlock] eltType;
 
   proc dsiAccess(i) ref {
-    /*writeln("LocSparseBlockArr dsiAccess L", here.id, " : ", i);*/
     return myElems[i];
   }
   proc dsiAccess(i)
   where !shouldReturnRvalueByConstRef(eltType) {
-    /*writeln("LocSparseBlockArr dsiAccess L", here.id, " : ", i);*/
-    /*writeln("\t", i, "dom:", locDom.parentDom.dim(1));*/
     return myElems[i];
   }
   proc dsiAccess(i) const ref
   where shouldReturnRvalueByConstRef(eltType) {
-    /*writeln("LocSparseBlockArr dsiAccess L", here.id, " : ", i);*/
     return myElems[i];
   }
 }
