@@ -1,6 +1,0 @@
-in init of R
-in deinit of R
-in deinit of C
-in deinit of R
-in deinit of C
-nested-destructor.chpl:3: error: attempt to dereference nil
