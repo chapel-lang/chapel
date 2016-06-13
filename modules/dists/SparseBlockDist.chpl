@@ -40,7 +40,6 @@
 use DSIUtil;
 use ChapelUtil;
 use BlockDist;
-
 //
 // These flags are used to output debug information and run extra
 // checks when using SparseBlock.  Should these be promoted so that they can
@@ -50,8 +49,6 @@ use BlockDist;
 //
 config param debugSparseBlockDist = false;
 config param debugSparseBlockDistBulkTransfer = false;
-config param bulkAddMemoize = true;
-
 // There is no SparseBlock distribution class. Instead, we
 // just use Block.
 
@@ -76,6 +73,7 @@ class SparseBlockDom: BaseSparseDom {
   var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable,
       sparseLayoutType);
   var pid: int = -1; // privatized object id (this should be factored out)
+
 
   proc initialize() {
     setup();
@@ -133,54 +131,45 @@ class SparseBlockDom: BaseSparseDom {
     }
   }
 
+  // Tried to put this record in the function and the if statement, but got a
+  // segfault from the compiler.
+  record TargetLocaleComparator {
+    proc key(a: index(rank, idxType)) { 
+      return (dist.targetLocsIdx(a), a); 
+    }
+  }
+
   proc bulkAdd_help(inds: [] index(rank,idxType), isSorted=false, isUnique=false) {
 
-    if !isSorted then
-      QuickSort(inds);
+    if !isSorted {
 
-    var localIndexInitSize = max(1, inds.size/numLocales);
-    var localIndexDom = {0..#localIndexInitSize};
+      // without _new_ record functions throw null deref. It doesn't seem to be 
+      // able to deref _outer_ ? I think it has something to do with memory
+      // allocation for classes vs records, but I cannot explain
+      var comp = new TargetLocaleComparator;
+      sort(inds, comparator=comp);
+    }
 
-    var localIndexes: [dist.targetLocDom] [localIndexDom] index(rank,idxType);
-    var localIndexCnts: [dist.targetLocDom] int =
-      inds.domain.low;
+    var firstIndex = inds.domain.low;
+    var curLoc = dist.targetLocsIdx(inds[inds.domain.low]);
 
-    if bulkAddMemoize {
-      var lastLocaleIndexCache = dist.targetLocDom.low;
-      for i in inds {
-        if locDoms[lastLocaleIndexCache].parentDom.member(i) {
-          addToLocalIndexes(i,lastLocaleIndexCache);
+    sync {
+      for i in inds.domain {
+        const _tmpLoc = dist.targetLocsIdx(inds[i]);
+        if _tmpLoc != curLoc {
+          spawnBulkAdd(firstIndex..i-1, curLoc);
+          curLoc = _tmpLoc;
+          firstIndex = i;
         }
-        else {
-          const localeIndex = dist.targetLocsIdx(i);
-          addToLocalIndexes(i, localeIndex);
-        }
       }
-    }
-    else {
-      for i in inds {
-        const localeIndex = dist.targetLocsIdx(i);
-        addToLocalIndexes(i, localeIndex);
-      }
-    }
-    coforall localeIdx in dist.targetLocDom do {
-      on dist.targetLocales(localeIdx) do {
-        const locCnt = localIndexCnts[localeIdx];
-        locDoms[localeIdx].mySparseBlock.bulkAdd(localIndexes[localeIdx][0..#locCnt], 
-            true, false, false); 
-      }
+      spawnBulkAdd(firstIndex..inds.domain.high, curLoc);
     }
 
-    // helper to grow localIndexes array if necessary
-    proc addToLocalIndexes(idx, locId) {
-
-      if localIndexes[locId].size <= localIndexCnts[locId] {
-        localIndexDom = {0..#localIndexes[locId].size*2};
+    proc spawnBulkAdd(indsRange: range, loc){
+      begin on dist.targetLocales(loc) {
+        locDoms[loc].mySparseBlock.bulkAdd(inds[indsRange], isSorted=true,
+            isUnique=false);
       }
-      
-      localIndexes[locId][localIndexCnts[locId]] = idx;
-      localIndexCnts[locId] += 1;
-      
     }
   }
 
