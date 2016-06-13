@@ -265,19 +265,6 @@ class SparseBlockDom: BaseSparseDom {
 
   proc dsiDims() return whole.dims();
 
-  proc dsiDim(d: int) return whole.dim(d);
-
-  iter dimIter(param d, ind) {
-    if (d != 2) {
-      compilerError("Dimension Error");
-    }
-    for i in whole.dim(2) {
-      for l in locDoms {
-        if l.dsiMember((ind,i)) then yield i;
-      }
-    }
-  }
-
   proc dsiMember(ind) {
     on parentDom.dist.idxToLocale(ind) {
       writeln("Need to add support for mapping locale to local domain");
