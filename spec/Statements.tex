@@ -360,8 +360,10 @@ A,other
 \label{The_Select_Statement}
 \index{select@\chpl{select}}
 \index{when@\chpl{when}}
+\index{otherwise@\chpl{otherwise}}
 \index{statements!select@\chpl{select}}
 \index{statements!when@\chpl{when}}
+\index{statements!otherwise@\chpl{otherwise}}
 
 The select statement is a multi-way variant of the conditional
 statement.  The syntax is given by:
@@ -371,12 +373,18 @@ select-statement:
 
 when-statements:
   when-statement
+  when-statement otherwise-statement
+  otherwise-statement when-statement
   when-statement when-statements
+  when-statements when-statement
 
 when-statement:
   `when' expression-list `do' statement
   `when' expression-list block-statement
+
+otherwise-statement:
   `otherwise' statement
+  `otherwise' `do' statement
 
 expression-list:
   expression
@@ -396,7 +404,7 @@ will be selected and control transferred to it.  There may be at most
 one \chpl{otherwise} statement and its location within the select
 statement does not matter.
 
-Each statement embedded in the {\em when-statement} has its own scope
+Each statement embedded in the {\em when-statement} or the {\em otherwise-statement} has its own scope
 whether or not an explicit block surrounds it.
 
 \section{The While Do and Do While Loops}
