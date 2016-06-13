@@ -4940,9 +4940,11 @@ static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *
 
   parent->dispatchParents.add(dtObject);
   dtObject->dispatchChildren.add(parent);
+
   VarSymbol* parent_super = new VarSymbol("super", dtObject);
   parent_super->addFlag(FLAG_SUPER_CLASS);
   parent->fields.insertAtHead(new DefExpr(parent_super));
+
   build_constructors(parent);
   buildDefaultDestructor(parent);
 
@@ -4960,6 +4962,82 @@ static AggregateType* createAndInsertFunParentClass(CallExpr *call, const char *
   The function is put at the highest scope so that all functions of a given type will share the same parent class.
 */
 static FnSymbol* createAndInsertFunParentMethod(CallExpr *call, AggregateType *parent, AList &arg_list, bool isFormal, Type *retType) {
+  // Add a "getter" method that returns the return type of the function
+  //
+  //   * The return type itself is not actually stored as a member variable
+  //
+  //   * A function that returns void will similarly cause a call to retType
+  //     to return void, which is to say it doesn't return anything.  This is
+  //     maybe not terribly intuitive to the user, but should be resolved
+  //     when "void" becomes a fully-featured type.
+  {
+    FnSymbol* rtGetter = new FnSymbol("retType");
+    rtGetter->addFlag(FLAG_NO_IMPLICIT_COPY);
+    rtGetter->addFlag(FLAG_INLINE);
+    rtGetter->retTag = RET_TYPE;
+    rtGetter->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+
+    ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", parent);
+    _this->addFlag(FLAG_ARG_THIS);
+    rtGetter->insertFormalAtTail(_this);
+    rtGetter->insertAtTail(new CallExpr(PRIM_RETURN, retType->symbol));
+
+    DefExpr* def = new DefExpr(rtGetter);
+    parent->symbol->defPoint->insertBefore(def);
+    normalize(rtGetter);
+    parent->methods.add(rtGetter);
+    rtGetter->addFlag(FLAG_METHOD);
+    rtGetter->addFlag(FLAG_METHOD_PRIMARY);
+    rtGetter->cname = astr("chpl_get_", parent->symbol->cname, "_",
+                           rtGetter->cname);
+    rtGetter->addFlag(FLAG_NO_PARENS);
+    rtGetter->_this = _this;
+  }
+
+  // Add a "getter" method that returns the tuple of argument types
+  // for the function
+  {
+    FnSymbol* atGetter = new FnSymbol("argTypes");
+    atGetter->addFlag(FLAG_NO_IMPLICIT_COPY);
+    atGetter->addFlag(FLAG_INLINE);
+    atGetter->retTag = RET_TYPE;
+    atGetter->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+
+    CallExpr* expr = new CallExpr(PRIM_ACTUALS_LIST);
+    if (isFormal) {
+      for_alist(formalExpr, arg_list) {
+        DefExpr* dExp = toDefExpr(formalExpr);
+        ArgSymbol* fArg = toArgSymbol(dExp->sym);
+        expr->insertAtTail(fArg->type->symbol);
+      }
+    }
+    else {
+      for_alist(actualExpr, arg_list) {
+        if (actualExpr != arg_list.tail) {
+          SymExpr* sExpr = toSymExpr(actualExpr);
+          expr->insertAtTail(sExpr->var->type->symbol);
+        }
+      }
+    }
+
+    ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", parent);
+    _this->addFlag(FLAG_ARG_THIS);
+    atGetter->insertFormalAtTail(_this);
+    atGetter->insertAtTail(
+      new CallExpr(PRIM_RETURN, new CallExpr("_build_tuple", expr)));
+
+    DefExpr* def = new DefExpr(atGetter);
+    parent->symbol->defPoint->insertBefore(def);
+    normalize(atGetter);
+    parent->methods.add(atGetter);
+    atGetter->addFlag(FLAG_METHOD);
+    atGetter->addFlag(FLAG_METHOD_PRIMARY);
+    atGetter->cname = astr("chpl_get_", parent->symbol->cname, "_",
+                           atGetter->cname);
+    atGetter->addFlag(FLAG_NO_PARENS);
+    atGetter->_this = _this;
+  }
+
   FnSymbol* parent_method = new FnSymbol("this");
   parent_method->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
   parent_method->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
