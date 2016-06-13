@@ -41,10 +41,10 @@ for i in ParentDom.dim(1) {
 }
 
 //create diagonal indices
-var diagIndArr : [{0..#2*N}] 2*int;
+var diagIndArr : [{17..#2*N }] 2*int;
 for i in ParentDom.dim(1) {
-  diagIndArr[i*2] = (i, i);
-  diagIndArr[i*2+1] = (i, N-1-i);
+  diagIndArr[diagIndArr.domain.low+i*2] = (i, i);
+  diagIndArr[diagIndArr.domain.low+i*2+1] = (i, N-1-i);
 }
 
 SparseDom += diagIndArr;
