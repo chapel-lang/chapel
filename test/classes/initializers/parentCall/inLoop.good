@@ -1,1 +1,1 @@
-inLoop.chpl:13: error: use of super.init() call in loop body, can't call multiple outside initializers
+inLoop.chpl:13: error: use of super.init() call in loop body

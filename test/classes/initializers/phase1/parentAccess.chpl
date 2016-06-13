@@ -11,7 +11,7 @@ class Child : Parent {
     // Omitted field relies on parent field value.
     super.init(parentFieldVal);
     // The proper way to do this is to either use the value we know the parent
-    // field will be updated to, or wait to initialize the field until Phase 2
+    // field will be updated to, or wait to assign the field until Phase 2
   }
 }
 

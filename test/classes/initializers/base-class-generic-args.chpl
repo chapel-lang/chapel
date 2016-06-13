@@ -10,6 +10,7 @@ class Circle {
   proc init(h,param rank=h.size)
   {
     this.r=h;
+    super.init();
   }
 }
 
