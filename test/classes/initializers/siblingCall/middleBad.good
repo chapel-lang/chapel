@@ -1,0 +1,1 @@
+middleBad.chpl:6: error: field initialization not allowed with sibling initializer call
