@@ -1,1 +1,1 @@
-parallelSiblingCall.chpl:5: error: this.init() call in parallel statement makes Phase for other statements ambiguous
+parallelSiblingCall.chpl:5: error: this.init() call in parallel statement
