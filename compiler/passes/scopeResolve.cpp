@@ -1935,19 +1935,13 @@ static void resolveEnumeratedTypes() {
 
 
             INT_ASSERT(get_string(second, &name));
-
             for_enums(constant, type) {
               if (!strcmp(constant->sym->name, name)) {
                 call->replace(new SymExpr(constant->sym));
                 found = true;
               }
             }
-
-            if (!found) {
-              USR_FATAL(call, 
-                        "unresolved enumerated type symbol \"%s\"",
                         name);
-            }
           }
         }
       }
