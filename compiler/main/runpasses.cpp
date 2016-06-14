@@ -168,6 +168,11 @@ void runPasses(PhaseTracker& tracker, bool isChpldoc) {
 
     currentPassNo++;
 
+    // Break early if this is a parse-only run
+    if (fParseOnly ==  true && strcmp(sPassList[i].name, "checkParsed") == 0) {
+      break;
+    }
+
     // Break early if this is a chpl doc run
     if (isChpldoc == true && strcmp(sPassList[i].name, "docs") == 0) {
       break;
