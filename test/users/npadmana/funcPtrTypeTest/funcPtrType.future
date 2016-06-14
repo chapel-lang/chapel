@@ -1,0 +1,10 @@
+feature request: c_fn_ptr should contain correct function pointer type.
+
+Currently, c_fn_ptr does not keep track of the actual function pointer type, resulting
+in warnings from the backend C compiler about assigning pointers to incompatible types.
+Since the test system promotes warnings to errors, this causes tests to fail.
+
+Ideally, this should be fixed by having c_fn_ptr know about the type of the function it 
+is wrapping.
+
+
