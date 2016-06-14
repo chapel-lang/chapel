@@ -959,7 +959,7 @@ module ChapelBase {
   // casts from imag
   //
   inline proc _cast(type t, x: imag(?w)) where isRealType(t) || isIntegralType(t)
-    return 0:t;
+    return __primitive("cast", t, x);
 
   inline proc _cast(type t, x: imag(?w)) where isBoolType(t)
     return if x != 0i then true else false;
