@@ -79,6 +79,18 @@ Type* Type::typeInfo() {
   return this;
 }
 
+// Are actuals of this type passed with const intent by default?
+bool Type::isDefaultIntentConst() const {
+  bool retval = true;
+
+  if (symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) == true ||
+      isReferenceType(this)                       == true ||
+      isSyncType(this)                            == true ||
+      isRecordWrappedType(this)                   == true)
+    retval = false;
+
+  return retval;
+}
 
 GenRet Type::codegen() {
   if (this == dtUnknown) {
@@ -1846,7 +1858,7 @@ bool isUnion(Type* t) {
   return false;
 }
 
-bool isReferenceType(Type* t) {
+bool isReferenceType(const Type* t) {
   return t->symbol->hasFlag(FLAG_REF);
 }
 
@@ -1860,7 +1872,7 @@ bool isRefCountedType(Type* t) {
   return getRecordWrappedFlags(t->symbol).any();
 }
 
-bool isRecordWrappedType(Type* t) {
+bool isRecordWrappedType(const Type* t) {
   return getRecordWrappedFlags(t->symbol).any();
 }
 
@@ -1904,11 +1916,11 @@ static bool isDerivedType(Type* type, Flag flag)
   return retval;
 }
 
-bool isSyncType(Type* t) {
+bool isSyncType(const Type* t) {
   return getSyncFlags(t->symbol).any();
 }
 
-bool isAtomicType(Type* t) {
+bool isAtomicType(const Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
 }
 
