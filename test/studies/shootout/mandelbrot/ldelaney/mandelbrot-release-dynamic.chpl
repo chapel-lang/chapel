@@ -18,15 +18,11 @@ type eltType = uint(bitsPerElt);   // element type used to store the image
 
 
 proc main() {
-  const ydim = 0..#n,                          // the image's y dimension
-        xdim = 0..#divceilpos(n, bitsPerElt);  // the compacted x dimension
+  const xdim = 0..#divceilpos(n, bitsPerElt);  // the compacted x dimension
 
-  var image : [ydim, xdim] eltType;            // the compacted bitmap image
+  var image : [0..#n, xdim] eltType;            // the compacted bitmap image
 
-    forall (y, xelt) in dynamic({ydim, xdim}, chunkSize) {
-  //forall y in dynamic(ydim, chunkSize) {       // for all rows...
-  //  for xelt in xdim {                         //   for each column element...
-
+    forall (y, xelt) in dynamic(image.domain, chunkSize) {
       var buff: eltType;                       // a single-element pixel buffer
 
       for off in 0..#bitsPerElt {              // for each bit in the buffer
@@ -52,8 +48,6 @@ proc main() {
       }
 
       image[y, xelt] = buff;                   // store the pixel buffer
-  //  }
-  //}
     }
 
   //
