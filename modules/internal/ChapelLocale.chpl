@@ -358,7 +358,7 @@ module ChapelLocale {
       return this;
     }
 
-    // These iterators are to be used by RootLocale:init() to
+    // These iterators are to be used by RootLocale:startInit() to
     // initialize the LocaleModel.  The calling loop body cannot
     // contain any non-local code, since the rootLocale is not yet
     // initialized.
