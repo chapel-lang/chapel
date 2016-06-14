@@ -262,7 +262,7 @@ class LocStencilDom {
   var myBlock, myFluff: domain(rank, idxType, stridable);
   var NeighDom: domain(rank);
   var Dest, Src: [NeighDom] domain(rank, idxType, stridable);
-  var Neighs: [NeighDom] rank*idxType;
+  var Neighs: [NeighDom] rank*int;
 }
 
 //
@@ -889,7 +889,10 @@ proc StencilDom.setup() {
 
         for (N, L) in zip(myLocDom.Neighs, ND) {
           if zeroTuple(L) then continue;
-          N = localeIdx + L;
+          if rank == 1 then
+            N(1) = localeIdx + L;
+          else
+            N = localeIdx + L;
         }
 
         if periodic {
@@ -905,7 +908,10 @@ proc StencilDom.setup() {
             }
 
             S = S.translate(offset);
-            N = dist.targetLocsIdx(S.low);
+            if rank == 1 then
+              N(1) = dist.targetLocsIdx(S.low);
+            else
+              N = dist.targetLocsIdx(S.low);
             assert(whole.member(S.low) && whole.member(S.high), "StencilDist: Failure to compute Src slice.");
             assert(dist.targetLocDom.member(N), "StencilDist: Error computing neighbor index.");
           }
@@ -1221,10 +1227,11 @@ proc StencilArr.dsiSlice(d: StencilDom) {
   var alias = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d);
   var thisid = this.locale.id;
   coforall i in d.dist.targetLocDom {
-    d.locDoms[i].myFluff = d.locDoms[i].myBlock;
-    d.fluff = makeZero(d.rank);
     on d.dist.targetLocales(i) {
-      alias.locArr[i] = new LocStencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i], myElems=>locArr[i].myElems[d.locDoms[i].myBlock]);
+      alias.locArr[i] = new LocStencilArr(eltType=eltType, rank=rank,
+                                          idxType=idxType, stridable=d.stridable,
+                                          locDom=d.locDoms[i],
+                                          myElems=>locArr[i].myElems[d.locDoms[i].myFluff]);
       if thisid == here.id then
         alias.myLocArr = alias.locArr[i];
     }
@@ -1330,8 +1337,13 @@ proc StencilArr.dsiRankChange(d, param newRank: int, param stridable: bool, args
 }
 
 private inline proc zeroTuple(t) {
-  for param i in 1..t.size do 
-    if t(i) != 0 then return false;
+  if isTuple(t) {
+    for param i in 1..t.size do
+      if t(i) != 0 then return false;
+  } else if isIntegral(t) {
+    return t == 0;
+  }
+  else compilerError("Incorrect usage of 'zeroTuple' utility function.");
   return true;
 }
 
@@ -1420,6 +1432,52 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
       }
     }
   }
+}
+
+//
+// Returns a view of this Stencil-distributed array without any fluff.
+// Useful for ensuring that reads/writes always operate on non-cached data
+//
+// Copies the range slice function in ChapelArray.
+//
+proc _array.noFluffView() {
+  var a = _value.dsiNoFluffView();
+  a._arrAlias = _value;
+  pragma "dont disable remote value forwarding"
+  proc help() {
+    a.dom.incRefCount();
+    a._arrAlias.incRefCount();
+  }
+  if !noRefCount then
+    help();
+  return _newArray(a);
+}
+
+proc StencilArr.dsiNoFluffView() {
+  var tempDist = new Stencil(dom.dist.boundingBox, dom.dist.targetLocales,
+                             dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
+                             dom.dist.dataParMinGranularity);
+  var newDist = _newDistribution(tempDist)._value;
+
+  var tempDom = new StencilDom(rank=rank, idxType=idxType,
+                               dist=newDist, stridable=stridable);
+  tempDom.dsiSetIndices(dom.whole);
+  var newDom = _newDomain(tempDom)._value;
+
+  var alias = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=newDom.stridable, dom=newDom);
+  var thisid = this.locale.id;
+  coforall i in newDom.dist.targetLocDom {
+    on newDom.dist.targetLocales(i) {
+      alias.locArr[i] = new LocStencilArr(eltType=eltType, rank=rank,
+                                          idxType=idxType, stridable=newDom.stridable,
+                                          locDom=newDom.locDoms[i],
+                                          myElems=>locArr[i].myElems[newDom.locDoms[i].myFluff]);
+      if thisid == here.id then
+        alias.myLocArr = alias.locArr[i];
+    }
+  }
+  if doRADOpt then alias.setupRADOpt();
+  return alias;
 }
 
 // wrapper
