@@ -140,10 +140,14 @@ class SparseBlockDom: BaseSparseDom {
 
     if !isSorted {
 
-      // without _new_ record functions throw null deref. It doesn't seem to be 
+      // there are two issues with the following line
+      // 1 without _new_ record functions throw null deref. It doesn't seem to be 
       // able to deref _outer_ ? I think it has something to do with memory
       // allocation for classes vs records, but I cannot explain
-      var comp = new TargetLocaleComparator;
+      // 2 this line seems to be completely hacky -- explicit parantheses were
+      // necessary for the compiler not to complain when --verify flag is
+      // present. 
+      var comp = new TargetLocaleComparator();
       sort(inds, comparator=comp);
     }
 
