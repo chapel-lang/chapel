@@ -1052,13 +1052,30 @@ bool ArgSymbol::requiresCPtr(void) {
 
 
 bool ArgSymbol::isConstant() const {
-  if (intent == INTENT_CONST_IN || intent == INTENT_CONST_REF) {
-    return true;
+  bool retval = false;
+
+  switch (intent) {
+  case INTENT_BLANK:
+    retval = type->isDefaultIntentConst();
+    break;
+
+  case INTENT_CONST_IN:
+  case INTENT_CONST_REF:
+    retval = true;
+    break;
+
+  // Noakes: 2016/06/14
+  // It seems odd to me that this case depends on the type
+  case INTENT_CONST:
+    retval = type->isDefaultIntentConst();
+    break;
+
+  default:
+    retval = false;
+    break;
   }
-  return (intent == INTENT_BLANK || intent == INTENT_CONST) &&
-    !isReferenceType(type) &&
-    !isSyncType(type) &&
-    !isRecordWrappedType(type) /* array, domain, distribution */;
+
+  return retval;
 }
 
 bool ArgSymbol::isConstValWillNotChange() const {
