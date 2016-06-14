@@ -1935,13 +1935,29 @@ static void resolveEnumeratedTypes() {
 
 
             INT_ASSERT(get_string(second, &name));
+            
             for_enums(constant, type) {
               if (!strcmp(constant->sym->name, name)) {
                 call->replace(new SymExpr(constant->sym));
                 found = true;
               }
             }
+            
+            // One option is to permit only .size as a valid .method for enums
+            /*const char* sizeFunctionName = "size";
+            if (!strcmp(name, sizeFunctionName)){
+              found = true; //all enums have this method, it will resolve later
+            }*/
+            
+            // Another option is to get rid of the error, becaues unresolved
+              // type symbols are also resolved later as unresolved function
+              // calls if a matching function is not found
+            /*if (!found) {
+              USR_FATAL(call,
+                        "unresolved enumerated type symbol (or yet to be 
+                        resolved function without parentheses) \"%s\"",
                         name);
+            }*/
           }
         }
       }
