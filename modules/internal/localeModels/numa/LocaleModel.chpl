@@ -442,7 +442,7 @@ module LocaleModel {
   //
   // returns true if an executeOn can be handled directly
   // by running the function in question.
-  // Applieds to execute on and execute on fast.
+  // Applies to execute on and execute on fast.
   // When performing a blocking on, the compiler will emit this sequence:
   //
   //  if (chpl_doDirectExecuteOn(targetLocale))

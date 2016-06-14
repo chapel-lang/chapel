@@ -353,7 +353,7 @@ qioerr qio_openproc(const char** argv,
                     int64_t *pid_out)
 {
   // runs qio_do_openproc in a pthread in order
-  // to avoid issuse where a Chapel task is allocated
+  // to avoid issues where a Chapel task is allocated
   // from memory with MAP_SHARED.
   //
   // If such a thread is the thread running fork(),
