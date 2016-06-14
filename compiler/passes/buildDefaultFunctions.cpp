@@ -645,36 +645,43 @@ static void build_record_inequality_function(AggregateType* ct) {
 
 
 static void build_enum_size_function(EnumType* et) {
-  if (function_exists("chpl_enum_size", 1, et))
+  if (function_exists("size", 1, et))
     return;
   // Build a function that returns the length of the enum specified
-  FnSymbol* fn = new FnSymbol("chpl_enum_size");
+  FnSymbol* fn = new FnSymbol("size");
   fn->addFlag(FLAG_COMPILER_GENERATED);
-  //fn->addFlag(FLAG_INLINE);
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", dtAny);
-  arg->addFlag(FLAG_MARKED_GENERIC);
-  arg->addFlag(FLAG_TYPE_VARIABLE);
-  fn->insertFormalAtTail(arg);
+  fn->addFlag(FLAG_NO_PARENS);
+  fn->addFlag(FLAG_METHOD);
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", dtAny);//et);
+   _this->addFlag(FLAG_ARG_THIS);
+  _this->addFlag(FLAG_MARKED_GENERIC);
+  _this->addFlag(FLAG_TYPE_VARIABLE);
+  fn->insertFormalAtTail(_this);
+  
+  
   fn->retTag = RET_VALUE;
   //use this function only where the argument is an enum
-  fn->where = new BlockStmt(new CallExpr("==", arg, et->symbol));
-
+  fn->where = new BlockStmt(new CallExpr("==", _this, et->symbol)); //what does this do?
+  
   VarSymbol*  varS = new_IntSymbol(et->constants.length);
   //et->constants.length
-    
+  
   //DefExpr* defExpr = toDefExpr(resultvar); //FIXME:
-
+  
   fn->insertAtTail(new CallExpr(PRIM_RETURN, varS));
-    
   
   DefExpr* fnDef = new DefExpr(fn);
   // needs to go in the base module because when called from _defaultOf(et),
   // they are automatically inserted
   baseModule->block->insertAtTail(fnDef);
   reset_ast_loc(fnDef, et->symbol);
-    
+  
   normalize(fn);
 }
+
+
 
 static void build_enum_first_function(EnumType* et) {
   if (function_exists("chpl_enum_first", 1, et))
