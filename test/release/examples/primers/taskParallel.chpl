@@ -46,7 +46,7 @@ cobegin {
 }
 
 // The order of the output is again undefined because the begin
-// statements in the above cobegin statment are not guaranteed to
+// statements in the above cobegin statement are not guaranteed to
 // have been executed before control reaches the following statement.
 writeln("3: output from main task");
 
