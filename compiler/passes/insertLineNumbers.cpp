@@ -78,9 +78,12 @@ static void moveLinenoInsideArgBundle();
 // can be updated with new actual arguments.
 //
 static Vec<FnSymbol*> queue;
+static Vec<FnSymbol*> tokQueue;
 
 static Map<FnSymbol*,ArgSymbol*> linenoMap; // fn to line number argument
 static Map<FnSymbol*,ArgSymbol*> filenameMap; // fn to filename argument
+static Map<FnSymbol*,ArgSymbol*> tokMap; // fn to tok argument
+static Map<FnSymbol*,VarSymbol*> tokToks; // fn to tok variable
 
 static ArgSymbol* newLine(FnSymbol* fn) {
   ArgSymbol* line = new ArgSymbol(INTENT_CONST_IN, "_ln", dtInt[INT_SIZE_DEFAULT]);
@@ -99,7 +102,7 @@ static ArgSymbol* newLine(FnSymbol* fn) {
 }
 
 static ArgSymbol* newFile(FnSymbol* fn) {
-  ArgSymbol* file = new ArgSymbol(INTENT_CONST_REF, "_fn", dtInt[INT_SIZE_32]);
+  ArgSymbol* file = new ArgSymbol(INTENT_CONST_IN, "_fn", dtInt[INT_SIZE_32]);
   fn->insertFormalAtTail(file);
   filenameMap.put(fn, file);
   queue.add(fn);
@@ -114,6 +117,24 @@ static ArgSymbol* newFile(FnSymbol* fn) {
   }
   return file;
 }
+
+static ArgSymbol* newCallerStackTok(FnSymbol* fn) {
+  ArgSymbol* tok = new ArgSymbol(INTENT_CONST_IN, "_tok", dtCVoidPtr);
+  fn->insertFormalAtTail(tok);
+  tokMap.put(fn, tok);
+  tokQueue.add(fn);
+  if (Vec<FnSymbol*>* rootFns = virtualRootsMap.get(fn)) {
+    forv_Vec(FnSymbol, rootFn, *rootFns)
+      if (!tokMap.get(rootFn))
+        newCallerStackTok(rootFn);
+  } else if (Vec<FnSymbol*>* childrenFns = virtualChildrenMap.get(fn)) {
+    forv_Vec(FnSymbol, childrenFn, *childrenFns)
+      if (!tokMap.get(childrenFn))
+        newCallerStackTok(childrenFn);
+  }
+  return tok;
+}
+
 
 //
 // insert a line number and filename actual into a call; add line
@@ -279,8 +300,20 @@ void insertLineNumbers() {
   // loop over all primitives that require a line number and filename
   // and pass them an actual line number and filename
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->primitive && call->primitive->passLineno) {
-      insertLineNumber(call);
+    if (call->primitive) {
+      if (call->primitive->passLineno) {
+        insertLineNumber(call);
+      }
+      if (call->isPrimitive(PRIM_GET_CALLER_STACK_TOKEN)) {
+        FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(inFn);
+        if (!tokMap.get(inFn)) {
+          SET_LINENO(inFn);
+          //call->parentSymbol->addFlag(FLAG_USES_GET_CALLER_STACK_TOKEN);
+          ArgSymbol* arg = newCallerStackTok(inFn);
+          call->replace(new SymExpr(arg));
+        }
+      }
     }
   }
 
@@ -304,6 +337,30 @@ void insertLineNumbers() {
       insertLineNumber(call);
     }
   }
+
+  forv_Vec(FnSymbol, fn, tokQueue) {
+    forv_Vec(CallExpr, call, *fn->calledBy) {
+      FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+      INT_ASSERT(inFn);
+      SET_LINENO(inFn);
+      VarSymbol* tok = tokToks.get(inFn);
+      if (!tok) {
+        VarSymbol* tmp = newTemp("_tok_tmp", dtInt[INT_SIZE_32]);
+        tok = newTemp("_tok", dtCVoidPtr);
+
+        inFn->insertAtHead(new CallExpr(PRIM_MOVE, tok,
+                                  new CallExpr(PRIM_ADDR_OF, tmp)));
+        inFn->insertAtHead(new DefExpr(tok));
+//        inFn->insertAtHead(new CallExpr(PRIM_MOVE, tmp,
+//                                  new_IntSymbol(0)));
+        inFn->insertAtHead(new DefExpr(tmp));
+        tokToks.put(inFn, tok);
+      }
+
+      call->insertAtTail(new SymExpr(tok));
+    }
+  }
+
 
   moveLinenoInsideArgBundle();
 }
