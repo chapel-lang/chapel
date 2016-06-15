@@ -40,7 +40,7 @@ Mesos's C++ stout API:
 
 1. https://mesos.apache.org/api/latest/c++/md_3rdparty_libprocess_3rdparty_stout_README.html
 
-2. 
+2. https://github.com/3rdparty/stout 
 
 Example 1
 ---------
