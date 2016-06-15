@@ -41,10 +41,10 @@ proc main() {
   write(data);
 }
 
-proc process(ref data : string, in from : int, end : int) {
+proc process(data : string, in from : int, end : int) {
 
   // Skip the header information
-  while data[from] != 0xa do
+  while data.buff[from] != 0xa do
     from += 1;
   from += 1;
 
@@ -56,16 +56,16 @@ proc process(ref data : string, in from : int, end : int) {
     var m = from + adj;
     while m < end {
       for i in 0..off-1 by -1 do
-        data[m+1+i] = data[m+i];
-      data[m+1] = 0xa;
+        data.buff[m+1+i] = data.buff[m+i];
+      data.buff[m+1] = 0xa;
       m += 61;
     }
   }
 
   const middle = len/2;
   for i in 0..middle {
-    const c = table[data[from+i]];
-    data[from+i] = table[data[end-i]];
-    data[end-i] = c;
+    const c = table[data.buff[from+i]];
+    data.buff[from+i] = table[data.buff[end-i]];
+    data.buff[end-i] = c;
   }
 }
