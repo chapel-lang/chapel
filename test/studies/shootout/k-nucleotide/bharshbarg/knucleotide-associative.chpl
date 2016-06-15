@@ -1,115 +1,114 @@
-use IO;
+/* The Computer Language Benchmarks Game
+   http://benchmarksgame.alioth.debian.org/
 
-extern proc memcpy(x : [], b:c_string , len:int);
+   contributed by Ben Harshbarger
+   derived from the GNU C++ version by Branimir Maksimovic
+*/
 
-config const tableSize = 1 << 16;
-config const lineSize = 61;
+// Used to encode a string into a uint
+var tonum : [0..127] int;
+tonum[ascii("A")] = 0;
+tonum[ascii("C")] = 1;
+tonum[ascii("T")] = 2;
+tonum[ascii("G")] = 3;
 
-var tonum : [1..128] int;
-tonum[0x41] = 0; // A
-tonum[0x43] = 1; // C
-tonum[0x54] = 2; // T
-tonum[0x47] = 3; // G
-
+// Used to decode a uint back into a string
 var tochar : [0..3] string;
 tochar[0] = "A";
 tochar[1] = "C";
 tochar[2] = "T";
 tochar[3] = "G";
 
-inline proc hash(str : [] uint(8), beg:int, sizeRange:range(?) ) {
-  var data : uint = 0;
+inline proc hash(data : string, sizeRange:range) {
+  var d : uint = 0;
   for i in sizeRange {
-    data <<= 2;
-    data |= tonum[str[beg+i]];
+    d <<= 2;
+    d |= tonum[data.buff[i-1]];
   }
-  return data;
+  return d;
 }
 
-proc decode(data : uint, size : int) {
+proc decode(in data : uint, size : int) {
   var ret : string;
-  var d = data;
-  for i in 1..size {
-    ret = tochar[(d & 3) : uint(8)] + ret;
-    d >>= 2;
+  for 1..size {
+    ret = tochar[(data & 3):int] + ret;
+    data >>= 2;
   }
   return ret;
 }
 
-proc calculate(data : [] uint(8), size : int) {
-  var freqDom : domain(uint);
+proc calculate(data : string, size : int) {
+  //
+  // Create an associative array to store the results of each task.
+  // Disables the parallel safety feature to achieve better performance. We
+  // will avoid races through the use of locks.
+  //
+  var freqDom : domain(uint, parSafe = false);
   var freqs : [freqDom] int;
 
-  var lock : sync bool;
-  lock = true;
-  const sizeRange = 0..size-1;
+  // Create and free a lock
+  var lock$ : sync bool = true;
+  const high = data.length - size + 1;
+
   coforall tid in 1..here.maxTaskPar {
-    var curDom : domain(uint);
-    var curArr : [curDom] int;
-    for i in tid .. data.size-size by here.maxTaskPar {
-      curArr[hash(data, i, sizeRange)] += 1;
+    var privDom : domain(uint, parSafe = false);
+    var privArr : [privDom] int;
+
+    for i in tid..high by here.maxTaskPar {
+      // Assignment into an associative array creates an index an element
+      privArr[hash(data, i..#size)] += 1;
     }
-    lock; // acquire lock
-    for (k,v) in zip(curDom, curArr) do freqs[k] += v;
-    lock = true; // free lock
+
+    lock$;                                  // read to acquire lock
+    for (k,v) in zip(privDom, privArr) do
+      freqs[k] += v;                        // accumulate into returned array
+    lock$ = true;                           // write to free lock
   }
 
   return freqs;
 }
 
-proc write_frequencies(data : [] uint(8), size : int) {
-  var sum = data.size  - size;
+proc write_frequencies(data : string, size : int) {
   var freqs = calculate(data, size);
 
-  // sort by frequencies
-  var arr : [1..freqs.size] (int, uint);
-  for (a, k, v) in zip(arr, freqs.domain, freqs) do
-    a = (v,k);
-  QuickSort(arr, reverse=true);
+  //
+  // To sort by frequencies, create a temporary array of tuples, where the
+  // first element is the frequency and the second element is the encoded
+  // string.
+  //
+  var sorted : [1..freqs.size] (int, uint);
+  for (s, e, f) in zip(sorted, freqs.domain, freqs) do
+    s = (f, e);
 
-  for (f, s) in arr do
-    writef("%s %.3dr\n", decode(s, size), (100.0 * f) / sum);
+  // QuickSort will sort starting at the tuple's first element.
+  QuickSort(sorted, reverse=true);
+
+  const sum = data.length - size;
+  for (f, e) in sorted do
+    writef("%s %.3dr\n", decode(e, size), (100.0 * f) / sum);
 }
 
-proc write_count(data : [] uint(8), str : string) {
-  var freqs = calculate(data, str.length);
-  var d = hash(str.toBytes(), 1, 0..str.length-1);
-  writeln(freqs[d], "\t", decode(d, str.length));
+proc write_count(data : string, pattern : string) {
+  const size = pattern.length;
+  var freqs = calculate(data, size);
+  const d = hash(pattern, 1..size);
+  writeln(freqs[d], "\t", decode(d, size));
 }
 
-proc string.toBytes() ref {
-   var b : [1..this.length] uint(8);
-   memcpy(b, this.c_str(), this.length);
-   return b;
-}
+proc main() {
+  var data, buf : string;
 
-inline proc startsWithThree(data : []) {
-  return data[1] == 0x3E && data[2] == 0x54 && data[3] == 0x48;
-}
-
-proc main(args: [] string) {
-  // Open stdin and a binary reader channel
-  const inFile = openfd(0);
-  const fileLen = inFile.length();
-  var myin = inFile.reader(kind=ionative,locking=false);
-
-  // Read line-by-line until we see a line beginning with '>TH'
-  var tempdata : [1..lineSize] uint(8);
-  var numRead = 0;
-  var total = 0;
-  while myin.readline(tempdata, numRead) && !startsWithThree(tempdata) { total += numRead; }
-
-  // Read in the rest of the file
-  var dataDom = {1..fileLen-total};
-  var data : [dataDom] uint(8);
-  var idx = 1;
-  while myin.readline(data, numRead, idx) { idx += numRead - 1; }
+  // Read each line until the desired section
+  while stdin.readline(buf) && !buf.startsWith(">THREE") do {}
   
-  // Resize our array to the amount actually read
-  dataDom = {1..idx};
+  //
+  // Accumulate each remaining line into 'data'.
+  // 'readline' includes the newline character in 'buf', so only add a slice
+  // of 'buf' that leaves off the last character.
+  //
+  while stdin.readline(buf) do data += buf[1..buf.length-1];
 
-  // Make everything uppercase
-  forall d in data do d ^= 0x20;
+  data = data.toUpper();
 
   write_frequencies(data, 1);
   writeln();
