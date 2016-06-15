@@ -101,7 +101,7 @@ module LocaleModel {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
-      startInit();
+      setup();
     }
 
     proc LocaleModel(parent_loc : locale) {
@@ -109,7 +109,7 @@ module LocaleModel {
         halt("Cannot create additional LocaleModel instances");
       }
       parent = parent_loc;
-      startInit();
+      setup();
     }
 
     proc chpl_id() return _node_id; // top-level node number
@@ -153,7 +153,7 @@ module LocaleModel {
     //------------------------------------------------------------------------{
     //- Implementation (private)
     //-
-    proc startInit() {
+    proc setup() {
       _node_id = chpl_nodeID: int;
 
       // chpl_nodeName is defined in chplsys.c.
@@ -210,7 +210,7 @@ module LocaleModel {
     // The init() function must use chpl_initOnLocales() to iterate (in
     // parallel) over the locales to set up the LocaleModel object.
     // In addition, the initial 'here' must be set.
-    proc startInit() {
+    proc setup() {
       forall locIdx in chpl_initOnLocales() {
         const node = new LocaleModel(this);
         myLocales[locIdx] = node;
