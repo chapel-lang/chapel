@@ -112,7 +112,7 @@ Each CHIP should have a discussion of the problem it is attempting to solve.
 Details
 +++++++
 
-Each CHIP ccan contain any other sections that are appropriate to record the
+Each CHIP can contain any other sections that are appropriate to record the
 proposal idea, design details, implementation details, and justification for
 decisions.
 

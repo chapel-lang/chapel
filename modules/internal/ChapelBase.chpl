@@ -656,22 +656,7 @@ module ChapelBase {
   pragma "no default functions"
   class _ddata {
     type eltType;
-    /*
-       If we had a way to do 'static' routines, this
-       could stay here, but since we don't at the moment,
-       we've wired the modules to call _ddata_free().
 
-    proc ~_ddata() {
-      __primitive("array_free", this);
-    }
-
-     If we had a way to do 'static' routines, this
-       could stay here, but since we don't at the moment,
-       we've wired the modules to call _ddata_allocate().
-    inline proc init(size: integral) {
-      __primitive("array_alloc", this, eltType, size);
-      init_elts(this, size, eltType);
-    }*/
     inline proc this(i: integral) ref {
       return __primitive("array_get", this, i);
     }
@@ -759,7 +744,7 @@ module ChapelBase {
 
   // This function is called once by the initiating task.  No on
   // statement needed, because the task should be running on the same
-  // locale as the sync/cofall/cobegin was initiated on and thus the
+  // locale as the sync/coforall/cobegin was initiated on and thus the
   // same locale on which the object is allocated.
   //
   // TODO: 'taskCnt' can sometimes be local even if 'i' has to be remote.
@@ -799,7 +784,7 @@ module ChapelBase {
       e.taskCnt.add(1, memory_order_release);
     } else {
       // note that this on statement does not have the usual
-      // remote memory fence becaues of pragma "no remote memory fence"
+      // remote memory fence because of pragma "no remote memory fence"
       // above. So we do an acquire fence before it.
       chpl_rmem_consist_fence(memory_order_release);
       on e {
@@ -1545,7 +1530,7 @@ module ChapelBase {
   inline proc _defaultOf(type t) param where t == imag return 0.0i;
   pragma "no doc"
   inline proc _defaultOf(type t) where (isImagType(t) && t != imag) return 0.0i:t;
-  // Also, complexes cannot yet be parametized
+  // Also, complexes cannot yet be parameterized
   pragma "no doc"
   inline proc _defaultOf(type t): t where (isComplexType(t)) {
     var ret:t = noinit;

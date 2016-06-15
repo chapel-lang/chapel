@@ -25,7 +25,7 @@ module DefaultAssociative {
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
   
-  use Sort /* only QuickSort */;
+  use Sort; /* only sort */;
   
   // TODO: make the domain parameterized by this?
   type chpl_table_index_type = int;
@@ -346,11 +346,11 @@ module DefaultAssociative {
       if entries < numKeys {
 
         //Find the first suitable prime
-        var threshhold = (numKeys + 1) * 2;
+        var threshold = (numKeys + 1) * 2;
         var prime = 0;
         var primeLoc = 0;
         for i in 1..chpl__primes.size {
-            if chpl__primes(i) > threshhold {
+            if chpl__primes(i) > threshold {
               prime = chpl__primes(i);
               primeLoc = i;
               break;
@@ -362,7 +362,7 @@ module DefaultAssociative {
           halt("Requested capacity (", numKeys, ") exceeds maximum size");
         }
 
-        //Changing underlying strucure, time for locking
+        //Changing underlying structure, time for locking
         if parSafe then lockTable();
         if entries > 0 {
           // Slow path: back up required
@@ -407,7 +407,7 @@ module DefaultAssociative {
       for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do
         tableCopy(tmp) = table[slot].idx;
   
-      QuickSort(tableCopy);
+      sort(tableCopy);
   
       for ind in tableCopy do
         yield ind;
@@ -676,7 +676,7 @@ module DefaultAssociative {
       for (copy, slot) in zip(tableCopy.domain, dom._fullSlots()) do
         tableCopy(copy) = data(slot);
   
-      QuickSort(tableCopy);
+      sort(tableCopy);
   
       for elem in tableCopy do
         yield elem;

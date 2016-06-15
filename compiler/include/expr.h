@@ -165,31 +165,50 @@ class UnresolvedSymExpr : public Expr {
 // ContextCallExpr. Therefore, it is important to use toCallExpr()
 // instead of casting to CallExpr* directly.
 class CallExpr : public Expr {
- public:
-  Expr* baseExpr;         // function expression
-  AList argList;          // function actuals
-  PrimitiveOp* primitive; // primitive expression (baseExpr == NULL)
+public:
+  PrimitiveOp* primitive;        // primitive expression (baseExpr == NULL)
+  Expr*        baseExpr;         // function expression
 
-  bool partialTag;
-  bool methodTag; ///< Set to true if the call is a method call.
-  // It is used in gatherCandidates to filter out method field extraction
-  // (partials).
-  // TODO: Maybe use a new primitive to represent partials, and get rid of this tag.
-  bool square; // true if call made with square brackets
+  AList        argList;          // function actuals
 
-  CallExpr(BaseAST* base, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
-  CallExpr(PrimitiveOp *prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
-  CallExpr(PrimitiveTag prim, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
-  CallExpr(const char* name, BaseAST* arg1 = NULL, BaseAST* arg2 = NULL,
-           BaseAST* arg3 = NULL, BaseAST* arg4 = NULL, BaseAST* arg5 = NULL);
+  bool         partialTag;
+  bool         methodTag;        // Set to true if the call is a method call.
+  bool         square;           // true if call made with square brackets
+
+  CallExpr(BaseAST*     base,
+           BaseAST*     arg1 = NULL,
+           BaseAST*     arg2 = NULL,
+           BaseAST*     arg3 = NULL,
+           BaseAST*     arg4 = NULL,
+           BaseAST*     arg5 = NULL);
+
+  CallExpr(PrimitiveOp* prim,
+           BaseAST*     arg1 = NULL,
+           BaseAST*     arg2 = NULL,
+           BaseAST*     arg3 = NULL,
+           BaseAST*     arg4 = NULL,
+           BaseAST*     arg5 = NULL);
+
+  CallExpr(PrimitiveTag prim,
+           BaseAST*     arg1 = NULL,
+           BaseAST*     arg2 = NULL,
+           BaseAST*     arg3 = NULL,
+           BaseAST*     arg4 = NULL,
+           BaseAST*     arg5 = NULL);
+
+  CallExpr(const char*  name,
+           BaseAST*     arg1 = NULL,
+           BaseAST*     arg2 = NULL,
+           BaseAST*     arg3 = NULL,
+           BaseAST*     arg4 = NULL,
+           BaseAST*     arg5 = NULL);
+
   ~CallExpr();
 
   virtual void    verify();
 
   DECLARE_COPY(CallExpr);
+
 
   virtual void    accept(AstVisitor* visitor);
 
@@ -210,6 +229,10 @@ class CallExpr : public Expr {
   // True if the callExpr has been emptied (aka dead)
   bool            isEmpty()                                              const;
 
+  bool            isPrimitive()                                          const;
+  bool            isPrimitive(PrimitiveTag primitiveTag)                 const;
+  bool            isPrimitive(const char*  primitiveName)                const;
+
   FnSymbol*       isResolved()                                           const;
   FnSymbol*       resolvedFunction()                                     const;
 
@@ -221,9 +244,18 @@ class CallExpr : public Expr {
   Expr*           get(int index)                                         const;
   FnSymbol*       findFnSymbol();
 
-  bool            isPrimitive()                                          const;
-  bool            isPrimitive(PrimitiveTag primitiveTag)                 const;
-  bool            isPrimitive(const char*  primitiveName)                const;
+
+private:
+  GenRet          codegenPrimitive();
+  GenRet          codegenPrimMove();
+  bool            codegenPrimMoveRhsIsSpecialPrimop();
+
+  void            codegenInvokeOnFun();
+  void            codegenInvokeTaskFun(const char* name);
+
+  GenRet          codegenBasicPrimitiveExpr()                            const;
+
+  bool            isRefExternStarTuple(Symbol* formal, Expr* actual)     const;
 };
 
 // For storing several call expressions, where

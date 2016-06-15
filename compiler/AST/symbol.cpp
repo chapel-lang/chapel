@@ -39,6 +39,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
+#include "resolution.h"
 
 #include "AstToText.h"
 #include "AstVisitor.h"
@@ -1051,13 +1052,30 @@ bool ArgSymbol::requiresCPtr(void) {
 
 
 bool ArgSymbol::isConstant() const {
-  if (intent == INTENT_CONST_IN || intent == INTENT_CONST_REF) {
-    return true;
+  bool retval = false;
+
+  switch (intent) {
+  case INTENT_BLANK:
+    retval = type->isDefaultIntentConst();
+    break;
+
+  case INTENT_CONST_IN:
+  case INTENT_CONST_REF:
+    retval = true;
+    break;
+
+  // Noakes: 2016/06/14
+  // It seems odd to me that this case depends on the type
+  case INTENT_CONST:
+    retval = type->isDefaultIntentConst();
+    break;
+
+  default:
+    retval = false;
+    break;
   }
-  return (intent == INTENT_BLANK || intent == INTENT_CONST) &&
-    !isReferenceType(type) &&
-    !isSyncType(type) &&
-    !isRecordWrappedType(type) /* array, domain, distribution */;
+
+  return retval;
 }
 
 bool ArgSymbol::isConstValWillNotChange() const {
@@ -1466,6 +1484,7 @@ FnSymbol::FnSymbol(const char* initName) :
   codegenUniqueNum(1),
   doc(NULL),
   partialCopySource(NULL),
+  varargOldFormal(NULL),
   retSymbol(NULL)
 {
   substitutions.clear();
@@ -1767,6 +1786,15 @@ void FnSymbol::finalizeCopy(void) {
      * replacements.
      */
     update_symbols(this, map);
+
+    // Replace vararg formal if appropriate.
+    if (this->varargOldFormal) {
+      substituteVarargTupleRefs(this->body, this->varargNewFormals.size(),
+                                this->varargOldFormal, this->varargNewFormals);
+      // Done, clean up.
+      this->varargOldFormal = NULL;
+      this->varargNewFormals.clear();
+    }
 
     // Clean up book keeping information.
     this->partialCopyMap.clear();
@@ -2203,35 +2231,6 @@ FnSymbol::insertBeforeReturnAfterLabel(Expr* ast) {
     INT_FATAL(this, "function is not normal");
   ret->insertBefore(ast);
 }
-
-
-// Inserts the given ast ahead of the _downEndCount call at the end of this
-// function, if present.  Otherwise, inserts it ahead of the return.
-void
-FnSymbol::insertBeforeDownEndCount(Expr* ast) {
-  CallExpr* ret = toCallExpr(body->body.last());
-
-  if (!ret || !ret->isPrimitive(PRIM_RETURN))
-    INT_FATAL(this, "function is not normal");
-
-  Expr* prev = ret->prev;
-
-  while (isBlockStmt(prev))
-    prev = toBlockStmt(prev)->body.last();
-
-  CallExpr* last = toCallExpr(prev);
-
-  if (last               &&
-      last->isResolved() &&
-      strcmp(last->isResolved()->name, "_downEndCount") == 0) {
-    last->insertBefore(ast);
-
-  } else {
-    // No _downEndCount() call, so insert the ast before the return.
-    ret->insertBefore(ast);
-  }
-}
-
 
 void
 FnSymbol::insertFormalAtHead(BaseAST* ast) {
@@ -3113,11 +3112,22 @@ HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
 FnSymbol* initStringLiterals = NULL;
 
+void createInitStringLiterals() {
+  SET_LINENO(stringLiteralModule);
+  initStringLiterals = new FnSymbol("chpl__initStringLiterals");
+  // We need to initialize strings literals on every locale, so we make this an
+  // exported function that will be called in the runtime
+  initStringLiterals->addFlag(FLAG_EXPORT);
+  initStringLiterals->addFlag(FLAG_LOCAL_ARGS);
+  initStringLiterals->retType = dtVoid;
+  initStringLiterals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
+}
+
 // Note that string immediate values are stored
 // with C escapes - that is newline is 2 chars \ n
 // so this function expects a string that could be in "" in C
 VarSymbol *new_StringSymbol(const char *str) {
-  SET_LINENO(stringLiteralModule);
 
   // Hash the string and return an existing symbol if found.
   // Aka. uniquify all string literals
@@ -3172,16 +3182,8 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   CallExpr* ctorCall = new CallExpr(PRIM_MOVE, new SymExpr(s), ctor);
 
-  // We need to initialize strings literals on every locale, so we make this an
-  // exported function that will be called in the runtime
-  if (initStringLiterals == NULL) {
-    initStringLiterals = new FnSymbol("chpl__initStringLiterals");
-    initStringLiterals->addFlag(FLAG_EXPORT);
-    initStringLiterals->addFlag(FLAG_LOCAL_ARGS);
-    initStringLiterals->retType = dtVoid;
-    initStringLiterals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-    stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
-  }
+  if (initStringLiterals == NULL)
+    createInitStringLiterals();
 
   initStringLiterals->insertBeforeReturn(new DefExpr(cptrTemp));
   initStringLiterals->insertBeforeReturn(cptrCall);
@@ -3453,16 +3455,6 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
     mask.set(FLAG_ARRAY);
     mask.set(FLAG_DOMAIN);
     mask.set(FLAG_DISTRIBUTION);
-  }
-
-  return s->flags & mask;
-}
-
-FlagSet getSyncFlags(Symbol* s) {
-  static FlagSet mask;
-  if (mask.none()) {
-    mask.set(FLAG_SYNC);
-    mask.set(FLAG_SINGLE);
   }
 
   return s->flags & mask;

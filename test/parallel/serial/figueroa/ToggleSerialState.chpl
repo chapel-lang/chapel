@@ -11,7 +11,7 @@ for i in 1..runs {
       in_order = true;
   serial i % 2 > 0 do
     coforall j in 1..n with (ref in_order) {
-      sleep((n-j) : uint);
+      sleep((n-j) / 10.0);
       var t = s + 1;
       if in_order then
         in_order = t == j;

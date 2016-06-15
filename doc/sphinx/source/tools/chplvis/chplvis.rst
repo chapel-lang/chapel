@@ -141,7 +141,7 @@ will bring up a window that shows a task time line for the locale.
 This display shows the order the tasks are executed and the color of
 each task shows the clock time for that task.  The black vertical vertical
 lines show the life time of the task.  There are two kinds of tasks
-shown, taskes forked to this locale indicated by an *F* and tasks
+shown: tasks forked to this locale indicated by an *F* and tasks
 started locally indicated by an *L*.
 
 .. note::
@@ -506,7 +506,7 @@ calculation of concurrency as seen above.
 
 ..  Give examples of how to find problems.
 
-Config Paramaters and Variables
+Config Parameters and Variables
 -------------------------------
 
 Because :mod:`VisualDebug` support requires added procedure calls in source to

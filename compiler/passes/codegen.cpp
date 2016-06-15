@@ -302,7 +302,8 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
             fprintf(hdrfile, "(chpl_fn_p)NULL");
             n++;
           }
-          comma = true;
+          if (maxVMT > 0)
+            comma = true;
         }
       }
     }

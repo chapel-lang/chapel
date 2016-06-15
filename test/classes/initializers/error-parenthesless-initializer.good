@@ -1,0 +1,1 @@
+error-parenthesless-initializer.chpl:3: error: an initializer cannot be declared without parentheses

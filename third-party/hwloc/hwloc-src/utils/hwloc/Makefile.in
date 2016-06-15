@@ -1581,7 +1581,7 @@ uninstall-man: uninstall-man1 uninstall-man7
 	@ $(SED) -e 's/#PACKAGE_NAME#/@PACKAGE_NAME@/g' \
 	  -e 's/#PACKAGE_VERSION#/@PACKAGE_VERSION@/g' \
 	  -e 's/#HWLOC_DATE#/@HWLOC_RELEASE_DATE@/g' \
-	  -e 's@#RUNSTATEDIR#@'$(HWLOC_runstatedir)'@g' \
+	  -e 's/#RUNSTATEDIR#/$(subst /,\/,$(HWLOC_runstatedir))/g' \
 	  > $@ < $<
 
 .3in.3:

@@ -307,7 +307,7 @@ module Math {
      i.e., the fraction `m`/`n` rounded up to the nearest integer. 
 
      If the arguments are of unsigned type, then
-     fewer condititionals will be evaluated at run time.
+     fewer conditionals will be evaluated at run time.
   */
   proc divceil(param m: integral, param n: integral) param return
     if isNonnegative(m) then
@@ -321,7 +321,7 @@ module Math {
      i.e., the fraction `m`/`n` rounded up to the nearest integer. 
 
      If the arguments are of unsigned type, then
-     fewer condititionals will be evaluated at run time.
+     fewer conditionals will be evaluated at run time.
   */
   proc divceil(m: integral, n: integral) return
     if isNonnegative(m) then
@@ -347,7 +347,7 @@ module Math {
      i.e., the fraction `m`/`n` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
-     fewer condititionals will be evaluated at run time.
+     fewer conditionals will be evaluated at run time.
   */
   proc divfloor(param m: integral, param n: integral) param return
     if isNonnegative(m) then
@@ -361,7 +361,7 @@ module Math {
      i.e., the fraction `m`/`n` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
-     fewer condititionals will be evaluated at run time.
+     fewer conditionals will be evaluated at run time.
   */
   proc divfloor(m: integral, n: integral) return
     if isNonnegative(m) then

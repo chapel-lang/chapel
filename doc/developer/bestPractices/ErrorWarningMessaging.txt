@@ -87,7 +87,7 @@ In the compiler
   takes a format string and optional arguments, which are all passed
   to printf or similar.
 
-  If the format string is preceeded by an AST node (BaseAST*), then
+  If the format string is preceded by an AST node (BaseAST*), then
   that node's file and line number are printed before the error message.
 
   (See compiler/include/misc.h.)

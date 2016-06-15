@@ -102,6 +102,7 @@ studies/shootout/binary-trees/binary-trees-extras.graph
 studies/shootout/fasta/fasta-extras.graph
 studies/shootout/spectral-norm/lydia/spectral-norm-specify-step.graph
 studies/shootout/mandelbrot/mandelbrot-extras.graph
+studies/shootout/mandelbrot/mandelbrot-dynamicIter.graph
 # suite: Parboil benchmarks
 studies/parboil/BFS/bfs.graph
 studies/parboil/histo/histo.graph
@@ -126,6 +127,7 @@ npb/ep/ep.graph
 npb/ep/ep-b.graph
 npb/ft/ft.graph
 npb/ft/ft-a.graph
+users/npadmana/npb-mg/mg.graph
 # suite: Array/Domain performance
 arrays/diten/arrayPerformance-2d.graph
 arrays/diten/arrayPerformance-1d.graph
@@ -198,6 +200,13 @@ studies/hpcc/STREAM_study_fragmented.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/mandelbrot/mandelbrot.graph
+# suite: String perf tests
+types/string/ferguson/temporary-copies.graph
+types/string/psahabu/split-whitespace-perf.graph
+types/string/psahabu/perf/allocate.graph
+types/string/psahabu/perf/arguments.graph
+types/string/psahabu/perf/search.graph
+types/string/psahabu/perf/substring.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph
@@ -206,7 +215,6 @@ spectests.graph
 studies/paracr/asenjo/PARACR-BC.graph
 modules/standard/BitOps/c-tests/performance/bitops.graph
 studies/rbc/tvandoren/RBC.graph
-types/string/ferguson/temporary-copies.graph
 # suite: Colorado State University
 studies/colostate/Jacobi1D.graph
 studies/colostate/Jacobi2D.graph

@@ -1535,7 +1535,7 @@ argument.
 void subSymbol(BaseAST* ast, Symbol* oldSym, Symbol* newSym);
 \end{clang}
 \begin{quote}
-This function replaces all occurences of symbol \cc{oldSym} in
+This function replaces all occurrences of symbol \cc{oldSym} in
 \cc{ast} with \cc{newSym} by traversing \cc{ast}.  This is a special
 case of \cc{update_symbols} which takes a map of old symbols to new
 symbols.
@@ -2842,7 +2842,7 @@ This pass consists of the following steps:
   are local (unless checks are disabled).  This optimization analyzes
   the code in local blocks for places where wide references or wide
   classes are accessed such that remote communication may occur.  In
-  this case, a check is inserted to ensure that the wide referene is
+  this case, a check is inserted to ensure that the wide reference is
   local to the current locale, and a narrow reference is inserted to
   capture the address.  Note that wide references can be moved into
   other wide references even if they are not local, since this does

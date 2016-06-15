@@ -5,8 +5,6 @@
 use sorted;
 use Common;
 
-use Sort;
-
 var rA: [1..10] real;
 randStream.fillRandom(rA);
 var A = [i in rA] (10 * i): int;
