@@ -656,22 +656,7 @@ module ChapelBase {
   pragma "no default functions"
   class _ddata {
     type eltType;
-    /*
-       If we had a way to do 'static' routines, this
-       could stay here, but since we don't at the moment,
-       we've wired the modules to call _ddata_free().
 
-    proc ~_ddata() {
-      __primitive("array_free", this);
-    }
-
-     If we had a way to do 'static' routines, this
-       could stay here, but since we don't at the moment,
-       we've wired the modules to call _ddata_allocate().
-    inline proc init(size: integral) {
-      __primitive("array_alloc", this, eltType, size);
-      init_elts(this, size, eltType);
-    }*/
     inline proc this(i: integral) ref {
       return __primitive("array_get", this, i);
     }
