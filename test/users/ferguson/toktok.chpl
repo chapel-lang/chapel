@@ -10,6 +10,9 @@ proc a() {
 }
 proc b() {
   var tok = __primitive("get caller stack token");
+  var tok2 = __primitive("get caller stack token");
+
+  assert(tok == tok2);
 
   return tok;
 }

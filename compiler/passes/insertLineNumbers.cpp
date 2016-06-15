@@ -307,12 +307,13 @@ void insertLineNumbers() {
       if (call->isPrimitive(PRIM_GET_CALLER_STACK_TOKEN)) {
         FnSymbol* inFn = toFnSymbol(call->parentSymbol);
         INT_ASSERT(inFn);
-        if (!tokMap.get(inFn)) {
-          SET_LINENO(inFn);
+        ArgSymbol* arg = tokMap.get(inFn);
+        SET_LINENO(inFn);
+        if (!arg) {
           //call->parentSymbol->addFlag(FLAG_USES_GET_CALLER_STACK_TOKEN);
-          ArgSymbol* arg = newCallerStackTok(inFn);
-          call->replace(new SymExpr(arg));
+          arg = newCallerStackTok(inFn);
         }
+        call->replace(new SymExpr(arg));
       }
     }
   }
