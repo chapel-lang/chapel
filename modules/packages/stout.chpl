@@ -1,5 +1,80 @@
 /*
-  structures to improve error handling in chapel programs
+ * Copyright 2004-2016 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+
+Structures to improve error handling in Chapel programs
+
+General purpose data structures to manage and handle errors that could occur
+in an end-user application or program.
+
+This module provides:
+
+1. An "Error" record. 
+
+2. An "Option" record type capturing two states "None" or "Some". This is a
+   safe alternative to null/nil testing.
+
+3. The "Try" record type which can either return a value or an "Error" without
+   the need for runtime exception handling.
+
+4. "Result" record type - a combination of "Try" and "Option".
+
+Example 1
+---------
+
+.. code-block:: chapel
+
+  use stout;
+
+  var os = Option(int).some(10);
+  writeln(os.isSome());
+
+  var on = Option(int).none(int);
+  writeln(os.isNone());
+
+Example 2
+---------
+
+.. code-block:: chapel
+
+  use stout;
+
+   var x : Try(int);
+
+   x = Try(int).error(int, "boo");
+   writeln((true, x.isError()));
+
+   var e = new Error(int, "lame");
+   writeln((true, x.isError()));
+
+   x = e;
+   writeln((true, x.isError()));
+   writeln((false, x.isSome()));
+
+   x = Try(int).some(5);
+   writeln((false, x.isError()));
+   writeln((true, x.isSome()));
+
+stout Types and Functions
+--------------------------------
+
  */
 module stout {
 
@@ -7,6 +82,11 @@ module stout {
       type eltype;
       var msg:string;
 
+  /* Create an Error
+
+     :arg t: the type associated with the Error 
+     :arg message: the message associated with the Error 
+   */
       proc Error(type eltype, const message:string) {
          msg = message;
       }
@@ -38,34 +118,68 @@ module stout {
       var state = OptionState.NONE;
       var t:option_type;      
 
+  /* Create an Option that is a "None" 
+
+     :arg option_type: the type associated with the Option 
+   */
       proc Option(type option_type) {
          state = OptionState.NONE;
       }
 
+  /* Create an Option that is a "Some"
+
+     :arg option_type: the type associated with the Option
+     :arg val: the inital value
+   */
       proc Option(type option_type, const val:option_type) {
          state = OptionState.SOME;
          t = val;
       }
 
+  /* Create an Option from an Option
+
+     :arg option_type: the type associated with the Option
+     :arg that: the option to clone 
+   */
       proc Option(type option_type, const that:Option(option_type)) {
          state = that.state;
-         t = if that.t != nil then that.t else nil; 
+         if that.state != OptionState.NONE { t = that.t }
       }
 
+  /* Does the Option have value? 
+   */
       proc isSome() { return state == OptionState.SOME; }
+
+  /* Does the Option not have value?
+   */
       proc isNone() { return state == OptionState.NONE; }
 
+  /* Fetch the Option's value
+   */
       proc get() : option_type { assert(state == OptionState.SOME, "Option is not a SOME"); return t; }
+
+  /* Fetch the Option's value 
+
+     :arg val: if the Option is a "None" then assign the Option "val" and return "val".
+   */
       proc get(const val:option_type) : option_type {  return if state == OptionState.NONE then val else t; }
 
+  /* Fetch the Option's value 
+   */
       proc this() { return get(); }
 
    }
 
+  /* Create a "None" Option
+     :arg option_type: assign the Option "option_type" type
+   */
    proc type Option.none(type option_type) {
       return new Option(option_type);
    }
 
+  /* Create a "Some" Option
+     :arg val: assign the Option "val"
+   */
    proc type Option.some(const val:?option_type) {
       return new Option(option_type, val);
    }
@@ -89,7 +203,6 @@ module stout {
          else {
             t = Try(Option(result_type)).some(Option(result_type).some(val));
          }
-writeln(t);
       }
 
       proc Result(type result_type, const that:Result(result_type)) {
