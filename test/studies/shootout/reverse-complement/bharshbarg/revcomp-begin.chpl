@@ -1,71 +1,69 @@
+use IO;
+
+param newLineChar = 0x0A;
+param greaterThan = 0x3E;
 const pairs = "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n";
 var table : [1..128] uint(8);
 
-proc main(args: [] string) {
-  param newLineChar = 0x0A;
-  param greaterThan = 0x3E;
-  var inFile = openfd(0); // stdin
-  const fileLen = inFile.length();
-  var data : [1..fileLen] uint(8);
-  var r = inFile.reader(locking=false);
-
+proc main() {
   // initialize complement table
   for i in 0..#pairs.length by 2 {
-    table[pairs.buff[i]] = pairs.buff[i+1];      // uppercase
+    table[pairs.buff[i]] = pairs.buff[i+1];        // uppercase
     if pairs.buff[i] != newLineChar then
       table[pairs.buff[i] + 32] = pairs.buff[i+1]; // lowercase
   }
-
-  var numRead  : int;
+  
+  var data : string; 
   var idx = 1;
   var start = 0;
 
   // sync statements wait for all tasks inside them to complete
   sync {
-    while r.readline(data, numRead, idx) {
+    var data_in : string;
+    while readln(data_in) {
+      data += data_in;
 
       // Look for the start of a section, and if possible 
       // spawn a task to start work on the previous section.
-      if data[idx] == greaterThan {
-        if start == 0 then start = idx;
-        else {
+      if data.buff[idx] == greaterThan {
+        if start != 0 then 
           begin process(data, start, idx-2);
-          start = idx;
-        }
+        start = idx;
       }
-      idx += numRead; 
+
+      idx += data_in.len; 
     }
 
     // work on the last section
     process(data, start, idx-2);
   }
-
-  // Open a binary writer to stdout
-  var binout = openfd(1).writer(iokind.native, locking=false, 
-                                hints=QIO_CH_ALWAYS_UNBUFFERED);
-  binout.write(data);
+  
+  write(data);
 }
 
-proc process(ref data : [], in from : int, end : int) {
+proc process(ref data : string, in from : int, end : int) {
 
   // Skip the header information
-  while data[from] != 0xa do from += 1;
+  while data[from] != 0xa do
+    from += 1;
   from += 1;
 
   const len = end - from;
-  const off = 60 - (len % 61);
+  const adj = len % 61; 
+  const off = 60 - adj;
 
   if off > 0 {
-    var m = from + 60 - off;
+    var m = from + adj;
     while m < end {
-      for i in 0..off-1 by -1 do data[m+1+i] = data[m+i];
+      for i in 0..off-1 by -1 do
+        data[m+1+i] = data[m+i];
       data[m+1] = 0xa;
       m += 61;
     }
   }
 
-  const middle = (end-from)/2;
-  for i in 0 .. middle {
+  const middle = len/2;
+  for i in 0..middle {
     const c = table[data[from+i]];
     data[from+i] = table[data[end-i]];
     data[end-i] = c;
