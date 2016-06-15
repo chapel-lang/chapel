@@ -36,6 +36,12 @@ This module provides:
 
 4. "Result" record type - a combination of "Try" and "Option".
 
+Mesos's C++ stout API:
+
+1. https://mesos.apache.org/api/latest/c++/md_3rdparty_libprocess_3rdparty_stout_README.html
+
+2. 
+
 Example 1
 ---------
 
