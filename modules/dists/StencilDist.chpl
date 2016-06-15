@@ -677,7 +677,18 @@ proc _matchArgsShape(type rangeType, type scalarType, args) type {
 
 proc Stencil.dsiCreateRankChangeDist(param newRank: int, args) {
   var collapsedDimLocs: rank*idxType;
+  var newFluff : newRank*idxType;
 
+  {
+    // Create a fluff that skips a dimension.
+    var curdim = 1;
+    for param i in 1..rank {
+      if !isCollapsedDimension(args(i)) {
+        newFluff(curdim) = fluff(i);
+        curdim += 1;
+      }
+    }
+  }
   for param i in 1..rank {
     if isCollapsedDimension(args(i)) {
       collapsedDimLocs(i) = args(i);
@@ -704,7 +715,7 @@ proc Stencil.dsiCreateRankChangeDist(param newRank: int, args) {
   const newTargetLocales = targetLocales((...collapsedLocs));
   return new Stencil(newBbox, newTargetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity, fluff=fluff, periodic=periodic);
+                   dataParMinGranularity, fluff=newFluff, periodic=periodic);
 }
 
 iter StencilDom.these() {
@@ -1305,7 +1316,7 @@ proc StencilArr.dsiRankChange(d, param newRank: int, param stridable: bool, args
           locSlice(i) = args(i);
           collapsedDims(i) = args(i);
         } else {
-          locSlice(i) = locDom.myBlock.dim(j)(args(i));
+          locSlice(i) = locDom.myFluff.dim(j)(args(i));
           j += 1;
         }
       }
