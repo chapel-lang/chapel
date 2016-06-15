@@ -488,7 +488,7 @@ void chpl_thread_exit(void) {
 
     /* We have joined with tlp->thread, so now we search for its stack
      * in the thread_stack_list_head list and free it. This is for be
-     * sure that we free stacks used only by teminated threads.
+     * sure that we free stacks used only by terminated threads.
      */
     for (tslp = thread_stack_list_head; tslp != NULL; tslp = tslp->next) {
       if(pthread_equal(tlp->thread, tslp->owner_pthread)){

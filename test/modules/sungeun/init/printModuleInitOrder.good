@@ -31,6 +31,7 @@ Initializing Modules:
       Regexp
     LocaleTree
     DefaultAssociative
+     Sort
     ChapelTaskTable
     MemTracking
     ChapelUtil

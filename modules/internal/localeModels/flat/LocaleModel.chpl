@@ -358,6 +358,24 @@ module LocaleModel {
   extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
 
   //
+  // returns true if an executeOn can be handled directly
+  // by running the function in question.
+  // Applies to execute on and execute on fast.
+  // When performing a blocking on, the compiler will emit this sequence:
+  //
+  //  if (chpl_doDirectExecuteOn(targetLocale))
+  //         onStatementBodyFunction( args ... );
+  //  else
+  //         chpl_executeOn / chpl_executeOnFast
+  //
+  export
+  proc chpl_doDirectExecuteOn(loc: chpl_localeID_t // target locale
+                             ):bool {
+    const node = chpl_nodeFromLocaleID(loc);
+    return (node == chpl_nodeID);
+  }
+
+  //
   // regular "on"
   //
   pragma "insert line file info"
@@ -370,6 +388,9 @@ module LocaleModel {
     const node = chpl_nodeFromLocaleID(loc);
     if (node == chpl_nodeID) {
       // don't call the runtime execute_on function if we can stay local
+      // one day, we could rely on this always being handled
+      // by the compiler's use of doDirectExecuteOn, but for now
+      // the compiler calls this version in some cases.
       chpl_ftable_call(fn, args);
     } else {
       chpl_comm_execute_on(node, chpl_sublocFromLocaleID(loc),

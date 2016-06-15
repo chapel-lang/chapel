@@ -35,6 +35,7 @@ Parsing module files:
   $CHPL_HOME/modules/packages/Search.chpl
   $CHPL_HOME/modules/standard/Error.chpl
   $CHPL_HOME/modules/standard/Regexp.chpl
+  $CHPL_HOME/modules/standard/Reflection.chpl
 In bar
 In baz
 In bak

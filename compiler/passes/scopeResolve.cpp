@@ -1003,14 +1003,16 @@ static void build_type_constructor(AggregateType* ct) {
 
 
 // For the given class type, this builds the compiler-generated constructor
-// which is also called by user-defined constructors to pre-initialize all 
+// which is also called by user-defined constructors to pre-initialize all
 // fields to their declared or type-specific initial values.
 static void build_constructor(AggregateType* ct) {
-  if (isSyncType(ct))
+  if (isSyncType(ct) || isSingleType(ct)) {
     ct->defaultValue = NULL;
+  }
 
   // Create the default constructor function symbol,
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
+
   fn->cname = fn->name;
 
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
@@ -1064,10 +1066,13 @@ static void build_constructor(AggregateType* ct) {
   CallExpr*  allocCall = NULL;
 
   if (ct->symbol->hasFlag(FLAG_REF) ||
-      isSyncType(ct)) {
+      isSyncType(ct)                ||
+      isSingleType(ct)) {
     // For ref, sync and single classes, just allocate space.
     allocCall = callChplHereAlloc(fn->_this);
+
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
+
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
     // Create a meme (whatever that is).
     meme = new ArgSymbol(INTENT_BLANK,
@@ -1075,6 +1080,7 @@ static void build_constructor(AggregateType* ct) {
                          ct,
                          NULL,
                          new SymExpr(gTypeDefaultToken));
+
     meme->addFlag(FLAG_IS_MEME);
 
     // Move the meme into "this".
@@ -1541,10 +1547,22 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
         CallExpr *call = toCallExpr(parent);
 
         if (((call) && (call->baseExpr != unresolvedSymExpr)) || (!call)) {
+          //
+          // If we detect that this function reference is within a
+          // c_ptrTo() call then we only need a C pointer to the
+          // function, not a full Chapel first-class function (which
+          // can capture variables).
+          //
+          // TODO: Can we avoid strcmp or ensure it's "our" fn?
+          // 
+          bool captureForC = (call && call->isNamed("c_ptrTo"));
+
           //If the function is being used as a first-class value, handle
           // this with a primitive and unwrap the primitive later in
           // functionResolution
-          CallExpr *prim_capture_fn = new CallExpr(PRIM_CAPTURE_FN);
+          CallExpr *prim_capture_fn = new CallExpr(captureForC ?
+                                                   PRIM_CAPTURE_FN_FOR_C :
+                                                   PRIM_CAPTURE_FN_FOR_CHPL);
 
           unresolvedSymExpr->replace(prim_capture_fn);
           prim_capture_fn->insertAtTail(unresolvedSymExpr);
@@ -2512,6 +2530,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
       // Handles case where inner use has an 'except' list, or is
       // just a plain use.  The use returned will have a (longer) 'except'
       // list.
+      SET_LINENO(this);
       UseStmt* newUse = copy();
       for_vector(const char, toExclude, outer->named) {
         newUse->named.push_back(toExclude);
@@ -2606,6 +2625,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
     } else {
       // The inner use did not specify an 'except' or 'only' list,
       // so propagate our 'only' list and/or renamed list to it.
+      SET_LINENO(this);
       UseStmt* newUse = copy();
       for_vector(const char, toInclude, outer->named) {
         newUse->named.push_back(toInclude);

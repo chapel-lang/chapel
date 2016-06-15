@@ -124,9 +124,18 @@ all:
   03/17/16:
     - text: Switched gen compiler to gcc 5.1.0
       config: 16 node XC, Single node XC
+  04/27/16:
+    - text: Optimization for returning wide pointers (#3742)
+      config: Single node XC, 16 node XC
   05/05/16:
     - text: ubuntu update to 16.04 (gcc upgraded to 5.3)
       config: shootout
+  05/12/16:
+    - KACE removed from systems.  Should see less noise after this day.
+  05/31/16:
+    - Enable jemalloc's decay-based purging (#3926)
+  06/06/16:
+    - Avoid allocating arg bundles for local on statements (#3890)
 
 AllCompTime:
   11/09/14:
@@ -166,6 +175,8 @@ binary-trees:
     - upgrade jemalloc to 4.1.0 (#3447)
   03/16/16:
     - revert jemalloc to 4.0.4 (#3477)
+  05/28/16:
+    - upgrade jemalloc to 4.2.0 (#3919)
 
 chameneos-redux:
   07/08/13:
@@ -268,14 +279,24 @@ isx-no-return:
 isx.xc-time:
   02/26/16:
     - ISx ref to array (#3365)
+  04/23/16:
+    - Switched to PCG random number generator (#3764)
 
 isx-bucket-spmd.xc-time:
   02/26/16:
     - ISx ref to array (#3365)
+  04/23/16:
+    - Switched to PCG random number generator (#3764)
 
 isx-spmd.xc-time:
   02/26/16:
     - ISx ref to array (#3365)
+  04/23/16:
+    - Switched to PCG random number generator (#3764)
+
+isx-perf-task.xc-time:
+  04/23/16:
+    - Switched to PCG random number generator (#3764)
 
 jacobi:
   03/07/14:
@@ -395,6 +416,8 @@ nbody:
     - upgrade jemalloc to 4.1.0 (#3447)
   03/16/16:
     - revert jemalloc to 4.0.4 (#3477)
+  05/28/16:
+    - upgrade jemalloc to 4.2.0 (#3919)
 
 parOpEquals:
   09/06/13:
@@ -426,6 +449,11 @@ prk-stencil.xc-perf:
   05/07/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
 
+ra:
+  05/13/16:
+    - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
+      config: Single node XC
+
 regexdna:
   10/07/14:
     - Add c_string_copy type
@@ -441,6 +469,10 @@ revcomp:
     - various qio changes motivated by cygwin failures (#1943)
   10/29/15:
     - Difficult to consistently replicate
+
+sad:
+  05/03/16:
+    - inconclusive due to noise
 
 spectralnorm:
   01/21/15:
@@ -475,8 +507,10 @@ stencil:
     - machine related (no commits on the day before)
   03/24/15:
     - with CCE, bug fix to avoid vectorizing when not valid
-  04/27/16:
-    - text: Optimization for returning wide pointers (#3742)
+
+stream:
+  05/13/16:
+    - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
       config: Single node XC
 
 testSerialReductions:
@@ -513,3 +547,5 @@ timeVectorArray:
     - implemented doubling/halving for array-as-vec (#3380) (no timing from 4th)
   03/09/16:
     - increased array-as-vec problem size (#3422)
+  05/28/16:
+    - upgrade jemalloc to 4.2.0 (#3919)

@@ -263,7 +263,7 @@ module DefaultRectangular {
         // Make sure we don't use more sublocales than the numbers of
         // tasksPerLocale requested
         const numSublocTasks = min(numSublocs, dptpl);
-        // For serial tasks, we will only have a singel chunk
+        // For serial tasks, we will only have a single chunk
         const (numChunks, parDim) = if __primitive("task_get_serial") then
                                     (1, -1) else
                                     _computeChunkStuff(numSublocTasks,
@@ -471,7 +471,7 @@ module DefaultRectangular {
     proc dsiDim(d : int)
       return ranges(d);
   
-    // optional, is this necesary? probably not now that
+    // optional, is this necessary? probably not now that
     // homogeneous tuples are implemented as C vectors.
     proc dsiDim(param d : int)
       return ranges(d);
@@ -1412,8 +1412,8 @@ module DefaultRectangular {
   Data needed to use strided copy of data:
     + Stridelevels: the number of stride level (not really the number of dimensions because:
        - Stridelevels < rank if we can aggregate several dimensions due to they are consecutive 
-           -- for exameple, whole rows --
-       - Stridelevels == rank if there is a "by X" whith X>1 in the range description for 
+           -- for example, whole rows --
+       - Stridelevels == rank if there is a "by X" with X>1 in the range description for
            the rightmost dimension)
     + srcCount: slice size in each dimension for the source array. srcCount[0] should be the number of bytes of contiguous data in the rightmost dimension.
     + dstCount: slice size in each dimension for the destination array. dstCount[0] should be the number of bytes of contiguous data in the rightmost dimension.
@@ -1473,7 +1473,7 @@ module DefaultRectangular {
     //  stridelevels =1
     //  srcCount = (1,50) //In B you read 1 element 50 times
     //  (srcStride=(2) = distance between 1 element and the next one)
-    //  dstCount = (5,10) //In A you write a chunk of 5 elments 10
+    //  dstCount = (5,10) //In A you write a chunk of 5 elements 10
     //  times (dstStride=(10) distance between 1 chunk and the next one)
     
     
@@ -1503,9 +1503,9 @@ module DefaultRectangular {
     var dstStride, srcStride: [1..rank] size_t;
     /*When the source and destination arrays have different sizes 
       (example: A[1..10,1..10] and B[1..20,1..20]), the count arrays obtained are different,
-      so we have to calculate the minimun count array */
+      so we have to calculate the minimum count array */
     //Note that we use equal function equal instead of dstCount==srcCount due to the latter fails
-    //The same for the array assigment (using assing function instead of srcCount=dstCount)
+    //The same for the array assignment (using assign function instead of srcCount=dstCount)
     
     if !bulkCommEqual(dstCount, srcCount, rank+1) //For different size arrays
     {
@@ -1603,7 +1603,7 @@ module DefaultRectangular {
       const dest = A.data;
       const src = B.data;
   
-      //We are in a locale that doesn't store neither A nor B so we need to copy the auxiliarry
+      //We are in a locale that doesn't store neither A nor B so we need to copy the auxiliary
       //arrays to the locale that hosts A. This should translate into some more gets...
       const countAux=count.safeCast(size_t);
       const srcstrides=srcStride.safeCast(size_t);
@@ -1639,8 +1639,8 @@ module DefaultRectangular {
   /* This function returns stridelevels for the default rectangular array.
     + Stridelevels: the number of stride level (not really the number of dimensions because:
        - Stridelevels < rank if we can aggregate several dimensions due to they are consecutive 
-           -- for exameple, whole rows --
-       - Stridelevels == rank if there is a "by X" whith X>1 in the range description for 
+           -- for example, whole rows --
+       - Stridelevels == rank if there is a "by X" with X>1 in the range description for
            the rightmost dimension)*/
   proc DefaultRectangularArr.computeBulkStrideLevels(rankcomp):int(32) where rank == 1
   {//To understand the blk(1)==1 condition,
@@ -1653,7 +1653,7 @@ module DefaultRectangular {
   //Case 1:  
   //  var A: [1..4,1..4,1..4] real; A[1..4,3..4,1..4 by 2] 
   // --> In dimension 3 there is stride, because the elements are not
-  //     consecutives, so stridelevels +=1
+  //     consecutive, so stridelevels +=1
   //More in test/optimizations/bulkcomm/alberto/2dDRtoBDTest.chpl (example 8)
   
   //Case 2:
@@ -1728,7 +1728,7 @@ module DefaultRectangular {
   //    var A: [1..4,1..4,1..4] real; A[1..4,4..4,1..4 by 3] 
   //      --> There is only 1 element in dimension 2, so it's possible to 
   //        join to dimension 1, and the value of count[3] will be the number 
-  //        of elements in dimension 2 x number of elements in dimesion 1 (1 x 4).
+  //        of elements in dimension 2 x number of elements in dimension 1 (1 x 4).
   //More in test/optimizations/bulkcomms/alberto/3dAgTestStride.chpl (example 6 and 7)
   proc DefaultRectangularArr.computeBulkCount(stridelevels:int(32), rankcomp, aux = false):(rank+1)*size_t where rank >1
   {
@@ -1851,7 +1851,7 @@ module DefaultRectangular {
   
   /* This function checks if the stride in dimension 'x' is the same as the distance
   between the last element in dimension 'x' and  the first in dimension 'x-1'.
-  If the distances are equal, we can aggregate these two dimmensions. 
+  If the distances are equal, we can aggregate these two dimensions.
   Example: 
   array A, the domain is D=[1..6, 1..6, 1..6]
   Let's A[1..6 by 2, 1..6, 1..6 by 2], then, checkStrideDistance(3) returns true, 

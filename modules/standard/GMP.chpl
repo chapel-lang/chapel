@@ -30,7 +30,7 @@ Multiple Precision Arithmetic Library) module in Chapel.  It should be
 considered incomplete in that (a) only a subset of the full GMP interface is
 supported, and (b) the performance is currently lacking due to extraneous
 copies in the Chapel code that have not yet been optimized away.  If there is
-sufficient interest, this protype can be expanded to support the full GMP
+sufficient interest, this prototype can be expanded to support the full GMP
 interface and performance.
 
 This prototype GMP module has been used to implement a port of the standard GMP
@@ -173,7 +173,7 @@ module GMP {
   extern const mp_bits_per_limb: c_int;
 
   /* All these external functions are ref, which may
-     seem suprising. They are that way because identity
+     seem surprising. They are that way because identity
      matters and they may get reallocated otherwise;
      ref is currently the only way to avoid that.
    
@@ -296,9 +296,9 @@ module GMP {
   extern proc mpz_divisible_ui_p(ref N: mpz_t, D:c_ulong):c_int;
   extern proc mpz_divisible_2exp_p(ref N: mpz_t, B:c_ulong):c_int;
 
-  extern proc mpz_conguent_p(ref N: mpz_t, ref C:mpz_t, ref D:mpz_t):c_int;
+  extern proc mpz_congruent_p(ref N: mpz_t, ref C:mpz_t, ref D:mpz_t):c_int;
   extern proc mpz_congruent_ui_p(ref N: mpz_t, C:c_ulong, D:c_ulong):c_int;
-  extern proc mpz_congruent_2exp_p(ref N: mpz_t, ref C:mpz_t, B:c_int):c_int;
+  extern proc mpz_congruent_2exp_p(ref N: mpz_t, ref C:mpz_t, B:c_ulong):c_int;
 
   // Exponentiation Functions
   extern proc mpz_powm(ref ROP: mpz_t, ref BASE: mpz_t, ref EXP: mpz_t, ref MOD: mpz_t);
@@ -456,9 +456,9 @@ module GMP {
     The checks are controlled by the compiler options ``--[no-]cast-checks``,
     ``--fast``, etc.
 
-    TODO: When a Chapel will not safely cast to a C type, it would be better to
-    promte the Chapel value to a BigInt, then run the operation on that
-    BigInt. This would make the BigInt interface consistent across all
+    TODO: When a Chapel type will not safely cast to a C type, it would be
+    better to promote the Chapel value to a BigInt, then run the operation on
+    that BigInt. This would make the BigInt interface consistent across all
     platforms (already true today) _and_ always work regardless of platform
     (not true today).
    */
@@ -981,7 +981,7 @@ module GMP {
       var ret:c_int;
       on this {
         var (ccopy,c_) = c.maybeCopy();
-        ret=mpz_congruent_2exp_p(this.mpz, c, b.safeCast(c_ulong));
+        ret=mpz_congruent_2exp_p(this.mpz, c_.mpz, b.safeCast(c_ulong));
         if ccopy then delete c_;
       }
       return ret.safeCast(int);

@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -61,17 +61,14 @@ void liveVariableAnalysis(FnSymbol* fn,
                           Vec<SymExpr*>& defSet,
                           std::vector<BitVec*>& OUT);
 
-void
-buildDefUseChains(FnSymbol* fn,
-                  std::map<SymExpr*,Vec<SymExpr*>*>& DU,
-                  std::map<SymExpr*,Vec<SymExpr*>*>& UD);
+void buildDefUseChains(FnSymbol*                           fn,
+                       std::map<SymExpr*, Vec<SymExpr*>*>& DU,
+                       std::map<SymExpr*, Vec<SymExpr*>*>& UD);
 
-void
-freeDefUseChains(std::map<SymExpr*,Vec<SymExpr*>*>& DU,
-                 std::map<SymExpr*,Vec<SymExpr*>*>& UD);
+void freeDefUseChains(std::map<SymExpr*, Vec<SymExpr*>*>& DU,
+                      std::map<SymExpr*, Vec<SymExpr*>*>& UD);
 
-void
-remoteValueForwarding(Vec<FnSymbol*>& fns);
+void remoteValueForwarding();
 
 
 #endif

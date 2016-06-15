@@ -503,7 +503,7 @@ def compiler_performance():
 
     # create the graphs
     title = "Chapel Compiler Performance Graphs"
-    logger.write("[Creating compiler perforamce graphs now]")
+    logger.write("[Creating compiler performance graphs now]")
 
     cmd = [create_graphs]
     cmd += args.gen_graph_opts.split(" ")
@@ -516,10 +516,10 @@ def compiler_performance():
     printout(p.stdout)
     p.wait()
     if p.returncode == 0:
-        logger.write("[Success generating compiler perfrommance graphs from "
+        logger.write("[Success generating compiler performance graphs from "
                 "{0} in {1}]".format(comp_graph_list, comp_perf_html_dir))
     else:
-        logger.write("[Error generating compiler perfrommance graphs from "
+        logger.write("[Error generating compiler performance graphs from "
             "{0} in {1}]".format(comp_graph_list, comp_perf_html_dir))
 
     # delete temp files

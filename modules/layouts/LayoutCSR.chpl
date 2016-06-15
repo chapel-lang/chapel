@@ -18,6 +18,7 @@
  */
 
 config param debugCSR = false;
+use Sort;
 
 // In the following, I insist on SUBdomains because
 // I have not seen us test a non-"sub" CSR domain
@@ -237,8 +238,11 @@ class CSRDom: BaseSparseDom {
   }
 
   proc dsiMember(ind: rank*idxType) {
-    const (found, loc) = find(ind);
-    return found;
+    if parentDom.member(ind) {
+      const (found, loc) = find(ind);
+      return found;
+    }
+    return false;
   }
 
   proc dsiAdd(ind: rank*idxType) {
@@ -285,6 +289,98 @@ class CSRDom: BaseSparseDom {
     for a in _arrs {
       a.sparseShiftArray(insertPt..nnz-1, oldNNZDomSize+1..nnzDomSize);
     }
+  }
+
+  proc dsiBulkAdd(inds: [] index(rank, idxType),
+      isSorted=false, isUnique=false, preserveInds=true){
+
+    if !isSorted && preserveInds {
+      var _inds = inds;
+      bulkAdd_help(_inds, isSorted, isUnique); 
+    }
+    else {
+      bulkAdd_help(inds, isSorted, isUnique);
+    }
+  }
+
+  proc bulkAdd_help(inds: [?indsDom] rank*idxType, isSorted=false, 
+      isUnique=false){
+
+    const (actualInsertPts, actualAddCnt) =
+      __getActualInsertPts(this, inds, isSorted, isUnique);
+
+    const oldnnz = nnz;
+    nnz += actualAddCnt;
+
+    //grow nnzDom if necessary
+    if (nnz > nnzDomSize) {
+      nnzDomSize = (exp2(log2(nnz)+1.0)):int;
+
+      nnzDom = {1..nnzDomSize};
+    }
+
+    //linearly fill the new colIdx from backwards
+    var newIndIdx = indsDom.high; //index into new indices
+    var oldIndIdx = oldnnz; //index into old indices
+    var newLoc = actualInsertPts[newIndIdx]; //its position-to-be in new dom
+    while newLoc == -1 {
+      newIndIdx -= 1;
+      if newIndIdx == indsDom.low-1 then break; //there were duplicates -- now done
+      newLoc = actualInsertPts[newIndIdx];
+    }
+
+    var arrShiftMap: [{1..oldnnz}] int; //to map where data goes
+
+    for i in 1..nnz by -1 {
+      if oldIndIdx >= 1 && i > newLoc {
+        //shift from old values
+        colIdx[i] = colIdx[oldIndIdx];
+        arrShiftMap[oldIndIdx] = i;
+        oldIndIdx -= 1;
+      }
+      else if newIndIdx >= indsDom.low && i == newLoc {
+        //put the new guy in
+        colIdx[i] = inds[newIndIdx][2];
+        newIndIdx -= 1;
+        if newIndIdx >= indsDom.low then 
+          newLoc = actualInsertPts[newIndIdx];
+        else
+          newLoc = -2; //finished new set
+        while newLoc == -1 {
+          newIndIdx -= 1;
+          if newIndIdx == indsDom.low-1 then break; //there were duplicates -- now done
+          newLoc = actualInsertPts[newIndIdx];
+        }
+      }
+      else halt("Something went wrong");
+
+    }
+
+    //aggregated row shift
+    var prevRow = parentDom.dim(1).low;
+    var row: int;
+    var rowCnt = 0;
+    for (ind, p) in zip(inds, actualInsertPts)  {
+      if p == -1 then continue;
+      row = ind[1];
+      if row == prevRow then rowCnt += 1;
+      else {
+        /*writeln(rowCnt, " nnz in row ", prevRow);*/
+        rowStart[prevRow+1] += rowCnt;
+        if row - prevRow > 1 {
+          for i in prevRow+2..row{
+            rowStart[i] += rowCnt;
+          }
+        }
+        rowCnt += 1;
+        prevRow = row;
+      }
+    }
+    for i in prevRow+1..rowDom.high{
+        rowStart[i] += rowCnt;
+    }
+    for a in _arrs do 
+      a.sparseBulkShiftArray(arrShiftMap, oldnnz);
   }
 
   proc dsiRemove(ind: rank*idxType) {
@@ -431,6 +527,21 @@ class CSRArr: BaseArr {
 
   proc IRV ref {
     return irv;
+  }
+
+  proc sparseBulkShiftArray(shiftMap, oldnnz){
+    var newIdx: int;
+    var prevNewIdx = 1;
+    for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(1) by -1) {
+      newIdx = shiftMap[_newIdx];
+      data[newIdx] = data[i];
+
+      //fill IRV up to previously added nnz
+      for emptyIndex in newIdx+1..prevNewIdx-1 do data[emptyIndex] = irv;
+      prevNewIdx = newIdx;
+    }
+    //fill the initial added space with IRV
+    for i in 1..prevNewIdx-1 do data[i] = irv;
   }
 
   proc sparseShiftArray(shiftrange, initrange) {

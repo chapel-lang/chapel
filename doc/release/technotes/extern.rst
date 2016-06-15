@@ -21,13 +21,13 @@ C declarations that should be usable from Chapel code.
     explicit strategy, one creates a Chapel declarations for each C
     function, variable, or type that one wants to use from Chapel code.
     This explicit strategy allows for a great deal of manual control over
-    how the Chapel compiler views a C function or type. This stategy is
+    how the Chapel compiler views a C function or type. This strategy is
     typically used within the Chapel standard modules for portability
     reasons.
  2) The extern block feature provides an implicit strategy, as described in
     the section `Support for Extern Blocks`_ below. This strategy makes
     use of the `clang` parser and so requires a Chapel compiler built with
-    LLVM support. The main advantage of the extern block stategy is that
+    LLVM support. The main advantage of the extern block strategy is that
     it is not necessary to provide Chapel declarations for every desired C
     function or type. Instead, such declarations are added automatically.
     In addition, the extern block can contain C function definitions in

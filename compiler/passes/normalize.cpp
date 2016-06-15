@@ -134,10 +134,18 @@ void normalize() {
     // state (empty) if they are used but not assigned to anything.
     forv_Vec(SymExpr, se, gSymExprs) {
       if (isFnSymbol(se->parentSymbol) && se == se->getStmtExpr()) {
-        SET_LINENO(se);
-        CallExpr* call = new CallExpr("_statementLevelSymbol");
-        se->insertBefore(call);
-        call->insertAtTail(se->remove());
+        if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
+          // Don't add these calls for the return type, since
+          // _statementLevelSymbol would do nothing in that case
+          // anyway, and it contributes to order-of-resolution issues for
+          // extern functions with declared return type.
+          if (parentFn->retExprType != se->parentExpr) {
+            SET_LINENO(se);
+            CallExpr* call = new CallExpr("_statementLevelSymbol");
+            se->insertBefore(call);
+            call->insertAtTail(se->remove());
+          }
+        }
       }
     }
   }
@@ -402,7 +410,11 @@ checkUseBeforeDefs() {
                 (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
                 call->get(1) == sym)
               continue; // We already handled this case above.
-            if ((!call || (call->baseExpr != sym && !call->isPrimitive(PRIM_CAPTURE_FN))) && sym->unresolved) {
+            if ((!call || 
+                 (call->baseExpr != sym && 
+                  !call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) &&
+                  !call->isPrimitive(PRIM_CAPTURE_FN_FOR_C))) && 
+                sym->unresolved) {
               if (!undeclared.set_in(sym->unresolved)) {
                 if (!toFnSymbol(fn->defPoint->parentSymbol)) {
                   USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",

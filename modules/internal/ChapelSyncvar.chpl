@@ -51,7 +51,7 @@ module ChapelSyncvar {
     //
     // The following types are OK for full empty types (sync/single)
     // because they represent a single logical value.  (Note that for
-    // the class it's the referenece to the object that has full/empty
+    // the class it's the reference to the object that has full/empty
     // semantics.  Note that this includes the internal type
     // chpl_taskID_t in order to keep parallel/taskPar/sungeun/private.chpl
     // working, but this does not seem to be more broadly necessary.
