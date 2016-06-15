@@ -3,6 +3,7 @@ proc verifyStencil(A : [?dom], debug = false) {
   // Domain where each dim is "-1..1"
   param rank = dom.rank;
   const halo = dom._value.fluff;
+  assert(dom._value.periodic);
   var Neighs : domain(rank);
   {
     var n : rank*range;
@@ -12,7 +13,8 @@ proc verifyStencil(A : [?dom], debug = false) {
 
   // Build each ghost domain and check it against the actual data to confirm
   // the update occurred correctly
-  for neigh in Neighs {
+  for n in Neighs {
+    const neigh = if isTuple(n) then n else (n,);
     const base : rank*int;
     if neigh == base then continue; // skip when neigh is all 0s
 
@@ -36,7 +38,7 @@ proc verifyStencil(A : [?dom], debug = false) {
     if debug then writeln("\tComparing ", gdom, " vs. ", adom);
     for (g, a) in zip(gdom, adom) {
       if A[g] != A[a] {
-        writeln("Failed when domain is: ", dom);
+        writeln("Failed when domain is: ", dom, ". Ghost = ", gdom, "; actual = ", adom);
         halt();
       }
     }
