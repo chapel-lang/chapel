@@ -1,6 +1,0 @@
-#!/bin/bash
-
-output=$2
-cut -d"[" -f1 $2 | xargs > $output.tmp
-mv $output.tmp $output
-
