@@ -1191,7 +1191,8 @@ proc BlockArr.dsiSerialWrite(f) {
 }
 
 proc BlockArr.dsiSlice(d: BlockDom) {
-  var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d);
+  var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
+      stridable=d.stridable, dom=d, sparseLayoutType=DefaultDist);
   var thisid = this.locale.id;
   coforall i in d.dist.targetLocDom {
     on d.dist.targetLocales(i) {
@@ -1246,7 +1247,8 @@ proc _extendTuple(type t, idx, args) {
 
 
 proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
-  var alias = new BlockArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom=d);
+  var alias = new BlockArr(eltType=eltType, rank=newRank, idxType=idxType,
+      stridable=stridable, dom=d, sparseLayoutType=DefaultDist);
   var thisid = this.locale.id;
   coforall ind in d.dist.targetLocDom {
     on d.dist.targetLocales(ind) {
@@ -1302,7 +1304,8 @@ proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) 
 
 proc BlockArr.dsiReindex(d: BlockDom) {
   var alias = new BlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
-                           stridable=d.stridable, dom=d);
+                           stridable=d.stridable, dom=d,
+                           sparseLayoutType=DefaultDist);
   const sameDom = d==dom;
 
   var thisid = this.locale.id;
