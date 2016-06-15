@@ -25,7 +25,7 @@ module StringCasts {
   //
   // Type -- Foo.type:string
   //
-  proc _cast(type t, type x)  param : string where t: string {
+  proc _cast(type t, type x)  param : string where t:string {
     return __primitive("typeToString", x);
   }
 
@@ -33,7 +33,7 @@ module StringCasts {
   // Bool
   //
 
-  inline proc _cast(type t, x: bool) where t: string {
+  inline proc _cast(type t, x: bool) where t:string {
     if (x) {
       return "true";
     } else {
@@ -55,7 +55,7 @@ module StringCasts {
   //
   // int
   //
-  proc _cast(type t, x: integral) where t: string {
+  proc _cast(type t, x: integral) where t:string {
     //TODO: switch to using qio's writef somehow
     extern proc integral_to_c_string_copy(x:int(64), size:uint(32), isSigned: bool) : c_string_copy;
     extern proc strlen(const str: c_string_copy) : size_t;
@@ -126,12 +126,12 @@ module StringCasts {
     return ret;
   }
 
-  proc _cast(type t, x:real(?w)) where t: string {
+  proc _cast(type t, x:real(?w)) where t:string {
     //TODO: switch to using qio's writef somehow
     return _real_cast_helper(x:real(64), false);
   }
 
-  proc _cast(type t, x:imag(?w)) where t: string {
+  proc _cast(type t, x:imag(?w)) where t:string {
     //TODO: switch to using qio's writef somehow
     // The Chapel version of the imag --> real cast smashes it flat rather than
     // just stripping off the "i".  See the cast in ChapelBase.
@@ -171,7 +171,7 @@ module StringCasts {
   //
   // complex
   //
-  proc _cast(type t, x: complex(?w)) where t: string {
+  proc _cast(type t, x: complex(?w)) where t:string {
     if isnan(x.re) || isnan(x.im) then
       return "nan";
     var re = (x.re):string;
