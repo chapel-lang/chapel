@@ -1,0 +1,6 @@
+bug: paranthesesless inner* constructor doesn't compile with --verify
+
+While instantiating inner class or inner record objects from the outer class,
+paranthesesless constructor doesn't go through when compiled with --verify.
+
+Same issue doesn't seem to happen when it is not in a class/record

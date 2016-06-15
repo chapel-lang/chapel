@@ -1,0 +1,8 @@
+bug: nil dereference referencing outer class' fields
+
+NOTES
+
+- Where outer,inner == class,class; same thing happens, which I would understand
+  due to memory allocation differences btw records vs classes
+
+- Where outer == record, nothing works(it is a separate future)
