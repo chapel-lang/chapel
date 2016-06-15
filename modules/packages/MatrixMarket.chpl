@@ -31,6 +31,13 @@ module MatrixMarket {
     var mm_fmt : MMFormat;
   }
 
+  proc high(d){
+    if isSparseDom(d) then
+      return d._value.parentDom.high;
+    else
+      return d.high;
+  }
+
   proc initMMInfo(const headerfields:[] string) {
     assert(headerfields(1) == "%%MatrixMarket", "Improperly formatted MatrixMarket file");
     assert(headerfields(2) == "matrix", "Improperly formatted MatrixMarket file");
@@ -114,13 +121,13 @@ module MatrixMarket {
       }
 
       proc fake_headers(nrows, ncols, nnz) {
-         var tfout = fd.writer(start=HEADER_LINE.size);
+         var tfout = fd.writer(start=HEADER_LINE.length);
          tfout.writef("%i %i %i", nrows, ncols, nnz);
          tfout.close();
       }
 
-      proc write_vector(i:int, jvec:[?Djvec] ?T) where Djvec.rank == 1 {
-         assert(last_rowno < i, "rows %i and %i not in sequential order!", last_rowno, i);
+      proc write_vector(const i:int, jvec:[?Djvec] ?T) where Djvec.rank == 1 {
+         //assert(last_rowno < i, "rows %i and %i not in sequential order!", last_rowno, i);
          var wfmt = "%i %i ";
 
          if T == complex {
@@ -128,7 +135,6 @@ module MatrixMarket {
            for (j,w) in zip(Djvec, jvec) {
              fout.writef(wfmt, i, j, w.re, w.im);
            }
- 
          }
          else if T == int {
            wfmt = wfmt + "%d\n";
@@ -143,7 +149,7 @@ module MatrixMarket {
            }
          }
 
-         last_rowno = i;
+         last_rowno = i; 
          var ret:(int,int);
          if jvec.size < 1 { ret = (-1, 0); } else { ret = (Djvec.size, jvec.size); }
          return ret;
@@ -153,18 +159,25 @@ module MatrixMarket {
       proc ~MMWriter() { this.close(); }
    }
 
-proc mmwrite(const fname:string, mat:[?Dmat] ?T, _num_cols=-1) where mat.domain.rank == 2 {
+proc mmwrite(const fname:string, mat:[?Dmat] ?T) where mat.domain.rank == 2 {
    var mw = new MMWriter(T, fname);
    mw.write_headers(-1,-1,-1);
+
    var (ncols, nnz) = (0,0);
    var (nrows, poslast) = (-1,-1);
-   var n_cols = _num_cols;
-   for r in 1..Dmat.high(1) {
-      var row = mat(r,..);
-      var (max_id, veclen) = mw.write_vector(r, row);
-      n_cols = max(n_cols, max_id);
-      nnz += veclen;
-      ncols = r;
+   var n_cols = -1;
+
+   const DmatHighRow = high(Dmat)(1);
+   const DmatHighCol = high(Dmat)(2);
+
+   for r in 1..DmatHighRow {
+     const dom = 1..DmatHighCol;
+     const rng = [ j in dom] (r,j);
+     const matvec = [ j in dom ] mat(r,j);
+     mw.write_vector(r, matvec);
+     n_cols = max(n_cols, DmatHighCol);
+     nnz += DmatHighCol; 
+     ncols = r;
    }
 
    nrows = mw.last_rowno;
@@ -234,7 +247,7 @@ class MMReader {
           var wr:real;
           var wi:real;
           done = fin.readf(fmtstr, i, j, wr, wi);
-          const w:complex = wr + wi:imag;
+          const w:complex = (wr, wi):complex;
           if done { spDom += (i,j); toret(i,j) = w; }
         }
 
@@ -266,7 +279,7 @@ class MMReader {
           var wr:real;
           var wi:real;
           fin.readf(tfmt, wr, wi);
-          var w:complex = wr + wi:imag;
+          var w:complex = (wr, wi):complex;
           toret(i) = w;
         }
       }
