@@ -1,5 +1,3 @@
-use IO;
-
 param newLineChar = 0x0A;
 param greaterThan = 0x3E;
 const pairs = "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n";
@@ -62,7 +60,7 @@ proc process(data : string, in from : int, end : int) {
     }
   }
 
-  const middle = len/2;
+  const middle = len / 2;
   for i in 0..middle {
     const c = table[data.buff[from+i]];
     data.buff[from+i] = table[data.buff[end-i]];
