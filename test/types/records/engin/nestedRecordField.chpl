@@ -5,12 +5,13 @@ record outerRecord {
   }
 
   var field = 7;
-  var nr: innerRecord;
+  var nr: innerRecord; // problem here
 
   // neither of the below works
   // var nr = new innerRecord;
   // var nr = new innerRecord();
 
+  // this method is just to show a working case of a similar issue
   proc outerProc() {
     var ir: innerRecord; //it works inside a record method
     writeln(ir.field);

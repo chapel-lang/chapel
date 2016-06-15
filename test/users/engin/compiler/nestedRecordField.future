@@ -1,4 +1,0 @@
-bug: inner record object as a field
-
-when outer is a record it seems to fail whereas when it is class it seems to be
-working fine

@@ -5,6 +5,7 @@ class outerClass {
 
   record innerRecord{
     proc innerRecordProc(){
+      // following line doesn't work with "var r: innerRecord" above
       writeln(outer.field); //outer or no outer doesn't make a difference
     }
   }
