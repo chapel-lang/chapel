@@ -86,6 +86,7 @@ bool Type::isDefaultIntentConst() const {
   if (symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) == true ||
       isReferenceType(this)                       == true ||
       isSyncType(this)                            == true ||
+      isSingleType(this)                          == true ||
       isRecordWrappedType(this)                   == true)
     retval = false;
 
@@ -1917,8 +1918,11 @@ static bool isDerivedType(Type* type, Flag flag)
 }
 
 bool isSyncType(const Type* t) {
-  return t->symbol->hasFlag(FLAG_SYNC) ||
-         t->symbol->hasFlag(FLAG_SINGLE);
+  return t->symbol->hasFlag(FLAG_SYNC);
+}
+
+bool isSingleType(const Type* t) {
+  return t->symbol->hasFlag(FLAG_SINGLE);
 }
 
 bool isAtomicType(const Type* t) {
@@ -2217,8 +2221,9 @@ bool needsCapture(Type* t) {
     return true;
   } else {
     // Ensure we have covered all types.
-    INT_ASSERT(isRecordWrappedType(t) ||  // domain, array, or distribution
-               isSyncType(t) ||
+    INT_ASSERT(isRecordWrappedType(t) ||
+               isSyncType(t)          ||
+               isSingleType(t)        ||
                isAtomicType(t));
     return false;
   }
