@@ -149,7 +149,7 @@ module stout {
    */
       proc Option(type option_type, const that:Option(option_type)) {
          state = that.state;
-         if that.state != OptionState.NONE { t = that.t }
+         if that.state != OptionState.NONE { t = that.t; }
       }
 
   /* Does the Option have value? 
