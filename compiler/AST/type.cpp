@@ -1917,7 +1917,8 @@ static bool isDerivedType(Type* type, Flag flag)
 }
 
 bool isSyncType(const Type* t) {
-  return getSyncFlags(t->symbol).any();
+  return t->symbol->hasFlag(FLAG_SYNC) ||
+         t->symbol->hasFlag(FLAG_SINGLE);
 }
 
 bool isAtomicType(const Type* t) {

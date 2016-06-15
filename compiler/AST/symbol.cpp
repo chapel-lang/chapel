@@ -3460,16 +3460,6 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
   return s->flags & mask;
 }
 
-FlagSet getSyncFlags(Symbol* s) {
-  static FlagSet mask;
-  if (mask.none()) {
-    mask.set(FLAG_SYNC);
-    mask.set(FLAG_SINGLE);
-  }
-
-  return s->flags & mask;
-}
-
 VarSymbol* newTemp(const char* name, Type* type) {
   if (!name) {
     if (localTempNames)

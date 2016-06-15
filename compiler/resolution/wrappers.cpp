@@ -505,7 +505,7 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
   actualExpr = newActual;
   actualSym  = castTemp;
 
-  if (getSyncFlags(ats).any()) {
+  if (isSyncType(ats->type) == true) {
 
     // Tom notes: Ultimately, I hope to push all code related to sync
     // variable implementation into module code.  Moving the special
