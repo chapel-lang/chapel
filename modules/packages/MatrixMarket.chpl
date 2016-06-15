@@ -83,7 +83,7 @@ module MatrixMarket {
 
    class MMWriter {
       type eltype;
-      var HEADER_LINE = "%%MatrixMarket matrix coordinate real general\n"; // currently the only supported MM format in this module
+      var HEADER_LINE : string = "%%MatrixMarket matrix coordinate real general\n"; // currently the only supported MM format in this module
 
       var fd:file;
       var fout:channel(true, iokind.dynamic, true);
@@ -127,7 +127,7 @@ module MatrixMarket {
       }
 
       proc write_vector(const i:int, jvec:[?Djvec] ?T) where Djvec.rank == 1 {
-         //assert(last_rowno < i, "rows %i and %i not in sequential order!", last_rowno, i);
+         assert(last_rowno <= i, "rows %i and %i not in sequential order!", last_rowno, i);
          var wfmt = "%i %i ";
 
          if T == complex {
@@ -139,13 +139,13 @@ module MatrixMarket {
          else if T == int {
            wfmt = wfmt + "%d\n";
            for (j,w) in zip(Djvec, jvec) {
-             if abs(w) > 1e-12 { fout.writef(wfmt, i, j, w); }
+              if abs(w) > 1e-12 { fout.writef(wfmt, i, j, w); }
            }
          }
          else if T == real {
            wfmt = wfmt + "%r\n";
            for (j,w) in zip(Djvec, jvec) {
-             if w > 0 { fout.writef(wfmt, i, j, w); }
+              if w > 0 { fout.writef(wfmt, i, j, w); }
            }
          }
 
@@ -244,8 +244,7 @@ class MMReader {
         const fmtstr = "%i %i " + tfmt + "\n";
         while done {
           var i, j:int;
-          var wr:real;
-          var wi:real;
+          var wr, wi:real;
           done = fin.readf(fmtstr, i, j, wr, wi);
           const w:complex = (wr, wi):complex;
           if done { spDom += (i,j); toret(i,j) = w; }
