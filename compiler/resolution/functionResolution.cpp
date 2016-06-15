@@ -2756,6 +2756,11 @@ printResolutionErrorUnresolved(
       INT_ASSERT(mod);
       str = astr(mod->name, ".", str);
     }
+    if (EnumType* typeE = toEnumType(info->actuals.v[1]->getValType())){
+      if(!strcmp("_MT", toString(info->actuals.v[0]->getValType()))) {
+        entity = "enumerated type symbol or call";
+      }
+    }
     USR_FATAL_CONT(call, "unresolved %s '%s'", entity, str);
     if (visibleFns.n > 0) {
       if (developer) {

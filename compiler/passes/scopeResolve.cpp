@@ -1922,8 +1922,8 @@ static void resolveEnumeratedTypes() {
         if (EnumType* type = toEnumType(first->var->type)) {
           if (SymExpr* second = toSymExpr(call->get(2))) {
             const char* name;
-            bool found = false;
-
+            //bool found = false;
+            /*
             CallExpr* parent = toCallExpr(call->parentExpr);
             if( parent && parent->baseExpr == call ) {
               // This is a call e.g.
@@ -1932,32 +1932,21 @@ static void resolveEnumeratedTypes() {
               // so that call needs to go through normalize and resolve
               continue;
             }
-
+            */
 
             INT_ASSERT(get_string(second, &name));
             
             for_enums(constant, type) {
               if (!strcmp(constant->sym->name, name)) {
                 call->replace(new SymExpr(constant->sym));
-                found = true;
+                //found = true;
               }
             }
             
-            // One option is to permit only .size as a valid .method for enums
-            /*const char* sizeFunctionName = "size";
-            if (!strcmp(name, sizeFunctionName)){
-              found = true; //all enums have this method, it will resolve later
-            }*/
-            
-            // Another option is to get rid of the error, becaues unresolved
-              // type symbols are also resolved later as unresolved function
-              // calls if a matching function is not found
-            /*if (!found) {
-              USR_FATAL(call,
-                        "unresolved enumerated type symbol (or yet to be 
-                        resolved function without parentheses) \"%s\"",
-                        name);
-            }*/
+            //The USR_FATAL error call is no longer made, and unresolved
+            //enum symbols are either resolved as functions or throw an error
+            //during the function resolution pass. The old code for recognizing
+            //calls failed to recognize methods without parentheses. 
           }
         }
       }
