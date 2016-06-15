@@ -292,7 +292,7 @@ class BlockDom: BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;
-  type sparseLayoutType = DefaultDist;
+  type sparseLayoutType;
   const dist: Block(rank, idxType, sparseLayoutType);
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
@@ -330,7 +330,7 @@ class BlockArr: BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
-  type sparseLayoutType = DefaultDist;
+  type sparseLayoutType;
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: BlockDom(rank, idxType, stridable, sparseLayoutType);
   var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
@@ -934,7 +934,8 @@ proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
     compilerError("Block domain rank does not match distribution's");
 
   var dom = new BlockDom(rank=rank, idxType=idxType,
-                         dist=dist, stridable=stridable);
+                         dist=dist, stridable=stridable,
+                         sparseLayoutType=sparseLayoutType);
   dom.dsiSetIndices(ranges);
   return dom;
 }

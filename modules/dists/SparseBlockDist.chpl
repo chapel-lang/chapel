@@ -66,7 +66,7 @@ class SparseBlockDom: BaseSparseDom {
   param rank: int;
   type idxType;
   param stridable: bool = false;  // TODO: remove default value eventually
-  type sparseLayoutType = DefaultDist;
+  type sparseLayoutType;
   const dist: Block(rank, idxType, sparseLayoutType);
   var parentDom;
   const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
@@ -287,7 +287,7 @@ class LocSparseBlockDom {
   param rank: int;
   type idxType;
   param stridable: bool;
-  type sparseLayoutType = DefaultDist;
+  type sparseLayoutType;
   var parentDom: domain(rank, idxType, stridable);
   var sparseDist = new sparseLayoutType; //unresolved call workaround
   var mySparseBlock: sparse subdomain(parentDom) dmapped new dmap(sparseDist);
@@ -452,7 +452,7 @@ class LocSparseBlockArr {
   param rank: int;
   type idxType;
   param stridable: bool;
-  type sparseLayoutType = DefaultDist;
+  type sparseLayoutType;
   const locDom: LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType);
   var myElems: [locDom.mySparseBlock] eltType;
 
