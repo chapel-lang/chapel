@@ -24,7 +24,8 @@
 bool intentsResolved = false;
 
 static IntentTag constIntentForType(Type* t) {
-  if (isSyncType(t) ||
+  if (isSyncType(t)          ||
+      isSingleType(t)        ||
       isRecordWrappedType(t) ||  // domain, array, or distribution
       isRecord(t)) { // may eventually want to decide based on size
     return INTENT_CONST_REF;
@@ -57,6 +58,7 @@ IntentTag blankIntentForType(Type* t) {
   IntentTag retval = INTENT_BLANK;
 
   if (isSyncType(t)                                  ||
+      isSingleType(t)                                ||
       isAtomicType(t)                                ||
       t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) ||
       t->symbol->hasFlag(FLAG_ARRAY)) {
