@@ -398,6 +398,8 @@ void Scope::variablesDestroy(Expr* refStmt, VarSymbol* excludeVar) const {
         if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
           SET_LINENO(var);
 
+          INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
+
           CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
 
           if (insertAfter == true)
