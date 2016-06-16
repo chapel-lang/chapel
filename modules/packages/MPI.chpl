@@ -109,11 +109,9 @@ Communicators
 
 The GASNet runtime, and therefore Chapel, makes no guarantees that the MPI
 ranks will match the GASNet locales. This module creates a new MPI communicator
-``CHPL_COMM_WORLD`` that ensures that this mapping is true. This is a replicated
-variable, so it is used as ``CHPL_COMM_WORLD(1)``, as in
-``MPI_Send(...., CHPL_COMM_WORLD(1))``
+``CHPL_COMM_WORLD`` that ensures that this mapping is true.
 Note that this is only set in mixed Chapel-MPI mode. If numLocales is 1, then
-CHPL_COMM_WORLD(1) is set to MPI_COMM_NULL, and will cause an MPI error if used.
+CHPL_COMM_WORLD is set to MPI_COMM_NULL, and will cause an MPI error if used.
 
 .. note::
   #. Pointer arguments are written as `ref` arguments, so no casting to a ``c_ptr``
@@ -136,16 +134,17 @@ module MPI {
   config const requireThreadedMPI=true;
   config const debugMPI=false;
 
+  var CHPL_COMM_WORLD_REPLICATED : [rcDomain] MPI_Comm;
+  rcReplicate(CHPL_COMM_WORLD_REPLICATED, MPI_COMM_NULL);
   /* Define a new communicator that directly maps to Chapel locales.
   This is just a reordering of MPI_COMM_WORLD, which you are, of course,
   free to continue to use. This just guarantees that locale ids and MPI
   ranks agree.
 
-  Since this is a replicated variable, you must use CHPL_COMM_WORLD(1)
-  in your code.
   */
-  var CHPL_COMM_WORLD : [rcDomain] MPI_Comm;
-  rcReplicate(CHPL_COMM_WORLD, MPI_COMM_NULL);
+  proc CHPL_COMM_WORLD {
+    return CHPL_COMM_WORLD_REPLICATED(1);
+  }
 
   record _initMPI {
     var doinit : bool = false;
@@ -154,7 +153,7 @@ module MPI {
     proc ~_initMPI() {
       if freeChplComm {
         coforall loc in Locales do on loc {
-          C_MPI.MPI_Comm_free(CHPL_COMM_WORLD(1));
+          C_MPI.MPI_Comm_free(CHPL_COMM_WORLD_REPLICATED(1));
         }
       }
       if doinit {
@@ -213,7 +212,8 @@ module MPI {
   proc setChplComm() {
     if numLocales > 1 {
       coforall loc in Locales do on loc {
-        C_MPI.MPI_Comm_split(MPI_COMM_WORLD, 0, here.id : c_int, CHPL_COMM_WORLD(1));
+        C_MPI.MPI_Comm_split(MPI_COMM_WORLD, 0, here.id : c_int,
+          CHPL_COMM_WORLD_REPLICATED(1));
       }
       _mpi.freeChplComm = true;
     }
