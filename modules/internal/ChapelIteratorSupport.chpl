@@ -98,7 +98,8 @@ module ChapelIteratorSupport {
     return ic;
 
   proc _getIterator(type t) {
-    compilerError("cannot iterate over a type");
+    if (!(isEnumType(t))) then
+      compilerError("cannot iterate over a type");
   }
 
   inline proc _getIteratorZip(x) {
@@ -119,7 +120,8 @@ module ChapelIteratorSupport {
   }
 
   proc _checkIterator(type t) {
-    compilerError("cannot iterate over a type");
+    if (!(isEnumType(t))) then
+      compilerError("cannot iterate over a type");
   }
 
   inline proc _checkIterator(x) {
