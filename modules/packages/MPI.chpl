@@ -59,7 +59,7 @@ Interoperability Modes
 ----------------------
 
 We envision two modes in which Chapel and MPI can interoperate with
-one another. The first of these is Chapel (local)+MPI. This has no
+one another. The first of these is MPI + single-locale Chapel. This has no
 constraints on the setup of Chapel and MPI, and is conceptually the same
 as OpenMP+MPI programming. All communication here is handled by
 MPI; Chapel is just used to provide local parallelism. Furthermore,
@@ -78,9 +78,9 @@ model requires
    support level for threads. This is needed if the user plans on making
    MPI calls from multiple threads. It is necessary when using the mpi-conduit
    for GASNet, since the GASNet library may make simultaneous MPI calls.
-   Currently, the MPICH library (and its derivatives) appear to have the
-   most robust support for this.
-2. ``CHPL_TASKS`` must be set to ``fifo``.
+   We've had good experience with MPICH and MPI_THREAD_MULTIPLE.
+2. ``CHPL_TASKS=fifo`` is currently a requirement that hopefully can be relaxed
+   in the future.
 
 This second mode has been tried on
 
