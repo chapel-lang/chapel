@@ -168,7 +168,7 @@ module ChapelDistribution {
         if dsiLinksDistribution() {
           var cnt = -1;
           local cnt = dist.remove_dom(this);
-          if cnt == 0 then
+          if cnt == 0 && dist._free_when_no_doms then
             delete dist;
         }
 
@@ -343,7 +343,7 @@ module ChapelDistribution {
       on dom {
         var cnt = -1;
         local cnt = dom.remove_arr(this);
-        if cnt == 0 then
+        if cnt == 0 && dom._free_when_no_arrs then
           delete dom;
       }
 

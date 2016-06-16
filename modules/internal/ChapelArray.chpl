@@ -1849,6 +1849,7 @@ module ChapelArray {
         checkSlice((... ranges));
       // dsiSlice takes ownership of d._value
       pragma "no auto destroy" var d = _dom((...ranges));
+      d._value._free_when_no_arrs = true;
       var a = _value.dsiSlice(d._value);
       a._arrAlias = _value;
       a._stackToken = _value._stackToken;
@@ -1869,7 +1870,8 @@ module ChapelArray {
         checkRankChange(args);
       var ranges = _getRankChangeRanges(args);
       param rank = ranges.size, stridable = chpl__anyStridable(ranges);
-      var d = _dom((...args));
+      pragma "no auto destroy" var d = _dom((...args));
+      d._value._free_when_no_arrs = true;
       //if !noRefCount then
       //  d._value.incRefCount();
       var a = _value.dsiRankChange(d._value, rank, stridable, args);
