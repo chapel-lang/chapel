@@ -13,23 +13,23 @@ proc main() {
   
   var data : string; 
   var idx = 1;
-  var start = 0;
+  var start = -1;
 
   // sync statements wait for all tasks inside them to complete
   sync {
-    var data_in : string;
-    while readln(data_in) {
-      data += data_in;
+    var buffer : string;
+    while readln(buffer) {
+      data += buffer;
 
       // Look for the start of a section, and if possible 
       // spawn a task to start work on the previous section.
       if data.buff[idx] == greaterThan {
-        if start != 0 then 
+        if start != -1 then 
           begin process(data, start, idx-2);
         start = idx;
       }
 
-      idx += data_in.len; 
+      idx += buffer.len; 
     }
 
     // work on the last section
