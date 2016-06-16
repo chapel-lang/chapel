@@ -1931,14 +1931,11 @@ static void handleLocalBlocks() {
   Vec<BlockStmt*> queue; // queue of blocks to localize
 
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->parentSymbol) {
-      // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet()
-      if (block->isLoopStmt() == true) {
-
-      } else if (block->blockInfoGet()) {
-        if (block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
-          queue.add(block);
-        }
+    if (isLocalBlock(block)) {
+      if (block->length() == 0) {
+        block->remove();
+      } else {
+        queue.add(block);
       }
     }
   }
@@ -2411,6 +2408,14 @@ void handleIsWidePointer() {
   }
 }
 
+bool isLocalBlock(Expr* stmt) {
+  BlockStmt* block = toBlockStmt(stmt);
+  return block &&
+         block->parentSymbol &&
+         block->isLoopStmt() == false &&
+         block->blockInfoGet() &&
+         block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL);
+}
 
 //
 // Widen variables that may be remote.
@@ -2422,6 +2427,46 @@ insertWideReferences(void) {
   if (!requireWideReferences()) {
     handleIsWidePointer();
     return;
+  }
+
+  //
+  // fragmentLocalBlocks splits up local blocks, but sometimes they end up
+  // being consecutive. To make the generated code easier to read, we merge
+  // such blocks together. Sometimes there are only DefExprs separating
+  // local blocks. If that's the case, we move those DefExprs before the
+  // earlier local block.
+  //
+  // TODO: What would we need to do to avoid the fragmentation around
+  // if-statements and loops?
+  //
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (isLocalBlock(block)) {
+      // Get rid of annoying empty local blocks
+      if (block->length() == 0) {
+        block->remove();
+      }
+      else {
+        Expr* next = block->next;
+        std::vector<Expr*> defs;
+        while (isLocalBlock(next) || isDefExpr(next)) {
+          if (isDefExpr(next)) {
+            defs.push_back(next);
+            next = next->next;
+          } else {
+            Expr* old = next;
+            next = next->next;
+            old->remove();
+            for_alist(subItem, toBlockStmt(old)->body) {
+              block->body.insertAtTail(subItem->remove());
+            }
+            for_vector(Expr, def, defs) {
+              block->insertBefore(def->remove());
+            }
+            defs.clear();
+          }
+        }
+      }
+    }
   }
 
   Vec<Symbol*> heapVars;
