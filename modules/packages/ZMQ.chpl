@@ -218,18 +218,44 @@ module ZMQ {
    */
   const SUB  = ZMQ_SUB;
 
+  /*
+    The requester socket type for a paired request-reply messaging pattern.
+   */
   const REQ  = ZMQ_REQ;
+
+  /*
+    The replier socket type for a paired request-reply messaging pattern.
+   */
   const REP  = ZMQ_REP;
+
+  /*
+    The pusher socket type for a pipeline messaging pattern.
+   */
   const PUSH = ZMQ_PUSH;
+
+  /*
+    The puller socket type for a pipeline messaging pattern.
+   */
   const PULL = ZMQ_PULL;
 
   // -- Socket Options
   private extern const ZMQ_AFFINITY: c_int;
   private extern const ZMQ_IDENTITY: c_int;
-  private extern const ZMQ_SUBSCRIBE: c_int;
+
+  /*
+    The :proc:`Socket.setsockopt()` option value to specify the message filter
+    for a :const:`SUB`-type :record:`Socket`.
+   */
   const SUBSCRIBE = ZMQ_SUBSCRIBE;
-  private extern const ZMQ_UNSUBSCRIBE: c_int;
+  private extern const ZMQ_SUBSCRIBE: c_int;
+
+  /*
+    The :proc:`Socket.setsockopt()` option value to remote an existing message
+    filter for a :const:`SUB`-type :record:`Socket`.
+   */
   const UNSUBSCRIBE = ZMQ_UNSUBSCRIBE;
+  private extern const ZMQ_UNSUBSCRIBE: c_int;
+
   private extern const ZMQ_RATE: c_int;
   private extern const ZMQ_RECOVERY_IVL: c_int;
   private extern const ZMQ_SNDBUF: c_int;
@@ -238,8 +264,14 @@ module ZMQ {
   private extern const ZMQ_FD: c_int;
   private extern const ZMQ_EVENTS: c_int;
   private extern const ZMQ_TYPE: c_int;
-  private extern const ZMQ_LINGER: c_int;
+
+  /*
+    The :proc:`Socket.setsockopt()` option value to specify the linger period
+    for the associated :record:`Socket` object.
+   */
   const LINGER = ZMQ_LINGER;
+  private extern const ZMQ_LINGER: c_int;
+
   private extern const ZMQ_RECONNECT_IVL: c_int;
   private extern const ZMQ_BACKLOG: c_int;
   private extern const ZMQ_RECONNECT_IVL_MAX: c_int;
@@ -278,7 +310,21 @@ module ZMQ {
   private extern const ZMQ_MORE: c_int;
 
   // -- Send/Recv Options
+  
+  /*
+    The flag value for :proc:`Socket.send()` and :proc:`Socket.recv()` to
+    indicate that the associated send or receive operation should be performed
+    as a non-blocking operation.
+   */
+  const DONTWAIT = ZMQ_DONTWAIT;
   private extern const ZMQ_DONTWAIT: c_int;
+
+  /*
+    The flag value for :proc:`Socket.send()` to indicate that the associated
+    send operation is a multi-part message and that more message parts will
+    subsequently be issued.
+   */
+  const SNDMORE = ZMQ_SNDMORE;
   private extern const ZMQ_SNDMORE: c_int;
 
   // -- Security Options
@@ -525,7 +571,16 @@ module ZMQ {
       }
     }
 
-    // setsockopt
+    /*
+      Set socket options;
+      see `zmq_setsockopt <http://api.zeromq.org/4-0:zmq-setsockopt>`_
+
+      :arg option: a socket option;
+          e.g., :const:`LINGER`, :const:`SUBSCRIBE`, :const:`UNSUBSCRIBE`
+      :type option: `int`
+
+      :arg value: the socket option value
+     */
     proc setsockopt(option: int, value: ?T) where isPODType(T) {
       var copy: T = value;
       var ret = zmq_setsockopt(classRef.socket, option:c_int,
