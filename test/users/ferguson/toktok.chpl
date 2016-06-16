@@ -27,6 +27,13 @@ proc c() {
 
   return tok;
 }
+inline
+proc d() {
+  var tok = __primitive("get caller stack token");
+
+  return tok;
+}
+
 
 proc foo() {
   return a();
@@ -36,10 +43,12 @@ proc bar() {
   var aa = a();
   var bb = b();
   var cc = c();
+  var dd = d();
   var f = foo();
   
   assert(is_same(aa, bb));
   assert(is_same(bb, cc));
+  assert(is_same(cc, dd));
 
   assert(!is_same(aa, f));
 }
