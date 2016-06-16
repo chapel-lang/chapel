@@ -227,6 +227,9 @@ static Map<FnSymbol*,const char*> outerCompilerWarningMap;
 
 Map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
 Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
+Map<Type*,FnSymbol*> unaliasMap; // type to chpl__unalias function
+Map<Type*,FnSymbol*> onretMap; // type to chpl__onret function
+
 
 Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotion
 Map<FnSymbol*,FnSymbol*> iteratorFollowerMap; // iterator->leader map for promotion
@@ -240,8 +243,7 @@ static bool typeHasRefField(Type *type);
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
 static void makeRefType(Type* type);
 static bool hasUserAssign(Type* type);
-static void resolveAutoCopy(Type* type);
-static void resolveAutoDestroy(Type* type);
+static void resolveAutoCopyEtc(Type* type);
 static void resolveOther();
 static FnSymbol*
 protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType);
@@ -559,29 +561,57 @@ hasUserAssign(Type* type) {
 
 
 static void
-resolveAutoCopy(Type* type) {
-  SET_LINENO(type->symbol);
-  Symbol* tmp = newTemp(type);
-  chpl_gen_main->insertAtHead(new DefExpr(tmp));
-  CallExpr* call = new CallExpr("chpl__autoCopy", tmp);
-  FnSymbol* fn = resolveUninsertedCall(type, call);
-  resolveFns(fn);
-  autoCopyMap.put(type, fn);
-  tmp->defPoint->remove();
-}
+resolveAutoCopyEtc(Type* type) {
+
+  // resolve autoCopy
+  {
+    SET_LINENO(type->symbol);
+    Symbol* tmp = newTemp(type);
+    chpl_gen_main->insertAtHead(new DefExpr(tmp));
+    CallExpr* call = new CallExpr("chpl__autoCopy", tmp);
+    FnSymbol* fn = resolveUninsertedCall(type, call);
+    resolveFns(fn);
+    autoCopyMap.put(type, fn);
+    tmp->defPoint->remove();
+  }
+
+  // resolve autoDestroy
+  {
+    SET_LINENO(type->symbol);
+    Symbol* tmp = newTemp(type);
+    chpl_gen_main->insertAtHead(new DefExpr(tmp));
+    CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
+    FnSymbol* fn = resolveUninsertedCall(type, call);
+    fn->addFlag(FLAG_AUTO_DESTROY_FN);
+    resolveFns(fn);
+    autoDestroyMap.put(type, fn);
+    tmp->defPoint->remove();
+  }
 
 
-static void
-resolveAutoDestroy(Type* type) {
-  SET_LINENO(type->symbol);
-  Symbol* tmp = newTemp(type);
-  chpl_gen_main->insertAtHead(new DefExpr(tmp));
-  CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
-  FnSymbol* fn = resolveUninsertedCall(type, call);
-  fn->addFlag(FLAG_AUTO_DESTROY_FN);
-  resolveFns(fn);
-  autoDestroyMap.put(type, fn);
-  tmp->defPoint->remove();
+  // resolve unalias
+  {
+    SET_LINENO(type->symbol);
+    Symbol* tmp = newTemp(type);
+    chpl_gen_main->insertAtHead(new DefExpr(tmp));
+    CallExpr* call = new CallExpr("chpl__unalias", tmp);
+    FnSymbol* fn = resolveUninsertedCall(type, call);
+    resolveFns(fn);
+    unaliasMap.put(type, fn);
+    tmp->defPoint->remove();
+  }
+
+  // resolve onret
+  {
+    SET_LINENO(type->symbol);
+    Symbol* tmp = newTemp(type);
+    chpl_gen_main->insertAtHead(new DefExpr(tmp));
+    CallExpr* call = new CallExpr("chpl__onret", tmp);
+    FnSymbol* fn = resolveUninsertedCall(type, call);
+    resolveFns(fn);
+    onretMap.put(type, fn);
+    tmp->defPoint->remove();
+  }
 }
 
 
@@ -594,6 +624,13 @@ FnSymbol* getAutoDestroy(Type* t) {
   return autoDestroyMap.get(t);
 }
 
+FnSymbol* getUnalias(Type* t) {
+  return unaliasMap.get(t);
+}
+
+FnSymbol* getOnRet(Type* t) {
+  return onretMap.get(t);
+}
 
 const char* toString(Type* type) {
   if( type ) return type->getValType()->symbol->name;
@@ -922,10 +959,10 @@ determineQueriedField(CallExpr* call) {
 //
 static bool
 okToConvertFormalToRefType(Type* type) {
-  if (isRecordWrappedType(type))
+/*  if (isRecordWrappedType(type))
     // no, don't
     return false;
-
+*/
   // otherwise, proceed with the original plan
   return true;
 }
@@ -8190,8 +8227,7 @@ static void resolveAutoCopies() {
 
     if (isRecord(ts->type) || getSyncFlags(ts).any())
     {
-      resolveAutoCopy(ts->type);
-      resolveAutoDestroy(ts->type);
+      resolveAutoCopyEtc(ts->type);
     }
 
     if (isAggregateType(ts->type) ) {
@@ -8262,8 +8298,7 @@ static bool propagateNotPOD(Type* t) {
     // Except not for runtime types, because that causes
     // some sort of fatal resolution error. This is a workaround.
     if (! t->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-      resolveAutoCopy(t);
-      resolveAutoDestroy(t);
+      resolveAutoCopyEtc(t);
     }
 
     // Also check for a non-compiler generated autocopy/autodestroy.

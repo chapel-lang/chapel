@@ -1024,6 +1024,14 @@ module ChapelBase {
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x) return chpl__initCopy(x);
 
+  pragma "compiler generated"
+  inline proc chpl__unalias(ref x) { }
+
+  pragma "compiler generated"
+  inline proc chpl__onret(ref x) { }
+
+
+
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
   inline proc chpl__maybeAutoDestroyed(x: object) param return false;
