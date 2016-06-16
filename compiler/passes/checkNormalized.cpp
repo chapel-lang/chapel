@@ -54,7 +54,7 @@ static void checkFunctionSignatures()
         collectSymExprs(formal, symExprs);
         for_vector(SymExpr, se, symExprs) {
           if (se->var == fn->_this) {
-            USR_FATAL_CONT(se, "invalid access of class member in initializer header");
+            USR_FATAL_CONT(se, "invalid access of class member in initializer argument list");
             break;
           }
         }
