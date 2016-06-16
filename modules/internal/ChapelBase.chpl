@@ -1070,6 +1070,12 @@ module ChapelBase {
 
   // = for c_void_ptr
   inline proc =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }
+  inline proc ==(a: c_void_ptr, b: c_void_ptr) {
+    return __primitive("ptr_eq", a, b);
+  }
+  inline proc !=(a: c_void_ptr, b: c_void_ptr) {
+    return __primitive("ptr_neq", a, b);
+  }
 
   // Type functions for representing function types
   inline proc func() type { return __primitive("create fn type", void); }
