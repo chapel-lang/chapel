@@ -392,8 +392,10 @@ module ChapelArray {
   // Support for array types
   //
   pragma "runtime type init fn"
-  proc chpl__buildArrayRuntimeType(dom: domain, type eltType)
-    return dom.buildArray(eltType);
+  proc chpl__buildArrayRuntimeType(dom: domain, type eltType) {
+    var tok = __primitive("get caller stack token");
+    return dom.buildArray(eltType, tok);
+  }
 
   proc _getLiteralType(type t) type {
     if t != c_string then return t;
@@ -1007,8 +1009,9 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc buildArray(type eltType) {
+    proc buildArray(type eltType, tok:c_void_ptr) {
       var x = _value.dsiBuildArray(eltType);
+      x._stackToken = tok;
       pragma "dont disable remote value forwarding"
       proc help() {
         _value.add_arr(x);
@@ -1848,6 +1851,7 @@ module ChapelArray {
       pragma "no auto destroy" var d = _dom((...ranges));
       var a = _value.dsiSlice(d._value);
       a._arrAlias = _value;
+      a._stackToken = _value._stackToken;
       //pragma "dont disable remote value forwarding"
       //proc help() {
       //  d._value.incRefCount();
@@ -1870,6 +1874,7 @@ module ChapelArray {
       //  d._value.incRefCount();
       var a = _value.dsiRankChange(d._value, rank, stridable, args);
       a._arrAlias = _value;
+      a._stackToken = _value._stackToken;
       //if !noRefCount then
       //  a._arrAlias.incRefCount();
       return _newArray(a);
@@ -2026,6 +2031,7 @@ module ChapelArray {
       var newDom = {(...d.dims())} dmapped newDist;
       var x = _value.dsiReindex(newDom._value);
       x._arrAlias = _value;
+      x._stackToken = _value._stackToken;
       //pragma "dont disable remote value forwarding"
       //proc help() {
       //  newDom._value.incRefCount();
@@ -3240,7 +3246,10 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(a: []) {
+    var tok = __primitive("get caller stack token");
+
     var b : [a._dom] a.eltType;
+    b._value._stackToken = tok;
 
     // Try bulk transfer.
     if !chpl__serializeAssignment(b, a) {
@@ -3255,6 +3264,53 @@ module ChapelArray {
    pragma "auto copy fn" proc chpl__autoCopy(x: []) {
     pragma "no copy" var b = new _array(x._pid, x._instance, true);
     return b;
+  }
+
+  proc __doDeepCopy(ref a:[], tok) {
+    var b : [a._dom] a.eltType;
+    b._value._stackToken = tok;
+
+    // Try bulk transfer.
+    if !chpl__serializeAssignment(b, a) {
+      chpl__bulkTransferArray(b, a);
+    } else {
+      chpl__transferArray(b, a);
+    }
+
+    if ! a._unowned {
+      // destroy the old array now that we are replacing it
+      var cnt = a._value.destroyArr();
+      if cnt == 0 then {
+        delete a._value;
+      }
+    }
+
+    a._pid = b._pid;
+    a._instance = b._instance;
+    a._unowned = false;
+
+    b._pid = -1;
+    b._instance = nil;
+    b._unowned = true;
+  }
+
+  inline proc chpl__onret(ref x: []) {
+    const tok = __primitive("get caller stack token");
+    const isalias = (x._unowned) | (x._value._arrAlias != nil);
+    const isaliaslocal = isalias & (tok == x._value._stackToken);
+
+    if isaliaslocal {
+      __doDeepCopy(x, tok);
+    }
+  }
+  inline proc chpl__unalias(ref x: []) {
+    const tok = __primitive("get caller stack token");
+    const isalias = (x._unowned) | (x._value._arrAlias != nil);
+
+    if isalias {
+
+      __doDeepCopy(x, tok);
+    }
   }
 
 
@@ -3277,6 +3333,7 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(ir: _iteratorRecord) {
+    var tok = __primitive("get caller stack token");
 
     // The use of an explicit initCopy() is required
     // to support nested for/forall expressions.
@@ -3306,6 +3363,7 @@ module ChapelArray {
     // array) and use a primitive to set the array's element; that may
     // also handle skyline arrays
     var A: [D] iteratorIndexType(irc);
+    A._value._stackToken = tok;
 
     for e in irc {
       // The resulting array grows dynamically
