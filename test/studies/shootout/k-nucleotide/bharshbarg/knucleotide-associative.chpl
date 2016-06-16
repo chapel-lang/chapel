@@ -99,14 +99,8 @@ proc main() {
   var data, buf : string;
 
   // Read each line until the desired section
-  while stdin.readline(buf) && !buf.startsWith(">THREE") do {}
-  
-  //
-  // Accumulate each remaining line into 'data'.
-  // 'readline' includes the newline character in 'buf', so only add a slice
-  // of 'buf' that leaves off the last character.
-  //
-  while stdin.readline(buf) do data += buf[1..buf.length-1];
+  while readln(buf) && !buf.startsWith(">THREE") do {}
+  while readln(buf) do data += buf;
 
   data = data.toUpper();
 
