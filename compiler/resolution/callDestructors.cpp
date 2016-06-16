@@ -1218,37 +1218,41 @@ static void handleStackTokens() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->primitive) {
       if (call->isPrimitive(PRIM_GET_CALLER_STACK_TOKEN)) {
-        FnSymbol* inFn = toFnSymbol(call->parentSymbol);
-        INT_ASSERT(inFn);
-        ArgSymbol* arg = tokMap.get(inFn);
-        SET_LINENO(inFn);
-        if (!arg) {
-          //call->parentSymbol->addFlag(FLAG_USES_GET_CALLER_STACK_TOKEN);
-          arg = newCallerStackTok(inFn);
+        if (call->parentSymbol) {
+          FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+          INT_ASSERT(inFn);
+          ArgSymbol* arg = tokMap.get(inFn);
+          SET_LINENO(inFn);
+          if (!arg) {
+            //call->parentSymbol->addFlag(FLAG_USES_GET_CALLER_STACK_TOKEN);
+            arg = newCallerStackTok(inFn);
+          }
+          call->replace(new SymExpr(arg));
         }
-        call->replace(new SymExpr(arg));
       }
     }
   }
 
   forv_Vec(FnSymbol, fn, tokQueue) {
     forv_Vec(CallExpr, call, *fn->calledBy) {
-      FnSymbol* inFn = toFnSymbol(call->parentSymbol);
-      INT_ASSERT(inFn);
-      SET_LINENO(inFn);
-      VarSymbol* tok = tokToks.get(inFn);
-      if (!tok) {
-        VarSymbol* tmp = newTemp("_tok_tmp", dtInt[INT_SIZE_32]);
-        tok = newTemp("_tok", dtCVoidPtr);
+      if (call->parentSymbol) {
+        FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(inFn);
+        SET_LINENO(inFn);
+        VarSymbol* tok = tokToks.get(inFn);
+        if (!tok) {
+          VarSymbol* tmp = newTemp("_tok_tmp", dtInt[INT_SIZE_32]);
+          tok = newTemp("_tok", dtCVoidPtr);
 
-        inFn->insertAtHead(new CallExpr(PRIM_MOVE, tok,
-                                  new CallExpr(PRIM_ADDR_OF, tmp)));
-        inFn->insertAtHead(new DefExpr(tok));
-        inFn->insertAtHead(new DefExpr(tmp));
-        tokToks.put(inFn, tok);
+          inFn->insertAtHead(new CallExpr(PRIM_MOVE, tok,
+                                    new CallExpr(PRIM_ADDR_OF, tmp)));
+          inFn->insertAtHead(new DefExpr(tok));
+          inFn->insertAtHead(new DefExpr(tmp));
+          tokToks.put(inFn, tok);
+        }
+
+        call->insertAtTail(new SymExpr(tok));
       }
-
-      call->insertAtTail(new SymExpr(tok));
     }
   }
 
