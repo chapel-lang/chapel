@@ -9,7 +9,7 @@ proc foo(ref rec: R) {
 proc myfunction() {
 
   var myvar: R;
-  myvar.init(x = 20);
+  myvar.setup(x = 20);
 
   myvar.verify();
   assert(myvar.x == 20);

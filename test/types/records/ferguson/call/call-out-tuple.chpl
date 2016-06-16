@@ -1,11 +1,11 @@
 use myrecord;
 
 proc foo(out rec: (R,R) ) {
-  rec(1).init(x = 20);
+  rec(1).setup(x = 20);
   rec(1).verify();
   assert(rec(1).x == 20);
 
-  rec(2).init(x = 40);
+  rec(2).setup(x = 40);
   rec(2).verify();
   assert(rec(2).x == 40);
 }
