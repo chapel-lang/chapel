@@ -301,9 +301,6 @@ void insertLineNumbers() {
   // and pass them an actual line number and filename
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->primitive) {
-      if (call->primitive->passLineno) {
-        insertLineNumber(call);
-      }
       if (call->isPrimitive(PRIM_GET_CALLER_STACK_TOKEN)) {
         FnSymbol* inFn = toFnSymbol(call->parentSymbol);
         INT_ASSERT(inFn);
@@ -314,6 +311,15 @@ void insertLineNumbers() {
           arg = newCallerStackTok(inFn);
         }
         call->replace(new SymExpr(arg));
+      }
+    }
+  }
+
+
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->primitive) {
+      if (call->primitive->passLineno) {
+        insertLineNumber(call);
       }
     }
   }
@@ -331,14 +337,6 @@ void insertLineNumbers() {
     }
   }
 
-  // loop over all functions in the queue and all calls to these
-  // functions, and pass the calls an actual line number and filename
-  forv_Vec(FnSymbol, fn, queue) {
-    forv_Vec(CallExpr, call, *fn->calledBy) {
-      insertLineNumber(call);
-    }
-  }
-
   forv_Vec(FnSymbol, fn, tokQueue) {
     forv_Vec(CallExpr, call, *fn->calledBy) {
       FnSymbol* inFn = toFnSymbol(call->parentSymbol);
@@ -352,13 +350,20 @@ void insertLineNumbers() {
         inFn->insertAtHead(new CallExpr(PRIM_MOVE, tok,
                                   new CallExpr(PRIM_ADDR_OF, tmp)));
         inFn->insertAtHead(new DefExpr(tok));
-//        inFn->insertAtHead(new CallExpr(PRIM_MOVE, tmp,
-//                                  new_IntSymbol(0)));
         inFn->insertAtHead(new DefExpr(tmp));
         tokToks.put(inFn, tok);
       }
 
       call->insertAtTail(new SymExpr(tok));
+    }
+  }
+
+
+  // loop over all functions in the queue and all calls to these
+  // functions, and pass the calls an actual line number and filename
+  forv_Vec(FnSymbol, fn, queue) {
+    forv_Vec(CallExpr, call, *fn->calledBy) {
+      insertLineNumber(call);
     }
   }
 
