@@ -177,8 +177,6 @@ class Cyclic: BaseDist {
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
 
-  var pid: int = -1;
-
   proc Cyclic(startIdx,
              targetLocales: [] locale = Locales,
              dataParTasksPerLocale=getDataParTasksPerLocale(),
@@ -487,8 +485,6 @@ class CyclicDom : BaseRectangularDom {
   var locDoms: [dist.targetLocDom] LocCyclicDom(rank, idxType, stridable);
 
   var whole: domain(rank, idxType, stridable);
-
-  var pid: int = -1;
 }
 
 
@@ -709,7 +705,6 @@ class CyclicArr: BaseArr {
 
   var locArr: [dom.dist.targetLocDom] LocCyclicArr(eltType, rank, idxType, stridable);
   var myLocArr: LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable);
-  var pid: int = -1;
   const SENTINEL = max(rank*idxType);
 }
 
