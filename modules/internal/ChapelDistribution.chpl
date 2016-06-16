@@ -143,6 +143,7 @@ module ChapelDistribution {
     var _arrsLock: atomicflag; //   and lock for concurrent access
     var _free_when_no_arrs: bool;
     var pid:int = -1; // privatized ID, if privitization is supported
+    var _stackToken: c_void_ptr;
   
     proc ~BaseDom() {
       if _isPrivatized(this) && pid >= 0 then

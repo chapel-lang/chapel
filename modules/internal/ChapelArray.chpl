@@ -1710,9 +1710,9 @@ module ChapelArray {
     proc ~_array() {
       if ! _unowned {
         on _value {
-          var cnt = _value.destroyArr();
+          var cnt = _instance.destroyArr();
           if cnt == 0 then {
-            delete _value;
+            delete _instance;
           }
         }
       }
@@ -3244,6 +3244,65 @@ module ChapelArray {
     return b;
   }
 
+  pragma "auto copy fn" proc chpl__autoCopy(x: domain) {
+    pragma "no copy" var b = new _domain(x._pid, x._instance, true);
+    return b;
+  }
+
+  proc __doDeepCopy(ref a:domain, tok) {
+    var b : a.type;
+    b._value._stackToken = tok;
+
+    if isRectangularDom(a) && isRectangularDom(b) {
+      b.setIndices(a.getIndices());
+    } else {
+      // TODO: These should eventually become forall loops, hence the
+      // warning
+      //
+      // NOTE: See above note regarding associative domains
+      //
+      compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+      for i in a do
+        b.add(i);
+    }
+
+    if ! a._unowned {
+      // destroy the old domain now that we are replacing it
+      var cnt = a._instance.destroyDom();
+      if cnt == 0 then {
+        delete a._instance;
+      }
+    }
+
+    a._pid = b._pid;
+    a._instance = b._instance;
+    a._unowned = false;
+
+    b._pid = -1;
+    b._instance = nil;
+    b._unowned = true;
+  }
+
+
+  inline proc chpl__onret(ref x: domain) {
+    const tok = __primitive("get caller stack token");
+    const isalias = (x._unowned);// | (x._value._arrAlias != nil);
+    const isaliaslocal = isalias & (tok == x._value._stackToken);
+
+    if isaliaslocal {
+      __doDeepCopy(x, tok);
+    }
+  }
+  inline proc chpl__unalias(ref x: domain) {
+    const tok = __primitive("get caller stack token");
+    const isalias = (x._unowned);// | (x._value._arrAlias != nil);
+
+    if isalias {
+      __doDeepCopy(x, tok);
+    }
+  }
+
+
   pragma "init copy fn"
   proc chpl__initCopy(a: []) {
     var tok = __primitive("get caller stack token");
@@ -3279,9 +3338,9 @@ module ChapelArray {
 
     if ! a._unowned {
       // destroy the old array now that we are replacing it
-      var cnt = a._value.destroyArr();
+      var cnt = a._instance.destroyArr();
       if cnt == 0 then {
-        delete a._value;
+        delete a._instance;
       }
     }
 
