@@ -1,4 +1,10 @@
 
+// Works around "self-comparison always evaluates to true" C comp error
+proc is_same(a: c_void_ptr, b: c_void_ptr)
+{
+  if a == b then return true;
+  else return false;
+}
 
 proc a() {
   var tok = __primitive("get caller stack token");
@@ -12,7 +18,7 @@ proc b() {
   var tok = __primitive("get caller stack token");
   var tok2 = __primitive("get caller stack token");
 
-  assert(tok == tok2);
+  assert(is_same(tok, tok2));
 
   return tok;
 }
@@ -32,10 +38,10 @@ proc bar() {
   var cc = c();
   var f = foo();
   
-  assert(aa == bb);
-  assert(bb == cc);
+  assert(is_same(aa, bb));
+  assert(is_same(bb, cc));
 
-  assert(aa != f);
+  assert(!is_same(aa, f));
 }
 
 bar();

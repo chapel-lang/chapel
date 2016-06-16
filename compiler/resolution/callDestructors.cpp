@@ -1188,6 +1188,74 @@ static void insertReferenceTemps() {
   }
 }
 
+static Vec<FnSymbol*> tokQueue;
+static Map<FnSymbol*,ArgSymbol*> tokMap; // fn to tok argument
+static Map<FnSymbol*,VarSymbol*> tokToks; // fn to tok variable
+
+
+static ArgSymbol* newCallerStackTok(FnSymbol* fn) {
+  ArgSymbol* tok = new ArgSymbol(INTENT_CONST_IN, "_tok", dtCVoidPtr);
+  fn->insertFormalAtTail(tok);
+  tokMap.put(fn, tok);
+  tokQueue.add(fn);
+  if (Vec<FnSymbol*>* rootFns = virtualRootsMap.get(fn)) {
+    forv_Vec(FnSymbol, rootFn, *rootFns)
+      if (!tokMap.get(rootFn))
+        newCallerStackTok(rootFn);
+  } else if (Vec<FnSymbol*>* childrenFns = virtualChildrenMap.get(fn)) {
+    forv_Vec(FnSymbol, childrenFn, *childrenFns)
+      if (!tokMap.get(childrenFn))
+        newCallerStackTok(childrenFn);
+  }
+  return tok;
+}
+
+static void handleStackTokens() {
+  compute_call_sites();
+
+  // loop over all primitives that require a line number and filename
+  // and pass them an actual line number and filename
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->primitive) {
+      if (call->isPrimitive(PRIM_GET_CALLER_STACK_TOKEN)) {
+        FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+        INT_ASSERT(inFn);
+        ArgSymbol* arg = tokMap.get(inFn);
+        SET_LINENO(inFn);
+        if (!arg) {
+          //call->parentSymbol->addFlag(FLAG_USES_GET_CALLER_STACK_TOKEN);
+          arg = newCallerStackTok(inFn);
+        }
+        call->replace(new SymExpr(arg));
+      }
+    }
+  }
+
+  forv_Vec(FnSymbol, fn, tokQueue) {
+    forv_Vec(CallExpr, call, *fn->calledBy) {
+      FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+      INT_ASSERT(inFn);
+      SET_LINENO(inFn);
+      VarSymbol* tok = tokToks.get(inFn);
+      if (!tok) {
+        VarSymbol* tmp = newTemp("_tok_tmp", dtInt[INT_SIZE_32]);
+        tok = newTemp("_tok", dtCVoidPtr);
+
+        inFn->insertAtHead(new CallExpr(PRIM_MOVE, tok,
+                                  new CallExpr(PRIM_ADDR_OF, tmp)));
+        inFn->insertAtHead(new DefExpr(tok));
+        inFn->insertAtHead(new DefExpr(tmp));
+        tokToks.put(inFn, tok);
+      }
+
+      call->insertAtTail(new SymExpr(tok));
+    }
+  }
+
+
+}
+
+
 /************************************* | **************************************
 *                                                                             *
 * Entry point                                                                 *
@@ -1210,4 +1278,10 @@ void callDestructors() {
   insertYieldTemps();
   insertGlobalAutoDestroyCalls();
   insertReferenceTemps();
+
+  // This doesn't strictly have to be in this pass, but it's here because
+  // it's related to copy and destroy because it enables returning
+  // a slice of a local array
+  handleStackTokens();
+
 }
