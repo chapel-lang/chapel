@@ -81,6 +81,9 @@ FnSymbol* promotionWrap(FnSymbol* fn, CallInfo* info);
 
 FnSymbol* getAutoCopy(Type* t);
 FnSymbol* getAutoDestroy(Type* t);
+FnSymbol* getUnalias(Type* t);
+FnSymbol* getOnRet(Type* t);
+
 
 bool isPOD(Type* t);
 

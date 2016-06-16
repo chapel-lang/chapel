@@ -250,7 +250,39 @@ void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
   Expr*     returnValue = returnCall->get(1)->remove();
   CallExpr* moveExpr    = new CallExpr(PRIM_MOVE, formal, returnValue);
 
-  returnPrim->insertBefore(moveExpr);
+
+  Expr* expr = returnPrim;
+  // Walk backwards while the previous element is an autoDestroy call
+  while (expr->prev != NULL) {
+    bool stop = true;
+    if (CallExpr* call = toCallExpr(expr->prev))
+      if (FnSymbol* calledFn = call->isResolved())
+        if (calledFn->hasFlag(FLAG_AUTO_DESTROY_FN))
+          stop = false;
+
+    if (stop) break;
+
+    expr = expr->prev;
+  }
+
+  Expr* returnOrFirstAutoDestroy = expr;
+
+  // Adding the onret call before the first autoDestroy
+  // allows array onret to respond to returning a slice of a local
+  // array.
+  returnOrFirstAutoDestroy->insertBefore(moveExpr);
+
+  if (0 == strcmp(fn->name, "_defaultOf") ||
+      fn->hasFlag(FLAG_CONSTRUCTOR) ||
+      fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
+      fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+      fn->hasFlag(FLAG_INIT_COPY_FN)) {
+    // don't add a onRet call
+  } else {
+    FnSymbol* onRetFn = getOnRet(formal->getValType());
+    CallExpr* onRetCall   = new CallExpr(onRetFn, new SymExpr(formal));
+    returnOrFirstAutoDestroy->insertBefore(onRetCall);
+  }
 }
 
 //
@@ -565,8 +597,16 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   callExpr->insertAtTail(refVar);
 
   // Possibly reduce a copy operation to a simple move
-  if (copyExpr)
+  if (copyExpr) {
+    FnSymbol* rhsFn = copyExpr->isResolved();
+
     copyExpr->replace(copyExpr->get(1)->remove());
+
+    // But... if we're replacing an init copy, we got to a user
+    // variable, so add an unalias call if there is one
+    if (rhsFn->hasFlag(FLAG_INIT_COPY_FN))
+      callExpr->insertAfter(new CallExpr(getUnalias(useLhs->type), refVar));
+  }
 }
 
 /************************************* | **************************************
