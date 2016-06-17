@@ -43,7 +43,7 @@ module Search {
       been if it was not found.
    :rtype: (`bool`, `Data.domain.type`)
  */
-proc search(Data:[?Dom], val, comparator:?rec=defaultComparator) {
+proc search(Data:[?Dom], val, comparator:?rec=defaultComparator) where Dom.rank == 1 {
   return binarySearch(Data, val, comparator);
 }
 
@@ -67,7 +67,7 @@ proc search(Data:[?Dom], val, comparator:?rec=defaultComparator) {
    :rtype: (`bool`, `Data.domain.type`)
 
  */
-proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator) {
+proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator) where Dom.rank == 1 {
   chpl_check_comparator(comparator, Data.eltType);
   for i in Dom {
     if chpl_compare(Data[i], val, comparator=comparator) == 0 then
@@ -100,7 +100,7 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator) {
    :rtype: (`bool`, `Data.domain.type`)
 
  */
-proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator) {
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator) where Dom.rank == 1 {
   var lo = Dom.low,
       hi = Dom.high;
 
