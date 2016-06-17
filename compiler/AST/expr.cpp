@@ -4105,6 +4105,7 @@ GenRet CallExpr::codegen() {
       if (se && isFnSymbol(se->var)) {
         arg = codegenCast("chpl_fn_p", arg);
       }
+
       // Handle passing strings to externs
       if (fn->hasFlag(FLAG_EXTERN)) {
         if (actualType->symbol->hasFlag(FLAG_WIDE_REF) == true ||
