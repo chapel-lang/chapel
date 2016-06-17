@@ -44,6 +44,21 @@
 #define IS_LOCAL 1
 #define NO_OPT 0
 
+
+/*
+// Does the primitive communicate?
+#define NOT_LOCAL 0
+// Is the primitive ineligible for a fast (e.g. uses a lock)
+// even if it doesn't communicate?
+#define NOT_FAST 1
+// Is the primitive function communication-free?
+#define IS_LOCAL 1
+// Is the primitive function fast (ie, could it be run in a signal handler)
+#define IS_FAST 2
+// Is the primitive 
+#define IS_FAST_IF_IN_LOCAL_BLOCK 3
+ */
+
 //
 // Return IS_FAST or IS_LOCAL or NO_OPT
 // IS_FAST -> safe for fast on optimization (e.g., no communication, no sync/single accesses)
@@ -58,7 +73,7 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
   switch (call->primitive->tag) {
   case PRIM_UNKNOWN:
     // TODO: Return true for PRIM_UNKNOWNs that are side-effect free
-    return 0;
+    return NO_OPT;
 
   case PRIM_NOOP:
   case PRIM_REF_TO_STRING:
@@ -160,6 +175,15 @@ isFastPrimitive(CallExpr *call, bool isLocal) {
                    call->primitive->name);
       return IS_FAST;
     }
+    break;
+
+  case PRIM_ARRAY_SHIFT_BASE_POINTER:
+    // Right now, the only use of this primitive in the
+    // module code is within a local block. If the arguments
+    // to it do not require communication, it is also local.
+    // So, just fall out to default case. If necessary in the
+    // future, this could be improved to check that accessing
+    // the arguments does not require communication.
     break;
 
   case PRIM_SET_UNION_ID:
