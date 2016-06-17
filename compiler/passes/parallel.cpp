@@ -1035,41 +1035,51 @@ static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 //   Otherwise, if it is a record-wrapped type, replicate it.
 //   Otherwise,
 //    Add it to varSet and varVec, so it will be put on the heap.
-static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                                Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
-                                Vec<Symbol*>& varSet, Vec<Symbol*>& varVec)
+static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+
+                                Vec<Symbol*>&                 refSet,
+                                Vec<Symbol*>&                 refVec,
+
+                                Vec<Symbol*>&                 varSet,
+                                Vec<Symbol*>& varVec)
 {
   forv_Vec(DefExpr, def, gDefExprs) {
     SET_LINENO(def);
-    if (!fLocal &&
-        isModuleSymbol(def->parentSymbol) &&
-        def->parentSymbol != rootModule &&
-        isVarSymbol(def->sym) &&
+
+    if (!fLocal                                 &&
+        isModuleSymbol(def->parentSymbol)       &&
+        def->parentSymbol != rootModule         &&
+        isVarSymbol(def->sym)                   &&
         !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
         !def->sym->hasFlag(FLAG_EXTERN)) {
       if (def->sym->hasFlag(FLAG_CONST) &&
-          (is_bool_type(def->sym->type) ||
-           is_enum_type(def->sym->type) ||
-           is_int_type(def->sym->type) ||
-           is_uint_type(def->sym->type) ||
-           is_real_type(def->sym->type) ||
-           is_imag_type(def->sym->type) ||
+          (is_bool_type(def->sym->type)    ||
+           is_enum_type(def->sym->type)    ||
+           is_int_type(def->sym->type)     ||
+           is_uint_type(def->sym->type)    ||
+           is_real_type(def->sym->type)    ||
+           is_imag_type(def->sym->type)    ||
            is_complex_type(def->sym->type) ||
-           (isRecord(def->sym->type) &&
+           (isRecord(def->sym->type)             &&
             !isRecordWrappedType(def->sym->type) &&
             // sync/single are currently classes, so this shouldn't matter
-            !isSyncType(def->sym->type) &&
+            !isSyncType(def->sym->type)          &&
+            !isSingleType(def->sym->type)        &&
             // Dont try to broadcast string literals, they'll get fixed in
             // another manner
             (def->sym->type != dtString)))) {
         // replicate global const of primitive type
         INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
+
         for_defs(se, defMap, def->sym) {
-          se->getStmtExpr()->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
+          se->getStmtExpr()->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST,
+                                                      def->sym));
         }
+
       } else if (isRecordWrappedType(def->sym->type)) {
         // replicate address of global arrays, domains, and distributions
         replicateGlobalRecordWrappedVars(def);
+
       } else {
         // put other global constants and all global variables on the heap
         varSet.set_add(def->sym);

@@ -1490,17 +1490,19 @@ module ChapelArray {
   }  // record _domain
 
   // this is a helper function for bulkAdd functions in sparse subdomains.
+  // NOTE:it assumes that nnz array of the sparse domain has non-negative 
+  // indices. If, for some reason it changes, this function and bulkAdds have to
+  // be refactored. (I think it is a safe assumption at this point and keeps the
+  // function a bit cleaner than some other approach. -Engin)
   proc __getActualInsertPts(d, inds, 
-      isSorted, isUnique) /* where isSparseDom(d) */ {
-
-    var numAdded = inds.size; //maybe remove this var
+      isIndsSorted, isUnique) /* where isSparseDom(d) */ {
 
     //find individual insert points
     //and eliminate duplicates between inds and dom
-    var indivInsertPts: [{0..#numAdded}] int;
-    var actualInsertPts: [{0..#numAdded}] int; //where to put in newdom
+    var indivInsertPts: [inds.domain] int;
+    var actualInsertPts: [inds.domain] int; //where to put in newdom
 
-    if !isSorted then QuickSort(inds);
+    if !isIndsSorted then sort(inds);
 
     //eliminate duplicates --assumes sorted
     if !isUnique {
@@ -1514,8 +1516,11 @@ module ChapelArray {
 
     //verify sorted and no duplicates if not --fast
     if boundsChecking {
-      VerifySort(inds, "bulkAdd: Data is not sorted, call the function with \
-          isSorted=false");
+      // TODO there seems to be a bug while resolving Sort.isSorted, therefore
+      // for this function the argument is still isIndsSorted, instead of
+      // isSorted. This should be changed when Sort.isSorted is working.
+      if !isSorted(inds) then
+        halt("bulkAdd: Data not sorted, call the function with isSorted=false");
 
       //check duplicates assuming sorted
       const indsStart = inds.domain.low;

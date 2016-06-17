@@ -1751,14 +1751,15 @@ static void change_method_into_constructor(FnSymbol* fn) {
 
   // Now check that the function name matches the name of the type
   // attached to 'this'.
-  if (strcmp(fn->getFormal(2)->type->symbol->name, fn->name))
+  if (strcmp(fn->getFormal(2)->type->symbol->name, fn->name) &&
+      strcmp(fn->name, "init"))
     return;
 
   // The type must be a class type.
   // No constructors for records? <hilde>
   AggregateType* ct = toAggregateType(fn->getFormal(2)->type);
   if (!ct)
-    INT_FATAL(fn, "constructor on non-class type");
+    INT_FATAL(fn, "initializer on non-class type");
 
   // Call the initializer, passing in just the generic arguments.
   // This call ensures that the object is default-initialized before the user's
@@ -1773,7 +1774,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
     }
     if (!arg) {
       if (!defaultTypeConstructorArg->defaultExpr)
-        USR_FATAL_CONT(fn, "constructor for class '%s' requires a generic argument called '%s'", ct->symbol->name, defaultTypeConstructorArg->name);
+        USR_FATAL_CONT(fn, "initializer for class '%s' requires a generic argument called '%s'", ct->symbol->name, defaultTypeConstructorArg->name);
     } else {
       call->insertAtTail(new NamedExpr(arg->name, new SymExpr(arg)));
     }

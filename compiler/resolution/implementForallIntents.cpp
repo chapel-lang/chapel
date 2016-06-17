@@ -216,6 +216,7 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
       }
 
       bool isMethodToken = ovar->type == dtMethodToken;
+
       // concreteIntent() does not work for MT.
       if (!isMethodToken)
         tiIntent = concreteIntent(tiIntent, valtype);
@@ -226,18 +227,27 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
       if (tiIntent == INTENT_REF) {
         // for efficiency
         pruneit = true;
+
       } else if (isMethodToken) {
         // If MT is present, _toLeader(..., _mt...) does not get resolved.
         // See e.g. parallel/taskPar/figueroa/taskParallel.chpl
         pruneit = true;
-      } else if (isSyncType(ovar->type) || isAtomicType(ovar->type)) {
+
+      } else if (isSyncType(ovar->type)   ||
+                 isSingleType(ovar->type) ||
+                 isAtomicType(ovar->type)) {
         // Currently we need it because sync variables do not get tupled
         // and detupled properly when threading through the leader iterator.
         // See e.g. test/distributions/dm/s7.chpl
         // Atomic vars might not work either.
         // And anyway, only 'ref' intent makes sense here.
         pruneit = true;
-        USR_WARN(defChplIter, "sync, single, or atomic var '%s' currently can be passed into the forall loop by 'ref' intent only - %s is ignored", ovar->name, tiMarker ? intentDescrString(tiMarker->intent) : "default intent");
+
+        USR_WARN(defChplIter,
+                 "sync, single, or atomic var '%s' currently can be passed into the forall loop by 'ref' intent only - %s is ignored",
+                 ovar->name,
+                 tiMarker ? intentDescrString(tiMarker->intent) : "default intent");
+
       } else if (isRecordWrappedType(ovar->type) &&
                  !(tiIntent & INTENT_FLAG_REF)) {
         // Threading through the leader for non-ref intents
@@ -252,8 +262,9 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
         continue; // form_Map(uses)
       }
     }  // if !isReduce
-    
+
     svar = new VarSymbol(ovar->name, valtype);
+
     if (isReduce) {
       if (ovar->hasFlag(FLAG_CONST))
         USR_FATAL_CONT(defChplIter,
@@ -264,10 +275,13 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
     } else {
       setShadowVarFlags(svar, tiIntent); // instead of arg intents
     }
+
     outerVars.push_back(ovar);
     shadowVars.push_back(svar);
     reduceGVars.push_back(globalOp);
+
     e->value = svar;
+
     numShadowVars++;
   }
 }

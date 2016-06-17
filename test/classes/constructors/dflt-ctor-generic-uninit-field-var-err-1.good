@@ -1,2 +1,2 @@
-dflt-ctor-generic-uninit-field-var-err-1.chpl:5: error: unresolved call 'A()'
-dflt-ctor-generic-uninit-field-var-err-1.chpl:1: note: candidates are: A(v)
+dflt-ctor-generic-uninit-field-var-err-1.chpl:5: error: unresolved call 'A.init()'
+dflt-ctor-generic-uninit-field-var-err-1.chpl:1: note: candidates are: A.init(v)

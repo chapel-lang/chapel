@@ -14,7 +14,7 @@ proc main() {
   var comp = new comparator();
 
   // Test fails if this compiles
-  bubbleSort(Arr, comparator=comp);
+  sort(Arr, comparator=comp);
 
 }
 

@@ -1,0 +1,11 @@
+bug: inner record object as a field
+
+NOTES
+
+- When outer is a record, it is not possible to have a field of the inner record
+
+- Lydia: In the case of nested records, the compiler is unable to create an
+  instance of the outer type due to not being able to detect and appropriately
+  respond to the interdependency of the inner and outer type when creating their
+  default methods, and thus making it unable to determine the return type to
+  generate from its default methods

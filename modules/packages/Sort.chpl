@@ -24,6 +24,8 @@ This module supports a variety of standard sorting routines on 1D arrays.
 The current interface is minimal and should be expected to
 grow and evolve over time.
 
+.. _comparators:
+
 Comparators
 -----------
 
@@ -42,8 +44,8 @@ Key Comparator
 ~~~~~~~~~~~~~~
 
 The ``key(a)`` method accepts 1 argument, which will be an element from the
-array being sorted. The value returned should support numeric operations or be
-a string.
+array being sorted. The return type should support the ``<`` operator, since
+that is what the base ``compare`` method of all sort algorithms uses by default.
 
 The default key method would look like this:
 
@@ -182,8 +184,9 @@ const reverseComparator: ReverseComparator(DefaultComparator);
 
 /* Private methods */
 
+pragma "no doc"
 /* Base compare method of all sort functions */
-private inline proc chpl_compare(a, b, comparator:?rec=defaultComparator) {
+inline proc chpl_compare(a, b, comparator:?rec=defaultComparator) {
   use Reflection;
 
   // TODO -- In cases where values are larger than keys, it may be faster to
@@ -200,16 +203,17 @@ private inline proc chpl_compare(a, b, comparator:?rec=defaultComparator) {
 }
 
 
+pragma "no doc"
 /*
     Check if a comparator was passed and confirm that it will work, otherwise
     throw a compile-time error.
 
     :arg a: Sample data passed to confirm that comparator methods can resolve
-    :arg comparator: Record that redefines the comparison mechanism with one of
-      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
 
  */
-private proc chpl_check_comparator(comparator, type eltType) {
+proc chpl_check_comparator(comparator, type eltType) {
   use Reflection;
 
   // Dummy data for checking method resolution
@@ -217,20 +221,19 @@ private proc chpl_check_comparator(comparator, type eltType) {
   const data: eltType;
 
   if comparator.type == DefaultComparator {}
-  // Check for valid comaparator methods
+  // Check for valid comparator methods
   else if canResolveMethod(comparator, "compare", data, data) {
     // Check return type of compare
     type comparetype = comparator.compare(data, data).type;
-    if !(isNumericType(comparetype)) {
+    if !(isNumericType(comparetype)) then
       compilerError("The compare method must return a numeric type");
-    }
   }
   else if canResolveMethod(comparator, "key", data) {
     // Check return type of key
-    type keytype = comparator.key(data).type;
-    if !(isNumericType(keytype) || isStringType(keytype)) {
-      compilerError("The key method must return a numeric or string type");
-    }
+    const keydata = comparator.key(data);
+    type keytype = keydata.type;
+    if !(canResolve("<", keydata, keydata)) then
+      compilerError("The key method must return an object that supports the '<' function");
   }
   else {
     // If we make it this far, the passed comparator was defined incorrectly
@@ -244,15 +247,13 @@ private proc chpl_check_comparator(comparator, type eltType) {
 /*
    General purpose sorting interface.
 
-   .. note:
-
-      This method calls a sequential quickSort but it will call faster algorithms
-      once they are implemented.
+   .. note:: Currently this method calls a sequential :proc:`quickSort`, but
+             this may change the future as other algorithms are implemented.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
-   :arg comparator: Record that redefines the comparison mechanism with one of
-      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
 
  */
 proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
@@ -265,8 +266,8 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.ra
 
    :arg Data: The array to verify
    :type Data: [] `eltType`
-   :arg comparator: Record that redefines the comparison mechanism with one of
-      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
    :returns: ``true`` if array is sorted
    :rtype: `bool`
  */
@@ -303,8 +304,8 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
 
    :arg x: An iterable value to be sorted and yielded element by element
    :type x: `iterable`
-   :arg comparator: Record that redefines the comparison mechanism with one of
-      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
 
    :yields: The elements of x in sorted order
    :ytype: x's element type
@@ -325,8 +326,8 @@ iter sorted(x, comparator:?rec=defaultComparator) {
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
-   :arg comparator: Record that redefines the comparison mechanism with one of
-      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
 
  */
 proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
@@ -338,7 +339,7 @@ proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where 
   while (swapped) {
     swapped = false;
     for i in lo..hi-1 {
-      if chpl_compare(Data(i), Data(i+1), comparator) >= 0 {
+      if chpl_compare(Data(i), Data(i+1), comparator) > 0 {
         Data(i) <=> Data(i+1);
         swapped = true;
       }
@@ -352,8 +353,8 @@ proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where 
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
-   :arg comparator: Record that redefines the comparison mechanism with one of
-      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
 
  */
 proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
@@ -400,8 +401,8 @@ proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Do
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
-   :arg comparator: Record that redefines the comparison mechanism with one of
-      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
 
  */
 proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
@@ -431,10 +432,10 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) whe
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
-   :arg minlen: When the array size is less than `minlen` use insertion sort algorithm
+   :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
    :type minlen: `integral`
-   :arg comparator: Record that redefines the comparison mechanism with one of
-      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
 
  */
 proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) where Dom.rank == 1 {
@@ -492,10 +493,10 @@ private iter _MergeIterator(A1: [] ?eltType, A2: [] eltType, comparator:?rec=def
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
-   :arg minlen: When the array size is less than `minlen` use insertion sort algorithm
+   :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
    :type minlen: `integral`
-   :arg comparator: Record that redefines the comparison mechanism with one of
-      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
 
  */
 proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) where Dom.rank == 1 {
@@ -590,7 +591,7 @@ record DefaultComparator {
    :returns: -1 if ``a < b``
 
    */
-  proc compare(a:?t, b) {
+  proc compare(a, b) {
     if a < b { return -1; }
     else if b < a { return 1; }
     else return 0;
@@ -607,8 +608,8 @@ record ReverseComparator {
    Constructor - builds a comparator with a compare method that reverses the sort order of
    the argument-provided comparator.
 
-   :arg comparator: Record that redefines the comparison mechanism with one of
-      the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
 
    */
   proc ReverseComparator(comparator:?rec=defaultComparator) {}
@@ -688,7 +689,7 @@ pragma "no doc"
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
-   :arg minlen: When the array size is less than `minlen` use insertion sort algorithm
+   :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
    :type minlen: `integral`
    :arg doublecheck: Verify the array is correctly sorted before returning
    :type doublecheck: `bool`

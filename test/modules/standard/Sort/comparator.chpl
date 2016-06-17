@@ -26,16 +26,25 @@ proc main() {
         compare = new compcomparator(),
         keycompare = new keycompcomparator(),
         revkey = new ReverseComparator(key),
-        revcompare = new ReverseComparator(compare);
+        revcompare = new ReverseComparator(compare),
+        tuplekey = new tuplecomparator();
 
 
   /* Test data types */
+
+  // Integers
+  sort(Arr);
+  checkSort(Arr, ArrSorted, 'sort');
 
   // Strings
   sort(StrArr);
   checkSort(StrArr, StrArrSorted, 'sort');
 
-  /* Default behavior */
+  // Integers sorted as tuples
+  sort(Arr, comparator=tuplekey);
+  checkSort(Arr, ArrSorted, 'sort');
+
+  /* Key + Compare */
 
   // key method sorts by abs(a), while compare is normal sort
   sort(Arr, comparator=keycompare);
@@ -185,3 +194,7 @@ proc keycompcomparator.key(a) { return abs(a); }
 proc keycompcomparator.compare(a, b) {
   return a - b;
 }
+
+/* Key method can return a non-numerical/string type, such as tuple */
+record tuplecomparator { }
+proc tuplecomparator.key(a) { return (a, a); }
