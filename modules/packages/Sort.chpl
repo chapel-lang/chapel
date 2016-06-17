@@ -24,6 +24,8 @@ This module supports a variety of standard sorting routines on 1D arrays.
 The current interface is minimal and should be expected to
 grow and evolve over time.
 
+.. _comparators:
+
 Comparators
 -----------
 
@@ -131,7 +133,7 @@ reverse the default sorting order.
   var Array = [-1, -4, 2, 3];
 
   // Using module-defined 'reverseComparator'
-  sort(Array, comparator=reverseComparator)
+  sort(Array, comprator=reverseComparator)
 
   // This will output: 3, 2, -1, -4
   writeln(Array);
@@ -182,8 +184,9 @@ const reverseComparator: ReverseComparator(DefaultComparator);
 
 /* Private methods */
 
+pragma "no doc"
 /* Base compare method of all sort functions */
-private inline proc chpl_compare(a, b, comparator:?rec=defaultComparator) {
+inline proc chpl_compare(a, b, comparator:?rec=defaultComparator) {
   use Reflection;
 
   // TODO -- In cases where values are larger than keys, it may be faster to
@@ -209,7 +212,7 @@ private inline proc chpl_compare(a, b, comparator:?rec=defaultComparator) {
       the methods: ``comparator.key(a)`` or ``comparator.compare(a,b)``
 
  */
-private proc chpl_check_comparator(comparator, type eltType) {
+proc chpl_check_comparator(comparator, type eltType) {
   use Reflection;
 
   // Dummy data for checking method resolution
