@@ -1645,7 +1645,7 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
   // Do nothing if we have already completed sn.
   if( sn <= max_completed ) return;
 
-  cache->in_cache_call++;
+  cache->in_cache_call = 1;
 
   // If we have any pending requests with sequence number <= sn,
   // wait for them to complete.
@@ -1678,7 +1678,7 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
 
   cache->completed_request_number = max_completed;
 
-  cache->in_cache_call--;
+  cache->in_cache_call = 0;
 }
 
 
@@ -2883,7 +2883,6 @@ void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
   struct rdcache_s* cache = tls_cache_remote_data();
   TRACE_PRINT(("%d: in chpl_cache_comm_get_strd\n", chpl_nodeID));
   assert(!cache->in_cache_call); // GET in a fast AM body?
-  cache->in_cache_call = 1;
   // do a full fence - so that:
   // 1) any pending writes are completed (in case they were to the
   //    same location handled by the strided get)
@@ -2892,6 +2891,7 @@ void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
   // Alternatively, the strided get could be done through the cache
   // system. This is just the current (possibly temporary) solution.
   chpl_cache_fence(1, 1, ln, fn);
+  cache->in_cache_call = 1;
   // do the strided get.
 #ifdef CHPL_TASK_COMM_GET_STRD
   chpl_task_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
@@ -2909,7 +2909,6 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
   struct rdcache_s* cache = tls_cache_remote_data();
   TRACE_PRINT(("%d: in chpl_cache_comm_put_strd\n", chpl_nodeID));
   assert(!cache->in_cache_call); // PUT in a fast AM body?
-  cache->in_cache_call = 1;
   // do a full fence - so that:
   // 1) any pending writes are completed (in case they were to the
   //    same location handled by the strided put and would
@@ -2918,6 +2917,7 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
   // Alternatively, the strided put could be done through the cache
   // system. This is just the current (possibly temporary) solution.
   chpl_cache_fence(1, 1, ln, fn);
+  cache->in_cache_call = 1;
   // do the strided put.
 #ifdef CHPL_TASK_COMM_PUT_STRD
   chpl_task_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
