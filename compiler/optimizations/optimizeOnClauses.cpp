@@ -305,7 +305,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_USED_MODULES_LIST:
 
   case PRIM_WHEN:
-  case PRIM_INT_ERROR:
   case PRIM_CAPTURE_FN_FOR_C:
   case PRIM_CAPTURE_FN_FOR_CHPL:
   case PRIM_CREATE_FN_TYPE:
@@ -343,6 +342,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_ARRAY_FREE_ELTS:
     return LOCAL_NOT_FAST;
 
+
     // Temporarily unclassified (legacy) cases.
     // These formerly defaulted to false (slow), so we leave them
     // here until they are proven fast.
@@ -359,6 +359,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_RT_WARNING:
   case PRIM_FTABLE_CALL:
   case PRIM_VIRTUAL_METHOD_CALL:
+  case PRIM_INT_ERROR:
     return NOT_FAST_NOT_LOCAL;
 
   // no default, so that it is usually a C compilation
