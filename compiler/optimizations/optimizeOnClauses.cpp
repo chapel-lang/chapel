@@ -133,6 +133,7 @@ classifyPrimitive(CallExpr *call) {
 
   case PRIM_GET_USER_LINE:
   case PRIM_GET_USER_FILE:
+  case PRIM_LOOKUP_FILENAME:
     DEBUG_PRINTF(" *** OK (default): %s\n", call->primitive->name);
     return FAST_AND_LOCAL;
 
@@ -321,7 +322,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_COERCE:
   case PRIM_CALL_RESOLVES:
   case PRIM_METHOD_CALL_RESOLVES:
-  case PRIM_LOOKUP_FILENAME:
   case PRIM_GET_COMPILER_VAR:
   case NUM_KNOWN_PRIMS:
     INT_FATAL("This primitive should have been removed from the tree by now.");
