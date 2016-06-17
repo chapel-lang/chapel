@@ -383,7 +383,6 @@ static void initializeClass(Expr* stmt, Symbol* sym);
 static void ensureAndResolveInitStringLiterals();
 static void handleRuntimeTypes();
 static void pruneResolvedTree();
-static void removeCompilerWarnings();
 static void removeUnusedFunctions();
 static void removeUnusedTypes();
 static void buildRuntimeTypeInitFns();
@@ -8906,7 +8905,6 @@ pruneResolvedTree() {
   removeWhereClauses();
   removeMootFields();
   expandInitFieldPrims();
-  removeCompilerWarnings();
 }
 
 static void clearDefaultInitFns(FnSymbol* unusedFn) {
@@ -8930,18 +8928,6 @@ static void removeUnusedFunctions() {
         clearDefaultInitFns(fn);
         fn->defPoint->remove();
       }
-    }
-  }
-}
-
-static void removeCompilerWarnings() {
-  // Warnings have now been issued, no need to keep the function around.
-  // Remove calls to compilerWarning and let dead code elimination handle
-  // the rest.
-  typedef MapElem<FnSymbol*, const char*> FnSymbolElem;
-  form_Map(FnSymbolElem, el, innerCompilerWarningMap) {
-    forv_Vec(CallExpr, call, *(el->key->calledBy)) {
-      call->remove();
     }
   }
 }
@@ -9129,6 +9115,17 @@ static void removeRandomPrimitive(CallExpr* call)
         call->remove();
     }
     break;
+
+    case PRIM_WARNING:
+    case PRIM_ERROR:
+    {
+      // Warnings have now been issued, no need to keep the function around.
+      // Remove calls to compilerWarning and let dead code elimination handle
+      // the rest.
+      call->remove();
+    }
+    break;
+
   }
 }
 
