@@ -584,13 +584,6 @@ struct rdcache_s {
   c_nodeid_t last_cache_miss_read_node;
   raddr_t last_cache_miss_read_addr;
 
-  // with fast active messages, we sometimes run user code
-  // in a poll (e.g. chpl_comm_wait_nb_some can call user code).
-  // We just make sure not to wait a second time while in that
-  // situation. The problem occurs because the compiler sometimes
-  // adds fences even for the fast handler.
-  unsigned char in_cache_call;
-
   // The variable names Ain Aout and Am come from the 2Q paper
 
   // Ain is a FIFO queue storing entries initially as they go into
@@ -772,8 +765,6 @@ struct rdcache_s* cache_create(void) {
 
   c->last_cache_miss_read_node = -1;
   c->last_cache_miss_read_addr = 0;
-
-  c->in_cache_call = 0;
 
   c->max_pages = cache_pages;
   c->max_entries = n_entries;
@@ -1645,7 +1636,7 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
   // Do nothing if we have already completed sn.
   if( sn <= max_completed ) return;
 
-  cache->in_cache_call = 1;
+  // Note: chpl_comm_wait_nb_some could cause a different task body to run...
 
   // If we have any pending requests with sequence number <= sn,
   // wait for them to complete.
@@ -1677,8 +1668,6 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
   }
 
   cache->completed_request_number = max_completed;
-
-  cache->in_cache_call = 0;
 }
 
 
@@ -1742,14 +1731,13 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
                  page+start, entry->base.node, (void*) (entry->raddr+start),
                  (int) got_len));
 
-          cache->in_cache_call = 1;
+          // Note: chpl_comm_put_nb could cause a different task body to run.
           handle =
             chpl_comm_put_nb(page+start, /*local addr*/
                              entry->base.node,
                              (void*)(entry->raddr+start),
                              got_len /*size*/, -1/*typei*/,
                              -1, 0);
-          cache->in_cache_call = 0;
 
           // Save the handle in the list of pending requests.
           entry->max_put_sequence_number = pending_push(cache, handle);
@@ -1963,7 +1951,6 @@ void cache_put(struct rdcache_s* cache,
                (int) node, (void*) raddr, addr, (int) size));
 
   assert(chpl_nodeID != node); // should be handled in chpl_gen_comm_put
-  assert(!cache->in_cache_call); // PUT in a fast AM body?
 
   // And don't do anything if it's a zero-length 
   if( size == 0 ) {
@@ -2272,7 +2259,6 @@ void cache_get(struct rdcache_s* cache,
                (int) chpl_nodeID, addr, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
 
   assert(chpl_nodeID != node); // should be handled in chpl_gen_comm_prefetch.
-  assert(!cache->in_cache_call); // GET in a fast AM body?
 
   // And don't do anything if it's a zero-length 
   if( size == 0 ) {
@@ -2485,13 +2471,12 @@ void cache_get(struct rdcache_s* cache,
 #ifdef TIME
     clock_gettime(CLOCK_REALTIME, &start_get1);
 #endif
-    cache->in_cache_call = 1;
+    // Note: chpl_comm_get_nb could cause a different task body to run.
     handle = 
       chpl_comm_get_nb(page+(ra_line-ra_page), /*local addr*/
                        node, (void*) ra_line,
                        ra_line_end - ra_line /*size*/, -1/*typei*/,
                        ln, fn);
-    cache->in_cache_call = 0;
 #ifdef TIME
     clock_gettime(CLOCK_REALTIME, &start_get2);
 #endif
@@ -2775,10 +2760,6 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
     struct rdcache_s* cache = tls_cache_remote_data();
     chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
 
-    // Do nothing for a fence within a fast message we're handling
-    // while in a poll loop.
-    if (cache->in_cache_call) return;
-
     INFO_PRINT(("%i fence acquire %i release %i %s:%i\n", chpl_nodeID, acquire, release, fn, ln));
 
     TRACE_PRINT(("%d: task %d in chpl_cache_fence(acquire=%i,release=%i) on cache %p from %s:%d\n", chpl_nodeID, (int) chpl_task_getId(), acquire, release, cache, fn?fn:"", ln));
@@ -2813,7 +2794,6 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
   //printf("put len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
-  assert(!cache->in_cache_call); // PUT in a fast AM body?
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_put %s:%d put %d bytes to %d:%p "
                "from %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
@@ -2840,7 +2820,6 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
   //printf("get len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
-  assert(!cache->in_cache_call); // GET in a fast AM body?
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_get %s:%d get %d bytes from "
                "%d:%p to %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
@@ -2866,7 +2845,6 @@ void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
-  assert(!cache->in_cache_call); // PREFETCH in a fast AM body?
   TRACE_PRINT(("%d: in chpl_cache_comm_prefetch\n", chpl_nodeID));
   if (chpl_verbose_comm)
     printf("%d: %s:%d: remote prefetch from %d\n", chpl_nodeID,
@@ -2880,9 +2858,7 @@ void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
                               int32_t strlevels, size_t elemSize,
                               int32_t typeIndex, int ln, int32_t fn) {
-  struct rdcache_s* cache = tls_cache_remote_data();
   TRACE_PRINT(("%d: in chpl_cache_comm_get_strd\n", chpl_nodeID));
-  assert(!cache->in_cache_call); // GET in a fast AM body?
   // do a full fence - so that:
   // 1) any pending writes are completed (in case they were to the
   //    same location handled by the strided get)
@@ -2891,7 +2867,6 @@ void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
   // Alternatively, the strided get could be done through the cache
   // system. This is just the current (possibly temporary) solution.
   chpl_cache_fence(1, 1, ln, fn);
-  cache->in_cache_call = 1;
   // do the strided get.
 #ifdef CHPL_TASK_COMM_GET_STRD
   chpl_task_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
@@ -2900,15 +2875,12 @@ void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
   chpl_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
                      elemSize, typeIndex, ln, fn);
 #endif
-  cache->in_cache_call = 0;
 }
 void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
                               int32_t strlevels, size_t elemSize,
                               int32_t typeIndex, int ln, int32_t fn) {
-  struct rdcache_s* cache = tls_cache_remote_data();
   TRACE_PRINT(("%d: in chpl_cache_comm_put_strd\n", chpl_nodeID));
-  assert(!cache->in_cache_call); // PUT in a fast AM body?
   // do a full fence - so that:
   // 1) any pending writes are completed (in case they were to the
   //    same location handled by the strided put and would
@@ -2917,7 +2889,6 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
   // Alternatively, the strided put could be done through the cache
   // system. This is just the current (possibly temporary) solution.
   chpl_cache_fence(1, 1, ln, fn);
-  cache->in_cache_call = 1;
   // do the strided put.
 #ifdef CHPL_TASK_COMM_PUT_STRD
   chpl_task_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
@@ -2926,7 +2897,6 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
   chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
                      elemSize, typeIndex, ln, fn);
 #endif
-  cache->in_cache_call = 0;
 }
 
 // This is for debugging.
