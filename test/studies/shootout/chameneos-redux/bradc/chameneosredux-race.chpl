@@ -19,6 +19,8 @@ config const n = 600,                // number of meetings to take place
              numChameneos1 = 3,      // size of population 1
              numChameneos2 = 10;     // size of population 2
 
+config const numtrials = 1;
+
 if (numChameneos1 < 2 || numChameneos2 < 2) then
   halt("There must be at least 2 chameneos");
 
@@ -39,11 +41,13 @@ proc main() {
   //
   printColorEquations();
 
-  //
-  // run two simulations for the two different population sizes
-  //
-  simulate(numChameneos1);
-  simulate(numChameneos2);
+  for i in 1..numtrials {
+    //
+    // run two simulations for the two different population sizes
+    //
+    simulate(numChameneos1);
+    simulate(numChameneos2);
+  }
 }
 
 
@@ -343,6 +347,10 @@ proc printInfo(chameneos) {
   // compute the total number of meetings and spell it out
   //
   const totalMeetings = + reduce chameneos.meetings;
+
+  if (totalMeetings != n*2) then
+    halt("Error, total meetings was ", totalMeetings);
+
   spellInt(totalMeetings);
   writeln();
 }
