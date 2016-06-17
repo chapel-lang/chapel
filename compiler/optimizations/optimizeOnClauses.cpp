@@ -442,11 +442,16 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
   // We will return NOT_FAST_NOT_LOCAL immediately if we see something
   // in the function that is not local.
   bool maybefast = true;
-  if (fn->hasFlag(FLAG_EXTERN) && !fn->hasFlag(FLAG_FAST_ON_SAFE_EXTERN)) {
-    maybefast = false;
-  }
-  if (fn->hasFlag(FLAG_EXTERN) && !fn->hasFlag(FLAG_LOCAL_FN)) {
-    return NOT_FAST_NOT_LOCAL;
+  if (fn->hasFlag(FLAG_EXTERN)) {
+    if (fn->hasFlag(FLAG_FAST_ON_SAFE_EXTERN)) {
+      // OK, fast
+    } else if( fn->hasFlag(FLAG_LOCAL_FN)) {
+      // Local, but not fast
+      maybefast = false;
+    } else {
+      // Unknown extern functions are not fast or local.
+      return NOT_FAST_NOT_LOCAL;
+    }
   }
 
   if (fn->hasFlag(FLAG_NON_BLOCKING))
