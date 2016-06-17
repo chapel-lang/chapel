@@ -28,16 +28,14 @@ module Search {
 /*
    General purpose searching interface for searching through a pre-sorted array.
 
-   .. note:
-
-      This method calls a sequential binarySearch but it will call faster
-      algorithms once they are implemented.
+   .. note:: Currently this method calls a sequential :proc:`binarySearch`, but
+             this may change the future as other algorithms are implemented.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
    :arg val: The value to find in the array
    :type val: `eltType`
-   :arg comparator: :ref: Comparator <comparators> record that defines how the
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
       data is sorted.
 
    :returns: A tuple indicating (1) if the value was found and (2) the location
@@ -60,7 +58,7 @@ proc search(Data:[?Dom], val, comparator:?rec=defaultComparator) {
    :type Data: [] `eltType`
    :arg val: The value to find in the array
    :type val: `eltType`
-   :arg comparator: :ref: Comparator <comparators> record that defines how the
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
       data is sorted.
 
    :returns: A tuple indicating (1) if the value was found and (2) the location
@@ -93,7 +91,7 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator) {
    :type Data: [] `eltType`
    :arg val: The value to find in the array
    :type val: `eltType`
-   :arg comparator: :ref: Comparator <comparators> record that defines how the
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
       data is sorted.
 
    :returns: A tuple indicating (1) if the value was found and (2) the location
