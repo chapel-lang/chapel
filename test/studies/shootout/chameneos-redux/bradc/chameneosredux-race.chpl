@@ -15,7 +15,7 @@ config param NUM_CHAMENEOS_ID_BITS = 8;
 param CHAMENEOS_ID_MASK = (0x1 << NUM_CHAMENEOS_ID_BITS) - 1;
 
 
-config const n = 6000000,            // number of meetings to take place
+config const n = 600,                // number of meetings to take place
              numChameneos1 = 3,      // size of population 1
              numChameneos2 = 10;     // size of population 2
 
@@ -40,15 +40,10 @@ proc main() {
   printColorEquations();
 
   //
-  // Run multiple times to increase chances of failure
-  //
-  for 1..10 {
-  //
   // run two simulations for the two different population sizes
   //
   simulate(numChameneos1);
   simulate(numChameneos2);
-  }
 }
 
 
