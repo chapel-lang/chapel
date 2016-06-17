@@ -98,6 +98,7 @@ extern const char* CHPL_REGEXP;
 extern const char* CHPL_WIDE_POINTERS;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
+extern const char* CHPL_UNWIND;
 
 extern bool  printPasses;
 extern FILE* printPassesFile;

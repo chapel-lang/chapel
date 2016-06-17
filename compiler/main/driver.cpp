@@ -75,6 +75,7 @@ const char* CHPL_REGEXP = NULL;
 const char* CHPL_WIDE_POINTERS = NULL;
 const char* CHPL_LLVM = NULL;
 const char* CHPL_AUX_FILESYS = NULL;
+const char* CHPL_UNWIND = NULL;
 
 bool widePointersStruct;
 
@@ -946,6 +947,7 @@ static void setChapelEnvs() {
   CHPL_WIDE_POINTERS   = envMap["CHPL_WIDE_POINTERS"];
   CHPL_LLVM            = envMap["CHPL_LLVM"];
   CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
+  CHPL_UNWIND          = envMap["CHPL_UNWIND"];
 }
 
 static void setupChplGlobals(const char* argv0) {

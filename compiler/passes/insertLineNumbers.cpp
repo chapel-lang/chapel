@@ -44,7 +44,7 @@ std::vector<std::string> gFilenameLookup;
 // Caches lookups into our filename vector
 std::map<std::string, int> gFilenameLookupCache;
 
-static int getFilenameLookupPosition(std::string name) {
+int getFilenameLookupPosition(std::string name) {
   std::map<std::string, int>::iterator it = gFilenameLookupCache.find(name);
   int idx;
   if (it != gFilenameLookupCache.end()) {

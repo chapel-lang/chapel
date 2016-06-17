@@ -409,6 +409,65 @@ static void genFilenameTable() {
   genGlobalInt32(sizeName, gFilenameLookup.size());
 }
 
+//
+// This adds the Chapel symbol table to the config file
+// Our symbol table is formed by two 1-D arrays with 2 elements
+// per entry:
+//
+// chpl_funSymTable     = cname, Chapel name
+// chpl_filenumSymTable = Chapel file name index, Chapel line number
+//
+static void genUnwindSymbolTable(){
+  GenInfo *info = gGenInfo;
+  Vec<FnSymbol*> symbols;
+
+  //If CHPL_UNWIND is none we don't want any symbols in our tables
+  if(strcmp(CHPL_UNWIND, "none") != 0){
+    // Gets only user symbols
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      if(strncmp(fn->cname, "chpl_", 5)) {
+        symbols.add(fn);
+      }
+    }
+  }
+
+  //TODO: Could have a native LLVM version, instead of relying on C to LLVM
+  if( info->cfile ) {
+    FILE* hdrfile = info->cfile;
+    bool first = true;
+
+    // Generate the cname, Chapel name table
+    fprintf(hdrfile,"\nc_string chpl_funSymTable[] = {\n");
+    forv_Vec(FnSymbol, fn, symbols) {
+      if(!first)
+        fprintf(hdrfile,",\n");
+
+      fprintf(hdrfile," \"%s\", \"%s\"", fn->cname, fn->name);
+      first = false;
+    }
+    fprintf(hdrfile,"};\n");
+
+    // Generate the filename index, linenum table
+    first = true;
+    fprintf(hdrfile,"\n\nint chpl_filenumSymTable[] = {\n");
+    forv_Vec(FnSymbol, fn, symbols) {
+      if(!first)
+        fprintf(hdrfile,",\n");
+
+      fprintf(hdrfile," %d, %d",
+        getFilenameLookupPosition(fn->fname()), fn->linenum());
+      first = false;
+    }
+    fprintf(hdrfile,"};\n");
+  }
+  else {
+#ifdef HAVE_LLVM
+
+#endif
+  }
+  genGlobalInt32("chpl_sizeSymTable", symbols.n * 2);
+}
+
 static int
 compareSymbol(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
@@ -624,6 +683,9 @@ static void codegen_header_compilation_config() {
 
     genComment("Filename Lookup Table");
     genFilenameTable();
+
+    genComment("Unwind symbol tables");
+    genUnwindSymbolTable();
 
     closeCFile(&cfgfile);
 
