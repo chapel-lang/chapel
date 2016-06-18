@@ -46,7 +46,7 @@ static void build_record_inequality_function(AggregateType* ct);
 static void build_enum_cast_function(EnumType* et);
 static void build_enum_first_function(EnumType* et);
 static void build_enum_enumerate_function(EnumType* et);
-static void build_enum_size_function(EnumType* et); //FIXME:
+static void build_enum_size_function(EnumType* et);
 
 //static void buildDefaultReadFunction(AggregateType* type);
 //static void buildDefaultReadFunction(EnumType* type);
@@ -142,7 +142,7 @@ static void buildFieldAccessorFunctions(AggregateType* at)
         }
       } else if (isEnumType(field->type)) {
         build_accessors(at, field);
-      }
+      }//FIXME: Look here for tuples of types not being able to make field accessors
     }
   }
 }
@@ -289,7 +289,7 @@ static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   _this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(_this);
-  if (field->isParameter())
+  if (field->isParameter()) //FIXME: (remove comment) When we get to here, we can handle fields that are parameters. Issue is that we aren't getting here for types
     fn->retTag = RET_PARAM;
   else if (field->hasFlag(FLAG_TYPE_VARIABLE))
     fn->retTag = RET_TYPE;
@@ -321,7 +321,7 @@ static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
                          new_CStringSymbol(field->name))),
           new CallExpr("halt", new_CStringSymbol("illegal union access"))));
     }
-  }
+  } //FIXME: (remove comment) below this is where we handle enums as a special case of types. Types appear to be otherwise ignored.
   if (isTypeSymbol(field) && isEnumType(field->type)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, field));
     // better flatten enumerated types now
@@ -347,6 +347,7 @@ static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
   fn->cname = astr("chpl_get_", ct->symbol->cname, "_", fn->cname);
   fn->addFlag(FLAG_NO_PARENS);
   fn->_this = _this;
+  
 }
 
 // Getter and setter functions are provided by the compiler if not supplied by
@@ -660,16 +661,11 @@ static void build_enum_size_function(EnumType* et) {
   _this->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(_this);
   
-  
   fn->retTag = RET_VALUE;
   //use this function only where the argument is an enum
-  fn->where = new BlockStmt(new CallExpr("==", _this, et->symbol)); //what does this do?
+  fn->where = new BlockStmt(new CallExpr("==", _this, et->symbol));
   
   VarSymbol*  varS = new_IntSymbol(et->constants.length);
-  //et->constants.length
-  
-  //DefExpr* defExpr = toDefExpr(resultvar); //FIXME:
-  
   fn->insertAtTail(new CallExpr(PRIM_RETURN, varS));
   
   DefExpr* fnDef = new DefExpr(fn);
