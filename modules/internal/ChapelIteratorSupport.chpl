@@ -98,12 +98,20 @@ module ChapelIteratorSupport {
     return ic;
 
   proc _getIterator(type t) {
-    if (!(isEnumType(t))) then
+    if (isEnumType(t)) then
+      return _getIterator(t.these());
+    else if (isTupleType(t)) then
+      compilerError("unable to iterate over a tuple"); //TODO: support this
+    else
       compilerError("cannot iterate over a type");
   }
 
   inline proc _getIteratorZip(x) {
     return _getIterator(x);
+  }
+
+  inline proc _getIteratorZip(type t) {
+    return _getIterator(t);
   }
 
   inline proc _getIteratorZip(x: _tuple) {
@@ -119,9 +127,35 @@ module ChapelIteratorSupport {
       return _getIteratorZipInternal(x, 1);
   }
 
+  inline proc _getIteratorZip(type t: _tuple) {
+    if (!(isTupleType(t))) then
+      compilerError("cannot zip over a type that is not a homogeneous tuple");
+    else if (!(isEnumType(t(1)))) then
+      compilerError("cannot zip over a tuple of types that is not of enums");
+    else {
+
+
+    inline proc _getIteratorZipInternal(type t: _tuple, param dim: int) {
+      var x : t;
+
+      if dim == x.size then // dim == t.size then
+        return (_getIterator(t(dim)),);
+      else
+        return (_getIterator(t(dim)), (..._getIteratorZipInternal(t, dim+1)));
+    }
+    if t == (t(1),) then // t.size == 1 then
+      return _getIterator(t(1));
+    else
+      return _getIteratorZipInternal(t, 1);
+      }
+  }
+
+
   proc _checkIterator(type t) {
-    if (!(isEnumType(t))) then
-      compilerError("cannot iterate over a type");
+    //if (!(isEnumType(t))) then
+    //  compilerError("cannot iterate over a type");
+    //else
+      return t;
   }
 
   inline proc _checkIterator(x) {

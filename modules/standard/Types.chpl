@@ -609,6 +609,11 @@ iter chpl_enumerate(type t: enumerated) {
   for i in 1..enumTuple.size do
     yield enumTuple(i);
 }
+pragma "no doc"
+iter type enumerated.these(){
+  for i in chpl_enumerate(this) do
+    yield i;
+}
 
 // TODO add chpl_ to these functions' names - they are not intended for user.
 private proc enum_minbits(type t: enumerated) param {
