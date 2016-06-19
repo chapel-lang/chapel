@@ -69,7 +69,6 @@ module BLAS {
   enum Uplo {Upper=121:c_int, Lower=122:c_int};
   enum Diag {NonUnit=131:c_int, Unit=132:c_int};
   enum Side {Left=141:c_int, Right=142:c_int};
-  const _BlasOp : [Op.N..Op.H] CBLAS_TRANSPOSE = [CblasNoTrans, CblasTrans, CblasConjTrans];
 
   {
     assert(Order.Row:c_int == CblasRowMajor);
@@ -254,7 +253,6 @@ module BLAS {
     var k : c_int;
     if trans == Op.N then k = Adom.dim(2).size : c_int;
                      else k = Adom.dim(1).size : c_int;
-    var _trans = _BlasOp[trans];
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA),
@@ -263,26 +261,26 @@ module BLAS {
     select eltType {
       when real(32) {
         // ssymm
-        cblas_ssyrk(order, uplo, _trans, n, k,
+        cblas_ssyrk(order, uplo, trans, n, k,
           alpha, A[Adom.low], _ldA, beta, C[Cdom.low],_ldC);
       }
       when real(64) {
         // dsymm
-        cblas_dsyrk(order, uplo, _trans, n, k,
+        cblas_dsyrk(order, uplo, trans, n, k,
           alpha, A[Adom.low], _ldA, beta, C[Cdom.low],_ldC);
       }
       when complex(64) {
         // csymm
         var alpha1 = alpha : complex(64),
             beta1 = beta : complex(64);
-        cblas_csyrk(order, uplo, _trans, n, k,
+        cblas_csyrk(order, uplo, trans, n, k,
           alpha1, A[Adom.low], _ldA, beta1, C[Cdom.low],_ldC);
       }
       when complex(128) {
         // zsymm
         var alpha1 = alpha : complex(128),
             beta1 = beta : complex(128);
-        cblas_zsyrk(order, uplo, _trans, n, k,
+        cblas_zsyrk(order, uplo, trans, n, k,
           alpha1, A[Adom.low], _ldA, beta1, C[Cdom.low],_ldC);
       }
       otherwise {
@@ -309,7 +307,6 @@ module BLAS {
     var k : c_int;
     if trans == Op.N then k = Adom.dim(2).size : c_int;
                      else k = Adom.dim(1).size : c_int;
-    var _trans = _BlasOp[trans];
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA),
@@ -320,14 +317,14 @@ module BLAS {
         // csymm
         var alpha1 = alpha : real(32),
             beta1 = beta : real(32);
-        cblas_cherk(order, uplo, _trans, n, k,
+        cblas_cherk(order, uplo, trans, n, k,
           alpha1, A[Adom.low], _ldA, beta1, C[Cdom.low],_ldC);
       }
       when complex(128) {
         // zsymm
         var alpha1 = alpha : real(64),
             beta1 = beta : real(64);
-        cblas_zherk(order, uplo, _trans, n, k,
+        cblas_zherk(order, uplo, trans, n, k,
           alpha1, A[Adom.low], _ldA, beta1, C[Cdom.low],_ldC);
       }
       otherwise {
@@ -355,7 +352,6 @@ module BLAS {
     var k : c_int;
     if trans == Op.N then k = Adom.dim(2).size : c_int;
                      else k = Adom.dim(1).size : c_int;
-    var _trans = _BlasOp[trans];
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA),
@@ -365,26 +361,26 @@ module BLAS {
     select eltType {
       when real(32) {
         // ssymm
-        cblas_ssyr2k(order, uplo, _trans, n, k,
+        cblas_ssyr2k(order, uplo, trans, n, k,
           alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
       }
       when real(64) {
         // dsymm
-        cblas_dsyr2k(order, uplo, _trans, n, k,
+        cblas_dsyr2k(order, uplo, trans, n, k,
           alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta, C[Cdom.low],_ldC);
       }
       when complex(64) {
         // csymm
         var alpha1 = alpha : complex(64),
             beta1 = beta : complex(64);
-        cblas_csyr2k(order, uplo, _trans, n, k,
+        cblas_csyr2k(order, uplo, trans, n, k,
           alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta1, C[Cdom.low],_ldC);
       }
       when complex(128) {
         // zsymm
         var alpha1 = alpha : complex(128),
             beta1 = beta : complex(128);
-        cblas_zsyr2k(order, uplo, _trans, n, k,
+        cblas_zsyr2k(order, uplo, trans, n, k,
           alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta1, C[Cdom.low],_ldC);
       }
       otherwise {
@@ -411,7 +407,6 @@ module BLAS {
     var k : c_int;
     if trans == Op.N then k = Adom.dim(2).size : c_int;
                      else k = Adom.dim(1).size : c_int;
-    var _trans = _BlasOp[trans];
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA),
@@ -422,13 +417,13 @@ module BLAS {
       when complex(64) {
         var alpha1 = alpha : complex(64),
             beta1 = beta : real(32);
-        cblas_cher2k(order, uplo, _trans, n, k,
+        cblas_cher2k(order, uplo, trans, n, k,
           alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta1, C[Cdom.low],_ldC);
       }
       when complex(128) {
         var alpha1 = alpha : complex(128),
             beta1 = beta : real(64);
-        cblas_zher2k(order, uplo, _trans, n, k,
+        cblas_zher2k(order, uplo, trans, n, k,
           alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB, beta1, C[Cdom.low],_ldC);
       }
       otherwise {
@@ -454,7 +449,6 @@ module BLAS {
     // Determine sizes
     var m = Bdom.dim(1).size : c_int,
         n = Bdom.dim(2).size : c_int;
-    var _trans = _BlasOp[trans];
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA),
@@ -462,21 +456,21 @@ module BLAS {
 
     select eltType {
       when real(32) {
-        cblas_strmm(order, side, uplo, _trans, diag,
+        cblas_strmm(order, side, uplo, trans, diag,
           m, n, alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB);
       }
       when real(64) {
-        cblas_dtrmm(order, side, uplo, _trans, diag,
+        cblas_dtrmm(order, side, uplo, trans, diag,
           m, n, alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB);
       }
       when complex(64) {
         var alpha1 = alpha : complex(64);
-        cblas_ctrmm(order, side, uplo, _trans, diag,
+        cblas_ctrmm(order, side, uplo, trans, diag,
           m, n, alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB);
       }
       when complex(128) {
         var alpha1 = alpha : complex(128);
-        cblas_ztrmm(order, side, uplo, _trans, diag,
+        cblas_ztrmm(order, side, uplo, trans, diag,
           m, n, alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB);
       }
       otherwise {
@@ -502,7 +496,6 @@ module BLAS {
     // Determine sizes
     var m = Bdom.dim(1).size : c_int,
         n = Bdom.dim(2).size : c_int;
-    var _trans = _BlasOp[trans];
 
     // Set strides if necessary
     var _ldA = getLeadingDim(Adom, order, ldA),
@@ -510,21 +503,21 @@ module BLAS {
 
     select eltType {
       when real(32) {
-        cblas_strsm(order, side, uplo, _trans, diag,
+        cblas_strsm(order, side, uplo, trans, diag,
           m, n, alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB);
       }
       when real(64) {
-        cblas_dtrsm(order, side, uplo, _trans, diag,
+        cblas_dtrsm(order, side, uplo, trans, diag,
           m, n, alpha, A[Adom.low], _ldA, B[Bdom.low], _ldB);
       }
       when complex(64) {
         var alpha1 = alpha : complex(64);
-        cblas_ctrsm(order, side, uplo, _trans, diag,
+        cblas_ctrsm(order, side, uplo, trans, diag,
           m, n, alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB);
       }
       when complex(128) {
         var alpha1 = alpha : complex(128);
-        cblas_ztrsm(order, side, uplo, _trans, diag,
+        cblas_ztrsm(order, side, uplo, trans, diag,
           m, n, alpha1, A[Adom.low], _ldA, B[Bdom.low], _ldB);
       }
       otherwise {
