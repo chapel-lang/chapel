@@ -91,7 +91,7 @@ module BLAS {
   proc gemm(A : [?Adom], B : [?Bdom], C : [?Cdom],
     alpha, beta,
     opA : Op = Op.N, opB : Op = Op.N,
-    rowMajor : bool = true,
+    order : Order = Order.Row,
     ldA : int = 0, ldB : int = 0, ldC : int = 0)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
@@ -105,16 +105,10 @@ module BLAS {
     if opA > Op.N then k = Adom.dim(1).size : c_int;
                   else k = Adom.dim(2).size : c_int;
 
-    // Set various parameters
-    var order : CBLAS_ORDER = CblasRowMajor;
-    if !rowMajor then order = CblasColMajor;
-    var _opA = _BlasOp[opA],
-        _opB = _BlasOp[opB];
-
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, rowMajor, ldA),
-        _ldB = getLeadingDim(Bdom, rowMajor, ldB),
-        _ldC = getLeadingDim(Cdom, rowMajor, ldC);
+    var _ldA = getLeadingDim(Adom, order, ldA),
+        _ldB = getLeadingDim(Bdom, order, ldB),
+        _ldC = getLeadingDim(Cdom, order, ldC);
 
     select eltType {
       when real(32) {
@@ -152,8 +146,8 @@ module BLAS {
   */
   proc symm(A : [?Adom], B : [?Bdom], C : [?Cdom],
     alpha, beta,
-    uplo : CBLAS_UPLO = CblasUpper,  side : CBLAS_SIDE = CblasLeft,
-    rowMajor : bool = true,
+    uplo : Uplo = Uplo.Upper,  side : Side = Side.Left,
+    order : Order = Order.Row,
     ldA : int = 0, ldB : int = 0, ldC : int = 0)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
@@ -164,14 +158,10 @@ module BLAS {
     var m = Cdom.dim(1).size : c_int,
         n = Cdom.dim(2).size : c_int;
 
-    // Set various parameters
-    var order : CBLAS_ORDER = CblasRowMajor;
-    if !rowMajor then order = CblasColMajor;
-
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, rowMajor, ldA),
-        _ldB = getLeadingDim(Bdom, rowMajor, ldB),
-        _ldC = getLeadingDim(Cdom, rowMajor, ldC);
+    var _ldA = getLeadingDim(Adom, order, ldA),
+        _ldB = getLeadingDim(Bdom, order, ldB),
+        _ldC = getLeadingDim(Cdom, order, ldC);
 
     select eltType {
       when real(32) {
@@ -208,8 +198,8 @@ module BLAS {
   /* HEMM : Hermitian multiplications.... only for complex types*/
   proc hemm(A : [?Adom], B : [?Bdom], C : [?Cdom],
     alpha, beta,
-    uplo : CBLAS_UPLO = CblasUpper,  side : CBLAS_SIDE = CblasLeft,
-    rowMajor : bool = true,
+    uplo : Uplo = Uplo.Upper,  side : Side = Side.Left,
+    order : Order = Order.Row,
     ldA : int = 0, ldB : int = 0, ldC : int = 0)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
@@ -220,14 +210,10 @@ module BLAS {
     var m = Cdom.dim(1).size : c_int,
         n = Cdom.dim(2).size : c_int;
 
-    // Set various parameters
-    var order : CBLAS_ORDER = CblasRowMajor;
-    if !rowMajor then order = CblasColMajor;
-
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, rowMajor, ldA),
-        _ldB = getLeadingDim(Bdom, rowMajor, ldB),
-        _ldC = getLeadingDim(Cdom, rowMajor, ldC);
+    var _ldA = getLeadingDim(Adom, order, ldA),
+        _ldB = getLeadingDim(Bdom, order, ldB),
+        _ldC = getLeadingDim(Cdom, order, ldC);
 
     select eltType {
       when complex(64) {
@@ -255,8 +241,8 @@ module BLAS {
   */
   proc syrk(A : [?Adom],  C : [?Cdom],
     alpha, beta,
-    uplo : CBLAS_UPLO = CblasUpper,  trans : Op = Op.N,
-    rowMajor : bool = true,
+    uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
+    order : Order = Order.Row,
     ldA : int = 0,  ldC : int = 0)
     where (Adom.rank == 2) && (Cdom.rank==2)
   {
@@ -270,13 +256,9 @@ module BLAS {
                      else k = Adom.dim(1).size : c_int;
     var _trans = _BlasOp[trans];
 
-    // Set various parameters
-    var order : CBLAS_ORDER = CblasRowMajor;
-    if !rowMajor then order = CblasColMajor;
-
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, rowMajor, ldA),
-        _ldC = getLeadingDim(Cdom, rowMajor, ldC);
+    var _ldA = getLeadingDim(Adom, order, ldA),
+        _ldC = getLeadingDim(Cdom, order, ldC);
 
     select eltType {
       when real(32) {
@@ -314,8 +296,8 @@ module BLAS {
   */
   proc herk(A : [?Adom],  C : [?Cdom],
     alpha, beta,
-    uplo : CBLAS_UPLO = CblasUpper,  trans : Op = Op.N,
-    rowMajor : bool = true,
+    uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
+    order : Order = Order.Row,
     ldA : int = 0,  ldC : int = 0)
     where (Adom.rank == 2) && (Cdom.rank==2)
   {
@@ -329,13 +311,9 @@ module BLAS {
                      else k = Adom.dim(1).size : c_int;
     var _trans = _BlasOp[trans];
 
-    // Set various parameters
-    var order : CBLAS_ORDER = CblasRowMajor;
-    if !rowMajor then order = CblasColMajor;
-
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, rowMajor, ldA),
-        _ldC = getLeadingDim(Cdom, rowMajor, ldC);
+    var _ldA = getLeadingDim(Adom, order, ldA),
+        _ldC = getLeadingDim(Cdom, order, ldC);
 
     select eltType {
       when complex(64) {
@@ -364,8 +342,8 @@ module BLAS {
   */
   proc syr2k(A : [?Adom],  B : [?Bdom], C : [?Cdom],
     alpha, beta,
-    uplo : CBLAS_UPLO = CblasUpper,  trans : Op = Op.N,
-    rowMajor : bool = true,
+    uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
+    order : Order = Order.Row,
     ldA : int = 0,  ldB : int = 0, ldC : int = 0)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
@@ -379,14 +357,10 @@ module BLAS {
                      else k = Adom.dim(1).size : c_int;
     var _trans = _BlasOp[trans];
 
-    // Set various parameters
-    var order : CBLAS_ORDER = CblasRowMajor;
-    if !rowMajor then order = CblasColMajor;
-
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, rowMajor, ldA),
-        _ldB = getLeadingDim(Bdom, rowMajor, ldB),
-        _ldC = getLeadingDim(Cdom, rowMajor, ldC);
+    var _ldA = getLeadingDim(Adom, order, ldA),
+        _ldB = getLeadingDim(Bdom, order, ldB),
+        _ldC = getLeadingDim(Cdom, order, ldC);
 
     select eltType {
       when real(32) {
@@ -424,8 +398,8 @@ module BLAS {
   */
   proc her2k(A : [?Adom],  B : [?Bdom], C : [?Cdom],
     alpha, beta,
-    uplo : CBLAS_UPLO = CblasUpper,  trans : Op = Op.N,
-    rowMajor : bool = true,
+    uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
+    order : Order = Order.Row,
     ldA : int = 0,  ldB : int = 0, ldC : int = 0)
     where (Adom.rank == 2) && (Bdom.rank==2) && (Cdom.rank==2)
   {
@@ -439,14 +413,10 @@ module BLAS {
                      else k = Adom.dim(1).size : c_int;
     var _trans = _BlasOp[trans];
 
-    // Set various parameters
-    var order : CBLAS_ORDER = CblasRowMajor;
-    if !rowMajor then order = CblasColMajor;
-
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, rowMajor, ldA),
-        _ldB = getLeadingDim(Bdom, rowMajor, ldB),
-        _ldC = getLeadingDim(Cdom, rowMajor, ldC);
+    var _ldA = getLeadingDim(Adom, order, ldA),
+        _ldB = getLeadingDim(Bdom, order, ldB),
+        _ldC = getLeadingDim(Cdom, order, ldC);
 
     select eltType {
       when complex(64) {
@@ -472,9 +442,9 @@ module BLAS {
   */
   proc trmm(A : [?Adom],  B : [?Bdom],
     alpha,
-    uplo : CBLAS_UPLO = CblasUpper,  trans : Op = Op.N,
-    side : CBLAS_SIDE = CblasLeft, diag : CBLAS_DIAG = CblasNonUnit,
-    rowMajor : bool = true,
+    uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
+    side : Side = Side.Left, diag : Diag = Diag.NonUnit,
+    order : Order = Order.Row,
     ldA : int = 0,  ldB : int = 0)
     where (Adom.rank == 2) && (Bdom.rank==2)
   {
@@ -486,13 +456,9 @@ module BLAS {
         n = Bdom.dim(2).size : c_int;
     var _trans = _BlasOp[trans];
 
-    // Set various parameters
-    var order : CBLAS_ORDER = CblasRowMajor;
-    if !rowMajor then order = CblasColMajor;
-
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, rowMajor, ldA),
-        _ldB = getLeadingDim(Bdom, rowMajor, ldB);
+    var _ldA = getLeadingDim(Adom, order, ldA),
+        _ldB = getLeadingDim(Bdom, order, ldB);
 
     select eltType {
       when real(32) {
@@ -524,9 +490,9 @@ module BLAS {
   */
   proc trsm(A : [?Adom],  B : [?Bdom],
     alpha,
-    uplo : CBLAS_UPLO = CblasUpper,  trans : Op = Op.N,
-    side : CBLAS_SIDE = CblasLeft, diag : CBLAS_DIAG = CblasNonUnit,
-    rowMajor : bool = true,
+    uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
+    side : Side = Side.Left, diag : Diag = Diag.NonUnit,
+    order : Order = Order.Row,
     ldA : int = 0,  ldB : int = 0)
     where (Adom.rank == 2) && (Bdom.rank==2)
   {
@@ -538,13 +504,9 @@ module BLAS {
         n = Bdom.dim(2).size : c_int;
     var _trans = _BlasOp[trans];
 
-    // Set various parameters
-    var order : CBLAS_ORDER = CblasRowMajor;
-    if !rowMajor then order = CblasColMajor;
-
     // Set strides if necessary
-    var _ldA = getLeadingDim(Adom, rowMajor, ldA),
-        _ldB = getLeadingDim(Bdom, rowMajor, ldB);
+    var _ldA = getLeadingDim(Adom, order, ldA),
+        _ldB = getLeadingDim(Bdom, order, ldB);
 
     select eltType {
       when real(32) {
@@ -574,10 +536,11 @@ module BLAS {
 
 
   // Helper function
-  inline proc getLeadingDim(Adom : domain(2), rowMajor : bool, ldA : int) : c_int {
+  inline proc getLeadingDim(Adom : domain(2), order : Order, ldA : int) : c_int {
     var _ldA = ldA : c_int;
     if ldA==0 {
-      if rowMajor then _ldA = Adom.dim(2).size : c_int;
+      if order==Order.Row
+                  then _ldA = Adom.dim(2).size : c_int;
                   else _ldA = Adom.dim(1).size : c_int;
     }
     return _ldA;

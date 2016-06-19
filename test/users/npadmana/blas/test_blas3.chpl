@@ -214,14 +214,14 @@ proc test_symm_helper(type t) {
     const alpha = rng.getNext(),
           beta = rng.getNext();
 
-    symm(A, B, C, alpha, beta, uplo=CblasUpper, side=CblasLeft);
+    symm(A, B, C, alpha, beta, uplo=Uplo.Upper, side=Side.Left);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta);
     var err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
     C = saveC;
-    symm(A, B, C, alpha, beta, uplo=CblasLower, side=CblasLeft);
+    symm(A, B, C, alpha, beta, uplo=Uplo.Lower, side=Side.Left);
     // Do a direct multiplication as a test
     err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
@@ -248,14 +248,14 @@ proc test_symm_helper(type t) {
     const alpha = rng.getNext(),
           beta = rng.getNext();
 
-    symm(A, B, C, alpha, beta, uplo=CblasUpper, side=CblasRight);
+    symm(A, B, C, alpha, beta, uplo=Uplo.Upper, side=Side.Right);
     // Do a direct multiplication as a test
     gemm(B,A,D,alpha,beta);
     var err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
     C = saveC;
-    symm(A, B, C, alpha, beta, uplo=CblasLower, side=CblasRight);
+    symm(A, B, C, alpha, beta, uplo=Uplo.Lower, side=Side.Right);
     // Do a direct multiplication as a test
     err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
@@ -292,14 +292,14 @@ proc test_hemm_helper(type t) {
     const alpha = rng.getNext(),
           beta = rng.getNext();
 
-    hemm(A, B, C, alpha, beta, uplo=CblasUpper, side=CblasLeft);
+    hemm(A, B, C, alpha, beta, uplo=Uplo.Upper, side=Side.Left);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta);
     var err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
     C = saveC;
-    hemm(A, B, C, alpha, beta, uplo=CblasLower, side=CblasLeft);
+    hemm(A, B, C, alpha, beta, uplo=Uplo.Lower, side=Side.Left);
     // Do a direct multiplication as a test
     err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
@@ -326,14 +326,14 @@ proc test_hemm_helper(type t) {
     const alpha = rng.getNext(),
           beta = rng.getNext();
 
-    hemm(A, B, C, alpha, beta, uplo=CblasUpper, side=CblasRight);
+    hemm(A, B, C, alpha, beta, uplo=Uplo.Upper, side=Side.Right);
     // Do a direct multiplication as a test
     gemm(B,A,D,alpha,beta);
     var err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
     C = saveC;
-    hemm(A, B, C, alpha, beta, uplo=CblasLower, side=CblasRight);
+    hemm(A, B, C, alpha, beta, uplo=Uplo.Lower, side=Side.Right);
     // Do a direct multiplication as a test
     err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
@@ -367,7 +367,7 @@ proc test_syrk_helper(type t) {
     const alpha = rng.getNext(),
           beta = rng.getNext();
 
-    syrk(A, C, alpha, beta, uplo=CblasUpper, trans=Op.N);
+    syrk(A, C, alpha, beta, uplo=Uplo.Upper, trans=Op.N);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opB=Op.T);
     zeroTri(C, zeroLow=true);
@@ -377,7 +377,7 @@ proc test_syrk_helper(type t) {
 
     C = saveC;
     D = saveC;
-    syrk(A, C, alpha, beta, uplo=CblasLower, trans=Op.N);
+    syrk(A, C, alpha, beta, uplo=Uplo.Lower, trans=Op.N);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opB=Op.T);
     zeroTri(C, zeroLow=false);
@@ -387,7 +387,7 @@ proc test_syrk_helper(type t) {
 
     C = saveC;
     D = saveC;
-    syrk(A, C, alpha, beta, uplo=CblasUpper, trans=Op.T);
+    syrk(A, C, alpha, beta, uplo=Uplo.Upper, trans=Op.T);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opA=Op.T);
     zeroTri(C, zeroLow=true);
@@ -397,7 +397,7 @@ proc test_syrk_helper(type t) {
 
     C = saveC;
     D = saveC;
-    syrk(A, C, alpha, beta, uplo=CblasLower, trans=Op.T);
+    syrk(A, C, alpha, beta, uplo=Uplo.Lower, trans=Op.T);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opA=Op.T);
     zeroTri(C, zeroLow=false);
@@ -435,7 +435,7 @@ proc test_herk_helper(type t) {
     const alpha = tmp.re,
           beta = tmp.im;
 
-    herk(A, C, alpha, beta, uplo=CblasUpper, trans=Op.N);
+    herk(A, C, alpha, beta, uplo=Uplo.Upper, trans=Op.N);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opB=Op.H);
     zeroTri(C, zeroLow=true);
@@ -445,7 +445,7 @@ proc test_herk_helper(type t) {
 
     C = saveC;
     D = saveC;
-    herk(A, C, alpha, beta, uplo=CblasLower, trans=Op.N);
+    herk(A, C, alpha, beta, uplo=Uplo.Lower, trans=Op.N);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opB=Op.H);
     zeroTri(C, zeroLow=false);
@@ -455,7 +455,7 @@ proc test_herk_helper(type t) {
 
     C = saveC;
     D = saveC;
-    herk(A, C, alpha, beta, uplo=CblasUpper, trans=Op.H);
+    herk(A, C, alpha, beta, uplo=Uplo.Upper, trans=Op.H);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opA=Op.H);
     zeroTri(C, zeroLow=true);
@@ -465,7 +465,7 @@ proc test_herk_helper(type t) {
 
     C = saveC;
     D = saveC;
-    herk(A, C, alpha, beta, uplo=CblasLower, trans=Op.H);
+    herk(A, C, alpha, beta, uplo=Uplo.Lower, trans=Op.H);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opA=Op.H);
     zeroTri(C, zeroLow=false);
@@ -504,7 +504,7 @@ proc test_syr2k_helper(type t) {
           beta = rng.getNext();
 
     var one = 1 : t;
-    syr2k(A, B, C, alpha, beta, uplo=CblasUpper, trans=Op.N);
+    syr2k(A, B, C, alpha, beta, uplo=Uplo.Upper, trans=Op.N);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opB=Op.T);
     gemm(B,A,D,alpha,one,opB=Op.T);
@@ -515,7 +515,7 @@ proc test_syr2k_helper(type t) {
 
     C = saveC;
     D = saveC;
-    syr2k(A, B, C, alpha, beta, uplo=CblasLower, trans=Op.N);
+    syr2k(A, B, C, alpha, beta, uplo=Uplo.Lower, trans=Op.N);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opB=Op.T);
     gemm(B,A,D,alpha,one,opB=Op.T);
@@ -526,7 +526,7 @@ proc test_syr2k_helper(type t) {
 
     C = saveC;
     D = saveC;
-    syr2k(A, B, C, alpha, beta, uplo=CblasUpper, trans=Op.T);
+    syr2k(A, B, C, alpha, beta, uplo=Uplo.Upper, trans=Op.T);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opA=Op.T);
     gemm(B,A,D,alpha,one,opA=Op.T);
@@ -537,7 +537,7 @@ proc test_syr2k_helper(type t) {
 
     C = saveC;
     D = saveC;
-    syr2k(A, B, C, alpha, beta, uplo=CblasLower, trans=Op.T);
+    syr2k(A, B, C, alpha, beta, uplo=Uplo.Lower, trans=Op.T);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opA=Op.T);
     gemm(B,A,D,alpha,one,opA=Op.T);
@@ -579,7 +579,7 @@ proc test_her2k_helper(type t) {
     const beta = tmp.re;
 
     var one = 1 : t;
-    her2k(A, B, C, alpha, beta, uplo=CblasUpper, trans=Op.N);
+    her2k(A, B, C, alpha, beta, uplo=Uplo.Upper, trans=Op.N);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opB=Op.H);
     gemm(B,A,D,calpha,one,opB=Op.H);
@@ -590,7 +590,7 @@ proc test_her2k_helper(type t) {
 
     C = saveC;
     D = saveC;
-    her2k(A, B, C, alpha, beta, uplo=CblasLower, trans=Op.N);
+    her2k(A, B, C, alpha, beta, uplo=Uplo.Lower, trans=Op.N);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opB=Op.H);
     gemm(B,A,D,calpha,one,opB=Op.H);
@@ -601,7 +601,7 @@ proc test_her2k_helper(type t) {
 
     C = saveC;
     D = saveC;
-    her2k(A, B, C, alpha, beta, uplo=CblasUpper, trans=Op.H);
+    her2k(A, B, C, alpha, beta, uplo=Uplo.Upper, trans=Op.H);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opA=Op.H);
     gemm(B,A,D,calpha,one,opA=Op.H);
@@ -612,7 +612,7 @@ proc test_her2k_helper(type t) {
 
     C = saveC;
     D = saveC;
-    her2k(A, B, C, alpha, beta, uplo=CblasLower, trans=Op.H);
+    her2k(A, B, C, alpha, beta, uplo=Uplo.Lower, trans=Op.H);
     // Do a direct multiplication as a test
     gemm(A,B,D,alpha,beta,opA=Op.H);
     gemm(B,A,D,calpha,one,opA=Op.H);
@@ -649,7 +649,7 @@ proc test_trmm_helper(type t) {
     var zero = 0 : t;
     fillRandom(A);
     zeroTri(A, zeroLow=true);
-    trmm(A, B, alpha, uplo=CblasUpper, trans=Op.N, side=CblasLeft);
+    trmm(A, B, alpha, uplo=Uplo.Upper, trans=Op.N, side=Side.Left);
     // Do a direct multiplication as a test
     gemm(A,saveB,C,alpha,zero);
     var err = max reduce abs(B-C);
@@ -658,7 +658,7 @@ proc test_trmm_helper(type t) {
     fillRandom(A);
     B = saveB;
     zeroTri(A, zeroLow=false);
-    trmm(A, B, alpha, uplo=CblasLower, trans=Op.N, side=CblasLeft);
+    trmm(A, B, alpha, uplo=Uplo.Lower, trans=Op.N, side=Side.Left);
     // Do a direct multiplication as a test
     gemm(A,saveB,C,alpha,zero);
     err = max reduce abs(B-C);
@@ -667,7 +667,7 @@ proc test_trmm_helper(type t) {
     fillRandom(A);
     B = saveB;
     zeroTri(A, zeroLow=true);
-    trmm(A, B, alpha, uplo=CblasUpper, trans=Op.N, side=CblasRight);
+    trmm(A, B, alpha, uplo=Uplo.Upper, trans=Op.N, side=Side.Right);
     // Do a direct multiplication as a test
     gemm(saveB,A,C,alpha,zero);
     err = max reduce abs(B-C);
@@ -676,7 +676,7 @@ proc test_trmm_helper(type t) {
     fillRandom(A);
     B = saveB;
     zeroTri(A, zeroLow=true);
-    trmm(A, B, alpha, uplo=CblasUpper, trans=Op.T, side=CblasRight);
+    trmm(A, B, alpha, uplo=Uplo.Upper, trans=Op.T, side=Side.Right);
     // Do a direct multiplication as a test
     gemm(saveB,A,C,alpha,zero,opB=Op.T);
     err = max reduce abs(B-C);
@@ -718,7 +718,7 @@ proc test_trsm_helper(type t) {
     fillRandom(A);
     A += Id;
     zeroTri(A, zeroLow=true);
-    trsm(A, B, alpha, uplo=CblasUpper, trans=Op.N, side=CblasLeft);
+    trsm(A, B, alpha, uplo=Uplo.Upper, trans=Op.N, side=Side.Left);
     // Do a direct multiplication as a test
     C = zero;
     gemm(A,B,C,one,zero);
@@ -729,7 +729,7 @@ proc test_trsm_helper(type t) {
     A += Id;
     B = saveB;
     zeroTri(A, zeroLow=false);
-    trsm(A, B, alpha, uplo=CblasLower, trans=Op.N, side=CblasLeft);
+    trsm(A, B, alpha, uplo=Uplo.Lower, trans=Op.N, side=Side.Left);
     // Do a direct multiplication as a test
     C = zero;
     gemm(A,B,C,one,zero);
@@ -740,7 +740,7 @@ proc test_trsm_helper(type t) {
     A += Id;
     B = saveB;
     zeroTri(A, zeroLow=true);
-    trsm(A, B, alpha, uplo=CblasUpper, trans=Op.N, side=CblasRight);
+    trsm(A, B, alpha, uplo=Uplo.Upper, trans=Op.N, side=Side.Right);
     // Do a direct multiplication as a test
     C = zero;
     gemm(B,A,C,one,zero);
@@ -751,7 +751,7 @@ proc test_trsm_helper(type t) {
     A += Id;
     B = saveB;
     zeroTri(A, zeroLow=true);
-    trsm(A, B, alpha, uplo=CblasUpper, trans=Op.T, side=CblasRight);
+    trsm(A, B, alpha, uplo=Uplo.Upper, trans=Op.T, side=Side.Right);
     // Do a direct multiplication as a test
     C = zero;
     gemm(B,A,C,one,zero,opB=Op.T);
