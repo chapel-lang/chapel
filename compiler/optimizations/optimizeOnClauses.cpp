@@ -149,19 +149,37 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_AND_ASSIGN:
   case PRIM_OR_ASSIGN:
   case PRIM_XOR_ASSIGN:
-    if (!isCallExpr(call->get(2))) { // callExprs checked in calling function
-      if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
-          !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-        DEBUG_PRINTF(" *** OK (PRIM_MOVE 1): %s\n", call->primitive->name);
-        return FAST_AND_LOCAL;
-      }
-    } else {
+    if (isCallExpr(call->get(2))) { // callExprs checked in calling function
       DEBUG_PRINTF(" *** OK (PRIM_MOVE 2): %s\n", call->primitive->name);
       // Not necessarily true, but we return true because
       // the callExpr will be checked in the calling function
       return FAST_AND_LOCAL;
+    } else {
+      bool arg1wide = call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF);
+      bool arg2wide = call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF);
+
+      // If neither argument is a wide reference, OK: no communication
+      if (!arg1wide && !arg2wide) {
+        DEBUG_PRINTF(" *** OK (PRIM_MOVE 1): %s\n", call->primitive->name);
+        return FAST_AND_LOCAL;
+      }
+
+      if (call->isPrimitive(PRIM_MOVE)) {
+        bool arg1ref = call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF);
+        bool arg2ref = call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF);
+        // Handle (move tmp:ref, other_tmp:wide_ref)
+        // and    (move tmp:wide_ref, other_tmp:ref)
+        // these does not require communication and merely adjust
+        // the wideness of the ref.
+        if ((arg1wide && arg2ref) || (arg1ref && arg2wide)) {
+          DEBUG_PRINTF(" *** OK (PRIM_MOVE 3): %s\n", call->primitive->name);
+          return FAST_AND_LOCAL;
+        }
+      }
+
+      // Otherwise, communication is required if we're not in a local block
+      return FAST_NOT_LOCAL;
     }
-    return FAST_NOT_LOCAL;
 
 // I think these can always return true. <hilde>
 // But that works only if the remote get is removed from code generation.
