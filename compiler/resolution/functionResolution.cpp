@@ -6015,6 +6015,14 @@ preFold(Expr* expr) {
         }
       }
 
+    } else if (call->isPrimitive(PRIM_SUPER_INIT)) {
+      result = new CallExpr(PRIM_NOOP);
+      call->replace(result);
+
+    } else if (call->isPrimitive(PRIM_THIS_INIT)) {
+      result = new CallExpr(PRIM_NOOP);
+      call->replace(result);
+
     } else if (call->isPrimitive(PRIM_TYPEOF)) {
       Type* type = call->get(1)->getValType();
       if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {

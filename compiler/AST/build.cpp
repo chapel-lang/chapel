@@ -307,8 +307,18 @@ Expr* buildDotExpr(BaseAST* base, const char* member) {
     // chpl_localeID_to_locale(_wide_get_node(x)).
     return new CallExpr("chpl_localeID_to_locale",
                         new CallExpr(PRIM_WIDE_GET_LOCALE, base));
-  else
-    return new CallExpr(".", base, new_CStringSymbol(member));
+  else if (!strcmp("init", member)) {
+    // MAGIC: detect this.init and super.init calls
+    if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(base)) {
+      if (!strcmp("super", expr->unresolved)) {
+        return new CallExpr(PRIM_SUPER_INIT);
+      } else if (!strcmp("this", expr->unresolved)) {
+        return new CallExpr(PRIM_THIS_INIT);
+      }
+    }
+  }
+  // fall through case
+  return new CallExpr(".", base, new_CStringSymbol(member));
 }
 
 

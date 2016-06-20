@@ -75,7 +75,8 @@ void normalize() {
   insertModuleInit();
   transformLogicalShortCircuit();
 
-  // tag iterators and replace delete statements with calls to ~chpl_destroy
+  // tag iterators, replace delete statements with calls to ~chpl_destroy, and
+  // associate this.init() and super.init() calls with their arguments
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
@@ -101,6 +102,22 @@ void normalize() {
         call->insertBefore(onStmt);
       }
       call->remove();
+    }
+    if (call->isPrimitive(PRIM_SUPER_INIT) ||
+        call->isPrimitive(PRIM_THIS_INIT)) {
+      // Because these calls are represented as dot exprs, they end up inserted
+      // into the tree separately from their arguments, as a nested empty call
+      // stored in the baseExpr field of the call with the arguments.  This step
+      // collapses that structure, so that it is represented as a call to the
+      // primitive with those arguments
+      if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+        if (parentCall->baseExpr == call) {
+          for_actuals(actual, parentCall) {
+            call->insertAtTail(actual->remove());
+          }
+          parentCall->replace(call->remove());
+        }
+      }
     }
   }
 

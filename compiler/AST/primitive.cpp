@@ -396,6 +396,8 @@ initPrimitive() {
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false, true);
   prim_def(PRIM_INIT, "init", returnInfoFirstDeref);
   prim_def(PRIM_NO_INIT, "no init", returnInfoFirstDeref);
+  prim_def(PRIM_SUPER_INIT, "super init", returnInfoVoid);
+  prim_def(PRIM_THIS_INIT, "this init", returnInfoVoid);
   prim_def(PRIM_TYPE_INIT, "type init", returnInfoFirstDeref);
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
