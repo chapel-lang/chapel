@@ -252,6 +252,15 @@ static void moveAddressSourcesToTemp();
 static void fixAST();
 static void handleIsWidePointer();
 
+static bool isLocalBlock(Expr* stmt) {
+  BlockStmt* block = toBlockStmt(stmt);
+  return block &&
+         block->parentSymbol &&
+         block->isLoopStmt() == false &&
+         block->blockInfoGet() &&
+         block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL);
+}
+
 // Top-level wrapper
 static bool isCausedByArgs(FnSymbol* fn,
                            Symbol* sym,
@@ -2406,15 +2415,6 @@ void handleIsWidePointer() {
       call->replace(new SymExpr(isWide));
     }
   }
-}
-
-bool isLocalBlock(Expr* stmt) {
-  BlockStmt* block = toBlockStmt(stmt);
-  return block &&
-         block->parentSymbol &&
-         block->isLoopStmt() == false &&
-         block->blockInfoGet() &&
-         block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL);
 }
 
 //
