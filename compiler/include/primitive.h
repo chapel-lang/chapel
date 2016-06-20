@@ -34,6 +34,8 @@ enum PrimitiveTag {
   PRIM_MOVE,
   PRIM_INIT,
   PRIM_NO_INIT,
+  PRIM_SUPER_INIT,
+  PRIM_THIS_INIT,
   PRIM_TYPE_INIT,       // Used in a context where only a type is needed.
                         // Establishes the type of the result without
                         // generating code.
