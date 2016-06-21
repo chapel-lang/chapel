@@ -23,6 +23,7 @@
 
 #include "error.h"
 #include "chplexit.h"
+#include "chpl-env.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -45,12 +46,10 @@ static void chpl_stack_unwind(void){
   unw_context_t uc;
   unw_word_t wordValue;
   char buffer[128];
-  char *p;
 
   // Check if we need to print the stack trace (default = yes)
-  if((p = getenv("CHPL_RT_UNWIND")) != NULL ){
-    if(strcmp(p, "0") == 0)
-      return;
+  if(! chpl_get_rt_env_bool("UNWIND", true)) {
+    return;
   }
 
   unw_getcontext(&uc);

@@ -460,11 +460,7 @@ static void genUnwindSymbolTable(){
     }
     fprintf(hdrfile,"};\n");
   }
-  else {
-#ifdef HAVE_LLVM
 
-#endif
-  }
   genGlobalInt32("chpl_sizeSymTable", symbols.n * 2);
 }
 
