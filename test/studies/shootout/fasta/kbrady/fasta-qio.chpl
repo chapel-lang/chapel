@@ -11,93 +11,57 @@ config const LOOKUP_SIZE = 4*1024;
 config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
-const outfd = openfd(1);
-const stdout = outfd.writer(kind=iokind.native, locking=false);
+const stdout = openfd(1).writer(kind=iokind.native, locking=false);
+
+const A: int(8) = 65;
+const C: int(8) = 67;
+const G: int(8) = 71;
+const T: int(8) = 84;
+const a: int(8) = 97;
+const c: int(8) = 99;
+const g: int(8) = 103;
+const t: int(8) = 116;
+
+const B: int(8) = 66;
+const D: int(8) = 68;
+const H: int(8) = 72;
+const K: int(8) = 75;
+const M: int(8) = 77;
+const N: int(8) = 78;
+const R: int(8) = 82;
+const S: int(8) = 83;
+const V: int(8) = 86;
+const W: int(8) = 87;
+const Y: int(8) = 89;
+
+// Sequence to be repeated
+const ALU : [0..286] int(8) = [
+  G, G, C, C, G, G, G, C, G, C, G, G, T, G,
+  G, C, T, C, A, C, G, C, C, T, G, T, A, A,
+  T, C, C, C, A, G, C, A, C, T, T, T, G, G,
+  G, A, G, G, C, C, G, A, G, G, C, G, G, G,
+  C, G, G, A, T, C, A, C, C, T, G, A, G, G,
+  T, C, A, G, G, A, G, T, T, C, G, A, G, A,
+  C, C, A, G, C, C, T, G, G, C, C, A, A, C,
+  A, T, G, G, T, G, A, A, A, C, C, C, C, G,
+  T, C, T, C, T, A, C, T, A, A, A, A, A, T,
+  A, C, A, A, A, A, A, T, T, A, G, C, C, G,
+  G, G, C, G, T, G, G, T, G, G, C, G, C, G,
+  C, G, C, C, T, G, T, A, A, T, C, C, C, A,
+  G, C, T, A, C, T, C, G, G, G, A, G, G, C,
+  T, G, A, G, G, C, A, G, G, A, G, A, A, T,
+  C, G, C, T, T, G, A, A, C, C, C, G, G, G,
+  A, G, G, C, G, G, A, G, G, T, T, G, C, A,
+  G, T, G, A, G, C, C, G, A, G, A, T, C, G,
+  C, G, C, C, A, C, T, G, C, A, C, T, C, C,
+  A, G, C, C, T, G, G, G, C, G, A, C, A, G,
+  A, G, C, G, A, G, A, C, T, C, C, G, T, C,
+  T, C, A, A, A, A, A
+];
 
 class Freq {
   var c: int(8);
   var p: real;
-}
-
-//Sequence to be repeated
-// A -> 65  G -> 71
-// C -> 67  T -> 84
-const ALU : [0..286] int(8) = [
-  71:int(8), 71:int(8), 67:int(8), 67:int(8), 71:int(8), 71:int(8), 71:int(8),
-  67:int(8), 71:int(8), 67:int(8), 71:int(8), 71:int(8), 84:int(8), 71:int(8),
-  71:int(8), 67:int(8), 84:int(8), 67:int(8), 65:int(8), 67:int(8), 71:int(8),
-  67:int(8), 67:int(8), 84:int(8), 71:int(8), 84:int(8), 65:int(8), 65:int(8),
-  84:int(8), 67:int(8), 67:int(8), 67:int(8), 65:int(8), 71:int(8), 67:int(8),
-  65:int(8), 67:int(8), 84:int(8), 84:int(8), 84:int(8), 71:int(8), 71:int(8),
-  71:int(8), 65:int(8), 71:int(8), 71:int(8), 67:int(8), 67:int(8), 71:int(8),
-  65:int(8), 71:int(8), 71:int(8), 67:int(8), 71:int(8), 71:int(8), 71:int(8),
-  67:int(8), 71:int(8), 71:int(8), 65:int(8), 84:int(8), 67:int(8), 65:int(8),
-  67:int(8), 67:int(8), 84:int(8), 71:int(8), 65:int(8), 71:int(8), 71:int(8),
-  84:int(8), 67:int(8), 65:int(8), 71:int(8), 71:int(8), 65:int(8), 71:int(8),
-  84:int(8), 84:int(8), 67:int(8), 71:int(8), 65:int(8), 71:int(8), 65:int(8),
-  67:int(8), 67:int(8), 65:int(8), 71:int(8), 67:int(8), 67:int(8), 84:int(8),
-  71:int(8), 71:int(8), 67:int(8), 67:int(8), 65:int(8), 65:int(8), 67:int(8),
-  65:int(8), 84:int(8), 71:int(8), 71:int(8), 84:int(8), 71:int(8), 65:int(8),
-  65:int(8), 65:int(8), 67:int(8), 67:int(8), 67:int(8), 67:int(8), 71:int(8),
-  84:int(8), 67:int(8), 84:int(8), 67:int(8), 84:int(8), 65:int(8), 67:int(8),
-  84:int(8), 65:int(8), 65:int(8), 65:int(8), 65:int(8), 65:int(8), 84:int(8),
-  65:int(8), 67:int(8), 65:int(8), 65:int(8), 65:int(8), 65:int(8), 65:int(8),
-  84:int(8), 84:int(8), 65:int(8), 71:int(8), 67:int(8), 67:int(8), 71:int(8),
-  71:int(8), 71:int(8), 67:int(8), 71:int(8), 84:int(8), 71:int(8), 71:int(8),
-  84:int(8), 71:int(8), 71:int(8), 67:int(8), 71:int(8), 67:int(8), 71:int(8),
-  67:int(8), 71:int(8), 67:int(8), 67:int(8), 84:int(8), 71:int(8), 84:int(8),
-  65:int(8), 65:int(8), 84:int(8), 67:int(8), 67:int(8), 67:int(8), 65:int(8),
-  71:int(8), 67:int(8), 84:int(8), 65:int(8), 67:int(8), 84:int(8), 67:int(8),
-  71:int(8), 71:int(8), 71:int(8), 65:int(8), 71:int(8), 71:int(8), 67:int(8),
-  84:int(8), 71:int(8), 65:int(8), 71:int(8), 71:int(8), 67:int(8), 65:int(8),
-  71:int(8), 71:int(8), 65:int(8), 71:int(8), 65:int(8), 65:int(8), 84:int(8),
-  67:int(8), 71:int(8), 67:int(8), 84:int(8), 84:int(8), 71:int(8), 65:int(8),
-  65:int(8), 67:int(8), 67:int(8), 67:int(8), 71:int(8), 71:int(8), 71:int(8),
-  65:int(8), 71:int(8), 71:int(8), 67:int(8), 71:int(8), 71:int(8), 65:int(8),
-  71:int(8), 71:int(8), 84:int(8), 84:int(8), 71:int(8), 67:int(8), 65:int(8),
-  71:int(8), 84:int(8), 71:int(8), 65:int(8), 71:int(8), 67:int(8), 67:int(8),
-  71:int(8), 65:int(8), 71:int(8), 65:int(8), 84:int(8), 67:int(8), 71:int(8),
-  67:int(8), 71:int(8), 67:int(8), 67:int(8), 65:int(8), 67:int(8), 84:int(8),
-  71:int(8), 67:int(8), 65:int(8), 67:int(8), 84:int(8), 67:int(8), 67:int(8),
-  65:int(8), 71:int(8), 67:int(8), 67:int(8), 84:int(8), 71:int(8), 71:int(8),
-  71:int(8), 67:int(8), 71:int(8), 65:int(8), 67:int(8), 65:int(8), 71:int(8),
-  65:int(8), 71:int(8), 67:int(8), 71:int(8), 65:int(8), 71:int(8), 65:int(8),
-  67:int(8), 84:int(8), 67:int(8), 67:int(8), 71:int(8), 84:int(8), 67:int(8),
-  84:int(8), 67:int(8), 65:int(8), 65:int(8), 65:int(8), 65:int(8), 65:int(8)
-];
-
-//Sequences to be randomly generated (probability table)
-var IUB : [0..14] Freq;
-IUB[0] = new Freq(97, 0.27);  // a -> 97
-IUB[1] = new Freq(99, 0.12);  // c -> 99
-IUB[2] = new Freq(103, 0.12); // g -> 103
-IUB[3] = new Freq(116, 0.27); // t -> 116
-IUB[4] = new Freq(66, 0.02);  // B -> 66
-IUB[5] = new Freq(68, 0.02);  // D -> 68
-IUB[6] = new Freq(72, 0.02);  // H -> 72
-IUB[7] = new Freq(75, 0.02);  // K -> 75
-IUB[8] = new Freq(77, 0.02);  // M -> 77
-IUB[9] = new Freq(78, 0.02);  // N -> 78
-IUB[10] = new Freq(82, 0.02); // R -> 82
-IUB[11] = new Freq(83, 0.02); // S -> 83
-IUB[12] = new Freq(86, 0.02); // V -> 86
-IUB[13] = new Freq(87, 0.02); // W -> 87
-IUB[14] = new Freq(89, 0.02); // Y -> 89
-
-var HomoSapiens : [0..3] Freq;
-HomoSapiens[0] = new Freq(97, 0.3029549426680);  // a -> 97
-HomoSapiens[1] = new Freq(99, 0.1979883004921);  // c -> 99
-HomoSapiens[2] = new Freq(103, 0.1975473066391); // g -> 103
-HomoSapiens[3] = new Freq(116, 0.3015094502008); // t -> 116
-
-// (Scan operation)
-proc sumAndScale(a :[?D]) {
-  var p : real = 0;
-  for item in a {
-    p += item.p;
-    item.p = p * LOOKUP_SCALE;
-  }
-  a[a.numElements-1].p = LOOKUP_SCALE;
 }
 
 // Deterministic random number generator as specified
@@ -114,27 +78,62 @@ class Random {
   }
 }
 
-var lookup : [0..LOOKUP_SIZE-1] Freq;
-var random = new Random();
+// Sequences to be randomly generated (probability table)
+var IUB : [0..14] Freq;
+IUB[0] = new Freq(a, 0.27);
+IUB[1] = new Freq(c, 0.12);
+IUB[2] = new Freq(g, 0.12);
+IUB[3] = new Freq(t, 0.27);
+IUB[4] = new Freq(B, 0.02);
+IUB[5] = new Freq(D, 0.02);
+IUB[6] = new Freq(H, 0.02);
+IUB[7] = new Freq(K, 0.02);
+IUB[8] = new Freq(M, 0.02);
+IUB[9] = new Freq(N, 0.02);
+IUB[10] = new Freq(R, 0.02);
+IUB[11] = new Freq(S, 0.02);
+IUB[12] = new Freq(V, 0.02);
+IUB[13] = new Freq(W, 0.02);
+IUB[14] = new Freq(Y, 0.02);
+
+var HomoSapiens : [0..3] Freq;
+HomoSapiens[0] = new Freq(a, 0.3029549426680);
+HomoSapiens[1] = new Freq(c, 0.1979883004921);
+HomoSapiens[2] = new Freq(g, 0.1975473066391);
+HomoSapiens[3] = new Freq(t, 0.3015094502008);
+
+// Scan operation
+proc sumAndScale(a :[?D]) {
+  var p : real = 0;
+  for item in a {
+    p += item.p;
+    item.p = p * LOOKUP_SCALE;
+  }
+  a[a.numElements-1].p = LOOKUP_SCALE;
+}
 
 // Make lookup table for random sequence generation
+var lookup : [0..LOOKUP_SIZE-1] Freq;
 proc makeLookup(a :[?D]) {
   var j: int = 0;
   for i in 0..LOOKUP_SIZE-1 {
-    while (a[j].p < i) do j = j + 1;
+    while (a[j].p < i) do
+      j += 1;
+
     lookup[i] = a[j];
   }
 }
 
 // Add a line of random sequence
+var random = new Random();
 var line_buff : [0..LINE_LENGTH] int(8);
 proc addLine(bytes: int) {
   for i in 0..bytes-1 {
     var r  = random.next();
     var ai = r : int;
-    while (lookup[ai].p < r) {
+    while (lookup[ai].p < r) do
       ai = ai + 1;
-    }
+
     line_buff[i] = lookup[ai].c;
   }
   line_buff[bytes] = 10;
@@ -158,18 +157,19 @@ proc repeatMake(desc : string, alu : [], n : int) {
   stdout.writef("%s", desc);
   var r : int = alu.size;
   var s : [0..(r+LINE_LENGTH)] int(8);
-  for indx in s.domain {
-    s[indx] = alu[indx % r];
-  }
+  for d in s.domain do 
+    s[d] = alu[d % r];
+  
   var j : int;
-
   for i in 0..(n / LINE_LENGTH)-1 {
     j = (i * LINE_LENGTH) % r;
     stdout.write(s[j..#LINE_LENGTH], 10:int(8));
   }
-  if (n % LINE_LENGTH) {
-    j = ((n / LINE_LENGTH)*LINE_LENGTH) % r;
-    stdout.write(s[j..#(n % LINE_LENGTH)], 10:int(8));
+
+  var m = n % LINE_LENGTH;
+  if m != 0 {
+    j = ((n / LINE_LENGTH) * LINE_LENGTH) % r;
+    stdout.write(s[j..#m], 10:int(8));
   }
 }
 
