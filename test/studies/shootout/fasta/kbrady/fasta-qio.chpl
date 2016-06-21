@@ -74,16 +74,16 @@ class Random {
 
 // Sequences to be randomly generated (probability table)
 var IUB : [0..14] Freq;
-IUB[0] = new Freq(a, 0.27);
-IUB[1] = new Freq(c, 0.12);
-IUB[2] = new Freq(g, 0.12);
-IUB[3] = new Freq(t, 0.27);
-IUB[4] = new Freq(B, 0.02);
-IUB[5] = new Freq(D, 0.02);
-IUB[6] = new Freq(H, 0.02);
-IUB[7] = new Freq(K, 0.02);
-IUB[8] = new Freq(M, 0.02);
-IUB[9] = new Freq(N, 0.02);
+IUB[0]  = new Freq(a, 0.27);
+IUB[1]  = new Freq(c, 0.12);
+IUB[2]  = new Freq(g, 0.12);
+IUB[3]  = new Freq(t, 0.27);
+IUB[4]  = new Freq(B, 0.02);
+IUB[5]  = new Freq(D, 0.02);
+IUB[6]  = new Freq(H, 0.02);
+IUB[7]  = new Freq(K, 0.02);
+IUB[8]  = new Freq(M, 0.02);
+IUB[9]  = new Freq(N, 0.02);
 IUB[10] = new Freq(R, 0.02);
 IUB[11] = new Freq(S, 0.02);
 IUB[12] = new Freq(V, 0.02);
