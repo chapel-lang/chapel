@@ -456,9 +456,6 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
     }
   }
 
-  if (fn->id == 999856 || fn->id == 998323 || fn->id == 88084)
-    gdbShouldBreakHere();
-
   // Next, go through function bodies.
   // We will set maybefast=false if we see something in the function
   //  that is local but not suitable for a signal handler
