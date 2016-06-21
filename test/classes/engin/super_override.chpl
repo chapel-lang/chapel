@@ -9,7 +9,7 @@ class B:A {
 
   /*
       bar runs if there is no foo that calls super.foo
-
+      (see super_nooverride test)
   proc bar() {
     super.foo();
     writeln("B.foo() called");
@@ -26,6 +26,3 @@ var b = new B();
 
 a.foo();
 b.foo();
-// b.bar();
-// b.super.foo(); // this works as you'd expect
-

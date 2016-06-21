@@ -5,7 +5,7 @@ NOTES
 - Keyword "super" seems to parse and work in some cases but, it fails without any
 error message when used from inside the subclass
 
-- One woreking example for _super_ is when you use it outside the class
+- One working example for _super_ is when you use it outside the class
   (see comment on line 30 in .chpl file)
 
 - A method with another named(not an override) can call super.foo
