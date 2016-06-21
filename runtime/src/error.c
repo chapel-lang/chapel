@@ -39,7 +39,7 @@
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 
-static void chpl_stack_unwind(){
+static void chpl_stack_unwind(void){
   // This is just a prototype using libunwind
   unw_cursor_t cursor;
   unw_context_t uc;
