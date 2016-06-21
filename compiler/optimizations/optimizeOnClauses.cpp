@@ -31,13 +31,6 @@
 #include "stmt.h"
 #include "passes.h"
 
-/* Print lots of debugging messages when DEBUG is defined */
-#ifdef DEBUG
-  #define DEBUG_PRINTF(...) printf(__VA_ARGS__)
-#else
-  #define DEBUG_PRINTF(...)
-#endif
-
 // There are two questions:
 // 1- is the primitive/function eligible to run in a fast block?
 //    any blocking or system call disqualifies it since a fast
@@ -134,7 +127,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GET_USER_LINE:
   case PRIM_GET_USER_FILE:
   case PRIM_LOOKUP_FILENAME:
-    DEBUG_PRINTF(" *** OK (default): %s\n", call->primitive->name);
     return FAST_AND_LOCAL;
 
   case PRIM_MOVE:
@@ -150,7 +142,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_OR_ASSIGN:
   case PRIM_XOR_ASSIGN:
     if (isCallExpr(call->get(2))) { // callExprs checked in calling function
-      DEBUG_PRINTF(" *** OK (PRIM_MOVE 2): %s\n", call->primitive->name);
       // Not necessarily true, but we return true because
       // the callExpr will be checked in the calling function
       return FAST_AND_LOCAL;
@@ -160,7 +151,6 @@ classifyPrimitive(CallExpr *call) {
 
       // If neither argument is a wide reference, OK: no communication
       if (!arg1wide && !arg2wide) {
-        DEBUG_PRINTF(" *** OK (PRIM_MOVE 1): %s\n", call->primitive->name);
         return FAST_AND_LOCAL;
       }
 
@@ -172,7 +162,6 @@ classifyPrimitive(CallExpr *call) {
         // these does not require communication and merely adjust
         // the wideness of the ref.
         if ((arg1wide && arg2ref) || (arg1ref && arg2wide)) {
-          DEBUG_PRINTF(" *** OK (PRIM_MOVE 3): %s\n", call->primitive->name);
           return FAST_AND_LOCAL;
         }
       }
@@ -189,8 +178,6 @@ classifyPrimitive(CallExpr *call) {
     // If this test is true, a remote get is required.
     if (!(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
           call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
-      DEBUG_PRINTF(" *** OK (PRIM_WIDE_GET_LOCALE, etc.): %s\n",
-                   call->primitive->name);
       return FAST_AND_LOCAL;
     }
     return FAST_NOT_LOCAL;
@@ -209,8 +196,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GET_MEMBER_VALUE:
   case PRIM_GET_SVEC_MEMBER_VALUE:
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-      DEBUG_PRINTF(" *** OK (PRIM_SET_UNION_ID, etc.): %s\n",
-                   call->primitive->name);
       return FAST_AND_LOCAL;
     }
     return FAST_NOT_LOCAL;
@@ -224,8 +209,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_ARRAY_GET_VALUE:
   case PRIM_DYNAMIC_CAST:
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      DEBUG_PRINTF(" *** OK (PRIM_ARRAY_SET, etc.): %s\n",
-                   call->primitive->name);
       return FAST_AND_LOCAL;
     }
     return FAST_NOT_LOCAL;
@@ -235,7 +218,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_SET_SVEC_MEMBER:
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
         !call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      DEBUG_PRINTF(" *** OK (PRIM_DEREF, etc.): %s\n", call->primitive->name);
       return FAST_AND_LOCAL;
     }
     return FAST_NOT_LOCAL;
@@ -391,10 +373,10 @@ classifyPrimitive(CallExpr *call) {
 }
 
 static int
-classifyIfLocal(int is, bool isLocal)
+setLocal(int is, bool inLocal)
 {
   // If it's in a local block, it's always local.
-  if (isLocal) {
+  if (inLocal) {
     if (is == NOT_FAST_NOT_LOCAL ) is = LOCAL_NOT_FAST;
     if (is == FAST_NOT_LOCAL )     is = FAST_AND_LOCAL;
   }
@@ -403,14 +385,14 @@ classifyIfLocal(int is, bool isLocal)
 }
 
 static bool
-classifyIsFast(int is)
+isFast(int is)
 {
   if (is == FAST_AND_LOCAL || is == FAST_NOT_LOCAL) return true;
   return false;
 }
 
 static bool
-classifyIsLocal(int is)
+isLocal(int is)
 {
   if (is == FAST_AND_LOCAL || is == LOCAL_NOT_FAST) return true;
   return false;
@@ -419,12 +401,12 @@ classifyIsLocal(int is)
 
 
 static int
-classifyPrimitive(CallExpr *call, bool isLocal)
+classifyPrimitive(CallExpr *call, bool inLocal)
 {
   int is = classifyPrimitive(call);
 
   // If it's in a local block, it's always local.
-  is = classifyIfLocal(is, isLocal);
+  is = setLocal(is, inLocal);
 
   return is;
 }
@@ -446,99 +428,90 @@ inLocalBlock(CallExpr *call) {
 static int
 markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
 
-  if (fn->hasFlag(FLAG_FAST_ON))
-    return FAST_AND_LOCAL;
+  // First, handle functions we've already vesited.
+  if (visited->in(fn)) {
+    if (fn->hasFlag(FLAG_FAST_ON))
+      return FAST_AND_LOCAL;
+    if (fn->hasFlag(FLAG_LOCAL_FN))
+      return LOCAL_NOT_FAST;
+    return NOT_FAST_NOT_LOCAL;
+  }
 
-  // MPF - this seems surprising to me? Why would declaring a function
-  // with export mean that it is fast?
-  if (fn->hasFlag(FLAG_EXPORT))
-    return FAST_AND_LOCAL;
+  // Now, add fn to the set of visited functions,
+  // since we will categorize it now.
+  visited->add_exclusive(fn);
 
+  // Next, classify extern functions
+  if (fn->hasFlag(FLAG_EXTERN)) {
+    if (fn->hasFlag(FLAG_FAST_ON_SAFE_EXTERN)) {
+      // Make sure the FAST_ON and LOCAL_FN flags are set.
+      fn->addFlag(FLAG_FAST_ON);
+      fn->addFlag(FLAG_LOCAL_FN);
+      return FAST_AND_LOCAL;
+    } else if(fn->hasFlag(FLAG_LOCAL_FN)) {
+      return LOCAL_NOT_FAST;
+    } else {
+      // Other extern functions are not fast or local.
+      return NOT_FAST_NOT_LOCAL;
+    }
+  }
+
+  if (fn->id == 999856 || fn->id == 998323 || fn->id == 88084)
+    gdbShouldBreakHere();
+
+  // Next, go through function bodies.
   // We will set maybefast=false if we see something in the function
   //  that is local but not suitable for a signal handler
   //  (mostly allocation or locking).
   // We will return NOT_FAST_NOT_LOCAL immediately if we see something
   // in the function that is not local.
   bool maybefast = true;
-  if (fn->hasFlag(FLAG_EXTERN)) {
-    if (fn->hasFlag(FLAG_FAST_ON_SAFE_EXTERN)) {
-      // OK, fast
-    } else if( fn->hasFlag(FLAG_LOCAL_FN)) {
-      // Local, but not fast
-      maybefast = false;
-    } else {
-      // Unknown extern functions are not fast or local.
-      return NOT_FAST_NOT_LOCAL;
-    }
-  }
 
   if (fn->hasFlag(FLAG_NON_BLOCKING))
     maybefast = false;
-
-  visited->add_exclusive(fn);
 
   std::vector<CallExpr*> calls;
 
   collectCallExprs(fn, calls);
 
   for_vector(CallExpr, call, calls) {
-    DEBUG_PRINTF("\tcall %p (id=%d): ", call, call->id);
-    bool isLocal = fn->hasFlag(FLAG_LOCAL_FN) || inLocalBlock(call);
+    bool inLocal = fn->hasFlag(FLAG_LOCAL_FN) || inLocalBlock(call);
 
-    if (!call->primitive) {
-      DEBUG_PRINTF("(non-primitive CALL)\n");
-      if ((recurse>0) && call->isResolved()) {
+    if (call->primitive) {
+      int is = classifyPrimitive(call, inLocal);
+      if (!isLocal(is)) {
+        // FAST_NOT_LOCAL or NOT_FAST_NOT_LOCAL
+        return NOT_FAST_NOT_LOCAL;
+      }
+      // is == FAST_AND_LOCAL requires no action
+      if (is == LOCAL_NOT_FAST)
+        maybefast = false;
+    } else {
+      if (recurse<=0 || !call->isResolved()) {
+        // didn't resolve or past too much recursion.
+        // No function calls allowed
+        return NOT_FAST_NOT_LOCAL;
+      } else {
+        // Handle nested 'on' statements
         if (call->isResolved()->hasFlag(FLAG_ON_BLOCK)) {
-          visited->add_exclusive(call->isResolved());
-          call->isResolved()->removeFlag(FLAG_FAST_ON);
-          DEBUG_PRINTF("%d: recurse FAILED (nested on block, id=%d).\n",
-                       recurse-1, call->id);
-          if (isLocal)
+          if (inLocal)
             maybefast = false;
           else
             return NOT_FAST_NOT_LOCAL;
         }
-        if (!visited->in(call->isResolved())) {
-          DEBUG_PRINTF("%d: recurse %p (block=%p, id=%d)\n", recurse-1,
-                       call->isResolved(), call->isResolved()->body,
-                       call->isResolved()->id);
-          DEBUG_PRINTF("\tlength=%d\n", call->isResolved()->body->length());
-          int is = markFastSafeFn(call->isResolved(), recurse-1, visited);
 
-          // Remove NOT_LOCAL parts if it's in a local block
-          is = classifyIfLocal(is, isLocal);
+        // is the call to a fast/local function?
+        int is = markFastSafeFn(call->isResolved(), recurse-1, visited);
 
-          if (!classifyIsLocal(is))
-            return NOT_FAST_NOT_LOCAL;
+        // Remove NOT_LOCAL parts if it's in a local block
+        is = setLocal(is, inLocal);
 
-          if (is == LOCAL_NOT_FAST)
-            maybefast = false;
-          // otherwise, possibly still fast.
-        } else {
-          DEBUG_PRINTF("%d: recurse ALREADY VISITED %p (id=%d)\n", recurse-1,
-                       call->isResolved(), call->isResolved()->id);
-          DEBUG_PRINTF("\tlength=%d\n", call->isResolved()->body->length());
-        }
-        DEBUG_PRINTF("%d: recurse DONE.\n", recurse-1);
-      } else {
-        // No function calls allowed
-        DEBUG_PRINTF("%d: recurse FAILED (%s, id=%d).\n", recurse-1,
-                     recurse == 1 ? "too deep" : "function not resolved",
-                     call->id);
-        return NOT_FAST_NOT_LOCAL;
-      }
-    } else {
-      int is = classifyPrimitive(call, isLocal);
-      if (!classifyIsLocal(is)) {
-        // LOCAL_NOT_FAST or NOT_FAST_NOT_LOCAL
-        DEBUG_PRINTF("%d: FAILED (non-FAST primitive CALL: %s, id=%d)\n",
-                     recurse-1, call->primitive->name, call->id);
-        return NOT_FAST_NOT_LOCAL;
-      }
-      if (is == FAST_AND_LOCAL) {
-        DEBUG_PRINTF(" (FAST primitive CALL)\n");
-      } else { // LOCAL_NOT_FAST
-        maybefast = false;
+        if (!isLocal(is))
+          return NOT_FAST_NOT_LOCAL;
+
+        if (is == LOCAL_NOT_FAST)
+          maybefast = false;
+        // otherwise, possibly still fast.
       }
     }
   }
@@ -586,8 +559,8 @@ optimizeOnClauses(void) {
 
     int is = markFastSafeFn(fn, optimize_on_clause_limit, &visited);
 
-    bool fastFork = classifyIsFast(is);
-    bool removeRmemFences = classifyIsLocal(is);
+    bool fastFork = isFast(is);
+    bool removeRmemFences = isLocal(is);
 
     if (!fn->hasFlag(FLAG_ON_BLOCK))
       fastFork = false;
@@ -597,15 +570,12 @@ optimizeOnClauses(void) {
       removeRmemFences = false;
 
     if (fastFork) {
-      DEBUG_PRINTF("\t[CANDIDATE FOR FAST FORK]\n");
       // Code generation will use executeOnFast because
       // the function will have been marked with FLAG_FAST_ON
       // in markFastSafeFn.
       // No other action is necessary at this point.
     }
     if (removeRmemFences) {
-      DEBUG_PRINTF("\t[CANDIDATE FOR RMEM_FENCE REMOVAL FN]\n");
-
       // If the function is marked local, remove
       // PRIM_START_RMEM_FENCE / PRIM_FINISH_RMEM_FENCE
       // from the wrapper.
