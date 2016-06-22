@@ -137,9 +137,12 @@ typedef struct chpl_task_list* chpl_task_list_p;
 // makes sure all the tasks have at least started.  freeTaskList()
 // just reclaims space associated with the list.
 //
+// Note that the tasking layer must generally copy the arguments
+// as it cannot assume anything about the lifetime of that memory.
 void chpl_task_addToTaskList(
          chpl_fn_int_t,      // function to call for task
          void*,              // argument to the function
+         size_t,             // length of the argument
          c_sublocid_t,       // desired sublocale
          void**,             // task list
          c_nodeid_t,         // locale (node) where task list resides
@@ -150,6 +153,9 @@ void chpl_task_executeTasksInList(void**);
 
 //
 // Call a function in a task.
+//
+// Note that the tasking layer must generally copy the arguments
+// as it cannot assume anything about the lifetime of that memory.
 //
 void chpl_task_taskCall(chpl_fn_p,          // function to call
                         void*,              // function arg
@@ -167,7 +173,7 @@ void chpl_task_taskCall(chpl_fn_p,          // function to call
 static inline
 void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
                               void* arg,              // function arg
-                              size_t arg_size,        // length of arg
+                              size_t arg_size,        // length of arg in bytes
                               c_sublocid_t subloc,    // desired sublocale
                               int lineno,             // source line
                               int32_t filename) {     // source filename
@@ -180,8 +186,12 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
 // but on a different locale.  This is used to invoke the body of an
 // "on" statement.
 //
+// Note that the tasking layer must generally copy the arguments
+// as it cannot assume anything about the lifetime of that memory.
+//
 void chpl_task_startMovedTask(chpl_fn_p,          // function to call
                               void*,              // function arg
+                              size_t,             // length of arg in bytes
                               c_sublocid_t,       // desired sublocale
                               chpl_taskID_t,      // task identifier
                               chpl_bool);         // serial state

@@ -456,7 +456,9 @@ module LocaleModel {
   // runtime interface
   //
   pragma "insert line file info"
-  extern proc chpl_task_addToTaskList(fn: int, args: c_void_ptr, subloc_id: int,
+  extern proc chpl_task_addToTaskList(fn: int,
+                                      args: c_void_ptr, args_size: size_t,
+                                      subloc_id: int,
                                       ref tlist: c_void_ptr, tlist_node_id: int,
                                       is_begin: bool);
   extern proc chpl_task_executeTasksInList(ref tlist: c_void_ptr);
@@ -469,10 +471,12 @@ module LocaleModel {
   proc chpl_taskListAddBegin(subloc_id: int,        // target sublocale
                              fn: int,               // task body function idx
                              args: c_void_ptr,      // function args
+                             args_size: size_t,     // args size
                              ref tlist: c_void_ptr, // task list
                              tlist_node_id: int     // task list owner node
                             ) {
-    chpl_task_addToTaskList(fn, args, subloc_id, tlist, tlist_node_id, true);
+    chpl_task_addToTaskList(fn, args, args_size,
+                            subloc_id, tlist, tlist_node_id, true);
   }
 
   //
@@ -484,10 +488,12 @@ module LocaleModel {
   proc chpl_taskListAddCoStmt(subloc_id: int,        // target sublocale
                               fn: int,               // task body function idx
                               args: c_void_ptr,      // function args
+                              args_size: size_t,     // args size
                               ref tlist: c_void_ptr, // task list
                               tlist_node_id: int     // task list owner node
                              ) {
-    chpl_task_addToTaskList(fn, args, subloc_id, tlist, tlist_node_id, false);
+    chpl_task_addToTaskList(fn, args, args_size,
+                            subloc_id, tlist, tlist_node_id, false);
   }
 
   //

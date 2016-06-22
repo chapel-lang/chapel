@@ -318,6 +318,7 @@ void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
 //
 // Runs a function f on a remote locale, passing it
 // arg where size of arg is stored in arg_size.
+// arg can be reused immediately after this call completes.
 //
 // This call will block the current task until the remote function has
 // completed. Use chpl_comm_execute_on_nb if you do not want to wait.
@@ -329,12 +330,14 @@ void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
 
 //
 // non-blocking execute_on
+// arg can be reused immediately after this call completes.
 //
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                              chpl_fn_int_t fid, void *arg, size_t arg_size);
 
 //
 // fast execute_on (i.e., run in handler)
+// arg can be reused immediately after this call completes.
 //
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                          chpl_fn_int_t fid, void *arg, size_t arg_size);
