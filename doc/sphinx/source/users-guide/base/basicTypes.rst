@@ -4,12 +4,12 @@ Basic Types: Booleans, Numbers, and Strings
 ===========================================
 
 Chapel supports a variety of basic types to represent logical values,
-numbers, and strings.  Specifically, these types provide support for
+numbers, and strings.  Specifically, these types provide support for:
 Boolean values; signed and unsigned integers; real, imaginary, and
 complex floating point values; and strings.  These types, along with
 the ``void`` type (not covered in this section), are known as Chapel's
-*primitive types*.  In the previous sections, we've seen simple uses
-of string and integer types and values.
+*primitive types*.  In previous sections, we've seen simple uses of
+string and integer types and values.
 
 
 Bit-Widths
@@ -27,8 +27,7 @@ integer, capable of storing values from -9,223,372,036,854,775,808
 
 These types also have a default size that is used when no bit-width is
 specified.  For example, integers default to 64 bits, permitting
-``int(64)`` to simply be written ``int``, as we've seen in previous
-examples.
+``int(64)`` to simply be written as ``int``, as in previous examples.
 
 Since Boolean values only require a single bit of data, the use of
 different bit-widths for the ``bool`` type only affects memory usage
@@ -58,6 +57,6 @@ default bit width, when applicable.
 +-------------+--------------------------------+---------------+------------------+--------------------------+
 | ``complex`` | complex floating-point value   | 0.0 + 0.0i    | 64, 128          | 128                      |
 +-------------+--------------------------------+---------------+------------------+--------------------------+
-| ``string``  | ASCII character string         | ""            | N/A              | N/A                      |
+| ``string``  | character string               | ""            | N/A              | N/A                      |
 +-------------+--------------------------------+---------------+------------------+--------------------------+
 
