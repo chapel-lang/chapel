@@ -157,8 +157,8 @@ proc main() {
           "%{######.######}",
           "%|n", "%<n", "%>n",
           "%|t", "%<t", "%>t"];
-  testio(fformats, [0.002:imag(32), -0.002:imag(32)]);
-  testio(fformats, [0.002:imag(64), -0.002:imag(64)]);
+  testio(mformats, [0.002:imag(32), -0.002:imag(32)]);
+  testio(mformats, [0.002:imag(64), -0.002:imag(64)]);
   testio(["%|4m", "%<4m", "%>4m"], [0.002:imag(32), -0.002:imag(32)]);
   testio(["%|8m", "%<8m", "%>8m"], [0.002:imag(64), -0.002:imag(64)]);
 

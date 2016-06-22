@@ -687,6 +687,8 @@ when_stmt:
     { $$ = new CondStmt(new CallExpr(PRIM_WHEN, $2), $3); }
 | TOTHERWISE stmt
     { $$ = new CondStmt(new CallExpr(PRIM_WHEN), $2); }
+| TOTHERWISE TDO stmt
+    { $$ = new CondStmt(new CallExpr(PRIM_WHEN), $3); }
 ;
 
 /** DECLARATION STATEMENTS ***************************************************/

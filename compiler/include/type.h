@@ -297,6 +297,7 @@ bool isDomImplType(Type* t);
 bool isArrayImplType(Type* t);
 bool isDistImplType(Type* t);
 bool isSyncType(const Type* t);
+bool isSingleType(const Type* t);
 bool isAtomicType(const Type* t);
 bool isRefIterType(Type* t);
 
