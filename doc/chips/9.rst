@@ -188,7 +188,7 @@ Manifest File
 -------------
 
 The ``Mason.toml`` manifest file will closely follow the design of Cargo's
-``Rust.toml``. Some fields will vary, if they are too Rust-specific or could
+``Cargo.toml``. Some fields will vary, if they are too Rust-specific or could
 benefit from being more Chapel-specific.
 
 
