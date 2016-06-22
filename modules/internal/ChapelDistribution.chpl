@@ -256,6 +256,27 @@ module ChapelDistribution {
     proc clearForIteratableAssign() {
       dsiClear();
     }
+
+    //basic DSI functions
+    proc dsiNumIndices() { return nnz; }
+    proc dsiSize() { return nnz; }
+    proc dsiLow() { return parentDom.low; }
+    proc dsiHigh() { return parentDom.high; }
+    proc dsiStride() { return parentDom.stride; }
+    proc dsiAlignment() { return parentDom.alignment; }
+    proc dsiFirst() {
+      halt("dsiFirst is not implemented");
+      const _tmp: rank*idxType;
+      return _tmp;
+    }
+    proc dsiLast() {
+      halt("dsiLast not implemented");
+      const _tmp: rank*idxType;
+      return _tmp;
+    }
+    proc dsiAlignedLow() { return parentDom.alignedLow; }
+    proc dsiAlignedHigh() { return parentDom.alignedHigh; }
+
   }
   
   class BaseAssociativeDom : BaseDom {
