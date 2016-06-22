@@ -1636,6 +1636,8 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
   // Do nothing if we have already completed sn.
   if( sn <= max_completed ) return;
 
+  // Note: chpl_comm_wait_nb_some could cause a different task body to run...
+
   // If we have any pending requests with sequence number <= sn,
   // wait for them to complete.
   while( 1 ) {
@@ -1664,6 +1666,7 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
       break;
     }
   }
+
   cache->completed_request_number = max_completed;
 }
 
@@ -1728,6 +1731,7 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
                  page+start, entry->base.node, (void*) (entry->raddr+start),
                  (int) got_len));
 
+          // Note: chpl_comm_put_nb could cause a different task body to run.
           handle =
             chpl_comm_put_nb(page+start, /*local addr*/
                              entry->base.node,
@@ -1946,12 +1950,7 @@ void cache_put(struct rdcache_s* cache,
   DEBUG_PRINT(("cache_put %i:%p from %p len %i\n",
                (int) node, (void*) raddr, addr, (int) size));
 
-  if (chpl_nodeID == node) {
-    // Already handled in chpl-comm-compiler-macros.
-    assert(0);
-    //memcpy(raddr, addr, size);
-    //return;
-  }
+  assert(chpl_nodeID != node); // should be handled in chpl_gen_comm_put
 
   // And don't do anything if it's a zero-length 
   if( size == 0 ) {
@@ -2259,9 +2258,8 @@ void cache_get(struct rdcache_s* cache,
   INFO_PRINT(("%i cache_get addr %p from %i:%p len %i ra_len %i\n",
                (int) chpl_nodeID, addr, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
 
-  if (chpl_nodeID == node) {
-    assert(0); // should be handled in chpl_gen_comm_prefetch.
-  }
+  assert(chpl_nodeID != node); // should be handled in chpl_gen_comm_prefetch.
+
   // And don't do anything if it's a zero-length 
   if( size == 0 ) {
     return;
@@ -2473,6 +2471,7 @@ void cache_get(struct rdcache_s* cache,
 #ifdef TIME
     clock_gettime(CLOCK_REALTIME, &start_get1);
 #endif
+    // Note: chpl_comm_get_nb could cause a different task body to run.
     handle = 
       chpl_comm_get_nb(page+(ra_line-ra_page), /*local addr*/
                        node, (void*) ra_line,
@@ -2760,7 +2759,7 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
   if( chpl_cache_enabled() ) {
     struct rdcache_s* cache = tls_cache_remote_data();
     chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
-    
+
     INFO_PRINT(("%i fence acquire %i release %i %s:%i\n", chpl_nodeID, acquire, release, fn, ln));
 
     TRACE_PRINT(("%d: task %d in chpl_cache_fence(acquire=%i,release=%i) on cache %p from %s:%d\n", chpl_nodeID, (int) chpl_task_getId(), acquire, release, cache, fn?fn:"", ln));
@@ -2836,6 +2835,7 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
   //saturating_increment(&info->get_since_acquire);
   cache_get(cache, addr, node, (raddr_t)raddr, size, task_local->last_acquire,
             0, ln, fn);
+
   return;
 }
 
@@ -2899,12 +2899,34 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
 #endif
 }
 
+// This is for debugging.
 void chpl_cache_print(void)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   printf("%d: cache dump last acquire %i\n", chpl_nodeID, (int) task_local->last_acquire);
   rdcache_print(cache);
+}
+
+// This is for debugging.
+void chpl_cache_assert_released(void)
+{
+  struct rdcache_s* cache = tls_cache_remote_data();
+  struct dirty_entry_s* cur;
+  cache_seqn_t sn;
+  int index;
+
+  cur = cache->dirty_lru_head;
+  if ( cur && cur->entry )
+    assert(0); //dirty entry
+
+  index = cache->pending_last_entry;
+
+  if( index >= 0 ) {
+    sn = cache->pending_sequence_numbers[index];
+    if( sn <= cache->completed_request_number ) return;
+    assert(0); //pending request
+  }
 }
 
 /*
