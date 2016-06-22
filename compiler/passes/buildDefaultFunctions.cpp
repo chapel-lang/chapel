@@ -289,9 +289,10 @@ static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   _this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(_this);
-  if (field->isParameter()) //FIXME: (remove comment) When we get to here, we can handle fields that are parameters. Issue is that we aren't getting here for types
+  if (field->isParameter()){ //FIXME: (remove comment) When we get to here, we can handle fields that are parameters.
     fn->retTag = RET_PARAM;
-  else if (field->hasFlag(FLAG_TYPE_VARIABLE))
+    //_this->addFlag(FLAG_TYPE_VARIABLE);// FIXME: how do I add this without breaking the old one?
+  } else if (field->hasFlag(FLAG_TYPE_VARIABLE))
     fn->retTag = RET_TYPE;
   else if (field->hasFlag(FLAG_SUPER_CLASS)) {
     fn->retTag = RET_VALUE;
@@ -347,7 +348,6 @@ static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
   fn->cname = astr("chpl_get_", ct->symbol->cname, "_", fn->cname);
   fn->addFlag(FLAG_NO_PARENS);
   fn->_this = _this;
-  
 }
 
 // Getter and setter functions are provided by the compiler if not supplied by
