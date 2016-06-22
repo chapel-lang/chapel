@@ -39,6 +39,7 @@ support of parallelism and locality are removed.
 
    base/simpleConsoleOutput
    base/variableDeclarations
+   base/casts
 
 (more to come...)
 
