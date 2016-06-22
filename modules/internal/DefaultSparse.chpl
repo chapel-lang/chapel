@@ -132,6 +132,14 @@ module DefaultSparse {
       return found;
     }
 
+    proc dsiFirst {
+      return indices[indices.domain.first];
+    }
+
+    proc dsiLast {
+      return indices[nnz];
+    }
+
     proc add_help(ind) {
       // find position in nnzDom to insert new index
       const (found, insertPt) = find(ind);

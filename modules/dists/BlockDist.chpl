@@ -844,6 +844,9 @@ proc BlockDom.dsiNumIndices return whole.numIndices;
 proc BlockDom.dsiLow return whole.low;
 proc BlockDom.dsiHigh return whole.high;
 proc BlockDom.dsiStride return whole.stride;
+proc BlockDom.dsiAlignedLow return whole.alignedLow;
+proc BlockDom.dsiAlignedHigh return whole.alignedHigh;
+proc BlockDom.dsiAlignment return whole.alignment;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular

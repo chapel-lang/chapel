@@ -353,24 +353,24 @@ module ChapelDistribution {
     //basic DSI functions
     proc dsiDim(d: int) { return parentDom.dim(d); }
     proc dsiDims() { return parentDom.dims(); }
-    proc dsiNumIndices() { return nnz; }
-    proc dsiSize() { return nnz; }
-    proc dsiLow() { return parentDom.low; }
-    proc dsiHigh() { return parentDom.high; }
-    proc dsiStride() { return parentDom.stride; }
-    proc dsiAlignment() { return parentDom.alignment; }
-    proc dsiFirst() {
+    proc dsiNumIndices { return nnz; }
+    proc dsiSize { return nnz; }
+    proc dsiLow { return parentDom.low; }
+    proc dsiHigh { return parentDom.high; }
+    proc dsiStride { return parentDom.stride; }
+    proc dsiAlignment { return parentDom.alignment; }
+    proc dsiFirst {
       halt("dsiFirst is not implemented");
       const _tmp: rank*idxType;
       return _tmp;
     }
-    proc dsiLast() {
+    proc dsiLast {
       halt("dsiLast not implemented");
       const _tmp: rank*idxType;
       return _tmp;
     }
-    proc dsiAlignedLow() { return parentDom.alignedLow; }
-    proc dsiAlignedHigh() { return parentDom.alignedHigh; }
+    proc dsiAlignedLow { return parentDom.alignedLow; }
+    proc dsiAlignedHigh { return parentDom.alignedHigh; }
 
   } // end BaseSparseDom
 

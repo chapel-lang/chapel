@@ -231,6 +231,28 @@ class CSRDom: BaseSparseDom {
     return false;
   }
 
+  proc dsiFirst {
+    if nnz == 0 then return (parentDom.low) - (1,1);
+    const _low = nnzDom.low;
+    for i in rowDom do
+      if rowStart[i] > _low then
+        return (i-1, colIdx[colIdx.domain.low]);
+
+    halt("Something went wrong in dsiFirst");
+    return (0, 0);
+  }
+
+  proc dsiLast {
+    if nnz == 0 then return (parentDom.low) - (1,1);
+    const _low = nnzDom.low;
+    var _lastRow = parentDom.low[1] - 1;
+    for i in rowDom do
+      if rowStart[i] > _low then
+        _lastRow = i;
+
+    return (_lastRow-1, colIdx[nnz]);
+  }
+
   proc dsiAdd(ind: rank*idxType) {
     boundsCheck(ind);
 

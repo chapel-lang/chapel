@@ -135,6 +135,14 @@ class SparseBlockDom: BaseSparseDom {
     }
   }
 
+  proc dsiFirst {
+    return min reduce ([l in locDoms] l.mySparseBlock.first);
+  }
+
+  proc dsiLast {
+    return max reduce ([l in locDoms] l.mySparseBlock.last);
+  }
+
   // Tried to put this record in the function and the if statement, but got a
   // segfault from the compiler.
   record TargetLocaleComparator {
