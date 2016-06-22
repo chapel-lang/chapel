@@ -234,6 +234,21 @@ module ChapelDistribution {
   }
   
   class BaseSparseDom : BaseDom {
+    // these should be generic fields of all sparse subdomains
+    // NOTE this is only true for the first PR, rank and idxType should be
+    // hoisted higher to the BaseDom
+    param rank: int;
+    type idxType;
+    var parentDom;
+
+    // We currently cannot have dist here. It is due to a compiler bug due to
+    // inheritance of generic var fields.
+    // var dist;
+
+    var nnz = 0; //: int;
+    var nnzDomSize = nnz; //: int; //seems a bit unnecessary
+    var nnzDom = {1..nnzDomSize};
+
     proc dsiClear() {
       halt("clear not implemented for this distribution");
     }

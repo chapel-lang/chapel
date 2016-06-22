@@ -65,19 +65,12 @@ class CSR: BaseDist {
 }
 
 class CSRDom: BaseSparseDom {
-  param rank : int;
-  type idxType;
   var dist: CSR;
-  var parentDom: domain(rank, idxType);
-  var nnz: idxType;  // intention is that user might specify this to avoid reallocs
-  //  type idxType = rank*idxType;
 
   var rowRange: range(idxType);
   var colRange: range(idxType);
 
   const rowDom: domain(1, idxType);
-  var nnzDomSize: idxType;
-  var nnzDom: domain(1, nnz.type);
 
   var rowStart: [rowDom] idxType;      // would like index(nnzDom)
   var colIdx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
@@ -447,7 +440,7 @@ class CSRArr: BaseArr {
   param rank : int;
   type idxType;
 
-  var dom : CSRDom(rank=rank, idxType=idxType);
+  var dom; // : CSRDom(rank=rank, idxType=idxType);
   var data: [dom.nnzDom] eltType;
   var irv: eltType;
 

@@ -25,14 +25,7 @@ module DefaultSparse {
   config param debugDefaultSparse = false;
 
   class DefaultSparseDom: BaseSparseDom {
-    param rank : int;
-    type idxType;
-    var parentDom;
     var dist: DefaultDist;
-    var nnz = 0;  // intention is that user might specify this to avoid reallocs
-
-    var nnzDomSize = nnz;
-    var nnzDom = {1..nnzDomSize};
 
     var indices: [nnzDom] index(rank, idxType);
 
@@ -42,7 +35,6 @@ module DefaultSparse {
     proc DefaultSparseDom(param rank, type idxType,
                                  dist: DefaultDist,
                                  parentDom: domain) {
-      this.parentDom = parentDom;
       this.dist = dist;
       nnz = 0;
     }

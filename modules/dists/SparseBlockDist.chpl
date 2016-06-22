@@ -63,15 +63,22 @@ config param debugSparseBlockDistBulkTransfer = false;
 // whole:     a non-distributed domain that defines the domain's indices
 //
 class SparseBlockDom: BaseSparseDom {
-  param rank: int;
-  type idxType;
   param stridable: bool = false;  // TODO: remove default value eventually
   const dist: Block(rank, idxType);
-  var parentDom;
-  const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
 
+  inline proc nnz {
+    return (+ reduce [l in locDoms] l.mySparseBlock.nnz);
+  }
+
+  inline proc nnzDom {
+    return {1..nnz};
+  }
+
+  inline proc nnzDomSize {
+    return nnz;
+  }
 
   proc initialize() {
     setup();
@@ -86,7 +93,7 @@ class SparseBlockDom: BaseSparseDom {
           //                    writeln("Setting up on ", here.id);
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
          locDoms(localeIdx) = new LocSparseBlockDom(rank, idxType, stridable,
-                                                     dist.getChunk(whole, localeIdx));
+                                                     dist.getChunk(parentDom, localeIdx));
           //                    writeln("Back on ", here.id);
         }
       }
@@ -252,7 +259,7 @@ class SparseBlockDom: BaseSparseDom {
   }
 
 
-  proc dsiDims() return whole.dims();
+  proc dsiDims() return parentDom.dims();
 
   proc dsiMember(ind) {
     on parentDom.dist.idxToLocale(ind) {
@@ -814,23 +821,23 @@ proc LocSparseBlockArr.dsiSerialWrite(f) {
 
 proc SparseBlockDom.dsiSupportsPrivatization() param return false;
 
-proc SparseBlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
+proc SparseBlockDom.dsiGetPrivatizeData() return (dist.pid, parentDom.dims());
 
 proc SparseBlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
   var c = new SparseBlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist, parentDom=parentDom);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
-  c.whole = {(...privatizeData(2))};
+  c.parentDom = {(...privatizeData(2))};
   return c;
 }
 
-proc SparseBlockDom.dsiGetReprivatizeData() return whole.dims();
+proc SparseBlockDom.dsiGetReprivatizeData() return parentDom.dims();
 
 proc SparseBlockDom.dsiReprivatize(other, reprivatizeData) {
   for i in dist.targetLocDom do
     locDoms(i) = other.locDoms(i);
-  whole = {(...reprivatizeData)};
+  parentDom = {(...reprivatizeData)};
 }
 
 proc SparseBlockArr.dsiSupportsPrivatization() param return false;
@@ -853,7 +860,7 @@ proc SparseBlockArr.dsiSupportsBulkTransfer() param return true;
 proc SparseBlockArr.doiCanBulkTransfer() {
   if dom.stridable then
     for param i in 1..rank do
-      if dom.whole.dim(i).stride != 1 then return false;
+      if dom.parentDom.dim(i).stride != 1 then return false;
 
   // See above note regarding aliased arrays
   if disableAliasedBulkTransfer then
@@ -946,7 +953,7 @@ proc SparseBlockArr.doiBulkTransfer(B) {
 
 iter ConsecutiveChunks(d1,d2,lid,lo) {
   var elemsToGet = d1.locDoms[lid].mySparseBlock.numIndices;
-  const offset   = d2.whole.low - d1.whole.low;
+  const offset   = d2.parentDom.low - d1.parentDom.low;
   var rlo=lo+offset;
   var rid  = d2.dist.targetLocsIdx(rlo);
   while (elemsToGet>0) {
@@ -961,7 +968,7 @@ iter ConsecutiveChunks(d1,d2,lid,lo) {
 iter ConsecutiveChunksD(d1,d2,i,lo) {
   const rank=d1.rank;
   var elemsToGet = d1.locDoms[i].mySparseBlock.dim(rank).length;
-  const offset   = d2.whole.low - d1.whole.low;
+  const offset   = d2.parentDom.low - d1.parentDom.low;
   var rlo = lo+offset;
   var rid = d2.dist.targetLocsIdx(rlo);
   while (elemsToGet>0) {
@@ -976,7 +983,7 @@ iter ConsecutiveChunksD(d1,d2,i,lo) {
 proc SparseBlockDom.numRemoteElems(rlo,rid){
   var blo,bhi:dist.idxType;
   if rid==(dist.targetLocDom.dim(rank).length - 1) then
-    bhi=whole.dim(rank).high;
+    bhi=parentDom.dim(rank).high;
   else
       bhi=dist.boundingBox.dim(rank).low +
         intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1),
