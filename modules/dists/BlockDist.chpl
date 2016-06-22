@@ -1303,6 +1303,7 @@ proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) 
 }
 
 proc BlockArr.dsiReindex(d: BlockDom) {
+  // in constructor we have to pass sparseLayoutType as it has no default value
   var alias = new BlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
                            stridable=d.stridable, dom=d,
                            sparseLayoutType=DefaultDist);
@@ -1422,8 +1423,9 @@ proc BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc BlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
+  // in constructor we have to pass sparseLayoutType as it has no default value
   var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable,
-      sparseLayoutType=sparseLayoutType, dist=privdist);
+      sparseLayoutType=privDist.sparseLayoutType, dist=privdist);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
   c.whole = {(...privatizeData(2))};
