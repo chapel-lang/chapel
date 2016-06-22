@@ -231,14 +231,20 @@ static void fork_wrapper(fork_t *f) {
   GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL,
                                      AckArg0(f->ack), AckArg1(f->ack)));
 
-  chpl_mem_free(f, 0, 0);
+  chpl_mem_free(f, 0, 0); // TODO remove
 }
 
 static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
+  // This allocation can be removed.
+  // If that happens, need for buf to include:
+  //   fid
+  //   void* ack
+
   fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char),
                                           CHPL_RT_MD_COMM_FRK_RCV_INFO, 0, 0);
   chpl_memcpy(f, buf, nbytes);
-  chpl_task_startMovedTask((chpl_fn_p)fork_wrapper, (void*)f,
+
+  chpl_task_startMovedTask((chpl_fn_p)fork_wrapper, (void*)f, nbytes,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
 }
@@ -262,7 +268,7 @@ static void fork_large_wrapper(fork_t* f) {
   GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL,
                                      AckArg0(f->ack), AckArg1(f->ack)));
 
-  chpl_mem_free(f, 0, 0);
+  chpl_mem_free(f, 0, 0); // TODO remove
   chpl_mem_free(arg, 0, 0);
 }
 
@@ -270,11 +276,16 @@ static void fork_large_wrapper(fork_t* f) {
 ////           hide data copy by making get non-blocking
 ////GASNET - can we allocate f big enough so as not to need malloc in wrapper
 static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
+  // This allocation can be removed.
+  // If that happens, need for buf to include:
+  //   fid
+  //   void* ack
+
   fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes,
                                           CHPL_RT_MD_COMM_FRK_RCV_INFO,
                                           0, 0);
   chpl_memcpy(f, buf, nbytes);
-  chpl_task_startMovedTask((chpl_fn_p)fork_large_wrapper, (void*)f,
+  chpl_task_startMovedTask((chpl_fn_p)fork_large_wrapper, (void*)f, nbytes,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
 }
@@ -284,17 +295,21 @@ static void fork_nb_wrapper(fork_t *f) {
     chpl_ftable_call(f->fid, &f->arg);
   else
     chpl_ftable_call(f->fid, NULL);
-  chpl_mem_free(f, 0, 0);
+  chpl_mem_free(f, 0, 0); // TODO remove
 }
 
 static void AM_fork_nb(gasnet_token_t  token,
                         void           *buf,
                         size_t          nbytes) {
+  // This allocation can be removed.
+  // If that happens, need for buf to include:
+  //   fid
+  //   void* ack
   fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char),
                                           CHPL_RT_MD_COMM_FRK_RCV_INFO,
                                           0, 0);
   chpl_memcpy(f, buf, nbytes);
-  chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)f,
+  chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)f, nbytes,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
 }
@@ -314,16 +329,21 @@ static void fork_nb_large_wrapper(fork_t* f) {
                                       &(f->ack),
                                       sizeof(f->ack)));
   chpl_ftable_call(f->fid, arg);
-  chpl_mem_free(f, 0, 0);
+  chpl_mem_free(f, 0, 0); // TODO remove
   chpl_mem_free(arg, 0, 0);
 }
 
 static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
+  // This allocation can be removed.
+  // If that happens, need for buf to include:
+  //   fid
+  //   void* ack
+
   fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes,
                                           CHPL_RT_MD_COMM_FRK_RCV_INFO,
                                           0, 0);
   chpl_memcpy(f, buf, nbytes);
-  chpl_task_startMovedTask((chpl_fn_p)fork_nb_large_wrapper, (void*)f,
+  chpl_task_startMovedTask((chpl_fn_p)fork_nb_large_wrapper, (void*)f, nbytes,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
 }
@@ -374,7 +394,7 @@ static void AM_free(gasnet_token_t token, void* buf, size_t nbytes) {
   chpl_memcpy(&f_arg, f->arg, sizeof(void*));
 
   chpl_mem_free(f_arg, 0, 0);
-  chpl_mem_free(f, 0, 0);
+  chpl_mem_free(f, 0, 0); // TODO -- maybe remove this one
 }
 
 // this is currently unused; it's intended to be used to implement
@@ -1253,6 +1273,7 @@ void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
 
 
   if (chpl_nodeID == node) {
+    assert(0);
     chpl_ftable_call(fid, arg);
   } else {
     // Visual Debug Support
@@ -1280,6 +1301,8 @@ void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
     //   * allows us to re-use the source memory once it returns
     // and since nothing in info actually ends up in the task we
     // start (arg does but can be copied as a pointer)
+
+    // TODO -- remove this one
     info = (fork_t*)chpl_mem_allocMany(1, info_size,
                                        CHPL_RT_MD_COMM_FRK_SND_INFO, 0, 0);
     info->caller = chpl_nodeID;
@@ -1319,6 +1342,16 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
   } else {
     info_size = sizeof(fork_t) + sizeof(void*);
   }
+
+  // This does not need to be heap allocated
+  // To avoid it, we need to put the information here before
+  // the memory for the on statement
+  // calling node id
+  // requested subloc
+  // void* ack
+  // serial_state
+  // fid
+  // args size
   info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char), CHPL_RT_MD_COMM_FRK_SND_INFO, 0, 0);
   info->caller = chpl_nodeID;
   info->subloc = subloc;
@@ -1339,6 +1372,8 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
   }
 
   if (chpl_nodeID == node) {
+    assert(0);
+    /*
     // Visual Debug?  Should we generate a task here???
     if (info->serial_state)
       fork_nb_wrapper(info);
@@ -1346,6 +1381,7 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
       chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)info,
                                subloc, chpl_nullTaskID,
                                info->serial_state);
+                               */
   } else {
     // Visual Debug Support
     chpl_vdebug_log_fork_nb(node, subloc, fid, arg, arg_size);
@@ -1376,12 +1412,14 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
   int     passArg = info_size <= gasnet_AMMaxMedium();
 
   if (chpl_nodeID == node) {
+    assert(0);
     chpl_ftable_call(fid, arg);
   } else {
-    // Visual Debug Support
-    chpl_vdebug_log_fast_fork(node, subloc, fid, arg, arg_size);
 
     if (passArg) {
+      // Visual Debug Support
+      chpl_vdebug_log_fast_fork(node, subloc, fid, arg, arg_size);
+
       if (chpl_verbose_comm && !chpl_comm_no_debug_private)
         printf("%d: remote (no-fork) task created on %d\n",
                chpl_nodeID, node);
@@ -1401,6 +1439,8 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
 
       init_done_obj(&done, 1);
 
+      // TODO -- could avoid this memcpy if info
+      // is stored in task argument bundle at start.
       if (arg_size)
         chpl_memcpy(&(info->arg), arg, arg_size);
       GASNET_Safe(gasnet_AMRequestMedium0(node, FORK_FAST, info, info_size));

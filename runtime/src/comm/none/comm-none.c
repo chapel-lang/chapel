@@ -482,29 +482,11 @@ void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
   chpl_ftable_call(fid, arg);
 }
 
-static void fork_nb_wrapper(fork_t* f) {
-  if (f->arg_size)
-    chpl_ftable_call(f->fid, &f->arg);
-  else
-    chpl_ftable_call(f->fid, NULL);
-  chpl_mem_free(f, 0, 0);
-}
-
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                        chpl_fn_int_t fid, void *arg, size_t arg_size) {
-  fork_t *info;
-  size_t  info_size;
-
   assert(node==0);
 
-  info_size = sizeof(fork_t) + arg_size;
-  info = (fork_t*)chpl_mem_allocMany(info_size, sizeof(char),
-                                     CHPL_RT_MD_COMM_FRK_SND_INFO, 0, 0);
-  info->fid = fid;
-  info->arg_size = arg_size;
-  if (arg_size)
-    chpl_memcpy(&(info->arg), arg, arg_size);
-  chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)info,
+  chpl_task_startMovedTask(chpl_ftable[fid], arg, arg_size,
                            subloc, chpl_nullTaskID, false);
 }
 
