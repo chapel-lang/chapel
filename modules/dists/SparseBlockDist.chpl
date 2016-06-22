@@ -123,18 +123,6 @@ class SparseBlockDom: BaseSparseDom {
     dsiAdd((ind,));
   }
 
-  proc dsiBulkAdd(inds: [] index(rank, idxType), isSorted=false, isUnique=false,
-      preserveInds=true){
-  
-    if !isSorted && preserveInds {
-      var _inds = inds;
-      bulkAdd_help(_inds, isSorted, isUnique); 
-    }
-    else {
-      bulkAdd_help(inds, isSorted, isUnique);
-    }
-  }
-
   proc dsiFirst {
     return min reduce ([l in locDoms] l.mySparseBlock.first);
   }
@@ -266,9 +254,6 @@ class SparseBlockDom: BaseSparseDom {
     }
   }
 
-
-  proc dsiDims() return parentDom.dims();
-
   proc dsiMember(ind) {
     on parentDom.dist.idxToLocale(ind) {
       writeln("Need to add support for mapping locale to local domain");
@@ -282,8 +267,6 @@ class SparseBlockDom: BaseSparseDom {
   }
 
   proc dsiMyDist() return dist;
-
-
 }
 
 //
