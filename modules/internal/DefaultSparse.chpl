@@ -116,14 +116,6 @@ module DefaultSparse {
       yield dummy;
     }
 
-    proc dsiDim(d : int) {
-      return parentDom.dim(d);
-    }
-
-    proc dsiDims() {
-      return parentDom.dims();
-    }
-
     // private
     proc find(ind) {
       //

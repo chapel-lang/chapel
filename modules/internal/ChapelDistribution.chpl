@@ -269,9 +269,78 @@ module ChapelDistribution {
       }
     }
 
-    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), isSorted=false, 
-        isUnique=false){
+    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), 
+        isSorted=false, isUnique=false){
       halt("Helper function called on the BaseSparseDom");
+    }
+
+    // this is a helper function for bulkAdd functions in sparse subdomains.
+    // NOTE:it assumes that nnz array of the sparse domain has non-negative 
+    // indices. If, for some reason it changes, this function and bulkAdds have to
+    // be refactored. (I think it is a safe assumption at this point and keeps the
+    // function a bit cleaner than some other approach. -Engin)
+    proc __getActualInsertPts(d, inds, 
+        isIndsSorted, isUnique) /* where isSparseDom(d) */ {
+
+      //find individual insert points
+      //and eliminate duplicates between inds and dom
+      var indivInsertPts: [inds.domain] int;
+      var actualInsertPts: [inds.domain] int; //where to put in newdom
+
+      if !isIndsSorted then sort(inds);
+
+      //eliminate duplicates --assumes sorted
+      if !isUnique {
+        //make sure lastInd != inds[inds.domain.low]
+        var lastInd = inds[inds.domain.low] + 1; 
+        for (i, p) in zip(inds, indivInsertPts)  {
+          if i == lastInd then p = -1;
+          else lastInd = i;
+        }
+      }
+
+      //verify sorted and no duplicates if not --fast
+      if boundsChecking {
+        // TODO there seems to be a bug while resolving Sort.isSorted, therefore
+        // for this function the argument is still isIndsSorted, instead of
+        // isSorted. This should be changed when Sort.isSorted is working.
+        if !isSorted(inds) then
+          halt("bulkAdd: Data not sorted, call the function with isSorted=false");
+
+        //check duplicates assuming sorted
+        const indsStart = inds.domain.low;
+        const indsEnd = inds.domain.high;
+        var lastInd = inds[indsStart];
+        for i in indsStart+1..indsEnd {
+          if inds[i] == lastInd && indivInsertPts[i] != -1 then 
+            halt("There are duplicates, call the function with isUnique=false"); 
+        }
+
+        for i in inds do d.boundsCheck(i);
+
+      }
+
+      forall (i,p) in zip(inds, indivInsertPts) {
+        if isUnique || p != -1 { //don't do anything if it's duplicate
+          const (found, insertPt) = d.find(i);
+          p = if found then -1 else insertPt; //mark as duplicate
+        }
+      }
+
+      //shift insert points for bulk addition
+      //previous indexes that are added will cause a shift in the next indexes
+      var actualAddCnt = 0;
+
+      //NOTE: this can also be done with scan
+      for (ip, ap) in zip(indivInsertPts, actualInsertPts) {
+        if ip != -1 {
+          ap = ip + actualAddCnt;
+          actualAddCnt += 1;
+        }
+        else ap = ip;
+      }
+
+      return (actualInsertPts, actualAddCnt);
     }
 
     proc boundsCheck(ind: index(rank, idxType)):void {
@@ -280,7 +349,10 @@ module ChapelDistribution {
           halt("Sparse domain/array index out of bounds: ", ind,
               " (expected to be within ", parentDom, ")");
     }
+
     //basic DSI functions
+    proc dsiDim(d: int) { return parentDom.dim(d); }
+    proc dsiDims() { return parentDom.dims(); }
     proc dsiNumIndices() { return nnz; }
     proc dsiSize() { return nnz; }
     proc dsiLow() { return parentDom.low; }
@@ -300,7 +372,41 @@ module ChapelDistribution {
     proc dsiAlignedLow() { return parentDom.alignedLow; }
     proc dsiAlignedHigh() { return parentDom.alignedHigh; }
 
+  } // end BaseSparseDom
+
+  // BaseSparseDom operator overloads
+  proc +=(ref sd: domain, inds: [] sd.idxType) where isSparseDom(sd) && 
+    sd.rank==1 {
+
+    if inds.size == 0 then return;
+
+    sd._value.dsiBulkAdd(inds);
   }
+
+  proc +=(ref sd: domain, inds: [] sd.rank*sd.idxType) where isSparseDom(sd) &&
+    sd.rank>1 {
+
+    if inds.size == 0 then return;
+
+    sd._value.dsiBulkAdd(inds);
+  }
+
+  // Currently this is not optimized for addition of a sparse
+  proc +=(ref sd: domain, d: domain)
+  where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
+
+    if d.size == 0 then return;
+
+    type _idxType = if sd.rank==1 then int else sd.rank*int;
+    const indCount = d.numIndices;
+    const arr: [{0..#indCount}] _idxType;
+
+    //this could be a parallel loop. but ranks don't match -- doesn't compile
+    for (a,i) in zip(arr,d) do a=i;
+
+    sd._value.dsiBulkAdd(arr, true, true, false);
+  }
+  // end BaseSparseDom operators
   
   class BaseAssociativeDom : BaseDom {
     proc dsiClear() {
