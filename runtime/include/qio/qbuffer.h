@@ -25,9 +25,13 @@ extern "C" {
 #endif
 
 // This macro set to obtain the portable format macro PRIu64 for debug output.
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS 1
+#endif
 // This macro set to obtain SIZE_MAX
+#ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS 1
+#endif
 
 #include "sys_basic.h"
 #include "qio_error.h"

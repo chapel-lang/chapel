@@ -74,7 +74,9 @@
 //#endif
 
 // Ask a C++ compiler if it would please include e.g. INT64_MAX
+#ifndef __STDC_CONSTANT_MACROS
 #define __STDC_CONSTANT_MACROS
+#endif
 
 #include <sys/types.h>
 #include <unistd.h>
