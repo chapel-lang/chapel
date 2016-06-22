@@ -56,6 +56,7 @@ explicitly and synchronizing between them.
 
    taskpar/taskParallelismOverview
    taskpar/theBeginStatement
+   taskpar/coforall
 
 (more to come...)
 
