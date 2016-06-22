@@ -3,35 +3,159 @@
 Basic Values (Literals)
 =======================
 
-Most of the basic types support a corresponding literal format for
-specifying values of that type.
+Most of Chapel's basic types support a corresponding literal format
+for specifying values of that type at the default bit-width.  To get
+values of different bit-widths, casts or coercions must be applied.
 
-* The ``bool`` type supports ``true`` and ``false`` as its two literal
-  values.
+.. TODO: hyperlink "basic types" above as well as casts and coercions.
 
-* The ``int`` type supports base-10 literals via a sequence of decimal
-  digits.  It also supports binary, octal, and hexidecimal literals
-  via the ``0b``, ``0o``, and ``0x`` prefixes, respectively.  Note
-  that there are no negative integer literals, simply applications of
-  the unary negation operator (``-``) to integer literals.
 
-* The ``uint`` type does not have a specific literal format, although
-  integer literals which are too large for an ``int(64)`` yet fit
-  within a ``uint(64)`` are considered to be unsigned integers.
+Boolean Values
+--------------
 
-* The ``real`` type's literal format includes both decimal and
-  exponential formats.  Unlike some languages, ``5.`` is not a legal
-  real value and must be written ``5.0`` due to a parsing ambiguity
-  stemming from Chapel's ability to invoke methods on literal values.
-  Floating point values may also be specified using a hexidecimal
-  floating point format using the ``0x`` prefix.
+The ``bool`` type supports ``true`` and ``false`` as its two literal
+values:
 
-* The ``imag`` type's literal format is similar to those used for
-  ``int`` and ``real`` yet followed by ``i`` to indicate an imaginary
-  value.
+.. literalinclude:: examples/users-guide/base/boolValues.chpl
+  :caption:
+  :language: chapel
+  :lines: 1,4,6
 
-* The ``complex`` type does not support a literal format.  Complex
-  values are most often expressed by adding or subtracting ``real``
-  and ``imag`` literals.
+Integral Values
+---------------
+            
+Literal values for ``int`` types are typically written as a sequence
+of decimal digits:
 
-* String literals are expressed using either single or double quotes.  
+.. literalinclude:: examples/users-guide/base/intValues.chpl
+  :caption:
+  :language: chapel
+  :lines: 1,5
+
+However, they can also be expressed as binary, octal, or hexidecimal
+values via the ``0b``/``0B``, ``0o``/``0O``, and ``0x``/``0X``
+prefixes, respectively:
+
+.. literalinclude:: examples/users-guide/base/intValues.chpl
+  :language: chapel
+  :lines: 9,11,13
+
+
+where these values correspond to decimal values:
+
+.. literalinclude:: examples/users-guide/base/intValues.good
+  :language: text
+  :lines: 5-7
+
+It's worth noting that in Chapel, there are no negative integer
+literal values, simply applications of the unary negation operator
+(``-``) to positive integer literals.
+
+The ``uint`` type does not have its own literal format, although
+integer literals which do not fit in an ``int(64)`` and can fit within
+a ``uint(64)`` are considered to be unsigned integer values.  Thus, in
+the following declarations, the first variable is inferred to be of
+type ``int`` while the second is inferred to be of type ``uint``:
+
+.. literalinclude:: examples/users-guide/base/inferredIntValues.chpl
+  :caption:
+  :language: chapel
+  :lines: 1-2
+
+To represent smaller integral values as a ``uint``, type conversions
+(casts or coercions) must be used.
+
+.. TODO: hyperlink the casts and coercions above once that text is
+   written
+   
+
+Floating Point Values
+---------------------
+
+The ``real`` type supports literal values via either decimal or
+exponential formats:
+
+.. literalinclude:: examples/users-guide/base/floatValues.chpl
+  :caption:
+  :language: chapel
+  :lines: 3,6,8
+
+where these literals correspond to the values:
+
+.. literalinclude:: examples/users-guide/base/floatValues.good
+  :caption:
+  :language: chapel
+  :lines: 3-4
+          
+In the decimal form, a ``.`` must be used to distinguish the value
+from an integral literal.  Note that ``10.`` is not a valid floating
+point literal value in Chapel due to a syntactic ambiguity with making
+a method call on an integral value.  For this reason, ``10.0`` must be
+used instead.
+
+Note that in the exponential form, the base decimal value can be an
+integer value and/or `E` may be used to set off the exponent.  Thus,
+the following four assignments are all equivalent:
+
+.. literalinclude:: examples/users-guide/base/floatValues.chpl
+  :language: chapel
+  :lines: 10,12,14,16
+
+Floating point values may also be specified using a hexidecimal
+floating point format using the ``0x`` prefix.
+
+.. TODO: how the heck does this work?
+
+Literal values for the ``imag`` type are identical to those for
+``int`` and ``real``, yet with an ``i`` suffix.  Thus, the following
+assignments demonstrate imaginary literals:
+
+.. literalinclude:: examples/users-guide/base/floatValues.chpl
+  :language: chapel
+  :lines: 26,29,31,33
+     
+Note that in either form, the resulting value is represented as a
+floating point literal.  Thus, these assignments correspond to the
+values:
+
+.. literalinclude:: examples/users-guide/base/floatValues.good
+  :language: chapel
+  :lines: 12-14
+
+Note further that the expression ``i`` does not refer to the
+mathematical value $sqrt(-1)$, but rather to a variable named *i*.  To
+get the mathematical value, use an expression like ``1i`` or ``1.0i``.
+
+The ``complex`` type does not support a native format for literal
+values.  Instead, complex values are typically expressed by adding or
+subtracting ``real`` and ``imag`` values.  For example:
+
+.. literalinclude:: examples/users-guide/base/floatValues.chpl
+  :language: chapel
+  :lines: 41,44
+
+
+String Literals
+---------------
+
+Literal ``string`` values can be expressed using either single or
+double quotes.  For example, the following represent legal string
+values:
+
+.. literalinclude:: examples/users-guide/base/stringValues.chpl
+  :language: chapel
+  :lines: 1,4,6
+
+One impact of this is that the other type of quotes can be used within
+a string literal without additional effort:
+
+.. literalinclude:: examples/users-guide/base/stringValues.chpl
+  :language: chapel
+  :lines: 9
+
+Subsequent sections will cover strings in more detail.
+
+.. TODO: write such a section and hyperlink it
+
+
+   
