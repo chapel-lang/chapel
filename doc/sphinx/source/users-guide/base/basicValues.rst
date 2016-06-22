@@ -1,11 +1,11 @@
-:title: Users Guide: Basic Values (Literals)
+:title: Users Guide: Literal Values for Basic Types
 
-Basic Values (Literals)
-=======================
+Literal Values for Basic Types
+==============================
 
 Most of Chapel's basic types support a corresponding literal format
-for specifying values of that type at the default bit-width.  To get
-values of different bit-widths, casts or coercions must be applied.
+for specifying its values at the default bit-width.  Values of other
+bit-widths are obtained via type conversions (casts or coercions).
 
 .. TODO: hyperlink "basic types" above as well as casts and coercions.
 
