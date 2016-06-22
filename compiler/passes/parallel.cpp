@@ -1473,6 +1473,7 @@ static void insertEndCounts()
 //
 // Returns the call in the 'else' block (which will need
 // argument bundling as usual).
+static
 CallExpr* createConditionalForDirectOn(CallExpr* call, FnSymbol* fn)
 {
 
