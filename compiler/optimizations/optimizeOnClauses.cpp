@@ -127,6 +127,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GET_USER_LINE:
   case PRIM_GET_USER_FILE:
   case PRIM_LOOKUP_FILENAME:
+
+  case PRIM_STACK_ALLOCATE_CLASS:
     return FAST_AND_LOCAL;
 
   case PRIM_MOVE:

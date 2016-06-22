@@ -5516,6 +5516,16 @@ GenRet CallExpr::codegenPrimitive() {
     break;
   }
 
+  case PRIM_STACK_ALLOCATE_CLASS: {
+    AggregateType* at = toAggregateType(get(1)->typeInfo());
+    const char* struct_name = at->classStructName(true);
+    GenRet tmp = createTempVar(struct_name);
+
+    ret = codegenCast(at, codegenAddrOf(tmp));
+
+    break;
+  }
+
   case PRIM_HEAP_REGISTER_GLOBAL_VAR: {
     GenRet idx          = codegenValue(get(1));
     GenRet var          = get(2);

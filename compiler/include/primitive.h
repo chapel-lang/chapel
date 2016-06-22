@@ -266,6 +266,8 @@ enum PrimitiveTag {
 
   PRIM_GET_COMPILER_VAR,
 
+  PRIM_STACK_ALLOCATE_CLASS,
+
   NUM_KNOWN_PRIMS
 };
 
