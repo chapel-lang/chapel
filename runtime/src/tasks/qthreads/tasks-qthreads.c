@@ -161,7 +161,6 @@ typedef struct {
     void                     *fn;
     void                     *arg;
     void                     *arg_copy;
-    chpl_bool                countRunning;
     chpl_task_prvDataImpl_t  chpl_data;
 } chpl_qthread_wrapper_args_t;
 
@@ -732,7 +731,7 @@ static inline void wrap_callbacks(chpl_task_cb_event_kind_t event_kind,
     }
 }
 
-static aligned_t chapel_wrapper(void *arg)
+static aligned_t chapel_wrapper_count(void *arg)
 {
     chpl_qthread_wrapper_args_t *rarg = arg;
     chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
@@ -741,9 +740,7 @@ static aligned_t chapel_wrapper(void *arg)
     data->lock_filename = 0;
     data->lock_lineno = 0;
 
-    if (rarg->countRunning) {
-        chpl_taskRunningCntInc(0, 0);
-    }
+    chpl_taskRunningCntInc(0, 0);
 
     wrap_callbacks(chpl_task_cb_event_kind_begin, &data->chpl_data);
 
@@ -756,9 +753,30 @@ static aligned_t chapel_wrapper(void *arg)
 
     wrap_callbacks(chpl_task_cb_event_kind_end, &data->chpl_data);
 
-    if (rarg->countRunning) {
-        chpl_taskRunningCntDec(0, 0);
+    chpl_taskRunningCntDec(0, 0);
+
+    return 0;
+}
+
+static aligned_t chapel_wrapper_nocount(void *arg)
+{
+    chpl_qthread_wrapper_args_t *rarg = arg;
+    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
+
+    data->chpl_data = rarg->chpl_data;
+    data->lock_filename = 0;
+    data->lock_lineno = 0;
+
+    wrap_callbacks(chpl_task_cb_event_kind_begin, &data->chpl_data);
+
+    if (rarg->arg_copy != NULL) {
+        (*(chpl_fn_p)(rarg->fn))(rarg->arg_copy);
+        chpl_mem_free(rarg->arg_copy, 0, 0);
+    } else {
+        (*(chpl_fn_p)(rarg->fn))(rarg->arg);
     }
+
+    wrap_callbacks(chpl_task_cb_event_kind_end, &data->chpl_data);
 
     return 0;
 }
@@ -783,14 +801,14 @@ static void *comm_task_wrapper(void *arg)
 void chpl_task_callMain(void (*chpl_main)(void))
 {
     chpl_qthread_wrapper_args_t wrapper_args =
-        {chpl_main, NULL, NULL, false,
+        {chpl_main, NULL, NULL,
          PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_MAIN_TASK , 0,
                            chpl_qthread_process_tls.chpl_data.id, false,
                            c_sublocid_any_val, false) };
 
     wrap_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);
 
-    qthread_fork_syncvar(chapel_wrapper, &wrapper_args, &exit_ret);
+    qthread_fork_syncvar(chapel_wrapper_nocount, &wrapper_args, &exit_ret);
     qthread_syncvar_readFF(NULL, &exit_ret);
 }
 
@@ -842,7 +860,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
         (chpl_ftable[fid])(arg);
     } else {
         chpl_qthread_wrapper_args_t wrapper_args =
-            {chpl_ftable[fid], arg, NULL, false,
+            {chpl_ftable[fid], arg, NULL,
              PRV_DATA_IMPL_VAL(filename, lineno, chpl_nullTaskID, false,
                                subloc, serial_state) };
 
@@ -850,10 +868,10 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
                        &wrapper_args.chpl_data);
 
         if (subloc == c_sublocid_any) {
-            qthread_fork_copyargs(chapel_wrapper, &wrapper_args,
+            qthread_fork_copyargs(chapel_wrapper_nocount, &wrapper_args,
                                   sizeof(chpl_qthread_wrapper_args_t), NULL);
         } else {
-            qthread_fork_copyargs_to(chapel_wrapper, &wrapper_args,
+            qthread_fork_copyargs_to(chapel_wrapper_nocount, &wrapper_args,
                                      sizeof(chpl_qthread_wrapper_args_t), NULL,
                                      (qthread_shepherd_id_t) subloc);
         }
@@ -869,18 +887,29 @@ static inline void taskCallBody(chpl_fn_p fp, void *arg, void *arg_copy,
                                 c_sublocid_t subloc,  chpl_bool serial_state,
                                 int lineno, int32_t filename)
 {
+    qthread_f fn;
+
+    // TODO --
+    // put chpl_qthread_wrapper_args_t at start of task
+    //
+
     chpl_qthread_wrapper_args_t wrapper_args =
-        {fp, arg, arg_copy, canCountRunningTasks,
+        {fp, arg, arg_copy,
          PRV_DATA_IMPL_VAL(filename, lineno, chpl_nullTaskID, true,
                            subloc, serial_state) };
+
+    if (canCountRunningTasks)
+      fn = chapel_wrapper_count;
+    else
+      fn = chapel_wrapper_nocount;
 
     wrap_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);
 
     if (subloc < 0) {
-        qthread_fork_copyargs(chapel_wrapper, &wrapper_args,
+        qthread_fork_copyargs(fn, &wrapper_args,
                               sizeof(chpl_qthread_wrapper_args_t), NULL);
     } else {
-        qthread_fork_copyargs_to(chapel_wrapper, &wrapper_args,
+        qthread_fork_copyargs_to(fn, &wrapper_args,
                                  sizeof(chpl_qthread_wrapper_args_t), NULL,
                                  (qthread_shepherd_id_t) subloc);
     }
@@ -894,6 +923,7 @@ void chpl_task_taskCall(chpl_fn_p fp, void *arg, size_t arg_size,
 
     PROFILE_INCR(profile_task_taskCall,1);
 
+    // TODO -- remove this allocation
     if (arg != NULL) {
         arg_copy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_TASK_ARG, 0, 0);
         chpl_memcpy(arg_copy, arg, arg_size);
