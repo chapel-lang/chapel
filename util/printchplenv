@@ -6,6 +6,8 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 from chplenv import *
+from chplenv import chpl_unwind
+from chplenv import chpl_3p_libunwind_configs
 
 def print_mode(mode='list'):
     print_var.first_time = True
@@ -76,6 +78,9 @@ def print_mode(mode='list'):
     timers = chpl_timers.get()
     print_var('CHPL_TIMERS', timers, mode, 'tmr', ('runtime', 'launcher'))
 
+    unwind = chpl_unwind.get()
+    print_var('CHPL_UNWIND', unwind, mode, 'unwind', ('runtime', 'launcher'))
+
     target_mem = chpl_mem.get('target')
     if mode == 'make':
         host_mem = chpl_mem.get('host')
@@ -135,6 +140,11 @@ def print_mode(mode='list'):
                   chpl_3p_gmp_configs.get_uniq_cfg_path(),
                   mode, filters=('runtime',))
         link_args_3p.extend(chpl_3p_gmp_configs.get_link_args(gmp))
+
+	print_var('  CHPL_LIBUNWIND_UNIQ_CFG_PATH',
+                  chpl_3p_libunwind_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+      	link_args_3p.extend(chpl_3p_libunwind_configs.get_link_args(unwind))
 
         print_var('  CHPL_HWLOC_UNIQ_CFG_PATH',
                   chpl_3p_hwloc_configs.get_uniq_cfg_path(),
