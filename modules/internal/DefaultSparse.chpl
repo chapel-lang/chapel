@@ -140,13 +140,6 @@ module DefaultSparse {
       return found;
     }
 
-    proc boundsCheck(ind: index(rank, idxType)):void {
-      if boundsChecking then
-        if !(parentDom.member(ind)) then
-          halt("DefaultSparse domain/array index out of bounds: ", ind,
-              " (expected to be within ", parentDom, ")");
-    }
-
     proc add_help(ind) {
       // find position in nnzDom to insert new index
       const (found, insertPt) = find(ind);
@@ -232,18 +225,6 @@ module DefaultSparse {
         add_help(ind(1));
       } else {
         add_help(ind);
-      }
-    }
-
-    proc dsiBulkAdd(inds: [] index(rank, idxType),
-        isSorted=false, isUnique=false, preserveInds=true){
-
-      if !isSorted && preserveInds {
-        var _inds = inds;
-        bulkAdd_help(_inds, isSorted, isUnique); 
-      }
-      else {
-        bulkAdd_help(inds, isSorted, isUnique);
       }
     }
 

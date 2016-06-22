@@ -211,13 +211,6 @@ class CSRDom: BaseSparseDom {
     }
   }
 
-  proc boundsCheck(ind: rank*idxType):void {
-    if boundsChecking then
-      if !(parentDom.member(ind)) then
-        halt("CSR domain/array index out of bounds: ", ind,
-             " (expected to be within ", parentDom, ")");
-  }
-
   proc rowStop(row) {
     return rowStart(row+1)-1;
   }
@@ -281,18 +274,6 @@ class CSRDom: BaseSparseDom {
     // we could also eliminate the oldNNZDomSize variable
     for a in _arrs {
       a.sparseShiftArray(insertPt..nnz-1, oldNNZDomSize+1..nnzDomSize);
-    }
-  }
-
-  proc dsiBulkAdd(inds: [] index(rank, idxType),
-      isSorted=false, isUnique=false, preserveInds=true){
-
-    if !isSorted && preserveInds {
-      var _inds = inds;
-      bulkAdd_help(_inds, isSorted, isUnique); 
-    }
-    else {
-      bulkAdd_help(inds, isSorted, isUnique);
     }
   }
 

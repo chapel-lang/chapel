@@ -257,6 +257,29 @@ module ChapelDistribution {
       dsiClear();
     }
 
+    proc dsiBulkAdd(inds: [] index(rank, idxType),
+        isSorted=false, isUnique=false, preserveInds=true){
+
+      if !isSorted && preserveInds {
+        var _inds = inds;
+        bulkAdd_help(_inds, isSorted, isUnique); 
+      }
+      else {
+        bulkAdd_help(inds, isSorted, isUnique);
+      }
+    }
+
+    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), isSorted=false, 
+        isUnique=false){
+      halt("Helper function called on the BaseSparseDom");
+    }
+
+    proc boundsCheck(ind: index(rank, idxType)):void {
+      if boundsChecking then
+        if !(parentDom.member(ind)) then
+          halt("Sparse domain/array index out of bounds: ", ind,
+              " (expected to be within ", parentDom, ")");
+    }
     //basic DSI functions
     proc dsiNumIndices() { return nnz; }
     proc dsiSize() { return nnz; }
