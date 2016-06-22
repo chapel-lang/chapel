@@ -1839,6 +1839,54 @@ int get_width(Type *t) {
   return 0;
 }
 
+/*
+int estimateSizeInBytes(Type *t, bool classInstanceSize, int sizeForUnknown)
+{
+  int size = 0;
+  int estimated_pointer_size = 8;
+  int estimated_localeid_size = 8;
+
+  if (t->symbol->hasFlag(FLAG_EXTERN)) {
+    if (t->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE))
+      size = estimated_pointer_size;
+    else if(t == dtLocaleID)
+      size = estimated_localeid_size;
+    else {
+      //INT_ASSERT(0);
+      // What about qio_file_ptr_t or qio_channel_ptr_t ?
+      size = sizeForUnknown;
+    }
+  } else {
+    if (AggregateType* at = toAggregateType(t)) {
+      if (!classInstanceSize && at->isClass())
+        return estimated_pointer_size;
+      for_fields(field, at) {
+        int fieldSz;
+        fieldSz = estimateSizeInBytes(field->typeInfo(), false, sizeForUnknown);
+        printf("field %s had size %i\n", field->name, fieldSz);
+        if (at->isUnion()) {
+          if (fieldSz > size) size = fieldSz;
+        } else {
+          size += fieldSz;
+        }
+      }
+    } else if (EnumType* et = toEnumType(t)) {
+      size = (get_width(et->getIntegerType())+7) / 8;
+    } else if (is_bool_type(t) ||
+               is_int_type(t) || is_uint_type(t) ||
+               is_real_type(t) || is_imag_type(t) ||
+               is_complex_type(t)) {
+      size = (get_width(t)+7) / 8;
+    } else {
+      //INT_ASSERT(0);
+      size = sizeForUnknown;
+    }
+  }
+
+  printf("returning size %i for %s\n", size, t->symbol->name);
+  return size;
+}
+*/
 
 bool isClass(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
