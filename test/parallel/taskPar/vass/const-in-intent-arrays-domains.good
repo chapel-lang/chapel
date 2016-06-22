@@ -1,0 +1,10 @@
+const-in-intent-arrays-domains.chpl:6: In function 'testFormal':
+const-in-intent-arrays-domains.chpl:7: error: illegal lvalue in assignment
+const-in-intent-arrays-domains.chpl:8: error: illegal lvalue in assignment
+const-in-intent-arrays-domains.chpl:11: In function 'main':
+const-in-intent-arrays-domains.chpl:15: error: illegal lvalue in assignment
+const-in-intent-arrays-domains.chpl:16: error: illegal lvalue in assignment
+const-in-intent-arrays-domains.chpl:20: error: illegal lvalue in assignment
+const-in-intent-arrays-domains.chpl:21: error: illegal lvalue in assignment
+const-in-intent-arrays-domains.chpl:25: error: illegal lvalue in assignment
+const-in-intent-arrays-domains.chpl:26: error: illegal lvalue in assignment

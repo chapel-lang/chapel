@@ -103,13 +103,24 @@ proc locale.name: string;
 Returns the name of the locale.
 \end{protobody}
 
-\index{predefined functions!numCores@\chpl{numCores}}
-\index{locales!numCores@\chpl{numCores}}
+\index{predefined functions!numPUs@\chpl{numPUs}}
+\index{locales!numPUs@\chpl{numPUs}}
 \begin{protohead}
-proc locale.numCores: int;
+proc numPUs(logical: bool = false, accessible: bool = true);
 \end{protohead}
 \begin{protobody}
-Returns the number of logical CPUs available on a given locale.
+Returns the number of processing unit instances
+available on a given locale.
+Basically these are the things that execute instructions.
+If \chpl{logical} is \chpl{false}
+then the count reflects physical instances,
+often referred to as {\em cores}.
+Otherwise it reflects logical instances,
+such as hardware threads on multithreaded CPU architectures.
+If \chpl{accessible} is \chpl{true}
+then the count includes only those processors
+the OS has made available to the program.
+Otherwise it includes all processors that seem to be present.
 \end{protobody}
 
 \index{predefined functions!physicalMemory@\chpl{physicalMemory}}

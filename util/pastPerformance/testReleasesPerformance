@@ -17,8 +17,8 @@
 #   you want to make the results comparable to the ones we gather
 #   nightly) and up-to-date with the master.
 #
-# * set CHPL_TEST_VENV_DIR=\
-#     $CHPL_HOME/third-party/chpl-venv/install/$CHPL_HOST_PLATFORM/chpl-virtualenv
+# * optionally, set CHPL_TEST_VENV_DIR if you want it to differ
+#   from the default below.
 #
 # * optionally, set CHPL_TEST_PERF_DIR to indicate where you want
 #   the output .dat and html/ files to be placed.  By default, it
@@ -37,7 +37,7 @@ function testReleasePerformance {
     pushd $CHPL_HOME
     . util/setchplenv.bash
     popd
-    $CHPL_HOME_ORIG/util/start_test -performance -num-trials 3
+    $CHPL_TEST_UTIL_DIR/start_test -performance -num-trials 3
 }
 
 if [[ -z $CHPL_HOME ]]; then
@@ -46,6 +46,18 @@ fi
 
 export CHPL_HOME_ORIG=$CHPL_HOME
 export CHPL_TEST_UTIL_DIR=$CHPL_HOME_ORIG/util
+
+if [[ -z $CHPL_TEST_VENV_DIR ]]; then
+    if [[ -z $CHPL_HOST_PLATFORM ]]; then
+        export CHPL_TEST_VENV_DIR=$CHPL_HOME_ORIG/third-party/chpl-venv/install/`$CHPL_TEST_UTIL_DIR/chplenv/chpl_platform.py --host`/chpl-virtualenv
+    else
+        export CHPL_TEST_VENV_DIR=$CHPL_HOME_ORIG/third-party/chpl-venv/install/$CHPL_HOST_PLATFORM/chpl-virtualenv
+    fi
+fi
+if [[ ! -d $CHPL_TEST_VENV_DIR ]]; then
+    echo "ERROR: incorrect or missing CHPL_TEST_VENV_DIR='$CHPL_TEST_VENV_DIR'"
+    exit 1
+fi
 
 #
 # This is a place where all releases will be unpacked and built with
@@ -91,9 +103,13 @@ export CHPL_TEST_PERF_DATE="09/24/15"
 export CHPL_HOME=$chpl_release_home/chapel-1.12.0
 testReleasePerformance
 
-export -n CHPL_TEST_PERF_DATE
+export CHPL_TEST_PERF_DATE="03/29/16"
+export CHPL_HOME=$chpl_release_home/chapel-1.13.0
+testReleasePerformance
+
+unset CHPL_TEST_PERF_DATE
 export CHPL_HOME=$CHPL_HOME_ORIG
-start_test --gen-graphs
+$CHPL_TEST_UTIL_DIR/start_test --gen-graphs
 
 #
 # ADD NEW RELEASES HERE AS THEY ARE CREATED.

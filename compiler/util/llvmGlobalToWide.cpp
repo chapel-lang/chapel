@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -1201,7 +1201,7 @@ namespace {
         
         if( debugPassOne ) {
           // Wait until we have converted the argument types since
-          // we might rename them... before duming the fn.
+          // we might rename them... before dumping the fn.
           F->dump();
           errs() << "-----------------------------\n";
         }
@@ -1445,7 +1445,12 @@ namespace {
           }
 
           Constant *init = ConstantExpr::getPointerCast(gv, new_type);
-#if HAVE_LLVM_VER >= 35
+#if HAVE_LLVM_VER >= 37
+          GlobalAlias *new_alias = GlobalAlias::create(
+              llvm::PointerType::get(new_type, 0 /*addr space*/ ),
+              ga->getLinkage(),
+              "", init, &M);
+#elif HAVE_LLVM_VER >= 35
           GlobalAlias *new_alias = GlobalAlias::create(new_type,
               0, // address space
               ga->getLinkage(),
@@ -1658,7 +1663,7 @@ namespace {
         F->eraseFromParent();
       }
 
-      // Delete the dummy depedencies preserving function
+      // Delete the dummy dependencies preserving function
       Constant* cf = info->preservingFn;
       if( cf ) {
         Function* f = dyn_cast<Function>(cf);
@@ -1932,7 +1937,7 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
     }
 
     if (st->isLiteral()) {
-      // literal struct types are equivalent by strucutre (vs name)
+      // literal struct types are equivalent by structure (vs name)
       newStruct = StructType::get(context, fields, st->isPacked());
     } else {
       // Named structure types -- set the body.

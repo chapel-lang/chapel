@@ -1,12 +1,12 @@
 proc foo(x, y) {
   if (x.type != y.type) then
     compilerError("foo() called with non-matching types: ", 
-                  typeToString(x.type), " != ", typeToString(y.type));
+                  x.type:string, " != ", y.type:string);
   writeln("In 2-argument foo...");
 }
 
 proc foo(x) {
-  compilerWarning("1-argument version of foo called with type: ", typeToString(x.type));
+  compilerWarning("1-argument version of foo called with type: ", x.type:string);
   writeln("In generic foo!");
 }
 

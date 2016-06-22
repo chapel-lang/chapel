@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1027,18 +1027,27 @@ static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>&
  */
 static bool containsSynchronizationVar(BaseAST* ast) {
   std::vector<SymExpr*> symExprs;
-  collectSymExprs(ast, symExprs);
-  for_vector(SymExpr, symExpr, symExprs) {
 
-    if(isLcnSymbol(symExpr->var)) {
+  collectSymExprs(ast, symExprs);
+
+  for_vector(SymExpr, symExpr, symExprs) {
+    if (isLcnSymbol(symExpr->var)) {
       Type* symType = symExpr->var->type;
       Type* valType = symType->getValType();
-      if (isSyncType(symType) || isAtomicType(symType) ||
-          isSyncType(valType) || isAtomicType(valType)) {
+
+      if (isSyncType(symType)    ||
+          isSingleType(symType)  ||
+          isAtomicType(symType)  ||
+
+          isSyncType(valType)    ||
+          isSingleType(valType)  ||
+          isAtomicType(valType)) {
+
         return true;
       }
     }
   }
+
   return false;
 }
 

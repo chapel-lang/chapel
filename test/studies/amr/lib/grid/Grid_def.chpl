@@ -218,7 +218,7 @@ class Grid {
   // sensible.  Mainly for testing and debugging.
   //-----------------------------------------------------------
   
-  proc writeThis (w: Writer) {
+  proc writeThis (w) {
     writeln("x_low: ", x_low, ",  x_high: ", x_high);
     write("i_low: ", i_low, ",  i_high: ", i_high);
   }

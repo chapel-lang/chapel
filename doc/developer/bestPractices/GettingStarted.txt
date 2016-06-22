@@ -29,7 +29,7 @@ project via the following steps:
   trunk subsumes everything in the release.  $CHPL_HOME/README.devel
   exists to help map between the two views).  
 
-  Start from the top-level README.rst to build the compiler, run it, and
+  Start from the top-level QUICKSTART.rst to build the compiler, run it, and
   execute the resulting binary.  Follow as many of the "What's next?"
   steps as possible in order to explore the contents of the release
   and familiarize yourself with the language, compiler, documentation,
@@ -76,7 +76,7 @@ project via the following steps:
 * Get acquainted with the testing system which is a crucial technology
   for the development team for test-first development, pre-commit
   sanity checks, and nightly correctness and performance regression
-  testing.  See TestSystem.txt in this directory for an introduction.
+  testing.  See TestSystem.rst in this directory for an introduction.
 
-* Get aquainted with the compiler architecture via the compiler
+* Get acquainted with the compiler architecture via the compiler
   overview document in $CHPL_HOME/doc/developer/compilerOverview/

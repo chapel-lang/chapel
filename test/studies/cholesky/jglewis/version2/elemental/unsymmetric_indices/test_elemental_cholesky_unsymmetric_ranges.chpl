@@ -52,7 +52,7 @@ module cholesky_test_unsymmetric_ranges {
     writeln ("Parallel Environment");
     writeln ("   Number of Locales         : ", numLocales );
     if !reproducible_output then {
-      writeln ("   Number of cores per locale: ", Locales.numCores );
+      writeln ("   Number of cores per locale: ", Locales.numPUs() );
       writeln ("   Max tasking parallelism   : ", Locales.maxTaskPar );
     }
 

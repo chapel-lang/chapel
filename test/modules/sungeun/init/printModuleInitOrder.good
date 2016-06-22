@@ -1,13 +1,13 @@
 Initializing Modules:
    ChapelStandard
-    ChapelBase
-     ChapelStringLiterals
     CPtr
     CString
     String
      BaseStringType
      SysCTypes
      StringCasts
+    ChapelBase
+     ChapelStringLiterals
     MemConsistency
     Atomics
     AtomicsCommon
@@ -31,6 +31,7 @@ Initializing Modules:
       Regexp
     LocaleTree
     DefaultAssociative
+     Sort
     ChapelTaskTable
     MemTracking
     ChapelUtil

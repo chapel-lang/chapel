@@ -1,0 +1,11 @@
+expect true for 1*int(64) isPrim=true
+expect true for 1*real(64) isPrim=true
+expect true for 1*string isPrim=true
+expect true for 2*int(64) isPrim=true
+expect true for 2*real(64) isPrim=true
+expect true for 2*string isPrim=true
+expect true for (string,int(64)) isPrim=true
+expect false for 1*R isPrim=false
+expect false for 1*C isPrim=false
+expect false for (R,int(64)) isPrim=false
+expect false for (int(64),R,int(64)) isPrim=false

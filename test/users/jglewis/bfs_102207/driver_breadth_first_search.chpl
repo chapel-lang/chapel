@@ -15,7 +15,7 @@ use BFS;
 config const n_nodes = 100000, max_edges = 10;
 
 config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.currentTime else 7402943902;
+             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 7402943902;
 
 
 

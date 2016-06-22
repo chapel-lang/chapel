@@ -1,9 +1,14 @@
 class C {
   var x: [1..3] int;
   proc foo() ref {
-    writeln(setter);
+    writeln(true);
     return x;
   }
+  proc foo() {
+    writeln(false);
+    return x;
+  }
+
 }
 
 var c = new C();

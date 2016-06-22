@@ -1,4 +1,8 @@
 basic.doc
+
+Usage:
+   use basic.doc;
+
    proc commented()
       This is one way to make your own comment 
 

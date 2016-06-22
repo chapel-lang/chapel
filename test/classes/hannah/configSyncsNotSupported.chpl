@@ -1,1 +1,1 @@
-config var n$ : sync inc;
+config var n$ : sync int;

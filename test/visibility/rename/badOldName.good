@@ -1,0 +1,1 @@
+badOldName.chpl:8: error: Bad identifier in rename, no known 'br' in 'Foo'

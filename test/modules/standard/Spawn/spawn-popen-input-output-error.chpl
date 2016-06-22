@@ -23,8 +23,9 @@ while sub.stderr.readline(line) {
   write("stderr line: ", line);
 }
 
-
 assert(sub.running == false);
 assert(sub.exit_status == 0);
+
+sub.close();
 
 unlink("stdout-stderr");

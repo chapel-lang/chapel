@@ -19,9 +19,16 @@ class myouter {
   }
   proc runit() {
     var nes = new nested();
+
     nes.bar();
+
+    delete nes;
   }
 }
 
 var outervar = new myouter();
+
 outervar.runit();
+
+delete outervar;
+

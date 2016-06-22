@@ -10,14 +10,14 @@ only one type throughout its lifetime.  Storage is allocated for a variable of
 record type when the variable declaration is executed, and the record variable
 is also initialized at that time.
 
-A record declaration creates a record type~\rsec{Record_Declarations}.  A
+A record declaration statement creates a record type~\rsec{Record_Declarations}.  A
 variable of record type contains all and only the fields defined by that type
 (\rsec{Record_Types}).  Value semantics imply that the type of a record variable
 is known at compile time (i.e. it is statically typed).  
 
-Records can be created through an explicit call to a record
-constructor, which allocates storage, initializes
-it and returns it.  
+A record can be created using the \chpl{new} operator, which
+allocates storage, initializes it via a call to a record constructor,
+and returns it.
 A record is also created upon a variable declaration of a record type.
 
 A record type is generic if it contains generic fields.  Generic record types
@@ -29,7 +29,7 @@ are discussed in detail in~\rsec{Generic_Types}.
 \index{declarations!records}
 \index{record@\chpl{record}}
 
-A record is defined with the following syntax:
+A record type is defined with the following syntax:
 \begin{syntax}
 record-declaration-statement:
   simple-record-declaration-statement
@@ -80,11 +80,11 @@ incongruous with the definition of a record.  Moreover, space would have to be
 allocated in this special case, to store the record's run-time type.
 \end{rationale}
 
-As in a class declarations, the body of a record declaration can contain
+As in a class declaration, the body of a record declaration can contain
 variable, iterator and method declarations as well as nested type declarations.
 
 If a record declaration contains a type alias or parameter field, or it contains
-a variable or constant without a specified type and without an initialization
+a variable or constant field without a specified type and without an initialization
 expression, then it declares a generic record type.  Generic record types are
 described in~\rsec{Generic_Types}.
 
@@ -176,22 +176,30 @@ means of an \chpl{outer} reference.
 \index{records!inheritance}
 \index{inheritance!records}
 
-A \emph{derived} record type is a type that inherits from other record types.  For each named
-base record type, inheritance effectively inserts all of its fields and methods
-into the new record type.
+A \emph{derived} record type is a type that inherits from another record
+type. Inheritance effectively inserts
+all of the field in the base record type into the new record type.
 
-Since record types are resolved statically, there is no type hierarchy implied
+\begin{openissue}
+Inheritance of methods in records has not been defined. Inheritance of
+fields in records may change.
+\end{openissue}
+
+\begin{openissue}
+It has not been decided whether or not multiple inheritance for records
+will be allowed.
+\end{openissue}
+
+There is no type hierarchy implied
 by record inheritance.  It is merely a shorthand for including a list of fields
 in the record (or class) type being defined.  Record inheritance can be useful
 for grouping data common to several or class or record types.
 
 \begin{future}
-From the definition of record inheritance, it is apparent that a record of a
-derived type can be cast legally to any of its base record types.  But given
-their semantics, records can also be legally cast to types with which they have
-no inheritance relationship.  Thus, records do not induce a well-defined type
-hierarchy.
+Depending on how inheritance of record methods is defined, record
+inheritance might possibly define a type hierarchy.
 \end{future}
+
 
 \begin{chapelexample}{recordInheritance.chpl}
 \begin{chapel}
@@ -212,10 +220,6 @@ three \chpl{real} fields named \chpl{x}, \chpl{y} and \chpl{radius}.  The
 \chpl{major} and \chpl{minor}.
 \end{chapelexample}
 
-The syntax and semantics for accessing methods (including getter methods and
-hence fields) in a base
-record type is the same as for accessing fields in a base class (\rsec{Accessing_Base_Class_Fields}).
-
 \subsection{Shadowing Base Record Fields}
 \label{Shadowing_Base_Record_Fields}
 \index{records!fields!shadowing}
@@ -228,24 +232,6 @@ directly accessible.
 \begin{openissue}
 A syntax for accessing shadowed fields has not yet been specified.
 \end{openissue}
-
-\subsection{Overriding Base Record Methods}
-\label{Overriding_Base_Record_Methods}
-\index{records!base method!overriding}
-
-\begin{future}
-If a method in a derived record is declared with a signature identical to that
-of a method in a base record, then it is said to override the
-base record's method.  Since records do not support dynamic dispatch, method
-overriding is the same as method shadowing: When referenced via the derived
-record type, the derived type's version of the method is called; when referenced
-via the base record type, the base record type's version of the method is called.
-
-The identical signature requires that the names, types, and order of
-the formal arguments be identical. The return type of the overriding
-method must be the same as the return type of the base record's method,
-or must be a subrecord of the base record method's return type.
-\end{future}
 
 \section{Record Variable Declarations}
 \label{Record_Variable_Declarations}
@@ -354,7 +340,7 @@ supplied, the default initializer cannot be called directly.
 \index{records!destructor}
 \index{destructor!records}
 
-A record author may specify addditional actions to be performed before record storage is
+A record author may specify additional actions to be performed before record storage is
 reclaimed by defining a record destructor.  A record destructor is a method that has the
 same name as the record prefixed by a tilde.  A record destructor takes no arguments
 (aside from the implicit \chpl{this} argument).  If defined, the destructor is called

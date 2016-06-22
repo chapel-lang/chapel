@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -72,10 +72,10 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
 /*
    :arg  unit: The units for the returned value
-   :type unit: TimeUnits
+   :type unit: :type:`TimeUnits`
 
    :returns: The elapsed time since midnight, local time, in the units specified
-   :rtype:   real(64)
+   :rtype:   `real(64)`
  */
 proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64)
   return _convert_microseconds(unit, chpl_now_time());
@@ -98,7 +98,7 @@ proc getCurrentDate() {
 
 /*
    :returns: The current day of the week
-   :rtype:   Day
+   :rtype:   :type:`Day`
  */
 proc getCurrentDayOfWeek() : Day {
   var now = chpl_now_timevalue();
@@ -110,13 +110,24 @@ proc getCurrentDayOfWeek() : Day {
   return wday : Day;
 }
 
-/* Delay a task for t seconds */
-inline proc sleep(t: uint) : void {
-  extern proc chpl_task_sleep(t:uint) : void;
+/*
+   Delay a task for a duration in the units specified
 
-  chpl_task_sleep(t);
+   :arg  t: The duration for the time to sleep
+   :type t: `real`
+
+   :arg  unit: The units for the duration
+   :type unit: :type:`TimeUnits`
+*/
+inline proc sleep(t: real, unit: TimeUnits = TimeUnits.seconds) : void {
+  extern proc chpl_task_sleep(s:c_double) : void;
+
+  if t < 0 {
+    stderr.writeln("Warning: sleep() called with negative time parameter");
+    return;
+  }
+  chpl_task_sleep(_convert_to_seconds(unit, t:real):c_double);
 }
-
 
 /*
    Implements basic stopwatch behavior with a potential resolution of
@@ -177,16 +188,16 @@ record Timer {
 
   /*
      Returns the cumulative elapsed time, in the units specified, between
-     all pairs of calls to :proc:`~!Timer.start` and :proc:`~!Timer.stop`
-     since the timer was created or the last call to :proc:`~!Timer.clear`.
+     all pairs of calls to :proc:`start` and :proc:`stop`
+     since the timer was created or the last call to :proc:`clear`.
      If the timer is running, the elapsed time since the last call to
-     :proc:`~!Timer.start` is added to the return value.
+     :proc:`start` is added to the return value.
 
      :arg  unit: The units for the returned value
-     :type unit: TimeUnits
+     :type unit: :type:`TimeUnits`
 
      :returns: The elapsed time in the units specified
-     :rtype:   real(64)
+     :rtype:   `real(64)`
   */
   proc elapsed(unit: TimeUnits = TimeUnits.seconds) : real {
     if running {
@@ -211,6 +222,22 @@ private inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
   var us2 = chpl_timevalue_microseconds(t2);
 
   return (s1 * 1.0e+6 + us1) - (s2 * 1.0e+6 + us2);
+}
+
+// converts a time specified by unit into seconds
+private proc _convert_to_seconds(unit: TimeUnits, us: real) {
+  select unit {
+    when TimeUnits.microseconds do return us *    1.0e-6;
+    when TimeUnits.milliseconds do return us *    1.0e-3;
+    when TimeUnits.seconds      do return us;
+    when TimeUnits.minutes      do return us *   60.0;
+    when TimeUnits.hours        do return us * 3600.0;
+  }
+
+  halt("internal error in module Time");
+
+  // will never get here, but to avoid warnings:
+  return -1.0;
 }
 
 // converts microseconds to another unit

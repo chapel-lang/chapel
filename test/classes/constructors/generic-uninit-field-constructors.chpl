@@ -4,7 +4,7 @@
 // to the generic fields (see sample compiler error messages in comments)
 // (and callers to pass values to those formals,
 //  via the resolution mechanism - because they do not have defaults?)
-// the actuals DO initialze the like-formal-named fields
+// the actuals DO initialize the like-formal-named fields
 /////////////////////////////////
 
 class A {
@@ -15,7 +15,15 @@ class A {
 }
 
 var a = new A(real);
+
 writeln(a);
+
+delete a;
+
+
+
+
+
 
 class B {
   param p;
@@ -24,7 +32,14 @@ class B {
 }
 
 var b = new B("hello-user");
-writeln(b);
+
+writeln("{p = ", b.p, "}");
+
+delete b;
+
+
+
+
 
 class C {
   const cst;
@@ -33,7 +48,16 @@ class C {
 }
 
 var c = new C(1.2);
+
 writeln(c);
+
+delete c;
+
+
+
+
+
+
 
 class D {
   var vbl;
@@ -42,7 +66,14 @@ class D {
 }
 
 var d = new D(7);
+
 writeln(d);
+
+delete d;
+
+
+
+
 
 /////////////////////////////////
 // default constructors,
@@ -56,25 +87,56 @@ class Ad {
 }
 
 var ad = new Ad(real);
+
 writeln(ad);
+
+delete ad;
+
+
+
+
+
 
 class Bd {
   param p;
 }
 
 var bd = new Bd("hello-default");
-writeln(bd);
+
+writeln("{p = ", bd.p, "}");
+
+delete bd;
+
+
+
+
+
+
 
 class Cd {
   const cst;
 }
 
 var cd = new Cd(1.33);
+
 writeln(cd);
+
+delete cd;
+
+
+
+
+
+
+
+
 
 class Dd {
   var vbl;
 }
 
 var dd = new Dd(55);
+
 writeln(dd);
+
+delete dd;

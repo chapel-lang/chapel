@@ -8,4 +8,4 @@
 var u : uint(32) = 0;
 var v : uint(64) = 1;
 
-writeln(typeToString((u+v).type));
+writeln((u+v).type:string);

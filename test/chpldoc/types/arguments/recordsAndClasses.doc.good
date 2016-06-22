@@ -1,4 +1,8 @@
 recordsAndClasses.doc
+
+Usage:
+   use recordsAndClasses.doc;
+
    Record: thingy
    proc takesAThingy(val: thingy)
       This method takes a record as its argument 

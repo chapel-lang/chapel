@@ -117,7 +117,7 @@ class MyBlockCyclic : BaseDist {
         locDist(locid) = new LocMyBlockCyclic(rank, idxType, locid, this);
 
     if tasksPerLocale == 0 then
-      this.tasksPerLocale = 1;   // TODO: here.numCores;
+      this.tasksPerLocale = 1;   // TODO: here.numPUs() or here.maxTaskPar?
     else
       this.tasksPerLocale = tasksPerLocale;
 
@@ -242,7 +242,7 @@ proc MyBlockCyclic.getStarts(inds, locid) {
 //
 proc MyBlockCyclic.idxToLocaleInd(ind: idxType) where rank == 1 {
   const ind0 = ind - lowIdx(1);
-  //  compilerError(typeToString((ind0/blocksize(1)%targetLocDom.dim(1).type));
+  //  compilerError((ind0/blocksize(1)%targetLocDom.dim(1).type):string);
   return (ind0 / blocksize(1)) % targetLocDom.dim(1).length;
 }
 
@@ -353,7 +353,7 @@ iter MyBlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
 //     writeln(dist.blocksize(1));
 
 //begin new code
-    var tasks=here.numCores;
+    var tasks=here.numPUs();
     coforall core in 0..tasks-1 do
     for i in core..blocksize-1 by tasks {
       var ind=locDom.myStarts.low+i;
@@ -682,7 +682,7 @@ proc MyBlockCyclicArr.dsiAccess(i: idxType) var where rank == 1 {
       return myLocArr.this(i);
   }
   //  var loci = dom.dist.idxToLocaleInd(i);
-  //  compilerError(typeToString(loci.type));
+  //  compilerError(loci.type:string);
   //  var desc = locArr(loci);
   //  return locArr(loci)(i);
   return locArr(dom.dist.idxToLocaleInd(i))(i);

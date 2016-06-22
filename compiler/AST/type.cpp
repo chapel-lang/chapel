@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -79,6 +79,19 @@ Type* Type::typeInfo() {
   return this;
 }
 
+// Are actuals of this type passed with const intent by default?
+bool Type::isDefaultIntentConst() const {
+  bool retval = true;
+
+  if (symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) == true ||
+      isReferenceType(this)                       == true ||
+      isSyncType(this)                            == true ||
+      isSingleType(this)                          == true ||
+      isRecordWrappedType(this)                   == true)
+    retval = false;
+
+  return retval;
+}
 
 GenRet Type::codegen() {
   if (this == dtUnknown) {
@@ -849,7 +862,8 @@ void AggregateType::codegenDef() {
           if (this->fields.length != 0)
             fprintf(outfile, "union {\n");
         } else if (this->fields.length == 0) {
-          fprintf(outfile, "int dummyFieldToAvoidWarning;\n");
+          // TODO: remove and enforce at least 1 element in a union
+          fprintf(outfile, "uint8_t dummyFieldToAvoidWarning;\n");
         }
 
         if (this->fields.length != 0) {
@@ -1520,6 +1534,9 @@ void initPrimitiveTypes() {
   dtCVoidPtr   = createPrimitiveType("c_void_ptr", "c_void_ptr" );
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gOpaque;
+  dtCFnPtr = createPrimitiveType("c_fn_ptr", "c_fn_ptr");
+  dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
+  dtCFnPtr->defaultValue = gOpaque;
   CREATE_DEFAULT_SYMBOL(dtCVoidPtr, gCVoidPtr, "_nullVoidPtr");
   gCVoidPtr->cname = "NULL";
   gCVoidPtr->addFlag(FLAG_EXTERN);
@@ -1552,12 +1569,6 @@ void initPrimitiveTypes() {
 
   CREATE_DEFAULT_SYMBOL (dtSingleVarAuxFields, gSingleVarAuxFields, "_nullSingleVarAuxFields");
   gSingleVarAuxFields->cname = "NULL";
-
-  dtTaskList = createPrimitiveType( "_task_list", "chpl_task_list_p");
-  dtTaskList->symbol->addFlag(FLAG_EXTERN);
-
-  CREATE_DEFAULT_SYMBOL (dtTaskList, gTaskList, "_nullTaskList");
-  gTaskList->cname = "NULL";
 
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
@@ -1660,7 +1671,7 @@ DefExpr* defineObjectClass() {
                                NULL);
 
   retval->sym->addFlag(FLAG_OBJECT_CLASS);
-  retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResovedTree().
+  retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL); // Prevents removal in pruneResolvedTree().
   retval->sym->addFlag(FLAG_NO_OBJECT);
 
   return retval;
@@ -1672,8 +1683,8 @@ void initChplProgram(DefExpr* objectDef) {
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
 
-  CallExpr* base = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelBase"));
-  CallExpr* std  = new CallExpr(PRIM_USE, new UnresolvedSymExpr("ChapelStandard"));
+  UseStmt* base = new UseStmt(new UnresolvedSymExpr("ChapelBase"));
+  UseStmt* std  = new UseStmt(new UnresolvedSymExpr("ChapelStandard"));
 
   theProgram->block->insertAtTail(base);
 
@@ -1731,6 +1742,7 @@ bool is_void_type(Type* t) {
 
 bool is_bool_type(Type* t) {
   return
+    t == dtBools[BOOL_SIZE_1] ||
     t == dtBools[BOOL_SIZE_SYS] ||
     t == dtBools[BOOL_SIZE_8] ||
     t == dtBools[BOOL_SIZE_16] ||
@@ -1794,7 +1806,8 @@ bool is_enum_type(Type *t) {
 }
 
 int get_width(Type *t) {
-  if (t == dtBools[BOOL_SIZE_SYS]) {
+  if (t == dtBools[BOOL_SIZE_1] ||
+      t == dtBools[BOOL_SIZE_SYS]) {
     return 1;
     // BLC: This is a lie, but one I'm hoping we can get away with
     // based on how this function is used
@@ -1846,7 +1859,7 @@ bool isUnion(Type* t) {
   return false;
 }
 
-bool isReferenceType(Type* t) {
+bool isReferenceType(const Type* t) {
   return t->symbol->hasFlag(FLAG_REF);
 }
 
@@ -1860,7 +1873,7 @@ bool isRefCountedType(Type* t) {
   return getRecordWrappedFlags(t->symbol).any();
 }
 
-bool isRecordWrappedType(Type* t) {
+bool isRecordWrappedType(const Type* t) {
   return getRecordWrappedFlags(t->symbol).any();
 }
 
@@ -1904,11 +1917,15 @@ static bool isDerivedType(Type* type, Flag flag)
   return retval;
 }
 
-bool isSyncType(Type* t) {
-  return getSyncFlags(t->symbol).any();
+bool isSyncType(const Type* t) {
+  return t->symbol->hasFlag(FLAG_SYNC);
 }
 
-bool isAtomicType(Type* t) {
+bool isSingleType(const Type* t) {
+  return t->symbol->hasFlag(FLAG_SINGLE);
+}
+
+bool isAtomicType(const Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
 }
 
@@ -1975,6 +1992,69 @@ bool isString(Type* type) {
 
   if (AggregateType* aggr = toAggregateType(type))
     retval = strcmp(aggr->symbol->name, "string") == 0;
+
+  return retval;
+}
+
+//
+// NOAKES 2016/02/29
+//
+// To support the merge of the string-as-rec branch we defined a
+// function, isString(), which is only true of the record that was
+// defined in the new implementation of String.  This predicate was
+// applied in cullOverReferences and callDestructors to improve
+// memory management for that particular record type.
+//
+// We seek to apply those routines to a wider set of record types but
+// are not ready to apply them to range, tuple, and the reference-counted
+// records.
+//
+// This shorter-term predicate, which has a slightly inelegant name, allows
+// most record-like types to use the new business logic.
+//
+// In the longer term we plan to further broaden the cases that the new
+// logic can handle and reduce the exceptions that are filtered out here.
+//
+
+bool isUserDefinedRecord(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* aggr = toAggregateType(type)) {
+    Symbol*     sym  = aggr->symbol;
+    const char* name = sym->name;
+
+    // Must be a record type
+    if (aggr->aggregateTag != AGGREGATE_RECORD) {
+
+    // Not a tuple
+    } else if (sym->hasFlag(FLAG_TUPLE)              == true) {
+
+    // Not a range
+    } else if (sym->hasFlag(FLAG_RANGE)              == true) {
+
+    // Not a distribution
+    } else if (sym->hasFlag(FLAG_DISTRIBUTION)       == true) {
+
+    // Not a domain
+    } else if (sym->hasFlag(FLAG_DOMAIN)             == true) {
+
+    // Not an array or an array alias
+    } else if (sym->hasFlag(FLAG_ARRAY)              == true ||
+               sym->hasFlag(FLAG_ARRAY_ALIAS)        == true) {
+
+    // Not an atomic type
+    } else if (sym->hasFlag(FLAG_ATOMIC_TYPE)        == true) {
+
+    // Not a RUNTIME_type
+    } else if (sym->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == true) {
+
+    // Not an iterator
+    } else if (strncmp(name, "_ir_", 4)              ==    0) {
+
+    } else {
+      retval = true;
+    }
+  }
 
   return retval;
 }
@@ -2134,7 +2214,6 @@ bool needsCapture(Type* t) {
       isUnion(t) ||
       t == dtTaskID || // false?
       t == dtFile ||
-      t == dtTaskList ||
       // TODO: Move these down to the "no" section.
       t == dtNil ||
       t == dtOpaque ||
@@ -2142,8 +2221,9 @@ bool needsCapture(Type* t) {
     return true;
   } else {
     // Ensure we have covered all types.
-    INT_ASSERT(isRecordWrappedType(t) ||  // domain, array, or distribution
-               isSyncType(t) ||
+    INT_ASSERT(isRecordWrappedType(t) ||
+               isSyncType(t)          ||
+               isSingleType(t)        ||
                isAtomicType(t));
     return false;
   }
@@ -2153,12 +2233,12 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t)
 {
   for( int i = 0; i < INT_SIZE_NUM; i++ ) {
     if( t == dtInt[i] ) {
-      return new_IntSymbol(s->immediate->int_value(), (IF1_int_type) i);
+      return new_IntSymbol(s->immediate->to_int(), (IF1_int_type) i);
     }
   }
   for( int i = 0; i < INT_SIZE_NUM; i++ ) {
     if( t == dtUInt[i] ) {
-      return new_UIntSymbol(s->immediate->uint_value(), (IF1_int_type) i);
+      return new_UIntSymbol(s->immediate->to_uint(), (IF1_int_type) i);
     }
   }
   return NULL;

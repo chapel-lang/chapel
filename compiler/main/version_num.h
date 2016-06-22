@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -21,8 +21,8 @@
 #define _version_num_H_
 
 #define MAJOR_VERSION 1
-#define MINOR_VERSION "12"
-#define UPDATE_VERSION "0"
+#define MINOR_VERSION "13"
+#define UPDATE_VERSION "1"
 
 static const char* BUILD_VERSION =
 #include "BUILD_VERSION"

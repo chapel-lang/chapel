@@ -1,13 +1,21 @@
-use BlockDist;
+use BlockDist, Barrier;
 
 config const n = 10;
 
 config const epsilon = 0.01;
 
-config const printArrays = false;
+config const printLocaleData = false,
+             printArrays = false;
 
 //
-// global domains -- describing whole problem; use to boostrap
+// global domains -- describing whole problem; I'm using these to boostrap
+// things like the computation of how to arrange the locales, who owns
+// what, etc.  In a truly SPMD-style computation, you'd compute all that
+// from nothing based on your locale ID and numLocales.  Since the Block
+// distribution already encodes all this stuff, I took the shortcut of
+// creating a block-distributed domain and then querying all of this
+// information out of its guts.  A little lame, but you can only write
+// such logic so many times in your life before it gets really old.
 //
 const LocDom = {1..n  , 1..n  },
          Dom = LocDom dmapped Block(LocDom),
@@ -16,27 +24,38 @@ const LocDom = {1..n  , 1..n  },
 //
 // query out the domain and array of the locales we're targeting
 //
+// TODO: Even though this is a bit lame (as noted in the comment above)
+// it could be even less lame if we relied on the targetLocales() query
+// that we support on distributed arrays, but for some reason not on
+// distributed domains.  BenH and I are trying to remember whether there
+// was a good reason we couldn't support the queries on domains as well.
+//
 const LocaleGridDom = Dom._value.dist.targetLocDom,
       LocaleGrid = Dom._value.dist.targetLocales;
 
-writeln("Our locale grid is as follows:\n", LocaleGrid, "\n");
+if printLocaleData {
+  writeln("Our locale grid is as follows:\n", LocaleGrid, "\n");
 
 
-//
-// print out our locale's ID and virtual coordinates
-//
-coforall (lr,lc) in LocaleGridDom {
-  on LocaleGrid[lr,lc] {
-    writeln("Hello from locale #", here.id, " at ", (lr,lc));
+  //
+  // print out our locale's ID and virtual coordinates
+  //
+  for (lr,lc) in LocaleGridDom {
+    on LocaleGrid[lr,lc] {
+      writeln("Hello from locale #", here.id, " at ", (lr,lc));
+    }
   }
-}
 
-//
-// query the sub-block of the whole problem space that each locale owns
-//
-for (lr,lc) in LocaleGridDom {
-  on LocaleGrid[lr,lc] {
-    writeln("locale #", here.id, " owns ", Dom._value.locDoms[lr,lc].myBlock);
+  //
+  // query the sub-block of the whole problem space that each locale owns
+  //
+  // TODO: See the TODO above about querying the targetLocales() from
+  // Dom.  By that same argument, we could use localSubdomain() here.
+  //
+  for (lr,lc) in LocaleGridDom {
+    on LocaleGrid[lr,lc] {
+      writeln("locale #", here.id, " owns ", Dom._value.locDoms[lr,lc].myBlock);
+    }
   }
 }
 
@@ -64,12 +83,17 @@ class DomArr {
 //
 var LocalDomArrs: [LocaleGridDom] DomArr;
 
-var numIters = 0;
+var numIters: atomic int;
+
+
+var b = new Barrier(LocaleGridDom.size);
 
 coforall (lr,lc) in LocaleGridDom {
   on LocaleGrid[lr,lc] {
     //
     // What I own; and extended to include overlap with neighbors ("fluff")
+    //
+    // TODO: See the TODO above about localSubDomain()
     //
     const MyLocDom = Dom._value.locDoms[lr,lc].myBlock;
     const WithFluff = MyLocDom.expand(1);
@@ -95,7 +119,7 @@ coforall (lr,lc) in LocaleGridDom {
     // describes what I own myself)
     //
     const PanelDom = {-1..1, -1..1};
-    const Panels: [PanelDom] domain(2);
+    var Panels: [PanelDom] domain(2);
 
     //
     // use 'exterior' to do the hard work of defining these 3x3 domains
@@ -105,13 +129,15 @@ coforall (lr,lc) in LocaleGridDom {
       Panels[ij] = MyLocDom.exterior(ij);
     }
 
-    //
-    // Debug print what each locale owns
-    //
-    while (takeTurns$.readXX() != here.id) { }
-    writeln("locale #", here.id, " panels:\n");
-    writeln(Panels);
-    takeTurns$.writeXF((here.id + 1)%numLocales);
+    if printLocaleData {
+      //
+      // Debug print what each locale owns
+      //
+      while (takeTurns$.readXX() != here.id) { }
+      writeln("\nlocale #", here.id, " panels:");
+      writeln(Panels);
+      takeTurns$.writeXF((here.id + 1)%numLocales);
+    }
 
 
     /*
@@ -145,13 +171,21 @@ coforall (lr,lc) in LocaleGridDom {
     if WithFluff.member(p4) then
       A[p4] =  -1.0;
 
+    //
+    // Ensure we don't start computing until everybody's done initializing
+    //
+    b.barrier();
 
-    //
-    // Debug print to make sure everything got set up right
-    //
-    while (takeTurns$.readXX() != here.id) { }
-    writeln("locale #", here.id, "'s slab:\n", A[MyLocDom]);
-    takeTurns$.writeXF((here.id + 1)%numLocales);
+    if printArrays {
+      //
+      // Debug print to make sure everything got set up right
+      //
+      while (takeTurns$.readXX() != here.id) { }
+      if here.id == 0 then
+        writeln("Initial A:");
+      writeln("locale #", here.id, "'s slab:\n", A[MyLocDom]);
+      takeTurns$.writeXF((here.id + 1)%numLocales);
+    }
 
     //
     // main loop
@@ -182,14 +216,11 @@ coforall (lr,lc) in LocaleGridDom {
           // TODO: If we took out all the coordinated debug printing,
           // we would need to do some sort of synchronization to ensure
           // that our neighbors were ready for us to read their
-          // values.
-          //
-          // This is where we want a team describing the coforall's
-          // members and a barrier on the team.  Feature request.
+          // values.  We could use the Barrier module/type to do so.
           //
 
           //
-          // I think this conditional is unnecessary -- should remove
+          // TODO: I think this conditional is unnecessary -- should remove
           //
           if (Dom[Panels[ij]].numIndices > 0) {
             // Update our fluff by assigning from our neighbor's array
@@ -227,29 +258,17 @@ coforall (lr,lc) in LocaleGridDom {
       takeTurns$.writeXF((here.id + 1)%numLocales);
       */
 
-      // Need to wait until everyone has read each others' A's until we
-      // can swap in the following loop.
-
       //
-      // Using this as sort of a poor man's barrier/fence to make sure
-      // that we don't swap our A's and B's while someone is still
-      // reading our A's to update their fluff.  (Unlikely to occur in
-      // a truly concurrent system; but when oversubscribing, someone
-      // could get way ahead if poorly scheduled).
+      // Barrier to make sure we don't swap our A's and B's while
+      // someone is still reading our A's to update their fluff.
       //
-      // TODO: We could do something smarter/better here -- I was just
-      // trying to make it correct.
-      //
-      while (takeTurns$.readXX() != here.id) { }
-      takeTurns$.writeXF((here.id + 1)%numLocales);
-      while (takeTurns$.readXX() != here.id) { }
-      takeTurns$.writeXF((here.id + 1)%numLocales);
+      b.barrier();
 
       // TODO: could parallelize if we made the reduction safe
       var locDelta = 0.0;
       for ij in MyLocDom {
         // local reduction
-        const diff = fabs(B[ij] - A[ij]);
+        const diff = abs(B[ij] - A[ij]);
 
         if (diff > locDelta) then
           locDelta = diff;
@@ -266,6 +285,9 @@ coforall (lr,lc) in LocaleGridDom {
       // a barrier between the two idioms (e.g., potentially using the
       // poor man's barrier from above?).  But I think what we have here
       // is also correct.
+      //
+      // TODO: Should consider using an atomic with CAS rather than a
+      // sync here...
       //
       while (takeTurns$.readXX() != here.id) { }
       const prevDelta = delta$;
@@ -286,7 +308,7 @@ coforall (lr,lc) in LocaleGridDom {
       // when !done).  And increment the # of iterations
       if here.id == numLocales-1 {
         delta$.writeXF(0);
-        numIters += 1;
+        numIters.add(1);
       }
 
     } while (!done);
@@ -317,10 +339,10 @@ if printArrays {
   //
   // print out the global result array
   //
-  writeln("Result is: ", Result);
+  writeln("Final A:\n", Result);
 }
 
 //
 // use as checksum
 //
-writeln("# iterations: ", numIters);
+writeln("# iterations: ", numIters.read());

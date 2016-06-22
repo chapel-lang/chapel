@@ -1,1 +1,1 @@
-test_module_use4.chpl:12: error: Illegal use of non-module M1
+test_module_use4.chpl:12: error: 'use' of non-module/enum symbol M1

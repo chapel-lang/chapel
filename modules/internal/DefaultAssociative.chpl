@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,7 +25,7 @@ module DefaultAssociative {
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
   
-  use Sort /* only QuickSort */;
+  use Sort; /* only sort */;
   
   // TODO: make the domain parameterized by this?
   type chpl_table_index_type = int;
@@ -41,11 +41,18 @@ module DefaultAssociative {
     var idx: idxType;
   }
   
-  proc chpl__primes return (23, 53, 97, 193, 389, 769, 1543,
-                           3079, 6151, 12289, 24593, 49157, 98317, 196613,
-                           393241, 786433, 1572869, 3145739, 6291469, 12582917, 25165843,
-                           50331653, 100663319, 201326611, 402653189, 805306457, 1610612741);
-  
+  proc chpl__primes return
+  (23, 53, 89, 191, 383, 761, 1531, 3067, 6143, 12281, 24571, 49139, 98299,
+   196597, 393209, 786431, 1572853, 3145721, 6291449, 12582893, 25165813,
+   50331599, 100663291, 201326557, 402653171, 805306357, 1610612711, 3221225461,
+   6442450939, 12884901877, 25769803751, 51539607551, 103079215087,
+   206158430183, 412316860387, 824633720831, 1649267441651, 3298534883309,
+   6597069766631, 13194139533299, 26388279066623, 52776558133177,
+   105553116266489, 211106232532969, 422212465065953, 844424930131963,
+   1688849860263901, 3377699720527861, 6755399441055731, 13510798882111483,
+   27021597764222939, 54043195528445869, 108086391056891903, 216172782113783773,
+   432345564227567561, 864691128455135207);
+
   class DefaultAssociativeDom: BaseAssociativeDom {
     type idxType;
     param parSafe: bool;
@@ -83,7 +90,7 @@ module DefaultAssociative {
                                dist: DefaultDist) {
       if !chpl__validDefaultAssocDomIdxType(idxType) then
         compilerError("Default Associative domains with idxType=",
-                      typeToString(idxType), " are not allowed", 2);
+                      idxType:string, " are not allowed", 2);
       this.dist = dist;
     }
   
@@ -107,8 +114,8 @@ module DefaultAssociative {
       }
       f <~> new ioLiteral("}");
     }
-    proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
   
     //
     // Standard user domain interface
@@ -339,11 +346,11 @@ module DefaultAssociative {
       if entries < numKeys {
 
         //Find the first suitable prime
-        var threshhold = (numKeys + 1) * 2;
+        var threshold = (numKeys + 1) * 2;
         var prime = 0;
         var primeLoc = 0;
         for i in 1..chpl__primes.size {
-            if chpl__primes(i) > threshhold {
+            if chpl__primes(i) > threshold {
               prime = chpl__primes(i);
               primeLoc = i;
               break;
@@ -355,7 +362,7 @@ module DefaultAssociative {
           halt("Requested capacity (", numKeys, ") exceeds maximum size");
         }
 
-        //Changing underlying strucure, time for locking
+        //Changing underlying structure, time for locking
         if parSafe then lockTable();
         if entries > 0 {
           // Slow path: back up required
@@ -400,7 +407,7 @@ module DefaultAssociative {
       for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do
         tableCopy(tmp) = table[slot].idx;
   
-      QuickSort(tableCopy);
+      sort(tableCopy);
   
       for ind in tableCopy do
         yield ind;
@@ -484,10 +491,16 @@ module DefaultAssociative {
     //
     // NOTE: Calls to this routine assume that the tableLock has been acquired.
     //
+    // NOTE: A copy of this routine is tested in
+    //    test/associative/ferguson/check-look-for-slots.chpl
+    // So, when updating this routine, either refactor so the test
+    // can use the below code - or update the test in a corresponding manner.
     iter _lookForSlots(idx: idxType, numSlots = tableSize) {
-      const baseSlot = chpl__defaultHashWrapper(idx);
+      const baseSlot = chpl__defaultHashWrapper(idx):uint;
       for probe in 0..numSlots/2 {
-        yield (baseSlot + probe**2)%numSlots;
+        var uprobe = probe:uint;
+        var n = numSlots:uint;
+        yield ((baseSlot + uprobe**2)%n):int;
       }
     }
   
@@ -521,6 +534,7 @@ module DefaultAssociative {
       dsiAccess(idx, haveLock) = initval;
     }
 
+    // ref version
     proc dsiAccess(idx : idxType, haveLock = false) ref {
       const shouldLock = dom.parSafe && !haveLock;
       if shouldLock then dom.lockTable();
@@ -528,8 +542,7 @@ module DefaultAssociative {
       if found {
         if shouldLock then dom.unlockTable();
         return data(slotNum);
-      }
-      else if setter && slotNum != -1 { // do an insert using the slot we found
+      } else if slotNum != -1 { // do an insert using the slot we found
         if dom._arrs.length != 1 {
           halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
           return data(0);
@@ -538,6 +551,35 @@ module DefaultAssociative {
           if shouldLock then dom.unlockTable();
           return data(newSlot);
         }
+      } else {
+        halt("array index out of bounds: ", idx);
+        return data(0);
+      }
+    }
+
+    // value version for POD types
+    proc dsiAccess(idx : idxType, haveLock = false)
+    where !shouldReturnRvalueByConstRef(eltType) {
+      const shouldLock = dom.parSafe && !haveLock;
+      if shouldLock then dom.lockTable();
+      var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
+      if found {
+        if shouldLock then dom.unlockTable();
+        return data(slotNum);
+      } else {
+        halt("array index out of bounds: ", idx);
+        return data(0);
+      }
+    }
+    // const ref version for strings, records with copy ctor
+    proc dsiAccess(idx : idxType, haveLock = false) const ref
+    where shouldReturnRvalueByConstRef(eltType) {
+      const shouldLock = dom.parSafe && !haveLock;
+      if shouldLock then dom.lockTable();
+      var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
+      if found {
+        if shouldLock then dom.unlockTable();
+        return data(slotNum);
       } else {
         halt("array index out of bounds: ", idx);
         return data(0);
@@ -621,8 +663,8 @@ module DefaultAssociative {
         f <~> val;
       }
     }
-    proc dsiSerialWrite(f: Writer) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f: Reader) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
   
   
     //
@@ -634,7 +676,7 @@ module DefaultAssociative {
       for (copy, slot) in zip(tableCopy.domain, dom._fullSlots()) do
         tableCopy(copy) = data(slot);
   
-      QuickSort(tableCopy);
+      sort(tableCopy);
   
       for elem in tableCopy do
         yield elem;

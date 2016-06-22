@@ -12,7 +12,9 @@ record R2 {
 
 for param i in 1..p {
   var A1: [1..2] R1(i);
-  writeln(A1);
+  writeln("(p = ", A1[1].p, ", x = ", A1[1].x,
+          ") (p = ", A1[2].p, ", x = ", A1[2].x, ")");
   var A2: [1..2] R2(i);
-  writeln(A2);
+  writeln("(p = ", A2[1].p, ", x = ", A2[1].x,
+          ") (p = ", A2[2].p, ", x = ", A2[2].x, ")");
 }

@@ -17,6 +17,8 @@ A[3*n/4+1, 3*n/4+1] =  1.0;
 A[  n/4+1, 3*n/4+1] = -1.0;
 A[3*n/4+1,   n/4+1] = -1.0;
 
+
+
 if printArrays then
   writeln("Initial A:\n", A[Dom], "\n");
 
@@ -30,11 +32,13 @@ do {
            + 0.125  * (A[i+1,j  ] + A[i-1,j  ] + A[i  ,j-1] + A[i  ,j+1])
            + 0.0625 * (A[i-1,j-1] + A[i-1,j+1] + A[i+1,j-1] + A[i+1,j+1]);
 
-  const delta = max reduce fabs(B - A);
+  const delta = max reduce abs(B - A);
 
   B <=> A;
 
- } while (delta > epsilon);
+
+
+} while (delta > epsilon);
 
 if printArrays then
   writeln("Final A:\n", A[Dom]);

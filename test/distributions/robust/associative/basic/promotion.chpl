@@ -45,7 +45,7 @@ proc testPromote(AAssoc) {
       break;
     }
   }
-  writeln("Zippered promotion (", typeToString(idxType), ") : ",
+  writeln("Zippered promotion (", idxType:string, ") : ",
           if success then "SUCCESS" else "FAILED");
 }
 

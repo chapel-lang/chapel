@@ -1,0 +1,3 @@
+# This looks like a PGI compiler bug
+CHPL_TARGET_COMPILER == pgi
+CHPL_TARGET_COMPILER == cray-prgenv-pgi

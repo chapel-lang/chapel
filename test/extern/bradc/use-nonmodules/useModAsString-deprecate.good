@@ -1,2 +1,0 @@
-useModAsString-deprecate.chpl:6: warning: 'use' no longer accepts string literals == use 'require' instead
-In useModAsString.chpl's foo

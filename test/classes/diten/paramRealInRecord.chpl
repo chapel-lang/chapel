@@ -4,4 +4,4 @@ record R {
 }
 
 var a: R;
-writeln(a);
+writeln("(n = ", a.n, ", a = ", a.a, ")");

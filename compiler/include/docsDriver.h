@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,6 +31,7 @@ extern char fDocsFolder[256];
 extern bool fDocsTextOnly;
 extern char fDocsSphinxDir[256];
 extern bool fDocsHTML;
+extern bool fDocsProcessUsedModules;
 
 // TODO: Whether or not to support this flag is an open discussion. Currently,
 //       it is not supported, so the flag is always true.

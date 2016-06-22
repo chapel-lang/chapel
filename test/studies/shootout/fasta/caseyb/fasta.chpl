@@ -1,5 +1,5 @@
 //Fasta Shootout
-//http://shootout.alioth.debian.org
+//http://benchmarksgame.alioth.debian.org
 //Casey Battaglino
 config const LINE_LENGTH = 60;
 config const LOOKUP_SIZE = 4*1024;
@@ -132,4 +132,8 @@ proc main() {
   repeatMake(">ONE Homo sapiens alu\n", ALU, n * 2);
   randomMake(">TWO IUB ambiguity codes\n", IUB, n * 3);
   randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, n * 5);
+
+  delete random;
+  for h in HomoSapiens do delete h;
+  for i in IUB         do delete i;
 }

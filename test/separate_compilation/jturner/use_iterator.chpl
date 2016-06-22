@@ -1,4 +1,4 @@
-iter dothis(n:int) : int;
+extern iter dothis(n:int) : int;
 
 proc main()
 {

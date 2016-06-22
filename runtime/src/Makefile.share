@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -17,11 +17,13 @@
 
 COMMON_LAUNCHER_SRCS = \
 	arg.c \
+	chpl-linefile-support.c \
+	chpl-string-support.c \
 	chplcast.c \
+	chpltypes.c \
 	config.c \
 	error.c \
-	chpl-string-support.c \
-	chpltypes.c \
+
 
 COMMON_NOGEN_SRCS = \
 	$(COMMON_LAUNCHER_SRCS) \
@@ -34,13 +36,12 @@ COMMON_NOGEN_SRCS = \
 	chpl-file-utils.c \
 	chplgmp.c \
 	chplio.c \
-	chpl-linefile-support.c \
 	chpl-mem.c \
 	chpl-mem-desc.c \
 	chpl-mem-hook.c \
 	chplmemtrack.c \
 	chpl-privatization.c \
-        chpl-string.c \
+	chpl-string.c \
 	chplsys.c \
 	chpl-tasks.c \
 	chpl-tasks-callbacks.c \

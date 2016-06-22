@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -122,7 +122,7 @@ std::vector<DefExpr*> IpeReaderFile::readModules(const char* path, ModTag modTyp
   return retval;
 }
 
-// Return true if every expression is a module defintion
+// Return true if every expression is a module definition
 bool IpeReaderFile::onlyModuleDefs(std::vector<Expr*> exprList)
 {
   bool retval = true;

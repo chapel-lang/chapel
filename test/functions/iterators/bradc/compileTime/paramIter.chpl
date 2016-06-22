@@ -7,5 +7,5 @@ proc intSizes() param {
   
 
 for type t in intSizes() {
-  writeln("t is: ", typeToString(int(t)));
+  writeln("t is: ", int(t):string);
 }

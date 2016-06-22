@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -28,7 +28,7 @@
 //   LocBlockArr : local array class (per-locale instances)
 //
 // When a distribution, domain, or array class instance is created, a
-// correponding local class instance is created on each locale that is
+// corresponding local class instance is created on each locale that is
 // mapped to by the distribution.
 //
 
@@ -41,6 +41,7 @@
 use DSIUtil;
 use ChapelUtil;
 use CommDiagnostics;
+use SparseBlockDist;
 
 //
 // These flags are used to output debug information and run extra
@@ -231,10 +232,11 @@ and arrays in the same way that the like-named config constants
 control data parallelism for ranges and default-distributed domains
 and arrays.
 
-The ``rank`` and ``idxType`` arguments are inferred from the
-``boundingBox`` argument unless explicitly set.
-They must match the rank and index type of the domains
-"dmapped" using that Block instance.
+The ``rank`` and ``idxType`` arguments are inferred from the ``boundingBox``
+argument unless explicitly set.  They must match the rank and index type of the
+domains "dmapped" using that Block instance. If the ``boundingBox`` argument is
+a stridable domain, the stride information will be ignored and the
+``boundingBox`` will only use the lo..hi bounds.
 
 
 **Data-Parallel Iteration**
@@ -382,11 +384,11 @@ proc Block.Block(boundingBox: domain,
   if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
 
-  this.boundingBox = boundingBox;
+  this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
 
-  const boundingBoxDims = boundingBox.dims();
+  const boundingBoxDims = this.boundingBox.dims();
   const targetLocDomDims = targetLocDom.dims();
   coforall locid in targetLocDom do
     on this.targetLocales(locid) do
@@ -483,10 +485,14 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   return dom;
 }
 
+proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
+  return new SparseBlockDom(rank=rank, idxType=idxType, dist=this, parentDom=dom, whole=dom._value.whole);
+}
+
 //
 // output distribution
 //
-proc Block.writeThis(x:Writer) {
+proc Block.writeThis(x) {
   x.writeln("Block");
   x.writeln("-------");
   x.writeln("distributes: ", boundingBox);
@@ -501,7 +507,7 @@ proc Block.dsiIndexToLocale(ind: idxType) where rank == 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
-proc Block.dsiIndexToLocale(ind: rank*idxType) where rank > 1 {
+proc Block.dsiIndexToLocale(ind: rank*idxType) {
   return targetLocales(targetLocsIdx(ind));
 }
 
@@ -668,6 +674,7 @@ proc LocBlock.LocBlock(param rank: int,
   }
 }
 
+
 proc BlockDom.dsiMyDist() return dist;
 
 proc BlockDom.dsiDisplayRepresentation() {
@@ -724,7 +731,7 @@ proc Block.dsiCreateRankChangeDist(param newRank: int, args) {
 
   for param i in 1..rank {
     if isCollapsedDimension(args(i)) {
-      // set indicies that are out of bounds to the bounding box low or high.
+      // set indices that are out of bounds to the bounding box low or high.
       collapsedBbox(i) = if args(i) < boundingBox.dim(i).low then boundingBox.dim(i).low else if args(i) > boundingBox.dim(i).high then boundingBox.dim(i).high else args(i);
       collapsedLocs(i) = collapsedLocInd(i);
     } else {
@@ -810,7 +817,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).low:strType):idxType;
     var high = (stride * followThis(i).high:strType):idxType;
-    t(i) = (low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType;
+    t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -820,7 +827,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
 //
 // output domain
 //
-proc BlockDom.dsiSerialWrite(x:Writer) {
+proc BlockDom.dsiSerialWrite(x) {
   x.write(whole);
 }
 
@@ -1100,7 +1107,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).low * abs(stride):idxType;
     var high = followThis(i).high * abs(stride):idxType;
-    myFollowThis(i) = (low..high by stride) + dom.whole.dim(i).low by followThis(i).stride;
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).low;
   }
 
@@ -1144,7 +1151,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
 //
 // output array
 //
-proc BlockArr.dsiSerialWrite(f: Writer) {
+proc BlockArr.dsiSerialWrite(f) {
   type strType = chpl__signedType(idxType);
   var binary = f.binary();
   if dom.dsiNumIndices == 0 then return;
@@ -1546,14 +1553,33 @@ proc BlockArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }
 
+proc BlockDom.dsiTargetLocales() {
+  return dist.targetLocales;
+}
+
+proc Block.dsiTargetLocales() {
+  return targetLocales;
+}
+
 // Block subdomains are continuous
 
 proc BlockArr.dsiHasSingleLocalSubdomain() param return true;
+proc BlockDom.dsiHasSingleLocalSubdomain() param return true;
 
 // returns the current locale's subdomain
 
 proc BlockArr.dsiLocalSubdomain() {
   return myLocArr.locDom.myBlock;
+}
+proc BlockDom.dsiLocalSubdomain() {
+  // TODO -- could be replaced by a privatized myLocDom in BlockDom
+  // as it is with BlockArr
+  var myLocDom:LocBlockDom(rank, idxType, stridable) = nil;
+  for (loc, locDom) in zip(dist.targetLocales, locDoms) {
+    if loc == here then
+      myLocDom = locDom;
+  }
+  return myLocDom.myBlock;
 }
 
 iter ConsecutiveChunks(d1,d2,lid,lo) {

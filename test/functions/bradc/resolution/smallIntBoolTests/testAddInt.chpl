@@ -5,5 +5,5 @@ var z = 3: int(16);
 var a = x + y;
 var b = x + z;
 
-writeln("a is ", a, " (", typeToString(a.type), ")");
-writeln("b is ", b, " (", typeToString(b.type), ")");
+writeln("a is ", a, " (", a.type:string, ")");
+writeln("b is ", b, " (", b.type:string, ")");

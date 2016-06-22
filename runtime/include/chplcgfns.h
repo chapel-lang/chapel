@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -65,22 +65,23 @@ extern const char* CHPL_AUX_FILESYS;
 extern const int CHPL_STACK_CHECKS;
 extern const int CHPL_CACHE_REMOTE;
 
+// Sorted lookup table of filenames used with insertLineNumbers for error
+// messages and logging. Defined in chpl_compilation_config.c (needed by launchers)
+extern c_string chpl_filenameTable[];
+extern const int32_t chpl_filenameTableSize;
+
 /* defined in main.c */
 extern char* chpl_executionCommand;
 
 /* generated */
 extern chpl_fn_p chpl_ftable[];
 
-// Sorted lookup table of filenames used with insertLineNumbers for error
-// messages and logging
-extern c_string chpl_filenameTable[];
-extern const int64_t chpl_filenameTableSize;
-
 extern void chpl__initStringLiterals(void);
 
-void chpl__init_preInit(int64_t _ln, c_string _fn);
-void chpl__init_PrintModuleInitOrder(int64_t _ln, c_string _fn);
-void chpl__init_ChapelStandard(int64_t _ln, c_string _fn);
+
+void chpl__init_preInit(int64_t _ln, int32_t _fn);
+void chpl__init_PrintModuleInitOrder(int64_t _ln, int32_t _fn);
+void chpl__init_ChapelStandard(int64_t _ln, int32_t _fn);
 
 /* used for entry point: */
 extern int64_t chpl_gen_main(chpl_main_argument* const _arg);

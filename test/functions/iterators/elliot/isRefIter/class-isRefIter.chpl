@@ -86,3 +86,5 @@ for i in printIterRefnessWrapper(c.myRefIter(tag=iterKind.leader)) do
 
 for i in printIterRefnessWrapper(c.myValIter(tag=iterKind.follower, 0)) do;
 for i in printIterRefnessWrapper(c.myRefIter(tag=iterKind.follower, 0)) do;
+
+delete c;

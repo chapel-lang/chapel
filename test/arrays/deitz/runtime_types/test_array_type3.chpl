@@ -1,5 +1,5 @@
 proc foo(type t) {
-  writeln(typeToString(t));
+  writeln(t:string);
   var X: t;
   writeln(X);
 }

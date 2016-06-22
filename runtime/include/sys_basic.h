@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -53,7 +53,7 @@
 #endif
 
 #ifndef _DEFAULT_SOURCE
-// Quiets warnings about _BSD_SOURCE being deprecated in glbic >= 2.20
+// Quiets warnings about _BSD_SOURCE being deprecated in glibc >= 2.20
 // This define enables everything _BSD_SOURCE does (and more) with glibc >= 2.19
 #define _DEFAULT_SOURCE
 #endif
@@ -104,7 +104,7 @@
 
 
 #ifdef __cplusplus
-// g++ supports restrict in C++ with the name __restrict. For other compliers,
+// g++ supports restrict in C++ with the name __restrict. For other compilers,
 // we just #define-out restrict.
 #if defined(__GNUC__) && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
 #define restrict __restrict

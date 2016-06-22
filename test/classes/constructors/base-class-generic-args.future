@@ -1,1 +1,0 @@
-bug: Type constructor call for base class does not include generic args.

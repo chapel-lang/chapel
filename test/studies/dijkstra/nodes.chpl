@@ -4,7 +4,7 @@ module Nodes {
 
   /*If isDirected = 1, then it is a directed graph, else it is not */
   proc InitializeNodes(nEdges: int, nNodes: int, Edges, isDirected: int) {
-    
+
     // Count number of neighbors
     var D1 = {0..(nNodes-1)};
 

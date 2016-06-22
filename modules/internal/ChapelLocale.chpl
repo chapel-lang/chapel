@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,8 +17,53 @@
  * limitations under the License.
  */
 
-// ChapelLocale.chpl
-//
+/*
+  A *locale* is a Chapel abstraction for a piece of a target
+  architecture that has processing and storage capabilities.
+  Generally speaking, the tasks running within a locale have
+  roughly uniform access to values stored in the locale's local
+  memory and longer latencies for accessing the memories of other
+  locales.  As examples, a single shared memory machine would be
+  defined as a single locale, while in a system consisting of a
+  group of network-connected multicore nodes or SMPs each node
+  would be defined as a locale.
+
+  Chapel provides several predefined methods on locales, as well as
+  a few variables that describe the locales upon which a program is
+  running.
+
+  In addition to what is documented below, ``numLocales``, ``LocaleSpace``,
+  and ``Locales`` are available as global variables.
+
+  ``numLocales`` is the number of top-level (network connected) locales.
+
+  .. code-block:: chapel
+
+    config const numLocales: int;
+
+  ``LocaleSpace`` is the domain over which the global ``Locales`` array is
+  defined.
+
+  .. code-block:: chapel
+
+    const LocaleSpace = {0..numLocales-1};
+
+  The global ``Locales`` array contains an entry for each top-level locale.
+
+  .. code-block:: chapel
+
+    const Locales: [LocaleSpace] locale;
+
+
+  One common code idiom in Chapel is the following, which spreads parallel
+  tasks across the network-connected locales upon which the program is running:
+
+    .. code-block:: chapel
+
+      coforall loc in Locales { on loc { ... } }
+
+
+ */
 module ChapelLocale {
 
   use LocaleModel;
@@ -26,18 +71,25 @@ module ChapelLocale {
   //
   // Node and sublocale types and special sublocale values.
   //
+  pragma "no doc"
   type chpl_nodeID_t = int(32);
+  pragma "no doc"
   type chpl_sublocID_t = int(32);
 
+  pragma "no doc"
   extern const c_sublocid_none: chpl_sublocID_t;
+  pragma "no doc"
   extern const c_sublocid_any: chpl_sublocID_t;
 
-  //
-  // An abstract class. Specifies the required locale interface.
-  // Each locale implementation must inherit from this class.
-  //
+  /*
+    ``locale`` is the abstract class from which the various
+    implementations inherit.  It specifies the required interface
+    and implements part of it, but requires the rest to be provided
+    by the corresponding concrete classes.
+   */
   class locale {
     //- Constructor
+    pragma "no doc"
     proc locale() { }
 
     //------------------------------------------------------------------------{
@@ -46,16 +98,97 @@ module ChapelLocale {
 
     // Every locale has a parent, except for the root locale.
     // The parent of the root locale is nil (by definition).
+    pragma "no doc"
     const parent : locale;
 
-    // To be removed from the required interface once legacy code is adjusted.
-    // Modified in RootLocale.init().
-    var numCores: int;
+    pragma "no doc" var nPUsLogAcc: int;     // HW threads, accessible
+    pragma "no doc" var nPUsLogAll: int;     // HW threads, all
+    pragma "no doc" var nPUsPhysAcc: int;    // HW cores, accessible
+    pragma "no doc" var nPUsPhysAll: int;    // HW cores, all
 
-    var maxTaskPar: int; // max parallelism tasking layer expects to deliver
+    /*
+      A *processing unit* or *PU* is an instance of the processor
+      architecture, basically the thing that executes instructions.
+      :proc:`numPUs` tells how many of these are present on this
+      locale.  It can count either physical PUs (commonly known as
+      *cores*) or hardware threads such as hyperthreads and the like.
+      It can also either take into account any OS limits on which PUs
+      the program has access to or do its best to ignore such limits.
+      By default it returns the number of accessible physical cores.
 
+      :arg logical: Count logical PUs (hyperthreads and the like),
+                    or physical ones (cores)?  Defaults to `false`,
+                    for cores.
+      :type logical: `bool`
+      :arg accessible: Count only PUs that can be reached, or all of
+                       them?  Defaults to `true`, for accessible PUs.
+      :type accessible: `bool`
+      :returns: number of PUs
+      :rtype: `int`
+
+      There are several things that can cause the OS to limit the
+      processor resources available to a Chapel program.  On plain
+      Linux systems using the ``taskset(1)`` command will do it.  On
+      Cray systems the ``CHPL_LAUNCHER_CORES_PER_LOCALE`` environment
+      variable may do it, indirectly via the system job launcher.
+      Also on Cray systems, using a system job launcher (``aprun`` or
+      ``slurm``) to run a Chapel program manually may do it, as can
+      running programs within Cray batch jobs that have been set up
+      with limited processor resources.
+     */
+    inline
+    proc numPUs(logical: bool = false, accessible: bool = true)
+      return if logical
+             then if accessible then nPUsLogAcc else nPUsLogAll
+             else if accessible then nPUsPhysAcc else nPUsPhysAll;
+
+    /*
+      :proc:`numCores` is a deprecated predecessor to :proc:`numPUs`,
+      equivalent to `numPUs(logical=true, accessible=true)`.  It will
+      be removed after Chapel 1.13 is released.
+     */
+    proc numCores: int {
+      compilerWarning("numCores is deprecated; please use numPUs() instead");
+      return this.numPUs(logical=true, accessible=true);
+    }
+
+    /*
+      This is the maximum task concurrency that one can expect to
+      achieve on this locale.  The value is an estimate by the
+      runtime tasking layer.  Typically it is the number of physical
+      processor cores available to the program.  Creating more tasks
+      than this will probably increase walltime rather than decrease
+      it.
+     */
+    var maxTaskPar: int;
+
+    /*
+      ``callStackSize`` holds the size of a task stack on a given
+      locale.  Thus, ``here.callStackSize`` is the size of the call
+      stack for any task on the current locale, including the
+      caller.
+    */
+    const callStackSize: size_t;
+
+    /*
+      Get the integer identifier for the top-level locale the
+      current task is running on.
+
+      :returns: locale number, in the range ``0..numLocales-1``
+      :rtype: int
+     */
     proc id : int return chpl_id();  // just the node part
+
+    pragma "no doc"
     proc localeid : chpl_localeID_t return chpl_localeid(); // full locale id
+
+    /*
+      Get the name of the top-level locale the current task is
+      running on.
+
+      :returns: locale name
+      :rtype: string
+     */
     proc name return chpl_name() : string;
 
     // This many tasks are running on this locale.
@@ -75,20 +208,25 @@ module ChapelLocale {
     //
     // This field should only be accessed locally, so we will have better
     // performance if we always use a processor atomic.
+    pragma "no doc"
     var runningTaskCounter : chpl__processorAtomicType(int);
 
+    pragma "no doc"
     inline proc runningTaskCntSet(val : int) {
       runningTaskCounter.write(val, memory_order_relaxed);
     }
 
+    pragma "no doc"
     inline proc runningTaskCntAdd(val : int) {
       runningTaskCounter.add(val, memory_order_relaxed);
     }
 
+    pragma "no doc"
     inline proc runningTaskCntSub(val : int) {
       runningTaskCounter.sub(val, memory_order_relaxed);
     }
 
+    pragma "no doc"
     inline proc runningTaskCnt() {
       var rtc = runningTaskCounter.read(memory_order_relaxed);
       return if (rtc <= 0) then 1 else rtc;
@@ -101,26 +239,31 @@ module ChapelLocale {
 
     // These are dynamically dispatched, so they can be overridden in
     // concrete classes.
+    pragma "no doc"
     proc chpl_id() : int {
       _throwPVFCError();
       return -1;
     }
 
+    pragma "no doc"
     proc chpl_localeid() : chpl_localeID_t {
       _throwPVFCError();
       return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_none);
     }
 
+    pragma "no doc"
     proc chpl_name() : string {
       _throwPVFCError();
       return "";
     }
 
     // A useful default definition is provided (not pure virtual).
-    proc readWriteThis(f) {
+    pragma "no doc"
+    proc writeThis(f) {
       f <~> name;
     }
 
+    pragma "no doc"
     proc getChildCount() : int {
       _throwPVFCError();
       return 0;
@@ -133,11 +276,13 @@ module ChapelLocale {
 //        yield idx;
 //    }
   
+    pragma "no doc"
     proc addChild(loc:locale)
     {
       _throwPVFCError();
     }
   
+    pragma "no doc"
     proc getChild(idx:int) : locale {
       _throwPVFCError();
       return this;
@@ -153,6 +298,7 @@ module ChapelLocale {
     //------------------------------------------------------------------------}
   }
 
+  pragma "no doc"
   class AbstractLocaleModel : locale {
     // This will be used for interfaces that will be common to all
     // (non-RootLocale) locale models
@@ -168,10 +314,13 @@ module ChapelLocale {
   // The rootLocale is private to each locale.  It cannot be
   // initialized until LocaleModel is initialized.  To disable this
   // replication, set replicateRootLocale to false.
+  pragma "no doc"
   pragma "locale private" var rootLocale : locale = nil;
+
+  pragma "no doc"
   config param replicateRootLocale = true;
 
-  // The rootLocale needs to be initalized on all locales prior to
+  // The rootLocale needs to be initialized on all locales prior to
   // initializing the Locales array.  Unfortunately, the rootLocale
   // cannot be properly replicated until DefaultRectangular can be
   // initialized (as the private copies of the defaultDist are
@@ -182,11 +331,13 @@ module ChapelLocale {
   // Locales array).  This is being done in the InitPrivateGlobals
   // module.
   //
+  pragma "no doc"
   var origRootLocale : locale = nil;
 
+  pragma "no doc"
   class AbstractRootLocale : locale {
     // These functions are used to establish values for Locales[] and
-    // LocaleSpace -- an array of locales and its correponding domain
+    // LocaleSpace -- an array of locales and its corresponding domain
     // which are used as the default set of targetLocales in many
     // distributions.
     proc getDefaultLocaleSpace() {
@@ -207,7 +358,7 @@ module ChapelLocale {
       return this;
     }
 
-    // These iterators are to be used by RootLocale:init() to
+    // These iterators are to be used by RootLocale:setup() to
     // initialize the LocaleModel.  The calling loop body cannot
     // contain any non-local code, since the rootLocale is not yet
     // initialized.
@@ -258,9 +409,11 @@ module ChapelLocale {
   // arrive and then set the signals to true.  We can't do anything
   // too complicated this early on, so we are using a for loop to
   // broadcast that we are done.
+  pragma "no doc"
   class localesSignal {
     var s: atomic bool;
   }
+  pragma "no doc"
   record localesBarrier {
     proc wait(locIdx, flags) {
       if locIdx==0 {
@@ -304,15 +457,17 @@ module ChapelLocale {
   // The init() function must use the chpl_initOnLocales() iterator above
   // to iterate in parallel over the locales to set up the LocaleModel
   // object.
+  pragma "no doc"
   proc chpl_init_rootLocale() {
     origRootLocale = new RootLocale();
-    (origRootLocale:RootLocale).init();
+    (origRootLocale:RootLocale).setup();
   }
 
   // This function sets up a private copy of rootLocale by replicating
   // origRootLocale and resets the Locales array to point to the local
   // copy on all but locale 0 (which is done in LocalesArray.chpl as
   // part of the declaration).
+  pragma "no doc"
   proc chpl_rootLocaleInitPrivate(locIdx) {
     // Even when not replicating the rootLocale, we must temporarily
     // set the rootLocale to the original version on locale 0, because
@@ -353,10 +508,13 @@ module ChapelLocale {
   // Its type should probably be renamed dummyLocale or something
   // representative.
   // The dummy locale provides system-default tasking and memory management.
+  pragma "no doc"
   const dummyLocale = new locale();
 
+  pragma "no doc"
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;
 
+  pragma "no doc"
   pragma "insert line file info"
   export
   proc chpl_getLocaleID(ref localeID: chpl_localeID_t) {
@@ -364,18 +522,26 @@ module ChapelLocale {
   }
 
   // Return the locale ID of the current locale
+  pragma "no doc"
   inline proc here_id {
      if localeModelHasSublocales then
       return chpl_rt_buildLocaleID(chpl_nodeID, chpl_task_getRequestedSubloc());
     else
       return chpl_rt_buildLocaleID(chpl_nodeID, c_sublocid_any);
   }
-  // Return the current locale
+
+  /*
+    This returns the locale from which the call is made.
+
+    :return: current locale
+    :rtype: locale
+  */
   inline proc here {
     return chpl_localeID_to_locale(here_id);
   }
   
   // Returns a wide pointer to the locale with the given id.
+  pragma "no doc"
   proc chpl_localeID_to_locale(id : chpl_localeID_t) : locale {
     if rootLocale then
       return (rootLocale:AbstractRootLocale).localeIDtoLocale(id);
@@ -384,21 +550,7 @@ module ChapelLocale {
       return dummyLocale;
   }
 
-
-  pragma "insert line file info"
-  extern proc chpl_memhook_malloc_pre(number:int, size:int, md:int(16)): void;
-  pragma "insert line file info"
-  extern proc chpl_memhook_malloc_post(ptr:opaque, number:int,
-                                       size:int, md:int(16)): void;
-  pragma "insert line file info"
-  extern proc chpl_memhook_realloc_pre(ptr:object, size:int, md:int(16)): void;
-  pragma "insert line file info"
-  extern proc chpl_memhook_realloc_post(newPtr:opaque, ptr:object,
-                                        size:int, md:int(16)): void;
-  pragma "insert line file info"
-  extern proc chpl_memhook_free_pre(ptr:opaque): void;
-  extern proc chpl_memhook_md_num(): int(16);
-
+  pragma "no doc"
   proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
     return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
   
@@ -407,6 +559,7 @@ module ChapelLocale {
 //# Locale diagnostics
 //#
 
+  pragma "no doc"
   proc locale.totalThreads() {
     var totalThreads: int;
     extern proc chpl_task_getNumThreads() : uint(32);
@@ -414,6 +567,7 @@ module ChapelLocale {
     return totalThreads;
   }
   
+  pragma "no doc"
   proc locale.idleThreads() {
     var idleThreads: int;
     extern proc chpl_task_getNumIdleThreads() : uint(32);
@@ -421,6 +575,7 @@ module ChapelLocale {
     return idleThreads;
   }
   
+  pragma "no doc"
   proc locale.queuedTasks() {
     var queuedTasks: int;
     extern proc chpl_task_getNumQueuedTasks() : uint(32);
@@ -428,10 +583,12 @@ module ChapelLocale {
     return queuedTasks;
   }
   
+  pragma "no doc"
   proc locale.runningTasks() {
     return this.runningTaskCnt();
   }
   
+  pragma "no doc"
   proc locale.blockedTasks() {
     var blockedTasks: int;
     extern proc chpl_task_getNumBlockedTasks() : int(32);
@@ -448,12 +605,14 @@ module ChapelLocale {
   // directly, but at least for now the runtime also needs to be
   // able to do so.  These functions support that.
   //
+  pragma "no doc"
   pragma "insert line file info"
   export
   proc chpl_taskRunningCntInc() {
     here.runningTaskCntAdd(1);
   }
 
+  pragma "no doc"
   pragma "insert line file info"
   export
   proc chpl_taskRunningCntDec() {

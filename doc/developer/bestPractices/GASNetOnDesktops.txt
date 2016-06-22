@@ -16,7 +16,7 @@ locales on a single workstation as described in multilocale.rst.
 
 GASNet may detect the existence of an Infiniband network even if one
 does not exist (due to the inclusion of Infiniband in the Linux
-kernel).  If you do not have an Inifiband NIC in your workstation (or
+kernel).  If you do not have an Infiniband NIC in your workstation (or
 don't want to use it), set CHPL_GASNET_CFG_OPTIONS='--disable-ibv'
 when you build the GASNet library for your Chapel installation.
 Alternatively, you can set GASNET_QUIET=yes to avoid the GASNet
@@ -24,7 +24,8 @@ warning messages from GASNet regarding using the Infiniband conduit.
 
 DEBUGGING
 =========
-See executing.rst regarding debugging with CHPL_COMM_USE_GDB.
+See debugging.rst regarding debugging with CHPL_COMM_USE_GDB or
+CHPL_COMM_USE_LLDB.
 
 Sometimes GASNet issues are general multi-locale issues that can be
 recreated by compiling the program with the --no-local flag and using
@@ -41,7 +42,5 @@ DEBUGGING WITH VALGRIND
 
 To debug using valgrind, use the following command
 
-    % valgrind --trace-children=yes --suppressions=$CHPL_HOME/third-party/gasnet/<GASNET_VERSION>/other/contrib/gasnet.supp
-
-where <GASNET_VERSION> can be found in $CHPL_HOME/make/Makefile.base.
+    % valgrind --trace-children=yes --suppressions=$CHPL_HOME/third-party/gasnet/gasnet-src/other/contrib/gasnet.supp
 

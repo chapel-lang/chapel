@@ -1,0 +1,1 @@
+exceptPrivateSymbol.chpl:8: error: Bad identifier in 'except' clause, 'b' is private

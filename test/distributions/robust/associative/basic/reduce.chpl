@@ -39,7 +39,7 @@ proc testReduceArr(AA) {
     if AA(ai) < checkMin then
       checkMin = AA(ai);
   }
-  writeln("Parallel array reduce (", typeToString(idxType), ") : ",
+  writeln("Parallel array reduce (", idxType:string, ") : ",
           if checkMin==minAA then "SUCCESS" else "FAILED");
 }
 
@@ -51,7 +51,7 @@ proc testReduceDom(Dom, AA) {
     if AA(ai) < checkMin then
       checkMin = AA(ai);
   }
-  writeln("Parallel domain reduce (", typeToString(idxType), ") : ",
+  writeln("Parallel domain reduce (", idxType:string, ") : ",
           if checkMin==minAA then "SUCCESS" else "FAILED");
 }
 

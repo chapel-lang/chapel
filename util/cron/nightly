@@ -744,7 +744,7 @@ if ($runtests == 0) {
 
     if ($performance == 1 or $compperformance == 1) {
         # sync the performance graphs over to sourceforge
-        $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfDir/html/ $perfConfigName/$syncsuffix --logFile $logdir/syncToSourceForge.errors";
+        $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfDir/$performancedescription/html/ $perfConfigName/$syncsuffix --logFile $logdir/syncToSourceForge.errors";
         $rsyncMessage = "syncing performance graph to sourceforge -- log file at $logdir/syncToSourceForge.errors";
         mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
    }

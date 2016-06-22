@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -21,8 +21,7 @@
   This module provides support for reporting and counting
   communication operations between network-connected locales.  The
   operations include various kinds of remote reads (GETs), remote
-  writes (PUTs), and remote forks (which are actually more like remote
-  procedure calls, and are used to implement ``on`` statements).
+  writes (PUTs), and remote executions.
   Callers can request on-the-fly output each time a remote operation
   occurs, or count such operations as they occur and retrieve the
   counts later.  The former gives more detailed information but has
@@ -57,7 +56,7 @@
     proc main() {
       startVerboseComm();
       var x: int = 1;
-      on Locales(1) {     // should fork a blocking task onto locale 1
+      on Locales(1) {     // should execute_on a blocking task onto locale 1
         x = x + 1;        // should invoke a remote put and a remote get
       }
       stopVerboseComm();
@@ -72,7 +71,7 @@
 
   The initial number refers to the locale reporting the communication
   event.  The file name and line number point to the place in the
-  code that triggered the communication event.  (For remote forks,
+  code that triggered the communication event.  (For remote execute_ons,
   file name and line number information is not yet reported.)
 
   **Counting Communication Operations**
@@ -120,7 +119,7 @@
     proc main() {
       startCommDiagnostics();
       var x: int = 1;
-      on Locales(1) {     // should fork a blocking task onto locale 1
+      on Locales(1) {     // should execute_on a blocking task onto locale 1
         x = x + 1;        // should invoke a remote put and a remote get
       }
       stopCommDiagnostics();
@@ -130,11 +129,11 @@
   Executing this on two locales with the ``-nl 2`` command line
   option results in the following output::
 
-    (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 1, fork_fast = 0, fork_nb = 0) (get = 1, get_nb = 0, put = 1, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, fork = 0, fork_fast = 0, fork_nb = 0)
+    (get = 0, get_nb = 0, put = 0, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 1, execute_on_fast = 0, execute_on_nb = 0) (get = 1, get_nb = 0, put = 1, put_nb = 0, test_nb = 0, wait_nb = 0, try_nb = 0, execute_on = 0, execute_on_fast = 0, execute_on_nb = 0)
 
   The first parenthesized group contains the counts for locale 0, and
   the second contains the counts for locale 1.  So, for the
-  instrumented section of this program we can say that a remote fork
+  instrumented section of this program we can say that a remote execute_on
   was executed on locale 0, and a remote get and a remote put were
   executed on locale 1.
 
@@ -168,13 +167,6 @@
  */
 module CommDiagnostics
 {
-  // There should be a type like this declared in chpl-comm.h with a single
-  // function that returns the C struct.  We're not doing it that way yet
-  // due to some shortcomings in our extern records implementation.
-  // Once that gets sorted out, we can turn this into an extern record,
-  // and remove the 8 or so individual functions below that return the
-  // various counters.
-
   /* Aggregated communication operation counts.  This record type is
      defined in the same way by both the underlying comm layer(s) and
      this module, because we don't have a good way to inherit types back
@@ -213,16 +205,16 @@ module CommDiagnostics
     /*
       blocking remote executions, in which initiator waits for completion
      */
-    var fork: uint(64);
+    var execute_on: uint(64);
     /*
       blocking remote executions performed by the target locale's
       Active Message handler
      */
-    var fork_fast: uint(64);
+    var execute_on_fast: uint(64);
     /*
       non-blocking remote executions
      */
-    var fork_nb: uint(64);
+    var execute_on_nb: uint(64);
   };
 
   /*
@@ -313,27 +305,6 @@ module CommDiagnostics
     chpl_resetCommDiagnosticsHere();
   }
 
-  // See note above regarding extern records
-  private extern proc chpl_numCommGets(): uint(64);
-
-  private extern proc chpl_numCommNBGets(): uint(64);
-
-  private extern proc chpl_numCommPuts(): uint(64);
-
-  private extern proc chpl_numCommNBPuts(): uint(64);
-
-  private extern proc chpl_numCommTestNB(): uint(64);
-
-  private extern proc chpl_numCommWaitNB(): uint(64);
-
-  private extern proc chpl_numCommTryNB(): uint(64);
-
-  private extern proc chpl_numCommForks(): uint(64);
-
-  private extern proc chpl_numCommFastForks(): uint(64);
-
-  private extern proc chpl_numCommNBForks(): uint(64);
-
   /*
     Retrieve aggregate communication counts for the whole program.
 
@@ -343,17 +314,7 @@ module CommDiagnostics
   proc getCommDiagnostics() {
     var D: [LocaleSpace] commDiagnostics;
     for loc in Locales do on loc {
-      // See note above regarding extern records
-      D(loc.id).get = chpl_numCommGets();
-      D(loc.id).get_nb = chpl_numCommNBGets();
-      D(loc.id).put = chpl_numCommPuts();
-      D(loc.id).put_nb = chpl_numCommNBPuts();
-      D(loc.id).test_nb = chpl_numCommTestNB();
-      D(loc.id).wait_nb = chpl_numCommWaitNB();
-      D(loc.id).try_nb = chpl_numCommTryNB();
-      D(loc.id).fork = chpl_numCommForks();
-      D(loc.id).fork_fast = chpl_numCommFastForks();
-      D(loc.id).fork_nb = chpl_numCommNBForks();
+      D(loc.id) = getCommDiagnosticsHere();
     }
     return D;
   }
@@ -366,16 +327,7 @@ module CommDiagnostics
    */
   proc getCommDiagnosticsHere() {
     var cd: commDiagnostics;
-    cd.get = chpl_numCommGets();
-    cd.get_nb = chpl_numCommNBGets();
-    cd.put = chpl_numCommPuts();
-    cd.put_nb = chpl_numCommNBPuts();
-    cd.test_nb = chpl_numCommTestNB();
-    cd.wait_nb = chpl_numCommWaitNB();
-    cd.try_nb = chpl_numCommTryNB();
-    cd.fork = chpl_numCommForks();
-    cd.fork_fast = chpl_numCommFastForks();
-    cd.fork_nb = chpl_numCommNBForks();
+    chpl_getCommDiagnosticsHere(cd);
     return cd;
   }
 

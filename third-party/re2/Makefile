@@ -12,15 +12,6 @@ else
   RE_DEBUG_CXX += -DNDEBUG
 endif
 
-#
-# if compiling for knc with intel, add the -mmic flag
-#
-ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),intel)
-CHPL_RE2_CXXFLAGS += -mmic
-endif
-endif
-
 # re2's makefile explicity throws flags that cray and pgi don't support. This
 # is intended to basically replace the re2 makefiles lines:
 #
@@ -39,7 +30,7 @@ endif
 CHPL_RE2_CFG_OPTIONS += $(CHPL_RE2_MORE_CFG_OPTIONS)
 
 
-CHPL_RE2_CXXFLAGS += $(CFLAGS)
+CHPL_RE2_CXXFLAGS += $(CFLAGS) $(CXXFLAGS)
 
 default: all
 

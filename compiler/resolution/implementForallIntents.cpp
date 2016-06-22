@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -216,6 +216,7 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
       }
 
       bool isMethodToken = ovar->type == dtMethodToken;
+
       // concreteIntent() does not work for MT.
       if (!isMethodToken)
         tiIntent = concreteIntent(tiIntent, valtype);
@@ -226,18 +227,27 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
       if (tiIntent == INTENT_REF) {
         // for efficiency
         pruneit = true;
+
       } else if (isMethodToken) {
         // If MT is present, _toLeader(..., _mt...) does not get resolved.
         // See e.g. parallel/taskPar/figueroa/taskParallel.chpl
         pruneit = true;
-      } else if (isSyncType(ovar->type) || isAtomicType(ovar->type)) {
+
+      } else if (isSyncType(ovar->type)   ||
+                 isSingleType(ovar->type) ||
+                 isAtomicType(ovar->type)) {
         // Currently we need it because sync variables do not get tupled
         // and detupled properly when threading through the leader iterator.
         // See e.g. test/distributions/dm/s7.chpl
         // Atomic vars might not work either.
         // And anyway, only 'ref' intent makes sense here.
         pruneit = true;
-        USR_WARN(defChplIter, "sync, single, or atomic var '%s' currently can be passed into the forall loop by 'ref' intent only - %s is ignored", ovar->name, tiMarker ? intentDescrString(tiMarker->intent) : "default intent");
+
+        USR_WARN(defChplIter,
+                 "sync, single, or atomic var '%s' currently can be passed into the forall loop by 'ref' intent only - %s is ignored",
+                 ovar->name,
+                 tiMarker ? intentDescrString(tiMarker->intent) : "default intent");
+
       } else if (isRecordWrappedType(ovar->type) &&
                  !(tiIntent & INTENT_FLAG_REF)) {
         // Threading through the leader for non-ref intents
@@ -252,8 +262,9 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
         continue; // form_Map(uses)
       }
     }  // if !isReduce
-    
+
     svar = new VarSymbol(ovar->name, valtype);
+
     if (isReduce) {
       if (ovar->hasFlag(FLAG_CONST))
         USR_FATAL_CONT(defChplIter,
@@ -264,10 +275,13 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
     } else {
       setShadowVarFlags(svar, tiIntent); // instead of arg intents
     }
+
     outerVars.push_back(ovar);
     shadowVars.push_back(svar);
     reduceGVars.push_back(globalOp);
+
     e->value = svar;
+
     numShadowVars++;
   }
 }
@@ -354,7 +368,7 @@ static void addActualsTo_toLeader(Symbol* serIterSym, int& numLeaderActuals,
     } else {
       Symbol* actual = ovar;
       if (isReduce) {
-        // pass chpl__reduceGlob insetad
+        // pass chpl__reduceGlob instead
         actual = globalOp;
       } else if (isReferenceType(ovar->type)) {
         // If it is a reference, dereference it. E.g. m-lsms.chpl (-nl 1?).
@@ -449,7 +463,7 @@ static void insertExtractFromYieldAtHead(BlockStmt* block, int ix,
 // Strictly speaking, a copy constructor aka chpl__initCopy()
 // needs to be invoked from tuple component into the shadow variable,
 // then the tuple component should be destructed.
-// We forego these two operations, simply transfering the bits,
+// We forego these two operations, simply transferring the bits,
 // because the cases where that matters are going to be rare.
 //
 static void extractFromLeaderYield(CallExpr* lcCall, int ix,
@@ -712,7 +726,7 @@ void implementForallIntents1(DefExpr* defChplIter)
   //  - forallBody2 == NULL
   //  - forallBody1->byrefVars is what forallBody2->byrefVars is above
   //
-  // - In all three cases, the user-speicified contents of the 'with' clause
+  // - In all three cases, the user-specified contents of the 'with' clause
   //   are appended to forallBody1/2->byrefVars specified above
   //
   // - Standalone case:
@@ -882,6 +896,51 @@ void stashPristineCopyOfLeaderIter(FnSymbol* origLeader,
 }
 
 //
+// When PRIM_TO_LEADER resolves to a call to _iterator_for_loopexprNN(),
+// aka 'origIter', all it does is invoke _toLeader on its argument.
+// If so, do not do extendLeader() on it. Simply thread the extra args
+// from origToLeaderCall into that _toLeader call.
+//    
+// BTW _iterator_for_loopexprNN is created in buildLeaderIteratorFn()
+// invoked from buildForallLoopExpr().
+//
+static void propagateExtraArgsForLoopIter(CallExpr* call,
+                                          CallExpr* origToLeaderCall,
+                                          FnSymbol* origIter)
+{
+  // Clone 'origIter' because we are messing with it.
+  FnSymbol* newIter = copyLeaderFn(origIter, false);
+  SymExpr* baseSE = toSymExpr(call->baseExpr);
+  INT_ASSERT(baseSE && baseSE->var == origIter);
+  baseSE->replace(new SymExpr(newIter));
+
+  // Find the _toLeader call.
+  std::vector<CallExpr*> callsInIter;
+  collectCallExprs(newIter, callsInIter);
+  CallExpr* toLeaderCall = NULL;
+  for_vector(CallExpr, callInIter, callsInIter) {
+    if (callInIter->isNamed("_toLeader")) {
+      // There must be only one such call.
+      INT_ASSERT(!toLeaderCall);
+      toLeaderCall = callInIter;
+    }
+  }
+  INT_ASSERT(toLeaderCall);  // We must have found it.
+
+  // The first argument is the iterator class, it does not participate.
+  Expr* firstArg = origToLeaderCall->get(1);
+  // Handle the other args
+  while (Expr* secondArg = firstArg->next) {
+    SymExpr* currActual = toSymExpr(secondArg->remove());
+    Symbol* currVar = currActual->var;
+    call->insertAtTail(currActual);
+    ArgSymbol* currFormal = new ArgSymbol(INTENT_BLANK, currVar->name, currVar->type);
+    newIter->insertFormalAtTail(currFormal);
+    toLeaderCall->insertAtTail(currFormal);
+  }
+}
+
+//
 // origRetExpr's symbol will no longer be recognized as a yield symbol in
 // localizeReturnSymbols(), which will be called after resolution.
 // So we are going to localize it right away.
@@ -948,8 +1007,14 @@ static void checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn) {
   origRet->defPoint->remove();
 }
 
-static void setupRedRefs(FnSymbol* fn, bool nested,
-                         Expr*& redRef1, Expr*& redRef2)
+//
+// Set up anchors, if not already, so we can add reduction-related code
+// via refRef->insertBefore() within 'fn'.
+//
+// "redRef" is short for "reference for reduction".
+// redRef1 goes at the beginning of fn, redRef2 at the end.
+//
+void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2)
 {
   if (redRef1) return;
 
@@ -972,15 +1037,19 @@ static void setupRedRefs(FnSymbol* fn, bool nested,
   }
 }
 
-static void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
+//
+// We won't need the redRef anchors any more. Remove them if we set them up.
+//
+void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
   if (!redRef1) return;
   redRef1->remove();
   redRef2->remove();
   redRef1 = redRef2 = NULL;
 }
 
-// like isArrayClass()
-static bool isReduceOp(Type* type) {
+// Is 'type' a Reduce/Scan Op?
+// similar to isArrayClass()
+bool isReduceOp(Type* type) {
   if (type->symbol->hasFlag(FLAG_REDUCESCANOP))
     return true;
   forv_Vec(Type, t, type->dispatchParents)
@@ -991,6 +1060,29 @@ static bool isReduceOp(Type* type) {
 
 static const char* astrArg(int ix, const char* add1) {
   return astr("x", istr(ix+1), "_", add1);
+}
+
+//
+// Since a promotion-wrapper leader (PWL) merely invokes another leader
+// in a for loop, all we need for that is to pass x1_reduceParent into
+// PWL as a new formal, then pass that formal into the _toLeader call
+// within PWL.  We *need* to bypass the machinery related to handling the
+// loop index - otherwise an extraneous new x1_svarRef will be generated.
+//
+static void addArgsToToLeaderCallForPromotionWrapper(FnSymbol* fn,
+                                                     int numExtraArgs,
+                                                     Symbol* extraFormals[])
+{
+  std::vector<CallExpr*> calls;
+  collectCallExprs(fn, calls);
+  int toleaderCnt = 0;
+  for_vector(CallExpr, call, calls)
+    if (call->isNamed("_toLeader") || call->isNamed("_toLeaderZip")) {
+      toleaderCnt++;
+      for (int ix = 0; ix < numExtraArgs; ix++)
+        call->insertAtTail(extraFormals[ix]);
+    }
+  INT_ASSERT(toleaderCnt == 1);
 }
 
 // Is 'forLoop' a loop over a parallel iterator?
@@ -1314,11 +1406,15 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
     }
   }
 
-  propagateRecursively(fn, fn, numExtraArgs, retSym,
-                       extraActuals, extraFormals, shadowVars, reduceArgs,
-                       nested, redRef1, redRef2);
-
-  cleanupRedRefs(redRef1, redRef2);
+  if (!nested && fn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+    INT_ASSERT(!redRef1); // no need to clean them up
+    addArgsToToLeaderCallForPromotionWrapper(fn, numExtraArgs, extraFormals);
+  } else {
+    propagateRecursively(fn, fn, numExtraArgs, retSym,
+                         extraActuals, extraFormals, shadowVars, reduceArgs,
+                         nested, redRef1, redRef2);
+    cleanupRedRefs(redRef1, redRef2);
+  }
 }
 
 // Propagate recursively into task functions and yields.
@@ -1404,10 +1500,9 @@ static void propagateRecursively(FnSymbol* parentFn,
 // earlier (before resolution), we have to do task intents
 // for forallOuterVars ourselves.
 //
-static void extendLeader(CallExpr* call, CallExpr* origToLeaderCall) {
-  FnSymbol* origIterFn = call->isResolved();
-  INT_ASSERT(origIterFn);  // caller's responsibility
-
+static void extendLeader(CallExpr* call, CallExpr* origToLeaderCall,
+                         FnSymbol* origIterFn)
+{
   // Replace the callee with a clone.
   if (origIterFn->isResolved()) {
     // ... using a pristine copy if the callee is already resolved.
@@ -1420,10 +1515,15 @@ static void extendLeader(CallExpr* call, CallExpr* origToLeaderCall) {
   call->baseExpr->replace(new SymExpr(iterFn));
 
   // Setup the new return/yield symbol.
-  VarSymbol* retSym  = newTemp("ret"); // its type is to be inferred
-  Symbol* origRetSym = iterFn->replaceReturnSymbol(retSym, /*newRetType*/NULL);
-  origRetSym->defPoint->insertBefore(new DefExpr(retSym));
-  origRetSym->name = "origRet";
+  VarSymbol* retSym  = NULL;
+  Symbol* origRetSym = NULL;
+
+  if (!iterFn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+    retSym  = newTemp("ret"); // its type is to be inferred
+    origRetSym = iterFn->replaceReturnSymbol(retSym, /*newRetType*/NULL);
+    origRetSym->defPoint->insertBefore(new DefExpr(retSym));
+    origRetSym->name = "origRet";
+  }
 
   int numExtraArgs = origToLeaderCall->numActuals()-1;
   INT_ASSERT(numExtraArgs > 0); // we shouldn't be doing all this otherwise
@@ -1441,20 +1541,25 @@ static void extendLeader(CallExpr* call, CallExpr* origToLeaderCall) {
   propagateExtraLeaderArgs(call, retSym, numExtraArgs,
                            extraActuals, reduceArgs, false);
 
-  checkAndRemoveOrigRetSym(origRetSym, iterFn);
+  if (origRetSym) {
+    checkAndRemoveOrigRetSym(origRetSym, iterFn);
+  }
 }
 
 void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall) {
+  FnSymbol* origLeader = call->isResolved();
+  INT_ASSERT(origLeader);  // caller responsibility
+
   if (origToLeaderCall->numActuals() <= 1) {
     // No variables to propagate => no extendLeader.
     // Ensure we have a pristine copy for the other case.
-    FnSymbol* origLeader = call->isResolved();
-    INT_ASSERT(origLeader);
-
     if (!pristineLeaderIterators.get(origLeader))
       stashPristineCopyOfLeaderIter(origLeader, /*ignore_isResolved:*/ false);
   } else {
-    extendLeader(call, origToLeaderCall);
+    if (!strncmp(origLeader->name, "_iterator_for_loopexpr", 22))
+      propagateExtraArgsForLoopIter(call, origToLeaderCall, origLeader);
+    else
+      extendLeader(call, origToLeaderCall, origLeader);
   }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -244,7 +244,6 @@ void reset_ast_loc(BaseAST* destNode, astlocT astlocArg) {
   AST_CHILDREN_CALL(destNode, reset_ast_loc, astlocArg);
 }
 
-
 void compute_call_sites() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->calledBy)
@@ -252,16 +251,23 @@ void compute_call_sites() {
     else
       fn->calledBy = new Vec<CallExpr*>();
   }
+
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (FnSymbol* fn = call->isResolved()) {
+    if (call->isEmpty() == true) {
+
+    } else if (FnSymbol* fn = call->isResolved()) {
       fn->calledBy->add(call);
+
     } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
       // sjd: do we have to do anything special here?
       //      should this call be added to some function's calledBy list?
+
     } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-      FnSymbol* fn = toFnSymbol(toSymExpr(call->get(1))->var);
+      FnSymbol*       fn       = toFnSymbol(toSymExpr(call->get(1))->var);
       Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
+
       fn->calledBy->add(call);
+
       forv_Vec(FnSymbol, child, *children)
         child->calledBy->add(call);
     }
@@ -581,8 +587,10 @@ Expr* formal_to_actual(CallExpr* call, Symbol* arg) {
       if (arg == formal)
         return actual;
     }
+    INT_FATAL(call, "couldn't find arg");
+  } else {
+    INT_FATAL(call, "formal_to_actual invoked with unresolved call");
   }
-  INT_FATAL(call, "bad call to formal_to_actual");
   return NULL;
 }
 

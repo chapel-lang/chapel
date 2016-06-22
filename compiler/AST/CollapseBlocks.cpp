@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -188,7 +188,7 @@ bool CollapseBlocks::enterCondStmt(CondStmt* node)
 
 /************************************ | *************************************
 *                                                                           *
-* The remaining definitions are simple "default do nothing" defintions      *
+* The remaining definitions are simple "default do nothing" definitions      *
 *                                                                           *
 ************************************* | ************************************/
 
@@ -281,6 +281,15 @@ void CollapseBlocks::exitCallExpr(CallExpr* node)
 {
 }
 
+bool CollapseBlocks::enterContextCallExpr(ContextCallExpr* node)
+{
+  return false;
+}
+
+void CollapseBlocks::exitContextCallExpr(ContextCallExpr* node)
+{
+}
+
 bool CollapseBlocks::enterDefExpr(DefExpr* node)
 {
   return false;
@@ -307,6 +316,11 @@ void CollapseBlocks::visitSymExpr(SymExpr* node)
 }
 
 void CollapseBlocks::visitUsymExpr(UnresolvedSymExpr* node)
+{
+
+}
+
+void CollapseBlocks::visitUseStmt(UseStmt* node)
 {
 
 }

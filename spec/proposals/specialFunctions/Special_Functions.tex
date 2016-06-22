@@ -7,7 +7,7 @@ copy-construction, destruction, assignment, fieldwise-construction and equality 
 The first four of these are required by the Chapel
 compiler.  The remainder are provided as a convenience
 to the user.  The compiler-generated version of a special function may always be
-overridden by an explicity user-defined version.
+overridden by an explicitly user-defined version.
 
 Of the special functions required by the compiler, all but assignment are associated with
 a state transition in the object lifecycle.  These associations are detailed in the
@@ -58,7 +58,7 @@ Following field-initialization, the actions specified in the body of the
 constructor are called.  In many cases, the body of the constructor is empty,
 because the actions of value- and field-initialization bring the object into a
 state consistent with the desired class invariants.  In any case, after the body
-of one of its constructors has run to completeion, the object is
+of one of its constructors has run to completion, the object is
 fully-initialized (i.e. constructed).
 
 When an object is destroyed it transitions to the destroyed state.  This state
@@ -86,7 +86,7 @@ construction is applied.  For fundamental types (including numerics, strings,
 enums and ranges) as well as sync/single variables and atomics, this is the
 value specified in section 8.1.1 [Default Initialization].  The remaining type
 classes (classes, records, arrays and tuples) will be handled specifically below.
-% TODO: Default initialziation as discussed in that section should actually be
+% TODO: Default initialization as discussed in that section should actually be
 % interpreted as default construction.  Default construction is
 % value-initialization followed by the actions specified in the constructor
 % body.  But since the body of the constructor for every fundamental type is
@@ -148,7 +148,7 @@ constructors can then be kept distinct (as opposed to being mutually dependent).
 
 \subsection{Semantics}
 
-Value initializtion is more fundamental than construction.  It is equivalent to
+Value initialization is more fundamental than construction.  It is equivalent to
 the language concept of default initialization (also known as guaranteed
 initialization).  
 
@@ -296,7 +296,7 @@ with that type that can be called with an argument list consisting of a single
 object of that type.  The selected definition may involve generic types for both
 the object and the operand.  The definition may also involve other arguments, so
 long as all but one of the arguments has a default value associated with it, and
-the type of the remaining formal argument can bind to an actual argumet of the
+the type of the remaining formal argument can bind to an actual argument of the
 object type.
 
 \subsection{Interface}
@@ -735,7 +735,7 @@ insertion and lookup.
 
 \section{Record Equality}
 
-The compiler provides record equality \chpl{==} and inequalty \chpl{!=} functions as a
+The compiler provides record equality \chpl{==} and inequality \chpl{!=} functions as a
 convenience.
 
 \subsection{Interface}

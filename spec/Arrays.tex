@@ -3,7 +3,7 @@
 \index{arrays}
 
 An \emph{array} is a map from a domain's indices to a collection of
-variables of homogenous type.  Since Chapel domains support a rich
+variables of homogeneous type.  Since Chapel domains support a rich
 variety of index sets, Chapel arrays are also richer than the
 traditional linear or rectilinear array types in conventional
 languages.  Like domains, arrays may be distributed across multiple
@@ -77,8 +77,8 @@ var A: [D] real;
 var x: A.eltType;
 \end{chapel}
 \begin{chapelpost}
-writeln(typeToString(x.type));
-writeln(typeToString(A.eltType));
+writeln(x.type:string);
+writeln(A.eltType:string);
 \end{chapelpost}
 \begin{chapeloutput}
 real(64)
@@ -679,6 +679,8 @@ multiple arrays, the promoted function returns an array with a domain
 that is equal to the domain of the first argument to the function that
 enables promotion.  If the first argument is an iterator or a range,
 the result is a one-based one-dimensional array.
+
+See also~\rsec{Promotion}.
 
 \begin{chapelexample}{whole-array-ops.chpl}
 Whole array operations is a special case of array promotion of scalar

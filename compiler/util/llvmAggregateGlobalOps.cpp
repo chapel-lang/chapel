@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,7 @@
 
 
 // Merges sequences of loads or sequences of stores
-// on adress space(globalSpace) into memcpy operations so
+// on address space(globalSpace) into memcpy operations so
 // that we can do fewer puts or gets. For example
 // %i1 = getelementptr ... %p, ..., 1
 // %i2 = getelementptr ... %p, ..., 2
@@ -70,6 +70,10 @@
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/MemoryDependenceAnalysis.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
+
+#if HAVE_LLVM_VER >= 37
+#include "llvm/IR/GetElementPtrTypeIterator.h"
+#endif
 
 #include <cstdio>
 #include <list>
@@ -753,7 +757,9 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
   }
 
   //MD = &getAnalysis<MemoryDependenceAnalysis>();
-#if HAVE_LLVM_VER >= 35
+#if HAVE_LLVM_VER >= 37
+  TD = & F.getParent()->getDataLayout();
+#elif HAVE_LLVM_VER >= 35
   TD = & getAnalysisIfAvailable<DataLayoutPass>()->getDataLayout();
 #else
   TD = getAnalysisIfAvailable<DataLayout>();

@@ -1,3 +1,3 @@
 var t: int;
 const c = 1:t;
-compilerWarning("c: ", typeToString(c.type), 0);
+compilerWarning("c: ", c.type:string, 0);

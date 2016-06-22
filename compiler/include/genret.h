@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -76,7 +76,7 @@ extern GenRet baseASTCodegenString(const char* str);
    to something else. Sometimes the code generator is required to do that, even
    though it does not normally make sense with the Chapel reference semantics.
 
-   Lastly, note that GenRet is implicitly convertable from
+   Lastly, note that GenRet is implicitly convertible from
    BaseAST* (code generate some Chapel thing)
    const char* (generate a string)
    int (generate an int)

@@ -116,8 +116,8 @@ proc _wdadr(o:object):string
 proc WrapperDist.toString() {
   return "WrapperDist(" + this.kind:string + "," +
          "rank:" + this.rank:string + "<-" + this.origRank:string + "," +
-         typeToString(this._data.type) + "," +
-         "origDist:" + typeToString(this.origDist.type) + "," +
+         this._data.type:string + "," +
+         "origDist:" + this.origDist.type:string + "," +
          _wdadr(this) + ")";
 }
 
@@ -177,19 +177,19 @@ proc ensureHasBeenPrivatized(arg): void {
   if arg.dsiSupportsPrivatization() {
     if arg.pid == -1 {
       if verboseWrapperPrivHelper then
-        writeln("privatizing ", typeToString(arg.type));
+        writeln("privatizing ", arg.type:string);
       _newPrivatizedClass(arg);
     }
   } else {
     // this writeln is reasonable only when this is an uncommon case
     if verboseWrapperPrivHelper then
-      writeln("does not support privatization ", typeToString(arg.type));
+      writeln("does not support privatization ", arg.type:string);
   }
 }
 
 proc _checkPrivatized(context, arg) {
   assert(arg.pid != -1,
-         typeToString(arg.type), "  from  ", typeToString(context.type));
+         arg.type:string, "  from  ", context.type:string);
 }
 
 proc WrapperDist.dsiSupportsPrivatization() param
@@ -705,7 +705,7 @@ proc WrapperDist._highestUncollapsedOrigDimension() param {
   // If all-collapsed-dimensions slicing is allowed,
   // review the uses of this function to handle such a case.
   // E.g. return 0 in this case.
-  compilerError("The slice ", typeToString(sliceDef.type),
+  compilerError("The slice ", sliceDef.type:string,
                 " contains only collapsed dimensions");
 }
 

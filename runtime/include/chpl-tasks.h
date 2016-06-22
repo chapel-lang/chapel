@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -23,6 +23,7 @@
 #ifndef LAUNCHER
 
 #include <stdint.h>
+#include "chplcgfns.h"
 #include "chpltypes.h"
 #include "chpl-tasks-prvdata.h"
 
@@ -50,9 +51,9 @@
 void      chpl_sync_lock(chpl_sync_aux_t *);
 void      chpl_sync_unlock(chpl_sync_aux_t *);
 void      chpl_sync_waitFullAndLock(chpl_sync_aux_t *,
-                                       int32_t, c_string);
+                                       int32_t, int32_t);
 void      chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *,
-                                        int32_t, c_string);
+                                        int32_t, int32_t);
 void      chpl_sync_markAndSignalFull(chpl_sync_aux_t *);     // and unlock
 void      chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *);    // and unlock
 chpl_bool chpl_sync_isFull(void *, chpl_sync_aux_t *);
@@ -70,7 +71,7 @@ static inline
 void chpl_single_unlock(chpl_sync_aux_t * s) { chpl_sync_unlock(s); }
 static inline
 void chpl_single_waitFullAndLock(chpl_sync_aux_t * s,
-                                 int32_t lineno, c_string filename) {
+                                 int32_t lineno, int32_t filename) {
   chpl_sync_waitFullAndLock(s,lineno,filename);
 }
 static inline
@@ -140,14 +141,39 @@ void chpl_task_addToTaskList(
          chpl_fn_int_t,      // function to call for task
          void*,              // argument to the function
          c_sublocid_t,       // desired sublocale
-         chpl_task_list_p*,  // task list
+         void**,             // task list
          c_nodeid_t,         // locale (node) where task list resides
          chpl_bool,          // is begin{} stmt?  (vs. cobegin or coforall)
          int,                // line at which function begins
-         c_string);          // name of file containing functions
-void chpl_task_processTaskList(chpl_task_list_p);
-void chpl_task_executeTasksInList(chpl_task_list_p);
-void chpl_task_freeTaskList(chpl_task_list_p);
+         int32_t);           // name of file containing function
+void chpl_task_executeTasksInList(void**);
+
+//
+// Call a function in a task.
+//
+void chpl_task_taskCall(chpl_fn_p,          // function to call
+                        void*,              // function arg
+                        size_t,             // length of arg
+                        c_sublocid_t,       // desired sublocale
+                        int,                // line at which function begins
+                        int32_t);           // name of file containing function
+
+//
+// Call a chpl_ftable[] function in a task.
+//
+// This is a convenience function for use by the module code, in which
+// we have function table indices rather than function pointers.
+//
+static inline
+void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
+                              void* arg,              // function arg
+                              size_t arg_size,        // length of arg
+                              c_sublocid_t subloc,    // desired sublocale
+                              int lineno,             // source line
+                              int32_t filename) {     // source filename
+    chpl_task_taskCall(chpl_ftable[fid], arg, arg_size, subloc,
+                       lineno, filename);
+}
 
 //
 // Launch a task that is the logical continuation of some other task,
@@ -193,7 +219,7 @@ void chpl_task_yield(void);
 //
 // Suspend.
 //
-void chpl_task_sleep(int);
+void chpl_task_sleep(double);
 
 //
 // Get and set dynamic serial state.
@@ -314,8 +340,8 @@ size_t chpl_task_getDefaultCallStackSize(void);
 // These are service functions provided to the runtime by the module
 // code.
 //
-extern void chpl_taskRunningCntInc(int64_t _ln, c_string _fn);
-extern void chpl_taskRunningCntDec(int64_t _ln, c_string _fn);
+extern void chpl_taskRunningCntInc(int64_t _ln, int32_t _fn);
+extern void chpl_taskRunningCntDec(int64_t _ln, int32_t _fn);
 
 #include "chpl-tasks-callbacks.h"
 

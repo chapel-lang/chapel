@@ -91,8 +91,8 @@ specified filename.  If the resulting name is not a legal Chapel
 identifier, it cannot be referenced in a use statement.
 
 \begin{chapelexample}{implicit.chpl}
-The following file, named myModule.chpl, defines an implicitly named
-module called myModule.
+The following file, named implicit.chpl, defines an implicitly named
+module called implicit.
 \begin{chapel}
 var x: int = 0;
 var y: int = 1;
@@ -112,7 +112,7 @@ printY();
 0
 1
 \end{chapeloutput}
-Module myModule defines the top-level module symbols x, y, printX, and
+Module implicit defines the top-level module symbols x, y, printX, and
 printY.
 \end{chapelexample}
 
@@ -155,8 +155,8 @@ Files with both module declarations and top-level statements result in
 nested modules.
 
 \begin{chapelexample}{nested.chpl}
-The following file, named myModule.chpl, defines an
-implicitly named module called myModule, with nested modules
+The following file, named nested.chpl, defines an
+implicitly named module called nested, with nested modules
 MX and MY.
 \begin{chapel}
 module MX {
@@ -203,13 +203,10 @@ statement~(\rsec{Using_Modules}).
 \label{Visibility_Of_A_Module}
 \index{modules!access}
 
-A top-level module is visible anywhere if the \sntx{privacy-specifier}
-of its declaration is \chpl{public} or is omitted (i.e. by default).
-A top-level module declared \chpl{private} is visible only within that
-module.  The visibility of a nested module is subject to the rules
-of~\rsec{Visibility_Of_Symbols}. There, the nested module is
-considered a "symbol defined at the top level scope" of its outer
-module.
+A module defined at file scope is visible anywhere. The visibility of a nested
+module is subject to the rules of~\rsec{Visibility_Of_Symbols}. There,
+the nested module is considered a "symbol defined at the top level
+scope" of its outer module.
 
 \subsection{Visibility Of A Module's Symbols}
 \label{Visibility_Of_Symbols}
@@ -315,79 +312,18 @@ compiler error.
 \label{Using_Modules}
 \index{modules!using}
 
-If a module is visible to where accessing its symbols is desirable,
+If a module is visible to the scope in which accessing its symbols is desirable,
 then a use statement on that module may be employed.  Use statements
 make a module's visible symbols available without requiring them to be
-prefixed by the module's name.  The syntax of the use statement is
-given by:
+prefixed by the module's name.  For information about use statements in general,
+see~\rsec{The_Use_Statement}.
 
-\begin{syntax}
-use-statement:
-  `use' module-name-list ;
+If a type is specified in the \sntx{limitation-clause}, then the type's fields
+and methods are treated similarly to the type name.  These fields and methods
+cannot be specified in a \sntx{limitation-clause} on their own.
 
-module-name-list:
-  module-name
-  module-name , module-name-list
-
-module-name:
-  identifier
-  module-name . module-name
-\end{syntax}
-
-Symbols made available by a use statement are at an outer scope from those
-defined directly in the scope where the use statement occurs, but at a
-nearer scope than symbols defined in the scope containing the scope where
-the use statement occurs.
-
-Use statements are transitive by default: if a module A used by
-another module B also contains a use of a further module C, C's
-symbols will also be considered visible within B, at a further scope
-than the symbols of other modules immediately used by B.
-
-% We would like to provide a way to specify that a use should not be
-% transitive
-
-It is an error for two public variables, types, or modules to be
-defined at the same depth.
-
-\begin{openissue}
-There is an expectation that this statement will be extended to allow
-the programmer to restrict which symbols are 'used' as well as to
-rename symbols that are 'used.'
-\end{openissue}
-
-\begin{chapelexample}{use.chpl}
-  The following example illustrates how the use statement makes
-  symbols declared in \chpl{M1}'s scope (like procedure
-  \chpl{foo()}) visible within the scope of \chpl{M2}'s \chpl{main}
-  function.  Without the \chpl{use} statement, the procedure call to
-  \chpl{foo} could not be resolved since \chpl{M2} would not have
-  access to symbols in \chpl{M1}.
-
-  When executed, the program
-\begin{chapel}
-module M1 {
-  proc foo() {
-    writeln("In M1's foo.");
-  }
-}
-
-module M2 {
-  proc main() {
-    use M1;
-
-    writeln("In M2's main.");
-    foo();
-  }
-}
-\end{chapel}
-prints out
-\begin{chapelprintoutput}{}
-In M2's main.
-In M1's foo.
-\end{chapelprintoutput}
-\end{chapelexample}
-
+% We need to figure out what to do about functions that return types which due
+% to the limitation-clause are not visible without prefix.
 
 
 \subsection{Module Initialization}

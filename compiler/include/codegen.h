@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -125,7 +125,7 @@ struct GenInfo {
   GlobalToWideInfo globalToWideInfo;
 
   // Optimizations to apply immediately after code-generating a fn
-  llvm::FunctionPassManager* FPM_postgen;
+  LEGACY_FUNCTION_PASS_MANAGER* FPM_postgen;
 
   // When using a function, just use cgModule->GetAddrOfFunction,
   // which will cause cgModule to emit it on Builder->Release.

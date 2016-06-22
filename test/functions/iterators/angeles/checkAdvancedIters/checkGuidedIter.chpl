@@ -1,7 +1,7 @@
-// Test to check the correctness of the guided() Iterator from the AdvancedIters module
-use AdvancedIters;
+// Test to check the correctness of the guided() Iterator from the DynamicIters module
+use DynamicIters;
 
-config const nTasks=4;       //here.numCores; should be here.maxTaskPar?
+config const nTasks=4;       // number of cores; should be here.maxTaskPar?
 config const n:int=1000;     // The size of the range
 var rng:range=1..n;          // The ranges
 var rngs=rng by 2;

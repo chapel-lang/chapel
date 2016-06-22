@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
+/* A Chapel version of a C pointer. */
 module CPtr {
-  /* A Chapel version of a C NULL pointer.
-  */
+  /* A Chapel version of a C NULL pointer. */
   extern const c_nil:c_void_ptr;
 
   // To generate legal C prototypes, we have to manually instantiate this
@@ -48,6 +48,7 @@ module CPtr {
   pragma "no object"
   pragma "no default functions"
   pragma "no wide class"
+  pragma "c_ptr class"
   class c_ptr {
     /* The type that this pointer points to */
     type eltType;
@@ -84,6 +85,7 @@ module CPtr {
   inline proc _cast(type t, x) where t:c_void_ptr && x.type:c_ptr {
     return __primitive("cast", t, x);
   }
+  pragma "no doc"
   inline proc _cast(type t, x) where t:c_ptr && x.type:c_void_ptr {
     return __primitive("cast", t, x);
   }
@@ -100,6 +102,19 @@ module CPtr {
   inline proc _defaultOf(type t) where t:c_ptr {
       return __primitive("cast", t, nil);
   }
+
+  pragma "compiler generated"
+  pragma "no doc"
+  inline proc _defaultOf(type t) where t == c_fn_ptr {
+      return __primitive("cast", t, nil);
+  }
+
+  pragma "no doc"
+  inline proc =(ref a:c_fn_ptr, b:_nilType) { __primitive("=", a, c_nil); }
+
+  pragma "no doc"
+  inline proc =(ref a:c_fn_ptr, b:c_fn_ptr) { __primitive("=", a, b); }
+
 
 
   pragma "no doc"
@@ -122,6 +137,14 @@ module CPtr {
   inline proc ==(a: _nilType, b: c_ptr) {
     return __primitive("ptr_eq", c_nil, b);
   }
+  pragma "no doc"
+  inline proc ==(a: c_void_ptr, b: _nilType) {
+    return __primitive("ptr_eq", a, c_nil);
+  }
+  pragma "no doc"
+  inline proc ==(a: _nilType, b: c_void_ptr) {
+    return __primitive("ptr_eq", c_nil, b);
+  }
 
   pragma "no doc"
   inline proc !=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
@@ -141,6 +164,14 @@ module CPtr {
   }
   pragma "no doc"
   inline proc !=(a: _nilType, b: c_ptr) {
+    return __primitive("ptr_neq", c_nil, b);
+  }
+  pragma "no doc"
+  inline proc !=(a: c_void_ptr, b: _nilType) {
+    return __primitive("ptr_neq", a, c_nil);
+  }
+  pragma "no doc"
+  inline proc !=(a: _nilType, b: c_void_ptr) {
     return __primitive("ptr_neq", c_nil, b);
   }
 
@@ -195,25 +226,102 @@ module CPtr {
     return c_pointer_return(x);
   }
 
-
-  /* Allocate memory that is filled with zeros. This memory should eventually be
-    freed with c_free.
-
-    :arg eltType: the type of the elements to allocate
-    :arg size: the number of elements to allocate
-    :returns: a c_ptr(eltType) to allocated memory
-    */
-  inline proc c_calloc(type eltType, size: integral) {
-    var ret:c_ptr(eltType);
-    __primitive("array_alloc", ret, eltType, size);
-    init_elts(ret, size, eltType);
-    return ret;
+  inline proc c_ptrTo(x: c_fn_ptr) {
+    return x;
+  }
+  proc c_fn_ptr.this() {
+    compilerError("Can't call a C function pointer within Chapel");
+  }
+  proc c_fn_ptr.this(args...) {
+    compilerError("Can't call a C function pointer within Chapel");
   }
 
-  /* Free memory that was allocated with :proc:`c_free`.
+
+  private extern const CHPL_RT_MD_ARRAY_ELEMENTS:chpl_mem_descInt_t;
+
+  private inline proc c_sizeof(type x): size_t {
+    extern proc sizeof(type x): size_t;
+    return sizeof(x);
+  }
+
+  /*
+    Allocate memory and initialize all bits to 0. Note that this simply zeros
+    memory, it does not call Chapel initializers (it is meant for primitive
+    types and C interoperability only.) This memory should eventually be freed
+    with :proc:`c_free`.
+
+    :arg eltType: the type of the elements to allocate
+    :arg size: the number of elements to allocate space for
+    :returns: a c_ptr(eltType) to allocated memory
+    */
+  inline proc c_calloc(type eltType, size: integral) : c_ptr(eltType) {
+    const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
+    return chpl_here_calloc(alloc_size, 1, CHPL_RT_MD_ARRAY_ELEMENTS):c_ptr(eltType);
+  }
+
+  /*
+    Allocate memory that is not initialized. This memory should eventually be
+    freed with :proc:`c_free`.
+
+    :arg eltType: the type of the elements to allocate
+    :arg size: the number of elements to allocate space for
+    :returns: a c_ptr(eltType) to allocated memory
+    */
+  inline proc c_malloc(type eltType, size: integral) : c_ptr(eltType) {
+    const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
+    return chpl_here_alloc(alloc_size, CHPL_RT_MD_ARRAY_ELEMENTS):c_ptr(eltType);
+  }
+
+  /* Free memory that was allocated with :proc:`c_calloc` or :proc:`c_malloc`.
+
     :arg data: the c_ptr to memory that was allocated
     */
   inline proc c_free(data: c_ptr) {
-    __primitive("array_free", data);
+    chpl_here_free(data);
+  }
+
+
+  /*
+    Copies n (potentially overlapping) bytes from memory area src to memory
+    area dest.
+
+    This is a simple wrapper over the C memmove() function.
+
+    :arg dest: the destination memory area to copy to
+    :arg src: the source memory area to copy from
+    :arg n: the number of bytes from src to copy to dest
+   */
+  inline proc c_memmove(dest: c_ptr, const src: c_ptr, n: integral) {
+    extern proc memmove(dest: c_void_ptr, const src: c_void_ptr, n: size_t);
+    memmove(dest, src, n.safeCast(size_t));
+  }
+
+  /*
+    Copies n (non-overlapping) bytes from memory area src to memory
+    area dest. Use :proc:`c_memmove` if memory areas do overlap.
+
+    This is a simple wrapper over the C memcpy() function.
+
+    :arg dest: the destination memory area to copy to
+    :arg src: the source memory area to copy from
+    :arg n: the number of bytes from src to copy to dest
+   */
+  inline proc c_memcpy(dest: c_ptr, const src: c_ptr, n: integral) {
+    extern proc memcpy (dest: c_void_ptr, const src: c_void_ptr, n: size_t);
+    memcpy(dest, src, n.safeCast(size_t));
+  }
+
+  /*
+    Compares the first n bytes of memory areas s1 and s2
+
+    This is a simple wrapper over the C memcmp() function.
+
+    :returns: returns an integer less than, equal to, or greater than zero if
+              the first n bytes of s1 are found, respectively, to be less than,
+              to match, or be greater than the first n bytes of s2.
+   */
+  inline proc c_memcmp(const s1: c_ptr, const s2: c_ptr, n: integral) {
+    extern proc memcmp(const s1: c_void_ptr, const s2: c_ptr, n: size_t) : c_int;
+    return memcmp(s1, s2, n.safeCast(size_t)).safeCast(int);
   }
 }

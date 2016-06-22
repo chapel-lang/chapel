@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -135,7 +135,7 @@ static PassInfo sPassList[] = {
                                 // _distribution records
   RUN(removeEmptyRecords),      // remove empty records
   RUN(localizeGlobals),         // pull out global constants from loop runs
-  RUN(loopInvariantCodeMotion), // move loop invarient code above loop runs
+  RUN(loopInvariantCodeMotion), // move loop invariant code above loop runs
   RUN(prune2),                  // prune AST of dead functions and types again
 
   RUN(returnStarTuplesByRefArgs),
@@ -150,7 +150,7 @@ static PassInfo sPassList[] = {
   RUN(makeBinary)               // invoke underlying C compiler
 };
 
-static void runPass(PhaseTracker& tracker, size_t passIndex);
+static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc);
 
 void runPasses(PhaseTracker& tracker, bool isChpldoc) {
   size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
@@ -162,11 +162,16 @@ void runPasses(PhaseTracker& tracker, bool isChpldoc) {
   }
 
   for (size_t i = 0; i < passListSize; i++) {
-    runPass(tracker, i);
+    runPass(tracker, i, isChpldoc);
 
     USR_STOP(); // quit if fatal errors were encountered in pass
 
     currentPassNo++;
+
+    // Break early if this is a parse-only run
+    if (fParseOnly ==  true && strcmp(sPassList[i].name, "checkParsed") == 0) {
+      break;
+    }
 
     // Break early if this is a chpl doc run
     if (isChpldoc == true && strcmp(sPassList[i].name, "docs") == 0) {
@@ -178,7 +183,7 @@ void runPasses(PhaseTracker& tracker, bool isChpldoc) {
   teardownLogfiles();
 }
 
-static void runPass(PhaseTracker& tracker, size_t passIndex) {
+static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc) {
   PassInfo* info = &sPassList[passIndex];
 
   //
@@ -204,12 +209,16 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
   considerExitingEndOfPass();
 
   //
-  // Clean up the global pointers to AST
+  // Clean up the global pointers to AST.  If we're running chpldoc,
+  // there's no real reason to run this step (and at the time of this
+  // writing, it didn't work if we hadn't parsed all the 'use'd
+  // modules.
   //
+  if (!isChpldoc) {
+    tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
 
-  tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
-
-  cleanAst();
+    cleanAst();
+  }
 
   //
   // An optional verify pass

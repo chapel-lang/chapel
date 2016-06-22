@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -183,16 +183,16 @@ genGlobalInt(const char* cname, int value) {
   }
 }
 
-static void genGlobalInt64(const char *cname, int value) {
+static void genGlobalInt32(const char *cname, int value) {
   GenInfo *info = gGenInfo;
   if (info->cfile) {
-    fprintf(info->cfile, "const int64_t %s = %d;\n", cname, value);
+    fprintf(info->cfile, "const int32_t %s = %d;\n", cname, value);
   } else {
 #ifdef HAVE_LLVM
     llvm::GlobalVariable *globalInt =
         llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(
-            cname, llvm::IntegerType::getInt64Ty(info->module->getContext())));
-    globalInt->setInitializer(info->builder->getInt64(value));
+            cname, llvm::IntegerType::getInt32Ty(info->module->getContext())));
+    globalInt->setInitializer(info->builder->getInt32(value));
     globalInt->setConstant(true);
     info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false);
 #endif
@@ -302,7 +302,8 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
             fprintf(hdrfile, "(chpl_fn_p)NULL");
             n++;
           }
-          comma = true;
+          if (maxVMT > 0)
+            comma = true;
         }
       }
     }
@@ -360,15 +361,13 @@ static void genFilenameTable() {
   GenInfo *info = gGenInfo;
   const char *tableName = "chpl_filenameTable";
   const char *sizeName = "chpl_filenameTableSize";
-  // make sure the internal filename is added to the table
-  gFilenameLookup.insert("<internal>");
   if (info->cfile) {
     FILE *hdrfile = info->cfile;
 
     fprintf(hdrfile, "c_string %s[] = {\n", tableName);
 
     bool first = true;
-    for (std::set<std::string>::iterator it = gFilenameLookup.begin();
+    for (std::vector<std::string>::iterator it = gFilenameLookup.begin();
          it != gFilenameLookup.end(); it++) {
       if (!first)
         fprintf(hdrfile, ",\n");
@@ -385,7 +384,7 @@ static void genFilenameTable() {
         llvm::IntegerType::getInt8PtrTy(info->module->getContext());
 
     int idx = 0;
-    for (std::set<std::string>::iterator it = gFilenameLookup.begin();
+    for (std::vector<std::string>::iterator it = gFilenameLookup.begin();
          it != gFilenameLookup.end(); it++) {
       table[idx++] = llvm::cast<llvm::GlobalVariable>(
               new_CStringSymbol((*it).c_str())->codegen().val)->getInitializer();
@@ -407,7 +406,7 @@ static void genFilenameTable() {
     info->lvt->addGlobalValue(tableName, filenameTable, GEN_PTR, true);
 #endif
   }
-  genGlobalInt64(sizeName, gFilenameLookup.size());
+  genGlobalInt32(sizeName, gFilenameLookup.size());
 }
 
 static int
@@ -526,6 +525,7 @@ static inline bool shouldCodegenAggregate(AggregateType* ct)
 
 
 static void codegen_aggregate_def(AggregateType* ct) {
+  //DFS, check visited
   if (!shouldCodegenAggregate(ct)) return;
   if (ct->symbol->hasFlag(FLAG_CODEGENNED)) return;
   ct->symbol->addFlag(FLAG_CODEGENNED);
@@ -582,6 +582,7 @@ static void codegen_header_compilation_config() {
     genComment("Compilation Info");
 
     fprintf(cfgfile.fptr, "\n#include <stdio.h>\n");
+    fprintf(cfgfile.fptr, "\n#include \"chpltypes.h\"\n");
 
     genGlobalString("chpl_compileCommand", compileCommand);
     genGlobalString("chpl_compileVersion", compileVersion);
@@ -621,6 +622,9 @@ static void codegen_header_compilation_config() {
 
     fprintf(cfgfile.fptr, "}\n");
 
+    genComment("Filename Lookup Table");
+    genFilenameTable();
+
     closeCFile(&cfgfile);
 
     gGenInfo->cfile = save_cfile;
@@ -641,7 +645,7 @@ static void protectNameFromC(Symbol* sym) {
   //
   // For now, we only rename our user and standard symbols.  Internal
   // modules symbols should arguably similarly be protected, to ensure
-  // that we haven't inadvertantly used a name that some user library
+  // that we haven't inadvertently used a name that some user library
   // will; most file-level symbols should be protected by 'chpl_' or
   // somesuch, but of course local symbols may not be, and can cause
   // conflicts (at present, a local variable named 'socket' would).
@@ -701,7 +705,7 @@ static void protectNameFromC(Symbol* sym) {
   //
   // Can we free this given how we create names?  free() doesn't like
   // const char*, I don't want to just cast it away, and I'm not
-  // certain we can assume it isn't aliased to someting else, like
+  // certain we can assume it isn't aliased to something else, like
   // sym->name...  In other cases, we seem to leak old names as
   // well... :P
   //
@@ -1008,9 +1012,6 @@ static void codegen_header() {
   genComment("Virtual Method Table");
   genVirtualMethodTable(types);
 
-  genComment("Filename Lookup Table");
-  genFilenameTable();
-
   genComment("Global Variables");
   forv_Vec(VarSymbol, varSymbol, globals) {
     varSymbol->codegenGlobalDef();
@@ -1248,7 +1249,11 @@ codegen_config() {
     info->builder->SetInsertPoint(createConfigBlock);
 
     llvm::Function *initConfigFunc = getFunctionLLVM("initConfigVarTable");
+#if HAVE_LLVM_VER >= 37
+    info->builder->CreateCall(initConfigFunc, {} );
+#else
     info->builder->CreateCall(initConfigFunc);
+#endif
 
     llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
 
@@ -1348,7 +1353,7 @@ void codegen(void) {
   if( llvmCodegen ) {
 #ifdef HAVE_LLVM
     if( fHeterogeneous )
-      INT_FATAL("fHeretogeneous not yet supported with LLVM");
+      INT_FATAL("fHeterogeneous not yet supported with LLVM");
 
     prepareCodegenLLVM();
 #endif

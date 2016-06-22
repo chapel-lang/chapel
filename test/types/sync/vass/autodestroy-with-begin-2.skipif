@@ -1,2 +1,0 @@
-# The only way for this test to fail reliably is under valgrind.
-CHPL_TEST_VGRND_COMP != on

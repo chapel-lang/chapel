@@ -1,7 +1,7 @@
 use myrecord;
 
 proc foo(out rec: R) {
-  rec.init(x = 20);
+  rec.setup(x = 20);
   rec.verify();
   assert(rec.x == 20);
 }

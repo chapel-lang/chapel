@@ -48,7 +48,7 @@ def get_compiler_version(compiler):
 @memoize
 def CompVersion(version_string):
     CompVersionT = namedtuple('CompVersion', ['major', 'minor', 'revision', 'build'])
-    match = re.search(u'(\d+)(\.(\d+))?(\.(\d+))?(\.(\d+))?', str(version_string))
+    match = re.search(u'(\d+)(\.(\d+))?(\.(\d+))?(\.(\d+))?', version_string)
     if match:
         major    = int(match.group(1))
         minor    = int(match.group(3) or 0)
@@ -74,6 +74,7 @@ def run_command(command, stdout=True, stderr=False):
             "command `{0}` failed - output was \n{1}".format(command,
                                                              output[1]))
     else:
+        output = (output[0].decode(), output[1].decode())
         if stdout and stderr:
             return output
         elif stdout:

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -44,7 +44,7 @@ This Block-Cyclic dimension specifier is for use with the
 :class:`DimensionalDist2D` distribution.
 
 It specifies the mapping of indices in its dimension
-that would be produced by a 1D :class:`BlockCyclic` distribution.
+that would be produced by a 1D :class:`~BlockCycDist.BlockCyclic` distribution.
 
 **Constructor Arguments**
 
@@ -66,7 +66,7 @@ The arguments are as follows:
       to be distributed over
   ``lowIdx``, ``blockSize``
       are the counterparts to ``startIdx`` and ``blocksize``
-      in the :class:`BlockCyclic` distribution
+      in the :class:`~BlockCycDist.BlockCyclic` distribution
   ``name``
       may be used for debugging; it is ignored by the implementation
   ``cycleSizePos``
@@ -199,7 +199,7 @@ inline proc _checkFitsWithin(src: integral, type destT)
   where isIntegralType(destT)
 {
   inline proc ensure(arg:bool) {
-    if !arg then halt("When creating a domain mapped using DimensionalDist2D with a BlockCyclicDim specifier, could not fit BlockCyclicDim's adjusted lowIdx of ", src, " in the domain's idxType ", typeToString(destT));
+    if !arg then halt("When creating a domain mapped using DimensionalDist2D with a BlockCyclicDim specifier, could not fit BlockCyclicDim's adjusted lowIdx of ", src, " in the domain's idxType ", destT:string);
   }
   type maxuT = uint(64); // the largest unsigned type
   type srcT = src.type;
@@ -255,7 +255,7 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
       if lowIdxDom <= 0 then -lowIdxDom else adjustLowIdx()
     ;
 
-  if BlockCyclicDim_printAdjustedLowIdx then writeln("BlockCyclicDim(numLocales=", numLocales, ", lowIdx=", lowIdx, " blockSize=", blockSize, " name=", name, ").dsiNewRectangularDom1d(idxType=", typeToString(idxType), "): adjusted lowIdx = ", adjLowIdx);
+  if BlockCyclicDim_printAdjustedLowIdx then writeln("BlockCyclicDim(numLocales=", numLocales, ", lowIdx=", lowIdx, " blockSize=", blockSize, " name=", name, ").dsiNewRectangularDom1d(idxType=", idxType:string, "): adjusted lowIdx = ", adjLowIdx);
 
   _checkFitsWithin(adjLowIdx, idxType);
 
@@ -387,7 +387,7 @@ on each locale, then starts over:
  // the pair (locNo(j), storageOff(j)) is unique for each integer j
  storageOff(i) = cycNo(i) * blockSize + locOff(i)
 
-Advdanced: compress the storage based on the above advanced property,
+Advanced: compress the storage based on the above advanced property,
 which implies that:
  the pair (locNo(i), storageOff(i) div |wSt|) is unique
  for each 'i' - member of 'whole'.
@@ -418,7 +418,7 @@ to stay the same throughout the life of a domain descriptor.
 (This is so that our storage indices remain consistent - which is
 useful to implement Chapel's preservation of array contents upon
 domain assignments.)
-This implies that the same cycAdj should accomodate wLo for any
+This implies that the same cycAdj should accommodate wLo for any
 domain bounds that can be assigned to our domain descriptor.
 That may not be convenient in practice.
 */

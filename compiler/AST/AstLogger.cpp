@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,6 +18,7 @@
  */
 
 #include "AstLogger.h"
+#include "stlUtil.h"
 
 
 
@@ -89,6 +90,13 @@ bool AstLogger::enterCallExpr(CallExpr* node) {
 void AstLogger::exitCallExpr(CallExpr* node) {
 }
 
+bool AstLogger::enterContextCallExpr(ContextCallExpr* node) {
+  return true;
+}
+
+void AstLogger::exitContextCallExpr(ContextCallExpr* node) {
+}
+
 bool AstLogger::enterDefExpr(DefExpr* node) {
   return true;
 }
@@ -107,6 +115,9 @@ void AstLogger::visitSymExpr(SymExpr* node) {
 }
 
 void AstLogger::visitUsymExpr(UnresolvedSymExpr* node) {
+}
+
+void AstLogger::visitUseStmt(UseStmt* node) {
 }
 
 bool AstLogger::enterBlockStmt(BlockStmt* node) {
@@ -166,4 +177,31 @@ bool AstLogger::enterGotoStmt(GotoStmt* node) {
 }
 
 void AstLogger::exitGotoStmt(GotoStmt* node) {
+}
+
+bool AstLogger::outputVector(FILE* mFP, std::vector<const char *> vec) {
+  bool first = true;
+  for_vector(const char, str, vec) {
+    if (first) {
+      first = false;
+    } else {
+      fprintf(mFP, ", ");
+    }
+    fprintf(mFP, "%s", str);
+  }
+  return first;
+}
+
+void AstLogger::outputRenames(FILE* mFP,
+                              std::map<const char*, const char*> renames,
+                              bool first) {
+  for (std::map<const char*, const char*>::iterator it = renames.begin();
+       it != renames.end(); ++it) {
+    if (first) {
+      first = false;
+    } else {
+      fprintf(mFP, ", ");
+    }
+    fprintf(mFP, "%s 'as' %s", it->second, it->first);
+  }
 }

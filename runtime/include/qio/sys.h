@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -87,7 +87,7 @@ typedef struct addrinfo* sys_addrinfo_ptr_t;
 //  struct addrinfo addr_info;
 //} sys_addrinfo_t;
 
-/* Wrap system calls to return error seperately,
+/* Wrap system calls to return error separately,
  * to run them in a pthread, and to use a fixed-length sys_sockaddr
  * to simplify programming.
  *

@@ -5,4 +5,4 @@ record R {
 
 type t = R(bool);
 type typeField = __primitive("query type field", t, "foo");
-writeln(typeToString(typeField));
+writeln(typeField:string);

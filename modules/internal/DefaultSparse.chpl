@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -120,11 +120,16 @@ module DefaultSparse {
 
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
       compilerError("Sparse iterators can't yet be zippered with others");
-      yield 0;  // dummy.
+      var dummy: rank * idxType;
+      yield dummy;
     }
 
     proc dsiDim(d : int) {
       return parentDom.dim(d);
+    }
+
+    proc dsiDims() {
+      return parentDom.dims();
     }
 
     // private
@@ -141,6 +146,13 @@ module DefaultSparse {
     proc dsiMember(ind) { // ind should be verified to be index type
       const (found, loc) = find(ind);
       return found;
+    }
+
+    proc boundsCheck(ind: index(rank, idxType)):void {
+      if boundsChecking then
+        if !(parentDom.member(ind)) then
+          halt("DefaultSparse domain/array index out of bounds: ", ind,
+              " (expected to be within ", parentDom, ")");
     }
 
     proc add_help(ind) {
@@ -224,11 +236,87 @@ module DefaultSparse {
     }
 
     proc dsiAdd(ind: rank*idxType) {
-      add_help(ind);
+      if (rank == 1) {
+        add_help(ind(1));
+      } else {
+        add_help(ind);
+      }
+    }
+
+    proc dsiBulkAdd(inds: [] index(rank, idxType),
+        isSorted=false, isUnique=false, preserveInds=true){
+
+      if !isSorted && preserveInds {
+        var _inds = inds;
+        bulkAdd_help(_inds, isSorted, isUnique); 
+      }
+      else {
+        bulkAdd_help(inds, isSorted, isUnique);
+      }
+    }
+
+    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), isSorted=false, 
+        isUnique=false){
+
+      const (actualInsertPts, actualAddCnt) =
+        __getActualInsertPts(this, inds, isSorted, isUnique);
+
+      const oldnnz = nnz;
+      nnz += actualAddCnt;
+
+      //grow nnzDom if necessary
+      if (nnz > nnzDomSize) {
+        nnzDomSize = (exp2(log2(nnz)+1.0)):int;
+
+        nnzDom = {1..nnzDomSize};
+      }
+
+      //linearly fill the new colIdx from backwards
+      var newIndIdx = indsDom.high; //index into new indices
+      var oldIndIdx = oldnnz; //index into old indices
+      var newLoc = actualInsertPts[newIndIdx]; //its position-to-be in new dom
+      while newLoc == -1 {
+        newIndIdx -= 1;
+        if newIndIdx == indsDom.low-1 then break; //there were duplicates -- now done
+        newLoc = actualInsertPts[newIndIdx];
+      }
+
+      var arrShiftMap: [{1..oldnnz}] int; //to map where data goes
+
+      for i in 1..nnz by -1 {
+        if oldIndIdx >= 1 && i > newLoc {
+          //shift from old values
+          indices[i] = indices[oldIndIdx];
+          arrShiftMap[oldIndIdx] = i;
+          oldIndIdx -= 1;
+        }
+        else if newIndIdx >= indsDom.low && i == newLoc {
+          //put the new guy in
+          indices[i] = inds[newIndIdx];
+          newIndIdx -= 1;
+          if newIndIdx >= indsDom.low then 
+            newLoc = actualInsertPts[newIndIdx];
+          else
+            newLoc = -2; //finished new set
+          while newLoc == -1 {
+            newIndIdx -= 1;
+            if newIndIdx == indsDom.low-1 then break; //there were duplicates -- now done
+            newLoc = actualInsertPts[newIndIdx];
+          }
+        }
+        else halt("Something went wrong");
+      }
+
+      for a in _arrs do 
+        a.sparseBulkShiftArray(arrShiftMap, oldnnz);
     }
 
     proc dsiRemove(ind: rank*idxType) {
-      rem_help(ind);
+      if (rank == 1) {
+        rem_help(ind(1));
+      } else {
+        rem_help(ind);
+      }
     }
 
     proc dsiClear() {
@@ -256,7 +344,30 @@ module DefaultSparse {
 
     proc dsiGetBaseDom() return dom;
 
+    // ref version
     proc dsiAccess(ind: idxType) ref where rank == 1 {
+      // make sure we're in the dense bounding box
+      if boundsChecking then
+        if !(dom.parentDom.member(ind)) {
+          if debugDefaultSparse {
+            writeln("On locale ", here.id);
+            writeln("In dsiAccess, got index ", ind);
+            writeln("dom.parentDom = ", dom.parentDom);
+          }
+
+          halt("array index out of bounds: ", ind);
+        }
+
+
+      // lookup the index and return the data or IRV
+      const (found, loc) = dom.find(ind);
+      if found then
+        return data(loc);
+      else
+        halt("attempting to assign a 'zero' value in a sparse array: ", ind);
+    }
+    // value version
+    proc dsiAccess(ind: idxType) const ref where rank == 1 {
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.member(ind)) then
@@ -264,14 +375,14 @@ module DefaultSparse {
 
       // lookup the index and return the data or IRV
       const (found, loc) = dom.find(ind);
-      if setter && !found then
-        halt("attempting to assign a 'zero' value in a sparse array: ", ind);
       if found then
         return data(loc);
       else
         return irv;
     }
 
+
+    // ref version
     proc dsiAccess(ind: rank*idxType) ref {
       // make sure we're in the dense bounding box
       if boundsChecking then
@@ -280,8 +391,36 @@ module DefaultSparse {
 
       // lookup the index and return the data or IRV
       const (found, loc) = dom.find(ind);
-      if setter && !found then
+      if found then
+        return data(loc);
+      else
         halt("attempting to assign a 'zero' value in a sparse array: ", ind);
+    }
+    // value version for POD types
+    proc dsiAccess(ind: rank*idxType)
+    where !shouldReturnRvalueByConstRef(eltType) {
+      // make sure we're in the dense bounding box
+      if boundsChecking then
+        if !(dom.parentDom.member(ind)) then
+          halt("array index out of bounds: ", ind);
+
+      // lookup the index and return the data or IRV
+      const (found, loc) = dom.find(ind);
+      if found then
+        return data(loc);
+      else
+        return irv;
+    }
+    // const ref version for types with copy ctors
+    proc dsiAccess(ind: rank*idxType) const ref
+    where shouldReturnRvalueByConstRef(eltType) {
+      // make sure we're in the dense bounding box
+      if boundsChecking then
+        if !(dom.parentDom.member(ind)) then
+          halt("array index out of bounds: ", ind);
+
+      // lookup the index and return the data or IRV
+      const (found, loc) = dom.find(ind);
       if found then
         return data(loc);
       else
@@ -342,6 +481,27 @@ module DefaultSparse {
       return irv;
     }
 
+    // shifts data array according to shiftMap where shiftMap[i] is the new index 
+    // of the ith element of the array. Called at the end of bulkAdd to move the
+    // existing items in data array and initialize new indices with irv.
+    // oldnnz is the number of elements in the array. As the function is called 
+    // at the end of bulkAdd, it is almost certain that oldnnz!=data.size
+    proc sparseBulkShiftArray(shiftMap, oldnnz){
+      var newIdx: int;
+      var prevNewIdx = 1;
+      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(1) by -1) {
+        newIdx = shiftMap[_newIdx];
+        data[newIdx] = data[i];
+        
+        //fill IRV up to previously added nnz
+        for emptyIndex in newIdx+1..prevNewIdx-1 do data[emptyIndex] = irv;
+        prevNewIdx = newIdx;
+      }
+      //fill the initial added space with IRV
+      for i in 1..prevNewIdx-1 do data[i] = irv;
+    }
+
+    // shift data array after single index addition. Fills the new index with irv
     proc sparseShiftArray(shiftrange, initrange) {
       for i in initrange {
         data(i) = irv;
@@ -359,7 +519,7 @@ module DefaultSparse {
     }
 
     proc dsiTargetLocales() {
-      compilerError("targetLocales is unsuppported by sparse domains");
+      compilerError("targetLocales is unsupported by sparse domains");
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;
@@ -370,18 +530,18 @@ module DefaultSparse {
   }
 
 
-  proc DefaultSparseDom.dsiSerialWrite(f: Writer) {
+  proc DefaultSparseDom.dsiSerialWrite(f, printBrackets=true) {
     if (rank == 1) {
-      f.write("{");
+      if printBrackets then f.write("{");
       if (nnz >= 1) {
         f.write(indices(1));
         for i in 2..nnz {
           f.write(" ", indices(i));
         }
       }
-      f.write("}");
+      if printBrackets then f.write("}");
     } else {
-      f.writeln("{");
+      if printBrackets then f.writeln("{");
       if (nnz >= 1) {
         var prevInd = indices(1);
         f.write(" ", prevInd);
@@ -394,12 +554,12 @@ module DefaultSparse {
         }
         f.writeln();
       }
-      f.writeln("}");
+      if printBrackets then f.writeln("}");
     }
   }
 
 
-  proc DefaultSparseArr.dsiSerialWrite(f: Writer) {
+  proc DefaultSparseArr.dsiSerialWrite(f) {
     if (rank == 1) {
       if (dom.nnz >= 1) {
         f.write(data(1));

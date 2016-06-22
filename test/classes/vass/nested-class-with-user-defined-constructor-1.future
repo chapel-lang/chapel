@@ -10,8 +10,3 @@ There are two problems with this:
 * The 'outer' formal should not be required - because there are cases
   (like in this example) where the user does not wish to pass an explicit
   outer pointer.
-
-Furthermore, if we suck it up and do add the "outer" argument,
-the compiler can't handle it (this is an internal error):
-
-nested-class-with-user-defined-constructor-1.chpl:4: error: SymExpr::var::defPoint is not in AST [expr.cpp:187]

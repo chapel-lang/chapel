@@ -1,0 +1,2 @@
+use_before_def3.chpl:1: In function 'foo':
+use_before_def3.chpl:3: error: 'x' used before defined (first used here)

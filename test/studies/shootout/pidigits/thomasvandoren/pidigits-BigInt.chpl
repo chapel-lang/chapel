@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://shootout.alioth.debian.org/
+   http://benchmarksgame.alioth.debian.org
 
    contributed by Tom Hildebrandt, Brad Chamberlain, Lydia Duncan,
    and Thomas Van Doren
@@ -12,10 +12,19 @@ use GMP;
 config const n = 10000;
 
 proc main() {
+  param digitsPerLine = 10;
+
   for (digit, i) in zip(genDigits(n), 1..) {
     write(digit);
-    if i % 10 == 0 then
+    if i % digitsPerLine == 0 then
       writeln("\t:", i);
+  }
+
+  const leftover = n%digitsPerLine;
+  if (leftover) {
+    for leftover..digitsPerLine do
+      write(" ");
+    writeln("\t:", n);
   }
 }
 

@@ -166,7 +166,7 @@ iter postorder(tree: Tree): string {
 }
 \end{chapel}
 \begin{chapelnoprint}
-proc Tree.writeThis(x: Writer)
+proc Tree.writeThis(x)
 {
   var first = true;
   for node in postorder(tree) {
@@ -187,6 +187,50 @@ recursive calls, which would then be discarded.
 Tree Data
 b d e c a
 \end{chapeloutput}
+\end{chapelexample}
+
+\subsection{Iterator Promotion of Scalar Functions}
+\label{Iterator_Promotion_of_Scalar_Functions}
+\index{iterators!promotion}
+\index{promotion!iterator}
+
+Iterator calls may be passed to a scalar function argument whose type
+matches the iterator's yielded type.  This results in a promotion of the
+scalar function as described in~\rsec{Promotion}.
+
+\begin{chapelexample}{iteratorPromotion.chpl}
+Given a function \chpl{addOne(x:int)} that accepts \chpl{int} values
+and an iterator \chpl{firstN()} that yields \chpl{int} values,
+\chpl{addOne()} can be called with \chpl{firstN()} as its actual argument.
+This pattern creates a new iterator that yields the result of applying
+\chpl{addOne()} to each value yielded by \chpl{firstN()}.
+
+\begin{chapel}
+proc addOne(x:int) {
+  return x + 1;
+}
+iter firstN(n:int) {
+  for i in 1..n {
+    yield i;
+  }
+}
+for number in addOne(firstN(10)) {
+  writeln(number);
+}
+\end{chapel}
+\begin{chapeloutput}
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+\end{chapeloutput}
+
 \end{chapelexample}
 
 \section{Parallel Iterators}

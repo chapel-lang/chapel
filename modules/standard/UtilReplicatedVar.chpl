@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -112,8 +112,6 @@ private const rcDomainMap  = new ReplicatedDist(rcLocales);
 /* Use this domain to declare a user-level replicated variable,
    as shown :ref:`above <basic-usage>` . */
 const rcDomain     = rcDomainBase dmapped new dmap(rcDomainMap);
-// todo - remove private from rcCollectDomaim?  our examples use LocaleSpace instead
-private const rcCollectDomaim = rcLocales.domain;
 private param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped ReplicatedDist(an array of locales)'";
 
 private proc _rcTargetLocalesHelper(replicatedVar: [?D])

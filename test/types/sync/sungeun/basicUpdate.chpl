@@ -12,7 +12,7 @@ proc foo(type myType) {
   var sum: myType;
   sum = + reduce A;
   if x.readXX() != sum then
-    writeln("ERROR: sums do not match for ", typeToString(myType),
+    writeln("ERROR: sums do not match for ", myType:string,
             " (should be ", sum, ", result is ", x.readXX(), ")");
 }
 

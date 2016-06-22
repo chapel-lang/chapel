@@ -7,5 +7,5 @@ writeln("r is: ", r);
 for i in r do
   writeln(i);
 
-writeln("r.type = ", typeToString(r.type));
-writeln("r.str.type = ", typeToString(r.stride.type));
+writeln("r.type = ", r.type:string);
+writeln("r.str.type = ", r.stride.type:string);

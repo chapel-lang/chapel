@@ -5,8 +5,8 @@ Building Chapel
 ===============
 
 To build the Chapel compiler, set up your environment as described in
-:ref:`chapelhome-readme` (or :ref:`readme-chplenv` for more settings),
-cd to ``$CHPL_HOME``, and type:
+:ref:`chapelhome-quickstart` (or :ref:`readme-chplenv` for more
+settings), cd to ``$CHPL_HOME``, and type:
 
 .. code-block:: sh
 
@@ -29,10 +29,12 @@ If everything works as intended, you ought to see:
 
      ``$CHPL_HOME/lib/$CHPL_TARGET_PLATFORM.$CHPL_TARGET_COMPILER.../``
 
-If you get an error or failure during the make process, please let us
-know about it at: chapel-bugs@lists.sourceforge.net (as well as
-information about your system as described in :ref:`readme-bugs` and any
-workaround that you come up with).
+If you get an error or failure during the make process, first
+double-check that you have the required prerequisites (see
+:ref:`readme-prereqs`). If you do, please let us know about the failure
+at: chapel-bugs@lists.sourceforge.net (as well as information about your
+system as described in :ref:`readme-bugs` and any workaround that you
+come up with).
 
 Note that each make command only builds the compiler and runtime for
 the current set of ``CHPL_`` environment variables defined by (and

@@ -26,7 +26,7 @@ This directory contains the following documentation:
                             Cray CS(TM) series
     cygwin.rst           :  Cygwin
     ibm.rst              :  IBM
-    knc.rst              :  Intel Xeon Phi (Knights Corner)
+    knl.rst              :  Intel Xeon Phi (Knights Landing)
     macosx.rst           :  Mac
     marenostrum.rst      :  MareNostrum (at BSC)
     sgi.rst              :  SGI Altix
@@ -36,7 +36,6 @@ This directory contains the following documentation:
     atomics.rst          :  information about using 'atomic' variables
     auxIO.rst            :  information about Auxiliary I/O with Chapel
     chpl-ipe.rst         :  information about Interactive Chapel
-    chpldoc.rst          :  notes on using the 'chpldoc' capability
     reduceIntents.rst    :  'reduce' forall intents
     dsi.rst              :  requirements/guidelines on writing a domain map
     extern.rst           :  calling external C routines
@@ -58,7 +57,7 @@ Online Documentation
 You can navigate to the root of the documentation for this release using
 the URL:
 
-[chapel.cray.com/docs/1.12](http://chapel.cray.com/docs/1.12/)
+[chapel.cray.com/docs/1.13](http://chapel.cray.com/docs/1.13/)
 
 
 For More Information

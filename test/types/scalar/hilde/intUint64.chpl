@@ -5,4 +5,4 @@
 var i: int = 0;
 var ui64: uint(64) = 3184;
 
-writeln(typeToString((i+ui64).type));
+writeln((i+ui64).type:string);

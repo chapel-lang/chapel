@@ -1,7 +1,0 @@
-semantic: should writeln(someRecord) pass someRecord by value?
-
-If we are OK with writeln() passing a record by value
-somewhere in its implementation, then it is legal and required
-for initialize() to run. So this test should indeed print (c = 2).
-
-Otherwise we have a bug and this test should print (c = 1) for a[1].

@@ -1,6 +1,6 @@
 /*
  * The Computer Language Benchmarks Game
- * http://shootout.alioth.debian.org/
+ * http://benchmarksgame.alioth.debian.org
  *
  * Original C contributed by Sebastien Loisel
  * Conversion to Chapel by Albert Sidelnik
@@ -49,7 +49,7 @@ proc main() {
   var chunk = n / numThreads;
 
   u = 1.0;
-        b = new BarrierWF(numThreads);
+  b = new BarrierWF(numThreads);
 
   coforall i in 0..#numThreads do {
     var r_begin = i * chunk;
@@ -64,9 +64,12 @@ proc main() {
       eval_AtA_times_u(v, u, tmp, n, r_begin, r_end);
     }
   }
-  var vv = + reduce (v * v);
-  var vBv = + reduce (u * v);
 
+  var   vv  = + reduce (v * v);
+  var   vBv = + reduce (u * v);
   const res = sqrt(vBv/vv);
+
   writeln(res, new iostyle(precision=10));
+
+  delete b;
 }

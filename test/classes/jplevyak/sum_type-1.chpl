@@ -28,3 +28,7 @@ writeln("cp { ", cp.x, ", ", cp.y, ", ", cp.color, " }");
 
 writeln("length p = ", length(p));
 writeln("length cp = ", length(cp));
+
+
+delete p;
+delete cp;

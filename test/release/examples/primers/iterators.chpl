@@ -5,7 +5,7 @@
  *   an iterator to generate the Fibonacci numbers,
  *   an iterator defined by multiple loops
  *   and a recursive iterator over a tree.
- * 
+ *
  * It also contains examples of the two kinds of parallel iteration:
  *  data-parallel (forall), and
  *  task-parallel (coforall).
@@ -20,6 +20,7 @@
 //
 iter fibonacci(n: int) {
   var (current, next) = (0, 1); // same as: var current = 0, next = 1;
+
   for 1..n {
     yield current;
       // When this iterator runs, it proceeds this far
@@ -45,8 +46,10 @@ iter fibonacci(n: int) {
 // execution of the loop terminates (no more iterations occur).
 //
 write("The first few Fibonacci numbers are: ");
+
 for indexVar in fibonacci(10) do
   write(indexVar, ", ");
+
 writeln("...");
 writeln();
 
@@ -63,16 +66,20 @@ writeln();
 // with the value yielded by the corresponding iterator.
 //
 writeln("Fibonacci Numbers");
+
 for (i, j) in zip(1.., fibonacci(10)) {
   write("The ", i);
+
   select i {
     when 1 do write("st");
     when 2 do write("nd");
     when 3 do write("rd");
     otherwise write("th");
   }
+
   writeln(" Fibonacci number is ", j);
 }
+
 writeln();
 
 //
@@ -103,7 +110,7 @@ writeln(); // line break
 // define a tree class and initialize an instance to
 //
 //      a
-//     / \ 
+//     / \
 //    b   c
 //       / \
 //      d   e
@@ -111,6 +118,11 @@ writeln(); // line break
 class Tree {
   var data: string;
   var left, right: Tree;
+
+  proc ~Tree() {
+    if left  then delete left;
+    if right then delete right;
+  }
 }
 
 var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"),
@@ -119,7 +131,7 @@ var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"),
 //
 // postorder - iterate over the Tree in postorder using recursion
 //
-// Each yield statement returns a node, 
+// Each yield statement returns a node,
 // or equivalently the subtree rooted at that node.
 //
 iter postorder(tree: Tree): Tree {
@@ -143,16 +155,18 @@ iter postorder(tree: Tree): Tree {
 // This visits the nodes of the tree in postorder and prints them out.
 // It uses the "first" flag to avoid printing a leading space.
 //
-proc Tree.writeThis(x: Writer)
+proc Tree.writeThis(x)
 {
   var first = true;
+
   for node in postorder(tree) {
     if first then first = false;
       else x.write(" ");
+
     x.write(node.data);
   }
 }
-  
+
 //
 // Output the data in the tree using the postorder iterator.
 //
@@ -170,10 +184,10 @@ writeln();
 // this directory.
 
 //
-// The coforall loop uses the serial version iterator 
+// The coforall loop uses the serial version iterator
 // to spawn a separate task for each of the values it yields.
 // If you use coforall, you are asserting that the manipulations
-// done with each yielded value can be done in parallel 
+// done with each yielded value can be done in parallel
 // (i.e. in no particular order).
 //
 // All of the spawned tasks must complete before execution continues
@@ -184,12 +198,16 @@ writeln();
 // prefixing each string with "node_".
 proc decorate(s:string) return "node_" + s;
 
-// 
+//
 // This decorates each node in the tree in parallel, using a coforall.
 // Then it writes out the resulting tree data using a postorder traversal.
 //
 writeln("Task parallel iteration");
+
 coforall node in postorder(tree) do
   node.data = decorate(node.data);
+
 writeln(tree);
 writeln();
+
+delete tree;

@@ -5,7 +5,7 @@ class D {
 class C {
   var Ds: [LocaleSpace] D;
 
-  proc writeThis(x:Writer) {
+  proc writeThis(x) {
     for loc in Locales do
       on loc do
 	Ds[loc.id].writeThis(x);
@@ -19,3 +19,11 @@ for loc in Locales do
     myC.Ds[loc.id] = new D(me=loc.id);
 
 writeln(myC);
+
+for loc in Locales do
+  on loc do
+    delete myC.Ds[loc.id];
+
+delete myC;
+
+

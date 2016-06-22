@@ -49,16 +49,19 @@ record LocTree {
      */
     proc this(lvl: int, idx: int) ref {
         if !locIndices.member((lvl, idx)) {
-            if setter {
-              locIndices += ((lvl, idx));
-              locNodes[(lvl, idx)] = new Coeff(coeffDom);
-            } else {
-              // This is a getter so it shouldn't be modifying what
-              // we return, should be safe to return the zero vector.
-              // FIXME: Zeroes should really be a const, but can'ti
-              //        return const from a var fcn.
-              return zeroes;
-            }
+            locIndices += ((lvl, idx));
+            locNodes[(lvl, idx)] = new Coeff(coeffDom);
+        }
+
+        return locNodes[(lvl, idx)].data;
+    }
+    proc this(lvl: int, idx: int) {
+        if !locIndices.member((lvl, idx)) {
+            // This is a getter so it shouldn't be modifying what
+            // we return, should be safe to return the zero vector.
+            // FIXME: Zeroes should really be a const, but can'ti
+            //        return const from a var fcn.
+            return zeroes;
         }
 
         return locNodes[(lvl, idx)].data;

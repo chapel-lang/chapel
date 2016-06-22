@@ -312,7 +312,7 @@ proc resid(R, V, U) {
 // the R array, accumulating the result into the U array.  The main
 // difference is that its weight array varies depending on the problem
 // size for some reason (maybe there was a bug in the early version of
-// the benchmark that has been preserved for backwards compatability?)
+// the benchmark that has been preserved for backwards compatibility?)
 
 proc psinv(U, R) {
   const c: coeff = initCValues();
@@ -454,7 +454,7 @@ proc zran3(V) {
   var pos, neg: [1..numCharges] index(Base);
 
   // compute the random array of values
-  fillRandom(V, 314159265);
+  fillRandom(V, 314159265, RNG.NPB);
 
   // the following does a number of maxloc/minloc reductions, each of
   // which returns the location of the largest/smallest element as an

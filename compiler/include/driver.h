@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -115,10 +115,10 @@ extern char fExplainInstantiation[256];
 /// If true, then print additional (disambiguation) information about
 /// resolution.
 extern bool fExplainVerbose;
+extern bool fParseOnly;
 extern bool fPrintCallStackOnError;
 extern bool fPrintIDonError;
 extern bool fPrintModuleResolution;
-extern bool fCLineNumbers;
 extern bool fPrintEmittedCodeSize;
 extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
@@ -192,7 +192,7 @@ extern char compileVersion[64];
 extern bool fMinimalModules;
 
 // Set to true if we want to use the experimental
-// Interactive Programming Environmment (IPE) mode.
+// Interactive Programming Environment (IPE) mode.
 extern bool fUseIPE;
 
 #endif

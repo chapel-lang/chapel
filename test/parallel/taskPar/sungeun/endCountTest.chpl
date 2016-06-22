@@ -20,7 +20,7 @@ proc printDiags() {
   for i in 0..numLocales-1 do {
     write(i, ": ");
     if printForkCnt then
-      write((diags[i].fork, diags[i].fork_fast, diags[i].fork_nb));
+      write((diags[i].execute_on, diags[i].execute_on_fast, diags[i].execute_on_nb));
     if printGetPutCnt then
       write((diags[i].get, diags[i].get_nb, diags[i].put));
     writeln();

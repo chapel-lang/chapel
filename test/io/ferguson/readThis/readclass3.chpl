@@ -1,12 +1,14 @@
 class mything {
   var x:int;
   var y:int;
-  proc readThis(r: Reader) {
+
+  proc readThis(r) {
     r <~> x;
     r <~> new ioLiteral(" ");
     r <~> y;
   }
-  proc writeThis(w: Writer) {
+
+  proc writeThis(w) {
     w <~> x;
     w <~> new ioLiteral(" ");
     w <~> y;
@@ -28,12 +30,15 @@ class mything {
   var r = f.reader();
 
   var b = new mything(2);
-  r.read(b);
 
+  r.read(b);
   r.close();
 
   writeln("Read ", b);
 
   assert(a.x == b.x);
+
+  delete b;
+  delete a;
 }
 

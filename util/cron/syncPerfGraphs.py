@@ -44,38 +44,56 @@ def main():
 # file wasn't found in the directory that is being synced
 def syncToSourceForge(dirToSync, destDir, logFile):
 
-    logFile.write('SF sync log for: ' + time.strftime("%m/%d/%Y") + '\n\n')
+    logFile.write('SF sync log for: {0} \n\n'.format(time.strftime("%m/%d/%Y")))
 
     successFile = os.path.join(dirToSync, 'SUCCESS')
 
     if not os.path.isfile(successFile):
-        logFile.write('SUCCESS file did not exist in %s. Assuming genGraph was '
-          'unsuccessful. Graphs will NOT be synced.\n' % dirToSync)
+        logFile.write('SUCCESS file did not exist in {0}. Assuming genGraph was '
+          'unsuccessful. Graphs will NOT be synced.\n'.format(dirToSync))
         return 124
 
     # Assumes correct username and authentication for web.sourceforge.net is
     # configured for the current system.
-    sfBaseDest = 'web.sourceforge.net:/home/project-web/chapel/htdocs/perf/'
-    sfPerfDest = posixpath.join(sfBaseDest, destDir)
+    sfWebHost = 'web.sourceforge.net'
+    sfShellHost = 'shell.sourceforge.net'
+    sfPerfBaseDir = '/home/project-web/chapel/htdocs/perf/'
+    sfPerfDir = posixpath.join(sfPerfBaseDir, destDir)
 
-    logFile.write('Attempting to rsync %s to %s\n'%(dirToSync, sfPerfDest))
+    # create an interactive shell on sourceforge and immediately exit, which
+    # allows us to do regular ssh commands (SF security thing)
+    getShellCommand = 'ssh chapeladmin,chapel@{0} create '.format(sfShellHost)
+    getShellDesc = 'create interactive sourceforge shell'
+    executeCommand(getShellCommand, getShellDesc, logFile)
 
-    # The rsync command that we will execute -- authenticates over ssh
-    # --del to remove any old data (graphs merged, changed names, removed etc)
-    rsyncCommand = 'rsync -avz --del -e ssh ' + dirToSync + ' ' + sfPerfDest
-    logFile.write('Sync to sourceforge command was: ' + rsyncCommand + '\n\n')
-    logFile.write('Rsync output is: \n')
+    # Delete files older than 10 days. Don't just use `rsync --del` because
+    # there might be subdirectories we don't want to delete, ignore errors
+    delOldCommand = 'ssh {0} "find {1} -ctime +10 | xargs rm -rf "'.format(sfShellHost, sfPerfDir)
+    delOldDesc = 'delete old files'
+    executeCommand(delOldCommand, delOldDesc, logFile)
+
+    # rsync, authenticating with ssh
+    rsyncDest = '{0}:{1}'.format(sfWebHost, sfPerfDir)
+    rsyncCommand = 'rsync -avz -e ssh {0} {1}'.format(dirToSync, rsyncDest)
+    rsyncDesc = 'rsync perf graphs to sourceforge'
+    return executeCommand(rsyncCommand, rsyncDesc, logFile)
+
+
+# Helper function for execute a command and log results/progress
+def executeCommand(command, commandDesc, logFile):
+    logFile.write('Attempting to {0} with `{1}`...\n'.format(commandDesc, command))
     logFile.flush()
 
-    # Actually send graphs to sourceforge and pipe output to the logfile
-    rsync = subprocess.call(shlex.split(rsyncCommand), stdout=logFile, stderr=subprocess.STDOUT)
+    commandRet = subprocess.call(shlex.split(command), stdout=logFile, stderr=subprocess.STDOUT)
 
-    if rsync == 0:
-        logFile.write('\n\nSuccessfully sent performance graphs to sourceforge\n')
+    if commandRet == 0:
+        logFile.write('\nCommand to {0} succeeded\n\n'.format(commandDesc))
     else:
-        logFile.write('\n\nFailure sending performance graphs to sourceforge\n')
+        logFile.write('\nCommand to {0} failed with error code {1}\n\n'.format(commandDesc, commandRet))
 
-    return rsync
+    logFile.flush()
+
+    return commandRet
 
 
 if __name__ == "__main__":

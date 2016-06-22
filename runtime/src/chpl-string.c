@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -29,7 +29,7 @@ struct chpl_chpl____wide_chpl_string_s {
 typedef struct chpl_chpl____wide_chpl_string_s chpl____wide_chpl_string;
 
 chpl_string
-chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string filename) {
+chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, int32_t filename) {
   if (chpl_rt_nodeFromLocaleID(x->locale) == chpl_nodeID)
     return string_copy(x->addr, lineno, filename);
   else {
@@ -53,7 +53,7 @@ chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, chpl_string f
 // since no corresponding free is added to the generated code.
 void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
                                    size_t size, int32_t typeIndex,
-                                   int ln, chpl_string fn) {
+                                   int ln, int32_t fn) {
   // This part just copies the descriptor.
   if (chpl_nodeID == node) {
     chpl_memcpy(addr, raddr, size);
@@ -77,7 +77,7 @@ void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
 
 // un-macro'd CHPL_WIDEN_STRING
 void
-chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from, int32_t lineno, chpl_string filename)
+chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from, int32_t lineno, int32_t filename)
 {
   size_t len;
 
@@ -97,7 +97,7 @@ chpl_string_widen(chpl____wide_chpl_string* x, chpl_string from, int32_t lineno,
 
 // un-macro'd CHPL_COMM_WIDE_GET_STRING
 void
-chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, chpl_string filename)
+chpl_comm_wide_get_string(chpl_string* local, struct chpl_chpl____wide_chpl_string_s* x, int32_t tid, int32_t lineno, int32_t filename)
 {
   char* chpl_macro_tmp;
 

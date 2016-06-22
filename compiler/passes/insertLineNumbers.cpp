@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,8 @@
 
 #include "insertLineNumbers.h"
 
+#include <algorithm>
+
 #include "passes.h"
 
 #include "astutil.h"
@@ -37,7 +39,37 @@
 // number and a filename.
 //
 
-std::set<std::string> gFilenameLookup;
+
+std::vector<std::string> gFilenameLookup;
+// Caches lookups into our filename vector
+std::map<std::string, int> gFilenameLookupCache;
+
+static int getFilenameLookupPosition(std::string name) {
+  std::map<std::string, int>::iterator it = gFilenameLookupCache.find(name);
+  int idx;
+  if (it != gFilenameLookupCache.end()) {
+    // Use cached position in the table
+    idx = it->second;
+  } else {
+    // not found - new add new filename to the cache
+    std::vector<std::string>::iterator vIt =
+        std::find(gFilenameLookup.begin(), gFilenameLookup.end(), name);
+    if (vIt == gFilenameLookup.end()) {
+      // Not in the lookup table either, add it (This case should only be for
+      // command line casts, doesn't really matter if something else sneaks in
+      // though)
+      gFilenameLookup.push_back(name);
+      idx = gFilenameLookup.size() - 1;
+    } else {
+      idx = vIt - gFilenameLookup.begin();
+    }
+    gFilenameLookupCache.insert(std::pair<std::string, int>(name, idx));
+  }
+  INT_ASSERT(idx >= 0);
+  INT_ASSERT((size_t)idx < gFilenameLookup.size());
+  return idx;
+}
+
 static void moveLinenoInsideArgBundle();
 
 //
@@ -67,7 +99,7 @@ static ArgSymbol* newLine(FnSymbol* fn) {
 }
 
 static ArgSymbol* newFile(FnSymbol* fn) {
-  ArgSymbol* file = new ArgSymbol(INTENT_CONST_REF, "_fn", dtStringC);
+  ArgSymbol* file = new ArgSymbol(INTENT_CONST_REF, "_fn", dtInt[INT_SIZE_32]);
   fn->insertFormalAtTail(file);
   filenameMap.put(fn, file);
   queue.add(fn);
@@ -138,22 +170,13 @@ insertLineNumber(CallExpr* call) {
       INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
       const char *cmdLineSetting =
           astr("<command line setting of '", var->immediate->v_string, "'>");
-      call->insertAtTail(new_CStringSymbol(cmdLineSetting));
-      gFilenameLookup.insert(cmdLineSetting);
+      int filenameIdx = getFilenameLookupPosition(cmdLineSetting);
+      call->insertAtTail(new_IntSymbol(filenameIdx, INT_SIZE_32));
     } else {
-      if (fCLineNumbers) {
-        if (!gCLine) {
-          gCLine = new VarSymbol("__LINE__", dtInt[INT_SIZE_DEFAULT]);
-          rootModule->block->insertAtTail(new DefExpr(gCLine));
-          gCFile = new VarSymbol("__FILE__", dtStringC);
-          rootModule->block->insertAtTail(new DefExpr(gCFile));
-        }
-        call->insertAtTail(gCLine);
-        call->insertAtTail(gCFile);
-      } else {
-        call->insertAtTail(new_IntSymbol(call->linenum()));
-        call->insertAtTail(new_CStringSymbol(call->fname()));
-      }
+      call->insertAtTail(new_IntSymbol(call->linenum()));
+
+      int filenameIdx = getFilenameLookupPosition(call->fname());
+      call->insertAtTail(new_IntSymbol(filenameIdx, INT_SIZE_32));
     }
   } else if (file) {
     // call is in non-user code, but the function already has line
@@ -217,7 +240,7 @@ static void insertNilChecks() {
       if (ct && (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS))) {
         FnSymbol* fn = call->isResolved();
 
-        // Avoid inserting a nil-check if this is a call to a destrutor
+        // Avoid inserting a nil-check if this is a call to a destructor
         if (fn == NULL || fn->hasFlag(FLAG_DESTRUCTOR) == false) {
           Expr* stmt = call->getStmtExpr();
 
@@ -232,6 +255,22 @@ static void insertNilChecks() {
 
 void insertLineNumbers() {
   compute_call_sites();
+
+  // Temporary vector that stores some constant filenames that are used
+  // directly by the runtime. The index for these matter, and are provided to
+  // the runtime as defines in chpl-linefile-support.h
+  std::vector<std::string> constantFilenames;
+  // Put a null string into the iterator at the first position, some runtime
+  // calls will pass in NULL for their filename, we can then use this null
+  // string to deal with that case.
+  constantFilenames.push_back("");
+  // Add "<internal>" to the filename table if it didn't make it in there, some
+  // runtime functions use this name directly, and it doesn't always end up in
+  // the table otherwise
+  constantFilenames.push_back("<internal>");
+
+  gFilenameLookup.insert(gFilenameLookup.begin(), constantFilenames.begin(),
+                         constantFilenames.end());
 
   if (!fNoNilChecks) {
     insertNilChecks();
@@ -305,33 +344,15 @@ static void moveLinenoInsideArgBundle()
       fn->insertAtHead("'move'(%S, '.v'(%S, %S))", lineLocal, bundleArg->sym, lineField);
       fn->insertAtHead(new DefExpr(lineLocal));
 
-      // Now perform a similar operation for filenames
-      // filenames can not be passed directly via argument bundles since they
-      // are (local only) c_strings. Instead we need to map them from integers
-      // via a lookup table.
-      // We only do this if we are using chapel line numbers, when using C line
-      // numbers we will just use __FILE__ and we dont have to put anything in
-      // the bundle
-      VarSymbol* fileLocal = NULL;
-      VarSymbol* fileIdxField = NULL;
-      if (!fCLineNumbers) {
-        fileIdxField = newTemp("_fnIdx", dtUInt[INT_SIZE_64]);
-        bundleType->fields.insertAtTail(new DefExpr(fileIdxField));
+      // Same thing, just for the filename index now.
 
-        VarSymbol* fileIdxLocal = newTemp("_fnIdx", dtUInt[INT_SIZE_64]);
-        fileLocal = newTemp("_fn", fileArg->sym->typeInfo());
+      VarSymbol* fileField = newTemp("_fn", fileArg->sym->typeInfo());
+      bundleType->fields.insertAtTail(new DefExpr(fileField));
 
-        fn->insertAtHead(
-            new CallExpr(PRIM_MOVE, fileLocal,
-                        new CallExpr(PRIM_LOOKUP_FILENAME,
-                                      new SymExpr(fileIdxLocal))));
+      VarSymbol* fileLocal = newTemp("_fn", fileArg->sym->typeInfo());
 
-        fn->insertAtHead("'move'(%S, '.v'(%S, %S))", fileIdxLocal, bundleArg->sym, fileIdxField);
-        fn->insertAtHead(new DefExpr(fileLocal));
-        fn->insertAtHead(new DefExpr(fileIdxLocal));
-      } else {
-        fileLocal = toVarSymbol(gCFile); // __FILE__
-      }
+      fn->insertAtHead("'move'(%S, '.v'(%S, %S))", fileLocal, bundleArg->sym, fileField);
+      fn->insertAtHead(new DefExpr(fileLocal));
 
       // Replace references to the (removed) arguments with
       // references to these local variables.
@@ -348,21 +369,10 @@ static void moveLinenoInsideArgBundle()
         Expr* fileActual = call->argList.tail->remove();
         Expr* lineActual = call->argList.tail->remove();
         Expr* bundleActual = call->argList.tail;
-        call->insertBefore(new CallExpr(PRIM_SET_MEMBER,
-              bundleActual->copy(), lineField, lineActual));
-
-        // As above, we cant use the file directly with the bundle
-        // Instead we will perform a lookup to find it's index in the table and
-        // pass that along instead. If we are using C line numbers we dont need
-        // to pass anything.
-        if (!fCLineNumbers) {
-          VarSymbol* fileIdxTemp = newTemp("fnIdx_tmp", dtUInt[INT_SIZE_64]);
-          call->insertBefore(new DefExpr(fileIdxTemp));
-          call->insertBefore(new CallExpr(PRIM_MOVE, fileIdxTemp,
-                new CallExpr(PRIM_FIND_FILENAME_IDX, fileActual)));
-          call->insertBefore(new CallExpr(PRIM_SET_MEMBER,
-              bundleActual->copy(), fileIdxField, new SymExpr(fileIdxTemp)));
-        }
+        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(),
+                                        lineField, lineActual));
+        call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(),
+                                        fileField, fileActual));
       }
     }
   }

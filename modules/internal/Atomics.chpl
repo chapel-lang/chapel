@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -416,7 +416,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -519,7 +519,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -622,7 +622,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -725,7 +725,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -828,7 +828,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -931,7 +931,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -1034,7 +1034,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -1136,7 +1136,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -1350,7 +1350,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
 
@@ -1430,7 +1430,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }
@@ -1509,7 +1509,7 @@ module Atomics {
       this.write(value, order=memory_order_relaxed);
     }
 
-    proc writeThis(x: Writer) {
+    proc writeThis(x) {
       x.write(read());
     }
   }

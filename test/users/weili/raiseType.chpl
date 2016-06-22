@@ -4,5 +4,5 @@ proc raiseType(type x)
         if (x==int) return real;
 }
 
-writeln(typeToString(raiseType(bool)));
-writeln(typeToString(raiseType(int)));
+writeln(raiseType(bool):string);
+writeln(raiseType(int):string);

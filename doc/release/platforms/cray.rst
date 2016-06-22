@@ -17,14 +17,30 @@ Getting Started with Chapel on Cray X-Series Systems
 
 Chapel is available as a module for Cray X-series systems.  When it is
 installed on your system, you do not need to build Chapel from the
-source release (though you can); instead, simply load the module
-using::
+source release (though you can). To use Chapel with the default settings and
+confirm it is correctly installed, do the following:
+
+1) Load the Chapel module::
 
      module load chapel
 
-Then proceed directly to `Using Chapel on a Cray System`_ below.  If instead
-you wish to build Chapel from source, continue on to `Building Chapel for a
-Cray System from Source`_ just below.
+
+2) Compile an example program using::
+
+     chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
+
+
+3) Execute the resulting executable (on four locales)::
+
+     ./hello6-taskpar-dist -nl 4
+
+
+This may be all that is necessary to use Chapel on a Cray X-Series system.
+If the installation setup by your system administrator deviates from
+the default settings, or you are interested in other configuration
+options, see `Using Chapel on a Cray System`_ below.  If instead you wish to
+build Chapel from source, continue on to
+`Building Chapel for a Cray System from Source`_ just below.
 
 For information on obtaining and installing the Chapel module please
 contact your system administrator.
@@ -37,8 +53,8 @@ Getting Started with Chapel on Cray CS Systems
 On Cray CS systems, Chapel is not currently available as a module due
 to the wide diversity of software packages that Cray CS customers may
 choose to install on their system.  For this reason, Chapel must be
-built from source on Cray CS systems using the instructions just
-below.
+built from source on Cray CS systems using the
+`Building Chapel for a Cray System from Source`_ instructions just below.
 
 
 ---------------------------------------------
@@ -369,16 +385,16 @@ program heap will grow to during execution::
 
 or::
 
-  CHPL_COMM=ugni
+  CHPL_COMM=ugni, with a craype-hugepages module loaded
 
 With ``CHPL_COMM=gasnet``, by default the heap will occupy as much of the
 free memory on each locale (compute node) as the runtime can acquire,
 less some amount to allow for demands from other (system) programs
-running there.  With ``CHPL_COMM=ugni``, by default the heap will occupy 2/3
-of the free memory on each locale.  With the ugni comm layer and slurm
-job placement, however, the default is reduced to 16 GiB if that is
-less.  See `Communication Layer Concurrency and Slurm`_, below, for more
-information.
+running there.  With ``CHPL_COMM=ugni`` when a craype-hugepages module is
+loaded, by default the heap will occupy 2/3 of the free memory on each
+locale.  With the ugni comm layer and slurm job placement, however, this
+default is reduced to 16 GiB if that is less.  See `Communication Layer
+Concurrency and Slurm`_, below, for more information.
 
 Advanced users may want to make the heap smaller than this.  Programs
 start more quickly with a smaller heap, and in the unfortunate event
@@ -403,7 +419,7 @@ following would set the heap size to 1 GiB, for example:
 
 Note that the value you set in ``CHPL_RT_MAX_HEAP_SIZE`` may get rounded up
 internally to match the page alignment.  How much, if any, this will add
-depends on the hugepage size in the hugepage module you have loaded at
+depends on the hugepage size in any craype-hugepage module you have loaded at
 the time you execute the program.
 
 Note that for ``CHPL_COMM=gasnet``, ``CHPL_RT_MAX_HEAP_SIZE`` is synonymous with
@@ -446,7 +462,7 @@ Using the ugni Communications Layer
 
 To use ugni communications:
 
-1) Make sure that you are using either the GNU or Intel target
+1) Make sure that you are using either the GNU, Intel, or Cray target
    compiler::
 
      module load PrgEnv-gnu
@@ -454,6 +470,10 @@ To use ugni communications:
    or::
 
      module load PrgEnv-intel
+
+   or::
+
+     module load PrgEnv-cray
 
    (If you have a different PrgEnv module loaded, you will have to
    unload it first, or do a swap instead of a load.)
@@ -495,15 +515,21 @@ To use ugni communications:
    with those to be selected automatically.
 
 
-4) Load an appropriate craype-hugepages module.  For example::
+4) *(Optional)* Load an appropriate craype-hugepages module.  For example::
 
      module load craype-hugepages16M
 
-   Use of the ugni communication layer requires that the program's data
-   reside on so-called *hugepages*.  To arrange for this, you must have
-   a ``craype-hugepages`` module loaded both when building your program and
-   when running it.
+   The ugni communication layer can be used with or without so-called
+   *hugepages*.  Performance for remote variable references is better
+   when hugepages are used.  However, using hugepages effectively may
+   require setting ``CHPL_RT_MAX_HEAP_SIZE`` to a value large enough to
+   encompass the program's memory needs (see `Controlling the Heap
+   Size`_, above), and that quantity can be hard to know.  Using
+   hugepages also means that the tasking layer cannot use guard pages to
+   detect task stack overflows (see below).
 
+   To use hugepages, you must have a ``craype-hugepages`` module loaded
+   both when building your program and when running it.
    There are several hugepage modules, with suffixes indicating the page
    size they support.  For example, ``craype-hugepages16M`` supports 16 MiB
    hugepages.  It does not matter which ``craype-hugepages`` module you have
@@ -531,7 +557,7 @@ To use ugni communications:
    fairly large 16 MiB hugepages will typically only result in around 1%
    of the total locale memory being wasted.
 
-Due to the use of hugepages in the ugni comm layer, tasking layers
+When hugepages are used with the ugni comm layer, tasking layers
 cannot use guard pages for stack overflow detection.  Qthreads tasking
 can only use guard pages for stack overflow detection, so if ugni
 communications is combined with qthreads tasking, overflow detection is
@@ -583,7 +609,7 @@ Using the muxed Tasking Layer
 
 To use muxed tasking:
 
-1) Make sure that you are using either the GNU or Intel target
+1) Make sure that you are using either the GNU, Intel, or Cray target
    compiler::
 
      module load PrgEnv-gnu
@@ -591,6 +617,10 @@ To use muxed tasking:
    or::
 
      module load PrgEnv-intel
+
+   or::
+
+     module load PrgEnv-cray
 
    (If you have a different PrgEnv module loaded, you will have to
    unload it first, or do a swap instead of a load.)
@@ -681,7 +711,8 @@ also trustworthy because it relies on OS services.
 Guard pages cannot be used when the heap is on hugepages, because
 the system call that makes memory pages inaccessible cannot be
 applied to hugepages.  Currently the heap is on hugepages when
-``CHPL_COMM=ugni``.  In this case muxed tasking does synchronous
+``CHPL_COMM=ugni`` and there is a craype-hugepages module loaded.
+In this case muxed tasking does synchronous
 stack overflow detection instead.  Explicit checks against the
 task's stack limit are done on entry to selected functions in the
 muxed tasking layer.  If overflow is seen, the runtime prints an
@@ -696,7 +727,7 @@ environment variable, which can take the following values:
 Successively higher levels of overflow checking are more likely both to
 catch overflow and to catch it earlier, but they also have more overhead
 and thus a greater impact on performance.
- 
+
 Note: in some situations the check as to whether or not the task
 stacks are in hugepage memory gets the wrong answer, leading to
 internal errors when the tasking layer tries to use guard pages and
@@ -821,7 +852,7 @@ Known Constraints and Bugs
   platforms, resulting in an internal Chapel error or a GASNet
   initialization error such as::
 
-     node 1 log gasnetc_init_segment() at /path/to/chapel/third-party/gasnet/GASNet-1.22.0/gemini-conduit/gasnet_gemini.c:562: MemRegister segment fault 8 at  0x2aab6ae00000 60000000, code GNI_RC_ERROR_RESOURCE
+     node 1 log gasnetc_init_segment() at $CHPL_HOME/third-party/gasnet/gasnet-src/gemini-conduit/gasnet_gemini.c:<line#>: MemRegister segment fault 8 at  0x2aab6ae00000 60000000, code GNI_RC_ERROR_RESOURCE
 
   If your Chapel program exits with such an error, try setting the
   environment variable ``CHPL_RT_MAX_HEAP_SIZE`` or ``GASNET_MAX_SEGSIZE`` to a
@@ -829,7 +860,7 @@ Known Constraints and Bugs
   For more information, refer to the discussion of ``CHPL_RT_MAX_HEAP_SIZE``
   above and/or the discussion of ``GASNET_MAX_SEGSIZE`` here::
 
-     $CHPL_HOME/third-party/gasnet/GASNet-*/README
+     $CHPL_HOME/third-party/gasnet/gasnet-src/README
 
 
 ---------------

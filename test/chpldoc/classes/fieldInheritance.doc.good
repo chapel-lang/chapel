@@ -1,4 +1,8 @@
 fieldInheritance.doc
+
+Usage:
+   use fieldInheritance.doc;
+
    Class: Elder
       This class has two fields 
 

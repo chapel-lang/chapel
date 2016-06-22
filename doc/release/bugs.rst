@@ -29,7 +29,25 @@ Please include the following information in your email:
 
 A list of known bugs and unimplemented features can be found in
 ``$CHPL_HOME/STATUS``.  Even if you run into a known issue, we
-encourage you to email us a bug report, particularly if it is impeding
+encourage you to send us a bug report, particularly if it is impeding
 your progress.  Depending on the issue, we may be able to suggest a
-workaround or prioritize addressing the bug.
+workaround or to prioritize the development of a fix.
 
+
+Filing Futures
+--------------
+
+If you are a Chapel contributor and familiar with the `Chapel Testing
+System`_, you can file bugs by submitting `Future tests`_.
+
+.. _Chapel testing system: https://github.com/chapel-lang/chapel/blob/master/doc/developer/bestPractices/TestSystem.rst
+.. _Future tests: https://github.com/chapel-lang/chapel/blob/master/doc/developer/bestPractices/TestSystem.rst#user-content-futures-a-mechanism-for-tracking-bugs-feature-requests-etc
+
+
+JIRA Issues
+-----------
+
+The Chapel team is working to bring our `JIRA issues site`_ up to
+date. Bugs can be viewed without creating an account.
+
+.. _JIRA issues site: https://chapel.atlassian.net/projects/CHAPEL/issues/

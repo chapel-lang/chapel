@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -101,7 +101,7 @@ qio_regexp_string_piece_isnull(qio_regexp_string_piece_t* sp)
 // full match == consume and check that we stopped at end of string
 // after one incremental search
 
-// Using a compiled regular expression, match againt str
+// Using a compiled regular expression, match against str
 // if find is set, the pattern may match something after the start
 //  of str; if it is not, the pattern must match at the beginning of str
 // Returns in matches[0], if nmatches>=1, the match for the entire regexp

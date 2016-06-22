@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,6 +26,7 @@
 #include "bison-chapel.h"
 #include "config.h"
 #include "countTokens.h"
+#include "docsDriver.h"
 #include "expr.h"
 #include "files.h"
 #include "parser.h"
@@ -55,8 +56,6 @@ static WellKnownType sWellKnownTypes[] = {
   {"BaseArr",            &dtBaseArr,       true},
   {"BaseDom",            &dtBaseDom,       true},
   {"BaseDist",           &dtDist,          true},
-  {"Writer",             &dtWriter,        true},
-  {"Reader",             &dtReader,        true},
   {"chpl_main_argument", &dtMainArgument, false}
 };
 
@@ -67,20 +66,27 @@ void parse() {
   if (countTokens)
     countTokensInCmdLineFiles();
 
-  baseModule            = parseMod("ChapelBase",           MOD_INTERNAL);
-  INT_ASSERT(baseModule);
+  //
+  // If we're running chpldoc on just a single file, we don't want to
+  // bring in all the base, standard, etc. modules -- just the file
+  // we're documenting.
+  //
+  if (fDocs == false || fDocsProcessUsedModules) {
+    baseModule            = parseMod("ChapelBase",           MOD_INTERNAL);
+    INT_ASSERT(baseModule);
 
-  setIteratorTags();
+    setIteratorTags();
 
-  standardModule        = parseMod("ChapelStandard",       MOD_INTERNAL);
-  INT_ASSERT(standardModule);
+    standardModule        = parseMod("ChapelStandard",       MOD_INTERNAL);
+    INT_ASSERT(standardModule);
 
-  printModuleInitModule = parseMod("PrintModuleInitOrder", MOD_INTERNAL);
-  INT_ASSERT(printModuleInitModule);
+    printModuleInitModule = parseMod("PrintModuleInitOrder", MOD_INTERNAL);
+    INT_ASSERT(printModuleInitModule);
 
-  parseDependentModules(MOD_INTERNAL);
+    parseDependentModules(MOD_INTERNAL);
 
-  gatherWellKnownTypes();
+    gatherWellKnownTypes();
+  }
 
   {
     int         filenum       = 0;
@@ -108,10 +114,17 @@ void parse() {
     }
   }
 
-  parseDependentModules(MOD_USER);
+  //
+  // When generating chpldocs for just a single file, we don't want to
+  // parse dependent modules, as we're just documenting the file at
+  // hand.
+  //
+  if (fDocs == false || fDocsProcessUsedModules) {
+    parseDependentModules(MOD_USER);
 
-  forv_Vec(ModuleSymbol, mod, allModules) {
-    mod->addDefaultUses();
+    forv_Vec(ModuleSymbol, mod, allModules) {
+      mod->addDefaultUses();
+    }
   }
 
   checkConfigs();
@@ -198,5 +211,12 @@ static void gatherWellKnownTypes() {
     }
 
     USR_STOP();
+  } else {
+    if (dtString->symbol == NULL) {
+      // This means there was no declaration of the string type.
+      gAggregateTypes.remove(gAggregateTypes.index(dtString));
+      delete dtString;
+      dtString = NULL;
+    }
   }
 }

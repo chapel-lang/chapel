@@ -1,8 +1,8 @@
 class mysumreduce {
   type t;
   var state: sync t;
-  
-  proc init() {
+
+  proc initState() {
     state = 0;
   }
 
@@ -26,8 +26,12 @@ forall i in D {
 }
 
 var myreduce = new mysumreduce(t = int);
-myreduce.init();
+
+myreduce.initState();
 myreduce.combine(A);
+
 var result = myreduce.finalize();
 
 writeln("result is: ", result);
+
+delete myreduce;

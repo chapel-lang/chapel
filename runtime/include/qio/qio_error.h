@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -91,7 +91,7 @@ static inline int32_t qio_err_to_int(qioerr a) {
   return qio_err_local_ptr(a)->code;
 }
 
-// Get the errer message string associated with a qioerr.
+// Get the error message string associated with a qioerr.
 const char* qio_err_msg(qioerr a);
 
 // Get a qioerr referring to a numeric error code

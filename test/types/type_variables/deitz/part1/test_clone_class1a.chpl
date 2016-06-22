@@ -1,5 +1,6 @@
 class foo {
   var x;
+
   proc print() {
     writeln(x);
   }
@@ -12,3 +13,5 @@ f.print();
 f.x = 2;
 
 f.print();
+
+delete f;

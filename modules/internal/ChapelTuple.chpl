@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -29,7 +29,7 @@ Besides the functions defined here, the Chapel Language specification
 defines other operations available on tuples: indexing, iteration,
 assignment, and unary, binary, and relational operators.
 
-The following method is also availble:
+The following method is also available:
 
   .. code-block:: chapel
 
@@ -80,6 +80,11 @@ module ChapelTuple {
     return _fill(p, oneTuple).type;
   }
   
+  pragma "compiler generated"
+  proc *(type t, param p: int) {
+    compilerError("<type>*<param int> not supported.  If you're trying to specify a homogeneous tuple type, use <param int>*<type>.");
+  }
+
   proc *(p: int, type t) type {
     compilerError("tuple size must be static");
   }

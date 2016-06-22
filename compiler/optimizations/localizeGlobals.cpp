@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -45,6 +45,8 @@ void localizeGlobals() {
       if (SymExpr* se = toSymExpr(ast)) {
         Symbol* var = se->var;
         ModuleSymbol* parentmod = toModuleSymbol(var->defPoint->parentSymbol);
+        CallExpr* parentExpr = toCallExpr(se->parentExpr);
+        bool inAddrOf = parentExpr && parentExpr->isPrimitive(PRIM_ADDR_OF);
 
         // Is var a global constant?
         // Don't replace the var name in its init function since that's
@@ -52,9 +54,11 @@ void localizeGlobals() {
         //      inside initStringLiterals
         // If the parentSymbol is the rootModule, the var is 'void,'
         //      'false,' '0,' ...
+        // Also don't replace it when it's in an addr of primitive.
         if (parentmod &&
             fn != parentmod->initFn &&
             fn != initStringLiterals &&
+            !inAddrOf &&
             var->hasFlag(FLAG_CONST) &&
             var->defPoint->parentSymbol != rootModule) {
           VarSymbol* local_global = globals.get(var);

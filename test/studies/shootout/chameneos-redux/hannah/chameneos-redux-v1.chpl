@@ -12,7 +12,7 @@ use Time;
       colors are the same, no change, otherwise each chameneos changes to the
       color you and your partner both are not.)
 
-    - (description of benchmark: http://shootout.alioth.debian.org/u32q/benchmark.php?test=chameneosredux&lang=all */
+    - (description of benchmark: http://benchmarksgame.alioth.debian.org/u32q/performance.php?test=chameneosredux */
 
 config const numMeetings : int = 6000000; // number of meetings to take place
 config const numChameneos1 : int = 3;     // size of population 1
@@ -244,10 +244,17 @@ proc main() {
       runQuiet(population1, forest);
       runQuiet(population2, forest);
     }
+
     var endTimeTotal = getCurrentTime();
+
     if (verbose) {
       writeln("total execution time = ", endTimeTotal - startTimeTotal);
     }
+
+    for c in population2 do delete c;
+    for c in population1 do delete c;
+
+    delete forest;
   }
 }
 

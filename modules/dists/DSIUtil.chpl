@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -59,7 +59,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
     return (0,-1);
   assert(numChunks > 0);
 
-  // Dimension to parallelize (eventually should "block" thespace)
+  // Dimension to parallelize (eventually should "block" the space)
   var parDim = -1;
   var maxDim = -1;
   var maxElems = min(EC);
@@ -363,7 +363,7 @@ proc _densiIdxCheck(type subIdxType, type wholeIdxType, type argtypes) {
 }
 
 proc _densiCheck(param cond, type argtypes, param errlevel = 2) {
-  if !cond then compilerError("densify() is defined only on matching domains, ranges, and quasi-homogenous tuples of ranges (except stridability and range boundedness do not need to match), but is invoked on ", typeToString(argtypes), errlevel);
+  if !cond then compilerError("densify() is defined only on matching domains, ranges, and quasi-homogeneous tuples of ranges (except stridability and range boundedness do not need to match), but is invoked on ", argtypes:string, errlevel);
 }
 
 //
@@ -444,7 +444,7 @@ proc _undensEnsureBounded(arg) {
 }
 
 proc _undensCheck(param cond, type argtypes, param errlevel = 2) {
-  if !cond then compilerError("unDensify() is defined only on matching domains, ranges, and quasi-homogenous tuples of ranges, but is invoked on ", typeToString(argtypes), errlevel);
+  if !cond then compilerError("unDensify() is defined only on matching domains, ranges, and quasi-homogeneous tuples of ranges, but is invoked on ", argtypes:string, errlevel);
 }
 
 

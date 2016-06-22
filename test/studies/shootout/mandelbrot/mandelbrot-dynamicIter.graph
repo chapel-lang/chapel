@@ -1,0 +1,5 @@
+perfkeys: real, real
+files: mandelbrot.dat, mandelbrot-release-dynamic.dat
+graphkeys: mandelbrot (release), mandelbrot-dynamic-domain-iterator
+ylabel: Time (seconds)
+graphtitle: Mandelbrot Dynamic Domain Iter Comparison

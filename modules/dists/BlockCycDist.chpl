@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -278,7 +278,7 @@ class BlockCyclic : BaseDist {
     // the number of locales in that dimension times the blocksize.
     // I think this is more akin to what cyclic does.  So the
     // current test is shallower, indicating whether they were
-    // paramterized the same, but not whether they distribute
+    // parameterized the same, but not whether they distribute
     // the same.
     //
     return (this.lowIdx == that.lowIdx &&
@@ -308,7 +308,7 @@ proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc BlockCyclic.writeThis(x:Writer) {
+proc BlockCyclic.writeThis(x) {
   x.writeln("BlockCyclic");
   x.writeln("-------");
   x.writeln("distributes: ", lowIdx, "...");
@@ -392,7 +392,7 @@ proc BlockCyclic.getStarts(inds, locid) {
 //
 proc BlockCyclic.idxToLocaleInd(ind: idxType) where rank == 1 {
   const ind0 = ind - lowIdx(1);
-  //  compilerError(typeToString((ind0/blocksize(1)%targetLocDom.dim(1).type));
+  //  compilerError((ind0/blocksize(1)%targetLocDom.dim(1).type:string);
   return (ind0 / blocksize(1)) % targetLocDom.dim(1).length;
 }
 
@@ -447,7 +447,7 @@ class LocBlockCyclic {
 }
 
 
-proc LocBlockCyclic.writeThis(x:Writer) {
+proc LocBlockCyclic.writeThis(x) {
   var localeid: int;
   on this {
     localeid = here.id;
@@ -552,7 +552,7 @@ iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind
     var stride = whole.dim(i).stride: idxType;
     var low = stride * followThis(i).low;
     var high = stride * followThis(i).high;
-    t(i) = (low..high by stride:int) + whole.dim(i).low;
+    t(i) = ((low..high by stride:int) + whole.dim(i).low).safeCast(t(i).type);
   }
   //  writeln(here.id, ": Changed it into: ", t);
   for i in {(...t)} {
@@ -563,7 +563,7 @@ iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind
 //
 // output domain
 //
-proc BlockCyclicDom.dsiSerialWrite(x:Writer) {
+proc BlockCyclicDom.dsiSerialWrite(x) {
   x.write(whole);
 }
 
@@ -714,7 +714,7 @@ proc LocBlockCyclicDom.computeFlatInds() {
 //
 // output local domain piece
 //
-proc LocBlockCyclicDom.writeThis(x:Writer) {
+proc LocBlockCyclicDom.writeThis(x) {
   x.write(myStarts);
 }
 
@@ -821,7 +821,7 @@ proc BlockCyclicArr.dsiAccess(i: idxType) ref where rank == 1 {
       return myLocArr.this(i);
   }
   //  var loci = dom.dist.idxToLocaleInd(i);
-  //  compilerError(typeToString(loci.type));
+  //  compilerError(loci.type:string);
   //  var desc = locArr(loci);
   //  return locArr(loci)(i);
   return locArr(dom.dist.idxToLocaleInd(i))(i);
@@ -859,7 +859,7 @@ iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iter
     var stride = dom.whole.dim(i).stride;
     var low = followThis(i).low * stride;
     var high = followThis(i).high * stride;
-    myFollowThis(i) = (low..high by stride) + dom.whole.dim(i).low;
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).low;
   }
   const myFollowThisDom = {(...myFollowThis)};
@@ -891,7 +891,7 @@ iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iter
 //
 // output array
 //
-proc BlockCyclicArr.dsiSerialWrite(f: Writer) {
+proc BlockCyclicArr.dsiSerialWrite(f) {
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
   for dim in 1..rank do
@@ -935,16 +935,27 @@ proc BlockCyclicArr.dsiReindex(dom) {
 proc BlockCyclicArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
 }
+proc BlockCyclicDom.dsiTargetLocales() {
+  return dist.targetLocales;
+}
+proc BlockCyclic.dsiTargetLocales() {
+  return targetLocales;
+}
+
 
 proc BlockCyclicArr.dsiHasSingleLocalSubdomain() param return false;
+proc BlockCyclicDom.dsiHasSingleLocalSubdomain() param return false;
 
 // essentially enumerateBlocks()
 // basically add blocksize to the start indices
-iter BlockCyclicArr.dsiLocalSubdomains() {
-  for i in myLocArr.indexDom.myStarts {
+private
+iter do_dsiLocalSubdomains(indexDom) {
+  param rank = indexDom.rank;
+  type idxType = indexDom.idxType;
+  for i in indexDom.myStarts {
     var temp : rank*range(idxType);
-    const blockSizes = myLocArr.indexDom.globDom.dist.blocksize;
-    const globDims = myLocArr.indexDom.globDom.whole.dims();
+    const blockSizes = indexDom.globDom.dist.blocksize;
+    const globDims = indexDom.globDom.whole.dims();
     for param j in 1..rank {
       var lo: idxType;
       if rank == 1 then lo = i;
@@ -954,6 +965,22 @@ iter BlockCyclicArr.dsiLocalSubdomains() {
     yield {(...temp)};
   }
 }
+iter BlockCyclicArr.dsiLocalSubdomains() {
+  for i in do_dsiLocalSubdomains(myLocArr.indexDom) do
+    yield i;
+}
+iter BlockCyclicDom.dsiLocalSubdomains() {
+  // TODO -- could be replaced by a privatized myLocDom in BlockCyclicDom
+  // as it is with BlockCyclicArr
+  var myLocDom:LocBlockCyclicDom(rank, idxType, stridable) = nil;
+  for (loc, locDom) in zip(dist.targetLocales, locDoms) {
+    if loc == here then
+      myLocDom = locDom;
+  }
+  for i in do_dsiLocalSubdomains(myLocDom) do
+    yield i;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Array Class
@@ -1070,7 +1097,7 @@ proc LocBlockCyclicArr.this(i) ref {
 //
 // output local array piece
 //
-proc LocBlockCyclicArr.writeThis(x: Writer) {
+proc LocBlockCyclicArr.writeThis(x) {
   // note on this fails; see writeThisUsingOn.chpl
   x.write(myElems);
 }

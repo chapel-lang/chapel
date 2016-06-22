@@ -4,4 +4,4 @@ proc fun(type x) type {
   return real(64);
 }
 
-writeln(typeToString(fun(int)));
+writeln(fun(int):string);

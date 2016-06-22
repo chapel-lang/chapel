@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -84,6 +84,7 @@
 //#include <ntddk.h>
 //#include <winternl.h>
 //#include <ntifs.h>
+#include "chpl-mem-no-warning-macros.h"
 #include <windows.h>
 #include <sys/cygwin.h> // for cygwin_internal
 
@@ -646,7 +647,7 @@ err_t sys_fstatfs(fd_t fd, sys_statfs_t* buf)
     buf->f_ffree   = safe_inode_cast(tmp.f_ffree);
     buf->f_namelen = safe_inode_cast(MNAMELEN);
 #else // linux or cygwin
-    // We don't have to deal with possible conversion from signed to unsiged
+    // We don't have to deal with possible conversion from signed to unsigned
     // numbers here, since in linux the field will be set to 0 if it is
     // undefined for the FS. Since we know the field is >= 0 we can get rid of
     // all the branching logic that we had for apple

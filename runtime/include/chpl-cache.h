@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -45,17 +45,17 @@ void chpl_cache_exit(void);
 // If release is set, waits on any pending puts in the cache.
 // If acquire is set, sets this task's last acquire fence to 
 // the cache's current request number.
-void chpl_cache_fence(int acquire, int release, int ln, c_string fn);
+void chpl_cache_fence(int acquire, int release, int ln, int32_t fn);
 
 // "acquire" barrier or fence -> discard pre-fetched GET values
 static inline
-void chpl_cache_acquire(int ln, c_string fn)
+void chpl_cache_acquire(int ln, int32_t fn)
 {
   if (chpl_cache_enabled()) chpl_cache_fence(1, 0, ln, fn);
 }
 // "release" barrier or fence -> complete pending PUTs
 static inline
-void chpl_cache_release(int ln, c_string fn)
+void chpl_cache_release(int ln, int32_t fn)
 {
   if (chpl_cache_enabled()) chpl_cache_fence(0, 1, ln, fn);
 }
@@ -65,23 +65,23 @@ void chpl_cache_release(int ln, c_string fn)
 // calling on a put or a get.
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t typeIndex,
-                         int ln, c_string fn);
+                         int ln, int32_t fn);
 void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t typeIndex,
-                         int ln, c_string fn);
+                         int ln, int32_t fn);
 void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
                               size_t size, int32_t typeIndex,
-                              int ln, c_string fn);
+                              int ln, int32_t fn);
 void  chpl_cache_comm_get_strd(
                    void *addr, void *dststr, c_nodeid_t node, void *raddr,
                    void *srcstr, void *count, int32_t strlevels,
                    size_t elemSize, int32_t typeIndex,
-                   int ln, c_string fn);
+                   int ln, int32_t fn);
 void  chpl_cache_comm_put_strd(
                       void *addr, void *dststr, c_nodeid_t node, void *raddr,
                       void *srcstr, void *count, int32_t strlevels,
                       size_t elemSize, int32_t typeIndex,
-                      int ln, c_string fn);
+                      int ln, int32_t fn);
 
 // For debugging.
 void chpl_cache_print(void);

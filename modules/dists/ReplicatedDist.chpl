@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -356,7 +356,7 @@ proc ReplicatedDist.dsiNewRectangularDom(param rank: int,
   : ReplicatedDom(rank, idxType, stridable, this.type)
 {
   if traceReplicatedDist then writeln("ReplicatedDist.dsiNewRectangularDom ",
-                                      (rank, typeToString(idxType), stridable));
+                                      (rank, idxType:string, stridable));
 
   // Have to call the default constructor because we need to initialize 'dist'
   // prior to initializing 'localDoms' (which needs a non-nil value for 'dist'.
@@ -458,7 +458,7 @@ iter ReplicatedDom.these(param tag: iterKind, followThis) where tag == iterKind.
 }
 
 /* Write the domain out to the given Writer serially. */
-proc ReplicatedDom.dsiSerialWrite(f: Writer): void {
+proc ReplicatedDom.dsiSerialWrite(f): void {
   // redirect to DefaultRectangular
   redirectee()._value.dsiSerialWrite(f);
   if printReplicatedLocales {
@@ -588,7 +588,7 @@ proc ReplicatedArr.dsiAccess(indexx) ref: eltType {
 }
 
 // Write the array out to the given Writer serially.
-proc ReplicatedArr.dsiSerialWrite(f: Writer): void {
+proc ReplicatedArr.dsiSerialWrite(f): void {
   var neednl = false;
   for locArr in localArrs {
 //  on locArr {  // may cause deadlock

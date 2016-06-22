@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,8 +43,8 @@ class AList {
   Expr* last(void);  // begin backwards iteration over a list
 
   // other ways to get elements from the list
-  Expr* only(void); // return the single element in a list
-  Expr* get(int index); // get the index-th element in a list
+  Expr* only(void);            // return the single element in a list
+  Expr* get(int index)  const; // get the index-th element in a list
 
   // add element(s) at beginning of list
   void insertAtHead(Expr* new_ast);
@@ -69,7 +69,7 @@ class AList {
        node;                                                            \
        node = _alist_prev,                                              \
          _alist_prev = node ? node->prev : NULL)
- 
+
 #define for_enums(node, et)                                             \
   for (DefExpr *node = toDefExpr((et)->constants.head),                 \
          *_alist_next = node ? toDefExpr(node->next) : NULL;            \
@@ -84,6 +84,7 @@ class AList {
        node = _alist_prev,                                              \
          _alist_prev = node ? toDefExpr(node->prev) : NULL)
 
+// for_formals(arg, fn) arg is ArgSymbol*, fn is FnSymbol*
 #define for_formals(formal, fn)                                         \
   for (ArgSymbol *formal = ((fn)->formals.head) ? toArgSymbol(toDefExpr((fn)->formals.head)->sym) : NULL, \
          *_alist_next = (formal && formal->defPoint->next) ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL; \
@@ -117,7 +118,7 @@ class AList {
 
 // Visits the formal and actual parameters of a normal call or a virtual method call.
 // Virtual method calls are represented by the PRIM_VIRTUAL_METHOD_CALL primitive.
-// In this case, the first actual argument contains the FnSymbol representing the 
+// In this case, the first actual argument contains the FnSymbol representing the
 // function being called, and the second argument contains the call id (cid).
 // These two initial arguments are elided when the actuals list is traversed.
 // There can be fewer formals than actuals if some of the formals are param

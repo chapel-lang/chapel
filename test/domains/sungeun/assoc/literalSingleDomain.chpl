@@ -1,7 +1,7 @@
 var D1 = {{1..3}};
-writeln(typeToString(D1.type));
+writeln(D1.type:string);
 
 var D  = {1..3};
 var D2 = {D};
-writeln(typeToString(D2.type));
+writeln(D2.type:string);
 

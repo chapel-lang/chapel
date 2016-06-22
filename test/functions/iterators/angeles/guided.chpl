@@ -5,9 +5,9 @@
 // divided by the number of threads. These sizes decrease approximately exponentially to 1
 
 // Contributed by Angeles Navarro 
-use AdvancedIters;
+use DynamicIters;
 extern proc usleep(val:uint);
-config const nTasks:int=4; //here.numCores; should be here.maxTaskPar?
+config const nTasks:int=4; // number of cores; should be here.maxTaskPar?
 writeln("Working with ", nTasks, " Threads");
 
 // Adding timing

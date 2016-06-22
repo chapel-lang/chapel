@@ -20,11 +20,11 @@ class Node {
   var pred : Node = nil;
   var disc,fini : int = -1;
 
-  proc writeThis(w: Writer){
+  proc writeThis(w){
     w.write("{",name,"}");
   }
 
-  proc writeFancy(w: Writer){
+  proc writeFancy(w){
     w.write("{",name," : ",color);
     if(pred != nil) then w.write("^",pred.name);
     if(disc >= 0) then w.write(" ",disc);
@@ -43,7 +43,7 @@ class Edge {
   var dst: Node;
   var reversed: bool = false;
   var kind: edgeKind = edgeKind.GRAPH;
-  proc writeThis(w: Writer){
+  proc writeThis(w){
     var ec:string;
     select(kind) {
     when edgeKind.GRAPH do ec = "--->";
@@ -136,7 +136,7 @@ proc Edge.read(infile: file){
 */
 
 class UndirectedEdge : Edge {
-  proc writeThis(w: Writer){
+  proc writeThis(w){
      w.write(src," -- ",dst);
   }
 }

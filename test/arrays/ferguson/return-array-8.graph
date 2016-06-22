@@ -1,0 +1,5 @@
+perfkeys: serial 8 untyped return, parallel 8 untyped return, serial 8 typed return, parallel 8 typed return, serial 8 untyped arg, parallel 8 untyped arg, serial 8 typed arg, parallel 8 typed arg
+graphkeys: serial untyped return, parallel untyped return, serial typed return, parallel typed return, serial untyped arg, parallel untyped arg, serial typed arg, parallel typed arg
+files: return-array-serial-8-1000000.dat, return-array-parallel-8-1000000.dat, return-array-serial-8-1000000.dat, return-array-parallel-8-1000000.dat, return-array-serial-8-1000000.dat, return-array-parallel-8-1000000.dat, return-array-serial-8-1000000.dat, return-array-parallel-8-1000000.dat
+ylabel: Time (seconds)
+graphtitle: array return performance, serial/parallel, 8 element array

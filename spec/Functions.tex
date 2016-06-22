@@ -144,8 +144,6 @@ formal:
   formal-intent[OPT] tuple-grouped-identifier-list formal-type[OPT] default-expression[OPT]
   formal-intent[OPT] tuple-grouped-identifier-list formal-type[OPT] variable-argument-expression
 
-
-
 formal-type:
   : type-specifier
   : ? identifier[OPT]
@@ -169,8 +167,12 @@ formal-intent:
   `param'
   `type'
 
-return-intent: one of
-  `ref' $ $ $ $ `const' $ $ $ $ `param' $ $ $ $ `type'
+return-intent:
+  `const'
+  `const ref'
+  `ref'
+  `param'
+  `type'
 
 return-type:
   : type-specifier
@@ -369,7 +371,7 @@ or \emph{abstract}.  Concrete intents are those in which the semantics
 of the intent keyword are independent of the argument's type.
 Abstract intents are those in which the keyword (or lack thereof)
 expresses a general intention that will ultimately be implemented via
-one of the conrete intents.  The specific choice of concrete intent
+one of the concrete intents.  The specific choice of concrete intent
 depends on the argument's type and may be implementation-defined.
 Abstract intents are provided to support productivity and code reuse.
 
@@ -710,31 +712,26 @@ and in what contexts that function is allowed to be used.  By default, or if
 the \sntx{return-intent} is \chpl{const}, the function returns a value that
 cannot be used as an lvalue.
 
+% TODO: it's a little jarring that the above talks about returning
+% a value when e.g. a type function does not return a value at all
+% (since it returns a type).
+% It would probably be better to consider type and param return
+% functions "type functions" or "param functions" and leave this
+% section to only discuss const/ref/const ref return intents.
+
 \subsection{The Ref Return Intent}
 \label{Ref_Return_Intent}
 \index{functions!ref keyword and@\chpl{ref} keyword and}
+\index{ref (return intent)@\chpl{ref} (return intent)}
+\index{intents!ref return@\chpl{ref} return}
 \index{functions!lvalues}
 
 When using a \chpl{ref} return intent, the function call is an lvalue
 (specifically, a call expression for a procedure and an iterator variable for
-an iterator).  This implies that the function produces a reference; however,
-this reference cannot be captured.
-%TODO: is this still true with ref variables?
+an iterator).
 
 The \chpl{ref} return intent is specified by following the argument list with
 the \chpl{ref} keyword.  The function must return or yield an lvalue.
-% Todo: disallow void return types for variable functions?
-
-When a procedure with a \chpl{ref} return intent is called on the left-hand
-side of an assignment statement or in the context of a call to a formal
-argument by \chpl{out}, \chpl{inout}, or \chpl{ref} intent, the lvalue that is
-returned by the procedure is assigned a value.
-
-Functions with a \chpl{ref} return intent provide an implicit \chpl{param}
-formal argument \chpl{setter} of type \chpl{bool}.  If the function is called
-in a context requiring an lvalue, the actual argument for \chpl{setter} is
-implicitly \chpl{true}; otherwise it is \chpl{false}.  This argument is useful
-for adjusting the behavior depending to the calling context.
 
 \begin{chapelexample}{ref-return-intent.chpl}
 The following code defines a procedure that can be interpreted as a
@@ -764,50 +761,92 @@ writeln(A(0) + A(1));
 \end{chapel}
 This code outputs the number \chpl{3}.
 
-\index{setter}
-\index{functions!setter argument}
-The implicit \chpl{setter} argument can be used to ensure, for
+\begin{chapeloutput}
+3
+\end{chapeloutput}
+\end{chapelexample}
+
+
+\subsection{The Const Ref Return Intent}
+\label{Const_Ref_Return_Intent}
+\index{functions!const ref keyword and@\chpl{const ref} keyword and}
+\index{const ref (return intent)@\chpl{const ref} (return intent)}
+\index{intents!const ref return@\chpl{const ref} return}
+
+The \chpl{const ref} return intent is also available. It is a restricted
+form of the \chpl{ref} return intent. Calls to functions marked with
+the \chpl{const ref} return intent are not lvalue expressions.
+
+\subsection{Choosing a Ref Return Intent Function Based on Calling Context}
+\label{Ref_Pair}
+\index{functions!ref-pair}
+
+In some situations, it is useful to distinguish between calls that are
+used in an lvalue setting and those that are not. In particular, suppose
+that there are two functions that have the same formal arguments and
+differ only in their return intent. Normally, such a situation will cause
+an error since it is ambiguous which function is called. However, the
+Chapel language includes a special rule for determining which function to
+call when one of the calls is an lvalue and the other is not.  This rule
+enables data structures such as sparse arrays.
+
+This special rule is called the ref-pair rule. If, when resolving a call,
+there are two candidate functions where:
+
+\begin{itemize}
+\item
+ one of them uses the \chpl{ref} return intent and the other uses
+ \chpl{const}, \chpl{const ref}, or blank return intent
+\item
+ either both use promotion or neither do
+\end{itemize}
+
+then this pair of candidate functions is called a ref-pair.
+
+When such a call appears on the left-hand side of an assignment
+statement, is returned in a function with \chpl{ref} return intent, or
+appears in a call and corresponds to a formal argument with \chpl{out},
+\chpl{inout}, or \chpl{ref} intent, the candidate with the \chpl{ref}
+return intent is used. Otherwise, the other candidate is used.
+
+% TODO - this section, or a significant portion of it,
+% should move to the function resolution section.
+
+\begin{chapelexample}{ref-return-intent-pair.chpl}
+
+\index{functions!ref-pair}
+A ref-pair can be used to ensure, for
 example, that the second element in the pseudo-array is only assigned
-a value if the first argument is positive.  To do this, add the
-following:
-\begin{chapelnoprint}
-proc A2(i: int) ref { // } to fool latex
+a value if the first argument is positive.  The following is an
+example:
+\begin{chapel}
+var x, y = 0;
+
+proc doA(param setter, i: int) ref {
   if i < 0 || i > 1 then
     halt("array access out of bounds");
-\end{chapelnoprint}
-\begin{chapel}
-if setter && i == 1 && x <= 0 then
-  halt("cannot assign value to A(1) if A(0) <= 0");
-\end{chapel}
-\begin{chapelpost}
-// { to fool latex
+
+  if setter && i == 1 && x <= 0 then
+    halt("cannot assign value to A(1) if A(0) <= 0");
+
   if i == 0 then
     return x;
   else
     return y;
 }
-A2(0) = 0;
-A2(1) = 1;
-\end{chapelpost}
-\begin{chapelprediff}
-\#!/usr/bin/env python
+proc A(i: int) ref {
+  return doA(true, i);
+}
+proc A(i: int) {
+  return doA(false, i);
+}
 
-"""Sort the output file. Some platforms (especially WLMs) seem to reverse the
-order (probably because one line is on stdout and the other is on stderr).
-"""
+A(0) = 0;
+A(1) = 1;
 
-import sys
-
-with open(sys.argv[2], 'r') as fp:
-    content = fp.read()
-lines = content.splitlines(True)
-lines.sort()
-with open(sys.argv[2], 'w') as fp:
-    fp.write(''.join(lines))
-\end{chapelprediff}
+\end{chapel}
 \begin{chapeloutput}
-3
-ref-return-intent.chpl:18: error: halt reached - cannot assign value to A(1) if A(0) <= 0
+ref-return-intent-pair.chpl:8: error: halt reached - cannot assign value to A(1) if A(0) <= 0
 \end{chapeloutput}
 \end{chapelexample}
 
@@ -1155,7 +1194,7 @@ more specific argument mapping than the corresponding legal argument
 mapping to $F_2$, then $F_2$ is more specific.
 \item If $F_1$ shadows $F_2$, then $F_1$ is more specific.
 \item If $F_2$ shadows $F_1$, then $F_2$ is more specific.
-\item If all \chpl{param} arguments prefer $F_1$ over $F_2$, then $F_1$ is more specific.  In order of preference, a \chpl{param} argument prefers to passed to (a) a \chpl{param} formal of matching type; (b) a \chpl{param} formal large enough to store the \chpl{param} value; (c) a non-\chpl{param} formal of matching type.
+\item If all \chpl{param} arguments prefer $F_1$ over $F_2$, then $F_1$ is more specific.  In order of preference, a \chpl{param} argument prefers to be passed to (a) a \chpl{param} formal of matching type; (b) a \chpl{param} formal large enough to store the \chpl{param} value; (c) a non-\chpl{param} formal of matching type.
 \item If all \chpl{param} arguments prefer $F_2$ over $F_1$, then $F_2$ is more specific.
 \item If $F_1$ has a where clause and $F_2$ does not have a where clause, then $F_1$ is more specific.
 \item If $F_2$ has a where clause and $F_1$ does not have a where clause, then $F_2$ is more specific.

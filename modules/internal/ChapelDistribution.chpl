@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -342,6 +342,10 @@ module ChapelDistribution {
   
     proc sparseShiftArrayBack(shiftrange) {
       halt("sparseShiftArrayBack not supported for non-sparse arrays");
+    }
+
+    proc sparseBulkShiftArray(shiftMap, oldnnz) {
+      halt("sparseBulkShiftArray not supported for non-sparse arrays");
     }
   
     // methods for associative arrays

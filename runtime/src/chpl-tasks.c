@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -60,10 +60,10 @@ int32_t chpl_task_getenvNumThreadsPerLocale(void)
     }
     else {
       if (sscanf(p, "%" SCNi32, &num) != 1)
-        chpl_warning("Cannot parse CHPL_RT_NUM_THREADS_PER_LOCALE environment "
-                     "variable", 0, NULL);
+        chpl_error("Cannot parse CHPL_RT_NUM_THREADS_PER_LOCALE environment "
+                   "variable", 0, 0);
       if (num < 0) {
-        chpl_error("CHPL_RT_NUM_THREADS_PER_LOCALE must be >= 0", 0, NULL);
+        chpl_error("CHPL_RT_NUM_THREADS_PER_LOCALE must be >= 0", 0, 0);
         num = 0;
       }
       else {
@@ -73,7 +73,7 @@ int32_t chpl_task_getenvNumThreadsPerLocale(void)
                    "CHPL_RT_NUM_THREADS_PER_LOCALE = %" PRIi32 " is too large; "
                    "limit is %" PRIi32,
                    num, lim);
-          chpl_warning(msg, 0, NULL);
+          chpl_warning(msg, 0, 0);
           num = lim;
         }
       }
@@ -140,13 +140,13 @@ size_t chpl_task_getEnvCallStackSize(void)
         }
       }
       else {
-        chpl_warning("Cannot parse CHPL_RT_CALL_STACK_SIZE", 0, NULL);
+        chpl_warning("Cannot parse CHPL_RT_CALL_STACK_SIZE", 0, 0);
         size = 0;
       }
     }
 
     if (size <= 0) {
-      chpl_warning("CHPL_RT_CALL_STACK_SIZE must be > 0", 0, NULL);
+      chpl_warning("CHPL_RT_CALL_STACK_SIZE must be > 0", 0, 0);
       size = 0;
     }
 
@@ -156,7 +156,7 @@ size_t chpl_task_getEnvCallStackSize(void)
         snprintf(msg, sizeof(msg),
                  "CHPL_RT_CALL_STACK_SIZE must be <= %zd; using %zd",
                  max, max);
-        chpl_warning(msg, 0, NULL);
+        chpl_warning(msg, 0, 0);
         size = max;
       }
     }

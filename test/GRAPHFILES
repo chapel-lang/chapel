@@ -2,6 +2,7 @@
 release/examples/benchmarks/ssca2/SSCA2_main.graph
 release/examples/benchmarks/ssca2/edge_generation.graph
 release/examples/benchmarks/ssca2/total_time.graph
+release/examples/benchmarks/lcals/LCALSMain.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/hpcc/stream.graph
 release/examples/benchmarks/hpcc/ra.graph
@@ -40,7 +41,6 @@ studies/shootout/regex-dna/regexdna.graph
 studies/shootout/reverse-complement/revcomp.graph
 npb/ep/ep-b.graph
 npb/ft/ft-a.graph
-npb/is/is.graph
 studies/parboil/BFS/bfs.graph
 studies/parboil/histo/histo.graph
 studies/parboil/SAD/sad.graph
@@ -102,6 +102,7 @@ studies/shootout/binary-trees/binary-trees-extras.graph
 studies/shootout/fasta/fasta-extras.graph
 studies/shootout/spectral-norm/lydia/spectral-norm-specify-step.graph
 studies/shootout/mandelbrot/mandelbrot-extras.graph
+studies/shootout/mandelbrot/mandelbrot-dynamicIter.graph
 # suite: Parboil benchmarks
 studies/parboil/BFS/bfs.graph
 studies/parboil/histo/histo.graph
@@ -110,15 +111,23 @@ studies/parboil/stencil/stencil.graph
 # suite: PARSEC benchmarks
 studies/parsec/blackscholes.graph
 studies/parsec/blackscholes_promote.graph
-# suite: LCALS benchmarks
-studies/lcals/LCALSMain.graph
+# suite: ISx benchmark
+studies/isx/isx.graph
+studies/isx/isx-bucket-spmd.graph
+studies/isx/isx-no-return.graph
+studies/isx/isx-per-task.graph
+release/examples/benchmarks/isx/isx-release.graph
+# suite: PRK benchmarks
+studies/prk/synch_p2p/prk-synch_p2p.graph
+studies/prk/stencil/prk-stencil.graph
+studies/prk/transpose/prk-transpose.graph
 # suite: NAS Parallel benchmarks
 npb/cg/cg.graph
 npb/ep/ep.graph
 npb/ep/ep-b.graph
 npb/ft/ft.graph
 npb/ft/ft-a.graph
-npb/is/is.graph
+users/npadmana/npb-mg/mg.graph
 # suite: Array/Domain performance
 arrays/diten/arrayPerformance-2d.graph
 arrays/diten/arrayPerformance-1d.graph
@@ -141,6 +150,11 @@ distributions/robust/associative/performance/array_iter.graph
 distributions/robust/associative/performance/domain_iter.graph
 domains/bradc/domEqualityPerf.graph
 performance/thomasvandoren/matrix-multiply.graph
+types/string/ferguson/array-of-strings-read.graph
+arrays/ferguson/return-array-8.graph
+arrays/ferguson/return-array-20000000.graph
+arrays/ferguson/return-array-40000000.graph
+domains/ferguson/build-associative.graph
 # suite: Dynamic iterators
 functions/iterators/angeles/dynamic.graph
 functions/iterators/angeles/distAdaptativeWSv1.graph
@@ -186,9 +200,17 @@ studies/hpcc/STREAM_study_fragmented.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/mandelbrot/mandelbrot.graph
+# suite: String perf tests
+types/string/ferguson/temporary-copies.graph
+types/string/psahabu/split-whitespace-perf.graph
+types/string/psahabu/perf/allocate.graph
+types/string/psahabu/perf/arguments.graph
+types/string/psahabu/perf/search.graph
+types/string/psahabu/perf/substring.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph
+reductions/vass/reductions-perf.graph
 spectests.graph
 studies/paracr/asenjo/PARACR-BC.graph
 modules/standard/BitOps/c-tests/performance/bitops.graph
@@ -200,5 +222,7 @@ studies/colostate/cfd-mini.graph
 # suite: Nikhil Padmanabhan
 users/npadmana/twopt/twopt-buildtrees.graph
 users/npadmana/twopt/twopt-paircount.graph
+# suite: Elegance
+studies/elegance/elegance.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph

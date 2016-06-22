@@ -1,0 +1,1 @@
+checkUsePathBadFunctionAccess.chpl:3: error: unresolved call 'f2()'

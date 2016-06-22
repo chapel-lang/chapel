@@ -1,9 +1,9 @@
 var i: int;
-proc blah() ref where setter {
+proc blah() ref {
   return i;
 }
 
-proc blah() ref where !setter {
+proc blah() {
   return 3;
 }
 

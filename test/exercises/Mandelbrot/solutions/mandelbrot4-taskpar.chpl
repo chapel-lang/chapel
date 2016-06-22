@@ -17,7 +17,7 @@ config const maxSteps = 50;
 // 
 // The number of tasks we should spawn.
 //
-config const numTasks = here.numCores; // Cores on locale #0.
+config const numTasks = here.maxTaskPar;
 
 
 proc main() {

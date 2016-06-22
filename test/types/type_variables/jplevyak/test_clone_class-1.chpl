@@ -6,10 +6,19 @@ class foo {
   }
 }
 
-var f = new foo(x = 2);
 
-f.print();
+
+var f1 = new foo(x = 2);
+
+f1.print();
+
+delete f1;
+
+
+
 
 var f2 = new foo(x = 3.0);
 
 f2.print();
+
+delete f2;

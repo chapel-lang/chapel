@@ -1,5 +1,5 @@
-./FTree.chpl:162: In function 'copy':
-./FTree.chpl:163: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+./FTree.chpl:169: In function 'copy':
+./FTree.chpl:170: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
 Mad Chapel -- Gaxpy Test
 
 ** Testing function 1

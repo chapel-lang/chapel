@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -462,8 +462,8 @@ unlock:
   return err;
 }
 
-// allocates and returns a string. maxlen is in CHARACTERS.
-qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen)
+// allocates and returns a string.
+qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes)
 {
   qioerr err;
   char* restrict ret = NULL;
@@ -483,12 +483,14 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
   ssize_t nread = 0;
   int64_t mark_offset;
   int64_t end_offset;
+  ssize_t maxlen_chars = SSIZE_MAX - 1;
+  int found_term = 0;
 
   if( qio_glocale_utf8 == 0 ) {
     qio_set_glocale();
   }
 
-  if( maxlen <= 0 ) maxlen = SSIZE_MAX - 1;
+  if( maxlen_bytes <= 0 ) maxlen_bytes = SSIZE_MAX - 1;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -498,8 +500,12 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
   style = &ch->style;
 
   if( style->max_width_characters < UINT32_MAX &&
-      style->max_width_characters < maxlen ) {
-    maxlen = style->max_width_characters;
+      style->max_width_characters < maxlen_chars ) {
+    maxlen_chars = style->max_width_characters;
+  }
+  if( style->max_width_bytes < UINT32_MAX &&
+      style->max_width_bytes < maxlen_bytes ) {
+    maxlen_bytes = style->max_width_bytes;
   }
 
   // Allocate room for our buffer...
@@ -552,7 +558,14 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
   }
 
   err = 0;
-  for( nread = 0; nread < maxlen && !err; nread++ ) {
+  for( nread = 0;
+      // limit # characters
+      nread < maxlen_chars &&
+      // stop on error
+      !err &&
+      // limit # bytes
+      qio_channel_offset_unlocked(ch) - mark_offset < maxlen_bytes;
+      nread++ ) {
     err = qio_channel_read_char(false, ch, &chr);
     if( err ) break;
 
@@ -700,6 +713,7 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
       if(style->string_format == QIO_STRING_FORMAT_TOEND) {
         err = _append_char(&ret, &ret_len, &ret_max, chr);
       }
+      found_term = 1;
       break;
     } else {
       err = _append_char(&ret, &ret_len, &ret_max, chr);
@@ -715,7 +729,7 @@ qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch,
 
     // Unget the terminating character - there must
     // be one (or else err!=0)
-    if( err == 0 ) {
+    if( err == 0 && found_term ) {
       // Unget the terminating character.
       qio_channel_revert_unlocked(ch);
       qio_channel_advance_unlocked(ch, end_offset - mark_offset - 1);
@@ -809,10 +823,13 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
     }
 
     // ignore EOF when looking for whitespace.
-    if( qio_err_to_int(err) == EEOF ) err = 0;
     // ignore EILSEQ (illegal unicode sequence) when
     // looking for whitespace (that just means it wasn't whitespace)
-    if( qio_err_to_int(err) == EILSEQ ) err = 0;
+    if( qio_err_to_int(err) == EEOF ||
+        qio_err_to_int(err) == EILSEQ ) {
+      err = 0;
+      qio_channel_clear_error(ch);
+    }
 
     qio_channel_revert_unlocked(ch);
 
@@ -1316,7 +1333,7 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
   ssize_t safe_quoted_bytes = 0;
   ssize_t safe_quoted_chars = 0;
   ssize_t safe_quoted_cols = 0;
-  int elipses_size;
+  int ellipses_size;
   int end_quote_size;
   int start_quote_size;
   int clen = 1;
@@ -1330,11 +1347,11 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
   // write the string itself, possible with some escape-handling.
   if( string_format == QIO_STRING_FORMAT_WORD ||
       string_format == QIO_STRING_FORMAT_TOEND ) {
-    elipses_size = 0;
+    ellipses_size = 0;
     end_quote_size = 0;
     start_quote_size = 0;
   } else {
-    elipses_size = 3; // ie ...
+    ellipses_size = 3; // ie ...
     end_quote_size = 1; // ie a double quote
     start_quote_size = 1;
     // Smallest pattern is ""...
@@ -1361,9 +1378,9 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
       QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
       goto error;
     }
-    if( quoted_bytes + elipses_size + end_quote_size <= max_bytes &&
-        quoted_chars + elipses_size + end_quote_size <= max_chars &&
-        quoted_cols + elipses_size + end_quote_size <= max_cols) {
+    if( quoted_bytes + ellipses_size + end_quote_size <= max_bytes &&
+        quoted_chars + ellipses_size + end_quote_size <= max_chars &&
+        quoted_cols + ellipses_size + end_quote_size <= max_cols) {
       safe_i = i;
       safe_quoted_bytes = quoted_bytes;
       safe_quoted_chars = quoted_chars;
@@ -1383,7 +1400,7 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
 
   if( overfull ) {
     i = safe_i;
-    // and add end quote and elipses.
+    // and add end quote and ellipses.
     quoted_bytes = safe_quoted_bytes;
     quoted_chars = safe_quoted_chars;
     quoted_cols = safe_quoted_cols;
@@ -1395,10 +1412,10 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
   quoted_cols += end_quote_size;
 
   if( overfull ) {
-    // Account for the elipses
-    quoted_bytes += elipses_size;
-    quoted_chars += elipses_size;
-    quoted_cols += elipses_size;
+    // Account for the ellipses
+    quoted_bytes += ellipses_size;
+    quoted_chars += ellipses_size;
+    quoted_cols += ellipses_size;
   }
 
   if( ti ) {
@@ -1511,6 +1528,330 @@ error:
 #undef WRITEC
 }
 
+static inline bool is_json_whitespace(int32_t c)
+{
+  return ( c == ' ' || c == '\b' ||
+           c == '\f' || c == '\n' || c == '\r' || c == '\t' );
+}
+
+// Read and skip an arbitrary JSON object, assuming the leading '{'
+// has already been read. Returns 0 on success or a negative error code.
+int32_t qio_skip_json_object_unlocked(qio_channel_t* restrict ch)
+{
+  int32_t c;
+
+  while( true ) {
+    // Read a field.
+    c = qio_skip_json_field_unlocked(ch);
+    if( c < 0 ) return c;
+
+    // Read whitespace followed by , or '}'
+    if( c == 0 || is_json_whitespace(c) ) {
+      while( true ) {
+        c = qio_channel_read_byte(false, ch);
+        if( c < 0 ) return c;
+        if( is_json_whitespace(c) ) {
+          // continue reading whitespace.
+        } else {
+          break;
+        }
+      }
+    }
+
+    if( c == ',' ) {
+      // OK, move on to the next value.
+    } else if( c == '}' ) {
+      // we've reached the end.
+      return 0;
+    } else {
+      return -EFORMAT;
+    }
+  }
+}
+
+// Read and skip an arbitrary JSON array, assuming the leading '['
+// has already been read. Returns 0 on success or a negative error code.
+int32_t qio_skip_json_array_unlocked(qio_channel_t* restrict ch)
+{
+  int32_t c;
+
+  while( true ) {
+    // Read a value.
+    c = qio_skip_json_value_unlocked(ch);
+    if( c < 0 ) return c;
+
+    // Read a whitespace followed by , or ']'
+    if( c == 0 || is_json_whitespace(c) ) {
+      while( true ) {
+        c = qio_channel_read_byte(false, ch);
+        if( c < 0 ) return c;
+        if( is_json_whitespace(c) ) {
+          // continue reading whitespace.
+        } else {
+          break;
+        }
+      }
+    }
+
+    if( c == ',' ) {
+      // OK, move on to the next value.
+    } else if( c == ']' ) {
+      // we've reached the end.
+      return 0;
+    } else {
+      return -EFORMAT;
+    }
+  }
+}
+
+// Read and skip an arbitrary JSON value.
+// Returns any unhandled character, 0 if all characters
+// were handled, or a negative error code.
+// unhandled characters could easily be , ] }
+int32_t qio_skip_json_value_unlocked(qio_channel_t* restrict ch)
+{
+  int32_t c;
+
+  // Read whitespace and then a value.
+  while( true ) {
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( is_json_whitespace(c) ) {
+      // continue reading whitespace.
+    } else {
+      break;
+    }
+  }
+
+  if( c == '"' ) {
+    // read string until matching '"'
+    return qio_skip_json_string_unlocked(ch);
+  } else if( c == '-' || ('0' <= c && c <= '9') ) {
+    // read digits before .
+    while( true ) {
+      c = qio_channel_read_byte(false, ch);
+      if( c < 0 ) return c;
+      if( '0' <= c && c <= '9' ) {
+        // continue reading digits.
+      } else {
+        break;
+      }
+    }
+
+    // now c is the first non-digit.
+
+    if( c == '.' ) {
+      // read some more digits after .
+      while( true ) {
+        c = qio_channel_read_byte(false, ch);
+        if( c < 0 ) return c;
+        if( '0' <= c && c <= '9' ) {
+          // continue reading digits.
+        } else {
+          break;
+        }
+      }
+    }
+
+    // now read e or E followed by + - and exponent digits
+    if( c == 'e' || c == 'E' ) {
+      // read +, -, or a digit
+      c = qio_channel_read_byte(false, ch);
+      if( c < 0 ) return c;
+      if( c == '+' || c == '-' || ('0' <= c && c <= '9') ) {
+        // OK
+      } else {
+        return -EFORMAT;
+      }
+      // read some more digits
+      while( true ) {
+        c = qio_channel_read_byte(false, ch);
+        if( c < 0 ) return c;
+        if( '0' <= c && c <= '9' ) {
+          // continue reading digits.
+        } else {
+          break;
+        }
+      }
+    }
+
+    // Returns the next non-digit (could be , for example)
+    return c;
+  } else if( c == '{' ) {
+    // read object until matching '}'
+    return qio_skip_json_object_unlocked(ch);
+  } else if( c == '[' ) {
+    // read array until matching ']'
+    return qio_skip_json_array_unlocked(ch);
+  } else if( c == 't' ) {
+    // read true
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'r' ) return -EFORMAT;
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'u' ) return -EFORMAT;
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'e' ) return -EFORMAT;
+    return 0;
+  } else if( c == 'f' ) {
+    // read false
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'a' ) return -EFORMAT;
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'l' ) return -EFORMAT;
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0  ) return c;
+    if( c != 's' ) return -EFORMAT;
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'e' ) return -EFORMAT;
+    return 0;
+  } else if( c == 'n' ) {
+    // read null
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'u' ) return -EFORMAT;
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'l' ) return -EFORMAT;
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( c != 'l' ) return -EFORMAT;
+    return 0;
+  } else {
+    // some other character - it could be ] } , after a value.
+    return c;
+  }
+}
+
+// Read and skip an arbitrary JSON string, assuming the leading "
+// has already been read. Returns 0 on success, or a negative
+// error code.
+int32_t qio_skip_json_string_unlocked(qio_channel_t* restrict ch)
+{
+  int32_t c;
+
+  while( true ) {
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+
+    // quote: end of string.
+    if( c == '\"' ) return 0;
+
+    // backslash: handle quoting.
+    if( c == '\\' ) {
+      c = qio_channel_read_byte(false, ch);
+      if( c < 0 ) return c;
+
+      // As long as we handle \" correctly, there is
+      // no need to validate the JSON in the string.
+      // Furthermore, since we are just skipping over it,
+      // there is no need to take special action for
+      // particular backslash-escapes.
+    }
+  }
+}
+
+// Read and skip an arbitrary JSON field, not counting a following ,
+// Returns the last character read, or
+// negative for a negative error code.
+int32_t qio_skip_json_field_unlocked(qio_channel_t* restrict ch)
+{
+  int32_t c;
+
+  // Read a whitespace followed by " or '}'
+  while( true ) {
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( is_json_whitespace(c) ) {
+      // continue reading whitespace.
+    } else {
+      break;
+    }
+  }
+
+  if( c == '"' ) {
+    // OK, move on to reading the value.
+  } else if( c == '}' ) {
+    return c;
+  } else {
+    return -EFORMAT;
+  }
+
+  c = qio_skip_json_string_unlocked(ch);
+  if( c < 0 ) return c;
+
+  // Read a whitespace followed by :
+  while( true ) {
+    c = qio_channel_read_byte(false, ch);
+    if( c < 0 ) return c;
+    if( is_json_whitespace(c) ) {
+      // continue reading whitespace.
+    } else {
+      break;
+    }
+  }
+
+  if( c == ':' ) {
+    // OK, move on to reading the value.
+  } else {
+    return -EFORMAT;
+  }
+
+  c = qio_skip_json_value_unlocked(ch);
+  return c;
+}
+
+qioerr qio_channel_skip_json_field(const int threadsafe, qio_channel_t* ch)
+{
+  qioerr err;
+  int32_t got;
+  int64_t start_offset;
+  int64_t offset;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) return err;
+  }
+
+  start_offset = qio_channel_offset_unlocked(ch);
+
+  err = qio_channel_mark(false, ch);
+  if( err ) goto unlock;
+
+  got = qio_skip_json_field_unlocked(ch);
+  if( got < 0 ) {
+    err = qio_int_to_err(-got);
+    qio_channel_revert_unlocked(ch);
+  } else {
+    offset = qio_channel_offset_unlocked(ch);
+    // if there was a last character, we need to un-get it.
+    if( got > 0 ) {
+      if( offset > start_offset ) {
+        offset--;
+      }
+    }
+
+    // now actually commit the skip.
+    qio_channel_revert_unlocked(ch);
+
+    qio_channel_advance_unlocked(ch, offset - start_offset);
+  }
+
+
+unlock:
+  _qio_channel_set_error_unlocked(ch, err);
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+  return err;
+
+}
+
 // only support floating point numbers in
 // base 10, or base 16 (with decimal exponent).
 //
@@ -1519,7 +1860,7 @@ error:
 // Always do case insensitive reading; the characters here should be
 // lower case.
 typedef struct number_reading_state_s {
-  int base; // 0 means 0b 0x supported; othewise particular base 2,10,16
+  int base; // 0 means 0b 0x supported; otherwise particular base 2,10,16
 
   char allow_base; // allow 0b or 0x when base == 2 or == 16 respectively
                    // (these are always allowed when base == 0)
@@ -2248,6 +2589,28 @@ int _ltoa(char* restrict dst, size_t size, uint64_t num, int isnegative,
   return i;
 }
 
+//This function finds where the last non-zero digit
+//is in the decimal part of an exponential number.
+//
+//This will be used in _ftoa_core for resolve a
+//a problem about trailing zeroes.
+static int _find_prec(char *buf, int len){
+  int dp_index = 0;
+  int last_dig = 0;
+  int index = 0;
+
+  //Find where the decimal point is
+  while( dp_index < len && buf[dp_index++] != '.');
+
+  //Explore the decimal part for find where the
+  //last non-zero digit is.
+  for( index = dp_index; index < len && buf[index] != 'e'; index++ ){
+    if( buf[index] != '0' )
+      last_dig = index - dp_index + 1;
+  }
+  return last_dig;
+}
+
 // Converts num to a string in buf, returns the number
 // of bytes that would be used if space permits (not including null)
 // or -1 on error
@@ -2315,9 +2678,32 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
   } else if( realfmt == 0 ) {
     if( precision < 0 ) {
       if( uppercase ) {
-        got = snprintf(buf, buf_sz, "%G", num);
+        // This if is necessary because if the number has
+        // 6 digits in the integer part, %g will not print
+        // the decimal part because the integer part have
+        // a number of digits equals to the standard precision.
+        if(num >= 100000.0 && num < 1000000.0){
+          got = snprintf(buf, buf_sz, "%.5E", num);
+          //Since we force the %.5e for maintain a precision of
+          //6 digits, the output could include some trailing zeroes.
+          //With _find_prec, we find how much digits we need.
+          //
+          //It can also be done starting from the number itself
+          //but this way avoids to deal with the loss of precision
+          //caused by floating point representation
+          if(buf_sz > 0)
+            got = snprintf(buf, buf_sz, "%.*E",_find_prec(buf, got), num);
+        }
+        else
+          got = snprintf(buf, buf_sz, "%G", num);
       } else {
-        got = snprintf(buf, buf_sz, "%g", num);
+        if(num >= 100000.0 && num < 1000000.0){
+          got = snprintf(buf, buf_sz, "%.5e", num);
+          if(buf_sz > 0)
+            got = snprintf(buf, buf_sz, "%.*e",_find_prec(buf, got), num);
+        }
+        else
+          got = snprintf(buf, buf_sz, "%g", num);
       }
     } else {
       if( uppercase ) {
@@ -2461,7 +2847,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
 
       needspoint = 1;
       if( got < size ) {
-        // If we have suceeded at putting the number in dst,
+        // If we have succeeded at putting the number in dst,
         // go about figuring out if we need to add .0
         // If not - we will assume we need it for the purpose
         // of reserving temporary space.
@@ -2545,7 +2931,7 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
     if( showbase ) {
       dst[got++] = '0';
       if( base == 16 ) dst[got++] = style->uppercase?'X':'x';
-      else return -2; //unspported floating point base.
+      else return -2; //unsupported floating point base.
     }
 
     // 0 padding goes after the sign
@@ -2672,7 +3058,7 @@ qioerr qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, c
     char* tmp = NULL;
     char tmp_onstack[MAX_ON_STACK];
 
-    // Store it in a tempory variable and then
+    // Store it in a temporary variable and then
     // copy that in to the buffer.
     MAYBE_STACK_ALLOC(char, max, tmp, tmp_onstack);
     if( ! tmp ) {
@@ -2779,7 +3165,7 @@ qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* rest
     char* buf = NULL;
     char buf_onstack[MAX_ON_STACK];
 
-    // Store it in a tempory variable and then
+    // Store it in a temporary variable and then
     // copy that in to the buffer.
     MAYBE_STACK_ALLOC(char, max, buf, buf_onstack);
     if( ! buf ) {
@@ -3258,7 +3644,7 @@ qioerr qio_channel_print_complex(const int threadsafe,
     err = maybe_right_pad(ch, width);
     if( err ) goto rewind;
   } else {
-    QIO_GET_CONSTANT_ERROR(err, EINVAL, "unknow complex format");
+    QIO_GET_CONSTANT_ERROR(err, EINVAL, "unknown complex format");
     goto rewind;
   }
 
@@ -3630,6 +4016,7 @@ qioerr qio_conv_parse(c_string fmt,
   int minus_flag = 0;
   int space_flag = 0;
   int plus_flag = 0;
+  int sloppy_flag = 0;
   char base_flag = 0;
   char specifier = 0;
   char binary = 0;
@@ -3739,6 +4126,10 @@ qioerr qio_conv_parse(c_string fmt,
         space_flag = 1;
       } else if( fmt[i] == '+' ) {
         plus_flag = 1;
+      } else if( fmt[i] == '~' ) {
+        // ~ might one day mean allow non-quoted JSON field names
+        // but it also means to skip JSON fields not in use.
+        sloppy_flag = 1;
       } else {
         break;
       }
@@ -3885,7 +4276,7 @@ qioerr qio_conv_parse(c_string fmt,
           }
         }
 
-        // s conversions without follwing encoding type must have a width.
+        // s conversions without following encoding type must have a width.
         if( type == 's' && width == WIDTH_NOT_SET ) {
           QIO_GET_CONSTANT_ERROR(err, EINVAL, "Binary s conversion must have a width");
           goto done;
@@ -4011,6 +4402,14 @@ qioerr qio_conv_parse(c_string fmt,
 
       if( specifier == 's' || specifier == 'S') {
         // Handle base flags modifying string format
+
+        // Note -- when scanning, a precision should adjust the string
+        // format to not end at a whitespace.
+        // This mode scans a particular number of code points.
+        if( scanning && precision != WIDTH_NOT_SET ) {
+          style_out->string_format = QIO_STRING_FORMAT_TOEOF;
+        }
+
         if( base_flag == 'j' ) {
           style_out->string_format = QIO_STRING_FORMAT_JSON;
         } else if( base_flag == 'h' ) {
@@ -4119,6 +4518,10 @@ qioerr qio_conv_parse(c_string fmt,
       style_out->pad_char = ' ';
       style_out->realfmt = 2;
       style_out->string_format = QIO_STRING_FORMAT_CHPL;
+
+      if( sloppy_flag ) {
+        style_out->skip_unknown_fields = 1;
+      }
 
       if( base_flag == 'j' ) {
         style_out->realfmt = 2;

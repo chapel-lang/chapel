@@ -48,7 +48,7 @@ iter myiter(followThis, param tag: iterKind) where tag == iterKind.follower {
 var i = 111;
 var s1$, s2$: sync int;
 
-
+/* blank intents are not available at present
 s1$.reset(); s2$.reset();
 writeln(i, "  blank");
 cobegin with (ref i) {
@@ -64,7 +64,8 @@ cobegin with (ref i) {
     }
   }
 }
-
+*/
+i = 222;
 
 s1$.reset(); s2$.reset();
 writeln(i, "  in");

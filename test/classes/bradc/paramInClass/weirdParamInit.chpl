@@ -10,7 +10,7 @@ var c = new C(2);
 
 param x = c.x;
 
-writeln("c is: ", c);
+writeln("c is: {x = ", c.x, "}");
 writeln("x is: ", x);
 
 delete c;

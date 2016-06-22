@@ -11,9 +11,9 @@ module torus_graph_generator_utilities {
     use SSCA2_compilation_config_params, Random;
 
     var Rand_Gen = if REPRODUCIBLE_PROBLEMS then 
-                     new RandomStream (seed = 8737935341)
+                     new NPBRandomStream (seed = 8737935341)
 		    else
-		      new RandomStream ();
+		      new NPBRandomStream ();
 
     const n_neighbors = 2*G.dimensions;
     var Unif_Random : [1..n_neighbors] real;

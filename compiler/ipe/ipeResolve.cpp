@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,7 +32,6 @@
 
 #include "ipeDriver.h"
 #include "ipeEvaluate.h"
-#include "ipeUtils.h"
 
 #include "AstDumpToNode.h"
 #include "expr.h"
@@ -650,7 +649,7 @@ static bool blockProcessUseStmts(BlockStmt* stmt, IpeEnv* env)
 
     if (isUseStmt(expr) == true)
     {
-      Expr*              modName = toCallExpr(expr)->get(1);
+      Expr*              modName = toUseStmt(expr)->src;
       UnresolvedSymExpr* sel     = toUnresolvedSymExpr(modName);
       LcnSymbol*         sym     = env->findVariable(sel->unresolved);
 

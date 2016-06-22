@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -66,7 +66,7 @@ int chpl_mem_inited(void);
 static inline
 void* chpl_mem_allocMany(size_t number, size_t size,
                          chpl_mem_descInt_t description,
-                         int32_t lineno, c_string filename) {
+                         int32_t lineno, int32_t filename) {
   void* memAlloc;
   chpl_memhook_malloc_pre(number, size, description, lineno, filename);
   memAlloc = chpl_malloc(number*size);
@@ -77,14 +77,14 @@ void* chpl_mem_allocMany(size_t number, size_t size,
 
 static inline
 void* chpl_mem_alloc(size_t size, chpl_mem_descInt_t description,
-                     int32_t lineno, c_string filename) {
+                     int32_t lineno, int32_t filename) {
   return chpl_mem_allocMany(1, size, description, lineno, filename);
 }
 
 static inline
 void* chpl_mem_allocManyZero(size_t number, size_t size,
                              chpl_mem_descInt_t description,
-                             int32_t lineno, c_string filename) {
+                             int32_t lineno, int32_t filename) {
   void* memAlloc;
   chpl_memhook_malloc_pre(number, size, description, lineno, filename);
   memAlloc = chpl_calloc(number, size);
@@ -96,14 +96,14 @@ void* chpl_mem_allocManyZero(size_t number, size_t size,
 static inline
 void* chpl_mem_calloc(size_t number, size_t size,
                       chpl_mem_descInt_t description,
-                      int32_t lineno, c_string filename) {
+                      int32_t lineno, int32_t filename) {
   return chpl_mem_allocManyZero(number, size, description, lineno, filename);
 }
 
 static inline
 void* chpl_mem_realloc(void* memAlloc, size_t size,
                        chpl_mem_descInt_t description,
-                       int32_t lineno, c_string filename) {
+                       int32_t lineno, int32_t filename) {
   void* moreMemAlloc;
 
   chpl_memhook_realloc_pre(memAlloc, size, description,
@@ -120,7 +120,7 @@ void* chpl_mem_realloc(void* memAlloc, size_t size,
 }
 
 static inline
-void chpl_mem_free(void* memAlloc, int32_t lineno, c_string filename) {
+void chpl_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   chpl_memhook_free_pre(memAlloc, lineno, filename);
   chpl_free(memAlloc);
 }
@@ -139,15 +139,15 @@ void* chpl_memcpy(void* dest, const void* src, size_t num)
 //
 // If an allocator does not have the ability to get this information, minSize
 // will be returned.
-static inline size_t chpl_mem_goodAllocSize(size_t minSize) {
-  return chpl_goodAllocSize(minSize);
+static inline size_t chpl_mem_good_alloc_size(size_t minSize, int32_t lineno, int32_t filename) {
+  return chpl_good_alloc_size(minSize);
 }
 
 // free a c_string_copy, no error checking.
 // The argument type is explicitly c_string_copy, since only an "owned" string
 // should be freed.
 static inline
-void chpl_rt_free_c_string_copy(c_string_copy *s, int32_t lineno, c_string filename)  {
+void chpl_rt_free_c_string_copy(c_string_copy *s, int32_t lineno, int32_t filename)  {
   assert(*s!=NULL);
   chpl_mem_free((void *) *s, lineno, filename);
   *s = NULL;
@@ -158,7 +158,7 @@ void chpl_rt_free_c_string_copy(c_string_copy *s, int32_t lineno, c_string filen
 // c_strings are "unowned" so should not be freed, but NewString.chpl was written
 // before this distinction was made.
 static inline
-void chpl_rt_free_c_string(c_string* s, int32_t lineno, c_string filename)
+void chpl_rt_free_c_string(c_string* s, int32_t lineno, int32_t filename)
 {
   // As far as the C compiler is concerned c_string and c_string_copy are the
   // same type, so no explicit cast is required.
@@ -167,9 +167,9 @@ void chpl_rt_free_c_string(c_string* s, int32_t lineno, c_string filename)
 
 void chpl_mem_layerInit(void);
 void chpl_mem_layerExit(void);
-void* chpl_mem_layerAlloc(size_t, int32_t lineno, c_string filename);
-void* chpl_mem_layerRealloc(void*, size_t, int32_t lineno, c_string filename);
-void chpl_mem_layerFree(void*, int32_t lineno, c_string filename);
+void* chpl_mem_layerAlloc(size_t, int32_t lineno, int32_t filename);
+void* chpl_mem_layerRealloc(void*, size_t, int32_t lineno, int32_t filename);
+void chpl_mem_layerFree(void*, int32_t lineno, int32_t filename);
 
 #else // LAUNCHER
 

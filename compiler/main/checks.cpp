@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,7 +33,7 @@
 //
 
 static void check_afterEveryPass(); // Checks to be performed after every pass.
-static void check_afterScopeResolve(); // Checks to be performeed after the
+static void check_afterScopeResolve(); // Checks to be performed after the
                                        // scopeResolve pass.
 static void check_afterNormalization(); // Checks to be performed after
                                         // normalization.
@@ -173,6 +173,11 @@ void check_cullOverReferences()
   check_afterEveryPass();
   check_afterNormalization();
   check_afterResolution();
+
+  // No ContextCallExprs should remain in the tree.
+  forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
+    INT_FATAL("ContextCallExpr should no longer be in AST");
+  }
 }
 
 void check_callDestructors()
@@ -246,7 +251,7 @@ void check_scalarReplace()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
-  // Suggestion: Ensure no constant expresions.
+  // Suggestion: Ensure no constant expressions.
 }
 
 void check_refPropagation()

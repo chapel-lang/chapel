@@ -1,9 +1,9 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0303 
-header_name {.h} 
+version 1.0303
+header_name {.h}
 code_name {.cxx}
 comment {/*
- * Copyright 2015 Cray Inc.
+ * Copyright 2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,48 +21,48 @@ comment {/*
  * limitations under the License.
  */
 } {in_source in_header
-} 
+}
 
 decl {\#include <FL/Fl_File_Chooser.H>} {private local
-} 
+}
 
 decl {\#include <FL/Fl_Multiline_Output.H>} {public local
-} 
+}
 
 decl {\#include <FL/Fl_Sys_Menu_Bar.H>} {public local
-} 
+}
 
 decl {\#include <FL/fl_ask.H>} {private local
-} 
+}
 
 decl {\#include <unistd.h>} {public local
-} 
+}
 
 decl {\#include "ViewField.h"} {public global
-} 
+}
 
 decl {\#include "DataModel.h"} {public global
-} 
+}
 
 decl {\#include "InfoBar.h"} {public local
-} 
+}
 
 decl {\#include "LocaleWin.h"} {public global
-} 
+}
 
 decl {\#include "CommWin.h"} {public local
-} 
+}
 
 decl {\#include "ConcurrencyWin.h"} {public local
-} 
+}
 
 decl {DataModel VisData;} {public local
-} 
+}
 
 Function {mainWinCallback(Fl_Widget *)} {return_type void
 } {
   code {exit(1);} {}
-} 
+}
 
 Function {make_locale_window(int locnum, localeData *locInfo)} {open C
 } {
@@ -82,7 +82,7 @@ Function {make_locale_window(int locnum, localeData *locInfo)} {open C
   }
   code {w->setMembers(Locale_Title,cpuInfo,locInfo,locnum);
 w->updateWin(locInfo);} {}
-} 
+}
 
 Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {open
 } {
@@ -102,7 +102,7 @@ Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {op
   }
   code {w->setMembers(Comm_Title, commInfo, commdata, fromLn, toLn);
 w->updateWin(commdata);} {}
-} 
+}
 
 Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {ConcurrencyWin *}
 } {
@@ -126,7 +126,7 @@ Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {
   code {w->setMembers(title, ConcScroll, scrollData);
 w->updateData(locNum, tagNum);
 return w;} {}
-} 
+}
 
 Function {} {open
 } {
@@ -235,7 +235,7 @@ MainWindow->redraw();}
           xywh {0 0 36 21}
         }
         MenuItem {} {
-          label {Show Communation Size}
+          label {Show Communication Size}
           callback {DbgView->showDsize();
 MainWindow->redraw();}
           xywh {0 0 36 21}
@@ -272,4 +272,4 @@ MainWindow->redraw();}
    }
 }
 MainWindow->callback(mainWinCallback);} {}
-} 
+}

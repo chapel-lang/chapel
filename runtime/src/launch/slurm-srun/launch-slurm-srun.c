@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -190,7 +190,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // corresponding env var. e.g. you have to use '--output=%j.out to
   // have the output file be <jobid>.out, but when we copy the tmp file
   // to the real output file, the %j and other formatters aren't
-  // available so we have to use the equivelent slurm env var
+  // available so we have to use the equivalent slurm env var
   // (SLURM_JOB_ID.) The env vars can't be used when specifying --output
   // because they haven't been initialized yet
   char* bufferStdout    = getenv("CHPL_LAUNCHER_SLURM_BUFFER_STDOUT");
@@ -395,7 +395,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   // copy baseCommand into command and return it 
   size = strlen(baseCommand) + 1;
-  command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+  command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   sprintf(command, "%s", baseCommand);
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
@@ -459,7 +459,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 // handle launcher args
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
-                           int32_t lineno, c_string filename) {
+                           int32_t lineno, int32_t filename) {
   // handle --walltime <walltime> or --walltime=<walltime>
   if (!strcmp(argv[argNum], CHPL_WALLTIME_FLAG)) {
     walltime = argv[argNum+1];

@@ -1,4 +1,8 @@
 sameName2
+
+Usage:
+   use sameName2;
+
    This module with the same name actually contains all 
    the code in the file 
    proc inner()

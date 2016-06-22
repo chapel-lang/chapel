@@ -3,7 +3,7 @@ class C {
 }
 
 proc f(a: 3*C(?)) {
-  writeln(typeToString(a.type));
+  writeln(a.type:string);
 }
 
 f((new C(int), new C(real), new C(complex)));

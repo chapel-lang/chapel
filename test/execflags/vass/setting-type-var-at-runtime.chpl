@@ -3,4 +3,4 @@
 config type T = real;
 var x : T;
 
-writeln("x = ", x, " : ", typeToString(x.type));
+writeln("x = ", x, " : ", x.type:string);

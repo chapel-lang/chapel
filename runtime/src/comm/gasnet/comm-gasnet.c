@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -30,6 +30,7 @@
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chpl-atomics.h"
+#include "chpl-linefile-support.h"
 #include "error.h"
 #include "chpl-mem-desc.h"
 #include "chpl-cache.h" // to call chpl_cache_init()
@@ -255,8 +256,8 @@ static void fork_large_wrapper(fork_t* f) {
   void* f_arg;
   chpl_memcpy(&f_arg, f->arg, sizeof(void*));
 
-  chpl_comm_get(arg, f->caller, f_arg,
-                f->arg_size, -1 /*typeIndex: unused*/, 0, "fork large");
+  chpl_comm_get(arg, f->caller, f_arg, f->arg_size, -1 /*typeIndex: unused*/,
+                0, CHPL_FILE_IDX_FORK_LARGE);
   chpl_ftable_call(f->fid, arg);
   GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL,
                                      AckArg0(f->ack), AckArg1(f->ack)));
@@ -306,8 +307,8 @@ static void fork_nb_large_wrapper(fork_t* f) {
   void* f_arg;
   chpl_memcpy(&f_arg, f->arg, sizeof(void*));
 
-  chpl_comm_get(arg, f->caller, f_arg,
-                f->arg_size, -1 /*typeIndex: unused*/, 0, "fork large");
+  chpl_comm_get(arg, f->caller, f_arg, f->arg_size, -1 /*typeIndex: unused*/,
+                0, CHPL_FILE_IDX_FORK_LARGE);
   GASNET_Safe(gasnet_AMRequestMedium0(f->caller,
                                       FREE,
                                       &(f->ack),
@@ -389,7 +390,7 @@ static void AM_exit_any(gasnet_token_t token, void* buf, size_t nbytes) {
 // This global and routine are used to broadcast the seginfo_table at the outset
 // of the program's execution.  It is designed to only be used once.  This code
 // was modeled after the _test_segbcast() routine in
-// third-party/gasnet/GASNet-*/tests/test.h
+// third-party/gasnet/gasnet-src/tests/test.h
 //
 static int bcast_seginfo_done = 0;
 static void AM_bcast_seginfo(gasnet_token_t token, void *buf, size_t nbytes) {
@@ -447,12 +448,25 @@ static gasnet_handlerentry_t ftable[] = {
 //
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t typeIndex,
-                                       int ln, c_string fn)
+                                       int ln, int32_t fn)
 {
   gasnet_handle_t ret;
+  int remote_in_segment;
 
   // Should be in the compiler macros file?
   chpl_vdebug_log_put_nb(addr, node, raddr, size, typeIndex, ln, fn);
+
+#ifdef GASNET_SEGMENT_EVERYTHING
+    remote_in_segment = 1;
+#else
+    remote_in_segment = chpl_comm_addr_gettable(node, raddr, size);
+#endif
+
+  if(!remote_in_segment) {
+    chpl_comm_put(addr, node, raddr, size, typeIndex, ln, fn);
+    ret = NULL;
+    return (chpl_comm_nb_handle_t) ret;
+  }
 
   ret = gasnet_put_nb_bulk(node, raddr, addr, size);
 
@@ -467,12 +481,25 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t typeIndex,
-                                       int ln, c_string fn)
+                                       int ln, int32_t fn)
 {
   gasnet_handle_t ret;
+  int remote_in_segment;
 
   // Visual Debug Support
   chpl_vdebug_log_get_nb(addr, node, raddr, size, typeIndex, ln, fn);
+
+#ifdef GASNET_SEGMENT_EVERYTHING
+    remote_in_segment = 1;
+#else
+    remote_in_segment = chpl_comm_addr_gettable(node, raddr, size);
+#endif
+
+  if(!remote_in_segment) {
+    chpl_comm_get(addr, node, raddr, size, typeIndex, ln, fn);
+    ret = NULL;
+    return (chpl_comm_nb_handle_t) ret;
+  }
 
   ret = gasnet_get_nb_bulk(addr, node, raddr, size);
 
@@ -502,7 +529,7 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
   return gasnet_try_syncnb_some((gasnet_handle_t*) h, nhandles) == GASNET_OK;
 }
 
-int chpl_comm_is_in_segment(c_nodeid_t node, void* start, size_t len)
+int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 {
 #ifdef GASNET_SEGMENT_EVERYTHING
   return 0;
@@ -558,7 +585,7 @@ static void set_max_segsize_env_var(size_t size) {
 
   snprintf(segsizeval, sizeof(segsizeval), "%zd", size);
   if (setenv("GASNET_MAX_SEGSIZE", segsizeval, 1) != 0) {
-    chpl_error("Cannot setenv(\"GASNET_MAX_SEGSIZE\")", 0, NULL);
+    chpl_error("Cannot setenv(\"GASNET_MAX_SEGSIZE\")", 0, 0);
   }
 }
 
@@ -603,12 +630,15 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
                             sizeof(ftable)/sizeof(gasnet_handlerentry_t),
                             gasnet_getMaxLocalSegmentSize(),
                             0));
-#undef malloc
+  // memory layer hasn't been initialized, need to use the system allocator
+#include "chpl-mem-no-warning-macros.h"
+  // TODO (EJR: 03/03/16): we currently "leak" seginfo_table. We should
+  // probably free it on exit (but only for "clean" exits.)
   seginfo_table = (gasnet_seginfo_t*)malloc(chpl_numNodes*sizeof(gasnet_seginfo_t));
   //
   // The following call has no real effect on the .addr and .size
   // fields for GASNET_SEGMENT_EVERYTHING, but is recommended to be
-  // used anyway (see third-party/gasnet/GASNet-version/tests/test.h)
+  // used anyway (see third-party/gasnet/gasnet-src/tests/test.h)
   // in order to ensure that the seginfo_table array is initialized
   // appropriately on all locales.
   //
@@ -622,7 +652,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   // be stored at the same address in all instances of the executable
   // (something that is typically true, but turns out not to be on,
   // for example, OS X Lion).  This technique was modeled after the
-  // _test_attach() routine from third-party/gasnet/GASNET-version/tests/test.h
+  // _test_attach() routine from third-party/gasnet/gasnet-src/tests/test.h
   // but is significantly simplified for our purposes.
   //
   if (chpl_nodeID == 0) {
@@ -666,7 +696,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   GASNET_BLOCKUNTIL(bcast_seginfo_done);
   chpl_comm_barrier("making sure everyone's done with the broadcast");
 #endif
-#define malloc dont_use_malloc_use_chpl_mem_allocMany_instead
+#include "chpl-mem-warning-macros.h"
 
   gasnet_set_waitmode(GASNET_WAIT_BLOCK);
 
@@ -728,7 +758,7 @@ void chpl_comm_broadcast_global_vars(int numGlobals) {
     for (i = 0; i < numGlobals; i++) {
       chpl_comm_get(chpl_globals_registry[i], 0,
                     &((wide_ptr_t*)seginfo_table[0].addr)[i],
-                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/, 0, "");
+                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/, 0, 0);
     }
   }
 }
@@ -892,7 +922,7 @@ void chpl_comm_exit(int all, int status) {
 
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                     size_t size, int32_t typeIndex,
-                    int ln, c_string fn) {
+                    int ln, int32_t fn) {
   int remote_in_segment;
 
   if (chpl_nodeID == node) {
@@ -902,7 +932,8 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
     chpl_vdebug_log_put(addr, node, raddr, size, typeIndex, ln, fn);
 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: %s:%d: remote put to %d\n", chpl_nodeID, fn, ln, node);
+      printf("%d: %s:%d: remote put to %d\n", chpl_nodeID,
+             chpl_lookupFilename(fn), ln, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_commDiagnostics.put++;
@@ -913,7 +944,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 #ifdef GASNET_SEGMENT_EVERYTHING
     remote_in_segment = 1;
 #else
-    remote_in_segment = chpl_comm_is_in_segment(node, raddr, size);
+    remote_in_segment = chpl_comm_addr_gettable(node, raddr, size);
 #endif
 
     if( remote_in_segment ) {
@@ -968,7 +999,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 ////GASNET - look at GASNET tools at top of README.tools has atomic counters
 void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
                     size_t size, int32_t typeIndex,
-                    int ln, c_string fn) {
+                    int ln, int32_t fn) {
   int remote_in_segment;
 
   if (chpl_nodeID == node) {
@@ -978,7 +1009,8 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
     chpl_vdebug_log_get(addr, node, raddr, size, typeIndex, ln, fn);
     
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn, ln, node);
+      printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
+             chpl_lookupFilename(fn), ln, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
       chpl_comm_commDiagnostics.get++;
@@ -999,7 +1031,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 #ifdef GASNET_SEGMENT_EVERYTHING
     remote_in_segment = 1;
 #else
-    remote_in_segment = chpl_comm_is_in_segment(node, raddr, size);
+    remote_in_segment = chpl_comm_addr_gettable(node, raddr, size);
 #endif
 
     if( remote_in_segment ) {
@@ -1020,7 +1052,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 #ifdef GASNET_SEGMENT_EVERYTHING
       local_in_segment = 1;
 #else
-      local_in_segment = chpl_comm_is_in_segment(chpl_nodeID, addr, size);
+      local_in_segment = chpl_comm_addr_gettable(chpl_nodeID, addr, size);
 #endif
 
       // If the local address isn't in a registered segment,
@@ -1034,9 +1066,9 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 
         local_buf = chpl_mem_alloc(buf_sz, CHPL_RT_MD_COMM_XMIT_RCV_BUF, 0, 0);
 #ifdef GASNET_SEGMENT_EVERYTHING
-        // local_buf is definately in our segment
+        // local_buf is definitely in our segment
 #else
-        assert(chpl_comm_is_in_segment(chpl_nodeID, local_buf, buf_sz));
+        assert(chpl_comm_addr_gettable(chpl_nodeID, local_buf, buf_sz));
 #endif
       }
 
@@ -1085,14 +1117,14 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 }
 
 //
-// This is an adaptor from Chapel code to GASNet's gasnet_gets_bulk. It does:
+// This is an adapter from Chapel code to GASNet's gasnet_gets_bulk. It does:
 // * convert count[0] and all of 'srcstr' and 'dststr' from counts of element
 //   to counts of bytes,
 //
 void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_id, 
                          void* srcaddr, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
-                         int ln, c_string fn) {
+                         int ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
   const gasnet_node_t srcnode = (gasnet_node_t)srcnode_id;
@@ -1116,17 +1148,20 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
   }
 
   if (chpl_verbose_comm && !chpl_comm_no_debug_private) {
-    printf("%d: %s:%d: remote get from %d. strlvls:%ld. elemSize:%ld  sizeof(size_t):%ld  sizeof(gasnet_node_t):%ld\n", chpl_nodeID, fn, ln, srcnode,(long)strlvls,(long)elemSize,(long)sizeof(size_t),(long)sizeof(gasnet_node_t));
+    printf("%d: %s:%d: remote get from %d. strlvls:%ld. elemSize:%ld  "
+           "sizeof(size_t):%ld  sizeof(gasnet_node_t):%ld\n",
+           chpl_nodeID, chpl_lookupFilename(fn), ln, srcnode, (long)strlvls,
+           (long)elemSize, (long)sizeof(size_t), (long)sizeof(gasnet_node_t));
 
-    printf("dststrides in bytes:\n");                 
+    printf("dststrides in bytes:\n");
     for (i=0;i<strlvls;i++) printf(" %ld ",(long)dststr[i]);
-    printf("\n");                     
-    printf("srcstrides in bytes:\n");                 
+    printf("\n");
+    printf("srcstrides in bytes:\n");
     for (i=0;i<strlvls;i++) printf(" %ld ",(long)srcstr[i]);
-    printf("\n");                     
-    printf("count (count[0] in bytes):\n");                   
+    printf("\n");
+    printf("count (count[0] in bytes):\n");
     for (i=0;i<=strlvls;i++) printf(" %ld ",(long)cnt[i]);
-    printf("\n");                     
+    printf("\n");
   }
 
   // Visual Debug Support
@@ -1135,7 +1170,8 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
 
   // the case (chpl_nodeID == srcnode) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn, ln, srcnode);
+    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
+           chpl_lookupFilename(fn), ln, srcnode);
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
     chpl_sync_lock(&chpl_comm_diagnostics_sync);
     chpl_comm_commDiagnostics.get++;
@@ -1146,11 +1182,11 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
   gasnet_gets_bulk(dstaddr, dststr, srcnode, srcaddr, srcstr, cnt, strlvls); 
 }
 
-// See the comment for cmpl_comm_gets().
+// See the comment for chpl_comm_gets().
 void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_id, 
                          void* srcaddr, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t typeIndex, 
-                         int ln, c_string fn) {
+                         int ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
   const gasnet_node_t dstnode = (gasnet_node_t)dstnode_id;
@@ -1172,17 +1208,20 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
     cnt[strlvls] = count[strlvls];
   }
   if (chpl_verbose_comm && !chpl_comm_no_debug_private) {
-    printf("%d: %s:%d: remote get from %d. strlvls:%ld. elemSize:%ld  sizeof(size_t):%ld  sizeof(gasnet_node_t):%ld\n", chpl_nodeID, fn, ln, dstnode,(long)strlvls,(long)elemSize,(long)sizeof(size_t),(long)sizeof(gasnet_node_t));
+    printf("%d: %s:%d: remote get from %d. strlvls:%ld. elemSize:%ld  "
+           "sizeof(size_t):%ld  sizeof(gasnet_node_t):%ld\n",
+           chpl_nodeID, chpl_lookupFilename(fn), ln, dstnode, (long)strlvls,
+           (long)elemSize, (long)sizeof(size_t), (long)sizeof(gasnet_node_t));
 
-    printf("dststrides in bytes:\n");                 
+    printf("dststrides in bytes:\n");
     for (i=0;i<strlvls;i++) printf(" %ld ",(long)dststr[i]);
-    printf("\n");                     
-    printf("srcstrides in bytes:\n");                 
+    printf("\n");
+    printf("srcstrides in bytes:\n");
     for (i=0;i<strlvls;i++) printf(" %ld ",(long)srcstr[i]);
-    printf("\n");                     
-    printf("count (count[0] in bytes):\n");                   
+    printf("\n");
+    printf("count (count[0] in bytes):\n");
     for (i=0;i<=strlvls;i++) printf(" %ld ",(long)cnt[i]);
-    printf("\n");                     
+    printf("\n");
   }
 
   // Visual Debug Support
@@ -1191,7 +1230,8 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
 
   // the case (chpl_nodeID == dstnode) is internally managed inside gasnet
   if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID, fn, ln, dstnode);
+    printf("%d: %s:%d: remote get from %d\n", chpl_nodeID,
+           chpl_lookupFilename(fn), ln, dstnode);
   if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
     chpl_sync_lock(&chpl_comm_diagnostics_sync);
     chpl_comm_commDiagnostics.put++;
@@ -1204,7 +1244,7 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
 
 ////GASNET - introduce locale-int size
 ////GASNET - is caller in fork_t redundant? active message can determine this.
-void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
+void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                      chpl_fn_int_t fid, void *arg, size_t arg_size) {
   fork_t* info;
   size_t  info_size;
@@ -1222,7 +1262,7 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
       printf("%d: remote task created on %d\n", chpl_nodeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_commDiagnostics.fork++;
+      chpl_comm_commDiagnostics.execute_on++;
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
 
@@ -1265,7 +1305,7 @@ void  chpl_comm_fork(c_nodeid_t node, c_sublocid_t subloc,
   }
 }
 
-void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
+void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                         chpl_fn_int_t fid, void *arg, size_t arg_size) {
   fork_t *info;
   size_t  info_size;
@@ -1291,7 +1331,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
       chpl_memcpy(&(info->arg), arg, arg_size);
   } else {
     // If the arg bundle is too large to fit in fork_t (i.e. passArg == false), 
-    // Copy the args into auxilliary memory and pass a pointer to this instead.
+    // Copy the args into auxiliary memory and pass a pointer to this instead.
     argCopy = chpl_mem_allocMany(1, arg_size,
                                  CHPL_RT_MD_COMM_FRK_SND_ARG, 0, 0);
     chpl_memcpy(argCopy, arg, arg_size);
@@ -1314,7 +1354,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
       printf("%d: remote non-blocking task created on %d\n", chpl_nodeID, node);
     if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
       chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_commDiagnostics.fork_nb++;
+      chpl_comm_commDiagnostics.execute_on_nb++;
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
     if (passArg) {
@@ -1327,7 +1367,7 @@ void  chpl_comm_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
 }
 
 // GASNET - should only be called for "small" functions
-void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
+void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid, void *arg, size_t arg_size) {
   char infod[gasnet_AMMaxMedium()];
   fork_t* info;
@@ -1347,7 +1387,7 @@ void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
                chpl_nodeID, node);
       if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
         chpl_sync_lock(&chpl_comm_diagnostics_sync);
-        chpl_comm_commDiagnostics.fork_fast++;
+        chpl_comm_commDiagnostics.execute_on_fast++;
         chpl_sync_unlock(&chpl_comm_diagnostics_sync);
       }
       info = (fork_t *) &infod;
@@ -1369,8 +1409,8 @@ void  chpl_comm_fork_fast(c_nodeid_t node, c_sublocid_t subloc,
       wait_done_obj(&done);
 
     } else {
-      // Call the normal chpl_comm_fork()
-      chpl_comm_fork(node, subloc, fid, arg, arg_size);
+      // Call the normal chpl_comm_execute_on()
+      chpl_comm_execute_on(node, subloc, fid, arg, arg_size);
     }
   }
 }
@@ -1440,47 +1480,6 @@ void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
   chpl_memcpy(cd, &chpl_comm_commDiagnostics, sizeof(chpl_commDiagnostics));
   chpl_sync_unlock(&chpl_comm_diagnostics_sync);
 }
-
-uint64_t chpl_numCommGets(void) {
-  return chpl_comm_commDiagnostics.get;
-}
-
-uint64_t chpl_numCommNBGets(void) {
-  return chpl_comm_commDiagnostics.get_nb;
-}
-
-uint64_t chpl_numCommPuts(void) {
-  return chpl_comm_commDiagnostics.put;
-}
-
-uint64_t chpl_numCommNBPuts(void) {
-  return chpl_comm_commDiagnostics.put_nb;
-}
-
-uint64_t chpl_numCommTestNB(void) {
-  return chpl_comm_commDiagnostics.test_nb;
-}
-
-uint64_t chpl_numCommWaitNB(void) {
-  return chpl_comm_commDiagnostics.wait_nb;
-}
-
-uint64_t chpl_numCommTryNB(void) {
-  return chpl_comm_commDiagnostics.try_nb;
-}
-
-uint64_t chpl_numCommFastForks(void) {
-  return chpl_comm_commDiagnostics.fork_fast;
-}
-
-uint64_t chpl_numCommForks(void) {
-  return chpl_comm_commDiagnostics.fork;
-}
-
-uint64_t chpl_numCommNBForks(void) {
-  return chpl_comm_commDiagnostics.fork_nb;
-}
-
 
 void chpl_comm_gasnet_help_register_global_var(int i, wide_ptr_t wide_addr) {
   if (chpl_nodeID == 0) {

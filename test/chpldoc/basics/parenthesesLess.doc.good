@@ -1,4 +1,8 @@
 parenthesesLess.doc
+
+Usage:
+   use parenthesesLess.doc;
+
    proc foo
    proc bar: bool
    proc foo2

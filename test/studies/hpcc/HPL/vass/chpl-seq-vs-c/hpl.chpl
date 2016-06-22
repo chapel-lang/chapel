@@ -79,7 +79,7 @@ proc main() {
   initAB(Ab);
 
   if verb || showresult {
-   writeln("initial ", typeToString(elemType), " ", seed);
+   writeln("initial ", elemType:string, " ", seed);
    show2e(Ab); writeln();
   }
 

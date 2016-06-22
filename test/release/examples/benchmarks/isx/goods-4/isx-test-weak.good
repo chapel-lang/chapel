@@ -1,0 +1,9 @@
+scaling mode = weak
+total keys = 128 (2**7)
+keys per locale = 32 (2**5)
+maxKeyVal = 32 (2**5)
+bucketWidth = 8 (2**3)
+numTrials = 1
+numLocales = 4
+
+Verification successful!

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -24,7 +24,6 @@
 
 #include "llvmUtil.h"
 
-#include "llvm/PassManager.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallPtrSet.h"
 
@@ -62,7 +61,7 @@
  * that, and set preservingFn to it, GlobalToWide will delete that function
  * when it finishes its work.
  *
- * It would be desireable for this pass to support wide pointers larger
+ * It would be desirable for this pass to support wide pointers larger
  * than 64 bits. However, in order to prevent data type layouts from
  * changing (in case e.g. offsets have been lowered to constants), it is
  * necessary to keep the global pointer size the same as the ultimate wide

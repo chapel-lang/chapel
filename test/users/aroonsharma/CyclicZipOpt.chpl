@@ -86,7 +86,7 @@ class CyclicZipOpt: BaseDist {
     // NOTE: When these knobs stop using the global defaults, we will need
     // to add checks to make sure dataParTasksPerLocale<0 and
     // dataParMinGranularity<0
-    this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numCores
+    this.dataParTasksPerLocale = if dataParTasksPerLocale==0 then here.numPUs()
                                  else dataParTasksPerLocale;
     this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
     this.dataParMinGranularity = dataParMinGranularity;
@@ -265,7 +265,7 @@ proc CyclicZipOpt.dsiCreateRankChangeDist(param newRank: int, args) {
 }
 
 proc CyclicZipOpt.writeThis(x: Writer) {
-  x.writeln(typeToString(this.type));
+  x.writeln(this.type:string);
   x.writeln("------");
   for locid in targetLocDom do
     x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ", locDist(locid).myChunk); 
@@ -412,7 +412,7 @@ proc CyclicZipOptDom.dsiSetIndices(x) {
 
 proc CyclicZipOptDom.dsiSerialWrite(x: Writer) {
   if verboseCyclicZipOptDistWriters {
-    x.writeln(typeToString(this.type));
+    x.writeln(this.type:string);
     x.writeln("------");
     for loc in dist.targetLocDom {
       x.writeln("[", loc, "=", dist.targetLocs(loc), "] owns ", locDoms(loc).myBlock);
@@ -962,7 +962,7 @@ iter CyclicZipOptArr.these(param tag: iterKind, followThis, param fast: bool = f
 
 proc CyclicZipOptArr.dsiSerialWrite(f: Writer) {
   if verboseCyclicZipOptDistWriters {
-    writeln(typeToString(this.type));
+    writeln(this.type:string);
     writeln("------");
   }
   if dom.dsiNumIndices == 0 then return;

@@ -6,7 +6,18 @@ class stack_elt {
 
 record stack {
   type eltType;
-  var top : stack_elt(eltType);
+
+  var  top : stack_elt(eltType);
+
+  proc ~stack() {
+    while top != nil {
+      var t = top;
+
+      top = top.next;
+
+      delete t;
+    }
+  }
 }
 
 proc stack.empty
@@ -17,12 +28,17 @@ proc stack.push(v : eltType) {
 }
 
 proc stack.pop() : eltType {
+  var t = top;
   var v = top.value;
+
   top = top.next;
+
+  delete t;
+
   return v;
 }
 
-proc stack.writeThis(f : Writer) {
+proc stack.writeThis(f) {
   var tmp = top;
   while tmp != nil {
     f.write(tmp.value, " ");
@@ -31,8 +47,10 @@ proc stack.writeThis(f : Writer) {
 }
 
 var s : stack(string);
+
 s.push("hello");
 s.push("world");
+
 writeln(s);
 writeln(s.pop());
 writeln(s);

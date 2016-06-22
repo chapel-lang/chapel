@@ -106,7 +106,7 @@ proc dobench(mydist, mydom) {
   if timeit then writeln("took ", timer.elapsed(), " (s)");
   //writeln(stopTime:real(64));
   //writeln(startTime);
-  //writeln(typeToString(startTime.type));
+  //writeln(startTime.type:string);
 
   if correct then writeln("it is correct? ", still_correct);
 

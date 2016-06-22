@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -115,19 +115,14 @@ void AstToText::appendName(FnSymbol* fn)
 
 void AstToText::appendThisIntent(FnSymbol* fn)
 {
-  int index = indexForThis(fn);
+  if (fn->thisTag == INTENT_REF)
+    mText += "ref ";
 
-  if (index > 0)
-  {
-    DefExpr*   formal = toDefExpr(fn->formals.get(index));
-    ArgSymbol* argSym = toArgSymbol(formal->sym);
+  else if (fn->thisTag == INTENT_PARAM)
+    mText += "param ";
 
-    if (argSym->intent == INTENT_REF)
-      mText += "ref ";
-
-    else if (argSym->intent == INTENT_PARAM)
-      mText += "param ";
-  }
+  else if (fn->thisTag == INTENT_TYPE)
+    mText += "type ";
 }
 
 void AstToText::appendClassName(FnSymbol* fn)
@@ -880,6 +875,18 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         appendExpr(expr->get(1), printingType);
       }
 
+      else if (strcmp(fnName, "chpl__buildDomainExpr")        == 0)
+      {
+        mText += "{";
+        appendExpr(expr->get(1), printingType);
+        for (int index = 2; index <= expr->numActuals(); index++)
+        {
+          mText += ", ";
+          appendExpr(expr->get(index), printingType);
+        }
+        mText += "}";
+      }
+
       else if (strcmp(fnName, "chpl__ensureDomainExpr")       == 0)
       {
         appendExpr(expr->get(1), printingType);
@@ -996,11 +1003,28 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       else if (strcmp(fnName, "range")                       == 0)
         appendExpr(expr, "range", printingType);
 
-      else if (strcmp(fnName, "chpl_build_bounded_range")    == 0)
+      else if (strcmp(fnName, "chpl_build_bounded_range") == 0)
       {
         appendExpr(expr->get(1), printingType);
         mText += "..";
         appendExpr(expr->get(2), printingType);
+      }
+
+      else if (strcmp(fnName, "chpl_build_low_bounded_range") == 0)
+      {
+        appendExpr(expr->get(1), printingType);
+        mText += "..";
+      }
+
+      else if (strcmp(fnName, "chpl_build_high_bounded_range") == 0)
+      {
+        mText += "..";
+        appendExpr(expr->get(1), printingType);
+      }
+
+      else if (strcmp(fnName, "chpl_build_unbounded_range") == 0)
+      {
+        mText += "..";
       }
 
       else if (strcmp(fnName, ".")                           == 0)
@@ -1078,18 +1102,18 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       }
 
       // NOAKES 2015/02/09 Treating all calls with 2 actuals as binary operators
-      // Lydia 2015/02/17 ... except homogenuous tuple inner workings.
+      // Lydia 2015/02/17 ... except homogeneous tuple inner workings.
       else if (expr->numActuals() == 2)
       {
         UnresolvedSymExpr* name     = toUnresolvedSymExpr(expr->baseExpr);
         if (printingType && strcmp(name->unresolved, "*") == 0)
         {
-          // This is not a multiply, it's the symbol for a homogenuous tuple.
+          // This is not a multiply, it's the symbol for a homogeneous tuple.
 
           // I found that some multiplies would match this (even though they
           // really should be PRIM_MULT), so we must rely on context to
           // differentiate between the two cases: if we're in a type expression,
-          // either something has gone terribly wrong or a homogenuous tuple is
+          // either something has gone terribly wrong or a homogeneous tuple is
           // intended.  If we're in another expression, it's more likely to be
           // a multiply.
           appendExpr(expr->get(1), printingType);

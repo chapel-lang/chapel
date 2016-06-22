@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -344,7 +344,7 @@ Expr* ParamForLoop::getNextExpr(Expr* expr)
 
    * Inserts the body before the expression beforeHere
    * i should be a loop variable index (used to label iterations)
-   * Assumes that map already contains the mapping redifining
+   * Assumes that map already contains the mapping redefining
      the index variable.
    * continueSym is the symbol for the loop's continue label.
      This function will replace that with a new continue label
@@ -399,9 +399,9 @@ CallExpr* ParamForLoop::foldForResolve()
 
   if (is_int_type(idxType))
   {
-    int64_t low    = lvar->immediate->int_value();
-    int64_t high   = hvar->immediate->int_value();
-    int64_t stride = svar->immediate->int_value();
+    int64_t low    = lvar->immediate->to_int();
+    int64_t high   = hvar->immediate->to_int();
+    int64_t stride = svar->immediate->to_int();
 
     if (stride <= 0)
     {
@@ -429,9 +429,9 @@ CallExpr* ParamForLoop::foldForResolve()
   {
     INT_ASSERT(is_uint_type(idxType) || is_bool_type(idxType));
 
-    uint64_t low    = lvar->immediate->uint_value();
-    uint64_t high   = hvar->immediate->uint_value();
-    int64_t  stride = svar->immediate->int_value();
+    uint64_t low    = lvar->immediate->to_uint();
+    uint64_t high   = hvar->immediate->to_uint();
+    int64_t  stride = svar->immediate->to_int();
 
     if (stride <= 0)
     {

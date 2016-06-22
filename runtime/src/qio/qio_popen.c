@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -28,10 +28,13 @@
 
 #include "qio_popen.h"
 
+#include <sys/select.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <spawn.h>
+
+#include <pthread.h>
 
 // We need to be able to call malloc, free, etc.
 #include "chpl-mem-no-warning-macros.h"
@@ -147,7 +150,7 @@ static qioerr setup_actions(
     -1 -> use the existing stdin/stdout
     -2 -> close the file descriptor
     -3 -> create a pipe and return the parent's end
-    >0 -> use this file discriptor
+    >0 -> use this file descriptor
    When this function returns, any file descriptors with a negative
    value indicating a pipe should be created (-3)
    will have their value replaced with the new pipe file descriptor.
@@ -155,7 +158,8 @@ static qioerr setup_actions(
    executable == NULL or "" -> search the path for argv[0]
 
  */
-qioerr qio_openproc(const char** argv,
+static
+qioerr qio_do_openproc(const char** argv,
                     const char** envp,
                     const char* executable,
                     int* stdin_fd,
@@ -319,6 +323,73 @@ error:
   return err;
 }
 
+struct openproc_args_s {
+  const char** argv;
+  const char** envp;
+  const char* executable;
+  int* stdin_fd;
+  int* stdout_fd;
+  int* stderr_fd;
+  int64_t* pid_out;
+  qioerr err;
+};
+
+static
+void* qio_openproc_wrapper(void* arg)
+{
+  struct openproc_args_s* s = (struct openproc_args_s*) arg;
+  s->err = qio_do_openproc(s->argv, s->envp, s->executable,
+                           s->stdin_fd, s->stdout_fd, s->stderr_fd,
+                           s->pid_out);
+  return NULL;
+}
+
+qioerr qio_openproc(const char** argv,
+                    const char** envp,
+                    const char* executable,
+                    int* stdin_fd,
+                    int* stdout_fd,
+                    int* stderr_fd,
+                    int64_t *pid_out)
+{
+  // runs qio_do_openproc in a pthread in order
+  // to avoid issues where a Chapel task is allocated
+  // from memory with MAP_SHARED.
+  //
+  // If such a thread is the thread running fork(),
+  // after the fork() occurs, there will be 2 threads
+  // sharing the same stack.
+  //
+  // If it mattered, we could do this extra step
+  // only for configurations where the Chapel heap
+  // has this problem (GASNet with SEGMENT=fast,large
+  // and possibly others).
+
+  int rc;
+  pthread_t thread;
+  struct openproc_args_s s;
+
+  s.argv = argv;
+  s.envp = envp;
+  s.executable = executable;
+  s.stdin_fd = stdin_fd;
+  s.stdout_fd = stdout_fd;
+  s.stderr_fd = stderr_fd;
+  s.pid_out = pid_out;
+  s.err = 0;
+
+  rc = pthread_create(&thread, NULL, qio_openproc_wrapper, &s);
+  if (rc)
+    QIO_RETURN_CONSTANT_ERROR(EAGAIN, "failed pthread_create in qio_openproc");
+
+  rc = pthread_join(thread, NULL);
+  if (rc)
+    QIO_RETURN_CONSTANT_ERROR(EAGAIN, "failed pthread_join in qio_openproc");
+
+  return s.err;
+}
+
+
 // waitpid
 qioerr qio_waitpid(int64_t pid,
                    int blocking, int* done, int* exitcode)
@@ -330,20 +401,25 @@ qioerr qio_waitpid(int64_t pid,
   if( ! blocking ) flags |= WNOHANG;
 
   got = waitpid((pid_t) pid, &status, flags);
+
+  // Check for error
   if( got == -1 ) {
     return qio_int_to_err(errno);
   }
-
-  if( WIFEXITED(status) ) {
-    *exitcode = WEXITSTATUS(status);
-    if( WIFSIGNALED(status) ) {
-      *exitcode = - WSTOPSIG(status);
+  // Only update (done, exitcode) if waitpid() returned for the desired pid
+  else if ( got == pid ) {
+    if( WIFEXITED(status) ) {
+      *exitcode = WEXITSTATUS(status);
+      *done = 1;
     }
-    *done = 1;
+    else if( WIFSIGNALED(status) ) {
+      *exitcode = -WTERMSIG(status);
+      *done = 1;
+    }
   }
+
   return 0;
 }
-
 
 // commit input, sending any data to the subprocess.
 // once input is sent, close input channel and file.
@@ -365,6 +441,9 @@ qioerr qio_proc_communicate(
   bool do_input;
   bool do_output;
   bool do_error;
+  bool input_ready;
+  bool output_ready;
+  bool error_ready;
   fd_set rfds, wfds, efds;
   int nfds = 1;
 
@@ -375,15 +454,25 @@ qioerr qio_proc_communicate(
 
   if( threadsafe ) {
     // lock all three channels.
+    // but unlock them immediately and set them to NULL
+    // if they are already closed.
     if( input ) {
       err = qio_lock(&input->lock);
       if( err ) return err;
+      if( qio_channel_isclosed(false, input) ) {
+        qio_unlock(&input->lock);
+        input = NULL;
+      }
     }
     if( output ) {
       err = qio_lock(&output->lock);
       if( err ) {
         if( input ) qio_unlock(&input->lock);
         return err;
+      }
+      if( qio_channel_isclosed(false, output) ) {
+        qio_unlock(&output->lock);
+        output = NULL;
       }
     }
     if( error ) {
@@ -392,6 +481,10 @@ qioerr qio_proc_communicate(
         if( input ) qio_unlock(&input->lock);
         if( output ) qio_unlock(&output->lock);
         return err;
+      }
+      if( qio_channel_isclosed(false, error) ) {
+        qio_unlock(&error->lock);
+        error = NULL;
       }
     }
   }
@@ -452,50 +545,6 @@ qioerr qio_proc_communicate(
   do_error = (error != NULL);
 
   while( do_input || do_output || do_error ) {
-    if( do_input ) {
-      err = _qio_channel_flush_qio_unlocked(input);
-      if( !err ) {
-        qioerr err2 = 0;
-        do_input = false;
-        // Close input channel.
-        err = qio_channel_close(false, input);
-        err2 = qio_file_close(input_file);
-        if( err2 && !err ) err = err2;
-      }
-      if( qio_err_to_int(err) == EAGAIN ) err = 0;
-      if( err ) break;
-    }
-
-    if( do_output ) {
-      // read some into our buffer.
-      err = qio_channel_advance(false, output, qbytes_iobuf_size);
-      if( qio_err_to_int(err) == EEOF ) {
-        do_output = false;
-        // close the output file (not channel), in case closing output
-        // causes the program to output on stderr, e.g.
-        err = qio_file_close(output_file);
-        // Set the output channel maximum position
-        // This prevents a read on output from trying to get
-        // more data from the (now closed) file.
-        output->end_pos = qio_channel_offset_unlocked(output);
-      }
-      if( qio_err_to_int(err) == EAGAIN ) err = 0;
-      if( err ) break;
-    }
-
-    if( do_error ) {
-      // read some into our buffer.
-      err = qio_channel_advance(false, error, qbytes_iobuf_size);
-      if( qio_err_to_int(err) == EEOF ) {
-        do_error = false;
-        // close the error file (not channel)
-        err = qio_file_close(error_file);
-        // Set the error channel maximum position
-        error->end_pos = qio_channel_offset_unlocked(error);
-      }
-      if( qio_err_to_int(err) == EAGAIN ) err = 0;
-      if( err ) break;
-    }
 
     // Now call select to wait for one of the descriptors to
     // become ready.
@@ -517,10 +566,22 @@ qioerr qio_proc_communicate(
       FD_SET(error_fd, &efds);
     }
 
+    input_ready = false;
+    output_ready = false;
+    error_ready = false;
+
     // Run select to wait for something
     if( do_input || do_output || do_error ) {
       // TODO -- use sys_select so threading can interact
       rc = select(nfds, &rfds, &wfds, &efds, NULL);
+      if (rc > 0) {
+        // read ready file descriptors
+        input_ready = input_fd != -1 && FD_ISSET(input_fd, &wfds);
+        output_ready = output_fd != -1 && FD_ISSET(output_fd, &rfds);
+        error_ready = error_fd != -1 && FD_ISSET(error_fd, &rfds);
+      }
+      // Ignore EAGAIN and EINTR
+      if (rc == EAGAIN || rc == EINTR) rc = 0;
     }
 
     if( rc == -1 ) {
@@ -528,11 +589,51 @@ qioerr qio_proc_communicate(
       break;
     }
 
-    if( rc == 0 ) break;
+    if( do_input && input_ready ) {
+      err = _qio_channel_flush_qio_unlocked(input);
+      if( !err ) {
+        qioerr err2 = 0;
+        do_input = false;
+        // Close input channel.
+        err = qio_channel_close(false, input);
+        err2 = qio_file_close(input_file);
+        if( err2 && !err ) err = err2;
+      }
+      if( qio_err_to_int(err) == EAGAIN ) err = 0;
+      if( err ) break;
+    }
 
-    // we don't actually care about which fds are ready,
-    // we'll just try to work with all of them each time through the
-    // loop.
+    if( do_output && output_ready ) {
+      // read some into our buffer.
+      err = qio_channel_advance(false, output, qbytes_iobuf_size);
+      if( qio_err_to_int(err) == EEOF ) {
+        do_output = false;
+        // close the output file (not channel), in case closing output
+        // causes the program to output on stderr, e.g.
+        err = qio_file_close(output_file);
+        // Set the output channel maximum position
+        // This prevents a read on output from trying to get
+        // more data from the (now closed) file.
+        output->end_pos = qio_channel_offset_unlocked(output);
+      }
+      if( qio_err_to_int(err) == EAGAIN ) err = 0;
+      if( err ) break;
+    }
+
+    if( do_error && error_ready ) {
+      // read some into our buffer.
+      err = qio_channel_advance(false, error, qbytes_iobuf_size);
+      if( qio_err_to_int(err) == EEOF ) {
+        do_error = false;
+        // close the error file (not channel)
+        err = qio_file_close(error_file);
+        // Set the error channel maximum position
+        error->end_pos = qio_channel_offset_unlocked(error);
+      }
+      if( qio_err_to_int(err) == EAGAIN ) err = 0;
+      if( err ) break;
+    }
+
   }
 
   // we could close the file descriptors at this point,
@@ -564,3 +665,14 @@ qioerr qio_proc_communicate(
   return err;
 }
 
+// Send a signal to the specified pid
+qioerr qio_send_signal(int64_t pid, int sig)
+{
+  qioerr err = 0;
+
+  int rc = kill(pid, sig);
+  if (rc == -1)
+    err = qio_mkerror_errno();
+
+  return err;
+}

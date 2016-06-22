@@ -1,0 +1,2 @@
+outerOnlyNoOldName2.chpl:19: In function 'main':
+outerOnlyNoOldName2.chpl:20: error: 'bar' undeclared (first use this function)

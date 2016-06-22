@@ -1,4 +1,8 @@
 arrays.doc
+
+Usage:
+   use arrays.doc;
+
    proc smallArray(): [1..4] bool
       This method returns an array of bools as an argument 
 

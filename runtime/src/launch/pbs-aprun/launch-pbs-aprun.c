@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -131,7 +131,7 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
     fprintf(qsubScript, "#PBS -N Chpl-%.10s\n", genFilename);
   } else {
     optionString = chpl_mem_allocMany(maxOptLength, sizeof(char),
-                                      CHPL_RT_MD_COMMAND_BUFFER, -1, "");
+                                      CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
     length += snprintf(optionString + length, maxOptLength - length,
                        "-z -V -I -N Chpl-%.10s", genFilename);
   }
@@ -414,7 +414,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
-                           int32_t lineno, c_string filename) {
+                           int32_t lineno, int32_t filename) {
   int numArgs = 0;
   if (!strcmp(argv[argNum], CHPL_WALLTIME_FLAG)) {
     walltime = argv[argNum+1];

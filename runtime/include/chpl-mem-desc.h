@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -68,6 +68,7 @@
   m(LOCALE_NAME_BUF,      "locale name buffer",                       true ), \
   m(TASK_DESC,            "task descriptor",                          false), \
   m(TASK_DESC_LINK,       "task descriptor link",                     false), \
+  m(TASK_ARG,             "task body argument",                       false), \
   m(TASK_STACK,           "task stack",                               false), \
   m(MUTEX,                "mutex",                                    false), \
   m(LOCK_REPORT_DATA,     "lock report data",                         false), \
@@ -75,6 +76,7 @@
   m(TASK_LIST_DESC,       "task list descriptor",                     false), \
   m(THREAD_PRV_DATA,      "thread private data",                      false), \
   m(THREAD_LIST_DESC,     "thread list descriptor",                   false), \
+  m(THREAD_STACK_DESC,    "thread stack descriptor",                  false), \
   m(IO_BUFFER,            "io buffer or bytes",                       true ), \
   m(OS_LAYER_TMP_DATA,    "OS layer temporary data",                  true ), \
   m(GMP,                  "gmp data",                                 true ), \

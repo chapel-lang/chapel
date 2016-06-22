@@ -26,7 +26,7 @@ proc main() {
   writeln(areal2);
 
   writeln(ac_string1);
-  writeln(ac_string2);
+  writeln(ac_string2: string);
 
   //writeln(acomplex1);
   //writeln(acomplex2);

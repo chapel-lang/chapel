@@ -13,3 +13,5 @@ writeln("a is: ", a);
 t.append(4);
 writeln("t is: ", t);
 writeln("a is: ", a);
+
+t.destroy();

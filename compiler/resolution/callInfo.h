@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -34,7 +34,8 @@ class CallInfo {
   const char*      name;        // function name
   Vec<Symbol*>     actuals;     // actual symbols
   Vec<const char*> actualNames; // named arguments
-  CallInfo(CallExpr* icall);
+  bool             badcall;     // the call is an error but checkonly set
+  CallInfo(CallExpr* icall, bool checkonly);
 };
 
 #endif

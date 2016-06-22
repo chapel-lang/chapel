@@ -33,7 +33,7 @@ typedef qioerr (*qio_readv_fptr)
                 ssize_t*);              
                 // Amount that was written into iovec
 \end{lstlisting}
-\item {\tt writev} Implements the same sematics as {\tt writev} in 
+\item {\tt writev} Implements the same semantics as {\tt writev} in
 \href{http://pubs.opengroup.org/onlinepubs/9699919799/}{POSIX.1-2008}. 
 \begin{lstlisting}
 typedef qioerr (*qio_writev_fptr) 
@@ -461,7 +461,7 @@ There are 5 types of hints:
 \begin{itemize}
 \item {\tt IOHINT\_NONE} Normal operation. We expect to use this most of the time.
 \item {\tt QIO\_HINT\_RANDOM} We expect random access to this file.
-\item {\tt QIO\_HINT\_SEQUENTAL} We expect sequential access to this file.
+\item {\tt QIO\_HINT\_SEQUENTIAL} We expect sequential access to this file.
 \item {\tt QIO\_HINT\_CACHED} We expect the entire file to be cached and/or pulled in all
 at once.
 \item {\tt QIO\_HINT\_PARALLEL} We expect many channels to work on this file concurrently.

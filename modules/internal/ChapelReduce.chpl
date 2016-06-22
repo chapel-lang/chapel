@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -75,15 +75,15 @@ module ChapelReduce {
     var value: chpl__sumType(eltType);
 
     // Rely on the default value of the desired type.
-    // Todo: is this efficnent when that is an array?
+    // Todo: is this efficient when that is an array?
     proc identity {
       var x: chpl__sumType(eltType); return x;
     }
     proc accumulate(x) {
-      value = value + x;
+      value += x;
     }
     proc combine(x) {
-      value = value + x.value;
+      value += x.value;
     }
     proc generate() return value;
     proc clone() return new SumReduceScanOp(eltType=eltType);
@@ -95,10 +95,10 @@ module ChapelReduce {
   
     proc identity return _prod_id(eltType);
     proc accumulate(x) {
-      value = value * x;
+      value *= x;
     }
     proc combine(x) {
-      value = value * x.value;
+      value *= x.value;
     }
     proc generate() return value;
     proc clone() return new ProductReduceScanOp(eltType=eltType);
@@ -140,10 +140,10 @@ module ChapelReduce {
   
     proc identity return _land_id(eltType);
     proc accumulate(x) {
-      value = value && x;
+      value &&= x;
     }
     proc combine(x) {
-      value = value && x.value;
+      value &&= x.value;
     }
     proc generate() return value;
     proc clone() return new LogicalAndReduceScanOp(eltType=eltType);
@@ -155,10 +155,10 @@ module ChapelReduce {
   
     proc identity return _lor_id(eltType);
     proc accumulate(x) {
-      value = value || x;
+      value ||= x;
     }
     proc combine(x) {
-      value = value || x.value;
+      value ||= x.value;
     }
     proc generate() return value;
     proc clone() return new LogicalOrReduceScanOp(eltType=eltType);
@@ -170,10 +170,10 @@ module ChapelReduce {
   
     proc identity return _band_id(eltType);
     proc accumulate(x) {
-      value = value & x;
+      value &= x;
     }
     proc combine(x) {
-      value = value & x.value;
+      value &= x.value;
     }
     proc generate() return value;
     proc clone() return new BitwiseAndReduceScanOp(eltType=eltType);
@@ -185,10 +185,10 @@ module ChapelReduce {
   
     proc identity return _bor_id(eltType);
     proc accumulate(x) {
-      value = value | x;
+      value |= x;
     }
     proc combine(x) {
-      value = value | x.value;
+      value |= x.value;
     }
     proc generate() return value;
     proc clone() return new BitwiseOrReduceScanOp(eltType=eltType);
@@ -200,10 +200,10 @@ module ChapelReduce {
   
     proc identity return _bxor_id(eltType);
     proc accumulate(x) {
-      value = value ^ x;
+      value ^= x;
     }
     proc combine(x) {
-      value = value ^ x.value;
+      value ^= x.value;
     }
     proc generate() return value;
     proc clone() return new BitwiseXorReduceScanOp(eltType=eltType);

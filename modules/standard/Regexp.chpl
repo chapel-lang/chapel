@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -905,7 +905,7 @@ record regexp {
 
      :arg repl: replace matches with this string
      :arg text: the text to search and replace within
-     :type text: string
+     :type text: `string`
      :arg global: if true, replace multiple matches
      :returns: a tuple containing (new string, number of substitutions made)
    */
@@ -938,7 +938,7 @@ record regexp {
 
      :arg repl: replace matches with this string
      :arg text: the text to search and replace within
-     :type text: string
+     :type text: `string`
      :arg global: if true, replace multiple matches
      :returns: the new string
    */
@@ -950,10 +950,12 @@ record regexp {
   }
 
   pragma "no doc"
-  proc writeThis(f: Writer) {
-    var pattern:c_string;
+  proc writeThis(f) {
+    var pattern:string;
     on this.home {
-      qio_regexp_get_pattern(this._regexp, pattern);
+      var patternTemp:c_string;
+      qio_regexp_get_pattern(this._regexp, patternTemp);
+      pattern = new string(patternTemp);
     }
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
@@ -961,17 +963,18 @@ record regexp {
   }
 
   pragma "no doc"
-  proc readThis(f: Reader) {
-    var pattern:c_string;
+  proc readThis(f) {
+    var pattern:string;
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
     var litOne = new ioLiteral("new regexp(\"");
     var litTwo = new ioLiteral("\")");
     if(f.read(litOne, pattern, litTwo)) {
       on this.home {
+        var localPattern = pattern.localize();
         var opts:qio_regexp_options_t;
         qio_regexp_init_default_options(opts);
-        qio_regexp_create_compile(pattern, pattern.length, opts, this._regexp);
+        qio_regexp_create_compile(localPattern.c_str(), localPattern.length, opts, this._regexp);
       }
     }
   }

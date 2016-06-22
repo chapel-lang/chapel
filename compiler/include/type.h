@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -72,6 +72,8 @@ public:
   virtual Symbol*  getField(const char* name, bool fatal = true);
 
   void             addSymbol(TypeSymbol* newSymbol);
+
+  bool             isDefaultIntentConst()                                const;
 
   TypeSymbol*      symbol;
   AggregateType*   refType;  // pointer to references for non-reference types
@@ -242,13 +244,10 @@ TYPE_EXTERN PrimitiveType* dtOpaque;
 TYPE_EXTERN PrimitiveType* dtTaskID;
 TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType* dtSingleVarAuxFields;
-TYPE_EXTERN PrimitiveType* dtTaskList;
 
 // Well-known types
 TYPE_EXTERN AggregateType* dtString;
 TYPE_EXTERN AggregateType* dtArray;
-TYPE_EXTERN AggregateType* dtReader;
-TYPE_EXTERN AggregateType* dtWriter;
 TYPE_EXTERN AggregateType* dtBaseArr;
 TYPE_EXTERN AggregateType* dtBaseDom;
 TYPE_EXTERN AggregateType* dtDist;
@@ -260,6 +259,7 @@ TYPE_EXTERN AggregateType* dtMainArgument;
 TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string (unowned)
 TYPE_EXTERN PrimitiveType* dtStringCopy; // the type of a C string (owned)
 TYPE_EXTERN PrimitiveType* dtCVoidPtr; // the type of a C void* (unowned)
+TYPE_EXTERN PrimitiveType* dtCFnPtr;   // a C function pointer (unowned)
 
 // base object type (for all classes)
 TYPE_EXTERN Type* dtObject;
@@ -289,15 +289,16 @@ bool isClass(Type* t);
 bool isRecord(Type* t);
 bool isUnion(Type* t);
 
-bool isReferenceType(Type* t);
+bool isReferenceType(const Type* t);
 
 bool isRefCountedType(Type* t);
-bool isRecordWrappedType(Type* t);
+bool isRecordWrappedType(const Type* t);
 bool isDomImplType(Type* t);
 bool isArrayImplType(Type* t);
 bool isDistImplType(Type* t);
-bool isSyncType(Type* t);
-bool isAtomicType(Type* t);
+bool isSyncType(const Type* t);
+bool isSingleType(const Type* t);
+bool isAtomicType(const Type* t);
 bool isRefIterType(Type* t);
 
 bool isSubClass(Type* type, Type* baseType);
@@ -306,6 +307,7 @@ bool isDomainClass(Type* type);
 bool isArrayClass(Type* type);
 
 bool isString(Type* type);
+bool isUserDefinedRecord(Type* type);
 
 void registerTypeToStructurallyCodegen(TypeSymbol* type);
 GenRet genTypeStructureIndex(TypeSymbol* typesym);

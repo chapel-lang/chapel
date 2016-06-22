@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -35,8 +35,8 @@ returnInfoVoid(CallExpr* call) {
 }
 
 static Type*
-returnInfoOpaque(CallExpr* call) {
-  return dtOpaque;
+returnInfoCVoidPtr(CallExpr* call) {
+  return dtCVoidPtr;
 }
 
 static Type*
@@ -491,10 +491,6 @@ initPrimitive() {
   prim_def(PRIM_GET_END_COUNT, "get end count", returnInfoEndCount);
   prim_def(PRIM_SET_END_COUNT, "set end count", returnInfoVoid, true);
 
-  prim_def(PRIM_PROCESS_TASK_LIST, "process task list", returnInfoVoid, true, true);
-  prim_def(PRIM_EXECUTE_TASKS_IN_LIST, "execute tasks in list", returnInfoVoid, true, true);
-  prim_def(PRIM_FREE_TASK_LIST, "free task list", returnInfoVoid, true, true);
-
   // task primitives
   prim_def(PRIM_GET_SERIAL, "task_get_serial", returnInfoBool);
   prim_def(PRIM_SET_SERIAL, "task_set_serial", returnInfoVoid, true);
@@ -512,7 +508,6 @@ initPrimitive() {
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false, true);
   prim_def(PRIM_TYPEOF, "typeof", returnInfoFirstDeref);
-  prim_def(PRIM_USE, "use", returnInfoVoid, true);
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);
   prim_def(PRIM_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
   prim_def(PRIM_TUPLE_AND_EXPAND, "and_expand_tuple", returnInfoVoid);
@@ -574,6 +569,7 @@ initPrimitive() {
   // functions for debugging.
   prim_def(PRIM_WIDE_GET_NODE, "_wide_get_node", returnInfoNodeID, false, true);
   prim_def(PRIM_WIDE_GET_ADDR, "_wide_get_addr", returnInfoUInt64, false, true);
+  prim_def(PRIM_IS_WIDE_PTR, "is wide pointer", returnInfoBool);
 
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
 
@@ -583,7 +579,8 @@ initPrimitive() {
 
   prim_def(PRIM_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
-  prim_def(PRIM_CAPTURE_FN, "capture fn", returnInfoVoid);
+  prim_def(PRIM_CAPTURE_FN_FOR_CHPL, "capture fn for chpl", returnInfoVoid);
+  prim_def(PRIM_CAPTURE_FN_FOR_C, "capture fn for C", returnInfoVoid);
   prim_def(PRIM_CREATE_FN_TYPE, "create fn type", returnInfoVoid);
 
   prim_def("string_compare", returnInfoDefaultInt, true);
@@ -593,7 +590,7 @@ initPrimitive() {
   prim_def("ascii", returnInfoInt32);
   prim_def("string_index", returnInfoStringCopy, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringCopy, false, true);
-  prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoOpaque, true, false);
+  prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoCVoidPtr, true, false);
   prim_def("string_select", returnInfoStringCopy, true, true);
   prim_def("sleep", returnInfoVoid, true);
   prim_def("real2int", returnInfoDefaultInt);
@@ -607,7 +604,7 @@ initPrimitive() {
   prim_def(PRIM_GET_PRIV_CLASS, "chpl_getPrivatizedClass",  returnInfoFirst);
   
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoDefaultInt, true, true);
-  prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoStringC, true, true);
+  prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoInt32, true, true);
 
   prim_def(PRIM_FTABLE_CALL, "call ftable function", returnInfoVoid, true);
 
@@ -622,10 +619,9 @@ initPrimitive() {
   prim_def(PRIM_VIRTUAL_METHOD_CALL, "virtual method call", returnInfoVirtualMethodCall, true, true);
 
   prim_def(PRIM_NUM_FIELDS, "num fields", returnInfoInt32);
-  prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoStringC);
-  prim_def(PRIM_FIELD_VALUE_BY_NUM, "field value by num", returnInfoUnknown);
-  prim_def(PRIM_FIELD_ID_BY_NUM, "field id by num", returnInfoInt32);
-  prim_def(PRIM_FIELD_VALUE_BY_NAME, "field value by name", returnInfoUnknown);
+  prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
+  prim_def(PRIM_FIELD_NAME_TO_NUM, "field name to num", returnInfoInt32);
+  prim_def(PRIM_FIELD_BY_NUM, "field by num", returnInfoUnknown);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
   prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);
@@ -639,16 +635,18 @@ initPrimitive() {
   // It coerces its first argument to the type stored in the second argument.
   prim_def(PRIM_COERCE, "coerce", returnInfoSecondType);
 
+  prim_def(PRIM_CALL_RESOLVES, "call resolves", returnInfoBool);
+  prim_def(PRIM_METHOD_CALL_RESOLVES, "method call resolves", returnInfoBool);
+
   prim_def(PRIM_ENUM_MIN_BITS, "enum min bits", returnInfoInt32);
   prim_def(PRIM_ENUM_IS_SIGNED, "enum is signed", returnInfoBool);
 
   prim_def(PRIM_START_RMEM_FENCE, "chpl_rmem_consist_acquire", returnInfoVoid, true, true);
   prim_def(PRIM_FINISH_RMEM_FENCE, "chpl_rmem_consist_release", returnInfoVoid, true, true);
 
-  prim_def(PRIM_FIND_FILENAME_IDX, "chpl_findFilenameIdx", returnInfoUInt64, false, false);
   prim_def(PRIM_LOOKUP_FILENAME, "chpl_lookupFilename", returnInfoStringC, false, false);
 
-  prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoStringC);
+  prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoString);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;

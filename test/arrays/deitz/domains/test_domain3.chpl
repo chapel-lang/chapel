@@ -82,3 +82,4 @@ writeln(D.dforall(2));
 writeln(D.dfor(1));
 writeln(D.dfor(2));
 
+delete D;

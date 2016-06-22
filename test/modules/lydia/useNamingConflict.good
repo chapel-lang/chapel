@@ -1,0 +1,3 @@
+useNamingConflict.chpl:13: error: cannot resolve symbol 'foo', multiple definitions
+useNamingConflict.chpl:10: note: defined here from use of module 'A'
+useNamingConflict.chpl:10: note: defined here from use of module 'B'

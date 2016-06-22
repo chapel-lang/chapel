@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+# Sphinx generates some extra output that I don't want to try and match against,
+# so instead of using a .catfiles and trying to remove/match the sphinx output,
+# have the prediff overwrite the output file to do a cat on its own.
+cat deep-sphinx/source/modules/Foo.rst > $2
+cat deep-sphinx/source/modules/Foo/Bar.rst >> $2

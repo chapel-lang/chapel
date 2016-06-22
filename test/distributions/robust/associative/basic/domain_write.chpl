@@ -9,7 +9,7 @@ for i in D {
   DomUintType += myIdx:uintType;
   DomRealType += myIdx:realType;
   var s: string;
-  s.write(myIdx);
+  s = myIdx:string;
   DomStringType += s;
 }
 

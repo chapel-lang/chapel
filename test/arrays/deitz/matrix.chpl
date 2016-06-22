@@ -7,7 +7,7 @@ record Matrix {
   proc this(i: int, j: int) ref return A(i,j);
 }
 
-proc Matrix.writeThis(f: Writer) {
+proc Matrix.writeThis(f) {
   f.write(A);
 }
 

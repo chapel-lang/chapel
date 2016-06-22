@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -67,7 +67,7 @@ proc quote_string(s:string, len:ssize_t) {
 }
 
 /* Halt with a useful message if there was an error. Do nothing if the error
-   argument does not indicate an error occured. The error message printed
+   argument does not indicate an error occurred. The error message printed
    when halting will describe the error passed and msg will be appended to it.
 
    :arg error: the error object
@@ -85,7 +85,7 @@ proc ioerror(error:syserr, msg:string)
 }
 
 /* Halt with a useful message if there was an error. Do nothing if the error
-   argument does not indicate an error occured. The error message printed
+   argument does not indicate an error occurred. The error message printed
    when halting will describe the error passed and msg will be appended to it,
    along with the path related to the error (for example, the path to a file
    which could not be opened).
@@ -97,18 +97,16 @@ proc ioerror(error:syserr, msg:string)
 proc ioerror(error:syserr, msg:string, path:string)
 {
   if( error ) {
-    var errstr:c_string;
-    var quotedpath:c_string;
     var strerror_err:err_t = ENOERR;
-    errstr = sys_strerror_syserr_str(error, strerror_err);
-    quotedpath = quote_string(path, path.length:ssize_t);
+    const errstr = sys_strerror_syserr_str(error, strerror_err):string;
+    const quotedpath = quote_string(path, path.length:ssize_t):string;
     const err_msg: string = errstr + " " + msg + " with path " + quotedpath;
     __primitive("chpl_error", err_msg.c_str());
   }
 }
 
 /* Halt with a useful message if there was an error. Do nothing if the error
-   argument does not indicate an error occured. The error message printed
+   argument does not indicate an error occurred. The error message printed
    when halting will describe the error passed and msg will be appended to it,
    along with the path and file offset related to the error. For example, this
    routine might indicate a file format error at a particular location.
@@ -121,11 +119,9 @@ proc ioerror(error:syserr, msg:string, path:string)
 proc ioerror(error:syserr, msg:string, path:string, offset:int(64))
 {
   if( error ) {
-    var errstr:c_string;
-    var quotedpath:c_string;
     var strerror_err:err_t = ENOERR;
-    errstr = sys_strerror_syserr_str(error, strerror_err);
-    quotedpath = quote_string(path, path.length:ssize_t);
+    const errstr = sys_strerror_syserr_str(error, strerror_err): string;
+    const quotedpath = quote_string(path, path.length:ssize_t): string;
     const err_msg: string = errstr + " " + msg + " with path " + quotedpath + " offset " + offset:string;
     __primitive("chpl_error", err_msg.c_str());
   }
@@ -147,8 +143,7 @@ proc ioerror(error:syserr, msg:string, path:string, offset:int(64))
  */
 proc ioerror(errstr:string, msg:string, path:string, offset:int(64))
 {
-  var quotedpath:c_string;
-  quotedpath = quote_string(path, path.length:ssize_t);
+  const quotedpath = quote_string(path, path.length:ssize_t): string;
   const err_msg = errstr + " " + msg + " with path " + quotedpath + " offset " + offset:string;
   __primitive("chpl_error", err_msg.c_str());
 }

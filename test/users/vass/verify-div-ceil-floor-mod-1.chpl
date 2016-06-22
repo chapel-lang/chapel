@@ -6,9 +6,9 @@ config const verbose = true;
 proc verify1(i, j, name:string, result, reference:real) {
   if result:real != reference {
     errcount += 1;
-    writeln("failed ", name, "(", i, ":", typeToString(i.type), ",",
-            j, ":", typeToString(j.type), ")  expected ", reference,
-            "  got ", result, ":", typeToString(result.type));
+    writeln("failed ", name, "(", i, ":", i.type:string, ",",
+            j, ":", j.type:string, ")  expected ", reference,
+            "  got ", result, ":", result.type:string);
   }
 }
 
@@ -34,10 +34,10 @@ proc launch(type ta, type tb) {
 
   if verbose then
     writeln("%{####}".format(vtestcount - tcv), " var tests ",
-            typeToString(ta), ",", typeToString(tb), " -> ",
-            typeToString(divceil(a2,b2).type), " ",
-            typeToString(divfloor(a2,b2).type), " ",
-            typeToString(mod(a2,b2).type));
+            ta:string, ",", tb:string, " -> ",
+            divceil(a2,b2).type:string, " ",
+            divfloor(a2,b2).type:string, " ",
+            mod(a2,b2).type:string);
 
   // same as above, but test the 'param' versions
   param e1 = if isIntType(ta) then -7:ta else 0:ta;
@@ -57,10 +57,10 @@ proc launch(type ta, type tb) {
 
   if verbose then
     writeln("%{####}".format(ptestcount - tcp), " par tests ",
-            typeToString(ta), ",", typeToString(tb), " -> ",
-            typeToString(divceil(e2,f2).type), " ",
-            typeToString(divfloor(e2,f2).type), " ",
-            typeToString(mod(e2,f2).type), "\n");
+            ta:string, ",", tb:string, " -> ",
+            divceil(e2,f2).type:string, " ",
+            divfloor(e2,f2).type:string, " ",
+            mod(e2,f2).type:string, "\n");
 }
 
 // the calls commented out below hit typechecking issues in divceil()

@@ -23,7 +23,7 @@ proc test(d) {
 
   const vd = d._value.dom2;
   if verbose {
-    hd("vd = ", vd, "  : ", typeToString(vd.type));
+    hd("vd = ", vd, "  : ", vd.type:string);
     tl();
   } else {
     nextphase();
@@ -45,7 +45,7 @@ proc test(d) {
 
 proc testsuite(type T, initphase) {
   phase = initphase; leapphase();
-  hd("testsuite(", typeToString(T), ")");
+  hd("testsuite(", T:string, ")");
   tl();
 
   const vdf = new ReplicatedDim(1);

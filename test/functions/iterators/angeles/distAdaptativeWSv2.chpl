@@ -7,9 +7,9 @@
 // The Termination strategy is still very naive
 
 // Contributed by Angeles Navarro 
-use AdvancedIters;
+use DynamicIters;
 extern proc usleep(val:uint);
-config const nTasks:int=4; //here.numCores; should be here.maxTaskPar?
+config const nTasks:int=4; // number of cores; should be here.maxTaskPar?
 writeln("Working with ", nTasks, " Threads");
 
 // Adding timing

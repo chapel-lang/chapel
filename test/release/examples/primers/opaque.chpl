@@ -21,7 +21,7 @@ var People: domain(opaque);
 
 //
 // Since opaque domains don't support logical index values, new
-// indices are created by requesting them from the dommain directly.
+// indices are created by requesting them from the domain directly.
 // So, to add our first three people to the People domain, we could
 // do the following declarations/assignments:
 //
@@ -242,9 +242,9 @@ proc createRandomGraph() {
   //
   // Note: example usage of the standard module Random can be found in
   // the primer randomNumbers.chpl, located in the current directory.
-  //
+  // Uses the NPB random number generator for historical reasons.
   use Random;
-  var myRandNums = new RandomStream(seed=314159265);
+  var myRandNums = makeRandomStream(seed=314159265,algorithm=RNG.NPB);
 
   //
   // allocate all the vertices and assign them labels and random weights

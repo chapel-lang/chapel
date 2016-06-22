@@ -1,0 +1,1 @@
+bits-errors.chpl:33: error: halt reached - writebits nbits=9 > bits in v:uint(8)

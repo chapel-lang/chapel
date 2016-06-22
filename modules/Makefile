@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -33,7 +33,7 @@ CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_COMPILER)
-SYS_CTYPES_MODULE_DOC=standard/gen/doc/SysCTypes.chpl
+SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
@@ -64,40 +64,46 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
 	cd $(@D) && $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
 
-sys-ctypes-docs: $(SYS_CTYPES_MODULE_DOC)
 
 MODULES_TO_DOCUMENT = \
-	standard/AdvancedIters.chpl \
 	standard/Assert.chpl \
 	standard/Barrier.chpl \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
 	standard/CommDiagnostics.chpl \
-	standard/Curl.chpl \
-	standard/FFTW.chpl \
-	standard/FFTW_MT.chpl \
+	standard/DynamicIters.chpl \
+	standard/Error.chpl \
 	standard/FileSystem.chpl \
 	standard/GMP.chpl \
-	standard/HDFS.chpl \
-	standard/HDFSiterator.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
 	standard/List.chpl \
-	standard/LAPACK.chpl \
 	standard/Math.chpl \
 	standard/Memory.chpl \
-	standard/Norm.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
+	standard/Reflection.chpl \
 	standard/Regexp.chpl \
-	standard/Search.chpl \
-	standard/Sort.chpl \
 	standard/Spawn.chpl \
 	standard/Sys.chpl \
+	standard/SysBasic.chpl \
+	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/UtilReplicatedVar.chpl \
-	standard/VisualDebug.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
+
+PACKAGES_TO_DOCUMENT = \
+	packages/Curl.chpl \
+	packages/FFTW.chpl \
+	packages/FFTW_MT.chpl \
+	packages/HDFS.chpl \
+	packages/HDFSiterator.chpl \
+	packages/LAPACK.chpl \
+	packages/Norm.chpl \
+	packages/RecordParser.chpl \
+	packages/Search.chpl \
+	packages/Sort.chpl \
+	packages/VisualDebug.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
@@ -111,29 +117,33 @@ DISTS_TO_DOCUMENT = \
 	dists/dims/ReplicatedDim.chpl \
 	layouts/LayoutCSR.chpl \
 
-INTERNAL_MODULES_TO_DOCUMENT =                \
+INTERNAL_MODULES_TO_DOCUMENT =          \
+	internal/Atomics.chpl                 \
 	internal/ChapelArray.chpl             \
-        internal/ChapelTuple.chpl             \
-        internal/ChapelIO.chpl                \
-        internal/ChapelIteratorSupport.chpl   \
-        internal/ChapelLocale_forDocs.chpl    \
-        internal/ChapelRange.chpl             \
-        internal/ChapelSyncvar.chpl           \
-        internal/Atomics.chpl                 \
-        internal/ChapelComplex_forDocs.chpl   \
-        internal/UtilMisc_forDocs.chpl
+	internal/ChapelComplex_forDocs.chpl   \
+	internal/ChapelIO.chpl                \
+	internal/ChapelIteratorSupport.chpl   \
+	internal/ChapelLocale.chpl    \
+	internal/UtilMisc_forDocs.chpl 	      \
+	internal/ChapelRange.chpl             \
+	internal/String.chpl                  \
+	internal/ChapelSyncvar.chpl           \
+	internal/ChapelTuple.chpl \
+	internal/ChapelEnv.chpl
+
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	export CHPLDOC_AUTHOR='Cray Inc' && \
-	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) \
-	$(DISTS_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
+	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
 	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	./dists/fixDistDocs.perl      ${MODULE_SPHINX}
 	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/
+	cp -rf ${MODULE_SPHINX}/source/modules/packages ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_SPHINX}/source/modules/
 	rm -rf ${MODULE_SPHINX}
+	rm -f ${CHPL_MAKE_HOME}/modules/$(SYS_CTYPES_MODULE_DOC)
 
 clean-documentation:
 	rm -rf ./docs

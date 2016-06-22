@@ -6,6 +6,8 @@ PopFront
 InsertR
 InsertSB
 InsertSL
+RemoveFront
+RemoveBack
 ListAppend
 ListReduce
 ListDest

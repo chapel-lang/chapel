@@ -16,8 +16,8 @@ config const printRandomNumbers: bool = true, // print random numbers to screen
 
 // seed the random stream with something reproducable?
 config const useRandomSeed = true,
-             seed  = if useRandomSeed then SeedGenerator.currentTime else 314159265,
-             seed2 = if useRandomSeed then SeedGenerator.currentTime else 161803399;
+             seed  = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265,
+             seed2 = if useRandomSeed then SeedGenerator.oddCurrentTime else 161803399;
 
 // global variables
 var X, X2: [1..numNumbers] real, // arrays of random numbers
@@ -31,8 +31,8 @@ writef(" Number of Buckets        = %{########}\n", numBuckets);
 writeln();
 
 // fill arrays with random numbers (using standard Random module)
-fillRandom(X, seed);
-fillRandom(X2, seed2);
+fillRandom(X, seed, algorithm=RNG.NPB);
+fillRandom(X2, seed2, algorithm=RNG.NPB);
 X = (X+X2)/2;
 
 // output arrays of random numbers as averages

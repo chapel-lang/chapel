@@ -26,25 +26,25 @@ proc TEST_CLASS(param ARG_PARAM) {
 
 /*  this does not work - see param-formal-in-ctor.chpl
   type LOC_TYPE = CLASS_PARAM(ARG_PARAM);
-  compilerWarning(typeToString(LOC_TYPE));
+  compilerWarning(LOC_TYPE:string);
 */
   var LOC_VAR1: CLASS_PARAM(ARG_PARAM);
-  compilerWarning(typeToString(LOC_VAR1.type));
+  compilerWarning(LOC_VAR1.type:string);
   compilerWarning(LOC_VAR1.FIELD_PARAM: c_string);
-  compilerWarning(typeToString(LOC_VAR1.METHOD_TYPE));
+  compilerWarning(LOC_VAR1.METHOD_TYPE:string);
   param LOC_ALIAS_PARAM1 = LOC_VAR1.FIELD_PARAM;
   compilerWarning(LOC_ALIAS_PARAM1: c_string);
   type LOC_ALIAS_TYPE1 = LOC_VAR1.METHOD_TYPE;
-  compilerWarning(typeToString(LOC_ALIAS_TYPE1));
+  compilerWarning(LOC_ALIAS_TYPE1:string);
 /*
   var LOC_VAR2: LOC_TYPE;
-  compilerWarning(typeToString(LOC_VAR2.type));
+  compilerWarning(LOC_VAR2.type:string);
   compilerWarning(LOC_VAR2.FIELD_PARAM: c_string);
-  compilerWarning(typeToString(LOC_VAR2.METHOD_TYPE));
+  compilerWarning(LOC_VAR2.METHOD_TYPE:string);
   param LOC_ALIAS_PARAM2 = LOC_VAR2.FIELD_PARAM;
   compilerWarning(LOC_ALIAS_PARAM2: c_string);
   type LOC_ALIAS_TYPE2 = LOC_VAR2.METHOD_TYPE;
-  compilerWarning(typeToString(LOC_ALIAS_TYPE2));
+  compilerWarning(LOC_ALIAS_TYPE2:string);
 */
 }
 
@@ -64,25 +64,25 @@ proc TEST_RECORD(param ARG_PARAM) {
 
 /*  this does not work - see param-formal-in-ctor.chpl
   type LOC_TYPE = RECORD_PARAM(ARG_PARAM);
-  compilerWarning(typeToString(LOC_TYPE));
+  compilerWarning(LOC_TYPE:string);
 */
   var LOC_VAR1: RECORD_PARAM(ARG_PARAM);
-  compilerWarning(typeToString(LOC_VAR1.type));
+  compilerWarning(LOC_VAR1.type:string);
   compilerWarning(LOC_VAR1.FIELD_PARAM: c_string);
-  compilerWarning(typeToString(LOC_VAR1.METHOD_TYPE));
+  compilerWarning(LOC_VAR1.METHOD_TYPE:string);
   param LOC_ALIAS_PARAM1 = LOC_VAR1.FIELD_PARAM;
   compilerWarning(LOC_ALIAS_PARAM1: c_string);
   type LOC_ALIAS_TYPE1 = LOC_VAR1.METHOD_TYPE;
-  compilerWarning(typeToString(LOC_ALIAS_TYPE1));
+  compilerWarning(LOC_ALIAS_TYPE1:string);
 /*
   var LOC_VAR2: LOC_TYPE;
-  compilerWarning(typeToString(LOC_VAR2.type));
+  compilerWarning(LOC_VAR2.type:string);
   compilerWarning(LOC_VAR2.FIELD_PARAM: c_string);
-  compilerWarning(typeToString(LOC_VAR2.METHOD_TYPE));
+  compilerWarning(LOC_VAR2.METHOD_TYPE:string);
   param LOC_ALIAS_PARAM2 = LOC_VAR2.FIELD_PARAM;
   compilerWarning(LOC_ALIAS_PARAM2: c_string);
   type LOC_ALIAS_TYPE2 = LOC_VAR2.METHOD_TYPE;
-  compilerWarning(typeToString(LOC_ALIAS_TYPE2));
+  compilerWarning(LOC_ALIAS_TYPE2:string);
 */
 }
 
@@ -95,29 +95,29 @@ class CLASS_TYPE {
 
 proc TEST_CLASS(type ARG_TYPE) {
   compilerWarning("TEST_CLASS(type)");
-  compilerWarning(typeToString(ARG_TYPE));
+  compilerWarning(ARG_TYPE:string);
 
   type LOC_ALIAS_TYPE = ARG_TYPE;
-  compilerWarning(typeToString(LOC_ALIAS_TYPE));
+  compilerWarning(LOC_ALIAS_TYPE:string);
 
   type LOC_TYPE = CLASS_TYPE(ARG_TYPE);
-  compilerWarning(typeToString(LOC_TYPE));
+  compilerWarning(LOC_TYPE:string);
 
   var LOC_VAR1: CLASS_TYPE(ARG_TYPE);
-  compilerWarning(typeToString(LOC_VAR1.type));
-  compilerWarning(typeToString(LOC_VAR1.FIELD_TYPE));
+  compilerWarning(LOC_VAR1.type:string);
+  compilerWarning(LOC_VAR1.FIELD_TYPE:string);
   compilerWarning(LOC_VAR1.METHOD_PARAM: c_string);
   type LOC_ALIAS_TYPE1 = LOC_VAR1.FIELD_TYPE;
-  compilerWarning(typeToString(LOC_ALIAS_TYPE1));
+  compilerWarning(LOC_ALIAS_TYPE1:string);
   param LOC_ALIAS_PARAM1 = LOC_VAR1.METHOD_PARAM;
   compilerWarning(LOC_ALIAS_PARAM1: c_string);
 
   var LOC_VAR2: LOC_TYPE;
-  compilerWarning(typeToString(LOC_VAR2.type));
-  compilerWarning(typeToString(LOC_VAR2.FIELD_TYPE));
+  compilerWarning(LOC_VAR2.type:string);
+  compilerWarning(LOC_VAR2.FIELD_TYPE:string);
   compilerWarning(LOC_VAR2.METHOD_PARAM: c_string);
   type LOC_ALIAS_TYPE2 = LOC_VAR2.FIELD_TYPE;
-  compilerWarning(typeToString(LOC_ALIAS_TYPE2));
+  compilerWarning(LOC_ALIAS_TYPE2:string);
   param LOC_ALIAS_PARAM2 = LOC_VAR2.METHOD_PARAM;
   compilerWarning(LOC_ALIAS_PARAM2: c_string);
 }
@@ -131,29 +131,29 @@ class RECORD_TYPE {
 
 proc TEST_RECORD(type ARG_TYPE) {
   compilerWarning("TEST_RECORD(type)");
-  compilerWarning(typeToString(ARG_TYPE));
+  compilerWarning(ARG_TYPE:string);
 
   type LOC_ALIAS_TYPE = ARG_TYPE;
-  compilerWarning(typeToString(LOC_ALIAS_TYPE));
+  compilerWarning(LOC_ALIAS_TYPE:string);
 
   type LOC_TYPE = RECORD_TYPE(ARG_TYPE);
-  compilerWarning(typeToString(LOC_TYPE));
+  compilerWarning(LOC_TYPE:string);
 
   var LOC_VAR1: RECORD_TYPE(ARG_TYPE);
-  compilerWarning(typeToString(LOC_VAR1.type));
-  compilerWarning(typeToString(LOC_VAR1.FIELD_TYPE));
+  compilerWarning(LOC_VAR1.type:string);
+  compilerWarning(LOC_VAR1.FIELD_TYPE:string);
   compilerWarning(LOC_VAR1.METHOD_PARAM: c_string);
   type LOC_ALIAS_TYPE1 = LOC_VAR1.FIELD_TYPE;
-  compilerWarning(typeToString(LOC_ALIAS_TYPE1));
+  compilerWarning(LOC_ALIAS_TYPE1:string);
   param LOC_ALIAS_PARAM1 = LOC_VAR1.METHOD_PARAM;
   compilerWarning(LOC_ALIAS_PARAM1: c_string);
 
   var LOC_VAR2: LOC_TYPE;
-  compilerWarning(typeToString(LOC_VAR2.type));
-  compilerWarning(typeToString(LOC_VAR2.FIELD_TYPE));
+  compilerWarning(LOC_VAR2.type:string);
+  compilerWarning(LOC_VAR2.FIELD_TYPE:string);
   compilerWarning(LOC_VAR2.METHOD_PARAM: c_string);
   type LOC_ALIAS_TYPE2 = LOC_VAR2.FIELD_TYPE;
-  compilerWarning(typeToString(LOC_ALIAS_TYPE2));
+  compilerWarning(LOC_ALIAS_TYPE2:string);
   param LOC_ALIAS_PARAM2 = LOC_VAR2.METHOD_PARAM;
   compilerWarning(LOC_ALIAS_PARAM2: c_string);
 }

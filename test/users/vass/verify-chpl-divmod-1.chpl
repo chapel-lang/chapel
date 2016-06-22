@@ -50,9 +50,9 @@ proc launch(type ta, type tb) {
 
   if verbose then
     writeln("%{####}".format(vtestcount - tcv), " var tests ",
-            typeToString(ta), ",", typeToString(tb), " -> ",
-            typeToString((a2/b2).type), " ",
-            typeToString((a2%b2).type));
+            ta:string, ",", tb:string, " -> ",
+            (a2/b2).type:string, " ",
+            (a2%b2).type:string);
 }
 
 // the combinations commented out below have typechecking issues

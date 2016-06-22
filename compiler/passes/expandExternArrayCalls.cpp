@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -98,7 +98,6 @@ void expandExternArrayCalls() {
       SET_LINENO(fn);
       fn->defPoint->insertAfter(new DefExpr(fcopy));
       fcopy->removeFlag(FLAG_EXTERN);
-      fcopy->removeFlag(FLAG_FUNCTION_PROTOTYPE);
       fcopy->addFlag(FLAG_INLINE);
       fcopy->cname = astr("chpl__extern_array_wrapper_", fcopy->cname);
       fn->name = astr("chpl__extern_array_", fn->name);

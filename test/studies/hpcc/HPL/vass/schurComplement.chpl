@@ -88,7 +88,7 @@ var replA: [replAD] elemType,
 /////////// for the reference implementation ///////////
 
 config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.currentTime else 31415;
+             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 31415;
 config const verify = false;
 // can be too much memory
 //var Abref: [MatVectSpace] elemType;

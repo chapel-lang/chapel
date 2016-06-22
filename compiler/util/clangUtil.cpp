@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -80,6 +80,7 @@ using namespace llvm;
 // and not normally installed in the include directory.
 #include "CodeGenModule.h"
 #include "CGRecordLayout.h"
+#include "CGDebugInfo.h"
 #include "clang/CodeGen/BackendUtil.h"
 
 static void setupForGlobalToWide();
@@ -230,6 +231,10 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
     new LLVM_TARGET_DATA(info->Ctx->getTargetInfo().getTargetDescription());
   if( ! info->parseOnly ) {
     info->cgBuilder = new CodeGen::CodeGenModule(*Ctx,
+#if HAVE_LLVM_VER >= 37
+        info->Clang->getHeaderSearchOpts(),
+        info->Clang->getPreprocessorOpts(),
+#endif
                               info->codegenOptions,
                               *info->module,
                               *info->targetData, *info->Diags);
@@ -490,7 +495,9 @@ void readMacrosClang(void) {
       i != preproc.macro_end();
       i++) {
 
-#if HAVE_LLVM_VER >= 33
+#if HAVE_LLVM_VER >= 37
+    handleMacro(i->first, i->second.getLatest()->getMacroInfo());
+#elif HAVE_LLVM_VER >= 33
     handleMacro(i->first, i->second->getMacroInfo());
 #else
     handleMacro(i->first, i->second);
@@ -498,102 +505,236 @@ void readMacrosClang(void) {
   }
 };
 
+// We need a way to:
+// 1: parse code only
+// 2: keep the code generator open until we finish generating Chapel code,
+//    since we might need to code generate called functions.
+// 3: append to the target description
+// 4: get LLVM values for code generated C things (e.g. types, function ptrs)
+//
+// This code is boiler-plate code mostly copied from ModuleBuilder.cpp - see
+// http://clang.llvm.org/doxygen/ModuleBuilder_8cpp_source.html
+// Note that ModuleBuilder.cpp is from the clang project and distributed
+// under a BSD-like license.
+//
+// As far as we know, there is no public API for clang that
+// would allow us the level of control we need over code generation.
+// The portions that are not copied are delineated by
+// comments indicating that they are custom to Chapel.
 class CCodeGenConsumer : public ASTConsumer {
   private:
     GenInfo* info;
+    unsigned HandlingTopLevelDecls;
+    SmallVector<CXXMethodDecl *, 8> DeferredInlineMethodDefinitions;
+
+    struct HandlingTopLevelDeclRAII {
+      CCodeGenConsumer &Self;
+      HandlingTopLevelDeclRAII(CCodeGenConsumer &Self) : Self(Self) {
+        ++Self.HandlingTopLevelDecls;
+      }
+      ~HandlingTopLevelDeclRAII() {
+        if (--Self.HandlingTopLevelDecls == 0)
+          Self.EmitDeferredDecls();
+      }
+    };
   public:
-    CCodeGenConsumer() : ASTConsumer(), info(gGenInfo) {
-      //info->module = new llvm::Module(info->moduleName, info->llvmContext);
+    CCodeGenConsumer()
+      : ASTConsumer(), info(gGenInfo), HandlingTopLevelDecls(0) {
     }
 
     virtual ~CCodeGenConsumer() { }
 
+    // these macros help us to copy and paste the code from ModuleBuilder.
+#define Ctx (info->Ctx)
+#define Diags (* info->Diags)
+#define Builder (info->cgBuilder)
+#define CodeGenOpts (info->codegenOptions)
+
     // mostly taken from ModuleBuilder.cpp
-     virtual void Initialize(ASTContext &Context) {
-       // This does setTargetTriple, setDataLayout, initialize targetData
-       // and cgBuilder.
-       setupClangContext(info, &Context);
-     }
 
-     virtual void HandleCXXStaticMemberVarInstantiation(VarDecl *VD) {
-       // Custom to Chapel
-       if( info->parseOnly ) return;
-       // End custom to Chapel
-       info->cgBuilder->HandleCXXStaticMemberVarInstantiation(VD);
-     }
+     /// ASTConsumer override:
+     // Initialize - This is called to initialize the consumer, providing
+     // the ASTContext.
+    virtual void Initialize(ASTContext &Context) LLVM_CXX_OVERRIDE {
+      // This does setTargetTriple, setDataLayout, initialize targetData
+      // and cgBuilder.
+      setupClangContext(info, &Context);
 
-     virtual bool HandleTopLevelDecl(DeclGroupRef DG) {
-       // Make sure to emit all elements of a Decl.
-       for (DeclGroupRef::iterator I = DG.begin(), E = DG.end(); I != E; ++I) {
-         // Custom to Chapel
-         if(TypedefDecl *td = dyn_cast<TypedefDecl>(*I)) {
-           const clang::Type *ctype= td->getUnderlyingType().getTypePtrOrNull();
-           //printf("Adding typedef %s\n", td->getNameAsString().c_str());
-           if(ctype != NULL) {
-             info->lvt->addGlobalCDecl(td);
-           }
-         } else if(FunctionDecl *fd = dyn_cast<FunctionDecl>(*I)) {
-           info->lvt->addGlobalCDecl(fd);
-         } else if(VarDecl *vd = dyn_cast<VarDecl>(*I)) {
-           info->lvt->addGlobalCDecl(vd);
-         } else if(clang::RecordDecl *rd = dyn_cast<RecordDecl>(*I)) {
-           // Handle forward declaration for structs
-           info->lvt->addGlobalCDecl(rd);
-         }
-         if( info->parseOnly ) continue;
-         // End custom to Chapel
+      for (size_t i = 0, e = CodeGenOpts.DependentLibraries.size(); i < e; ++i)
+        HandleDependentLibrary(CodeGenOpts.DependentLibraries[i]);
+    }
 
-         info->cgBuilder->EmitTopLevelDecl(*I);
-       }
+    // ASTConsumer override:
+    // HandleCXXStaticMemberVarInstantiation - Tell the consumer that
+    // this variable has been instantiated.
+    virtual void HandleCXXStaticMemberVarInstantiation(VarDecl *VD) LLVM_CXX_OVERRIDE {
+      // Custom to Chapel
+      if( info->parseOnly ) return;
+      // End custom to Chapel
 
-       return true;
-     }
+      if (Diags.hasErrorOccurred())
+        return;
 
-     /// HandleTagDeclDefinition - This callback is invoked each time a TagDecl
-     /// to (e.g. struct, union, enum, class) is completed. This allows the
-     /// client hack on the type, which can occur at any point in the file
-     /// (because these can be defined in declspecs).
-     virtual void HandleTagDeclDefinition(TagDecl *D) {
-       // Custom to Chapel - make a note of C globals
-       if(EnumDecl *ed = dyn_cast<EnumDecl>(D)) {
-          // Add the enum type
-          info->lvt->addGlobalCDecl(ed);
-          // Add the enum values
-          for(EnumDecl::enumerator_iterator e = ed->enumerator_begin();
-              e != ed->enumerator_end();
-              e++) {
-            info->lvt->addGlobalCDecl(*e); // & goes away with newer clang
+      Builder->HandleCXXStaticMemberVarInstantiation(VD);
+    }
+
+    // ASTConsumer override:
+    // 
+    // HandleTopLevelDecl - Handle the specified top-level declaration.
+    // This is called by the parser to process every top-level Decl*.
+    //
+    // \returns true to continue parsing, or false to abort parsing.
+    virtual bool HandleTopLevelDecl(DeclGroupRef DG) LLVM_CXX_OVERRIDE {
+       if (Diags.hasErrorOccurred())
+         return true;
+
+        HandlingTopLevelDeclRAII HandlingDecl(*this);
+
+      // Make sure to emit all elements of a Decl.
+      for (DeclGroupRef::iterator I = DG.begin(), E = DG.end(); I != E; ++I) {
+        // Custom to Chapel
+        if(TypedefDecl *td = dyn_cast<TypedefDecl>(*I)) {
+          const clang::Type *ctype= td->getUnderlyingType().getTypePtrOrNull();
+          //printf("Adding typedef %s\n", td->getNameAsString().c_str());
+          if(ctype != NULL) {
+            info->lvt->addGlobalCDecl(td);
           }
-       } else if(RecordDecl *rd = dyn_cast<RecordDecl>(D)) {
-          const clang::Type *ctype = rd->getTypeForDecl();
-
-          if(ctype != NULL && rd->getDefinition() != NULL) {
+        } else if(FunctionDecl *fd = dyn_cast<FunctionDecl>(*I)) {
+          info->lvt->addGlobalCDecl(fd);
+        } else if(VarDecl *vd = dyn_cast<VarDecl>(*I)) {
+          info->lvt->addGlobalCDecl(vd);
+        } else if(clang::RecordDecl *rd = dyn_cast<RecordDecl>(*I)) {
+          if( rd->getName().size() > 0 ) {
+            // Handle forward declaration for structs
             info->lvt->addGlobalCDecl(rd);
           }
-       }
-       if( info->parseOnly ) return;
-       // End Custom to Chapel
+        }
+        if( info->parseOnly ) continue;
+        // End custom to Chapel
 
-       info->cgBuilder->UpdateCompletedType(D);
+        Builder->EmitTopLevelDecl(*I);
+      }
 
-       // In C++, we may have member functions that need to be emitted at this 
-       // point.
-       if (info->Ctx->getLangOpts().CPlusPlus && !D->isDependentContext()) {
-         for (DeclContext::decl_iterator M = D->decls_begin(),
-                                      MEnd = D->decls_end();
-              M != MEnd; ++M)
-           if (CXXMethodDecl *Method = dyn_cast<CXXMethodDecl>(*M))
-             if (Method->doesThisDeclarationHaveABody() &&
-                 (Method->hasAttr<UsedAttr>() ||
-                  Method->hasAttr<ConstructorAttr>()))
-               info->cgBuilder->EmitTopLevelDecl(Method);
-       }
+      return true;
+    }
+
+    // ModuleBuilder.cpp has EmitDeferredDecls but that's not in ASTConsumer.
+    void EmitDeferredDecls() {
+       if (DeferredInlineMethodDefinitions.empty())
+         return;
+
+       // Emit any deferred inline method definitions. Note that more deferred
+       // methods may be added during this loop, since ASTConsumer callbacks
+       // can be invoked if AST inspection results in declarations being added.
+       HandlingTopLevelDeclRAII HandlingDecl(*this);
+       for (unsigned I = 0; I != DeferredInlineMethodDefinitions.size(); ++I)
+         Builder->EmitTopLevelDecl(DeferredInlineMethodDefinitions[I]);
+       DeferredInlineMethodDefinitions.clear();
+    }
+
+   // ASTConsumer override:
+   // \brief This callback is invoked each time an inline method
+   // definition is completed.
+   virtual void HandleInlineMethodDefinition(CXXMethodDecl *D) LLVM_CXX_OVERRIDE {
+      if (Diags.hasErrorOccurred())
+        return;
+
+      assert(D->doesThisDeclarationHaveABody());
+
+      // We may want to emit this definition. However, that decision might be
+      // based on computing the linkage, and we have to defer that in case we
+      // are inside of something that will change the method's final linkage,
+      // e.g.
+      //   typedef struct {
+      //     void bar();
+      //     void foo() { bar(); }
+      //   } A;
+      DeferredInlineMethodDefinitions.push_back(D);
+
+      // Provide some coverage mapping even for methods that aren't emitted.
+      // Don't do this for templated classes though, as they may not be
+      // instantiable.
+      if (!D->getParent()->getDescribedClassTemplate())
+        Builder->AddDeferredUnusedCoverageMapping(D);
+    }
+
+     // skipped ASTConsumer HandleInterestingDecl
+     // HandleTagDeclRequiredDefinition
+     // HandleCXXImplicitFunctionInstantiation
+     // HandleTopLevelDeclInObjCContainer
+     // HandleImplicitImportDecl
+     // GetASTMutationListener
+     // GetASTDeserializationListener
+     // PrintStats
+     // shouldSkipFunctionBody
+
+    // ASTConsumer override:
+    // HandleTagDeclDefinition - This callback is invoked each time a TagDecl
+    // to (e.g. struct, union, enum, class) is completed. This allows the
+    // client hack on the type, which can occur at any point in the file
+    // (because these can be defined in declspecs).
+    virtual void HandleTagDeclDefinition(TagDecl *D) LLVM_CXX_OVERRIDE {
+      if (Diags.hasErrorOccurred())
+        return;
+
+      // Custom to Chapel - make a note of C globals
+      if(EnumDecl *ed = dyn_cast<EnumDecl>(D)) {
+         // Add the enum type
+         info->lvt->addGlobalCDecl(ed);
+         // Add the enum values
+         for(EnumDecl::enumerator_iterator e = ed->enumerator_begin();
+             e != ed->enumerator_end();
+             e++) {
+           info->lvt->addGlobalCDecl(*e); // & goes away with newer clang
+         }
+      } else if(RecordDecl *rd = dyn_cast<RecordDecl>(D)) {
+         const clang::Type *ctype = rd->getTypeForDecl();
+
+         if(ctype != NULL && rd->getDefinition() != NULL) {
+           info->lvt->addGlobalCDecl(rd);
+         }
+      }
+      if( info->parseOnly ) return;
+      // End Custom to Chapel
+
+      Builder->UpdateCompletedType(D);
+
+      // For MSVC compatibility, treat declarations of static data members with
+      // inline initializers as definitions.
+      if (Ctx->getLangOpts().MSVCCompat) {
+        for (Decl *Member : D->decls()) {
+          if (VarDecl *VD = dyn_cast<VarDecl>(Member)) {
+            if (Ctx->isMSStaticDataMemberInlineDefinition(VD) &&
+                Ctx->DeclMustBeEmitted(VD)) {
+              Builder->EmitGlobal(VD);
+            }
+          }
+        }
+      }
+    }
+
+    // ASTConsumer override:
+    // \brief This callback is invoked the first time each TagDecl is required
+    // to be complete.
+    virtual void HandleTagDeclRequiredDefinition(const TagDecl *D) LLVM_CXX_OVERRIDE {
+      if (Diags.hasErrorOccurred())
+        return;
+
+      if( info->parseOnly ) return;
+
+      if (CodeGen::CGDebugInfo *DI = Builder->getModuleDebugInfo())
+        if (const RecordDecl *RD = dyn_cast<RecordDecl>(D))
+          DI->completeRequiredType(RD);
+    }
 
 
-     }
-
-     virtual void HandleTranslationUnit(ASTContext &Ctx) {
-       if (info->Diags->hasErrorOccurred()) {
+     // ASTConsumer override:
+     // HandleTranslationUnit - This method is called when the ASTs for
+     // entire translation unit have been parsed.
+     virtual void HandleTranslationUnit(ASTContext &Context) LLVM_CXX_OVERRIDE {
+       if (Diags.hasErrorOccurred()) {
+         if(Builder)
+           Builder->clear();
          return;
        }
 
@@ -601,32 +742,94 @@ class CCodeGenConsumer : public ASTConsumer {
           we don't release the builder now, because
           we want to add a bunch of uses of functions
           that may not have been codegened yet.
-       if (info->cgBuilder)
-         cgBuilder->Release();
+
+          Instead, we call this in cleanupClang.
+       if (Builder)
+         Builder->Release();
        */
      }
 
-     virtual void CompleteTentativeDefinition(VarDecl *D) {
-       if (info->Diags->hasErrorOccurred())
+     // ASTConsumer override:
+     //
+     // CompleteTentativeDefinition - Callback invoked at the end of a
+     // translation unit to notify the consumer that the given tentative
+     // definition should be completed.
+     //
+     // The variable declaration
+     // itself will be a tentative definition. If it had an incomplete
+     // array type, its type will have already been changed to an array
+     // of size 1. However, the declaration remains a tentative
+     // definition and has not been modified by the introduction of an
+     // implicit zero initializer.
+     virtual void CompleteTentativeDefinition(VarDecl *D) LLVM_CXX_OVERRIDE {
+       if (Diags.hasErrorOccurred())
          return;
 
        // Custom to Chapel
        if( info->parseOnly ) return;
        // End Custom to Chapel
        
-       info->cgBuilder->EmitTentativeDefinition(D);
+       Builder->EmitTentativeDefinition(D);
      }
 
-     virtual void HandleVTable(CXXRecordDecl *RD, bool DefinitionRequired) {
-       if (info->Diags->hasErrorOccurred())
+     // ASTConsumer override:
+     // \brief Callback involved at the end of a translation unit to
+     // notify the consumer that a vtable for the given C++ class is
+     // required.
+     //
+     // \param RD The class whose vtable was used.
+     virtual void HandleVTable(CXXRecordDecl *RD
+#if HAVE_LLVM_VER < 37
+         , bool DefinitionRequired
+#endif
+         ) LLVM_CXX_OVERRIDE {
+       if (Diags.hasErrorOccurred())
          return;
 
        // Custom to Chapel
        if( info->parseOnly ) return;
        // End Custom to Chapel
 
-       info->cgBuilder->EmitVTable(RD, DefinitionRequired);
+       Builder->EmitVTable(RD
+#if HAVE_LLVM_VER < 37
+           , DefinitionRequired
+#endif
+           );
      }
+     
+     // ASTConsumer override:
+     //
+     // \brief Handle a pragma that appends to Linker Options.  Currently
+     // this only exists to support Microsoft's #pragma comment(linker,
+     // "/foo").
+     void HandleLinkerOptionPragma(llvm::StringRef Opts) override {
+       Builder->AppendLinkerOptions(Opts);
+     }
+
+     // HandleLinkerOptionPragma
+     // ASTConsumer override:
+     // \brief Handle a pragma that emits a mismatch identifier and value to
+     // the object file for the linker to work with.  Currently, this only
+     // exists to support Microsoft's #pragma detect_mismatch.
+     virtual void HandleDetectMismatch(llvm::StringRef Name,
+                                               llvm::StringRef Value) LLVM_CXX_OVERRIDE {
+       Builder->AddDetectMismatch(Name, Value);
+     }
+
+     // ASTConsumer override:
+     // \brief Handle a dependent library created by a pragma in the source.
+     /// Currently this only exists to support Microsoft's
+     /// #pragma comment(lib, "/foo").
+     virtual void HandleDependentLibrary(llvm::StringRef Lib) LLVM_CXX_OVERRIDE {
+       Builder->AddDependentLib(Lib);
+     }
+
+    // undefine macros we created to help with ModuleBuilder
+#undef Ctx
+#undef Diags
+#undef Builder
+#undef CodeGenOpts
+
 };
 
 
@@ -716,11 +919,13 @@ void setupClang(GenInfo* info, std::string mainFile)
     // Make sure we include clang's internal header dir
 #if HAVE_LLVM_VER >= 34
     SmallString<128> P;
+    SmallString<128> P2; // avoids a valgrind overlapping memcpy
+
     P = clangexe;
     // Remove /clang from foo/bin/clang
-    P = sys::path::parent_path(P);
+    P2 = sys::path::parent_path(P);
     // Remove /bin   from foo/bin
-    P = sys::path::parent_path(P);
+    P = sys::path::parent_path(P2);
 
     if( ! P.equals("") ) {
       // Get foo/lib/clang/<version>/
@@ -809,14 +1014,17 @@ void prepareCodegenLLVM()
 {
   GenInfo *info = gGenInfo;
 
-  FunctionPassManager *fpm = new FunctionPassManager(info->module);
+  LEGACY_FUNCTION_PASS_MANAGER *fpm = new LEGACY_FUNCTION_PASS_MANAGER(info->module);
 
   PassManagerBuilder PMBuilder;
 
   // Set up the optimizer pipeline.
   // Start with registering info about how the
   // target lays out data structures.
-#if HAVE_LLVM_VER >= 36
+#if HAVE_LLVM_VER >= 37
+  // We already set the data layout in setupClangContext
+  // don't need to do anything else.
+#elif HAVE_LLVM_VER >= 36
   // We already set the data layout in setupClangContext
   fpm->add(new DataLayoutPass());
 #elif HAVE_LLVM_VER >= 35
@@ -894,11 +1102,11 @@ void runClang(const char* just_parse_filename) {
 
   std::string readargsfrom;
 
-  if( just_parse_filename ) {
+  if( !llvmCodegen && just_parse_filename ) {
     // We're handling an extern block and not using the LLVM backend.
-    // Don't change CHPL_TARGET_COMPILER or ask for any compiler-specific
-    // C flags. Just get the neccesary includes and defines.
-    readargsfrom = compileline + " --llvm-install-dir"
+    // Don't ask for any compiler-specific C flags.
+    readargsfrom = compileline + " --llvm"
+                                 " --llvm-install-dir"
                                  " --clang-sysroot-arguments"
                                  " --includes-and-defines";
   } else {
@@ -1127,7 +1335,7 @@ void cleanupExternC(void) {
   }
 }
 
-Function* getFunctionLLVM(const char* name)
+llvm::Function* getFunctionLLVM(const char* name)
 {
   GenInfo* info = gGenInfo;
   Function* fn = info->module->getFunction(name);
@@ -1496,7 +1704,8 @@ bool isBuiltinExternCFunction(const char* cname)
 }
 
 static
-void addAggregateGlobalOps(const PassManagerBuilder &Builder, PassManagerBase &PM) {
+void addAggregateGlobalOps(const PassManagerBuilder &Builder,
+    LEGACY_PASS_MANAGER &PM) {
   GenInfo* info = gGenInfo;
   if( fLLVMWideOpt ) {
     PM.add(createAggregateGlobalOpsOptPass(info->globalToWideInfo.globalSpace));
@@ -1504,7 +1713,8 @@ void addAggregateGlobalOps(const PassManagerBuilder &Builder, PassManagerBase &P
 }
 
 static
-void addGlobalToWide(const PassManagerBuilder &Builder, PassManagerBase &PM) {
+void addGlobalToWide(const PassManagerBuilder &Builder,
+    LEGACY_PASS_MANAGER &PM) {
   GenInfo* info = gGenInfo;
   if( fLLVMWideOpt ) {
     PM.add(createGlobalToWide(&info->globalToWideInfo, info->targetLayout));
@@ -1584,7 +1794,7 @@ void setupForGlobalToWide(void) {
   }
   ginfo->builder->CreateRet(ret);
 
-#if HAVE_LLVM_VERS >= 35
+#if HAVE_LLVM_VER >= 35
   llvm::verifyFunction(*fn, &errs());
 #endif
 
@@ -1705,7 +1915,7 @@ void makeBinaryLLVM(void) {
   // Start linker options with C args
   // This is important to get e.g. -O3 -march=native
   // since with LLVM we are doing link-time optimization.
-  // We know it's OK to inclued -I (e.g.) since we're calling
+  // We know it's OK to include -I (e.g.) since we're calling
   // clang++ to link so that it can optimize the .bc files.
   options = cargs;
 
@@ -1730,10 +1940,9 @@ void makeBinaryLLVM(void) {
   codegen_makefile(&mainfile, &tmpbinname, true);
   INT_ASSERT(tmpbinname);
 
-  // Run linker... we always use clang++ since some relevant libraries
-  //  (like tcmalloc, GASNet, etc) are actually written with C++
-  //  and need C++ support. With the C backend, this switcheroo is
-  //  accomplished in the Makefiles somewhere....
+  // Run the linker. We always use clang++ because some third-party
+  // libraries are written in C++. With the C backend, this switcheroo
+  // is accomplished in the Makefiles somewhere
   std::string command = clangInstall + "/bin/clang++ " + options + " " +
                         moduleFilename + " " + maino +
                         " -o " + tmpbinname;

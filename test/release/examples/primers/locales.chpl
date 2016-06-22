@@ -2,7 +2,7 @@
  * Locales primer
  *
  * This example showcases Chapel's locale types.  To run this example
- * using multiple locales set up your envionment as described in
+ * using multiple locales set up your environment as described in
  * multilocale.rst and execute it using the "-nl #" flag to specify
  * the number of locales.  For example, to run on 2 locales, run
  * "./a.out -nl 2".
@@ -107,7 +107,7 @@ writeln();
 // number of other queries about their properties.  For example:
 //
 //   locale.name     : returns a string indicating the locale's name
-//   locale.numCores : returns the number of processor cores on the locale
+//   locale.numPUs() : returns the number of processor cores on the locale
 //   locale.physicalMemory() : returns the amount of memory on the locale
 //   locale.maxTaskPar : returns the likely maximum parallelism available
 //                       on the locale
@@ -120,7 +120,7 @@ if printLocaleInfo then
     on loc {
       writeln("locale #", here.id, "...");
       writeln("  ...is named: ", here.name);
-      writeln("  ...has ", here.numCores, " processor cores");
+      writeln("  ...has ", here.numPUs(), " processor cores");
       writeln("  ...has ", here.physicalMemory(unit=MemUnits.GB, retType=real), 
               " GB of memory");
       writeln("  ...has ", here.maxTaskPar, " maximum parallelism");
@@ -184,12 +184,15 @@ writeln();
 
 {
   var x: int = 2;
+
   on Locales[1 % numLocales] {
     var y: int = 3;
+
     on x do
-      writeln("Using a data-driven on-clause, I'm now executing on locale ", 
+      writeln("Using a data-driven on-clause, I'm now executing on locale ",
               here.id);
   }
+
   writeln();
 }
 
@@ -225,12 +228,16 @@ class Node {
 // the next locale.  That way, our execution of 'new' will create
 // the new object on that "next" locale.
 //
-var head = new Node(0);
+var head    = new Node(0);
+
+
+
 var current = head;
+
 for i in 1..numLocales-1 do
   on Locales[i] {
     current.next = new Node(i);
-    current = current.next;
+    current      = current.next;
   }
 
 //
@@ -240,10 +247,12 @@ for i in 1..numLocales-1 do
 // memory as necessary.
 //
 current = head;
+
 while current {
   writeln("node with data = ", current.data, " on locale ", current.locale.id);
   current = current.next;
 }
+
 writeln();
 
 //
@@ -252,6 +261,7 @@ writeln();
 // variables, resolve to the locale of the object, not the reference.
 //
 current = head;
+
 while current {
   on current {
     writeln("node with data = ", current.data, " on locale ", here.id);
@@ -259,7 +269,23 @@ while current {
   }
 }
 
+
+
+
+current = head;
+
+while current {
+  on current {
+    var ptr = current;
+
+    current = current.next;
+
+    delete ptr;
+  }
+}
+
 //
 // For more information about Locales, refer to the Locales chapter of
 // the language spec.
 //
+

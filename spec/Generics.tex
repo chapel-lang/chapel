@@ -122,7 +122,7 @@ proc fillTuple(param p: int, x) {
 \begin{chapelpost}
 var x = fillTuple(3, 3.14);
 writeln(x);
-writeln(typeToString(x.type));
+writeln(x.type:string);
 \end{chapelpost}
 \begin{chapeloutput}
 (3.14, 3.14, 3.14)
@@ -157,7 +157,7 @@ proc fillTuple(param p: int, x: ?t) {
 \begin{chapelpost}
 var x = fillTuple(3, 3.14);
 writeln(x);
-writeln(typeToString(x.type));
+writeln(x.type:string);
 \end{chapelpost}
 \begin{chapeloutput}
 (3.14, 3.14, 3.14)
@@ -469,7 +469,7 @@ class Node {
 var n: Node(real) = new Node(real, 3.14);
 writeln(n.data);
 writeln(n.next);
-writeln(typeToString(n.next.type));
+writeln(n.next.type:string);
 delete n;
 \end{chapelpost}
 \begin{chapeloutput}
@@ -582,6 +582,8 @@ list.next = new Node(2);
 \begin{chapelpost}
 writeln(list.data);
 writeln(list.next.data);
+delete list.next;
+delete list;
 \end{chapelpost}
 \begin{chapeloutput}
 1
@@ -718,14 +720,22 @@ var g2 = new MyGenericClass(int, "this is g2", 3.3, 333, 3333,
                             real, 2, 222, 222.2, 22);
 \end{chapel}
 \begin{chapelpost}
+writeln(g1.p1);
+writeln(g1.p5);
 writeln(g1);
+writeln(g2.p1);
+writeln(g2.p5);
 writeln(g2);
 delete g1;
 delete g2;
 \end{chapelpost}
 \begin{chapeloutput}
-{p1 = 1, c1 = 11, v1 = 111, x1 = 0, p5 = a string, c5 = 5.5, v5 = 555, x5 = 0.0}
-{p1 = 2, c1 = 222, v1 = 222.2, x1 = 0.0, p5 = this is g2, c5 = 5.5, v5 = 555, x5 = 0}
+1
+a string
+{c1 = 11, v1 = 111, x1 = 0, c5 = 5.5, v5 = 555, x5 = 0.0}
+2
+this is g2
+{c1 = 222, v1 = 222.2, x1 = 0.0, c5 = 5.5, v5 = 555, x5 = 0}
 \end{chapeloutput}
 The arguments \chpl{t1}, \chpl{p1}, \chpl{c1}, and \chpl{v1} are
 required in all constructors for \chpl{MyGenericClass}. They can appear
@@ -796,14 +806,6 @@ program from which the function containing the call is called.
 Compilation halts if a \chpl{compilerError} is encountered whereas it
 will continue after encountering a \chpl{compilerWarning}.
 
-\begin{craychapel}
-Note that when a function with a \chpl{ref} return intent is called in a
-context where the implicit \chpl{setter} argument is true or false, both
-versions of the function are resolved by the compiler.  Consequently, the
-\chpl{setter} argument cannot be effectively used to guard a compiler
-diagnostic statements.
-\end{craychapel}
-
 \begin{chapelexample}{compilerDiagnostics.chpl}
 The following code shows an example of using user-defined compiler
 diagnostics to generate warnings and errors:
@@ -811,7 +813,7 @@ diagnostics to generate warnings and errors:
 proc foo(x, y) {
   if (x.type != y.type) then
     compilerError("foo() called with non-matching types: ", 
-                  typeToString(x.type), " != ", typeToString(y.type));
+                  x.type:string, " != ", y.type:string);
   writeln("In 2-argument foo...");
 }
 

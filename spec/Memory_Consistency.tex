@@ -10,9 +10,16 @@ Sequential consistency (SC) means that all Chapel tasks agree on the
 interleaving of memory operations and this interleaving results in an
 order is consistent with the order of operations in the program source
 code.  \emph{Conflicting memory operations}, i.e., operations to the
-same location and one of which is a write, form a data race if they
-are from different Chapel tasks and can be executed concurrently.  Any
-Chapel program with a data race is not a valid program, and an
+same variable, or memory location, and one of which is a write, form a data race if they
+are from different Chapel tasks and can be executed concurrently.
+Accesses to the same variable from different tasks can result from
+the tasks referencing the same variable directly -- or indirectly
+via aliases. Aliases arise, for example, when using \chpl{ref} variables,
+argument intents, return intents, task intents and forall intents.
+% TODO: add to the above: 'const ref' variables/intents and
+% 'ref'/'const ref' fields, once we settle on their semantics.
+
+Any Chapel program with a data race is not a valid program, and an
 implementation cannot be relied upon to produce consistent behavior.
 Valid Chapel programs will use synchronization constructs such
 as \emph{sync}, \emph{single}, or \emph{atomic} variables or
@@ -218,7 +225,7 @@ be implemented in terms of \textit{load}, \textit{store}, and
 \label{memory_order}
 
 The memory order $<_m$ of SC atomic operations in a given task
-repsects program order as follows:
+respects program order as follows:
 
 \begin{itemize}
   \item If $A_{sc}(a)<_pA_{sc}(b)$ then $A_{sc}(a)<_mA_{sc}(b)$
@@ -458,7 +465,7 @@ preserve sequential program behavior:
 %% \end{itemize}
 
 %% \subsection{Mapping Chapel concepts to the C++11 memory model}
-%% sungeun: this subsection moved to the next section editted but
+%% sungeun: this subsection moved to the next section edited but
 %% comment out for use elsewhere
 %%
 
@@ -529,7 +536,7 @@ the memory order types.
 
 %% It is just as unreasonable to synchronize tasks with a non-atomic variable
 %% as it is to synchronize them with a \chpl{memory\_order\_relaxed} atomic
-%% variable. Both of these are disasterous for program correctness and should
+%% variable. Both of these are disastrous for program correctness and should
 %% be avoided. Note that advanced users can combine
 %% \chpl{memory\_order\_relaxed} with fences to synchronize tasks.
 
@@ -721,7 +728,7 @@ for i in 1..n {
 %% \begin{itemize}
 
 %%  \item The load and store operations cannot be reordered across SC atomic
-%%  operations (see \ref{loads_stores_ordererd_with_atomics}).
+%%  operations (see \ref{loads_stores_ordered_with_atomics}).
 
 %%  \item Concurrent access by at least two tasks to the same memory location,
 %%  when at least one of the accesses is a store, is a race condition. In order to
@@ -741,13 +748,13 @@ for i in 1..n {
 %% is a store, and it is not already constrained by the SC atomic operations, then
 %% there is a race condition.
 
-%(Corrolary 1: LLVM optimizations and C program optimizations are OK because C programs cannot reorder SC atomic ops)
-%(Corralary 2: Cache is OK because:
+%(Corollary 1: LLVM optimizations and C program optimizations are OK because C programs cannot reorder SC atomic ops)
+%(Corollary 2: Cache is OK because:
 % - any communication not mediated by atomics constitutes a data race
 % - use of SC atomics causes cache flush/invalidate)
 
 %Adve phd thesis
-%Scheurich and Dubios ScD87 and Sch89 - sufficient condition for sequential consistency.
+%Scheurich and Dubois ScD87 and Sch89 - sufficient condition for sequential consistency.
 %Collier proved .... writes in same order equivalent to atomically... thus system ... is sequential consistenc. Col84-92 and DuS90.
 %LHH91 also do it. All writes are seen in the same order by all processors -> sequentially consistent.
 %\url{http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.217.8176&rep=rep1&type=pdf}: An execution is consistent with respect to a consistency model... and these 3 invariants are sufficient to guarantee memory consistency defined in this way: Uniprocessor Ordering, Allowable Reordering, and Cache Coherence.
@@ -757,7 +764,7 @@ for i in 1..n {
 %  - Every processor issues memory ops in program order
 %  - Processor must wait for store to complete before issuing next memory operation
 %  - After load, issuing proc waits for load to complete, and store that produced value to complete before issuing next op
-%Scheurich Dubois and Brgiss 1988 Synchronization, Coherence, and Event Ordering in Multiprocessors.
+%Scheurich Dubois and Briggs 1988 Synchronization, Coherence, and Event Ordering in Multiprocessors.
 %\url{ftp://ftp.cs.wisc.edu/markhill/Papers/icpp90_seqcon.pdf} sufficient conditions for SC including the above.
 %\url{http://www.cs.berkeley.edu/~kubitron/cs252/lectures/lec20-sharedmemory3.pdf} has a picture of "exclusion zone" and argument for why processor atomics -> sequential consistency.
 
@@ -865,7 +872,7 @@ cobegin {
 
 
 \begin{chapelexample}{atomicWaitFor.chpl}
-The main drawpack of the above example is that it prevents the thread
+The main drawback of the above example is that it prevents the thread
 executing the spin wait from doing other useful work. Atomic variables
 include a waitFor method that will block the calling thread until a read
 of the atomic value matches a particular value. In contrast to the spin

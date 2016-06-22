@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -198,8 +198,14 @@
   #define DEBUG_PRINTF(...)
 #endif
 
-static void debug(Symbol* sym, const char* format, ...) {
+static void debug(BaseAST* base, const char* format, ...) {
 #ifdef PRINT_WIDE_ANALYSIS
+  Symbol* sym = toSymbol(base);
+  if (sym == NULL) {
+    sym = toSymExpr(base)->var;
+  }
+  INT_ASSERT(sym != NULL);
+
   DEBUG_PRINTF("%s (%d) in %s : ", sym->cname, sym->id, sym->getModule()->cname);
   va_list argptr;
   va_start(argptr, format);
@@ -223,6 +229,15 @@ static std::map<FnSymbol*, bool> downstreamFromOn;
 
 static std::set<Symbol*> fieldsToMakeWide;
 
+// A map from a symbol to the BaseASTs that caused it to be wide
+static std::map<Symbol*, std::set<BaseAST*> > causes;
+
+// set of calls that return a wide pointer and need to be analyzed
+static std::set<CallExpr*> returnCalls;
+
+// cache to store results of isCausedByArgs
+static std::map<FnSymbol*, std::set<Symbol*> > argsCache;
+
 // Various mini-passes to manipulate the AST into something functional
 static void convertNilToObject();
 static void buildWideClasses();
@@ -235,6 +250,40 @@ static void derefWideRefsToWideClasses();
 static void widenGetPrivClass();
 static void moveAddressSourcesToTemp();
 static void fixAST();
+static void handleIsWidePointer();
+
+static bool isLocalBlock(Expr* stmt) {
+  BlockStmt* block = toBlockStmt(stmt);
+  return block &&
+         block->parentSymbol &&
+         block->isLoopStmt() == false &&
+         block->blockInfoGet() &&
+         block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL);
+}
+
+// Top-level wrapper
+static bool isCausedByArgs(FnSymbol* fn,
+                           Symbol* sym,
+                           std::set<Symbol*>& sourceArgs,
+                           bool debug = false);
+
+// wraps recursive call and passes in its own 'visited' set.
+static bool isCausedByArgs(FnSymbol* fn,
+                           Symbol* sym,
+                           std::set<Symbol*>& visited,
+                           std::set<Symbol*>& sourceArgs,
+                           bool debug = false);
+
+// Does most of the work, called recursively
+static bool recurseCausedByArgs(FnSymbol* fn,
+                                Symbol* sym,
+                                std::set<Symbol*>& visited,
+                                std::set<Symbol*>& sourceArgs);
+
+//
+// Returns true if the call returns a wide pointer
+//
+static bool shouldRetWide(CallExpr* call);
 
 //
 // Miscellaneous utility functions to help manage the AST
@@ -383,8 +432,76 @@ static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
   }
 }
 
+static void cause_helper(BaseAST* target, int level, std::set<Symbol*>& visited) {
+#ifdef PRINT_WIDE_ANALYSIS
+  for (int i = 0; i < level; i++) {
+    DEBUG_PRINTF(" ");
+  }
+  DEBUG_PRINTF("L-%d: ", level);
 
-static void setWide(Symbol* sym) {
+  if (isLcnSymbol(target) || isSymExpr(target)) {
+    Symbol* sym = toSymbol(target);
+    if (sym == NULL) {
+      sym = toSymExpr(target)->var;
+    }
+
+    std::set<BaseAST*> parents = causes[sym];
+    if (parents.size() == 0) {
+      DEBUG_PRINTF("ROOT: ");
+    }
+
+    DEBUG_PRINTF("%lu: ", parents.size());
+    bool cycle = visited.find(sym) != visited.end();
+    if (cycle) {
+      DEBUG_PRINTF("CYCLE: ");
+    }
+
+    if (isArgSymbol(sym)) {
+      FnSymbol* fn = toFnSymbol(sym->defPoint->parentSymbol);
+      DEBUG_PRINTF("ARG: %s (%d) in FN %s (%d) in %s\n", sym->cname, sym->id, fn->cname, fn->id, fn->getModule()->cname);
+    } else {
+      DEBUG_PRINTF("%s (%d) from %s\n", sym->cname, sym->id, sym->defPoint->getModule()->cname);
+    }
+
+    if (cycle) return;
+
+    visited.insert(sym);
+
+    for_set(BaseAST, base, parents) {
+      cause_helper(base, level + 1, visited);
+    }
+
+    visited.erase(sym);
+  } else {
+    if (FnSymbol* fn = toFnSymbol(target)) {
+      DEBUG_PRINTF("FN %s (%d) in %s\n", fn->cname, fn->id, fn->getModule()->cname);
+    }
+    else if (CallExpr* call = toCallExpr(target)) {
+      DEBUG_PRINTF("CALL %d in %s\n", call->id, call->getModule()->cname);
+    }
+    else if (ModuleSymbol* mod = toModuleSymbol(target)) {
+      DEBUG_PRINTF("MODULE %s\n", mod->cname);
+    }
+    else {
+      DEBUG_PRINTF("UNHANDLED CAUSE\n");
+    }
+  }
+
+#endif
+}
+
+static void printCauses(Symbol* sym) {
+  //quiet unused function warning
+  if (sym == NULL) return;
+
+  DEBUG_PRINTF("Printing causes for %s (%d)\n", sym->cname, sym->id);
+
+  std::set<Symbol*> visited;
+  cause_helper(sym, 0, visited);
+}
+
+
+static void setWide(BaseAST* cause, Symbol* sym) {
   if (!typeCanBeWide(sym)) return;
   if (isArgSymbol(sym) && sym->defPoint->parentSymbol->hasFlag(FLAG_LOCAL_ARGS)) return;
   if (!isFullyWide(sym)) {
@@ -393,11 +510,15 @@ static void setWide(Symbol* sym) {
   } else {
     DEBUG_PRINTF("%s (%d) is already wide, will not put in queue\n", sym->cname, sym->id);
   }
+
+  causes[sym].insert(cause);
 }
-static void setWide(SymExpr* se) { setWide(se->var); }
+static void setWide(BaseAST* cause, SymExpr* se) {
+  setWide(cause, se->var);
+}
 
 
-static void setValWide(Symbol* sym) {
+static void setValWide(BaseAST* cause, Symbol* sym) {
   Type* valType = sym->type->getValType();
   if (!typeCanBeWide(sym)) return;
   if (!isClass(valType)) return;
@@ -408,39 +529,43 @@ static void setValWide(Symbol* sym) {
   } else {
     DEBUG_PRINTF("%s (%d) already has a wide _val, won't put in queue\n", sym->cname, sym->id);
   }
+
+  causes[sym].insert(cause);
 }
-static void setValWide(SymExpr* se) { setValWide(se->var); }
+static void setValWide(BaseAST* cause, SymExpr* se) {
+  setValWide(cause, se->var);
+}
 
 
 //
 // Often we need to sync the wideness of two references.
 // Here, the wideness of 'src' will be used to widen 'dest'.
 //
-static void widenRef(Symbol* src, Symbol* dest) {
+static void widenRef(BaseAST* src, Symbol* dest) {
   INT_ASSERT(isRef(src) && isRef(dest));
 
   if (isFullyWide(src)) {
     debug(src, "Ref %s (%d) must be be wide\n", dest->cname, dest->id);
-    setWide(dest);
+    setWide(src, dest);
   }
   else if (valIsWideClass(src)) {
     debug(src, "Ref %s (%d) must have a wide _val\n", dest->cname, dest->id);
-    setValWide(dest);
+    setValWide(src, dest);
   }
 }
 
 // Abstract special casing for refs away if we just want an easy
 // way to say that two variables need to have the same wideness.
-static void matchWide(Symbol* src, Symbol* dest) {
+static void matchWide(BaseAST* src, Symbol* dest) {
   if (isRef(src) && isRef(dest)) {
     widenRef(src, dest);
   } else {
-    setWide(dest);
+    setWide(src, dest);
   }
 }
 
 
-static void widenTupleField(CallExpr* tupleCall, Symbol* wideThing) {
+static void widenTupleField(CallExpr* tupleCall, SymExpr* wideThing) {
   Symbol* field = getSvecSymbol(tupleCall);
   if (field) {
     debug(wideThing, "tuple field %s (%d) must be wide\n", field->cname, field->id);
@@ -463,26 +588,335 @@ static void widenTupleField(CallExpr* tupleCall, Symbol* wideThing) {
   }
 }
 
-
-//
-// End of utility functions
-//
-
-
 //
 // Returns true if the symbol is used within a function that might be remote
 //
 // Only really used for module-scope variables.
 //
-static bool usedInOn(Symbol* sym) {
+static FnSymbol* usedInOn(Symbol* sym) {
   for_defs(def, defMap, sym) {
-    if (downstreamFromOn[toFnSymbol(def->parentSymbol)]) return true;
+    FnSymbol* fn = toFnSymbol(def->parentSymbol);
+    if (downstreamFromOn[fn]) return fn;
   }
+
   for_uses(use, useMap, sym) {
-    if (downstreamFromOn[toFnSymbol(use->parentSymbol)]) return true;
+    FnSymbol* fn = toFnSymbol(use->parentSymbol);
+    if (downstreamFromOn[fn]) return fn;
   }
-  return false;
+
+  return NULL;
 }
+
+
+//
+// End of utility functions
+//
+
+//
+// Functions used for wide-return optimization
+//
+
+//
+// Returns TRUE if the args of `fn` are the ONLY reason that `sym` is a
+// wide pointer.
+//
+// The arguments that cause 'sym' to be a wide pointer will be returned through
+// the 'sourceArgs' formal
+//
+// The 'visited' arg is used to track symbols already visited by this recursive
+// function, and is used to avoid a cycle.
+//
+static bool recurseCausedByArgs(FnSymbol* fn,
+                                Symbol* sym,
+                                std::set<Symbol*>& visited,
+                                std::set<Symbol*>& sourceArgs) {
+
+  // return TRUE if `sym` is a class and is an arg of `fn`
+  if (isObj(sym) &&
+      isArgSymbol(sym) &&
+      sym->defPoint->parentSymbol == fn) {
+    sourceArgs.insert(sym);
+    return true;
+  }
+
+  // A cycle was found. This doesn't say anything about the root cause of
+  // `sym`, so we'll just return TRUE. There should be some other path that
+  // causes `sym` to be wide.
+  if (visited.find(sym) != visited.end()) {
+    return true;
+  }
+  visited.insert(sym);
+
+  // Zero causes implies that it was added during addKnownWides, and is a root
+  // cause. Return FALSE.
+  std::set<BaseAST*> parents = causes[sym];
+  if (parents.size() == 0) {
+    return false;
+  }
+
+  // Check to see if our parent causes are influenced ONLY by fn's args
+  for_set(BaseAST, base, parents) {
+    // Only interested in 'base' if it is a LcnSymbol or SymExpr
+    Symbol* cause = NULL;
+    if (isSymExpr(base)) {
+      cause = toSymExpr(base)->var;
+    } else if (isLcnSymbol(base)) {
+      // Currently the case if it's a _retArg
+      cause = toSymbol(base);
+    } else {
+      return false;
+    }
+
+    //
+    // Look for a call like this:
+    //   sym = foo(x,y,z);
+    //
+    // Where foo looks like this:
+    //
+    //   proc foo(x,y,z) {
+    //     ...
+    //     return cause;
+    //   }
+    //
+    // If `foo` is the kind of function that returns a wide pointer only if the
+    // arguments are wide, we can return TRUE if the actuals in the call are
+    // caused by the args of `fn`.
+    //
+    // If we didn't try and detect this case, we'd see that the args of `foo`
+    // are caused by wide pointers at a lot of different call sites and most
+    // likely return FALSE when we could have returned TRUE.
+    //
+    // Do not enter this branch if `sym` is a ref.
+    //
+    // TODO: handle recursive _retArg cases
+    FnSymbol* otherFn = toFnSymbol(cause->defPoint->parentSymbol);
+    if (otherFn &&
+        otherFn != sym->defPoint->parentSymbol && // exposed by SSCA2 perfcompopts
+        !isRef(cause) &&
+        cause == otherFn->getReturnSymbol() &&
+        !otherFn->hasFlag(FLAG_VIRTUAL) &&
+        !isModuleSymbol(sym->defPoint->parentSymbol)) {
+
+      //
+      // Is `cause` a wide pointer because of the args for `otherFn`?
+      //
+      // TODO: should we really pass `visited` through?
+      std::set<Symbol*> otherArgs;
+      if (!isCausedByArgs(otherFn, cause, visited, otherArgs)) return false;
+
+      // find the statement `sym = otherFn(...)`
+      // `sym` can have multiple defs if it's the return symbol and there are
+      // multiple return statements in the function.
+      //
+      // TODO: could be quicker if we knew that `base` was a SymExpr
+      CallExpr* curCall = NULL;
+      for_defs(def, defMap, sym) {
+        CallExpr* parent = toCallExpr(def->parentExpr);
+        INT_ASSERT(parent->isPrimitive(PRIM_MOVE) || parent->isPrimitive(PRIM_ASSIGN));
+        CallExpr* RHS = toCallExpr(parent->get(2));
+        if (RHS->isResolved() == otherFn) {
+          curCall = RHS;
+          break;
+        }
+      }
+      INT_ASSERT(curCall != NULL);
+
+      //
+      // Are these actuals wide pointers because of the args of `fn` ? If not,
+      // return FALSE.
+      //
+      for_set(Symbol, arg, otherArgs) {
+        SymExpr* act = toSymExpr(formal_to_actual(curCall, arg));
+        if (!recurseCausedByArgs(fn, act->var, visited, sourceArgs)) return false;
+      }
+
+    } else {
+      //
+      // Default case, handles something as simple as:
+      //   MOVE sym, cause
+      //
+      if (!recurseCausedByArgs(fn, cause, visited, sourceArgs)) return false;
+    }
+  }
+
+  visited.erase(sym);
+
+  // `sym` is a wide pointer because of the args of `fn`
+  return true;
+}
+
+//
+// Top-level wrapper if you want to avoid creating your own `visited`
+//
+static bool isCausedByArgs(FnSymbol* fn,
+                         Symbol* sym,
+                         std::set<Symbol*>& sourceArgs,
+                         bool debug) {
+  std::set<Symbol*> visited;
+  return isCausedByArgs(fn, sym, visited, sourceArgs, debug);
+}
+
+//
+// Wraps recurseCausedByArgs
+//
+// Returns TRUE if the args of `fn` are the ONLY reason that `sym` is a wide
+// pointer.
+//
+// Will return FALSE if `fn` is a virtual function.
+//
+// `sym` must be either the return symbol of `fn`, or the _retArg for `fn`
+//
+static bool isCausedByArgs(FnSymbol* fn,
+                         Symbol* sym,
+                         std::set<Symbol*>& visited,
+                         std::set<Symbol*>& sourceArgs,
+                         bool debug) {
+  INT_ASSERT(sourceArgs.size() == 0);
+  INT_ASSERT(sym == fn->getReturnSymbol() ||
+             (sym->hasFlag(FLAG_RETARG) && sym->defPoint->parentSymbol == fn));
+  if (fn->hasFlag(FLAG_VIRTUAL)) {
+    return false;
+  }
+
+  // Check to see if we have some results for this fn/sym already
+  if (argsCache.count(fn) != 0) {
+    DEBUG_PRINTF("Using args cache for %s (%d)\n", fn->cname, fn->id);
+    std::set<Symbol*> stored = argsCache[fn];
+    sourceArgs.insert(stored.begin(), stored.end());
+    return sourceArgs.size() > 0;
+  }
+
+  // Assert that the only causes for formals are the corresponding actuals
+  for_formals(formal, fn) {
+    if (isRef(formal)) {
+      continue;
+    }
+
+    std::set<BaseAST*> parents = causes[formal];
+    for_set(BaseAST, base, parents) {
+      SymExpr* se = toSymExpr(base);
+      INT_ASSERT(se);
+      ArgSymbol* arg = actual_to_formal(se);
+      INT_ASSERT(arg == formal);
+    }
+  }
+
+  if (debug) {
+    printCauses(sym);
+  }
+
+  bool success = recurseCausedByArgs(fn ,sym, visited, sourceArgs);
+  if (!success) {
+    sourceArgs.clear(); // TODO: needed?
+  } else {
+    if (sym->hasFlag(FLAG_RETARG)) {
+      sourceArgs.erase(sym);
+    }
+  }
+
+  DEBUG_PRINTF("Caching result for %s (%d)\n", fn->cname, fn->id);
+  argsCache[fn] = sourceArgs;
+
+  return success;
+}
+
+//
+// Returns TRUE if the returned symbol should be a wide pointer
+//
+static bool shouldRetWide(CallExpr* call) {
+  FnSymbol* fn = call->isResolved();
+  INT_ASSERT(fn != NULL);
+
+  Symbol* ret = NULL;
+
+  if (fn->hasFlag(FLAG_FN_RETARG)) {
+    ret = toDefExpr(fn->formals.tail)->sym;
+    INT_ASSERT(ret->hasFlag(FLAG_RETARG));
+  } else {
+    ret = fn->getReturnSymbol();
+  }
+
+  std::set<Symbol*> sourceArgs;
+  if (isCausedByArgs(fn, ret, sourceArgs)) {
+    for_set(Symbol, arg, sourceArgs) {
+      // If the corresponding actual is wide, the returned var must be wide
+      INT_ASSERT(isArgSymbol(arg) && arg->defPoint->parentSymbol == fn);
+      if (!arg->hasFlag(FLAG_RETARG) && hasSomeWideness(formal_to_actual(call, arg))) {
+        // This actual causes the returned var to be wide
+        return true;
+      }
+    }
+    return false;
+  }
+  return hasSomeWideness(ret);
+}
+
+static void handleReturns() {
+  std::vector<CallExpr*> toRemove;
+
+  for_set(CallExpr, call, returnCalls) {
+    FnSymbol* fn = call->isResolved();
+    INT_ASSERT(fn);
+
+    if (shouldRetWide(call)) {
+      toRemove.push_back(call);
+      if (fn->hasFlag(FLAG_FN_RETARG)) {
+        Symbol* retarg = toDefExpr(fn->formals.tail)->sym;
+        INT_ASSERT(retarg->hasFlag(FLAG_RETARG));
+
+        SymExpr* actual = toSymExpr(formal_to_actual(call, retarg));
+        // TODO: Find SymExprs to use instead of a Symbol for the cause
+        setValWide(retarg, actual->var);
+      } else {
+        CallExpr* move = toCallExpr(call->parentExpr);
+        INT_ASSERT(move->isPrimitive(PRIM_MOVE) || move->isPrimitive(PRIM_ASSIGN));
+        SymExpr* LHS = toSymExpr(move->get(1));
+
+        // Get SymExpr in PRIM_RETURN to use as a cause
+        SymExpr* ret = NULL;
+        {
+          CallExpr* call = toCallExpr(fn->body->body.last());
+          INT_ASSERT(call->isPrimitive(PRIM_RETURN));
+          ret = toSymExpr(call->get(1));
+          INT_ASSERT(isObj(ret));
+        }
+
+        if (isRef(LHS)) {
+          setValWide(ret, LHS);
+        } else  {
+          setWide(ret, LHS);
+        }
+      }
+    }
+  }
+
+  // Do not keep track of calls that return wide. Going forward we only need to
+  // confirm that narrow returns are correct.
+  for_vector(CallExpr, rem, toRemove) {
+    returnCalls.erase(rem);
+  }
+
+  // Remove cache entries that allow the returned value to be narrow. This will
+  // cause those entries to be recalculated during the next propagation
+  // iteration. This is currently necessary because we don't know if something
+  // further up in the `causes` graph has changed.
+  //
+  // TODO: One could imagine using a reversed  `causes` graph to propagate some
+  // notion of 'freshness', but I'm not sure if that would be much faster.
+  for(std::map<FnSymbol*, std::set<Symbol*> >::iterator it = argsCache.begin();
+      it != argsCache.end();) {
+    if (it->second.size() > 0) {
+      DEBUG_PRINTF("Removing cache for %s (%d)\n", it->first->cname, it->first->id);
+      argsCache.erase(it++);
+    } else {
+      ++it;
+    }
+  }
+}
+
+//
+// End of functions used for wide-return optimization
+//
 
 
 //
@@ -639,14 +1073,14 @@ static bool fieldCanBeWide(Symbol* field) {
 // Widen all fields in the type 'parent'. If the field is a record, then
 // we will recursively widen the fields in that record.
 //
-static void widenSubAggregateTypes(Type* parent) {
+static void widenSubAggregateTypes(BaseAST* cause, Type* parent) {
   for_fields(fi, toAggregateType(parent)) {
     if (isRecord(fi->type)) {
-      widenSubAggregateTypes(fi->type);
+      widenSubAggregateTypes(cause, fi->type);
     } else {
       if (fieldCanBeWide(fi)) {
         DEBUG_PRINTF("Field %s (%d) is a nested record in an on_fn bundle, must be wide\n", fi->cname, fi->id);
-        setWide(fi);
+        setWide(cause, fi);
       }
     }
   }
@@ -658,7 +1092,7 @@ static void widenSubAggregateTypes(Type* parent) {
 //
 static void addKnownWides() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ON_BLOCK)) {
+    if (fn->hasFlag(FLAG_ON_BLOCK) && !fn->hasFlag(FLAG_LOCAL_ON)) {
       // Get the arg bundle type for an on-stmt. Testing against a name like
       // "_class_localson_fn" is NOT enough, because sometimes the name is
       // a bit more complicated. Recursive iterators may introduce this.
@@ -671,10 +1105,10 @@ static void addKnownWides() {
           // lose all locality information inside the on-stmt. This means that
           // such fields need to be wide. This may have to be done recursively
           // if such a field is a record itself.
-          widenSubAggregateTypes(fi->type);
+          widenSubAggregateTypes(fn, fi->type);
         } else {
           DEBUG_PRINTF("Field %s (%d) is in an on bundle, must be wide\n", fi->cname, fi->id);
-          setWide(fi);
+          setWide(fn, fi);
         }
       }
     }
@@ -688,9 +1122,9 @@ static void addKnownWides() {
     // needing to be wide.
     //
     if (isModuleSymbol(defParent) && !var->hasFlag(FLAG_LOCALE_PRIVATE)) {
-      if (usedInOn(var)) {
+      if (FnSymbol* fn = usedInOn(var)) {
         debug(var, "Module scope variable used in on-statement\n");
-        setWide(var);
+        setWide(fn, var);
       }
     }
   }
@@ -704,7 +1138,7 @@ static void addKnownWides() {
     forv_Vec(FnSymbol, indirectlyCalledFn, ftableVec) {
       if (fn == indirectlyCalledFn) {
         debug(arg, "called from ftableVec\n");
-        setWide(arg);
+        setWide(fn, arg);
       }
     }
 
@@ -712,7 +1146,7 @@ static void addKnownWides() {
       if (!isAlive(call)) continue;
       if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         debug(arg, "formal in virtual method call to fn %s (%d) must be wide\n", fn->cname, fn->id);
-        setWide(arg);
+        setWide(call, arg);
       }
     }
   }
@@ -720,7 +1154,7 @@ static void addKnownWides() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_VIRTUAL)) {
       debug(fn->getReturnSymbol(), "must be wide, is returned from virtual fn %s (%d)\n", fn->cname, fn->id);
-      setWide(fn->getReturnSymbol());
+      setWide(fn, fn->getReturnSymbol());
     }
   }
 
@@ -732,11 +1166,12 @@ static void addKnownWides() {
 
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
         if (rhs->isPrimitive(PRIM_ARRAY_GET) || rhs->isPrimitive(PRIM_ARRAY_GET_VALUE)) {
-          if (getElementType(rhs->get(1))->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+          SymExpr* cause = toSymExpr(rhs->get(1));
+          if (getElementType(cause)->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             if (isRef(lhs)) {
-              setValWide(lhs);
+              setValWide(cause, lhs);
             } else if (isObj(lhs)) {
-              setWide(lhs);
+              setWide(cause, lhs);
             }
           }
         }
@@ -748,7 +1183,7 @@ static void addKnownWides() {
       for_actuals(actual, call) {
         if (SymExpr* se = toSymExpr(actual)) {
           if (typeCanBeWide(se->var)) {
-            setWide(se->var);
+            setWide(call, se->var);
           }
         }
       }
@@ -771,11 +1206,17 @@ static void propagateVar(Symbol* sym) {
     FnSymbol* fn = toFnSymbol(sym->defPoint->parentSymbol);
     DEBUG_PRINTF("\tFixing types for arg %s (%d) in %s\n", sym->cname, sym->id, fn->cname);
     forv_Vec(CallExpr, call, *fn->calledBy) {
+      if (sym->hasFlag(FLAG_RETARG) && call->isResolved()) {
+        // Function is trying to return a wide pointer, add it to the list of
+        // calls to be processed.
+        returnCalls.insert(call);
+        continue;
+      }
       if (!isAlive(call)) DEBUG_PRINTF("\tFound dead call %d\n", call->id);
-     if (!call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+      if (!call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         SymExpr* actual = toSymExpr(formal_to_actual(call, sym));
         DEBUG_PRINTF("\tRef types have to match: %s (%d) in call %d\n", actual->var->cname, actual->var->id, call->id);
-        setValWide(actual->var);
+        setValWide(sym, actual->var);
       }
     }
   }
@@ -791,7 +1232,7 @@ static void propagateVar(Symbol* sym) {
             switch (call->primitive->tag) {
               case PRIM_ADDR_OF:
                 debug(sym, "_val of ref %s (%d) needs to be wide\n", lhs->cname, lhs->id);
-                setValWide(lhs);
+                setValWide(use, lhs);
                 break;
 
               case PRIM_ARRAY_GET:
@@ -806,9 +1247,8 @@ static void propagateVar(Symbol* sym) {
               case PRIM_GET_SVEC_MEMBER_VALUE:
               case PRIM_GET_REAL:
               case PRIM_GET_IMAG:
-              case PRIM_VIRTUAL_METHOD_CALL:
                 debug(sym, "Setting %s (%d) to wide\n", lhs->cname, lhs->id);
-                setWide(lhs);
+                setWide(use, lhs);
                 break;
               default:
                 debug(lhs, "Did not handle use in (move lhs, %s)\n", call->primitive->name);
@@ -827,11 +1267,11 @@ static void propagateVar(Symbol* sym) {
               if (!hasSomeWideness(lhs) && isRecord(lhs->type)) {
                 // This record's fields need to be wide to preserve locality
                 // information.
-                widenSubAggregateTypes(lhs->type);
+                widenSubAggregateTypes(use, lhs->type);
               } else {
                 SymExpr* field = toSymExpr(call->get(2));
                 if (isRef(field)) {
-                  setValWide(field);
+                  setValWide(use, field);
                 }
                 fieldsToMakeWide.insert(field->var);
               }
@@ -841,7 +1281,7 @@ static void propagateVar(Symbol* sym) {
               Symbol* field = getSvecSymbol(call);
               if (field) {
                 if (isRef(field)) {
-                  setValWide(field);
+                  setValWide(use, field);
                 }
                 fieldsToMakeWide.insert(field);
               } else {
@@ -849,10 +1289,18 @@ static void propagateVar(Symbol* sym) {
                 // play it safe and widen all of them.
                 for_fields(fi, toAggregateType(call->get(1)->getValType())) {
                   if (isRef(fi)) {
-                    setValWide(fi);
+                    setValWide(use, fi);
                   }
                   fieldsToMakeWide.insert(fi);
                 }
+              }
+            } else if (call->isPrimitive(PRIM_DEREF)) {
+              // loc_record = *(wide_ref_record);
+              // exposed by distributions/robust/arithmetic/modules/test_module_Sort.chpl
+              // when dereferencing a wide ref to a tuple, which had a narrow
+              // class element.
+              if (!hasSomeWideness(lhs) && isRecord(lhs->type)) {
+                widenSubAggregateTypes(use, lhs->type);
               }
             }
           }
@@ -866,7 +1314,7 @@ static void propagateVar(Symbol* sym) {
 
         if (isObj(lhs) && isObj(rhs)) {
           debug(sym, "Assigning from wide to narrow %s (%d)\n", lhs->cname, lhs->id);
-          setWide(lhs);
+          setWide(use, lhs);
         }
         else if (isRef(lhs) && isRef(rhs)) {
           // Here is a place where PRIM_MOVE and PRIM_ASSIGN diverge.
@@ -876,11 +1324,11 @@ static void propagateVar(Symbol* sym) {
           // RHS are copied into the object pointed to by the LHS.
           // Therefore, this clause applies only to PRIM_MOVE.
           if (call->isPrimitive(PRIM_MOVE))
-            widenRef(sym, lhs);
+            widenRef(use, lhs);
         }
         else if (isRef(lhs) && isObj(rhs)) {
           debug(sym, "_val of ref %s (%d) needs to be wide\n", lhs->cname, lhs->id);
-          setValWide(lhs);
+          setValWide(use, lhs);
         }
         else {
           DEBUG_PRINTF("Unhandled assign: %s = %s\n", lhs->type->symbol->cname, rhs->type->symbol->cname);
@@ -891,10 +1339,10 @@ static void propagateVar(Symbol* sym) {
         // with a remote value and should be wide.
         SymExpr* field = toSymExpr(call->get(2));
         debug(sym, "narrow field %s (%d) must be wide\n", field->var->cname, field->var->id);
-        matchWide(sym, field->var);
+        matchWide(use, field->var);
       }
       else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-        widenTupleField(call, sym);
+        widenTupleField(call, use);
       }
       else if (call->isPrimitive(PRIM_RETURN)) {
         FnSymbol* fn = toFnSymbol(call->parentSymbol);
@@ -903,20 +1351,29 @@ static void propagateVar(Symbol* sym) {
 
         forv_Vec(CallExpr*, call, *fn->calledBy) {
           if (!isAlive(call)) continue;
+
+          // TODO: handle return of _refs
+          if (isObj(sym) && call->isResolved() && isCallExpr(call->parentExpr)) {
+            // Returning a wide pointer, need to analyze the call to see if the
+            // destination can be narrow.
+            returnCalls.insert(call);
+            continue;
+          }
+
+          // TODO: This case handles virtual method calls, or the return of
+          // a _ref. Can we handle this better?
           if (CallExpr* parent = toCallExpr(call->parentExpr)) {
-            if (parent->isPrimitive(PRIM_MOVE) ||
-                parent->isPrimitive(PRIM_ASSIGN)) {
-              SymExpr* lhs = toSymExpr(parent->get(1));
-              DEBUG_PRINTF("Returning wide to %s (%d)\n", lhs->var->cname, lhs->var->id);
-              if (isObj(sym) && isRef(lhs)) {
-                setValWide(lhs);
-              }
-              else if (isObj(lhs) || isObj(sym)) {
-                setWide(lhs);
-              }
-              else if (isRef(sym) && isRef(lhs)) {
-                widenRef(sym, lhs->var);
-              }
+            INT_ASSERT(parent->isPrimitive(PRIM_MOVE) || parent->isPrimitive(PRIM_ASSIGN));
+            SymExpr* lhs = toSymExpr(parent->get(1));
+            DEBUG_PRINTF("Returning wide to %s (%d)\n", lhs->var->cname, lhs->var->id);
+            if (isObj(sym) && isRef(lhs)) {
+              setValWide(use, lhs);
+            }
+            else if (isObj(lhs) || isObj(sym)) {
+              setWide(use, lhs);
+            }
+            else if (isRef(sym) && isRef(lhs)) {
+              widenRef(use, lhs->var);
             }
           }
         }
@@ -924,7 +1381,7 @@ static void propagateVar(Symbol* sym) {
       else if (call->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER)) {
         if (use == call->get(2)) {
           debug(sym, "Setting shift base wide\n");
-          setWide(toSymExpr(call->get(1))->var);
+          setWide(use, toSymExpr(call->get(1))->var);
         }
       }
       else if (call->primitive) {
@@ -934,9 +1391,10 @@ static void propagateVar(Symbol* sym) {
         debug(sym, "passed to fn %s (%d)\n", fn->cname, fn->id);
 
         // TODO: Duplicate functions here.
+
         ArgSymbol* arg = actual_to_formal(use);
         debug(sym, "Default widening of arg %s (%d)\n", arg->cname, arg->id);
-        matchWide(sym, arg);
+        matchWide(use, arg);
       }
     }
   }
@@ -947,7 +1405,7 @@ static void propagateVar(Symbol* sym) {
       if (call->isResolved()) {
         debug(sym, "Widening def arg\n");
         ArgSymbol* arg = actual_to_formal(def);
-        matchWide(sym, arg);
+        matchWide(def, arg);
       }
       else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
@@ -958,20 +1416,20 @@ static void propagateVar(Symbol* sym) {
             //
             SymExpr* se = toSymExpr(rhs->get(1));
             debug(sym, "ref has a wide _val, src %s (%d) of addr_of must be wide\n", se->var->cname, se->var->id);
-            setWide(se);
+            setWide(def, se);
           }
           else if (isRef(sym)) {
             if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) || 
                 rhs->isPrimitive(PRIM_GET_MEMBER)) {
               SymExpr* field = toSymExpr(rhs->get(2));
               debug(sym, "widening field ref %s (%d)\n", field->var->cname, field->var->id);
-              matchWide(sym, field->var);
+              matchWide(def, field->var);
             }
             else if (rhs->isPrimitive(PRIM_GET_SVEC_MEMBER) || 
                      rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
-              widenTupleField(rhs, sym);
+              widenTupleField(rhs, def);
             }
-            else if (rhs->isResolved()) {
+            else if (rhs->isResolved() && isRef(rhs->isResolved()->getReturnSymbol())) {
               debug(sym, "return symbol must be wide\n");
               matchWide(sym, rhs->isResolved()->getReturnSymbol());
             }
@@ -980,7 +1438,7 @@ static void propagateVar(Symbol* sym) {
           // Exposed by: --baseline --inline
           if (SymExpr* rhs = toSymExpr(call->get(2))) {
             if (isRef(rhs)) {
-              widenRef(sym, rhs->var);
+              widenRef(def, rhs->var);
             }
           }
         }
@@ -1008,14 +1466,14 @@ static void propagateField(Symbol* sym) {
                 // Currently we have to keep a 'local field' wide for
                 // compatibility with some codegen stuff.
                 debug(sym, "field causes _val of %s (%d) to be wide\n", lhs->cname, lhs->id);
-                setValWide(lhs);
+                setValWide(use, lhs);
                 break;
 
               case PRIM_GET_MEMBER_VALUE:
               case PRIM_GET_SVEC_MEMBER_VALUE:
                 if (fIgnoreLocalClasses || !sym->hasFlag(FLAG_LOCAL_FIELD)) {
                   DEBUG_PRINTF("\t"); debug(lhs, "widened gmv\n");
-                  matchWide(sym, lhs);
+                  matchWide(use, lhs);
                 }
                 break;
               default:
@@ -1029,7 +1487,7 @@ static void propagateField(Symbol* sym) {
         SymExpr* rhs = toSymExpr(call->get(3));
         if (isRef(sym)) {
           DEBUG_PRINTF("Widening ref rhs of set_member\n");
-          setValWide(rhs);
+          setValWide(use, rhs);
         }
       }
       else if (call->primitive) {
@@ -1053,7 +1511,7 @@ static void propagateField(Symbol* sym) {
 
         if (isRef(rhs) && valIsWideClass(field)) {
           debug(field, " set_svec_member widens rhs ref %s (%d)\n", rhs->cname, rhs->id);
-          setValWide(rhs);
+          setValWide(def, rhs);
         }
       }
     }
@@ -1482,14 +1940,11 @@ static void handleLocalBlocks() {
   Vec<BlockStmt*> queue; // queue of blocks to localize
 
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->parentSymbol) {
-      // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet()
-      if (block->isLoopStmt() == true) {
-
-      } else if (block->blockInfoGet()) {
-        if (block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
-          queue.add(block);
-        }
+    if (isLocalBlock(block)) {
+      if (block->length() == 0) {
+        block->remove();
+      } else {
+        queue.add(block);
       }
     }
   }
@@ -1656,7 +2111,69 @@ static void fixAST() {
 
     if (call->isResolved()) {
       for_formals_actuals(formal, actual, call) {
-        if (SymExpr* act = toSymExpr(actual)) {
+        if (formal->hasFlag(FLAG_RETARG)) {
+          if (formal->typeInfo() != actual->typeInfo() && hasSomeWideness(formal)) {
+            SET_LINENO(call);
+
+            SymExpr* act = toSymExpr(actual);
+            Vec<SymExpr*>* defs = defMap.get(act->var);
+
+            // def/use maps were not built for local fns
+            if (!defs) {
+              BlockStmt* parentBlock = toBlockStmt(call->getStmtExpr()->parentExpr);
+              if (parentBlock->parentSymbol &&
+                  !parentBlock->isLoopStmt() &&
+                  parentBlock->blockInfoGet() &&
+                  parentBlock->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
+                buildDefUseMaps(parentBlock, defMap, useMap);
+              } else if (FnSymbol* locfn = toFnSymbol(call->parentSymbol)) {
+                if (locfn->hasFlag(FLAG_LOCAL_FN)) {
+                  buildDefUseMaps(locfn, defMap, useMap);
+                }
+              }
+              defs = defMap.get(act->var);
+              INT_ASSERT(defs);
+            }
+
+            // assume the _retArg is only def'd once
+            INT_ASSERT(defs->n == 1);
+            SymExpr* lhs = defs->first();
+
+            //
+            // This:
+            //
+            //   ref_T _retArg = &dest;
+            //   fn(..., _retArg);
+            //
+            // Becomes:
+            //
+            //   ref_wide_T _retArg = &wide_dest;
+            //   fn(..., _retArg);
+            //   dest = wide_dest.addr;
+            //
+
+            CallExpr* parent = toCallExpr(lhs->parentExpr);
+            INT_ASSERT(parent->isPrimitive(PRIM_MOVE));
+
+            CallExpr* addrof = toCallExpr(parent->get(2));
+            INT_ASSERT(addrof->isPrimitive(PRIM_ADDR_OF));
+            SymExpr* dest = toSymExpr(addrof->get(1));
+
+            VarSymbol* refTemp = newTemp(formal->typeInfo());
+            call->insertBefore(new DefExpr(refTemp));
+
+            VarSymbol* destTemp = newTemp(refTemp->getValType());
+            call->insertBefore(new DefExpr(destTemp));
+
+            call->insertBefore(new CallExpr(PRIM_MOVE, refTemp, new CallExpr(PRIM_ADDR_OF, destTemp)));
+            act->replace(new SymExpr(refTemp));
+
+            call->insertAfter(new CallExpr(PRIM_MOVE, dest->copy(), new SymExpr(destTemp)));
+            parent->remove();
+            act->var->defPoint->remove();
+          }
+        }
+        else if (SymExpr* act = toSymExpr(actual)) {
           makeMatch(formal, act);
         }
       }
@@ -1747,6 +2264,50 @@ static void fixAST() {
               call->insertBefore(new DefExpr(tmp));
               call->insertAfter(new CallExpr(PRIM_MOVE, lhs->copy(), tmp));
               lhs->replace(new SymExpr(tmp));
+            }
+          }
+          else if (FnSymbol* fn = rhs->isResolved()) {
+            if (call->get(1)->getValType() != call->get(2)->getValType() &&
+                hasSomeWideness(fn->retType) &&
+                isObj(fn->retType)) {
+              SET_LINENO(call);
+
+              SymExpr* LHS = toSymExpr(call->get(1));
+              VarSymbol* wideTemp = newTemp(fn->retType);
+              call->insertBefore(new DefExpr(wideTemp));
+
+              if (isRef(LHS)) {
+                //
+                // This:
+                //
+                //   *(_ref_tmp) = fn(...)
+                //
+                // Becomes:
+                //
+                //   wideTemp = fn(...)
+                //   narrowTemp = wideTemp.addr
+                //   *(ref_temp) = narrowTemp
+                //
+                VarSymbol* narrowTemp = newTemp(LHS->getValType());
+                call->insertBefore(new DefExpr(narrowTemp));
+
+                call->insertAfter(new CallExpr(PRIM_MOVE, LHS->copy(), narrowTemp));
+                call->insertAfter(new CallExpr(PRIM_MOVE, narrowTemp, wideTemp));
+              } else {
+                //
+                // This:
+                //
+                //   LHS = fn(...)
+                //
+                // Becomes:
+                //
+                //   wideTemp = fn(...)
+                //   LHS = wideTemp.addr
+                //
+                call->insertAfter(new CallExpr(PRIM_MOVE, LHS->copy(), wideTemp));
+              }
+
+              LHS->replace(new SymExpr(wideTemp));
             }
           }
         }
@@ -1841,6 +2402,21 @@ static void buildTupleDefsUses() {
   }
 }
 
+void handleIsWidePointer() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_IS_WIDE_PTR)) {
+      SET_LINENO(call->getStmtExpr());
+      VarSymbol* isWide;
+      if (hasSomeWideness(call->get(1))) {
+        isWide = gTrue;
+      } else {
+        isWide = gFalse;
+      }
+      call->replace(new SymExpr(isWide));
+    }
+  }
+}
+
 //
 // Widen variables that may be remote.
 //
@@ -1848,8 +2424,50 @@ void
 insertWideReferences(void) {
   FnSymbol* heapAllocateGlobals = heapAllocateGlobalsHead();
 
-  if (!requireWideReferences())
+  if (!requireWideReferences()) {
+    handleIsWidePointer();
     return;
+  }
+
+  //
+  // fragmentLocalBlocks splits up local blocks, but sometimes they end up
+  // being consecutive. To make the generated code easier to read, we merge
+  // such blocks together. Sometimes there are only DefExprs separating
+  // local blocks. If that's the case, we move those DefExprs before the
+  // earlier local block.
+  //
+  // TODO: What would we need to do to avoid the fragmentation around
+  // if-statements and loops?
+  //
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (isLocalBlock(block)) {
+      // Get rid of annoying empty local blocks
+      if (block->length() == 0) {
+        block->remove();
+      }
+      else {
+        Expr* next = block->next;
+        std::vector<Expr*> defs;
+        while (isLocalBlock(next) || isDefExpr(next)) {
+          if (isDefExpr(next)) {
+            defs.push_back(next);
+            next = next->next;
+          } else {
+            Expr* old = next;
+            next = next->next;
+            old->remove();
+            for_alist(subItem, toBlockStmt(old)->body) {
+              block->body.insertAtTail(subItem->remove());
+            }
+            for_vector(Expr, def, defs) {
+              block->insertBefore(def->remove());
+            }
+            defs.clear();
+          }
+        }
+      }
+    }
+  }
 
   Vec<Symbol*> heapVars;
   getHeapVars(heapVars);
@@ -1882,7 +2500,7 @@ insertWideReferences(void) {
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (FnSymbol* fn = call->isResolved()) {
-      if (fn->hasFlag(FLAG_ON_BLOCK)) { // wrapon_fn
+      if (fn->hasFlag(FLAG_ON_BLOCK) && !fn->hasFlag(FLAG_LOCAL_ON)) { // wrapon_fn
         std::set<FnSymbol*> downstream;
         collectUsedFnSymbols(call, downstream);
         for_set(FnSymbol, on, downstream) {
@@ -1892,9 +2510,10 @@ insertWideReferences(void) {
     }
   }
 
+  debugTimer.start();
   forv_Vec(Symbol, sym, heapVars) {
     DEBUG_PRINTF("Heap var %s (%d) is wide\n", sym->cname, sym->id);
-    setWide(sym);
+    setWide(sym->defPoint->getModule(), sym);
   }
 
   addKnownWides();
@@ -1903,15 +2522,26 @@ insertWideReferences(void) {
     DEBUG_PRINTF("WARNING: No known wide things...?\n");
   }
 
-  debugTimer.start();
+  //
+  // Iteratively propagate wide pointers through the AST.
+  //
+  int numIters = 0;
   while (!queueEmpty()) {
-    Symbol* sym = queuePop();
+    DEBUG_PRINTF("Propagation Iteration %d\n\n", numIters);
+    numIters += 1;
 
-    if (isField(sym)) {
-      propagateField(sym);
-    } else {
-      propagateVar(sym);
+    // Propagate as far as we can...
+    while (!queueEmpty()) {
+      Symbol* sym = queuePop();
+      if (isField(sym)) {
+        propagateField(sym);
+      } else {
+        propagateVar(sym);
+      }
     }
+
+    // ... then deal with the return of wide pointers
+    handleReturns();
   }
   debugTimer.stop();
 
@@ -1952,6 +2582,9 @@ insertWideReferences(void) {
   fixAST();
   moveAddressSourcesToTemp();
 
+  handleIsWidePointer();
+
+
 #ifdef PRINT_WIDEN_SUMMARY
   printf("Spent %2.3f seconds propagating vars\n", debugTimer.elapsedSecs());
   int wide = 0, narrow = 0;
@@ -1969,5 +2602,9 @@ insertWideReferences(void) {
   }
   printf("Summary:\n\twide: %d\n\tnarrow: %d\n", wide, narrow);
 #endif
+
+  //quiet unused function warning
+  printCauses(NULL);
+
 }
 

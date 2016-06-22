@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -20,7 +20,7 @@
 #ifndef _chpl_rt_utils_static_H_
 #define _chpl_rt_utils_static_H_
 #include "stdchplrt.h"
-void chpldev_taskTable_add(chpl_taskID_t taskID, uint32_t lineno, c_string filename2, uint64_t tl_info);
+void chpldev_taskTable_add(chpl_taskID_t taskID, uint32_t lineno, int32_t filename, uint64_t tl_info);
 void chpldev_taskTable_remove(chpl_taskID_t taskID);
 void chpldev_taskTable_set_active(chpl_taskID_t taskID);
 void chpldev_taskTable_set_suspended(chpl_taskID_t taskID);

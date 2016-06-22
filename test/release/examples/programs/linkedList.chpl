@@ -36,7 +36,58 @@ class List {
   proc insert(value: eltType) {
     head = new Node(eltType, value, head);
   }
+ 
+  
+ //  
+ // deletes the first element from the list 
+ //
 
+ proc delete_first() {
+    if head == nil then {
+      return;
+    }
+    var current=head;
+    head=head.next;
+    delete current ;
+  }
+
+ //
+ // deletes the element at position p from the list 
+ //
+ 
+ proc delete_pos(pos: int) {
+    if head==nil then {
+      return;
+    }
+
+
+    if pos==1 then {
+      delete_first();
+      return; 
+    }
+
+    var count: int=1;   // assuming 1-based indexing //
+    var current=head;
+    
+
+    while(count!=pos-1 && current!=nil) {  
+     current=current.next;
+     count=count+1;
+    }
+   
+    if current.next==nil then  { 
+     return;
+    }
+  
+    var temp=current.next;
+    var temp2=temp.next;
+    current.next=temp2;
+    delete temp;
+  }
+    
+
+ 
+  
   //
   // Return true if the list has any elements that match the argument in value
   //
@@ -83,15 +134,15 @@ class List {
   //
   // Define the style of the output when a list is passed to the write or
   // writeln functions. The values will be written separated by spaces.
-  // 
-  proc writeThis(x: Writer) {
+  // The argument 'w' is a writeable channel.
+  proc writeThis(w) {
     var first = true;
     for i in this do
       if first {
-        x.write(i);
+        w.write(i);
         first = false;
       } else {
-        x.write(" " + i);
+        w.write(" " + i);
       }
   }
 }
@@ -101,8 +152,8 @@ proc main() {
 
   var lst = new List(int);
   var rnd = if useClockSeed 
-              then new RandomStream()
-              else new RandomStream(seed = randomSeed);
+              then new NPBRandomStream()
+              else new NPBRandomStream(seed = randomSeed);
   const maxValue = 100;
 
   //
@@ -125,6 +176,21 @@ proc main() {
     writeln("No more ones: ", lst);
   }
 
+
+  lst.delete_first();
+ writeln("The list after deleting first contains: ", lst);
+
+
+ lst.delete_pos(3);
+writeln("delete element at pos 3 :", lst);
+ lst.delete_pos(1);
+writeln("delete element at pos 1 :", lst);
+ lst.delete_pos(5);
+ writeln("delete element at pos 5 :", lst);
+
+ 
+ 
+  
   //
   // Remove everything from the list using the default iterator
   // to find the values that need to be removed.

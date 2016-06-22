@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,7 +31,7 @@
 * transformation must be applied before function resolution.  In the        *
 * current implementation this Visitor is leveraged early in normalize().    *
 *                                                                           *
-* This transfom inserts Chapel if-expressions that must be in the same      *
+* This transform inserts Chapel if-expressions that must be in the same     *
 * scope as the boolean operators.  Hence the transformer requires that a    *
 * suitable insertion point be provided to the constructor.                  *
 *                                                                           *

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -105,7 +105,7 @@ the mapping is obtained using the dimension specifier:
 
 The following code declares a domain ``D`` distributed
 using a 2D Dimensional distribution that
-replicates over 2 locales (when available) in the first dimemsion
+replicates over 2 locales (when available) in the first dimension
 and distributes using block-cyclic distribution in the second dimension.
 
   .. code-block:: chapel
@@ -439,8 +439,8 @@ proc DimensionalDist2D.checkInvariants(): void {
   }
   ensure(targetLocales.rank == 2, "DimensionalDist2D requires 'targetLocales' to be a 2-dimensional array, got " + targetLocales.rank:c_string + " dimension(s)");
   ensure(rank == targetLocales.rank, "DimensionalDist2D bug: inconsistent rank");
-  ensure(targetLocales.eltType == locale, "DimensionalDist2D requires 'targetLocales' to be an array of locales, got an array of " + typeToString(targetLocales.eltType));
-  ensure(targetIds.idxType == locIdT, "DimensionalDist2D currently requires 'idxType' of 'targetLocales.domain' to be " + typeToString(locIdT) + ", got " + typeToString(targetIds.idxType));
+  ensure(targetLocales.eltType == locale, "DimensionalDist2D requires 'targetLocales' to be an array of locales, got an array of " + targetLocales.eltType:string);
+  ensure(targetIds.idxType == locIdT, "DimensionalDist2D currently requires 'idxType' of 'targetLocales.domain' to be " + locIdT:string + ", got " + targetIds.idxType:string);
 
   assert(targetIds == {0..#numLocs1, 0..#numLocs2}, "DimensionalDist2D-targetIds");
   assert(di1.numLocales == numLocs1, "DimensionalDist2D-numLocales-1");
@@ -481,7 +481,7 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
   _traceddd(this, ".dsiPrivatize on ", here.id);
 
   // ensure we get a local copy of targetLocales
-  // todo - provide the following as utilty functions (for domains, arrays)
+  // todo - provide the following as utility functions (for domains, arrays)
   const pdTargetLocales = privatizeData(1);
   const privTargetIds: domain(pdTargetLocales.domain.rank,
                               pdTargetLocales.domain.idxType,
@@ -556,7 +556,7 @@ proc DimensionalDist2D.dsiIndexToLocale(indexx: indexT): locale {
   if !isTuple(indexx) || indexx.size != 2 then
     compilerError("DimensionalDist2D presently supports only indexing with",
                   " 2-tuples; got an index of the type ",
-                  typeToString(indexx.type));
+                  indexx.type:string);
 
   return targetLocales(di1.dsiIndexToLocale1d(indexx(1)):int,
                        di2.dsiIndexToLocale1d(indexx(2)):int);
@@ -750,7 +750,7 @@ proc DimensionalDom.dimSpecifier(param dim: int) {
 
 //== writing
 
-proc DimensionalDom.dsiSerialWrite(f: Writer): void {
+proc DimensionalDom.dsiSerialWrite(f): void {
   f.write(whole);
 }
 
@@ -764,7 +764,7 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
 //  : DimensionalDom(rank, idxType, stridable, this.type, ...)
 {
   _traceddd(this, ".dsiNewRectangularDom ",
-           (rank, typeToString(idxType), stridable));
+           (rank, idxType:string, stridable));
   if rank != 2 then
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got ", rank:c_string, " dimensions");
@@ -772,8 +772,8 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
   // todo: ideally, this will not be required;
   // furthermore, DimensionalDist2D shouldn't be specific to idxType.
   if idxType != this.idxType then
-    compilerError("The domain index type ", typeToString(idxType),
-                  " does not match the index type ",typeToString(this.idxType),
+    compilerError("The domain index type ", idxType:string,
+                  " does not match the index type ",this.idxType:string,
                   " of the DimensionalDist2D used to map that domain");
   if rank != this.rank then
     compilerError("The rank of the domain (", rank,
@@ -872,7 +872,7 @@ proc DimensionalDom.dsiBuildRectangularDom(param rank: int,
                                                                 stridable))
 {
   _traceddd(this, ".dsiBuildRectangularDom ",
-           (rank, typeToString(idxType), stridable), ranges);
+           (rank, idxType:string, stridable), ranges);
   if rank != 2 then
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got ", rank, " dimensions");
@@ -880,8 +880,8 @@ proc DimensionalDom.dsiBuildRectangularDom(param rank: int,
   // todo: ideally, this will not be required;
   // furthermore, DimensionalDist2D shouldn't be specific to idxType.
   if idxType != this.idxType then
-    compilerError("The domain index type ", typeToString(idxType),
-                  " does not match the index type ",typeToString(this.idxType),
+    compilerError("The domain index type ", idxType:string,
+                  " does not match the index type ",this.idxType:string,
                   " of the DimensionalDom used to create this domain");
   if rank != this.rank then
     compilerError("The rank of the domain (", rank,
@@ -1012,7 +1012,7 @@ proc DimensionalArr.dsiAccess(indexx: dom.indexT) ref: eltType {
   if !isTuple(indexx) || indexx.size != 2 then
     compilerError("DimensionalDist2D presently supports only indexing with",
                   " 2-tuples; got an array index of the type ",
-                  typeToString(indexx.type));
+                  indexx.type:string);
 
   const alDom = this.allocDom;
   const (l1,i1):(locIdT, alDom.stoIndexT) = alDom.dom1.dsiAccess1d(indexx(1));
@@ -1024,7 +1024,7 @@ proc DimensionalArr.dsiAccess(indexx: dom.indexT) ref: eltType {
 
 //== writing
 
-proc DimensionalArr.dsiSerialWrite(f: Writer): void {
+proc DimensionalArr.dsiSerialWrite(f): void {
   _traceddd(this, ".dsiSerialWrite on ", here.id,
             if this.isAlias then "  (alias)" else "");
   assert(this.rank == 2);
@@ -1124,7 +1124,7 @@ proc DimensionalArr.dsiReindex(reindexDef: DimensionalDom) {
     return reindexee;
 
   halt("DimensionalArr.dsiReindex: unexpected invocation on ",
-       typeToString(this.type), "  and  ", typeToString(reindexDef.type));
+       this.type:string, "  and  ", reindexDef.type:string);
 }
 
 proc DimensionalArr.dsiReindex(reindexDef: WrapperRectDom) {

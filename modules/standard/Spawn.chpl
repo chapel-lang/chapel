@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -80,18 +80,21 @@ back its input.
   while sub.stdout.readline(line) {
     write("Got line: ", line);
   }
+  sub.close();
+
   // prints out:
   // Got line: Hello
   // Got line: World
 
 
+
 .. note::
 
   As of Chapel v1.12, creating a subprocess that uses :const:`PIPE` to provide
-  input or capture output does not work when using the ugni communications
-  layer and when using more than one locale. In this circumstance, the program
-  will halt with an error message. These scenarios do work when using GASNet
-  instead of the ugni layer.
+  input or capture output does not work when using the ugni communications layer
+  with hugepages enabled and when using more than one locale. In this
+  circumstance, the program will halt with an error message. These scenarios do
+  work when using GASNet instead of the ugni layer.
 
  */
 module Spawn {
@@ -128,6 +131,17 @@ module Spawn {
 
   /* 
      This record represents a subprocess.
+
+     Note that the subprocess will not be waited for if this record
+     goes out of scope. Channels opened to communicate with the subprocess
+     will be closed if the record goes out of scope, however.
+
+     Generally, it is important to call :proc:`subprocess.wait` to wait for the
+     process to complete. If the parent process is using pipes to communicate
+     with the subprocess, the parent process may call :proc:`subprocess.close`
+     in order to close the pipes and free any buffers. Such calls are
+     generally not needed since the channels will be closed when the
+     subprocess record is automatically destroyed.
    */
   record subprocess {
     /* The kind of a subprocess is used to create the types
@@ -173,24 +187,26 @@ module Spawn {
     // TODO -- these could be private to this module
     pragma "no doc"
     var stdin_pipe:bool;
+    // true if we are currently buffering up stdin, meaning that
+    // we need to 'commit' in order to actually send the data.
     pragma "no doc"
     var stdin_buffering:bool;
     pragma "no doc"
     var stdin_file:file;
     pragma "no doc"
-    var stdin:channel(writing=true, kind=kind, locking=locking);
+    var stdin_channel:channel(writing=true, kind=kind, locking=locking);
     pragma "no doc"
     var stdout_pipe:bool;
     pragma "no doc"
     var stdout_file:file;
     pragma "no doc"
-    var stdout:channel(writing=false, kind=kind, locking=locking);
+    var stdout_channel:channel(writing=false, kind=kind, locking=locking);
     pragma "no doc"
     var stderr_pipe:bool;
     pragma "no doc"
     var stderr_file:file;
     pragma "no doc"
-    var stderr:channel(writing=false, kind=kind, locking=locking);
+    var stderr_channel:channel(writing=false, kind=kind, locking=locking);
 
     // Ideally we don't have the _file versions, but they
     // are there now because of issues with when the reference counts
@@ -198,6 +214,80 @@ module Spawn {
 
     pragma "no doc" 
     var spawn_error:syserr;
+
+    pragma "no doc"
+    proc _start_stdin_buffering() {
+      var err = stdin_channel._mark();
+      if ! err {
+        stdin_buffering = true;
+      }
+      return err;
+    }
+
+    pragma "no doc"
+    proc _stop_stdin_buffering() {
+      if this.stdin_buffering {
+        this.stdin._commit();
+        this.stdin_buffering = false; // Don't commit again on close again
+      }
+    }
+
+
+    pragma "no doc"
+    proc _halt_on_launch_error() {
+      if !running {
+        ioerror(spawn_error,
+                "encountered when launching subprocess");
+      }
+    }
+
+    /*
+       Access the stdin pipe for the subprocess. The parent process
+       can write to the subprocess through this pipe if the subprocess
+       was created with stdin=PIPE.
+
+       Causes a fatal error if the subprocess does not have a
+       stdin pipe open.
+     */
+    proc stdin {
+      _halt_on_launch_error();
+      if stdin_pipe == false {
+        halt("subprocess was not configured with a stdin pipe");
+      }
+      return stdin_channel;
+    }
+
+    /*
+       Access the stdout pipe for the subprocess. The parent process
+       can read from the subprocess through this pipe if the subprocess
+       was created with stdout=PIPE.
+
+       Causes a fatal error if the subprocess does not have a
+       stdout pipe open.
+     */
+    proc stdout {
+      _halt_on_launch_error();
+      if stdout_pipe == false {
+        halt("subprocess was not configured with a stdout pipe");
+      }
+      return stdout_channel;
+    }
+
+    /*
+       Access the stderr pipe for the subprocess. The parent process
+       can read from the subprocess through this pipe if the subprocess
+       was created with stderr=PIPE.
+
+       Causes a fatal error if the subprocess does not have a
+       stderr pipe open.
+     */
+    proc stderr {
+      _halt_on_launch_error();
+      if stderr_pipe == false {
+        halt("subprocess was not configured with a stderr pipe");
+      }
+      return stderr_channel;
+    }
   }
 
   private extern const QIO_FD_FORWARD:c_int;
@@ -237,7 +327,7 @@ module Spawn {
 
   /* TODO:
      stdin stdout and stderr can be PIPE, existing file descriptor,
-     existing file opject, or None. and stderr can be STDOUT which
+     existing file object, or None. and stderr can be STDOUT which
      indicates stderr -> stdout.
 
      What about a string for a file path? To support that, use
@@ -303,7 +393,7 @@ module Spawn {
      :arg kind: What kind of channels should be created when
                 :const:`PIPE` is used. This argument is used to set
                 :attr:`subprocess.kind` in the resulting subprocess.
-                Defaults to :enum:`IO.iokind.dynamic`.
+                Defaults to :type:`IO.iokind` ``iokind.dynamic``.
                  
      :arg locking: Should channels created use locking?
                    This argument is used to set :attr:`subprocess.locking`
@@ -341,9 +431,17 @@ module Spawn {
     // under those circumstances. See JIRA issue 113 for more details.
     if CHPL_COMM == "ugni" then
       if stdin != FORWARD || stdout != FORWARD || stderr != FORWARD then
-        if numLocales > 1 then
-          halt("spawn with more than 1 locale for CHPL_COMM=ugni currently ",
-               "requires stdin, stdout, stderr=FORWARD");
+        if numLocales > 1 {
+          var env_c_str:c_string;
+          var env_str:string;
+          if sys_getenv(c"PE_PRODUCT_LIST", env_c_str)==1 {
+            env_str = env_c_str;
+            if env_str.count("HUGETLB") > 0 then
+              halt("spawn with more than 1 locale for CHPL_COMM=ugni ",
+                   "with hugepages currently ",
+                   "requires stdin, stdout, stderr=FORWARD");
+          }
+        }
 
     if stdin == QIO_FD_PIPE then stdin_pipe = true;
     if stdout == QIO_FD_PIPE then stdout_pipe = true;
@@ -408,7 +506,7 @@ module Spawn {
       if err {
         ret.spawn_error = err; return ret;
       }
-      ret.stdin = ret.stdin_file.writer(error=err);
+      ret.stdin_channel = ret.stdin_file.writer(error=err);
       if err {
         ret.spawn_error = err; return ret;
       }
@@ -417,7 +515,7 @@ module Spawn {
         // mark stdin so that we don't actually send any data
         // until communicate() is called.
 
-        err = ret.stdin._mark();
+        err = ret.stdin_channel._mark();
         if err {
           ret.spawn_error = err; return ret;
         }
@@ -432,7 +530,7 @@ module Spawn {
         ret.spawn_error = err; return ret;
       }
 
-      ret.stdout = ret.stdout_file.reader(error=err);
+      ret.stdout_channel = ret.stdout_file.reader(error=err);
       if err {
         ret.spawn_error = err; return ret;
       }
@@ -445,7 +543,7 @@ module Spawn {
         ret.spawn_error = err; return ret;
       }
 
-      ret.stderr = ret.stderr_file.reader(error=err);
+      ret.stderr_channel = ret.stderr_file.reader(error=err);
       if err {
         ret.spawn_error = err; return ret;
       }
@@ -500,7 +598,7 @@ module Spawn {
      :arg kind: What kind of channels should be created when
                 :const:`PIPE` is used. This argument is used to set
                 :attr:`subprocess.kind` in the resulting subprocess.
-                Defaults to :enum:`IO.iokind.dynamic`.
+                Defaults to :type:`IO.iokind` ``iokind.dynamic``.
                  
      :arg locking: Should channels created use locking?
                    This argument is used to set :attr:`subprocess.locking`
@@ -518,7 +616,9 @@ module Spawn {
     var args = [command];
     if shellarg != "" then args.push_front(shellarg);
     args.push_front(executable);
-    return spawn(args, env, executable, kind=kind, locking=locking);
+    return spawn(args, env, executable,
+                 stdin=stdin, stdout=stdout, stderr=stderr,
+                 kind=kind, locking=locking);
   }
 
   /*
@@ -537,6 +637,17 @@ module Spawn {
         this.exit_status = exitcode;
       }
     }
+  }
+
+  // documented in the out error version
+  pragma "no doc"
+  proc subprocess.poll() {
+    var err:syserr = ENOERR;
+
+    _halt_on_launch_error();
+
+    this.poll(error=err);
+    if err then ioerror(err, "in subprocess.poll");
   }
   
   /*
@@ -565,6 +676,8 @@ module Spawn {
 
     :arg error: optional argument to capture any error encountered
                 when waiting for the child process.
+    :arg buffer: if `true`, buffer input and output pipes (see above).
+
    */
   proc subprocess.wait(out error:syserr, buffer=true) {
 
@@ -581,8 +694,8 @@ module Spawn {
       // Close stdin.
       if this.stdin_pipe {
         // send data to stdin
-        if this.stdin_buffering then this.stdin._commit();
-        this.stdin.close(error=error);
+        _stop_stdin_buffering();
+        this.stdin_channel.close(error=error);
         this.stdin_file.close(error=error);
       }
 
@@ -595,7 +708,7 @@ module Spawn {
         this.exit_status = exitcode;
       }
 
-      // Close stdout/stderr files.
+      // Close stdout/stderr files. Leave the channels open.
       if this.stdout_pipe {
         this.stdout_file.close(error=error);
       }
@@ -611,8 +724,10 @@ module Spawn {
   proc subprocess.wait(buffer=true) {
     var err:syserr = ENOERR;
 
+    _halt_on_launch_error();
+
     this.wait(error=err, buffer=buffer);
-    if err then halt("Error in subprocess.wait: " + errorToString(err));
+    if err then ioerror(err, "in subprocess.wait");
   }
 
   /*
@@ -636,17 +751,17 @@ module Spawn {
     on home {
       if this.stdin_pipe {
         // send data to stdin
-        if this.stdin_buffering then this.stdin._commit();
+        _stop_stdin_buffering();
       }
 
       error = qio_proc_communicate(
         locking,
         stdin_file._file_internal,
-        stdin._channel_internal,
+        stdin_channel._channel_internal,
         stdout_file._file_internal,
-        stdout._channel_internal,
+        stdout_channel._channel_internal,
         stderr_file._file_internal,
-        stderr._channel_internal);
+        stderr_channel._channel_internal);
     }
 
     if !error {
@@ -666,16 +781,203 @@ module Spawn {
   proc subprocess.communicate() {
     var err:syserr = ENOERR;
 
+    _halt_on_launch_error();
+
     this.communicate(error=err);
-    if err then halt("Error in subprocess.communicate: " + errorToString(err));
+    if err then ioerror(err, "in subprocess.communicate");
   }
 
+  /*
+    Close any open channels and pipes for interacting with a subprocess.  This
+    function does not wait for the subprocess to complete.  Note that it is
+    generally not necessary to call this function since these channels will be
+    closed when the subprocess record goes out of scope.
 
-// Future work: support
-// send_signal
-// terminate
-// kill (send SIGKILL)
+    :arg error: optional argument to capture any error encountered
+                when closing the pipes.
+   */
+  proc subprocess.close(out error:syserr) {
+    error = ENOERR;
+    // Close stdin.
+    if this.stdin_pipe {
+      // send data to stdin
+      _stop_stdin_buffering();
+      this.stdin_channel.close(error=error);
+      this.stdin_file.close(error=error);
+    }
+    // Close stdout.
+    if this.stdout_pipe {
+      this.stdout_channel.close(error=error);
+      this.stdout_file.close(error=error);
+    }
+    // Close stderr.
+    if this.stderr_pipe {
+      this.stderr_channel.close(error=error);
+      this.stderr_file.close(error=error);
+    }
+  }
 
+  // documented in the out error version
+  pragma "no doc"
+  proc subprocess.close() {
+    var err:syserr = ENOERR;
+
+    this.close(error=err);
+    if err then ioerror(err, "in subprocess.close");
+  }
+
+  // Signals as required by POSIX.1-2008, 2013 edition
+  // See note below about signals intentionally not included.
+  pragma "no doc"
+  extern const SIGABRT: c_int;
+  pragma "no doc"
+  extern const SIGALRM: c_int;
+  pragma "no doc"
+  extern const SIGBUS: c_int;
+  pragma "no doc"
+  extern const SIGCHLD: c_int;
+  pragma "no doc"
+  extern const SIGCONT: c_int;
+  pragma "no doc"
+  extern const SIGFPE: c_int;
+  pragma "no doc"
+  extern const SIGHUP: c_int;
+  pragma "no doc"
+  extern const SIGILL: c_int;
+  pragma "no doc"
+  extern const SIGINT: c_int;
+  pragma "no doc"
+  extern const SIGKILL: c_int;
+  pragma "no doc"
+  extern const SIGPIPE: c_int;
+  pragma "no doc"
+  extern const SIGQUIT: c_int;
+  pragma "no doc"
+  extern const SIGSEGV: c_int;
+  pragma "no doc"
+  extern const SIGSTOP: c_int;
+  pragma "no doc"
+  extern const SIGTERM: c_int;
+  pragma "no doc"
+  extern const SIGTRAP: c_int;
+  pragma "no doc"
+  extern const SIGTSTP: c_int;
+  pragma "no doc"
+  extern const SIGTTIN: c_int;
+  pragma "no doc"
+  extern const SIGTTOU: c_int;
+  pragma "no doc"
+  extern const SIGURG: c_int;
+  pragma "no doc"
+  extern const SIGUSR1: c_int;
+  pragma "no doc"
+  extern const SIGUSR2: c_int;
+  pragma "no doc"
+  extern const SIGXCPU: c_int;
+  pragma "no doc"
+  extern const SIGXFSZ: c_int;
+
+  // These signals are not strictly required by POSIX.1.2008 2013 edition
+  // and so should not be included here:
+
+  // SIGPOLL is Obsolescent and optional as part of XSI STREAMS
+  // SIGPROF is Obsolescent and optional as part of XSI STREAMS
+  // SIGSYS is optional as part of X/Open Systems Interface
+  // SIGVTALRM is optional as part of X/Open Systems Interface
+
+  private extern proc qio_send_signal(pid: int(64), sig: c_int): syserr;
+
+  /*
+    Send a signal to a child process.
+
+    Declarations for POSIX.1.2008 signals are provided in this module.
+    These include `SIGABRT`, `SIGALRM`, `SIGBUS`, `SIGCHLD`, `SIGCONT`,
+    `SIGFPE`, `SIGHUP`, `SIGILL`, `SIGINT`, `SIGKILL`, `SIGPIPE`, `SIGQUIT`,
+    `SIGSEGV`, `SIGSTOP`, `SIGTERM`, `SIGTRAP`, `SIGTSTP`, `SIGTTIN`,
+    `SIGTTOU`, `SIGURG`, `SIGUSR1`, `SIGUSR2`, `SIGXCPU`, `SIGXFSZ`.
+
+    See your system's documentation for their meaning:
+
+    ::
+
+      man signal
+
+    Other values for `signal` are system-specific and can be declared in this
+    way, for example:
+
+    .. code-block:: chapel
+
+       extern const SIGPOLL: c_int;
+
+
+    :arg signal: the signal to send
+
+    :arg error: optional argument to capture any error encountered
+                when sending a signal to the child process
+   */
+  proc subprocess.send_signal(out error:syserr, signal: int) {
+    on home {
+      error = qio_send_signal(pid, signal:c_int);
+    }
+  }
+
+  // documented in the out error version
+  pragma "no doc"
+  proc subprocess.send_signal(signal:int) {
+    var err:syserr = ENOERR;
+
+    _halt_on_launch_error();
+
+    this.send_signal(error=err, signal=signal);
+    if err then ioerror(err, "in subprocess.send_signal");
+  }
+
+  /*
+    Unconditionally kill the child process.  The associated signal,
+    `SIGKILL`, cannot be caught by the child process. See
+    :proc:`subprocess.send_signal`.
+
+
+    :arg error: optional argument to capture any error encountered
+                when killing the child process
+   */
+  proc subprocess.kill(out error:syserr) {
+    this.send_signal(error, SIGKILL);
+  }
+
+  // documented in the out error version
+  pragma "no doc"
+  proc subprocess.kill() {
+    var err:syserr = ENOERR;
+
+    _halt_on_launch_error();
+
+    this.kill(error=err);
+    if err then ioerror(err, "in subprocess.kill");
+  }
+
+  /*
+    Request termination of the child process.  The associated signal,
+    `SIGTERM`, may be caught and handled by the child process. See
+    :proc:`subprocess.send_signal`.
+
+    :arg error: optional argument to capture any error encountered
+                when terminating the child process
+   */
+  proc subprocess.terminate(out error:syserr) {
+    this.send_signal(error, SIGTERM);
+  }
+
+  // documented in the out error version
+  pragma "no doc"
+  proc subprocess.terminate() {
+    var err:syserr = ENOERR;
+
+    _halt_on_launch_error();
+
+    this.terminate(error=err);
+    if err then ioerror(err, "in subprocess.terminate");
+  }
 
 }
 

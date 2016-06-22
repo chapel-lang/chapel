@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2016 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -115,8 +115,9 @@ CHPL_CONFIG_CHECK = $(CHPL_CONFIG_CHECK_PREFIX)-$(CHPL_MAKE_COMPILER_SUBDIR)
 UPDATE_BUILD_VERSION = $(CHPL_MAKE_HOME)/util/devel/updateBuildVersion
 
 $(BUILD_VERSION_FILE): FORCE
-	@({ test -x $(CHPL_MAKE_HOME)/.git || test -x $(CHPL_MAKE_HOME)/.svn ; } && \
-	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@) || (echo '"0"' > $@);
+	@({ test -x $(CHPL_MAKE_HOME)/.git ; } && \
+	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@) || \
+	test -r $(BUILD_VERSION_FILE) || (echo '"0"' > $@);
 
 $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 	rm -f $(CHPL_CONFIG_CHECK_PREFIX)-*

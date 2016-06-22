@@ -1,0 +1,2 @@
+nestedOnlysFunction.chpl:21: In function 'main':
+nestedOnlysFunction.chpl:22: error: unresolved call 'bar()'

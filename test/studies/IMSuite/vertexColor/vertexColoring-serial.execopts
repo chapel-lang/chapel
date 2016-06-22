@@ -1,0 +1,3 @@
+--inputFile=input/inputvertexColoring_64_-star.txt  --verify=true --outputFile=outputvertexColoring_64_-star.txt # outputvertexColoring_64_-star.good
+--inputFile=input/inputvertexColoring_64_-rn.txt  --verify=true --outputFile=outputvertexColoring_64_-rn.txt # outputvertexColoring_64_-rn.good
+--inputFile=input/inputvertexColoring_64_-chain.txt --verify=true --outputFile=outputvertexColoring_64_-chain.txt # outputvertexColoring_64_-chain.good

@@ -4,6 +4,6 @@ record R {
 
 proc main {
   var a: R;
-  begin writeln(a);
+  begin writeln("(a = ", a.a, ")");
 }
 

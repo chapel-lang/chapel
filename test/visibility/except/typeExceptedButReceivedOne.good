@@ -1,0 +1,2 @@
+typeExceptedButReceivedOne.chpl:5: In function 'main()'
+typeExceptedButReceivedOne.chpl:6: error: unresolved call 'bar()'

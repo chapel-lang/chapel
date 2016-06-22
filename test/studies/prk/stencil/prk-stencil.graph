@@ -1,0 +1,6 @@
+perfkeys: Rate (MFlops/s): , Rate (MFlops/s): , Rate (MFlops/s): , Rate (MFlops/s):
+files: stencil-defaultdist.dat, stencil-blockdist.dat, stencil-stencildist.dat, stencil-serial.dat
+graphkeys: DefaultDist, BlockDist, StencilDist, Serial
+graphtitle: PRK stencil
+ylabel: Rate (MFlops/s)
+graphname: prk-stencil

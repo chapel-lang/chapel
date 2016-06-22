@@ -1,4 +1,8 @@
 recordsAndClasses.doc
+
+Usage:
+   use recordsAndClasses.doc;
+
    Record: thingy
    proc takesAThingy(): thingy
       This method returns a record 

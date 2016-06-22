@@ -8,7 +8,7 @@ testtype( int(32));
 testtype(uint(32));
 
 proc testtype(type T) {
-  writeln("testing ", typeToString(T));
+  writeln("testing ", T:string);
   for x in (if isIntType(T) then -11 else 0) .. 11 {
     for y in 1 .. 11  {
       var a = x:T;

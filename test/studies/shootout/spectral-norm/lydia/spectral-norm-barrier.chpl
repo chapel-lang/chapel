@@ -1,6 +1,6 @@
 /*
  * The Computer Language Benchmarks Game
- * http://shootout.alioth.debian.org/
+ * http://benchmarksgame.alioth.debian.org
  *
  * Original C contributed by Sebastien Loisel
  * Conversion to Chapel by Albert Sidelnik
@@ -83,4 +83,6 @@ proc main() {
 
   const res = sqrt(vBv/vv);
   writeln(res, new iostyle(precision=10));
+
+  delete b;
 }

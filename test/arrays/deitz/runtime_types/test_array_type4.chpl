@@ -1,5 +1,5 @@
 proc g(x) {
-  writeln(typeToString(x.type), ": ", x);
+  writeln(x.type:string, ": ", x);
 }
 
 proc f(e) {

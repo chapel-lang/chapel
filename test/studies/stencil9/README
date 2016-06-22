@@ -1,0 +1,50 @@
+This directory contains four ways of writing a 9-point stencil in
+Chapel using various styles.
+
+stencil9.chpl             : a simple, single-locale implementation
+stencil9-block.chpl       : a global-view block-distributed implementation
+stencil9-stencildist.chpl : a global-view stencil-distributed implementation
+stencil9-explicit.chpl    : a local-view "SPMD-esque in Chapel" version
+
+Note that it would be possible / not difficult to combine the first
+three versions into a single code base in which the domain map was
+controlled by a config param as we've done for other benchmarks -- see
+MiniMD, LULESH, etc., but that here we kept them separate for
+clarity.
+
+Note that none of these were written for the purposes of performance
+studies, but to illustrate different coding idioms.  All are likely
+amenable to further optimization (within Chapel, within the codes
+themselves) if performance studies were desired.
+
+Some of the tradeoffs between these versions are:
+
+* stencil9 isn't scalable since it's shared memory
+
+* stencil9-block doesn't do anything smart w.r.t. communication, so
+  all fetching of remote data is done in a fine-grain, last-minute,
+  demand-driven manner, which is not ideal for stencils.  Without some
+  sort of significant latency-hiding mechanism, it would be unlikely
+  to compare with hand-written versions.
+
+* stencil9-stencildist uses a variation of the Block distribution that
+  knows about "fluff" (a.k.a., ghost/halo/overlap cells/regions) and
+  so strives to do the neighbor communications using slab sub-array
+  assignments a priori rather than when the remote data is accessed.
+  This version requires explicit calls to updateFluff() to be called,
+  which is part of the reason it hasn't been promoted to a standard
+  domain map.  Specifically, future work would be to have a domain map
+  announce its support for halos/fluff to the compiler and have the
+  compiler automatically insert updateFluff()-style calls, as in ZPL.
+  The fact that this domain map can't be plugged in without changes to
+  the source code at present makes it not adhere to the plug-and-play
+  aspect of the domain map philosophy.
+
+* stencil9-explicit is sortof like taking the logic within the Stencil
+  distribution and implementing it directly in the Chapel program
+  using an explicit SPMD-esque style.  As a result it's very ugly.
+
+With attention, the expectation is that the stencildist and explicit
+versions are the two that have the best chance of competing with a
+hand-generated stencil code without teaching the compiler about fluff
+as in ZPL.

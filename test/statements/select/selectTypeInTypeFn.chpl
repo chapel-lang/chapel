@@ -9,6 +9,6 @@ proc f(x) type {
 var a: f(1:int(64));
 var b: f(1:int(32));
 var c: f(1:int(16));
-writeln(typeToString(a.type));
-writeln(typeToString(b.type));
-writeln(typeToString(c.type));
+writeln(a.type:string);
+writeln(b.type:string);
+writeln(c.type:string);

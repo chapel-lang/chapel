@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -32,7 +32,7 @@ module AtomicsCommon {
       // Note CHPL_CACHE_REMOTE activates more complicated behavior
       // only when the cache for remote data is enabled; it's possible
       // that the more complicated behavior would benefit single-locale
-      // situations as well but curently our atomics implementation doesn't
+      // situations as well but currently our atomics implementation doesn't
       // do anything with the order argument (except for when the cache
       // for remote data is enabled).
       if CHPL_CACHE_REMOTE then _cnt.add(cnt, order=memory_order_relaxed);

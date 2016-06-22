@@ -6,7 +6,7 @@ writeln("r2 is: ", r2);
 writeln("r(r2) is: ", r(r2));
 writeln("r2(r) is: ", r2(r));
 
-writeln("r.type is: ", typeToString(r.type));
-writeln("r2.type is: ", typeToString(r2.type));
-writeln("r(r2).type is: ", typeToString(r(r2).type));
-writeln("r2(r).type is: ", typeToString(r2(r).type));
+writeln("r.type is: ", r.type:string);
+writeln("r2.type is: ", r2.type:string);
+writeln("r(r2).type is: ", r(r2).type:string);
+writeln("r2(r).type is: ", r2(r).type:string);

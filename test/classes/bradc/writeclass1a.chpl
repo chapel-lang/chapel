@@ -3,7 +3,7 @@ class myclass {
   var y: real;
 }
 
-proc myclass.writeThis(f:Writer) {
+proc myclass.writeThis(f) {
   f.write(x, " ", y);
 }
 
@@ -20,9 +20,13 @@ b.y = 5.6;
 
 writeln("a is: ", a, ", b is: ", b);
 
+delete a;
+
 a = b;
 
 a.x = 7;
 b.y = 8.9;
 
 writeln("a is: ", a, ", b is: ", b);
+
+delete a;

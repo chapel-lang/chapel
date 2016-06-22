@@ -45,11 +45,11 @@ iter HDFSmap(dataFile: string, namenode: string = "default", port: int(32) = 0) 
 
 
   // use const instead of var -- better optimizations this way
-  const hdfsFS: c_void_ptr = HDFS.hdfsConnect(namenode, port);
-  const fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, dataFile);
-  const blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile, 0, fileInfo.mSize); // incr 0?
+  const hdfsFS: c_void_ptr = HDFS.hdfsConnect(namenode.localize().c_str(), port);
+  const fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, dataFile.localize().c_str());
+  const blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile.localize().c_str(), 0, fileInfo.mSize); // incr 0?
   const blockCount = HDFS.chadoopGetBlockCount(blockHosts);
-  const dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, dataFile, O_RDONLY, 0, 0, 0);
+  const dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, dataFile.localize().c_str(), O_RDONLY, 0, 0, 0);
   assert(HDFS.IS_NULL(dataFileLocal) == HDFS.IS_NULL_FALSE, "Failed to open dataFileLocal");
   var length = (fileInfo.mBlockSize): int(32); // LOOK
 
@@ -58,7 +58,7 @@ iter HDFSmap(dataFile: string, namenode: string = "default", port: int(32) = 0) 
 
   for i in 0..#blockCount {
 
-    var owner_tmp = HDFS.chadoopGetHost(blockHosts, i: int(32), (i % fileInfo.mReplication): int(32));
+    var owner_tmp = HDFS.chadoopGetHost(blockHosts, i: int(32), (i % fileInfo.mReplication): int(32)):string;
     var IDX = indexOf(".", owner_tmp, 1);
     var owner = owner_tmp[1..IDX-1];
 
@@ -112,11 +112,11 @@ iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default"
       on loc {
 
         //======================== File connection =========================
-        var hdfsFS: c_void_ptr = HDFS.hdfsConnect(namenode, port);
+        var hdfsFS: c_void_ptr = HDFS.hdfsConnect(namenode.localize().c_str(), port);
         assert(HDFS.IS_NULL(hdfsFS) == HDFS.IS_NULL_FALSE, "Failed to connect to HDFS");
 
-        var fileInfo      = HDFS.chadoopGetFileInfo(hdfsFS, dataFile);
-        var dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, dataFile, O_RDONLY, 0, 0, 0);
+        var fileInfo      = HDFS.chadoopGetFileInfo(hdfsFS, dataFile.localize().c_str());
+        var dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, dataFile.localize().c_str(), O_RDONLY, 0, 0, 0);
         assert(HDFS.IS_NULL(dataFileLocal) == HDFS.IS_NULL_FALSE, "Failed to open dataFileLocal on loc ", here.id);
         // =================================== END =========================
 
@@ -143,7 +143,7 @@ iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default"
       // Setup a mapping loc --> {block1, block2, ...}
       var fileInfo = rcLocal(fileInfo_PL);
       var hdfsFS   = rcLocal(hdfsFS_PL);
-      var blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile, 0, fileInfo.mSize); // Investigate
+      var blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile.localize().c_str(), 0, fileInfo.mSize); // Investigate
       var blockCount: int = HDFS.chadoopGetBlockCount(blockHosts);
 
       const Space = {0..blockCount-1};
@@ -153,10 +153,10 @@ iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default"
       forall (j, i) in zip (Biter, 0..) {
         var fileInfo = rcLocal(fileInfo_PL);
         var hdfsFS   = rcLocal(hdfsFS_PL);
-        var blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile, 0, fileInfo.mSize); // Investigate
+        var blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile.localize().c_str(), 0, fileInfo.mSize); // Investigate
 
         //var owner_tmp = HDFS.chadoopGetHost(blockHosts, i: int(32), here.name + domainSuffix, (i % fileInfo.mReplication): int(32));
-        var owner_tmp = HDFS.chadoopGetHost(blockHosts, i: int(32), (i % fileInfo.mReplication): int(32));
+        var owner_tmp = HDFS.chadoopGetHost(blockHosts, i: int(32), (i % fileInfo.mReplication): int(32)):string;
         var IDX = indexOf(".", owner_tmp, 1);
         var owner = owner_tmp[1..IDX-1];
         Blockies(owner) += i;

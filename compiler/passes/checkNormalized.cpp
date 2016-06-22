@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -48,13 +48,13 @@ static void checkFunctionSignatures()
     } else if (fn->hasFlag(FLAG_CONSTRUCTOR) &&
                !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
       if (fn->retExprType)
-        USR_FATAL_CONT(fn, "constructors may not declare a return type");
+        USR_FATAL_CONT(fn, "initializers may not declare a return type");
       for_formals(formal, fn) {
         std::vector<SymExpr*> symExprs;
         collectSymExprs(formal, symExprs);
         for_vector(SymExpr, se, symExprs) {
           if (se->var == fn->_this) {
-            USR_FATAL_CONT(se, "invalid access of class member in constructor header");
+            USR_FATAL_CONT(se, "invalid access of class member in initializer argument list");
             break;
           }
         }
@@ -79,22 +79,30 @@ static void checkPrimNew()
     if (!call->isPrimitive(PRIM_NEW))
       continue;
 
-    // The operand of a new should be a contructor call.
-    if (CallExpr* ctorCall = toCallExpr(call->get(1)))
+    // The 1st operand of a new should be a type
+    // the remaining operands are arguments
+    if (Expr* typeExpr = call->get(1))
     {
-      if (isUnresolvedSymExpr(ctorCall->baseExpr))
+      if (isUnresolvedSymExpr(typeExpr))
         // We can't know anything more about this symbol until resolution.
         // So let it pass
         continue;
 
-      if (isTypeExpr(ctorCall))
+      if (isTypeExpr(typeExpr))
         // If we know the expression represents a type, that's also good.
         continue;
 
-      if (ctorCall->baseExpr && isTypeExpr(ctorCall->baseExpr))
-        // This is of the form <type-expr>(<args>)
-        // That is, it looks like a constructor.
+      if (isCallExpr(typeExpr))
+        // Sometimes the type expression is a (partial) callExpr
+        // This happens with nested classes, e.g.
+        // new this.someType()
         continue;
+
+      if (SymExpr* se = toSymExpr(typeExpr))
+        if (se->var->hasFlag(FLAG_MAYBE_TYPE))
+          // E.g. new gettype()
+          // where gettype is a parentheses-less method returning a type
+          continue;
 
       // Fail by default
       // (We may need additional filters above, to pass expected cases.)

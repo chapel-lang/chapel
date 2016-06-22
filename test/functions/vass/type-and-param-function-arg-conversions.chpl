@@ -19,8 +19,8 @@ writeln(paramFun(sv1));
 
 sv2 = 2;
 type t2 = typeFunNoUse(sv2);
-writeln(typeToString(t2));
+writeln(t2:string);
 
 sv3 = 3;
 type t3 = typeFunUse(sv3);
-writeln(typeToString(t3));
+writeln(t3:string);

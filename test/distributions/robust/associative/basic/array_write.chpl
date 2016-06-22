@@ -8,9 +8,7 @@ for i in D {
   DomIntType += myIdx;
   DomUintType += myIdx:uintType;
   DomRealType += myIdx:realType;
-  var s: string;
-  s.write(myIdx);
-  DomStringType += s;
+  DomStringType += stringify(myIdx);
 }
 
 forall ai in DomIntType do
@@ -25,6 +23,6 @@ forall ar in DomRealType do
   AReal(ar) = ar;
 writeln(AReal.sorted());
 
-forall as in DomStringType do
-  AString(as) = as;
+forall aStr in DomStringType do
+  AString(aStr) = aStr;
 writeln(AString.sorted());

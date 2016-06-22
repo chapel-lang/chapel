@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -50,28 +50,28 @@ void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
 
 void chpl_gen_startCommDiagnostics(void) {
   // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(__LINE__, __FILE__);
+  chpl_rmem_consist_release(0, 0);
   // And then start the comm diagnostics as usual.
   chpl_startCommDiagnostics();
 }
 
 void chpl_gen_stopCommDiagnostics(void) {
   // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(__LINE__, __FILE__);
+  chpl_rmem_consist_release(0, 0);
   // And then stop the comm diagnostics as usual.
   chpl_stopCommDiagnostics();
 }
 
 void chpl_gen_startCommDiagnosticsHere(void) {
   // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(__LINE__, __FILE__);
+  chpl_rmem_consist_release(0, 0);
   // And then start the comm diagnostics as usual.
   chpl_startCommDiagnosticsHere();
 }
 
 void chpl_gen_stopCommDiagnosticsHere(void) {
   // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(__LINE__, __FILE__);
+  chpl_rmem_consist_release(0, 0);
   // And then stop the comm diagnostics as usual.
   chpl_stopCommDiagnosticsHere();
 }
@@ -103,7 +103,7 @@ size_t chpl_comm_getenvMaxHeapSize(void)
       }
       else {
         chpl_warning("Cannot parse CHPL_RT_MAX_HEAP_SIZE environment "
-                     "variable; assuming 1g", 0, NULL);
+                     "variable; assuming 1g", 0, 0);
         size = ((size_t) 1) << 30;
       }
     }

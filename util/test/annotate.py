@@ -53,7 +53,7 @@ def get(data, graph, series, start, end, config_name):
   for i, date in enumerate(sorted(matches.keys()), start=1):
     date_string = time.strftime(_csv_date_format, date)
     ann_text = json.dumps('{0}: {1}'.format(date_string,
-      r'\n'.join(matches[date])))
+      '\n'.join(matches[date])))
     formatted.append(_annotation_format.format(
         series = series,
         x = date_string,

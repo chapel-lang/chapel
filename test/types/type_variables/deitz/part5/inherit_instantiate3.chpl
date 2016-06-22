@@ -17,3 +17,5 @@ proc foo(d : D) {
 }
 
 foo(d);
+
+delete d;

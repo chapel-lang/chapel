@@ -15,9 +15,9 @@ runs, additional tasks can be created to introduce parallel
 computation.  Chapel does not automatically parallelize programs,
 which is to say, tasks are not automatically created on the
 programmer's behalf.  Rather, the programmer must create all tasks,
-either directly (using the constructs described in this `Task
-Parallelism <index.html#task-parallelism>`_ section), or indirectly
-(through the use of `Data Parallelism <index.html#data-parallelism>`_
+either directly (using the constructs described in this
+:ref:`index-task-parallelism` section), or indirectly
+(through the use of :ref:`index-data-parallelism`
 abstractions that create the tasks).
 
 A Chapel task may be short-lived, or it may run for the program's
@@ -80,6 +80,6 @@ time, all your tasks should run in parallel.
 When the number of tasks created by a Chapel program exceeds the
 amount of hardware parallelism available, tasks will typically be
 multiplexed across the available hardware over time.  The specifics
-depend on how tasks are implementated by the runtime library; again,
+depend on how tasks are implemented by the runtime library; again,
 see :ref:`readme-tasks` for further details if you're curious to
 understand task scheduling in more detail.

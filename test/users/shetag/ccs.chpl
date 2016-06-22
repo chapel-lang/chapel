@@ -37,13 +37,13 @@ const atmA : [atmD] real;
 */
 
 const atmD : domain(3) = {0..anz+1, 0..any+1, 0..anx+1};
-const atmA : [atmD] real = -1; 
+var   atmA : [atmD] real = -1; 
 
 const ocnD : domain(3) = {0..onz+1, 0..ony+1, 0..onx+1};
-const ocnA : [ocnD] real = -1;
+var   ocnA : [ocnD] real = -1;
 
 const lndD : domain(3) = {0..lnz+1, 0..lny+1, 0..lnx+1};
-const lndA : [lndD] real = -1;
+var   lndA : [lndD] real = -1;
 
 atmA[1..anz, 1..any, 1..anx] = 1; 
 ocnA[1..onz, 1..ony, 1..onx] = 2;

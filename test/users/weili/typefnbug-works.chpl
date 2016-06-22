@@ -3,4 +3,4 @@ proc fun(type x) type {
   else if (x==int) then return real(32);
   else return real(64);
 }
-writeln(typeToString(fun(int)));
+writeln(fun(int):string);

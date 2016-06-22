@@ -31,7 +31,7 @@ config const numTrials = 10,
 //
 // The number of tasks to use per Chapel locale
 //
-//config const tasksPerLocale = min reduce Locales.numCores; // maxTaskPar?
+//config const tasksPerLocale = min reduce Locales.numPUs(); // maxTaskPar?
 
 //
 // Configuration constants to indicate whether or not to use a

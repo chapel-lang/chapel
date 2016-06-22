@@ -11,5 +11,5 @@ proc _defaultOf(type t) where t:bar(3) {
 
 var foo: bar(3);
 var baz: bar(2);
-writeln(foo);
-writeln(baz);
+writeln("(size = ", foo.size, ", whatev = ", foo.whatev, ")");
+writeln("(size = ", baz.size, ", whatev = ", baz.whatev, ")");

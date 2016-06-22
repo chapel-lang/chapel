@@ -95,7 +95,7 @@ This section clarifies the "Return Intents" section of the
 When a function's return intent is not specified explicitly,
 the function is said to have the "default" return intent.
 It is an abstract return intent. Depending on the return type,
-the corresonding concrete intent is either by value or `ref`.
+the corresponding concrete intent is either by value or `ref`.
 
 When the concrete intent is by value, the function returns
 an r-value. When the concrete intent is `ref`, it is equivalent

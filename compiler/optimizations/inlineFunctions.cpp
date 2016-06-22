@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -95,25 +95,13 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
     call->replace(return_value);
 }
 
-// Ideally we would compute this after inling all nested functions, but that
-// doesn't work due to some cases that explictly expect a ref and have deref
-// calls. Future work would be to find those cases and make change this check
-// to support nested inling if possible.
+// Ideally we would compute this after inlining all nested functions, but that
+// doesn't work due to some cases that explicitly expect a ref and have deref
+// calls. Future work would be to find those cases and change this check to
+// support nested inlining if possible.
 static bool canRemoveRefTemps(FnSymbol* fn) {
   if (!fn) // primitive
     return true;
-
-  // Work around for a bug with non-default size bools in no-local. I believe
-  // they dont work in no-local due to not preserving thier size during
-  // codegen.
-  // TODO: Check if this can be removed onces bool sizes are preserved
-  //       ( test/types/scalar/bradc/bools[2].chpl )
-  if (!fLocal) {
-    for_formals(formal, fn) {
-      if (is_bool_type(formal->typeInfo()))
-        return false;
-    }
-  }
 
   std::vector<CallExpr*> callExprs;
   collectCallExprs(fn, callExprs);
@@ -133,9 +121,9 @@ static bool canRemoveRefTemps(FnSymbol* fn) {
   return true;
 }
 
-// Search for the first assingment (a PRIM_MOVE) to a ref temp. If found, the
+// Search for the first assignment (a PRIM_MOVE) to a ref temp. If found, the
 // CallExpr doing the assignment will be returned, otherwise NULL. This works
-// because a ref temp's DefExpr and inital assignment are inserted togther
+// because a ref temp's DefExpr and initial assignment are inserted together
 // inside of insertReferenceTemps.
 static CallExpr* findRefTempInit(SymExpr* se) {
   Expr* expr = se->var->defPoint->next;

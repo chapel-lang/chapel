@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -92,8 +92,8 @@ class LayeredValueTable
       }
     };
    
-    typedef llvm::StringMap<Storage> map_type;
-    typedef std::list<map_type> layers_type;
+    typedef llvm::StringMap<Storage> map_type;//just map, key is string, value is Storage
+    typedef std::list<map_type> layers_type;// each element of the list is a map
     typedef layers_type::iterator layer_iterator;
     typedef map_type::iterator value_iterator;
     

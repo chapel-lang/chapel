@@ -17,6 +17,11 @@ Classes
 * indicate that parentheses-less methods are statically dispatched,
   just like fields
 
+Conversions
+-----------
+* how does explicit real->int conversion treat the fractional part
+  (round or truncate, and in which direction)?
+
 Expressions
 -----------
 * the index expressions section should also have a pointer to the
@@ -40,7 +45,7 @@ Functions
 ---------
 * need to make sure to explain the use of default values (and
   non-lvalue default values) for inout/out/ref arguments
-* move oveloading and resolution subsections to the end of the section
+* move overloading and resolution subsections to the end of the section
   *** this should be true after first class function stuff is removed.
 * define semantics of creating tuples with array components, etc.
 * define function resolution for type functions (perhaps by difference from

@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://shootout.alioth.debian.org/
+   http://benchmarksgame.alioth.debian.org
 
    contributed by Tom Hildebrandt, Brad Chamberlain, Lydia Duncan
    derived from the GNU C version by Bonzini, Bartlett, and Mellor
@@ -27,6 +27,8 @@ proc main() {
   // TODO: make our GMP methods accept uints, ints, etc. of various sizes so
   // that the user doesn't need to know C types?
 
+  param digitsPerLine = 10;
+
   //
   // extract and print n digits
   //
@@ -37,6 +39,16 @@ proc main() {
 
     if i % 10 == 0 then
       writeln("\t:", i);
+  }
+
+  //
+  // Pad out any trailing digits for the final line
+  //
+  const leftover = n%digitsPerLine;
+  if (leftover) {
+    for leftover..digitsPerLine do
+      write(" ");
+    writeln("\t:", n);
   }
 
   //

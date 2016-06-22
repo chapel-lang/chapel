@@ -72,25 +72,9 @@ CHPL_GASNET_CFG_SCRIPT=configure
 endif
 endif
 
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),tile-cc)
-CHPL_GASNET_CFG_SCRIPT=cross-configure-tilera
-XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
-XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
-endif
-
 CHPL_GASNET_ENV_VARS:= CC='$(CC)' CXX='$(CXX)'
 
-# Copied this usage from other/contrib/cross-configure-intel-mic
-ifeq ($(CHPL_MAKE_TARGET_ARCH),knc)
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),intel)
-CHPL_GASNET_CFG_OPTIONS = --enable-cross-compile --host=x86_64-unknown-linux-gnu --build=mic-unknown-linux-gnu --disable-aligned-segments --enable-pshm
-CHPL_GASNET_ENV_VARS:= CC='icc -mmic' CXX='icpc -mmic' HOST_CC='icc' CROSS_PAGESIZE='4096' CROSS_HAVE_SHM_OPEN=1 CROSS_HAVE_MMAP=1
-# I personally don't have a way to test this
-# MPI_CC = mpiicc -mmic
-else
-# CHPL_GASNET_CFG_OPTIONS = --disable-aligned-segments --enable-pshm
-endif
-endif
+CHPL_GASNET_CFG_OPTIONS += $(CHPL_GASNET_MORE_CFG_OPTIONS)
 
 MKFILES=$(shell find $(GASNET_INSTALL_DIR) -name \*.mak)
 

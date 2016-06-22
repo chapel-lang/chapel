@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -23,7 +23,7 @@
 
 void createDocsFileFolders(std::string filename);
 
-void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs);
+void printModule(std::ofstream *file, ModuleSymbol *mod, unsigned int tabs, std::string parentName);
 
 void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs);
 
@@ -44,5 +44,3 @@ static std::string generateSphinxProject(std::string dirpath);
 static void generateSphinxOutput(std::string sphinxDir, std::string outputDir);
 
 static std::string filenameFromMod(ModuleSymbol *mod, std::string docsWorkDir);
-
-static std::ofstream* openFileFromMod(ModuleSymbol *mod, std::string docsWorkDir);

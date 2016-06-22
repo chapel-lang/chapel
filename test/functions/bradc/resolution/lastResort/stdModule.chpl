@@ -22,5 +22,5 @@ proc foo(x: real) {
 
 //pragma "last resort"
 proc foo(x) {
-  compilerError("foo() can't be called with type: ", typeToString(x.type));
+  compilerError("foo() can't be called with type: ", x.type:string);
 }

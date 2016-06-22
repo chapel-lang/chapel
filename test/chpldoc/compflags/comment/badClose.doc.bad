@@ -1,4 +1,8 @@
 badClose.doc
+
+Usage:
+   use badClose.doc;
+
    proc bad()
       This comment is not closed properly
 

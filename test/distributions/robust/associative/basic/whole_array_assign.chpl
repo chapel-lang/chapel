@@ -10,7 +10,7 @@ for i in D {
   DomUintType += myIdx:uintType;
   DomRealType += myIdx:realType;
   var s: string;
-  s.write(myIdx);
+  s = myIdx:string;
   DomStringType += s;
 }
 if debug then writeln(DomIntType);
@@ -27,8 +27,8 @@ if debug then writeln(AUint);
 forall ar in DomRealType do
   AReal(ar) = ar;
 if debug then writeln(AReal);
-forall as in DomStringType do
-  AString(as) = as;
+forall aStr in DomStringType do
+  AString(aStr) = aStr;
 if debug then writeln(AString);
 
 testWhole(AInt);
@@ -49,7 +49,7 @@ proc testWhole(AAssoc) {
       break;
     }
   }
-  writeln("Whole array assignment (", typeToString(idxType), ") : ",
+  writeln("Whole array assignment (", idxType:string, ") : ",
           if success then "SUCCESS" else "FAILED");
 }
 

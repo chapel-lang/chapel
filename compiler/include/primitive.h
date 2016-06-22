@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -128,10 +128,6 @@ enum PrimitiveTag {
   PRIM_GET_END_COUNT,
   PRIM_SET_END_COUNT,
 
-  PRIM_PROCESS_TASK_LIST,
-  PRIM_EXECUTE_TASKS_IN_LIST,
-  PRIM_FREE_TASK_LIST,
-
   PRIM_GET_SERIAL,              // get serial state
   PRIM_SET_SERIAL,              // set serial state to true or false
 
@@ -144,7 +140,6 @@ enum PrimitiveTag {
   PRIM_CAST,
   PRIM_DYNAMIC_CAST,
   PRIM_TYPEOF,
-  PRIM_USE,
   PRIM_USED_MODULES_LIST,       // used modules in BlockStmt::modUses
   PRIM_TUPLE_EXPAND,
   PRIM_TUPLE_AND_EXPAND,
@@ -205,6 +200,7 @@ enum PrimitiveTag {
 
   PRIM_WIDE_GET_NODE,           // Get just the node portion of a wide pointer.
   PRIM_WIDE_GET_ADDR,           // Get just the address portion of a wide pointer.
+  PRIM_IS_WIDE_PTR,             // Returns true if the symbol is represented by a wide pointer.
 
   PRIM_ON_LOCALE_NUM,           // specify a particular localeID for an on clause.
 
@@ -217,7 +213,8 @@ enum PrimitiveTag {
 
   PRIM_INT_ERROR,
 
-  PRIM_CAPTURE_FN,
+  PRIM_CAPTURE_FN_FOR_CHPL,
+  PRIM_CAPTURE_FN_FOR_C,
   PRIM_CREATE_FN_TYPE,
 
   PRIM_STRING_COPY,
@@ -246,9 +243,8 @@ enum PrimitiveTag {
 
   PRIM_NUM_FIELDS,
   PRIM_FIELD_NUM_TO_NAME,
-  PRIM_FIELD_VALUE_BY_NUM,
-  PRIM_FIELD_ID_BY_NUM,
-  PRIM_FIELD_VALUE_BY_NAME,
+  PRIM_FIELD_NAME_TO_NUM,
+  PRIM_FIELD_BY_NUM,
   PRIM_IS_UNION_TYPE,
   PRIM_IS_ATOMIC_TYPE,
   PRIM_IS_REF_ITER_TYPE,
@@ -257,15 +253,15 @@ enum PrimitiveTag {
 
   PRIM_COERCE,
 
+  PRIM_CALL_RESOLVES,
+  PRIM_METHOD_CALL_RESOLVES,
+
   PRIM_ENUM_MIN_BITS,
   PRIM_ENUM_IS_SIGNED,
 
   PRIM_START_RMEM_FENCE,
   PRIM_FINISH_RMEM_FENCE,
 
-  PRIM_FIND_FILENAME_IDX, // search for a filename's index in a lookup table
-                          // used when converting line/file info into a form
-                          // that can be passed into argument bundles
   PRIM_LOOKUP_FILENAME,   // Given an index, get a given filename (c_string)
 
   PRIM_GET_COMPILER_VAR,

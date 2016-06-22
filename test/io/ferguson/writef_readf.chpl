@@ -6,7 +6,7 @@ proc testio(fmts: [] string, values: [])
 {
   for fmt in fmts {
     for v in values {
-      if noisy then writeln("Testing ",fmt," ",typeToString(v.type)," ",v);
+      if noisy then writeln("Testing ",fmt," ",v.type:string," ",v);
       for try in 1..4 {
         // We do it 4x:
         // try 1 is the simple way
@@ -157,8 +157,8 @@ proc main() {
           "%{######.######}",
           "%|n", "%<n", "%>n",
           "%|t", "%<t", "%>t"];
-  testio(fformats, [0.002:imag(32), -0.002:imag(32)]);
-  testio(fformats, [0.002:imag(64), -0.002:imag(64)]);
+  testio(mformats, [0.002:imag(32), -0.002:imag(32)]);
+  testio(mformats, [0.002:imag(64), -0.002:imag(64)]);
   testio(["%|4m", "%<4m", "%>4m"], [0.002:imag(32), -0.002:imag(32)]);
   testio(["%|8m", "%<8m", "%>8m"], [0.002:imag(64), -0.002:imag(64)]);
 

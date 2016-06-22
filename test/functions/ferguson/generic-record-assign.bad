@@ -1,1 +1,0 @@
-generic-record-assign.chpl:14: error: type mismatch in assignment from R_with_2_params(1,4) to R_with_2_params(1,4)

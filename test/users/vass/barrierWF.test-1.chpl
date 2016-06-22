@@ -1,7 +1,7 @@
 use barrierWF;
 
 // num tasks
-config const tk = 8; //here.numCores; should be maxTaskPar?
+config const tk = here.maxTaskPar;
 
 // num tries
 config const ty = 1000;
@@ -33,3 +33,5 @@ for try in 1..ty {
 }
 
 writeln("done");
+
+delete b;

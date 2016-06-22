@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -34,13 +34,13 @@
 #include "chpl-comm.h"
 
 static void* chpl_gmp_alloc(size_t sz) {
-  return chpl_mem_alloc(sz, CHPL_RT_MD_GMP, __LINE__, __FILE__);
+  return chpl_mem_alloc(sz, CHPL_RT_MD_GMP, 0, 0);
 }
 static void* chpl_gmp_realloc(void* ptr, size_t old_size, size_t new_size) {
-  return chpl_mem_realloc( ptr, new_size, CHPL_RT_MD_GMP, __LINE__, __FILE__);
+  return chpl_mem_realloc( ptr, new_size, CHPL_RT_MD_GMP, 0, 0);
 }
 static void chpl_gmp_free(void* ptr, size_t old_size) {
-  chpl_mem_free( ptr, __LINE__, __FILE__);
+  chpl_mem_free( ptr, 0, 0);
 }
 
 void chpl_gmp_init(void) {
@@ -59,7 +59,7 @@ void chpl_gmp_get_mpz(mpz_t ret, int64_t src_locale, __mpz_struct from)
   // Next, use GASNET to move the pointer data.
   chpl_gen_comm_get(ret[0]._mp_d, src_locale, from._mp_d,
                     sizeof(mp_limb_t) * ret[0]._mp_alloc, CHPL_TYPE_uint64_t,
-                    __LINE__, __FILE__);
+                    0, 0);
 
   //gmp_printf("got %Zd\n", ret);
 }

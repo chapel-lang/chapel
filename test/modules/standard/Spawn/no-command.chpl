@@ -12,4 +12,4 @@ assert(sub.running == false);
 // but on Linux, exit_status != 0.
 assert(error != 0 || sub.exit_status != 0);
 
-
+sub.close();

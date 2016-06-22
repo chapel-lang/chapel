@@ -30,7 +30,13 @@ proc countSolutions(boardSize: int, showEachSoln: bool) {
   showEachSolution = showEachSoln;
   if showEachSoln then
     writeln("Solving N Queens for N=", boardSize, "...");
-  tryQueenInNextRow(createBoard(boardSize));  // forego dealloc of this board
+
+  var board = createBoard(boardSize);
+
+  tryQueenInNextRow(board);  // forego dealloc of this board
+
+  delete board;
+
   writeln("Found ", solutionCount, " solutions for N=", boardSize);
 }
 
@@ -136,7 +142,7 @@ proc Board.nextPlacementIsLegal(col: int): bool {
 //
 config var show1line: bool = true;
 
-proc Board.writeThis(f:Writer) {
+proc Board.writeThis(f) {
   if boardSize <= 0 {
     f.write("the board is empty");
     return;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,8 +29,8 @@
 
 class AstPrintDocs : public AstVisitorTraverse {
 public:
-                  AstPrintDocs(std::ostream *file);
-  virtual         ~AstPrintDocs();
+  AstPrintDocs(std::string moduleName, std::string path, std::string parentName);
+                  ~AstPrintDocs();
 
   virtual bool   enterAggrType    (AggregateType*     node);
   virtual void   exitAggrType     (AggregateType*     node);
@@ -42,6 +42,7 @@ public:
   virtual void   exitModSym       (ModuleSymbol*      node);
   virtual void   visitVarSym      (VarSymbol*         node);
 
+  virtual bool   enterBlockStmt   (BlockStmt*         node);
   virtual bool   enterWhileDoStmt (WhileDoStmt*       node);
   virtual bool   enterDoWhileStmt (DoWhileStmt*       node);
   virtual bool   enterCForLoop    (CForLoop*          node);
@@ -51,9 +52,11 @@ public:
   virtual bool   enterGotoStmt    (GotoStmt*          node);
 
 private:
-  std::ostream*   file;
+  std::ofstream*  file;
   unsigned int    tabs;
-  std::stack<std::string> moduleNames;
+  std::string     moduleName;
+  std::string     pathWithoutPostfix;
+  std::string     parentName;
 };
 
 #endif

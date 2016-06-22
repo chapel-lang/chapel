@@ -7,7 +7,7 @@ class trio {
     return x1 + x2 + x3;
 }
 
-proc trio.writeThis(f : Writer) {
+proc trio.writeThis(f) {
   f.write("(", x1, " & ", x2, " & ", x3, ")");
 }
 
@@ -16,5 +16,9 @@ var t2 = new trio(1.0, 2.0, 3.0);
 
 writeln(t1);
 writeln(t1.sum());
+
 writeln(t2);
 writeln(t2.sum());
+
+delete t2;
+delete t1;

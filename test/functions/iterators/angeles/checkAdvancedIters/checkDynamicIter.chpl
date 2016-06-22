@@ -1,7 +1,7 @@
-// Test to check the correctness of the dynamic() Iterator from the AdvancedIters module
-use AdvancedIters;
+// Test to check the correctness of the dynamic() Iterator from the DynamicIters module
+use DynamicIters;
 
-config const nTasks=4;          // here.numCores; should be here.maxTaskPar?
+config const nTasks=4;          // number of cores; should be here.maxTaskPar?
 config const n:int=10000;       // The size of the range
 config const chunkSize:int=100; // The size of the chunk 
 var rng:range=1..n;             // The ranges

@@ -21,13 +21,13 @@ C declarations that should be usable from Chapel code.
     explicit strategy, one creates a Chapel declarations for each C
     function, variable, or type that one wants to use from Chapel code.
     This explicit strategy allows for a great deal of manual control over
-    how the Chapel compiler views a C function or type. This stategy is
+    how the Chapel compiler views a C function or type. This strategy is
     typically used within the Chapel standard modules for portability
     reasons.
  2) The extern block feature provides an implicit strategy, as described in
     the section `Support for Extern Blocks`_ below. This strategy makes
     use of the `clang` parser and so requires a Chapel compiler built with
-    LLVM support. The main advantage of the extern block stategy is that
+    LLVM support. The main advantage of the extern block strategy is that
     it is not necessary to provide Chapel declarations for every desired C
     function or type. Instead, such declarations are added automatically.
     In addition, the extern block can contain C function definitions in
@@ -177,7 +177,7 @@ c_string
 
 The c_string type maps to a constant C string (that is, const char*)
 that is intended for use locally. A c_string can be obtained from a
-Chapel string using the method string.c_str(). A Chapel string can be
+Chapel string using the method :proc:`~String.string.c_str`. A Chapel string can be
 constructed from a C string using the cast operator. Note however that
 because c_string is a local-only type, the .c_str() method can only be
 called on Chapel strings that are stored on the same locale; calling
@@ -846,7 +846,7 @@ Working with strings
 If you need to call a C function and provide a Chapel string, you may need to
 convert the Chapel string to a C string first.  Chapel string literals will
 automatically convert to C strings.  A Chapel string variable can be converted
-using the :proc:`string.c_str` method.
+using the :proc:`~String.string.c_str` method.
 
 myprint.h:
 

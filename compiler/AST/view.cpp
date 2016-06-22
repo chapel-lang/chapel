@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,7 @@
 #include "ForLoop.h"
 #include "log.h"
 #include "ParamForLoop.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -98,8 +99,8 @@ list_line(Expr* expr, BaseAST* parentAst) {
       return false;
   }
   if (Expr* pExpr = toExpr(parentAst))
-   if (pExpr->isStmt())
-    return true;
+    if (pExpr->isStmt() && !isUseStmt(pExpr))
+      return true;
   if (isSymbol(parentAst))
     return true;
   return false;
@@ -146,6 +147,8 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       list_sym(e->var, false);
     } else if (UnresolvedSymExpr* e = toUnresolvedSymExpr(expr)) {
       printf("%s ", e->unresolved);
+    } else if (isUseStmt(expr)) {
+      printf("use ");
     }
   }
 
@@ -182,6 +185,34 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
         printf("} ");
       else
         printf("}\n");
+    } else if (UseStmt* use = toUseStmt(expr)) {
+      if (!use->isPlainUse()) {
+        if (use->hasExceptList()) {
+          printf("except ");
+        } else {
+          printf("only ");
+        }
+        bool first = true;
+        for_vector(const char, str, use->named) {
+          if (first) {
+            first = false;
+          } else {
+            printf(", ");
+          }
+          printf("%s", str);
+        }
+
+        for (std::map<const char*, const char*>::iterator it = use->renamed.begin();
+             it != use->renamed.end(); ++it) {
+          if (first) {
+            first = false;
+          } else {
+            printf(", ");
+          }
+          printf("%s as %s", it->second, it->first);
+        }
+        printf("\n");
+      }
     } else if (CondStmt* cond = toCondStmt(parentAst)) {
       if (cond->condExpr == expr)
         printf("\n");
@@ -218,7 +249,7 @@ static const char* aidIgnoreError(const char* callerMsg, int id) {
                          " is small, use aid09(id) to examine it");
 }
 
-// This version of aid*() does not exlude any id.
+// This version of aid*() does not exclude any id.
 BaseAST* aid09(int id) {
   #define match_id(type)                        \
     forv_Vec(type, a, g##type##s) {             \

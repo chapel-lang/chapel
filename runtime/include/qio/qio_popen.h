@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -23,6 +23,7 @@
 #include "sys_basic.h"
 #include "qio.h"
 #include <stdarg.h>
+#include <signal.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,6 +62,7 @@ qioerr qio_proc_communicate(
     qio_file_t* error_file,
     qio_channel_t* error);
 
+qioerr qio_send_signal(int64_t pid, int qio_sig);
 
 #ifdef __cplusplus
 } // end extern "C"

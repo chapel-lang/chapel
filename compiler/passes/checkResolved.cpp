@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -213,7 +213,6 @@ checkReturnPaths(FnSymbol* fn) {
       fn->retType == dtVoid ||
       fn->retTag == RET_TYPE ||
       fn->hasFlag(FLAG_EXTERN) ||
-      fn->hasFlag(FLAG_FUNCTION_PROTOTYPE) ||
       fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
       fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
       fn->hasFlag(FLAG_AUTO_II))

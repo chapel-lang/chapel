@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -83,21 +83,24 @@ size_t chpl_getHeapPageSize(void) {
     if ((ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) == NULL)
       pageSize = chpl_getSysPageSize();
     else {
-      int scanCnt;
+
       size_t tmpPageSize;
+      int  num_scanned;
       char units;
 
-      if ((scanCnt = sscanf(ev, "%zd%1[kKmMgG]", &tmpPageSize, &units)) > 0) {
-        if (scanCnt == 2) {
+      if ((num_scanned = sscanf(ev, "%zi%c", &tmpPageSize, &units)) != 1) {
+        if (num_scanned == 2 && strchr("kKmMgG", units) != NULL) {
           switch (units) {
           case 'k': case 'K': tmpPageSize <<= 10; break;
           case 'm': case 'M': tmpPageSize <<= 20; break;
           case 'g': case 'G': tmpPageSize <<= 30; break;
           }
         }
+        else {
+          chpl_internal_error("unexpected HUGETLB_DEFAULT_PAGE_SIZE syntax");
+        }
       }
-      else
-        chpl_internal_error("unexpected HUGETLB_DEFAULT_PAGE_SIZE syntax");
+
       pageSize = tmpPageSize;
     }
 #else
@@ -198,6 +201,13 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
   if ((f = fopen("/proc/cpuinfo", "r")) == NULL)
     chpl_internal_error("Cannot open /proc/cpuinfo");
 
+  //
+  // If f is NULL, we should have exited by now, but Coverity doesn't
+  // seem to be catching this (anymore), so I'm adding an assertion
+  // to try and help it out.
+  //
+  assert(f != NULL);
+
   while (!feof(f) && fgets(buf, sizeof(buf), f) != NULL) {
     size_t buf_len = strlen(buf);
     int procTmp;
@@ -276,13 +286,7 @@ int chpl_getNumPhysicalCpus(chpl_bool accessible_only) {
     static int numCpus = 0;
 
     if (numCpus == 0) {
-#if defined __MIC__
-      //
-      // On Intel MIC, we seem (for now at least) not to have kernel
-      // scheduling affinity information.
-      //
-      numCpus = numPhysCpus;
-#elif defined __NetBSD__
+#if defined __NetBSD__
       numCpus = numPhysCpus;
 #else
       //
@@ -362,13 +366,7 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
     static int numCpus = 0;
 
     if (numCpus == 0) {
-#if defined __MIC__
-      //
-      // On Intel MIC, we seem (for now at least) not to have kernel
-      // scheduling affinity information.
-      //
-      numCpus = numLogCpus;
-#elif defined __NetBSD__
+#if defined __NetBSD__
       numCpus = numLogCpus;
 #else
       cpu_set_t m;
@@ -405,9 +403,9 @@ int chpl_getNumLogicalCpus(chpl_bool accessible_only) {
 //
 void chpl_moveToLastCPU(void) {
   //
-  // This is currently a no-op except on non-MIC Linux.
+  // This is currently a no-op except on Linux.
   //
-#if defined(__linux__) && !defined(__MIC__)
+#if defined __linux__
   {
     cpu_set_t mask;
     int i, cnt;
@@ -445,7 +443,7 @@ c_string chpl_nodeName(void) {
     uname(&utsinfo);
     namelen = strlen(utsinfo.nodename)+1;
     namespace = chpl_mem_realloc(namespace, namelen * sizeof(char), 
-                                 CHPL_RT_MD_LOCALE_NAME_BUF, 0, NULL);
+                                 CHPL_RT_MD_LOCALE_NAME_BUF, 0, 0);
     strcpy(namespace, utsinfo.nodename);
   }
   return namespace;

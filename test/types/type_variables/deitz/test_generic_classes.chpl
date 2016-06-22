@@ -15,5 +15,12 @@ class D {
 var c = new C(5, 4, 1, 2, 3);
 var d = new D(5, 4, c);
 
-writeln(c);
-writeln(d);
+writeln("{a = ", c.a, ", b = ", c.b, ", c = ", c.c,
+        ", d = ", c.d, ", e = ", c.e, "}");
+writeln("{a = ", d.a, ", b = ", d.b,
+        ", c = {a = ", d.c.a, ", b = ", d.c.b, ", c = ", d.c.c,
+        ", d = ", d.c.d, ", e = ", d.c.e, "}}");
+
+delete d;
+delete c;
+

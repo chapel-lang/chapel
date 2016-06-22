@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,7 @@
 #include "expr.h"
 #include "astutil.h"
 #include "stlUtil.h"
+#include "docsDriver.h"
 
 
 static void checkNamedArguments(CallExpr* call);
@@ -36,6 +37,19 @@ static void checkModule(ModuleSymbol* mod);
 
 void
 checkParsed() {
+  //
+  // Let's not bother checking the parsed code if we're generating
+  // docs.  In part because it seems reasonable to generate
+  // documentation for incorrect code; in part because there are other
+  // checks that occur post-docs pass that won't fire (i.e., this pass
+  // doesn't check everything); and in part because the code below, as
+  // written, doesn't work if you're documenting just a single file
+  // and haven't parsed all the other files it depends on.
+  //
+  if (fDocs) {
+    return;
+  }
+
   forv_Vec(CallExpr, call, gCallExprs) {
     checkNamedArguments(call);
   }
@@ -234,9 +248,9 @@ checkFunction(FnSymbol* fn) {
   if (isIterator && numYields == 0)
     USR_FATAL_CONT(fn, "iterator does not yield a value");
   if (!isIterator &&
-      fn->retTag == RET_REF &&
+      fn->returnsRefOrConstRef() &&
       numNonVoidReturns == 0) {
-    USR_FATAL_CONT(fn, "function declared 'var' but does not return anything");
+    USR_FATAL_CONT(fn, "function declared 'ref' but does not return anything");
   }
 }
 

@@ -6,19 +6,19 @@ proc foo(type t, c : t) where t:C {
   writeln("foo2 ", c.x);
 }
 
-class A { 
+class A {
   var x : int;
 }
 
-class B : A { 
+class B : A {
   var y : int;
 }
 
-class C { 
+class C {
   var x : real;
 }
 
-class D : C { 
+class D : C {
   var y : real;
 }
 
@@ -27,3 +27,6 @@ var d = new D(x = 3.0, y = 4.0);
 
 foo(B, b);
 foo(D, d);
+
+delete d;
+delete b;

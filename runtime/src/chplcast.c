@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -117,7 +117,7 @@ _define_string_to_int_precise(uint, 32, 1)
 _define_string_to_bigint_precise(uint, 64, 1, "%" SCNu64)
 
 
-chpl_bool c_string_to_chpl_bool(c_string str, int lineno, c_string filename) {
+chpl_bool c_string_to_chpl_bool(c_string str, int lineno, int32_t filename) {
   if (string_compare(str, "true") == 0) {
     return true;
   } else if (string_compare(str, "false") == 0) {
@@ -282,7 +282,7 @@ _define_string_to_complex_precise(complex, 128, "%lf", 64)
 
 #define _define_string_to_type(base, width)                             \
   _type(base, width) c_string_to_##base##width##_t(c_string str, int lineno, \
-                                                   c_string filename) {   \
+                                                   int32_t filename) {   \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
     _type(base, width) val = 0;                                         \
@@ -323,7 +323,7 @@ _define_string_to_type(uint, 64)
 
 #define _define_string_to_real_type(base, width)                        \
   _##base##width c_string_to_##base##width(c_string str, int lineno,    \
-                                           c_string filename) {         \
+                                           int32_t filename) {         \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
     _##base##width val = c_string_to_##base##width##_precise(str,       \
@@ -364,7 +364,7 @@ integral_to_c_string_copy(int64_t x, uint32_t size, chpl_bool isSigned)
   switch (SIGNED * isSigned + size)
   {
    default:
-    chpl_error("Unexpected case in integral_to_c_string_copy", -1, "");
+    chpl_error("Unexpected case in integral_to_c_string_copy", -1, 0);
     break;
 
    case UNSIGNED + 1: format = "%" PRIu8;  break;
@@ -377,7 +377,7 @@ integral_to_c_string_copy(int64_t x, uint32_t size, chpl_bool isSigned)
    case   SIGNED + 8: format = "%" PRId64; break;
   }
   sprintf(buffer, format, x);
-  return string_copy(buffer, 0, NULL);
+  return string_copy(buffer, 0, 0);
 }
 
 /*
@@ -402,12 +402,12 @@ c_string_copy
 real_to_c_string_copy(_real64 x, chpl_bool isImag)
 {
   if (isnan(x)) {
-    return string_copy(NANSTRING, 0, NULL);
+    return string_copy(NANSTRING, 0, 0);
   } else if (isinf(x)) {
     if (x < 0) {
-      return string_copy(NEGINFSTRING, 0, NULL);
+      return string_copy(NEGINFSTRING, 0, 0);
     } else {
-      return string_copy(POSINFSTRING, 0, NULL);
+      return string_copy(POSINFSTRING, 0, 0);
     }
   } else {
     char buffer[256];
@@ -417,6 +417,6 @@ real_to_c_string_copy(_real64 x, chpl_bool isImag)
     last = ensureDecimal(buffer);
     if (isImag)
       strcat(last, "i");
-    return string_copy(buffer, 0, NULL);
+    return string_copy(buffer, 0, 0);
   }
 }

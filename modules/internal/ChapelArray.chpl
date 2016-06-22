@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -149,15 +149,18 @@ module ChapelArray {
   pragma "no doc"
   config param useBulkTransferStride = false;
 
+  pragma "no doc" // no doc unless we decide to expose this
+  config param arrayAsVecGrowthFactor = 1.5;
+
   pragma "privatized class"
   proc _isPrivatized(value) param
     return !_local && ((_privatization && value.dsiSupportsPrivatization()) || value.dsiRequiresPrivatization());
 
   proc _newPrivatizedClass(value) {
 
-    var n = numPrivateObjects.fetchAdd(1);
+    const n = numPrivateObjects.fetchAdd(1);
 
-    var hereID = here.id;
+    const hereID = here.id;
     const privatizeData = value.dsiGetPrivatizeData();
     on Locales[0] do
       _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
@@ -186,8 +189,8 @@ module ChapelArray {
   }
 
   proc _reprivatize(value) {
-    var pid = value.pid;
-    var hereID = here.id;
+    const pid = value.pid;
+    const hereID = here.id;
     const reprivatizeData = value.dsiGetReprivatizeData();
     on Locales[0] do
       _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
@@ -229,7 +232,7 @@ module ChapelArray {
         t(i) = val;
       return t;
     } else {
-      compilerWarning(typeToString(val.type));
+      compilerWarning(val.type:string);
       compilerError("index rank must match domain rank");
       return val;
     }
@@ -270,6 +273,12 @@ module ChapelArray {
       return new _distribution(value, value);
   }
 
+  // Run-time type support
+  //
+  // NOTE: the bodies of functions marked with runtime type init fn such as
+  // chpl__buildDomainRuntimeType and chpl__buildArrayRuntimeType are replaced
+  // by the compiler to just create a record storing the arguments. The body
+  // is moved by the compiler to convertRuntimeTypeToValue.
 
   //
   // Support for domain types
@@ -365,8 +374,8 @@ module ChapelArray {
 
       if currType != elemType {
         compilerError( "Array literal element " + i +
-                       " expected to be of type " + typeToString(elemType) +
-                       " but is of type " + typeToString(currType) );
+                       " expected to be of type " + elemType:string +
+                       " but is of type " + currType:string );
       }
 
       A(i) = elems(i);
@@ -382,6 +391,9 @@ module ChapelArray {
 
     //Size the domain appropriately for the number of keys
     //This prevents expensive resizing as keys are added.
+    // Note that k/2 is the number of keys, since the tuple
+    // passed to this function has 2 elements (key and value)
+    // for each array element.
     D.requestCapacity(k/2);
     var A : [D] valType;
 
@@ -393,14 +405,14 @@ module ChapelArray {
 
       if elemKeyType != keyType {
          compilerError("Associative array key element " + (i+2)/2 +
-                       " expected to be of type " + typeToString(keyType) +
-                       " but is of type " + typeToString(elemKeyType));
+                       " expected to be of type " + keyType:string +
+                       " but is of type " + elemKeyType:string);
       }
 
       if elemValType != valType {
         compilerError("Associative array value element " + (i+1)/2
-                      + " expected to be of type " + typeToString(valType)
-                      + " but is of type " + typeToString(elemValType));
+                      + " expected to be of type " + valType:string
+                      + " but is of type " + elemValType:string);
       }
 
       D += elemKey;
@@ -510,9 +522,9 @@ module ChapelArray {
     for param i in 2..count do
       if keyType != _getLiteralType(keys(i).type) {
         compilerError("Associative domain element " + i +
-                      " expected to be of type " + typeToString(keyType) +
+                      " expected to be of type " + keyType:string +
                       " but is of type " +
-                      typeToString(_getLiteralType(keys(i).type)));
+                      _getLiteralType(keys(i).type):string);
       }
 
     //Initialize the domain with a size appropriate for the number of keys.
@@ -556,7 +568,7 @@ module ChapelArray {
 
   proc chpl__isRectangularDomType(type domainType) param {
     var dom: domainType;
-    return isRectangularDom(dom);
+    return isDomainType(domainType) && isRectangularDom(dom);
   }
 
   proc chpl__isSparseDomType(type domainType) param {
@@ -567,7 +579,7 @@ module ChapelArray {
   proc chpl__distributed(d: _distribution, type domainType) type {
     if !isDomainType(domainType) then
       compilerError("cannot apply 'dmapped' to the non-domain type ",
-                    typeToString(domainType));
+                    domainType:string);
     if chpl__isRectangularDomType(domainType) {
       var dom: domainType;
       return chpl__buildDomainRuntimeType(d, dom._value.rank, dom._value.idxType,
@@ -798,6 +810,11 @@ module ChapelArray {
     }
 
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
+    // the locale grid
+    proc targetLocales() {
+      return _value.dsiTargetLocales();
+    }
   }  // record _distribution
 
   inline proc ==(d1: _distribution(?), d2: _distribution(?)) {
@@ -962,9 +979,11 @@ module ChapelArray {
     // anything that is not covered by the above
     pragma "no doc"
     proc this(args ...?numArgs) {
-      if numArgs == rank then
+      if numArgs == rank {
+        // Doing this just to get a better compiler error
+        var ranges = _getRankChangeRanges(args);
         compilerError("invalid argument types for domain slicing");
-      else
+      } else
         compilerError("a domain slice requires either a single domain argument or exactly one argument per domain dimension");
     }
 
@@ -1011,12 +1030,32 @@ module ChapelArray {
       _value.dsiAdd(i);
     }
 
+    proc bulkAdd(inds: [] _value.idxType, isSorted=false,
+        isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank==1 {
+
+      if inds.size == 0 then return;
+
+      _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
+    }
+
+    proc bulkAdd(inds: [] _value.rank*_value.idxType, isSorted=false,
+        isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank>1 {
+
+      if inds.size == 0 then return;
+
+      _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
+    }
+
     /* Remove index ``i`` from this domain */
     proc remove(i) {
       _value.dsiRemove(i);
     }
 
-    pragma "no doc"
+    /* Request space for a particular number of values in an
+       domain.
+
+       Currently only applies to associative domains.
+     */
     proc requestCapacity(i) {
 
       if i < 0 {
@@ -1340,12 +1379,12 @@ module ChapelArray {
       return _value.dsiGetIndices();
 
     pragma "no doc"
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       _value.dsiSerialWrite(f);
     }
 
     pragma "no doc"
-    proc readThis(f: Reader) {
+    proc readThis(f) {
       _value.dsiSerialRead(f);
     }
 
@@ -1377,7 +1416,216 @@ module ChapelArray {
 
     pragma "no doc"
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
+    pragma "no doc"
+    proc defaultSparseDist {
+      // For now, this function just returns the same distribution
+      // as the dense one. That works for:
+      //  * sparse subdomains of defaultDist arrays (they use defaultDist)
+      //  * sparse subdomains of Block distributed arrays (they use Block)
+      // However, it is likely that DSI implementations will need to be
+      // able to further customize this behavior. In particular, we
+      // could add e.g. dsiDefaultSparseDist to the DSI interface
+      // and have this function use _value.dsiDefaultSparseDist()
+      // (or perhaps _value.dist.dsiDefaultSparseDist() ).
+      return _getDistribution(_value.dist);
+    }
+
+    /* Cast a rectangular domain to another rectangular domain type.
+       If the old type is stridable and the new type is not stridable,
+       ensure that the stride was 1.
+     */
+    proc safeCast(type t)
+      where chpl__isRectangularDomType(t) && isRectangularDom(this) {
+      const tmpD: t;
+      if tmpD.rank != this.rank then
+        compilerError("rank mismatch in cast");
+      if tmpD.idxType != this.idxType then
+        compilerError("idxType mismatch in cast");
+      if tmpD.stridable == this.stridable then
+        return this;
+      else if !tmpD.stridable && this.stridable {
+        const inds = this.getIndices();
+        var unstridableInds: rank*range(tmpD.idxType, stridable=false);
+
+        for param dim in 1..inds.size {
+          if inds(dim).stride != 1 then
+            halt("non-stridable domain assigned non-unit stride in dimension ", dim);
+          unstridableInds(dim) = inds(dim).safeCast(range(tmpD.idxType,
+                                                          stridable=false));
+        }
+        tmpD.setIndices(unstridableInds);
+        return tmpD;
+      } else /* if tmpD.stridable && !this.stridable */ {
+        tmpD = this;
+        return tmpD;
+      }
+    }
+
+    // the locale grid
+    proc targetLocales() {
+      return _value.dsiTargetLocales();
+    }
+
+    /* Return true if the local subdomain can be represented as a single
+       domain. Otherwise return false. */
+    proc hasSingleLocalSubdomain() param {
+      return _value.dsiHasSingleLocalSubdomain();
+    }
+
+    /* Return the subdomain that is local to the current locale */
+    proc localSubdomain() {
+      if !_value.dsiHasSingleLocalSubdomain() then
+        compilerError("Domain's local domain is not a single domain");
+      return _value.dsiLocalSubdomain();
+    }
+
+    /* Yield the subdomains that are local to the current locale */
+    iter localSubdomains() {
+      if _value.dsiHasSingleLocalSubdomain() then
+        yield _value.dsiLocalSubdomain();
+      else
+        for d in _value.dsiLocalSubdomains() do yield d;
+    }
   }  // record _domain
+
+  // this is a helper function for bulkAdd functions in sparse subdomains.
+  // NOTE:it assumes that nnz array of the sparse domain has non-negative 
+  // indices. If, for some reason it changes, this function and bulkAdds have to
+  // be refactored. (I think it is a safe assumption at this point and keeps the
+  // function a bit cleaner than some other approach. -Engin)
+  proc __getActualInsertPts(d, inds, 
+      isIndsSorted, isUnique) /* where isSparseDom(d) */ {
+
+    //find individual insert points
+    //and eliminate duplicates between inds and dom
+    var indivInsertPts: [inds.domain] int;
+    var actualInsertPts: [inds.domain] int; //where to put in newdom
+
+    if !isIndsSorted then sort(inds);
+
+    //eliminate duplicates --assumes sorted
+    if !isUnique {
+      //make sure lastInd != inds[inds.domain.low]
+      var lastInd = inds[inds.domain.low] + 1; 
+      for (i, p) in zip(inds, indivInsertPts)  {
+        if i == lastInd then p = -1;
+        else lastInd = i;
+      }
+    }
+
+    //verify sorted and no duplicates if not --fast
+    if boundsChecking {
+      // TODO there seems to be a bug while resolving Sort.isSorted, therefore
+      // for this function the argument is still isIndsSorted, instead of
+      // isSorted. This should be changed when Sort.isSorted is working.
+      if !isSorted(inds) then
+        halt("bulkAdd: Data not sorted, call the function with isSorted=false");
+
+      //check duplicates assuming sorted
+      const indsStart = inds.domain.low;
+      const indsEnd = inds.domain.high;
+      var lastInd = inds[indsStart];
+      for i in indsStart+1..indsEnd {
+        if inds[i] == lastInd && indivInsertPts[i] != -1 then 
+          halt("There are duplicates, call the function with isUnique=false"); 
+      }
+
+      for i in inds do d.boundsCheck(i);
+
+    }
+
+    forall (i,p) in zip(inds, indivInsertPts) {
+      if isUnique || p != -1 { //don't do anything if it's duplicate
+        const (found, insertPt) = d.find(i);
+        p = if found then -1 else insertPt; //mark as duplicate
+      }
+    }
+
+    //shift insert points for bulk addition
+    //previous indexes that are added will cause a shift in the next indexes
+    var actualAddCnt = 0;
+
+    //NOTE: this can also be done with scan
+    for (ip, ap) in zip(indivInsertPts, actualInsertPts) {
+      if ip != -1 {
+        ap = ip + actualAddCnt;
+        actualAddCnt += 1;
+      }
+      else ap = ip;
+    }
+
+    return (actualInsertPts, actualAddCnt);
+
+  }
+
+  proc +=(ref sd: domain, inds: [] sd.idxType) 
+    where isSparseDom(sd) && sd.rank == 1 {
+    
+    if inds.size == 0 then return;
+
+    sd._value.dsiBulkAdd(inds);
+  }
+
+  proc +=(ref sd: domain, inds: [] sd.rank*sd.idxType ) 
+    where isSparseDom(sd) && sd.rank > 1 {
+
+    if inds.size == 0 then return;
+
+    sd._value.dsiBulkAdd(inds);
+  }
+
+  /*
+    Currently this is not optimized for addition of a sparse
+  */
+  proc +=(ref sd: domain, d: domain) 
+    where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
+
+    if d.size == 0 then return;
+
+    type _idxType = if sd.rank==1 then int else sd.rank*int;
+    const indCount = d.numIndices;
+    const arr: [{0..#indCount}] _idxType;
+  
+    //this could be a parallel loop. but ranks don't match -- doesn't compile
+    for (a,i) in zip(arr,d) do a=i;
+
+    sd._value.dsiBulkAdd(arr, true, true, false);
+  }
+
+  /* Cast a rectangular domain to a new rectangular domain type.  If the old
+     type was stridable and the new type is not stridable then assume the
+     stride was 1 without checking.
+
+     For example:
+     {1..10 by 2}:domain(stridable=false)
+
+     results in the domain '{1..10}'
+   */
+  pragma "no doc"
+  proc _cast(type t, d: domain) where chpl__isRectangularDomType(t) && isRectangularDom(d) {
+    const tmpD: t;
+    if tmpD.rank != d.rank then
+      compilerError("rank mismatch in cast");
+    if tmpD.idxType != d.idxType then
+      compilerError("idxType mismatch in cast");
+
+    if tmpD.stridable == d.stridable then
+      return d;
+    else if !tmpD.stridable && d.stridable {
+      var inds = d.getIndices();
+      var unstridableInds: d.rank*range(tmpD.idxType, stridable=false);
+
+      for param i in 1..tmpD.rank {
+        unstridableInds(i) = inds(i):range(tmpD.idxType, stridable=false);
+      }
+      tmpD.setIndices(unstridableInds);
+      return tmpD;
+    } else /* if tmpD.stridable && !d.stridable */ {
+      tmpD = d;
+      return tmpD;
+    }
+  }
 
   proc chpl_countDomHelp(dom, counts) {
     var ranges = dom.dims();
@@ -1547,6 +1795,11 @@ module ChapelArray {
     return true;
   }
 
+  pragma "no doc"
+  proc shouldReturnRvalueByConstRef(type t) param {
+    if isPODType(t) then return false;
+    return true;
+  }
 
   // Array wrapper record
   pragma "array"
@@ -1601,7 +1854,7 @@ module ChapelArray {
     proc rank param return this.domain.rank;
 
     // When 'this' is 'const', so is the returned l-value.
-    pragma "no doc"
+    pragma "no doc" // ref version
     pragma "reference to const when const this"
     inline proc this(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
@@ -1609,25 +1862,88 @@ module ChapelArray {
       else
         return _value.dsiAccess(i(1));
     }
+    pragma "no doc" // value version, for POD types
+    inline proc this(i: rank*_value.dom.idxType)
+    where !shouldReturnRvalueByConstRef(_value.eltType)
+    {
+      if isRectangularArr(this) || isSparseArr(this) then
+        return _value.dsiAccess(i);
+      else
+        return _value.dsiAccess(i(1));
+    }
+    pragma "no doc" // const ref version, for not-POD types
+    inline proc this(i: rank*_value.dom.idxType) const ref
+    where shouldReturnRvalueByConstRef(_value.eltType)
+    {
+      if isRectangularArr(this) || isSparseArr(this) then
+        return _value.dsiAccess(i);
+      else
+        return _value.dsiAccess(i(1));
+    }
 
-    pragma "no doc"
+
+
+    pragma "no doc" // ref version
     pragma "reference to const when const this"
     inline proc this(i: _value.dom.idxType ...rank) ref
       return this(i);
 
-    pragma "no doc"
+    pragma "no doc" // value version, for POD types
+    inline proc this(i: _value.dom.idxType ...rank)
+    where !shouldReturnRvalueByConstRef(_value.eltType)
+      return this(i);
+
+    pragma "no doc" // const ref version, for not-POD types
+    inline proc this(i: _value.dom.idxType ...rank) const ref
+    where shouldReturnRvalueByConstRef(_value.eltType)
+      return this(i);
+
+
+    pragma "no doc" // ref version
     pragma "reference to const when const this"
-    inline proc localAccess(i: rank*_value.dom.idxType) ref {
+    inline proc localAccess(i: rank*_value.dom.idxType) ref
+    {
+      if isRectangularArr(this) || isSparseArr(this) then
+        return _value.dsiLocalAccess(i);
+      else
+        return _value.dsiLocalAccess(i(1));
+    }
+    pragma "no doc" // value version, for POD types
+    inline proc localAccess(i: rank*_value.dom.idxType)
+    where !shouldReturnRvalueByConstRef(_value.eltType)
+    {
+      if isRectangularArr(this) || isSparseArr(this) then
+        return _value.dsiLocalAccess(i);
+      else
+        return _value.dsiLocalAccess(i(1));
+    }
+    pragma "no doc" // const ref version, for not-POD types
+    inline proc localAccess(i: rank*_value.dom.idxType) const ref
+    where shouldReturnRvalueByConstRef(_value.eltType)
+    {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiLocalAccess(i);
       else
         return _value.dsiLocalAccess(i(1));
     }
 
-    pragma "no doc"
+
+
+    pragma "no doc" // ref version
     pragma "reference to const when const this"
     inline proc localAccess(i: _value.dom.idxType ...rank) ref
       return localAccess(i);
+
+    pragma "no doc" // value version, for POD types
+    inline proc localAccess(i: _value.dom.idxType ...rank)
+    where !shouldReturnRvalueByConstRef(_value.eltType)
+      return localAccess(i);
+
+    pragma "no doc" // const ref version, for not-POD types
+    inline proc localAccess(i: _value.dom.idxType ...rank) const ref
+    where shouldReturnRvalueByConstRef(_value.eltType)
+      return localAccess(i);
+
 
     //
     // requires dense domain implementation that returns a tuple of
@@ -1737,7 +2053,7 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    inline proc these() ref {
+    inline proc these() {
       return _value.these();
     }
 
@@ -1860,12 +2176,12 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc writeThis(f: Writer) {
+    proc writeThis(f) {
       _value.dsiSerialWrite(f);
     }
 
     pragma "no doc"
-    proc readThis(f: Reader) {
+    proc readThis(f) {
       _value.dsiSerialRead(f);
     }
 
@@ -1931,10 +2247,6 @@ module ChapelArray {
 
        These are currently not parallel safe, and cannot safely be called by
        multiple tasks simultaneously on the same array.
-
-       The current implementation reallocates the array every time the domain
-       is modified.  This could be improved with a size doubling/halving
-       strategy.
      */
 
     /* Return true if the array has no elements */
@@ -1958,17 +2270,55 @@ module ChapelArray {
       return this[this.domain.high];
     }
 
+    /* Return a range that is grown or shrunk from r to accommodate 'r2' */
+    pragma "no doc"
+    inline proc resizeAllocRange(r: range, r2: range, factor=arrayAsVecGrowthFactor, param direction=1, param grow=1) {
+      // This should only be called for 1-dimensional arrays
+      const lo = r.low,
+            hi = r.high,
+            size = hi - lo + 1;
+      if grow > 0 {
+        const newSize = max(size+1, (size*factor):int); // Always grow by at least 1.
+        if direction > 0 {
+          return lo..#newSize;
+        } else {
+          return ..hi#-newSize;
+        }
+      } else {
+        // shrink to match the r2 bound on the side indicated by direction
+        if direction > 0 {
+          return lo..r2.high;
+        } else {
+          return r2.low..hi;
+        }
+      }
+    }
+
     /* Add element ``val`` to the back of the array, extending the array's
        domain by one. If the domain was ``{1..5}`` it will become ``{1..6}``.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc push_back(val: this.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("push_back");
       const lo = this.domain.low,
             hi = this.domain.high+1;
-      const newDom = {lo..hi};
+      const newRange = lo..hi;
       on this._value {
-        this._value.dsiReallocate(newDom);
-        this.domain.setIndices(newDom.getIndices());
+        if !this._value.dataAllocRange.member(hi) {
+          /* The new index is not in the allocated space.  We'll need to
+             realloc it. */
+          if this._value.dataAllocRange.length < this.domain.numIndices {
+            /* if dataAllocRange has fewer indices than this.domain it must not
+               be set correctly.  Set it to match this.domain to start.
+             */ 
+            this._value.dataAllocRange = this.domain.low..this.domain.high;
+          }
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange);
+          this._value.dsiReallocate({this._value.dataAllocRange});
+        }
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
       this[hi] = val;
@@ -1976,30 +2326,52 @@ module ChapelArray {
 
     /* Remove the last element from the array, reducing the size of the
        domain by one. If the domain was ``{1..5}`` it will become ``{1..4}``
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc pop_back() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("pop_back");
+
+      if boundsChecking && isEmpty() then
+        halt("pop_back called on empty array");
+
       const lo = this.domain.low,
             hi = this.domain.high-1;
-      const newDom = {lo..hi};
+      const newRange = lo..hi;
       on this._value {
-        this._value.dsiReallocate(newDom);
-        this.domain.setIndices(newDom.getIndices());
+        if this._value.dataAllocRange.length < this.domain.numIndices {
+          this._value.dataAllocRange = this.domain.low..this.domain.high;
+        }
+        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
+          this._value.dsiReallocate({this._value.dataAllocRange});
+        }
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
     }
 
     /* Add element ``val`` to the front of the array, extending the array's
        domain by one. If the domain was ``{1..5}`` it will become ``{0..5}``.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc push_front(val: this.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("push_front");
       const lo = this.domain.low-1,
             hi = this.domain.high;
-      const newDom = {lo..hi};
+      const newRange = lo..hi;
       on this._value {
-        this._value.dsiReallocate(newDom);
-        this.domain.setIndices(newDom.getIndices());
+        if !this._value.dataAllocRange.member(lo) {
+          if this._value.dataAllocRange.length < this.domain.numIndices {
+            this._value.dataAllocRange = this.domain.low..this.domain.high;
+          }
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1);
+          this._value.dsiReallocate({this._value.dataAllocRange});
+        }
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
       this[lo] = val;
@@ -2007,15 +2379,28 @@ module ChapelArray {
 
     /* Remove the first element of the array reducing the size of the
        domain by one.  If the domain was ``{1..5}`` it will become ``{2..5}``.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc pop_front() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("pop_front");
+
+      if boundsChecking && isEmpty() then
+        halt("pop_front called on empty array");
+
       const lo = this.domain.low+1,
             hi = this.domain.high;
-      const newDom = {lo..hi};
+      const newRange = lo..hi;
       on this._value {
-        this._value.dsiReallocate(newDom);
-        this.domain.setIndices(newDom.getIndices());
+        if this._value.dataAllocRange.length < this.domain.numIndices {
+          this._value.dataAllocRange = this.domain.low..this.domain.high;
+        }
+        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1, grow=-1);
+          this._value.dsiReallocate({this._value.dataAllocRange});
+        }
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
     }
@@ -2023,15 +2408,28 @@ module ChapelArray {
     /* Insert element ``val`` into the array at index ``pos``. Shift the array
        elements above ``pos`` up one index. If the domain was ``{1..5}`` it will
        become ``{1..6}``.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc insert(pos: this.idxType, val: this.eltType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("insert");
       const lo = this.domain.low,
             hi = this.domain.high+1;
-      const newDom = {lo..hi};
+      const newRange = lo..hi;
+
+      if boundsChecking && !newRange.member(pos) then
+        halt("insert at position " + pos + " out of bounds");
+
       on this._value {
-        this._value.dsiReallocate(newDom);
-        this.domain.setIndices(newDom.getIndices());
+        if !this._value.dataAllocRange.member(hi) {
+          if this._value.dataAllocRange.length < this.domain.numIndices {
+            this._value.dataAllocRange = this.domain.low..this.domain.high;
+          }
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange);
+          this._value.dsiReallocate({this._value.dataAllocRange});
+        }
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
       for i in pos..hi-1 by -1 do this[i+1] = this[i];
@@ -2041,38 +2439,63 @@ module ChapelArray {
     /* Remove the element at index ``pos`` from the array and shift the array
        elements above ``pos`` down one index. If the domain was ``{1..5}``
        it will become ``{1..4}``.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc remove(pos: this.idxType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove");
+
+      if boundsChecking && !this.domain.member(pos) then
+        halt("remove at position " + pos + " out of bounds");
+
       const lo = this.domain.low,
             hi = this.domain.high-1;
-      const newDom = {lo..hi};
+      const newRange = lo..hi;
       for i in pos..hi {
         this[i] = this[i+1];
       }
       on this._value {
-        this._value.dsiReallocate(newDom);
-        this.domain.setIndices(newDom.getIndices());
+        if this._value.dataAllocRange.length < this.domain.numIndices {
+          this._value.dataAllocRange = this.domain.low..this.domain.high;
+        }
+        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
+          this._value.dsiReallocate({this._value.dataAllocRange});
+        }
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
     }
 
     /* Remove ``count`` elements from the array starting at index ``pos`` and
        shift elements above ``pos+count`` down by ``count`` indices.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc remove(pos: this.idxType, count: this.idxType) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove count");
       const lo = this.domain.low,
             hi = this.domain.high-count;
-      if pos > hi then
-        halt("index ", pos+count, " is outside the supported range");
-      const newDom = {lo..hi};
+      if boundsChecking && pos+count-1 > this.domain.high then
+        halt("remove at position ", pos+count-1, " out of bounds");
+      if boundsChecking && pos < lo then
+        halt("remove at position ", pos, " out of bounds");
+
+      const newRange = lo..hi;
       for i in pos..hi {
         this[i] = this[i+count];
       }
       on this._value {
-        this._value.dsiReallocate(newDom);
-        this.domain.setIndices(newDom.getIndices());
+        if this._value.dataAllocRange.length < this.domain.numIndices {
+          this._value.dataAllocRange = this.domain.low..this.domain.high;
+        }
+        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
+          this._value.dsiReallocate({this._value.dataAllocRange});
+        }
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
     }
@@ -2082,6 +2505,9 @@ module ChapelArray {
        ``{1..5}`` and this is called with ``2..3`` as an argument, the new
        domain would be ``{1..3}`` and the array would contain the elements
        formerly at positions 1, 4, and 5.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc remove(pos: range(this.idxType, stridable=false)) where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("remove range");
@@ -2100,16 +2526,19 @@ module ChapelArray {
 
     /* Remove all elements from the array leaving the domain empty. If the
        domain was ``{5..10}`` it will become ``{5..4}``.
+
+       The array must be a rectangular 1-D array; its domain must be
+       non-stridable and not shared with other arrays.
      */
     proc clear() where chpl__isDense1DArray() {
       chpl__assertSingleArrayDomain("clear");
       const lo = this.domain.low,
             hi = this.domain.low-1;
       assert(hi < lo, "overflow occurred subtracting 1 from low bound in clear");
-      const newDom = {lo..hi};
+      const newRange = lo..hi;
       on this._value {
-        this._value.dsiReallocate(newDom);
-        this.domain.setIndices(newDom.getIndices());
+        this._value.dsiReallocate({newRange});
+        this.domain.setIndices((newRange,));
         this._value.dsiPostReallocate();
       }
     }
@@ -2164,8 +2593,6 @@ module ChapelArray {
     //
     return && reduce (this == that);
   }
-
-
 
 
   //
@@ -2395,10 +2822,14 @@ module ChapelArray {
   // integers and ranges; that is, it is a valid argument list for rank
   // change
   proc _validRankChangeArgs(args, type idxType) param {
+    proc _isRange(type idxType, r: range(?)) param return true;
+    proc _isRange(type idxType, x) param return false;
+
     proc _validRankChangeArg(type idxType, r: range(?)) param return true;
     proc _validRankChangeArg(type idxType, i: idxType) param return true;
     proc _validRankChangeArg(type idxType, x) param return false;
 
+    /*
     proc help(param dim: int) param {
       if !_validRankChangeArg(idxType, args(dim)) then
         return false;
@@ -2406,9 +2837,25 @@ module ChapelArray {
         return help(dim+1);
       else
         return true;
+    }*/
+
+    proc allValid() param {
+      for param dim in 1.. args.size {
+        if !_validRankChangeArg(idxType, args(dim)) then
+          return false;
+      }
+      return true;
+    }
+    proc oneRange() param {
+      for param dim in 1.. args.size {
+        if _isRange(idxType, args(dim)) then
+          return true;
+      }
+      return false;
     }
 
-    return help(1);
+    return allValid() && oneRange();
+    //return help(1);
   }
 
   proc _getRankChangeRanges(args) {
@@ -2469,6 +2916,14 @@ module ChapelArray {
   }
 
   proc =(ref a: domain, b: domain) {
+    if a.rank != b.rank then
+      compilerError("rank mismatch in domain assignment");
+    if a.idxType != b.idxType then
+      compilerError("index type mismatch in domain assignment");
+    if isRectangularDom(a) && isRectangularDom(b) then
+      if !a.stridable && b.stridable then
+        compilerError("cannot assign from a stridable domain to an unstridable domain without an explicit cast");
+
     if !isIrregularDom(a) && !isIrregularDom(b) {
       for e in a._value._arrs do {
         on e do e.dsiReallocate(b);
@@ -2804,16 +3259,17 @@ module ChapelArray {
   }
 
   proc =(ref a: [], b: _desync(a.eltType)) {
-    if isRectangularArr(a) {
-      forall e in a do
-        e = b;
-    } else {
-      compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
-      for e in a do
-        e = b;
-    }
+    forall e in a do
+      e = b;
   }
 
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_by(a:domain, b) { ... }
+   *
+   * because the parser renames the routine since 'by' is a keyword.
+   */
   proc by(a: domain, b) {
     var r: a.rank*range(a._value.idxType,
                       BoundedRangeType.bounded,
@@ -2822,6 +3278,27 @@ module ChapelArray {
     for param i in 1..a.rank do
       r(i) = a.dim(i) by t(i);
     var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, true, r);
+    if !noRefCount then
+      if (d.linksDistribution()) then
+        d.dist.incRefCount();
+    return _newDomain(d);
+  }
+
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_align(a:domain, b) { ... }
+   *
+   * because the parser renames the routine since 'align' is a keyword.
+   */
+  proc align(a: domain, b) {
+    var r: a.rank*range(a._value.idxType,
+                      BoundedRangeType.bounded,
+                      a.stridable);
+    var t = _makeIndexTuple(a.rank, b, expand=true);
+    for param i in 1..a.rank do
+      r(i) = a.dim(i) align t(i);
+    var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, a.stridable, r);
     if !noRefCount then
       if (d.linksDistribution()) then
         d.dist.incRefCount();
@@ -2849,7 +3326,7 @@ module ChapelArray {
      default iteration orders over both arrays.  */
   proc reshape(A: [], D: domain) {
     if !isRectangularDom(D) then
-      compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", typeToString(D.type));
+      compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", D.type:string);
     if A.size != D.size then
       halt("reshape(A,D) is invoked when A has ", A.size,
            " elements, but D has ", D.size, " indices");

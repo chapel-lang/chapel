@@ -17,12 +17,11 @@ writeln("myVariable1 = ", myVariable1);
 //
 // Here we declare a variable without a type.  Since 1.618 is a real
 // value, the variable is inferred to be of type real.  Note that we
-// print out the type by passing the type of the variable (via
-// myVariable2.type) to the typeToString procedure.
+// print out the type by casting it to a string.
 //
 var myVariable2 = 1.618;
 writeln("myVariable2 = ", myVariable2, " (type = ",
-        typeToString(myVariable2.type), ")");
+        myVariable2.type:string, ")");
 
 //
 // Variables can also be declared using type aliases.  Here we declare
@@ -31,9 +30,9 @@ writeln("myVariable2 = ", myVariable2, " (type = ",
 //
 type myType = uint(16);
 var myVariable3: myType = 3;
-writeln("myType = ", typeToString(myType));
+writeln("myType = ", myType:string);
 writeln("myVariable3 = ", myVariable3, " (type = ",
-        typeToString(myVariable3.type), ")");
+        myVariable3.type:string, ")");
 
 //
 // Instead of 'var', 'const' and 'param' can be used to declare
@@ -61,7 +60,7 @@ config type cfgType = complex;       // chpl variables.chpl -s cfgType=imag
 writeln("cfgVar = ", cfgVar,
         ", cfgConst = ", cfgConst,
         ", cfgParam = ", cfgParam,
-        ", cfgType = ", typeToString(cfgType));
+        ", cfgType = ", cfgType:string);
 
 //
 // Variable types and values propagate to the left.  Here, 'a' is a

@@ -12,7 +12,9 @@ record foo {
 
   proc append(e : t) {
    var anew : node(t) = new node(t);
+
     anew.element = e;
+
     if length > 0 {
       last.next = anew;
       last = anew;
@@ -20,31 +22,40 @@ record foo {
       first = anew;
       last = anew;
     }
+
     length += 1;
+
     return this;
   }
 
   proc copy() {
     var anew : foo(t);
     var tmp = first;
-    while (tmp != nil) {
+
+    while tmp != nil {
       anew.append(tmp.element);
-      tmp  = tmp.next;    
+      tmp  = tmp.next;
     }
-    return anew;     
+
+    return anew;
   }
 }
 
-proc foo.writeThis(fp: Writer) {
+proc foo.writeThis(fp) {
   fp.write("(/");
+
   var tmp = first;
+
   while tmp != nil {
     fp.write(tmp.element);
+
     tmp = tmp.next;
+
     if (tmp != nil) {
       fp.write(", ");
     }
   }
+
   fp.write("/)");
 }
 

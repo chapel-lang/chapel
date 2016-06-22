@@ -7,3 +7,6 @@ var k : int = 4;
 var s : list(int) = makeList( i, j, k );
 
 writeln(s);
+
+s.destroy();
+

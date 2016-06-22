@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -17,8 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef _chpl_mem_no_warning_macros_h_
-#define _chpl_mem_no_warning_macros_h_
+// NOTE: there is no include guard. This is so that the mem-warning and
+// mem-no-warning headers can be included an arbitrary number of times to
+// disable and then re-enable the macros
+
 
 // Leave malloc/free/etc to use the system allocator.
 // malloc/free may not return memory that can be
@@ -28,5 +30,3 @@
 #undef calloc
 #undef free
 #undef realloc
-
-#endif

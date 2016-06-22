@@ -1,0 +1,1 @@
+useExpr.chpl:4: error: 'use' statements must refer to module or enum symbols (e.g., 'use <module>[.<submodule>]*;')

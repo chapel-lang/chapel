@@ -1,6 +1,6 @@
 (i = 1, j = 2, x = 3.0, y = 4.0, a = test one, b = test two) (i = 6, j = 7, x = -1.1, y = -2.2, a = quick brown, b = fox jumped)
 [new MyRecord(i = 1, j = 2, x = 3.000000e+00, y = 4.000000e+00, a = "test one", b = "test two"), new MyRecord(i = 6, j = 7, x = -1.100000e+00, y = -2.200000e+00, a = "quick brown", b = "fox jumped")]
-[{i : 1, j : 2, x : 3.000000e+00, y : 4.000000e+00, a : "test one", b : "test two"}, {i : 6, j : 7, x : -1.100000e+00, y : -2.200000e+00, a : "quick brown", b : "fox jumped"}]
+[{"i":1, "j":2, "x":3.000000e+00, "y":4.000000e+00, "a":"test one", "b":"test two"}, {"i":6, "j":7, "x":-1.100000e+00, "y":-2.200000e+00, "a":"quick brown", "b":"fox jumped"}]
 101 102 103 104 105 106 107 108 109
 201 202 203 204 205 206 207 208 209
 301 302 303 304 305 306 307 308 309

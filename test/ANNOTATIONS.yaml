@@ -104,15 +104,54 @@ all:
       config: Single node XC
   12/09/15:
     - Added record-based strings (#2884)
+  12/16/15:
+    - Enable the Qthreads tasking shim (#3040)
+  01/06/16:
+    - Replace filenames with indices into a lookup table (#3049)
+  02/14/16:
+    - text: Default to jemalloc for gasnet configurations (#3287)
+      config: 16 node XC
+  02/17/16:
+    - text: Remove origin check to improve bulk transfer (#3301)
+      config: 16 node XC
+  02/19/16:
+    - text: Default to jemalloc for comm=ugni (#3321)
+      config: 16 node XC
+  02/22/16:
+    - Default to jemalloc for comm=none (#3333)
+  03/04/16:
+    - implemented doubling/halving for array-as-vec (#3380)
+  03/17/16:
+    - text: Switched gen compiler to gcc 5.1.0
+      config: 16 node XC, Single node XC
+  04/27/16:
+    - text: Optimization for returning wide pointers (#3742)
+      config: Single node XC, 16 node XC
+  05/05/16:
+    - text: ubuntu update to 16.04 (gcc upgraded to 5.3)
+      config: shootout
+  05/12/16:
+    - KACE removed from systems.  Should see less noise after this day.
+  05/31/16:
+    - Enable jemalloc's decay-based purging (#3926)
+  06/06/16:
+    - Avoid allocating arg bundles for local on statements (#3890)
+    - Upgrade target compiler versions (#218, internal)
 
 AllCompTime:
   11/09/14:
     - disable the task table by default
+  01/17/16:
+    - add dead string literal elimination (#3120)
 
 arrayPerformance-1d:
   03/19/15:
     - text: memory related, qthreads memory pool bug fix
       config: chap03
+
+array-of-strings-read:
+  04/14/16:
+    - string changes to bounds checking, isUpper (#3718)
 
 arr-forall:
   03/24/15:
@@ -131,6 +170,14 @@ bfs:
 binary-trees:
   12/05/14:
     - introduce "library mode"
+  01/25/16:
+    - Optimize iteration over anonymous low-bounded counted ranges (#3154)
+  03/14/16:
+    - upgrade jemalloc to 4.1.0 (#3447)
+  03/16/16:
+    - revert jemalloc to 4.0.4 (#3477)
+  05/28/16:
+    - upgrade jemalloc to 4.2.0 (#3919)
 
 chameneos-redux:
   07/08/13:
@@ -172,6 +219,10 @@ fasta:
     - enabled unlocked I/O on fasta and fasta-printf
   10/07/14:
     - Add c_string_copy type
+  01/14/16:
+    - optimize certain functions that return with ref-intent (#3101)
+  03/12/16:
+    - implemented good_alloc_size for jemalloc(#3446)
 
 forall-dom-range:
   01/21/15:
@@ -196,6 +247,10 @@ hpl_performance:
   12/11/15:
     - Fixed string leak in DimensionalDist2D (#3013)
 
+init:
+  05/03/16:
+    - Fix ref-return intent bugs (#3795)
+
 is:
   09/05/14:
     - switched uses of locale.numCores to locale.maxTaskPar
@@ -205,6 +260,44 @@ is:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
   05/21/15:
     - set dataParTasksPerLocale to 2 to avoid occasional validation failure
+
+isx:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-bucket-spmd:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-spmd:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx-no-return:
+  02/26/16:
+    - ISx ref to array (#3365)
+
+isx.xc-time:
+  02/26/16:
+    - ISx ref to array (#3365)
+  04/23/16:
+    - Switched to PCG random number generator (#3764)
+
+isx-bucket-spmd.xc-time:
+  02/26/16:
+    - ISx ref to array (#3365)
+  04/23/16:
+    - Switched to PCG random number generator (#3764)
+
+isx-spmd.xc-time:
+  02/26/16:
+    - ISx ref to array (#3365)
+  04/23/16:
+    - Switched to PCG random number generator (#3764)
+
+isx-perf-task.xc-time:
+  04/23/16:
+    - Switched to PCG random number generator (#3764)
 
 jacobi:
   03/07/14:
@@ -219,6 +312,10 @@ jacobi:
     - disable the task table by default
   01/30/15:
     - param protect all calls to chpl__testPar (#1200)
+  01/17/16:
+    - add dead string literal elimination (#3120)
+  04/01/16:
+    - casting bug fix (#3615)
 
 knucleotide:
   10/16/15:
@@ -244,6 +341,8 @@ mandelbrot:
     - maxTaskPar change delayed fifo->qthreads performance hit
   11/11/15:
     - Initial commit of C complexes
+  06/16/16:
+    - Change complex getter functions for .re and .im into "static inline" (#4033)
 
 mandelbrot-extras:
   01/03/14:
@@ -276,6 +375,10 @@ memleaks:
     - Fixed string leak in DimensionalDist2D (#3013)
   12/13/15:
     - Fixed string memory leak resulting from redundant autoCopies (#3023)
+  01/14/16:
+    - optimize certain functions that return with ref-intent (#3101)
+  03/10/16:
+    - Cleanups to miniMD (#3436)
 
 memleaksfull:
   07/08/14:
@@ -286,6 +389,8 @@ memleaksfull:
     - Fixed string leak in DimensionalDist2D (#3013)
   12/13/15:
     - Fixed string memory leak resulting from redundant autoCopies (#3023)
+  01/14/16:
+    - optimize certain functions that return with ref-intent (#3101)
 
 meteor:
   12/18/13:
@@ -300,12 +405,22 @@ miniMD:
     - param protect all calls to chpl__testPar -- resolve DefaultRect cast regression (#1200)
   03/17/15:
     -  Avoid shallow record copies in miniMD (#1643)
+  03/19/16:
+    -  Increase parallelism, decrease comm (#3483)
 
 nbody:
   03/17/14:
     - removed extra formal temps
   07/24/14:
     - chap04 Subtest random glitch
+  01/17/16:
+    - add dead string literal elimination (#3120)
+  03/14/16:
+    - upgrade jemalloc to 4.1.0 (#3447)
+  03/16/16:
+    - revert jemalloc to 4.0.4 (#3477)
+  05/28/16:
+    - upgrade jemalloc to 4.2.0 (#3919)
 
 parOpEquals:
   09/06/13:
@@ -315,6 +430,33 @@ parOpEquals:
   02/28/15:
     - (no-local) Move the check for src==dst from comm_get to array op= (#1410)
 
+pidigits:
+  05/16/16:
+    - switched release version to use ledrug algorithm
+
+prk-stencil:
+  02/14/16:
+    - Improved performance on PRK-stencil (#3288)
+  04/08/16:
+    - Looping over range instead of domain for weight matrix (#3500)
+  04/09/16:
+    - blockDist for useStencilDist output matrix and more (#3705)
+  05/07/16:
+    - Problem size increased from --order=1000 to --order=32000 (#3813)
+
+prk-stencil.xc-perf:
+  04/08/16:
+    - Looping over range instead of domain for weight matrix (#3500)
+  04/09/16:
+    - blockDist for useStencilDist output matrix and more (#3705)
+  05/07/16:
+    - Problem size increased from --order=1000 to --order=32000 (#3813)
+
+ra:
+  05/13/16:
+    - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
+      config: Single node XC
+
 regexdna:
   10/07/14:
     - Add c_string_copy type
@@ -322,12 +464,18 @@ regexdna:
     - started building re2 with optimizations (#2930)
   12/13/15:
     - Fixed string memory leak resulting from redundant autoCopies (#3023)
+  03/12/16:
+    - implemented good_alloc_size for jemalloc(#3446)
 
 revcomp:
   05/11/15:
     - various qio changes motivated by cygwin failures (#1943)
   10/29/15:
     - Difficult to consistently replicate
+
+sad:
+  05/03/16:
+    - inconclusive due to noise
 
 spectralnorm:
   01/21/15:
@@ -363,6 +511,11 @@ stencil:
   03/24/15:
     - with CCE, bug fix to avoid vectorizing when not valid
 
+stream:
+  05/13/16:
+    - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
+      config: Single node XC
+
 testSerialReductions:
   08/16/14:
     - result of Greg's commit to let the tasking layer determine parallelism
@@ -375,6 +528,10 @@ thread-ring:
 time_array_vs_ddata:
   05/31/14:
     - specializing binaries to target architectures
+  01/25/16:
+    - Optimize iteration over anonymous low-bounded counted ranges (#3154)
+  03/01/16:
+    - Extend early string-as-rec work to cover more sub-types of record (#3386)
 
 time_array_vs_tuple:
   08/19/14:
@@ -387,3 +544,11 @@ time_iterate:
 time-write:
   03/05/15:
     - no strings with externs update
+
+timeVectorArray:
+  03/05/16:
+    - implemented doubling/halving for array-as-vec (#3380) (no timing from 4th)
+  03/09/16:
+    - increased array-as-vec problem size (#3422)
+  05/28/16:
+    - upgrade jemalloc to 4.2.0 (#3919)

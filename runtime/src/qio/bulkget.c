@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #include "chplrt.h"
 #include "chpl-comm.h"
 #include "chpl-comm-compiler-macros.h"
+#include "chpl-linefile-support.h"
 
 #include "bulkget.h"
 
@@ -37,7 +38,8 @@ qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
   memset(&tmp, 0, sizeof(qbytes_t));
 
   // First, get the length and local pointer to the bytes.
-  chpl_gen_comm_get( &tmp, src_locale, src_addr, sizeof(qbytes_t), CHPL_TYPE_int64_t, -1, "<internal>");
+  chpl_gen_comm_get(&tmp, src_locale, src_addr, sizeof(qbytes_t),
+                    CHPL_TYPE_int64_t, -1, CHPL_FILE_IDX_INTERNAL);
   src_len = tmp.len;
   src_data = tmp.data;
 
@@ -50,7 +52,9 @@ qbytes_t* bulk_get_bytes(int64_t src_locale, qbytes_t* src_addr)
 
   // Next, get the data itself.
   if( src_data ) {
-    chpl_gen_comm_get( ret->data, src_locale, src_data, sizeof(uint8_t)*src_len, CHPL_TYPE_uint8_t, -1, "<internal>");
+    chpl_gen_comm_get(ret->data, src_locale, src_data,
+                      sizeof(uint8_t) * src_len, CHPL_TYPE_uint8_t, -1,
+                      CHPL_FILE_IDX_INTERNAL);
   }
 
   // Great! All done.
@@ -87,7 +91,7 @@ qioerr bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
                        dst_locale,
                        PTR_ADDBYTES(dst_addr, j),
                        sizeof(uint8_t)*iov[i].iov_len, CHPL_TYPE_uint8_t,
-                       -1, "<internal>" );
+                       -1, CHPL_FILE_IDX_INTERNAL );
 
     j += iov[i].iov_len;
   }

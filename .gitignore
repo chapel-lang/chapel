@@ -63,6 +63,9 @@ tags
 /doc/sphinx/source/modules/dists
 /doc/sphinx/source/modules/layouts
 /doc/sphinx/source/modules/internal
+/doc/sphinx/source/modules/packages
+/doc/sphinx/source/language/*.pdf
+/doc/sphinx/source/tools/chpldoc/man.rst
 !/doc/sphinx/source/index.rst
 !/doc/sphinx/source/technotes/index.rst
 !/doc/sphinx/source/platforms/index.rst
@@ -122,6 +125,7 @@ tags
 /test/chpldoc/compflags/folder/my-docs
 /test/chpldoc/compflags/folder/my_docs
 /test/chpldoc/compflags/folder/save-sphinx/my-sphinx
+/test/chpldoc/compflags/folder/save-sphinx/deep-sphinx
 
 /test/chplvis/TREEvis
 /test/chplvis/benchmarks-hpcc/FFTvis
@@ -315,7 +319,7 @@ tags
 /test/modules/standard/FileSystem/lydia/symlink/bar.txt
 /test/modules/standard/Path/lydia/realpath/blahblahblah.txt
 /test/modules/standard/Time/stonea/getCurrentDayOfWeek.good
-/test/modules/standard/machine/numCores.good
+/test/modules/standard/machine/numPUs.good
 /test/modules/standard/memory/countMemory/countMemory.*.good
 
 /test/multilocale/deitz/needMultiLocales/test_remote_file_read_class.txt
@@ -385,6 +389,8 @@ test/separate_compilation/jturner/libsimplefloat.so.a
 test/separate_compilation/jturner/libsubclass.so.a
 
 /test/studies/590o/alexco/*.txt
+/test/studies/IMSuite/leader_elect_lcr/outputleader_elect_lcr_*.txt
+/test/studies/IMSuite/vertexColor/outputvertexColoring*.txt
 /test/studies/amr/**/_output
 /test/studies/amr/**/*.tmp.save
 /test/studies/dijkstra/RtsGraph_out.txt

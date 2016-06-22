@@ -1,5 +1,5 @@
 proc writeDefaultValues(args:?t ...?n) where n*t(1) == t {
-  writeln(typeToString(args.type));
+  writeln(args.type:string);
   for param i in 1..n {
     var x: args(i).type;
     writeln(x);

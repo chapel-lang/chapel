@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -26,7 +26,6 @@ typedef enum {
   aprun_d,    // cores per locale
   aprun_N,    // locales per node
   aprun_j,    // cpus per node (newer versions of aprun)
-  aprun_k,    // place on Xeon Phi co-processor
   aprun_none
 } aprun_arg_t;
 

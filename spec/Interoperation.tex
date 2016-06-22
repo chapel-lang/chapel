@@ -209,7 +209,7 @@ it treats the named type as an opaque type.  The definition for an external type
 must be supplied by a C header file named on the \chpl{chpl} command line.
 
 Fixed-size C array types can be described within Chapel using its
-homogenous tuple type.  For example, the C typedef
+homogeneous tuple type.  For example, the C typedef
 \begin{chapel}
 typedef double vec[3];
 \end{chapel}
@@ -382,8 +382,8 @@ definitions for \#defines and enum symbols in addition to traditional C
 constants.
 
 \begin{craychapel}
-Note that since params must be known to Chapel at compile-time (and
-because the Chapel compiler doesn't have the ability to parse C code),
+Note that since params must be known to Chapel at compile-time and
+the Chapel compiler does not necessarily parse C code,
 external params are not supported.
 \end{craychapel}
 

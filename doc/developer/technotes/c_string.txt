@@ -148,7 +148,7 @@ support code to ensure that memory management is done correctly.
 * If a runtime support routine returns a "const char*" that refers to heap-allocated
   memory that is allocated within that routine, the return type should be c_string_copy.
 * It is illegal to return a c_string_copy object as an object of type c_string.  This will
-  result in memory leakage as outined above.
+  result in memory leakage as outlined above.
 
 * Any formal argument of type c_string may be used as a c_string within the routine and
   even returned (so long as the type is still c_string).  To coerce a c_string object to a
@@ -193,7 +193,7 @@ routine has a c_string formal at that location.  If a c_string_copy is passed, i
 coerced to a c_string and used as if it were a reference, so there is a potential memory
 leak there.
 
-The two ways to handle this situation are to explictly free the c_string_copy in the
+The two ways to handle this situation are to explicitly free the c_string_copy in the
 client code, or to supply an overloaded version of the called routine that has a
 c_string_copy formal in that position.  If the called routine is called from several
 locations in the code, supplying the overloaded function is the preferred approach.

@@ -3,6 +3,7 @@
 import sys, os, shutil, time, math, re, stat
 from optparse import OptionParser
 
+import datetime
 import fileReadHelp
 import json
 try:
@@ -224,6 +225,44 @@ def sort_csv(csvFile):
 
     data_to_csv(data, csvFile)
 
+# Yield dateformat-ed dates in the range [start_date, end_date]
+def date_range(start_date, end_date, dateformat='%Y-%m-%d'):
+  cur_date = datetime.datetime.strptime(start_date, dateformat)
+  end_date = datetime.datetime.strptime(end_date, dateformat)
+
+  while cur_date <= end_date:
+    yield cur_date.strftime(dateformat)
+    cur_date += datetime.timedelta(days=1)
+
+# Fill in missing dates in the csv file. Grabs the start and end date from the
+# file, and ensures that we have an entry for every date in the range.
+# We do this because annotations require an actual data point to attach to, so
+# we make sure there will always be a day available
+def fill_sparse_csv(csvFile):
+    data = parse_csv(csvFile)
+    keys = data.pop(0)
+    if len(data) > 1:
+        dates = zip(*data).pop(0)
+        dates = [date[0] for date in dates]
+        if len(dates) > 1:
+            start_date = dates[0]
+            end_date = dates[-1]
+
+            # for all the missing days append an empty entry to the end of the
+            # data (we'll sort later to get things in the right order)
+            missing_dates = set(date_range(start_date, end_date)) - set(dates)
+            for date in missing_dates:
+               # emptydate = [[date], [''], [''], ...]
+               emptydate = [[date]] + [['']]*(len(keys)-1)
+               data.append(emptydate)
+
+        # sort our data, we don't need to convert our date strings to datetimes
+        # because for ISO 8601 dates lexical order is also chronological order
+        data.sort()
+
+    data.insert(0, keys)
+    data_to_csv(data, csvFile)
+
 
 # Strips all but the first 'numseries' series from a csv file. Useful for
 # things like compiler performance testing where you want to display the top 10
@@ -259,6 +298,9 @@ def strip_series(csvFile, numseries):
 
 
 ############
+
+class CouldNotReadGraphFile(Exception):
+    pass
 
 # Global info about generating graphs
 class GraphStuff:
@@ -409,15 +451,18 @@ class GraphStuff:
 
 
     def genGraphStuff(self, fname, suites):
-        fullFname = self.testdir+'/'+fname
-        if not os.path.exists(fullFname):
-            fullFname = './'+fname
+        if os.path.isabs(fname):
+            fullFname = fname
+        else:
+            fullFname = self.testdir+'/'+fname
+            if not os.path.exists(fullFname):
+                fullFname = './'+fname
         if verbose:
             sys.stdout.write('Reading %s...\n'%(fullFname))
         lines=fileReadHelp.ReadFileWithComments(fullFname)
         if lines==None:
             sys.stdout.write('WARNING: Could not read graph description from %s.  Ignoring.\n'%(fullFname))
-            return
+            raise CouldNotReadGraphFile
 
         basename = os.path.splitext(os.path.basename(fname))[0]
 
@@ -524,7 +569,10 @@ class GraphClass:
     def __str__(self):
         l  = 'Graph: '+str(self.name)+' (id='+str(self.id)+')\n'
         l += '\ttitle: '+self.title+'\n'
-        l += '\tsuites: ['+','.join(suites)+']\n'
+        if self.suites == None or self.suites == [] or self.suites == [None]:
+            l += '\tsuites: none\n'
+        else:
+            l += '\tsuites: ['+','.join(self.suites)+']\n'
         l += '\tgraphname: '+self.graphname+'\n'
         l += '\tylabel: '+self.ylabel+'\n'
         if self.startdate != None:
@@ -726,6 +774,8 @@ class GraphClass:
         # functions section above, you can eliminate the intermediate step.
         if self.sort:
             sort_csv(fname)
+
+        fill_sparse_csv(fname)
 
         if self.numseries > 0:
             strip_series(fname, self.numseries)
@@ -1017,6 +1067,8 @@ def main():
         try:
             graphInfo.genGraphStuff(graph[0], graph[1])
             numGraphfiles += 1
+        except (CouldNotReadGraphFile):
+            pass  # do not increment numGraphfiles
         except (ValueError, IOError, OSError):
             return -1
 

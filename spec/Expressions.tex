@@ -1135,6 +1135,9 @@ proc <(a: uint(16), b: uint(16)): bool
 proc <(a: uint(32), b: uint(32)): bool
 proc <(a: uint(64), b: uint(64)): bool
 
+proc <(a: int(64), b: uint(64)): bool
+proc <(a: uint(64), b: int(64)): bool
+
 proc <(a: real(32), b: real(32)): bool
 proc <(a: real(64), b: real(64)): bool
 
@@ -1159,6 +1162,9 @@ proc >(a: uint(8), b: uint(8)): bool
 proc >(a: uint(16), b: uint(16)): bool
 proc >(a: uint(32), b: uint(32)): bool
 proc >(a: uint(64), b: uint(64)): bool
+
+proc >(a: int(64), b: uint(64)): bool
+proc >(a: uint(64), b: int(64)): bool
 
 proc >(a: real(32), b: real(32)): bool
 proc >(a: real(64), b: real(64)): bool
@@ -1185,6 +1191,9 @@ proc <=(a: uint(16), b: uint(16)): bool
 proc <=(a: uint(32), b: uint(32)): bool
 proc <=(a: uint(64), b: uint(64)): bool
 
+proc <=(a: int(64), b: uint(64)): bool
+proc <=(a: uint(64), b: int(64)): bool
+
 proc <=(a: real(32), b: real(32)): bool
 proc <=(a: real(64), b: real(64)): bool
 
@@ -1209,6 +1218,9 @@ proc >=(a: uint(8), b: uint(8)): bool
 proc >=(a: uint(16), b: uint(16)): bool
 proc >=(a: uint(32), b: uint(32)): bool
 proc >=(a: uint(64), b: uint(64)): bool
+
+proc >=(a: int(64), b: uint(64)): bool
+proc >=(a: uint(64), b: int(64)): bool
 
 proc >=(a: real(32), b: real(32)): bool
 proc >=(a: real(64), b: real(64)): bool
@@ -1252,6 +1264,9 @@ proc ==(a: uint(16), b: uint(16)): bool
 proc ==(a: uint(32), b: uint(32)): bool
 proc ==(a: uint(64), b: uint(64)): bool
 
+proc ==(a: int(64), b: uint(64)): bool
+proc ==(a: uint(64), b: int(64)): bool
+
 proc ==(a: real(32), b: real(32)): bool
 proc ==(a: real(64), b: real(64)): bool
 
@@ -1270,6 +1285,9 @@ proc !=(a: uint(8), b: uint(8)): bool
 proc !=(a: uint(16), b: uint(16)): bool
 proc !=(a: uint(32), b: uint(32)): bool
 proc !=(a: uint(64), b: uint(64)): bool
+
+proc !=(a: int(64), b: uint(64)): bool
+proc !=(a: uint(64), b: int(64)): bool
 
 proc !=(a: real(32), b: real(32)): bool
 proc !=(a: real(64), b: real(64)): bool
@@ -1360,6 +1378,15 @@ would be \chpl{"result: 3"}.
 The operator \chpl{by} is predefined on ranges and rectangular domains.
 It is described in~\rsec{By_Operator_For_Ranges} for ranges
 and~\rsec{Domain_Striding} for domains.
+
+\subsection{The Align Operator}
+\label{The_Align_Operator}
+\index{align@\chpl{align}}
+\index{operators!align@\chpl{align}}
+
+The operator \chpl{align} is predefined on ranges and rectangular domains.
+It is described in~\rsec{Align_Operator_For_Ranges} for ranges
+and~\rsec{Domain_Alignment} for domains.
 
 \subsection{The Range Count Operator}
 \label{The_Range_Count_Operator}

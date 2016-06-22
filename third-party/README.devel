@@ -1,71 +1,40 @@
-=============================================
-Chapel third-party directory : for developers
-=============================================
+=========================================
+Chapel third-party developer instructions
+=========================================
 
-This directory is designed to hold sources that were not developed by
-the Chapel team and which are released under distinct licenses from
-Chapel itself.  Current subdirectories that we do not make available in
-the release are:
+For certain third-party packages the un-tarballed package contents are
+in third-party/<package>/<package>-src/.  Version updates for those
+should be done as follows, using GASNet as an example and assuming the
+CWD is third-party/gasnet/:
 
-armci/
-  Summary: the PNNL ARMCI library for one-sided communication which we
-           are investigating using as an alternative to GASNet
+1. un-tarball the new package version into the directory it specifies,
+   for example GASNet-1.26.3
+2. git rm -r gasnet-src
+3. mv GASNet-1.26.3 gasnet-src
+4. git add --force gasnet-src
+   (the '--force' is needed so that it ignores our .gitignore)
+5. commit
+6. update the new sources by re-applying any needed patches and commit
+   (some packages are patched and some not; third-party/<package>/README
+   should say which is which)
+7. PR, merge, etc.
 
-  License: Batelle Open Source License (see:
-           http://www.emsl.pnl.gov/docs/parsoft/armci/license.htm)
+For other third-party packages the un-tarballed package contents are in
+third-party/<package>/<package>-<version>/.  This is our older layout
+and we're moving away from it, but some packages still use it.  Version
+updates are done as follows, using Qthreads as an example and assuming
+the CWD is third-party/qthread/:
 
-  Contact: For more information, please refer to:
-           http://www.emsl.pnl.gov/docs/parsoft/armci/
+1. un-tarball the new package version into the directory it specifies,
+   for example qthread-1.10
+2. change Makefile.include to reference the new package dir
+3. commit
+4. update the new sources by re-applying any needed patches and commit
+   (some packages are patched and some not; third-party/<package>/README
+   should say which is which)
+5. PR, merge, etc.
+6. git rm the old package dir
+7. PR, merge, etc.
 
-  See also: armci/armci-*/README
-
-
-mpich1/
-  Summary: the MPICH1 implementation of MPI that we use to launch
-           ARMCI programs
-
-  License: MPICH1 license and ROMIO license (see
-           mpich1/mpich-*/COPYRIGHT and mpich1/mpich-*/romio/COPYRIGHT)
-
-  Contact: For more information, please refer to:
-           http://www.mcs.anl.gov/research/projects/mpi/mpich1/
-
-  See also: mpich1/mpich-*/README
-
-
-openmpi/
-  Summary: the Open MPI message passing library used to implement a
-           prototype communication interface
-
-  License: The BSD license (see openmpi/openmpi-*/LICENSE)
-
-  Contact: For more information, please refer to:
-           http://www.open-mpi.org/
-
-  See also: openmpi/openmpi-*/README
-
-
-pvm/
-  Summary: the PVM message passing library that we are using to
-           prototype hybrid (multi-realm) Chapel execution
-
-  License: an ORNL variant off the BSD license (see the top of
-           pvm/pvm-*/pvm3/Readme for example)
-
-  Contact: For more information, please refer to:
-           http://www.csm.ornl.gov/pvm/)
-
-  See also: pvm/README
-
-
-txt2man/
-  Summary: Marc Vertes' shell script for converting text files to man
-           pages.  We use this to generate the Chapel man page
-
-  License: GPL (see comments at the top of txt2man/txt2man)
-
-  Contact: For more information, please refer to:
-           http://mvertes.free.fr/
-
-  See also: comments at the top of txt2man/txt2man
-
+(Note that Qthreads is not perfect here since it's not really released
+in "versions" currently.  But as an example it's good enough.)

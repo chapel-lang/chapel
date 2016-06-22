@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -35,7 +35,7 @@ typedef enum {
   parse_dash_E
 } chpl_parseArgsMode_t;
 
-void parseNumLocales(const char* numPtr, int32_t lineno, c_string filename);
+void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename);
 void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
                int* argc, char* argv[]);
 int32_t getArgNumLocales(void);
@@ -47,7 +47,7 @@ int chpl_specify_locales_error(void);
 // defined with main()
 //
 int handleNonstandardArg(int* argc, char* argv[], int argNum, 
-                         int32_t lineno, c_string filename);
+                         int32_t lineno, int32_t filename);
 void printAdditionalHelp(void);
 
 void printHelpTable(void);

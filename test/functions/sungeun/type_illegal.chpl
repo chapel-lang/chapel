@@ -2,5 +2,5 @@ proc foo() {
   return 2;
 }
 
-writeln(typeToString(foo.type));
+writeln(foo.type:string);
 
