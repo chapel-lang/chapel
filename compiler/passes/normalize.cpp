@@ -109,14 +109,6 @@ void normalize() {
     if (!fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) &&
         !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
       fixup_array_formals(fn);
-    if (fn->hasFlag(FLAG_LOCALE_MODEL_ALLOC)) {
-      INT_ASSERT(gChplHereAlloc==NULL);
-      gChplHereAlloc = fn;
-    }
-    if (fn->hasFlag(FLAG_LOCALE_MODEL_FREE)) {
-      INT_ASSERT(gChplHereFree==NULL);
-      gChplHereFree = fn;
-    }
     clone_parameterized_primitive_methods(fn);
     fixup_query_formals(fn);
     change_method_into_constructor(fn);
