@@ -140,6 +140,15 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
   new_c->addFlag(FLAG_NO_OBJECT);
   new_c->addFlag(FLAG_NO_WIDE_CLASS);
 
+  // Add the runtime header field
+  if (fn->hasFlag(FLAG_ON)) {
+    VarSymbol* field = new VarSymbol("_runtime_hdr", dtOnBundleRecord);
+    ctype->fields.insertAtTail(new DefExpr(field));
+  } else {
+    VarSymbol* field = new VarSymbol("_runtime_hdr", dtTaskBundleRecord);
+    ctype->fields.insertAtTail(new DefExpr(field));
+  }
+
   // add the function args as fields in the class
   int i = 0;    // Fields are numbered for uniqueness.
   for_actuals(arg, fcall) {
@@ -335,6 +344,9 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
                               ctype->symbol)));
   }
 
+  // Don't destroy rt hdr.
+  baData.needsDestroy.push_back(false);
+
   // set the references in the class instance
   int i = 1;
   for_actuals(arg, fcall) 
@@ -352,7 +364,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     // Copy the argument into the corresponding slot in the argument bundle.
     CallExpr *setc = new CallExpr(PRIM_SET_MEMBER,
                                   tempc,
-                                  ctype->getField(i),
+                                  ctype->getField(i+1), //+1 for rt header
                                   var);
     fcall->insertBefore(setc);
     i++;
@@ -536,7 +548,7 @@ static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* w
     // Now get the i'th class member. It should be an end count.
     // Change that to the downEndCount call.
 
-    Symbol *field = ctype->getField(i);
+    Symbol *field = ctype->getField(i+1); // +1 for rt header
     INT_ASSERT(field->getValType()->symbol->hasFlag(FLAG_END_COUNT));
 
     VarSymbol* tmp = newTemp("endcount", field->type);
@@ -640,44 +652,50 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
 
   // Create a call to the original function
   CallExpr *call_orig = new CallExpr(fn);
-  bool first = true;
+  int i = 0;
   for_fields(field, ctype)
   {
-    // insert args
-    VarSymbol* tmp = newTemp(field->name, field->type);
-    wrap_fn->insertAtTail(new DefExpr(tmp));
-    wrap_fn->insertAtTail(
-        new CallExpr(PRIM_MOVE, tmp,
-        new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
+    // Skip runtime header
+    if (i > 0) {
+      // insert args
+      VarSymbol* tmp = newTemp(field->name, field->type);
+      wrap_fn->insertAtTail(new DefExpr(tmp));
+      wrap_fn->insertAtTail(
+          new CallExpr(PRIM_MOVE, tmp,
+          new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
-    // Special case: 
-    // If this is an on block, remember the first field,
-    // but don't add to the list of actuals passed to the original on_fn.
-    // It contains the locale on which the new task is launched.
-    if (first && fn->hasFlag(FLAG_ON))
-      /* no-op */;
-    else
-      call_orig->insertAtTail(tmp);
+      // Special case:
+      // If this is an on block, remember the first field,
+      // but don't add to the list of actuals passed to the original on_fn.
+      // It contains the locale on which the new task is launched.
+      if (i == 1 && fn->hasFlag(FLAG_ON))
+        /* no-op */;
+      else
+        call_orig->insertAtTail(tmp);
+    }
 
-    first = false;
+    i++;
   }
 
   wrap_fn->retType = dtVoid;
   wrap_fn->insertAtTail(call_orig);     // add new call
 
   // Destroy any fields that we should be destroying.
-  int i = 0;
+  i = 0;
   for_fields(field, ctype)
   {
-    // insert auto destroy calls
-    VarSymbol* tmp = newTemp(field->name, field->type);
-    wrap_fn->insertAtTail(new DefExpr(tmp));
-    wrap_fn->insertAtTail(
-        new CallExpr(PRIM_MOVE, tmp,
-        new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
+    // Skip runtime header
+    if (i > 0) {
+      // insert auto destroy calls
+      VarSymbol* tmp = newTemp(field->name, field->type);
+      wrap_fn->insertAtTail(new DefExpr(tmp));
+      wrap_fn->insertAtTail(
+          new CallExpr(PRIM_MOVE, tmp,
+          new CallExpr(PRIM_GET_MEMBER_VALUE, wrap_c, field)));
 
-    if (baData.needsDestroy[i])
-      insertAutoDestroyForVar(tmp, wrap_fn);
+      if (baData.needsDestroy[i])
+        insertAutoDestroyForVar(tmp, wrap_fn);
+    }
 
     i++;
   }

@@ -6204,6 +6204,8 @@ void CallExpr::codegenInvokeOnFun() {
   FnSymbol*           fn       = isResolved();
   GenRet              localeId = get(1);
   const char*         fname    = NULL;
+  GenRet              argBundle;
+  GenRet              bundleSize;
   std::vector<GenRet> args(6);
 
   // get(1) is the locale
@@ -6220,10 +6222,13 @@ void CallExpr::codegenInvokeOnFun() {
   else
     fname = "chpl_executeOn";
 
+  argBundle  = codegenValue(get(2));
+  bundleSize = codegenValue(get(3));
+
   args[0] = codegenLocalAddrOf(localeId);
   args[1] = new_IntSymbol(ftableMap[fn], INT_SIZE_32);
-  args[2] = get(2);
-  args[3] = get(3);
+  args[2] = codegenCast("chpl_comm_on_bundle_p", argBundle);
+  args[3] = bundleSize;
   args[4] = fn->linenum();
   args[5] = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
 
@@ -6256,7 +6261,7 @@ void CallExpr::codegenInvokeTaskFun(const char* name) {
 
   args[0]      = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
   args[1]      = new_IntSymbol(ftableMap[fn], INT_SIZE_64);
-  args[2]      = codegenCastToVoidStar(taskBundle);
+  args[2]      = codegenCast("chpl_task_bundle_p", taskBundle);
   args[3]      = bundleSize;
   args[4]      = taskList;
   args[5]      = codegenValue(taskListNode);
