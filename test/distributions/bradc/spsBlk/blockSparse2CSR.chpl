@@ -2,6 +2,7 @@
 // We need to use the block distribution module.
 //
 use BlockDist;
+use LayoutCSR;
 
 //
 // The per-dimension size of the array.  Override using --n <val> on
@@ -13,7 +14,8 @@ config const n = 8;
 // The block-distributed dense domain that will serve as the parent
 // domain for the sparse one.
 //
-const Elems = {0..#n, 0..#n} dmapped Block({0..#n, 0..#n});
+const Elems = {0..#n, 0..#n} dmapped Block({0..#n, 0..#n},
+    sparseLayoutType=CSR);
 
 //
 // The sparse subdomain.  In the current code framework, the parent
