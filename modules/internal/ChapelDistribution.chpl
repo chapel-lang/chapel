@@ -246,8 +246,7 @@ module ChapelDistribution {
     // var dist;
 
     var nnz = 0; //: int;
-    /*var nnzDomSize = nnz; //: int; //seems a bit unnecessary*/
-    /*var nnzDom = {1..nnz};*/
+    var nnzDom = {1..nnz};
 
     proc dsiClear() {
       halt("clear not implemented for this distribution");
@@ -266,6 +265,22 @@ module ChapelDistribution {
       }
       else {
         return bulkAdd_help(inds, isSorted, isUnique);
+      }
+    }
+
+    inline proc _grow(size: int){
+      const oldNNZDomSize = nnzDom.size;
+      if (size > oldNNZDomSize) {
+        const _newNNZDomSize = if (oldNNZDomSize) then 2*oldNNZDomSize else 1;
+        nnzDom = {1.._newNNZDomSize};
+      }
+    }
+
+    inline proc _bulkGrow(size: int) {
+      if (nnz > nnzDom.size) {
+        const _newNNZDomSize = (exp2(log2(nnz)+1.0)):int;
+
+        nnzDom = {1.._newNNZDomSize};
       }
     }
 

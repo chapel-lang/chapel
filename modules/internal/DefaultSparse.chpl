@@ -27,17 +27,15 @@ module DefaultSparse {
   class DefaultSparseDom: BaseSparseDom {
     var dist: DefaultDist;
 
-    var nnzDom = {1..nnz};
     var indices: [nnzDom] index(rank, idxType);
 
     proc linksDistribution() param return false;
     proc dsiLinksDistribution()     return false;
 
-    proc DefaultSparseDom(param rank, type idxType,
-                                 dist: DefaultDist,
-                                 parentDom: domain) {
+    proc DefaultSparseDom(param rank, type idxType, dist: DefaultDist,
+        parentDom: domain) {
+
       this.dist = dist;
-      /*nnz = 0;*/
     }
 
     proc dsiBuildArray(type eltType)
@@ -149,12 +147,10 @@ module DefaultSparse {
       // increment number of nonzeroes
       nnz += 1;
 
+      const oldNNZDomSize = nnzDom.size;
       // double nnzDom if we've outgrown it; grab current size otherwise
-      var oldNNZDomSize = nnzDom.size;
-      if (nnz > oldNNZDomSize) {
-        const _newNNZDomSize = if (oldNNZDomSize) then 2*oldNNZDomSize else 1;
-        nnzDom = {1.._newNNZDomSize};
-      }
+      _grow(nnz);
+
       // shift indices up
       for i in insertPt..nnz-1 by -1 {
         indices(i+1) = indices(i);
@@ -250,11 +246,7 @@ module DefaultSparse {
       nnz += actualAddCnt;
 
       //grow nnzDom if necessary
-      if (nnz > nnzDom.size) {
-        const _newNNZDomSize = (exp2(log2(nnz)+1.0)):int;
-
-        nnzDom = {1.._newNNZDomSize};
-      }
+      _bulkGrow(nnz);
 
       //linearly fill the new colIdx from backwards
       var newIndIdx = indsDom.high; //index into new indices

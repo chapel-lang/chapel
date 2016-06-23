@@ -72,7 +72,6 @@ class CSRDom: BaseSparseDom {
 
   const rowDom: domain(1, idxType);
 
-  var nnzDom = {1..nnz};
   var rowStart: [rowDom] idxType;      // would like index(nnzDom)
   var colIdx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
@@ -265,18 +264,8 @@ class CSRDom: BaseSparseDom {
     nnz += 1;
 
     // double nnzDom if we've outgrown it; grab current size otherwise
-    /*var oldNNZDomSize = nnzDom.size;*/
-    /*if (nnz > nnzDomSize) {*/
-      /*nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;*/
-
-      /*nnzDom = {1..nnzDomSize};*/
-    /*}*/
-    // double nnzDom if we've outgrown it; grab current size otherwise
     var oldNNZDomSize = nnzDom.size;
-    if (nnz > oldNNZDomSize) {
-      const _newNNZDomSize = if (oldNNZDomSize) then 2*oldNNZDomSize else 1;
-      nnzDom = {1.._newNNZDomSize};
-    }
+    _grow(nnz);
 
     const (row,col) = ind;
 
@@ -315,17 +304,7 @@ class CSRDom: BaseSparseDom {
     nnz += actualAddCnt;
 
     //grow nnzDom if necessary
-    /*if (nnz > nnzDomSize) {*/
-      /*nnzDomSize = (exp2(log2(nnz)+1.0)):int;*/
-
-      /*nnzDom = {1..nnzDomSize};*/
-    /*}*/
-    //grow nnzDom if necessary
-    if (nnz > nnzDom.size) {
-      const _newNNZDomSize = (exp2(log2(nnz)+1.0)):int;
-
-      nnzDom = {1.._newNNZDomSize};
-    }
+    _bulkGrow(nnz);
 
     //linearly fill the new colIdx from backwards
     var newIndIdx = indsDom.high; //index into new indices
