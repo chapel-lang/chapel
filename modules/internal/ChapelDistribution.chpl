@@ -576,5 +576,22 @@ module ChapelDistribution {
     proc dsiSupportsBulkTransferInterface() param return false;
     proc doiCanBulkTransferStride() param return false;
   }
+
+  // currently there are some compiler bugs holding us back from having a
+  // BaseSparseArr class. Current sparse array classes have enough common
+  // methods and fields to make this effort worthwhile once compiler issues are
+  // resolved. some of the issues are/will be futures.
+
+  // while trying to get a very basic BaseSparseDom working I tried the
+  // following that hit an internal compiler bug with TYP1277, I wasn't able to
+  // create a minimal code that hits the same issue. It seems that we don't hit
+  // the bug when compiled with --devel or CHPL_DEVELOPER
+  /*
+  class BaseSparseArr: BaseArr {
+     type eltType;
+     param rank : int;
+     type idxType;
+  }
+   */
   
 }
