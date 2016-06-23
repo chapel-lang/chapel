@@ -5,7 +5,7 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_compiler, chpl_platform
+import chpl_platform
 from utils import memoize
 
 @memoize
@@ -15,7 +15,7 @@ def get():
     osx = platform_val.startswith('darwin')
     val = os.environ.get('CHPL_UNWIND')
     if val == 'libunwind' and linux:
-	    return 'libunwind';
+        return 'libunwind'
     if val == 'system' and (osx or linux):
         return 'system'
     return 'none'

@@ -6,8 +6,6 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 from chplenv import *
-from chplenv import chpl_unwind
-from chplenv import chpl_3p_libunwind_configs
 
 def print_mode(mode='list'):
     print_var.first_time = True
@@ -141,11 +139,6 @@ def print_mode(mode='list'):
                   mode, filters=('runtime',))
         link_args_3p.extend(chpl_3p_gmp_configs.get_link_args(gmp))
 
-	print_var('  CHPL_LIBUNWIND_UNIQ_CFG_PATH',
-                  chpl_3p_libunwind_configs.get_uniq_cfg_path(),
-                  mode, filters=('runtime',))
-      	link_args_3p.extend(chpl_3p_libunwind_configs.get_link_args(unwind))
-
         print_var('  CHPL_HWLOC_UNIQ_CFG_PATH',
                   chpl_3p_hwloc_configs.get_uniq_cfg_path(),
                   mode, filters=('runtime',))
@@ -157,6 +150,11 @@ def print_mode(mode='list'):
                   mode, filters=('runtime',))
         if target_mem == 'jemalloc':
             link_args_3p.extend(chpl_3p_jemalloc_configs.get_link_args())
+
+        print_var('  CHPL_LIBUNWIND_UNIQ_CFG_PATH',
+                  chpl_3p_libunwind_configs.get_uniq_cfg_path(),
+                  mode, filters=('runtime',))
+        link_args_3p.extend(chpl_3p_libunwind_configs.get_link_args(unwind))
 
         print_var('  CHPL_MASSIVETHREADS_UNIQ_CFG_PATH',
                   chpl_3p_massivethreads_configs.get_uniq_cfg_path(),
