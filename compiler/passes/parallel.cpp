@@ -618,8 +618,10 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
 
   // Add start fence to wrapper if it was requested
   // This supports --cache-remote and is set in createTaskFunctions
-  if (fn->hasFlag(FLAG_WRAPPER_NEEDS_START_FENCE))
+  if (fn->hasFlag(FLAG_WRAPPER_NEEDS_START_FENCE)) {
+    wrap_fn->addFlag(FLAG_WRAPPER_NEEDS_START_FENCE); // helps optimizeOnClauses
     wrap_fn->insertAtTail(new CallExpr(PRIM_START_RMEM_FENCE));
+  }
 
   // Create a call to the original function
   CallExpr *call_orig = new CallExpr(fn);
@@ -677,8 +679,10 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
 
   // Add finish fence to wrapper if it was requested
   // This supports --cache-remote and is set in createTaskFunctions
-  if (fn->hasFlag(FLAG_WRAPPER_NEEDS_FINISH_FENCE))
+  if (fn->hasFlag(FLAG_WRAPPER_NEEDS_FINISH_FENCE)) {
+    wrap_fn->addFlag(FLAG_WRAPPER_NEEDS_FINISH_FENCE); // helps optimizeOnClauses
     wrap_fn->insertAtTail(new CallExpr(PRIM_FINISH_RMEM_FENCE));
+  }
 
   wrap_fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
