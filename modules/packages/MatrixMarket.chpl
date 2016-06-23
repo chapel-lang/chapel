@@ -212,7 +212,7 @@ class MMReader {
        var offset = fin._offset();
        fin.readline(percentfound);
 
-       // didn't find a precentage, rewind channel by length of read string...
+       // didn't find a percentage, rewind channel by length of read string...
        if !percentfound.find("%") {
          fin.close();
          fin = fd.reader(start=offset, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
