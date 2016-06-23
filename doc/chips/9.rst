@@ -152,23 +152,26 @@ external dependencies and packages if it is available. Otherwise, libraries and
 headers are expected to be placed on the normal search paths.
 
 
-
-
 Mason Pipeline
 ++++++++++++++
 
 The package manager pipeline has 4 key states, where each state acts as the
 input to the next state:
 
-    * Chapel Project: ``src/``
-    * Manifest file: ``Mason.toml``
-      * Markup-style file containing package metadata
-    * Lock file: ``Mason.lock``
-      * File containing list of dependencies generated from ``Mason.toml``.
-      * Contains the necessary information to guarantee a consistent build on
-      all supported platforms.
-    * Dependency code: ``~/.mason/src/``
-      * Dependencies that are downloaded into a local directory.
+* **Project Code**: ``src/``
+* **Manifest File**: ``Mason.toml``
+
+  * Markup-style file containing package metadata
+
+* **Lock File**: ``Mason.lock``
+
+  * File containing list of dependencies generated from ``Mason.toml``.
+  * Contains the necessary information to guarantee a consistent build on
+    all supported platforms.
+
+* **Dependency Code**: ``~/.mason/src/``
+
+  * Dependencies that are downloaded into a local directory.
 
 Project Code
 ------------
@@ -194,13 +197,13 @@ benefit from being more Chapel-specific.
 
 **Registry**
 
-Eventually, we will want a service similar to Cargo's crates.io to serve as our
+Eventually, we will want a service similar to Cargo's crates.io_ to serve as our
 registry. Due to the amount of effort behind such a task, it has been decided
 that this can come at a later stage.
 
 The initial mason registry would be a GitHub repository containing a list of
 versioned manifest files from packages, not too unlike that of the OS X
-HomeBrew package manager registry.
+Homebrew package manager registry.
 
 The registry would follow a hierarchy as follows:
 
@@ -228,14 +231,15 @@ and revision in which the version is located.
 There are some recognized downsides of pursuing a GitHub repository as a registry:
 
 * It is not be feasible to cache packages centrally, compromising the
-  reliability of the entire package ecosystem
+  reliability of the entire package ecosystem.
 
-  * The packages are distributed despite there being a central registry
-  * We can _not_ guarantee that a given package version will always remain
-    unchanged or even always exist
+  * The packages themselves are distributed despite there being a central
+    registry of manifests.
+  * We can *not* guarantee that a given package version will always remain
+    unchanged or even always exist.
 
     * Although some form of nightly/weekly testing could help mitigate this
-      issue
+      issue.
 
 * It is not easy to allow users to submit packages without human intervention
   (gate keeper accepting pull requests).
@@ -243,33 +247,46 @@ There are some recognized downsides of pursuing a GitHub repository as a registr
 * GitHub's native interface would severely inhibit discoverability of packages.
 
   * This can circumvented by building a separate website for exploring the
-    package ecosystem. Julia_ does a great job at this.
+    package ecosystem.
+
+    * Julia does a great job at this in their Ecosystem-Pulse_.
 
 For these reasons, we would like to eventually pursue a truly central registry
 with cached packaged and a first-class interface.
 
 **Package Integrity**
+
 There will be two primary measures taken to ensure that submitted packages are
 valid and not of poor quality:
 
-    * Continuous Integration (CI) tools such as Travis CI could run a suite of
-      basic functionality tests to ensure a submitted package is properly
-      setup. Tests might include:
+* Continuous Integration (CI) tools such as Travis CI could run a suite of
+  basic functionality tests to ensure a submitted package is properly
+  setup. Tests might include:
 
-      * Downloading the package
-      * Building the package
-      * Running any tests that the package provides
+  * Downloading the package.
+  * Building the package.
+  * Running any tests that the package provides.
 
-    * A set of core and trusted non-core Chapel community developers will serve
-      as gate keepers who will allow packages into the repository by merging
-      pull requests that pass all tests.
+* A set of core and trusted non-core Chapel community developers will serve
+  as gate keepers who will allow packages into the repository by merging
+  pull requests that pass all tests.
 
-      * Other non-automated review procedures can be done by the gate keepers,
-        but it would be ideal to keep this effort minimal if required at all.
+  * Other non-automated review procedures can be done by the gate keepers,
+    but it would be ideal to keep this effort minimal if required at all.
+
+  * This is similar to Homebrew's approach to package submission.
 
 
 Manifest File -> Lock File
 --------------------------
+
+This will be a fully automated step in which mason does the following:
+
+* parses the manifest file
+* builds a dependency directed acyclic graph (DAG)
+* performs any incompatible version resolution strategy
+* serializes the DAG and outputs it into ``Mason.lock``
+
 
 Lock File
 ---------
@@ -281,6 +298,7 @@ Dependency Code
 ---------------
 
 
+.. _crates.io: https://crates.io/
 .. _cargo: http://doc.crates.io/guide.html
 .. _nix: https://nixos.org/nix/
-.. _Julia: http://pkg.julialang.org/
+.. _Ecosystem-Pulse: http://pkg.julialang.org/pulse.html
