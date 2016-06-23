@@ -104,6 +104,9 @@ void chpl_task_exit(void);        // called by the main task
 // thread) in order to be responsive and not be held up by other
 // user-level tasks. returns 0 on success, nonzero on failure.
 //
+// The caller of this function is responsible for ensuring that
+// *arg remains available to the task as long as it is running.
+//
 int chpl_task_createCommTask(chpl_fn_p fn, void* arg);
 
 //
