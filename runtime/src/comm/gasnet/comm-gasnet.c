@@ -230,20 +230,10 @@ static void fork_wrapper(fork_t *f) {
     chpl_ftable_call(f->fid, NULL);
   GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL,
                                      AckArg0(f->ack), AckArg1(f->ack)));
-
-  chpl_mem_free(f, 0, 0); // TODO remove
 }
 
 static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
-  // This allocation can be removed.
-  // If that happens, need for buf to include:
-  //   fid
-  //   void* ack
-
-  fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char),
-                                          CHPL_RT_MD_COMM_FRK_RCV_INFO, 0, 0);
-  chpl_memcpy(f, buf, nbytes);
-
+  fork_t *f = (fork_t*) buf;
   chpl_task_startMovedTask((chpl_fn_p)fork_wrapper, (void*)f, nbytes,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
@@ -268,7 +258,6 @@ static void fork_large_wrapper(fork_t* f) {
   GASNET_Safe(gasnet_AMRequestShort2(f->caller, SIGNAL,
                                      AckArg0(f->ack), AckArg1(f->ack)));
 
-  chpl_mem_free(f, 0, 0); // TODO remove
   chpl_mem_free(arg, 0, 0);
 }
 
@@ -276,15 +265,7 @@ static void fork_large_wrapper(fork_t* f) {
 ////           hide data copy by making get non-blocking
 ////GASNET - can we allocate f big enough so as not to need malloc in wrapper
 static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
-  // This allocation can be removed.
-  // If that happens, need for buf to include:
-  //   fid
-  //   void* ack
-
-  fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes,
-                                          CHPL_RT_MD_COMM_FRK_RCV_INFO,
-                                          0, 0);
-  chpl_memcpy(f, buf, nbytes);
+  fork_t* f = (fork_t*) buf;
   chpl_task_startMovedTask((chpl_fn_p)fork_large_wrapper, (void*)f, nbytes,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
@@ -295,20 +276,12 @@ static void fork_nb_wrapper(fork_t *f) {
     chpl_ftable_call(f->fid, &f->arg);
   else
     chpl_ftable_call(f->fid, NULL);
-  chpl_mem_free(f, 0, 0); // TODO remove
 }
 
 static void AM_fork_nb(gasnet_token_t  token,
                         void           *buf,
                         size_t          nbytes) {
-  // This allocation can be removed.
-  // If that happens, need for buf to include:
-  //   fid
-  //   void* ack
-  fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char),
-                                          CHPL_RT_MD_COMM_FRK_RCV_INFO,
-                                          0, 0);
-  chpl_memcpy(f, buf, nbytes);
+  fork_t *f = (fork_t*) buf;
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)f, nbytes,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
@@ -329,20 +302,11 @@ static void fork_nb_large_wrapper(fork_t* f) {
                                       &(f->ack),
                                       sizeof(f->ack)));
   chpl_ftable_call(f->fid, arg);
-  chpl_mem_free(f, 0, 0); // TODO remove
   chpl_mem_free(arg, 0, 0);
 }
 
 static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
-  // This allocation can be removed.
-  // If that happens, need for buf to include:
-  //   fid
-  //   void* ack
-
-  fork_t* f = (fork_t*)chpl_mem_allocMany(1, nbytes,
-                                          CHPL_RT_MD_COMM_FRK_RCV_INFO,
-                                          0, 0);
-  chpl_memcpy(f, buf, nbytes);
+  fork_t* f = (fork_t*) buf;
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_large_wrapper, (void*)f, nbytes,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);

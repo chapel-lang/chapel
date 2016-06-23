@@ -60,6 +60,7 @@ typedef struct task_pool_struct {
   chpl_fn_p        fun;          // function to call for task
   void*            arg;          // argument to the function
   chpl_bool        is_executeOn; // is this the body of an executeOn?
+  chpl_bool        countRunningTasks;
   int32_t          filename;
   int              lineno;
   chpl_task_prvDataImpl_t chpl_data;
@@ -156,7 +157,7 @@ static void                    thread_begin(void*);
 static void                    thread_end(void);
 static void                    maybe_add_thread(void);
 static task_pool_p             add_to_task_pool(chpl_fn_p, void*, size_t,
-                                                chpl_bool,
+                                                chpl_bool, chpl_bool,
                                                 chpl_task_prvDataImpl_t,
                                                 task_pool_p*, chpl_bool,
                                                 int, int32_t);
@@ -336,6 +337,7 @@ static void setup_main_thread_private_data(void)
   tp->ptask->fun          = NULL;
   tp->ptask->arg          = NULL;
   tp->ptask->is_executeOn = false;
+  tp->ptask->countRunningTasks = false;
   tp->ptask->filename     = CHPL_FILE_IDX_MAIN_PROGRAM;
   tp->ptask->lineno       = 0;
   tp->ptask->p_list_head  = NULL;
@@ -535,6 +537,7 @@ static void comm_task_wrapper(void* arg) {
   tp->ptask->fun          = comm_task_fn;
   tp->ptask->arg          = arg;
   tp->ptask->is_executeOn = false;
+  tp->ptask->countRunningTasks = false;
   tp->ptask->filename     = CHPL_FILE_IDX_COMM_TASK;
   tp->ptask->lineno       = 0;
   tp->ptask->p_list_head  = NULL;
@@ -646,7 +649,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
   chpl_thread_mutexLock(&threading_lock);
 
   if (task_list_locale == chpl_nodeID) {
-    (void) add_to_task_pool(chpl_ftable[fid], arg, arg_size, false, chpl_data,
+    (void) add_to_task_pool(chpl_ftable[fid], arg, arg_size,
+                            false, false, chpl_data,
                             (task_pool_p*) p_task_list_void, is_begin_stmt,
                             lineno, filename);
 
@@ -658,7 +662,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
     // the context of a cobegin or coforall statement.
     //
     assert(is_begin_stmt);
-    (void) add_to_task_pool(chpl_ftable[fid], arg, arg_size, false, chpl_data,
+    (void) add_to_task_pool(chpl_ftable[fid], arg, arg_size,
+                            false, false, chpl_data,
                             NULL, true, 0, CHPL_FILE_IDX_UNKNOWN);
   }
 
@@ -723,7 +728,13 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
                            child_ptask->id,
                            child_ptask->is_executeOn);
 
+    if (child_ptask->countRunningTasks)
+        chpl_taskRunningCntInc(0, 0);
+
     (*task_to_run_fun)(child_ptask->arg);
+
+    if (child_ptask->countRunningTasks)
+        chpl_taskRunningCntDec(0, 0);
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
                            child_ptask->filename,
@@ -759,17 +770,6 @@ void chpl_task_taskCall(chpl_fn_p fp, void* arg, size_t arg_size,
   taskCallBody(fp, arg, arg_size, subloc, false, lineno, filename);
 }
 
-static void
-countCallWrapper(void* a) {
-  task_pool_p ptask = get_current_ptask();
-
-  chpl_taskRunningCntInc(0, 0);
-
-  (ptask->fun)(ptask->arg);
-
-  chpl_taskRunningCntDec(0, 0);
-}
-
 
 static inline
 void taskCallBody(chpl_fn_p fp, void* arg, size_t arg_size,
@@ -777,17 +777,12 @@ void taskCallBody(chpl_fn_p fp, void* arg, size_t arg_size,
                   int lineno, int32_t filename) {
   chpl_task_prvDataImpl_t private = {
     .prvdata = { .serial_state = serial_state } };
-  chpl_fn_p use_fn;
-
-  if (canCountRunningTasks)
-    use_fn = countCallWrapper;
-  else
-    use_fn = fp;
 
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
 
-  (void) add_to_task_pool(use_fn, arg, arg_size, true, private,
+  (void) add_to_task_pool(fp, arg, arg_size,
+                          true, canCountRunningTasks, private,
                           NULL, false, lineno, filename);
 
   // end critical section
@@ -1273,7 +1268,13 @@ thread_begin(void* ptask_void) {
                            ptask->id,
                            ptask->is_executeOn);
 
+    if (ptask->countRunningTasks)
+        chpl_taskRunningCntInc(0, 0);
+
     (*ptask->fun)(ptask->arg);
+
+    if (ptask->countRunningTasks)
+        chpl_taskRunningCntDec(0, 0);
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
                            ptask->filename,
@@ -1363,6 +1364,7 @@ static inline
 task_pool_p add_to_task_pool(chpl_fn_p fp,
                              void* a, size_t a_size,
                              chpl_bool is_executeOn,
+                             chpl_bool countRunningTasks,
                              chpl_task_prvDataImpl_t chpl_data,
                              task_pool_p* p_task_list_head,
                              chpl_bool is_begin_stmt,
@@ -1382,6 +1384,7 @@ task_pool_p add_to_task_pool(chpl_fn_p fp,
   ptask->fun          = fp;
   ptask->arg          = args_area;
   ptask->is_executeOn = is_executeOn;
+  ptask->countRunningTasks = countRunningTasks;
   ptask->chpl_data    = chpl_data;
   ptask->filename     = filename;
   ptask->lineno       = lineno;
