@@ -184,14 +184,11 @@ class SparseBlockDom: BaseSparseDom {
     return _retval;
 
     proc spawnBulkAdd(indsRange: range, loc){
-      var _retval = 0;
-      begin with (ref _retval) {
-        on dist.targetLocales(loc) {
-          _retval = locDoms[loc].mySparseBlock.bulkAdd(inds[indsRange],
-              isSorted=true, isUnique=false);
-        }
+      begin on dist.targetLocales(loc) {
+        const _retval = locDoms[loc].mySparseBlock.bulkAdd(inds[indsRange],
+            isSorted=true, isUnique=false);
+        _totalAdded.add(_retval);
       }
-      _totalAdded.add(_retval);
     }
   }
 
