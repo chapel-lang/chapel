@@ -434,31 +434,21 @@ static void genUnwindSymbolTable(){
   //TODO: Could have a native LLVM version, instead of relying on C to LLVM
   if( info->cfile ) {
     FILE* hdrfile = info->cfile;
-    bool first = true;
 
     // Generate the cname, Chapel name table
     fprintf(hdrfile,"\nc_string chpl_funSymTable[] = {\n");
     forv_Vec(FnSymbol, fn, symbols) {
-      if(!first)
-        fprintf(hdrfile,",\n");
-
-      fprintf(hdrfile," \"%s\", \"%s\"", fn->cname, fn->name);
-      first = false;
+      fprintf(hdrfile," \"%s\", \"%s\",\n", fn->cname, fn->name);
     }
-    fprintf(hdrfile,"};\n");
+    fprintf(hdrfile," \"\", \"\" };\n");
 
     // Generate the filename index, linenum table
-    first = true;
     fprintf(hdrfile,"\n\nint chpl_filenumSymTable[] = {\n");
     forv_Vec(FnSymbol, fn, symbols) {
-      if(!first)
-        fprintf(hdrfile,",\n");
-
-      fprintf(hdrfile," %d, %d",
+      fprintf(hdrfile," %d, %d,\n",
         getFilenameLookupPosition(fn->fname()), fn->linenum());
-      first = false;
     }
-    fprintf(hdrfile,"};\n");
+    fprintf(hdrfile," 0, 0};\n");
   }
 
   genGlobalInt32("chpl_sizeSymTable", symbols.n * 2);
