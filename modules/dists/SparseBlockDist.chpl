@@ -68,24 +68,6 @@ class SparseBlockDom: BaseSparseDom {
   var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
 
-  /*inline proc nnz {*/
-    /*var total:atomic int;*/
-    /*coforall locDom in locDoms do on locDom {*/
-      /*var localNum = locDom.dsiNumIndices;*/
-      /*total.add(localNum);*/
-    /*}*/
-    /*return total.read();*/
-    /*[>return (+ reduce [l in locDoms] l.mySparseBlock.nnz);<]*/
-  /*}*/
-
-  /*inline proc nnzDom {*/
-    /*return {1..nnz};*/
-  /*}*/
-
-  /*inline proc nnzDomSize {*/
-    /*return nnz;*/
-  /*}*/
-
   proc initialize() {
     setup();
     //    writeln("Exiting initialize");
@@ -211,15 +193,6 @@ class SparseBlockDom: BaseSparseDom {
       compilerError("Can't write out multidimensional sparse distributed domains yet");
     }
   }
-
-  /*proc dsiNumIndices {*/
-    /*var total:atomic int;*/
-    /*coforall locDom in locDoms do on locDom {*/
-      /*var localNum = locDom.dsiNumIndices;*/
-      /*total.add(localNum);*/
-    /*}*/
-    /*return total.read();*/
-  /*}*/
 
   //
   // how to allocate a new array over this domain

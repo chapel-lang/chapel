@@ -82,11 +82,9 @@ class CSRDom: BaseSparseDom {
       compilerError("Only 2D sparse domains are supported by the CSR distribution");
     this.dist = dist;
     this.parentDom = parentDom;
-    /*nnz = 0;*/
     rowRange = parentDom.dim(1);
     colRange = parentDom.dim(2);
     rowDom = {rowRange.low..rowRange.high+1};
-    /*nnzDomSize = nnz;*/
     nnzDom = {1..nnz};
     dsiClear();
   }
@@ -199,14 +197,6 @@ class CSRDom: BaseSparseDom {
       // ensuring existence of a solution is caller responsibility.
     }
     return l;
-  }
-
-  proc dsiDim(d : int) {
-    if (d == 1) {
-      return rowRange;
-    } else {
-      return colRange;
-    }
   }
 
   proc rowStop(row) {

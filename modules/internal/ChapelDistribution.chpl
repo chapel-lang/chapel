@@ -234,9 +234,7 @@ module ChapelDistribution {
   }
   
   class BaseSparseDom : BaseDom {
-    // these should be generic fields of all sparse subdomains
-    // NOTE this is only true for the first PR, rank and idxType should be
-    // hoisted higher to the BaseDom
+    // rank and idxType will be moved to BaseDom
     param rank: int;
     type idxType;
     var parentDom;
