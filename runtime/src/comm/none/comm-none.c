@@ -476,23 +476,27 @@ typedef struct {
 } fork_t;
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
-                    chpl_fn_int_t fid, void *arg, size_t arg_size) {
+                    chpl_fn_int_t fid,
+                    chpl_comm_on_bundle_t *arg, size_t arg_size) {
   assert(node==0);
 
   chpl_ftable_call(fid, arg);
 }
 
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
-                       chpl_fn_int_t fid, void *arg, size_t arg_size) {
+                       chpl_fn_int_t fid,
+                       chpl_comm_on_bundle_t *arg, size_t arg_size) {
   assert(node==0);
 
-  chpl_task_startMovedTask(chpl_ftable[fid], arg, arg_size,
+  chpl_task_startMovedTask(chpl_ftable[fid],
+                           chpl_comm_on_bundle_task_bundle(arg), arg_size,
                            subloc, chpl_nullTaskID, false);
 }
 
 // Same as chpl_comm_execute_on()
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                         chpl_fn_int_t fid, void *arg, size_t arg_size) {
+                         chpl_fn_int_t fid,
+                         chpl_comm_on_bundle_t *arg, size_t arg_size) {
   assert(node==0);
 
   chpl_ftable_call(fid, arg);

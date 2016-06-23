@@ -58,7 +58,6 @@ typedef struct {
 typedef struct task_pool_struct {
   chpl_taskID_t    id;           // task identifier
   chpl_fn_p        fun;          // function to call for task
-  void*            arg;          // argument to the function
   chpl_bool        is_executeOn; // is this the body of an executeOn?
   chpl_bool        countRunningTasks;
   int32_t          filename;
@@ -69,19 +68,9 @@ typedef struct task_pool_struct {
   task_pool_p      list_prev;
   task_pool_p      next;         // double-link pointers for pool
   task_pool_p      prev;
+
+  chpl_task_bundle_t bundle; // ends in a variable-length array
 } task_pool_t;
-
-
-//
-// This is a descriptor for taskCallWrapper().
-//
-typedef struct {
-  chpl_fn_p fp;
-  void* arg;
-  void* arg_copy;
-  chpl_bool countRunning;
-  chpl_task_prvDataImpl_t chpl_data;
-} taskCallWrapperDesc_t;
 
 
 typedef struct lockReport {
@@ -139,7 +128,8 @@ static chpl_fn_p comm_task_fn;
 static void                    enqueue_task(task_pool_p, task_pool_p*);
 static void                    dequeue_task(task_pool_p);
 static void                    comm_task_wrapper(void*);
-static void                    taskCallBody(chpl_fn_p, void*, size_t,
+static void                    taskCallBody(chpl_fn_p,
+                                            chpl_task_bundle_t*, size_t,
                                             c_sublocid_t, chpl_bool,
                                             int, int32_t);
 static chpl_taskID_t           get_next_task_id(void);
@@ -156,7 +146,8 @@ static void                    check_for_deadlock(void);
 static void                    thread_begin(void*);
 static void                    thread_end(void);
 static void                    maybe_add_thread(void);
-static task_pool_p             add_to_task_pool(chpl_fn_p, void*, size_t,
+static task_pool_p             add_to_task_pool(chpl_fn_p,
+                                                chpl_task_bundle_t*, size_t,
                                                 chpl_bool, chpl_bool,
                                                 chpl_task_prvDataImpl_t,
                                                 task_pool_p*, chpl_bool,
@@ -335,7 +326,6 @@ static void setup_main_thread_private_data(void)
                                            0, 0);
   tp->ptask->id           = get_next_task_id();
   tp->ptask->fun          = NULL;
-  tp->ptask->arg          = NULL;
   tp->ptask->is_executeOn = false;
   tp->ptask->countRunningTasks = false;
   tp->ptask->filename     = CHPL_FILE_IDX_MAIN_PROGRAM;
@@ -535,7 +525,6 @@ static void comm_task_wrapper(void* arg) {
                                            0, 0);
   tp->ptask->id           = get_next_task_id();
   tp->ptask->fun          = comm_task_fn;
-  tp->ptask->arg          = arg;
   tp->ptask->is_executeOn = false;
   tp->ptask->countRunningTasks = false;
   tp->ptask->filename     = CHPL_FILE_IDX_COMM_TASK;
@@ -626,7 +615,7 @@ void dequeue_task(task_pool_p ptask) {
 
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid,
-                             void* arg, size_t arg_size,
+                             chpl_task_bundle_t* arg, size_t arg_size,
                              c_sublocid_t subloc,
                              void** p_task_list_void,
                              int32_t task_list_locale,
@@ -731,7 +720,7 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
     if (child_ptask->countRunningTasks)
         chpl_taskRunningCntInc(0, 0);
 
-    (*task_to_run_fun)(child_ptask->arg);
+    (*task_to_run_fun)(&child_ptask->bundle);
 
     if (child_ptask->countRunningTasks)
         chpl_taskRunningCntDec(0, 0);
@@ -764,7 +753,8 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
 }
 
 
-void chpl_task_taskCall(chpl_fn_p fp, void* arg, size_t arg_size,
+void chpl_task_taskCall(chpl_fn_p fp,
+                        chpl_task_bundle_t* arg, size_t arg_size,
                         c_sublocid_t subloc,
                         int lineno, int32_t filename) {
   taskCallBody(fp, arg, arg_size, subloc, false, lineno, filename);
@@ -772,7 +762,8 @@ void chpl_task_taskCall(chpl_fn_p fp, void* arg, size_t arg_size,
 
 
 static inline
-void taskCallBody(chpl_fn_p fp, void* arg, size_t arg_size,
+void taskCallBody(chpl_fn_p fp,
+                  chpl_task_bundle_t* arg, size_t arg_size,
                   c_sublocid_t subloc, chpl_bool serial_state,
                   int lineno, int32_t filename) {
   chpl_task_prvDataImpl_t private = {
@@ -792,7 +783,7 @@ void taskCallBody(chpl_fn_p fp, void* arg, size_t arg_size,
 
 
 void chpl_task_startMovedTask(chpl_fn_p fp,
-                              void* arg, size_t arg_size,
+                              chpl_task_bundle_t* arg, size_t arg_size,
                               c_sublocid_t subloc,
                               chpl_taskID_t id,
                               chpl_bool serial_state) {
@@ -1271,7 +1262,7 @@ thread_begin(void* ptask_void) {
     if (ptask->countRunningTasks)
         chpl_taskRunningCntInc(0, 0);
 
-    (*ptask->fun)(ptask->arg);
+    (*ptask->fun)(&ptask->bundle);
 
     if (ptask->countRunningTasks)
         chpl_taskRunningCntDec(0, 0);
@@ -1362,7 +1353,7 @@ static void maybe_add_thread(void) {
 // assumes threading_lock has already been acquired!
 static inline
 task_pool_p add_to_task_pool(chpl_fn_p fp,
-                             void* a, size_t a_size,
+                             chpl_task_bundle_t* a, size_t a_size,
                              chpl_bool is_executeOn,
                              chpl_bool countRunningTasks,
                              chpl_task_prvDataImpl_t chpl_data,
@@ -1370,19 +1361,20 @@ task_pool_p add_to_task_pool(chpl_fn_p fp,
                              chpl_bool is_begin_stmt,
                              int lineno, int32_t filename) {
 
-  size_t aligned_pool_size = round_up_to_mask(sizeof(task_pool_t), 16);
 
-  unsigned char* buf = chpl_mem_alloc(aligned_pool_size + a_size,
-                                      //CHPL_RT_MD_TASK_POOL_DESC,
-                                      CHPL_RT_MD_TASK_ARG,
-                                      0, 0);
+  size_t payload_size;
+  task_pool_p ptask;
 
-  task_pool_p ptask = (task_pool_p) buf;
-  unsigned char* args_area = buf + aligned_pool_size;
+  assert(a_size >= sizeof(chpl_task_bundle_t));
+
+  payload_size = a_size - sizeof(chpl_task_bundle_t);
+  ptask = (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t) + payload_size,
+                                       //CHPL_RT_MD_TASK_POOL_DESC,
+                                       CHPL_RT_MD_TASK_ARG,
+                                       lineno, filename);
 
   ptask->id           = get_next_task_id();
   ptask->fun          = fp;
-  ptask->arg          = args_area;
   ptask->is_executeOn = is_executeOn;
   ptask->countRunningTasks = countRunningTasks;
   ptask->chpl_data    = chpl_data;
@@ -1391,7 +1383,7 @@ task_pool_p add_to_task_pool(chpl_fn_p fp,
   ptask->p_list_head  = NULL;
   ptask->next         = NULL;
 
-  memcpy(args_area, a, a_size);
+  memcpy(&ptask->bundle, a, a_size);
 
   enqueue_task(ptask, p_task_list_head);
 
