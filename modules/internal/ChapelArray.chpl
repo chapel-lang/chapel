@@ -1027,23 +1027,23 @@ module ChapelArray {
 
     /* Add index ``i`` to this domain */
     proc add(i) {
-      _value.dsiAdd(i);
+      return _value.dsiAdd(i);
     }
 
     proc bulkAdd(inds: [] _value.idxType, isSorted=false,
         isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank==1 {
 
-      if inds.size == 0 then return;
+      if inds.size == 0 then return 0;
 
-      _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
+      return _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
     }
 
     proc bulkAdd(inds: [] _value.rank*_value.idxType, isSorted=false,
         isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank>1 {
 
-      if inds.size == 0 then return;
+      if inds.size == 0 then return 0;
 
-      _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
+      return _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
     }
 
     /* Remove index ``i`` from this domain */

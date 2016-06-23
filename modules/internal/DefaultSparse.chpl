@@ -27,6 +27,7 @@ module DefaultSparse {
   class DefaultSparseDom: BaseSparseDom {
     var dist: DefaultDist;
 
+    var nnzDom = {1..nnz};
     var indices: [nnzDom] index(rank, idxType);
 
     proc linksDistribution() param return false;
@@ -36,10 +37,8 @@ module DefaultSparse {
                                  dist: DefaultDist,
                                  parentDom: domain) {
       this.dist = dist;
-      nnz = 0;
+      /*nnz = 0;*/
     }
-
-    proc dsiNumIndices return nnz;
 
     proc dsiBuildArray(type eltType)
       return new DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
@@ -145,16 +144,16 @@ module DefaultSparse {
       const (found, insertPt) = find(ind);
 
       // if the index already existed, then return
-      if (found) then return;
+      if (found) then return 0;
 
       // increment number of nonzeroes
       nnz += 1;
 
       // double nnzDom if we've outgrown it; grab current size otherwise
-      var oldNNZDomSize = nnzDomSize;
-      if (nnz > nnzDomSize) {
-        nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;
-        nnzDom = {1..nnzDomSize};
+      var oldNNZDomSize = nnzDom.size;
+      if (nnz > oldNNZDomSize) {
+        const _newNNZDomSize = if (oldNNZDomSize) then 2*oldNNZDomSize else 1;
+        nnzDom = {1.._newNNZDomSize};
       }
       // shift indices up
       for i in insertPt..nnz-1 by -1 {
@@ -171,8 +170,10 @@ module DefaultSparse {
       // this second initialization of any new values in the array.
       // we could also eliminate the oldNNZDomSize variable
       for a in _arrs {
-        a.sparseShiftArray(insertPt..nnz-1, oldNNZDomSize+1..nnzDomSize);
+        a.sparseShiftArray(insertPt..nnz-1, oldNNZDomSize+1..nnzDom.size);
       }
+
+      return 1;
     }
 
     proc rem_help(ind) {
@@ -180,6 +181,7 @@ module DefaultSparse {
       const (found, insertPt) = find(ind);
 
       // if the index does not exist, then halt
+      // why halt? - Engin
       if (!found) then
         halt("index not in domain: ", ind);
 
@@ -210,21 +212,31 @@ module DefaultSparse {
       for a in _arrs {
         a.sparseShiftArrayBack(insertPt..nnz-1);
       }
+
+      return 1;
     }
 
     proc dsiAdd(ind: idxType) where rank == 1 {
-      add_help(ind);
+      return add_help(ind);
     }
 
     proc dsiRemove(ind: idxType) where rank == 1 {
-      rem_help(ind);
+      return rem_help(ind);
     }
 
     proc dsiAdd(ind: rank*idxType) {
       if (rank == 1) {
-        add_help(ind(1));
+        return add_help(ind(1));
       } else {
-        add_help(ind);
+        return add_help(ind);
+      }
+    }
+
+    proc dsiRemove(ind: rank*idxType) {
+      if (rank == 1) {
+        return rem_help(ind(1));
+      } else {
+        return rem_help(ind);
       }
     }
 
@@ -238,10 +250,10 @@ module DefaultSparse {
       nnz += actualAddCnt;
 
       //grow nnzDom if necessary
-      if (nnz > nnzDomSize) {
-        nnzDomSize = (exp2(log2(nnz)+1.0)):int;
+      if (nnz > nnzDom.size) {
+        const _newNNZDomSize = (exp2(log2(nnz)+1.0)):int;
 
-        nnzDom = {1..nnzDomSize};
+        nnzDom = {1.._newNNZDomSize};
       }
 
       //linearly fill the new colIdx from backwards
@@ -282,18 +294,14 @@ module DefaultSparse {
 
       for a in _arrs do 
         a.sparseBulkShiftArray(arrShiftMap, oldnnz);
-    }
 
-    proc dsiRemove(ind: rank*idxType) {
-      if (rank == 1) {
-        rem_help(ind(1));
-      } else {
-        rem_help(ind);
-      }
+      return actualAddCnt;
     }
 
     proc dsiClear() {
       nnz = 0;
+      // should we empty the domain too ?
+      // nnzDom = {1..0};
     }
 
     iter dimIter(param d, ind) {

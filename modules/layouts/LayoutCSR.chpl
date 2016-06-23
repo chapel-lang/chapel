@@ -72,6 +72,7 @@ class CSRDom: BaseSparseDom {
 
   const rowDom: domain(1, idxType);
 
+  var nnzDom = {1..nnz};
   var rowStart: [rowDom] idxType;      // would like index(nnzDom)
   var colIdx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
@@ -82,18 +83,16 @@ class CSRDom: BaseSparseDom {
       compilerError("Only 2D sparse domains are supported by the CSR distribution");
     this.dist = dist;
     this.parentDom = parentDom;
-    nnz = 0;
+    /*nnz = 0;*/
     rowRange = parentDom.dim(1);
     colRange = parentDom.dim(2);
     rowDom = {rowRange.low..rowRange.high+1};
-    nnzDomSize = nnz;
-    nnzDom = {1..nnzDomSize};
+    /*nnzDomSize = nnz;*/
+    nnzDom = {1..nnz};
     dsiClear();
   }
 
   proc dsiMyDist() return dist;
-
-  proc dsiNumIndices return nnz;
 
   proc dsiGetIndices() return 0;
   proc dsiSetIndices(x) { }
@@ -260,17 +259,23 @@ class CSRDom: BaseSparseDom {
     const (found, insertPt) = find(ind);
 
     // if the index already existed, then return
-    if (found) then return;
+    if (found) then return 0;
 
     // increment number of nonzeroes
     nnz += 1;
 
     // double nnzDom if we've outgrown it; grab current size otherwise
-    var oldNNZDomSize = nnzDomSize;
-    if (nnz > nnzDomSize) {
-      nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;
+    /*var oldNNZDomSize = nnzDom.size;*/
+    /*if (nnz > nnzDomSize) {*/
+      /*nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;*/
 
-      nnzDom = {1..nnzDomSize};
+      /*nnzDom = {1..nnzDomSize};*/
+    /*}*/
+    // double nnzDom if we've outgrown it; grab current size otherwise
+    var oldNNZDomSize = nnzDom.size;
+    if (nnz > oldNNZDomSize) {
+      const _newNNZDomSize = if (oldNNZDomSize) then 2*oldNNZDomSize else 1;
+      nnzDom = {1.._newNNZDomSize};
     }
 
     const (row,col) = ind;
@@ -295,8 +300,9 @@ class CSRDom: BaseSparseDom {
     // this second initialization of any new values in the array.
     // we could also eliminate the oldNNZDomSize variable
     for a in _arrs {
-      a.sparseShiftArray(insertPt..nnz-1, oldNNZDomSize+1..nnzDomSize);
+      a.sparseShiftArray(insertPt..nnz-1, oldNNZDomSize+1..nnzDom.size);
     }
+    return 1;
   }
 
   proc bulkAdd_help(inds: [?indsDom] rank*idxType, isSorted=false, 
@@ -309,10 +315,16 @@ class CSRDom: BaseSparseDom {
     nnz += actualAddCnt;
 
     //grow nnzDom if necessary
-    if (nnz > nnzDomSize) {
-      nnzDomSize = (exp2(log2(nnz)+1.0)):int;
+    /*if (nnz > nnzDomSize) {*/
+      /*nnzDomSize = (exp2(log2(nnz)+1.0)):int;*/
 
-      nnzDom = {1..nnzDomSize};
+      /*nnzDom = {1..nnzDomSize};*/
+    /*}*/
+    //grow nnzDom if necessary
+    if (nnz > nnzDom.size) {
+      const _newNNZDomSize = (exp2(log2(nnz)+1.0)):int;
+
+      nnzDom = {1.._newNNZDomSize};
     }
 
     //linearly fill the new colIdx from backwards
@@ -377,6 +389,8 @@ class CSRDom: BaseSparseDom {
     }
     for a in _arrs do 
       a.sparseBulkShiftArray(arrShiftMap, oldnnz);
+
+    return actualAddCnt;
   }
 
   proc dsiRemove(ind: rank*idxType) {
@@ -384,7 +398,7 @@ class CSRDom: BaseSparseDom {
     const (found, insertPt) = find(ind);
 
     // if the index doesn't already exist, then return
-    if (!found) then return;
+    if (!found) then return 0;
 
     // increment number of nonzeroes
     nnz -= 1;
@@ -421,6 +435,8 @@ class CSRDom: BaseSparseDom {
     for a in _arrs {
       a.sparseShiftArrayBack(insertPt..nnz-1);
     }
+
+    return 1;
   }
 
   proc dsiClear() {

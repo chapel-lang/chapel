@@ -68,17 +68,23 @@ class SparseBlockDom: BaseSparseDom {
   var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
 
-  inline proc nnz {
-    return (+ reduce [l in locDoms] l.mySparseBlock.nnz);
-  }
+  /*inline proc nnz {*/
+    /*var total:atomic int;*/
+    /*coforall locDom in locDoms do on locDom {*/
+      /*var localNum = locDom.dsiNumIndices;*/
+      /*total.add(localNum);*/
+    /*}*/
+    /*return total.read();*/
+    /*[>return (+ reduce [l in locDoms] l.mySparseBlock.nnz);<]*/
+  /*}*/
 
-  inline proc nnzDom {
-    return {1..nnz};
-  }
+  /*inline proc nnzDom {*/
+    /*return {1..nnz};*/
+  /*}*/
 
-  inline proc nnzDomSize {
-    return nnz;
-  }
+  /*inline proc nnzDomSize {*/
+    /*return nnz;*/
+  /*}*/
 
   proc initialize() {
     setup();
@@ -114,13 +120,16 @@ class SparseBlockDom: BaseSparseDom {
   // rather than secondary methods.  This doesn't seem right, but I couldn't boil
   // it down to a smaller test case in the time I spent on it.
   proc dsiAdd(ind: rank*idxType) {
+    var _retval = 0;
     on dist.dsiIndexToLocale(ind) {
-      locDoms[dist.targetLocsIdx(ind)].dsiAdd(ind);
+      _retval = locDoms[dist.targetLocsIdx(ind)].dsiAdd(ind);
     }
+    nnz += _retval;
+    return _retval;
   }
 
   proc dsiAdd(ind: idxType) where this.rank == 1 {
-    dsiAdd((ind,));
+    return dsiAdd((ind,));
   }
 
   proc dsiFirst {
@@ -157,6 +166,7 @@ class SparseBlockDom: BaseSparseDom {
     var firstIndex = inds.domain.low;
     var curLoc = dist.targetLocsIdx(inds[inds.domain.low]);
 
+    var _totalAdded: atomic int;
     sync {
       for i in inds.domain {
         const _tmpLoc = dist.targetLocsIdx(inds[i]);
@@ -169,11 +179,19 @@ class SparseBlockDom: BaseSparseDom {
       spawnBulkAdd(firstIndex..inds.domain.high, curLoc);
     }
 
+    var _retval = _totalAdded.read();
+    nnz += _retval;
+    return _retval;
+
     proc spawnBulkAdd(indsRange: range, loc){
-      begin on dist.targetLocales(loc) {
-        locDoms[loc].mySparseBlock.bulkAdd(inds[indsRange], isSorted=true,
-            isUnique=false);
+      var _retval = 0;
+      begin with (ref _retval) {
+        on dist.targetLocales(loc) {
+          _retval = locDoms[loc].mySparseBlock.bulkAdd(inds[indsRange],
+              isSorted=true, isUnique=false);
+        }
       }
+      _totalAdded.add(_retval);
     }
   }
 
@@ -197,14 +215,14 @@ class SparseBlockDom: BaseSparseDom {
     }
   }
 
-  proc dsiNumIndices {
-    var total:atomic int;
-    coforall locDom in locDoms do on locDom {
-      var localNum = locDom.dsiNumIndices;
-      total.add(localNum);
-    }
-    return total.read();
-  }
+  /*proc dsiNumIndices {*/
+    /*var total:atomic int;*/
+    /*coforall locDom in locDoms do on locDom {*/
+      /*var localNum = locDom.dsiNumIndices;*/
+      /*total.add(localNum);*/
+    /*}*/
+    /*return total.read();*/
+  /*}*/
 
   //
   // how to allocate a new array over this domain
@@ -289,7 +307,7 @@ class LocSparseBlockDom {
   }
 
   proc dsiAdd(ind: rank*idxType) {
-    mySparseBlock.add(ind);
+    return mySparseBlock.add(ind);
   }
 
   proc dsiMember(ind: rank*idxType) {

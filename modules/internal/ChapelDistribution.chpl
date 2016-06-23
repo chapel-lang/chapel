@@ -246,8 +246,8 @@ module ChapelDistribution {
     // var dist;
 
     var nnz = 0; //: int;
-    var nnzDomSize = nnz; //: int; //seems a bit unnecessary
-    var nnzDom = {1..nnzDomSize};
+    /*var nnzDomSize = nnz; //: int; //seems a bit unnecessary*/
+    /*var nnzDom = {1..nnz};*/
 
     proc dsiClear() {
       halt("clear not implemented for this distribution");
@@ -262,16 +262,18 @@ module ChapelDistribution {
 
       if !isSorted && preserveInds {
         var _inds = inds;
-        bulkAdd_help(_inds, isSorted, isUnique); 
+        return bulkAdd_help(_inds, isSorted, isUnique); 
       }
       else {
-        bulkAdd_help(inds, isSorted, isUnique);
+        return bulkAdd_help(inds, isSorted, isUnique);
       }
     }
 
     proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), 
         isSorted=false, isUnique=false){
       halt("Helper function called on the BaseSparseDom");
+
+      return -1;
     }
 
     // this is a helper function for bulkAdd functions in sparse subdomains.
