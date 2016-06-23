@@ -24,6 +24,9 @@
 
 #include "chpl-threads.h"
 
+typedef struct {
+  int64_t dummy;    // structs must be nonempty
+} chpl_task_bundleData_t;
 
 //
 // Because we use the task tracking table for fifo tasking, this gives

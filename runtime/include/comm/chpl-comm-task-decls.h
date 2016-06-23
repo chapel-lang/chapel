@@ -30,6 +30,10 @@ typedef struct {
   int dummy;    // structs must be nonempty
 } chpl_comm_taskPrvData_t;
 
+typedef struct {
+  int64_t dummy;    // structs must be nonempty
+} chpl_comm_bundleData_t;
+
 #undef HAS_CHPL_CACHE_FNS
 
 #endif

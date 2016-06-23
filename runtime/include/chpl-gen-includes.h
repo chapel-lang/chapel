@@ -35,9 +35,9 @@
 // one argument.
 //
 static inline
-void chpl_ftable_call(chpl_fn_int_t fid, void* arg)
+void chpl_ftable_call(chpl_fn_int_t fid, chpl_comm_on_bundle_t* bundle)
 {
-  (*chpl_ftable[fid])(arg);
+  (*chpl_ftable[fid])(bundle);
 }
 
 

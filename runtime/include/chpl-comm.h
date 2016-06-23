@@ -77,6 +77,44 @@ extern const int chpl_heterogeneous;
 // chpl_comm_nb_handle_t must be defined in the comm layer header
 // chpl-comm-task-decls.h
 
+// uses comm-layer specific chpl_comm_bundleData_t
+// uses task-layer specific chpl_task_bundleData_t
+typedef struct {
+  chpl_task_bundle_t task_bundle;
+  chpl_fn_int_t fid;
+  chpl_comm_bundleData_t comm;
+  // arguments immediately follow
+} chpl_comm_on_bundle_t;
+
+typedef chpl_comm_on_bundle_t *chpl_comm_on_bundle_p;
+
+static inline
+chpl_task_bundle_t* chpl_comm_on_bundle_task_bundle(chpl_comm_on_bundle_t* a)
+{
+  return &a->task_bundle;
+}
+
+//
+// Call a chpl_ftable[] function in a task.
+//
+// This is a convenience function for use by the module code, in which
+// we have function table indices rather than function pointers.
+//
+static inline
+void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
+                              chpl_comm_on_bundle_t* arg,// function arg
+                              size_t arg_size,        // length of arg in bytes
+                              c_sublocid_t subloc,    // desired sublocale
+                              int lineno,             // source line
+                              int32_t filename) {     // source filename
+    chpl_task_taskCall(chpl_ftable[fid],
+                       chpl_comm_on_bundle_task_bundle(arg), arg_size,
+                       subloc,
+                       lineno, filename);
+}
+
+
+
 // Do a GET in a nonblocking fashion, returning a handle which can be used to
 // wait for the GET to complete. The destination buffer must not be modified
 // before the request completes (after waiting on the returned handle)
@@ -326,21 +364,24 @@ void chpl_gen_comm_wide_string_get(void *addr, c_nodeid_t node, void *raddr,
 //   multiple executeOns to the same locale should be handled concurrently
 //
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
-                          chpl_fn_int_t fid, void *arg, size_t arg_size);
+                          chpl_fn_int_t fid,
+                          chpl_comm_on_bundle_t *arg, size_t arg_size);
 
 //
 // non-blocking execute_on
 // arg can be reused immediately after this call completes.
 //
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
-                             chpl_fn_int_t fid, void *arg, size_t arg_size);
+                             chpl_fn_int_t fid,
+                             chpl_comm_on_bundle_t *arg, size_t arg_size);
 
 //
 // fast execute_on (i.e., run in handler)
 // arg can be reused immediately after this call completes.
 //
 void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
-                         chpl_fn_int_t fid, void *arg, size_t arg_size);
+                         chpl_fn_int_t fid,
+                         chpl_comm_on_bundle_t *arg, size_t arg_size);
 
 
 //

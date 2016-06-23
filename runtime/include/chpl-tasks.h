@@ -31,7 +31,6 @@
 #include CHPL_TASKS_MODEL_H
 #endif
 
-
 //
 // Some function declarations here may be protected like this:
 //   #ifdef CHPL_TASK_func_IMPL_DECL
@@ -45,6 +44,33 @@
 // as needed.
 //
 
+// uses task-layer specific chpl_task_bundleData_t
+typedef struct {
+// don't think I need this  unsigned char header_length;
+// instead, wrapper just uses a type with chpl_task_bundle included.
+  chpl_bool serial_state;
+  chpl_bool countRunning;
+  chpl_bool is_executeOn;
+  c_sublocid_t requestedSubloc;
+  chpl_fn_p requested_fn;
+
+  chpl_task_bundleData_t task_prv;
+} chpl_task_bundle_t;
+
+typedef chpl_task_bundle_t *chpl_task_bundle_p;
+
+/* This shouldn't be needed because the task function
+   uses a bundle the whole time
+    e.g. wrap_fn works with chpl_task_bundle_t as the
+    first struct element.
+static inline
+void* chpl_bundle_arg(void* bundle)
+{
+  unsigned char* tmp = (unsigned char*) bundle;
+  unsigned char header_length = *tmp;
+  return tmp + heaader_length;
+}
+*/
 
 // Sync variables
 
@@ -144,7 +170,7 @@ typedef struct chpl_task_list* chpl_task_list_p;
 // as it cannot assume anything about the lifetime of that memory.
 void chpl_task_addToTaskList(
          chpl_fn_int_t,      // function to call for task
-         void*,              // argument to the function
+         chpl_task_bundle_t*,// argument to the function
          size_t,             // length of the argument
          c_sublocid_t,       // desired sublocale
          void**,             // task list
@@ -161,28 +187,11 @@ void chpl_task_executeTasksInList(void**);
 // as it cannot assume anything about the lifetime of that memory.
 //
 void chpl_task_taskCall(chpl_fn_p,          // function to call
-                        void*,              // function arg
+                        chpl_task_bundle_t*,// function arg
                         size_t,             // length of arg
                         c_sublocid_t,       // desired sublocale
                         int,                // line at which function begins
                         int32_t);           // name of file containing function
-
-//
-// Call a chpl_ftable[] function in a task.
-//
-// This is a convenience function for use by the module code, in which
-// we have function table indices rather than function pointers.
-//
-static inline
-void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
-                              void* arg,              // function arg
-                              size_t arg_size,        // length of arg in bytes
-                              c_sublocid_t subloc,    // desired sublocale
-                              int lineno,             // source line
-                              int32_t filename) {     // source filename
-    chpl_task_taskCall(chpl_ftable[fid], arg, arg_size, subloc,
-                       lineno, filename);
-}
 
 //
 // Launch a task that is the logical continuation of some other task,
@@ -193,7 +202,7 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
 // as it cannot assume anything about the lifetime of that memory.
 //
 void chpl_task_startMovedTask(chpl_fn_p,          // function to call
-                              void*,              // function arg
+                              chpl_task_bundle_t*,// function arg
                               size_t,             // length of arg in bytes
                               c_sublocid_t,       // desired sublocale
                               chpl_taskID_t,      // task identifier
