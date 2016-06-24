@@ -204,7 +204,7 @@ void chpl_sync_unlock(chpl_sync_aux_t *s) {
 }
 
 void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s, int32_t lineno,
-    c_string filename) {
+    int32_t filename) {
   assert(!is_worker_in_cs());
   {
     //wait until F/E bit is empty, and acquire lock
@@ -213,7 +213,7 @@ void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s, int32_t lineno,
 }
 
 void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s, int32_t lineno,
-    c_string filename) {
+    int32_t filename) {
   assert(!is_worker_in_cs());
   {
     myth_felock_wait_lock(s->lock, 0);
@@ -286,10 +286,10 @@ typedef struct {
 static void* moved_task_wrapper(void* a) {
   moved_task_wrapper_desc_t* pmtwd = (moved_task_wrapper_desc_t*) a;
   if (pmtwd->count_running)
-    chpl_taskRunningCntInc(0, NULL);
+    chpl_taskRunningCntInc(0, 0);
   (pmtwd->fp)(pmtwd->arg);
   if (pmtwd->count_running)
-    chpl_taskRunningCntDec(0, NULL);
+    chpl_taskRunningCntDec(0, 0);
   chpl_mem_free(pmtwd, 0, 0);
   return NULL;
 }
@@ -337,7 +337,7 @@ void chpl_task_init(void) {
   assert(s_stack_size > 0);
   assert(!is_worker_in_cs());
   s_tld = chpl_mem_allocMany(numThreadsPerLocale + numCommTasks,
-      sizeof(thread_local_data), 0, 0, "");
+      sizeof(thread_local_data), 0, 0, 0);
   for (i = 0; i < numThreadsPerLocale + numCommTasks; i++) {
     s_tld[i].in_mutex_flag = 0;
   }
@@ -368,7 +368,7 @@ void chpl_task_exit(void) {
   assert(!is_worker_in_cs());
   myth_fini();
   tasking_layer_active = 0;
-  chpl_mem_free(s_tld, 0, "");
+  chpl_mem_free(s_tld, 0, 0);
 }
 
 void chpl_task_callMain(void(*chpl_main)(void)) {
@@ -381,12 +381,12 @@ void chpl_task_stdModulesInitialized(void) {
   // running until after the modules have been initialized.  That's
   // when this function is called, so now count the main task.
   canCountRunningTasks = true;
-  chpl_taskRunningCntInc(0, NULL);
+  chpl_taskRunningCntInc(0, 0);
 }
 
 void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg, c_sublocid_t subLoc,
     void **task_list, int32_t task_list_locale,
-    chpl_bool is_begin_stmt, int lineno, c_string filename) {
+    chpl_bool is_begin_stmt, int lineno, int32_t filename) {
   //Create a new task directly
   myth_thread_option opt;
   myth_thread_t th;
