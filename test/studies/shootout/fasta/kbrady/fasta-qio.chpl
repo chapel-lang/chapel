@@ -15,11 +15,11 @@ config const n = 1000;
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
 
 param
-  A = 65, C = 67, G = 71, T = 84,
-  a = 97, c = 99, g = 103, t = 116,
-  B = 66, D = 68, H = 72, K = 75,
-  M = 77, N = 78, R = 82, S = 83,
-  V = 86, W = 87, Y = 89;
+  A = ascii("A"), C = ascii("C"), G = ascii("G"), T = ascii("T"),
+  a = ascii("a"), c = ascii("c"), g = ascii("g"), t = ascii("t"),
+  B = ascii("B"), D = ascii("D"), H = ascii("H"), K = ascii("K"),
+  M = ascii("M"), N = ascii("N"), R = ascii("R"), S = ascii("S"),
+  V = ascii("V"), W = ascii("W"), Y = ascii("Y");
 
 // Sequence to be repeated
 const ALU : [0..286] int = [
@@ -41,24 +41,19 @@ const ALU : [0..286] int = [
 ];
 
 // Deterministic random number generator as specified
-record Random {
+class Random {
   const IA = 3877;
   const IC = 29573;
   const IM = 139968;
   const SCALE = LOOKUP_SCALE / IM;
 
   var last = 42;
-  proc next() : real {
-    last = (last * IA + IC) % IM;
-    return SCALE * last;
+  iter get(n: int) : (int, real) {
+    for i in 0..#n {
+      last = (last * IA + IC) % IM;
+      yield (i, SCALE * last);
+    }
   }
-  
-  /* 
-  iter these() : real {
-    last = (last * IA + IC) % IM;
-    yield SCALE * last;
-  }
-  */
 }
 
 // Sequences to be randomly generated (probability table)
@@ -108,9 +103,7 @@ proc makeLookup(a) {
 var random = new Random();
 var line_buff : [0..LINE_LENGTH] int(8);
 proc addLine(bytes: int) {
-//  for (i, r) in zip(0..#bytes, random) {
-  for i in 0..#bytes {
-    var r = random.next();
+  for (i, r) in random.get(bytes) {
     var ai = r: int;
     while (lookup[ai].p < r) do
       ai = ai + 1;
