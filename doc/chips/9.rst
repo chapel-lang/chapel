@@ -25,13 +25,13 @@ Chapel's current approach of bundling any extra modules in the standard library
 isn't sustainable if we wish to have a healthy ecosystem of libraries. There
 are several problems with the current strategy:
 
-  * Modules are in our repository, so:
+* Modules are in our repository, so:
 
-    * Developers must sign a CLA
-    * Code must be under a compatible license
-    * The core team needs to review each module
+  * Developers must sign a CLA
+  * Code must be under a compatible license
+  * The core team needs to review each module
 
-  * Modules are gated for release alongside the compiler
+* Modules are gated for release alongside the compiler
 
 Description
 -----------
@@ -39,8 +39,8 @@ Description
 There are a several components of this package manager here I will propose what
 two of them will look like initially:
 
-  * mason - a command line tool for building Chapel programs
-  * mason.toml - module metadata mason uses to build your application
+* mason - a command line tool for building Chapel programs
+* mason.toml - module metadata mason uses to build your application
 
 Mason
 +++++
@@ -59,7 +59,7 @@ benchmark or for a test.
 
 
 Mason Pipeline
-++++++++++++++
+--------------
 
 The package manager pipeline has 4 key states, where each state acts as the
 input to the next state:
@@ -110,7 +110,7 @@ build into ``target/``. The final directory hierarchy will look like this:
 
 
 Project Code
-------------
+++++++++++++
 
 This is the Chapel source code written by the package author.
 
@@ -123,7 +123,7 @@ For example:
     }
 
 Project Code -> Manifest File
------------------------------
++++++++++++++++++++++++++++++
 
 For the initial versions, the user will be responsible for writing the manifest
 file in its entirety.
@@ -132,7 +132,7 @@ Improved tooling can assist in automating parts of this in the future,
 e.g. ``mason new <project-name> --<bin || lib>``
 
 Manifest File
--------------
++++++++++++++
 
 The ``Mason.toml`` manifest file will closely follow the design of
 `Cargo's manifest file <http://doc.crates.io/manifest.html>`_,
@@ -250,7 +250,7 @@ valid and not of poor quality:
 
 
 Manifest File -> Lock File
---------------------------
+++++++++++++++++++++++++++
 
 This will be a fully automated step in which mason does the following:
 
@@ -261,7 +261,7 @@ This will be a fully automated step in which mason does the following:
 
 
 Lock File
----------
++++++++++
 
 The ``Mason.lock`` lock file will follow the design of ``Cargo.lock``. An
 example of a ``Mason.lock`` generated from the previous ``Mason.toml`` example:
@@ -280,7 +280,7 @@ example of a ``Mason.lock`` generated from the previous ``Mason.toml`` example:
 
 
 Lock File -> Dependency Code
-----------------------------
+++++++++++++++++++++++++++++
 
 The dependency code will be downloaded into a common pool of packages, under
 the user's home directory by default:
@@ -291,11 +291,8 @@ the user's home directory by default:
     (dependencies)
 
 
-Build Feature
-+++++++++++++
-
 Future Work
-+++++++++++
+-----------
 
 The first version of the package manager will be very simple with limited
 functionality. There are several additional features we wish to eventually
@@ -303,7 +300,7 @@ pursue. This section is dedicated to the subset of those features that have
 been considered or are partially designed.
 
 C Dependencies
---------------
+++++++++++++++
 
 ``mason`` will support managing C dependencies in future versions. Unlike
 Cargo, the management of these C dependencies will *not* be implemented as part
@@ -394,7 +391,7 @@ headers are expected to be placed on the normal search paths.
 
 
 Other Future Work
------------------
++++++++++++++++++
 
 * Support for binary packages
 * Truly centralized registry with cached packages
