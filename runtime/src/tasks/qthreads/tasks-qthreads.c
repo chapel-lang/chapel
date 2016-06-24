@@ -731,52 +731,70 @@ static inline void wrap_callbacks(chpl_task_cb_event_kind_t event_kind,
     }
 }
 
-static aligned_t chapel_wrapper_count(void *arg)
+// If we stored chpl_taskID_t in chpl_task_bundleData_t,
+// this struct and the following function may not be necessary.
+typedef void (*main_ptr_t)(void);
+typedef struct {
+  chpl_task_bundle_t arg;
+  chpl_taskID_t id;
+  main_ptr_t chpl_main;
+} main_wrapper_bundle_t;
+
+static aligned_t main_wrapper(void *arg)
 {
-    chpl_qthread_wrapper_args_t *rarg = arg;
-    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
+    chpl_qthread_tls_t      *data = chpl_qthread_get_tasklocal();
+    main_wrapper_bundle_t *bundle = (main_wrapper_bundle_t*) arg;
+    chpl_task_prvDataImpl_t    pv =
+             PRV_DATA_IMPL_VAL(bundle->arg.task_prv.filename,
+                               bundle->arg.task_prv.lineno,
+                               bundle->id,
+                               bundle->arg.is_executeOn,
+                               bundle->arg.requestedSubloc,
+                               bundle->arg.serial_state);
 
-    data->chpl_data = rarg->chpl_data;
+    data->chpl_data     = pv;
     data->lock_filename = 0;
-    data->lock_lineno = 0;
+    data->lock_lineno   = 0;
 
-    chpl_taskRunningCntInc(0, 0);
+    // main call doesn't need countRunning / chpl_taskRunningCntInc
 
     wrap_callbacks(chpl_task_cb_event_kind_begin, &data->chpl_data);
 
-    if (rarg->arg_copy != NULL) {
-        (*(chpl_fn_p)(rarg->fn))(rarg->arg_copy);
-        chpl_mem_free(rarg->arg_copy, 0, 0);
-    } else {
-        (*(chpl_fn_p)(rarg->fn))(rarg->arg);
-    }
+    (bundle->chpl_main)();
 
     wrap_callbacks(chpl_task_cb_event_kind_end, &data->chpl_data);
-
-    chpl_taskRunningCntDec(0, 0);
 
     return 0;
 }
 
-static aligned_t chapel_wrapper_nocount(void *arg)
-{
-    chpl_qthread_wrapper_args_t *rarg = arg;
-    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
 
-    data->chpl_data = rarg->chpl_data;
+static aligned_t chapel_wrapper(void *arg)
+{
+    chpl_qthread_tls_t   *data = chpl_qthread_get_tasklocal();
+    chpl_task_bundle_t *bundle = (chpl_task_bundle_t*) arg;
+    chpl_task_prvDataImpl_t pv =
+             PRV_DATA_IMPL_VAL(bundle->task_prv.filename,
+                               bundle->task_prv.lineno,
+                               chpl_nullTaskID,
+                               bundle->is_executeOn,
+                               bundle->requestedSubloc,
+                               bundle->serial_state);
+
+    data->chpl_data     = pv;
     data->lock_filename = 0;
-    data->lock_lineno = 0;
+    data->lock_lineno   = 0;
+
+    if (bundle->countRunning)
+      chpl_taskRunningCntInc(0, 0);
 
     wrap_callbacks(chpl_task_cb_event_kind_begin, &data->chpl_data);
 
-    if (rarg->arg_copy != NULL) {
-        (*(chpl_fn_p)(rarg->fn))(rarg->arg_copy);
-        chpl_mem_free(rarg->arg_copy, 0, 0);
-    } else {
-        (*(chpl_fn_p)(rarg->fn))(rarg->arg);
-    }
+    (bundle->requested_fn)(arg);
 
     wrap_callbacks(chpl_task_cb_event_kind_end, &data->chpl_data);
+
+    if (bundle->countRunning)
+      chpl_taskRunningCntDec(0, 0);
 
     return 0;
 }
@@ -800,15 +818,22 @@ static void *comm_task_wrapper(void *arg)
 // not use methods that require task context (e.g., task-local storage).
 void chpl_task_callMain(void (*chpl_main)(void))
 {
-    chpl_qthread_wrapper_args_t wrapper_args =
-        {chpl_main, NULL, NULL,
-         PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_MAIN_TASK , 0,
-                           chpl_qthread_process_tls.chpl_data.id, false,
-                           c_sublocid_any_val, false) };
+    main_wrapper_bundle_t arg;
 
-    wrap_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);
+    arg.arg.serial_state      = false;
+    arg.arg.countRunning      = false;
+    arg.arg.is_executeOn      = false;
+    arg.arg.requestedSubloc   = c_sublocid_any_val;
+    arg.arg.requested_fn      = NULL;
+    arg.arg.task_prv.lineno   = 0;
+    arg.arg.task_prv.filename = CHPL_FILE_IDX_MAIN_TASK;
+    arg.id                    = chpl_qthread_process_tls.chpl_data.id;
+    arg.chpl_main             = chpl_main;
 
-    qthread_fork_syncvar(chapel_wrapper_nocount, &wrapper_args, &exit_ret);
+    // TODO -- how to do event create?
+    // wrap_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);
+
+    qthread_fork_syncvar_copyargs(main_wrapper, &arg, sizeof(arg), &exit_ret);
     qthread_syncvar_readFF(NULL, &exit_ret);
 }
 
@@ -840,16 +865,18 @@ int chpl_task_createCommTask(chpl_fn_p fn,
                           NULL, comm_task_wrapper, &wrapper_info);
 }
 
-void chpl_task_addToTaskList(chpl_fn_int_t     fid,
-                             void             *arg,
-                             c_sublocid_t      subloc,
-                             void            **task_list,
-                             int32_t           task_list_locale,
-                             chpl_bool         is_begin_stmt,
-                             int               lineno,
-                             int32_t           filename)
+void chpl_task_addToTaskList(chpl_fn_int_t       fid,
+                             chpl_task_bundle_t *arg,
+                             size_t              arg_size,
+                             c_sublocid_t        subloc,
+                             void              **task_list,
+                             int32_t             task_list_locale,
+                             chpl_bool           is_begin_stmt,
+                             int                 lineno,
+                             int32_t             filename)
 {
     chpl_bool serial_state = chpl_task_getSerial();
+    chpl_fn_p requested_fn = chpl_ftable[fid];
 
     assert(subloc != c_sublocid_none);
 
@@ -857,23 +884,28 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
 
     if (serial_state) {
         // call the function directly.
-        (chpl_ftable[fid])(arg);
+        requested_fn(arg);
     } else {
-        chpl_qthread_wrapper_args_t wrapper_args =
-            {chpl_ftable[fid], arg, NULL,
-             PRV_DATA_IMPL_VAL(filename, lineno, chpl_nullTaskID, false,
-                               subloc, serial_state) };
+        arg->serial_state      = false;
+        arg->countRunning      = false;
+        arg->is_executeOn      = false;
+        arg->requestedSubloc   = subloc;
+        arg->requested_fn      = requested_fn;
+        arg->task_prv.lineno   = lineno;
+        arg->task_prv.filename = filename;
 
-        wrap_callbacks(chpl_task_cb_event_kind_create,
-                       &wrapper_args.chpl_data);
+        // wrap_callbacks assigns the task id on create?
+        // but that seems nasty. Also, we no longer need
+        // to form a chpl_task_prvDataImpl_t at this point.
+        // Can we call the event inside the task once it runs?
+        // wrap_callbacks(chpl_task_cb_event_kind_create,
+        //                &wrapper_args.chpl_data);
 
         if (subloc == c_sublocid_any) {
-            qthread_fork_copyargs(chapel_wrapper_nocount, &wrapper_args,
-                                  sizeof(chpl_qthread_wrapper_args_t), NULL);
+            qthread_fork_copyargs(chapel_wrapper, arg, arg_size, NULL);
         } else {
-            qthread_fork_copyargs_to(chapel_wrapper_nocount, &wrapper_args,
-                                     sizeof(chpl_qthread_wrapper_args_t), NULL,
-                                     (qthread_shepherd_id_t) subloc);
+            qthread_fork_copyargs_to(chapel_wrapper, arg, arg_size,
+                                     NULL, (qthread_shepherd_id_t) subloc);
         }
     }
 }
@@ -883,59 +915,50 @@ void chpl_task_executeTasksInList(void **task_list)
     PROFILE_INCR(profile_task_executeTasksInList,1);
 }
 
-static inline void taskCallBody(chpl_fn_p fp, void *arg, void *arg_copy,
+static inline void taskCallBody(chpl_fn_p fp, void *arg, size_t arg_size,
                                 c_sublocid_t subloc,  chpl_bool serial_state,
                                 int lineno, int32_t filename)
 {
-    qthread_f fn;
+    chpl_task_bundle_t *bundle = (chpl_task_bundle_t*) arg;
 
-    // TODO --
-    // put chpl_qthread_wrapper_args_t at start of task
-    //
+    bundle->serial_state       = serial_state;
+    bundle->countRunning       = canCountRunningTasks;
+    bundle->is_executeOn       = true;
+    bundle->requestedSubloc    = subloc;
+    bundle->requested_fn       = fp;
+    bundle->task_prv.lineno    = lineno;
+    bundle->task_prv.filename  = filename;
 
-    chpl_qthread_wrapper_args_t wrapper_args =
-        {fp, arg, arg_copy,
-         PRV_DATA_IMPL_VAL(filename, lineno, chpl_nullTaskID, true,
-                           subloc, serial_state) };
-
-    if (canCountRunningTasks)
-      fn = chapel_wrapper_count;
-    else
-      fn = chapel_wrapper_nocount;
-
-    wrap_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);
+    // wrap_callbacks assigns the task id on create?
+    // but that seems nasty. Also, we no longer need
+    // to form a chpl_task_prvDataImpl_t at this point.
+    // Can we call the event inside the task once it runs?
+    // wrap_callbacks(chpl_task_cb_event_kind_create,
+    //                &wrapper_args.chpl_data);
 
     if (subloc < 0) {
-        qthread_fork_copyargs(fn, &wrapper_args,
-                              sizeof(chpl_qthread_wrapper_args_t), NULL);
+        qthread_fork_copyargs(chapel_wrapper, arg, arg_size, NULL);
     } else {
-        qthread_fork_copyargs_to(fn, &wrapper_args,
-                                 sizeof(chpl_qthread_wrapper_args_t), NULL,
-                                 (qthread_shepherd_id_t) subloc);
+        qthread_fork_copyargs_to(chapel_wrapper, arg, arg_size,
+                                 NULL, (qthread_shepherd_id_t) subloc);
     }
 }
 
-void chpl_task_taskCall(chpl_fn_p fp, void *arg, size_t arg_size,
+void chpl_task_taskCall(chpl_fn_p fp, chpl_task_bundle_t *arg, size_t arg_size,
                         c_sublocid_t subloc,
                         int lineno, int32_t filename)
 {
-    void *arg_copy = NULL;
-
     PROFILE_INCR(profile_task_taskCall,1);
 
-    // TODO -- remove this allocation
-    if (arg != NULL) {
-        arg_copy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_TASK_ARG, 0, 0);
-        chpl_memcpy(arg_copy, arg, arg_size);
-    }
-    taskCallBody(fp, NULL, arg_copy, subloc, false, lineno, filename);
+    taskCallBody(fp, arg, arg_size, subloc, false, lineno, filename);
 }
 
-void chpl_task_startMovedTask(chpl_fn_p      fp,
-                              void          *arg,
-                              c_sublocid_t   subloc,
-                              chpl_taskID_t  id,
-                              chpl_bool      serial_state)
+void chpl_task_startMovedTask(chpl_fn_p           fp,
+                              chpl_task_bundle_t *arg,
+                              size_t              arg_size,
+                              c_sublocid_t        subloc,
+                              chpl_taskID_t       id,
+                              chpl_bool           serial_state)
 {
     //
     // For now the incoming task ID is simply dropped, though we check
@@ -947,7 +970,7 @@ void chpl_task_startMovedTask(chpl_fn_p      fp,
 
     PROFILE_INCR(profile_task_startMovedTask,1);
 
-    taskCallBody(fp, arg, NULL, subloc, serial_state, 0, CHPL_FILE_IDX_UNKNOWN);
+    taskCallBody(fp, arg, arg_size, subloc, serial_state, 0, CHPL_FILE_IDX_UNKNOWN);
 }
 
 //

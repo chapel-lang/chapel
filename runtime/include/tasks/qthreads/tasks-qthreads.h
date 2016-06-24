@@ -120,8 +120,8 @@ typedef struct {
   //chpl_bool serial_state;
   //chpl_bool countRunning;
   //chpl_bool is_executeOn;
-  int task_filename;
-  int task_lineno;
+  int lineno;
+  int filename;
   //c_sublocid_t requestedSubloc;
   //chpl_fn_p requested_fn;
 } chpl_task_bundleData_t;
