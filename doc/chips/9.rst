@@ -39,8 +39,8 @@ Description
 There are a several components of this package manager here I will propose what
 two of them will look like initially:
 
-* mason - a command line tool for building Chapel programs
-* mason.toml - module metadata mason uses to build your application
+* ``mason`` - a command line tool for building Chapel programs
+* ``Mason.toml`` - module metadata mason uses to build your application
 
 Mason
 +++++
@@ -53,7 +53,7 @@ questions is to look at what cargo is doing. They have a very well
 designed package manager, and reinventing the wheel should generally be avoided
 when dealing with package manager design.
 
-The authors of this proposal do support the idea of writing ``mason`` in
+The authors of this proposal support the idea of writing ``mason`` in
 Chapel. It would be good to have a piece of production code that is written in
 Chapel that users and developers depend on and use regularly. The largest
 concern that has been brought up with this idea is the lack of proper error
@@ -70,7 +70,7 @@ input to the next state:
 * **Project Code**: ``src/``
 * **Manifest File**: ``Mason.toml``
 
-  * Markup-style file containing package metadata
+  * Markup-style file containing package metadata.
 
 * **Lock File**: ``Mason.lock``
 
@@ -123,7 +123,7 @@ For example, ``main.chpl``:
 
    proc main() {
        writeln("Hello, world!");
-    }
+   }
 
 Project Code -> Manifest File
 +++++++++++++++++++++++++++++
@@ -199,21 +199,21 @@ the additional ``source`` field:
    Curl = "1.0.0"
 
 
-There are some recognized downsides of pursuing a GitHub repository as a registry:
+There are some recognized downsides of using a GitHub repository as a registry:
 
 * It is not be feasible to cache packages centrally, compromising the
   reliability of the entire package ecosystem.
 
   * The packages themselves are distributed despite there being a central
     registry of manifests.
-  * We can *not* guarantee that a given package version will always remain
+  * We *cannot* guarantee that a given package version will always remain
     unchanged or even always exist.
 
     * Although some form of nightly/weekly testing could help mitigate this
       issue.
 
 * It is not easy to allow users to submit packages without human intervention
-  (gate keeper accepting pull requests).
+  (gatekeeper accepting pull requests).
 
 * GitHub's native interface would severely inhibit discoverability of packages.
 
@@ -239,10 +239,10 @@ valid and not of poor quality:
   * Running any tests that the package provides.
 
 * A set of core and trusted non-core Chapel community developers will serve
-  as gate keepers who will allow packages into the repository by merging
+  as gatekeepers who will allow packages into the repository by merging
   pull requests that pass all tests.
 
-  * Other non-automated review procedures can be done by the gate keepers,
+  * Other non-automated review procedures can be done by the gatekeepers,
     but it would be ideal to keep this effort minimal if required at all.
 
   * This is similar to Homebrew's approach to package submission.
@@ -258,7 +258,7 @@ This will be a fully automated step in which mason does the following:
 * Performs any incompatible version resolution strategy
 * Serializes the DAG and outputs it into ``Mason.lock``
 
-The user should never have to edit a ``Mason.lock`` file manually.
+The user should never edit a ``Mason.lock`` file manually.
 
 
 Lock File
