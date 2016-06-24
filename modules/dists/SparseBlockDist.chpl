@@ -136,21 +136,17 @@ class SparseBlockDom: BaseSparseDom {
     }
   }
 
-  proc bulkAdd_help(inds: [] index(rank,idxType), isSorted=false, isUnique=false) {
-    // there are two issues with the following line
-    // 1 without _new_ record functions throw null deref. It doesn't seem to be 
-    // able to deref _outer_ ? I think it has something to do with memory
-    // allocation for classes vs records, but I cannot explain
-    // 2 this line seems to be completely hacky -- explicit parentheses were
-    // necessary for the compiler not to complain when --verify flag is
-    // present. 
+  proc bulkAdd_help(inds: [] index(rank,idxType),
+      isSorted=false, isUnique=false) {
+
+    // without _new_, record functions throw null deref
     var comp = new TargetLocaleComparator();
 
     if !isSorted then sort(inds, comparator=comp);
 
     var localeRanges: [dist.targetLocDom] range;
     on inds {
-      forall l in dist.targetLocDom {
+      for l in dist.targetLocDom {
         const _first = locDoms[l].mySparseBlock._value.parentDom.first;
         const _last = locDoms[l].mySparseBlock._value.parentDom.last;
 
@@ -159,13 +155,13 @@ class SparseBlockDom: BaseSparseDom {
 
         if !foundLast then locLast -= 1;
 
-        // these two ifs necessary to catch out of bounds in the bulkAdd call
+        // two ifs are necessary to catch out of bounds in the bulkAdd call
         // chain. otherwise this methods would cutoff indices that are smaller
         // than parentDom.first or larger than parentDom.last, which is
         // _probably_ not desirable.
-        if dist.targetLocDom.first == l then 
+        if dist.targetLocDom.first == l then
           locFirst = inds.domain.first;
-        if dist.targetLocDom.last == l then 
+        if dist.targetLocDom.last == l then
           locLast = inds.domain.last;
 
         localeRanges[l] = locFirst..locLast;
