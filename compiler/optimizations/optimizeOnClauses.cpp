@@ -61,10 +61,10 @@ enum {
 static int
 classifyPrimitive(CallExpr *call) {
   INT_ASSERT(call->primitive);
-  // Check primitives for communication
+  // Check primitives for suitability for executeOnFast and for communication
   switch (call->primitive->tag) {
   case PRIM_UNKNOWN:
-    // TODO: Return true for PRIM_UNKNOWNs that are side-effect free
+    // TODO: Return FAST_AND_LOCAL for PRIM_UNKNOWNs that are side-effect free
     return NOT_FAST_NOT_LOCAL;
 
   case PRIM_NOOP:
@@ -120,7 +120,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_START_RMEM_FENCE:
   case PRIM_FINISH_RMEM_FENCE:
 
-  case PRIM_STRING_COPY:
   case PRIM_CAST_TO_VOID_STAR:
   case PRIM_SIZEOF:
 
@@ -185,13 +184,14 @@ classifyPrimitive(CallExpr *call) {
     return FAST_NOT_LOCAL;
 
   case PRIM_ARRAY_SHIFT_BASE_POINTER:
-    // Right now, the only use of this primitive in the
-    // module code is within a local block. If the arguments
-    // to it do not require communication, it is also local.
-    // So, just fall out to default case. If necessary in the
-    // future, this could be improved to check that accessing
-    // the arguments does not require communication.
-    return FAST_NOT_LOCAL;
+    // SHIFT_BASE_POINTER is fast as long as none of the
+    // arguments are wide references.
+    if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
+        call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
+        call->get(3)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))
+      return FAST_NOT_LOCAL;
+    else
+      return FAST_AND_LOCAL;
 
   case PRIM_SET_UNION_ID:
   case PRIM_GET_UNION_ID:
@@ -342,6 +342,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_ARRAY_ALLOC:
   case PRIM_ARRAY_FREE:
   case PRIM_ARRAY_FREE_ELTS:
+  case PRIM_STRING_COPY:
     return LOCAL_NOT_FAST;
 
 
@@ -529,6 +530,39 @@ markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
   }
 }
 
+// Removes PRIM_START_RMEM_FENCE and PRIM_FINISH_RMEM_FENCE
+// from the passed function.
+// For reporting purposes, returns true if the function actually
+// changed the function.
+static bool
+removeUnnecessaryFences(FnSymbol* fn)
+{
+  bool ret = false;
+
+  // These fences are only present if one of these flags
+  // is set. This is an optimization.
+  if (fn->hasEitherFlag(FLAG_WRAPPER_NEEDS_START_FENCE,
+                        FLAG_WRAPPER_NEEDS_FINISH_FENCE)) {
+
+    // If the function is marked local, remove
+    // PRIM_START_RMEM_FENCE / PRIM_FINISH_RMEM_FENCE
+    // from the wrapper.
+    std::vector<CallExpr*> calls;
+
+    collectCallExprs(fn, calls);
+
+    for_vector(CallExpr, call, calls) {
+      if (call->isPrimitive(PRIM_START_RMEM_FENCE) ||
+          call->isPrimitive(PRIM_FINISH_RMEM_FENCE)) {
+        call->remove();
+        ret = true;
+      }
+    }
+  }
+
+  return ret;
+}
+
 
 void
 optimizeOnClauses(void) {
@@ -564,10 +598,6 @@ optimizeOnClauses(void) {
     if (!fn->hasFlag(FLAG_ON_BLOCK))
       fastFork = false;
 
-    if (!fn->hasEitherFlag(FLAG_WRAPPER_NEEDS_START_FENCE,
-                           FLAG_WRAPPER_NEEDS_FINISH_FENCE))
-      removeRmemFences = false;
-
     if (fastFork) {
       // Code generation will use executeOnFast because
       // the function will have been marked with FLAG_FAST_ON
@@ -575,21 +605,16 @@ optimizeOnClauses(void) {
       // No other action is necessary at this point.
     }
     if (removeRmemFences) {
-      // If the function is marked local, remove
-      // PRIM_START_RMEM_FENCE / PRIM_FINISH_RMEM_FENCE
-      // from the wrapper.
-      std::vector<CallExpr*> calls;
-
-      collectCallExprs(fn, calls);
-
-      for_vector(CallExpr, call, calls) {
-        if (call->isPrimitive(PRIM_START_RMEM_FENCE) ||
-            call->isPrimitive(PRIM_FINISH_RMEM_FENCE)) {
-          call->remove();
-        }
-      }
+      // Compiling with --cache-remote adds fences for the start
+      // and end of a on-statement wrapper function. These fences
+      // generally cause communication and will lead to deadlock
+      // if they are left in an on-body that is run in an AM
+      // handler (ie with executeOnFast). Additionally, if there
+      // is no communication in the on body, the fence can be
+      // removed without harm (since that portion of code will
+      // not interact at all with this cache for *remote* data).
+      removeRmemFences = removeUnnecessaryFences(fn);
     }
-
 
     if ( (fastFork || removeRmemFences) && fReportOptimizedOn) {
       ModuleSymbol *mod = toModuleSymbol(fn->defPoint->parentSymbol);

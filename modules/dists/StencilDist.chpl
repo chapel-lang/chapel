@@ -1454,13 +1454,7 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
 proc _array.noFluffView() {
   var a = _value.dsiNoFluffView();
   a._arrAlias = _value;
-  pragma "dont disable remote value forwarding"
-  proc help() {
-    a.dom.incRefCount();
-    a._arrAlias.incRefCount();
-  }
-  if !noRefCount then
-    help();
+  if !noRefCount then a._arrAlias.incRefCount();
   return _newArray(a);
 }
 
@@ -1468,12 +1462,13 @@ proc StencilArr.dsiNoFluffView() {
   var tempDist = new Stencil(dom.dist.boundingBox, dom.dist.targetLocales,
                              dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
                              dom.dist.dataParMinGranularity);
-  var newDist = _newDistribution(tempDist)._value;
+  var newDist = _newDistribution(tempDist);
+  var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable));
+  newDist._value.add_dom(tempDom._value);
+  if !noRefCount then newDist._value.incRefCount();
+  tempDom.setIndices(dom.whole);
 
-  var tempDom = new StencilDom(rank=rank, idxType=idxType,
-                               dist=newDist, stridable=stridable);
-  tempDom.dsiSetIndices(dom.whole);
-  var newDom = _newDomain(tempDom)._value;
+  var newDom = tempDom._value;
 
   var alias = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=newDom.stridable, dom=newDom);
   var thisid = this.locale.id;
@@ -1488,6 +1483,7 @@ proc StencilArr.dsiNoFluffView() {
     }
   }
   if doRADOpt then alias.setupRADOpt();
+  if !noRefCount then tempDom._value.incRefCount();
   return alias;
 }
 

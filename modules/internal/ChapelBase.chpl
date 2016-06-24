@@ -675,11 +675,9 @@ module ChapelBase {
 
   // Removing the 'eltType' arg results in errors for --baseline
   inline proc _ddata_shift(type eltType, data: _ddata(eltType), shift: integral) {
-    local {
-      var ret: _ddata(eltType);
-       __primitive("shift_base_pointer", ret, data, shift);
-      return ret;
-    }
+    var ret: _ddata(eltType);
+     __primitive("shift_base_pointer", ret, data, shift);
+    return ret;
   }
 
   inline proc _ddata_allocate(type eltType, size: integral) {

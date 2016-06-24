@@ -249,7 +249,7 @@ static void gatherWellKnownFns() {
   static const char* wkfn_reqd_message   = "Function '%s' must be defined in the Chapel internal modules.";
 
   // Harvest well-known functions from among the global fn definitions.
-  // We check before assigning to the well-known type dt<typename>, to ensure that it
+  // We check before assigning to the associated global to ensure that it
   // is null.  In that way we can flag duplicate definitions.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     for (int i = 0; i < nEntries; ++i) {
