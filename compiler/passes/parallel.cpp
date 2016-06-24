@@ -709,6 +709,12 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
     if (fn->hasFlag(FLAG_ON))
       ; // the caller will free the actual
     else
+      // Since runtime is now copying argument bundles,
+      // this would only work if we stored a pointer to the original.
+      // But there is not much point in it anyway since the runtime
+      // is copying the argument bundles. Why do we care to allocate
+      // something to just have the runtime copy from the allocated
+      // memory instead of the stack?
       wrap_fn->insertAtTail(callChplHereFree(wrap_c));
   }
 
