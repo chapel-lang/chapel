@@ -132,46 +132,48 @@ class SparseBlockDom: BaseSparseDom {
   // segfault from the compiler.
   record TargetLocaleComparator {
     proc key(a: index(rank, idxType)) { 
-      return (dist.targetLocsIdx(a), a); 
+      return (dist.targetLocsIdx(a), a);
     }
   }
 
   proc bulkAdd_help(inds: [] index(rank,idxType), isSorted=false, isUnique=false) {
+    // there are two issues with the following line
+    // 1 without _new_ record functions throw null deref. It doesn't seem to be 
+    // able to deref _outer_ ? I think it has something to do with memory
+    // allocation for classes vs records, but I cannot explain
+    // 2 this line seems to be completely hacky -- explicit parentheses were
+    // necessary for the compiler not to complain when --verify flag is
+    // present. 
+    var comp = new TargetLocaleComparator();
 
-    if !isSorted {
+    if !isSorted then sort(inds, comparator=comp);
 
-      // there are two issues with the following line
-      // 1 without _new_ record functions throw null deref. It doesn't seem to be 
-      // able to deref _outer_ ? I think it has something to do with memory
-      // allocation for classes vs records, but I cannot explain
-      // 2 this line seems to be completely hacky -- explicit parentheses were
-      // necessary for the compiler not to complain when --verify flag is
-      // present. 
-      var comp = new TargetLocaleComparator();
-      sort(inds, comparator=comp);
-    }
+    var localeRanges: [dist.targetLocDom] range;
+    on inds {
+      forall l in dist.targetLocDom {
+        const _first = locDoms[l].mySparseBlock._value.parentDom.first;
+        const _last = locDoms[l].mySparseBlock._value.parentDom.last;
 
-    var firstIndex = inds.domain.low;
-    var curLoc = dist.targetLocsIdx(inds[inds.domain.low]);
+        var (foundFirst, locFirst) = search(inds, _first, comp);
+        var (foundLast, locLast) = search(inds, _last, comp);
 
-    sync {
-      for i in inds.domain {
-        const _tmpLoc = dist.targetLocsIdx(inds[i]);
-        if _tmpLoc != curLoc {
-          spawnBulkAdd(firstIndex..i-1, curLoc);
-          curLoc = _tmpLoc;
-          firstIndex = i;
-        }
+        if !foundLast then locLast -= 1;
+
+        // these two ifs necessary to catch out of bounds in the bulkAdd call
+        // chain. otherwise this methods would cutoff indices that are smaller
+        // than parentDom.first or larger than parentDom.last, which is
+        // _probably_ not desirable.
+        if dist.targetLocDom.first == l then 
+          locFirst = inds.domain.first;
+        if dist.targetLocDom.last == l then 
+          locLast = inds.domain.last;
+
+        localeRanges[l] = locFirst..locLast;
       }
-      spawnBulkAdd(firstIndex..inds.domain.high, curLoc);
     }
-
-    proc spawnBulkAdd(indsRange: range, loc){
-      begin on dist.targetLocales(loc) {
-        locDoms[loc].mySparseBlock.bulkAdd(inds[indsRange], isSorted=true,
-            isUnique=false);
-      }
-    }
+    coforall l in dist.targetLocDom do on dist.targetLocales[l] do
+      locDoms[l].mySparseBlock.bulkAdd(inds[localeRanges[l]],
+          isSorted=true, isUnique=false);
   }
 
   //

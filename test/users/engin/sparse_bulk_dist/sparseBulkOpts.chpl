@@ -9,7 +9,7 @@ const ParentDom = {dimRange, dimRange} dmapped Block({dimRange, dimRange});
 config type layoutType = DefaultDist;
 var layout = new layoutType;
 
-var SparseDom: sparse subdomain(ParentDom) dmapped new dmap(layout);
+var SparseDom: sparse subdomain(ParentDom);
 var SparseMat: [SparseDom] int;
 
 //left diagonal

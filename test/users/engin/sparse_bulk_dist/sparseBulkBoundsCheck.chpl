@@ -6,7 +6,7 @@ config type layoutType = DefaultDist;
 var layout = new layoutType;
 
 const ParentDom = {0..#N, 0..#N} dmapped Block({0..#N, 0..#N});
-var SparseDom: sparse subdomain(ParentDom) dmapped new dmap(layout);
+var SparseDom: sparse subdomain(ParentDom);
 
 var SparseArr: [SparseDom] int;
 
