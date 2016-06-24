@@ -49,13 +49,16 @@ The idea of ``mason`` is based heavily off of Rust's cargo_. It is meant to
 provide a consistent way for libraries and applications to be built. This is
 done through the use of a manifest, ``mason.toml``. The manifest describes your
 package, its dependencies, and how it is built. The long term answer for most
-questions is to look at what cargo is doing. I think they have a very well
-designed package manager, and I see no reason to totally reinvent the wheel.
+questions is to look at what cargo is doing. They have a very well
+designed package manager, and reinventing the wheel should generally be avoided
+when dealing with package manager design.
 
-I do think ``mason`` should be written in Chapel however. I think it would be good
-to have a piece of code that is written in Chapel that we depend on and
-actually use. Currently the only time someone is writing Chapel is as a
-benchmark or for a test.
+The authors of this proposal do support the idea of writing ``mason`` in
+Chapel. It would be good to have a piece of production code that is written in
+Chapel that users and developers depend on and use regularly. The largest
+concern that has been brought up with this idea is the lack of proper error
+handling in Chapel. However, this should improve over time in parallel to the
+development of ``mason``.
 
 
 Mason Pipeline
