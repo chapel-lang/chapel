@@ -86,14 +86,14 @@ A package repository will consist of the following directory hierarchy:
 
 ::
 
-  /MyPackage
+  MyPackage/
     Mason.toml
     src/
       main.chpl
 
 Upon invoking ``mason build``, the dependencies will be parsed into a directed
 acyclic graph, resolved, and serialized into ``Mason.lock``. They will then be
-downloaded into ``~/.mason/src`` mirroring Cargo's ``~/.cargo/src`` common pool
+downloaded into ``~/.mason/src/`` mirroring Cargo's ``~/.cargo/src/`` common pool
 of dependencies. Finally, if the package is an application, the binary will
 build into ``target/``. The final directory hierarchy will look like this:
 
@@ -103,7 +103,7 @@ build into ``target/``. The final directory hierarchy will look like this:
     (dependencies of MyPackage)
 
 
-  /MyPackage
+  MyPackage/
     Mason.toml
     Mason.lock
     src/
@@ -117,7 +117,7 @@ Project Code
 
 This is the Chapel source code written by the package author.
 
-For example:
+For example, ``main.chpl``:
 
 .. code-block:: chapel
 
@@ -128,11 +128,7 @@ For example:
 Project Code -> Manifest File
 +++++++++++++++++++++++++++++
 
-For the initial versions, the user will be responsible for writing the manifest
-file in its entirety.
-
-Improved tooling can assist in automating parts of this in the future,
-e.g. ``mason new <project-name> --<bin || lib>``
+The user will be responsible for writing the manifest file in its entirety.
 
 Manifest File
 +++++++++++++
@@ -142,14 +138,14 @@ The ``Mason.toml`` manifest file will closely follow the design of
 ``Cargo.toml``. Some fields will vary, if they are too Rust-specific or could
 benefit from being more Chapel-specific.
 
-For example:
+For example, ``Mason.toml``:
 
 .. code-block:: ini
 
    [package]
    name = "hello_world"
    version = "0.1.0"
-   authors = ["Brad Chamberlain <brad@chamberlain.com>"]
+   authors = ["Bradford Chamberlain <brad@chamberlain.com>"]
 
    [dependencies]
    Curl = "1.0.0"
@@ -261,6 +257,8 @@ This will be a fully automated step in which mason does the following:
 * Builds a dependency directed acyclic graph (DAG)
 * Performs any incompatible version resolution strategy
 * Serializes the DAG and outputs it into ``Mason.lock``
+
+The user should never have to edit a ``Mason.lock`` file manually.
 
 
 Lock File
@@ -388,7 +386,7 @@ Things to note:
   mason build
 
 to download our lapack dependency, and build the program. The dependency will
-be downloaded and placed in ``~/.mason/src``. Nix will be used to resolve the
+be downloaded and placed in ``~/.mason/src/``. Nix will be used to resolve the
 external dependencies and packages if it is available. Otherwise, libraries and
 headers are expected to be placed on the normal search paths.
 
@@ -398,6 +396,8 @@ Other Future Work
 
 * Support for binary packages
 * Truly centralized registry with cached packages
+* Improved tooling to assist in automating parts of source code -> manifest file
+  * e.g. ``mason new <project-name> --app``
 
 
 .. _crates.io: https://crates.io/
