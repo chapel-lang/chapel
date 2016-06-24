@@ -47,4 +47,8 @@ int chpl_task_supportsRemoteCache(void) {
   return 0;    // not sure; return safe answer
 }
 
+typedef struct {
+  chpl_task_prvData_t prv;
+} chpl_task_bundleData_t;
+
 #endif

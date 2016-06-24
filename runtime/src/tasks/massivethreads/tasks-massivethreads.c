@@ -52,11 +52,6 @@
 #define PTHREAD_MUTEX_OVERRIDE
 
 typedef struct {
-  c_sublocid_t requestedSubloc;  // requested sublocal for task
-  chpl_task_prvData_t prvdata;
-} chpl_task_prvDataImpl_t;
-
-typedef struct {
   // A task which acquires pthread_mutex_lock must not migrate to
   // another worker thread.
   int in_mutex_flag;
@@ -66,17 +61,19 @@ static int tasking_layer_active = 0;
 static int worker_in_cs_beforeinit = 0;
 static thread_local_data* s_tld;
 
-static const chpl_task_prvDataImpl_t s_def_chpl_data=
+// task-private data of comm task
+static const chpl_task_bundle_t s_def_chpl_data=
              { .requestedSubloc = c_sublocid_any_val };
 
 // task-private data of main task
-static chpl_task_prvDataImpl_t s_main_chpl_data =
+static chpl_task_bundle_t s_main_chpl_data =
              { .requestedSubloc = c_sublocid_any_val };
 
-static inline chpl_task_prvDataImpl_t* getTaskPrivateData(void) {
+static inline chpl_task_bundle_t* getTaskPrivateData(void) {
   if (tasking_layer_active){
-    if (myth_wsapi_get_hint_size(myth_self())==sizeof(chpl_task_prvDataImpl_t)){
-      return (chpl_task_prvDataImpl_t*)myth_wsapi_get_hint_ptr(myth_self());
+    // Why is this check here?
+    if (myth_wsapi_get_hint_size(myth_self()) >= sizeof(chpl_task_bundle_t)){
+      return (chpl_task_bundle_t*)myth_wsapi_get_hint_ptr(myth_self());
     }
   }
   return &s_main_chpl_data;
@@ -275,22 +272,14 @@ static size_t s_stack_size;
 
 static volatile chpl_bool canCountRunningTasks = false;
 
-typedef struct {
-  // descriptor for moved_task_wrapper()
-  chpl_fn_p fp;
-  void* arg;
-  chpl_bool count_running;
-  chpl_task_prvDataImpl_t chpl_data;
-} moved_task_wrapper_desc_t;
+static void* task_wrapper(void* a) {
+  chpl_task_bundle_t* bundle = getTaskPrivateData();
 
-static void* moved_task_wrapper(void* a) {
-  moved_task_wrapper_desc_t* pmtwd = (moved_task_wrapper_desc_t*) a;
-  if (pmtwd->count_running)
+  if (bundle->countRunning)
     chpl_taskRunningCntInc(0, 0);
-  (pmtwd->fp)(pmtwd->arg);
-  if (pmtwd->count_running)
+  (bundle->requested_fn)(bundle);
+  if (bundle->countRunning)
     chpl_taskRunningCntDec(0, 0);
-  chpl_mem_free(pmtwd, 0, 0);
   return NULL;
 }
 
@@ -303,7 +292,7 @@ void chpl_task_init(void) {
   char *env;
   int i;
   void *chpl_data_ptr=&s_main_chpl_data;
-  size_t chpl_data_size=sizeof(chpl_task_prvDataImpl_t);
+  size_t chpl_data_size=sizeof(chpl_task_bundle_t);
 
   //
   // This threading layer does not have any inherent limit on the number
@@ -355,9 +344,9 @@ int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
   //Since return value is always ignored, this cast is legal unless the definition is changed.
   opt.stack_size = 0;
   opt.switch_immediately = 0;
-  opt.custom_data_size = sizeof(chpl_task_prvDataImpl_t);
+  opt.custom_data_size = sizeof(chpl_task_bundle_t);
   opt.custom_data = (void*)&s_def_chpl_data;
-  th = myth_create_ex((void*(*)(void*)) fn, arg, &opt);
+  th = myth_create_ex((void*(*)(void*)) fn, NULL, &opt);
   assert(th);
   myth_detach(th);
   return 0;
@@ -384,28 +373,39 @@ void chpl_task_stdModulesInitialized(void) {
   chpl_taskRunningCntInc(0, 0);
 }
 
-void chpl_task_addToTaskList(chpl_fn_int_t fid, void* arg, c_sublocid_t subLoc,
+void chpl_task_addToTaskList(chpl_fn_int_t fid,
+    chpl_task_bundle_t* arg, size_t arg_size,
+    c_sublocid_t subLoc,
     void **task_list, int32_t task_list_locale,
     chpl_bool is_begin_stmt, int lineno, int32_t filename) {
   //Create a new task directly
   myth_thread_option opt;
   myth_thread_t th;
-  chpl_bool serial_state = getTaskPrivateData()->prvdata.serial_state;
-
-  assert(subLoc == 0 || subLoc == c_sublocid_any);
+  chpl_bool serial_state = getTaskPrivateData()->serial_state;
+  chpl_task_prvData_t prv = { .serial_state = serial_state };
 
   if (serial_state) {
     (*chpl_ftable[fid])(arg);
     return;
   }
+
+  arg->serial_state = serial_state;
+  arg->countRunning = true;
+  arg->is_executeOn = true;
+  arg->requestedSubloc = subLoc;
+  arg->requested_fn = chpl_ftable[fid];
+  arg->task_prv.prv = prv;
+
   //Create one task
-  //chpl_fn_p is defined as "typedef void (*chpl_fn_p)(void*);" in chpltypes.h at line 85.
-  //So this cast is OK unless the definition is changed.
   opt.stack_size = 0;
   opt.switch_immediately = (is_worker_in_cs())?0:1;
-  opt.custom_data_size = sizeof(chpl_task_prvDataImpl_t);
-  opt.custom_data = getTaskPrivateData();
-  th = myth_create_ex((void*(*)(void*)) chpl_ftable[fid], arg, &opt);
+  // By storing the arguments in the custom_data pointer,
+  // ask massivethreads to copy the data to the task stack.
+  // Instead of using the task argument, task_wrapper will get
+  // this task-local data and use it.
+  opt.custom_data_size = arg_size;
+  opt.custom_data = arg;
+  th = myth_create_ex(task_wrapper, NULL, &opt);
   assert(th);
   myth_detach(th);
 }
@@ -414,37 +414,59 @@ void chpl_task_executeTasksInList(void** task_list) {
   //Nothing to do because chpl_task_list is actually not used.
 }
 
-void chpl_task_startMovedTask(chpl_fn_p fp,
-                              void* a,
-                              c_sublocid_t subloc,
-                              chpl_taskID_t id,
-                              chpl_bool serial_state)
+static inline
+void taskCallBody(chpl_fn_p fp,
+		  chpl_task_bundle_t* arg,
+		  size_t arg_size,
+		  c_sublocid_t subloc,
+		  chpl_bool serial_state,
+                  int lineno, int32_t filename)
 {
   myth_thread_t th;
   myth_thread_option opt;
-  moved_task_wrapper_desc_t* pmtwd;
-  chpl_task_prvDataImpl_t private = {
-    .requestedSubloc = subloc,
-    .prvdata = { .serial_state = serial_state } };
+  chpl_task_prvData_t prv = { .serial_state = serial_state };
+
+  arg->serial_state = serial_state;
+  arg->countRunning = true;
+  arg->is_executeOn = true;
+  arg->requestedSubloc = subloc;
+  arg->requested_fn = fp;
+  arg->task_prv.prv = prv;
 
   assert(subloc == 0 || subloc == c_sublocid_any);
-  assert(id == chpl_nullTaskID);
-
-  pmtwd = (moved_task_wrapper_desc_t*) chpl_mem_alloc(sizeof(*pmtwd), 0, 0, 0);
-  *pmtwd = (moved_task_wrapper_desc_t)
-           { fp, a, canCountRunningTasks,
-             private };
-
 
   // Do the same as chpl_task_addToTaskList, except wrap the function
   opt.stack_size = 0;
   opt.switch_immediately = (is_worker_in_cs())?0:1;
-  opt.custom_data_size = sizeof(chpl_task_prvDataImpl_t);
-  opt.custom_data = (void*)&pmtwd->chpl_data;
-  th = myth_create_ex(moved_task_wrapper, pmtwd, &opt);
+  opt.custom_data_size = arg_size;
+  opt.custom_data = arg;
+  th = myth_create_ex(task_wrapper, NULL, &opt);
   assert(th);
   myth_detach(th);
 }
+
+void chpl_task_taskCall(chpl_fn_p fp,
+                        chpl_task_bundle_t* arg,
+                        size_t arg_size,
+                        c_sublocid_t subloc,
+                        int lineno,
+                        int32_t fileno)
+{
+  taskCallBody(fp, arg, arg_size, subloc, false, lineno, fileno);
+}
+
+
+void chpl_task_startMovedTask(chpl_fn_p fp,
+                              chpl_task_bundle_t* arg,
+                              size_t arg_size,
+                              c_sublocid_t subloc,
+                              chpl_taskID_t id,
+                              chpl_bool serial_state)
+{
+  assert(id == chpl_nullTaskID);
+  taskCallBody(fp, arg, arg_size, subloc, serial_state, 0, 0);
+}
+
 
 c_sublocid_t chpl_task_getSubloc(void) {
   return 0;
@@ -481,12 +503,12 @@ void chpl_task_sleep(double secs) {
 chpl_bool chpl_task_getSerial(void)
 {
   //get dynamic serial state
-  return getTaskPrivateData()->prvdata.serial_state;
+  return getTaskPrivateData()->serial_state;
 }
 
 void chpl_task_setSerial(chpl_bool new_state) {
   //set dynamic serial state
-  getTaskPrivateData()->prvdata.serial_state = new_state;
+  getTaskPrivateData()->serial_state = new_state;
 }
 
 uint32_t chpl_task_getMaxPar(void) {
@@ -511,7 +533,7 @@ c_sublocid_t chpl_task_getNumSublocales(void)
 }
 
 chpl_task_prvData_t* chpl_task_getPrvData(void) {
-  return & getTaskPrivateData()->prvdata;
+  return & getTaskPrivateData()->task_prv.prv;
 }
 
 size_t chpl_task_getCallStackSize(void) {
