@@ -13,6 +13,7 @@ config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
+param newLine: int(8) = ascii("\n");
 
 enum Ntide {
   A = ascii("A"), C = ascii("C"), G = ascii("G"), T = ascii("T"),
@@ -139,13 +140,13 @@ proc repeatMake(desc: string, alu: [], n: int) {
   var j : int;
   for i in 0..#(n / LINE_LENGTH) {
     j = (i * LINE_LENGTH) % r;
-    stdout.write(s[j..#LINE_LENGTH], 10: int(8));
+    stdout.write(s[j..#LINE_LENGTH], newLine);
   }
 
   const remain = n % LINE_LENGTH;
   if remain != 0 {
     j = ((n / LINE_LENGTH) * LINE_LENGTH) % r;
-    stdout.write(s[j..#remain], 10: int(8));
+    stdout.write(s[j..#remain], newLine);
   }
 }
 
@@ -155,4 +156,6 @@ proc main() {
   repeatMake(">ONE Homo sapiens alu\n", ALU, n * 2);
   randomMake(">TWO IUB ambiguity codes\n", IUB, n * 3);
   randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, n * 5);
+
+  delete random;
 }
