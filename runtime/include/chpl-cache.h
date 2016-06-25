@@ -85,6 +85,7 @@ void  chpl_cache_comm_put_strd(
 
 // For debugging.
 void chpl_cache_print(void);
+void chpl_cache_assert_released(void);
 
 #endif
 // ifdef HAS_CHPL_CACHE_FNS

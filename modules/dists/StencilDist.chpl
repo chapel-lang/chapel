@@ -262,7 +262,7 @@ class LocStencilDom {
   var myBlock, myFluff: domain(rank, idxType, stridable);
   var NeighDom: domain(rank);
   var Dest, Src: [NeighDom] domain(rank, idxType, stridable);
-  var Neighs: [NeighDom] rank*idxType;
+  var Neighs: [NeighDom] rank*int;
 }
 
 //
@@ -677,7 +677,18 @@ proc _matchArgsShape(type rangeType, type scalarType, args) type {
 
 proc Stencil.dsiCreateRankChangeDist(param newRank: int, args) {
   var collapsedDimLocs: rank*idxType;
+  var newFluff : newRank*idxType;
 
+  {
+    // Create a fluff that skips a dimension.
+    var curdim = 1;
+    for param i in 1..rank {
+      if !isCollapsedDimension(args(i)) {
+        newFluff(curdim) = fluff(i);
+        curdim += 1;
+      }
+    }
+  }
   for param i in 1..rank {
     if isCollapsedDimension(args(i)) {
       collapsedDimLocs(i) = args(i);
@@ -704,7 +715,7 @@ proc Stencil.dsiCreateRankChangeDist(param newRank: int, args) {
   const newTargetLocales = targetLocales((...collapsedLocs));
   return new Stencil(newBbox, newTargetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity, fluff=fluff, periodic=periodic);
+                   dataParMinGranularity, fluff=newFluff, periodic=periodic);
 }
 
 iter StencilDom.these() {
@@ -889,7 +900,10 @@ proc StencilDom.setup() {
 
         for (N, L) in zip(myLocDom.Neighs, ND) {
           if zeroTuple(L) then continue;
-          N = localeIdx + L;
+          if rank == 1 then
+            N(1) = localeIdx + L;
+          else
+            N = localeIdx + L;
         }
 
         if periodic {
@@ -905,7 +919,10 @@ proc StencilDom.setup() {
             }
 
             S = S.translate(offset);
-            N = dist.targetLocsIdx(S.low);
+            if rank == 1 then
+              N(1) = dist.targetLocsIdx(S.low);
+            else
+              N = dist.targetLocsIdx(S.low);
             assert(whole.member(S.low) && whole.member(S.high), "StencilDist: Failure to compute Src slice.");
             assert(dist.targetLocDom.member(N), "StencilDist: Error computing neighbor index.");
           }
@@ -1221,10 +1238,11 @@ proc StencilArr.dsiSlice(d: StencilDom) {
   var alias = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d);
   var thisid = this.locale.id;
   coforall i in d.dist.targetLocDom {
-    d.locDoms[i].myFluff = d.locDoms[i].myBlock;
-    d.fluff = makeZero(d.rank);
     on d.dist.targetLocales(i) {
-      alias.locArr[i] = new LocStencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i], myElems=>locArr[i].myElems[d.locDoms[i].myBlock]);
+      alias.locArr[i] = new LocStencilArr(eltType=eltType, rank=rank,
+                                          idxType=idxType, stridable=d.stridable,
+                                          locDom=d.locDoms[i],
+                                          myElems=>locArr[i].myElems[d.locDoms[i].myFluff]);
       if thisid == here.id then
         alias.myLocArr = alias.locArr[i];
     }
@@ -1298,7 +1316,7 @@ proc StencilArr.dsiRankChange(d, param newRank: int, param stridable: bool, args
           locSlice(i) = args(i);
           collapsedDims(i) = args(i);
         } else {
-          locSlice(i) = locDom.myBlock.dim(j)(args(i));
+          locSlice(i) = locDom.myFluff.dim(j)(args(i));
           j += 1;
         }
       }
@@ -1330,8 +1348,13 @@ proc StencilArr.dsiRankChange(d, param newRank: int, param stridable: bool, args
 }
 
 private inline proc zeroTuple(t) {
-  for param i in 1..t.size do 
-    if t(i) != 0 then return false;
+  if isTuple(t) {
+    for param i in 1..t.size do
+      if t(i) != 0 then return false;
+  } else if isIntegral(t) {
+    return t == 0;
+  }
+  else compilerError("Incorrect usage of 'zeroTuple' utility function.");
   return true;
 }
 
@@ -1420,6 +1443,48 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
       }
     }
   }
+}
+
+//
+// Returns a view of this Stencil-distributed array without any fluff.
+// Useful for ensuring that reads/writes always operate on non-cached data
+//
+// Copies the range slice function in ChapelArray.
+//
+proc _array.noFluffView() {
+  var a = _value.dsiNoFluffView();
+  a._arrAlias = _value;
+  if !noRefCount then a._arrAlias.incRefCount();
+  return _newArray(a);
+}
+
+proc StencilArr.dsiNoFluffView() {
+  var tempDist = new Stencil(dom.dist.boundingBox, dom.dist.targetLocales,
+                             dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
+                             dom.dist.dataParMinGranularity);
+  var newDist = _newDistribution(tempDist);
+  var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable));
+  newDist._value.add_dom(tempDom._value);
+  if !noRefCount then newDist._value.incRefCount();
+  tempDom.setIndices(dom.whole);
+
+  var newDom = tempDom._value;
+
+  var alias = new StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=newDom.stridable, dom=newDom);
+  var thisid = this.locale.id;
+  coforall i in newDom.dist.targetLocDom {
+    on newDom.dist.targetLocales(i) {
+      alias.locArr[i] = new LocStencilArr(eltType=eltType, rank=rank,
+                                          idxType=idxType, stridable=newDom.stridable,
+                                          locDom=newDom.locDoms[i],
+                                          myElems=>locArr[i].myElems[newDom.locDoms[i].myFluff]);
+      if thisid == here.id then
+        alias.myLocArr = alias.locArr[i];
+    }
+  }
+  if doRADOpt then alias.setupRADOpt();
+  if !noRefCount then tempDom._value.incRefCount();
+  return alias;
 }
 
 // wrapper

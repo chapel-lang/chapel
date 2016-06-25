@@ -144,7 +144,7 @@ class SparseBlockDom: BaseSparseDom {
       // 1 without _new_ record functions throw null deref. It doesn't seem to be 
       // able to deref _outer_ ? I think it has something to do with memory
       // allocation for classes vs records, but I cannot explain
-      // 2 this line seems to be completely hacky -- explicit parantheses were
+      // 2 this line seems to be completely hacky -- explicit parentheses were
       // necessary for the compiler not to complain when --verify flag is
       // present. 
       var comp = new TargetLocaleComparator();
