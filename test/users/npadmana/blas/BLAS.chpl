@@ -24,6 +24,40 @@ use ATLAS, you will likely need to also add a -latlas to the above
 command. We strongly recommend referring to the documentation for the
 version of BLAS you have.
 
+The CBLAS API
+-------------
+
+The C_BLAS submodule of the BLAS module provides access to all the 
+CBLAS calls. Arrays are passed in directly, while pointers to scalar
+quantities (including complex numbers) are passed by reference (removing
+the need to wrap these with ``c_ptrTo``). As with BLAS calls in C, 
+the user is responsible for passing in array dimensions etc. Furthermore, 
+different array element types require using different functions.
+
+We refer the user to the existing CBLAS documentation for the usage
+of these functions.
+
+Chapel Level 3 BLAS API
+-----------------------
+
+For convenience, we provide wrappers around the Level 3 (matrix-matrix)
+BLAS functions. These determine the appropriate functions to call, based
+on the array element types, as well as the array dimensions. The other
+functionality is identical to the corresponding BLAS functions.
+
+The names of these routines are identical to the corresponding BLAS functions,
+except that the type prefix is dropped. For instance, ``gemm`` is the 
+wrapper for the ``[sdcz]gemm`` routines.
+
+.. note::
+ Chapel determines the dimensions of the matrices from the arrays that are
+ passed in. However, if one is passing in a sub-array such that the array 
+ elements are not contiguously stored in memory, then the user needs to 
+ pass in the leading dimension (```lda``` etc) to the array, just as they
+ would in C. These default to 0, in which case Chapel determines the appropriate
+ values based on the array passed in.
+
+
 */
 
 
@@ -50,8 +84,7 @@ module BLAS {
 
   /* Level 3 BLAS */
 
-  /* GEMM : Matrix multiplication
-  */
+  /* Wrapper for the GEMM routines */
   proc gemm(A : [?Adom], B : [?Bdom], C : [?Cdom],
     alpha, beta,
     opA : Op = Op.N, opB : Op = Op.N,
@@ -106,8 +139,7 @@ module BLAS {
 
   }
 
-  /* SYMM : Matrix multiplication with a symmetric matrix A
-  */
+  /* Wrapper for the SYMM routines */
   proc symm(A : [?Adom], B : [?Bdom], C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  side : Side = Side.Left,
@@ -159,7 +191,7 @@ module BLAS {
 
   }
 
-  /* HEMM : Hermitian multiplications.... only for complex types*/
+  /* Wrapper for the HEMM routines */
   proc hemm(A : [?Adom], B : [?Bdom], C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  side : Side = Side.Left,
@@ -201,8 +233,7 @@ module BLAS {
 
   }
 
-  /* SYRK :
-  */
+  /* Wrapper for the SYRK routines */
   proc syrk(A : [?Adom],  C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
@@ -255,8 +286,7 @@ module BLAS {
 
   }
 
-  /* HERK :
-  */
+  /* Wrapper for the HERK routines */
   proc herk(A : [?Adom],  C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
@@ -300,8 +330,7 @@ module BLAS {
   }
 
 
-  /* SYR2K :
-  */
+  /* Wrapper for the SYR2K routines */
   proc syr2k(A : [?Adom],  B : [?Bdom], C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
@@ -355,8 +384,7 @@ module BLAS {
 
   }
 
-  /* HER2K :
-  */
+  /* Wrapper for the HER2K routines */
   proc her2k(A : [?Adom],  B : [?Bdom], C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
@@ -398,7 +426,7 @@ module BLAS {
 
   }
 
-  /* TRMM
+  /* Wrapper for the TRMM routines
   */
   proc trmm(A : [?Adom],  B : [?Bdom],
     alpha,
@@ -445,7 +473,7 @@ module BLAS {
 
   }
 
-  /* TRSM
+  /* Wrapper for the TRSM routines
   */
   proc trsm(A : [?Adom],  B : [?Bdom],
     alpha,
