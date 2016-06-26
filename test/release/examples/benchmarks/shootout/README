@@ -45,24 +45,65 @@ implementations that would benefit the codes:
 
 binarytrees.chpl
 ----------------
-o What would it take to make Chapel better at inferring the type of
-  recursive functions, at least in simple cases?
+o The Chapel compiler should really be able to infer the return types
+  of these recursive functions...
+
+o Related: the type function Tree.build() could be made into a
+  constructor except that the compiler can't resolve the return type
+  of the constructor because it's recursive (which is silly since it's
+  a constructor); yet we can't declare the return type because it's a
+  constructor.  I.e., we should be able to write:
+
+    proc Tree(item, depth) {
+      this.item = item;
+      if depth {
+        left = new Tree(2*item-1, depth-1);
+        right = new Tree(2*item-1, depth-1);
+      }
+    }
+
+o It seems like we should be able to write a strength-reduction
+  oriented overload of the ** operator in order to replace the '1 <<'
+  expression with a 2** operation without loss of performance (looking
+  for param base expressions equal to 2 (or a power of 2?).  I believe
+  we already specialize ** for certain integral param exponents, but
+  not for the base expression?
 
 
 chameneosredux.chpl
 -------------------
+o add user-level support for an enum iterator and replace array in
+  printColorEquations() with it
+
+o add support for a param enum.size query (not sure we'd actually use
+  this, though...)
+
+o once we map to C11 atomics/utilize memory order arguments, can
+  performance be improved via different memory orders?
+
+o should the language support local enums?  If so, move 'digit' into
+  spellInt().  Currently, it seems to break the cast operator within
+  the function (maybe a point-of-instantiation issue?  or where default
+  functions are inserted?)
+
+o once Chapel has initializers distinct from assignment, add support
+  for initialization of atomic types, which would remove the need for
+  the MeetingPlace constructor; and/or add support for direct
+  assignment to atomics which would accomplish the same thing even
+  before initializers come on-line.
+
+o would we want to have a digiterator in the standard library?  An
+  iterator that yields digits for a number?  (in base b)?
+
+o add support for compiler analysis that switch statements on enums
+  cover all cases in order to be able to replace 'otherwise' with
+  'when yellow' and not get a compiler error.
+
 o Chapel has discussed supporting some standard record-wrapped class
   types in order to avoid the need to use 'new' and 'delete' while
   still supporting "single logical instance" semantics.  It seems that
   both the meeting place and chameneos population would benefit from
   this in terms of avoiding the cleanup steps.
-
-o Once we better distinguish between initialization and assignment in
-  Chapel, we should add support for initializing atomic variables.  In
-  this program, it would permit us to replace the constructor with a
-  field initializer, which would be nice.  The question has also been
-  raised "should we allow assignments to/from atomic variables?" in
-  which case we could do it even sooner.
 
 
 mandelbrot.chpl
@@ -114,6 +155,31 @@ o promote mpz_t types to a record-based implementation with:
   - automatic memory reclamation when it leaves scope
   - support for native Chapel types rather than exposing C types
     (using safecasts at any downward-facing interfaces)
+
+
+spectralnorm.chpl
+-----------------
+o spectral norm really wants partial reductions... :(
+
+o What could we do to not pass 'tmp' in as an input argument?  Should
+  Chapel support static variables?
+
+o open question: What would it take to (efficiently) have the helper
+  routines return the result they're computing rather than taking it
+  in as an input argument?  This is related to ongoing questions
+  about returning arrays and records and optimizing such returns...
+
+o do we have an opportunity to take advantage of vectorization?
+  (could it be as simple as 'vectorizeOnly-ing' the reduction loops?
+  Or unrolling them?)
+
+o are our reductions overly heavyweight in the serial case?  (e.g., do
+  we still use synchronized values?)  Is there more we could do to
+  improve them?
+
+o are the domain queries costing us more than we'd like?
+
+o should Chapel's dynamic() iterators default to a chunksize of 1?
 
 
 threadring.chpl

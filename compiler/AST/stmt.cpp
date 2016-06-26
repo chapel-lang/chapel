@@ -426,8 +426,14 @@ GenRet BlockStmt::codegen() {
   codegenStmt(this);
 
   if (outfile) {
-    if (this != getFunction()->body)
+    if (this != getFunction()->body) {
+      if (this->blockInfoGet()) {
+        if (this->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
+          info->cStatements.push_back("/* local block */\n");
+        }
+      }
       info->cStatements.push_back("{\n");
+    }
 
     body.codegen("");
 

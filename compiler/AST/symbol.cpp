@@ -39,6 +39,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
+#include "resolution.h"
 
 #include "AstToText.h"
 #include "AstVisitor.h"
@@ -93,6 +94,7 @@ VarSymbol *gModuleInitIndentLevel = NULL;
 FnSymbol *gPrintModuleInitFn = NULL;
 FnSymbol* gChplHereAlloc = NULL;
 FnSymbol* gChplHereFree = NULL;
+FnSymbol* gChplDoDirectExecuteOn = NULL;
 
 std::map<FnSymbol*,int> ftableMap;
 Vec<FnSymbol*> ftableVec;
@@ -1051,13 +1053,30 @@ bool ArgSymbol::requiresCPtr(void) {
 
 
 bool ArgSymbol::isConstant() const {
-  if (intent == INTENT_CONST_IN || intent == INTENT_CONST_REF) {
-    return true;
+  bool retval = false;
+
+  switch (intent) {
+  case INTENT_BLANK:
+    retval = type->isDefaultIntentConst();
+    break;
+
+  case INTENT_CONST_IN:
+  case INTENT_CONST_REF:
+    retval = true;
+    break;
+
+  // Noakes: 2016/06/14
+  // It seems odd to me that this case depends on the type
+  case INTENT_CONST:
+    retval = type->isDefaultIntentConst();
+    break;
+
+  default:
+    retval = false;
+    break;
   }
-  return (intent == INTENT_BLANK || intent == INTENT_CONST) &&
-    !isReferenceType(type) &&
-    !isSyncType(type) &&
-    !isRecordWrappedType(type) /* array, domain, distribution */;
+
+  return retval;
 }
 
 bool ArgSymbol::isConstValWillNotChange() const {
@@ -1466,6 +1485,7 @@ FnSymbol::FnSymbol(const char* initName) :
   codegenUniqueNum(1),
   doc(NULL),
   partialCopySource(NULL),
+  varargOldFormal(NULL),
   retSymbol(NULL)
 {
   substitutions.clear();
@@ -1767,6 +1787,15 @@ void FnSymbol::finalizeCopy(void) {
      * replacements.
      */
     update_symbols(this, map);
+
+    // Replace vararg formal if appropriate.
+    if (this->varargOldFormal) {
+      substituteVarargTupleRefs(this->body, this->varargNewFormals.size(),
+                                this->varargOldFormal, this->varargNewFormals);
+      // Done, clean up.
+      this->varargOldFormal = NULL;
+      this->varargNewFormals.clear();
+    }
 
     // Clean up book keeping information.
     this->partialCopyMap.clear();
@@ -3427,16 +3456,6 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
     mask.set(FLAG_ARRAY);
     mask.set(FLAG_DOMAIN);
     mask.set(FLAG_DISTRIBUTION);
-  }
-
-  return s->flags & mask;
-}
-
-FlagSet getSyncFlags(Symbol* s) {
-  static FlagSet mask;
-  if (mask.none()) {
-    mask.set(FLAG_SYNC);
-    mask.set(FLAG_SINGLE);
   }
 
   return s->flags & mask;

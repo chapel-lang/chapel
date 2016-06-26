@@ -238,8 +238,11 @@ class CSRDom: BaseSparseDom {
   }
 
   proc dsiMember(ind: rank*idxType) {
-    const (found, loc) = find(ind);
-    return found;
+    if parentDom.member(ind) {
+      const (found, loc) = find(ind);
+      return found;
+    }
+    return false;
   }
 
   proc dsiAdd(ind: rank*idxType) {
@@ -300,7 +303,8 @@ class CSRDom: BaseSparseDom {
     }
   }
 
-  proc bulkAdd_help(inds: [] rank*idxType, isSorted=false, isUnique=false){
+  proc bulkAdd_help(inds: [?indsDom] rank*idxType, isSorted=false, 
+      isUnique=false){
 
     const (actualInsertPts, actualAddCnt) =
       __getActualInsertPts(this, inds, isSorted, isUnique);
@@ -316,12 +320,12 @@ class CSRDom: BaseSparseDom {
     }
 
     //linearly fill the new colIdx from backwards
-    var newIndIdx = actualInsertPts.size-1; //index into new indices
+    var newIndIdx = indsDom.high; //index into new indices
     var oldIndIdx = oldnnz; //index into old indices
     var newLoc = actualInsertPts[newIndIdx]; //its position-to-be in new dom
     while newLoc == -1 {
       newIndIdx -= 1;
-      if newIndIdx == -1 then break; //there were duplicates -- now done
+      if newIndIdx == indsDom.low-1 then break; //there were duplicates -- now done
       newLoc = actualInsertPts[newIndIdx];
     }
 
@@ -334,17 +338,17 @@ class CSRDom: BaseSparseDom {
         arrShiftMap[oldIndIdx] = i;
         oldIndIdx -= 1;
       }
-      else if newIndIdx >= 0 && i == newLoc {
+      else if newIndIdx >= indsDom.low && i == newLoc {
         //put the new guy in
         colIdx[i] = inds[newIndIdx][2];
         newIndIdx -= 1;
-        if newIndIdx >= 0 then 
+        if newIndIdx >= indsDom.low then 
           newLoc = actualInsertPts[newIndIdx];
         else
           newLoc = -2; //finished new set
         while newLoc == -1 {
           newIndIdx -= 1;
-          if newIndIdx == -1 then break; //there were duplicates -- now done
+          if newIndIdx == indsDom.low-1 then break; //there were duplicates -- now done
           newLoc = actualInsertPts[newIndIdx];
         }
       }

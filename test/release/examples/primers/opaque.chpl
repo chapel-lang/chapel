@@ -21,7 +21,7 @@ var People: domain(opaque);
 
 //
 // Since opaque domains don't support logical index values, new
-// indices are created by requesting them from the dommain directly.
+// indices are created by requesting them from the domain directly.
 // So, to add our first three people to the People domain, we could
 // do the following declarations/assignments:
 //

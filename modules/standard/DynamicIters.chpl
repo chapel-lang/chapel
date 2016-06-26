@@ -475,7 +475,7 @@ where tag == iterKind.leader
             const zeroBasedIters2:rType=adaptSplit(localWork[victim], factorSteal, moreLocalWork[victim], locks[victim]);
             if zeroBasedIters2.length !=0 then {
               if debugDynamicIters then 
-                writeln("Range stealed at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
+                writeln("Range stolen at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
               yield (zeroBasedIters2,);
             }
           } else {
@@ -488,7 +488,7 @@ where tag == iterKind.leader
                                           //after splitting from a victim range
             if zeroBasedIters2.length !=0 then {
               if debugDynamicIters then 
-                writeln("Range stealed at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
+                writeln("Range stolen at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
               yield (zeroBasedIters2,);
             }
           }

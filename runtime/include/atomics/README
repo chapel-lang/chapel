@@ -45,7 +45,7 @@ Memory Orderings:
    } memory_order;
 
    // release, acq_rel, seq_cst store performs a release on affected memory.
-   // acquire, acq_rel, seq_cst load operation performs aquire on affected memory.
+   // acquire, acq_rel, seq_cst load operation performs acquire on affected memory.
    // consume a load operation performs a consume on affected memory
    // seq_cst is 'sequentially consistent'
    // At present our implementations are really the same regardless of the memory order

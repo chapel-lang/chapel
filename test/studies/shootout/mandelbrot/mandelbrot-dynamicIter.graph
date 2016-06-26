@@ -1,5 +1,5 @@
 perfkeys: real, real
-files: mandelbrot-unrolled.dat, mandelbrot-unrolled-DynamicNDIter.dat
-graphkeys: mandelbrot-unrolled, mandelbrot-unrolled-DynamicNDIter
+files: mandelbrot.dat, mandelbrot-release-dynamic.dat
+graphkeys: mandelbrot (release), mandelbrot-dynamic-domain-iterator
 ylabel: Time (seconds)
-graphtitle: Mandelbrot-unrolled Dynamic Iter Comparison
+graphtitle: Mandelbrot Dynamic Domain Iter Comparison

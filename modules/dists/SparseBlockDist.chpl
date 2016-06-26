@@ -40,7 +40,6 @@
 use DSIUtil;
 use ChapelUtil;
 use BlockDist;
-
 //
 // These flags are used to output debug information and run extra
 // checks when using SparseBlock.  Should these be promoted so that they can
@@ -50,7 +49,6 @@ use BlockDist;
 //
 config param debugSparseBlockDist = false;
 config param debugSparseBlockDistBulkTransfer = false;
-
 // There is no SparseBlock distribution class. Instead, we
 // just use Block.
 
@@ -73,6 +71,7 @@ class SparseBlockDom: BaseSparseDom {
   const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
+
 
   proc initialize() {
     setup();
@@ -115,6 +114,64 @@ class SparseBlockDom: BaseSparseDom {
 
   proc dsiAdd(ind: idxType) where this.rank == 1 {
     dsiAdd((ind,));
+  }
+
+  proc dsiBulkAdd(inds: [] index(rank, idxType), isSorted=false, isUnique=false,
+      preserveInds=true){
+  
+    if !isSorted && preserveInds {
+      var _inds = inds;
+      bulkAdd_help(_inds, isSorted, isUnique); 
+    }
+    else {
+      bulkAdd_help(inds, isSorted, isUnique);
+    }
+  }
+
+  // Tried to put this record in the function and the if statement, but got a
+  // segfault from the compiler.
+  record TargetLocaleComparator {
+    proc key(a: index(rank, idxType)) { 
+      return (dist.targetLocsIdx(a), a); 
+    }
+  }
+
+  proc bulkAdd_help(inds: [] index(rank,idxType), isSorted=false, isUnique=false) {
+
+    if !isSorted {
+
+      // there are two issues with the following line
+      // 1 without _new_ record functions throw null deref. It doesn't seem to be 
+      // able to deref _outer_ ? I think it has something to do with memory
+      // allocation for classes vs records, but I cannot explain
+      // 2 this line seems to be completely hacky -- explicit parentheses were
+      // necessary for the compiler not to complain when --verify flag is
+      // present. 
+      var comp = new TargetLocaleComparator();
+      sort(inds, comparator=comp);
+    }
+
+    var firstIndex = inds.domain.low;
+    var curLoc = dist.targetLocsIdx(inds[inds.domain.low]);
+
+    sync {
+      for i in inds.domain {
+        const _tmpLoc = dist.targetLocsIdx(inds[i]);
+        if _tmpLoc != curLoc {
+          spawnBulkAdd(firstIndex..i-1, curLoc);
+          curLoc = _tmpLoc;
+          firstIndex = i;
+        }
+      }
+      spawnBulkAdd(firstIndex..inds.domain.high, curLoc);
+    }
+
+    proc spawnBulkAdd(indsRange: range, loc){
+      begin on dist.targetLocales(loc) {
+        locDoms[loc].mySparseBlock.bulkAdd(inds[indsRange], isSorted=true,
+            isUnique=false);
+      }
+    }
   }
 
   //
