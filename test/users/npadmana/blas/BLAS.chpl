@@ -13,6 +13,7 @@ We recommend using a version of BLAS optimized for your system
 to get the best performance.
 
 As an example, with OpenBLAS :
+
 .. code-block:: sh
 
     chpl -I$PATH_TO_CBLAS_DIR \
@@ -31,37 +32,6 @@ module BLAS {
   use SysCTypes;
   require "cblas.h";
 
-  extern type CBLAS_INDEX = size_t;
-
-  // Do a size test.
-  {
-    pragma "no doc"
-    pragma "no prototype"
-    extern proc sizeof(type t): size_t;
-    assert(sizeof(CBLAS_INDEX) == sizeof(size_t));
-  }
-
-  // Define the external types
-  // These are C enums, so we define these as c_ints;
-  extern type CBLAS_ORDER = c_int;
-  extern type CBLAS_TRANSPOSE = c_int;
-  extern type CBLAS_UPLO = c_int;
-  extern type CBLAS_DIAG = c_int;
-  extern type CBLAS_SIDE = c_int;
-
-  // Constants
-  extern const CblasRowMajor : CBLAS_ORDER,
-               CblasColMajor : CBLAS_ORDER;
-  extern const CblasNoTrans : CBLAS_TRANSPOSE,
-               CblasTrans   : CBLAS_TRANSPOSE,
-               CblasConjTrans : CBLAS_TRANSPOSE;
-  extern const CblasUpper : CBLAS_UPLO,
-               CblasLower : CBLAS_UPLO;
-  extern const CblasNonUnit : CBLAS_DIAG,
-               CblasUnit : CBLAS_DIAG;
-  extern const CblasLeft : CBLAS_SIDE,
-               CblasRight : CBLAS_SIDE;
-
 
   /* Convenience */
   enum Order {Row=101:c_int, Col=102};
@@ -70,19 +40,6 @@ module BLAS {
   enum Diag {NonUnit=131:c_int, Unit=132:c_int};
   enum Side {Left=141:c_int, Right=142:c_int};
 
-  {
-    assert(Order.Row:c_int == CblasRowMajor);
-    assert(Order.Col:c_int == CblasColMajor);
-    assert(Op.N:c_int == CblasNoTrans);
-    assert(Op.T:c_int == CblasTrans);
-    assert(Op.H:c_int == CblasConjTrans);
-    assert(Uplo.Upper:c_int == CblasUpper);
-    assert(Uplo.Lower:c_int == CblasLower);
-    assert(Diag.NonUnit:c_int == CblasNonUnit);
-    assert(Diag.Unit:c_int == CblasUnit);
-    assert(Side.Left:c_int == CblasLeft);
-    assert(Side.Right:c_int == CblasRight);
-  }
   /* Level 3 BLAS */
 
   /* GEMM : Matrix multiplication
@@ -112,26 +69,26 @@ module BLAS {
     select eltType {
       when real(32) {
         // sgemm
-        cblas_sgemm(order, opA, opB, m, n, k,
+        C_BLAS.cblas_sgemm(order, opA, opB, m, n, k,
           alpha, A, _ldA, B, _ldB, beta, C,_ldC);
       }
       when real(64) {
         // dgemm
-        cblas_dgemm(order, opA, opB, m, n, k,
+        C_BLAS.cblas_dgemm(order, opA, opB, m, n, k,
           alpha, A, _ldA, B, _ldB, beta, C,_ldC);
       }
       when complex(64) {
         // cgemm
         var alpha1 = alpha : complex(64),
             beta1 = beta : complex(64);
-        cblas_cgemm(order, opA, opB, m, n, k,
+        C_BLAS.cblas_cgemm(order, opA, opB, m, n, k,
           alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       when complex(128) {
         // zgemm
         var alpha1 = alpha : complex(128),
             beta1 = beta : complex(128);
-        cblas_zgemm(order, opA, opB, m, n, k,
+        C_BLAS.cblas_zgemm(order, opA, opB, m, n, k,
           alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       otherwise {
@@ -165,26 +122,26 @@ module BLAS {
     select eltType {
       when real(32) {
         // ssymm
-        cblas_ssymm(order, side, uplo, m, n,
+        C_BLAS.cblas_ssymm(order, side, uplo, m, n,
           alpha, A, _ldA, B, _ldB, beta, C,_ldC);
       }
       when real(64) {
         // dsymm
-        cblas_dsymm(order, side, uplo, m, n,
+        C_BLAS.cblas_dsymm(order, side, uplo, m, n,
           alpha, A, _ldA, B, _ldB, beta, C,_ldC);
       }
       when complex(64) {
         // csymm
         var alpha1 = alpha : complex(64),
             beta1 = beta : complex(64);
-        cblas_csymm(order, side, uplo, m, n,
+        C_BLAS.cblas_csymm(order, side, uplo, m, n,
           alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       when complex(128) {
         // zsymm
         var alpha1 = alpha : complex(128),
             beta1 = beta : complex(128);
-        cblas_zsymm(order, side, uplo, m, n,
+        C_BLAS.cblas_zsymm(order, side, uplo, m, n,
           alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       otherwise {
@@ -219,14 +176,14 @@ module BLAS {
         // csymm
         var alpha1 = alpha : complex(64),
             beta1 = beta : complex(64);
-        cblas_chemm(order, side, uplo, m, n,
+        C_BLAS.cblas_chemm(order, side, uplo, m, n,
           alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       when complex(128) {
         // zsymm
         var alpha1 = alpha : complex(128),
             beta1 = beta : complex(128);
-        cblas_zhemm(order, side, uplo, m, n,
+        C_BLAS.cblas_zhemm(order, side, uplo, m, n,
           alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       otherwise {
@@ -261,26 +218,26 @@ module BLAS {
     select eltType {
       when real(32) {
         // ssymm
-        cblas_ssyrk(order, uplo, trans, n, k,
+        C_BLAS.cblas_ssyrk(order, uplo, trans, n, k,
           alpha, A, _ldA, beta, C,_ldC);
       }
       when real(64) {
         // dsymm
-        cblas_dsyrk(order, uplo, trans, n, k,
+        C_BLAS.cblas_dsyrk(order, uplo, trans, n, k,
           alpha, A, _ldA, beta, C,_ldC);
       }
       when complex(64) {
         // csymm
         var alpha1 = alpha : complex(64),
             beta1 = beta : complex(64);
-        cblas_csyrk(order, uplo, trans, n, k,
+        C_BLAS.cblas_csyrk(order, uplo, trans, n, k,
           alpha1, A, _ldA, beta1, C,_ldC);
       }
       when complex(128) {
         // zsymm
         var alpha1 = alpha : complex(128),
             beta1 = beta : complex(128);
-        cblas_zsyrk(order, uplo, trans, n, k,
+        C_BLAS.cblas_zsyrk(order, uplo, trans, n, k,
           alpha1, A, _ldA, beta1, C,_ldC);
       }
       otherwise {
@@ -317,14 +274,14 @@ module BLAS {
         // csymm
         var alpha1 = alpha : real(32),
             beta1 = beta : real(32);
-        cblas_cherk(order, uplo, trans, n, k,
+        C_BLAS.cblas_cherk(order, uplo, trans, n, k,
           alpha1, A, _ldA, beta1, C,_ldC);
       }
       when complex(128) {
         // zsymm
         var alpha1 = alpha : real(64),
             beta1 = beta : real(64);
-        cblas_zherk(order, uplo, trans, n, k,
+        C_BLAS.cblas_zherk(order, uplo, trans, n, k,
           alpha1, A, _ldA, beta1, C,_ldC);
       }
       otherwise {
@@ -361,26 +318,26 @@ module BLAS {
     select eltType {
       when real(32) {
         // ssymm
-        cblas_ssyr2k(order, uplo, trans, n, k,
+        C_BLAS.cblas_ssyr2k(order, uplo, trans, n, k,
           alpha, A, _ldA, B, _ldB, beta, C,_ldC);
       }
       when real(64) {
         // dsymm
-        cblas_dsyr2k(order, uplo, trans, n, k,
+        C_BLAS.cblas_dsyr2k(order, uplo, trans, n, k,
           alpha, A, _ldA, B, _ldB, beta, C,_ldC);
       }
       when complex(64) {
         // csymm
         var alpha1 = alpha : complex(64),
             beta1 = beta : complex(64);
-        cblas_csyr2k(order, uplo, trans, n, k,
+        C_BLAS.cblas_csyr2k(order, uplo, trans, n, k,
           alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       when complex(128) {
         // zsymm
         var alpha1 = alpha : complex(128),
             beta1 = beta : complex(128);
-        cblas_zsyr2k(order, uplo, trans, n, k,
+        C_BLAS.cblas_zsyr2k(order, uplo, trans, n, k,
           alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       otherwise {
@@ -417,13 +374,13 @@ module BLAS {
       when complex(64) {
         var alpha1 = alpha : complex(64),
             beta1 = beta : real(32);
-        cblas_cher2k(order, uplo, trans, n, k,
+        C_BLAS.cblas_cher2k(order, uplo, trans, n, k,
           alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       when complex(128) {
         var alpha1 = alpha : complex(128),
             beta1 = beta : real(64);
-        cblas_zher2k(order, uplo, trans, n, k,
+        C_BLAS.cblas_zher2k(order, uplo, trans, n, k,
           alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       otherwise {
@@ -456,21 +413,21 @@ module BLAS {
 
     select eltType {
       when real(32) {
-        cblas_strmm(order, side, uplo, trans, diag,
+        C_BLAS.cblas_strmm(order, side, uplo, trans, diag,
           m, n, alpha, A, _ldA, B, _ldB);
       }
       when real(64) {
-        cblas_dtrmm(order, side, uplo, trans, diag,
+        C_BLAS.cblas_dtrmm(order, side, uplo, trans, diag,
           m, n, alpha, A, _ldA, B, _ldB);
       }
       when complex(64) {
         var alpha1 = alpha : complex(64);
-        cblas_ctrmm(order, side, uplo, trans, diag,
+        C_BLAS.cblas_ctrmm(order, side, uplo, trans, diag,
           m, n, alpha1, A, _ldA, B, _ldB);
       }
       when complex(128) {
         var alpha1 = alpha : complex(128);
-        cblas_ztrmm(order, side, uplo, trans, diag,
+        C_BLAS.cblas_ztrmm(order, side, uplo, trans, diag,
           m, n, alpha1, A, _ldA, B, _ldB);
       }
       otherwise {
@@ -503,21 +460,21 @@ module BLAS {
 
     select eltType {
       when real(32) {
-        cblas_strsm(order, side, uplo, trans, diag,
+        C_BLAS.cblas_strsm(order, side, uplo, trans, diag,
           m, n, alpha, A, _ldA, B, _ldB);
       }
       when real(64) {
-        cblas_dtrsm(order, side, uplo, trans, diag,
+        C_BLAS.cblas_dtrsm(order, side, uplo, trans, diag,
           m, n, alpha, A, _ldA, B, _ldB);
       }
       when complex(64) {
         var alpha1 = alpha : complex(64);
-        cblas_ctrsm(order, side, uplo, trans, diag,
+        C_BLAS.cblas_ctrsm(order, side, uplo, trans, diag,
           m, n, alpha1, A, _ldA, B, _ldB);
       }
       when complex(128) {
         var alpha1 = alpha : complex(128);
-        cblas_ztrsm(order, side, uplo, trans, diag,
+        C_BLAS.cblas_ztrsm(order, side, uplo, trans, diag,
           m, n, alpha1, A, _ldA, B, _ldB);
       }
       otherwise {
@@ -542,6 +499,50 @@ module BLAS {
 
 
   module C_BLAS {
+    extern type CBLAS_INDEX = size_t;
+
+    // Do a size test.
+    {
+      pragma "no doc"
+        pragma "no prototype"
+        extern proc sizeof(type t): size_t;
+      assert(sizeof(CBLAS_INDEX) == sizeof(size_t));
+    }
+
+    // Define the external types
+    // These are C enums, so we define these as c_ints;
+    extern type CBLAS_ORDER = c_int;
+    extern type CBLAS_TRANSPOSE = c_int;
+    extern type CBLAS_UPLO = c_int;
+    extern type CBLAS_DIAG = c_int;
+    extern type CBLAS_SIDE = c_int;
+
+    // Constants
+    extern const CblasRowMajor : CBLAS_ORDER,
+           CblasColMajor : CBLAS_ORDER;
+    extern const CblasNoTrans : CBLAS_TRANSPOSE,
+           CblasTrans   : CBLAS_TRANSPOSE,
+           CblasConjTrans : CBLAS_TRANSPOSE;
+    extern const CblasUpper : CBLAS_UPLO,
+           CblasLower : CBLAS_UPLO;
+    extern const CblasNonUnit : CBLAS_DIAG,
+           CblasUnit : CBLAS_DIAG;
+    extern const CblasLeft : CBLAS_SIDE,
+           CblasRight : CBLAS_SIDE;
+
+    {
+      assert(Order.Row:c_int == CblasRowMajor);
+      assert(Order.Col:c_int == CblasColMajor);
+      assert(Op.N:c_int == CblasNoTrans);
+      assert(Op.T:c_int == CblasTrans);
+      assert(Op.H:c_int == CblasConjTrans);
+      assert(Uplo.Upper:c_int == CblasUpper);
+      assert(Uplo.Lower:c_int == CblasLower);
+      assert(Diag.NonUnit:c_int == CblasNonUnit);
+      assert(Diag.Unit:c_int == CblasUnit);
+      assert(Side.Left:c_int == CblasLeft);
+      assert(Side.Right:c_int == CblasRight);
+    }
 
     extern proc cblas_sdsdot (N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int): c_float;
     extern proc cblas_dsdot (N: c_int, X: []c_float, incX: c_int, Y: []c_float, incY: c_int): c_double;
