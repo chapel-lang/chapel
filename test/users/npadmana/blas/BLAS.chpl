@@ -33,11 +33,19 @@ module BLAS {
   require "cblas.h";
 
 
-  /* Convenience */
+  /* Define row or column order */
   enum Order {Row=101:c_int, Col=102};
+
+  /* Operation of matrix : none, transpose, or adjoint */
   enum Op {N=111:c_int, T=112:c_int, H=113:c_int}; // NoTranspose, Transpose, Adjoint
+
+  /* Storage for symmetric matrices */
   enum Uplo {Upper=121:c_int, Lower=122:c_int};
+
+  /* Assume a unit or non-unit diagonal */
   enum Diag {NonUnit=131:c_int, Unit=132:c_int};
+
+  /* Operate on the left or right side */
   enum Side {Left=141:c_int, Right=142:c_int};
 
   /* Level 3 BLAS */
@@ -486,6 +494,7 @@ module BLAS {
 
 
   // Helper function
+  pragma "no doc"
   inline proc getLeadingDim(Adom : domain(2), order : Order, ldA : int) : c_int {
     var _ldA = ldA : c_int;
     if ldA==0 {
@@ -504,8 +513,8 @@ module BLAS {
     // Do a size test.
     {
       pragma "no doc"
-        pragma "no prototype"
-        extern proc sizeof(type t): size_t;
+      pragma "no prototype"
+      extern proc sizeof(type t): size_t;
       assert(sizeof(CBLAS_INDEX) == sizeof(size_t));
     }
 
@@ -517,18 +526,17 @@ module BLAS {
     extern type CBLAS_DIAG = c_int;
     extern type CBLAS_SIDE = c_int;
 
-    // Constants
-    extern const CblasRowMajor : CBLAS_ORDER,
-           CblasColMajor : CBLAS_ORDER;
-    extern const CblasNoTrans : CBLAS_TRANSPOSE,
-           CblasTrans   : CBLAS_TRANSPOSE,
-           CblasConjTrans : CBLAS_TRANSPOSE;
-    extern const CblasUpper : CBLAS_UPLO,
-           CblasLower : CBLAS_UPLO;
-    extern const CblasNonUnit : CBLAS_DIAG,
-           CblasUnit : CBLAS_DIAG;
-    extern const CblasLeft : CBLAS_SIDE,
-           CblasRight : CBLAS_SIDE;
+    extern const CblasRowMajor : CBLAS_ORDER;
+    extern const CblasColMajor : CBLAS_ORDER;
+    extern const CblasNoTrans : CBLAS_TRANSPOSE;
+    extern const CblasTrans   : CBLAS_TRANSPOSE;
+    extern const CblasConjTrans : CBLAS_TRANSPOSE;
+    extern const CblasUpper : CBLAS_UPLO;
+    extern const CblasLower : CBLAS_UPLO;
+    extern const CblasNonUnit : CBLAS_DIAG;
+    extern const CblasUnit : CBLAS_DIAG;
+    extern const CblasLeft : CBLAS_SIDE;
+    extern const CblasRight : CBLAS_SIDE;
 
     {
       assert(Order.Row:c_int == CblasRowMajor);
