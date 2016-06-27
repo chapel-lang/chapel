@@ -2,7 +2,7 @@
  * http://benchmarksgame.alioth.debian.org/
  *
  * contributed by Ben Harshbarger
- * based on Go implementation by Oleg Mazurov
+ * based on Swift implementation by Ralph Ganszky
  *
  */
 
