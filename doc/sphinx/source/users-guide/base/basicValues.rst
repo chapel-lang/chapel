@@ -4,7 +4,7 @@ Literal Values for Basic Types
 ==============================
 
 Most of Chapel's basic types support a corresponding literal format
-for specifying its values at the default bit-width.  Values of other
+for specifying their values at the default bit-width.  Values of other
 bit-widths are obtained via type conversions (casts or coercions).
 
 .. TODO: hyperlink "basic types" above as well as casts and coercions.
@@ -51,8 +51,8 @@ It's worth noting that in Chapel, there are no negative integer
 literal values, simply applications of the unary negation operator
 (``-``) to positive integer literals.
 
-The ``uint`` type does not have its own literal format, although
-integer literals which do not fit in an ``int(64)`` and can fit within
+The ``uint`` type does not have its own literal format.  However,
+integer literals that do not fit in an ``int(64)`` yet do fit within
 a ``uint(64)`` are considered to be unsigned integer values.  Thus, in
 the following declarations, the first variable is inferred to be of
 type ``int`` while the second is inferred to be of type ``uint``:
@@ -62,7 +62,7 @@ type ``int`` while the second is inferred to be of type ``uint``:
   :language: chapel
   :lines: 1-2
 
-To represent smaller integral values as a ``uint``, type conversions
+To represent a smaller integral value as a ``uint``, type conversions
 (casts or coercions) must be used.
 
 .. TODO: hyperlink the casts and coercions above once that text is
@@ -83,8 +83,7 @@ exponential formats:
 where these literals correspond to the values:
 
 .. literalinclude:: examples/users-guide/base/floatValues.good
-  :caption:
-  :language: chapel
+  :language: text
   :lines: 3-4
           
 In the decimal form, a ``.`` must be used to distinguish the value
@@ -94,17 +93,28 @@ a method call on an integral value.  For this reason, ``10.0`` must be
 used instead.
 
 Note that in the exponential form, the base decimal value can be an
-integer value and/or `E` may be used to set off the exponent.  Thus,
-the following four assignments are all equivalent:
+integer value and/or capital ``E`` may be used to set off the
+exponent.  Thus, the values in the following four assignments are all
+equivalent:
 
 .. literalinclude:: examples/users-guide/base/floatValues.chpl
   :language: chapel
   :lines: 10,12,14,16
 
 Floating point values may also be specified using a hexidecimal
-floating point format using the ``0x`` prefix.
+floating point format using the ``0x`` prefix.  In such cases, 
+``p`` is used to indicate the exponent to avoid ambiguity with
+the hexadecimal digit ``e``:
 
-.. TODO: how the heck does this work?
+.. literalinclude:: examples/users-guide/base/floatValues.chpl
+  :language: chapel
+  :lines: 18, 20
+
+These expressions correspond to the floating point values:
+
+.. literalinclude:: examples/users-guide/base/floatValues.good
+  :language: text
+  :lines: 9-10
 
 Literal values for the ``imag`` type are identical to those for
 ``int`` and ``real``, yet with an ``i`` suffix.  Thus, the following
@@ -112,19 +122,20 @@ assignments demonstrate imaginary literals:
 
 .. literalinclude:: examples/users-guide/base/floatValues.chpl
   :language: chapel
-  :lines: 26,29,31,33
+  :lines: 26,29,31,33,35
      
-Note that in either form, the resulting value is represented as a
-floating point literal.  Thus, these assignments correspond to the
-values:
+Note that whether using the ``int`` or ``real`` form, imaginary values
+are stored using a floating point representation.  Thus, these
+expressions correspond to the values:
 
 .. literalinclude:: examples/users-guide/base/floatValues.good
-  :language: chapel
-  :lines: 12-14
+  :language: text
+  :lines: 14-17
 
-Note further that the expression ``i`` does not refer to the
-mathematical value $sqrt(-1)$, but rather to a variable named *i*.  To
-get the mathematical value, use an expression like ``1i`` or ``1.0i``.
+Note that the standalone expression ``i`` does not refer to the
+mathematical value *i*, but rather to a Chapel symbol (e.g., variable,
+procedure, etc.) named *i*.  To get the mathematical value, use an
+expression like ``1i`` or ``1.0i``.
 
 The ``complex`` type does not support a native format for literal
 values.  Instead, complex values are typically expressed by adding or

@@ -15,10 +15,10 @@ myReal = 123.0E2;
 writeln(myReal);
 myReal = 123E2;
 writeln(myReal);
-//myReal = 0x1ff;
-//writeln(myReal);
-//myReal = 0x1ffe3;
-//writeln(myReal);
+myReal = 0x1p-1;
+writeln(myReal);
+myReal = 0x1.8;
+writeln(myReal);
 writeln();
 
 writeln("imag cases:");
@@ -32,8 +32,8 @@ myImag = 1.2e3i;
 writeln(myImag);
 myImag = 123i;
 writeln(myImag);
-//myImag = 0x1ffe3i;
-//writeln(myImag);
+myImag = 0x0.4p-1i;
+writeln(myImag);
 writeln();
 
 writeln("complex cases:");
