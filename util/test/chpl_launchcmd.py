@@ -81,6 +81,10 @@ class AbstractJob(object):
     # argument name for specifying number of cpus (i.e. mppdepth)
     num_cpus_resource = None
 
+    # redirect_output decides whether we redirect output directly to the output
+    # file or whether we let the launcher and queueing system do it.
+    redirect_output = None
+
     def __init__(self, test_command, reservation_args):
         """Initialize new job runner.
 
@@ -127,7 +131,8 @@ class AbstractJob(object):
             full_test_command += ['test', '-f', self.test_command[0], '&&']
 
         full_test_command.extend(self.test_command)
-        full_test_command.extend(['&>{0}'.format(output_file)])
+        if self.redirect_output:
+            full_test_command.extend(['&>{0}'.format(output_file)])
         return full_test_command
 
     @property
@@ -205,6 +210,8 @@ class AbstractJob(object):
         :returns: qsub command as list of strings
         """
         submit_command =  [self.submit_bin, '-V', '-N', self.job_name]
+        if not self.redirect_output:
+            submit_command.extend(['-j', 'oe', '-o', output_file])
         if self.walltime is not None:
             submit_command.append('-l')
             submit_command.append('walltime={0}'.format(self.walltime))
@@ -681,6 +688,7 @@ class MoabJob(AbstractJob):
     hostlist_resource = 'hostlist'
     num_nodes_resource = 'nodes'
     num_cpus_resource = None
+    redirect_output = True
 
     @classmethod
     def status(cls, job_id):
@@ -728,6 +736,7 @@ class PbsProJob(AbstractJob):
     hostlist_resource = 'mppnodes'
     num_nodes_resource = 'mppwidth'
     num_cpus_resource = 'ncpus'
+    redirect_output = False
 
     @property
     def job_name(self):
