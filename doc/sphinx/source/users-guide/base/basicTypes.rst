@@ -1,5 +1,7 @@
 :title: Users Guide: Basic Types
 
+.. _basicTypes:
+
 Basic Types: Booleans, Numbers, and Strings
 ===========================================
 
