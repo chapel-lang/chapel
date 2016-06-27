@@ -8,7 +8,7 @@ corresponding literal format for specifying their values at the
 default bit-width.  Values of other bit-widths are obtained via type
 conversions (casts or coercions).
 
-.. TODO: hyperlink "basic types" above as well as casts and coercions.
+.. TODO: hyperlink casts and coercions when those sections come online
 
 
 Boolean Values
