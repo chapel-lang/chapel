@@ -5,11 +5,16 @@ Basic Types: Booleans, Numbers, and Strings
 
 Chapel supports a variety of basic types to represent logical values,
 numbers, and strings.  Specifically, these types provide support for:
-Boolean values; signed and unsigned integers; real, imaginary, and
-complex floating point values; and strings.  These types, along with
-the ``void`` type (not covered in this section), are known as Chapel's
-*primitive types*.  In previous sections, we've seen simple uses of
-string and integer types and values.
+
+* Boolean values;
+* Signed and unsigned integers;
+* Real, imaginary, and complex floating point values; and
+* Strings.
+
+These types, along with the ``void`` type (not covered in this
+section), are known as Chapel's *primitive types*.  In previous
+sections, we've seen simple uses of string and integer types and
+values.
 
 
 Bit-Widths
