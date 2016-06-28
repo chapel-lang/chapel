@@ -41,6 +41,7 @@ support of parallelism and locality are removed.
    base/variableDeclarations
    base/basicTypes
    base/basicValues
+   base/casts
 
 (more to come...)
 

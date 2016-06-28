@@ -3,12 +3,12 @@
 Literal Values for Basic Types
 ==============================
 
-Most of Chapel's :ref:`basic types <basicTypes>` support a
+Most of Chapel's :ref:`basic types <ug-basicTypes>` support a
 corresponding literal format for specifying their values at the
 default bit-width.  Values of other bit-widths are obtained via type
-conversions (casts or coercions).
+conversions (:ref:`casts <ug-casts>` or coercions).
 
-.. TODO: hyperlink casts and coercions when those sections come online
+.. TODO: hyperlink coercions when those sections come online
 
 
 Boolean Values
@@ -64,10 +64,9 @@ type ``int`` while the second is inferred to be of type ``uint``:
   :lines: 1-2
 
 To represent a smaller integral value as a ``uint``, type conversions
-(casts or coercions) must be used.
+(:ref:`casts <ug-casts>` or coercions) must be used.
 
-.. TODO: hyperlink the casts and coercions above once that text is
-   written
+.. TODO: hyperlink coercions above once that text is written
    
 
 Floating Point Values
