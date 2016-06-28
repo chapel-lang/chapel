@@ -89,7 +89,6 @@ symbolFlag( FLAG_DEFAULT_INTENT_IS_REF, ypr, "default intent is ref", "The defau
 symbolFlag( FLAG_DEFAULT_CONSTRUCTOR , npr, "default constructor" , ncm )
 symbolFlag( FLAG_DESTRUCTOR , npr, "destructor" , "applied to functions that are destructors" )
 symbolFlag( FLAG_DISTRIBUTION , ypr, "distribution" , ncm )
-symbolFlag( FLAG_DIRECT_ON_ARGUMENT , npr, "direct on argument" , ncm )
 symbolFlag( FLAG_DOMAIN , ypr, "domain" , ncm )
 symbolFlag( FLAG_DONOR_FN, ypr, "donor fn" , "function donates ownership of the returned object to the calling function" )
 symbolFlag( FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING , ypr, "dont disable remote value forwarding" , ncm )

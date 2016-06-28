@@ -611,65 +611,13 @@ void createTaskFunctions(void) {
 
         bool needsMemFence = true; // only used with fCacheRemote
         bool isBlockingOn = false;
-        bool isInIterator = false;
 
         if( block->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON) ) {
           isBlockingOn = true;
         }
-        if (FnSymbol* pfn = toFnSymbol(block->parentSymbol)) {
-          isInIterator = pfn->isIterator();
-        }
 
-        if( isBlockingOn && !isInIterator) {
-          // Generate an if statement
-          // if ( chpl_doDirectExecuteOn( targetLocale ) )
-          //     call un-wrapped task function
-          // else
-          //     proceed as with chpl_executeOn/chpl_executeOnFast
-          //     fid call to wrapper function on a remote local
-          //     (possibly just a different sublocale)
-          //
-          // This is called the "direct on" optimization.
-          //
-          // TODO: This is disabled for iterators for now in order to avoid
-          // interfering with iterator inlining and to avoid an assertion error
-          // in lowerIterators.
-
-          VarSymbol* isDirectTmp = newTemp("isdirect", dtBool);
-          CallExpr* isCall;
-          isCall = new CallExpr("chpl_doDirectExecuteOn",
-                                block->blockInfoGet()->get(1)->copy() // target
-                               );
-
-          block->insertBefore(new DefExpr(isDirectTmp));
-          block->insertBefore(new CallExpr(PRIM_MOVE, isDirectTmp, isCall));
-
-          // Build comparison
-          SymExpr* isTrue = new SymExpr(isDirectTmp);
-
-          // Build true branch
-          CallExpr* directcall = new CallExpr(fn);
-
-          VarSymbol* dummyArg = newTemp("local_locale");
-          dummyArg->addFlag(FLAG_DIRECT_ON_ARGUMENT);
-          block->insertBefore(new DefExpr(dummyArg));
-          block->insertBefore(new CallExpr(PRIM_MOVE, dummyArg,
-                block->blockInfoGet()->get(1)->copy()));
-
-          directcall->insertAtTail(dummyArg);
-
-          // False branch is call.
-
-          // Build condition
-          CondStmt* cond = new CondStmt(isTrue, directcall, call);
-          // Add the condition which calls the outlined task function
-          // somehow.
-          block->insertBefore(cond);
-        } else {
-          // Add the call to the outlined task function.
-          block->insertBefore(call);
-        }
-
+        // Add the call to the outlined task function.
+        block->insertBefore(call);
 
         if( fCacheRemote ) {
           Symbol* parent = block->parentSymbol;

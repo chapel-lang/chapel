@@ -409,6 +409,51 @@ static void genFilenameTable() {
   genGlobalInt32(sizeName, gFilenameLookup.size());
 }
 
+//
+// This adds the Chapel symbol table to the config file
+// Our symbol table is formed by two 1-D arrays with 2 elements
+// per entry:
+//
+// chpl_funSymTable     = cname, Chapel name
+// chpl_filenumSymTable = Chapel file name index, Chapel line number
+//
+static void genUnwindSymbolTable(){
+  GenInfo *info = gGenInfo;
+  Vec<FnSymbol*> symbols;
+
+  //If CHPL_UNWIND is none we don't want any symbols in our tables
+  if(strcmp(CHPL_UNWIND, "none") != 0){
+    // Gets only user symbols
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      if(strncmp(fn->cname, "chpl_", 5)) {
+        symbols.add(fn);
+      }
+    }
+  }
+
+  //TODO: Could have a native LLVM version, instead of relying on C to LLVM
+  if( info->cfile ) {
+    FILE* hdrfile = info->cfile;
+
+    // Generate the cname, Chapel name table
+    fprintf(hdrfile,"\nc_string chpl_funSymTable[] = {\n");
+    forv_Vec(FnSymbol, fn, symbols) {
+      fprintf(hdrfile," \"%s\", \"%s\",\n", fn->cname, fn->name);
+    }
+    fprintf(hdrfile," \"\", \"\" };\n");
+
+    // Generate the filename index, linenum table
+    fprintf(hdrfile,"\n\nint chpl_filenumSymTable[] = {\n");
+    forv_Vec(FnSymbol, fn, symbols) {
+      fprintf(hdrfile," %d, %d,\n",
+        getFilenameLookupPosition(fn->fname()), fn->linenum());
+    }
+    fprintf(hdrfile," 0, 0};\n");
+  }
+
+  genGlobalInt32("chpl_sizeSymTable", symbols.n * 2);
+}
+
 static int
 compareSymbol(const void* v1, const void* v2) {
   Symbol* s1 = *(Symbol* const *)v1;
@@ -624,6 +669,9 @@ static void codegen_header_compilation_config() {
 
     genComment("Filename Lookup Table");
     genFilenameTable();
+
+    genComment("Unwind symbol tables");
+    genUnwindSymbolTable();
 
     closeCFile(&cfgfile);
 

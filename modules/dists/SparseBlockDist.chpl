@@ -66,10 +66,12 @@ class SparseBlockDom: BaseSparseDom {
   param rank: int;
   type idxType;
   param stridable: bool = false;  // TODO: remove default value eventually
-  const dist: Block(rank, idxType);
+  type sparseLayoutType;
+  const dist: Block(rank, idxType, sparseLayoutType);
   var parentDom;
   const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
-  var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable);
+  var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable,
+      sparseLayoutType);
   var pid: int = -1; // privatized object id (this should be factored out)
 
 
@@ -85,8 +87,9 @@ class SparseBlockDom: BaseSparseDom {
         on dist.targetLocales(localeIdx) do {
           //                    writeln("Setting up on ", here.id);
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
+         /*writeln("Creating LSBD with chunk: ", dist.getChunk(whole, localeIdx));*/
          locDoms(localeIdx) = new LocSparseBlockDom(rank, idxType, stridable,
-                                                     dist.getChunk(whole, localeIdx));
+             sparseLayoutType, dist.getChunk(whole,localeIdx));
           //                    writeln("Back on ", here.id);
         }
       }
@@ -144,7 +147,7 @@ class SparseBlockDom: BaseSparseDom {
       // 1 without _new_ record functions throw null deref. It doesn't seem to be 
       // able to deref _outer_ ? I think it has something to do with memory
       // allocation for classes vs records, but I cannot explain
-      // 2 this line seems to be completely hacky -- explicit parantheses were
+      // 2 this line seems to be completely hacky -- explicit parentheses were
       // necessary for the compiler not to complain when --verify flag is
       // present. 
       var comp = new TargetLocaleComparator();
@@ -207,7 +210,8 @@ class SparseBlockDom: BaseSparseDom {
   // how to allocate a new array over this domain
   //
   proc dsiBuildArray(type eltType) {
-    var arr = new SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+    var arr = new SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType,
+        stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this);
     arr.setup();
     return arr;
   }
@@ -283,8 +287,10 @@ class LocSparseBlockDom {
   param rank: int;
   type idxType;
   param stridable: bool;
+  type sparseLayoutType;
   var parentDom: domain(rank, idxType, stridable);
-  var mySparseBlock: sparse subdomain(parentDom);
+  var sparseDist = new sparseLayoutType; //unresolved call workaround
+  var mySparseBlock: sparse subdomain(parentDom) dmapped new dmap(sparseDist);
 
   proc initialize() {
     //    writeln("On locale ", here.id, " LocSparseBlockDom = ", this);
@@ -329,9 +335,12 @@ class SparseBlockArr: BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
+  type sparseLayoutType = DefaultDist;
   var dom; //: SparseBlockDom(rank, idxType, stridable);
-  var locArr: [dom.dist.targetLocDom] LocSparseBlockArr(eltType, rank, idxType, stridable);
-  var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable);
+  var locArr: [dom.dist.targetLocDom] LocSparseBlockArr(eltType, rank, idxType,
+      stridable, sparseLayoutType);
+  var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable, 
+      sparseLayoutType);
   var pid: int = -1; // privatized object id (this should be factored out)
 
   proc setup() {
@@ -339,7 +348,8 @@ class SparseBlockArr: BaseArr {
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocales(localeIdx) {
         const locDom = dom.getLocDom(localeIdx);
-        locArr(localeIdx) = new LocSparseBlockArr(eltType, rank, idxType, stridable, locDom);
+        locArr(localeIdx) = new LocSparseBlockArr(eltType, rank, idxType,
+            stridable, sparseLayoutType, locDom);
         if thisid == here.id then
           myLocArr = locArr(localeIdx);
       }
@@ -388,7 +398,6 @@ class SparseBlockArr: BaseArr {
         return myLocArr.dsiAccess(i);
         //      }
     }
-      //      writeln("In general case, and finding that locale is ", dom.dist.targetLocsIdx(i));
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
   }
   proc dsiAccess(i: rank*idxType)
@@ -443,7 +452,8 @@ class LocSparseBlockArr {
   param rank: int;
   type idxType;
   param stridable: bool;
-  const locDom: LocSparseBlockDom(rank, idxType, stridable);
+  type sparseLayoutType;
+  const locDom: LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType);
   var myElems: [locDom.mySparseBlock] eltType;
 
   proc dsiAccess(i) ref {
@@ -474,7 +484,6 @@ proc SparseBlockDom.dsiDisplayRepresentation() {
     writeln("locDoms[", tli, "].mySparseBlock = ", locDoms[tli].mySparseBlock);
 }
 
-proc SparseBlockDom.dsiDim(d: int) return whole.dim(d);
 
 
 //
