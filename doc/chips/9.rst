@@ -100,7 +100,7 @@ build into ``target/``. The final directory hierarchy will look like this:
 ::
 
   ~/.mason/src/
-    (dependencies of MyPackage)
+    (contains dependencies of MyPackage)
 
 
   MyPackage/
@@ -128,7 +128,14 @@ For example, ``main.chpl``:
 Project Code -> Manifest File
 +++++++++++++++++++++++++++++
 
-The user will be responsible for writing the manifest file in its entirety.
+``mason`` will provide command line support for adding and removing dependencies
+to the manifest in the form of ``mason add [package] [version]`` and
+``mason rm [package]`` when within the project directory.
+
+The manifest may also be edited manually.
+
+``mason`` will not automatically generate any of the manifest from the project code. 
+
 
 Manifest File
 +++++++++++++
@@ -258,6 +265,11 @@ This will be a fully automated step in which mason does the following:
 * Performs any incompatible version resolution strategy
 * Serializes the DAG and outputs it into ``Mason.lock``
 
+If the user has manually edited their manifest file, they may update the
+lock file using ``mason update`` from within the project directory. Otherwise,
+the lock file is updated automatically when using ``mason add`` or ``mason rm``.
+(see: Syncing Commands)
+
 The user should never edit a ``Mason.lock`` file manually.
 
 
@@ -290,6 +302,49 @@ the user's home directory by default:
 
   ~/.mason/src/
     (dependencies)
+
+
+Syncing Commands
+++++++++++++++++
+
+When any of ``add``, ``rm``, or ``update`` are invoked, ``mason`` will make sure that
+the manifest file, lock file, and dependency code are kept in sync with each other.
+Effectively, this means that when ``update`` is run, dependencies will be downloaded,
+and when ``add`` or ``rm`` are run, ``update`` will be run.
+
+To avoid unnecessary updates, a hash of the manifest will be kept in the lock file.
+We will not hash the lock file because the dependencies across all projects are kept
+in a single namespaced directory -- we can simply check if all the dependency
+directories are present. 
+
+
+Build System
+------------
+
+When invoked, ``mason build`` will do the following:
+
+* Navigate to the root of the project.
+
+* Run ``update`` to make sure any manual manifest edits are reflected in the
+  dependency code.
+
+* Build ``main.chpl`` in the ``/src`` directory.
+  
+  - Dependencies are included using the ``-M`` flag.
+
+  - Compiler options from the manifest will also be passed here.
+
+  - The name of the binary will be the project name, and will be placed in the
+    ``/target`` directory.
+
+``mason run`` will, in turn:
+
+* Invoke ``build``.
+
+* Run the resulting executable.
+
+  - Runtime options may be included in the manifest, or may be passed to
+    ``build`` on the command line. Command line options take precedence. 
 
 
 Future Work
