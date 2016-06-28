@@ -536,60 +536,6 @@ module GMP2 {
         }
       }
     }
-
-    // These are the autoCopy functions the compiler calls behind my back?
-    // I don't expect this to work right now -- I've never seen it called
-    pragma "donor fn"
-    pragma "auto copy fn"
-    pragma "no doc"
-    proc chpl__autoCopy(bir : BigInt) {
-      //this pragma may not be needed
-      pragma "no auto destroy"
-      var ret : BigInt;
-      writeln("In the autocopy function for BigInt");
-      //big int record doesn't have an analogy for s.len
-       //TODO: need some sort of check to ensure bir can be queried?
-        if _local || bir.locale_id == chpl_nodeID {
-          ret.owned = bir.owned;
-          if bir.owned {
-            ret.mpz = (new BigInt(bir)).mpz; //Do we need to check/free first?
-            ret.owned = true;
-          } else {
-            ret.mpz = bir.mpz; //make a shallow copy
-            ret.owned = false;
-          }
-        } else {
-          // TODO: impelement copyRemoteBigInt
-          writeln("WATCH OUT! remote copying on BigInts for autoCopy has not been implemented yet.");
-        }
-      return ret;
-    } 
-
-  pragma "init copy fn"
-  pragma "no doc"
-  proc chpl_initCopy(bir : BigInt) {
-    // This pragma may be unnecessary.
-    pragma "no auto destroy"
-    var ret: BigInt;
-    writeln("in the BigInt initCopy chpl__constructor");
-    writeln("In the init copy fn for BigInt");
-     //TODO: need some sort of check to ensure bir can be queried?
-      if _local || bir.locale_id == chpl_nodeID {
-        if bir.owned {
-          ret = new BigInt(bir);
-          ret.owned = true;
-          //TODO copy 
-        } else {
-          ret.mpz = bir.mpz; // make a shalow copy
-          ret.owned = false;
-        }
-      } else {
-        //FIXME: implement copyRemoteBigInt
-        writeln("WATCH OUT! remote copying for initCopy on BigInts has not been implemented yet.");
-      }
-      //no length variables to set
-      return ret;
-    }
     
 
     // TODO: should we reset the value or free and remake the BigInts?
@@ -695,6 +641,61 @@ module GMP2 {
     //if acopy then delete a_; //TODO: delete this line, records autodelete
   }
 // END OF BigInt SECTION
+
+  // These are the autoCopy functions the compiler calls behind my back?
+  // I don't expect this to work right now -- I've never seen it called
+  pragma "donor fn"
+  pragma "auto copy fn"
+  pragma "no doc"
+  proc chpl__autoCopy(ref bir : BigInt) {
+    //this pragma may not be needed
+    pragma "no auto destroy"
+    var ret : BigInt;
+    writeln("In the autocopy function for BigInt");
+    //big int record doesn't have an analogy for s.len
+     //TODO: need some sort of check to ensure bir can be queried?
+      if _local || bir.locale_id == chpl_nodeID {
+        ret.owned = bir.owned;
+        if bir.owned {
+        // TODO: Do we need to check/free first?
+          mpz_init_set(ret.mpz, bir.mpz); 
+          ret.owned = true;
+        } else {
+          ret.mpz = bir.mpz; //make a shallow copy
+          ret.owned = false;
+        }
+      } else {
+        // TODO: impelement copyRemoteBigInt
+        writeln("WATCH OUT! remote copying on BigInts for autoCopy has not been implemented yet.");
+      }
+    return ret;
+  } 
+
+  pragma "init copy fn"
+  pragma "no doc"
+  proc chpl__initCopy(ref bir : BigInt) {
+    writeln("in the BigInt initCopy chpl__constructor");
+    // This pragma may be unnecessary.
+    //pragma "no auto destroy"
+    var ret : BigInt;
+    writeln("In the init copy fn for BigInt");
+     //TODO: need some sort of check to ensure bir can be queried?
+      if _local || bir.locale_id == chpl_nodeID {
+        if bir.owned {
+          mpz_init_set(ret.mpz, bir.mpz); // TODO: confirm deep copy
+          ret.owned = true;
+          //TODO copy 
+        } else {
+          ret.mpz = bir.mpz; // make a shalow copy
+          ret.owned = false;
+        }
+      } else {
+        //FIXME: implement copyRemoteBigInt
+        writeln("WATCH OUT! remote copying for initCopy on BigInts has not been implemented yet.");
+      }
+      return ret;
+  }
+
 
 
 //end of module
