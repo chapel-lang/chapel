@@ -97,6 +97,8 @@ studies/shootout/meteor/kbrady/meteor.graph
 studies/shootout/k-nucleotide/knucleotide.graph
 studies/shootout/regex-dna/regexdna.graph
 studies/shootout/reverse-complement/revcomp.graph
+# suite: Submitted Shootout benchmarks
+studies/shootout/submitted/spectralnorm-submitted.graph
 # suite: Shootout extras
 studies/shootout/binary-trees/binary-trees-extras.graph
 studies/shootout/fasta/fasta-extras.graph
