@@ -1,28 +1,31 @@
 /* The Computer Language Benchmarks Game
  * http://benchmarksgame.alioth.debian.org/
  *
- * contributed by Kyle Brady, Preston Sahabu
+ * contributed by Kyle Brady
  * modified from the Chapel version by Casey Battaglino
+ * edited by Preston Sahabu
  */
 use IO;
 
 config const LINE_LENGTH = 60;
 config const LOOKUP_SIZE = 4*1024;
-config const LOOKUP_SCALE: real = LOOKUP_SIZE - 1;
+config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
 param newLine: int(8) = ascii("\n");
 
-param
+enum Ntide {
   A = ascii("A"), C = ascii("C"), G = ascii("G"), T = ascii("T"),
   a = ascii("a"), c = ascii("c"), g = ascii("g"), t = ascii("t"),
   B = ascii("B"), D = ascii("D"), H = ascii("H"), K = ascii("K"),
   M = ascii("M"), N = ascii("N"), R = ascii("R"), S = ascii("S"),
-  V = ascii("V"), W = ascii("W"), Y = ascii("Y");
+  V = ascii("V"), W = ascii("W"), Y = ascii("Y")
+}
+use Ntide;
 
 // Sequence to be repeated
-const ALU: [0..286] int = [
+const ALU : [0..286] Ntide = [
   G, G, C, C, G, G, G, C, G, C, G, G, T, G, G, C, T, C, A, C,
   G, C, C, T, G, T, A, A, T, C, C, C, A, G, C, A, C, T, T, T,
   G, G, G, A, G, G, C, C, G, A, G, G, C, G, G, G, C, G, G, A,
@@ -48,7 +51,7 @@ class Random {
   const SCALE = LOOKUP_SCALE / IM;
 
   var last = 42;
-  iter get(n: int): (int, real) {
+  iter get(n: int) : (int, real) {
     for i in 0..#n {
       last = (last * IA + IC) % IM;
       yield (i, SCALE * last);
@@ -59,18 +62,18 @@ class Random {
 // Sequences to be randomly generated (probability table)
 
 record Freq {
-  var c: int;
+  var c: Ntide;
   var p: real;
 }
 
-const IUB: [0..14] Freq = [
+const IUB : [0..14] Freq = [
   new Freq(a, 0.27), new Freq(c, 0.12), new Freq(g, 0.12), new Freq(t, 0.27),
   new Freq(B, 0.02), new Freq(D, 0.02), new Freq(H, 0.02), new Freq(K, 0.02),
   new Freq(M, 0.02), new Freq(N, 0.02), new Freq(R, 0.02), new Freq(S, 0.02),
   new Freq(V, 0.02), new Freq(W, 0.02), new Freq(Y, 0.02)
 ];
 
-const HomoSapiens: [0..3] Freq = [
+const HomoSapiens : [0..3] Freq = [
   new Freq(a, 0.3029549426680),
   new Freq(c, 0.1979883004921),
   new Freq(g, 0.1975473066391),
@@ -79,7 +82,7 @@ const HomoSapiens: [0..3] Freq = [
 
 // Scan operation
 proc sumAndScale(a) {
-  var p: real = 0;
+  var p : real = 0;
   for item in a {
     p += item.p;
     item.p = p * LOOKUP_SCALE;
@@ -88,7 +91,7 @@ proc sumAndScale(a) {
 }
 
 // Make lookup table for random sequence generation
-var lookup: [0..#LOOKUP_SIZE] Freq;
+var lookup : [0..#LOOKUP_SIZE] Freq;
 proc makeLookup(a) {
   var j: int = 0;
   for i in 0..#LOOKUP_SIZE {
@@ -101,14 +104,14 @@ proc makeLookup(a) {
 
 // Add a line of random sequence
 var random = new Random();
-var line_buff: [0..LINE_LENGTH] int(8);
+var line_buff : [0..LINE_LENGTH] int(8);
 proc addLine(bytes: int) {
   for (i, r) in random.get(bytes) {
     var ai = r: int;
     while (lookup[ai].p < r) do
       ai = ai + 1;
 
-    line_buff[i] = lookup[ai].c: int(8);
+    line_buff[i] = lookup[ai].c;
   }
   line_buff[bytes] = 10;
   stdout.write(line_buff[0..bytes]);
@@ -116,11 +119,11 @@ proc addLine(bytes: int) {
 
 // Output a random sequence of length n using distribution a
 proc randomMake(desc: string, a: [], n: int) {
-  var len: int = n;
+  var len : int = n;
   makeLookup(a);
   stdout.writef("%s", desc);
   while (len > 0) {
-    var bytes: int = min(LINE_LENGTH, len);
+    var bytes : int = min(LINE_LENGTH, len);
     addLine(bytes);
     len = len - bytes;
   }
@@ -129,12 +132,12 @@ proc randomMake(desc: string, a: [], n: int) {
 // Repeat sequence "alu" for n characters
 proc repeatMake(desc: string, alu: [], n: int) {
   stdout.writef("%s", desc);
-  var r: int = alu.size;
-  var s: [0..(r+LINE_LENGTH)] int(8);
+  var r : int = alu.size;
+  var s : [0..(r+LINE_LENGTH)] int(8);
   for d in s.domain do 
-    s[d] = alu[d % r]: int(8);
+    s[d] = alu[d % r];
   
-  var j: int;
+  var j : int;
   for i in 0..#(n / LINE_LENGTH) {
     j = (i * LINE_LENGTH) % r;
     stdout.write(s[j..#LINE_LENGTH], newLine);
