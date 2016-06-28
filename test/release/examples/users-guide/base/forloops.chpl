@@ -23,3 +23,18 @@ writeln();
 writeln("Printing five messages:");
 for 1..5 do
   writeln("hi!");
+writeln();
+
+for i in 1..5 {
+  writeln("Computing on A[", i, "]");
+  A[i] += i;
+}
+writeln(A);
+writeln();
+
+for i in 1..5 do {
+  writeln("Computing on A[", i, "]");
+  A[i] += (i / 10.0);
+}
+writeln(A);
+writeln();

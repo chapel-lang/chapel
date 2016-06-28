@@ -80,8 +80,34 @@ by the body, it does not need to be named:
 .. literalinclude:: examples/users-guide/base/forloops.chpl
   :language: chapel
   :lines: 23-25
-          
-             
-.. TODO: zippered iteration?
-.. TODO: ability to drop i
-.. TODO: break statements?
+
+
+For-loop Bodies
+---------------
+
+If the body of a for-loop is a single statement, as in all of the
+examples above, the ``do`` keyword can be used after the iterand to
+specify the loop body.  For multi-statement loop bodies, curly
+brackets are used:
+
+.. literalinclude:: examples/users-guide/base/forloops.chpl
+  :language: chapel
+  :lines: 28-31
+
+Of course, since a compound statement is itself a single statement,
+this also means that the two styles can be combined (though with no
+benefit):
+
+.. literalinclude:: examples/users-guide/base/forloops.chpl
+  :language: chapel
+  :lines: 35-38
+
+
+Additional For-loop Capabilities
+--------------------------------
+
+For loops can be iterate over multiple iterands in a *zippered*
+manner, described on the next page.  Note that it is also possible to
+exit early from for loops via the ``break`` statement, covered in a
+later section.
+
