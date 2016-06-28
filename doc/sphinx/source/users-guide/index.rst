@@ -42,6 +42,13 @@ support of parallelism and locality are removed.
    base/basicTypes
    base/basicValues
    base/casts
+   base/forloops
+
+..   base/constParamType
+..   base/configs
+..   base/refs
+..   base/basicArrays
+..   base/compoundStmts
 
 (more to come...)
 
