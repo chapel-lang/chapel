@@ -1,10 +1,22 @@
+Next Steps
+----------
+Base:
+ - type, .type, casts
+ - param
+ - const
+ 
+
 ASAP
 ----
 * fix poorly formatted code in locale type vars section.
+* point spec to somewhere within the docs directory, version independent.
 
 Later
 -----
 * When on-clauses section is written, link into first locale section
+* Four major sections
+  - better landing page or way to link to them other than anchors?
+  - do something smarter/cooler with the sidebar
 
 Second pass
 -----------
