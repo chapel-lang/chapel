@@ -6,41 +6,62 @@
  * loosely based on Ben St. John's and Kevin Barnes' implementation
  */
 
+
+/* TODO
+ * Easy stylistic improvements (inferred types, comma-separated declarations)
+ * Quality commenting
+
+*/
 use BitOps;
 
-const pieceCount: int(32) = 10;
-const pieces: [0..9][0..4][0..1] int(32) = [
-  [[0:int(32), 0:int(32)], [1:int(32), 0:int(32)], [2:int(32), 0:int(32)], [3:int(32), 0:int(32)], [3:int(32), 1:int(32)]],
-  [[0:int(32), 0:int(32)], [0:int(32), 1:int(32)], [-2:int(32), 2:int(32)], [-1:int(32), 2:int(32)], [-3:int(32), 3:int(32)]],
-  [[0:int(32), 0:int(32)], [1:int(32), 0:int(32)], [2:int(32), 0:int(32)], [-1:int(32), 1:int(32)], [-1:int(32), 2:int(32)]],
-  [[0:int(32), 0:int(32)], [1:int(32), 0:int(32)], [2:int(32), 0:int(32)], [1:int(32), 1:int(32)], [1:int(32), 2:int(32)]],
-  [[0:int(32), 0:int(32)], [0:int(32), 1:int(32)], [1:int(32), 1:int(32)], [-1:int(32), 2:int(32)], [1:int(32), 2:int(32)]],
-  [[0:int(32), 0:int(32)], [1:int(32), 0:int(32)], [-2:int(32), 1:int(32)], [-1:int(32), 1:int(32)], [0:int(32), 1:int(32)]],
-  [[0:int(32), 0:int(32)], [1:int(32), 0:int(32)], [0:int(32), 1:int(32)], [-1:int(32), 2:int(32)], [-1:int(32), 3:int(32)]],
-  [[0:int(32), 0:int(32)], [2:int(32), 0:int(32)], [-1:int(32), 1:int(32)], [0:int(32), 1:int(32)], [1:int(32), 1:int(32)]],
-  [[0:int(32), 0:int(32)], [0:int(32), 1:int(32)], [0:int(32), 2:int(32)], [1:int(32), 2:int(32)], [1:int(32), 3:int(32)]],
-  [[0:int(32), 0:int(32)], [0:int(32), 1:int(32)], [0:int(32), 2:int(32)], [-1:int(32), 3:int(32)], [0:int(32), 3:int(32)]]
+//
+const pieceCount = 10,
+      pieces: [0..9][0..4][0..1] int =
+[
+  [[0, 0], [1, 0], [2, 0], [3, 0], [3, 1]],
+  [[0, 0], [0, 1], [-2, 2], [-1, 2], [-3, 3]],
+  [[0, 0], [1, 0], [2, 0], [-1, 1], [-1, 2]],
+  [[0, 0], [1, 0], [2, 0], [1, 1], [1, 2]],
+  [[0, 0], [0, 1], [1, 1], [-1, 2], [1, 2]],
+  [[0, 0], [1, 0], [-2, 1], [-1, 1], [0, 1]],
+  [[0, 0], [1, 0], [0, 1], [-1, 2], [-1, 3]],
+  [[0, 0], [2, 0], [-1, 1], [0, 1], [1, 1]],
+  [[0, 0], [0, 1], [0, 2], [1, 2], [1, 3]],
+  [[0, 0], [0, 1], [0, 2], [-1, 3], [0, 3]]
 ];
 
-var allMasks: [0..8191] uint(32);
-var maskStart: [0..49][0..7] uint(32);
+//
+var allMasks: [0..8191] uint(32),
+    maskStart: [0..49][0..7] uint(32);
 
-var minSolution: [0..49] uint(8);
-var maxSolution: [0..49] uint(8);
-var solutions: uint(32);
+//
+var minSolution: [0..49] uint(8),
+    maxSolution: [0..49] uint(8),
+    solutions: uint(32);
 
-var evenRowsLookup: [0..49] uint(32);
-var leftBorderLookup: [0..49] uint(32);
+//
+var evenRowsLookup: [0..49] uint(32),
+    leftBorderLookup: [0..49] uint(32);
 
+// Magic hexcodes
+param hexEven = 0xf07c1f07c1f07c1f,
+      hexBorder = 0x1084210842108421,
+      hexMagic = 0xFFFC000000000000,
+      hexOnes = 0x003FFFFF,
+      hexUsed = 0xFFC00000;
+
+//
+//
+//
 proc goodPiece(mask: uint(32), pos: uint(32)): bool {
-   var isGood: bool = true;
-   const evenRows: uint = 0xf07c1f07c1f07c1f;
-   const oddRows: uint = ~evenRows;
-   const leftBorder: uint = 0x1084210842108421;
-   const rightBorder: uint = leftBorder >> 1;
+   var isGood = true;
+   const evenRows: uint = hexEven,
+         oddRows: uint = ~evenRows,
+         leftBorder: uint = hexBorder,
+         rightBorder: uint = leftBorder >> 1;
    var a, b, aOld, s1, s2, s3, s4, s5, s6, s7, s8: uint;
 
-   b = (mask:uint << pos) | 0xFFFC000000000000;
+   b = (mask:uint << pos) | hexMagic;
 
    b = ~b;
 
@@ -69,17 +90,20 @@ proc goodPiece(mask: uint(32), pos: uint(32)): bool {
    return isGood;
 }
 
-proc initialise() {
+//
+//
+//
+proc initialize() {
   for i in 0..49 {
-    evenRowsLookup[i] = (0xF07C1F07C1F07C1F >> i):uint(32);
-    leftBorderLookup[i] = (0x1084210842108421 >> i):uint(32);
+    evenRowsLookup[i] = (hexEven >> i):uint(32);
+    leftBorderLookup[i] = (hexBorder >> i):uint(32);
   }
 
-  var totalCount: uint(32);
-  var x: [0..4] int(32);
-  var y: [0..4] int(32);
-  for yBase in 2..3:int(32) {
-    for xBase in 0..4:int(32) {
+  var totalCount: uint(32),
+      x: [0..4] int,
+      y: [0..4] int;
+  for yBase in 2..3:int {
+    for xBase in 0..4:int {
       const pos: uint(32) = (xBase+5*yBase):uint(32);
       maskStart[pos][0] = totalCount;
       for piece in 0..pieceCount-1 {
@@ -90,8 +114,8 @@ proc initialise() {
 
         for currentRotation in 0..11 {
           if piece != 3 || (currentRotation/3) % 2 == 0 {
-            var minX: int(32) = x[0];
-            var minY: int(32) = y[0];
+            var minX = x[0],
+                minY = y[0];
             for i in 1..4 {
               if y[i] < minY || (y[i] == minY && x[i] < minX) {
                 minX = x[i];
@@ -99,14 +123,14 @@ proc initialise() {
               }
             }
 
-            var mask: uint(32);
-            var fit: bool = true;
+            var mask: uint(32),
+                fit: bool = true;
 
             for i in 0..4 {
-              var nX: int(32) = (x[i]-minX+(xBase-yBase/2)) + (y[i]-minY+yBase)/2;
-              var nY: int(32) = y[i]-minY+yBase;
+              var nX = (x[i]-minX+(xBase-yBase/2)) + (y[i]-minY+yBase)/2,
+                  nY = y[i]-minY+yBase;
               if nX >= 0 && nX < 5 {
-                var numBits: int(32) = nX-xBase+5*(nY-yBase);
+                var numBits = nX-xBase+5*(nY-yBase);
                 mask |= (1:int(32)<<numBits);
               } else {
                 fit = false;
@@ -121,13 +145,13 @@ proc initialise() {
           }
 
           for i in 0..4 {
-            const xnew: int(32) = x[i]+y[i];
-            const ynew: int(32) = -x[i];
+            const xnew = x[i]+y[i],
+                  ynew = -x[i];
             x[i] = xnew;
             y[i] = ynew;
             if currentRotation == 5 {
-              const xnew:int(32) = x[i]+y[i];
-              const ynew:int(32) = -y[i];
+              const xnew = x[i]+y[i],
+                    ynew = -y[i];
               x[i] = xnew;
               y[i] = ynew;
             }
@@ -141,21 +165,21 @@ proc initialise() {
 
    // copy rows 2 and 3 to other rows
 
-  for yBase in 0..9:int(32) {
+  for yBase in 0..9 {
     if yBase!=2 && yBase!=3 {
-      for xBase in 0..4:int(32) {
-        const pos: uint(32) = (xBase+5*yBase):uint(32);
-        const origPos: int(32) = xBase+5*(yBase%2+2);
+      for xBase in 0..4 {
+        const pos = (xBase+5*yBase): uint(32),
+              origPos = xBase+5*(yBase%2+2);
         maskStart[pos][0] = totalCount;
         var pMask: uint(32) = maskStart[origPos][0];
-        const bottom: uint(32) = ((0xFFFC000000000000>>pos) & 0x003FFFFF):uint(32);
-        const lastRow: uint(32) = ((0xFFFC000000000000>>(pos+5)) & 0x003FFFFF):uint(32);
+        const bottom: uint(32) = ((hexMagic >> pos) & hexOnes):uint(32),
+              lastRow: uint(32) = ((hexMagic >> (pos+5)) & hexOnes):uint(32);
         while allMasks[pMask] {
           var mask: uint(32) = allMasks[pMask];
           pMask += 1;
           if (mask & bottom) == 0 {
             if yBase == 0 || ((mask & lastRow) != 0) {
-              if !goodPiece(mask&0x003FFFFF, pos) {
+              if !goodPiece(mask&hexOnes, pos) {
                 continue;
               }
             }
@@ -189,9 +213,13 @@ proc initialise() {
   }
 }
 
+//
+//
+//
 proc compareSolution(board: [] uint(8), minSolution: [] uint(8),
                      maxSolution: [] uint(8)) {
-  var i, j: int(32);
+  var i: int,
+      j: int;
 
   for i in 0..49 {
     if board[i] < minSolution[i] {
@@ -215,28 +243,33 @@ proc compareSolution(board: [] uint(8), minSolution: [] uint(8),
   }
 }
 
+//
+//
+//
 proc printBoard(board: [] uint(8)) {
   for i in 0..49 {
     writef("%i ", board[i]);
     if i%5 == 4 {
       writeln();
-      if (i&1) == 0 {
+      if i&1 == 0 then
         write(" ");
-      }
     }
   }
   writeln();
 }
 
+//
+//
+//
 proc recordSolution(currentSolution: [] uint(32)) {
-  var board: [0..49] uint(8);
-  var flipBoard: [0..49] uint(8);
-  var mask, pos, currentBit, b1 : uint(32);
-  var piece, count : uint(32);
+  var board: [0..49] uint(8),
+      flipBoard: [0..49] uint(8),
+      mask, pos, currentBit, b1 : uint(32),
+      piece, count : uint(32);
   for i in 0..9 {
     mask = currentSolution[i];
     piece = ctz(mask>>22:uint(32)):uint(32);
-    mask &= 0x003FFFFF;
+    mask &= hexOnes;
     b1 |= mask;
     while mask {
       currentBit = mask&(-(mask:int(32))):uint(32);
@@ -262,6 +295,9 @@ proc recordSolution(currentSolution: [] uint(32)) {
   solutions += 2;
 }
 
+//
+//
+//
 record Spinlock {
   var l: atomic bool;
 
@@ -276,11 +312,14 @@ record Spinlock {
 
 var recordLock: Spinlock;
 
+//
+//
+//
 proc searchLinear(in board: uint(32), in pos: uint(32), in used: uint(32),
                   in placed: uint(32), currentSolution: [] uint(32)) {
-  var count : uint(32);
-  var evenRows, oddRows, leftBorder, rightBorder: uint(32);
-  var s1, s2, s3, s4, s5, s6, s7, s8: uint(32);
+  var count : uint(32),
+      evenRows, oddRows, leftBorder, rightBorder: uint(32),
+      s1, s2, s3, s4, s5, s6, s7, s8: uint(32);
   if placed == 10 {
     recordLock.lock();
     recordSolution(currentSolution);
@@ -310,11 +349,11 @@ proc searchLinear(in board: uint(32), in pos: uint(32), in used: uint(32),
     pos += count;
     board >>= count;
 
-    const f: uint(32) = ((board>>1)&1) | ((board >> (4-(evenRowsLookup[pos] & 1)))&6);
-    const boardAndUsed = board|used;
+    const f: uint(32) = ((board>>1)&1) | ((board >> (4-(evenRowsLookup[pos] & 1)))&6),
+          boardAndUsed = board|used;
 
-    var mask: uint(32);
-    var currentMask: uint(32) = maskStart[pos][f];
+    var mask: uint(32),
+        currentMask: uint(32) = maskStart[pos][f];
 
     while allMasks[currentMask] {
       while allMasks[currentMask] & boardAndUsed {
@@ -323,8 +362,8 @@ proc searchLinear(in board: uint(32), in pos: uint(32), in used: uint(32),
       if allMasks[currentMask] {
         mask = allMasks[currentMask];
         currentSolution[placed] = mask;
-        searchLinear(board|(mask & 0x003FFFFF:uint(32)), pos,
-                     used|(mask & 0xFFC00000:uint(32)), placed+1,
+        searchLinear(board|(mask & hexOnes: uint(32)), pos,
+                     used|(mask & hexUsed: uint(32)), placed+1,
                      currentSolution);
         currentMask += 1;
       }
@@ -332,6 +371,9 @@ proc searchLinear(in board: uint(32), in pos: uint(32), in used: uint(32),
   }
 }
 
+//
+//
+//
 proc searchLinearHelper(in board: uint(32), in pos: uint(32),
                         in used: uint(32), in placed: uint(32),
                         in firstPiece: uint(32), in mask: uint(32)) {
@@ -342,6 +384,9 @@ proc searchLinearHelper(in board: uint(32), in pos: uint(32),
 }
 
 
+//
+//
+//
 proc searchParallel(in board: uint(32), in pos: uint(32), in used: uint(32),
                     in placed: uint(32), in firstPiece: uint(32)) {
   var count: uint(32);
@@ -359,8 +404,8 @@ proc searchParallel(in board: uint(32), in pos: uint(32), in used: uint(32),
       if allMasks[currentMask] {
         mask = allMasks[currentMask];
         currentMask += 1;
-        searchParallel(board|(mask&0x003FFFFF), pos,
-                       used|(mask&0xFFC00000:uint(32)), placed+1, mask);
+        searchParallel(board|(mask & hexOnes), pos,
+                       used|(mask & hexUsed: uint(32)), placed+1, mask);
       }
     }
   } else {   // placed == 1
@@ -371,8 +416,8 @@ proc searchParallel(in board: uint(32), in pos: uint(32), in used: uint(32),
       if allMasks[currentMask] {
         mask = allMasks[currentMask];
         currentMask += 1;
-        searchLinearHelper(board|((mask&0x003FFFFF)), pos,
-                           used|(mask&0xFFC00000:uint(32)),  placed+1,
+        searchLinearHelper(board|((mask & hexOnes)), pos,
+                           used|(mask & hexUsed: uint(32)),  placed+1,
                            firstPiece, mask);
       }
     }
@@ -380,18 +425,17 @@ proc searchParallel(in board: uint(32), in pos: uint(32), in used: uint(32),
 }
 
 
-proc main(args: [] string): int
+//
+//
+//
+proc main()
 {
-  if args.size > 2 then
-    return 1;
 
-  initialise();
+  initialize();
 
   sync searchParallel(0,0,0,0,0);
 
   writef("%i solutions found\n\n", solutions);
   printBoard(minSolution);
   printBoard(maxSolution);
-
-  return 0;
 }
