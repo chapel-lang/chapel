@@ -3246,6 +3246,7 @@ module ChapelArray {
     return b;
   }
 
+  /*
   pragma "auto copy fn" proc chpl__autoCopy(x: domain) {
     pragma "no copy" var b = new _domain(x._pid, x._instance, true);
     return b;
@@ -3283,9 +3284,10 @@ module ChapelArray {
     b._pid = -1;
     b._instance = nil;
     b._unowned = true;
-  }
+  }*/
 
 
+  /*
   inline proc chpl__onret(ref x: domain) {
     const tok = __primitive("get caller stack token");
     const isalias = (x._unowned);// | (x._value._arrAlias != nil);
@@ -3302,15 +3304,15 @@ module ChapelArray {
     if isalias {
       __doDeepCopy(x, tok);
     }
-  }
+  }*/
 
 
   pragma "init copy fn"
   proc chpl__initCopy(a: []) {
-    var tok = __primitive("get caller stack token");
+    //var tok = __primitive("get caller stack token");
 
     var b : [a._dom] a.eltType;
-    b._value._stackToken = tok;
+    //b._value._stackToken = tok;
 
     // Try bulk transfer.
     if !chpl__serializeAssignment(b, a) {
@@ -3322,11 +3324,13 @@ module ChapelArray {
     return b;
   }
 
+   /*
    pragma "auto copy fn" proc chpl__autoCopy(x: []) {
     pragma "no copy" var b = new _array(x._pid, x._instance, true);
     return b;
-  }
+  }*/
 
+  /*
   proc __doDeepCopy(ref a:[], tok) {
     var b : [a._dom] a.eltType;
     b._value._stackToken = tok;
@@ -3372,7 +3376,7 @@ module ChapelArray {
 
       __doDeepCopy(x, tok);
     }
-  }
+  }*/
 
 
  
