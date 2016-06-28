@@ -1,5 +1,7 @@
 :title: Users Guide: The **cobegin** statement
 
+.. _ug-cobegin:
+
 The **cobegin** statement
 =========================
 
