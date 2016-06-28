@@ -10,15 +10,13 @@ statement, but uses the ``coforall`` keyword in place of ``for``.
 Operationally, a coforall loop creates a distinct task per loop
 iteration, each of which executes a copy of the loop body.
 Mnemonically, the coforall loop can be thought of as a *concurrent
-forall* --- that is, a parallel loop in which each iteration is a
+forall*—that is, a parallel loop in which each iteration is a
 concurrent task.
 
-As with the cobegin statement, the original task does not proceed
-until the child tasks corresponding to the coforall's iterations have
-completed.  And, as there, the original task waits only for its
-immediate children, not their descendents.
-
-.. TODO: better m-dash above?
+As with the :ref:`cobegin statement <ug-cobegin>`, the original task
+does not proceed until the child tasks corresponding to the coforall's
+iterations have completed.  And, as with ``cobegin``, the original
+task waits only for its immediate children, not their descendents.
 
 The following code illustrates a simple use of the coforall loop:
 
@@ -34,7 +32,7 @@ tasks.  As in previous examples, since the tasks are not coordinating
 with one another, their "Hello" messages will print out in an
 arbitrary order.  However, the "Goodbye" message will not print until
 all the "Hello" messages have, since it will be executed by the
-original task only once the coforall's tasks are done.  Thus, the
+original task only once the per-iteration tasks are done.  Thus, the
 following shows a possible output of the test:
 
 .. literalinclude:: examples/users-guide/taskpar/coforall-alt.good
