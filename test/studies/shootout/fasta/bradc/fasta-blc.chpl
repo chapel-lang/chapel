@@ -91,17 +91,17 @@ proc repeatMake(desc, alu, n) {
   const s = [i in 0..(r+lineLength)] alu[i % r];
 
   for i in 0..n by lineLength {
-    const j = i % r + 1;
-    const len = min(lineLength, n-i);
+    const lo = i % r + 1,
+          len = min(lineLength, n-i);
     // TODO: Can we avoid this slice?
-    stdout.write(s[j..#len], newLine);
+    stdout.write(s[lo..#len], newLine);
   }
 }
 
 // Output a random sequence of length 'len' using distribution a
 proc randomMake(desc, a, n) {
   var lookup = initLookup();
-  var line_buff: [0..lineLength] int(8);
+  var line_buff: [0..lineLength] int(8);  // TODO: This wants to be static
     
   stdout.writef("%s", desc);
   //  stdout.write(desc);
@@ -119,9 +119,6 @@ proc randomMake(desc, a, n) {
   }
 
   // Add a line of random sequence
-  //
-  // TODO: This wants to be static
-  //
   proc addLine(bytes) {
     for (r, i) in zip(getRands(bytes), 0..) {
       var ai = r: int + 1;
@@ -131,19 +128,15 @@ proc randomMake(desc, a, n) {
       line_buff[i] = lookup[ai](nucl);
     }
     line_buff[bytes] = newLine;
-    //
-    // TODO: Any way to avoid the slice here?  %s with a control character?
-    //
-    stdout.write(line_buff[0..bytes]);
+
+    stdout.write(line_buff[0..bytes]); // TODO: avoid slicing?
   }
 }
 
+
 // Deterministic random number generator as specified
 
-//
-// TODO: This wants to be static
-//
-var lastRand = 42;
+var lastRand = 42;  // TODO: wants to be static local to getRands()
 
 iter getRands(n) {
   param IA = 3877,
