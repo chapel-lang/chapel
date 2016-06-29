@@ -18,6 +18,9 @@ directions for future improvements. This CHIP primarily covers the design of
 the initial Chapel package manager, but also includes some design and ideas for
 future work.
 
+Credit is due to Sam Boyer of the Glide package manager for Go. His article
+on Medium_ provided an excellent guide and template for our own package manager.
+
 Rationale
 ---------
 
@@ -487,6 +490,7 @@ Other Future Work
   * e.g. ``mason new <project-name> --app``
 
 
+.. _Medium: https://medium.com/@sdboyer/so-you-want-to-write-a-package-manager-4ae9c17d9527#.id7wa9vae
 .. _crates.io: https://crates.io/
 .. _cargo: http://doc.crates.io/guide.html
 .. _nix: https://nixos.org/nix/
