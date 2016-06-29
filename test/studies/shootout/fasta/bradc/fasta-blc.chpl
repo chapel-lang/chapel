@@ -50,19 +50,15 @@ param nucl = 1,
 
 // Sequences to be randomly generated (probability table)
 
-const IUB: [0..14] (Ntide, real) = [
-  (a, 0.27), (c, 0.12), (g, 0.12), (t, 0.27),
-  (B, 0.02), (D, 0.02), (H, 0.02), (K, 0.02),
-  (M, 0.02), (N, 0.02), (R, 0.02), (S, 0.02),
-  (V, 0.02), (W, 0.02), (Y, 0.02)
-];
+const IUB = [(a, 0.27), (c, 0.12), (g, 0.12), (t, 0.27),
+             (B, 0.02), (D, 0.02), (H, 0.02), (K, 0.02),
+             (M, 0.02), (N, 0.02), (R, 0.02), (S, 0.02),
+             (V, 0.02), (W, 0.02), (Y, 0.02)];
 
-const HomoSapiens: [0..3] (Ntide, real) = [
-  (a, 0.3029549426680),
-  (c, 0.1979883004921),
-  (g, 0.1975473066391),
-  (t, 0.3015094502008)
-];
+const HomoSapiens = [(a, 0.3029549426680),
+                     (c, 0.1979883004921),
+                     (g, 0.1975473066391),
+                     (t, 0.3015094502008)];
 
 proc main() {
   sumAndScale(IUB);
@@ -83,7 +79,7 @@ proc sumAndScale(alphabet: [?D]) {
 }
 
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newLine: int(8) = ascii("\n");
+param newLine = ascii("\n"): int(8);
 
 // Repeat sequence "alu" for n characters
 proc repeatMake(desc, alu, n) {
@@ -104,44 +100,42 @@ proc repeatMake(desc, alu, n) {
 
 // Output a random sequence of length 'len' using distribution a
 proc randomMake(desc, a, n) {
-  var lookup: [0..#lookupSize] (Ntide, real);
-  for (l,v) in zip(lookup, initLookup(a)) do
-    l = v;
+  var lookup = initLookup();
+  var line_buff: [0..lineLength] int(8);
     
   stdout.writef("%s", desc);
   //  stdout.write(desc);
   for i in 1..n by lineLength do
-    addLine(min(lineLength, n-i+1), lookup);
-}
+    addLine(min(lineLength, n-i+1));
 
-iter initLookup(a) {
-  var j = 0;
-  for i in 0..#lookupSize {
-    while (a[j](prob) < i) do
-      j += 1;
-
-    yield a[j];
+  iter initLookup() {
+    var j = 1;
+    for i in 0..#lookupSize {
+      while (a[j](prob) < i) do
+        j += 1;
+      
+      yield a[j];
+    }
   }
-}
 
-// Add a line of random sequence
-//
-// TODO: This wants to be static
-//
-var line_buff: [0..lineLength] int(8);
-proc addLine(bytes, lookup) {
-  for (r, i) in zip(getRands(bytes), 0..) {
-    var ai = r: int;
-    while (lookup[ai](prob) < r) do
-      ai += 1;
-
-    line_buff[i] = lookup[ai](nucl);
+  // Add a line of random sequence
+  //
+  // TODO: This wants to be static
+  //
+  proc addLine(bytes) {
+    for (r, i) in zip(getRands(bytes), 0..) {
+      var ai = r: int + 1;
+      while (lookup[ai](prob) < r) do
+        ai += 1;
+      
+      line_buff[i] = lookup[ai](nucl);
+    }
+    line_buff[bytes] = newLine;
+    //
+    // TODO: Any way to avoid the slice here?  %s with a control character?
+    //
+    stdout.write(line_buff[0..bytes]);
   }
-  line_buff[bytes] = 10;
-  //
-  // TODO: Any way to avoid the slice here?  %s with a control character?
-  //
-  stdout.write(line_buff[0..bytes]);
 }
 
 // Deterministic random number generator as specified
