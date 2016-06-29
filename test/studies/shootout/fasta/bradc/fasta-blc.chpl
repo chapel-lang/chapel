@@ -24,7 +24,7 @@ enum Ntide {
 use Ntide;
 
 // Sequence to be repeated
-const ALU: [0..286] Ntide = [
+const ALU: [0..286] int(8) = [
   G, G, C, C, G, G, G, C, G, C, G, G, T, G, G, C, T, C, A, C,
   G, C, C, T, G, T, A, A, T, C, C, C, A, G, C, A, C, T, T, T,
   G, G, G, A, G, G, C, C, G, A, G, G, C, G, G, G, C, G, G, A,
@@ -88,10 +88,10 @@ proc repeatMake(desc, alu, n) {
   //
   // TODO; Can we reduce reliance on % below?
   //
-  const s: [0..(r+lineLength)] int(8) = [i in 0..(r+lineLength)] alu[i % r];
+  const s = [i in 0..(r+lineLength)] alu[i % r];
 
   for i in 0..n by lineLength {
-    const j = i % r;
+    const j = i % r + 1;
     const len = min(lineLength, n-i);
     // TODO: Can we avoid this slice?
     stdout.write(s[j..#len], newLine);
