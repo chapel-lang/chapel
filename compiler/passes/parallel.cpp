@@ -99,8 +99,8 @@ static BundleArgsFnData bundleArgsFnDataInit = { true, NULL, NULL };
 static bool needHeapVars();
 static void insertEndCounts();
 static void passArgsToNestedFns();
-static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData, bool heapAllocateArgBundle);
-static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn, Symbol* taskList, Symbol* taskListNode, bool heapAllocateArgBundle);
+static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData);
+static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol* args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn, Symbol* taskList, Symbol* taskListNode);
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec);
 static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
@@ -328,21 +328,14 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
   VarSymbol *tempc = newTemp(astr("_args_for", fn->name), ctype);
   fcall->insertBefore( new DefExpr( tempc));
 
-  // We could potentially base this decision on the size of the
+  // We could potentially heap-allocate based upon the size of the
   // argument bundle, but the local case would pass these arguments
   // on the stack anway, so it seems moot.
 
-  bool heapAllocateArgBundle = needHeapVars();
-
-  if (heapAllocateArgBundle) {
-    insertChplHereAlloc(fcall, false /*insertAfter*/, tempc,
-                        ctype, newMemDesc("bundled args"));
-  } else {
-    fcall->insertBefore( new CallExpr(PRIM_MOVE,
-                            tempc,
-                            new CallExpr(PRIM_STACK_ALLOCATE_CLASS,
-                              ctype->symbol)));
-  }
+  fcall->insertBefore( new CallExpr(PRIM_MOVE,
+                          tempc,
+                          new CallExpr(PRIM_STACK_ALLOCATE_CLASS,
+                            ctype->symbol)));
 
   // Don't destroy rt hdr.
   baData.needsDestroy.push_back(false);
@@ -457,10 +450,10 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
   // create wrapper-function that uses the class instance
   if (firstCall)
-    create_block_fn_wrapper(fn, fcall, baData, heapAllocateArgBundle);
+    create_block_fn_wrapper(fn, fcall, baData);
 
   // call wrapper-function
-  call_block_fn_wrapper(fn, fcall, allocated_args, tmpsz, tempc, baData.wrap_fn, taskList, taskListNode, heapAllocateArgBundle);
+  call_block_fn_wrapper(fn, fcall, allocated_args, tmpsz, tempc, baData.wrap_fn, taskList, taskListNode);
   baData.firstCall = false;
 }
 
@@ -578,7 +571,7 @@ static void moveDownEndCountToWrapper(FnSymbol* fn, FnSymbol* wrap_fn, Symbol* w
 
 }
 
-static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData, bool heapAllocateArgBundle)
+static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnData &baData)
 {
   ModuleSymbol* mod = fcall->getModule();
   INT_ASSERT(fn == fcall->isResolved());
@@ -705,13 +698,6 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   // to the wrapper.
   moveDownEndCountToWrapper(fn, wrap_fn, wrap_c, ctype);
 
-  if (heapAllocateArgBundle) {
-    if (fn->hasFlag(FLAG_ON))
-      ; // the caller will free the actual
-    else
-      wrap_fn->insertAtTail(callChplHereFree(wrap_c));
-  }
-
   // Add finish fence to wrapper if it was requested
   // This supports --cache-remote and is set in createTaskFunctions
   if (fn->hasFlag(FLAG_WRAPPER_NEEDS_FINISH_FENCE)) {
@@ -732,7 +718,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
 
 static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol*
     args_buf, VarSymbol* args_buf_len, VarSymbol* tempc, FnSymbol *wrap_fn,
-    Symbol* taskList, Symbol* taskListNode, bool heapAllocateArgBundle)
+    Symbol* taskList, Symbol* taskListNode)
 {
   // The wrapper function is called with the bundled argument list.
   if (fn->hasFlag(FLAG_ON)) {
@@ -746,13 +732,6 @@ static void call_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, VarSymbol*
     // We need the taskList.
     INT_ASSERT(taskList);
     fcall->insertBefore(new CallExpr(wrap_fn, new SymExpr(taskList), new SymExpr(taskListNode), args_buf, args_buf_len, tempc));
-  }
-
-  if (heapAllocateArgBundle) {
-    if (fn->hasFlag(FLAG_ON))
-      fcall->insertAfter(callChplHereFree(tempc));
-    else
-      ; // wrap_fn will free the formal
   }
 
   fcall->remove();                     // rm orig. call

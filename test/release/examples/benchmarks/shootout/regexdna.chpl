@@ -5,7 +5,7 @@
    based on C++ RE2 implementation by Alexey Zolotov
 */
 
-proc main(args: [] string) {
+proc main() {
   var variants = [
     "agggtaaa|tttaccct",
     "[cgt]gggtaaa|tttaccc[acg]",
@@ -38,18 +38,17 @@ proc main(args: [] string) {
 
   // waits for tasks to finish
   sync {
-    // fire off a thread to do replacing
+    // fire off a task to do replacing
     begin with (ref copy) {
-      for (f, r) in subst {
-        const re = compile(f);
-        copy = re.sub(r, copy);
-      }
+      for (f, r) in subst do
+        copy = compile(f).sub(r, copy);
     }
 
-
     // count patterns
-    forall (pattern, result) in zip(variants, results) do
-      for m in compile(pattern).matches(data) do result += 1;
+    forall (pattern, result) in zip(variants, results) {
+      for m in compile(pattern).matches(data) do
+        result += 1;
+    }
   }
 
   // print results
