@@ -31,7 +31,7 @@
 static inline
 uintptr_t round_down_to_mask(uintptr_t p, uintptr_t mask)
 {
- return p - (p & mask);
+  return p - (p & mask);
 }
 static inline
 unsigned char* round_down_to_mask_ptr(unsigned char* p, uintptr_t mask)
@@ -44,8 +44,7 @@ unsigned char* round_down_to_mask_ptr(unsigned char* p, uintptr_t mask)
 static inline
 uintptr_t round_up_to_mask(uintptr_t p, uintptr_t mask)
 {
-  uintptr_t offset = p & mask;
-  return (offset==0)?(p):(p + (mask+1) - offset);
+  return (p + mask) & ~mask;
 }
 static inline
 unsigned char* round_up_to_mask_ptr(unsigned char* p, uintptr_t mask)
