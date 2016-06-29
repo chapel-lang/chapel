@@ -8,15 +8,22 @@
 
 
 /* TODO
- * Easy stylistic improvements (inferred types, comma-separated declarations)
+ * How much of this stuff needs to be
  * Quality commenting
+ * Stylistic consistency:
+    * colons: string
+    * inferred types removed
+ * Possible optimizations?
+  * param loop
+  * forall's (probably not worth it)
+
 
 */
 use BitOps;
 
 //
-const pieceCount = 10,
-      pieces: [0..9][0..4][0..1] int =
+param pieceCount = 10;
+const pieces: [0..9][0..4][0..1] int =
 [
   [[0, 0], [1, 0], [2, 0], [3, 0], [3, 1]],
   [[0, 0], [0, 1], [-2, 2], [-1, 2], [-3, 3]],
@@ -95,16 +102,16 @@ proc goodPiece(mask: uint(32), pos: uint(32)): bool {
 //
 proc initialize() {
   for i in 0..49 {
-    evenRowsLookup[i] = (hexEven >> i):uint(32);
-    leftBorderLookup[i] = (hexBorder >> i):uint(32);
+    evenRowsLookup[i] = (hexEven >> i): uint(32);
+    leftBorderLookup[i] = (hexBorder >> i): uint(32);
   }
 
   var totalCount: uint(32),
       x: [0..4] int,
       y: [0..4] int;
-  for yBase in 2..3:int {
-    for xBase in 0..4:int {
-      const pos: uint(32) = (xBase+5*yBase):uint(32);
+  for yBase in 2..3 {
+    for xBase in 0..4 {
+      const pos: uint(32) = (xBase+5*yBase): uint(32);
       maskStart[pos][0] = totalCount;
       for piece in 0..pieceCount-1 {
         for j in 0..4 {
@@ -124,21 +131,21 @@ proc initialize() {
             }
 
             var mask: uint(32),
-                fit: bool = true;
+                fit = true;
 
             for i in 0..4 {
               var nX = (x[i]-minX+(xBase-yBase/2)) + (y[i]-minY+yBase)/2,
                   nY = y[i]-minY+yBase;
               if nX >= 0 && nX < 5 {
                 var numBits = nX-xBase+5*(nY-yBase);
-                mask |= (1:int(32)<<numBits);
+                mask |= (1:int(32) << numBits);
               } else {
                 fit = false;
               }
             }
             if fit {
               if goodPiece(mask, pos) {
-                allMasks[totalCount] = mask|(1:int(32)<<(piece+22));
+                allMasks[totalCount] = mask|(1:int(32) << (piece+22));
                 totalCount += 1;
               }
             }
@@ -196,11 +203,10 @@ proc initialize() {
   for filter in 1..7:uint(32) {
     for pos in 0..49:uint(32) {
       maskStart[pos][filter] = totalCount;
-      var filterMask: uint(32);
-      filterMask = ((filter&1)<<1) | ((filter&6)<<(4-(evenRowsLookup[pos]&1)));
-      var pMask: uint(32) = maskStart[pos][0];
+      var filterMask = ((filter&1)<<1) | ((filter&6)<<(4-(evenRowsLookup[pos]&1))),
+          pMask = maskStart[pos][0];
       while allMasks[pMask] {
-        const mask:uint(32) = allMasks[pMask];
+        const mask = allMasks[pMask];
         if (mask&filterMask) == 0 {
           allMasks[totalCount] = mask;
           totalCount += 1;
@@ -218,8 +224,6 @@ proc initialize() {
 //
 proc compareSolution(board: [] uint(8), minSolution: [] uint(8),
                      maxSolution: [] uint(8)) {
-  var i: int,
-      j: int;
 
   for i in 0..49 {
     if board[i] < minSolution[i] {
@@ -264,18 +268,20 @@ proc printBoard(board: [] uint(8)) {
 proc recordSolution(currentSolution: [] uint(32)) {
   var board: [0..49] uint(8),
       flipBoard: [0..49] uint(8),
-      mask, pos, currentBit, b1 : uint(32),
-      piece, count : uint(32);
+      mask, pos, currentBit, b1: uint(32),
+      count: uint(32),
+      piece: uint(8);
+
   for i in 0..9 {
     mask = currentSolution[i];
-    piece = ctz(mask>>22:uint(32)):uint(32);
+    piece = ctz(mask >> 22: uint(32)): uint(8);
     mask &= hexOnes;
     b1 |= mask;
     while mask {
-      currentBit = mask&(-(mask:int(32))):uint(32);
-      count = ctz(currentBit):uint(32);
-      board[count+pos] = piece:uint(8);
-      flipBoard[49-count-pos] = piece:uint(8);
+      currentBit = mask & (-(mask: int(32))):uint(32);
+      count = ctz(currentBit): uint(32);
+      board[count+pos] = piece;
+      flipBoard[49-count-pos] = piece;
       mask ^= currentBit;
     }
     count = ctz(~b1);
@@ -317,8 +323,7 @@ var recordLock: Spinlock;
 //
 proc searchLinear(in board: uint(32), in pos: uint(32), in used: uint(32),
                   in placed: uint(32), currentSolution: [] uint(32)) {
-  var count : uint(32),
-      evenRows, oddRows, leftBorder, rightBorder: uint(32),
+  var count, evenRows, oddRows, leftBorder, rightBorder,
       s1, s2, s3, s4, s5, s6, s7, s8: uint(32);
   if placed == 10 {
     recordLock.lock();
@@ -330,30 +335,30 @@ proc searchLinear(in board: uint(32), in pos: uint(32), in used: uint(32),
     oddRows = ~evenRows;
 
     leftBorder = leftBorderLookup[pos];
-    rightBorder = leftBorder>>1;
+    rightBorder = leftBorder >> 1;
 
     s1 = (board << 1) | leftBorder;
     s2 = (board >> 1) | rightBorder;
-    s3 = (board << 4) | ((1<<4)-1) | rightBorder;
+    s3 = (board << 4) | ((1 << 4) - 1) | rightBorder;
     s4 = (board >> 4) | leftBorder;
-    s5 = (board << 5) | ((1<<5)-1);
+    s5 = (board << 5) | ((1 << 5) - 1);
     s6 = (board >> 5);
-    s7 = (board << 6) | ((1<<6)-1) | leftBorder;
+    s7 = (board << 6) | ((1 << 6) - 1) | leftBorder;
     s8 = (board >> 6) | rightBorder;
 
-    if ~board&s1&s2&s5&s6 & ((evenRows&s4&s7) | (oddRows&s3&s8)) {
-      return;
-    }
+    if ~board & s1 & s2 & s5 & s6 &
+       ((evenRows & s4 & s7) | (oddRows & s3 & s8)) then return;
 
     count = ctz(~board);
     pos += count;
     board >>= count;
 
-    const f: uint(32) = ((board>>1)&1) | ((board >> (4-(evenRowsLookup[pos] & 1)))&6),
-          boardAndUsed = board|used;
+    const f = ((board >> 1) & 1) |
+              ((board >> (4 - (evenRowsLookup[pos] & 1))) & 6),
+          boardAndUsed = board | used;
 
     var mask: uint(32),
-        currentMask: uint(32) = maskStart[pos][f];
+        currentMask = maskStart[pos][f];
 
     while allMasks[currentMask] {
       while allMasks[currentMask] & boardAndUsed {
@@ -362,8 +367,8 @@ proc searchLinear(in board: uint(32), in pos: uint(32), in used: uint(32),
       if allMasks[currentMask] {
         mask = allMasks[currentMask];
         currentSolution[placed] = mask;
-        searchLinear(board|(mask & hexOnes: uint(32)), pos,
-                     used|(mask & hexUsed: uint(32)), placed+1,
+        searchLinear(board | (mask & hexOnes), pos,
+                     used | (mask & hexUsed), placed+1,
                      currentSolution);
         currentMask += 1;
       }
@@ -391,33 +396,33 @@ proc searchParallel(in board: uint(32), in pos: uint(32), in used: uint(32),
                     in placed: uint(32), in firstPiece: uint(32)) {
   var count: uint(32);
 
-  count = ctz(~board):uint(32);
+  count = ctz(~board): uint(32);
   pos += count;
   board >>= count;
 
-  const boardAndUsed: uint(32) = board|used;
-  var currentMask: uint(32) = maskStart[pos][0];
-  var mask: uint(32);
+  const boardAndUsed = board | used;
+  var currentMask = maskStart[pos][0],
+      mask: uint(32);
 
   if placed == 0 {
     while allMasks[currentMask] {
       if allMasks[currentMask] {
         mask = allMasks[currentMask];
         currentMask += 1;
-        searchParallel(board|(mask & hexOnes), pos,
-                       used|(mask & hexUsed: uint(32)), placed+1, mask);
+        searchParallel(board | (mask & hexOnes), pos,
+                       used | (mask & hexUsed), placed + 1, mask);
       }
     }
   } else {   // placed == 1
     while allMasks[currentMask] {
-      while allMasks[currentMask] & boardAndUsed {
+      while allMasks[currentMask] & boardAndUsed do
         currentMask += 1;
-      }
+
       if allMasks[currentMask] {
         mask = allMasks[currentMask];
         currentMask += 1;
-        searchLinearHelper(board|((mask & hexOnes)), pos,
-                           used|(mask & hexUsed: uint(32)),  placed+1,
+        searchLinearHelper(board | (mask & hexOnes), pos,
+                           used | (mask & hexUsed), placed+1,
                            firstPiece, mask);
       }
     }
@@ -428,8 +433,7 @@ proc searchParallel(in board: uint(32), in pos: uint(32), in used: uint(32),
 //
 //
 //
-proc main()
-{
+proc main() {
 
   initialize();
 
