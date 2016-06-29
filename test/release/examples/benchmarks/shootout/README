@@ -119,9 +119,15 @@ o as part of DynamicIters and/or chunking library, create version
 
 o improve magic number default for nChunks?
 
-o use scan to compute/initialize fact?
+o make scans not generate warnings and use them to compute/initialize
+  fact?
 
 o remove warning for serial whole-array assignment when RHS is serial
+  and then use an initfact() iterator / procedure to initialize fact[]
+  at declaration time
+
+o should globals be allowed to be declared below main()?  If so, move
+  fact[] to the bottom of the file?
 
 
 mandelbrot.chpl

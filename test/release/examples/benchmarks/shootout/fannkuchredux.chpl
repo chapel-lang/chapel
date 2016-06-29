@@ -1,29 +1,35 @@
 /* The Computer Language Benchmarks Game
- * http://benchmarksgame.alioth.debian.org/
- *
- * contributed by Ben Harshbarger
- * based on Swift implementation by Ralph Ganszky
- *
- */
+   http://benchmarksgame.alioth.debian.org/
+
+   contributed by Ben Harshbarger
+   derived from the Swift implementation by Ralph Ganszky
+*/
 
 use DynamicIters;
 
 config const n = 7,          // the array size over which to compute perms
              nchunks = 720;  // the number of chunks of parallelism
 
-const fact: [0..n] int = initFact(n);
+//
+// memoize n! (n factorial)
+//
+var fact: [0..n] int;
+fact[0] = 1;
+for i in 1..n do
+  fact[i] = i*fact[i-1];
+
 
 proc main() {
   var checkSum = 0,
       maxFlips = 1;
 
-  var chunksz = (fact[n] + nchunks - 1) / nchunks;
+  var chunksz = (fact(n) + nchunks - 1) / nchunks;
   chunksz += chunksz%2;
-  const work = 0..(fact[n] - chunksz) by chunksz;
+  const work = 0..(fact(n) - chunksz) by chunksz;
 
-  forall idx in dynamic(work, 1) with (+ reduce checkSum, 
-                                       max reduce maxFlips) {
-    for (i, flips) in fannkuch(idx..#chunksz) {
+  forall lo in dynamic(work, 1) with (+ reduce checkSum, 
+                                      max reduce maxFlips) {
+    for (i, flips) in fannkuch(lo..#chunksz) {
       maxFlips = max(maxFlips, flips);
       checkSum += if i % 2 == 0 then flips else -flips;
     }
@@ -32,6 +38,7 @@ proc main() {
   writeln(checkSum);
   writeln("Pfannkuchen(", n, ") = ", maxFlips);
 }
+
 
 iter fannkuch(inds) {
   var p, pp, count: [0..#n] int;
@@ -47,13 +54,14 @@ iter fannkuch(inds) {
       nextPerm();
   }
 
+
   proc firstPerm() {
     var idx = inds.low;
     for i in 1..n-1 by -1 {
-      const fact_i = fact[i],
+      const fact_i = fact(i),
             d = idx / fact_i;
       count[i] = d;
-      idx %= fact[i];
+      idx %= fact(i);
 
       for i in 0..i do
         pp[i] = p[i];
@@ -109,12 +117,3 @@ iter fannkuch(inds) {
     }
   }
 }
-
-iter initFact(n) {
-  var fact = 1;
-  for i in 0..n {
-    yield fact;
-    fact *= i+1;
-  }
-}
-    
