@@ -42,27 +42,26 @@ const ALU: [0..286] Ntide = [
   T, C, A, A, A, A, A
 ];
 
-// TODO: Use a tuple rather than a record to avoid constructor calls?
-
-record Freq {
-  var c: Ntide;
-  var p: real;
-}
+//
+// index aliases for use with (nucleotide, probability) tuples
+//
+param nucl = 1,
+      prob = 2;
 
 // Sequences to be randomly generated (probability table)
 
-const IUB: [0..14] Freq = [
-  new Freq(a, 0.27), new Freq(c, 0.12), new Freq(g, 0.12), new Freq(t, 0.27),
-  new Freq(B, 0.02), new Freq(D, 0.02), new Freq(H, 0.02), new Freq(K, 0.02),
-  new Freq(M, 0.02), new Freq(N, 0.02), new Freq(R, 0.02), new Freq(S, 0.02),
-  new Freq(V, 0.02), new Freq(W, 0.02), new Freq(Y, 0.02)
+const IUB: [0..14] (Ntide, real) = [
+  (a, 0.27), (c, 0.12), (g, 0.12), (t, 0.27),
+  (B, 0.02), (D, 0.02), (H, 0.02), (K, 0.02),
+  (M, 0.02), (N, 0.02), (R, 0.02), (S, 0.02),
+  (V, 0.02), (W, 0.02), (Y, 0.02)
 ];
 
-const HomoSapiens: [0..3] Freq = [
-  new Freq(a, 0.3029549426680),
-  new Freq(c, 0.1979883004921),
-  new Freq(g, 0.1975473066391),
-  new Freq(t, 0.3015094502008)
+const HomoSapiens: [0..3] (Ntide, real) = [
+  (a, 0.3029549426680),
+  (c, 0.1979883004921),
+  (g, 0.1975473066391),
+  (t, 0.3015094502008)
 ];
 
 proc main() {
@@ -77,10 +76,10 @@ proc main() {
 proc sumAndScale(alphabet: [?D]) {
   var p = 0.0;
   for letter in alphabet {
-    p += letter.p;
-    letter.p = p * lookupScale;
+    p += letter(prob);
+    letter(prob) = p * lookupScale;
   }
-  alphabet[D.high].p = lookupScale;
+  alphabet[D.high](prob) = lookupScale;
 }
 
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
@@ -105,11 +104,12 @@ proc repeatMake(desc, alu, n) {
 
 // Output a random sequence of length 'len' using distribution a
 proc randomMake(desc, a, n) {
-  var lookup: [0..#lookupSize] Freq;
+  var lookup: [0..#lookupSize] (Ntide, real);
   for (l,v) in zip(lookup, initLookup(a)) do
     l = v;
     
   stdout.writef("%s", desc);
+  //  stdout.write(desc);
   for i in 1..n by lineLength do
     addLine(min(lineLength, n-i+1), lookup);
 }
@@ -117,7 +117,7 @@ proc randomMake(desc, a, n) {
 iter initLookup(a) {
   var j = 0;
   for i in 0..#lookupSize {
-    while (a[j].p < i) do
+    while (a[j](prob) < i) do
       j += 1;
 
     yield a[j];
@@ -132,10 +132,10 @@ var line_buff: [0..lineLength] int(8);
 proc addLine(bytes, lookup) {
   for (r, i) in zip(getRands(bytes), 0..) {
     var ai = r: int;
-    while (lookup[ai].p < r) do
+    while (lookup[ai](prob) < r) do
       ai += 1;
 
-    line_buff[i] = lookup[ai].c;
+    line_buff[i] = lookup[ai](nucl);
   }
   line_buff[bytes] = 10;
   //
