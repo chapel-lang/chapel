@@ -445,7 +445,7 @@ module LocaleModel {
   extern proc chpl_comm_execute_on_nb(loc_id: int, subloc_id: int, fn: int,
                                       args: chpl_comm_on_bundle_p, args_size: size_t);
   pragma "insert line file info"
-    extern proc chpl_task_taskCallFTable(fn: int,
+    extern proc chpl_comm_taskCallFTable(fn: int,
                                          args: chpl_comm_on_bundle_p, args_size: size_t,
                                          subloc_id: int): void;
   extern proc chpl_ftable_call(fn: int, args: chpl_comm_on_bundle_p): void;
@@ -556,7 +556,7 @@ module LocaleModel {
       if __primitive("task_get_serial") then
         chpl_ftable_call(fn, args);
       else
-        chpl_task_taskCallFTable(fn, args, args_size, dsubloc);
+        chpl_comm_taskCallFTable(fn, args, args_size, dsubloc);
     } else {
       if __primitive("task_get_serial") then
         chpl_comm_execute_on(dnode, dsubloc, fn, args, args_size);

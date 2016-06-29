@@ -194,6 +194,23 @@ void chpl_task_taskCall(chpl_fn_p,          // function to call
                         int32_t);           // name of file containing function
 
 //
+// Call a chpl_ftable[] function in a task.
+//
+// This is a convenience function for use by the module code, in which
+// we have function table indices rather than function pointers.
+//
+static inline
+void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
+                              chpl_task_bundle_t* arg,// function arg
+                              size_t arg_size,        // length of arg
+                              c_sublocid_t subloc,    // desired sublocale
+                              int lineno,             // source line
+                              int32_t filename) {     // source filename
+    chpl_task_taskCall(chpl_ftable[fid], arg, arg_size, subloc,
+                       lineno, filename);
+}
+
+//
 // Launch a task that is the logical continuation of some other task,
 // but on a different locale.  This is used to invoke the body of an
 // "on" statement.

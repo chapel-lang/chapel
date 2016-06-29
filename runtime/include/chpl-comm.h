@@ -101,16 +101,16 @@ chpl_task_bundle_t* chpl_comm_on_bundle_task_bundle(chpl_comm_on_bundle_t* a)
 // we have function table indices rather than function pointers.
 //
 static inline
-void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
+void chpl_comm_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
                               chpl_comm_on_bundle_t* arg,// function arg
                               size_t arg_size,        // length of arg in bytes
                               c_sublocid_t subloc,    // desired sublocale
                               int lineno,             // source line
                               int32_t filename) {     // source filename
-    chpl_task_taskCall(chpl_ftable[fid],
-                       chpl_comm_on_bundle_task_bundle(arg), arg_size,
-                       subloc,
-                       lineno, filename);
+    chpl_task_taskCallFTable(fid,
+                             chpl_comm_on_bundle_task_bundle(arg), arg_size,
+                             subloc,
+                             lineno, filename);
 }
 
 
