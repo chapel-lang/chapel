@@ -5,7 +5,7 @@
  */
 use IO;
 
-config const n = 1000,   // controls the length of the generated strings
+config const n = 1000;   // controls the length of the generated strings
 
 config const lineLength = 60,
              lookupSize = 4*1024,
@@ -72,13 +72,14 @@ proc main() {
 }
 
 // Scan operation
-proc sumAndScale(alphabet) {
+proc sumAndScale(alphabet: [?D]) {
   var p = 0.0;
   for letter in alphabet {
     p += letter.p;
     letter.p = p * lookupScale;
   }
-  alphabet[a.high].p = lookupScale;
+  //  alphabet[D.high-1].p = lookupScale;
+  alphabet[alphabet.size-1].p = lookupScale;
 }
 
 // Make lookup table for random sequence generation
@@ -93,24 +94,6 @@ proc makeLookup(a) {
   }
 }
 
-// Deterministic random number generator as specified
-record Random {
-  const IA = 3877;
-  const IC = 29573;
-  const IM = 139968;
-  const SCALE = lookupScale / IM;
-
-  var last = 42;
-  iter get(n) {
-    for 0..#n {
-      last = (last * IA + IC) % IM;
-      yield SCALE * last;
-    }
-  }
-}
-
-var random: Random;
-
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
 param newLine: int(8) = ascii("\n");
 
@@ -118,7 +101,7 @@ param newLine: int(8) = ascii("\n");
 // Add a line of random sequence
 var line_buff : [0..lineLength] int(8);
 proc addLine(bytes: int) {
-  for (i, r) in zip(0..#n, random.get(bytes)) {
+  for (r, i) in zip(getRands(bytes), 0..) {
     var ai = r: int;
     while (lookup[ai].p < r) do
       ai = ai + 1;
@@ -137,7 +120,7 @@ proc randomMake(desc: string, a: [], n: int) {
   while (len > 0) {
     var bytes : int = min(lineLength, len);
     addLine(bytes);
-    len = len - bytes;
+    len -= bytes;
   }
 }
 
@@ -162,3 +145,19 @@ proc repeatMake(desc: string, alu: [], n: int) {
   }
 }
 
+
+// Deterministic random number generator as specified
+
+var lastRand = 42;
+
+iter getRands(n) {
+  param IA = 3877,
+        IC = 29573,
+        IM = 139968;
+  const SCALE = lookupScale / IM;
+
+  for 0..#n {
+    lastRand = (lastRand * IA + IC) % IM;
+    yield SCALE * lastRand;
+  }
+}
