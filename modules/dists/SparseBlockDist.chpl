@@ -62,7 +62,7 @@ config param debugSparseBlockDistBulkTransfer = false;
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-class SparseBlockDom: BaseSparseDom {
+class SparseBlockDom: BaseSparseDomImpl {
   param stridable: bool = false;  // TODO: remove default value eventually
   const dist: Block(rank, idxType);
   var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable);

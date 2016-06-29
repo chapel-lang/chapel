@@ -24,7 +24,7 @@ module DefaultSparse {
   use Search;
   config param debugDefaultSparse = false;
 
-  class DefaultSparseDom: BaseSparseDom {
+  class DefaultSparseDom: BaseSparseDomImpl {
     var dist: DefaultDist;
 
     var indices: [nnzDom] index(rank, idxType);

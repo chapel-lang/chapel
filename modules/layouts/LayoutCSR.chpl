@@ -64,7 +64,7 @@ class CSR: BaseDist {
   }
 }
 
-class CSRDom: BaseSparseDom {
+class CSRDom: BaseSparseDomImpl {
   var dist: CSR;
 
   var rowRange: range(idxType);

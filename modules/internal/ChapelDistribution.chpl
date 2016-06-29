@@ -233,26 +233,9 @@ module ChapelDistribution {
     }
   }
   
-  class BaseSparseDom : BaseDom {
-    // rank and idxType will be moved to BaseDom
-    param rank: int;
-    type idxType;
-    var parentDom;
+  class BaseSparseDomImpl : BaseSparseDom {
 
-    // We currently cannot have dist here. It is due to a compiler bug due to
-    // inheritance of generic var fields.
-    // var dist;
-
-    var nnz = 0; //: int;
     var nnzDom = {1..nnz};
-
-    proc dsiClear() {
-      halt("clear not implemented for this distribution");
-    }
-  
-    proc clearForIteratableAssign() {
-      dsiClear();
-    }
 
     proc dsiBulkAdd(inds: [] index(rank, idxType),
         isSorted=false, isUnique=false, preserveInds=true){
@@ -264,6 +247,13 @@ module ChapelDistribution {
       else {
         return bulkAdd_help(inds, isSorted, isUnique);
       }
+    }
+
+    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), 
+        isSorted=false, isUnique=false){
+      halt("Helper function called on the BaseSparseDomImpl");
+
+      return -1;
     }
 
     inline proc _grow(size: int){
@@ -280,13 +270,6 @@ module ChapelDistribution {
 
         nnzDom = {1.._newNNZDomSize};
       }
-    }
-
-    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), 
-        isSorted=false, isUnique=false){
-      halt("Helper function called on the BaseSparseDom");
-
-      return -1;
     }
 
     // this is a helper function for bulkAdd functions in sparse subdomains.
@@ -356,6 +339,34 @@ module ChapelDistribution {
       }
 
       return (actualInsertPts, actualAddCnt);
+    }
+
+  }
+
+  class BaseSparseDom : BaseDom {
+    // rank and idxType will be moved to BaseDom
+    param rank: int;
+    type idxType;
+    var parentDom;
+
+    // We currently cannot have dist here. It is due to a compiler bug due to
+    // inheritance of generic var fields.
+    // var dist;
+
+    var nnz = 0; //: int;
+
+    proc dsiClear() {
+      halt("clear not implemented for this distribution");
+    }
+  
+    proc clearForIteratableAssign() {
+      dsiClear();
+    }
+
+    proc dsiBulkAdd(inds: [] index(rank, idxType),
+        isSorted=false, isUnique=false, preserveInds=true){
+
+      halt("Bulk addition is not supported by this sparse domain");
     }
 
     proc boundsCheck(ind: index(rank, idxType)):void {
