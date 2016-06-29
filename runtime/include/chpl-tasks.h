@@ -59,19 +59,6 @@ typedef struct {
 
 typedef chpl_task_bundle_t *chpl_task_bundle_p;
 
-/* This shouldn't be needed because the task function
-   uses a bundle the whole time
-    e.g. wrap_fn works with chpl_task_bundle_t as the
-    first struct element.
-static inline
-void* chpl_bundle_arg(void* bundle)
-{
-  unsigned char* tmp = (unsigned char*) bundle;
-  unsigned char header_length = *tmp;
-  return tmp + heaader_length;
-}
-*/
-
 // Sync variables
 
 void      chpl_sync_lock(chpl_sync_aux_t *);
@@ -131,7 +118,7 @@ void chpl_task_exit(void);        // called by the main task
 // user-level tasks. returns 0 on success, nonzero on failure.
 //
 // The caller of this function is responsible for ensuring that
-// *arg remains available to the task as long as it is running.
+// *arg remains available to the task as long as it is needed.
 //
 int chpl_task_createCommTask(chpl_fn_p fn, void* arg);
 
