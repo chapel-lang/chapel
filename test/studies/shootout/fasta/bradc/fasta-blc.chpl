@@ -24,7 +24,7 @@ enum Ntide {
 use Ntide;
 
 // Sequence to be repeated
-const ALU : [0..286] Ntide = [
+const ALU: [0..286] Ntide = [
   G, G, C, C, G, G, G, C, G, C, G, G, T, G, G, C, T, C, A, C,
   G, C, C, T, G, T, A, A, T, C, C, C, A, G, C, A, C, T, T, T,
   G, G, G, A, G, G, C, C, G, A, G, G, C, G, G, G, C, G, G, A,
@@ -42,6 +42,8 @@ const ALU : [0..286] Ntide = [
   T, C, A, A, A, A, A
 ];
 
+// TODO: Use a tuple rather than a record to avoid constructor calls?
+
 record Freq {
   var c: Ntide;
   var p: real;
@@ -49,14 +51,14 @@ record Freq {
 
 // Sequences to be randomly generated (probability table)
 
-const IUB : [0..14] Freq = [
+const IUB: [0..14] Freq = [
   new Freq(a, 0.27), new Freq(c, 0.12), new Freq(g, 0.12), new Freq(t, 0.27),
   new Freq(B, 0.02), new Freq(D, 0.02), new Freq(H, 0.02), new Freq(K, 0.02),
   new Freq(M, 0.02), new Freq(N, 0.02), new Freq(R, 0.02), new Freq(S, 0.02),
   new Freq(V, 0.02), new Freq(W, 0.02), new Freq(Y, 0.02)
 ];
 
-const HomoSapiens : [0..3] Freq = [
+const HomoSapiens: [0..3] Freq = [
   new Freq(a, 0.3029549426680),
   new Freq(c, 0.1979883004921),
   new Freq(g, 0.1975473066391),
@@ -78,76 +80,75 @@ proc sumAndScale(alphabet: [?D]) {
     p += letter.p;
     letter.p = p * lookupScale;
   }
-  //  alphabet[D.high-1].p = lookupScale;
-  alphabet[alphabet.size-1].p = lookupScale;
-}
-
-// Make lookup table for random sequence generation
-var lookup : [0..#lookupSize] Freq;
-proc makeLookup(a) {
-  var j: int = 0;
-  for i in 0..#lookupSize {
-    while (a[j].p < i) do
-      j += 1;
-
-    lookup[i] = a[j];
-  }
+  alphabet[D.high].p = lookupScale;
 }
 
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
 param newLine: int(8) = ascii("\n");
 
+// Repeat sequence "alu" for n characters
+proc repeatMake(desc, alu, n) {
+  stdout.writef("%s", desc); // TODO: Why can't this be a write()?
+  const r = alu.size;
+  //
+  // TODO; Can we reduce reliance on % below?
+  //
+  const s: [0..(r+lineLength)] int(8) = [i in 0..(r+lineLength)] alu[i % r];
+
+  for i in 0..n by lineLength {
+    const j = i % r;
+    const len = min(lineLength, n-i);
+    // TODO: Can we avoid this slice?
+    stdout.write(s[j..#len], newLine);
+  }
+}
+
+// Output a random sequence of length 'len' using distribution a
+proc randomMake(desc, a, n) {
+  var lookup: [0..#lookupSize] Freq;
+  for (l,v) in zip(lookup, initLookup(a)) do
+    l = v;
+    
+  stdout.writef("%s", desc);
+  for i in 1..n by lineLength do
+    addLine(min(lineLength, n-i+1), lookup);
+}
+
+iter initLookup(a) {
+  var j = 0;
+  for i in 0..#lookupSize {
+    while (a[j].p < i) do
+      j += 1;
+
+    yield a[j];
+  }
+}
 
 // Add a line of random sequence
-var line_buff : [0..lineLength] int(8);
-proc addLine(bytes: int) {
+//
+// TODO: This wants to be static
+//
+var line_buff: [0..lineLength] int(8);
+proc addLine(bytes, lookup) {
   for (r, i) in zip(getRands(bytes), 0..) {
     var ai = r: int;
     while (lookup[ai].p < r) do
-      ai = ai + 1;
+      ai += 1;
 
     line_buff[i] = lookup[ai].c;
   }
   line_buff[bytes] = 10;
+  //
+  // TODO: Any way to avoid the slice here?  %s with a control character?
+  //
   stdout.write(line_buff[0..bytes]);
 }
 
-// Output a random sequence of length n using distribution a
-proc randomMake(desc: string, a: [], n: int) {
-  var len : int = n;
-  makeLookup(a);
-  stdout.writef("%s", desc);
-  while (len > 0) {
-    var bytes : int = min(lineLength, len);
-    addLine(bytes);
-    len -= bytes;
-  }
-}
-
-// Repeat sequence "alu" for n characters
-proc repeatMake(desc: string, alu: [], n: int) {
-  stdout.writef("%s", desc);
-  var r : int = alu.size;
-  var s : [0..(r+lineLength)] int(8);
-  for d in s.domain do 
-    s[d] = alu[d % r];
-  
-  var j : int;
-  for i in 0..#(n / lineLength) {
-    j = (i * lineLength) % r;
-    stdout.write(s[j..#lineLength], newLine);
-  }
-
-  const remain = n % lineLength;
-  if remain != 0 {
-    j = ((n / lineLength) * lineLength) % r;
-    stdout.write(s[j..#remain], newLine);
-  }
-}
-
-
 // Deterministic random number generator as specified
 
+//
+// TODO: This wants to be static
+//
 var lastRand = 42;
 
 iter getRands(n) {
