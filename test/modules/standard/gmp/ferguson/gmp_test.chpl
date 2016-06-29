@@ -8,7 +8,6 @@ writeln(a);
 
 var x = new BigInt("1838348473822929893829847293847289764918276498172649817264982619487612984761928476189274698126489127649");
 writeln(x);
-delete x;
 
 //a.debugprint();
 
@@ -24,12 +23,7 @@ on Locales[numLocales-1] {
   //d.debugprint();
   writeln(d);
   b.set(d);
-  delete c;
-  delete d;
 }
 
 //b.debugprint();
 writeln(b);
-
-delete b;
-delete a;

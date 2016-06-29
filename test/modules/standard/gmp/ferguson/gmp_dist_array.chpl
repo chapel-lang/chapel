@@ -11,15 +11,15 @@ var C: [D] BigInt;
 
 // Fill the arrays with something easy.
 forall (x,i) in zip(A,D) {
-  x = new BigInt(i);
+  x.set(i); //FIXME: should be able to do this with assignment
   //x = i;
 }
 forall (x,i) in zip(B,D) {
-  x = new BigInt(i);
+  x.set(i);
   //x = i;
 }
 forall (x,i) in zip(C,D) {
-  x = new BigInt(i);
+  x.set(i);
   x.fac_ui((10000*i):uint(32));
   //x = i;
 }
@@ -44,16 +44,3 @@ modulus.nextprime(modulus);
 writeln(modulus);
 sum.mod(sum, modulus);
 writeln(sum);
-delete modulus;
-delete sum;
-
-// Release the array elements.
-forall a in A {
-  delete a;
-}
-forall b in B {
-  delete b;
-}
-forall c in C {
-  delete c;
-}

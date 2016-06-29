@@ -14,9 +14,7 @@ for m in 1..10 {
   for c in 0..9 {
     var cb = new BigInt(c);
     write(TF(tensandthrees.congruent_p(cb, mb)));
-    delete cb;
   }
-  delete mb;
   writeln();
 }
 
@@ -33,9 +31,6 @@ for b in 1..10:uint {
   for c in 0..9 {
     var cb = new BigInt(c);
     write(TF(tensandthrees.congruent_2exp_p(cb, b)));
-    delete cb;
   }
   writeln();
 }
-
-delete tensandthrees;
