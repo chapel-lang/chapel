@@ -122,6 +122,7 @@ typedef struct {
   //chpl_bool is_executeOn;
   int lineno;
   int filename;
+  chpl_taskID_t id;
   //c_sublocid_t requestedSubloc;
   //chpl_fn_p requested_fn;
 } chpl_task_bundleData_t;

@@ -718,6 +718,20 @@ void chpl_task_exit(void)
     }
 }
 
+static inline void wrap_callbacks_bundle(chpl_task_cb_event_kind_t event_kind,
+                                         chpl_task_bundle_t* bundle) {
+    if (chpl_task_have_callbacks(event_kind)) {
+        if (bundle->task_prv.id == chpl_nullTaskID)
+            bundle->task_prv.id = qthread_incr(&next_task_id, 1);
+        chpl_task_do_callbacks(event_kind,
+                               bundle->task_prv.filename,
+                               bundle->task_prv.lineno,
+                               bundle->task_prv.id,
+                               bundle->is_executeOn);
+    }
+}
+
+
 static inline void wrap_callbacks(chpl_task_cb_event_kind_t event_kind,
                                   chpl_task_prvDataImpl_t *chpl_data) {
     if (chpl_task_have_callbacks(event_kind)) {
@@ -775,7 +789,7 @@ static aligned_t chapel_wrapper(void *arg)
     chpl_task_prvDataImpl_t pv =
              PRV_DATA_IMPL_VAL(bundle->task_prv.filename,
                                bundle->task_prv.lineno,
-                               chpl_nullTaskID,
+                               bundle->task_prv.id,
                                bundle->is_executeOn,
                                bundle->requestedSubloc,
                                bundle->serial_state);
@@ -827,11 +841,10 @@ void chpl_task_callMain(void (*chpl_main)(void))
     arg.arg.requested_fn      = NULL;
     arg.arg.task_prv.lineno   = 0;
     arg.arg.task_prv.filename = CHPL_FILE_IDX_MAIN_TASK;
-    arg.id                    = chpl_qthread_process_tls.chpl_data.id;
+    arg.arg.task_prv.id       = chpl_qthread_process_tls.chpl_data.id;
     arg.chpl_main             = chpl_main;
 
-    // TODO -- how to do event create?
-    // wrap_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);
+    wrap_callbacks_bundle(chpl_task_cb_event_kind_create, &arg.arg);
 
     qthread_fork_syncvar_copyargs(main_wrapper, &arg, sizeof(arg), &exit_ret);
     qthread_syncvar_readFF(NULL, &exit_ret);
@@ -893,13 +906,9 @@ void chpl_task_addToTaskList(chpl_fn_int_t       fid,
         arg->requested_fn      = requested_fn;
         arg->task_prv.lineno   = lineno;
         arg->task_prv.filename = filename;
+        arg->task_prv.id       = chpl_nullTaskID;
 
-        // wrap_callbacks assigns the task id on create?
-        // but that seems nasty. Also, we no longer need
-        // to form a chpl_task_prvDataImpl_t at this point.
-        // Can we call the event inside the task once it runs?
-        // wrap_callbacks(chpl_task_cb_event_kind_create,
-        //                &wrapper_args.chpl_data);
+        wrap_callbacks_bundle(chpl_task_cb_event_kind_create, arg);
 
         if (subloc == c_sublocid_any) {
             qthread_fork_copyargs(chapel_wrapper, arg, arg_size, NULL);
@@ -928,13 +937,9 @@ static inline void taskCallBody(chpl_fn_p fp, void *arg, size_t arg_size,
     bundle->requested_fn       = fp;
     bundle->task_prv.lineno    = lineno;
     bundle->task_prv.filename  = filename;
+    bundle->task_prv.id        = chpl_nullTaskID;
 
-    // wrap_callbacks assigns the task id on create?
-    // but that seems nasty. Also, we no longer need
-    // to form a chpl_task_prvDataImpl_t at this point.
-    // Can we call the event inside the task once it runs?
-    // wrap_callbacks(chpl_task_cb_event_kind_create,
-    //                &wrapper_args.chpl_data);
+    wrap_callbacks_bundle(chpl_task_cb_event_kind_create, bundle);
 
     if (subloc < 0) {
         qthread_fork_copyargs(chapel_wrapper, arg, arg_size, NULL);
