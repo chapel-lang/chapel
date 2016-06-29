@@ -32,7 +32,6 @@
 #include "chpl-tasks-callbacks-internal.h"
 #include "chplsys.h"
 #include "chpl-linefile-support.h"
-#include "chpl-align.h"
 #include "error.h"
 #include <stdio.h>
 #include <string.h>
@@ -1369,8 +1368,7 @@ task_pool_p add_to_task_pool(chpl_fn_p fp,
 
   payload_size = a_size - sizeof(chpl_task_bundle_t);
   ptask = (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t) + payload_size,
-                                       //CHPL_RT_MD_TASK_POOL_DESC,
-                                       CHPL_RT_MD_TASK_ARG,
+                                       CHPL_RT_MD_TASK_ARG_AND_POOL_DESC,
                                        lineno, filename);
 
   ptask->id           = get_next_task_id();
