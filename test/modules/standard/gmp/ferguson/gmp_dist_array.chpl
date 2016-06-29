@@ -11,17 +11,14 @@ var C: [D] BigInt;
 
 // Fill the arrays with something easy.
 forall (x,i) in zip(A,D) {
-  x.set(i); //FIXME: should be able to do this with assignment
-  //x = i;
+  x = i;
 }
 forall (x,i) in zip(B,D) {
-  x.set(i);
-  //x = i;
+  x = i;
 }
 forall (x,i) in zip(C,D) {
-  x.set(i);
+  x = i;
   x.fac_ui((10000*i):uint(32));
-  //x = i;
 }
 
 forall (a,b,c) in zip(A,B,C) {

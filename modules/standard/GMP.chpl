@@ -540,32 +540,26 @@ module GMP {
     // current implementation is free and remake
     // Note: by the time reinit is called, locality has been taken care of
     proc ref reinitBigInt(ref num : mpz, needToCopy : bool = true) {
-      /*if this.mpz == nil {
-        if num == nil then return; //both nums are uninitialized -- nothing to do
-      }*/ // with BigInt, we could check for initialization, with 
-      // records nothing can compare with nil. At this point, all 
-      // variables of the type BigInt are constructed such that 
-      // their mpz is at least initialized as an object upon 
-      // construction. 
       
-      // if the record exists, a constructor of some sort was 
-      // called, and mpz is initialized
+      // if the record exists, and is owned, a constructor of some 
+      // sort was called, and mpz is initialized
       
-      // if we own our old num, free it TODO: try to reuse BigInts?
-      if this.owned {
-        on this do mpz_clear(this.mpz); 
-        this.owned = false;
+      // if we own our old num re-use it
+      // if we don't, init a new one
+      if !(this.owned) {
+        on this do mpz_init(this.mpz); 
+        this.owned = true;
       }
-      // if we don't need to deep copy, make a shallow copy and get out
+
+      // if we don't need to deep copy, free ours, make a shallow copy and get out
       if !needToCopy {
+        on this do mpz_clear(this.mpz);
         this.owned = false;
-        this.mpz = num; // TODO: check for a <op>= overload for mpz
+        this.mpz = num; //shallow copy
         return;
       }
       else {
-        //TODO: make sure this is a deep copy
-        // writeln("  making a deep copy in reinitBigInt");
-        mpz_init_set(this.mpz, num);
+        mpz_set(this.mpz, num);
         this.owned = true;
       }
     }
@@ -1606,7 +1600,8 @@ module GMP {
         lhs.reinitBigInt(rhs.mpz, needToCopy=true);
       } else {
         // TODO: handle remote assignment
-        writeln("Watch out! Remote assignment of BigInt not currently supported");
+        writeln("Watch out! Remote assignment of BigInt not currently supported/tested");
+        lhs.set(rhs);
       }
     }
     if _local || lhs.localed_id == chpl_nodeID then { //why use 'then' here?
@@ -1618,6 +1613,12 @@ module GMP {
       }
     }
   }
+
+  // assignment operator overload for signed int assignment
+  proc =(ref lhs: BigInt, rhs: int) {
+    lhs.set(rhs); //should just change the value?
+  }
+
 
   // These are the autoCopy functions the compiler calls behind my back?
   // I don't expect this to work right now -- I've never seen it called
@@ -1631,9 +1632,9 @@ module GMP {
     //writeln("In the autocopy function for BigInt");
     //TODO: need some sort of check to ensure bir can be queried?
     if _local || bir.locale_id == chpl_nodeID {
-      ret.owned = bir.owned;
+      
       if bir.owned {
-      // TODO: Do we need to check/free first?
+        if ret.owned then on ret.locale do mpz_clear(ret.mpz);
         mpz_init_set(ret.mpz, bir.mpz); 
         ret.owned = true;
       } else {
@@ -1657,10 +1658,11 @@ module GMP {
     //pragma "no auto destroy"
     var ret : BigInt;
     //writeln("In the init copy fn for BigInt");
-    //TODO: need some sort of check to ensure bir can be queried?
     if _local || bir.locale_id == chpl_nodeID {
       if bir.owned {
-        mpz_init_set(ret.mpz, bir.mpz); // TODO: confirm deep copy
+        if ret.owned then on ret.locale do mpz_clear(ret.mpz); 
+          // TODO: confirm ret.locale is the correct locale for 'on'
+        mpz_init_set(ret.mpz, bir.mpz); 
         ret.owned = true;
       } else {
         ret.mpz = bir.mpz; // make a shalow copy
@@ -1669,6 +1671,7 @@ module GMP {
     } else {
       //FIXME: implement copyRemoteBigInt
       writeln("WATCH OUT! remote copying for initCopy on BigInts has not been implemented yet.");
+      ret.set(bir);
     }
     return ret;
   }
