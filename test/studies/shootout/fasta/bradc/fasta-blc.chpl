@@ -14,14 +14,14 @@ config const lineLength = 60,
 //
 // TODO: Could we eliminate these ascii initializers somehow?
 //
-enum Ntide {
+enum nucleotide {
   A = ascii("A"), C = ascii("C"), G = ascii("G"), T = ascii("T"),
   a = ascii("a"), c = ascii("c"), g = ascii("g"), t = ascii("t"),
   B = ascii("B"), D = ascii("D"), H = ascii("H"), K = ascii("K"),
   M = ascii("M"), N = ascii("N"), R = ascii("R"), S = ascii("S"),
   V = ascii("V"), W = ascii("W"), Y = ascii("Y")
 }
-use Ntide;
+use nucleotide;
 
 // Sequence to be repeated
 const ALU: [0..286] int(8) = [

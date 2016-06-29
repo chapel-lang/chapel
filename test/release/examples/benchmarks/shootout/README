@@ -110,6 +110,13 @@ fasta.chpl
 ----------
 o Shouldn't ascii() return an int(8)/uint(8) by default?
 
+o We should introduce local "static" variables (using some other
+  keyword) and use it to define some of the variables that are
+  currently at global or outer scopes unnecessarily
+
+o Should writef("%s", str) and write(str) be equivalent?  If so,
+  it looks like we have a bug.
+
 
 mandelbrot.chpl
 ---------------
