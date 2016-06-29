@@ -65,22 +65,22 @@ Step 2:
 
 Step 3:
   Start using the supported subset of GMP types and routines
-  or the BigInt record (see below for a complete listing).
+  or the BigInt class (see below for a complete listing).
 
 
-Using the BigInt record
+Using the BigInt class
 ----------------------
 
-The GMP Chapel module provides a :record:`BigInt` record wrapping GMP 
-integers. At the present time, only the functions for ``mpz`` (ie signed 
-integer) GMP types are supported with :record:`BigInt`; future work will be to
+The GMP Chapel module provides a :class:`BigInt` class wrapping GMP integers.
+At the present time, only the functions for ``mpz`` (ie signed integer)
+GMP types are supported with :class:`BigInt`; future work will be to
 extend this support to floating-point types. Also, in the future,
 we hope to provide these GMP functions as records that support
 operators like ``+``, ``*``, ``-``, etc.
 
-:record:`BigInt` methods all wrap GMP functions with obviously similar names.
-The :record:`BigInt` methods are locale aware - so Chapel programs can create
-a distributed array of GMP numbers. The method of :record:`BigInt` objects are
+:class:`BigInt` methods all wrap GMP functions with obviously similar names.
+The :class:`BigInt` methods are locale aware - so Chapel programs can create a
+distributed array of GMP numbers. The method of :class:`BigInt` objects are
 setting the receiver, so e.g. myBigInt.add(x,y) sets myBigInt to ``x + y``.
 
 A code example::
@@ -93,12 +93,12 @@ A code example::
 
  writeln(a); // output 100!
 
- // memory used by the GMP value is freed automatically by record destruction
+ delete a; // free memory used by the GMP value
 
- var b = new BigInt("48473822929893829847"); // initialize from a decimal 
- string
+ var b = new BigInt("48473822929893829847"); // initialize from a decimal string
  b.add_ui(b, 1); // add one to b
 
+ delete b; // free memory used by b
 
 Calling GMP functions directly
 ------------------------------
@@ -422,13 +422,17 @@ module GMP {
 
 
   // Initialize GMP to use Chapel's allocator
-  private extern proc chpl_gmp_init();
+  //private 
+  extern proc chpl_gmp_init();
   /* Get an MPZ value stored on another locale */
-  private extern proc chpl_gmp_get_mpz(ref ret:mpz_t,src_local:int,from:__mpz_struct);
+  //private 
+  extern proc chpl_gmp_get_mpz(ref ret:mpz_t,src_local:int,from:__mpz_struct);
   /* Get a randstate value stored on another locale */
-  private extern proc chpl_gmp_get_randstate(not_inited_state:gmp_randstate_t, src_locale:int, from:__gmp_randstate_struct);
+  //private 
+  extern proc chpl_gmp_get_randstate(not_inited_state:gmp_randstate_t, src_locale:int, from:__gmp_randstate_struct);
   /* Return the number of limbs in an __mpz_struct */
-  private extern proc chpl_gmp_mpz_nlimbs(from:__mpz_struct):uint(64);
+  //private 
+  extern proc chpl_gmp_mpz_nlimbs(from:__mpz_struct):uint(64);
   /* Print out an mpz_t (for debugging) */
   extern proc chpl_gmp_mpz_print(x:mpz_t);
   /* Get an mpz_t as a string */
@@ -449,9 +453,9 @@ module GMP {
 
 
 
-    /*
-    The BigInt record provides a more Chapel-friendly interface to the
-    GMP integer functions. In particular, this record supports GMP
+  /*
+    The BigInt class provides a more Chapel-friendly interface to the
+    GMP integer functions. In particular, this class supports GMP
     numbers that are stored in distributed arrays.
     
     All methods on BigInt work with Chapel types. Many of them use the gmp
@@ -469,38 +473,25 @@ module GMP {
     platforms (already true today) _and_ always work regardless of platform
     (not true today).
    */
-  pragma "ignore noinit" // TODO: Is this still needed?
-  record BigInt {
-    var mpz : mpz_t;
-    var owned : bool = false; //all user-defined constructors set true
+  class BigInt {
+    var mpz:mpz_t;
 
-    proc BigInt(){
-      // writeln("BigInt no-arg constructor called");
-      mpz_init(this.mpz); 
-      owned = true;
-    }
-    proc BigInt(init2:bool, nbits:uint){
-      // writeln("BigInt init2/nbits constructor called");
+    // initializing integers (constructors)
+    proc BigInt(init2:bool, nbits:uint) {
       mpz_init2(this.mpz, nbits.safeCast(c_ulong));
-      owned = true;
     }
     proc BigInt(num:int) {
-      // writeln("BigInt num:int constructor called");
       mpz_init_set_si(this.mpz, num.safeCast(c_long));
-      owned = true;
     }
     proc BigInt(str:string, base:int=0) {
-      // writeln("BigInt string constructor called");
       var e:c_int;
       e = mpz_init_set_str(this.mpz, str.localize().c_str(), base.safeCast(c_int));
       if e {
         mpz_clear(this.mpz);
         halt("Error initializing big integer: bad format");
       }
-      owned = true;
     }
     proc BigInt(str:string, base:int=0, out error:syserr) {
-      // writeln("BigInt string/base/error constructor called");
       var e:c_int;
       error = ENOERR;
       e = mpz_init_set_str(this.mpz, str.localize().c_str(), base.safeCast(c_int));
@@ -508,66 +499,21 @@ module GMP {
         mpz_clear(this.mpz);
         error = EFORMAT;
       }
-      owned = true;
     }
-    proc BigInt(ref num:BigInt) { //needs to be passed by ref
-      // writeln("BigInt num:BigInt constructor called");
+    proc BigInt(num:BigInt) {
       if num.locale == here {
-        mpz_init_set(this.mpz, num.mpz); 
+        mpz_init_set(this.mpz, num.mpz);
       } else {
         mpz_init(this.mpz);
         var mpz_struct = num.mpzStruct(); 
         chpl_gmp_get_mpz(this.mpz, num.locale.id, mpz_struct);
       }
-      owned = true;
     }
+    proc BigInt() { mpz_init(this.mpz); }
 
     // destructor
-    proc ~BigInt(){
-      if true {
-        if this.owned then {
-          // writeln("In BigInt destructor and owned");
-          on this do mpz_clear(this.mpz); 
-          this.owned = false;
-        }
-        else {
-          writeln("In BigInt destructor and not owned");
-        }
-      }
-    }
-
-    // TODO: should we reset the value or free and remake the BigInts?
-    // current implementation is free and remake
-    // Note: by the time reinit is called, locality has been taken care of
-    proc ref reinitBigInt(ref num : mpz, needToCopy : bool = true) {
-      /*if this.mpz == nil {
-        if num == nil then return; //both nums are uninitialized -- nothing to do
-      }*/ // with BigInt, we could check for initialization, with 
-      // records nothing can compare with nil. At this point, all 
-      // variables of the type BigInt are constructed such that 
-      // their mpz is at least initialized as an object upon 
-      // construction. 
-      
-      // if the record exists, a constructor of some sort was 
-      // called, and mpz is initialized
-      
-      // if we own our old num, free it TODO: try to reuse BigInts?
-      if this.owned {
-        on this do mpz_clear(this.mpz); 
-        this.owned = false;
-      }
-      // if we don't need to deep copy, make a shallow copy and get out
-      if !needToCopy {
-        this.owned = false;
-        this.mpz = num; // TODO: check for a <op>= overload for mpz
-        return;
-      }
-      else {
-        //TODO: make sure this is a deep copy
-        // writeln("  making a deep copy in reinitBigInt");
-        mpz_init_set(this.mpz, num);
-        this.owned = true;
-      }
+    proc ~BigInt() { 
+      on this do mpz_clear(this.mpz); 
     }
 
     // utility functions used below.
@@ -584,22 +530,20 @@ module GMP {
       return ret;
     }
 
-    // returns true if we made a temp copy // TODO: Do records need this?
-    proc maybeCopy():(bool, BigInt) {
+
+    // returns true if we made a temp copy.
+    proc maybeCopy():(bool,BigInt) {
       if this.locale == here {
-        return (false, this);
+        return (false,this);
       } else {
         var mpz_struct = this.mpz[1];
         var tmp = new BigInt(true, (mp_bits_per_limb:uint(64))*chpl_gmp_mpz_nlimbs(mpz_struct));
         chpl_gmp_get_mpz(tmp.mpz, this.locale.id, mpz_struct); 
-        
-        //var tmp = this; //assignment should localize and deep copy
         return (true, tmp);
       }
     }
 
-
-   // Assignment functions
+    // Assignment functions
     proc set(a:BigInt)
     {
       on this {
@@ -677,7 +621,6 @@ module GMP {
       }
       return (exp.safeCast(int), dbl: real);
     }
-
     proc get_str(base:int=10):string
     {
       var ret:string;
@@ -695,8 +638,8 @@ module GMP {
         var (acopy,a_) = a.maybeCopy();
         var (bcopy,b_) = b.maybeCopy();
         mpz_add(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if acopy then delete a_;
+        if bcopy then delete b_;
       }
     }
     proc add_ui(a:BigInt, b:uint)
@@ -704,7 +647,7 @@ module GMP {
       on this {
         var (acopy,a_) = a.maybeCopy();
         mpz_add_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
     }
     proc sub(a:BigInt, b:BigInt)
@@ -713,8 +656,8 @@ module GMP {
         var (acopy,a_) = a.maybeCopy();
         var (bcopy,b_) = b.maybeCopy();
         mpz_sub(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if acopy then delete a_;
+        if bcopy then delete b_;
       }
     }
     proc sub_ui(a:BigInt, b:uint)
@@ -722,7 +665,7 @@ module GMP {
       on this {
         var (acopy,a_) = a.maybeCopy();
         mpz_sub_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
     }
     proc ui_sub(a:uint, b:BigInt)
@@ -730,7 +673,7 @@ module GMP {
       on this {
         var (bcopy,b_) = b.maybeCopy();
         mpz_ui_sub(this.mpz, a.safeCast(c_ulong), b_.mpz);
-        //if bcopy then delete b_;
+        if bcopy then delete b_;
       }
     }
     proc mul(a:BigInt, b:BigInt)
@@ -739,8 +682,8 @@ module GMP {
         var (acopy,a_) = a.maybeCopy();
         var (bcopy,b_) = b.maybeCopy();
         mpz_mul(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if acopy then delete a_;
+        if bcopy then delete b_;
       }
     }
     proc mul_si(a:BigInt, b:int)
@@ -748,7 +691,7 @@ module GMP {
       on this {
         var (acopy,a_) = a.maybeCopy();
         mpz_mul_si(this.mpz, a_.mpz, b.safeCast(c_long));
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
     }
     proc mul_ui(a:BigInt, b:uint)
@@ -756,7 +699,7 @@ module GMP {
       on this {
         var (acopy,a_) = a.maybeCopy();
         mpz_mul_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
     }
     proc addmul(a:BigInt, b:BigInt)
@@ -765,8 +708,8 @@ module GMP {
         var (acopy,a_) = a.maybeCopy();
         var (bcopy,b_) = b.maybeCopy();
         mpz_addmul(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if acopy then delete a_;
+        if bcopy then delete b_;
       }
     }
     proc addmul_ui(a:BigInt, b:uint)
@@ -774,7 +717,7 @@ module GMP {
       on this {
         var (acopy,a_) = a.maybeCopy();
         mpz_addmul_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
     }
     proc submul(a:BigInt, b:BigInt)
@@ -783,8 +726,8 @@ module GMP {
         var (acopy,a_) = a.maybeCopy();
         var (bcopy,b_) = b.maybeCopy();
         mpz_submul(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if acopy then delete a_;
+        if bcopy then delete b_;
       }
     }
     proc submul_ui(a:BigInt, b:uint)
@@ -792,7 +735,7 @@ module GMP {
       on this {
         var (acopy,a_) = a.maybeCopy();
         mpz_submul_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
     }
     proc mul_2exp(a:BigInt, b:uint)
@@ -800,7 +743,7 @@ module GMP {
       on this {
         var (acopy,a_) = a.maybeCopy();
         mpz_mul_2exp(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
     }
     proc neg(a:BigInt)
@@ -808,7 +751,7 @@ module GMP {
       on this {
         var (acopy,a_) = a.maybeCopy();
         mpz_neg(this.mpz, a_.mpz);
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
     }
     proc abs(a:BigInt)
@@ -816,7 +759,7 @@ module GMP {
       on this {
         var (acopy,a_) = a.maybeCopy();
         mpz_abs(this.mpz, a_.mpz);
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
     }
 
@@ -832,8 +775,8 @@ module GMP {
           when Round.DOWN do mpz_fdiv_q(this.mpz, n_.mpz, d_.mpz);
           when Round.ZERO do mpz_tdiv_q(this.mpz, n_.mpz, d_.mpz);
         }
-        //if ncopy then delete n_;
-        //if dcopy then delete d_;
+        if ncopy then delete n_;
+        if dcopy then delete d_;
       }
     }
     proc div_r(param rounding:Round, n:BigInt, d:BigInt)
@@ -846,8 +789,8 @@ module GMP {
           when Round.DOWN do mpz_fdiv_r(this.mpz, n_.mpz, d_.mpz);
           when Round.ZERO do mpz_tdiv_r(this.mpz, n_.mpz, d_.mpz);
         }
-        //if ncopy then delete n_;
-        //if dcopy then delete d_;
+        if ncopy then delete n_;
+        if dcopy then delete d_;
       }
     }
     // this gets quotient, r gets remainder
@@ -864,10 +807,10 @@ module GMP {
         }
         if rcopy {
           r.set(r_);
-          //delete r_;
+          delete r_;
         }
-        //if ncopy then delete n_;
-        //if dcopy then delete d_;
+        if ncopy then delete n_;
+        if dcopy then delete d_;
       }
     }
     proc div_q_ui(param rounding:Round, n:BigInt, d:uint):uint
@@ -881,7 +824,7 @@ module GMP {
           when Round.DOWN do ret=mpz_fdiv_q_ui(this.mpz, n_.mpz, cd);
           when Round.ZERO do ret=mpz_tdiv_q_ui(this.mpz, n_.mpz, cd);
         }
-        //if ncopy then delete n_;
+        if ncopy then delete n_;
       }
       return ret.safeCast(uint);
     }
@@ -896,7 +839,7 @@ module GMP {
           when Round.DOWN do ret=mpz_fdiv_r_ui(this.mpz, n_.mpz, cd);
           when Round.ZERO do ret=mpz_tdiv_r_ui(this.mpz, n_.mpz, cd);
         }
-        //if ncopy then delete n_;
+        if ncopy then delete n_;
       }
       return ret.safeCast(uint);
     }
@@ -915,9 +858,9 @@ module GMP {
         }
         if rcopy {
           r.set(r_);
-          //delete r_;
+          delete r_;
         }
-        //if ncopy then delete n_;
+        if ncopy then delete n_;
       }
       return ret.safeCast(uint);
     }
@@ -932,7 +875,7 @@ module GMP {
           when Round.DOWN do ret=mpz_fdiv_ui(this.mpz, n_.mpz, cd);
           when Round.ZERO do ret=mpz_tdiv_ui(this.mpz, n_.mpz, cd);
         }
-        //if ncopy then delete n_;
+        if ncopy then delete n_;
       }
       return ret.safeCast(uint);
     }
@@ -946,7 +889,7 @@ module GMP {
           when Round.DOWN do mpz_fdiv_q_2exp(this.mpz, n_.mpz, cb);
           when Round.ZERO do mpz_tdiv_q_2exp(this.mpz, n_.mpz, cb);
         }
-        //if ncopy then delete n_;
+        if ncopy then delete n_;
       }
     }
     proc div_r_2exp(param rounding:Round, n:BigInt, b:uint)
@@ -959,7 +902,7 @@ module GMP {
           when Round.DOWN do mpz_fdiv_r_2exp(this.mpz, n_.mpz, cb);
           when Round.ZERO do mpz_tdiv_r_2exp(this.mpz, n_.mpz, cb);
         }
-        //if ncopy then delete n_;
+        if ncopy then delete n_;
       }
     }
     proc mod(n:BigInt, d:BigInt)
@@ -968,8 +911,8 @@ module GMP {
         var (ncopy,n_) = n.maybeCopy();
         var (dcopy,d_) = d.maybeCopy();
         mpz_mod(this.mpz, n_.mpz, d_.mpz);
-        //if ncopy then delete n_;
-        //if dcopy then delete d_;
+        if ncopy then delete n_;
+        if dcopy then delete d_;
       }
     }
     proc mod_ui(n:BigInt, d:uint):uint
@@ -978,7 +921,7 @@ module GMP {
       on this {
         var (ncopy,n_) = n.maybeCopy();
         ret=mpz_mod_ui(this.mpz, n_.mpz, d.safeCast(c_ulong));
-        //if ncopy then delete n_;
+        if ncopy then delete n_;
       }
       return ret.safeCast(uint);
     }
@@ -988,8 +931,8 @@ module GMP {
         var (ncopy,n_) = n.maybeCopy();
         var (dcopy,d_) = d.maybeCopy();
         mpz_divexact(this.mpz, n_.mpz, d_.mpz);
-        //if ncopy then delete n_;
-        //if dcopy then delete d_;
+        if ncopy then delete n_;
+        if dcopy then delete d_;
       }
     }
     proc divexact_ui(n:BigInt, d:uint)
@@ -997,7 +940,7 @@ module GMP {
       on this {
         var (ncopy,n_) = n.maybeCopy();
         mpz_divexact(this.mpz, n_.mpz, d.safeCast(c_ulong));
-        //if ncopy then delete n_;
+        if ncopy then delete n_;
       }
     }
     proc divisible_p(d:BigInt):int
@@ -1006,7 +949,7 @@ module GMP {
       on this {
         var (dcopy,d_) = d.maybeCopy();
         ret=mpz_divisible_p(this.mpz, d_.mpz);
-        //if dcopy then delete d_;
+        if dcopy then delete d_;
       }
       return ret.safeCast(int);
     }
@@ -1033,8 +976,8 @@ module GMP {
         var (ccopy,c_) = c.maybeCopy();
         var (dcopy,d_) = d.maybeCopy();
         ret=mpz_congruent_p(this.mpz, c_.mpz, d_.mpz);
-        //if ccopy then delete c_;
-        //if dcopy then delete d_;
+        if ccopy then delete c_;
+        if dcopy then delete d_;
       }
       return ret.safeCast(int);
     }
@@ -1052,7 +995,7 @@ module GMP {
       on this {
         var (ccopy,c_) = c.maybeCopy();
         ret=mpz_congruent_2exp_p(this.mpz, c_.mpz, b.safeCast(c_ulong));
-        //if ccopy then delete c_;
+        if ccopy then delete c_;
       }
       return ret.safeCast(int);
     }
@@ -1066,9 +1009,9 @@ module GMP {
         var (ecopy,e_) = exp.maybeCopy();
         var (mcopy,m_) = mod.maybeCopy();
         mpz_powm(this.mpz, b_.mpz, e_.mpz, m_.mpz);
-        //if bcopy then delete b_;
-        //if ecopy then delete e_;
-        //if mcopy then delete m_;
+        if bcopy then delete b_;
+        if ecopy then delete e_;
+        if mcopy then delete m_;
       }
     }
     proc powm_ui(base:BigInt, exp:uint, mod:BigInt)
@@ -1077,8 +1020,8 @@ module GMP {
         var (bcopy,b_) = base.maybeCopy();
         var (mcopy,m_) = mod.maybeCopy();
         mpz_powm_ui(this.mpz, b_.mpz, exp.safeCast(c_ulong), m_.mpz);
-        //if bcopy then delete b_;
-        //if mcopy then delete m_;
+        if bcopy then delete b_;
+        if mcopy then delete m_;
       }
     }
     proc pow_ui(base:BigInt, exp:uint)
@@ -1086,7 +1029,7 @@ module GMP {
       on this {
         var (bcopy,b_) = base.maybeCopy();
         mpz_pow_ui(this.mpz, b_.mpz, exp.safeCast(c_ulong));
-        //if bcopy then delete b_;
+        if bcopy then delete b_;
       }
     }
     proc ui_pow_ui(base:uint, exp:uint)
@@ -1103,7 +1046,7 @@ module GMP {
       on this {
         var (acopy,a_) = a.maybeCopy();
         ret=mpz_root(this.mpz, a_.mpz, n.safeCast(c_ulong));
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
       return ret.safeCast(int);
     }
@@ -1116,9 +1059,9 @@ module GMP {
         mpz_rootrem(this.mpz, r_.mpz, u_.mpz, n.safeCast(c_ulong));
         if rcopy {
           rem.set(r_);
-          //delete r_;
+          delete r_;
         }
-        //if ucopy then delete u_;
+        if ucopy then delete u_;
       }
     }
     proc sqrt(a:BigInt)
@@ -1126,7 +1069,7 @@ module GMP {
       on this {
         var (acopy,a_) = a.maybeCopy();
         mpz_sqrt(this.mpz, a_.mpz);
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
     }
     // this gets root, rem gets remainder of a-root*root.
@@ -1138,9 +1081,9 @@ module GMP {
         mpz_sqrtrem(this.mpz, r_.mpz, a_.mpz);
         if rcopy {
           rem.set(r_);
-          //delete r_;
+          delete r_;
         }
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
     }
     proc perfect_power_p():int
@@ -1174,7 +1117,7 @@ module GMP {
       on this {
         var (acopy,a_) = a.maybeCopy();
         mpz_nextprime(this.mpz, a_.mpz);
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
     }
     proc gcd(a: BigInt, b: BigInt)
@@ -1183,8 +1126,8 @@ module GMP {
         var (acopy,a_) = a.maybeCopy();
         var (bcopy,b_) = b.maybeCopy();
         mpz_gcd(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if acopy then delete a_;
+        if bcopy then delete b_;
       }
     }
     proc gcd_ui(a: BigInt, b: uint)
@@ -1192,7 +1135,7 @@ module GMP {
       on this {
         var (acopy,a_) = a.maybeCopy();
         mpz_gcd_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
     }
     // sets this to gcd(a,b)
@@ -1205,15 +1148,15 @@ module GMP {
         var (scopy,s_) = s.maybeCopy();
         var (tcopy,t_) = t.maybeCopy();
         mpz_gcdext(this.mpz, s_.mpz, t_.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if acopy then delete a_;
+        if bcopy then delete b_;
         if scopy {
           s.set(s_);
-         // delete s_;
+          delete s_;
         }
         if tcopy {
           t.set(t_);
-         // delete t_;
+          delete t_;
         }
       }
     }
@@ -1223,8 +1166,8 @@ module GMP {
         var (acopy,a_) = a.maybeCopy();
         var (bcopy,b_) = b.maybeCopy();
         mpz_lcm(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if acopy then delete a_;
+        if bcopy then delete b_;
       }
     }
     proc lcm_ui(a: BigInt, b: uint)
@@ -1232,7 +1175,7 @@ module GMP {
       on this {
         var (acopy,a_) = a.maybeCopy();
         mpz_lcm_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
     }
     proc invert(a: BigInt, b: BigInt):int
@@ -1242,14 +1185,13 @@ module GMP {
         var (acopy,a_) = a.maybeCopy();
         var (bcopy,b_) = b.maybeCopy();
         ret=mpz_invert(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if acopy then delete a_;
+        if bcopy then delete b_;
       }
       return ret.safeCast(int);
     }
 
-    // jacobi, legendre, kronecker are procedures outside this 
-    // record.
+    // jacobi, legendre, kronecker are procedures outside this class.
 
     proc remove(a: BigInt, f: BigInt):uint
     {
@@ -1258,8 +1200,8 @@ module GMP {
         var (acopy,a_) = a.maybeCopy();
         var (fcopy,f_) = f.maybeCopy();
         ret=mpz_remove(this.mpz, a_.mpz, f_.mpz);
-        //if acopy then delete a_;
-        //if fcopy then delete f_;
+        if acopy then delete a_;
+        if fcopy then delete f_;
       }
       return ret.safeCast(uint);
     }
@@ -1274,7 +1216,7 @@ module GMP {
       on this {
         var (ncopy,n_) = n.maybeCopy();
         mpz_bin_ui(this.mpz, n_.mpz, k.safeCast(c_ulong));
-        //if ncopy then delete n_;
+        if ncopy then delete n_;
       }
     }
     proc bin_uiui(n: uint, k: uint)
@@ -1296,7 +1238,7 @@ module GMP {
         mpz_fib2_ui(this.mpz, f_.mpz, n.safeCast(c_ulong));
         if fcopy {
           fnsub1.set(f_);
-          //delete f_;
+          delete f_;
         }
       }
     }
@@ -1313,7 +1255,7 @@ module GMP {
         mpz_lucnum2_ui(this.mpz, f_.mpz, n.safeCast(c_ulong));
         if fcopy {
           lnsub1.set(f_);
-          //delete f_;
+          delete f_;
         }
       }
     }
@@ -1326,7 +1268,7 @@ module GMP {
       on this {
         var (bcopy,b_) = b.maybeCopy();
         ret=mpz_cmp(this.mpz,b_.mpz);
-        //if bcopy then delete b_;
+        if bcopy then delete b_;
       }
       return ret.safeCast(int);
     }
@@ -1360,7 +1302,7 @@ module GMP {
       on this {
         var (acopy,b_) = b.maybeCopy();
         ret=mpz_cmpabs(this.mpz,b_.mpz);
-        //if acopy then delete b_;
+        if acopy then delete b_;
       }
       return ret.safeCast(int);
     }
@@ -1396,8 +1338,8 @@ module GMP {
         var (acopy,a_) = a.maybeCopy();
         var (bcopy,b_) = b.maybeCopy();
         mpz_and(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if acopy then delete a_;
+        if bcopy then delete b_;
       }
     }
     proc ior(a:BigInt, b:BigInt)
@@ -1406,8 +1348,8 @@ module GMP {
         var (acopy,a_) = a.maybeCopy();
         var (bcopy,b_) = b.maybeCopy();
         mpz_ior(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if acopy then delete a_;
+        if bcopy then delete b_;
       }
     }
     proc xor(a:BigInt, b:BigInt)
@@ -1416,8 +1358,8 @@ module GMP {
         var (acopy,a_) = a.maybeCopy();
         var (bcopy,b_) = b.maybeCopy();
         mpz_xor(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if acopy then delete a_;
+        if bcopy then delete b_;
       }
     }
     proc com(a:BigInt)
@@ -1425,7 +1367,7 @@ module GMP {
       on this {
         var (acopy,a_) = a.maybeCopy();
         mpz_com(this.mpz, a_.mpz);
-        //if acopy then delete a_;
+        if acopy then delete a_;
       }
     }
     proc popcount():uint
@@ -1442,7 +1384,7 @@ module GMP {
       on this {
         var (bcopy,b_) = b.maybeCopy();
         ret=mpz_hamdist(this.mpz, b_.mpz);
-        //if bcopy then delete b_;
+        if bcopy then delete b_;
       }
       return ret.safeCast(uint);
     }
@@ -1594,93 +1536,17 @@ module GMP {
         chpl_gmp_mpz_print(this.mpz);
       }
     }
-
-  } // END OF BigInt record declaration
-
-  // Assignment function -- deep copies `rhs` into `lhs`
-  // needs to deep copy b'c of how we use it
-   proc =(ref lhs: BigInt, ref rhs: BigInt) {
-    // writeln("In overloaded assignment operator");
-    inline proc helpMe(ref lhs : BigInt, ref rhs : BigInt) {
-      if _local || rhs.locale_id == chpl_nodeID {
-        lhs.reinitBigInt(rhs.mpz, needToCopy=true);
-      } else {
-        // TODO: handle remote assignment
-        writeln("Watch out! Remote assignment of BigInt not currently supported");
-      }
-    }
-    if _local || lhs.localed_id == chpl_nodeID then { //why use 'then' here?
-      helpMe(lhs, rhs);
-    }
-    else {
-      on __primitive("chpl_on_locale_num", chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-        helpMe(lhs, rhs);
-      }
-    }
   }
 
-  // These are the autoCopy functions the compiler calls behind my back?
-  // I don't expect this to work right now -- I've never seen it called
-  pragma "donor fn"
-  pragma "auto copy fn"
-  pragma "no doc"
-  proc chpl__autoCopy(ref bir : BigInt) {
-    //this pragma may not be needed
-    pragma "no auto destroy"
-    var ret : BigInt;
-    //writeln("In the autocopy function for BigInt");
-    //TODO: need some sort of check to ensure bir can be queried?
-    if _local || bir.locale_id == chpl_nodeID {
-      ret.owned = bir.owned;
-      if bir.owned {
-      // TODO: Do we need to check/free first?
-        mpz_init_set(ret.mpz, bir.mpz); 
-        ret.owned = true;
-      } else {
-        ret.mpz = bir.mpz; //make a shallow copy
-        ret.owned = false;
-      }
-    } else {
-      // TODO: confirm that remote copying works
-      writeln("WATCH OUT! remote copying on BigInts for autoCopy has not been tested yet.");
-      var remoteMpz = bir.mpz;
-      ret.reinitBigInt(remoteMpz, needToCopy=false);
-    }
-    return ret;
-  } 
-
-  pragma "init copy fn"
-  pragma "no doc"
-  proc chpl__initCopy(ref bir : BigInt) {
-    // writeln("in the BigInt initCopy chpl__constructor");
-    // This pragma may be unnecessary.
-    //pragma "no auto destroy"
-    var ret : BigInt;
-    //writeln("In the init copy fn for BigInt");
-    //TODO: need some sort of check to ensure bir can be queried?
-    if _local || bir.locale_id == chpl_nodeID {
-      if bir.owned {
-        mpz_init_set(ret.mpz, bir.mpz); // TODO: confirm deep copy
-        ret.owned = true;
-      } else {
-        ret.mpz = bir.mpz; // make a shalow copy
-        ret.owned = false;
-      }
-    } else {
-      //FIXME: implement copyRemoteBigInt
-      writeln("WATCH OUT! remote copying for initCopy on BigInts has not been implemented yet.");
-    }
-    return ret;
-  }
 
   proc BigInt.writeThis(writer) {
-    var (acopy,a_) = this.maybeCopy(); //this works, but makes and 
-    //deletes 2 records each time it is called
-    //TODO: confirm support of remote records for writing
+    var (acopy,a_) = this.maybeCopy();
     var s:string = a_.get_str();
     //gmp_asprintf(s, "%Zd", a_.mpz);
     writer.write(s);
+    if acopy then delete a_;
   }
+
 
   proc jacobi(a: BigInt, b: BigInt):int
   {
@@ -1688,7 +1554,7 @@ module GMP {
     on a {
       var (bcopy,b_) = b.maybeCopy();
       ret=mpz_jacobi(a.mpz, b_.mpz);
-      //if bcopy then delete b_;
+      if bcopy then delete b_;
     }
     return ret.safeCast(int);
   }
@@ -1698,7 +1564,7 @@ module GMP {
     on a {
       var (pcopy,p_) = p.maybeCopy();
       ret=mpz_legendre(a.mpz, p_.mpz);
-      //if pcopy then delete p_;
+      if pcopy then delete p_;
     }
     return ret.safeCast(int);
   }
@@ -1708,7 +1574,7 @@ module GMP {
     on a {
       var (bcopy,b_) = b.maybeCopy();
       ret=mpz_kronecker(a.mpz, b_.mpz);
-      //if bcopy then delete b_;
+      if bcopy then delete b_;
     }
     return ret.safeCast(int);
   }
@@ -1760,7 +1626,7 @@ module GMP {
     {
       var (acopy,a_) = a.maybeCopy();
       gmp_randinit_lc_2exp(this.state, a_.mpz, c.safeCast(c_ulong), m2exp.safeCast(c_ulong));
-      //if acopy then delete a_;
+      if acopy then delete a_;
     }
     proc GMPRandom(size: uint)
     {
@@ -1783,7 +1649,7 @@ module GMP {
       on this {
         var (scopy,s_) = seed.maybeCopy();
         gmp_randseed(this.state, s_.mpz);
-        //if scopy then delete s_;
+        if scopy then delete s_;
       }
     }
     proc seed(seed: uint)
@@ -1815,7 +1681,7 @@ module GMP {
         mpz_urandomb(r_.mpz, this.state, nbits.safeCast(c_ulong));
         if rcopy {
           r.set(r_);
-          //delete r_;
+          delete r_;
         }
       }
     }
@@ -1827,9 +1693,9 @@ module GMP {
         mpz_urandomm(r_.mpz, this.state, n_.mpz);
         if rcopy {
           r.set(r_);
-          //delete r_;
+          delete r_;
         }
-        //if ncopy then delete n_;
+        if ncopy then delete n_;
       }
     }
     proc rrandomb(r: BigInt, nbits: uint)
@@ -1839,7 +1705,7 @@ module GMP {
         mpz_rrandomb(r_.mpz, this.state, nbits.safeCast(c_ulong));
         if rcopy {
           r.set(r_);
-          //delete r_;
+          delete r_;
         }
       }
     }
@@ -1854,5 +1720,4 @@ module GMP {
   // calls mp_set_memory_functions to use chpl_malloc, etc.
   chpl_gmp_init();
 
-  //end of module
-}
+} /* end of module */
