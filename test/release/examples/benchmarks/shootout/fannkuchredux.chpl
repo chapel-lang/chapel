@@ -1,71 +1,68 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/
-
-   contributed by Ben Harshbarger
-   derived from the Swift implementation by Ralph Ganszky
-*/
+ * http://benchmarksgame.alioth.debian.org/
+ *
+ * contributed by Ben Harshbarger
+ * based on Swift implementation by Ralph Ganszky
+ *
+ */
 
 use DynamicIters;
 
-config const n = 7,          // the array size over which to compute perms
-             nchunks = 720;  // the number of chunks of parallelism
+config const n = 7;
 
-//
-// memoize n! (n factorial)
-//
-var fact: [0..n] int;
-fact[0] = 1;
-for i in 1..n do
-  fact[i] = i*fact[i-1];
-
+config const nchunks = 720;
+var Fact : [0..n] int;
 
 proc main() {
-  var checkSum = 0,
-      maxFlips = 1;
+  Fact[0] = 1;
+  for i in 1..n do
+    Fact[i] = Fact[i-1] * i;
 
-  var chunksz = (fact(n) + nchunks - 1) / nchunks;
+  var chunksz = (Fact[n] + nchunks - 1) / nchunks;
   chunksz += chunksz%2;
-  const work = 0..(fact(n) - chunksz) by chunksz;
 
-  forall lo in dynamic(work, 1) with (+ reduce checkSum, 
-                                      max reduce maxFlips) {
-    for (i, flips) in fannkuch(lo..#chunksz) {
+  const work = 0 .. (Fact[n] - chunksz) by chunksz;
+
+  var checkSum: int;
+  var maxFlips = 1;
+
+  forall idx in dynamic(work, 1) with ( + reduce checkSum, max reduce maxFlips) {
+    for (i, flips) in fannkuch(idx, idx+chunksz) {
       maxFlips = max(maxFlips, flips);
       checkSum += if i % 2 == 0 then flips else -flips;
     }
   }
   
-  writeln(checkSum);
-  writeln("Pfannkuchen(", n, ") = ", maxFlips);
+  writeln(checkSum, "\nPfannkuchen(", n, ") = ", maxFlips);
 }
 
-
-iter fannkuch(inds) {
-  var p, pp, count: [0..#n] int;
+iter fannkuch(idxMin:int, idxMax:int) {
+  var p, pp, count : [0..#n] int;
   p = 0..#n;
 
   firstPerm();
 
-  for i in inds {
+  var idx = idxMin;
+
+  while true {
     if p[0] != 0 then
-      yield (i, countFlips());
-    
-    if i != inds.high then
-      nextPerm();
+      yield (idx, countFlips());
+
+    idx += 1;
+    if idx == idxMax then break;
+
+    nextPerm();
   }
 
-
   proc firstPerm() {
-    var idx = inds.low;
+    var idx = idxMin;
     for i in 1..n-1 by -1 {
-      const fact_i = fact(i),
-            d = idx / fact_i;
+      const d = idx / Fact[i];
       count[i] = d;
-      idx %= fact(i);
+      idx = idx % Fact[i];
 
-      for i in 0..i do
-        pp[i] = p[i];
-
+      const slice = 0..i;
+      pp[slice] = p[slice];
       for j in 0..i {
         if j + d <= i then
           p[j] = pp[j+d];
@@ -76,12 +73,11 @@ iter fannkuch(inds) {
   }
 
   proc countFlips() {
-    var locflips = 1,
-        first = p[0];
+    var locflips = 1;
+    var first = p[0];
 
     if p[first] != 0 {
-      for i in 0..#n do
-        pp[i] = p[i];
+      pp = p;
       do {
         locflips += 1;
         var lo = 1, hi = first - 1;
@@ -108,8 +104,7 @@ iter fannkuch(inds) {
       i += 1;
       const next = p[1];
       p[0] = p[1];
-      for j in 1..i-1 do 
-        p[j] = p[j+1];
+      for j in 1..i-1 do p[j] = p[j+1];
       p[i] = first;
       first = next;
       
