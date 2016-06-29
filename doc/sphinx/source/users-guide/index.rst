@@ -39,6 +39,9 @@ support of parallelism and locality are removed.
 
    base/simpleConsoleOutput
    base/variableDeclarations
+   base/basicTypes
+   base/basicValues
+   base/casts
 
 (more to come...)
 
@@ -56,6 +59,8 @@ explicitly and synchronizing between them.
 
    taskpar/taskParallelismOverview
    taskpar/theBeginStatement
+   taskpar/cobegin
+   taskpar/coforall
 
 (more to come...)
 

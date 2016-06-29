@@ -7,7 +7,13 @@ help: help-sphinx help-source
 
 help-source:
 	@echo "Source Help:"
-	@echo "  symlinks-docs to symlink doc/release contents to source"
+	@echo "  docs           to invoke 'make html' in the virtualenv"
+	@echo "  checkdocs      to invoke 'make check' in the virtualenv"
+	@echo "  symlinks-docs  to symlink doc/release contents to source"
+	@echo "  clean          to remove all generated files in source/"
+	@echo "  clean-build    to remove all generated files in build/"
+	@echo "  clobber        to remove all generated files in source/ and build/"
+	@echo ""
 
 docs: FORCE
 	./run-in-venv.bash $(MAKE) html

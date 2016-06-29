@@ -689,13 +689,22 @@ static bool recurseCausedByArgs(FnSymbol* fn,
     // Do not enter this branch if `sym` is a ref.
     //
     // TODO: handle recursive _retArg cases
+    //
     FnSymbol* otherFn = toFnSymbol(cause->defPoint->parentSymbol);
+
+    // Ensure that the cause is used in a PRIM_RETURN.
+    // Exposed by test/memory/sungeun/refCount/arrays.chpl: the cause was an
+    // actual and 'sym' was the corresponding formal, but the cause happened to
+    // also be used as the return symbol.
+    SymExpr* causeExpr = toSymExpr(base);
+    bool usedInReturn = causeExpr && toCallExpr(causeExpr->parentExpr)->isPrimitive(PRIM_RETURN);
     if (otherFn &&
         otherFn != sym->defPoint->parentSymbol && // exposed by SSCA2 perfcompopts
         !isRef(cause) &&
         cause == otherFn->getReturnSymbol() &&
         !otherFn->hasFlag(FLAG_VIRTUAL) &&
-        !isModuleSymbol(sym->defPoint->parentSymbol)) {
+        !isModuleSymbol(sym->defPoint->parentSymbol) &&
+        usedInReturn) {
 
       //
       // Is `cause` a wide pointer because of the args for `otherFn`?

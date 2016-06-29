@@ -198,9 +198,9 @@ CHPL_TARGET_ARCH
         none      No specialization will be performed (will not warn)
         ========  =============================================================
 
+        **Architecture-specific values**
+
         =========== ================
-        Architecture-specific values
-        ----------------------------
         intel       amd
         =========== ================
         core2           k8
