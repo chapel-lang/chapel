@@ -27,7 +27,7 @@ proc main() {
   var maxFlips = 1;
 
   forall idx in dynamic(work, 1) with ( + reduce checkSum, max reduce maxFlips) {
-    for (i, flips) in fannkuch(idx, idx+chunksz) {
+    for (i, flips) in fannkuch(idx..#chunksz) {
       maxFlips = max(maxFlips, flips);
       checkSum += if i % 2 == 0 then flips else -flips;
     }
@@ -36,26 +36,22 @@ proc main() {
   writeln(checkSum, "\nPfannkuchen(", n, ") = ", maxFlips);
 }
 
-iter fannkuch(idxMin:int, idxMax:int) {
+iter fannkuch(inds) {
   var p, pp, count : [0..#n] int;
   p = 0..#n;
 
   firstPerm();
 
-  var idx = idxMin;
-
-  while true {
+  for i in inds {
     if p[0] != 0 then
-      yield (idx, countFlips());
-
-    idx += 1;
-    if idx == idxMax then break;
-
-    nextPerm();
+      yield (i, countFlips());
+    
+    if i != inds.high then
+      nextPerm();
   }
 
   proc firstPerm() {
-    var idx = idxMin;
+    var idx = inds.low;
     for i in 1..n-1 by -1 {
       const d = idx / Fact[i];
       count[i] = d;
