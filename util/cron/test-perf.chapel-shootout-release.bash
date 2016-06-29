@@ -12,6 +12,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapel-shootout-release"
 currentSha=`git rev-parse HEAD`
 git checkout 1.13.0
 git checkout $currentSha -- $CHPL_HOME/test/
+git checkout $currentSha -- $CHPL_HOME/util/cron/
 
 export CHPL_NIGHTLY_TEST_DIRS="studies/shootout/submitted/"
 
