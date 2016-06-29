@@ -335,7 +335,8 @@ When invoked, ``mason build`` will do the following:
   - Binary dependencies are included by specifying their ``main.chpl`` from the
     dependency pool. 
 
-  - Library dependencies are included using the ``-M`` flag.
+  - Library dependencies are included by specifying their ``lib.chpl`` from the
+    dependency pool. 
 
   - Compiler options from the manifest will also be passed here.
 
@@ -367,7 +368,7 @@ Naming Conventions: main.chpl and packages
 
 If no module is declared in a file, then the entire file is in a module named after
 the file. If we force users to have ``main.chpl`` be their package file, then their
-modules will be called main by default, and ``use main;`` is not ergonomic.
+modules will be called ``main`` by default, and ``use main;`` is not ergonomic.
 
 There are a few options to resolve this:
 
