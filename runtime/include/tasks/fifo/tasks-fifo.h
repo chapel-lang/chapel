@@ -24,10 +24,6 @@
 
 #include "chpl-threads.h"
 
-typedef struct {
-  int64_t dummy;    // structs must be nonempty
-} chpl_task_bundleData_t;
-
 //
 // Because we use the task tracking table for fifo tasking, this gives
 // us the ability to register the main task in the task table and
@@ -49,6 +45,11 @@ void chpl_task_stdModulesInitialized(void);
 //
 typedef uint64_t chpl_taskID_t;
 #define chpl_nullTaskID 0
+
+typedef struct {
+  chpl_taskID_t id; // task identifier
+} chpl_task_bundleData_t;
+
 
 //
 // Condition variables

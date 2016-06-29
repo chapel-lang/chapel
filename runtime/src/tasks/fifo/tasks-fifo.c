@@ -55,18 +55,13 @@ typedef struct {
 } chpl_task_prvDataImpl_t;
 
 typedef struct task_pool_struct {
-  chpl_taskID_t    id;           // task identifier
-  chpl_fn_p        fun;          // function to call for task
-  chpl_bool        is_executeOn; // is this the body of an executeOn?
-  chpl_bool        countRunningTasks;
-  int32_t          filename;
-  int              lineno;
-  chpl_task_prvDataImpl_t chpl_data;
   task_pool_p*     p_list_head;  // task list we're on, if any
   task_pool_p      list_next;    // double-link pointers for list
   task_pool_p      list_prev;
   task_pool_p      next;         // double-link pointers for pool
   task_pool_p      prev;
+
+  chpl_task_prvDataImpl_t chpl_data;
 
   chpl_task_bundle_t bundle; // ends in a variable-length array
 } task_pool_t;
@@ -147,8 +142,7 @@ static void                    thread_end(void);
 static void                    maybe_add_thread(void);
 static task_pool_p             add_to_task_pool(chpl_fn_p,
                                                 chpl_task_bundle_t*, size_t,
-                                                chpl_bool, chpl_bool,
-                                                chpl_task_prvDataImpl_t,
+                                                chpl_bool, chpl_bool, chpl_bool,
                                                 task_pool_p*, chpl_bool,
                                                 int, int32_t);
 
@@ -323,18 +317,24 @@ static void setup_main_thread_private_data(void)
   tp->ptask = (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t),
                                            CHPL_RT_MD_TASK_POOL_DESC,
                                            0, 0);
-  tp->ptask->id           = get_next_task_id();
-  tp->ptask->fun          = NULL;
-  tp->ptask->is_executeOn = false;
-  tp->ptask->countRunningTasks = false;
-  tp->ptask->filename     = CHPL_FILE_IDX_MAIN_PROGRAM;
-  tp->ptask->lineno       = 0;
-  tp->ptask->p_list_head  = NULL;
-  tp->ptask->next         = NULL;
   tp->lockRprt            = NULL;
 
-  // Set up task-private data for locale (architectural) support.
-  tp->ptask->chpl_data.prvdata.serial_state = true;     // Set to false in chpl_task_callMain().
+  tp->ptask->p_list_head  = NULL;
+  tp->ptask->list_next    = NULL;
+  tp->ptask->list_prev    = NULL;
+  tp->ptask->next         = NULL;
+  tp->ptask->prev         = NULL;
+
+  // serial_state starts out true; it is set to false in chpl_std_module_init().
+  tp->ptask->bundle.serial_state    = true;
+  tp->ptask->bundle.countRunning    = false;
+  tp->ptask->bundle.is_executeOn    = false;
+  tp->ptask->bundle.lineno          = 0;
+  tp->ptask->bundle.filename        = CHPL_FILE_IDX_MAIN_PROGRAM;
+  tp->ptask->bundle.requestedSubloc = c_sublocid_any_val;
+  tp->ptask->bundle.requested_fn    = NULL;
+  tp->ptask->bundle.task_prv.id     = get_next_task_id();
+
 
   chpl_thread_setPrivateData(tp);
 }
@@ -491,10 +491,10 @@ void chpl_task_stdModulesInitialized(void) {
   if (taskreport) {
     thread_private_data_t* tp = chpl_thread_getPrivateData();
 
-    chpldev_taskTable_add(tp->ptask->id,
-                          tp->ptask->lineno, tp->ptask->filename,
+    chpldev_taskTable_add(tp->ptask->bundle.task_prv.id,
+                          tp->ptask->bundle.lineno, tp->ptask->bundle.filename,
                           (uint64_t) (intptr_t) tp->ptask);
-    chpldev_taskTable_set_active(tp->ptask->id);
+    chpldev_taskTable_set_active(tp->ptask->bundle.task_prv.id);
 
     chpl_thread_mutexInit(&taskTable_lock);
   }
@@ -522,21 +522,22 @@ static void comm_task_wrapper(void* arg) {
   tp->ptask = (task_pool_p) chpl_mem_alloc(sizeof(task_pool_t),
                                            CHPL_RT_MD_TASK_POOL_DESC,
                                            0, 0);
-  tp->ptask->id           = get_next_task_id();
-  tp->ptask->fun          = comm_task_fn;
-  tp->ptask->is_executeOn = false;
-  tp->ptask->countRunningTasks = false;
-  tp->ptask->filename     = CHPL_FILE_IDX_COMM_TASK;
-  tp->ptask->lineno       = 0;
+  tp->lockRprt            = NULL;
+
   tp->ptask->p_list_head  = NULL;
+  tp->ptask->list_next    = NULL;
+  tp->ptask->list_prev    = NULL;
   tp->ptask->next         = NULL;
+  tp->ptask->prev         = NULL;
 
-  //
-  // The comm (polling) task shouldn't really need this information.
-  //
-  tp->ptask->chpl_data.prvdata.serial_state = true;
-
-  tp->lockRprt = NULL;
+  tp->ptask->bundle.serial_state    = false;
+  tp->ptask->bundle.countRunning    = false;
+  tp->ptask->bundle.is_executeOn    = false;
+  tp->ptask->bundle.lineno          = 0;
+  tp->ptask->bundle.filename        = CHPL_FILE_IDX_COMM_TASK;
+  tp->ptask->bundle.requestedSubloc = c_sublocid_any_val;
+  tp->ptask->bundle.requested_fn    = comm_task_fn;
+  tp->ptask->bundle.task_prv.id     = get_next_task_id();
 
   chpl_thread_setPrivateData(tp);
 
@@ -622,13 +623,11 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
                              int lineno,
                              int32_t filename) {
   task_pool_p curr_ptask = get_current_ptask();
-  chpl_task_prvDataImpl_t chpl_data =
-    { .prvdata = { .serial_state = curr_ptask->chpl_data.prvdata.serial_state }
-    };
+  bool serial_state = curr_ptask->bundle.serial_state;
 
   assert(subloc == 0 || subloc == c_sublocid_any);
 
-  if (chpl_data.prvdata.serial_state) {
+  if (serial_state) {
     (*chpl_ftable[fid])(arg);
     return;
   }
@@ -638,7 +637,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
 
   if (task_list_locale == chpl_nodeID) {
     (void) add_to_task_pool(chpl_ftable[fid], arg, arg_size,
-                            false, false, chpl_data,
+                            false, false, false,
                             (task_pool_p*) p_task_list_void, is_begin_stmt,
                             lineno, filename);
 
@@ -651,7 +650,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
     //
     assert(is_begin_stmt);
     (void) add_to_task_pool(chpl_ftable[fid], arg, arg_size,
-                            false, false, chpl_data,
+                            false, false, false,
                             NULL, true, 0, CHPL_FILE_IDX_UNKNOWN);
   }
 
@@ -680,7 +679,7 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
     chpl_thread_mutexLock(&threading_lock);
 
     if ((child_ptask = *p_task_list_head) != NULL) {
-      task_to_run_fun = child_ptask->fun;
+      task_to_run_fun = child_ptask->bundle.requested_fn;
       dequeue_task(child_ptask);
     }
 
@@ -702,8 +701,8 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
-      chpldev_taskTable_set_suspended(curr_ptask->id);
-      chpldev_taskTable_set_active(child_ptask->id);
+      chpldev_taskTable_set_suspended(curr_ptask->bundle.task_prv.id);
+      chpldev_taskTable_set_active(child_ptask->bundle.task_prv.id);
       chpl_thread_mutexUnlock(&taskTable_lock);
     }
 
@@ -711,29 +710,29 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
       initializeLockReportForThread();
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
-                           child_ptask->filename,
-                           child_ptask->lineno,
-                           child_ptask->id,
-                           child_ptask->is_executeOn);
+                           child_ptask->bundle.filename,
+                           child_ptask->bundle.lineno,
+                           child_ptask->bundle.task_prv.id,
+                           child_ptask->bundle.is_executeOn);
 
-    if (child_ptask->countRunningTasks)
+    if (child_ptask->bundle.countRunning)
         chpl_taskRunningCntInc(0, 0);
 
     (*task_to_run_fun)(&child_ptask->bundle);
 
-    if (child_ptask->countRunningTasks)
+    if (child_ptask->bundle.countRunning)
         chpl_taskRunningCntDec(0, 0);
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
-                           child_ptask->filename,
-                           child_ptask->lineno,
-                           child_ptask->id,
-                           child_ptask->is_executeOn);
+                           child_ptask->bundle.filename,
+                           child_ptask->bundle.lineno,
+                           child_ptask->bundle.task_prv.id,
+                           child_ptask->bundle.is_executeOn);
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
-      chpldev_taskTable_set_active(curr_ptask->id);
-      chpldev_taskTable_remove(child_ptask->id);
+      chpldev_taskTable_set_active(curr_ptask->bundle.task_prv.id);
+      chpldev_taskTable_remove(child_ptask->bundle.task_prv.id);
       chpl_thread_mutexUnlock(&taskTable_lock);
     }
 
@@ -765,14 +764,11 @@ void taskCallBody(chpl_fn_p fp,
                   chpl_task_bundle_t* arg, size_t arg_size,
                   c_sublocid_t subloc, chpl_bool serial_state,
                   int lineno, int32_t filename) {
-  chpl_task_prvDataImpl_t private = {
-    .prvdata = { .serial_state = serial_state } };
-
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
 
   (void) add_to_task_pool(fp, arg, arg_size,
-                          true, canCountRunningTasks, private,
+                          serial_state, canCountRunningTasks, true,
                           NULL, false, lineno, filename);
 
   // end critical section
@@ -815,7 +811,7 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
 
 
 chpl_taskID_t chpl_task_getId(void) {
-  return get_current_ptask()->id;
+  return get_current_ptask()->bundle.task_prv.id;
 }
 
 
@@ -849,11 +845,11 @@ void chpl_task_sleep(double secs) {
 }
 
 chpl_bool chpl_task_getSerial(void) {
-  return get_current_ptask()->chpl_data.prvdata.serial_state;
+  return get_current_ptask()->bundle.serial_state;
 }
 
 void chpl_task_setSerial(chpl_bool state) {
-  get_current_ptask()->chpl_data.prvdata.serial_state = state;
+  get_current_ptask()->bundle.serial_state = state;
 }
 
 uint32_t chpl_task_getMaxPar(void) {
@@ -1003,8 +999,8 @@ static void report_all_tasks(void) {
   // print out pending tasks
   printf("Pending tasks:\n");
   while (pendingTask != NULL) {
-    printf("- %s:%d\n", chpl_lookupFilename(pendingTask->filename),
-           (int)pendingTask->lineno);
+    printf("- %s:%d\n", chpl_lookupFilename(pendingTask->bundle.filename),
+           pendingTask->bundle.lineno);
     pendingTask = pendingTask->next;
   }
   printf("\n");
@@ -1248,33 +1244,33 @@ thread_begin(void* ptask_void) {
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
-      chpldev_taskTable_set_active(ptask->id);
+      chpldev_taskTable_set_active(ptask->bundle.task_prv.id);
       chpl_thread_mutexUnlock(&taskTable_lock);
     }
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
-                           ptask->filename,
-                           ptask->lineno,
-                           ptask->id,
-                           ptask->is_executeOn);
+                           ptask->bundle.filename,
+                           ptask->bundle.lineno,
+                           ptask->bundle.task_prv.id,
+                           ptask->bundle.is_executeOn);
 
-    if (ptask->countRunningTasks)
+    if (ptask->bundle.countRunning)
         chpl_taskRunningCntInc(0, 0);
 
-    (*ptask->fun)(&ptask->bundle);
+    (ptask->bundle.requested_fn)(&ptask->bundle);
 
-    if (ptask->countRunningTasks)
+    if (ptask->bundle.countRunning)
         chpl_taskRunningCntDec(0, 0);
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
-                           ptask->filename,
-                           ptask->lineno,
-                           ptask->id,
-                           ptask->is_executeOn);
+                           ptask->bundle.filename,
+                           ptask->bundle.lineno,
+                           ptask->bundle.task_prv.id,
+                           ptask->bundle.is_executeOn);
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
-      chpldev_taskTable_remove(ptask->id);
+      chpldev_taskTable_remove(ptask->bundle.task_prv.id);
       chpl_thread_mutexUnlock(&taskTable_lock);
     }
 
@@ -1353,9 +1349,9 @@ static void maybe_add_thread(void) {
 static inline
 task_pool_p add_to_task_pool(chpl_fn_p fp,
                              chpl_task_bundle_t* a, size_t a_size,
-                             chpl_bool is_executeOn,
+                             chpl_bool serial_state,
                              chpl_bool countRunningTasks,
-                             chpl_task_prvDataImpl_t chpl_data,
+                             chpl_bool is_executeOn,
                              task_pool_p* p_task_list_head,
                              chpl_bool is_begin_stmt,
                              int lineno, int32_t filename) {
@@ -1363,6 +1359,9 @@ task_pool_p add_to_task_pool(chpl_fn_p fp,
 
   size_t payload_size;
   task_pool_p ptask;
+  chpl_task_prvDataImpl_t pv;
+
+  memset(&pv, 0, sizeof(pv));
 
   assert(a_size >= sizeof(chpl_task_bundle_t));
 
@@ -1371,30 +1370,35 @@ task_pool_p add_to_task_pool(chpl_fn_p fp,
                                        CHPL_RT_MD_TASK_ARG_AND_POOL_DESC,
                                        lineno, filename);
 
-  ptask->id           = get_next_task_id();
-  ptask->fun          = fp;
-  ptask->is_executeOn = is_executeOn;
-  ptask->countRunningTasks = countRunningTasks;
-  ptask->chpl_data    = chpl_data;
-  ptask->filename     = filename;
-  ptask->lineno       = lineno;
-  ptask->p_list_head  = NULL;
-  ptask->next         = NULL;
-
   memcpy(&ptask->bundle, a, a_size);
+
+  ptask->p_list_head            = NULL;
+  ptask->list_next              = NULL;
+  ptask->list_prev              = NULL;
+  ptask->next                   = NULL;
+  ptask->prev                   = NULL;
+  ptask->chpl_data              = pv;
+  ptask->bundle.serial_state    = serial_state;
+  ptask->bundle.countRunning    = countRunningTasks;
+  ptask->bundle.is_executeOn    = is_executeOn;
+  ptask->bundle.lineno          = lineno;
+  ptask->bundle.filename        = filename;
+  ptask->bundle.requestedSubloc = c_sublocid_any_val;
+  ptask->bundle.requested_fn    = fp;
+  ptask->bundle.task_prv.id     = get_next_task_id();
 
   enqueue_task(ptask, p_task_list_head);
 
   chpl_task_do_callbacks(chpl_task_cb_event_kind_create,
-                         ptask->filename,
-                         ptask->lineno,
-                         ptask->id,
-                         ptask->is_executeOn);
+                         ptask->bundle.filename,
+                         ptask->bundle.lineno,
+                         ptask->bundle.task_prv.id,
+                         ptask->bundle.is_executeOn);
 
   if (do_taskReport) {
     chpl_thread_mutexLock(&taskTable_lock);
-    chpldev_taskTable_add(ptask->id,
-                          ptask->lineno, ptask->filename,
+    chpldev_taskTable_add(ptask->bundle.task_prv.id,
+                          ptask->bundle.lineno, ptask->bundle.filename,
                           (uint64_t) (intptr_t) ptask);
     chpl_thread_mutexUnlock(&taskTable_lock);
   }
