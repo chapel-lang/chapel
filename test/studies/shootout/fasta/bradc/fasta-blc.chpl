@@ -1,8 +1,9 @@
 /* The Computer Language Benchmarks Game
- * http://benchmarksgame.alioth.debian.org/
- *
- * contributed by Casey, Battaglino, Kyle Brady, and Preston Sahabu
- */
+   http://benchmarksgame.alioth.debian.org/
+
+   contributed by Casey, Battaglino, Kyle Brady, Preston Sahabu, 
+               and Brad Chamberlain
+*/
 use IO;
 
 config const n = 1000;   // controls the length of the generated strings
