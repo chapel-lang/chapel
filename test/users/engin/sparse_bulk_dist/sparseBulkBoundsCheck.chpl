@@ -2,10 +2,10 @@ use BlockDist;
 use LayoutCSR;
 
 config const N=8;
-config type layoutType = DefaultDist;
-var layout = new layoutType;
+config type sparseLayoutType = DefaultDist;
 
-const ParentDom = {0..#N, 0..#N} dmapped Block({0..#N, 0..#N});
+const ParentDom = {0..#N, 0..#N} dmapped Block({0..#N, 0..#N},
+    sparseLayoutType=sparseLayoutType);
 var SparseDom: sparse subdomain(ParentDom);
 
 var SparseArr: [SparseDom] int;
