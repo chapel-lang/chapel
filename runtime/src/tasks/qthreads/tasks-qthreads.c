@@ -724,8 +724,8 @@ static inline void wrap_callbacks_bundle(chpl_task_cb_event_kind_t event_kind,
         if (bundle->task_prv.id == chpl_nullTaskID)
             bundle->task_prv.id = qthread_incr(&next_task_id, 1);
         chpl_task_do_callbacks(event_kind,
-                               bundle->task_prv.filename,
-                               bundle->task_prv.lineno,
+                               bundle->filename,
+                               bundle->lineno,
                                bundle->task_prv.id,
                                bundle->is_executeOn);
     }
@@ -759,8 +759,8 @@ static aligned_t main_wrapper(void *arg)
     chpl_qthread_tls_t      *data = chpl_qthread_get_tasklocal();
     main_wrapper_bundle_t *bundle = (main_wrapper_bundle_t*) arg;
     chpl_task_prvDataImpl_t    pv =
-             PRV_DATA_IMPL_VAL(bundle->arg.task_prv.filename,
-                               bundle->arg.task_prv.lineno,
+             PRV_DATA_IMPL_VAL(bundle->arg.filename,
+                               bundle->arg.lineno,
                                bundle->id,
                                bundle->arg.is_executeOn,
                                bundle->arg.requestedSubloc,
@@ -787,8 +787,8 @@ static aligned_t chapel_wrapper(void *arg)
     chpl_qthread_tls_t   *data = chpl_qthread_get_tasklocal();
     chpl_task_bundle_t *bundle = (chpl_task_bundle_t*) arg;
     chpl_task_prvDataImpl_t pv =
-             PRV_DATA_IMPL_VAL(bundle->task_prv.filename,
-                               bundle->task_prv.lineno,
+             PRV_DATA_IMPL_VAL(bundle->filename,
+                               bundle->lineno,
                                bundle->task_prv.id,
                                bundle->is_executeOn,
                                bundle->requestedSubloc,
@@ -839,8 +839,8 @@ void chpl_task_callMain(void (*chpl_main)(void))
     arg.arg.is_executeOn      = false;
     arg.arg.requestedSubloc   = c_sublocid_any_val;
     arg.arg.requested_fn      = NULL;
-    arg.arg.task_prv.lineno   = 0;
-    arg.arg.task_prv.filename = CHPL_FILE_IDX_MAIN_TASK;
+    arg.arg.lineno            = 0;
+    arg.arg.filename           = CHPL_FILE_IDX_MAIN_TASK;
     arg.arg.task_prv.id       = chpl_qthread_process_tls.chpl_data.id;
     arg.chpl_main             = chpl_main;
 
@@ -904,8 +904,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t       fid,
         arg->is_executeOn      = false;
         arg->requestedSubloc   = subloc;
         arg->requested_fn      = requested_fn;
-        arg->task_prv.lineno   = lineno;
-        arg->task_prv.filename = filename;
+        arg->lineno            = lineno;
+        arg->filename          = filename;
         arg->task_prv.id       = chpl_nullTaskID;
 
         wrap_callbacks_bundle(chpl_task_cb_event_kind_create, arg);
@@ -935,8 +935,8 @@ static inline void taskCallBody(chpl_fn_p fp, void *arg, size_t arg_size,
     bundle->is_executeOn       = true;
     bundle->requestedSubloc    = subloc;
     bundle->requested_fn       = fp;
-    bundle->task_prv.lineno    = lineno;
-    bundle->task_prv.filename  = filename;
+    bundle->lineno             = lineno;
+    bundle->filename           = filename;
     bundle->task_prv.id        = chpl_nullTaskID;
 
     wrap_callbacks_bundle(chpl_task_cb_event_kind_create, bundle);

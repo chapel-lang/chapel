@@ -48,12 +48,13 @@
 typedef struct {
 // don't think I need this  unsigned char header_length;
 // instead, wrapper just uses a type with chpl_task_bundle included.
-  chpl_bool serial_state;
-  chpl_bool countRunning;
-  chpl_bool is_executeOn;
+  chpl_bool    serial_state;
+  chpl_bool    countRunning;
+  chpl_bool    is_executeOn;
+  int          lineno;
+  int          filename;
   c_sublocid_t requestedSubloc;
-  chpl_fn_p requested_fn;
-
+  chpl_fn_p    requested_fn;
   chpl_task_bundleData_t task_prv;
 } chpl_task_bundle_t;
 

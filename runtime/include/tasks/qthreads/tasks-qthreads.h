@@ -117,14 +117,7 @@ extern
 volatile int chpl_qthread_done_initializing;
 
 typedef struct {
-  //chpl_bool serial_state;
-  //chpl_bool countRunning;
-  //chpl_bool is_executeOn;
-  int lineno;
-  int filename;
   chpl_taskID_t id;
-  //c_sublocid_t requestedSubloc;
-  //chpl_fn_p requested_fn;
 } chpl_task_bundleData_t;
 
 typedef struct {
