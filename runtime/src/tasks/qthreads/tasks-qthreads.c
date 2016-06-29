@@ -147,22 +147,34 @@ static aligned_t next_task_id = 1;
 pthread_t chpl_qthread_process_pthread;
 pthread_t chpl_qthread_comm_pthread;
 
+chpl_task_bundle_t chpl_qthread_process_bundle = {
+                                   .serial_state = false,
+                                   .countRunning = false,
+                                   .is_executeOn = false,
+                                   .lineno = 0,
+                                   .filename = CHPL_FILE_IDX_MAIN_TASK,
+                                   .requestedSubloc = c_sublocid_any_val,
+                                   .task_prv = { .id = chpl_nullTaskID } };
+
+chpl_task_bundle_t chpl_qthread_comm_task_bundle = {
+                                   .serial_state = false,
+                                   .countRunning = false,
+                                   .is_executeOn = false,
+                                   .lineno = 0,
+                                   .filename = CHPL_FILE_IDX_COMM_TASK,
+                                   .requestedSubloc = c_sublocid_any_val,
+                                   .task_prv = { .id = chpl_nullTaskID } };
+
 chpl_qthread_tls_t chpl_qthread_process_tls = {
-    PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_MAIN_TASK, 0, chpl_nullTaskID, false,
-                      c_sublocid_any_val, false),
-    0, 0};
+                               .bundle = &chpl_qthread_process_bundle,
+                               .lock_filename = 0,
+                               .lock_lineno = 0 };
 
 chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
-    PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_COMM_TASK, 0, chpl_nullTaskID, false,
-                      c_sublocid_any_val, false),
-    0, 0 };
+                               .bundle = &chpl_qthread_comm_task_bundle,
+                               .lock_filename = 0,
+                               .lock_lineno = 0 };
 
-typedef struct {
-    void                     *fn;
-    void                     *arg;
-    void                     *arg_copy;
-    chpl_task_prvDataImpl_t  chpl_data;
-} chpl_qthread_wrapper_args_t;
 
 //
 // chpl_qthread_get_tasklocal() is in tasks-qthreads.h
@@ -668,7 +680,7 @@ void chpl_task_init(void)
     pthread_t initer;
 
     chpl_qthread_process_pthread = pthread_self();
-    chpl_qthread_process_tls.chpl_data.id = qthread_incr(&next_task_id, 1);
+    chpl_qthread_process_bundle.task_prv.id = qthread_incr(&next_task_id, 1);
 
     commMaxThreads = chpl_comm_getMaxThreads();
 
@@ -718,8 +730,8 @@ void chpl_task_exit(void)
     }
 }
 
-static inline void wrap_callbacks_bundle(chpl_task_cb_event_kind_t event_kind,
-                                         chpl_task_bundle_t* bundle) {
+static inline void wrap_callbacks(chpl_task_cb_event_kind_t event_kind,
+                                  chpl_task_bundle_t* bundle) {
     if (chpl_task_have_callbacks(event_kind)) {
         if (bundle->task_prv.id == chpl_nullTaskID)
             bundle->task_prv.id = qthread_incr(&next_task_id, 1);
@@ -732,51 +744,30 @@ static inline void wrap_callbacks_bundle(chpl_task_cb_event_kind_t event_kind,
 }
 
 
-static inline void wrap_callbacks(chpl_task_cb_event_kind_t event_kind,
-                                  chpl_task_prvDataImpl_t *chpl_data) {
-    if (chpl_task_have_callbacks(event_kind)) {
-        if (chpl_data->id == chpl_nullTaskID)
-            chpl_data->id = qthread_incr(&next_task_id, 1);
-        chpl_task_do_callbacks(event_kind,
-                               chpl_data->task_filename,
-                               chpl_data->task_lineno,
-                               chpl_data->id,
-                               chpl_data->is_executeOn);
-    }
-}
-
 // If we stored chpl_taskID_t in chpl_task_bundleData_t,
 // this struct and the following function may not be necessary.
 typedef void (*main_ptr_t)(void);
 typedef struct {
   chpl_task_bundle_t arg;
-  chpl_taskID_t id;
   main_ptr_t chpl_main;
 } main_wrapper_bundle_t;
 
 static aligned_t main_wrapper(void *arg)
 {
-    chpl_qthread_tls_t      *data = chpl_qthread_get_tasklocal();
-    main_wrapper_bundle_t *bundle = (main_wrapper_bundle_t*) arg;
-    chpl_task_prvDataImpl_t    pv =
-             PRV_DATA_IMPL_VAL(bundle->arg.filename,
-                               bundle->arg.lineno,
-                               bundle->id,
-                               bundle->arg.is_executeOn,
-                               bundle->arg.requestedSubloc,
-                               bundle->arg.serial_state);
+    chpl_qthread_tls_t         *tls = chpl_qthread_get_tasklocal();
+    main_wrapper_bundle_t *m_bundle = (main_wrapper_bundle_t*) arg;
+    chpl_task_bundle_t      *bundle = &m_bundle->arg;
+    chpl_qthread_tls_t         pv = {.bundle = bundle};
 
-    data->chpl_data     = pv;
-    data->lock_filename = 0;
-    data->lock_lineno   = 0;
+    *tls = pv;
 
     // main call doesn't need countRunning / chpl_taskRunningCntInc
 
-    wrap_callbacks(chpl_task_cb_event_kind_begin, &data->chpl_data);
+    wrap_callbacks(chpl_task_cb_event_kind_begin, bundle);
 
-    (bundle->chpl_main)();
+    (m_bundle->chpl_main)();
 
-    wrap_callbacks(chpl_task_cb_event_kind_end, &data->chpl_data);
+    wrap_callbacks(chpl_task_cb_event_kind_end, bundle);
 
     return 0;
 }
@@ -784,28 +775,20 @@ static aligned_t main_wrapper(void *arg)
 
 static aligned_t chapel_wrapper(void *arg)
 {
-    chpl_qthread_tls_t   *data = chpl_qthread_get_tasklocal();
+    chpl_qthread_tls_t    *tls = chpl_qthread_get_tasklocal();
     chpl_task_bundle_t *bundle = (chpl_task_bundle_t*) arg;
-    chpl_task_prvDataImpl_t pv =
-             PRV_DATA_IMPL_VAL(bundle->filename,
-                               bundle->lineno,
-                               bundle->task_prv.id,
-                               bundle->is_executeOn,
-                               bundle->requestedSubloc,
-                               bundle->serial_state);
+    chpl_qthread_tls_t      pv = {.bundle = bundle};
 
-    data->chpl_data     = pv;
-    data->lock_filename = 0;
-    data->lock_lineno   = 0;
+    *tls = pv;
 
     if (bundle->countRunning)
       chpl_taskRunningCntInc(0, 0);
 
-    wrap_callbacks(chpl_task_cb_event_kind_begin, &data->chpl_data);
+    wrap_callbacks(chpl_task_cb_event_kind_begin, bundle);
 
     (bundle->requested_fn)(arg);
 
-    wrap_callbacks(chpl_task_cb_event_kind_end, &data->chpl_data);
+    wrap_callbacks(chpl_task_cb_event_kind_end, bundle);
 
     if (bundle->countRunning)
       chpl_taskRunningCntDec(0, 0);
@@ -841,10 +824,10 @@ void chpl_task_callMain(void (*chpl_main)(void))
     arg.arg.requested_fn      = NULL;
     arg.arg.lineno            = 0;
     arg.arg.filename           = CHPL_FILE_IDX_MAIN_TASK;
-    arg.arg.task_prv.id       = chpl_qthread_process_tls.chpl_data.id;
+    arg.arg.task_prv.id       = chpl_qthread_process_bundle.task_prv.id;
     arg.chpl_main             = chpl_main;
 
-    wrap_callbacks_bundle(chpl_task_cb_event_kind_create, &arg.arg);
+    wrap_callbacks(chpl_task_cb_event_kind_create, &arg.arg);
 
     qthread_fork_syncvar_copyargs(main_wrapper, &arg, sizeof(arg), &exit_ret);
     qthread_syncvar_readFF(NULL, &exit_ret);
@@ -908,7 +891,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t       fid,
         arg->filename          = filename;
         arg->task_prv.id       = chpl_nullTaskID;
 
-        wrap_callbacks_bundle(chpl_task_cb_event_kind_create, arg);
+        wrap_callbacks(chpl_task_cb_event_kind_create, arg);
 
         if (subloc == c_sublocid_any) {
             qthread_fork_copyargs(chapel_wrapper, arg, arg_size, NULL);
@@ -939,7 +922,7 @@ static inline void taskCallBody(chpl_fn_p fp, void *arg, size_t arg_size,
     bundle->filename           = filename;
     bundle->task_prv.id        = chpl_nullTaskID;
 
-    wrap_callbacks_bundle(chpl_task_cb_event_kind_create, bundle);
+    wrap_callbacks(chpl_task_cb_event_kind_create, bundle);
 
     if (subloc < 0) {
         qthread_fork_copyargs(chapel_wrapper, arg, arg_size, NULL);
@@ -994,17 +977,18 @@ void chpl_task_startMovedTask(chpl_fn_p           fp,
 // Returns '(unsigned int)-1' if called outside of the tasking layer.
 chpl_taskID_t chpl_task_getId(void)
 {
-    chpl_qthread_tls_t * tls = chpl_qthread_get_tasklocal();
+    chpl_qthread_tls_t *tls = chpl_qthread_get_tasklocal();
+    chpl_task_bundleData_t *task_prv = &tls->bundle->task_prv;
 
     PROFILE_INCR(profile_task_getId,1);
 
     if (tls == NULL)
         return (chpl_taskID_t) -1;
 
-    if (tls->chpl_data.id == chpl_nullTaskID)
-        tls->chpl_data.id = qthread_incr(&next_task_id, 1);
+    if (task_prv->id == chpl_nullTaskID)
+        task_prv->id = qthread_incr(&next_task_id, 1);
 
-    return tls->chpl_data.id;
+    return task_prv->id;
 }
 
 void chpl_task_sleep(double secs)
@@ -1049,13 +1033,13 @@ chpl_bool chpl_task_getSerial(void)
 
     PROFILE_INCR(profile_task_getSerial,1);
 
-    return data->chpl_data.prvdata.serial_state;
+    return data->bundle->serial_state;
 }
 
 void chpl_task_setSerial(chpl_bool state)
 {
     chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
-    data->chpl_data.prvdata.serial_state = state;
+    data->bundle->serial_state = state;
 
     PROFILE_INCR(profile_task_setSerial,1);
 }

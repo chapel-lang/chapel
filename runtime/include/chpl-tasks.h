@@ -31,6 +31,11 @@
 #include CHPL_TASKS_MODEL_H
 #endif
 
+// CHPL_TASKS_MODEL_H defines a component of the task bundle,
+// chpl_task_bundleData_t, so the task bundle is declared here
+// after CHPL_TASKS_MODEL_H is included.
+#include "chpl-tasks-bundle.h"
+
 //
 // Some function declarations here may be protected like this:
 //   #ifdef CHPL_TASK_func_IMPL_DECL
@@ -43,22 +48,6 @@
 // present we only support this for a few functions.  We can add more
 // as needed.
 //
-
-// uses task-layer specific chpl_task_bundleData_t
-typedef struct {
-// don't think I need this  unsigned char header_length;
-// instead, wrapper just uses a type with chpl_task_bundle included.
-  chpl_bool    serial_state;
-  chpl_bool    countRunning;
-  chpl_bool    is_executeOn;
-  int          lineno;
-  int          filename;
-  c_sublocid_t requestedSubloc;
-  chpl_fn_p    requested_fn;
-  chpl_task_bundleData_t task_prv;
-} chpl_task_bundle_t;
-
-typedef chpl_task_bundle_t *chpl_task_bundle_p;
 
 // Sync variables
 
