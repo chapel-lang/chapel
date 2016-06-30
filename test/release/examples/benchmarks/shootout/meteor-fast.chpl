@@ -22,7 +22,7 @@ var evenRowsLookup: [0..49] uint(32),
     leftBorderLookup: [0..49] uint(32);
 
 // Predefined masks commonly used throughout program
-param maskEven = 0xf07c1f07c1f07c1f,    // Even rows of board (starts at row 0)
+param maskEven = 0xf07c1f07c1f07c1f,    // Even rows of board (rows 0, 2, 4,..)
       maskBorder = 0x1084210842108421,  // Right border of board
       maskBoard = 0xFFFC000000000000,   // bits of board within 64-bit int
       maskBottom = 0x003FFFFF,          // Bottom 22 elements of boards
@@ -69,7 +69,7 @@ proc goodPiece(mask: uint(32), pos: uint(32)): bool {
 }
 
 //
-//
+// Setup allMasks with pre-filtered piece permutations to search
 //
 proc initialize() {
 
