@@ -182,6 +182,8 @@ parallel/taskCompare/lydia/loopCompare.graph
 statements/lydia/moduleVersusFunctionBaseline.graph
 statements/lydia/moduleVersusFunctionDifAccess.graph
 statements/lydia/moduleVersusFunction.graph
+# suite: Task Spawning
+parallel/taskCompare/elliot/taskSpawn.graph
 # suite: Compiler performance
 performance/compiler/bradc/fft-timecomp.graph
 performance/compiler/bradc/compSampler-timecomp.graph
