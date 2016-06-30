@@ -220,10 +220,6 @@ module ChapelDistribution {
       halt("clear not implemented for this distribution");
     }
   
-    proc clearForIteratableAssign() {
-      compilerError("Illegal assignment to a rectangular domain");
-    }
-  
     proc dsiAdd(x) {
       compilerError("Cannot add indices to a rectangular domain");
     }
@@ -363,10 +359,6 @@ module ChapelDistribution {
       halt("clear not implemented for this distribution - BaseSparseDom");
     }
   
-    proc clearForIteratableAssign() {
-      dsiClear();
-    }
-
     proc dsiBulkAdd(inds: [] index(rank, idxType),
         isSorted=false, isUnique=false, preserveInds=true){
 
@@ -443,9 +435,6 @@ module ChapelDistribution {
       halt("clear not implemented for this distribution");
     }
   
-    proc clearForIteratableAssign() {
-      dsiClear();
-    }
   }
   
   class BaseOpaqueDom : BaseDom {
@@ -453,9 +442,6 @@ module ChapelDistribution {
       halt("clear not implemented for this distribution");
     }
   
-    proc clearForIteratableAssign() {
-      dsiClear();
-    }
   }
   
   //

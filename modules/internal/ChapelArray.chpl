@@ -2860,7 +2860,7 @@ module ChapelArray {
   }
 
   proc =(ref a: domain, b: _tuple) {
-    a._value.clearForIteratableAssign();
+    a.clear();
     for ind in 1..b.size {
       a.add(b(ind));
     }
@@ -2901,7 +2901,7 @@ module ChapelArray {
   }
 
   proc =(ref a: domain, b) {  // b is iteratable
-    a._value.clearForIteratableAssign();
+    a.clear();
     for ind in b {
       a.add(ind);
     }
