@@ -5702,7 +5702,7 @@ static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
       //
       typeConsCall->replace(call);
     }
-    
+
     //
     // If the generic was unresolved (either because its type
     // constructor couldn't be called with zero arguments or because
@@ -5711,7 +5711,7 @@ static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
     // constructor.
     //
     if (unsafeGeneric) {
-      USR_FATAL(call, 
+      USR_FATAL(call,
                 "Variables can't be declared using %s generic types like '%s'",
                 (typeCons ? "not-fully-instantiated" : "abstract"),
                 typeSym->name);
@@ -8378,7 +8378,7 @@ static void unmarkDefaultedGenerics() {
     }
     if (unmark) {
       fn->removeFlag(FLAG_GENERIC);
-      INT_ASSERT(false);
+      //INT_ASSERT(false);
     }
   }
 }
@@ -9938,5 +9938,3 @@ setScalarPromotionType(AggregateType* ct) {
       ct->scalarPromotionType = field->type;
   }
 }
-
-
