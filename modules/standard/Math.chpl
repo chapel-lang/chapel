@@ -153,7 +153,7 @@ module Math {
 
      :rtype: The type of the real component of the argument (== `w`/2).
   */
-  inline proc abs(z : complex(?w)) {
+  inline proc abs(z : complex(?w)): real(w/2) {
     extern proc cabsf(z: complex(64)): real(32);
     extern proc cabs(z: complex(128)): real(64);
     if w == 64 then
@@ -164,15 +164,13 @@ module Math {
 
 
   /* Returns the real phase angle of complex argument `z`. */
-  inline proc arg(z: complex(64)): real(32) {
+  inline proc carg(z: complex(?w)): real(w/2) {
     extern proc cargf(z: complex(64)): real(32);
-    return cargf(z);
-  }
-
-  /* Returns the real phase angle of complex argument `z`. */
-  inline proc arg(z: complex(128)): real(64) {
     extern proc carg(z: complex(128)): real(64);
-    return carg(z);
+    if w == 64 then
+      return cargf(z);
+    else
+      return carg(z);
   }
 
 
@@ -370,8 +368,8 @@ module Math {
 
 
   /* Returns the complex conjugate of the argument `z`.
-   
-     :rtype: The type of `z`.
+
+     :rtype: A complex number of the same type as `z`.
   */
   inline proc conjg(z: complex(?w)): complex(w) {
     extern proc conjf(z: complex(64)): complex(64);
@@ -384,7 +382,7 @@ module Math {
 
 
   /* Returns the projection of `z` on a Riemann sphere. */
-  inline proc proj(z: complex(?w)): real(w/2) {
+  inline proc cproj(z: complex(?w)): real(w/2) {
     extern proc cprojf(z: complex(64)): real(32);
     extern proc cproj(z: complex(128)): real(64);
     if w == 64 then
