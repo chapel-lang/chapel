@@ -10,14 +10,7 @@ use DynamicIters;
 config const n = 7,          // the array size over which to compute perms
              nchunks = 720;  // the number of chunks of parallelism
 
-//
-// memoize n! (n factorial)
-//
-var fact: [0..n] int;
-fact[0] = 1;
-for i in 1..n do
-  fact[i] = i*fact[i-1];
-
+const fact = computeFact(n);  // memoize n! (n-factorial)
 
 proc main() {
   var checkSum = 0,
@@ -115,5 +108,13 @@ iter fannkuch(inds) {
       
       count[i] += 1;
     }
+  }
+}
+
+iter computeFact(n) {
+  var f = 1;
+  for i in 1..n {
+    f *= i;
+    yield f;
   }
 }
