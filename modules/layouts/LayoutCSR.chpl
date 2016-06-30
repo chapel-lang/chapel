@@ -423,19 +423,7 @@ class CSRDom: BaseSparseDomImpl {
 }
 
 
-class CSRArr: BaseArr {
-  type eltType;
-  param rank : int;
-  type idxType;
-
-  var dom; // : CSRDom(rank=rank, idxType=idxType);
-  var data: [dom.nnzDom] eltType;
-  var irv: eltType;
-
-  proc dsiGetBaseDom() return dom;
-
-  //  proc this(ind: idxType ... 1) ref where rank == 1
-  //    return this(ind);
+class CSRArr: BaseSparseArr {
 
   proc dsiAccess(ind: rank*idxType) ref {
     // make sure we're in the dense bounding box
@@ -504,41 +492,6 @@ class CSRArr: BaseArr {
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     compilerError("Sparse iterators can't yet be zippered with others (CSR layout)");
     yield 0;    // Dummy.
-  }
-
-  proc IRV ref {
-    return irv;
-  }
-
-  proc sparseBulkShiftArray(shiftMap, oldnnz){
-    var newIdx: int;
-    var prevNewIdx = 1;
-    for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(1) by -1) {
-      newIdx = shiftMap[_newIdx];
-      data[newIdx] = data[i];
-
-      //fill IRV up to previously added nnz
-      for emptyIndex in newIdx+1..prevNewIdx-1 do data[emptyIndex] = irv;
-      prevNewIdx = newIdx;
-    }
-    //fill the initial added space with IRV
-    for i in 1..prevNewIdx-1 do data[i] = irv;
-  }
-
-  proc sparseShiftArray(shiftrange, initrange) {
-    for i in initrange {
-      data(i) = irv;
-    }
-    for i in shiftrange by -1 {
-      data(i+1) = data(i);
-    }
-    data(shiftrange.low) = irv;
-  }
-
-  proc sparseShiftArrayBack(shiftrange) {
-    for i in shiftrange {
-      data(i) = data(i+1);
-    }
   }
 }
 

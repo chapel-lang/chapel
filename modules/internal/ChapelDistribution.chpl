@@ -341,6 +341,10 @@ module ChapelDistribution {
       return (actualInsertPts, actualAddCnt);
     }
 
+    proc dsiClear(){
+      halt("not implemented");
+    }
+
   }
 
   class BaseSparseDom : BaseDom {
@@ -356,7 +360,7 @@ module ChapelDistribution {
     var nnz = 0; //: int;
 
     proc dsiClear() {
-      halt("clear not implemented for this distribution");
+      halt("clear not implemented for this distribution - BaseSparseDom");
     }
   
     proc clearForIteratableAssign() {
@@ -586,21 +590,62 @@ module ChapelDistribution {
     proc doiCanBulkTransferStride() param return false;
   }
 
-  // currently there are some compiler bugs holding us back from having a
-  // BaseSparseArr class. Current sparse array classes have enough common
-  // methods and fields to make this effort worthwhile once compiler issues are
-  // resolved. some of the issues are/will be futures.
-
-  // while trying to get a very basic BaseSparseDom working I tried the
-  // following that hit an internal compiler bug with TYP1277, I wasn't able to
-  // create a minimal code that hits the same issue. It seems that we don't hit
-  // the bug when compiled with --devel or CHPL_DEVELOPER
-  /*
   class BaseSparseArr: BaseArr {
-     type eltType;
-     param rank : int;
-     type idxType;
+    type eltType;
+    param rank : int;
+    type idxType;
+
+    var dom; /* : DefaultSparseDom(?); */
+    /*var dataDom = {1..0};*/
+    var data: [dom.nnzDom] eltType;
+    var irv: eltType;
+
+    /*proc BaseSparseArr(type eltType, param rank, type idxType, dom) {*/
+      /*dataDom = dom.nnzDom;*/
+    /*}*/
+
+    proc dsiGetBaseDom() return dom;
+
+
+    proc IRV ref {
+      return irv;
+    }
+
+    // shifts data array according to shiftMap where shiftMap[i] is the new index 
+    // of the ith element of the array. Called at the end of bulkAdd to move the
+    // existing items in data array and initialize new indices with irv.
+    // oldnnz is the number of elements in the array. As the function is called 
+    // at the end of bulkAdd, it is almost certain that oldnnz!=data.size
+    proc sparseBulkShiftArray(shiftMap, oldnnz){
+      var newIdx: int;
+      var prevNewIdx = 1;
+      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(1) by -1) {
+        newIdx = shiftMap[_newIdx];
+        data[newIdx] = data[i];
+
+        //fill IRV up to previously added nnz
+        for emptyIndex in newIdx+1..prevNewIdx-1 do data[emptyIndex] = irv;
+        prevNewIdx = newIdx;
+      }
+      //fill the initial added space with IRV
+      for i in 1..prevNewIdx-1 do data[i] = irv;
+    }
+
+    // shift data array after single index addition. Fills the new index with irv
+    proc sparseShiftArray(shiftrange, initrange) {
+      for i in initrange {
+        data(i) = irv;
+      }
+      for i in shiftrange by -1 {
+        data(i+1) = data(i);
+      }
+      data(shiftrange.low) = irv;
+    }
+
+    proc sparseShiftArrayBack(shiftrange) {
+      for i in shiftrange {
+        data(i) = data(i+1);
+      }
+    }
   }
-   */
-  
 }

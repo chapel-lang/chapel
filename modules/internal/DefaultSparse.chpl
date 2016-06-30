@@ -306,16 +306,7 @@ module DefaultSparse {
   }
 
 
-  class DefaultSparseArr: BaseArr {
-    type eltType;
-    param rank : int;
-    type idxType;
-
-    var dom; /* : DefaultSparseDom(?); */
-    var data: [dom.nnzDom] eltType;
-    var irv: eltType;
-
-    proc dsiGetBaseDom() return dom;
+  class DefaultSparseArr: BaseSparseArr {
 
     // ref version
     proc dsiAccess(ind: idxType) ref where rank == 1 {
@@ -448,47 +439,6 @@ module DefaultSparse {
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
       compilerError("Sparse iterators can't yet be zippered with others");
       yield 0;  // dummy
-    }
-
-    proc IRV ref {
-      return irv;
-    }
-
-    // shifts data array according to shiftMap where shiftMap[i] is the new index 
-    // of the ith element of the array. Called at the end of bulkAdd to move the
-    // existing items in data array and initialize new indices with irv.
-    // oldnnz is the number of elements in the array. As the function is called 
-    // at the end of bulkAdd, it is almost certain that oldnnz!=data.size
-    proc sparseBulkShiftArray(shiftMap, oldnnz){
-      var newIdx: int;
-      var prevNewIdx = 1;
-      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(1) by -1) {
-        newIdx = shiftMap[_newIdx];
-        data[newIdx] = data[i];
-        
-        //fill IRV up to previously added nnz
-        for emptyIndex in newIdx+1..prevNewIdx-1 do data[emptyIndex] = irv;
-        prevNewIdx = newIdx;
-      }
-      //fill the initial added space with IRV
-      for i in 1..prevNewIdx-1 do data[i] = irv;
-    }
-
-    // shift data array after single index addition. Fills the new index with irv
-    proc sparseShiftArray(shiftrange, initrange) {
-      for i in initrange {
-        data(i) = irv;
-      }
-      for i in shiftrange by -1 {
-        data(i+1) = data(i);
-      }
-      data(shiftrange.low) = irv;
-    }
-
-    proc sparseShiftArrayBack(shiftrange) {
-      for i in shiftrange {
-        data(i) = data(i+1);
-      }
     }
 
     proc dsiTargetLocales() {

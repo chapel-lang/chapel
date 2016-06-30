@@ -310,15 +310,20 @@ class LocSparseBlockDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-class SparseBlockArr: BaseArr {
-  type eltType;
-  param rank: int;
-  type idxType;
+class SparseBlockArr: BaseSparseArr {
   param stridable: bool;
-  var dom; //: SparseBlockDom(rank, idxType, stridable);
-  var locArr: [dom.dist.targetLocDom] LocSparseBlockArr(eltType, rank, idxType, stridable);
+
+  // child class' fields initializers will not have dom set up correctly. domain
+  // of locArr should be dom.dist.targetLocDom
+  var locArrDom: domain(rank,idxType);
+  var locArr: [locArrDom] LocSparseBlockArr(eltType, rank, idxType, stridable);
   var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
+
+  proc SparseBlockArr(type eltType, param rank, type idxType, param stridable,
+      dom) {
+    locArrDom = dom.dist.targetLocDom;
+  }
 
   proc setup() {
     var thisid = this.locale.id;
@@ -412,6 +417,17 @@ class SparseBlockArr: BaseArr {
 
   proc dsiGetBaseDom() return dom;
 
+  proc sparseBulkShiftArray(shiftMap, oldnnz){
+    halt("Sparse bulk shift must be handled by local arrays");
+  }
+
+  proc sparseShiftArray(shiftrange, initrange) {
+    halt("Sparse shift must be handled by local arrays");
+  }
+
+  proc sparseShiftArrayBack(shiftrange) {
+    halt("sparse shift-back must be handled by local arrays");
+  }
 }
 
 //
