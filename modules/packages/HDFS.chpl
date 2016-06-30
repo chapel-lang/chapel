@@ -49,6 +49,10 @@ CHPL_AUX_FILESYS to 'hdfs' to enable HDFS support:
 
   export CHPL_AUX_FILESYS=hdfs
 
+The HDFS C API on some platforms freezes using the default q-threads. Use fifo instead.
+
+  export CHPL_TASKS=fifo
+
 Then, rebuild Chapel by executing 'make' from $CHPL_HOME.
 
 .. code-block:: sh
@@ -60,6 +64,8 @@ Then, rebuild Chapel by executing 'make' from $CHPL_HOME.
   If HDFS support is not enabled (which is the default), all
   features described below will compile successfully but will result in
   an error at runtime such as: "No HDFS Support".
+  
+  Currently, the HDFS C API is NOT supported on Macintosh OS X platforms.
 
 
 Using HDFS Support in Chapel
@@ -295,8 +301,8 @@ Here is a sample .bashrc for using Hadoop within Chapel:
   # those listed below if you have more than one IO system enabled. These are all
   # that you will need in order to use HDFS (only)
   #
-  export CHPL_AUXIO_INCLUDE="-I$JAVA_INSTALL/include -I$JAVA_INSTALL/include/linux  -I$HADOOP_INSTALL/src/c++/libhdfs"
-  export CHPL_AUXIO_LIBS="-L$JAVA_INSTALL/jre/lib/amd64/server -L$HADOOP_INSTALL/c++/Linux-amd64-64/lib"
+  export CHPL_AUXIO_INCLUDE="-I$JAVA_INSTALL/include -I$JAVA_INSTALL/include/linux  -I$HADOOP_INSTALL/include"
+  export CHPL_AUXIO_LIBS="-L$JAVA_INSTALL/jre/lib/amd64/server -L$HADOOP_INSTALL/lib/native"
 
   #
   # So we can run things such as start-all.sh etc. from anywhere and
@@ -312,12 +318,12 @@ Here is a sample .bashrc for using Hadoop within Chapel:
   #
   # Add Hadoop directories to the Java class path
   #
-  export CLASSPATH=$CLASSPATH:$HADOOP_HOME/""*:$HADOOP_HOME/lib/""*:$HADOOP_HOME/conf/""*:$(hadoop classpath):
+  export CLASSPATH=$CLASSPATH:`hadoop classpath --glob`:
 
   #
   # So we don't have to "install" these things
   #
-  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_HOME/c++/Linux-amd64-64/lib:$HADOOP_HOME/src/c++/libhdfs:$JAVA_INSTALL/jre/lib/amd64/server:$JAVA_INSTALL:$HADOOP_HOME/lib:$JAVA_INSTALL/jre/lib/amd64:$CLASSPATH
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_HOME/lib/native:$JAVA_INSTALL/jre/lib/amd64/server:$JAVA_INSTALL:$JAVA_INSTALL/jre/lib/amd64:$CLASSPATH
 
   #
   # Settings to run Chapel on multiple nodes
