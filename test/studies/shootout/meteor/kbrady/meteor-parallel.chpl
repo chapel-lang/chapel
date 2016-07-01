@@ -482,7 +482,7 @@ module meteor {
      each successful piece placement.  This data is used to create a 50 char
      array if a solution is found.
    */
-  var solutions: [0..2099][0..49] uint(8);
+  var solutions: [0..2099][0..49] int;
   var solutionCount: atomic int;
   var maxSolutions = 2100;
 
@@ -505,7 +505,7 @@ module meteor {
   proc solve_helper(piece) {
     var board: uint = 0xFFFC000000000000;
     var avail: uint = 0x03FF;
-    var solNums: [0..9] uint(8);
+    var solNums: [0..9] int;
     var solMasks: [0..9] uint;
     var pieceNoMask: uint;
     var maxRots: int;
@@ -551,7 +551,7 @@ module meteor {
     while (board & (1 << cell)) do
       cell += 1;
 
-    for piece in 0..9:uint(8) {
+    for piece in 0..9 {
       pieceNoMask = 1:uint << piece;
       if !((avail & pieceNoMask):bool) {
         continue;
