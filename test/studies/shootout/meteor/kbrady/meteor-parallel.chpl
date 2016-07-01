@@ -504,16 +504,16 @@ module meteor {
 
   proc solve_helper(piece) {
     var board: uint = 0xFFFC000000000000;
-    var avail: uint(16) = 0x03FF;
+    var avail: uint = 0x03FF;
     var solNums: [0..9] uint(8);
     var solMasks: [0..9] uint;
-    var pieceNoMask: uint(16);
+    var pieceNoMask: uint;
     var maxRots: int;
     var pieceMask: uint;
     var depth = 0;
     var cell = 0;
 
-    pieceNoMask = 1:uint(16) << piece;
+    pieceNoMask = 1:uint << piece;
 
     avail ^= pieceNoMask;
     maxRots = pieceCounts[piece][cell];
@@ -541,7 +541,7 @@ module meteor {
 
   proc solve_linear(in depth, in cell, in board,
       in avail, solNums, solMasks) {
-    var pieceNoMask: uint(16);
+    var pieceNoMask: uint;
     var maxRots: int;
     var pieceMask: uint;
 
@@ -552,7 +552,7 @@ module meteor {
       cell += 1;
 
     for piece in 0..9:uint(8) {
-      pieceNoMask = 1:uint(16) << piece;
+      pieceNoMask = 1:uint << piece;
       if !((avail & pieceNoMask):bool) {
         continue;
       }
