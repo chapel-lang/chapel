@@ -2901,6 +2901,8 @@ module ChapelArray {
   }
 
   proc =(ref a: domain, b) {  // b is iteratable
+    if isRectangularDom(a) then
+      compilerError("Illegal assignment to a rectangular domain");
     a.clear();
     for ind in b {
       a.add(ind);
