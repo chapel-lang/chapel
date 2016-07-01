@@ -222,6 +222,7 @@ module ChapelDistribution {
   
     proc dsiAdd(x) {
       compilerError("Cannot add indices to a rectangular domain");
+      return 0;
     }
   
     proc dsiRemove(x) {
@@ -433,6 +434,11 @@ module ChapelDistribution {
   class BaseAssociativeDom : BaseDom {
     proc dsiClear() {
       halt("clear not implemented for this distribution");
+    }
+
+    proc dsiAdd(idx) {
+      halt("Index addition is not supported by this domain");
+      return 0;
     }
   
   }

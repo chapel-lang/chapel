@@ -1027,7 +1027,7 @@ module ChapelArray {
 
     /* Add index ``i`` to this domain */
     proc add(i) {
-      return _value.dsiAdd(i);
+      _value.dsiAdd(i);
     }
 
     proc bulkAdd(inds: [] _value.idxType, isSorted=false,
