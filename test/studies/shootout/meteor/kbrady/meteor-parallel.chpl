@@ -153,7 +153,7 @@ module meteor {
     }
   }
 
-  /* Returns wether the specified cell and direction will land outside
+  /* Returns whether the specified cell and direction will land outside
    * of the board.  Used to determine if a piece is at a legal board
    * location or not.
    */
@@ -294,7 +294,7 @@ module meteor {
   }
 
   /* To thin the number of pieces, I calculate if any of them trap any empty
-   * cells at the edges.  There are only a handful of exceptions where the
+   * cells at the edges.  There are only a handful of exceptions where
    * the board can be solved with the trapped cells.  For example:  piece 8 can
    * trap 5 cells in the corner, but piece 3 can fit in those cells, or piece 0
    * can split the board in half where both halves are viable.
