@@ -277,6 +277,16 @@ module meteor {
     if (board[indx] == 1) then
       return;
     board[indx] = 1;
+
+    /* I really want to rewrite the if statements below as this:
+    for dir in [E, SE, SW, W, NW, NE] {
+      if (!outOfBounds(indx, dir)) then
+        fillContinguousSpace(board, shift(indx, dir));
+    }
+       but every time I try I get error: unresolved call
+       'fillContinguousSpace([domain(1,int(64),false)] int(64), int(64))' on
+       the call in the loop.
+    */
     if (!outOfBounds(indx, E)) then
       fillContiguousSpace(board, shift(indx, E));
     if (!outOfBounds(indx, SE)) then
