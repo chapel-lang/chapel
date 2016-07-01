@@ -95,17 +95,14 @@ param newline = ascii("\n"): int(8);
 // Repeat sequence "alu" for n characters
 //
 proc repeatMake(desc, alu, n) {
-  stdout.writef("%s", desc); // TODO: Why can't this be a write()?
-  const r = alu.size;
-  //
-  // TODO; Can we reduce reliance on % below?
-  //
-  const s = [i in 0..(r+lineLength)] alu[i % r];
+  stdout.writef("%s", desc);
+
+  const r = alu.size,
+        s = [i in 0..(r+lineLength)] alu[i % r];
 
   for i in 0..n by lineLength {
     const lo = i % r + 1,
           len = min(lineLength, n-i);
-    // TODO: Can we avoid this slice?
     stdout.write(s[lo..#len], newline);
   }
 }
@@ -115,10 +112,9 @@ proc repeatMake(desc, alu, n) {
 //
 proc randomMake(desc, a, n) {
   var lookup = initLookup();
-  var line_buff: [0..lineLength] int(8);  // TODO: This wants to be static
+  var line_buff: [0..lineLength] int(8);
     
   stdout.writef("%s", desc);
-  //  stdout.write(desc);
   for i in 1..n by lineLength do
     addLine(min(lineLength, n-i+1));
 
@@ -145,7 +141,7 @@ proc randomMake(desc, a, n) {
     }
     line_buff[bytes] = newline;
 
-    stdout.write(line_buff[0..bytes]); // TODO: avoid slicing?
+    stdout.write(line_buff[0..bytes]);
   }
 }
 
@@ -153,7 +149,7 @@ proc randomMake(desc, a, n) {
 //
 // Deterministic random number generator
 //
-var lastRand = 42;  // TODO: wants to be static local to getRands()
+var lastRand = 42;
 
 iter getRands(n) {
   param IA = 3877,
