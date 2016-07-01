@@ -265,8 +265,9 @@ module meteor {
    */
   proc recordPiece(piece, minimum, firstEmpty,
                    pieceMask) {
-    pieces[piece][minimum][pieceCounts[piece][minimum]] = pieceMask;
-    nextCell[piece][minimum][pieceCounts[piece][minimum]] = firstEmpty;
+    const lastIdx = pieceCounts[piece][minimum];
+    pieces[piece][minimum][lastIdx] = pieceMask;
+    nextCell[piece][minimum][lastIdx] = firstEmpty;
     pieceCounts[piece][minimum] += 1;
   }
 
