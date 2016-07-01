@@ -347,6 +347,8 @@ mandelbrot:
     - Initial commit of C complexes
   06/16/16:
     - Change complex getter functions for .re and .im into "static inline" (#4033)
+  06/30/16:
+    - Start using C99 functions for operations such as abs() on complex numbers (#4098)
 
 mandelbrot-extras:
   01/03/14:
