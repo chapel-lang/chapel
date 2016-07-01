@@ -13,7 +13,6 @@ use BitOps;
 
  * More comments
  * More inferred types
- * x/yCoords -> Coords tuple (pieces)
  * Top down view -> Breadth first
 
 */
@@ -95,8 +94,7 @@ proc initialize() {
   }
 
   var totalCount = 0,
-      xCoords: [0..4] int,
-      yCoords: [0..4] int;
+      coords: [0..4] 2*int;
 
   const pieceCount = 10;
 
@@ -116,18 +114,18 @@ proc initialize() {
    *                  O       O O
    *
    */
-  const pieces: [piecesDom][0..4][0..1] int =
+  const pieces: [piecesDom][0..4] 2*int =
   [
-    [[0, 0], [1, 0], [2, 0], [3, 0], [3, 1]],
-    [[0, 0], [0, 1], [-2, 2], [-1, 2], [-3, 3]],
-    [[0, 0], [1, 0], [2, 0], [-1, 1], [-1, 2]],
-    [[0, 0], [1, 0], [2, 0], [1, 1], [1, 2]],
-    [[0, 0], [0, 1], [1, 1], [-1, 2], [1, 2]],
-    [[0, 0], [1, 0], [-2, 1], [-1, 1], [0, 1]],
-    [[0, 0], [1, 0], [0, 1], [-1, 2], [-1, 3]],
-    [[0, 0], [2, 0], [-1, 1], [0, 1], [1, 1]],
-    [[0, 0], [0, 1], [0, 2], [1, 2], [1, 3]],
-    [[0, 0], [0, 1], [0, 2], [-1, 3], [0, 3]]
+    [(0, 0), (1, 0), ( 2, 0), ( 3, 0), ( 3, 1)],
+    [(0, 0), (0, 1), (-2, 2), (-1, 2), (-3, 3)],
+    [(0, 0), (1, 0), ( 2, 0), (-1, 1), (-1, 2)],
+    [(0, 0), (1, 0), ( 2, 0), ( 1, 1), ( 1, 2)],
+    [(0, 0), (0, 1), ( 1, 1), (-1, 2), ( 1, 2)],
+    [(0, 0), (1, 0), (-2, 1), (-1, 1), ( 0, 1)],
+    [(0, 0), (1, 0), ( 0, 1), (-1, 2), (-1, 3)],
+    [(0, 0), (2, 0), (-1, 1), ( 0, 1), ( 1, 1)],
+    [(0, 0), (0, 1), ( 0, 2), ( 1, 2), ( 1, 3)],
+    [(0, 0), (0, 1), ( 0, 2), (-1, 3), ( 0, 3)]
   ];
 
   // Generate bit mask for permutations of all pieces that fit on rows 2 & 3
@@ -143,10 +141,8 @@ proc initialize() {
       for piece in 0..pieceCount-1 {
 
         // Get x y coordinates of piece cells
-        for j in 0..4 {
-          xCoords[j] = pieces[piece][j][0];
-          yCoords[j] = pieces[piece][j][1];
-        }
+        for (coord, pieceCell) in zip(coords, pieces[piece]) do
+          coord = pieceCell;
 
         // Loop over 12 permutations for a given piece (6 rotations * 2 flips)
         for currentPermutation in 0..11 {
@@ -155,8 +151,8 @@ proc initialize() {
           if piece != 3 || (currentPermutation/3) % 2 == 0 {
 
             // Compute the xMin and yMin of coordinates for given permutation
-            var xMin = xCoords[0], yMin = yCoords[0];
-            for (x, y) in zip(xCoords, yCoords) {
+            var xMin = coords[0][1], yMin = coords[0][2];
+            for (x, y) in coords {
               if y < yMin || (y == yMin && x < xMin) then
                 (xMin, yMin) = (x, y);
             }
@@ -169,7 +165,7 @@ proc initialize() {
                   yOff= yBase - yMin;
 
             // Set bit mask for given piece's permutation if it fits on board
-            for (x, y) in zip(xCoords, yCoords) {
+            for (x, y) in coords {
 
               var nY = y + yOff,
                   nX = x + xOff + nY/2;
@@ -190,7 +186,7 @@ proc initialize() {
           }
 
           // Permute piece for next iteration
-          for (x, y) in zip(xCoords, yCoords) {
+          for (x, y) in coords {
             // Rotation
             (x, y) = (x + y, -x);
 
