@@ -81,15 +81,15 @@ module meteor {
    */
   var pieces: [0..9][0..49][0..11] uint;
   var pieceCounts: [0..9][0..49] int;
-  var nextCell: [0..9][0..49][0..11] uint(8);
+  var nextCell: [0..9][0..49][0..11] int;
 
   /* Returns the direction rotated 60 degrees clockwise */
-  proc rotate(dir: direction) {
+  proc rotate(dir) {
     return ((dir + 2) % PIVOT): direction;
   }
 
   /* Returns the direction flipped on the horizontal axis */
-  proc flip(dir: direction) {
+  proc flip(dir) {
     return ((PIVOT - dir) % PIVOT): direction;
   }
 
@@ -98,7 +98,7 @@ module meteor {
      starting cell and direction have been checked by the
      outOfBounds function first.
    */
-  proc shift(cell: int(8), dir: direction) {
+  proc shift(cell, dir) {
     select dir {
       when E do
         return cell + 1;
@@ -157,8 +157,8 @@ module meteor {
      of the board.  Used to determine if a piece is at a legal board
      location or not.
    */
-  proc outOfBounds(cell: int(8), dir: direction) {
-    var i: int(8);
+  proc outOfBounds(cell, dir) {
+    var i: int;
     select dir {
       when E do
         return cell % 5 == 4;
@@ -198,20 +198,20 @@ module meteor {
   }
 
   /* Rotate a piece 60 degrees clockwise */
-  proc rotatePiece(piece: int) {
+  proc rotatePiece(piece) {
     for i in 0..3 do
       pieceDef[piece][i] = rotate(pieceDef[piece][i]);
   }
 
   /* Flip a piece along the horizontal axis */
-  proc flipPiece(piece: int) {
+  proc flipPiece(piece) {
     for i in 0..3 {
       pieceDef[piece][i] = flip(pieceDef[piece][i]);
     }
   }
 
   /* Convenience function to quickly calculate all of the indices for a piece */
-  proc calcCellIndices(cell: [] int(8), piece: int, indx: int(8) ) {
+  proc calcCellIndices(cell, piece, indx) {
     cell[0] = indx;
     cell[1] = shift(cell[0], pieceDef[piece][0]);
     cell[2] = shift(cell[1], pieceDef[piece][1]);
@@ -220,7 +220,7 @@ module meteor {
   }
 
   /* Convenience function to quickly calculate if a piece fits on the board */
-  proc cellsFitOnBoard(cell: [] int(8), piece: int) {
+  proc cellsFitOnBoard(cell, piece) {
     return (!outOfBounds(cell[0], pieceDef[piece][0]) &&
             !outOfBounds(cell[1], pieceDef[piece][1]) &&
             !outOfBounds(cell[2], pieceDef[piece][2]) &&
@@ -231,8 +231,8 @@ module meteor {
      I use the lowest index that a piece occupies as the index for looking up
      the piece in the solve function.
    */
-  proc minimumOfCells(cell: [] int(8)) {
-    var minimum: int(8) = max(int(8));
+  proc minimumOfCells(cell) {
+    var minimum = max(int);
     for i in cell do
       if i < minimum then minimum = i;
     return minimum;
@@ -242,7 +242,7 @@ module meteor {
      board.  Used to later reduce the amount of time searching for open cells in
      the solve function.
    */
-  proc firstEmptyCell(cell: [] int(8), minimum: int(8)) {
+  proc firstEmptyCell(cell, minimum) {
     var firstEmpty = minimum;
     while (firstEmpty == cell[0] || firstEmpty == cell[1] ||
           firstEmpty == cell[2] || firstEmpty == cell[3] ||
@@ -255,8 +255,8 @@ module meteor {
   /* Generate the unsigned int that will later be anded with the board to
      determine if it fits.
    */
-  proc bitmaskFromCells(cell: [] int(8)) {
-    var pieceMask: uint = 0;
+  proc bitmaskFromCells(cell) {
+    var pieceMask: uint;
     for i in 0..4 {
       pieceMask |= 1:uint << cell[i];
     }
@@ -266,17 +266,17 @@ module meteor {
   /* Record the piece and other important information in arrays that will
      later be used by the solve function.
    */
-  proc recordPiece(piece: int, minimum: int, firstEmpty: int(8),
-                   pieceMask: uint) {
+  proc recordPiece(piece, minimum, firstEmpty,
+                   pieceMask) {
     pieces[piece][minimum][pieceCounts[piece][minimum]] = pieceMask;
-    nextCell[piece][minimum][pieceCounts[piece][minimum]] = firstEmpty:uint(8);
+    nextCell[piece][minimum][pieceCounts[piece][minimum]] = firstEmpty;
     pieceCounts[piece][minimum] += 1;
   }
 
   /* Fill the entire board going cell by cell.  If any cells are "trapped"
      they will be left alone.
    */
-  proc fillContiguousSpace(board: [] int(8), indx: int(8)) {
+  proc fillContiguousSpace(board, indx) {
     if(board[indx] == 1) then
       return;
     board[indx] = 1;
@@ -300,14 +300,14 @@ module meteor {
      trap 5 cells in the corner, but piece 3 can fit in those cells, or piece 0
      can split the board in half where both halves are viable.
    */
-  proc hasIsland(cell: [] int(8), piece: int) {
-    var tempBoard: [0..49] int(8);
-    var c: int(8);
+  proc hasIsland(cell, piece) {
+    var tempBoard: [0..49] int;
+    var c: int;
 
     for i in 0..4 do
       tempBoard[cell[i]] = 1;
 
-    var i:int(8) = 49;
+    var i = 49;
     while tempBoard[i] == 1 do
       i -= 1;
     fillContiguousSpace(tempBoard, i);
@@ -330,8 +330,8 @@ module meteor {
      including the 180-degree-rotated pieces of ONE of the pieces.  I chose
      piece 3 because it gave me the best time ;)
    */
-  proc calcSixRotations(piece: int(8), indx: int(8), cell: [] int(8)) {
-    var minimum, firstEmpty: int(8);
+  proc calcSixRotations(piece, indx, cell) {
+    var minimum, firstEmpty: int;
     var pieceMask: uint;
 
     for rotation in 0..5 {
@@ -465,7 +465,7 @@ module meteor {
   }
 
   /* Calculate islands while solving the board. */
-  proc boardHasIslands(cell: uint(8), board: uint) {
+  proc boardHasIslands(cell, board: uint) {
     /* Too low on board, don't bother checking */
     if cell >= 40 then
       return false;
