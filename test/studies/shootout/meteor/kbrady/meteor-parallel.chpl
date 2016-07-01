@@ -348,11 +348,11 @@ module meteor {
     }
   }
 
-  var cells: [0..9][0..4] int(8);
+  var cells: [0..9][0..4] int;
   /* Calculate every legal rotation for each piece at each board location. */
   proc calcPieces() {
-    forall piece in 0..9:int(8) {
-      for indx in 0..49:int(8) {
+    forall piece in 0..9 {
+      for indx in 0..49 {
         calcSixRotations(piece, indx, cells[piece]);
         flipPiece(piece);
         calcSixRotations(piece, indx, cells[piece]);
@@ -374,7 +374,7 @@ module meteor {
 
   proc rowsBad(row1, row2, even) {
     /* even is referring to row1 */
-    var inZeroes, groupOkay: bool = false;
+    var inZeroes, groupOkay = false;
     var block, row2Shift: int(8);
     /* Test for blockages at same index and shifted index */
     if even then
