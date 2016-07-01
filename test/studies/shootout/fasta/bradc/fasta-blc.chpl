@@ -1,19 +1,19 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Casey, Battaglino, Kyle Brady, Preston Sahabu, 
+   contributed by Casey Battaglino, Kyle Brady, Preston Sahabu,
                and Brad Chamberlain
+   derived from the GNU C version by Petr Prokhorenkov
 */
-use IO;
 
-config const n = 1000;   // controls the length of the generated strings
+config const n = 1000,   // controls the length of the generated strings
 
-config const lineLength = 60,
-             lookupSize = 4*1024,
+             lineLength = 60,
+             lookupSize = 4096,
              lookupScale = lookupSize - 1.0;
 
 //
-// TODO: Could we eliminate these ascii initializers somehow?
+// Nucleotide definitions
 //
 enum nucleotide {
   A = ascii("A"), C = ascii("C"), G = ascii("G"), T = ascii("T"),
@@ -24,7 +24,9 @@ enum nucleotide {
 }
 use nucleotide;
 
+//
 // Sequence to be repeated
+//
 const ALU: [0..286] int(8) = [
   G, G, C, C, G, G, G, C, G, C, G, G, T, G, G, C, T, C, A, C,
   G, C, C, T, G, T, A, A, T, C, C, C, A, G, C, A, C, T, T, T,
@@ -44,13 +46,14 @@ const ALU: [0..286] int(8) = [
 ];
 
 //
-// index aliases for use with (nucleotide, probability) tuples
+// Index aliases for use with (nucleotide, probability) tuples
 //
 param nucl = 1,
       prob = 2;
 
-// Sequences to be randomly generated (probability table)
-
+//
+// Probability tables for equences to be randomly generated
+//
 const IUB = [(a, 0.27), (c, 0.12), (g, 0.12), (t, 0.27),
              (B, 0.02), (D, 0.02), (H, 0.02), (K, 0.02),
              (M, 0.02), (N, 0.02), (R, 0.02), (S, 0.02),
@@ -61,6 +64,7 @@ const HomoSapiens = [(a, 0.3029549426680),
                      (g, 0.1975473066391),
                      (t, 0.3015094502008)];
 
+
 proc main() {
   sumAndScale(IUB);
   sumAndScale(HomoSapiens);
@@ -69,7 +73,9 @@ proc main() {
   randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, n * 5);
 }
 
-// Scan operation
+//
+// Scan the alphabets' probabilities to compute cut-offs
+//
 proc sumAndScale(alphabet: [?D]) {
   var p = 0.0;
   for letter in alphabet {
@@ -79,33 +85,36 @@ proc sumAndScale(alphabet: [?D]) {
   alphabet[D.high](prob) = lookupScale;
 }
 
+//
+// Redefine stdout to use lock-free binary I/O and capture a newline
+//
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newLine = ascii("\n"): int(8);
+param newline = ascii("\n"): int(8);
 
+//
 // Repeat sequence "alu" for n characters
+//
 proc repeatMake(desc, alu, n) {
-  stdout.writef("%s", desc); // TODO: Why can't this be a write()?
-  const r = alu.size;
-  //
-  // TODO; Can we reduce reliance on % below?
-  //
-  const s = [i in 0..(r+lineLength)] alu[i % r];
+  stdout.writef("%s", desc);
+
+  const r = alu.size,
+        s = [i in 0..(r+lineLength)] alu[i % r];
 
   for i in 0..n by lineLength {
     const lo = i % r + 1,
           len = min(lineLength, n-i);
-    // TODO: Can we avoid this slice?
-    stdout.write(s[lo..#len], newLine);
+    stdout.write(s[lo..#len], newline);
   }
 }
 
-// Output a random sequence of length 'len' using distribution a
+//
+// Output a random sequence of length 'n' using distribution a
+//
 proc randomMake(desc, a, n) {
   var lookup = initLookup();
-  var line_buff: [0..lineLength] int(8);  // TODO: This wants to be static
+  var line_buff: [0..lineLength] int(8);
     
   stdout.writef("%s", desc);
-  //  stdout.write(desc);
   for i in 1..n by lineLength do
     addLine(min(lineLength, n-i+1));
 
@@ -119,7 +128,9 @@ proc randomMake(desc, a, n) {
     }
   }
 
+  //
   // Add a line of random sequence
+  //
   proc addLine(bytes) {
     for (r, i) in zip(getRands(bytes), 0..) {
       var ai = r: int + 1;
@@ -128,16 +139,17 @@ proc randomMake(desc, a, n) {
       
       line_buff[i] = lookup[ai](nucl);
     }
-    line_buff[bytes] = newLine;
+    line_buff[bytes] = newline;
 
-    stdout.write(line_buff[0..bytes]); // TODO: avoid slicing?
+    stdout.write(line_buff[0..bytes]);
   }
 }
 
 
-// Deterministic random number generator as specified
-
-var lastRand = 42;  // TODO: wants to be static local to getRands()
+//
+// Deterministic random number generator
+//
+var lastRand = 42;
 
 iter getRands(n) {
   param IA = 3877,
