@@ -30,8 +30,8 @@ hello message indicating the value of its unique, private copy of the
 loop index variable *tid* (think "task ID") and the total number of
 tasks.  As in previous examples, since the tasks are not coordinating
 with one another, their "Hello" messages will print out in an
-arbitrary order.  However, the "Goodbye" message will not print until
-all the "Hello" messages have, since it will be executed by the
+arbitrary order.  However, the "Signing off..." message will not print
+until all the "Hello" messages have, since it will be executed by the
 original task only once the per-iteration tasks are done.  Thus, the
 following shows a possible output of the test:
 
