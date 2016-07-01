@@ -205,26 +205,23 @@ module meteor {
 
   /* Flip a piece along the horizontal axis */
   proc flipPiece(piece) {
-    for i in 0..3 {
+    for i in 0..3 do
       pieceDef[piece][i] = flip(pieceDef[piece][i]);
-    }
   }
 
   /* Convenience function to quickly calculate all of the indices for a piece */
   proc calcCellIndices(cell, piece, indx) {
     cell[0] = indx;
-    cell[1] = shift(cell[0], pieceDef[piece][0]);
-    cell[2] = shift(cell[1], pieceDef[piece][1]);
-    cell[3] = shift(cell[2], pieceDef[piece][2]);
-    cell[4] = shift(cell[3], pieceDef[piece][3]);
+    for i in 0..3 do
+      cell[i+1] = shift(cell[i], pieceDef[piece][i]);
   }
 
   /* Convenience function to quickly calculate if a piece fits on the board */
   proc cellsFitOnBoard(cell, piece) {
-    return (!outOfBounds(cell[0], pieceDef[piece][0]) &&
-            !outOfBounds(cell[1], pieceDef[piece][1]) &&
-            !outOfBounds(cell[2], pieceDef[piece][2]) &&
-            !outOfBounds(cell[3], pieceDef[piece][3]));
+    var notOut = true;
+    for i in 0..3 do
+      notOut &&= !outOfBounds(cell[i], pieceDef[piece][i]);
+    return notOut;
   }
 
   /* Returns the lowest index of the cells of a piece.
@@ -534,9 +531,8 @@ module meteor {
 
 
   proc solve() {
-    forall piece in 0..9 {
+    forall piece in 0..9 do
       solve_helper(piece);
-    }
   }
 
   proc solve_linear(in depth, in cell, in board,
