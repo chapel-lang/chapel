@@ -372,7 +372,7 @@ module meteor {
   var badEvenTriple: [0..32767] bool;
   var badOddTriple: [0..32767] bool;
 
-  proc rowsBad(row1: int(8), row2: int(8), even: bool) {
+  proc rowsBad(row1, row2, even) {
     /* even is referring to row1 */
     var inZeroes, groupOkay: bool = false;
     var block, row2Shift: int(8);
@@ -408,7 +408,7 @@ module meteor {
      positive.  One scenario is when 5 cells may be surrounded where piece 5
      or 7 can fit.  The other scenario is when piece 2 creates a hook shape.
    */
-  proc tripleIsOkay(row1: int(8), row2: int(8), row3: int(8), even: bool) {
+  proc tripleIsOkay(row1, row2, row3, even) {
     if even {
       /* There are four cases:
          row1: 00011  00001  11001  10101
@@ -465,7 +465,7 @@ module meteor {
   }
 
   /* Calculate islands while solving the board. */
-  proc boardHasIslands(cell, board: uint) {
+  proc boardHasIslands(cell, board) {
     /* Too low on board, don't bother checking */
     if cell >= 40 then
       return false;
@@ -486,7 +486,7 @@ module meteor {
   var solutionCount: atomic int;
   var maxSolutions = 2100;
 
-  proc recordSolution(solNums: [] uint(8), solMasks: [] uint) {
+  proc recordSolution(solNums, solMasks) {
     var solMask: uint;
     var mySolCount = solutionCount.fetchAdd(2);
     for solNo in 0..9 {
@@ -502,7 +502,7 @@ module meteor {
     }
   }
 
-  proc solve_helper(piece: uint(8)) {
+  proc solve_helper(piece) {
     var board: uint = 0xFFFC000000000000;
     var avail: uint(16) = 0x03FF;
     var solNums: [0..9] uint(8);
@@ -539,8 +539,8 @@ module meteor {
     }
   }
 
-  proc solve_linear(in depth: int, in cell: int, in board: uint,
-      in avail: uint(16), solNums: [] uint(8), solMasks: [] uint) {
+  proc solve_linear(in depth, in cell, in board,
+      in avail, solNums, solMasks) {
     var pieceNoMask: uint(16);
     var maxRots: int;
     var pieceMask: uint;
@@ -582,7 +582,7 @@ module meteor {
 
 
   /* pretty print a board in the specified hexagonal format */
-  proc pretty(s: [] uint(8)) {
+  proc pretty(s) {
     for i in 0..49 by 10 {
       // '0' -> 48 in ascii: shifting the numbers up into valid range
       writef("%c %c %c %c %c \n %c %c %c %c %c \n", s[i]+48, s[i+1]+48,
@@ -592,7 +592,7 @@ module meteor {
     writeln("");
   }
 
-  proc solutionLessThan(lhs: int, rhs: int) {
+  proc solutionLessThan(lhs, rhs) {
     if lhs == rhs then return false;
     for i in 0..49 {
       if solutions[lhs][i] != solutions[rhs][i] then
