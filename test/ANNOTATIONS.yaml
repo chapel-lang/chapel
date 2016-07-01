@@ -178,6 +178,8 @@ binary-trees:
     - revert jemalloc to 4.0.4 (#3477)
   05/28/16:
     - upgrade jemalloc to 4.2.0 (#3919)
+  06/13/16:
+    - polish to binary-trees versions (#4017)
 
 chameneos-redux:
   07/08/13:
@@ -213,6 +215,8 @@ fannkuch-redux:
   10/16/15:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
+  06/29/16:
+    - replacement with more elegant version (#4089)
 
 fasta:
   01/14/14:
