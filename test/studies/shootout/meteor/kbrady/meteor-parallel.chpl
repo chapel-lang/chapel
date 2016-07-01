@@ -79,7 +79,7 @@ module meteor {
      I'm also going to record the next possible open cell for each piece and
      location to reduce the burden on the solve function.
    */
-  var pieces: [0..9][0..49][0..11] uint;
+  var pieces: [0..9][0..49][0..11] int;
   var pieceCounts: [0..9][0..49] int;
   var nextCell: [0..9][0..49][0..11] int;
 
@@ -256,9 +256,9 @@ module meteor {
      determine if it fits.
    */
   proc bitmaskFromCells(cell) {
-    var pieceMask: uint;
+    var pieceMask: int;
     for i in 0..4 {
-      pieceMask |= 1:uint << cell[i];
+      pieceMask |= 1 << cell[i];
     }
     return pieceMask;
   }
@@ -332,7 +332,7 @@ module meteor {
    */
   proc calcSixRotations(piece, indx, cell) {
     var minimum, firstEmpty: int;
-    var pieceMask: uint;
+    var pieceMask: int;
 
     for rotation in 0..5 {
       if piece != 3 || rotation < 3 {
@@ -487,7 +487,7 @@ module meteor {
   var maxSolutions = 2100;
 
   proc recordSolution(solNums, solMasks) {
-    var solMask: uint;
+    var solMask: int;
     var mySolCount = solutionCount.fetchAdd(2);
     for solNo in 0..9 {
       solMask = solMasks[solNo];
@@ -506,14 +506,14 @@ module meteor {
     var board: uint = 0xFFFC000000000000;
     var avail: uint = 0x03FF;
     var solNums: [0..9] int;
-    var solMasks: [0..9] uint;
-    var pieceNoMask: uint;
+    var solMasks: [0..9] int;
+    var pieceNoMask: int;
     var maxRots: int;
-    var pieceMask: uint;
+    var pieceMask: int;
     var depth = 0;
     var cell = 0;
 
-    pieceNoMask = 1:uint << piece;
+    pieceNoMask = 1 << piece;
 
     avail ^= pieceNoMask;
     maxRots = pieceCounts[piece][cell];
@@ -534,16 +534,16 @@ module meteor {
 
 
   proc solve() {
-    forall piece in 0..9:uint(8) {
+    forall piece in 0..9 {
       solve_helper(piece);
     }
   }
 
   proc solve_linear(in depth, in cell, in board,
       in avail, solNums, solMasks) {
-    var pieceNoMask: uint;
+    var pieceNoMask: int;
     var maxRots: int;
-    var pieceMask: uint;
+    var pieceMask: int;
 
     if solutionCount.read() >= maxSolutions then
       return;
@@ -552,7 +552,7 @@ module meteor {
       cell += 1;
 
     for piece in 0..9 {
-      pieceNoMask = 1:uint << piece;
+      pieceNoMask = 1 << piece;
       if !((avail & pieceNoMask):bool) {
         continue;
       }
