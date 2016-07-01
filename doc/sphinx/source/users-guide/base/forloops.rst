@@ -6,9 +6,9 @@ For-loops
 =========
 
 *For-loops* are Chapel's means of expressing serial iteration as
-driven by an iterator function or iterable expression.  As a simple
-example, the following for-loop loops over the integers 1 through 5,
-printing a message per iteration:
+driven by an *iterand*—an iterator function or iterable expression.
+As a simple example, the following code loops over the integers 1
+through 5, printing a message per iteration:
 
 .. literalinclude:: examples/users-guide/base/forloops.chpl
   :caption:
@@ -28,27 +28,26 @@ resulting output is:
 For-loop Index Variables
 ------------------------
 
-Note that for-loop index variables, like *i* above, are new symbols
-that are defined by the for-loop and only available within its body.
-Thus, the following code actually declares two variables named *i*
-where the for-loop's index variable temporarily shadows the original
-*i*:
+A for-loop's index variable (like *i* above) is a new symbol that the
+for-loop defines, permitting its body to refer to the values generated
+by its iterand expression.  Thus, the following code actually declares
+two variables named *i* where the for-loop's index variable
+temporarily shadows the original *i* and has no relation to it:
 
 .. literalinclude:: examples/users-guide/base/forloops.chpl
   :language: chapel
   :lines: 7-10
 
-Meanwhile, the original *i* is unchanged and so retains its default
-value once it comes back into scope.  Thus, the output for the program
-is:
+The original variable *i* remains unchanged by the loop, so it retains
+its default value once it is no longer shadowed.  Thus, the output for
+the program is:
 
 .. literalinclude:: examples/users-guide/base/forloops.good
   :language: text
   :lines: 7-12
 
 
-
-A for-loop's index variable may or may not be modifiable, depending on
+A for-loop's index variable may or may not be mutable, depending on
 the expression that drives the loop.  For example, range iterators
 yield ``const`` integer values, making it illegal to modify *i* within
 the loop body:
@@ -57,25 +56,25 @@ the loop body:
   :language: chapel
   :lines: 14-15
 
-In contrast, the default iterator for an array yields references to
-the array's elements.  As a result, the loop's index variable can be
-used to modify the array:
+In contrast, an array's default iterator yields references to the
+array's elements.  As a result, the loop's index variable can be used
+as a means of modifying the array's values:
 
 .. literalinclude:: examples/users-guide/base/forloops.chpl
   :language: chapel
   :lines: 17-19
 
-As a result, printing out the array after the loop terminates reflects
+Thus, printing out the array after this loop terminates would reflect
 the updated values:
 
 .. literalinclude:: examples/users-guide/base/forloops.good
   :language: text
   :lines: 14
 
-If the yielded values are not required within the loop, the index
-variable and ``in`` keyword can be omitted altogether.  For example,
-the following loop iterates five times but since the index is not used
-by the body, it does not need to be named:
+If the values yielded by the iterand are not required by the loop
+body, the index variable and ``in`` keyword can be omitted altogether.
+For example, the following loop iterates five times, but since the
+index variable is not required by the body, it has been omitted:
 
 .. literalinclude:: examples/users-guide/base/forloops.chpl
   :language: chapel
@@ -87,16 +86,16 @@ For-loop Bodies
 
 If the body of a for-loop is a single statement, as in all of the
 examples above, the ``do`` keyword can be used after the iterand to
-specify the loop body.  For multi-statement loop bodies, curly
-brackets are used:
+specify the loop body.  Multi-statement loop bodies can be defined
+using curly brackets:
 
 .. literalinclude:: examples/users-guide/base/forloops.chpl
   :language: chapel
   :lines: 28-31
 
-Of course, since a compound statement is itself a single statement,
+Of course, since a compound statement is a single statement itself,
 this also means that the two styles can be combined (though with no
-benefit):
+real benefit):
 
 .. literalinclude:: examples/users-guide/base/forloops.chpl
   :language: chapel
@@ -106,8 +105,10 @@ benefit):
 Additional For-loop Capabilities
 --------------------------------
 
-For loops can be iterate over multiple iterands in a *zippered*
-manner, described on the next page.  Note that it is also possible to
-exit early from for loops via the ``break`` statement, covered in a
-later section.
+For loops can be used to iterate over multiple expressions in a
+coordinated or *zippered* manner, described on the next page.
+Subsequent pages will also describe how to write iterator functions.
+Note that it is also possible to exit early from a for-loop via the
+``break`` statement, covered later.
 
+.. TODO: add links for these things as they come on-line
