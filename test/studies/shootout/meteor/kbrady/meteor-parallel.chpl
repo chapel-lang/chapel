@@ -84,12 +84,12 @@ module meteor {
   var nextCell: [0..9][0..49][0..11] uint(8);
 
   /* Returns the direction rotated 60 degrees clockwise */
-  proc rotate(dir: direction) : direction {
+  proc rotate(dir: direction) {
     return ((dir + 2) % PIVOT): direction;
   }
 
   /* Returns the direction flipped on the horizontal axis */
-  proc flip(dir: direction) : direction {
+  proc flip(dir: direction) {
     return ((PIVOT - dir) % PIVOT): direction;
   }
 
@@ -98,7 +98,7 @@ module meteor {
      starting cell and direction have been checked by the
      outOfBounds function first.
    */
-  proc shift(cell: int(8), dir: direction) : int(8) {
+  proc shift(cell: int(8), dir: direction) {
     select dir {
       when E do
         return cell + 1;
@@ -157,7 +157,7 @@ module meteor {
      of the board.  Used to determine if a piece is at a legal board
      location or not.
    */
-  proc outOfBounds(cell: int(8), dir: direction) : bool {
+  proc outOfBounds(cell: int(8), dir: direction) {
     var i: int(8);
     select dir {
       when E do
@@ -220,7 +220,7 @@ module meteor {
   }
 
   /* Convenience function to quickly calculate if a piece fits on the board */
-  proc cellsFitOnBoard(cell: [] int(8), piece: int) : bool {
+  proc cellsFitOnBoard(cell: [] int(8), piece: int) {
     return (!outOfBounds(cell[0], pieceDef[piece][0]) &&
             !outOfBounds(cell[1], pieceDef[piece][1]) &&
             !outOfBounds(cell[2], pieceDef[piece][2]) &&
@@ -231,7 +231,7 @@ module meteor {
      I use the lowest index that a piece occupies as the index for looking up
      the piece in the solve function.
    */
-  proc minimumOfCells(cell: [] int(8)) : int(8) {
+  proc minimumOfCells(cell: [] int(8)) {
     var minimum: int(8) = max(int(8));
     for i in cell do
       if i < minimum then minimum = i;
@@ -255,10 +255,10 @@ module meteor {
   /* Generate the unsigned int that will later be anded with the board to
      determine if it fits.
    */
-  proc bitmaskFromCells(cell: [] int(8)) : uint(64) {
-    var pieceMask: uint(64) = 0;
+  proc bitmaskFromCells(cell: [] int(8)) {
+    var pieceMask: uint = 0;
     for i in 0..4 {
-      pieceMask |= 1:uint(64) << cell[i];
+      pieceMask |= 1:uint << cell[i];
     }
     return pieceMask;
   }
@@ -267,7 +267,7 @@ module meteor {
      later be used by the solve function.
    */
   proc recordPiece(piece: int, minimum: int, firstEmpty: int(8),
-                   pieceMask: uint(64)) {
+                   pieceMask: uint) {
     pieces[piece][minimum][pieceCounts[piece][minimum]] = pieceMask;
     nextCell[piece][minimum][pieceCounts[piece][minimum]] = firstEmpty:uint(8);
     pieceCounts[piece][minimum] += 1;
@@ -300,7 +300,7 @@ module meteor {
      trap 5 cells in the corner, but piece 3 can fit in those cells, or piece 0
      can split the board in half where both halves are viable.
    */
-  proc hasIsland(cell: [] int(8), piece: int) : bool {
+  proc hasIsland(cell: [] int(8), piece: int) {
     var tempBoard: [0..49] int(8);
     var c: int(8);
 
@@ -372,7 +372,7 @@ module meteor {
   var badEvenTriple: [0..32767] bool;
   var badOddTriple: [0..32767] bool;
 
-  proc rowsBad(row1: int(8), row2: int(8), even: bool) : bool {
+  proc rowsBad(row1: int(8), row2: int(8), even: bool) {
     /* even is referring to row1 */
     var inZeroes, groupOkay: bool = false;
     var block, row2Shift: int(8);
@@ -408,7 +408,7 @@ module meteor {
      positive.  One scenario is when 5 cells may be surrounded where piece 5
      or 7 can fit.  The other scenario is when piece 2 creates a hook shape.
    */
-  proc tripleIsOkay(row1: int(8), row2: int(8), row3: int(8), even: bool) : bool {
+  proc tripleIsOkay(row1: int(8), row2: int(8), row3: int(8), even: bool) {
     if even {
       /* There are four cases:
          row1: 00011  00001  11001  10101
@@ -465,7 +465,7 @@ module meteor {
   }
 
   /* Calculate islands while solving the board. */
-  proc boardHasIslands(cell: uint(8), board: uint) : bool {
+  proc boardHasIslands(cell: uint(8), board: uint) {
     /* Too low on board, don't bother checking */
     if cell >= 40 then
       return false;
@@ -592,8 +592,7 @@ module meteor {
     writeln("");
   }
 
-  proc solutionLessThan(lhs: int, rhs: int) : bool
-  {
+  proc solutionLessThan(lhs: int, rhs: int) {
     if lhs == rhs then return false;
     for i in 0..49 {
       if solutions[lhs][i] != solutions[rhs][i] then
