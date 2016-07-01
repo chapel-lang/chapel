@@ -8,16 +8,7 @@
 
 use BitOps;
 
-/*
-   TODO
-
- * More comments
- * More inferred types
- * Top down view -> Breadth first
-
-*/
-
-// Reusable domains
+// Common ranges encapsulated as domains for simplicity
 const boardDom = {0..49},
       permutationsDom = {0..8191},
       piecesDom = {0..9};
@@ -26,7 +17,7 @@ const boardDom = {0..49},
 var allMasks: [permutationsDom] int,
     maskStart: [boardDom][0..7] int;
 
-// Arrays of solutions
+// Arrays of min, max, and number of solutions
 var minSolution: [boardDom] int,
     maxSolution: [boardDom] int,
     solutions: int;
@@ -43,44 +34,26 @@ param maskEven   = 0xf07c1f07c1f07c1f: int, // Even rows of board (0, 2, 4, ..)
       maskUsed   = 0x00000000FFC00000: int; // Board + 4 additional bits
 
 //
-// Determine if piece and permutation (mask) at a given position (pos) is valid
+// DIY sync variable functionality that outperforms native sync variables.
+// Access controlled by functions lock() and unlock()
 //
-proc goodPiece(mask, pos) {
-   var isGood = true;
-   const evenRows = maskEven,
-         oddRows = ~evenRows,
-         leftBorder = maskBorder,
-         rightBorder = leftBorder >> 1;
-   var a, b, aOld, s1, s2, s3, s4, s5, s6, s7, s8: int;
+var l: atomic bool;
 
-   b = (mask << pos) | maskBoard;
 
-   b = ~b;
+//
+// Find and print the minimum and maximum solutions to meteor puzzle
+//
+proc main() {
 
-   while b {
-      a = b & (-b);
+  initialize();
 
-      do {
-         s1 = a << 5;
-         s2 = a >> 5;
-         s3 = (a << 1) & (~leftBorder);
-         s4 = (a >> 1) & (~rightBorder);
-         s5 = ((a & evenRows) >> 6) & (~rightBorder);
-         s6 = ((a & evenRows) << 4) & (~rightBorder);
-         s7 = ((a & oddRows) >> 4) & (~leftBorder);
-         s8 = ((a & oddRows) << 6) & (~leftBorder);
-         aOld = a;
-         a = (a | s1 | s2 | s3 | s4 | s5 | s6 | s7 | s8) & b;
-      } while aOld != a;
+  sync searchParallel(0, 0, 0, 0, 0);
 
-      if popcount(a) % 5 != 0 {
-         isGood = false;
-         break;
-      }
-      b ^= a;
-   }
-   return isGood;
+  writef("%i solutions found\n\n", solutions);
+  printBoard(minSolution);
+  printBoard(maxSolution);
 }
+
 
 //
 // Setup allMasks with pre-filtered piece permutations to search
@@ -252,24 +225,46 @@ proc initialize() {
   }
 }
 
-//
-// Determine whether a solution is a min or max solution
-//
-proc compareSolution(board, minSolution, maxSolution) {
 
-  for i in boardDom {
-    if board[i] < minSolution[i] {
-      minSolution = board;
-      break;
-    } else if board[i] > minSolution[i] then break;
-  }
-  for i in boardDom {
-    if board[i] > maxSolution[i] {
-      maxSolution = board;
-      break;
-    } else if board[i] < maxSolution[i] then break;
+//
+// Add initial piece to board, then fire off remaining searches in parallel
+//
+proc searchParallel(in board, in pos, in used, in placed, in firstPiece) {
+
+  var count = ctz(~board);
+  pos += count;
+  board >>= count;
+
+  const boardAndUsed = board | used;
+  var currentMask = maskStart[pos][0],
+      mask: int;
+
+  if placed == 0 {
+    while allMasks[currentMask] {
+      if allMasks[currentMask] {
+        mask = allMasks[currentMask];
+        currentMask += 1;
+        searchParallel(board | (mask & maskBottom), pos,
+                       used | (mask & maskUsed), placed + 1, mask);
+      }
+    }
+  // 1 piece has been placed
+  } else {
+    while allMasks[currentMask] {
+      while allMasks[currentMask] & boardAndUsed do
+        currentMask += 1;
+
+      if allMasks[currentMask] {
+        mask = allMasks[currentMask];
+        currentMask += 1;
+        searchLinearHelper(board | (mask & maskBottom), pos,
+                           used | (mask & maskUsed), placed+1,
+                           firstPiece, mask);
+      }
+    }
   }
 }
+
 
 //
 // Pretty printed output of board
@@ -286,53 +281,59 @@ proc printBoard(board) {
   writeln();
 }
 
-//
-// Check a given board as a solution and record it
-//
-proc recordSolution(currentSolution) {
-  var board: [boardDom] int,
-      flipBoard: [boardDom] int,
-      mask, pos, currentBit, b1, count, piece: int;
 
-  for i in piecesDom {
-    mask = currentSolution[i];
-    piece = ctz(mask >> 22);
-    mask &= maskBottom;
-    b1 |= mask;
-    while mask {
-      currentBit = mask & (-mask);
-      count = ctz(currentBit);
-      board[count + pos] = piece;
-      flipBoard[49 - count - pos] = piece;
-      mask ^= currentBit;
-    }
-    count = ctz(~b1);
-    pos += count;
-    b1 >>= count;
-  }
-  if solutions == 0 {
-    minSolution = board;
-    maxSolution = board;
-  } else {
-    compareSolution(board, minSolution, maxSolution);
-    compareSolution(flipBoard, minSolution, maxSolution);
-  }
+//
+// Determine if piece and permutation (mask) at a given position (pos) is valid
+//
+proc goodPiece(mask, pos) {
+   var isGood = true;
+   const evenRows = maskEven,
+         oddRows = ~evenRows,
+         leftBorder = maskBorder,
+         rightBorder = leftBorder >> 1;
+   var a, b, aOld, s1, s2, s3, s4, s5, s6, s7, s8: int;
 
-  solutions += 2;
+   b = (mask << pos) | maskBoard;
+
+   b = ~b;
+
+   while b {
+      a = b & (-b);
+
+      do {
+         s1 = a << 5;
+         s2 = a >> 5;
+         s3 = (a << 1) & (~leftBorder);
+         s4 = (a >> 1) & (~rightBorder);
+         s5 = ((a & evenRows) >> 6) & (~rightBorder);
+         s6 = ((a & evenRows) << 4) & (~rightBorder);
+         s7 = ((a & oddRows) >> 4) & (~leftBorder);
+         s8 = ((a & oddRows) << 6) & (~leftBorder);
+         aOld = a;
+         a = (a | s1 | s2 | s3 | s4 | s5 | s6 | s7 | s8) & b;
+      } while aOld != a;
+
+      if popcount(a) % 5 != 0 {
+         isGood = false;
+         break;
+      }
+      b ^= a;
+   }
+   return isGood;
 }
 
-//
-// DIY sync variable functionality that outperforms native sync variables
-//
-var l: atomic bool;
 
-proc lock() {
-  while l.testAndSet() != false do chpl_task_yield();
+//
+// Wrapper to setup initial call to recursive searchLinear
+//
+proc searchLinearHelper(in board, in pos, in used, in placed,
+                        in firstPiece, in mask) {
+  var currentSolution: [piecesDom] int;
+  currentSolution[0] = firstPiece;
+  currentSolution[1] = mask;
+  begin searchLinear(board, pos, used, placed, currentSolution);
 }
 
-proc unlock() {
-  l.write(false);
-}
 
 //
 // Recursively add pieces to the board, and check solution when filled.
@@ -391,68 +392,75 @@ proc searchLinear(in board, in pos, in used, in placed, currentSolution) {
   }
 }
 
+
 //
-// Wrapper to setup initial call to recursive searchLinear
+// Lock atomic lock - this is what sync variables do under the hood
 //
-proc searchLinearHelper(in board, in pos, in used, in placed,
-                        in firstPiece, in mask) {
-  var currentSolution: [piecesDom] int;
-  currentSolution[0] = firstPiece;
-  currentSolution[1] = mask;
-  begin searchLinear(board, pos, used, placed, currentSolution);
+proc lock() {
+  while l.testAndSet() != false do chpl_task_yield();
 }
 
 
 //
-// Add initial piece to board, then fire off remaining searches in parallel
+// Unlock atomic lock
 //
-proc searchParallel(in board, in pos, in used, in placed, in firstPiece) {
+proc unlock() {
+  l.write(false);
+}
 
-  var count = ctz(~board);
-  pos += count;
-  board >>= count;
 
-  const boardAndUsed = board | used;
-  var currentMask = maskStart[pos][0],
-      mask: int;
+//
+// Check a given board as a solution and record it
+//
+proc recordSolution(currentSolution) {
+  var board: [boardDom] int,
+      flipBoard: [boardDom] int,
+      mask, pos, currentBit, b1, count, piece: int;
 
-  if placed == 0 {
-    while allMasks[currentMask] {
-      if allMasks[currentMask] {
-        mask = allMasks[currentMask];
-        currentMask += 1;
-        searchParallel(board | (mask & maskBottom), pos,
-                       used | (mask & maskUsed), placed + 1, mask);
-      }
+  for i in piecesDom {
+    mask = currentSolution[i];
+    piece = ctz(mask >> 22);
+    mask &= maskBottom;
+    b1 |= mask;
+    while mask {
+      currentBit = mask & (-mask);
+      count = ctz(currentBit);
+      board[count + pos] = piece;
+      flipBoard[49 - count - pos] = piece;
+      mask ^= currentBit;
     }
-  // 1 piece has been placed
+    count = ctz(~b1);
+    pos += count;
+    b1 >>= count;
+  }
+  if solutions == 0 {
+    minSolution = board;
+    maxSolution = board;
   } else {
-    while allMasks[currentMask] {
-      while allMasks[currentMask] & boardAndUsed do
-        currentMask += 1;
+    compareSolution(board, minSolution, maxSolution);
+    compareSolution(flipBoard, minSolution, maxSolution);
+  }
 
-      if allMasks[currentMask] {
-        mask = allMasks[currentMask];
-        currentMask += 1;
-        searchLinearHelper(board | (mask & maskBottom), pos,
-                           used | (mask & maskUsed), placed+1,
-                           firstPiece, mask);
-      }
-    }
+  solutions += 2;
+}
+
+
+//
+// Determine whether a solution is a min or max solution
+//
+proc compareSolution(board, minSolution, maxSolution) {
+
+  for i in boardDom {
+    if board[i] < minSolution[i] {
+      minSolution = board;
+      break;
+    } else if board[i] > minSolution[i] then break;
+  }
+  for i in boardDom {
+    if board[i] > maxSolution[i] {
+      maxSolution = board;
+      break;
+    } else if board[i] < maxSolution[i] then break;
   }
 }
 
-
-//
-// Find and print the minimum and maximum solutions to meteor puzzle
-//
-proc main() {
-
-  initialize();
-
-  sync searchParallel(0, 0, 0, 0, 0);
-
-  writef("%i solutions found\n\n", solutions);
-  printBoard(minSolution);
-  printBoard(maxSolution);
-}
