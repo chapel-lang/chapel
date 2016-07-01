@@ -293,7 +293,9 @@ module DefaultAssociative {
       // I checked the C code and couldn't see any call to _addWrapper.
       // I tried to replicate the issue with generic classes but it always
       // worked smoothly.
-      const numInds = _addWrapper(idx)[2]; return numInds; }
+      const numInds = _addWrapper(idx)[2];
+      return numInds;
+    }
 
     proc _addWrapper(idx: idxType, in slotNum : index(tableDom) = -1, 
         haveLock = !parSafe) {
@@ -342,6 +344,7 @@ module DefaultAssociative {
     }
   
     proc dsiRemove(idx: idxType) {
+      var retval = 1;
       on this {
         if parSafe then lockTable();
         const (foundSlot, slotNum) = _findFilledSlot(idx, haveLock=parSafe);
@@ -351,13 +354,14 @@ module DefaultAssociative {
           table[slotNum].status = chpl__hash_status.deleted;
           numEntries.sub(1);
         } else {
-          halt("index not in domain: ", idx);
+          retval = 0;
         }
         if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
           _resize(grow=false);
         }
         if parSafe then unlockTable();
       }
+      return 1;
     }
   
     proc dsiRequestCapacity(numKeys:int) {
@@ -401,7 +405,7 @@ module DefaultAssociative {
 
           // insert old data into newly resized table
           for slot in _fullSlots(copyTable) {
-            const newslot = _add(copyTable[slot].idx);
+            const (newslot, _) = _add(copyTable[slot].idx);
             _preserveArrayElements(oldslot=slot, newslot=newslot);
           }
             
@@ -457,7 +461,7 @@ module DefaultAssociative {
   
       // insert old data into newly resized table
       for slot in _fullSlots(copyTable) {
-        const newslot = _add(copyTable[slot].idx);
+        const (newslot, _) = _add(copyTable[slot].idx);
         _preserveArrayElements(oldslot=slot, newslot=newslot);
       }
       
@@ -567,7 +571,7 @@ module DefaultAssociative {
           halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
           return data(0);
         } else {
-          const newSlot = dom.dsiAdd(idx, slotNum, haveLock=true);
+          const (newSlot, _) = dom._addWrapper(idx, slotNum, haveLock=true);
           if shouldLock then dom.unlockTable();
           return data(newSlot);
         }

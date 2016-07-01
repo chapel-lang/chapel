@@ -252,6 +252,15 @@ static void moveAddressSourcesToTemp();
 static void fixAST();
 static void handleIsWidePointer();
 
+static bool isLocalBlock(Expr* stmt) {
+  BlockStmt* block = toBlockStmt(stmt);
+  return block &&
+         block->parentSymbol &&
+         block->isLoopStmt() == false &&
+         block->blockInfoGet() &&
+         block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL);
+}
+
 // Top-level wrapper
 static bool isCausedByArgs(FnSymbol* fn,
                            Symbol* sym,
@@ -680,13 +689,22 @@ static bool recurseCausedByArgs(FnSymbol* fn,
     // Do not enter this branch if `sym` is a ref.
     //
     // TODO: handle recursive _retArg cases
+    //
     FnSymbol* otherFn = toFnSymbol(cause->defPoint->parentSymbol);
+
+    // Ensure that the cause is used in a PRIM_RETURN.
+    // Exposed by test/memory/sungeun/refCount/arrays.chpl: the cause was an
+    // actual and 'sym' was the corresponding formal, but the cause happened to
+    // also be used as the return symbol.
+    SymExpr* causeExpr = toSymExpr(base);
+    bool usedInReturn = causeExpr && toCallExpr(causeExpr->parentExpr)->isPrimitive(PRIM_RETURN);
     if (otherFn &&
         otherFn != sym->defPoint->parentSymbol && // exposed by SSCA2 perfcompopts
         !isRef(cause) &&
         cause == otherFn->getReturnSymbol() &&
         !otherFn->hasFlag(FLAG_VIRTUAL) &&
-        !isModuleSymbol(sym->defPoint->parentSymbol)) {
+        !isModuleSymbol(sym->defPoint->parentSymbol) &&
+        usedInReturn) {
 
       //
       // Is `cause` a wide pointer because of the args for `otherFn`?
@@ -1931,14 +1949,11 @@ static void handleLocalBlocks() {
   Vec<BlockStmt*> queue; // queue of blocks to localize
 
   forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (block->parentSymbol) {
-      // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet()
-      if (block->isLoopStmt() == true) {
-
-      } else if (block->blockInfoGet()) {
-        if (block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
-          queue.add(block);
-        }
+    if (isLocalBlock(block)) {
+      if (block->length() == 0) {
+        block->remove();
+      } else {
+        queue.add(block);
       }
     }
   }
@@ -2411,7 +2426,6 @@ void handleIsWidePointer() {
   }
 }
 
-
 //
 // Widen variables that may be remote.
 //
@@ -2422,6 +2436,46 @@ insertWideReferences(void) {
   if (!requireWideReferences()) {
     handleIsWidePointer();
     return;
+  }
+
+  //
+  // fragmentLocalBlocks splits up local blocks, but sometimes they end up
+  // being consecutive. To make the generated code easier to read, we merge
+  // such blocks together. Sometimes there are only DefExprs separating
+  // local blocks. If that's the case, we move those DefExprs before the
+  // earlier local block.
+  //
+  // TODO: What would we need to do to avoid the fragmentation around
+  // if-statements and loops?
+  //
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (isLocalBlock(block)) {
+      // Get rid of annoying empty local blocks
+      if (block->length() == 0) {
+        block->remove();
+      }
+      else {
+        Expr* next = block->next;
+        std::vector<Expr*> defs;
+        while (isLocalBlock(next) || isDefExpr(next)) {
+          if (isDefExpr(next)) {
+            defs.push_back(next);
+            next = next->next;
+          } else {
+            Expr* old = next;
+            next = next->next;
+            old->remove();
+            for_alist(subItem, toBlockStmt(old)->body) {
+              block->body.insertAtTail(subItem->remove());
+            }
+            for_vector(Expr, def, defs) {
+              block->insertBefore(def->remove());
+            }
+            defs.clear();
+          }
+        }
+      }
+    }
   }
 
   Vec<Symbol*> heapVars;

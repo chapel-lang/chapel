@@ -227,6 +227,7 @@ module ChapelDistribution {
   
     proc dsiRemove(x) {
       compilerError("Cannot remove indices from a rectangular domain");
+      return 0;
     }
   }
   
@@ -437,7 +438,7 @@ module ChapelDistribution {
     }
 
     proc dsiAdd(idx) {
-      halt("Index addition is not supported by this domain");
+      compilerError("Index addition is not supported by this domain");
       return 0;
     }
   

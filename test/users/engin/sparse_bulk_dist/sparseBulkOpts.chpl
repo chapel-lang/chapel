@@ -4,12 +4,14 @@ use Random;
 
 config const N = 8;
 const dimRange = 0..#N;
-const ParentDom = {dimRange, dimRange} dmapped Block({dimRange, dimRange});
 
-config type layoutType = DefaultDist;
-var layout = new layoutType;
+config type sparseLayoutType = DefaultDist;
 
-var SparseDom: sparse subdomain(ParentDom) dmapped new dmap(layout);
+const ParentDom = {dimRange, dimRange} dmapped Block({dimRange, dimRange},
+    sparseLayoutType=sparseLayoutType);
+
+
+var SparseDom: sparse subdomain(ParentDom);
 var SparseMat: [SparseDom] int;
 
 //left diagonal

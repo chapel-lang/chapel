@@ -1027,7 +1027,7 @@ module ChapelArray {
 
     /* Add index ``i`` to this domain */
     proc add(i) {
-      _value.dsiAdd(i);
+      return _value.dsiAdd(i);
     }
 
     proc bulkAdd(inds: [] _value.idxType, isSorted=false,
@@ -1048,7 +1048,7 @@ module ChapelArray {
 
     /* Remove index ``i`` from this domain */
     proc remove(i) {
-      _value.dsiRemove(i);
+      return _value.dsiRemove(i);
     }
 
     /* Request space for a particular number of values in an
@@ -3096,7 +3096,6 @@ module ChapelArray {
       forall (aa,bb) in zip(a,b) do
         aa = bb;
     } else {
-      compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
       for (aa,bb) in zip(a,b) do
         aa = bb;
     }

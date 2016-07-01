@@ -63,9 +63,11 @@ config param debugSparseBlockDistBulkTransfer = false;
 // whole:     a non-distributed domain that defines the domain's indices
 //
 class SparseBlockDom: BaseSparseDomImpl {
+  type sparseLayoutType;
   param stridable: bool = false;  // TODO: remove default value eventually
-  const dist: Block(rank, idxType);
-  var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable);
+  const dist: Block(rank, idxType, sparseLayoutType);
+  var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable,
+      sparseLayoutType);
   var pid: int = -1; // privatized object id (this should be factored out)
 
   proc initialize() {
@@ -81,7 +83,7 @@ class SparseBlockDom: BaseSparseDomImpl {
           //                    writeln("Setting up on ", here.id);
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
          locDoms(localeIdx) = new LocSparseBlockDom(rank, idxType, stridable,
-                                                     dist.getChunk(parentDom, localeIdx));
+             sparseLayoutType, dist.getChunk(parentDom,localeIdx));
           //                    writeln("Back on ", here.id);
         }
       }
@@ -126,52 +128,50 @@ class SparseBlockDom: BaseSparseDomImpl {
   // segfault from the compiler.
   record TargetLocaleComparator {
     proc key(a: index(rank, idxType)) { 
-      return (dist.targetLocsIdx(a), a); 
+      return (dist.targetLocsIdx(a), a);
     }
   }
 
-  proc bulkAdd_help(inds: [] index(rank,idxType), isSorted=false, isUnique=false) {
+  proc bulkAdd_help(inds: [] index(rank,idxType),
+      isSorted=false, isUnique=false) {
 
-    if !isSorted {
+    // without _new_, record functions throw null deref
+    var comp = new TargetLocaleComparator();
 
-      // there are two issues with the following line
-      // 1 without _new_ record functions throw null deref. It doesn't seem to be 
-      // able to deref _outer_ ? I think it has something to do with memory
-      // allocation for classes vs records, but I cannot explain
-      // 2 this line seems to be completely hacky -- explicit parantheses were
-      // necessary for the compiler not to complain when --verify flag is
-      // present. 
-      var comp = new TargetLocaleComparator();
-      sort(inds, comparator=comp);
-    }
+    if !isSorted then sort(inds, comparator=comp);
 
-    var firstIndex = inds.domain.low;
-    var curLoc = dist.targetLocsIdx(inds[inds.domain.low]);
+    var localeRanges: [dist.targetLocDom] range;
+    on inds {
+      for l in dist.targetLocDom {
+        const _first = locDoms[l].mySparseBlock._value.parentDom.first;
+        const _last = locDoms[l].mySparseBlock._value.parentDom.last;
 
-    var _totalAdded: atomic int;
-    sync {
-      for i in inds.domain {
-        const _tmpLoc = dist.targetLocsIdx(inds[i]);
-        if _tmpLoc != curLoc {
-          spawnBulkAdd(firstIndex..i-1, curLoc);
-          curLoc = _tmpLoc;
-          firstIndex = i;
-        }
+        var (foundFirst, locFirst) = search(inds, _first, comp);
+        var (foundLast, locLast) = search(inds, _last, comp);
+
+        if !foundLast then locLast -= 1;
+
+        // two ifs are necessary to catch out of bounds in the bulkAdd call
+        // chain. otherwise this methods would cutoff indices that are smaller
+        // than parentDom.first or larger than parentDom.last, which is
+        // _probably_ not desirable.
+        if dist.targetLocDom.first == l then
+          locFirst = inds.domain.first;
+        if dist.targetLocDom.last == l then
+          locLast = inds.domain.last;
+
+        localeRanges[l] = locFirst..locLast;
       }
-      spawnBulkAdd(firstIndex..inds.domain.high, curLoc);
     }
-
-    var _retval = _totalAdded.read();
+    var _totalAdded: atomic int;
+    coforall l in dist.targetLocDom do on dist.targetLocales[l] {
+      const _retval = locDoms[l].mySparseBlock.bulkAdd(inds[localeRanges[l]],
+          isSorted=true, isUnique=false);
+      _totalAdded.add(_retval);
+    }
+    const _retval = _totalAdded.read();
     nnz += _retval;
     return _retval;
-
-    proc spawnBulkAdd(indsRange: range, loc){
-      begin on dist.targetLocales(loc) {
-        const _retval = locDoms[loc].mySparseBlock.bulkAdd(inds[indsRange],
-            isSorted=true, isUnique=false);
-        _totalAdded.add(_retval);
-      }
-    }
   }
 
   //
@@ -198,7 +198,9 @@ class SparseBlockDom: BaseSparseDomImpl {
   // how to allocate a new array over this domain
   //
   proc dsiBuildArray(type eltType) {
-    var arr = new SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+    /*writeln("Build array called");*/
+    var arr = new SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType,
+        stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this);
     arr.setup();
     return arr;
   }
@@ -269,8 +271,10 @@ class LocSparseBlockDom {
   param rank: int;
   type idxType;
   param stridable: bool;
+  type sparseLayoutType;
   var parentDom: domain(rank, idxType, stridable);
-  var mySparseBlock: sparse subdomain(parentDom);
+  var sparseDist = new sparseLayoutType; //unresolved call workaround
+  var mySparseBlock: sparse subdomain(parentDom) dmapped new dmap(sparseDist);
 
   proc initialize() {
     //    writeln("On locale ", here.id, " LocSparseBlockDom = ", this);
@@ -312,16 +316,20 @@ class LocSparseBlockDom {
 //
 class SparseBlockArr: BaseSparseArr {
   param stridable: bool;
+  type sparseLayoutType = DefaultDist;
 
   // child class' fields initializers will not have dom set up correctly. domain
   // of locArr should be dom.dist.targetLocDom
   var locArrDom: domain(rank,idxType);
-  var locArr: [locArrDom] LocSparseBlockArr(eltType, rank, idxType, stridable);
-  var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable);
+  var locArr: [locArrDom] LocSparseBlockArr(eltType, rank, idxType, stridable,
+      sparseLayoutType);
+  var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable,
+      sparseLayoutType);
   var pid: int = -1; // privatized object id (this should be factored out)
 
   proc SparseBlockArr(type eltType, param rank, type idxType, param stridable,
-      dom) {
+      type sparseLayoutType ,dom) {
+    /*writeln("Constructor called");*/
     locArrDom = dom.dist.targetLocDom;
   }
 
@@ -330,7 +338,9 @@ class SparseBlockArr: BaseSparseArr {
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocales(localeIdx) {
         const locDom = dom.getLocDom(localeIdx);
-        locArr(localeIdx) = new LocSparseBlockArr(eltType, rank, idxType, stridable, locDom);
+        /*writeln(locArr.domain);*/
+        locArr(localeIdx) = new LocSparseBlockArr(eltType, rank, idxType,
+            stridable, sparseLayoutType, locDom);
         if thisid == here.id then
           myLocArr = locArr(localeIdx);
       }
@@ -379,7 +389,6 @@ class SparseBlockArr: BaseSparseArr {
         return myLocArr.dsiAccess(i);
         //      }
     }
-      //      writeln("In general case, and finding that locale is ", dom.dist.targetLocsIdx(i));
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
   }
   proc dsiAccess(i: rank*idxType)
@@ -445,7 +454,8 @@ class LocSparseBlockArr {
   param rank: int;
   type idxType;
   param stridable: bool;
-  const locDom: LocSparseBlockDom(rank, idxType, stridable);
+  type sparseLayoutType;
+  const locDom: LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType);
   var myElems: [locDom.mySparseBlock] eltType;
 
   proc dsiAccess(i) ref {
@@ -476,7 +486,6 @@ proc SparseBlockDom.dsiDisplayRepresentation() {
     writeln("locDoms[", tli, "].mySparseBlock = ", locDoms[tli].mySparseBlock);
 }
 
-proc SparseBlockDom.dsiDim(d: int) return whole.dim(d);
 
 
 //

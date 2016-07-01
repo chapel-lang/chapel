@@ -106,6 +106,42 @@ o Chapel has discussed supporting some standard record-wrapped class
   this in terms of avoiding the cleanup steps.
 
 
+fannkuchredux.chpl
+------------------
+o optimize slice assignment such that pp[0..i] = p[0..i] can be
+  written without penalty
+
+o create better story for serializing array assignments by default
+  when arrays are short? or parallelism is already full-throttle?
+
+o as part of DynamicIters and/or chunking library, create version
+  of dynamic iterator that will return chunk directly
+
+o improve magic number default for nChunks?
+
+o make scans not generate warnings and use them to compute/initialize
+  fact?
+
+o remove warning for serial whole-array assignment when RHS is serial
+  and then use an initfact() iterator / procedure to initialize fact[]
+  at declaration time
+
+o should globals be allowed to be declared below main()?  If so, move
+  fact[] to the bottom of the file?
+
+
+fasta.chpl
+----------
+o Shouldn't ascii() return an int(8)/uint(8) by default?
+
+o We should introduce local "static" variables (using some other
+  keyword) and use it to define some of the variables that are
+  currently at global or outer scopes unnecessarily
+
+o Should writef("%s", str) and write(str) be equivalent?  If so,
+  it looks like we have a bug.
+
+
 mandelbrot.chpl
 ---------------
 o extend the dynamic() iterators for ranges to support domains and

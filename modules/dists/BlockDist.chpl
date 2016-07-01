@@ -42,7 +42,7 @@ use DSIUtil;
 use ChapelUtil;
 use CommDiagnostics;
 use SparseBlockDist;
-
+use LayoutCSR;
 //
 // These flags are used to output debug information and run extra
 // checks when using Block.  Should these be promoted so that they can
@@ -261,6 +261,7 @@ class Block : BaseDist {
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
+  type sparseLayoutType = DefaultDist;
   var pid: int = -1; // privatized object id (this should be factored out)
 }
 
@@ -291,7 +292,8 @@ class BlockDom: BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;
-  const dist: Block(rank, idxType);
+  type sparseLayoutType;
+  const dist: Block(rank, idxType, sparseLayoutType);
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
@@ -328,8 +330,9 @@ class BlockArr: BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
+  type sparseLayoutType;
   var doRADOpt: bool = defaultDoRADOpt;
-  var dom: BlockDom(rank, idxType, stridable);
+  var dom: BlockDom(rank, idxType, stridable, sparseLayoutType);
   var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
   var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
   var pid: int = -1; // privatized object id (this should be factored out)
@@ -378,11 +381,14 @@ proc Block.Block(boundingBox: domain,
                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
                 dataParMinGranularity=getDataParMinGranularity(),
                 param rank = boundingBox.rank,
-                type idxType = boundingBox.idxType) {
+                type idxType = boundingBox.idxType,
+                type sparseLayoutType = DefaultDist) {
   if rank != boundingBox.rank then
     compilerError("specified Block rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
+  if rank != 2 && sparseLayoutType == CSR then 
+    compilerError("CSR layout is only supported for 2 dimensional domains");
 
   this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
 
@@ -476,7 +482,8 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   if rank != this.rank then
     compilerError("Block domain rank does not match distribution's");
 
-  var dom = new BlockDom(rank=rank, idxType=idxType, dist=this, stridable=stridable);
+  var dom = new BlockDom(rank=rank, idxType=idxType, dist=this,
+      stridable=stridable, sparseLayoutType=sparseLayoutType);
   dom.setup();
   if debugBlockDist {
     writeln("Creating new Block domain:");
@@ -486,7 +493,8 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
 }
 
 proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
-  return new SparseBlockDom(rank=rank, idxType=idxType, dist=this, parentDom=dom);
+  return new SparseBlockDom(rank=rank, idxType=idxType,
+      sparseLayoutType=sparseLayoutType, dist=this, parentDom=dom);
 }
 
 //
@@ -835,7 +843,8 @@ proc BlockDom.dsiSerialWrite(x) {
 // how to allocate a new array over this domain
 //
 proc BlockDom.dsiBuildArray(type eltType) {
-  var arr = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+  var arr = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
+      stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this);
   arr.setup();
   return arr;
 }
@@ -927,7 +936,8 @@ proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
     compilerError("Block domain rank does not match distribution's");
 
   var dom = new BlockDom(rank=rank, idxType=idxType,
-                         dist=dist, stridable=stridable);
+                         dist=dist, stridable=stridable,
+                         sparseLayoutType=sparseLayoutType);
   dom.dsiSetIndices(ranges);
   return dom;
 }
@@ -1183,7 +1193,8 @@ proc BlockArr.dsiSerialWrite(f) {
 }
 
 proc BlockArr.dsiSlice(d: BlockDom) {
-  var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, dom=d);
+  var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
+      stridable=d.stridable, dom=d, sparseLayoutType=DefaultDist);
   var thisid = this.locale.id;
   coforall i in d.dist.targetLocDom {
     on d.dist.targetLocales(i) {
@@ -1238,7 +1249,8 @@ proc _extendTuple(type t, idx, args) {
 
 
 proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
-  var alias = new BlockArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=stridable, dom=d);
+  var alias = new BlockArr(eltType=eltType, rank=newRank, idxType=idxType,
+      stridable=stridable, dom=d, sparseLayoutType=DefaultDist);
   var thisid = this.locale.id;
   coforall ind in d.dist.targetLocDom {
     on d.dist.targetLocales(ind) {
@@ -1293,8 +1305,10 @@ proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) 
 }
 
 proc BlockArr.dsiReindex(d: BlockDom) {
+  // in constructor we have to pass sparseLayoutType as it has no default value
   var alias = new BlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
-                           stridable=d.stridable, dom=d);
+                           stridable=d.stridable, dom=d,
+                           sparseLayoutType=DefaultDist);
   const sameDom = d==dom;
 
   var thisid = this.locale.id;
@@ -1368,7 +1382,8 @@ proc LocBlockArr.this(i) ref {
 //
 proc Block.Block(other: Block, privateData,
                 param rank = other.rank,
-                type idxType = other.idxType) {
+                type idxType = other.idxType,
+                type sparseLayoutType = other.sparseLayoutType) {
   boundingBox = {(...privateData(1))};
   targetLocDom = {(...privateData(2))};
   dataParTasksPerLocale = privateData(3);
@@ -1410,7 +1425,9 @@ proc BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc BlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
-  var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
+  // in constructor we have to pass sparseLayoutType as it has no default value
+  var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable,
+      sparseLayoutType=privdist.sparseLayoutType, dist=privdist);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
   c.whole = {(...privatizeData(2))};
@@ -1431,7 +1448,8 @@ proc BlockArr.dsiGetPrivatizeData() return dom.pid;
 
 proc BlockArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
-  var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
+  var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
+      stridable=stridable, sparseLayoutType=sparseLayoutType, dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);
     if c.locArr(localeIdx).locale.id == here.id then
