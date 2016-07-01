@@ -4,6 +4,14 @@ Base:
  - type, .type, casts
  - param
  - const
+
+
+Use before def:
+
+for: operators (+=)
+loop: simple arrays
+zip: tuples, array literals
+
  
 
 ASAP
