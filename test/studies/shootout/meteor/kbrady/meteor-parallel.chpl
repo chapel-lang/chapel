@@ -274,20 +274,20 @@ module meteor {
      they will be left alone.
    */
   proc fillContiguousSpace(board, indx) {
-    if(board[indx] == 1) then
+    if (board[indx] == 1) then
       return;
     board[indx] = 1;
-    if(!outOfBounds(indx, E)) then
+    if (!outOfBounds(indx, E)) then
       fillContiguousSpace(board, shift(indx, E));
-    if(!outOfBounds(indx, SE)) then
+    if (!outOfBounds(indx, SE)) then
       fillContiguousSpace(board, shift(indx, SE));
-    if(!outOfBounds(indx, SW)) then
+    if (!outOfBounds(indx, SW)) then
       fillContiguousSpace(board, shift(indx, SW));
-    if(!outOfBounds(indx, W)) then
+    if (!outOfBounds(indx, W)) then
       fillContiguousSpace(board, shift(indx, W));
-    if(!outOfBounds(indx, NW)) then
+    if (!outOfBounds(indx, NW)) then
       fillContiguousSpace(board, shift(indx, NW));
-    if(!outOfBounds(indx, NE)) then
+    if (!outOfBounds(indx, NE)) then
       fillContiguousSpace(board, shift(indx, NE));
   }
 
