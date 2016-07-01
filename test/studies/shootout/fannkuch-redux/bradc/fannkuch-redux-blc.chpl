@@ -7,10 +7,11 @@
 
 use DynamicIters;
 
-config const n = 7,          // the array size over which to compute perms
-             nchunks = 720;  // the number of chunks of parallelism
+config const n = 7,           // the array size over which to compute perms
+             nchunks = 720;   // the number of chunks of parallelism to use
 
 const fact = computeFact(n);  // memoize n! (n-factorial)
+
 
 proc main() {
   var checkSum = 0,
@@ -20,11 +21,11 @@ proc main() {
   chunksz += chunksz%2;
   const work = 0..(fact(n) - chunksz) by chunksz;
 
-  forall lo in dynamic(work, 1) with (+ reduce checkSum, 
-                                      max reduce maxFlips) {
-    for (i, flips) in fannkuch(lo..#chunksz) {
+  forall i in dynamic(work, 1) with (+ reduce checkSum, 
+                                     max reduce maxFlips) {
+    for (j, flips) in fannkuch(i..#chunksz) {
       maxFlips = max(maxFlips, flips);
-      checkSum += if i % 2 == 0 then flips else -flips;
+      checkSum += if j % 2 == 0 then flips else -flips;
     }
   }
   
@@ -35,7 +36,8 @@ proc main() {
 
 iter fannkuch(inds) {
   var p, pp, count: [0..#n] int;
-  p = 0..#n;
+  for i in 0..#n do
+    p[i] = i;
 
   firstPerm();
 
@@ -51,13 +53,11 @@ iter fannkuch(inds) {
   proc firstPerm() {
     var idx = inds.low;
     for i in 1..n-1 by -1 {
-      const fact_i = fact(i),
-            d = idx / fact_i;
+      const d = idx / fact(i);;
       count[i] = d;
       idx %= fact(i);
 
-      for i in 0..i do
-        pp[i] = p[i];
+      pp[0..i] = p[0..i];
 
       for j in 0..i {
         if j + d <= i then
