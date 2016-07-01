@@ -1,42 +1,42 @@
 /* The Computer Language Benchmarks Game
- * http://benchmarksgame.alioth.debian.org/
- *
- * contributed by Kyle Brady
- * based upon the C implementation by Christian Vosteen
+   http://benchmarksgame.alioth.debian.org/
+
+   contributed by Kyle Brady
+   based upon the C implementation by Christian Vosteen
  */
 
 module meteor {
   /* The board is a 50 cell hexagonal pattern.  For    . . . . .
-   * maximum speed the board will be implemented as     . . . . .
-   * 50 bits, which will fit into a 64 bit long long   . . . . .
-   * int.                                               . . . . .
-   *                                                   . . . . .
-   * I will represent 0's as empty cells and 1's        . . . . .
-   * as full cells.                                    . . . . .
-   *                                                    . . . . .
-   *                                                   . . . . .
-   *                                                    . . . . .
+     maximum speed the board will be implemented as     . . . . .
+     50 bits, which will fit into a 64 bit int.        . . . . .
+                                                        . . . . .
+                                                       . . . . .
+     I will represent 0's as empty cells and 1's        . . . . .
+     as full cells.                                    . . . . .
+                                                        . . . . .
+                                                       . . . . .
+                                                        . . . . .
    */
 
   /* The puzzle pieces must be specified by the path followed
-   * from one end to the other along 12 hexagonal directions.
-   *
-   *   Piece 0   Piece 1   Piece 2   Piece 3   Piece 4
-   *
-   *  O O O O    O   O O   O O O     O O O     O   O
-   *         O    O O           O       O       O O
-   *                           O         O         O
-   *
-   *   Piece 5   Piece 6   Piece 7   Piece 8   Piece 9
-   *
-   *    O O O     O O       O O     O O        O O O O
-   *       O O       O O       O       O O O        O
-   *                  O       O O
-   *
-   * I had to make it 12 directions because I wanted all of the
-   * piece definitions to fit into the same size arrays.  It is
-   * not possible to define piece 4 in terms of the 6 cardinal
-   * directions in 4 moves.
+     from one end to the other along 12 hexagonal directions.
+
+       Piece 0   Piece 1   Piece 2   Piece 3   Piece 4
+
+      O O O O    O   O O   O O O     O O O     O   O
+             O    O O           O       O       O O
+                               O         O         O
+
+       Piece 5   Piece 6   Piece 7   Piece 8   Piece 9
+
+        O O O     O O       O O     O O        O O O O
+           O O       O O       O       O O O        O
+                      O       O O
+
+     I had to make it 12 directions because I wanted all of the
+     piece definitions to fit into the same size arrays.  It is
+     not possible to define piece 4 in terms of the 6 cardinal
+     directions in 4 moves.
    */
   enum direction {
     E=0,
@@ -70,14 +70,14 @@ module meteor {
   ];
 
   /* To minimize the amount of work done in the recursive solve function below,
-   * I'm going to allocate enough space for all legal rotations of each piece
-   * at each position on the board. That's 10 pieces x 50 board positions x
-   * 12 rotations.  However, not all 12 rotations will fit on every cell, so
-   * I'll have to keep count of the actual number that do.
-   * The pieces are going to be unsigned long long ints just like the board so
-   * they can be bitwise-anded with the board to determine if they fit.
-   * I'm also going to record the next possible open cell for each piece and
-   * location to reduce the burden on the solve function.
+     I'm going to allocate enough space for all legal rotations of each piece
+     at each position on the board. That's 10 pieces x 50 board positions x
+     12 rotations.  However, not all 12 rotations will fit on every cell, so
+     I'll have to keep count of the actual number that do.
+     The pieces are going to be unsigned ints just like the board so
+     they can be bitwise-anded with the board to determine if they fit.
+     I'm also going to record the next possible open cell for each piece and
+     location to reduce the burden on the solve function.
    */
   var pieces: [0..9][0..49][0..11] uint;
   var pieceCounts: [0..9][0..49] int;
@@ -94,9 +94,9 @@ module meteor {
   }
 
   /* Returns the new cell index from the specified cell in the
-   * specified direction.  The index is only valid if the
-   * starting cell and direction have been checked by the
-   * outOfBounds function first.
+     specified direction.  The index is only valid if the
+     starting cell and direction have been checked by the
+     outOfBounds function first.
    */
   proc shift(cell: int(8), dir: direction) : int(8) {
     select dir {
@@ -154,8 +154,8 @@ module meteor {
   }
 
   /* Returns whether the specified cell and direction will land outside
-   * of the board.  Used to determine if a piece is at a legal board
-   * location or not.
+     of the board.  Used to determine if a piece is at a legal board
+     location or not.
    */
   proc outOfBounds(cell: int(8), dir: direction) : bool {
     var i: int(8);
@@ -228,9 +228,9 @@ module meteor {
   }
 
   /* Returns the lowest index of the cells of a piece.
-  * I use the lowest index that a piece occupies as the index for looking up
-  * the piece in the solve function.
-  */
+     I use the lowest index that a piece occupies as the index for looking up
+     the piece in the solve function.
+   */
   proc minimumOfCells(cell: [] int(8)) : int(8) {
     var minimum: int(8) = max(int(8));
     for i in cell do
@@ -238,10 +238,10 @@ module meteor {
     return minimum;
   }
 
-  /* Calculate the lowest possible open cell if the piece is placed on the board.
-  * Used to later reduce the amount of time searching for open cells in the
-  * solve function.
-  */
+  /* Calculate the lowest possible open cell if the piece is placed on the
+     board.  Used to later reduce the amount of time searching for open cells in
+     the solve function.
+   */
   proc firstEmptyCell(cell: [] int(8), minimum: int(8)) {
     var firstEmpty = minimum;
     while (firstEmpty == cell[0] || firstEmpty == cell[1] ||
@@ -252,8 +252,8 @@ module meteor {
     return firstEmpty;
   }
 
-  /* Generate the unsigned long long int that will later be anded with the
-   * board to determine if it fits.
+  /* Generate the unsigned int that will later be anded with the board to
+     determine if it fits.
    */
   proc bitmaskFromCells(cell: [] int(8)) : uint(64) {
     var pieceMask: uint(64) = 0;
@@ -264,16 +264,17 @@ module meteor {
   }
 
   /* Record the piece and other important information in arrays that will
-   * later be used by the solve function.
+     later be used by the solve function.
    */
-  proc recordPiece(piece: int, minimum: int, firstEmpty: int(8), pieceMask: uint(64)) {
+  proc recordPiece(piece: int, minimum: int, firstEmpty: int(8),
+                   pieceMask: uint(64)) {
     pieces[piece][minimum][pieceCounts[piece][minimum]] = pieceMask;
     nextCell[piece][minimum][pieceCounts[piece][minimum]] = firstEmpty:uint(8);
     pieceCounts[piece][minimum] += 1;
   }
 
   /* Fill the entire board going cell by cell.  If any cells are "trapped"
-   * they will be left alone.
+     they will be left alone.
    */
   proc fillContiguousSpace(board: [] int(8), indx: int(8)) {
     if(board[indx] == 1) then
@@ -294,10 +295,10 @@ module meteor {
   }
 
   /* To thin the number of pieces, I calculate if any of them trap any empty
-   * cells at the edges.  There are only a handful of exceptions where
-   * the board can be solved with the trapped cells.  For example:  piece 8 can
-   * trap 5 cells in the corner, but piece 3 can fit in those cells, or piece 0
-   * can split the board in half where both halves are viable.
+     cells at the edges.  There are only a handful of exceptions where
+     the board can be solved with the trapped cells.  For example:  piece 8 can
+     trap 5 cells in the corner, but piece 3 can fit in those cells, or piece 0
+     can split the board in half where both halves are viable.
    */
   proc hasIsland(cell: [] int(8), piece: int) : bool {
     var tempBoard: [0..49] int(8);
@@ -323,11 +324,11 @@ module meteor {
   }
 
   /* Calculate all six rotations of the specified piece at the specified index.
-   * We calculate only half of piece 3's rotations.  This is because any solution
-   * found has an identical solution rotated 180 degrees.  Thus we can reduce the
-   * number of attempted pieces in the solve algorithm by not including the 180-
-   * degree-rotated pieces of ONE of the pieces.  I chose piece 3 because it gave
-   * me the best time ;)
+     We calculate only half of piece 3's rotations.  This is because any
+     solution found has an identical solution rotated 180 degrees.  Thus we can
+     reduce the number of attempted pieces in the solve algorithm by not
+     including the 180-degree-rotated pieces of ONE of the pieces.  I chose
+     piece 3 because it gave me the best time ;)
    */
   proc calcSixRotations(piece: int(8), indx: int(8), cell: [] int(8)) {
     var minimum, firstEmpty: int(8);
@@ -360,10 +361,10 @@ module meteor {
   }
 
   /* Calculate all 32 possible states for a 5-bit row and all rows that will
-  * create islands that follow any of the 32 possible rows.  These pre-
-  * calculated 5-bit rows will be used to find islands in a partially solved
-  * board in the solve function.
-  */
+     create islands that follow any of the 32 possible rows.  These pre-
+     calculated 5-bit rows will be used to find islands in a partially solved
+     board in the solve function.
+   */
   const ROWMASK: int(8) = 0x1F;
   const TRIPLEMASK = 0x7FFF;
   var badEvenRows: [0..31][0..31] bool;
@@ -404,26 +405,26 @@ module meteor {
   }
 
   /* Check for cases where three rows checked sequentially cause a false
-   * positive.  One scenario is when 5 cells may be surrounded where piece 5
-   * or 7 can fit.  The other scenario is when piece 2 creates a hook shape.
+     positive.  One scenario is when 5 cells may be surrounded where piece 5
+     or 7 can fit.  The other scenario is when piece 2 creates a hook shape.
    */
   proc tripleIsOkay(row1: int(8), row2: int(8), row3: int(8), even: bool) : bool {
     if even {
       /* There are four cases:
-      * row1: 00011  00001  11001  10101
-      * row2: 01011  00101  10001  10001
-      * row3: 011??  00110  ?????  ?????
-      */
+         row1: 00011  00001  11001  10101
+         row2: 01011  00101  10001  10001
+         row3: 011??  00110  ?????  ?????
+       */
       return ((row1 == 0x03) && (row2 == 0x0B) && ((row3 & 0x1C) == 0x0C)) ||
              ((row1 == 0x01) && (row2 == 0x05) && (row3 == 0x06)) ||
              ((row1 == 0x19) && (row2 == 0x11)) ||
              ((row1 == 0x15) && (row2 == 0x11));
     } else {
       /* There are two cases:
-      * row1: 10011  10101
-      * row2: 10001  10001
-      * row3: ?????  ?????
-      */
+         row1: 10011  10101
+         row2: 10001  10001
+         row3: ?????  ?????
+       */
       return ((row1 == 0x13) && (row2 == 0x11)) ||
              ((row1 == 0x15) && (row2 == 0x11));
     }
@@ -446,7 +447,8 @@ module meteor {
           && tripleIsOkay(row1, row2, row3, true)) then
             badEvenTriple[row1+(row2:int*32)+(row3:int*1024)] = false;
           else {
-            badEvenTriple[row1+(row2:int*32)+(row3:int*1024)] = result1 || result2;
+            badEvenTriple[row1+(row2:int*32)+(row3:int*1024)] =
+              result1 || result2;
           }
 
           result1 = badOddRows[row1][row2];
@@ -455,14 +457,14 @@ module meteor {
           && tripleIsOkay(row1, row2, row3, false)) then
             badOddTriple[row1+(row2:int*32)+(row3:int*1024)] = false;
           else
-            badOddTriple[row1+(row2:int*32)+(row3:int*1024)] = result1 || result2;
+            badOddTriple[row1+(row2:int*32)+(row3:int*1024)] =
+              result1 || result2;
         }
       }
     }
   }
 
-  /* Calculate islands while solving the board.
-   */
+  /* Calculate islands while solving the board. */
   proc boardHasIslands(cell: uint(8), board: uint) : bool {
     /* Too low on board, don't bother checking */
     if cell >= 40 then
@@ -475,10 +477,10 @@ module meteor {
   }
 
   /* The recursive solve algorithm.  Try to place each permutation in the upper-
-   * leftmost empty cell.  Mark off available pieces as it goes along.
-   * Because the board is a bit mask, the piece number and bit mask must be saved
-   * at each successful piece placement.  This data is used to create a 50 char
-   * array if a solution is found.
+     leftmost empty cell.  Mark off available pieces as it goes along.  Because
+     the board is a bit mask, the piece number and bit mask must be saved at
+     each successful piece placement.  This data is used to create a 50 char
+     array if a solution is found.
    */
   var solutions: [0..2099][0..49] uint(8);
   var solutionCount: atomic int;
