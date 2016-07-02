@@ -2,7 +2,7 @@
 
 .. _ug-basicTypes:
 
-Basic Types: Booleans, Numbers, and Strings
+Basic Types: booleans, numbers, and strings
 ===========================================
 
 Chapel supports a variety of basic types to represent logical values,
