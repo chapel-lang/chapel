@@ -71,16 +71,16 @@ module BLAS {
   enum Order {Row=101:c_int, Col=102};
 
   /* Operation of matrix : none, transpose, or adjoint */
-  enum Op {N=111:c_int, T=112:c_int, H=113:c_int}; // NoTranspose, Transpose, Adjoint
+  enum Op {N=111:c_int, T=112, H=113}; // NoTranspose, Transpose, Adjoint
 
   /* Storage for symmetric matrices */
-  enum Uplo {Upper=121:c_int, Lower=122:c_int};
+  enum Uplo {Upper=121:c_int, Lower=122};
 
   /* Assume a unit or non-unit diagonal */
-  enum Diag {NonUnit=131:c_int, Unit=132:c_int};
+  enum Diag {NonUnit=131:c_int, Unit=132};
 
   /* Operate on the left or right side */
-  enum Side {Left=141:c_int, Right=142:c_int};
+  enum Side {Left=141:c_int, Right=142};
 
   /* Level 3 BLAS */
 
