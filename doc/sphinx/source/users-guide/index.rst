@@ -44,13 +44,8 @@ support of parallelism and locality are removed.
    base/casts
    base/forloops
 
-..   base/constParamType
-..   base/configs
-..   base/refs
-..   base/basicArrays
-..   base/compoundStmts
-
 (more to come...)
+
 
 .. _index-task-parallelism:
 
@@ -71,6 +66,7 @@ explicitly and synchronizing between them.
 
 (more to come...)
 
+
 .. _index-data-parallelism:
 
 Data Parallelism
@@ -78,6 +74,12 @@ Data Parallelism
 
 These are Chapel's higher-level features for creating parallelism more
 abstractly using a rich set of data structures.
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   datapar/forall
 
 (more to come...)
 

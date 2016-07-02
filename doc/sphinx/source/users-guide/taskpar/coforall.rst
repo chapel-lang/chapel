@@ -1,5 +1,7 @@
 :title: Users Guide: The **coforall** statement
 
+.. _ug-coforall:
+
 The **coforall** statement
 ==========================
 
