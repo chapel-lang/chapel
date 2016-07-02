@@ -1,7 +1,7 @@
-:title: Users Guide: *Locales* in Chapel
+:title: Users Guide: *Locales*
 
-*Locales* in Chapel
-===================
+*Locales*: representing architectural locality
+==============================================
 
 In Chapel, a *locale* is a subset of the target architecture that can
 be used to control and reason about affinity for the sake of

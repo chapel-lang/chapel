@@ -1,9 +1,9 @@
-:title: Users Guide: The **coforall** statement
+:title: Users Guide: **coforall**-loops
 
 .. _ug-coforall:
 
-The **coforall** statement
-==========================
+**coforall**-loops: loop-based tasking
+======================================
 
 The **coforall statement** can be used to create an arbitrary number
 of related, homogeneous tasks.  Syntactically, it mirrors the for-loop

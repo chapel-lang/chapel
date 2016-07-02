@@ -1,9 +1,9 @@
-:title: Users Guide: For loops
+:title: Users Guide: **for**-loops
 
 .. _ug-forloops:
 
-For-loops
-=========
+**for**-loops: structured serial iteration
+==========================================
 
 *For-loops* are Chapel's means of expressing serial iteration as
 driven by an *iterand*—an iterator function or iterable expression.

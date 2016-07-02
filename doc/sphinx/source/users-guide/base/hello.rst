@@ -1,6 +1,6 @@
-:title: Users Guide: Simple Console Output: Hello world
+:title: Users Guide: Hello world
 
-Simple Console Output: Hello world
+Hello world: simple console output
 ==================================
 
 A good feature to learn first in any language is how to print things

@@ -37,8 +37,8 @@ support of parallelism and locality are removed.
    :maxdepth: 1
    :glob:
 
-   base/simpleConsoleOutput
-   base/variableDeclarations
+   base/hello
+   base/vars
    base/basicTypes
    base/basicValues
    base/casts
@@ -60,7 +60,7 @@ explicitly and synchronizing between them.
    :glob:
 
    taskpar/taskParallelismOverview
-   taskpar/theBeginStatement
+   taskpar/begin
    taskpar/cobegin
    taskpar/coforall
 
