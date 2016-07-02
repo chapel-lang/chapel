@@ -1,7 +1,7 @@
-:title: Users Guide: The **begin** statement
+:title: Users Guide: **begin** Statements
 
-The **begin** statement
-=======================
+**begin** Statements: unstructured tasking
+==========================================
 
 The simplest way to create a task in Chapel is with the **begin**
 statement.  It prefixes another statement and indicates that a task
