@@ -164,6 +164,41 @@ void wait_done_obj(done_t* done)
 }
 
 typedef struct {
+  c_nodeid_t    caller;
+  c_sublocid_t  subloc;
+
+  void*         ack;
+
+  chpl_bool     serial_state; // true if not allowed to spawn new threads
+  chpl_fn_int_t fid;
+  uint16_t      payload_size;
+
+} small_fork_hdr_t;
+
+typedef struct {
+  small_fork_hdr_t hdr;
+  void*            arg;
+  size_t           arg_size;
+} large_fork_t;
+
+#define MAX_SMALL_FORK_SIZE 128
+
+typedef struct {
+  unsigned char space[MAX_SMALL_FORK_SIZE];
+} small_fork_space_t;
+
+typedef union {
+  small_fork_hdr_t   small;
+  large_fork_t       large;
+  small_fork_space_t space;
+} special_fork_t;
+
+typedef struct {
+  chpl_comm_on_bundle_t bundle;
+  special_fork_t        space;
+} special_fork_task_t;
+
+typedef struct {
   void*   ack;
   int     id;       // private broadcast table entry to update
   int     size;     // size of data
@@ -191,10 +226,14 @@ typedef struct {
 //
 typedef enum {
   FORK = 128,           // synchronous fork
+  FORK_SMALL,           // synchronous small fork
   FORK_LARGE,           // synchronous fork with a huge argument
   FORK_NB,              // non-blocking fork
+  FORK_NB_SMALL,        // non-blocking small fork
   FORK_NB_LARGE,        // non-blocking fork with a huge argument
   FORK_FAST,            // run the function in the handler (use with care)
+  FORK_FAST_SMALL,      // run the function in the handler (use with care)
+
   SIGNAL,               // ack to a done_t via gasnet_AMReplyShortM()
   SIGNAL_LONG,          // ack to a done_t via gasnet_AMReplyLongM()
   PRIV_BCAST,           // put data at addr (used for private broadcast)
@@ -209,15 +248,54 @@ typedef enum {
 static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
   chpl_comm_on_bundle_t *f = buf;
 
-  chpl_ftable_call(f->fid, f);
+  // Run the function
+  chpl_ftable_call(f->comm.fid, f);
 
-  // Signal that the handler has completed
-  GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
-                                   Arg0(f->comm.ack), Arg1(f->comm.ack)));
+  // Signal that the handler has completed if that was requested.
+  if (f->comm.ack)
+    GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
+                                     Arg0(f->comm.ack), Arg1(f->comm.ack)));
 }
 
+static inline
+size_t setup_fork_task(special_fork_task_t* dst, small_fork_hdr_t* f, size_t nbytes)
+{
+  chpl_comm_bundleData_t comm  = { .fid    = f->fid,
+                                   .caller = f->caller,
+                                   .ack    = f->ack };
+  chpl_comm_on_bundle_t bundle = { .comm =  comm };
+  chpl_comm_on_bundle_t *bptr  = &dst->bundle;
+  size_t payload_size = nbytes - sizeof(small_fork_hdr_t);
+
+  dst->bundle = bundle;
+
+  // Copy the payload into the special task
+  memcpy(bptr + 1, f + 1, payload_size);
+
+  return sizeof(chpl_comm_on_bundle_t) + payload_size;
+}
+
+
+static void AM_fork_fast_small(gasnet_token_t token, void* buf, size_t nbytes) {
+  small_fork_hdr_t *f = buf;
+  special_fork_task_t task;
+  chpl_comm_on_bundle_t *bptr = &task.bundle;
+
+  // Copy the data into a chpl_comm_on_bundle_t
+  setup_fork_task(&task, f, nbytes);
+
+  // Run the function
+  chpl_ftable_call(f->fid, bptr);
+
+  // Signal that the handler has completed if that was requested.
+  if (f->ack)
+    GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL,
+                                     Arg0(f->ack), Arg1(f->ack)));
+}
+
+
 static void fork_wrapper(chpl_comm_on_bundle_t *f) {
-  chpl_ftable_call(f->fid, f);
+  chpl_ftable_call(f->comm.fid, f);
 
   GASNET_Safe(gasnet_AMRequestShort2(f->comm.caller, SIGNAL,
                                      Arg0(f->comm.ack), Arg1(f->comm.ack)));
@@ -231,26 +309,54 @@ static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
                            f->task_bundle.serial_state);
 }
 
-static void fork_large_wrapper(chpl_comm_on_bundle_t* f) {
+static void AM_fork_small(gasnet_token_t token, void* buf, size_t nbytes) {
+  small_fork_hdr_t *f = buf;
+  special_fork_task_t task;
+  chpl_comm_on_bundle_t *bptr = &task.bundle;
+  size_t size;
+
+  // Copy the data into a chpl_comm_on_bundle_t
+  size = setup_fork_task(&task, f, nbytes);
+ 
+  chpl_task_startMovedTask((chpl_fn_p)fork_wrapper,
+                           chpl_comm_on_bundle_task_bundle(bptr),
+                           size,
+                           f->subloc, chpl_nullTaskID,
+                           f->serial_state);
+}
+
+
+static void fork_large_wrapper(special_fork_task_t* f) {
+  large_fork_t *lg = &f->space.large;
   chpl_comm_on_bundle_t* arg;
   int caller;
   size_t bundle_size_on_caller;
   void* arg_on_caller;
+  void* ack;
+  chpl_fn_int_t fid;
 
-  caller = f->comm.caller;
-  bundle_size_on_caller = f->comm.bundle_size_on_caller;
-  arg_on_caller = f->comm.ack;
+  caller = lg->hdr.caller;
+  bundle_size_on_caller = lg->arg_size;
+  arg_on_caller = lg->arg;
+  ack = lg->hdr.ack;
+  fid = lg->hdr.fid;
 
+  // Allocate the bundle
   arg = chpl_mem_allocMany(1, bundle_size_on_caller,
                            CHPL_RT_MD_COMM_FRK_RCV_ARG, 0, 0);
 
+  // GET the bundle data
+  // TODO: This could get only the payload
   chpl_comm_get(arg, caller, arg_on_caller, bundle_size_on_caller,
                 -1 /*typeIndex: unused*/, 0, CHPL_FILE_IDX_FORK_LARGE);
 
-  chpl_ftable_call(arg->fid, arg);
-  GASNET_Safe(gasnet_AMRequestShort2(arg->comm.caller, SIGNAL,
-                                     Arg0(arg->comm.ack), Arg1(arg->comm.ack)));
+  // Call the on body function
+  chpl_ftable_call(f->space.large.hdr.fid, arg);
 
+  // Signal completion
+  GASNET_Safe(gasnet_AMRequestShort2(caller, SIGNAL, Arg0(ack), Arg1(ack)));
+
+  // Free the bundle we just allocated.
   chpl_mem_free(arg, 0, 0);
 }
 
@@ -258,15 +364,23 @@ static void fork_large_wrapper(chpl_comm_on_bundle_t* f) {
 ////           hide data copy by making get non-blocking
 ////GASNET - can we allocate f big enough so as not to need malloc in wrapper
 static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
-  chpl_comm_on_bundle_t* f = (chpl_comm_on_bundle_t*) buf;
+  small_fork_hdr_t *f = buf;
+  special_fork_task_t task;
+  chpl_comm_on_bundle_t *bptr = &task.bundle;
+  size_t size;
+
+  // Copy the data into a chpl_comm_on_bundle_t
+  size = setup_fork_task(&task, f, nbytes);
+ 
   chpl_task_startMovedTask((chpl_fn_p)fork_large_wrapper,
-                           chpl_comm_on_bundle_task_bundle(f), nbytes,
-                           f->task_bundle.requestedSubloc, chpl_nullTaskID,
-                           f->task_bundle.serial_state);
+                           chpl_comm_on_bundle_task_bundle(bptr),
+                           size,
+                           f->subloc, chpl_nullTaskID,
+                           f->serial_state);
 }
 
 static void fork_nb_wrapper(chpl_comm_on_bundle_t *f) {
-  chpl_ftable_call(f->fid, f);
+  chpl_ftable_call(f->comm.fid, f);
 }
 
 static void AM_fork_nb(gasnet_token_t  token,
@@ -279,26 +393,54 @@ static void AM_fork_nb(gasnet_token_t  token,
                            f->task_bundle.serial_state);
 }
 
-static void fork_nb_large_wrapper(chpl_comm_on_bundle_t* f) {
+static void AM_fork_nb_small(gasnet_token_t  token,
+                             void           *buf,
+                             size_t          nbytes) {
+  small_fork_hdr_t *f = buf;
+  special_fork_task_t task;
+  chpl_comm_on_bundle_t *bptr = &task.bundle;
+  size_t size;
+
+  // Copy the data into a chpl_comm_on_bundle_t
+  size = setup_fork_task(&task, f, nbytes);
+ 
+  chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper,
+                           chpl_comm_on_bundle_task_bundle(bptr), size,
+                           f->subloc, chpl_nullTaskID,
+                           f->serial_state);
+}
+
+
+static void fork_nb_large_wrapper(special_fork_task_t* f) {
+  large_fork_t *lg = &f->space.large;
   chpl_comm_on_bundle_t* arg;
   int caller;
   size_t bundle_size_on_caller;
   void* arg_on_caller;
+  chpl_fn_int_t fid;
 
-  caller = f->comm.caller;
-  bundle_size_on_caller = f->comm.bundle_size_on_caller;
-  arg_on_caller = f->comm.ack;
+  caller = lg->hdr.caller;
+  bundle_size_on_caller = lg->arg_size;
+  arg_on_caller = lg->arg;
+  fid = lg->hdr.fid;
 
+  // Allocate the bundle
   arg = chpl_mem_allocMany(1, bundle_size_on_caller,
                            CHPL_RT_MD_COMM_FRK_RCV_ARG, 0, 0);
 
+  // GET the bundle data
   chpl_comm_get(arg, caller, arg_on_caller, bundle_size_on_caller,
                 -1 /*typeIndex: unused*/, 0, CHPL_FILE_IDX_FORK_LARGE);
 
-  GASNET_Safe(gasnet_AMRequestShort2(f->comm.caller, FREE,
+  // Signal that the allocated region can be freed
+  GASNET_Safe(gasnet_AMRequestShort2(caller, FREE,
                                      Arg0(arg_on_caller),
                                      Arg1(arg_on_caller)));
-  chpl_ftable_call(f->fid, arg);
+
+  // Call the user function
+  chpl_ftable_call(lg->hdr.fid, arg);
+
+  // Free the bundle we just allocated
   chpl_mem_free(arg, 0, 0);
 }
 
@@ -404,10 +546,13 @@ void AM_copy_payload(gasnet_token_t token, void* buf, size_t nbytes,
 
 static gasnet_handlerentry_t ftable[] = {
   {FORK,          AM_fork},
+  {FORK_SMALL,    AM_fork_small},
   {FORK_LARGE,    AM_fork_large},
   {FORK_NB,       AM_fork_nb},
+  {FORK_NB_SMALL, AM_fork_nb_small},
   {FORK_NB_LARGE, AM_fork_nb_large},
   {FORK_FAST,     AM_fork_fast},
+  {FORK_FAST_SMALL, AM_fork_fast_small},
   {SIGNAL,        AM_signal},
   {SIGNAL_LONG,   AM_signal_long},
   {PRIV_BCAST,    AM_priv_bcast},
@@ -1217,6 +1362,115 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
   gasnet_puts_bulk(dstnode, dstaddr, dststr, srcaddr, srcstr, cnt, strlvls); 
 }
 
+static inline
+void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
+                        chpl_fn_int_t fid,
+                        chpl_comm_on_bundle_t *arg, size_t arg_size,
+                        chpl_bool fast, chpl_bool blocking) {
+  done_t done;
+  size_t payload_size = arg_size - sizeof(chpl_comm_on_bundle_t);
+  size_t small_msg_size = payload_size + sizeof(small_fork_hdr_t);
+  int large = (arg_size > gasnet_AMMaxMedium());
+  int small = (small_msg_size < sizeof(special_fork_t) && !large);
+
+  int op;
+
+  chpl_bool serial_state = chpl_task_getSerial();
+
+  if (blocking)
+    init_done_obj(&done, 1);
+
+  // Don't consider it fast if it's large, because the
+  // handler has to GET the bundle.
+  fast = fast && ! large;
+
+  op = 0;
+  if (fast) {
+    // At this point, a fast implies !large.
+    // A fast non-blocking fork is the same as a fast blocking
+    // one, except the non-blocking version does not notify completion.
+    if (small)      op = FORK_FAST_SMALL;
+    else            op = FORK_FAST;
+  } else if(blocking) {
+    if (small)      op = FORK_SMALL;
+    else if (large) op = FORK_LARGE;
+    else            op = FORK;
+  } else {
+    if (small)      op = FORK_NB_SMALL;
+    else if (large) op = FORK_NB_LARGE;
+    else            op = FORK_NB;
+  }
+
+  if (small || large) {
+    special_fork_t tmp;
+
+    small_fork_hdr_t hdr = { .caller = chpl_nodeID,
+                             .subloc = subloc,
+                             .ack = blocking ? &done : NULL,
+                             .serial_state = serial_state,
+                             .fid = fid,
+                             .payload_size = payload_size };
+
+    if (small) {
+      // Copy the argument bundle payload to a smaller message.
+      // We'll reconstruct the argument bundle payload on the other end.
+      // This copying should have minor performance impact because
+      // arg_size is small.
+      small_fork_hdr_t *f = &tmp.small;
+
+      // Copy in the header
+      *f = hdr;
+
+      // Copy in the payload
+      memcpy(f + 1, arg + 1, payload_size);
+    
+      // Send the AM
+      GASNET_Safe(gasnet_AMRequestMedium0(node, op, f, small_msg_size));
+    } else {
+      // Setup a small message pointing to arg
+      // so the other side can GET from it
+      large_fork_t *f = &tmp.large;
+      chpl_comm_on_bundle_t* use_arg;
+
+      if (blocking)
+        use_arg = arg;
+      else {
+        // Since the argument will necessarily continue to exist
+        // unchanged after this call, for an execute_on_nb we need
+        // to copy the argument if it is large.
+        // An AM back to us will free it.
+
+        use_arg = chpl_mem_allocMany(1, arg_size,
+                                     CHPL_RT_MD_COMM_FRK_SND_ARG, 0, 0);
+        chpl_memcpy(use_arg, arg, arg_size);
+      }
+
+      // Copy in the header
+      f->hdr = hdr;
+
+      // Set the pointer to GET with
+      f->arg      = use_arg;
+      f->arg_size = arg_size;
+
+      // Send the AM
+      GASNET_Safe(gasnet_AMRequestMedium0(node, op, f, sizeof(large_fork_t)));
+    }
+  } else {
+    // Neither small nor large
+
+    chpl_task_bundle_t bundle = { .serial_state    = serial_state,
+                                  .requestedSubloc = subloc };
+
+    arg->comm.caller = chpl_nodeID;
+    arg->comm.fid = fid;
+    arg->comm.ack = blocking ? &done : NULL;
+
+    GASNET_Safe(gasnet_AMRequestMedium0(node, op, arg, arg_size));
+  }
+
+  if (blocking)
+    wait_done_obj(&done);
+}
 
 ////GASNET - introduce locale-int size
 ////GASNET - is caller in chpl_comm_on_bundle_t redundant? active message can determine this.
@@ -1240,35 +1494,8 @@ void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
       chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
 
-    arg->task_bundle.serial_state = chpl_task_getSerial();
-    arg->task_bundle.countRunning = false;
-    arg->task_bundle.is_executeOn = true;
-    arg->task_bundle.requestedSubloc = subloc;
-    arg->task_bundle.requested_fn = NULL;
-    arg->fid = fid;
-    arg->comm.caller = chpl_nodeID;
-    arg->comm.bundle_size_on_caller = arg_size;
-    arg->comm.ack = &done;
-
-    init_done_obj(&done, 1);
-
-    if (arg_size <= gasnet_AMMaxMedium()) {
-      GASNET_Safe(gasnet_AMRequestMedium0(node, FORK, arg, arg_size));
-    } else {
-      chpl_comm_on_bundle_t tmp;
-      // Copy only the initial portion of the bundle
-      // (ie no task arguments).
-      tmp = *arg;
-      tmp.comm.ack = arg; // abuse ack for large arg
-      assert( sizeof(tmp) <= gasnet_AMMaxMedium());
-      // OK to do FORK_LARGE from argument bundle because
-      // the next thing we will do is to wait for completion,
-      // so the GET into bundle_on_caller will be complete
-      // in addition to the rest of the task.
-      GASNET_Safe(gasnet_AMRequestMedium0(node, FORK_LARGE, &tmp, sizeof(tmp)));
-    }
-
-    wait_done_obj(&done);
+    execute_on_common(node, subloc, fid, arg, arg_size,
+                     /*fast*/ false, /*blocking*/ true);
   }
 }
 
@@ -1276,59 +1503,36 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                         chpl_fn_int_t fid,
                         chpl_comm_on_bundle_t *arg, size_t arg_size) {
 
-  chpl_comm_on_bundle_t *argCopy = NULL;
-  chpl_bool passArg = (chpl_nodeID == node
-                       || arg_size <= gasnet_AMMaxMedium());
-
-
-  if (!passArg) {
-    // If the arg bundle is too large to fit in a medium AM
-    // Copy the args into auxiliary memory and pass a pointer to this instead.
-    // An AM back to us will free it.
-    argCopy = chpl_mem_allocMany(1, arg_size,
-                                 CHPL_RT_MD_COMM_FRK_SND_ARG, 0, 0);
-    chpl_memcpy(argCopy, arg, arg_size);
-    arg = argCopy;
-  }
-
-  arg->task_bundle.serial_state = chpl_task_getSerial();
-  arg->task_bundle.countRunning = false;
-  arg->task_bundle.is_executeOn = true;
-  arg->task_bundle.requestedSubloc = subloc;
-  arg->task_bundle.requested_fn = NULL;
-  arg->fid = fid;
-  arg->comm.caller = chpl_nodeID;
-  arg->comm.bundle_size_on_caller = arg_size;
-  arg->comm.ack = argCopy; // abusing ack field for fork_nb
 
   if (chpl_nodeID == node) {
-    assert(0);
+    chpl_bool serial_state = chpl_task_getSerial();
+
+    assert(0); // locale model code should prevent this...
+
     // Visual Debug?  Should we generate a task here???
-    if (arg->task_bundle.serial_state)
-      chpl_ftable_call(arg->fid, arg);
+    if (serial_state)
+      chpl_ftable_call(fid, arg);
     else
       chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper,
                                chpl_comm_on_bundle_task_bundle(arg), arg_size,
                                subloc, chpl_nullTaskID,
-                               arg->task_bundle.serial_state);
-  } else {
-    // Visual Debug Support
-    chpl_vdebug_log_fork_nb(node, subloc, fid, arg, arg_size);
-
-    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-      printf("%d: remote non-blocking task created on %d\n", chpl_nodeID, node);
-    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-      chpl_sync_lock(&chpl_comm_diagnostics_sync);
-      chpl_comm_commDiagnostics.execute_on_nb++;
-      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
-    }
-    if (passArg) {
-      GASNET_Safe(gasnet_AMRequestMedium0(node, FORK_NB, arg, arg_size));
-    } else {
-      // fork_nb_large_wrapper will send an AM back to us to free argCopy
-      GASNET_Safe(gasnet_AMRequestMedium0(node, FORK_NB_LARGE, arg, arg_size));
-    }
+                               serial_state);
+    return;
   }
+
+  // Visual Debug Support
+  chpl_vdebug_log_fork_nb(node, subloc, fid, arg, arg_size);
+
+  if (chpl_verbose_comm && !chpl_comm_no_debug_private)
+    printf("%d: remote non-blocking task created on %d\n", chpl_nodeID, node);
+  if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+    chpl_sync_lock(&chpl_comm_diagnostics_sync);
+    chpl_comm_commDiagnostics.execute_on_nb++;
+    chpl_sync_unlock(&chpl_comm_diagnostics_sync);
+  }
+  
+  execute_on_common(node, subloc, fid, arg, arg_size,
+                    /*fast*/ false, /*blocking*/ false);
 }
 
 // GASNET - should only be called for "small" functions
@@ -1341,40 +1545,20 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
     assert(0);
     chpl_ftable_call(fid, arg);
   } else {
+    // Visual Debug Support
+    chpl_vdebug_log_fast_fork(node, subloc, fid, arg, arg_size);
 
-    if (arg_size <= gasnet_AMMaxMedium()) {
-      // Visual Debug Support
-      chpl_vdebug_log_fast_fork(node, subloc, fid, arg, arg_size);
-
-      if (chpl_verbose_comm && !chpl_comm_no_debug_private)
-        printf("%d: remote (no-fork) task created on %d\n",
-               chpl_nodeID, node);
-      if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
-        chpl_sync_lock(&chpl_comm_diagnostics_sync);
-        chpl_comm_commDiagnostics.execute_on_fast++;
-        chpl_sync_unlock(&chpl_comm_diagnostics_sync);
-      }
-
-      arg->task_bundle.serial_state = chpl_task_getSerial();
-      arg->task_bundle.countRunning = false;
-      arg->task_bundle.is_executeOn = true;
-      arg->task_bundle.requestedSubloc = subloc;
-      arg->task_bundle.requested_fn = NULL;
-      arg->fid = fid;
-      arg->comm.caller = chpl_nodeID;
-      arg->comm.bundle_size_on_caller = arg_size;
-      arg->comm.ack = &done;
-
-      init_done_obj(&done, 1);
-
-      GASNET_Safe(gasnet_AMRequestMedium0(node, FORK_FAST, arg, arg_size));
-
-      // Wait for the handler to complete
-      wait_done_obj(&done);
-    } else {
-      // Call the normal chpl_comm_execute_on()
-      chpl_comm_execute_on(node, subloc, fid, arg, arg_size);
+    if (chpl_verbose_comm && !chpl_comm_no_debug_private)
+      printf("%d: remote (no-fork) task created on %d\n",
+             chpl_nodeID, node);
+    if (chpl_comm_diagnostics && !chpl_comm_no_debug_private) {
+      chpl_sync_lock(&chpl_comm_diagnostics_sync);
+      chpl_comm_commDiagnostics.execute_on_fast++;
+      chpl_sync_unlock(&chpl_comm_diagnostics_sync);
     }
+
+  execute_on_common(node, subloc, fid, arg, arg_size,
+                    /*fast*/ true, /*blocking*/ true);
   }
 }
 
