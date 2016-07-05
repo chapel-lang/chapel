@@ -147,13 +147,20 @@ void chpl_vdebug_start (const char *fileroot, double now) {
   chpl_vdebug = 1;
 }
 
-// Record>  VdbMark: time.sec user.time system.time nodeID taskID
+// Record>  End: time.sec user.time system.time nodeID taskID
+//
+// Should be the last record in the file.
 
 void chpl_vdebug_stop (void) {
   struct rusage ru;  
   struct timeval tv;
   chpl_taskID_t stopTask = chpl_task_getId();
 
+  // First, shutdown VisualDebug
+  chpl_vdebug = 0;
+  uninstall_callbacks();
+
+  // Now log the stop
   if (chpl_vdebug_fd >= 0) {
     (void) gettimeofday (&tv, NULL);
     if ( getrusage (RUSAGE_SELF, &ru) < 0) {
@@ -170,8 +177,6 @@ void chpl_vdebug_stop (void) {
                   chpl_nodeID, (int) stopTask);
     close (chpl_vdebug_fd);
   }
-  chpl_vdebug = 0;
-  uninstall_callbacks();
 }
 
 // Record>  VdbMark: time.sec nodeId taskId
@@ -391,7 +396,7 @@ void  chpl_vdebug_log_fork_nb(c_nodeid_t node, c_sublocid_t subloc,
   }
 }
 
-// Record>  fork_nb: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
+// Record>  f_fork: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
 
 void chpl_vdebug_log_fast_fork(c_nodeid_t node, c_sublocid_t subloc,
                                chpl_fn_int_t fid, void *arg, int32_t arg_size) {
