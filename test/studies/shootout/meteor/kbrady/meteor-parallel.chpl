@@ -55,8 +55,12 @@ module meteor {
   }
 
   use direction;  // make direction's symbols directly available to this scope
+
+  /* Avoiding magic numbers */
+  var numPieces = 10;
+  var numBoardSquares = 50;
   
-  var pieceDef: [0..9][0..3] direction = [
+  var pieceDef: [0..#numPieces][0..3] direction = [
     [  E,  E,   E, SE],
     [ SE,  E,  NE,  E],
     [  E,  E,  SE, SW],
@@ -79,8 +83,8 @@ module meteor {
      I'm also going to record the next possible open cell for each piece and
      location to reduce the burden on the solve function.
    */
-  var pieces, nextCell: [0..9][0..49][0..11] int;
-  var pieceCounts: [0..9][0..49] int;
+  var pieces, nextCell: [0..#numPieces][0..#numBoardSquares][0..11] int;
+  var pieceCounts: [0..#numPieces][0..#numBoardSquares] int;
 
   /* Returns the direction rotated 60 degrees clockwise */
   proc rotate(dir) {
@@ -308,18 +312,18 @@ module meteor {
      can split the board in half where both halves are viable.
    */
   proc hasIsland(cell, piece) {
-    var tempBoard: [0..49] int;
+    var tempBoard: [0..#numBoardSquares] int;
     var c: int;
 
     for i in 0..4 do
       tempBoard[cell[i]] = 1;
 
-    var i = 49;
+    var i = numBoardSquares - 1;
     while tempBoard[i] == 1 do
       i -= 1;
     fillContiguousSpace(tempBoard, i);
 
-    for i in  0..49 do
+    for i in  0..#numBoardSquares do
       if tempBoard[i] == 0 then
         c += 1;
     if (c == 0 || (c == 5 && piece == 8) || (c == 40 && piece == 8) ||
@@ -354,11 +358,11 @@ module meteor {
     }
   }
 
-  var cells: [0..9][0..4] int;
+  var cells: [0..#numPieces][0..4] int;
   /* Calculate every legal rotation for each piece at each board location. */
   proc calcPieces() {
-    forall piece in 0..9 {
-      for indx in 0..49 {
+    forall piece in 0..#numPieces {
+      for indx in 0..#numBoardSquares {
         calcSixRotations(piece, indx, cells[piece]);
         flipPiece(piece);
         calcSixRotations(piece, indx, cells[piece]);
@@ -486,20 +490,20 @@ module meteor {
      each successful piece placement.  This data is used to create a 50 char
      array if a solution is found.
    */
-  var solutions: [0..2099][0..49] int;
+  var solutions: [0..2099][0..#numBoardSquares] int;
   var solutionCount: atomic int;
   var maxSolutions = 2100;
 
   proc recordSolution(solNums, solMasks) {
     var solMask: int;
     var mySolCount = solutionCount.fetchAdd(2);
-    for solNo in 0..9 {
+    for solNo in 0..#numPieces {
       solMask = solMasks[solNo];
-      for indx in 0..49 {
+      for indx in 0..#numBoardSquares {
         if (solMask & 1) {
           solutions[mySolCount][indx] = solNums[solNo];
           /* Board rotated 180 degrees is a solution too! */
-          solutions[mySolCount+1][49-indx] = solNums[solNo];
+          solutions[mySolCount+1][numBoardSquares-indx-1] = solNums[solNo];
         }
         solMask = solMask >> 1;
       }
@@ -509,7 +513,7 @@ module meteor {
   proc solve_helper(piece) {
     var board: uint = 0xFFFC000000000000;
     var avail: uint = 0x03FF;
-    var solNums, solMasks: [0..9] int;
+    var solNums, solMasks: [0..#numPieces] int;
     var pieceNoMask, maxRots, pieceMask, depth, cell = 0;
 
     pieceNoMask = 1 << piece;
@@ -533,7 +537,7 @@ module meteor {
 
 
   proc solve() {
-    forall piece in 0..9 do
+    forall piece in 0..#numPieces do
       solve_helper(piece);
   }
 
@@ -547,7 +551,7 @@ module meteor {
     while (board & (1 << cell)) do
       cell += 1;
 
-    for piece in 0..9 {
+    for piece in 0..#numPieces {
       pieceNoMask = 1 << piece;
       if !((avail & pieceNoMask):bool) {
         continue;
@@ -579,7 +583,7 @@ module meteor {
 
   /* pretty print a board in the specified hexagonal format */
   proc pretty(s) {
-    for i in 0..49 by 10 {
+    for i in 0..#numBoardSquares by 10 {
       // '0' -> 48 in ascii: shifting the numbers up into valid range
       writef("%c %c %c %c %c \n %c %c %c %c %c \n", s[i]+48, s[i+1]+48,
         s[i+2]+48, s[i+3]+48, s[i+4]+48, s[i+5]+48, s[i+6]+48,
@@ -590,7 +594,7 @@ module meteor {
 
   proc solutionLessThan(lhs, rhs) {
     if lhs == rhs then return false;
-    for i in 0..49 {
+    for i in 0..#numBoardSquares {
       if solutions[lhs][i] != solutions[rhs][i] then
         return solutions[lhs][i] < solutions[rhs][i];
     }
