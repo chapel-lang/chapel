@@ -66,6 +66,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   type sparseLayoutType;
   param stridable: bool = false;  // TODO: remove default value eventually
   const dist: Block(rank, idxType, sparseLayoutType);
+  const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable,
       sparseLayoutType);
   var pid: int = -1; // privatized object id (this should be factored out)
@@ -83,7 +84,7 @@ class SparseBlockDom: BaseSparseDomImpl {
           //                    writeln("Setting up on ", here.id);
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
          locDoms(localeIdx) = new LocSparseBlockDom(rank, idxType, stridable,
-             sparseLayoutType, dist.getChunk(parentDom,localeIdx));
+             sparseLayoutType, dist.getChunk(whole,localeIdx));
           //                    writeln("Back on ", here.id);
         }
       }
@@ -245,7 +246,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   proc dsiMember(ind) {
-    on parentDom.dist.idxToLocale(ind) {
+    on whole.dist.idxToLocale(ind) {
       writeln("Need to add support for mapping locale to local domain");
     }
   }
@@ -825,23 +826,24 @@ proc LocSparseBlockArr.dsiSerialWrite(f) {
 
 proc SparseBlockDom.dsiSupportsPrivatization() param return false;
 
-proc SparseBlockDom.dsiGetPrivatizeData() return (dist.pid, parentDom.dims());
+proc SparseBlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc SparseBlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
-  var c = new SparseBlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist, parentDom=parentDom);
+  var c = new SparseBlockDom(rank=rank, idxType=idxType, stridable=stridable,
+      dist=privdist, whole=whole);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
-  c.parentDom = {(...privatizeData(2))};
+  c.whole = {(...privatizeData(2))};
   return c;
 }
 
-proc SparseBlockDom.dsiGetReprivatizeData() return parentDom.dims();
+proc SparseBlockDom.dsiGetReprivatizeData() return whole.dims();
 
 proc SparseBlockDom.dsiReprivatize(other, reprivatizeData) {
   for i in dist.targetLocDom do
     locDoms(i) = other.locDoms(i);
-  parentDom = {(...reprivatizeData)};
+  whole = {(...reprivatizeData)};
 }
 
 proc SparseBlockArr.dsiSupportsPrivatization() param return false;
@@ -864,7 +866,7 @@ proc SparseBlockArr.dsiSupportsBulkTransfer() param return true;
 proc SparseBlockArr.doiCanBulkTransfer() {
   if dom.stridable then
     for param i in 1..rank do
-      if dom.parentDom.dim(i).stride != 1 then return false;
+      if dom.whole.dim(i).stride != 1 then return false;
 
   // See above note regarding aliased arrays
   if disableAliasedBulkTransfer then
@@ -957,7 +959,7 @@ proc SparseBlockArr.doiBulkTransfer(B) {
 
 iter ConsecutiveChunks(d1,d2,lid,lo) {
   var elemsToGet = d1.locDoms[lid].mySparseBlock.numIndices;
-  const offset   = d2.parentDom.low - d1.parentDom.low;
+  const offset   = d2.whole.low - d1.whole.low;
   var rlo=lo+offset;
   var rid  = d2.dist.targetLocsIdx(rlo);
   while (elemsToGet>0) {
@@ -972,7 +974,7 @@ iter ConsecutiveChunks(d1,d2,lid,lo) {
 iter ConsecutiveChunksD(d1,d2,i,lo) {
   const rank=d1.rank;
   var elemsToGet = d1.locDoms[i].mySparseBlock.dim(rank).length;
-  const offset   = d2.parentDom.low - d1.parentDom.low;
+  const offset   = d2.whole.low - d1.whole.low;
   var rlo = lo+offset;
   var rid = d2.dist.targetLocsIdx(rlo);
   while (elemsToGet>0) {
@@ -987,7 +989,7 @@ iter ConsecutiveChunksD(d1,d2,i,lo) {
 proc SparseBlockDom.numRemoteElems(rlo,rid){
   var blo,bhi:dist.idxType;
   if rid==(dist.targetLocDom.dim(rank).length - 1) then
-    bhi=parentDom.dim(rank).high;
+    bhi=whole.dim(rank).high;
   else
       bhi=dist.boundingBox.dim(rank).low +
         intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1),
