@@ -71,15 +71,16 @@ static void chpl_stack_unwind(void){
     // 2) Emit chpl_funSymTable in sorted order and use binary search on it
     for(int t = 0; t < chpl_sizeSymTable; t+=2 ){
       if (!strcmp(chpl_funSymTable[t], buffer)){
-        fprintf(stderr,"%s (%s:%d)\n",
-                 chpl_funSymTable[t+1],
-                 chpl_lookupFilename(chpl_filenumSymTable[t]),
-                 chpl_filenumSymTable[t+1]);
+        fprintf(stderr,"%s() at %s:%d\n",
+                  chpl_funSymTable[t+1],
+                  chpl_lookupFilename(chpl_filenumSymTable[t]),
+                  chpl_filenumSymTable[t+1]);
         break;
       }
     }
   }
-  fprintf(stderr,"\n");
+  if(chpl_sizeSymTable > 0)
+    fprintf(stderr,"\nStacktrace\n");
 }
 #endif
 

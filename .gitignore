@@ -380,8 +380,6 @@ tags
 /test/runtime/kbrady/goodAllocSize.good
 /test/runtime/sungeun/chpl-env-gen.h
 /test/runtime/sungeun/chpl-env-gen.test.gen.c
-/test/runtime/panzone/stacktrace.good
-/test/runtime/panzone/fact-stacktrace.good
 
 test/separate_compilation/jturner/libclassextern2.so.a
 test/separate_compilation/jturner/libfcfunc.so.a

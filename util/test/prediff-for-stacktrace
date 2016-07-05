@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# This script is a system-wide prediff for use when stack tracing is enabled.
+# If the test doesn't present a stack trace in the expected output, this script
+# will remove the stack trace (if present) in the generated output.
+#
+# Can also be used with the environment variable (on bash)
+#
+#  export CHPL_SYSTEM_PREDIFF=$CHPL_HOME/util/test/prediff-for-stacktrace
+
+# If the good file has a stack trace, the expected output shoul have it too
+if grep -q "Stacktrace.*" $1.good ; then
+  exit
+fi
+
+# The .good file doesn't have a stack trace, we should remove it from the
+# generated output
+if grep -q "Stacktrace.*" $2 ; then
+  perl -i -pe 'BEGIN{undef $/;} s/\nStacktrace.*Stacktrace\n//smg' $2
+fi
