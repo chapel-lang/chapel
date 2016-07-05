@@ -31,10 +31,9 @@
 #include CHPL_TASKS_MODEL_H
 #endif
 
-// CHPL_TASKS_MODEL_H defines a component of the task bundle,
-// chpl_task_bundleData_t, so the task bundle is declared here
-// after CHPL_TASKS_MODEL_H is included.
-#include "chpl-tasks-bundle.h"
+// CHPL_TASKS_MODEL_H must define the task bundle header type,
+// chpl_task_bundle_t.
+typedef chpl_task_bundle_t* chpl_task_bundle_p;
 
 //
 // Some function declarations here may be protected like this:
