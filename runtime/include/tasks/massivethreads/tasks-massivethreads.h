@@ -47,8 +47,18 @@ int chpl_task_supportsRemoteCache(void) {
   return 0;    // not sure; return safe answer
 }
 
+//
+// Task layer private area argument bundle header
+//
 typedef struct {
+  chpl_bool serial_state;
+  chpl_bool countRunning;
+  chpl_bool is_executeOn;
+  int lineno;
+  int filename;
+  c_sublocid_t requestedSubloc;
+  chpl_fn_p requested_fn;
   chpl_task_prvData_t prv;
-} chpl_task_bundleData_t;
+} chpl_task_bundle_t;
 
 #endif

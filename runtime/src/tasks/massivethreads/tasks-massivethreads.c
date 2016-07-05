@@ -382,7 +382,9 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
   myth_thread_option opt;
   myth_thread_t th;
   chpl_bool serial_state = getTaskPrivateData()->serial_state;
-  chpl_task_prvData_t prv = { .serial_state = serial_state };
+  chpl_task_prvData_t prv;
+  
+  memset(&prv, 0, sizeof(prv));
 
   if (serial_state) {
     (*chpl_ftable[fid])(arg);
@@ -394,7 +396,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
   arg->is_executeOn = true;
   arg->requestedSubloc = subLoc;
   arg->requested_fn = chpl_ftable[fid];
-  arg->task_prv.prv = prv;
+  arg->prv = prv;
 
   //Create one task
   opt.stack_size = 0;
@@ -424,14 +426,16 @@ void taskCallBody(chpl_fn_p fp,
 {
   myth_thread_t th;
   myth_thread_option opt;
-  chpl_task_prvData_t prv = { .serial_state = serial_state };
+  chpl_task_prvData_t prv;
+
+  memset(&prv, 0, sizeof(prv));
 
   arg->serial_state = serial_state;
   arg->countRunning = true;
   arg->is_executeOn = true;
   arg->requestedSubloc = subloc;
   arg->requested_fn = fp;
-  arg->task_prv.prv = prv;
+  arg->prv = prv;
 
   assert(subloc == 0 || subloc == c_sublocid_any);
 
@@ -533,7 +537,7 @@ c_sublocid_t chpl_task_getNumSublocales(void)
 }
 
 chpl_task_prvData_t* chpl_task_getPrvData(void) {
-  return & getTaskPrivateData()->task_prv.prv;
+  return & getTaskPrivateData()->prv;
 }
 
 size_t chpl_task_getCallStackSize(void) {
