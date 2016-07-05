@@ -31,12 +31,14 @@ typedef struct {
     chpl_cache_taskPrvData_t cache_data;
 } chpl_comm_taskPrvData_t;
 
-// Note: execute_on could take in just a bundle* and bundle_size
-// if we put dst node, subloc here
+//
+// Comm layer private area within executeOn argument bundles
+// (bundle.comm)
 typedef struct {
+  chpl_fn_int_t fid;
   int caller;
-  size_t bundle_size_on_caller;
-  void* ack; // might also be bundle on caller
+
+  void* ack; // address on caller to post acknowledgement
 } chpl_comm_bundleData_t;
 
 #endif

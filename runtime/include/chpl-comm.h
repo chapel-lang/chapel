@@ -79,11 +79,16 @@ extern const int chpl_heterogeneous;
 
 // uses comm-layer specific chpl_comm_bundleData_t
 // uses task-layer specific chpl_task_bundleData_t
+
 typedef struct {
+  // Including space for the task_bundle here helps with
+  // running tasks locally, but it doesn't normally need
+  // to be communicated over the network.
   chpl_task_bundle_t task_bundle;
-  chpl_fn_int_t fid;
+  // Including space for some comm information here helps
+  // the comm layer communicate some values to a wrapper
+  // function that is run in a task.
   chpl_comm_bundleData_t comm;
-  // arguments immediately follow
 } chpl_comm_on_bundle_t;
 
 typedef chpl_comm_on_bundle_t *chpl_comm_on_bundle_p;
