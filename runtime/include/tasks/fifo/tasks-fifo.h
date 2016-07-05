@@ -46,9 +46,19 @@ void chpl_task_stdModulesInitialized(void);
 typedef uint64_t chpl_taskID_t;
 #define chpl_nullTaskID 0
 
+//
+// Task layer private area argument bundle header
+//
 typedef struct {
-  chpl_taskID_t id; // task identifier
-} chpl_task_bundleData_t;
+  chpl_bool serial_state;
+  chpl_bool countRunning;
+  chpl_bool is_executeOn;
+  int lineno;
+  int filename;
+  c_sublocid_t requestedSubloc;  
+  chpl_fn_p requested_fn;
+  chpl_taskID_t id;
+} chpl_task_bundle_t;
 
 
 //

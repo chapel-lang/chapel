@@ -333,7 +333,7 @@ static void setup_main_thread_private_data(void)
   tp->ptask->bundle.filename        = CHPL_FILE_IDX_MAIN_PROGRAM;
   tp->ptask->bundle.requestedSubloc = c_sublocid_any_val;
   tp->ptask->bundle.requested_fn    = NULL;
-  tp->ptask->bundle.task_prv.id     = get_next_task_id();
+  tp->ptask->bundle.id              = get_next_task_id();
 
 
   chpl_thread_setPrivateData(tp);
@@ -491,10 +491,10 @@ void chpl_task_stdModulesInitialized(void) {
   if (taskreport) {
     thread_private_data_t* tp = chpl_thread_getPrivateData();
 
-    chpldev_taskTable_add(tp->ptask->bundle.task_prv.id,
+    chpldev_taskTable_add(tp->ptask->bundle.id,
                           tp->ptask->bundle.lineno, tp->ptask->bundle.filename,
                           (uint64_t) (intptr_t) tp->ptask);
-    chpldev_taskTable_set_active(tp->ptask->bundle.task_prv.id);
+    chpldev_taskTable_set_active(tp->ptask->bundle.id);
 
     chpl_thread_mutexInit(&taskTable_lock);
   }
@@ -536,8 +536,8 @@ static void comm_task_wrapper(void* arg) {
   tp->ptask->bundle.lineno          = 0;
   tp->ptask->bundle.filename        = CHPL_FILE_IDX_COMM_TASK;
   tp->ptask->bundle.requestedSubloc = c_sublocid_any_val;
-  tp->ptask->bundle.requested_fn    = comm_task_fn;
-  tp->ptask->bundle.task_prv.id     = get_next_task_id();
+  tp->ptask->bundle.requested_fn    = NULL;
+  tp->ptask->bundle.id              = get_next_task_id();
 
   chpl_thread_setPrivateData(tp);
 
@@ -701,8 +701,8 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
-      chpldev_taskTable_set_suspended(curr_ptask->bundle.task_prv.id);
-      chpldev_taskTable_set_active(child_ptask->bundle.task_prv.id);
+      chpldev_taskTable_set_suspended(curr_ptask->bundle.id);
+      chpldev_taskTable_set_active(child_ptask->bundle.id);
       chpl_thread_mutexUnlock(&taskTable_lock);
     }
 
@@ -712,7 +712,7 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
                            child_ptask->bundle.filename,
                            child_ptask->bundle.lineno,
-                           child_ptask->bundle.task_prv.id,
+                           child_ptask->bundle.id,
                            child_ptask->bundle.is_executeOn);
 
     if (child_ptask->bundle.countRunning)
@@ -726,13 +726,13 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
                            child_ptask->bundle.filename,
                            child_ptask->bundle.lineno,
-                           child_ptask->bundle.task_prv.id,
+                           child_ptask->bundle.id,
                            child_ptask->bundle.is_executeOn);
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
-      chpldev_taskTable_set_active(curr_ptask->bundle.task_prv.id);
-      chpldev_taskTable_remove(child_ptask->bundle.task_prv.id);
+      chpldev_taskTable_set_active(curr_ptask->bundle.id);
+      chpldev_taskTable_remove(child_ptask->bundle.id);
       chpl_thread_mutexUnlock(&taskTable_lock);
     }
 
@@ -811,7 +811,7 @@ void chpl_task_startMovedTask(chpl_fn_p fp,
 
 
 chpl_taskID_t chpl_task_getId(void) {
-  return get_current_ptask()->bundle.task_prv.id;
+  return get_current_ptask()->bundle.id;
 }
 
 
@@ -1244,14 +1244,14 @@ thread_begin(void* ptask_void) {
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
-      chpldev_taskTable_set_active(ptask->bundle.task_prv.id);
+      chpldev_taskTable_set_active(ptask->bundle.id);
       chpl_thread_mutexUnlock(&taskTable_lock);
     }
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
                            ptask->bundle.filename,
                            ptask->bundle.lineno,
-                           ptask->bundle.task_prv.id,
+                           ptask->bundle.id,
                            ptask->bundle.is_executeOn);
 
     if (ptask->bundle.countRunning)
@@ -1265,12 +1265,12 @@ thread_begin(void* ptask_void) {
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
                            ptask->bundle.filename,
                            ptask->bundle.lineno,
-                           ptask->bundle.task_prv.id,
+                           ptask->bundle.id,
                            ptask->bundle.is_executeOn);
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
-      chpldev_taskTable_remove(ptask->bundle.task_prv.id);
+      chpldev_taskTable_remove(ptask->bundle.id);
       chpl_thread_mutexUnlock(&taskTable_lock);
     }
 
@@ -1385,19 +1385,19 @@ task_pool_p add_to_task_pool(chpl_fn_p fp,
   ptask->bundle.filename        = filename;
   ptask->bundle.requestedSubloc = c_sublocid_any_val;
   ptask->bundle.requested_fn    = fp;
-  ptask->bundle.task_prv.id     = get_next_task_id();
+  ptask->bundle.id              = get_next_task_id();
 
   enqueue_task(ptask, p_task_list_head);
 
   chpl_task_do_callbacks(chpl_task_cb_event_kind_create,
                          ptask->bundle.filename,
                          ptask->bundle.lineno,
-                         ptask->bundle.task_prv.id,
+                         ptask->bundle.id,
                          ptask->bundle.is_executeOn);
 
   if (do_taskReport) {
     chpl_thread_mutexLock(&taskTable_lock);
-    chpldev_taskTable_add(ptask->bundle.task_prv.id,
+    chpldev_taskTable_add(ptask->bundle.id,
                           ptask->bundle.lineno, ptask->bundle.filename,
                           (uint64_t) (intptr_t) ptask);
     chpl_thread_mutexUnlock(&taskTable_lock);
