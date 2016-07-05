@@ -211,10 +211,11 @@ returnInfoArrayIndex(CallExpr* call) {
 
 static Type*
 returnInfoGetMember(CallExpr* call) {
-  SymExpr* sym1 = toSymExpr(call->get(1));
-  if (!sym1)
-    INT_FATAL(call, "bad member primitive");
-  AggregateType* ct = toAggregateType(sym1->var->type);
+  //SymExpr* sym1 = toSymExpr(call->get(1));
+  //if (!sym1)
+    //INT_FATAL(call, "bad member primitive");
+  //Type
+  AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
   if (ct->symbol->hasFlag(FLAG_REF))
     ct = toAggregateType(ct->getValType());
   if (!ct)

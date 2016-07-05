@@ -28,6 +28,7 @@
 #define GEN_VAL      0
 #define GEN_PTR      1
 #define GEN_WIDE_PTR 2
+//#define GEN_DENORM   3
 
 class BaseAST;
 class Type;

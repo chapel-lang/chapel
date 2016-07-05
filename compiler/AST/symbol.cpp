@@ -40,6 +40,7 @@
 #include "stringutil.h"
 #include "type.h"
 #include "resolution.h"
+#include "view.h"
 
 #include "AstToText.h"
 #include "AstVisitor.h"
@@ -1235,6 +1236,8 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   if (!type)
     INT_FATAL(this, "TypeSymbol constructor called without type");
   type->addSymbol(this);
+  //std::cout << "Adding type symbol " << std::endl;
+  //print_view(this);
   gTypeSymbols.add(this);
 }
 

@@ -3911,8 +3911,6 @@ FnSymbol* tryResolveCall(CallExpr* call) {
 FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   if( call->id == breakOnResolveID ) {
-    printf("breaking on call:\n");
-    print_view(call);
     gdbShouldBreakHere();
   }
 
@@ -7677,8 +7675,6 @@ resolveFns(FnSymbol* fn) {
     return;
 
   if (fn->id == breakOnResolveID) {
-    printf("breaking on resolve fn:\n");
-    print_view(fn);
     gdbShouldBreakHere();
   }
 
