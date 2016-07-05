@@ -116,19 +116,23 @@ extern
 
 volatile int chpl_qthread_done_initializing;
 
+//
+// Task layer private area argument bundle header
+//
 typedef struct {
+  chpl_bool serial_state;
+  chpl_bool countRunning;
+  chpl_bool is_executeOn;
+  int lineno;
+  int filename;
+  c_sublocid_t requestedSubloc;
+  chpl_fn_p requested_fn;
   chpl_taskID_t id;
-  // lock_filename, lock_lineno
-} chpl_task_bundleData_t;
-
-// Now that chpl_task_bundleData_t is defined, include
-// chpl-tasks-bundle.h so the full structure is available
-// in the rest of this file.
-#include "chpl-tasks-bundle.h"
+} chpl_task_bundle_t;
 
 // Structure of task-local storage
 typedef struct chpl_qthread_tls_s {
-  chpl_task_bundle_p bundle;
+  chpl_task_bundle_t *bundle;
   // The below fields could move to chpl_task_bundleData_t
   // That would reduce the size of the task local storage,
   // but increase the size of executeOn bundles.

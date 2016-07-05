@@ -154,7 +154,7 @@ chpl_task_bundle_t chpl_qthread_process_bundle = {
                                    .lineno = 0,
                                    .filename = CHPL_FILE_IDX_MAIN_TASK,
                                    .requestedSubloc = c_sublocid_any_val,
-                                   .task_prv = { .id = chpl_nullTaskID } };
+                                   .id = chpl_nullTaskID };
 
 chpl_task_bundle_t chpl_qthread_comm_task_bundle = {
                                    .serial_state = false,
@@ -163,7 +163,7 @@ chpl_task_bundle_t chpl_qthread_comm_task_bundle = {
                                    .lineno = 0,
                                    .filename = CHPL_FILE_IDX_COMM_TASK,
                                    .requestedSubloc = c_sublocid_any_val,
-                                   .task_prv = { .id = chpl_nullTaskID } };
+                                   .id = chpl_nullTaskID };
 
 chpl_qthread_tls_t chpl_qthread_process_tls = {
                                .bundle = &chpl_qthread_process_bundle,
@@ -680,7 +680,7 @@ void chpl_task_init(void)
     pthread_t initer;
 
     chpl_qthread_process_pthread = pthread_self();
-    chpl_qthread_process_bundle.task_prv.id = qthread_incr(&next_task_id, 1);
+    chpl_qthread_process_bundle.id = qthread_incr(&next_task_id, 1);
 
     commMaxThreads = chpl_comm_getMaxThreads();
 
@@ -733,12 +733,12 @@ void chpl_task_exit(void)
 static inline void wrap_callbacks(chpl_task_cb_event_kind_t event_kind,
                                   chpl_task_bundle_t* bundle) {
     if (chpl_task_have_callbacks(event_kind)) {
-        if (bundle->task_prv.id == chpl_nullTaskID)
-            bundle->task_prv.id = qthread_incr(&next_task_id, 1);
+        if (bundle->id == chpl_nullTaskID)
+            bundle->id = qthread_incr(&next_task_id, 1);
         chpl_task_do_callbacks(event_kind,
                                bundle->filename,
                                bundle->lineno,
-                               bundle->task_prv.id,
+                               bundle->id,
                                bundle->is_executeOn);
     }
 }
@@ -824,7 +824,7 @@ void chpl_task_callMain(void (*chpl_main)(void))
     arg.arg.requested_fn      = NULL;
     arg.arg.lineno            = 0;
     arg.arg.filename           = CHPL_FILE_IDX_MAIN_TASK;
-    arg.arg.task_prv.id       = chpl_qthread_process_bundle.task_prv.id;
+    arg.arg.id                = chpl_qthread_process_bundle.id;
     arg.chpl_main             = chpl_main;
 
     wrap_callbacks(chpl_task_cb_event_kind_create, &arg.arg);
@@ -889,7 +889,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t       fid,
         arg->requested_fn      = requested_fn;
         arg->lineno            = lineno;
         arg->filename          = filename;
-        arg->task_prv.id       = chpl_nullTaskID;
+        arg->id                = chpl_nullTaskID;
 
         wrap_callbacks(chpl_task_cb_event_kind_create, arg);
 
@@ -920,7 +920,7 @@ static inline void taskCallBody(chpl_fn_p fp, void *arg, size_t arg_size,
     bundle->requested_fn       = fp;
     bundle->lineno             = lineno;
     bundle->filename           = filename;
-    bundle->task_prv.id        = chpl_nullTaskID;
+    bundle->id                 = chpl_nullTaskID;
 
     wrap_callbacks(chpl_task_cb_event_kind_create, bundle);
 
@@ -978,17 +978,17 @@ void chpl_task_startMovedTask(chpl_fn_p           fp,
 chpl_taskID_t chpl_task_getId(void)
 {
     chpl_qthread_tls_t *tls = chpl_qthread_get_tasklocal();
-    chpl_task_bundleData_t *task_prv = &tls->bundle->task_prv;
+    chpl_taskID_t *id_ptr = &tls->bundle->id;
 
     PROFILE_INCR(profile_task_getId,1);
 
     if (tls == NULL)
         return (chpl_taskID_t) -1;
 
-    if (task_prv->id == chpl_nullTaskID)
-        task_prv->id = qthread_incr(&next_task_id, 1);
+    if (*id_ptr == chpl_nullTaskID)
+        *id_ptr = qthread_incr(&next_task_id, 1);
 
-    return task_prv->id;
+    return *id_ptr;
 }
 
 void chpl_task_sleep(double secs)
