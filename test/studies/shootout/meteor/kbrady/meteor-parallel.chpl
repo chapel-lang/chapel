@@ -79,9 +79,8 @@ module meteor {
      I'm also going to record the next possible open cell for each piece and
      location to reduce the burden on the solve function.
    */
-  var pieces: [0..9][0..49][0..11] int;
+  var pieces, nextCell: [0..9][0..49][0..11] int;
   var pieceCounts: [0..9][0..49] int;
-  var nextCell: [0..9][0..49][0..11] int;
 
   /* Returns the direction rotated 60 degrees clockwise */
   proc rotate(dir) {
@@ -339,8 +338,7 @@ module meteor {
      piece 3 because it gave me the best time ;)
    */
   proc calcSixRotations(piece, indx, cell) {
-    var minimum, firstEmpty: int;
-    var pieceMask: int;
+    var minimum, firstEmpty, pieceMask: int;
 
     for rotation in 0..5 {
       if piece != 3 || rotation < 3 {
@@ -373,17 +371,15 @@ module meteor {
      calculated 5-bit rows will be used to find islands in a partially solved
      board in the solve function.
    */
-  const ROWMASK: int(8) = 0x1F;
+  const ROWMASK = 0x1F;
   const TRIPLEMASK = 0x7FFF;
-  var badEvenRows: [0..31][0..31] bool;
-  var badOddRows: [0..31][0..31] bool;
-  var badEvenTriple: [0..32767] bool;
-  var badOddTriple: [0..32767] bool;
+  var badEvenRows, badOddRows: [0..31][0..31] bool;
+  var badEvenTriple, badOddTriple: [0..32767] bool;
 
   proc rowsBad(row1, row2, even) {
     /* even is referring to row1 */
     var inZeroes, groupOkay = false;
-    var block, row2Shift: int(8);
+    var block, row2Shift: int;
     /* Test for blockages at same index and shifted index */
     if even then
       row2Shift = ((row2 << 1) & ROWMASK) | 0x01;
@@ -440,15 +436,15 @@ module meteor {
 
   proc calcRows() {
     var result1, result2: bool;
-    forall row1 in 0:int(8)..31 {
-      for row2 in 0:int(8)..31 {
+    forall row1 in 0..31 {
+      for row2 in 0..31 {
         badEvenRows[row1][row2] = rowsBad(row1, row2, true);
         badOddRows[row1][row2] = rowsBad(row1, row2, false);
       }
     }
-    for row1 in 0:int(8)..31 {
-      for row2 in 0:int(8)..31 {
-        for row3 in 0:int(8)..31 {
+    for row1 in 0..31 {
+      for row2 in 0..31 {
+        for row3 in 0..31 {
           result1 = badEvenRows[row1][row2];
           result2 = badOddRows[row2][row3];
           if(result1 == false && result2 == true
@@ -513,13 +509,8 @@ module meteor {
   proc solve_helper(piece) {
     var board: uint = 0xFFFC000000000000;
     var avail: uint = 0x03FF;
-    var solNums: [0..9] int;
-    var solMasks: [0..9] int;
-    var pieceNoMask: int;
-    var maxRots: int;
-    var pieceMask: int;
-    var depth = 0;
-    var cell = 0;
+    var solNums, solMasks: [0..9] int;
+    var pieceNoMask, maxRots, pieceMask, depth, cell = 0;
 
     pieceNoMask = 1 << piece;
 
@@ -548,9 +539,7 @@ module meteor {
 
   proc solve_linear(in depth, in cell, in board,
       in avail, solNums, solMasks) {
-    var pieceNoMask: int;
-    var maxRots: int;
-    var pieceMask: int;
+    var pieceNoMask, maxRots, pieceMask: int;
 
     if solutionCount.read() >= maxSolutions then
       return;
@@ -609,8 +598,7 @@ module meteor {
   }
 
   proc printLargestSmallest() {
-    var sIndx = 0;
-    var lIndx = 0;
+    var sIndx, lIndx = 0;
     for i in 1..solutionCount.read()-1 {
       if solutionLessThan(lIndx, i) {
         lIndx = i;
