@@ -20,18 +20,29 @@
 #ifndef _chpl_tasks_bundle_h_
 #define _chpl_tasks_bundle_h_
 
+// TODO -- make this entirely tasking layer private
+// and make impl define chpl_task_bundle_t instead of chpl_task_bundleData_t.
+
 // uses task-layer specific chpl_task_bundleData_t
 typedef struct chpl_task_bundle_s {
-// don't think I need this  unsigned char header_length;
-// instead, wrapper just uses a type with chpl_task_bundle included.
-  chpl_bool    serial_state;
-  chpl_bool    countRunning;
-  chpl_bool    is_executeOn;
-  int          lineno;
+  // Values are public here so that a communication layer
+  // can make use of them and reduce duplication.
+
+  unsigned int serial_state :  1;   // used in gasnet !small !large
+  unsigned int countRunning :  1;   
+  unsigned int is_executeOn :  1;
+  unsigned int lineno       : 29;
   int          filename;
-  c_sublocid_t requestedSubloc;
-  chpl_fn_p    requested_fn;
-  chpl_task_bundleData_t task_prv;
+
+  c_sublocid_t requestedSubloc;  // used in gasnet !small !large
+
+  chpl_fn_p    requested_fn; // can this turn into an fid?
+                             // comm layer task wrapper fns, such as
+                             // to handle getting the argument bundle for
+                             // the "large" case, make always using fid
+                             // difficult
+
+  chpl_task_bundleData_t task_prv; // typically stores 8 byte task ID
 } chpl_task_bundle_t;
 
 typedef chpl_task_bundle_t* chpl_task_bundle_p;
