@@ -147,7 +147,13 @@ The following declarations both create an uninitialized rectangular domain with 
 var D1 : domain(rank=3, idxType=int, stridable=false);
 var D2 : domain(3);
 \end{chapel}
+\begin{chapelpost}
+writeln(D1);
+writeln(D2);
+\end{chapelpost}
 \begin{chapeloutput}
+{1..0, 1..0, 1..0}
+{1..0, 1..0, 1..0}
 \end{chapeloutput}
 \end{chapelexample}
 
