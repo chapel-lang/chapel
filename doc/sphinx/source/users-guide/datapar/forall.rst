@@ -16,9 +16,9 @@ task, or it can use any number of tasks up to the number of iterations
 (or even beyond, though this is unusual).
 
 More specifically, the actual number of tasks used to execute a
-forall-loop is determined by the its iterand expressions.  The
+forall-loop is determined by its iterand expressions.  The
 iterands invoke *parallel iterators*, either directly or via
-expressions that support default parallel iterator methods like
+expressions that have default parallel iterator methods like
 ranges, domains, and arrays.  These iterators often select the number
 of tasks to use based on dynamic information such as the size of the
 loop and/or the number of available processors.  In addition to
@@ -57,13 +57,12 @@ However, a coforall-loop would likely be overkill for this scenario
 since it would create one million tasks, each of which is simply
 responsible for incrementing a single element.  For most hardware
 platforms, this would generate more concurrency than the system could
-run in parallel while also creating very fine-grain tasks for which
-the cost of creating, scheduling, and destroying them would likely
-cost far more than the loop body itself.  Better would be to create a
-smaller number of tasks, each of which owns a number of loop
-iterations, as a means of amortizing the task creation overheads while
-avoiding flooding the target system with more concurrency than it can
-make use of.
+execute in parallel.  Moreover, the cost of creating, scheduling, and
+destroying the tasks would likely overshadow the small amount of
+computation done by each.  Better would be to create a smaller number
+of tasks, each of which owns a number of loop iterations, as a means
+of amortizing the task creation overheads while avoiding flooding the
+target system with more concurrency than it can make use of.
 
 This is precisely what forall-loops are for.  While they also result
 in parallel execution, they typically use a number of tasks that is
@@ -76,7 +75,7 @@ them.  Thus, we could write this parallel loop as:
    
 
 In slightly more detail, the number of tasks used to implement a
-forall-loop is determined by its iterand expression(s), in this case,
+forall-loop is determined by its iterand expression(s), in this case
 the array *A*.  As declared here, *A* uses a default implementation
 ("**domain map**") which causes it to be allocated locally to the
 compute node on which the active task is running.  The default
@@ -98,8 +97,8 @@ well-defined by Chapel, such loops must be *serializable*.  This means
 that the loop's iterations must be written such that they can legally
 be executed by a single task.  At the same time, since the loop's
 iterations are likely to execute in parallel, there should be no
-sensitivity to the order in which they will execute --- in practice,
-the iterands may schedule them in whatever order they choose.  To that
+sensitivity to the order in which they will execute—in practice, the
+iterands may schedule them in whatever order they choose.  To that
 end, by using a forall-loop, the user is asserting that it is safe to
 run the iterations serially or in parallel, and in any order.
 
