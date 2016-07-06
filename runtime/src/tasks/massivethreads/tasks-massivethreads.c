@@ -383,7 +383,7 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
   myth_thread_t th;
   chpl_bool serial_state = getTaskPrivateData()->serial_state;
   chpl_task_prvData_t prv;
-  
+
   memset(&prv, 0, sizeof(prv));
 
   if (serial_state) {
@@ -392,8 +392,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t fid,
   }
 
   arg->serial_state = serial_state;
-  arg->countRunning = true;
-  arg->is_executeOn = true;
+  arg->countRunning = false;
+  arg->is_executeOn = false;
   arg->requestedSubloc = subLoc;
   arg->requested_fn = chpl_ftable[fid];
   arg->prv = prv;
@@ -418,10 +418,10 @@ void chpl_task_executeTasksInList(void** task_list) {
 
 static inline
 void taskCallBody(chpl_fn_p fp,
-		  chpl_task_bundle_t* arg,
-		  size_t arg_size,
-		  c_sublocid_t subloc,
-		  chpl_bool serial_state,
+                  chpl_task_bundle_t* arg,
+                  size_t arg_size,
+                  c_sublocid_t subloc,
+                  chpl_bool serial_state,
                   int lineno, int32_t filename)
 {
   myth_thread_t th;
@@ -431,7 +431,7 @@ void taskCallBody(chpl_fn_p fp,
   memset(&prv, 0, sizeof(prv));
 
   arg->serial_state = serial_state;
-  arg->countRunning = true;
+  arg->countRunning = canCountRunningTasks;
   arg->is_executeOn = true;
   arg->requestedSubloc = subloc;
   arg->requested_fn = fp;
