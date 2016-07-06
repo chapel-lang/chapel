@@ -1,5 +1,7 @@
 :title: Users Guide: **coforall**-loops
 
+.. _ug-coforall:
+
 **coforall**-loops: loop-based tasking
 ======================================
 

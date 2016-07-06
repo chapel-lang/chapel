@@ -43,6 +43,7 @@ support of parallelism and locality are removed.
    base/basicValues
    base/casts
    base/forloops
+   base/zip
 
 (more to come...)
 
