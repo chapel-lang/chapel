@@ -19,10 +19,22 @@ As an example, with OpenBLAS :
     chpl -I$PATH_TO_CBLAS_DIR \
          -L$PATH_TO_BLAS_LIBS -lblas source.chpl
 
-You may need additional of different libraries. For instance, if you
+You may need additional arguments for different libraries. For instance, if you
 use ATLAS, you will likely need to also add a -latlas to the above
 command. We strongly recommend referring to the documentation for the
 version of BLAS you have.
+
+.. note::
+ 1. This module assumes that the CBLAS functions are defined in ``cblas.h``.
+ If they are not (eg. MKL defines these in ``mkl_cblas.h``, you can work around
+ this by creating a symbolic link to the correct header file (eg. ``ln -s mkl_cblas.h cblas.h``).
+ You may also just download the Netlib reference ``cblas.h`` file 
+ http://www.netlib.org/blas/#_cblas
+ and then link to the appropriate libaries.
+ 2. The header files that are included with OpenBLAS differ from the reference CBLAS prototypes
+ for complex arguments by using ``float*`` and ``double*`` pointers, instead of ``void*`` pointers.
+ Using this will likely result in warnings about incompatible pointer types. These may be ignored, 
+ or suppressed by using the Netlib reference header file.
 
 The CBLAS API
 -------------
