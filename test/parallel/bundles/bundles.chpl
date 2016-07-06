@@ -9,7 +9,7 @@
 
 
 config param n = 10;
-config const niters = 1000;
+config const niters = if CHPL_COMM == "none" then 1000 else 10;
 config const ncoforall = 100;
 config const debug = false;
 
