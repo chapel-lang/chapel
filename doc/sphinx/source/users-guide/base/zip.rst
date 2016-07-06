@@ -6,10 +6,10 @@ Zippered Iteration
 ==================
 
 Chapel's :ref:`for-loops <ug-forloops>` (and their parallel
-counterparts, :ref:`coforall <ug-coforall>` and forall) can be driven
-by multiple iterands in a coordinated manner known as *zippered
-iteration*.  This is expressed using the ``zip`` keyword, followed by
-a parenthesized list of the iterands.
+counterparts, :ref:`coforall <ug-coforall>` and :ref:`forall
+<ug-forall>`) can be driven by multiple iterands in a coordinated
+manner known as *zippered iteration*.  This is expressed using the
+``zip`` keyword, followed by a parenthesized list of the iterands.
 
 As a simple example, the following loop iterates over an array and a
 range simultaneously, referring to the values yielded by each using
