@@ -523,7 +523,7 @@ module BLAS {
 
   // Helper function
   pragma "no doc"
-  inline proc getLeadingDim(Adom : domain(2), order : Order, ldA : int) : c_int {
+  private inline proc getLeadingDim(Adom : domain(2), order : Order, ldA : int) : c_int {
     var _ldA = ldA : c_int;
     if ldA==0 {
       if order==Order.Row
