@@ -8,13 +8,26 @@
 #
 #  export CHPL_SYSTEM_PREDIFF=$CHPL_HOME/util/test/prediff-for-stacktrace
 
-# If the good file has a stack trace, the expected output shoul have it too
+# This skips some specific tests (for example tests that produce binary output)
+case "$1" in
+  # binary output, no newline
+  ( mandelbrot | mandelbrot-complex | mandelbrot-dist | mandelbrot-fancy)
+  exit
+  # text output, no newline - which ones?
+  ( declprintint | fwriteIntFile | fwriteMultipleInts | fwriteIntStdout )
+  exit
+esac
+
+# If the good file has a stack trace, the expected output should have it too
 if grep -q "Stacktrace.*" $1.good ; then
   exit
 fi
 
 # The .good file doesn't have a stack trace, we should remove it from the
 # generated output
-if grep -q "Stacktrace.*" $2 ; then
-  perl -i -pe 'BEGIN{undef $/;} s/\nStacktrace.*Stacktrace\n//smg' $2
-fi
+outfile=$2
+# This will remove all the function lines
+grep -a -v -E "[[a-zA-Z0-9]+\(\) at .*:.*]*" $outfile > $outfile.tmp
+# This will remove the stack trace prologue
+perl -i -pe 'BEGIN{undef $/;} s/\nStacktrace\n\n//smg' $outfile.tmp
+mv $outfile.tmp $outfile

@@ -79,8 +79,6 @@ static void chpl_stack_unwind(void){
       }
     }
   }
-  if(chpl_sizeSymTable > 0)
-    fprintf(stderr,"\nStacktrace\n");
 }
 #endif
 
