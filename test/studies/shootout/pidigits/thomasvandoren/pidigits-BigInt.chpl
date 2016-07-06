@@ -75,11 +75,4 @@ iter genDigits(numDigits) {
     accum.mul_ui(accum, 10);
     numer.mul_ui(numer, 10);
   }
-
-  // Free the memory associated with these.
-  delete numer;
-  delete accum;
-  delete denom;
-  delete tmp1;
-  delete tmp2;
 }
