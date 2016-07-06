@@ -69,7 +69,7 @@ Step 3:
 
 
 Using the BigInt record
-----------------------
+-----------------------
 
 The GMP Chapel module provides a :record:`BigInt` record wrapping GMP 
 integers. At the present time, only the functions for ``mpz`` (ie signed 
@@ -336,7 +336,7 @@ module GMP {
   extern proc mpz_bin_ui(ref ROP: mpz_t, N: mpz_t, K: c_ulong);
   extern proc mpz_bin_uiui(ref ROP: mpz_t, N: c_ulong, K: c_ulong);
   extern proc mpz_fib_ui(ref FN: mpz_t, N: c_ulong);
-  extern proc mpz_fib2_ui(ref FN: mpz_t, FNSUB1: mpz_t, N: c_ulong);
+  extern proc mpz_fib2_ui(ref FN: mpz_t, ref FNSUB1: mpz_t, N: c_ulong);
   extern proc mpz_lucnum_ui(ref LN: mpz_t, N: c_ulong);
   extern proc mpz_lucnum2_ui(ref LN: mpz_t, LNSUB1: mpz_t, N: c_ulong);
 
@@ -392,7 +392,7 @@ module GMP {
   extern proc mpz_odd_p(ref OP: mpz_t): c_int;
   extern proc mpz_even_p(ref OP: mpz_t): c_int;
   extern proc mpz_sizeinbase(ref OP: mpz_t, BASE: c_int): size_t;
-
+  extern proc mpz_size(ref X: mpz_t): size_t;
   extern proc mpf_set_default_prec(PREC: mp_bitcnt_t);
 
   // floating-point functions
@@ -472,7 +472,8 @@ module GMP {
   pragma "ignore noinit" // TODO: Is this still needed?
   record BigInt {
     var mpz : mpz_t;
-    var owned : bool = false; //all user-defined constructors set true
+    var owned : bool; //all user-defined constructors set true 
+    // TODO: should there be a 
 
     proc BigInt(){
       // writeln("BigInt no-arg constructor called");
@@ -510,7 +511,7 @@ module GMP {
       }
       owned = true;
     }
-    proc BigInt(ref num:BigInt) { //needs to be passed by ref
+    proc BigInt(ref num:BigInt, owned : bool = true) { //must be passed by ref
       // writeln("BigInt num:BigInt constructor called");
       if num.locale == here {
         mpz_init_set(this.mpz, num.mpz); 
@@ -519,21 +520,19 @@ module GMP {
         var mpz_struct = num.mpzStruct(); 
         chpl_gmp_get_mpz(this.mpz, num.locale.id, mpz_struct);
       }
-      owned = true;
+      this.owned = owned;
     }
 
     // destructor
     proc ~BigInt(){
-      if true {
         if this.owned then {
           // writeln("In BigInt destructor and owned");
           on this do mpz_clear(this.mpz); 
           this.owned = false;
         }
         else {
-          writeln("In BigInt destructor and not owned");
+         // writeln("In BigInt destructor and not owned");
         }
-      }
     }
 
     // TODO: should we reset the value or free and remake the BigInts?
@@ -592,9 +591,37 @@ module GMP {
       }
     }
 
+    // replaces maybeCopy()
+    inline proc localize():BigInt {
+      if this.locale == here {
+        return new BigInt(this, owned=false); //return a shallow copy
+      } else {
+        var mpz_struct = this.mpz[1];
+        var tmp = new BigInt(true, (mp_bits_per_limb:uint(64))*chpl_gmp_mpz_nlimbs(mpz_struct));
+        chpl_gmp_get_mpz(tmp.mpz, this.locale.id, mpz_struct); 
+
+        // TODO: should be able to replace this with assignment?
+          // since assignment localizes?
+        // TODO: should tmp be const in this case? it is in String::localize
+        return tmp;
+      }
+    }
+
+    proc copyRemoteBigInt():BigInt{
+      var mpz_struct = this.mpz[1];
+        var tmp = new BigInt(true, (mp_bits_per_limb:uint(64))*chpl_gmp_mpz_nlimbs(mpz_struct));
+        chpl_gmp_get_mpz(tmp.mpz, this.locale.id, mpz_struct); 
+
+        // TODO: should be able to replace this with assignment?
+          // since assignment localizes?
+        // TODO: should tmp be const in this case? it is in String::localize
+        return tmp;
+    }
+
+
 
    // Assignment functions
-    proc set(a:BigInt)
+    proc set(ref a:BigInt)
     {
       on this {
         if a.locale == here {
@@ -625,7 +652,7 @@ module GMP {
     {
       on this do mpz_set_str(this.mpz, str.localize().c_str(), base.safeCast(c_int));
     }
-    proc swap(a:BigInt)
+    proc swap(ref a:BigInt)
     {
       on this {
         if a.locale == here {
@@ -683,324 +710,439 @@ module GMP {
     }
 
     // Arithmetic functions
-    proc add(a:BigInt, b:BigInt)
+    proc add(ref a:BigInt, ref b:BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        var (bcopy,b_) = b.maybeCopy();
-        mpz_add(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if (here != a.locale || here != b.locale) {
+          var a_ = a.localize();
+          var b_ = b.localize();
+          mpz_add(this.mpz, a_.mpz, b_.mpz);
+        } else {
+          mpz_add(this.mpz, a.mpz, b.mpz);
+        }
       }
     }
-    proc add_ui(a:BigInt, b:uint)
+    proc add_ui(ref a:BigInt, b:uint)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        mpz_add_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        if (here != a.locale ) {
+          var a_ = a.localize();
+          mpz_add_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
+        } else {
+          mpz_add_ui(this.mpz, a.mpz, b.safeCast(c_ulong));
+        }
       }
     }
-    proc sub(a:BigInt, b:BigInt)
+    proc sub(ref a:BigInt, ref b:BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        var (bcopy,b_) = b.maybeCopy();
-        mpz_sub(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if (here != a.locale || here != b.locale) {
+          var a_ = a.localize();
+          var b_ = b.localize();
+          mpz_sub(this.mpz, a_.mpz, b_.mpz);
+        } else {
+          mpz_sub(this.mpz, a.mpz, b.mpz);
+        }
       }
     }
-    proc sub_ui(a:BigInt, b:uint)
+    proc sub_ui(ref a:BigInt, b:uint)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        mpz_sub_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        if (here != a.locale) {
+          var a_ = a.localize();
+          mpz_sub_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
+        } else {
+          mpz_sub_ui(this.mpz, a.mpz, b.safeCast(c_ulong));
+        }
       }
     }
-    proc ui_sub(a:uint, b:BigInt)
+    proc ui_sub(a:uint, ref b:BigInt)
     {
       on this {
-        var (bcopy,b_) = b.maybeCopy();
-        mpz_ui_sub(this.mpz, a.safeCast(c_ulong), b_.mpz);
-        //if bcopy then delete b_;
+        if (here != b.locale) {
+          var b_ = b.localize();
+          mpz_ui_sub(this.mpz, a.safeCast(c_ulong), b_.mpz);
+        } else {
+          mpz_ui_sub(this.mpz, a.safeCast(c_ulong), b.mpz);
+        }
       }
     }
-    proc mul(a:BigInt, b:BigInt)
+    proc mul(ref a:BigInt, ref b:BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        var (bcopy,b_) = b.maybeCopy();
-        mpz_mul(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if (here != a.locale || here != b.locale) {
+          var a_ = a.localize();
+          var b_ = b.localize();
+          mpz_mul(this.mpz, a_.mpz, b_.mpz);
+        } else {
+          mpz_mul(this.mpz, a.mpz, b.mpz);
+        }
       }
     }
-    proc mul_si(a:BigInt, b:int)
+    proc mul_si(ref a:BigInt, b:int)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        mpz_mul_si(this.mpz, a_.mpz, b.safeCast(c_long));
-        //if acopy then delete a_;
+        if (here != a.locale) {
+          var a_ = a.localize();
+          mpz_mul_si(this.mpz, a_.mpz, b.safeCast(c_long));
+        } else {
+          mpz_mul_si(this.mpz, a.mpz, b.safeCast(c_long));
+        }
       }
     }
-    proc mul_ui(a:BigInt, b:uint)
+    proc mul_ui(ref a:BigInt, b:uint)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        mpz_mul_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        if (here != a.locale) {
+          var a_ = a.localize();
+          mpz_mul_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
+        } else {
+          mpz_mul_ui(this.mpz, a.mpz, b.safeCast(c_ulong));
+        }
       }
     }
-    proc addmul(a:BigInt, b:BigInt)
+    proc addmul(ref a:BigInt, ref b:BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        var (bcopy,b_) = b.maybeCopy();
-        mpz_addmul(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if (here != a.locale || here != b.locale) {
+          var a_ = a.localize();
+          var b_ = b.localize();
+          mpz_addmul(this.mpz, a_.mpz, b_.mpz);
+        } else {
+          mpz_addmul(this.mpz, a.mpz, b.mpz);
+        }
       }
     }
-    proc addmul_ui(a:BigInt, b:uint)
+    proc addmul_ui(ref a:BigInt, b:uint)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
+        if (here != a.locale) {
+        var a_ = a.localize();
         mpz_addmul_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        } else {
+          mpz_addmul_ui(this.mpz, a.mpz, b.safeCast(c_ulong));
+        }
       }
     }
-    proc submul(a:BigInt, b:BigInt)
+    proc submul(ref a:BigInt, ref b:BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        var (bcopy,b_) = b.maybeCopy();
-        mpz_submul(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if (here != a.locale || here != b.locale) {
+          var a_ = a.localize();
+          var b_ = b.localize();
+          mpz_submul(this.mpz, a_.mpz, b_.mpz);
+        } else {
+          mpz_submul(this.mpz, a.mpz, b.mpz);
+        }
       }
     }
-    proc submul_ui(a:BigInt, b:uint)
+    proc submul_ui(ref a:BigInt, b:uint)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        mpz_submul_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        if (here != a.locale) {
+          var a_ = a.localize();
+          mpz_submul_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
+        } else {
+          mpz_submul_ui(this.mpz, a.mpz, b.safeCast(c_ulong));
+        }
       }
     }
-    proc mul_2exp(a:BigInt, b:uint)
+    proc mul_2exp(ref a:BigInt, b:uint)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
+        if (here != a.locale) {
+        var a_ = a.localize();
         mpz_mul_2exp(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        } else {
+          mpz_mul_2exp(this.mpz, a.mpz, b.safeCast(c_ulong));
+        }
       }
     }
-    proc neg(a:BigInt)
+    proc neg(ref a:BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        mpz_neg(this.mpz, a_.mpz);
-        //if acopy then delete a_;
+        if (here != a.locale) {
+          var a_ = a.localize();
+          mpz_neg(this.mpz, a_.mpz);
+        } else {
+          mpz_neg(this.mpz, a.mpz);
+        }
       }
     }
-    proc abs(a:BigInt)
+    proc abs(ref a:BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        mpz_abs(this.mpz, a_.mpz);
-        //if acopy then delete a_;
+        if (here != a.locale) {
+          var a_ = a.localize();
+          mpz_abs(this.mpz, a_.mpz);
+        } else {
+          mpz_abs(this.mpz, a.mpz);
+        }
       }
     }
 
     // Division Functions
     // These functions take in a constant rounding mode.
-    proc div_q(param rounding:Round, n:BigInt, d:BigInt)
+    proc div_q(param rounding:Round, ref n:BigInt, ref d:BigInt)
     {
       on this {
-        var (ncopy,n_) = n.maybeCopy();
-        var (dcopy,d_) = d.maybeCopy();
-        select rounding {
-          when Round.UP   do mpz_cdiv_q(this.mpz, n_.mpz, d_.mpz);
-          when Round.DOWN do mpz_fdiv_q(this.mpz, n_.mpz, d_.mpz);
-          when Round.ZERO do mpz_tdiv_q(this.mpz, n_.mpz, d_.mpz);
+        if (here != n.locale || here != d.locale)
+        {
+          var n_ = n.localize();
+          var d_ = d.localize();
+          select rounding {
+            when Round.UP   do mpz_cdiv_q(this.mpz, n_.mpz, d_.mpz);
+            when Round.DOWN do mpz_fdiv_q(this.mpz, n_.mpz, d_.mpz);
+            when Round.ZERO do mpz_tdiv_q(this.mpz, n_.mpz, d_.mpz);
+          }
+        } else {
+          select rounding {
+            when Round.UP   do mpz_cdiv_q(this.mpz, n.mpz, d.mpz);
+            when Round.DOWN do mpz_fdiv_q(this.mpz, n.mpz, d.mpz);
+            when Round.ZERO do mpz_tdiv_q(this.mpz, n.mpz, d.mpz);
+          }
         }
-        //if ncopy then delete n_;
-        //if dcopy then delete d_;
       }
     }
-    proc div_r(param rounding:Round, n:BigInt, d:BigInt)
+    proc div_r(param rounding:Round, ref n:BigInt, ref d:BigInt)
     {
       on this {
-        var (ncopy,n_) = n.maybeCopy();
-        var (dcopy,d_) = d.maybeCopy();
-        select rounding {
-          when Round.UP   do mpz_cdiv_r(this.mpz, n_.mpz, d_.mpz);
-          when Round.DOWN do mpz_fdiv_r(this.mpz, n_.mpz, d_.mpz);
-          when Round.ZERO do mpz_tdiv_r(this.mpz, n_.mpz, d_.mpz);
+        if (here != n.locale || here != d.locale) {
+          var n_ = n.localize();
+          var d_ = d.localize();
+          select rounding {
+            when Round.UP   do mpz_cdiv_r(this.mpz, n_.mpz, d_.mpz);
+            when Round.DOWN do mpz_fdiv_r(this.mpz, n_.mpz, d_.mpz);
+            when Round.ZERO do mpz_tdiv_r(this.mpz, n_.mpz, d_.mpz);
+          }
+        } else {
+          select rounding {
+            when Round.UP   do mpz_cdiv_r(this.mpz, n.mpz, d.mpz);
+            when Round.DOWN do mpz_fdiv_r(this.mpz, n.mpz, d.mpz);
+            when Round.ZERO do mpz_tdiv_r(this.mpz, n.mpz, d.mpz);
+          }
         }
-        //if ncopy then delete n_;
-        //if dcopy then delete d_;
       }
     }
-    // this gets quotient, r gets remainder
-    proc div_qr(param rounding:Round, r:BigInt, n:BigInt, d:BigInt)
+    // this gets quotient, r gets remainder, so needs to be a ref
+    proc ref div_qr(param rounding:Round, ref r:BigInt, ref n:BigInt, ref d:BigInt)
     {
       on this {
-        var (rcopy,r_) = r.maybeCopy();
-        var (ncopy,n_) = n.maybeCopy();
-        var (dcopy,d_) = d.maybeCopy();
-        select rounding {
-          when Round.UP   do mpz_cdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
-          when Round.DOWN do mpz_fdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
-          when Round.ZERO do mpz_tdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+        if (here != r.locale || here != n.locale || here != d.locale)
+        {
+          var r_ = r.localize(); //assignment always makes deep copies
+          var n_ = n.localize();
+          var d_ = d.localize();
+          select rounding {
+            when Round.UP   do mpz_cdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+            when Round.DOWN do mpz_fdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+            when Round.ZERO do mpz_tdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+          }
+          r.set(r_); // r_ is a deep copy of r
         }
-        if rcopy {
-          r.set(r_);
-          //delete r_;
+        else
+        {
+          select rounding {
+            when Round.UP   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
+            when Round.DOWN do mpz_fdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
+            when Round.ZERO do mpz_tdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
+          }
         }
-        //if ncopy then delete n_;
-        //if dcopy then delete d_;
       }
     }
-    proc div_q_ui(param rounding:Round, n:BigInt, d:uint):uint
+    proc div_q_ui(param rounding:Round, ref n:BigInt, d:uint):uint
     {
       var ret:c_ulong;
       on this {
-        var (ncopy,n_) = n.maybeCopy();
         const cd = d.safeCast(c_ulong);
-        select rounding {
-          when Round.UP   do ret=mpz_cdiv_q_ui(this.mpz, n_.mpz, cd);
-          when Round.DOWN do ret=mpz_fdiv_q_ui(this.mpz, n_.mpz, cd);
-          when Round.ZERO do ret=mpz_tdiv_q_ui(this.mpz, n_.mpz, cd);
+        if (here != n.locale) {
+          var n_ = n.localize();
+          select rounding {
+            when Round.UP   do ret=mpz_cdiv_q_ui(this.mpz, n_.mpz, cd);
+            when Round.DOWN do ret=mpz_fdiv_q_ui(this.mpz, n_.mpz, cd);
+            when Round.ZERO do ret=mpz_tdiv_q_ui(this.mpz, n_.mpz, cd);
+          }
+        } else {
+          select rounding {
+            when Round.UP   do ret=mpz_cdiv_q_ui(this.mpz, n.mpz, cd);
+            when Round.DOWN do ret=mpz_fdiv_q_ui(this.mpz, n.mpz, cd);
+            when Round.ZERO do ret=mpz_tdiv_q_ui(this.mpz, n.mpz, cd);
+          }
         }
-        //if ncopy then delete n_;
       }
       return ret.safeCast(uint);
     }
-    proc div_r_ui(param rounding:Round, n:BigInt, d:uint):uint
+    proc div_r_ui(param rounding:Round, ref n:BigInt, d:uint):uint
     {
       var ret:c_ulong;
       on this {
-        var (ncopy,n_) = n.maybeCopy();
-        const cd = d.safeCast(c_ulong);
-        select rounding {
-          when Round.UP   do ret=mpz_cdiv_r_ui(this.mpz, n_.mpz, cd);
-          when Round.DOWN do ret=mpz_fdiv_r_ui(this.mpz, n_.mpz, cd);
-          when Round.ZERO do ret=mpz_tdiv_r_ui(this.mpz, n_.mpz, cd);
+      const cd = d.safeCast(c_ulong);
+        if (here != n.locale) {
+          var n_ = n.localize();
+          select rounding {
+            when Round.UP   do ret=mpz_cdiv_r_ui(this.mpz, n_.mpz, cd);
+            when Round.DOWN do ret=mpz_fdiv_r_ui(this.mpz, n_.mpz, cd);
+            when Round.ZERO do ret=mpz_tdiv_r_ui(this.mpz, n_.mpz, cd);
+          }
+        } else {
+          select rounding {
+            when Round.UP   do ret=mpz_cdiv_r_ui(this.mpz, n.mpz, cd);
+            when Round.DOWN do ret=mpz_fdiv_r_ui(this.mpz, n.mpz, cd);
+            when Round.ZERO do ret=mpz_tdiv_r_ui(this.mpz, n.mpz, cd);
+          }
         }
-        //if ncopy then delete n_;
       }
       return ret.safeCast(uint);
     }
     // this gets quotient, r gets remainder
-    proc div_qr_ui(param rounding:Round, r:BigInt, n:BigInt, d:uint):uint
+    proc div_qr_ui(param rounding:Round, ref r:BigInt, ref n:BigInt, d:uint):uint
     {
       var ret:c_ulong;
       const cd = d.safeCast(c_ulong);
       on this {
-        var (rcopy,r_) = r.maybeCopy();
-        var (ncopy,n_) = n.maybeCopy();
-        select rounding {
-          when Round.UP   do ret=mpz_cdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, cd);
-          when Round.DOWN do ret=mpz_fdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, cd);
-          when Round.ZERO do ret=mpz_tdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, cd);
-        }
-        if rcopy {
+        if (here != n.locale || here != r.locale) {
+          var (rcopy,r_) = r.maybeCopy();
+          var (ncopy,n_) = n.maybeCopy();
+          select rounding {
+            when Round.UP  do ret=mpz_cdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, cd);
+            when Round.DOWN do ret=mpz_fdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, cd);
+            when Round.ZERO do ret=mpz_tdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, cd);
+          }
           r.set(r_);
-          //delete r_;
+        } else {
+          select rounding {
+            when Round.UP  do ret=mpz_cdiv_qr_ui(this.mpz, r.mpz, n.mpz, cd);
+            when Round.DOWN do ret=mpz_fdiv_qr_ui(this.mpz, r.mpz, n.mpz, cd);
+            when Round.ZERO do ret=mpz_tdiv_qr_ui(this.mpz, r.mpz, n.mpz, cd);
+          }
         }
-        //if ncopy then delete n_;
       }
       return ret.safeCast(uint);
     }
-    proc div_ui(param rounding:Round, n:BigInt, d:uint):uint
+    // TODO: This function doesn't work the same way as the other division 
+    // functions, and the code for it was making an illegal call
+    proc div_ui(param rounding:Round, ref n:BigInt, d:uint):uint
     {
       var ret:c_ulong;
       const cd = d.safeCast(c_ulong);
       on this {
-        var (ncopy,n_) = n.maybeCopy();
-        select rounding {
-          when Round.UP   do ret=mpz_cdiv_ui(this.mpz, n_.mpz, cd);
-          when Round.DOWN do ret=mpz_fdiv_ui(this.mpz, n_.mpz, cd);
-          when Round.ZERO do ret=mpz_tdiv_ui(this.mpz, n_.mpz, cd);
+        if (here != n.locale) {
+          var n_ = n.localize();
+          select rounding {
+            when Round.UP   do ret=mpz_cdiv_ui(n_.mpz, cd);
+            when Round.DOWN do ret=mpz_fdiv_ui(n_.mpz, cd);
+            when Round.ZERO do ret=mpz_tdiv_ui(n_.mpz, cd);
+          }
+        } else {
+          select rounding {
+            when Round.UP   do ret=mpz_cdiv_ui(n.mpz, cd);
+            when Round.DOWN do ret=mpz_fdiv_ui(n.mpz, cd);
+            when Round.ZERO do ret=mpz_tdiv_ui(n.mpz, cd);
+          }
         }
-        //if ncopy then delete n_;
       }
       return ret.safeCast(uint);
     }
-    proc div_q_2exp(param rounding:Round, n:BigInt, b:uint)
+    proc div_q_2exp(param rounding:Round, ref n:BigInt, b:uint)
     {
       on this {
-        var (ncopy,n_) = n.maybeCopy();
-        const cb = b.safeCast(c_ulong);
-        select rounding {
-          when Round.UP   do mpz_cdiv_q_2exp(this.mpz, n_.mpz, cb);
-          when Round.DOWN do mpz_fdiv_q_2exp(this.mpz, n_.mpz, cb);
-          when Round.ZERO do mpz_tdiv_q_2exp(this.mpz, n_.mpz, cb);
+      const cb = b.safeCast(c_ulong);
+        if (here != n.locale) {
+          var n_ = n.localize();
+          select rounding {
+            when Round.UP   do mpz_cdiv_q_2exp(this.mpz, n_.mpz, cb);
+            when Round.DOWN do mpz_fdiv_q_2exp(this.mpz, n_.mpz, cb);
+            when Round.ZERO do mpz_tdiv_q_2exp(this.mpz, n_.mpz, cb);
+          }
+        } else {
+          select rounding {
+            when Round.UP   do mpz_cdiv_q_2exp(this.mpz, n.mpz, cb);
+            when Round.DOWN do mpz_fdiv_q_2exp(this.mpz, n.mpz, cb);
+            when Round.ZERO do mpz_tdiv_q_2exp(this.mpz, n.mpz, cb);
+          }
         }
-        //if ncopy then delete n_;
       }
     }
-    proc div_r_2exp(param rounding:Round, n:BigInt, b:uint)
+    proc div_r_2exp(param rounding:Round, ref n:BigInt, b:uint)
     {
       on this {
-        var (ncopy,n_) = n.maybeCopy();
         const cb = b.safeCast(c_ulong);
-        select rounding {
-          when Round.UP   do mpz_cdiv_r_2exp(this.mpz, n_.mpz, cb);
-          when Round.DOWN do mpz_fdiv_r_2exp(this.mpz, n_.mpz, cb);
-          when Round.ZERO do mpz_tdiv_r_2exp(this.mpz, n_.mpz, cb);
+        if (here != n.locale) {
+          var n_ = n.localize();
+         select rounding {
+           when Round.UP   do mpz_cdiv_r_2exp(this.mpz, n_.mpz, cb);
+            when Round.DOWN do mpz_fdiv_r_2exp(this.mpz, n_.mpz, cb);
+            when Round.ZERO do mpz_tdiv_r_2exp(this.mpz, n_.mpz, cb);
+          }
+        } else {
+          select rounding {
+            when Round.UP   do mpz_cdiv_r_2exp(this.mpz, n.mpz, cb);
+            when Round.DOWN do mpz_fdiv_r_2exp(this.mpz, n.mpz, cb);
+            when Round.ZERO do mpz_tdiv_r_2exp(this.mpz, n.mpz, cb);
+          }
         }
-        //if ncopy then delete n_;
       }
     }
-    proc mod(n:BigInt, d:BigInt)
+    proc mod(ref n:BigInt, ref d:BigInt)
     {
       on this {
-        var (ncopy,n_) = n.maybeCopy();
-        var (dcopy,d_) = d.maybeCopy();
-        mpz_mod(this.mpz, n_.mpz, d_.mpz);
-        //if ncopy then delete n_;
-        //if dcopy then delete d_;
+        if (here != n.locale || here != d.locale) {
+          var n_ = n.localize();
+          var d_ = d.localize();
+          mpz_mod(this.mpz, n_.mpz, d_.mpz);
+        } else {
+          mpz_mod(this.mpz, n.mpz, d.mpz);
+        }
       }
     }
-    proc mod_ui(n:BigInt, d:uint):uint
+    // TODO: same issue as div_ui, returns a ui instead of setting this
+    proc mod_ui(ref n:BigInt, d:uint):uint
     {
       var ret:c_ulong;
       on this {
-        var (ncopy,n_) = n.maybeCopy();
-        ret=mpz_mod_ui(this.mpz, n_.mpz, d.safeCast(c_ulong));
-        //if ncopy then delete n_;
+        if (here != n.locale) {
+          var (ncopy,n_) = n.maybeCopy();
+          ret=mpz_mod_ui(this.mpz, n_.mpz, d.safeCast(c_ulong));
+        }
+        else {
+          ret=mpz_mod_ui(this.mpz, n.mpz, d.safeCast(c_ulong));
+        }
       }
       return ret.safeCast(uint);
     }
-    proc divexact(n:BigInt, d:BigInt)
+    proc divexact(ref n:BigInt, ref d:BigInt)
     {
       on this {
-        var (ncopy,n_) = n.maybeCopy();
-        var (dcopy,d_) = d.maybeCopy();
-        mpz_divexact(this.mpz, n_.mpz, d_.mpz);
-        //if ncopy then delete n_;
-        //if dcopy then delete d_;
+        if (here != n.locale || here != d.locale) {
+          var n_ = n.localize();
+          var d_ = d.localize();
+          mpz_divexact(this.mpz, n_.mpz, d_.mpz);
+        } else {
+          mpz_divexact(this.mpz, n.mpz, d.mpz);
+        }
       }
     }
-    proc divexact_ui(n:BigInt, d:uint)
+    proc divexact_ui(ref n:BigInt, d:uint)
     {
       on this {
-        var (ncopy,n_) = n.maybeCopy();
-        mpz_divexact(this.mpz, n_.mpz, d.safeCast(c_ulong));
-        //if ncopy then delete n_;
+        if (here != n.locale) {
+          var n_ = n.localize();
+          mpz_divexact_ui(this.mpz, n_.mpz, d.safeCast(c_ulong));
+        } else {
+          mpz_divexact_ui(this.mpz, n.mpz, d.safeCast(c_ulong));
+        }
       }
     }
-    proc divisible_p(d:BigInt):int
+    proc divisible_p(ref d:BigInt):int
     {
       var ret:c_int;
       on this {
-        var (dcopy,d_) = d.maybeCopy();
+        if (here != d.locale) {
+        var d_ = d.localize();
         ret=mpz_divisible_p(this.mpz, d_.mpz);
-        //if dcopy then delete d_;
+        } else {
+          ret=mpz_divisible_p(this.mpz, d.mpz);
+        }
       }
       return ret.safeCast(int);
     }
@@ -1012,23 +1154,25 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc divisible_2exp_p(b:uint):int
+    proc divisible_2exp_p(b:uint):int // TODO: remove comment (formerly broken)
     {
       var ret:c_int;
       on this {
-        mpz_divisible_2exp_p(this.mpz, b.safeCast(c_ulong));
+        ret=mpz_divisible_2exp_p(this.mpz, b.safeCast(c_ulong));
       }
       return ret.safeCast(int);
     }
-    proc congruent_p(c:BigInt, d:BigInt):int
+    proc congruent_p(ref c:BigInt, ref d:BigInt):int
     {
       var ret:c_int;
       on this {
-        var (ccopy,c_) = c.maybeCopy();
-        var (dcopy,d_) = d.maybeCopy();
+        if (here != c.locale || here != d.locale) {          
+        var c_ = c.localize(); // TODO: redo localize and replace with shallow copies allowed
+        var d_ = d.localize();
         ret=mpz_congruent_p(this.mpz, c_.mpz, d_.mpz);
-        //if ccopy then delete c_;
-        //if dcopy then delete d_;
+        } else {
+          ret=mpz_congruent_p(this.mpz, c.mpz, d.mpz);
+        }
       }
       return ret.safeCast(int);
     }
@@ -1040,47 +1184,56 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc congruent_2exp_p(c:BigInt, b:uint):int
+    proc congruent_2exp_p(ref c:BigInt, b:uint):int
     {
       var ret:c_int;
       on this {
-        var (ccopy,c_) = c.maybeCopy();
-        ret=mpz_congruent_2exp_p(this.mpz, c_.mpz, b.safeCast(c_ulong));
-        //if ccopy then delete c_;
+        if (here != c.locale) {
+          var c_ = c.localize();
+          ret=mpz_congruent_2exp_p(this.mpz, c_.mpz, b.safeCast(c_ulong));
+        } else {
+          ret=mpz_congruent_2exp_p(this.mpz, c.mpz, b.safeCast(c_ulong));
+        }
       }
       return ret.safeCast(int);
     }
 
 
     // Exponentiation Functions
-    proc powm(base:BigInt, exp:BigInt, mod:BigInt)
+    proc powm(ref base:BigInt, ref exp:BigInt, ref mod:BigInt)
     {
       on this {
-        var (bcopy,b_) = base.maybeCopy();
-        var (ecopy,e_) = exp.maybeCopy();
-        var (mcopy,m_) = mod.maybeCopy();
-        mpz_powm(this.mpz, b_.mpz, e_.mpz, m_.mpz);
-        //if bcopy then delete b_;
-        //if ecopy then delete e_;
-        //if mcopy then delete m_;
+        if (here != base.locale || here != exp.locale || here != mod.locale) {
+          var b_ = base.localize();
+          var e_ = exp.localize();
+          var m_ = mod.localize();
+          mpz_powm(this.mpz, b_.mpz, e_.mpz, m_.mpz);
+        } else {
+          mpz_powm(this.mpz, base.mpz, exp.mpz, mod.mpz);
+        }
       }
     }
-    proc powm_ui(base:BigInt, exp:uint, mod:BigInt)
+    proc powm_ui(ref base:BigInt, exp:uint, ref mod:BigInt)
     {
       on this {
-        var (bcopy,b_) = base.maybeCopy();
-        var (mcopy,m_) = mod.maybeCopy();
-        mpz_powm_ui(this.mpz, b_.mpz, exp.safeCast(c_ulong), m_.mpz);
-        //if bcopy then delete b_;
-        //if mcopy then delete m_;
+        if (here != base.locale || here != mod.locale) {
+          var b_ = base.localize();
+          var m_ = mod.localize();
+          mpz_powm_ui(this.mpz, b_.mpz, exp.safeCast(c_ulong), m_.mpz);
+        } else {
+          mpz_powm_ui(this.mpz, base.mpz, exp.safeCast(c_ulong), mod.mpz);
+        }
       }
     }
-    proc pow_ui(base:BigInt, exp:uint)
+    proc pow_ui(ref base:BigInt, exp:uint)
     {
       on this {
-        var (bcopy,b_) = base.maybeCopy();
+        if (here != base.locale) {
+        var b_ = base.localize();
         mpz_pow_ui(this.mpz, b_.mpz, exp.safeCast(c_ulong));
-        //if bcopy then delete b_;
+        } else {
+          mpz_pow_ui(this.mpz, base.mpz, exp.safeCast(c_ulong));
+        }
       }
     }
     proc ui_pow_ui(base:uint, exp:uint)
@@ -1091,28 +1244,31 @@ module GMP {
     }
 
     // Root Extraction Functions
-    proc root(a:BigInt, n:uint):int
+    proc root(ref a:BigInt, n:uint):int
     {
       var ret:c_int;
       on this {
-        var (acopy,a_) = a.maybeCopy();
+        if (here != a.locale) {
+        var a_ = a.localize();
         ret=mpz_root(this.mpz, a_.mpz, n.safeCast(c_ulong));
-        //if acopy then delete a_;
+        } else {
+          ret=mpz_root(this.mpz, a.mpz, n.safeCast(c_ulong));
+        }
       }
       return ret.safeCast(int);
     }
     // this gets root, rem gets remainder.
-    proc mpz_rootrem(rem:BigInt, u:BigInt, n:uint)
+    proc rootrem(ref rem:BigInt, ref u:BigInt, n:uint) //TODO: does this need to have the mpz in it's name (formerly was mpz_rootrem)
     {
       on this {
-        var (rcopy,r_) = rem.maybeCopy();
-        var (ucopy,u_) = u.maybeCopy();
-        mpz_rootrem(this.mpz, r_.mpz, u_.mpz, n.safeCast(c_ulong));
-        if rcopy {
+        if (here != rem.locale || here != u.locale) {
+          var r_ = rem.localize();
+          var u_ = u.localize();
+          mpz_rootrem(this.mpz, r_.mpz, u_.mpz, n.safeCast(c_ulong));
           rem.set(r_);
-          //delete r_;
+        } else {
+          mpz_rootrem(this.mpz, rem.mpz, u.mpz, n.safeCast(c_ulong));
         }
-        //if ucopy then delete u_;
       }
     }
     proc sqrt(a:BigInt)
@@ -1124,17 +1280,17 @@ module GMP {
       }
     }
     // this gets root, rem gets remainder of a-root*root.
-    proc sqrtrem(rem:BigInt, a:BigInt)
+    proc sqrtrem(ref rem:BigInt, ref a:BigInt)
     {
       on this {
-        var (rcopy,r_) = rem.maybeCopy();
-        var (acopy,a_) = a.maybeCopy();
-        mpz_sqrtrem(this.mpz, r_.mpz, a_.mpz);
-        if rcopy {
+        if (here != rem.locale || here != a.locale) {
+          var r_ = rem.localize();
+          var a_ = a.localize();
+          mpz_sqrtrem(this.mpz, r_.mpz, a_.mpz);
           rem.set(r_);
-          //delete r_;
+        } else {
+          mpz_sqrtrem(this.mpz, rem.mpz, a.mpz);
         }
-        //if acopy then delete a_;
       }
     }
     proc perfect_power_p():int
@@ -1145,16 +1301,19 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc perfect_square():int
+    proc perfect_square_p():int // TODO: note that I changed this name
     {
       var ret:c_int;
       on this {
-        ret=mpz_perfect_square(this.mpz);
+        ret=mpz_perfect_square_p(this.mpz); // TODO: note name change
       }
       return ret.safeCast(int);
     }
 
     // Number Theoretic Functions
+
+    // returns 2 if definitely prime, 0 if not prime, 1 if likely prime
+    // reasonable number of reps is 15-50
     proc probab_prime_p(reps: int):int
     {
       var ret:c_int;
@@ -1163,81 +1322,92 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc nextprime(a: BigInt)
+    proc nextprime(ref a: BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        mpz_nextprime(this.mpz, a_.mpz);
-        //if acopy then delete a_;
+        if (here != a.locale){
+          var a_ = a.localize();
+          mpz_nextprime(this.mpz, a_.mpz);
+        } else {
+          mpz_nextprime(this.mpz, a.mpz);
+        }
       }
     }
-    proc gcd(a: BigInt, b: BigInt)
+    proc gcd(ref a: BigInt, ref b: BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        var (bcopy,b_) = b.maybeCopy();
-        mpz_gcd(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if (here != a.locale || here != b.locale) {
+          var a_ = a.localize();
+          var b_ = b.localize();
+          mpz_gcd(this.mpz, a_.mpz, b_.mpz);
+        } else {
+          mpz_gcd(this.mpz, a.mpz, b.mpz);
+        }
       }
     }
-    proc gcd_ui(a: BigInt, b: uint)
+    proc gcd_ui(ref a: BigInt, b: uint)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        mpz_gcd_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        if (here != a.locale) {
+          var a_ = a.localize();
+          mpz_gcd_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
+        } else {
+          mpz_gcd_ui(this.mpz, a.mpz, b.safeCast(c_ulong));
+        }
       }
     }
     // sets this to gcd(a,b)
     // set s and t to to coefficients satisfying a*s + b*t == g
-    proc gcdext(s: BigInt, t: BigInt, a: BigInt, b: BigInt)
+    proc gcdext(ref s: BigInt, ref t: BigInt, ref a: BigInt, ref b: BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        var (bcopy,b_) = b.maybeCopy();
-        var (scopy,s_) = s.maybeCopy();
-        var (tcopy,t_) = t.maybeCopy();
-        mpz_gcdext(this.mpz, s_.mpz, t_.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
-        if scopy {
+        if (here != a.locale || here != b.locale || here != s.locale || here != t.locale) {
+          var a_ = a.localize();
+          var b_ = b.localize();
+          var s_ = s.localize();
+          var t_ = t.localize();
+          mpz_gcdext(this.mpz, s_.mpz, t_.mpz, a_.mpz, b_.mpz);
           s.set(s_);
-         // delete s_;
-        }
-        if tcopy {
           t.set(t_);
-         // delete t_;
+        } else {
+          mpz_gcdext(this.mpz, s.mpz, t.mpz, a.mpz, b.mpz);
         }
       }
     }
-    proc lcm(a: BigInt, b: BigInt)
+    proc lcm(ref a: BigInt, ref b: BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        var (bcopy,b_) = b.maybeCopy();
-        mpz_lcm(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if (here != a.locale || here != b.locale){
+          var a_ = a.localize();
+          var b_ = b.localize();
+          mpz_lcm(this.mpz, a_.mpz, b_.mpz);
+        } else {
+          mpz_lcm(this.mpz, a.mpz, b.mpz);
+        }
       }
     }
-    proc lcm_ui(a: BigInt, b: uint)
+    proc lcm_ui(ref a: BigInt, b: uint)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        mpz_lcm_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
-        //if acopy then delete a_;
+        if (here != a.locale) {
+          var a_ = a.localize();
+          mpz_lcm_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
+        } else {
+          mpz_lcm_ui(this.mpz, a.mpz, b.safeCast(c_ulong));
+        }
       }
     }
-    proc invert(a: BigInt, b: BigInt):int
+    proc invert(ref a: BigInt, ref b: BigInt):int
     {
       var ret:c_int;
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        var (bcopy,b_) = b.maybeCopy();
-        ret=mpz_invert(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if (here != a.locale || here != b.locale) {
+          var a_ = a.localize();
+          var b_ = b.localize();
+          ret=mpz_invert(this.mpz, a_.mpz, b_.mpz);
+        } else {
+          ret=mpz_invert(this.mpz, a.mpz, b.mpz);
+        }
       }
       return ret.safeCast(int);
     }
@@ -1245,15 +1415,17 @@ module GMP {
     // jacobi, legendre, kronecker are procedures outside this 
     // record.
 
-    proc remove(a: BigInt, f: BigInt):uint
+    proc remove(ref a: BigInt, ref f: BigInt):uint
     {
       var ret:c_ulong;
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        var (fcopy,f_) = f.maybeCopy();
-        ret=mpz_remove(this.mpz, a_.mpz, f_.mpz);
-        //if acopy then delete a_;
-        //if fcopy then delete f_;
+        if (here != a.locale || here != f.locale){
+          var a_ = a.localize();
+          var f_ = f.localize();
+          ret=mpz_remove(this.mpz, a_.mpz, f_.mpz);
+        } else {
+          ret=mpz_remove(this.mpz, a.mpz, f.mpz);
+        }
       }
       return ret.safeCast(uint);
     }
@@ -1263,12 +1435,18 @@ module GMP {
         mpz_fac_ui(this.mpz, a.safeCast(c_ulong));
       }
     }
-    proc bin_ui(n: BigInt, k: uint)
+    // TODO: functions including mpz_2fac_ui, mpz_primorial_ui, and 
+    // mpz_mfac_uiui are not represented here. Should they be?
+
+    proc bin_ui(ref n: BigInt, k: uint)
     {
       on this {
-        var (ncopy,n_) = n.maybeCopy();
-        mpz_bin_ui(this.mpz, n_.mpz, k.safeCast(c_ulong));
-        //if ncopy then delete n_;
+        if (here != n.locale){
+          var n_ = n.localize();
+          mpz_bin_ui(this.mpz, n_.mpz, k.safeCast(c_ulong));
+        } else {
+          mpz_bin_ui(this.mpz, n.mpz, k.safeCast(c_ulong));
+        }
       }
     }
     proc bin_uiui(n: uint, k: uint)
@@ -1283,14 +1461,15 @@ module GMP {
         mpz_fib_ui(this.mpz, n.safeCast(c_ulong));
       }
     }
-    proc fib2_ui(fnsub1: BigInt, n: uint)
+    proc fib2_ui(ref fnsub1: BigInt, n: uint)
     {
       on this {
-        var (fcopy,f_) = fnsub1.maybeCopy();
-        mpz_fib2_ui(this.mpz, f_.mpz, n.safeCast(c_ulong));
-        if fcopy {
+        if (here != fnsub1.locale){
+          var (fcopy,f_) = fnsub1.maybeCopy();
+          mpz_fib2_ui(this.mpz, f_.mpz, n.safeCast(c_ulong));
           fnsub1.set(f_);
-          //delete f_;
+        } else {
+          mpz_fib2_ui(this.mpz, fnsub1.mpz, n.safeCast(c_ulong));
         }
       }
     }
@@ -1303,24 +1482,28 @@ module GMP {
     proc lucnum2_ui(lnsub1: BigInt, n: uint)
     {
       on this {
-        var (fcopy,f_) = lnsub1.maybeCopy();
-        mpz_lucnum2_ui(this.mpz, f_.mpz, n.safeCast(c_ulong));
-        if fcopy {
+        if (here != lnsub1.locale) {
+          var f_ = lnsub1.localize();
+          mpz_lucnum2_ui(this.mpz, f_.mpz, n.safeCast(c_ulong));
           lnsub1.set(f_);
-          //delete f_;
+        } else {
+          mpz_lucnum2_ui(this.mpz, lnsub1.mpz, n.safeCast(c_ulong));
         }
       }
     }
  
 
     // Comparison Functions
-    proc cmp(b:BigInt):int
+    proc cmp(ref b:BigInt):int
     {
       var ret:c_int;
       on this {
-        var (bcopy,b_) = b.maybeCopy();
-        ret=mpz_cmp(this.mpz,b_.mpz);
-        //if bcopy then delete b_;
+        if (here != b.locale) {
+          var b_ = b.localize();
+          ret=mpz_cmp(this.mpz, b_.mpz);
+        } else {
+          ret=mpz_cmp(this.mpz, b.mpz);
+        }
       }
       return ret.safeCast(int);
     }
@@ -1348,13 +1531,16 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc cmpabs(b:BigInt):int
+    proc cmpabs(ref b:BigInt):int
     {
       var ret:c_int;
       on this {
-        var (acopy,b_) = b.maybeCopy();
-        ret=mpz_cmpabs(this.mpz,b_.mpz);
-        //if acopy then delete b_;
+        if here != b.locale {
+          var b_ = b.localize();
+          ret=mpz_cmpabs(this.mpz, b_.mpz);
+        } else {
+          ret = mpz_cmpabs(this.mpz, b.mpz);
+        }
       }
       return ret.safeCast(int);
     }
@@ -1366,7 +1552,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc cmp_abs_ui(b:uint):int
+    proc cmpabs_ui(b:uint):int
     {
       var ret:c_int;
       on this {
@@ -1384,42 +1570,51 @@ module GMP {
     }
 
     // Logical and Bit Manipulation Functions
-    proc and(a:BigInt, b:BigInt)
+    proc and(ref a:BigInt, ref b:BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        var (bcopy,b_) = b.maybeCopy();
-        mpz_and(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if (here != a.locale || here != b.locale) {
+          var a_ = a.localize();
+          var b_ = b.localize();
+          mpz_and(this.mpz, a_.mpz, b_.mpz);
+        } else {
+          mpz_and(this.mpz, a.mpz, b.mpz);
+        }
       }
     }
-    proc ior(a:BigInt, b:BigInt)
+    proc ior(ref a:BigInt, ref b:BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        var (bcopy,b_) = b.maybeCopy();
-        mpz_ior(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if (here != a.locale || here != b.locale) {
+          var a_ = a.localize();
+          var b_ = b.localize();
+          mpz_ior(this.mpz, a_.mpz, b_.mpz);
+        } else {
+          mpz_ior(this.mpz, a.mpz, b.mpz);
+        }
       }
     }
-    proc xor(a:BigInt, b:BigInt)
+    proc xor(ref a:BigInt, ref b:BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        var (bcopy,b_) = b.maybeCopy();
-        mpz_xor(this.mpz, a_.mpz, b_.mpz);
-        //if acopy then delete a_;
-        //if bcopy then delete b_;
+        if (here != a.locale || here != b.locale) {
+          var a_ = a.localize();
+          var b_ = b.localize();
+          mpz_xor(this.mpz, a_.mpz, b_.mpz);
+        } else {
+          mpz_xor(this.mpz, a.mpz, b.mpz);
+        }
       }
     }
-    proc com(a:BigInt)
+    proc com(ref a:BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
-        mpz_com(this.mpz, a_.mpz);
-        //if acopy then delete a_;
+        if here != a.locale {
+          var a_ = a.localize();
+          mpz_com(this.mpz, a_.mpz);
+        } else {
+          mpz_com(this.mpz, a.mpz);
+        }
       }
     }
     proc popcount():uint
@@ -1430,13 +1625,16 @@ module GMP {
       }
       return ret.safeCast(uint);
     }
-    proc hamdist(b:BigInt):uint
+    proc hamdist(ref b:BigInt):uint
     {
       var ret:c_ulong;
       on this {
-        var (bcopy,b_) = b.maybeCopy();
-        ret=mpz_hamdist(this.mpz, b_.mpz);
-        //if bcopy then delete b_;
+        if here != b.locale {
+          var b_ = b.localize();
+          ret=mpz_hamdist(this.mpz, b_.mpz);
+        } else {
+          ret=mpz_hamdist(this.mpz, b.mpz);
+        }
       }
       return ret.safeCast(uint);
     }
@@ -1496,7 +1694,7 @@ module GMP {
     {
       var ret:c_int;
       on this {
-        ret = mpz_fits_ulong_p(this.mpz);
+        ret = mpz_fits_slong_p(this.mpz);
       }
       return ret.safeCast(int);
     }
@@ -1566,6 +1764,7 @@ module GMP {
         mpz_realloc2(this.mpz, nbits.safeCast(c_ulong));
       }
     }
+    // TODO: write the extern for this
     proc get_limbn(n:uint):uint
     {
       var ret:mp_limb_t;
@@ -1618,6 +1817,8 @@ module GMP {
   proc =(ref lhs: BigInt, rhs: int) {
     lhs.set(rhs); //should just change the value?
   }
+
+
 
 
   // These are the autoCopy functions the compiler calls behind my back?
@@ -1677,45 +1878,62 @@ module GMP {
   }
 
   proc BigInt.writeThis(writer) {
-    var (acopy,a_) = this.maybeCopy(); //this works, but makes and 
-    //deletes 2 records each time it is called
-    //TODO: confirm support of remote records for writing
-    var s:string = a_.get_str();
-    //gmp_asprintf(s, "%Zd", a_.mpz);
+    //var (acopy,a_) = this.maybeCopy(); //this works, but makes and 
+    // deletes 2 records each time it is called
+    // TODO: confirm support of remote records for writing
+    // TODO: Ask why we can't just do "on this" and skip localization, since 
+    // we are only working with 'this'
+    var s:string;
+    if (here != this.locale) {
+      var a_ = this.localize();
+      s = a_.get_str();
+      //gmp_asprintf(s, "%Zd", a_.mpz);
+    } else {
+      s = this.get_str();
+    }
     writer.write(s);
   }
 
-  proc jacobi(a: BigInt, b: BigInt):int
+  proc jacobi(ref a: BigInt, ref b: BigInt):int
   {
     var ret:c_int;
     on a {
-      var (bcopy,b_) = b.maybeCopy();
-      ret=mpz_jacobi(a.mpz, b_.mpz);
-      //if bcopy then delete b_;
+      if here != b.locale {
+        var b_ = b.localize();
+        ret=mpz_jacobi(a.mpz, b_.mpz);
+      } else {
+        ret =mpz_jacobi(a.mpz, b.mpz);
+      }
     }
     return ret.safeCast(int);
   }
-  proc legendre(a: BigInt, p: BigInt):int
+  proc legendre(ref a: BigInt, ref p: BigInt):int
   {
     var ret:c_int;
     on a {
-      var (pcopy,p_) = p.maybeCopy();
-      ret=mpz_legendre(a.mpz, p_.mpz);
-      //if pcopy then delete p_;
+      if here != p.locale {
+        var p_ = p.localize();
+        ret=mpz_legendre(a.mpz, p_.mpz);
+      } else {
+        ret=mpz_legendre(a.mpz, p.mpz);
+      }
     }
     return ret.safeCast(int);
   }
-  proc kronecker(a: BigInt, b: BigInt):int
+  proc kronecker(ref a: BigInt, ref b: BigInt):int
   {
     var ret:c_int;
     on a {
-      var (bcopy,b_) = b.maybeCopy();
-      ret=mpz_kronecker(a.mpz, b_.mpz);
-      //if bcopy then delete b_;
+      if here != b.locale {
+        var b_ = b.localize();
+        ret=mpz_kronecker(a.mpz, b_.mpz);
+      } else {
+        ret = mpz_kronecker(a.mpz, b.mpz);
+      }
     }
     return ret.safeCast(int);
   }
-  proc kronecker_si(a: BigInt, b: int):int
+  proc kronecker_si(ref a: BigInt, b: int):int
   {
     var ret:c_int;
     on a {
@@ -1723,7 +1941,7 @@ module GMP {
     }
     return ret.safeCast(int);
   }
-  proc kronecker_ui(a: BigInt, b: uint):int
+  proc kronecker_ui(ref a: BigInt, b: uint):int
   {
     var ret:c_int;
     on a {
@@ -1731,19 +1949,19 @@ module GMP {
     }
     return ret.safeCast(int);
   }
-  proc si_kronecker(a: int, b: BigInt):int
+  proc si_kronecker(a: int, ref b: BigInt):int
   {
     var ret:c_int;
     on b {
-      ret=mpz_si_kronecker(b.mpz.safeCast(c_long, a));
+      ret=mpz_si_kronecker(a.safeCast(c_long), b.mpz);
     }
     return ret.safeCast(int);
   }
-  proc ui_kronecker(a: uint, b: BigInt):int
+  proc ui_kronecker(a: uint, ref b: BigInt):int
   {
     var ret:c_int;
     on b {
-      ret=mpz_ui_kronecker(b.mpz.safeCast(c_ulong, a));
+      ret=mpz_ui_kronecker(a.safeCast(c_ulong), b.mpz);
     }
     return ret.safeCast(int);
   }
@@ -1759,15 +1977,18 @@ module GMP {
     {
       gmp_randinit_mt(this.state);
     }
-    proc GMPRandom(a: BigInt, c: uint, m2exp: uint)
+    proc GMPRandom(ref a: BigInt, c: uint, m2exp: uint)
     {
-      var (acopy,a_) = a.maybeCopy();
-      gmp_randinit_lc_2exp(this.state, a_.mpz, c.safeCast(c_ulong), m2exp.safeCast(c_ulong));
-      //if acopy then delete a_;
+      if here != a.locale {
+        var a_ = a.localize();
+        gmp_randinit_lc_2exp(this.state, a_.mpz, c.safeCast(c_ulong), m2exp.safeCast(c_ulong));
+      } else {
+         gmp_randinit_lc_2exp(this.state, a.mpz, c.safeCast(c_ulong), m2exp.safeCast(c_ulong));
+      }
     }
     proc GMPRandom(size: uint)
     {
-      gmp_randinit_lc_2exp_esize(this.state, size.safeCast(c_ulong));
+      gmp_randinit_lc_2exp_size(this.state, size.safeCast(c_ulong));
     }
     proc GMPRandom(a: GMPRandom)
     {
@@ -1781,15 +2002,18 @@ module GMP {
     {
       on this do gmp_randclear(this.state);
     }
-    proc seed(seed: BigInt)
+    proc seed(ref seed: BigInt)
     {
       on this {
-        var (scopy,s_) = seed.maybeCopy();
-        gmp_randseed(this.state, s_.mpz);
-        //if scopy then delete s_;
+        if here != seed.locale {
+          var s_ = seed.localize();
+          gmp_randseed(this.state, s_.mpz);
+        } else {
+          gmp_randseed(this.state, seed.mpz);
+        }
       }
     }
-    proc seed(seed: uint)
+    proc seed(seed: uint) // TODO: should this be named seed_ui ?
     {
       on this {
         gmp_randseed_ui(this.state, seed.safeCast(c_ulong));
@@ -1811,38 +2035,40 @@ module GMP {
       }
       return ret.safeCast(uint);
     }
-    proc urandomb(r: BigInt, nbits: uint)
+    proc urandomb(ref r: BigInt, nbits: uint)
     {
       on this {
-        var (rcopy,r_) = r.maybeCopy();
-        mpz_urandomb(r_.mpz, this.state, nbits.safeCast(c_ulong));
-        if rcopy {
+        if here != r.locale {
+          var r_ = r.localize();
+          mpz_urandomb(r_.mpz, this.state, nbits.safeCast(c_ulong));
           r.set(r_);
-          //delete r_;
+        } else {
+          mpz_urandomb(r.mpz, this.state, nbits.safeCast(c_ulong));
         }
       }
     }
-    proc urandomm(r: BigInt, n: BigInt)
+    proc urandomm(ref r: BigInt, ref n: BigInt)
     {
       on this {
-        var (rcopy,r_) = r.maybeCopy();
-        var (ncopy,n_) = n.maybeCopy();
-        mpz_urandomm(r_.mpz, this.state, n_.mpz);
-        if rcopy {
+        if (here != r.locale || here != n.locale){
+          var r_ = r.localize();
+          var n_ = n.localize();
+          mpz_urandomm(r_.mpz, this.state, n_.mpz);
           r.set(r_);
-          //delete r_;
+        } else {
+          mpz_urandomm(r.mpz, this.state, n.mpz);
         }
-        //if ncopy then delete n_;
       }
     }
-    proc rrandomb(r: BigInt, nbits: uint)
+    proc rrandomb(ref r: BigInt, nbits: uint)
     {
       on this {
-        var (rcopy,r_) = r.maybeCopy();
-        mpz_rrandomb(r_.mpz, this.state, nbits.safeCast(c_ulong));
-        if rcopy {
+        if here != r.locale {
+          var r_ = r.localize();
+          mpz_rrandomb(r_.mpz, this.state, nbits.safeCast(c_ulong));
           r.set(r_);
-          //delete r_;
+        } else {
+          mpz_rrandomb(r.mpz, this.state, nbits.safeCast(c_ulong));
         }
       }
     }

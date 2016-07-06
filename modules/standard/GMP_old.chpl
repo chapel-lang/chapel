@@ -137,7 +137,7 @@ And all :type:`mpz_t` GMP routines, as well as the following routines:
   * :proc:`mpf_ui_sub()`
 
  */
-module GMP {
+module GMP_old {
   use SysBasic;
   use Error;
 
