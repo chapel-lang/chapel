@@ -8,7 +8,6 @@
 */
 
 
-config param n = 10;
 config const niters = if CHPL_COMM == "none" then 1000 else 10;
 config const ncoforall = 100;
 config const debug = false;
@@ -25,7 +24,7 @@ pragma "fast-on safe extern function"
 extern proc assert_match(got:int, expected:int);
 
 
-proc dobegin() {
+proc dobegin(param n) {
 
   var x: int;
   var tup: n * int;
@@ -82,7 +81,7 @@ proc dobegin() {
   }
 }
 
-proc dobeginon() {
+proc dobeginon(param n) {
 
   var x: int;
   var tup: n * int;
@@ -139,7 +138,7 @@ proc dobeginon() {
   }
 }
 
-proc doon() {
+proc doon(param n) {
 
   var x: int;
   var tup: n * int;
@@ -173,7 +172,7 @@ proc doon() {
 }
 
 
-proc dofaston() {
+proc dofaston(param n) {
 
   var x: int;
   var tup: n * int;
@@ -204,7 +203,7 @@ proc dofaston() {
   if debug then writeln("end of loop");
 }
 
-proc defastbeginon() {
+proc defastbeginon(param n) {
 
   var x: int;
   var tup: n * int;
@@ -251,7 +250,7 @@ iter modifyAndYield(num:int, i: int, ref x: int, ref tup: n*int)
   }
 }
 
-proc docoforall() 
+proc docoforall(param n) 
 
   var x: int;
   var tup: n * int;
@@ -279,11 +278,18 @@ proc docoforall()
 }
 */
 
-dobegin();
-dobeginon();
-doon();
-dofaston();
-defastbeginon();
-//docoforall();
+proc dotests(param n) {
+  dobegin(n);
+  dobeginon(n);
+  doon(n);
+  dofaston(n);
+  defastbeginon(n);
+  //docoforall(n);
+}
+
+dotests(1);
+dotests(10);
+dotests(100);
+dotests(1000);
 
 writeln("OK");
