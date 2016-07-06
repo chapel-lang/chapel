@@ -18,13 +18,11 @@ var allMasks: [permutationsDom] int,
     maskStart: [boardDom][0..7] int;
 
 // Arrays of min, max, and number of solutions
-var minSolution: [boardDom] int,
-    maxSolution: [boardDom] int,
+var minSolution, maxSolution: [boardDom] int,
     solutions: int;
 
 // Masks for evens and left border
-var evenRowsLookup: [boardDom] int,
-    leftBorderLookup: [boardDom] int;
+var evenRowsLookup, leftBorderLookup: [boardDom] int;
 
 // Predefined masks commonly used throughout program
 param maskEven   = 0xf07c1f07c1f07c1f: int, // Even rows of board (0, 2, 4, ..)
@@ -33,17 +31,19 @@ param maskEven   = 0xf07c1f07c1f07c1f: int, // Even rows of board (0, 2, 4, ..)
       maskBottom = 0x00000000003FFFFF: int, // Bottom 22 elements of boards
       maskUsed   = 0x00000000FFC00000: int; // Board + 4 additional bits
 
-//
 // DIY sync variable functionality that outperforms native sync variables.
 // Access controlled by functions lock() and unlock()
-//
 var l: atomic bool;
 
 
 //
 // Find and print the minimum and maximum solutions to meteor puzzle
 //
-proc main() {
+proc main(args: [] string) {
+
+  // Support dummy arguments for shootout execution scripts
+  if args.size > 2 then
+    return;
 
   initialize();
 
@@ -413,8 +413,7 @@ proc unlock() {
 // Check a given board as a solution and record it
 //
 proc recordSolution(currentSolution) {
-  var board: [boardDom] int,
-      flipBoard: [boardDom] int,
+  var board, flipBoard: [boardDom] int,
       mask, pos, currentBit, b1, count, piece: int;
 
   for i in piecesDom {
