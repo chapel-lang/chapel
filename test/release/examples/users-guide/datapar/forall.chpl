@@ -1,6 +1,6 @@
 config param runSerial = false,
              runConcurrent = false,
-             runRace = false;;
+             runRace = false;
 
 config 
   const n = 1000000;
