@@ -196,7 +196,12 @@ typedef union {
 typedef struct {
   chpl_comm_on_bundle_t bundle;
   special_fork_t        space;
-} special_fork_task_t;
+} small_fork_task_t;
+
+typedef struct {
+  chpl_comm_on_bundle_t bundle;
+  large_fork_t          large;
+} large_fork_task_t;
 
 typedef struct {
   void*   ack;
@@ -258,7 +263,7 @@ static void AM_fork_fast(gasnet_token_t token, void* buf, size_t nbytes) {
 }
 
 static inline
-size_t setup_fork_task(special_fork_task_t* dst, small_fork_hdr_t* f, size_t nbytes)
+size_t setup_small_fork_task(small_fork_task_t* dst, small_fork_hdr_t* f, size_t nbytes)
 {
   chpl_comm_bundleData_t comm  = { .fid    = f->fid,
                                    .caller = f->caller,
@@ -276,13 +281,30 @@ size_t setup_fork_task(special_fork_task_t* dst, small_fork_hdr_t* f, size_t nby
 }
 
 
+static inline
+size_t setup_large_fork_task(large_fork_task_t* dst, large_fork_t* f, size_t nbytes)
+{
+  chpl_comm_bundleData_t comm  = { .fid    = f->hdr.fid,
+                                   .caller = f->hdr.caller,
+                                   .ack    = f->hdr.ack };
+  chpl_comm_on_bundle_t bundle = { .comm =  comm };
+  chpl_comm_on_bundle_t *bptr  = &dst->bundle;
+
+  dst->bundle = bundle;
+  // Copy the large fork info into the task bundle
+  dst->large = *f;
+
+  return sizeof(large_fork_task_t);
+}
+
+
 static void AM_fork_fast_small(gasnet_token_t token, void* buf, size_t nbytes) {
   small_fork_hdr_t *f = buf;
-  special_fork_task_t task;
+  small_fork_task_t task;
   chpl_comm_on_bundle_t *bptr = &task.bundle;
 
   // Copy the data into a chpl_comm_on_bundle_t
-  setup_fork_task(&task, f, nbytes);
+  setup_small_fork_task(&task, f, nbytes);
 
   // Run the function
   chpl_ftable_call(f->fid, bptr);
@@ -311,12 +333,12 @@ static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
 
 static void AM_fork_small(gasnet_token_t token, void* buf, size_t nbytes) {
   small_fork_hdr_t *f = buf;
-  special_fork_task_t task;
+  small_fork_task_t task;
   chpl_comm_on_bundle_t *bptr = &task.bundle;
   size_t size;
 
   // Copy the data into a chpl_comm_on_bundle_t
-  size = setup_fork_task(&task, f, nbytes);
+  size = setup_small_fork_task(&task, f, nbytes);
  
   chpl_task_startMovedTask((chpl_fn_p)fork_wrapper,
                            chpl_comm_on_bundle_task_bundle(bptr),
@@ -326,8 +348,8 @@ static void AM_fork_small(gasnet_token_t token, void* buf, size_t nbytes) {
 }
 
 
-static void fork_large_wrapper(special_fork_task_t* f) {
-  large_fork_t *lg = &f->space.large;
+static void fork_large_wrapper(large_fork_task_t* f) {
+  large_fork_t *lg = &f->large;
   chpl_comm_on_bundle_t* arg;
   int caller;
   size_t bundle_size_on_caller;
@@ -351,7 +373,7 @@ static void fork_large_wrapper(special_fork_task_t* f) {
                 -1 /*typeIndex: unused*/, 0, CHPL_FILE_IDX_FORK_LARGE);
 
   // Call the on body function
-  chpl_ftable_call(f->space.large.hdr.fid, arg);
+  chpl_ftable_call(fid, arg);
 
   // Signal completion
   GASNET_Safe(gasnet_AMRequestShort2(caller, SIGNAL, Arg0(ack), Arg1(ack)));
@@ -364,19 +386,18 @@ static void fork_large_wrapper(special_fork_task_t* f) {
 ////           hide data copy by making get non-blocking
 ////GASNET - can we allocate f big enough so as not to need malloc in wrapper
 static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
-  small_fork_hdr_t *f = buf;
-  special_fork_task_t task;
+  large_fork_t *f = buf;
+  large_fork_task_t task;
   chpl_comm_on_bundle_t *bptr = &task.bundle;
   size_t size;
 
   // Copy the data into a chpl_comm_on_bundle_t
-  size = setup_fork_task(&task, f, nbytes);
- 
+  size = setup_large_fork_task(&task, f, nbytes);
+
   chpl_task_startMovedTask((chpl_fn_p)fork_large_wrapper,
-                           chpl_comm_on_bundle_task_bundle(bptr),
-                           size,
-                           f->subloc, chpl_nullTaskID,
-                           f->serial_state);
+                           chpl_comm_on_bundle_task_bundle(bptr), size,
+                           f->hdr.subloc, chpl_nullTaskID,
+                           f->hdr.serial_state);
 }
 
 static void fork_nb_wrapper(chpl_comm_on_bundle_t *f) {
@@ -397,12 +418,12 @@ static void AM_fork_nb_small(gasnet_token_t  token,
                              void           *buf,
                              size_t          nbytes) {
   small_fork_hdr_t *f = buf;
-  special_fork_task_t task;
+  small_fork_task_t task;
   chpl_comm_on_bundle_t *bptr = &task.bundle;
   size_t size;
 
   // Copy the data into a chpl_comm_on_bundle_t
-  size = setup_fork_task(&task, f, nbytes);
+  size = setup_small_fork_task(&task, f, nbytes);
  
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper,
                            chpl_comm_on_bundle_task_bundle(bptr), size,
@@ -411,8 +432,8 @@ static void AM_fork_nb_small(gasnet_token_t  token,
 }
 
 
-static void fork_nb_large_wrapper(special_fork_task_t* f) {
-  large_fork_t *lg = &f->space.large;
+static void fork_nb_large_wrapper(large_fork_task_t* f) {
+  large_fork_t *lg = &f->large;
   chpl_comm_on_bundle_t* arg;
   int caller;
   size_t bundle_size_on_caller;
@@ -438,18 +459,25 @@ static void fork_nb_large_wrapper(special_fork_task_t* f) {
                                      Arg1(arg_on_caller)));
 
   // Call the user function
-  chpl_ftable_call(lg->hdr.fid, arg);
+  chpl_ftable_call(fid, arg);
 
   // Free the bundle we just allocated
   chpl_mem_free(arg, 0, 0);
 }
 
 static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
-  chpl_comm_on_bundle_t* f = (chpl_comm_on_bundle_t*) buf;
+  large_fork_t *f = buf;
+  large_fork_task_t task;
+  chpl_comm_on_bundle_t *bptr = &task.bundle;
+  size_t size;
+
+  // Copy the data into a chpl_comm_on_bundle_t
+  size = setup_large_fork_task(&task, f, nbytes);
+
   chpl_task_startMovedTask((chpl_fn_p)fork_nb_large_wrapper,
-                           chpl_comm_on_bundle_task_bundle(f), nbytes,
-                           f->task_bundle.requestedSubloc, chpl_nullTaskID,
-                           f->task_bundle.serial_state);
+                           chpl_comm_on_bundle_task_bundle(bptr), size,
+                           f->hdr.subloc, chpl_nullTaskID,
+                           f->hdr.serial_state);
 }
 
 static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handlerarg_t a1) {
@@ -1399,6 +1427,10 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
     if (small)      op = FORK_NB_SMALL;
     else if (large) op = FORK_NB_LARGE;
     else            op = FORK_NB;
+  }
+
+  if (large) {
+    payload_size = sizeof(large_fork_t) - sizeof(small_fork_hdr_t);
   }
 
   if (small || large) {
