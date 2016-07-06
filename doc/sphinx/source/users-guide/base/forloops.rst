@@ -55,6 +55,7 @@ the loop body:
 .. literalinclude:: examples/users-guide/base/forloops.chpl
   :language: chapel
   :lines: 14-15
+  :dedent: 2
 
 In contrast, an array's default iterator yields references to the
 array's elements.  As a result, the loop's index variable can be used
