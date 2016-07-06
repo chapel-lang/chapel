@@ -2,7 +2,8 @@
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Kyle Brady
-   based upon the C implementation by Christian Vosteen
+   based upon the C implementation by Christian Vosteen (including some
+   comments)
  */
 
 module meteor {
@@ -11,15 +12,15 @@ module meteor {
      50 bits, which will fit into a 64 bit int.        . . . . .
                                                         . . . . .
                                                        . . . . .
-     I will represent 0's as empty cells and 1's        . . . . .
-     as full cells.                                    . . . . .
+     Represent 0's as empty cells and 1's as full       . . . . .
+     cells.                                            . . . . .
                                                         . . . . .
                                                        . . . . .
                                                         . . . . .
    */
 
-  /* The puzzle pieces must be specified by the path followed
-     from one end to the other along 12 hexagonal directions.
+  /* The puzzle pieces must be specified by the path followed from one end to
+     the other along 12 hexagonal directions.
 
        Piece 0   Piece 1   Piece 2   Piece 3   Piece 4
 
@@ -33,10 +34,9 @@ module meteor {
            O O       O O       O       O O O        O
                       O       O O
 
-     I had to make it 12 directions because I wanted all of the
-     piece definitions to fit into the same size arrays.  It is
-     not possible to define piece 4 in terms of the 6 cardinal
-     directions in 4 moves.
+     This was done in 12 directions because it was desirable for all the piece
+     definitions to fit into the same size arrays.  It is not possible to define
+     piece 4 in terms of the 6 cardinal directions in 4 moves.
    */
   enum direction {
     E=0,
@@ -58,7 +58,7 @@ module meteor {
 
   /* Avoiding magic numbers */
   var piecesDom = {0..9}; // There are 10 pieces
-  var boardDom = {0..49};
+  var boardDom = {0..49}; // There are 50 squares in the board
   
   var pieceDef: [piecesDom][0..3] direction = [
     [  E,  E,   E, SE],
@@ -74,14 +74,11 @@ module meteor {
   ];
 
   /* To minimize the amount of work done in the recursive solve function below,
-     I'm going to allocate enough space for all legal rotations of each piece
-     at each position on the board. That's 10 pieces x 50 board positions x
-     12 rotations.  However, not all 12 rotations will fit on every cell, so
-     I'll have to keep count of the actual number that do.
-     The pieces are going to be unsigned ints just like the board so
-     they can be bitwise-anded with the board to determine if they fit.
-     I'm also going to record the next possible open cell for each piece and
-     location to reduce the burden on the solve function.
+     allocate enough space for all legal rotations of each piece at each
+     position on the board. That's 10 pieces x 50 board positions x 12
+     rotations.  However, not all 12 rotations will fit on every cell, so keep
+     count of the actual number that do.  Record the next possible open cell for
+     each piece and location to reduce the burden on the solve function.
    */
   var pieces, nextCell: [piecesDom][boardDom][0..11] int;
   var pieceCounts: [piecesDom][boardDom] int;
@@ -96,10 +93,9 @@ module meteor {
     return ((PIVOT - dir) % PIVOT): direction;
   }
 
-  /* Returns the new cell index from the specified cell in the
-     specified direction.  The index is only valid if the
-     starting cell and direction have been checked by the
-     outOfBounds function first.
+  /* Returns the new cell index from the specified cell in the specified
+     direction.  The index is only valid if the starting cell and direction have
+     been checked by the outOfBounds function first.
    */
   proc shift(cell, dir) {
     select dir {
@@ -156,9 +152,8 @@ module meteor {
     }
   }
 
-  /* Returns whether the specified cell and direction will land outside
-     of the board.  Used to determine if a piece is at a legal board
-     location or not.
+  /* Returns whether the specified cell and direction will land outside of the
+     board.  Used to determine if a piece is at a legal board location or not.
    */
   proc outOfBounds(cell, dir) {
     var i: int;
@@ -227,9 +222,9 @@ module meteor {
     return notOut;
   }
 
-  /* Returns the lowest index of the cells of a piece.
-     I use the lowest index that a piece occupies as the index for looking up
-     the piece in the solve function.
+  /* Returns the lowest index of the cells of a piece.  Use the lowest index
+     that a piece occupies as the index for looking up the piece in the solve
+     function.
    */
   proc minimumOfCells(cell) {
     var minimum = max(int);
@@ -257,17 +252,15 @@ module meteor {
    */
   proc bitmaskFromCells(cell) {
     var pieceMask: int;
-    for i in 0..4 {
+    for i in 0..4 do
       pieceMask |= 1 << cell[i];
-    }
     return pieceMask;
   }
 
   /* Record the piece and other important information in arrays that will
      later be used by the solve function.
    */
-  proc recordPiece(piece, minimum, firstEmpty,
-                   pieceMask) {
+  proc recordPiece(piece, minimum, firstEmpty, pieceMask) {
     const lastIdx = pieceCounts[piece][minimum];
     pieces[piece][minimum][lastIdx] = pieceMask;
     nextCell[piece][minimum][lastIdx] = firstEmpty;
@@ -282,7 +275,7 @@ module meteor {
       return;
     board[indx] = 1;
 
-    /* I really want to rewrite the if statements below as this:
+    /* LYDIA NOTE: I really want to rewrite the if statements below as this:
     for dir in [E, SE, SW, W, NW, NE] {
       if (!outOfBounds(indx, dir)) then
         fillContinguousSpace(board, shift(indx, dir));
@@ -305,11 +298,11 @@ module meteor {
       fillContiguousSpace(board, shift(indx, NE));
   }
 
-  /* To thin the number of pieces, I calculate if any of them trap any empty
-     cells at the edges.  There are only a handful of exceptions where
-     the board can be solved with the trapped cells.  For example:  piece 8 can
-     trap 5 cells in the corner, but piece 3 can fit in those cells, or piece 0
-     can split the board in half where both halves are viable.
+  /* To thin the number of pieces, calculate if any of them trap any empty cells
+     at the edges.  There are only a handful of exceptions where the board can
+     be solved with the trapped cells.  For example: piece 8 can trap 5 cells in
+     the corner, but piece 3 can fit in those cells, or piece 0 can split the
+     board in half where both halves are viable.
    */
   proc hasIsland(cell, piece) {
     var tempBoard: [boardDom] int;
@@ -327,7 +320,7 @@ module meteor {
       if tempBoard[i] == 0 then
         c += 1;
     if (c == 0 || (c == 5 && piece == 8) || (c == 40 && piece == 8) ||
-       (c % 5 == 0 && piece == 0)) {
+        (c % 5 == 0 && piece == 0)) {
       return false;
     } else {
       return true;
@@ -335,11 +328,11 @@ module meteor {
   }
 
   /* Calculate all six rotations of the specified piece at the specified index.
-     We calculate only half of piece 3's rotations.  This is because any
-     solution found has an identical solution rotated 180 degrees.  Thus we can
-     reduce the number of attempted pieces in the solve algorithm by not
-     including the 180-degree-rotated pieces of ONE of the pieces.  I chose
-     piece 3 because it gave me the best time ;)
+     Calculate only half of piece 3's rotations, because any solution found has
+     an identical solution rotated 180 degrees.  Thus we can reduce the number
+     of attempted pieces in the solve algorithm by not including the
+     180-degree-rotated pieces of ONE of the pieces.  Piece 3 was chosen because
+     it gave the best time ;)
    */
   proc calcSixRotations(piece, indx, cell) {
     var minimum, firstEmpty, pieceMask: int;
@@ -535,14 +528,12 @@ module meteor {
     avail ^= pieceNoMask;
   }
 
-
   proc solve() {
     forall piece in piecesDom do
       solve_helper(piece);
   }
 
-  proc solve_linear(in depth, in cell, in board,
-      in avail, solNums, solMasks) {
+  proc solve_linear(in depth, in cell, in board, in avail, solNums, solMasks) {
     var pieceNoMask, maxRots, pieceMask: int;
 
     if solutionCount.read() >= maxSolutions then
@@ -579,7 +570,6 @@ module meteor {
       avail ^= pieceNoMask;
     }
   }
-
 
   /* pretty print a board in the specified hexagonal format */
   proc pretty(s) {
