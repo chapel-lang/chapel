@@ -469,28 +469,28 @@ module GMP {
     platforms (already true today) _and_ always work regardless of platform
     (not true today).
    */
-  pragma "ignore noinit" // TODO: Is this still needed?
+  pragma "ignore noinit" // TODO: Is this pragma still needed?
   record BigInt {
     var mpz : mpz_t;
     var owned : bool; //all user-defined constructors set true 
-    // TODO: should there be a 
+    // TODO: should there be a default value?
 
     proc BigInt(){
       // writeln("BigInt no-arg constructor called");
       mpz_init(this.mpz); 
       owned = true;
     }
-    proc BigInt(init2:bool, nbits:uint){
+    proc BigInt(init2: bool, nbits: uint){
       // writeln("BigInt init2/nbits constructor called");
       mpz_init2(this.mpz, nbits.safeCast(c_ulong));
       owned = true;
     }
-    proc BigInt(num:int) {
+    proc BigInt(num: int) {
       // writeln("BigInt num:int constructor called");
       mpz_init_set_si(this.mpz, num.safeCast(c_long));
       owned = true;
     }
-    proc BigInt(str:string, base:int=0) {
+    proc BigInt(str: string, base: int=0) {
       // writeln("BigInt string constructor called");
       var e:c_int;
       e = mpz_init_set_str(this.mpz, str.localize().c_str(), base.safeCast(c_int));
@@ -500,7 +500,7 @@ module GMP {
       }
       owned = true;
     }
-    proc BigInt(str:string, base:int=0, out error:syserr) {
+    proc BigInt(str: string, base: int=0, out error:syserr) {
       // writeln("BigInt string/base/error constructor called");
       var e:c_int;
       error = ENOERR;
@@ -511,8 +511,8 @@ module GMP {
       }
       owned = true;
     }
-    proc BigInt(ref num:BigInt, owned : bool = true) { //must be passed by ref
-      // writeln("BigInt num:BigInt constructor called");
+    proc BigInt(ref num: BigInt, owned: bool = true) { //must be passed by ref
+      // writeln("BigInt num: BigInt constructor called");
       if num.locale == here {
         mpz_init_set(this.mpz, num.mpz); 
       } else {
@@ -564,13 +564,13 @@ module GMP {
     }
 
     // utility functions used below.
-    proc numLimbs:uint(64) {
+    proc numLimbs: uint(64) {
       var mpz_struct = this.mpz[1];
       return chpl_gmp_mpz_nlimbs(mpz_struct);
     }
 
-    proc mpzStruct():__mpz_struct {
-      var ret:__mpz_struct;
+    proc mpzStruct(): __mpz_struct {
+      var ret: __mpz_struct;
       on this {
         ret = this.mpz[1];
       }
@@ -578,7 +578,7 @@ module GMP {
     }
 
     // returns true if we made a temp copy // TODO: Do records need this?
-    proc maybeCopy():(bool, BigInt) {
+    /*proc maybeCopy():(bool, BigInt) {
       if this.locale == here {
         return (false, this);
       } else {
@@ -589,10 +589,10 @@ module GMP {
         //var tmp = this; //assignment should localize and deep copy
         return (true, tmp);
       }
-    }
+    }*/
 
     // replaces maybeCopy()
-    inline proc localize():BigInt {
+    inline proc localize(): BigInt {
       if this.locale == here {
         return new BigInt(this, owned=false); //return a shallow copy
       } else {
@@ -602,12 +602,15 @@ module GMP {
 
         // TODO: should be able to replace this with assignment?
           // since assignment localizes?
+        // since there isn't a way to init and set a variable as a fn arg
+          // without calling a constructor on the variable before the fn
+          // do we even need localize or can we hide it in assignment?
         // TODO: should tmp be const in this case? it is in String::localize
         return tmp;
       }
     }
 
-    proc copyRemoteBigInt():BigInt{
+    proc copyRemoteBigInt(): BigInt{
       var mpz_struct = this.mpz[1];
         var tmp = new BigInt(true, (mp_bits_per_limb:uint(64))*chpl_gmp_mpz_nlimbs(mpz_struct));
         chpl_gmp_get_mpz(tmp.mpz, this.locale.id, mpz_struct); 
@@ -621,7 +624,7 @@ module GMP {
 
 
    // Assignment functions
-    proc set(ref a:BigInt)
+    proc set(ref a: BigInt)
     {
       on this {
         if a.locale == here {
@@ -632,7 +635,7 @@ module GMP {
         }
       }
     }
-    proc set_ui(num:uint)
+    proc set_ui(num: uint)
     {
       on this do mpz_set_ui(this.mpz, num.safeCast(c_ulong));
     }
@@ -640,19 +643,19 @@ module GMP {
     {
       on this do mpz_set_si(this.mpz, num.safeCast(c_long));
     }
-    proc set(num:int)
+    proc set(num: int)
     {
       set_si(num.safeCast(c_long));
     }
-    proc set_d(num:real)
+    proc set_d(num: real)
     {
       on this do mpz_set_d(this.mpz, num: c_double);
     }
-    proc set_str(str:string, base:int=0)
+    proc set_str(str: string, base: int=0)
     {
       on this do mpz_set_str(this.mpz, str.localize().c_str(), base.safeCast(c_int));
     }
-    proc swap(ref a:BigInt)
+    proc swap(ref a: BigInt)
     {
       on this {
         if a.locale == here {
@@ -699,7 +702,7 @@ module GMP {
       return (exp.safeCast(int), dbl: real);
     }
 
-    proc get_str(base:int=10):string
+    proc get_str(base: int=10):string
     {
       var ret:string;
       on this {
@@ -710,7 +713,7 @@ module GMP {
     }
 
     // Arithmetic functions
-    proc add(ref a:BigInt, ref b:BigInt)
+    proc add(ref a: BigInt, ref b: BigInt)
     {
       on this {
         if (here != a.locale || here != b.locale) {
@@ -722,7 +725,7 @@ module GMP {
         }
       }
     }
-    proc add_ui(ref a:BigInt, b:uint)
+    proc add_ui(ref a: BigInt, b: uint)
     {
       on this {
         if (here != a.locale ) {
@@ -733,7 +736,7 @@ module GMP {
         }
       }
     }
-    proc sub(ref a:BigInt, ref b:BigInt)
+    proc sub(ref a: BigInt, ref b: BigInt)
     {
       on this {
         if (here != a.locale || here != b.locale) {
@@ -745,7 +748,7 @@ module GMP {
         }
       }
     }
-    proc sub_ui(ref a:BigInt, b:uint)
+    proc sub_ui(ref a: BigInt, b: uint)
     {
       on this {
         if (here != a.locale) {
@@ -756,7 +759,7 @@ module GMP {
         }
       }
     }
-    proc ui_sub(a:uint, ref b:BigInt)
+    proc ui_sub(a: uint, ref b: BigInt)
     {
       on this {
         if (here != b.locale) {
@@ -767,7 +770,7 @@ module GMP {
         }
       }
     }
-    proc mul(ref a:BigInt, ref b:BigInt)
+    proc mul(ref a: BigInt, ref b: BigInt)
     {
       on this {
         if (here != a.locale || here != b.locale) {
@@ -779,7 +782,7 @@ module GMP {
         }
       }
     }
-    proc mul_si(ref a:BigInt, b:int)
+    proc mul_si(ref a: BigInt, b: int)
     {
       on this {
         if (here != a.locale) {
@@ -790,7 +793,7 @@ module GMP {
         }
       }
     }
-    proc mul_ui(ref a:BigInt, b:uint)
+    proc mul_ui(ref a: BigInt, b: uint)
     {
       on this {
         if (here != a.locale) {
@@ -801,7 +804,7 @@ module GMP {
         }
       }
     }
-    proc addmul(ref a:BigInt, ref b:BigInt)
+    proc addmul(ref a: BigInt, ref b: BigInt)
     {
       on this {
         if (here != a.locale || here != b.locale) {
@@ -813,7 +816,7 @@ module GMP {
         }
       }
     }
-    proc addmul_ui(ref a:BigInt, b:uint)
+    proc addmul_ui(ref a: BigInt, b: uint)
     {
       on this {
         if (here != a.locale) {
@@ -824,7 +827,7 @@ module GMP {
         }
       }
     }
-    proc submul(ref a:BigInt, ref b:BigInt)
+    proc submul(ref a: BigInt, ref b: BigInt)
     {
       on this {
         if (here != a.locale || here != b.locale) {
@@ -836,7 +839,7 @@ module GMP {
         }
       }
     }
-    proc submul_ui(ref a:BigInt, b:uint)
+    proc submul_ui(ref a: BigInt, b: uint)
     {
       on this {
         if (here != a.locale) {
@@ -847,7 +850,7 @@ module GMP {
         }
       }
     }
-    proc mul_2exp(ref a:BigInt, b:uint)
+    proc mul_2exp(ref a: BigInt, b: uint)
     {
       on this {
         if (here != a.locale) {
@@ -858,7 +861,7 @@ module GMP {
         }
       }
     }
-    proc neg(ref a:BigInt)
+    proc neg(ref a: BigInt)
     {
       on this {
         if (here != a.locale) {
@@ -869,7 +872,7 @@ module GMP {
         }
       }
     }
-    proc abs(ref a:BigInt)
+    proc abs(ref a: BigInt)
     {
       on this {
         if (here != a.locale) {
@@ -883,7 +886,7 @@ module GMP {
 
     // Division Functions
     // These functions take in a constant rounding mode.
-    proc div_q(param rounding:Round, ref n:BigInt, ref d:BigInt)
+    proc div_q(param rounding: Round, ref n: BigInt, ref d: BigInt)
     {
       on this {
         if (here != n.locale || here != d.locale)
@@ -904,7 +907,7 @@ module GMP {
         }
       }
     }
-    proc div_r(param rounding:Round, ref n:BigInt, ref d:BigInt)
+    proc div_r(param rounding: Round, ref n: BigInt, ref d: BigInt)
     {
       on this {
         if (here != n.locale || here != d.locale) {
@@ -925,7 +928,7 @@ module GMP {
       }
     }
     // this gets quotient, r gets remainder, so needs to be a ref
-    proc ref div_qr(param rounding:Round, ref r:BigInt, ref n:BigInt, ref d:BigInt)
+    proc ref div_qr(param rounding: Round, ref r: BigInt, ref n: BigInt, ref d: BigInt)
     {
       on this {
         if (here != r.locale || here != n.locale || here != d.locale)
@@ -950,7 +953,7 @@ module GMP {
         }
       }
     }
-    proc div_q_ui(param rounding:Round, ref n:BigInt, d:uint):uint
+    proc div_q_ui(param rounding: Round, ref n: BigInt, d: uint):uint
     {
       var ret:c_ulong;
       on this {
@@ -972,7 +975,7 @@ module GMP {
       }
       return ret.safeCast(uint);
     }
-    proc div_r_ui(param rounding:Round, ref n:BigInt, d:uint):uint
+    proc div_r_ui(param rounding: Round, ref n: BigInt, d: uint):uint
     {
       var ret:c_ulong;
       on this {
@@ -995,14 +998,14 @@ module GMP {
       return ret.safeCast(uint);
     }
     // this gets quotient, r gets remainder
-    proc div_qr_ui(param rounding:Round, ref r:BigInt, ref n:BigInt, d:uint):uint
+    proc div_qr_ui(param rounding: Round, ref r: BigInt, ref n: BigInt, d: uint):uint
     {
       var ret:c_ulong;
       const cd = d.safeCast(c_ulong);
       on this {
         if (here != n.locale || here != r.locale) {
-          var (rcopy,r_) = r.maybeCopy();
-          var (ncopy,n_) = n.maybeCopy();
+          var r_ = r.localize();
+          var n_ = n.localize();
           select rounding {
             when Round.UP  do ret=mpz_cdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, cd);
             when Round.DOWN do ret=mpz_fdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, cd);
@@ -1021,7 +1024,7 @@ module GMP {
     }
     // TODO: This function doesn't work the same way as the other division 
     // functions, and the code for it was making an illegal call
-    proc div_ui(param rounding:Round, ref n:BigInt, d:uint):uint
+    proc div_ui(param rounding: Round, ref n: BigInt, d: uint):uint
     {
       var ret:c_ulong;
       const cd = d.safeCast(c_ulong);
@@ -1043,7 +1046,7 @@ module GMP {
       }
       return ret.safeCast(uint);
     }
-    proc div_q_2exp(param rounding:Round, ref n:BigInt, b:uint)
+    proc div_q_2exp(param rounding: Round, ref n: BigInt, b: uint)
     {
       on this {
       const cb = b.safeCast(c_ulong);
@@ -1063,7 +1066,7 @@ module GMP {
         }
       }
     }
-    proc div_r_2exp(param rounding:Round, ref n:BigInt, b:uint)
+    proc div_r_2exp(param rounding: Round, ref n: BigInt, b: uint)
     {
       on this {
         const cb = b.safeCast(c_ulong);
@@ -1083,7 +1086,7 @@ module GMP {
         }
       }
     }
-    proc mod(ref n:BigInt, ref d:BigInt)
+    proc mod(ref n: BigInt, ref d: BigInt)
     {
       on this {
         if (here != n.locale || here != d.locale) {
@@ -1096,12 +1099,12 @@ module GMP {
       }
     }
     // TODO: same issue as div_ui, returns a ui instead of setting this
-    proc mod_ui(ref n:BigInt, d:uint):uint
+    proc mod_ui(ref n: BigInt, d: uint):uint
     {
       var ret:c_ulong;
       on this {
         if (here != n.locale) {
-          var (ncopy,n_) = n.maybeCopy();
+          var n_ = n.localize();
           ret=mpz_mod_ui(this.mpz, n_.mpz, d.safeCast(c_ulong));
         }
         else {
@@ -1110,7 +1113,7 @@ module GMP {
       }
       return ret.safeCast(uint);
     }
-    proc divexact(ref n:BigInt, ref d:BigInt)
+    proc divexact(ref n: BigInt, ref d: BigInt)
     {
       on this {
         if (here != n.locale || here != d.locale) {
@@ -1122,7 +1125,7 @@ module GMP {
         }
       }
     }
-    proc divexact_ui(ref n:BigInt, d:uint)
+    proc divexact_ui(ref n: BigInt, d: uint)
     {
       on this {
         if (here != n.locale) {
@@ -1133,7 +1136,7 @@ module GMP {
         }
       }
     }
-    proc divisible_p(ref d:BigInt):int
+    proc divisible_p(ref d: BigInt):int
     {
       var ret:c_int;
       on this {
@@ -1146,7 +1149,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc divisible_ui_p(d:uint):int
+    proc divisible_ui_p(d: uint):int
     {
       var ret:c_int;
       on this {
@@ -1154,7 +1157,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc divisible_2exp_p(b:uint):int // TODO: remove comment (formerly broken)
+    proc divisible_2exp_p(b: uint):int
     {
       var ret:c_int;
       on this {
@@ -1162,31 +1165,32 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc congruent_p(ref c:BigInt, ref d:BigInt):int
+    proc congruent_p(ref c: BigInt, ref d: BigInt):int
     {
       var ret:c_int;
       on this {
         if (here != c.locale || here != d.locale) {          
-        var c_ = c.localize(); // TODO: redo localize and replace with shallow copies allowed
-        var d_ = d.localize();
-        ret=mpz_congruent_p(this.mpz, c_.mpz, d_.mpz);
+          var c_ = c.localize(); 
+            // TODO: redo localize and replace with shallow copies allowed
+          var d_ = d.localize();
+          ret=mpz_congruent_p(this.mpz, c_.mpz, d_.mpz);
         } else {
           ret=mpz_congruent_p(this.mpz, c.mpz, d.mpz);
         }
       }
       return ret.safeCast(int);
     }
-    proc congruent_ui_p(c:uint, d:uint):int
+    proc congruent_ui_p(c:uint, d: uint):int
     {
-      var ret:c_int;
+      var ret: c_int;
       on this {
         ret=mpz_congruent_ui_p(this.mpz, c.safeCast(c_ulong), d.safeCast(c_ulong));
       }
       return ret.safeCast(int);
     }
-    proc congruent_2exp_p(ref c:BigInt, b:uint):int
+    proc congruent_2exp_p(ref c: BigInt, b: uint):int
     {
-      var ret:c_int;
+      var ret: c_int;
       on this {
         if (here != c.locale) {
           var c_ = c.localize();
@@ -1200,7 +1204,7 @@ module GMP {
 
 
     // Exponentiation Functions
-    proc powm(ref base:BigInt, ref exp:BigInt, ref mod:BigInt)
+    proc powm(ref base: BigInt, ref exp: BigInt, ref mod: BigInt)
     {
       on this {
         if (here != base.locale || here != exp.locale || here != mod.locale) {
@@ -1213,7 +1217,7 @@ module GMP {
         }
       }
     }
-    proc powm_ui(ref base:BigInt, exp:uint, ref mod:BigInt)
+    proc powm_ui(ref base: BigInt, exp:uint, ref mod: BigInt)
     {
       on this {
         if (here != base.locale || here != mod.locale) {
@@ -1225,7 +1229,7 @@ module GMP {
         }
       }
     }
-    proc pow_ui(ref base:BigInt, exp:uint)
+    proc pow_ui(ref base: BigInt, exp: uint)
     {
       on this {
         if (here != base.locale) {
@@ -1236,7 +1240,7 @@ module GMP {
         }
       }
     }
-    proc ui_pow_ui(base:uint, exp:uint)
+    proc ui_pow_ui(base: uint, exp: uint)
     {
       on this {
         mpz_ui_pow_ui(this.mpz, base.safeCast(c_ulong), exp.safeCast(c_ulong));
@@ -1244,7 +1248,7 @@ module GMP {
     }
 
     // Root Extraction Functions
-    proc root(ref a:BigInt, n:uint):int
+    proc root(ref a: BigInt, n: uint):int
     {
       var ret:c_int;
       on this {
@@ -1258,7 +1262,8 @@ module GMP {
       return ret.safeCast(int);
     }
     // this gets root, rem gets remainder.
-    proc rootrem(ref rem:BigInt, ref u:BigInt, n:uint) //TODO: does this need to have the mpz in it's name (formerly was mpz_rootrem)
+    proc rootrem(ref rem: BigInt, ref u: BigInt, n: uint) 
+      //TODO: does this need to have the mpz in it's name (formerly was mpz_rootrem)
     {
       on this {
         if (here != rem.locale || here != u.locale) {
@@ -1271,16 +1276,16 @@ module GMP {
         }
       }
     }
-    proc sqrt(a:BigInt)
+    proc sqrt(ref a: BigInt)
     {
       on this {
-        var (acopy,a_) = a.maybeCopy();
+        var a_ = a.localize();
         mpz_sqrt(this.mpz, a_.mpz);
         //if acopy then delete a_;
       }
     }
     // this gets root, rem gets remainder of a-root*root.
-    proc sqrtrem(ref rem:BigInt, ref a:BigInt)
+    proc sqrtrem(ref rem: BigInt, ref a: BigInt)
     {
       on this {
         if (here != rem.locale || here != a.locale) {
@@ -1301,11 +1306,11 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc perfect_square_p():int // TODO: note that I changed this name
+    proc perfect_square_p():int
     {
       var ret:c_int;
       on this {
-        ret=mpz_perfect_square_p(this.mpz); // TODO: note name change
+        ret=mpz_perfect_square_p(this.mpz);
       }
       return ret.safeCast(int);
     }
@@ -1316,7 +1321,7 @@ module GMP {
     // reasonable number of reps is 15-50
     proc probab_prime_p(reps: int):int
     {
-      var ret:c_int;
+      var ret: c_int;
       on this {
         ret=mpz_probab_prime_p(this.mpz, reps.safeCast(c_int));
       }
@@ -1465,7 +1470,7 @@ module GMP {
     {
       on this {
         if (here != fnsub1.locale){
-          var (fcopy,f_) = fnsub1.maybeCopy();
+          var f_ = fnsub1.localize();
           mpz_fib2_ui(this.mpz, f_.mpz, n.safeCast(c_ulong));
           fnsub1.set(f_);
         } else {
@@ -1479,7 +1484,7 @@ module GMP {
         mpz_lucnum_ui(this.mpz, n.safeCast(c_ulong));
       }
     }
-    proc lucnum2_ui(lnsub1: BigInt, n: uint)
+    proc lucnum2_ui(ref lnsub1: BigInt, n: uint)
     {
       on this {
         if (here != lnsub1.locale) {
@@ -1494,7 +1499,7 @@ module GMP {
  
 
     // Comparison Functions
-    proc cmp(ref b:BigInt):int
+    proc cmp(ref b: BigInt):int
     {
       var ret:c_int;
       on this {
@@ -1507,7 +1512,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc cmp_d(b:real):int
+    proc cmp_d(b: real):int
     {
       var ret:c_int;
       on this {
@@ -1515,7 +1520,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc cmp_si(b:int):int
+    proc cmp_si(b: int):int
     {
       var ret:c_int;
       on this {
@@ -1523,7 +1528,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc cmp_ui(b:uint):int
+    proc cmp_ui(b: uint):int
     {
       var ret:c_int;
       on this {
@@ -1531,7 +1536,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc cmpabs(ref b:BigInt):int
+    proc cmpabs(ref b: BigInt):int
     {
       var ret:c_int;
       on this {
@@ -1544,7 +1549,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc cmpabs_d(b:real):int
+    proc cmpabs_d(b: real):int
     {
       var ret:c_int;
       on this {
@@ -1552,7 +1557,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc cmpabs_ui(b:uint):int
+    proc cmpabs_ui(b: uint):int
     {
       var ret:c_int;
       on this {
@@ -1570,7 +1575,7 @@ module GMP {
     }
 
     // Logical and Bit Manipulation Functions
-    proc and(ref a:BigInt, ref b:BigInt)
+    proc and(ref a: BigInt, ref b: BigInt)
     {
       on this {
         if (here != a.locale || here != b.locale) {
@@ -1582,7 +1587,7 @@ module GMP {
         }
       }
     }
-    proc ior(ref a:BigInt, ref b:BigInt)
+    proc ior(ref a: BigInt, ref b: BigInt)
     {
       on this {
         if (here != a.locale || here != b.locale) {
@@ -1594,7 +1599,7 @@ module GMP {
         }
       }
     }
-    proc xor(ref a:BigInt, ref b:BigInt)
+    proc xor(ref a: BigInt, ref b: BigInt)
     {
       on this {
         if (here != a.locale || here != b.locale) {
@@ -1606,7 +1611,7 @@ module GMP {
         }
       }
     }
-    proc com(ref a:BigInt)
+    proc com(ref a: BigInt)
     {
       on this {
         if here != a.locale {
@@ -1625,7 +1630,7 @@ module GMP {
       }
       return ret.safeCast(uint);
     }
-    proc hamdist(ref b:BigInt):uint
+    proc hamdist(ref b: BigInt):uint
     {
       var ret:c_ulong;
       on this {
@@ -1638,7 +1643,7 @@ module GMP {
       }
       return ret.safeCast(uint);
     }
-    proc scan0(starting_bit:uint):uint
+    proc scan0(starting_bit: uint):uint
     {
       var ret:c_ulong;
       on this {
@@ -1646,7 +1651,7 @@ module GMP {
       }
       return ret.safeCast(uint);
     }
-    proc scan1(starting_bit:uint):uint
+    proc scan1(starting_bit: uint):uint
     {
       var ret:c_ulong;
       on this {
@@ -1654,25 +1659,25 @@ module GMP {
       }
       return ret.safeCast(uint);
     }
-    proc setbit(bit_index:uint)
+    proc setbit(bit_index: uint)
     {
       on this {
         mpz_setbit(this.mpz, bit_index.safeCast(c_ulong));
       }
     }
-    proc clrbit(bit_index:uint)
+    proc clrbit(bit_index: uint)
     {
       on this {
         mpz_clrbit(this.mpz, bit_index.safeCast(c_ulong));
       }
     }
-    proc combit(bit_index:uint)
+    proc combit(bit_index: uint)
     {
       on this {
         mpz_combit(this.mpz, bit_index.safeCast(c_ulong));
       }
     }
-    proc tstbit(bit_index:uint):int
+    proc tstbit(bit_index: uint):int
     {
       var ret:c_int;
       on this {
@@ -1684,7 +1689,7 @@ module GMP {
     // Miscellaneous Functions
     proc fits_ulong_p():int
     {
-      var ret:c_int;
+      var ret: c_int;
       on this {
         ret = mpz_fits_ulong_p(this.mpz);
       }
@@ -1746,7 +1751,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc sizeinbase(base:int):uint
+    proc sizeinbase(base: int):uint
     {
       var ret:size_t;
       on this {
@@ -1758,14 +1763,14 @@ module GMP {
     // left out integer random functions
     // these are in the GMPRandom class.
 
-    proc realloc2(nbits:uint)
+    proc realloc2(nbits: uint)
     {
       on this {
         mpz_realloc2(this.mpz, nbits.safeCast(c_ulong));
       }
     }
     // TODO: write the extern for this
-    proc get_limbn(n:uint):uint
+    proc get_limbn(n: uint):uint
     {
       var ret:mp_limb_t;
       on this {
@@ -1794,7 +1799,7 @@ module GMP {
   // needs to deep copy b'c of how we use it
    proc =(ref lhs: BigInt, ref rhs: BigInt) {
     // writeln("In overloaded assignment operator");
-    inline proc helpMe(ref lhs : BigInt, ref rhs : BigInt) {
+    inline proc helpMe(ref lhs: BigInt, ref rhs: BigInt) {
       if _local || rhs.locale_id == chpl_nodeID {
         lhs.reinitBigInt(rhs.mpz, needToCopy=true);
       } else {
@@ -1826,7 +1831,7 @@ module GMP {
   pragma "donor fn"
   pragma "auto copy fn"
   pragma "no doc"
-  proc chpl__autoCopy(ref bir : BigInt) {
+  proc chpl__autoCopy(ref bir: BigInt) {
     //this pragma may not be needed
     pragma "no auto destroy"
     var ret : BigInt;
@@ -1853,7 +1858,7 @@ module GMP {
 
   pragma "init copy fn"
   pragma "no doc"
-  proc chpl__initCopy(ref bir : BigInt) {
+  proc chpl__initCopy(ref bir: BigInt) {
     // writeln("in the BigInt initCopy chpl__constructor");
     // This pragma may be unnecessary.
     //pragma "no auto destroy"
@@ -1878,7 +1883,7 @@ module GMP {
   }
 
   proc BigInt.writeThis(writer) {
-    //var (acopy,a_) = this.maybeCopy(); //this works, but makes and 
+    //this works, but makes and 
     // deletes 2 records each time it is called
     // TODO: confirm support of remote records for writing
     // TODO: Ask why we can't just do "on this" and skip localization, since 
@@ -1973,7 +1978,7 @@ module GMP {
       gmp_randinit_default(this.state);
     }
     // Creates a Mersenne Twister (probably same as init_default)
-    proc GMPRandom(twister:bool)
+    proc GMPRandom(twister: bool)
     {
       gmp_randinit_mt(this.state);
     }
