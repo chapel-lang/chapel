@@ -543,7 +543,7 @@ module BLAS {
       pragma "no doc"
       pragma "no prototype"
       extern proc sizeof(type t): size_t;
-      assert(sizeof(CBLAS_INDEX) == sizeof(size_t));
+      assert(sizeof(CBLAS_INDEX) == sizeof(size_t), "size of CBLAS_INDEX is not the same as size_t");
     }
 
     // Define the external types
@@ -567,17 +567,17 @@ module BLAS {
     extern const CblasRight : CBLAS_SIDE;
 
     {
-      assert(Order.Row:c_int == CblasRowMajor);
-      assert(Order.Col:c_int == CblasColMajor);
-      assert(Op.N:c_int == CblasNoTrans);
-      assert(Op.T:c_int == CblasTrans);
-      assert(Op.H:c_int == CblasConjTrans);
-      assert(Uplo.Upper:c_int == CblasUpper);
-      assert(Uplo.Lower:c_int == CblasLower);
-      assert(Diag.NonUnit:c_int == CblasNonUnit);
-      assert(Diag.Unit:c_int == CblasUnit);
-      assert(Side.Left:c_int == CblasLeft);
-      assert(Side.Right:c_int == CblasRight);
+      assert(Order.Row:c_int == CblasRowMajor,"Enum value for Order.Row does not agree with CblasRowMajor");
+      assert(Order.Col:c_int == CblasColMajor,"Enum value for Order.Col does not agree with CblasColMajor");
+      assert(Op.N:c_int == CblasNoTrans,"Enum value for Op.N does not agree with CblasNoTrans");
+      assert(Op.T:c_int == CblasTrans,"Enum value for Op.T does not agree with CblasTrans");
+      assert(Op.H:c_int == CblasConjTrans,"Enum value for Op.H does not agree with CblasConjTrans");
+      assert(Uplo.Upper:c_int == CblasUpper,"Enum value for Uplo.Upper does not agree with CblasUpper");
+      assert(Uplo.Lower:c_int == CblasLower,"Enum value for Uplo.Lower does not agree with CblasLower");
+      assert(Diag.NonUnit:c_int == CblasNonUnit,"Enum value for Diag.NonUnit does not agree with CblasNonUnit");
+      assert(Diag.Unit:c_int == CblasUnit,"Enum value for Diag.Unit does not agree with CblasUnit");
+      assert(Side.Left:c_int == CblasLeft,"Enum value for Side.Left does not agree with CblasLeft");
+      assert(Side.Right:c_int == CblasRight,"Enum value for Side.Right does not agree with CblasRight");
     }
 
     extern proc cblas_sdsdot (N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int): c_float;
