@@ -137,6 +137,9 @@ all:
   06/06/16:
     - Avoid allocating arg bundles for local on statements (#3890)
     - Upgrade target compiler versions (#218, internal)
+  06/24/16:
+    - text: Improve optimizeOnClauses optimization (#4008)
+      config: 16 node XC
 
 AllCompTime:
   11/09/14:
