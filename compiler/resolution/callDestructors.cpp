@@ -599,14 +599,14 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
 
   // Possibly reduce a copy operation to a simple move
   if (copyExpr) {
-    //FnSymbol* rhsFn = copyExpr->isResolved();
+    FnSymbol* rhsFn = copyExpr->isResolved();
 
     copyExpr->replace(copyExpr->get(1)->remove());
 
     // But... if we're replacing an init copy, we got to a user
     // variable, so add an unalias call if there is one
-    //if (rhsFn->hasFlag(FLAG_INIT_COPY_FN))
-    //  callExpr->insertAfter(new CallExpr(getUnalias(useLhs->type), refVar));
+    if (rhsFn->hasFlag(FLAG_INIT_COPY_FN))
+      callExpr->insertAfter(new CallExpr(getUnalias(useLhs->type), refVar));
   }
 }
 

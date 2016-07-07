@@ -227,7 +227,7 @@ static Map<FnSymbol*,const char*> outerCompilerWarningMap;
 
 Map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
 Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
-//Map<Type*,FnSymbol*> unaliasMap; // type to chpl__unalias function
+Map<Type*,FnSymbol*> unaliasMap; // type to chpl__unalias function
 //Map<Type*,FnSymbol*> onretMap; // type to chpl__onret function
 
 
@@ -588,7 +588,6 @@ resolveAutoCopyEtc(Type* type) {
     tmp->defPoint->remove();
   }
 
-/*
   // resolve unalias
   {
     SET_LINENO(type->symbol);
@@ -601,6 +600,7 @@ resolveAutoCopyEtc(Type* type) {
     tmp->defPoint->remove();
   }
 
+  /*
   // resolve onret
   {
     SET_LINENO(type->symbol);
@@ -624,11 +624,11 @@ FnSymbol* getAutoCopy(Type *t) {
 FnSymbol* getAutoDestroy(Type* t) {
   return autoDestroyMap.get(t);
 }
-/*
 FnSymbol* getUnalias(Type* t) {
   return unaliasMap.get(t);
 }
 
+/*
 FnSymbol* getOnRet(Type* t) {
   return onretMap.get(t);
 }*/
