@@ -74,7 +74,6 @@ void chpl_gmp_get_randstate(gmp_randstate_t not_inited_state, int64_t src_locale
   chpl_gmp_get_mpz(not_inited_state[0]._mp_seed, src_locale, from._mp_seed[0]);
 }
 
-
 uint64_t chpl_gmp_mpz_nlimbs(__mpz_struct from)
 {
   return __GMP_ABS ( from._mp_size );
@@ -87,8 +86,7 @@ void chpl_gmp_mpz_print(mpz_t x)
   gmp_printf("x=%Zd\n", x);
 }
 
-
-c_string_copy chpl_gmp_mpz_get_str(int base, mpz_t x)
+c_string chpl_gmp_mpz_get_str(int base, mpz_t x)
 {
   size_t len = mpz_sizeinbase(x, base);
 
