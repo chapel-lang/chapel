@@ -503,7 +503,7 @@ module meteor {
     }
   }
 
-  proc solve_helper(piece) {
+  proc solveHelper(piece) {
     var board: uint = 0xFFFC000000000000;
     var avail: uint = 0x03FF;
     var solNums, solMasks: [piecesDom] int;
@@ -519,7 +519,7 @@ module meteor {
         solMasks[depth] = pieces[piece][cell][rotation];
         board |= pieces[piece][cell][rotation];
         if !boardHasIslands(nextCell[piece][cell][rotation], board) {
-          solve_linear(1, nextCell[piece][cell][rotation],
+          solveLinear(1, nextCell[piece][cell][rotation],
             board, avail, solNums, solMasks);
         }
         board ^= pieces[piece][cell][rotation];
@@ -530,10 +530,10 @@ module meteor {
 
   proc solve() {
     forall piece in piecesDom do
-      solve_helper(piece);
+      solveHelper(piece);
   }
 
-  proc solve_linear(in depth, in cell, in board, in avail, solNums, solMasks) {
+  proc solveLinear(in depth, in cell, in board, in avail, solNums, solMasks) {
     var pieceNoMask, maxRots, pieceMask: int;
 
     if solutionCount.read() >= maxSolutions then
@@ -561,7 +561,7 @@ module meteor {
           }
           board |= pieces[piece][cell][rotation];
           if !boardHasIslands(nextCell[piece][cell][rotation], board) {
-            solve_linear(depth + 1, nextCell[piece][cell][rotation],
+            solveLinear(depth + 1, nextCell[piece][cell][rotation],
               board, avail, solNums, solMasks);
           }
           board ^= pieces[piece][cell][rotation];
