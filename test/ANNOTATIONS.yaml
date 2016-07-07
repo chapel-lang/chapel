@@ -349,6 +349,8 @@ mandelbrot:
     - Change complex getter functions for .re and .im into "static inline" (#4033)
   06/30/16:
     - Start using C99 functions for operations such as abs() on complex numbers (#4098)
+  07/07/16:
+    - Added compiler option --no-ieee-float to mandelbrot-complex (#4134)
 
 mandelbrot-extras:
   01/03/14:
