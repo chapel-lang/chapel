@@ -286,27 +286,10 @@ module meteor {
       return;
     board[indx] = 1;
 
-    /* LYDIA NOTE: I really want to rewrite the if statements below as this:
-    for dir in [E, SE, SW, W, NW, NE] {
+    for dir in (E, SE, SW, W, NW, NE) {
       if (!outOfBounds(indx, dir)) then
-        fillContinguousSpace(board, shift(indx, dir));
+        fillContiguousSpace(board, shift(indx, dir));
     }
-       but every time I try I get error: unresolved call
-       'fillContinguousSpace([domain(1,int(64),false)] int(64), int(64))' on
-       the call in the loop.
-    */
-    if (!outOfBounds(indx, E)) then
-      fillContiguousSpace(board, shift(indx, E));
-    if (!outOfBounds(indx, SE)) then
-      fillContiguousSpace(board, shift(indx, SE));
-    if (!outOfBounds(indx, SW)) then
-      fillContiguousSpace(board, shift(indx, SW));
-    if (!outOfBounds(indx, W)) then
-      fillContiguousSpace(board, shift(indx, W));
-    if (!outOfBounds(indx, NW)) then
-      fillContiguousSpace(board, shift(indx, NW));
-    if (!outOfBounds(indx, NE)) then
-      fillContiguousSpace(board, shift(indx, NE));
   }
 
   /* Returns the lowest index of the cells of a piece.  Use the lowest index
