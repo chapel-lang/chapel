@@ -497,8 +497,9 @@ module ChapelLocale {
     if locIdx!=0 {
       // We mimic a private Locales array alias by using the move
       // primitive.
-      __primitive("move", Locales,
-                  (rootLocale:RootLocale).getDefaultLocaleArray());
+      pragma "no auto destroy"
+      var tmp = (rootLocale:RootLocale).getDefaultLocaleArray();
+      __primitive("move", Locales, tmp);
     }
   }
 
