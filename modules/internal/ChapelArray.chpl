@@ -3045,7 +3045,7 @@ module ChapelArray {
       chpl__transferArray(a, b);
   }
 
-  inline proc chpl__bulkTransferArray(a: [], b) {
+  inline proc chpl__bulkTransferArray(ref a: [], const ref b) {
     if (useBulkTransfer &&
         chpl__compatibleForBulkTransfer(a, b) &&
         chpl__useBulkTransfer(a, b))
@@ -3066,7 +3066,7 @@ module ChapelArray {
     }
   }
 
-  inline proc chpl__transferArray(a: [], b) {
+  inline proc chpl__transferArray(ref a: [], const ref b) {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
       forall aa in a do
@@ -3308,7 +3308,7 @@ module ChapelArray {
 
 
   pragma "init copy fn"
-  proc chpl__initCopy(a: []) {
+  proc chpl__initCopy(const ref a: []) {
     //var tok = __primitive("get caller stack token");
 
     var b : [a._dom] a.eltType;
