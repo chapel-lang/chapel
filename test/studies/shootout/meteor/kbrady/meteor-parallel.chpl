@@ -83,14 +83,60 @@ module meteor {
   var pieces, nextCell: [piecesDom][boardDom][0..11] int;
   var pieceCounts: [piecesDom][boardDom] int;
 
-  /* Returns the direction rotated 60 degrees clockwise */
-  proc rotate(dir) {
-    return ((dir + 2) % PIVOT): direction;
+  var solutionCount: atomic int;
+  var maxSolutions = 2100;
+
+  proc main(args: [] string) {
+    if args.domain.size > 1 then
+      maxSolutions = args[1]:int;
+    calcPieces();
+    calcRows();
+    solve();
+    writeln(solutionCount.read(), " solutions found\n");
+    printLargestSmallest();
   }
 
-  /* Returns the direction flipped on the horizontal axis */
-  proc flip(dir) {
-    return ((PIVOT - dir) % PIVOT): direction;
+  var cells: [piecesDom][0..4] int;
+  /* Calculate every legal rotation for each piece at each board location. */
+  proc calcPieces() {
+    forall piece in piecesDom {
+      for indx in boardDom {
+        calcSixRotations(piece, indx, cells[piece]);
+        flipPiece(piece);
+        calcSixRotations(piece, indx, cells[piece]);
+      }
+    }
+  }
+
+  /* Calculate all six rotations of the specified piece at the specified index.
+     Calculate only half of piece 3's rotations, because any solution found has
+     an identical solution rotated 180 degrees.  Thus we can reduce the number
+     of attempted pieces in the solve algorithm by not including the
+     180-degree-rotated pieces of ONE of the pieces.  Piece 3 was chosen because
+     it gave the best time ;)
+   */
+  proc calcSixRotations(piece, indx, cell) {
+    var minimum, firstEmpty, pieceMask: int;
+
+    for rotation in 0..5 {
+      if piece != 3 || rotation < 3 {
+        calcCellIndices(cell, piece, indx);
+        if cellsFitOnBoard(cell, piece) && !hasIsland(cell, piece) {
+          minimum = minimumOfCells(cell);
+          firstEmpty = firstEmptyCell(cell, minimum);
+          pieceMask = bitmaskFromCells(cell);
+          recordPiece(piece, minimum, firstEmpty, pieceMask);
+        }
+      }
+      rotatePiece(piece);
+    }
+  }
+
+  /* Convenience function to quickly calculate all of the indices for a piece */
+  proc calcCellIndices(cell, piece, indx) {
+    cell[0] = indx;
+    for i in 0..3 do
+      cell[i+1] = shift(cell[i], pieceDef[piece][i]);
   }
 
   /* Returns the new cell index from the specified cell in the specified
@@ -152,6 +198,14 @@ module meteor {
     }
   }
 
+  /* Convenience function to quickly calculate if a piece fits on the board */
+  proc cellsFitOnBoard(cell, piece) {
+    var notOut = true;
+    for i in 0..3 do
+      notOut &&= !outOfBounds(cell[i], pieceDef[piece][i]);
+    return notOut;
+  }
+
   /* Returns whether the specified cell and direction will land outside of the
      board.  Used to determine if a piece is at a legal board location or not.
    */
@@ -195,31 +249,64 @@ module meteor {
     }
   }
 
-  /* Rotate a piece 60 degrees clockwise */
-  proc rotatePiece(piece) {
-    for i in 0..3 do
-      pieceDef[piece][i] = rotate(pieceDef[piece][i]);
+  /* To thin the number of pieces, calculate if any of them trap any empty cells
+     at the edges.  There are only a handful of exceptions where the board can
+     be solved with the trapped cells.  For example: piece 8 can trap 5 cells in
+     the corner, but piece 3 can fit in those cells, or piece 0 can split the
+     board in half where both halves are viable.
+   */
+  proc hasIsland(cell, piece) {
+    var tempBoard: [boardDom] int;
+    var c: int;
+
+    for i in 0..4 do
+      tempBoard[cell[i]] = 1;
+
+    var i = boardDom.high;
+    while tempBoard[i] == 1 do
+      i -= 1;
+    fillContiguousSpace(tempBoard, i);
+
+    for i in  boardDom do
+      if tempBoard[i] == 0 then
+        c += 1;
+    if (c == 0 || (c == 5 && piece == 8) || (c == 40 && piece == 8) ||
+        (c % 5 == 0 && piece == 0)) {
+      return false;
+    } else {
+      return true;
+    }
   }
 
-  /* Flip a piece along the horizontal axis */
-  proc flipPiece(piece) {
-    for i in 0..3 do
-      pieceDef[piece][i] = flip(pieceDef[piece][i]);
-  }
+  /* Fill the entire board going cell by cell.  If any cells are "trapped"
+     they will be left alone.
+   */
+  proc fillContiguousSpace(board, indx) {
+    if (board[indx] == 1) then
+      return;
+    board[indx] = 1;
 
-  /* Convenience function to quickly calculate all of the indices for a piece */
-  proc calcCellIndices(cell, piece, indx) {
-    cell[0] = indx;
-    for i in 0..3 do
-      cell[i+1] = shift(cell[i], pieceDef[piece][i]);
-  }
-
-  /* Convenience function to quickly calculate if a piece fits on the board */
-  proc cellsFitOnBoard(cell, piece) {
-    var notOut = true;
-    for i in 0..3 do
-      notOut &&= !outOfBounds(cell[i], pieceDef[piece][i]);
-    return notOut;
+    /* LYDIA NOTE: I really want to rewrite the if statements below as this:
+    for dir in [E, SE, SW, W, NW, NE] {
+      if (!outOfBounds(indx, dir)) then
+        fillContinguousSpace(board, shift(indx, dir));
+    }
+       but every time I try I get error: unresolved call
+       'fillContinguousSpace([domain(1,int(64),false)] int(64), int(64))' on
+       the call in the loop.
+    */
+    if (!outOfBounds(indx, E)) then
+      fillContiguousSpace(board, shift(indx, E));
+    if (!outOfBounds(indx, SE)) then
+      fillContiguousSpace(board, shift(indx, SE));
+    if (!outOfBounds(indx, SW)) then
+      fillContiguousSpace(board, shift(indx, SW));
+    if (!outOfBounds(indx, W)) then
+      fillContiguousSpace(board, shift(indx, W));
+    if (!outOfBounds(indx, NW)) then
+      fillContiguousSpace(board, shift(indx, NW));
+    if (!outOfBounds(indx, NE)) then
+      fillContiguousSpace(board, shift(indx, NE));
   }
 
   /* Returns the lowest index of the cells of a piece.  Use the lowest index
@@ -267,100 +354,26 @@ module meteor {
     pieceCounts[piece][minimum] += 1;
   }
 
-  /* Fill the entire board going cell by cell.  If any cells are "trapped"
-     they will be left alone.
-   */
-  proc fillContiguousSpace(board, indx) {
-    if (board[indx] == 1) then
-      return;
-    board[indx] = 1;
-
-    /* LYDIA NOTE: I really want to rewrite the if statements below as this:
-    for dir in [E, SE, SW, W, NW, NE] {
-      if (!outOfBounds(indx, dir)) then
-        fillContinguousSpace(board, shift(indx, dir));
-    }
-       but every time I try I get error: unresolved call
-       'fillContinguousSpace([domain(1,int(64),false)] int(64), int(64))' on
-       the call in the loop.
-    */
-    if (!outOfBounds(indx, E)) then
-      fillContiguousSpace(board, shift(indx, E));
-    if (!outOfBounds(indx, SE)) then
-      fillContiguousSpace(board, shift(indx, SE));
-    if (!outOfBounds(indx, SW)) then
-      fillContiguousSpace(board, shift(indx, SW));
-    if (!outOfBounds(indx, W)) then
-      fillContiguousSpace(board, shift(indx, W));
-    if (!outOfBounds(indx, NW)) then
-      fillContiguousSpace(board, shift(indx, NW));
-    if (!outOfBounds(indx, NE)) then
-      fillContiguousSpace(board, shift(indx, NE));
+  /* Rotate a piece 60 degrees clockwise */
+  proc rotatePiece(piece) {
+    for i in 0..3 do
+      pieceDef[piece][i] = rotate(pieceDef[piece][i]);
   }
 
-  /* To thin the number of pieces, calculate if any of them trap any empty cells
-     at the edges.  There are only a handful of exceptions where the board can
-     be solved with the trapped cells.  For example: piece 8 can trap 5 cells in
-     the corner, but piece 3 can fit in those cells, or piece 0 can split the
-     board in half where both halves are viable.
-   */
-  proc hasIsland(cell, piece) {
-    var tempBoard: [boardDom] int;
-    var c: int;
-
-    for i in 0..4 do
-      tempBoard[cell[i]] = 1;
-
-    var i = boardDom.high;
-    while tempBoard[i] == 1 do
-      i -= 1;
-    fillContiguousSpace(tempBoard, i);
-
-    for i in  boardDom do
-      if tempBoard[i] == 0 then
-        c += 1;
-    if (c == 0 || (c == 5 && piece == 8) || (c == 40 && piece == 8) ||
-        (c % 5 == 0 && piece == 0)) {
-      return false;
-    } else {
-      return true;
-    }
+  /* Returns the direction rotated 60 degrees clockwise */
+  proc rotate(dir) {
+    return ((dir + 2) % PIVOT): direction;
   }
 
-  /* Calculate all six rotations of the specified piece at the specified index.
-     Calculate only half of piece 3's rotations, because any solution found has
-     an identical solution rotated 180 degrees.  Thus we can reduce the number
-     of attempted pieces in the solve algorithm by not including the
-     180-degree-rotated pieces of ONE of the pieces.  Piece 3 was chosen because
-     it gave the best time ;)
-   */
-  proc calcSixRotations(piece, indx, cell) {
-    var minimum, firstEmpty, pieceMask: int;
-
-    for rotation in 0..5 {
-      if piece != 3 || rotation < 3 {
-        calcCellIndices(cell, piece, indx);
-        if cellsFitOnBoard(cell, piece) && !hasIsland(cell, piece) {
-          minimum = minimumOfCells(cell);
-          firstEmpty = firstEmptyCell(cell, minimum);
-          pieceMask = bitmaskFromCells(cell);
-          recordPiece(piece, minimum, firstEmpty, pieceMask);
-        }
-      }
-      rotatePiece(piece);
-    }
+  /* Flip a piece along the horizontal axis */
+  proc flipPiece(piece) {
+    for i in 0..3 do
+      pieceDef[piece][i] = flip(pieceDef[piece][i]);
   }
 
-  var cells: [piecesDom][0..4] int;
-  /* Calculate every legal rotation for each piece at each board location. */
-  proc calcPieces() {
-    forall piece in piecesDom {
-      for indx in boardDom {
-        calcSixRotations(piece, indx, cells[piece]);
-        flipPiece(piece);
-        calcSixRotations(piece, indx, cells[piece]);
-      }
-    }
+  /* Returns the direction flipped on the horizontal axis */
+  proc flip(dir) {
+    return ((PIVOT - dir) % PIVOT): direction;
   }
 
   /* Calculate all 32 possible states for a 5-bit row and all rows that will
@@ -372,6 +385,40 @@ module meteor {
   const TRIPLEMASK = 0x7FFF;
   var badEvenRows, badOddRows: [0..31][0..31] bool;
   var badEvenTriple, badOddTriple: [0..32767] bool;
+
+  proc calcRows() {
+    var result1, result2: bool;
+    forall row1 in 0..31 {
+      for row2 in 0..31 {
+        badEvenRows[row1][row2] = rowsBad(row1, row2, true);
+        badOddRows[row1][row2] = rowsBad(row1, row2, false);
+      }
+    }
+    for row1 in 0..31 {
+      for row2 in 0..31 {
+        for row3 in 0..31 {
+          result1 = badEvenRows[row1][row2];
+          result2 = badOddRows[row2][row3];
+          if(result1 == false && result2 == true
+          && tripleIsOkay(row1, row2, row3, true)) then
+            badEvenTriple[row1+(row2:int*32)+(row3:int*1024)] = false;
+          else {
+            badEvenTriple[row1+(row2:int*32)+(row3:int*1024)] =
+              result1 || result2;
+          }
+
+          result1 = badOddRows[row1][row2];
+          result2 = badEvenRows[row2][row3];
+          if(result1 == false && result2 == true
+          && tripleIsOkay(row1, row2, row3, false)) then
+            badOddTriple[row1+(row2:int*32)+(row3:int*1024)] = false;
+          else
+            badOddTriple[row1+(row2:int*32)+(row3:int*1024)] =
+              result1 || result2;
+        }
+      }
+    }
+  }
 
   proc rowsBad(row1, row2, even) {
     /* even is referring to row1 */
@@ -431,52 +478,6 @@ module meteor {
     }
   }
 
-  proc calcRows() {
-    var result1, result2: bool;
-    forall row1 in 0..31 {
-      for row2 in 0..31 {
-        badEvenRows[row1][row2] = rowsBad(row1, row2, true);
-        badOddRows[row1][row2] = rowsBad(row1, row2, false);
-      }
-    }
-    for row1 in 0..31 {
-      for row2 in 0..31 {
-        for row3 in 0..31 {
-          result1 = badEvenRows[row1][row2];
-          result2 = badOddRows[row2][row3];
-          if(result1 == false && result2 == true
-          && tripleIsOkay(row1, row2, row3, true)) then
-            badEvenTriple[row1+(row2:int*32)+(row3:int*1024)] = false;
-          else {
-            badEvenTriple[row1+(row2:int*32)+(row3:int*1024)] =
-              result1 || result2;
-          }
-
-          result1 = badOddRows[row1][row2];
-          result2 = badEvenRows[row2][row3];
-          if(result1 == false && result2 == true
-          && tripleIsOkay(row1, row2, row3, false)) then
-            badOddTriple[row1+(row2:int*32)+(row3:int*1024)] = false;
-          else
-            badOddTriple[row1+(row2:int*32)+(row3:int*1024)] =
-              result1 || result2;
-        }
-      }
-    }
-  }
-
-  /* Calculate islands while solving the board. */
-  proc boardHasIslands(cell, board) {
-    /* Too low on board, don't bother checking */
-    if cell >= 40 then
-      return false;
-    var currentTriple = (board >> ((cell / 5) * 5)) & TRIPLEMASK;
-    if (cell / 5) % 2 then
-      return badOddTriple[currentTriple:int];
-    else
-      return badEvenTriple[currentTriple:int];
-  }
-
   /* The recursive solve algorithm.  Try to place each permutation in the upper-
      leftmost empty cell.  Mark off available pieces as it goes along.  Because
      the board is a bit mask, the piece number and bit mask must be saved at
@@ -484,23 +485,10 @@ module meteor {
      array if a solution is found.
    */
   var solutions: [0..2099][boardDom] int;
-  var solutionCount: atomic int;
-  var maxSolutions = 2100;
 
-  proc recordSolution(solNums, solMasks) {
-    var solMask: int;
-    var mySolCount = solutionCount.fetchAdd(2);
-    for solNo in piecesDom {
-      solMask = solMasks[solNo];
-      for indx in boardDom {
-        if (solMask & 1) {
-          solutions[mySolCount][indx] = solNums[solNo];
-          /* Board rotated 180 degrees is a solution too! */
-          solutions[mySolCount+1][boardDom.high-indx] = solNums[solNo];
-        }
-        solMask = solMask >> 1;
-      }
-    }
+  proc solve() {
+    forall piece in piecesDom do
+      solveHelper(piece);
   }
 
   proc solveHelper(piece) {
@@ -520,7 +508,7 @@ module meteor {
         board |= pieces[piece][cell][rotation];
         if !boardHasIslands(nextCell[piece][cell][rotation], board) {
           solveLinear(1, nextCell[piece][cell][rotation],
-            board, avail, solNums, solMasks);
+                      board, avail, solNums, solMasks);
         }
         board ^= pieces[piece][cell][rotation];
       }
@@ -528,9 +516,16 @@ module meteor {
     avail ^= pieceNoMask;
   }
 
-  proc solve() {
-    forall piece in piecesDom do
-      solveHelper(piece);
+  /* Calculate islands while solving the board. */
+  proc boardHasIslands(cell, board) {
+    /* Too low on board, don't bother checking */
+    if cell >= 40 then
+      return false;
+    var currentTriple = (board >> ((cell / 5) * 5)) & TRIPLEMASK;
+    if (cell / 5) % 2 then
+      return badOddTriple[currentTriple:int];
+    else
+      return badEvenTriple[currentTriple:int];
   }
 
   proc solveLinear(in depth, in cell, in board, in avail, solNums, solMasks) {
@@ -571,24 +566,20 @@ module meteor {
     }
   }
 
-  /* pretty print a board in the specified hexagonal format */
-  proc pretty(s) {
-    for i in boardDom by 10 {
-      // '0' -> 48 in ascii: shifting the numbers up into valid range
-      writef("%c %c %c %c %c \n %c %c %c %c %c \n", s[i]+48, s[i+1]+48,
-        s[i+2]+48, s[i+3]+48, s[i+4]+48, s[i+5]+48, s[i+6]+48,
-        s[i+7]+48, s[i+8]+48, s[i+9]+48);
+  proc recordSolution(solNums, solMasks) {
+    var solMask: int;
+    var mySolCount = solutionCount.fetchAdd(2);
+    for solNo in piecesDom {
+      solMask = solMasks[solNo];
+      for indx in boardDom {
+        if (solMask & 1) {
+          solutions[mySolCount][indx] = solNums[solNo];
+          /* Board rotated 180 degrees is a solution too! */
+          solutions[mySolCount+1][boardDom.high-indx] = solNums[solNo];
+        }
+        solMask = solMask >> 1;
+      }
     }
-    writeln("");
-  }
-
-  proc solutionLessThan(lhs, rhs) {
-    if lhs == rhs then return false;
-    for i in boardDom {
-      if solutions[lhs][i] != solutions[rhs][i] then
-        return solutions[lhs][i] < solutions[rhs][i];
-    }
-    return false;
   }
 
   proc printLargestSmallest() {
@@ -604,13 +595,23 @@ module meteor {
     pretty(solutions[lIndx]);
   }
 
-  proc main(args: [] string) {
-    if args.domain.size > 1 then
-      maxSolutions = args[1]:int;
-    calcPieces();
-    calcRows();
-    solve();
-    writeln(solutionCount.read(), " solutions found\n");
-    printLargestSmallest();
+  proc solutionLessThan(lhs, rhs) {
+    if lhs == rhs then return false;
+    for i in boardDom {
+      if solutions[lhs][i] != solutions[rhs][i] then
+        return solutions[lhs][i] < solutions[rhs][i];
+    }
+    return false;
+  }
+
+  /* pretty print a board in the specified hexagonal format */
+  proc pretty(s) {
+    for i in boardDom by 10 {
+      // '0' -> 48 in ascii: shifting the numbers up into valid range
+      writef("%c %c %c %c %c \n %c %c %c %c %c \n", s[i]+48, s[i+1]+48,
+        s[i+2]+48, s[i+3]+48, s[i+4]+48, s[i+5]+48, s[i+6]+48,
+        s[i+7]+48, s[i+8]+48, s[i+9]+48);
+    }
+    writeln("");
   }
 }
