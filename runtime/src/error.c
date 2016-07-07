@@ -56,7 +56,7 @@ static void chpl_stack_unwind(void){
   unw_init_local(&cursor, &uc);
 
   if(chpl_sizeSymTable > 0)
-    fprintf(stderr,"\nStacktrace\n\n");
+    fprintf(stderr,"Stacktrace\n\n");
 
   // This loop does the effective stack unwind, see libunwind documentation
   while (unw_step(&cursor) > 0) {
