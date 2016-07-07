@@ -61,7 +61,7 @@ proc main(args: [] string) {
 proc initialize() {
 
   // Set up array of evens and borders masks
-  for i in boardDom {
+  for i in 0..49 {
     evenRowsLookup[i] = (maskEven >> i);
     leftBorderLookup[i] = (maskBorder >> i);
   }
@@ -176,7 +176,7 @@ proc initialize() {
   } // yBase
 
   // Generate bit masks for translation of permutations that fit on rows 2 & 3
-  for yBase in piecesDom {
+  for yBase in 0..9 {
     // Skip rows 2 & 3, since we already generated their masks
     if yBase != 2 && yBase != 3 {
       for xBase in 0..4 {
@@ -206,7 +206,7 @@ proc initialize() {
   }
 
   for filter in 1..7 {
-    for pos in boardDom {
+    for pos in 0..49 {
       maskStart[pos][filter] = totalCount;
       const filterMask = ((filter & 1) << 1) |
                          ((filter & 6) << (4 - (evenRowsLookup[pos] & 1)));
@@ -270,7 +270,7 @@ proc searchParallel(in board, in pos, in used, in placed, in firstPiece) {
 // Pretty printed output of board
 //
 proc printBoard(board) {
-  for i in boardDom {
+  for i in 0..49 {
     writef("%i ", board[i]);
     if i%5 == 4 {
       writeln();
@@ -416,7 +416,7 @@ proc recordSolution(currentSolution) {
   var board, flipBoard: [boardDom] int,
       mask, pos, currentBit, b1, count, piece: int;
 
-  for i in piecesDom {
+  for i in 0..9 {
     mask = currentSolution[i];
     piece = ctz(mask >> 22);
     mask &= maskBottom;
@@ -449,13 +449,13 @@ proc recordSolution(currentSolution) {
 //
 proc compareSolution(board, minSolution, maxSolution) {
 
-  for i in boardDom {
+  for i in 0..49 {
     if board[i] < minSolution[i] {
       minSolution = board;
       break;
     } else if board[i] > minSolution[i] then break;
   }
-  for i in boardDom {
+  for i in 0..49 {
     if board[i] > maxSolution[i] {
       maxSolution = board;
       break;
