@@ -49,7 +49,7 @@ version of BLAS you have.
  this by creating a symbolic link to the correct header file (eg. ``ln -s mkl_cblas.h cblas.h``).
  You may also just download the Netlib reference ``cblas.h`` file 
  http://www.netlib.org/blas/#_cblas
- and then link to the appropriate libaries.
+ and then link to the appropriate libraries.
  2. The header files that are included with OpenBLAS differ from the reference CBLAS prototypes
  for complex arguments by using ``float*`` and ``double*`` pointers, instead of ``void*`` pointers.
  Using this will likely result in warnings about incompatible pointer types. These may be ignored, 
