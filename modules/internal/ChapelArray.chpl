@@ -556,7 +556,7 @@ module ChapelArray {
   //
   // Support for domain expressions within array types, e.g. [1..n], [D]
   //
-  proc chpl__ensureDomainExpr(x: domain) {
+  proc chpl__ensureDomainExpr(const ref x: domain) const ref {
     return x;
   }
 
@@ -3229,7 +3229,7 @@ module ChapelArray {
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(a: domain) {
+  proc chpl__initCopy(const ref a: domain) {
     var b: a.type;
     if isRectangularDom(a) && isRectangularDom(b) {
       b.setIndices(a.getIndices());
@@ -3246,12 +3246,13 @@ module ChapelArray {
     return b;
   }
 
-  /*
-  pragma "auto copy fn" proc chpl__autoCopy(x: domain) {
-    pragma "no copy" var b = new _domain(x._pid, x._instance, true);
+  pragma "auto copy fn" proc chpl__autoCopy(const ref x: domain) {
+    //pragma "no copy" var b = new _domain(x._pid, x._instance, true);
+    pragma "no copy" var b = chpl__initCopy(x);
     return b;
   }
 
+  /*
   proc __doDeepCopy(ref a:domain, tok) {
     var b : a.type;
     b._value._stackToken = tok;
@@ -3324,13 +3325,12 @@ module ChapelArray {
     return b;
   }
 
-   /*
-   pragma "auto copy fn" proc chpl__autoCopy(x: []) {
-    pragma "no copy" var b = new _array(x._pid, x._instance, true);
+  pragma "auto copy fn" proc chpl__autoCopy(const ref x: []) {
+    //pragma "no copy" var b = new _array(x._pid, x._instance, true);
+    pragma "no copy" var b = chpl__initCopy(x);
     return b;
-  }*/
+  }
 
-  /*
   proc __doDeepCopy(ref a:[], tok) {
     var b : [a._dom] a.eltType;
     b._value._stackToken = tok;
@@ -3359,6 +3359,7 @@ module ChapelArray {
     b._unowned = true;
   }
 
+  /*
   inline proc chpl__onret(ref x: []) {
     const tok = __primitive("get caller stack token");
     const isalias = (x._unowned) | (x._value._arrAlias != nil);
@@ -3368,6 +3369,7 @@ module ChapelArray {
       __doDeepCopy(x, tok);
     }
   }
+  */
   inline proc chpl__unalias(ref x: []) {
     const tok = __primitive("get caller stack token");
     const isalias = (x._unowned) | (x._value._arrAlias != nil);
@@ -3376,7 +3378,7 @@ module ChapelArray {
 
       __doDeepCopy(x, tok);
     }
-  }*/
+  }
 
 
  
