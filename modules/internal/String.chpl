@@ -99,6 +99,21 @@ module String {
 
   private config param debugStrings = false;
 
+  enum Encoding {
+    ascii,
+    utf8
+  }
+
+  record string {
+    param encoding: Encoding = Encoding.ascii;
+    var guts =
+      if encoding == Encoding.ascii
+      then new string_ascii
+      else new string_utf8;
+  }
+
+  record string_utf8 { }
+
   //
   // String Implementation
   //
@@ -107,7 +122,7 @@ module String {
   // in when possible.
   pragma "ignore noinit"
   pragma "no default functions" // avoid the default (read|write)This routines
-  record string {
+  record string_ascii {
     pragma "no doc"
     var len: int = 0; // length of string in bytes
     pragma "no doc"
@@ -129,7 +144,7 @@ module String {
       ensure that the underlying buffer is not freed while being used as part
       of a shallow copy.
      */
-    proc string(s: string, owned: bool = true) {
+    proc string_ascii(s: string, owned: bool = true) {
       const sRemote = s.locale_id != chpl_nodeID;
       const sLen = s.len;
       this.owned = owned;
@@ -165,7 +180,7 @@ module String {
       the user to ensure that the underlying buffer is not freed if the
       `c_string` is not copied in.
      */
-    proc string(cs: c_string, owned: bool = true, needToCopy:  bool = true) {
+    proc string_ascii(cs: c_string, owned: bool = true, needToCopy:  bool = true) {
       this.owned = owned;
       const cs_len = cs.length;
       this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
@@ -182,14 +197,14 @@ module String {
       underlying buffer is not freed if the `c_string` is not copied in.
      */
     // This constructor can cause a leak if owned = false and needToCopy = true
-    proc string(buff: bufferType, length: int, size: int,
+    proc string_ascii(buff: bufferType, length: int, size: int,
                 owned: bool = true, needToCopy: bool = true) {
       this.owned = owned;
       this.reinitString(buff, length, size, needToCopy);
     }
 
     pragma "no doc"
-    proc ref ~string() {
+    proc ref ~string_ascii() {
       if owned && !this.isEmptyString() {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
@@ -1759,7 +1774,7 @@ module String {
 
   // Cast from c_string to string
   pragma "no doc"
-  proc _cast(type t, cs: c_string) where t == string {
+  proc _cast(type t, cs: c_string) where t: string {
     var ret: string;
     ret.len = cs.length;
     ret._size = ret.len+1;
