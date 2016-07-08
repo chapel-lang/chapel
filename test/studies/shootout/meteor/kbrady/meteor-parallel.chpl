@@ -333,7 +333,6 @@ module meteor {
   var badEvenTriple, badOddTriple: [0..32767] bool;
 
   proc calcRows() {
-    var result1, result2: bool;
     forall row1 in 0..31 {
       for row2 in 0..31 {
         badEvenRows[row1][row2] = rowsBad(row1, row2, true);
@@ -343,24 +342,24 @@ module meteor {
     for row1 in 0..31 {
       for row2 in 0..31 {
         for row3 in 0..31 {
-          result1 = badEvenRows[row1][row2];
-          result2 = badOddRows[row2][row3];
-          if(result1 == false && result2 == true
-          && tripleIsOkay(row1, row2, row3, true)) then
-            badEvenTriple[row1+(row2:int*32)+(row3:int*1024)] = false;
+          var idx = row1+(row2*32)+(row3*1024);
+
+          var even = badEvenRows[row1][row2];
+          var odd = badOddRows[row2][row3];
+          if(!even && odd && tripleIsOkay(row1, row2, row3, true)) then
+            badEvenTriple[idx] = false;
           else {
-            badEvenTriple[row1+(row2:int*32)+(row3:int*1024)] =
-              result1 || result2;
+            badEvenTriple[idx] =
+              even || odd;
           }
 
-          result1 = badOddRows[row1][row2];
-          result2 = badEvenRows[row2][row3];
-          if(result1 == false && result2 == true
-          && tripleIsOkay(row1, row2, row3, false)) then
-            badOddTriple[row1+(row2:int*32)+(row3:int*1024)] = false;
+          odd = badOddRows[row1][row2];
+          even = badEvenRows[row2][row3];
+          if(!odd && even && tripleIsOkay(row1, row2, row3, false)) then
+            badOddTriple[idx] = false;
           else
-            badOddTriple[row1+(row2:int*32)+(row3:int*1024)] =
-              result1 || result2;
+            badOddTriple[idx] =
+              odd || even;
         }
       }
     }
@@ -388,7 +387,7 @@ module meteor {
       } else {
         if !inZeroes then
           inZeroes = true;
-        if !((block & (1 << i)):bool) then
+        if !((block & (1 << i))) then
           groupOkay = true;
       }
     }
@@ -405,22 +404,23 @@ module meteor {
   proc tripleIsOkay(row1, row2, row3, even) {
     if even {
       /* There are four cases:
-         row1: 00011  00001  11001  10101
-         row2: 01011  00101  10001  10001
-         row3: 011??  00110  ?????  ?????
+         row1: 00011  |  00001  |  11001  |  10101
+         row2: 01011  |  00101  |  10001  |  10001
+         row3: 011??  |  00110  |  ?????  |  ?????
        */
-      return ((row1 == 0x03) && (row2 == 0x0B) && ((row3 & 0x1C) == 0x0C)) ||
-             ((row1 == 0x01) && (row2 == 0x05) && (row3 == 0x06)) ||
-             ((row1 == 0x19) && (row2 == 0x11)) ||
-             ((row1 == 0x15) && (row2 == 0x11));
+      return ((row1 == 0b00011) && (row2 == 0b01011) &&
+              ((row3 & 0b11100) == 0b01100)) ||
+             ((row1 == 0b00001) && (row2 == 0b00101) && (row3 == 0b00110)) ||
+             ((row1 == 0b11001) && (row2 == 0b10001)) ||
+             ((row1 == 0b10101) && (row2 == 0b10001));
     } else {
       /* There are two cases:
-         row1: 10011  10101
-         row2: 10001  10001
-         row3: ?????  ?????
+         row1: 10011  |  10101
+         row2: 10001  |  10001
+         row3: ?????  |  ?????
        */
-      return ((row1 == 0x13) && (row2 == 0x11)) ||
-             ((row1 == 0x15) && (row2 == 0x11));
+      return ((row1 == 0b10011) && (row2 == 0b10001)) ||
+             ((row1 == 0b10101) && (row2 == 0b10001));
     }
   }
 
@@ -439,6 +439,7 @@ module meteor {
 
   proc solveHelper(piece) {
     var board: uint = 0xFFFC000000000000;
+    // Keep empty only bits corresponding to the board
     var avail: uint = 0x03FF;
     var solNums, solMasks: [0..#numPieces] int;
     var pieceNoMask, maxRots, pieceMask, depth, cell = 0;
