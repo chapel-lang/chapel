@@ -78,6 +78,7 @@ tags
 
 # Man ignores.
 /man/man1/
+/man/man3/
 
 # Modules ignores.
 /modules/docs
