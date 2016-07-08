@@ -126,14 +126,19 @@ proc initialize() {
           // Skip piece 3 and specific permutations
           if piece != 3 || (currentPermutation/3) % 2 == 0 {
 
-            // Compute the xMin and yMin of coordinates for given permutation
-            var xMin = coords[0][1], yMin = coords[0][2];
-            for (x, y) in coords {
-              if y < yMin || (y == yMin && x < xMin) then
-                (xMin, yMin) = (x, y);
+            //
+            // Overload min function to use for reduction of piece coordinates
+            //
+            proc min((x1, y1), (x2, y2)) {
+              if y1 < y2 || (y1 == y2 && x1 < x2) then
+                return (x1, y1);
+              return (x2, y2);
             }
 
-            var mask: int, // Bit mask representing piece's permutation
+            // Serial reduction to find min coords of a given permutation
+            var (xMin, yMin) = min reduce for c in coords do c;
+
+            var mask: int,      // Bit mask representing piece's permutation
                 fit = true;     // Track if piece's permutation fits board
 
             // Offsets for piece coordinates, such that 'island' is not formed
@@ -227,6 +232,8 @@ proc initialize() {
     }
   }
 }
+
+
 
 
 //
@@ -343,20 +350,6 @@ proc searchLinearHelper(in board, in pos, in used, in placed,
 var l: atomic bool;
 
 
-//
-// Lock atomic lock - this is what sync variables do under the hood
-//
-proc lock() {
-  while l.testAndSet() != false do chpl_task_yield();
-}
-
-
-//
-// Unlock atomic lock
-//
-proc unlock() {
-  l.write(false);
-}
 
 
 //
@@ -365,6 +358,13 @@ proc unlock() {
 proc searchLinear(in board, in pos, in used, in placed, currentSolution) {
   var count, evenRows, oddRows, leftBorder, rightBorder,
       s1, s2, s3, s4, s5, s6, s7, s8: int;
+
+  // Lock atomic lock - this is what sync variables do under the hood
+  proc lock() { while l.testAndSet() != false do chpl_task_yield(); }
+
+  // Unlock atomic lock
+  proc unlock() { l.write(false); }
+
   if placed == numPieces {
     lock();
     recordSolution(currentSolution);
