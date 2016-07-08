@@ -1,23 +1,29 @@
 /* The Computer Language Benchmarks Game
- * http://benchmarksgame.alioth.debian.org/
- *
- * contributed by Kyle Brady and Ben Albrecht
- * derived from the C++ implementation by Stefan Westen which states it was
- * loosely based on Ben St. John's and Kevin Barnes' implementation
+   http://benchmarksgame.alioth.debian.org/
+
+   contributed by Kyle Brady and Ben Albrecht
+   derived from the C++ implementation by Stefan Westen which states it was
+   loosely based on Ben St. John's and Kevin Barnes' implementation
  */
 
 use BitOps;
 
-// Common ranges encapsulated as domains for simplicity
-const boardDom = {0..49},
-      permutationsDom = {0..8191},
-      piecesDom = {0..9};
+param boardCells = 50,          // Number of cells on board
+      boardWidth = 5,           // Number of cells along x-axis
+      boardHeight = 10,         // Number of cells along y-axis
+      permutations = 8192,      // Number of permutations stored as masks
+      piecePermutations = 12,   // Number of permutations for a single piece
+      numPieces = 10,           // Number of puzzle pieces
+      pieceCells = 5;           // Number of cells that make up a puzzle piece
+
+const boardDom = {0..#boardCells},
+      piecesDom = {0..#numPieces};
 
 // Arrays of masks to store all pieces and their possible configurations
-var allMasks: [permutationsDom] int,
-    maskStart: [boardDom][0..7] int;
+var allMasks: [0..#permutations] int,
+    maskStart: [boardDom][0..#numPieces-2] int;
 
-// Arrays of min, max, and number of solutions
+// Arrays of min and max, and an integer storing the number of solutions
 var minSolution, maxSolution: [boardDom] int,
     solutions: int;
 
@@ -30,11 +36,6 @@ param maskEven   = 0xf07c1f07c1f07c1f: int, // Even rows of board (0, 2, 4, ..)
       maskBoard  = 0xFFFC000000000000: int, // bits of board within 64-bit int
       maskBottom = 0x00000000003FFFFF: int, // Bottom 22 elements of boards
       maskUsed   = 0x00000000FFC00000: int; // Board + 4 additional bits
-
-// DIY sync variable functionality that outperforms native sync variables.
-// Access controlled by functions lock() and unlock()
-var l: atomic bool;
-
 
 //
 // Find and print the minimum and maximum solutions to meteor puzzle
@@ -61,33 +62,47 @@ proc main(args: [] string) {
 proc initialize() {
 
   // Set up array of evens and borders masks
-  for i in 0..49 {
+  for i in 0..#boardCells {
     evenRowsLookup[i] = (maskEven >> i);
     leftBorderLookup[i] = (maskBorder >> i);
   }
 
   var totalCount = 0,
-      coords: [0..4] 2*int;
+      coords: [0..#pieceCells] 2*int;
 
-  const pieceCount = 10;
+  /* The 10 puzzle pieces are defined with hexagonal cell coordinates, where
+     the first cell of a piece always begins at the origin cell, (0, 0).
+     This coordinate system is best conveyed through a diagram:
 
-  /* The puzzle pieces are defined with hexagonal cell coordinates
-   * starting from the origin [0, 0].
-   *
-   *   Piece 0   Piece 1   Piece 2   Piece 3   Piece 4
-   *
-   *  O O O O    O   O O   O O O     O O O     O   O
-   *         O    O O           O       O       O O
-   *                           O         O         O
-   *
-   *   Piece 5   Piece 6   Piece 7   Piece 8   Piece 9
-   *
-   *    O O O     O O       O O     O O        O O O O
-   *       O O       O O       O       O O O        O
-   *                  O       O O
-   *
-   */
-  const pieces: [piecesDom][0..4] 2*int =
+                         (0, -1)       (1, -1)
+
+                  (-1, 0)       (0 , 0)       (1 , 0)
+
+                         (-1, 1)       (0 , 1)
+
+     Therefore, the cell to the South of the origin can be computed as follows:
+
+        S =    SW   +   SE
+        S = (-1, 1) + (0, 1) = (-1, 2)
+
+     The following illustrates the piece shapes and their cell indices:
+
+        Piece 0      Piece 1      Piece 2      Piece 3      Piece 4
+
+        0 1 2 3         0          0 1 2        0 1 2        0
+               4         1        3                3          1 2
+                      2 3          4                4        3   4
+                     4
+
+        Piece 5      Piece 6      Piece 7      Piece 8      Piece 9
+
+           0 1        0 1          0   1        0            0
+        2 3 4          2          2 3 4          1            1
+                      3                           2 3          2
+                       4                             4        3 4
+
+  */
+  const pieces: [piecesDom][0..#pieceCells] 2*int =
   [
     [(0, 0), (1, 0), ( 2, 0), ( 3, 0), ( 3, 1)],
     [(0, 0), (0, 1), (-2, 2), (-1, 2), (-3, 3)],
@@ -103,34 +118,39 @@ proc initialize() {
 
   // Generate bit mask for permutations of all pieces that fit on rows 2 & 3
   for yBase in 2..3 {
-    for xBase in 0..4 {
+    for xBase in 0..#boardWidth {
       // Compute base position for xBase, yBase coordinates
-      const pos = (xBase + 5 * yBase);
+      const pos = (xBase + boardWidth * yBase);
 
       // Record total number of fitted pieces at this point
       maskStart[pos][0] = totalCount;
 
       // Loop over piece indices
-      for piece in 0..pieceCount-1 {
+      for piece in 0..#numPieces {
 
         // Get x y coordinates of piece cells
         for (coord, pieceCell) in zip(coords, pieces[piece]) do
           coord = pieceCell;
 
         // Loop over 12 permutations for a given piece (6 rotations * 2 flips)
-        for currentPermutation in 0..11 {
+        for currentPermutation in 0..#piecePermutations {
 
           // Skip piece 3 and specific permutations
           if piece != 3 || (currentPermutation/3) % 2 == 0 {
 
-            // Compute the xMin and yMin of coordinates for given permutation
-            var xMin = coords[0][1], yMin = coords[0][2];
-            for (x, y) in coords {
-              if y < yMin || (y == yMin && x < xMin) then
-                (xMin, yMin) = (x, y);
+            //
+            // Overload min function to use for reduction of piece coordinates
+            //
+            proc min((x1, y1), (x2, y2)) {
+              if y1 < y2 || (y1 == y2 && x1 < x2) then
+                return (x1, y1);
+              return (x2, y2);
             }
 
-            var mask: int, // Bit mask representing piece's permutation
+            // Serial reduction to find min coords of a given permutation
+            var (xMin, yMin) = min reduce for c in coords do c;
+
+            var mask: int,      // Bit mask representing piece's permutation
                 fit = true;     // Track if piece's permutation fits board
 
             // Offsets for piece coordinates, such that 'island' is not formed
@@ -143,8 +163,8 @@ proc initialize() {
               var nY = y + yOff,
                   nX = x + xOff + nY/2;
 
-              if nX >= 0 && nX < 5 {
-                var numBits = nX - xBase + 5 * (nY - yBase);
+              if nX >= 0 && nX < boardWidth {
+                var numBits = nX - xBase + boardWidth * (nY - yBase);
                 mask |= (1 << numBits);
               } else
                 fit = false;
@@ -176,16 +196,16 @@ proc initialize() {
   } // yBase
 
   // Generate bit masks for translation of permutations that fit on rows 2 & 3
-  for yBase in 0..9 {
+  for yBase in 0..#boardHeight {
     // Skip rows 2 & 3, since we already generated their masks
     if yBase != 2 && yBase != 3 {
-      for xBase in 0..4 {
-        const pos = (xBase + 5 * yBase),
-              origPos = xBase + 5 * (yBase % 2 + 2);
+      for xBase in 0..#boardWidth {
+        const pos = (xBase + boardWidth * yBase),
+              origPos = xBase + boardWidth * (yBase % 2 + 2);
         maskStart[pos][0] = totalCount;
         var pMask = maskStart[origPos][0];
         const bottom = ((maskBoard >> pos) & maskBottom),
-              lastRow = ((maskBoard >> (pos + 5)) & maskBottom);
+              lastRow = ((maskBoard >> (pos + boardWidth)) & maskBottom);
         while allMasks[pMask] {
           var mask = allMasks[pMask];
           pMask += 1;
@@ -206,7 +226,7 @@ proc initialize() {
   }
 
   for filter in 1..7 {
-    for pos in 0..49 {
+    for pos in 0..#boardCells {
       maskStart[pos][filter] = totalCount;
       const filterMask = ((filter & 1) << 1) |
                          ((filter & 6) << (4 - (evenRowsLookup[pos] & 1)));
@@ -270,11 +290,11 @@ proc searchParallel(in board, in pos, in used, in placed, in firstPiece) {
 // Pretty printed output of board
 //
 proc printBoard(board) {
-  for i in 0..49 {
+  for i in 0..#boardCells {
     writef("%i ", board[i]);
-    if i%5 == 4 {
+    if i % boardWidth == 4 {
       writeln();
-      if i&1 == 0 then
+      if i & 1 == 0 then
         write(" ");
     }
   }
@@ -335,13 +355,25 @@ proc searchLinearHelper(in board, in pos, in used, in placed,
 }
 
 
+// DIY sync variable functionality that outperforms native sync variables.
+// Access controlled by functions lock() and unlock()
+var l: atomic bool;
+
+
 //
 // Recursively add pieces to the board, and check solution when filled.
 //
 proc searchLinear(in board, in pos, in used, in placed, currentSolution) {
   var count, evenRows, oddRows, leftBorder, rightBorder,
       s1, s2, s3, s4, s5, s6, s7, s8: int;
-  if placed == 10 {
+
+  // Lock atomic lock - this is what sync variables do under the hood
+  proc lock() { while l.testAndSet() != false do chpl_task_yield(); }
+
+  // Unlock atomic lock
+  proc unlock() { l.write(false); }
+
+  if placed == numPieces {
     lock();
     recordSolution(currentSolution);
     unlock();
@@ -394,29 +426,13 @@ proc searchLinear(in board, in pos, in used, in placed, currentSolution) {
 
 
 //
-// Lock atomic lock - this is what sync variables do under the hood
-//
-proc lock() {
-  while l.testAndSet() != false do chpl_task_yield();
-}
-
-
-//
-// Unlock atomic lock
-//
-proc unlock() {
-  l.write(false);
-}
-
-
-//
 // Check a given board as a solution and record it
 //
 proc recordSolution(currentSolution) {
   var board, flipBoard: [boardDom] int,
       mask, pos, currentBit, b1, count, piece: int;
 
-  for i in 0..9 {
+  for i in 0..#numPieces {
     mask = currentSolution[i];
     piece = ctz(mask >> 22);
     mask &= maskBottom;
@@ -449,13 +465,13 @@ proc recordSolution(currentSolution) {
 //
 proc compareSolution(board, minSolution, maxSolution) {
 
-  for i in 0..49 {
+  for i in 0..#boardCells {
     if board[i] < minSolution[i] {
       minSolution = board;
       break;
     } else if board[i] > minSolution[i] then break;
   }
-  for i in 0..49 {
+  for i in 0..#boardCells {
     if board[i] > maxSolution[i] {
       maxSolution = board;
       break;
