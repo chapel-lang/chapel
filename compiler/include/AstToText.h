@@ -90,6 +90,8 @@ public:
   void                   appendEnumDecl(EnumType* et);
   void                   appendVarDef(VarSymbol* var);
 
+  void                   appendExpr(Expr* expr, bool printingType);
+
 private:
 
   //
@@ -130,9 +132,6 @@ private:
   //
   // Formatting the expressions found in formals (skeleton)
   //
-  void                   appendExpr(Expr*              expr,
-                                    bool               printingType);
-
   void                   appendExpr(UnresolvedSymExpr* expr);
 
   void                   appendExpr(SymExpr*           expr,
