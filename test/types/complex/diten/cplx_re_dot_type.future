@@ -1,7 +1,0 @@
-bug: cplx.re.type generates C compiler warning
-
-cplx.re.type generates a call to the extern creal function that does not
-capture the return value.  This causes a warning from clang.  Instead, .type
-should cause the entire expression to not be evaluated, and be replaced by
-the expected type at compile time.
-
