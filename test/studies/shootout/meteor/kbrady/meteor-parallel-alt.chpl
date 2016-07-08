@@ -72,22 +72,23 @@ proc initialize() {
 
   /* The puzzle pieces are defined with hexagonal cell coordinates
      starting from the origin cell (0, 0).
-     (1, 0) corresponds to 1 cell to the right of the the origin cell.
-     (0, 1) corresponds to 1 cell diagonally down/right from the origin cell.
 
-    Piece 0      Piece 1       Piece 2      Piece 3      Piece 4
+     The hexagonal cell coordinates map to cardinal directions as follows:
+     (1, 0) = East | (-1, 0) = West | (0, 1) = SouthEast | (-1, 1) = South
 
-    0 1 2 3         0           0 1 2        0 1 2        0
-           4         1         3                3          1 2
-                  2 3           4                4        3   4
-                 4
+     Piece 0      Piece 1       Piece 2      Piece 3      Piece 4
 
-    Piece 5      Piece 6       Piece 7      Piece 8      Piece 9
+     0 1 2 3         0           0 1 2        0 1 2        0
+            4         1         3                3          1 2
+                   2 3           4                4        3   4
+                  4
 
-       0 1        0 1           0   1        0            0
-    2 3 4          2           2 3 4          1            1
-                  3                            2 3          2
-                   4                              4        3 4
+     Piece 5      Piece 6       Piece 7      Piece 8      Piece 9
+
+        0 1        0 1           0   1        0            0
+     2 3 4          2           2 3 4          1            1
+                   3                            2 3          2
+                    4                              4        3 4
 
   */
   const pieces: [piecesDom][0..#pieceCells] 2*int =
@@ -234,8 +235,6 @@ proc initialize() {
 }
 
 
-
-
 //
 // Add initial piece to board, then fire off remaining searches in parallel
 //
@@ -348,8 +347,6 @@ proc searchLinearHelper(in board, in pos, in used, in placed,
 // DIY sync variable functionality that outperforms native sync variables.
 // Access controlled by functions lock() and unlock()
 var l: atomic bool;
-
-
 
 
 //
