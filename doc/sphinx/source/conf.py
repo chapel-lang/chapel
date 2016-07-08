@@ -64,7 +64,7 @@ shortversion = 1.13
 release = '1.13.1'
 
 # General information about the project.
-project = u'Chapel Language Documentation {0}'.format(shortversion)
+project = u'Chapel Documentation {0}'.format(shortversion)
 
 author_text = os.environ.get('CHPLDOC_AUTHOR', '')
 
