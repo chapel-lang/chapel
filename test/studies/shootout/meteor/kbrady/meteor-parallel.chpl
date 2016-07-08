@@ -1,7 +1,7 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Kyle Brady
+   contributed by Kyle Brady, Lydia Duncan
    based upon the C implementation by Christian Vosteen (including some
    comments)
  */
@@ -40,27 +40,24 @@ module meteor {
    */
   enum direction {
     E=0,
-    ESE=1,
-    SE=2,
-    S=3,
-    SW=4,
-    WSW=5,
-    W=6,
-    WNW=7,
-    NW=8,
-    N=9,
-    NE=10,
-    ENE=11,
-    PIVOT=12
+    ESE,
+    SE,
+    S,
+    SW,
+    WSW,
+    W,
+    WNW,
+    NW,
+    N,
+    NE,
+    ENE,
+    PIVOT
   }
 
-  use direction;  // make direction's symbols directly available to this scope
-
-  /* Avoiding magic numbers */
-  var piecesDom = {0..9}; // There are 10 pieces
-  var boardDom = {0..49}; // There are 50 squares in the board
+  const numPieces = 10,
+        boardCells = 50;
   
-  var pieceDef: [piecesDom][0..3] direction = [
+  var pieceDef: [0..#numPieces][0..3] direction = [
     [  E,  E,   E, SE],
     [ SE,  E,  NE,  E],
     [  E,  E,  SE, SW],
@@ -73,6 +70,8 @@ module meteor {
     [  E,  E,   E, SW]
   ];
 
+  use direction;  // make direction's symbols directly available to this scope
+
   /* To minimize the amount of work done in the recursive solve function below,
      allocate enough space for all legal rotations of each piece at each
      position on the board. That's 10 pieces x 50 board positions x 12
@@ -80,14 +79,14 @@ module meteor {
      count of the actual number that do.  Record the next possible open cell for
      each piece and location to reduce the burden on the solve function.
    */
-  var pieces, nextCell: [piecesDom][boardDom][0..11] int;
-  var pieceCounts: [piecesDom][boardDom] int;
+  var pieces, nextCell: [0..#numPieces][0..#boardCells][0..11] int;
+  var pieceCounts: [0..#numPieces][0..#boardCells] int;
 
   var solutionCount: atomic int;
   var maxSolutions = 2100;
 
   proc main(args: [] string) {
-    if args.domain.size > 1 then
+    if args.size > 1 then
       maxSolutions = args[1]:int;
     calcPieces();
     calcRows();
@@ -96,11 +95,11 @@ module meteor {
     printLargestSmallest();
   }
 
-  var cells: [piecesDom][0..4] int;
+  var cells: [0..#numPieces][0..4] int;
   /* Calculate every legal rotation for each piece at each board location. */
   proc calcPieces() {
-    forall piece in piecesDom {
-      for indx in boardDom {
+    forall piece in 0..#numPieces {
+      for indx in 0..#boardCells {
         calcSixRotations(piece, indx, cells[piece]);
         flipPiece(piece);
         calcSixRotations(piece, indx, cells[piece]);
@@ -122,9 +121,9 @@ module meteor {
       if piece != 3 || rotation < 3 {
         calcCellIndices(cell, piece, indx);
         if cellsFitOnBoard(cell, piece) && !hasIsland(cell, piece) {
-          minimum = minimumOfCells(cell);
+          minimum = min reduce (for i in cell do i);
           firstEmpty = firstEmptyCell(cell, minimum);
-          pieceMask = bitmaskFromCells(cell);
+          pieceMask = | reduce (for i in cell do 1 << i);
           recordPiece(piece, minimum, firstEmpty, pieceMask);
         }
       }
@@ -200,10 +199,8 @@ module meteor {
 
   /* Convenience function to quickly calculate if a piece fits on the board */
   proc cellsFitOnBoard(cell, piece) {
-    var notOut = true;
-    for i in 0..3 do
-      notOut &&= !outOfBounds(cell[i], pieceDef[piece][i]);
-    return notOut;
+    return && reduce (for i in 0..3 do
+                              !outOfBounds(cell[i], pieceDef[piece][i]));
   }
 
   /* Returns whether the specified cell and direction will land outside of the
@@ -256,18 +253,18 @@ module meteor {
      board in half where both halves are viable.
    */
   proc hasIsland(cell, piece) {
-    var tempBoard: [boardDom] int;
+    var tempBoard: [0..#boardCells] int;
     var c: int;
 
     for i in 0..4 do
       tempBoard[cell[i]] = 1;
 
-    var i = boardDom.high;
+    var i = boardCells - 1;
     while tempBoard[i] == 1 do
       i -= 1;
     fillContiguousSpace(tempBoard, i);
 
-    for i in  boardDom do
+    for i in  0..#boardCells do
       if tempBoard[i] == 0 then
         c += 1;
     if (c == 0 || (c == 5 && piece == 8) || (c == 40 && piece == 8) ||
@@ -292,48 +289,26 @@ module meteor {
     }
   }
 
-  /* Returns the lowest index of the cells of a piece.  Use the lowest index
-     that a piece occupies as the index for looking up the piece in the solve
-     function.
-   */
-  proc minimumOfCells(cell) {
-    var minimum = max(int);
-    for i in cell do
-      if i < minimum then minimum = i;
-    return minimum;
-  }
-
   /* Calculate the lowest possible open cell if the piece is placed on the
      board.  Used to later reduce the amount of time searching for open cells in
      the solve function.
    */
-  proc firstEmptyCell(cell, minimum) {
-    var firstEmpty = minimum;
-    while (firstEmpty == cell[0] || firstEmpty == cell[1] ||
-          firstEmpty == cell[2] || firstEmpty == cell[3] ||
-          firstEmpty == cell[4]) {
-      firstEmpty += 1;
+  proc firstEmptyCell(cell, in min) {
+    while (min == cell[0] || min == cell[1] ||
+          min == cell[2] || min == cell[3] ||
+          min == cell[4]) {
+      min += 1;
     }
-    return firstEmpty;
-  }
-
-  /* Generate the unsigned int that will later be anded with the board to
-     determine if it fits.
-   */
-  proc bitmaskFromCells(cell) {
-    var pieceMask: int;
-    for i in 0..4 do
-      pieceMask |= 1 << cell[i];
-    return pieceMask;
+    return min;
   }
 
   /* Record the piece and other important information in arrays that will
      later be used by the solve function.
    */
   proc recordPiece(piece, minimum, firstEmpty, pieceMask) {
-    const lastIdx = pieceCounts[piece][minimum];
-    pieces[piece][minimum][lastIdx] = pieceMask;
-    nextCell[piece][minimum][lastIdx] = firstEmpty;
+    const pieceCount = pieceCounts[piece][minimum];
+    pieces[piece][minimum][pieceCount] = pieceMask;
+    nextCell[piece][minimum][pieceCount] = firstEmpty;
     pieceCounts[piece][minimum] += 1;
   }
 
@@ -467,17 +442,17 @@ module meteor {
      each successful piece placement.  This data is used to create a 50 char
      array if a solution is found.
    */
-  var solutions: [0..2099][boardDom] int;
+  var solutions: [0..#maxSolutions][0..#boardCells] int;
 
   proc solve() {
-    forall piece in piecesDom do
+    forall piece in 0..#numPieces do
       solveHelper(piece);
   }
 
   proc solveHelper(piece) {
     var board: uint = 0xFFFC000000000000;
     var avail: uint = 0x03FF;
-    var solNums, solMasks: [piecesDom] int;
+    var solNums, solMasks: [0..#numPieces] int;
     var pieceNoMask, maxRots, pieceMask, depth, cell = 0;
 
     pieceNoMask = 1 << piece;
@@ -520,7 +495,7 @@ module meteor {
     while (board & (1 << cell)) do
       cell += 1;
 
-    for piece in piecesDom {
+    for piece in 0..#numPieces {
       pieceNoMask = 1 << piece;
       if !((avail & pieceNoMask):bool) {
         continue;
@@ -552,13 +527,13 @@ module meteor {
   proc recordSolution(solNums, solMasks) {
     var solMask: int;
     var mySolCount = solutionCount.fetchAdd(2);
-    for solNo in piecesDom {
+    for solNo in 0..#numPieces {
       solMask = solMasks[solNo];
-      for indx in boardDom {
+      for indx in 0..#boardCells {
         if (solMask & 1) {
           solutions[mySolCount][indx] = solNums[solNo];
           /* Board rotated 180 degrees is a solution too! */
-          solutions[mySolCount+1][boardDom.high-indx] = solNums[solNo];
+          solutions[mySolCount + 1][boardCells - 1 - indx] = solNums[solNo];
         }
         solMask = solMask >> 1;
       }
@@ -580,7 +555,7 @@ module meteor {
 
   proc solutionLessThan(lhs, rhs) {
     if lhs == rhs then return false;
-    for i in boardDom {
+    for i in 0..#boardCells {
       if solutions[lhs][i] != solutions[rhs][i] then
         return solutions[lhs][i] < solutions[rhs][i];
     }
@@ -589,7 +564,7 @@ module meteor {
 
   /* pretty print a board in the specified hexagonal format */
   proc pretty(s) {
-    for i in boardDom by 10 {
+    for i in 0..#boardCells by 10 {
       // '0' -> 48 in ascii: shifting the numbers up into valid range
       writef("%c %c %c %c %c \n %c %c %c %c %c \n", s[i]+48, s[i+1]+48,
         s[i+2]+48, s[i+3]+48, s[i+4]+48, s[i+5]+48, s[i+6]+48,
