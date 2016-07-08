@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,22 +47,22 @@ version of BLAS you have.
  1. This module assumes that the CBLAS functions are defined in ``cblas.h``.
  If they are not (eg. MKL defines these in ``mkl_cblas.h``, you can work around
  this by creating a symbolic link to the correct header file (eg. ``ln -s mkl_cblas.h cblas.h``).
- You may also just download the Netlib reference ``cblas.h`` file 
+ You may also just download the Netlib reference ``cblas.h`` file
  http://www.netlib.org/blas/#_cblas
  and then link to the appropriate libraries.
  2. The header files that are included with OpenBLAS differ from the reference CBLAS prototypes
  for complex arguments by using ``float*`` and ``double*`` pointers, instead of ``void*`` pointers.
- Using this will likely result in warnings about incompatible pointer types. These may be ignored, 
+ Using this will likely result in warnings about incompatible pointer types. These may be ignored,
  or suppressed by using the Netlib reference header file.
 
 The CBLAS API
 -------------
 
-The C_BLAS submodule of the BLAS module provides access to all the 
+The C_BLAS submodule of the BLAS module provides access to all the
 CBLAS calls. Arrays are passed in directly, while pointers to scalar
 quantities (including complex numbers) are passed by reference (removing
-the need to wrap these with ``c_ptrTo``). As with BLAS calls in C, 
-the user is responsible for passing in array dimensions etc. Furthermore, 
+the need to wrap these with ``c_ptrTo``). As with BLAS calls in C,
+the user is responsible for passing in array dimensions etc. Furthermore,
 different array element types require using different functions.
 
 We refer the user to the existing CBLAS documentation for the usage
@@ -77,13 +77,13 @@ on the array element types, as well as the array dimensions. The other
 functionality is identical to the corresponding BLAS functions.
 
 The names of these routines are identical to the corresponding BLAS functions,
-except that the type prefix is dropped. For instance, ``gemm`` is the 
+except that the type prefix is dropped. For instance, ``gemm`` is the
 wrapper for the ``[sdcz]gemm`` routines.
 
 .. note::
  Chapel determines the dimensions of the matrices from the arrays that are
- passed in. However, if one is passing in a sub-array such that the array 
- elements are not contiguously stored in memory, then the user needs to 
+ passed in. However, if one is passing in a sub-array such that the array
+ elements are not contiguously stored in memory, then the user needs to
  pass in the leading dimension (```lda``` etc) to the array, just as they
  would in C. These default to 0, in which case Chapel determines the appropriate
  values based on the array passed in.
@@ -99,19 +99,19 @@ module BLAS {
 
 
   /* Define row or column order */
-  enum Order {Row=101:c_int, Col=102};
+  enum Order {Row=101 : c_int, Col};
 
   /* Operation of matrix : none, transpose, or adjoint */
-  enum Op {N=111:c_int, T=112, H=113}; // NoTranspose, Transpose, Adjoint
+  enum Op {N=111 : c_int, T, H}; // NoTranspose, Transpose, Adjoint
 
   /* Storage for symmetric matrices */
-  enum Uplo {Upper=121:c_int, Lower=122};
+  enum Uplo {Upper=121 : c_int, Lower};
 
   /* Assume a unit or non-unit diagonal */
-  enum Diag {NonUnit=131:c_int, Unit=132};
+  enum Diag {NonUnit=131 : c_int, Unit};
 
   /* Operate on the left or right side */
-  enum Side {Left=141:c_int, Right=142};
+  enum Side {Left=141 : c_int, Right};
 
   /* Level 3 BLAS */
 
@@ -758,3 +758,4 @@ module BLAS {
 
 
 }
+
