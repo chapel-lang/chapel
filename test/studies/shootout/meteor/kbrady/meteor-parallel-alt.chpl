@@ -23,7 +23,7 @@ const boardDom = {0..#boardCells},
 var allMasks: [0..#permutations] int,
     maskStart: [boardDom][0..#numPieces-2] int;
 
-// Arrays of min, max, and integer storing number of solutions
+// Arrays of min and max, and an integer storing the number of solutions
 var minSolution, maxSolution: [boardDom] int,
     solutions: int;
 
