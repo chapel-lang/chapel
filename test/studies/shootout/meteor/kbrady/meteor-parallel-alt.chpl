@@ -70,8 +70,8 @@ proc initialize() {
   var totalCount = 0,
       coords: [0..#pieceCells] 2*int;
 
-  /* The puzzle pieces are defined with hexagonal cell coordinates, where the
-     first piece cell always begins at the origin cell, (0, 0).
+  /* The 10 puzzle pieces are defined with hexagonal cell coordinates, where
+     the first cell of a piece always begins at the origin cell, (0, 0).
      This coordinate system is best conveyed through a diagram:
 
                          (0, -1)       (1, -1)
@@ -80,23 +80,26 @@ proc initialize() {
 
                          (-1, 1)       (0 , 1)
 
-     Therefore, (-1, 2) corresponds to the South, and (1, -2) to the North.
+     Therefore, the cell to the South of the origin can be computed as follows:
+
+        S =    SW   +   SE
+        S = (-1, 1) + (0, 1) = (-1, 2)
 
      The following illustrates the piece shapes and their cell indices:
 
-     Piece 0      Piece 1      Piece 2      Piece 3      Piece 4
+        Piece 0      Piece 1      Piece 2      Piece 3      Piece 4
 
-     0 1 2 3         0          0 1 2        0 1 2        0
-            4         1        3                3          1 2
-                   2 3          4                4        3   4
-                  4
+        0 1 2 3         0          0 1 2        0 1 2        0
+               4         1        3                3          1 2
+                      2 3          4                4        3   4
+                     4
 
-     Piece 5      Piece 6      Piece 7      Piece 8      Piece 9
+        Piece 5      Piece 6      Piece 7      Piece 8      Piece 9
 
-        0 1        0 1          0   1        0            0
-     2 3 4          2          2 3 4          1            1
-                   3                           2 3          2
-                    4                             4        3 4
+           0 1        0 1          0   1        0            0
+        2 3 4          2          2 3 4          1            1
+                      3                           2 3          2
+                       4                             4        3 4
 
   */
   const pieces: [piecesDom][0..#pieceCells] 2*int =
