@@ -553,12 +553,15 @@ module meteor {
 
   /* pretty print a board in the specified hexagonal format */
   proc pretty(s) {
-    for i in 0..#boardCells by 10 {
-      // '0' -> 48 in ascii: shifting the numbers up into valid range
-      writef("%c %c %c %c %c \n %c %c %c %c %c \n", s[i]+48, s[i+1]+48,
-        s[i+2]+48, s[i+3]+48, s[i+4]+48, s[i+5]+48, s[i+6]+48,
-        s[i+7]+48, s[i+8]+48, s[i+9]+48);
+    param boardWidth = 5;
+    for i in 0..#boardCells {
+      writef("%i ", s[i]);
+      if (i % boardWidth == 4) {
+        writeln();
+        if (i & 1 == 0) then
+          write(" ");
+      }
     }
-    writeln("");
+    writeln();
   }
 }
