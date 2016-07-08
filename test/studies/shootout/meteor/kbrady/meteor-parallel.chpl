@@ -101,7 +101,7 @@ module meteor {
     forall piece in 0..#numPieces {
       for indx in 0..#boardCells {
         calcSixRotations(piece, indx, cells[piece]);
-        flipPiece(piece);
+        serial do pieceDef[piece] = flip(pieceDef[piece]);
         calcSixRotations(piece, indx, cells[piece]);
       }
     }
@@ -127,7 +127,7 @@ module meteor {
           recordPiece(piece, minimum, firstEmpty, pieceMask);
         }
       }
-      rotatePiece(piece);
+      serial do pieceDef[piece] = rotate(pieceDef[piece]);
     }
   }
 
@@ -312,26 +312,14 @@ module meteor {
     pieceCounts[piece][minimum] += 1;
   }
 
-  /* Rotate a piece 60 degrees clockwise */
-  proc rotatePiece(piece) {
-    for i in 0..3 do
-      pieceDef[piece][i] = rotate(pieceDef[piece][i]);
-  }
-
   /* Returns the direction rotated 60 degrees clockwise */
   proc rotate(dir) {
-    return ((dir + 2) % PIVOT): direction;
-  }
-
-  /* Flip a piece along the horizontal axis */
-  proc flipPiece(piece) {
-    for i in 0..3 do
-      pieceDef[piece][i] = flip(pieceDef[piece][i]);
+    return ((dir + 2) % PIVOT:int): direction;
   }
 
   /* Returns the direction flipped on the horizontal axis */
   proc flip(dir) {
-    return ((PIVOT - dir) % PIVOT): direction;
+    return ((PIVOT - dir:int) % PIVOT:int): direction;
   }
 
   /* Calculate all 32 possible states for a 5-bit row and all rows that will
