@@ -109,10 +109,6 @@ build into ``target/``. The final directory hierarchy will look like this:
 
   ~/.mason/src/
     (contains dependencies of MyPackage)
-<<<<<<< HEAD
-=======
-
->>>>>>> chapel-lang/master
 
   MyPackage/
     Mason.toml
@@ -138,22 +134,13 @@ For example, ``MyPackage.chpl``:
 Project Code -> Manifest File
 +++++++++++++++++++++++++++++
 
-<<<<<<< HEAD
 mason will provide command line support for adding and removing dependencies
-=======
-``mason`` will provide command line support for adding and removing dependencies
->>>>>>> chapel-lang/master
 to the manifest in the form of ``mason add [package] [version]`` and
 ``mason rm [package]`` when within the project directory.
 
 The manifest may also be edited manually.
 
-<<<<<<< HEAD
 mason will not automatically generate any of the manifest from the project code. 
-=======
-``mason`` will not automatically generate any of the manifest from the project code. 
->>>>>>> chapel-lang/master
-
 
 Manifest File
 +++++++++++++
@@ -351,11 +338,7 @@ the user's home directory by default:
 Syncing Commands
 ++++++++++++++++
 
-<<<<<<< HEAD
 When any of ``add``, ``rm``, or ``update`` are invoked, mason will make sure that
-=======
-When any of ``add``, ``rm``, or ``update`` are invoked, ``mason`` will make sure that
->>>>>>> chapel-lang/master
 the manifest file, lock file, and dependency code are kept in sync with each other.
 Effectively, this means that when ``update`` is run, dependencies will be downloaded,
 and when ``add`` or ``rm`` are run, ``update`` will be run.
@@ -376,7 +359,6 @@ When invoked, ``mason build`` will do the following:
 * Run ``update`` to make sure any manual manifest edits are reflected in the
   dependency code.
 
-<<<<<<< HEAD
 * Build ``??.chpl`` in the ``/src`` directory, where ?? is the name of the project.
  
   - This file will be the designated main by the ``--main-module`` flag.
@@ -385,28 +367,6 @@ When invoked, ``mason build`` will do the following:
     dependency pool. 
 
   - Binary dependencies are included by specifying their main file from the
-=======
-* Build ``main.chpl`` in the ``/src`` directory.
- 
-  - ``main.chpl`` will be the designated main by the ``--main-module`` flag.
-
-  - Binary dependencies are included by specifying their ``main.chpl`` from the
-    dependency pool. 
-
-  - Library dependencies are included by specifying their ``lib.chpl`` from the
->>>>>>> chapel-lang/master
-    dependency pool. 
-
-  - Compiler options from the manifest will also be passed here.
-
-  - The name of the binary will be the project name, and will be placed in the
-    ``/target`` directory.
-
-<<<<<<< HEAD
-  - example: ``chpl --main-module src/MyPackage.chpl ~/.mason/src/Curl/src/Curl.chpl -o target/hello_world``
-=======
-  - example: ``chpl --main-module src/main.chpl ~/.mason/src/Curl/src/main.chpl -o target/hello_world``
->>>>>>> chapel-lang/master
 
 ``mason run`` will, in turn:
 
