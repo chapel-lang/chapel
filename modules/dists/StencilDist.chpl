@@ -827,7 +827,11 @@ proc StencilDom.dsiSetIndices(x: domain) {
     compilerError("index type mismatch in domain assignment");
   whole = x;
   if whole.size > 0 {
-    wholeFluff = whole.expand(fluff);
+    var absFluff : fluff.type;
+    for param i in 1..rank {
+      absFluff(i) = abs(fluff(i) * x.dim(i).stride);
+    }
+    wholeFluff = whole.expand(absFluff);
   }
   setup();
   if debugStencilDist {
@@ -846,7 +850,11 @@ proc StencilDom.dsiSetIndices(x) {
   //
   whole.setIndices(x);
   if whole.size > 0 {
-    wholeFluff = whole.expand(fluff);
+    var absFluff : fluff.type;
+    for param i in 1..rank {
+      absFluff(i) = abs(fluff(i) * whole.dim(i).stride);
+    }
+    wholeFluff = whole.expand(absFluff);
   }
   setup();
   if debugStencilDist {
@@ -874,6 +882,11 @@ proc StencilDom.setup() {
       for param i in 1..rank do nearest(i) = -1..1;
       const ND : domain(rank) = nearest;
 
+      var abstr : rank*whole.dim(1).stride.type;
+      for param i in 1..rank {
+        abstr(i) = abs(whole.dim(i).stride);
+      }
+
       if myLocDom == nil {
         myLocDom = new LocStencilDom(rank, idxType, stridable,
                                              dist.getChunk(whole, localeIdx), NeighDom=ND);
@@ -882,7 +895,7 @@ proc StencilDom.setup() {
       }
 
       if !zeroTuple(fluff) && myLocDom.myBlock.numIndices!=0 then {
-        myLocDom.myFluff = myLocDom.myBlock.expand(fluff);
+        myLocDom.myFluff = myLocDom.myBlock.expand(fluff*abstr);
       }
       else {
         myLocDom.myFluff = myLocDom.myBlock;
@@ -893,8 +906,22 @@ proc StencilDom.setup() {
         // Recompute Src and Dest domains, later used to update fluff regions
         //
         for (S, D, off) in zip(myLocDom.Src, myLocDom.Dest, ND) {
-          D = myLocDom.myBlock.exterior(off * fluff);
-          assert(wholeFluff.member(D.low) && wholeFluff.member(D.high), "StencilDist: Error computing destination slice.");
+          const to = if isTuple(off) then off else (off,);
+          var dr : rank*whole.dim(1).type;
+          for i in 1..rank {
+            const fa = fluff(i) * abstr(i);
+            const cur = myLocDom.myBlock.dim(i);
+            if to(i) < 0 then
+              dr(i) = cur.first - fa .. cur.first-abstr(i);
+            else if to(i) > 0 then
+              dr(i) = cur.last+abstr(i)..cur.last+fa;
+            else
+              dr(i) = cur.first..cur.last;
+            if stridable then
+              dr(i) = dr(i) by cur.stride;
+          }
+          D = {(...dr)};
+          assert(wholeFluff.member(D.first) && wholeFluff.member(D.last), "StencilDist: Error computing destination slice.");
           if periodic then S = D;
         }
 
@@ -913,17 +940,17 @@ proc StencilDom.setup() {
             var offset : rank*idxType;
             for i in 1..rank {
               if S.dim(i).low > whole.dim(i).high then
-                offset(i) = -whole.dim(i).size;
+                offset(i) = -whole.dim(i).size * abstr(i);
               else if S.dim(i).high < whole.dim(i).low then
-                offset(i) = whole.dim(i).size;
+                offset(i) = whole.dim(i).size * abstr(i);
             }
 
             S = S.translate(offset);
             if rank == 1 then
-              N(1) = dist.targetLocsIdx(S.low);
+              N(1) = dist.targetLocsIdx(S.first);
             else
-              N = dist.targetLocsIdx(S.low);
-            assert(whole.member(S.low) && whole.member(S.high), "StencilDist: Failure to compute Src slice.");
+              N = dist.targetLocsIdx(S.first);
+            assert(whole.member(S.first) && whole.member(S.last), "StencilDist: Failure to compute Src slice.");
             assert(dist.targetLocDom.member(N), "StencilDist: Error computing neighbor index.");
           }
         }
@@ -1635,7 +1662,11 @@ proc StencilDom.dsiPrivatize(privatizeData) {
     c.locDoms(i) = locDoms(i);
   c.whole = {(...privatizeData(2))};
   if c.whole.size > 0 {
-    c.wholeFluff = c.whole.expand(fluff);
+    var absFluff : fluff.type;
+    for param i in 1..rank {
+      absFluff(i) = abs(fluff(i) * c.whole.dim(i).stride);
+    }
+    c.wholeFluff = c.whole.expand(absFluff);
   }
   return c;
 }
@@ -1647,7 +1678,11 @@ proc StencilDom.dsiReprivatize(other, reprivatizeData) {
     locDoms(i) = other.locDoms(i);
   whole = {(...reprivatizeData)};
   if whole.size > 0 {
-    wholeFluff = whole.expand(fluff);
+    var absFluff : fluff.type;
+    for param i in 1..rank {
+      absFluff(i) = abs(fluff(i) * whole.dim(i).stride);
+    }
+    wholeFluff = whole.expand(absFluff);
   }
 }
 

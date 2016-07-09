@@ -11,6 +11,11 @@ proc verifyStencil(A : [?dom], debug = false) {
     Neighs = {(...n)};
   }
 
+  var abstr : rank*int;
+  for i in 1..rank do
+    abstr(i) = abs(dom.dim(i).stride);
+  const max = dom.expand(halo*abstr);
+
   // Build each ghost domain and check it against the actual data to confirm
   // the update occurred correctly
   for n in Neighs {
@@ -21,16 +26,18 @@ proc verifyStencil(A : [?dom], debug = false) {
     var ghost : rank*dom.dim(1).type;
     var actual : rank*dom.dim(1).type;
     for i in 1..rank {
+      const h = halo(i);
+      const str = dom.dim(i).stride;
       if neigh(i) < 0 {
-        ghost(i) = dom.dim(i).low - halo(i)..#halo(i);
+        ghost(i) = dom.dim(i).exterior(-h*str);
       }
       else if neigh(i) == 0 {
         ghost(i) = dom.dim(i);
       }
       else {
-        ghost(i) = dom.dim(i).high+1..#halo(i);
+        ghost(i) = dom.dim(i).exterior(h*str);
       }
-      actual(i) = ghost(i).translate(-neigh(i) * dom.dim(i).size);
+      actual(i) = ghost(i).translate(-neigh(i) * dom.dim(i).size * str);
     }
     const gdom = {(...ghost)};
     const adom = {(...actual)};

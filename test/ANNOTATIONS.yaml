@@ -178,6 +178,8 @@ binary-trees:
     - revert jemalloc to 4.0.4 (#3477)
   05/28/16:
     - upgrade jemalloc to 4.2.0 (#3919)
+  06/13/16:
+    - polish to binary-trees versions (#4017)
 
 chameneos-redux:
   07/08/13:
@@ -213,6 +215,8 @@ fannkuch-redux:
   10/16/15:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
+  06/29/16:
+    - replacement with more elegant version (#4089)
 
 fasta:
   01/14/14:
@@ -343,6 +347,10 @@ mandelbrot:
     - Initial commit of C complexes
   06/16/16:
     - Change complex getter functions for .re and .im into "static inline" (#4033)
+  07/01/16:
+    - Start using C99 functions for operations such as abs() on complex numbers (#4098)
+  07/08/16:
+    - Added compiler option --no-ieee-float to mandelbrot-complex (#4134)
 
 mandelbrot-extras:
   01/03/14:

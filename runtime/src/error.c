@@ -58,7 +58,7 @@ static void chpl_stack_unwind(void){
   if(chpl_sizeSymTable > 0)
     fprintf(stderr,"\nStacktrace\n\n");
 
-  // This loop does the effective stack unwind, see libunwid documentation
+  // This loop does the effective stack unwind, see libunwind documentation
   while (unw_step(&cursor) > 0) {
     unw_get_proc_name(&cursor, buffer, sizeof(buffer), &wordValue);
     // Since this stack trace is printed out a program exit, we do not believe

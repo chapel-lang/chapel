@@ -109,12 +109,13 @@ IEEE_FLOAT_GEN_CFLAGS = -fp-model precise -fp-model source
 
 WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr304,593,810,869,981,1572,1599
 WARN_CFLAGS = $(WARN_CXXFLAGS)
-WARN_GEN_CFLAGS = $(WARN_CFLAGS) -wr111,174,177
+WARN_GEN_CFLAGS = $(WARN_CFLAGS)
+SQUASH_WARN_GEN_CFLAGS = -wr111,174,177
 
 #
 # Don't warn for signed pointer issues (ex. c_ptr(c_char) )
 #
-WARN_GEN_CFLAGS += -Wno-pointer-sign
+SQUASH_WARN_GEN_CFLAGS += -Wno-pointer-sign
 
 #
 # compiler warnings settings

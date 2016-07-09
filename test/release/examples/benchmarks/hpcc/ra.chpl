@@ -131,8 +131,7 @@ proc main() {
   //
   [i in TableSpace] T[i] = i;
 
-  var kernel: Timer;
-  kernel.start();
+  const startTime = getCurrentTime();              // capture the start time
 
   //
   // The main computation: Iterate over the set of updates and the
@@ -158,9 +157,7 @@ proc main() {
     forall (_, r) in zip(Updates, RAStream()) do
       T[r & indexMask] ^= r;
 
-  kernel.stop();
-
-  const execTime = kernel.elapsed(); // capture the elapsed time
+  const execTime = getCurrentTime() - startTime;   // capture the elapsed time
 
   const validAnswer = verifyResults(T);            // verify the updates
   printResults(validAnswer, execTime);             // print the results

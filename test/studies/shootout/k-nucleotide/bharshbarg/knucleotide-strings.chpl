@@ -99,7 +99,7 @@ proc write_count(data : string, pattern : string) {
   writeln(freqs[d], "\t", decode(d, size));
 }
 
-proc main() {
+proc main(args: [] string) {
   var data, buf : string;
 
   // Read each line until the desired section

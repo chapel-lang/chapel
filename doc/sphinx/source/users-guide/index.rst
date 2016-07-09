@@ -15,13 +15,13 @@ defining every corner case in the language.
 
    **Pardon Our Dust**
 
-   This users guide is a work-in-progress that was kicked off in
-   Autumn 2015.  We are taking the approach of writing it in a
-   breadth-first manner in order to cover features that are most
-   unique to the language sooner without completely neglecting the
-   base language (which is expected to comprise the largest number of
-   the sections of the guide).  We welcome feedback and requests on
-   the guide as we go.
+   This users guide is a work-in-progress.  We are writing it in a
+   breadth-first manner in order to cover features that are more
+   unique to Chapel sooner.  If you're not already using the `master
+   branch <http://chapel.cray.com/docs/master/users-guide/>`_ of the
+   documentation (which tracks real-time GitHub development), you may
+   find that it contains a more complete set of sections.  We welcome
+   feedback and requests on the guide as we go.
 
 
 The Chapel Users Guide is divided into four main sections:
@@ -37,10 +37,16 @@ support of parallelism and locality are removed.
    :maxdepth: 1
    :glob:
 
-   base/simpleConsoleOutput
-   base/variableDeclarations
+   base/hello
+   base/vars
+   base/basicTypes
+   base/basicValues
+   base/casts
+   base/forloops
+   base/zip
 
 (more to come...)
+
 
 .. _index-task-parallelism:
 
@@ -55,9 +61,12 @@ explicitly and synchronizing between them.
    :glob:
 
    taskpar/taskParallelismOverview
-   taskpar/theBeginStatement
+   taskpar/begin
+   taskpar/cobegin
+   taskpar/coforall
 
 (more to come...)
+
 
 .. _index-data-parallelism:
 
@@ -66,6 +75,12 @@ Data Parallelism
 
 These are Chapel's higher-level features for creating parallelism more
 abstractly using a rich set of data structures.
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   datapar/forall
 
 (more to come...)
 
