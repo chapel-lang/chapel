@@ -10,6 +10,11 @@ convenience and was obtained from:
 Any Chapel issues that seem to be related to jemalloc should be
 directed to the Chapel team at chapel-bugs@lists.sourceforge.net.
 
+In addition to the base 4.2.1 version, we have applied upstream
+patches in order to support using jemalloc with the PGI compiler.
+
+  https://github.com/jemalloc/jemalloc/commit/fbd7956
+  https://github.com/jemalloc/jemalloc/commit/8a1a794
 
 Upgrading jemalloc versions
 ===========================
@@ -18,16 +23,17 @@ The directory $CHPL_HOME/third-party/jemalloc/jemalloc-src contains the
 un-tarballed jemalloc package contents. Version updates should be done as
 follows, assuming the CWD is $CHPL_HOME/third-party/jemalloc/:
 
-1. download and untar the latest jemalloc version: e.g. jemalloc-4.2.1
-2. `rm -rf jemalloc-src`
-3. `mv jemalloc-4.2.1 jemalloc-src`
-4. `git add --force jemalloc-src` (--force to ignore our .gitignore)
-5. update the version number mentioned above
-6. verify the references to jemalloc's man page in the runtime shim are
-   accurate and update the version number referenced.
-7. make sure these instructions are up to date :)
-8. test (std config, and at least one that requires a shared-heap)
-9. commit, PR, merge, etc
+1.  download and untar the latest jemalloc version: e.g. jemalloc-4.2.1
+2.  `rm -rf jemalloc-src`
+3.  `mv jemalloc-4.2.1 jemalloc-src`
+4.  `git add --force jemalloc-src` (--force to ignore our .gitignore)
+5.  update the version number mentioned above
+6.  apply patches mentioned above, assuming they aren't in the new version
+7.  verify the references to jemalloc's man page in the runtime shim are
+    accurate and update the version number referenced.
+8.  make sure these instructions are up to date :)
+9.  test (std config, and at least one that requires a shared-heap)
+10. commit, PR, merge, etc
 
 Note that these instructions are for a simple API compatible updates. If the
 jemalloc API changes, or the references to the man page in the runtime shim are
