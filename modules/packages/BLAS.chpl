@@ -94,6 +94,8 @@ wrapper for the ``[sdcz]gemm`` routines.
 
 module BLAS {
 
+  use C_BLAS;
+
   use SysCTypes;
   require "cblas.h";
 
@@ -565,7 +567,11 @@ module BLAS {
   }
 
 
+  /* Low-level native CBLAS bindings for Chapel
 
+     The definitions in this module wrap the netlib cblas implementation.
+     For documentation of the reference verision, see [link].
+  */
   module C_BLAS {
     extern type CBLAS_INDEX = size_t;
 
