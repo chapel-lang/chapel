@@ -724,8 +724,8 @@ module GMP {
     {
       on this {
         if (here != a.locale || here != b.locale) {
-          var a_ = a; // .localize();
-          var b_ = b; // .localize();
+          var a_ = a;
+          var b_ = b;
           mpz_add(this.mpz, a_.mpz, b_.mpz);
         } else {
           mpz_add(this.mpz, a.mpz, b.mpz);
@@ -736,7 +736,7 @@ module GMP {
     {
       on this {
         if (here != a.locale ) {
-          var a_ = a; // .localize();
+          var a_ = a;
           mpz_add_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
         } else {
           mpz_add_ui(this.mpz, a.mpz, b.safeCast(c_ulong));
@@ -747,8 +747,8 @@ module GMP {
     {
       on this {
         if (here != a.locale || here != b.locale) {
-          var a_ = a; // .localize();
-          var b_ = b; // .localize();
+          var a_ = a;
+          var b_ = b;
           mpz_sub(this.mpz, a_.mpz, b_.mpz);
         } else {
           mpz_sub(this.mpz, a.mpz, b.mpz);
@@ -759,7 +759,7 @@ module GMP {
     {
       on this {
         if (here != a.locale) {
-          var a_ = a; // .localize();
+          var a_ = a;
           mpz_sub_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
         } else {
           mpz_sub_ui(this.mpz, a.mpz, b.safeCast(c_ulong));
@@ -770,7 +770,7 @@ module GMP {
     {
       on this {
         if (here != b.locale) {
-          var b_ = b; // .localize();
+          var b_ = b;
           mpz_ui_sub(this.mpz, a.safeCast(c_ulong), b_.mpz);
         } else {
           mpz_ui_sub(this.mpz, a.safeCast(c_ulong), b.mpz);
@@ -781,8 +781,8 @@ module GMP {
     {
       on this {
         if (here != a.locale || here != b.locale) {
-          var a_ = a; // .localize();
-          var b_ = b; // .localize();
+          var a_ = a;
+          var b_ = b;
           mpz_mul(this.mpz, a_.mpz, b_.mpz);
         } else {
           mpz_mul(this.mpz, a.mpz, b.mpz);
@@ -793,7 +793,7 @@ module GMP {
     {
       on this {
         if (here != a.locale) {
-          var a_ = a; // .localize();
+          var a_ = a;
           mpz_mul_si(this.mpz, a_.mpz, b.safeCast(c_long));
         } else {
           mpz_mul_si(this.mpz, a.mpz, b.safeCast(c_long));
@@ -804,7 +804,7 @@ module GMP {
     {
       on this {
         if (here != a.locale) {
-          var a_ = a; // .localize();
+          var a_ = a;
           mpz_mul_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
         } else {
           mpz_mul_ui(this.mpz, a.mpz, b.safeCast(c_ulong));
@@ -815,8 +815,8 @@ module GMP {
     {
       on this {
         if (here != a.locale || here != b.locale) {
-          var a_ = a; // .localize();
-          var b_ = b; // .localize();
+          var a_ = a;
+          var b_ = b;
           mpz_addmul(this.mpz, a_.mpz, b_.mpz);
         } else {
           mpz_addmul(this.mpz, a.mpz, b.mpz);
@@ -827,7 +827,7 @@ module GMP {
     {
       on this {
         if (here != a.locale) {
-        var a_ = a; // .localize();
+        var a_ = a;
         mpz_addmul_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
         } else {
           mpz_addmul_ui(this.mpz, a.mpz, b.safeCast(c_ulong));
@@ -838,8 +838,8 @@ module GMP {
     {
       on this {
         if (here != a.locale || here != b.locale) {
-          var a_ = a; // .localize();
-          var b_ = b; // .localize();
+          var a_ = a;
+          var b_ = b;
           mpz_submul(this.mpz, a_.mpz, b_.mpz);
         } else {
           mpz_submul(this.mpz, a.mpz, b.mpz);
@@ -850,7 +850,7 @@ module GMP {
     {
       on this {
         if (here != a.locale) {
-          var a_ = a; // .localize();
+          var a_ = a;
           mpz_submul_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
         } else {
           mpz_submul_ui(this.mpz, a.mpz, b.safeCast(c_ulong));
@@ -861,7 +861,7 @@ module GMP {
     {
       on this {
         if (here != a.locale) {
-        var a_ = a; // .localize();
+        var a_ = a;
         mpz_mul_2exp(this.mpz, a_.mpz, b.safeCast(c_ulong));
         } else {
           mpz_mul_2exp(this.mpz, a.mpz, b.safeCast(c_ulong));
@@ -872,7 +872,7 @@ module GMP {
     {
       on this {
         if (here != a.locale) {
-          var a_ = a; // .localize();
+          var a_ = a;
           mpz_neg(this.mpz, a_.mpz);
         } else {
           mpz_neg(this.mpz, a.mpz);
@@ -883,7 +883,7 @@ module GMP {
     {
       on this {
         if (here != a.locale) {
-          var a_ = a; // .localize();
+          var a_ = a;
           mpz_abs(this.mpz, a_.mpz);
         } else {
           mpz_abs(this.mpz, a.mpz);
@@ -898,8 +898,8 @@ module GMP {
       on this {
         if (here != n.locale || here != d.locale)
         {
-          var n_ = n; // .localize();
-          var d_ = d; // .localize();
+          var n_ = n;
+          var d_ = d;
           select rounding {
             when Round.UP   do mpz_cdiv_q(this.mpz, n_.mpz, d_.mpz);
             when Round.DOWN do mpz_fdiv_q(this.mpz, n_.mpz, d_.mpz);
@@ -918,8 +918,8 @@ module GMP {
     {
       on this {
         if (here != n.locale || here != d.locale) {
-          var n_ = n; // .localize();
-          var d_ = d; // .localize();
+          var n_ = n;
+          var d_ = d;
           select rounding {
             when Round.UP   do mpz_cdiv_r(this.mpz, n_.mpz, d_.mpz);
             when Round.DOWN do mpz_fdiv_r(this.mpz, n_.mpz, d_.mpz);
@@ -940,9 +940,9 @@ module GMP {
       on this {
         if (here != r.locale || here != n.locale || here != d.locale)
         {
-          var r_ = r; // .localize(); //assignment always makes deep copies
-          var n_ = n; // .localize();
-          var d_ = d; // .localize();
+          var r_ = r;
+          var n_ = n;
+          var d_ = d;
           select rounding {
             when Round.UP   do mpz_cdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
             when Round.DOWN do mpz_fdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
@@ -966,7 +966,7 @@ module GMP {
       on this {
         const cd = d.safeCast(c_ulong);
         if (here != n.locale) {
-          var n_ = n; // .localize();
+          var n_ = n;
           select rounding {
             when Round.UP   do ret=mpz_cdiv_q_ui(this.mpz, n_.mpz, cd);
             when Round.DOWN do ret=mpz_fdiv_q_ui(this.mpz, n_.mpz, cd);
@@ -988,7 +988,7 @@ module GMP {
       on this {
       const cd = d.safeCast(c_ulong);
         if (here != n.locale) {
-          var n_ = n; // .localize();
+          var n_ = n;
           select rounding {
             when Round.UP   do ret=mpz_cdiv_r_ui(this.mpz, n_.mpz, cd);
             when Round.DOWN do ret=mpz_fdiv_r_ui(this.mpz, n_.mpz, cd);
@@ -1011,8 +1011,8 @@ module GMP {
       const cd = d.safeCast(c_ulong);
       on this {
         if (here != n.locale || here != r.locale) {
-          var r_ = r; // .localize();
-          var n_ = n; // .localize();
+          var r_ = r;
+          var n_ = n;
           select rounding {
             when Round.UP  do ret=mpz_cdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, cd);
             when Round.DOWN do ret=mpz_fdiv_qr_ui(this.mpz, r_.mpz, n_.mpz, cd);
@@ -1037,7 +1037,7 @@ module GMP {
       const cd = d.safeCast(c_ulong);
       on this {
         if (here != n.locale) {
-          var n_ = n; // .localize();
+          var n_ = n;
           select rounding {
             when Round.UP   do ret=mpz_cdiv_ui(n_.mpz, cd);
             when Round.DOWN do ret=mpz_fdiv_ui(n_.mpz, cd);
@@ -1058,7 +1058,7 @@ module GMP {
       on this {
       const cb = b.safeCast(c_ulong);
         if (here != n.locale) {
-          var n_ = n; // .localize();
+          var n_ = n;
           select rounding {
             when Round.UP   do mpz_cdiv_q_2exp(this.mpz, n_.mpz, cb);
             when Round.DOWN do mpz_fdiv_q_2exp(this.mpz, n_.mpz, cb);
@@ -1078,7 +1078,7 @@ module GMP {
       on this {
         const cb = b.safeCast(c_ulong);
         if (here != n.locale) {
-          var n_ = n; // .localize();
+          var n_ = n;
          select rounding {
            when Round.UP   do mpz_cdiv_r_2exp(this.mpz, n_.mpz, cb);
             when Round.DOWN do mpz_fdiv_r_2exp(this.mpz, n_.mpz, cb);
@@ -1097,8 +1097,8 @@ module GMP {
     {
       on this {
         if (here != n.locale || here != d.locale) {
-          var n_ = n; // .localize();
-          var d_ = d; // .localize();
+          var n_ = n;
+          var d_ = d;
           mpz_mod(this.mpz, n_.mpz, d_.mpz);
         } else {
           mpz_mod(this.mpz, n.mpz, d.mpz);
@@ -1111,7 +1111,7 @@ module GMP {
       var ret:c_ulong;
       on this {
         if (here != n.locale) {
-          var n_ = n; // .localize();
+          var n_ = n;
           ret=mpz_mod_ui(this.mpz, n_.mpz, d.safeCast(c_ulong));
         }
         else {
@@ -1124,8 +1124,8 @@ module GMP {
     {
       on this {
         if (here != n.locale || here != d.locale) {
-          var n_ = n; // .localize();
-          var d_ = d; // .localize();
+          var n_ = n;
+          var d_ = d;
           mpz_divexact(this.mpz, n_.mpz, d_.mpz);
         } else {
           mpz_divexact(this.mpz, n.mpz, d.mpz);
@@ -1136,7 +1136,7 @@ module GMP {
     {
       on this {
         if (here != n.locale) {
-          var n_ = n; // .localize();
+          var n_ = n;
           mpz_divexact_ui(this.mpz, n_.mpz, d.safeCast(c_ulong));
         } else {
           mpz_divexact_ui(this.mpz, n.mpz, d.safeCast(c_ulong));
@@ -1148,7 +1148,7 @@ module GMP {
       var ret:c_int;
       on this {
         if (here != d.locale) {
-        var d_ = d; // .localize();
+        var d_ = d;
         ret=mpz_divisible_p(this.mpz, d_.mpz);
         } else {
           ret=mpz_divisible_p(this.mpz, d.mpz);
@@ -1177,9 +1177,8 @@ module GMP {
       var ret:c_int;
       on this {
         if (here != c.locale || here != d.locale) {          
-          var c_ = c; // .localize(); 
-            // TODO: redo localize and replace with shallow copies allowed
-          var d_ = d; // .localize();
+          var c_ = c;
+          var d_ = d;
           ret=mpz_congruent_p(this.mpz, c_.mpz, d_.mpz);
         } else {
           ret=mpz_congruent_p(this.mpz, c.mpz, d.mpz);
@@ -1200,7 +1199,7 @@ module GMP {
       var ret: c_int;
       on this {
         if (here != c.locale) {
-          var c_ = c; // .localize();
+          var c_ = c;
           ret=mpz_congruent_2exp_p(this.mpz, c_.mpz, b.safeCast(c_ulong));
         } else {
           ret=mpz_congruent_2exp_p(this.mpz, c.mpz, b.safeCast(c_ulong));
@@ -1215,9 +1214,9 @@ module GMP {
     {
       on this {
         if (here != base.locale || here != exp.locale || here != mod.locale) {
-          var b_ = base; // .localize();
-          var e_ = exp; // .localize();
-          var m_ = mod; // .localize();
+          var b_ = base;
+          var e_ = exp;
+          var m_ = mod;
           mpz_powm(this.mpz, b_.mpz, e_.mpz, m_.mpz);
         } else {
           mpz_powm(this.mpz, base.mpz, exp.mpz, mod.mpz);
@@ -1228,8 +1227,8 @@ module GMP {
     {
       on this {
         if (here != base.locale || here != mod.locale) {
-          var b_ = base; // .localize();
-          var m_ = mod; // .localize();
+          var b_ = base;
+          var m_ = mod;
           mpz_powm_ui(this.mpz, b_.mpz, exp.safeCast(c_ulong), m_.mpz);
         } else {
           mpz_powm_ui(this.mpz, base.mpz, exp.safeCast(c_ulong), mod.mpz);
@@ -1240,7 +1239,7 @@ module GMP {
     {
       on this {
         if (here != base.locale) {
-        var b_ = base; // .localize();
+        var b_ = base;
         mpz_pow_ui(this.mpz, b_.mpz, exp.safeCast(c_ulong));
         } else {
           mpz_pow_ui(this.mpz, base.mpz, exp.safeCast(c_ulong));
@@ -1260,7 +1259,7 @@ module GMP {
       var ret:c_int;
       on this {
         if (here != a.locale) {
-        var a_ = a; // .localize();
+        var a_ = a;
         ret=mpz_root(this.mpz, a_.mpz, n.safeCast(c_ulong));
         } else {
           ret=mpz_root(this.mpz, a.mpz, n.safeCast(c_ulong));
@@ -1274,8 +1273,8 @@ module GMP {
     {
       on this {
         if (here != rem.locale || here != u.locale) {
-          var r_ = rem; // .localize();
-          var u_ = u; // .localize();
+          var r_ = rem;
+          var u_ = u;
           mpz_rootrem(this.mpz, r_.mpz, u_.mpz, n.safeCast(c_ulong));
           rem.set(r_);
         } else {
@@ -1286,7 +1285,7 @@ module GMP {
     proc sqrt(ref a: BigInt)
     {
       on this {
-        var a_ = a; // TODO: this was a.localize()
+        var a_ = a;
         mpz_sqrt(this.mpz, a_.mpz);
       }
     }
@@ -1295,8 +1294,8 @@ module GMP {
     {
       on this {
         if (here != rem.locale || here != a.locale) {
-          var r_ = rem; // .localize();
-          var a_ = a; // .localize();
+          var r_ = rem;
+          var a_ = a;
           mpz_sqrtrem(this.mpz, r_.mpz, a_.mpz);
           rem.set(r_);
         } else {
@@ -1337,7 +1336,7 @@ module GMP {
     {
       on this {
         if (here != a.locale){
-          var a_ = a; // .localize();
+          var a_ = a;
           mpz_nextprime(this.mpz, a_.mpz);
         } else {
           mpz_nextprime(this.mpz, a.mpz);
@@ -1348,8 +1347,8 @@ module GMP {
     {
       on this {
         if (here != a.locale || here != b.locale) {
-          var a_ = a; // .localize();
-          var b_ = b; // .localize();
+          var a_ = a;
+          var b_ = b;
           mpz_gcd(this.mpz, a_.mpz, b_.mpz);
         } else {
           mpz_gcd(this.mpz, a.mpz, b.mpz);
@@ -1360,7 +1359,7 @@ module GMP {
     {
       on this {
         if (here != a.locale) {
-          var a_ = a; // .localize();
+          var a_ = a;
           mpz_gcd_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
         } else {
           mpz_gcd_ui(this.mpz, a.mpz, b.safeCast(c_ulong));
@@ -1373,10 +1372,10 @@ module GMP {
     {
       on this {
         if (here != a.locale || here != b.locale || here != s.locale || here != t.locale) {
-          var a_ = a; // .localize();
-          var b_ = b; // .localize();
-          var s_ = s; // .localize();
-          var t_ = t; // .localize();
+          var a_ = a;
+          var b_ = b;
+          var s_ = s;
+          var t_ = t;
           mpz_gcdext(this.mpz, s_.mpz, t_.mpz, a_.mpz, b_.mpz);
           s.set(s_);
           t.set(t_);
@@ -1389,8 +1388,8 @@ module GMP {
     {
       on this {
         if (here != a.locale || here != b.locale){
-          var a_ = a; // .localize();
-          var b_ = b; // .localize();
+          var a_ = a;
+          var b_ = b;
           mpz_lcm(this.mpz, a_.mpz, b_.mpz);
         } else {
           mpz_lcm(this.mpz, a.mpz, b.mpz);
@@ -1401,7 +1400,7 @@ module GMP {
     {
       on this {
         if (here != a.locale) {
-          var a_ = a; // .localize();
+          var a_ = a;
           mpz_lcm_ui(this.mpz, a_.mpz, b.safeCast(c_ulong));
         } else {
           mpz_lcm_ui(this.mpz, a.mpz, b.safeCast(c_ulong));
@@ -1413,8 +1412,8 @@ module GMP {
       var ret:c_int;
       on this {
         if (here != a.locale || here != b.locale) {
-          var a_ = a; // .localize();
-          var b_ = b; // .localize();
+          var a_ = a;
+          var b_ = b;
           ret=mpz_invert(this.mpz, a_.mpz, b_.mpz);
         } else {
           ret=mpz_invert(this.mpz, a.mpz, b.mpz);
@@ -1431,8 +1430,8 @@ module GMP {
       var ret:c_ulong;
       on this {
         if (here != a.locale || here != f.locale){
-          var a_ = a; // .localize();
-          var f_ = f; // .localize();
+          var a_ = a;
+          var f_ = f;
           ret=mpz_remove(this.mpz, a_.mpz, f_.mpz);
         } else {
           ret=mpz_remove(this.mpz, a.mpz, f.mpz);
@@ -1453,7 +1452,7 @@ module GMP {
     {
       on this {
         if (here != n.locale){
-          var n_ = n; // .localize();
+          var n_ = n;
           mpz_bin_ui(this.mpz, n_.mpz, k.safeCast(c_ulong));
         } else {
           mpz_bin_ui(this.mpz, n.mpz, k.safeCast(c_ulong));
@@ -1476,7 +1475,7 @@ module GMP {
     {
       on this {
         if (here != fnsub1.locale){
-          var f_ = fnsub1; // .localize();
+          var f_ = fnsub1;
           mpz_fib2_ui(this.mpz, f_.mpz, n.safeCast(c_ulong));
           fnsub1.set(f_);
         } else {
@@ -1494,7 +1493,7 @@ module GMP {
     {
       on this {
         if (here != lnsub1.locale) {
-          var f_ = lnsub1; // .localize();
+          var f_ = lnsub1;
           mpz_lucnum2_ui(this.mpz, f_.mpz, n.safeCast(c_ulong));
           lnsub1.set(f_);
         } else {
@@ -1510,7 +1509,7 @@ module GMP {
       var ret:c_int;
       on this {
         if (here != b.locale) {
-          var b_ = b; // .localize();
+          var b_ = b;
           ret=mpz_cmp(this.mpz, b_.mpz);
         } else {
           ret=mpz_cmp(this.mpz, b.mpz);
@@ -1547,7 +1546,7 @@ module GMP {
       var ret:c_int;
       on this {
         if here != b.locale {
-          var b_ = b; // .localize();
+          var b_ = b;
           ret=mpz_cmpabs(this.mpz, b_.mpz);
         } else {
           ret = mpz_cmpabs(this.mpz, b.mpz);
@@ -1585,8 +1584,8 @@ module GMP {
     {
       on this {
         if (here != a.locale || here != b.locale) {
-          var a_ = a; // .localize();
-          var b_ = b; // .localize();
+          var a_ = a;
+          var b_ = b;
           mpz_and(this.mpz, a_.mpz, b_.mpz);
         } else {
           mpz_and(this.mpz, a.mpz, b.mpz);
@@ -1597,8 +1596,8 @@ module GMP {
     {
       on this {
         if (here != a.locale || here != b.locale) {
-          var a_ = a; // .localize();
-          var b_ = b; // .localize();
+          var a_ = a;
+          var b_ = b;
           mpz_ior(this.mpz, a_.mpz, b_.mpz);
         } else {
           mpz_ior(this.mpz, a.mpz, b.mpz);
@@ -1609,8 +1608,8 @@ module GMP {
     {
       on this {
         if (here != a.locale || here != b.locale) {
-          var a_ = a; // .localize();
-          var b_ = b; // .localize();
+          var a_ = a;
+          var b_ = b;
           mpz_xor(this.mpz, a_.mpz, b_.mpz);
         } else {
           mpz_xor(this.mpz, a.mpz, b.mpz);
@@ -1621,7 +1620,7 @@ module GMP {
     {
       on this {
         if here != a.locale {
-          var a_ = a; // .localize();
+          var a_ = a;
           mpz_com(this.mpz, a_.mpz);
         } else {
           mpz_com(this.mpz, a.mpz);
@@ -1641,7 +1640,7 @@ module GMP {
       var ret:c_ulong;
       on this {
         if here != b.locale {
-          var b_ = b; // .localize();
+          var b_ = b;
           ret=mpz_hamdist(this.mpz, b_.mpz);
         } else {
           ret=mpz_hamdist(this.mpz, b.mpz);
@@ -1882,7 +1881,7 @@ module GMP {
         ret.owned = false;
       }
     } else {
-      //FIXME: use copyRemoteBigInt?
+      //TODO: use copyRemoteBigInt?
       writeln("WATCH OUT! remote copying for initCopy on BigInts has not been implemented yet.");
       ret.set(bir);
     }
@@ -1897,7 +1896,7 @@ module GMP {
     // we are only working with 'this'
     var s:string;
     if (here != this.locale) {
-      var a_ = this; // .localize();
+      var a_ = this;
       s = a_.get_str();
       //gmp_asprintf(s, "%Zd", a_.mpz);
     } else {
@@ -1911,7 +1910,7 @@ module GMP {
     var ret:c_int;
     on a {
       if here != b.locale {
-        var b_ = b; // .localize();
+        var b_ = b;
         ret=mpz_jacobi(a.mpz, b_.mpz);
       } else {
         ret =mpz_jacobi(a.mpz, b.mpz);
@@ -1924,7 +1923,7 @@ module GMP {
     var ret:c_int;
     on a {
       if here != p.locale {
-        var p_ = p; // .localize();
+        var p_ = p;
         ret=mpz_legendre(a.mpz, p_.mpz);
       } else {
         ret=mpz_legendre(a.mpz, p.mpz);
@@ -1937,7 +1936,7 @@ module GMP {
     var ret:c_int;
     on a {
       if here != b.locale {
-        var b_ = b; // .localize();
+        var b_ = b;
         ret=mpz_kronecker(a.mpz, b_.mpz);
       } else {
         ret = mpz_kronecker(a.mpz, b.mpz);
@@ -1992,7 +1991,7 @@ module GMP {
     proc GMPRandom(ref a: BigInt, c: uint, m2exp: uint)
     {
       if here != a.locale {
-        var a_ = a; // .localize();
+        var a_ = a;
         gmp_randinit_lc_2exp(this.state, a_.mpz, c.safeCast(c_ulong), m2exp.safeCast(c_ulong));
       } else {
          gmp_randinit_lc_2exp(this.state, a.mpz, c.safeCast(c_ulong), m2exp.safeCast(c_ulong));
@@ -2018,7 +2017,7 @@ module GMP {
     {
       on this {
         if here != seed.locale {
-          var s_ = seed; // .localize();
+          var s_ = seed;
           gmp_randseed(this.state, s_.mpz);
         } else {
           gmp_randseed(this.state, seed.mpz);
@@ -2051,7 +2050,7 @@ module GMP {
     {
       on this {
         if here != r.locale {
-          var r_ = r; // .localize();
+          var r_ = r;
           mpz_urandomb(r_.mpz, this.state, nbits.safeCast(c_ulong));
           r.set(r_);
         } else {
@@ -2063,8 +2062,8 @@ module GMP {
     {
       on this {
         if (here != r.locale || here != n.locale){
-          var r_ = r; // .localize();
-          var n_ = n; // .localize();
+          var r_ = r;
+          var n_ = n;
           mpz_urandomm(r_.mpz, this.state, n_.mpz);
           r.set(r_);
         } else {
@@ -2076,7 +2075,7 @@ module GMP {
     {
       on this {
         if here != r.locale {
-          var r_ = r; // .localize();
+          var r_ = r;
           mpz_rrandomb(r_.mpz, this.state, nbits.safeCast(c_ulong));
           r.set(r_);
         } else {
