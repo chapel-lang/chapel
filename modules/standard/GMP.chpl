@@ -1814,7 +1814,7 @@ module GMP {
         lhs.set(rhs);
       }
     }
-    if _local || lhs.localed_id == chpl_nodeID then { //why use 'then' here?
+    if _local || lhs.locale_id == chpl_nodeID then { //why use 'then' here?
       helpMe(lhs, rhs);
     }
     else {
@@ -1826,6 +1826,7 @@ module GMP {
 
   // assignment operator overload for signed int assignment
   proc =(ref lhs: BigInt, rhs: int) {
+    //TODO: does this need an "on lhs" ?
     lhs.set(rhs); //should just change the value?
   }
 
