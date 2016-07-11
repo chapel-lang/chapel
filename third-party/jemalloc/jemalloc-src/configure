@@ -6944,6 +6944,52 @@ fi
 
 
 
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether a program using __builtin_unreachable is compilable" >&5
+$as_echo_n "checking whether a program using __builtin_unreachable is compilable... " >&6; }
+if ${je_cv_gcc_builtin_unreachable+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+void foo (void) {
+  __builtin_unreachable();
+}
+
+int
+main ()
+{
+
+	{
+		foo();
+	}
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  je_cv_gcc_builtin_unreachable=yes
+else
+  je_cv_gcc_builtin_unreachable=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $je_cv_gcc_builtin_unreachable" >&5
+$as_echo "$je_cv_gcc_builtin_unreachable" >&6; }
+
+if test "x${je_cv_gcc_builtin_ffsl}" = "xyes" ; then
+  $as_echo "#define JEMALLOC_INTERNAL_UNREACHABLE __builtin_unreachable" >>confdefs.h
+
+else
+  $as_echo "#define JEMALLOC_INTERNAL_UNREACHABLE abort" >>confdefs.h
+
+fi
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether a program using __builtin_ffsl is compilable" >&5
 $as_echo_n "checking whether a program using __builtin_ffsl is compilable... " >&6; }
 if ${je_cv_gcc_builtin_ffsl+:} false; then :
