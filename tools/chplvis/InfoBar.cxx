@@ -18,8 +18,7 @@
  */
 
 
-#include "InfoBar.h"
-#include "ViewField.h"  // To get access to heatColor
+#include "chplvis.h"
 
 #include <FL/fl_draw.H>
 #include <FL/x.H>
@@ -33,6 +32,20 @@ static const int Y_OFF = 10;
 #else
 static const int Y_OFF = 0;
 #endif
+
+// Local utility functions
+
+// Computation of color for use in displays
+
+Fl_Color heatColor ( double val, double max ) {
+  SettingsData *s = &VisSettings;
+  if (val == 0) return FL_WHITE;
+  if (max == 1) return fl_rgb_color(s->maxR, s->maxG, s->maxB);
+  // if (val == 1) return fl_rgb_color(0,180,255);
+  return fl_rgb_color( s->minR + (s->maxR-s->minR)*(val/max),
+                       s->minG + (s->maxG-s->minG)*(val/max),
+                       s->minB + (s->maxB-s->minB)*(val/max));
+}
 
 // XXX should new and delete here?
 void InfoBar::setFileName(const char *name) {

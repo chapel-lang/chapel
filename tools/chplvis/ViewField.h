@@ -28,9 +28,9 @@
 #include "CommWin.h"
 #include "ConcurrencyWin.h"
 
-#include <string>
-
 #include "DataModel.h"
+
+#include <string>
 
 // Information stored for each locale
 
@@ -62,11 +62,6 @@ struct tagInfo {
   int tagNo;
   char *tagName;
 };
-
-// Utility routine for computing colors for display,
-// Needed by other classes that draw colors.
-
-Fl_Color heatColor ( double val, double max );
 
 static const double twopi = 6.28318530717958647688;
 static const double pi = 3.14159265358979323844;
@@ -189,6 +184,8 @@ class ViewField : public Fl_Box {
           theLocales[ix].ccwin->show();
       }
     }
+
+  void redrawAllWindows (void);
 
 };
 
