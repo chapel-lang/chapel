@@ -178,7 +178,7 @@ DbgView->redrawAllWindows();}
     }
     Fl_Button {} {
       label {Reset Heat Colors}
-      callback {SettingsWin->reset();} selected
+      callback {SettingsWin->reset();}
       xywh {350 100 165 25}
     }
     Fl_Check_Button saveWH {
@@ -351,8 +351,8 @@ if (argc > 1 && argv[1][1] != '-') {
 }
 MainWindow->callback(mainWinCallback);
 if (VisSettings.save_WH) {
-   printf ("resizing main window...\\n");
    MainWindow->size(VisSettings.mainW,VisSettings.mainH);
    MainWindow->redraw();
-}} {}
+}} {selected
+  }
 } 
