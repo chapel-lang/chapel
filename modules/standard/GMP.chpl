@@ -474,6 +474,7 @@ module GMP {
     var mpz : mpz_t;
     var owned : bool; //all user-defined constructors set true 
     // TODO: should there be a default value?
+    var locale_id = chpl_nodeID;
 
     proc BigInt(){
       // writeln("BigInt no-arg constructor called");
