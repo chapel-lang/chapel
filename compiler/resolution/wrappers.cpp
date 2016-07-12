@@ -306,6 +306,7 @@ buildDefaultWrapper(FnSymbol* fn,
         temp->addFlag(FLAG_MAYBE_PARAM);
         temp->addFlag(FLAG_EXPR_TEMP);
       }
+      temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       if (formal->hasFlag(FLAG_TYPE_VARIABLE))
         temp->addFlag(FLAG_TYPE_VARIABLE);
       copy_map.put(formal, temp);
@@ -340,19 +341,24 @@ buildDefaultWrapper(FnSymbol* fn,
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapper->body->body.tail->remove()));
         } else {
           // This calls the copy-constructor, to copy the return value into the calling context.
+          // (for intent inout)
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("chpl__initCopy", wrapper->body->body.tail->remove())));
           INT_ASSERT(!temp->hasFlag(FLAG_EXPR_TEMP));
           temp->removeFlag(FLAG_MAYBE_PARAM);
         }
       }
       call->insertAtTail(temp);
-      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
+
+      // MPF - this doesn't make sense to me, since we're calling
+      // a constructor that will set the field.
+      /*if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE))
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
               wrapper->insertAtTail(
                 new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
                              new_CStringSymbol(formal->name), temp));
+       */
     }
   }
   update_symbols(wrapper->body, &copy_map);

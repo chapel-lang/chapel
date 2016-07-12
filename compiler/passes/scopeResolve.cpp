@@ -938,17 +938,9 @@ static void build_type_constructor(AggregateType* ct) {
             fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                           fn->_this,
                                           new_CStringSymbol(field->name),
-                                          new CallExpr("chpl__initCopy",
-                                                       new CallExpr(PRIM_TYPE_INIT, arg))));
-          #if 0
-          // Leaving this case in for Tom's work.  He will remove it if it is
-          // unnecessary
-          else
-            fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
-                                          fn->_this,
-                                          new_CStringSymbol(field->name),
                                           new CallExpr(PRIM_TYPE_INIT, arg)));
-          #endif
+//  was                                     new CallExpr("chpl__initCopy",
+//                                                       new CallExpr(PRIM_TYPE_INIT, arg))));
         } else if (exprType) {
           CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, exprType->copy());
           CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER, 
@@ -1162,11 +1154,10 @@ static void build_constructor(AggregateType* ct) {
 
     if (field->hasFlag(FLAG_PARAM))
       arg->intent = INTENT_PARAM;
-    //else if (field->hasFlag(FLAG_TYPE))
-    //  arg->intent = INTENT_TYPE;
-    //else
-    //  arg->intent = INTENT_IN;
-    // TODO -- here make it INTENT_IN
+    else if (field->isType() || field->hasFlag(FLAG_TYPE_VARIABLE))
+      arg->intent = INTENT_TYPE;
+    else
+      arg->intent = INTENT_IN;
 
     Expr* exprType = field->defPoint->exprType;
     Expr* init     = field->defPoint->init;
@@ -1240,6 +1231,12 @@ static void build_constructor(AggregateType* ct) {
 
     fn->insertFormalAtTail(arg);
 
+    fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
+                                  fn->_this,
+                                  new_CStringSymbol(arg->name),
+                                  arg));
+
+    /*
     if (arg->type == dtAny && !arg->hasFlag(FLAG_TYPE_VARIABLE) &&
         !arg->hasFlag(FLAG_PARAM) && !ct->symbol->hasFlag(FLAG_REF))
       fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, 
@@ -1257,6 +1254,7 @@ static void build_constructor(AggregateType* ct) {
                                     fn->_this, 
                                     new_CStringSymbol(arg->name),
                                     arg));
+      */
   }
 
   if (meme)
