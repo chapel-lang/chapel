@@ -29,7 +29,7 @@
 // Utility routine for computing colors for display,
 // Needed by other classes that draw colors.
 
-Fl_Color heatColor ( double val, double max );
+Fl_Color heatColor(double val, double max);
 
 class InfoBar : public Fl_Box {
 

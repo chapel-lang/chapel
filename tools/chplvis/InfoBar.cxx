@@ -37,7 +37,7 @@ static const int Y_OFF = 0;
 
 // Computation of color for use in displays
 
-Fl_Color heatColor ( double val, double max ) {
+Fl_Color heatColor(double val, double max) {
   SettingsData *s = &VisSettings;
   if (val == 0) return FL_WHITE;
   if (max == 1) return fl_rgb_color(s->maxR, s->maxG, s->maxB);
