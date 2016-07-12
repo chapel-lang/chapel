@@ -267,7 +267,7 @@ module ChapelLocale {
     proc getChildCount() : int {
       _throwPVFCError();
       return 0;
-    }      
+    }
   
 // Part of the required locale interface.
 // Commented out because presently iterators are statically bound.
@@ -297,6 +297,33 @@ module ChapelLocale {
 
     //------------------------------------------------------------------------}
   }
+
+  /* This class is used during initialization and is returned when
+     'here' is used before the locale heirarchy is initialized.
+   */
+  pragma "no doc"
+  class DummyLocale : locale {
+    proc chpl_id() : int {
+      return -1;
+    }
+    proc chpl_localeid() : chpl_localeID_t {
+      return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_none);
+    }
+    proc chpl_name() : string {
+      return "dummy-locale";
+    }
+    proc getChildCount() : int {
+      return 0;
+    }
+    proc getChild(idx:int) : locale {
+      return this;
+    }
+    proc addChild(loc:locale)
+    {
+      halt("addChild on DummyLocale");
+    }
+  }
+
 
   pragma "no doc"
   class AbstractLocaleModel : locale {
@@ -510,7 +537,7 @@ module ChapelLocale {
   // representative.
   // The dummy locale provides system-default tasking and memory management.
   pragma "no doc"
-  const dummyLocale = new locale();
+  const dummyLocale = new DummyLocale();
 
   pragma "no doc"
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;
