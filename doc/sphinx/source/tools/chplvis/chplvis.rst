@@ -520,6 +520,25 @@ If this is set to `false` at compile time
 then :param:`~VisualDebug.VisualDebugOn` must be set to `true`
 on the execution command line to generate :mod:`VisualDebug` data.
 
+Settings
+--------
+
+``chplvis`` has two settings that are set by a settings window and are
+saved in a file named ``~/.cache/chplvis`.   First, the user can
+select custom colors for the 'heat' displays.  The standard colors are
+used in this document.  Next, ``chplvis`` can save the window size
+of the main display for use on the next execution.   Both of these
+settings are set in the settings window.  The settings window is
+opened via the ``file/settings`` menu option.  The settings window
+looks like:
+
+.. image:: S1.png
+
+The ``Use for this run only`` button allows the user to choose custom
+heat colors for the current run only and on the next run, the default
+or saved colors will be used.   The ``window size`` setting is 
+ignored when this button is clicked.
+
 Final Comments
 --------------
 
