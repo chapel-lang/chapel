@@ -273,13 +273,14 @@ buildDefaultWrapper(FnSymbol* fn,
       // into the wrapper formal as well.
       if (Symbol* value = paramMap->get(formal))
         paramMap->put(wrapper_formal, value);
-      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
+      if (0 && specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && !paramMap->get(formal) && formal->type != dtMethodToken)
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
             {
               Symbol* copyTemp = newTemp("wrap_arg");
               wrapper->insertAtTail(new DefExpr(copyTemp));
+              // This is from 3788ee34fa9f42bdce19e9e3cf46ccfbb1c60ac2
               wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
               wrapper->insertAtTail(
                 new CallExpr(PRIM_SET_MEMBER, wrapper->_this,

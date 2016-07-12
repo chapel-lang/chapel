@@ -1162,6 +1162,11 @@ static void build_constructor(AggregateType* ct) {
 
     if (field->hasFlag(FLAG_PARAM))
       arg->intent = INTENT_PARAM;
+    //else if (field->hasFlag(FLAG_TYPE))
+    //  arg->intent = INTENT_TYPE;
+    //else
+    //  arg->intent = INTENT_IN;
+    // TODO -- here make it INTENT_IN
 
     Expr* exprType = field->defPoint->exprType;
     Expr* init     = field->defPoint->init;
