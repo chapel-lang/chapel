@@ -661,6 +661,7 @@ CC_MM
 AROUT
 ARFLAGS
 MKLIB
+TEST_LD_MODE
 LDTARGET
 CTARGET
 PIC_CFLAGS
@@ -3470,6 +3471,17 @@ fi
 $as_echo "$je_cv_msvc" >&6; }
 fi
 
+je_cv_cray_prgenv_wrapper=""
+if test "x${PE_ENV}" != "x" ; then
+  case "${CC}" in
+    CC|cc)
+	je_cv_cray_prgenv_wrapper="yes"
+	;;
+    *)
+       ;;
+  esac
+fi
+
 if test "x$CFLAGS" = "x" ; then
   no_CFLAGS="yes"
   if test "x$GCC" = "xyes" ; then
@@ -4960,10 +4972,15 @@ SOREV="${so}.${rev}"
 PIC_CFLAGS='-fPIC -DPIC'
 CTARGET='-o $@'
 LDTARGET='-o $@'
+TEST_LD_MODE=
 EXTRA_LDFLAGS=
 ARFLAGS='crus'
 AROUT=' $@'
 CC_MM=1
+
+if test "x$je_cv_cray_prgenv_wrapper" = "xyes" ; then
+  TEST_LD_MODE='-dynamic'
+fi
 
 
 
@@ -5248,6 +5265,7 @@ done
 cat >>confdefs.h <<_ACEOF
 #define JEMALLOC_USABLE_SIZE_CONST $JEMALLOC_USABLE_SIZE_CONST
 _ACEOF
+
 
 
 
@@ -7442,6 +7460,108 @@ if test "$ac_res" != no; then :
 
 fi
 
+
+if test "x$je_cv_cray_prgenv_wrapper" = "xyes" ; then
+  if test "$ac_cv_search_clock_gettime" != "-lrt"; then
+    SAVED_CFLAGS="${CFLAGS}"
+
+    unset ac_cv_search_clock_gettime
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether compiler supports -dynamic" >&5
+$as_echo_n "checking whether compiler supports -dynamic... " >&6; }
+TCFLAGS="${CFLAGS}"
+if test "x${CFLAGS}" = "x" ; then
+  CFLAGS="-dynamic"
+else
+  CFLAGS="${CFLAGS} -dynamic"
+fi
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+
+    return 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  je_cv_cflags_appended=-dynamic
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  je_cv_cflags_appended=
+              { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+              CFLAGS="${TCFLAGS}"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing clock_gettime" >&5
+$as_echo_n "checking for library containing clock_gettime... " >&6; }
+if ${ac_cv_search_clock_gettime+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char clock_gettime ();
+int
+main ()
+{
+return clock_gettime ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' rt; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_clock_gettime=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_clock_gettime+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_clock_gettime+:} false; then :
+
+else
+  ac_cv_search_clock_gettime=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_clock_gettime" >&5
+$as_echo "$ac_cv_search_clock_gettime" >&6; }
+ac_res=$ac_cv_search_clock_gettime
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+
+    CFLAGS="${SAVED_CFLAGS}"
+  fi
+fi
 
 ac_fn_c_check_func "$LINENO" "secure_getenv" "ac_cv_func_secure_getenv"
 if test "x$ac_cv_func_secure_getenv" = xyes; then :
