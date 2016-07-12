@@ -1154,10 +1154,6 @@ static void build_constructor(AggregateType* ct) {
 
     if (field->hasFlag(FLAG_PARAM))
       arg->intent = INTENT_PARAM;
-    else if (field->isType() || field->hasFlag(FLAG_TYPE_VARIABLE))
-      arg->intent = INTENT_TYPE;
-    else
-      arg->intent = INTENT_IN;
 
     Expr* exprType = field->defPoint->exprType;
     Expr* init     = field->defPoint->init;
@@ -1231,6 +1227,16 @@ static void build_constructor(AggregateType* ct) {
 
     fn->insertFormalAtTail(arg);
 
+    // Note: buildDefaultWrapper will add any initCopy call that is
+    // that is necessary. It happens in buildDefaultWrapper so that in
+    //   record { var D:domain(1); var A:[D]; }
+    // the relationship between D and A is preserved.
+    // One should think of buildDefaultWrapper as completing the
+    // process of creating a default constructor as it handles
+    // several of these cases. In the future, we might consider
+    // moving all of the logic for generating the default
+    // constructor into resolution and making it depend on
+    // what arguments are supplied.
     fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                   fn->_this,
                                   new_CStringSymbol(arg->name),

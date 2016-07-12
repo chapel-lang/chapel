@@ -273,7 +273,7 @@ buildDefaultWrapper(FnSymbol* fn,
       // into the wrapper formal as well.
       if (Symbol* value = paramMap->get(formal))
         paramMap->put(wrapper_formal, value);
-      if (0 && specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
+      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
         if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && !paramMap->get(formal) && formal->type != dtMethodToken)
           if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
             if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
@@ -306,7 +306,7 @@ buildDefaultWrapper(FnSymbol* fn,
         temp->addFlag(FLAG_MAYBE_PARAM);
         temp->addFlag(FLAG_EXPR_TEMP);
       }
-      temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      //temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       if (formal->hasFlag(FLAG_TYPE_VARIABLE))
         temp->addFlag(FLAG_TYPE_VARIABLE);
       copy_map.put(formal, temp);
