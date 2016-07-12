@@ -6981,7 +6981,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $je_cv_gcc_builtin_unreachable" >&5
 $as_echo "$je_cv_gcc_builtin_unreachable" >&6; }
 
-if test "x${je_cv_gcc_builtin_ffsl}" = "xyes" ; then
+if test "x${je_cv_gcc_builtin_unreachable}" = "xyes" ; then
   $as_echo "#define JEMALLOC_INTERNAL_UNREACHABLE __builtin_unreachable" >>confdefs.h
 
 else
