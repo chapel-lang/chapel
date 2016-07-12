@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -71,12 +71,10 @@ Step 3:
 Using the BigInt record
 -----------------------
 
-The GMP Chapel module provides a :record:`BigInt` record wrapping GMP 
-integers. At the present time, only the functions for ``mpz`` (ie signed 
+The GMP Chapel module provides a :record:`BigInt` record wrapping GMP
+integers. At the present time, only the functions for ``mpz`` (ie signed
 integer) GMP types are supported with :record:`BigInt`; future work will be to
-extend this support to floating-point types. Also, in the future,
-we hope to provide these GMP functions as records that support
-operators like ``+``, ``*``, ``-``, etc.
+extend this support to floating-point types. 
 
 :record:`BigInt` methods all wrap GMP functions with obviously similar names.
 The :record:`BigInt` methods are locale aware - so Chapel programs can create
@@ -95,7 +93,7 @@ A code example::
 
  // memory used by the GMP value is freed automatically by record destruction
 
- var b = new BigInt("48473822929893829847"); // initialize from a decimal 
+ var b = new BigInt("48473822929893829847"); // initialize from a decimal
  string
  b.add_ui(b, 1); // add one to b
 
@@ -175,16 +173,16 @@ module GMP {
      seem surprising. They are that way because identity
      matters and they may get reallocated otherwise;
      ref is currently the only way to avoid that.
-   
+
      Note that GMP defines e.g. gmp_randstate_t with
      typedef struct __gmp_randstate_struct gmp_randstate_t[1],
-    
+
      and the natural way to wrap that in Chapel is with a 1-element
      tuple. These tuples would be passed by value to the extern
      routines if not for ref.
    */
 
-  // Initializing random state 
+  // Initializing random state
   /* */
   extern proc gmp_randinit_default(ref STATE: gmp_randstate_t);
   extern proc gmp_randinit_mt(ref STATE: gmp_randstate_t);
@@ -222,7 +220,6 @@ module GMP {
   extern proc mpz_get_d(ref OP: mpz_t): c_double;
   extern proc mpz_get_d_2exp(ref exp:c_long, ref OP: mpz_t): c_double;
   extern proc mpz_get_str(STR:c_string, BASE:c_int, ref OP: mpz_t): c_string;
-
 
   // Arithmetic functions
   extern proc mpz_add(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
@@ -267,7 +264,6 @@ module GMP {
   extern proc mpz_cdiv_r_ui(ref R: mpz_t, ref N: mpz_t, D: c_ulong):c_ulong;
   extern proc mpz_fdiv_r_ui(ref R: mpz_t, ref N: mpz_t, D: c_ulong):c_ulong;
   extern proc mpz_tdiv_r_ui(ref R: mpz_t, ref N: mpz_t, D: c_ulong):c_ulong;
-
 
   extern proc mpz_cdiv_qr_ui(ref Q: mpz_t, ref R: mpz_t, ref N: mpz_t, D: c_ulong):c_ulong;
   extern proc mpz_fdiv_qr_ui(ref Q: mpz_t, ref R: mpz_t, ref N: mpz_t, D: c_ulong):c_ulong;
@@ -380,7 +376,6 @@ module GMP {
 
   // Integer import and export
 
-
   // Miscellaneous Functions
   extern proc mpz_fits_ulong_p(ref OP: mpz_t): c_int;
   extern proc mpz_fits_slong_p(ref OP: mpz_t): c_int;
@@ -394,6 +389,7 @@ module GMP {
   extern proc mpz_sizeinbase(ref OP: mpz_t, BASE: c_int): size_t;
   extern proc mpz_size(ref X: mpz_t): size_t;
   extern proc mpf_set_default_prec(PREC: mp_bitcnt_t);
+  extern proc mpz_getlimbn(ref OP: mpz_t, n:mp_size_t): mp_limb_t; 
 
   // floating-point functions
   extern proc mpf_init(ref X: mpf_t);
@@ -412,14 +408,11 @@ module GMP {
   extern proc mpf_out_str(STREAM: _file, BASE: c_int, N_DIGITS: size_t, ref OP: mpf_t);
   extern proc mpf_clear(ref X: mpf_t);
 
-
   // printf/scanf
   extern proc gmp_printf(fmt: c_string, arg...);
   extern proc gmp_fprintf(fp: _file, fmt: c_string, arg...);
   extern proc gmp_fprintf(fp: _file, fmt: c_string, arg...);
   extern proc gmp_asprintf(ref ret: c_string, fmt: c_string, arg...);
-
-
 
   // Initialize GMP to use Chapel's allocator
   private extern proc chpl_gmp_init();
@@ -440,14 +433,6 @@ module GMP {
     DOWN = -1,
     ZERO = 0
   }
-
-
-
-
-
-
-
-
 
     /*
     The BigInt record provides a more Chapel-friendly interface to the
@@ -472,13 +457,13 @@ module GMP {
   pragma "ignore noinit" // TODO: Is this pragma still needed?
   record BigInt {
     var mpz : mpz_t;
-    var owned : bool; //all user-defined constructors set true 
+    var owned : bool; //all user-defined constructors set true
     // TODO: should there be a default value?
     var locale_id = chpl_nodeID;
 
     proc BigInt(){
       // writeln("BigInt no-arg constructor called");
-      mpz_init(this.mpz); 
+      mpz_init(this.mpz);
       owned = true;
     }
     proc BigInt(init2: bool, nbits: uint){
@@ -515,10 +500,10 @@ module GMP {
     proc BigInt(ref num: BigInt, owned: bool = true) { //must be passed by ref
       // writeln("BigInt num: BigInt constructor called");
       if num.locale == here {
-        mpz_init_set(this.mpz, num.mpz); 
+        mpz_init_set(this.mpz, num.mpz);
       } else {
         mpz_init(this.mpz);
-        var mpz_struct = num.mpzStruct(); 
+        var mpz_struct = num.mpzStruct();
         chpl_gmp_get_mpz(this.mpz, num.locale.id, mpz_struct);
       }
       this.owned = owned;
@@ -528,7 +513,7 @@ module GMP {
     proc ~BigInt(){
         if this.owned then {
           // writeln("In BigInt destructor and owned");
-          on this do mpz_clear(this.mpz); 
+          on this do mpz_clear(this.mpz);
           this.owned = false;
         }
         else {
@@ -539,15 +524,14 @@ module GMP {
     // TODO: should we reset the value or free and remake the BigInts?
     // current implementation is free and remake
     // Note: by the time reinit is called, locality has been taken care of
-    proc ref reinitBigInt(ref num : mpz, needToCopy : bool = true) {
-      
-      // if the record exists, and is owned, a constructor of some 
+    proc ref reinitBigInt(num : mpz, needToCopy : bool = true) {
+      // if the record exists, and is owned, a constructor of some
       // sort was called, and mpz is initialized
-      
+
       // if we own our old num re-use it
       // if we don't, init a new one
       if !(this.owned) {
-        on this do mpz_init(this.mpz); 
+        on this do mpz_init(this.mpz);
         this.owned = true;
       }
 
@@ -585,7 +569,7 @@ module GMP {
       } else {
         var mpz_struct = this.mpz[1];
         var tmp = new BigInt(true, (mp_bits_per_limb:uint(64))*chpl_gmp_mpz_nlimbs(mpz_struct));
-        chpl_gmp_get_mpz(tmp.mpz, this.locale.id, mpz_struct); 
+        chpl_gmp_get_mpz(tmp.mpz, this.locale.id, mpz_struct);
         
         //var tmp = this; //assignment should localize and deep copy
         return (true, tmp);
@@ -601,7 +585,7 @@ module GMP {
       } else {
         var mpz_struct = this.mpz[1];
         var tmp = new BigInt(true, (mp_bits_per_limb:uint(64))*chpl_gmp_mpz_nlimbs(mpz_struct));
-        chpl_gmp_get_mpz(tmp.mpz, this.locale.id, mpz_struct); 
+        chpl_gmp_get_mpz(tmp.mpz, this.locale.id, mpz_struct);
 
         // TODO: should be able to replace this with assignment?
           // since assignment localizes?
@@ -618,15 +602,13 @@ module GMP {
     proc copyRemoteBigInt(): BigInt{
       var mpz_struct = this.mpz[1];
         var tmp = new BigInt(true, (mp_bits_per_limb:uint(64))*chpl_gmp_mpz_nlimbs(mpz_struct));
-        chpl_gmp_get_mpz(tmp.mpz, this.locale.id, mpz_struct); 
+        chpl_gmp_get_mpz(tmp.mpz, this.locale.id, mpz_struct);
 
         // TODO: should be able to replace this with assignment?
           // since assignment localizes?
         // TODO: should tmp be const in this case? it is in String::localize
         return tmp;
     }
-
-
 
    // Assignment functions
     proc set(ref a: BigInt)
@@ -636,7 +618,7 @@ module GMP {
           mpz_set(this.mpz, a.mpz);
           // TODO: this.owned = ??? Does this make deep or shallow copies?
         } else {
-          var mpz_struct = a.mpzStruct(); 
+          var mpz_struct = a.mpzStruct();
           chpl_gmp_get_mpz(this.mpz, a.locale.id, mpz_struct);
           this.owned = true; //remote assignment makes a deep copy?
         }
@@ -708,7 +690,6 @@ module GMP {
       }
       return (exp.safeCast(int), dbl: real);
     }
-
     proc get_str(base: int=10):string
     {
       var ret:string;
@@ -1105,7 +1086,6 @@ module GMP {
         }
       }
     }
-    // TODO: same issue as div_ui, returns a ui instead of setting this
     proc mod_ui(ref n: BigInt, d: uint):uint
     {
       var ret:c_ulong;
@@ -1176,7 +1156,7 @@ module GMP {
     {
       var ret:c_int;
       on this {
-        if (here != c.locale || here != d.locale) {          
+        if (here != c.locale || here != d.locale) {
           var c_ = c;
           var d_ = d;
           ret=mpz_congruent_p(this.mpz, c_.mpz, d_.mpz);
@@ -1207,7 +1187,6 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-
 
     // Exponentiation Functions
     proc powm(ref base: BigInt, ref exp: BigInt, ref mod: BigInt)
@@ -1268,7 +1247,7 @@ module GMP {
       return ret.safeCast(int);
     }
     // this gets root, rem gets remainder.
-    proc rootrem(ref rem: BigInt, ref u: BigInt, n: uint) 
+    proc rootrem(ref rem: BigInt, ref u: BigInt, n: uint)
       //TODO: does this need to have the mpz in it's name (formerly was mpz_rootrem)
     {
       on this {
@@ -1501,7 +1480,6 @@ module GMP {
         }
       }
     }
- 
 
     // Comparison Functions
     proc cmp(ref b: BigInt):int
@@ -1765,8 +1743,7 @@ module GMP {
       return ret.safeCast(uint);
     }
 
-    // left out integer random functions
-    // these are in the GMPRandom class.
+    // Integer random functions are in the GMPRandom class.
 
     proc realloc2(nbits: uint)
     {
@@ -1798,13 +1775,13 @@ module GMP {
       }
     }
 
-  } // END OF BigInt record declaration
+  }
 
   // Assignment function -- deep copies `rhs` into `lhs`
   // needs to deep copy b'c of how we use it
-   proc =(ref lhs: BigInt, ref rhs: BigInt) {
+   proc =(ref lhs: BigInt, rhs: BigInt) {
     // writeln("In overloaded assignment operator");
-    inline proc helpMe(ref lhs: BigInt, ref rhs: BigInt) {
+    inline proc helpMe(ref lhs: BigInt, rhs: BigInt) {
       if _local || rhs.locale_id == chpl_nodeID {
         lhs.reinitBigInt(rhs.mpz, needToCopy=true);
       } else {
@@ -1829,9 +1806,6 @@ module GMP {
     lhs.set(rhs); //should just change the value?
   }
 
-
-
-
   // These are the autoCopy functions the compiler calls behind my back?
   // I don't expect this to work right now -- I've never seen it called
   pragma "donor fn"
@@ -1847,7 +1821,7 @@ module GMP {
       
       if bir.owned {
         if ret.owned then on ret.locale do mpz_clear(ret.mpz);
-        mpz_init_set(ret.mpz, bir.mpz); 
+        mpz_init_set(ret.mpz, bir.mpz);
         ret.owned = true;
       } else {
         ret.mpz = bir.mpz; //make a shallow copy
@@ -1860,7 +1834,7 @@ module GMP {
       ret.reinitBigInt(remoteMpz, needToCopy=false);
     }
     return ret;
-  } 
+  }
 
   pragma "init copy fn"
   pragma "no doc"
@@ -1872,9 +1846,9 @@ module GMP {
     //writeln("In the init copy fn for BigInt");
     if _local || bir.locale_id == chpl_nodeID {
       if bir.owned {
-        if ret.owned then on ret.locale do mpz_clear(ret.mpz); 
+        if ret.owned then on ret.locale do mpz_clear(ret.mpz);
           // TODO: confirm ret.locale is the correct locale for 'on'
-        mpz_init_set(ret.mpz, bir.mpz); 
+        mpz_init_set(ret.mpz, bir.mpz);
         ret.owned = true;
       } else {
         ret.mpz = bir.mpz; // make a shalow copy
@@ -1882,17 +1856,17 @@ module GMP {
       }
     } else {
       //TODO: use copyRemoteBigInt?
-      writeln("WATCH OUT! remote copying for initCopy on BigInts has not been implemented yet.");
+      // There used to be an error message here
       ret.set(bir);
     }
     return ret;
   }
 
   proc BigInt.writeThis(writer) {
-    //this works, but makes and 
+    //this works, but makes and
     // deletes 2 records each time it is called
     // TODO: confirm support of remote records for writing
-    // TODO: Ask why we can't just do "on this" and skip localization, since 
+    // TODO: Ask why we can't just do "on this" and skip localization, since
     // we are only working with 'this'
     var s:string;
     if (here != this.locale) {
@@ -1903,6 +1877,193 @@ module GMP {
       s = this.get_str();
     }
     writer.write(s);
+  }
+
+  // Operator Overloads
+  inline proc **(ref a: BigInt, b: uint) {
+    var c = new BigInt();
+    c.pow_ui(a, b);
+    return c;
+  }
+  // TODO: Bitwise negation not natively supported by GMP
+  inline proc *(ref a: BigInt, ref b: BigInt){
+    var c = new BigInt();
+    c.mul(a, b);
+    return c;
+  }
+  inline proc *(ref a: BigInt, b: int){
+    var c = new BigInt();
+    c.mul_si(a, b);
+    return c;
+  }
+  inline proc *(ref a: BigInt, b: uint){
+    var c = new BigInt();
+    c.mul_ui(a, b);
+    return c;
+  }
+  inline proc /(ref a: BigInt, ref b: BigInt){
+    var c = new BigInt();
+    c.div_q(Round.DOWN, a, b);
+    return c;
+  }
+  inline proc /(ref a: BigInt, b: uint){
+    var c = new BigInt();
+    c.div_q_ui(Round.DOWN, a, b);
+    return c;
+  }
+  inline proc /(ref a: BigInt, b: int){
+    var c = new BigInt();
+    c.div_q_ui(Round.DOWN, a, abs(b):uint);
+    if b < 0 then c.neg(c);
+    return c;
+  }
+   inline proc %(ref a: BigInt, ref b: BigInt){
+    var c = new BigInt();
+    c.mod(a, b);
+    return c;
+  }
+  inline proc %(ref a: BigInt, b: uint){
+    var c = new BigInt();
+    c.mod_ui(a, b);
+    return c;
+  }
+  inline proc %(ref a: BigInt, b: int){
+    var c = new BigInt();
+    c.mod_ui(a, abs(b):uint); // in C (a mod b) and (a mod -b) are the same
+    return c;
+  }
+  inline proc +(ref a: BigInt){
+    return new BigInt(a); //unary plus returns the value of its operand
+  }
+  inline proc -(ref a: BigInt){
+    var c = new BigInt();
+    c.neg(a);
+    return c;
+  }
+  // TODO: Shift left, shift right (<< >>) operators not in gmplib library
+  // TODO: & ^ | operators may eventually want to have uint rhs options
+  inline proc &(ref a: BigInt, ref b: BigInt){
+    var c = new BigInt();
+    c.and(a, b);
+    return c;
+  }
+    inline proc ^(ref a: BigInt, ref b: BigInt){
+    var c = new BigInt();
+    c.ior(a, b);
+    return c;
+  }
+  inline proc |(ref a: BigInt, ref b: BigInt){
+    var c = new BigInt();
+    c.xor(a, b);
+    return c;
+  }
+  inline proc +(ref a: BigInt, ref b: BigInt){
+    var c = new BigInt();
+    c.add(a, b);
+    return c;
+  }
+  inline proc +(ref a: BigInt, b: uint){
+    var c = new BigInt();
+    c.add_ui(a, b);
+    return c;
+  }
+  inline proc +(ref a: BigInt, b: int){
+    if b < 0  {
+      return a - abs(b):uint;
+    }
+    else {
+      return a + b:uint;
+    }
+  }
+  inline proc -(ref a: BigInt, ref b: BigInt){
+    var c = new BigInt();
+    c.sub(a, b);
+    return c;
+  }
+  inline proc -(ref a: BigInt, b: uint){
+    var c = new BigInt();
+    c.sub_ui(a, b);
+    return c;
+  }
+  inline proc -(ref a: BigInt, b: int){
+        if b < 0  {
+      return a + abs(b):uint;
+    }
+    else {
+      return a - b:uint;
+    }
+  }
+  inline proc >=(ref a: BigInt, ref b: BigInt){
+    var f = a.cmp(b);
+    return f >= 0;
+  }
+  inline proc >=(ref a: BigInt, b: int){
+    var f = a.cmp_si(b);
+    return f >= 0;
+  }
+    inline proc >=(ref a: BigInt, b: uint){
+    var f = a.cmp_ui(b);
+    return f >= 0;
+  }
+  inline proc <=(ref a: BigInt, ref b: BigInt){
+    var f = a.cmp(b);
+    return f <= 0;
+  }
+  inline proc <=(ref a: BigInt, b: int){
+    var f = a.cmp_si(b);
+    return f <= 0;
+  }
+  inline proc <=(ref a: BigInt, b: uint){
+    var f = a.cmp_ui(b);
+    return f <= 0;
+  }
+  inline proc >(ref a: BigInt, ref b: BigInt){
+    var f = a.cmp(b);
+    return f > 0;
+  }
+  inline proc >(ref a: BigInt, b: int){
+    var f = a.cmp_si(b);
+    return f > 0;
+  }
+  inline proc >(ref a: BigInt, b: uint){
+    var f = a.cmp_ui(b);
+    return f > 0;
+  }
+  inline proc <(ref a: BigInt, ref b: BigInt){
+    var f = a.cmp(b);
+    return f < 0;
+  }
+  inline proc <(ref a: BigInt, b: int){
+    var f = a.cmp_si(b);
+    return f < 0;
+  }
+  inline proc <(ref a: BigInt, b: uint){
+    var f = a.cmp_ui(b);
+    return f < 0;
+  }
+  inline proc ==(ref a: BigInt, ref b: BigInt){
+    var f = a.cmp(b);
+    return f == 0;
+  }
+  inline proc ==(ref a: BigInt, b: int){
+    var f = a.cmp_si(b);
+    return f == 0;
+  }
+  inline proc ==(ref a: BigInt, b: uint){
+    var f = a.cmp_ui(b);
+    return f == 0;
+  }
+  inline proc !=(ref a: BigInt, ref b: BigInt){
+    var f = a.cmp(b);
+    return f != 0;
+  }
+  inline proc !=(ref a: BigInt, b: int){
+    var f = a.cmp_si(b);
+    return f != 0;
+  }
+  inline proc !=(ref a: BigInt, b: uint){
+    var f = a.cmp_ui(b);
+    return f != 0;
   }
 
   proc jacobi(ref a: BigInt, ref b: BigInt):int
@@ -2083,13 +2244,7 @@ module GMP {
         }
       }
     }
-
-
   }
-
-  /* FUTURE -- GMP numbers with record semantics,
-      expression and operator overloads.
-      */
 
   // calls mp_set_memory_functions to use chpl_malloc, etc.
   chpl_gmp_init();

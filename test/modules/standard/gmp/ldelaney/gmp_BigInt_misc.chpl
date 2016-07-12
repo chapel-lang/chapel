@@ -38,9 +38,10 @@ writeln(a, ".size is " , a.size());
 
 a.realloc2(65); // fits, so a is preserved
 writeln(a);
+writeln(a.get_limbn(1));
+writeln(a.get_limbn(0));
 a.realloc2(32); // does not fit, so a is set to 0
 writeln(a);
-// TODO: add the extern for this to the GMP module // writeln(a.get_limbn(1));
 // a.debugprint(); // TODO: write something to check if this worked, without 
   // printing non-deterministic output
 
