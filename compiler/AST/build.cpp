@@ -1991,7 +1991,7 @@ buildClassDefExpr(const char* name,
   // Hook the string type in the modules
   // to avoid duplication with dtString created in initPrimitiveTypes().
   // gatherWellKnownTypes runs too late to help.
-  if (strcmp("string", name) == 0) {
+  if (strcmp("string_ascii", name) == 0) {
     *dtString = *ct;
     // These fields get overwritten with `ct` by the assignment. These fields are
     // set to `this` by the AggregateType constructor so they should still be

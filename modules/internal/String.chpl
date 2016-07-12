@@ -99,27 +99,31 @@ module String {
 
   private config param debugStrings = false;
 
-  //
-  // String Implementation
-  //
+  enum Encoding {
+    ascii,
+  }
+
   // TODO: We should be able to remove "ignore noinit", but doing so causes
   // memory leaks in various places. Investigate why later and add noinit back
   // in when possible.
   pragma "ignore noinit"
-  pragma "no default functions" // avoid the default (read|write)This routines
+  pragma "no default functions"  // avoid the default (read|write)This routines
   record string {
+    param encoding: Encoding = Encoding.ascii;
+    var guts = new string_ascii;
+    
     pragma "no doc"
-    var len: int = 0; // length of string in bytes
+    var len: int = guts.len; // length of string in bytes
     pragma "no doc"
-    var _size: int = 0; // size of the buffer we own
+    var _size: int = guts._size; // size of the buffer we own
     pragma "no doc"
-    var buff: bufferType = nil;
+    var buff: bufferType = guts.buff;
     pragma "no doc"
-    var owned: bool = true;
+    var owned: bool = guts.owned;
     pragma "no doc"
     // We use chpl_nodeID as a shortcut to get at here.id without actually constructing
     // a locale object. Used when determining if we should make a remote transfer.
-    var locale_id = chpl_nodeID; // : chpl_nodeID_t
+    var locale_id = guts.locale_id; // : chpl_nodeID_t
 
     /*
       Construct a new string from ``s``. If ``owned`` is set to ``true`` then
@@ -129,6 +133,519 @@ module String {
       ensure that the underlying buffer is not freed while being used as part
       of a shallow copy.
      */
+    proc string(s: string, owned: bool = true) {
+      guts.string(s, owned);
+    }
+
+    /*
+      Construct a new string from the `c_string` `cs`. If `owned` is set to
+      true, the backing buffer will be freed when the new record is destroyed.
+      If `needToCopy` is set to true, the `c_string` will be copied into the
+      record, otherwise it will be used directly. It is the responsibility of
+      the user to ensure that the underlying buffer is not freed if the
+      `c_string` is not copied in.
+     */
+    proc string(cs: c_string, owned: bool = true, needToCopy:  bool = true) {
+      guts.string(c_string, owned, needToCopy);
+    }
+
+    /*
+      Construct a new string from `buff` ( `c_ptr(uint(8))` ). `size` indicates
+      the total size of the buffer available, while `len` indicates the current
+      length of the string in the buffer (the common case would be `size-1` for
+      a C-style string). If `owned` is set to true, the backing buffer will be
+      freed when the new record is destroyed. If `needToCopy` is set to true,
+      the `c_string` will be copied into the record, otherwise it will be used
+      directly. It is the responsibility of the user to ensure that the
+      underlying buffer is not freed if the `c_string` is not copied in.
+     */
+    // This constructor can cause a leak if owned = false and needToCopy = true
+    proc string(buff: bufferType, length: int, size: int,
+                owned: bool = true, needToCopy: bool = true) {
+      guts.string(bufferType, length, size, owned, needToCopy);
+    }
+
+    // This is assumed to be called from this.locale
+    pragma "no doc"
+    proc ref reinitString(buf: bufferType, s_len: int, size: int,
+                          needToCopy:bool = true) {
+      guts.reinitString(bufferType, s_len, size, needToCopy);
+    }
+
+    /*
+      :returns: The number of characters in the string.
+    */
+    inline proc length return len;
+
+    /*
+       Gets a version of the :record:`string` that is on the currently
+       executing locale.
+
+       :returns: A shallow copy if the :record:`string` is already on the
+                 current locale, otherwise a deep copy is performed.
+    */
+    inline proc localize() : string {
+      return guts.localize();
+    }
+
+    /*
+      Get a `c_string` from a :record:`string`.
+
+      .. warning::
+
+          This can only be called safely on a :record:`string` whose home is
+          the current locale.  This property can be enforced by calling
+          :proc:`string.localize()` before :proc:`~string.c_str()`. If the
+          string is remote, the program will halt.
+
+      For example:
+
+      .. code-block:: chapel
+
+          var my_string = "Hello!";
+          on different_locale {
+            printf("%s", my_string.localize().c_str());
+          }
+
+      :returns:
+          A `c_string` that points to the underlying buffer used by this
+          :record:`string`. The returned `c_string` is only valid when used
+          on the same locale as the string.
+     */
+    inline proc c_str(): c_string {
+      return guts.c_str();
+    }
+
+    pragma "no doc"
+    inline proc param c_str() param : c_string {
+      return guts.c_str();
+    }
+
+    /*
+      Iterates over the string character by character.
+
+      For example:
+
+      .. code-block:: chapel
+
+        var str = "abcd";
+        for c in str {
+          writeln(c);
+        }
+
+      Output::
+
+        a
+        b
+        c
+        d
+     */
+    iter these() : string {
+      for c in guts.these() do
+        yield c;
+    }
+
+    /*
+      Index into a string
+
+      :returns: A string with the character at the specified index from
+                `1..string.length`
+     */
+    proc this(i: int) : string {
+      return guts.this();
+    }
+
+    // Checks to see if r is inside the bounds of this and returns a finite
+    // range that can be used to iterate over a section of the string
+    // TODO: move into the public interface in some form? better name if so?
+    pragma "no doc"
+    proc _getView(r:range(?)) {
+      return guts._getView(r);
+    }
+
+    /*
+      Slice a string. Halts if r is not completely inside the range
+      `1..string.length`.
+
+      :arg r: range of the indices the new string should be made from
+
+      :returns: a new string that is a substring within `1..string.length`. If
+                the length of `r` is zero, an empty string is returned.
+     */
+    // TODO: I wasn't very good about caching variables locally in this one.
+    proc this(r: range(?)) : string {
+      return guts.this(r);
+    }
+
+    pragma "no doc"
+    inline proc substring(i: int) {
+      compilerError("substring removed: use string[index]");
+    }
+
+    pragma "no doc"
+    inline proc substring(r: range) {
+      compilerError("substring removed: use string[range]");
+    }
+
+    /*
+      :returns: * `true`  -- when the string is empty
+                * `false` -- otherwise
+     */
+    inline proc isEmptyString() : bool {
+      return this.len == 0; // this should be enough of a check
+    }
+
+    // These should never be called (but are default functions for records)
+    pragma "no doc"
+    proc writeThis(f) {
+      compilerError("not implemented: writeThis");
+    }
+    pragma "no doc"
+    proc readThis(f) {
+      compilerError("not implemented: readThis");
+    }
+
+    // TODO: could use a multi-pattern search or some variant when there are
+    // multiple needles. Probably wouldn't be worth the overhead for small
+    // needles though
+    pragma "no doc"
+    inline proc _startsEndsWith(needles: string ..., param fromLeft: bool) : bool {
+      return guts._startsEndsWith(needles, fromLeft);
+    }
+
+    /*
+      :arg needles: A varargs list of strings to match against.
+
+      :returns: * `true`  -- when the string begins with one or more of the `needles`
+                * `false` -- otherwise
+     */
+    proc startsWith(needles: string ...) : bool {
+      return _startsEndsWith((...needles), fromLeft=true);
+    }
+
+    /*
+      :arg needles: A varargs list of strings to match against.
+
+      :returns: * `true`  -- when the string ends with one or more of the `needles`
+                * `false` -- otherwise
+     */
+    proc endsWith(needles: string ...) : bool {
+      return _startsEndsWith((...needles), fromLeft=false);
+    }
+
+
+    // Helper function that uses a param bool to toggle between count and find
+    //TODO: this could be a much better string search
+    //      (Boyer-Moore-Horspool|any thing other than brute force)
+    //
+    pragma "no doc"
+    inline proc _search_helper(needle: string, region: range(?),
+                               param count: bool, param fromLeft: bool = true) {
+      return guts._search_helper(needle, region, count, fromLeft);
+    }
+
+    /*
+      :arg needle: the string to search for
+      :arg region: an optional range defining the substring to search within,
+                   default is the whole string. Halts if the range is not
+                   within `1..string.length`
+
+      :returns: the index of the first occurrence of `needle` within a
+                string, or 0 if the `needle` is not in the string.
+     */
+    // TODO: better name than region?
+    proc find(needle: string, region: range(?) = 1..) : int {
+      return _search_helper(needle, region, count=false);
+    }
+
+    /*
+      :arg needle: the string to search for
+      :arg region: an optional range defining the substring to search within,
+                   default is the whole string. Halts if the range is not
+                   within `1..string.length`
+
+      :returns: the index of the first occurrence from the right of `needle`
+                within a string, or 0 if the `needle` is not in the string.
+     */
+    proc rfind(needle: string, region: range(?) = 1..) : int {
+      return _search_helper(needle, region, count=false, fromLeft=false);
+    }
+
+    /*
+      :arg needle: the string to search for
+      :arg region: an optional range defining the substring to search within,
+                   default is the whole string. Halts if the range is not
+                   within `1..string.length`
+
+      :returns: the number of times `needle` occurs in the string
+     */
+    proc count(needle: string, region: range(?) = 1..) : int {
+      return _search_helper(needle, region, count=true);
+    }
+
+    /*
+      :arg needle: the string to search for
+      :arg replacement: the string to replace `needle` with
+      :arg count: an optional integer specifying the number of replacements to
+                  make, values less than zero will replace all occurrences
+
+      :returns: a copy of the string where `needle` replaces `replacement` up
+                to `count` times
+     */
+    // TODO: not ideal - count and single allocation probably faster
+    //                 - can special case on replacement|needle.length (0, 1)
+    proc replace(needle: string, replacement: string, count: int = -1) : string {
+      return guts.replace(needle, replacement, count);
+    }
+
+    /*
+      Splits the string on `sep` yielding the substring between each
+      occurrence, up to `maxsplit` times.
+
+      :arg sep: The delimiter used to break the string into chunks.
+      :arg maxsplit: The number of times to split the string, negative values
+                     indicate no limit.
+      :arg ignoreEmpty: * When `true`  -- Empty strings will not be yielded,
+                                          and will not count towards `maxsplit`
+                        * When `false` -- Empty strings will be yielded when
+                                          `sep` occurs multiple times in a row.
+     */
+    // TODO: specifying return type leads to un-inited string?
+    iter split(sep: string, maxsplit: int = -1, ignoreEmpty: bool = false) /* : string */ {
+      for s in guts.split(sep, maxsplit, ignoreEmpty) do
+        yield s;
+    }
+
+    /*
+      Works as above, but uses runs of whitespace as the delimiter.
+
+      :arg maxsplit: The number of times to split the string, negative values
+                     indicate no limit.
+     */
+    // note: to improve performance, this code collapses several cases into a
+    //       single yield statement, which makes it confusing to read
+    // TODO: specifying return type leads to un-inited string?
+    iter split(maxsplit: int = -1) /* : string */ {
+      for s in guts.split(maxsplit) do
+        yield s;
+    }
+
+    /*
+      Returns a new string, which is the concatenation of all of the strings
+      passed in with the receiving string inserted between them.
+
+      .. code-block:: chapel
+
+          var x = "|".join("a","10","d");
+          writeln(x); // prints: "a|10|d"
+     */
+
+    proc join(const ref S: string ...) : string {
+      return _join(S);
+    }
+
+    /*
+      Same as the varargs version, but with a homogeneous tuple of strings.
+
+      .. code-block:: chapel
+
+          var x = "|".join("a","10","d");
+          writeln(x); // prints: "a|10|d"
+     */
+    proc join(const ref S) : string where isTuple(S) {
+      if !isHomogeneousTuple(S) || !isString(S[1]) then
+        compilerError("join() on tuples only handles homogeneous tuples of strings");
+      return _join(S);
+    }
+
+    /*
+      Same as the varargs version, but with all the strings in an array.
+
+      .. code-block:: chapel
+
+          var x = "|".join(["a","10","d"]);
+          writeln(x); // prints: "a|10|d"
+     */
+    proc join(const ref S: [] string) : string {
+      return _join(S);
+    }
+
+    proc _join(const ref S) : string where isTuple(S) || isArray(S) {
+      return guts._join(S);
+    }
+
+    /*
+      :arg chars: A string containing each character to remove.
+                  Defaults to `" \t\r\n"`.
+      :arg leading: Indicates if leading occurrences should be removed.
+                    Defaults to `true`.
+      :arg trailing: Indicates if trailing occurrences should be removed.
+                     Defaults to `true`.
+
+      :returns: A new string with all occurrences of characters in `chars`
+                removed, including `leading` and `trailing` occurrences as
+                appropriate.
+    */
+    proc strip(chars: string = " \t\r\n", leading=true, trailing=true) : string {
+      return strip(chars, leading, trailing);
+    }
+
+    /*
+      Splits the string on `sep` into a `3*string` consisting of the section
+      before `sep`, `sep`, and the section after `sep`. If `sep` is not found,
+      the tuple will contain the whole string, and then two empty strings.
+    */
+    // TODO: I could make this and other routines that use find faster by
+    // making a version of search helper that only takes in local strings and
+    // localizing in the calling function
+    proc partition(sep: string) : 3*string {
+      return guts.partition(sep);
+    }
+
+    /*
+     Checks if all the characters in the string are either uppercase (A-Z) or
+     uncased (not a letter).
+
+      :returns: * `true`  -- if the string contains at least one uppercase
+                             character and no lowercase characters, ignoring
+                             uncased characters.
+                * `false` -- otherwise
+     */
+    proc isUpper() : bool {
+      return guts.isUpper();
+    }
+
+    /*
+     Checks if all the characters in the string are either lowercase (a-z) or
+     uncased (not a letter).
+
+      :returns: * `true`  -- when there are no uppercase characters in the string.
+                * `false` -- otherwise
+     */
+    proc isLower() : bool {
+      return guts.isLower(); 
+    }
+
+    /*
+     Checks if all the characters in the string are whitespace (' ', '\t',
+     '\n', '\v', '\f', '\r').
+
+      :returns: * `true`  -- when all the characters are whitespace.
+                * `false` -- otherwise
+     */
+    proc isSpace() : bool {
+      return guts.isSpace();
+    }
+
+    /*
+     Checks if all the characters in the string are alphabetic (a-zA-Z).
+
+      :returns: * `true`  -- when the characters are alphabetic.
+                * `false` -- otherwise
+     */
+    proc isAlpha() : bool {
+      return guts.isAlpha();
+    }
+
+    /*
+     Checks if all the characters in the string are digits (0-9).
+
+      :returns: * `true`  -- when the characters are digits.
+                * `false` -- otherwise
+     */
+    proc isDigit() : bool {
+      return guts.isDigit();
+    }
+
+    /*
+     Checks if all the characters in the string are alphanumeric (a-zA-Z0-9).
+
+      :returns: * `true`  -- when the characters are alphanumeric.
+                * `false` -- otherwise
+     */
+    proc isAlnum() : bool {
+      return guts.isAlnum();
+    }
+
+    /*
+     Checks if all the characters in the string are printable. Characters are
+     defined as being printable if they are not within the range of `0x00-0x1f`
+     or are `0x7f`.
+
+      :returns: * `true`  -- when the characters are alphanumeric.
+                * `false` -- otherwise
+     */
+    proc isPrintable() : bool {
+      return guts.isPrintable();
+    }
+
+    /*
+      Checks if all uppercase characters are preceded by uncased characters,
+      and if all lowercase characters are preceded by cased characters.
+
+      :returns: * `true`  -- when the condition described above is met.
+                * `false` -- otherwise
+     */
+    proc isTitle() : bool {
+      return guts.isTitle();
+    }
+
+    /*
+      :returns: A new string with all uppercase characters replaced with their
+                lowercase counterpart.
+    */
+    proc toLower() : string {
+      return guts.toLower();
+    }
+
+    /*
+      :returns: A new string with all lowercase characters replaced with their
+                uppercase counterpart.
+    */
+    proc toUpper() : string {
+      return guts.toUpper();
+    }
+
+    /*
+      :returns: A new string with all cased characters following an uncased
+                character converted to uppercase, and all cased characters
+                following another cased character converted to lowercase.
+     */
+    proc toTitle() : string {
+      return guts.toTitle();
+    }
+
+    /*
+      :returns: A new string with the first character in uppercase (if it is a
+                case character), and all other case characters in lowercase.
+                Uncased characters are copied with no changes.
+    */
+    pragma "no doc"
+    proc capitalize() : string {
+      return guts.capitalize();
+    }
+  } // end record string
+
+  //
+  // String Implementation
+  //
+  // TODO: We should be able to remove "ignore noinit", but doing so causes
+  // memory leaks in various places. Investigate why later and add noinit back
+  // in when possible.
+  pragma "ignore noinit"
+  pragma "no default functions"
+  record string_ascii {
+    pragma "no doc"
+    var len: int = 0;
+    pragma "no doc"
+    var _size: int = 0;
+    pragma "no doc"
+    var buff: bufferType = nil;
+    pragma "no doc"
+    var owned: bool = true;
+    pragma "no doc"
+    var locale_id = chpl_nodeID;
+
     proc string(s: string, owned: bool = true) {
       const sRemote = s.locale_id != chpl_nodeID;
       const sLen = s.len;
@@ -157,31 +674,12 @@ module String {
       }
     }
 
-    /*
-      Construct a new string from the `c_string` `cs`. If `owned` is set to
-      true, the backing buffer will be freed when the new record is destroyed.
-      If `needToCopy` is set to true, the `c_string` will be copied into the
-      record, otherwise it will be used directly. It is the responsibility of
-      the user to ensure that the underlying buffer is not freed if the
-      `c_string` is not copied in.
-     */
     proc string(cs: c_string, owned: bool = true, needToCopy:  bool = true) {
       this.owned = owned;
       const cs_len = cs.length;
       this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
     }
 
-    /*
-      Construct a new string from `buff` ( `c_ptr(uint(8))` ). `size` indicates
-      the total size of the buffer available, while `len` indicates the current
-      length of the string in the buffer (the common case would be `size-1` for
-      a C-style string). If `owned` is set to true, the backing buffer will be
-      freed when the new record is destroyed. If `needToCopy` is set to true,
-      the `c_string` will be copied into the record, otherwise it will be used
-      directly. It is the responsibility of the user to ensure that the
-      underlying buffer is not freed if the `c_string` is not copied in.
-     */
-    // This constructor can cause a leak if owned = false and needToCopy = true
     proc string(buff: bufferType, length: int, size: int,
                 owned: bool = true, needToCopy: bool = true) {
       this.owned = owned;
@@ -189,7 +687,7 @@ module String {
     }
 
     pragma "no doc"
-    proc ref ~string() {
+    proc ref ~string_ascii() {
       if owned && !this.isEmptyString() {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
@@ -198,7 +696,6 @@ module String {
       }
     }
 
-    // This is assumed to be called from this.locale
     pragma "no doc"
     proc ref reinitString(buf: bufferType, s_len: int, size: int,
                           needToCopy:bool = true) {
@@ -241,18 +738,6 @@ module String {
       this.len = s_len;
     }
 
-    /*
-      :returns: The number of characters in the string.
-      */
-    inline proc length return len;
-
-    /*
-       Gets a version of the :record:`string` that is on the currently
-       executing locale.
-
-       :returns: A shallow copy if the :record:`string` is already on the
-                 current locale, otherwise a deep copy is performed.
-    */
     inline proc localize() : string {
       if _local || this.locale_id == chpl_nodeID {
         return new string(this, owned=false);
@@ -262,30 +747,6 @@ module String {
       }
     }
 
-    /*
-      Get a `c_string` from a :record:`string`.
-
-      .. warning::
-
-          This can only be called safely on a :record:`string` whose home is
-          the current locale.  This property can be enforced by calling
-          :proc:`string.localize()` before :proc:`~string.c_str()`. If the
-          string is remote, the program will halt.
-
-      For example:
-
-      .. code-block:: chapel
-
-          var my_string = "Hello!";
-          on different_locale {
-            printf("%s", my_string.localize().c_str());
-          }
-
-      :returns:
-          A `c_string` that points to the underlying buffer used by this
-          :record:`string`. The returned `c_string` is only valid when used
-          on the same locale as the string.
-     */
     inline proc c_str(): c_string {
       inline proc _cast(type t, x) where t:c_string && x.type:bufferType {
         return __primitive("cast", t, x);
@@ -305,25 +766,6 @@ module String {
       return this:c_string; // folded out in resolution
     }
 
-    /*
-      Iterates over the string character by character.
-
-      For example:
-
-      .. code-block:: chapel
-
-        var str = "abcd";
-        for c in str {
-          writeln(c);
-        }
-
-      Output::
-
-        a
-        b
-        c
-        d
-     */
     iter these() : string {
       for i in 1..this.len {
         // This is pretty painful from a performance perspective right now,
@@ -332,12 +774,6 @@ module String {
       }
     }
 
-    /*
-      Index into a string
-
-      :returns: A string with the character at the specified index from
-                `1..string.length`
-     */
     proc this(i: int) : string {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of string");
@@ -361,9 +797,6 @@ module String {
       return ret;
     }
 
-    // Checks to see if r is inside the bounds of this and returns a finite
-    // range that can be used to iterate over a section of the string
-    // TODO: move into the public interface in some form? better name if so?
     pragma "no doc"
     proc _getView(r:range(?)) {
       //TODO: halt()s should use string.writef at some point.
@@ -383,15 +816,6 @@ module String {
       return ret;
     }
 
-    /*
-      Slice a string. Halts if r is not completely inside the range
-      `1..string.length`.
-
-      :arg r: range of the indices the new string should be made from
-
-      :returns: a new string that is a substring within `1..string.length`. If
-                the length of `r` is zero, an empty string is returned.
-     */
     // TODO: I wasn't very good about caching variables locally in this one.
     proc this(r: range(?)) : string {
       var ret: string;
@@ -432,33 +856,9 @@ module String {
 
       return ret;
     }
-
-    pragma "no doc"
-    inline proc substring(i: int) {
-      compilerError("substring removed: use string[index]");
-    }
-
-    pragma "no doc"
-    inline proc substring(r: range) {
-      compilerError("substring removed: use string[range]");
-    }
-
-    /*
-      :returns: * `true`  -- when the string is empty
-                * `false` -- otherwise
-     */
+    
     inline proc isEmptyString() : bool {
       return this.len == 0; // this should be enough of a check
-    }
-
-    // These should never be called (but are default functions for records)
-    pragma "no doc"
-    proc writeThis(f) {
-      compilerError("not implemented: writeThis");
-    }
-    pragma "no doc"
-    proc readThis(f) {
-      compilerError("not implemented: readThis");
     }
 
     // TODO: could use a multi-pattern search or some variant when there are
@@ -494,27 +894,6 @@ module String {
       }
       return ret;
     }
-
-    /*
-      :arg needles: A varargs list of strings to match against.
-
-      :returns: * `true`  -- when the string begins with one or more of the `needles`
-                * `false` -- otherwise
-     */
-    proc startsWith(needles: string ...) : bool {
-      return _startsEndsWith((...needles), fromLeft=true);
-    }
-
-    /*
-      :arg needles: A varargs list of strings to match against.
-
-      :returns: * `true`  -- when the string ends with one or more of the `needles`
-                * `false` -- otherwise
-     */
-    proc endsWith(needles: string ...) : bool {
-      return _startsEndsWith((...needles), fromLeft=false);
-    }
-
 
     // Helper function that uses a param bool to toggle between count and find
     //TODO: this could be a much better string search
@@ -586,54 +965,6 @@ module String {
       return ret;
     }
 
-    /*
-      :arg needle: the string to search for
-      :arg region: an optional range defining the substring to search within,
-                   default is the whole string. Halts if the range is not
-                   within `1..string.length`
-
-      :returns: the index of the first occurrence of `needle` within a
-                string, or 0 if the `needle` is not in the string.
-     */
-    // TODO: better name than region?
-    proc find(needle: string, region: range(?) = 1..) : int {
-      return _search_helper(needle, region, count=false);
-    }
-
-    /*
-      :arg needle: the string to search for
-      :arg region: an optional range defining the substring to search within,
-                   default is the whole string. Halts if the range is not
-                   within `1..string.length`
-
-      :returns: the index of the first occurrence from the right of `needle`
-                within a string, or 0 if the `needle` is not in the string.
-     */
-    proc rfind(needle: string, region: range(?) = 1..) : int {
-      return _search_helper(needle, region, count=false, fromLeft=false);
-    }
-
-    /*
-      :arg needle: the string to search for
-      :arg region: an optional range defining the substring to search within,
-                   default is the whole string. Halts if the range is not
-                   within `1..string.length`
-
-      :returns: the number of times `needle` occurs in the string
-     */
-    proc count(needle: string, region: range(?) = 1..) : int {
-      return _search_helper(needle, region, count=true);
-    }
-
-    /*
-      :arg needle: the string to search for
-      :arg replacement: the string to replace `needle` with
-      :arg count: an optional integer specifying the number of replacements to
-                  make, values less than zero will replace all occurrences
-
-      :returns: a copy of the string where `needle` replaces `replacement` up
-                to `count` times
-     */
     // TODO: not ideal - count and single allocation probably faster
     //                 - can special case on replacement|needle.length (0, 1)
     proc replace(needle: string, replacement: string, count: int = -1) : string {
@@ -654,18 +985,6 @@ module String {
       return result;
     }
 
-    /*
-      Splits the string on `sep` yielding the substring between each
-      occurrence, up to `maxsplit` times.
-
-      :arg sep: The delimiter used to break the string into chunks.
-      :arg maxsplit: The number of times to split the string, negative values
-                     indicate no limit.
-      :arg ignoreEmpty: * When `true`  -- Empty strings will not be yielded,
-                                          and will not count towards `maxsplit`
-                        * When `false` -- Empty strings will be yielded when
-                                          `sep` occurs multiple times in a row.
-     */
     // TODO: specifying return type leads to un-inited string?
     iter split(sep: string, maxsplit: int = -1, ignoreEmpty: bool = false) /* : string */ {
       if !(maxsplit == 0 && ignoreEmpty && this.isEmptyString()) {
@@ -711,14 +1030,6 @@ module String {
       }
     }
 
-    /*
-      Works as above, but uses runs of whitespace as the delimiter.
-
-      :arg maxsplit: The number of times to split the string, negative values
-                     indicate no limit.
-     */
-    // note: to improve performance, this code collapses several cases into a
-    //       single yield statement, which makes it confusing to read
     // TODO: specifying return type leads to un-inited string?
     iter split(maxsplit: int = -1) /* : string */ {
       if !this.isEmptyString() {
@@ -784,46 +1095,6 @@ module String {
       }
     }
 
-    /*
-      Returns a new string, which is the concatenation of all of the strings
-      passed in with the receiving string inserted between them.
-
-      .. code-block:: chapel
-
-          var x = "|".join("a","10","d");
-          writeln(x); // prints: "a|10|d"
-     */
-
-    proc join(const ref S: string ...) : string {
-      return _join(S);
-    }
-
-    /*
-      Same as the varargs version, but with a homogeneous tuple of strings.
-
-      .. code-block:: chapel
-
-          var x = "|".join("a","10","d");
-          writeln(x); // prints: "a|10|d"
-     */
-    proc join(const ref S) : string where isTuple(S) {
-      if !isHomogeneousTuple(S) || !isString(S[1]) then
-        compilerError("join() on tuples only handles homogeneous tuples of strings");
-      return _join(S);
-    }
-
-    /*
-      Same as the varargs version, but with all the strings in an array.
-
-      .. code-block:: chapel
-
-          var x = "|".join(["a","10","d"]);
-          writeln(x); // prints: "a|10|d"
-     */
-    proc join(const ref S: [] string) : string {
-      return _join(S);
-    }
-
     proc _join(const ref S) : string where isTuple(S) || isArray(S) {
       if S.size == 1 {
         // TODO: ensures copy, clean up when no longer needed
@@ -866,18 +1137,6 @@ module String {
       }
     }
 
-    /*
-      :arg chars: A string containing each character to remove.
-                  Defaults to `" \t\r\n"`.
-      :arg leading: Indicates if leading occurrences should be removed.
-                    Defaults to `true`.
-      :arg trailing: Indicates if trailing occurrences should be removed.
-                     Defaults to `true`.
-
-      :returns: A new string with all occurrences of characters in `chars`
-                removed, including `leading` and `trailing` occurrences as
-                appropriate.
-    */
     proc strip(chars: string = " \t\r\n", leading=true, trailing=true) : string {
       if this.isEmptyString() then return "";
       if chars.isEmptyString() then return this;
@@ -915,11 +1174,6 @@ module String {
       return localThis[start..end];
     }
 
-    /*
-      Splits the string on `sep` into a `3*string` consisting of the section
-      before `sep`, `sep`, and the section after `sep`. If `sep` is not found,
-      the tuple will contain the whole string, and then two empty strings.
-    */
     // TODO: I could make this and other routines that use find faster by
     // making a version of search helper that only takes in local strings and
     // localizing in the calling function
@@ -932,15 +1186,6 @@ module String {
       }
     }
 
-    /*
-     Checks if all the characters in the string are either uppercase (A-Z) or
-     uncased (not a letter).
-
-      :returns: * `true`  -- if the string contains at least one uppercase
-                             character and no lowercase characters, ignoring
-                             uncased characters.
-                * `false` -- otherwise
-     */
     proc isUpper() : bool {
       if this.isEmptyString() then return false;
 
@@ -962,13 +1207,6 @@ module String {
       return result;
     }
 
-    /*
-     Checks if all the characters in the string are either lowercase (a-z) or
-     uncased (not a letter).
-
-      :returns: * `true`  -- when there are no uppercase characters in the string.
-                * `false` -- otherwise
-     */
     proc isLower() : bool {
       if this.isEmptyString() then return false;
       var result: bool = false;
@@ -988,13 +1226,6 @@ module String {
       return result;
     }
 
-    /*
-     Checks if all the characters in the string are whitespace (' ', '\t',
-     '\n', '\v', '\f', '\r').
-
-      :returns: * `true`  -- when all the characters are whitespace.
-                * `false` -- otherwise
-     */
     proc isSpace() : bool {
       if this.isEmptyString() then return false;
       var result: bool = true;
@@ -1012,12 +1243,6 @@ module String {
       return result;
     }
 
-    /*
-     Checks if all the characters in the string are alphabetic (a-zA-Z).
-
-      :returns: * `true`  -- when the characters are alphabetic.
-                * `false` -- otherwise
-     */
     proc isAlpha() : bool {
       if this.isEmptyString() then return false;
       var result: bool = true;
@@ -1035,12 +1260,6 @@ module String {
       return result;
     }
 
-    /*
-     Checks if all the characters in the string are digits (0-9).
-
-      :returns: * `true`  -- when the characters are digits.
-                * `false` -- otherwise
-     */
     proc isDigit() : bool {
       if this.isEmptyString() then return false;
       var result: bool = true;
@@ -1058,12 +1277,6 @@ module String {
       return result;
     }
 
-    /*
-     Checks if all the characters in the string are alphanumeric (a-zA-Z0-9).
-
-      :returns: * `true`  -- when the characters are alphanumeric.
-                * `false` -- otherwise
-     */
     proc isAlnum() : bool {
       if this.isEmptyString() then return false;
       var result: bool = true;
@@ -1081,14 +1294,6 @@ module String {
       return result;
     }
 
-    /*
-     Checks if all the characters in the string are printable. Characters are
-     defined as being printable if they are not within the range of `0x00-0x1f`
-     or are `0x7f`.
-
-      :returns: * `true`  -- when the characters are alphanumeric.
-                * `false` -- otherwise
-     */
     proc isPrintable() : bool {
       if this.isEmptyString() then return false;
       var result: bool = true;
@@ -1106,13 +1311,6 @@ module String {
       return result;
     }
 
-    /*
-      Checks if all uppercase characters are preceded by uncased characters,
-      and if all lowercase characters are preceded by cased characters.
-
-      :returns: * `true`  -- when the condition described above is met.
-                * `false` -- otherwise
-     */
     proc isTitle() : bool {
       if this.isEmptyString() then return false;
       var result: bool = true;
@@ -1147,10 +1345,6 @@ module String {
       return result;
     }
 
-    /*
-      :returns: A new string with all uppercase characters replaced with their
-                lowercase counterpart.
-    */
     proc toLower() : string {
       var result: string = this;
       if result.isEmptyString() then return result;
@@ -1165,10 +1359,6 @@ module String {
       return result;
     }
 
-    /*
-      :returns: A new string with all lowercase characters replaced with their
-                uppercase counterpart.
-    */
     proc toUpper() : string {
       var result: string = this;
       if result.isEmptyString() then return result;
@@ -1182,11 +1372,6 @@ module String {
       return result;
     }
 
-    /*
-      :returns: A new string with all cased characters following an uncased
-                character converted to uppercase, and all cased characters
-                following another cased character converted to lowercase.
-     */
     proc toTitle() : string {
       var result: string = this;
       if result.isEmptyString() then return result;
@@ -1214,11 +1399,6 @@ module String {
       return result;
     }
 
-    /*
-      :returns: A new string with the first character in uppercase (if it is a
-                case character), and all other case characters in lowercase.
-                Uncased characters are copied with no changes.
-    */
     pragma "no doc"
     proc capitalize() : string {
       var result: string = this.toLower();
@@ -1231,7 +1411,7 @@ module String {
       return result;
     }
 
-  } // end record string
+  } // end record string_ascii
 
 
   // We'd like this to be by ref, but doing so leads to an internal
@@ -1759,7 +1939,7 @@ module String {
 
   // Cast from c_string to string
   pragma "no doc"
-  proc _cast(type t, cs: c_string) where t == string {
+  proc _cast(type t, cs: c_string) where t: string {
     var ret: string;
     ret.len = cs.length;
     ret._size = ret.len+1;

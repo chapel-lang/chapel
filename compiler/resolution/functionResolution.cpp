@@ -8376,10 +8376,8 @@ static void unmarkDefaultedGenerics() {
         unmark = false;
       }
     }
-    if (unmark) {
+    if (unmark)
       fn->removeFlag(FLAG_GENERIC);
-      INT_ASSERT(false);
-    }
   }
 }
 
