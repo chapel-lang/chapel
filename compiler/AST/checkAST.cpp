@@ -50,6 +50,29 @@ void checkForDuplicateUses()
   }
 }
 
+void checkArgsAndLocals()
+{
+  // Check that each VarSymbol and each ArgSymbol
+  // has a DefExpr that is in the FnSymbol
+  // or a parent of it.
+  forv_Vec(SymExpr, se, gSymExprs)
+  {
+    DefExpr* def = se->var->defPoint;
+    Symbol* defInSym = def->parentSymbol;
+    Symbol* useInSym = se->parentSymbol;
+
+    if (isFnSymbol(defInSym) && isFnSymbol(useInSym)) {
+      if (defInSym->hasFlag(FLAG_MODULE_INIT) /*||
+          defInSym->hasFlag(FLAG_ITERATOR_FN) */ ) {
+        // OK, module init functions can define globals
+      } else {
+        if (defInSym != useInSym) {
+          INT_FATAL(se, "Refers to a local/arg in another function");
+        }
+      }
+    }
+  }
+}
 
 // Check that no unresolved symbols remain in the tree.
 // This one is pretty cheap, so can be run after every pass (following
@@ -61,7 +84,7 @@ void checkNoUnresolveds()
   // resolution ... .
   if (gUnresolvedSymExprs.n > 1)
     INT_FATAL("Structural error: "
-      "At this point, the AST should not contain any unresovled symbols.");
+      "At this point, the AST should not contain any unresolved symbols.");
 }
 
 // Ensures that primitives are used only where they are expected.
