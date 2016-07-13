@@ -68,9 +68,13 @@ int DataModel::LoadData(const char * filename)
     return 0;
   }
 
-  if ((statbuf.st_mode & S_IFMT) == S_IFDIR)
-    snprintf (fullfilename, MAXPATHLEN, "%s/%s-0", mfilename, mfilename);
-  else
+  if ((statbuf.st_mode & S_IFMT) == S_IFDIR) {
+    char *lastelement = strrchr(mfilename, '/');
+    if (lastelement)
+      snprintf (fullfilename, MAXPATHLEN, "%s%s-0", mfilename, lastelement);
+    else
+      snprintf (fullfilename, MAXPATHLEN, "%s/%s-0", mfilename, mfilename);
+  }  else
     snprintf (fullfilename, MAXPATHLEN, "%s", filename);
   
   suffix = strrchr(fullfilename, '-');
