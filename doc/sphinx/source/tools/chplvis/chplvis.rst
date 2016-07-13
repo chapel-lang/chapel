@@ -524,7 +524,7 @@ Settings
 --------
 
 ``chplvis`` has two settings that are set by a settings window and are
-saved in a file named ``~/.cache/chplvis`.   First, the user can
+saved in a file named ``~/.cache/chplvis``.   First, the user can
 select custom colors for the 'heat' displays.  The standard colors are
 used in this document.  Next, ``chplvis`` can save the window size
 of the main display for use on the next execution.   Both of these
