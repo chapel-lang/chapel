@@ -1,3 +1,0 @@
-old values = 42, 3.14
-returned values (should equal old values) = 42, 3.14
-new values = 89, 6.28
