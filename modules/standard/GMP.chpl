@@ -1780,14 +1780,18 @@ module GMP {
   // Assignment function -- deep copies `rhs` into `lhs`
   // needs to deep copy b'c of how we use it
    proc =(ref lhs: BigInt, rhs: BigInt) {
-    // writeln("In overloaded assignment operator");
     inline proc helpMe(ref lhs: BigInt, rhs: BigInt) {
       if _local || rhs.locale_id == chpl_nodeID {
         lhs.reinitBigInt(rhs.mpz, needToCopy=true);
       } else {
         // TODO: handle remote assignment
-        writeln("Watch out! Remote assignment of BigInt not currently supported/tested");
-        lhs.set(rhs);
+        writeln("Watch out! Remote assignment of BigInt not tested");
+        //lhs.set(rhs);
+        on lhs{
+          var mpz_struct = rhs.mpz[1];
+          chpl_gmp_get_mpz(lhs.mpz, rhs.locale.id, mpz_struct);
+          lhs.owned = true; //remote assignment makes a deep copy
+        }
       }
     }
     if _local || lhs.locale_id == chpl_nodeID then { //why use 'then' here?
@@ -1868,14 +1872,8 @@ module GMP {
     // TODO: confirm support of remote records for writing
     // TODO: Ask why we can't just do "on this" and skip localization, since
     // we are only working with 'this'
-    var s:string;
-    if (here != this.locale) {
-      var a_ = this;
-      s = a_.get_str();
-      //gmp_asprintf(s, "%Zd", a_.mpz);
-    } else {
-      s = this.get_str();
-    }
+    var a_ = this; //assignment should localize
+    var s: string = a_.get_str();
     writer.write(s);
   }
 
