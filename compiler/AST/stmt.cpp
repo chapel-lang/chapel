@@ -933,7 +933,7 @@ CondStmt::codegen() {
     //thus, following conditional -- Engin
 
     std::string c_condExpr = codegenValue(condExpr).c;
-    if (c_condExpr.front() == '(' && c_condExpr.back() == ')') {
+    if (c_condExpr[0] == '(' && c_condExpr[c_condExpr.size()-1] == ')') {
       c_condExpr = c_condExpr.substr(1, c_condExpr.length()-2);
     }
     info->cStatements.push_back("if (" + c_condExpr  + ") ");
