@@ -1,4 +1,4 @@
-// Checks that you can access the overridden grandparent method.
+// Checks that you can access the overridden parent method.
 class A {
   proc foo() {
     writeln("in A.foo()");
@@ -14,7 +14,7 @@ class B: A {
 
 class C: B {
   proc foo() {
-    super.super.foo();
+    super.foo();
     writeln("in C.foo()");
   }
 }
