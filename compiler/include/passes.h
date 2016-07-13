@@ -84,6 +84,7 @@ void checkPostResolution();
 void checkNoUnresolveds();
 // These checks can be applied after any pass.
 void checkForDuplicateUses();
+void checkArgsAndLocals();
 void checkReturnTypesHaveRefTypes();
 
 //

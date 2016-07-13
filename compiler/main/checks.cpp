@@ -449,6 +449,8 @@ static void check_afterCallDestructors()
 static void check_afterLowerIterators()
 {
   checkLowerIteratorsRemovedPrims();
+  if (fVerify)
+    checkArgsAndLocals();
 }
 
 
