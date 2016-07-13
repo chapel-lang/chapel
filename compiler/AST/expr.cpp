@@ -4177,7 +4177,7 @@ GenRet CallExpr::codegen() {
         }
         else if(ce->isPrimitive(PRIM_ARRAY_GET_VALUE)){
           //arg = ce->codegenPrimArrayGetForTarget(formal);
-          arg = codegenElementPtr(get(1), get(2));
+          arg = codegenElementPtr(ce->get(1), ce->get(2));
         }
         else if(ce->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
           arg = ce->codegenPrimGetSvecMemberForTarget(NULL);

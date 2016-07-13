@@ -188,9 +188,7 @@ returnInfoNumericUp(CallExpr* call) {
 
 static Type*
 returnInfoArrayIndexValue(CallExpr* call) {
-  SymExpr* sym = toSymExpr(call->get(1));
-  INT_ASSERT(sym);
-  Type* type = sym->var->type;
+  Type* type = call->get(1)->typeInfo();
   if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
     type = type->getField("addr")->type;
   if (!type->substitutions.n)
