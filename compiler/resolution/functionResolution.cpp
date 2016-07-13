@@ -5939,6 +5939,8 @@ preFold(Expr* expr) {
       FnSymbol* iterator = getTheIteratorFn(call);
       CallExpr* standaloneCall = new CallExpr(iterator->name);
       for_formals(formal, iterator) {
+        // Note: this can add a use formal outside of its function
+        // This is cleaned up in cleanupLeaderFollowerIteratorCalls
         standaloneCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
       }
       // "tag" should be placed at the end of the formals in the source code as
@@ -5954,6 +5956,8 @@ preFold(Expr* expr) {
       else
         leaderCall = new CallExpr(iterator->name);
       for_formals(formal, iterator) {
+        // Note: this can add a use formal outside of its function
+        // This is cleaned up in cleanupLeaderFollowerIteratorCalls
         leaderCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
       }
       // "tag" should be placed at the end of the formals in the source code as
@@ -5969,6 +5973,8 @@ preFold(Expr* expr) {
       else
         followerCall = new CallExpr(iterator->name);
       for_formals(formal, iterator) {
+        // Note: this can add a use formal outside of its function
+        // This is cleaned up in cleanupLeaderFollowerIteratorCalls
         followerCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
       }
       // "tag", "followThis" and optionally "fast" should be placed at the end

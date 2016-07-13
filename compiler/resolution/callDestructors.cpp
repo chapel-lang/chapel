@@ -231,6 +231,7 @@ ArgSymbol* ReturnByRef::addFormal(FnSymbol* fn)
   Type*          type    = fn->retType;
   AggregateType* refType = type->refType;
   IntentTag      intent  = blankIntentForType(refType);
+  // Note: other code does strcmps against the name _retArg
   ArgSymbol*     formal  = new ArgSymbol(intent, "_retArg", refType);
   formal->addFlag(FLAG_RETARG);
 
@@ -655,7 +656,8 @@ createClonedFnWithRetArg(FnSymbol* fn, FnSymbol* useFn)
 {
   SET_LINENO(fn);
   FnSymbol* newFn = fn->copy();
-  ArgSymbol* arg = new ArgSymbol(blankIntentForType(useFn->retType->refType), "_retArg_old_clone", useFn->retType->refType);
+  // Note: other code does strcmps against the name _retArg
+  ArgSymbol* arg = new ArgSymbol(blankIntentForType(useFn->retType->refType), "_retArg", useFn->retType->refType);
   arg->addFlag(FLAG_RETARG);
   newFn->insertFormalAtTail(arg);
   newFn->addFlag(FLAG_FN_RETARG);
