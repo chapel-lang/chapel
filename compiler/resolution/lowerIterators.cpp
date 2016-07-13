@@ -2177,10 +2177,18 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
     if (FnSymbol* autoCopy = autoCopyMap.get(field->type)) {
       Symbol* tmp1 = newTemp(field->name, field->type);
       Symbol* tmp2 = newTemp(autoCopy->retType);
+      Symbol* refTmp = NULL;
       block->insertAtTail(new DefExpr(tmp1));
       block->insertAtTail(new DefExpr(tmp2));
+      if (isReferenceType(autoCopy->getFormal(1)->type)) {
+        refTmp = newTemp(autoCopy->getFormal(1)->type);
+        block->insertAtTail(new DefExpr(refTmp));
+      }
       block->insertAtTail(new CallExpr(PRIM_MOVE, tmp1, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp2, new CallExpr(autoCopy, tmp1)));
+      if (refTmp) {
+        block->insertAtTail(new CallExpr(PRIM_MOVE, refTmp, new CallExpr(PRIM_ADDR_OF, tmp1)));
+      }
+      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp2, new CallExpr(autoCopy, refTmp?refTmp:tmp1)));
       block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp2));
     } else {
       Symbol* tmp = newTemp(field->name, field->type);

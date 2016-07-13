@@ -71,6 +71,7 @@ void resolveFormals(FnSymbol* fn);
 void resolveBlockStmt(BlockStmt* blockStmt);
 void resolveCall(CallExpr* call);
 void resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
+void makeRefType(Type* type);
 FnSymbol* tryResolveCall(CallExpr* call);
 void resolveFns(FnSymbol* fn);
 

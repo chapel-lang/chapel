@@ -241,7 +241,6 @@ std::map<CallExpr*, CallExpr*> eflopiMap; // for-loops over par iterators
 static bool hasRefField(Type *type);
 static bool typeHasRefField(Type *type);
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
-static void makeRefType(Type* type);
 static bool hasUserAssign(Type* type);
 static void resolveAutoCopyEtc(Type* type);
 static void resolveOther();
@@ -505,7 +504,7 @@ void resolveCallAndCallee(CallExpr* call, bool allowUnresolved) {
 
 // Fills in the refType field of a type
 // with the type's corresponding reference type.
-static void makeRefType(Type* type) {
+void makeRefType(Type* type) {
   if (!type)
     // Should this be an assert?
     return;
@@ -5857,8 +5856,8 @@ preFold(Expr* expr) {
                 SymExpr* ret = toSymExpr(call->get(1));
                 INT_ASSERT(ret);
                 if (ret->var->defPoint->getFunction() == move->getFunction() &&
-                    !ret->var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-                    !ret->var->type->symbol->hasFlag(FLAG_ARRAY))
+                    !ret->var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+                    //!ret->var->type->symbol->hasFlag(FLAG_ARRAY))
                   // Should this conditional include domains, distributions, sync and/or single?
                   USR_FATAL(ret, "illegal expression to return by ref");
                 if (fn->retTag == RET_REF)
@@ -9377,7 +9376,7 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts)
           VarSymbol* tmp = newTemp("_runtime_type_tmp_", runtimeTypeToValueFn->retType);
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, runtimeTypeToValueCall));
-          INT_ASSERT(autoCopyMap.get(tmp->type));
+          //INT_ASSERT(autoCopyMap.get(tmp->type));
           //call->replace(new CallExpr(autoCopyMap.get(tmp->type), tmp));
           call->replace(new SymExpr(tmp));
         } else if (rt->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {

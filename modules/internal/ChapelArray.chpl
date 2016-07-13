@@ -961,7 +961,16 @@ module ChapelArray {
       param newRank = ranges.size, stridable = chpl__anyStridable(ranges);
       var newRanges: newRank*range(idxType=_value.idxType, stridable=stridable);
       var newDistVal = _value.dist.dsiCreateRankChangeDist(newRank, args);
-      var newDist = _getNewDist(newDistVal);
+      var sameDist = (newDistVal == _value.dist);
+      var newDist = if sameDist then
+                       _getDistribution(newDistVal)
+                    else
+                       _newDistribution(newDistVal);
+      if ! sameDist && ! _value.dist.trackDomains() {
+        // Otherwise, we don't have a way for the var d below
+        // to extend the lifetime of the distribution...
+        halt("Distribution must use trackDomains or be singleton");
+      }
       var j = 1;
       var makeEmpty = false;
 
@@ -1541,9 +1550,9 @@ module ChapelArray {
   }
 
 
-  proc _getNewDist(value) {
+  /*proc _getNewDist(value) {
     return new dmap(value);
-  }
+  }*/
 
   proc +(d: domain, i: index(d)) {
     if isRectangularDom(d) then

@@ -848,6 +848,9 @@ promotionWrap(FnSymbol* fn, CallInfo* info) {
   Vec<Symbol*>* actuals = &info->actuals;
   if (!strcmp(fn->name, "="))
     return fn;
+  // Don't try to promotion wrap _ref type constructor
+  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
+    return fn;
   bool promotion_wrapper_required = false;
   SymbolMap promoted_subs;
   int j = -1;
@@ -855,6 +858,13 @@ promotionWrap(FnSymbol* fn, CallInfo* info) {
     j++;
     Type* actualType = actuals->v[j]->type;
     Symbol* actualSym = actuals->v[j];
+
+    if (isRecordWrappedType(actualType)) {
+      makeRefType(actualType);
+      actualType = actualType->refType;
+      INT_ASSERT(actualType);
+    }
+
     bool promotes = false;
     if (canDispatch(actualType, actualSym, formal->type, fn, &promotes)){
       if (promotes) {

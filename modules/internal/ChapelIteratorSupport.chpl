@@ -122,7 +122,9 @@ module ChapelIteratorSupport {
     compilerError("cannot iterate over a type");
   }
 
-  inline proc _checkIterator(x) {
+  // TODO - should be inline, but something is going really
+  // wrong in inlining...
+  proc _checkIterator(const ref x) const ref {
     return x;
   }
 

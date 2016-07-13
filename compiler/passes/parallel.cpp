@@ -195,12 +195,7 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
       isString(baseType) ||
       var->hasFlag(FLAG_COFORALL_INDEX_VAR))
   {
-    if (isRefCountedType(baseType))
-    {
-      return true;
-    }
-
-    else if ((isRecord(baseType) && fn->hasFlag(FLAG_BEGIN)) ||
+    if ((isRecord(baseType) && fn->hasFlag(FLAG_BEGIN)) ||
              isString(baseType))
     {
       // Do this only if the record is passed by value.
@@ -228,7 +223,7 @@ static Symbol* insertAutoCopyForTaskArg
   FnSymbol* autoCopyFn = getAutoCopy(baseType);
 
   // Special handling for reference counted types.
-  if (isRefCountedType(baseType))
+  if (false) //isRefCountedType(baseType))
   {
     // TODO: Can we consolidate these two clauses?
     // Does arg->typeInfo() != baseType mean that arg is passed by ref?
