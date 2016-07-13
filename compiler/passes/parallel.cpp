@@ -290,7 +290,7 @@ static void insertAutoDestroyForVar(Symbol *arg, FnSymbol* wrap_fn)
   if (arg->typeInfo() != baseType)
   {
     // This code is special case for ref counted types
-    INT_ASSERT(isRefCountedType(baseType));
+    INT_ASSERT(isRefCountedType(baseType)); // TODO - remove isRefCountedType?
     VarSymbol* derefTmp = newTemp(baseType);
     wrap_fn->insertAtTail(new DefExpr(derefTmp));
     wrap_fn->insertAtTail(

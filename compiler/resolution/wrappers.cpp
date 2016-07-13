@@ -222,7 +222,7 @@ buildDefaultWrapper(FnSymbol* fn,
         wrapper->insertAtTail(new DefExpr(temp));
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_ADDR_OF, wrapper_formal)));
       } else if (specializeDefaultConstructor && wrapper_formal->typeExpr &&
-                 isRefCountedType(wrapper_formal->type)) {
+                 isRecordWrappedType(wrapper_formal->type)) {
         // Formal has a type expression attached and is reference counted (?).
         temp = newTemp("wrap_type_arg");
         if (Symbol* field = fn->_this->type->getField(formal->name, false))

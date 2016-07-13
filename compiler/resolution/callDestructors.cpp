@@ -910,7 +910,7 @@ fixupDestructors() {
           AggregateType* fct = toAggregateType(field->type);
           INT_ASSERT(fct);
           if (!isClass(fct)) {
-            bool useRefType = !isRefCountedType(fct);
+            bool useRefType = !isRecordWrappedType(fct);
             VarSymbol* tmp = newTemp("_field_destructor_tmp_", useRefType ? fct->refType : fct);
             fn->insertBeforeReturnAfterLabel(new DefExpr(tmp));
             fn->insertBeforeReturnAfterLabel(new CallExpr(PRIM_MOVE, tmp,
@@ -1098,6 +1098,8 @@ static void insertAutoCopyTemps() {
       INT_ASSERT(move);
       SET_LINENO(move);
 
+      // TODO -- this code should no longer be necessary but it is
+      // currently being run
       Symbol* tmp = newTemp("_autoCopy_tmp_", sym->type);
 
       move->insertBefore(new DefExpr(tmp));

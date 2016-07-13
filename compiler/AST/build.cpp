@@ -1741,6 +1741,9 @@ buildReduceScanPreface1(FnSymbol* fn, Symbol* data, Symbol* eltType,
   fn->insertAtTail(new DefExpr(eltType));
   fn->insertAtTail("'move'(%S, %E)", data, dataExpr);
 
+  // TODO -- consider giving this function a different name
+  // By function resolution, we can know when a user variable
+  // is being set to an iterator.
   if( !zippered ) {
     fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIterator(%S)))))}", eltType, data);
   } else {

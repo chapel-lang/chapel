@@ -4594,7 +4594,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
     if (concreteIntent(formal->intent, formalType) & INTENT_FLAG_CONST) {
       tmp->addFlag(FLAG_CONST);
       if (!isSyncType(formalType) &&
-          !isRefCountedType(formalType))
+          !isRefCountedType(formalType)) // TODO - remove isRefCountedType?
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
     }
 
@@ -6578,6 +6578,7 @@ postFold(Expr* expr) {
               lhs->var->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) ||
               lhs->var->type->symbol->hasFlag(FLAG_ARRAY))
             // Should this conditional include domains, distributions, sync and/or single?
+            // TODO -- remove this? Or explain its purpose?
             lhs->var->removeFlag(FLAG_EXPR_TEMP);
         }
         if (!set) {

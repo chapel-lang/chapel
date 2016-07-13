@@ -512,6 +512,7 @@ static bool isAutoDestroyedVariable(Symbol* sym) {
 
         (var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == true  &&
          var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)        == false &&
+         // TODO - can we remove this isRefCountedType?
          isRefCountedType(var->type)                             == false)) {
 
       retval = (var->isType() == false && autoDestroyMap.get(var->type) != 0);
