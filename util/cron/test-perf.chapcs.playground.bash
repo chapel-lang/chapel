@@ -9,9 +9,9 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test performance of jemalloc's decay-based purging
+# Test performance of jemalloc with some features we don't use disabled
 
-export CHPL_JEMALLOC_MORE_CFG_OPTIONS="--disable-stats --disable-fill --disable-valgrind"
+export CHPL_JEMALLOC_MORE_CFG_OPTIONS="--disable-stats"
 SHORT_NAME=minimal-jemalloc
 START_DATE=06/03/16
 
