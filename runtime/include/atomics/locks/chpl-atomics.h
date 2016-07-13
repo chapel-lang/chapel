@@ -76,6 +76,11 @@ typedef struct atomic_uintptr_s {
   uintptr_t v;
 } atomic_uintptr_t;
 
+typedef struct atomic_bool_s {
+  chpl_sync_aux_t sv;
+  chpl_bool v;
+} atomic_bool;
+
 typedef struct atomic_flag_s {
   chpl_sync_aux_t sv;
   chpl_bool v;
@@ -106,7 +111,7 @@ void atomic_thread_fence(memory_order order)
   // No idea!
 }
 static inline
-void atomic_signal_thread_fence(memory_order order)
+void atomic_signal_fence(memory_order order)
 {
   // No idea!
 }
@@ -177,25 +182,26 @@ static inline basetype atomic_exchange_ ## type(atomic_ ## type * obj, basetype 
   return atomic_exchange_explicit_ ## type(obj, value, memory_order_seq_cst); \
 } \
 static MAYBE_INLINE chpl_bool \
-atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
+atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order order) { \
   basetype ret; \
   chpl_sync_lock(&obj->sv); \
-  if( obj->v == expected ) { \
+  if( obj->v == *expected ) { \
     obj->v = desired; \
     ret = true; \
   } else { \
+    *expected = obj->v; \
     ret = false; \
   } \
   chpl_sync_unlock(&obj->sv); \
   return ret; \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
+static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
   return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
+static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order order) { \
   return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, order); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
+static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
   return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
 }
 
@@ -287,7 +293,7 @@ static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand
   return atomic_fetch_sub_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 }
 
-DECLARE_ATOMICS_BASE(flag, chpl_bool);
+DECLARE_ATOMICS_BASE(bool, chpl_bool);
 
 #define DECLARE_ATOMICS(type) \
   DECLARE_ATOMICS_BASE(type, type) \

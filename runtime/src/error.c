@@ -112,9 +112,9 @@ void chpl_warning_explicit(const char *message, int32_t lineno,
 }
 
 #ifndef LAUNCHER
-static atomic_flag thisLocaleAlreadyExiting;
+static atomic_flag thisLocaleAlreadyExiting = ATOMIC_FLAG_INIT;
 void chpl_error_init(void) {
-  atomic_init_flag(&thisLocaleAlreadyExiting, false);
+  atomic_flag_clear(&thisLocaleAlreadyExiting);
 }
 #endif
 

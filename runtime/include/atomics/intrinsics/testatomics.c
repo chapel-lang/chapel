@@ -71,14 +71,14 @@
 
 int main(int argc, char** argv)
 {
-  atomic_flag flag;
+  atomic_flag flag = ATOMIC_FLAG_INIT;
 
   atomic_flag_clear(&flag);
   assert( false == atomic_flag_test_and_set(&flag) );
   assert( true == atomic_flag_test_and_set(&flag) );
 
   atomic_thread_fence(memory_order_seq_cst);
-  atomic_signal_thread_fence(memory_order_seq_cst);
+  atomic_signal_fence(memory_order_seq_cst);
 
   {
     atomic_uint_least8_t tmp;
