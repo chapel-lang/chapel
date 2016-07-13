@@ -2286,10 +2286,11 @@ module ChapelArray {
         }
       } else {
         // shrink to match the r2 bound on the side indicated by direction
+        const newSize = min(size-1, (size/factor):int);
         if direction > 0 {
-          return lo..r2.high;
+          return r2.low..#newSize;
         } else {
-          return r2.low..hi;
+          return ..r2.high # -newSize;
         }
       }
     }
@@ -2315,6 +2316,7 @@ module ChapelArray {
              */ 
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
+          const oldRng = this._value.dataAllocRange;
           this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
@@ -2343,7 +2345,8 @@ module ChapelArray {
         if this._value.dataAllocRange.length < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
+          const oldRng = this._value.dataAllocRange;
           this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
@@ -2396,7 +2399,7 @@ module ChapelArray {
         if this._value.dataAllocRange.length < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1, grow=-1);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
@@ -2459,7 +2462,7 @@ module ChapelArray {
         if this._value.dataAllocRange.length < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
@@ -2491,7 +2494,7 @@ module ChapelArray {
         if this._value.dataAllocRange.length < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
