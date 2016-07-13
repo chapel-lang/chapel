@@ -5,6 +5,7 @@
 #include "symbol.h"
 #include "type.h"
 #include "view.h"
+#include "passes.h"
 
 void denormalize(FnSymbol *fn);
 
