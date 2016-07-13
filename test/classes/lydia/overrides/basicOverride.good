@@ -1,0 +1,3 @@
+in A.foo()
+in A.foo()
+in B.foo()
