@@ -39,14 +39,16 @@ void denormalize(FnSymbol *fn) {
       
       if(defs && defs->n == 1 && uses && uses->n == 1) { // check def-use counts
         for_defs(se, defMap, sym) { //use a Map method maybe
-          defExpr = se->parentExpr;
+          if(!argMustUseCPtr(se->typeInfo())) {
+            defExpr = se->parentExpr;
 
-          //defExpr has to be a move without any coercion
-          CallExpr* ce = toCallExpr(defExpr);
-          if(ce) {
-            if(ce->isPrimitive(PRIM_MOVE)) {
-              if(ce->get(1)->typeInfo() == ce->get(2)->typeInfo()) {
-                def = ce->get(2);
+            //defExpr has to be a move without any coercion
+            CallExpr* ce = toCallExpr(defExpr);
+            if(ce) {
+              if(ce->isPrimitive(PRIM_MOVE)) {
+                if(ce->get(1)->typeInfo() == ce->get(2)->typeInfo()) {
+                  def = ce->get(2);
+                }
               }
             }
           }
