@@ -84,7 +84,7 @@ void denormalize(FnSymbol *fn) {
       //std::cout << "use\n";
       //print_view(use);
 
-      //any dependency between def and use expr themselves
+      ////any dependency between def and use expr themselves
       if(CallExpr* useCe = toCallExpr(useExpr)){
         if(!useCe->isPrimitive()) {
           if(CallExpr* defCe = toCallExpr(def)) {
@@ -123,7 +123,7 @@ void denormalize(FnSymbol *fn) {
         //std::cout << "REVISITING\n";
         //print_view(ce);
         for_alist_backward(actual, ce->argList) {
-          if(SymExpr* argSym = toSymExpr(actual)) {
+          if(SymExpr* argSym = toSymExpr(actual)) { //else it's already denormd
             if(! (argSym->var->isConstant() ||
                   argSym->var->isParameter())) {
               SymExpr* use;
@@ -171,21 +171,28 @@ void denormalize(FnSymbol *fn) {
   }
 }
 
+inline bool isNonEssentialPrimitive(CallExpr* ce) {
+  return ce->isPrimitive() && !ce->primitive->isEssential;
+}
+
 bool possibleDepInBetween(Expr* e1, Expr* e2){
   for(Expr* e = e1; e != e2 ; e = getNextExpr(e)) {
     if(CallExpr* ce = toCallExpr(e)) {
-      if(ce->isPrimitive()){
-        if(ce->primitive->isEssential) {
-          //std::cout << "ESSENTIAL PRIMITIVE IN BETWEEN\n";
-          //isDenormalizeSafe = false;
-          return true;
-        }
-      }
-      else {
-        //std::cout << "USER FUNC IN BETWEEN\n";
-        //isDenormalizeSafe = false;
+      if(!isNonEssentialPrimitive(ce)) {
         return true;
       }
+      //if(ce->isPrimitive()){
+        //if(ce->primitive->isEssential) {
+          ////std::cout << "ESSENTIAL PRIMITIVE IN BETWEEN\n";
+          ////isDenormalizeSafe = false;
+          //return true;
+        //}
+      //}
+      //else {
+        ////std::cout << "USER FUNC IN BETWEEN\n";
+        ////isDenormalizeSafe = false;
+        //return true;
+      //}
     }
     // other possibilities are safe and they are:
     // DefExpr, SymExpr, BlockStmt, GotoStmt, CondStmt
@@ -238,6 +245,22 @@ bool isDefSafeToMove(Expr* def) {
           return false;
         }
       }
+      //this else if lazily marks a def to be immovable if the
+      //function body has a call to another user function
+      //this can be enhanced by going recursive, but it might be a bit overkill
+      else if(CallExpr* ce = toCallExpr(ast)) {
+        if(!isNonEssentialPrimitive(ce)) {
+          return false;
+        }
+        //if(!ce->isPrimitive()) {
+          //return false;
+        //}
+        //else {
+          //if(ce->primitive->isEssential) {
+            //return false;
+          //}
+        //}
+      }
     }
   }
   return true;
@@ -259,19 +282,17 @@ bool isDenormalizable(Symbol* sym,
 
     if(defs && defs->n == 1 && uses && uses->n == 1) { // check def-use counts
       for_defs(se, defMap, sym) { //use a Map method maybe
-        //if(!argMustUseCPtr(se->typeInfo())) { // this currently break de normaliza                                                //of strings
-          defExpr = se->parentExpr;
+        defExpr = se->parentExpr;
 
-          //defExpr has to be a move without any coercion
-          CallExpr* ce = toCallExpr(defExpr);
-          if(ce) {
-            if(ce->isPrimitive(PRIM_MOVE)) {
-              if(ce->get(1)->typeInfo() == ce->get(2)->typeInfo()) {
-                def = ce->get(2);
-              }
+        //defExpr has to be a move without any coercion
+        CallExpr* ce = toCallExpr(defExpr);
+        if(ce) {
+          if(ce->isPrimitive(PRIM_MOVE)) {
+            if(ce->get(1)->typeInfo() == ce->get(2)->typeInfo()) {
+              def = ce->get(2);
             }
           }
-        //}
+        }
       }
 
       if(def) {
@@ -307,6 +328,30 @@ bool isDenormalizable(Symbol* sym,
       }
       else {
         return false;
+      }
+      //here I have my valid use and def
+      //so far we checked specific cases for them individually, now check if
+      //there is anything wrong with them as a pair
+
+      //std::cout << "defExpr\n";
+      //print_view(defExpr);
+      //std::cout << "def\n";
+      //print_view(def);
+      //std::cout << "useExpr\n";
+      //print_view(useExpr);
+      //std::cout << "use\n";
+      //print_view(use);
+      //only issue I hit was this and it feels too specific, maybe there is
+      //safer/better/more general way of doing this check
+      //for reference test that caused this was:
+      //test/modules/standard/FileSystem/bharshbarg/filer
+      //The issue seemed to be yielding string from an iterator
+      if(CallExpr* useParentCe = toCallExpr(useExpr)) {
+        if(useParentCe->isPrimitive(PRIM_FTABLE_CALL)) {
+          if(argMustUseCPtr(def->typeInfo())){
+            return false;
+          }
+        }
       }
       return true;
     }
