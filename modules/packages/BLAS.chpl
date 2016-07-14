@@ -138,9 +138,7 @@ module BLAS {
 
     Performs the matrix-matrix operation::
 
-      C = alpha * op(A) * op(B) + beta * C
-
-    where ``A`` is a triangular matrix.
+      C := alpha * op(A) * op(B) + beta * C
 
   */
   proc gemm(A : [?Adom], B : [?Bdom], C : [?Cdom],
@@ -202,11 +200,11 @@ module BLAS {
 
     Performs the matrix-matrix operation::
 
-      C = alpha * A * B + beta * C
+      C := alpha * A * B + beta * C
 
     or::
 
-      C = alpha * B * A + beta * C
+      C := alpha * B * A + beta * C
 
     where ``A`` is a symmetric matrix.
   */
@@ -266,11 +264,11 @@ module BLAS {
 
     Performs the matrix-matrix operation::
 
-      C = alpha * A * B + beta * C
+      C := alpha * A * B + beta * C
 
     or::
 
-      C = alpha * B * A + beta * C
+      C := alpha * B * A + beta * C
 
     where ``A`` is an hermitian matrix.
   */
@@ -320,11 +318,11 @@ module BLAS {
 
     Performs the matrix-matrix operation::
 
-      C = alpha * A * A**T + beta * C
+      C := alpha * A * A**T + beta * C
 
     or::
 
-      C = alpha * A**T * A + beta * C
+      C := alpha * A**T * A + beta * C
 
 
     where ``C`` is a symmetric matrix, and ``A**T`` is the transpose of ``A``.
@@ -386,11 +384,11 @@ module BLAS {
 
     Performs the matrix-matrix operation::
 
-      C = alpha * A * A**H + beta * C
+      C := alpha * A * A**H + beta * C
 
     or::
 
-      C = alpha * A**H * A + beta * C
+      C := alpha * A**H * A + beta * C
 
     where ``C`` is an hermitian matrix, and ``A**H`` is the conjugate transpose
     of ``A``.
@@ -443,11 +441,11 @@ module BLAS {
 
     Performs the matrix-matrix operation::
 
-      C = alpha * A * B**T + alpha * B * A**T +  beta * C
+      C := alpha * A * B**T + alpha * B * A**T +  beta * C
 
     or::
 
-      C = alpha * A**T * B + alpha * B**T * A +  beta * C
+      C := alpha * A**T * B + alpha * B**T * A +  beta * C
 
     where ``C`` is a symmetric matrix, and ``A**T`` and ``B**T`` are the
     transpose of ``A`` and ``B`` , respectively.
@@ -510,11 +508,11 @@ module BLAS {
 
     Performs the matrix-matrix operation::
 
-      C = alpha * A * B**H + conjg(alpha) * B * A**H +  beta * C
+      C := alpha * A * B**H + conjg(alpha) * B * A**H +  beta * C
 
     or::
 
-      C = alpha * A**H * B + conjg(alpha) * B**H * A +  beta * C
+      C := alpha * A**H * B + conjg(alpha) * B**H * A +  beta * C
 
     where ``C`` is an hermitian matrix, ``B**H`` is the conjugate transpose of
     ``B`` , ``conjg(alpha)`` is the complex conjugate of ``alpha``.
@@ -627,7 +625,7 @@ module BLAS {
 
     or::
 
-      X * op(a) = alpha * B
+      X * op(A) = alpha * B
 
     where ``A`` is a triangular matrix.
   */
