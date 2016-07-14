@@ -102,6 +102,7 @@ studies/shootout/submitted/fannkuchredux-submitted.graph
 studies/shootout/submitted/binarytrees-submitted.graph
 studies/shootout/submitted/spectralnorm-submitted.graph
 studies/shootout/submitted/chameneosredux-submitted.graph
+studies/shootout/submitted/nbody-submitted.graph
 # suite: Shootout extras
 studies/shootout/binary-trees/binary-trees-extras.graph
 studies/shootout/fasta/fasta-extras.graph
