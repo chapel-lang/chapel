@@ -23,8 +23,13 @@ proc bar(z) {
   return z*2;
 }
 
+proc baz(z) {
+  return z*2;
+}
+
 var x = 5;
 writeln(foo(x));
 writeln(x);
 
 writeln(bar(arr[foo(x)-2]));
+writeln(baz(10));
