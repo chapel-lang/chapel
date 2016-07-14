@@ -99,6 +99,7 @@ studies/shootout/regex-dna/regexdna.graph
 studies/shootout/reverse-complement/revcomp.graph
 # suite: Submitted Shootout benchmarks
 studies/shootout/submitted/fannkuchredux-submitted.graph
+studies/shootout/submitted/binarytrees-submitted.graph
 studies/shootout/submitted/spectralnorm-submitted.graph
 # suite: Shootout extras
 studies/shootout/binary-trees/binary-trees-extras.graph
