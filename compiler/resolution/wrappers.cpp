@@ -47,7 +47,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-
+#include "resolveIntents.h"
 
 //########################################################################
 //# Static Function Forward Declarations
@@ -196,6 +196,13 @@ buildDefaultWrapper(FnSymbol* fn,
   // argument defaults as needed, so every formal in the called function
   // has a matching actual argument in the call.
   for_formals(formal, fn) {
+
+    IntentTag intent = formal->intent;
+    if (formal->type != dtTypeDefaultToken &&
+        formal->type != dtMethodToken &&
+        formal->intent == INTENT_BLANK)
+      intent = blankIntentForType(formal->type);
+
     SET_LINENO(formal);
 
     if (!defaults->in(formal)) {
@@ -217,6 +224,10 @@ buildDefaultWrapper(FnSymbol* fn,
       // Check for the fixup cases:
       if (formal->type->symbol->hasFlag(FLAG_REF)) {
         // Formal is passed by reference.
+        // MPF - shouldn't this code also check that wrapper_formal
+        // doesn't also have FLAG_REF? Or maybe there is a better way
+        // to write this? When does this code fire? Shouldn't it be
+        // using the ref intent instead?
         temp = newTemp("wrap_ref_arg");
         temp->addFlag(FLAG_MAYBE_PARAM);
         wrapper->insertAtTail(new DefExpr(temp));
@@ -300,9 +311,12 @@ buildDefaultWrapper(FnSymbol* fn,
 
       call->insertAtTail(wrapper->_this);
     } else {
+
+      // The formal was not supplied. We need to use a default value.
+
       const char* temp_name = astr("default_arg", formal->name);
       VarSymbol* temp = newTemp(temp_name);
-      if (formal->intent != INTENT_INOUT && formal->intent != INTENT_OUT) {
+      if (intent != INTENT_INOUT && intent != INTENT_OUT) {
         temp->addFlag(FLAG_MAYBE_PARAM);
         temp->addFlag(FLAG_EXPR_TEMP);
       }
@@ -311,7 +325,7 @@ buildDefaultWrapper(FnSymbol* fn,
         temp->addFlag(FLAG_TYPE_VARIABLE);
       copy_map.put(formal, temp);
       wrapper->insertAtTail(new DefExpr(temp));
-      if (formal->intent == INTENT_OUT ||
+      if (intent == INTENT_OUT ||
           !formal->defaultExpr ||
           (formal->defaultExpr->body.length == 1 &&
            isSymExpr(formal->defaultExpr->body.tail) &&
@@ -333,32 +347,39 @@ buildDefaultWrapper(FnSymbol* fn,
             wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, new SymExpr(formal->type->symbol))));
         }
       } else {
+        // use argument default for the formal argument
         BlockStmt* defaultExpr = formal->defaultExpr->copy();
         for_alist(expr, defaultExpr->body) {
           wrapper->insertAtTail(expr->remove());
         }
-        if (formal->intent != INTENT_INOUT) {
-          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapper->body->body.tail->remove()));
-        } else {
-          // This calls the copy-constructor, to copy the return value into the calling context.
-          // (for intent inout)
+
+        // Normally, addLocalCopiesAndWritebacks will handle
+        // adding the copies. However, because of some issues with
+        // default constructors, the copy is added here for them.
+        // (In particular, the called constructor function does not
+        //  include the necessary copies, because it would interfere
+        //  with the array-domain link in
+        //    record { var D={1..2}; var A:[D] int }
+        //  )
+        if (specializeDefaultConstructor) {
+          // Copy construct from the default value.
           wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("chpl__initCopy", wrapper->body->body.tail->remove())));
+        } else {
+          // Otherwise, just pass it in
+          if (intent & INTENT_FLAG_REF) {
+            // For a ref intent argument, pass in address
+            wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_ADDR_OF, wrapper->body->body.tail->remove())));
+          } else {
+            wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapper->body->body.tail->remove()));
+          }
+        }
+
+        if (formal->intent == INTENT_INOUT) {
           INT_ASSERT(!temp->hasFlag(FLAG_EXPR_TEMP));
           temp->removeFlag(FLAG_MAYBE_PARAM);
         }
       }
       call->insertAtTail(temp);
-
-      // MPF - this doesn't make sense to me, since we're calling
-      // a constructor that will set the field.
-      /*if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
-        if (!formal->hasFlag(FLAG_TYPE_VARIABLE))
-          if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
-            if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
-              wrapper->insertAtTail(
-                new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
-                             new_CStringSymbol(formal->name), temp));
-       */
     }
   }
   update_symbols(wrapper->body, &copy_map);
