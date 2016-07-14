@@ -1,0 +1,7 @@
+in A.foo() with arg 3
+in A.foo() with arg 6
+in B.foo() with arg 6
+in B.foo() with arg 5
+in B.foo() with arg 4
+in B.foo() with arg 3
+in B.foo() with arg 2
