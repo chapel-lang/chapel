@@ -4160,7 +4160,12 @@ GenRet CallExpr::codegen() {
       //std::cout << arg.c << " object class? " << 
         //actual->typeInfo()->symbol->hasFlag(FLAG_OBJECT_CLASS) << std::endl;
       if (se && isFnSymbol(se->var)) {
-        arg = codegenCast("chpl_fn_p", arg);
+        if(this->theFnSymbol()->hasFlag(FLAG_EXTERN)) {
+          arg = codegenCast("c_fn_ptr", arg);
+        }
+        else {
+          arg = codegenCast("chpl_fn_p", arg);
+        }
       }
 
       CallExpr* ce = toCallExpr(actual);

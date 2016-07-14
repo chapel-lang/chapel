@@ -55,6 +55,7 @@ void denormalize(FnSymbol *fn) {
   //if(strcmp(fn->name, "chpl__init_eval-order-of-actuals") != 0) return;
   //std::cout << fn->name << std::endl;
   //if(strcmp(fn->name, "updateVar") != 0) return;
+  //if(strcmp(fn->name, "chpl__init_passFnsToC2x") != 0) return;
   forv_Vec(Symbol, sym, symSet) {
 
     SymExpr *use;
