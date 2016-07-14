@@ -293,7 +293,7 @@ static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, typ
     desired_as_uint = *desired_as_uint_p; \
     success = my__sync_bool_compare_and_swap((uinttype *) obj, cur_as_uint, desired_as_uint); \
   } \
-  return desired; \
+  return cur; \
 } \
 static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand) { \
   return atomic_fetch_add_explicit_ ## type(obj, operand, memory_order_seq_cst); \
@@ -317,7 +317,7 @@ static inline type atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, typ
     desired_as_uint = *desired_as_uint_p; \
     success =  my__sync_bool_compare_and_swap((uinttype *) obj, cur_as_uint, desired_as_uint); \
   } \
-  return desired; \
+  return cur; \
 } \
 static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand) { \
   return atomic_fetch_sub_explicit_ ## type(obj, operand, memory_order_seq_cst); \

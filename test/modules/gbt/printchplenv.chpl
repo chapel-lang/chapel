@@ -12,6 +12,7 @@ if CHPL_COMM != 'none' && CHPL_COMM != 'ugni' then {
 writeln('CHPL_TASKS: ', CHPL_TASKS);
 writeln('CHPL_LAUNCHER: ', CHPL_LAUNCHER);
 writeln('CHPL_TIMERS: ', CHPL_TIMERS);
+writeln('CHPL_UNWIND: ', CHPL_UNWIND);
 writeln('CHPL_MEM: ', CHPL_MEM);
 writeln('CHPL_MAKE: ', CHPL_MAKE);
 writeln('CHPL_ATOMICS: ', CHPL_ATOMICS);

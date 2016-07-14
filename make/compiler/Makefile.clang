@@ -107,12 +107,13 @@ endif
 WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing -Wmissing-declarations
 # decl-after-stmt for non c99 compilers. See commit message 21665
 WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement -Wmissing-format-attribute
-WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused -Wno-uninitialized
+WARN_GEN_CFLAGS = $(WARN_CFLAGS)
+SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
 
 #
 # Don't warn for signed pointer issues (ex. c_ptr(c_char) )
 #
-WARN_GEN_CFLAGS += -Wno-pointer-sign
+SQUASH_WARN_GEN_CFLAGS += -Wno-pointer-sign
 
 #
 # compiler warnings settings

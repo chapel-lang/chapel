@@ -4203,6 +4203,9 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_ARRAY_SHIFT_BASE_POINTER: {
+    // get(1): local return value
+    // get(2): _ddata instance
+    // get(3): integral amount to shift by
     GenRet ret     = get(1);
     GenRet addr    = get(2);
     GenRet shifted = codegenElementPtr(addr, get(3), true);

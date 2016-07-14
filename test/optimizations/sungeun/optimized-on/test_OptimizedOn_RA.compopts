@@ -1,1 +1,1 @@
---no-warnings -O --no-codegen -M ../../../release/examples/benchmarks/hpcc -sdisableBlockLazyRAD
+-O --no-codegen -M ../../../release/examples/benchmarks/hpcc -sdisableBlockLazyRAD

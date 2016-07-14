@@ -383,7 +383,6 @@ static void initializeClass(Expr* stmt, Symbol* sym);
 static void ensureAndResolveInitStringLiterals();
 static void handleRuntimeTypes();
 static void pruneResolvedTree();
-static void removeCompilerWarnings();
 static void removeUnusedFunctions();
 static void removeUnusedTypes();
 static void buildRuntimeTypeInitFns();
@@ -622,6 +621,7 @@ const char* toString(CallInfo* info) {
     str = astr(str, info->name+16);
   } else if (!developer && !strncmp("_construct_", info->name, 11)) {
     str = astr(str, info->name+11);
+    str = astr(str, ".init");
   } else if (!_this) {
     str = astr(str, info->name);
   }
@@ -693,7 +693,7 @@ const char* toString(FnSymbol* fn) {
     str = astr(fn->name+16);
   } else if (fn->hasFlag(FLAG_CONSTRUCTOR)) {
     INT_ASSERT(!strncmp("_construct_", fn->name, 11));
-    str = astr(fn->name+11);
+    str = astr(fn->name+11, ".init");
   } else if (fn->isPrimaryMethod()) {
     if (!strcmp(fn->name, "this")) {
       INT_ASSERT(fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION));
@@ -9142,7 +9142,6 @@ pruneResolvedTree() {
   removeWhereClauses();
   removeMootFields();
   expandInitFieldPrims();
-  removeCompilerWarnings();
 }
 
 static void clearDefaultInitFns(FnSymbol* unusedFn) {
@@ -9166,18 +9165,6 @@ static void removeUnusedFunctions() {
         clearDefaultInitFns(fn);
         fn->defPoint->remove();
       }
-    }
-  }
-}
-
-static void removeCompilerWarnings() {
-  // Warnings have now been issued, no need to keep the function around.
-  // Remove calls to compilerWarning and let dead code elimination handle
-  // the rest.
-  typedef MapElem<FnSymbol*, const char*> FnSymbolElem;
-  form_Map(FnSymbolElem, el, innerCompilerWarningMap) {
-    forv_Vec(CallExpr, call, *(el->key->calledBy)) {
-      call->remove();
     }
   }
 }
@@ -9365,6 +9352,17 @@ static void removeRandomPrimitive(CallExpr* call)
         call->remove();
     }
     break;
+
+    case PRIM_WARNING:
+    case PRIM_ERROR:
+    {
+      // Warnings have now been issued, no need to keep the function around.
+      // Remove calls to compilerWarning and let dead code elimination handle
+      // the rest.
+      call->remove();
+    }
+    break;
+
   }
 }
 

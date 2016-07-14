@@ -198,9 +198,9 @@ CHPL_TARGET_ARCH
         none      No specialization will be performed (will not warn)
         ========  =============================================================
 
+        **Architecture-specific values**
+
         =========== ================
-        Architecture-specific values
-        ----------------------------
         intel       amd
         =========== ================
         core2           k8
@@ -376,13 +376,11 @@ CHPL_MEM
         Value     Description
         ========= =======================================================
         cstdlib   use the standard C malloc/free commands
-        jemalloc  use Jason Evan's memory allocation package
+        jemalloc  use Jason Evan's memory allocator
         ========= =======================================================
 
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
-   If the target platform is ``cygwin*``, the target compiler is ``*pgi``,
-   or the target platform is ``darwin`` and the target compiler is ``gnu``
-   it defaults to ``cstdlib``
+   If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
 
 .. _readme-chplenv.CHPL_LAUNCHER:

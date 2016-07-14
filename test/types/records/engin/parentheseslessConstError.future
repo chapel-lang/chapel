@@ -1,0 +1,5 @@
+error message: parenthesesless constructor call 
+
+Call to constructor in line 3 should probably not be supported.
+
+Code compiles even with --verify

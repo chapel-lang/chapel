@@ -618,8 +618,10 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
 
   // Add start fence to wrapper if it was requested
   // This supports --cache-remote and is set in createTaskFunctions
-  if (fn->hasFlag(FLAG_WRAPPER_NEEDS_START_FENCE))
+  if (fn->hasFlag(FLAG_WRAPPER_NEEDS_START_FENCE)) {
+    wrap_fn->addFlag(FLAG_WRAPPER_NEEDS_START_FENCE); // helps optimizeOnClauses
     wrap_fn->insertAtTail(new CallExpr(PRIM_START_RMEM_FENCE));
+  }
 
   // Create a call to the original function
   CallExpr *call_orig = new CallExpr(fn);
@@ -677,8 +679,10 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
 
   // Add finish fence to wrapper if it was requested
   // This supports --cache-remote and is set in createTaskFunctions
-  if (fn->hasFlag(FLAG_WRAPPER_NEEDS_FINISH_FENCE))
+  if (fn->hasFlag(FLAG_WRAPPER_NEEDS_FINISH_FENCE)) {
+    wrap_fn->addFlag(FLAG_WRAPPER_NEEDS_FINISH_FENCE); // helps optimizeOnClauses
     wrap_fn->insertAtTail(new CallExpr(PRIM_FINISH_RMEM_FENCE));
+  }
 
   wrap_fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
@@ -1461,21 +1465,56 @@ static void insertEndCounts()
   }
 }
 
-static bool isDirectOnCall(FnSymbol* fn, CallExpr* call)
+// Generate an if statement
+// if ( chpl_doDirectExecuteOn( targetLocale ) )
+//     call un-wrapped task function
+// else
+//     proceed as with chpl_executeOn/chpl_executeOnFast
+//     fid call to wrapper function on a remote local
+//     (possibly just a different sublocale)
+//
+// This is called the "direct on" optimization.
+//
+// Returns the call in the 'else' block (which will need
+// argument bundling as usual).
+static
+CallExpr* createConditionalForDirectOn(CallExpr* call, FnSymbol* fn)
 {
-  if (fn->hasFlag(FLAG_ON)) {
-    // For an on block, the first argument is the target locale.
 
-    // The call is direct if this first argument
-    // is a SymExpr with the flag FLAG_DIRECT_ON_ARGUMENT.
-    if (SymExpr* se = toSymExpr(call->get(1))) {
-      if (se->var->hasFlag(FLAG_DIRECT_ON_ARGUMENT)) {
-        return true;
-      }
-    }
-  }
+  VarSymbol* isDirectTmp = newTemp("isdirect", dtBool);
+  CallExpr* isCall;
+  isCall = new CallExpr(gChplDoDirectExecuteOn,
+                        call->get(1)->copy() // target
+                       );
 
-  return false;
+  DefExpr* def = new DefExpr(isDirectTmp);
+  call->insertBefore(def);
+
+  // Remove call (we will add it back in a conditional)
+  call->remove();
+
+  CallExpr* move = new CallExpr(PRIM_MOVE, isDirectTmp, isCall);
+  def->insertAfter(move);
+
+  // Build comparison
+  SymExpr* isTrue = new SymExpr(isDirectTmp);
+
+  // Build true branch
+  CallExpr* directcall = call->copy();
+
+  // Remove the first arg (destination locale)
+  // not needed for direct call
+  directcall->get(1)->remove();
+
+  // False branch is call.
+
+  // Build condition
+  CondStmt* cond = new CondStmt(isTrue, directcall, call);
+
+  // Add the condition which calls the outlined task function somehow.
+  move->insertAfter(cond);
+
+  return call;
 }
 
 // For each "nested" function created to represent remote execution,
@@ -1500,13 +1539,12 @@ static void passArgsToNestedFns() {
       forv_Vec(CallExpr, call, *fn->calledBy) {
         SET_LINENO(call);
 
-        if (isDirectOnCall(fn, call))
-          // For a direct call, don't bundle the arguments
-          // leave the call directly invoking the on-function.
-          // On statements also need their first argument removed.
-          call->get(1)->remove();
-        else
-          bundleArgs(call, baData);
+        if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_NON_BLOCKING)) {
+          // create conditional for direct-on optimization
+          call = createConditionalForDirectOn(call, fn);
+        }
+
+        bundleArgs(call, baData);
       }
 
       if (fn->hasFlag(FLAG_ON)) {
