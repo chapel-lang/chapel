@@ -199,7 +199,25 @@ bool possibleDepInBetween(Expr* e1, Expr* e2){
   }
   return false;
 }
-
+/*
+bool isSafePrimitive(CallExpr* ce) {
+  PrimitiveOp* prim = ce->primitive;
+  if (!prim) return false; // or INT_ASSERT(prim);
+  if (prim->isEssential) return false;
+  switch(prim->tag) {
+    case PRIM_UN_PLUS:
+    case PRIM_UN_MINUS:
+    //....
+      return true;
+    // If we trip over this assert, see if the IR is correct
+    // and if so whether we should return true or false for this primitive.
+    default:
+      INT_ASSERT(false); // should not be getting those
+             // that are !isEssential and not listed above
+      break;
+  }
+}
+*/
 //I am not proud of how this function checks "safety" of denormalization.
 //What it does is to return false if the function has a ref formal or has any
 //global variable in it's body(either def/use). Cases that it cover might be a
