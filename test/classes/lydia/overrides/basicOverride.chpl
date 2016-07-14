@@ -14,5 +14,7 @@ class B: A {
 
 var a = new A();
 var b = new B();
+var b2: A = new B();
 a.foo();
 b.foo();
+b2.foo();
