@@ -31,10 +31,6 @@
 #ifndef _DEQUE_H_
 #define _DEQUE_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "sys_basic.h"
 #include "qio_error.h"
 
@@ -52,6 +48,10 @@ extern "C" {
 #define deque_calloc(nmemb, size) calloc(nmemb,size)
 #define deque_free(ptr) free(ptr)
 #define deque_memcpy(dest, src, num) memcpy(dest, src, num)
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 typedef struct deque_node_s {
