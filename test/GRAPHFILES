@@ -106,6 +106,7 @@ studies/shootout/submitted/nbody-submitted.graph
 studies/shootout/submitted/threadring-submitted.graph
 studies/shootout/submitted/mandelbrot-submitted.graph
 studies/shootout/submitted/pidigits-submitted.graph
+studies/shootout/submitted/regexdna-submitted.graph
 # suite: Shootout extras
 studies/shootout/binary-trees/binary-trees-extras.graph
 studies/shootout/fasta/fasta-extras.graph
