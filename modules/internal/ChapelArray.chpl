@@ -1976,11 +1976,10 @@ module ChapelArray {
         checkSlice((... ranges));
       var d = _dom((...ranges));
       var a = _value.dsiSlice(d._value);
-      a._arrAlias = _value;
+      a._arrAlias = true;
       pragma "dont disable remote value forwarding"
       proc help() {
         d._value.incRefCount();
-        a._arrAlias.incRefCount();
       }
       if !noRefCount then
         help();
@@ -1998,9 +1997,7 @@ module ChapelArray {
       if !noRefCount then
         d._value.incRefCount();
       var a = _value.dsiRankChange(d._value, rank, stridable, args);
-      a._arrAlias = _value;
-      if !noRefCount then
-        a._arrAlias.incRefCount();
+      a._arrAlias = true;
       return _newArray(a);
     }
 
@@ -2154,11 +2151,10 @@ module ChapelArray {
                                                                   _value.dom.dsiDims()));
       var newDom = {(...d.dims())} dmapped newDist;
       var x = _value.dsiReindex(newDom._value);
-      x._arrAlias = _value;
+      x._arrAlias = true;
       pragma "dont disable remote value forwarding"
       proc help() {
         newDom._value.incRefCount();
-        x._arrAlias.incRefCount();
       }
       if !noRefCount then
         help();

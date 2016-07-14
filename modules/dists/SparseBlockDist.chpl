@@ -864,7 +864,7 @@ proc SparseBlockArr.doiCanBulkTransfer() {
 
   // See above note regarding aliased arrays
   if disableAliasedBulkTransfer then
-    if _arrAlias != nil then return false;
+    if _arrAlias then return false;
 
   return true;
 }
