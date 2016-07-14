@@ -1,0 +1,8 @@
+This test fails to work with the new "deallocate arrays at the end of
+their lexical scope even if slices/aliases are still referring to
+them" semantics; and looking at the code's heavy use of =>, ._value,
+and custom localSlice() routines, it's not difficult to believe that
+that's the case.  Talking with Vass, we decided that this code falls
+into the "interesting historical artifact" category and that it wasn't
+worth determining what would be necessary to make it work in the new
+world anymore, so we're marking it as .notest instead.
