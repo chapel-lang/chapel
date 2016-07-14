@@ -26,7 +26,7 @@
 #if defined(__cplusplus)
   #if __cplusplus >= 201103L
     #include <atomic>
-    #define Atomic(T) atomic<T>
+    #define Atomic(T) std::atomic<T>
     using std::atomic_int_least8_t;
     using std::atomic_int_least16_t;
     using std::atomic_int_least32_t;
@@ -216,8 +216,8 @@ static inline basetype atomic_exchange_ ## type(atomic_ ## type * obj, basetype 
   return atomic_exchange_explicit_ ## type(obj, value, memory_order_seq_cst); \
 } \
 static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succeed_order, memory_order fail_order) { \
-  basetype old = __sync_val_compare_and_swap(obj, *expected, desired); \
-  return old == *expected ? true : (*expected = old, false); \
+  basetype old_val = __sync_val_compare_and_swap(obj, *expected, desired); \
+  return old_val == *expected ? true : (*expected = old_val, false); \
 } \
 static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
   return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
@@ -233,17 +233,17 @@ static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * 
 static inline basetype atomic_exchange_explicit_ ## type(atomic_ ## type * obj, basetype value, memory_order order) { \
   return atomic_exchange_explicit(obj, value, order); \
 } \
-static inline basetype atomic_exchange_ ## type(atomic_ ## type * obj, basetype * value) { \
+static inline basetype atomic_exchange_ ## type(atomic_ ## type * obj, basetype value) { \
   return atomic_exchange(obj, value); \
 } \
 static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succeed_order, memory_order fail_order) { \
-  return atomic_compare_exchange_strong_explicit(obj, expected, desired, order, succeed_order, fail_order); \
+  return atomic_compare_exchange_strong_explicit(obj, expected, desired, succeed_order, fail_order); \
 } \
 static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
   return atomic_compare_exchange_strong(obj, expected, desired); \
 } \
 static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succeed_order, memory_order fail_order) { \
-  return atomic_compare_exchange_weak_explicit(obj, expected, desired, order, succeed_order, fail_order); \
+  return atomic_compare_exchange_weak_explicit(obj, expected, desired, succeed_order, fail_order); \
 } \
 static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
   return atomic_compare_exchange_weak(obj, expected, desired); \
@@ -500,23 +500,23 @@ static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand
 #else
 #define DECLARE_REAL_ATOMICS_FETCH_OPS(type, uinttype) \
 static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
-  type old = *obj; \
-  type new; \
+  type old_val = *obj; \
+  type new_val; \
   do { \
-    new = old + operand; \
-  } while (!atomic_compare_exchange_weak_explicit(obj, &old, new, order, order)); \
-  return old; \
+    new_val = old_val + operand; \
+  } while (!atomic_compare_exchange_weak_explicit(obj, &old_val, new_val, order, order)); \
+  return old_val; \
 } \
 static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand) { \
   return atomic_fetch_add_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 } \
 static inline type atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
-  type old = *obj; \
-  type new; \
+  type old_val = *obj; \
+  type new_val; \
   do { \
-    new = old - operand; \
-  } while (!atomic_compare_exchange_weak_explicit(obj, &old, new, order, order)); \
-  return old; \
+    new_val = old_val - operand; \
+  } while (!atomic_compare_exchange_weak_explicit(obj, &old_val, new_val, order, order)); \
+  return old_val; \
 } \
 static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand) { \
   return atomic_fetch_sub_explicit_ ## type(obj, operand, memory_order_seq_cst); \
