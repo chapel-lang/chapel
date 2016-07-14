@@ -3243,12 +3243,7 @@ module ChapelArray {
     if isRectangularDom(a) && isRectangularDom(b) {
       b.setIndices(a.getIndices());
     } else {
-      // TODO: These should eventually become forall loops, hence the
-      // warning
-      //
-      // NOTE: See above note regarding associative domains
-      //
-      compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+      // TODO : update to use forall loop
       for i in a do
         b.add(i);
     }
