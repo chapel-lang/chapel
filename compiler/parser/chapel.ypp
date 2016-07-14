@@ -662,7 +662,7 @@ loop_stmt:
 ;
 
 zippered_iterator:
-    TZIP TLP expr_ls TRP    { $$ = new CallExpr("_build_tuple", $3); }
+    TZIP TLP expr_ls TRP    { $$ = new CallExpr(PRIM_ZIP, $3); }
 ;
 
 if_stmt:

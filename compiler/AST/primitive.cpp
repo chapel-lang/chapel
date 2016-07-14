@@ -647,6 +647,8 @@ initPrimitive() {
   prim_def(PRIM_LOOKUP_FILENAME, "chpl_lookupFilename", returnInfoStringC, false, false);
 
   prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoString);
+
+  prim_def(PRIM_ZIP, "zip", returnInfoVoid, false, false);
 }
 
 Map<const char*, VarSymbol*> memDescsMap;
