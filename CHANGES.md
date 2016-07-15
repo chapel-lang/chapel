@@ -2,6 +2,41 @@
 Release Changes List
 ====================
 
+
+==============
+version 1.13.1
+==============
+
+Update to sixteenth public release of Chapel, June 2016
+(see also changes below for 1.13.0)
+
+Bug Fixes
+---------
+* fixed a race condition causing lossy behavior in reductions as of 1.13.0
+* fixed bugs in extern block support for C function pointers and structs
+* restored support for --cpp-lines when not saving the generated C code
+* fixed a bug in the remove() method on arrays
+* fixed a bug relating to the index sets used by vector operations on arrays
+* fixed an idxType/eltType mix-up in 'shuffle()' in the 'Random' module
+* fixed an issue with closing a spawn channel before wait()ing
+* fixed a bug in open() when a path the path was stored remotely
+* fixed a bug with the printing of real floating point values
+* fixed a bug in the GMP BigInt.mod_ui() function
+* fixed some bugs in the congruent family of functions in the 'GMP' module
+
+Feature Improvements
+--------------------
+* add support for casting from c_string to c_void_ptr
+
+Standard Library/Modules
+------------------------
+* added bounds-checks to vector operations on arrays by default
+
+Memory Improvements
+-------------------
+* closed memory leaks within the 'RandomStream' class
+
+
 ==============
 version 1.13.0
 ==============
@@ -2864,7 +2899,7 @@ Third-Party Software Changes
 
 Testing System
 --------------
-- added the ability for a skipif file to check for substrings in an env. variable
+- added the ability for a skipif file to check for substrings in an env. var.
 - fixed several bugs in the testing system:
   - when using named .good files in compopts files
   - when using multiple compopts files and no execopts files

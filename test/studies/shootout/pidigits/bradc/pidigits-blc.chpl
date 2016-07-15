@@ -16,7 +16,7 @@ var numer, accum, denom, tmp1, tmp2: mpz_t;
 //
 mpz_init_set_ui(numer, 1);                 // numer = 1
 mpz_init_set_ui(accum, 0);                 // accum = 0
-mpz_init_set_ui(denom, 1);                 // denum = 1
+mpz_init_set_ui(denom, 1);                 // denom = 1
 mpz_init(tmp1);                            // init tmp1
 mpz_init(tmp2);                            // init tmp2
 
@@ -52,7 +52,7 @@ proc main() {
   }
 
   //
-  // Free memory associated with multi-precision valuesx
+  // Free memory associated with multi-precision values
   //
   mpz_clear(tmp2);
   mpz_clear(tmp1);

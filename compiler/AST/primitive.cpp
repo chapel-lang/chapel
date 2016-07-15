@@ -579,7 +579,8 @@ initPrimitive() {
 
   prim_def(PRIM_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
-  prim_def(PRIM_CAPTURE_FN, "capture fn", returnInfoVoid);
+  prim_def(PRIM_CAPTURE_FN_FOR_CHPL, "capture fn for chpl", returnInfoVoid);
+  prim_def(PRIM_CAPTURE_FN_FOR_C, "capture fn for C", returnInfoVoid);
   prim_def(PRIM_CREATE_FN_TYPE, "create fn type", returnInfoVoid);
 
   prim_def("string_compare", returnInfoDefaultInt, true);

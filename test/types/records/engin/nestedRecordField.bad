@@ -1,0 +1,2 @@
+nestedRecordField.chpl:1: error: unable to resolve return type of function '_defaultOf'
+nestedRecordField.chpl:3: error: called recursively at this point

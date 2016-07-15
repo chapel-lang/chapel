@@ -97,11 +97,21 @@ studies/shootout/meteor/kbrady/meteor.graph
 studies/shootout/k-nucleotide/knucleotide.graph
 studies/shootout/regex-dna/regexdna.graph
 studies/shootout/reverse-complement/revcomp.graph
+# suite: Submitted Shootout benchmarks
+studies/shootout/submitted/fannkuchredux-submitted.graph
+studies/shootout/submitted/binarytrees-submitted.graph
+studies/shootout/submitted/spectralnorm-submitted.graph
+studies/shootout/submitted/chameneosredux-submitted.graph
+studies/shootout/submitted/nbody-submitted.graph
+studies/shootout/submitted/threadring-submitted.graph
+studies/shootout/submitted/mandelbrot-submitted.graph
+studies/shootout/submitted/pidigits-submitted.graph
 # suite: Shootout extras
 studies/shootout/binary-trees/binary-trees-extras.graph
 studies/shootout/fasta/fasta-extras.graph
 studies/shootout/spectral-norm/lydia/spectral-norm-specify-step.graph
 studies/shootout/mandelbrot/mandelbrot-extras.graph
+studies/shootout/mandelbrot/mandelbrot-dynamicIter.graph
 # suite: Parboil benchmarks
 studies/parboil/BFS/bfs.graph
 studies/parboil/histo/histo.graph
@@ -179,6 +189,8 @@ parallel/taskCompare/lydia/loopCompare.graph
 statements/lydia/moduleVersusFunctionBaseline.graph
 statements/lydia/moduleVersusFunctionDifAccess.graph
 statements/lydia/moduleVersusFunction.graph
+# suite: Task Spawning
+parallel/taskCompare/elliot/taskSpawn.graph
 # suite: Compiler performance
 performance/compiler/bradc/fft-timecomp.graph
 performance/compiler/bradc/compSampler-timecomp.graph

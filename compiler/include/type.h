@@ -73,6 +73,8 @@ public:
 
   void             addSymbol(TypeSymbol* newSymbol);
 
+  bool             isDefaultIntentConst()                                const;
+
   TypeSymbol*      symbol;
   AggregateType*   refType;  // pointer to references for non-reference types
   Vec<FnSymbol*>   methods;
@@ -257,6 +259,7 @@ TYPE_EXTERN AggregateType* dtMainArgument;
 TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string (unowned)
 TYPE_EXTERN PrimitiveType* dtStringCopy; // the type of a C string (owned)
 TYPE_EXTERN PrimitiveType* dtCVoidPtr; // the type of a C void* (unowned)
+TYPE_EXTERN PrimitiveType* dtCFnPtr;   // a C function pointer (unowned)
 
 // base object type (for all classes)
 TYPE_EXTERN Type* dtObject;
@@ -286,15 +289,16 @@ bool isClass(Type* t);
 bool isRecord(Type* t);
 bool isUnion(Type* t);
 
-bool isReferenceType(Type* t);
+bool isReferenceType(const Type* t);
 
 bool isRefCountedType(Type* t);
-bool isRecordWrappedType(Type* t);
+bool isRecordWrappedType(const Type* t);
 bool isDomImplType(Type* t);
 bool isArrayImplType(Type* t);
 bool isDistImplType(Type* t);
-bool isSyncType(Type* t);
-bool isAtomicType(Type* t);
+bool isSyncType(const Type* t);
+bool isSingleType(const Type* t);
+bool isAtomicType(const Type* t);
 bool isRefIterType(Type* t);
 
 bool isSubClass(Type* type, Type* baseType);

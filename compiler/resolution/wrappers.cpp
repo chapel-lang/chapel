@@ -171,25 +171,35 @@ buildDefaultWrapper(FnSymbol* fn,
     wrapper->retType = fn->retType;
 
   SymbolMap copy_map;
+
   bool specializeDefaultConstructor =
     fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) &&
-    !isSyncType(fn->_this->type) &&
+    !isSyncType(fn->_this->type)          &&
+    !isSingleType(fn->_this->type)        &&
     !fn->_this->type->symbol->hasFlag(FLAG_REF);
   if (specializeDefaultConstructor) {
     wrapper->removeFlag(FLAG_COMPILER_GENERATED);
     wrapper->_this = fn->_this->copy();
+
     copy_map.put(fn->_this, wrapper->_this);
+
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
+
     if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME)) {
       if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
-        wrapper->insertAtTail(new CallExpr(PRIM_MOVE, wrapper->_this,
+        wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
+                                           wrapper->_this,
                                            callChplHereAlloc((wrapper->_this->typeInfo())->symbol)));
+
         wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));
       }
     }
+
     wrapper->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, wrapper->_this));
   }
+
   CallExpr* call = new CallExpr(fn);
+
   call->square = info->call->square;    // Copy square brackets call flag.
 
   // Now walk the formals list of the called function, and expand formal
@@ -498,16 +508,20 @@ static bool needToAddCoercion(Type* actualType, Symbol* actualSym,
 
 // Add a coercion; replace prevActual and actualSym - the actual to 'call' -
 // with the result of the coercion.
-static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
-                           Expr*& actualExpr, Symbol*& actualSym,
-                           bool& checkAgain)
+static void addArgCoercion(FnSymbol*  fn,
+                           CallExpr*  call,
+                           ArgSymbol* formal,
+                           Expr*&     actualExpr,
+                           Symbol*&   actualSym,
+                           bool&      checkAgain)
 {
-  Expr* prevActual = actualExpr;
-  SET_LINENO(prevActual);
-  TypeSymbol* ats = actualSym->type->symbol;
-  TypeSymbol* fts = formal->type->symbol;
-  CallExpr* castCall;
-  VarSymbol* castTemp = newTemp("coerce_tmp"); // ..., formal->type ?
+  SET_LINENO(actualExpr);
+
+  Expr*       prevActual = actualExpr;
+  TypeSymbol* ats        = actualSym->type->symbol;
+  TypeSymbol* fts        = formal->type->symbol;
+  CallExpr*   castCall   = NULL;
+  VarSymbol*  castTemp   = newTemp("coerce_tmp"); // ..., formal->type ?
 
   castTemp->addFlag(FLAG_COERCE_TEMP);
 
@@ -527,20 +541,14 @@ static void addArgCoercion(FnSymbol* fn, CallExpr* call, ArgSymbol* formal,
   } else {
     prevActual->replace(newActual);
   }
+
   // Now 'prevActual' has been removed+replaced and is ready to be passed
   // as an actual to a cast or some such.
   // We can update addArgCoercion's caller right away.
   actualExpr = newActual;
   actualSym  = castTemp;
 
-  if (getSyncFlags(ats).any()) {
-
-    // Tom notes: Ultimately, I hope to push all code related to sync
-    // variable implementation into module code.  Moving the special
-    // handling of sync demotion (i.e. extracting the underlying value
-    // from a sync variable) into module code would render this
-    // special-case code in the compiler moot.
-
+  if (isSyncType(ats->type) == true || isSingleType(ats->type) == true) {
     // Here we will often strip the type of its sync-ness.
     // After that we may need another coercion(s), e.g.
     //   _syncvar(int) --readFE()-> _ref(int) --(dereference)-> int --> real

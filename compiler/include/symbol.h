@@ -353,10 +353,17 @@ class FnSymbol : public Symbol {
   int codegenUniqueNum;
   const char *doc;
 
+  // The following fields are used only when hasFlag(FLAG_PARTIAL_COPY)
+  // to pass information from partialCopy() to finalizeCopy().
   /// Used to keep track of symbol substitutions during partial copying.
   SymbolMap partialCopyMap;
   /// Source of a partially copied function.
   FnSymbol* partialCopySource;
+  /// Vararg formal to be replaced with individual formals, or NULL.
+  ArgSymbol* varargOldFormal;
+  /// Individual formals to replace varargOldFormal.
+  std::vector<ArgSymbol*> varargNewFormals;
+
   /// Used to store the return symbol during partial copying.
   Symbol* retSymbol;
   /// Number of formals before tuple type constructor formals are added.
@@ -571,7 +578,6 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm);
 void createInitStringLiterals();
 void resetTempID();
 FlagSet getRecordWrappedFlags(Symbol* s);
-FlagSet getSyncFlags(Symbol* s);
 VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);
 VarSymbol* newTemp(Type* type);
 
@@ -583,6 +589,9 @@ const char* intentDescrString(IntentTag intent);
 // Return true if the arg must use a C pointer whether or not
 // pass-by-reference intents are used.
 bool argMustUseCPtr(Type* t);
+
+void substituteVarargTupleRefs(BlockStmt* ast, int numArgs, ArgSymbol* formal,
+                               std::vector<ArgSymbol*>& varargFormals);
 
 extern bool localTempNames;
 
@@ -625,6 +634,7 @@ extern VarSymbol *gModuleInitIndentLevel;
 extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gChplHereAlloc;
 extern FnSymbol *gChplHereFree;
+extern FnSymbol *gChplDoDirectExecuteOn;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

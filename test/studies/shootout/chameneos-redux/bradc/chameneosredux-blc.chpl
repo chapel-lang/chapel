@@ -2,6 +2,7 @@
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Hannah Hemmaplardh, Lydia Duncan, and Brad Chamberlain
+   derived in part from the GNU C version by Dmitry Vyukov
 */
 
 config const n = 600,              // number of meetings (must be >= 0)
@@ -219,9 +220,8 @@ inline proc getNewColor(myColor, otherColor) {
     when red do
       return (if otherColor == blue then yellow else blue);
 
-    otherwise {
+    otherwise
       return (if otherColor == blue then red else blue);
-    }
   }
 }
 

@@ -95,28 +95,25 @@ gsl_spline_free(sp);
 record Payload {
   var alpha : real;
 }
-export proc func(x : real, p : c_void_ptr) : real {
+export proc func1(x : real, p : c_void_ptr) : real {
   var r = (p : c_ptr(Payload)).deref();
   return log(r.alpha*x)/sqrt(x);
 }
-extern {
-#include <gsl/gsl_integration.h>
+// Set up the GSL function
+var p = new Payload(1.0);
+var F : gsl_function;
+F.function = c_ptrTo(func1);
+F.params = c_ptrTo(p);
 
-  double func(double,void*);
-  static void call_qags(void* params, double a, double b, double epsabs, double epsrel, size_t limit, 
-      gsl_integration_workspace* wk, double *result, double *err) 
-  {
-    gsl_function F;
-    F.function = &func;
-    F.params = params;
-    gsl_integration_qags(&F, a,b,epsabs,epsrel,limit,wk,result,err);
-  }
-}
+// Set up the integrator
 var wk = gsl_integration_workspace_alloc(1000);
 var result, error: real(64);
-var p = new Payload(1.0);
-call_qags(c_ptrTo(p):c_void_ptr, 0, 1, 0, 1.e-07,1000,wk,c_ptrTo(result), c_ptrTo(error));
 const expected = -4.0;
+
+// Actual call
+gsl_integration_qags(c_ptrTo(F), 0.0, 1.0, 0.0, 1.0e-7, 1000, wk, c_ptrTo(result), c_ptrTo(error));
+
+// Clean up
 writeln("Integration result : ",result);
 writeln("Expected : ", expected);
 writeln("Estimated error : ",error);

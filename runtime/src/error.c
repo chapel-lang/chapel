@@ -19,9 +19,11 @@
 
 #include "chplrt.h"
 #include "chpl-linefile-support.h"
+#include "chplcgfns.h"
 
 #include "error.h"
 #include "chplexit.h"
+#include "chpl-env.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -31,6 +33,53 @@
 
 #ifndef LAUNCHER
 #include "chpl-atomics.h"
+#endif
+
+#ifdef CHPL_UNWIND_LIBUNWIND
+// Necessary for instruct libunwind to use only the local unwind
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
+
+static void chpl_stack_unwind(void){
+  // This is just a prototype using libunwind
+  unw_cursor_t cursor;
+  unw_context_t uc;
+  unw_word_t wordValue;
+  char buffer[128];
+
+  // Check if we need to print the stack trace (default = yes)
+  if(! chpl_get_rt_env_bool("UNWIND", true)) {
+    return;
+  }
+
+  unw_getcontext(&uc);
+  unw_init_local(&cursor, &uc);
+
+  if(chpl_sizeSymTable > 0)
+    fprintf(stderr,"Stacktrace\n\n");
+
+  // This loop does the effective stack unwind, see libunwind documentation
+  while (unw_step(&cursor) > 0) {
+    unw_get_proc_name(&cursor, buffer, sizeof(buffer), &wordValue);
+    // Since this stack trace is printed out a program exit, we do not believe
+    // it is performance sensitive. Additionally, this initial implementation
+    // favors simplicity over performance.
+    //
+    // If it becomes necessary to improve performance, this code could use be
+    // faster using one of these two strategies:
+    // 1) Use a hashtable or map to find entries in chpl_funSymTable, or
+    // 2) Emit chpl_funSymTable in sorted order and use binary search on it
+    for(int t = 0; t < chpl_sizeSymTable; t+=2 ){
+      if (!strcmp(chpl_funSymTable[t], buffer)){
+        fprintf(stderr,"%s() at %s:%d\n",
+                  chpl_funSymTable[t+1],
+                  chpl_lookupFilename(chpl_filenumSymTable[t]),
+                  chpl_filenumSymTable[t+1]);
+        break;
+      }
+    }
+  }
+}
 #endif
 
 int verbosity = 1;
@@ -90,6 +139,11 @@ void chpl_error_explicit(const char *message, int32_t lineno,
   else
     fprintf(stderr, "error: %s", message);
   fprintf(stderr, "\n");
+
+#ifdef CHPL_UNWIND_LIBUNWIND
+  chpl_stack_unwind();
+#endif
+
   chpl_exit_any(1);
 }
 

@@ -613,8 +613,10 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
 
   // Add start fence to wrapper if it was requested
   // This supports --cache-remote and is set in createTaskFunctions
-  if (fn->hasFlag(FLAG_WRAPPER_NEEDS_START_FENCE))
+  if (fn->hasFlag(FLAG_WRAPPER_NEEDS_START_FENCE)) {
+    wrap_fn->addFlag(FLAG_WRAPPER_NEEDS_START_FENCE); // helps optimizeOnClauses
     wrap_fn->insertAtTail(new CallExpr(PRIM_START_RMEM_FENCE));
+  }
 
   // Create a call to the original function
   CallExpr *call_orig = new CallExpr(fn);
@@ -672,8 +674,10 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
 
   // Add finish fence to wrapper if it was requested
   // This supports --cache-remote and is set in createTaskFunctions
-  if (fn->hasFlag(FLAG_WRAPPER_NEEDS_FINISH_FENCE))
+  if (fn->hasFlag(FLAG_WRAPPER_NEEDS_FINISH_FENCE)) {
+    wrap_fn->addFlag(FLAG_WRAPPER_NEEDS_FINISH_FENCE); // helps optimizeOnClauses
     wrap_fn->insertAtTail(new CallExpr(PRIM_FINISH_RMEM_FENCE));
+  }
 
   wrap_fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
@@ -960,9 +964,20 @@ freeHeapAllocatedVars(Vec<Symbol*> heapAllocatedVars) {
 //  fLocal == true
 // or
 //  CHPL_COMM == "ugni"
-// of
+// or
 //  CHPL_COMM == "gasnet" && CHPL_GASNET_SEGMENT == "everything";
+// or
+//  CHPL_STACK_CHECKS == 0 && CHPL_TASKS == "fifo"
+// or
+//  CHPL_STACK_CHECKS == 0 && CHPL_TASKS == "muxed"
+//
 // true otherwise.
+//
+// The tasking layer matters because fifo and muxed allocate
+// from task stacks the communication registered heap
+// (unless stack checks is on, in which case it might not
+//  be possible because of huge pages).
+// In the future, we hope that all tasking layers do this.
 static bool
 needHeapVars() {
   if (fLocal) return false;
@@ -970,6 +985,11 @@ needHeapVars() {
   if (!strcmp(CHPL_COMM, "ugni") ||
       (!strcmp(CHPL_COMM, "gasnet") &&
        !strcmp(CHPL_GASNET_SEGMENT, "everything")))
+    return false;
+
+  if (fNoStackChecks &&
+      (0 == strcmp(CHPL_TASKS, "fifo") ||
+       0 == strcmp(CHPL_TASKS, "muxed")) )
     return false;
 
   return true;
@@ -1010,41 +1030,51 @@ static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 //   Otherwise, if it is a record-wrapped type, replicate it.
 //   Otherwise,
 //    Add it to varSet and varVec, so it will be put on the heap.
-static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                                Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
-                                Vec<Symbol*>& varSet, Vec<Symbol*>& varVec)
+static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+
+                                Vec<Symbol*>&                 refSet,
+                                Vec<Symbol*>&                 refVec,
+
+                                Vec<Symbol*>&                 varSet,
+                                Vec<Symbol*>& varVec)
 {
   forv_Vec(DefExpr, def, gDefExprs) {
     SET_LINENO(def);
-    if (!fLocal &&
-        isModuleSymbol(def->parentSymbol) &&
-        def->parentSymbol != rootModule &&
-        isVarSymbol(def->sym) &&
+
+    if (!fLocal                                 &&
+        isModuleSymbol(def->parentSymbol)       &&
+        def->parentSymbol != rootModule         &&
+        isVarSymbol(def->sym)                   &&
         !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
         !def->sym->hasFlag(FLAG_EXTERN)) {
       if (def->sym->hasFlag(FLAG_CONST) &&
-          (is_bool_type(def->sym->type) ||
-           is_enum_type(def->sym->type) ||
-           is_int_type(def->sym->type) ||
-           is_uint_type(def->sym->type) ||
-           is_real_type(def->sym->type) ||
-           is_imag_type(def->sym->type) ||
+          (is_bool_type(def->sym->type)    ||
+           is_enum_type(def->sym->type)    ||
+           is_int_type(def->sym->type)     ||
+           is_uint_type(def->sym->type)    ||
+           is_real_type(def->sym->type)    ||
+           is_imag_type(def->sym->type)    ||
            is_complex_type(def->sym->type) ||
-           (isRecord(def->sym->type) &&
+           (isRecord(def->sym->type)             &&
             !isRecordWrappedType(def->sym->type) &&
             // sync/single are currently classes, so this shouldn't matter
-            !isSyncType(def->sym->type) &&
+            !isSyncType(def->sym->type)          &&
+            !isSingleType(def->sym->type)        &&
             // Dont try to broadcast string literals, they'll get fixed in
             // another manner
             (def->sym->type != dtString)))) {
         // replicate global const of primitive type
         INT_ASSERT(defMap.get(def->sym) && defMap.get(def->sym)->n == 1);
+
         for_defs(se, defMap, def->sym) {
-          se->getStmtExpr()->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, def->sym));
+          se->getStmtExpr()->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST,
+                                                      def->sym));
         }
+
       } else if (isRecordWrappedType(def->sym->type)) {
         // replicate address of global arrays, domains, and distributions
         replicateGlobalRecordWrappedVars(def);
+
       } else {
         // put other global constants and all global variables on the heap
         varSet.set_add(def->sym);
@@ -1430,21 +1460,56 @@ static void insertEndCounts()
   }
 }
 
-static bool isDirectOnCall(FnSymbol* fn, CallExpr* call)
+// Generate an if statement
+// if ( chpl_doDirectExecuteOn( targetLocale ) )
+//     call un-wrapped task function
+// else
+//     proceed as with chpl_executeOn/chpl_executeOnFast
+//     fid call to wrapper function on a remote local
+//     (possibly just a different sublocale)
+//
+// This is called the "direct on" optimization.
+//
+// Returns the call in the 'else' block (which will need
+// argument bundling as usual).
+static
+CallExpr* createConditionalForDirectOn(CallExpr* call, FnSymbol* fn)
 {
-  if (fn->hasFlag(FLAG_ON)) {
-    // For an on block, the first argument is the target locale.
 
-    // The call is direct if this first argument
-    // is a SymExpr with the flag FLAG_DIRECT_ON_ARGUMENT.
-    if (SymExpr* se = toSymExpr(call->get(1))) {
-      if (se->var->hasFlag(FLAG_DIRECT_ON_ARGUMENT)) {
-        return true;
-      }
-    }
-  }
+  VarSymbol* isDirectTmp = newTemp("isdirect", dtBool);
+  CallExpr* isCall;
+  isCall = new CallExpr(gChplDoDirectExecuteOn,
+                        call->get(1)->copy() // target
+                       );
 
-  return false;
+  DefExpr* def = new DefExpr(isDirectTmp);
+  call->insertBefore(def);
+
+  // Remove call (we will add it back in a conditional)
+  call->remove();
+
+  CallExpr* move = new CallExpr(PRIM_MOVE, isDirectTmp, isCall);
+  def->insertAfter(move);
+
+  // Build comparison
+  SymExpr* isTrue = new SymExpr(isDirectTmp);
+
+  // Build true branch
+  CallExpr* directcall = call->copy();
+
+  // Remove the first arg (destination locale)
+  // not needed for direct call
+  directcall->get(1)->remove();
+
+  // False branch is call.
+
+  // Build condition
+  CondStmt* cond = new CondStmt(isTrue, directcall, call);
+
+  // Add the condition which calls the outlined task function somehow.
+  move->insertAfter(cond);
+
+  return call;
 }
 
 // For each "nested" function created to represent remote execution,
@@ -1469,13 +1534,12 @@ static void passArgsToNestedFns() {
       forv_Vec(CallExpr, call, *fn->calledBy) {
         SET_LINENO(call);
 
-        if (isDirectOnCall(fn, call))
-          // For a direct call, don't bundle the arguments
-          // leave the call directly invoking the on-function.
-          // On statements also need their first argument removed.
-          call->get(1)->remove();
-        else
-          bundleArgs(call, baData);
+        if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_NON_BLOCKING)) {
+          // create conditional for direct-on optimization
+          call = createConditionalForDirectOn(call, fn);
+        }
+
+        bundleArgs(call, baData);
       }
 
       if (fn->hasFlag(FLAG_ON)) {

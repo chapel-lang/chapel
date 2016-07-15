@@ -123,6 +123,8 @@ void checkPrimitives()
      case PRIM_IS_TUPLE_TYPE:
      case PRIM_IS_STAR_TUPLE_TYPE:
      case PRIM_NEW:                 // new keyword
+     case PRIM_ERROR:
+     case PRIM_WARNING:
       if (resolved)
         INT_FATAL("Primitive should not appear after resolution is complete.");
       break;
@@ -237,8 +239,6 @@ void checkPrimitives()
      case PRIM_ARRAY_SHIFT_BASE_POINTER:
      case PRIM_ARRAY_SET:
      case PRIM_ARRAY_SET_FIRST:
-     case PRIM_ERROR:
-     case PRIM_WARNING:
      case PRIM_WHEN:
      case PRIM_BLOCK_PARAM_LOOP:        // BlockStmt::blockInfo - param for loop
      case PRIM_BLOCK_WHILEDO_LOOP:      // BlockStmt::blockInfo - while do loop
@@ -264,7 +264,8 @@ void checkPrimitives()
      case PRIM_HEAP_BROADCAST_GLOBAL_VARS:
      case PRIM_PRIVATE_BROADCAST:
      case PRIM_INT_ERROR:
-     case PRIM_CAPTURE_FN:
+     case PRIM_CAPTURE_FN_FOR_CHPL:
+     case PRIM_CAPTURE_FN_FOR_C:
      case PRIM_CREATE_FN_TYPE:
      case PRIM_STRING_COPY:
      case PRIM_CAST_TO_VOID_STAR:       // Cast the object argument to void*.

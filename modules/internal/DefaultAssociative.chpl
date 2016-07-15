@@ -25,7 +25,7 @@ module DefaultAssociative {
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
   
-  use Sort /* only QuickSort */;
+  use Sort; /* only sort */;
   
   // TODO: make the domain parameterized by this?
   type chpl_table_index_type = int;
@@ -411,7 +411,7 @@ module DefaultAssociative {
       for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do
         tableCopy(tmp) = table[slot].idx;
   
-      QuickSort(tableCopy);
+      sort(tableCopy);
   
       for ind in tableCopy do
         yield ind;
@@ -680,7 +680,7 @@ module DefaultAssociative {
       for (copy, slot) in zip(tableCopy.domain, dom._fullSlots()) do
         tableCopy(copy) = data(slot);
   
-      QuickSort(tableCopy);
+      sort(tableCopy);
   
       for elem in tableCopy do
         yield elem;

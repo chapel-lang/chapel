@@ -109,14 +109,6 @@ void normalize() {
     if (!fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) &&
         !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
       fixup_array_formals(fn);
-    if (fn->hasFlag(FLAG_LOCALE_MODEL_ALLOC)) {
-      INT_ASSERT(gChplHereAlloc==NULL);
-      gChplHereAlloc = fn;
-    }
-    if (fn->hasFlag(FLAG_LOCALE_MODEL_FREE)) {
-      INT_ASSERT(gChplHereFree==NULL);
-      gChplHereFree = fn;
-    }
     clone_parameterized_primitive_methods(fn);
     fixup_query_formals(fn);
     change_method_into_constructor(fn);
@@ -410,7 +402,11 @@ checkUseBeforeDefs() {
                 (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
                 call->get(1) == sym)
               continue; // We already handled this case above.
-            if ((!call || (call->baseExpr != sym && !call->isPrimitive(PRIM_CAPTURE_FN))) && sym->unresolved) {
+            if ((!call || 
+                 (call->baseExpr != sym && 
+                  !call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) &&
+                  !call->isPrimitive(PRIM_CAPTURE_FN_FOR_C))) && 
+                sym->unresolved) {
               if (!undeclared.set_in(sym->unresolved)) {
                 if (!toFnSymbol(fn->defPoint->parentSymbol)) {
                   USR_FATAL_CONT(sym, "'%s' undeclared (first use this function)",
@@ -962,6 +958,14 @@ static void insert_call_temps(CallExpr* call)
 
   tmp->addFlag(FLAG_MAYBE_PARAM);
   tmp->addFlag(FLAG_MAYBE_TYPE);
+
+  if (call->isNamed("super") && parentCall && parentCall->isNamed(".") &&
+      parentCall->get(1) == call) {
+    // We've got an access to a method or field on the super type.  This means
+    // we should preserve that knowledge for when we attempt to access the
+    // method on the super type.
+    tmp->addFlag(FLAG_SUPER_TEMP);
+  }
 
   call->replace(new SymExpr(tmp));
 
@@ -1748,14 +1752,15 @@ static void change_method_into_constructor(FnSymbol* fn) {
 
   // Now check that the function name matches the name of the type
   // attached to 'this'.
-  if (strcmp(fn->getFormal(2)->type->symbol->name, fn->name))
+  if (strcmp(fn->getFormal(2)->type->symbol->name, fn->name) &&
+      strcmp(fn->name, "init"))
     return;
 
   // The type must be a class type.
   // No constructors for records? <hilde>
   AggregateType* ct = toAggregateType(fn->getFormal(2)->type);
   if (!ct)
-    INT_FATAL(fn, "constructor on non-class type");
+    INT_FATAL(fn, "initializer on non-class type");
 
   // Call the initializer, passing in just the generic arguments.
   // This call ensures that the object is default-initialized before the user's
@@ -1770,7 +1775,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
     }
     if (!arg) {
       if (!defaultTypeConstructorArg->defaultExpr)
-        USR_FATAL_CONT(fn, "constructor for class '%s' requires a generic argument called '%s'", ct->symbol->name, defaultTypeConstructorArg->name);
+        USR_FATAL_CONT(fn, "initializer for class '%s' requires a generic argument called '%s'", ct->symbol->name, defaultTypeConstructorArg->name);
     } else {
       call->insertAtTail(new NamedExpr(arg->name, new SymExpr(arg)));
     }

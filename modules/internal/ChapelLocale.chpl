@@ -385,7 +385,7 @@ module ChapelLocale {
       return this;
     }
 
-    // These iterators are to be used by RootLocale:init() to
+    // These iterators are to be used by RootLocale:setup() to
     // initialize the LocaleModel.  The calling loop body cannot
     // contain any non-local code, since the rootLocale is not yet
     // initialized.
@@ -487,7 +487,7 @@ module ChapelLocale {
   pragma "no doc"
   proc chpl_init_rootLocale() {
     origRootLocale = new RootLocale();
-    (origRootLocale:RootLocale).init();
+    (origRootLocale:RootLocale).setup();
   }
 
   // This function sets up a private copy of rootLocale by replicating

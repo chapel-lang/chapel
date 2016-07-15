@@ -1435,8 +1435,8 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
   if (depth) {
     var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
     if (sort) {
-      use Sort;
-      QuickSort(subdirs);
+      use Sort /* only sort */;
+      sort(subdirs);
     }
 
     for subdir in subdirs {

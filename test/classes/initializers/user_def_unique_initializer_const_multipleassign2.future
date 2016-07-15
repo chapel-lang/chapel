@@ -1,0 +1,3 @@
+semantic: multiple assignments to const fields in initializers
+
+error message: assigning a const field multiple times in the initializer does not result in an error message
