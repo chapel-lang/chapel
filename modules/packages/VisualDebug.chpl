@@ -63,7 +63,7 @@ module VisualDebug
 
   private extern proc chpl_vdebug_tagname (tagname: c_string, tagno: int);
 
-  private var tagno: int = 0;
+  private var tagno: atomic int;
 
 
 /* Instead of using a "coforall l in Locales" which is an O(n) operation
@@ -122,6 +122,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
   proc startVdebug ( rootname : string ) {
     var now = chpl_now_time();
     if (VisualDebugOn) {
+      tagno.write(0);
       VDebugTree (vis_op.v_start, rootname, now, 0);
     }
   }
@@ -133,9 +134,9 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
 */
   proc tagVdebug ( tagname : string ) {
     if (VisualDebugOn) {
-       chpl_vdebug_tagname (tagname.c_str(), tagno);
-       VDebugTree (vis_op.v_tag, "", 0, tagno);
-       tagno += 1;
+       var ttag = tagno.fetchAdd(1);
+       chpl_vdebug_tagname (tagname.c_str(), ttag);
+       VDebugTree (vis_op.v_tag, "", 0, ttag);
     }
   }
 
@@ -153,7 +154,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
 */
   proc pauseVdebug () {
     if (VisualDebugOn) {
-       VDebugTree (vis_op.v_pause, "", 0, tagno-1);
+       VDebugTree (vis_op.v_pause, "", 0, tagno.read()-1);
     }
   }
 
