@@ -103,6 +103,7 @@ module String {
     ascii,
     utf8
   }
+  type string_ascii = string(ascii);
 
   //
   // String Implementation
@@ -113,6 +114,8 @@ module String {
   pragma "ignore noinit"
   pragma "no default functions" // avoid the default (read|write)This routines
   record string {
+    param encoding: Encoding = Encoding.ascii;
+
     pragma "no doc"
     var len: int = 0; // length of string in bytes
     pragma "no doc"
@@ -125,8 +128,6 @@ module String {
     // We use chpl_nodeID as a shortcut to get at here.id without actually constructing
     // a locale object. Used when determining if we should make a remote transfer.
     var locale_id = chpl_nodeID; // : chpl_nodeID_t
-
-    param encoding: Encoding = Encoding.ascii;
 
     /*
       Construct a new string from ``s``. If ``owned`` is set to ``true`` then
