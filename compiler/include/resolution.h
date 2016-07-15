@@ -21,6 +21,7 @@
 #define _RESOLUTION_H_
 
 #include "baseAST.h"
+#include <vector>
 #include <map>
 
 class CallInfo;
@@ -83,5 +84,12 @@ FnSymbol* getAutoCopy(Type* t);
 FnSymbol* getAutoDestroy(Type* t);
 
 bool isPOD(Type* t);
+
+// tuples
+TypeSymbol* getTupleTypeSymbol(std::vector<TypeSymbol*>& args);
+void instantiate_tuple_hash( FnSymbol* fn);
+void instantiate_tuple_init(FnSymbol* fn);
+void instantiate_tuple_initCopy(FnSymbol* fn);
+void instantiate_tuple_autoCopy(FnSymbol* fn);
 
 #endif

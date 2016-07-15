@@ -7640,6 +7640,22 @@ static void resolveReturnType(FnSymbol* fn)
     fn->retType = retType;
   }
 
+  if (retType->symbol->hasFlag(FLAG_TUPLE)) {
+    // testing
+    std::vector<TypeSymbol*> tmp;
+    AggregateType* at = toAggregateType(retType);
+    int i = 0;
+    for_fields(field, at) {
+      if (i != 0) { // skip size field
+        tmp.push_back(field->type->symbol);
+      }
+      i++;
+    }
+    TypeSymbol* ts = getTupleTypeSymbol(tmp);
+    assert(ts);
+    gdbShouldBreakHere();
+  }
+
 }
 
 // Simple wrappers to check if a function is a specific type of iterator

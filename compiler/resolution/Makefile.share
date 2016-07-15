@@ -25,6 +25,7 @@ RESOLUTION_SRCS =                                    \
 	generics.cpp                                 \
 	functionResolution.cpp                       \
 	lowerIterators.cpp                           \
+	tuples.cpp                                   \
 	wrappers.cpp
 
 SVN_SRCS = $(RESOLUTION_SRCS)
