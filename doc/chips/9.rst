@@ -105,28 +105,9 @@ namespacing. While it is common practice for package names to be PascalCase
 while chpl files are lowercase, it is an acceptable tradeoff for reliability,
 and MyPackage will be the first file listed in src/.
 
-Upon invoking ``mason build``, the dependencies will be parsed into a directed
-acyclic graph, resolved, and serialized into ``Mason.lock``. They will then be
-downloaded into ``~/.mason/src/`` mirroring Cargo's ``~/.cargo/src/`` common pool
-of dependencies. Finally, if the package is an application, the binary will
-build into ``target/``. The final directory hierarchy will look like this:
-
-::
-
-  ~/.mason/src/
-    (contains dependencies of MyPackage)
-
-  MyPackage/
-    Mason.toml
-    Mason.lock
-    src/
-      MyPackage.chpl
-    target/
-      ( MyPackage )
-
-To work on an existing project, clone its repository and invoke ``mason build``.
-This will fetch all the dependencies and build the project for a fully
-functional copy.
+To work on an existing project, clone its repository and invoke ``mason build``
+(see [Build System]). This will fetch all the dependencies and build the project
+for a fully functional copy.
 
 Project Code
 ++++++++++++
@@ -343,7 +324,7 @@ This step will be fully automated by mason, in which it:
 If the user has manually edited their manifest file, they may update the
 lock file using ``mason update`` from within the project directory. Otherwise,
 the lock file is updated automatically when using ``mason add`` or ``mason rm``.
-(see: Syncing Commands)
+(see [Syncing Commands])
 
 The user should never edit a ``Mason.lock`` file manually.
 
@@ -372,7 +353,7 @@ Lock File -> Dependency Code
 ++++++++++++++++++++++++++++
 
 The dependency code will be downloaded into a common pool of packages, under
-the user's home directory by default:
+the user's home directory by default. This mirrors Cargo's ``~/.cargo/src/``.
 
 ::
 
@@ -381,7 +362,7 @@ the user's home directory by default:
 
 
 Syncing Commands
-++++++++++++++++
+----------------
 
 When any of ``add``, ``rm``, or ``update`` are invoked, mason will make sure that
 the manifest file, lock file, and dependency code are kept in sync with each other.
@@ -395,7 +376,7 @@ directories are present.
 
 
 Build System
-------------
+++++++++++++
 
 When invoked, ``mason build`` will do the following:
 
@@ -414,14 +395,32 @@ When invoked, ``mason build`` will do the following:
   - Binary dependencies are included by specifying their main file from the
     dependency pool. 
 
+* If the package is an application, build the binary into ``target/``.
+
+
 ``mason run`` will, in turn:
 
 * Invoke ``build``.
-
-* Run the resulting executable.
+  
+* Run the resulting executable out of ``target/``, if it exists.
 
   - Runtime options may be included in the manifest, or may be passed to
     ``build`` on the command line. Command line options take precedence. 
+
+
+For example, after ``mason run MyPackage``, the project directory appears as so:
+
+::
+
+  ~/.mason/src/
+
+  MyPackage/
+    Mason.toml
+    Mason.lock
+    src/
+      MyPackage.chpl
+    ( target/ )
+      ( MyPackage )
 
 
 Future Work
