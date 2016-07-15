@@ -314,14 +314,16 @@ License fields will propagate throughout their uses for developer convenience.
 Manifest File -> Lock File
 ++++++++++++++++++++++++++
 
-As lock file is a serialized directed acyclic graph of the dependencies
-in the project. It is more concrete than a manifest because it specifies
-Git SHA revisions rather than abstract "versions" or "packages". The purpose
-of the lock is to ensure repeatable builds on a given system; whether the
-lock file is checked into the repository to ensure identical builds across
-all systems is left to the project.
+A lock file ensures repeatable builds on a given system, thus "locking" the
+project's build sequence and configuration into place. It contains a serialized
+directed acyclic graph of the dependencies build options from the manifest.
 
-This will be a fully automated step in which mason does the following:
+The lock file is more concrete than the manifest because it specifies Git SHA
+revisions rather than abstract "versions" or "packages". Whether the lock
+file is checked into the repository to ensure identical builds across all
+systems is up to the project.
+
+This step will be fully automated by mason, in which it:
 
 * Parses the manifest file
 * Builds a dependency directed acyclic graph (DAG)
@@ -344,7 +346,6 @@ the lock file is updated automatically when using ``mason add`` or ``mason rm``.
 (see: Syncing Commands)
 
 The user should never edit a ``Mason.lock`` file manually.
-
 
 Lock File
 +++++++++
