@@ -23,6 +23,7 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "codegen.h"
+#include "view.h"
 
 #include <algorithm>
 
@@ -178,8 +179,17 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
     iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator",    iteratorExpr));
 
   // Expand tuple to a tuple containing appropriate iterators for each value.
-  else
-    iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIteratorZip", iteratorExpr));
+  else {
+    CallExpr* zipExpr = toCallExpr(iteratorExpr);
+    assert(zipExpr);
+    list_view(zipExpr);
+    //    zipExpr->baseExpr->replace(new UnresolvedSymExpr("_getIteratorZip"));
+    zipExpr->baseExpr = new UnresolvedSymExpr("_getIteratorZip");
+    list_view(zipExpr);
+    printf("----\n");
+    iterInit = new CallExpr(PRIM_MOVE, iterator, zipExpr);
+    assert(zipExpr == iteratorExpr);
+  }
 
   // try to optimize anonymous range iteration, replaces iterExpr in place
   optimizeAnonymousRangeIteration(iteratorExpr, zippered);
