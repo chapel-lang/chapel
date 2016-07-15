@@ -98,7 +98,7 @@ module ChapelIteratorSupport {
     return ic;
 
   proc _getIterator(type t) {
-    compilerError("cannot iterate over a type");
+    return _getIterator(t.these());
   }
 
   inline proc _getIteratorZip(x) {
@@ -122,9 +122,11 @@ module ChapelIteratorSupport {
       return _getIteratorZipInternal(x, 1);
   }
 
+  /*
   proc _checkIterator(type t) {
     compilerError("cannot iterate over a type");
   }
+  */
 
   inline proc _checkIterator(x) {
     return x;
