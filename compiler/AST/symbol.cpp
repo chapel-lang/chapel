@@ -656,6 +656,7 @@ GenRet VarSymbol::codegen() {
         ret.isLVPtr = GEN_VAL;
         ret.c = cname;
       } else {
+        std::cout << "Aren't I here?\n";
         ret.c = '&';
         ret.c += cname;
         ret.isLVPtr = GEN_PTR;

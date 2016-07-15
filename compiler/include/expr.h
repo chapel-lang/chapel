@@ -255,6 +255,7 @@ private:
   GenRet          codegenPrimGetSvecMemberValue();
   GenRet          codegenPrimGetPrivClassForTarget(BaseAST* target);
   GenRet          codegenPrimOnLocaleNum();
+  GenRet          codegenPrimDerefForTarget(BaseAST* target);
 
   void            codegenInvokeOnFun();
   void            codegenInvokeTaskFun(const char* name);

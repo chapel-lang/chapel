@@ -23,6 +23,7 @@
 #include "iterator.h"
 #include "stringutil.h"
 #include "type.h"
+#include "view.h"
 
 static Type*
 returnInfoUnknown(CallExpr* call) {
@@ -157,9 +158,16 @@ returnInfoCast(CallExpr* call) {
 static Type*
 returnInfoVal(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
-  if (!ct || !ct->symbol->hasFlag(FLAG_REF))
-    INT_FATAL(call, "attempt to get value type of non-reference type");
-  return ct->getField(1)->type;
+  if (ct) {
+    if(ct->symbol->hasFlag(FLAG_REF)) {
+      return ct->getField(1)->type;
+    }
+    else if(ct->symbol->hasFlag(FLAG_WIDE_REF)) {
+      return ct->getField(2)->type;
+    }
+  }
+  INT_FATAL(call, "attempt to get value type of non-reference type");
+  return ct->getField(1)->type; //dummy
 }
 
 static Type*

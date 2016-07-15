@@ -849,6 +849,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
     // Create a stack-local stored wide pointer
     // of the appropriate type.
     ret = createTempVar(wideRefType);
+    std::cout << "Creating temp var : " << ret.c << std::endl;
     if( info->cfile ) {
       std::string localeAssign;
       std::string addrAssign;
@@ -857,7 +858,12 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
       info->cStatements.push_back(localeAssign);
       addrAssign = ret.c + ".addr = " + raddr.c + ";\n";
       info->cStatements.push_back(addrAssign);
+      std::cout << "\n*******\n" << ret.c << "\n*******\n" << std::endl;
+
+        std::cout << "DDD: " << (ret.isLVPtr == GEN_VAL) << " "
+<< (ret.isLVPtr == GEN_PTR) << " " << (ret.isLVPtr == GEN_WIDE_PTR);
     } else {
+      std::cout << "no c file maybe \n";
 #ifdef HAVE_LLVM
       llvm::Value* adr = info->builder->CreateStructGEP(
 #if HAVE_LLVM_VER >= 37
@@ -1143,7 +1149,7 @@ Type* getRefTypesForWideThing(GenRet wide, Type** wideRefTypeOut)
         ret = wide.chplType->getField("addr")->typeInfo();
         wideRefType = wide.chplType;
       } else {
-        INT_ASSERT(0);
+        //INT_ASSERT(0);
       }
     }
   }
@@ -1404,7 +1410,7 @@ GenRet codegenFieldPtr(
     // Reduce the Chapel reference or wide reference cases
     // to GEN_PTR or GEN_WIDE_PTR cases.
     if (baseType->symbol->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF)) {
-      //std::cout << "In here 1\n";
+      std::cout << "In here 1\n";
       base = codegenDeref(base);
       return codegenFieldPtr(base, c_field_name, chpl_field_name, special);
     }
@@ -1415,7 +1421,7 @@ GenRet codegenFieldPtr(
     // and rebuild addresses.
     if( base.isLVPtr == GEN_WIDE_PTR ||
         (baseType && baseType->symbol->hasFlag(FLAG_WIDE_CLASS)) ) {
-      //std::cout << "In here 2\n";
+      std::cout << "In here 2\n";
       GenRet addr;
       addr = codegenRaddr(base);
       addr = codegenFieldPtr(addr, c_field_name, chpl_field_name, special);
@@ -1438,6 +1444,7 @@ GenRet codegenFieldPtr(
       // Get the local version of the class (because it has the fields)
       base = codegenValue(base);
       baseType = baseType->getField("addr")->typeInfo();
+      std::cout << "I should hit this line\n";
       ct = toAggregateType(baseType);
     } else {
       // Must be a record or union type, and we must have an
@@ -2613,9 +2620,29 @@ GenRet codegenArgForFormal(GenRet arg,
     if (!isExtern &&
         formal->requiresCPtr() &&
         !formal->type->symbol->hasFlag(FLAG_REF)) { 
+        std::cout << "HERE!!1\n";
+        print_view(formal);
+        std::cout << arg.c << std::endl;
+        std::cout << (arg.isLVPtr == GEN_PTR) << " " << 
+          (arg.isLVPtr == GEN_WIDE_PTR) << std::endl;
       if( arg.isLVPtr == GEN_VAL ) {
+        std::cout << "HERE!!\n";
+        print_view(formal);
         arg = codegenValuePtr(arg);
+        std::cout << arg.c << std::endl;
       }
+      //this else if is to prevent codegen generated temp vars of type wide
+      //classes to be passed to * formals without &
+      //I'm not proud of it, there might be a better way, but this was by far
+      //the easiest solution I could think of
+      //else if(arg.isLVPtr == GEN_PTR) {
+        //if(arg.chplType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+          //if(arg.c[0] != '&') {
+            ////arg.c = '&' + arg.c;
+            //codegenValuePtr(arg);
+          //}
+        //}
+      //}
     } else {
       if( arg.isLVPtr != GEN_VAL ) {
         arg = codegenValue(arg);
@@ -2628,6 +2655,7 @@ GenRet codegenArgForFormal(GenRet arg,
       }
     } // otherwise, leave it be.
   }
+  std::cout << "Arg ready " << arg.c << std::endl;
   return arg;
 }
 
@@ -2663,6 +2691,8 @@ GenRet codegenCallExpr(GenRet function,
           if (!fSym->hasFlag(FLAG_EXTERN))
             isExtern = false;
         }
+        std::cout << "Earlier: " << (args[i].isLVPtr == GEN_VAL) << " "
+<< (args[i].isLVPtr == GEN_PTR) << " " << (args[i].isLVPtr == GEN_WIDE_PTR);
         args[i] =
           codegenArgForFormal(args[i], formal, defaultToValues, isExtern);
       }
@@ -4388,12 +4418,19 @@ GenRet CallExpr::codegenPrimitive() {
   // We list the special cases handled in the PRIM_MOVE switch above,
   // so we don't trigger the "should these still be in the AST?" error.
   case PRIM_DEREF:
-    ret = codegenDeref(get(1));
+    //ret = codegenDeref(get(1));
+    ret = codegenPrimDerefForTarget(NULL);
     break;
   case PRIM_GET_SVEC_MEMBER_VALUE:
     ret = codegenPrimGetSvecMemberValue();
     break;
   case PRIM_GET_MEMBER_VALUE:
+    if(CallExpr* ce = toCallExpr(parentExpr)) {
+      if(ce->isPrimitive(PRIM_ASSIGN)) {
+        ret = codegenPrimGetMemberValForTarget(ce->get(1));
+        break;
+      }
+    }
     ret = codegenPrimGetMemberValForTarget(NULL);
     //ret = codegenFieldPtr(get(1), get(2));
     break;
@@ -5927,7 +5964,7 @@ GenRet CallExpr::codegenPrimMove() {
   if (get(1)->typeInfo() == dtVoid) {
     ret = get(2)->codegen();
   // Is the RHS a primop with special case handling?
-  } else if (codegenPrimMoveRhsIsSpecialPrimop() == true) {
+  } else if (codegenSpecialPrimitive() == true) {
     // Codegen has been handled.  No more activity here.
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true  &&
@@ -6038,13 +6075,50 @@ GenRet CallExpr::codegenPrimGetSvecMemberForTarget(BaseAST* target) {
 
   return ret;
 }
+GenRet CallExpr::codegenPrimDerefForTarget(BaseAST* target){
+
+  if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
+      get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+    Type* valueType;
+
+    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))
+      valueType = get(1)->getValType();
+    else
+      valueType = get(1)->typeInfo()->getField("addr")->type;
+
+    if(target) {
+      INT_ASSERT(valueType == target->typeInfo());
+    }
+
+    // set get(1) = *(rhs->get(1));
+    //codegenAssign(get(1), codegenDeref(rhs->get(1)));
+    return codegenDeref(get(1));
+
+  } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+    // star tuple retval in codegenAssign
+    // set get(1) = *(rhs->get(1));
+    //codegenAssign(get(1), codegenDeref(rhs->get(1)));
+    return codegenDeref(get(1));
+
+  } else {
+    // set get(1) = *(rhs->get(1));
+    //codegenAssign(get(1), codegenDeref(rhs->get(1)));
+    return codegenDeref(get(1));
+  }
+  INT_ASSERT(0);
+  GenRet ret;
+  return ret;
+}
+
 GenRet CallExpr::codegenPrimGetMemberValForTarget(BaseAST* target) {
   // here rhs is the primitive itself(this)
   //SymExpr* se = toSymExpr(rhs->get(2));
   SymExpr* se = toSymExpr(get(2));
 
-  //std::cout << "IN ENGIN METHOD\n";
-  //print_view(this);
+  std::cout << "IN ENGIN METHOD\n";
+  print_view(this);
+  std::cout << "for target\n";
+  print_view(target);
 
   if (target && get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
     if (se->var->hasFlag(FLAG_SUPER_CLASS)) {
@@ -6056,21 +6130,25 @@ GenRet CallExpr::codegenPrimGetMemberValForTarget(BaseAST* target) {
             addr));
 
       //codegenAssign(get(1), ref);
+      std::cout << "IN HELPER 1\n";
       return ref;
 
     } else {
       //codegenAssign(get(1), codegenFieldPtr(rhs->get(1), se));
+      std::cout << "IN HELPER 2\n";
       return codegenFieldPtr(get(1), se);
     }
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
     // codegenAssign will dereference.
     //codegenAssign(get(1), codegenFieldPtr(rhs->get(1), se));
+      std::cout << "IN HELPER 3\n";
     return codegenFieldPtr(get(1), se);
 
   } else if (get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
     // codegenAssign will handle star tuple
     //codegenAssign(get(1), codegenFieldPtr(rhs->get(1), se));
+      std::cout << "IN HELPER 4\n";
     return codegenFieldPtr(get(1), se);
 
   } else if (se->var->hasFlag(FLAG_SUPER_CLASS)) {
@@ -6083,15 +6161,17 @@ GenRet CallExpr::codegenPrimGetMemberValForTarget(BaseAST* target) {
     ref.isLVPtr = GEN_VAL;
 
     //codegenAssign(get(1), ref);
+      std::cout << "IN HELPER 5\n";
     return ref;
 
   } else {
     //codegenAssign(get(1), codegenFieldPtr(rhs->get(1), se));
+      std::cout << "IN HELPER 6\n";
     return codegenFieldPtr(get(1), se);
   }
 }
 
-bool CallExpr::codegenPrimMoveRhsIsSpecialPrimop() {
+bool CallExpr::codegenSpecialPrimitive() {
   CallExpr* rhs    = toCallExpr(get(2));
   bool      retval = false;
 
@@ -6173,6 +6253,9 @@ bool CallExpr::codegenPrimMoveRhsIsSpecialPrimop() {
     case PRIM_GET_MEMBER_VALUE: {
       SymExpr* se = toSymExpr(rhs->get(2));
 
+      std::cout << "RHS .v\n";
+      print_view(this);
+
       if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         if (se->var->hasFlag(FLAG_SUPER_CLASS)) {
           // We're getting the super class pointer.
@@ -6182,18 +6265,25 @@ bool CallExpr::codegenPrimMoveRhsIsSpecialPrimop() {
           GenRet ref      = codegenAddrOf(codegenWideAddrWithAddr(srcwide,
                                                                   addr));
 
+          std::cout << "HERE 1\n";
           codegenAssign(get(1), ref);
 
         } else {
+          std::cout << "HERE 2\n";
+          print_view(get(1));
+          print_view(rhs->get(1));
+          print_view(se);
           codegenAssign(get(1), codegenFieldPtr(rhs->get(1), se));
         }
 
       } else if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         // codegenAssign will dereference.
+        std::cout << "HERE 3\n";
         codegenAssign(get(1), codegenFieldPtr(rhs->get(1), se));
 
       } else if (get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
         // codegenAssign will handle star tuple
+        std::cout << "HERE 4\n";
         codegenAssign(get(1), codegenFieldPtr(rhs->get(1), se));
 
       } else if (se->var->hasFlag(FLAG_SUPER_CLASS)) {
@@ -6205,9 +6295,11 @@ bool CallExpr::codegenPrimMoveRhsIsSpecialPrimop() {
         // the super class. So we just set isPtr to Value.
         ref.isLVPtr = GEN_VAL;
 
+        std::cout << "HERE 5\n";
         codegenAssign(get(1), ref);
 
       } else {
+        std::cout << "HERE 6\n";
         codegenAssign(get(1), codegenFieldPtr(rhs->get(1), se));
       }
 

@@ -22,7 +22,7 @@
 #include <string>
 
 #include "baseAST.h"
-
+#include "view.h"
 #include "astutil.h"
 #include "CForLoop.h"
 #include "expr.h"
@@ -589,6 +589,8 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
 
 GenRet baseASTCodegen(BaseAST* ast)
 {
+  std::cout<< "codegenning\n";
+  print_view(ast);
   GenRet ret = ast->codegen();
   ret.chplType = ast->typeInfo();
   ret.isUnsigned = ! is_signed(ret.chplType);

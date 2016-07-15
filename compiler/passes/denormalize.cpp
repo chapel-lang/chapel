@@ -54,7 +54,7 @@ void denormalize(FnSymbol *fn) {
   //if(strncmp(fn->name, "__getActualInsertPts", 20) != 0) return;
   //if(strcmp(fn->name, "chpl__init_eval-order-of-actuals") != 0) return;
   //std::cout << fn->name << std::endl;
-  //if(strcmp(fn->name, "updateVar") != 0) return;
+  //if(strcmp(fn->name, "chpl__init_passWdie") != 0) return;
   //if(strcmp(fn->name, "chpl__init_passFnsToC2x") != 0) return;
   forv_Vec(Symbol, sym, symSet) {
 
@@ -368,6 +368,16 @@ bool isDenormalizable(Symbol* sym,
       if(CallExpr* useParentCe = toCallExpr(useExpr)) {
         if(useParentCe->isPrimitive(PRIM_FTABLE_CALL)) {
           if(argMustUseCPtr(def->typeInfo())){
+            return false;
+          }
+        }
+      }
+
+      //PRIM_ASSIGN is pain when things are wide
+      if(CallExpr* useParentCe = toCallExpr(useExpr)) {
+        if(useParentCe->isPrimitive(PRIM_ASSIGN)) {
+          if(useParentCe->get(1)->typeInfo()->symbol->hasEitherFlag(
+                FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
             return false;
           }
         }
