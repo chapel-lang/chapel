@@ -1,3 +1,1 @@
-declared-return-forexpr.chpl:3: In function 'testproc':
-declared-return-forexpr.chpl:4: warning: whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)
 1 2 3 4 5 6 7 8 9 10

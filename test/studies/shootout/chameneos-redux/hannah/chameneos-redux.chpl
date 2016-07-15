@@ -181,7 +181,7 @@ proc printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
   if (totalMeetings == numMeetings*2) {
     writeln("total meetings PASS");
   } else {
-    writeln("total meetings actual = ", totalMeetings, ", total meetings expectud = ", numMeetings*2);
+    writeln("total meetings actual = ", totalMeetings, ", total meetings expected = ", numMeetings*2);
   }
 
   if (totalMeetingsWithSelf == 0) {

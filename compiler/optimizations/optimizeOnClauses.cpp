@@ -37,7 +37,7 @@
 //    AM handler can be run in a signal handler
 // 2- is the primitive/function communication free?
 
-// Any function containing comminication can't run in a fast block.
+// Any function containing communication can't run in a fast block.
 
 enum {
   // The primitive is ineligible for a fast (e.g. uses a lock or allocator)
@@ -429,7 +429,7 @@ inLocalBlock(CallExpr *call) {
 static int
 markFastSafeFn(FnSymbol *fn, int recurse, Vec<FnSymbol*> *visited) {
 
-  // First, handle functions we've already vesited.
+  // First, handle functions we've already visited.
   if (visited->in(fn)) {
     if (fn->hasFlag(FLAG_FAST_ON))
       return FAST_AND_LOCAL;

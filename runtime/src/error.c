@@ -56,9 +56,9 @@ static void chpl_stack_unwind(void){
   unw_init_local(&cursor, &uc);
 
   if(chpl_sizeSymTable > 0)
-    fprintf(stderr,"\nStacktrace\n\n");
+    fprintf(stderr,"Stacktrace\n\n");
 
-  // This loop does the effective stack unwind, see libunwid documentation
+  // This loop does the effective stack unwind, see libunwind documentation
   while (unw_step(&cursor) > 0) {
     unw_get_proc_name(&cursor, buffer, sizeof(buffer), &wordValue);
     // Since this stack trace is printed out a program exit, we do not believe
@@ -71,15 +71,14 @@ static void chpl_stack_unwind(void){
     // 2) Emit chpl_funSymTable in sorted order and use binary search on it
     for(int t = 0; t < chpl_sizeSymTable; t+=2 ){
       if (!strcmp(chpl_funSymTable[t], buffer)){
-        fprintf(stderr,"%s (%s:%d)\n",
-                 chpl_funSymTable[t+1],
-                 chpl_lookupFilename(chpl_filenumSymTable[t]),
-                 chpl_filenumSymTable[t+1]);
+        fprintf(stderr,"%s() at %s:%d\n",
+                  chpl_funSymTable[t+1],
+                  chpl_lookupFilename(chpl_filenumSymTable[t]),
+                  chpl_filenumSymTable[t+1]);
         break;
       }
     }
   }
-  fprintf(stderr,"\n");
 }
 #endif
 

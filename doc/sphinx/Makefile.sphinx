@@ -133,6 +133,9 @@ text: symlink-docs check-sphinxbuild clean-build
 
 man: symlink-docs check-sphinxbuild clean-build
 	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man
+	echo ".if n .pl 2000v" > $(BUILDDIR)/man/chapel.3
+	cat $(BUILDDIR)/man/chapel.1 >> $(BUILDDIR)/man/chapel.3
+	rm -f $(BUILDDIR)/man/chapel.1
 	@echo
 	@echo "Build finished. The manual pages are in "'$(BUILDPATH)'"/man."
 

@@ -1,9 +1,9 @@
-:title: Users Guide: The **cobegin** statement
+:title: Users Guide: **cobegin** Statements
 
 .. _ug-cobegin:
 
-The **cobegin** statement
-=========================
+**cobegin** Statements: creating groups of tasks
+================================================
 
 The **cobegin statement** creates a fixed number of related, yet
 potentially heterogeneous, tasks.  It is expressed by prefixing a

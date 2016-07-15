@@ -1,9 +1,33 @@
-Next Steps
-----------
-Base:
- - type, .type, casts
- - param
- - const
+outline
+-------
+basicTypesValues
+...
+const/param/type
+refs
+configs
+...
+casts       // is this the right place?
+coercions
+...
+operators
+ranges
+basicArrays
+compoundStatements
+...
+forloops
+zip
+...
+iterator functions
+these iterators
+...
+
+Use before def:
+---------------
+
+for: operators (+=)
+loop: simple arrays
+zip: tuples, array literals, unbounded ranges
+
  
 
 ASAP

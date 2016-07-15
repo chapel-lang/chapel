@@ -33,7 +33,7 @@ of decimal digits:
   :language: chapel
   :lines: 1,5
 
-However, they can also be expressed as binary, octal, or hexidecimal
+However, they can also be expressed as binary, octal, or hexadecimal
 values via the ``0b``/``0B``, ``0o``/``0O``, and ``0x``/``0X``
 prefixes, respectively:
 
@@ -101,16 +101,16 @@ equivalent:
   :language: chapel
   :lines: 10,12,14,16
 
-Floating point values may also be specified using a hexidecimal
-floating point format using the ``0x`` prefix.  In such cases, 
-``p`` is used to indicate the exponent to avoid ambiguity with
-the hexadecimal digit ``e``:
+Floating point values may also be specified using a hexadecimal format
+using the ``0x`` prefix.  In such cases, ``p`` is used to indicate the
+exponent (avoiding ambiguity with the hexadecimal digit ``e``) and
+indicates a power of 2 rather than 10:
 
 .. literalinclude:: examples/users-guide/base/floatValues.chpl
   :language: chapel
   :lines: 18, 20
 
-These expressions correspond to the floating point values:
+Thus, these expressions correspond to the floating point values:
 
 .. literalinclude:: examples/users-guide/base/floatValues.good
   :language: text

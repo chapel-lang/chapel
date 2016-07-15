@@ -62,8 +62,8 @@ def main():
     chpldocexamples = os.path.join(chpl_home, 'test', 'release', 'examples')
     os.symlink(chpldocexamples, 'source/users-guide/taskpar/examples')
 
-#    chpldocexamples = os.path.join(chpl_home, 'test', 'release', 'examples')
-#    os.symlink(chpldocexamples, 'source/users-guide/datapar/examples')
+    chpldocexamples = os.path.join(chpl_home, 'test', 'release', 'examples')
+    os.symlink(chpldocexamples, 'source/users-guide/datapar/examples')
 
     chpldocexamples = os.path.join(chpl_home, 'test', 'release', 'examples')
     os.symlink(chpldocexamples, 'source/users-guide/locality/examples')

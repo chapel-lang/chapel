@@ -2,7 +2,7 @@
 
 .. _ug-casts:
 
-Casts: Explicit Type Conversions
+Casts: explicit type conversions
 ================================
 
 *Casting* refers to explicitly requesting that an expression be
