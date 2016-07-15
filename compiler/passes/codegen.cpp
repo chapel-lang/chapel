@@ -371,7 +371,10 @@ static void genFilenameTable() {
          it != gFilenameLookup.end(); it++) {
       if (!first)
         fprintf(hdrfile, ",\n");
-      fprintf(hdrfile, "    \"%s\"", (*it).c_str());
+      if(!strncmp(CHPL_HOME, (*it).c_str(), strlen(CHPL_HOME)))
+        fprintf(hdrfile, "    \"$CHPL_HOME%s\"", (*it).c_str()+strlen(CHPL_HOME));
+      else
+        fprintf(hdrfile, "    \"%s\"", (*it).c_str());
       first = false;
     }
 
