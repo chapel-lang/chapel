@@ -394,6 +394,7 @@ When invoked, ``mason build`` will do the following:
     dependency pool. 
 
   - Binary dependencies are included by specifying their main file from the
+    dependency pool. 
 
 ``mason run`` will, in turn:
 
