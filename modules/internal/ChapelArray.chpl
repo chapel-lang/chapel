@@ -2274,7 +2274,8 @@ module ChapelArray {
 
     /* Return a range that is grown or shrunk from r to accommodate 'r2' */
     pragma "no doc"
-    inline proc resizeAllocRange(r: range, factor=arrayAsVecGrowthFactor,
+    inline proc resizeAllocRange(r: range, r2: range,
+                                 factor=arrayAsVecGrowthFactor,
                                  param direction=1, param grow=1) {
       // This should only be called for 1-dimensional arrays
       const lo = r.low,
@@ -2290,9 +2291,23 @@ module ChapelArray {
       } else {
         const newSize = min(size-1, (size/factor):int);
         if direction > 0 {
-          return lo..#newSize;
+          var newRange = lo..#newSize;
+          if newRange.high < r2.high {
+            // not able to take enough spaces off the high end.  Take them
+            // off the low end instead.
+            const spaceNeeded = r2.high - newRange.high;
+            newRange = (newRange.low+spaceNeeded)..r2.high;
+          }
+          return newRange;
         } else {
-          return ..hi # -newSize;
+          var newRange = ..hi # -newSize;
+          if newRange.low > r2.low {
+            // not able to take enough spaces off the low end.  Take them
+            // off the high end instead.
+            const spaceNeeded = r2.low - newRange.low;
+            newRange = r2.low..(newRange.high-spaceNeeded);
+          }
+          return newRange;
         }
       }
     }
@@ -2319,7 +2334,7 @@ module ChapelArray {
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
           const oldRng = this._value.dataAllocRange;
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange);
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange);
           if debugArrayAsVec then
             writeln("push_back reallocate: ",
                     oldRng, " => ", this._value.dataAllocRange,
@@ -2353,7 +2368,7 @@ module ChapelArray {
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const oldRng = this._value.dataAllocRange;
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, grow=-1);
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
           if debugArrayAsVec then
             writeln("pop_back reallocate: ",
                     oldRng, " => ", this._value.dataAllocRange,
@@ -2382,7 +2397,7 @@ module ChapelArray {
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
           const oldRng = this._value.dataAllocRange;
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, direction=-1);
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1);
           if debugArrayAsVec then
             writeln("push_front reallocate: ",
                     oldRng, " => ", this._value.dataAllocRange,
@@ -2416,7 +2431,7 @@ module ChapelArray {
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           const oldRng = this._value.dataAllocRange;
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, direction=-1, grow=-1);
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1, grow=-1);
           if debugArrayAsVec then
             writeln("pop_front reallocate: ",
                     oldRng, " => ", this._value.dataAllocRange,
@@ -2449,7 +2464,7 @@ module ChapelArray {
           if this._value.dataAllocRange.length < this.domain.numIndices {
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange);
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
         this.domain.setIndices((newRange,));
@@ -2483,7 +2498,7 @@ module ChapelArray {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, grow=-1);
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
         this.domain.setIndices((newRange,));
@@ -2515,7 +2530,7 @@ module ChapelArray {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
         if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
-          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, grow=-1);
+          this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
         this.domain.setIndices((newRange,));
