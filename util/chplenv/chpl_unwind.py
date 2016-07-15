@@ -22,7 +22,8 @@ def get():
             return 'system'
     if osx:
         if val == 'libunwind':
-            raise ValueError("Invalid flag "+val)
+            raise ValueError("Using CHPL_UNWIND=libunwind is not supported"+
+                            " on Mac OS X. Use CHPL_UNWIND=system instead.")
         elif val == 'system':
             return 'system'
     return 'none'
