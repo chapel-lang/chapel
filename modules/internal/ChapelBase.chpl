@@ -1012,6 +1012,14 @@ module ChapelBase {
     // body inserted during generic instantiation
   }
 
+  pragma "compiler generated"
+  pragma "donor fn"
+  pragma "unref fn"
+  inline proc chpl__unref(x: _tuple) {
+    // body inserted during generic instantiation
+  }
+
+
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(ir: _iteratorRecord) {

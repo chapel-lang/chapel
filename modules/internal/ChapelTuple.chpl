@@ -52,18 +52,18 @@ module ChapelTuple {
   inline proc _build_tuple(type t...) type
     return t;
 
-  // tuple value with intents by default
+  // tuple value copying in the values (no refs)
   pragma "build tuple"
   inline proc _build_tuple(x...) {
       return x;
   }
-  
-  // tuple value with ref intents for actuals of ref types
+
+  // tuple value allowing refs (ref actuals or for types with blank=ref intent)
   pragma "allow ref" 
   pragma "build tuple"
   inline proc _build_tuple_always_allow_ref(x...)
     return x;
-  
+ 
   // homogeneous tuple type
   proc *(param p: int, type t) type {
     var oneTuple: _build_tuple(t);

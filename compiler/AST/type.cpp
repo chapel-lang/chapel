@@ -2007,7 +2007,9 @@ bool isUserDefinedRecord(Type* type) {
     if (aggr->aggregateTag != AGGREGATE_RECORD) {
 
     // Not a tuple
+    /*
     } else if (sym->hasFlag(FLAG_TUPLE)              == true) {
+    */
 
     // Not a range
     } else if (sym->hasFlag(FLAG_RANGE)              == true) {

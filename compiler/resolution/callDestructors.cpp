@@ -241,6 +241,30 @@ ArgSymbol* ReturnByRef::addFormal(FnSymbol* fn)
   return formal;
 }
 
+/*
+
+This logic can't go here, because the function
+ return type needs to change.
+
+static bool
+shouldCopyTupleContainingRefs(FnSymbol* fn)
+{
+  AggregateType* at = toAggregateType(fn->retType);
+
+  if (at &&
+      at->symbol->hasFlag(FLAG_TUPLE) &&
+      !fn->hasFlag(FLAG_CONSTRUCTOR) && // but not _construct_tuple
+      !fn->hasFlag(FLAG_BUILD_TUPLE) && // and not _build_tuple(_allow_ref)
+      !fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES) // not iteratorIndex
+     ) {
+    for_fields(field, at) {
+      if (isReferenceType(field->type)) return true;
+    }
+  }
+  return false;
+}
+*/
+
 void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
 {
   Expr*     returnPrim  = fn->body->body.tail;
@@ -249,6 +273,13 @@ void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
 
   CallExpr* returnCall  = toCallExpr(returnPrim);
   Expr*     returnValue = returnCall->get(1)->remove();
+  /*if (shouldCopyTupleContainingRefs(fn)) {
+    // When returning a tuple containing a reference,
+    // copy the reference fields.
+    FnSymbol* fixFn = autoCopyMap.get(fn->retType);
+    returnValue = new CallExpr(autoCopyFn, returnValue);
+    gdbShouldBreakHere();
+  }*/
   CallExpr* moveExpr    = new CallExpr(PRIM_MOVE, formal, returnValue);
 
 

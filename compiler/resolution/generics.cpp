@@ -31,6 +31,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 
+#include "resolveIntents.h"
+
 #include <cstdlib>
 #include <inttypes.h>
 
@@ -142,7 +144,8 @@ instantiate_tuple_signature(FnSymbol* fn) {
   fn->removeFlag(FLAG_TUPLE);
   
   fn->addFlag(FLAG_PARTIAL_TUPLE);
-  fn->addFlag(FLAG_ALLOW_REF);
+  if (tuple)
+    fn->addFlag(FLAG_ALLOW_REF);
 }
 
 
@@ -150,7 +153,7 @@ static void
 instantiate_tuple_body(FnSymbol* fn) {
   Expr* last = fn->body->body.last();
   int numPreTupleFormals = fn->numPreTupleFormals;
-  
+
   for (int i = numPreTupleFormals + 1; i <= fn->formals.length; ++i) {
     ArgSymbol* formal = fn->getFormal(i);
     
@@ -233,6 +236,37 @@ instantiate_tuple_init(FnSymbol* fn) {
 }
 
 static void
+instantiate_tuple_unref(FnSymbol* fn)
+{
+  ArgSymbol* arg;
+  AggregateType* ct;
+  getTupleArgAndType(fn, arg, ct);
+
+  CallExpr *call = new CallExpr("_build_tuple");
+  BlockStmt* block = new BlockStmt();
+
+  for (int i=1; i<ct->fields.length; i++) {
+    CallExpr* member = new CallExpr(arg, new_IntSymbol(i));
+    DefExpr* def = toDefExpr(ct->fields.get(i+1));
+    INT_ASSERT(def);
+    if (isReferenceType(def->sym->type))
+      // If it is a reference, copy construct it
+      call->insertAtTail(new CallExpr("chpl__initCopy", member));
+    else
+      // Otherwise, bit copy it
+      // Since this is only used as part of returning,
+      // any non-ref tuple elements can be PRIM_MOVE'd
+      // without harm.
+      call->insertAtTail(member);
+  }
+
+  block->insertAtTail(new CallExpr(PRIM_RETURN, call));
+  fn->body->replace(block);
+  normalize(fn);
+}
+
+
+static void
 instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
                                        const char* build_tuple_fun,
                                        const char* copy_fun)
@@ -278,14 +312,43 @@ instantiate_tuple_autoCopy(FnSymbol* fn) {
 
 static TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
-  if (value->hasFlag(FLAG_REF) &&
-      !fn->hasFlag(FLAG_REF) &&
-      !fn->hasFlag(FLAG_ALLOW_REF) &&
-      !fn->hasFlag(FLAG_TUPLE)) {
+  if (fn->hasEitherFlag(FLAG_TUPLE,FLAG_PARTIAL_TUPLE)) {
+    // TODO -- I don't think that I can put this logic here...
+    // it seems to affect all tuples, because of
+    // _type_construct__tuple being the thing we resolve here
+
+    /*
+    // fn is a tuple construction/type construction function
+    Type *t = value->type;
+    IntentTag intent = blankIntentForType(t);
+    if ((intent & INTENT_FLAG_REF) &&
+         fn->hasFlag(FLAG_ALLOW_REF) &&
+         //!fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) && // not _type_construct__tuple
+         isRecordWrappedType(t) // temporary
+        ) {
+      // Use a ref field to capture values with types
+      // where blank intent is ref or const ref.
+      if (!isReferenceType(t)) {
+        gdbShouldBreakHere();
+        return t->getRefType()->symbol;
+      }
+    }*/
+    return value;
+  } else if (fn->hasFlag(FLAG_ALLOW_REF)) {
+    // With FLAG_ALLOW_REF, always use value type, even if it's a ref type
+    return value;
+  } else if (fn->hasFlag(FLAG_REF)) {
+    // With FLAG_REF on the function, that means it's a constructor
+    // for the ref type, so re-instantiate it with whatever value is.
+    return value;
+  } else if (!value->hasFlag(FLAG_REF)) {
+    // If the value isn't a ref, no further action is necessary
+    return value;
+  } else {
+    // The value is a ref and
     // instantiation of a formal of ref type loses ref
     return getNewSubType(fn, key, value->getValType()->symbol);
   }
-  return value;
 }
 
 
@@ -770,6 +833,8 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
     newFn->retType = newType;
   }
   
+  // Note: scopeResolve sets FLAG_TUPLE is for the type constructor
+  // and the constructor for the tuple record.
   if (fn->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_signature(newFn);
   }
@@ -788,6 +853,10 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
 
   if (fn->hasFlag(FLAG_AUTO_COPY_FN) && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_autoCopy(newFn);
+  }
+
+  if (fn->hasFlag(FLAG_UNREF_FN) && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
+    instantiate_tuple_unref(newFn);
   }
   
   if (newFn->numFormals() > 1 && newFn->getFormal(1)->type == dtMethodToken) {

@@ -145,7 +145,8 @@ static void optimizeAnonymousRangeIteration(Expr* iteratorExpr, bool zippered)
   // for zippered iterators, try to replace each iterator of the tuple
   else
     if (CallExpr* call = toCallExpr(iteratorExpr))
-      if (call->isNamed("_build_tuple"))
+      if (call->isNamed("_build_tuple") ||
+          call->isNamed("_build_tuple_always_allow_ref"))
         for_actuals(actual, call)
           tryToReplaceWithDirectRangeIterator(actual);
 }

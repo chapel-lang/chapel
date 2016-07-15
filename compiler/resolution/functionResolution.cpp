@@ -228,7 +228,7 @@ static Map<FnSymbol*,const char*> outerCompilerWarningMap;
 Map<Type*,FnSymbol*> autoCopyMap; // type to chpl__autoCopy function
 Map<Type*,FnSymbol*> autoDestroyMap; // type to chpl__autoDestroy function
 Map<Type*,FnSymbol*> unaliasMap; // type to chpl__unalias function
-//Map<Type*,FnSymbol*> onretMap; // type to chpl__onret function
+Map<Type*,FnSymbol*> unrefMap; // type to chpl__unref function
 
 
 Map<FnSymbol*,FnSymbol*> iteratorLeaderMap; // iterator->leader map for promotion
@@ -599,19 +599,17 @@ resolveAutoCopyEtc(Type* type) {
     tmp->defPoint->remove();
   }
 
-  /*
-  // resolve onret
-  {
+  // resolve unref
+  /*{
     SET_LINENO(type->symbol);
     Symbol* tmp = newTemp(type);
     chpl_gen_main->insertAtHead(new DefExpr(tmp));
-    CallExpr* call = new CallExpr("chpl__onret", tmp);
+    CallExpr* call = new CallExpr("chpl__unref", tmp);
     FnSymbol* fn = resolveUninsertedCall(type, call);
     resolveFns(fn);
-    onretMap.put(type, fn);
+    unrefMap.put(type, fn);
     tmp->defPoint->remove();
-  }
-  */
+  }*/
 }
 
 
@@ -627,10 +625,9 @@ FnSymbol* getUnalias(Type* t) {
   return unaliasMap.get(t);
 }
 
-/*
-FnSymbol* getOnRet(Type* t) {
-  return onretMap.get(t);
-}*/
+FnSymbol* getUnref(Type* t) {
+  return unrefMap.get(t);
+}
 
 const char* toString(Type* type) {
   if( type ) return type->getValType()->symbol->name;
@@ -1704,6 +1701,9 @@ handleSymExprInExpandVarArgs(FnSymbol*  workingFn,
       int        n         = nVar->immediate->int_value();
       CallExpr*  tupleCall = NULL;
 
+      // NOTE HERE
+      // This code is run for _build_tuple
+      // and _build_tuple_always_allow_ref
       if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true)
         tupleCall = new CallExpr("_type_construct__tuple");
       else
@@ -4228,8 +4228,24 @@ static void resolveSetMember(CallExpr* call) {
 
   if (t == dtNil && fs->type == dtUnknown)
     USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
-  if (fs->type == dtUnknown)
+  if (fs->type == dtUnknown) {
+/*    if (ct->symbol->hasFlag(FLAG_TUPLE)) {
+      // adjust field to use blank intent.
+      IntentTag intent = blankIntentForType(t);
+      if ((intent & INTENT_FLAG_REF) &&
+           ct->symbol->hasFlag(FLAG_ALLOW_REF) &&
+           isRecordWrappedType(t) // temporary
+          ) {
+        // Use a ref field to capture values with types
+        // where blank intent is ref or const ref.
+        if (!isReferenceType(t))
+          t = t->getRefType();
+      }
+    }
+  */
+    // Set the field type.
     fs->type = t;
+  }
 
   if (t != fs->type && t != dtNil && t != dtObject) {
     USR_FATAL(userCall(call),
@@ -7152,9 +7168,23 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   call->insertBefore(new DefExpr(tmp));
                   call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
                 }
-                CallExpr* cast = new CallExpr("_cast", lhsType->symbol, tmp);
-                rhs->replace(cast);
-                casts.add(cast);
+
+                if (lhsType->symbol->hasFlag(FLAG_TUPLE) &&
+                    lhs->var->hasFlag(FLAG_RVV)) {
+                  // When returning tuples, we might return a
+                  // tuple containing a ref, while the return type
+                  // is the tuple with no refs. This code adjusts
+                  // the AST to compensate.
+                  CallExpr* unref = new CallExpr("chpl__unref", tmp);
+                  call->insertBefore(unref);
+                  resolveExpr(unref);
+                  unref->remove();
+                  rhs->replace(unref);
+                } else {
+                  CallExpr* cast = new CallExpr("_cast", lhsType->symbol, tmp);
+                  rhs->replace(cast);
+                  casts.add(cast);
+                }
               }
             }
           }
@@ -7207,6 +7237,11 @@ static void resolveReturnType(FnSymbol* fn)
 
   if (retType == dtUnknown) {
 
+//    if( 0 == strcmp(fn->name, "bar") )
+//      gdbShouldBreakHere();
+    if( 0 == strcmp(fn->name, "foo") )
+      gdbShouldBreakHere();
+
     Vec<Type*> retTypes;
     Vec<Symbol*> retParams;
     computeReturnTypeParamVectors(fn, ret, retTypes, retParams);
@@ -7234,6 +7269,51 @@ static void resolveReturnType(FnSymbol* fn)
     if (!fn->iteratorInfo) {
       if (retTypes.n == 0)
         retType = dtVoid;
+    }
+  }
+
+  // For tuples, do not allow a tuple to contain a reference
+  // when it is returned, except if we are
+  // in  _construct_tuple, _build_tuple(_allow_ref), or
+  // iteratorIndex
+  if (retType->symbol->hasFlag(FLAG_TUPLE) &&
+      !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) && // but not _type_construct__tuple
+      !fn->hasFlag(FLAG_CONSTRUCTOR) && // but not _construct_tuple
+      !fn->hasFlag(FLAG_BUILD_TUPLE) && // and not _build_tuple(_allow_ref)
+      !fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES) && // not iteratorIndex
+      !fn->hasFlag(FLAG_AUTO_COPY_FN) // not tuple chpl__autoCopy
+     ) {
+    // Compute the tuple type without any refs
+    // TODO -- I wish that tuple types were handled more
+    // straight-forwardly:
+    //   - _build_tuple could be instantiated directly
+    //   - tuple types could be handled directly instead of
+    //     being treated as arbitrary generic records
+    bool containsRef = false;
+    AggregateType* at = toAggregateType(retType);
+    int i = 0;
+    for_fields(field, at) {
+      if (i != 0) { // skip size field
+        if (isReferenceType(field->type)) containsRef = true;
+      }
+      i++;
+    }
+
+    if (containsRef) {
+//      gdbShouldBreakHere();
+
+      // Compute the tuple type containing no references
+      CallExpr* call = new CallExpr("_build_tuple");
+      i = 0;
+      for_fields(field, at) {
+        if (i != 0) { // skip size field
+          call->insertAtTail(new SymExpr(field->type->getValType()->symbol));
+        }
+        i++;
+      }
+      FnSymbol* resolved = resolveUninsertedCall(at, call);
+      resolveFns(resolved);
+      retType = resolved->retType;
     }
   }
 
