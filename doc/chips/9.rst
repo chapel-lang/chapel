@@ -90,8 +90,8 @@ Setup
 +++++
 
 ``mason new [project name]`` is the command that initializes a new project
-and git repository. For example, after ``mason new MyPackage`` is run,
-the project will have the following directory hierarchy:
+and git repository. For example, after ``mason new MyPackage`` is run in an
+empty directory it will have the following hierarchy:
 
 ::
 
