@@ -362,7 +362,7 @@ the user's home directory by default. This mirrors Cargo's ``~/.cargo/src/``.
 
 
 Syncing Commands
-----------------
+++++++++++++++++
 
 When any of ``add``, ``rm``, or ``update`` are invoked, mason will make sure that
 the manifest file, lock file, and dependency code are kept in sync with each other.
@@ -376,7 +376,7 @@ directories are present.
 
 
 Build System
-++++++++++++
+------------
 
 When invoked, ``mason build`` will do the following:
 
