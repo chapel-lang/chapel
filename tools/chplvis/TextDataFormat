@@ -23,11 +23,17 @@ First line of every file is:
      ts  - system time        (sec.usec format)
      tnum - tag number
      lnum - line number
-     name - name of tag or file
+     fileno - index in the file name table 
 
 Lines in the file:
 
- End: tv tu ts nid tid
+  Tablesize: size
+    On locale 0 only, size of the file name table
+
+  fname: ix name
+    On locale 0 only, name of file in the file table at ix
+
+  End: tv tu ts nid tid
     End collection of data, should be last line of file
 
   VdbMark: tv nid tid
@@ -39,16 +45,16 @@ Lines in the file:
   Pause:  tv tu ts nid tid tnum
     Pause the collection of data, tag number is previous tag
 
-  task: tv nid tid parent_tid [OL] lnum name
+  task: tv nid tid parent_tid [OL] lnum fileno
     [OL] - on of O or L, O for an "on task", L for a "local task"
-    Task creation, On tasks don't have valid lnum and name.
+    Task creation, On tasks don't have valid lnum and fileno.
 
-  nb_put: tv nid rid tid addr raddr elemsize typeIndex length lnum name
-  nb_get: tv nid rid tid addr raddr elemsize typeIndex length lnum name
-  put: tv nid rid tid addr raddr elemsize typeIndex length lnum name
-  get: tv nid rid tid addr raddr elemsize typeIndex length lnum name
-  st_put:  tv nid rid tid addr raddr elemsize typeIndex length lnum name
-  st_get:  tv nid rid tid addr raddr elemsize typeIndex length lnum name
+  nb_put: tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
+  nb_get: tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
+  put: tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
+  get: tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
+  st_put:  tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
+  st_get:  tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
     communication.  Puts: data flow nid->rid, gets: data flow rid -> nid
     nb is non-blocking, st is strided.
 

@@ -51,15 +51,19 @@ module VisualDebug
   // Data Generation for the Visual Debug tool  (offline)
   //
 
-  private extern proc chpl_vdebug_start ( rootname: c_string, time:real);
+  private extern proc chpl_vdebug_start (rootname: c_string, time:real);
 
   private extern proc chpl_vdebug_stop ();
 
-  private extern proc chpl_vdebug_tag ( tagname: c_string);
+  private extern proc chpl_vdebug_tag (tagno: int);
 
-  private extern proc chpl_vdebug_pause ();
+  private extern proc chpl_vdebug_pause (tagno: int);
 
   private extern proc chpl_vdebug_mark ();
+
+  private extern proc chpl_vdebug_tagname (tagname: c_string, tagno: int);
+
+  private var tagno: int = 0;
 
 
 /* Instead of using a "coforall l in Locales" which is an O(n) operation
@@ -82,8 +86,8 @@ private iter hc_id2com ( id: int, off: int ) {
    }
 }
 
-private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
-                   n: int = numLocales, off: int = -1) {
+private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
+                id: int = 0, n: int = numLocales, off: int = -1) {
       var offset = 1;
       if off < 0 then
          while offset >> 1 + id < n do offset = offset << 1;
@@ -93,14 +97,14 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
       chpl_vdebug_mark();
       coforall (rid, shift) in hc_id2com(id, offset) do
          if rid < n then
-             on Locales[rid] do VDebugTree (what, name, time, rid, n, offset >> shift);
+             on Locales[rid] do VDebugTree (what, name, time, tagno, rid, n, offset >> shift);
 
      /* Do the op at the root  */
      select what {
          when vis_op.v_start    do chpl_vdebug_start (name.localize().c_str(), time);
          when vis_op.v_stop     do chpl_vdebug_stop ();
-         when vis_op.v_tag      do chpl_vdebug_tag (name.localize().c_str());
-         when vis_op.v_pause    do chpl_vdebug_pause ();
+         when vis_op.v_tag      do chpl_vdebug_tag (tagno);
+         when vis_op.v_pause    do chpl_vdebug_pause (tagno);
      }
 }
 
@@ -117,10 +121,8 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
 */
   proc startVdebug ( rootname : string ) {
     var now = chpl_now_time();
-    //coforall l in Locales do
-    //  on l do chpl_vdebug_start (rootname.localize().c_str(), now);
     if (VisualDebugOn) {
-      VDebugTree (vis_op.v_start, rootname, now);
+      VDebugTree (vis_op.v_start, rootname, now, 0);
     }
   }
 
@@ -130,11 +132,10 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
   :arg tagname: name of the tag
 */
   proc tagVdebug ( tagname : string ) {
-    //coforall l in Locales[1..] do
-    //  on l do chpl_vdebug_tag (tagname.localize().c_str(), 0);
-    //chpl_vdebug_tag (tagname.localize().c_str(), 0);
     if (VisualDebugOn) {
-       VDebugTree (vis_op.v_tag, tagname, 0);
+       chpl_vdebug_tagname (tagname.c_str(), tagno);
+       VDebugTree (vis_op.v_tag, "", 0, tagno);
+       tagno += 1;
     }
   }
 
@@ -142,11 +143,8 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
   Stop collecting VisualDebug data and close the data files.
 */
   proc stopVdebug () {
-    // chpl_vdebug_stop();
-    // coforall l in Locales[1..] do
-    //  on l do chpl_vdebug_stop();
     if (VisualDebugOn) {
-       VDebugTree (vis_op.v_stop, "", 0);
+       VDebugTree (vis_op.v_stop, "", 0, 0);
     }
   }
 
@@ -154,11 +152,8 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
   Suspend collection of VisualDebug data.
 */
   proc pauseVdebug () {
-    //coforall l in Locales[1..] do
-    //  on l do chpl_vdebug_tag (tagname.localize().c_str(), 1);
-    //chpl_vdebug_tag(tagname.localize().c_str(), 1);
     if (VisualDebugOn) {
-       VDebugTree (vis_op.v_pause, "", 0);
+       VDebugTree (vis_op.v_pause, "", 0, tagno-1);
     }
   }
 
@@ -168,12 +163,9 @@ private proc VDebugTree (what: vis_op, name: string, time: real, id: int = 0,
 
   :arg tagname: name of the tag
 */
-  proc resumeVdebug ( tagname : string ) {
-    //coforall l in Locales[1..] do
-    //  on l do chpl_vdebug_resume ();
-    //chpl_vdebug_resume(tagname);
+  proc resumeVdebug ( tagno : int ) {
     if (VisualDebugOn) {
-      VDebugTree (vis_op.v_tag, tagname, 0);
+      VDebugTree (vis_op.v_tag, "", 0, tagno-1);
     }
   }
 
