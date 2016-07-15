@@ -99,16 +99,16 @@ static inline memory_order _defaultOfMemoryOrder(void) {
 // fence. Cray also does not support __sync_bool_compare_and_swap so we 
 // cheat our way around this using __sync_val_compare_and_swap
 //
-// non_stdatomic_memory_barrier is only a memory barrier when we do not
-// have C11/C++11 standard atomics.  When standard atomics are available,
-// they use acquire/release semantics instead.
+// full_memory_barrier() is only needed when we do not have C11/C++11
+// standard atomics.  When standard atomics are available, they use
+// acquire/release semantics instead.
 #ifdef _CRAYC
-  #define non_stdatomic_memory_barrier() __builtin_ia32_mfence()
+  #define full_memory_barrier() __builtin_ia32_mfence()
   
   # define my__sync_bool_compare_and_swap(obj, expected, desired) \
   (__sync_val_compare_and_swap(obj, expected, desired) == expected) 
 #else
-  #define non_stdatomic_memory_barrier() __sync_synchronize()
+  #define full_memory_barrier() __sync_synchronize()
  
   # define my__sync_bool_compare_and_swap(obj, expected, desired) \
   __sync_bool_compare_and_swap(obj, expected, desired) 
@@ -116,14 +116,12 @@ static inline memory_order _defaultOfMemoryOrder(void) {
 
 static inline void atomic_thread_fence(memory_order order)
 {
-  non_stdatomic_memory_barrier();
+  full_memory_barrier();
 }
 static inline void atomic_signal_fence(memory_order order)
 {
-  non_stdatomic_memory_barrier();
+  full_memory_barrier();
 }
-#else
-#define non_stdatomic_memory_barrier()
 #endif
 
 
@@ -162,13 +160,13 @@ static inline void atomic_destroy_ ## type(atomic_ ## type * obj) { \
 } \
 static inline void atomic_store_explicit_ ## type(atomic_ ## type * obj, basetype value, memory_order order) { \
   *obj = value; \
-  non_stdatomic_memory_barrier(); \
+  full_memory_barrier(); \
 } \
 static inline void atomic_store_ ## type(atomic_ ## type * obj, basetype value) { \
   atomic_store_explicit_ ## type(obj, value, memory_order_seq_cst); \
 } \
 static inline basetype atomic_load_explicit_ ## type(atomic_ ## type * obj, memory_order order) { \
-  non_stdatomic_memory_barrier(); \
+  full_memory_barrier(); \
   return *obj; \
 } \
 static inline basetype atomic_load_ ## type(atomic_ ## type * obj) { \
@@ -335,13 +333,13 @@ static inline void atomic_destroy_ ## type(atomic_ ## type * obj) { \
 } \
 static inline void atomic_store_explicit_ ## type(atomic_ ## type * obj, type value, memory_order order) { \
   *obj = value; \
-  non_stdatomic_memory_barrier(); \
+  full_memory_barrier(); \
 } \
 static inline void atomic_store_ ## type(atomic_ ## type * obj, type value) { \
   atomic_store_explicit_ ## type(obj, value, memory_order_seq_cst); \
 } \
 static inline type atomic_load_explicit_ ## type(atomic_ ## type * obj, memory_order order) { \
-  non_stdatomic_memory_barrier(); \
+  full_memory_barrier(); \
   return *obj; \
 } \
 static inline type atomic_load_ ## type(atomic_ ## type * obj) { \
@@ -405,7 +403,7 @@ static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_
   uinttype volatile * expected_as_uint_p; \
   uinttype volatile * desired_as_uint_p; \
   uinttype old_as_uint; \
-  non_stdatomic_memory_barrier(); \
+  full_memory_barrier(); \
   expected_as_uint_p = (uinttype volatile *) expected; \
   desired_as_uint_p = (uinttype volatile *) &desired; \
   expected_as_uint = *expected_as_uint_p; \
@@ -461,7 +459,7 @@ static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, typ
   desired_as_uint_p = (uinttype volatile *) &desired; \
   success = false; \
   while(!success) { \
-    non_stdatomic_memory_barrier(); \
+    full_memory_barrier(); \
     cur = *obj; \
     desired = cur + operand; \
     cur_as_uint = *cur_as_uint_p; \
@@ -485,7 +483,7 @@ static inline type atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, typ
   desired_as_uint_p = (uinttype volatile *) &desired; \
   success = false; \
   while(!success) { \
-    non_stdatomic_memory_barrier(); \
+    full_memory_barrier(); \
     cur = *obj; \
     desired = cur - operand; \
     cur_as_uint = *cur_as_uint_p; \
