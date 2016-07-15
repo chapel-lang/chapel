@@ -405,7 +405,7 @@ When invoked, ``mason build`` will do the following:
 * Run the resulting executable out of ``target/``, if it exists.
 
   - Runtime options may be included in the manifest, or may be passed to
-    ``build`` on the command line. Command line options take precedence. 
+    ``run`` on the command line. Command line options take precedence. 
 
 
 For example, after ``mason run MyPackage``, the project directory appears as so:
