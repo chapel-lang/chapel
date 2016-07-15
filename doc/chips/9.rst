@@ -163,9 +163,10 @@ For example, ``Mason.toml``:
    [dependencies]
    Curl = "1.0.0"
 
-**Registry**
+Package Registry
+++++++++++++++++
 
-Eventually, we will want a service similar to Cargo's crates.io_ to serve as our
+Eventually we will want a service similar to Cargo's crates.io_ to serve as our
 registry. Due to the amount of effort behind such a task, it has been decided
 that this can come at a later stage.
 
@@ -245,6 +246,32 @@ All packages will exist in a single common namespace with a first-come, first-se
 policy. Though there are natural concerns about name squatting, these have been
 addressed_ by the Cargo project. It is also easier to go to separate namespaces
 than to roll them back, so this position affords flexibility.
+
+**Semantic Versioning**
+
+To assist version resolution, the registry will enforce the following conventions:
+
+* The format for all versions will be a.b.c.
+
+  * Major versions are denoted by a.
+  * Minor versions are denoted by b.
+  * Bug fixes are denoted by c.
+
+* If the major version is 0, no further conventions will be enforced.
+
+  * However, a package at major version 0 can only be included in a manifest by
+    a specific bug fix.
+
+* The major version must be advanced if and only if the update causes breaking API
+  changes, such as updated data structures or removed methods and procedures. The
+  minor and bug fix versions will be zeroed out. (ex. 1.13.1 -> 2.0.0)
+
+* The minor version must be advanced if and only if the update adds functionality
+  to the API while maintaining backward compatibility with the current major
+  version. The bug fix version will be zeroed out. (ex. 1.13.1 -> 1.14.0)
+
+* The bug fix must be advanced for any update correcting functionality within a
+  minor revision. (ex. 1.13.1 -> 1.13.2)
 
 **Package Integrity**
 
