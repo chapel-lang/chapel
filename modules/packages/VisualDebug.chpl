@@ -157,16 +157,4 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
     }
   }
 
-/*
-  Resume collection of VisualDebug data for chplvis after a pauseVdebug().
-  This also generates a tag record visible by chplvis.
-
-  :arg tagname: name of the tag
-*/
-  proc resumeVdebug ( tagno : int ) {
-    if (VisualDebugOn) {
-      VDebugTree (vis_op.v_tag, "", 0, tagno-1);
-    }
-  }
-
 }
