@@ -959,7 +959,7 @@ static void insert_call_temps(CallExpr* call)
   tmp->addFlag(FLAG_MAYBE_PARAM);
   tmp->addFlag(FLAG_MAYBE_TYPE);
 
-  if (call->isNamed("super") && parentCall->isNamed(".") &&
+  if (call->isNamed("super") && parentCall && parentCall->isNamed(".") &&
       parentCall->get(1) == call) {
     // We've got an access to a method or field on the super type.  This means
     // we should preserve that knowledge for when we attempt to access the
