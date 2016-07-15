@@ -105,6 +105,10 @@ module ChapelIteratorSupport {
     return _getIterator(x);
   }
 
+  inline proc _getIteratorZip(x...?n) where n > 1 {
+    return _getIteratorZip(x);
+  }
+
   inline proc _getIteratorZip(x: _tuple) {
     inline proc _getIteratorZipInternal(x: _tuple, param dim: int) {
       if dim == x.size then

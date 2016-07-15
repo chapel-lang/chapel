@@ -180,15 +180,25 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
 
   // Expand tuple to a tuple containing appropriate iterators for each value.
   else {
+    //    list_view(iteratorExpr);
     CallExpr* zipExpr = toCallExpr(iteratorExpr);
-    assert(zipExpr);
-    list_view(zipExpr);
-    //    zipExpr->baseExpr->replace(new UnresolvedSymExpr("_getIteratorZip"));
-    zipExpr->baseExpr = new UnresolvedSymExpr("_getIteratorZip");
-    list_view(zipExpr);
-    printf("----\n");
-    iterInit = new CallExpr(PRIM_MOVE, iterator, zipExpr);
-    assert(zipExpr == iteratorExpr);
+    if (zipExpr) {
+      //
+      // If this is a PRIM_ZIP(), replace it by _getIteratorZip()
+      //      assert(zipExpr->primitive == PRIM_ZIP);
+      zipExpr->primitive = NULL;
+      zipExpr->baseExpr = new UnresolvedSymExpr("_getIteratorZip");
+      //      list_view(zipExpr);
+      iterInit = new CallExpr(PRIM_MOVE, iterator, zipExpr);
+      assert(zipExpr == iteratorExpr);
+    } else {
+      //
+      // otherwise, treat it as we traditionally have
+      //
+      iterInit = new CallExpr(PRIM_MOVE, iterator,
+                              new CallExpr("_getIteratorZip", iteratorExpr));
+    }
+    //    printf("----\n");
   }
 
   // try to optimize anonymous range iteration, replaces iterExpr in place
