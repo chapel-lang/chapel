@@ -249,7 +249,7 @@ void chpl_vdebug_pause (int tagno) {
   struct timeval tv;
   chpl_taskID_t pauseTask = chpl_task_getId();
 
-  if (chpl_vdebug_fd >=0 && chpl_vdebug == 0) {
+  if (chpl_vdebug_fd >=0 && chpl_vdebug == 1) {
     (void) gettimeofday (&tv, NULL);
     if ( getrusage (RUSAGE_SELF, &ru) < 0) {
       ru.ru_utime.tv_sec = 0;
