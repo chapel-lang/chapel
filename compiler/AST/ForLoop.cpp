@@ -187,7 +187,21 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
       // If this is a PRIM_ZIP(), replace it by _getIteratorZip()
       //      assert(zipExpr->primitive == PRIM_ZIP);
       zipExpr->primitive = NULL;
-      zipExpr->baseExpr = new UnresolvedSymExpr("_getIteratorZip");
+      if (zipExpr->argList.length == 1) {
+        zipExpr->baseExpr = new UnresolvedSymExpr("_getIterator");
+        Expr* arg = zipExpr->argList.only();
+        arg->replace(new CallExpr("_getIterator", arg->copy()));
+      } else {
+        zipExpr->baseExpr = new UnresolvedSymExpr("_build_tuple");
+        Expr* arg = zipExpr->argList.first();
+        while (arg) {
+          //          list_view(arg);
+          Expr* next = arg->next;
+          arg->replace(new CallExpr("_getIterator", arg->copy()));
+          //          list_view(arg);
+          arg = next;
+        }
+      }
       //      list_view(zipExpr);
       iterInit = new CallExpr(PRIM_MOVE, iterator, zipExpr);
       assert(zipExpr == iteratorExpr);
