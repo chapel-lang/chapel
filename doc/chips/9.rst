@@ -85,7 +85,13 @@ input to the next state:
 
   * Dependencies that are downloaded into a local directory.
 
-A package repository will consist of the following directory hierarchy:
+
+Setup
++++++
+
+``mason new [project name]`` is the command that initializes a new project
+and git repository. For example, after ``mason new MyPackage`` is run,
+the project will have the following directory hierarchy:
 
 ::
 
@@ -117,6 +123,10 @@ build into ``target/``. The final directory hierarchy will look like this:
       MyPackage.chpl
     target/
       ( MyPackage )
+
+To work on an existing project, clone its repository and invoke ``mason build``.
+This will fetch all the dependencies and build the project for a fully
+functional copy.
 
 Project Code
 ++++++++++++
@@ -304,6 +314,13 @@ License fields will propagate throughout their uses for developer convenience.
 Manifest File -> Lock File
 ++++++++++++++++++++++++++
 
+As lock file is a serialized directed acyclic graph of the dependencies
+in the project. It is more concrete than a manifest because it specifies
+Git SHA revisions rather than abstract "versions" or "packages". The purpose
+of the lock is to ensure repeatable builds on a given system; whether the
+lock file is checked into the repository to ensure identical builds across
+all systems is left to the project.
+
 This will be a fully automated step in which mason does the following:
 
 * Parses the manifest file
@@ -413,30 +430,6 @@ The first version of the package manager will be very simple with limited
 functionality. There are several additional features we wish to eventually
 pursue. This section is dedicated to the subset of those features that have
 been considered or are partially designed.
-
-Naming Conventions: main.chpl and packages
-++++++++++++++++++++++++++++++++++++++++++
-
-If no module is declared in a file, then the entire file is in a module named after
-the file. If we force users to have ``main.chpl`` be their package file, then their
-modules will be called ``main`` by default, and ``use main;`` is not ergonomic.
-
-There are a few options to resolve this:
-
-* Users should declare a module inside ``main.chpl`` by convention.
-
-  - Seems to be the standard already, but more work for the user.
-
-* We provide an option in the manifest to build a main file other than ``main.chpl``.  
-
-  - Not difficult, but it's more work for the user.
-
-* ``mason`` will enforce that the main file be named after the package name, as in
-  Python package managers.
-
-  - Currently, all packages are in PascalCase, while all chpl files are in lowercase.
-    Either main files would have to be in PascalCase, or the packages would have to
-    be lowercase, or we'd lowercase the package name and see if it matches the file.
 
 C Dependencies
 ++++++++++++++
