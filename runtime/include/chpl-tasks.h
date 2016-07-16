@@ -31,6 +31,10 @@
 #include CHPL_TASKS_MODEL_H
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 //
 // Some function declarations here may be protected like this:
@@ -343,13 +347,25 @@ size_t chpl_task_getDefaultCallStackSize(void);
 extern void chpl_taskRunningCntInc(int64_t _ln, int32_t _fn);
 extern void chpl_taskRunningCntDec(int64_t _ln, int32_t _fn);
 
+#ifdef __cplusplus
+} // end extern "C"
+#endif
+
 #include "chpl-tasks-callbacks.h"
 
 #else // LAUNCHER
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void chpl_sync_aux_t;
 typedef chpl_sync_aux_t chpl_single_aux_t;
 #define chpl_task_exit()
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif // LAUNCHER
 
