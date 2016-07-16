@@ -5628,6 +5628,9 @@ GenRet CallExpr::codegenPrimitive() {
       ret = codegenWideAddrWithAddr(tmp,
                                     codegenCast(get(1)->typeInfo(),
                                                 codegenRaddr(tmp)));
+      //NOTE when everything is normalized we never hit this case and it
+      //obviously misses the following line
+      ret = codegenAddrOf(ret);
     } else {
       Type* dst = get(1)->typeInfo();
       Type* src = get(2)->typeInfo();
@@ -5964,7 +5967,7 @@ GenRet CallExpr::codegenPrimMove() {
   if (get(1)->typeInfo() == dtVoid) {
     ret = get(2)->codegen();
   // Is the RHS a primop with special case handling?
-  } else if (codegenSpecialPrimitive() == true) {
+  } else if (codegenPrimMoveRhsIsSpecialPrimop() == true) {
     // Codegen has been handled.  No more activity here.
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true  &&
@@ -6171,7 +6174,7 @@ GenRet CallExpr::codegenPrimGetMemberValForTarget(BaseAST* target) {
   }
 }
 
-bool CallExpr::codegenSpecialPrimitive() {
+bool CallExpr::codegenPrimMoveRhsIsSpecialPrimop() {
   CallExpr* rhs    = toCallExpr(get(2));
   bool      retval = false;
 
