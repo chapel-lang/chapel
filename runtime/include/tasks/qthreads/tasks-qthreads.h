@@ -38,6 +38,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CHPL_COMM_YIELD_TASK_WHILE_POLLING
 void chpl_task_yield(void);
 
@@ -267,6 +271,10 @@ static inline
 int chpl_task_supportsRemoteCache(void) {
   return CHPL_QTHREAD_SUPPORTS_REMOTE_CACHE;
 }
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif // ifndef _tasks_qthreads_h_
 /* vim:set expandtab: */
