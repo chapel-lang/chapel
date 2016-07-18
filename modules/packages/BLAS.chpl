@@ -577,11 +577,11 @@ module BLAS {
 
     Performs the matrix-matrix operation::
 
-      B = alpha * op(A) * B
+      B := alpha * op(A) * B
 
     or::
 
-      B = alpha * B * op(A)
+      B := alpha * B * op(A)
 
     where ``A`` is a triangular matrix.
   */
