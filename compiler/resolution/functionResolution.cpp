@@ -9172,6 +9172,12 @@ static void clearDefaultInitFns(FnSymbol* unusedFn) {
   if (unusedFn->retType->defaultInitializer == unusedFn) {
     unusedFn->retType->defaultInitializer = NULL;
   }
+  // Ditto for iterator fn in iterator info.
+  if (unusedFn->retType->symbol->hasEitherFlag(FLAG_ITERATOR_RECORD,
+                                               FLAG_ITERATOR_CLASS)) {
+    AggregateType* it = toAggregateType(unusedFn->retType);
+    it->iteratorInfo = NULL;
+  }
 }
 
 static void removeUnusedFunctions() {

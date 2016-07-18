@@ -60,7 +60,7 @@ checkResolved() {
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->isIterator()) {
       IteratorInfo* ii = toAggregateType(fn->retType)->iteratorInfo;
-      if (ii->iterator && ii->iterator->defPoint->parentSymbol == fn)
+      if (ii && ii->iterator && ii->iterator->defPoint->parentSymbol == fn)
         USR_FATAL_CONT(fn, "functions cannot return nested iterators or loop expressions");
     }
     if (fn->hasFlag(FLAG_ASSIGNOP) && fn->retType != dtVoid)
