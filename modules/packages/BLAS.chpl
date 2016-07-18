@@ -85,6 +85,19 @@ BLAS Implementations:
       pointers, instead of ``void*`` pointers.  Using this will likely result in
       warnings about incompatible pointer types. These may be ignored.
 
+Cray Systems:
+  PBLAS is made available through Cray's libsci. For Cray systems with libsci
+  installed, simply load the ``cray-libsci`` module and link against the
+  ``sci_gnu`` library, using the module-defined environment variables as shown
+  below:
+
+.. code-block:: sh
+
+  module load cray-libsci
+
+  chpl -I$CRAY_LIBSCI_PREFIX_DIR/include
+       -L$CRAY_LIBSCI_PREFIX_DIR/lib -lsci_gnu
+
 
 Chapel Level 3 BLAS API
 -----------------------
@@ -563,11 +576,11 @@ module BLAS {
 
     Performs the matrix-matrix operation::
 
-      B = alpha * op(A) * B
+      B := alpha * op(A) * B
 
     or::
 
-      B = alpha * B * op(A)
+      B := alpha * B * op(A)
 
     where ``A`` is a triangular matrix.
   */
@@ -621,11 +634,11 @@ module BLAS {
 
     Solves the matrix equation::
 
-      op(A) * X = alpha * B
+      op(A) * X := alpha * B
 
     or::
 
-      X * op(A) = alpha * B
+      X * op(A) := alpha * B
 
     where ``A`` is a triangular matrix.
   */
