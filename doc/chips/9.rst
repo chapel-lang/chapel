@@ -89,9 +89,10 @@ input to the next state:
 Setup
 +++++
 
-``mason new [project name]`` is the command that initializes a new project
-and git repository. For example, after ``mason new MyPackage`` is run in an
-empty directory it will have the following hierarchy:
+``mason new [project name] [--vcs OPTION]`` is the command that initializes a
+new project. It also creates a git repository unless ``--vcs none`` is included.
+For example, after ``mason new MyPackage`` is run in an empty directory it will
+have the following hierarchy:
 
 ::
 
