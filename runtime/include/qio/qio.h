@@ -20,10 +20,6 @@
 #ifndef _QIO_H_
 #define _QIO_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "sys_basic.h"
 #include "bswap.h"
 #include "qbuffer.h"
@@ -43,6 +39,10 @@ extern "C" {
 #include <sys/mman.h>
 
 #define DEBUG_QIO 0
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // synonym for iovec
 typedef struct iovec qiovec_t;
@@ -196,6 +196,10 @@ typedef struct qio_file_functions_s {
 typedef qio_file_functions_t* qio_file_functions_ptr_t;
 // -- end --
 
+#ifdef __cplusplus
+} // end extern "C"
+#endif
+
 #ifdef _chplrt_H_
 // also export iohint_t and fdflag_t
 typedef qio_hint_t iohints;
@@ -211,6 +215,10 @@ typedef struct {
 
 #define NULL_OWNER chpl_nullTaskID
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 qioerr qio_lock(qio_lock_t* x);
 void qio_unlock(qio_lock_t* x);
 
@@ -225,6 +233,10 @@ static inline void qio_lock_destroy(qio_lock_t* x) {
   chpl_sync_destroyAux(&x->sv);
 }
 
+#ifdef __cplusplus
+} // end extern "C"
+#endif
+
 #else
 
 #ifndef CHPL_RT_UNIT_TEST
@@ -232,6 +244,10 @@ static inline void qio_lock_destroy(qio_lock_t* x) {
 #endif
 
 #include <pthread.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef pthread_mutex_t qio_lock_t;
 // these should return 0 on success; otherwise, an error number.
@@ -264,12 +280,21 @@ static inline qioerr qio_lock_init(qio_lock_t* x) {
 
 // returns void for the same reason as qio_unlock.
 static inline void qio_lock_destroy(qio_lock_t* x) { int rc = pthread_mutex_destroy(x); if( rc ) { assert(rc == 0); abort(); } }
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
+
 #endif
 
 
 extern ssize_t qio_too_small_for_default_mmap;
 extern ssize_t qio_too_large_for_default_mmap;
 extern ssize_t qio_mmap_chunk_iobufs;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Wrap system calls readv, writev, preadv, pwritev
  * to take a buffer.

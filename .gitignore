@@ -381,8 +381,6 @@ tags
 /test/runtime/kbrady/goodAllocSize.good
 /test/runtime/sungeun/chpl-env-gen.h
 /test/runtime/sungeun/chpl-env-gen.test.gen.c
-/test/runtime/panzone/stacktrace.good
-/test/runtime/panzone/fact-stacktrace.good
 
 /test/studies/590o/alexco/*.txt
 /test/studies/IMSuite/leader_elect_lcr/outputleader_elect_lcr_*.txt

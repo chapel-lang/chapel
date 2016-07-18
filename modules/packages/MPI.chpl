@@ -215,8 +215,15 @@ module MPI {
         C_MPI.MPI_Comm_split(MPI_COMM_WORLD, 0, here.id : c_int,
           CHPL_COMM_WORLD_REPLICATED(1));
       }
-      _mpi.freeChplComm = true;
+    } else {
+      // For a single Chapel locale, just duplicate MPI_COMM_WORLD
+      // NOTE : This split in logic is necessary, especially if Chapel is running
+      // in single-locale mode, but we want to continue to use MPI.
+      C_MPI.MPI_Comm_dup(MPI_COMM_WORLD, CHPL_COMM_WORLD_REPLICATED(1));
     }
+
+    // Set flag to free
+    _mpi.freeChplComm = true;
   }
 
   /* commRank(comm)
