@@ -14,15 +14,23 @@ Abstract
 --------
 
 This CHIP proposes a package manager for Chapel and provides some
-directions for future improvements. This CHIP primarily covers the design of
-the initial Chapel package manager, but also includes some design and ideas for
-future work.
+directions for future improvements. It primarily covers the design of
+the initial Chapel package manager, but also includes some designs and
+ideas for future work.
 
-Credit is due to Sam Boyer of the Glide package manager for Go. His article
-on Medium_ provided an excellent guide and template for our own package manager.
+Credit
+++++++
+
+* Sam Boyer of the Glide package manager for Go. His article on Medium_
+  provided an excellent guide and template for this proposal.
+
+* Rust's cargo_. The long term answer for most questions was to look at what
+  cargo is doing. They have a very well designed package manager, and
+  reinventing the wheel should generally be avoided when dealing with
+  package manager design. 
 
 Rationale
----------
++++++++++
 
 Chapel's current approach of bundling any extra modules in the standard library
 isn't sustainable if we wish to have a healthy ecosystem of libraries. There
@@ -36,32 +44,17 @@ are several problems with the current strategy:
 
 * Modules are gated for release alongside the compiler
 
-Description
------------
-
-There are a several components of this package manager here I will propose what
-two of them will look like initially:
-
-* ``mason`` - a command line tool for building Chapel programs
-* ``Mason.toml`` - module metadata mason uses to build your application
-
 Mason
 +++++
 
-The idea of ``mason`` is based heavily off of Rust's cargo_. It is meant to
-provide a consistent way for libraries and applications to be built. This is
-done through the use of a manifest, ``mason.toml``. The manifest describes your
-package, its dependencies, and how it is built. The long term answer for most
-questions is to look at what cargo is doing. They have a very well
-designed package manager, and reinventing the wheel should generally be avoided
-when dealing with package manager design.
+``mason`` will be a command line tool for building Chapel programs, providing
+a consistent way for libraries and applications to be built.
 
 The authors of this proposal support the idea of writing ``mason`` in
 Chapel. It would be good to have a piece of production code that is written in
-Chapel that users and developers depend on and use regularly. The largest
-concern that has been brought up with this idea is the lack of proper error
-handling in Chapel. However, this should improve over time in parallel to the
-development of ``mason``.
+Chapel and depended on by users and developers. The largest concern that has been
+brought up with this idea is the lack of proper error handling in Chapel. However,
+this should improve in parallel to the development of ``mason``.
 
 
 Mason Pipeline
@@ -70,20 +63,19 @@ Mason Pipeline
 The package manager pipeline has 4 key states, where each state acts as the
 input to the next state:
 
-* **Project Code**: ``src/``
-* **Manifest File**: ``Mason.toml``
+* `Project Code`_: ``src/``
+* `Manifest File`_: ``Mason.toml``
 
-  * Markup-style file containing package metadata.
+  * Markup-style file containing package metadata and dependencies.
 
-* **Lock File**: ``Mason.lock``
+* `Lock File`_: ``Mason.lock``
 
-  * File containing list of dependencies generated from ``Mason.toml``.
   * Contains the necessary information to guarantee a consistent build on
     all supported platforms.
 
-* **Dependency Code**: ``~/.mason/src/``
+* `Dependency Code`_: ``~/.mason/src/``
 
-  * Dependencies that are downloaded into a local directory.
+  * Dependencies that have been downloaded into a local directory.
 
 
 Setup
@@ -91,6 +83,7 @@ Setup
 
 ``mason new [project name] [--vcs OPTION]`` is the command that initializes a
 new project. It also creates a git repository unless ``--vcs none`` is included.
+
 For example, after ``mason new MyPackage`` is run in an empty directory it will
 have the following hierarchy:
 
@@ -103,7 +96,7 @@ have the following hierarchy:
 
 mason will enforce that the main file be named after the package to enforce
 namespacing. While it is common practice for package names to be PascalCase
-while chpl files are lowercase, it is an acceptable tradeoff for reliability,
+and chpl files to be lowercase, it is an acceptable tradeoff for reliability,
 and MyPackage will be the first file listed in src/.
 
 To work on an existing project, clone its repository and invoke ``mason build``
@@ -163,8 +156,8 @@ registry. Due to the amount of effort behind such a task, it has been decided
 that this can come at a later stage.
 
 The initial mason registry would be a GitHub repository containing a list of
-versioned manifest files from packages, not too unlike that of the OS X
-Homebrew package manager registry.
+versioned manifest files from packages, not unlike that of the OS X Homebrew
+package manager registry.
 
 The registry would follow a hierarchy as follows:
 
@@ -229,8 +222,8 @@ There are some recognized downsides of using a GitHub repository as a registry:
 
     * Julia does a great job at this in their Ecosystem-Pulse_.
 
-For these reasons, we would like to eventually pursue a truly central registry
-with cached packaged and a first-class interface.
+For these reasons, we would eventually like to pursue a truly central registry
+with cached packages and a first-class interface.
 
 **Namespacing**
 
@@ -309,17 +302,24 @@ This step will be fully automated by mason, in which it:
 
 * Parses the manifest file
 * Builds a dependency directed acyclic graph (DAG)
-  - If a cycle is formed by the dependencies, mason will print an error.
-  - This should only occur if one of the dependencies depends on the
+
+  * If a cycle is formed by the dependencies, mason will print an error.
+
+  * This should only occur if one of the dependencies depends on the
     current project.
+    
 * Performs the incompatible version resolution strategy
-  - If multiple bug fixes of a package are present in the project, mason
+
+  * If multiple bug fixes of a package are present in the project, mason
     will use the latest bug fix. (ex. 1.1.0, 1.1.1 --> 1.1.1)
-  - If multiple minor versions of a package are present in the project,
+
+  * If multiple minor versions of a package are present in the project,
     mason will use the latest minor version within the common major version.
     (ex. 1.4.3, 1.7.0 --> 1.7) 
-  - If multiple major versions are present, mason will print an error.
+    
+  * If multiple major versions are present, mason will print an error.
     (ex. 1.13.0, 2.1.0 --> incompatible) 
+
 * Serializes the DAG and outputs it into ``Mason.lock``
 
 If the user has manually edited their manifest file, they may update the
@@ -388,12 +388,12 @@ When invoked, ``mason build`` will do the following:
 
 * Build ``??.chpl`` in the ``/src`` directory, where ?? is the name of the project.
  
-  - This file will be the designated main by the ``--main-module`` flag.
+  * This file will be the designated main by the ``--main-module`` flag.
 
-  - Library dependencies are included by specifying their main file from the
+  * Library dependencies are included by specifying their main file from the
     dependency pool. 
 
-  - Binary dependencies are included by specifying their main file from the
+  * Binary dependencies are included by specifying their main file from the
     dependency pool. 
 
 * If the package is an application, build the binary into ``target/``.
@@ -405,7 +405,7 @@ When invoked, ``mason build`` will do the following:
   
 * Run the resulting executable out of ``target/``, if it exists.
 
-  - Runtime options may be included in the manifest, or may be passed to
+  * Runtime options may be included in the manifest, or may be passed to
     ``run`` on the command line. Command line options take precedence. 
 
 
@@ -428,9 +428,9 @@ Future Work
 -----------
 
 The first version of the package manager will be very simple with limited
-functionality. There are several additional features we wish to eventually
-pursue. This section is dedicated to the subset of those features that have
-been considered or are partially designed.
+functionality, but there are several more features that we wish to add
+eventually. This section is dedicated to the subset of those features that have
+been considered or partially designed.
 
 C Dependencies
 ++++++++++++++
@@ -503,6 +503,7 @@ The LAPACK package with native bindings:
 
 
 Things to note:
+
   * ``requires`` is a list of nix packages to be in the environment when
     building your program.  It's recommended to provide these, but they may not
     be used.
@@ -511,14 +512,10 @@ Things to note:
   * ``includes`` is the header file that is expected to be on your search path
     and will be added to the compile line.
 
-.. code-block:: shell
-
-  mason build
-
-to download our lapack dependency, and build the program. The dependency will
-be downloaded and placed in ``~/.mason/src/``. Nix will be used to resolve the
-external dependencies and packages if it is available. Otherwise, libraries and
-headers are expected to be placed on the normal search paths.
+``mason build`` will download our lapack dependency, and build the program.
+The dependency will be downloaded and placed in ``~/.mason/src/``. Nix will be
+used to resolve the external dependencies and packages if it is available. Otherwise,
+libraries and headers are expected to be placed on the normal search paths.
 
 
 Other Future Work
