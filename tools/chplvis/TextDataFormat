@@ -3,7 +3,7 @@ This file documents the text data format of the VisualDebug.chpl output files.
 First line of every file is:
 
   ChplVdebug: ver x.y nodes m nid n tid t seq s t1 t2 t3
-     x.y is the version number.   The current version in 1.1.
+     x.y is the version number.   The current version in 1.2.
      m is the total locale/node count. 
      n is the current node id
      t is the task id for this call to ChplVdebug.
@@ -23,32 +23,41 @@ First line of every file is:
      ts  - system time        (sec.usec format)
      tnum - tag number
      lnum - line number
-     name - name of tag or file
+     fileno - index in the file name table 
 
 Lines in the file:
 
- End: tv tu ts nid tid
+  Tablesize: size
+    On locale 0 only, size of the file name table
+
+  fname: fileno name
+    On locale 0 only, name of file in the file table at fileno
+
+  tname: tnum tag_name
+    On locale 0 only, name of a new tag
+
+  End: tv tu ts nid tid
     End collection of data, should be last line of file
 
   VdbMark: tv nid tid
     Mark a task as a VisualDebug task
 
-  Tag: tv tu ts nid tid tnum name
+  Tag: tv tu ts nid tid tnum
     Tag in the data
 
   Pause:  tv tu ts nid tid tnum
     Pause the collection of data, tag number is previous tag
 
-  task: tv nid tid parent_tid [OL] lnum name
+  task: tv nid tid parent_tid [OL] lnum fileno
     [OL] - on of O or L, O for an "on task", L for a "local task"
-    Task creation, On tasks don't have valid lnum and name.
+    Task creation, On tasks don't have valid lnum and fileno.
 
-  nb_put: tv nid rid tid addr raddr elemsize typeIndex length lnum name
-  nb_get: tv nid rid tid addr raddr elemsize typeIndex length lnum name
-  put: tv nid rid tid addr raddr elemsize typeIndex length lnum name
-  get: tv nid rid tid addr raddr elemsize typeIndex length lnum name
-  st_put:  tv nid rid tid addr raddr elemsize typeIndex length lnum name
-  st_get:  tv nid rid tid addr raddr elemsize typeIndex length lnum name
+  nb_put: tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
+  nb_get: tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
+  put: tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
+  get: tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
+  st_put:  tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
+  st_get:  tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
     communication.  Puts: data flow nid->rid, gets: data flow rid -> nid
     nb is non-blocking, st is strided.
 

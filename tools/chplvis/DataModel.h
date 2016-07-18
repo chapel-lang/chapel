@@ -106,6 +106,9 @@ class DataModel {
   taskData mainTask;
 
   StringCache strDB;
+  char **strTbl;
+  int strTblSize;
+  std::vector<const char *> tagNames;
 
   typedef std::list<Event*>::iterator evItr;
 
@@ -218,6 +221,7 @@ class DataModel {
     curEvent = theEvents.begin();
     uniqueTags = true;
     utagList = NULL;
+    tagNames.resize(64);
   }
   
   // Destructor for DataModel

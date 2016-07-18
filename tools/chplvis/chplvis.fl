@@ -329,7 +329,7 @@ MainWindow->redraw();}
   }
   code {VisSettings.readFromFile();
 if (argc > 1 && argv[1][1] != '-') {
-    printf ("argv[1] is %s\\n", argv[1]);
+    //printf ("argv[1] is %s\\n", argv[1]);
     if (!VisData.LoadData(argv[1])) {
        exit(1);
     }
