@@ -86,10 +86,11 @@ BLAS Implementations:
       warnings about incompatible pointer types. These may be ignored.
 
 Cray Systems:
-  PBLAS is made available through Cray's libsci. For Cray systems with libsci
-  installed, simply load the ``cray-libsci`` module and link against the
-  ``sci_gnu`` library, using the module-defined environment variables as shown
-  below:
+  The **PBLAS** implementation is made available through Cray's libsci, which
+  comes installed on all Cray systems. To compile programs with the ``BLAS``
+  module on Cray systems, load the ``cray-libsci`` module and link against the
+  ``sci_gnu`` library, using the module-defined ``$CRAY_LIBSCI_PREFIX_DIR``
+  environment variable as shown here:
 
 .. code-block:: sh
 
