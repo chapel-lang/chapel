@@ -347,7 +347,7 @@ example of a ``Mason.lock`` generated from the previous ``Mason.toml`` example:
     name = "curl"
     version = "1.0.0"
     license = "Apache-2.0"
-    source= git+https://github.com/tzakian/curl.git#9f35b8e439eeedd60b9414c58f389bdc6a3284f9"
+    source= "git+https://github.com/tzakian/curl.git#9f35b8e439eeedd60b9414c58f389bdc6a3284f9"
 
 
 Lock File -> Dependency Code
