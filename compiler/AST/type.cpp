@@ -576,6 +576,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
   fields(),
   inherits(),
   outer(NULL),
+  iteratorInfo(NULL),
   doc(NULL)
 {
   if (aggregateTag == AGGREGATE_CLASS) { // set defaultValue to nil to keep it

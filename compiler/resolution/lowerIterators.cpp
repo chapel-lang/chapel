@@ -36,9 +36,7 @@
 //
 // getTheIteratorFn(): get the original (user-written) iterator function
 // that corresponds to an _iteratorClass type or symbol
-// or a CallExpr therewith. Its uses were simply:
-//
-//   ... ->defaultInitializer->getFormal(1)->type->defaultInitializer
+// or a CallExpr therewith.
 //
 
 // 'ic' must be an instance of _iteratorClass
@@ -49,9 +47,8 @@ FnSymbol* getTheIteratorFn(Symbol* ic) {
 FnSymbol* getTheIteratorFn(CallExpr* call) {
   return getTheIteratorFn(call->get(1)->typeInfo());
 }
-
-// either an _iteratorClass type or a tuple thereof
-FnSymbol* getTheIteratorFn(Type* icType)
+/*
+FnSymbol* oldGetTheIteratorFn(Type* icType)
 {
   // the asserts document the current state
   bool gotTuple = icType->symbol->hasFlag(FLAG_TUPLE);
@@ -70,6 +67,46 @@ FnSymbol* getTheIteratorFn(Type* icType)
   INT_ASSERT(gotTuple || result->hasFlag(FLAG_ITERATOR_FN));
 
   return result;
+}
+*/
+
+// icType is either an _iteratorClass type or a tuple thereof
+// When icType is a tuple, this function returns
+//  the getIterator function for the first tuple element.
+// When icType is an _iteratorClass, this function returns
+//  the original iterator function.
+FnSymbol* getTheIteratorFn(Type* icType)
+{
+  // the asserts document the current state
+
+  if (icType->symbol->hasFlag(FLAG_TUPLE)) {
+    FnSymbol* getIterFn = icType->defaultInitializer;
+    // A tuple of iterator classes -> first argument to
+    // tuple constructor is the iterator class type.
+    Type* firstIcType = getIterFn->getFormal(1)->type;
+    INT_ASSERT(firstIcType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
+    AggregateType* firstIcTypeAgg = toAggregateType(firstIcType);
+    FnSymbol* result = firstIcTypeAgg->iteratorInfo->getIterator;
+//INT_ASSERT(result == oldGetTheIteratorFn(icType));
+    return result;
+  } else {
+    INT_ASSERT(icType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
+    AggregateType* icTypeAgg = toAggregateType(icType);
+    INT_ASSERT(icTypeAgg->iteratorInfo);
+    FnSymbol* getIterFn = icTypeAgg->iteratorInfo->getIterator;
+    // The type of _getIterator's first formal arg is _iteratorRecord.
+    Type* irType = getIterFn->getFormal(1)->type;
+    INT_ASSERT(irType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
+
+    AggregateType* irTypeAgg = toAggregateType(irType);
+    INT_ASSERT(irTypeAgg->iteratorInfo);
+
+    // Return the original iterator function
+    FnSymbol* result = irTypeAgg->iteratorInfo->iterator;
+    INT_ASSERT(result->hasFlag(FLAG_ITERATOR_FN));
+//INT_ASSERT(result == oldGetTheIteratorFn(icType));
+    return result;
+  }
 }
 
 
@@ -2127,11 +2164,12 @@ static void handlePolymorphicIterators()
         getIterator->insertBeforeReturn(new DefExpr(label));
         Symbol* ret = getIterator->getReturnSymbol();
         forv_Vec(Type, type, irecord->dispatchChildren) {
+          AggregateType* subTypeAgg = toAggregateType(type);
           VarSymbol* tmp = newTemp(irecord->getField(1)->type);
           VarSymbol* cid = newTemp(dtBool);
           BlockStmt* thenStmt = new BlockStmt();
           VarSymbol* recordTmp = newTemp("recordTmp", type);
-          VarSymbol* classTmp = newTemp("classTmp", type->defaultInitializer->iteratorInfo->getIterator->retType);
+          VarSymbol* classTmp = newTemp("classTmp", subTypeAgg->iteratorInfo->getIterator->retType);
           thenStmt->insertAtTail(new DefExpr(recordTmp));
           thenStmt->insertAtTail(new DefExpr(classTmp));
 
@@ -2150,11 +2188,11 @@ static void handlePolymorphicIterators()
               thenStmt->insertAtTail(new CallExpr(PRIM_SET_MEMBER, recordTmp, field, ftmp2));
             }
           }
-          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, classTmp, new CallExpr(type->defaultInitializer->iteratorInfo->getIterator, recordTmp)));
+          thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, classTmp, new CallExpr(subTypeAgg->iteratorInfo->getIterator, recordTmp)));
           thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ret, new CallExpr(PRIM_CAST, ret->type->symbol, classTmp)));
           thenStmt->insertAtTail(new GotoStmt(GOTO_GETITER_END, label));
           ret->defPoint->insertAfter(new CondStmt(new SymExpr(cid), thenStmt));
-          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_TESTCID, tmp, type->defaultInitializer->iteratorInfo->irecord->getField(1)->type->symbol)));
+          ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_TESTCID, tmp, subTypeAgg->iteratorInfo->irecord->getField(1)->type->symbol)));
           ret->defPoint->insertAfter(new DefExpr(cid));
           ret->defPoint->insertAfter(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), irecord->getField(1))));
           ret->defPoint->insertAfter(new DefExpr(tmp));

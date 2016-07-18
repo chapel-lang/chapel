@@ -824,7 +824,8 @@ protoIteratorClass(FnSymbol* fn) {
   // of the iterator record type.  Since we are only creating shell functions
   // here, we still need a way to obtain the original iterator function, so we
   // can fill in the bodies of the above 9 methods in the lowerIterators pass.
-  ii->irecord->defaultInitializer = fn;
+  //ii->irecord->defaultInitializer = fn; // TODO remove
+  ii->irecord->iteratorInfo = ii;
   ii->irecord->scalarPromotionType = fn->retType;
   fn->retType = ii->irecord;
   fn->retTag = RET_VALUE;
@@ -847,7 +848,8 @@ protoIteratorClass(FnSymbol* fn) {
   // the iterator class type.  This makes it easy to obtain the iterator given
   // just a symbol of the iterator class type.  This may include _getIterator
   // and _getIteratorZip functions in the module code.
-  ii->iclass->defaultInitializer = ii->getIterator;
+  //ii->iclass->defaultInitializer = ii->getIterator; // TODO remove
+  ii->iclass->iteratorInfo = ii;
   normalize(ii->getIterator);
   resolveFns(ii->getIterator);  // No shortcuts.
 }
@@ -9193,8 +9195,9 @@ isUnusedClass(AggregateType *ct) {
   if (ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
     return false;
 
-  // Uses of iterator records get inserted in lowerIterators
-  if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+  // Uses of iterator records/classes get inserted in lowerIterators
+  if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
+      ct->symbol->hasFlag(FLAG_ITERATOR_CLASS))
     return false;
 
   // FALSE if initializers are used
