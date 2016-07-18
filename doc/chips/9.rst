@@ -107,7 +107,7 @@ while chpl files are lowercase, it is an acceptable tradeoff for reliability,
 and MyPackage will be the first file listed in src/.
 
 To work on an existing project, clone its repository and invoke ``mason build``
-(see Build System). This will fetch all the dependencies and build the project
+(see `Build System`_). This will fetch all the dependencies and build the project
 for a fully functional copy.
 
 Project Code
@@ -325,7 +325,7 @@ This step will be fully automated by mason, in which it:
 If the user has manually edited their manifest file, they may update the
 lock file using ``mason update`` from within the project directory. Otherwise,
 the lock file is updated automatically when using ``mason add`` or ``mason rm``.
-(see Syncing Commands)
+(see `Syncing Commands`_)
 
 The user should never edit a ``Mason.lock`` file manually.
 
