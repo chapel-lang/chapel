@@ -23,8 +23,10 @@ void denormalize(Expr* def, SymExpr* use);
 void denormalize(FnSymbol *fn);
 
 void denormalize(void) {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    denormalize(fn);
+  if(fDenormalize) {
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      denormalize(fn);
+    }
   }
 }
 

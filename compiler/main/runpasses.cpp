@@ -76,7 +76,7 @@ struct PassInfo {
 #define LOG_optimizeOnClauses                  'o'
 #define LOG_addInitCalls                       'M'
 #define LOG_insertLineNumbers                  'n'
-#define LOG_denormalize                        'D'
+#define LOG_denormalize                        'Q'
 #define LOG_codegen                            'E'
 #define LOG_makeBinary                         NUL
 
