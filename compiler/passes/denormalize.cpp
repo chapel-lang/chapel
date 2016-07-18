@@ -8,35 +8,24 @@
 #include "view.h"
 #include "passes.h"
 
-
-
-bool isDefSafeToMove(Expr* def);
+//helpers
+//bool isDefSafeToMove(Expr* def);
+bool isExprSafeForReorder(Expr * e);
 bool possibleDepInBetween(Expr* e1, Expr* e2);
-void denormalize(FnSymbol *fn);
+bool canPrimMoveCreateCommunication(CallExpr* ce);
 bool isDenormalizable(Symbol* sym,
     Map<Symbol*,Vec<SymExpr*>*> defMap,
     Map<Symbol*,Vec<SymExpr*>*> useMap, SymExpr** useOut, Expr** defOut);
+void denormalizeActuals(CallExpr* ce,
+    Map<Symbol*,Vec<SymExpr*>*> defMap,
+    Map<Symbol*,Vec<SymExpr*>*> useMap);
+void denormalize(Expr* def, SymExpr* use);
+void denormalize(FnSymbol *fn);
 
 void denormalize(void) {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     denormalize(fn);
   }
-}
-
-void denormalize(Expr* def, SymExpr* use) {
-  Expr* defExpr = def->parentExpr;
-
-  //remove variable declaration
-  use->var->defPoint->remove();
-
-  //remove def
-  Expr* replExpr = def->remove();
-
-  //replace use with def
-  use->replace(replExpr);
-
-  //remove defExpr
-  defExpr->remove();
 }
 
 void denormalize(FnSymbol *fn) {
@@ -50,6 +39,7 @@ void denormalize(FnSymbol *fn) {
   collectSymbolSetSymExprVec(fn, symSet, symExprs);
   buildDefUseMaps(symSet, symExprs, defMap, useMap);
 
+  std::vector<CallExpr*> deferredFns;
   //if(strncmp(fn->name, "chpl__init_tempVar", 18) != 0) return;
   //if(strncmp(fn->name, "__getActualInsertPts", 20) != 0) return;
   //if(strcmp(fn->name, "chpl__init_eval-order-of-actuals") != 0) return;
@@ -85,20 +75,23 @@ void denormalize(FnSymbol *fn) {
       //std::cout << "use\n";
       //print_view(use);
 
-      ////any dependency between def and use expr themselves
       if(CallExpr* useCe = toCallExpr(useExpr)){
         if(!useCe->isPrimitive()) {
           if(CallExpr* defCe = toCallExpr(def)) {
             if(!defCe->isPrimitive()) {
               //deal with this later
               isDenormalizeSafe = false; 
+              deferredFns.push_back(useCe);
             }
           }
         }
       }
       //any function call in between that is potentially dangerous?
-      isDenormalizeSafe &= !possibleDepInBetween(defExpr, useExpr);
-
+      if(possibleDepInBetween(defExpr, useExpr)) {
+        //if(! isExprSafeForReorder(def)) {
+          isDenormalizeSafe = false;
+        //}
+      }
       if(isDenormalizeSafe) {
         //all systems go
         denormalize(def, use);
@@ -113,59 +106,59 @@ void denormalize(FnSymbol *fn) {
     use = NULL;
   }
 
-  std::vector<BaseAST*> asts;
-  collect_asts(fn->body, asts);
-  for_vector(BaseAST, ast, asts) {
+  for_vector(CallExpr, ce, deferredFns) {
+    denormalizeActuals(ce, defMap, useMap);
+  }
+}
 
-    if(CallExpr* ce = toCallExpr(ast)) {
-      if(!ce->isPrimitive()) {
-        //we have a user function call
+void denormalizeActuals(CallExpr* ce,
+    Map<Symbol*,Vec<SymExpr*>*> defMap,
+    Map<Symbol*,Vec<SymExpr*>*> useMap) {
 
-        //std::cout << "REVISITING\n";
-        //print_view(ce);
-        for_alist_backward(actual, ce->argList) {
-          if(SymExpr* argSym = toSymExpr(actual)) { //else it's already denormd
-            if(! (argSym->var->isConstant() ||
-                  argSym->var->isParameter())) {
-              SymExpr* use;
-              Expr* def;
-              if(isDenormalizable(argSym->var, defMap, useMap, &use, &def)) {
-                Expr* useExpr = use->parentExpr;
-                Expr* defExpr = def->parentExpr;
-                //std::cout << "FOUND DENORMALIZABLE ACTUAL\n";
-                //std::cout << "defExpr\n";
-                //print_view(defExpr);
-                //std::cout << "def\n";
-                //print_view(def);
-                //std::cout << "useExpr\n";
-                //print_view(useExpr);
-                //std::cout << "use\n";
-                //print_view(use);
-                if(!possibleDepInBetween(defExpr, useExpr)) {
-                  if(isDefSafeToMove(def)) {
-                    denormalize(def, use);
-                    //std::cout << "DENORMALIZED\n";
-                  }
-                  else {
-                    //std::cout << "STILL UNSAFE: Cannot move def\n";
-                    break; //abort denormalization for actuals of this func
-                  }
-                }
-                else {
-                  //std::cout << "STILL UNSAFE: Dangerous call cross-over\n";
-                  break;
-                }
-              }
-              else {
-                //std::cout << "Nondenormalizable argument\n";
-                //it is a bit immature to break at this point as there can be a
-                //nondenormalizble for many reasons, and we can keep looking
-                //further in the alist for denormalization in many cases
-                //I don't know how easy it is, yet.
-                break;
-              }
+  INT_ASSERT(!ce->isPrimitive());
+  for_alist_backward(actual, ce->argList) {
+    if(SymExpr* argSym = toSymExpr(actual)) { //else it's already denormd
+      if(! (argSym->var->isConstant() ||
+            argSym->var->isParameter())) {
+        SymExpr* use;
+        Expr* def;
+        if(isDenormalizable(argSym->var, defMap, useMap, &use, &def)) {
+          Expr* useExpr = use->parentExpr;
+          Expr* defExpr = def->parentExpr;
+          //std::cout << "FOUND DENORMALIZABLE ACTUAL\n";
+          //std::cout << "defExpr\n";
+          //print_view(defExpr);
+          //std::cout << "def\n";
+          //print_view(def);
+          //std::cout << "useExpr\n";
+          //print_view(useExpr);
+          //std::cout << "use\n";
+          //print_view(use);
+          if(!possibleDepInBetween(defExpr, useExpr)) {
+            // In C actual evaluation order is not standard, therefore any
+            // defExpr that us unsafe for reordering cannot be moved to
+            // the args
+            if(isExprSafeForReorder(def)) {
+              denormalize(def, use);
+              //std::cout << "DENORMALIZED\n";
+            }
+            else {
+              //std::cout << "STILL UNSAFE: Cannot move def\n";
+              //break; //abort denormalization for actuals of this func
             }
           }
+          else {
+            //std::cout << "STILL UNSAFE: Dangerous call cross-over\n";
+            //break;
+          }
+        }
+        else {
+          //std::cout << "Nondenormalizable argument\n";
+          //it is a bit immature to break at this point as there can be a
+          //nondenormalizble for many reasons, and we can keep looking
+          //further in the alist for denormalization in many cases
+          //I don't know how easy it is, yet.
+          //break;
         }
       }
     }
@@ -178,47 +171,83 @@ inline bool isNonEssentialPrimitive(CallExpr* ce) {
 
 bool possibleDepInBetween(Expr* e1, Expr* e2){
   for(Expr* e = e1; e != e2 ; e = getNextExpr(e)) {
-    if(CallExpr* ce = toCallExpr(e)) {
-      if(!isNonEssentialPrimitive(ce)) {
-        return true;
-      }
-      //if(ce->isPrimitive()){
-        //if(ce->primitive->isEssential) {
-          ////std::cout << "ESSENTIAL PRIMITIVE IN BETWEEN\n";
-          ////isDenormalizeSafe = false;
-          //return true;
-        //}
-      //}
-      //else {
-        ////std::cout << "USER FUNC IN BETWEEN\n";
-        ////isDenormalizeSafe = false;
-        //return true;
-      //}
+    if(! isExprSafeForReorder(e)) {
+      return true;
     }
-    // other possibilities are safe and they are:
-    // DefExpr, SymExpr, BlockStmt, GotoStmt, CondStmt
+    //if(CallExpr* ce = toCallExpr(e)) {
+    ////if(!isNonEssentialPrimitive(ce)) {
+    ////return true;
+    ////}
+
+    //}
+    //// other possibilities are safe and they are:
+    //// DefExpr, SymExpr, BlockStmt, GotoStmt, CondStmt
   }
   return false;
 }
 /*
-bool isSafePrimitive(CallExpr* ce) {
-  PrimitiveOp* prim = ce->primitive;
-  if (!prim) return false; // or INT_ASSERT(prim);
-  if (prim->isEssential) return false;
-  switch(prim->tag) {
-    case PRIM_UN_PLUS:
-    case PRIM_UN_MINUS:
-    //....
-      return true;
-    // If we trip over this assert, see if the IR is correct
-    // and if so whether we should return true or false for this primitive.
-    default:
-      INT_ASSERT(false); // should not be getting those
-             // that are !isEssential and not listed above
-      break;
-  }
+   bool isSafePrimitive(CallExpr* ce) {
+   PrimitiveOp* prim = ce->primitive;
+   if (!prim) return false; // or INT_ASSERT(prim);
+   if (prim->isEssential) return false;
+   switch(prim->tag) {
+   case PRIM_UN_PLUS:
+   case PRIM_UN_MINUS:
+//....
+return true;
+// If we trip over this assert, see if the IR is correct
+// and if so whether we should return true or false for this primitive.
+default:
+INT_ASSERT(false); // should not be getting those
+// that are !isEssential and not listed above
+break;
+}
 }
 */
+bool isExprSafeForReorder(Expr * e) {
+  if(CallExpr* ce = toCallExpr(e)) {
+    if(!ce->isPrimitive()) {
+      for_formals_actuals(formal, actual, ce) {
+        if(isReferenceType(formal->typeInfo())) {
+          //std::cout << "forbidden actual\n";
+          //print_view(actual);
+          return false;
+        }
+      }
+      FnSymbol* fnSym = ce->theFnSymbol();
+
+      std::vector<BaseAST*> asts;
+      collect_asts(fnSym->body, asts);
+      for_vector(BaseAST, ast, asts) {
+        if (SymExpr* se = toSymExpr(ast)) {
+          Symbol* var = se->var;
+
+          if(!var->isConstant() && !var->isImmediate() && isGlobal(var)){
+            //std::cout << "Symbol\n";
+            //print_view(var);
+            //std::cout << "is global\n";
+            return false;
+          }
+        }
+        //this else if lazily marks a def to be immovable if the
+        //function body has a call to another user function
+        //this can be enhanced by going recursive, but it might be a bit overkill
+        else if(CallExpr* ce = toCallExpr(ast)) {
+          if(!isNonEssentialPrimitive(ce)) {
+            return false;
+          }
+        }
+      }
+    }
+    else {
+      //primitive
+      if(ce->primitive->isEssential){
+        return false;
+      }
+    }
+  }
+  return true;
+}
 //I am not proud of how this function checks "safety" of denormalization.
 //What it does is to return false if the function has a ref formal or has any
 //global variable in it's body(either def/use). Cases that it cover might be a
@@ -231,58 +260,110 @@ bool isSafePrimitive(CallExpr* ce) {
 //  Any worries for parallelism/synchronizations/atomics?
 //
 //With this version we should be able to pass standard no-local testing
-bool isDefSafeToMove(Expr* def) {
-  if(CallExpr* defCall = toCallExpr(def)) {
-    if(!defCall->isPrimitive()) {
-      for_formals_actuals(formal, actual, defCall) {
-        if(isReferenceType(formal->typeInfo())) {
-          //std::cout << "forbidden actual\n";
-          //print_view(actual);
-          return false;
-        }
-      }
-    }
-    //it's def'd in a user function
-    //Vec<Symbol*> defSymSet;
-    //Vec<SymExpr*> defSymExprs;
-    //print_view(defCall->get(1));
-    FnSymbol* defFn = defCall->theFnSymbol();
-    //std::cout << "defFn " << defFn->name << "\n";
-
-    std::vector<BaseAST*> asts;
-    collect_asts(defFn->body, asts);
-    for_vector(BaseAST, ast, asts) {
-      if (SymExpr* se = toSymExpr(ast)) {
-        Symbol* var = se->var;
-
-
-
-        if(!var->isConstant() && !var->isImmediate() && isGlobal(var)){
-          //std::cout << "Symbol\n";
-          //print_view(var);
-          //std::cout << "is global\n";
-          return false;
-        }
-      }
-      //this else if lazily marks a def to be immovable if the
-      //function body has a call to another user function
-      //this can be enhanced by going recursive, but it might be a bit overkill
-      else if(CallExpr* ce = toCallExpr(ast)) {
-        if(!isNonEssentialPrimitive(ce)) {
-          return false;
-        }
-        //if(!ce->isPrimitive()) {
+//bool isDefSafeToMove(Expr* def) {
+  //if(CallExpr* defCall = toCallExpr(def)) {
+    //if(!defCall->isPrimitive()) {
+      //for_formals_actuals(formal, actual, defCall) {
+        //if(isReferenceType(formal->typeInfo())) {
+          ////std::cout << "forbidden actual\n";
+          ////print_view(actual);
           //return false;
         //}
-        //else {
-          //if(ce->primitive->isEssential) {
-            //return false;
-          //}
+      //}
+    //}
+    ////it's def'd in a user function
+    ////Vec<Symbol*> defSymSet;
+    ////Vec<SymExpr*> defSymExprs;
+    ////print_view(defCall->get(1));
+    //FnSymbol* defFn = defCall->theFnSymbol();
+    ////std::cout << "defFn " << defFn->name << "\n";
+
+    //std::vector<BaseAST*> asts;
+    //collect_asts(defFn->body, asts);
+    //for_vector(BaseAST, ast, asts) {
+      //if (SymExpr* se = toSymExpr(ast)) {
+        //Symbol* var = se->var;
+
+
+
+        //if(!var->isConstant() && !var->isImmediate() && isGlobal(var)){
+          ////std::cout << "Symbol\n";
+          ////print_view(var);
+          ////std::cout << "is global\n";
+          //return false;
         //}
+      //}
+      ////this else if lazily marks a def to be immovable if the
+      ////function body has a call to another user function
+      ////this can be enhanced by going recursive, but it might be a bit overkill
+      //else if(CallExpr* ce = toCallExpr(ast)) {
+        //if(!isNonEssentialPrimitive(ce)) {
+          //return false;
+        //}
+        ////if(!ce->isPrimitive()) {
+        ////return false;
+        ////}
+        ////else {
+        ////if(ce->primitive->isEssential) {
+        ////return false;
+        ////}
+        ////}
+      //}
+    //}
+  //}
+  //return true;
+//}
+
+// If RHS of a move contain access to anything wide, it can generate
+// communication. chpl_gen_comm_get "returns" the data in the first argument,
+// and the function itself is generated during codegen(see expr.cpp
+// codegenAssign). Although the value assigned is actually temporary in the AST, 
+// it cannot be denormalized due to that.
+//
+// Such temporaries that are passed as address are not denormalized in other
+// functions due to PRIM_ADDROF, since chpl_gen_comm_get is generated at codegen
+// time, such information is not readily available at AST.
+bool canPrimMoveCreateCommunication(CallExpr* ce) {
+  INT_ASSERT(ce);
+  INT_ASSERT(ce->isPrimitive(PRIM_MOVE));
+
+  Expr* lhs = ce->get(1);
+  Expr* rhs = ce->get(2);
+  Type* lhsType = lhs->typeInfo();
+  Type* rhsType = rhs->typeInfo();
+
+  if(lhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
+    return true; // direct put
+  if(rhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
+    return true; // direct get
+
+  //now it is still possible that rhs primitive has a nonwide symbol yet the
+  //primitive itself generates communication
+  if(CallExpr* rhsCe = toCallExpr(rhs)) {
+    if(rhsCe->isPrimitive()) {
+      switch(rhsCe->primitive->tag) {
+        case PRIM_SET_MEMBER:
+        case PRIM_GET_MEMBER:
+        case PRIM_GET_MEMBER_VALUE:
+        case PRIM_SET_SVEC_MEMBER:
+        case PRIM_GET_SVEC_MEMBER:
+        case PRIM_GET_SVEC_MEMBER_VALUE:
+          if(rhsCe->get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
+            return true;
+          }
+          break;
+        default:
+          return false;
       }
     }
   }
-  return true;
+  else {
+    // var to var move
+    // I don't see how this might create communication
+  }
+
+  return false;
+
 }
 
 bool isDenormalizable(Symbol* sym,
@@ -307,8 +388,15 @@ bool isDenormalizable(Symbol* sym,
         CallExpr* ce = toCallExpr(defExpr);
         if(ce) {
           if(ce->isPrimitive(PRIM_MOVE)) {
-            if(ce->get(1)->typeInfo() == ce->get(2)->typeInfo()) {
-              def = ce->get(2);
+            Type* lhsType = ce->get(1)->typeInfo();
+            Type* rhsType = ce->get(2)->typeInfo();
+            if(! canPrimMoveCreateCommunication(ce)) {
+              if(! (lhsType->symbol->hasFlag(FLAG_EXTERN) ||
+                    rhsType->symbol->hasFlag(FLAG_EXTERN))) {
+                if(ce->get(1)->typeInfo() == ce->get(2)->typeInfo()) {
+                  def = ce->get(2);
+                }
+              }
             }
           }
         }
@@ -374,16 +462,32 @@ bool isDenormalizable(Symbol* sym,
       }
 
       //PRIM_ASSIGN is pain when things are wide
-      if(CallExpr* useParentCe = toCallExpr(useExpr)) {
-        if(useParentCe->isPrimitive(PRIM_ASSIGN)) {
-          if(useParentCe->get(1)->typeInfo()->symbol->hasEitherFlag(
-                FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
-            return false;
-          }
-        }
-      }
+      //if(CallExpr* useParentCe = toCallExpr(useExpr)) {
+      //if(useParentCe->isPrimitive(PRIM_ASSIGN)) {
+      //if(useParentCe->get(1)->typeInfo()->symbol->hasEitherFlag(
+      //FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
+      //return false;
+      //}
+      //}
+      //}
       return true;
     }
   }
   return false;
+}
+
+void denormalize(Expr* def, SymExpr* use) {
+  Expr* defExpr = def->parentExpr;
+
+  //remove variable declaration
+  use->var->defPoint->remove();
+
+  //remove def
+  Expr* replExpr = def->remove();
+
+  //replace use with def
+  use->replace(replExpr);
+
+  //remove defExpr
+  defExpr->remove();
 }
