@@ -85,7 +85,14 @@ input to the next state:
 
   * Dependencies that are downloaded into a local directory.
 
-A package repository will consist of the following directory hierarchy:
+
+Setup
++++++
+
+``mason new [project name] [--vcs OPTION]`` is the command that initializes a
+new project. It also creates a git repository unless ``--vcs none`` is included.
+For example, after ``mason new MyPackage`` is run in an empty directory it will
+have the following hierarchy:
 
 ::
 
@@ -99,24 +106,9 @@ namespacing. While it is common practice for package names to be PascalCase
 while chpl files are lowercase, it is an acceptable tradeoff for reliability,
 and MyPackage will be the first file listed in src/.
 
-Upon invoking ``mason build``, the dependencies will be parsed into a directed
-acyclic graph, resolved, and serialized into ``Mason.lock``. They will then be
-downloaded into ``~/.mason/src/`` mirroring Cargo's ``~/.cargo/src/`` common pool
-of dependencies. Finally, if the package is an application, the binary will
-build into ``target/``. The final directory hierarchy will look like this:
-
-::
-
-  ~/.mason/src/
-    (contains dependencies of MyPackage)
-
-  MyPackage/
-    Mason.toml
-    Mason.lock
-    src/
-      MyPackage.chpl
-    target/
-      ( MyPackage )
+To work on an existing project, clone its repository and invoke ``mason build``
+(see `Build System`_). This will fetch all the dependencies and build the project
+for a fully functional copy.
 
 Project Code
 ++++++++++++
@@ -304,7 +296,16 @@ License fields will propagate throughout their uses for developer convenience.
 Manifest File -> Lock File
 ++++++++++++++++++++++++++
 
-This will be a fully automated step in which mason does the following:
+A lock file ensures repeatable builds on a given system, thus "locking" the
+project's build sequence and configuration into place. It contains a serialized
+directed acyclic graph of the dependencies build options from the manifest.
+
+The lock file is more concrete than the manifest because it specifies Git SHA
+revisions rather than abstract "versions" or "packages". Whether the lock
+file is checked into the repository to ensure identical builds across all
+systems is up to the project.
+
+This step will be fully automated by mason, in which it:
 
 * Parses the manifest file
 * Builds a dependency directed acyclic graph (DAG)
@@ -324,10 +325,9 @@ This will be a fully automated step in which mason does the following:
 If the user has manually edited their manifest file, they may update the
 lock file using ``mason update`` from within the project directory. Otherwise,
 the lock file is updated automatically when using ``mason add`` or ``mason rm``.
-(see: Syncing Commands)
+(see `Syncing Commands`_)
 
 The user should never edit a ``Mason.lock`` file manually.
-
 
 Lock File
 +++++++++
@@ -354,7 +354,7 @@ Lock File -> Dependency Code
 ++++++++++++++++++++++++++++
 
 The dependency code will be downloaded into a common pool of packages, under
-the user's home directory by default:
+the user's home directory by default. This mirrors Cargo's ``~/.cargo/src/``.
 
 ::
 
@@ -394,15 +394,34 @@ When invoked, ``mason build`` will do the following:
     dependency pool. 
 
   - Binary dependencies are included by specifying their main file from the
+    dependency pool. 
+
+* If the package is an application, build the binary into ``target/``.
+
 
 ``mason run`` will, in turn:
 
 * Invoke ``build``.
-
-* Run the resulting executable.
+  
+* Run the resulting executable out of ``target/``, if it exists.
 
   - Runtime options may be included in the manifest, or may be passed to
-    ``build`` on the command line. Command line options take precedence. 
+    ``run`` on the command line. Command line options take precedence. 
+
+
+For example, after ``mason run MyPackage``, the project directory appears as so:
+
+::
+
+  ~/.mason/src/
+
+  MyPackage/
+    Mason.toml
+    Mason.lock
+    src/
+      MyPackage.chpl
+    ( target/ )
+      ( MyPackage )
 
 
 Future Work
@@ -412,30 +431,6 @@ The first version of the package manager will be very simple with limited
 functionality. There are several additional features we wish to eventually
 pursue. This section is dedicated to the subset of those features that have
 been considered or are partially designed.
-
-Naming Conventions: main.chpl and packages
-++++++++++++++++++++++++++++++++++++++++++
-
-If no module is declared in a file, then the entire file is in a module named after
-the file. If we force users to have ``main.chpl`` be their package file, then their
-modules will be called ``main`` by default, and ``use main;`` is not ergonomic.
-
-There are a few options to resolve this:
-
-* Users should declare a module inside ``main.chpl`` by convention.
-
-  - Seems to be the standard already, but more work for the user.
-
-* We provide an option in the manifest to build a main file other than ``main.chpl``.  
-
-  - Not difficult, but it's more work for the user.
-
-* ``mason`` will enforce that the main file be named after the package name, as in
-  Python package managers.
-
-  - Currently, all packages are in PascalCase, while all chpl files are in lowercase.
-    Either main files would have to be in PascalCase, or the packages would have to
-    be lowercase, or we'd lowercase the package name and see if it matches the file.
 
 C Dependencies
 ++++++++++++++
