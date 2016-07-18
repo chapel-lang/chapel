@@ -215,8 +215,13 @@ module MPI {
         C_MPI.MPI_Comm_split(MPI_COMM_WORLD, 0, here.id : c_int,
           CHPL_COMM_WORLD_REPLICATED(1));
       }
-      _mpi.freeChplComm = true;
+    } else {
+      // For a single locale, just duplicate MPI_COMM_WORLD
+      C_MPI.MPI_Comm_dup(MPI_COMM_WORLD, CHPL_COMM_WORLD_REPLICATED(1));
     }
+
+    // Set flag to free
+    _mpi.freeChplComm = true;
   }
 
   /* commRank(comm)
