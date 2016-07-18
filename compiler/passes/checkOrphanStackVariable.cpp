@@ -43,7 +43,7 @@ struct SyncGraph{
   SyncGraph* parent;
   Vec<SymExpr*>  contents; 
   /***
-      TODO: Is This change correct?
+      TODO: Is This model adequate ?
 
       changing the imlementation such that we will
       atmax 2 children one is proper child due to a 
@@ -270,9 +270,6 @@ bool isOuterVar(Symbol* sym, FnSymbol* fn) {
     ArgSymbol* argSym = toArgSymbol(sym);
     if(argSym->intent == INTENT_REF){
       Symbol* parent = sym->defPoint->parentSymbol;
-      //USR_PRINT(parent,"def point");
-      //print_view(sym);
-      //     list_view(sym);
       return true;
     }
   }
@@ -315,31 +312,22 @@ void addSymbolsToGraph(Expr* expr,SyncGraph *cur){
     Symbol* sym = se->var;
     if(isOuterVar(sym,sym->getFunction())){
       cur->contents.add(se);
-      USR_PRINT(se, "Symbol Expression at this point");
-      print_view(expr);
     }
   }
   cur = addSyncExprs(expr,cur);
 }
 
 
-/**
-   TODO: iNVERT THE ORDER
-
- **/
 void collectFuncNodes(SyncGraph *cur,Vec<SyncGraph*>& funcNodes){
-  if(cur->child != NULL)
-    collectFuncNodes(cur->child,funcNodes);
   if(cur->fChild != NULL){
     funcNodes.add(cur->fChild);
     collectFuncNodes(cur->fChild,funcNodes);
-  }
+  }  
+  if(cur->child != NULL)
+    collectFuncNodes(cur->child,funcNodes);
 }
 
 void checkOrphanStackVar(SyncGraph *root){
-  /* TODO: 
-     Now we have to identify the sync points
-   */
   /*
     TODO:
     We want to sync only begin functions right now.
@@ -373,6 +361,7 @@ void checkOrphanStackVar(SyncGraph *root){
       */
       if(!(curNode->syncVar.empty())){
   	std::string syncVar = curNode->syncVar;
+	
 	int processnextTask = 0;
 	forv_Vec(SyncGraph,nextFuncNode,funcNodes){
 	  if(processnextTask == 1){
@@ -397,7 +386,6 @@ void checkOrphanStackVar(SyncGraph *root){
 		candidateSyncNode = candidateSyncNode->child;
 	      }  
 	    }else  if(curNode->syncType == PRIM_SYNC_SIGNAL_FULL){
-	      //  USR_PRINT("DOUBLER");
 	      SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
   	      while(candidateSyncNode  != NULL){
   	    	if(syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == PRIM_SYNC_SIGNAL_EMPTY){
@@ -406,17 +394,15 @@ void checkOrphanStackVar(SyncGraph *root){
 		candidateSyncNode = candidateSyncNode->child;
   	      }    
 	    }else if(curNode->syncType == PRIM_SYNC_SIGNAL_EMPTY){
-	      //  USR_PRINT("HERERERER");
 	      SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
-	       while(candidateSyncNode  != NULL){
-		 if(syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == PRIM_SYNC_SIGNAL_FULL){
-		   linkSyncNodes(curNode,candidateSyncNode);
-		 }
+	      while(candidateSyncNode  != NULL){
+		if(syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == PRIM_SYNC_SIGNAL_FULL){
+		  linkSyncNodes(curNode,candidateSyncNode);
+		}
 		candidateSyncNode = candidateSyncNode->child;
-	       }
+	      }
 	    }
 	  }else if(nextFuncNode == funcNode){
-	    //	    USR_PRINT("mADE oNE HERE");
 	    processnextTask  = 1;
 	  }
 	}
@@ -454,10 +440,8 @@ void checkOrphanStackVar(SyncGraph *root){
       }
       curNode = curNode->child;
     }
-  } 
- 
-  
-}
+  }   
+} 
 
 
 SyncGraph* handleDefExpr(DefExpr* def,SyncGraph *cur){
@@ -490,19 +474,19 @@ SyncGraph* handleBlockStmt(BlockStmt* stmt,SyncGraph *cur){
 }
 
 SyncGraph* handleCallExpr(CallExpr* callExpr, SyncGraph *cur){
+  if(callExpr->theFnSymbol() != NULL &&
+     callExpr->theFnSymbol()->getModule()->modTag == MOD_USER){
     /**
        TODO:
        We are getting duplicate entries for the function calls.
        So we skip all uses of the variables in function calls.
        Also the begin functions also create a function call at 
        the end of the definition of the begin function.
-     **/
-
-  if(callExpr->theFnSymbol() != NULL)
-    if(!strcmp(callExpr->theFnSymbol()->name,"=")){
-      addSymbolsToGraph(callExpr,cur);
-    }
-
+    **/
+    
+  }else{
+    addSymbolsToGraph(callExpr,cur);
+  }
   return cur;
 }
 
@@ -580,9 +564,7 @@ void checkUseAfterLexScope(){
     }
   }
   forv_Vec(FnSymbol, fn, aFnSymbols) {
-    //   USR_PRINT(fn,"The function in picture");
     root =  new SyncGraph();
-    print_view(fn);
     handleFunction(fn,root);
     checkOrphanStackVar(root);
     cleanUpSyncGraph(root);
