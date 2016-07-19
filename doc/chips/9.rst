@@ -73,7 +73,7 @@ input to the next state:
   * Contains the necessary information to guarantee a consistent build on
     all supported platforms.
 
-* `Dependency Code`_: ``~/.mason/src/``
+* **Dependency Code**: ``~/.mason/src/``
 
   * Dependencies that have been downloaded into a local directory.
 
