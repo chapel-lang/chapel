@@ -97,7 +97,7 @@ FnSymbol* gChplHereFree = NULL;
 FnSymbol* gChplDoDirectExecuteOn = NULL;
 
 std::map<FnSymbol*,int> ftableMap;
-Vec<FnSymbol*> ftableVec;
+std::vector<FnSymbol*> ftableVec;
 
 Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
 Map<FnSymbol*,int> virtualMethodMap;

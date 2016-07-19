@@ -640,7 +640,7 @@ extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
 
 extern std::map<FnSymbol*,int> ftableMap;
-extern Vec<FnSymbol*> ftableVec;
+extern std::vector<FnSymbol*> ftableVec;
 
 //
 // The virtualMethodTable maps types to their arrays of methods.  The
