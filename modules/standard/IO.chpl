@@ -2896,7 +2896,7 @@ proc channel.offset():int(64) {
 proc channel.advance(amount:int(64), ref error:syserr) {
   on this.home {
     this.lock();
-    error = qio_channel_advance(false, _channel_internal);
+    error = qio_channel_advance(false, _channel_internal, amount);
     this.unlock();
   }
 }
@@ -2906,7 +2906,7 @@ pragma "no doc"
 proc channel.advance(amount:int(64)) {
   on this.home {
     this.lock();
-    var err = qio_channel_advance(false, _channel_internal);
+    var err = qio_channel_advance(false, _channel_internal, amount);
     if err then this._ch_ioerror(err, "in advance");
     this.unlock();
   }
