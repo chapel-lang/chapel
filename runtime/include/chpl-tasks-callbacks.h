@@ -22,6 +22,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // Tasking callback support.
 //
@@ -157,5 +161,9 @@ int chpl_task_install_callback(chpl_task_cb_event_kind_t,
                                chpl_task_cb_fn_t);
 int chpl_task_uninstall_callback(chpl_task_cb_event_kind_t,
                                  chpl_task_cb_fn_t);
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif // _chpl_tasks_callbacks_h_
