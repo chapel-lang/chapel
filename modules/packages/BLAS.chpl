@@ -86,19 +86,13 @@ BLAS Implementations:
       warnings about incompatible pointer types. These may be ignored.
 
 Cray Systems:
-  The **PBLAS** implementation is made available through Cray's libsci, which
-  comes installed on all Cray systems. To compile programs with the ``BLAS``
-  module on Cray systems, load the ``cray-libsci`` module and link against the
-  ``sci_gnu`` library, using the module-defined ``$CRAY_LIBSCI_PREFIX_DIR``
-  environment variable as shown here:
-
-.. code-block:: sh
-
-  module load cray-libsci
-
-  chpl -I$CRAY_LIBSCI_PREFIX_DIR/include
-       -L$CRAY_LIBSCI_PREFIX_DIR/lib -lsci_gnu
-
+  No compiler flags should be necessary when compiling BLAS programs on
+  Crays. The **PBLAS** implementation is made available through Cray's libsci,
+  which comes installed on all Cray systems. This is typically loaded by
+  default, but can be manually loaded with ``module load cray-libsci`` as well.
+  Chapel programs compiled on Crays utilize the ``cc`` wrapper as the backend
+  compiler, which implicitly links against the libsci library. Therefore, no
+  additional steps are required of the user.
 
 Chapel Level 3 BLAS API
 -----------------------

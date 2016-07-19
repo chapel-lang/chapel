@@ -1,1 +1,0 @@
--I$CRAY_LIBSCI_PREFIX_DIR/include -lsci_gnu -L$CRAY_LIBSCI_PREFIX_DIR/lib
