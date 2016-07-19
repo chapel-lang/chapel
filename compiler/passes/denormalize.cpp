@@ -15,11 +15,12 @@ bool possibleDepInBetween(Expr* e1, Expr* e2);
 bool canPrimMoveCreateCommunication(CallExpr* ce);
 bool isDenormalizable(Symbol* sym,
     Map<Symbol*,Vec<SymExpr*>*> defMap,
-    Map<Symbol*,Vec<SymExpr*>*> useMap, SymExpr** useOut, Expr** defOut);
+    Map<Symbol*,Vec<SymExpr*>*> useMap, SymExpr** useOut, Expr** defOut,
+    Type** castTo);
 void denormalizeActuals(CallExpr* ce,
     Map<Symbol*,Vec<SymExpr*>*> defMap,
     Map<Symbol*,Vec<SymExpr*>*> useMap);
-void denormalize(Expr* def, SymExpr* use);
+void denormalize(Expr* def, SymExpr* use, Type* castTo);
 void denormalize(FnSymbol *fn);
 
 void denormalize(void) {
@@ -54,8 +55,8 @@ void denormalize(FnSymbol *fn) {
     Expr *useExpr = NULL;
     Expr *def = NULL;
     Expr *defExpr;
-
-    if(isDenormalizable(sym, defMap, useMap, &use, &def)) {
+    Type* castTo = NULL;
+    if(isDenormalizable(sym, defMap, useMap, &use, &def, &castTo)) {
       useExpr = use->parentExpr;
       defExpr = def->parentExpr;
       bool isDenormalizeSafe = true;
@@ -79,13 +80,15 @@ void denormalize(FnSymbol *fn) {
 
       if(CallExpr* useCe = toCallExpr(useExpr)){
         if(!useCe->isPrimitive()) {
-          if(CallExpr* defCe = toCallExpr(def)) {
-            if(!defCe->isPrimitive()) {
+          //if(CallExpr* defCe = toCallExpr(def)) {
+            //if(!defCe->isPrimitive()) {
               //deal with this later
               isDenormalizeSafe = false; 
               deferredFns.push_back(useCe);
-            }
-          }
+              //std::cout << "deffered\n";
+              //print_view(useCe);
+            //}
+          //}
         }
       }
       //any function call in between that is potentially dangerous?
@@ -96,7 +99,7 @@ void denormalize(FnSymbol *fn) {
       }
       if(isDenormalizeSafe) {
         //all systems go
-        denormalize(def, use);
+        denormalize(def, use, castTo);
         //std::cout << "DENORMALIZED\n";
       }
       else {
@@ -109,6 +112,8 @@ void denormalize(FnSymbol *fn) {
   }
 
   for_vector(CallExpr, ce, deferredFns) {
+    //std::cout << "REVISITING\n";
+    //print_view(ce);
     denormalizeActuals(ce, defMap, useMap);
   }
 }
@@ -124,43 +129,48 @@ void denormalizeActuals(CallExpr* ce,
             argSym->var->isParameter())) {
         SymExpr* use;
         Expr* def;
-        if(isDenormalizable(argSym->var, defMap, useMap, &use, &def)) {
+        Type* castTo = NULL;
+        if(isDenormalizable(argSym->var, defMap, useMap, &use, &def, &castTo)) {
           Expr* useExpr = use->parentExpr;
           Expr* defExpr = def->parentExpr;
-          //std::cout << "FOUND DENORMALIZABLE ACTUAL\n";
-          //std::cout << "defExpr\n";
-          //print_view(defExpr);
-          //std::cout << "def\n";
-          //print_view(def);
-          //std::cout << "useExpr\n";
-          //print_view(useExpr);
-          //std::cout << "use\n";
-          //print_view(use);
-          if(!possibleDepInBetween(defExpr, useExpr)) {
-            // In C actual evaluation order is not standard, therefore any
-            // defExpr that us unsafe for reordering cannot be moved to
-            // the args
-            if(isExprSafeForReorder(def)) {
-              denormalize(def, use);
-              //std::cout << "DENORMALIZED\n";
+          if(CallExpr* ceTmp = toCallExpr(defExpr)) {
+            if(!isRecord(ceTmp->get(1)->typeInfo())) { //to preserve pass-by-value
+              //std::cout << "FOUND DENORMALIZABLE ACTUAL\n";
+              //std::cout << "defExpr\n";
+              //print_view(defExpr);
+              //std::cout << "def\n";
+              //print_view(def);
+              //std::cout << "useExpr\n";
+              //print_view(useExpr);
+              //std::cout << "use\n";
+              //print_view(use);
+              if(!possibleDepInBetween(defExpr, useExpr)) {
+                // In C actual evaluation order is not standard, therefore any
+                // defExpr that us unsafe for reordering cannot be moved to
+                // the args
+                if(isExprSafeForReorder(def)) {
+                  denormalize(def, use, castTo);
+                  //std::cout << "DENORMALIZED\n";
+                }
+                else {
+                  //std::cout << "STILL UNSAFE: Cannot move def\n";
+                  //break; //abort denormalization for actuals of this func
+                }
+              }
+              else {
+                //std::cout << "STILL UNSAFE: Dangerous call cross-over\n";
+                //break;
+              }
             }
             else {
-              //std::cout << "STILL UNSAFE: Cannot move def\n";
-              //break; //abort denormalization for actuals of this func
+              //std::cout << "Nondenormalizable argument\n";
+              //it is a bit immature to break at this point as there can be a
+              //nondenormalizble for many reasons, and we can keep looking
+              //further in the alist for denormalization in many cases
+              //I don't know how easy it is, yet.
+              //break;
             }
           }
-          else {
-            //std::cout << "STILL UNSAFE: Dangerous call cross-over\n";
-            //break;
-          }
-        }
-        else {
-          //std::cout << "Nondenormalizable argument\n";
-          //it is a bit immature to break at this point as there can be a
-          //nondenormalizble for many reasons, and we can keep looking
-          //further in the alist for denormalization in many cases
-          //I don't know how easy it is, yet.
-          //break;
         }
       }
     }
@@ -368,9 +378,44 @@ bool canPrimMoveCreateCommunication(CallExpr* ce) {
 
 }
 
+bool requiresCast(Type* t) {
+  if(is_int_type(t) || is_uint_type(t)) {
+    if(get_width(t) < 32) { //how lovely this will blow up
+      return true;
+    }
+  }
+  return false;
+  //if(is_int_type(t)) {
+    //if(t == dtInt[INT_SIZE_8] || t == dtInt[INT_SIZE_16]) {
+      //return true;
+    //}
+  //}
+  //else if(is_uint_type(t)) {
+    //if(t == dtUInt[INT_SIZE_8] || t == dtUInt[INT_SIZE_16]) {
+      //return true;
+    //}
+  //}
+}
+
+inline bool isIntegerPromotionPrimitive(PrimitiveTag tag) {
+  switch(tag) {
+    case PRIM_ADD:
+    case PRIM_SUBTRACT:
+    case PRIM_LSH:
+    case PRIM_RSH:
+      return true;
+      break;
+    default:
+      return false;
+      break;
+  }
+  return false;
+}
+
 bool isDenormalizable(Symbol* sym,
     Map<Symbol*,Vec<SymExpr*>*> defMap,
-    Map<Symbol*,Vec<SymExpr*>*> useMap, SymExpr** useOut, Expr** defOut) {
+    Map<Symbol*,Vec<SymExpr*>*> useMap, SymExpr** useOut, Expr** defOut,
+    Type** castTo) {
 
   if(sym && !(toFnSymbol(sym) || toArgSymbol(sym) || toTypeSymbol(sym))) {
 
@@ -397,6 +442,17 @@ bool isDenormalizable(Symbol* sym,
                     rhsType->symbol->hasFlag(FLAG_EXTERN))) {
                 if(ce->get(1)->typeInfo() == ce->get(2)->typeInfo()) {
                   def = ce->get(2);
+                  if(CallExpr* defCe = toCallExpr(def)) {
+                    if(defCe->isPrimitive() && 
+                        isIntegerPromotionPrimitive(defCe->primitive->tag)) {
+                      if(requiresCast(lhsType)) {
+                        *castTo = lhsType;
+                        //print_view(def);
+                        //std::cout << "def will be cast to\n";
+                        //print_view(*castTo);
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -478,7 +534,7 @@ bool isDenormalizable(Symbol* sym,
   return false;
 }
 
-void denormalize(Expr* def, SymExpr* use) {
+void denormalize(Expr* def, SymExpr* use, Type* castTo) {
   Expr* defExpr = def->parentExpr;
 
   //remove variable declaration
@@ -486,10 +542,18 @@ void denormalize(Expr* def, SymExpr* use) {
 
   //remove def
   Expr* replExpr = def->remove();
+  //replExpr->parentExpr = NULL;
 
   //replace use with def
-  use->replace(replExpr);
-
+  if(castTo != NULL) {
+    Expr* castExpr = new CallExpr(PRIM_CAST, castTo->symbol, replExpr);
+    //std::cout << "cast expression\n";
+    //print_view(castExpr);
+    use->replace(castExpr);
+  }
+  else {
+    use->replace(replExpr);
+  }
   //remove defExpr
   defExpr->remove();
 }

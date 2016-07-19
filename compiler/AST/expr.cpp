@@ -3232,6 +3232,8 @@ GenRet codegenCast(Type* t, GenRet value, bool Cparens)
   ret.chplType = t;
   ret.isLVPtr = value.isLVPtr;
 
+  //std::cout << "codegenning cast to\n";
+  //print_view(t);
   // If we are casting to bool, set it to != 0.
   if( is_bool_type(t) ) return codegenNotEquals(value, codegenZero());
 
@@ -3251,6 +3253,7 @@ GenRet codegenCast(Type* t, GenRet value, bool Cparens)
       ret.c += ")";
     }
     ret.c += ")";
+    //std::cout << ret.c << std::endl;
   } else {
 #ifdef HAVE_LLVM
     llvm::Type* castType = t->codegen().type;
@@ -3534,9 +3537,14 @@ codegenExprMinusOne(Expr* expr)
 static void callExprHelper(CallExpr* call, BaseAST* arg) {
   if (!arg)
     return;
-  if (toSymbol(arg) || toExpr(arg))
+  //std::cout << "Inserting actual\n";
+  //print_view(arg);
+  if (toSymbol(arg) || toExpr(arg)) {
+    //if(!call) std::cout << "WAT\n";
+    //else std::cout << "GOOD\n";
     call->insertAtTail(arg);
-  else
+    //std::cout << "inserted\n";
+  } else
     INT_FATAL(call, "Bad argList in CallExpr constructor");
 }
 
@@ -4435,7 +4443,8 @@ GenRet CallExpr::codegenPrimitive() {
     //ret = codegenFieldPtr(get(1), get(2));
     break;
   case PRIM_GET_PRIV_CLASS: //I never hit this so far
-    ret = codegenPrimGetPrivClassForTarget(NULL);
+    //changeBoundingBox error is coming from here
+    //ret = codegenPrimGetPrivClassForTarget(NULL);
     break;
   case PRIM_ARRAY_GET:
     ret = codegenPrimArrayGetForTarget(NULL);
@@ -5635,7 +5644,8 @@ GenRet CallExpr::codegenPrimitive() {
       Type* dst = get(1)->typeInfo();
       Type* src = get(2)->typeInfo();
 
-      if (dst == src) {
+      if (dst == src && ((is_int_type(dst) || is_uint_type(dst)) && 
+            get_width(dst) >= 32)) {
         ret = get(2);
 
       } else if ((is_int_type(dst) || is_uint_type(dst)) && src == dtTaskID) {
@@ -5650,6 +5660,9 @@ GenRet CallExpr::codegenPrimitive() {
       } else {
         GenRet v = codegenValue(get(2));
 
+        //std::cout << "cast from codegenPrimitive\n";
+        //print_view(typeInfo());
+        //std::cout << v.c << std::endl;
         ret = codegenCast(typeInfo(), v);
       }
     }
