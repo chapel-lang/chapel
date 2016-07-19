@@ -11,8 +11,7 @@ use BitOps;
 param boardCells = 50,          // Number of cells on board
       boardWidth = 5,           // Number of cells along x-axis
       boardHeight = 10,         // Number of cells along y-axis
-      //TODO
-      permutations = 8192,      // Number of permutations stored as masks
+      totalMasks = 6966,        // Magic number of total masks stored
       piecePermutations = 12,   // Number of permutations for a single piece
       numPieces = 10,           // Number of puzzle pieces
       pieceCells = 5;           // Number of cells that make up a puzzle piece
@@ -21,7 +20,7 @@ const boardDom = {0..#boardCells},
       piecesDom = {0..#numPieces};
 
 // Arrays of masks to store all pieces and their possible configurations
-var allMasks: [0..#permutations] int,
+var allMasks: [0..#totalMasks] int = -1,
     maskStart: [boardDom][0..#numPieces-2] int;
 
 // Arrays of min and max, and an integer storing the number of solutions
@@ -352,9 +351,11 @@ proc searchLinearHelper(in board, in pos, in used, in placed,
 }
 
 
-// DIY sync variable functionality that outperforms native sync variables.
-// Access controlled by functions lock() and unlock()
-// TODO
+//
+// Atomic lock that prevents multiple tasks recording their
+// solution at once (also known as a race condition).
+// 'false' is the unlocked state, and 'true' is the locked state
+//
 var l: atomic bool;
 
 
@@ -365,16 +366,18 @@ proc searchLinear(in board, in pos, in used, in placed, currentSolution) {
   var count, evenRows, oddRows, leftBorder, rightBorder,
       s1, s2, s3, s4, s5, s6, s7, s8: int;
 
-  // Lock atomic lock - this is what sync variables do under the hood
-  proc lock() { while l.testAndSet() != false do chpl_task_yield(); }
 
-  // Unlock atomic lock
-  proc unlock() { l.write(false); }
 
   if placed == numPieces {
-    lock();
+
+    // Wait for unlocked state, then lock it, while this task records solution
+    l.waitFor(false);
+
     recordSolution(currentSolution);
-    unlock();
+
+    // Set to unlocked state
+    l.write(false);
+
   } else {
     evenRows = evenRowsLookup[pos];
 
