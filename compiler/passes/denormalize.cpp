@@ -91,6 +91,9 @@ void denormalize(FnSymbol *fn) {
           //}
         }
       }
+      if(!isExprSafeForReorder(def)) {
+        isDenormalizeSafe = false;
+      }
       //any function call in between that is potentially dangerous?
       if(possibleDepInBetween(defExpr, useExpr)) {
         //if(! isExprSafeForReorder(def)) {
@@ -256,6 +259,20 @@ bool isExprSafeForReorder(Expr * e) {
       if(ce->primitive->isEssential){
         return false;
       }
+      else {
+        //here we have a non essential primitive. But consider following issue:
+        //
+        // tmp = (atomic_read() == 5);
+        //
+        // where `==` is non-essential yet one of its children has side effects
+        Expr* e = ce->argList.first();
+        while(e) {
+          if(!isExprSafeForReorder(e)) {//is this recursion safe?
+            return false;
+          }
+          e = e->next;
+        }
+      }
     }
   }
   return true;
@@ -401,6 +418,9 @@ inline bool isIntegerPromotionPrimitive(PrimitiveTag tag) {
   switch(tag) {
     case PRIM_ADD:
     case PRIM_SUBTRACT:
+    case PRIM_MULT:
+    case PRIM_DIV:
+    case PRIM_MOD:
     case PRIM_LSH:
     case PRIM_RSH:
       return true;
@@ -441,15 +461,17 @@ bool isDenormalizable(Symbol* sym,
               if(! (lhsType->symbol->hasFlag(FLAG_EXTERN) ||
                     rhsType->symbol->hasFlag(FLAG_EXTERN))) {
                 if(ce->get(1)->typeInfo() == ce->get(2)->typeInfo()) {
-                  def = ce->get(2);
-                  if(CallExpr* defCe = toCallExpr(def)) {
-                    if(defCe->isPrimitive() && 
-                        isIntegerPromotionPrimitive(defCe->primitive->tag)) {
-                      if(requiresCast(lhsType)) {
-                        *castTo = lhsType;
-                        //print_view(def);
-                        //std::cout << "def will be cast to\n";
-                        //print_view(*castTo);
+                  if(!ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_ATOMIC_TYPE)){
+                    def = ce->get(2);
+                    if(CallExpr* defCe = toCallExpr(def)) {
+                      if(defCe->isPrimitive() && 
+                          isIntegerPromotionPrimitive(defCe->primitive->tag)) {
+                        if(requiresCast(lhsType)) {
+                          *castTo = lhsType;
+                          //print_view(def);
+                          //std::cout << "def will be cast to\n";
+                          //print_view(*castTo);
+                        }
                       }
                     }
                   }

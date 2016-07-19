@@ -4444,7 +4444,7 @@ GenRet CallExpr::codegenPrimitive() {
     break;
   case PRIM_GET_PRIV_CLASS: //I never hit this so far
     //changeBoundingBox error is coming from here
-    //ret = codegenPrimGetPrivClassForTarget(NULL);
+    ret = codegenPrimGetPrivClassForTarget(NULL);
     break;
   case PRIM_ARRAY_GET:
     ret = codegenPrimArrayGetForTarget(NULL);
@@ -6071,7 +6071,7 @@ GenRet CallExpr::codegenPrimGetPrivClassForTarget(BaseAST* target) {
 
   GenRet r = codegenCallExpr("chpl_getPrivatizedClass", get(2));
 
-  if (target->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+  if (target && target->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
     r = codegenAddrOf(codegenWideHere(r, target->typeInfo()));
   }
 
