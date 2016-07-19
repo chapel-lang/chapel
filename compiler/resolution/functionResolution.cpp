@@ -9059,6 +9059,10 @@ static void insertReturnTemps() {
               }
             }
 
+            if (isTypeExpr(contextCallOrCall)) {
+              tmp->addFlag(FLAG_MAYBE_TYPE);
+              tmp->addFlag(FLAG_MAYBE_PARAM);
+            }
             def->insertAfter(new CallExpr(PRIM_MOVE,
                                           tmp,
                                           contextCallOrCall->remove()));
