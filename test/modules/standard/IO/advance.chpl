@@ -8,8 +8,8 @@ proc main() {
 
 
   writeln(c.read(int));
+  c.advance(2);
   writeln(c.read(int));
-  c.advance(8, err);
-  writeln(c.read(int));
+  c.advance(2, err);
   writeln(c.read(int));
 }
