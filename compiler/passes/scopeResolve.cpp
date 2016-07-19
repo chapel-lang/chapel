@@ -811,6 +811,7 @@ static void build_type_constructor(AggregateType* ct) {
   if (ct->symbol->hasFlag(FLAG_TUPLE)) {
     fn->addFlag(FLAG_TUPLE);
     fn->addFlag(FLAG_INLINE);
+    gGenericTupleTypeCtor = fn;
   }
 
   // and insert it into the class type.
@@ -1025,6 +1026,7 @@ static void build_constructor(AggregateType* ct) {
   if (ct->symbol->hasFlag(FLAG_TUPLE)) {
     fn->addFlag(FLAG_TUPLE);
     fn->addFlag(FLAG_INLINE);
+    gGenericTupleInit = fn;
   }
 
   // And insert it into the class type.

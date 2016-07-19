@@ -66,11 +66,24 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
 
     Type* sizeType = dtInt[INT_SIZE_DEFAULT];
 
+    ArgSymbol* genericTypeCtorSizeArg = gGenericTupleTypeCtor->getFormal(1);
+
+    // TODO:
+    // first create type constructor with right # of arguments
+    // then instantiate that (as the code does now)
+    // then fill in its bodies
+
+    // It would help if the control flow is obvious and the
+    // logic driving the insn is simpler here.
+
+    // Mostly, need to get _build_tuple out of generic argument
+    // processing...
+
     // Create the arguments for the type constructor
     // since we will refer to these in the substitutions.
     // Keys in the substitutions are ArgSymbol in the type constructor.
-    ArgSymbol* sizeArg = new ArgSymbol(INTENT_PARAM, "size", sizeType);
-    sizeArg->addFlag(FLAG_PARAM);
+    ArgSymbol* sizeArg = new ArgSymbol(INTENT_BLANK, "size", sizeType);
+    sizeArg->addFlag(FLAG_INSTANTIATED_PARAM);
     typeCtorArgs.push_back(sizeArg);
 
     for(size_t i = 0; i < args.size(); i++) {
@@ -88,7 +101,7 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
     size->addFlag(FLAG_PARAM);
     size->type = sizeType;
     newType->fields.insertAtTail(new DefExpr(size));
-    newType->substitutions.put(sizeArg, new_IntSymbol(args.size()));
+    newType->substitutions.put(genericTypeCtorSizeArg, new_IntSymbol(args.size()));
     for(size_t i = 0; i < args.size(); i++) {
       const char* name = typeCtorArgs[i+1]->name;
       VarSymbol *var = new VarSymbol(name);
@@ -104,23 +117,7 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
       t->dispatchChildren.add_exclusive(newType);
     }
 
-    // Construct the name for the tuple
-    std::string cname = "_tuple_";
-    std::string name = "(";
-    cname += istr(args.size());
-    for(size_t i = 0; i < args.size(); i++) {
-      cname += "_";
-      cname += args[i]->cname;
-      if (i != 0 ) name += ",";
-      name += args[i]->name;
-    }
-    name += ")";
-
-    // Create the TypeSymbol
-    TypeSymbol* newTypeSymbol = new TypeSymbol(name.c_str(), newType);
-    newTypeSymbol->cname = astr(cname.c_str());
-
-    // Set appropriate flags on the new TypeSymbol
+    // Decide whether or not we have a homogeneous/star tuple
     bool  markStar = true;
     Type* starType = NULL;
 
@@ -133,6 +130,34 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
       }
     }
 
+    // Construct the name for the tuple
+    const char* size_str = istr(args.size());
+    std::string cname = "_tuple_";
+    std::string name;
+    if (markStar) {
+      name += size_str;
+      name += "*";
+      name += args[0]->name;
+      cname += size_str;
+      cname += "_star_";
+      cname += args[0]->cname;
+    } else {
+      name += "(";
+      cname += size_str;
+      for(size_t i = 0; i < args.size(); i++) {
+        cname += "_";
+        cname += args[i]->cname;
+        if (i != 0 ) name += ",";
+        name += args[i]->name;
+      }
+      name += ")";
+    }
+
+    // Create the TypeSymbol
+    TypeSymbol* newTypeSymbol = new TypeSymbol(name.c_str(), newType);
+    newTypeSymbol->cname = astr(cname.c_str());
+
+    // Set appropriate flags on the new TypeSymbol
     newTypeSymbol->addFlag(FLAG_ALLOW_REF);
     newTypeSymbol->addFlag(FLAG_COMPILER_GENERATED);
     newTypeSymbol->addFlag(FLAG_TUPLE);
@@ -156,7 +181,7 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
       typeCtor->addFlag(FLAG_INLINE);
       typeCtor->addFlag(FLAG_INVISIBLE_FN);
       typeCtor->addFlag(FLAG_TYPE_CONSTRUCTOR);
-      //typeCtor->addFlag(FLAG_PARTIAL_TUPLE);
+      typeCtor->addFlag(FLAG_PARTIAL_TUPLE);
       //typeCtor->addFlag(FLAG_TUPLE);
 
       typeCtor->retTag = RET_TYPE;
@@ -166,14 +191,16 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
       typeCtor->substitutions.copy(newType->substitutions);
       typeCtor->numPreTupleFormals = 1;
 
+      typeCtor->instantiatedFrom = gGenericTupleTypeCtor;
+
       // TODO -- could set instantiationPoint to a CallExpr causing
       // this tuple to be created.
       tupleModule->block->insertAtTail(new DefExpr(typeCtor));
 
       newType->defaultTypeConstructor = typeCtor;
 
-      printf("tuple type constructor id %i\n", typeCtor->id);
-      print_view(typeCtor);
+      //printf("tuple type constructor id %i\n", typeCtor->id);
+      //print_view(typeCtor);
     }
 
     // Build the value constructor
@@ -186,8 +213,8 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
       ctor->insertAtTail(new DefExpr(_this));
       ctor->_this = _this;
 
-      ArgSymbol* sizeArg = new ArgSymbol(INTENT_PARAM, "size", sizeType);
-      sizeArg->addFlag(FLAG_PARAM);
+      ArgSymbol* sizeArg = new ArgSymbol(INTENT_BLANK, "size", sizeType);
+      sizeArg->addFlag(FLAG_INSTANTIATED_PARAM);
       ctor->insertFormalAtTail(sizeArg);
 
       for(size_t i = 0; i < args.size(); i++ ) {
@@ -207,7 +234,8 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
       ctor->addFlag(FLAG_INLINE);
       ctor->addFlag(FLAG_INVISIBLE_FN);
       ctor->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
-      //ctor->addFlag(FLAG_PARTIAL_TUPLE);
+      ctor->addFlag(FLAG_CONSTRUCTOR);
+      ctor->addFlag(FLAG_PARTIAL_TUPLE);
       //ctor->addFlag(FLAG_TUPLE);
 
       ctor->retTag = RET_VALUE;
@@ -216,16 +244,16 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
       ctor->insertAtTail(ret);
       ctor->substitutions.copy(newType->substitutions);
 
+      ctor->instantiatedFrom = gGenericTupleInit;
+
       tupleModule->block->insertAtTail(new DefExpr(ctor));
 
-      // Can't set defaultInitializer because iterator
-      // inlining uses it for something else.
-      //newType->defaultInitializer = ctor;
+      newType->defaultInitializer = ctor;
 
       info.ctor = ctor;
 
-      printf("tuple constructor id %i\n", ctor->id);
-      print_view(ctor);
+      //printf("tuple constructor id %i\n", ctor->id);
+      //print_view(ctor);
     }
   }
 
@@ -243,6 +271,56 @@ FnSymbol* getTupleConstructor(std::vector<TypeSymbol*>& args)
   return info.ctor;
 }
 
+/*
+static void
+instantiate_tuple_signature(FnSymbol* fn) {
+  AggregateType* tuple = toAggregateType(fn->retType);
+  //  // tuple is the return type for the type constructor
+  // tuple is NULL for the default constructor
+  //
+
+  fn->numPreTupleFormals = fn->formals.length;
+  
+  int64_t size = toVarSymbol(fn->substitutions.v[0].value)->immediate->int_value
+();
+  
+  for (int i = 1; i <= size; ++i) {
+    const char* name = astr("x", istr(i));
+    ArgSymbol* formal = new ArgSymbol(INTENT_BLANK, name, dtAny, NULL, new SymEx
+pr(gTypeDefaultToken));
+    
+    if (tuple) {
+      formal->addFlag(FLAG_TYPE_VARIABLE);
+      tuple->fields.insertAtTail(new DefExpr(new VarSymbol(name)));
+    }
+    
+    fn->insertFormalAtTail(formal);
+  }
+  
+  fn->removeFlag(FLAG_TUPLE);
+  
+  fn->addFlag(FLAG_PARTIAL_TUPLE);
+  fn->addFlag(FLAG_ALLOW_REF);
+}
+
+
+static void
+instantiate_tuple_body(FnSymbol* fn) {
+  Expr* last = fn->body->body.last();
+  int numPreTupleFormals = fn->numPreTupleFormals;
+  
+  std::vector<TypeSymbol*> test;
+
+  for (int i = numPreTupleFormals + 1; i <= fn->formals.length; ++i) {
+    ArgSymbol* formal = fn->getFormal(i);
+    
+    last->insertBefore(new CallExpr(PRIM_SET_MEMBER, fn->_this, new_IntSymbol(i - numPreTupleFormals), formal));
+    test.push_back(fn->getFormal(i)->type->symbol);
+  }
+  
+  fn->removeFlag(FLAG_PARTIAL_TUPLE);
+}
+*/
 
 static TupleInfo&
 getTupleArgAndType(FnSymbol* fn, ArgSymbol*& arg, AggregateType*& ct) {

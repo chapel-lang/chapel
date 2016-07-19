@@ -113,55 +113,6 @@ copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbo
     subs.put(key, value);
   }
 }
-/*
-static void
-instantiate_tuple_signature(FnSymbol* fn) {
-  AggregateType* tuple = toAggregateType(fn->retType);
-  //
-  // tuple is the return type for the type constructor
-  // tuple is NULL for the default constructor
-  //
-
-  fn->numPreTupleFormals = fn->formals.length;
-  
-  int64_t size = toVarSymbol(fn->substitutions.v[0].value)->immediate->int_value();
-  
-  for (int i = 1; i <= size; ++i) {
-    const char* name = astr("x", istr(i));
-    ArgSymbol* formal = new ArgSymbol(INTENT_BLANK, name, dtAny, NULL, new SymExpr(gTypeDefaultToken));
-    
-    if (tuple) {
-      formal->addFlag(FLAG_TYPE_VARIABLE);
-      tuple->fields.insertAtTail(new DefExpr(new VarSymbol(name)));
-    }
-    
-    fn->insertFormalAtTail(formal);
-  }
-  
-  fn->removeFlag(FLAG_TUPLE);
-  
-  fn->addFlag(FLAG_PARTIAL_TUPLE);
-  fn->addFlag(FLAG_ALLOW_REF);
-}
-
-
-static void
-instantiate_tuple_body(FnSymbol* fn) {
-  Expr* last = fn->body->body.last();
-  int numPreTupleFormals = fn->numPreTupleFormals;
-  
-  std::vector<TypeSymbol*> test;
-
-  for (int i = numPreTupleFormals + 1; i <= fn->formals.length; ++i) {
-    ArgSymbol* formal = fn->getFormal(i);
-    
-    last->insertBefore(new CallExpr(PRIM_SET_MEMBER, fn->_this, new_IntSymbol(i - numPreTupleFormals), formal));
-    test.push_back(fn->getFormal(i)->type->symbol);
-  }
-  
-  fn->removeFlag(FLAG_PARTIAL_TUPLE);
-}
-*/
 
 static TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
@@ -449,6 +400,7 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
     }
   }
 
+  /*
   //
   // mark star tuples, add star flag
   //
@@ -472,6 +424,8 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
     if (markStar)
       newType->symbol->addFlag(FLAG_STAR_TUPLE);
   }
+
+  */
 
   renameInstantiatedType(newType->symbol, subs, fn);
 

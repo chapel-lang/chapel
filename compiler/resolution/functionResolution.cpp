@@ -6841,6 +6841,7 @@ postFold(Expr* expr) {
   Expr* result = expr;
   if (!expr->parentSymbol)
     return result;
+
   SET_LINENO(expr);
   if (CallExpr* call = toCallExpr(expr)) {
     if (FnSymbol* fn = call->isResolved()) {
@@ -7571,11 +7572,16 @@ static void instantiate_default_constructor(FnSymbol* fn) {
   //
   // instantiate initializer
   //
-  if (fn->instantiatedFrom) {
+  // but don't bother for tuples since tuple init is created
+  // along with tuple type.
+  //
+  if (fn->instantiatedFrom && !fn->hasFlag(FLAG_PARTIAL_TUPLE)) {
     INT_ASSERT(!fn->retType->defaultInitializer);
     FnSymbol* instantiatedFrom = fn->instantiatedFrom;
     while (instantiatedFrom->instantiatedFrom)
       instantiatedFrom = instantiatedFrom->instantiatedFrom;
+
+
     CallExpr* call = new CallExpr(instantiatedFrom->retType->defaultInitializer);
 
     // This should not be happening for iterators.
