@@ -113,8 +113,7 @@ copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbo
     subs.put(key, value);
   }
 }
-
-
+/*
 static void
 instantiate_tuple_signature(FnSymbol* fn) {
   AggregateType* tuple = toAggregateType(fn->retType);
@@ -162,7 +161,7 @@ instantiate_tuple_body(FnSymbol* fn) {
   
   fn->removeFlag(FLAG_PARTIAL_TUPLE);
 }
-
+*/
 
 static TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
@@ -534,6 +533,9 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
     std::vector<TypeSymbol*> args;
     int i = 0;
     size_t actualN = 0;
+
+    //gdbShouldBreakHere();
+
     for_actuals(actual, call) {
       if (i == 0) {
         // First argument is the tuple size
@@ -545,10 +547,17 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
         Type* t = actual->typeInfo();
         args.push_back(t->symbol);
       }
+      i++;
     }
     INT_ASSERT(actualN == args.size());
     TypeSymbol* tupleTypeSym = getTupleTypeSymbol(args);
-    return tupleTypeSym->type->defaultTypeConstructor;
+
+    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
+      return tupleTypeSym->type->defaultTypeConstructor;
+    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
+      return getTupleConstructor(args);
+
+    INT_ASSERT(false); // what other functions are marked with FLAG_TUPLE?
   }
 
   form_Map(SymbolMapElem, e, subs) {
@@ -701,9 +710,11 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
     newFn->retType = newType;
   }
   
+  /*
   if (fn->hasFlag(FLAG_TUPLE)) {
+    gdbShouldBreakHere();
     instantiate_tuple_signature(newFn);
-  }
+  }*/
 
   if (!strcmp(fn->name, "_defaultOf") &&
       fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
@@ -759,9 +770,9 @@ instantiateBody(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_PARTIAL_COPY)) {
     fn->finalizeCopy();
 
-    if (fn->hasFlag(FLAG_PARTIAL_TUPLE)) {
+    /*if (fn->hasFlag(FLAG_PARTIAL_TUPLE)) {
       instantiate_tuple_body(fn);
-    }
+    }*/
   }
 }
 

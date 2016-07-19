@@ -87,6 +87,7 @@ bool isPOD(Type* t);
 
 // tuples
 TypeSymbol* getTupleTypeSymbol(std::vector<TypeSymbol*>& args);
+FnSymbol* getTupleConstructor(std::vector<TypeSymbol*>& args);
 void instantiate_tuple_hash( FnSymbol* fn);
 void instantiate_tuple_init(FnSymbol* fn);
 void instantiate_tuple_initCopy(FnSymbol* fn);

@@ -116,12 +116,12 @@ public:
   /** The actual arguments for the candidate, aligned so that they have the same
    *  index as their corresponding formal argument in the called function.
    */
-  Vec<Symbol*> formalIdxToActual; // alignedActuals
+  Vec<Symbol*> formalIdxToActual; // note: was alignedActuals
 
   /** The formal arguments for the candidate, aligned so that they have the same
    *  index as their corresponding actual argument in the call.
    */
-  Vec<ArgSymbol*> actualIdxToFormal; // alignedFormals
+  Vec<ArgSymbol*> actualIdxToFormal; // note: was alignedFormals
 
   /// A symbol map for substitutions that were made during the copying process.
   SymbolMap substitutions;
@@ -1524,6 +1524,8 @@ computeActualFormalAlignment(FnSymbol* fn,
           match = true;
           actualIdxToFormal.v[i] = formal;
           formalIdxToActual.v[j] = info.actuals.v[i];
+          formal = next_formal(formal);
+          j++;
           break;
         }
         formal = next_formal(formal);
@@ -1546,7 +1548,6 @@ computeActualFormalAlignment(FnSymbol* fn,
   }
   return true;
 }
-
 
 //
 // returns the type that a formal type should be instantiated to when
@@ -2132,6 +2133,12 @@ expandVarArgs(FnSymbol* origFn, int numActuals) {
 static void
 resolve_type_constructor(FnSymbol* fn, CallInfo& info) {
     SET_LINENO(fn);
+
+    // Don't bother with tuple constructors since we generated
+    // them along with their type constructors.
+    if( fn->hasFlag(FLAG_PARTIAL_TUPLE) )
+      return;
+
     CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
     for_formals(formal, fn) {
       if (strcmp(formal->name, "meme")) {
@@ -7640,7 +7647,7 @@ static void resolveReturnType(FnSymbol* fn)
     fn->retType = retType;
   }
 
-  if (retType->symbol->hasFlag(FLAG_TUPLE)) {
+  /*if (retType->symbol->hasFlag(FLAG_TUPLE)) {
     // testing
     std::vector<TypeSymbol*> tmp;
     AggregateType* at = toAggregateType(retType);
@@ -7654,7 +7661,7 @@ static void resolveReturnType(FnSymbol* fn)
     TypeSymbol* ts = getTupleTypeSymbol(tmp);
     assert(ts);
     gdbShouldBreakHere();
-  }
+  }*/
 
 }
 

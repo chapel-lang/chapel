@@ -31,6 +31,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 
+#include "view.h"
+
 #include <cstdlib>
 #include <inttypes.h>
 #include <vector>
@@ -39,6 +41,7 @@
 struct TupleInfo {
   TypeSymbol* typeSymbol;
   //FnSymbol *typeConstruct; in type->defaultTypeConstructor
+  FnSymbol *ctor;
   FnSymbol *defaultOf;
   FnSymbol *defaultHash;
   FnSymbol *autoCopy;
@@ -87,13 +90,13 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
     newType->fields.insertAtTail(new DefExpr(size));
     newType->substitutions.put(sizeArg, new_IntSymbol(args.size()));
     for(size_t i = 0; i < args.size(); i++) {
-      const char* name = astr("x", istr(i+1));
+      const char* name = typeCtorArgs[i+1]->name;
       VarSymbol *var = new VarSymbol(name);
       var->type = args[i]->type;
       newType->fields.insertAtTail(new DefExpr(var));
       newType->substitutions.put(typeCtorArgs[i+1], var->type->symbol);
     }
-    
+
     newType->instantiatedFrom = dtTuple;
 
     forv_Vec(Type, t, dtTuple->dispatchParents) {
@@ -130,7 +133,11 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
       }
     }
 
+    newTypeSymbol->addFlag(FLAG_ALLOW_REF);
+    newTypeSymbol->addFlag(FLAG_COMPILER_GENERATED);
     newTypeSymbol->addFlag(FLAG_TUPLE);
+    newTypeSymbol->addFlag(FLAG_PARTIAL_TUPLE);
+    newTypeSymbol->addFlag(FLAG_TYPE_VARIABLE);
     if (markStar)
       newTypeSymbol->addFlag(FLAG_STAR_TUPLE);
 
@@ -139,20 +146,87 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
     info.typeSymbol = newTypeSymbol;
 
     // Build the type constructor
-    FnSymbol *typeCtor = new FnSymbol("_type_construct__tuple");
-    for(size_t i = 0; i < typeCtorArgs.size(); i++ ) {
-      typeCtor->insertFormalAtTail(typeCtorArgs[i]);
-    }
-    CallExpr* ret = new CallExpr(PRIM_RETURN, new SymExpr(newTypeSymbol));
-    typeCtor->insertAtTail(ret);
-    typeCtor->substitutions.copy(newType->substitutions);
-    typeCtor->numPreTupleFormals = 1;
-    // TODO -- could set instantiationPoint to a CallExpr causing
-    // this tuple to be created.
-    tupleModule->block->insertAtTail(new DefExpr(typeCtor));
+    {
+      FnSymbol *typeCtor = new FnSymbol("_type_construct__tuple");
+      for(size_t i = 0; i < typeCtorArgs.size(); i++ ) {
+        typeCtor->insertFormalAtTail(typeCtorArgs[i]);
+      }
+      typeCtor->addFlag(FLAG_ALLOW_REF);
+      typeCtor->addFlag(FLAG_COMPILER_GENERATED);
+      typeCtor->addFlag(FLAG_INLINE);
+      typeCtor->addFlag(FLAG_INVISIBLE_FN);
+      typeCtor->addFlag(FLAG_TYPE_CONSTRUCTOR);
+      //typeCtor->addFlag(FLAG_PARTIAL_TUPLE);
+      //typeCtor->addFlag(FLAG_TUPLE);
 
-    newType->defaultTypeConstructor = typeCtor;
-    //info.defaultTypeConstructor = typeCtor;
+      typeCtor->retTag = RET_TYPE;
+      typeCtor->retType = newType;
+      CallExpr* ret = new CallExpr(PRIM_RETURN, new SymExpr(newTypeSymbol));
+      typeCtor->insertAtTail(ret);
+      typeCtor->substitutions.copy(newType->substitutions);
+      typeCtor->numPreTupleFormals = 1;
+
+      // TODO -- could set instantiationPoint to a CallExpr causing
+      // this tuple to be created.
+      tupleModule->block->insertAtTail(new DefExpr(typeCtor));
+
+      newType->defaultTypeConstructor = typeCtor;
+
+      printf("tuple type constructor id %i\n", typeCtor->id);
+      print_view(typeCtor);
+    }
+
+    // Build the value constructor
+    {
+      FnSymbol *ctor = new FnSymbol("_construct__tuple");
+
+      // Does "_this" even make sense in this situation?
+      VarSymbol* _this = new VarSymbol("this", newType);
+      _this->addFlag(FLAG_ARG_THIS);
+      ctor->insertAtTail(new DefExpr(_this));
+      ctor->_this = _this;
+
+      ArgSymbol* sizeArg = new ArgSymbol(INTENT_PARAM, "size", sizeType);
+      sizeArg->addFlag(FLAG_PARAM);
+      ctor->insertFormalAtTail(sizeArg);
+
+      for(size_t i = 0; i < args.size(); i++ ) {
+        const char* name = typeCtorArgs[i+1]->name;
+        ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, args[i]->type);
+        ctor->insertFormalAtTail(arg);
+        // TODO : one would think that the tuple constructor body
+        // should call initCopy
+        ctor->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
+                                        _this,
+                                        new_CStringSymbol(name),
+                                        arg));
+      }
+
+      ctor->addFlag(FLAG_ALLOW_REF);
+      ctor->addFlag(FLAG_COMPILER_GENERATED);
+      ctor->addFlag(FLAG_INLINE);
+      ctor->addFlag(FLAG_INVISIBLE_FN);
+      ctor->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
+      //ctor->addFlag(FLAG_PARTIAL_TUPLE);
+      //ctor->addFlag(FLAG_TUPLE);
+
+      ctor->retTag = RET_VALUE;
+      ctor->retType = newType;
+      CallExpr* ret = new CallExpr(PRIM_RETURN, _this);
+      ctor->insertAtTail(ret);
+      ctor->substitutions.copy(newType->substitutions);
+
+      tupleModule->block->insertAtTail(new DefExpr(ctor));
+
+      // Can't set defaultInitializer because iterator
+      // inlining uses it for something else.
+      //newType->defaultInitializer = ctor;
+
+      info.ctor = ctor;
+
+      printf("tuple constructor id %i\n", ctor->id);
+      print_view(ctor);
+    }
   }
 
   return info;
@@ -163,13 +237,29 @@ TypeSymbol* getTupleTypeSymbol(std::vector<TypeSymbol*>& args)
   TupleInfo& info = getTupleInfo(args);
   return info.typeSymbol;
 }
+FnSymbol* getTupleConstructor(std::vector<TypeSymbol*>& args)
+{
+  TupleInfo& info = getTupleInfo(args);
+  return info.ctor;
+}
 
-static void
+
+static TupleInfo&
 getTupleArgAndType(FnSymbol* fn, ArgSymbol*& arg, AggregateType*& ct) {
   INT_ASSERT(fn->numFormals() == 1); // expected of the original function
   arg = fn->getFormal(1);
   ct = toAggregateType(arg->type);
   INT_ASSERT(!isReferenceType(ct));
+
+  std::vector<TypeSymbol*> tmp;
+  int i = 0;
+  for_fields(field, ct) {
+    if (i != 0) { // skip size field
+      tmp.push_back(field->type->symbol);
+    }
+    i++;
+  }
+  return getTupleInfo(tmp);
 }
 
 void
@@ -181,12 +271,12 @@ instantiate_tuple_hash( FnSymbol* fn) {
   CallExpr* call = NULL;
   bool first = true;
   for (int i=1; i<ct->fields.length; i++) {
-    CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i)); 
+    CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i));
     if (first) {
       call =  new CallExpr( "chpl__defaultHash", field_access);
       first = false;
     } else {
-      call = new CallExpr( "^", 
+      call = new CallExpr( "^",
                            new CallExpr( "chpl__defaultHash",
                                          field_access),
                            new CallExpr( "<<",
@@ -194,11 +284,11 @@ instantiate_tuple_hash( FnSymbol* fn) {
                                          new_IntSymbol(17)));
     }
   }
-  
+
   // YAH, make sure that we do not return a negative hash value for now
   call = new CallExpr( "&", new_IntSymbol( 0x7fffffffffffffffLL, INT_SIZE_64), call);
   CallExpr* ret = new CallExpr(PRIM_RETURN, new CallExpr("_cast", dtInt[INT_SIZE_64]->symbol, call));
-  
+
   fn->body->replace( new BlockStmt( ret));
   normalize(fn);
 }
@@ -207,17 +297,19 @@ void
 instantiate_tuple_init(FnSymbol* fn) {
   ArgSymbol* arg;
   AggregateType* ct;
-  getTupleArgAndType(fn, arg, ct);
+  TupleInfo& info = getTupleArgAndType(fn, arg, ct);
+  FnSymbol* ctor = info.ctor;
+
   if (!arg->hasFlag(FLAG_TYPE_VARIABLE))
     INT_FATAL(fn, "_defaultOf function not provided a type argument");
 
   // Similar to build_record_init_function in buildDefaultFunctions, we need
   // to call the type specified default initializer
-  CallExpr* call = new CallExpr(ct->defaultInitializer);
+  CallExpr* call = new CallExpr(ctor);
   BlockStmt* block = new BlockStmt();
-  
+
   // Need to insert all required arguments into this call
-  for_formals(formal, ct->defaultInitializer) {
+  for_formals(formal, ctor) {
     VarSymbol* tmp = newTemp(formal->name);
     if (!strcmp(formal->name, "size"))
       block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_QUERY_PARAM_FIELD, arg, new_CStringSymbol(formal->name))));
@@ -246,7 +338,7 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
 
   CallExpr *call = new CallExpr(build_tuple_fun);
   BlockStmt* block = new BlockStmt();
-  
+
   for (int i=1; i<ct->fields.length; i++) {
     CallExpr* member = new CallExpr(arg, new_IntSymbol(i));
     DefExpr* def = toDefExpr(ct->fields.get(i+1));
@@ -258,7 +350,7 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
       // Otherwise, construct it.
       call->insertAtTail(new CallExpr(copy_fun, member));
   }
-  
+
   block->insertAtTail(new CallExpr(PRIM_RETURN, call));
   fn->body->replace(block);
   normalize(fn);
