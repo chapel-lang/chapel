@@ -1,0 +1,3 @@
+#!/bin/sh
+sed -e 's/\r$//' -e '/^salloc:/d' < $2 > $2.prediff.tmp
+mv $2.prediff.tmp $2
