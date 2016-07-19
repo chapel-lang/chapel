@@ -24,7 +24,7 @@ PASSES_SRCS = \
         checkNormalized.cpp \
         checkParsed.cpp \
         checkResolved.cpp \
-	checkOrphanStackVariable.cpp \
+        checkOrphanStackVariable.cpp \
         cleanup.cpp \
         codegen.cpp \
         createTaskFunctions.cpp \
