@@ -1,0 +1,52 @@
+This code tests the MPI module to make sure we
+don't deadlock (or expose the cases where we do 
+deadlock) when making MPI calls in multiple threads.
+
+To best expose possible deadlocks, I'm running this
+on a single core, but with multiple locales...
+
+Common settings :
+  export CHPL_TARGET_COMPILER=mpi-gnu
+  export AMMPI_MPI_THREAD=multiple
+
+  All of this run on MPICH
+
+1. single locale + fifo :
+  CHPL_COMM=none
+  CHPL_TASKS=fifo
+
+  chpl ring.chpl 
+  mpirun -np 3 ./a.out
+
+  No deadlock
+
+2. single locale + qthreads
+  CHPL_COMM=none
+  CHPL_TASKS=qthreads
+
+  chpl ring.chpl
+  mpirun -np 3 ./a.out
+
+  DEADLOCK!
+
+3. multi-locale + qthreads
+  CHPL_COMM=gasnet
+  CHPL_COMM_SUBSTRATE=mpi
+  CHPL_TASKS=qthreads
+
+  chpl ring.chpl
+  ./a.out -nl 3 
+
+  DEADLOCK!
+
+4. multi-locale + fifo
+  CHPL_COMM=gasnet
+  CHPL_COMM_SUBSTRATE=mpi
+  CHPL_TASKS=fifo
+
+  chpl ring.chpl
+  ./a.out -nl 3 
+
+  No deadlock
+
+
