@@ -1,0 +1,6 @@
+returnTypeExpression.doc
+
+Usage:
+   use returnTypeExpression.doc;
+
+   proc foo(a: complex(?w), b: real(w/2)): real(w/2)

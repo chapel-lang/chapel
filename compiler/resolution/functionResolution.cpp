@@ -8881,7 +8881,13 @@ static void insertDynamicDispatchCalls() {
       }
     }
 
-    if ((fns->n + 1 > fConditionalDynamicDispatchLimit) && (!referencesOuterVars)) {
+    bool isSuperAccess = false;
+    if (SymExpr* base = toSymExpr(call->get(2))) {
+      isSuperAccess = base->var->hasFlag(FLAG_SUPER_TEMP);
+    }
+
+    if ((fns->n + 1 > fConditionalDynamicDispatchLimit) &&
+        (!referencesOuterVars) && !isSuperAccess ) {
       //
       // change call of root method into virtual method call;
       // Insert function SymExpr and virtual method temp at head of argument
@@ -8913,10 +8919,18 @@ static void insertDynamicDispatchCalls() {
         BlockStmt* ifBlock = new BlockStmt();
         VarSymbol* cid = newTemp("_dynamic_dispatch_tmp_", dtBool);
         ifBlock->insertAtTail(new DefExpr(cid));
-        ifBlock->insertAtTail(new CallExpr(PRIM_MOVE, cid,
-                                new CallExpr(PRIM_TESTCID,
-                                             call->get(2)->copy(),
-                                             type->symbol)));
+
+        Expr* getCid = NULL;
+        if (isSuperAccess) {
+          // We're in a call on the super type.  We already know the answer to
+          // this if conditional
+          getCid = new SymExpr(gFalse);
+        } else {
+          getCid = new CallExpr(PRIM_TESTCID, call->get(2)->copy(),
+                                type->symbol);
+        }
+
+        ifBlock->insertAtTail(new CallExpr(PRIM_MOVE, cid, getCid));
         VarSymbol* _ret = NULL;
         if (key->retType != dtVoid) {
           _ret = newTemp("_return_tmp_", key->retType);

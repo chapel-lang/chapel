@@ -1,6 +1,6 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0303
-header_name {.h}
+version 1.0303 
+header_name {.h} 
 code_name {.cxx}
 comment {/*
  * Copyright 2016 Cray Inc.
@@ -21,54 +21,63 @@ comment {/*
  * limitations under the License.
  */
 } {in_source in_header
-}
+} 
 
 decl {\#include <FL/Fl_File_Chooser.H>} {private local
-}
+} 
 
 decl {\#include <FL/Fl_Multiline_Output.H>} {public local
-}
+} 
 
 decl {\#include <FL/Fl_Sys_Menu_Bar.H>} {public local
-}
+} 
 
 decl {\#include <FL/fl_ask.H>} {private local
-}
+} 
+
+decl {\#include <FL/Fl_Color_Chooser.H>} {private local
+} 
 
 decl {\#include <unistd.h>} {public local
-}
+} 
 
 decl {\#include "ViewField.h"} {public global
-}
+} 
 
 decl {\#include "DataModel.h"} {public global
-}
+} 
 
 decl {\#include "InfoBar.h"} {public local
-}
+} 
 
 decl {\#include "LocaleWin.h"} {public global
-}
+} 
 
 decl {\#include "CommWin.h"} {public local
-}
+} 
 
 decl {\#include "ConcurrencyWin.h"} {public local
-}
+} 
+
+decl {\#include "Settings.h"} {public local
+} 
 
 decl {DataModel VisData;} {public local
-}
+} 
 
-Function {mainWinCallback(Fl_Widget *)} {return_type void
+Function {mainWinCallback(Fl_Widget *)} {open return_type void
 } {
-  code {exit(1);} {}
+  code {if (VisSettings.save_WH) {
+   VisSettings.saveToFile();
 }
+exit(1);} {}
+} 
 
-Function {make_locale_window(int locnum, localeData *locInfo)} {open C
+Function {make_locale_window(int locnum, localeData *locInfo)} {C
 } {
   Fl_Window {} {open
-    xywh {-1081 123 180 130} type Double color 7 resizable
-    class LocaleWin size_range {180 120 0 0} visible
+    xywh {0 123 180 130} type Double color 7 hide resizable
+    class LocaleWin size_range {180 120 0 0}
   } {
     Fl_Box Locale_Title {
       label {Locale }
@@ -82,13 +91,12 @@ Function {make_locale_window(int locnum, localeData *locInfo)} {open C
   }
   code {w->setMembers(Locale_Title,cpuInfo,locInfo,locnum);
 w->updateWin(locInfo);} {}
-}
+} 
 
-Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {open
-} {
+Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {} {
   Fl_Window {} {open
-    xywh {-866 126 180 120} type Double color 7 resizable
-    class CommWin visible
+    xywh {1454 216 180 120} type Double color 7 hide resizable
+    class CommWin
   } {
     Fl_Box Comm_Title {
       label Comm
@@ -102,13 +110,13 @@ Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {op
   }
   code {w->setMembers(Comm_Title, commInfo, commdata, fromLn, toLn);
 w->updateWin(commdata);} {}
-}
+} 
 
-Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {ConcurrencyWin *}
+Function {make_concurrency_window(long locNum, long tagNum)} {return_type {ConcurrencyWin *}
 } {
   Fl_Window {} {open
-    xywh {-509 101 500 600} type Double color 7 resizable
-    class ConcurrencyWin visible
+    xywh {1300 177 500 600} type Double color 7 hide resizable
+    class ConcurrencyWin
   } {
     Fl_Box title {
       label Concurrency
@@ -117,7 +125,7 @@ Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {
     Fl_Scroll ConcScroll {open
       private xywh {0 30 500 570} box DOWN_BOX color 7 resizable
     } {
-      Fl_Box scrollData {selected
+      Fl_Box scrollData {
         private xywh {2 32 460 900} box FLAT_BOX color 7 resizable
         class ConcurrencyData
       }
@@ -126,13 +134,71 @@ Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {
   code {w->setMembers(title, ConcScroll, scrollData);
 w->updateData(locNum, tagNum);
 return w;} {}
-}
+} 
+
+Function {make_setting_window()} {open
+} {
+  Fl_Window SettingsWin {
+    label Settings open
+    xywh {1267 786 560 225} type Double color 7
+    class Settings visible
+  } {
+    Fl_Button {} {
+      label Cancel
+      callback {SettingsWin->copyIn();
+SettingsWin->hide();}
+      xywh {55 155 105 25}
+    }
+    Fl_Button {} {
+      label Save
+      callback {SettingsWin->copyOut();
+SettingsWin->hide();
+DbgView->redrawAllWindows();
+VisSettings.saveToFile();}
+      xywh {200 155 105 25}
+    }
+    Fl_Button {} {
+      label {Use for this run only}
+      callback {bool oldWH = VisSettings.save_WH;
+SettingsWin->copyOut();
+VisSettings.save_WH = oldWH;
+SettingsWin->hide();
+DbgView->redrawAllWindows();}
+      xywh {350 155 170 25}
+    }
+    Fl_Button {} {
+      label {Set Cool Color}
+      callback {SettingsWin->setCoolColor();}
+      xywh {55 45 120 25}
+    }
+    Fl_Button {} {
+      label {Set Hot Color}
+      callback {SettingsWin->setHotColor();}
+      xywh {350 45 120 25}
+    }
+    Fl_Button {} {
+      label {Reset Heat Colors}
+      callback {SettingsWin->reset();}
+      xywh {350 100 165 25}
+    }
+    Fl_Check_Button saveWH {
+      label {  Restore main window size}
+      callback {SettingsWin->toggleSaveWH();
+saveWH->value(SettingsWin->getSaveWH());}
+      xywh {55 100 215 25} type Normal box FLAT_BOX down_box DOWN_BOX
+      code0 {saveWH->value(SettingsWin->getSaveWH());}
+    }
+  }
+} 
+
+decl {SettingsData VisSettings;} {public local
+} 
 
 Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {-1082 304 500 590} type Double color 7 resizable size_range {500 590 0 0} visible
+    xywh {1104 442 500 590} type Double color 7 hide resizable size_range {500 590 0 0}
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 500 20} color 55
@@ -161,8 +227,18 @@ if (selfile) {
           xywh {0 0 34 21} shortcut 0x4006f
         }
         MenuItem {} {
+          label Settings
+          callback {if (!SettingsWin)
+  make_setting_window();
+SettingsWin->show();}
+          xywh {0 0 100 20}
+        }
+        MenuItem {} {
           label Quit
-          callback {exit(0);}
+          callback {if (VisSettings.save_WH) {
+   VisSettings.saveToFile();
+}
+exit(0);}
           xywh {0 0 34 21} shortcut 0x40071
         }
       }
@@ -251,7 +327,9 @@ MainWindow->redraw();}
       class ViewField
     }
   }
-  code {if (argc > 1 && argv[1][1] != '-') {
+  code {VisSettings.readFromFile();
+if (argc > 1 && argv[1][1] != '-') {
+    //printf ("argv[1] is %s\\n", argv[1]);
     if (!VisData.LoadData(argv[1])) {
        exit(1);
     }
@@ -271,5 +349,10 @@ MainWindow->redraw();}
       Info->setFileName(".Vdebug (default)");
    }
 }
-MainWindow->callback(mainWinCallback);} {}
-}
+MainWindow->callback(mainWinCallback);
+if (VisSettings.save_WH) {
+   MainWindow->size(VisSettings.mainW,VisSettings.mainH);
+   MainWindow->redraw();
+}} {selected
+  }
+} 

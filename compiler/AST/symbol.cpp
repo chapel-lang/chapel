@@ -2450,8 +2450,10 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
 
   // Print return type.
   if (this->retExprType != NULL) {
+    AstToText info;
+    info.appendExpr(this->retExprType->body.tail, true);
     *file << ": ";
-    this->retExprType->body.tail->prettyPrint(file);
+    *file << info.text();
   }
   *file << std::endl;
 

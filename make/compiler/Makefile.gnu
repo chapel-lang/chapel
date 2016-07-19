@@ -48,11 +48,11 @@ endif
 #
 COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL = -Wno-error
-RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
+RUNTIME_CFLAGS = $(CFLAGS)
 RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 RUNTIME_CXXFLAGS = $(CFLAGS)
 RUNTIME_GEN_CXXFLAGS = $(RUNTIME_CXXFLAGS)
-GEN_CFLAGS = -std=c99
+GEN_CFLAGS =
 GEN_STATIC_FLAG = -static
 GEN_DYNAMIC_FLAG =
 LIB_STATIC_FLAG =
@@ -90,11 +90,23 @@ endif
 #
 # query gcc version
 #
+ifndef GNU_GCC_MAJOR_VERSION
+export GNU_GCC_MAJOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
+endif
+ifndef GNU_GCC_MINOR_VERSION
+export GNU_GCC_MINOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
+endif
+ifndef GNU_GCC_SUPPORTS_STDATOMICS
+export GNU_GCC_SUPPORTS_STDATOMICS = $(shell test $(GNU_GCC_MAJOR_VERSION) -lt 4 || (test $(GNU_GCC_MAJOR_VERSION) -eq 4 && test $(GNU_GCC_MINOR_VERSION) -lt 9); echo "$$?")
+endif
 ifndef GNU_GPP_MAJOR_VERSION
 export GNU_GPP_MAJOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
 endif
 ifndef GNU_GPP_MINOR_VERSION
 export GNU_GPP_MINOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
+endif
+ifndef GNU_GPP_SUPPORTS_STDATOMICS
+export GNU_GPP_SUPPORTS_STDATOMICS = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -lt 5); echo "$$?")
 endif
 ifndef GNU_GPP_SUPPORTS_MISSING_DECLS
 export GNU_GPP_SUPPORTS_MISSING_DECLS = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
@@ -102,6 +114,42 @@ endif
 ifndef GNU_GPP_SUPPORTS_STRICT_OVERFLOW
 export GNU_GPP_SUPPORTS_STRICT_OVERFLOW = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
 endif
+
+#
+# Specifying the language standard for gcc/g++ to use
+#
+# If the gcc and g++ versions both support standard atomics:
+#   For gcc version >= 5, just use the default, which is at least C11.
+#   For g++ version >= 6, just use the default, which is at least C++14.
+#   Otherwise the defaults are C90/C++98, so specify C11 and C++11.
+# If one or both don't support standard atomics:
+#   Specify C99/C++98.
+#
+ifeq ($(GNU_GCC_SUPPORTS_STDATOMICS),$(GNU_GPP_SUPPORTS_STDATOMICS))
+  ifeq ($(GNU_GCC_SUPPORTS_STDATOMICS),1)
+    ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -lt 5; echo "$$?"),0)
+      GCC_STD = -std=c11
+    else
+      GCC_STD =
+    endif
+    ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -lt 6; echo "$$?"),0)
+      GPP_STD = -std=c++11
+    else
+      GPP_STD =
+    endif
+  else
+    GCC_STD = -std=c99
+    GPP_STD = -std=c++98
+  endif
+else
+  GCC_STD = -std=c99
+  GPP_STD = -std=c++98
+endif
+RUNTIME_CFLAGS += $(GCC_STD)
+RUNTIME_GEN_CFLAGS += $(GCC_STD)
+RUNTIME_CXXFLAGS += $(GPP_STD)
+RUNTIME_GEN_CXXFLAGS += $(GPP_STD)
+GEN_CFLAGS += $(GCC_STD)
 
 #
 # Flags for turning on warnings for C++/C code
