@@ -852,6 +852,12 @@ protoIteratorClass(FnSymbol* fn) {
   ii->iclass->iteratorInfo = ii;
   normalize(ii->getIterator);
   resolveFns(ii->getIterator);  // No shortcuts.
+//  resolveFns(ii->iterator);
+
+  if( 0 == strcmp(ii->iterator->name, "foo") ) {
+    printf("In proto iterator\n");
+    nprint_view(fn);
+  }
 }
 
 
@@ -7574,6 +7580,10 @@ static void instantiate_default_constructor(FnSymbol* fn) {
     while (instantiatedFrom->instantiatedFrom)
       instantiatedFrom = instantiatedFrom->instantiatedFrom;
     CallExpr* call = new CallExpr(instantiatedFrom->retType->defaultInitializer);
+    if (instantiatedFrom->retType->symbol->hasEitherFlag(
+          FLAG_ITERATOR_RECORD, FLAG_ITERATOR_CLASS))
+      INT_ASSERT(0);
+
     for_formals(formal, fn) {
       if (formal->type == dtMethodToken || formal == fn->_this) {
         call->insertAtTail(formal);
@@ -9172,14 +9182,35 @@ static void clearDefaultInitFns(FnSymbol* unusedFn) {
   if (unusedFn->retType->defaultInitializer == unusedFn) {
     unusedFn->retType->defaultInitializer = NULL;
   }
+  // Also remove unused fns from iterator infos.
   // Ditto for iterator fn in iterator info.
-  if (unusedFn->retType->symbol->hasEitherFlag(FLAG_ITERATOR_RECORD,
-                                               FLAG_ITERATOR_CLASS)) {
-    AggregateType* it = toAggregateType(unusedFn->retType);
-    it->iteratorInfo = NULL;
+  AggregateType* at = toAggregateType(unusedFn->retType);
+  if (at && at->iteratorInfo) {
+    IteratorInfo* ii = at->iteratorInfo;
+    INT_ASSERT(at->symbol->hasEitherFlag(FLAG_ITERATOR_RECORD,
+                                         FLAG_ITERATOR_CLASS));
+    if (ii) {
+      if (ii->iterator == unusedFn)
+        ii->iterator = NULL;
+      if (ii->getIterator == unusedFn)
+        ii->getIterator = NULL;
+    }
   }
 }
-
+/*
+static bool
+hasFalseWhereClause(FnSymbol* fn)
+{
+  if (fn->where) {
+    SymExpr* se = toSymExpr(fn->where->body.last());
+    if (!se)
+      INT_FATAL(se, "invalid where clause");
+    else if (se->var == gFalse)
+      return true;
+  }
+  return false;
+}
+*/
 static void removeUnusedFunctions() {
   // Remove unused functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -9187,7 +9218,9 @@ static void removeUnusedFunctions() {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       if (fn->defPoint->parentSymbol == stringLiteralModule) continue;
 
-      if (! fn->isResolved() || fn->retTag == RET_PARAM) {
+      if (! fn->isResolved() ||
+          fn->retTag == RET_PARAM /*||
+          hasFalseWhereClause(fn) */ ){
         clearDefaultInitFns(fn);
         fn->defPoint->remove();
       }
@@ -9205,9 +9238,16 @@ isUnusedClass(AggregateType *ct) {
   if (ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
     return false;
 
-  // Uses of iterator records/classes get inserted in lowerIterators
-  if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
-      ct->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+  // Uses of iterator records get inserted in lowerIterators
+  // (this also handles the case where an iterator record's
+  //  original iterator function is used)
+  if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    //|| ct->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+    return false;
+
+  // FALSE if iterator class's getIterator is used
+  if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
+      ct->iteratorInfo->getIterator->isResolved())
     return false;
 
   // FALSE if initializers are used

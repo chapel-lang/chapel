@@ -32,7 +32,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-
+#include "view.h"
 //
 // getTheIteratorFn(): get the original (user-written) iterator function
 // that corresponds to an _iteratorClass type or symbol
@@ -88,6 +88,16 @@ FnSymbol* getTheIteratorFn(Type* icType)
     AggregateType* firstIcTypeAgg = toAggregateType(firstIcType);
     FnSymbol* result = firstIcTypeAgg->iteratorInfo->getIterator;
 //INT_ASSERT(result == oldGetTheIteratorFn(icType));
+
+
+  if( 0 == strcmp(icType->symbol->name, "_ic_foo") ) {
+    printf("getTheIteratorFn for type\n");
+    nprint_view(icType);
+    printf("returning\n");
+    if ( result )
+      nprint_view(result);
+  }
+
     return result;
   } else {
     INT_ASSERT(icType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
@@ -105,6 +115,15 @@ FnSymbol* getTheIteratorFn(Type* icType)
     FnSymbol* result = irTypeAgg->iteratorInfo->iterator;
     INT_ASSERT(result->hasFlag(FLAG_ITERATOR_FN));
 //INT_ASSERT(result == oldGetTheIteratorFn(icType));
+
+  if( 0 == strcmp(icType->symbol->name, "_ic_foo") ) {
+    printf("getTheIteratorFn for type\n");
+    nprint_view(icType);
+    printf("returning\n");
+    if ( result )
+      nprint_view(result);
+  }
+
     return result;
   }
 }
