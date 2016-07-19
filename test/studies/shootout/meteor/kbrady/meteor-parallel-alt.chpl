@@ -11,6 +11,7 @@ use BitOps;
 param boardCells = 50,          // Number of cells on board
       boardWidth = 5,           // Number of cells along x-axis
       boardHeight = 10,         // Number of cells along y-axis
+      //TODO
       permutations = 8192,      // Number of permutations stored as masks
       piecePermutations = 12,   // Number of permutations for a single piece
       numPieces = 10,           // Number of puzzle pieces
@@ -41,10 +42,6 @@ param maskEven   = 0xf07c1f07c1f07c1f: int, // Even rows of board (0, 2, 4, ..)
 // Find and print the minimum and maximum solutions to meteor puzzle
 //
 proc main(args: [] string) {
-
-  // Support dummy arguments for shootout execution scripts
-  if args.size > 2 then
-    return;
 
   initialize();
 
@@ -357,6 +354,7 @@ proc searchLinearHelper(in board, in pos, in used, in placed,
 
 // DIY sync variable functionality that outperforms native sync variables.
 // Access controlled by functions lock() and unlock()
+// TODO
 var l: atomic bool;
 
 
