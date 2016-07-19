@@ -820,11 +820,8 @@ protoIteratorClass(FnSymbol* fn) {
   ii->init = protoIteratorMethod(ii, "init", dtVoid);
   ii->incr = protoIteratorMethod(ii, "incr", dtVoid);
 
-  // The original iterator function is stashed in the defaultInitializer field
-  // of the iterator record type.  Since we are only creating shell functions
-  // here, we still need a way to obtain the original iterator function, so we
-  // can fill in the bodies of the above 9 methods in the lowerIterators pass.
-  //ii->irecord->defaultInitializer = fn; // TODO remove
+  // Save the iterator info in the iterator record.
+  // The iterator info is still owned by the iterator function.
   ii->irecord->iteratorInfo = ii;
   ii->irecord->scalarPromotionType = fn->retType;
   fn->retType = ii->irecord;
@@ -844,20 +841,13 @@ protoIteratorClass(FnSymbol* fn) {
   ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
-  // The _getIterator function is stashed in the defaultInitializer field of
-  // the iterator class type.  This makes it easy to obtain the iterator given
+  // Save the iterator info in the iterator class also.
+  // This makes it easy to obtain the iterator given
   // just a symbol of the iterator class type.  This may include _getIterator
   // and _getIteratorZip functions in the module code.
-  //ii->iclass->defaultInitializer = ii->getIterator; // TODO remove
   ii->iclass->iteratorInfo = ii;
   normalize(ii->getIterator);
   resolveFns(ii->getIterator);  // No shortcuts.
-//  resolveFns(ii->iterator);
-
-  if( 0 == strcmp(ii->iterator->name, "foo") ) {
-    printf("In proto iterator\n");
-    nprint_view(fn);
-  }
 }
 
 
@@ -7580,9 +7570,10 @@ static void instantiate_default_constructor(FnSymbol* fn) {
     while (instantiatedFrom->instantiatedFrom)
       instantiatedFrom = instantiatedFrom->instantiatedFrom;
     CallExpr* call = new CallExpr(instantiatedFrom->retType->defaultInitializer);
-    if (instantiatedFrom->retType->symbol->hasEitherFlag(
-          FLAG_ITERATOR_RECORD, FLAG_ITERATOR_CLASS))
-      INT_ASSERT(0);
+
+    // This should not be happening for iterators.
+    TypeSymbol* ts = instantiatedFrom->retType->symbol;
+    INT_ASSERT(!ts->hasEitherFlag(FLAG_ITERATOR_RECORD, FLAG_ITERATOR_CLASS))
 
     for_formals(formal, fn) {
       if (formal->type == dtMethodToken || formal == fn->_this) {
@@ -9197,20 +9188,7 @@ static void clearDefaultInitFns(FnSymbol* unusedFn) {
     }
   }
 }
-/*
-static bool
-hasFalseWhereClause(FnSymbol* fn)
-{
-  if (fn->where) {
-    SymExpr* se = toSymExpr(fn->where->body.last());
-    if (!se)
-      INT_FATAL(se, "invalid where clause");
-    else if (se->var == gFalse)
-      return true;
-  }
-  return false;
-}
-*/
+
 static void removeUnusedFunctions() {
   // Remove unused functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -9219,8 +9197,7 @@ static void removeUnusedFunctions() {
       if (fn->defPoint->parentSymbol == stringLiteralModule) continue;
 
       if (! fn->isResolved() ||
-          fn->retTag == RET_PARAM /*||
-          hasFalseWhereClause(fn) */ ){
+          fn->retTag == RET_PARAM ){
         clearDefaultInitFns(fn);
         fn->defPoint->remove();
       }
@@ -9239,13 +9216,12 @@ isUnusedClass(AggregateType *ct) {
     return false;
 
   // Uses of iterator records get inserted in lowerIterators
-  // (this also handles the case where an iterator record's
-  //  original iterator function is used)
   if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     //|| ct->symbol->hasFlag(FLAG_ITERATOR_CLASS))
     return false;
 
   // FALSE if iterator class's getIterator is used
+  // (this case may not be necessary)
   if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
       ct->iteratorInfo->getIterator->isResolved())
     return false;

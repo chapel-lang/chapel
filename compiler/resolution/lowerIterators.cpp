@@ -47,28 +47,6 @@ FnSymbol* getTheIteratorFn(Symbol* ic) {
 FnSymbol* getTheIteratorFn(CallExpr* call) {
   return getTheIteratorFn(call->get(1)->typeInfo());
 }
-/*
-FnSymbol* oldGetTheIteratorFn(Type* icType)
-{
-  // the asserts document the current state
-  bool gotTuple = icType->symbol->hasFlag(FLAG_TUPLE);
-  INT_ASSERT(gotTuple || icType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
-
-  // The _getIterator function is in _iteratorClass's defaultInitializer.
-  FnSymbol* getIterFn = icType->defaultInitializer;
-
-  // The type of _getIterator's first formal arg is _iteratorRecord.
-  Type* irType = getIterFn->getFormal(1)->type;
-  INT_ASSERT(irType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
-             (gotTuple && irType->symbol->hasFlag(FLAG_ITERATOR_CLASS)));
-
-  // The original iterator function is in _iteratorRecord's defaultInitializer.
-  FnSymbol* result = irType->defaultInitializer;
-  INT_ASSERT(gotTuple || result->hasFlag(FLAG_ITERATOR_FN));
-
-  return result;
-}
-*/
 
 // icType is either an _iteratorClass type or a tuple thereof
 // When icType is a tuple, this function returns
@@ -87,16 +65,6 @@ FnSymbol* getTheIteratorFn(Type* icType)
     INT_ASSERT(firstIcType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
     AggregateType* firstIcTypeAgg = toAggregateType(firstIcType);
     FnSymbol* result = firstIcTypeAgg->iteratorInfo->getIterator;
-//INT_ASSERT(result == oldGetTheIteratorFn(icType));
-
-
-  if( 0 == strcmp(icType->symbol->name, "_ic_foo") ) {
-    printf("getTheIteratorFn for type\n");
-    nprint_view(icType);
-    printf("returning\n");
-    if ( result )
-      nprint_view(result);
-  }
 
     return result;
   } else {
@@ -114,15 +82,6 @@ FnSymbol* getTheIteratorFn(Type* icType)
     // Return the original iterator function
     FnSymbol* result = irTypeAgg->iteratorInfo->iterator;
     INT_ASSERT(result->hasFlag(FLAG_ITERATOR_FN));
-//INT_ASSERT(result == oldGetTheIteratorFn(icType));
-
-  if( 0 == strcmp(icType->symbol->name, "_ic_foo") ) {
-    printf("getTheIteratorFn for type\n");
-    nprint_view(icType);
-    printf("returning\n");
-    if ( result )
-      nprint_view(result);
-  }
 
     return result;
   }

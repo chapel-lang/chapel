@@ -3,9 +3,7 @@ iter foo(n: int) {
     yield i;
 }
 
-extern proc printf(fmt:c_string);
 iter foo(param tag: iterKind, n: int):range where tag == iterKind.leader {
-  printf(c"In leader\n");
   if n == 1 then
     yield 1..1;
   else {
@@ -16,7 +14,6 @@ iter foo(param tag: iterKind, n: int):range where tag == iterKind.leader {
 }
 
 iter foo(param tag: iterKind, followThis, n: int) where tag == iterKind.follower {
-  printf(c"In follower\n");
   for i in followThis do
     yield i;
 }
