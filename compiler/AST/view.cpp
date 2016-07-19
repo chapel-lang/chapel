@@ -35,6 +35,7 @@
 #include "WhileStmt.h"
 #include "AstDump.h"
 #include "AstDumpToNode.h"
+#include "iterator.h"
 
 #include <inttypes.h>
 

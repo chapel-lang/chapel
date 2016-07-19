@@ -7573,7 +7573,7 @@ static void instantiate_default_constructor(FnSymbol* fn) {
 
     // This should not be happening for iterators.
     TypeSymbol* ts = instantiatedFrom->retType->symbol;
-    INT_ASSERT(!ts->hasEitherFlag(FLAG_ITERATOR_RECORD, FLAG_ITERATOR_CLASS))
+    INT_ASSERT(!ts->hasEitherFlag(FLAG_ITERATOR_RECORD, FLAG_ITERATOR_CLASS));
 
     for_formals(formal, fn) {
       if (formal->type == dtMethodToken || formal == fn->_this) {
