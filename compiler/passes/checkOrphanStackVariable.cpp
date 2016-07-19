@@ -30,6 +30,25 @@ PRIM_BLOCK_FOR_LOOP     :|
 PRIM_BLOCK_C_FOR_LOOP   :|
                         : If-ELse
 *************************/
+
+enum GraphNodeStatus{
+  NODE_UNKNOWN = 0, //NODE STATUS UNKNOWN
+  NODE_SINGLE_WAIT_FULL,
+  NODE_SINGLE_SIGNAL_FULL,
+  NODE_SYNC_SIGNAL_FULL,
+  NODE_SYNC_SIGNAL_EMPTY,
+  NODE_BLOCK_BEGIN, //A NEW BEGIN FUNCTION START HERE
+  NODE_BLOCK_FUNCTION, // A NEW FUNCTION NODE STARTS HERE
+  NODE_START_LOOP,
+  NODE_START_DOWHILE,
+  NODE_START_WHILE,
+  NODE_LOOP_END,
+  NODE_START_IFELSE,
+  NODE_END_IFELSE,
+  NODE_INTERNAL_FUNCTIONCALL
+};
+
+
 /****
      We can say The SyncGraph nodes represents
      a striped CCFG(Concurrent Control Flow Graph)
@@ -37,7 +56,11 @@ PRIM_BLOCK_C_FOR_LOOP   :|
      use of External variables.
 **/
 struct SyncGraph{
-  /* TODO: */
+  /* TODO: Function level ID
+ Will be zero for root Function.
+ For Others it will give the distance of the
+ begin Function from Root Node
+ */
   int levelID;
   FnSymbol * fnSymbol;
   SyncGraph* parent;
@@ -57,7 +80,9 @@ struct SyncGraph{
   SyncGraph* fChild;
   CallExpr* syncExpr;
   std::string syncVar;
-  PrimitiveTag syncType;
+  GraphNodeStatus syncType;
+  bool loopNode;
+  bool conditionalNode;
   /*
     SyncGraph* child(){
     return child;
@@ -67,10 +92,22 @@ struct SyncGraph{
      We always sync the READS  with WRITES
   **/
   Vec<SyncGraph*> syncPoints;
+  SyncGraph(SyncGraph* i, FnSymbol *f,int lID){
+    levelID = lID;
+    fnSymbol = f;
+    contents.copy(i->contents);
+    loopNode = i->loopNode;
+    conditionalNode = i->conditionalNode;
+    syncType = i->syncType;
+    syncVar = i->syncVar;
+  }
   SyncGraph(){
     child = NULL;
     fChild = NULL;
-    syncType = PRIM_NOOP;
+    syncType = NODE_UNKNOWN;
+    levelID = 0;
+    loopNode = false;
+    conditionalNode = false;
   }
   ~SyncGraph(){}
 } *root;
@@ -94,6 +131,8 @@ SyncGraph* addSyncExprs(Expr *expr,SyncGraph *cur);
 void addSymbolsToGraph(Expr* expr,SyncGraph *cur);
 void collectFuncNodes(SyncGraph *cur,Vec<SyncGraph*>& funcNodes);
 bool containsBeginFunction(FnSymbol* fn);
+bool inlineCFG(SyncGraph* inlineNode,SyncGraph* branch);
+Vec<SyncGraph*> getCopyofGraph(SyncGraph* start,FnSymbol* f,int level);
 /************** HEADER ENDS *******************/
 
 /***
@@ -112,6 +151,37 @@ void deleteSyncGraphNode(SyncGraph *node){
     deleteSyncGraphNode(node->fChild);
     delete node;
   }
+}
+
+Vec<SyncGraph*> getCopyofGraph(SyncGraph* start,FnSymbol* f,int level){
+  /**
+     TODO decide what to de when we have a fChild here
+   **/
+  Vec<SyncGraph*> copy;
+  SyncGraph* node = start;
+  while(node != NULL){
+    SyncGraph * newnode = new SyncGraph(node,f,level);
+    if(copy.count() > 0){
+      newnode->parent = copy.tail();
+      copy.tail()->child = newnode;
+    }
+    copy.add(node);
+  }
+  return copy;
+}
+
+bool inlineCFG(SyncGraph* inlineNode,SyncGraph* branch){
+  if(inlineNode){
+    SyncGraph *oldChild = inlineNode->child;
+    Vec<SyncGraph*> copy = getCopyofGraph(branch,inlineNode->fnSymbol,inlineNode->levelID);
+    if(copy.count() >0){
+      inlineNode->child = copy.head();
+      copy.head()->parent = inlineNode;
+      copy.tail()->child = oldChild;
+      oldChild->parent = copy.tail();
+    }
+  }
+  return true;
 }
 
 
@@ -142,8 +212,10 @@ SyncGraph* addChildNode(SyncGraph *cur, FnSymbol* fn){
   childNode->fnSymbol = fn;
   if(fn == cur->fnSymbol)
     cur->child = childNode;
-  else
+  else{
     cur->fChild = childNode;
+    childNode->levelID = cur->levelID + 1;
+  }
   return childNode;
 }
 
@@ -196,12 +268,12 @@ SyncGraph* addSyncExprs(Expr *expr,SyncGraph *cur){
               for_vector(CallExpr,markCall,markCalls){
                 if(markCall->isPrimitive(PRIM_SINGLE_SIGNAL_FULL)){
                   cur->syncVar = symName;
-                  cur->syncType = PRIM_SINGLE_SIGNAL_FULL;
+                  cur->syncType = NODE_SINGLE_SIGNAL_FULL;
                   cur->syncExpr = call;
                   cur = addChildNode(cur,curFun);
                 }else if(markCall->isPrimitive(PRIM_SYNC_SIGNAL_FULL)){
                   cur->syncVar = symName;
-                  cur->syncType = PRIM_SYNC_SIGNAL_FULL;
+                  cur->syncType = NODE_SYNC_SIGNAL_FULL;
                   cur->syncExpr = call;
                   cur = addChildNode(cur,curFun);
                 }
@@ -224,7 +296,7 @@ SyncGraph* addSyncExprs(Expr *expr,SyncGraph *cur){
               for_vector(CallExpr,markCall,markCalls){
                 if(markCall->isPrimitive(PRIM_SINGLE_WAIT_FULL)){
                   cur->syncVar = symName;
-                  cur->syncType = PRIM_SINGLE_WAIT_FULL;
+                  cur->syncType = NODE_SINGLE_WAIT_FULL;
                   cur->syncExpr = call;
                   cur = addChildNode(cur,curFun);
                 }
@@ -235,7 +307,7 @@ SyncGraph* addSyncExprs(Expr *expr,SyncGraph *cur){
               for_vector(CallExpr,markCall,markCalls){
                 if(markCall->isPrimitive(PRIM_SYNC_SIGNAL_EMPTY)){
                   cur->syncVar = symName;
-                  cur->syncType = PRIM_SYNC_SIGNAL_EMPTY;
+                  cur->syncType = NODE_SYNC_SIGNAL_EMPTY;
                   cur->syncExpr = call;
                   cur = addChildNode(cur,curFun);
                 }
@@ -335,9 +407,6 @@ void checkOrphanStackVar(SyncGraph *root){
   Vec<SyncGraph*> funcNodes;
   funcNodes.add(root);
   collectFuncNodes(root,funcNodes);
-
-
-
   forv_Vec(SyncGraph,funcNode,funcNodes){
     SyncGraph * curNode = funcNode;
     /**
@@ -363,38 +432,38 @@ void checkOrphanStackVar(SyncGraph *root){
         int processnextTask = 0;
         forv_Vec(SyncGraph,nextFuncNode,funcNodes){
           if(processnextTask == 1){
-            if(curNode->syncType ==  PRIM_SINGLE_WAIT_FULL){
+            if(curNode->syncType ==  NODE_SINGLE_WAIT_FULL){
               /*
                 Since there is no state change in SINGLE variable after
                 being full we have to search from begining.
               */
               SyncGraph* candidateSyncNode = nextFuncNode;
               while(candidateSyncNode  != NULL){
-                if(syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == PRIM_SINGLE_SIGNAL_FULL){
+                if(syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SINGLE_SIGNAL_FULL){
                   linkSyncNodes(candidateSyncNode,curNode);
                 }
                 candidateSyncNode = candidateSyncNode->child;
               }
-            }else if(curNode->syncType ==  PRIM_SINGLE_SIGNAL_FULL){
+            }else if(curNode->syncType ==  NODE_SINGLE_SIGNAL_FULL){
               SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
               while(candidateSyncNode  != NULL){
-                if(syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == PRIM_SINGLE_WAIT_FULL){
+                if(syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SINGLE_WAIT_FULL){
                   linkSyncNodes(curNode,candidateSyncNode);
                 }
                 candidateSyncNode = candidateSyncNode->child;
               }
-            }else  if(curNode->syncType == PRIM_SYNC_SIGNAL_FULL){
+            }else  if(curNode->syncType == NODE_SYNC_SIGNAL_FULL){
               SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
               while(candidateSyncNode  != NULL){
-                if(syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == PRIM_SYNC_SIGNAL_EMPTY){
+                if(syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SYNC_SIGNAL_EMPTY){
                   linkSyncNodes(candidateSyncNode,curNode);
                 }
                 candidateSyncNode = candidateSyncNode->child;
               }
-            }else if(curNode->syncType == PRIM_SYNC_SIGNAL_EMPTY){
+            }else if(curNode->syncType == NODE_SYNC_SIGNAL_EMPTY){
               SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
               while(candidateSyncNode  != NULL){
-                if(syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == PRIM_SYNC_SIGNAL_FULL){
+                if(syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SYNC_SIGNAL_FULL){
                   linkSyncNodes(curNode,candidateSyncNode);
                 }
                 candidateSyncNode = candidateSyncNode->child;
@@ -404,7 +473,7 @@ void checkOrphanStackVar(SyncGraph *root){
             processnextTask  = 1;
           }
         }
-        if(curNode->syncPoints.count() == 0 && curNode->syncType != PRIM_SINGLE_WAIT_FULL){
+        if(curNode->syncPoints.count() == 0 && curNode->syncType != NODE_SINGLE_WAIT_FULL){
           USR_WARN(curNode->syncExpr,"No matching Syncronization Expression for this. This could result in the program entering an infinite wait.");
         }else if(curNode->syncPoints.count() == 1){
           taskSyncPoints.put(curNode->syncPoints.only()->fnSymbol,curNode->syncPoints.only());
@@ -421,14 +490,14 @@ void checkOrphanStackVar(SyncGraph *root){
     SyncGraph * curNode = funcNode;
     while(curNode != NULL){
       if(curNode->contents.length() > 0){
-        if(curNode->syncType == PRIM_NOOP){
+        if(curNode->syncType == NODE_UNKNOWN){
           /* No sync point
              report error directly
           */
           forv_Vec(SymExpr,unsynced,curNode->contents){
             USR_WARN(unsynced,"Unsynchronized use of external variable(%s). This could result in incorrect/unintended program behaviour.",unsynced->var->name);
           }
-        }else if(!(curNode->syncType == PRIM_UNKNOWN)){
+        }else{
           /** All syncronization statements should be
               linked with Root Function **/
         }
@@ -444,10 +513,10 @@ SyncGraph* handleDefExpr(DefExpr* def,SyncGraph *cur){
     FnSymbol* fn = toFnSymbol(def->sym);
     if(fn->hasFlag(FLAG_BEGIN)){
       handleBegin(fn,cur);
-      cur->syncType = PRIM_BLOCK_BEGIN;
+      cur->syncType = NODE_BLOCK_BEGIN;
     }else{
       handleFunction(fn,cur);
-      cur->syncType = PRIM_UNKNOWN;
+      cur->syncType = NODE_INTERNAL_FUNCTIONCALL;
     }
     cur = addChildNode(cur,def->getFunction());
   }else{
