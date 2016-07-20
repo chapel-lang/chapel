@@ -94,8 +94,7 @@ void denormalize(FnSymbol *fn) {
       if(!isExprSafeForReorder(def)) {
         isDenormalizeSafe = false;
       }
-      //any function call in between that is potentially dangerous?
-      if(possibleDepInBetween(defExpr, useExpr)) {
+      else if(possibleDepInBetween(defExpr, useExpr)) {
         //if(! isExprSafeForReorder(def)) {
           isDenormalizeSafe = false;
         //}
@@ -147,11 +146,11 @@ void denormalizeActuals(CallExpr* ce,
               //print_view(useExpr);
               //std::cout << "use\n";
               //print_view(use);
-              if(!possibleDepInBetween(defExpr, useExpr)) {
+              if(isExprSafeForReorder(def)) {
+                if(!possibleDepInBetween(defExpr, useExpr)) {
                 // In C actual evaluation order is not standard, therefore any
                 // defExpr that us unsafe for reordering cannot be moved to
                 // the args
-                if(isExprSafeForReorder(def)) {
                   denormalize(def, use, castTo);
                   //std::cout << "DENORMALIZED\n";
                 }
@@ -265,13 +264,13 @@ bool isExprSafeForReorder(Expr * e) {
         // tmp = (atomic_read() == 5);
         //
         // where `==` is non-essential yet one of its children has side effects
-        Expr* e = ce->argList.first();
-        while(e) {
-          if(!isExprSafeForReorder(e)) {//is this recursion safe?
-            return false;
-          }
-          e = e->next;
-        }
+        //Expr* e = ce->argList.first();
+        //while(e) {
+          //if(!isExprSafeForReorder(e)) {//is this recursion safe?
+            //return false;
+          //}
+          //e = e->next;
+        //}
       }
     }
   }
@@ -457,11 +456,10 @@ bool isDenormalizable(Symbol* sym,
           if(ce->isPrimitive(PRIM_MOVE)) {
             Type* lhsType = ce->get(1)->typeInfo();
             Type* rhsType = ce->get(2)->typeInfo();
-            if(! canPrimMoveCreateCommunication(ce)) {
-              if(! (lhsType->symbol->hasFlag(FLAG_EXTERN) ||
-                    rhsType->symbol->hasFlag(FLAG_EXTERN))) {
-                if(ce->get(1)->typeInfo() == ce->get(2)->typeInfo()) {
-                  if(!ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_ATOMIC_TYPE)){
+            if(lhsType == rhsType) {
+              if(! canPrimMoveCreateCommunication(ce)) {
+                if(! (lhsType->symbol->hasFlag(FLAG_EXTERN))){
+                  if(!lhsType->symbol->hasFlag(FLAG_ATOMIC_TYPE)){
                     def = ce->get(2);
                     if(CallExpr* defCe = toCallExpr(def)) {
                       if(defCe->isPrimitive() && 
