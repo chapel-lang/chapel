@@ -31,7 +31,7 @@ PRIM_BLOCK_C_FOR_LOOP   :|
                         : If-ELse
 *************************/
 
-enum GraphNodeStatus{
+enum GraphNodeStatus {
   NODE_UNKNOWN = 0, //NODE STATUS UNKNOWN
   NODE_SINGLE_WAIT_FULL,
   NODE_SINGLE_SIGNAL_FULL,
@@ -55,7 +55,7 @@ enum GraphNodeStatus{
      Which stores data of sync Points and
      use of External variables.
 **/
-struct SyncGraph{
+struct SyncGraph {
   /* TODO: Function level ID
  Will be zero for root Function.
  For Others it will give the distance of the
@@ -92,7 +92,7 @@ struct SyncGraph{
      We always sync the READS  with WRITES
   **/
   Vec<SyncGraph*> syncPoints;
-  SyncGraph(SyncGraph* i, FnSymbol *f,int lID){
+  SyncGraph(SyncGraph* i, FnSymbol *f, int lID) {
     levelID = lID;
     fnSymbol = f;
     contents.copy(i->contents);
@@ -101,7 +101,7 @@ struct SyncGraph{
     syncType = i->syncType;
     syncVar = i->syncVar;
   }
-  SyncGraph(){
+  SyncGraph() {
     child = NULL;
     fChild = NULL;
     syncType = NODE_UNKNOWN;
@@ -109,7 +109,7 @@ struct SyncGraph{
     loopNode = false;
     conditionalNode = false;
   }
-  ~SyncGraph(){}
+  ~SyncGraph() {}
 };
 
 static SyncGraph* syncGraphRoot;
@@ -117,25 +117,25 @@ static SyncGraph* syncGraphRoot;
 static void deleteSyncGraphNode(SyncGraph *node);
 static void cleanUpSyncGraph(SyncGraph *root);
 static void checkOrphanStackVar(SyncGraph *root);
-static SyncGraph* addChildNode(SyncGraph *cur,FnSymbol* fn);
-static SyncGraph* handleBlockStmt(BlockStmt* stmt,SyncGraph *cur);
-static SyncGraph* handleDefExpr(DefExpr* def,SyncGraph *cur);
-static SyncGraph* handleExpr(Expr* expr,SyncGraph *cur);
-static SyncGraph* handleFunction(FnSymbol* fn,SyncGraph *cur);
-static SyncGraph* handleBegin(FnSymbol* fn,SyncGraph* cur);
-static SyncGraph* handleCallExpr(CallExpr* fn,SyncGraph* cur);
+static SyncGraph* addChildNode(SyncGraph *cur, FnSymbol* fn);
+static SyncGraph* handleBlockStmt(BlockStmt* stmt, SyncGraph *cur);
+static SyncGraph* handleDefExpr(DefExpr* def, SyncGraph *cur);
+static SyncGraph* handleExpr(Expr* expr, SyncGraph *cur);
+static SyncGraph* handleFunction(FnSymbol* fn, SyncGraph *cur);
+static SyncGraph* handleBegin(FnSymbol* fn, SyncGraph* cur);
+static SyncGraph* handleCallExpr(CallExpr* fn, SyncGraph* cur);
 static bool isOuterVar(Symbol* sym, FnSymbol* fn);
-//bool isSymbolvarisOfInterest(Symbol* sym,Expr * node);
-//static SyncGraph* addSyncExprs(SymExpr *expr,SyncGraph *cur);
-static void linkSyncNodes(SyncGraph *signal,SyncGraph *wait);
+//bool isSymbolvarisOfInterest(Symbol* sym, Expr * node);
+//static SyncGraph* addSyncExprs(SymExpr *expr, SyncGraph *cur);
+static void linkSyncNodes(SyncGraph *signal, SyncGraph *wait);
 //bool argumentsContainsSyncVar(FnSymbol *fn);
-static SyncGraph* addSyncExprs(Expr *expr,SyncGraph *cur);
-static void addSymbolsToGraph(Expr* expr,SyncGraph *cur);
-static void collectFuncNodes(SyncGraph *cur,Vec<SyncGraph*>& funcNodes);
+static SyncGraph* addSyncExprs(Expr *expr, SyncGraph *cur);
+static void addSymbolsToGraph(Expr* expr, SyncGraph *cur);
+static void collectFuncNodes(SyncGraph *cur, Vec<SyncGraph*>& funcNodes);
 static bool containsBeginFunction(FnSymbol* fn);
-//static bool inlineCFG(SyncGraph* inlineNode,SyncGraph* branch);
-//static bool inlineCFG(SyncGraph* inlineNode,SyncGraph* branch);
-//static Vec<SyncGraph*> getCopyofGraph(SyncGraph* start,FnSymbol* f,int level);
+//static bool inlineCFG(SyncGraph* inlineNode, SyncGraph* branch);
+//static bool inlineCFG(SyncGraph* inlineNode, SyncGraph* branch);
+//static Vec<SyncGraph*> getCopyofGraph(SyncGraph* start, FnSymbol* f, int level);
 /************** HEADER ENDS *******************/
 
 /***
@@ -148,23 +148,23 @@ static bool containsBeginFunction(FnSymbol* fn);
    We are ging for recursive delete.
    We have to delete all children Nodes before deleting the Node.
 **/
-static void deleteSyncGraphNode(SyncGraph *node){
-  if(node != NULL){
+static void deleteSyncGraphNode(SyncGraph *node) {
+  if(node != NULL) {
     deleteSyncGraphNode(node->child);
     deleteSyncGraphNode(node->fChild);
     delete node;
   }
 }
 
-// static Vec<SyncGraph*> getCopyofGraph(SyncGraph* start,FnSymbol* f,int level){
+// static Vec<SyncGraph*> getCopyofGraph(SyncGraph* start, FnSymbol* f, int level) {
 //   /**
 //      TODO decide what to de when we have a fChild here
 //    **/
 //   Vec<SyncGraph*> copy;
 //   SyncGraph* node = start;
-//   while(node != NULL){
+//   while(node != NULL) {
 //     SyncGraph * newnode = new SyncGraph(node,f,level);
-//     if(copy.count() > 0){
+//     if(copy.count() > 0) {
 //       newnode->parent = copy.tail();
 //       copy.tail()->child = newnode;
 //     }
@@ -174,11 +174,11 @@ static void deleteSyncGraphNode(SyncGraph *node){
 // }
 
 
-// static bool inlineCFG(SyncGraph* inlineNode,SyncGraph* branch){
-//   if(inlineNode){
+// static bool inlineCFG(SyncGraph* inlineNode, SyncGraph* branch) {
+//   if(inlineNode) {
 //     SyncGraph *oldChild = inlineNode->child;
 //     Vec<SyncGraph*> copy = getCopyofGraph(branch,inlineNode->fnSymbol,inlineNode->levelID);
-//     if(copy.count() >0){
+//     if(copy.count() >0) {
 //       inlineNode->child = copy.head();
 //       copy.head()->parent = inlineNode;
 //       copy.tail()->child = oldChild;
@@ -192,11 +192,11 @@ static void deleteSyncGraphNode(SyncGraph *node){
 /**
    clean up the Data-Control Graph.
 **/
-static void cleanUpSyncGraph(SyncGraph *node){
+static void cleanUpSyncGraph(SyncGraph *node) {
   deleteSyncGraphNode(node);
 }
 
-static void linkSyncNodes(SyncGraph *signal,SyncGraph *wait){
+static void linkSyncNodes(SyncGraph *signal, SyncGraph *wait) {
   signal->syncPoints.add(wait);
   wait->syncPoints.add(signal);
 }
@@ -210,13 +210,13 @@ static void linkSyncNodes(SyncGraph *signal,SyncGraph *wait){
    that are created due to sync points
    and the ones that are created for embedded Functions.
 **/
-static SyncGraph* addChildNode(SyncGraph *cur, FnSymbol* fn){
+static SyncGraph* addChildNode(SyncGraph *cur, FnSymbol* fn) {
   SyncGraph* childNode = new SyncGraph();
   childNode->parent = cur;
   childNode->fnSymbol = fn;
   if(fn == cur->fnSymbol)
     cur->child = childNode;
-  else{
+  else {
     cur->fChild = childNode;
     childNode->levelID = cur->levelID + 1;
   }
@@ -224,7 +224,7 @@ static SyncGraph* addChildNode(SyncGraph *cur, FnSymbol* fn){
 }
 
 /*
-  bool argumentsContainsSyncVar(FnSymbol *fn){
+  bool argumentsContainsSyncVar(FnSymbol *fn) {
   std::vector<SymExpr*> callExprs;
   collectSymExprs(fn, callExprs);
   return true;
@@ -250,71 +250,71 @@ static SyncGraph* addChildNode(SyncGraph *cur, FnSymbol* fn){
    NOTE : TODO: Also we need to remove syncing with duplicate
    write to the single value.
 **/
-static SyncGraph* addSyncExprs(Expr *expr,SyncGraph *cur){
+static SyncGraph* addSyncExprs(Expr *expr, SyncGraph *cur) {
   std::vector<CallExpr*> callExprs;
   collectCallExprs(expr, callExprs);
   FnSymbol* curFun = expr->getFunction();
-  for_vector(CallExpr, call, callExprs) {
-    if(call->theFnSymbol() != NULL){
-      if(!strcmp(call->theFnSymbol()->name,"=")){
+  for_vector (CallExpr, call, callExprs) {
+    if (call->theFnSymbol() != NULL) {
+      if (!strcmp(call->theFnSymbol()->name,"=")) {
         SymExpr* symExpr = toSymExpr(call->getNextExpr(call->getFirstExpr()));
         std::string symName;
-        if(symExpr != NULL){
+        if (symExpr != NULL) {
           symName = symExpr->var->name;
         }
         std::vector<CallExpr*> intCalls;
-        collectCallExprs(call->theFnSymbol(),intCalls);
-        for_vector(CallExpr,intCall,intCalls){
-          if(intCall->theFnSymbol() != NULL){
-            if(!strcmp(intCall->theFnSymbol()->name,"writeEF")){
+        collectCallExprs(call->theFnSymbol(), intCalls);
+        for_vector (CallExpr, intCall, intCalls) {
+          if (intCall->theFnSymbol() != NULL) {
+            if (!strcmp(intCall->theFnSymbol()->name, "writeEF")) {
               std::vector<CallExpr*> markCalls;
-              collectCallExprs(intCall->theFnSymbol(),markCalls);
-              for_vector(CallExpr,markCall,markCalls){
-                if(markCall->isPrimitive(PRIM_SINGLE_SIGNAL_FULL)){
+              collectCallExprs(intCall->theFnSymbol(), markCalls);
+              for_vector (CallExpr, markCall, markCalls){
+                if (markCall->isPrimitive(PRIM_SINGLE_SIGNAL_FULL)) {
                   cur->syncVar = symName;
                   cur->syncType = NODE_SINGLE_SIGNAL_FULL;
                   cur->syncExpr = call;
-                  cur = addChildNode(cur,curFun);
-                }else if(markCall->isPrimitive(PRIM_SYNC_SIGNAL_FULL)){
+                  cur = addChildNode(cur, curFun);
+                } else if (markCall->isPrimitive(PRIM_SYNC_SIGNAL_FULL)) {
                   cur->syncVar = symName;
                   cur->syncType = NODE_SYNC_SIGNAL_FULL;
                   cur->syncExpr = call;
-                  cur = addChildNode(cur,curFun);
+                  cur = addChildNode(cur, curFun);
                 }
               }
             }
 	  }
         }
-      }else if(!strcmp(call->theFnSymbol()->name,"_statementLevelSymbol")){
+      } else if (!strcmp(call->theFnSymbol()->name, "_statementLevelSymbol")) {
         SymExpr* symExpr = toSymExpr(call->getNextExpr(call->getFirstExpr()));
         std::string symName;
-        if(symExpr != NULL){
+        if (symExpr != NULL) {
           symName = symExpr->var->name;
         }
         std::vector<CallExpr*> intCalls;
-        collectCallExprs(call->theFnSymbol(),intCalls);
-        for_vector(CallExpr,intCall,intCalls){
-          if(intCall->theFnSymbol() != NULL){
-            if(!strcmp(intCall->theFnSymbol()->name,"readFF")){
+        collectCallExprs(call->theFnSymbol(), intCalls);
+        for_vector (CallExpr, intCall, intCalls) {
+          if (intCall->theFnSymbol() != NULL) {
+            if (!strcmp(intCall->theFnSymbol()->name, "readFF")) {
               std::vector<CallExpr*> markCalls;
-              collectCallExprs(intCall->theFnSymbol(),markCalls);
-              for_vector(CallExpr,markCall,markCalls){
-                if(markCall->isPrimitive(PRIM_SINGLE_WAIT_FULL)){
+              collectCallExprs(intCall->theFnSymbol(), markCalls);
+              for_vector (CallExpr, markCall, markCalls){
+                if(markCall->isPrimitive(PRIM_SINGLE_WAIT_FULL)) {
                   cur->syncVar = symName;
                   cur->syncType = NODE_SINGLE_WAIT_FULL;
                   cur->syncExpr = call;
-                  cur = addChildNode(cur,curFun);
+                  cur = addChildNode(cur, curFun);
                 }
               }
-            }else if(!strcmp(intCall->theFnSymbol()->name,"readFE")){
+            } else if (!strcmp(intCall->theFnSymbol()->name, "readFE")) {
               std::vector<CallExpr*> markCalls;
-              collectCallExprs(intCall->theFnSymbol(),markCalls);
-              for_vector(CallExpr,markCall,markCalls){
-                if(markCall->isPrimitive(PRIM_SYNC_SIGNAL_EMPTY)){
+              collectCallExprs(intCall->theFnSymbol(), markCalls);
+              for_vector (CallExpr, markCall, markCalls) {
+                if (markCall->isPrimitive(PRIM_SYNC_SIGNAL_EMPTY)) {
                   cur->syncVar = symName;
                   cur->syncType = NODE_SYNC_SIGNAL_EMPTY;
                   cur->syncExpr = call;
-                  cur = addChildNode(cur,curFun);
+                  cur = addChildNode(cur, curFun);
                 }
               }
             }
@@ -336,15 +336,15 @@ static bool isOuterVar(Symbol* sym, FnSymbol* fn) {
   /**
      To do handle function calls.
   **/
-  if( sym->hasFlag(FLAG_TEMP)          || // exclude these
-      sym->hasFlag(FLAG_CONST)         ||
-      sym->hasFlag(FLAG_TYPE_VARIABLE)     // 'type' aliases or formals
-      )
+  if ( sym->hasFlag(FLAG_TEMP)          || // exclude these
+       sym->hasFlag(FLAG_CONST)         ||
+       sym->hasFlag(FLAG_TYPE_VARIABLE)     // 'type' aliases or formals
+     )
     return false;
 
-  if(isArgSymbol(sym)){
+  if (isArgSymbol(sym)) {
     ArgSymbol* argSym = toArgSymbol(sym);
-    if(argSym->intent == INTENT_REF){
+    if (argSym->intent == INTENT_REF) {
       // Symbol* parent = sym->defPoint->parentSymbol;
       return true;
     }
@@ -369,7 +369,7 @@ static bool isOuterVar(Symbol* sym, FnSymbol* fn) {
     return true;
     if (!parent->defPoint)
     return false;
-    INT_ASSERT(parent->defPoint->parentSymbol &&
+    INT_ASSERT (parent->defPoint->parentSymbol &&
     parent->defPoint->parentSymbol != parent); // ensure termination
     parent = parent->defPoint->parentSymbol;
     }
@@ -381,29 +381,29 @@ static bool isOuterVar(Symbol* sym, FnSymbol* fn) {
 }
 
 
-static void addSymbolsToGraph(Expr* expr,SyncGraph *cur){
+static void addSymbolsToGraph(Expr* expr, SyncGraph *cur) {
   std::vector<SymExpr*> symExprs;
   collectSymExprs(expr, symExprs);
-  for_vector(SymExpr, se, symExprs) {
+  for_vector (SymExpr, se, symExprs) {
     Symbol* sym = se->var;
-    if(isOuterVar(sym,sym->getFunction())){
+    if (isOuterVar(sym, sym->getFunction())) {
       cur->contents.add_exclusive(se);
     }
   }
-  cur = addSyncExprs(expr,cur);
+  cur = addSyncExprs(expr, cur);
 }
 
 
-static void collectFuncNodes(SyncGraph *cur,Vec<SyncGraph*>& funcNodes){
-  if(cur->fChild != NULL){
+static void collectFuncNodes(SyncGraph *cur, Vec<SyncGraph*>& funcNodes) {
+  if (cur->fChild != NULL) {
     funcNodes.add(cur->fChild);
     collectFuncNodes(cur->fChild,funcNodes);
   }
-  if(cur->child != NULL)
+  if (cur->child != NULL)
     collectFuncNodes(cur->child,funcNodes);
 }
 
-static void checkOrphanStackVar(SyncGraph *root){
+static void checkOrphanStackVar(SyncGraph *root) {
   /*
     TODO:
     We want to sync only begin functions right now.
@@ -412,7 +412,7 @@ static void checkOrphanStackVar(SyncGraph *root){
   Vec<SyncGraph*> funcNodes;
   funcNodes.add(root);
   collectFuncNodes(root,funcNodes);
-  forv_Vec(SyncGraph,funcNode,funcNodes){
+  forv_Vec (SyncGraph,funcNode,funcNodes) {
     SyncGraph * curNode = funcNode;
     /**
        An optimization: we will not process the thread
@@ -422,68 +422,69 @@ static void checkOrphanStackVar(SyncGraph *root){
     /* Initialize sync points with each Thread */
     Map<FnSymbol*,SyncGraph*> taskSyncPoints;
     Map<FnSymbol*,Vec<SyncGraph*>* > syncedNodes;
-    forv_Vec(SyncGraph,nextFuncNode,funcNodes){  
-      if(processTask == 1){
+    forv_Vec (SyncGraph,nextFuncNode,funcNodes) {  
+      if (processTask == 1) {
         taskSyncPoints.put(nextFuncNode->fnSymbol,nextFuncNode);
 	syncedNodes.put(nextFuncNode->fnSymbol,new Vec<SyncGraph*>());
-      }else if(nextFuncNode == funcNode){
+      } else if (nextFuncNode == funcNode) {
         processTask  = 1;
       }
     }
-    while(curNode != NULL){
+    while (curNode != NULL) {
       /*
         We need to consider only about syncVars
       */
-      if(!(curNode->syncVar.empty())){
+      if (!(curNode->syncVar.empty())) {
         std::string syncVar = curNode->syncVar;
         int processnextTask = 0;
-        forv_Vec(SyncGraph,nextFuncNode,funcNodes){
-          if(processnextTask == 1){
-            if(curNode->syncType ==  NODE_SINGLE_WAIT_FULL){
+        forv_Vec (SyncGraph, nextFuncNode, funcNodes) {
+          if (processnextTask == 1) {
+            if (curNode->syncType ==  NODE_SINGLE_WAIT_FULL) {
               /*
                 Since there is no state change in SINGLE variable after
                 being full we have to search from begining.
               */
               SyncGraph* candidateSyncNode = nextFuncNode;
-              while(candidateSyncNode  != NULL){
-                if(syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SINGLE_SIGNAL_FULL){
-                  linkSyncNodes(candidateSyncNode,curNode);
+              while (candidateSyncNode  != NULL) {
+                if (syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SINGLE_SIGNAL_FULL) {
+                  linkSyncNodes(candidateSyncNode, curNode);
                 }
                 candidateSyncNode = candidateSyncNode->child;
               }
-            }else if(curNode->syncType ==  NODE_SINGLE_SIGNAL_FULL){
+            } else if (curNode->syncType ==  NODE_SINGLE_SIGNAL_FULL) {
               SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
-              while(candidateSyncNode  != NULL){
-                if(syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SINGLE_WAIT_FULL){
-                  linkSyncNodes(curNode,candidateSyncNode);
+              while (candidateSyncNode  != NULL) {
+                if (syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SINGLE_WAIT_FULL) {
+                  linkSyncNodes(curNode, candidateSyncNode);
                 }
                 candidateSyncNode = candidateSyncNode->child;
               }
-            }else  if(curNode->syncType == NODE_SYNC_SIGNAL_FULL){
+            } else  if (curNode->syncType == NODE_SYNC_SIGNAL_FULL) {
               SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
-              while(candidateSyncNode  != NULL){
-                if(syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SYNC_SIGNAL_EMPTY){
-                  linkSyncNodes(candidateSyncNode,curNode);
+              while (candidateSyncNode  != NULL) {
+                if (syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SYNC_SIGNAL_EMPTY) {
+                  linkSyncNodes(candidateSyncNode, curNode);
                 }
                 candidateSyncNode = candidateSyncNode->child;
               }
-            }else if(curNode->syncType == NODE_SYNC_SIGNAL_EMPTY){
+            } else if (curNode->syncType == NODE_SYNC_SIGNAL_EMPTY) {
               SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
-              while(candidateSyncNode  != NULL){
-                if(syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SYNC_SIGNAL_FULL){
-                  linkSyncNodes(curNode,candidateSyncNode);
+              while (candidateSyncNode  != NULL) {
+                if (syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SYNC_SIGNAL_FULL) {
+                  linkSyncNodes(curNode, candidateSyncNode);
                 }
                 candidateSyncNode = candidateSyncNode->child;
               }
             }
-          }else if(nextFuncNode == funcNode){
+          } else if (nextFuncNode == funcNode) {
             processnextTask  = 1;
           }
         }
-        if(curNode->syncPoints.count() == 0 && curNode->syncType != NODE_SINGLE_WAIT_FULL){
-          USR_WARN(curNode->syncExpr,"No matching Syncronization Expression for this. This could result in the program entering an infinite wait.");
-        }else if(curNode->syncPoints.count() == 1){
-          taskSyncPoints.put(curNode->syncPoints.only()->fnSymbol,curNode->syncPoints.only());
+        if (curNode->syncPoints.count() == 0 && curNode->syncType != NODE_SINGLE_WAIT_FULL) {
+          USR_WARN(curNode->syncExpr, 
+		   "No matching Syncronization Expression for this. This could result in the program entering an infinite wait.");
+        } else if (curNode->syncPoints.count() == 1) {
+          taskSyncPoints.put(curNode->syncPoints.only()->fnSymbol, curNode->syncPoints.only());
         }
       }
       curNode = curNode->child;
@@ -493,18 +494,20 @@ static void checkOrphanStackVar(SyncGraph *root){
      TODO: We need not analyze the main thread for unsyncronized
   **/
   funcNodes.remove(0);
-  forv_Vec(SyncGraph,funcNode,funcNodes){
+  forv_Vec (SyncGraph, funcNode, funcNodes) {
     SyncGraph * curNode = funcNode;
-    while(curNode != NULL){
-      if(curNode->contents.length() > 0){
-        if(curNode->syncType == NODE_UNKNOWN){
+    while (curNode != NULL) {
+      if (curNode->contents.length() > 0) {
+        if (curNode->syncType == NODE_UNKNOWN) {
           /* No sync point
              report error directly
           */
-          forv_Vec(SymExpr,unsynced,curNode->contents){
-            USR_WARN(unsynced,"Unsynchronized use of external variable(%s). This could result in incorrect/unintended program behaviour.",unsynced->var->name);
+          forv_Vec (SymExpr, unsynced, curNode->contents) {
+            USR_WARN(unsynced,
+		     "Unsynchronized use of external variable(%s). This could result in incorrect/unintended program behaviour.",
+		     unsynced->var->name);
           }
-        }else{
+        } else {
           /** All syncronization statements should be
               linked with Root Function **/
         }
@@ -515,18 +518,18 @@ static void checkOrphanStackVar(SyncGraph *root){
 }
 
 
-static SyncGraph* handleDefExpr(DefExpr* def,SyncGraph *cur){
-  if(isFnSymbol(def->sym)){
+static SyncGraph* handleDefExpr(DefExpr* def, SyncGraph *cur){
+  if (isFnSymbol(def->sym)) {
     FnSymbol* fn = toFnSymbol(def->sym);
-    if(fn->hasFlag(FLAG_BEGIN)){
-      handleBegin(fn,cur);
+    if (fn->hasFlag(FLAG_BEGIN)) {
+      handleBegin(fn, cur);
       cur->syncType = NODE_BLOCK_BEGIN;
-    }else{
-      handleFunction(fn,cur);
+    } else {
+      handleFunction(fn, cur);
       cur->syncType = NODE_INTERNAL_FUNCTIONCALL;
     }
-    cur = addChildNode(cur,def->getFunction());
-  }else{
+    cur = addChildNode(cur, def->getFunction());
+  } else {
     //     addSymbolsToGraph(def,cur);
   }
   return cur;
@@ -534,18 +537,18 @@ static SyncGraph* handleDefExpr(DefExpr* def,SyncGraph *cur){
 
 
 
-static SyncGraph* handleBlockStmt(BlockStmt* stmt,SyncGraph *cur){
-  if(stmt->body.length != 0 ){
-    for_alist(node,stmt->body){
-      cur = handleExpr(node,cur);
+static SyncGraph* handleBlockStmt(BlockStmt* stmt, SyncGraph *cur){
+  if (stmt->body.length != 0 ) {
+    for_alist (node, stmt->body) {
+      cur = handleExpr(node, cur);
     }
   }
   return cur;
 }
 
 static SyncGraph* handleCallExpr(CallExpr* callExpr, SyncGraph *cur){
-  if(callExpr->theFnSymbol() != NULL &&
-     callExpr->theFnSymbol()->getModule()->modTag == MOD_USER){
+  if (callExpr->theFnSymbol() != NULL &&
+     callExpr->theFnSymbol()->getModule()->modTag == MOD_USER) {
     /**
        TODO:
        We are getting duplicate entries for the function calls.
@@ -553,43 +556,43 @@ static SyncGraph* handleCallExpr(CallExpr* callExpr, SyncGraph *cur){
        Also the begin functions also create a function call at
        the end of the definition of the begin function.
     **/
-  }else{
-    addSymbolsToGraph(callExpr,cur);
+  } else {
+    addSymbolsToGraph(callExpr, cur);
   }
   return cur;
 }
 
-static SyncGraph* handleExpr(Expr* expr,SyncGraph *cur){
-  if(NamedExpr* named = toNamedExpr(expr)){
-    cur = handleExpr(named->actual,cur);
-  }else if(DefExpr* def = toDefExpr(expr)){
-    cur  = handleDefExpr(def,cur);
-  }else if(BlockStmt* block = toBlockStmt(expr)){
-    cur = handleBlockStmt(block,cur);
-  }else if(CallExpr* callExpr = toCallExpr(expr)){
-    cur = handleCallExpr(callExpr,cur);
-  }else{
-    addSymbolsToGraph(expr,cur);
+static SyncGraph* handleExpr(Expr* expr, SyncGraph *cur){
+  if (NamedExpr* named = toNamedExpr(expr)) {
+    cur = handleExpr(named->actual, cur);
+  } else if (DefExpr* def = toDefExpr(expr)) {
+    cur  = handleDefExpr(def, cur);
+  } else if (BlockStmt* block = toBlockStmt(expr)) {
+    cur = handleBlockStmt(block, cur);
+  } else if (CallExpr* callExpr = toCallExpr(expr)) {
+    cur = handleCallExpr(callExpr, cur);
+  } else {
+    addSymbolsToGraph(expr, cur);
   }
   return cur;
 }
 
 
 
-static SyncGraph* handleBegin(FnSymbol* fn,SyncGraph* cur){
-  SyncGraph* childNode = addChildNode(cur,fn);
-  handleBlockStmt(fn->body,childNode);
+static SyncGraph* handleBegin(FnSymbol* fn, SyncGraph* cur) {
+  SyncGraph* childNode = addChildNode(cur, fn);
+  handleBlockStmt(fn->body, childNode);
   return cur;
 }
 
-static SyncGraph* handleFunction(FnSymbol* fn,SyncGraph *cur=NULL){
+static SyncGraph* handleFunction(FnSymbol* fn, SyncGraph *cur=NULL) {
   SyncGraph* newNode = NULL;
-  if(cur == NULL){
+  if (cur == NULL) {
     newNode = cur  = syncGraphRoot = new SyncGraph();
-  }else{
-    newNode = addChildNode(cur,fn);
+  } else {
+    newNode = addChildNode(cur, fn);
   }
-  handleBlockStmt(fn->body,newNode);
+  handleBlockStmt(fn->body, newNode);
   return cur;
 }
 
@@ -600,7 +603,7 @@ static SyncGraph* handleFunction(FnSymbol* fn,SyncGraph *cur=NULL){
 //   if(root == NULL)
 //     cur = root = new SyncGraph();
 //   else
-//     cur = addChildNode(cur,fn);
+//     cur = addChildNode(cur, fn);
 //   handleFunction
 //   checkOrphanStackVar(root);
 //   cleanUpSyncGraph(root);
@@ -612,15 +615,15 @@ static SyncGraph* handleFunction(FnSymbol* fn,SyncGraph *cur=NULL){
    If the current function is begin we return False since,
    we have already (recursively) added its parent into the list.
 */
-static bool containsBeginFunction(FnSymbol* fn){
-  if (!(fn->getModule()->modTag == MOD_USER) || fn->hasFlag(FLAG_BEGIN)){
+static bool containsBeginFunction(FnSymbol* fn) {
+  if (!(fn->getModule()->modTag == MOD_USER) || fn->hasFlag(FLAG_BEGIN)) {
     return false;
   }
   std::vector<CallExpr*> callExprs;
   collectCallExprs(fn, callExprs);
-  for_vector(CallExpr, call, callExprs) {
+  for_vector (CallExpr, call, callExprs) {
     FnSymbol* caleeFn = call->theFnSymbol();
-    if(caleeFn != NULL && caleeFn->hasFlag(FLAG_BEGIN)){
+    if (caleeFn != NULL && caleeFn->hasFlag(FLAG_BEGIN)) {
       return true;
     }
   }
@@ -630,14 +633,14 @@ static bool containsBeginFunction(FnSymbol* fn){
 void checkUseAfterLexScope(){
   // collect all functions that needs to be analyzed
   Vec<FnSymbol*> aFnSymbols;
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (containsBeginFunction(fn) == true){
+  forv_Vec (FnSymbol, fn, gFnSymbols) {
+    if (containsBeginFunction(fn) == true) {
       aFnSymbols.add_exclusive(fn);
     }
   }
-  forv_Vec(FnSymbol, fn, aFnSymbols) {
+  forv_Vec (FnSymbol, fn, aFnSymbols) {
     syncGraphRoot =  new SyncGraph();
-    handleFunction(fn,syncGraphRoot);
+    handleFunction(fn, syncGraphRoot);
     checkOrphanStackVar(syncGraphRoot);
     cleanUpSyncGraph(syncGraphRoot);
   }
