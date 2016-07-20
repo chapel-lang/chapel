@@ -45,7 +45,7 @@
     using std::memory_order_acq_rel;
     using std::memory_order_seq_cst;
     using std::memory_order;
-#else
+  #else
     #define NO_STDATOMIC
     #define Atomic(T) T
     #define ATOMIC_FLAG_INIT { false }
