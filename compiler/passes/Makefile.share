@@ -21,10 +21,10 @@ GEN_HEADERS = \
 PASSES_SRCS = \
         addInitGuards.cpp \
         buildDefaultFunctions.cpp \
+        checkUseAfterLexScope.cpp \
         checkNormalized.cpp \
         checkParsed.cpp \
         checkResolved.cpp \
-        checkOrphanStackVariable.cpp \
         cleanup.cpp \
         codegen.cpp \
         createTaskFunctions.cpp \
