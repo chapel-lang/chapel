@@ -1620,7 +1620,7 @@ computeGenericSubs(SymbolMap &subs,
       // check for field with specified generic type
       //
       if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && formal->type != dtAny &&
-          strcmp(formal->name, "outer") && strcmp(formal->name, "meme") &&
+          strcmp(formal->name, "outer") && !formal->hasFlag(FLAG_IS_MEME) &&
           (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
         USR_FATAL(formal, "invalid generic type specification on class field");
 
@@ -2132,7 +2132,7 @@ resolve_type_constructor(FnSymbol* fn, CallInfo& info) {
     SET_LINENO(fn);
     CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
     for_formals(formal, fn) {
-      if (strcmp(formal->name, "meme")) {
+      if (!formal->hasFlag(FLAG_IS_MEME)) {
         if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
           if (formal->instantiatedFrom) {
             typeConstructorCall->insertAtTail(formal->type->symbol);
