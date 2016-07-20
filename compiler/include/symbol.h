@@ -635,6 +635,8 @@ extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gChplHereAlloc;
 extern FnSymbol *gChplHereFree;
 extern FnSymbol *gChplDoDirectExecuteOn;
+extern FnSymbol *gGenericTupleTypeCtor;
+extern FnSymbol *gGenericTupleInit;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

@@ -36,6 +36,8 @@
 #include "symbol.h"
 #include "vec.h"
 
+#include "iterator.h"
+
 #include "AstVisitor.h"
 
 static bool isDerivedType(Type* type, Flag flag);
@@ -576,6 +578,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
   fields(),
   inherits(),
   outer(NULL),
+  iteratorInfo(NULL),
   doc(NULL)
 {
   if (aggregateTag == AGGREGATE_CLASS) { // set defaultValue to nil to keep it
@@ -1932,9 +1935,11 @@ bool isAtomicType(const Type* t) {
 bool isRefIterType(Type* t) {
   Symbol* iteratorRecord = NULL;
 
-  if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS))
-    iteratorRecord = t->defaultInitializer->getFormal(1)->type->symbol;
-  else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+  if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+    AggregateType* at = toAggregateType(t);
+    FnSymbol* getIterator = at->iteratorInfo->getIterator;
+    iteratorRecord = getIterator->getFormal(1)->type->symbol;
+  } else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     iteratorRecord = t->symbol;
 
   if (iteratorRecord)

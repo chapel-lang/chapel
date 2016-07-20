@@ -116,200 +116,6 @@ copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbo
   }
 }
 
-
-static void
-instantiate_tuple_signature(FnSymbol* fn) {
-  AggregateType* tuple = toAggregateType(fn->retType);
-  //
-  // tuple is the return type for the type constructor
-  // tuple is NULL for the default constructor
-  //
-
-  fn->numPreTupleFormals = fn->formals.length;
-  
-  int64_t size = toVarSymbol(fn->substitutions.v[0].value)->immediate->int_value();
-  
-  for (int i = 1; i <= size; ++i) {
-    const char* name = astr("x", istr(i));
-    ArgSymbol* formal = new ArgSymbol(INTENT_BLANK, name, dtAny, NULL, new SymExpr(gTypeDefaultToken));
-    
-    if (tuple) {
-      formal->addFlag(FLAG_TYPE_VARIABLE);
-      tuple->fields.insertAtTail(new DefExpr(new VarSymbol(name)));
-    }
-    
-    fn->insertFormalAtTail(formal);
-  }
-  
-  fn->removeFlag(FLAG_TUPLE);
-  
-  fn->addFlag(FLAG_PARTIAL_TUPLE);
-  if (tuple)
-    fn->addFlag(FLAG_ALLOW_REF);
-}
-
-
-static void
-instantiate_tuple_body(FnSymbol* fn) {
-  Expr* last = fn->body->body.last();
-  int numPreTupleFormals = fn->numPreTupleFormals;
-
-  for (int i = numPreTupleFormals + 1; i <= fn->formals.length; ++i) {
-    ArgSymbol* formal = fn->getFormal(i);
-    
-    last->insertBefore(new CallExpr(PRIM_SET_MEMBER, fn->_this, new_IntSymbol(i - numPreTupleFormals), formal));
-  }
-  
-  fn->removeFlag(FLAG_PARTIAL_TUPLE);
-}
-
-
-static void
-getTupleArgAndType(FnSymbol* fn, ArgSymbol*& arg, AggregateType*& ct) {
-  INT_ASSERT(fn->numFormals() == 1); // expected of the original function
-  arg = fn->getFormal(1);
-  ct = toAggregateType(arg->type);
-  INT_ASSERT(!isReferenceType(ct));
-}
-
-static void
-instantiate_tuple_hash( FnSymbol* fn) {
-  ArgSymbol* arg;
-  AggregateType* ct;
-  getTupleArgAndType(fn, arg, ct);
-
-  CallExpr* call = NULL;
-  bool first = true;
-  for (int i=1; i<ct->fields.length; i++) {
-    CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i)); 
-    if (first) {
-      call =  new CallExpr( "chpl__defaultHash", field_access);
-      first = false;
-    } else {
-      call = new CallExpr( "^", 
-                           new CallExpr( "chpl__defaultHash",
-                                         field_access),
-                           new CallExpr( "<<",
-                                         call,
-                                         new_IntSymbol(17)));
-    }
-  }
-  
-  // YAH, make sure that we do not return a negative hash value for now
-  call = new CallExpr( "&", new_IntSymbol( 0x7fffffffffffffffLL, INT_SIZE_64), call);
-  CallExpr* ret = new CallExpr(PRIM_RETURN, new CallExpr("_cast", dtInt[INT_SIZE_64]->symbol, call));
-  
-  fn->body->replace( new BlockStmt( ret));
-  normalize(fn);
-}
-
-static void
-instantiate_tuple_init(FnSymbol* fn) {
-  ArgSymbol* arg;
-  AggregateType* ct;
-  getTupleArgAndType(fn, arg, ct);
-  if (!arg->hasFlag(FLAG_TYPE_VARIABLE))
-    INT_FATAL(fn, "_defaultOf function not provided a type argument");
-
-  // Similar to build_record_init_function in buildDefaultFunctions, we need
-  // to call the type specified default initializer
-  CallExpr* call = new CallExpr(ct->defaultInitializer);
-  BlockStmt* block = new BlockStmt();
-  
-  // Need to insert all required arguments into this call
-  for_formals(formal, ct->defaultInitializer) {
-    VarSymbol* tmp = newTemp(formal->name);
-    if (!strcmp(formal->name, "size"))
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_QUERY_PARAM_FIELD, arg, new_CStringSymbol(formal->name))));
-    else if (!formal->hasFlag(FLAG_IS_MEME)) {
-      if (formal->isParameter()) {
-        tmp->addFlag(FLAG_PARAM);
-      }
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_INIT, formal->type->symbol)));
-    }
-    block->insertAtHead(new DefExpr(tmp));
-    call->insertAtTail(new NamedExpr(formal->name, new SymExpr(tmp)));
-  }
-  block->insertAtTail(new CallExpr(PRIM_RETURN, call));
-  fn->body->replace(block);
-  normalize(fn);
-}
-
-static void
-instantiate_tuple_unref(FnSymbol* fn)
-{
-  ArgSymbol* arg;
-  AggregateType* ct;
-  getTupleArgAndType(fn, arg, ct);
-
-  CallExpr *call = new CallExpr("_build_tuple");
-  BlockStmt* block = new BlockStmt();
-
-  for (int i=1; i<ct->fields.length; i++) {
-    CallExpr* member = new CallExpr(arg, new_IntSymbol(i));
-    DefExpr* def = toDefExpr(ct->fields.get(i+1));
-    INT_ASSERT(def);
-    if (isReferenceType(def->sym->type))
-      // If it is a reference, copy construct it
-      call->insertAtTail(new CallExpr("chpl__initCopy", member));
-    else
-      // Otherwise, bit copy it
-      // Since this is only used as part of returning,
-      // any non-ref tuple elements can be PRIM_MOVE'd
-      // without harm.
-      call->insertAtTail(member);
-  }
-
-  block->insertAtTail(new CallExpr(PRIM_RETURN, call));
-  fn->body->replace(block);
-  normalize(fn);
-}
-
-
-static void
-instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
-                                       const char* build_tuple_fun,
-                                       const char* copy_fun)
-{
-  ArgSymbol* arg;
-  AggregateType* ct;
-  getTupleArgAndType(fn, arg, ct);
-
-  CallExpr *call = new CallExpr(build_tuple_fun);
-  BlockStmt* block = new BlockStmt();
-  
-  for (int i=1; i<ct->fields.length; i++) {
-    CallExpr* member = new CallExpr(arg, new_IntSymbol(i));
-    DefExpr* def = toDefExpr(ct->fields.get(i+1));
-    INT_ASSERT(def);
-    if (isReferenceType(def->sym->type))
-      // If it is a reference, pass it through.
-      call->insertAtTail(member);
-    else
-      // Otherwise, construct it.
-      call->insertAtTail(new CallExpr(copy_fun, member));
-  }
-  
-  block->insertAtTail(new CallExpr(PRIM_RETURN, call));
-  fn->body->replace(block);
-  normalize(fn);
-}
-
-static void
-instantiate_tuple_initCopy(FnSymbol* fn) {
-  instantiate_tuple_initCopy_or_autoCopy(fn,
-                                         "_build_tuple",
-                                         "chpl__initCopy");
-}
-
-static void
-instantiate_tuple_autoCopy(FnSymbol* fn) {
-  instantiate_tuple_initCopy_or_autoCopy(fn,
-                                         "_build_tuple_always_allow_ref",
-                                         "chpl__autoCopy");
-}
-
-
 static TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
   if (fn->hasEitherFlag(FLAG_TUPLE,FLAG_PARTIAL_TUPLE)) {
@@ -625,6 +431,7 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
     }
   }
 
+  /*
   //
   // mark star tuples, add star flag
   //
@@ -648,6 +455,8 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
     if (markStar)
       newType->symbol->addFlag(FLAG_STAR_TUPLE);
   }
+
+  */
 
   renameInstantiatedType(newType->symbol, subs, fn);
 
@@ -701,6 +510,41 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
  */
 FnSymbol*
 instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
+
+  //
+  // Handle tuples explicitly
+  //
+  if (fn->hasFlag(FLAG_TUPLE)) {
+    std::vector<TypeSymbol*> args;
+    int i = 0;
+    size_t actualN = 0;
+
+    //gdbShouldBreakHere();
+
+    for_actuals(actual, call) {
+      if (i == 0) {
+        // First argument is the tuple size
+        SymExpr* se = toSymExpr(actual);
+        VarSymbol* v = toVarSymbol(se->var);
+        actualN = v->immediate->int_value();
+      } else {
+        // Subsequent arguments are tuple types.
+        Type* t = actual->typeInfo();
+        args.push_back(t->symbol);
+      }
+      i++;
+    }
+    INT_ASSERT(actualN == args.size());
+    TypeSymbol* tupleTypeSym = getTupleTypeSymbol(args);
+
+    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
+      return tupleTypeSym->type->defaultTypeConstructor;
+    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
+      return getTupleConstructor(args);
+
+    INT_ASSERT(false); // what other functions are marked with FLAG_TUPLE?
+  }
+
   form_Map(SymbolMapElem, e, subs) {
     if (TypeSymbol* ts = toTypeSymbol(e->value)) {
       if (ts->type->symbol->hasFlag(FLAG_GENERIC))
@@ -853,9 +697,11 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   
   // Note: scopeResolve sets FLAG_TUPLE is for the type constructor
   // and the constructor for the tuple record.
+  /*
   if (fn->hasFlag(FLAG_TUPLE)) {
+    gdbShouldBreakHere();
     instantiate_tuple_signature(newFn);
-  }
+  }*/
 
   if (!strcmp(fn->name, "_defaultOf") &&
       fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
@@ -915,9 +761,9 @@ instantiateBody(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_PARTIAL_COPY)) {
     fn->finalizeCopy();
 
-    if (fn->hasFlag(FLAG_PARTIAL_TUPLE)) {
+    /*if (fn->hasFlag(FLAG_PARTIAL_TUPLE)) {
       instantiate_tuple_body(fn);
-    }
+    }*/
   }
 }
 

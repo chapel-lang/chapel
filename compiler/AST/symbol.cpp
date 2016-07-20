@@ -95,6 +95,9 @@ FnSymbol *gPrintModuleInitFn = NULL;
 FnSymbol* gChplHereAlloc = NULL;
 FnSymbol* gChplHereFree = NULL;
 FnSymbol* gChplDoDirectExecuteOn = NULL;
+FnSymbol *gGenericTupleTypeCtor = NULL;
+FnSymbol *gGenericTupleInit = NULL;
+
 
 std::map<FnSymbol*,int> ftableMap;
 Vec<FnSymbol*> ftableVec;
@@ -1506,8 +1509,14 @@ FnSymbol::FnSymbol(const char* initName) :
 
 
 FnSymbol::~FnSymbol() {
-  if (iteratorInfo)
+  if (iteratorInfo) {
+    // Also set iterator class and iterator record iteratorInfo = NULL.
+    if (iteratorInfo->iclass)
+      iteratorInfo->iclass->iteratorInfo = NULL;
+    if (iteratorInfo->irecord)
+      iteratorInfo->irecord->iteratorInfo = NULL;
     delete iteratorInfo;
+  }
   BasicBlock::clear(this);
   delete basicBlocks; basicBlocks = 0;
   if (calledBy)
