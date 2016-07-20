@@ -49,8 +49,10 @@ module ChapelTuple {
 
   // tuple type
   pragma "build tuple"
-  inline proc _build_tuple(type t...) type
-    return t;
+  pragma "build tuple type"
+  inline proc _build_tuple(type t...) type {
+    // body inserted during generic instantiation
+  }
 
   // tuple value copying in the values (no refs)
   pragma "build tuple"
@@ -64,22 +66,14 @@ module ChapelTuple {
   inline proc _build_tuple_always_allow_ref(x...)
     return x;
  
-  // homogeneous tuple type
+   // homogeneous tuple type
+  pragma "build tuple"
+  pragma "build tuple type"
+  pragma "star tuple"
   proc *(param p: int, type t) type {
-    var oneTuple: _build_tuple(t);
-    proc _fill(param p: int, x: _tuple) {
-      if x.size == p then
-        return x;
-      else if 2*x.size <= p then
-        return _fill(p, ((...x), (...x)));
-      else
-        return _fill(p, ((...x), (..._fill(p-x.size, oneTuple))));
-    }
-    if p <= 0 then
-      compilerError("tuple must have positive size");
-    return _fill(p, oneTuple).type;
+    // body inserted during generic instantiation
   }
-  
+
   pragma "compiler generated"
   proc *(type t, param p: int) {
     compilerError("<type>*<param int> not supported.  If you're trying to specify a homogeneous tuple type, use <param int>*<type>.");

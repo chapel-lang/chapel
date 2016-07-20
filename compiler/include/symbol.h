@@ -637,6 +637,8 @@ extern FnSymbol *gChplHereFree;
 extern FnSymbol *gChplDoDirectExecuteOn;
 extern FnSymbol *gGenericTupleTypeCtor;
 extern FnSymbol *gGenericTupleInit;
+extern FnSymbol *gBuildTupleType;
+extern FnSymbol *gBuildStarTupleType;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

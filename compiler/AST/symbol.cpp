@@ -97,6 +97,9 @@ FnSymbol* gChplHereFree = NULL;
 FnSymbol* gChplDoDirectExecuteOn = NULL;
 FnSymbol *gGenericTupleTypeCtor = NULL;
 FnSymbol *gGenericTupleInit = NULL;
+FnSymbol *gBuildTupleType = NULL;
+FnSymbol *gBuildStarTupleType = NULL;
+
 
 
 std::map<FnSymbol*,int> ftableMap;

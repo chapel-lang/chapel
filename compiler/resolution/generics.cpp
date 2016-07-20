@@ -513,37 +513,10 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
 
   //
   // Handle tuples explicitly
+  // (_build_tuple, tuple type constructor, tuple default constructor)
   //
-  if (fn->hasFlag(FLAG_TUPLE)) {
-    std::vector<TypeSymbol*> args;
-    int i = 0;
-    size_t actualN = 0;
-
-    //gdbShouldBreakHere();
-
-    for_actuals(actual, call) {
-      if (i == 0) {
-        // First argument is the tuple size
-        SymExpr* se = toSymExpr(actual);
-        VarSymbol* v = toVarSymbol(se->var);
-        actualN = v->immediate->int_value();
-      } else {
-        // Subsequent arguments are tuple types.
-        Type* t = actual->typeInfo();
-        args.push_back(t->symbol);
-      }
-      i++;
-    }
-    INT_ASSERT(actualN == args.size());
-    TypeSymbol* tupleTypeSym = getTupleTypeSymbol(args, call);
-
-    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
-      return tupleTypeSym->type->defaultTypeConstructor;
-    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
-      return tupleTypeSym->type->defaultInitializer;
-
-    INT_ASSERT(false); // what other functions are marked with FLAG_TUPLE?
-  }
+  FnSymbol* tupleFn = createTupleSignature(fn, subs, call);
+  if (tupleFn) return tupleFn;
 
   form_Map(SymbolMapElem, e, subs) {
     if (TypeSymbol* ts = toTypeSymbol(e->value)) {

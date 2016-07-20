@@ -90,7 +90,7 @@ FnSymbol* getUnref(Type* t);
 bool isPOD(Type* t);
 
 // tuples
-TypeSymbol* getTupleTypeSymbol(std::vector<TypeSymbol*>& args, CallExpr* instantiatedForCall);
+FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 void fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
 
 #endif

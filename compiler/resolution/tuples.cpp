@@ -45,8 +45,9 @@ struct TupleInfo {
   /*FnSymbol *defaultOf;
   FnSymbol *defaultHash;
   FnSymbol *autoCopy;
-  FnSymbol *initCopy;
-  FnSymbol *build;*/
+  FnSymbol *initCopy;*/
+  FnSymbol *buildTupleType;
+  FnSymbol *buildStarTupleType;
 };
 
 
@@ -120,14 +121,16 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args,
 
     // Decide whether or not we have a homogeneous/star tuple
     bool  markStar = true;
-    Type* starType = NULL;
+    {
+      Type* starType = NULL;
 
-    for(size_t i = 0; i < args.size(); i++) {
-      if (starType == NULL) {
-        starType = args[i]->type;
-      } else if (starType != args[i]->type) {
-        markStar = false;
-        break;
+      for(size_t i = 0; i < args.size(); i++) {
+        if (starType == NULL) {
+          starType = args[i]->type;
+        } else if (starType != args[i]->type) {
+          markStar = false;
+          break;
+        }
       }
     }
 
@@ -202,6 +205,72 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args,
       //printf("tuple type constructor id %i\n", typeCtor->id);
       //print_view(typeCtor);
     }
+    
+    // Build the _build_tuple type function
+    {
+      FnSymbol *buildTupleType = new FnSymbol("_build_tuple");
+      // starts at 1 to skip the size argument
+      for(size_t i = 1; i < typeCtorArgs.size(); i++ ) {
+        buildTupleType->insertFormalAtTail(typeCtorArgs[i]->copy());
+      }
+      buildTupleType->addFlag(FLAG_ALLOW_REF);
+      buildTupleType->addFlag(FLAG_COMPILER_GENERATED);
+      buildTupleType->addFlag(FLAG_INLINE);
+      buildTupleType->addFlag(FLAG_INVISIBLE_FN);
+      buildTupleType->addFlag(FLAG_BUILD_TUPLE);
+      buildTupleType->addFlag(FLAG_BUILD_TUPLE_TYPE);
+
+      buildTupleType->retTag = RET_TYPE;
+      buildTupleType->retType = newType;
+      CallExpr* ret = new CallExpr(PRIM_RETURN, new SymExpr(newTypeSymbol));
+      buildTupleType->insertAtTail(ret);
+      buildTupleType->substitutions.copy(newType->substitutions);
+
+      buildTupleType->instantiatedFrom = gBuildTupleType;
+      buildTupleType->instantiationPoint = getVisibilityBlock(instantiatedForCall);
+
+      tupleModule->block->insertAtTail(new DefExpr(buildTupleType));
+
+      info.buildTupleType = buildTupleType;
+      //printf("tuple type constructor id %i\n", typeCtor->id);
+      //print_view(typeCtor);
+    }
+
+    // Build the * type function
+    if (markStar) {
+      FnSymbol *buildStarTupleType = new FnSymbol("_build_tuple");
+      // just to arguments 0 and 1 to get size and element type
+      for(size_t i = 0; i < 2; i++ ) {
+        buildStarTupleType->insertFormalAtTail(typeCtorArgs[i]->copy());
+      }
+      buildStarTupleType->addFlag(FLAG_ALLOW_REF);
+      buildStarTupleType->addFlag(FLAG_COMPILER_GENERATED);
+      buildStarTupleType->addFlag(FLAG_INLINE);
+      buildStarTupleType->addFlag(FLAG_INVISIBLE_FN);
+      buildStarTupleType->addFlag(FLAG_BUILD_TUPLE);
+      buildStarTupleType->addFlag(FLAG_BUILD_TUPLE_TYPE);
+      buildStarTupleType->addFlag(FLAG_STAR_TUPLE);
+
+      buildStarTupleType->retTag = RET_TYPE;
+      buildStarTupleType->retType = newType;
+      CallExpr* ret = new CallExpr(PRIM_RETURN, new SymExpr(newTypeSymbol));
+      buildStarTupleType->insertAtTail(ret);
+      buildStarTupleType->substitutions.copy(newType->substitutions);
+
+      buildStarTupleType->instantiatedFrom = gBuildStarTupleType;
+      buildStarTupleType->instantiationPoint = getVisibilityBlock(instantiatedForCall);
+
+      tupleModule->block->insertAtTail(new DefExpr(buildStarTupleType));
+
+      info.buildStarTupleType = buildStarTupleType;
+      //printf("tuple type constructor id %i\n", typeCtor->id);
+      //print_view(typeCtor);
+    } else {
+      info.buildStarTupleType = NULL;
+    }
+
+
+
 
     // Build the value constructor
     {
@@ -261,13 +330,14 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args,
   return info;
 }
 
+/*
 TypeSymbol* getTupleTypeSymbol(std::vector<TypeSymbol*>& args,
                                CallExpr* instantiatedForCall)
 {
   TupleInfo& info = getTupleInfo(args, instantiatedForCall);
   return info.typeSymbol;
 }
-/*FnSymbol* getTupleConstructor(std::vector<TypeSymbol*>& args)
+FnSymbol* getTupleConstructor(std::vector<TypeSymbol*>& args)
 {
   TupleInfo& info = getTupleInfo(args);
   return info.ctor;
@@ -481,6 +551,7 @@ instantiate_tuple_unref(FnSymbol* fn)
   normalize(fn);
 }
 
+
 void
 fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* instantiatedForCall)
 {
@@ -511,5 +582,62 @@ fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* instantiatedForCall
   if (fn->hasFlag(FLAG_UNREF_FN) && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_unref(newFn);
   }
+
+}
+
+FnSymbol*
+createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
+{
+  if (fn->hasFlag(FLAG_TUPLE) || fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)) {
+    std::vector<TypeSymbol*> args;
+    int i = 0;
+    size_t actualN = 0;
+    bool firstArgIsSize = fn->hasFlag(FLAG_TUPLE) || fn->hasFlag(FLAG_STAR_TUPLE);
+
+    gdbShouldBreakHere();
+
+    // TODO - should this use subs in preference to call's arguments?
+    for_actuals(actual, call) {
+      if (i == 0 && firstArgIsSize) {
+        // First argument is the tuple size
+        SymExpr* se = toSymExpr(actual);
+        VarSymbol* v = toVarSymbol(se->var);
+        actualN = v->immediate->int_value();
+      } else {
+        // Subsequent arguments are tuple types.
+        Type* t = actual->typeInfo();
+        args.push_back(t->symbol);
+      }
+      i++;
+    }
+    if (firstArgIsSize) {
+      if (fn->hasFlag(FLAG_STAR_TUPLE)) {
+        // Copy the first argument actualN times.
+        for(size_t j = 1; j < actualN; j++) {
+          args.push_back(args[0]);
+        }
+      }
+      INT_ASSERT(actualN == args.size());
+    }
+
+    TupleInfo& info = getTupleInfo(args, call);
+    TypeSymbol* tupleTypeSym = info.typeSymbol;
+    Type* tupleType = tupleTypeSym->type;
+
+    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
+      return tupleType->defaultTypeConstructor;
+    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
+      return tupleType->defaultInitializer;
+    if (fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)) {
+      // is it the star tuple function?
+      if (fn->hasFlag(FLAG_STAR_TUPLE))
+        return info.buildStarTupleType;
+      else
+        return info.buildTupleType;
+    }
+
+    INT_ASSERT(false); // all cases should be handled by now...
+  }
+  return NULL;
 }
 
