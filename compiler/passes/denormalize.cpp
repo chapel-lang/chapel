@@ -10,6 +10,7 @@
 
 //helpers
 //bool isDefSafeToMove(Expr* def);
+bool requiresCast(Type* t);
 bool isExprSafeForReorder(Expr * e);
 bool possibleDepInBetween(Expr* e1, Expr* e2);
 bool canPrimMoveCreateCommunication(CallExpr* ce);
