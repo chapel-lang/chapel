@@ -84,7 +84,7 @@ struct SyncGraph {
   bool loopNode;
   bool conditionalNode;
   /*
-    SyncGraph* child(){
+    SyncGraph* child() {
     return child;
     }
   */
@@ -149,7 +149,7 @@ static bool containsBeginFunction(FnSymbol* fn);
    We have to delete all children Nodes before deleting the Node.
 **/
 static void deleteSyncGraphNode(SyncGraph *node) {
-  if(node != NULL) {
+  if (node != NULL) {
     deleteSyncGraphNode(node->child);
     deleteSyncGraphNode(node->fChild);
     delete node;
@@ -162,9 +162,9 @@ static void deleteSyncGraphNode(SyncGraph *node) {
 //    **/
 //   Vec<SyncGraph*> copy;
 //   SyncGraph* node = start;
-//   while(node != NULL) {
-//     SyncGraph * newnode = new SyncGraph(node,f,level);
-//     if(copy.count() > 0) {
+//   while (node != NULL) {
+//     SyncGraph * newnode = new SyncGraph(node, f, level);
+//     if (copy.count() > 0) {
 //       newnode->parent = copy.tail();
 //       copy.tail()->child = newnode;
 //     }
@@ -175,10 +175,10 @@ static void deleteSyncGraphNode(SyncGraph *node) {
 
 
 // static bool inlineCFG(SyncGraph* inlineNode, SyncGraph* branch) {
-//   if(inlineNode) {
+//   if (inlineNode) {
 //     SyncGraph *oldChild = inlineNode->child;
-//     Vec<SyncGraph*> copy = getCopyofGraph(branch,inlineNode->fnSymbol,inlineNode->levelID);
-//     if(copy.count() >0) {
+//     Vec<SyncGraph*> copy = getCopyofGraph(branch, inlineNode->fnSymbol, inlineNode->levelID);
+//     if (copy.count() >0) {
 //       inlineNode->child = copy.head();
 //       copy.head()->parent = inlineNode;
 //       copy.tail()->child = oldChild;
@@ -214,7 +214,7 @@ static SyncGraph* addChildNode(SyncGraph *cur, FnSymbol* fn) {
   SyncGraph* childNode = new SyncGraph();
   childNode->parent = cur;
   childNode->fnSymbol = fn;
-  if(fn == cur->fnSymbol)
+  if (fn == cur->fnSymbol)
     cur->child = childNode;
   else {
     cur->fChild = childNode;
@@ -256,7 +256,7 @@ static SyncGraph* addSyncExprs(Expr *expr, SyncGraph *cur) {
   FnSymbol* curFun = expr->getFunction();
   for_vector (CallExpr, call, callExprs) {
     if (call->theFnSymbol() != NULL) {
-      if (!strcmp(call->theFnSymbol()->name,"=")) {
+      if (!strcmp(call->theFnSymbol()->name, "=")) {
         SymExpr* symExpr = toSymExpr(call->getNextExpr(call->getFirstExpr()));
         std::string symName;
         if (symExpr != NULL) {
@@ -299,7 +299,7 @@ static SyncGraph* addSyncExprs(Expr *expr, SyncGraph *cur) {
               std::vector<CallExpr*> markCalls;
               collectCallExprs(intCall->theFnSymbol(), markCalls);
               for_vector (CallExpr, markCall, markCalls){
-                if(markCall->isPrimitive(PRIM_SINGLE_WAIT_FULL)) {
+                if (markCall->isPrimitive(PRIM_SINGLE_WAIT_FULL)) {
                   cur->syncVar = symName;
                   cur->syncType = NODE_SINGLE_WAIT_FULL;
                   cur->syncExpr = call;
@@ -397,10 +397,10 @@ static void addSymbolsToGraph(Expr* expr, SyncGraph *cur) {
 static void collectFuncNodes(SyncGraph *cur, Vec<SyncGraph*>& funcNodes) {
   if (cur->fChild != NULL) {
     funcNodes.add(cur->fChild);
-    collectFuncNodes(cur->fChild,funcNodes);
+    collectFuncNodes(cur->fChild, funcNodes);
   }
   if (cur->child != NULL)
-    collectFuncNodes(cur->child,funcNodes);
+    collectFuncNodes(cur->child, funcNodes);
 }
 
 static void checkOrphanStackVar(SyncGraph *root) {
@@ -411,8 +411,8 @@ static void checkOrphanStackVar(SyncGraph *root) {
   */
   Vec<SyncGraph*> funcNodes;
   funcNodes.add(root);
-  collectFuncNodes(root,funcNodes);
-  forv_Vec (SyncGraph,funcNode,funcNodes) {
+  collectFuncNodes(root, funcNodes);
+  forv_Vec (SyncGraph, funcNode, funcNodes) {
     SyncGraph * curNode = funcNode;
     /**
        An optimization: we will not process the thread
@@ -420,12 +420,12 @@ static void checkOrphanStackVar(SyncGraph *root) {
     **/
     int processTask  = 0;
     /* Initialize sync points with each Thread */
-    Map<FnSymbol*,SyncGraph*> taskSyncPoints;
-    Map<FnSymbol*,Vec<SyncGraph*>* > syncedNodes;
-    forv_Vec (SyncGraph,nextFuncNode,funcNodes) {  
+    Map<FnSymbol*, SyncGraph*> taskSyncPoints;
+    Map<FnSymbol*, Vec<SyncGraph*>* > syncedNodes;
+    forv_Vec (SyncGraph, nextFuncNode, funcNodes) {  
       if (processTask == 1) {
-        taskSyncPoints.put(nextFuncNode->fnSymbol,nextFuncNode);
-	syncedNodes.put(nextFuncNode->fnSymbol,new Vec<SyncGraph*>());
+        taskSyncPoints.put(nextFuncNode->fnSymbol, nextFuncNode);
+	syncedNodes.put(nextFuncNode->fnSymbol, new Vec<SyncGraph*>());
       } else if (nextFuncNode == funcNode) {
         processTask  = 1;
       }
@@ -530,7 +530,7 @@ static SyncGraph* handleDefExpr(DefExpr* def, SyncGraph *cur){
     }
     cur = addChildNode(cur, def->getFunction());
   } else {
-    //     addSymbolsToGraph(def,cur);
+    //     addSymbolsToGraph(def, cur);
   }
   return cur;
 }
@@ -600,7 +600,7 @@ static SyncGraph* handleFunction(FnSymbol* fn, SyncGraph *cur=NULL) {
 // void  checkSync(FnSymbol* fn){
 //  /* Function called
 //    we create the Root Node here*/
-//   if(root == NULL)
+//   if (root == NULL)
 //     cur = root = new SyncGraph();
 //   else
 //     cur = addChildNode(cur, fn);
