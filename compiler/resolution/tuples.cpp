@@ -41,19 +41,20 @@
 struct TupleInfo {
   TypeSymbol* typeSymbol;
   //FnSymbol *typeConstruct; in type->defaultTypeConstructor
-  FnSymbol *ctor;
-  FnSymbol *defaultOf;
+  //FnSymbol *ctor; in type->defaultInitializer
+  /*FnSymbol *defaultOf;
   FnSymbol *defaultHash;
   FnSymbol *autoCopy;
   FnSymbol *initCopy;
-  FnSymbol *build;
+  FnSymbol *build;*/
 };
 
 
 static std::map< std::vector<TypeSymbol*>, TupleInfo > tupleMap;
 
 static
-TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
+TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args,
+                        CallExpr* instantiatedForCall)
 {
   TupleInfo& info = tupleMap[args];
   if (!info.typeSymbol) {
@@ -192,9 +193,8 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
       typeCtor->numPreTupleFormals = 1;
 
       typeCtor->instantiatedFrom = gGenericTupleTypeCtor;
+      typeCtor->instantiationPoint = getVisibilityBlock(instantiatedForCall);
 
-      // TODO -- could set instantiationPoint to a CallExpr causing
-      // this tuple to be created.
       tupleModule->block->insertAtTail(new DefExpr(typeCtor));
 
       newType->defaultTypeConstructor = typeCtor;
@@ -245,12 +245,13 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
       ctor->substitutions.copy(newType->substitutions);
 
       ctor->instantiatedFrom = gGenericTupleInit;
+      ctor->instantiationPoint = getVisibilityBlock(instantiatedForCall);
 
       tupleModule->block->insertAtTail(new DefExpr(ctor));
 
       newType->defaultInitializer = ctor;
 
-      info.ctor = ctor;
+      //info.ctor = ctor;
 
       //printf("tuple constructor id %i\n", ctor->id);
       //print_view(ctor);
@@ -260,16 +261,17 @@ TupleInfo& getTupleInfo(std::vector<TypeSymbol*>& args)
   return info;
 }
 
-TypeSymbol* getTupleTypeSymbol(std::vector<TypeSymbol*>& args)
+TypeSymbol* getTupleTypeSymbol(std::vector<TypeSymbol*>& args,
+                               CallExpr* instantiatedForCall)
 {
-  TupleInfo& info = getTupleInfo(args);
+  TupleInfo& info = getTupleInfo(args, instantiatedForCall);
   return info.typeSymbol;
 }
-FnSymbol* getTupleConstructor(std::vector<TypeSymbol*>& args)
+/*FnSymbol* getTupleConstructor(std::vector<TypeSymbol*>& args)
 {
   TupleInfo& info = getTupleInfo(args);
   return info.ctor;
-}
+}*/
 
 /*
 static void
@@ -322,13 +324,14 @@ instantiate_tuple_body(FnSymbol* fn) {
 }
 */
 
-static TupleInfo&
+static void
 getTupleArgAndType(FnSymbol* fn, ArgSymbol*& arg, AggregateType*& ct) {
   INT_ASSERT(fn->numFormals() == 1); // expected of the original function
   arg = fn->getFormal(1);
   ct = toAggregateType(arg->type);
   INT_ASSERT(!isReferenceType(ct));
 
+  /*
   std::vector<TypeSymbol*> tmp;
   int i = 0;
   for_fields(field, ct) {
@@ -337,10 +340,10 @@ getTupleArgAndType(FnSymbol* fn, ArgSymbol*& arg, AggregateType*& ct) {
     }
     i++;
   }
-  return getTupleInfo(tmp);
+  return getTupleInfo(tmp);*/
 }
 
-void
+static void
 instantiate_tuple_hash( FnSymbol* fn) {
   ArgSymbol* arg;
   AggregateType* ct;
@@ -371,12 +374,12 @@ instantiate_tuple_hash( FnSymbol* fn) {
   normalize(fn);
 }
 
-void
+static void
 instantiate_tuple_init(FnSymbol* fn) {
   ArgSymbol* arg;
   AggregateType* ct;
-  TupleInfo& info = getTupleArgAndType(fn, arg, ct);
-  FnSymbol* ctor = info.ctor;
+  getTupleArgAndType(fn, arg, ct);
+  FnSymbol* ctor = ct->defaultInitializer;
 
   if (!arg->hasFlag(FLAG_TYPE_VARIABLE))
     INT_FATAL(fn, "_defaultOf function not provided a type argument");
@@ -434,21 +437,21 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
   normalize(fn);
 }
 
-void
+static void
 instantiate_tuple_initCopy(FnSymbol* fn) {
   instantiate_tuple_initCopy_or_autoCopy(fn,
                                          "_build_tuple",
                                          "chpl__initCopy");
 }
 
-void
+static void
 instantiate_tuple_autoCopy(FnSymbol* fn) {
   instantiate_tuple_initCopy_or_autoCopy(fn,
                                          "_build_tuple_always_allow_ref",
                                          "chpl__autoCopy");
 }
 
-void
+static void
 instantiate_tuple_unref(FnSymbol* fn)
 {
   ArgSymbol* arg;
@@ -476,5 +479,37 @@ instantiate_tuple_unref(FnSymbol* fn)
   block->insertAtTail(new CallExpr(PRIM_RETURN, call));
   fn->body->replace(block);
   normalize(fn);
+}
+
+void
+fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* instantiatedForCall)
+{
+  // Note: scopeResolve sets FLAG_TUPLE is for the type constructor
+  // and the constructor for the tuple record.
+  /*
+  if (fn->hasFlag(FLAG_TUPLE)) {
+    gdbShouldBreakHere();
+    instantiate_tuple_signature(newFn);
+  }*/
+
+  if (!strcmp(fn->name, "_defaultOf") &&
+      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
+    instantiate_tuple_init(newFn);
+
+  if (!strcmp(fn->name, "chpl__defaultHash") && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
+    instantiate_tuple_hash(newFn);
+  }
+
+  if (fn->hasFlag(FLAG_INIT_COPY_FN) && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
+    instantiate_tuple_initCopy(newFn);
+  }
+
+  if (fn->hasFlag(FLAG_AUTO_COPY_FN) && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
+    instantiate_tuple_autoCopy(newFn);
+  }
+
+  if (fn->hasFlag(FLAG_UNREF_FN) && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
+    instantiate_tuple_unref(newFn);
+  }
 }
 

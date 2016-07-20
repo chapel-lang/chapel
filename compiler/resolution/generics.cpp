@@ -535,12 +535,12 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
       i++;
     }
     INT_ASSERT(actualN == args.size());
-    TypeSymbol* tupleTypeSym = getTupleTypeSymbol(args);
+    TypeSymbol* tupleTypeSym = getTupleTypeSymbol(args, call);
 
     if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
       return tupleTypeSym->type->defaultTypeConstructor;
     if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
-      return getTupleConstructor(args);
+      return tupleTypeSym->type->defaultInitializer;
 
     INT_ASSERT(false); // what other functions are marked with FLAG_TUPLE?
   }
@@ -695,34 +695,8 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
     newFn->retType = newType;
   }
   
-  // Note: scopeResolve sets FLAG_TUPLE is for the type constructor
-  // and the constructor for the tuple record.
-  /*
-  if (fn->hasFlag(FLAG_TUPLE)) {
-    gdbShouldBreakHere();
-    instantiate_tuple_signature(newFn);
-  }*/
+  fixupTupleFunctions(fn, newFn, call);
 
-  if (!strcmp(fn->name, "_defaultOf") &&
-      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
-    instantiate_tuple_init(newFn);
-
-  if (!strcmp(fn->name, "chpl__defaultHash") && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
-    instantiate_tuple_hash(newFn);
-  }
-
-  if (fn->hasFlag(FLAG_INIT_COPY_FN) && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
-    instantiate_tuple_initCopy(newFn);
-  }
-
-  if (fn->hasFlag(FLAG_AUTO_COPY_FN) && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
-    instantiate_tuple_autoCopy(newFn);
-  }
-
-  if (fn->hasFlag(FLAG_UNREF_FN) && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
-    instantiate_tuple_unref(newFn);
-  }
-  
   if (newFn->numFormals() > 1 && newFn->getFormal(1)->type == dtMethodToken) {
     newFn->getFormal(2)->type->methods.add(newFn);
   }
