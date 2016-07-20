@@ -140,6 +140,8 @@ all:
   06/24/16:
     - text: Improve optimizeOnClauses optimization (#4008)
       config: 16 node XC
+  07/19/16:
+    - Disable jemalloc's stat gatherting by default (#4180)
 
 AllCompTime:
   11/09/14:

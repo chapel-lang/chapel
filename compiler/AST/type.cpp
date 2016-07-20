@@ -592,7 +592,15 @@ AggregateType::AggregateType(AggregateTag initTag) :
 }
 
 
-AggregateType::~AggregateType() { }
+AggregateType::~AggregateType() {
+  // Delete references to this in iteratorInfo when destroyed.
+  if (iteratorInfo) {
+    if (iteratorInfo->iclass == this)
+      iteratorInfo->iclass = NULL;
+    if (iteratorInfo->irecord == this)
+      iteratorInfo->irecord = NULL;
+  }
+}
 
 
 void AggregateType::verify() {

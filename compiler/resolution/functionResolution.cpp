@@ -9348,8 +9348,7 @@ static void removeUnusedFunctions() {
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       if (fn->defPoint->parentSymbol == stringLiteralModule) continue;
 
-      if (! fn->isResolved() ||
-          fn->retTag == RET_PARAM ){
+      if (! fn->isResolved() || fn->retTag == RET_PARAM) {
         clearDefaultInitFns(fn);
         fn->defPoint->remove();
       }
@@ -9369,7 +9368,6 @@ isUnusedClass(AggregateType *ct) {
 
   // Uses of iterator records get inserted in lowerIterators
   if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-    //|| ct->symbol->hasFlag(FLAG_ITERATOR_CLASS))
     return false;
 
   // FALSE if iterator class's getIterator is used
