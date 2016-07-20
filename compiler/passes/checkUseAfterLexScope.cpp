@@ -91,7 +91,11 @@ struct SyncGraph {
   /**
      We always sync the READS  with WRITES
   **/
+
+
   Vec<SyncGraph*> syncPoints;
+
+
   SyncGraph(SyncGraph* i, FnSymbol *f, int lID) {
     levelID = lID;
     fnSymbol = f;
@@ -112,6 +116,11 @@ struct SyncGraph {
   ~SyncGraph() {}
 };
 
+typedef Vec<SyncGraph*> SyncGraphVec;
+typedef Map<FnSymbol*, SyncGraph*> FnSyncGraphMap;
+typedef Map<FnSymbol*, Vec<SyncGraph*>* > FnSyncGraphVecMap;
+typedef MapElem<FnSymbol*, Vec<SyncGraph*>* > FnSyncGraphVecMapElem;
+
 static SyncGraph* syncGraphRoot;
 
 static void deleteSyncGraphNode(SyncGraph *node);
@@ -131,11 +140,12 @@ static void linkSyncNodes(SyncGraph *signal, SyncGraph *wait);
 //bool argumentsContainsSyncVar(FnSymbol *fn);
 static SyncGraph* addSyncExprs(Expr *expr, SyncGraph *cur);
 static void addSymbolsToGraph(Expr* expr, SyncGraph *cur);
-static void collectFuncNodes(SyncGraph *cur, Vec<SyncGraph*>& funcNodes);
+static void collectFuncNodes(SyncGraph *cur, SyncGraphVec& funcNodes);
 static bool containsBeginFunction(FnSymbol* fn);
+static SyncGraph* getNextSyncNode(SyncGraph* cur, SyncGraphVec* funcNodes);
 //static bool inlineCFG(SyncGraph* inlineNode, SyncGraph* branch);
 //static bool inlineCFG(SyncGraph* inlineNode, SyncGraph* branch);
-//static Vec<SyncGraph*> getCopyofGraph(SyncGraph* start, FnSymbol* f, int level);
+//static SyncGraphVec getCopyofGraph(SyncGraph* start, FnSymbol* f, int level);
 /************** HEADER ENDS *******************/
 
 /***
@@ -156,11 +166,11 @@ static void deleteSyncGraphNode(SyncGraph *node) {
   }
 }
 
-// static Vec<SyncGraph*> getCopyofGraph(SyncGraph* start, FnSymbol* f, int level) {
+// static SyncGraphVec getCopyofGraph(SyncGraph* start, FnSymbol* f, int level) {
 //   /**
 //      TODO decide what to de when we have a fChild here
 //    **/
-//   Vec<SyncGraph*> copy;
+//   SyncGraphVec copy;
 //   SyncGraph* node = start;
 //   while (node != NULL) {
 //     SyncGraph * newnode = new SyncGraph(node, f, level);
@@ -177,7 +187,7 @@ static void deleteSyncGraphNode(SyncGraph *node) {
 // static bool inlineCFG(SyncGraph* inlineNode, SyncGraph* branch) {
 //   if (inlineNode) {
 //     SyncGraph *oldChild = inlineNode->child;
-//     Vec<SyncGraph*> copy = getCopyofGraph(branch, inlineNode->fnSymbol, inlineNode->levelID);
+//     SyncGraphVec copy = getCopyofGraph(branch, inlineNode->fnSymbol, inlineNode->levelID);
 //     if (copy.count() >0) {
 //       inlineNode->child = copy.head();
 //       copy.head()->parent = inlineNode;
@@ -394,7 +404,7 @@ static void addSymbolsToGraph(Expr* expr, SyncGraph *cur) {
 }
 
 
-static void collectFuncNodes(SyncGraph *cur, Vec<SyncGraph*>& funcNodes) {
+static void collectFuncNodes(SyncGraph *cur, SyncGraphVec& funcNodes) {
   if (cur->fChild != NULL) {
     funcNodes.add(cur->fChild);
     collectFuncNodes(cur->fChild, funcNodes);
@@ -403,13 +413,26 @@ static void collectFuncNodes(SyncGraph *cur, Vec<SyncGraph*>& funcNodes) {
     collectFuncNodes(cur->child, funcNodes);
 }
 
+static SyncGraph* getNextSyncNode(SyncGraph* cur, SyncGraphVec* alreadySynced) {
+  SyncGraph* next  = cur->child;
+  while ( next != NULL &&
+	  next->syncType != NODE_SINGLE_WAIT_FULL &&
+	  next->syncType != NODE_SINGLE_SIGNAL_FULL &&
+	  next->syncType != NODE_SYNC_SIGNAL_FULL &&
+	  next->syncType != NODE_SYNC_SIGNAL_EMPTY &&
+	  !(alreadySynced->in(next))) {
+    next = next->child;
+  }
+  return next;
+}
+
 static void checkOrphanStackVar(SyncGraph *root) {
   /*
     TODO:
     We want to sync only begin functions right now.
     So we will filter out the begin functions.
   */
-  Vec<SyncGraph*> funcNodes;
+  SyncGraphVec funcNodes;
   funcNodes.add(root);
   collectFuncNodes(root, funcNodes);
   forv_Vec (SyncGraph, funcNode, funcNodes) {
@@ -420,12 +443,12 @@ static void checkOrphanStackVar(SyncGraph *root) {
     **/
     int processTask  = 0;
     /* Initialize sync points with each Thread */
-    Map<FnSymbol*, SyncGraph*> taskSyncPoints;
-    Map<FnSymbol*, Vec<SyncGraph*>* > syncedNodes;
+    FnSyncGraphMap taskSyncPoints;
+    FnSyncGraphVecMap syncedNodes;
     forv_Vec (SyncGraph, nextFuncNode, funcNodes) {  
       if (processTask == 1) {
         taskSyncPoints.put(nextFuncNode->fnSymbol, nextFuncNode);
-	syncedNodes.put(nextFuncNode->fnSymbol, new Vec<SyncGraph*>());
+	syncedNodes.put(nextFuncNode->fnSymbol, new SyncGraphVec());
       } else if (nextFuncNode == funcNode) {
         processTask  = 1;
       }
@@ -439,39 +462,48 @@ static void checkOrphanStackVar(SyncGraph *root) {
         int processnextTask = 0;
         forv_Vec (SyncGraph, nextFuncNode, funcNodes) {
           if (processnextTask == 1) {
+	    SyncGraphVec* syncedNodesinFunc =  syncedNodes.get(nextFuncNode->fnSymbol);
+	    SyncGraph* finalCandidateSyncNode = getNextSyncNode(nextFuncNode, syncedNodesinFunc);
+	    SyncGraph* endofSearch = NULL;
+	    if (finalCandidateSyncNode != NULL)
+	      endofSearch = finalCandidateSyncNode->child;
             if (curNode->syncType ==  NODE_SINGLE_WAIT_FULL) {
               /*
                 Since there is no state change in SINGLE variable after
                 being full we have to search from begining.
               */
               SyncGraph* candidateSyncNode = nextFuncNode;
-              while (candidateSyncNode  != NULL) {
+              while (candidateSyncNode  != endofSearch) {
                 if (syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SINGLE_SIGNAL_FULL) {
                   linkSyncNodes(candidateSyncNode, curNode);
+		  syncedNodesinFunc->add_exclusive(candidateSyncNode);
                 }
                 candidateSyncNode = candidateSyncNode->child;
               }
             } else if (curNode->syncType ==  NODE_SINGLE_SIGNAL_FULL) {
               SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
-              while (candidateSyncNode  != NULL) {
+              while (candidateSyncNode  != endofSearch) {
                 if (syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SINGLE_WAIT_FULL) {
                   linkSyncNodes(curNode, candidateSyncNode);
+		  syncedNodesinFunc->add_exclusive(candidateSyncNode);
                 }
                 candidateSyncNode = candidateSyncNode->child;
               }
             } else  if (curNode->syncType == NODE_SYNC_SIGNAL_FULL) {
               SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
-              while (candidateSyncNode  != NULL) {
+              while (candidateSyncNode  != endofSearch) {
                 if (syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SYNC_SIGNAL_EMPTY) {
                   linkSyncNodes(candidateSyncNode, curNode);
+		  syncedNodesinFunc->add_exclusive(candidateSyncNode);
                 }
                 candidateSyncNode = candidateSyncNode->child;
               }
             } else if (curNode->syncType == NODE_SYNC_SIGNAL_EMPTY) {
               SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
-              while (candidateSyncNode  != NULL) {
+              while (candidateSyncNode  != endofSearch) {
                 if (syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SYNC_SIGNAL_FULL) {
                   linkSyncNodes(curNode, candidateSyncNode);
+		  syncedNodesinFunc->add_exclusive(candidateSyncNode);
                 }
                 candidateSyncNode = candidateSyncNode->child;
               }
@@ -488,6 +520,10 @@ static void checkOrphanStackVar(SyncGraph *root) {
         }
       }
       curNode = curNode->child;
+    }
+    //    syncedNodes;
+    form_Map(FnSyncGraphVecMapElem, nextList, syncedNodes) {
+      delete(nextList->value);
     }
   }
   /**
