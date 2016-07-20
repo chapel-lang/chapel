@@ -60,10 +60,10 @@ def print_mode(mode='list', anonymize=False):
 
     comm = chpl_comm.get()
     print_var('CHPL_COMM', comm, mode, 'comm', ('runtime', 'launcher'))
-    if m == 'make' or (comm != 'none' and comm != 'ugni'):
+    if m == 'make' or (comm != 'none' and comm != 'ugni') or m == 'shell':
         comm_substrate = chpl_comm_substrate.get()
         print_var('  CHPL_COMM_SUBSTRATE', comm_substrate, mode, filters=('runtime',))
-        if m == 'make' or comm == 'gasnet':
+        if m == 'make' or comm == 'gasnet' or m == 'shell':
             comm_segment = chpl_comm_segment.get()
             print_var('  CHPL_GASNET_SEGMENT', comm_segment, mode, filters=('runtime',))
 
@@ -93,7 +93,7 @@ def print_mode(mode='list', anonymize=False):
 
     atomics = chpl_atomics.get()
     print_var('CHPL_ATOMICS', atomics, mode, 'atomics', ('runtime', 'launcher'))
-    if (mode != 'runtime' and mode != 'make' and mode != 'launcher') and comm != 'none' or mode == 'simple':
+    if (mode != 'runtime' and mode != 'make' and mode != 'launcher') and comm != 'none' or mode == 'simple' or mode == 'shell':
         net_atomics = chpl_atomics.get('network')
         print_var('  CHPL_NETWORK_ATOMICS', net_atomics, mode, filters=('runtime', 'launcher'))
 
@@ -209,9 +209,9 @@ def print_var(env_var, value, mode, short_name='', filters=None):
             else:
                 stdout.write("{0}-{1}".format(short_name, value))
     elif mode == 'shell':
-        stdout.write("export {0}='{1}'\n".format(env_var, value))
+        stdout.write("export {0}='{1}'\n".format(env_var.strip(), value))
     elif mode == 'cshell':
-        stdout.write("setenv {0} '{1}'\n".format(env_var, value))
+        stdout.write("setenv {0} '{1}'\n".format(env_var.strip(), value))
     else:
         raise ValueError("Invalid mode '{0}'".format(mode))
 
