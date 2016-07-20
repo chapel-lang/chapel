@@ -9,6 +9,12 @@
 #include "passes.h"
 
 //helpers
+typedef struct DefCastTuple_s {
+  Expr* def;
+  Type* castTo;
+} DefCastTuple;
+
+#define ActualUseDefCastMap std::map<SymExpr*, std::pair<Expr*,Type*> >
 //bool isDefSafeToMove(Expr* def);
 bool requiresCast(Type* t);
 bool isExprSafeForReorder(Expr * e);
@@ -20,10 +26,12 @@ bool isDenormalizable(Symbol* sym,
     Type** castTo);
 void denormalizeActuals(CallExpr* ce,
     Map<Symbol*,Vec<SymExpr*>*> defMap,
-    Map<Symbol*,Vec<SymExpr*>*> useMap);
+    Map<Symbol*,Vec<SymExpr*>*> useMap,
+    ActualUseDefCastMap actualUseDefMap);
 void denormalize(Expr* def, SymExpr* use, Type* castTo);
 void denormalize(FnSymbol *fn);
 
+std::map<Expr*,bool> safeExprCache;
 void denormalize(void) {
   if(fDenormalize) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -43,16 +51,17 @@ void denormalize(FnSymbol *fn) {
   collectSymbolSetSymExprVec(fn, symSet, symExprs);
   buildDefUseMaps(symSet, symExprs, defMap, useMap);
 
-  std::vector<CallExpr*> deferredFns;
+  std::set<CallExpr*> deferredFns;
   //if(strncmp(fn->name, "chpl__init_tempVar", 18) != 0) return;
   //if(strncmp(fn->name, "__getActualInsertPts", 20) != 0) return;
   //if(strcmp(fn->name, "chpl__init_eval-order-of-actuals") != 0) return;
   //std::cout << fn->name << std::endl;
   //if(strcmp(fn->name, "chpl__init_passWdie") != 0) return;
   //if(strcmp(fn->name, "chpl__init_passFnsToC2x") != 0) return;
+  ActualUseDefCastMap actualUseDefMap;
   forv_Vec(Symbol, sym, symSet) {
 
-    SymExpr *use;
+    SymExpr *use = NULL;
     Expr *useExpr = NULL;
     Expr *def = NULL;
     Expr *defExpr;
@@ -85,7 +94,12 @@ void denormalize(FnSymbol *fn) {
             //if(!defCe->isPrimitive()) {
               //deal with this later
               isDenormalizeSafe = false; 
-              deferredFns.push_back(useCe);
+              deferredFns.insert(useCe);
+              //DefCastTuple tmpTuple = {def, castTo};
+              //actualUseDefMap.insert(use, tmpTuple);
+              std::pair<Expr*, Type*> defCastBundle(def, castTo);
+              actualUseDefMap.insert(std::pair<SymExpr*, std::pair<Expr*, Type*> >(use, defCastBundle));
+              continue;
               //std::cout << "deffered\n";
               //print_view(useCe);
             //}
@@ -94,10 +108,12 @@ void denormalize(FnSymbol *fn) {
       }
       if(!isExprSafeForReorder(def)) {
         isDenormalizeSafe = false;
+        //break;
       }
       else if(possibleDepInBetween(defExpr, useExpr)) {
         //if(! isExprSafeForReorder(def)) {
           isDenormalizeSafe = false;
+          //break;
         //}
       }
       if(isDenormalizeSafe) {
@@ -112,28 +128,33 @@ void denormalize(FnSymbol *fn) {
     }
     def = NULL;
     use = NULL;
-  }
+  } // end loop for symbol
 
-  for_vector(CallExpr, ce, deferredFns) {
+  for(std::set<CallExpr*>::iterator ceIt = deferredFns.begin() ; 
+      ceIt != deferredFns.end() ; ceIt++) {
     //std::cout << "REVISITING\n";
     //print_view(ce);
-    denormalizeActuals(ce, defMap, useMap);
+    denormalizeActuals(*ceIt, defMap, useMap, actualUseDefMap);
   }
+  freeDefUseMaps(defMap, useMap);
 }
 
 void denormalizeActuals(CallExpr* ce,
     Map<Symbol*,Vec<SymExpr*>*> defMap,
-    Map<Symbol*,Vec<SymExpr*>*> useMap) {
+    Map<Symbol*,Vec<SymExpr*>*> useMap,
+    ActualUseDefCastMap actualUseDefMap) {
 
   INT_ASSERT(!ce->isPrimitive());
   for_alist_backward(actual, ce->argList) {
     if(SymExpr* argSym = toSymExpr(actual)) { //else it's already denormd
       if(! (argSym->var->isConstant() ||
             argSym->var->isParameter())) {
-        SymExpr* use;
-        Expr* def;
-        Type* castTo = NULL;
-        if(isDenormalizable(argSym->var, defMap, useMap, &use, &def, &castTo)) {
+        if(actualUseDefMap.count(argSym) > 0) {
+          std::pair<Expr*,Type*> tmpTuple = actualUseDefMap[argSym];
+          SymExpr* use = argSym;
+          Expr* def = tmpTuple.first;
+          Type* castTo = tmpTuple.second;
+          //if(isDenormalizable(argSym->var, defMap, useMap, &use, &def, &castTo)) {
           Expr* useExpr = use->parentExpr;
           Expr* defExpr = def->parentExpr;
           if(CallExpr* ceTmp = toCallExpr(defExpr)) {
@@ -220,12 +241,16 @@ break;
 }
 */
 bool isExprSafeForReorder(Expr * e) {
+  if(safeExprCache.count(e) > 0) {
+    return safeExprCache[e];
+  }
   if(CallExpr* ce = toCallExpr(e)) {
     if(!ce->isPrimitive()) {
       for_formals_actuals(formal, actual, ce) {
         if(isReferenceType(formal->typeInfo())) {
           //std::cout << "forbidden actual\n";
           //print_view(actual);
+          safeExprCache[e] = false;
           return false;
         }
       }
@@ -241,6 +266,7 @@ bool isExprSafeForReorder(Expr * e) {
             //std::cout << "Symbol\n";
             //print_view(var);
             //std::cout << "is global\n";
+            safeExprCache[e] = false;
             return false;
           }
         }
@@ -249,6 +275,7 @@ bool isExprSafeForReorder(Expr * e) {
         //this can be enhanced by going recursive, but it might be a bit overkill
         else if(CallExpr* ce = toCallExpr(ast)) {
           if(!isNonEssentialPrimitive(ce)) {
+            safeExprCache[e] = false;
             return false;
           }
         }
@@ -257,6 +284,7 @@ bool isExprSafeForReorder(Expr * e) {
     else {
       //primitive
       if(ce->primitive->isEssential){
+        safeExprCache[e] = false;
         return false;
       }
       else {
@@ -275,6 +303,7 @@ bool isExprSafeForReorder(Expr * e) {
       }
     }
   }
+  safeExprCache[e] = true;
   return true;
 }
 //I am not proud of how this function checks "safety" of denormalization.
@@ -448,29 +477,29 @@ bool isDenormalizable(Symbol* sym,
     Vec<SymExpr*>* uses = useMap.get(sym);
 
     if(defs && defs->n == 1 && uses && uses->n == 1) { // check def-use counts
-      for_defs(se, defMap, sym) { //use a Map method maybe
-        defExpr = se->parentExpr;
+      //for_defs(se, defMap, sym) {
+      SymExpr* se = defs->first();
+      defExpr = se->parentExpr;
 
-        //defExpr has to be a move without any coercion
-        CallExpr* ce = toCallExpr(defExpr);
-        if(ce) {
-          if(ce->isPrimitive(PRIM_MOVE)) {
-            Type* lhsType = ce->get(1)->typeInfo();
-            Type* rhsType = ce->get(2)->typeInfo();
-            if(lhsType == rhsType) {
-              if(! canPrimMoveCreateCommunication(ce)) {
-                if(! (lhsType->symbol->hasFlag(FLAG_EXTERN))){
-                  if(!lhsType->symbol->hasFlag(FLAG_ATOMIC_TYPE)){
-                    def = ce->get(2);
-                    if(CallExpr* defCe = toCallExpr(def)) {
-                      if(defCe->isPrimitive() && 
-                          isIntegerPromotionPrimitive(defCe->primitive->tag)) {
-                        if(requiresCast(lhsType)) {
-                          *castTo = lhsType;
-                          //print_view(def);
-                          //std::cout << "def will be cast to\n";
-                          //print_view(*castTo);
-                        }
+      //defExpr has to be a move without any coercion
+      CallExpr* ce = toCallExpr(defExpr);
+      if(ce) {
+        if(ce->isPrimitive(PRIM_MOVE)) {
+          Type* lhsType = ce->get(1)->typeInfo();
+          Type* rhsType = ce->get(2)->typeInfo();
+          if(lhsType == rhsType) {
+            if(! canPrimMoveCreateCommunication(ce)) {
+              if(! (lhsType->symbol->hasFlag(FLAG_EXTERN))){
+                if(!lhsType->symbol->hasFlag(FLAG_ATOMIC_TYPE)){
+                  def = ce->get(2);
+                  if(CallExpr* defCe = toCallExpr(def)) {
+                    if(defCe->isPrimitive() && 
+                        isIntegerPromotionPrimitive(defCe->primitive->tag)) {
+                      if(requiresCast(lhsType)) {
+                        *castTo = lhsType;
+                        //print_view(def);
+                        //std::cout << "def will be cast to\n";
+                        //print_view(*castTo);
                       }
                     }
                   }
@@ -480,31 +509,33 @@ bool isDenormalizable(Symbol* sym,
           }
         }
       }
+      //}
 
       if(def) {
         *defOut = def;
         // we have def now find where the value is used
-        for_uses(se, useMap, sym) {
-          useExpr = se->parentExpr;
-          if(CallExpr* ce = toCallExpr(useExpr)) {
+        //for_uses(se, useMap, sym) {
+        SymExpr* se = uses->first();
+        useExpr = se->parentExpr;
+        if(CallExpr* ce = toCallExpr(useExpr)) {
 
-            //or'ed list of cases where we cannot denormalize due to 
-            //inappropriate useExpr
-            if( !(ce->isPrimitive(PRIM_ADDR_OF) ||
-                  ce->isPrimitive(PRIM_ARRAY_GET) ||
-                  ce->isPrimitive(PRIM_GET_MEMBER) ||
-                  ce->isPrimitive(PRIM_DEREF) ||
-                  ce->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                  (ce->isPrimitive(PRIM_MOVE) && 
-                   ce->get(1)->typeInfo() !=
-                   ce->get(2)->typeInfo()))) {
-              use = se;
-            }
-          }
-          else {
-            use = se; //TODO how's this possible?
+          //or'ed list of cases where we cannot denormalize due to 
+          //inappropriate useExpr
+          if( !(ce->isPrimitive(PRIM_ADDR_OF) ||
+                ce->isPrimitive(PRIM_ARRAY_GET) ||
+                ce->isPrimitive(PRIM_GET_MEMBER) ||
+                ce->isPrimitive(PRIM_DEREF) ||
+                ce->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                (ce->isPrimitive(PRIM_MOVE) && 
+                 ce->get(1)->typeInfo() !=
+                 ce->get(2)->typeInfo()))) {
+            use = se;
           }
         }
+        else {
+          use = se; //TODO how's this possible?
+        }
+        //}
       }
       else {
         return false;
