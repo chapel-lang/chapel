@@ -215,10 +215,10 @@ public:
   const char* doc;
 
   GenRet codegen();
-  void codegenDefC(bool global = false);
+  void codegenDefC(bool global = false, bool isHeader = false);
   void codegenDef();
   // global vars are different ...
-  void codegenGlobalDef();
+  void codegenGlobalDef(bool isHeader);
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 

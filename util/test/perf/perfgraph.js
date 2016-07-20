@@ -187,12 +187,21 @@ function getNextDivs(afterDiv, afterLDiv) {
   screenshotToggle.style.visibility = 'hidden';
   gspacer.appendChild(screenshotToggle);
 
+  // create a close graph button and put it next to the screnshot button
+  var closeGraphToggle = document.createElement('input');
+  closeGraphToggle.type = 'button';
+  closeGraphToggle.className = 'toggle';
+  closeGraphToggle.value = 'close';
+  closeGraphToggle.style.visibility = 'hidden';
+  gspacer.appendChild(closeGraphToggle);
+
   return {
     div: div,
-      ldiv: ldiv,
-      logToggle: logToggle,
-      annToggle: annToggle,
-      screenshotToggle: screenshotToggle
+    ldiv: ldiv,
+    logToggle: logToggle,
+    annToggle: annToggle,
+    screenshotToggle: screenshotToggle,
+    closeGraphToggle: closeGraphToggle
   }
 }
 
@@ -206,6 +215,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
   var logToggle = graphDivs.logToggle;
   var annToggle = graphDivs.annToggle;
   var screenshotToggle = graphDivs.screenshotToggle;
+  var closeGraphToggle = graphDivs.closeGraphToggle;
 
   var startdate = getDateFromURL(OptionsEnum.STARTDATE, graphInfo.startdate);
   var enddate = getDateFromURL(OptionsEnum.ENDDATE, graphInfo.enddate);
@@ -290,6 +300,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
     setupLogToggle(g, graphInfo, logToggle);
     setupAnnToggle(g, graphInfo, annToggle);
     setupScreenshotToggle(g, graphInfo, screenshotToggle);
+    setupCloseGraphToggle(g, graphInfo, closeGraphToggle);
 
     g.isReady = true;
 
@@ -389,6 +400,22 @@ function setupScreenshotToggle(g, graphInfo, screenshotToggle) {
 
   screenshotToggle.onclick = function() {
     captureScreenshot(g, graphInfo);
+  }
+}
+
+
+// Setup the close graph button
+function setupCloseGraphToggle(g, graphInfo, closeGraphToggle) {
+  closeGraphToggle.style.visibility = 'visible';
+
+  closeGraphToggle.onclick = function() {
+    var checkBox = getCheckboxForGraph(g);
+    checkBox.checked = false;
+
+    // TODO instead of completely redrawing with displaySelectedGraphs() we
+    // could just remove the divs associated with the graph being removed to
+    // speed up this operation and make it less "jittery"
+    displaySelectedGraphs();
   }
 }
 
@@ -1415,6 +1442,15 @@ function normalizeForURL(str) {
   return str.toLowerCase().replace(nonAlphaNumRegex, '');
 }
 
+
+// gets the checkbox associated with a particular graph
+function getCheckboxForGraph(g) {
+  for (var i = 0; i < allGraphs.length; i++) {
+    if (allGraphs[i].title == g.graphInfo.title) {
+      return document.getElementById('graph' + i);
+    }
+  }
+}
 
 
 ////////////////////////////

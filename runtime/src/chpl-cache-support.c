@@ -21,6 +21,7 @@
 #include <string.h>
 #include <assert.h>
 #include "chpl-bitops.h"
+#include "chpl-align.h"
 
 // ----------  SUPPORT FUNCTIONS 
 typedef int64_t cache_seqn_t;
@@ -56,33 +57,6 @@ static inline void saturating_add(saturating_count_t *x, unsigned int num) {
   *x = v;
 }
 */
-// If we have a mask representing 2^n - 1,
-// round an offset down to a multiple of 2^n.
-static inline
-uintptr_t round_down_to_mask(uintptr_t p, uintptr_t mask)
-{
- return p - (p & mask);
-}
-static inline
-unsigned char* round_down_to_mask_ptr(unsigned char* p, uintptr_t mask)
-{
-  return (unsigned char*) round_down_to_mask((uintptr_t)p, mask);
-}
-
-// If we have a mask representing 2^n - 1,
-// round an offset up to a multiple of 2^n.
-static inline
-uintptr_t round_up_to_mask(uintptr_t p, uintptr_t mask)
-{
-  uintptr_t offset = p & mask;
-  return (offset==0)?(p):(p + (mask+1) - offset);
-}
-static inline
-unsigned char* round_up_to_mask_ptr(unsigned char* p, uintptr_t mask)
-{
-  return (unsigned char*) round_up_to_mask((uintptr_t)p, mask);
-}
-
 
 // Single linked list/stack
 #define SINGLE_POP_HEAD(tree, NAME) { \
