@@ -141,7 +141,7 @@ Function {make_setting_window()} {open
 } {
   Fl_Window SettingsWin {
     label Settings open
-    xywh {837 675 560 225} type Double color 7
+    xywh {1297 787 560 225} type Double color 7
     class Settings visible
   } {
     Fl_Button {} {
@@ -199,7 +199,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {39 273 500 590} type Double color 7 resizable size_range {500 590 0 0} visible
+    xywh {39 273 500 590} type Double color 7 hide resizable size_range {500 590 0 0}
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 500 20} color 55
@@ -215,7 +215,7 @@ Function {} {open
 
 if (selfile) {
    // User didn't cancel
-   if (!VisData.LoadData(selfile)) {
+   if (!VisData.LoadData(selfile, false)) {
       return;
    }
    DbgView->setNumLocales(VisData.NumLocales());
@@ -322,7 +322,7 @@ MainWindow->redraw();}
         MenuItem {} {
           label {Show Size}
           callback {DbgView->showDsize();
-MainWindow->redraw();} selected
+MainWindow->redraw();}
           xywh {0 0 36 21}
         }
       }
@@ -339,7 +339,7 @@ MainWindow->redraw();} selected
   code {VisSettings.readFromFile();
 if (argc > 1 && argv[1][1] != '-') {
     //printf ("argv[1] is %s\\n", argv[1]);
-    if (!VisData.LoadData(argv[1])) {
+    if (!VisData.LoadData(argv[1],true)) {
        exit(1);
     }
     DbgView->setNumLocales(VisData.NumLocales());
@@ -351,7 +351,7 @@ if (argc > 1 && argv[1][1] != '-') {
 } else {
    // look for .Vdebug/.Vdebug-0
    if (access(".Vdebug/.Vdebug-0", R_OK) == 0 &&
-       VisData.LoadData(".Vdebug/.Vdebug-0")) {
+       VisData.LoadData(".Vdebug/.Vdebug-0",false)) {
       DbgView->setNumLocales(VisData.NumLocales());
       DbgView->makeTagsMenu();
       DbgView->selectData(DataModel::TagALL);
@@ -362,5 +362,6 @@ MainWindow->callback(mainWinCallback);
 if (VisSettings.save_WH) {
    MainWindow->size(VisSettings.mainW,VisSettings.mainH);
    MainWindow->redraw();
-}} {}
+}} {selected
+  }
 } 
