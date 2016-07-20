@@ -48,7 +48,7 @@
 #else
     #define NO_STDATOMIC
     #define Atomic(T) T
-    #define ATOMIC_FLAG_INIT false
+    #define ATOMIC_FLAG_INIT { false }
   #endif
 #elif __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
   #include <stdatomic.h>
@@ -56,7 +56,7 @@
 #else
   #define NO_STDATOMIC
   #define Atomic(T) T
-  #define ATOMIC_FLAG_INIT false
+  #define ATOMIC_FLAG_INIT { false }
 #endif
 
 #ifdef NO_STDATOMIC
@@ -75,7 +75,7 @@ typedef uint_least32_t atomic_uint_least32_t;
 typedef uint_least64_t atomic_uint_least64_t;
 typedef uintptr_t atomic_uintptr_t;
 typedef chpl_bool atomic_bool;
-typedef chpl_bool atomic_flag;
+typedef struct { chpl_bool v; } atomic_flag;
 
 typedef enum {
  memory_order_relaxed,
@@ -130,14 +130,14 @@ static inline void atomic_signal_fence(memory_order order)
 //////////////////////////////////////////////////////////////////////////////
 #ifdef NO_STDATOMIC
 static inline chpl_bool atomic_flag_test_and_set_explicit(atomic_flag *obj, memory_order order) {
-  return (chpl_bool)__sync_fetch_and_or((int_fast8_t*)obj, true); 
+  return (chpl_bool)__sync_fetch_and_or(&obj->v, true);
 }
 static inline chpl_bool atomic_flag_test_and_set(atomic_flag *obj) {
   return atomic_flag_test_and_set_explicit(obj, memory_order_seq_cst);
 }
 
 static inline void atomic_flag_clear_explicit(atomic_flag *obj, memory_order order) {
-  __sync_fetch_and_and((int_fast8_t*)obj, false);
+  __sync_fetch_and_and(&obj->v, false);
 }
 static inline void atomic_flag_clear(atomic_flag *obj) {
   atomic_flag_clear_explicit(obj, memory_order_seq_cst);
