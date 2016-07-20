@@ -143,6 +143,8 @@ genGlobalDefClassId(const char* cname, int id, bool isHeader) {
                       id_type_name, name.c_str(), id);
   } else {
 #ifdef HAVE_LLVM
+    if (!isHeader)
+      return;
     GenRet id_type_g = CLASS_ID_TYPE->codegen();
     llvm::Type *id_type = id_type_g.type;
     llvm::GlobalVariable * gv = llvm::cast<llvm::GlobalVariable>(
@@ -244,6 +246,9 @@ genFtable(Vec<FnSymbol*> & fSymbols, bool isHeader) {
     fprintf(hdrfile, "\n};\n");
   } else {
 #ifdef HAVE_LLVM
+    if (!isHeader)
+      return;
+
     std::vector<llvm::Constant *> table ((fSymbols.n == 0) ? 1 : fSymbols.n);
     
     llvm::Type *funcPtrType = info->lvt->getType("chpl_fn_p");
@@ -327,6 +332,9 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types, bool isHeader) {
     fprintf(hdrfile, "\n};\n");
   } else {
 #ifdef HAVE_LLVM
+    if (!isHeader)
+      return;
+
     const char* vmtData = "chpl_vmtable_data";
     std::vector<llvm::Constant *> table;
     llvm::Type *funcPtrType = getTypeLLVM("chpl_fn_p");
@@ -1073,7 +1081,11 @@ static void codegen_header(bool isHeader) {
   }
 
   genComment("Function Pointer Table");
+#ifndef HAVE_LLVM
   if(!isHeader) {
+#else
+    if (isHeader) {
+#endif
     for_vector(FnSymbol, fn2, functions) {
       if (fn2->hasFlag(FLAG_BEGIN_BLOCK) ||
           fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
@@ -1105,6 +1117,9 @@ static void codegen_header(bool isHeader) {
                       globals_registry_static_size);
   } else {
 #ifdef HAVE_LLVM
+    if (!isHeader)
+      return; // Nothing in remainder of function should be done twice for LLVM
+
     llvm::Type* ptr_wide_ptr_t = info->lvt->getType("ptr_wide_ptr_t");
     INT_ASSERT(ptr_wide_ptr_t);
 
