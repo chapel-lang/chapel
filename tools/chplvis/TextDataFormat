@@ -52,6 +52,12 @@ Lines in the file:
     [OL] - on of O or L, O for an "on task", L for a "local task"
     Task creation, On tasks don't have valid lnum and fileno.
 
+  Btask: tv nid tid
+    Task has begun execution
+
+  Etask: tv nid tid
+    Task has ended execution
+
   nb_put: tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
   nb_get: tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
   put: tv nid rid tid addr raddr elemsize typeIndex length lnum fileno
