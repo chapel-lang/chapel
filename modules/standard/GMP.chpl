@@ -149,7 +149,7 @@ module GMP {
   extern type __mpz_struct;
 
   /* The GMP ``mpz_t`` type */
-  extern type mpz_t = 1*__mpz_struct;
+  extern type mpz_t = 1*__mpz_struct; // can we use a struct and not a tuple?
 
   pragma "no doc"
   extern type __gmp_randstate_struct;
@@ -425,8 +425,7 @@ module GMP {
   /* Print out an mpz_t (for debugging) */
   extern proc chpl_gmp_mpz_print(x:mpz_t);
   /* Get an mpz_t as a string */
-  extern proc chpl_gmp_mpz_get_str(base: c_int, x:mpz_t):c_string_copy;
-
+  extern proc chpl_gmp_mpz_get_str(base: c_int, x:mpz_t):c_string;
 
   enum Round {
     UP = 1,
@@ -693,7 +692,7 @@ module GMP {
     proc get_str(base: int=10):string
     {
       var ret:string;
-      on this {
+      on Locales[this.locale_id] {
         var tmp = chpl_gmp_mpz_get_str(base.safeCast(c_int), this.mpz);
         ret = new string(tmp, owned=true, needToCopy=false);
       }
@@ -1781,15 +1780,12 @@ module GMP {
   // needs to deep copy b'c of how we use it
    proc =(ref lhs: BigInt, rhs: BigInt) {
     inline proc helpMe(ref lhs: BigInt, rhs: BigInt) {
-      if _local || rhs.locale_id == chpl_nodeID {
+      if _local || rhs.locale_id == lhs.locale_id {
         lhs.reinitBigInt(rhs.mpz, needToCopy=true);
       } else {
-        // TODO: handle remote assignment
-        writeln("Watch out! Remote assignment of BigInt not tested");
-        //lhs.set(rhs);
-        on lhs{
+        on Locales[lhs.locale_id]{
           var mpz_struct = rhs.mpz[1];
-          chpl_gmp_get_mpz(lhs.mpz, rhs.locale.id, mpz_struct);
+          chpl_gmp_get_mpz(lhs.mpz, rhs.locale_id, mpz_struct);
           lhs.owned = true; //remote assignment makes a deep copy
         }
       }
@@ -1867,13 +1863,10 @@ module GMP {
   }
 
   proc BigInt.writeThis(writer) {
-    //this works, but makes and
-    // deletes 2 records each time it is called
-    // TODO: confirm support of remote records for writing
-    // TODO: Ask why we can't just do "on this" and skip localization, since
-    // we are only working with 'this'
-    var a_ = this; //assignment should localize
-    var s: string = a_.get_str();
+    var s: string;
+    on Locales[this.locale_id] {
+      s = this.get_str();
+    }
     writer.write(s);
   }
 
