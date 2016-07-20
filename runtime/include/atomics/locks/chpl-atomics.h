@@ -199,7 +199,7 @@ static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type 
   return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
 } \
 static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succeed_order, memory_order fail_order) { \
-  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, order); \
+  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, succeed_order, fail_order); \
 } \
 static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
   return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
