@@ -51,7 +51,6 @@ class FnSymbol;
 class Symbol;
 class TypeSymbol;
 class VarSymbol;
-class IteratorInfo;
 
 class Type : public BaseAST {
 public:
@@ -158,9 +157,6 @@ class AggregateType : public Type {
   AList fields;
   AList inherits; // used from parsing, sets dispatchParents
   Symbol* outer;  // pointer to an outer class if this is an inner class
-
-  IteratorInfo* iteratorInfo; // Attached only to iterator class/records
-
   const char *doc;
 
   AggregateType(AggregateTag initTag);
