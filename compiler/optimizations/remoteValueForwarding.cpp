@@ -184,8 +184,7 @@ static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   buildSyncAccessFunctionSet(syncSet);
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-
-    if (isTaskFun(fn)) {
+    if (fn->hasFlag(FLAG_ON) == true) {
       // Would need to flatten them if they are not already.
       INT_ASSERT(isGlobal(fn));
 
