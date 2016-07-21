@@ -1,0 +1,2 @@
+AMMPI_MPI_THREAD=multiple
+MPICH_MAX_THREAD_SAFETY=multiple
