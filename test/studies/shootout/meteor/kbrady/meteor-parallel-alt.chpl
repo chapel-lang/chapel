@@ -351,11 +351,7 @@ proc searchLinearHelper(in board, in pos, in used, in placed,
 }
 
 
-//
-// Atomic lock that prevents multiple tasks recording their
-// solution at once (also known as a race condition)
-// 'false' is the unlocked state, and 'true' is the locked state
-//
+// Atomic used as mutex for recordSolution()
 var l: atomic bool;
 
 
@@ -366,16 +362,14 @@ proc searchLinear(in board, in pos, in used, in placed, currentSolution) {
   var count, evenRows, oddRows, leftBorder, rightBorder,
       s1, s2, s3, s4, s5, s6, s7, s8: int;
 
-
-
   if placed == numPieces {
 
-    // Wait (yield) until unlocked state, then lock it by setting it to true
+    // lock
     while l.testAndSet() do chpl_task_yield();
 
     recordSolution(currentSolution);
 
-    // Set to unlocked state after solution has been recorded
+    // unlock
     l.clear();
 
   } else {
