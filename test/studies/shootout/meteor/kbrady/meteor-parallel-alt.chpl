@@ -11,7 +11,7 @@ use BitOps;
 param boardCells = 50,          // Number of cells on board
       boardWidth = 5,           // Number of cells along x-axis
       boardHeight = 10,         // Number of cells along y-axis
-      permutations = 8192,      // Number of permutations stored as masks
+      totalMasks = 8192,        // Upper bound for allMasks needed (power of 2)
       piecePermutations = 12,   // Number of permutations for a single piece
       numPieces = 10,           // Number of puzzle pieces
       pieceCells = 5;           // Number of cells that make up a puzzle piece
@@ -20,7 +20,7 @@ const boardDom = {0..#boardCells},
       piecesDom = {0..#numPieces};
 
 // Arrays of masks to store all pieces and their possible configurations
-var allMasks: [0..#permutations] int,
+var allMasks: [0..#totalMasks] int,
     maskStart: [boardDom][0..#numPieces-2] int;
 
 // Arrays of min and max, and an integer storing the number of solutions
@@ -41,10 +41,6 @@ param maskEven   = 0xf07c1f07c1f07c1f: int, // Even rows of board (0, 2, 4, ..)
 // Find and print the minimum and maximum solutions to meteor puzzle
 //
 proc main(args: [] string) {
-
-  // Support dummy arguments for shootout execution scripts
-  if args.size > 2 then
-    return;
 
   initialize();
 
@@ -355,28 +351,27 @@ proc searchLinearHelper(in board, in pos, in used, in placed,
 }
 
 
-// DIY sync variable functionality that outperforms native sync variables.
-// Access controlled by functions lock() and unlock()
+// Atomic used as mutex for recordSolution()
 var l: atomic bool;
 
 
 //
-// Recursively add pieces to the board, and check solution when filled.
+// Recursively add pieces to the board, and check solution when filled
 //
 proc searchLinear(in board, in pos, in used, in placed, currentSolution) {
   var count, evenRows, oddRows, leftBorder, rightBorder,
       s1, s2, s3, s4, s5, s6, s7, s8: int;
 
-  // Lock atomic lock - this is what sync variables do under the hood
-  proc lock() { while l.testAndSet() != false do chpl_task_yield(); }
-
-  // Unlock atomic lock
-  proc unlock() { l.write(false); }
-
   if placed == numPieces {
-    lock();
+
+    // lock
+    while l.testAndSet() do chpl_task_yield();
+
     recordSolution(currentSolution);
-    unlock();
+
+    // unlock
+    l.clear();
+
   } else {
     evenRows = evenRowsLookup[pos];
 
@@ -452,8 +447,8 @@ proc recordSolution(currentSolution) {
     minSolution = board;
     maxSolution = board;
   } else {
-    compareSolution(board, minSolution, maxSolution);
-    compareSolution(flipBoard, minSolution, maxSolution);
+    compareSolution(board);
+    compareSolution(flipBoard);
   }
 
   solutions += 2;
@@ -463,7 +458,7 @@ proc recordSolution(currentSolution) {
 //
 // Determine whether a solution is a min or max solution
 //
-proc compareSolution(board, minSolution, maxSolution) {
+proc compareSolution(board) {
 
   for i in 0..#boardCells {
     if board[i] < minSolution[i] {
