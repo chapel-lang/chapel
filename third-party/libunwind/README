@@ -2,21 +2,10 @@
 libunwind README for Chapel
 ===========================
 
-Currently Chapel doesn't include libunwind as a third-party package. The library
-must be manually downloaded and extracted into the libunwind-src directory. See
-the "Install libunwind into Chapel" section into this README file for more
-informations. 
+This copy of libunwind is being released with Chapel for
+convenience and was obtained from:
+
+  http://download.savannah.gnu.org/releases/libunwind
 
 Any Chapel issues that seem to be related to libunwind should be
 directed to the Chapel team at chapel-bugs@lists.sourceforge.net.
-
-Install libunwind into Chapel
-=============================
-
-1. Download libunwind 1.1 from
-   http://download.savannah.gnu.org/releases/libunwind//libunwind-1.1.tar.gz
-2. Extract the package into the directory 
-   $CHPL_HOME/third-party/libunwind/libunwind-src/. Please note that this
-   directory must contains the un-tarballed libunwind package contents.
-
-Chapel should now be able to build libunwind from source.
