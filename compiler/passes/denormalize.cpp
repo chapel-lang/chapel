@@ -57,7 +57,7 @@ void denormalize(FnSymbol *fn) {
   collectSymbolSetSymExprVec(fn, symSet, symExprs);
   buildDefUseMaps(symSet, symExprs, defMap, useMap);
 
-  //data structures dfor deferred actual handling
+  //data structures for deferred actual handling
   std::set<CallExpr*> deferredFns;
   ActualUseDefCastMap actualUseDefMap;
 
@@ -74,7 +74,10 @@ void denormalize(FnSymbol *fn) {
     //if we don't already have it cached,
     //check for global symbols in function body
     if(!cachedGlobalManip) {
-      if(sym && !sym->isImmediate() && !sym->isConstant() && isGlobal(sym)){
+      //I am not sure if there should be !isConstant and !isParam as well
+      //I think there can be a const but stateful global that is manipulated by
+      //the function so, play safe
+      if(sym && !sym->isImmediate() && isGlobal(sym)){
         globalManipFuncCache[fn] = true;
         cachedGlobalManip = true;
       }
@@ -303,7 +306,7 @@ bool isExprSafeForReorder(Expr * e) {
           if (SymExpr* se = toSymExpr(ast)) {
             Symbol* var = se->var;
 
-            if(!var->isImmediate() && !var->isConstant() && isGlobal(var)){
+            if(!var->isImmediate() &&  isGlobal(var)){
               safeExprCache[e] = false;
               globalManipFuncCache[fnSym] = true;
               return false;
