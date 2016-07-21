@@ -4307,15 +4307,6 @@ GenRet CallExpr::codegenPrimitive() {
   case PRIM_DEREF:
   case PRIM_GET_SVEC_MEMBER_VALUE:
   case PRIM_GET_MEMBER_VALUE:
-    ////TODO check if tests pass with following commented out
-    //if uncommented back you need to move it to the top of the case list to
-    //avoid wrong fall-through
-    //if(CallExpr* ce = toCallExpr(parentExpr)) {
-      //if(ce->isPrimitive(PRIM_ASSIGN)) {
-        //ret = codegenPrimGetMemberValForTarget(ce->get(1));
-        //break;
-      //}
-    //}
   case PRIM_GET_PRIV_CLASS:
   case PRIM_ARRAY_GET:
   case PRIM_ARRAY_GET_VALUE:
