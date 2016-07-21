@@ -655,7 +655,6 @@ GenRet VarSymbol::codegen() {
         ret.isLVPtr = GEN_VAL;
         ret.c = cname;
       } else {
-        //std::cout << "Aren't I here?\n";
         ret.c = '&';
         ret.c += cname;
         ret.isLVPtr = GEN_PTR;
@@ -1236,8 +1235,6 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   if (!type)
     INT_FATAL(this, "TypeSymbol constructor called without type");
   type->addSymbol(this);
-  //std::cout << "Adding type symbol " << std::endl;
-  //print_view(this);
   gTypeSymbols.add(this);
 }
 

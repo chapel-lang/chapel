@@ -23,7 +23,6 @@
 #include "iterator.h"
 #include "stringutil.h"
 #include "type.h"
-#include "view.h"
 
 static Type*
 returnInfoUnknown(CallExpr* call) {

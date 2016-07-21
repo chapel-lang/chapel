@@ -24,7 +24,6 @@
 #include "build.h"
 #include "codegen.h"
 #include "ForLoop.h"
-#include "view.h"
 
 #include <algorithm>
 

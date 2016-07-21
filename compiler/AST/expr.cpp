@@ -36,7 +36,6 @@
 #include "stringutil.h"
 #include "type.h"
 #include "WhileStmt.h"
-#include "view.h"
 
 
 #include <cstdio>
@@ -3459,9 +3458,9 @@ codegenExprMinusOne(Expr* expr)
 static void callExprHelper(CallExpr* call, BaseAST* arg) {
   if (!arg)
     return;
-  if (toSymbol(arg) || toExpr(arg)) {
+  if (toSymbol(arg) || toExpr(arg))
     call->insertAtTail(arg);
-  } else
+  else
     INT_FATAL(call, "Bad argList in CallExpr constructor");
 }
 
@@ -4095,7 +4094,6 @@ GenRet CallExpr::codegen() {
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) == true)  {
     codegenInvokeTaskFun("chpl_taskListAddCoStmt");
 
-  } else if (fn->hasFlag(FLAG_NO_CODEGEN)                == true) {
   } else if (fn->hasFlag(FLAG_NO_CODEGEN)                == false) {
     std::vector<GenRet> args(numActuals());
     GenRet              base = baseExpr->codegen();
@@ -4181,6 +4179,7 @@ GenRet CallExpr::codegen() {
 #endif
     }
   }
+
   return ret;
 }
 
@@ -5493,9 +5492,6 @@ GenRet CallExpr::codegenPrimitive() {
       ret = codegenWideAddrWithAddr(tmp,
                                     codegenCast(get(1)->typeInfo(),
                                                 codegenRaddr(tmp)));
-      //NOTE when everything is normalized we never hit this case and it
-      //obviously misses the following line
-      //ret = codegenAddrOf(ret);
     } else {
       Type* dst = get(1)->typeInfo();
       Type* src = get(2)->typeInfo();
@@ -5832,6 +5828,7 @@ GenRet CallExpr::codegenPrimMove() {
   GenRet specRet;
   if (get(1)->typeInfo() == dtVoid) {
     ret = get(2)->codegen();
+
   // Is the RHS a primop with special case handling?
   } else if (codegenIsSpecialPrimitive(get(1), get(2), specRet)) {
     CallExpr* rhsCe = toCallExpr(get(2));
@@ -5897,14 +5894,8 @@ GenRet CallExpr::codegenPrimMove() {
   return ret;
 }
 
-//static GenRet* codegenIsSpecialPrimitive(BaseAST* target, Expr* e) {
 static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
-  //CallExpr* rhs    = toCallExpr(get(2));
-  //rhs is this now
-  //
-  //get(1) 's should be target
   bool      retval = false;
-  //GenRet*   ret = NULL;
   CallExpr* ce = toCallExpr(e);
 
   if(!ce) return false;
@@ -5958,19 +5949,13 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
           INT_ASSERT(valueType == target->typeInfo());
         }
 
-        // set get(1) = *(rhs->get(1));
-        //codegenAssign(get(1), codegenDeref(rhs->get(1)));
         ret = codegenDeref(ce->get(1));
 
       } else if (target && target->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
         // star tuple retval in codegenAssign
-        // set get(1) = *(rhs->get(1));
-        //codegenAssign(get(1), codegenDeref(rhs->get(1)));
         ret = codegenDeref(ce->get(1));
 
       } else {
-        // set get(1) = *(rhs->get(1));
-        //codegenAssign(get(1), codegenDeref(rhs->get(1)));
         ret = codegenDeref(ce->get(1));
       }
 
@@ -6222,7 +6207,6 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
   return retval;
 }
-
 
 void CallExpr::codegenInvokeOnFun() {
   FnSymbol*           fn       = isResolved();
