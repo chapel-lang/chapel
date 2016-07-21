@@ -11,7 +11,7 @@ use BitOps;
 param boardCells = 50,          // Number of cells on board
       boardWidth = 5,           // Number of cells along x-axis
       boardHeight = 10,         // Number of cells along y-axis
-      totalMasks = 6966,        // Magic number of total masks stored
+      totalMasks = 8192,        // Upper bound for allMasks needed (power of 2)
       piecePermutations = 12,   // Number of permutations for a single piece
       numPieces = 10,           // Number of puzzle pieces
       pieceCells = 5;           // Number of cells that make up a puzzle piece
@@ -20,7 +20,7 @@ const boardDom = {0..#boardCells},
       piecesDom = {0..#numPieces};
 
 // Arrays of masks to store all pieces and their possible configurations
-var allMasks: [0..#totalMasks] int = -1,
+var allMasks: [0..#totalMasks] int,
     maskStart: [boardDom][0..#numPieces-2] int;
 
 // Arrays of min and max, and an integer storing the number of solutions
@@ -371,13 +371,12 @@ proc searchLinear(in board, in pos, in used, in placed, currentSolution) {
   if placed == numPieces {
 
     // Wait (yield) until unlocked state, then lock it by setting it to true
-    while l.testAndSet() != false
-      do chpl_task_yield();
+    while l.testAndSet() do chpl_task_yield();
 
     recordSolution(currentSolution);
 
     // Set to unlocked state after solution has been recorded
-    l.write(false);
+    l.clear();
 
   } else {
     evenRows = evenRowsLookup[pos];
@@ -454,8 +453,8 @@ proc recordSolution(currentSolution) {
     minSolution = board;
     maxSolution = board;
   } else {
-    compareSolution(board, minSolution, maxSolution);
-    compareSolution(flipBoard, minSolution, maxSolution);
+    compareSolution(board);
+    compareSolution(flipBoard);
   }
 
   solutions += 2;
@@ -465,7 +464,7 @@ proc recordSolution(currentSolution) {
 //
 // Determine whether a solution is a min or max solution
 //
-proc compareSolution(board, minSolution, maxSolution) {
+proc compareSolution(board) {
 
   for i in 0..#boardCells {
     if board[i] < minSolution[i] {
