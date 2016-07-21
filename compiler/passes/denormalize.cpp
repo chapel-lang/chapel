@@ -35,6 +35,7 @@ void denormalizeActuals(CallExpr* ce,
     Map<Symbol*,Vec<SymExpr*>*> useMap,
     ActualUseDefCastMap actualUseDefMap);
 
+void denormalize(void);
 void denormalize(FnSymbol *fn);
 void denormalize(Expr* def, SymExpr* use, Type* castTo);
 
