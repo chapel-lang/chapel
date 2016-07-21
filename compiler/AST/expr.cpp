@@ -5650,8 +5650,7 @@ GenRet CallExpr::codegenPrimitive() {
       Type* dst = get(1)->typeInfo();
       Type* src = get(2)->typeInfo();
 
-      if (dst == src && ((is_int_type(dst) || is_uint_type(dst)) && 
-            get_width(dst) >= 32)) {
+      if (dst == src && !(is_int_type(dst) || is_uint_type(dst)) ) {
         ret = get(2);
 
       } else if ((is_int_type(dst) || is_uint_type(dst)) && src == dtTaskID) {
