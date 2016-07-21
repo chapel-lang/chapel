@@ -52,7 +52,7 @@ param nucl = 1,
       prob = 2;
 
 //
-// Probability tables for equences to be randomly generated
+// Probability tables for sequences to be randomly generated
 //
 const IUB = [(a, 0.27), (c, 0.12), (g, 0.12), (t, 0.27),
              (B, 0.02), (D, 0.02), (H, 0.02), (K, 0.02),

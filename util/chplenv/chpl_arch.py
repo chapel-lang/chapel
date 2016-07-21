@@ -113,7 +113,7 @@ class argument_map(object):
         if arch == 'unknown':
             return arch
 
-        if compiler == 'gnu':
+        if compiler in ['gnu', 'mpi-gnu']:
             if version >= CompVersion('4.9'):
                 return cls.gcc49.get(arch, '')
             elif version >= CompVersion('4.7'):

@@ -11,8 +11,8 @@ writeln("i is: ", i);
 writeln();
 
 if tryIllegal then
-for i in 1..5 do
-  i += 1;        // Illegal: i is 'const' for ranges
+  for i in 1..5 do
+    i += 1;        // Illegal: i is 'const' for ranges
 
 var A: [1..5] real;
 for a in A do

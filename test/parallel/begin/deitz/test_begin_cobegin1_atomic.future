@@ -1,0 +1,5 @@
+bug: rvf not respecting memory order imposed by atomics
+
+Remote value forwarding forwards variables across implicit memory fences
+imposed by atomic operations. RVF takes care to avoid this for memory orders
+imposed by sync variables, but does not do it for atomics.

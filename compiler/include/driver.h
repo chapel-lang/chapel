@@ -193,6 +193,9 @@ extern char compileVersion[64];
 // the compiler but breaks the language!
 extern bool fMinimalModules;
 
+// Set to true if we want to enable incremental compilation.
+extern bool fIncrementalCompilation;
+
 // Set to true if we want to use the experimental
 // Interactive Programming Environment (IPE) mode.
 extern bool fUseIPE;

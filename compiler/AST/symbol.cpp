@@ -757,7 +757,7 @@ GenRet VarSymbol::codegen() {
 }
 
 
-void VarSymbol::codegenDefC(bool global) {
+void VarSymbol::codegenDefC(bool global, bool isHeader) {
   GenInfo* info = gGenInfo;
   if (this->hasFlag(FLAG_EXTERN))
     return;
@@ -774,9 +774,9 @@ void VarSymbol::codegenDefC(bool global) {
   // a variable can be codegen'd as static if it is global and neither
   // exported nor external.
   //
-  bool isStatic =  global && !hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN);
+  bool addExtern =  global && isHeader;
 
-  std::string str = (isStatic ? "static " : "") + typestr + " " + cname;
+  std::string str = (addExtern ? "extern " : "") + typestr + " " + cname;
   if (ct) {
     if (ct->isClass()) {
       if (isFnSymbol(defPoint->parentSymbol)) {
@@ -800,7 +800,7 @@ void VarSymbol::codegenDefC(bool global) {
   info->cLocalDecls.push_back(str);
 }
 
-void VarSymbol::codegenGlobalDef() {
+void VarSymbol::codegenGlobalDef(bool isHeader) {
   GenInfo* info = gGenInfo;
 
   if( id == breakOnCodegenID ||
@@ -810,10 +810,10 @@ void VarSymbol::codegenGlobalDef() {
   }
 
   if( info->cfile ) {
-    codegenDefC(/*global=*/true);
+    codegenDefC(/*global=*/true, isHeader);
   } else {
 #ifdef HAVE_LLVM
-    if(type == dtVoid) {
+    if(type == dtVoid || !isHeader) {
       return;
     }
 
@@ -1495,8 +1495,14 @@ FnSymbol::FnSymbol(const char* initName) :
 
 
 FnSymbol::~FnSymbol() {
-  if (iteratorInfo)
+  if (iteratorInfo) {
+    // Also set iterator class and iterator record iteratorInfo = NULL.
+    if (iteratorInfo->iclass)
+      iteratorInfo->iclass->iteratorInfo = NULL;
+    if (iteratorInfo->irecord)
+      iteratorInfo->irecord->iteratorInfo = NULL;
     delete iteratorInfo;
+  }
   BasicBlock::clear(this);
   delete basicBlocks; basicBlocks = 0;
   if (calledBy)
@@ -1888,15 +1894,6 @@ void FnSymbol::codegenHeaderC(void) {
   FILE* outfile = gGenInfo->cfile;
   if (fGenIDS)
     fprintf(outfile, "/* %7d */ ", id);
-  // Prepend function header with necessary __global__ declaration
-
-  //
-  // A function prototype can be labeled static if it is neither
-  // exported nor external
-  //
-  if (!hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN)) {
-    fprintf(outfile, "static ");
-  }
   fprintf(outfile, "%s", codegenFunctionType(true).c.c_str());
 }
 
@@ -2450,8 +2447,10 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
 
   // Print return type.
   if (this->retExprType != NULL) {
+    AstToText info;
+    info.appendExpr(this->retExprType->body.tail, true);
     *file << ": ";
-    this->retExprType->body.tail->prettyPrint(file);
+    *file << info.text();
   }
   *file << std::endl;
 
