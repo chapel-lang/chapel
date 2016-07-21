@@ -60,7 +60,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
-  // if chpl_comm == none, the numLocales = 1
   return chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
                                   argv[0]);
 }
