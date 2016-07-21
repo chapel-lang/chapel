@@ -5,15 +5,19 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "type.h"
-#include "view.h"
-#include "passes.h"
-#include "resolution.h"
 #include "LoopStmt.h"
 #include "CForLoop.h"
 #include "WhileStmt.h"
 
-//helpers
+//helper datastructures/types
+
+//maybe more memoization than caching
+std::map<Expr*,bool> safeExprCache;
+std::map<FnSymbol*,bool> globalManipFuncCache;
+
 #define ActualUseDefCastMap std::map<SymExpr*, std::pair<Expr*,Type*> >
+
+//prototypes
 bool isExprSafeForReorder(Expr * e);
 bool canPrimMoveCreateCommunication(CallExpr* ce);
 inline bool possibleDepInBetween(Expr* e1, Expr* e2);
@@ -34,7 +38,6 @@ void denormalizeActuals(CallExpr* ce,
 void denormalize(FnSymbol *fn);
 void denormalize(Expr* def, SymExpr* use, Type* castTo);
 
-std::map<Expr*,bool> safeExprCache;
 
 void denormalize(void) {
   if(fDenormalize) {
@@ -54,8 +57,11 @@ void denormalize(FnSymbol *fn) {
   collectSymbolSetSymExprVec(fn, symSet, symExprs);
   buildDefUseMaps(symSet, symExprs, defMap, useMap);
 
+  //data structures dfor deferred actual handling
   std::set<CallExpr*> deferredFns;
   ActualUseDefCastMap actualUseDefMap;
+
+  bool cachedGlobalManip = globalManipFuncCache.count(fn);
 
   forv_Vec(Symbol, sym, symSet) {
 
@@ -64,6 +70,15 @@ void denormalize(FnSymbol *fn) {
     Expr *def = NULL;
     Expr *defPar;
     Type* castTo = NULL;
+
+    //if we don't already have it cached,
+    //check for global symbols in function body
+    if(!cachedGlobalManip) {
+      if(sym && !sym->isImmediate() && !sym->isConstant() && isGlobal(sym)){
+        globalManipFuncCache[fn] = true;
+        cachedGlobalManip = true;
+      }
+    }
 
     if(isDenormalizable(sym, defMap, useMap, &use, &def, &castTo)) {
       usePar = use->parentExpr;
@@ -74,10 +89,14 @@ void denormalize(FnSymbol *fn) {
         if(!useCe->isPrimitive()) {
           deferredFns.insert(useCe);
           std::pair<Expr*, Type*> defCastBundle(def, castTo);
-          actualUseDefMap.insert(std::pair<SymExpr*, std::pair<Expr*, Type*> >(use, defCastBundle));
+          actualUseDefMap.insert(std::pair<SymExpr*, std::pair<Expr*, Type*> >
+              (use, defCastBundle));
           continue;
         }
       }
+
+      //denormalize if the def is safe to move and there is no unsafe function
+      //between use and def
       if(isExprSafeForReorder(def)) {
         if(!possibleDepInBetween(defPar, usePar)) {
           denormalize(def, use, castTo);
@@ -85,6 +104,10 @@ void denormalize(FnSymbol *fn) {
       }
     }
   } // end loop for symbol
+
+  if(!cachedGlobalManip) {
+    globalManipFuncCache[fn] = false;
+  }
 
   //handle deferred actuals
   for(std::set<CallExpr*>::iterator ceIt = deferredFns.begin() ;
@@ -158,7 +181,10 @@ bool isDenormalizable(Symbol* sym,
             if(! canPrimMoveCreateCommunication(ce)) {
               if(! (lhsType->symbol->hasFlag(FLAG_EXTERN))){
                 if(!lhsType->symbol->hasFlag(FLAG_ATOMIC_TYPE)){
+                  //at this point we now that def is fine
                   def = ce->get(2);
+
+                  //now check if we need to case it when we move it
                   if(CallExpr* defCe = toCallExpr(def)) {
                     if(defCe->isPrimitive() &&
                         isIntegerPromotionPrimitive(defCe->primitive->tag)) {
@@ -255,6 +281,14 @@ bool isExprSafeForReorder(Expr * e) {
   if(CallExpr* ce = toCallExpr(e)) {
     if(!ce->isPrimitive()) {
       FnSymbol* fnSym = ce->theFnSymbol();
+
+      const bool cachedGlobalManip = globalManipFuncCache.count(fnSym);
+
+      if(cachedGlobalManip) {
+        if(globalManipFuncCache[fnSym]) {
+          return false;
+        }
+      }
       for_formals(formal, fnSym) {
         if(isReferenceType(formal->typeInfo())) {
           safeExprCache[e] = false;
@@ -264,25 +298,33 @@ bool isExprSafeForReorder(Expr * e) {
 
       std::vector<BaseAST*> asts;
       collect_asts(fnSym->body, asts);
-      for_vector(BaseAST, ast, asts) {
-        if (SymExpr* se = toSymExpr(ast)) {
-          Symbol* var = se->var;
+      if(!cachedGlobalManip){
+        for_vector(BaseAST, ast, asts) {
+          if (SymExpr* se = toSymExpr(ast)) {
+            Symbol* var = se->var;
 
-          if(!var->isImmediate() && !var->isConstant() && isGlobal(var)){
-            safeExprCache[e] = false;
-            return false;
+            if(!var->isImmediate() && !var->isConstant() && isGlobal(var)){
+              safeExprCache[e] = false;
+              globalManipFuncCache[fnSym] = true;
+              return false;
+            }
           }
         }
-        //this else if lazily marks a def to be immovable if the
-        //function body has a call to another user function
-        //this can be enhanced by going recursive, but it might be a bit overkill
-        else if(CallExpr* ce = toCallExpr(ast)) {
+      }
+
+      //this else if lazily marks a def to be immovable if the
+      //function body has a call to another user function
+      //this can be enhanced by going recursive, but it might be a bit overkill
+      for_vector(BaseAST, ast, asts) {
+        if(CallExpr* ce = toCallExpr(ast)) {
           if(!isNonEssentialPrimitive(ce)) {
             safeExprCache[e] = false;
             return false;
           }
         }
       }
+      //it shouldn't be touching any globals at this point
+      globalManipFuncCache[fnSym] = false;
     }
     else {
       //primitive
@@ -317,7 +359,6 @@ bool isExprSafeForReorder(Expr * e) {
   safeExprCache[e] = true;
   return true;
 }
-
 
 void denormalize(Expr* def, SymExpr* use, Type* castTo) {
   Expr* defPar = def->parentExpr;
@@ -399,7 +440,8 @@ bool canPrimMoveCreateCommunication(CallExpr* ce) {
         case PRIM_SET_SVEC_MEMBER:
         case PRIM_GET_SVEC_MEMBER:
         case PRIM_GET_SVEC_MEMBER_VALUE:
-          if(rhsCe->get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
+          if(rhsCe->get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF, 
+                FLAG_WIDE_CLASS)) {
             return true;
           }
           break;
