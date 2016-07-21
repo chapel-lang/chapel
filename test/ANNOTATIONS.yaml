@@ -142,6 +142,8 @@ all:
       config: 16 node XC
   07/19/16:
     - Disable jemalloc's stat gathering by default (#4180)
+  07/20/16:
+    - Generated code changes in preparation for incremental compilation (#4177)
 
 AllCompTime:
   11/09/14:
