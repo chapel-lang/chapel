@@ -1520,25 +1520,6 @@ static void fixup_array_formals(FnSymbol* fn) {
 
 static void clone_parameterized_primitive_methods(FnSymbol* fn) {
   if (toArgSymbol(fn->_this)) {
-    /* The following works but is not currently necessary:
-    if (fn->_this->type == dtIntegral) {
-      for (int i=INT_SIZE_8; i<INT_SIZE_NUM; i++) {
-        if (dtInt[i]) { // Need this because of our bogus dtInt sizes
-          FnSymbol* nfn = fn->copy();
-          nfn->_this->type = dtInt[i];
-          fn->defPoint->insertBefore(new DefExpr(nfn));
-        }
-      }
-      for (int i=INT_SIZE_8; i<INT_SIZE_NUM; i++) {
-        if (dtUInt[i]) { // Need this because of our bogus dtUint sizes
-          FnSymbol* nfn = fn->copy();
-          nfn->_this->type = dtUInt[i];
-          fn->defPoint->insertBefore(new DefExpr(nfn));
-        }
-      }
-      fn->defPoint->remove();
-    }
-    */
     if (fn->_this->type == dtAnyComplex) {
       for (int i=COMPLEX_SIZE_32; i<COMPLEX_SIZE_NUM; i++) {
         if (dtComplex[i]) { // Need this because of our bogus dtComplex sizes
