@@ -57,17 +57,17 @@ void denormalize(FnSymbol *fn) {
   forv_Vec(Symbol, sym, symSet) {
 
     SymExpr *use = NULL;
-    Expr *useExpr = NULL;
+    Expr *usePar = NULL;
     Expr *def = NULL;
-    Expr *defExpr;
+    Expr *defPar;
     Type* castTo = NULL;
 
     if(isDenormalizable(sym, defMap, useMap, &use, &def, &castTo)) {
-      useExpr = use->parentExpr;
-      defExpr = def->parentExpr;
+      usePar = use->parentExpr;
+      defPar = def->parentExpr;
 
       //defer if the symbol used as actual
-      if(CallExpr* useCe = toCallExpr(useExpr)){
+      if(CallExpr* useCe = toCallExpr(usePar)){
         if(!useCe->isPrimitive()) {
           deferredFns.insert(useCe);
           std::pair<Expr*, Type*> defCastBundle(def, castTo);
@@ -76,7 +76,7 @@ void denormalize(FnSymbol *fn) {
         }
       }
       if(isExprSafeForReorder(def)) {
-        if(!possibleDepInBetween(defExpr, useExpr)) {
+        if(!possibleDepInBetween(defPar, usePar)) {
           denormalize(def, use, castTo);
         }
       }
@@ -106,14 +106,14 @@ void denormalizeActuals(CallExpr* ce,
           SymExpr* use = argSym;
           Expr* def = tmpTuple.first;
           Type* castTo = tmpTuple.second;
-          Expr* useExpr = use->parentExpr;
-          Expr* defExpr = def->parentExpr;
-          if(CallExpr* ceTmp = toCallExpr(defExpr)) {
+          Expr* usePar = use->parentExpr;
+          Expr* defPar = def->parentExpr;
+          if(CallExpr* ceTmp = toCallExpr(defPar)) {
             if(!isRecord(ceTmp->get(1)->typeInfo())) { //to preserve pass-by-value
               if(isExprSafeForReorder(def)) {
-                if(!possibleDepInBetween(defExpr, useExpr)) {
+                if(!possibleDepInBetween(defPar, usePar)) {
                   // In C actual evaluation order is not standard, therefore any
-                  // defExpr that us unsafe for reordering cannot be moved to
+                  // defPar that us unsafe for reordering cannot be moved to
                   // the args
                   denormalize(def, use, castTo);
                 }
@@ -134,19 +134,19 @@ bool isDenormalizable(Symbol* sym,
   if(sym && !(toFnSymbol(sym) || toArgSymbol(sym) || toTypeSymbol(sym))) {
 
     SymExpr *use = NULL;
-    Expr *useExpr = NULL;
+    Expr *usePar = NULL;
     Expr *def = NULL;
-    Expr *defExpr = NULL;
+    Expr *defPar = NULL;
 
     Vec<SymExpr*>* defs = defMap.get(sym);
     Vec<SymExpr*>* uses = useMap.get(sym);
 
     if(defs && defs->n == 1 && uses && uses->n == 1) { // check def-use counts
       SymExpr* se = defs->first();
-      defExpr = se->parentExpr;
+      defPar = se->parentExpr;
 
-      //defExpr has to be a move without any coercion
-      CallExpr* ce = toCallExpr(defExpr);
+      //defPar has to be a move without any coercion
+      CallExpr* ce = toCallExpr(defPar);
       if(ce) {
         if(ce->isPrimitive(PRIM_MOVE)) {
           Type* lhsType = ce->get(1)->typeInfo();
@@ -175,8 +175,8 @@ bool isDenormalizable(Symbol* sym,
         *defOut = def;
         // we have def now find where the value is used
         SymExpr* se = uses->first();
-        useExpr = se->parentExpr;
-        if(CallExpr* ce = toCallExpr(useExpr)) {
+        usePar = se->parentExpr;
+        if(CallExpr* ce = toCallExpr(usePar)) {
           if( !(ce->isPrimitive(PRIM_ADDR_OF) ||
                 ce->isPrimitive(PRIM_ARRAY_GET) ||
                 ce->isPrimitive(PRIM_GET_MEMBER) ||
@@ -207,7 +207,7 @@ bool isDenormalizable(Symbol* sym,
       //for reference test that caused this was:
       //test/modules/standard/FileSystem/bharshbarg/filer
       //The issue seemed to be yielding string from an iterator
-      if(CallExpr* useParentCe = toCallExpr(useExpr)) {
+      if(CallExpr* useParentCe = toCallExpr(usePar)) {
         if(useParentCe->isPrimitive(PRIM_FTABLE_CALL)) {
           if(argMustUseCPtr(def->typeInfo())){
             return false;
@@ -292,7 +292,7 @@ bool isExprSafeForReorder(Expr * e) {
 
 
 void denormalize(Expr* def, SymExpr* use, Type* castTo) {
-  Expr* defExpr = def->parentExpr;
+  Expr* defPar = def->parentExpr;
 
   //remove variable declaration
   use->var->defPoint->remove();
@@ -308,8 +308,8 @@ void denormalize(Expr* def, SymExpr* use, Type* castTo) {
   else {
     use->replace(replExpr);
   }
-  //remove defExpr
-  defExpr->remove();
+  //remove defPar
+  defPar->remove();
 }
 
 inline bool requiresCast(Type* t) {
