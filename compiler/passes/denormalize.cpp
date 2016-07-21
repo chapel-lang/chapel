@@ -8,6 +8,9 @@
 #include "view.h"
 #include "passes.h"
 #include "resolution.h"
+#include "LoopStmt.h"
+#include "CForLoop.h"
+#include "WhileStmt.h"
 
 //helpers
 #define ActualUseDefCastMap std::map<SymExpr*, std::pair<Expr*,Type*> >
@@ -198,19 +201,44 @@ bool isDenormalizable(Symbol* sym,
       else {
         return false;
       }
+
       //here I have my valid use and def
       //so far we checked specific cases for them individually, now check if
       //there is anything wrong with them as a pair
 
-      //only issue I hit was this and it feels too specific, maybe there is
+      //this issue feels too specific, maybe there is
       //safer/better/more general way of doing this check
+      //
       //for reference test that caused this was:
       //test/modules/standard/FileSystem/bharshbarg/filer
+      //
       //The issue seemed to be yielding string from an iterator
       if(CallExpr* useParentCe = toCallExpr(usePar)) {
         if(useParentCe->isPrimitive(PRIM_FTABLE_CALL)) {
           if(argMustUseCPtr(def->typeInfo())){
             return false;
+          }
+        }
+      }
+
+      // we have to protect repeatedly evaluated statements of loops from
+      // expensive and/or unsafe CallExprs
+      if(CallExpr* defCe = toCallExpr(def)){
+        if(! isNonEssentialPrimitive(defCe)) { //nonessential primitives are safe
+          if(LoopStmt* enclLoop = LoopStmt::findEnclosingLoop(use)) {
+            if(CForLoop* enclCForLoop = toCForLoop(enclLoop)) {
+              if(enclCForLoop->testBlockGet()->contains(ce) ||
+                  enclCForLoop->incrBlockGet()->contains(ce)) {
+                return false;
+              }
+            }
+            else if(enclLoop->isWhileStmt() || 
+                enclLoop->isDoWhileStmt() || 
+                enclLoop->isWhileDoStmt()) {
+              if(toWhileStmt(enclLoop)->condExprGet()->contains(ce)) {
+                return false;
+              }
+            }
           }
         }
       }
