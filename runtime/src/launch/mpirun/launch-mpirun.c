@@ -30,13 +30,24 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   int size;
   char baseCommand[256];
   char* command;
+  char* numrankStr;
+  int numranks;
+  
+  // Get the number of ranks
+  numrankStr = getenv("CHPL_MPI_NUM_RANKS");
+  if (numrankStr==0) {
+    numranks=numLocales;
+  } else {
+    numranks=atoi(numrankStr);
+  }
 
   chpl_compute_real_binary_name(argv[0]);
 
-  sprintf(baseCommand, "mpirun -np %d %s %s", numLocales, MPIRUN_XTRA_OPTS, 
+  sprintf(baseCommand, "mpirun -np %d %s %s", numranks, MPIRUN_XTRA_OPTS, 
           chpl_get_real_binary_name());
 
-  size = strlen(MPIRUN_PATH) + 1 + strlen(baseCommand) + 1;
+  //size = strlen(MPIRUN_PATH) + 1 + strlen(baseCommand) + 1;
+  size = strlen(baseCommand)+1;
 
   for (i=1; i<argc; i++) {
     size += strlen(argv[i]) + 3;
@@ -44,7 +55,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   
-  sprintf(command, "%s/%s", MPIRUN_PATH, baseCommand);
+  //sprintf(command, "%s/%s", MPIRUN_PATH, baseCommand);
+  sprintf(command, "%s", baseCommand);
   for (i=1; i<argc; i++) {
     strcat(command, " '");
     strcat(command, argv[i]);
@@ -66,7 +78,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
-                           int32_t lineno, c_string filename) {
+                           int32_t lineno, int32_t filename) {
   return 0;
 }
 
