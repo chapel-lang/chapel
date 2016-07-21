@@ -248,14 +248,6 @@ public:
 private:
   GenRet          codegenPrimitive();
   GenRet          codegenPrimMove();
-  bool            codegenPrimMoveRhsIsSpecialPrimop();
-  GenRet          codegenPrimGetMemberValForTarget(BaseAST* target);
-  GenRet          codegenPrimArrayGetForTarget(BaseAST* target);
-  GenRet          codegenPrimGetSvecMemberForTarget(BaseAST* target);
-  GenRet          codegenPrimGetSvecMemberValue();
-  GenRet          codegenPrimGetPrivClassForTarget(BaseAST* target);
-  GenRet          codegenPrimOnLocaleNum();
-  GenRet          codegenPrimDerefForTarget(BaseAST* target);
 
   void            codegenInvokeOnFun();
   void            codegenInvokeTaskFun(const char* name);

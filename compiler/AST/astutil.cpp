@@ -29,7 +29,6 @@
 #include "symbol.h"
 #include "type.h"
 #include "WhileStmt.h"
-#include "view.h"
 
 #include "oldCollectors.h" // Deprecated. To be removed.
 // After #include "oldCollectors.h" has been removed from all other source
@@ -414,7 +413,6 @@ int isDefAndOrUse(SymExpr* se) {
     } else if (isOpEqualPrim(call) && call->get(1) == se) {
       return 3;
     } else if (FnSymbol* fn = call->isResolved()) {
-      //std::cout << "so far so good\n";
       ArgSymbol* arg = actual_to_formal(se);
       if (arg->intent == INTENT_REF ||
           arg->intent == INTENT_INOUT ||
@@ -425,14 +423,6 @@ int isDefAndOrUse(SymExpr* se) {
       } else if (arg->intent == INTENT_OUT) {
         return 1;
       }
-      //std::cout << "I shouldn't be here\n";
-      //std::cout << (arg->intent == INTENT_REF) << " " <<
-        //(arg->intent == INTENT_INOUT) << " " <<
-        //(!strcmp(fn->name, "=") && fn->getFormal(1) == arg && isRecord(arg->type)) 
-        //<< " " <<
-        //isRecordWrappedType(arg->type) << std::endl;
-      //std::cout << "is array ?" << arg->type->symbol->hasFlag(FLAG_ARRAY);
-      //print_view(arg);
     }
   }
   return 2;

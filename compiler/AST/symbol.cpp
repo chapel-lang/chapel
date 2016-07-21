@@ -40,7 +40,6 @@
 #include "stringutil.h"
 #include "type.h"
 #include "resolution.h"
-#include "view.h"
 
 #include "AstToText.h"
 #include "AstVisitor.h"
