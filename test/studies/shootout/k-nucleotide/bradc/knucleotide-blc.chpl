@@ -1,5 +1,13 @@
+/* The Computer Language Benchmarks Game
+   http://benchmarksgame.alioth.debian.org/
+
+   contributed by Ben Harshbarger and Brad Chamberlain
+   derived from the GNU C++ version by Branimir Maksimovic (TODO: true?)
+*/
+
 config param tableSize = 1 << 16,
              columns = 61;
+
 
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
@@ -99,6 +107,7 @@ proc calculate(data, param nclSize) {
   return freqs;
 }
 
+
 //
 // TODO: make these static to decode and hash respectively
 //
@@ -111,20 +120,24 @@ forall i in toChar.domain do
 // Too terse (?): toNum[ascii(toChar)] = toChar.domain;
 
 inline proc decode(in data, param nclSize) {
-  var ret : string;
-  for param i in 1..nclSize by -1 {
+  var ret: string;
+
+  for param i in 1..nclSize {
     ret = toChar[(data & 3)] + ret;
     data >>= 2;
   }
+
   return ret;
 }
 
 inline proc hash(str, beg, param size) {
   var data = 0;
+
   for param i in 0..size-1 {
     data <<= 2;
     data |= toNum[str[beg+i]];
   }
+
   return data;
 }
 
@@ -134,10 +147,11 @@ proc string.toBytes() ref {
   //
   extern proc memcpy(x: [], b, len);
 
-  var b : [1..this.length] uint(8);
-  memcpy(b, this.c_str(), this.length:size_t);
+  var b: [1..this.length] uint(8);
+  memcpy(b, this.c_str(), this.length: size_t);
   return b;
 }
+
 
 inline proc startsWithThree(data) {
   return data[1] == ascii(">") && 
