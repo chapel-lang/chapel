@@ -272,7 +272,7 @@ module ChapelDistribution {
     // will use explicit processor atomics, even when network
     // atomics are available
     var _arrCnt: atomic_refcnt; // array reference count
-    var _arrAlias: BaseArr;    // reference to base array if an alias
+    var _arrAlias: bool;
   
     proc dsiStaticFastFollowCheck(type leadType) param return false;
   
@@ -286,15 +286,8 @@ module ChapelDistribution {
       compilerAssert(!noRefCount);
       var cnt = decRefCount();
       if cnt == 0 {
-        if _arrAlias {
-          on _arrAlias {
-            var cnt = _arrAlias.destroyArr();
-            if cnt == 0 then
-              delete _arrAlias;
-          }
-        } else {
+        if !_arrAlias then
           dsiDestroyData();
-        }
       }
       if cnt == 0 {
           var dom = dsiGetBaseDom();

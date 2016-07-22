@@ -1480,8 +1480,7 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
 //
 proc _array.noFluffView() {
   var a = _value.dsiNoFluffView();
-  a._arrAlias = _value;
-  if !noRefCount then a._arrAlias.incRefCount();
+  a._arrAlias = true;
   return _newArray(a);
 }
 
@@ -1714,7 +1713,7 @@ proc StencilArr.doiCanBulkTransfer() {
 
   // See above note regarding aliased arrays
   if disableAliasedBulkTransfer then
-    if _arrAlias != nil then return false;
+    if _arrAlias then return false;
 
   return true;
 }
