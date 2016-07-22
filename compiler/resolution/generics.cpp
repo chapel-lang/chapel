@@ -116,8 +116,31 @@ copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbo
   }
 }
 
+/* Just want argument intent to cover it, rather than
+   changing the type.
+static bool formalWillBeByRef(Symbol* key, TypeSymbol* actualTS)
+{
+  ArgSymbol* formal = toArgSymbol(key);
+  
+  // If no formal, assume blank intent.
+  IntentTag intent = INTENT_BLANK;
+  if (formal) {
+    intent = formal->intent;
+    if (formal->hasFlag(FLAG_TYPE_VARIABLE))
+      intent = INTENT_TYPE;
+  }
+  if (intent == INTENT_BLANK &&
+      actualTS->type != dtTypeDefaultToken &&
+      !actualTS->hasFlag(FLAG_ITERATOR_RECORD) )
+    intent = blankIntentForType(actualTS->type->getValType());
+
+  if ((intent & INTENT_FLAG_REF) != 0)
+    return true;
+  return false;
+}
+*/
 static TypeSymbol*
-getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
+getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
   if (fn->hasEitherFlag(FLAG_TUPLE,FLAG_PARTIAL_TUPLE)) {
     // TODO -- I don't think that I can put this logic here...
     // it seems to affect all tuples, because of
@@ -125,35 +148,49 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* value) {
 
     /*
     // fn is a tuple construction/type construction function
-    Type *t = value->type;
+    Type *t = actualTS->type;
     IntentTag intent = blankIntentForType(t);
     if ((intent & INTENT_FLAG_REF) &&
          fn->hasFlag(FLAG_ALLOW_REF) &&
          //!fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) && // not _type_construct__tuple
          isRecordWrappedType(t) // temporary
         ) {
-      // Use a ref field to capture values with types
+      // Use a ref field to capture actualTS with types
       // where blank intent is ref or const ref.
       if (!isReferenceType(t)) {
         gdbShouldBreakHere();
         return t->getRefType()->symbol;
       }
     }*/
-    return value;
+    return actualTS;
   } else if (fn->hasFlag(FLAG_ALLOW_REF)) {
-    // With FLAG_ALLOW_REF, always use value type, even if it's a ref type
-    return value;
+    // With FLAG_ALLOW_REF, always use actualTS type, even if it's a ref type
+    return actualTS;
   } else if (fn->hasFlag(FLAG_REF)) {
     // With FLAG_REF on the function, that means it's a constructor
-    // for the ref type, so re-instantiate it with whatever value is.
-    return value;
-  } else if (!value->hasFlag(FLAG_REF)) {
-    // If the value isn't a ref, no further action is necessary
-    return value;
+    // for the ref type, so re-instantiate it with whatever actualTS is.
+    return actualTS;
   } else {
-    // The value is a ref and
-    // instantiation of a formal of ref type loses ref
-    return getNewSubType(fn, key, value->getValType()->symbol);
+
+//if( key->id == 235200 )
+//  gdbShouldBreakHere();
+//if( fn->id == 230516)
+//gdbShouldBreakHere();
+
+    //bool formalRef = formalWillBeByRef(key, actualTS);
+    bool actualRef = actualTS->hasFlag(FLAG_REF);
+
+    /*if (formalRef == actualRef)
+      return actualTS;
+    else*/ if(actualRef)
+      // the value is a ref and
+      // instantiation of a formal of ref type loses ref
+      return getNewSubType(fn, key, actualTS->getValType()->symbol);
+    else
+      // the value is not a ref and instantiation of the
+      // formal of ref type adds ref
+      return actualTS;
+      //return getNewSubType(fn, key, actualTS->getRefType()->symbol);
   }
 }
 
