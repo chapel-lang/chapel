@@ -15,20 +15,16 @@ proc main(args: [] string) {
       start = 0;
 
   //
-  // don't continue until all process() tasks complete
+  // wait for all process() tasks complete
   //
   sync {
     var numRead: int;
 
     while stdin.readline(data, numRead, idx) {
-      //
       // Look for the start of a section
-      //
       if data[idx] == ascii(">") {
         if start then 
-          //
           // Spawn a task to work on the previous section
-          //
           begin process(data, start, idx-2);
         
         start = idx;
@@ -54,21 +50,21 @@ proc process(data, in start, end) {
     start += 1;
   start += 1;
 
-  const extra = (end - start) % 61,
-        off = 60 - extra;
+  param chunk = 61;
+  const extra = (end - start) % chunk,
+        off = chunk - extra - 1;
 
-  if off > 0 then
-    for m in (start+extra)..(end-1) by 61 {
+  if off then
+    for m in (start+extra)..(end-1) by chunk {
       for i in 0..#off by -1 do
-        data[m+1+i] = data[m+i];
+        data[m+i+1] = data[m+i];
       data[m+1] = ascii("\n");
     }
 
-  const middle = (end-start)/2;
-  for i in 0 .. middle {
-    const c = table[data[start+i]];
-    data[start+i] = table[data[end-i]];
-    data[end-i] = c;
+  for i in 0..(end-start)/2 {
+    ref d1 = data[start+i],
+        d2 = data[end-i];
+    (d1, d2) = (table[d2], table[d1]);
   }
 }
 
