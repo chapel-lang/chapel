@@ -92,5 +92,6 @@ bool isPOD(Type* t);
 // tuples
 FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 void fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
+AggregateType* computeNonRefTuple(Type* t, BlockStmt* instantiationPoint);
 
 #endif

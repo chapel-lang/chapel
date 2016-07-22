@@ -323,6 +323,7 @@ static void resolveTupleExpand(CallExpr* call);
 static void resolveSetMember(CallExpr* call);
 static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
+static void resolveCoerce(CallExpr* call);
 static bool formalRequiresTemp(ArgSymbol* formal);
 static void insertFormalTemps(FnSymbol* fn);
 static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars);
@@ -963,6 +964,26 @@ okToConvertFormalToRefType(Type* type) {
 }
 
 
+// Generally speaking, tuples containing refs should be converted
+// to tuples without refs before returning.
+// This function returns true for exceptional FnSymbols
+// where tuples containing refs can be returned.
+static bool
+allowTupleReturnWithRef(FnSymbol* fn)
+{
+  if( fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) || // but not _type_construct__tuple
+      fn->hasFlag(FLAG_CONSTRUCTOR) || // but not _construct_tuple
+      fn->hasFlag(FLAG_BUILD_TUPLE) || // and not _build_tuple(_allow_ref)
+      fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) || // and not _build_tuple_type
+      fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES) || // not iteratorIndex
+      fn->hasFlag(FLAG_AUTO_COPY_FN) // not tuple chpl__autoCopy
+     ) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 static void
 resolveSpecifiedReturnType(FnSymbol* fn) {
   Type* retType;
@@ -993,7 +1014,27 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
       retType = fn->retType->refType;
       fn->retType = retType;
     }
-    fn->retExprType->remove();
+
+    fn->retExprType->remove(); // 159781 removed here
+
+
+    // Difficult to call e.g. _unref_type in build/normalize
+    // b/c of bugs in pulling out function symbols.
+    if (retType->symbol->hasFlag(FLAG_TUPLE) && !allowTupleReturnWithRef(fn)) {
+      // Compute the tuple type without any refs
+      // Set the function return type to that type.
+      Type* newType = computeNonRefTuple(retType, fn->body);
+      
+      if (newType != retType) {
+        // Also adjust any PRIM_COERCE calls
+        gdbShouldBreakHere();
+      }
+
+      retType = newType;
+      fn->retType = retType;
+
+    }
+
     if (fn->isIterator() && !fn->iteratorInfo) {
       // Note: protoIteratorClass changes fn->retType
       // to the iterator record. The original return type
@@ -3931,7 +3972,7 @@ resolveCall(CallExpr* call)
      case PRIM_TYPE_INIT:
      case PRIM_INIT:                resolveDefaultGenericType(call);    break;
      case PRIM_NO_INIT:             resolveDefaultGenericType(call);    break;
-     case PRIM_COERCE:              resolveDefaultGenericType(call);    break;
+     case PRIM_COERCE:              resolveCoerce(call);                break;
      case PRIM_NEW:                 resolveNew(call);                   break;
     }
   }
@@ -4413,6 +4454,8 @@ static void resolveTupleExpand(CallExpr* call) {
   for (int i = 1; i <= size; i++) {
     VarSymbol* tmp = newTemp("_tuple_expand_tmp_");
     tmp->addFlag(FLAG_MAYBE_TYPE);
+    if (sym->var->hasFlag(FLAG_TYPE_VARIABLE))
+      tmp->addFlag(FLAG_TYPE_VARIABLE);
     DefExpr* def = new DefExpr(tmp);
     call->getStmtExpr()->insertBefore(def);
     CallExpr* e = NULL;
@@ -4754,6 +4797,29 @@ resolveNew(CallExpr* call)
   USR_FATAL(call, "invalid use of 'new'");
 }
 
+static void
+resolveCoerce(CallExpr* call) {
+
+  resolveDefaultGenericType(call);
+  
+  FnSymbol* fn = toFnSymbol(call->parentSymbol);
+  Type* toType = call->get(2)->typeInfo();
+  
+  INT_ASSERT(fn);
+
+  if (toType->symbol->hasFlag(FLAG_TUPLE) && !allowTupleReturnWithRef(fn)) {
+    // Compute the tuple type without any refs
+    // Set the function return type to that type.
+    Type* newType = computeNonRefTuple(toType, fn->body);
+
+    if (newType != toType) {
+      gdbShouldBreakHere();
+
+      // Also adjust any PRIM_COERCE calls
+      call->get(2)->replace(new SymExpr(newType->symbol));
+    }
+  }
+}
 
 //
 // This tells us whether we can rely on the compiler's back end (e.g.,
@@ -7728,49 +7794,12 @@ static void resolveReturnType(FnSymbol* fn)
     }
   }
 
-  // For tuples, do not allow a tuple to contain a reference
-  // when it is returned, except if we are
-  // in  _construct_tuple, _build_tuple(_allow_ref), or
-  // iteratorIndex
-  if (retType->symbol->hasFlag(FLAG_TUPLE) &&
-      !fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) && // but not _type_construct__tuple
-      !fn->hasFlag(FLAG_CONSTRUCTOR) && // but not _construct_tuple
-      !fn->hasFlag(FLAG_BUILD_TUPLE) && // and not _build_tuple(_allow_ref)
-      !fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES) && // not iteratorIndex
-      !fn->hasFlag(FLAG_AUTO_COPY_FN) // not tuple chpl__autoCopy
-     ) {
+  // For tuples, generally do not allow a tuple to contain a reference
+  // when it is returned
+  if (retType->symbol->hasFlag(FLAG_TUPLE) && !allowTupleReturnWithRef(fn)) {
     // Compute the tuple type without any refs
-    // TODO -- I wish that tuple types were handled more
-    // straight-forwardly:
-    //   - _build_tuple could be instantiated directly
-    //   - tuple types could be handled directly instead of
-    //     being treated as arbitrary generic records
-    bool containsRef = false;
-    AggregateType* at = toAggregateType(retType);
-    int i = 0;
-    for_fields(field, at) {
-      if (i != 0) { // skip size field
-        if (isReferenceType(field->type)) containsRef = true;
-      }
-      i++;
-    }
-
-    if (containsRef) {
-//      gdbShouldBreakHere();
-
-      // Compute the tuple type containing no references
-      CallExpr* call = new CallExpr("_build_tuple");
-      i = 0;
-      for_fields(field, at) {
-        if (i != 0) { // skip size field
-          call->insertAtTail(new SymExpr(field->type->getValType()->symbol));
-        }
-        i++;
-      }
-      FnSymbol* resolved = resolveUninsertedCall(at, call);
-      resolveFns(resolved);
-      retType = resolved->retType;
-    }
+    // Set the function return type to that type.
+    retType = computeNonRefTuple(retType, fn->body);
   }
 
   ret->type = retType;

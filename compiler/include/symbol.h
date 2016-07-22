@@ -639,6 +639,8 @@ extern FnSymbol *gGenericTupleTypeCtor;
 extern FnSymbol *gGenericTupleInit;
 extern FnSymbol *gBuildTupleType;
 extern FnSymbol *gBuildStarTupleType;
+extern FnSymbol *gBuildTupleTypeNoRef;
+extern FnSymbol *gBuildStarTupleTypeNoRef;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

@@ -47,30 +47,54 @@ module ChapelTuple {
   // syntactic support for tuples
   //
 
-  // tuple type
+  // tuple type (refs for types with blank intent=ref intent)
   pragma "build tuple"
   pragma "build tuple type"
   inline proc _build_tuple(type t...) type {
     // body inserted during generic instantiation
   }
 
-  // tuple value copying in the values (no refs)
+  // tuple value (refs)
   pragma "build tuple"
   inline proc _build_tuple(x...) {
       return x;
   }
 
-  // tuple value allowing refs (ref actuals or for types with blank=ref intent)
+  // tuple type (no refs)
+  pragma "do not allow ref" 
+  pragma "build tuple"
+  pragma "build tuple type"
+  inline proc _build_tuple_noref(type t...) type {
+    // body inserted during generic instantiation
+  }
+
+  // tuple value allowing refs (ref actuals)
   pragma "allow ref" 
   pragma "build tuple"
   inline proc _build_tuple_always_allow_ref(x...)
     return x;
  
+
+  inline proc _unref_type(type t) type {
+    if isTupleType(t) then
+      return _build_tuple_noref((...t));
+    else
+      return t;
+  }
+
    // homogeneous tuple type
   pragma "build tuple"
   pragma "build tuple type"
   pragma "star tuple"
   proc *(param p: int, type t) type {
+    // body inserted during generic instantiation
+  }
+
+  pragma "do not allow ref" 
+  pragma "build tuple"
+  pragma "build tuple type"
+  pragma "star tuple"
+  proc _build_star_tuple_noref(param p: int, type t) type {
     // body inserted during generic instantiation
   }
 

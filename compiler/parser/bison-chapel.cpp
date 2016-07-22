@@ -5074,7 +5074,7 @@ yyreduce:
 
   case 108:
 #line 665 "chapel.ypp" /* yacc.c:1646  */
-    { (yyval.pexpr) = new CallExpr("_build_tuple_always_allow_ref", (yyvsp[-1].pcallexpr)); }
+    { (yyval.pexpr) = new CallExpr("_build_tuple", (yyvsp[-1].pcallexpr)); }
 #line 5079 "bison-chapel.cpp" /* yacc.c:1646  */
     break;
 
