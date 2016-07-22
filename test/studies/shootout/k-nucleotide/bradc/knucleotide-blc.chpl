@@ -55,7 +55,8 @@ proc writeFreqs(data, param nclSize) {
   //
   // TODO: Shouldn't this work?
   //
-  var arr = [(k,v) in zip(freqs.domain, freqs)] (v,k);
+  //  var arr = [(k,v) in zip(freqs.domain, freqs)] (v,k);
+  var arr = for (k,v) in zip(freqs.domain, freqs) do (v,k);
 
   //  var arr: [1..freqs.size] 2*int;
   //  for (a, k, v) in zip(arr, freqs.domain, freqs) do
@@ -86,7 +87,7 @@ proc calculate(data, param nclSize) {
   // intent and use a forall intent?
   //
 
-  //  var lock$: sync bool = true;
+  var lock$: sync bool = true;
   const numTasks = here.maxTaskPar;
   coforall tid in 1..numTasks {
     var myDom: domain(int),
@@ -98,10 +99,10 @@ proc calculate(data, param nclSize) {
     for i in tid..(data.size-nclSize) by numTasks do
       myArr[hash(data, i, nclSize)] += 1;
 
-    //    lock$; // acquire lock
+    lock$; // acquire lock
     for (k,v) in zip(myDom, myArr) do
       freqs[k] += v;
-    //    lock$ = true; // release lock
+    lock$ = true; // release lock
   }
 
   return freqs;
