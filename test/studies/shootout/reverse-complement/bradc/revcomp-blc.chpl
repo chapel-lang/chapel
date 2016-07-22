@@ -9,7 +9,7 @@ const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 
 proc main(args: [] string) {
   const consoleIn = openfd(0),
-        stdin = consoleIn.reader(locking=false);
+        stdinNoLock = consoleIn.reader(locking=false);
   var data: [1..consoleIn.length()] uint(8),
       idx = 1,
       start = 0;
@@ -20,7 +20,7 @@ proc main(args: [] string) {
   sync {
     var numRead: int;
 
-    while stdin.readline(data, numRead, idx) {
+    while stdinNoLock.readline(data, numRead, idx) {
       // Look for the start of a section
       if data[idx] == ascii(">") {
         if start then 
@@ -50,13 +50,13 @@ proc process(data, in start, end) {
     start += 1;
   start += 1;
 
-  param chunk = 61;
-  const extra = (end - start) % chunk,
-        off = chunk - extra - 1;
+  param columns = 61;
+  const extra = (end - start) % columns,
+        off = columns - extra - 1;
 
   if off then
-    for m in (start+extra)..(end-1) by chunk {
-      for i in 0..#off by -1 do
+    for m in (start+extra)..(end-1) by columns {
+      for i in 1..off-1 by -1 do
         data[m+i+1] = data[m+i];
       data[m+1] = ascii("\n");
     }
