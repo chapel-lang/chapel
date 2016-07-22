@@ -129,6 +129,23 @@ void checkPrimitives()
         INT_FATAL("Primitive should not appear after resolution is complete.");
       break;
 
+     case PRIM_ADDR_OF:             // set a reference to a value
+      if (resolved) {
+        // Check that the argument is not already a reference.
+        // references can only go 1 level
+        if (isReferenceType(call->get(1)->typeInfo()))
+          INT_FATAL("Invalid PRIM_ADDR_OF of a reference");
+      }
+      break;
+
+     case PRIM_DEREF:               // dereference a reference
+      if (resolved) {
+        // Check that the argument is a reference.
+        if (!isReferenceType(call->get(1)->typeInfo()))
+          INT_FATAL("Invalid PRIM_DEREF of a non-reference");
+      }
+      break;
+
      case PRIM_UNKNOWN:
      case PRIM_NOOP:
      case PRIM_MOVE:
@@ -181,8 +198,6 @@ void checkPrimitives()
      case PRIM_GET_REAL:            // get complex real component
      case PRIM_GET_IMAG:            // get complex imag component
      case PRIM_QUERY:               // query expression primitive
-     case PRIM_ADDR_OF:             // set a reference to a value
-     case PRIM_DEREF:               // dereference a reference
      case PRIM_LOCAL_CHECK:         // assert that a wide ref is on this locale
      case PRIM_SYNC_INIT:
      case PRIM_SYNC_DESTROY:
