@@ -163,7 +163,15 @@ bool AutoTrack::update() {
 void AutoTrack::updateAutoCopy(CallExpr* call) {
 //fprintf(stderr, "@@@ updateAutoCopy %d\n", call->id);
   CallExpr* rhs = toCallExpr(call->get(2));
-  rhs->replace(rhs->get(1)->remove());
+  Type* lhsType = call->get(1)->typeInfo();
+  Type* rhsType = rhs->get(1)->typeInfo();
+  SET_LINENO(call);
+  if (lhsType == rhsType)
+    rhs->replace(rhs->get(1)->remove());
+  else if (lhsType->getRefType() == rhsType)
+    rhs->replace(new CallExpr(PRIM_DEREF, rhs->get(1)->remove()));
+  else
+    INT_ASSERT("Type mismatch in updateAutoCopy");
 }
 
 void AutoTrack::updateAutoDestroy(CallExpr* call) {
@@ -305,7 +313,23 @@ static void removePODinitDestroy()
             INT_FATAL(arg, "Expected autoCopy argument to be a SymExpr.");
 
           // Bridge out the autoCopy call.
-          call->replace(actual->remove());
+
+          Type* lhsType = NULL;
+          Type* rhsType = actual->typeInfo();
+
+          if (CallExpr* move = toCallExpr(call->parentExpr))
+            if (move->isPrimitive(PRIM_MOVE))
+              lhsType = move->get(1)->typeInfo();
+
+          SET_LINENO(call);
+
+          if (lhsType == rhsType)
+            call->replace(actual->remove());
+          else if (lhsType && lhsType->getRefType() == rhsType)
+            call->replace(new CallExpr(PRIM_DEREF, actual->remove()));
+          else
+            INT_ASSERT("Type mismatch in updateAutoCopy");
+
         }
       }
     }
