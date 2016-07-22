@@ -578,8 +578,8 @@ bool isSafePrimitive(CallExpr* ce) {
       return true;
     case PRIM_UNKNOWN:
       if(strcmp(prim->name, "string_length") == 0 ||
-          strcmp(prim->name, "object2Int") == 0 ||
-          strcmp(prim->name, "real2Int") == 0) {
+          strcmp(prim->name, "object2int") == 0 ||
+          strcmp(prim->name, "real2int") == 0) {
         return true;
       }
       else {
