@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+import os
+
+# Only run when testing with --verify because otherwise the failure mode
+# can change from run to run.
+print('--verify' not in str(os.getenv('COMPOPTS')))

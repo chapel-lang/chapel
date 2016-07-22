@@ -1,9 +1,9 @@
-:title: Users Guide: Locale Type and Variables
+:title: Users Guide: The **locale** Type and Variables
 
 .. default-domain:: chpl
 
-Locale Type and Variables
-=========================
+The **locale** Type and Variables
+=================================
 
 The Chapel language has a locale type and a number of built-in
 variables that permit a programmer to refer to, and reason about, the

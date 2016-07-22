@@ -78,6 +78,7 @@ tags
 
 # Man ignores.
 /man/man1/
+/man/man3/
 
 # Modules ignores.
 /modules/docs
@@ -380,13 +381,8 @@ tags
 /test/runtime/kbrady/goodAllocSize.good
 /test/runtime/sungeun/chpl-env-gen.h
 /test/runtime/sungeun/chpl-env-gen.test.gen.c
-
-test/separate_compilation/jturner/libclassextern2.so.a
-test/separate_compilation/jturner/libfcfunc.so.a
-test/separate_compilation/jturner/libiterator.so.a
-test/separate_compilation/jturner/libmethodextern2.so.a
-test/separate_compilation/jturner/libsimplefloat.so.a
-test/separate_compilation/jturner/libsubclass.so.a
+/test/runtime/panzone/stacktrace.good
+/test/runtime/panzone/fact-stacktrace.good
 
 /test/studies/590o/alexco/*.txt
 /test/studies/IMSuite/leader_elect_lcr/outputleader_elect_lcr_*.txt

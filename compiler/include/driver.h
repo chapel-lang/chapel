@@ -98,6 +98,7 @@ extern const char* CHPL_REGEXP;
 extern const char* CHPL_WIDE_POINTERS;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
+extern const char* CHPL_UNWIND;
 
 extern bool  printPasses;
 extern FILE* printPassesFile;
@@ -115,6 +116,7 @@ extern char fExplainInstantiation[256];
 /// If true, then print additional (disambiguation) information about
 /// resolution.
 extern bool fExplainVerbose;
+extern bool fParseOnly;
 extern bool fPrintCallStackOnError;
 extern bool fPrintIDonError;
 extern bool fPrintModuleResolution;

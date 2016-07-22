@@ -3409,7 +3409,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):sys
     // handle complex types
     var re = x.re;
     var im = x.im;
-    return qio_channel_print_complex(false, _channel_internal, re, im, numBytes(x.re.type));
+    return qio_channel_print_complex(false, _channel_internal, re, im, numBytes(re.type));
   } else if t == string {
     // handle string
     const local_x = x.localize();

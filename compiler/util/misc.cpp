@@ -200,7 +200,7 @@ printErrorHeader(BaseAST* ast) {
           fprintf(stderr, "%s:%d: In ",
                   cleanFilename(err_fn), err_fn->linenum());
           if (!strncmp(err_fn->name, "_construct_", 11)) {
-            fprintf(stderr, "constructor '%s':\n", err_fn->name+11);
+            fprintf(stderr, "initializer '%s':\n", err_fn->name+11);
           } else {
             fprintf(stderr, "%s '%s':\n",
                     (err_fn->isIterator() ? "iterator" : "function"),

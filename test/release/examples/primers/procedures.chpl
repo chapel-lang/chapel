@@ -14,7 +14,7 @@
 //
 // Formal arguments are supplied with values when the procedure is called.
 // The arguments supplied at the call site are the "actual" arguments.
-// If a name and '=' preceed an actual argument, the actual is assigned
+// If a name and '=' precede an actual argument, the actual is assigned
 // to the formal argument with that name.  Any remaining (unnamed) actual
 // arguments are assigned to the remaining formal arguments in lexical order.
 //

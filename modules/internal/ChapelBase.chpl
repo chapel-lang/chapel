@@ -656,22 +656,7 @@ module ChapelBase {
   pragma "no default functions"
   class _ddata {
     type eltType;
-    /*
-       If we had a way to do 'static' routines, this
-       could stay here, but since we don't at the moment,
-       we've wired the modules to call _ddata_free().
 
-    proc ~_ddata() {
-      __primitive("array_free", this);
-    }
-
-     If we had a way to do 'static' routines, this
-       could stay here, but since we don't at the moment,
-       we've wired the modules to call _ddata_allocate().
-    inline proc init(size: integral) {
-      __primitive("array_alloc", this, eltType, size);
-      init_elts(this, size, eltType);
-    }*/
     inline proc this(i: integral) ref {
       return __primitive("array_get", this, i);
     }
@@ -932,13 +917,13 @@ module ChapelBase {
     return if x then 1i:t else 0i:t;
 
   inline proc _cast(type t, x: int(?w)) where isImagType(t)
-    return 0i:t;
+    return __primitive("cast", t, x);
 
   inline proc _cast(type t, x: uint(?w)) where isImagType(t)
-    return 0i:t;
+    return __primitive("cast", t, x);
 
   inline proc _cast(type t, x: real(?w)) where isImagType(t)
-    return 0i:t;
+    return __primitive("cast", t, x);
 
   inline proc _cast(type t, x: imag(?w)) where isImagType(t)
     return __primitive("cast", t, x);
@@ -959,7 +944,7 @@ module ChapelBase {
   // casts from imag
   //
   inline proc _cast(type t, x: imag(?w)) where isRealType(t) || isIntegralType(t)
-    return 0:t;
+    return __primitive("cast", t, x);
 
   inline proc _cast(type t, x: imag(?w)) where isBoolType(t)
     return if x != 0i then true else false;

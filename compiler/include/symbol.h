@@ -578,7 +578,6 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm);
 void createInitStringLiterals();
 void resetTempID();
 FlagSet getRecordWrappedFlags(Symbol* s);
-FlagSet getSyncFlags(Symbol* s);
 VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);
 VarSymbol* newTemp(Type* type);
 
@@ -635,6 +634,7 @@ extern VarSymbol *gModuleInitIndentLevel;
 extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gChplHereAlloc;
 extern FnSymbol *gChplHereFree;
+extern FnSymbol *gChplDoDirectExecuteOn;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

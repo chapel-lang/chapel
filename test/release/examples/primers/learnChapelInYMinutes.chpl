@@ -236,7 +236,7 @@ for x in 1..10 {
 // They are first-class citizen types, and can be assigned into variables
 var range1to10: range = 1..10;  // 1, 2, 3, ..., 10
 var range2to11 = 2..11; // 2, 3, 4, ..., 11
-var rangeThistoThat: range = thisInt..thatInt; // using variables
+var rangeThisToThat: range = thisInt..thatInt; // using variables
 var rangeEmpty: range = 100..-100 ; // this is valid but contains no indices 
 
 // Ranges can be unbounded 
@@ -245,7 +245,7 @@ var range1toInf: range(boundedType=BoundedRangeType.boundedLow) = 1.. ;
 // Note: the range(boundedType= ... ) is only 
 // necessary if we explicitly type the variable
 
-var rangeNegInfto1 = ..1; // ..., -4, -3, -2, -1, 0, 1
+var rangeNegInfTo1 = ..1; // ..., -4, -3, -2, -1, 0, 1
 
 // Ranges can be strided using the 'by' operator.
 var range2to10by2: range(stridable=true) = 2..10 by 2; // 2, 4, 6, 8, 10
@@ -617,7 +617,7 @@ for (i, j) in zip( toThisArray.domain, -100..#5 ){
 }
 writeln( toThisArray );
 
-// This is all very important in undestanding why the statement 
+// This is all very important in understanding why the statement
 // var iterArray : [1..10] int = [ i in 1..10 ] if ( i % 2 == 1 ) then j;
 // exhibits a runtime error.
 // Even though the domain of the array and the loop-expression are 
@@ -760,7 +760,7 @@ writeln( );
 // Modules are Chapel's way of managing name spaces.
 // The files containing these modules do not need to be named after the modules
 // (as in Java), but files implicitly name modules.
-// In this case, this file implicitly names the 'learnchapel' module
+// In this case, this file implicitly names the 'learnChapelInYMinutes' module
 
 module OurModule {
   // We can use modules inside of other modules.
@@ -902,7 +902,7 @@ proc main(){
   [ val in myBigArray ] val = 1 / val; // Parallel operation
 
   // Atomic variables, common to many languages, are ones whose operations
-  // occur uninterupted. Multiple threads can both modify atomic variables
+  // occur uninterrupted. Multiple threads can both modify atomic variables
   // and can know that their values are safe.
   // Chapel atomic variables can be of type bool, int, uint, and real.
   var uranium: atomic int;
