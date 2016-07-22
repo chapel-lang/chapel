@@ -31,22 +31,22 @@ proc main() {
       for off in 0..#bitsPerElt {              // for each bit in the buffer
         const x = xelt*bitsPerElt + off;       // compute its logical column
 
-        const Cr = 2.0*x/n - 1.5;              // the (x,y) pixel as a complex
-        const Ci = 2.0*y/n - 1.0;              //   (real, imag) value 'C'
-        var Zr, Zi, Tr, Ti = 0.0;              // 'complex' helper values
+        const C = 2.0*x/n - 1.5 +              // the (x,y) pixel as a complex
+                 (2.0*y/n - 1.0)*1i;           //   (real, imag) value 'C'
+        var Z, T: complex;                     // 'complex' helper values
 
         for 1..maxIter {                       // for the max # of iterations
-          if (Tr + Ti > limit) then            // if we haven't converged
+          if (T.re + T.im > limit) then        // if we haven't converged
             break;
           
-          Zi = 2.0*Zr*Zi + Ci;                 // update Z and T
-          Zr = Tr - Ti + Cr;
-          Tr = Zr**2;
-          Ti = Zi**2;
+          Z.im = 2.0*Z.re*Z.im + C.im;         // update Z and T
+          Z.re = T.re - T.im + C.re;
+          T.re = Z.re**2;
+          T.im = Z.im**2;
         }
 
         buff <<= 1;                            // shift the pixel buffer
-        if (Tr + Ti <= limit) then             // if 'C' is within the limit,
+        if (T.re + T.im <= limit) then         // if 'C' is within the limit,
           buff |= 0x1;                         //   turn the low pixel on
       }
 

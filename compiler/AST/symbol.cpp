@@ -832,7 +832,7 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
     codegenDefC(/*global=*/true, isHeader);
   } else {
 #ifdef HAVE_LLVM
-    if(type == dtVoid) {
+    if(type == dtVoid || !isHeader) {
       return;
     }
 

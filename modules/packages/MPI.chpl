@@ -152,7 +152,11 @@ module MPI {
 
     proc ~_initMPI() {
       if freeChplComm {
-        coforall loc in Locales do on loc {
+        if numLocales > 1 {
+          coforall loc in Locales do on loc {
+            C_MPI.MPI_Comm_free(CHPL_COMM_WORLD_REPLICATED(1));
+          }
+        } else {
           C_MPI.MPI_Comm_free(CHPL_COMM_WORLD_REPLICATED(1));
         }
       }

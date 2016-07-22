@@ -48,22 +48,43 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
   for_formals_actuals(formal, actual, call) {
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
-    if ((formal->intent & INTENT_REF) && canRemoveRefTempSet.set_in(fn)) {
-      if (se->var->hasFlag(FLAG_REF_TEMP)) {
-        if (CallExpr* move = findRefTempInit(se)) {
-          SymExpr* origSym = NULL;
-          if (CallExpr* addrOf = toCallExpr(move->get(2))) {
-            INT_ASSERT(addrOf->isPrimitive(PRIM_ADDR_OF));
-            origSym = toSymExpr(addrOf->get(1));
-          } else {
-            origSym = toSymExpr(move->get(2));
+    if ((formal->intent & INTENT_REF)) {
+      if (canRemoveRefTempSet.set_in(fn)) {
+        if (se->var->hasFlag(FLAG_REF_TEMP)) {
+          if (CallExpr* move = findRefTempInit(se)) {
+            SymExpr* origSym = NULL;
+            if (CallExpr* addrOf = toCallExpr(move->get(2))) {
+              INT_ASSERT(addrOf->isPrimitive(PRIM_ADDR_OF));
+              origSym = toSymExpr(addrOf->get(1));
+            } else {
+              origSym = toSymExpr(move->get(2));
+            }
+            INT_ASSERT(origSym);
+            map.put(formal, origSym->var);
+            se->var->defPoint->remove();
+            move->remove();
+            continue;
           }
-          INT_ASSERT(origSym);
-          map.put(formal, origSym->var);
-          se->var->defPoint->remove();
-          move->remove();
-          continue;
         }
+      } else if(!isReferenceType(formal->type) &&
+                formal->type->getRefType() == actual->typeInfo()) {
+        // Passing an actual that is ref(t) to a formal t with intent ref.
+        // Add a PRIM_DEREF of the argument, although this is wrong,
+        // it's a different way of continuing to have a historical problem
+        // and it's hard to do better without a bigger change.
+        // Even if we updated the uses of this PRIM_DEREF that were ADDR_OF
+        // to point to the original variable, we would still have 2 different
+        // variables.
+        // The only solution is to allow VarSymbols to be references or
+        // not without changing their type.
+        Expr* point = call->getStmtExpr();
+        VarSymbol* tmp = newTemp(astr("i_", formal->name), formal->type);
+        DefExpr* def = new DefExpr(tmp);
+        CallExpr* move = new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, se->var));
+        point->insertBefore(def);
+        point->insertBefore(move);
+        map.put(formal, tmp);
+        continue;
       }
     }
     map.put(formal, se->var);

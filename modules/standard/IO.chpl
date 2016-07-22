@@ -3927,12 +3927,11 @@ inline proc channel.read(ref args ...?k,
   */
 proc stringify(args ...?k):string {
   proc isStringOrPrimitiveTypes(type t) param : bool {
-    var x: t;
     for param i in 1..k {
-      if !(x[i].type == string ||
-          x[i].type == c_string ||
-          x[i].type == c_string_copy) {
-        if !isPrimitiveType(x[i].type) then
+      if !(t[i] == string ||
+           t[i] == c_string ||
+           t[i] == c_string_copy) {
+        if !isPrimitiveType(t[i]) then
           return false;
       }
     }
