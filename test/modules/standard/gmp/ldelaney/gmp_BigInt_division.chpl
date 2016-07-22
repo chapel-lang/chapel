@@ -1,6 +1,8 @@
 use GMP;
 use Round; //the rounding enum
 
+// Tests the division functions
+
 var a = new BigInt(8);
 var b = new BigInt(10);
 var c = new BigInt(-27);
@@ -47,13 +49,12 @@ writeln(d, " ", b);
 c.neg(c);
 
 writeln();
-//TODO: div_ui is implemented poorly / needs to be relocated within GMP.chpl
 var d2 : uint;
-d2 = d.div_ui(UP, c, 8);
+d2 = div_ui(UP, c, 8);
 writeln(d2);
-d2 = d.div_ui(DOWN, c, 8);
+d2 = div_ui(DOWN, c, 8);
 writeln(d2);
-d2 = d.div_ui(ZERO, c, 8);
+d2 = div_ui(ZERO, c, 8);
 writeln(d2);
 
 writeln();

@@ -1,5 +1,6 @@
-//this should test all of the assignment functions
 use GMP;
+
+// tests the assignment functions
 
 var a = new BigInt(0);    // a = 0
 var b = new BigInt(2);      // b = 2
@@ -28,10 +29,16 @@ if isInt(y) then writeln("int ", y);
 var z = a.get_d();
 if isReal(z) then writeln("real ", z);
 
-/* //get_d_2exp throws "incompatible pointer" warnings
-a.set(243);
-var tup = a.get_d_2exp();
-writeln(tup);
+/*
+  TODO: get_d_2exp throws "incompatible pointer" warnings
+    due to the tmp arg in mpz_get_d_2exp having its type ignored, and the 
+    compiler making an INT(64) to use instead, leading to the wrong int size
+    this should never cause a serious problem since the compiler's choice is
+    larger than the needed type
+    on gnu can use --ccflags -Wno-incompatible-pointer-types to squash them
+  a.set(243);
+  var tup = a.get_d_2exp();
+  writeln(tup);
 */
 
 a.set(101);

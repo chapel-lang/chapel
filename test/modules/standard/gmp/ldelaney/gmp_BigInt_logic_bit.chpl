@@ -1,5 +1,7 @@
 use GMP;
+
 // Tests the logical and bit manipulation functions
+
 var a = new BigInt(8);
 var b = new BigInt(40);
 a.and(a, b); // 8 & 40 = 8
@@ -12,7 +14,7 @@ a.xor(a, b); // 6 XOR 10 = 12
 writeln(a);
 a.set(129);
 
-// unsure about the accuracy of this, but I am unfamiliar with one's compliment
+// TODO: what should one's complement generate?
 a.com(a); // one's complement of 129
 writeln(a); // seems to only give -(a) -1;
 

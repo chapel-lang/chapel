@@ -1,5 +1,6 @@
-//this should test all of the arithmetic functions
 use GMP;
+
+// test the arithmetic functions
 
 var a = new BigInt(0);    // a = 0
 var b = new BigInt(2);      // b = 2

@@ -1,5 +1,7 @@
 use GMP;
-// Tests the mpz/BigInt comparison operators
+
+// Tests the comparison operators
+
 var a = new BigInt(5);
 var b = new BigInt(-6);
 

@@ -1,5 +1,6 @@
 use GMP;
-// test the miscellaneous functions
+
+// Tests the miscellaneous functions
 
 var a = new BigInt(-65536);
 var b = new BigInt(129);
@@ -33,6 +34,7 @@ writeln(b, " is ", b.sizeinbase(2), " digits in base 2");
 
 
 // TODO: determine what reasonable results for num.size are
+// TODO: is size machine-dependent?
 a.mul_ui(a, 100000000000001234);
 writeln(a, ".size is " , a.size());
 

@@ -1,5 +1,8 @@
 use GMP;
-//powers 
+
+// Tests the power and root functions
+
+// powers
 var a = new BigInt(2);
 var b = new BigInt(4);
 var c = new BigInt(10);
@@ -15,7 +18,7 @@ writeln(d);
 d.ui_pow_ui(3, 5);
 writeln(d);
 
-//roots
+// roots
 a.root(d, 5); // fifth root of d = 3 // d^(1/5) = 3 
 writeln(a);
 d.add_ui(d, 10);

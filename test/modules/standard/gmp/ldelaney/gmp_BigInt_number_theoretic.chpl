@@ -1,6 +1,8 @@
 use GMP;
-// Tests all of the number theoretic functions in that section of the record
-// jacobi and legendre functions will be tested in a different test
+
+// Tests all of the number theoretic functions contained in the record
+// the jacobi and legendre functions will be tested elsewhere
+
 var a = new BigInt(27);
 var b = new BigInt(19);
 var c = new BigInt("1302397");
@@ -67,11 +69,11 @@ writeln("the 7th Lucas number is ", a);
 a.lucnum2_ui(b, 6);
 writeln("the 5th and 6th Lucas numbers are ", b, " and ", a);
 
-//use this to print out the results of probab_prime_p
+//use to print out the results of probab_prime_p
 proc prime_parse(val){
   select val { 
     when 1 do writeln("probably prime");
     when 2 do writeln("definitely prime");
-    when 0 do writeln("Not prime");
+    when 0 do writeln("not prime");
     }
 }
