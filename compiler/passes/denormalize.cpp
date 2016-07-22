@@ -43,6 +43,7 @@ inline bool possibleDepInBetween(Expr* e1, Expr* e2);
 inline bool requiresCast(Type* t);
 inline bool isIntegerPromotionPrimitive(PrimitiveTag tag);
 inline bool isNonEssentialPrimitive(CallExpr* ce);
+bool isSafePrimitive(CallExpr* ce);
 
 bool isDenormalizable(Symbol* sym,
     Map<Symbol*,Vec<SymExpr*>*> defMap,
@@ -351,7 +352,8 @@ bool isExprSafeForReorder(Expr * e) {
     }
     else {
       //primitive
-      if(ce->primitive->isEssential){
+      //if(ce->primitive->isEssential){
+      if(! isSafePrimitive(ce)){
         safeExprCache[e] = false;
         return false;
       }
@@ -482,7 +484,112 @@ bool canPrimMoveCreateCommunication(CallExpr* ce) {
 }
 
 inline bool isNonEssentialPrimitive(CallExpr* ce) {
-  return ce->isPrimitive() && !ce->primitive->isEssential;
+  return ce->isPrimitive() && isSafePrimitive(ce);
+}
+
+/* List of primitives that we shouldn't be hitting at this point in compilation
+
+    case PRIM_DIV:
+    case PRIM_REF_TO_STRING:
+    case PRIM_SIZEOF:
+    case PRIM_USED_MODULES_LIST:
+    case PRIM_STRING_COPY:
+    case PRIM_CAST_TO_VOID_STAR:
+    case PRIM_GET_USER_LINE:
+    case PRIM_GET_USER_FILE:
+    case PRIM_IS_SYNC_TYPE:
+    case PRIM_IS_SINGLE_TYPE:
+    case PRIM_IS_TUPLE_TYPE:
+    case PRIM_IS_STAR_TUPLE_TYPE:
+    case PRIM_NUM_FIELDS:
+    case PRIM_FIELD_NUM_TO_NAME:
+    case PRIM_FIELD_NAME_TO_NUM:
+    case PRIM_FIELD_BY_NUM:
+    case PRIM_IS_UNION_TYPE:
+    case PRIM_IS_ATOMIC_TYPE:
+    case PRIM_IS_REF_ITER_TYPE:
+    case PRIM_IS_POD:
+    case PRIM_COERCE:
+    case PRIM_CALL_RESOLVES:
+    case PRIM_METHOD_CALL_RESOLVES:
+    case PRIM_ENUM_MIN_BITS:
+    case PRIM_ENUM_IS_SIGNED:
+    case PRIM_LOOKUP_FILENAME:
+    case PRIM_GET_COMPILER_VAR:k
+*/
+bool isSafePrimitive(CallExpr* ce) {
+  PrimitiveOp* prim = ce->primitive;
+  //if (!prim) return false; // or INT_ASSERT(prim);
+  INT_ASSERT(prim);
+  if (prim->isEssential) return false;
+  switch(prim->tag) {
+    case PRIM_MOVE:
+    case PRIM_SIZEOF:
+    case PRIM_STRING_COPY:
+    case PRIM_GET_SERIAL:
+    case PRIM_NOOP:
+    case PRIM_UNARY_MINUS:
+    case PRIM_UNARY_PLUS:
+    case PRIM_UNARY_NOT:
+    case PRIM_UNARY_LNOT:
+    case PRIM_ADD:
+    case PRIM_SUBTRACT:
+    case PRIM_MULT:
+    case PRIM_MOD:
+    case PRIM_LSH:
+    case PRIM_RSH:
+    case PRIM_EQUAL:
+    case PRIM_NOTEQUAL:
+    case PRIM_LESSOREQUAL:
+    case PRIM_GREATEROREQUAL:
+    case PRIM_LESS:
+    case PRIM_GREATER:
+    case PRIM_AND:
+    case PRIM_OR:
+    case PRIM_XOR:
+    case PRIM_POW:
+    case PRIM_MIN:
+    case PRIM_MAX:
+    case PRIM_CAST:
+    case PRIM_TESTCID:
+    case PRIM_GETCID:
+    case PRIM_GET_UNION_ID:
+    case PRIM_GET_MEMBER:
+    case PRIM_GET_MEMBER_VALUE:
+    case PRIM_GET_REAL:
+    case PRIM_GET_IMAG:
+    case PRIM_ADDR_OF:
+    case PRIM_DEREF:
+    case PRIM_PTR_EQUAL:
+    case PRIM_PTR_NOTEQUAL:
+    case PRIM_IS_SUBTYPE:
+    case PRIM_DYNAMIC_CAST:
+    case PRIM_ARRAY_GET:
+    case PRIM_ARRAY_GET_VALUE:
+    case PRIM_WIDE_GET_LOCALE:
+    case PRIM_WIDE_GET_NODE:
+    case PRIM_WIDE_GET_ADDR:
+    case PRIM_IS_WIDE_PTR:
+    case PRIM_CAPTURE_FN_FOR_CHPL:
+    case PRIM_CAPTURE_FN_FOR_C:
+    case PRIM_GET_PRIV_CLASS:
+    case PRIM_GET_SVEC_MEMBER:
+    case PRIM_GET_SVEC_MEMBER_VALUE:
+      return true;
+    case PRIM_UNKNOWN:
+      if(strcmp(prim->name, "string_length") == 0) {
+        return true;
+      }
+      else {
+        std::cout << "Unknown primitive : " << prim->name << std::endl;
+        return false;
+      }
+    default:
+      std::cout << prim->name << std::endl;
+      INT_ASSERT(false); // should not be getting those
+      // that are !isEssential and not listed above
+  }
+  return false;
 }
 
 inline bool possibleDepInBetween(Expr* e1, Expr* e2){
