@@ -785,7 +785,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
     int typeIx;    // type Index
     int dlen;      // data length 
 
-    // fork
+    // fork & task
     int fid;
 
     // task
@@ -877,8 +877,9 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
       case 't':  // new task line
         //  task: s.u nodeID taskID O/L lineno filename
-        if (sscanf (&linedata[nextCh], "%d %d %d %4s %d %d",
-                    &nid, &taskid, &parentId, onstr, &nlineno, &nfileno) != 6) {
+        if (sscanf (&linedata[nextCh], "%d %d %d %4s %d %d %d",
+                    &nid, &taskid, &parentId, onstr, &nlineno, &nfileno,
+                    &fid) != 7) {
           fprintf (stderr, "Bad task line: %s\n", filename);
           fprintf (stderr, "nid = %d, taskid = %d, nbstr = '%s', nlineno = %d"
                    " nfileno = '%d'\n", nid, taskid, onstr, nlineno, nfileno);
@@ -891,7 +892,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
             (void)vdbTids.insert(taskid);
           } else {
             if (nfileno < 0 || nfileno >= strTblSize) nfileno = 0;
-            newEvent = new E_task (sec, usec, nid, taskid, onstr[0] == 'O',
+            newEvent = new E_task (sec, usec, nid, taskid, fid, onstr[0] == 'O',
                                    nlineno, strTbl[nfileno]);
           }
 
