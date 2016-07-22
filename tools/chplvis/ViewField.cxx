@@ -532,6 +532,7 @@ int ViewField::handle(int event)
                 theLocales[ix].ccwin = make_concurrency_window(ix, curTagNum);
               } else {
                 theLocales[ix].ccwin->updateData(ix, curTagNum);
+                theLocales[ix].ccwin->showTaskBox();
               }
               if (theLocales[ix].ccwin->visible())
                 theLocales[ix].ccwin->hide();

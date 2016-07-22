@@ -128,17 +128,23 @@ static void legalizeName(Symbol* sym) {
 }
 
 static void
-genGlobalDefClassId(const char* cname, int id) {
+genGlobalDefClassId(const char* cname, int id, bool isHeader) {
   GenInfo* info = gGenInfo;
   const char* id_type_name = "chpl__class_id";
   std::string name("chpl__cid_");
   name += cname;
   
   if( info->cfile ) {
-    fprintf(info->cfile, "const %s %s = %d;\n", 
+    if(isHeader)
+      fprintf(info->cfile, "extern const %s %s;\n",
+                      id_type_name, name.c_str());
+    else
+      fprintf(info->cfile, "const %s %s = %d;\n",
                       id_type_name, name.c_str(), id);
   } else {
 #ifdef HAVE_LLVM
+    if (!isHeader)
+      return;
     GenRet id_type_g = CLASS_ID_TYPE->codegen();
     llvm::Type *id_type = id_type_g.type;
     llvm::GlobalVariable * gv = llvm::cast<llvm::GlobalVariable>(
@@ -167,9 +173,12 @@ genGlobalString(const char* cname, const char* value) {
   }
 }
 static void
-genGlobalInt(const char* cname, int value) {
+genGlobalInt(const char* cname, int value, bool isHeader) {
   GenInfo* info = gGenInfo;
   if( info->cfile ) {
+    if(isHeader)
+      fprintf(info->cfile, "extern const int %s;\n", cname);
+    else
     fprintf(info->cfile, "const int %s = %d;\n", cname, value);
   } else {
 #ifdef HAVE_LLVM
@@ -200,25 +209,29 @@ static void genGlobalInt32(const char *cname, int value) {
 }
 
 static void
-genClassIDs(Vec<TypeSymbol*> & typeSymbols) {
+genClassIDs(Vec<TypeSymbol*> & typeSymbols, bool isHeader) {
   genComment("Class Type Identification Numbers");
 
   int count=0;
   forv_Vec(TypeSymbol, ts, typeSymbols) {
     if (AggregateType* ct = toAggregateType(ts->type)) {
       if (!isReferenceType(ct) && isClass(ct)) {
-        genGlobalDefClassId(ts->cname, count);
+        genGlobalDefClassId(ts->cname, count, isHeader);
         count++;
       }
     }
   }
 }
 static void
-genFtable(Vec<FnSymbol*> & fSymbols) {
+genFtable(Vec<FnSymbol*> & fSymbols, bool isHeader) {
   GenInfo* info = gGenInfo;
   const char* ftable_name = "chpl_ftable";
   if( info->cfile ) {
     FILE* hdrfile = info->cfile;
+    if(isHeader) {
+      fprintf(hdrfile, "extern chpl_fn_p %s[];\n", ftable_name);
+      return;
+    }
     fprintf(hdrfile, "chpl_fn_p %s[] = {\n", ftable_name);
     bool first = true;
     forv_Vec(FnSymbol, fn, fSymbols) {
@@ -233,6 +246,9 @@ genFtable(Vec<FnSymbol*> & fSymbols) {
     fprintf(hdrfile, "\n};\n");
   } else {
 #ifdef HAVE_LLVM
+    if (!isHeader)
+      return;
+
     std::vector<llvm::Constant *> table ((fSymbols.n == 0) ? 1 : fSymbols.n);
     
     llvm::Type *funcPtrType = info->lvt->getType("chpl_fn_p");
@@ -265,8 +281,13 @@ genFtable(Vec<FnSymbol*> & fSymbols) {
 }
 
 static void
-genVirtualMethodTable(Vec<TypeSymbol*>& types) {
+genVirtualMethodTable(Vec<TypeSymbol*>& types, bool isHeader) {
   GenInfo* info = gGenInfo;
+  const char* vmt = "chpl_vmtable";
+  if(info->cfile && isHeader) {
+    fprintf(info->cfile, "extern chpl_fn_p %s[];\n", vmt);
+    return;
+  }
   int maxVMT = 0;
   for (int i = 0; i < virtualMethodTable.n; i++)
     if(virtualMethodTable.v[i].key && virtualMethodTable.v[i].value->n > maxVMT)
@@ -274,7 +295,6 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
 
   gMaxVMT = maxVMT;
 
-  const char* vmt = "chpl_vmtable";
   if( info->cfile ) {
     FILE* hdrfile = info->cfile;
     // MPF - in order to simplify code generation, making
@@ -312,6 +332,9 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types) {
     fprintf(hdrfile, "\n};\n");
   } else {
 #ifdef HAVE_LLVM
+    if (!isHeader)
+      return;
+
     const char* vmtData = "chpl_vmtable_data";
     std::vector<llvm::Constant *> table;
     llvm::Type *funcPtrType = getTypeLLVM("chpl_fn_p");
@@ -636,8 +659,8 @@ static void codegen_header_compilation_config() {
     genGlobalString("chpl_compileVersion", compileVersion);
     genGlobalString("CHPL_HOME",           CHPL_HOME);
 
-    genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks);
-    genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote);
+    genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
+    genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
 
     for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
       if (env->first != "CHPL_HOME") {
@@ -765,7 +788,7 @@ static void protectNameFromC(Symbol* sym) {
 
 
 // TODO: Split this into a number of smaller routines.<hilde>
-static void codegen_header() {
+static void codegen_header(bool isHeader) {
   GenInfo* info = gGenInfo;
   Vec<const char*> cnames;
   Vec<TypeSymbol*> types;
@@ -813,7 +836,7 @@ static void codegen_header() {
   // identifiers.  This can be disabled via the --munge-user-idents
   // flag.
   //
-  if (fMungeUserIdents) {
+  if (fMungeUserIdents && isHeader) {
     forv_Vec(ModuleSymbol, sym, gModuleSymbols) {
       protectNameFromC(sym);
     }
@@ -856,8 +879,10 @@ static void codegen_header() {
       for_enums(constant, enumType) {
         Symbol* sym = constant->sym;
         legalizeName(sym);
-        sym->cname = astr(enumType->symbol->cname, "_", sym->cname);
-        sym->cname = uniquifyName(sym->cname, &cnames);
+        if(isHeader) {
+          sym->cname = astr(enumType->symbol->cname, "_", sym->cname);
+          sym->cname = uniquifyName(sym->cname, &cnames);
+        }
       }
     }
   }
@@ -951,7 +976,7 @@ static void codegen_header() {
 
   FILE* hdrfile = info->cfile;
 
-  if( hdrfile ) {
+  if( hdrfile && isHeader) {
     // This is done in runClang for LLVM version.
     fprintf(hdrfile, "\n#define CHPL_GEN_CODE\n\n");
 
@@ -961,9 +986,6 @@ static void codegen_header() {
     genIncludeCommandLineHeaders(hdrfile);
 
     fprintf(hdrfile, "#include \"stdchpl.h\"\n");
-
-    // Include the compilation config file
-    fprintf(hdrfile, "#include \"%s.c\"\n", sCfgFname);
 
 #ifdef HAVE_LLVM
     //include generated extern C header file
@@ -975,26 +997,29 @@ static void codegen_header() {
 #endif
   }
 
-  genClassIDs(types);
+  genClassIDs(types, isHeader);
 
-  genComment("Class Prototypes");
-  forv_Vec(TypeSymbol, typeSymbol, types) {
-    if (!typeSymbol->hasFlag(FLAG_REF) && !typeSymbol->hasFlag(FLAG_DATA_CLASS))
-    {
-      typeSymbol->codegenPrototype();
+  if(isHeader) {
+    genComment("Class Prototypes");
+    forv_Vec(TypeSymbol, typeSymbol, types) {
+      if (!typeSymbol->hasFlag(FLAG_REF) && !typeSymbol->hasFlag(FLAG_DATA_CLASS))
+      {
+        typeSymbol->codegenPrototype();
+      }
     }
   }
 
-  // codegen enumerated types
-  genComment("Enumerated Types");
-
-  forv_Vec(TypeSymbol, typeSymbol, types) {
-    if (toEnumType(typeSymbol->type)) {
-      typeSymbol->codegenDef();
+  if(isHeader) {
+    // codegen enumerated types
+    genComment("Enumerated Types");
+    forv_Vec(TypeSymbol, typeSymbol, types) {
+      if (toEnumType(typeSymbol->type)) {
+        typeSymbol->codegenDef();
+      }
     }
   }
 
-  {
+  if(isHeader) {
     // codegen records/unions/references/data class in topological order
     genComment("Records, Unions, Data Class, References (Hierarchically)");
     forv_Vec(TypeSymbol, ts, types) {
@@ -1003,39 +1028,44 @@ static void codegen_header() {
     }
   }
 
-  // codegen remaining types
-  genComment("Classes");
-  forv_Vec(TypeSymbol, typeSymbol, types) {
-    if (isClass(typeSymbol->type) &&
-        !typeSymbol->hasFlag(FLAG_REF) &&
-        !typeSymbol->hasFlag(FLAG_DATA_CLASS) &&
-        typeSymbol->hasFlag(FLAG_NO_OBJECT) &&
-        !typeSymbol->hasFlag(FLAG_OBJECT_CLASS))
-      typeSymbol->codegenDef();
+  if(isHeader) {
+    // codegen remaining types
+    genComment("Classes");
+    forv_Vec(TypeSymbol, typeSymbol, types) {
+      if (isClass(typeSymbol->type) &&
+          !typeSymbol->hasFlag(FLAG_REF) &&
+          !typeSymbol->hasFlag(FLAG_DATA_CLASS) &&
+          typeSymbol->hasFlag(FLAG_NO_OBJECT) &&
+          !typeSymbol->hasFlag(FLAG_OBJECT_CLASS))
+        typeSymbol->codegenDef();
+    }
   }
 
   //
   // codegen class definitions in breadth first order starting with
   // "object" and following its dispatch children
   //
-  Vec<TypeSymbol*> next, current;
-  current.add(dtObject->symbol);
-  while (current.n) {
-    forv_Vec(TypeSymbol, ts, current) {
-      ts->codegenDef();
-      forv_Vec(Type, child, ts->type->dispatchChildren) {
-        if (child)
-          next.set_add(child->symbol);
+  if(isHeader) {
+    Vec<TypeSymbol*> next, current;
+    current.add(dtObject->symbol);
+    while (current.n) {
+      forv_Vec(TypeSymbol, ts, current) {
+        ts->codegenDef();
+        forv_Vec(Type, child, ts->type->dispatchChildren) {
+          if (child)
+            next.set_add(child->symbol);
+        }
       }
+      current.clear();
+      current.move(next);
+      current.set_to_vec();
+      qsort(current.v, current.n, sizeof(current.v[0]), compareSymbol);
+      next.clear();
     }
-    current.clear();
-    current.move(next);
-    current.set_to_vec();
-    qsort(current.v, current.n, sizeof(current.v[0]), compareSymbol);
-    next.clear();
   }
 
-  if( ! info->cfile ) { 
+
+  if( (!info->cfile) && isHeader ) {
     // Codegen any type annotations that are necessary.
     forv_Vec(TypeSymbol, typeSymbol, types) {
       typeSymbol->codegenMetadata();
@@ -1043,39 +1073,53 @@ static void codegen_header() {
   }
 
 
-  genComment("Function Prototypes");
-  for_vector(FnSymbol, fnSymbol, functions) {
-    fnSymbol->codegenPrototype();
-  }
-    
-  genComment("Function Pointer Table");
-  for_vector(FnSymbol, fn2, functions) {
-    if (fn2->hasFlag(FLAG_BEGIN_BLOCK) ||
-        fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
-        fn2->hasFlag(FLAG_ON_BLOCK)) {
-    ftableVec.add(fn2);
-    ftableMap[fn2] = ftableVec.n-1;
+  if(isHeader) {
+    genComment("Function Prototypes");
+    for_vector(FnSymbol, fnSymbol, functions) {
+      fnSymbol->codegenPrototype();
     }
   }
 
-  genFtable(ftableVec);
+  genComment("Function Pointer Table");
+#ifndef HAVE_LLVM
+  if(!isHeader) {
+#else
+    if (isHeader) {
+#endif
+    for_vector(FnSymbol, fn2, functions) {
+      if (fn2->hasFlag(FLAG_BEGIN_BLOCK) ||
+          fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
+          fn2->hasFlag(FLAG_ON_BLOCK)) {
+      ftableVec.add(fn2);
+      ftableMap[fn2] = ftableVec.n-1;
+      }
+    }
+  }
+  genFtable(ftableVec,isHeader);
 
   genComment("Virtual Method Table");
-  genVirtualMethodTable(types);
+  genVirtualMethodTable(types,isHeader);
 
   genComment("Global Variables");
   forv_Vec(VarSymbol, varSymbol, globals) {
-    varSymbol->codegenGlobalDef();
+    varSymbol->codegenGlobalDef(isHeader);
   }
   flushStatements();
 
-  genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap);
+  genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap, isHeader);
   int globals_registry_static_size = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
   if( hdrfile ) {
-    fprintf(hdrfile, "\nptr_wide_ptr_t chpl_globals_registry[%d];\n",
-                     globals_registry_static_size);
+    if(isHeader)
+      fprintf(hdrfile, "\nextern ptr_wide_ptr_t chpl_globals_registry[%d];\n",
+                      globals_registry_static_size);
+    else
+      fprintf(hdrfile, "\nptr_wide_ptr_t chpl_globals_registry[%d];\n",
+                      globals_registry_static_size);
   } else {
 #ifdef HAVE_LLVM
+    if (!isHeader)
+      return; // Nothing in remainder of function should be done twice for LLVM
+
     llvm::Type* ptr_wide_ptr_t = info->lvt->getType("ptr_wide_ptr_t");
     INT_ASSERT(ptr_wide_ptr_t);
 
@@ -1096,18 +1140,22 @@ static void codegen_header() {
                               chpl_globals_registryGVar, GEN_PTR, true);
 #endif
   }
-  genGlobalInt("chpl_heterogeneous", fHeterogeneous?1:0);
+  genGlobalInt("chpl_heterogeneous", fHeterogeneous?1:0, isHeader);
   if( hdrfile ) {
-    fprintf(hdrfile, "\nconst char* chpl_mem_descs[] = {\n");
-    bool first = true;
-    forv_Vec(const char*, memDesc, memDescsVec) {
-      if (!first)
-        fprintf(hdrfile, ",\n");
-      fprintf(hdrfile, "\"%s\"", memDesc);
-      first = false;
-    }
-    fprintf(hdrfile, "\n};\n");
-  } else {
+      if(isHeader) {
+        fprintf(hdrfile, "\nextern const char* chpl_mem_descs[];\n");
+      } else {
+        fprintf(hdrfile, "\nconst char* chpl_mem_descs[] = {\n");
+        bool first = true;
+        forv_Vec(const char*, memDesc, memDescsVec) {
+          if (!first)
+            fprintf(hdrfile, ",\n");
+          fprintf(hdrfile, "\"%s\"", memDesc);
+          first = false;
+        }
+        fprintf(hdrfile, "\n};\n");
+      }
+    } else {
 #ifdef HAVE_LLVM
     std::vector<llvm::Constant *> memDescTable;
     forv_Vec(const char*, memDesc, memDescsVec) {
@@ -1132,31 +1180,35 @@ static void codegen_header() {
 #endif
   }
 
-  genGlobalInt("chpl_mem_numDescs", memDescsVec.n);
+  genGlobalInt("chpl_mem_numDescs", memDescsVec.n, isHeader);
 
   //
   // add table of private-broadcast constants
   //
   if( hdrfile ) {
-    fprintf(hdrfile, "\nvoid* const chpl_private_broadcast_table[] = {\n");
-    fprintf(hdrfile, "&chpl_verbose_comm");
-    fprintf(hdrfile, ",\n&chpl_comm_diagnostics");
-    fprintf(hdrfile, ",\n&chpl_verbose_mem");
-    int i = 3;
-    forv_Vec(CallExpr, call, gCallExprs) {
-      if (call->isPrimitive(PRIM_PRIVATE_BROADCAST)) {
-        SymExpr* se = toSymExpr(call->get(1));
-        INT_ASSERT(se);
-        SET_LINENO(call);
-        fprintf(hdrfile, ",\n&%s", se->var->cname);
-        // To preserve operand order, this should be insertAtTail.
-        // The change must also be made below (for LLVM) and in the signature
-        // of chpl_comm_broadcast_private().
-        call->insertAtHead(new_IntSymbol(i));
-        i++;
+    if(isHeader){
+      fprintf(hdrfile, "\nextern void* const chpl_private_broadcast_table[];\n");
+    } else {
+      fprintf(hdrfile, "\nvoid* const chpl_private_broadcast_table[] = {\n");
+      fprintf(hdrfile, "&chpl_verbose_comm");
+      fprintf(hdrfile, ",\n&chpl_comm_diagnostics");
+      fprintf(hdrfile, ",\n&chpl_verbose_mem");
+      int i = 3;
+      forv_Vec(CallExpr, call, gCallExprs) {
+        if (call->isPrimitive(PRIM_PRIVATE_BROADCAST)) {
+          SymExpr* se = toSymExpr(call->get(1));
+          INT_ASSERT(se);
+          SET_LINENO(call);
+          fprintf(hdrfile, ",\n&%s", se->var->cname);
+          // To preserve operand order, this should be insertAtTail.
+          // The change must also be made below (for LLVM) and in the signature
+          // of chpl_comm_broadcast_private().
+          call->insertAtHead(new_IntSymbol(i));
+          i++;
+        }
       }
+      fprintf(hdrfile, "\n};\n");
     }
-    fprintf(hdrfile, "\n};\n");
   } else {
 #ifdef HAVE_LLVM
     llvm::Type *private_broadcastTableEntryType =
@@ -1212,7 +1264,7 @@ static void codegen_header() {
   }
 
 
-  if (hdrfile) {
+  if (hdrfile && isHeader) {
     fprintf(hdrfile, "#include \"chpl-gen-includes.h\"\n");
   }
 }
@@ -1246,7 +1298,7 @@ codegen_config() {
 
     fprintf(outfile, "#include \"error.h\"\n\n");
 
-    genGlobalInt("mainHasArgs", mainHasArgs);
+    genGlobalInt("mainHasArgs", mainHasArgs, false);
 
     fprintf(outfile, "void CreateConfigVarTable(void) {\n");
     fprintf(outfile, "initConfigVarTable();\n");
@@ -1281,7 +1333,7 @@ codegen_config() {
 #ifdef HAVE_LLVM
     llvm::FunctionType *createConfigType;
     llvm::Function *createConfigFunc;
-    genGlobalInt("mainHasArgs", mainHasArgs);
+    genGlobalInt("mainHasArgs", mainHasArgs, false);
     if((createConfigFunc = getFunctionLLVM("CreateConfigVarTable"))) {
       createConfigType = createConfigFunc->getFunctionType();
     }
@@ -1345,6 +1397,42 @@ codegen_config() {
   }
 }
 
+static const char* generateFileName(ChainHashMap<char*, StringHashFns, int>& filenames, const char* name, const char* currentModuleName){
+  // Macs are case-insensitive when it comes to files, so
+  // the following bit of code creates a unique filename
+  // with case-insensitivity taken into account
+
+  // create the lowercase filename
+  char lowerFilename[FILENAME_MAX];
+  sprintf(lowerFilename, "%s", currentModuleName);
+  for (unsigned int i=0; i<strlen(lowerFilename); i++) {
+    lowerFilename[i] = tolower(lowerFilename[i]);
+  }
+
+  // create a filename by bumping a version number until we get a
+  // filename we haven't seen before
+  char filename[FILENAME_MAX];
+  sprintf(filename, "%s", lowerFilename);
+  int version = 1;
+  while (filenames.get(filename)) {
+    version++;
+    sprintf(filename, "%s%d", lowerFilename, version);
+  }
+  filenames.put(filename, 1);
+
+  // build the real filename using that version number -- preserves
+  // case by default by going back to currentModule->name rather
+  // than using the lowercase filename
+  if (version == 1) {
+    sprintf(filename, "%s", currentModuleName);
+  } else {
+    sprintf(filename, "%s%d", currentModuleName, version);
+  }
+
+  name = astr(filename);
+  return name;
+}
+
 
 void codegen(void) {
   if (no_codegen)
@@ -1396,6 +1484,8 @@ void codegen(void) {
 
   fileinfo hdrfile  = { NULL, NULL, NULL };
   fileinfo mainfile = { NULL, NULL, NULL };
+  fileinfo defnfile = { NULL, NULL, NULL };
+  fileinfo strconfig = { NULL, NULL, NULL };
 
   GenInfo* info     = gGenInfo;
 
@@ -1406,20 +1496,50 @@ void codegen(void) {
     if( fHeterogeneous )
       INT_FATAL("fHeterogeneous not yet supported with LLVM");
 
+    if(fIncrementalCompilation)
+      USR_FATAL("Incremental compilation is not yet supported with LLVM");
+
     prepareCodegenLLVM();
 #endif
   } else {
     openCFile(&hdrfile,  "chpl__header", "h");
     openCFile(&mainfile, "_main",        "c");
+    openCFile(&defnfile, "chpl__defn",    "c");
+    openCFile(&strconfig,  "chpl_str_config", "c");
 
+    fprintf(mainfile.fptr, "#include \"chpl_str_config.c\"\n");
     fprintf(mainfile.fptr, "#include \"chpl__header.h\"\n");
+    fprintf(mainfile.fptr, "#include \"%s.c\"\n", sCfgFname);
+    fprintf(mainfile.fptr, "#include \"chpl__defn.c\"\n");
 
-    codegen_makefile(&mainfile);
+    std::vector<const char*> userFileName;
+    if(fIncrementalCompilation) {
+      ChainHashMap<char*, StringHashFns, int> fileNameHashMap;
+      forv_Vec(ModuleSymbol, currentModule, allModules) {
+        const char* filename = NULL;
+        filename = generateFileName(fileNameHashMap, filename, currentModule->name);
+        if(currentModule->modTag == MOD_USER) {
+          fileinfo modulefile;
+          openCFile(&modulefile, filename, "c");
+          int modulePathLen = strlen(astr(modulefile.pathname));
+          char path[FILENAME_MAX];
+          strncpy(path, astr(modulefile.pathname), modulePathLen-2);
+          path[modulePathLen-2]='\0';
+          userFileName.push_back(astr(path));
+          closeCFile(&modulefile);
+        }
+      }
+    }
+
+    codegen_makefile(&mainfile, NULL, false, userFileName);
   }
 
   // This dumps the generated sources into the build directory.
   info->cfile = hdrfile.fptr;
-  codegen_header();
+  codegen_header(true);
+
+  info->cfile = defnfile.fptr;
+  codegen_header(false);
 
   info->cfile = mainfile.fptr;
   codegen_config();
@@ -1448,50 +1568,28 @@ void codegen(void) {
       }
     }
 
-    ChainHashMap<char*, StringHashFns, int> filenames;
+    ChainHashMap<char*, StringHashFns, int> fileNameHashMap;
     forv_Vec(ModuleSymbol, currentModule, allModules) {
       mysystem(astr("# codegen-ing module", currentModule->name),
                "generating comment for --print-commands option");
 
-      // Macs are case-insensitive when it comes to files, so
-      // the following bit of code creates a unique filename
-      // with case-insensitivity taken into account
-
-      // create the lowercase filename
-      char lowerFilename[FILENAME_MAX];
-      sprintf(lowerFilename, "%s", currentModule->name);
-      for (unsigned int i=0; i<strlen(lowerFilename); i++) {
-        lowerFilename[i] = tolower(lowerFilename[i]);
-      }
-
-      // create a filename by bumping a version number until we get a
-      // filename we haven't seen before
-      char filename[FILENAME_MAX];
-      sprintf(filename, "%s", lowerFilename);
-      int version = 1;
-      while (filenames.get(filename)) {
-        version++;
-        sprintf(filename, "%s%d", lowerFilename, version);
-      }
-      filenames.put(filename, 1);
-
-      // build the real filename using that version number -- preserves
-      // case by default by going back to currentModule->name rather
-      // than using the lowercase filename
-      if (version == 1) {
-        sprintf(filename, "%s", currentModule->name);
-      } else {
-        sprintf(filename, "%s%d", currentModule->name, version);
-      }
+      const char* filename = NULL;
+      filename = generateFileName(fileNameHashMap, filename,currentModule->name);
 
       fileinfo modulefile;
       openCFile(&modulefile, filename, "c");
       info->cfile = modulefile.fptr;
-
+      if(fIncrementalCompilation && (currentModule->modTag == MOD_USER))
+        fprintf(modulefile.fptr, "#include \"chpl__header.h\"\n");
       currentModule->codegenDef();
       closeCFile(&modulefile);
-      fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
+
+      if(!(fIncrementalCompilation && (currentModule->modTag == MOD_USER)))
+        fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
     }
+
+    fprintf(strconfig.fptr, "#include \"chpl-string.h\"\n");
+    fprintf(strconfig.fptr, "chpl_string defaultStringValue=\"\";\n");
 
     if (fHeterogeneous)
       codegenTypeStructures(hdrfile.fptr);
@@ -1501,6 +1599,8 @@ void codegen(void) {
 
     closeCFile(&hdrfile);
     closeCFile(&mainfile);
+    closeCFile(&defnfile);
+    closeCFile(&strconfig);
   }
 
   if (fPrintEmittedCodeSize)

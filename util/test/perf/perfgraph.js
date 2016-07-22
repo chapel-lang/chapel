@@ -163,36 +163,28 @@ function getNextDivs(afterDiv, afterLDiv) {
   lspacer.className = 'lspacer';
   legend.insertBefore(lspacer, beforeLDiv);
 
-  // create a log button and put it in the gspacer
-  var logToggle = document.createElement('input');
-  logToggle.type = 'button';
-  logToggle.className = 'toggle';
-  logToggle.value = 'log';
-  logToggle.style.visibility = 'hidden';
-  gspacer.appendChild(logToggle);
+  function addButtonHelper(buttonText) {
+    var button = document.createElement('input');
+    button.type = 'button';
+    button.className = 'toggle';
+    button.value = buttonText;
+    button.style.visibility = 'hidden';
+    gspacer.appendChild(button);
+    return button;
+  }
 
-  // create an annotation button and put it next to the log button in gspacer
-  var annToggle = document.createElement('input');
-  annToggle.type = 'button';
-  annToggle.className = 'toggle';
-  annToggle.value = 'annotations';
-  annToggle.style.visibility = 'hidden';
-  gspacer.appendChild(annToggle);
-
-  // create a screenshot button and put it next to the annotation button
-  var screenshotToggle = document.createElement('input');
-  screenshotToggle.type = 'button';
-  screenshotToggle.className = 'toggle';
-  screenshotToggle.value = 'screenshot';
-  screenshotToggle.style.visibility = 'hidden';
-  gspacer.appendChild(screenshotToggle);
+  var logToggle = addButtonHelper('log');
+  var annToggle = addButtonHelper('annotations');
+  var screenshotToggle = addButtonHelper('screenshot');
+  var closeGraphToggle = addButtonHelper('close');
 
   return {
     div: div,
-      ldiv: ldiv,
-      logToggle: logToggle,
-      annToggle: annToggle,
-      screenshotToggle: screenshotToggle
+    ldiv: ldiv,
+    logToggle: logToggle,
+    annToggle: annToggle,
+    screenshotToggle: screenshotToggle,
+    closeGraphToggle: closeGraphToggle
   }
 }
 
@@ -200,12 +192,6 @@ function getNextDivs(afterDiv, afterLDiv) {
 // Gen a new dygraph, if an existing graph is being expanded then expandInfo
 // will contain the expansion information, else it is null
 function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
-
-  var div = graphDivs.div;
-  var ldiv = graphDivs.ldiv;
-  var logToggle = graphDivs.logToggle;
-  var annToggle = graphDivs.annToggle;
-  var screenshotToggle = graphDivs.screenshotToggle;
 
   var startdate = getDateFromURL(OptionsEnum.STARTDATE, graphInfo.startdate);
   var enddate = getDateFromURL(OptionsEnum.ENDDATE, graphInfo.enddate);
@@ -243,7 +229,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
     // So it's easier to zoom in on the right side
     rightGap: 15,
     labels: graphLabels,
-    labelsDiv: ldiv,
+    labelsDiv: graphDivs.ldiv,
     labelsSeparateLines: true,
     dateWindow: [startdate, enddate],
     // sync graphs anytime we pan, zoom, or at initial draw
@@ -273,7 +259,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
   }
 
   // actually create the dygraph
-  var g = new Dygraph(div, graphData, graphOptions);
+  var g = new Dygraph(graphDivs.div, graphData, graphOptions);
   g.isReady = false;
   setupSeriesLocking(g);
 
@@ -287,9 +273,10 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
     g.divs = graphDivs;
     g.graphInfo = graphInfo;
 
-    setupLogToggle(g, graphInfo, logToggle);
-    setupAnnToggle(g, graphInfo, annToggle);
-    setupScreenshotToggle(g, graphInfo, screenshotToggle);
+    setupLogToggle(g, graphInfo, graphDivs.logToggle);
+    setupAnnToggle(g, graphInfo, graphDivs.annToggle);
+    setupScreenshotToggle(g, graphInfo, graphDivs.screenshotToggle);
+    setupCloseGraphToggle(g, graphInfo, graphDivs.closeGraphToggle);
 
     g.isReady = true;
 
@@ -389,6 +376,22 @@ function setupScreenshotToggle(g, graphInfo, screenshotToggle) {
 
   screenshotToggle.onclick = function() {
     captureScreenshot(g, graphInfo);
+  }
+}
+
+
+// Setup the close graph button
+function setupCloseGraphToggle(g, graphInfo, closeGraphToggle) {
+  closeGraphToggle.style.visibility = 'visible';
+
+  closeGraphToggle.onclick = function() {
+    var checkBox = getCheckboxForGraph(g);
+    checkBox.checked = false;
+
+    // TODO instead of completely redrawing with displaySelectedGraphs() we
+    // could just remove the divs associated with the graph being removed to
+    // speed up this operation and make it less "jittery"
+    displaySelectedGraphs();
   }
 }
 
@@ -1415,6 +1418,15 @@ function normalizeForURL(str) {
   return str.toLowerCase().replace(nonAlphaNumRegex, '');
 }
 
+
+// gets the checkbox associated with a particular graph
+function getCheckboxForGraph(g) {
+  for (var i = 0; i < allGraphs.length; i++) {
+    if (allGraphs[i].title == g.graphInfo.title) {
+      return document.getElementById('graph' + i);
+    }
+  }
+}
 
 
 ////////////////////////////
