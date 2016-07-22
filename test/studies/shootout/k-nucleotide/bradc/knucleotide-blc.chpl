@@ -40,21 +40,50 @@ proc main(args: [] string) {
 }
 
 
-proc writeFreqs(data, size) {
-  var sum = data.size  - size;
-  var freqs = calculate(data, size);
+proc writeFreqs(data, param nclSize) {
+  const freqs = calculate(data, nclSize);
 
   // sort by frequencies
+  //  var arr = [(k,v) in zip(freqs.domain, freqs)] (k,v);
+
   var arr: [1..freqs.size] (int, uint);
   for (a, k, v) in zip(arr, freqs.domain, freqs) do
-    a = (v,k);
+    a = (v, k);
   QuickSort(arr, reverse=true);
 
   for (f, s) in arr do
-    writef("%s %.3dr\n", decode(s, size), (100.0 * f) / sum);
+    writef("%s %.3dr\n", decode(s, nclSize), 
+           (100.0 * f) / (data.size - nclSize));
   writeln();
 }
 
+
+proc writeCount(data, param str) {
+  const freqs = calculate(data, str.length),
+        d = hash(str.toBytes(), 1, str.length);
+
+  writeln(freqs[d], "\t", decode(d, str.length));
+}
+
+
+proc calculate(data, param nclSize) {
+  var freqDom: domain(uint),
+      freqs: [freqDom] int;
+
+  var lock$: sync bool = true;
+  coforall tid in 1..here.maxTaskPar {
+    var curDom: domain(uint);
+    var curArr: [curDom] int;
+    for i in tid .. data.size-nclSize by here.maxTaskPar {
+      curArr[hash(data, i, nclSize)] += 1;
+    }
+    lock$; // acquire lock
+    for (k,v) in zip(curDom, curArr) do freqs[k] += v;
+    lock$ = true; // release lock
+  }
+
+  return freqs;
+}
 
 //
 // TODO: make these static to decode and hash respectively
@@ -64,50 +93,23 @@ var toNum: [0..127] int;
 
 toNum[ascii(toChar)] = toChar.domain;
 
-inline proc hash(str, beg, sizeRange) {
+inline proc hash(str, beg, param size) {
   var data: uint = 0;
-  for i in sizeRange {
+  for param i in 0..size-1 {
     data <<= 2;
     data |= toNum[str[beg+i]];
   }
   return data;
 }
 
-proc decode(data, size) {
+proc decode(data, param nclSize) {
   var ret : string;
   var d = data;
-  for i in 1..size {
+  for i in 1..nclSize {
     ret = toChar[(d & 3) : uint(8)] + ret;
     d >>= 2;
   }
   return ret;
-}
-
-proc calculate(data, size) {
-  var freqDom: domain(uint);
-  var freqs: [freqDom] int;
-
-  var lock: sync bool;
-  lock = true;
-  const sizeRange = 0..size-1;
-  coforall tid in 1..here.maxTaskPar {
-    var curDom: domain(uint);
-    var curArr: [curDom] int;
-    for i in tid .. data.size-size by here.maxTaskPar {
-      curArr[hash(data, i, sizeRange)] += 1;
-    }
-    lock; // acquire lock
-    for (k,v) in zip(curDom, curArr) do freqs[k] += v;
-    lock = true; // free lock
-  }
-
-  return freqs;
-}
-
-proc writeCount(data, str) {
-  var freqs = calculate(data, str.length);
-  var d = hash(str.toBytes(), 1, 0..str.length-1);
-  writeln(freqs[d], "\t", decode(d, str.length));
 }
 
 proc string.toBytes() ref {
