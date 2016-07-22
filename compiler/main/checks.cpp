@@ -666,12 +666,18 @@ checkFormalActualTypesMatch()
                     formal->name);
         }
 
-        if (formal->type != actual->typeInfo())
-          INT_FATAL(call,
-                    "actual formal type mismatch for %s: %s != %s",
-                    fn->name,
-                    actual->typeInfo()->symbol->name,
-                    formal->type->symbol->name);
+        if (formal->type != actual->typeInfo()) {
+          if ((formal->intent & INTENT_FLAG_REF) != 0 &&
+              formal->type->getRefType() == actual->typeInfo()) {
+            // OK to pass a ref to a ref-intent function
+          } else {
+            INT_FATAL(call,
+                      "actual formal type mismatch for %s: %s != %s",
+                      fn->name,
+                      actual->typeInfo()->symbol->name,
+                      formal->type->symbol->name);
+          }
+        }
       }
     }
   }

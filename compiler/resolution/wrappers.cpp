@@ -491,11 +491,25 @@ void reorderActuals(FnSymbol* fn,
   return;
 }
 
+static IntentTag getIntent(ArgSymbol* formal)
+{
+  IntentTag intent = formal->intent;
+  if (intent == INTENT_BLANK &&
+      !formal->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    intent = blankIntentForType(formal->type);
+  return intent;
+}
 
 // do we need to add some coercion from the actual to the formal?
 static bool needToAddCoercion(Type* actualType, Symbol* actualSym,
-                              Type* formalType, FnSymbol* fn) {
+                              ArgSymbol* formal, FnSymbol* fn) {
+  Type* formalType = formal->type;
   if (actualType == formalType)
+    return false;
+  // If we have an actual of ref(formalType) and
+  // a REF or CONST REF argument intent, no coercion is necessary.
+  else if(actualType == formalType->getRefType() &&
+          (getIntent(formal) & INTENT_FLAG_REF) != 0)
     return false;
   else
     return canCoerce(actualType, actualSym, formalType, fn) ||
@@ -699,7 +713,7 @@ void coerceActuals(FnSymbol* fn, CallInfo* info) {
     do {
       c2 = false;
       Type* actualType = actualSym->type;
-      if (needToAddCoercion(actualType, actualSym, formalType, fn)) {
+      if (needToAddCoercion(actualType, actualSym, formal, fn)) {
         if (formalType == dtStringC && actualType == dtString && actualSym->isImmediate()) {
           // We do this swap since we know the string is a valid literal
           // There also is no cast defined for string->c_string on purpose (you

@@ -2592,12 +2592,33 @@ GenRet codegenArgForFormal(GenRet arg,
 {
   // NOTE -- VMT call had add & if arg isRecord.
   if( formal ) {
+    bool passReference = false;
+
     if (!isExtern &&
         formal->requiresCPtr() &&
-        !formal->type->symbol->hasFlag(FLAG_REF)) { 
+        !formal->type->symbol->hasFlag(FLAG_REF)) {
+      passReference = true;
+    }
+
+    // Make sure that the formal type + intent
+    // matches, so we don't get multiple reference levels.
+
+    // When passing a ref(t) to a formal of type
+    // t with a ref intent, we need to pass the ref(t)
+    // as a value.
+    //if ((formal->intent & INTENT_FLAG_REF) != 0 &&
+     //   arg.chplType && arg.chplType->symbol->hasFlag(FLAG_REF))
+
+    // If the argument type is already a reference, pass that
+    // reference as a value.
+    if (arg.chplType && arg.chplType->symbol->hasFlag(FLAG_REF))
+      passReference = false;
+
+    if (passReference) {
       if( arg.isLVPtr == GEN_VAL ) {
         arg = codegenValuePtr(arg);
       }
+      // Now arg.isLVPtr is 1
     } else {
       if( arg.isLVPtr != GEN_VAL ) {
         arg = codegenValue(arg);
