@@ -142,6 +142,23 @@ o Should writef("%s", str) and write(str) be equivalent?  If so,
   it looks like we have a bug.
 
 
+k-nucleotide
+------------
+o Good motivation for optimizing 1D array reallocations with a common
+  low bound?
+
+o Why does '(data:[] uint(8)) op= 0x20' not work?
+
+o Shouldn't ascii() return an int(8)/uint(8) by default?
+
+o Should readline() support an overload that takes an array of int(8)?
+
+o Could we use a 'sorted' iterator to print freqs rather than storing into
+  an array?
+
+o Shouldn't we be able to do a param for loop over a lo..#size param range
+
+
 mandelbrot.chpl
 ---------------
 o extend the dynamic() iterators for ranges to support domains and
@@ -191,6 +208,13 @@ o promote mpz_t types to a record-based implementation with:
   - automatic memory reclamation when it leaves scope
   - support for native Chapel types rather than exposing C types
     (using safecasts at any downward-facing interfaces)
+
+
+revcomp.chpl
+------------
+o Shouldn't ascii() return an int(8)/uint(8) by default?
+
+o Should we be able to support a param loop over lo..hi by 2?
 
 
 spectralnorm.chpl
