@@ -1467,6 +1467,10 @@ void codegen(void) {
       USR_WARN("C code generation for packed pointers not supported");
   }
 
+  if(fIncrementalCompilation && fFastFlag)
+    USR_WARN("Compiling with --incremental and --fast together can lead to "
+             "slower execution time than compiling with --fast only");
+
   if( llvmCodegen ) {
 #ifndef HAVE_LLVM
     USR_FATAL("This compiler was built without LLVM support");
