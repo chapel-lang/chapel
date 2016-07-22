@@ -142,15 +142,11 @@ inline proc hash(str, beg, param size) {
   return data;
 }
 
-proc string.toBytes() ref {
-  //
-  // TODO: Is there really no better way than an extern memcpy()?
-  //
-  extern proc memcpy(x: [], b, len);
-
-  var b: [1..this.length] uint(8);
-  memcpy(b, this.c_str(), this.length: size_t);
-  return b;
+proc string.toBytes() {
+  var bytes: [1..this.length] uint(8);
+  for (b, i) in zip(bytes, 1..) do
+    b = ascii(this[i]):uint(8);
+  return bytes;
 }
 
 
