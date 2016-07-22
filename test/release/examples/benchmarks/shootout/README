@@ -144,6 +144,12 @@ o Should writef("%s", str) and write(str) be equivalent?  If so,
 
 k-nucleotide
 ------------
+o Consider the difference in performance between associative and chaining;
+  tighten up associative domain to try and close this gap
+  - support user-defined hashes to avoid double-hashing
+  - BHarsh thinks there's an extraneous % operation?
+  - what else...?
+
 o Good motivation for optimizing 1D array reallocations with a common
   low bound?
 
