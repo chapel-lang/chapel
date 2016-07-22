@@ -583,10 +583,7 @@ bool isSafePrimitive(CallExpr* ce) {
           strcmp(prim->name, "real2int") == 0) {
         return true;
       }
-      else {
-        std::cout << "Unknown primitive : " << prim->name << std::endl;
-        INT_ASSERT(false);
-      }
+      //else fall through
     default:
       std::cout << "Unknown primitive : " << prim->name << std::endl;
       INT_ASSERT(false); // should not be getting those
