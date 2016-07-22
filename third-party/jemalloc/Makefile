@@ -15,6 +15,12 @@ endif
 CHPL_JEMALLOC_CFG_OPTIONS += --prefix=$(JEMALLOC_INSTALL_DIR) \
 			     --with-jemalloc-prefix=je_
 
+# Unless the user explicitly asks for stats gathering, disable it since
+# there is some runtime overhead of this capability
+ifeq (, $(CHPL_JEMALLOC_ENABLE_STATS))
+CHPL_JEMALLOC_CFG_OPTIONS += --disable-stats
+endif
+
 # As an optimization, use jemalloc's decay-based purging instead of the
 # default ratio-based purging
 CHPL_JEMALLOC_CFG_OPTIONS += --with-malloc-conf=purge:decay

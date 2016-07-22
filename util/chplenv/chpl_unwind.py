@@ -14,12 +14,19 @@ def get():
     linux = platform_val.startswith('linux64')
     osx = platform_val.startswith('darwin')
     val = os.environ.get('CHPL_UNWIND')
-    if val == 'libunwind' and linux:
-        return 'libunwind'
-    if val == 'system' and (osx or linux):
-        return 'system'
-    return 'none'
 
+    if linux:
+        if val == 'libunwind':
+            return 'libunwind'
+        elif val == 'system':
+            return 'system'
+    if osx:
+        if val == 'libunwind':
+            raise ValueError("Using CHPL_UNWIND=libunwind is not supported"+
+                            " on Mac OS X. Use CHPL_UNWIND=system instead.")
+        elif val == 'system':
+            return 'system'
+    return 'none'
 
 def _main():
     unwind_val = get()

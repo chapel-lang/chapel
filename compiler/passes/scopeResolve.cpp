@@ -277,16 +277,10 @@ static void addOneToSymbolTable(DefExpr* def)
                     def->sym->stringLoc());
         }
 
-        if (!oldFn && (newFn && !newFn->_this)) {
+        if ((!oldFn && (newFn && !newFn->_this)) ||
+            (!newFn && (oldFn && !oldFn->_this))) {
           // A function definition is conflicting with another named symbol
           // that isn't a function (could be a variable, a module name, etc.)
-          USR_FATAL(sym,
-                    "'%s' has multiple definitions, redefined at:\n  %s",
-                    sym->name,
-                    def->sym->stringLoc());
-        } else if (!newFn && (oldFn && !oldFn->_this)) {
-          // Another named symbol that isn't a function is conflicting with
-          // a function definition name.
           USR_FATAL(sym,
                     "'%s' has multiple definitions, redefined at:\n  %s",
                     sym->name,

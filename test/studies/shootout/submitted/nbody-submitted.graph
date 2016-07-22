@@ -1,0 +1,5 @@
+perfkeys: real, real
+graphkeys: release, submitted
+files: nbody.dat, nbody-submitted.dat
+graphtitle: Submitted N-body Shootout Benchmark
+ylabel: Time (seconds)

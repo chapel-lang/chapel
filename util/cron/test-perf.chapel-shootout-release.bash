@@ -14,7 +14,11 @@ git checkout 1.13.0
 git checkout $currentSha -- $CHPL_HOME/test/
 git checkout $currentSha -- $CHPL_HOME/util/cron/
 
+SHORT_NAME=release
+START_DATE=06/28/16
+
 export CHPL_NIGHTLY_TEST_DIRS="studies/shootout/submitted/"
 
-perf_args="-performance -numtrials 5 -startdate 06/28/16 -sync-dir-suffix release"
+perf_args="-performance-description $SHORT_NAME -performance-configs default,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
+perf_args="${perf_args} -numtrials 5 -startdate $START_DATE"
 $CWD/nightly -cron ${perf_args}

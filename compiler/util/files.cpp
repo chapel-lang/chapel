@@ -540,7 +540,7 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
 }
 
 
-void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_compile_link) {
+void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_compile_link, const std::vector<const char*>& splitFiles) {
   fileinfo makefile;
   openCFile(&makefile, "Makefile");
   const char* tmpDirName = intDirName;
@@ -632,6 +632,10 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
 
   fprintf(makefile.fptr, "CHPLSRC = \\\n");
   fprintf(makefile.fptr, "\t%s \\\n\n", mainfile->pathname);
+  fprintf(makefile.fptr, "CHPLUSEROBJ = \\\n");
+  for(int i=0; i<(int)splitFiles.size(); i++)
+    fprintf(makefile.fptr, "\t%s \\\n", splitFiles[i]);
+  fprintf(makefile.fptr, "\n");
   genCFiles(makefile.fptr);
   genObjFiles(makefile.fptr);
   fprintf(makefile.fptr, "\nLIBS =");

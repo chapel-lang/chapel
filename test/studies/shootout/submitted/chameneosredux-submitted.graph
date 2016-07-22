@@ -1,0 +1,5 @@
+perfkeys: real, real
+graphkeys: release, submitted
+files: chameneosredux.dat, chameneosredux-submitted.dat
+graphtitle: Submitted Chameneos Redux Shootout Benchmark (n=6,000,000)
+ylabel: Time (seconds)
