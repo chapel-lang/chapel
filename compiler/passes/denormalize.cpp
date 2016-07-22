@@ -528,6 +528,7 @@ bool isSafePrimitive(CallExpr* ce) {
     case PRIM_NOOP:
     case PRIM_LOOKUP_FILENAME:
     case PRIM_REF_TO_STRING:
+    case PRIM_BLOCK_LOCAL:
     case PRIM_UNARY_MINUS:
     case PRIM_UNARY_PLUS:
     case PRIM_UNARY_NOT:
