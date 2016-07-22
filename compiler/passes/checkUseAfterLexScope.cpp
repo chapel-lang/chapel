@@ -12,25 +12,6 @@
 
 /*********** HEADER *********************/
 
-/**********************
-
-TODO : We are using primitive tags to handle
-the Node boundaries.
-PRIM_NOOP               :Initial/ End of Function.
-PRIM_SINGLE_WAIT_FULL   : single read
-PRIM_SINGLE_SIGNAL_FULL : sigle fill
-PRIM_SYNC_SIGNAL_FULL   : sync full
-PRIM_SYNC_SIGNAL_EMPTY  : sync empty
-PRIM_BLOCK_BEGIN        : begin
-PRIM_UNKNOWN            : Internal Function
-PRIM_BLOCK_PARAM_LOOP   :|
-PRIM_BLOCK_WHILEDO_LOOP :|
-PRIM_BLOCK_DOWHILE_LOOP :>loop
-PRIM_BLOCK_FOR_LOOP     :|
-PRIM_BLOCK_C_FOR_LOOP   :|
-                        : If-ELse
-*************************/
-
 enum GraphNodeStatus {
   NODE_UNKNOWN = 0, //NODE STATUS UNKNOWN
   NODE_SINGLE_WAIT_FULL,
@@ -38,14 +19,14 @@ enum GraphNodeStatus {
   NODE_SYNC_SIGNAL_FULL,
   NODE_SYNC_SIGNAL_EMPTY,
   NODE_BLOCK_BEGIN, //A NEW BEGIN FUNCTION START HERE
-  NODE_BLOCK_FUNCTION, // A NEW FUNCTION NODE STARTS HERE
+  NODE_BLOCK_INTERNAL_FUNCTION, // A NEW FUNCTION NODE STARTS HERE
   NODE_START_LOOP,
   NODE_START_DOWHILE,
   NODE_START_WHILE,
   NODE_LOOP_END,
   NODE_START_IFELSE,
   NODE_END_IFELSE,
-  NODE_INTERNAL_FUNCTIONCALL
+  NODE_INTERNAL_FUNCTION_CALL
 };
 
 
@@ -474,7 +455,8 @@ static void checkOrphanStackVar(SyncGraph *root) {
               */
               SyncGraph* candidateSyncNode = nextFuncNode;
               while (candidateSyncNode  != endofSearch) {
-                if (syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SINGLE_SIGNAL_FULL) {
+                if (syncVar.compare(candidateSyncNode->syncVar) == 0  && 
+		    candidateSyncNode->syncType == NODE_SINGLE_SIGNAL_FULL) {
                   linkSyncNodes(candidateSyncNode, curNode);
 		  syncedNodesinFunc->add_exclusive(candidateSyncNode);
                 }
@@ -483,7 +465,8 @@ static void checkOrphanStackVar(SyncGraph *root) {
             } else if (curNode->syncType ==  NODE_SINGLE_SIGNAL_FULL) {
               SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
               while (candidateSyncNode  != endofSearch) {
-                if (syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SINGLE_WAIT_FULL) {
+                if (syncVar.compare(candidateSyncNode->syncVar) == 0  && 
+		    candidateSyncNode->syncType == NODE_SINGLE_WAIT_FULL) {
                   linkSyncNodes(curNode, candidateSyncNode);
 		  syncedNodesinFunc->add_exclusive(candidateSyncNode);
                 }
@@ -492,7 +475,8 @@ static void checkOrphanStackVar(SyncGraph *root) {
             } else  if (curNode->syncType == NODE_SYNC_SIGNAL_FULL) {
               SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
               while (candidateSyncNode  != endofSearch) {
-                if (syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SYNC_SIGNAL_EMPTY) {
+                if (syncVar.compare(candidateSyncNode->syncVar) == 0  && 
+		    candidateSyncNode->syncType == NODE_SYNC_SIGNAL_EMPTY) {
                   linkSyncNodes(candidateSyncNode, curNode);
 		  syncedNodesinFunc->add_exclusive(candidateSyncNode);
                 }
@@ -501,7 +485,8 @@ static void checkOrphanStackVar(SyncGraph *root) {
             } else if (curNode->syncType == NODE_SYNC_SIGNAL_EMPTY) {
               SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
               while (candidateSyncNode  != endofSearch) {
-                if (syncVar.compare(candidateSyncNode->syncVar) == 0  && candidateSyncNode->syncType == NODE_SYNC_SIGNAL_FULL) {
+                if (syncVar.compare(candidateSyncNode->syncVar) == 0  && 
+		    candidateSyncNode->syncType == NODE_SYNC_SIGNAL_FULL) {
                   linkSyncNodes(curNode, candidateSyncNode);
 		  syncedNodesinFunc->add_exclusive(candidateSyncNode);
                 }
@@ -512,7 +497,8 @@ static void checkOrphanStackVar(SyncGraph *root) {
             processnextTask  = 1;
           }
         }
-        if (curNode->syncPoints.count() == 0 && curNode->syncType != NODE_SINGLE_WAIT_FULL) {
+        if (curNode->syncPoints.count() == 0 && 
+	    curNode->syncType != NODE_SINGLE_WAIT_FULL) {
           USR_WARN(curNode->syncExpr, 
 		   "No matching Syncronization Expression for this. This could result in the program entering an infinite wait.");
         } else if (curNode->syncPoints.count() == 1) {
@@ -546,6 +532,7 @@ static void checkOrphanStackVar(SyncGraph *root) {
         } else {
           /** All syncronization statements should be
               linked with Root Function **/
+	  
         }
       }
       curNode = curNode->child;
@@ -562,7 +549,7 @@ static SyncGraph* handleDefExpr(DefExpr* def, SyncGraph *cur){
       cur->syncType = NODE_BLOCK_BEGIN;
     } else {
       handleFunction(fn, cur);
-      cur->syncType = NODE_INTERNAL_FUNCTIONCALL;
+      cur->syncType = NODE_BLOCK_INTERNAL_FUNCTION;
     }
     cur = addChildNode(cur, def->getFunction());
   } else {
