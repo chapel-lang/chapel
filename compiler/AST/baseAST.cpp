@@ -279,7 +279,7 @@ BaseAST::BaseAST(AstTag type) :
       astloc = currentAstLoc;
     } else {
       // neither yy* nor currentAstLoc are set
-      //INT_FATAL("no line number available");
+      INT_FATAL("no line number available");
     }
   }
 }

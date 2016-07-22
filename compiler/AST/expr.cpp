@@ -6052,15 +6052,12 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
     case PRIM_GET_SVEC_MEMBER_VALUE: {
       /* Get the i'th value from a homogeneous tuple */
-      if (ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-        ret =  codegenElementPtr(ce->get(1), codegenExprMinusOne(ce->get(2)));
 
-        retval = true;
-      } else {
-        ret =  codegenElementPtr(ce->get(1), codegenExprMinusOne(ce->get(2)));
-        retval = true;
-      }
+      //there was an if/else block checking if ce->get(1) is wide or narrow,
+      //however if/else blocks were identical. It may not be in the future.
+      ret =  codegenElementPtr(ce->get(1), codegenExprMinusOne(ce->get(2)));
 
+      retval = true;
       break;
     }
 

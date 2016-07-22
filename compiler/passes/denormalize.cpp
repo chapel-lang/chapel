@@ -34,7 +34,7 @@
 std::map<Expr*,bool> safeExprCache;
 std::map<FnSymbol*,bool> globalManipFuncCache;
 
-#define ActualUseDefCastMap std::map<SymExpr*, std::pair<Expr*,Type*> >
+typedef std::map<SymExpr*, std::pair<Expr*,Type*> > ActualUseDefCastMap;
 
 //prototypes
 bool isExprSafeForReorder(Expr * e);
@@ -394,6 +394,7 @@ void denormalize(Expr* def, SymExpr* use, Type* castTo) {
 
   //replace use with def
   if(castTo != NULL) {
+    SET_LINENO(def);
     Expr* castExpr = new CallExpr(PRIM_CAST, castTo->symbol, replExpr);
     use->replace(castExpr);
   }

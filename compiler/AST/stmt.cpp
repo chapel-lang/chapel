@@ -928,9 +928,10 @@ CondStmt::codegen() {
   codegenStmt(this);
 
   if ( outfile ) {
-    //here it's very possible that we end up with ( ) around condExpr. It didn't
-    //feel very safe to strip them at expr level as it might mess up precedence
-    //thus, following conditional -- Engin
+    //here it's very possible that we end up with ( ) around condExpr. Extra
+    //parentheses generated warnings from the backend compiler in some cases.
+    //It didn't feel very safe to strip them at expr level as it might mess up
+    //precedence thus, following conditional -- Engin
 
     std::string c_condExpr = codegenValue(condExpr).c;
     if (c_condExpr[0] == '(' && c_condExpr[c_condExpr.size()-1] == ')') {
