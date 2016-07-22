@@ -1100,9 +1100,11 @@ static void codegen_header(bool isHeader) {
   genComment("Virtual Method Table");
   genVirtualMethodTable(types,isHeader);
 
-  genComment("Global Variables");
-  forv_Vec(VarSymbol, varSymbol, globals) {
-    varSymbol->codegenGlobalDef(isHeader);
+  if(fIncrementalCompilation || isHeader) {
+    genComment("Global Variables");
+    forv_Vec(VarSymbol, varSymbol, globals) {
+      varSymbol->codegenGlobalDef(isHeader);
+    }
   }
   flushStatements();
 
