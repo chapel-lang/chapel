@@ -44,15 +44,18 @@ proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
   // sort by frequencies
-  //  var arr = [(k,v) in zip(freqs.domain, freqs)] (k,v);
+  //
+  // TODO: Shouldn't this work?
+  //
+  var arr = [(k,v) in zip(freqs.domain, freqs)] (v,k);
 
-  var arr: [1..freqs.size] (int, uint);
-  for (a, k, v) in zip(arr, freqs.domain, freqs) do
-    a = (v, k);
+  //  var arr: [1..freqs.size] 2*int;
+  //  for (a, k, v) in zip(arr, freqs.domain, freqs) do
+  //    a = (v, k);
   QuickSort(arr, reverse=true);
 
   for (f, s) in arr do
-    writef("%s %.3dr\n", decode(s, nclSize), 
+   writef("%s %.3dr\n", decode(s, nclSize), 
            (100.0 * f) / (data.size - nclSize));
   writeln();
 }
@@ -67,19 +70,30 @@ proc writeCount(data, param str) {
 
 
 proc calculate(data, param nclSize) {
-  var freqDom: domain(uint),
+  var freqDom: domain(int),
       freqs: [freqDom] int;
 
-  var lock$: sync bool = true;
-  coforall tid in 1..here.maxTaskPar {
-    var curDom: domain(uint);
-    var curArr: [curDom] int;
-    for i in tid .. data.size-nclSize by here.maxTaskPar {
-      curArr[hash(data, i, nclSize)] += 1;
-    }
-    lock$; // acquire lock
-    for (k,v) in zip(curDom, curArr) do freqs[k] += v;
-    lock$ = true; // release lock
+  //
+  // TODO: Could we combine these local hash tables with a reduce
+  // intent and use a forall intent?
+  //
+
+  //  var lock$: sync bool = true;
+  const numTasks = here.maxTaskPar;
+  coforall tid in 1..numTasks {
+    var myDom: domain(int),
+        myArr: [myDom] int;
+
+    //
+    // TODO: Bad locality; want to use blocking instead, right?
+    //
+    for i in tid..(data.size-nclSize) by numTasks do
+      myArr[hash(data, i, nclSize)] += 1;
+
+    //    lock$; // acquire lock
+    for (k,v) in zip(myDom, myArr) do
+      freqs[k] += v;
+    //    lock$ = true; // release lock
   }
 
   return freqs;
@@ -91,10 +105,22 @@ proc calculate(data, param nclSize) {
 const toChar: [0..3] string = ["A", "C", "T", "G"];
 var toNum: [0..127] int;
 
-toNum[ascii(toChar)] = toChar.domain;
+forall i in toChar.domain do
+  toNum[ascii(toChar[i])] = i;
+//
+// Too terse (?): toNum[ascii(toChar)] = toChar.domain;
+
+inline proc decode(in data, param nclSize) {
+  var ret : string;
+  for param i in 1..nclSize by -1 {
+    ret = toChar[(data & 3)] + ret;
+    data >>= 2;
+  }
+  return ret;
+}
 
 inline proc hash(str, beg, param size) {
-  var data: uint = 0;
+  var data = 0;
   for param i in 0..size-1 {
     data <<= 2;
     data |= toNum[str[beg+i]];
@@ -102,17 +128,10 @@ inline proc hash(str, beg, param size) {
   return data;
 }
 
-proc decode(data, param nclSize) {
-  var ret : string;
-  var d = data;
-  for i in 1..nclSize {
-    ret = toChar[(d & 3) : uint(8)] + ret;
-    d >>= 2;
-  }
-  return ret;
-}
-
 proc string.toBytes() ref {
+  //
+  // TODO: Is there really no better way than an extern memcpy()?
+  //
   extern proc memcpy(x: [], b, len);
 
   var b : [1..this.length] uint(8);
