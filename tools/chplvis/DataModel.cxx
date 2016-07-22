@@ -582,7 +582,8 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
             theTask->commSum.numForks++;
             theTask->commSum.numComms++;
           } else 
-            printf ("per task forks, no task %ld\n", (long)fp->inTask());
+            printf ("per task forks, no task %ld, node %ld\n",
+                    (long)fp->inTask(), (long)fp->nodeId());
         }
         break;
 
@@ -600,7 +601,8 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
               theTask->commSum.numPuts++;
             theTask->commSum.commSize += cp->dataLen();
           } else 
-            printf ("per task comms, no task %ld\n", (long)cp->inTask());
+            printf ("per task comms, no task %ld, node %ld\n",
+                    (long)cp->inTask(), (long)cp->nodeId());
         }
         break;
     }
