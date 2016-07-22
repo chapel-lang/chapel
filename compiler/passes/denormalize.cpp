@@ -490,7 +490,6 @@ inline bool isNonEssentialPrimitive(CallExpr* ce) {
 /* List of primitives that we shouldn't be hitting at this point in compilation
 
     case PRIM_DIV:
-    case PRIM_REF_TO_STRING:
     case PRIM_SIZEOF:
     case PRIM_USED_MODULES_LIST:
     case PRIM_STRING_COPY:
@@ -514,7 +513,6 @@ inline bool isNonEssentialPrimitive(CallExpr* ce) {
     case PRIM_METHOD_CALL_RESOLVES:
     case PRIM_ENUM_MIN_BITS:
     case PRIM_ENUM_IS_SIGNED:
-    case PRIM_LOOKUP_FILENAME:
     case PRIM_GET_COMPILER_VAR:k
 */
 bool isSafePrimitive(CallExpr* ce) {
@@ -528,6 +526,8 @@ bool isSafePrimitive(CallExpr* ce) {
     case PRIM_STRING_COPY:
     case PRIM_GET_SERIAL:
     case PRIM_NOOP:
+    case PRIM_LOOKUP_FILENAME:
+    case PRIM_REF_TO_STRING:
     case PRIM_UNARY_MINUS:
     case PRIM_UNARY_PLUS:
     case PRIM_UNARY_NOT:
@@ -577,15 +577,17 @@ bool isSafePrimitive(CallExpr* ce) {
     case PRIM_GET_SVEC_MEMBER_VALUE:
       return true;
     case PRIM_UNKNOWN:
-      if(strcmp(prim->name, "string_length") == 0) {
+      if(strcmp(prim->name, "string_length") == 0 ||
+          strcmp(prim->name, "object2Int") == 0 ||
+          strcmp(prim->name, "real2Int") == 0) {
         return true;
       }
       else {
         std::cout << "Unknown primitive : " << prim->name << std::endl;
-        return false;
+        INT_ASSERT(false);
       }
     default:
-      std::cout << prim->name << std::endl;
+      std::cout << "Unknown primitive : " << prim->name << std::endl;
       INT_ASSERT(false); // should not be getting those
       // that are !isEssential and not listed above
   }
