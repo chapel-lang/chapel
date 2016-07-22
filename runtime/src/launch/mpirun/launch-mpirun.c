@@ -23,6 +23,10 @@
 #include "chpl-mem.h"
 #include "error.h"
 
+#define CHPL_MPI_NUM_RANKS "--mpi-num-ranks"
+
+static char* mpi_num_ranks=NULL;
+
 
 static char* chpl_launch_create_command(int argc, char* argv[], 
                                         int32_t numLocales) {
@@ -30,15 +34,15 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   int size;
   char baseCommand[256];
   char* command;
-  char* numrankStr;
   int numranks;
   
   // Get the number of ranks
-  numrankStr = getenv("CHPL_MPI_NUM_RANKS");
-  if (numrankStr==0) {
-    numranks=numLocales;
+  // TODO -- if we want, we can also use an environment variable, although
+  // that's probably overkill for this.
+  if (mpi_num_ranks==NULL) {
+    numranks = numLocales;
   } else {
-    numranks=atoi(numrankStr);
+    numranks = atoi(mpi_num_ranks);
   }
 
   chpl_compute_real_binary_name(argv[0]);
@@ -79,9 +83,21 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, int32_t filename) {
+  // handle --mpi-num-ranks <nrank> or --mpi-num-ranks=<nrank>
+  if (!strcmp(argv[argNum], CHPL_MPI_NUM_RANKS)) {
+    mpi_num_ranks = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_MPI_NUM_RANKS"=", strlen(CHPL_MPI_NUM_RANKS))) {
+    mpi_num_ranks = &(argv[argNum][strlen(CHPL_MPI_NUM_RANKS)+1]);
+    return 1;
+  }
+
   return 0;
 }
 
 
 void chpl_launch_print_help(void) {
+  fprintf(stdout, "LAUNCHER FLAGS:\n");
+  fprintf(stdout, "===============\n");
+  fprintf(stdout, "  %s : specify number of MPI ranks (default : numLocales)\n", CHPL_MPI_NUM_RANKS);
 }
