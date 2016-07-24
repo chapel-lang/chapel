@@ -213,18 +213,18 @@ static inline basetype atomic_exchange_explicit_ ## type(atomic_ ## type * obj, 
 static inline basetype atomic_exchange_ ## type(atomic_ ## type * obj, basetype value) { \
   return atomic_exchange_explicit_ ## type(obj, value, memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succeed_order, memory_order fail_order) { \
-  basetype old_val = __sync_val_compare_and_swap(obj, *expected, desired); \
-  return old_val == *expected ? true : (*expected = old_val, false); \
+static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
+  basetype old_val = __sync_val_compare_and_swap(obj, expected, desired); \
+  return old_val == expected ? true : (expected = old_val, false); \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
-  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
+static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
+  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succeed_order, memory_order fail_order) { \
-  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, succeed_order, fail_order); \
+static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
+  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, order); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
-  return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
+static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
+  return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
 }
 #else
 #define DECLARE_ATOMICS_EXCHANGE_OPS(type, basetype) \
@@ -234,17 +234,17 @@ static inline basetype atomic_exchange_explicit_ ## type(atomic_ ## type * obj, 
 static inline basetype atomic_exchange_ ## type(atomic_ ## type * obj, basetype value) { \
   return atomic_exchange(obj, value); \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succeed_order, memory_order fail_order) { \
-  return atomic_compare_exchange_strong_explicit(obj, expected, desired, succeed_order, fail_order); \
+static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
+  return atomic_compare_exchange_strong_explicit(obj, &expected, desired, order, order); \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
-  return atomic_compare_exchange_strong(obj, expected, desired); \
+static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
+  return atomic_compare_exchange_strong(obj, &expected, desired); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succeed_order, memory_order fail_order) { \
-  return atomic_compare_exchange_weak_explicit(obj, expected, desired, succeed_order, fail_order); \
+static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
+  return atomic_compare_exchange_weak_explicit(obj, &expected, desired, order, order); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
-  return atomic_compare_exchange_weak(obj, expected, desired); \
+static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
+  return atomic_compare_exchange_weak(obj, &expected, desired); \
 }
 #endif
 
@@ -397,28 +397,28 @@ static inline type atomic_exchange_explicit_ ## type(atomic_ ## type * obj, type
 static inline type atomic_exchange_ ## type(atomic_ ## type * obj, type value) { \
   return atomic_exchange_explicit_ ## type(obj, value, memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, type * expected, type desired, memory_order succeed_order, memory_order fail_order) { \
+static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, type expected, type desired, memory_order order) { \
   uinttype volatile expected_as_uint; \
   uinttype volatile desired_as_uint; \
   uinttype volatile * expected_as_uint_p; \
   uinttype volatile * desired_as_uint_p; \
   uinttype old_as_uint; \
   full_memory_barrier(); \
-  expected_as_uint_p = (uinttype volatile *) expected; \
+  expected_as_uint_p = (uinttype volatile *) &expected; \
   desired_as_uint_p = (uinttype volatile *) &desired; \
   expected_as_uint = *expected_as_uint_p; \
   desired_as_uint = *desired_as_uint_p; \
   old_as_uint = __sync_val_compare_and_swap((uinttype *) obj, expected_as_uint, desired_as_uint); \
-  return old_as_uint == expected_as_uint ? true : (*expected = *(type *)&old_as_uint, false); \
+  return old_as_uint == expected_as_uint ? true : (expected = *(type *)&old_as_uint, false); \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, type * expected, type desired) { \
-  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
+static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, type expected, type desired) { \
+  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, type * expected, type desired, memory_order succeed_order, memory_order fail_order) { \
-  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, succeed_order, fail_order); \
+static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, type expected, type desired, memory_order order) { \
+  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, order); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, type * expected, type desired) { \
-  return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
+static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, type expected, type desired) { \
+  return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
 } 
 #else
 #define DECLARE_REAL_ATOMICS_EXCHANGE_OPS(type, uinttype) \
@@ -428,17 +428,17 @@ static inline type atomic_exchange_explicit_ ## type(atomic_ ## type * obj, type
 static inline type atomic_exchange_ ## type(atomic_ ## type * obj, type value) { \
   return atomic_exchange(obj, value); \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, type * expected, type desired, memory_order succeed_order, memory_order fail_order) { \
-  return atomic_compare_exchange_strong_explicit(obj, expected, desired, succeed_order, fail_order); \
+static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, type expected, type desired, memory_order order) { \
+  return atomic_compare_exchange_strong_explicit(obj, &expected, desired, order, order); \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, type * expected, type desired) { \
-  return atomic_compare_exchange_strong(obj, expected, desired); \
+static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, type expected, type desired) { \
+  return atomic_compare_exchange_strong(obj, &expected, desired); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, type * expected, type desired, memory_order succeed_order, memory_order fail_order) { \
-  return atomic_compare_exchange_weak_explicit(obj, expected, desired, succeed_order, fail_order); \
+static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, type expected, type desired, memory_order order) { \
+  return atomic_compare_exchange_weak_explicit(obj, &expected, desired, order, order); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, type * expected, type desired) { \
-  return atomic_compare_exchange_weak(obj, expected, desired); \
+static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, type expected, type desired) { \
+  return atomic_compare_exchange_weak(obj, &expected, desired); \
 } 
 #endif
 

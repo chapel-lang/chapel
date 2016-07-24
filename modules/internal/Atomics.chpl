@@ -97,8 +97,8 @@ module Atomics {
   extern proc atomic_store_explicit_bool(ref obj:atomic_bool, value:bool, order:memory_order);
   extern proc atomic_load_explicit_bool(ref obj:atomic_bool, order:memory_order):bool;
   extern proc atomic_exchange_explicit_bool(ref obj:atomic_bool, value:bool, order:memory_order):bool;
-  extern proc atomic_compare_exchange_strong_explicit_bool(ref obj:atomic_bool, ref expected:bool, desired:bool, succeed_order:memory_order, fail_order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_bool(ref obj:atomic_bool, ref expected:bool, desired:bool, succeed_order:memory_order, fail_order:memory_order):bool;
+  extern proc atomic_compare_exchange_strong_explicit_bool(ref obj:atomic_bool, expected:bool, desired:bool, order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_bool(ref obj:atomic_bool, expected:bool, desired:bool, order:memory_order):bool;
   extern proc atomic_flag_test_and_set_explicit(ref obj:atomic_flag, order:memory_order):bool;
   extern proc atomic_flag_test_and_set(ref obj:atomic_flag):bool;
   extern proc atomic_flag_clear_explicit(ref obj:atomic_flag, order:memory_order);
@@ -110,8 +110,8 @@ module Atomics {
   extern proc atomic_store_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, value:uint(8), order:memory_order);
   extern proc atomic_load_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, order:memory_order):uint(8);
   extern proc atomic_exchange_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, value:uint(8), order:memory_order):uint(8);
-  extern proc atomic_compare_exchange_strong_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, ref expected:uint(8), desired:uint(8), succeed_order:memory_order, fail_order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, ref expected:uint(8), desired:uint(8), succeed_order:memory_order, fail_order:memory_order):bool;
+  extern proc atomic_compare_exchange_strong_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, expected:uint(8), desired:uint(8), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, expected:uint(8), desired:uint(8), order:memory_order):bool;
   extern proc atomic_fetch_add_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
   extern proc atomic_fetch_sub_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
   extern proc atomic_fetch_or_explicit_uint_least8_t(ref obj:atomic_uint_least8_t, operand:uint(8), order:memory_order):uint(8);
@@ -124,8 +124,8 @@ module Atomics {
   extern proc atomic_store_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, value:uint(16), order:memory_order);
   extern proc atomic_load_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, order:memory_order):uint(16);
   extern proc atomic_exchange_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, value:uint(16), order:memory_order):uint(16);
-  extern proc atomic_compare_exchange_strong_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, ref expected:uint(16), desired:uint(16), succeed_order:memory_order, fail_order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, ref expected:uint(16), desired:uint(16), succeed_order:memory_order, fail_order:memory_order):bool;
+  extern proc atomic_compare_exchange_strong_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, expected:uint(16), desired:uint(16), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, expected:uint(16), desired:uint(16), order:memory_order):bool;
   extern proc atomic_fetch_add_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
   extern proc atomic_fetch_sub_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
   extern proc atomic_fetch_or_explicit_uint_least16_t(ref obj:atomic_uint_least16_t, operand:uint(16), order:memory_order):uint(16);
@@ -139,8 +139,8 @@ module Atomics {
   extern proc atomic_store_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, value:uint(32), order:memory_order);
   extern proc atomic_load_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, order:memory_order):uint(32);
   extern proc atomic_exchange_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, value:uint(32), order:memory_order):uint(32);
-  extern proc atomic_compare_exchange_strong_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, ref expected:uint(32), desired:uint(32), succeed_order:memory_order, fail_order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, ref expected:uint(32), desired:uint(32), succeed_order:memory_order, fail_order:memory_order):bool;
+  extern proc atomic_compare_exchange_strong_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, expected:uint(32), desired:uint(32), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, expected:uint(32), desired:uint(32), order:memory_order):bool;
   extern proc atomic_fetch_add_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
   extern proc atomic_fetch_sub_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
   extern proc atomic_fetch_or_explicit_uint_least32_t(ref obj:atomic_uint_least32_t, operand:uint(32), order:memory_order):uint(32);
@@ -153,8 +153,8 @@ module Atomics {
   extern proc atomic_store_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, value:uint(64), order:memory_order);
   extern proc atomic_load_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, order:memory_order):uint(64);
   extern proc atomic_exchange_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, value:uint(64), order:memory_order):uint(64);
-  extern proc atomic_compare_exchange_strong_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, ref expected:uint(64), desired:uint(64), succeed_order:memory_order, fail_order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, ref expected:uint(64), desired:uint(64), succeed_order:memory_order, fail_order:memory_order):bool;
+  extern proc atomic_compare_exchange_strong_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, expected:uint(64), desired:uint(64), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, expected:uint(64), desired:uint(64), order:memory_order):bool;
   extern proc atomic_fetch_add_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
   extern proc atomic_fetch_sub_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
   extern proc atomic_fetch_or_explicit_uint_least64_t(ref obj:atomic_uint_least64_t, operand:uint(64), order:memory_order):uint(64);
@@ -167,8 +167,8 @@ module Atomics {
   extern proc atomic_store_explicit_uintptr_t(ref obj:atomic_uintptr_t, value:c_void_ptr, order:memory_order);
   extern proc atomic_load_explicit_uintptr_t(ref obj:atomic_uintptr_t, order:memory_order):c_void_ptr;
   extern proc atomic_exchange_explicit_uintptr_t(ref obj:atomic_uintptr_t, value:c_void_ptr, order:memory_order):c_void_ptr;
-  extern proc atomic_compare_exchange_strong_explicit_uintptr_t(ref obj:atomic_uintptr_t, ref expected:c_void_ptr, desired:c_void_ptr, succeed_order:memory_order, fail_order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_uintptr_t(ref obj:atomic_uintptr_t, ref expected:c_void_ptr, desired:c_void_ptr, succeed_order:memory_order, fail_order:memory_order):bool;
+  extern proc atomic_compare_exchange_strong_explicit_uintptr_t(ref obj:atomic_uintptr_t, expected:c_void_ptr, desired:c_void_ptr, order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_uintptr_t(ref obj:atomic_uintptr_t, expected:c_void_ptr, desired:c_void_ptr, order:memory_order):bool;
   extern proc atomic_fetch_add_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_void_ptr, order:memory_order):c_void_ptr;
   extern proc atomic_fetch_sub_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_void_ptr, order:memory_order):c_void_ptr;
   extern proc atomic_fetch_or_explicit_uintptr_t(ref obj:atomic_uintptr_t, operand:c_void_ptr, order:memory_order):c_void_ptr;
@@ -181,8 +181,8 @@ module Atomics {
   extern proc atomic_store_explicit_int_least8_t(ref obj:atomic_int_least8_t, value:int(8), order:memory_order);
   extern proc atomic_load_explicit_int_least8_t(ref obj:atomic_int_least8_t, order:memory_order):int(8);
   extern proc atomic_exchange_explicit_int_least8_t(ref obj:atomic_int_least8_t, value:int(8), order:memory_order):int(8);
-  extern proc atomic_compare_exchange_strong_explicit_int_least8_t(ref obj:atomic_int_least8_t, ref expected:int(8), desired:int(8), succeed_order:memory_order, fail_order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_int_least8_t(ref obj:atomic_int_least8_t, ref expected:int(8), desired:int(8), succeed_order:memory_order, fail_order:memory_order):bool;
+  extern proc atomic_compare_exchange_strong_explicit_int_least8_t(ref obj:atomic_int_least8_t, expected:int(8), desired:int(8), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_int_least8_t(ref obj:atomic_int_least8_t, expected:int(8), desired:int(8), order:memory_order):bool;
   extern proc atomic_fetch_add_explicit_int_least8_t(ref obj:atomic_int_least8_t, operand:int(8), order:memory_order):int(8);
   extern proc atomic_fetch_sub_explicit_int_least8_t(ref obj:atomic_int_least8_t, operand:int(8), order:memory_order):int(8);
   extern proc atomic_fetch_or_explicit_int_least8_t(ref obj:atomic_int_least8_t, operand:int(8), order:memory_order):int(8);
@@ -195,8 +195,8 @@ module Atomics {
   extern proc atomic_store_explicit_int_least16_t(ref obj:atomic_int_least16_t, value:int(16), order:memory_order);
   extern proc atomic_load_explicit_int_least16_t(ref obj:atomic_int_least16_t, order:memory_order):int(16);
   extern proc atomic_exchange_explicit_int_least16_t(ref obj:atomic_int_least16_t, value:int(16), order:memory_order):int(16);
-  extern proc atomic_compare_exchange_strong_explicit_int_least16_t(ref obj:atomic_int_least16_t, ref expected:int(16), desired:int(16), succeed_order:memory_order, fail_order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_int_least16_t(ref obj:atomic_int_least16_t, ref expected:int(16), desired:int(16), succeed_order:memory_order, fail_order:memory_order):bool;
+  extern proc atomic_compare_exchange_strong_explicit_int_least16_t(ref obj:atomic_int_least16_t, expected:int(16), desired:int(16), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_int_least16_t(ref obj:atomic_int_least16_t, expected:int(16), desired:int(16), order:memory_order):bool;
   extern proc atomic_fetch_add_explicit_int_least16_t(ref obj:atomic_int_least16_t, operand:int(16), order:memory_order):int(16);
   extern proc atomic_fetch_sub_explicit_int_least16_t(ref obj:atomic_int_least16_t, operand:int(16), order:memory_order):int(16);
   extern proc atomic_fetch_or_explicit_int_least16_t(ref obj:atomic_int_least16_t, operand:int(16), order:memory_order):int(16);
@@ -209,8 +209,8 @@ module Atomics {
   extern proc atomic_store_explicit_int_least32_t(ref obj:atomic_int_least32_t, value:int(32), order:memory_order);
   extern proc atomic_load_explicit_int_least32_t(ref obj:atomic_int_least32_t, order:memory_order):int(32);
   extern proc atomic_exchange_explicit_int_least32_t(ref obj:atomic_int_least32_t, value:int(32), order:memory_order):int(32);
-  extern proc atomic_compare_exchange_strong_explicit_int_least32_t(ref obj:atomic_int_least32_t, ref expected:int(32), desired:int(32), succeed_order:memory_order, fail_order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_int_least32_t(ref obj:atomic_int_least32_t, ref expected:int(32), desired:int(32), succeed_order:memory_order, fail_order:memory_order):bool;
+  extern proc atomic_compare_exchange_strong_explicit_int_least32_t(ref obj:atomic_int_least32_t, expected:int(32), desired:int(32), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_int_least32_t(ref obj:atomic_int_least32_t, expected:int(32), desired:int(32), order:memory_order):bool;
   extern proc atomic_fetch_add_explicit_int_least32_t(ref obj:atomic_int_least32_t, operand:int(32), order:memory_order):int(32);
   extern proc atomic_fetch_sub_explicit_int_least32_t(ref obj:atomic_int_least32_t, operand:int(32), order:memory_order):int(32);
   extern proc atomic_fetch_or_explicit_int_least32_t(ref obj:atomic_int_least32_t, operand:int(32), order:memory_order):int(32);
@@ -223,8 +223,8 @@ module Atomics {
   extern proc atomic_store_explicit_int_least64_t(ref obj:atomic_int_least64_t, value:int(64), order:memory_order);
   extern proc atomic_load_explicit_int_least64_t(ref obj:atomic_int_least64_t, order:memory_order):int(64);
   extern proc atomic_exchange_explicit_int_least64_t(ref obj:atomic_int_least64_t, value:int(64), order:memory_order):int(64);
-  extern proc atomic_compare_exchange_strong_explicit_int_least64_t(ref obj:atomic_int_least64_t, ref expected:int(64), desired:int(64), succeed_order:memory_order, fail_order:memory_order):bool;
-  extern proc atomic_compare_exchange_weak_explicit_int_least64_t(ref obj:atomic_int_least64_t, ref expected:int(64), desired:int(64), succeed_order:memory_order, fail_order:memory_order):bool;
+  extern proc atomic_compare_exchange_strong_explicit_int_least64_t(ref obj:atomic_int_least64_t, expected:int(64), desired:int(64), order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit_int_least64_t(ref obj:atomic_int_least64_t, expected:int(64), desired:int(64), order:memory_order):bool;
   extern proc atomic_fetch_add_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
   extern proc atomic_fetch_sub_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
   extern proc atomic_fetch_or_explicit_int_least64_t(ref obj:atomic_int_least64_t, operand:int(64), order:memory_order):int(64);
@@ -237,9 +237,9 @@ module Atomics {
   extern proc atomic_is_lock_free__real64(ref obj:atomic__real64):bool;
   extern proc atomic_load_explicit__real64(ref obj:atomic__real64, order:memory_order):real(64);
   extern proc atomic_exchange_explicit__real64(ref obj:atomic__real64, value:real(64), order:memory_order):real(64);
-  extern proc atomic_compare_exchange_strong_explicit__real64(ref obj:atomic__real64, ref expected:real(64), desired:real(64), succeed_order:memory_order, fail_order:memory_order):bool;
+  extern proc atomic_compare_exchange_strong_explicit__real64(ref obj:atomic__real64, expected:real(64), desired:real(64), order:memory_order):bool;
 
-  extern proc atomic_compare_exchange_weak_explicit__real64(ref obj:atomic__real64, ref expected:real(64), desired:real(64), succeed_order:memory_order, fail_order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit__real64(ref obj:atomic__real64, expected:real(64), desired:real(64), order:memory_order):bool;
   extern proc atomic_fetch_add_explicit__real64(ref obj:atomic__real64, operand:real(64), order:memory_order):real(64);
   extern proc atomic_fetch_sub_explicit__real64(ref obj:atomic__real64, operand:real(64), order:memory_order):real(64);
 
@@ -249,9 +249,9 @@ module Atomics {
   extern proc atomic_is_lock_free__real32(ref obj:atomic__real32):bool;
   extern proc atomic_load_explicit__real32(ref obj:atomic__real32, order:memory_order):real(32);
   extern proc atomic_exchange_explicit__real32(ref obj:atomic__real32, value:real(32), order:memory_order):real(32);
-  extern proc atomic_compare_exchange_strong_explicit__real32(ref obj:atomic__real32, ref expected:real(32), desired:real(32), succeed_order:memory_order, fail_order:memory_order):bool;
+  extern proc atomic_compare_exchange_strong_explicit__real32(ref obj:atomic__real32, expected:real(32), desired:real(32), order:memory_order):bool;
 
-  extern proc atomic_compare_exchange_weak_explicit__real32(ref obj:atomic__real32, ref expected:real(32), desired:real(32), succeed_order:memory_order, fail_order:memory_order):bool;
+  extern proc atomic_compare_exchange_weak_explicit__real32(ref obj:atomic__real32, expected:real(32), desired:real(32), order:memory_order):bool;
   extern proc atomic_fetch_add_explicit__real32(ref obj:atomic__real32, operand:real(32), order:memory_order):real(32);
   extern proc atomic_fetch_sub_explicit__real32(ref obj:atomic__real32, operand:real(32), order:memory_order):real(32);
 
@@ -343,8 +343,8 @@ module Atomics {
     }
 
     /* Equivalent to :proc:`compareExchangeStrong` */
-    inline proc compareExchange(expected:bool, desired:bool, succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
-      return compareExchangeStrong(expected, desired, succeed_order, fail_order);
+    inline proc compareExchange(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst):bool {
+      return compareExchangeStrong(expected, desired, order);
     }
 
     /*
@@ -352,10 +352,9 @@ module Atomics {
        return `false` even if the original value was equal to `expected`. This
        may happen if the value could not be updated atomically.
     */
-    inline proc compareExchangeWeak(expected:bool, desired:bool, succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_weak_explicit_bool(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_weak_explicit_bool(_v, expected, desired, order);
       return ret;
     }
 
@@ -363,10 +362,9 @@ module Atomics {
        Stores `desired` as the new value, if and only if the original value is
        equal to `expected`. Returns `true` if `desired` was stored.
     */
-    inline proc compareExchangeStrong(expected:bool, desired:bool, succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:bool, desired:bool, order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_strong_explicit_bool(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_strong_explicit_bool(_v, expected, desired, order);
       return ret;
     }
 
@@ -451,19 +449,17 @@ module Atomics {
       on this do ret = atomic_exchange_explicit_uint_least8_t(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:uint(8), desired:uint(8), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
-      return compareExchangeStrong(expected, desired, succeed_order, fail_order);
+    inline proc compareExchange(expected:uint(8), desired:uint(8), order:memory_order = memory_order_seq_cst):bool {
+      return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:uint(8), desired:uint(8), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:uint(8), desired:uint(8), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_weak_explicit_uint_least8_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_weak_explicit_uint_least8_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:uint(8), desired:uint(8), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:uint(8), desired:uint(8), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_strong_explicit_uint_least8_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_strong_explicit_uint_least8_t(_v, expected, desired, order);
       return ret;
     }
     inline proc fetchAdd(value:uint(8), order:memory_order = memory_order_seq_cst):uint(8) {
@@ -556,19 +552,17 @@ module Atomics {
       on this do ret = atomic_exchange_explicit_uint_least16_t(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:uint(16), desired:uint(16), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
-      return compareExchangeStrong(expected, desired, succeed_order, fail_order);
+    inline proc compareExchange(expected:uint(16), desired:uint(16), order:memory_order = memory_order_seq_cst):bool {
+      return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:uint(16), desired:uint(16), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:uint(16), desired:uint(16), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_weak_explicit_uint_least16_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_weak_explicit_uint_least16_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:uint(16), desired:uint(16), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:uint(16), desired:uint(16), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_strong_explicit_uint_least16_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_strong_explicit_uint_least16_t(_v, expected, desired, order);
       return ret;
     }
     inline proc fetchAdd(value:uint(16), order:memory_order = memory_order_seq_cst):uint(16) {
@@ -661,19 +655,17 @@ module Atomics {
       on this do ret = atomic_exchange_explicit_uint_least32_t(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:uint(32), desired:uint(32), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
-      return compareExchangeStrong(expected, desired, succeed_order, fail_order);
+    inline proc compareExchange(expected:uint(32), desired:uint(32), order:memory_order = memory_order_seq_cst):bool {
+      return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:uint(32), desired:uint(32), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:uint(32), desired:uint(32), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_weak_explicit_uint_least32_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_weak_explicit_uint_least32_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:uint(32), desired:uint(32), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:uint(32), desired:uint(32), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_strong_explicit_uint_least32_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_strong_explicit_uint_least32_t(_v, expected, desired, order);
       return ret;
     }
     inline proc fetchAdd(value:uint(32), order:memory_order = memory_order_seq_cst):uint(32) {
@@ -766,19 +758,17 @@ module Atomics {
       on this do ret = atomic_exchange_explicit_uint_least64_t(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:uint(64), desired:uint(64), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
-      return compareExchangeStrong(expected, desired, succeed_order, fail_order);
+    inline proc compareExchange(expected:uint(64), desired:uint(64), order:memory_order = memory_order_seq_cst):bool {
+      return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:uint(64), desired:uint(64), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:uint(64), desired:uint(64), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_weak_explicit_uint_least64_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_weak_explicit_uint_least64_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:uint(64), desired:uint(64), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:uint(64), desired:uint(64), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_strong_explicit_uint_least64_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_strong_explicit_uint_least64_t(_v, expected, desired, order);
       return ret;
     }
     inline proc fetchAdd(value:uint(64), order:memory_order = memory_order_seq_cst):uint(64) {
@@ -871,19 +861,17 @@ module Atomics {
       on this do ret = atomic_exchange_explicit_int_least8_t(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:int(8), desired:int(8), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
-      return compareExchangeStrong(expected, desired, succeed_order, fail_order);
+    inline proc compareExchange(expected:int(8), desired:int(8), order:memory_order = memory_order_seq_cst):bool {
+      return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:int(8), desired:int(8), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:int(8), desired:int(8), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_weak_explicit_int_least8_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_weak_explicit_int_least8_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:int(8), desired:int(8), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:int(8), desired:int(8), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_strong_explicit_int_least8_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_strong_explicit_int_least8_t(_v, expected, desired, order);
       return ret;
     }
     inline proc fetchAdd(value:int(8), order:memory_order = memory_order_seq_cst):int(8) {
@@ -976,19 +964,17 @@ module Atomics {
       on this do ret = atomic_exchange_explicit_int_least16_t(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:int(16), desired:int(16), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
-      return compareExchangeStrong(expected, desired, succeed_order, fail_order);
+    inline proc compareExchange(expected:int(16), desired:int(16), order:memory_order = memory_order_seq_cst):bool {
+      return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:int(16), desired:int(16), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:int(16), desired:int(16), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_weak_explicit_int_least16_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_weak_explicit_int_least16_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:int(16), desired:int(16), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:int(16), desired:int(16), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_strong_explicit_int_least16_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_strong_explicit_int_least16_t(_v, expected, desired, order);
       return ret;
     }
     inline proc fetchAdd(value:int(16), order:memory_order = memory_order_seq_cst):int(16) {
@@ -1081,19 +1067,17 @@ module Atomics {
       on this do ret = atomic_exchange_explicit_int_least32_t(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:int(32), desired:int(32), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
-      return compareExchangeStrong(expected, desired, succeed_order, fail_order);
+    inline proc compareExchange(expected:int(32), desired:int(32), order:memory_order = memory_order_seq_cst):bool {
+      return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:int(32), desired:int(32), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:int(32), desired:int(32), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_weak_explicit_int_least32_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_weak_explicit_int_least32_t(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:int(32), desired:int(32), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:int(32), desired:int(32), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_strong_explicit_int_least32_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_strong_explicit_int_least32_t(_v, expected, desired, order);
       return ret;
     }
     inline proc fetchAdd(value:int(32), order:memory_order = memory_order_seq_cst):int(32) {
@@ -1201,8 +1185,8 @@ module Atomics {
     }
 
     /* Equivalent to :proc:`compareExchangeStrong` */
-    inline proc compareExchange(expected:int(64), desired:int(64), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
-      return compareExchangeStrong(expected, desired, succeed_order, fail_order);
+    inline proc compareExchange(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst):bool {
+      return compareExchangeStrong(expected, desired, order);
     }
 
     /*
@@ -1210,10 +1194,9 @@ module Atomics {
        return `false` even if the original value was equal to `expected`. This
        may happen if the value could not be updated atomically.
     */
-    inline proc compareExchangeWeak(expected:int(64), desired:int(64), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_weak_explicit_int_least64_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_weak_explicit_int_least64_t(_v, expected, desired, order);
       return ret;
     }
 
@@ -1221,10 +1204,9 @@ module Atomics {
        Stores `desired` as the new value, if and only if the original value is
        equal to `expected`. Returns `true` if `desired` was stored.
     */
-    inline proc compareExchangeStrong(expected:int(64), desired:int(64), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:int(64), desired:int(64), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_strong_explicit_int_least64_t(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_strong_explicit_int_least64_t(_v, expected, desired, order);
       return ret;
     }
 
@@ -1403,19 +1385,17 @@ module Atomics {
       on this do ret = atomic_exchange_explicit__real64(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:real(64), desired:real(64), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
-      return compareExchangeStrong(expected, desired, succeed_order, fail_order);
+    inline proc compareExchange(expected:real(64), desired:real(64), order:memory_order = memory_order_seq_cst):bool {
+      return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:real(64), desired:real(64), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:real(64), desired:real(64), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_weak_explicit__real64(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_weak_explicit__real64(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:real(64), desired:real(64), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:real(64), desired:real(64), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_strong_explicit__real64(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_strong_explicit__real64(_v, expected, desired, order);
       return ret;
     }
     inline proc fetchAdd(value:real(64), order:memory_order = memory_order_seq_cst):real(64) {
@@ -1485,19 +1465,17 @@ module Atomics {
       on this do ret = atomic_exchange_explicit__real32(_v, value, order);
       return ret;
     }
-    inline proc compareExchange(expected:real(32), desired:real(32), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
-      return compareExchangeStrong(expected, desired, succeed_order, fail_order);
+    inline proc compareExchange(expected:real(32), desired:real(32), order:memory_order = memory_order_seq_cst):bool {
+      return compareExchangeStrong(expected, desired, order);
     }
-    inline proc compareExchangeWeak(expected:real(32), desired:real(32), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeWeak(expected:real(32), desired:real(32), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_weak_explicit__real32(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_weak_explicit__real32(_v, expected, desired, order);
       return ret;
     }
-    inline proc compareExchangeStrong(expected:real(32), desired:real(32), succeed_order:memory_order = memory_order_seq_cst, fail_order:memory_order = memory_order_seq_cst):bool {
+    inline proc compareExchangeStrong(expected:real(32), desired:real(32), order:memory_order = memory_order_seq_cst):bool {
       var ret:bool;
-      var expectedLvalue = expected;
-      on this do ret = atomic_compare_exchange_strong_explicit__real32(_v, expectedLvalue, desired, succeed_order, fail_order);
+      on this do ret = atomic_compare_exchange_strong_explicit__real32(_v, expected, desired, order);
       return ret;
     }
     inline proc fetchAdd(value:real(32), order:memory_order = memory_order_seq_cst):real(32) {
