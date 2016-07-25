@@ -508,12 +508,11 @@ module GMP {
         } //else do nothing
     }
 
-    // TODO: should we reset the value or free and remake the BigInts?
-    // current implementation is free and remake
+
     // Note: by the time reinit is called, locality has been taken care of
     proc ref reinitBigInt(num : mpz, needToCopy : bool = true) {
       // if the record exists, and is owned, a constructor of some
-      // sort was called, and mpz is initialized
+      // sort was called, and mpz is initialized. 
 
       // if we own our old num re-use it
       // if we don't, init a new one
@@ -621,8 +620,8 @@ module GMP {
 
     // returns (exponent, double)
     // TODO: compiler chooses an INT(64) for tmp, gets win-pointer mismatch
-    // for architectures where long and long long are the same size, it makes
-    // an int64 for the long, and then turns it back into a long long instead
+    // for architectures where long and long long are both 8 bytes, it makes
+    // an int64 * for the long, and tries to return it as a long long * instead
     proc get_d_2exp():(uint(32), real)
     {
       var exp:c_long;
@@ -1859,7 +1858,6 @@ module GMP {
     return c;
   }
   // TODO: Shift left, shift right (<< >>) operators not in gmplib library
-  // TODO: & ^ | operators may eventually want to have uint rhs options
   inline proc &(ref a: BigInt, ref b: BigInt){
     var c = new BigInt();
     c.and(a, b);
