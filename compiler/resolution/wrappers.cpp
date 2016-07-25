@@ -497,7 +497,7 @@ static IntentTag getIntent(ArgSymbol* formal)
   IntentTag intent = formal->intent;
   if (intent == INTENT_BLANK &&
       !formal->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-    intent = blankIntentForType(formal->type);
+    intent = concreteIntentForArg(formal);
   return intent;
 }
 

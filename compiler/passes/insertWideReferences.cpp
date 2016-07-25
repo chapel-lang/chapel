@@ -1140,6 +1140,8 @@ static void addKnownWides() {
 
   // Widen the arguments of virtual methods
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    // Skip args we removed already in this pass.
+    if (!arg->defPoint->parentSymbol) continue;
     if (!typeCanBeWide(arg)) continue;
 
     FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
@@ -2071,18 +2073,35 @@ static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
   numGlobalsOnHeap = i;
 }
 
-
 static void insertWideTemp(Type* type, SymExpr* src) {
+  Type* srcType = src->var->type;
+
+  bool needsAddrOf = false;
+  bool needsDeref = false;
+
+  if (type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
+      !srcType->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF))
+    needsAddrOf = true;
+
+  if (srcType->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
+      !type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF))
+    needsDeref = true;
+
   SET_LINENO(src);
   Expr* stmt = src->getStmtExpr();
 
   VarSymbol* tmp = newTemp(type);
+  Expr* rhs = src->copy();
+  if (needsAddrOf)
+    rhs = new CallExpr(PRIM_ADDR_OF, rhs);
+  if (needsDeref)
+    rhs = new CallExpr(PRIM_DEREF, rhs);
+
   DEBUG_PRINTF("Created wide temp %d\n", tmp->id);
   stmt->insertBefore(new DefExpr(tmp));
-  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, src->copy()));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
   src->replace(new SymExpr(tmp));
 }
-
 
 static void makeMatch(Symbol* dst, SymExpr* src) {
   if (hasSomeWideness(dst) &&
@@ -2426,12 +2445,73 @@ void handleIsWidePointer() {
   }
 }
 
+static bool
+shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
+  FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
+
+  // Only change argument types for functions with a ref intent
+  // that don't already have an argument being passed by ref
+  // and that aren't extern functions.
+  return ((arg->intent & INTENT_FLAG_REF) &&
+          !arg->typeInfo()->symbol->hasFlag(FLAG_REF) &&
+          !fn->hasFlag(FLAG_EXTERN));
+}
+
+static void
+changeArgumentTypeToRef(ArgSymbol* arg) {
+  // TODO: this code is suspect
+  // To do a better job, we need to avoid adding the PRIM_DEREF
+  // here by making the AST more flexible about refs
+  // (e.g. ref-ness is a flag or field in VarSymbol/ArgSymbol rather
+  //  than part of the type).
+
+  FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
+
+  Type* refType = arg->type->getRefType();
+
+  SET_LINENO(arg);
+
+  // Make a new argument with ref type
+  ArgSymbol* newArg = new ArgSymbol(arg->intent, arg->name, refType);
+  DefExpr* newArgDef = new DefExpr(newArg);
+
+  // Replace the old argument with the new one
+  arg->defPoint->replace(newArgDef);
+
+  // Add a PRIM_DEREF
+  VarSymbol* tmp = newTemp(astr("v_", arg->name), arg->type);
+  DefExpr* def = new DefExpr(tmp);
+  CallExpr* move = new CallExpr(PRIM_MOVE,
+                                tmp,
+                                new CallExpr(PRIM_DEREF, new SymExpr(newArg)));
+  fn->body->insertAtHead(move);
+  fn->body->insertAtHead(def);
+
+  // Replace uses of the original argument with uses of the PRIM_DEREF
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(fn->body, symExprs);
+
+  for(size_t i = 0; i < symExprs.size(); i++ ) {
+    SymExpr* se = symExprs[i];
+    if (se->var == arg)
+      se->var = tmp;
+  }
+}
+
 //
 // Widen variables that may be remote.
 //
 void
 insertWideReferences(void) {
   FnSymbol* heapAllocateGlobals = heapAllocateGlobalsHead();
+
+  // Adjust ArgSymbols that have ref/const ref concrete
+  // intent so that their type is ref. This allows the
+  // rest of this code to work as expected.
+  forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    if (shouldChangeArgumentTypeToRef(arg))
+      changeArgumentTypeToRef(arg);
+  }
 
   if (!requireWideReferences()) {
     handleIsWidePointer();

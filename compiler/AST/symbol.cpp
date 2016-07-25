@@ -1036,7 +1036,9 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 bool argMustUseCPtr(Type* type) {
-  if (isRecord(type) || isUnion(type))
+  if (isUnion(type))
+    return true;
+  if (isRecord(type) && !type->symbol->hasFlag(FLAG_WIDE_REF))
     return true;
   return false;
 }

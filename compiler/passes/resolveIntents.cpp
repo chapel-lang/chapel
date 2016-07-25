@@ -106,14 +106,33 @@ IntentTag concreteIntent(IntentTag existingIntent, Type* t) {
 
 static IntentTag blankIntentForThisArg(Type* t) {
   // todo: be honest when 't' is an array or domain
+
+  // MPF - this is surprising to me. Apparently it's INTENT_CONST_IN
+  // because this as always a class or a ref(something) ?
   return INTENT_CONST_IN;
 }
 
-void resolveArgIntent(ArgSymbol* arg) {
+IntentTag concreteIntentForArg(ArgSymbol* arg) {
+
   if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK)
-    arg->intent = blankIntentForThisArg(arg->type);
+    return blankIntentForThisArg(arg->type);
   else
-    arg->intent = concreteIntent(arg->intent, arg->type);
+    return concreteIntent(arg->intent, arg->type);
+
+}
+
+void resolveArgIntent(ArgSymbol* arg) {
+  if (!resolved) {
+    if (arg->type == dtMethodToken ||
+      arg->type == dtTypeDefaultToken ||
+      arg->type == dtVoid ||
+      arg->type == dtUnknown ||
+      arg->hasFlag(FLAG_TYPE_VARIABLE) ||
+      arg->hasFlag(FLAG_PARAM))
+      return; // Leave these alone during resolution.
+  }
+
+  arg->intent = concreteIntentForArg(arg);
 }
 
 void resolveIntents() {

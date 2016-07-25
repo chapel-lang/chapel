@@ -2592,12 +2592,22 @@ GenRet codegenArgForFormal(GenRet arg,
 {
   // NOTE -- VMT call had add & if arg isRecord.
   if( formal ) {
-    bool passReference = false;
+    bool passRef = false;
+    bool passWideRef = false;
 
-    if (!isExtern &&
-        formal->requiresCPtr() &&
-        !formal->type->symbol->hasFlag(FLAG_REF)) {
-      passReference = true;
+    // We need to pass a reference in these cases
+    // Don't pass a reference to extern functions
+    // Do if requiresCPtr or the argument is of reference type
+    if (isExtern) {
+      // Don't pass by reference to extern functions
+    } else if (formal->requiresCPtr() ||
+               formal->type->symbol->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF)) {
+      // Pass by reference in this case
+      passRef = true;
+      // If it's wide, make a note of it
+      if (formal->type->symbol->hasFlag(FLAG_WIDE_REF)) {
+        passWideRef = true;
+      }
     }
 
     // Make sure that the formal type + intent
@@ -2609,16 +2619,35 @@ GenRet codegenArgForFormal(GenRet arg,
     //if ((formal->intent & INTENT_FLAG_REF) != 0 &&
      //   arg.chplType && arg.chplType->symbol->hasFlag(FLAG_REF))
 
-    // If the argument type is already a reference, pass that
-    // reference as a value.
-    if (arg.chplType && arg.chplType->symbol->hasFlag(FLAG_REF))
-      passReference = false;
+    // If we need to pass a reference but we already have a reference,
+    // pass the pointer by value.
+    if (arg.chplType && passRef) {
+      if (passWideRef && arg.chplType->symbol->hasFlag(FLAG_WIDE_REF)) {
+        passWideRef = false;
+        passRef = false;
+        // argument and formal types should match.
+        INT_ASSERT(arg.chplType == formal->type);
+      }
+      if (passRef && arg.chplType->symbol->hasFlag(FLAG_REF)) {
+        passRef = false;
+        // argument and formal types should match.
+        INT_ASSERT(arg.chplType == formal->type);
+      }
+    }
 
-    if (passReference) {
+    if (passWideRef) {
       if( arg.isLVPtr == GEN_VAL ) {
         arg = codegenValuePtr(arg);
-      }
-      // Now arg.isLVPtr is 1
+        arg = codegenWideHere(codegenAddrOf(arg));
+      } else if( arg.isLVPtr == GEN_PTR ) {
+        arg = codegenWideHere(codegenAddrOf(arg));
+      } // otherwise, arg.isLVPtr == GEN_WIDE_PTR, no action necessary
+    } else if(passRef) {
+      if( arg.isLVPtr == GEN_VAL ) {
+        arg = codegenValuePtr(arg);
+      } else if( arg.isLVPtr == GEN_WIDE_PTR ) {
+        INT_ASSERT(0); // not implemented
+      } // otherwise, arg.isLVPtr == GEN_PTR, no action necessary
     } else {
       if( arg.isLVPtr != GEN_VAL ) {
         arg = codegenValue(arg);
