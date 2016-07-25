@@ -57,8 +57,8 @@ list_sym(Symbol* sym, bool type = true) {
   }
   if (toFnSymbol(sym)) {
     printf("fn ");
-  } else if (toArgSymbol(sym)) {
-    printf("arg ");
+  } else if (ArgSymbol* arg = toArgSymbol(sym)) {
+    printf("arg intent %s", arg->intentDescrString());
   } else if (toTypeSymbol(sym)) {
     printf("type ");
   }
@@ -371,6 +371,8 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
 
   if (DefExpr* def = toDefExpr(ast)) {
     printf(" ");
+    if (ArgSymbol* arg = toArgSymbol(def->sym))
+      printf("intent %s ", arg->intentDescrString());
     writeFlags(stdout, def->sym);
   }
 
