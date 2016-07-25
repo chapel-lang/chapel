@@ -3903,7 +3903,7 @@ FnSymbol* tryResolveCall(CallExpr* call) {
 FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   if( call->id == breakOnResolveID ) {
-    printf("breaking on call:\n");
+    printf("breaking on resolve call:\n");
     print_view(call);
     gdbShouldBreakHere();
   }
