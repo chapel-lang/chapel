@@ -75,7 +75,7 @@
 static aligned_t profile_task_yield = 0;
 static aligned_t profile_task_addToTaskList = 0;
 static aligned_t profile_task_executeTasksInList = 0;
-static aligned_t profile_task_taskCall = 0;
+static aligned_t profile_task_taskCallFTable = 0;
 static aligned_t profile_task_startMovedTask = 0;
 static aligned_t profile_task_getId = 0;
 static aligned_t profile_task_sleep = 0;
@@ -99,7 +99,7 @@ static void profile_print(void)
     fprintf(stderr, "task yield: %lu\n", (unsigned long)profile_task_yield);
     fprintf(stderr, "task addToTaskList: %lu\n", (unsigned long)profile_task_addToTaskList);
     fprintf(stderr, "task executeTasksInList: %lu\n", (unsigned long)profile_task_executeTasksInList);
-    fprintf(stderr, "task taskCall: %lu\n", (unsigned long)profile_task_taskCall);
+    fprintf(stderr, "task taskCallFTable: %lu\n", (unsigned long)profile_task_taskCallFTable);
     fprintf(stderr, "task startMovedTask: %lu\n", (unsigned long)profile_task_startMovedTask);
     fprintf(stderr, "task getId: %lu\n", (unsigned long)profile_task_getId);
     fprintf(stderr, "task sleep: %lu\n", (unsigned long)profile_task_sleep);
@@ -893,7 +893,7 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid, void *arg, size_t arg_size,
 {
     void *arg_copy = NULL;
 
-    PROFILE_INCR(profile_task_taskCall,1);
+    PROFILE_INCR(profile_task_taskCallFTable,1);
 
     if (arg != NULL) {
         arg_copy = chpl_mem_allocMany(1, arg_size, CHPL_RT_MD_TASK_ARG, 0, 0);

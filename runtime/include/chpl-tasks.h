@@ -153,16 +153,6 @@ void chpl_task_addToTaskList(
 void chpl_task_executeTasksInList(void**);
 
 //
-// Call a function in a task.
-//
-void chpl_task_taskCall(chpl_fn_p,          // function to call
-                        void*,              // function arg
-                        size_t,             // length of arg
-                        c_sublocid_t,       // desired sublocale
-                        int,                // line at which function begins
-                        int32_t);           // name of file containing function
-
-//
 // Call a chpl_ftable[] function in a task.
 //
 // This is a convenience function for use by the module code, in which
