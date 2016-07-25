@@ -18,13 +18,12 @@ cleanall: FORCE
 	rm -rf build
 
 clobber: FORCE
-	rm -rf build install
+	rm -rf build install $(LIBUNWIND_SRC_DIR)
 
 libunwind: $(LIBUNWIND_SRC_DIR) configure-libunwind build-libunwind install-libunwind
 
 $(LIBUNWIND_SRC_DIR):
-	cd $(LIBUNWIND_DIR)
-	@if [ ! -d $(LIBUNWIND_SRC_DIR) ]; then $(error libunwind-src not avaiable, see third-party/libunwind/README); fi
+	cd $(LIBUNWIND_DIR) && tar -xf $(LIBUNWIND_TARBALL)
 
 configure-libunwind: FORCE
 	mkdir -p $(LIBUNWIND_BUILD_DIR)

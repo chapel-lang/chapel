@@ -330,10 +330,34 @@ buildDefaultWrapper(FnSymbol* fn,
           for_alist(expr, typeExpr->body) {
             wrapper->insertAtTail(expr->remove());
           }
+          Expr* lastExpr = wrapper->body->body.tail;
           if (formal->hasFlag(FLAG_TYPE_VARIABLE))
-            wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapper->body->body.tail->remove()));
-          else
-            wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, wrapper->body->body.tail->remove())));
+            wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, lastExpr->remove()));
+          else {
+            //
+            // 2016-07-18: benharsh: I was encountering an issue where we were
+            // attempting to wrap a function where we had inserted return temps
+            // for chpl__buildArrayRuntimeType. This wrapping function then
+            // created an invalid AST like this:
+            //
+            // (move call_tmp (move _return_tmp_ (call chpl__buildArrayRuntimeType ...)))
+            //
+            // With this change we assume that if the last Expr is a PRIM_MOVE
+            // that we can use the LHS of that move in the PRIM_INIT call that
+            // needs to be inserted.
+            //
+            // The test that exposed this issue is:
+            //   test/arrays/diten/distArrInRecord.chpl
+            //
+            // Compiled with -suseBulkTransferStride
+            //
+            CallExpr* lastCall = toCallExpr(lastExpr);
+            if (lastCall != NULL && lastCall->isPrimitive(PRIM_MOVE)) {
+              wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, lastCall->get(1)->copy())));
+            } else {
+              wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, lastExpr->remove())));
+            }
+          }
         } else {
           if (formal->hasFlag(FLAG_TYPE_VARIABLE))
             wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new SymExpr(formal->type->symbol)));

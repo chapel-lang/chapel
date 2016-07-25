@@ -35,7 +35,7 @@
 #include "chpl-atomics.h"
 #endif
 
-#ifdef CHPL_UNWIND_LIBUNWIND
+#ifdef CHPL_DO_UNWIND
 // Necessary for instruct libunwind to use only the local unwind
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
@@ -56,7 +56,7 @@ static void chpl_stack_unwind(void){
   unw_init_local(&cursor, &uc);
 
   if(chpl_sizeSymTable > 0)
-    fprintf(stderr,"\nStacktrace\n\n");
+    fprintf(stderr,"Stacktrace\n\n");
 
   // This loop does the effective stack unwind, see libunwind documentation
   while (unw_step(&cursor) > 0) {
@@ -71,15 +71,14 @@ static void chpl_stack_unwind(void){
     // 2) Emit chpl_funSymTable in sorted order and use binary search on it
     for(int t = 0; t < chpl_sizeSymTable; t+=2 ){
       if (!strcmp(chpl_funSymTable[t], buffer)){
-        fprintf(stderr,"%s (%s:%d)\n",
-                 chpl_funSymTable[t+1],
-                 chpl_lookupFilename(chpl_filenumSymTable[t]),
-                 chpl_filenumSymTable[t+1]);
+        fprintf(stderr,"%s() at %s:%d\n",
+                  chpl_funSymTable[t+1],
+                  chpl_lookupFilename(chpl_filenumSymTable[t]),
+                  chpl_filenumSymTable[t+1]);
         break;
       }
     }
   }
-  fprintf(stderr,"\n");
 }
 #endif
 
@@ -141,7 +140,7 @@ void chpl_error_explicit(const char *message, int32_t lineno,
     fprintf(stderr, "error: %s", message);
   fprintf(stderr, "\n");
 
-#ifdef CHPL_UNWIND_LIBUNWIND
+#ifdef CHPL_DO_UNWIND
   chpl_stack_unwind();
 #endif
 

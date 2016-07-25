@@ -1,0 +1,2 @@
+COMPOPTS <= --no-remote-value-forwarding
+COMPOPTS <= --baseline

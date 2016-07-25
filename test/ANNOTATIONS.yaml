@@ -140,6 +140,10 @@ all:
   06/24/16:
     - text: Improve optimizeOnClauses optimization (#4008)
       config: 16 node XC
+  07/19/16:
+    - Disable jemalloc's stat gathering by default (#4180)
+  07/20/16:
+    - Generated code changes in preparation for incremental compilation (#4177)
 
 AllCompTime:
   11/09/14:
@@ -452,7 +456,7 @@ prk-stencil:
     - Looping over range instead of domain for weight matrix (#3500)
   04/09/16:
     - blockDist for useStencilDist output matrix and more (#3705)
-  05/07/16:
+  05/06/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
 
 prk-stencil.xc-perf:
@@ -460,7 +464,7 @@ prk-stencil.xc-perf:
     - Looping over range instead of domain for weight matrix (#3500)
   04/09/16:
     - blockDist for useStencilDist output matrix and more (#3705)
-  05/07/16:
+  05/06/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
 
 ra:

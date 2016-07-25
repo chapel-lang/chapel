@@ -62,7 +62,7 @@ explainInstantiation(FnSymbol* fn) {
     form_Map(SymbolMapElem, e, fn->substitutions) {
       ArgSymbol* arg = toArgSymbol(e->key);
       if (!strcmp(formal->name, arg->name)) {
-        if (!strcmp(arg->name, "meme")) // do not show meme argument
+        if (arg->hasFlag(FLAG_IS_MEME)) // do not show meme argument
           continue;
         if (first)
           first = false;
