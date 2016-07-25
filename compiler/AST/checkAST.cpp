@@ -123,9 +123,16 @@ void checkPrimitives()
       }
       break;
 
+     case PRIM_MOVE:
+      if (resolved) {
+        // Check that the LHS has the same type as the RHS.
+        if (call->get(1)->typeInfo() != call->get(2)->typeInfo())
+          INT_FATAL("PRIM_MOVE types do not match");
+      }
+      break;
+
      case PRIM_UNKNOWN:
      case PRIM_NOOP:
-     case PRIM_MOVE:
      case PRIM_REF_TO_STRING:
      case PRIM_RETURN:
      case PRIM_YIELD:
