@@ -2896,7 +2896,7 @@ proc channel.offset():int(64) {
 proc channel.advance(amount:int(64), ref error:syserr) {
   on this.home {
     this.lock();
-    error = qio_channel_advance(false, _channel_internal);
+    error = qio_channel_advance(false, _channel_internal, amount);
     this.unlock();
   }
 }
@@ -2906,7 +2906,7 @@ pragma "no doc"
 proc channel.advance(amount:int(64)) {
   on this.home {
     this.lock();
-    var err = qio_channel_advance(false, _channel_internal);
+    var err = qio_channel_advance(false, _channel_internal, amount);
     if err then this._ch_ioerror(err, "in advance");
     this.unlock();
   }
@@ -3770,7 +3770,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
   // these are overridden to not be inout
   // since they don't change when read anyway
   // and it's much more convenient to be able to do e.g.
-  //   reader & new ioLiteral("=")
+  //   reader <~> new ioLiteral("=")
 
   /* Overload to support reading an :type:`IO.ioLiteral` without
      passing ioLiterals by reference, so that
@@ -3793,7 +3793,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
 
      .. code-block:: chapel
 
-       reader <~> new ioNewline("=")
+       reader <~> new ioNewline()
 
      works without requiring an explicit temporary value to store
      the ioNewline.
@@ -3927,12 +3927,11 @@ inline proc channel.read(ref args ...?k,
   */
 proc stringify(args ...?k):string {
   proc isStringOrPrimitiveTypes(type t) param : bool {
-    var x: t;
     for param i in 1..k {
-      if !(x[i].type == string ||
-          x[i].type == c_string ||
-          x[i].type == c_string_copy) {
-        if !isPrimitiveType(x[i].type) then
+      if !(t[i] == string ||
+           t[i] == c_string ||
+           t[i] == c_string_copy) {
+        if !isPrimitiveType(t[i]) then
           return false;
       }
     }

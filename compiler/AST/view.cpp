@@ -35,6 +35,7 @@
 #include "WhileStmt.h"
 #include "AstDump.h"
 #include "AstDumpToNode.h"
+#include "iterator.h"
 
 #include <inttypes.h>
 
@@ -779,11 +780,11 @@ void whocalls(int id) {
       // check each step, just in case
       if (SymExpr* act2 = toSymExpr(call->get(2)))
         if (Symbol* ic = act2->var)
-          if (Type* ty = ic->type)
-            if (FnSymbol* init = ty->defaultInitializer)
+          if (AggregateType* ty = toAggregateType(ic->type))
+            if (FnSymbol* init = ty->iteratorInfo->getIterator)
               if (ArgSymbol* form1 = init->getFormal(1))
-                if (Type* fty = form1->type)
-                  if (FnSymbol* iterator = fty->defaultInitializer)
+                if (AggregateType* fty = toAggregateType(form1->type))
+                  if (FnSymbol* iterator = fty->iteratorInfo->iterator)
                     if (iterator->id == id)
                       printf("  for-loop blockInfo %d  %s  %s\n",
                              call->id, parentMsg(call, &forMatch,

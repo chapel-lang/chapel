@@ -164,7 +164,7 @@ write("cubeiter: ");
 for z in cubeiter(numLocales) do write(" ", z);
 writeln();
 
-resumeVdebug("cubeiter");
+tagVdebug("cubeiter");
 
 forall z in cubeiter(numLocales) do  d[z] = here.id;
 
@@ -212,7 +212,7 @@ pauseVdebug();
 // for a in id2com(0,8) do write (a, " ");
 // writeln ();
 
-resumeVdebug("cubeiter2");
+tagVdebug("cubeiter2");
 
 forall x in cubeiter2(numLocales) do e[x] = here.id;
 

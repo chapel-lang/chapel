@@ -22,7 +22,6 @@
 
 
 #include "chplvis.h"
-#include "ViewField.h"
 #include "math.h"
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
@@ -31,19 +30,7 @@
 #define SSTR( x ) dynamic_cast< std::ostringstream & >( \
                     ( std::ostringstream() << std::dec << x ) ).str()
 
-// Local utility functions
-
-// Computation of color for use in displays
-
-Fl_Color heatColor ( double val, double max ) {
-  if (val == 0) return FL_WHITE;
-  if (max == 1) return fl_rgb_color(255,0,0);
-  if (val == 1) return fl_rgb_color(0,180,255);
-  return fl_rgb_color( 255*(val/max), 180 * ((max-val)/max), 255 * ((max-val)/max));
-}
-
 //  ViewField Constructors
-
 
 ViewField::ViewField (int bx, int by, int bw, int bh, const char *label)
   : Fl_Box (bx, by, bw, bh, 0) 
@@ -545,6 +532,7 @@ int ViewField::handle(int event)
                 theLocales[ix].ccwin = make_concurrency_window(ix, curTagNum);
               } else {
                 theLocales[ix].ccwin->updateData(ix, curTagNum);
+                theLocales[ix].ccwin->showTaskBox();
               }
               if (theLocales[ix].ccwin->visible())
                 theLocales[ix].ccwin->hide();
@@ -604,3 +592,18 @@ int ViewField::handle(int event)
   return Fl_Box::handle(event);
 }
 
+void ViewField::redrawAllWindows(void)
+    {
+      int ix, ix1, ix2;
+      MainWindow->redraw();
+      for (ix = 0; ix < numlocales; ix++) {
+        if (theLocales[ix].win != NULL)
+          theLocales[ix].win->redraw();
+        if (theLocales[ix].ccwin != NULL)
+          theLocales[ix].ccwin->redraw();
+      }
+      for (ix1 = 0; ix1 < numlocales; ix1++)
+        for (ix2 = 0; ix2 < numlocales; ix2++)
+          if (comms[ix1][ix2].win != NULL)
+            comms[ix1][ix2].win->redraw();
+    }
