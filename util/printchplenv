@@ -93,7 +93,7 @@ def print_mode(mode='list', anonymize=False):
 
     atomics = chpl_atomics.get()
     print_var('CHPL_ATOMICS', atomics, mode, 'atomics', ('runtime', 'launcher'))
-    if (mode != 'runtime' and mode != 'make' and mode != 'launcher') and comm != 'none' or mode == 'simple' or mode == 'shell':
+    if (mode != 'runtime' and mode != 'make' and mode != 'launcher') and comm != 'none' or mode == 'simple' or m == 'shell':
         net_atomics = chpl_atomics.get('network')
         print_var('  CHPL_NETWORK_ATOMICS', net_atomics, mode, filters=('runtime', 'launcher'))
 
