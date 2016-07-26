@@ -165,6 +165,10 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
                               int lineno,             // source line
                               int32_t filename);      // source filename
 
+// In some cases, we are not worried about the "function number" (fid)
+
+#define FID_NONE -1
+
 //
 // Launch a task that is the logical continuation of some other task,
 // but on a different locale.  This is used to invoke the body of an

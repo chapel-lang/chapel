@@ -148,13 +148,13 @@ pthread_t chpl_qthread_process_pthread;
 pthread_t chpl_qthread_comm_pthread;
 
 chpl_qthread_tls_t chpl_qthread_process_tls = {
-    PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_MAIN_TASK, 0, chpl_nullTaskID, -1, false,
-                      c_sublocid_any_val, false),
+    PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_MAIN_TASK, 0, chpl_nullTaskID, FID_NONE,
+                      false, c_sublocid_any_val, false),
     0, 0};
 
 chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
-    PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_COMM_TASK, 0, chpl_nullTaskID, -1, false,
-                      c_sublocid_any_val, false),
+    PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_COMM_TASK, 0, chpl_nullTaskID, FID_NONE,
+                      false, c_sublocid_any_val, false),
     0, 0 };
 
 typedef struct {
@@ -784,7 +784,7 @@ static void *comm_task_wrapper(void *arg)
 void chpl_task_callMain(void (*chpl_main)(void))
 {
     chpl_qthread_wrapper_args_t wrapper_args =
-         {chpl_main, NULL, NULL, false,
+        {chpl_main, NULL, NULL, false,
          PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_MAIN_TASK , 0,
                            chpl_qthread_process_tls.chpl_data.id, -1, false,
                            c_sublocid_any_val, false) };
@@ -843,8 +843,8 @@ void chpl_task_addToTaskList(chpl_fn_int_t     fid,
         (chpl_ftable[fid])(arg);
     } else {
         chpl_qthread_wrapper_args_t wrapper_args =
-             {chpl_ftable[fid], arg, NULL, false,
-              PRV_DATA_IMPL_VAL(filename, lineno, chpl_nullTaskID, fid, false,
+            {chpl_ftable[fid], arg, NULL, false,
+             PRV_DATA_IMPL_VAL(filename, lineno, chpl_nullTaskID, fid, false,
                                subloc, serial_state) };
 
         wrap_callbacks(chpl_task_cb_event_kind_create,
@@ -871,8 +871,8 @@ static inline void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp, void *arg,
                                 chpl_bool serial_state, int lineno, int32_t filename)
 {
     chpl_qthread_wrapper_args_t wrapper_args =
-         {fp, arg, arg_copy, canCountRunningTasks,
-          PRV_DATA_IMPL_VAL(filename, lineno, chpl_nullTaskID, fid, true,
+        {fp, arg, arg_copy, canCountRunningTasks,
+         PRV_DATA_IMPL_VAL(filename, lineno, chpl_nullTaskID, fid, true,
                            subloc, serial_state) };
 
     wrap_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);

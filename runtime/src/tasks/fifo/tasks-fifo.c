@@ -717,7 +717,7 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
       initializeLockReportForThread();
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
-                           -1,
+                           child_ptask->fid,
                            child_ptask->filename,
                            child_ptask->lineno,
                            child_ptask->id,
@@ -726,7 +726,7 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
     (*task_to_run_fun)(child_ptask->arg);
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
-                           -1,
+                           child_ptask->fid,
                            child_ptask->filename,
                            child_ptask->lineno,
                            child_ptask->id,
@@ -1284,7 +1284,7 @@ thread_begin(void* ptask_void) {
     }
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
-                           -1,
+                           ptask->fid,
                            ptask->filename,
                            ptask->lineno,
                            ptask->id,
@@ -1293,7 +1293,7 @@ thread_begin(void* ptask_void) {
     (*ptask->fun)(ptask->arg);
 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
-                           -1,
+                           ptask->fid,
                            ptask->filename,
                            ptask->lineno,
                            ptask->id,
