@@ -114,6 +114,8 @@ public:
   virtual bool       isImmediate()                             const;
   virtual bool       isParameter()                             const;
           bool       isRenameable()                            const;
+          bool       isRef();
+          bool       isWideRef();
 
   virtual void       codegenDef();
 
@@ -214,6 +216,7 @@ public:
 
   const char* doc;
 
+  GenRet codegenVarSymbol(bool lhsInSetReference=false);
   GenRet codegen();
   void codegenDefC(bool global = false, bool isHeader = false);
   void codegenDef();

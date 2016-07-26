@@ -79,8 +79,9 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
         // not without changing their type.
         Expr* point = call->getStmtExpr();
         VarSymbol* tmp = newTemp(astr("i_", formal->name), formal->type);
+        tmp->addFlag(FLAG_REF);
         DefExpr* def = new DefExpr(tmp);
-        CallExpr* move = new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_DEREF, se->var));
+        CallExpr* move = new CallExpr(PRIM_SET_REFERENCE, tmp, se->var);
         point->insertBefore(def);
         point->insertBefore(move);
         map.put(formal, tmp);

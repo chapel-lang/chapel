@@ -1294,7 +1294,8 @@ makeHeapAllocations() {
       if (CallExpr* call = toCallExpr(use->parentExpr)) {
         if (call->isPrimitive(PRIM_ADDR_OF)) {
           CallExpr* move = toCallExpr(call->parentExpr);
-          INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+          INT_ASSERT(move && (move->isPrimitive(PRIM_MOVE) ||
+                              move->isPrimitive(PRIM_SET_REFERENCE)));
           if (move->get(1)->typeInfo() == heapType) {
             call->replace(use->copy());
           } else {
