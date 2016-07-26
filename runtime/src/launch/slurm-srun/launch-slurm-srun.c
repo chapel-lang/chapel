@@ -35,11 +35,13 @@
 #define CHPL_WALLTIME_FLAG "--walltime"
 #define CHPL_GENERATE_SBATCH_SCRIPT "--generate-sbatch-script"
 #define CHPL_NODELIST_FLAG "--nodelist"
+#define CHPL_PARTITION_FLAG "--partition"
 
 static char* debug = NULL;
 static char* walltime = NULL;
 static int generate_sbatch_script = 0;
 static char* nodelist = NULL;
+static char* partition = NULL;
 
 char slurmFilename[FILENAME_MAX];
 char sysFilename[FILENAME_MAX];
@@ -210,6 +212,14 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     nodelist = getenv("CHPL_LAUNCHER_NODELIST");
   }
 
+  // command line partition takes precedence over env var
+  if (!partition) {
+    partition = getenv("SALLOC_PARTITION");
+  }
+  if (!partition) {
+    partition = getenv("SLURM_PARTITION");
+  }
+
   if (basenamePtr == NULL) {
     basenamePtr = argv[0];
   } else {
@@ -264,6 +274,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // Set the nodelist if it was specified
     if (nodelist) {
       fprintf(slurmFile, "#SBATCH --nodelist=%s\n", nodelist);
+    }
+
+    // Set the partition if it was specified
+    if (partition) {
+      fprintf(slurmFile, "#SBATCH --partition=%s\n", partition);
     }
 
     // If needed a constraint can be specified with the env var CHPL_LAUNCHER_CONSTRAINT
@@ -368,6 +383,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // Set the nodelist if it was specified
     if (nodelist) {
       len += sprintf(iCom+len, "--nodelist=%s ", nodelist);
+    }
+
+    // Set the partition if it was specified
+    if (partition) {
+      len += sprintf(iCom+len, "--partition=%s ", partition);
     }
 
     // set any constraints 
@@ -478,6 +498,15 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     return 1;
   }
 
+  // handle --partition <partition> or --partition=<partition>
+  if (!strcmp(argv[argNum], CHPL_PARTITION_FLAG)) {
+    partition = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_PARTITION_FLAG"=", strlen(CHPL_PARTITION_FLAG))) {
+    partition = &(argv[argNum][strlen(CHPL_PARTITION_FLAG)+1]);
+    return 1;
+  }
+
   // handle --generate-sbatch-script
   if (!strcmp(argv[argNum], CHPL_GENERATE_SBATCH_SCRIPT)) {
     generate_sbatch_script = 1;
@@ -501,6 +530,6 @@ void chpl_launch_print_help(void) {
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_WALLTIME)\n");
   fprintf(stdout, "  %s <nodelist> : specify a nodelist to use\n", CHPL_NODELIST_FLAG);
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_NODELIST)\n");
-
-
+  fprintf(stdout, "  %s <partition> : specify a partition to use\n", CHPL_PARTITION_FLAG);
+  fprintf(stdout, "                           (or use $SALLOC_PARTITION)\n");
 }
