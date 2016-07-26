@@ -76,6 +76,11 @@ typedef struct atomic_uintptr_s {
   uintptr_t v;
 } atomic_uintptr_t;
 
+typedef struct atomic_bool_s {
+  chpl_sync_aux_t sv;
+  chpl_bool v;
+} atomic_bool;
+
 typedef struct atomic_flag_s {
   chpl_sync_aux_t sv;
   chpl_bool v;
@@ -106,7 +111,7 @@ void atomic_thread_fence(memory_order order)
   // No idea!
 }
 static inline
-void atomic_signal_thread_fence(memory_order order)
+void atomic_signal_fence(memory_order order)
 {
   // No idea!
 }
@@ -184,6 +189,7 @@ atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype
     obj->v = desired; \
     ret = true; \
   } else { \
+    expected = obj->v; \
     ret = false; \
   } \
   chpl_sync_unlock(&obj->sv); \
@@ -287,7 +293,7 @@ static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand
   return atomic_fetch_sub_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 }
 
-DECLARE_ATOMICS_BASE(flag, chpl_bool);
+DECLARE_ATOMICS_BASE(bool, chpl_bool);
 
 #define DECLARE_ATOMICS(type) \
   DECLARE_ATOMICS_BASE(type, type) \
