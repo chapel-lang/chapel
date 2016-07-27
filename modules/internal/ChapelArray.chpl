@@ -395,8 +395,7 @@ module ChapelArray {
   //
   pragma "runtime type init fn"
   proc chpl__buildArrayRuntimeType(dom: domain, type eltType) {
-    var tok = __primitive("get caller stack token");
-    return dom.buildArray(eltType, tok);
+    return dom.buildArray(eltType);
   }
 
   proc _getLiteralType(type t) type {
@@ -1020,9 +1019,8 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc buildArray(type eltType, tok:c_void_ptr) {
+    proc buildArray(type eltType) {
       var x = _value.dsiBuildArray(eltType);
-      x._stackToken = tok;
       pragma "dont disable remote value forwarding"
       proc help() {
         _value.add_arr(x);
@@ -3472,10 +3470,8 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(const ref a: []) {
-    //var tok = __primitive("get caller stack token");
 
     var b : [a._dom] a.eltType;
-    //b._value._stackToken = tok;
 
     // Try bulk transfer.
     if !chpl__serializeAssignment(b, a) {
@@ -3493,9 +3489,8 @@ module ChapelArray {
     return b;
   }
 
-  proc __doDeepCopy(ref a:[], tok) {
+  proc __doDeepCopy(ref a:[]) {
     var b : [a._dom] a.eltType;
-    b._value._stackToken = tok;
 
     // Try bulk transfer.
     if !chpl__serializeAssignment(b, a) {
@@ -3533,12 +3528,11 @@ module ChapelArray {
   }
   */
   inline proc chpl__unalias(ref x: []) {
-    const tok = __primitive("get caller stack token");
     const isalias = (x._unowned) | (x._value._arrAlias != nil);
 
     if isalias {
 
-      __doDeepCopy(x, tok);
+      __doDeepCopy(x);
     }
   }
 
@@ -3562,7 +3556,6 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(ir: _iteratorRecord) {
-    var tok = __primitive("get caller stack token");
 
     // The use of an explicit initCopy() is required
     // to support nested for/forall expressions.
@@ -3592,7 +3585,6 @@ module ChapelArray {
     // array) and use a primitive to set the array's element; that may
     // also handle skyline arrays
     var A: [D] iteratorIndexType(irc);
-    A._value._stackToken = tok;
 
     for e in irc {
       // The resulting array grows dynamically

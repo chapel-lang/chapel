@@ -1244,6 +1244,7 @@ static ArgSymbol* newCallerStackTok(FnSymbol* fn) {
   return tok;
 }
 
+/*
 static void handleStackTokens() {
   compute_call_sites();
 
@@ -1291,7 +1292,7 @@ static void handleStackTokens() {
   }
 
 
-}
+}*/
 
 
 /************************************* | **************************************
@@ -1320,6 +1321,6 @@ void callDestructors() {
   // This doesn't strictly have to be in this pass, but it's here because
   // it's related to copy and destroy because it enables returning
   // a slice of a local array
-  handleStackTokens();
+  //handleStackTokens();
 
 }
