@@ -13,11 +13,7 @@ retval |= (os.environ['CHPL_TASKS']!="fifo")
 
 # Only support GASNET+MPI 
 retval |= (os.environ['CHPL_COMM']!="gasnet")
-
-if ('CHPL_COMM_SUBSTRATE' not in os.environ) :
-    retval = True
-else :
-    retval |=(os.environ['CHPL_COMM_SUBSTRATE']!="mpi")
+retval |= (os.environ['CHPL_COMM_SUBSTRATE']!="mpi")
 
 
 print(retval)
