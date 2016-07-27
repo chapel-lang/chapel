@@ -2638,21 +2638,46 @@ module ChapelArray {
     }
   }
 
+  iter _array.partialThese(onlyDim, otherIdx, param tag) where
+    tag==iterKind.leader {
+
+    for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
+      yield i;
+    }
+  }
+
+  iter _array.partialThese(onlyDim, otherIdx, param tag, followThis) where
+    tag==iterKind.follower {
+
+    for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx, 
+        tag=tag, followThis=followThis) {
+      yield this._value.dsiAccess(dsiMergeIdx(otherIdx, onlyDim, i));
+    }
+  }
+
+  iter _array.partialThese(onlyDim, otherIdx, param tag) where
+    tag==iterKind.standalone {
+
+    for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
+      yield this._value.dsiAccess(dsiMergeIdx(otherIdx, onlyDim, i));
+    }
+  }
+
   proc dsiPartialReduce_template(arr: [], onlyDim) {
 
     if onlyDim < 1 || onlyDim > arr.domain.rank then
       halt("Invalid partial reduction dimension: ", onlyDim);
 
-    // I am not sure if we support this. Some algorithms might do consecutive
-    // partial reductions with some intermediate steps. This pshould prevent
-    // specialization in user code 
+    // I am not sure if we should support this. Some algorithms might do
+    // consecutive partial reductions with some intermediate steps. This pshould
+    // prevent specialization in user code
     if arr.domain.rank == 1 then
       return + reduce arr;
 
     const PartialDom = arr.domain._value.dsiPartialDomain(exceptDim=onlyDim);
-    /*const PartialDom = {0..#4, 0..#4};*/
     var ResultArr: [PartialDom] arr._value.eltType;
 
+    // TODO check overhead of this reduction in forall
     forall partialIdx in PartialDom {
       ResultArr[partialIdx] = + reduce arr.partialThese(onlyDim, partialIdx);
     }
