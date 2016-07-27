@@ -212,6 +212,43 @@ module ChapelTuple {
     for i in followThis do yield this(i);
   }
   
+  proc _tuple.merge(mergeIdx, mergeVal) where isHomogeneousTuple(this) {
+
+    // FIXME this if doesn't seem to woerk as I expected
+    if mergeVal.type != this[1].type then
+      halt("Value to be merged doesn't match homogenour tuple eltType");
+
+    const defVal: mergeVal.type;
+    var ret = createTuple(this.size+1, mergeVal.type, defVal);
+
+    var partialIndexOffset = 0;
+    for i in 1..ret.size {
+      if i == mergeIdx {
+        ret[i] = mergeVal;
+        partialIndexOffset = 1;
+      }
+      else {
+        ret[i] = this[i-partialIndexOffset];
+      }
+    }
+
+    return ret;
+  }
+
+  proc _tuple.strip(stripIdx) where isHomogeneousTuple(this) {
+
+    const defVal: this[1].type;
+    var ret = createTuple(this.size-1, this[1].type, defVal);
+
+    for i in 1..stripIdx-1 do
+      ret[i] = this[i];
+
+    for i in stripIdx+1..this.size do
+      ret[i-1] = this[i];
+
+    return ret;
+  }
+
   //
   // tuple methods
   //

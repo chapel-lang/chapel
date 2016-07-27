@@ -160,6 +160,58 @@ module DefaultRectangular {
       }
     }
 
+    // dsiPartialThese implementations
+
+    // otherIdx doesn't make much sense other than conformance to sparse domain
+    // interface. When/if there is a support for ragged domains , then it would
+    // be useful
+
+    // strictly swpeaking I want createTuple calls to have rank-1. But that
+    // would require `where rank == 1` special implementations, and I kept
+    // hitting resolution issues there(may or may not be a bug). since otherIdx
+    // is not used at this point, I am moving with this implementation
+    iter dsiPartialThese(onlyDim,
+        otherIdx=createTuple(rank, idxType, 0:idxType)) {
+
+        for i in ranges(onlyDim) do yield i;
+    }
+
+    iter dsiPartialThese(onlyDim,
+        otherIdx=createTuple(rank, idxType, 0:idxType),
+        param tag: iterKind)
+      where tag == iterKind.leader {
+
+      for i in ranges(onlyDim).these(tag) do yield i;
+    }
+
+    iter dsiPartialThese(onlyDim,
+        otherIdx=createTuple(rank, idxType, 0:idxType),
+        param tag: iterKind, followThis)
+      where tag == iterKind.follower {
+
+      for i in ranges(onlyDim).these(tag, followThis=followThis) do yield i;
+    }
+
+    // currently no support for offset
+    iter dsiPartialThese(onlyDim,
+        otherIdx=createTuple(rank, idxType, 0:idxType),
+        param tag: iterKind)
+      where tag == iterKind.standalone {
+
+      for i in ranges(onlyDim).these(tag) do yield i;
+    }
+
+    proc dsiPartialDomain(exceptDim) where rank > 1 {
+      var ret = createTuple(rank-1, range, 0..1);
+      for i in 1..exceptDim-1 do
+        ret[i] = ranges[i];
+
+      for i in exceptDim+1..rank do
+        ret[i-1] = ranges[i];
+
+      return {(...ret)};
+    }
+
     iter these(param tag: iterKind,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,

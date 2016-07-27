@@ -2632,6 +2632,24 @@ module ChapelArray {
     return && reduce (this == that);
   }
 
+  iter _array.partialThese(onlyDim, otherIdx) {
+    for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx) {
+      yield this._value.dsiAccess(dsiMergeIdx(otherIdx, onlyDim, i));
+    }
+  }
+
+  proc dsiPartialReduce_template(arr: [], onlyDim) {
+    const PartialDom = arr.domain._value.dsiPartialDomain(exceptDim=onlyDim);
+    /*const PartialDom = {0..#4, 0..#4};*/
+    var ResultArr: [PartialDom] arr._value.eltType;
+
+    forall partialIdx in PartialDom {
+      ResultArr[partialIdx] = + reduce arr.partialThese(onlyDim, partialIdx);
+    }
+
+    return ResultArr;
+
+  }
 
   //
   // isXxxType, isXxxValue
