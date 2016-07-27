@@ -516,7 +516,7 @@ module GMP {
 
       // if we own our old num re-use it
       // if we don't, init a new one
-      if !(this.owned) { //TODO: write code that tests this
+      if !(this.owned) { //TODO: confirm that this case gets tested
         on Locales[this.locale_id] do mpz_init(this.mpz);
         this.owned = true;
       }
@@ -622,6 +622,7 @@ module GMP {
     // TODO: compiler chooses an INT(64) for tmp, gets win-pointer mismatch
     // for architectures where long and long long are both 8 bytes, it makes
     // an int64 * for the long, and tries to return it as a long long * instead
+    // makes a warning
     proc get_d_2exp():(uint(32), real)
     {
       var exp:c_long;
@@ -1349,7 +1350,7 @@ module GMP {
       }
     }
     // TODO: functions including mpz_2fac_ui, mpz_primorial_ui, and 
-    // mpz_mfac_uiui are not represented here. Should they be?
+    // mpz_mfac_uiui are not included in this module. 
 
     proc bin_ui(ref n: BigInt, k: uint)
     {
@@ -1748,7 +1749,7 @@ module GMP {
         ret.owned = false;
       }
     } else {
-      // TODO: untested
+      // TODO: test this
       var remoteMpz = bir.mpz;
       ret.reinitBigInt(remoteMpz, needToCopy=false);
     }
@@ -1790,7 +1791,7 @@ module GMP {
     c.pow_ui(a, b);
     return c;
   }
-  // TODO: Bitwise negation not natively supported by GMP
+  // TODO: Bitwise negation not in the GMP library
   inline proc *(ref a: BigInt, ref b: BigInt){
     var c = new BigInt();
     c.mul(a, b);
@@ -1857,7 +1858,7 @@ module GMP {
     c.neg(a);
     return c;
   }
-  // TODO: Shift left, shift right (<< >>) operators not in gmplib library
+  // TODO: Shift left, shift right (<< >>) operators not in GMP library
   inline proc &(ref a: BigInt, ref b: BigInt){
     var c = new BigInt();
     c.and(a, b);
@@ -1943,9 +1944,9 @@ module GMP {
     }
   }
   inline proc -(b: int, ref a: BigInt){
-        if b < 0  {
-        var c = new BigInt(a); //TODO: there should be a better way to do this
-        c.neg(c);
+    if b < 0  {
+      var c = new BigInt(a);
+      c.neg(c);
       return (c + b);
     }
     else {
