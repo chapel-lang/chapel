@@ -397,7 +397,23 @@ buildDefaultWrapper(FnSymbol* fn,
         //  )
         if (specializeDefaultConstructor) {
           // Copy construct from the default value.
-          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr("chpl__initCopy", wrapper->body->body.tail->remove())));
+          // Sometimes, normalize has already added an initCopy in the
+          // defaultExpr. But if it didn't, we need to add a copy.
+          Expr* fromExpr = wrapper->body->body.tail->remove();
+          bool needsInitCopy = true;
+          if (CallExpr* fromCall = toCallExpr(fromExpr)) {
+            Expr* base = fromCall->baseExpr;
+            if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(base)) {
+              if (0 == strcmp(urse->unresolved, "chpl__initCopy"))
+                needsInitCopy = false;
+            } else {
+              INT_ASSERT(0); // if resolved, check for FLAG_INIT_COPY_FN
+            }
+          }
+          if (needsInitCopy)
+            fromExpr = new CallExpr("chpl__initCopy", fromExpr);
+
+          wrapper->insertAtTail(new CallExpr(PRIM_MOVE, temp, fromExpr));
         } else {
           // Otherwise, just pass it in
           if (intent & INTENT_FLAG_REF) {
