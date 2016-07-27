@@ -35,7 +35,7 @@
 #include "chpl-atomics.h"
 #endif
 
-#ifdef CHPL_UNWIND_LIBUNWIND
+#ifdef CHPL_DO_UNWIND
 // Necessary for instruct libunwind to use only the local unwind
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
@@ -140,7 +140,7 @@ void chpl_error_explicit(const char *message, int32_t lineno,
     fprintf(stderr, "error: %s", message);
   fprintf(stderr, "\n");
 
-#ifdef CHPL_UNWIND_LIBUNWIND
+#ifdef CHPL_DO_UNWIND
   chpl_stack_unwind();
 #endif
 

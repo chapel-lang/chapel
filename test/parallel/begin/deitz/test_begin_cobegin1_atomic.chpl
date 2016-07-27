@@ -9,8 +9,10 @@ proc main {
       s.write(1);
     }
     {
-      s.waitFor(1);;
-      z = x;
+      on Locales[0] {
+        s.waitFor(1);
+        z = x;
+      }
     }
   }
   writeln((x, z));
