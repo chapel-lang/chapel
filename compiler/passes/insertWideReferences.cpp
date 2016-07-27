@@ -288,9 +288,21 @@ static bool shouldRetWide(CallExpr* call);
 //
 // Miscellaneous utility functions to help manage the AST
 //
+static bool isTypeFullyWide(BaseAST* bs) {
+  return bs->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_CLASS, FLAG_WIDE_REF);
+}
+
 
 static bool isFullyWide(BaseAST* bs) {
-  return bs->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_CLASS, FLAG_WIDE_REF);
+  if( Symbol* sym = toSymbol(bs) ) {
+    if (sym->isWideRef())
+      return true;
+  } else if( Expr* e = toExpr(bs) ) {
+    if (e->isWideRef())
+      return true;
+  }
+
+  return isTypeFullyWide(bs);
 }
 
 static bool valIsWideClass(BaseAST* bs) {
@@ -302,7 +314,7 @@ static Type* getNarrowType(BaseAST* bs) {
   // TODO: This should really return a completely narrow ref, and not
   // a ref to a wide class.
   //
-  if (isFullyWide(bs)) {
+  if (isTypeFullyWide(bs)) {
     return bs->typeInfo()->getField("addr")->typeInfo();
   }
   else {
@@ -314,8 +326,19 @@ static bool hasSomeWideness(BaseAST* bs) {
   return isFullyWide(bs) || valIsWideClass(bs);
 }
 
-static bool isRef(BaseAST* bs) {
+static bool isRefType(BaseAST* bs)
+{
   return bs->typeInfo()->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF);
+}
+
+static bool isRef(BaseAST* bs) {
+  if( Symbol* sym = toSymbol(bs) ) {
+    return (sym->isRef() || sym->isWideRef());
+  } else if( Expr* e = toExpr(bs) ) {
+    return (e->isRef() || e->isWideRef());
+  }
+  INT_ASSERT(0);
+  return false;
 }
 
 static bool isObj(BaseAST* bs) {
@@ -328,8 +351,10 @@ static bool typeCanBeWide(Symbol *sym) {
   // TODO: Special treatment of extern types may be removed in future
   // AMM work.
   bool bad = sym->hasFlag(FLAG_EXTERN) ||
-              ts->hasFlag(FLAG_NO_WIDE_CLASS) ||
-              (!isFullyWide(sym) && isRecord(sym->type));
+              ts->hasFlag(FLAG_NO_WIDE_CLASS);
+
+  if (!isFullyWide(sym) && !isRef(sym) && isRecord(sym->type))
+    bad = true;
 
   return !bad &&
          (isObj(sym) ||
@@ -420,6 +445,10 @@ static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
     if (Type* wide = wideClassMap.get(sym->type)) {
       sym->type = wide;
     }
+  }
+  else if(sym->hasEitherFlag(FLAG_WIDE_REF, FLAG_REF)) {
+    sym->removeFlag(FLAG_REF);
+    sym->addFlag(FLAG_WIDE_REF);
   }
   else if (isRef(sym)) {
     if (mustBeWide) {
@@ -1140,6 +1169,8 @@ static void addKnownWides() {
 
   // Widen the arguments of virtual methods
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    // Skip args we removed already in this pass.
+    if (!arg->defPoint->parentSymbol) continue;
     if (!typeCanBeWide(arg)) continue;
 
     FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
@@ -1205,6 +1236,7 @@ static void addKnownWides() {
 // widen other variables.
 //
 static void propagateVar(Symbol* sym) {
+
   INT_ASSERT(hasSomeWideness(sym));
   debug(sym, "Propagating var\n");
 
@@ -1235,7 +1267,8 @@ static void propagateVar(Symbol* sym) {
       CallExpr* parentCall = toCallExpr(call->parentExpr);
       if (parentCall && call->primitive) {
         if (parentCall->isPrimitive(PRIM_MOVE) ||
-            parentCall->isPrimitive(PRIM_ASSIGN)) {
+            parentCall->isPrimitive(PRIM_ASSIGN) ||
+            parentCall->isPrimitive(PRIM_SET_REFERENCE)) {
           Symbol* lhs = toSymExpr(parentCall->get(1))->var;
           if (call->primitive) {
             switch (call->primitive->tag) {
@@ -1316,6 +1349,7 @@ static void propagateVar(Symbol* sym) {
         }
       }
       else if ((call->isPrimitive(PRIM_MOVE) ||
+                 call->isPrimitive(PRIM_SET_REFERENCE) ||
                  call->isPrimitive(PRIM_ASSIGN)) &&
                   use == call->get(2)) {
         Symbol* lhs = toSymExpr(call->get(1))->var;
@@ -1332,7 +1366,8 @@ static void propagateVar(Symbol* sym) {
           // PRIM_ASSIGN means that the contents of the value or reference on the
           // RHS are copied into the object pointed to by the LHS.
           // Therefore, this clause applies only to PRIM_MOVE.
-          if (call->isPrimitive(PRIM_MOVE))
+          if (call->isPrimitive(PRIM_MOVE) ||
+              call->isPrimitive(PRIM_SET_REFERENCE))
             widenRef(use, lhs);
         }
         else if (isRef(lhs) && isObj(rhs)) {
@@ -1446,7 +1481,7 @@ static void propagateVar(Symbol* sym) {
         } else if (isRef(sym)) {
           // Exposed by: --baseline --inline
           if (SymExpr* rhs = toSymExpr(call->get(2))) {
-            if (isRef(rhs)) {
+            if (isRefType(rhs)) {
               widenRef(def, rhs->var);
             }
           }
@@ -1827,6 +1862,7 @@ static void localizeCall(CallExpr* call) {
       break;
     case PRIM_MOVE:
     case PRIM_ASSIGN: // Not sure about this one.
+    case PRIM_SET_REFERENCE:
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
         if (rhs->isPrimitive(PRIM_DEREF)) {
           if (isFullyWide(rhs->get(1))) {
@@ -1888,7 +1924,7 @@ static void localizeCall(CallExpr* call) {
         break;
       }
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
-          !isRef(call->get(2))) {
+          !isRefType(call->get(2))) {
         insertLocalTemp(call->get(1));
       }
       break;
@@ -2071,18 +2107,35 @@ static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
   numGlobalsOnHeap = i;
 }
 
-
 static void insertWideTemp(Type* type, SymExpr* src) {
+  Type* srcType = src->var->type;
+
+  bool needsAddrOf = false;
+  bool needsDeref = false;
+
+  if (type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
+      !srcType->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF))
+    needsAddrOf = true;
+
+  if (srcType->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
+      !type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF))
+    needsDeref = true;
+
   SET_LINENO(src);
   Expr* stmt = src->getStmtExpr();
 
   VarSymbol* tmp = newTemp(type);
+  Expr* rhs = src->copy();
+  if (needsAddrOf)
+    rhs = new CallExpr(PRIM_ADDR_OF, rhs);
+  if (needsDeref)
+    rhs = new CallExpr(PRIM_DEREF, rhs);
+
   DEBUG_PRINTF("Created wide temp %d\n", tmp->id);
   stmt->insertBefore(new DefExpr(tmp));
-  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, src->copy()));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
   src->replace(new SymExpr(tmp));
 }
-
 
 static void makeMatch(Symbol* dst, SymExpr* src) {
   if (hasSomeWideness(dst) &&
@@ -2235,7 +2288,8 @@ static void fixAST() {
         // TODO: this doesn't work if the field is a ref_wide_T and the rhs is a ref_T
         makeMatch(field, toSymExpr(call->get(3)));
       }
-      else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+      else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN) ||
+          call->isPrimitive(PRIM_SET_REFERENCE)) {
         // TODO: Local checks for references from GET_MEMBER_VALUE
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
           if (rhs->isPrimitive(PRIM_ADDR_OF)) {
@@ -2426,12 +2480,51 @@ void handleIsWidePointer() {
   }
 }
 
+static bool
+shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
+  FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
+
+  bool shouldPassRef = (arg->intent & INTENT_FLAG_REF) ||
+                       arg->requiresCPtr();
+
+  bool alreadyRef = arg->typeInfo()->symbol->hasFlag(FLAG_REF) ||
+                    arg->hasFlag(FLAG_REF);
+
+  // Only change argument types for functions with a ref intent
+  // that don't already have an argument being passed by ref
+  // and that aren't extern functions.
+  return (shouldPassRef &&
+          !alreadyRef &&
+          !fn->hasFlag(FLAG_EXTERN) &&
+          !arg->hasFlag(FLAG_NO_CODEGEN));
+}
+
+static void
+changeArgumentTypeToRef(ArgSymbol* arg) {
+
+  arg->addFlag(FLAG_REF);
+}
+
+static void
+adjustArgSymbolTypesForIntent(void)
+{
+  // Adjust ArgSymbols that have ref/const ref concrete
+  // intent so that their type is ref. This allows the
+  // rest of this code to work as expected.
+  forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    if (shouldChangeArgumentTypeToRef(arg))
+      changeArgumentTypeToRef(arg);
+  }
+}
+
 //
 // Widen variables that may be remote.
 //
 void
 insertWideReferences(void) {
   FnSymbol* heapAllocateGlobals = heapAllocateGlobalsHead();
+
+  adjustArgSymbolTypesForIntent();
 
   if (!requireWideReferences()) {
     handleIsWidePointer();

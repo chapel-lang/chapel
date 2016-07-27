@@ -1111,6 +1111,10 @@ resolveFormals(FnSymbol* fn) {
         }
       }
 
+      // MPF - we'll want to change from creating ref types
+      // to setting a ref flag on the Symbol.
+      //resolveArgIntent(formal);
+
       //
       // Fix up value types that need to be ref types.
       //
@@ -3995,7 +3999,7 @@ FnSymbol* tryResolveCall(CallExpr* call) {
 FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   if( call->id == breakOnResolveID ) {
-    printf("breaking on call:\n");
+    printf("breaking on resolve call:\n");
     print_view(call);
     gdbShouldBreakHere();
   }

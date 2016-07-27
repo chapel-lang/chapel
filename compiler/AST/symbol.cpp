@@ -175,6 +175,14 @@ bool Symbol::isRenameable() const {
   return !(hasFlag(FLAG_EXPORT) || hasFlag(FLAG_EXTERN));
 }
 
+bool Symbol::isRef() {
+  return (hasFlag(FLAG_REF) || type->symbol->hasFlag(FLAG_REF));
+}
+
+bool Symbol::isWideRef() {
+  return (hasFlag(FLAG_WIDE_REF) || type->symbol->hasFlag(FLAG_WIDE_REF));
+}
+
 
 // Returns the scope in which the given symbol is declared; NULL otherwise.
 BlockStmt* Symbol::getDeclarationScope() const {
@@ -562,7 +570,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
 }
 #endif
 
-GenRet VarSymbol::codegen() {
+GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
   GenRet ret;
@@ -663,9 +671,29 @@ GenRet VarSymbol::codegen() {
         ret.isLVPtr = GEN_VAL;
         ret.c = cname;
       } else {
-        ret.c = '&';
-        ret.c += cname;
-        ret.isLVPtr = GEN_PTR;
+        if (lhsInSetReference) {
+          ret.c = '&';
+          ret.c += cname;
+          ret.isLVPtr = GEN_PTR;
+          if (hasFlag(FLAG_REF))
+            ret.chplType = getOrMakeRefTypeDuringCodegen(typeInfo());
+          else if (hasFlag(FLAG_WIDE_REF)) {
+            Type* refType = getOrMakeRefTypeDuringCodegen(typeInfo());
+            ret.chplType = getOrMakeWideTypeDuringCodegen(refType);
+          }
+        } else {
+          if (hasFlag(FLAG_REF)) {
+            ret.c = cname;
+            ret.isLVPtr = GEN_PTR;
+          } else if(hasFlag(FLAG_WIDE_REF)) {
+            ret.c = cname;
+            ret.isLVPtr = GEN_WIDE_PTR;
+          } else {
+            ret.c = '&';
+            ret.c += cname;
+            ret.isLVPtr = GEN_PTR;
+          }
+        }
       }
       // Print string contents in a comment if developer mode
       // and savec is set.
@@ -775,6 +803,9 @@ GenRet VarSymbol::codegen() {
   return ret;
 }
 
+GenRet VarSymbol::codegen() {
+  return codegenVarSymbol();
+}
 
 void VarSymbol::codegenDefC(bool global, bool isHeader) {
   GenInfo* info = gGenInfo;
@@ -785,9 +816,23 @@ void VarSymbol::codegenDefC(bool global, bool isHeader) {
     return;
 
   AggregateType* ct = toAggregateType(type);
+
+  if (this->hasFlag(FLAG_REF)) {
+    Type* refType = getOrMakeRefTypeDuringCodegen(type);
+    ct = toAggregateType(refType);
+  }
+  if (this->hasFlag(FLAG_WIDE_REF)) {
+    Type* refType = getOrMakeRefTypeDuringCodegen(type);
+    Type* wideType = getOrMakeWideTypeDuringCodegen(refType);
+    ct = toAggregateType(wideType);
+  }
+
+  Type* useType = type;
+  if (ct) useType = ct;
+
   std::string typestr =  (this->hasFlag(FLAG_SUPER_CLASS) ?
                           std::string(ct->classStructName(true)) :
-                          type->codegen().c);
+                          useType->codegen().c);
 
   //
   // a variable can be codegen'd as static if it is global and neither
@@ -882,6 +927,9 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
 
 void VarSymbol::codegenDef() {
   GenInfo* info = gGenInfo;
+
+  if (id == breakOnCodegenID)
+        gdbShouldBreakHere();
 
   // Local variable symbols should never be
   // generated for extern or void types
@@ -1055,7 +1103,10 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 bool argMustUseCPtr(Type* type) {
-  if (isRecord(type) || isUnion(type))
+  if (isUnion(type))
+    return true;
+  if (isRecord(type) &&
+      !type->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
     return true;
   return false;
 }
@@ -1176,23 +1227,34 @@ const char* intentDescrString(IntentTag intent) {
 }
 
 
+static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
+  Type* useType = arg->type;
+  if (arg->hasFlag(FLAG_REF)) {
+    useType = getOrMakeRefTypeDuringCodegen(useType);
+  }
+  if (arg->hasFlag(FLAG_WIDE_REF)) {
+    Type* refType = getOrMakeRefTypeDuringCodegen(useType);
+    useType = getOrMakeWideTypeDuringCodegen(refType);
+  }
+  return useType;
+}
+
 GenRet ArgSymbol::codegenType() {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
   GenRet ret;
+
+  Type* useType = getArgSymbolCodegenType(this);
+
   if( outfile ) {
-    ret.c = type->codegen().c;
-    if (requiresCPtr())
-      ret.c += "* const";
+    ret.c = useType->codegen().c;
   } else {
 #ifdef HAVE_LLVM
-    llvm::Type *argType = type->codegen().type;
-    if(requiresCPtr()) {
-      argType = argType->getPointerTo();
-    }
+    llvm::Type *argType = useType->codegen().type;
     ret.type = argType;
 #endif
   }
+  ret.chplType = useType;
   return ret;
 }
 
@@ -1202,22 +1264,30 @@ GenRet ArgSymbol::codegen() {
   GenRet ret;
 
   if( outfile ) {
-    ret.c = '&';
-    ret.c += cname;
-    ret.isLVPtr = GEN_PTR;
+    if (hasFlag(FLAG_REF)) {
+      ret.c = cname;
+      ret.isLVPtr = GEN_PTR;
+    } else if(hasFlag(FLAG_WIDE_REF)) {
+      ret.c = cname;
+      ret.isLVPtr = GEN_WIDE_PTR;
+    } else {
+      ret.c = '&';
+      ret.c += cname;
+      ret.isLVPtr = GEN_PTR;
+    }
   } else {
 #ifdef HAVE_LLVM
     ret = info->lvt->getValue(cname);
 #endif
   }
 
-  if( requiresCPtr() ) {
-    // Don't try to use chplType.
-    ret.chplType = NULL;
-    ret = codegenLocalDeref(ret);
-  }
+  //if( requiresCPtr() ) {
+  //  // Don't try to use chplType.
+  //  ret.chplType = NULL;
+  //  ret = codegenLocalDeref(ret);
+  //}
 
-  ret.chplType = typeInfo();
+  ret.chplType = this->type;
 
   return ret;
 }

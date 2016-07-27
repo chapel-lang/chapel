@@ -669,9 +669,16 @@ checkFormalActualTypesMatch()
         }
 
         if (formal->type != actual->typeInfo()) {
-          if ((formal->intent & INTENT_FLAG_REF) != 0 &&
-              formal->type->getRefType() == actual->typeInfo()) {
+          TypeSymbol* actualTS = actual->typeInfo()->symbol;
+          TypeSymbol* formalTS = formal->type->symbol;
+          if ((formal->intent & INTENT_FLAG_REF) &&
+              actualTS->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
+              formal->type == actualTS->type->getValType()) {
             // OK to pass a ref to a ref-intent function
+          } else if((formal->intent & INTENT_FLAG_REF) &&
+                    formalTS->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
+                    formalTS->type->getValType() == actualTS->type) {
+            // OK to pass a value to a ref-intent function
           } else {
             INT_FATAL(call,
                       "actual formal type mismatch for %s: %s != %s",

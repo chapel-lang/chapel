@@ -407,7 +407,8 @@ bool isRelationalOperator(CallExpr* call) {
 //
 int isDefAndOrUse(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
-    if ((call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
+    if ((call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN) ||
+         call->isPrimitive(PRIM_SET_REFERENCE)) &&
         call->get(1) == se) {
       return 1;
     } else if (isOpEqualPrim(call) && call->get(1) == se) {

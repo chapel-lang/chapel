@@ -105,7 +105,8 @@ void deadVariableElimination(FnSymbol* fn) {
         CallExpr* call = toCallExpr(se->parentExpr);
         INT_ASSERT(call &&
                    (call->isPrimitive(PRIM_MOVE) ||
-                    call->isPrimitive(PRIM_ASSIGN)));
+                    call->isPrimitive(PRIM_ASSIGN) ||
+                    call->isPrimitive(PRIM_SET_REFERENCE)));
         Expr* rhs = call->get(2)->remove();
         if (!isSymExpr(rhs))
           call->replace(rhs);
@@ -149,7 +150,9 @@ void deadExpressionElimination(FnSymbol* fn) {
           expr->remove();
       }
 
-      if (expr->isPrimitive(PRIM_MOVE) || expr->isPrimitive(PRIM_ASSIGN))
+      if (expr->isPrimitive(PRIM_MOVE) ||
+          expr->isPrimitive(PRIM_ASSIGN) ||
+          expr->isPrimitive(PRIM_SET_REFERENCE))
         if (SymExpr* lhs = toSymExpr(expr->get(1)))
           if (SymExpr* rhs = toSymExpr(expr->get(2)))
             if (lhs->var == rhs->var)

@@ -590,7 +590,8 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
 GenRet baseASTCodegen(BaseAST* ast)
 {
   GenRet ret = ast->codegen();
-  ret.chplType = ast->typeInfo();
+  if (!ret.chplType)
+    ret.chplType = ast->typeInfo();
   ret.isUnsigned = ! is_signed(ret.chplType);
   return ret;
 }

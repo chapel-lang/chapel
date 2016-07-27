@@ -142,6 +142,39 @@ const char* DefExpr::name() const {
   return retval;
 }
 
+static
+bool isAddrOfWideRefVar(Expr* e)
+{
+  // ADDR_OF of a wide ref variable is a wide ref (not a ref).
+  if (CallExpr* call = toCallExpr(e))
+    if (call->isPrimitive(PRIM_ADDR_OF))
+      if (SymExpr* se = toSymExpr(call->get(1)))
+        if (se->var->hasFlag(FLAG_WIDE_REF))
+          return true;
+
+  return false;
+}
+
+bool Expr::isRef() {
+  if(SymExpr* se = toSymExpr(this))
+    return se->var->isRef();
+
+  if (isAddrOfWideRefVar(this))
+    return false; // wide ref, not ref
+
+  return this->typeInfo()->symbol->hasFlag(FLAG_REF);
+}
+
+bool Expr::isWideRef() {
+  if(SymExpr* se = toSymExpr(this))
+    return se->var->isWideRef();
+
+  if (isAddrOfWideRefVar(this))
+    return true;
+
+  return this->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF);
+}
+
 // Returns true if 'this' properly contains the given expr, false otherwise.
 bool Expr::contains(const Expr* expr) const {
   const Expr* parent = expr->parentExpr;
@@ -375,6 +408,13 @@ void Expr::replace(Expr* new_ast) {
   Expr* myParentExpr = parentExpr;
   remove_help(this, 'p');
   insert_help(new_ast, myParentExpr, myParentSymbol);
+
+  // Update the _this field in a FnSymbol if necessary.
+  if (DefExpr* def = toDefExpr(this))
+    if (ArgSymbol* arg = toArgSymbol(def->sym))
+      if (FnSymbol* fn = toFnSymbol(myParentSymbol))
+        if (fn->_this == arg)
+          fn->_this = toDefExpr(new_ast)->sym;
 }
 
 
@@ -2592,12 +2632,22 @@ GenRet codegenArgForFormal(GenRet arg,
 {
   // NOTE -- VMT call had add & if arg isRecord.
   if( formal ) {
-    bool passReference = false;
+    bool passRef = false;
+    bool passWideRef = false;
 
-    if (!isExtern &&
-        formal->requiresCPtr() &&
-        !formal->type->symbol->hasFlag(FLAG_REF)) {
-      passReference = true;
+    // We need to pass a reference in these cases
+    // Don't pass a reference to extern functions
+    // Do if requiresCPtr or the argument is of reference type
+    if (isExtern) {
+      // Don't pass by reference to extern functions
+    } else if (formal->requiresCPtr() ||
+               formal->isRef() || formal->isWideRef()) {
+      // Pass by reference in this case
+      passRef = true;
+      // If it's wide, make a note of it
+      if (formal->isWideRef()) {
+        passWideRef = true;
+      }
     }
 
     // Make sure that the formal type + intent
@@ -2609,16 +2659,32 @@ GenRet codegenArgForFormal(GenRet arg,
     //if ((formal->intent & INTENT_FLAG_REF) != 0 &&
      //   arg.chplType && arg.chplType->symbol->hasFlag(FLAG_REF))
 
-    // If the argument type is already a reference, pass that
-    // reference as a value.
-    if (arg.chplType && arg.chplType->symbol->hasFlag(FLAG_REF))
-      passReference = false;
+    // If we need to pass a reference but we already have a reference,
+    // pass the pointer by value.
+    if (arg.chplType && passRef) {
+      if (passWideRef && arg.chplType->symbol->hasFlag(FLAG_WIDE_REF)) {
+        passWideRef = false;
+        passRef = false;
+      }
 
-    if (passReference) {
+      if (passRef && arg.chplType->symbol->hasFlag(FLAG_REF)) {
+        passRef = false;
+      }
+    }
+
+    if (passWideRef) {
       if( arg.isLVPtr == GEN_VAL ) {
         arg = codegenValuePtr(arg);
-      }
-      // Now arg.isLVPtr is 1
+        arg = codegenWideHere(codegenAddrOf(arg));
+      } else if( arg.isLVPtr == GEN_PTR ) {
+        arg = codegenWideHere(codegenAddrOf(arg));
+      } // otherwise, arg.isLVPtr == GEN_WIDE_PTR, no action necessary
+    } else if(passRef) {
+      if( arg.isLVPtr == GEN_VAL ) {
+        arg = codegenValuePtr(arg);
+      } else if( arg.isLVPtr == GEN_WIDE_PTR ) {
+        arg = codegenValuePtr(codegenRaddr(arg));
+      } // otherwise, arg.isLVPtr == GEN_PTR, no action necessary
     } else {
       if( arg.isLVPtr != GEN_VAL ) {
         arg = codegenValue(arg);
@@ -3319,9 +3385,6 @@ void codegenAssign(GenRet to_ptr, GenRet from)
   // To must be a pointer.
   INT_ASSERT(to_ptr.isLVPtr);
 
-  // Both can't be wide
-  INT_ASSERT(!(to_ptr.isLVPtr == GEN_WIDE_PTR && from.isLVPtr == GEN_WIDE_PTR));
-
   Type* type = from.chplType;
   if( ! type ) type = to_ptr.chplType;
   INT_ASSERT(type);
@@ -3394,9 +3457,19 @@ void codegenAssign(GenRet to_ptr, GenRet from)
       }
     }
   } else {
-    // both should not be wide
+
     if (from.isLVPtr == GEN_WIDE_PTR && to_ptr.isLVPtr == GEN_WIDE_PTR){
-      INT_FATAL("Cannot assign two wide pointers");
+      // Assign two wide pointers through a temporary.
+
+      // Create a temporary, assign tmp = from,
+      // then assign to = tmp.
+      INT_ASSERT(from.chplType);
+
+      GenRet tmp = createTempVar(from.chplType);
+      codegenAssign(tmp, from);
+      // Now assign to_ptr = tmp
+      codegenAssign(to_ptr, tmp);
+      return;
     }
 
     // One of the types is a wide pointer type, so we have to
@@ -4366,7 +4439,13 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_ADDR_OF: {
-    ret = codegenAddrOf(get(1));
+    // Special handling for reference variables
+    // These variables have value type so PRIM_ADDR_OF
+    // should just return the reference.
+    //if (get(1)->isRef() && !get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+    //  ret = codegenValue(get(1));
+    //} else
+      ret = codegenAddrOf(get(1));
     break;
   }
 
@@ -4657,6 +4736,20 @@ GenRet CallExpr::codegenPrimitive() {
   case PRIM_XOR:
     ret = codegenXor(get(1), get(2));
     break;
+
+  case PRIM_SET_REFERENCE: {
+    SymExpr*    lhsSe      = toSymExpr(get(1));
+    VarSymbol*  var        = toVarSymbol(lhsSe->var);
+    Expr*       rhs        = get(2);
+
+    INT_ASSERT(var->hasFlag(FLAG_REF) || var->hasFlag(FLAG_WIDE_REF));
+
+    GenRet lhs = var->codegenVarSymbol(true);
+
+    codegenAssign(lhs, rhs);
+
+    break;
+  }
 
   case PRIM_ASSIGN: {
     Expr*       lhs        = get(1);
@@ -5840,19 +5933,22 @@ GenRet CallExpr::codegenPrimMove() {
              get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == false) {
     codegenAssign(get(1), codegenAddrOf(codegenWideHere(get(2))));
 
-  } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)   == true  &&
-             get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)        == true)  {
+  } else if (get(1)->isWideRef() == true &&
+             get(2)->isRef() == true) {
     codegenAssign(get(1), codegenAddrOf(codegenWideHere(get(2))));
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)   == true  &&
              get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)   == false &&
              get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)        == false) {
+//  } else if (get(1)->isWideRef()   == true  &&
+//             get(2)->isWideRef()   == false &&
+//             get(2)->isRef()       == false) {
     GenRet to_ptr = codegenDeref(get(1));
 
     codegenAssign(to_ptr, get(2));
 
-  } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)        == true  &&
-             get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)   == true)  {
+  } else if (get(1)->isRef()       == true  &&
+             get(2)->isWideRef()   == true)  {
     if (get(1)->getValType() != get(2)->getValType()) {
       GenRet narrowRef   = codegenRaddr(get(2));
       GenRet wideThing   = codegenDeref(narrowRef);
@@ -5860,18 +5956,20 @@ GenRet CallExpr::codegenPrimMove() {
 
       codegenAssign(get(1), codegenAddrOf(narrowThing));
     } else {
-      codegenAssign(get(1), codegenRaddr(get(2)));
+      GenRet genWide = get(2);
+      codegenAssign(get(1), codegenRaddr(genWide));
     }
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == false &&
-             get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)        == false &&
+             get(1)->isRef()                                      == false &&
              get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true)  {
     codegenAssign(get(1), codegenRaddr(get(2)));
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)        == true  &&
              get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)        == false) {
+//  } else if (get(1)->isRef()        == true  &&
+//             get(2)->isRef()        == false) {
     codegenAssign(codegenDeref(get(1)), get(2));
-
   } else {
     codegenAssign(get(1), get(2));
   }
@@ -6288,7 +6386,7 @@ GenRet CallExpr::codegenBasicPrimitiveExpr() const {
       gen = codegenRaddr(gen);
 
     // Dereference reference or now-local wide reference
-    if (type->hasFlag(FLAG_REF)        || type->hasFlag(FLAG_WIDE_REF))
+    if (actual->isRef() || actual->isWideRef())
       gen = codegenDeref(gen);
 
     gen = codegenValue(gen);
@@ -6308,9 +6406,9 @@ bool CallExpr::isRefExternStarTuple(Symbol* formal, Expr* actual) const {
 
   bool  retval       = false;
 
-  if (formalSym->hasFlag(FLAG_REF)        == true &&
+  if (formal->isRef()                     == true &&
       formalVal->hasFlag(FLAG_STAR_TUPLE) == true &&
-      actualSym->hasFlag(FLAG_REF)        == true)
+      actualSym->isRef()                  == true)
     retval = true;
 
   return retval;

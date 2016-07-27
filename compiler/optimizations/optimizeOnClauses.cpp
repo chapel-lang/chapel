@@ -104,6 +104,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GET_IMAG:
 
   case PRIM_ADDR_OF:
+  case PRIM_SET_REFERENCE:
   case PRIM_LOCAL_CHECK:
 
   case PRIM_INIT_FIELDS:
