@@ -7675,6 +7675,11 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               // handle adding casts for a regular PRIM_MOVE
 
               if (typesDiffer) {
+
+                // Remove the right-hand-side, which is call->get(2)
+                // The code below assumes it is the final argument
+                rhs->remove();
+
                 // Add a cast if the types don't match
                 Symbol* tmp = NULL;
                 if (SymExpr* se = toSymExpr(rhs)) {
@@ -7695,10 +7700,10 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   call->insertBefore(unref);
                   resolveExpr(unref);
                   unref->remove();
-                  rhs->replace(unref);
+                  call->insertAtTail(unref);
                 } else {
                   CallExpr* cast = new CallExpr("_cast", lhsType->symbol, tmp);
-                  rhs->replace(cast);
+                  call->insertAtTail(cast);
                   casts.add(cast);
                 }
               }
