@@ -132,7 +132,23 @@ void resolveArgIntent(ArgSymbol* arg) {
       return; // Leave these alone during resolution.
   }
 
-  arg->intent = concreteIntentForArg(arg);
+  IntentTag intent = concreteIntentForArg(arg);
+
+  if (resolved) {
+    // After resolution, change out/inout/in to ref
+    // to be more accurate to the generated code.
+
+    if (intent == INTENT_OUT ||
+        intent == INTENT_INOUT) {
+      // Resolution already handled out/inout copying
+      intent = INTENT_REF;
+    } else if (intent == INTENT_IN) {
+      // Resolution already handled in copying
+      intent = constIntentForType(arg->type);
+    }
+  }
+
+  arg->intent = intent;
 }
 
 void resolveIntents() {

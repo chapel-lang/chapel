@@ -1086,7 +1086,8 @@ void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 bool argMustUseCPtr(Type* type) {
   if (isUnion(type))
     return true;
-  if (isRecord(type) && !type->symbol->hasFlag(FLAG_WIDE_REF))
+  if (isRecord(type) &&
+      !type->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
     return true;
   return false;
 }
@@ -1207,23 +1208,34 @@ const char* intentDescrString(IntentTag intent) {
 }
 
 
+static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
+  Type* useType = arg->type;
+  if (arg->hasFlag(FLAG_REF)) {
+    useType = getOrMakeRefTypeDuringCodegen(useType);
+  }
+  if (arg->hasFlag(FLAG_WIDE_REF)) {
+    Type* refType = getOrMakeRefTypeDuringCodegen(useType);
+    useType = getOrMakeWideTypeDuringCodegen(refType);
+  }
+  return useType;
+}
+
 GenRet ArgSymbol::codegenType() {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
   GenRet ret;
+
+  Type* useType = getArgSymbolCodegenType(this);
+
   if( outfile ) {
-    ret.c = type->codegen().c;
-    if (requiresCPtr())
-      ret.c += "* const";
+    ret.c = useType->codegen().c;
   } else {
 #ifdef HAVE_LLVM
-    llvm::Type *argType = type->codegen().type;
-    if(requiresCPtr()) {
-      argType = argType->getPointerTo();
-    }
+    llvm::Type *argType = useType->codegen().type;
     ret.type = argType;
 #endif
   }
+  ret.chplType = useType;
   return ret;
 }
 
@@ -1233,22 +1245,30 @@ GenRet ArgSymbol::codegen() {
   GenRet ret;
 
   if( outfile ) {
-    ret.c = '&';
-    ret.c += cname;
-    ret.isLVPtr = GEN_PTR;
+    if (hasFlag(FLAG_REF)) {
+      ret.c = cname;
+      ret.isLVPtr = GEN_PTR;
+    } else if(hasFlag(FLAG_WIDE_REF)) {
+      ret.c = cname;
+      ret.isLVPtr = GEN_WIDE_PTR;
+    } else {
+      ret.c = '&';
+      ret.c += cname;
+      ret.isLVPtr = GEN_PTR;
+    }
   } else {
 #ifdef HAVE_LLVM
     ret = info->lvt->getValue(cname);
 #endif
   }
 
-  if( requiresCPtr() ) {
-    // Don't try to use chplType.
-    ret.chplType = NULL;
-    ret = codegenLocalDeref(ret);
-  }
+  //if( requiresCPtr() ) {
+  //  // Don't try to use chplType.
+  //  ret.chplType = NULL;
+  //  ret = codegenLocalDeref(ret);
+  //}
 
-  ret.chplType = typeInfo();
+  ret.chplType = this->type;
 
   return ret;
 }

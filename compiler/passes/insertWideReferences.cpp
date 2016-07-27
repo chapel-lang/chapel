@@ -2507,45 +2507,8 @@ shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
 
 static void
 changeArgumentTypeToRef(ArgSymbol* arg) {
-  // TODO: this code is a temporary workaround
-  // To be cleaner, we could just mark argument
-  // symbols with FLAG_REF and update the rest of
-  // this pass and code generation to handle that.
 
-  FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
-
-  Type* refType = arg->type->getRefType();
-
-  SET_LINENO(arg);
-
-  // Make a new argument with ref type
-  ArgSymbol* newArg = new ArgSymbol(arg->intent, arg->name, refType);
-  DefExpr* newArgDef = new DefExpr(newArg);
-  newArg->copyFlags(arg);
-
-  // Replace the old argument with the new one
-  arg->defPoint->replace(newArgDef);
-
-  // Add a PRIM_SET_REFERENCE
-  VarSymbol* tmp = newTemp(astr("v_", arg->name), arg->type);
-  tmp->addFlag(FLAG_REF);
-
-  DefExpr* def = new DefExpr(tmp);
-  CallExpr* move = new CallExpr(PRIM_SET_REFERENCE,
-                                tmp,
-                                new SymExpr(newArg));
-  fn->body->insertAtHead(move);
-  fn->body->insertAtHead(def);
-
-  // Replace uses of the original argument with uses of the PRIM_DEREF
-  std::vector<SymExpr*> symExprs;
-  collectSymExprs(fn->body, symExprs);
-
-  for(size_t i = 0; i < symExprs.size(); i++ ) {
-    SymExpr* se = symExprs[i];
-    if (se->var == arg)
-      se->var = tmp;
-  }
+  arg->addFlag(FLAG_REF);
 }
 
 static void

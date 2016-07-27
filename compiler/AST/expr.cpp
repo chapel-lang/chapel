@@ -408,6 +408,13 @@ void Expr::replace(Expr* new_ast) {
   Expr* myParentExpr = parentExpr;
   remove_help(this, 'p');
   insert_help(new_ast, myParentExpr, myParentSymbol);
+
+  // Update the _this field in a FnSymbol if necessary.
+  if (DefExpr* def = toDefExpr(this))
+    if (ArgSymbol* arg = toArgSymbol(def->sym))
+      if (FnSymbol* fn = toFnSymbol(myParentSymbol))
+        if (fn->_this == arg)
+          fn->_this = toDefExpr(new_ast)->sym;
 }
 
 
@@ -2638,7 +2645,7 @@ GenRet codegenArgForFormal(GenRet arg,
       // Pass by reference in this case
       passRef = true;
       // If it's wide, make a note of it
-      if (formal->type->symbol->hasFlag(FLAG_WIDE_REF)) {
+      if (formal->isWideRef()) {
         passWideRef = true;
       }
     }
@@ -2658,13 +2665,10 @@ GenRet codegenArgForFormal(GenRet arg,
       if (passWideRef && arg.chplType->symbol->hasFlag(FLAG_WIDE_REF)) {
         passWideRef = false;
         passRef = false;
-        // argument and formal types should match.
-        INT_ASSERT(arg.chplType == formal->type);
       }
+
       if (passRef && arg.chplType->symbol->hasFlag(FLAG_REF)) {
         passRef = false;
-        // argument and formal types should match.
-        INT_ASSERT(arg.chplType == formal->type);
       }
     }
 
@@ -5945,7 +5949,8 @@ GenRet CallExpr::codegenPrimMove() {
 
       codegenAssign(get(1), codegenAddrOf(narrowThing));
     } else {
-      codegenAssign(get(1), codegenRaddr(get(2)));
+      GenRet genWide = get(2);
+      codegenAssign(get(1), codegenRaddr(genWide));
     }
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == false &&
