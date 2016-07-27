@@ -361,7 +361,7 @@ module DefaultSparse {
 
       if onlyDim<0 || onlyDim>rank then
         halt("Invalid dsiPartialThese dimension in DefaultSparse: ", onlyDim);
-
+      const otherIdxTup = if isTuple(otherIdx) then otherIdx else (otherIdx, );
       /*if rank>2 then*/
         /*halt("dsiPartialThese is not supperted in more then 2 dimensional domains");*/
 
@@ -371,11 +371,11 @@ module DefaultSparse {
             Partial iteration over dimension other than last is expensive");
 
         for i in nnzDom.low..#nnz do
-          if indices[i].strip(onlyDim) == otherIdx then 
+          if indices[i].strip(onlyDim) == otherIdxTup then 
             yield indices[i][onlyDim];
       }
       else { //here we are sure that we are looking for the last index
-        for i in __private_findRowRange(otherIdx) do
+        for i in __private_findRowRange(otherIdxTup) do
           yield indices[i][onlyDim];
       }
     }
@@ -389,6 +389,7 @@ module DefaultSparse {
       if onlyDim<0 || onlyDim>rank then
         halt("Invalid dsiPartialThese dimension in DefaultSparse: ", onlyDim);
 
+      const otherIdxTup = if isTuple(otherIdx) then otherIdx else (otherIdx, );
       /*if rank>2 then*/
         /*halt("dsiPartialThese is not supperted in more then 2 dimensional domains");*/
 
@@ -400,7 +401,7 @@ module DefaultSparse {
         tasksPerLocale;
 
       var rowRange: range;
-      if onlyDim==rank then rowRange = __private_findRowRange(otherIdx);
+      if onlyDim==rank then rowRange = __private_findRowRange(otherIdxTup);
 
       const l = if onlyDim!=rank then nnzDom.low else rowRange.low;
       const h = if onlyDim!=rank then nnzDom.low+nnz else rowRange.high;
@@ -417,13 +418,15 @@ module DefaultSparse {
         minIndicesPerTask = dataParMinGranularity,
         param tag: iterKind, followThis) where tag==iterKind.follower {
 
+      const otherIdxTup = if isTuple(otherIdx) then otherIdx else (otherIdx, );
+
       const l = if onlyDim!=rank then nnzDom.low else
-        __private_findRowRange(otherIdx).low;
+        __private_findRowRange(otherIdxTup).low;
       const followRange = followThis[1].translate(l);
 
       if onlyDim!=rank then
         for i in followRange do
-        if indices[i].strip(onlyDim) == otherIdx then
+        if indices[i].strip(onlyDim) == otherIdxTup then
             yield indices[i][onlyDim];
       else 
         for i in followRange do
@@ -442,8 +445,10 @@ module DefaultSparse {
       const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
         tasksPerLocale;
 
+      const otherIdxTup = if isTuple(otherIdx) then otherIdx else (otherIdx, );
+
       var rowRange: range;
-      if onlyDim==rank then rowRange = __private_findRowRange(otherIdx);
+      if onlyDim==rank then rowRange = __private_findRowRange(otherIdxTup);
 
       const l = if onlyDim!=rank then indices.domain.low else rowRange.low;
       const h = if onlyDim!=rank then nnz else rowRange.high;
@@ -456,7 +461,7 @@ module DefaultSparse {
         coforall t in 0..#numTasks {
           const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);
           for i in myChunk[1]..min(nnz,myChunk[2]) do
-            if indices[i].strip(onlyDim) == otherIdx then
+            if indices[i].strip(onlyDim) == otherIdxTup then
               yield indices[i][onlyDim];
         }
       }

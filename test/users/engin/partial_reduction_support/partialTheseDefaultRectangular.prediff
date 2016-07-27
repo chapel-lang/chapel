@@ -1,0 +1,4 @@
+#! /bin/sh
+output=$2
+cat $output | sort -n > $output.tmp
+mv $output.tmp $output

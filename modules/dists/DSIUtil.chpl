@@ -40,8 +40,12 @@ proc createTuple(param rank, type t, val) {
   return tup;
 }
 
-proc dsiMergeIdx(partialIdx: _tuple, remDim, remIdx: integral) {
-  var ret = createTuple(partialIdx.size+1, remIdx.type, 0:remIdx.type);
+proc dsiMergeIdx(partialIdx, remDim, remIdx: integral) {
+
+  const partialIdxTup = if isTuple(partialIdx) then partialIdx 
+    else (partialIdx,);
+
+  var ret = createTuple(partialIdxTup.size+1, remIdx.type, 0:remIdx.type);
 
   var partialIndexOffset = 0;
   for i in 1..ret.size {
@@ -50,7 +54,7 @@ proc dsiMergeIdx(partialIdx: _tuple, remDim, remIdx: integral) {
       partialIndexOffset = 1;
     }
     else {
-      ret[i] = partialIdx[i-partialIndexOffset];
+      ret[i] = partialIdxTup[i-partialIndexOffset];
     }
   }
 

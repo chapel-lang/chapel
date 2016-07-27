@@ -432,12 +432,140 @@ class CSRDom: BaseSparseDom {
     rowStart = 1;
   }
 
-  iter dimIter(param d, ind) {
-    if (d != 2) {
-      compilerError("dimIter(1, ...) not supported on CSR domains");
+  proc dsiPartialDomain(exceptDim) where rank > 1 {
+    var ret = createTuple(rank-1, range, 0..1);
+    for i in 1..exceptDim-1 do
+      ret[i] = parentDom.dim(i);
+
+    for i in exceptDim+1..rank do
+      ret[i-1] = parentDom.dim(i);
+
+    return {(...ret)};
+  }
+
+  iter dsiPartialThese(onlyDim: int, otherIdx,
+      tasksPerLocale = dataParTasksPerLocale,
+      ignoreRunning = dataParIgnoreRunningTasks,
+      minIndicesPerTask = dataParMinGranularity){
+
+    if onlyDim<1 || onlyDim>2 then 
+      halt("Invalid dimension for CSR.dsiPartialThese(). Only 1 and 2 \
+          allowed.");
+
+    if onlyDim==1 {
+      compilerWarning("PERFORMANCE WARNING: CSR.dsiPartialThese(1, otherIdx) is expensive");
+      for i in nnzDom.low..#nnz {
+        if colIdx[i] == otherIdx {
+          const (found, loc) = BinarySearch(rowStart, i);
+          yield if found then loc else loc-1;
+        }
+      }
     }
-    for i in rowStart[ind]..rowStop[ind] do
-      yield colIdx[i];
+    else {
+      for i in rowStart[otherIdx]..rowStop[otherIdx] do
+        yield colIdx[i];
+    }
+  }
+
+  iter dsiPartialThese(onlyDim: int, otherIdx,
+      tasksPerLocale = dataParTasksPerLocale,
+      ignoreRunning = dataParIgnoreRunningTasks,
+      minIndicesPerTask = dataParMinGranularity,
+      param tag: iterKind) where tag==iterKind.leader {
+
+    if onlyDim<1 || onlyDim>2 then 
+      halt("Invalid dimension for CSR.dsiPartialThese(). Only 1 and 2 \
+          allowed.");
+
+    if onlyDim==1 then
+      compilerWarning("PERFORMANCE WARNING: CSR.dsiPartialThese(1, otherIdx) is expensive");
+
+    const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
+      tasksPerLocale;
+
+    const l = if onlyDim==1 then nnzDom.low else rowStart[otherIdx];
+    const h = if onlyDim==1 then nnzDom.low+nnz-1 else rowStop[otherIdx];
+    const numElems = h-l+1;
+
+    coforall t in 0..#numTasks {
+      const myChunk = _computeBlock(numElems, numTasks, t, h-l, 0, 0);
+      yield(myChunk[1]..myChunk[2], );
+    }
+  }
+
+  iter dsiPartialThese(onlyDim: int, otherIdx,
+      tasksPerLocale = dataParTasksPerLocale,
+      ignoreRunning = dataParIgnoreRunningTasks,
+      minIndicesPerTask = dataParMinGranularity,
+      param tag: iterKind, followThis) where tag==iterKind.follower {
+  
+    const l = if onlyDim==1 then nnzDom.low else rowStart[otherIdx];
+    const followRange = followThis[1].translate(l);
+
+    if onlyDim==1 {
+      for i in followRange {
+        if colIdx[i] == otherIdx {
+          const (found, loc) = BinarySearch(rowStart, i);
+          yield if found then loc else loc-1;
+        }
+      }
+    }
+    else {
+      for i in followRange {
+        yield colIdx[i];
+      }
+    }
+  }
+
+  iter dsiPartialThese(onlyDim: int, otherIdx,
+      tasksPerLocale = dataParTasksPerLocale,
+      ignoreRunning = dataParIgnoreRunningTasks,
+      minIndicesPerTask = dataParMinGranularity,
+      param tag: iterKind)  where tag==iterKind.standalone {
+
+    if onlyDim<1 || onlyDim>2 then 
+      halt("Invalid dimension for CSR.dsiPartialThese(). Only 1 and 2 \
+          allowed.");
+
+    const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
+      tasksPerLocale;
+
+    if onlyDim==1 {
+      compilerWarning("PERFORMANCE WARNING: CSR.dsiPartialThese(1, otherIdx) is expensive");
+      const l = nnzDom.low, h = nnzDom.high;
+      const numElems = colIdx.size;
+
+      coforall t in 0..#numTasks {
+        const myChunk = _computeBlock(numElems, numTasks, t, h-l, 0, 0);
+        for i in myChunk {
+          if colIdx[i] == otherIdx {
+            const (found, loc) = BinarySearch(rowStart, i);
+            yield if found then loc else loc-1;
+          }
+        }
+      }
+    }
+    else {
+      const l = rowStart[otherIdx], h = rowStop[otherIdx];
+      const numElems = h-l+1;
+
+      const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
+        tasksPerLocale;
+
+      const  numChunks = if __primitive("task_get_serial") then
+        1 else
+        _computeNumChunks(numTasks, ignoreRunning, minIndicesPerTask, numElems);
+
+      if numChunks == 1 {
+        for i in l..h do yield i;
+      }
+      else {
+        coforall t in 0..#numTasks {
+          const myChunk = _computeChunk(numElems, numTasks, t, h, l, l);
+          for i in myChunk do yield i;
+        }
+      }
+    }
   }
 }
 
