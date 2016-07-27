@@ -3385,9 +3385,6 @@ void codegenAssign(GenRet to_ptr, GenRet from)
   // To must be a pointer.
   INT_ASSERT(to_ptr.isLVPtr);
 
-  // Both can't be wide
-  INT_ASSERT(!(to_ptr.isLVPtr == GEN_WIDE_PTR && from.isLVPtr == GEN_WIDE_PTR));
-
   Type* type = from.chplType;
   if( ! type ) type = to_ptr.chplType;
   INT_ASSERT(type);
@@ -3460,9 +3457,19 @@ void codegenAssign(GenRet to_ptr, GenRet from)
       }
     }
   } else {
-    // both should not be wide
+
     if (from.isLVPtr == GEN_WIDE_PTR && to_ptr.isLVPtr == GEN_WIDE_PTR){
-      INT_FATAL("Cannot assign two wide pointers");
+      // Assign two wide pointers through a temporary.
+
+      // Create a temporary, assign tmp = from,
+      // then assign to = tmp.
+      INT_ASSERT(from.chplType);
+
+      GenRet tmp = createTempVar(from.chplType);
+      codegenAssign(tmp, from);
+      // Now assign to_ptr = tmp
+      codegenAssign(to_ptr, tmp);
+      return;
     }
 
     // One of the types is a wide pointer type, so we have to

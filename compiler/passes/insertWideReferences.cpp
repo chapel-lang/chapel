@@ -326,6 +326,11 @@ static bool hasSomeWideness(BaseAST* bs) {
   return isFullyWide(bs) || valIsWideClass(bs);
 }
 
+static bool isRefType(BaseAST* bs)
+{
+  return bs->typeInfo()->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF);
+}
+
 static bool isRef(BaseAST* bs) {
   if( Symbol* sym = toSymbol(bs) ) {
     return (sym->isRef() || sym->isWideRef());
@@ -1232,9 +1237,6 @@ static void addKnownWides() {
 //
 static void propagateVar(Symbol* sym) {
 
-  if( sym->id == 876309 )
-    gdbShouldBreakHere();
-
   INT_ASSERT(hasSomeWideness(sym));
   debug(sym, "Propagating var\n");
 
@@ -1479,7 +1481,7 @@ static void propagateVar(Symbol* sym) {
         } else if (isRef(sym)) {
           // Exposed by: --baseline --inline
           if (SymExpr* rhs = toSymExpr(call->get(2))) {
-            if (isRef(rhs)) {
+            if (isRefType(rhs)) {
               widenRef(def, rhs->var);
             }
           }
@@ -1860,6 +1862,7 @@ static void localizeCall(CallExpr* call) {
       break;
     case PRIM_MOVE:
     case PRIM_ASSIGN: // Not sure about this one.
+    case PRIM_SET_REFERENCE:
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
         if (rhs->isPrimitive(PRIM_DEREF)) {
           if (isFullyWide(rhs->get(1))) {
@@ -1921,7 +1924,7 @@ static void localizeCall(CallExpr* call) {
         break;
       }
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
-          !isRef(call->get(2))) {
+          !isRefType(call->get(2))) {
         insertLocalTemp(call->get(1));
       }
       break;
@@ -2256,16 +2259,6 @@ static void fixAST() {
           }
         }
       }
-      /*else  if (call->isPrimitive(PRIM_SET_REFERENCE)) {
-        if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-          // Adjust the LHS to be a wide reference instead
-          // of a local reference.
-          if (Symbol* se = toSymExpr(call->get(1))->var) {
-            se->removeFlag(FLAG_REF);
-            se->addFlag(FLAG_WIDE_REF);
-          }
-        }
-      }*/
       else if (call->isPrimitive(PRIM_ARRAY_SET_FIRST)) {
         Type* eltype = getElementType(call->get(1));
         if (eltype->symbol->hasFlag(FLAG_WIDE_CLASS)) insertWideTemp(eltype, toSymExpr(call->get(3)));
@@ -2295,7 +2288,8 @@ static void fixAST() {
         // TODO: this doesn't work if the field is a ref_wide_T and the rhs is a ref_T
         makeMatch(field, toSymExpr(call->get(3)));
       }
-      else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+      else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN) ||
+          call->isPrimitive(PRIM_SET_REFERENCE)) {
         // TODO: Local checks for references from GET_MEMBER_VALUE
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
           if (rhs->isPrimitive(PRIM_ADDR_OF)) {
