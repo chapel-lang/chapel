@@ -334,34 +334,30 @@ module DefaultSparse {
       nnz = 0;
     }
 
+    /*proc __private_findRowRange(r) {*/
+      /*return __private_findRowRangeHelper(r, parentDom.dim(rank).low-1,*/
+          /*parentDom.dim(rank).high+1, dim=1);*/
+
+    /*}*/
+
     proc __private_findRowRange(r) {
-      return __private_findRowRangeHelper(r, parentDom.dim(rank).low-1,
-          parentDom.dim(rank).high+1);
 
-      proc __private_findRowRangeHelper(r, startMarker, endMarker, dim=1){
+      //do async binary search in both directions
+      var start = parentDom.dim(rank).low-1;
+      var end = parentDom.dim(rank).low-1;
 
-        if dim == this.rank {
-          return startMarker..endMarker;
-        }
-
-        //do async binary search in both directions
-        var start = parentDom.dim(rank).low-1;
-        var end = parentDom.dim(rank).low-1;
-
-        /*var startMarker = parentDom.dim(rank).low-1;*/
-        /*var endMarker = parentDom.dim(rank).high+1;*/
-        var done: atomic bool;
-        begin with (ref end) {
-          var found: bool;
-          (found, end) = BinarySearch(indices, r, hi=endMarker);
-          done.write(true);
-        }
+      var startDummy = parentDom.dim(rank).low-1;
+      var endDummy = parentDom.dim(rank).high+1;
+      var done: atomic bool;
+      begin with (ref end) {
         var found: bool;
-        (found, start) = BinarySearch(indices, r, lo=startMarker);
-        done.waitFor(true);
-        return __private_findRowRange(r, start, end, dim+1);
-        /*return start..min(nnz,end-1);*/
+        (found, end) = BinarySearch(indices, ((...r),endDummy));
+        done.write(true);
       }
+      var found: bool;
+      (found, start) = BinarySearch(indices, ((...r),startDummy));
+      done.waitFor(true);
+      return start..min(nnz,end-1);
     }
 
     iter dsiPartialThese(onlyDim: int, otherIdx,
@@ -377,7 +373,7 @@ module DefaultSparse {
 
 
       if onlyDim != this.rank {
-        compilerWarning("PERFORMANCE WARNING:  \
+        compilerWarning("PERFORMANCE WARNING:\
             Partial iteration over dimension other than last is expensive");
 
         for i in nnzDom.low..#nnz do
@@ -386,100 +382,100 @@ module DefaultSparse {
       }
       else { //here we are sure that we are looking for the last index
         for i in __private_findRowRange(otherIdx) do
-          yield indices[i][2];
+          yield indices[i][onlyDim];
       }
     }
 
 
-    iter dsiPartialThese(onlyDim: int, otherIdx, 
-        tasksPerLocale = dataParTasksPerLocale,
-        ignoreRunning = dataParIgnoreRunningTasks,
-        minIndicesPerTask = dataParMinGranularity,
-        param tag: iterKind) where tag==iterKind.leader {
+    /*iter dsiPartialThese(onlyDim: int, otherIdx, */
+        /*tasksPerLocale = dataParTasksPerLocale,*/
+        /*ignoreRunning = dataParIgnoreRunningTasks,*/
+        /*minIndicesPerTask = dataParMinGranularity,*/
+        /*param tag: iterKind) where tag==iterKind.leader {*/
 
-      if onlyDim<0 || onlyDim>rank then
-        halt("Invalid dsiPartialThese dimension in DefaultSparse: ", onlyDim);
+      /*if onlyDim<0 || onlyDim>rank then*/
+        /*halt("Invalid dsiPartialThese dimension in DefaultSparse: ", onlyDim);*/
 
-      if rank>2 then
-        halt("dsiPartialThese is not supperted in more then 2 dimensional domains");
+      /*if rank>2 then*/
+        /*halt("dsiPartialThese is not supperted in more then 2 dimensional domains");*/
 
-      if onlyDim==1 then
-        compilerWarning("PERFORMANCE WARNING: CSR.dsiPartialThese(1, otherIdx) \
-            is expensive");
+      /*if onlyDim==1 then*/
+        /*compilerWarning("PERFORMANCE WARNING: CSR.dsiPartialThese(1, otherIdx) \*/
+            /*is expensive");*/
 
-      const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
-        tasksPerLocale;
+      /*const numTasks = if tasksPerLocale==0 then here.maxTaskPar else*/
+        /*tasksPerLocale;*/
 
-      var rowRange: range;
-      if onlyDim==2 then rowRange = __private_findRowRange(otherIdx);
+      /*var rowRange: range;*/
+      /*if onlyDim==2 then rowRange = __private_findRowRange(otherIdx);*/
 
-      const l = if onlyDim==1 then nnzDom.low else rowRange.low;
-      const h = if onlyDim==1 then nnzDom.low+nnz else rowRange.high;
-      const numElems = h-l-1;
-      coforall t in 0..#numTasks {
-        const myChunk = _computeBlock(numElems, numTasks, t, h-l, 0, 0);
-        yield (myChunk[1]..min(nnz, myChunk[2]),);
-      }
-    }
+      /*const l = if onlyDim==1 then nnzDom.low else rowRange.low;*/
+      /*const h = if onlyDim==1 then nnzDom.low+nnz else rowRange.high;*/
+      /*const numElems = h-l-1;*/
+      /*coforall t in 0..#numTasks {*/
+        /*const myChunk = _computeBlock(numElems, numTasks, t, h-l, 0, 0);*/
+        /*yield (myChunk[1]..min(nnz, myChunk[2]),);*/
+      /*}*/
+    /*}*/
 
-    iter dsiPartialThese(onlyDim: int, otherIdx, 
-        tasksPerLocale = dataParTasksPerLocale,
-        ignoreRunning = dataParIgnoreRunningTasks,
-        minIndicesPerTask = dataParMinGranularity,
-        param tag: iterKind, followThis) where tag==iterKind.follower {
+    /*iter dsiPartialThese(onlyDim: int, otherIdx, */
+        /*tasksPerLocale = dataParTasksPerLocale,*/
+        /*ignoreRunning = dataParIgnoreRunningTasks,*/
+        /*minIndicesPerTask = dataParMinGranularity,*/
+        /*param tag: iterKind, followThis) where tag==iterKind.follower {*/
 
-      const l = if onlyDim==1 then nnzDom.low else
-        __private_findRowRange(otherIdx).low;
-      const followRange = followThis[1].translate(l);
+      /*const l = if onlyDim==1 then nnzDom.low else*/
+        /*__private_findRowRange(otherIdx).low;*/
+      /*const followRange = followThis[1].translate(l);*/
 
-      if onlyDim==1 then
-        for i in followRange do
-          if indices[i][2] == otherIdx then
-            yield indices[i][1];
-      else 
-        for i in followRange do
-          yield indices[i][2];
-    }
+      /*if onlyDim==1 then*/
+        /*for i in followRange do*/
+          /*if indices[i][2] == otherIdx then*/
+            /*yield indices[i][1];*/
+      /*else */
+        /*for i in followRange do*/
+          /*yield indices[i][2];*/
+    /*}*/
 
-    iter dsiPartialThese(onlyDim: int, otherIdx, 
-        tasksPerLocale = dataParTasksPerLocale,
-        ignoreRunning = dataParIgnoreRunningTasks,
-        minIndicesPerTask = dataParMinGranularity,
-        param tag: iterKind) where tag==iterKind.standalone {
+    /*iter dsiPartialThese(onlyDim: int, otherIdx, */
+        /*tasksPerLocale = dataParTasksPerLocale,*/
+        /*ignoreRunning = dataParIgnoreRunningTasks,*/
+        /*minIndicesPerTask = dataParMinGranularity,*/
+        /*param tag: iterKind) where tag==iterKind.standalone {*/
 
-      if onlyDim<0 || onlyDim>rank then
-        halt("Invalid dsiPartialThese dimension in DefaultSparse: ", onlyDim);
+      /*if onlyDim<0 || onlyDim>rank then*/
+        /*halt("Invalid dsiPartialThese dimension in DefaultSparse: ", onlyDim);*/
 
-      if rank>2 then
-        halt("dsiPartialThese is not supperted in more then 2 dimensional domains");
+      /*if rank>2 then*/
+        /*halt("dsiPartialThese is not supperted in more then 2 dimensional domains");*/
 
-      const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
-        tasksPerLocale;
+      /*const numTasks = if tasksPerLocale==0 then here.maxTaskPar else*/
+        /*tasksPerLocale;*/
 
-      var rowRange: range;
-      if onlyDim==2 then rowRange = __private_findRowRange(otherIdx);
+      /*var rowRange: range;*/
+      /*if onlyDim==2 then rowRange = __private_findRowRange(otherIdx);*/
 
-      const l = if onlyDim==1 then indices.domain.low else rowRange.low;
-      const h = if onlyDim==1 then nnz else rowRange.high;
-      const numElems = h-l-1;
+      /*const l = if onlyDim==1 then indices.domain.low else rowRange.low;*/
+      /*const h = if onlyDim==1 then nnz else rowRange.high;*/
+      /*const numElems = h-l-1;*/
 
-      if onlyDim==1 {
-        compilerWarning("PERFORMANCE WARNING: DefaultSparse.dsiPartialThese(1, \
-          otherIdx) is expensive");
+      /*if onlyDim==1 {*/
+        /*compilerWarning("PERFORMANCE WARNING: DefaultSparse.dsiPartialThese(1, \*/
+          /*otherIdx) is expensive");*/
 
-        coforall t in 0..#numTasks {
-          const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);
-          for i in myChunk[1]..min(nnz,myChunk[2]) do
-            if indices[i][2] == otherIdx then yield indices[i][1];
-        }
-      }
-      else {
-        coforall t in 0..#numTasks {
-          const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);
-          for i in myChunk[1]..myChunk[2] do yield indices[i][2];
-        }
-      }
-    }
+        /*coforall t in 0..#numTasks {*/
+          /*const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);*/
+          /*for i in myChunk[1]..min(nnz,myChunk[2]) do*/
+            /*if indices[i][2] == otherIdx then yield indices[i][1];*/
+        /*}*/
+      /*}*/
+      /*else {*/
+        /*coforall t in 0..#numTasks {*/
+          /*const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);*/
+          /*for i in myChunk[1]..myChunk[2] do yield indices[i][2];*/
+        /*}*/
+      /*}*/
+    /*}*/
 
     iter dimIter(param d, ind) {
       if (d != rank-1) {

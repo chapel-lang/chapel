@@ -2639,6 +2639,16 @@ module ChapelArray {
   }
 
   proc dsiPartialReduce_template(arr: [], onlyDim) {
+
+    if onlyDim < 1 || onlyDim > arr.domain.rank then
+      halt("Invalid partial reduction dimension: ", onlyDim);
+
+    // I am not sure if we support this. Some algorithms might do consecutive
+    // partial reductions with some intermediate steps. This pshould prevent
+    // specialization in user code 
+    if arr.domain.rank == 1 then
+      return + reduce arr;
+
     const PartialDom = arr.domain._value.dsiPartialDomain(exceptDim=onlyDim);
     /*const PartialDom = {0..#4, 0..#4};*/
     var ResultArr: [PartialDom] arr._value.eltType;
