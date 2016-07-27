@@ -295,10 +295,23 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
         ctor->insertFormalAtTail(arg);
         // TODO : one would think that the tuple constructor body
         // should call initCopy
+
+        Symbol* element = NULL;
+        if (isReferenceType(args[i]->type)) {
+          // If it is a reference, pass it through
+          element = arg;
+        } else {
+          // Otherwise, copy it
+          element = new VarSymbol(astr("elt_", name), args[i]->type);
+          ctor->insertAtTail(new DefExpr(element));
+          CallExpr* copy = new CallExpr("chpl__autoCopy", arg);
+          ctor->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
+        }
+
         ctor->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                         _this,
                                         new_CStringSymbol(name),
-                                        arg));
+                                        element));
       }
 
       ctor->addFlag(FLAG_ALLOW_REF);
@@ -494,22 +507,41 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
   AggregateType* ct;
   getTupleArgAndType(fn, arg, ct);
 
-  CallExpr *call = new CallExpr(build_tuple_fun);
+  //CallExpr *call = new CallExpr(build_tuple_fun);
   BlockStmt* block = new BlockStmt();
 
-  for (int i=1; i<ct->fields.length; i++) {
-    CallExpr* member = new CallExpr(arg, new_IntSymbol(i));
-    DefExpr* def = toDefExpr(ct->fields.get(i+1));
-    INT_ASSERT(def);
-    if (isReferenceType(def->sym->type))
-      // If it is a reference, pass it through.
-      call->insertAtTail(member);
-    else
-      // Otherwise, construct it.
-      call->insertAtTail(new CallExpr(copy_fun, member));
+  VarSymbol* retv = new VarSymbol("retv", ct);
+  block->insertAtTail(new DefExpr(retv));
+
+  // Starting at field 2 to skip the size field
+  for (int i=2; i<=ct->fields.length; i++) {
+    Symbol* fromField = toDefExpr(    ct->fields.get(i))->sym;
+    Symbol*   toField = toDefExpr(    ct->fields.get(i))->sym;
+    Symbol*  fromName = new_CStringSymbol(fromField->name);
+    Symbol*    toName = new_CStringSymbol(  toField->name);
+    const char* name  = toField->name;
+
+    VarSymbol* read = new VarSymbol(astr("read_", name), fromField->type);
+    block->insertAtTail(new DefExpr(read));
+    VarSymbol* element = NULL;
+
+    CallExpr* get = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, fromName);
+    block->insertAtTail(new CallExpr(PRIM_MOVE, read, get));
+
+    if (isReferenceType(fromField->type)) {
+      // If it is a reference, pass it through
+      element = read;
+    } else {
+      // otherwise copy construct it
+      element = new VarSymbol(astr("elt_", name), toField->type);
+      block->insertAtTail(new DefExpr(element));
+      CallExpr* copy = new CallExpr(copy_fun, read);
+      block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
+    }
+    block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, retv, toName, element));
   }
 
-  block->insertAtTail(new CallExpr(PRIM_RETURN, call));
+  block->insertAtTail(new CallExpr(PRIM_RETURN, retv));
   fn->body->replace(block);
   normalize(fn);
 }
@@ -555,8 +587,9 @@ instantiate_tuple_unref(FnSymbol* fn)
       Symbol*   toField = toDefExpr(    ct->fields.get(i))->sym;
       Symbol*  fromName = new_CStringSymbol(fromField->name);
       Symbol*    toName = new_CStringSymbol(  toField->name);
+      const char* name  = toField->name;
 
-      VarSymbol* read = new VarSymbol("read", fromField->type);
+      VarSymbol* read = new VarSymbol(astr("read_", name), fromField->type);
       block->insertAtTail(new DefExpr(read));
       VarSymbol* element = NULL;
 
@@ -565,7 +598,7 @@ instantiate_tuple_unref(FnSymbol* fn)
 
       if (isReferenceType(fromField->type)) {
         // If it is a reference, copy construct it
-        element = new VarSymbol("elt", toField->type);
+        element = new VarSymbol(astr("elt_", name), toField->type);
         block->insertAtTail(new DefExpr(element));
         CallExpr* copy = new CallExpr("chpl__autoCopy", read);
         block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
