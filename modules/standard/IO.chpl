@@ -3928,10 +3928,12 @@ inline proc channel.read(ref args ...?k,
 proc stringify(args ...?k):string {
   proc isStringOrPrimitiveTypes(type t) param : bool {
     for param i in 1..k {
-      if !(t[i] == string ||
-           t[i] == c_string ||
-           t[i] == c_string_copy) {
-        if !isPrimitiveType(t[i]) then
+      // The .type here perhaps shouldn't be necessary.
+      // Without it, test 4-init-record-field2.chpl has problems.
+      if !(t[i].type == string ||
+           t[i].type == c_string ||
+           t[i].type == c_string_copy) {
+        if !isPrimitiveType(t[i].type) then
           return false;
       }
     }
