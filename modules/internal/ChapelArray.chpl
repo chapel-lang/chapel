@@ -2679,7 +2679,8 @@ module ChapelArray {
 
     // TODO check overhead of this reduction in forall
     forall partialIdx in PartialDom {
-      ResultArr[partialIdx] = + reduce arr.partialThese(onlyDim, partialIdx);
+      ResultArr[partialIdx] = + reduce arr.partialThese(onlyDim, 
+          if isTuple(partialIdx) then partialIdx else (partialIdx, ));
     }
 
     return ResultArr;

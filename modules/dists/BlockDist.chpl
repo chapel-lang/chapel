@@ -699,7 +699,40 @@ proc BlockDom.dsiDim(d: int) return whole.dim(d);
 // stopgap to avoid accessing locDoms field (and returning an array)
 proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
 
+proc BlockDom.dsiPartialDomain(param exceptDim) {
 
+  var ranges = whole._value.ranges.strip(exceptDim);
+  var space = {(...ranges)};
+  var ret = space dmapped Block(space, targetLocales =
+      dist.targetLocales[(...createTargetLocDomSliceMask(exceptDim))]);
+
+  return ret;
+
+  proc createTargetLocDomSliceMask(param exceptDim) {
+    param numUbRangesPre = exceptDim - 1;
+    param numUbRangesPost = rank - exceptDim;
+
+    assert(numUbRangesPre + numUbRangesPost == rank-1);
+
+    const ubRangesPre = createTuple(if numUbRangesPre > 0 then numUbRangesPre else
+        1, range(boundedType=BoundedRangeType.boundedNone), ..);
+    const ubRangesPost = createTuple(if numUbRangesPost > 0 then numUbRangesPost
+        else 1, range(boundedType=BoundedRangeType.boundedNone), ..);
+
+    if numUbRangesPre > 0 && numUbRangesPost > 0 {
+      return ((...ubRangesPre),0,(...ubRangesPost));
+    }
+    if numUbRangesPre > 0 && numUbRangesPost <= 0 {
+      return ((...ubRangesPre),0);
+    }
+    if numUbRangesPre <= 0 && numUbRangesPost > 0 {
+      return (0,(...ubRangesPost));
+    }
+    if numUbRangesPre <= 0 && numUbRangesPost <= 0 {
+      return (0, );
+    }
+  }
+}
 //
 // Given a tuple of scalars of type t or range(t) match the shape but
 // using types rangeType and scalarType e.g. the call:
