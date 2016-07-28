@@ -971,12 +971,15 @@ okToConvertFormalToRefType(Type* type) {
 static bool
 allowTupleReturnWithRef(FnSymbol* fn)
 {
+
   if( fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) || // but not _type_construct__tuple
       fn->hasFlag(FLAG_CONSTRUCTOR) || // but not _construct_tuple
       fn->hasFlag(FLAG_BUILD_TUPLE) || // and not _build_tuple(_allow_ref)
       fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) || // and not _build_tuple_type
       fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES) || // not iteratorIndex
-      fn->hasFlag(FLAG_AUTO_COPY_FN) // not tuple chpl__autoCopy
+      fn->hasFlag(FLAG_AUTO_COPY_FN) || // not tuple chpl__autoCopy
+      fn->retTag == RET_REF ||
+      fn->retTag == RET_CONST_REF
      ) {
     return true;
   } else {
@@ -4821,7 +4824,6 @@ resolveCoerce(CallExpr* call) {
     Type* newType = computeNonRefTuple(toType, fn->body);
 
     if (newType != toType) {
-      gdbShouldBreakHere();
 
       // Also adjust any PRIM_COERCE calls
       call->get(2)->replace(new SymExpr(newType->symbol));
@@ -6390,6 +6392,7 @@ preFold(Expr* expr) {
                 INT_ASSERT(ret);
                 if (ret->var->defPoint->getFunction() == move->getFunction() &&
                     !ret->var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+                    //!ret->var->type->symbol->hasFlag(FLAG_TUPLE))
                     //!ret->var->type->symbol->hasFlag(FLAG_ARRAY))
                   // Should this conditional include domains, distributions, sync and/or single?
                   USR_FATAL(ret, "illegal expression to return by ref");
