@@ -501,8 +501,8 @@ static void checkOrphanStackVar(SyncGraph *root) {
         }
         if (curNode->syncPoints.count() == 0 && 
 	    curNode->syncType != NODE_SINGLE_WAIT_FULL) {
-          USR_WARN(curNode->syncExpr, 
-		   "No matching Syncronization Expression for this. This could result in the program entering an infinite wait.");
+	  //          USR_WARN(curNode->syncExpr, 
+	  //	   "No matching Syncronization Expression for this. This could result in the program entering an infinite wait.");
         } else if (curNode->syncPoints.count() == 1) {
           taskSyncPoints.put(curNode->syncPoints.only()->fnSymbol, curNode->syncPoints.only());
         }
