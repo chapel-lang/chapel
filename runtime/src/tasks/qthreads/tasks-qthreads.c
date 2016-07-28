@@ -786,8 +786,8 @@ void chpl_task_callMain(void (*chpl_main)(void))
     chpl_qthread_wrapper_args_t wrapper_args =
         {chpl_main, NULL, NULL, false,
          PRV_DATA_IMPL_VAL(CHPL_FILE_IDX_MAIN_TASK , 0,
-                           chpl_qthread_process_tls.chpl_data.id, -1, false,
-                           c_sublocid_any_val, false) };
+                           chpl_qthread_process_tls.chpl_data.id, FID_NONE,
+                           false, c_sublocid_any_val, false) };
 
     wrap_callbacks(chpl_task_cb_event_kind_create, &wrapper_args.chpl_data);
 
