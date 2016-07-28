@@ -4495,8 +4495,12 @@ static void resolveMove(CallExpr* call) {
     }
   }
 
-  if (lhs->type == dtUnknown || lhs->type == dtNil)
+  if (lhs->type == dtUnknown || lhs->type == dtNil) {
+    if (lhs->id == breakOnResolveID )
+      gdbShouldBreakHere();
+
     lhs->type = rhsType;
+  }
 
   Type* lhsType = lhs->type;
 
