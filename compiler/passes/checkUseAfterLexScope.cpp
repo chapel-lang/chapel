@@ -329,10 +329,12 @@ static bool isOuterVar(Symbol* sym, FnSymbol* fn) {
   **/
   if ( sym->hasFlag(FLAG_TEMP)          || // exclude these
        sym->hasFlag(FLAG_CONST)         ||
-       sym->hasFlag(FLAG_TYPE_VARIABLE)     // 'type' aliases or formals
+       sym->hasFlag(FLAG_TYPE_VARIABLE) ||    // 'type' aliases or formals
+       sym->hasFlag(FLAG_SINGLE)        ||
+       sym->hasFlag(FLAG_SYNC)
      )
     return false;
-
+   
   if (isArgSymbol(sym)) {
     ArgSymbol* argSym = toArgSymbol(sym);
     if (argSym->intent == INTENT_REF) {
@@ -570,18 +572,20 @@ static SyncGraph* handleBlockStmt(BlockStmt* stmt, SyncGraph *cur){
 }
 
 static SyncGraph* handleCallExpr(CallExpr* callExpr, SyncGraph *cur){
-  if (callExpr->theFnSymbol() != NULL &&
-     callExpr->theFnSymbol()->getModule()->modTag == MOD_USER) {
+  // if (callExpr->theFnSymbol() != NULL  && 
+  //  callExpr->theFnSymbol()->getModule()->modTag == MOD_USER) {
     /**
        TODO:
        We are getting duplicate entries for the function calls.
        So we skip all uses of the variables in function calls.
        Also the begin functions also create a function call at
        the end of the definition of the begin function.
+       
+       Update : Not always the case.
     **/
-  } else {
-    addSymbolsToGraph(callExpr, cur);
-  }
+  // } else {
+  addSymbolsToGraph(callExpr, cur);
+    //  }
   return cur;
 }
 
