@@ -3477,9 +3477,6 @@ module ChapelArray {
 
     var b : [a._dom] a.eltType;
 
-    extern proc printf(fmt:c_string);
-    printf("IN ARRAY INIT COPY");
-
     // Try bulk transfer.
     if !chpl__serializeAssignment(b, a) {
       chpl__bulkTransferArray(b, a);
