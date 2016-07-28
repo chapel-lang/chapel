@@ -699,40 +699,88 @@ proc BlockDom.dsiDim(d: int) return whole.dim(d);
 // stopgap to avoid accessing locDoms field (and returning an array)
 proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
 
+proc BlockDom.__partialTheseLocales(param onlyDim, otherIdx) {
+  // index of master locale in targetLocales array
+  const baseLocaleIdx = dist.targetLocsIdx(
+      otherIdx.merge(onlyDim, whole.dim(onlyDim).low));
+
+  return dist.targetLocales[(...__lineSliceMask(onlyDim, baseLocaleIdx))];
+}
+
 proc BlockDom.dsiPartialDomain(param exceptDim) {
 
   var ranges = whole._value.ranges.strip(exceptDim);
   var space = {(...ranges)};
   var ret = space dmapped Block(space, targetLocales =
-      dist.targetLocales[(...createTargetLocDomSliceMask(exceptDim))]);
+      dist.targetLocales[(...__faceSliceMask(exceptDim))]);
 
   return ret;
+}
 
-  proc createTargetLocDomSliceMask(param exceptDim) {
-    param numUbRangesPre = exceptDim - 1;
-    param numUbRangesPost = rank - exceptDim;
+proc BlockDom.__lineSliceMask(param dim, idx) {
 
-    assert(numUbRangesPre + numUbRangesPost == rank-1);
+  if !isHomogeneousTuple(idx) then
+    halt("Index to get line slice must be homogeneous");
 
-    const ubRangesPre = createTuple(if numUbRangesPre > 0 then numUbRangesPre else
-        1, range(boundedType=BoundedRangeType.boundedNone), ..);
-    const ubRangesPost = createTuple(if numUbRangesPost > 0 then numUbRangesPost
-        else 1, range(boundedType=BoundedRangeType.boundedNone), ..);
+  if idx[1].type != idxType then 
+    halt("Index to get line slice must match domains index type");
 
-    if numUbRangesPre > 0 && numUbRangesPost > 0 {
-      return ((...ubRangesPre),0,(...ubRangesPost));
-    }
-    if numUbRangesPre > 0 && numUbRangesPost <= 0 {
-      return ((...ubRangesPre),0);
-    }
-    if numUbRangesPre <= 0 && numUbRangesPost > 0 {
-      return (0,(...ubRangesPost));
-    }
-    if numUbRangesPre <= 0 && numUbRangesPost <= 0 {
-      return (0, );
-    }
+  param numIdxPre = dim - 1;
+  param numIdxPost = rank - dim;
+
+  assert(numIdxPre + numIdxPost == rank-1);
+
+  var idxPre = createTuple(if numIdxPre>0 then numIdxPre else 1, 
+      idxType, 0:idxType);
+  for param i in 1..numIdxPre do
+    idxPre[i] = idx[i];
+
+  var idxPost = createTuple(if numIdxPost > 0 then numIdxPost else 1, 
+      idxType, 0:idxType);
+  for param i in 1..numIdxPost do
+    idxPost[i] = idx[numIdxPre+1+i];
+
+  if numIdxPre > 0 && numIdxPost > 0 {
+    return ((...idxPre),..,(...idxPost));
+  }
+  if numIdxPre > 0 && numIdxPost <= 0 {
+    return ((...idxPre),..);
+  }
+  if numIdxPre <= 0 && numIdxPost > 0 {
+    return (..,(...idxPost));
+  }
+  if numIdxPre <= 0 && numIdxPost <= 0 {
+    return (.., );
+  }
+
+}
+
+// name is creepy
+proc BlockDom.__faceSliceMask(param exceptDim) {
+  param numUbRangesPre = exceptDim - 1;
+  param numUbRangesPost = rank - exceptDim;
+
+  assert(numUbRangesPre + numUbRangesPost == rank-1);
+
+  const ubRangesPre = createTuple(if numUbRangesPre > 0 then numUbRangesPre
+      else 1, range(boundedType=BoundedRangeType.boundedNone), ..);
+  const ubRangesPost = createTuple(if numUbRangesPost > 0 then numUbRangesPost
+      else 1, range(boundedType=BoundedRangeType.boundedNone), ..);
+
+  if numUbRangesPre > 0 && numUbRangesPost > 0 {
+    return ((...ubRangesPre),0,(...ubRangesPost));
+  }
+  if numUbRangesPre > 0 && numUbRangesPost <= 0 {
+    return ((...ubRangesPre),0);
+  }
+  if numUbRangesPre <= 0 && numUbRangesPost > 0 {
+    return (0,(...ubRangesPost));
+  }
+  if numUbRangesPre <= 0 && numUbRangesPost <= 0 {
+    return (0, );
   }
 }
+
 //
 // Given a tuple of scalars of type t or range(t) match the shape but
 // using types rangeType and scalarType e.g. the call:
