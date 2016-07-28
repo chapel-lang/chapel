@@ -1026,6 +1026,10 @@ module ChapelArray {
         _value.add_arr(x);
       }
       help();
+
+      extern proc printf(fmt:c_string, p);
+      printf("IN buildArray v %p\n", x);
+
       return _newArray(x);
     }
     /* Remove all indices from this domain, leaving it empty */
@@ -3303,8 +3307,32 @@ module ChapelArray {
   }
 
   proc =(ref a: [], b: _desync(a.eltType)) {
-    forall e in a do
+//    TODO - works with for
+    {
+      extern proc printf(fmt:c_string, p);
+      printf("IN =          v %p\n", a._value);
+    }
+    extern proc printf(fmt:c_string, const ref p);
+    printf("IN =FALL1 %p\n", a[1]);
+    forall e in a {
+      printf("    RFALL %p\n", e);
+      printf("        b %p\n", b);
+    }
+    forall e in a {
+      printf("    RFAL2 %p\n", e);
+    }
+
+    forall e in a {
+      printf("IN = FALL %p\n", e);
+      /*{
+        pragma "insert line file info"
+        extern proc chpl_mem_free(x);
+        chpl_mem_free(c_ptrTo(e):c_void_ptr);
+        // It appears that e is not being generated as
+        // a reference but instead is a value.
+      }*/
       e = b;
+    }
   }
 
   /*
@@ -3472,6 +3500,9 @@ module ChapelArray {
   proc chpl__initCopy(const ref a: []) {
 
     var b : [a._dom] a.eltType;
+
+    extern proc printf(fmt:c_string);
+    printf("IN ARRAY INIT COPY");
 
     // Try bulk transfer.
     if !chpl__serializeAssignment(b, a) {
