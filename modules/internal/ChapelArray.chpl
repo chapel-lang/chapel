@@ -2159,9 +2159,12 @@ module ChapelArray {
         if d.dim(i).length != _value.dom.dsiDim(i).length then
           halt("extent in dimension ", i, " does not match actual");
 
-      var newDist = new dmap(_value.dom.dist.dsiCreateReindexDist(d.dims(),
+      // dsiReindex takes ownership of newDist._value.
+      pragma "no auto destroy" var newDist = new dmap(_value.dom.dist.dsiCreateReindexDist(d.dims(),
                                                                   _value.dom.dsiDims()));
-      var newDom = {(...d.dims())} dmapped newDist;
+      // dsiReindex takes ownership of newDom._value.
+      pragma "no auto destroy" var newDom = {(...d.dims())} dmapped newDist;
+      newDom._value._free_when_no_arrs = true;
       var x = _value.dsiReindex(newDom._value);
       x._arrAlias = _value;
       x._stackToken = _value._stackToken;
