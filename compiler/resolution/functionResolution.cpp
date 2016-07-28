@@ -978,6 +978,7 @@ allowTupleReturnWithRef(FnSymbol* fn)
       fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) || // and not _build_tuple_type
       fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES) || // not iteratorIndex
       fn->hasFlag(FLAG_AUTO_COPY_FN) || // not tuple chpl__autoCopy
+      fn->hasFlag(FLAG_ALLOW_REF) || // not iteratorIndex
       (fn->hasFlag(FLAG_ITERATOR_FN) && // iterators returning by ref
        (fn->retTag == RET_REF ||        // might yield index variable by
         fn->retTag == RET_CONST_REF))   // ref in a tuple

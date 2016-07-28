@@ -40,13 +40,14 @@ module ChapelIteratorSupport {
   // module support for iterators
   //
   pragma "no doc"
+  pragma "allow ref" // needs to to return tuples with refs
   proc iteratorIndex(ic: _iteratorClass) {
     ic.advance();
     return ic.getValue();
   }
 
   pragma "no doc"
-  pragma "expand tuples with values"
+  pragma "expand tuples with values"  // needs to return tuples with refs
   proc iteratorIndex(t: _tuple) {
     pragma "expand tuples with values"
     proc iteratorIndexHelp(t: _tuple, param dim: int) {
