@@ -154,6 +154,30 @@ void checkPrimitives()
       }
       break;
 
+     case PRIM_GET_MEMBER:
+     case PRIM_GET_MEMBER_VALUE:
+     case PRIM_SET_MEMBER:
+      if (resolved) {
+        // For expr.field, check that field is a VarSymbol
+        // in the class expr.type.
+        AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
+        SymExpr* getFieldSe = toSymExpr(call->get(2));
+        Symbol* getField = getFieldSe->var;
+        INT_ASSERT(ct);
+        INT_ASSERT(getField);
+        Symbol* name_match = NULL;
+        for_fields(field, ct) {
+          if (0 == strcmp(field->name, getField->name))
+            name_match = field;
+        }
+        if (name_match != getField) {
+          // Note: name_match contains the field that was
+          // probably meant...
+          INT_FATAL("Field access for field not in type");
+        }
+      }
+      break;
+
      case PRIM_UNKNOWN:
      case PRIM_NOOP:
      case PRIM_REF_TO_STRING:
@@ -199,9 +223,6 @@ void checkPrimitives()
      case PRIM_GETCID:
      case PRIM_SET_UNION_ID:
      case PRIM_GET_UNION_ID:
-     case PRIM_GET_MEMBER:
-     case PRIM_GET_MEMBER_VALUE:
-     case PRIM_SET_MEMBER:
      case PRIM_CHECK_NIL:
      case PRIM_GET_REAL:            // get complex real component
      case PRIM_GET_IMAG:            // get complex imag component
