@@ -579,8 +579,6 @@ instantiate_tuple_unref(FnSymbol* fn)
     VarSymbol* retv = new VarSymbol("retv", ct);
     block->insertAtTail(new DefExpr(retv));
 
-    gdbShouldBreakHere();
-
     // Starting at field 2 to skip the size field
     for (int i=2; i<=ct->fields.length; i++) {
       Symbol* fromField = toDefExpr(origCt->fields.get(i))->sym;
