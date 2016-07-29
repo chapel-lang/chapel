@@ -699,6 +699,45 @@ proc BlockDom.dsiDim(d: int) return whole.dim(d);
 // stopgap to avoid accessing locDoms field (and returning an array)
 proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
 
+iter BlockDom.dsiPartialThese(param onlyDim, otherIdx) {
+  writeln("In serial iterator");
+  for i in whole._value.dsiPartialThese(onlyDim, otherIdx) do
+    yield i;
+}
+
+iter BlockDom.dsiPartialThese(param onlyDim, otherIdx, param tag)
+    where tag==iterKind.leader {
+
+  coforall locDom in __partialTheseLocDoms(onlyDim, otherIdx) do on locDom {
+    for followThis in locDom.myBlock._value.dsiPartialThese(onlyDim, otherIdx,
+        tag) {
+      yield (followThis[1]+locDom.myBlock.dim(onlyDim).low, );
+    }
+  }
+}
+
+iter BlockDom.dsiPartialThese(param onlyDim, otherIdx, param tag, followThis)
+    where tag==iterKind.follower {
+
+  for i in followThis[1] {
+    yield i;
+  }
+}
+
+iter BlockDom.dsiPartialThese(param onlyDim, otherIdx, param tag)
+    where tag==iterKind.standalone {
+
+  coforall locDom in __partialTheseLocDoms(onlyDim, otherIdx) do on locDom do
+    for i in locDom.myBlock.dsiPartialThese(onlyDim, otherIdx, tag) do
+      yield i;
+}
+
+proc BlockDom.__partialTheseLocDoms(param onlyDim, otherIdx) {
+  const baseLocaleIdx = dist.targetLocsIdx(
+      otherIdx.merge(onlyDim, whole.dim(onlyDim).low));
+
+  return locDoms[(...__lineSliceMask(onlyDim, baseLocaleIdx))];
+}
 proc BlockDom.__partialTheseLocales(param onlyDim, otherIdx) {
   // index of master locale in targetLocales array
   const baseLocaleIdx = dist.targetLocsIdx(

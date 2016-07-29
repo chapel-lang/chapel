@@ -2632,13 +2632,14 @@ module ChapelArray {
     return && reduce (this == that);
   }
 
-  iter _array.partialThese(onlyDim, otherIdx) {
+  iter _array.partialThese(param onlyDim, otherIdx) {
     for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx) {
+      /*writeln("Serial Accessing ", i);*/
       yield this._value.dsiAccess(dsiMergeIdx(otherIdx, onlyDim, i));
     }
   }
 
-  iter _array.partialThese(onlyDim, otherIdx, param tag) where
+  iter _array.partialThese(param onlyDim, otherIdx, param tag) where
     tag==iterKind.leader {
 
     for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
@@ -2646,24 +2647,26 @@ module ChapelArray {
     }
   }
 
-  iter _array.partialThese(onlyDim, otherIdx, param tag, followThis) where
+  iter _array.partialThese(param onlyDim, otherIdx, param tag, followThis) where
     tag==iterKind.follower {
 
     for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx, 
         tag=tag, followThis=followThis) {
+      writeln("Follower Accessing ", i);
       yield this._value.dsiAccess(dsiMergeIdx(otherIdx, onlyDim, i));
     }
   }
 
-  iter _array.partialThese(onlyDim, otherIdx, param tag) where
+  iter _array.partialThese(param onlyDim, otherIdx, param tag) where
     tag==iterKind.standalone {
 
     for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
+      writeln("Standalone Accessing ", i);
       yield this._value.dsiAccess(dsiMergeIdx(otherIdx, onlyDim, i));
     }
   }
 
-  proc dsiPartialReduce_template(arr: [], onlyDim) {
+  proc dsiPartialReduce_template(arr: [], param onlyDim) {
 
     if onlyDim < 1 || onlyDim > arr.domain.rank then
       halt("Invalid partial reduction dimension: ", onlyDim);
@@ -2677,10 +2680,14 @@ module ChapelArray {
     const PartialDom = arr.domain._value.dsiPartialDomain(exceptDim=onlyDim);
     var ResultArr: [PartialDom] arr._value.eltType;
 
-    // TODO check overhead of this reduction in forall
+    // FIXME This loop has to be a forall. However it hits a resolution bug in
+    // compiler. Vass is aware of the issue. Generally, a param arg to a
+    // function cannot be passed to another function's param formal from within
+    // a forall loop. (Obiviously this can be done from within a for loop)
     forall partialIdx in PartialDom {
       ResultArr[partialIdx] = + reduce arr.partialThese(onlyDim, 
           if isTuple(partialIdx) then partialIdx else (partialIdx, ));
+      /*write(partialIdx); writeln(" is " + ResultArr[partialIdx]);*/
     }
 
     return ResultArr;

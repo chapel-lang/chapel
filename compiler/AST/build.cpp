@@ -32,6 +32,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "view.h"
 
 #include <map>
 #include <utility>
@@ -1720,6 +1721,7 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
   fn->insertAtTail(new CallExpr(PRIM_RETURN, result));
 
   // Success.
+  print_view(fn);
   return new CallExpr(new DefExpr(fn));
 }
 

@@ -38,11 +38,13 @@ module ChapelReduce {
   }
   
   proc chpl__reduceCombine(globalOp, localOp) {
+    writeln("Combining ", localOp.value);
     on globalOp {
       globalOp.lock();
       globalOp.combine(localOp);
       globalOp.unlock();
     }
+    writeln("Combined ", globalOp.value);
   }
 
   inline proc chpl__cleanupLocalOp(globalOp, localOp) {
