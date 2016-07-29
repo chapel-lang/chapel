@@ -46,13 +46,13 @@ inline bool isNonEssentialPrimitive(CallExpr* ce);
 bool isSafePrimitive(CallExpr* ce);
 
 bool isDenormalizable(Symbol* sym,
-    Map<Symbol*,Vec<SymExpr*>*> defMap,
-    Map<Symbol*,Vec<SymExpr*>*> useMap, SymExpr** useOut, Expr** defOut,
+    Map<Symbol*,Vec<SymExpr*>*>& defMap,
+    Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr** useOut, Expr** defOut,
     Type** castTo);
 
 void denormalizeActuals(CallExpr* ce,
-    Map<Symbol*,Vec<SymExpr*>*> defMap,
-    Map<Symbol*,Vec<SymExpr*>*> useMap,
+    Map<Symbol*,Vec<SymExpr*>*>& defMap,
+    Map<Symbol*,Vec<SymExpr*>*>& useMap,
     ActualUseDefCastMap actualUseDefMap);
 
 void denormalize(void);
@@ -143,8 +143,8 @@ void denormalize(FnSymbol *fn) {
 }
 
 void denormalizeActuals(CallExpr* ce,
-    Map<Symbol*,Vec<SymExpr*>*> defMap,
-    Map<Symbol*,Vec<SymExpr*>*> useMap,
+    Map<Symbol*,Vec<SymExpr*>*>& defMap,
+    Map<Symbol*,Vec<SymExpr*>*>& useMap,
     ActualUseDefCastMap actualUseDefMap) {
 
   INT_ASSERT(!ce->isPrimitive());
@@ -177,8 +177,8 @@ void denormalizeActuals(CallExpr* ce,
 }
 
 bool isDenormalizable(Symbol* sym,
-    Map<Symbol*,Vec<SymExpr*>*> defMap,
-    Map<Symbol*,Vec<SymExpr*>*> useMap, SymExpr** useOut, Expr** defOut,
+    Map<Symbol*,Vec<SymExpr*>*> & defMap,
+    Map<Symbol*,Vec<SymExpr*>*> & useMap, SymExpr** useOut, Expr** defOut,
     Type** castTo) {
 
   if(sym && !(toFnSymbol(sym) || toArgSymbol(sym) || toTypeSymbol(sym))) {
