@@ -346,6 +346,33 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
   return info;
 }
 
+static
+TupleInfo getTupleInfo(Type* t,
+                       BlockStmt* instantiationPoint,
+                       bool noref)
+{
+  INT_ASSERT(t->symbol->hasFlag(FLAG_TUPLE));
+  AggregateType* at = toAggregateType(t);
+  std::vector<TypeSymbol*> args;
+
+  // Compute the tuple type
+  int i = 0;
+  for_fields(field, at) {
+    if (i != 0) { // skip size field
+      Type* t;
+      if (noref)
+        t = field->type->getValType();
+      else
+        t = field->type;
+
+      args.push_back(t->symbol);
+    }
+    i++;
+  }
+
+  return getTupleInfo(args, instantiationPoint, noref);
+}
+
 /*
 TypeSymbol* getTupleTypeSymbol(std::vector<TypeSymbol*>& args,
                                CallExpr* instantiatedForCall)
@@ -499,6 +526,65 @@ instantiate_tuple_init(FnSymbol* fn) {
 }
 
 static void
+instantiate_tuple_cast(FnSymbol* fn)
+{
+  gdbShouldBreakHere();
+
+  AggregateType* toT   = toAggregateType(fn->getFormal(1)->type);
+  ArgSymbol*     arg   = fn->getFormal(2);
+  AggregateType* fromT = toAggregateType(arg->type);
+
+  BlockStmt* block = new BlockStmt();
+
+  VarSymbol* retv = new VarSymbol("retv", toT);
+  block->insertAtTail(new DefExpr(retv));
+
+  // Starting at field 2 to skip the size field
+  for (int i=2; i<=toT->fields.length; i++) {
+    Symbol* fromField = toDefExpr(fromT->fields.get(i))->sym;
+    Symbol*   toField = toDefExpr(   toT->fields.get(i))->sym;
+    Symbol*  fromName = new_CStringSymbol(fromField->name);
+    Symbol*    toName = new_CStringSymbol(  toField->name);
+    const char* name  = toField->name;
+
+    VarSymbol* read = new VarSymbol(astr("read_", name), fromField->type);
+    block->insertAtTail(new DefExpr(read));
+    VarSymbol* element = NULL;
+
+    CallExpr* get = NULL;
+
+    if (!isReferenceType(fromField->type) &&
+        fromField->type->getRefType() == toField->type) {
+      // Converting from a value to a reference
+      get = new CallExpr(PRIM_GET_MEMBER, arg, fromName);
+    } else {
+      get = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, fromName);
+    }
+
+    block->insertAtTail(new CallExpr(PRIM_MOVE, read, get));
+
+    element = new VarSymbol(astr("elt_", name), toField->type);
+    block->insertAtTail(new DefExpr(element));
+
+    if (isReferenceType(toField->type)) {
+      // If creating a reference, no copy call necessary
+      block->insertAtTail(new CallExpr(PRIM_MOVE, element, read));
+    } else {
+      // otherwise copy construct it
+      CallExpr* copy = new CallExpr("chpl__autoCopy", read);
+      block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
+    }
+    // Expecting insertCasts to fix any type mismatch in the last MOVE added
+
+    block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, retv, toName, element));
+  }
+
+  block->insertAtTail(new CallExpr(PRIM_RETURN, retv));
+  fn->body->replace(block);
+  normalize(fn);
+}
+
+static void
 instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
                                        const char* build_tuple_fun,
                                        const char* copy_fun)
@@ -560,6 +646,10 @@ instantiate_tuple_autoCopy(FnSymbol* fn) {
                                          "chpl__autoCopy");
 }
 
+/* Tuple unref takes in a tuple potentially containing reference
+   elements and returns a tuple that does not contain reference
+   elements.
+ */
 static void
 instantiate_tuple_unref(FnSymbol* fn)
 {
@@ -634,18 +724,7 @@ AggregateType* computeNonRefTuple(Type* t, BlockStmt* instantiationPoint)
   }
 
   if (containsRef) {
-    std::vector<TypeSymbol*> args;
-
-    // Compute the tuple type containing no references
-    i = 0;
-    for_fields(field, at) {
-      if (i != 0) { // skip size field
-        args.push_back(field->type->getValType()->symbol);
-      }
-      i++;
-    }
-
-    TupleInfo info = getTupleInfo(args, instantiationPoint, true /*noref*/);
+    TupleInfo info = getTupleInfo(t, instantiationPoint, true /*noref*/);
     return toAggregateType(info.typeSymbol->type);
   } else {
     return at;
@@ -672,6 +751,10 @@ fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* instantiatedForCall
     instantiate_tuple_hash(newFn);
   }
 
+  if (fn->hasFlag(FLAG_TUPLE_CAST_FN)) {
+    instantiate_tuple_cast(newFn);
+  }
+
   if (fn->hasFlag(FLAG_INIT_COPY_FN) && fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_initCopy(newFn);
   }
@@ -695,8 +778,6 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
     size_t actualN = 0;
     bool firstArgIsSize = fn->hasFlag(FLAG_TUPLE) || fn->hasFlag(FLAG_STAR_TUPLE);
     bool noref = fn->hasFlag(FLAG_DONT_ALLOW_REF);
-
-    //gdbShouldBreakHere();
 
     // TODO - should this use subs in preference to call's arguments?
     for_actuals(actual, call) {
@@ -733,7 +814,9 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
 	IntentTag intent = blankIntentForType(t);
 	if (!isReferenceType(t) &&
             (intent & INTENT_FLAG_REF) &&
-	    isRecordWrappedType(t) // temporary
+            // Including more than this causes problems with hello.chpl
+            // but I havn't figured out why.
+	    (isUserDefinedRecord(t) || isRecordWrappedType(t))
 	   ) {
 	  args[i] = t->getRefType()->symbol;
 	}

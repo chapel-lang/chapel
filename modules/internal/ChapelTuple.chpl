@@ -271,7 +271,7 @@ module ChapelTuple {
       f <~> end;
     }
   }
-  
+
   //
   // tuple casts to complex(64) and complex(128)
   //
@@ -291,6 +291,14 @@ module ChapelTuple {
     c.re = x(1):real(64);
     c.im = x(2):real(64);
     return c;
+  }
+
+  //
+  // General tuple cast function
+  //
+  pragma "tuple cast fn"
+  inline proc _cast(type t, const ref x: _tuple) where t:_tuple {
+    // body filled in during resolution
   }
   
   //

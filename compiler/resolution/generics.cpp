@@ -142,6 +142,13 @@ static bool formalWillBeByRef(Symbol* key, TypeSymbol* actualTS)
 */
 static TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
+  if (actualTS->hasFlag(FLAG_TUPLE)) {
+    // TODO:
+    // When passing a tuple in by blank intent, get the tuple type that
+    // has the same ref/nonref semantics as if the arguments
+    // were expanded with blank intent.
+  }
+
   if (fn->hasEitherFlag(FLAG_TUPLE,FLAG_PARTIAL_TUPLE)) {
     // TODO -- I don't think that I can put this logic here...
     // it seems to affect all tuples, because of

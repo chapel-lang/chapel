@@ -976,6 +976,7 @@ allowTupleReturnWithRef(FnSymbol* fn)
       fn->hasFlag(FLAG_CONSTRUCTOR) || // but not _construct_tuple
       fn->hasFlag(FLAG_BUILD_TUPLE) || // and not _build_tuple(_allow_ref)
       fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) || // and not _build_tuple_type
+      fn->hasFlag(FLAG_TUPLE_CAST_FN) || // and not _cast for tuples
       fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES) || // not iteratorIndex
       fn->hasFlag(FLAG_AUTO_COPY_FN) || // not tuple chpl__autoCopy
       fn->hasFlag(FLAG_ALLOW_REF) || // not iteratorIndex
@@ -1032,7 +1033,8 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
       
       if (newType != retType) {
         // Also adjust any PRIM_COERCE calls
-        gdbShouldBreakHere();
+        // gdbShouldBreakHere();
+        // I think that is handled in insertCasts
       }
 
       retType = newType;
@@ -1477,6 +1479,52 @@ bool canCoerce(Type*     actualType,
   if (isSyncType(actualType) || isSingleType(actualType)) {
     Type* baseType = actualType->getField("base_type")->type;
     return canDispatch(baseType, NULL, formalType, fn, promotes);
+  }
+
+  if (actualType->symbol->hasFlag(FLAG_TUPLE) &&
+      formalType->symbol->hasFlag(FLAG_TUPLE)) {
+    // Both are tuple types, but the types do not match.
+    // Could we coerce each individual tuple element?
+    // If so, we can coerce the tuples.
+    AggregateType *at = toAggregateType(actualType);
+    AggregateType *ft = toAggregateType(formalType);
+
+    Type* atFieldType = NULL;
+    Type* ftFieldType = NULL;
+
+    bool starTuple = (actualType->symbol->hasFlag(FLAG_STAR_TUPLE) &&
+                      formalType->symbol->hasFlag(FLAG_STAR_TUPLE));
+
+    // This check could be optimized for star tuples.
+    int i = 1;
+    for_fields(atField, at) {
+      Symbol* ftField = ft->getField(i);
+
+      bool prom = false;
+      bool ok;
+
+      atFieldType = atField->type;
+      ftFieldType = ftField->type;
+
+      // Can we coerce without promotion?
+      // If the types are the same, yes
+      if (atFieldType != ftFieldType) {
+        ok = canDispatch(atFieldType, actualSym, ftFieldType, fn, &prom, false);
+
+        // If we couldn't coerce or the coercion would promote, no
+        if (!ok || prom)
+          return false;
+      }
+
+      // For star tuples, we only needed to consider first 2 fields
+      // (size and 1st element)
+      if (starTuple && i == 2)
+        return true;
+
+      i++;
+    }
+
+    return true;
   }
 
   if (actualType->symbol->hasFlag(FLAG_REF))

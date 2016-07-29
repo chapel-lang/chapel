@@ -928,6 +928,12 @@ static void build_extern_assignment_function(Type* type)
 // If the coercion is permissible, then the operand can be statically cast to
 // the target type.
 static void build_record_cast_function(AggregateType* ct) {
+
+  // Don't do this for tuples.
+  // Tuple cast function is generated during resolution.
+  if (ct->symbol->hasFlag(FLAG_TUPLE))
+    return;
+
   FnSymbol* fn = new FnSymbol("_cast");
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_INLINE);
