@@ -32,8 +32,8 @@
 // determine if the code needs to call any callbacks:
 // Typical code:
 //
-//    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put) {
-//       struct chpl_comm_cb_info_t cb_data = {.... actual data ....}
+//    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
+//       chpl_comm_cb_info_t cb_data = {.... actual data ....};
 //       chpl_comm_do_callbacks (&cb_data);
 //    }
 //
