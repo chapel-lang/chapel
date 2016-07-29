@@ -111,16 +111,16 @@ void chpl_warning_explicit(const char *message, int32_t lineno,
 }
 
 #ifndef LAUNCHER
-static atomic_flag thisLocaleAlreadyExiting;
+static atomic_bool thisLocaleAlreadyExiting;
 void chpl_error_init(void) {
-  atomic_init_flag(&thisLocaleAlreadyExiting, false);
+  atomic_init_bool(&thisLocaleAlreadyExiting, false);
 }
 #endif
 
 static void spinhaltIfAlreadyExiting(void) {
 #ifndef LAUNCHER
   volatile int temp;
-  if (atomic_flag_test_and_set(&thisLocaleAlreadyExiting)) {
+  if (atomic_exchange_bool(&thisLocaleAlreadyExiting, true)) {
     // spin forever if somebody else already set it to 1
     temp = 1;
     while (temp);
