@@ -464,7 +464,7 @@ int uninstall_callbacks (void) {
   return rv;
 }
 
-// Record>  task: time.sec nodeId taskId parentTaskId On/Local lineNum srcName
+// Record>  task: time.sec nodeId taskId parentTaskId On/Local lineNum srcName fid
 
 void cb_task_create (const chpl_task_cb_info_t *info) {
   struct timeval tv;
@@ -475,13 +475,14 @@ void cb_task_create (const chpl_task_cb_info_t *info) {
     //         (int)info->event_kind, (int)info->nodeID,
     //        (info->iu.full.is_executeOn ? "O" : "L"), taskId, info->iu.full.id);
     (void)gettimeofday(&tv, NULL);
-    chpl_dprintf (chpl_vdebug_fd, "task: %lld.%06ld %lld %ld %lu %s %ld %d\n",
+    chpl_dprintf (chpl_vdebug_fd, "task: %lld.%06ld %lld %ld %lu %s %ld %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,
                   (long long) info->nodeID, (long int) info->iu.full.id,
                   (unsigned long) taskId,
                   (info->iu.full.is_executeOn ? "O" : "L"),
                   (long int) info->iu.full.lineno,
-                  info->iu.full.filename);
+                  info->iu.full.filename,
+                  info->iu.full.fid);
    }
 }
 
