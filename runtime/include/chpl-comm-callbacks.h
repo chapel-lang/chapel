@@ -126,9 +126,10 @@ typedef enum {
 } chpl_comm_cb_event_kind_t;
 
 typedef struct {
-  c_nodeid_t nodeID;              // target nodeID
   chpl_comm_cb_event_kind_t 
              event_kind;          // kind of event this describes
+  c_nodeid_t localNodeID;         // The node doing the communication
+  c_nodeid_t remoteNodeID;        // The node to which the communication is going
   union {
 
     struct chpl_comm_info_comm { // put, put_nb, get, get_nb

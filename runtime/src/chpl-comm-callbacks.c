@@ -103,6 +103,7 @@ void chpl_comm_do_callbacks(const chpl_comm_cb_info_t *info)
 {
   int i;
 
+
   // Don't do anything if the event kind is bad
   if (info->event_kind >= chpl_comm_cb_num_event_kinds)
     return;
