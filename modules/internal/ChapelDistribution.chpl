@@ -143,7 +143,6 @@ module ChapelDistribution {
     var _arrsLock: atomicflag; //   and lock for concurrent access
     var _free_when_no_arrs: bool;
     var pid:int = -1; // privatized ID, if privitization is supported
-    var _stackToken: c_void_ptr;
   
     proc ~BaseDom() {
       if _isPrivatized(this) && pid >= 0 then
@@ -317,7 +316,6 @@ module ChapelDistribution {
     var _arrCnt: atomic_refcnt; // array reference count
     var _arrAlias: BaseArr;    // reference to base array if an alias
     var pid:int = -1; // privatized ID, if privitization is supported
-    var _stackToken: c_void_ptr;
   
     proc ~BaseArr() {
       if _isPrivatized(this) && pid >= 0 then
