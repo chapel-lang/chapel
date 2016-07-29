@@ -1140,7 +1140,7 @@ Type* getRefTypesForWideThing(GenRet wide, Type** wideRefTypeOut)
         ret = wide.chplType->getField("addr")->typeInfo();
         wideRefType = wide.chplType;
       } else {
-        //INT_ASSERT(0);
+        INT_ASSERT(0);
       }
     }
   }
@@ -1436,7 +1436,7 @@ GenRet codegenFieldPtr(
       // Must be a record or union type, and we must have an
       // lvalue-ptr to one of them.
       INT_ASSERT(isRecord(ct) || isUnion(ct));
-      //INT_ASSERT( base.isLVPtr != GEN_VAL );
+      INT_ASSERT( base.isLVPtr != GEN_VAL );
     }
   }
 
@@ -1478,8 +1478,8 @@ GenRet codegenFieldPtr(
     base = codegenValue(base);
   } else {
     // not a class. base is a lvalue pointer.
-    //if( !fLLVMWideOpt ) INT_ASSERT(base.isLVPtr == GEN_PTR);
-    //else INT_ASSERT(base.isLVPtr != GEN_VAL);
+    if( !fLLVMWideOpt ) INT_ASSERT(base.isLVPtr == GEN_PTR);
+    else INT_ASSERT(base.isLVPtr != GEN_VAL);
   }
   if( info->cfile ) {
     ret.c = '&';
@@ -1932,7 +1932,7 @@ GenRet codegenDeref(GenRet r)
     return codegenLocalDeref(r);
   } else {
     //when an svec member value is returned and it is actually an address
-    //INT_ASSERT(0); // not a reference.
+    INT_ASSERT(0); // not a reference.
   }
 
   return ret;
