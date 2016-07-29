@@ -1,5 +1,5 @@
 
-proc chooseArray(A:[] int, B:[] int, chooseA:bool)
+proc chooseArray(ref A:[] int, ref B:[] int, chooseA:bool) ref
 {
    if chooseA then return A;
    else return B;
