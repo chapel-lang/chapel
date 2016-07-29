@@ -152,7 +152,7 @@ typedef struct {
       int32_t typeIndex;        //
       int lineno;               // source line of communication
       int32_t filename;         // source file of communication
-    } strd_comm;
+    } comm_strd;
 
     struct chpl_comm_info_comm_fork { //
       c_sublocid_t subloc;      //  Sub-location
