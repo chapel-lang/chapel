@@ -232,6 +232,8 @@ void beautify(fileinfo* origfile) {
     if (cp[0] != '\0') {
       if (zline >= 0 && new_line == TRUE) {
         fprintf(outputfile, ZLINEFORMAT, zline, zname);
+        if (zline == 0 && !strcmp(zname, "<internal>"))
+          zline = -1;
       }
     }
 

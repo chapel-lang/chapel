@@ -48,16 +48,10 @@ void codegenStmt(Expr* stmt) {
   info->filename = stmt->fname();
 
   if( outfile ) {
-    if (stmt->linenum() > 0) {
-      if (printCppLineno) {
-        info->cStatements.push_back(
-            "/* ZLINE: " + numToString(stmt->linenum())
-            + " " + stmt->fname() + " */\n");
-      }
-    }
-
+    if (printCppLineno && stmt->linenum() > 0)
+        info->cStatements.push_back(zlineToString(stmt));
     if (fGenIDS)
-      info->cStatements.push_back("/* " + numToString(stmt->id) + " */ ");
+      info->cStatements.push_back(idCommentTemp(stmt));
   }
 
   ++gStmtCount;
