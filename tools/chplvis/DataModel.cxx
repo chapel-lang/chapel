@@ -910,7 +910,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
         if (sscanf (&linedata[nextCh], "%d %d %d 0x%lx 0x%lx %d %d %d %d %d",
                     &nid, &rnid, &taskid, &locAddr, &remAddr, &eSize, & typeIx, &dlen,
                     &nlineno, &nfileno) != 10) {
-          fprintf (stderr, "Bad comm line: %s\n", filename);
+          fprintf (stderr, "Bad comm line: %s\n  '%s'\n", filename, line);
           nErrs++;
         } else {
           if (vdbTids.find(taskid) != vdbTids.end()) {
