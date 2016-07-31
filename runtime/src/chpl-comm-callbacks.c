@@ -102,14 +102,14 @@ int chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_t event_kind,
 void chpl_comm_do_callbacks(const chpl_comm_cb_info_t *info)
 {
   int i;
-
+  struct cb_info *cb;
 
   // Don't do anything if the event kind is bad
   if (info->event_kind >= chpl_comm_cb_num_event_kinds)
     return;
 
   // Call the callbacks
-  struct cb_info *cb = &cb_info[info->event_kind];
+  cb = &cb_info[info->event_kind];
   for (i = 0; i < chpl_comm_callback_counts[info->event_kind]; i++) {
     (cb->fns[i])(info);
   }
