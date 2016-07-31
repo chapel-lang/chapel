@@ -41,37 +41,21 @@ extern int chpl_dprintf(int fd, const char * format, ...)
 
 //  start and open file if not NULL
 extern void chpl_vdebug_start(const char *, double now); 
+
 //  stop collecting data
 extern void chpl_vdebug_stop(void);
+
 //  Tag the data with a character tag, and possibly resume
 extern void chpl_vdebug_tag(int);
-//  resume from a tag point
+
+//  Stop logging events 
 extern void chpl_vdebug_pause(int);
-//  mark the current task as a xxxVdebug() task and all children
-extern void chpl_vdebug_mark(void);
 
-
-//  communication logging routines
+//  Identify a tagname with a tag number
 void chpl_vdebug_tagname(const char* tagname, int tagno);
 
-void chpl_vdebug_log_put_nb(const chpl_comm_cb_info_t *info);
-
-void chpl_vdebug_log_get_nb(const chpl_comm_cb_info_t *info);
-
-void chpl_vdebug_log_put(const chpl_comm_cb_info_t *info);
-
-void chpl_vdebug_log_get(const chpl_comm_cb_info_t *info);
-
-void  chpl_vdebug_log_put_strd(const chpl_comm_cb_info_t *info);
-
-void chpl_vdebug_log_get_strd(const chpl_comm_cb_info_t *info);
-
-void chpl_vdebug_log_fork(const chpl_comm_cb_info_t *info);
-
-void  chpl_vdebug_log_fork_nb(const chpl_comm_cb_info_t *info);
-
-void chpl_vdebug_log_fork_fast(const chpl_comm_cb_info_t *info);
-
+//  mark the current task as a xxxVdebug() task and all children
+extern void chpl_vdebug_mark(void);
 
 #endif
 
