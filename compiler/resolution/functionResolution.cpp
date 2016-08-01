@@ -5566,6 +5566,13 @@ static CallExpr* toPrimToLeaderCall(Expr* expr) {
   return NULL;
 }
 
+static SymExpr* symOrParamExpr(Symbol* arg) {
+  Symbol* result = arg;
+  if (Symbol* paramVal = paramMap.get(arg))
+    result = paramVal;
+  return new SymExpr(result);
+}
+
 // Recursively resolve typedefs
 static Type* resolveTypeAlias(SymExpr* se)
 {
@@ -6339,7 +6346,8 @@ preFold(Expr* expr) {
       FnSymbol* iterator = getTheIteratorFn(call);
       CallExpr* standaloneCall = new CallExpr(iterator->name);
       for_formals(formal, iterator) {
-        standaloneCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
+        standaloneCall->insertAtTail(new NamedExpr(formal->name,
+                                                   symOrParamExpr(formal)));
       }
       // "tag" should be placed at the end of the formals in the source code as
       // well, to avoid insertion of an order wrapper.
@@ -6354,7 +6362,8 @@ preFold(Expr* expr) {
       else
         leaderCall = new CallExpr(iterator->name);
       for_formals(formal, iterator) {
-        leaderCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
+        leaderCall->insertAtTail(new NamedExpr(formal->name,
+                                               symOrParamExpr(formal)));
       }
       // "tag" should be placed at the end of the formals in the source code as
       // well, to avoid insertion of an order wrapper.
@@ -6369,7 +6378,8 @@ preFold(Expr* expr) {
       else
         followerCall = new CallExpr(iterator->name);
       for_formals(formal, iterator) {
-        followerCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
+        followerCall->insertAtTail(new NamedExpr(formal->name,
+                                                 symOrParamExpr(formal)));
       }
       // "tag", "followThis" and optionally "fast" should be placed at the end
       // of the formals in the source code as well, to avoid insertion of an
@@ -9082,6 +9092,10 @@ static void insertReturnTemps() {
               }
             }
 
+            if (isTypeExpr(contextCallOrCall)) {
+              tmp->addFlag(FLAG_MAYBE_TYPE);
+              tmp->addFlag(FLAG_MAYBE_PARAM);
+            }
             def->insertAfter(new CallExpr(PRIM_MOVE,
                                           tmp,
                                           contextCallOrCall->remove()));

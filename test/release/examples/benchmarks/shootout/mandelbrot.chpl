@@ -18,40 +18,37 @@ type eltType = uint(bitsPerElt);   // element type used to store the image
 
 
 proc main() {
-  const ydim = 0..#n,                          // the image's y dimension
-        xdim = 0..#divceilpos(n, bitsPerElt);  // the compacted x dimension
+  const xdim = 0..#divceilpos(n, bitsPerElt);  // the compacted x dimension
 
-  var image : [ydim, xdim] eltType;            // the compacted bitmap image
+  var image : [0..#n, xdim] eltType;           // the compacted bitmap image
 
-  forall y in dynamic(ydim, chunkSize) {       // for all rows...
-    for xelt in xdim {                         //   for each column element...
+  forall (y, xelt) in dynamic(image.domain, chunkSize) { // for all elements
 
-      var buff: eltType;                       // a single-element pixel buffer
+    var buff: eltType;                         // a single-element pixel buffer
 
-      for off in 0..#bitsPerElt {              // for each bit in the buffer
-        const x = xelt*bitsPerElt + off;       // compute its logical column
+    for off in 0..#bitsPerElt {                // for each bit in the buffer
+      const x = xelt*bitsPerElt + off;         // compute its logical column
 
-        const C = 2.0*x/n - 1.5 +              // the (x,y) pixel as a complex
-                 (2.0*y/n - 1.0)*1i;           //   (real, imag) value 'C'
-        var Z, T: complex;                     // 'complex' helper values
+      const C = 2.0*x/n - 1.5 +                // the (x,y) pixel as a complex
+               (2.0*y/n - 1.0)*1i;             //   (real, imag) value 'C'
+      var Z, T: complex;                       // 'complex' helper values
 
-        for 1..maxIter {                       // for the max # of iterations
-          if (T.re + T.im > limit) then        // if we haven't converged
-            break;
-          
-          Z.im = 2.0*Z.re*Z.im + C.im;         // update Z and T
-          Z.re = T.re - T.im + C.re;
-          T.re = Z.re**2;
-          T.im = Z.im**2;
-        }
+      for 1..maxIter {                         // for the max # of iterations
+        if (T.re + T.im > limit) then          // if we haven't converged
+          break;
 
-        buff <<= 1;                            // shift the pixel buffer
-        if (T.re + T.im <= limit) then         // if 'C' is within the limit,
-          buff |= 0x1;                         //   turn the low pixel on
+        Z.im = 2.0*Z.re*Z.im + C.im;           // update Z and T
+        Z.re = T.re - T.im + C.re;
+        T.re = Z.re**2;
+        T.im = Z.im**2;
       }
 
-      image[y, xelt] = buff;                   // store the pixel buffer
+      buff <<= 1;                            // shift the pixel buffer
+      if (T.re + T.im <= limit) then         // if 'C' is within the limit,
+        buff |= 0x1;                         //   turn the low pixel on
     }
+
+    image[y, xelt] = buff;                   // store the pixel buffer
   }
 
   //

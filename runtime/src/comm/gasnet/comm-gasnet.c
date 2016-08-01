@@ -238,7 +238,7 @@ static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
   fork_t *f = (fork_t*)chpl_mem_allocMany(nbytes, sizeof(char),
                                           CHPL_RT_MD_COMM_FRK_RCV_INFO, 0, 0);
   chpl_memcpy(f, buf, nbytes);
-  chpl_task_startMovedTask((chpl_fn_p)fork_wrapper, (void*)f,
+  chpl_task_startMovedTask(f->fid, (chpl_fn_p)fork_wrapper, (void*)f,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
 }
@@ -274,7 +274,7 @@ static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
                                           CHPL_RT_MD_COMM_FRK_RCV_INFO,
                                           0, 0);
   chpl_memcpy(f, buf, nbytes);
-  chpl_task_startMovedTask((chpl_fn_p)fork_large_wrapper, (void*)f,
+  chpl_task_startMovedTask(f->fid, (chpl_fn_p)fork_large_wrapper, (void*)f,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
 }
@@ -294,7 +294,7 @@ static void AM_fork_nb(gasnet_token_t  token,
                                           CHPL_RT_MD_COMM_FRK_RCV_INFO,
                                           0, 0);
   chpl_memcpy(f, buf, nbytes);
-  chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)f,
+  chpl_task_startMovedTask(f->fid, (chpl_fn_p)fork_nb_wrapper, (void*)f,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
 }
@@ -323,7 +323,7 @@ static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
                                           CHPL_RT_MD_COMM_FRK_RCV_INFO,
                                           0, 0);
   chpl_memcpy(f, buf, nbytes);
-  chpl_task_startMovedTask((chpl_fn_p)fork_nb_large_wrapper, (void*)f,
+  chpl_task_startMovedTask(f->fid, (chpl_fn_p)fork_nb_large_wrapper, (void*)f,
                            f->subloc, chpl_nullTaskID,
                            f->serial_state);
 }
@@ -1343,8 +1343,8 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
     if (info->serial_state)
       fork_nb_wrapper(info);
     else
-      chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)info,
-                               subloc, chpl_nullTaskID,
+      chpl_task_startMovedTask(info->fid, (chpl_fn_p)fork_nb_wrapper,
+                               (void*)info, subloc, chpl_nullTaskID,
                                info->serial_state);
   } else {
     // Visual Debug Support

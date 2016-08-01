@@ -23,6 +23,7 @@ studies/shootout/meteor/kbrady/meteor.graph
 release/examples/benchmarks/ssca2/total_time.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/miniMD/miniMD.graph
+release/examples/benchmarks/isx/isx-release.graph
 studies/hpcc/STREAM_study.graph
 studies/hpcc/STREAM_study_fragmented.graph
 release/examples/benchmarks/hpcc/ra.graph
@@ -67,6 +68,7 @@ studies/jacobi/jacobi.graph
 performance/elliot/no-op.graph
 performance/bharshbarg/forall-dom-range.graph
 performance/bharshbarg/arr-forall.graph
+studies/prk/stencil/prk-stencil.graph
 # suite: HPC Challenge
 studies/hpcc/STREAM_study_fragmented.graph
 studies/hpcc/STREAM_study.graph
@@ -112,7 +114,6 @@ studies/shootout/binary-trees/binary-trees-extras.graph
 studies/shootout/fasta/fasta-extras.graph
 studies/shootout/spectral-norm/lydia/spectral-norm-specify-step.graph
 studies/shootout/mandelbrot/mandelbrot-extras.graph
-studies/shootout/mandelbrot/mandelbrot-dynamicIter.graph
 # suite: Parboil benchmarks
 studies/parboil/BFS/bfs.graph
 studies/parboil/histo/histo.graph
