@@ -61,8 +61,16 @@ chplvis: $(GENSRCS) $(OFILES)
 chplvis.cxx chplvis.h: chplvis.fl
 	$(FLTK_FLUID) -c chplvis.fl
 
+testMG.cxx: testMG.fl
+	$(FLTK_FLUID) -c testMG.fl
+
+testMG: Fl_MultiGroup.o testMG.o
+	$$($(FLTK_CONFIG) --cxx)  -o testMG  Fl_MultiGroup.o testMG.o \
+	       $$($(FLTK_CONFIG) --ldflags) $$($(FLTK_CONFIG) --libs)
+
 clean:
 	rm -f $(GENSRCS) $(GENH) $(OFILES) *~
+	rm -f testMG.o testMG.cxx testMG.h
 
 clobber: clean
 	rm -f chplvis
