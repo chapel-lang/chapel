@@ -49,7 +49,11 @@ static int chpl_unwind_getLineNum(char *process_name, void *addr){
   char* p;
   FILE *f;
 
-  sprintf(buf, "addr2line -e %s %p", process_name, addr);
+  // We use a little POSIX script for avoiding the case in which
+  // addr2line isn't present
+  sprintf(buf,
+          "if test -x /usr/bin/addr2line; then /usr/bin/addr2line -e %s %p;fi",
+          process_name, addr);
   f = popen (buf, "r");
   if(f == NULL){
     // We wasn't able to start our pipe, we just give up
