@@ -563,7 +563,6 @@ module DefaultAssociative {
       const shouldLock = dom.parSafe && !haveLock;
       if shouldLock then dom.lockTable();
       var (found, slotNum) = dom._findFilledSlot(idx, haveLock=true);
-      /*writeln("slotNum: ", slotNum);*/
       if found {
         if shouldLock then dom.unlockTable();
         return data(slotNum);

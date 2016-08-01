@@ -199,7 +199,6 @@ class SparseBlockDom: BaseSparseDomImpl {
   // how to allocate a new array over this domain
   //
   proc dsiBuildArray(type eltType) {
-    /*writeln("Build array called");*/
     var arr = new SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType,
         stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this);
     arr.setup();
@@ -319,8 +318,9 @@ class SparseBlockArr: BaseSparseArr {
   param stridable: bool;
   type sparseLayoutType = DefaultDist;
 
-  // child class' fields initializers will not have dom set up correctly. domain
-  // of locArr should be dom.dist.targetLocDom
+  // ideally I wanted to have `var locArr: [dom.dist.targetLocDom]`. However,
+  // superclass' fields cannot be used in child class' field initializers. See
+  // the constructor for the workaround.
   var locArrDom: domain(rank,idxType);
   var locArr: [locArrDom] LocSparseBlockArr(eltType, rank, idxType, stridable,
       sparseLayoutType);
@@ -330,7 +330,6 @@ class SparseBlockArr: BaseSparseArr {
 
   proc SparseBlockArr(type eltType, param rank, type idxType, param stridable,
       type sparseLayoutType ,dom) {
-    /*writeln("Constructor called");*/
     locArrDom = dom.dist.targetLocDom;
   }
 
@@ -339,7 +338,6 @@ class SparseBlockArr: BaseSparseArr {
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocales(localeIdx) {
         const locDom = dom.getLocDom(localeIdx);
-        /*writeln(locArr.domain);*/
         locArr(localeIdx) = new LocSparseBlockArr(eltType, rank, idxType,
             stridable, sparseLayoutType, locDom);
         if thisid == here.id then
