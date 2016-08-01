@@ -70,7 +70,7 @@ testMG: Fl_MultiGroup.o testMG.o
 
 clean:
 	rm -f $(GENSRCS) $(GENH) $(OFILES) *~
-	rm -f testMG.o testMG.cxx testMG.h
+	rm -f testMG.o testMG.cxx testMG.h testMG
 
 clobber: clean
 	rm -f chplvis
