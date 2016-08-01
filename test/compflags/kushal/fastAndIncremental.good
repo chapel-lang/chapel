@@ -1,0 +1,3 @@
+warning: Compiling with --incremental and --fast together can lead to slower execution time than compiling with --fast only
+Computing...
+2
