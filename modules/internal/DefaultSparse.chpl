@@ -306,8 +306,13 @@ module DefaultSparse {
   }
 
 
-  class DefaultSparseArr: BaseSparseArr {
+  class DefaultSparseArr: BaseSparseArrImpl {
 
+    /*proc DefaultSparseArr(type eltType, param rank, type idxType, dom) {*/
+      /*this.dom = dom;*/
+      /*this.dataDom = dom.nnzDom;*/
+      /*writeln("dataDom is set : ", this.dataDom);*/
+    /*}*/
     // ref version
     proc dsiAccess(ind: idxType) ref where rank == 1 {
       // make sure we're in the dense bounding box

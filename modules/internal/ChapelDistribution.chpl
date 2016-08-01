@@ -591,15 +591,19 @@ module ChapelDistribution {
     var dom; /* : DefaultSparseDom(?); */
     /*var dataDom = {1..0};*/
     var data: [dom.nnzDom] eltType;
-    var irv: eltType;
 
-    /*proc BaseSparseArr(type eltType, param rank, type idxType, dom) {*/
-      /*dataDom = dom.nnzDom;*/
-    /*}*/
 
     proc dsiGetBaseDom() return dom;
+  }
+
+  class BaseSparseArrImpl: BaseSparseArr {
 
 
+    // currently there is no support implemneted for setting IRV for
+    // SparseBlockArr, therefore I moved IRV related stuff to this class, and
+    // have SparseBlockArr be a child class of BaseSparseArr directly instead
+    // of this one
+    var irv: eltType;
     proc IRV ref {
       return irv;
     }

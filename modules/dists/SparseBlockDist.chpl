@@ -425,17 +425,6 @@ class SparseBlockArr: BaseSparseArr {
 
   proc dsiGetBaseDom() return dom;
 
-  proc sparseBulkShiftArray(shiftMap, oldnnz){
-    halt("Sparse bulk shift must be handled by local arrays");
-  }
-
-  proc sparseShiftArray(shiftrange, initrange) {
-    halt("Sparse shift must be handled by local arrays");
-  }
-
-  proc sparseShiftArrayBack(shiftrange) {
-    halt("sparse shift-back must be handled by local arrays");
-  }
 }
 
 //

@@ -423,7 +423,7 @@ class CSRDom: BaseSparseDomImpl {
 }
 
 
-class CSRArr: BaseSparseArr {
+class CSRArr: BaseSparseArrImpl {
 
   proc dsiAccess(ind: rank*idxType) ref {
     // make sure we're in the dense bounding box
