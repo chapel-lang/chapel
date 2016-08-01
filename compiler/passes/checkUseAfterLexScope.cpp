@@ -124,6 +124,8 @@ static void addSymbolsToGraph(Expr* expr, SyncGraph *cur);
 static void collectFuncNodes(SyncGraph *cur, SyncGraphVec& funcNodes);
 static bool containsBeginFunction(FnSymbol* fn);
 static SyncGraph* getNextSyncNode(SyncGraph* cur, SyncGraphVec* funcNodes);
+static FnSymbol* getOriginalFunction(Symbol* sym);
+static ArgSymbol*  getTheArgSymbol(std::string sym,FnSymbol* parent);
 //static bool inlineCFG(SyncGraph* inlineNode, SyncGraph* branch);
 //static bool inlineCFG(SyncGraph* inlineNode, SyncGraph* branch);
 //static SyncGraphVec getCopyofGraph(SyncGraph* start, FnSymbol* f, int level);
@@ -327,60 +329,91 @@ static bool isOuterVar(Symbol* sym, FnSymbol* fn) {
   /**
      To do handle function calls.
   **/
-  if ( sym->hasFlag(FLAG_TEMP)          || // exclude these
-       sym->hasFlag(FLAG_CONST)         ||
-       sym->hasFlag(FLAG_TYPE_VARIABLE) ||    // 'type' aliases or formals
-       sym->hasFlag(FLAG_SINGLE)        ||
-       sym->hasFlag(FLAG_SYNC)
+  if (   sym->isParameter()               || // includes isImmediate()
+	 sym->hasFlag(FLAG_TEMP)          || // exclude these
+	 sym->hasFlag(FLAG_CONST)         ||
+	 sym->hasFlag(FLAG_TYPE_VARIABLE) ||    // 'type' aliases or formals
+	 sym->hasFlag(FLAG_SINGLE)        ||
+	 sym->hasFlag(FLAG_SYNC)          ||
+	 isFnSymbol(sym)
      )
     return false;
-   
   if (isArgSymbol(sym)) {
     ArgSymbol* argSym = toArgSymbol(sym);
     if (argSym->intent == INTENT_REF) {
-      // Symbol* parent = sym->defPoint->parentSymbol;
       return true;
     }
   }
-  /*
-    Symbol* symParent = sym->defPoint->parentSymbol;
-    if (symParent == fn                  || // no need to search
-    sym->isParameter()               || // includes isImmediate()
-    sym->hasFlag(FLAG_TEMP)          || // exclude these
-    sym->hasFlag(FLAG_CONST)         ||
-    sym->hasFlag(FLAG_TYPE_VARIABLE) ||    // 'type' aliases or formals
-    sym->hasFlag(FLAG_SYNC)          ||  // We don't want to process Sync
-    sym->hasFlag(FLAG_SINGLE)            // and sigle varibales.
-    ) {
-    return false;
+
+  Symbol* symParent = sym->defPoint->parentSymbol;
+  Symbol* parent = fn->defPoint->parentSymbol;  
+  bool flag = false;
+  while (true) {
+    if (!isFnSymbol(parent)) {
+      flag = false;
+      break;
+    } else if (symParent == parent) {
+      flag = true;
+      break;
+    } else {
+      INT_ASSERT (parent->defPoint->parentSymbol &&
+		  parent->defPoint->parentSymbol != parent); // ensure termination
+      parent = parent->defPoint->parentSymbol;
     }
-    Symbol* parent = fn->defPoint->parentSymbol;
-    while (true) {
-    if (!isFnSymbol(parent) && !isModuleSymbol(parent))
-    return false;
-    if (symParent == parent)
-    return true;
-    if (!parent->defPoint)
-    return false;
-    INT_ASSERT (parent->defPoint->parentSymbol &&
-    parent->defPoint->parentSymbol != parent); // ensure termination
-    parent = parent->defPoint->parentSymbol;
-    }
-
-
-  */
-
-  return false;
+  }
+  return flag;
 }
 
+
+static ArgSymbol*  getTheArgSymbol(std::string sym,FnSymbol* parent) {
+  for_formals(formal,parent) {
+    if(sym.compare(formal->name) == 0) {
+      return formal;
+    }
+  }
+  return NULL;
+}
+
+static FnSymbol* getOriginalFunction(Symbol* sym) {
+  if(isArgSymbol(sym)) {
+    while (isArgSymbol(sym)) {
+      ArgSymbol* argSym = toArgSymbol(sym);
+      Symbol* symParent  = sym->defPoint->parentSymbol;
+      Symbol* parent = symParent->defPoint->parentSymbol;  
+      if (argSym->intent == INTENT_REF) {
+	if(isFnSymbol(parent)) {
+	  FnSymbol* parentFunction = toFnSymbol(parent);
+	  ArgSymbol* argSymbol = getTheArgSymbol(sym->name,parentFunction);
+	  if(argSymbol != NULL) {
+	    sym = argSymbol;
+	  } else {
+	    //	    print_view(argSym->defPoint->parentSymbol);
+	    //  USR_PRINT(argSym->defPoint, "Defined here");
+	    return parentFunction;
+	  }
+	} else {
+	  return NULL;
+	}
+      } else {
+	return sym->defPoint->parentSymbol->getFunction();
+      }
+    }
+  }
+  Symbol* symParent = sym->defPoint->parentSymbol;
+  if(isFnSymbol(symParent))
+    return toFnSymbol(symParent);
+  return NULL;
+}
 
 static void addSymbolsToGraph(Expr* expr, SyncGraph *cur) {
   std::vector<SymExpr*> symExprs;
   collectSymExprs(expr, symExprs);
   for_vector (SymExpr, se, symExprs) {
     Symbol* sym = se->var;
-    if (isOuterVar(sym, sym->getFunction())) {
+    if (isOuterVar(sym, expr->getFunction())) {
+      FnSymbol* fn = getOriginalFunction(sym);
       cur->contents.add_exclusive(se);
+      cur->syncFunctions.add(fn);
     }
   }
   cur = addSyncExprs(expr, cur);
@@ -572,20 +605,13 @@ static SyncGraph* handleBlockStmt(BlockStmt* stmt, SyncGraph *cur){
 }
 
 static SyncGraph* handleCallExpr(CallExpr* callExpr, SyncGraph *cur){
-  // if (callExpr->theFnSymbol() != NULL  && 
-  //  callExpr->theFnSymbol()->getModule()->modTag == MOD_USER) {
+  if (callExpr->isNamed("begin_fn")) {
     /**
-       TODO:
-       We are getting duplicate entries for the function calls.
-       So we skip all uses of the variables in function calls.
-       Also the begin functions also create a function call at
-       the end of the definition of the begin function.
-       
-       Update : Not always the case.
+       Auto created call no need to add.
     **/
-  // } else {
-  addSymbolsToGraph(callExpr, cur);
-    //  }
+  } else {
+    addSymbolsToGraph(callExpr, cur);
+  }
   return cur;
 }
 
@@ -647,6 +673,7 @@ static bool containsBeginFunction(FnSymbol* fn) {
     return false;
   }
   std::vector<CallExpr*> callExprs;
+  
   collectCallExprs(fn, callExprs);
   for_vector (CallExpr, call, callExprs) {
     FnSymbol* caleeFn = call->theFnSymbol();
