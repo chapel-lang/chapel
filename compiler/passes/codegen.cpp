@@ -1100,9 +1100,11 @@ static void codegen_header(bool isHeader) {
   genComment("Virtual Method Table");
   genVirtualMethodTable(types,isHeader);
 
-  genComment("Global Variables");
-  forv_Vec(VarSymbol, varSymbol, globals) {
-    varSymbol->codegenGlobalDef(isHeader);
+  if(fIncrementalCompilation || isHeader) {
+    genComment("Global Variables");
+    forv_Vec(VarSymbol, varSymbol, globals) {
+      varSymbol->codegenGlobalDef(isHeader);
+    }
   }
   flushStatements();
 
@@ -1466,6 +1468,10 @@ void codegen(void) {
     if( ! llvmCodegen )
       USR_WARN("C code generation for packed pointers not supported");
   }
+
+  if(fIncrementalCompilation && fFastFlag)
+    USR_WARN("Compiling with --incremental and --fast together can lead to "
+             "slower execution time than compiling with --fast only");
 
   if( llvmCodegen ) {
 #ifndef HAVE_LLVM
