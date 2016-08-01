@@ -46,7 +46,7 @@ struct SyncGraph {
   FnSymbol* fnSymbol;
   SyncGraph* parent;
   Vec<SymExpr*>  contents;
-  Vec<FnSymbol*> syncFunctions;
+  Vec<BlockStmt*> syncScope;
   /***
       TODO: Is This model adequate ?
 
@@ -65,6 +65,7 @@ struct SyncGraph {
   GraphNodeStatus syncType;
   bool loopNode;
   bool conditionalNode;
+  bool insideSyncStmt;
   /*
     SyncGraph* child() {
     return child;
@@ -115,6 +116,7 @@ static SyncGraph* handleExpr(Expr* expr, SyncGraph *cur);
 static SyncGraph* handleFunction(FnSymbol* fn, SyncGraph *cur);
 static SyncGraph* handleBegin(FnSymbol* fn, SyncGraph* cur);
 static SyncGraph* handleCallExpr(CallExpr* fn, SyncGraph* cur);
+static SyncGraph* handleSyncStatement(BlockStmt* block,SyncGraph* cur);
 static bool isOuterVar(Symbol* sym, FnSymbol* fn);
 //bool isSymbolvarisOfInterest(Symbol* sym, Expr * node);
 //static SyncGraph* addSyncExprs(SymExpr *expr, SyncGraph *cur);
@@ -125,8 +127,11 @@ static void addSymbolsToGraph(Expr* expr, SyncGraph *cur);
 static void collectFuncNodes(SyncGraph *cur, SyncGraphVec& funcNodes);
 static bool containsBeginFunction(FnSymbol* fn);
 static SyncGraph* getNextSyncNode(SyncGraph* cur, SyncGraphVec* funcNodes);
-static FnSymbol* getOriginalFunction(Symbol* sym);
+static BlockStmt* getOriginalScope(Symbol* sym);
 static ArgSymbol*  getTheArgSymbol(std::string sym,FnSymbol* parent);
+static BlockStmt* getSyncBlockStmt(BlockStmt* def, SyncGraph *cur);
+static bool isInsideSyncStmt(Expr* expr);
+static bool shouldSync(BlockStmt *fn);
 //static bool inlineCFG(SyncGraph* inlineNode, SyncGraph* branch);
 //static bool inlineCFG(SyncGraph* inlineNode, SyncGraph* branch);
 //static SyncGraphVec getCopyofGraph(SyncGraph* start, FnSymbol* f, int level);
@@ -194,6 +199,8 @@ static void linkSyncNodes(SyncGraph *signal, SyncGraph *wait) {
   signal->syncPoints.add(wait);
   wait->syncPoints.add(signal);
 }
+
+
 
 
 /**
@@ -375,7 +382,7 @@ static ArgSymbol*  getTheArgSymbol(std::string sym,FnSymbol* parent) {
   return NULL;
 }
 
-static FnSymbol* getOriginalFunction(Symbol* sym) {
+static BlockStmt* getOriginalScope(Symbol* sym) {
   if(isArgSymbol(sym)) {
     while (isArgSymbol(sym)) {
       ArgSymbol* argSym = toArgSymbol(sym);
@@ -388,21 +395,24 @@ static FnSymbol* getOriginalFunction(Symbol* sym) {
 	  if(argSymbol != NULL) {
 	    sym = argSymbol;
 	  } else {
-	    //	    print_view(argSym->defPoint->parentSymbol);
-	    //  USR_PRINT(argSym->defPoint, "Defined here");
-	    return parentFunction;
+	    // it is defined in this level
+	    // TODO
+	    return parentFunction->body;
 	  }
+	} else if (isFnSymbol(symParent)) {
+	  return toFnSymbol(symParent)->body;
 	} else {
-	  return NULL;
+	  break;
 	}
       } else {
-	return sym->defPoint->parentSymbol->getFunction();
+	return sym->defPoint->getScopeBlock();
       }
     }
+    
+  } else {
+    return sym->defPoint->getScopeBlock();
   }
-  Symbol* symParent = sym->defPoint->parentSymbol;
-  if(isFnSymbol(symParent))
-    return toFnSymbol(symParent);
+
   return NULL;
 }
 
@@ -412,9 +422,11 @@ static void addSymbolsToGraph(Expr* expr, SyncGraph *cur) {
   for_vector (SymExpr, se, symExprs) {
     Symbol* sym = se->var;
     if (isOuterVar(sym, expr->getFunction())) {
-      FnSymbol* fn = getOriginalFunction(sym);
-      cur->contents.add_exclusive(se);
-      cur->syncFunctions.add(fn);
+      BlockStmt* block = getOriginalScope(sym);
+      if(shouldSync(block)){
+	cur->contents.add_exclusive(se);
+	cur->syncScope.add(block);
+      }
     }
   }
   cur = addSyncExprs(expr, cur);
@@ -577,6 +589,40 @@ static void checkOrphanStackVar(SyncGraph *root) {
 }
 
 
+static bool isInsideSyncStmt(Expr* expr) {
+  while(expr != NULL) {
+    if(isBlockStmt(expr)) {
+      Expr* previous = expr->prev;
+      if(isCallExpr(previous)) {
+	if(toCallExpr(previous)->isPrimitive(PRIM_SET_END_COUNT)){
+	  return true;
+	}
+      }
+    }
+  expr = expr->parentExpr;
+  }
+  return false;
+}
+
+
+static BlockStmt* getSyncBlockStmt(BlockStmt* block, SyncGraph *cur) {
+  for_alist (node, block->body) {
+    if(isCallExpr(node)){
+      if(toCallExpr(node)->isPrimitive(PRIM_SET_END_COUNT)) {
+	if(isBlockStmt(node->next))
+	  return toBlockStmt(node->next);
+      }
+    }
+  }
+  return NULL;
+}
+
+static SyncGraph* handleSyncStatement(BlockStmt* block,SyncGraph* cur) {
+  // TODO
+  isInsideSyncStmt(block);  
+  return cur;
+}
+
 static SyncGraph* handleDefExpr(DefExpr* def, SyncGraph *cur){
   if (isFnSymbol(def->sym)) {
     FnSymbol* fn = toFnSymbol(def->sym);
@@ -594,10 +640,36 @@ static SyncGraph* handleDefExpr(DefExpr* def, SyncGraph *cur){
   return cur;
 }
 
+static bool shouldSync(BlockStmt *block){
+  // TODO : this should handle all cases where the 
+  // scope of declaration function fn is beyond
+  // a sync statement then we need not worry  about 
+  // syncing it.
+  return true;
+}
 
+static SyncGraph* handleBlockStmt(BlockStmt* stmt, SyncGraph *cur) {
+  if(stmt->body.length == 0)
+    return cur;
 
-static SyncGraph* handleBlockStmt(BlockStmt* stmt, SyncGraph *cur){
-  if (stmt->body.length != 0 ) {
+ bool handled = false;
+
+ if(isDefExpr(stmt->body.first())) {
+   DefExpr* def = toDefExpr(stmt->body.first());
+    if(isVarSymbol(def->sym)) {
+      VarSymbol* var = toVarSymbol(def->sym);
+      if(strcmp(var->name,"_endCountSave") == 0) {
+	//start of sync statement
+	BlockStmt* syncblock = getSyncBlockStmt(stmt,cur);
+	if(syncblock !=  NULL){
+	  handled = true;
+	  cur = handleSyncStatement(stmt,cur);
+	}
+      }
+    }
+  }
+  
+  if (handled == false) {
     for_alist (node, stmt->body) {
       cur = handleExpr(node, cur);
     }
@@ -605,7 +677,7 @@ static SyncGraph* handleBlockStmt(BlockStmt* stmt, SyncGraph *cur){
   return cur;
 }
 
-static SyncGraph* handleCallExpr(CallExpr* callExpr, SyncGraph *cur){
+static SyncGraph* handleCallExpr(CallExpr* callExpr, SyncGraph *cur) {
   if (callExpr->isNamed("begin_fn")) {
     /**
        Auto created call no need to add.
@@ -694,6 +766,7 @@ void checkUseAfterLexScope(){
     }
   }
   forv_Vec (FnSymbol, fn, aFnSymbols) {
+    //print_view(fn);
     syncGraphRoot =  new SyncGraph();
     handleFunction(fn, syncGraphRoot);
     checkOrphanStackVar(syncGraphRoot);
