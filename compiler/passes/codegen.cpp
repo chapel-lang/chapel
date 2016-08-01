@@ -58,7 +58,7 @@ std::string zlineToString(BaseAST* ast) {
 }
 void zlineToFileIfNeeded(BaseAST* ast, FILE* outfile) {
   if (printCppLineno)
-    fprintf(outfile, "/* ZLINE: %d %s */\n", ast->linenum(), ast->fname());
+    fprintf(outfile, "%s", zlineToString(ast).c_str());
 }
 
 static char idCommentBuffer[32];
