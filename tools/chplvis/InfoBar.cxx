@@ -28,7 +28,7 @@
 static const int CR_Left = 220;
 
 #ifdef __APPLE__
-static const int Y_OFF = 10;
+static const int Y_OFF = 0;
 #else
 static const int Y_OFF = 0;
 #endif
@@ -93,9 +93,9 @@ void InfoBar::draw(void)
 
   // Separation line between InfoBar and the display field
   
-  fl_color(FL_BLACK);
-  fl_line_style(FL_SOLID, 2, NULL);
-  fl_line(x(),y()+h()-Y_OFF,x()+w(),y()+h()-Y_OFF);
+  //fl_color(FL_BLACK);
+  //fl_line_style(FL_SOLID, 1, NULL);
+  //fl_line(x(),y()+h()-Y_OFF,x()+w(),y()+h()-Y_OFF);
 
   // Color Reference
   int ix;
@@ -109,6 +109,7 @@ void InfoBar::draw(void)
       fl_line(x()+CR_Left+3*ix, cr_y+cr_h+2, x()+CR_Left+3*ix, cr_y+cr_h+6);
     }
   }
+
   fl_color(FL_BLACK);
   fl_line_style(FL_SOLID,1,NULL);
   fl_draw("1", x()+CR_Left-20, y_center-20, 15, 40, FL_ALIGN_CENTER, NULL, 0);

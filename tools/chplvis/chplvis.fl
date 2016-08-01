@@ -38,6 +38,9 @@ decl {\#include <FL/fl_ask.H>} {private local
 decl {\#include <FL/Fl_Color_Chooser.H>} {private local
 } 
 
+decl {\#include "Fl_MultiGroup.H"} {public global
+} 
+
 decl {\#include <unistd.h>} {public local
 } 
 
@@ -141,7 +144,7 @@ Function {make_setting_window()} {open
 } {
   Fl_Window SettingsWin {
     label Settings open
-    xywh {1297 787 560 225} type Double color 7
+    xywh {1295 836 560 225} type Double color 7
     class Settings visible
   } {
     Fl_Button {} {
@@ -199,10 +202,10 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {39 273 500 590} type Double color 7 hide resizable size_range {500 590 0 0}
+    xywh {778 185 560 590} type Double color 7 resizable size_range {560 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
-      xywh {0 0 500 20} color 55
+      xywh {0 0 560 20} color 55
       class Fl_Sys_Menu_Bar
     } {
       Submenu {} {
@@ -327,13 +330,21 @@ MainWindow->redraw();}
         }
       }
     }
-    Fl_Box Info {
-      xywh {0 20 500 70} box FLAT_BOX color 7
+    Fl_Box Info {selected
+      xywh {0 20 560 70} color 0
       class InfoBar
     }
-    Fl_Box DbgView {
-      xywh {0 90 500 500} box FLAT_BOX color 55 selection_color 48 resizable
-      class ViewField
+    Fl_Group DataControl {open
+      xywh {0 90 60 500} box BORDER_FRAME color 0
+    } {}
+    Fl_Group DataField {open
+      xywh {60 90 500 500} box BORDER_FRAME color 0 resizable
+      class Fl_MultiGroup
+    } {
+      Fl_Box DbgView {
+        xywh {60 90 500 500} box FLAT_BOX color 55 selection_color 48
+        class ViewField
+      }
     }
   }
   code {VisSettings.readFromFile();
@@ -362,6 +373,5 @@ MainWindow->callback(mainWinCallback);
 if (VisSettings.save_WH) {
    MainWindow->size(VisSettings.mainW,VisSettings.mainH);
    MainWindow->redraw();
-}} {selected
-  }
+}} {}
 } 
