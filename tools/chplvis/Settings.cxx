@@ -28,10 +28,15 @@
 #include <unistd.h>
 #include <errno.h>
 
-static const int CR_Left = 210;
+// Color Reference location and height
+static const int cr_x = 180;
+static const int cr_y = 35;  
+static const int cr_h = 20;
+
 
 Settings::Settings (int x, int y, int W, int H, const char *l)
-  :  Fl_Double_Window (W, H, l) {
+  :  Fl_Group (x, y, W, H, l) {
+  VisSettings.readFromFile();
   copyIn();
 }
 
@@ -94,23 +99,18 @@ void Settings::setHotColor(void)
 
 void Settings::draw(void)
 {
-  int cr_y = 45;  
-  int cr_h = 25;
-
-  //saveWH->value(VisSettings.save_WH);
-
-  Fl_Double_Window::draw();
+  Fl_Group::draw();
 
   // Color Reference
   int ix;
   for (ix = 0; ix <= 30; ix++) {
     fl_color(heatColor(ix+1,31));
     fl_line_style(FL_SOLID,3,NULL);
-    fl_line(CR_Left+3*ix,cr_y,CR_Left+3*ix,cr_y+cr_h);
+    fl_line(x()+cr_x+3*ix, y()+cr_y, x()+cr_x+3*ix, y()+cr_y+cr_h);
     if ((ix%3) == 0) {
       fl_color(FL_BLACK);
       fl_line_style(FL_SOLID,1,NULL);
-      fl_line(CR_Left+3*ix, cr_y+cr_h+2, CR_Left+3*ix, cr_y+cr_h+6);
+      fl_line(x()+cr_x+3*ix, y()+cr_y+cr_h+2, x()+cr_x+3*ix, y()+cr_y+cr_h+6);
     }
   }
 

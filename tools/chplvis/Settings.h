@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include <FL/Fl_Double_Window.H>
+#include <FL/Fl_Group.H>
 
 #ifndef SETTINGS_H
 #define SETTINGS_H
@@ -54,7 +54,7 @@ class SettingsData {
   void readFromFile (void);
 };
 
-class Settings : public Fl_Double_Window {
+class Settings : public Fl_Group {
   public: 
     Settings (int x, int y, int W, int H, const char *l=0);
 

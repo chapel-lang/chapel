@@ -23,8 +23,7 @@
  */
 
 #include "Fl_MultiGroup.H"
-
-#include <stdio.h>  // for debugging
+#include <FL/Fl_Window.H>
 
 Fl_MultiGroup::Fl_MultiGroup (int x, int y, int w, int h, const char *l)
   : Fl_Group(x, y, w, h, l) 
@@ -47,7 +46,7 @@ bool Fl_MultiGroup::selectChild (int which)
   // Select the new child
   selectedChild = which;
   child(which)->show();
-  redraw();
+  window()->redraw();
   return true;
 }
 
@@ -62,6 +61,8 @@ bool Fl_MultiGroup::selectChild (Fl_Widget *w)
 
 bool Fl_MultiGroup::pushChild (int which)
 {
+  if (which < 0 || which >= children())
+    return false;
   top++;
   if (top == stackSize) {
     int i;
@@ -74,10 +75,11 @@ bool Fl_MultiGroup::pushChild (int which)
     childStack = newStack;
   }
   childStack[top] = child(selectedChild);
-  if (selectChild(which))
+  if (selectChild(which)) {
     return true;
+  }
   top--;
-  redraw();
+  window()->redraw();
   return false;
 }
 
@@ -91,7 +93,7 @@ bool Fl_MultiGroup::pushChild (Fl_Widget *w)
 
 bool Fl_MultiGroup::popChild ()
 {
-  if (top < 0)
+  if (top < 0) 
     return false;
   selectChild(childStack[top--]);
   return true;
@@ -105,7 +107,6 @@ void Fl_MultiGroup::add (Fl_Widget &o)
   int  X, Y, W, H;
    X = x();  Y = y();  W = w();  H = h();
 
-   printf ("Multigroup Add &.\n");
   if (children() > 0) {
     o.hide();
   } else {
@@ -118,13 +119,11 @@ void Fl_MultiGroup::add (Fl_Widget &o)
 
 void Fl_MultiGroup::add (Fl_Widget *o)
 {
-  printf ("Multigroup Add &.\n");
   if (children() > 0) {
     o->hide();
   } else {
     o->show();
     selectedChild = 0;
-    
   }
   Fl_Group::add(o);
 }
@@ -161,6 +160,6 @@ void Fl_MultiGroup::end()
      child(i)->hide();
    }
    selectChild(0);
-   redraw();
+   window()->redraw();
  }
 

@@ -140,61 +140,6 @@ w->updateData(locNum, tagNum);
 return w;} {}
 } 
 
-Function {make_setting_window()} {open
-} {
-  Fl_Window SettingsWin {
-    label Settings open
-    xywh {1295 836 560 225} type Double color 7
-    class Settings visible
-  } {
-    Fl_Button {} {
-      label Cancel
-      callback {SettingsWin->copyIn();
-SettingsWin->hide();}
-      xywh {55 155 105 25}
-    }
-    Fl_Button {} {
-      label Save
-      callback {SettingsWin->copyOut();
-SettingsWin->hide();
-DbgView->redrawAllWindows();
-VisSettings.saveToFile();}
-      xywh {200 155 105 25}
-    }
-    Fl_Button {} {
-      label {Use for this run only}
-      callback {bool oldWH = VisSettings.save_WH;
-SettingsWin->copyOut();
-VisSettings.save_WH = oldWH;
-SettingsWin->hide();
-DbgView->redrawAllWindows();}
-      xywh {350 155 170 25}
-    }
-    Fl_Button {} {
-      label {Set Cool Color}
-      callback {SettingsWin->setCoolColor();}
-      xywh {55 45 120 25}
-    }
-    Fl_Button {} {
-      label {Set Hot Color}
-      callback {SettingsWin->setHotColor();}
-      xywh {350 45 120 25}
-    }
-    Fl_Button {} {
-      label {Reset Heat Colors}
-      callback {SettingsWin->reset();}
-      xywh {350 100 165 25}
-    }
-    Fl_Check_Button saveWH {
-      label {  Restore main window size}
-      callback {SettingsWin->toggleSaveWH();
-saveWH->value(SettingsWin->getSaveWH());}
-      xywh {55 100 215 25} type Normal box FLAT_BOX down_box DOWN_BOX
-      code0 {saveWH->value(SettingsWin->getSaveWH());}
-    }
-  }
-} 
-
 decl {SettingsData VisSettings;} {public local
 } 
 
@@ -202,7 +147,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {778 185 560 590} type Double color 7 resizable size_range {560 590 0 0} visible
+    xywh {1055 472 560 590} type Double color 7 hide resizable size_range {560 590 0 0}
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55
@@ -232,9 +177,8 @@ if (selfile) {
         }
         MenuItem {} {
           label Settings
-          callback {if (!SettingsWin)
-  make_setting_window();
-SettingsWin->show();}
+          callback {SettingsGrp->copyIn();
+DataField->pushChild(SettingsGrp);} selected
           xywh {0 0 100 20}
         }
         MenuItem {} {
@@ -330,25 +274,78 @@ MainWindow->redraw();}
         }
       }
     }
-    Fl_Box Info {selected
+    Fl_Box Info {
       xywh {0 20 560 70} color 0
       class InfoBar
     }
     Fl_Group DataControl {open
       xywh {0 90 60 500} box BORDER_FRAME color 0
-    } {}
+    } {
+      Fl_Button {} {
+        xywh {0 588 60 2}
+      }
+    }
     Fl_Group DataField {open
       xywh {60 90 500 500} box BORDER_FRAME color 0 resizable
       class Fl_MultiGroup
     } {
-      Fl_Box DbgView {
-        xywh {60 90 500 500} box FLAT_BOX color 55 selection_color 48
+      Fl_Box DbgView {user_data_type {void*}
+        xywh {60 90 500 500} box BORDER_FRAME color 0 selection_color 48 hide
         class ViewField
+      }
+      Fl_Group SettingsGrp {user_data_type {void*} open
+        xywh {60 90 500 500} box BORDER_FRAME color 0
+        class Settings
+      } {
+        Fl_Check_Button saveWH {
+          label {  Restore main window size} user_data_type {void*}
+          callback {SettingsGrp->toggleSaveWH();
+saveWH->value(SettingsGrp->getSaveWH());}
+          xywh {75 180 215 25} type Normal box FLAT_BOX down_box DOWN_BOX
+          code0 {saveWH->value(SettingsGrp->getSaveWH());}
+        }
+        Fl_Button {} {
+          label Cancel
+          callback {DataField->popChild();}
+          xywh {75 235 105 25}
+        }
+        Fl_Button {} {
+          label Save
+          callback {SettingsGrp->copyOut();
+VisSettings.saveToFile();
+DataField->popChild();}
+          xywh {220 235 105 25}
+        }
+        Fl_Button {} {
+          label {Use for this run only}
+          callback {bool oldWH = VisSettings.save_WH;
+SettingsGrp->copyOut();
+VisSettings.save_WH = oldWH;
+DataField->popChild();}
+          xywh {370 235 170 25}
+        }
+        Fl_Button {} {
+          label {Set Cool Color}
+          callback {SettingsGrp->setCoolColor();}
+          xywh {75 125 120 25}
+        }
+        Fl_Button {} {
+          label {Set Hot Color}
+          callback {SettingsGrp->setHotColor();}
+          xywh {370 125 120 25}
+        }
+        Fl_Button {} {
+          label {Reset Heat Colors}
+          callback {SettingsGrp->reset();}
+          xywh {370 180 165 25}
+        }
+        Fl_Button {} {
+          xywh {550 565 10 25} box NO_BOX color 7 resizable
+        }
       }
     }
   }
-  code {VisSettings.readFromFile();
-if (argc > 1 && argv[1][1] != '-') {
+  code {if (argc > 1 && argv[1][1] != '-') {
     //printf ("argv[1] is %s\\n", argv[1]);
     if (!VisData.LoadData(argv[1],true)) {
        exit(1);
