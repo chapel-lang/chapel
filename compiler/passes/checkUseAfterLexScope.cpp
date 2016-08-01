@@ -43,9 +43,10 @@ struct SyncGraph {
  begin Function from Root Node
  */
   int levelID;
-  FnSymbol * fnSymbol;
+  FnSymbol* fnSymbol;
   SyncGraph* parent;
   Vec<SymExpr*>  contents;
+  Vec<FnSymbol*> syncFunctions;
   /***
       TODO: Is This model adequate ?
 
