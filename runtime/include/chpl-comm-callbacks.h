@@ -135,7 +135,7 @@ typedef struct {
     struct chpl_comm_info_comm { // put, put_nb, get, get_nb
       void *addr;                // Source address
       void *raddr;               // Destination address
-      size_t size;		 // Size of communication
+      size_t size;               // Size of communication
       int32_t typeIndex;         // type of the communcation
       int lineno;                // source line of communication
       int32_t filename;          // source file of communication
@@ -145,12 +145,12 @@ typedef struct {
       void* srcaddr;            // Source Address
       void* srcstrides;         // Source strides
 
-      void* dstaddr;		// Destination Address
-      void* dststrides;		// Destination strides
-      void* count;		// 
-      int32_t stridelevels;     // 
-      int32_t elemSize;        //
-      int32_t typeIndex;        //
+      void* dstaddr;            // Destination Address
+      void* dststrides;         // Destination strides
+      void* count;
+      int32_t stridelevels;
+      int32_t elemSize;
+      int32_t typeIndex;
       int lineno;               // source line of communication
       int32_t filename;         // source file of communication
     } comm_strd;
