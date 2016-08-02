@@ -60,7 +60,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @USE_UDP_CONDUIT_TRUE@bin_PROGRAMS = amudprun$(EXEEXT)
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/Makefile.tests
 subdir = other/amudp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4

@@ -280,7 +280,7 @@ static gasnetc_memreg_t * gasnetc_find_reg(void *src_addr, int nbytes, int rank)
 
 #if MXM_API < MXM_VERSION(1,5)
 
-inline uint32_t gasnetc_find_lkey(void *src_addr, int nbytes)
+uint32_t gasnetc_find_lkey(void *src_addr, int nbytes)
 {
 #if GASNET_SEGMENT_FAST
     gasnetc_memreg_t * reg;
@@ -295,14 +295,14 @@ inline uint32_t gasnetc_find_lkey(void *src_addr, int nbytes)
 #endif
 }
 
-inline uint32_t gasnetc_find_rkey(void *src_addr, int nbytes, int rank)
+uint32_t gasnetc_find_rkey(void *src_addr, int nbytes, int rank)
 {
     return MXM_MKEY_NONE;
 }
 
 #elif MXM_API < MXM_VERSION(2,0)
 
-inline mxm_mem_h gasnetc_find_memh(void *addr, int nbytes)
+mxm_mem_h gasnetc_find_memh(void *addr, int nbytes)
 {
 #if GASNET_SEGMENT_FAST
     gasnetc_memreg_t * reg;
@@ -317,14 +317,14 @@ inline mxm_mem_h gasnetc_find_memh(void *addr, int nbytes)
 #endif
 }
 
-inline mxm_mem_h gasnetc_find_remote_memh(void *addr, int nbytes, int rank)
+mxm_mem_h gasnetc_find_remote_memh(void *addr, int nbytes, int rank)
 {
     return NULL; /* No zcopy on receive side, so don't bother */
 }
 
 #else
 
-inline mxm_mem_key_t *gasnetc_find_remote_mkey(void *addr, int nbytes, int rank)
+mxm_mem_key_t *gasnetc_find_remote_mkey(void *addr, int nbytes, int rank)
 {
 #if (GASNET_SEGMENT_FAST)
     gasnetc_memreg_t * reg = gasnetc_find_reg(addr, nbytes, rank);

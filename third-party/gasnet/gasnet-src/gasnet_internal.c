@@ -691,8 +691,10 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
   m = myext; while (*mn) { *m = tolower(*mn); m++; mn++; }
   *m = '\0';
   if ( /* is a portable network conduit */
-      (!strcmp("mpi",mycore) && !strcmp("reference",myext)) || 
-      (!strcmp("udp",mycore) && !strcmp("reference",myext))
+         (!strcmp("mpi",mycore) && !strcmp("reference",myext))
+      || (!strcmp("udp",mycore) && !strcmp("reference",myext))
+      || (!strcmp("ofi",mycore) && !strcmp("ofi",myext))
+      || (!strcmp("portals4",mycore) && !strcmp("portals4",myext))
       ) {
     const char *p = GASNETI_CONDUITS;
     char natives[255];
@@ -710,9 +712,11 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
         p += len;
         p += strspn(p,GASNETI_CONDUITS_DELIM);
         /* Ignore the portable conduits */
+        if (!strcmp(name,"smp")) continue;
         if (!strcmp(name,"mpi")) continue;
         if (!strcmp(name,"udp")) continue;
-        if (!strcmp(name,"smp")) continue;
+        if (!strcmp(name,"ofi")) continue;
+        if (!strcmp(name,"portals4")) continue;
       #if !GASNET_SEQ
         /* Ignore conduits that lack thread safety */
         if (!strcmp(name,"shmem")) continue;
