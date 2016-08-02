@@ -144,6 +144,8 @@ all:
     - Disable jemalloc's stat gathering by default (#4180)
   07/20/16:
     - Generated code changes in preparation for incremental compilation (#4177)
+  08/02/16:
+    - Restore static to normal compilation generated code (#4233)
 
 AllCompTime:
   11/09/14:
