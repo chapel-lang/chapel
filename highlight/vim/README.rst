@@ -68,5 +68,5 @@ file (without the ":").
 
   ``: filetype indent on``
 
-==========================================================================
-vim:tw=78:ts=8:ft=help:
+..
+  vim:tw=78:ts=8:ft=help:
