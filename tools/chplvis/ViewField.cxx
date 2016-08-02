@@ -182,8 +182,7 @@ static void selTag(Fl_Widget *w, void *p)
       }
     DbgView->selectData(ix);
   }
-  DbgView->redraw();
-  Info->redraw();
+  MainWindow->redraw();
 }
 
 static void toggleUnique (Fl_Widget *w, void *p) {

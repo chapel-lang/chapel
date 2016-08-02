@@ -62,6 +62,9 @@ decl {\#include "CommWin.h"} {public local
 decl {\#include "ConcurrencyWin.h"} {public local
 } 
 
+decl {\#include "GraphScroll.h"} {public global
+} 
+
 decl {\#include "Settings.h"} {public local
 } 
 
@@ -147,7 +150,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {1055 472 560 590} type Double color 7 hide resizable size_range {560 590 0 0}
+    xywh {779 165 560 590} type Double color 7 hide resizable size_range {560 590 0 0}
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55
@@ -178,7 +181,7 @@ if (selfile) {
         MenuItem {} {
           label Settings
           callback {SettingsGrp->copyIn();
-DataField->pushChild(SettingsGrp);} selected
+DataField->pushChild(SettingsGrp);}
           xywh {0 0 100 20}
         }
         MenuItem {} {
@@ -191,12 +194,23 @@ exit(0);}
         }
       }
       Submenu {} {
-        label Layout open
-        xywh {0 0 70 21} hide deactivate
+        label View open
+        xywh {0 0 70 21}
       } {
         MenuItem {} {
-          label Ellipse
+          label {Zoom In}
+          callback {DbgScroll->zoomIn();}
           tooltip {Only choice at this time} xywh {0 0 34 21}
+        }
+        MenuItem {} {
+          label {Zoom Out}
+          callback {DbgScroll->zoomOut();}
+          xywh {0 0 100 20}
+        }
+        MenuItem {} {
+          label {Reset Zoom}
+          callback {DbgScroll->reset();}
+          xywh {0 0 100 20}
         }
       }
       Submenu {} {
@@ -275,26 +289,35 @@ MainWindow->redraw();}
       }
     }
     Fl_Box Info {
-      xywh {0 20 560 70} color 0
+      xywh {0 20 560 70} box BORDER_FRAME color 0
       class InfoBar
     }
     Fl_Group DataControl {open
-      xywh {0 90 60 500} box BORDER_FRAME color 0
+      xywh {0 89 60 501} box BORDER_FRAME color 0
     } {
       Fl_Button {} {
         xywh {0 588 60 2}
       }
     }
     Fl_Group DataField {open
-      xywh {60 90 500 500} box BORDER_FRAME color 0 resizable
+      xywh {60 90 505 505} color 0 resizable
       class Fl_MultiGroup
     } {
-      Fl_Box DbgView {user_data_type {void*}
-        xywh {60 90 500 500} box BORDER_FRAME color 0 selection_color 48 hide
-        class ViewField
+      Fl_Group GraphView {open
+        xywh {60 90 500 500} color 7
+      } {
+        Fl_Scroll DbgScroll {open
+          xywh {60 90 495 495} color 7 resizable
+          class GraphScroll
+        } {
+          Fl_Box DbgView {user_data_type {void*} selected
+            xywh {60 90 500 500} color 0 selection_color 48 resizable
+            class ViewField
+          }
+        }
       }
-      Fl_Group SettingsGrp {user_data_type {void*} open
-        xywh {60 90 500 500} box BORDER_FRAME color 0
+      Fl_Group SettingsGrp {user_data_type {void*}
+        xywh {60 90 500 500} color 0 hide
         class Settings
       } {
         Fl_Check_Button saveWH {
@@ -341,6 +364,7 @@ DataField->popChild();}
         }
         Fl_Button {} {
           xywh {550 565 10 25} box NO_BOX color 7 resizable
+          code0 {o->clear_visible_focus();}
         }
       }
     }

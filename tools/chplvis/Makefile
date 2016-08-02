@@ -43,9 +43,11 @@ CXXFLAGS=  -Wall -I. -g
 
 
 SRCS=   ViewField.cxx DataModel.cxx Event.cxx InfoBar.cxx LocaleWin.cxx \
-        CommWin.cxx ConcurrencyWin.cxx Settings.cxx  Fl_MultiGroup.cxx
+        CommWin.cxx ConcurrencyWin.cxx Settings.cxx  Fl_MultiGroup.cxx \
+        GraphScroll.cxx
 HFILES= ViewField.h   DataModel.h   Event.h   InfoBar.h   LocaleWin.h \
-        CommWin.h   ConcurrencyWin.h   Settings.h Fl_MultiGroup.H
+        CommWin.h   ConcurrencyWin.h   Settings.h Fl_MultiGroup.H \
+        GraphScroll.h
 
 GENSRCS= chplvis.cxx
 GENH= chplvis.h
