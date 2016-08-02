@@ -57,9 +57,9 @@ static void cb_comm_put(const chpl_comm_cb_info_t *info);
 static void cb_comm_get(const chpl_comm_cb_info_t *info);
 static void cb_comm_put_strd(const chpl_comm_cb_info_t *info);
 static void cb_comm_get_strd(const chpl_comm_cb_info_t *info);
-static void cb_comm_fork(const chpl_comm_cb_info_t *info);
-static void cb_comm_fork_nb(const chpl_comm_cb_info_t *info);
-static void cb_comm_fork_fast(const chpl_comm_cb_info_t *info);
+static void cb_comm_exeOn(const chpl_comm_cb_info_t *info);
+static void cb_comm_exeOn_nb(const chpl_comm_cb_info_t *info);
+static void cb_comm_exeOn_fast(const chpl_comm_cb_info_t *info);
 
 int chpl_vdebug_fd = -1;
 int chpl_vdebug = 0;
@@ -211,7 +211,7 @@ void chpl_vdebug_stop (void) {
 
 // Record>  VdbMark: time.sec nodeId taskId
 //
-// This marks taskID as being a xxxVdebug() call.   Any forks or tasks
+// This marks taskID as being a xxxVdebug() call.   Any exeOns or tasks
 // started by this task and descendants of this task are related to
 // the xxxVdebug() call and chplvis should ignore them.
 
@@ -293,10 +293,10 @@ void cb_comm_put_nb (const chpl_comm_cb_info_t *info) {
     chpl_taskID_t commTask = chpl_task_getId();
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd, 
-                  "nb_put: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %d\n",
+                  "nb_put: %lld.%06ld %d %d %lu %#lx %#lx %d %d %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
-                  info->remoteNodeID, (unsigned long) commTask, (long) cm->addr,
-                  (long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
+                  info->remoteNodeID, (unsigned long) commTask, (unsigned long) cm->addr,
+                  (unsigned long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
                   cm->lineno, cm->filename);
   }
 }
@@ -313,10 +313,10 @@ void cb_comm_get_nb (const chpl_comm_cb_info_t *info) {
     chpl_taskID_t commTask = chpl_task_getId();
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  "nb_get: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %d\n",
+                  "nb_get: %lld.%06ld %d %d %lu %#lx %#lx %d %d %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
-                  info->remoteNodeID, (unsigned long)commTask, (long) cm->addr,
-                  (long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
+                  info->remoteNodeID, (unsigned long)commTask, (unsigned long) cm->addr,
+                  (unsigned long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
                   cm->lineno, cm->filename);
   }
 }
@@ -332,10 +332,10 @@ void cb_comm_put (const chpl_comm_cb_info_t *info) {
     chpl_taskID_t commTask = chpl_task_getId();
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  "put: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %d\n",
+                  "put: %lld.%06ld %d %d %lu %#lx %#lx %d %d %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
-                  info->remoteNodeID, (unsigned long) commTask, (long) cm->addr,
-                  (long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
+                  info->remoteNodeID, (unsigned long) commTask, (unsigned long) cm->addr,
+                  (unsigned long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
                   cm->lineno, cm->filename);
   }
 }
@@ -352,10 +352,10 @@ void cb_comm_get (const chpl_comm_cb_info_t *info) {
     chpl_taskID_t commTask = chpl_task_getId();
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  "get: %lld.%06ld %d %d %lu 0x%lx 0x%lx %d %d %d %d %d\n",
+                  "get: %lld.%06ld %d %d %lu %#lx %#lx %d %d %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
-                  info->remoteNodeID, (unsigned long) commTask, (long) cm->addr,
-                  (long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
+                  info->remoteNodeID, (unsigned long) commTask, (unsigned long) cm->addr,
+                  (unsigned long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
                   cm->lineno, cm->filename);
   }
 }
@@ -370,10 +370,10 @@ void cb_comm_put_strd (const chpl_comm_cb_info_t *info) {
     chpl_taskID_t commTask = chpl_task_getId();
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  "st_put: %lld.%06ld %d %ld %lu 0x%lx 0x%lx 1 %d %d %d %d\n",
+                  "st_put: %lld.%06ld %d %ld %lu %#lx %#lx 1 %zd %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID, 
                   (long) info->remoteNodeID, (unsigned long) commTask,
-                  (long) cm->srcaddr, (long) cm->dstaddr, cm->elemSize,
+                  (unsigned long) cm->srcaddr, (unsigned long) cm->dstaddr, cm->elemSize,
                   cm->typeIndex, cm->lineno, cm->filename);
     // printout srcstrides and dststrides and stridelevels and count?
   }
@@ -392,10 +392,10 @@ void cb_comm_get_strd (const chpl_comm_cb_info_t *info) {
     chpl_taskID_t commTask = chpl_task_getId();
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  "st_get: %lld.%06ld %d %ld %lu 0x%lx 0x%lx 1 %d %d %d %d\n",
+                  "st_get: %lld.%06ld %d %ld %lu %#lx %#lx 1 %zd %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   (long) info->remoteNodeID, (unsigned long) commTask, 
-                  (long) cm->dstaddr, (long) cm->srcaddr, cm->elemSize,
+                  (unsigned long) cm->dstaddr, (unsigned long) cm->srcaddr, cm->elemSize,
                   cm->typeIndex, cm->lineno, cm->filename);
     // print out the srcstrides and dststrides and stridelevels and count?
   }
@@ -403,51 +403,51 @@ void cb_comm_get_strd (const chpl_comm_cb_info_t *info) {
 
 // Record>  fork: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
 
-void cb_comm_fork (const chpl_comm_cb_info_t *info) {
+void cb_comm_exeOn (const chpl_comm_cb_info_t *info) {
 
   // Visual Debug Support
   if (chpl_vdebug) {
-    const struct chpl_comm_info_comm_fork *cm = &info->iu.fork;
-    chpl_taskID_t forkTask = chpl_task_getId();
+    const struct chpl_comm_info_comm_exeOn *cm = &info->iu.exeOn;
+    chpl_taskID_t exeOnTask = chpl_task_getId();
     struct timeval tv;
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  "fork: %lld.%06ld %d %d %d %d 0x%lx %d %lu \n",
+                  "fork: %lld.%06ld %d %d %d %d %#lx %zd %lu \n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
-                  info->remoteNodeID, cm->subloc, cm->fid, (long) cm->arg,
-                  cm->arg_size, (unsigned long) forkTask);
+                  info->remoteNodeID, cm->subloc, cm->fid, (unsigned long) cm->arg,
+                  cm->arg_size, (unsigned long) exeOnTask);
   }
 }
 
 // Record>  fork_nb: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
 
 
-void  cb_comm_fork_nb (const chpl_comm_cb_info_t *info) {
+void  cb_comm_exeOn_nb (const chpl_comm_cb_info_t *info) {
   if (chpl_vdebug) {
-    const struct chpl_comm_info_comm_fork *cm = &info->iu.fork;
-    chpl_taskID_t forkTask = chpl_task_getId();
+    const struct chpl_comm_info_comm_exeOn *cm = &info->iu.exeOn;
+    chpl_taskID_t exeOnTask = chpl_task_getId();
     struct timeval tv;
     (void) gettimeofday (&tv, NULL);
-    chpl_dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d 0x%lx %d %lu\n",
+    chpl_dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d %#lx %zd %lu\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
-                  info->remoteNodeID, cm->subloc, cm->fid, (long) cm->arg, 
-                  cm->arg_size, (unsigned long)forkTask);
+                  info->remoteNodeID, cm->subloc, cm->fid, (unsigned long) cm->arg, 
+                  cm->arg_size, (unsigned long)exeOnTask);
   }
 }
 
 // Record>  f_fork: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
 
-void cb_comm_fork_fast (const chpl_comm_cb_info_t *info) {
+void cb_comm_exeOn_fast (const chpl_comm_cb_info_t *info) {
   if (chpl_vdebug) {
-    const struct chpl_comm_info_comm_fork *cm = &info->iu.fork;
-    chpl_taskID_t forkTask = chpl_task_getId();
+    const struct chpl_comm_info_comm_exeOn *cm = &info->iu.exeOn;
+    chpl_taskID_t exeOnTask = chpl_task_getId();
     struct timeval tv;
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  "f_fork: %lld.%06ld %d %d %d %d 0x%lx %d %ld\n",
+                  "f_exeOn: %lld.%06ld %d %d %d %d %#lx %zd %ld\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
-                  info->remoteNodeID, cm->subloc, cm->fid, (long) cm->arg, 
-                  cm->arg_size, (unsigned long)forkTask);
+                  info->remoteNodeID, cm->subloc, cm->fid, (unsigned long)cm->arg, 
+                  cm->arg_size, (unsigned long)exeOnTask);
   }
 }
 
@@ -498,18 +498,18 @@ int install_callbacks (void) {
     (void) uninstall_callbacks();
     return 1;
   }
-  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_fork,
-                                 cb_comm_fork)) {
+  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_exeOn,
+                                 cb_comm_exeOn)) {
     (void) uninstall_callbacks();
     return 1;
   }
-  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_fork_nb,
-                                 cb_comm_fork_nb)) {
+  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_exeOn_nb,
+                                 cb_comm_exeOn_nb)) {
     (void) uninstall_callbacks();
     return 1;
   }
-  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_fork_fast,
-                                 cb_comm_fork_fast)) {
+  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_exeOn_fast,
+                                 cb_comm_exeOn_fast)) {
     (void) uninstall_callbacks();
     return 1;
   }
@@ -538,12 +538,12 @@ int uninstall_callbacks (void) {
                                      cb_comm_put_strd);
   rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_get_strd,
                                      cb_comm_get_strd);
-  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_fork,
-                                     cb_comm_fork);
-  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_fork_nb,
-                                     cb_comm_fork_nb);
-  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_fork_fast,
-                                     cb_comm_fork_fast);
+  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_exeOn,
+                                     cb_comm_exeOn);
+  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_exeOn_nb,
+                                     cb_comm_exeOn_nb);
+  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_exeOn_fast,
+                                     cb_comm_exeOn_fast);
   return rv;
 }
 

@@ -1287,10 +1287,10 @@ void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
     chpl_ftable_call(fid, arg);
   } else {
     // Communications callback support
-    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_fork)) {
+    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_exeOn)) {
       chpl_comm_cb_info_t cb_data = 
-        {chpl_comm_cb_event_kind_fork, chpl_nodeID, node,
-         .iu.fork={subloc, fid, arg, arg_size}};
+        {chpl_comm_cb_event_kind_exeOn, chpl_nodeID, node,
+         .iu.exeOn={subloc, fid, arg, arg_size}};
       chpl_comm_do_callbacks (&cb_data);
     }
 
@@ -1383,10 +1383,10 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                                info->serial_state);
   } else {
     // Communications callback support
-    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_fork_nb)) {
+    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_exeOn_nb)) {
       chpl_comm_cb_info_t cb_data = 
-        {chpl_comm_cb_event_kind_fork_nb, chpl_nodeID, node,
-         .iu.fork={subloc, fid, arg, arg_size}};
+        {chpl_comm_cb_event_kind_exeOn_nb, chpl_nodeID, node,
+         .iu.exeOn={subloc, fid, arg, arg_size}};
       chpl_comm_do_callbacks (&cb_data);
     }
 
@@ -1419,10 +1419,10 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
     chpl_ftable_call(fid, arg);
   } else {
     // Communications callback support
-    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_fork_fast)) {
+    if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_exeOn_fast)) {
       chpl_comm_cb_info_t cb_data = 
-        {chpl_comm_cb_event_kind_fork_fast, chpl_nodeID, node,
-         .iu.fork={subloc, fid, arg, arg_size}};
+        {chpl_comm_cb_event_kind_exeOn_fast, chpl_nodeID, node,
+         .iu.exeOn={subloc, fid, arg, arg_size}};
       chpl_comm_do_callbacks (&cb_data);
     }
 

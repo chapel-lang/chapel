@@ -64,9 +64,9 @@ extern "C" {
 //     typedef void (*chpl_comm_cb_fn_t)(chpl_comm_cb_info_t* info);
 //
 //   The single argument passed to it is a pointer to information of
-//   type chpl_comm_cb_info_t, describing the task and/or event.  This
+//   type chpl_comm_cb_info_t, describing the communication operation.  This
 //   type is also defined below.  It contains a union of three different
-//   information sets dependinf only on the chpl_comm_cb_devent_kind_t
+//   information sets depending only on the chpl_comm_cb_devent_kind_t
 //   value.   
 //
 //
@@ -119,9 +119,9 @@ typedef enum {
   chpl_comm_cb_event_kind_get,       // Simple get
   chpl_comm_cb_event_kind_get_nb,    // Non-blocking get
   chpl_comm_cb_event_kind_get_strd,  // Strided get
-  chpl_comm_cb_event_kind_fork,      // regular fork
-  chpl_comm_cb_event_kind_fork_nb,   // Non-blocking fork
-  chpl_comm_cb_event_kind_fork_fast, // Fast fork
+  chpl_comm_cb_event_kind_exeOn,     // regular executeOn
+  chpl_comm_cb_event_kind_exeOn_nb,   // Non-blocking executeOn
+  chpl_comm_cb_event_kind_exeOn_fast, // Fast executeOn
   chpl_comm_cb_num_event_kinds
 } chpl_comm_cb_event_kind_t;
 
@@ -136,7 +136,7 @@ typedef struct {
       void *addr;                // Source address
       void *raddr;               // Destination address
       size_t size;               // Size of communication
-      int32_t typeIndex;         // type of the communcation
+      int32_t typeIndex;         // type of the communication
       int lineno;                // source line of communication
       int32_t filename;          // source file of communication
     } comm;
@@ -147,20 +147,20 @@ typedef struct {
 
       void* dstaddr;            // Destination Address
       void* dststrides;         // Destination strides
-      void* count;
+      size_t *count;            // Counts for the above
       int32_t stridelevels;
-      int32_t elemSize;
+      size_t elemSize;
       int32_t typeIndex;
       int lineno;               // source line of communication
       int32_t filename;         // source file of communication
     } comm_strd;
 
-    struct chpl_comm_info_comm_fork { //
+    struct chpl_comm_info_comm_exeOn { //
       c_sublocid_t subloc;      //  Sub-location
       chpl_fn_int_t fid;        //  Function ID
       void *arg;                //  Function arg pointer
-      int32_t arg_size;         //  Function arg size
-    } fork;
+      size_t arg_size;          //  Function arg size
+    } exeOn;
 
   } iu;
 } chpl_comm_cb_info_t;

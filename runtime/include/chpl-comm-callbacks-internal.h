@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef _chpl_tasks_callbacks_internal_h_
-#define _chpl_tasks_callbacks_internal_h_
+#ifndef _chpl_comm_callbacks_internal_h_
+#define _chpl_comm_callbacks_internal_h_
 
 
 #include <stdint.h>

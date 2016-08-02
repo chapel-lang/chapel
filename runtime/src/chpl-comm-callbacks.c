@@ -43,7 +43,7 @@ int chpl_comm_callback_counts[chpl_comm_cb_num_event_kinds] = {0};
 
 
 //
-// Comming callback support.
+// Communication callback support.
 //
 int chpl_comm_install_callback(chpl_comm_cb_event_kind_t event_kind,
                                chpl_comm_cb_fn_t cb_fn) {
