@@ -51,6 +51,24 @@ int      gMaxVMT    = -1;
 int      gStmtCount =  0;
 
 
+// ensure these two produce consistent output
+std::string zlineToString(BaseAST* ast) {
+  return "/* ZLINE: " + numToString(ast->linenum())
+         + " " + ast->fname() + " */\n";
+}
+void zlineToFileIfNeeded(BaseAST* ast, FILE* outfile) {
+  if (printCppLineno)
+    fprintf(outfile, "%s", zlineToString(ast).c_str());
+}
+
+static char idCommentBuffer[32];
+
+const char* idCommentTemp(BaseAST* ast) {
+  sprintf(idCommentBuffer, "/* %7d */ ", ast->id);
+  return idCommentBuffer;
+}
+
+
 static const char*
 subChar(Symbol* sym, const char* ch, const char* x) {
   char* tmp = (char*)malloc(ch-sym->cname+1);
@@ -1107,6 +1125,8 @@ static void codegen_header(bool isHeader) {
     }
   }
   flushStatements();
+  if (!isHeader)
+    zlineToFileIfNeeded(rootModule, info->cfile);
 
   genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap, isHeader);
   int globals_registry_static_size = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
@@ -1513,6 +1533,7 @@ void codegen(void) {
     openCFile(&defnfile, "chpl__defn",    "c");
     openCFile(&strconfig,  "chpl_str_config", "c");
 
+    zlineToFileIfNeeded(rootModule, mainfile.fptr);
     fprintf(mainfile.fptr, "#include \"chpl_str_config.c\"\n");
     fprintf(mainfile.fptr, "#include \"chpl__header.h\"\n");
     fprintf(mainfile.fptr, "#include \"%s.c\"\n", sCfgFname);
@@ -1724,10 +1745,6 @@ void genComment(const char* comment, bool push) {
       fprintf(info->cfile, "/*** %s ***/\n\n", comment);
     }
   }
-}
-void genIdComment(int id) {
-  GenInfo* info = gGenInfo;
-  if( info->cfile ) fprintf(info->cfile, "/* %7d */ ", id);
 }
 
 void flushStatements(void)
