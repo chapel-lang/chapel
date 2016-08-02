@@ -1,0 +1,2 @@
+# memTracking must be enabled in order for this test to fail
+EXECOPTS >= memLeaksLog

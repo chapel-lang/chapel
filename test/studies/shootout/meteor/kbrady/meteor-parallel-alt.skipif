@@ -1,0 +1,2 @@
+# Deadlocks with memtracking, see memory/elliot/memTrack/memTrackDeadlock
+EXECOPTS <= memLeaksLog

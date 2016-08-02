@@ -1,0 +1,9 @@
+bug: memTracking deadlocks for tests that can't task yield
+
+memory tracking currently uses a sync var as a lock. sync vars can yield the
+current ask and for programs that are relying on their tasks not yielding this
+can lead to deadlock. mem tracking really shouldn't be using sync vars then,
+and perhaps should using a pthread_mutex intead (although then we have to be
+careful that we lock/unlock with the same pthread.)
+
+When this future is retired, please remove the skipif
