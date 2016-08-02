@@ -980,9 +980,13 @@ allowTupleReturnWithRef(FnSymbol* fn)
       fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES) || // not iteratorIndex
       fn->hasFlag(FLAG_AUTO_COPY_FN) || // not tuple chpl__autoCopy
       fn->hasFlag(FLAG_ALLOW_REF) || // not iteratorIndex
-      (fn->hasFlag(FLAG_ITERATOR_FN) && // iterators returning by ref
-       (fn->retTag == RET_REF ||        // might yield index variable by
-        fn->retTag == RET_CONST_REF))   // ref in a tuple
+      fn->hasFlag(FLAG_ITERATOR_FN) // iterators b/c
+                                    //  * they might return by ref
+                                    //  * might need to return a ref even
+                                    //    when not indicated return by ref.
+      //(fn->hasFlag(FLAG_ITERATOR_FN) && // iterators returning by ref
+      // (fn->retTag == RET_REF ||        // might yield index variable by
+      //  fn->retTag == RET_CONST_REF))   // ref in a tuple
      ) {
     return true;
   } else {
@@ -1568,7 +1572,10 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
   if (actualType == dtNil && isClass(formalType) &&
       !formalType->symbol->hasFlag(FLAG_REF))
     return true;
-  if (actualType->refType == formalType)
+  if (actualType->refType == formalType &&
+      // This is a workaround for type problems with tuples
+      // in implement forall intents...
+      !(fn->hasFlag(FLAG_BUILD_TUPLE) && fn->hasFlag(FLAG_ALLOW_REF)))
     return true;
   if (!paramCoerce && canCoerce(actualType, actualSym, formalType, fn, promotes))
     return true;

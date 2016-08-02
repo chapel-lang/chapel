@@ -528,8 +528,6 @@ instantiate_tuple_init(FnSymbol* fn) {
 static void
 instantiate_tuple_cast(FnSymbol* fn)
 {
-  gdbShouldBreakHere();
-
   AggregateType* toT   = toAggregateType(fn->getFormal(1)->type);
   ArgSymbol*     arg   = fn->getFormal(2);
   AggregateType* fromT = toAggregateType(arg->type);
@@ -751,7 +749,9 @@ fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* instantiatedForCall
     instantiate_tuple_hash(newFn);
   }
 
-  if (fn->hasFlag(FLAG_TUPLE_CAST_FN)) {
+  if (fn->hasFlag(FLAG_TUPLE_CAST_FN) &&
+      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE) &&
+      fn->getFormal(2)->type->symbol->hasFlag(FLAG_TUPLE) ) {
     instantiate_tuple_cast(newFn);
   }
 
@@ -768,6 +768,16 @@ fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* instantiatedForCall
   }
 
 }
+
+static FnSymbol*
+parentFunction(CallExpr* call)
+{
+  Symbol* s = call->parentSymbol;
+  while (s && ! isFnSymbol(s))
+    s = s->defPoint->parentSymbol;
+  return toFnSymbol(s);
+}
+
 
 FnSymbol*
 createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
@@ -803,23 +813,54 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
       INT_ASSERT(actualN == args.size());
     }
 
+    if (call->id == 1283246)
+      gdbShouldBreakHere();
+
+    //printf("Building tuple with %i parts\n", (int) args.size());
+
     if (noref) {
       for (size_t i = 0; i < args.size(); i++) {
         args[i] = args[i]->getValType()->symbol;
       }
     } else {
       // Types with blank intent = ref capture by ref
-      for (size_t i = 0; i < args.size(); i++) {
-	Type* t = args[i]->type;
-	IntentTag intent = blankIntentForType(t);
-	if (!isReferenceType(t) &&
-            (intent & INTENT_FLAG_REF) &&
-            // Including more than this causes problems with hello.chpl
-            // but I havn't figured out why.
-	    (isUserDefinedRecord(t) || isRecordWrappedType(t))
-	   ) {
-	  args[i] = t->getRefType()->symbol;
-	}
+
+      // Seeing problems with this when it's run inside of
+      // a _build_tuple_allow_ref call. In particular,
+      // an argument that should not be captured by ref
+      // is being captured by ref.
+
+      // This workaround is .. ugh..
+
+      // It might be better to distinguish in normalization
+      // the tuple construction calls between
+      // temporary values, user values, record/class fields,
+      // return types, argument types.
+
+      // * tuples in argument type expressions capture blank-intent-is-ref
+      //   types by reference
+      // * tuples in return type expressions capture blank-intent-is-ref
+      //   types by value
+      // * tuples in variable or field type declarations capture
+      //   blank-intent-is-ref types by value
+      // * tuples in compiler temporary variables capture blank-intent-is-ref
+      //   values by reference
+
+      if (! (parentFunction(call)->hasFlag(FLAG_ALLOW_REF) ||
+             parentFunction(call)->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
+             parentFunction(call)->hasFlag(FLAG_CONSTRUCTOR)) ) {
+        for (size_t i = 0; i < args.size(); i++) {
+          Type* t = args[i]->type;
+          IntentTag intent = blankIntentForType(t);
+          if (!isReferenceType(t) &&
+              (intent & INTENT_FLAG_REF) &&
+              // Including more than this causes problems with hello.chpl
+              // but I havn't figured out why.
+              (/*isUserDefinedRecord(t) || */isRecordWrappedType(t))
+             ) {
+            args[i] = t->getRefType()->symbol;
+          }
+        }
       }
     }
 

@@ -103,6 +103,8 @@ module ChapelTuple {
     compilerError("<type>*<param int> not supported.  If you're trying to specify a homogeneous tuple type, use <param int>*<type>.");
   }
 
+  // compiler generated since if this resolves some other way, OK
+  pragma "compiler generated"
   proc *(p: int, type t) type {
     compilerError("tuple size must be static");
   }
@@ -299,6 +301,9 @@ module ChapelTuple {
   pragma "tuple cast fn"
   inline proc _cast(type t, const ref x: _tuple) where t:_tuple {
     // body filled in during resolution
+    var x:t;
+    halt("this tuple _cast should not be called");
+    return x;
   }
   
   //
