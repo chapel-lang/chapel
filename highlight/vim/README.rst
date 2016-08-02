@@ -67,3 +67,6 @@ file (without the ":").
 - Enable indenting scheme:
 
   ``: filetype indent on``
+
+==========================================================================
+vim:tw=78:ts=8:ft=help:
