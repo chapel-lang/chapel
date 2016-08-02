@@ -9,18 +9,23 @@ File Descriptions:
 ==================
 
 + **ftdetect/chpl.vim**
+
   - Allows vim to auto-detect the syntax highlighting scheme for .chpl files.
 
 + **ftplugin/chpl.vim**
+
   - Useful editor settings supporting chpl, chpldoc
     
 + **syntax/chpl.vim**
+
   - Syntax highlighting scheme for Chapel
 
 + **indent/chpl.vim**
+
   - Indenting scheme for Chapel
 
 + **sample-vimrc**
+
   - Sample .vimrc configuration file
  
 
