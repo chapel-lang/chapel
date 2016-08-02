@@ -119,9 +119,9 @@ typedef enum {
   chpl_comm_cb_event_kind_get,       // Simple get
   chpl_comm_cb_event_kind_get_nb,    // Non-blocking get
   chpl_comm_cb_event_kind_get_strd,  // Strided get
-  chpl_comm_cb_event_kind_exeOn,     // regular executeOn
-  chpl_comm_cb_event_kind_exeOn_nb,   // Non-blocking executeOn
-  chpl_comm_cb_event_kind_exeOn_fast, // Fast executeOn
+  chpl_comm_cb_event_kind_executeOn,      // regular executeOn
+  chpl_comm_cb_event_kind_executeOn_nb,   // Non-blocking executeOn
+  chpl_comm_cb_event_kind_executeOn_fast, // Fast executeOn
   chpl_comm_cb_num_event_kinds
 } chpl_comm_cb_event_kind_t;
 
@@ -155,12 +155,12 @@ typedef struct {
       int32_t filename;         // source file of communication
     } comm_strd;
 
-    struct chpl_comm_info_comm_exeOn { //
+    struct chpl_comm_info_comm_executeOn {
       c_sublocid_t subloc;      //  Sub-location
       chpl_fn_int_t fid;        //  Function ID
       void *arg;                //  Function arg pointer
       size_t arg_size;          //  Function arg size
-    } exeOn;
+    } executeOn;
 
   } iu;
 } chpl_comm_cb_info_t;

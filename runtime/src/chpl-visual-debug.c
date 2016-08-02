@@ -57,9 +57,9 @@ static void cb_comm_put(const chpl_comm_cb_info_t *info);
 static void cb_comm_get(const chpl_comm_cb_info_t *info);
 static void cb_comm_put_strd(const chpl_comm_cb_info_t *info);
 static void cb_comm_get_strd(const chpl_comm_cb_info_t *info);
-static void cb_comm_exeOn(const chpl_comm_cb_info_t *info);
-static void cb_comm_exeOn_nb(const chpl_comm_cb_info_t *info);
-static void cb_comm_exeOn_fast(const chpl_comm_cb_info_t *info);
+static void cb_comm_executeOn(const chpl_comm_cb_info_t *info);
+static void cb_comm_executeOn_nb(const chpl_comm_cb_info_t *info);
+static void cb_comm_executeOn_fast(const chpl_comm_cb_info_t *info);
 
 int chpl_vdebug_fd = -1;
 int chpl_vdebug = 0;
@@ -211,7 +211,7 @@ void chpl_vdebug_stop (void) {
 
 // Record>  VdbMark: time.sec nodeId taskId
 //
-// This marks taskID as being a xxxVdebug() call.   Any exeOns or tasks
+// This marks taskID as being a xxxVdebug() call.   Any executeOns or tasks
 // started by this task and descendants of this task are related to
 // the xxxVdebug() call and chplvis should ignore them.
 
@@ -403,51 +403,51 @@ void cb_comm_get_strd (const chpl_comm_cb_info_t *info) {
 
 // Record>  fork: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
 
-void cb_comm_exeOn (const chpl_comm_cb_info_t *info) {
+void cb_comm_executeOn (const chpl_comm_cb_info_t *info) {
 
   // Visual Debug Support
   if (chpl_vdebug) {
-    const struct chpl_comm_info_comm_exeOn *cm = &info->iu.exeOn;
-    chpl_taskID_t exeOnTask = chpl_task_getId();
+    const struct chpl_comm_info_comm_executeOn *cm = &info->iu.executeOn;
+    chpl_taskID_t executeOnTask = chpl_task_getId();
     struct timeval tv;
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
                   "fork: %lld.%06ld %d %d %d %d %#lx %zd %lu \n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, cm->subloc, cm->fid, (unsigned long) cm->arg,
-                  cm->arg_size, (unsigned long) exeOnTask);
+                  cm->arg_size, (unsigned long) executeOnTask);
   }
 }
 
 // Record>  fork_nb: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
 
 
-void  cb_comm_exeOn_nb (const chpl_comm_cb_info_t *info) {
+void  cb_comm_executeOn_nb (const chpl_comm_cb_info_t *info) {
   if (chpl_vdebug) {
-    const struct chpl_comm_info_comm_exeOn *cm = &info->iu.exeOn;
-    chpl_taskID_t exeOnTask = chpl_task_getId();
+    const struct chpl_comm_info_comm_executeOn *cm = &info->iu.executeOn;
+    chpl_taskID_t executeOnTask = chpl_task_getId();
     struct timeval tv;
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d %#lx %zd %lu\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, cm->subloc, cm->fid, (unsigned long) cm->arg, 
-                  cm->arg_size, (unsigned long)exeOnTask);
+                  cm->arg_size, (unsigned long)executeOnTask);
   }
 }
 
 // Record>  f_fork: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
 
-void cb_comm_exeOn_fast (const chpl_comm_cb_info_t *info) {
+void cb_comm_executeOn_fast (const chpl_comm_cb_info_t *info) {
   if (chpl_vdebug) {
-    const struct chpl_comm_info_comm_exeOn *cm = &info->iu.exeOn;
-    chpl_taskID_t exeOnTask = chpl_task_getId();
+    const struct chpl_comm_info_comm_executeOn *cm = &info->iu.executeOn;
+    chpl_taskID_t executeOnTask = chpl_task_getId();
     struct timeval tv;
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  "f_exeOn: %lld.%06ld %d %d %d %d %#lx %zd %ld\n",
+                  "f_executeOn: %lld.%06ld %d %d %d %d %#lx %zd %ld\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
                   info->remoteNodeID, cm->subloc, cm->fid, (unsigned long)cm->arg, 
-                  cm->arg_size, (unsigned long)exeOnTask);
+                  cm->arg_size, (unsigned long)executeOnTask);
   }
 }
 
@@ -498,18 +498,18 @@ int install_callbacks (void) {
     (void) uninstall_callbacks();
     return 1;
   }
-  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_exeOn,
-                                 cb_comm_exeOn)) {
+  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_executeOn,
+                                 cb_comm_executeOn)) {
     (void) uninstall_callbacks();
     return 1;
   }
-  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_exeOn_nb,
-                                 cb_comm_exeOn_nb)) {
+  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_executeOn_nb,
+                                 cb_comm_executeOn_nb)) {
     (void) uninstall_callbacks();
     return 1;
   }
-  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_exeOn_fast,
-                                 cb_comm_exeOn_fast)) {
+  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_executeOn_fast,
+                                 cb_comm_executeOn_fast)) {
     (void) uninstall_callbacks();
     return 1;
   }
@@ -538,12 +538,12 @@ int uninstall_callbacks (void) {
                                      cb_comm_put_strd);
   rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_get_strd,
                                      cb_comm_get_strd);
-  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_exeOn,
-                                     cb_comm_exeOn);
-  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_exeOn_nb,
-                                     cb_comm_exeOn_nb);
-  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_exeOn_fast,
-                                     cb_comm_exeOn_fast);
+  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_executeOn,
+                                     cb_comm_executeOn);
+  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_executeOn_nb,
+                                     cb_comm_executeOn_nb);
+  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_executeOn_fast,
+                                     cb_comm_executeOn_fast);
   return rv;
 }
 
