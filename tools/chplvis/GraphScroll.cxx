@@ -64,8 +64,11 @@ void GraphScroll::resize (int new_x, int new_y, int new_w, int new_h)
 
 void GraphScroll::zoomIn(void)
 {
-  printf ("Should zoom in!\n");
-  DbgView->resize(DbgView->x(), DbgView->y(), (DbgView->w()*12)/10, (DbgView->h()*12)/10);
+  // Multiply size by 1.2, center of scroll to stay fixed.
+  DbgView->resize((12*DbgView->x() - 2*(x() + w()/2))/10,
+                  (12*DbgView->y() - 2*(y() + h()/2))/10,
+                  (DbgView->w()*12)/10,
+                  (DbgView->h()*12)/10);
   MainWindow->redraw();
 }
 
@@ -73,9 +76,17 @@ void GraphScroll::zoomOut(void)
 {
   int new_w = (DbgView->w()*8)/10;
   int new_h = (DbgView->h()*8)/10;
-  if (new_w < w()) new_w = w();
-  if (new_h < h()) new_h = h();
-  DbgView->resize(DbgView->x(), DbgView->y(), new_w, new_h);
+  int new_x = (8*DbgView->x() + 2 * (x() + w()/2))/10;
+  int new_y = (8*DbgView->y() + 2 * (y() + h()/2))/10;
+  if (new_x > x())
+    new_x = x();
+  if (new_y > y())
+    new_y = y();
+  if (new_w < w())
+     new_w = w();
+  if (new_h < h())
+    new_h = h();
+  DbgView->resize(new_x, new_y, new_w, new_h);
   MainWindow->redraw();
 }
 
