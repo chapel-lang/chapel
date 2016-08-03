@@ -87,13 +87,13 @@ proc main() {
 
   // quickSort
   quickSort(Arr);
-  checkSort(Arr, ArrSorted, 'QuickSort');
+  checkSort(Arr, ArrSorted, 'quickSort');
 
   quickSort(Arr, comparator=key);
-  checkSort(Arr, ArrAbsSorted, 'QuickSort', 'key');
+  checkSort(Arr, ArrAbsSorted, 'quickSort', 'key');
 
   quickSort(Arr, comparator=compare);
-  checkSort(Arr, ArrAbsSorted, 'QuickSort', 'compare');
+  checkSort(Arr, ArrAbsSorted, 'quickSort', 'compare');
 
   // heapSort
   heapSort(Arr);
@@ -140,15 +140,15 @@ proc main() {
   InsertionSort(Arr, reverse=true);
   checkSort(Arr, ArrRevSorted, 'InsertionSort');
 
-  // QuickSort
+  // quickSort
   QuickSort(Arr);
-  checkSort(Arr, ArrSorted, 'QuickSort');
+  checkSort(Arr, ArrSorted, 'quickSort');
 
   QuickSort(Arr, doublecheck=true);
-  checkSort(Arr, ArrSorted, 'QuickSort');
+  checkSort(Arr, ArrSorted, 'quickSort');
 
   QuickSort(Arr, reverse=true);
-  checkSort(Arr, ArrRevSorted, 'QuickSort');
+  checkSort(Arr, ArrRevSorted, 'quickSort');
 
   // HeapSort
   HeapSort(Arr);

@@ -14,7 +14,7 @@ var elem: real;
 
 proc reset(A) {
   rng.fillRandom(A);
-  QuickSort(A);
+  quickSort(A);
   elem = A[idx];
 }
 

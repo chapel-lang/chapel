@@ -1,4 +1,4 @@
-// A test of the QuickSort function in the Sort module
+// A test of the quickSort function in the Sort module
 
 use Sort;
 use Random;
@@ -16,7 +16,7 @@ proc main() {
   delete randomStream;
   [i in 1..size] A(i) = (100000 * rands(i)):int;
 
-  QuickSort(A);
+  quickSort(A);
 
   // Check that A is sorted
   [i in 1..size-1] {

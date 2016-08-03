@@ -353,7 +353,7 @@ class UserMapAssocDom: BaseAssociativeDom {
       }
     }
 
-    QuickSort(tableCopy);
+    quickSort(tableCopy);
 
     for ind in tableCopy do
       yield ind;
