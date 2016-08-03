@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+
+// TODO -- performance test sort routines and optimize (see other TODO's)
 /*
 
 This module supports a variety of standard sorting routines on 1D arrays.
@@ -185,7 +187,23 @@ const reverseComparator: ReverseComparator(DefaultComparator);
 /* Private methods */
 
 pragma "no doc"
-/* Base compare method of all sort functions */
+/*
+   Base compare method of all sort functions.
+
+   By default, it returns the value of defaultComparator.compare(a, b).
+
+   If a comparator with a key method is passed, it will return the value of
+   defaultComparator(comparator.key(a), comparator.key(b)).
+
+   If a comparator with a compare method is passed, it will return the value of
+   comparator.compare(a, b).
+
+   Return values conventions:
+
+     a < b : returns value < 0
+     a > b : returns value > 0
+     a == b: returns 0
+*/
 inline proc chpl_compare(a, b, comparator:?rec=defaultComparator) {
   use Reflection;
 
@@ -542,11 +560,35 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
   //  cobegin {
     quickSort(Data[..loptr-1], minlen, comparator);  // could use unbounded ranges here
     quickSort(Data[loptr+1..], minlen, comparator);
-    //  }
+  //  }
 }
 
 
-// TODO -- support comparators by implementing a reduce intent w/ comparators
+/*
+   Sort the 1D array `Data` in-place using a sequential selection sort
+   algorithm.
+
+   :arg Data: The array to be sorted
+   :type Data: [] `eltType`
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
+
+ */
+proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+  const lo = Dom.dim(1).low,
+        hi = Dom.dim(1).high;
+  for i in lo..hi-1 {
+    var jMin = i;
+    // TODO -- should be a reduce intent, when they can support comparators
+    for j in i..hi {
+      if chpl_compare(Data[j], Data[jMin], comparator) < 0 then
+        jMin = j;
+    }
+    Data(i) <=> Data(jMin);
+  }
+}
+
+
 /*
    Sort the 1D array `Data` in-place using a sequential selection sort
    algorithm.
@@ -572,7 +614,6 @@ proc SelectionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false
     Data(i) <=> Data(loc);
   }
 }
-
 
 /* Comparators */
 
