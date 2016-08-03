@@ -41,8 +41,6 @@ public:
 
   Fl_MultiGroup (int x, int y, int w, int h, const char *l = 0);
   
-  ~Fl_MultiGroup () { Fl_Group::~Fl_Group(); };
-
   bool selectChild (int which);    // Select a child to be visible
   bool selectChild (Fl_Widget *w);
 
