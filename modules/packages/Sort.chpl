@@ -588,7 +588,7 @@ proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) whe
         hi = Dom.dim(1).high;
   for i in lo..hi-1 {
     var jMin = i;
-    // TODO -- should be a reduce intent, when they can support comparators
+    // TODO -- should be a minloc reduction, when they can support comparators
     for j in i..hi {
       if chpl_compare(Data[j], Data[jMin], comparator) < 0 then
         jMin = j;
@@ -715,7 +715,7 @@ pragma "no doc"
 
  */
 proc QuickSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  compilerWarning("QuickSort() has been deprecated.  Please use QuickSort() instead");
+  compilerWarning("QuickSort() has been deprecated.  Please use quickSort() instead");
   var comparator = if reverse then reverseComparator else defaultComparator;
   quickSort(Data, minlen, comparator);
   if doublecheck then
