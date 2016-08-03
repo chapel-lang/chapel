@@ -25,7 +25,75 @@
 #include "math.h"
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
+#include <FL/Fl_Menu_Item.H>
 #include <sstream>
+
+// Menu Callbacks
+
+static void cb_ZoomIn(Fl_Menu_*, void*) {
+  DbgScroll->zoomIn();
+}
+
+static void cb_ZoomOut(Fl_Menu_*, void*) {
+  DbgScroll->zoomOut();
+}
+
+static void cb_Reset(Fl_Menu_*, void*) {
+  DbgScroll->reset();
+}
+
+static void cb_ShowTasks(Fl_Menu_*, void*) {
+  DbgView->showTasks();
+  MainWindow->redraw();
+}
+
+static void cb_ShowCpu(Fl_Menu_*, void*) {
+  DbgView->showCpu();
+  MainWindow->redraw();
+}
+
+static void cb_ShowClock(Fl_Menu_*, void*) {
+  DbgView->showClock();
+  MainWindow->redraw();
+}
+
+static void cb_ShowConc(Fl_Menu_*, void*) {
+  DbgView->showConcurrency();
+  MainWindow->redraw();
+}
+
+static void cb_ShowComm(Fl_Menu_*, void*) {
+  DbgView->showComms();
+  MainWindow->redraw();
+}
+
+static void cb_ShowDsize(Fl_Menu_*, void*) {
+  DbgView->showDsize();
+  MainWindow->redraw();
+}
+
+
+Fl_Menu_Item popup_Menu[] = {
+ {"View", 0,  0, 0, 64, FL_NORMAL_LABEL, 0, 14, 0},
+ {"Zoom In", 0,  (Fl_Callback*)cb_ZoomIn, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
+ {"Zoom Out", 0,  (Fl_Callback*)cb_ZoomOut, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
+ {"Reset Zoom", 0,  (Fl_Callback*)cb_Reset, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
+ {0,0,0,0,0,0,0,0,0},
+ {"Data", 0,  0, 0, 64, FL_NORMAL_LABEL, 0, 14, 0},
+ {"Locales", 0,  0, 0, 129, FL_ENGRAVED_LABEL, 0, 14, 0},
+ {"Show Tasks", 0,  (Fl_Callback*)cb_ShowTasks, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
+ {"Show CPU", 0,  (Fl_Callback*)cb_ShowCpu, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
+ {"Show Clock", 0,  (Fl_Callback*)cb_ShowClock, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
+ {"Show Concurrency", 0,  (Fl_Callback*)cb_ShowConc, 0, 128, FL_NORMAL_LABEL, 0, 14, 0},
+ {"Communication", 0,  0, 0, 129, FL_ENGRAVED_LABEL, 0, 14, 0},
+ {"Show Count", 0,  (Fl_Callback*)cb_ShowComm, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
+ {"Show Size", 0,  (Fl_Callback*)cb_ShowDsize, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
+ {0,0,0,0,0,0,0,0,0},
+ {0,0,0,0,0,0,0,0,0}
+};
+
+
+
 
 #define SSTR( x ) dynamic_cast< std::ostringstream & >( \
                     ( std::ostringstream() << std::dec << x ) ).str()
@@ -41,6 +109,8 @@ ViewField::ViewField (int bx, int by, int bw, int bh, const char *label)
   comms = NULL;
   curTagData = NULL;
   tagMenu = -1;
+  tagPopup = -1;
+  popup = NULL;  
   useUTags = false;
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
@@ -54,7 +124,6 @@ ViewField::ViewField (int bx, int by, int bw, int bh, const char *label)
   */
   infoTop = show_Tasks;
   showcomms = true;
-  
 };
 
 // Private methods 
@@ -198,6 +267,18 @@ void ViewField::makeTagsMenu(void)
     MainMenuBar->remove(tagMenu);
     tagMenu = -1;
   }
+  if (!popup) {
+    popup = new Fl_Menu_Button (GraphView->x(), GraphView->y(),
+                                GraphView->w(), GraphView->h());
+    popup->type(Fl_Menu_Button::POPUP3);
+    popup->box(FL_NO_BOX);
+    popup->menu(popup_Menu);
+    GraphView->add(popup);
+  }
+  if (tagPopup > 0) {
+    popup->remove(tagPopup);
+    tagPopup = -1;
+  }
   if (VisData.NumTags() >= 1) {
 
     // printf("Make tags menu, %d tags\n", VisData.NumTags());
@@ -209,14 +290,27 @@ void ViewField::makeTagsMenu(void)
       printf ("Menu problem!\n");
       return;
     }
+#if 1 
+    tagMenu = popup->add("Tags", 0, 0, 0, FL_SUBMENU);
+    if (tagMenu < 1) {
+      printf ("Popup menu problem!\n");
+      return;
+    }
+#endif    
     if (!VisData.hasUniqueTags()) {
-      if (useUTags)
+      if (useUTags) {
         MainMenuBar->add("Tags/Show All Tags", 0, toggleUnique, (void *)0);
-      else
+        popup->add("Tags/Show All Tags", 0, toggleUnique, (void *)0);
+      }
+      else {
         MainMenuBar->add("Tags/Merge Tags", 0, toggleUnique, (void *)0);
+        popup->add("Tags/Merge Tags", 0, toggleUnique, (void *)0);
+      }
     }
     MainMenuBar->add("Tags/All", 0, selTag, (void *)DataModel::TagALL);
+    popup->add("Tags/All", 0, selTag, (void *)DataModel::TagALL);
     MainMenuBar->add("Tags/Start", 0, selTag, (void *)DataModel::TagStart);
+    popup->add("Tags/Start", 0, selTag, (void *)DataModel::TagStart);
 
     long ix;
     long numTags;
@@ -237,6 +331,7 @@ void ViewField::makeTagsMenu(void)
       else
         menuName = "Tags/tag " + SSTR(ix) + " (" + tagName + ")";
       MainMenuBar->add(menuName.c_str(), 0, selTag, (void *)ix, 0);
+      popup->add(menuName.c_str(), 0, selTag, (void *)ix, 0);
     }
     MainMenuBar->redraw();
   }
@@ -511,10 +606,18 @@ int ViewField::handle(int event)
   
   switch (event) {
   case FL_PUSH:
-    //printf ("Push at (%d,%d)\n", x, y);
+    //printf ("Push at (%d,%d) event_button() = %d\n", x, y, Fl::event_buttons());
+    //if (Fl::event_buttons() == FL_RIGHT_MOUSE) {
+    //  printf ("right mouse push\n");
+    //}
     break;
   case FL_RELEASE:
     //printf ("Release at (%d,%d)\n", x, y);
+    if (Fl::event_button() == FL_MIDDLE_MOUSE ||
+        Fl::event_button() == FL_RIGHT_MOUSE) {
+      // printf ("middle or right release\n");
+      break;
+    }
     // Click on a locale?
     if (numlocales > 0) {
       for (ix = 0; ix < numlocales; ix++) {

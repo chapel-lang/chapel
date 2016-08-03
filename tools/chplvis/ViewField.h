@@ -24,6 +24,7 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
+#include <FL/Fl_Menu_Button.H>
 #include "LocaleWin.h"
 #include "CommWin.h"
 #include "ConcurrencyWin.h"
@@ -82,7 +83,6 @@ class ViewField : public Fl_Box {
     commInfo **comms;       // Also need to de/reallocate after changing numlocales
 
     bool useUTags;
-    int tagMenu;
 
     // Keep track of what is being displayed
     enum show_what {show_Tasks, show_CPU, show_Clock, show_Concurrency} infoTop;
@@ -90,6 +90,11 @@ class ViewField : public Fl_Box {
     DataModel::tagData *curTagData;
     int curTagNum;
     bool showcomms;
+
+    int tagMenu;
+    int tagPopup;
+    Fl_Menu_Button *popup;
+    
 
     // Methods
 
