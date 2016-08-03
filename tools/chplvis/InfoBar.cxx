@@ -25,13 +25,13 @@
 
 #include <string.h>
 
-static const int CR_Left = 220;
-
 #ifdef __APPLE__
-static const int Y_OFF = 0;
+static const int Y_OFFSET = 10;
 #else
-static const int Y_OFF = 0;
+static const int Y_OFFSET = 0;
 #endif
+
+static const int CR_Left = 25;
 
 // Local utility functions
 
@@ -81,21 +81,13 @@ void InfoBar::setTagName(const char *name) {
     tagName = strdup(sl);
   }
 
-
 void InfoBar::draw(void)
 {
   // dimensions and locations
-  int y_center = y() + (h()-Y_OFF) / 2;  // Center line of infobar
-  int cr_h = (h()-Y_OFF) / 2;               // Height of color reference
-  int cr_y = y() + cr_h / 2;        // Y of color reference
+  int cr_h = h() / 3;               // Height of color reference
+  int cr_y = y() + 30 + Y_OFFSET;        // Y of color reference
 
-  Fl_Box::draw();
-
-  // Separation line between InfoBar and the display field
-  
-  //fl_color(FL_BLACK);
-  //fl_line_style(FL_SOLID, 1, NULL);
-  //fl_line(x(),y()+h()-Y_OFF,x()+w(),y()+h()-Y_OFF);
+  Fl_Group::draw();
 
   // Color Reference
   int ix;
@@ -112,8 +104,7 @@ void InfoBar::draw(void)
 
   fl_color(FL_BLACK);
   fl_line_style(FL_SOLID,1,NULL);
-  fl_draw("1", x()+CR_Left-20, y_center-20, 15, 40, FL_ALIGN_CENTER, NULL, 0);
-  //  fl_draw("Max", x()+CR_Left+100, y()+5, 15, h()-10, FL_ALIGN_CENTER, NULL, 0);
+  fl_draw("1", x()+CR_Left-20, cr_y, 15, 30, FL_ALIGN_CENTER, NULL, 0);
 
   // Messages on max counts, next to the color reference
   char mesg[150] = "";
@@ -135,8 +126,8 @@ void InfoBar::draw(void)
         snprintf (mesg, 150, "max Concurrent: %ld", maxConcurrent);
       break;
   }
-
-  fl_draw(mesg, x()+CR_Left+105, y_center-20, 120, 20, FL_ALIGN_LEFT, NULL, 0);
+  fl_draw(mesg, x()+CR_Left+100, cr_y, 120, 20, FL_ALIGN_LEFT, NULL, 0);
+  
   mesg[0] = 0;
   if (showcomms) {
     if (maxComms > 0) 
@@ -145,21 +136,19 @@ void InfoBar::draw(void)
     if (maxSize > 0)
       snprintf (mesg, 150, "max Data: %ld", maxSize);
   }
-  fl_draw(mesg, x()+CR_Left+105, y_center, 120, 20, FL_ALIGN_LEFT, NULL, 0);
+  fl_draw(mesg, x()+CR_Left+100, cr_y+cr_h/2, 120, 20,FL_ALIGN_LEFT, NULL, 0);
 
 
   // Messages about file names / tags and so forth
 
   if (fileName != NULL) {
     snprintf (mesg, 150, "file: %s", fileName);
-    fl_draw(mesg, x()+5, y_center-20, 120, 20, FL_ALIGN_LEFT, NULL, 0);
+    fl_draw(mesg, x()+5, y()+5+Y_OFFSET, 120, 20, FL_ALIGN_LEFT, NULL, 0);
   }
 
   if (tagName != NULL) {
     snprintf (mesg, 150, "tag: %s", tagName);
-    fl_draw(mesg, x()+5, y_center, 120, 20, FL_ALIGN_LEFT, NULL, 0);
+    fl_draw(mesg, x()+130, y()+5+Y_OFFSET, 120, 20, FL_ALIGN_LEFT, NULL, 0);
   }
 
 }
-
-

@@ -21,7 +21,7 @@
 #define INFOBAR_H
 
 #include <FL/Fl.H>
-#include <FL/Fl_Box.H>
+#include <FL/Fl_Group.H>
 #include <string.h>
 
 // Top bar of display showing Max values and reference colors.
@@ -31,7 +31,7 @@
 
 Fl_Color heatColor(double val, double max);
 
-class InfoBar : public Fl_Box {
+class InfoBar : public Fl_Group {
 
  private:
   int maxTasks;
@@ -50,9 +50,9 @@ class InfoBar : public Fl_Box {
 
   InfoBar (int x, int y, int w, int h/*, const char *label = 0*/)
 #ifdef __APPLE__    
-    : Fl_Box(x,0,w,h+20) {
+    : Fl_Group(x,0,w,h+20) {
 #else
-    : Fl_Box(x,y,w,h) {
+    : Fl_Group(x,y,w,h) {
 #endif
     maxTasks = 0;
     maxComms = 0;

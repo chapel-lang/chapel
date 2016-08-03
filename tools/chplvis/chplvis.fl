@@ -102,8 +102,8 @@ w->updateWin(locInfo);} {}
 Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {open
 } {
   Fl_Window {} {open
-    xywh {1454 216 180 120} type Double color 7 hide resizable
-    class CommWin
+    xywh {1095 53 180 120} type Double color 7 resizable
+    class CommWin visible
   } {
     Fl_Box Comm_Title {
       label Comm
@@ -150,7 +150,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {784 167 560 590} type Double color 7 resizable size_range {560 590 0 0} visible
+    xywh {785 45 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55
@@ -288,65 +288,65 @@ MainWindow->redraw();}
         }
       }
     }
-    Fl_Box Info {
-      xywh {0 20 560 70} box BORDER_FRAME color 0
+    Fl_Group Info {open
+      xywh {0 20 560 80} box BORDER_FRAME color 0
       class InfoBar
-    }
-    Fl_Group DataControl {open
-      xywh {0 89 60 501} box BORDER_FRAME color 0
+    } {}
+    Fl_Group DataControl {open selected
+      xywh {0 99 60 501} box BORDER_FRAME color 0
     } {
       Fl_Button {} {
-        xywh {0 588 60 2} box NO_BOX
+        xywh {0 598 60 2} box NO_BOX
         code0 {o->clear_visible_focus();}
       }
       Fl_Button {} {
-        image {Graph-2-40x40.png} xywh {10 100 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
+        image {Graph-2-40x40.png} xywh {10 110 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
         code0 {o->clear_visible_focus();}
       }
       Fl_Button {} {
-        image {Grid-40x40.png} xywh {10 150 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
+        image {Grid-40x40.png} xywh {10 160 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
         code0 {o->clear_visible_focus();}
       }
     }
     Fl_Group DataField {open
-      xywh {60 90 505 505} color 0 resizable
+      xywh {60 100 500 500} color 0 resizable
       class Fl_MultiGroup
     } {
-      Fl_Group GraphGrp {open selected
-        xywh {60 90 500 500} color 7
+      Fl_Group GraphGrp {open
+        xywh {60 100 500 500} color 7
       } {
         Fl_Scroll DbgScroll {open
-          xywh {60 90 500 500} color 7 resizable
+          xywh {60 100 500 500} color 7 resizable
           class GraphScroll
         } {
           Fl_Box DbgView {user_data_type {void*}
-            xywh {60 90 500 500} color 0 selection_color 48 resizable
+            xywh {60 100 500 500} color 0 selection_color 48 resizable
             class ViewField
           }
         }
       }
       Fl_Group SettingsGrp {user_data_type {void*}
-        xywh {60 90 500 500} color 0 hide
+        xywh {60 100 500 500} color 0 hide
         class Settings
       } {
         Fl_Check_Button saveWH {
           label {  Restore main window size} user_data_type {void*}
           callback {SettingsGrp->toggleSaveWH();
 saveWH->value(SettingsGrp->getSaveWH());}
-          xywh {75 180 215 25} type Normal box FLAT_BOX down_box DOWN_BOX
+          xywh {75 190 215 25} type Normal box FLAT_BOX down_box DOWN_BOX
           code0 {saveWH->value(SettingsGrp->getSaveWH());}
         }
         Fl_Button {} {
           label Cancel
           callback {DataField->popChild();}
-          xywh {75 235 105 25}
+          xywh {75 245 105 25}
         }
         Fl_Button {} {
           label Save
           callback {SettingsGrp->copyOut();
 VisSettings.saveToFile();
 DataField->popChild();}
-          xywh {220 235 105 25}
+          xywh {220 245 105 25}
         }
         Fl_Button {} {
           label {Use for this run only}
@@ -354,25 +354,25 @@ DataField->popChild();}
 SettingsGrp->copyOut();
 VisSettings.save_WH = oldWH;
 DataField->popChild();}
-          xywh {370 235 170 25}
+          xywh {370 245 170 25}
         }
         Fl_Button {} {
           label {Set Cool Color}
           callback {SettingsGrp->setCoolColor();}
-          xywh {75 125 120 25}
+          xywh {75 135 120 25}
         }
         Fl_Button {} {
           label {Set Hot Color}
           callback {SettingsGrp->setHotColor();}
-          xywh {370 125 120 25}
+          xywh {370 135 120 25}
         }
         Fl_Button {} {
           label {Reset Heat Colors}
           callback {SettingsGrp->reset();}
-          xywh {370 180 165 25}
+          xywh {370 190 165 25}
         }
         Fl_Button {} {
-          xywh {550 565 10 25} box NO_BOX color 7 resizable
+          xywh {550 575 10 25} box NO_BOX color 7 resizable
           code0 {o->clear_visible_focus();}
         }
       }
