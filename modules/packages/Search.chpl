@@ -118,8 +118,14 @@ proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator) where Dom
   return (false, lo);
 }
 
+
+/*
+    Deprecated Functions
+    TODO -- deprecate in 1.15
+ */
+
+
 pragma "no doc"
-// TODO -- deprecate
 /*
    Searches through the pre-sorted array `Data` looking for the value `val` using
    a sequential linear search.  Returns a tuple indicating (1) whether or not
@@ -146,9 +152,6 @@ proc LinearSearch(Data:[?Dom], val) {
 
 
 pragma "no doc"
-// would really like to drop the lo/hi arguments here, but right now
-// that causes too big of a memory leak
-// TODO -- deprecate
 /*
    Searches through the pre-sorted array `Data` looking for the value `val`
    using a sequential binary search.  If provided, only the indices `lo`
