@@ -14,5 +14,8 @@ retval |= (os.environ['CHPL_TASKS']!="fifo")
 # Only support none
 retval |= (os.environ['CHPL_COMM']!="none")
 
+# Require CHPL_LAUNCHER=mpirun
+retval |= (os.environ['CHPL_LAUNCHER']!="mpirun")
+
 print(retval)
 
