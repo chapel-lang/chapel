@@ -589,32 +589,6 @@ proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) whe
 }
 
 
-/*
-   Sort the 1D array `Data` in-place using a sequential selection sort
-   algorithm.
-
-   .. warning::
-        SelectionSort will be deprecated for a comparator-supported
-        ``selectionSort`` in the future.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: `bool`
-   :arg reverse: Sort in reverse numerical order
-   :type reverse: `bool`
-
- */
-proc SelectionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  const lo = Dom.dim(1).low;
-  const hi = Dom.dim(1).high;
-  for i in lo..hi-1 {
-    var (_, loc) = if reverse then maxloc reduce zip(Data[i..hi], {i..hi})
-      else minloc reduce zip(Data[i..hi], {i..hi});
-    Data(i) <=> Data(loc);
-  }
-}
-
 /* Comparators */
 
 /* Default comparator used in sort functions.*/
@@ -692,15 +666,11 @@ record ReverseComparator {
 
 /*
    Deprecated Functions
-   TODO - print deprecation msg and possibly remove by 1.14.0
- */
+   TODO -- deprecate in 1.15
+*/
 
 pragma "no doc"
 /*
-
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`bubbleSort`
-
    Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
 
    :arg Data: The array to be sorted
@@ -712,7 +682,7 @@ pragma "no doc"
 
  */
 proc BubbleSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  //writeln("Deprecation warning: BubbleSort replaced by bubbleSort");
+  compilerWarning("BubbleSort() has been deprecated.  Please use bubbleSort() instead");
   var comparator = if reverse then reverseComparator else defaultComparator;
   bubbleSort(Data, comparator);
   if doublecheck then
@@ -723,9 +693,6 @@ proc BubbleSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) w
 
 pragma "no doc"
 /*
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`quickSort`
-
    Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
 
    :arg Data: The array to be sorted
@@ -739,7 +706,7 @@ pragma "no doc"
 
  */
 proc QuickSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  //writeln("Deprecation warning: QuickSort replaced by quickSort");
+  compilerWarning("QuickSort() has been deprecated.  Please use QuickSort() instead");
   var comparator = if reverse then reverseComparator else defaultComparator;
   quickSort(Data, minlen, comparator);
   if doublecheck then
@@ -750,9 +717,6 @@ proc QuickSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param revers
 
 pragma "no doc"
 /*
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`heapSort`
-
    Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
 
    :arg Data: The array to be sorted
@@ -764,7 +728,7 @@ pragma "no doc"
 
  */
 proc HeapSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  //writeln("Deprecation warning: HeapSort replaced by heapSort");
+  compilerWarning("HeapSort() has been deprecated.  Please use heapSort() instead");
   var comparator = if reverse then reverseComparator else defaultComparator;
   heapSort(Data, comparator);
   if doublecheck then
@@ -775,10 +739,6 @@ proc HeapSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) whe
 
 pragma "no doc"
 /*
-
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`insertionSort`
-
    Sort the 1D array `Data` in-place using a sequential insertion sort algorithm.
 
    :arg Data: The array to be sorted
@@ -790,7 +750,7 @@ pragma "no doc"
 
  */
 proc InsertionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  //writeln("Deprecation warning: InsertionSort replaced by insertionSort");
+  compilerWarning("InsertionSort() has been deprecated.  Please use insertionSort() instead");
   var comparator = if reverse then reverseComparator else defaultComparator;
   insertionSort(Data, comparator);
   if doublecheck then
@@ -801,10 +761,6 @@ proc InsertionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false
 
 pragma "no doc"
 /*
-
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`mergeSort`
-
    Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
 
    :arg Data: The array to be sorted
@@ -818,7 +774,7 @@ pragma "no doc"
 
  */
 proc MergeSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  //writeln("Deprecation warning: MergeSort replaced by mergeSort");
+  compilerWarning("MergeSort() has been deprecated.  Please use mergeSort() instead");
   var comparator = if reverse then reverseComparator else defaultComparator;
   mergeSort(Data, minlen, comparator);
   if doublecheck then
@@ -829,10 +785,31 @@ proc MergeSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param revers
 
 pragma "no doc"
 /*
+   Sort the 1D array `Data` in-place using a sequential selection sort
+   algorithm.
 
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`isSorted`
+   :arg Data: The array to be sorted
+   :type Data: [] `eltType`
+   :arg doublecheck: Verify the array is correctly sorted before returning
+   :type doublecheck: `bool`
+   :arg reverse: Sort in reverse numerical order
+   :type reverse: `bool`
 
+ */
+proc SelectionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+  compilerWarning("SelectionSort() has been deprecated.  Please use selectionSort() instead");
+  const lo = Dom.dim(1).low;
+  const hi = Dom.dim(1).high;
+  for i in lo..hi-1 {
+    var (_, loc) = if reverse then maxloc reduce zip(Data[i..hi], {i..hi})
+      else minloc reduce zip(Data[i..hi], {i..hi});
+    Data(i) <=> Data(loc);
+  }
+}
+
+
+pragma "no doc"
+/*
    Verify that the array `Data` is in sorted order and halt if any element is
    out of order.
 
