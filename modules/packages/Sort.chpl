@@ -21,10 +21,7 @@
 // TODO -- performance test sort routines and optimize (see other TODO's)
 /*
 
-This module supports a variety of standard sorting routines on 1D arrays.
-
-The current interface is minimal and should be expected to
-grow and evolve over time.
+The Sort module is designed to support standard sort routines.
 
 .. _comparators:
 
@@ -32,22 +29,18 @@ Comparators
 -----------
 
 Comparators allow sorting data by a mechanism other than the
-default comparison of array elements. To use a comparator, define a
-record with either a ``key(a)`` or ``compare(a, b)`` method, and pass an
-instance of that record to the sort function (examples shown below).
+default comparison operations between array elements. To use a comparator,
+define a record with either a ``key(a)`` or ``compare(a, b)`` method, and pass
+an instance of that record to the sort function (examples shown below).
 
 If both methods are implemented on the record passed as the comparator, the
 ``key(a)`` method will take priority over the ``compare(a, b)`` method.
-
-Nearly all sort routines support comparators, which is denoted by their
-function signature.
 
 Key Comparator
 ~~~~~~~~~~~~~~
 
 The ``key(a)`` method accepts 1 argument, which will be an element from the
-array being sorted. The return type should support the ``<`` operator, since
-that is what the base ``compare`` method of all sort algorithms uses by default.
+array being sorted.
 
 The default key method would look like this:
 
@@ -78,17 +71,33 @@ elements, the user can define a comparator with a key method as follows:
   // This will output: -1, 2, 3, -4
   writeln(Array);
 
+The return type of ``key(a)`` must support the ``<``
+operator, which is used by the base compare method of all sort routines. If the
+``<`` operator is not defined for the return type, the user may define it
+themselves like so:
+
+.. code-block:: chapel
+
+  proc op<(a: returnType, b: returnType): bool {
+    ...
+  }
+
 
 Compare Comparator
 ~~~~~~~~~~~~~~~~~~
 
 The ``compare(a, b)`` method accepts 2 arguments, which will be 2 elements from
-the array being sorted. The return value should be an integer indicating how a
-and b compare to each other, as shown below:
+the array being sorted. The return value should be a numeric signed type
+indicating how a and b compare to each other. The conditions between ``a`` and
+``b`` should result in the following return values for ``compare(a, b)``:
 
-  * > 0 if ``a > b``
-  * 0 if ``a == b``
-  * < 0 if ``a < b``
+  ============ ==========
+  Return Value Condition
+  ============ ==========
+  ``> 0``      ``a > b``
+  ``0``        ``a == b``
+  ``< 0``      ``a < b``
+  ============ ==========
 
 The default compare method for a numeric signed type would look like this:
 
