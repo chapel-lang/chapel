@@ -106,7 +106,7 @@ void atomic_thread_fence(memory_order order)
   // No idea!
 }
 static inline
-void atomic_signal_thread_fence(memory_order order)
+void atomic_signal_fence(memory_order order)
 {
   // No idea!
 }
