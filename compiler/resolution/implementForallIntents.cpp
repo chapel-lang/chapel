@@ -58,6 +58,7 @@ static bool isCorrespIndexVar(BlockStmt* block, Symbol* sym)
 //
 static bool isOuterVar(Symbol* sym, BlockStmt* block) {
   if (sym->isParameter()               || // includes isImmediate()
+      sym->hasFlag(FLAG_INSTANTIATED_PARAM)    || // also a param
       sym->hasFlag(FLAG_TEMP)          || // exclude these
 
       // Consts need no special semantics for begin/cobegin/coforall/on.
