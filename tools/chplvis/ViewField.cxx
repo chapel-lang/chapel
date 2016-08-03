@@ -268,12 +268,12 @@ void ViewField::makeTagsMenu(void)
     tagMenu = -1;
   }
   if (!popup) {
-    popup = new Fl_Menu_Button (GraphView->x(), GraphView->y(),
-                                GraphView->w(), GraphView->h());
+    popup = new Fl_Menu_Button (GraphGrp->x(), GraphGrp->y(),
+                                GraphGrp->w(), GraphGrp->h());
     popup->type(Fl_Menu_Button::POPUP3);
     popup->box(FL_NO_BOX);
     popup->menu(popup_Menu);
-    GraphView->add(popup);
+    GraphGrp->add(popup);
   }
   if (tagPopup > 0) {
     popup->remove(tagPopup);

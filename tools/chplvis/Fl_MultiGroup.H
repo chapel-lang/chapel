@@ -46,10 +46,12 @@ public:
   bool selectChild (int which);    // Select a child to be visible
   bool selectChild (Fl_Widget *w);
 
-  bool pushChild (int which);      // Select a child to be visible and stacks it
+  bool pushChild (int which);      // Select a child to be visible and stacks current child
   bool pushChild (Fl_Widget *w);
   
   bool popChild ();                // pops a child
+
+  int numOnStack() { return top+1; }
 
   int currentChild ();             // returns a child
 

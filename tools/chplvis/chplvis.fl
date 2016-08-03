@@ -150,7 +150,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {778 202 560 590} type Double color 7 resizable size_range {560 590 0 0} visible
+    xywh {784 167 560 590} type Double color 7 resizable size_range {560 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55
@@ -299,7 +299,7 @@ MainWindow->redraw();}
         xywh {0 588 60 2} box NO_BOX
         code0 {o->clear_visible_focus();}
       }
-      Fl_Button {} {selected
+      Fl_Button {} {
         image {Graph-2-40x40.png} xywh {10 100 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
         code0 {o->clear_visible_focus();}
       }
@@ -312,7 +312,7 @@ MainWindow->redraw();}
       xywh {60 90 505 505} color 0 resizable
       class Fl_MultiGroup
     } {
-      Fl_Group GraphView {open
+      Fl_Group GraphGrp {open selected
         xywh {60 90 500 500} color 7
       } {
         Fl_Scroll DbgScroll {open
