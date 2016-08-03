@@ -47,7 +47,7 @@ proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, sorted=false) w
   if sorted then
     return binarySearch(Data, val, comparator);
   else
-    return linearSearch(Data, val);
+    return linearSearch(Data, val, comparator);
 }
 
 
