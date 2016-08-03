@@ -3458,6 +3458,8 @@ module ChapelArray {
       __doDeepCopy(x, tok);
     }
   }
+
+  pragma "unalias fn"
   inline proc chpl__unalias(ref x: domain) {
     const tok = __primitive("get caller stack token");
     const isalias = (x._unowned);// | (x._value._arrAlias != nil);
@@ -3484,7 +3486,6 @@ module ChapelArray {
   }
 
   pragma "auto copy fn" proc chpl__autoCopy(const ref x: []) {
-    //pragma "no copy" var b = new _array(x._pid, x._instance, true);
     pragma "no copy" var b = chpl__initCopy(x);
     return b;
   }
@@ -3527,6 +3528,7 @@ module ChapelArray {
     }
   }
   */
+  pragma "unalias fn"
   inline proc chpl__unalias(ref x: []) {
     const isalias = (x._unowned) | (x._value._arrAlias != nil);
 

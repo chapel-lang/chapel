@@ -449,17 +449,25 @@ static bool typeHasRefField(Type *type) {
 //
 static FnSymbol*
 resolveUninsertedCall(Type* type, CallExpr* call) {
+
+  // In case resolveCall drops other stuff into the tree ahead of the
+  // call, we wrap everything in a block for safe removal.
+  BlockStmt* block = new BlockStmt();
+
   if (type->defaultInitializer) {
     if (type->defaultInitializer->instantiationPoint)
-      type->defaultInitializer->instantiationPoint->insertAtHead(call);
+      type->defaultInitializer->instantiationPoint->insertAtHead(block);
     else
-      type->symbol->defPoint->insertBefore(call);
+      type->symbol->defPoint->insertBefore(block);
   } else {
-    chpl_gen_main->insertAtHead(call);
+    chpl_gen_main->insertAtHead(block);
   }
 
+  INT_ASSERT(block->parentSymbol);
+
+  block->insertAtHead(call);
   resolveCall(call);
-  call->remove();
+  block->remove();
 
   return call->isResolved();
 }
@@ -581,6 +589,9 @@ resolveAutoCopyEtc(Type* type) {
     chpl_gen_main->insertAtHead(new DefExpr(tmp));
     CallExpr* call = new CallExpr("chpl__autoDestroy", tmp);
     FnSymbol* fn = resolveUninsertedCall(type, call);
+    // Adding the flag here isn't sufficient for checks
+    // to auto destroy fn during resolution, so
+    // I added it with a pragma in the modules.
     fn->addFlag(FLAG_AUTO_DESTROY_FN);
     resolveFns(fn);
     autoDestroyMap.put(type, fn);
@@ -969,7 +980,7 @@ okToConvertFormalToRefType(Type* type) {
 // This function returns true for exceptional FnSymbols
 // where tuples containing refs can be returned.
 static bool
-allowTupleReturnWithRef(FnSymbol* fn)
+doNotChangeTupleTypeRefLevel(FnSymbol* fn)
 {
 
   if( fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) || // but not _type_construct__tuple
@@ -979,6 +990,8 @@ allowTupleReturnWithRef(FnSymbol* fn)
       fn->hasFlag(FLAG_TUPLE_CAST_FN) || // and not _cast for tuples
       fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES) || // not iteratorIndex
       fn->hasFlag(FLAG_AUTO_COPY_FN) || // not tuple chpl__autoCopy
+      fn->hasFlag(FLAG_AUTO_DESTROY_FN) || // not tuple chpl__autoDestroy
+      fn->hasFlag(FLAG_UNALIAS_FN) || // not tuple chpl__unalias
       fn->hasFlag(FLAG_ALLOW_REF) || // not iteratorIndex
       fn->hasFlag(FLAG_ITERATOR_FN) // iterators b/c
                                     //  * they might return by ref
@@ -991,6 +1004,40 @@ allowTupleReturnWithRef(FnSymbol* fn)
     return true;
   } else {
     return false;
+  }
+}
+
+static bool
+isTupleContainingOnlyReferences(Type* t)
+{
+  if(t->symbol->hasFlag(FLAG_TUPLE)) {
+    bool allRef = true;
+    AggregateType* at = toAggregateType(t);
+    std::vector<TypeSymbol*> args;
+    int i = 0;
+    for_fields(field, at) {
+      if (i != 0) { // skip size field
+        if (!isReferenceType(field->type))
+          allRef = false;
+      }
+    }
+    return allRef;
+  }
+
+  return false;
+}
+
+static Type*
+getReturnedTupleType(FnSymbol* fn, Type* retType)
+{
+  INT_ASSERT(retType->symbol->hasFlag(FLAG_TUPLE));
+
+  if (fn->returnsRefOrConstRef()) {
+    return computeTupleWithIntent(INTENT_REF, retType);
+  } else {
+    // Compute the tuple type without any refs
+    // Set the function return type to that type.
+    return computeNonRefTuple(retType);
   }
 }
 
@@ -1019,32 +1066,21 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
   fn->retType = retType;
 
   if (retType != dtUnknown) {
-    if (fn->returnsRefOrConstRef()) {
+
+    // Difficult to call e.g. _unref_type in build/normalize
+    // b/c of bugs in pulling out function symbols.
+    if (retType->symbol->hasFlag(FLAG_TUPLE) &&
+        !doNotChangeTupleTypeRefLevel(fn)) {
+
+      retType = getReturnedTupleType(fn, retType);
+      fn->retType = retType;
+    } else if (fn->returnsRefOrConstRef()) {
       makeRefType(retType);
       retType = fn->retType->refType;
       fn->retType = retType;
     }
 
-    fn->retExprType->remove(); // 159781 removed here
-
-
-    // Difficult to call e.g. _unref_type in build/normalize
-    // b/c of bugs in pulling out function symbols.
-    if (retType->symbol->hasFlag(FLAG_TUPLE) && !allowTupleReturnWithRef(fn)) {
-      // Compute the tuple type without any refs
-      // Set the function return type to that type.
-      Type* newType = computeNonRefTuple(retType, fn->body);
-      
-      if (newType != retType) {
-        // Also adjust any PRIM_COERCE calls
-        // gdbShouldBreakHere();
-        // I think that is handled in insertCasts
-      }
-
-      retType = newType;
-      fn->retType = retType;
-
-    }
+    fn->retExprType->remove();
 
     if (fn->isIterator() && !fn->iteratorInfo) {
       // Note: protoIteratorClass changes fn->retType
@@ -1152,6 +1188,16 @@ resolveFormals(FnSymbol* fn) {
           // The type of the formal is its own ref type!
         }
       }
+
+      if (formal->type->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+          !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
+          !doNotChangeTupleTypeRefLevel(fn)) {
+
+        Type* newType = computeTupleWithIntent(formal->intent,
+                                               formal->type->getValType());
+        formal->type = newType;
+      }
+
     }
     if (fn->retExprType)
       resolveSpecifiedReturnType(fn);
@@ -4875,15 +4921,13 @@ resolveCoerce(CallExpr* call) {
   
   INT_ASSERT(fn);
 
-  if (toType->symbol->hasFlag(FLAG_TUPLE) && !allowTupleReturnWithRef(fn)) {
-    // Compute the tuple type without any refs
-    // Set the function return type to that type.
-    Type* newType = computeNonRefTuple(toType, fn->body);
+  if (toType->symbol->hasFlag(FLAG_TUPLE) &&
+      !doNotChangeTupleTypeRefLevel(fn)) {
 
-    if (newType != toType) {
-
+    Type* retType = getReturnedTupleType(fn, toType);
+    if (retType != toType) {
       // Also adjust any PRIM_COERCE calls
-      call->get(2)->replace(new SymExpr(newType->symbol));
+      call->get(2)->replace(new SymExpr(retType->symbol));
     }
   }
 }
@@ -6432,7 +6476,8 @@ preFold(Expr* expr) {
       }
     } else if (call->isPrimitive(PRIM_ADDR_OF)) {
       // remove set ref if already a reference
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) ||
+          isTupleContainingOnlyReferences(call->get(1)->typeInfo())) {
         result = call->get(1)->remove();
         call->replace(result);
       } else {
@@ -7709,7 +7754,8 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 CallExpr* move = new CallExpr(PRIM_MOVE, to, rhs);
                 call->replace(move);
                 casts.add(move);
-              } else {
+              } else if (lhsType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
+                         rhsType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ) {
 
                 // Use = if the types differ.  This should cause the 'from'
                 // value to be coerced to 'to' if possible or result in an
@@ -7734,7 +7780,27 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
                 // We've replaced the move with no-init/assign, so remove it.
                 call->remove();
+              } else {
+                // Add a cast if the types don't match
+
+                // Remove the right-hand-side, which is call->get(2)
+                // The code below assumes it is the final argument
+                rhs->remove();
+
+                Symbol* tmp = NULL;
+                if (SymExpr* se = toSymExpr(fromExpr)) {
+                  tmp = se->var;
+                } else {
+                  tmp = newTemp("_cast_tmp_", fromExpr->typeInfo());
+                  call->insertBefore(new DefExpr(tmp));
+                  call->insertBefore(new CallExpr(PRIM_MOVE, tmp, fromExpr));
+                }
+
+                CallExpr* cast = new CallExpr("_cast", lhsType->symbol, tmp);
+                call->insertAtTail(cast);
+                casts.add(cast);
               }
+
             } else {
               // handle adding casts for a regular PRIM_MOVE
 
@@ -7869,10 +7935,11 @@ static void resolveReturnType(FnSymbol* fn)
 
   // For tuples, generally do not allow a tuple to contain a reference
   // when it is returned
-  if (retType->symbol->hasFlag(FLAG_TUPLE) && !allowTupleReturnWithRef(fn)) {
+  if (retType->symbol->hasFlag(FLAG_TUPLE) &&
+      !doNotChangeTupleTypeRefLevel(fn)) {
     // Compute the tuple type without any refs
     // Set the function return type to that type.
-    retType = computeNonRefTuple(retType, fn->body);
+    retType = getReturnedTupleType(fn, retType);
   }
 
   ret->type = retType;
@@ -8049,7 +8116,8 @@ resolveFns(FnSymbol* fn) {
     //
     if (AggregateType* ct = toAggregateType(fn->retType)) {
       if (!ct->destructor &&
-          !ct->symbol->hasFlag(FLAG_REF)) {
+          !ct->symbol->hasFlag(FLAG_REF) &&
+          !isTupleContainingOnlyReferences(ct)) {
         VarSymbol* tmp = newTemp(ct);
         CallExpr* call = new CallExpr("~chpl_destroy", gMethodToken, tmp);
 

@@ -630,7 +630,7 @@ instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   }
   
   FnSymbol* newFn = fn->partialCopy(&map);
-  
+
   addCache(genericsCache, root, newFn, &all_subs);
 
   newFn->removeFlag(FLAG_GENERIC);

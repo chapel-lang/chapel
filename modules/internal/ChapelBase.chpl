@@ -1018,6 +1018,7 @@ module ChapelBase {
   inline proc chpl__autoCopy(x) return chpl__initCopy(x);
 
   pragma "compiler generated"
+  pragma "unalias fn"
   inline proc chpl__unalias(ref x) { }
 
   pragma "compiler generated"
@@ -1031,15 +1032,19 @@ module ChapelBase {
   inline proc chpl__maybeAutoDestroyed(x) param return true;
 
   pragma "compiler generated"
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: object) { }
 
   pragma "compiler generated"
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(type t)  { }
 
   pragma "compiler generated"
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: ?t) {
     __primitive("call destructor", x);
   }
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(ir: _iteratorRecord) {
     // body inserted during call destructors pass
   }

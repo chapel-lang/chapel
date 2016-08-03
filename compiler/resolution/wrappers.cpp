@@ -404,7 +404,8 @@ buildDefaultWrapper(FnSymbol* fn,
           if (CallExpr* fromCall = toCallExpr(fromExpr)) {
             Expr* base = fromCall->baseExpr;
             if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(base)) {
-              if (0 == strcmp(urse->unresolved, "chpl__initCopy"))
+              if (0 == strcmp(urse->unresolved, "chpl__initCopy") ||
+                  0 == strcmp(urse->unresolved, "_createFieldDefault"))
                 needsInitCopy = false;
             } else {
               INT_ASSERT(0); // if resolved, check for FLAG_INIT_COPY_FN
@@ -430,6 +431,23 @@ buildDefaultWrapper(FnSymbol* fn,
         }
       }
       call->insertAtTail(temp);
+
+
+      // MPF - this seems really strange since it is assigning to
+      // fields that will be set in the construct call at the end.
+      // It is handling the current issue that an iterator to
+      // initialize an array can refer to the fields.
+      // See arrayDomInClassRecord2.chpl.
+      // In the future, it would probably be better to initialize the
+      // fields in order in favor of calling the default constructor.
+      if (specializeDefaultConstructor && strcmp(fn->name, "_construct__tuple"))
+        if (!formal->hasFlag(FLAG_TYPE_VARIABLE))
+          if (Symbol* field = wrapper->_this->type->getField(formal->name, false))
+            if (field->defPoint->parentSymbol == wrapper->_this->type->symbol)
+              wrapper->insertAtTail(
+                new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
+                             new_CStringSymbol(formal->name), temp));
+
     }
   }
   update_symbols(wrapper->body, &copy_map);
@@ -638,7 +656,9 @@ static void addArgCoercion(FnSymbol*  fn,
       castCall = NULL;      // make gcc happy
     }
 
-  } else if (ats->hasFlag(FLAG_REF)) {
+  } else if (ats->hasFlag(FLAG_REF) &&
+             !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+               formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) ) {
     //
     // dereference a reference actual
     //
@@ -648,6 +668,8 @@ static void addArgCoercion(FnSymbol*  fn,
     //   _ref(_syncvar(int)) --> _syncvar(int) --> _ref(int) --> int --> real
     //
     checkAgain = true;
+
+    // MPF - this call here is suspect
     castCall = new CallExpr(PRIM_DEREF, prevActual);
 
     if (SymExpr* prevSE = toSymExpr(prevActual))

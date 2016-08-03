@@ -439,6 +439,10 @@ instantiate_tuple_body(FnSymbol* fn) {
 
 static void
 getTupleArgAndType(FnSymbol* fn, ArgSymbol*& arg, AggregateType*& ct) {
+
+  // Adjust any formals for blank-intent tuple behavior now
+  resolveFormals(fn);
+
   INT_ASSERT(fn->numFormals() == 1); // expected of the original function
   arg = fn->getFormal(1);
   ct = toAggregateType(arg->type);
@@ -528,6 +532,9 @@ instantiate_tuple_init(FnSymbol* fn) {
 static void
 instantiate_tuple_cast(FnSymbol* fn)
 {
+  // Adjust any formals for blank-intent tuple behavior now
+  resolveFormals(fn);
+
   AggregateType* toT   = toAggregateType(fn->getFormal(1)->type);
   ArgSymbol*     arg   = fn->getFormal(2);
   AggregateType* fromT = toAggregateType(arg->type);
@@ -545,8 +552,7 @@ instantiate_tuple_cast(FnSymbol* fn)
     Symbol*    toName = new_CStringSymbol(  toField->name);
     const char* name  = toField->name;
 
-    VarSymbol* read = new VarSymbol(astr("read_", name), fromField->type);
-    block->insertAtTail(new DefExpr(read));
+    VarSymbol* read = NULL;
     VarSymbol* element = NULL;
 
     CallExpr* get = NULL;
@@ -554,20 +560,24 @@ instantiate_tuple_cast(FnSymbol* fn)
     if (!isReferenceType(fromField->type) &&
         fromField->type->getRefType() == toField->type) {
       // Converting from a value to a reference
+      read = new VarSymbol(astr("read_", name), toField->type);
+      block->insertAtTail(new DefExpr(read));
       get = new CallExpr(PRIM_GET_MEMBER, arg, fromName);
     } else {
+      read = new VarSymbol(astr("read_", name), fromField->type);
+      block->insertAtTail(new DefExpr(read));
       get = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, fromName);
     }
 
     block->insertAtTail(new CallExpr(PRIM_MOVE, read, get));
 
-    element = new VarSymbol(astr("elt_", name), toField->type);
-    block->insertAtTail(new DefExpr(element));
-
     if (isReferenceType(toField->type)) {
       // If creating a reference, no copy call necessary
-      block->insertAtTail(new CallExpr(PRIM_MOVE, element, read));
+      element = read;
     } else {
+      element = new VarSymbol(astr("elt_", name), toField->type);
+      block->insertAtTail(new DefExpr(element));
+
       // otherwise copy construct it
       CallExpr* copy = new CallExpr("chpl__autoCopy", read);
       block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
@@ -656,7 +666,7 @@ instantiate_tuple_unref(FnSymbol* fn)
   AggregateType* ct;
   getTupleArgAndType(fn, arg, origCt);
 
-  ct = computeNonRefTuple(origCt, fn->body);
+  ct = computeNonRefTuple(origCt);
 
   BlockStmt* block = new BlockStmt();
 
@@ -706,9 +716,11 @@ instantiate_tuple_unref(FnSymbol* fn)
 }
 
 
-AggregateType* computeNonRefTuple(Type* t, BlockStmt* instantiationPoint)
+AggregateType* computeNonRefTuple(Type* t)
 {
   INT_ASSERT(t->symbol->hasFlag(FLAG_TUPLE));
+
+  BlockStmt* instantiationPoint = t->defaultTypeConstructor->instantiationPoint;
 
   // Compute the tuple type without any refs
   bool containsRef = false;
@@ -729,17 +741,53 @@ AggregateType* computeNonRefTuple(Type* t, BlockStmt* instantiationPoint)
   }
 }
 
+AggregateType* computeTupleWithIntent(IntentTag intent, Type* t)
+{
+  INT_ASSERT(t->symbol->hasFlag(FLAG_TUPLE));
+
+  BlockStmt* instantiationPoint = t->defaultTypeConstructor->instantiationPoint;
+
+  // Convert all of the types to reference types
+  bool allSame = true;
+  AggregateType* at = toAggregateType(t);
+  std::vector<TypeSymbol*> args;
+  int i = 0;
+  for_fields(field, at) {
+    if (i != 0) { // skip size field
+      if (isReferenceType(field->type)) {
+        args.push_back(field->type->symbol);
+      } else {
+        // Not a reference, but wish to make it a reference for
+        // blank-intent-is-ref types.
+        IntentTag concrete = concreteIntent(intent, field->type);
+        if ( (concrete & INTENT_FLAG_REF) ) {
+          args.push_back(field->type->getRefType()->symbol);
+          allSame = false;
+        } else {
+          args.push_back(field->type->symbol);
+        }
+      }
+    }
+    i++;
+  }
+
+
+  if (allSame) {
+    return at;
+  } else {
+    TupleInfo info = getTupleInfo(args, instantiationPoint, false /*noref*/);
+    return toAggregateType(info.typeSymbol->type);
+  }
+}
+
+
+
 
 void
 fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* instantiatedForCall)
 {
   // Note: scopeResolve sets FLAG_TUPLE is for the type constructor
   // and the constructor for the tuple record.
-  /*
-  if (fn->hasFlag(FLAG_TUPLE)) {
-    gdbShouldBreakHere();
-    instantiate_tuple_signature(newFn);
-  }*/
 
   if (!strcmp(fn->name, "_defaultOf") &&
       fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE))
@@ -750,8 +798,8 @@ fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* instantiatedForCall
   }
 
   if (fn->hasFlag(FLAG_TUPLE_CAST_FN) &&
-      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE) &&
-      fn->getFormal(2)->type->symbol->hasFlag(FLAG_TUPLE) ) {
+      newFn->getFormal(1)->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+      fn->getFormal(2)->getValType()->symbol->hasFlag(FLAG_TUPLE) ) {
     instantiate_tuple_cast(newFn);
   }
 
@@ -769,6 +817,7 @@ fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* instantiatedForCall
 
 }
 
+/*
 static FnSymbol*
 parentFunction(CallExpr* call)
 {
@@ -777,7 +826,7 @@ parentFunction(CallExpr* call)
     s = s->defPoint->parentSymbol;
   return toFnSymbol(s);
 }
-
+*/
 
 FnSymbol*
 createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
@@ -799,6 +848,17 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
       } else {
         // Subsequent arguments are tuple types.
         Type* t = actual->typeInfo();
+
+        // Args that are being passed with a ref intent
+        // should be captured as ref.
+        if (SymExpr* se = toSymExpr(actual)) {
+          if (ArgSymbol* arg = toArgSymbol(se->var)) {
+            IntentTag intent = concreteIntentForArg(arg);
+            if ( (intent & INTENT_FLAG_REF) &&
+                ! t->symbol->hasFlag(FLAG_ITERATOR_RECORD) )
+              t = t->getRefType();
+          }
+        }
         args.push_back(t->symbol);
       }
       i++;
@@ -813,8 +873,6 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
       INT_ASSERT(actualN == args.size());
     }
 
-    if (call->id == 1283246)
-      gdbShouldBreakHere();
 
     //printf("Building tuple with %i parts\n", (int) args.size());
 
@@ -825,6 +883,30 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
     } else {
       // Types with blank intent = ref capture by ref
 
+      // When running the type version of _build_tuple,
+      // use whatever types were specified.
+
+      // When running the value version, capture
+      // as if in blank intent.
+#if 0
+      FnSymbol* parentFn = parentFunction(call);
+      if (parentFn->hasFlag(FLAG_TUPLE) &&
+          !parentFn->hasFlag(FLAG_BUILD_TUPLE_TYPE)) {
+        for (size_t i = 0; i < args.size(); i++) {
+          Type* t = args[i]->type;
+          IntentTag intent = blankIntentForType(t);
+          if (!isReferenceType(t) &&
+              (intent & INTENT_FLAG_REF) &&
+              // Including more than this causes problems with hello.chpl
+              // but I havn't figured out why.
+              (/*isUserDefinedRecord(t) || */isRecordWrappedType(t))
+             ) {
+            args[i] = t->getRefType()->symbol;
+          }
+        }
+      }
+#endif
+ 
       // Seeing problems with this when it's run inside of
       // a _build_tuple_allow_ref call. In particular,
       // an argument that should not be captured by ref
@@ -845,7 +927,7 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
       //   blank-intent-is-ref types by value
       // * tuples in compiler temporary variables capture blank-intent-is-ref
       //   values by reference
-
+#if 0
       if (! (parentFunction(call)->hasFlag(FLAG_ALLOW_REF) ||
              parentFunction(call)->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
              parentFunction(call)->hasFlag(FLAG_CONSTRUCTOR)) ) {
@@ -862,6 +944,7 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
           }
         }
       }
+#endif
     }
 
     BlockStmt* point = getVisibilityBlock(call);

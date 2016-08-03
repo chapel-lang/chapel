@@ -1302,7 +1302,9 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
   if (local) {
     type = local->type;
     // The return value is automatically dereferenced (I guess).
-    if (local == fn->_this && type->symbol->hasFlag(FLAG_REF))
+    if (local == fn->_this && type->symbol->hasFlag(FLAG_REF) &&
+        // TODO -- why is this dereferencing done ever?
+        !isRecordWrappedType(type->getValType()))
       type = type->getValType();
   }
 
