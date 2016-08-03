@@ -150,7 +150,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {779 165 560 590} type Double color 7 hide resizable size_range {560 590 0 0}
+    xywh {778 202 560 590} type Double color 7 resizable size_range {560 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55
@@ -296,7 +296,16 @@ MainWindow->redraw();}
       xywh {0 89 60 501} box BORDER_FRAME color 0
     } {
       Fl_Button {} {
-        xywh {0 588 60 2}
+        xywh {0 588 60 2} box NO_BOX
+        code0 {o->clear_visible_focus();}
+      }
+      Fl_Button {} {selected
+        image {Graph-2-40x40.png} xywh {10 100 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
+        code0 {o->clear_visible_focus();}
+      }
+      Fl_Button {} {
+        image {Grid-40x40.png} xywh {10 150 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
+        code0 {o->clear_visible_focus();}
       }
     }
     Fl_Group DataField {open
@@ -307,10 +316,10 @@ MainWindow->redraw();}
         xywh {60 90 500 500} color 7
       } {
         Fl_Scroll DbgScroll {open
-          xywh {60 90 495 495} color 7 resizable
+          xywh {60 90 500 500} color 7 resizable
           class GraphScroll
         } {
-          Fl_Box DbgView {user_data_type {void*} selected
+          Fl_Box DbgView {user_data_type {void*}
             xywh {60 90 500 500} color 0 selection_color 48 resizable
             class ViewField
           }
