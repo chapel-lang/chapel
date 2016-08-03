@@ -1,8 +1,7 @@
 /*
- *  Check correctness of comparator functionality, output nothing if correct.
+ *  Check correctness of sort routines. Output nothing if correct.
  *
- * Note -- This also checks correctness of all sorts with comparators.
- *         This could potentially live in a separate test.
+ *  TODO -- remove deprecated testing in 1.15
  */
 
 use Sort;
