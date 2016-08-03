@@ -473,22 +473,8 @@ void ViewField::draw()
 
   Fl_Box::draw();
 
-  for (ix = 0; ix < numlocales; ix++) {
-    switch (infoTop) {
-    case show_Tasks:
-      drawLocale(ix, heatColor(curTagData->locales[ix].numTasks, curTagData->maxTasks));
-      break;
-    case show_CPU:
-      drawLocale(ix, heatColor(curTagData->locales[ix].Cpu, curTagData->maxCpu));
-      break;
-    case show_Clock:
-      drawLocale(ix, heatColor(curTagData->locales[ix].clockTime, curTagData->maxClock));
-      break;
-    case show_Concurrency:
-      drawLocale(ix, heatColor(curTagData->locales[ix].maxConc, curTagData->maxConc));
-    }
-  }
-
+  // Draw comm lines first so they go under locales
+  
   for (ix = 0; ix < numlocales-1; ix++) {
     for (iy = ix + 1; iy < numlocales; iy++) {
       int  com2ix, com2iy, comMax; 
@@ -511,6 +497,24 @@ void ViewField::draw()
                        iy, heatColor(com2iy, comMax));
         }
       }
+    }
+  }
+
+  // Draw locales next
+  
+  for (ix = 0; ix < numlocales; ix++) {
+    switch (infoTop) {
+    case show_Tasks:
+      drawLocale(ix, heatColor(curTagData->locales[ix].numTasks, curTagData->maxTasks));
+      break;
+    case show_CPU:
+      drawLocale(ix, heatColor(curTagData->locales[ix].Cpu, curTagData->maxCpu));
+      break;
+    case show_Clock:
+      drawLocale(ix, heatColor(curTagData->locales[ix].clockTime, curTagData->maxClock));
+      break;
+    case show_Concurrency:
+      drawLocale(ix, heatColor(curTagData->locales[ix].maxConc, curTagData->maxConc));
     }
   }
 
