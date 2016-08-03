@@ -151,12 +151,11 @@ static inline type atomic_fetch_xor_ ## type(atomic_ ## type * obj, type operand
 ///////////////////////////////////////////////////////////////////////////////
 ////                       START OF REAL ATOMICS BASE                     ////
 //////////////////////////////////////////////////////////////////////////////
-#define DECLARE_REAL_ATOMICS_BASE(type, uinttype) \
+#define DECLARE_REAL_ATOMICS_BASE(type) \
 static inline chpl_bool atomic_is_lock_free_ ## type(atomic_ ## type * obj) { \
   return atomic_is_lock_free(obj); \
 } \
 static inline void atomic_init_ ## type(atomic_ ## type * obj, type value) { \
-  assert(sizeof(type) == sizeof(uinttype)); \
   atomic_init(obj, value); \
 } \
 static inline void atomic_destroy_ ## type(atomic_ ## type * obj) { \
@@ -178,7 +177,7 @@ static inline type atomic_load_ ## type(atomic_ ## type * obj) { \
 ///////////////////////////////////////////////////////////////////////////////
 ////                START OF REAL ATOMICS EXCHANGE OPS                    ////
 //////////////////////////////////////////////////////////////////////////////
-#define DECLARE_REAL_ATOMICS_EXCHANGE_OPS(type, uinttype) \
+#define DECLARE_REAL_ATOMICS_EXCHANGE_OPS(type) \
 static inline type atomic_exchange_explicit_ ## type(atomic_ ## type * obj, type _value, memory_order order) { \
   return atomic_exchange_explicit(obj, _value, order); \
 } \
@@ -202,7 +201,7 @@ static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * 
 ///////////////////////////////////////////////////////////////////////////////
 ////                   START OF REAL ATOMICS FETCH OPS                    ////
 //////////////////////////////////////////////////////////////////////////////
-#define DECLARE_REAL_ATOMICS_FETCH_OPS(type, uinttype) \
+#define DECLARE_REAL_ATOMICS_FETCH_OPS(type) \
 static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
   type old_val = *obj; \
   type new_val; \
@@ -265,13 +264,13 @@ DECLARE_ATOMICS_EXCHANGE_OPS(uintptr_t, uintptr_t);
 DECLARE_ATOMICS_FETCH_OPS(uintptr_t);
 
 
-#define DECLARE_REAL_ATOMICS(type, uinttype) \
-  DECLARE_REAL_ATOMICS_BASE(type, uinttype) \
-  DECLARE_REAL_ATOMICS_EXCHANGE_OPS(type, uinttype) \
-  DECLARE_REAL_ATOMICS_FETCH_OPS(type, uinttype)
+#define DECLARE_REAL_ATOMICS(type) \
+  DECLARE_REAL_ATOMICS_BASE(type) \
+  DECLARE_REAL_ATOMICS_EXCHANGE_OPS(type) \
+  DECLARE_REAL_ATOMICS_FETCH_OPS(type)
 
-DECLARE_REAL_ATOMICS(_real32, uint32_t);
-DECLARE_REAL_ATOMICS(_real64, uint64_t);
+DECLARE_REAL_ATOMICS(_real32);
+DECLARE_REAL_ATOMICS(_real64);
 
 
 #undef DECLARE_ATOMICS_BASE
