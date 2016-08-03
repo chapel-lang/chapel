@@ -1,1 +1,3 @@
 --fast --incremental
+--ccflags=-O3 --incremental
+--incremental --ccflags=-O0
