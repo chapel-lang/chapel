@@ -106,6 +106,16 @@ proc main() {
   heapSort(Arr, comparator=compare);
   checkSort(Arr, ArrAbsSorted, 'heapSort', 'compare');
 
+  // selectionSort
+  selectionSort(Arr);
+  checkSort(Arr, ArrSorted, 'selectionSort');
+
+  selectionSort(Arr, comparator=key);
+  checkSort(Arr, ArrAbsSorted, 'selectionSort', 'key');
+
+  selectionSort(Arr, comparator=compare);
+  checkSort(Arr, ArrAbsSorted, 'selectionSort', 'compare');
+
   /* TODO -- selectionSort testing when comparator support implemented */
 
   /* Test deprecated sorts */
@@ -167,7 +177,7 @@ proc main() {
 /* Checks array and resets values -- any output results in failure */
 proc checkSort(ref array, correct, sort:string, comparator:string='none') {
   if !array.equals(correct) {
-    writeln(sort, 'with comparator: ', comparator, ' failed');
+    writeln(sort, ' with comparator: ', comparator, ' failed');
     writeln('Incorrect array:');
     writeln(array);
     writeln('Expected correct array:');
