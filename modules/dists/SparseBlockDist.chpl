@@ -153,8 +153,8 @@ class SparseBlockDom: BaseSparseDom {
         const _first = locDoms[l].mySparseBlock._value.parentDom.first;
         const _last = locDoms[l].mySparseBlock._value.parentDom.last;
 
-        var (foundFirst, locFirst) = search(inds, _first, comp);
-        var (foundLast, locLast) = search(inds, _last, comp);
+        var (foundFirst, locFirst) = binarySearch(inds, _first, comp);
+        var (foundLast, locLast) = binarySearch(inds, _last, comp);
 
         if !foundLast then locLast -= 1;
 
