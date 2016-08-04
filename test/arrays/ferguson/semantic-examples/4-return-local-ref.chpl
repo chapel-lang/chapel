@@ -4,6 +4,6 @@ proc f() ref {
   return localArray;
 }
 
-writeln(f()[1]);
+writeln(f()[1].x);
 
 // Is f() be a valid function? Or an error?

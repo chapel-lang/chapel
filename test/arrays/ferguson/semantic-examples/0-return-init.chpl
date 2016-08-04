@@ -8,5 +8,5 @@ proc createArray() {
 // process of moving from retA to A here?
 // It seems clear that they need not be copied in this program.
 var A = createArray();
-writeln(A[1]);
+writeln(A[1].x);
 

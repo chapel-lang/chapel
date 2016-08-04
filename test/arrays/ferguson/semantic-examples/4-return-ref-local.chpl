@@ -5,6 +5,6 @@ proc f() {
   return r;
 }
 
-writeln(f()[1]);
+writeln(f()[1].x);
 
 // Is f() be a valid function? Or an error?

@@ -4,7 +4,7 @@ proc createArray() {
   return retA;
 }
 proc consumesArray(A:[] R) {
-  writeln(A[1]);
+  writeln(A[1].x);
 }
 consumesArray(createArray());
 

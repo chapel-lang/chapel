@@ -13,7 +13,7 @@ proc g(x) {
 }
 
 g(f());
-writeln(A[2]);
+writeln(A[2].x);
 
 // Does this program output 0 or 1?
 //  
