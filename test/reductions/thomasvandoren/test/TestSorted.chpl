@@ -12,7 +12,7 @@ var A = [i in rA] (10 * i): int;
 writeln("A: ", A);
 writeln("sorted? ", isSorted reduce A);
 
-QuickSort(A);
+quickSort(A);
 writeln("A: ", A);
 writeln("sorted? ", isSorted reduce A);
 

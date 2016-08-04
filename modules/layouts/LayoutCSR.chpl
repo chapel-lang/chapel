@@ -187,7 +187,7 @@ class CSRDom: BaseSparseDom {
   proc _private_findStartRow(startIx, low, high) {
     var approx = 2; // Indicates when to switch to linear search.
                     // This number could be tuned for performance.
-    // simple binary search (should be fewer comparisons than BinarySearch())
+    // simple binary search (should be fewer comparisons than binarySearch())
     var l = low, h = high;
     while h > l + approx {
       var m = (h + l) / 2;
@@ -234,7 +234,7 @@ class CSRDom: BaseSparseDom {
 
     const (row, col) = ind;
 
-    return BinarySearch(colIdx, col, rowStart(row), rowStop(row));
+    return binarySearch(colIdx[rowStart(row)..rowStop(row)], col);
   }
 
   proc dsiMember(ind: rank*idxType) {
