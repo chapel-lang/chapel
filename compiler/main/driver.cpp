@@ -1035,6 +1035,15 @@ static void checkTargetArch() {
   }
 }
 
+static void checkIncrementalAndOptimized() {
+  std::size_t optimizationsEnabled = ccflags.find("-O");
+  if(fIncrementalCompilation && ( optimizeCCode ||
+      optimizationsEnabled!=std::string::npos ))
+    USR_WARN("Compiling with --incremental along with optimizations enabled"
+              " may lead to a slower execution time compared to --fast or"
+              " using -O optimizations directly.");
+}
+
 static void postprocess_args() {
   // Processes that depend on results of passed arguments or values of CHPL_vars
 
@@ -1055,6 +1064,8 @@ static void postprocess_args() {
   checkLLVMCodeGen();
 
   checkTargetArch();
+
+  checkIncrementalAndOptimized();
 }
 
 int main(int argc, char* argv[]) {

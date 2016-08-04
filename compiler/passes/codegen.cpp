@@ -1489,13 +1489,6 @@ void codegen(void) {
       USR_WARN("C code generation for packed pointers not supported");
   }
 
-  std::size_t optimizationsEnabled = ccflags.find("-O");
-  if(fIncrementalCompilation && ( fFastFlag||
-      optimizationsEnabled!=std::string::npos ))
-    USR_WARN("Compiling with --incremental along with optimizations enabled"
-              " may lead to a slower execution time compared to --fast or"
-              " using -O optimizations directly.");
-
   if( llvmCodegen ) {
 #ifndef HAVE_LLVM
     USR_FATAL("This compiler was built without LLVM support");
