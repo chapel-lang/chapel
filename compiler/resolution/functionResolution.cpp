@@ -1020,6 +1020,7 @@ isTupleContainingOnlyReferences(Type* t)
         if (!isReferenceType(field->type))
           allRef = false;
       }
+      i++;
     }
     return allRef;
   }
