@@ -27,13 +27,13 @@
 
 static char* mpi_num_ranks=NULL;
 
+static char _nlbuf[16];
+static char** chpl_launch_create_argv(const char *launch_cmd,
+                                      int argc, char* argv[],
+                                      int32_t numLocales) {
+  const int largc = 3;
+  char *largv[largc];
 
-static char* chpl_launch_create_command(int argc, char* argv[], 
-                                        int32_t numLocales) {
-  int i;
-  int size;
-  char baseCommand[256];
-  char* command;
   int numranks;
   
   // Get the number of ranks
@@ -45,40 +45,23 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     numranks = atoi(mpi_num_ranks);
   }
 
-  chpl_compute_real_binary_name(argv[0]);
+  largv[0] = (char *) launch_cmd;
+  largv[1] = (char *) "-np";
+  sprintf(_nlbuf, "%d", numranks);
+  largv[2] = _nlbuf;
 
-  sprintf(baseCommand, "mpirun -np %d %s %s", numranks, MPIRUN_XTRA_OPTS, 
-          chpl_get_real_binary_name());
-
-  //size = strlen(MPIRUN_PATH) + 1 + strlen(baseCommand) + 1;
-  size = strlen(baseCommand)+1;
-
-  for (i=1; i<argc; i++) {
-    size += strlen(argv[i]) + 3;
-  }
-
-  command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  
-  //sprintf(command, "%s/%s", MPIRUN_PATH, baseCommand);
-  sprintf(command, "%s", baseCommand);
-  for (i=1; i<argc; i++) {
-    strcat(command, " '");
-    strcat(command, argv[i]);
-    strcat(command, "'");
-  }
-
-  if (strlen(command)+1 > size) {
-    chpl_internal_error("buffer overflow");
-  }
-
-  return command;
+  return chpl_bundle_exec_args(argc, argv, largc, largv);
 }
-
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
-  return chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
-                                  argv[0]);
+  char *cmd = "mpirun";
+
+  return chpl_launch_using_exec(cmd,
+                                chpl_launch_create_argv(cmd, argc, argv,
+                                                        numLocales),
+                                argv[0]);
 }
+
 
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
