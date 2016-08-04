@@ -357,7 +357,7 @@ class LocBlockArr {
   const locDom: LocBlockDom(rank, idxType, stridable);
   var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
   var myElems: [locDom.myBlock] eltType;
-  var locRADLock: atomicflag; // This will only be accessed locally
+  var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
 
   // These function will always be called on this.locale, and so we do
