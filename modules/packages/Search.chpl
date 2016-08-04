@@ -96,6 +96,7 @@ proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=
 proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high) where Dom.rank == 1 {
   chpl_check_comparator(comparator, Data.eltType);
 
+  // Domain slicing is cheap, but avoiding it when possible helps performance
   if lo == Dom.low && hi == Dom.high {
     for i in Dom do
       if chpl_compare(Data[i], val, comparator=comparator) == 0 then
