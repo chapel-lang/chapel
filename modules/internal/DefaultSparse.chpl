@@ -288,6 +288,10 @@ module DefaultSparse {
       return actualAddCnt;
     }
 
+    proc dsiMyDist() : BaseDist {
+      return dist;
+    }
+
     proc dsiClear() {
       nnz = 0;
       // should we empty the domain too ?

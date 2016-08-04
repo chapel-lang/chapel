@@ -2960,7 +2960,10 @@ module ChapelArray {
       // intelligent will likely be needed before it is worth it to
       // parallelize whole-domain assignment for associative arrays.
       //
-      compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+
+//      disabled for testing for the same reason
+//      as the array version: it can be called from autoCopy/initCopy.
+//      compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
       for i in a._value.dsiIndsIterSafeForRemoving() {
         if !b.member(i) {
           a.remove(i);
@@ -3206,7 +3209,10 @@ module ChapelArray {
       forall aa in a do
         aa = b;
     } else if chpl__serializeAssignment(a, b) {
-      compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+// commenting this out to remove testing noise.
+// this is always printed out if it's on, because chpl__transferArray
+// is now called from array auto-copy.
+//      compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
       for (aa,bb) in zip(a,b) do
         aa = bb;
     } else if chpl__tryToken { // try to parallelize using leader and follower iterators
