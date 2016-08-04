@@ -319,6 +319,10 @@ module DefaultSparse {
       }
     }
 
+    proc dsiMyDist() : BaseDist {
+      return dist;
+    }
+
     proc dsiClear() {
       nnz = 0;
     }

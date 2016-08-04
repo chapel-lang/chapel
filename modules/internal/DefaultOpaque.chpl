@@ -45,6 +45,14 @@ module DefaultOpaque {
       adomain.dsiAdd(i);
       return i;
     }
+
+    proc dsiMyDist() {
+      return dist;
+    }
+
+    proc dsiAdd(i:idxType) {
+      return adomain.dsiAdd(i);
+    }
   
     proc dsiGetIndices() return adomain;
   
