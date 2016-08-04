@@ -407,9 +407,15 @@ bool isRelationalOperator(CallExpr* call) {
 //
 int isDefAndOrUse(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
-    if ((call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN) ||
-         call->isPrimitive(PRIM_SET_REFERENCE)) &&
+    if ((call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
         call->get(1) == se) {
+      CallExpr* rhsCall = toCallExpr(call->get(2));
+      if (se->var->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
+          !(rhsCall && rhsCall->isPrimitive(PRIM_SET_REFERENCE))) {
+        // Assigning to a reference variable counts as a 'use'
+        // of the reference and a 'def' of its value
+        return 3;
+      }
       return 1;
     } else if (isOpEqualPrim(call) && call->get(1) == se) {
       return 3;
