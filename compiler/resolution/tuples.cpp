@@ -738,14 +738,17 @@ do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
       // Not a reference, but wish to make it a reference for
       // blank-intent-is-ref types.
 
-      // For now, only do this for record wrapped types.
-      if (shouldChangeTupleType(useType)) {
-        IntentTag concrete = concreteIntent(intent, useType);
-        if ( (concrete & INTENT_FLAG_REF) ) {
-          useType = useType->getRefType();
-        }
-      } else if (useType->symbol->hasFlag(FLAG_TUPLE)) {
+      if (useType->symbol->hasFlag(FLAG_TUPLE)) {
         useType = do_computeTupleWithIntent(valueOnly, intent, useType);
+      } else if (shouldChangeTupleType(useType)) {
+        if (valueOnly) {
+          // already OK since we did getValType() above
+        } else {
+          IntentTag concrete = concreteIntent(intent, useType);
+          if ( (concrete & INTENT_FLAG_REF) ) {
+            useType = useType->getRefType();
+          }
+        }
       }
 
       if (useType != field->type)

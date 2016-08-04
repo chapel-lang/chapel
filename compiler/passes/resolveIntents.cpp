@@ -109,7 +109,13 @@ static IntentTag blankIntentForThisArg(Type* t) {
 
   // MPF - this is surprising to me. Apparently it's INTENT_CONST_IN
   // because this as always a class or a ref(something) ?
-  return INTENT_CONST_IN;
+  // See class-tuple-member.chpl which fails if this is left here...
+  //return INTENT_CONST_IN;
+
+  if (isRecord(t) || isUnion(t))
+    return INTENT_REF;
+  else
+    return INTENT_CONST_IN;
 }
 
 IntentTag concreteIntentForArg(ArgSymbol* arg) {
