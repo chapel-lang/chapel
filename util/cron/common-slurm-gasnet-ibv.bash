@@ -11,7 +11,6 @@ source $CWD/common.bash
 export CHPL_COMM=gasnet
 export CHPL_COMM_SUBSTRATE=ibv
 export CHPL_LAUNCHER=slurm-gasnetrun_ibv
-export CHPL_LAUNCHER_WALLTIME=00:04:00
 
 export CHPL_LAUNCHER_USE_SBATCH=1
 export CHPL_APP_LAUNCH_CMD=$CHPL_HOME/util/test/chpl_launchcmd.py
