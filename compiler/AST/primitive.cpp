@@ -170,6 +170,18 @@ returnInfoRef(CallExpr* call) {
   return t->refType;
 }
 
+static Type*
+returnInfoAsRef(CallExpr* call) {
+  Type* t = call->get(1)->typeInfo();
+  if (isReferenceType(t))
+    return t;
+  else {
+    if (!t->refType)
+      INT_FATAL(call, "invalid attempt to get reference type");
+    return t->refType;
+  }
+}
+
 // NEEDS TO BE FINISHED WHEN PRIMITIVES ARE REDONE
 static Type*
 returnInfoNumericUp(CallExpr* call) {
@@ -456,8 +468,8 @@ initPrimitive() {
   prim_def(PRIM_ADDR_OF, "addr of", returnInfoRef);
   prim_def(PRIM_DEREF,   "deref",   returnInfoVal, false, true);
   // sets a reference to another reference value
-  // args are (reference variable to set, reference value to point to)
-  prim_def(PRIM_SET_REFERENCE, "set reference", returnInfoVoid);
+  // it is the RHS of a PRIM_MOVE with the argument reference to point to
+  prim_def(PRIM_SET_REFERENCE, "set reference", returnInfoAsRef);
 
   // local block primitives
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);

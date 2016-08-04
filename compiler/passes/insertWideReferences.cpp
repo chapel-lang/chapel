@@ -1267,8 +1267,7 @@ static void propagateVar(Symbol* sym) {
       CallExpr* parentCall = toCallExpr(call->parentExpr);
       if (parentCall && call->primitive) {
         if (parentCall->isPrimitive(PRIM_MOVE) ||
-            parentCall->isPrimitive(PRIM_ASSIGN) ||
-            parentCall->isPrimitive(PRIM_SET_REFERENCE)) {
+            parentCall->isPrimitive(PRIM_ASSIGN)) {
           Symbol* lhs = toSymExpr(parentCall->get(1))->var;
           if (call->primitive) {
             switch (call->primitive->tag) {
@@ -1349,8 +1348,7 @@ static void propagateVar(Symbol* sym) {
         }
       }
       else if ((call->isPrimitive(PRIM_MOVE) ||
-                 call->isPrimitive(PRIM_SET_REFERENCE) ||
-                 call->isPrimitive(PRIM_ASSIGN)) &&
+                call->isPrimitive(PRIM_ASSIGN)) &&
                   use == call->get(2)) {
         Symbol* lhs = toSymExpr(call->get(1))->var;
         Symbol* rhs = toSymExpr(call->get(2))->var;
@@ -1366,8 +1364,7 @@ static void propagateVar(Symbol* sym) {
           // PRIM_ASSIGN means that the contents of the value or reference on the
           // RHS are copied into the object pointed to by the LHS.
           // Therefore, this clause applies only to PRIM_MOVE.
-          if (call->isPrimitive(PRIM_MOVE) ||
-              call->isPrimitive(PRIM_SET_REFERENCE))
+          if (call->isPrimitive(PRIM_MOVE))
             widenRef(use, lhs);
         }
         else if (isRef(lhs) && isObj(rhs)) {
@@ -1862,7 +1859,6 @@ static void localizeCall(CallExpr* call) {
       break;
     case PRIM_MOVE:
     case PRIM_ASSIGN: // Not sure about this one.
-    case PRIM_SET_REFERENCE:
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
         if (rhs->isPrimitive(PRIM_DEREF)) {
           if (isFullyWide(rhs->get(1))) {
@@ -2288,8 +2284,7 @@ static void fixAST() {
         // TODO: this doesn't work if the field is a ref_wide_T and the rhs is a ref_T
         makeMatch(field, toSymExpr(call->get(3)));
       }
-      else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN) ||
-          call->isPrimitive(PRIM_SET_REFERENCE)) {
+      else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
         // TODO: Local checks for references from GET_MEMBER_VALUE
         if (CallExpr* rhs = toCallExpr(call->get(2))) {
           if (rhs->isPrimitive(PRIM_ADDR_OF)) {
