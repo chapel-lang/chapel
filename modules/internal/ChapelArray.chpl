@@ -931,6 +931,7 @@ module ChapelArray {
 
     // see comments for the same method in _array
     //
+    // domain slicing by domain
     pragma "no doc"
     proc this(d: domain) {
       if d.rank == rank then
@@ -939,6 +940,7 @@ module ChapelArray {
         compilerError("slicing a domain with a domain of a different rank");
     }
 
+    // domain slicing by tuple of ranges
     pragma "no doc"
     proc this(ranges: range(?) ...rank) {
       param stridable = _value.stridable || chpl__anyStridable(ranges);
@@ -956,6 +958,7 @@ module ChapelArray {
       return _newDomain(d);
     }
 
+    // domain rank change
     pragma "no doc"
     proc this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
       var ranges = _getRankChangeRanges(args);
@@ -1857,6 +1860,7 @@ module ChapelArray {
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
 
+    // array element access
     // When 'this' is 'const', so is the returned l-value.
     pragma "no doc" // ref version
     pragma "reference to const when const this"
@@ -1949,6 +1953,7 @@ module ChapelArray {
       return localAccess(i);
 
 
+    // array slicing by a domain
     //
     // requires dense domain implementation that returns a tuple of
     // ranges via the getIndices() method; domain indexing is difficult
@@ -1973,6 +1978,7 @@ module ChapelArray {
           halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
     }
 
+    // array slicing by a tuple of ranges
     pragma "no doc"
     pragma "reference to const when const this"
     proc this(ranges: range(?) ...rank) {
@@ -1993,6 +1999,7 @@ module ChapelArray {
       return _newArray(a);
     }
 
+    // array rank change
     pragma "no doc"
     pragma "reference to const when const this"
     proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
