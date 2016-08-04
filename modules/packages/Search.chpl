@@ -70,12 +70,18 @@ proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, sorted=false) w
    :rtype: (`bool`, `Data.domain.type`)
 
  */
-proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo = Dom.low, hi = Dom.high) where Dom.rank == 1 {
   chpl_check_comparator(comparator, Data.eltType);
 
-  for i in Dom do
-    if chpl_compare(Data[i], val, comparator=comparator) == 0 then
-      return (true, i);
+  if lo == Dom.low && hi == Dom.high {
+    for i in Dom do
+      if chpl_compare(Data[i], val, comparator=comparator) == 0 then
+        return (true, i);
+  else {
+    for i in Dom[lo..hi] do
+      if chpl_compare(Data[i], val, comparator=comparator) == 0 then
+        return (true, i);
+  }
 
   return (false, Dom.high+1);
 }
@@ -102,9 +108,7 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator) where Dom
    :rtype: (`bool`, `Data.domain.type`)
 
  */
-proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator) where Dom.rank == 1 {
-  var lo = Dom.low,
-      hi = Dom.high;
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo = Dom.low, in hi = Dom.high) where Dom.rank == 1 {
 
   while (lo <= hi) {
     const mid = (hi - lo)/2 + lo;

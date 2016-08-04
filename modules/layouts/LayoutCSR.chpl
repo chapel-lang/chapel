@@ -234,7 +234,7 @@ class CSRDom: BaseSparseDom {
 
     const (row, col) = ind;
 
-    return binarySearch(colIdx[rowStart(row)..rowStop(row)], col);
+    return binarySearch(colIdx, col, lo=rowStart(row), hi=rowStop(row));
   }
 
   proc dsiMember(ind: rank*idxType) {
