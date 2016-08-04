@@ -8,7 +8,7 @@ proc f() ref {
 }
 
 f() = ArrTwoThree;
-writeln(A[2]);
+writeln(A[2].x);
 
 // It seems clear that this program should output
 // 2 since and be valid.

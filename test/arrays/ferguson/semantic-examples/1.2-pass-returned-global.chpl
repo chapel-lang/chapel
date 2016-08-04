@@ -9,7 +9,7 @@ proc setToOne(ref A:[] R) {
   A[1] = one;
 }
 setToOne(returnGlobalArray());
-writeln(globalArray[1]);
+writeln(globalArray[1].x);
 
 // Does this program output 0 or 1?
 // In other words, does the act of returning globalArray

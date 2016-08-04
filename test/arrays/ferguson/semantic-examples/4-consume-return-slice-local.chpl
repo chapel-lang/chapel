@@ -5,7 +5,7 @@ proc f() {
 }
 
 proc consumesArray(A:[] R) {
-  writeln(A[2]);
+  writeln(A[2].x);
 }
 consumesArray(f());
 
