@@ -64,9 +64,9 @@ module Search {
  */
 proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high, sorted=false) where Dom.rank == 1 {
   if sorted then
-    return binarySearch(Data, val, comparator);
+    return binarySearch(Data, val, comparator, lo, hi);
   else
-    return linearSearch(Data, val, comparator);
+    return linearSearch(Data, val, comparator, lo, hi);
 }
 
 
