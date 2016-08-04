@@ -6062,6 +6062,23 @@ static Expr* resolvePrimInit(CallExpr* call)
 }
 
 
+static bool
+returnsRefArgumentByRef(CallExpr* returnedCall, FnSymbol* fn)
+{
+  INT_ASSERT(returnedCall->isPrimitive(PRIM_ADDR_OF));
+  if (SymExpr* rhs = toSymExpr(returnedCall->get(1))) {
+    if (ArgSymbol* formal = toArgSymbol(rhs->var)) {
+      IntentTag intent = concreteIntentForArg(formal);
+      if (fn->retTag == RET_CONST_REF && (intent & INTENT_FLAG_REF))
+        return true;
+      else if(fn->retTag == RET_REF && intent == INTENT_REF)
+        return true;
+    }
+  }
+
+  return false;
+}
+
 static Expr*
 preFold(Expr* expr) {
   Expr* result = expr;
@@ -6520,7 +6537,9 @@ preFold(Expr* expr) {
               if (lhs && lhs->var == fn->getReturnSymbol()) {
                 SymExpr* ret = toSymExpr(call->get(1));
                 INT_ASSERT(ret);
-                if (ret->var->defPoint->getFunction() == move->getFunction() &&
+
+               if (ret->var->defPoint->getFunction() == move->getFunction() &&
+                    !returnsRefArgumentByRef(call, fn) &&
                     !ret->var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
                     //!ret->var->type->symbol->hasFlag(FLAG_TUPLE))
                     //!ret->var->type->symbol->hasFlag(FLAG_ARRAY))
