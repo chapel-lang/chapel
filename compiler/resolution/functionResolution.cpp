@@ -1484,6 +1484,62 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
   return false;
 }
 
+static
+bool canCoerceTuples(Type*     actualType,
+                     Symbol*   actualSym,
+                     Type*     formalType,
+                     FnSymbol* fn) {
+
+  if (actualType->symbol->hasFlag(FLAG_TUPLE) &&
+      formalType->symbol->hasFlag(FLAG_TUPLE)) {
+    // Both are tuple types, but the types do not match.
+    // Could we coerce each individual tuple element?
+    // If so, we can coerce the tuples.
+    AggregateType *at = toAggregateType(actualType);
+    AggregateType *ft = toAggregateType(formalType);
+
+    Type* atFieldType = NULL;
+    Type* ftFieldType = NULL;
+
+    bool starTuple = (actualType->symbol->hasFlag(FLAG_STAR_TUPLE) &&
+                      formalType->symbol->hasFlag(FLAG_STAR_TUPLE));
+
+    int i = 1;
+    for_fields(atField, at) {
+      Symbol* ftField = ft->getField(i);
+
+      bool prom = false;
+      bool ok;
+
+      atFieldType = atField->type;
+      ftFieldType = ftField->type;
+
+      // Can we coerce without promotion?
+      // If the types are the same, yes
+      if (atFieldType != ftFieldType) {
+        ok = canDispatch(atFieldType, actualSym, ftFieldType, fn, &prom, false);
+
+        // If we couldn't coerce or the coercion would promote, no
+        if (!ok || prom)
+          return false;
+      }
+
+      // For star tuples, we only needed to consider first 2 fields
+      // (size and 1st element)
+      if (starTuple && i == 2)
+        return true;
+
+      i++;
+    }
+
+    return true;
+
+  }
+
+  return false;
+}
+
+
 
 //
 // returns true iff dispatching the actualType to the formalType
@@ -1531,49 +1587,7 @@ bool canCoerce(Type*     actualType,
     return canDispatch(baseType, NULL, formalType, fn, promotes);
   }
 
-  if (actualType->symbol->hasFlag(FLAG_TUPLE) &&
-      formalType->symbol->hasFlag(FLAG_TUPLE)) {
-    // Both are tuple types, but the types do not match.
-    // Could we coerce each individual tuple element?
-    // If so, we can coerce the tuples.
-    AggregateType *at = toAggregateType(actualType);
-    AggregateType *ft = toAggregateType(formalType);
-
-    Type* atFieldType = NULL;
-    Type* ftFieldType = NULL;
-
-    bool starTuple = (actualType->symbol->hasFlag(FLAG_STAR_TUPLE) &&
-                      formalType->symbol->hasFlag(FLAG_STAR_TUPLE));
-
-    // This check could be optimized for star tuples.
-    int i = 1;
-    for_fields(atField, at) {
-      Symbol* ftField = ft->getField(i);
-
-      bool prom = false;
-      bool ok;
-
-      atFieldType = atField->type;
-      ftFieldType = ftField->type;
-
-      // Can we coerce without promotion?
-      // If the types are the same, yes
-      if (atFieldType != ftFieldType) {
-        ok = canDispatch(atFieldType, actualSym, ftFieldType, fn, &prom, false);
-
-        // If we couldn't coerce or the coercion would promote, no
-        if (!ok || prom)
-          return false;
-      }
-
-      // For star tuples, we only needed to consider first 2 fields
-      // (size and 1st element)
-      if (starTuple && i == 2)
-        return true;
-
-      i++;
-    }
-
+  if (canCoerceTuples(actualType, actualSym, formalType, fn)) {
     return true;
   }
 
@@ -1621,7 +1635,7 @@ canDispatch(Type* actualType, Symbol* actualSym, Type* formalType, FnSymbol* fn,
   if (actualType->refType == formalType &&
       // This is a workaround for type problems with tuples
       // in implement forall intents...
-      !(fn->hasFlag(FLAG_BUILD_TUPLE) && fn->hasFlag(FLAG_ALLOW_REF)))
+      !(fn && fn->hasFlag(FLAG_BUILD_TUPLE) && fn->hasFlag(FLAG_ALLOW_REF)))
     return true;
   if (!paramCoerce && canCoerce(actualType, actualSym, formalType, fn, promotes))
     return true;
@@ -4648,9 +4662,22 @@ static void resolveSetMember(CallExpr* call) {
   }
 
   if (t != fs->type && t != dtNil && t != dtObject) {
-    USR_FATAL(userCall(call),
-              "cannot assign expression of type %s to field of type %s",
-              toString(t), toString(fs->type));
+    SymExpr* se = toSymExpr(call->get(3));
+    Symbol* actual = se->var;
+    FnSymbol* fn = toFnSymbol(call->parentSymbol);
+    if (canCoerceTuples(t, actual, fs->type, fn)) {
+      // Add a PRIM_MOVE so that insertCasts will take care of it later.
+      VarSymbol* tmp = newTemp("coerce_elt", fs->type);
+      call->insertBefore(new DefExpr(tmp));
+      Expr* rhs = call->get(3);
+      rhs->remove();
+      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
+      call->insertAtTail(tmp);
+    } else {
+      USR_FATAL(userCall(call),
+                "cannot assign expression of type %s to field of type %s",
+                toString(t), toString(fs->type));
+    }
   }
 }
 
@@ -7827,10 +7854,8 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   // is the tuple with no refs. This code adjusts
                   // the AST to compensate.
                   CallExpr* unref = new CallExpr("chpl__unref", tmp);
-                  call->insertBefore(unref);
-                  resolveExpr(unref);
-                  unref->remove();
                   call->insertAtTail(unref);
+                  resolveExpr(unref);
                 } else {
                   CallExpr* cast = new CallExpr("_cast", lhsType->symbol, tmp);
                   call->insertAtTail(cast);

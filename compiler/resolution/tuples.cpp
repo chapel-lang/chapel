@@ -346,33 +346,6 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
   return info;
 }
 
-static
-TupleInfo getTupleInfo(Type* t,
-                       BlockStmt* instantiationPoint,
-                       bool noref)
-{
-  INT_ASSERT(t->symbol->hasFlag(FLAG_TUPLE));
-  AggregateType* at = toAggregateType(t);
-  std::vector<TypeSymbol*> args;
-
-  // Compute the tuple type
-  int i = 0;
-  for_fields(field, at) {
-    if (i != 0) { // skip size field
-      Type* t;
-      if (noref)
-        t = field->type->getValType();
-      else
-        t = field->type;
-
-      args.push_back(t->symbol);
-    }
-    i++;
-  }
-
-  return getTupleInfo(args, instantiationPoint, noref);
-}
-
 /*
 TypeSymbol* getTupleTypeSymbol(std::vector<TypeSymbol*>& args,
                                CallExpr* instantiatedForCall)
@@ -571,7 +544,22 @@ instantiate_tuple_cast(FnSymbol* fn)
 
     block->insertAtTail(new CallExpr(PRIM_MOVE, read, get));
 
-    if (isReferenceType(toField->type)) {
+    if (!isReferenceType(toField->type) &&
+        fromField->type == toField->type->getRefType()) {
+      // converting a reference to a value
+      element = new VarSymbol(astr("elt_", name), toField->type);
+      block->insertAtTail(new DefExpr(element));
+
+      CallExpr* deref = new CallExpr(PRIM_DEREF, read);
+      block->insertAtTail(new CallExpr(PRIM_MOVE, element, deref));
+    } else if (toField->type != get->typeInfo()) {
+      // Types do not match - add a _cast call
+      element = new VarSymbol(astr("elt_", name), toField->type);
+      block->insertAtTail(new DefExpr(element));
+
+      CallExpr* cast = new CallExpr("_cast", toField->type->symbol, read);
+      block->insertAtTail(new CallExpr(PRIM_MOVE, element, cast));
+    } else if (isReferenceType(toField->type)) {
       // If creating a reference, no copy call necessary
       element = read;
     } else {
@@ -715,58 +703,55 @@ instantiate_tuple_unref(FnSymbol* fn)
   normalize(fn);
 }
 
-
-AggregateType* computeNonRefTuple(Type* t)
+static bool
+shouldChangeTupleType(Type* elementType)
 {
-  INT_ASSERT(t->symbol->hasFlag(FLAG_TUPLE));
+  // Only record-wrapped types for now, but we probably
+  // want to expand this to include almost all types in the
+  // future.
+  return isRecordWrappedType(elementType);
 
-  BlockStmt* instantiationPoint = t->defaultTypeConstructor->instantiationPoint;
-
-  // Compute the tuple type without any refs
-  bool containsRef = false;
-  AggregateType* at = toAggregateType(t);
-  int i = 0;
-  for_fields(field, at) {
-    if (i != 0) { // skip size field
-      if (isReferenceType(field->type)) containsRef = true;
-    }
-    i++;
-  }
-
-  if (containsRef) {
-    TupleInfo info = getTupleInfo(t, instantiationPoint, true /*noref*/);
-    return toAggregateType(info.typeSymbol->type);
-  } else {
-    return at;
-  }
+  // Hint: unless iterator records are reworked,
+  // this function should return false for
+  //return ! elementType->symbol->hasFlag(FLAG_ITERATOR_RECORD);
 }
 
-AggregateType* computeTupleWithIntent(IntentTag intent, Type* t)
+
+static AggregateType*
+do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
 {
   INT_ASSERT(t->symbol->hasFlag(FLAG_TUPLE));
 
   BlockStmt* instantiationPoint = t->defaultTypeConstructor->instantiationPoint;
 
-  // Convert all of the types to reference types
+  // Construct tuple that would be used for a particular argument intent.
+
   bool allSame = true;
   AggregateType* at = toAggregateType(t);
   std::vector<TypeSymbol*> args;
   int i = 0;
   for_fields(field, at) {
     if (i != 0) { // skip size field
-      if (isReferenceType(field->type)) {
-        args.push_back(field->type->symbol);
-      } else {
-        // Not a reference, but wish to make it a reference for
-        // blank-intent-is-ref types.
-        IntentTag concrete = concreteIntent(intent, field->type);
+      // Don't allow references generally.
+      Type* useType = field->type->getValType();
+
+      // Not a reference, but wish to make it a reference for
+      // blank-intent-is-ref types.
+
+      // For now, only do this for record wrapped types.
+      if (shouldChangeTupleType(useType)) {
+        IntentTag concrete = concreteIntent(intent, useType);
         if ( (concrete & INTENT_FLAG_REF) ) {
-          args.push_back(field->type->getRefType()->symbol);
-          allSame = false;
-        } else {
-          args.push_back(field->type->symbol);
+          useType = useType->getRefType();
         }
+      } else if (useType->symbol->hasFlag(FLAG_TUPLE)) {
+        useType = do_computeTupleWithIntent(valueOnly, intent, useType);
       }
+
+      if (useType != field->type)
+        allSame = false;
+
+      args.push_back(useType->symbol);
     }
     i++;
   }
@@ -780,7 +765,15 @@ AggregateType* computeTupleWithIntent(IntentTag intent, Type* t)
   }
 }
 
+AggregateType* computeTupleWithIntent(IntentTag intent, Type* t)
+{
+  return do_computeTupleWithIntent(false, intent, t);
+}
 
+AggregateType* computeNonRefTuple(Type* t)
+{
+  return do_computeTupleWithIntent(true, INTENT_BLANK, t);
+}
 
 
 void
@@ -851,12 +844,13 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
 
         // Args that are being passed with a ref intent
         // should be captured as ref.
-        if (SymExpr* se = toSymExpr(actual)) {
-          if (ArgSymbol* arg = toArgSymbol(se->var)) {
-            IntentTag intent = concreteIntentForArg(arg);
-            if ( (intent & INTENT_FLAG_REF) &&
-                ! t->symbol->hasFlag(FLAG_ITERATOR_RECORD) )
-              t = t->getRefType();
+        if (shouldChangeTupleType(t->getValType())) {
+          if (SymExpr* se = toSymExpr(actual)) {
+            if (ArgSymbol* arg = toArgSymbol(se->var)) {
+              IntentTag intent = concreteIntentForArg(arg);
+              if ( (intent & INTENT_FLAG_REF) )
+                t = t->getRefType();
+            }
           }
         }
         args.push_back(t->symbol);

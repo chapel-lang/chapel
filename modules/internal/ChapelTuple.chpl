@@ -74,8 +74,7 @@ module ChapelTuple {
   inline proc _build_tuple_always_allow_ref(x...)
     return x;
  
-
-  inline proc _unref_type(type t) type {
+  inline proc chpl__unref(type t) type {
     if isTupleType(t) then
       return _build_tuple_noref((...t));
     else
