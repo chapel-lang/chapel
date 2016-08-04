@@ -3426,8 +3426,7 @@ module ChapelArray {
     return b;
   }
 
-  /*
-  proc __doDeepCopy(ref a:domain, tok) {
+  proc __doDeepCopy(ref a:domain) {
     var b : a.type;
 
     if isRectangularDom(a) && isRectangularDom(b) {
@@ -3438,7 +3437,7 @@ module ChapelArray {
       //
       // NOTE: See above note regarding associative domains
       //
-      compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
+      //compilerWarning("whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)");
       for i in a do
         b.add(i);
     }
@@ -3458,7 +3457,7 @@ module ChapelArray {
     b._pid = -1;
     b._instance = nil;
     b._unowned = true;
-  }*/
+  }
 
 
   /*
@@ -3472,15 +3471,15 @@ module ChapelArray {
     }
   }
 
+  */
+
   pragma "unalias fn"
   inline proc chpl__unalias(ref x: domain) {
-    const tok = __primitive("get caller stack token");
-    const isalias = (x._unowned);// | (x._value._arrAlias != nil);
 
-    if isalias {
-      __doDeepCopy(x, tok);
+    if x._unowned {
+      __doDeepCopy(x);
     }
-  }*/
+  }
 
 
   pragma "init copy fn"
