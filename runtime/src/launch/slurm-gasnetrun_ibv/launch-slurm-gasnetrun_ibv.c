@@ -38,8 +38,10 @@
 #define baseSysFilename ".chpl-sys-"
 
 #define CHPL_WALLTIME_FLAG "--walltime"
+#define CHPL_PARTITION_FLAG "--partition"
 
 static char* walltime = NULL;
+static char* partition = NULL;
 char slurmFilename[FILENAME_MAX];
 char expectFilename[FILENAME_MAX];
 char sysFilename[FILENAME_MAX];
@@ -119,12 +121,22 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
     walltime = getenv("CHPL_LAUNCHER_WALLTIME");
   }
 
+  // command line partition takes precedence over env var
+  if (!partition) {
+    partition = getenv("SALLOC_PARTITION");
+  }
+  if (!partition) {
+    partition = getenv("SLURM_PARTITION");
+  }
+
   /*
   if (queue)
     fprintf(slurmFile, "#SBATCH -q %s\n", queue);
     */
   if (walltime) 
     fprintf(slurmFile, "#SBATCH --time=%s\n", walltime);
+  if (partition)
+    fprintf(slurmFile, "#SBATCH --partition=%s\n", partition);
   switch (sbatch) {
 /* Only slurm has been tested
   case slurmpro:
@@ -179,6 +191,14 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     walltime = getenv("CHPL_LAUNCHER_WALLTIME");
   }
 
+  // command line partition takes precedence over env var
+  if (!partition) {
+    partition = getenv("SALLOC_PARTITION");
+  }
+  if (!partition) {
+    partition = getenv("SLURM_PARTITION");
+  }
+
 #ifndef DEBUG_LAUNCH
   mypid = getpid();
 #else
@@ -228,6 +248,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "--ntasks-per-node=1 ");
   fprintf(expectFile, "--exclusive "); //  give exclusive access to the nodes
   fprintf(expectFile, "--time=%s ",walltime); 
+  if(partition)
+    fprintf(expectFile, "--partition=%s ",partition);
   if (constraint) {
     fprintf(expectFile, " -C %s", constraint);
   }
@@ -305,6 +327,15 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     walltime = &(argv[argNum][strlen(CHPL_WALLTIME_FLAG)+1]);
     return 1;
   }
+
+  // handle --partition <partition> or --partition=<partition>
+  if (!strcmp(argv[argNum], CHPL_PARTITION_FLAG)) {
+    partition = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_PARTITION_FLAG"=", strlen(CHPL_PARTITION_FLAG))) {
+    partition = &(argv[argNum][strlen(CHPL_PARTITION_FLAG)+1]);
+    return 1;
+  }
   return 0;
 }
 
@@ -314,4 +345,6 @@ void chpl_launch_print_help(void) {
   fprintf(stdout, "===============\n");
   fprintf(stdout, "  %s <HH:MM:SS> : specify a wallclock time limit\n", CHPL_WALLTIME_FLAG);
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_WALLTIME)\n");
+  fprintf(stdout, "  %s <partition> : specify a partition to use\n", CHPL_PARTITION_FLAG);
+  fprintf(stdout, "                           (or use $SALLOC_PARTITION)\n");
 }
