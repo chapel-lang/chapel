@@ -11,7 +11,7 @@ config const size = 4096;
 proc main() {
   var A: [1..size] int = 12345;
 
-  QuickSort(A);
+  quickSort(A);
 
   var passed = true;
   // Check that A is sorted

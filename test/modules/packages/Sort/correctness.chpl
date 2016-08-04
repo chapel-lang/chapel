@@ -1,8 +1,7 @@
 /*
- *  Check correctness of comparator functionality, output nothing if correct.
+ *  Check correctness of sort routines. Output nothing if correct.
  *
- * Note -- This also checks correctness of all sorts with comparators.
- *         This could potentially live in a separate test.
+ *  TODO -- remove deprecated testing in 1.15
  */
 
 use Sort;
@@ -88,13 +87,13 @@ proc main() {
 
   // quickSort
   quickSort(Arr);
-  checkSort(Arr, ArrSorted, 'QuickSort');
+  checkSort(Arr, ArrSorted, 'quickSort');
 
   quickSort(Arr, comparator=key);
-  checkSort(Arr, ArrAbsSorted, 'QuickSort', 'key');
+  checkSort(Arr, ArrAbsSorted, 'quickSort', 'key');
 
   quickSort(Arr, comparator=compare);
-  checkSort(Arr, ArrAbsSorted, 'QuickSort', 'compare');
+  checkSort(Arr, ArrAbsSorted, 'quickSort', 'compare');
 
   // heapSort
   heapSort(Arr);
@@ -105,6 +104,16 @@ proc main() {
 
   heapSort(Arr, comparator=compare);
   checkSort(Arr, ArrAbsSorted, 'heapSort', 'compare');
+
+  // selectionSort
+  selectionSort(Arr);
+  checkSort(Arr, ArrSorted, 'selectionSort');
+
+  selectionSort(Arr, comparator=key);
+  checkSort(Arr, ArrAbsSorted, 'selectionSort', 'key');
+
+  selectionSort(Arr, comparator=compare);
+  checkSort(Arr, ArrAbsSorted, 'selectionSort', 'compare');
 
   /* TODO -- selectionSort testing when comparator support implemented */
 
@@ -131,15 +140,15 @@ proc main() {
   InsertionSort(Arr, reverse=true);
   checkSort(Arr, ArrRevSorted, 'InsertionSort');
 
-  // QuickSort
+  // quickSort
   QuickSort(Arr);
-  checkSort(Arr, ArrSorted, 'QuickSort');
+  checkSort(Arr, ArrSorted, 'quickSort');
 
   QuickSort(Arr, doublecheck=true);
-  checkSort(Arr, ArrSorted, 'QuickSort');
+  checkSort(Arr, ArrSorted, 'quickSort');
 
   QuickSort(Arr, reverse=true);
-  checkSort(Arr, ArrRevSorted, 'QuickSort');
+  checkSort(Arr, ArrRevSorted, 'quickSort');
 
   // HeapSort
   HeapSort(Arr);
@@ -167,7 +176,7 @@ proc main() {
 /* Checks array and resets values -- any output results in failure */
 proc checkSort(ref array, correct, sort:string, comparator:string='none') {
   if !array.equals(correct) {
-    writeln(sort, 'with comparator: ', comparator, ' failed');
+    writeln(sort, ' with comparator: ', comparator, ' failed');
     writeln('Incorrect array:');
     writeln(array);
     writeln('Expected correct array:');

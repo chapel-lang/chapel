@@ -3,7 +3,7 @@ config const verify = true;
 config const printTiming = false;
 config const n = 1024;
 config const MergeSort_minlen = n/16;
-config const QuickSort_minlen = n/64;
+config const quickSort_minlen = n/64;
 
 config const trials = 3;
 
@@ -49,25 +49,25 @@ proc doSort(param st: SortType, trials: int) {
 
 // complete support for first-class function would be nice here
 proc _doSort(param st, I) where st==SortType.BUBBLE {
-  BubbleSort(I, doublecheck=verify);
+  bubbleSort(I);
 }
 proc _doSort(param st, I) where st==SortType.INSERTION {
-  InsertionSort(I, doublecheck=verify);
+  insertionSort(I);
 }
 proc _doSort(param st, I) where st==SortType.MERGE {
-  MergeSort(I, doublecheck=verify);
+  mergeSort(I);
 }
 
 proc _doSort(param st, I) where st==SortType.SELECTION {
-  SelectionSort(I, doublecheck=verify);
+  selectionSort(I);
 }
 
 proc _doSort(param st, I) where st==SortType.QUICK {
-  QuickSort(I, doublecheck=verify);
+  quickSort(I);
 }
 
 proc _doSort(param st, I) where st==SortType.HEAP {
-  HeapSort(I, doublecheck=verify);
+  heapSort(I);
 }
 
 proc resetArr(A: [?D]) {
