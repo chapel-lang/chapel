@@ -93,19 +93,21 @@ ______
 When we are talking about zippering array iterators, there are a couple scenarios
 I can think of why we would need such loops.
 
-- First, this looks like something that is going to fire when sparse/dense
-  arrays are assigned to each other. With ref/nonref sparse array iterator
-  pairs, both of the above zippered loops would behave very naturally.::
+First, this looks like something that is going to fire when sparse/dense arrays
+are assigned to each other. With ref/nonref sparse array iterator pairs, both of
+the above zippered loops would behave very naturally.::
 
   RectArr = SparseArr;  // RectArray would have exact same values as sparse array
                         // including IRVs
 
-- If, on the other hand, user wants to avoid assigning IRVs, they should use
-  following::
+If, on the other hand, user wants to avoid assigning IRVs, they should use
+following::
 
   forall i in SparseArr.domain do RectArr[i] = SparseArr[i];
 
-- Meaning of array assignment in the other direction is a bit different::
+In this scenario, array assignment in the other direction means populating a
+sparse array using a dense list of values. Personally, this feels intuitive to
+me::
 
     SparseArr = RectArr; //populate a sparse array using _all_ values in RectArr
 
@@ -114,9 +116,9 @@ So, in effect, this is same as::
   SparseArr._value.data = RectArr;
 
 
-- If, ``RectArr`` is a "dense version" of ``SparseArr``,(ie indices need to be
-  "plucked out" from ``RectArr``) user has to use domain iterators, a full code
-  would look like::
+If, ``RectArr`` is a "dense version" of ``SparseArr``,(ie indices need to be
+"plucked out" from ``RectArr``) user has to use domain iterators, a full code
+would look like::
 
   const Dom = {1..10};
   var DenseArr: [DenseDom] int;
