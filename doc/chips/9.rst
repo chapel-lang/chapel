@@ -543,13 +543,6 @@ Other Future Work
 * Binary packages
 * User-hosted registries
 
-Feedback Received
-+++++++++++++++++
-
-* `Thomas Van Doren <https://sourceforge.net/p/chapel/mailman/message/35255086/>`_
-* `Russel Winder <https://sourceforge.net/p/chapel/mailman/message/35257736/>`_ 
-* `Nicholas Park <https://sourceforge.net/p/chapel/mailman/message/35258534/>`_
-
 .. _Medium: https://medium.com/@sdboyer/so-you-want-to-write-a-package-manager-4ae9c17d9527#.id7wa9vae
 .. _crates.io: https://crates.io/
 .. _cargo: http://doc.crates.io/guide.html
