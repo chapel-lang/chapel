@@ -22,7 +22,7 @@ wrong)::
     }
 
 What makes me a bit uneasy here is that IRVs are never yielded by sparse arrays.
-Albeit I find this a bit counter-intuitive, it makes sense when you think
+Although I find this a bit counter-intuitive, it makes sense when you think
 about::
 
   forall v in SparseArr do v = 5;
@@ -45,6 +45,9 @@ ref/nonref functions of same name resolve correctly today. But I'd be surprised
 if what I proposed works. At the same time, I don't expect that implementing
 support for this would be difficult.
 
+I have mixed feelings towards this idea as the iterator behavior depends on
+usage.
+
 More on zippering below.
 
 Current sparse domain iterator semantics
@@ -54,24 +57,25 @@ Sparse domains should be considered as linear index stores(regardless of the
 underlying implementation). Therefore, I don't have much to talk about current
 sparse domain iterator behaviour.
 
-PART I - HOW l/f ITERATORS SHOULD BE INTERPRETED WITH CROSS-TYPE ZIPPERING
---------------------------------------------------------------------------
+How To Interpret Cross-Type Zippered Loops
+------------------------------------------
 
 Dense/Sparse - Sparse/Dense Zippering
 +++++++++++++++++++++++++++++++++++++
 
-** Domains
-__________
+Domains
+_______
+
 ::
   forall (i,j) in zip(RectDom, SparseDom) do ...
   forall (i,j) in zip(SparseDom, RectDom) do ...
 
-I cannot think of many use cases that would require writing such zippered
-iterators. A user might want to zipper such iterators where domains don't overlap
-completely and hope that follower indices would be offset according to
-difference between two iterators. However, I believe that kind of burden should
-not be loaded on top of l/f iterators. Such index offsetting can be handled at
-user level through tuple arithmetic easily.
+I cannot think of many use cases that would require zippering such iterators. A
+user might want to do it where domains don't overlap completely and hope that
+follower indices would be offset according to difference between two iterators.
+However, I believe that kind of burden should not be loaded on top of l/f
+iterators. Such index offsetting can be handled at user level through tuple
+arithmetic easily.
 
 As I cannot explain why someone would need this, I don't have a strong opinion
 on what kind of check should be run on SparseDom.domain._value.parentDomain and
@@ -81,8 +85,9 @@ general opinion on l/f iterators(second part of this document) makes me think we
 shouldn't be worried about them at all, as I personally support very loose
 coupling between leaders and followers.
 
-** Arrays
-_________
+Arrays
+______
+
 ::
   forall (i,j) in zip(RectArr, SparseArr) do ...
   forall (i,j) in zip(SparseArr, RectArr) do ...
@@ -96,17 +101,17 @@ the above zippered loops would behave very naturally.::
 
   RectArr = SparseArr; //RectArray would have exact same values as sparse array
 
-If, on the other hand user wants to avoid assigning IRVs, they should use
+If, on the other hand, user wants to avoid assigning IRVs, they should use
 following::
 
-  forall i in SparseArr.domain do RectArr = SparseArr[i];
+  forall i in SparseArr.domain do RectArr[i] = SparseArr[i];
 
-Meaning of array assignment is a bit different::
+Meaning of array assignment in the other direction is a bit different::
 
   SparseArr = RectArr; //populate a sparse array using _all_ values in RectArr
 
-Similarly if, RectArr is a "dense version" of SparseArr, user has to use domain
-iterators, a full code would look like::
+Similarly if, ``RectArr`` is a "dense version" of ``SparseArr``, user has to use
+domain iterators, a full code would look like::
 
   const Dom = {1..10};
   var DenseArr: [DenseDom] int;
@@ -118,12 +123,12 @@ iterators, a full code would look like::
 
   forall i in DenseDom do DenseArr[i] = f(i);
 
-  forall i in SparseDom do SparseArr[i] = DenseArr[i];
+  forall i in SparseDom do SparseArr[i] = DenseArr[i]; //no need for zip
 
 Dense/Assoc - Assoc/Dense zippering
 +++++++++++++++++++++++++++++++++++
 
-Currently both cases generate different compile time errors. Even if that's the
+Currently, both cases generate different compile time errors. Even if that's the
 desired behaviour, errors are thrown for the wrong reasons and messages are not
 very helpful.
 
@@ -133,7 +138,7 @@ iterators.
 1. Where ``idxType`` s are different
 
 Consider following snippet where unique ids added to objects in an associative
-array(python dictionary)::
+array::
 
   var AssocDom: domain(string);
   var dictionary: [AssocDom] dictObject;
@@ -152,10 +157,10 @@ Here zippering order shouldn't have any effect on the behaviour.
   forall (i,j) in zip(AssocDom, RegDom) do ...
 
 In which order indices would be yielded from either domain is a bit unclear.
-However user must be aware of unordered nature of associative domains, therefore
+However, user must be aware of unordered nature of associative domains, therefore
 shouldn't write such code if specific ordering is desired. When I read this code
 all I can interpret is that *some* associative indices will be matched with
-regular indices. 
+regular indices.
 
 In that sense, implementation and sematic-wise, I do not see any difference when
 ``idxType`` s are some or different.
@@ -163,8 +168,8 @@ In that sense, implementation and sematic-wise, I do not see any difference when
 In terms of behaviour, I don't see any valuable difference between associative
 arrays and domains.
 
-HOW l/f ITERATORS SHOULD BE IMPLEMENTED
----------------------------------------
+A Possible Implementation
+-------------------------
 
 If we want to allow cross-type zippering, semantics should be very simple. Going
 back to the basics, if we have::
@@ -181,7 +186,10 @@ should always be interpreted exactly as::
     i2 = i2.next;
   }
 
-To implement such sematics, l/f iterators should follow the basic idea of
+(I personally believe that there shouldn't be any size checks in zippered
+iterator. i.e. if one of them returns, then the loop should end gracefully)
+
+To implement such semantics, l/f iterators should follow the basic idea of
 yielding a single range and following it. A rough sketch is::
 
   iter these(param tag) where tag==iterKind.leader {
@@ -207,8 +215,11 @@ Notes
 - For unbounded ranges or other unbounded iterators(input streams?), a ``config
   param maxChunkSize`` can be used to chunk up the unbounded space.
 
-- This l/f implementation is different than e.g. current DefaultRectangular
-  iteration as they are rank-aware. I think rank-oblivious iterators can help
+- These suggestions might break some operator promotions that rely on current
+  semantics. In which case, those operators should have specific overloads.
+
+- This l/f implementation is different than e.g. current ``DefaultRectangular``
+  iterators as they are rank-aware. I think rank-oblivious iterators can help
   answer hard questions such as zippering domains/arrays of different ranks. One
   can easily "flatten" a multi dimensional array::
 
@@ -216,29 +227,22 @@ Notes
     const singleDom = {1..N**2};
 
     forall (i,j) in zip(multiDom,singleDom) do singleArr[j] = multiArr[i];
+    // or even
+    forall (s,m) in (singleDimArr, multiDimArr) do s = m;
 
   Note that the order of zippered iterators should not matter.
 
-- I don't have a strong opinion on what exactly should be yielded by leader. A
+- I don't have a strong opinion on exactly what should be yielded by leader. A
   single range should suffice to provide basic functionality. However, we might
-  want to pass additional data for checking. e.g. numElems for halting if
-  boundsCheck==true
+  want to pass additional data for checking. e.g. ``numElems`` for halting if
+  ``boundsCheck==true``
 
   Best approach I can think of is having a record in the internal modules with
   fields that cover the bare minimums of desired functionality. Then, most
   common internal leaders should yield variables of that record type. If more
-  exotic behaviour is desired, a child record can be implemented. This would
+  *exotic* behaviour is desired, a child record can be implemented. This would
   allow those exotic iterators to be zippered with standard ones. When *exotic*
   behaviour is desired, such iterator should be the leader. If an *exotic*
   follower follows a standard leader, it can be detected through type system or
   metaprogramming. After that follower can chose to (1) change its behaviour (2)
   generate a compile time error.
-
-While obviously losing some flexibilty, I believe that this is a very clear l/f
-strategy that can be used in any iteratable object. Something like::
-
-  forall (i,j,k,l) in zip(rect, sparse, assoc, range) do ...
-
-Would have an unambigous interpretation and behaviour would be indifferent to
-order of zippered iterators. However, performance might depend on the choice of
-leader.
