@@ -728,7 +728,7 @@ iter BlockDom.dsiPartialThese(param onlyDim, otherIdx, param tag)
     where tag==iterKind.standalone {
 
   coforall locDom in __partialTheseLocDoms(onlyDim, otherIdx) do on locDom do
-    for i in locDom.myBlock.dsiPartialThese(onlyDim, otherIdx, tag) do
+    for i in locDom.myBlock._value.dsiPartialThese(onlyDim, otherIdx, tag) do
       yield i;
 }
 

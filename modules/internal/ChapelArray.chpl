@@ -2661,7 +2661,7 @@ module ChapelArray {
     tag==iterKind.standalone {
 
     for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
-      writeln("Standalone Accessing ", i);
+      /*writeln("Standalone Accessing ", i);*/
       yield this._value.dsiAccess(dsiMergeIdx(otherIdx, onlyDim, i));
     }
   }
