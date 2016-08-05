@@ -527,7 +527,7 @@ libraries and headers are expected to be placed on the normal search paths.
 Other Future Work
 +++++++++++++++++
 
-**client**
+**client:**
 
 * `Developer dependencies`_
 * Interoperability with other source control managers
@@ -535,7 +535,7 @@ Other Future Work
   * e.g. ``mason new <project-name> --app``
 * Virtual environments with different Chapel, mason configs
 
-**registry**
+**registry:**
 
 * Truly centralized registry with cached packages
 * "Blessed" versus "Open" packages (quality control)
