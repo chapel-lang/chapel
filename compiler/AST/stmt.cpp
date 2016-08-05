@@ -934,9 +934,15 @@ CondStmt::codegen() {
     //precedence thus, following conditional -- Engin
 
     std::string c_condExpr = codegenValue(condExpr).c;
-    if (c_condExpr[0] == '(' && c_condExpr[c_condExpr.size()-1] == ')') {
-      c_condExpr = c_condExpr.substr(1, c_condExpr.length()-2);
+
+    int numExtraPar = 0;
+    //if (c_condExpr[0] == '(' && c_condExpr[c_condExpr.size()-1] == ')') {
+    if (c_condExpr[numExtraPar] == '(' && 
+        c_condExpr[c_condExpr.size()-(numExtraPar+1)] == ')') {
+      numExtraPar++;
     }
+    c_condExpr = c_condExpr.substr(numExtraPar,
+        c_condExpr.length()-2*numExtraPar);
     info->cStatements.push_back("if (" + c_condExpr  + ") ");
 
     thenStmt->codegen();

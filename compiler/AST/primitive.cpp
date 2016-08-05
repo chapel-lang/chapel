@@ -166,7 +166,7 @@ returnInfoVal(CallExpr* call) {
     }
   }
   INT_FATAL(call, "attempt to get value type of non-reference type");
-  return ct->getField(1)->type; //dummy
+  return NULL;
 }
 
 static Type*
