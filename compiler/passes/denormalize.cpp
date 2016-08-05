@@ -192,7 +192,7 @@ bool isDenormalizable(Symbol* sym,
       //defPar has to be a move without any coercion
       CallExpr* ce = toCallExpr(defPar);
       if(ce) {
-        if(ce->isPrimitive(PRIM_MOVE)) {
+        if(ce->isPrimitive(PRIM_MOVE) || ce->isPrimitive(PRIM_ASSIGN)) {
           Type* lhsType = ce->get(1)->typeInfo();
           Type* rhsType = ce->get(2)->typeInfo();
           if(lhsType == rhsType) {
@@ -350,7 +350,7 @@ inline bool isIntegerPromotionPrimitive(PrimitiveTag tag) {
 // time, such information is not readily available at AST.
 bool canPrimMoveCreateCommunication(CallExpr* ce) {
   INT_ASSERT(ce);
-  INT_ASSERT(ce->isPrimitive(PRIM_MOVE));
+  INT_ASSERT(ce->isPrimitive(PRIM_MOVE) || ce->isPrimitive(PRIM_ASSIGN));
 
   Expr* lhs = ce->get(1);
   Expr* rhs = ce->get(2);
