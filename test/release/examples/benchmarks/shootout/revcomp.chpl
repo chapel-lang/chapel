@@ -5,19 +5,19 @@
    derived from the GNU C version by Mr Ledrug
 */
 
+config param columns = 61;
+
 const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 
 proc main(args: [] string) {
   const consoleIn = openfd(0),
         stdinNoLock = consoleIn.reader(locking=false);
+
   var data: [1..consoleIn.length()] uint(8),
       idx = 1,
       start = 0;
 
-  //
-  // wait for all process() tasks complete
-  //
-  sync {
+  sync {     // wait for all process() tasks to complete before continuing
     var numRead: int;
 
     while stdinNoLock.readline(data, numRead, idx) {
@@ -43,17 +43,15 @@ proc main(args: [] string) {
 
 
 proc process(data, in start, end) {
-  //
   // Skip the header information
-  //
   while data[start] != ascii("\n") do 
     start += 1;
   start += 1;
 
-  param columns = 61;
   const extra = (end - start) % columns,
         off = columns - extra - 1;
 
+  // shift the data
   if off then
     for m in (start+extra)..(end-1) by columns {
       for i in 1..off-1 by -1 do
@@ -61,6 +59,7 @@ proc process(data, in start, end) {
       data[m+1] = ascii("\n");
     }
 
+  // replace the data items with their table entries
   for i in 0..(end-start)/2 {
     ref d1 = data[start+i],
         d2 = data[end-i];
