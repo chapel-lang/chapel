@@ -508,7 +508,8 @@ static bool isAutoDestroyedVariable(Symbol* sym) {
   bool retval = false;
 
   if (VarSymbol* var = toVarSymbol(sym)) {
-    if (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) == true ||
+    if ((var->hasFlag(FLAG_INSERT_AUTO_DESTROY) == true &&
+         var->hasFlag(FLAG_NO_AUTO_DESTROY)     == false) ||
 
         (var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == true  &&
          var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)        == false &&
