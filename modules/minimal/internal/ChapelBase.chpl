@@ -32,4 +32,8 @@ module ChapelBase {
     var _val;
   }
 
+  pragma "compiler generated"
+  pragma "unalias fn"
+  inline proc chpl__unalias(ref x) { }
+
 }
