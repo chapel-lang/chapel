@@ -5887,24 +5887,24 @@ GenRet CallExpr::codegenPrimMove() {
 
 static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
   bool      retval = false;
-  CallExpr* ce = toCallExpr(e);
+  CallExpr* call = toCallExpr(e);
 
-  if(!ce) return false;
+  if(!call) return false;
 
-  if (ce->primitive) {
-    switch (ce->primitive->tag) {
+  if (call->primitive) {
+    switch (call->primitive->tag) {
     case PRIM_GET_REAL:
     case PRIM_GET_IMAG: {
-      bool isReal = ce->primitive->tag == PRIM_GET_REAL;
+      bool isReal = call->primitive->tag == PRIM_GET_REAL;
 
-      if (ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         // move(wide_real, prim_get_real(wide_complex));
         // turns into: wide_real.locale = wide_complex.locale;
         //             wide_real.addr = prim_get_real(wide_complex.addr);
-        Type*  cplxType = ce->get(1)->typeInfo()->getRefType();
+        Type*  cplxType = call->get(1)->typeInfo()->getRefType();
 
         GenRet t1       = createTempVar(cplxType);
-        codegenAssign(t1, codegenRaddr(ce->get(1)));
+        codegenAssign(t1, codegenRaddr(call->get(1)));
 
         GenRet t2;
         if(target) {
@@ -5915,11 +5915,12 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         }
 
         codegenAssign(t2, codegen_prim_get_real(t1, cplxType, isReal));
-        ret             = codegenWideAddr(codegenRlocale(ce->get(1)),
+        ret             = codegenWideAddr(codegenRlocale(call->get(1)),
                                           codegenDeref(t2));
 
       } else {
-        ret = codegen_prim_get_real(ce->get(1), ce->get(1)->typeInfo(), isReal);
+        ret = codegen_prim_get_real(call->get(1),
+            call->get(1)->typeInfo(), isReal);
       }
 
       retval = true;
@@ -5927,27 +5928,27 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_DEREF: {
-      if (ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
-          ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
+          call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         Type* valueType;
 
-        if (ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))
-          valueType = ce->get(1)->getValType();
+        if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))
+          valueType = call->get(1)->getValType();
         else
-          valueType = ce->get(1)->typeInfo()->getField("addr")->type;
+          valueType = call->get(1)->typeInfo()->getField("addr")->type;
 
         if(target) {
           INT_ASSERT(valueType == target->typeInfo());
         }
 
-        ret = codegenDeref(ce->get(1));
+        ret = codegenDeref(call->get(1));
 
       } else if (target && target->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
         // star tuple retval in codegenAssign
-        ret = codegenDeref(ce->get(1));
+        ret = codegenDeref(call->get(1));
 
       } else {
-        ret = codegenDeref(ce->get(1));
+        ret = codegenDeref(call->get(1));
       }
 
       retval = true;
@@ -5955,13 +5956,13 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_GET_MEMBER_VALUE: {
-      SymExpr* se = toSymExpr(ce->get(2));
+      SymExpr* se = toSymExpr(call->get(2));
 
 
-      if (target && ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      if (target && call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         if (se->var->hasFlag(FLAG_SUPER_CLASS)) {
           // We're getting the super class pointer.
-          GenRet srcwide  = ce->get(1);
+          GenRet srcwide  = call->get(1);
           Type*  addrType = target->typeInfo()->getField("addr")->type;
           GenRet addr     = codegenCast(addrType, codegenRaddr(srcwide));
           GenRet ref      = codegenAddrOf(codegenWideAddrWithAddr(srcwide,
@@ -5969,18 +5970,18 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
           ret = ref;
         } else {
-          ret = codegenFieldPtr(ce->get(1), se);
+          ret = codegenFieldPtr(call->get(1), se);
         }
 
-      } else if (ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-        ret = codegenFieldPtr(ce->get(1), se);
+      } else if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+        ret = codegenFieldPtr(call->get(1), se);
 
-      } else if (ce->get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-        ret = codegenFieldPtr(ce->get(1), se);
+      } else if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+        ret = codegenFieldPtr(call->get(1), se);
 
       } else if (se->var->hasFlag(FLAG_SUPER_CLASS)) {
         // We're getting the super class pointer.
-        GenRet ref = codegenFieldPtr(ce->get(1), se);
+        GenRet ref = codegenFieldPtr(call->get(1), se);
 
         // Now we have a field pointer to object->super, but
         // the pointer to super *is* actually the value of
@@ -5990,7 +5991,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         ret = ref;
 
       } else {
-        ret = codegenFieldPtr(ce->get(1), se);
+        ret = codegenFieldPtr(call->get(1), se);
       }
 
       retval = true;
@@ -5999,20 +6000,20 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
     case PRIM_GET_MEMBER: {
       /* Get a pointer to a member */
-      SymExpr* se = toSymExpr(ce->get(2));
+      SymExpr* se = toSymExpr(call->get(2));
 
-      if (ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-          ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)   ||
-          ce->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+          call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)   ||
+          call->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
 
-        ret = codegenAddrOf(codegenFieldPtr(ce->get(1), se));
+        ret = codegenAddrOf(codegenFieldPtr(call->get(1), se));
 
         retval = true;
 
-      } else if (target && (target->getValType() != ce->get(2)->typeInfo())) {
+      } else if (target && (target->getValType() != call->get(2)->typeInfo())) {
         // get a narrow reference to the actual 'addr' field
         // of the wide pointer
-        GenRet getField = codegenFieldPtr(ce->get(1), se);
+        GenRet getField = codegenFieldPtr(call->get(1), se);
 
         ret = codegenAddrOf(codegenWideThingField(getField, WIDE_GEP_ADDR));
 
@@ -6023,10 +6024,10 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_GET_SVEC_MEMBER: {
-      if (ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         /* Get a pointer to the i'th element of a homogeneous tuple */
-        GenRet elemPtr = codegenElementPtr(ce->get(1),
-                                           codegenExprMinusOne(ce->get(2)));
+        GenRet elemPtr = codegenElementPtr(call->get(1),
+                                           codegenExprMinusOne(call->get(2)));
 
         INT_ASSERT( elemPtr.isLVPtr == GEN_WIDE_PTR );
 
@@ -6037,9 +6038,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
         retval = true;
 
-      } else if (target && (target->getValType() != ce->getValType())) {
-        GenRet getElem = codegenElementPtr(ce->get(1),
-                                           codegenExprMinusOne(ce->get(2)));
+      } else if (target && (target->getValType() != call->getValType())) {
+        GenRet getElem = codegenElementPtr(call->get(1),
+                                           codegenExprMinusOne(call->get(2)));
 
 
         ret =  codegenAddrOf(codegenWideThingField(getElem, WIDE_GEP_ADDR));
@@ -6053,9 +6054,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_GET_SVEC_MEMBER_VALUE: {
       /* Get the i'th value from a homogeneous tuple */
 
-      //there was an if/else block checking if ce->get(1) is wide or narrow,
+      //there was an if/else block checking if call->get(1) is wide or narrow,
       //however if/else blocks were identical. It may not be in the future.
-      ret =  codegenElementPtr(ce->get(1), codegenExprMinusOne(ce->get(2)));
+      ret =  codegenElementPtr(call->get(1), codegenExprMinusOne(call->get(2)));
 
       retval = true;
       break;
@@ -6064,10 +6065,10 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_ARRAY_GET: {
       /* Get a pointer to the i'th array element */
       // ('_array_get' array idx)
-      GenRet elem = codegenElementPtr(ce->get(1), ce->get(2));
+      GenRet elem = codegenElementPtr(call->get(1), call->get(2));
       GenRet ref  = codegenAddrOf(elem);
 
-      if (ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         ret = ref;
 
       } else if (target && target->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,
@@ -6085,15 +6086,15 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_ARRAY_GET_VALUE: {
-      ret =  codegenElementPtr(ce->get(1), ce->get(2));
+      ret =  codegenElementPtr(call->get(1), call->get(2));
 
       retval = true;
       break;
     }
 
     case PRIM_GET_UNION_ID: {
-      if (ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-        ret = codegenFieldUidPtr(ce->get(1));
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+        ret = codegenFieldUidPtr(call->get(1));
         retval = true;
       }
 
@@ -6102,10 +6103,10 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
     case PRIM_TESTCID: {
       // set get(1) to
-      //   ce->get(1)->chpl_class_id == chpl__cid_"rhs->get(2)"
-      if (ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        GenRet tmp = codegenFieldCidPtr(ce->get(1));
-        GenRet cid = codegenUseCid(ce->get(2)->typeInfo());
+      //   call->get(1)->chpl_class_id == chpl__cid_"rhs->get(2)"
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        GenRet tmp = codegenFieldCidPtr(call->get(1));
+        GenRet cid = codegenUseCid(call->get(2)->typeInfo());
 
         ret = codegenEquals(tmp, cid);
         retval = true;
@@ -6115,8 +6116,8 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_GETCID: {
-      if (ce->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        GenRet tmp = codegenFieldCidPtr(ce->get(1));
+      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        GenRet tmp = codegenFieldCidPtr(call->get(1));
 
         ret = tmp;
         retval = true;
@@ -6126,12 +6127,12 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_CAST: {
-      if (ce->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
-          ce->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
-        GenRet tmp = ce->get(2);
+      if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
+          call->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+        GenRet tmp = call->get(2);
 
         tmp = codegenWideAddrWithAddr(tmp,
-                                      codegenCast(ce->get(1)->typeInfo(),
+                                      codegenCast(call->get(1)->typeInfo(),
                                                   codegenRaddr(tmp)));
 
         ret = codegenAddrOf(tmp);
@@ -6142,9 +6143,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_DYNAMIC_CAST: {
-      if (ce->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        Type*  type         = ce->typeInfo()->getField("addr")->type;
-        GenRet wideFrom     = codegenValue(ce->get(2));
+      if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        Type*  type         = call->typeInfo()->getField("addr")->type;
+        GenRet wideFrom     = codegenValue(call->get(2));
         GenRet wideFromAddr = codegenRaddr(wideFrom);
         GenRet value        = codegenValue(codegenFieldCidPtr(wideFrom));
         GenRet ok           = codegenDynamicCastCheck(value, type);
@@ -6154,7 +6155,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         GenRet wide         = codegenAddrOf(codegenWideAddrWithAddr(
                                                        wideFrom,
                                                        addr,
-                                                       ce->typeInfo()));
+                                                       call->typeInfo()));
 
         ret = wide;
         retval = true;
@@ -6164,7 +6165,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_GET_PRIV_CLASS: {
-      GenRet r = codegenCallExpr("chpl_getPrivatizedClass", ce->get(2));
+      GenRet r = codegenCallExpr("chpl_getPrivatizedClass", call->get(2));
 
       if (target && (target->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
         r = codegenAddrOf(codegenWideHere(r, target->typeInfo()));
@@ -6178,9 +6179,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
     case PRIM_ON_LOCALE_NUM: {
       // This primitive expects an argument of type chpl_localeID_t.
-      INT_ASSERT(ce->get(1)->typeInfo() == dtLocaleID);
+      INT_ASSERT(call->get(1)->typeInfo() == dtLocaleID);
 
-      ret = ce->get(1);
+      ret = call->get(1);
 
       retval = true;
       break;
