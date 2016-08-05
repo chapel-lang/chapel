@@ -62,6 +62,22 @@ void denormalize(void) {
   }
 }
 
+/*
+ * This function tries to remove temporary variables in function `fn`
+ *
+ * A local variable is removed if:
+ *
+ * - It is def'd and use'd once
+ *
+ * - Its def is a PRIM_MOVE or PRIM_ASSIGN, with no possible communication
+ * - RHS and LHS are of same type and non-extern
+ *
+ * - Its use a suitable primitive
+ * - Its use is not repeated(condition/increment statement of a loop)
+ *
+ * Denormalization uses helpers in util/exprAnalysis.cpp to decide if it's safe
+ * to move function calls and primitives.
+ */
 void denormalize(FnSymbol *fn) {
 
   Vec<Symbol*> symSet;
