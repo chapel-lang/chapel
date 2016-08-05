@@ -258,6 +258,9 @@ To assist version resolution, the registry will enforce the following convention
 * The bug fix must be advanced for any update correcting functionality within a
   minor revision. (ex. 1.13.1 -> 1.13.2)
 
+* The grammar_ used to specify a range of compatible versions will be similar to
+  that of Cargo.
+
 **Package Integrity**
 
 There will be two primary measures taken to ensure that submitted packages are
@@ -446,6 +449,9 @@ being installed as root (or at least becomes much more complicated if it is
 not). Nix also only works on linux/osx right now. Cygwin support is not ruled
 out, but not actively worked on.
 
+Another potential candidate that has been suggested is Conan_, but we have not
+had time to thoroughly investigate it yet.
+
 **Example**
 
 Lets go through an example from our package modules with a C dependency and see
@@ -521,12 +527,19 @@ libraries and headers are expected to be placed on the normal search paths.
 Other Future Work
 +++++++++++++++++
 
-* Support for binary packages
+**client**
+* `Developer dependencies`_
+* Other source control managers
+* Improved tooling to assist in automating parts of source code -> manifest file
+  * e.g. ``mason new <project-name> --app``
+* Virtual environments with different Chapel, mason configs
+
+**registry**
 * Truly centralized registry with cached packages
 * "Blessed" versus "Open" packages (quality control)
 * Checksumming (security for popular packages)
-* Improved tooling to assist in automating parts of source code -> manifest file
-  * e.g. ``mason new <project-name> --app``
+* Binary packages
+* User-hosted registries
 
 .. _Medium: https://medium.com/@sdboyer/so-you-want-to-write-a-package-manager-4ae9c17d9527#.id7wa9vae
 .. _crates.io: https://crates.io/
@@ -534,4 +547,7 @@ Other Future Work
 .. _nix: https://nixos.org/nix/
 .. _Ecosystem-Pulse: http://pkg.julialang.org/pulse.html
 .. _addressed: https://internals.rust-lang.org/t/crates-io-package-policies/1041
+.. _grammar: http://doc.crates.io/specifying-dependencies.html
 .. _SPDX: http://spdx.org/licenses/
+.. _Conan: https://www.conan.io/
+.. _Developer dependencies: http://doc.crates.io/specifying-dependencies.html#development-dependencies
