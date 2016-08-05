@@ -870,6 +870,8 @@ proc SparseBlockArr.doiCanBulkTransfer() {
 }
 
 proc SparseBlockArr.doiBulkTransfer(B) {
+  halt("SparseBlockArr.doiBulkTransfer not yet implemented");
+  /*
   if debugSparseBlockDistBulkTransfer then resetCommDiagnostics();
   var sameDomain: bool;
   // We need to do the following on the locale where 'this' was allocated,
@@ -879,9 +881,9 @@ proc SparseBlockArr.doiBulkTransfer(B) {
   // Use zippered iteration to piggyback data movement with the remote
   //  fork.  This avoids remote gets for each access to locArr[i] and
   //  B._value.locArr[i]
-  coforall (i, myLocArr, BmyLocArr) in (dom.dist.targetLocDom,
-                                        locArr,
-                                        B._value.locArr) do
+  coforall (i, myLocArr, BmyLocArr) in zip(dom.dist.targetLocDom,
+                                           locArr,
+                                           B._value.locArr) do
     on dom.dist.targetLocales(i) {
 
     if sameDomain &&
@@ -949,6 +951,7 @@ proc SparseBlockArr.doiBulkTransfer(B) {
     }
   }
   if debugSparseBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
+  */
 }
 
 iter ConsecutiveChunks(d1,d2,lid,lo) {
