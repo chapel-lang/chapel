@@ -107,7 +107,7 @@ I can think of why we would need such loops.
 
 - Meaning of array assignment in the other direction is a bit different::
 
-  SparseArr = RectArr; //populate a sparse array using _all_ values in RectArr
+    SparseArr = RectArr; //populate a sparse array using _all_ values in RectArr
 
 So, in effect, this is same as::
 
