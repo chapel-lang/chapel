@@ -1547,7 +1547,8 @@ buildIteratorCallInner(BlockStmt* block, Symbol* ret, int fnid, Symbol* iterator
   }
   CallExpr* call = new CallExpr(fn, iterator);
   if (ret) {
-    if (fn->retType == ret->type) {
+    if (fn->retType->getValType() == ret->type->getValType()) {
+      INT_ASSERT(fn->retType == ret->type);
       block->insertAtTail(new CallExpr(PRIM_MOVE, ret, call));
     } else {
       VarSymbol* tmp = newTemp("retTmp", fn->retType);

@@ -834,6 +834,13 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
     bool firstArgIsSize = fn->hasFlag(FLAG_TUPLE) || fn->hasFlag(FLAG_STAR_TUPLE);
     bool noref = fn->hasFlag(FLAG_DONT_ALLOW_REF);
 
+    bool noChangeTypes = false;
+
+    // This is a workaround for iterators use of build_tuple_always_allow_ref
+    if (FnSymbol* inFn = call->getFunction())
+      if (inFn->hasFlag(FLAG_ALLOW_REF))
+        noChangeTypes = true;
+
     // TODO - should this use subs in preference to call's arguments?
     for_actuals(actual, call) {
       if (i == 0 && firstArgIsSize) {
@@ -847,7 +854,7 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
 
         // Args that are being passed with a ref intent
         // should be captured as ref.
-        if (shouldChangeTupleType(t->getValType())) {
+        if (shouldChangeTupleType(t->getValType()) && !noChangeTypes) {
           if (SymExpr* se = toSymExpr(actual)) {
             if (ArgSymbol* arg = toArgSymbol(se->var)) {
               IntentTag intent = concreteIntentForArg(arg);
