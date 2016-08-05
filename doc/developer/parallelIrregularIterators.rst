@@ -2,7 +2,7 @@ Parallel Iterators On Irregular Arrays and Domains
 ==================================================
 
 This document covers semantics of zippering regular and irregular domains and
-arrays defined on them. Rather than going into rigorous details, it will covers
+arrays defined on them. Rather than going into rigorous details, it covers
 what an intended behaviour could be and what are possible ways of implementing
 l/f iterators providing such support. In most cases error/bounds checking issues
 are handled superficially, if at all.
@@ -13,7 +13,7 @@ Introduction
 Current sparse array iterator semantics
 +++++++++++++++++++++++++++++++++++++++
 
-While thinking about zippering sparse iterators with dense ones sparse array
+While thinking about zippering sparse iterators with dense ones, sparse array
 iterators always felt a bit unnatural to me(although I cannot say that it's
 wrong)::
 
@@ -48,14 +48,10 @@ support for this would be difficult.
 I have mixed feelings towards this idea as the iterator behavior depends on
 usage.
 
-More on zippering below.
-
 Current sparse domain iterator semantics
 ++++++++++++++++++++++++++++++++++++++++
 
-Sparse domains should be considered as linear index stores(regardless of the
-underlying implementation). Therefore, I don't have much to talk about current
-sparse domain iterator behaviour.
+I don't have much to talk about current sparse domain iterator behaviour.
 
 How To Interpret Cross-Type Zippered Loops
 ------------------------------------------
@@ -67,6 +63,7 @@ Domains
 _______
 
 ::
+
   forall (i,j) in zip(RectDom, SparseDom) do ...
   forall (i,j) in zip(SparseDom, RectDom) do ...
 
@@ -78,8 +75,8 @@ iterators. Such index offsetting can be handled at user level through tuple
 arithmetic easily.
 
 As I cannot explain why someone would need this, I don't have a strong opinion
-on what kind of check should be run on SparseDom.domain._value.parentDomain and
-RectDom. In general it seems to me that it is not easy to define a good set of
+on what kind of check should be run on ``SparseDom.domain._value.parentDomain`` and
+``RectDom``. In general, it seems to me that it is not easy to define a good set of
 conditions that increases safety while keeping performance overhead at bay. My
 general opinion on l/f iterators(second part of this document) makes me think we
 shouldn't be worried about them at all, as I personally support very loose
@@ -89,29 +86,37 @@ Arrays
 ______
 
 ::
+
   forall (i,j) in zip(RectArr, SparseArr) do ...
   forall (i,j) in zip(SparseArr, RectArr) do ...
 
 When we are talking about zippering array iterators, there are a couple scenarios
 I can think of why we would need such loops.
 
-First, this looks like something that is going to fire when sparse/dense arrays
-are assigned to each other. With ref/nonref sparse array iterator pairs, both of
-the above zippered loops would behave very naturally.::
+- First, this looks like something that is going to fire when sparse/dense
+  arrays are assigned to each other. With ref/nonref sparse array iterator
+  pairs, both of the above zippered loops would behave very naturally.::
 
-  RectArr = SparseArr; //RectArray would have exact same values as sparse array
+  RectArr = SparseArr;  // RectArray would have exact same values as sparse array
+                        // including IRVs
 
-If, on the other hand, user wants to avoid assigning IRVs, they should use
-following::
+- If, on the other hand, user wants to avoid assigning IRVs, they should use
+  following::
 
   forall i in SparseArr.domain do RectArr[i] = SparseArr[i];
 
-Meaning of array assignment in the other direction is a bit different::
+- Meaning of array assignment in the other direction is a bit different::
 
   SparseArr = RectArr; //populate a sparse array using _all_ values in RectArr
 
-Similarly if, ``RectArr`` is a "dense version" of ``SparseArr``, user has to use
-domain iterators, a full code would look like::
+So, in effect, this is same as::
+
+  SparseArr._value.data = RectArr;
+
+
+- If, ``RectArr`` is a "dense version" of ``SparseArr``,(ie indices need to be
+  "plucked out" from ``RectArr``) user has to use domain iterators, a full code
+  would look like::
 
   const Dom = {1..10};
   var DenseArr: [DenseDom] int;
@@ -135,7 +140,8 @@ very helpful.
 Regardsless, there are some possible scenarios I can think of for zippering such
 iterators.
 
-1. Where ``idxType`` s are different
+Where ``idxType`` s are different
+---------------------------------
 
 Consider following snippet where unique ids added to objects in an associative
 array::
@@ -147,7 +153,10 @@ array::
 
 Here zippering order shouldn't have any effect on the behaviour.
 
-2 Where ``idxType`` s are same::
+Where ``idxType`` s are same::
+------------------------------
+
+::
 
   var AssocDom: domain(int);
   AssocDom += [1,2,3,4,5];
