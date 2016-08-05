@@ -29,23 +29,14 @@ proc wrong.Key(a) {
   return abs(a);
 }
 
-// Invalid key args
+// Invalid key args -- should have 1 arg
 record keyargs{ }
 proc keyargs.key(a, b) {
   return a - b;
 }
 
-// Invalid compareargs
+// Invalid compareargs -- should have 2 args
 record compareargs { }
-proc compareargs.key(a, b) {
-  return a - b;
+proc compareargs.compare(a) {
+  return a;
 }
-
-/* TODO -- Unhandled errors:
-
-// Wrong return type -- hangs
-record keyreturn { }
-proc keyreturn.key(a) {
-  return 42;
-}
-*/
