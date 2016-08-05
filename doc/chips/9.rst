@@ -450,7 +450,7 @@ not). Nix also only works on linux/osx right now. Cygwin support is not ruled
 out, but not actively worked on.
 
 Another potential candidate that has been suggested is Conan_, but we have not
-had time to thoroughly investigate it yet.
+thoroughly investigated it yet.
 
 **Example**
 
@@ -528,18 +528,27 @@ Other Future Work
 +++++++++++++++++
 
 **client**
+
 * `Developer dependencies`_
-* Other source control managers
+* Interoperability with other source control managers
 * Improved tooling to assist in automating parts of source code -> manifest file
   * e.g. ``mason new <project-name> --app``
 * Virtual environments with different Chapel, mason configs
 
 **registry**
+
 * Truly centralized registry with cached packages
 * "Blessed" versus "Open" packages (quality control)
 * Checksumming (security for popular packages)
 * Binary packages
 * User-hosted registries
+
+Feedback Received
++++++++++++++++++
+
+* `Thomas Van Doren <https://sourceforge.net/p/chapel/mailman/message/35255086/>`_
+* `Russel Winder <https://sourceforge.net/p/chapel/mailman/message/35257736/>`_ 
+* `Nicholas Park <https://sourceforge.net/p/chapel/mailman/message/35258534/>`_
 
 .. _Medium: https://medium.com/@sdboyer/so-you-want-to-write-a-package-manager-4ae9c17d9527#.id7wa9vae
 .. _crates.io: https://crates.io/
