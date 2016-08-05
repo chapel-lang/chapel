@@ -4113,6 +4113,8 @@ GenRet CallExpr::codegen() {
         }
       }
 
+      // If actual is special primitive arg will be modified
+      // Otherwise, arg is untouched
       codegenIsSpecialPrimitive(formal, actual, arg);
       // Handle passing strings to externs
       //should this be else if?
@@ -5885,6 +5887,17 @@ GenRet CallExpr::codegenPrimMove() {
   return ret;
 }
 
+/*
+ * Some primitives require special attention depending on where they are used.
+ * This generally involves casting the result of the primitive to the type of
+ * the target.
+ *
+ * This function is used by codegenPrimMove, CallExpr::codegen(for matching
+ * formal/actual types) and codegenPrimitive
+ *
+ * Returns true if `e` is a special primitive, and sets ret.
+ * Returns false and doesn't change ret, otherwise
+ */
 static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
   bool      retval = false;
   CallExpr* call = toCallExpr(e);
