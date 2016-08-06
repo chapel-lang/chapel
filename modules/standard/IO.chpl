@@ -4078,7 +4078,7 @@ proc channel.read(ref args ...?k,
 
 // documented in the error= version
 pragma "no doc"
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start) : bool
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start + 1) : bool
 where arg.rank == 1 && isRectangularArr(arg)
 {
   var e:syserr = ENOERR;
@@ -4104,20 +4104,20 @@ where arg.rank == 1 && isRectangularArr(arg)
               will halt with an error message.
   :returns: true if the bytes were read without error.
 */
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start, out error:syserr) : bool
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start + 1, out error:syserr) : bool
 where arg.rank == 1 && isRectangularArr(arg)
 {
   error = ENOERR;
 
   // Make sure the arguments are valid
-  if arg.size == 0 || !arg.domain.member(start) || amount <= 0 || (start + amount > arg.domain.high)  then return false;
+  if arg.size == 0 || !arg.domain.member(start) || amount <= 0 || (start + amount - 1 > arg.domain.high)  then return false;
 
   on this.home {
     this.lock();
     param newLineChar = 0x0A;
     var got : int;
     var i = start;
-    const maxIdx = start + amount;
+    const maxIdx = start + amount - 1;
     while i <= maxIdx {
       got = qio_channel_read_byte(false, this._channel_internal);
       arg[i] = got:uint(8);
