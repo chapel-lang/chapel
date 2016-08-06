@@ -67,10 +67,10 @@ proc process(data, in start, end) {
   }
 }
 
-proc initTable(param pairs) {
+proc initTable(pairs) {
   var table: [1..128] uint(8);
 
-  for param i in 1..pairs.length do
+  for i in 1..pairs.length do
     if i%2 {
       table[ascii(pairs[i])] = ascii(pairs[i+1]):uint(8);
       if pairs[i] != "\n" then
