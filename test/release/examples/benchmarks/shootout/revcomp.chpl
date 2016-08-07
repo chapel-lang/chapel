@@ -21,19 +21,22 @@ proc main(args: [] string) {
     var numRead: int;
 
     while stdinNoLock.readline(data, numRead, idx) {
-      // Look for the start of a section
-      if data[idx] == ascii(">") {
-        if start then 
-          // Spawn a task to work on the previous section
-          begin process(data, start, idx-2);
-        
-        start = idx;
+      if data[idx] == ascii(">") {       // is this the start of a section?
+
+        // spawn a task to process the previous section, if there was one
+        if start then
+          begin process(data, start, idx-2);     // -2 == rewind past "\n>"
+
+        // capture the start of this section
+        start = idx + numRead;
       }
+
       idx += numRead; 
     }
 
-    // work on the final section
-    process(data, start, idx-2);
+    // process the final section
+    if start then
+      process(data, start, idx-2);
   }
 
   const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
@@ -42,12 +45,7 @@ proc main(args: [] string) {
 }
 
 
-proc process(data, in start, end) {
-  // Skip the header information
-  while data[start] != ascii("\n") do 
-    start += 1;
-  start += 1;
-
+proc process(data, start, end) {
   const extra = (end - start) % columns,
         off = columns - extra - 1;
 
