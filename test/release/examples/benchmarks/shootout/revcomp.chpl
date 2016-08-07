@@ -23,18 +23,18 @@ proc main(args: [] string) {
     while stdinNoLock.readline(data, numRead, idx) {
       if data[idx] == ascii(">") {       // is this the start of a section?
 
-        // spawn a task to process the previous section, if there was one
+        // spawn a task to process the previous sequence, if there was one
         if start then
           begin process(data, start, idx-2);     // -2 == rewind past "\n>"
 
-        // capture the start of this section
+        // capture the start of this sequence
         start = idx + numRead;
       }
 
       idx += numRead; 
     }
 
-    // process the final section
+    // process the final sequence
     if start then
       process(data, start, idx-2);
   }
