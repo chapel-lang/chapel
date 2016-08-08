@@ -177,6 +177,8 @@ bool Symbol::isRenameable() const {
 }
 
 bool Symbol::isRef() {
+  // TODO -- should this check ArgSymbols for their intent?
+  // FnSymbols for their retTag?
   return (hasFlag(FLAG_REF) || type->symbol->hasFlag(FLAG_REF));
 }
 
