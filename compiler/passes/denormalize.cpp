@@ -44,15 +44,9 @@ bool isDenormalizable(Symbol* sym,
     Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr** useOut, Expr** defOut,
     Type** castTo);
 
-void denormalizeActuals(CallExpr* ce,
-    Map<Symbol*,Vec<SymExpr*>*>& defMap,
-    Map<Symbol*,Vec<SymExpr*>*>& useMap,
-    ActualUseDefCastMap actualUseDefMap);
-
 void denormalize(void);
 void denormalize(FnSymbol *fn);
 void denormalize(Expr* def, SymExpr* use, Type* castTo);
-
 
 void denormalize(void) {
   if(fDenormalize) {
@@ -118,16 +112,15 @@ void denormalize(FnSymbol *fn) {
       usePar = use->parentExpr;
       defPar = def->parentExpr;
 
-      //defer if the symbol used as actual
-      if(CallExpr* useCe = toCallExpr(usePar)){
-        if(!useCe->isPrimitive()) {
-          deferredFns.insert(useCe);
-          std::pair<Expr*, Type*> defCastBundle(def, castTo);
-          actualUseDefMap.insert(std::pair<SymExpr*, std::pair<Expr*, Type*> >
-              (use, defCastBundle));
-          continue;
-        }
-      }
+      // Initially I used to defer denormalizing actuals and have special
+      // treatment while denormalizing actuals of a function call. Main reason
+      // behind that was C standard not specifying evaluation order of actuals
+      // and I wanted to keep the call order in the IR. However, if we have
+      // strong enough safety checks on `Expr`s that we are moving, than that
+      // shouldn't necessarily matter.
+      //
+      // Possible alternative for an easy-to-implement actual denormalization is
+      // to denormalize an actual only if it's the last/only one.
 
       //denormalize if the def is safe to move and there is no unsafe function
       //between use and def
@@ -143,47 +136,7 @@ void denormalize(FnSymbol *fn) {
     registerGlobalManip(fn, false);
   }
 
-  //handle deferred actuals
-  for(std::set<CallExpr*>::iterator ceIt = deferredFns.begin() ;
-      ceIt != deferredFns.end() ; ceIt++) {
-    denormalizeActuals(*ceIt, defMap, useMap, actualUseDefMap);
-  }
-
   freeDefUseMaps(defMap, useMap);
-}
-
-void denormalizeActuals(CallExpr* ce,
-    Map<Symbol*,Vec<SymExpr*>*>& defMap,
-    Map<Symbol*,Vec<SymExpr*>*>& useMap,
-    ActualUseDefCastMap actualUseDefMap) {
-
-  INT_ASSERT(!ce->isPrimitive());
-  for_alist_backward(actual, ce->argList) {
-    if(SymExpr* argSym = toSymExpr(actual)) { //else it's already denormd
-      if(! (argSym->var->isConstant() || argSym->var->isParameter())) {
-        if(actualUseDefMap.count(argSym) > 0) {
-          std::pair<Expr*,Type*> tmpTuple = actualUseDefMap[argSym];
-          SymExpr* use = argSym;
-          Expr* def = tmpTuple.first;
-          Type* castTo = tmpTuple.second;
-          Expr* usePar = use->parentExpr;
-          Expr* defPar = def->parentExpr;
-          if(CallExpr* ceTmp = toCallExpr(defPar)) {
-            if(!isRecord(ceTmp->get(1)->typeInfo())) { //to preserve pass-by-value
-              if(exprHasNoSideEffects(def)) {
-                if(!possibleDepInBetween(defPar, usePar)) {
-                  // In C actual evaluation order is not standard, therefore any
-                  // defPar that us unsafe for reordering cannot be moved to
-                  // the args
-                  denormalize(def, use, castTo);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
 }
 
 bool isDenormalizable(Symbol* sym,
