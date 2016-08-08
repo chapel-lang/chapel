@@ -4,6 +4,20 @@ Copyright (c) 2014-2015 Intel Corporation. All rights reserved.
 User Information:
 -----------------
 
+This conduit is designed to communicate for the Intel(R) Omni-Path Fabric
+through the Intel(r) Performance Scaled Messaging 2 (PSM2) Linux user space
+library Application Programming Interface (API). Mainly intended to use the
+Active Messaging PSM2 API, but will use PSM2 matched queues for long messages
+(review GASNET_LONG_MSG_THRESHOLD below).
+
+Where this conduit runs:
+-----------------------
+
+Intel(R) Omni-Path Fabric
+
+Using psm-conduit with MPI:
+---------------------------
+
 PSM has a restriction in which only one endpoint may be opened per process.
 For users of this conduit, this means that if an MPI is used for process
 spawning, that MPI must NOT also attempt to use PSM for communication.

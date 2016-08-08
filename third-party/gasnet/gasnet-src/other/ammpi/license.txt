@@ -24,7 +24,7 @@
  * ---------------------------------------------------------------------------
  *
  * For more information about AMMPI, visit our home page at:
- *  http://www.cs.berkeley.edu/~bonachea/ammpi
+ *  http://gasnet.lbl.gov/ammpi
  * Or send email to:
  *  Dan Bonachea <bonachea@cs.berkeley.edu>
  *

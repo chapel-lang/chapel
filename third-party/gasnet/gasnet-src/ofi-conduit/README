@@ -1,4 +1,5 @@
 GASNet ofi-conduit documentation
+Copyright 2015, Intel Corporation
 $Revision: 1.0 $
 
 User Information:
@@ -11,11 +12,32 @@ of libraries and applications used to export fabric services.
 
 See more details at: http://ofiwg.github.io/libfabric/
 
-@ Section: Building @
+Where this conduit runs:
+-----------------------
 
-Libfabric is a core component of OFI. To use ofi-conduit, the user needs first
-install libfabric. The source code of libfabric can be found at:
-https://github.com/ofiwg/libfabric
+The GASNet OFI conduit can run on any OFI provider that supports its requirements. At this
+point in time, it is known to work on the Sockets provider, Intel Truescale provider (psm),
+and Intel Omni-Path provider (psm2).  The fi_info command installed with libfabrics can be 
+used to query the available OFI providers.
+
+The OFI conduit can be considered as a tech-preview for next generation fabrics. We are
+in the process of tuning its performance on Intel Omni-Path fabric. If you are looking to
+obtain the best performance on Intel Omni-Path fabric, please continue to use the PSM
+conduit until we complete our performance optimizations. 
+
+Users with InfiniBand harware should use the GASNet ibv-conduit, as the verbs OFI provider 
+does not yet implement all the capabilities needed by ofi-conduit.
+
+Users with Ethernet hardware are encouraged to consider the GASNet udp-conduit as an alternative
+to ofi-conduit with the sockets provider, as the former may provide more favorable performance.
+
+Building ofi-conduit
+--------------------
+
+Libfabric is a core component of OFI. To use ofi-conduit, the user firsts needs to 
+locate or build an install of libfabric. The source code of libfabric can be found at:
+
+   https://github.com/ofiwg/libfabric
 
 To build GASNet with ofi-conduit enabled:
 ./configure --prefix=[Build Path] --enable-ofi --with-ofihome=[custom libfabric install directory]
@@ -25,6 +47,29 @@ When using PMI as job launcher, the user can further add
 --with-spawnerroot=[custom job launcher directory] 
 to specify which job launcher to use.
 
-At runtime the environment variable GASNET_OFI_SPAWNER (set to "mpi" or "ssh")
-can override the value set at configuration time, but the command line option
-will override the environment variable.
+Recognized environment variables:
+---------------------------------
+
+* GASNET_OFI_SPAWNER - set to "mpi", "ssh" or "pmi" to override the value set at
+  configuration time. The gasnetrun_ofi -spawner option overrides the
+  environment variable.
+
+* GASNET_QUIET - set to 1 to silence the startup warning indicating
+  the provider in use may deliver suboptimal performance.
+
+* FI_PROVIDER - set to a provider name to override the default OFI provider selection
+
+* All the environment variables provided by libfabric (see `fi_info -e`)
+
+* All the standard GASNet environment variables (see top-level README)
+
+Known problems:
+---------------
+
+* See the Berkeley UPC Bugzilla server for details on known bugs.
+
+
+Future work:
+------------
+
+The OFI community is working on increasing the number of providers that can support GASNet.
