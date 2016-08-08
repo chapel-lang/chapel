@@ -1506,6 +1506,12 @@ bool canCoerceTuples(Type*     actualType,
                       formalType->symbol->hasFlag(FLAG_STAR_TUPLE));
 
     int i = 1;
+
+    if (at->numFields() != ft->numFields()) {
+      // Number of fields differs, so not coercible.
+      return false;
+    }
+
     for_fields(atField, at) {
       Symbol* ftField = ft->getField(i);
 

@@ -183,6 +183,7 @@ class AggregateType : public Type {
   int getFieldPosition(const char* name, bool fatal = true);
   Symbol* getField(const char* name, bool fatal = true);
   Symbol* getField(int i);
+  int numFields() { return fields.length; }
   bool isClass() { return aggregateTag == AGGREGATE_CLASS; }
   bool isRecord() { return aggregateTag == AGGREGATE_RECORD; }
   bool isUnion() { return aggregateTag == AGGREGATE_UNION; }
