@@ -365,7 +365,7 @@ proc searchLinear(in board, in pos, in used, in placed, currentSolution) {
   if placed == numPieces {
 
     // lock
-    while l.testAndSet() do chpl_task_yield();
+    while l.testAndSet() {}
 
     recordSolution(currentSolution);
 
