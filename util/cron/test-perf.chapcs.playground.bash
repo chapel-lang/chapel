@@ -15,7 +15,7 @@ export CHPL_QTHREAD_SCHEDULER=distrib
 # hackily checkout and overlay qthreads branch that has the scheduler
 cd $CHPL_HOME/third-party/qthread/
 rm -rf qthread-1.10/
-git clone https://github.com/Qthreads/qthreads.git --branch distrib qthread-1.10/
+git clone https://github.com/Qthreads/qthreads.git qthread-1.10/
 cd qthread-1.10/
 ./autogen.sh
 cd $CWD
