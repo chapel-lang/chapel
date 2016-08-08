@@ -20,8 +20,6 @@ nightly_args=-no-buildcheck
 
 # host-specific
 export CHPL_TARGET_ARCH=native
-export SALLOC_PARTITION=chapel
-export SLURM_PARTITION=chapel
+export CHPL_LAUNCHER_PARTITION=chapel
 export GASNET_PHYSMEM_MAX=16G
 export GASNET_PHYSMEM_NOPROBE=1
-
