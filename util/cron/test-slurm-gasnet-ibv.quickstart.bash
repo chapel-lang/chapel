@@ -4,6 +4,11 @@
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-quickstart.bash
+
+echo "before: CHPL_MEM='$CHPL_MEM'" >&2
+unset CHPL_MEM  # avoid error: set CHPL_MEM to a more appropriate mem type (from mem-cstdlib.c)
+echo "after:  CHPL_MEM='$CHPL_MEM'" >&2
+
 source $CWD/common-slurm-gasnet-ibv.bash # must come after quickstart source
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="slurm-gasnet-ibv.quickstart"
