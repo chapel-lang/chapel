@@ -980,7 +980,7 @@ okToConvertFormalToRefType(Type* type) {
 // This function returns true for exceptional FnSymbols
 // where tuples containing refs can be returned.
 static bool
-doNotChangeTupleTypeRefLevel(FnSymbol* fn)
+doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet)
 {
 
   if( fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) || // but not _type_construct__tuple
@@ -993,7 +993,7 @@ doNotChangeTupleTypeRefLevel(FnSymbol* fn)
       fn->hasFlag(FLAG_AUTO_DESTROY_FN) || // not tuple chpl__autoDestroy
       fn->hasFlag(FLAG_UNALIAS_FN) || // not tuple chpl__unalias
       fn->hasFlag(FLAG_ALLOW_REF) || // not iteratorIndex
-      fn->hasFlag(FLAG_ITERATOR_FN) // iterators b/c
+      (forRet && fn->hasFlag(FLAG_ITERATOR_FN)) // iterators b/c
                                     //  * they might return by ref
                                     //  * might need to return a ref even
                                     //    when not indicated return by ref.
@@ -1071,7 +1071,7 @@ resolveSpecifiedReturnType(FnSymbol* fn) {
     // Difficult to call e.g. _unref_type in build/normalize
     // b/c of bugs in pulling out function symbols.
     if (retType->symbol->hasFlag(FLAG_TUPLE) &&
-        !doNotChangeTupleTypeRefLevel(fn)) {
+        !doNotChangeTupleTypeRefLevel(fn, true)) {
 
       retType = getReturnedTupleType(fn, retType);
       fn->retType = retType;
@@ -1190,9 +1190,18 @@ resolveFormals(FnSymbol* fn) {
         }
       }
 
+      if (isRecordWrappedType(formal->type) &&
+          fn->hasFlag(FLAG_ITERATOR_FN)) {
+        // Pass domains, arrays into iterators by ref.
+        // This is a temporary workaround for issues with
+        // iterator lowering.
+        makeRefType(formal->type);
+        formal->type = formal->type->refType;
+      }
+
       if (formal->type->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
           !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-          !doNotChangeTupleTypeRefLevel(fn)) {
+          !doNotChangeTupleTypeRefLevel(fn, false)) {
 
         Type* newType = computeTupleWithIntent(formal->intent,
                                                formal->type->getValType());
@@ -4956,7 +4965,7 @@ resolveCoerce(CallExpr* call) {
   INT_ASSERT(fn);
 
   if (toType->symbol->hasFlag(FLAG_TUPLE) &&
-      !doNotChangeTupleTypeRefLevel(fn)) {
+      !doNotChangeTupleTypeRefLevel(fn, true)) {
 
     Type* retType = getReturnedTupleType(fn, toType);
     if (retType != toType) {
@@ -7987,7 +7996,7 @@ static void resolveReturnType(FnSymbol* fn)
   // For tuples, generally do not allow a tuple to contain a reference
   // when it is returned
   if (retType->symbol->hasFlag(FLAG_TUPLE) &&
-      !doNotChangeTupleTypeRefLevel(fn)) {
+      !doNotChangeTupleTypeRefLevel(fn, true)) {
     // Compute the tuple type without any refs
     // Set the function return type to that type.
     retType = getReturnedTupleType(fn, retType);
