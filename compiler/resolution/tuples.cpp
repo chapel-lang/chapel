@@ -57,13 +57,16 @@ struct TupleInfo {
 static std::map< std::vector<TypeSymbol*>, TupleInfo > tupleMap;
 
 static
-TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
+TupleInfo getTupleInfo(int size,
+                       std::vector<TypeSymbol*>& args,
                        BlockStmt* instantiationPoint,
                        bool noref)
 {
   TupleInfo& info = tupleMap[args];
   if (!info.typeSymbol) {
     SET_LINENO(dtTuple);
+
+    INT_ASSERT(size == (int) args.size());
 
     ModuleSymbol* tupleModule =
       toModuleSymbol(dtTuple->symbol->defPoint->parentSymbol);
@@ -103,12 +106,12 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     AggregateType* newType = new AggregateType(AGGREGATE_RECORD);
 
     // Build up the fields in the new tuple record
-    VarSymbol *size = new VarSymbol("size");
-    size->addFlag(FLAG_PARAM);
-    size->type = sizeType;
-    newType->fields.insertAtTail(new DefExpr(size));
+    VarSymbol *sizeVar = new VarSymbol("size");
+    sizeVar->addFlag(FLAG_PARAM);
+    sizeVar->type = sizeType;
+    newType->fields.insertAtTail(new DefExpr(sizeVar));
     newType->substitutions.put(genericTypeCtorSizeArg, new_IntSymbol(args.size()));
-    for(size_t i = 0; i < args.size(); i++) {
+    for(int i = 0; i < size; i++) {
       const char* name = typeCtorArgs[i+1]->name;
       VarSymbol *var = new VarSymbol(name);
       var->type = args[i]->type;
@@ -152,7 +155,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     } else {
       name += "(";
       cname += size_str;
-      for(size_t i = 0; i < args.size(); i++) {
+      for(int i = 0; i < size; i++) {
         cname += "_";
         cname += args[i]->cname;
         if (i != 0 ) name += ",";
@@ -246,7 +249,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
       const char* fnName = noref?"_build_star_tuple_noref":"*";
       FnSymbol *buildStarTupleType = new FnSymbol(fnName);
       // just to arguments 0 and 1 to get size and element type
-      for(size_t i = 0; i < 2; i++ ) {
+      for(int i = 0; i < 2; i++ ) {
         buildStarTupleType->insertFormalAtTail(typeCtorArgs[i]->copy());
       }
       buildStarTupleType->addFlag(FLAG_ALLOW_REF);
@@ -289,7 +292,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
       sizeArg->addFlag(FLAG_INSTANTIATED_PARAM);
       ctor->insertFormalAtTail(sizeArg);
 
-      for(size_t i = 0; i < args.size(); i++ ) {
+      for(int i = 0; i < size; i++ ) {
         const char* name = typeCtorArgs[i+1]->name;
         ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, args[i]->type);
         ctor->insertFormalAtTail(arg);
@@ -763,7 +766,7 @@ do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
   if (allSame) {
     return at;
   } else {
-    TupleInfo info = getTupleInfo(args, instantiationPoint, false /*noref*/);
+    TupleInfo info = getTupleInfo(args.size(), args, instantiationPoint, false /*noref*/);
     return toAggregateType(info.typeSymbol->type);
   }
 }
@@ -831,6 +834,7 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
     std::vector<TypeSymbol*> args;
     int i = 0;
     size_t actualN = 0;
+    int size = 0;
     bool firstArgIsSize = fn->hasFlag(FLAG_TUPLE) || fn->hasFlag(FLAG_STAR_TUPLE);
     bool noref = fn->hasFlag(FLAG_DONT_ALLOW_REF);
 
@@ -874,7 +878,10 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
           args.push_back(args[0]);
         }
       }
-      INT_ASSERT(actualN == args.size());
+      INT_ASSERT(actualN == 0 || actualN == args.size());
+      size = actualN;
+    } else {
+      size = args.size();
     }
 
 
@@ -952,7 +959,7 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
     }
 
     BlockStmt* point = getVisibilityBlock(call);
-    TupleInfo info   = getTupleInfo(args, point, noref);
+    TupleInfo info   = getTupleInfo(size, args, point, noref);
 
     if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
       return info.typeSymbol->type->defaultTypeConstructor;
