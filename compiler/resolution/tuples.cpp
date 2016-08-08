@@ -57,8 +57,7 @@ struct TupleInfo {
 static std::map< std::vector<TypeSymbol*>, TupleInfo > tupleMap;
 
 static
-TupleInfo getTupleInfo(int size,
-                       std::vector<TypeSymbol*>& args,
+TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
                        BlockStmt* instantiationPoint,
                        bool noref)
 {
@@ -66,7 +65,10 @@ TupleInfo getTupleInfo(int size,
   if (!info.typeSymbol) {
     SET_LINENO(dtTuple);
 
-    INT_ASSERT(size == (int) args.size());
+    int size = args.size();
+
+    if (size == 0)
+      USR_FATAL(instantiationPoint, "tuple must have positive size");
 
     ModuleSymbol* tupleModule =
       toModuleSymbol(dtTuple->symbol->defPoint->parentSymbol);
@@ -766,7 +768,7 @@ do_computeTupleWithIntent(bool valueOnly, IntentTag intent, Type* t)
   if (allSame) {
     return at;
   } else {
-    TupleInfo info = getTupleInfo(args.size(), args, instantiationPoint, false /*noref*/);
+    TupleInfo info = getTupleInfo(args, instantiationPoint, false /*noref*/);
     return toAggregateType(info.typeSymbol->type);
   }
 }
@@ -834,7 +836,6 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
     std::vector<TypeSymbol*> args;
     int i = 0;
     size_t actualN = 0;
-    int size = 0;
     bool firstArgIsSize = fn->hasFlag(FLAG_TUPLE) || fn->hasFlag(FLAG_STAR_TUPLE);
     bool noref = fn->hasFlag(FLAG_DONT_ALLOW_REF);
 
@@ -878,10 +879,9 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
           args.push_back(args[0]);
         }
       }
+
       INT_ASSERT(actualN == 0 || actualN == args.size());
-      size = actualN;
-    } else {
-      size = args.size();
+      args.resize(actualN);
     }
 
 
@@ -959,7 +959,7 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
     }
 
     BlockStmt* point = getVisibilityBlock(call);
-    TupleInfo info   = getTupleInfo(size, args, point, noref);
+    TupleInfo info   = getTupleInfo(args, point, noref);
 
     if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
       return info.typeSymbol->type->defaultTypeConstructor;
