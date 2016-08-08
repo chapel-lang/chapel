@@ -855,7 +855,7 @@ proc SparseBlockArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc SparseBlockArr.dsiSupportsBulkTransfer() param return true;
+proc SparseBlockArr.dsiSupportsBulkTransfer() param return false;
 
 proc SparseBlockArr.doiCanBulkTransfer() {
   if dom.stridable then
@@ -869,6 +869,8 @@ proc SparseBlockArr.doiCanBulkTransfer() {
   return true;
 }
 
+// TODO This function needs to be fixed. For now, explicitly returning false
+// from dsiSupportsBulkTransfer, so this function should never be compiled
 proc SparseBlockArr.doiBulkTransfer(B) {
   if debugSparseBlockDistBulkTransfer then resetCommDiagnostics();
   var sameDomain: bool;
