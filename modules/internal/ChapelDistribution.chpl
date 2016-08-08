@@ -583,19 +583,28 @@ module ChapelDistribution {
     proc doiCanBulkTransferStride() param return false;
   }
 
+  /*
+   * BaseSparseArr is very basic/generic so that we have some flexibility in
+   * implementing sparse array classes.
+   */
   class BaseSparseArr: BaseArr {
     type eltType;
     param rank : int;
     type idxType;
 
     var dom; /* : DefaultSparseDom(?); */
-    /*var dataDom = {1..0};*/
-    var data: [dom.nnzDom] eltType;
 
+    // NOTE I tried to put `data` in `BaseSparseArrImpl`. However, it wasn't
+    // clear how to initialize this in that class.
+    var data: [dom.nnzDom] eltType;
 
     proc dsiGetBaseDom() return dom;
   }
 
+  /*
+   * All the common helpers/methods in implementations of internal sparse arrays
+   * go here.
+   */
   class BaseSparseArrImpl: BaseSparseArr {
 
 
