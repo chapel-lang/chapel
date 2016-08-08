@@ -757,7 +757,7 @@ GenRet VarSymbol::codegen() {
 }
 
 
-void VarSymbol::codegenDefC(bool global) {
+void VarSymbol::codegenDefC(bool global, bool isHeader) {
   GenInfo* info = gGenInfo;
   if (this->hasFlag(FLAG_EXTERN))
     return;
@@ -774,9 +774,16 @@ void VarSymbol::codegenDefC(bool global) {
   // a variable can be codegen'd as static if it is global and neither
   // exported nor external.
   //
-  bool isStatic =  global && !hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN);
+  std::string str;
 
-  std::string str = (isStatic ? "static " : "") + typestr + " " + cname;
+  if(fIncrementalCompilation) {
+    bool addExtern =  global && isHeader;
+    str = (addExtern ? "extern " : "") + typestr + " " + cname;
+  } else {
+    bool isStatic =  global && !hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN);
+    str = (isStatic ? "static " : "") + typestr + " " + cname;
+  }
+
   if (ct) {
     if (ct->isClass()) {
       if (isFnSymbol(defPoint->parentSymbol)) {
@@ -797,10 +804,16 @@ void VarSymbol::codegenDefC(bool global) {
       }
     }
   }
+
+  if (fGenIDS)
+    str = idCommentTemp(this) + str;
+  if (printCppLineno && !isHeader && !isTypeSymbol(defPoint->parentSymbol))
+    str = zlineToString(this) + str;
+
   info->cLocalDecls.push_back(str);
 }
 
-void VarSymbol::codegenGlobalDef() {
+void VarSymbol::codegenGlobalDef(bool isHeader) {
   GenInfo* info = gGenInfo;
 
   if( id == breakOnCodegenID ||
@@ -810,10 +823,10 @@ void VarSymbol::codegenGlobalDef() {
   }
 
   if( info->cfile ) {
-    codegenDefC(/*global=*/true);
+    codegenDefC(/*global=*/true, isHeader);
   } else {
 #ifdef HAVE_LLVM
-    if(type == dtVoid) {
+    if(type == dtVoid || !isHeader) {
       return;
     }
 
@@ -1495,8 +1508,14 @@ FnSymbol::FnSymbol(const char* initName) :
 
 
 FnSymbol::~FnSymbol() {
-  if (iteratorInfo)
+  if (iteratorInfo) {
+    // Also set iterator class and iterator record iteratorInfo = NULL.
+    if (iteratorInfo->iclass)
+      iteratorInfo->iclass->iteratorInfo = NULL;
+    if (iteratorInfo->irecord)
+      iteratorInfo->irecord->iteratorInfo = NULL;
     delete iteratorInfo;
+  }
   BasicBlock::clear(this);
   delete basicBlocks; basicBlocks = 0;
   if (calledBy)
@@ -1887,16 +1906,17 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
 void FnSymbol::codegenHeaderC(void) {
   FILE* outfile = gGenInfo->cfile;
   if (fGenIDS)
-    fprintf(outfile, "/* %7d */ ", id);
-  // Prepend function header with necessary __global__ declaration
+    fprintf(outfile, "%s", idCommentTemp(this));
 
-  //
-  // A function prototype can be labeled static if it is neither
-  // exported nor external
-  //
-  if (!hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN)) {
-    fprintf(outfile, "static ");
-  }
+    // Prepend function header with necessary __global__ declaration
+
+    //
+    // A function prototype can be labeled static if it is neither
+    // exported nor external
+    //
+    if (!fIncrementalCompilation && !hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN)) {
+      fprintf(outfile, "static ");
+    }
   fprintf(outfile, "%s", codegenFunctionType(true).c.c_str());
 }
 
@@ -2027,6 +2047,7 @@ void FnSymbol::codegenDef() {
   if( outfile ) {
     if (strcmp(saveCDir, "")) {
      if (const char* rawname = fname()) {
+      zlineToFileIfNeeded(this, outfile);
       const char* name = strrchr(rawname, '/');
       name = name ? name + 1 : rawname;
       fprintf(outfile, "/* %s:%d */\n", name, linenum());
@@ -2076,8 +2097,6 @@ void FnSymbol::codegenDef() {
     for_vector(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast))
         if (!toTypeSymbol(def->sym)) {
-          if (fGenIDS && isVarSymbol(def->sym))
-            genIdComment(def->sym->id);
           def->sym->codegenDef();
           flushStatements();
         }
@@ -2450,8 +2469,10 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
 
   // Print return type.
   if (this->retExprType != NULL) {
+    AstToText info;
+    info.appendExpr(this->retExprType->body.tail, true);
     *file << ": ";
-    this->retExprType->body.tail->prettyPrint(file);
+    *file << info.text();
   }
   *file << std::endl;
 

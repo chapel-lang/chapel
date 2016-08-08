@@ -646,7 +646,7 @@ const char* toString(CallInfo* info) {
       str = astr(str, info->actualNames.v[i], "=");
     VarSymbol* var = toVarSymbol(info->actuals.v[i]);
     if (info->actuals.v[i]->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-        info->actuals.v[i]->type->defaultInitializer->hasFlag(FLAG_PROMOTION_WRAPPER))
+        toAggregateType(info->actuals.v[i]->type)->iteratorInfo->iterator->hasFlag(FLAG_PROMOTION_WRAPPER))
       str = astr(str, "promoted expression");
     else if (info->actuals.v[i] && info->actuals.v[i]->hasFlag(FLAG_TYPE_VARIABLE))
       str = astr(str, "type ", toString(info->actuals.v[i]->type));
@@ -820,11 +820,9 @@ protoIteratorClass(FnSymbol* fn) {
   ii->init = protoIteratorMethod(ii, "init", dtVoid);
   ii->incr = protoIteratorMethod(ii, "incr", dtVoid);
 
-  // The original iterator function is stashed in the defaultInitializer field
-  // of the iterator record type.  Since we are only creating shell functions
-  // here, we still need a way to obtain the original iterator function, so we
-  // can fill in the bodies of the above 9 methods in the lowerIterators pass.
-  ii->irecord->defaultInitializer = fn;
+  // Save the iterator info in the iterator record.
+  // The iterator info is still owned by the iterator function.
+  ii->irecord->iteratorInfo = ii;
   ii->irecord->scalarPromotionType = fn->retType;
   fn->retType = ii->irecord;
   fn->retTag = RET_VALUE;
@@ -843,11 +841,11 @@ protoIteratorClass(FnSymbol* fn) {
   ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
   ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
-  // The _getIterator function is stashed in the defaultInitializer field of
-  // the iterator class type.  This makes it easy to obtain the iterator given
+  // Save the iterator info in the iterator class also.
+  // This makes it easy to obtain the iterator given
   // just a symbol of the iterator class type.  This may include _getIterator
   // and _getIteratorZip functions in the module code.
-  ii->iclass->defaultInitializer = ii->getIterator;
+  ii->iclass->iteratorInfo = ii;
   normalize(ii->getIterator);
   resolveFns(ii->getIterator);  // No shortcuts.
 }
@@ -1261,6 +1259,8 @@ canInstantiate(Type* actualType, Type* formalType) {
       (is_int_type(actualType) || is_uint_type(actualType) || is_imag_type(actualType) ||
        is_real_type(actualType) || is_complex_type(actualType)))
     return true;
+  if (formalType == dtAnyComplex && (is_complex_type(actualType)))
+    return true;
   if (formalType == dtString && actualType==dtStringC)
     return true;
   if (formalType == dtStringC && actualType==dtStringCopy)
@@ -1622,7 +1622,7 @@ computeGenericSubs(SymbolMap &subs,
       // check for field with specified generic type
       //
       if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && formal->type != dtAny &&
-          strcmp(formal->name, "outer") && strcmp(formal->name, "meme") &&
+          strcmp(formal->name, "outer") && !formal->hasFlag(FLAG_IS_MEME) &&
           (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)))
         USR_FATAL(formal, "invalid generic type specification on class field");
 
@@ -2134,7 +2134,7 @@ resolve_type_constructor(FnSymbol* fn, CallInfo& info) {
     SET_LINENO(fn);
     CallExpr* typeConstructorCall = new CallExpr(astr("_type", fn->name));
     for_formals(formal, fn) {
-      if (strcmp(formal->name, "meme")) {
+      if (!formal->hasFlag(FLAG_IS_MEME)) {
         if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
           if (formal->instantiatedFrom) {
             typeConstructorCall->insertAtTail(formal->type->symbol);
@@ -5566,6 +5566,13 @@ static CallExpr* toPrimToLeaderCall(Expr* expr) {
   return NULL;
 }
 
+static SymExpr* symOrParamExpr(Symbol* arg) {
+  Symbol* result = arg;
+  if (Symbol* paramVal = paramMap.get(arg))
+    result = paramVal;
+  return new SymExpr(result);
+}
+
 // Recursively resolve typedefs
 static Type* resolveTypeAlias(SymExpr* se)
 {
@@ -6339,7 +6346,8 @@ preFold(Expr* expr) {
       FnSymbol* iterator = getTheIteratorFn(call);
       CallExpr* standaloneCall = new CallExpr(iterator->name);
       for_formals(formal, iterator) {
-        standaloneCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
+        standaloneCall->insertAtTail(new NamedExpr(formal->name,
+                                                   symOrParamExpr(formal)));
       }
       // "tag" should be placed at the end of the formals in the source code as
       // well, to avoid insertion of an order wrapper.
@@ -6354,7 +6362,8 @@ preFold(Expr* expr) {
       else
         leaderCall = new CallExpr(iterator->name);
       for_formals(formal, iterator) {
-        leaderCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
+        leaderCall->insertAtTail(new NamedExpr(formal->name,
+                                               symOrParamExpr(formal)));
       }
       // "tag" should be placed at the end of the formals in the source code as
       // well, to avoid insertion of an order wrapper.
@@ -6369,7 +6378,8 @@ preFold(Expr* expr) {
       else
         followerCall = new CallExpr(iterator->name);
       for_formals(formal, iterator) {
-        followerCall->insertAtTail(new NamedExpr(formal->name, new SymExpr(formal)));
+        followerCall->insertAtTail(new NamedExpr(formal->name,
+                                                 symOrParamExpr(formal)));
       }
       // "tag", "followThis" and optionally "fast" should be placed at the end
       // of the formals in the source code as well, to avoid insertion of an
@@ -7572,6 +7582,11 @@ static void instantiate_default_constructor(FnSymbol* fn) {
     while (instantiatedFrom->instantiatedFrom)
       instantiatedFrom = instantiatedFrom->instantiatedFrom;
     CallExpr* call = new CallExpr(instantiatedFrom->retType->defaultInitializer);
+
+    // This should not be happening for iterators.
+    TypeSymbol* ts = instantiatedFrom->retType->symbol;
+    INT_ASSERT(!ts->hasEitherFlag(FLAG_ITERATOR_RECORD, FLAG_ITERATOR_CLASS));
+
     for_formals(formal, fn) {
       if (formal->type == dtMethodToken || formal == fn->_this) {
         call->insertAtTail(formal);
@@ -8006,18 +8021,22 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
             resolveFns(fn);
             if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                 pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-              if (!isSubType(fn->retType->defaultInitializer->iteratorInfo->getValue->retType,
-                  pfn->retType->defaultInitializer->iteratorInfo->getValue->retType)) {
+              AggregateType* fnRetType = toAggregateType(fn->retType);
+              IteratorInfo* fnInfo = fnRetType->iteratorInfo;
+              AggregateType* pfnRetType = toAggregateType(pfn->retType);
+              IteratorInfo* pfnInfo = pfnRetType->iteratorInfo;
+              if (!isSubType(fnInfo->getValue->retType,
+                             pfnInfo->getValue->retType)) {
                 USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn),
-                               pfn->retType->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
+                               pfnInfo->getValue->retType->symbol->name);
                 USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn),
-                               fn->retType->defaultInitializer->iteratorInfo->getValue->retType->symbol->name);
+                               fnInfo->getValue->retType->symbol->name);
                 USR_STOP();
               } else {
                 pfn->retType->dispatchChildren.add_exclusive(fn->retType);
                 fn->retType->dispatchParents.add_exclusive(pfn->retType);
-                Type* pic = pfn->retType->defaultInitializer->iteratorInfo->iclass;
-                Type* ic = fn->retType->defaultInitializer->iteratorInfo->iclass;
+                Type* pic = pfnInfo->iclass;
+                Type* ic = fnInfo->iclass;
                 INT_ASSERT(ic->symbol->hasFlag(FLAG_ITERATOR_CLASS));
 
                 // Iterator classes are created as normal top-level classes (inheriting
@@ -8881,7 +8900,13 @@ static void insertDynamicDispatchCalls() {
       }
     }
 
-    if ((fns->n + 1 > fConditionalDynamicDispatchLimit) && (!referencesOuterVars)) {
+    bool isSuperAccess = false;
+    if (SymExpr* base = toSymExpr(call->get(2))) {
+      isSuperAccess = base->var->hasFlag(FLAG_SUPER_TEMP);
+    }
+
+    if ((fns->n + 1 > fConditionalDynamicDispatchLimit) &&
+        (!referencesOuterVars) && !isSuperAccess ) {
       //
       // change call of root method into virtual method call;
       // Insert function SymExpr and virtual method temp at head of argument
@@ -8913,10 +8938,18 @@ static void insertDynamicDispatchCalls() {
         BlockStmt* ifBlock = new BlockStmt();
         VarSymbol* cid = newTemp("_dynamic_dispatch_tmp_", dtBool);
         ifBlock->insertAtTail(new DefExpr(cid));
-        ifBlock->insertAtTail(new CallExpr(PRIM_MOVE, cid,
-                                new CallExpr(PRIM_TESTCID,
-                                             call->get(2)->copy(),
-                                             type->symbol)));
+
+        Expr* getCid = NULL;
+        if (isSuperAccess) {
+          // We're in a call on the super type.  We already know the answer to
+          // this if conditional
+          getCid = new SymExpr(gFalse);
+        } else {
+          getCid = new CallExpr(PRIM_TESTCID, call->get(2)->copy(),
+                                type->symbol);
+        }
+
+        ifBlock->insertAtTail(new CallExpr(PRIM_MOVE, cid, getCid));
         VarSymbol* _ret = NULL;
         if (key->retType != dtVoid) {
           _ret = newTemp("_return_tmp_", key->retType);
@@ -9059,6 +9092,10 @@ static void insertReturnTemps() {
               }
             }
 
+            if (isTypeExpr(contextCallOrCall)) {
+              tmp->addFlag(FLAG_MAYBE_TYPE);
+              tmp->addFlag(FLAG_MAYBE_PARAM);
+            }
             def->insertAfter(new CallExpr(PRIM_MOVE,
                                           tmp,
                                           contextCallOrCall->remove()));
@@ -9152,6 +9189,20 @@ static void clearDefaultInitFns(FnSymbol* unusedFn) {
   if (unusedFn->retType->defaultInitializer == unusedFn) {
     unusedFn->retType->defaultInitializer = NULL;
   }
+  // Also remove unused fns from iterator infos.
+  // Ditto for iterator fn in iterator info.
+  AggregateType* at = toAggregateType(unusedFn->retType);
+  if (at && at->iteratorInfo) {
+    IteratorInfo* ii = at->iteratorInfo;
+    INT_ASSERT(at->symbol->hasEitherFlag(FLAG_ITERATOR_RECORD,
+                                         FLAG_ITERATOR_CLASS));
+    if (ii) {
+      if (ii->iterator == unusedFn)
+        ii->iterator = NULL;
+      if (ii->getIterator == unusedFn)
+        ii->getIterator = NULL;
+    }
+  }
 }
 
 static void removeUnusedFunctions() {
@@ -9181,6 +9232,12 @@ isUnusedClass(AggregateType *ct) {
 
   // Uses of iterator records get inserted in lowerIterators
   if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    return false;
+
+  // FALSE if iterator class's getIterator is used
+  // (this case may not be necessary)
+  if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
+      ct->iteratorInfo->getIterator->isResolved())
     return false;
 
   // FALSE if initializers are used

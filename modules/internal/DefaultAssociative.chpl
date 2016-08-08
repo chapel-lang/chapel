@@ -64,7 +64,7 @@ module DefaultAssociative {
     // We explicitly use processor atomics here since this is not
     // by design a distributed data structure
     var numEntries: atomic_int64;
-    var tableLock: atomicflag; // do not access directly, use function below
+    var tableLock: atomicbool; // do not access directly, use function below
     var tableSizeNum = 1;
     var tableSize = chpl__primes(tableSizeNum);
     var tableDom = {0..tableSize-1};

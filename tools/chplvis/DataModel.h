@@ -106,6 +106,9 @@ class DataModel {
   taskData mainTask;
 
   StringCache strDB;
+  char **strTbl;
+  int strTblSize;
+  std::vector<const char *> tagNames;
 
   typedef std::list<Event*>::iterator evItr;
 
@@ -218,6 +221,7 @@ class DataModel {
     curEvent = theEvents.begin();
     uniqueTags = true;
     utagList = NULL;
+    tagNames.resize(64);
   }
   
   // Destructor for DataModel
@@ -241,7 +245,7 @@ class DataModel {
   //  be a multi-digit number
   //  Returns 1 if successful, 0 if not
   
-  int LoadData (const char *filename);
+  int LoadData (const char *filename, bool fromArgv);
   
   //  Number of locales found in loading files
   

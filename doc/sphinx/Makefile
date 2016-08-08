@@ -18,6 +18,9 @@ help-source:
 docs: FORCE
 	./run-in-venv.bash $(MAKE) html
 
+man-chapel: FORCE
+	./run-in-venv.bash $(MAKE) man
+
 symlink-docs: clean-symlink-docs
 	@echo "Setting up symlinks from /doc/release to /doc/sphinx/source"
 	./symlinks.py

@@ -1,0 +1,3 @@
+warning: Compiling with --incremental along with optimizations enabled may lead to a slower execution time compared to --fast or using -O optimizations directly.
+Computing...
+2

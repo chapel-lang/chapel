@@ -101,16 +101,16 @@ equivalent:
   :language: chapel
   :lines: 10,12,14,16
 
-Floating point values may also be specified using a hexadecimal
-floating point format using the ``0x`` prefix.  In such cases, 
-``p`` is used to indicate the exponent to avoid ambiguity with
-the hexadecimal digit ``e``:
+Floating point values may also be specified using a hexadecimal format
+using the ``0x`` prefix.  In such cases, ``p`` is used to indicate the
+exponent (avoiding ambiguity with the hexadecimal digit ``e``) and
+indicates a power of 2 rather than 10:
 
 .. literalinclude:: examples/users-guide/base/floatValues.chpl
   :language: chapel
   :lines: 18, 20
 
-These expressions correspond to the floating point values:
+Thus, these expressions correspond to the floating point values:
 
 .. literalinclude:: examples/users-guide/base/floatValues.good
   :language: text

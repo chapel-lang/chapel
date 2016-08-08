@@ -1069,7 +1069,7 @@ class LocCyclicArr {
   var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
   var locCyclicRAD: LocCyclicRADCache(rank, idxType); // see below for why
   var myElems: [locDom.myBlock] eltType;
-  var locRADLock: atomicflag; // This will only be accessed locally, so
+  var locRADLock: atomicbool; // This will only be accessed locally, so
                               // force the use of processor atomics
 
   // These function will always be called on this.locale, and so we do

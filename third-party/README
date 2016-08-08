@@ -149,3 +149,14 @@ libhdfs3/
   Website: https://github.com/PivotalRD/libhdfs3
 
   See also: libhdfs3/README
+
+libunwind/
+  Summary: libunwind is a portable and efficient C programming
+           interface (API) to determine the call-chain of a program
+
+  License: MIT (see libunwind/libunwind-<version>/COPYING and
+           libunwind/libunwind-<version>/LICENSE)
+
+  Website: http://www.nongnu.org/libunwind/
+
+  See also: libunwind/README and libunwind/libunwind-<version>/README

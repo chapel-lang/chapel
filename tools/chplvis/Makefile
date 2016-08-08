@@ -42,9 +42,10 @@ CXXFLAGS=  -Wall -I. -g
 	$$($(FLTK_CONFIG) --cxx) -c $$($(FLTK_CONFIG) --cxxflags) $(CXXFLAGS) $<
 
 
-SRCS= ViewField.cxx DataModel.cxx Event.cxx InfoBar.cxx LocaleWin.cxx  CommWin.cxx \
-      ConcurrencyWin.cxx
-HFILES= ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h
+SRCS=   ViewField.cxx DataModel.cxx Event.cxx InfoBar.cxx LocaleWin.cxx \
+        CommWin.cxx ConcurrencyWin.cxx Settings.cxx
+HFILES= ViewField.h   DataModel.h   Event.h   InfoBar.h   LocaleWin.h \
+        CommWin.h   ConcurrencyWin.h   Settings.h
 
 GENSRCS= chplvis.cxx
 GENH= chplvis.h
@@ -78,3 +79,4 @@ LocaleWin.o: LocaleWin.h
 CommWin.o: CommWin.h
 ConcurrencyWin.o: ConcurrencyWin.h DataModel.h chplvis.h StringCache.h
 Event.o: Event.h
+Settings.o: Settings.h chplvis.h

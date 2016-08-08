@@ -125,7 +125,7 @@ qthread-build: FORCE
 ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),lifo mtsfifo mutexfifo nemesis))
 SUPPORTS_REMOTE_CACHE = 1
 ONE_WORKER_PER_SHEPHERD = 1
-else ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),nottingham sherwood))
+else ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),distrib nottingham sherwood))
 SUPPORTS_REMOTE_CACHE = 0
 ONE_WORKER_PER_SHEPHERD = 0
 else

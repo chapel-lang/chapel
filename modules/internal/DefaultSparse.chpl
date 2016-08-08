@@ -119,9 +119,9 @@ module DefaultSparse {
       // sjd: unfortunate specialization for rank == 1
       //
       if rank == 1 && isTuple(ind) && ind.size == 1 then
-        return BinarySearch(indices, ind(1), 1, nnz);
+        return binarySearch(indices, ind(1), lo=1, hi=nnz);
       else
-        return BinarySearch(indices, ind, 1, nnz);
+        return binarySearch(indices, ind, lo=1, hi=nnz);
     }
 
     proc dsiMember(ind) { // ind should be verified to be index type

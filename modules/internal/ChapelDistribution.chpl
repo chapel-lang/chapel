@@ -33,7 +33,7 @@ module ChapelDistribution {
     // atomics are available
     var _distCnt: atomic_refcnt; // distribution reference count
     var _doms: list(BaseDom);   // domains declared over this distribution
-    var _domsLock: atomicflag;  //   and lock for concurrent access
+    var _domsLock: atomicbool;  //   and lock for concurrent access
   
     pragma "dont disable remote value forwarding"
     proc destroyDist(): int {
@@ -121,7 +121,7 @@ module ChapelDistribution {
     // atomics are available
     var _domCnt: atomic_refcnt; // domain reference count
     var _arrs: list(BaseArr);  // arrays declared over this domain
-    var _arrsLock: atomicflag; //   and lock for concurrent access
+    var _arrsLock: atomicbool; //   and lock for concurrent access
   
     proc dsiMyDist(): BaseDist {
       halt("internal error: dsiMyDist is not implemented");
@@ -625,6 +625,10 @@ module ChapelDistribution {
     proc sparseBulkShiftArray(shiftMap, oldnnz){
       var newIdx: int;
       var prevNewIdx = 1;
+
+      // fill all new indices i s.t. i > indices[oldnnz]
+      forall i in shiftMap.domain.high+1..dom.nnzDom.high do data[i] = irv;
+
       for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(1) by -1) {
         newIdx = shiftMap[_newIdx];
         data[newIdx] = data[i];

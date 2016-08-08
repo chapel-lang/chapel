@@ -37,6 +37,11 @@
 #define baseExpectFilename ".chpl-expect-"
 #define baseSysFilename ".chpl-sys-"
 
+#define CHPL_WALLTIME_FLAG "--walltime"
+#define CHPL_PARTITION_FLAG "--partition"
+
+static char* walltime = NULL;
+static char* partition = NULL;
 char slurmFilename[FILENAME_MAX];
 char expectFilename[FILENAME_MAX];
 char sysFilename[FILENAME_MAX];
@@ -109,8 +114,20 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
                                  int32_t numLocales,
                                  int32_t numCoresPerLocale) {
   //char* queue = getenv("CHPL_LAUNCHER_QUEUE");
-  char* walltime = getenv("CHPL_LAUNCHER_WALLTIME");
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
+
+  // command line walltime takes precedence over env var
+  if (!walltime) {
+    walltime = getenv("CHPL_LAUNCHER_WALLTIME");
+  }
+
+  // command line partition takes precedence over env var
+  if (!partition) {
+    partition = getenv("SALLOC_PARTITION");
+  }
+  if (!partition) {
+    partition = getenv("SLURM_PARTITION");
+  }
 
   /*
   if (queue)
@@ -118,6 +135,8 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
     */
   if (walltime) 
     fprintf(slurmFile, "#SBATCH --time=%s\n", walltime);
+  if (partition)
+    fprintf(slurmFile, "#SBATCH --partition=%s\n", partition);
   switch (sbatch) {
 /* Only slurm has been tested
   case slurmpro:
@@ -156,7 +175,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   FILE* slurmFile, *expectFile;
   char* projectString = getenv(launcherAccountEnvvar);
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
-  char* walltime = getenv("CHPL_LAUNCHER_WALLTIME");
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
@@ -167,6 +185,19 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       basenamePtr++;
   }
   chpl_compute_real_binary_name(argv[0]);
+
+  // command line walltime takes precedence over env var
+  if (!walltime) {
+    walltime = getenv("CHPL_LAUNCHER_WALLTIME");
+  }
+
+  // command line partition takes precedence over env var
+  if (!partition) {
+    partition = getenv("SALLOC_PARTITION");
+  }
+  if (!partition) {
+    partition = getenv("SLURM_PARTITION");
+  }
 
 #ifndef DEBUG_LAUNCH
   mypid = getpid();
@@ -217,6 +248,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "--ntasks-per-node=1 ");
   fprintf(expectFile, "--exclusive "); //  give exclusive access to the nodes
   fprintf(expectFile, "--time=%s ",walltime); 
+  if(partition)
+    fprintf(expectFile, "--partition=%s ",partition);
   if (constraint) {
     fprintf(expectFile, " -C %s", constraint);
   }
@@ -285,9 +318,33 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, int32_t filename) {
+
+  // handle --walltime <walltime> or --walltime=<walltime>
+  if (!strcmp(argv[argNum], CHPL_WALLTIME_FLAG)) {
+    walltime = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_WALLTIME_FLAG"=", strlen(CHPL_WALLTIME_FLAG))) {
+    walltime = &(argv[argNum][strlen(CHPL_WALLTIME_FLAG)+1]);
+    return 1;
+  }
+
+  // handle --partition <partition> or --partition=<partition>
+  if (!strcmp(argv[argNum], CHPL_PARTITION_FLAG)) {
+    partition = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_PARTITION_FLAG"=", strlen(CHPL_PARTITION_FLAG))) {
+    partition = &(argv[argNum][strlen(CHPL_PARTITION_FLAG)+1]);
+    return 1;
+  }
   return 0;
 }
 
 
 void chpl_launch_print_help(void) {
+  fprintf(stdout, "LAUNCHER FLAGS:\n");
+  fprintf(stdout, "===============\n");
+  fprintf(stdout, "  %s <HH:MM:SS> : specify a wallclock time limit\n", CHPL_WALLTIME_FLAG);
+  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_WALLTIME)\n");
+  fprintf(stdout, "  %s <partition> : specify a partition to use\n", CHPL_PARTITION_FLAG);
+  fprintf(stdout, "                           (or use $SALLOC_PARTITION)\n");
 }
