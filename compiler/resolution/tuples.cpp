@@ -346,6 +346,47 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
       //printf("tuple constructor id %i\n", ctor->id);
       //print_view(ctor);
     }
+
+    // Build the value destructor
+    {
+      FnSymbol *dtor = new FnSymbol("~chpl_destroy");
+
+      dtor->cname = astr("chpl__auto_destroy_", newType->symbol->cname);
+
+      // Does "_this" even make sense in this situation?
+      ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", newType);
+      _this->addFlag(FLAG_ARG_THIS);
+      dtor->_this = _this;
+
+      dtor->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+      dtor->addFlag(FLAG_METHOD);
+      dtor->insertFormalAtTail(dtor->_this);
+
+      dtor->addFlag(FLAG_COMPILER_GENERATED);
+      dtor->addFlag(FLAG_INLINE);
+      dtor->addFlag(FLAG_INVISIBLE_FN);
+      dtor->addFlag(FLAG_DESTRUCTOR);
+      //dtor->addFlag(FLAG_PARTIAL_TUPLE);
+      //dtor->addFlag(FLAG_TUPLE);
+
+      dtor->retTag = RET_VALUE;
+      dtor->retType = dtVoid;
+      CallExpr* ret = new CallExpr(PRIM_RETURN, gVoid);
+      dtor->insertAtTail(ret);
+      dtor->substitutions.copy(newType->substitutions);
+
+      dtor->instantiatedFrom = gGenericTupleDestroy;
+      dtor->instantiationPoint = instantiationPoint;
+
+      tupleModule->block->insertAtTail(new DefExpr(dtor));
+
+      newType->destructor = dtor;
+      newType->methods.add(dtor);
+
+      // Resolve it so it stays in AST
+      resolveFns(dtor);
+    }
+
   }
 
   return info;

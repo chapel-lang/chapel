@@ -97,6 +97,7 @@ FnSymbol* gChplHereFree = NULL;
 FnSymbol* gChplDoDirectExecuteOn = NULL;
 FnSymbol *gGenericTupleTypeCtor = NULL;
 FnSymbol *gGenericTupleInit = NULL;
+FnSymbol *gGenericTupleDestroy = NULL;
 FnSymbol *gBuildTupleType = NULL;
 FnSymbol *gBuildStarTupleType = NULL;
 FnSymbol *gBuildTupleTypeNoRef = NULL;
