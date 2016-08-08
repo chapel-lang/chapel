@@ -231,6 +231,8 @@ buildDefaultWrapper(FnSymbol* fn,
       // but there are some special cases where some fixup is required.
       Symbol* temp = wrapper_formal;
 
+      bool isArrayAliasField = false;
+
       // Check for the fixup cases:
       if (formal->type->symbol->hasFlag(FLAG_REF)) {
         // Formal is passed by reference.
@@ -259,7 +261,7 @@ buildDefaultWrapper(FnSymbol* fn,
 
         // The type of an array is computed at runtime, so we have to insert
         // some type computation code if the argument is an array alias field.
-        bool isArrayAliasField = false;
+        isArrayAliasField = false;
         const char* aliasFieldArg = astr("chpl__aliasField_", formal->name);
         for_formals(formal, fn)
           if (formal->name == aliasFieldArg && !defaults->set_in(formal))
@@ -271,6 +273,9 @@ buildDefaultWrapper(FnSymbol* fn,
           arrayTypeTmp->addFlag(FLAG_MAYBE_TYPE);
           arrayTypeTmp->addFlag(FLAG_EXPR_TEMP);
           temp->addFlag(FLAG_EXPR_TEMP);
+
+          temp->addFlag(FLAG_NO_AUTO_DESTROY);
+
           // Add the type marker temporary, and use it to reindex this formal
           // before it is passed to the called function.
           wrapper->insertAtTail(new DefExpr(arrayTypeTmp));
@@ -301,8 +306,12 @@ buildDefaultWrapper(FnSymbol* fn,
             {
               Symbol* copyTemp = newTemp("wrap_arg");
               wrapper->insertAtTail(new DefExpr(copyTemp));
-              // This is from 3788ee34fa9f42bdce19e9e3cf46ccfbb1c60ac2
-              wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
+              if (isArrayAliasField) {
+                wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, temp));
+              } else {
+                // This is from 3788ee34fa9f42bdce19e9e3cf46ccfbb1c60ac2
+                wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
+              }
               wrapper->insertAtTail(
                 new CallExpr(PRIM_SET_MEMBER, wrapper->_this,
                              new_CStringSymbol(formal->name), copyTemp));

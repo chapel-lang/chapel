@@ -484,13 +484,24 @@ module ChapelArray {
     return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
 
   /*
-   used for array alias formal reindexing
-     -> identify code pattern with test?
+   See test_array_alias_field.chpl
+
+    class C {
+      var A: [0..4] int;
+    }
+
+    var GA: [1..5] int = [i in 1..5] i;
+
+    var c2 = new C(A=>GA);  // <- note A=>GA here
+  */
   proc chpl__getDomainFromArrayType(type arrayType) {
     var A: arrayType;
     pragma "no copy" var D = A.domain;
     return D;
   }
+
+  /*
+  test/arrays/diten/distArrInRecord.chpl -suseBulkTransferStride=true
 
     [Error matching compiler output for arrays/deitz/test_remote_block_slicing]
    [Error matching compiler output for arrays/deitz/test_remote_cyclic_slicing]
