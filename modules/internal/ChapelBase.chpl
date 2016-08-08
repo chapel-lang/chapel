@@ -1021,6 +1021,13 @@ module ChapelBase {
   pragma "unalias fn"
   inline proc chpl__unalias(ref x) { }
 
+  pragma "unalias fn"
+  inline proc chpl__unalias(x:_iteratorClass) { }
+  pragma "unalias fn"
+  inline proc chpl__unalias(const ref x:_iteratorRecord) { }
+
+
+
   pragma "compiler generated"
   inline proc chpl__onret(ref x) { }
 
