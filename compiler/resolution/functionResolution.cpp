@@ -7555,12 +7555,8 @@ insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   tmp = se->var;
                 } else {
                   tmp = newTemp("_cast_tmp_", rhs->typeInfo());
-                  DefExpr* def = new DefExpr(tmp);
-                  call->insertBefore(def);
-                  resolveExpr(def);
-                  CallExpr* newMove = new CallExpr(PRIM_MOVE, tmp, rhs->copy());
-                  call->insertBefore(newMove);
-                  resolveExpr(newMove);
+                  call->insertBefore(new DefExpr(tmp));
+                  call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs->copy()));
                 }
                 CallExpr* cast = new CallExpr("_cast", lhsType->symbol, tmp);
                 rhs->replace(cast);
