@@ -1056,7 +1056,9 @@ module ChapelBase {
     // body inserted during call destructors pass
   }
 
-  /*
+  // These might seem the same as the generic version
+  // but they currently necessary to prevent resolution from
+  // using promotion (for example with an array of sync variables)
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
   proc chpl__autoDestroy(x: _distribution) {
@@ -1071,7 +1073,7 @@ module ChapelBase {
   pragma "removable auto destroy"
   proc chpl__autoDestroy(x: []) {
     __primitive("call destructor", x);
-  }*/
+  }
 
   // = for c_void_ptr
   inline proc =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }
