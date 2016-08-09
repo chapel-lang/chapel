@@ -357,8 +357,8 @@ proc searchLinearHelper(in board, in pos, in used, in placed,
 // runtime than just using a sync var because it has lower latency.
 //
 record BackoffSpinLock {
-  var l: atomic bool;
-      lockAttempts: uint;
+  var l: atomic bool,
+      lockAttempts: uint,
       maxLockAttempts = (2**16-1): uint;
 
   inline proc lock() {
