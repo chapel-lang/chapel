@@ -234,8 +234,7 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
         // See e.g. parallel/taskPar/figueroa/taskParallel.chpl
         pruneit = true;
 
-      } else if (isSyncType(ovar->type)   ||
-                 isSingleType(ovar->type) ||
+      } else if (isSingleType(ovar->type) ||
                  isAtomicType(ovar->type)) {
         // Currently we need it because sync variables do not get tupled
         // and detupled properly when threading through the leader iterator.
