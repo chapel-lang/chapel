@@ -32,7 +32,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
-#include "view.h"
 
 #include <map>
 #include <utility>
@@ -1116,8 +1115,8 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
   // reduceVar = globalOp.generate(); delete globalOp;
   parLoop->insertAfter("'delete'(%S)",
                        globalOp);
-  parLoop->insertAfter("'='(%E,.(%S, 'generate')())",
-                       reduceVar->copy(), globalOp);
+  parLoop->insertAfter(new CallExpr("=", reduceVar->copy(),
+                         new_Expr(".(%S, 'generate')()", globalOp)));
 }
 
 // Setup for forall intents
@@ -1721,7 +1720,6 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
   fn->insertAtTail(new CallExpr(PRIM_RETURN, result));
 
   // Success.
-  print_view(fn);
   return new CallExpr(new DefExpr(fn));
 }
 

@@ -2666,6 +2666,9 @@ module ChapelArray {
     }
   }
 
+
+  // TODO Write a wrapper for this that would do local partial reductions to
+  // provide less communicioatn
   proc dsiPartialReduce_template(arr: [], param onlyDim) {
 
     if onlyDim < 1 || onlyDim > arr.domain.rank then

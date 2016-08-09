@@ -839,7 +839,7 @@ returnRecordsByReferenceArguments() {
         if (fn->hasFlag(FLAG_EXTERN))
           continue;
         CallExpr* move = toCallExpr(call->parentExpr);
-        INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+        INT_ASSERT(move->isPrimitive(PRIM_MOVE) || move->isPrimitive(PRIM_ASSIGN));
         SymExpr* lhs = toSymExpr(move->get(1));
         INT_ASSERT(!lhs->var->hasFlag(FLAG_TYPE_VARIABLE));
         changeRetToArgAndClone(move, lhs->var, call, fn, defMap, useMap);
