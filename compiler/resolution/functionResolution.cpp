@@ -1393,7 +1393,8 @@ bool canCoerce(Type*     actualType,
   }
 
   if (isSyncType(actualType) || isSingleType(actualType)) {
-    Type* baseType = actualType->getField("base_type")->type;
+    Type* baseType = actualType->getField("valType")->type;
+
     return canDispatch(baseType, NULL, formalType, fn, promotes);
   }
 
@@ -2524,13 +2525,13 @@ static bool considerParamMatches(Type* actualType,
     }
 
     if (isSyncType(actualType)) {
-      return considerParamMatches(actualType->getField("base_type")->type,
+      return considerParamMatches(actualType->getField("valType")->type,
                                   arg1Type,
                                   arg2Type);
     }
 
     if (isSingleType(actualType)) {
-      return considerParamMatches(actualType->getField("base_type")->type,
+      return considerParamMatches(actualType->getField("valType")->type,
                                   arg1Type,
                                   arg2Type);
     }
