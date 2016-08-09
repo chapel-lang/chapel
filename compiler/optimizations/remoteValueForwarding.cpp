@@ -332,7 +332,19 @@ static void updateTaskArg(Map<Symbol*, Vec<SymExpr*>*>& useMap,
 
 
 static bool isSyncSingleMethod(FnSymbol* fn) {
-  return fn->_this && (isSyncType(fn->_this->type) || isSingleType(fn->_this->type));
+
+  bool retval = false;
+
+  if (fn->_this != NULL) {
+    Type* valType = fn->_this->getValType();
+
+    if  (isSyncType(valType)   == true ||
+         isSingleType(valType) == true) {
+      retval = true;
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
