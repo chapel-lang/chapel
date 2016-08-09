@@ -13,4 +13,4 @@ export GASNET_QUIET=Y
 # Test a GASNet compile using the fast segment
 export CHPL_GASNET_SEGMENT=fast
 
-$CWD/nightly -cron -no-futures ${nightly_args} < /dev/null
+$CWD/nightly -cron ${nightly_args} < /dev/null

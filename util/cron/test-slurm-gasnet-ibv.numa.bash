@@ -11,4 +11,4 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="slurm-gasnet-ibv.numa"
 
 export GASNET_QUIET=Y
 
-$CWD/nightly -cron -multilocale -no-futures ${nightly_args} < /dev/null
+$CWD/nightly -cron -multilocale ${nightly_args} < /dev/null

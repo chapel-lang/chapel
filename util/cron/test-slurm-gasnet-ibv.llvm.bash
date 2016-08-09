@@ -9,4 +9,4 @@ source $CWD/common-llvm.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="slurm-gasnet-ibv.llvm"
 
-$CWD/nightly -cron -no-futures -examples ${nightly_args} < /dev/null
+$CWD/nightly -cron -examples ${nightly_args} < /dev/null
