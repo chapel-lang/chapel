@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef VIEWFIELD_H
-#define VIEWFIELD_H
+#ifndef GRAPHVIEW_H
+#define GRAPHVIEW_H
 
-//class ViewField;  // So we can include chplvis.h
+//class GraphView;  // So we can include chplvis.h
 
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
@@ -67,12 +67,12 @@ struct tagInfo {
 static const double twopi = 6.28318530717958647688;
 static const double pi = 3.14159265358979323844;
 
-class ViewField : public Fl_Box {
+class GraphView : public Fl_Box {
 
   private:
 
     int numlocales;
-    int cx, cy;     // center of the ViewField
+    int cx, cy;     // center of the GraphView
     double rx, ry;  // Radius of the locales, for elliptical view
     double angle;   // Angle between locale
     double start;   // Angle of locale 0
@@ -102,7 +102,7 @@ class ViewField : public Fl_Box {
 
   public:
 
-  ViewField (int bx, int by, int bw, int bh, const char *label = 0);
+  GraphView (int bx, int by, int bw, int bh, const char *label = 0);
 
   //  Virtual methods to override
   void draw (void);
@@ -146,8 +146,6 @@ class ViewField : public Fl_Box {
 
   void showComms (void) { showcomms = true; }
   void showDsize (void) { showcomms = false; }
-
-  void showAllData (void) { printf ("showAllData called\n"); }
 
   // Window show/hide functions ...
   void hideAllCommWindows (void)

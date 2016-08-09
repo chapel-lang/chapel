@@ -42,12 +42,12 @@ CXXFLAGS=  -Wall -I. -g
 	$$($(FLTK_CONFIG) --cxx) -c $$($(FLTK_CONFIG) --cxxflags) $(CXXFLAGS) $<
 
 
-SRCS=   ViewField.cxx DataModel.cxx Event.cxx InfoBar.cxx LocaleWin.cxx \
+SRCS=   GraphView.cxx DataModel.cxx Event.cxx InfoBar.cxx LocaleWin.cxx \
         CommWin.cxx ConcurrencyWin.cxx Settings.cxx  Fl_MultiGroup.cxx \
-        GraphScroll.cxx
-HFILES= ViewField.h   DataModel.h   Event.h   InfoBar.h   LocaleWin.h \
+        ZoomScroll.cxx GridView.cxx
+HFILES= GraphView.h   DataModel.h   Event.h   InfoBar.h   LocaleWin.h \
         CommWin.h   ConcurrencyWin.h   Settings.h Fl_MultiGroup.H \
-        GraphScroll.h
+        ZoomScroll.h GridView.h
 
 GENSRCS= chplvis.cxx
 GENH= chplvis.h
@@ -81,13 +81,16 @@ install: chplvis
 	cp chplvis $(CHPL_HOME)/bin/$(CHPL_HOST_PLATFORM)
 
 # Dependencies
-chplvis.o: chplvis.h ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h Settings.h Fl_MultiGroup.H
-ViewField.o: chplvis.h ViewField.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h
+chplvis.o: chplvis.h GraphView.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h Settings.h Fl_MultiGroup.H ZoomScroll.h
+GraphView.o: chplvis.h GraphView.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h
 DataModel.o: DataModel.h Event.h StringCache.h
-InfoBar.o: InfoBar.h ViewField.h chplvis.h
+InfoBar.o: InfoBar.h GraphView.h chplvis.h
 LocaleWin.o: LocaleWin.h
 CommWin.o: CommWin.h
 ConcurrencyWin.o: ConcurrencyWin.h DataModel.h chplvis.h StringCache.h
 Event.o: Event.h
 Settings.o: Settings.h chplvis.h
 Fl_MultiGroup.o: Fl_MultiGroup.H chplvis.h
+ZoomScroll.o: ZoomScroll.h
+GridView.o: chplvis.h GridView.h DataModel.h
+

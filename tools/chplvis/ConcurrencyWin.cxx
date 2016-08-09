@@ -22,7 +22,6 @@
 
 #include "ConcurrencyWin.h"
 #include "chplvis.h"
-#include "ViewField.h"   // for heatColor
 
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>

@@ -17,23 +17,28 @@
  * limitations under the License.
  */
 
-#ifndef GRAPHSCROLL_H
-#define GRAPHSCROLL_H
+#ifndef ZOOMSCROLL_H
+#define ZOOMSCROLL_H
 
 #include <FL/Fl_Scroll.H>
 
-class GraphScroll : public Fl_Scroll {
+class ZoomScroll : public Fl_Scroll {
+
+  Fl_Widget *zoomWidget;
 
  public:
 
-  GraphScroll (int x, int y, int w, int h, const char *l = 0)
-    : Fl_Scroll::Fl_Scroll (x, y, w, h, l) {}; 
-    
+  ZoomScroll (int x, int y, int w, int h, const char *l = 0)
+    : Fl_Scroll::Fl_Scroll (x, y, w, h, l) { zoomWidget = NULL; }; 
 
+  void setZoomWidget (Fl_Widget *zw) { zoomWidget = zw; }
+    
+  Fl_Widget *getZoomWidget (void) { return zoomWidget; }
+    
   void resize (int, int, int, int);
 
-  void zoomIn(void);
-  void zoomOut(void);
+  void zoomIn(int zx = -1, int zy=-1);
+  void zoomOut(int zx = -1, int zy=-1);
   void reset(void);
 
 };

@@ -38,13 +38,16 @@ decl {\#include <FL/fl_ask.H>} {private local
 decl {\#include <FL/Fl_Color_Chooser.H>} {private local
 } 
 
-decl {\#include "Fl_MultiGroup.H"} {public global
-} 
-
 decl {\#include <unistd.h>} {public local
 } 
 
-decl {\#include "ViewField.h"} {public global
+decl {\#include "Fl_MultiGroup.H"} {public global
+} 
+
+decl {\#include "GraphView.h"} {public global
+} 
+
+decl {\#include "GridView.h"} {public global
 } 
 
 decl {\#include "DataModel.h"} {public global
@@ -62,7 +65,7 @@ decl {\#include "CommWin.h"} {public local
 decl {\#include "ConcurrencyWin.h"} {public local
 } 
 
-decl {\#include "GraphScroll.h"} {public global
+decl {\#include "ZoomScroll.h"} {public global
 } 
 
 decl {\#include "Settings.h"} {public local
@@ -81,8 +84,8 @@ exit(1);} {}
 
 Function {make_locale_window(int locnum, localeData *locInfo)} {open C
 } {
-  Fl_Window {} {open
-    xywh {0 123 180 130} type Double color 7 hide resizable
+  Fl_Window {} {
+    xywh {904 50 180 130} type Double color 7 hide resizable
     class LocaleWin size_range {180 120 0 0}
   } {
     Fl_Box Locale_Title {
@@ -101,9 +104,9 @@ w->updateWin(locInfo);} {}
 
 Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {open
 } {
-  Fl_Window {} {open
-    xywh {1095 53 180 120} type Double color 7 resizable
-    class CommWin visible
+  Fl_Window {} {
+    xywh {1095 53 180 120} type Double color 7 hide resizable
+    class CommWin
   } {
     Fl_Box Comm_Title {
       label Comm
@@ -121,8 +124,8 @@ w->updateWin(commdata);} {}
 
 Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {ConcurrencyWin *}
 } {
-  Fl_Window {} {open
-    xywh {1300 177 500 600} type Double color 7 hide resizable
+  Fl_Window {} {
+    xywh {82 110 500 600} type Double color 7 hide resizable
     class ConcurrencyWin
   } {
     Fl_Box title {
@@ -150,7 +153,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {785 45 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
+    xywh {8 147 560 600} type Double color 7 hide resizable size_range {560 590 0 0}
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55
@@ -292,7 +295,7 @@ MainWindow->redraw();}
       xywh {0 20 560 80} box BORDER_FRAME color 0
       class InfoBar
     } {}
-    Fl_Group DataControl {open selected
+    Fl_Group DataControl {open
       xywh {0 99 60 501} box BORDER_FRAME color 0
     } {
       Fl_Button {} {
@@ -300,11 +303,15 @@ MainWindow->redraw();}
         code0 {o->clear_visible_focus();}
       }
       Fl_Button {} {
-        image {Graph-2-40x40.png} xywh {10 110 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
+        callback {DataField->selectChild(0);
+DbgView->makeTagsMenu();}
+        tooltip {Graph View} image {Graph-2-40x40.png} xywh {10 110 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
         code0 {o->clear_visible_focus();}
       }
       Fl_Button {} {
-        image {Grid-40x40.png} xywh {10 160 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
+        callback {DataField->selectChild(1);
+GrdView->makeTagsMenu();}
+        tooltip {Grid View} image {Grid-40x40.png} xywh {10 160 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
         code0 {o->clear_visible_focus();}
       }
     }
@@ -317,11 +324,25 @@ MainWindow->redraw();}
       } {
         Fl_Scroll DbgScroll {open
           xywh {60 100 500 500} color 7 resizable
-          class GraphScroll
+          class ZoomScroll
         } {
-          Fl_Box DbgView {user_data_type {void*}
-            xywh {60 100 500 500} color 0 selection_color 48 resizable
-            class ViewField
+          Fl_Box DbgView {user_data_type {void*} selected
+            xywh {60 100 500 500} color 7 selection_color 48 resizable
+            code0 {DbgScroll->setZoomWidget(o);}
+            class GraphView
+          }
+        }
+      }
+      Fl_Group GridGrp {open
+        xywh {60 100 500 500} color 7
+      } {
+        Fl_Scroll GridScroll {open
+          xywh {60 100 500 500} color 7 resizable
+          class ZoomScroll
+        } {
+          Fl_Box GrdView {
+            xywh {85 125 25 25} color 7
+            class GridView
           }
         }
       }
@@ -386,6 +407,10 @@ DataField->popChild();}
     DbgView->setNumLocales(VisData.NumLocales());
     DbgView->makeTagsMenu();
     DbgView->selectData(DataModel::TagALL);
+ 
+    GrdView->setNumLocales(VisData.NumLocales());
+    GrdView->selectData(DataModel::TagALL);
+ 
     Info->setFileName(argv[1]);
     argc--;
     argv++;
@@ -396,6 +421,10 @@ DataField->popChild();}
       DbgView->setNumLocales(VisData.NumLocales());
       DbgView->makeTagsMenu();
       DbgView->selectData(DataModel::TagALL);
+
+      GrdView->setNumLocales(VisData.NumLocales());
+      DbgView->selectData(DataModel::TagALL);
+
       Info->setFileName(".Vdebug (default)");
    }
 }

@@ -19,19 +19,25 @@
 
 #include "chplvis.h"
 
-void GraphScroll::resize (int new_x, int new_y, int new_w, int new_h)
+void ZoomScroll::resize (int new_x, int new_y, int new_w, int new_h)
 {
-  int dbv_x = DbgView->x();
-  int dbv_y = DbgView->y();
-  int dbv_w = DbgView->w();
-  int dbv_h = DbgView->h();
+  // Do nothing if zoomWidget not set yet.
+  if (!zoomWidget) {
+    Fl_Scroll::resize(new_x,new_y,new_w,new_h);
+    return;
+  }
+  
+  int dbv_x = zoomWidget->x();
+  int dbv_y = zoomWidget->y();
+  int dbv_w = zoomWidget->w();
+  int dbv_h = zoomWidget->h();
   int my_x = x();
   int my_y = y();
   int my_w = w();
   int my_h = h();
 
   // Testing ....
-  //printf ("GraphScroll resize (%d,%d,%d,%d), dbg (%d,%d,%d,%d), my (%d, %d, %d,%d)\n",
+  //printf ("ZoomScroll resize (%d,%d,%d,%d), dbg (%d,%d,%d,%d), my (%d, %d, %d,%d)\n",
   // new_x, new_y, new_w, new_h, dbv_x, dbv_y, dbv_w, dbv_h, my_x, my_y, my_w, my_h);
 
   // Adjust dbv's x and y
@@ -49,35 +55,40 @@ void GraphScroll::resize (int new_x, int new_y, int new_w, int new_h)
   }
 
   if ((dbv_w-5 <= my_w) && (dbv_h-5 <= my_h))
-    DbgView->resize(new_x, new_y, new_w, new_h);
+    zoomWidget->resize(new_x, new_y, new_w, new_h);
   else if ((dbv_w-5 <= my_w) && (new_w > my_w))
-    DbgView->resize(new_x, dbv_y, new_w, dbv_h);
+    zoomWidget->resize(new_x, dbv_y, new_w, dbv_h);
   else if ((dbv_h-5 <= my_h) && (new_h > my_h))
-    DbgView->resize(dbv_x, new_y, dbv_w, new_h);
+    zoomWidget->resize(dbv_x, new_y, dbv_w, new_h);
   else
-    DbgView->resize(dbv_x, dbv_y, dbv_w, dbv_h);
+    zoomWidget->resize(dbv_x, dbv_y, dbv_w, dbv_h);
 
   Fl_Scroll::resize(new_x,new_y,new_w,new_h);
-  
 }
 
 
-void GraphScroll::zoomIn(void)
+void ZoomScroll::zoomIn(int zx, int zy)
 {
+  // Do nothing if zoomWidget not set yet.
+  if (!zoomWidget) return;
+  
   // Multiply size by 1.2, center of scroll to stay fixed.
-  DbgView->resize((12*DbgView->x() - 2*(x() + w()/2))/10,
-                  (12*DbgView->y() - 2*(y() + h()/2))/10,
-                  (DbgView->w()*12)/10,
-                  (DbgView->h()*12)/10);
+  zoomWidget->resize((12*zoomWidget->x() - 2*(x() + w()/2))/10,
+                  (12*zoomWidget->y() - 2*(y() + h()/2))/10,
+                  (zoomWidget->w()*12)/10,
+                  (zoomWidget->h()*12)/10);
   MainWindow->redraw();
 }
 
-void GraphScroll::zoomOut(void)
+void ZoomScroll::zoomOut(int zx, int zy)
 {
-  int new_w = (DbgView->w()*8)/10;
-  int new_h = (DbgView->h()*8)/10;
-  int new_x = (8*DbgView->x() + 2 * (x() + w()/2))/10;
-  int new_y = (8*DbgView->y() + 2 * (y() + h()/2))/10;
+  // Do nothing if zoomWidget not set yet.
+  if (!zoomWidget) return;
+
+  int new_w = (zoomWidget->w()*8)/10;
+  int new_h = (zoomWidget->h()*8)/10;
+  int new_x = (8*zoomWidget->x() + 2 * (x() + w()/2))/10;
+  int new_y = (8*zoomWidget->y() + 2 * (y() + h()/2))/10;
   if (new_x > x())
     new_x = x();
   if (new_y > y())
@@ -86,12 +97,15 @@ void GraphScroll::zoomOut(void)
      new_w = w();
   if (new_h < h())
     new_h = h();
-  DbgView->resize(new_x, new_y, new_w, new_h);
+  zoomWidget->resize(new_x, new_y, new_w, new_h);
   MainWindow->redraw();
 }
 
-void GraphScroll::reset(void)
+void ZoomScroll::reset(void)
 {
-  DbgView->resize(x(),y(),w(),h());
+  // Do nothing if zoomWidget not set yet.
+  if (!zoomWidget) return;
+
+  zoomWidget->resize(x(),y(),w(),h());
   MainWindow->redraw();
 }
