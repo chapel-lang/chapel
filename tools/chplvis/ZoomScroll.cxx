@@ -17,7 +17,8 @@
  * limitations under the License.
  */
 
-#include "chplvis.h"
+#include "ZoomScroll.h"
+#include "chplvis.h"     // Access to the main window for redrawing
 
 void ZoomScroll::resize (int new_x, int new_y, int new_w, int new_h)
 {

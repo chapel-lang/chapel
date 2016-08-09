@@ -26,11 +26,12 @@
 #include <FL/Fl_Menu_Button.H>
 
 #include "DataModel.h"
+#include "DataView.h"
 
 #include <string>
 #include <math.h>
 
-class GridView : public Fl_Box {
+class GridView : public DataView {
 
   // Information stored for each locale
 

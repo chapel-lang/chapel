@@ -100,7 +100,7 @@ static Fl_Menu_Item popup_Menu[] = {
 //  GraphView Constructors
 
 GraphView::GraphView (int bx, int by, int bw, int bh, const char *label)
-  : Fl_Box (bx, by, bw, bh, 0) 
+  : DataView (bx, by, bw, bh, 0) 
 {
   // printf ("GraphView init. h=%d, w=%d, numlocales is %d\n",bh,bw, VisData.NumLocales());
   numlocales = 0;
@@ -470,7 +470,7 @@ void GraphView::draw()
     }
   }
 
-  Fl_Box::draw();
+  DataView::draw();
 
   // Draw comm lines first so they go under locales
   
@@ -694,7 +694,7 @@ int GraphView::handle(int event)
     
     break;
   }
-  return Fl_Box::handle(event);
+  return DataView::handle(event);
 }
 
 void GraphView::redrawAllWindows(void)

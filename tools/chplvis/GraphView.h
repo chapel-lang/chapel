@@ -30,6 +30,7 @@
 #include "ConcurrencyWin.h"
 
 #include "DataModel.h"
+#include "DataView.h"
 
 #include <string>
 
@@ -67,7 +68,7 @@ struct tagInfo {
 static const double twopi = 6.28318530717958647688;
 static const double pi = 3.14159265358979323844;
 
-class GraphView : public Fl_Box {
+class GraphView : public DataView {
 
   private:
 

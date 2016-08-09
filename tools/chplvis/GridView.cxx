@@ -99,7 +99,7 @@ static Fl_Menu_Item popup_Menu[] = {
 //  GridView Constructors
 
 GridView::GridView (int bx, int by, int bw, int bh, const char *label)
-  : Fl_Box (bx, by, bw, bh, 0) 
+  : DataView (bx, by, bw, bh, 0) 
 {
   // printf ("GridView init. h=%d, w=%d, numlocales is %d\n",bh,bw, VisData.NumLocales());
   numlocales = 0;
@@ -355,7 +355,7 @@ void GridView::draw()
     }
   }
 
-  Fl_Box::draw();
+  DataView::draw();
 
   // Draw locales next
   
@@ -467,7 +467,7 @@ int GridView::handle(int event)
     break;
 #endif    
   }
-  return Fl_Box::handle(event);
+  return DataView::handle(event);
 }
 
 void GridView::redrawAllWindows(void)

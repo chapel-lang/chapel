@@ -81,16 +81,16 @@ install: chplvis
 	cp chplvis $(CHPL_HOME)/bin/$(CHPL_HOST_PLATFORM)
 
 # Dependencies
-chplvis.o: chplvis.h GraphView.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h Settings.h Fl_MultiGroup.H ZoomScroll.h
-GraphView.o: chplvis.h GraphView.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h
+chplvis.o: chplvis.h GraphView.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h Settings.h Fl_MultiGroup.H ZoomScroll.h DataView.h 
+GraphView.o: chplvis.h GraphView.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h DataView.h DataView.h
 DataModel.o: DataModel.h Event.h StringCache.h
 InfoBar.o: InfoBar.h GraphView.h chplvis.h
 LocaleWin.o: LocaleWin.h GraphView.h
 CommWin.o: CommWin.h GraphView.h
-ConcurrencyWin.o: ConcurrencyWin.h DataModel.h chplvis.h StringCache.h
+ConcurrencyWin.o:chplvis.h GraphView.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h DataView.h DataView.h
 Event.o: Event.h
-Settings.o: Settings.h chplvis.h
-Fl_MultiGroup.o: Fl_MultiGroup.H chplvis.h
+Settings.o: chplvis.h GraphView.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h DataView.h DataView.h
+Fl_MultiGroup.o: chplvis.h GraphView.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h DataView.h DataView.h
 ZoomScroll.o: ZoomScroll.h
-GridView.o: chplvis.h GridView.h DataModel.h
+GridView.o: chplvis.h GridView.h DataModel.h DataView.h
 
