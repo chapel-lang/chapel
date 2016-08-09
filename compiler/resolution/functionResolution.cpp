@@ -7958,11 +7958,6 @@ static void resolveReturnType(FnSymbol* fn)
 
   if (retType == dtUnknown) {
 
-//    if( 0 == strcmp(fn->name, "bar") )
-//      gdbShouldBreakHere();
-    if( 0 == strcmp(fn->name, "foo") )
-      gdbShouldBreakHere();
-
     Vec<Type*> retTypes;
     Vec<Symbol*> retParams;
     computeReturnTypeParamVectors(fn, ret, retTypes, retParams);
