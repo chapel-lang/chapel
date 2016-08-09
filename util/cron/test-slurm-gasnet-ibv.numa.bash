@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Test numa locale model with comm=gasnet on multilocale and examples.
+# Multi-node, multi-locale testing on a linux64 cluster with slurm-gasnetrun_ibv launcher:
+# test numa locale model with comm=gasnet on multilocale and examples.
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-slurm-gasnet-ibv.bash

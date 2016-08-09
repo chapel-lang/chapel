@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Test gasnet (segment everything) against full suite on linux64.
+# Multi-node, multi-locale testing on a linux64 cluster with slurm-gasnetrun_ibv launcher:
+# test gasnet (segment everything) against full suite.
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-slurm-gasnet-ibv.bash
