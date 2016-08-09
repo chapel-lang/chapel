@@ -20,7 +20,7 @@
 #include <stdio.h>
 
 #include "LocaleWin.h"
-#include "ViewField.h"
+#include "GraphView.h"
 
 LocaleWin::LocaleWin (int x, int y, int W, int H, const char *l)
   :  Fl_Double_Window (W, H, l)

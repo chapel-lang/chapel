@@ -20,7 +20,7 @@
 #include <stdio.h>
 
 #include "CommWin.h"
-#include "ViewField.h"
+#include "GraphView.h"
 
 CommWin::CommWin (int x, int y, int W, int H, const char *l)
   :  Fl_Double_Window (W, H, l)

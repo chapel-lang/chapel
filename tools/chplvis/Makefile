@@ -85,8 +85,8 @@ chplvis.o: chplvis.h GraphView.h DataModel.h Event.h InfoBar.h LocaleWin.h CommW
 GraphView.o: chplvis.h GraphView.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h
 DataModel.o: DataModel.h Event.h StringCache.h
 InfoBar.o: InfoBar.h GraphView.h chplvis.h
-LocaleWin.o: LocaleWin.h
-CommWin.o: CommWin.h
+LocaleWin.o: LocaleWin.h GraphView.h
+CommWin.o: CommWin.h GraphView.h
 ConcurrencyWin.o: ConcurrencyWin.h DataModel.h chplvis.h StringCache.h
 Event.o: Event.h
 Settings.o: Settings.h chplvis.h
