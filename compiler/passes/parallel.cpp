@@ -196,7 +196,8 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
       var->hasFlag(FLAG_COFORALL_INDEX_VAR))
   {
     if ((isRecord(baseType) && fn->hasFlag(FLAG_BEGIN)) ||
-             isString(baseType))
+         isString(baseType) ||
+         (isRecord(baseType) && var->hasFlag(FLAG_COFORALL_INDEX_VAR)))
     {
       // Do this only if the record is passed by value.
       if (arg->typeInfo() == baseType)
