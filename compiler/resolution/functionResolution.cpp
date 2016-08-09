@@ -578,6 +578,7 @@ resolveAutoCopyEtc(Type* type) {
     CallExpr* call = new CallExpr("chpl__autoCopy", tmp);
     FnSymbol* fn = resolveUninsertedCall(type, call);
     resolveFns(fn);
+    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
     autoCopyMap.put(type, fn);
     tmp->defPoint->remove();
   }
@@ -594,6 +595,7 @@ resolveAutoCopyEtc(Type* type) {
     // I added it with a pragma in the modules.
     fn->addFlag(FLAG_AUTO_DESTROY_FN);
     resolveFns(fn);
+    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
     autoDestroyMap.put(type, fn);
     tmp->defPoint->remove();
   }
@@ -606,6 +608,7 @@ resolveAutoCopyEtc(Type* type) {
     CallExpr* call = new CallExpr("chpl__unalias", tmp);
     FnSymbol* fn = resolveUninsertedCall(type, call);
     resolveFns(fn);
+    INT_ASSERT(!fn->hasFlag(FLAG_PROMOTION_WRAPPER));
     unaliasMap.put(type, fn);
     tmp->defPoint->remove();
   }
