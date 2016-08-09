@@ -1195,10 +1195,28 @@ resolveFormals(FnSymbol* fn) {
         // Pass domains, arrays into iterators by ref.
         // This is a temporary workaround for issues with
         // iterator lowering.
+        // It is temporary because we expect more of the
+        // compiler to handle 'refness' of an ArgSymbol
+        // in the future.
+        makeRefType(formal->type);
+        formal->type = formal->type->refType;
+      }
+      if (isRecordWrappedType(formal->type) &&
+          (fn->hasFlag(FLAG_BEGIN) ||
+           fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
+           fn->hasFlag(FLAG_ON))) {
+        // Pass domains, arrays into task/on fns by ref.
+        // This is a temporary workaround that should
+        // probably be extended to all records that
+        // have blank-intent-is-const-ref.
+        // It is temporary because we expect more of the
+        // compiler to handle 'refness' of an ArgSymbol
+        // in the future.
         makeRefType(formal->type);
         formal->type = formal->type->refType;
       }
 
+      // Adjust tuples for intent.
       if (formal->type->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
           !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
           !doNotChangeTupleTypeRefLevel(fn, false)) {
