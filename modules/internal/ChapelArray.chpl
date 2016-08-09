@@ -156,6 +156,65 @@ module ChapelArray {
   pragma "no doc"
   config param debugArrayAsVec = false;
 
+  //
+  // When this flag is used during compilation, calls to chpl__testPar
+  // will output a message to indicate that a portion of the code has been
+  // parallelized.
+  //
+  // (chpl__testParFlag and related code is here to avoid order
+  //  of resolution issues.)
+
+  pragma "no doc"
+  config param chpl__testParFlag = false;
+  pragma "no doc"
+  var chpl__testParOn = false;
+
+  pragma "no doc"
+  proc chpl__testParStart() {
+    chpl__testParOn = true;
+  }
+
+  pragma "no doc"
+  proc chpl__testParStop() {
+    chpl__testParOn = false;
+  }
+
+  pragma "no doc"
+  proc chpl__testPar(args...) {
+    if chpl__testParFlag && chpl__testParOn {
+      // This function is written this way because it is called
+      // from DefaultRectangular. This way of writing it works
+      // around resolution ordering issues (such as stdout not
+      // yet defined).
+      const file_cs : c_string = __primitive("chpl_lookupFilename",
+                                        __primitive("_get_user_file"));
+      const file = file_cs:string;
+      const line = __primitive("_get_user_line");
+      var str = "";
+      for param i in 1..args.size {
+        var tmp = args(i);
+        if isNumeric(tmp.type) {
+          str += tmp:string;
+        } else if isRange(tmp.type) {
+          str += tmp.lo:string;
+          str += "..";
+          str += tmp.hi:string;
+        } else if isTuple(tmp.type) {
+          str += _stringify_index(tmp);
+        } else if isString(tmp.type) {
+          str += tmp;
+        } else {
+          str += "?";
+        }
+      }
+
+      extern proc printf(fmt:c_string, f:c_string, ln:c_int, s:c_string);
+      printf("CHPL TEST PAR (%s:%i): %s\n", file_cs, line:c_int, str.c_str());
+
+
+    }
+  }
+
   pragma "privatized class"
   proc _isPrivatized(value) param
     return !_local && ((_privatization && value.dsiSupportsPrivatization()) || value.dsiRequiresPrivatization());
