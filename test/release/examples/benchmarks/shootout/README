@@ -199,6 +199,13 @@ o explore expressing the complex values using Chapel's 'complex' type,
   overheads associated with using cleaner complex operations.
 
 
+meteor.chpl
+-----------
+o once we have a .size query on enums, we should replace uses of PIVOT
+  with this
+
+o would using 1-based arrays rather than 0-based clean anything up?
+
 nbody.chpl
 ----------
 o explore possibility of enabling vectorization (perhaps by applying

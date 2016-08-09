@@ -2,25 +2,26 @@
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Kyle Brady, Lydia Duncan
-   based upon the C implementation by Christian Vosteen (including some
-   comments)
+   derived from the C implementation by Christian Vosteen
  */
 
 module meteor {
   /* The board is a 50 cell hexagonal pattern.  For    . . . . .
-     maximum speed the board will be implemented as     . . . . .
-     50 bits, which will fit into a 64 bit int.        . . . . .
+     maximum speed the board will be implemented        . . . . .
+     using 50 bits of a 64 bit int.                    . . . . .
                                                         . . . . .
                                                        . . . . .
-     Represent 0's as empty cells and 1's as full       . . . . .
-     cells.                                            . . . . .
+     Represent empty cells as 0's and full cells        . . . . .
+     as 1's.                                           . . . . .
                                                         . . . . .
                                                        . . . . .
                                                         . . . . .
    */
 
-  /* The puzzle pieces must be specified by the path followed from one end to
-     the other along 12 hexagonal directions.
+  param boardCells = 50,
+        numPieces = 10;
+
+  /* The 10 puzzle pieces are as follows:
 
        Piece 0   Piece 1   Piece 2   Piece 3   Piece 4
 
@@ -34,10 +35,13 @@ module meteor {
            O O       O O       O       O O O        O
                       O       O O
 
-     This was done in 12 directions because it was desirable for all the piece
-     definitions to fit into the same size arrays.  It is not possible to define
-     piece 4 in terms of the 6 cardinal directions in 4 moves.
+     The pieces are represented as the path followed from one end to
+     the other along 12 hexagonal directions.  12 directions are used
+     rather than 6 in order to fit all the piece definitions into
+     4-element arrays.  For example, it is not possible to define
+     piece #4 in terms of the 6 cardinal directions using 4 moves.
    */
+
   enum direction {
     E=0,
     ESE,
@@ -53,37 +57,34 @@ module meteor {
     ENE,
     PIVOT
   }
-
-  const numPieces = 10,
-        boardCells = 50;
-  
-  var pieceDef: [0..#numPieces][0..3] direction = [
-    [  E,  E,   E, SE],
-    [ SE,  E,  NE,  E],
-    [  E,  E,  SE, SW],
-    [  E,  E,  SW, SE],
-    [ SE,  E,  NE,  S],
-    [  E,  E,  SW,  E],
-    [  E, SE,  SE, NE],
-    [  E, SE,  SE,  W],
-    [  E, SE,   E,  E],
-    [  E,  E,   E, SW]
-  ];
-
   use direction;  // make direction's symbols directly available to this scope
 
-  /* To minimize the amount of work done in the recursive solve function below,
-     allocate enough space for all legal rotations of each piece at each
-     position on the board. That's 10 pieces x 50 board positions x 12
-     rotations.  However, not all 12 rotations will fit on every cell, so keep
-     count of the actual number that do.  Record the next possible open cell for
-     each piece and location to reduce the burden on the solve function.
-   */
-  var pieces, nextCell: [0..#numPieces][0..#boardCells][0..11] int;
-  var pieceCounts: [0..#numPieces][0..#boardCells] int;
+  var pieceDef: [0..#numPieces] [0..3] direction
+              = [[ E,  E,  E, SE],
+                 [SE,  E, NE,  E],
+                 [ E,  E, SE, SW],
+                 [ E,  E, SW, SE],
+                 [SE,  E, NE,  S],
+                 [ E,  E, SW,  E],
+                 [ E, SE, SE, NE],
+                 [ E, SE, SE,  W],
+                 [ E, SE,  E,  E],
+                 [ E,  E,  E, SW]];
 
-  var solutionCount: atomic int;
-  var maxSolutions = 2100;
+
+  /* To minimize the amount of work done in the recursive solve
+     function below, allocate enough space for all legal rotations of
+     each piece at each position on the board. That's 10 pieces x 50
+     board positions x 12 rotations.  However, not all 12 rotations
+     will fit on every cell, so keep a count of the actual number that
+     do.  Record the next possible open cell for each piece and
+     location to reduce the burden on the solve function.
+   */
+  var pieces, nextCell: [0..#numPieces] [0..#boardCells] [0..11] int,
+      pieceCounts:      [0..#numPieces] [0..#boardCells] int;
+
+  var solutionCount: atomic int,
+      maxSolutions = 2100;
 
   proc main(args: [] string) {
     if args.size > 1 then
@@ -95,9 +96,10 @@ module meteor {
     printLargestSmallest();
   }
 
-  var cells: [0..#numPieces][0..4] int;
   /* Calculate every legal rotation for each piece at each board location. */
   proc calcPieces() {
+    var cells: [0..#numPieces] [0..4] int;
+    
     forall piece in 0..#numPieces {
       for indx in 0..#boardCells {
         calcSixRotations(piece, indx, cells[piece]);
@@ -329,7 +331,7 @@ module meteor {
    */
   const ROWMASK = 0x1F;
   const TRIPLEMASK = 0x7FFF;
-  var badEvenRows, badOddRows: [0..31][0..31] bool;
+  var badEvenRows, badOddRows: [0..31] [0..31] bool;
   var badEvenTriple, badOddTriple: [0..32767] bool;
 
   proc calcRows() {
@@ -430,7 +432,7 @@ module meteor {
      each successful piece placement.  This data is used to create a 50 char
      array if a solution is found.
    */
-  var solutions: [0..#maxSolutions][0..#boardCells] int;
+  var solutions: [0..#maxSolutions] [0..#boardCells] int;
 
   proc solve() {
     forall piece in 0..#numPieces do
