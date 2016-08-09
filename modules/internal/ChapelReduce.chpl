@@ -66,7 +66,7 @@ module ChapelReduce {
     }
 
     proc ~ReduceScanOp() {
-      delete lock$;
+
     }
   }
   

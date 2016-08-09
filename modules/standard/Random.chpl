@@ -582,18 +582,9 @@ module Random {
         PCGRandomStreamPrivate_count = 1;
       }
 
-      //
-      // NOAKES: 2016/04/21
-      //
-      // syncs are currently implemented as bare classes and so require a delete to be reclaimed
-      //
-      // We do not want to update application code but have agreed to update the randomStream
-      // classes to reduce leak noise until the implementation can be revised
-      //
-
       pragma "no doc"
       proc ~RandomStream() {
-        delete PCGRandomStreamPrivate_lock$;
+
       }
 
       pragma "no doc"
@@ -2066,17 +2057,9 @@ module Random {
         }
       }
 
-      //
-      // NOAKES: 2016/04/21
-      //
-      // syncs are currently implemented as bare classes and so require a delete to be reclaimed
-      //
-      // We do not want to update application code but have agreed to update the randomStream
-      // classes to reduce leak noise until the implementation can be revised
-      //
       pragma "no doc"
       proc ~NPBRandomStream() {
-        delete NPBRandomStreamPrivate_lock$;
+
       }
 
       pragma "no doc"
