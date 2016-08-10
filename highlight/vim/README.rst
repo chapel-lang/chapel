@@ -39,8 +39,9 @@ For users of the `vim-plug`_ plugin manager, the vim Chapel support can be
 loaded as an unmanaged plugin. To do this, add the following line to the
 ``.vimrc``, between the ``call plug#begin()`` and ``call plug#end()`` lines:
 
+.. code-block:: vim
 
-    ``Plug '~/path/to/chapel/highlight/vim'``
+    Plug '~/path/to/chapel/highlight/vim'
 
 Where ``~/path/to/chapel`` is the path to the Chapel repository, starting from
 the home directory. Chapel support should work once these changes are made
@@ -61,7 +62,9 @@ For users of the `Vundle`_ plugin manager, the vim Chapel support can be loaded
 as a local file. To do this, add the following line to the ``.vimrc``, between
 the ``call vundle#begin()`` and ``call vundle#end()`` lines:
 
-    ``Plugin 'file:///path/to/chapel/highlight/vim'``
+.. code-block:: vim
+
+   Plugin 'file:///path/to/chapel/highlight/vim'
 
 .. _Vundle: https://github.com/VundleVim/Vundle.vim
 
@@ -97,14 +100,12 @@ manually whenever you start a vim session (with the ":") or they can also be
 given automatically every time vim is started by putting them in your .vimrc
 file (without the ":").
 
-- Enable automatic filetype detection:
 
-  ``: filetype on``
+.. code-block:: vim
 
-- Enable syntax highlighting scheme:
-
-  ``: syntax on``
-
-- Enable indenting scheme:
-
-  ``: filetype indent on``
+   " Enable automatic filetype detection
+   :filetype on
+   " Enable syntax highlighting scheme:
+   :syntax on
+   " Enable indenting scheme:
+   :filetype indent on
