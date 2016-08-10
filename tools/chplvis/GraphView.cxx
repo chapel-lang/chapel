@@ -323,26 +323,6 @@ void GraphView::draw()
       drawLocale(ix, heatColor(curTagData->locales[ix].maxConc, curTagData->maxConc));
     }
   }
-
-  // Set up the info widget correctly
-  if (showcomms)
-    Info->showComms();
-  else 
-    Info->showSize();
-  switch (infoTop) {
-    case show_Tasks:
-      Info->showTasks();
-      break;
-    case show_CPU:
-      Info->showCpu();
-      break;
-    case show_Clock:
-      Info->showClock();
-      break;
-    case show_Concurrency:
-      Info->showConcurrency();
-      break;
-  }
     
   Info->draw();
 }

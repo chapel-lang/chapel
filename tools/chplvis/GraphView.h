@@ -24,7 +24,6 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
-#include <FL/Fl_Menu_Button.H>
 #include "LocaleWin.h"
 #include "CommWin.h"
 #include "ConcurrencyWin.h"
