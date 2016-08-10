@@ -5849,7 +5849,7 @@ GenRet CallExpr::codegenPrimMove() {
         gGenInfo->cStatements.push_back(stmt);
       } else {
 #ifdef HAVE_LLVM
-        codegenStoreLLVM(*specRet, get(1));
+        codegenStoreLLVM(specRet, get(1));
 #endif
       }
     }
