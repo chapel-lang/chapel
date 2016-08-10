@@ -68,14 +68,6 @@ class DataView : public Fl_Box {
 
   virtual int  getNumLocales (void) { return numlocales; }
   
-  // What to show!
-  virtual void showTasks (void) = 0;
-  virtual void showCpu (void) = 0;
-  virtual void showClock (void) = 0;
-  virtual void showConcurrency (void) = 0;
-  virtual void showComms (void) = 0;
-  virtual void showDsize (void) = 0;
-
 };
 
 #endif

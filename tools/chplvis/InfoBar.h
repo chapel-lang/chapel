@@ -31,6 +31,8 @@
 
 Fl_Color heatColor(double val, double max);
 
+enum showWhat { show_Tasks, show_CPU, show_Clock, show_Concurrency };
+
 class InfoBar : public Fl_Group {
 
  private:
@@ -40,7 +42,7 @@ class InfoBar : public Fl_Group {
   double maxCpu;
   double maxClock;
   long maxConcurrent;
-  enum showWhat { show_Tasks, show_CPU, show_Clock, show_Concurrent} infoTop;
+  showWhat infoTop;
   bool showcomms;
 
   char *fileName;
@@ -84,12 +86,14 @@ class InfoBar : public Fl_Group {
   void showTasks() { infoTop = show_Tasks; }
   void showCpu() { infoTop = show_CPU; }
   void showClock() { infoTop = show_Clock; }
-  void showConcurrency() { infoTop = show_Concurrent; }
+  void showConcurrency() { infoTop = show_Concurrency; }
   void showComms() { showcomms = true; }
   void showSize() { showcomms = false; }
 
-};
+  showWhat dataToShow() { return infoTop; }
+  bool commToShow() { return showcomms; }
 
+};
 
 #endif
 

@@ -26,93 +26,21 @@
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 #include <FL/Fl_Menu_Item.H>
-#include <sstream>
 
-// Menu Callbacks
-
-static void cb_ZoomIn(Fl_Menu_*, void*) {
-  GridScroll->zoomIn();
-}
-
-static void cb_ZoomOut(Fl_Menu_*, void*) {
-  GridScroll->zoomOut();
-}
-
-static void cb_Reset(Fl_Menu_*, void*) {
-  GridScroll->reset();
-}
-
-static void cb_ShowTasks(Fl_Menu_*, void*) {
-  GrdView->showTasks();
-  MainWindow->redraw();
-}
-
-static void cb_ShowCpu(Fl_Menu_*, void*) {
-  GrdView->showCpu();
-  MainWindow->redraw();
-}
-
-static void cb_ShowClock(Fl_Menu_*, void*) {
-  GrdView->showClock();
-  MainWindow->redraw();
-}
-
-static void cb_ShowConc(Fl_Menu_*, void*) {
-  GrdView->showConcurrency();
-  MainWindow->redraw();
-}
-
-static void cb_ShowComm(Fl_Menu_*, void*) {
-  GrdView->showComms();
-  MainWindow->redraw();
-}
-
-static void cb_ShowDsize(Fl_Menu_*, void*) {
-  GrdView->showDsize();
-  MainWindow->redraw();
-}
-
-
-static Fl_Menu_Item popup_Menu[] = {
- {"View", 0,  0, 0, 64, FL_NORMAL_LABEL, 0, 14, 0},
- {"Zoom In", 0,  (Fl_Callback*)cb_ZoomIn, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {"Zoom Out", 0,  (Fl_Callback*)cb_ZoomOut, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {"Reset Zoom", 0,  (Fl_Callback*)cb_Reset, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {0,0,0,0,0,0,0,0,0},
- {"Data", 0,  0, 0, 64, FL_NORMAL_LABEL, 0, 14, 0},
- {"Locales", 0,  0, 0, 129, FL_ENGRAVED_LABEL, 0, 14, 0},
- {"Show Tasks", 0,  (Fl_Callback*)cb_ShowTasks, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {"Show CPU", 0,  (Fl_Callback*)cb_ShowCpu, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {"Show Clock", 0,  (Fl_Callback*)cb_ShowClock, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {"Show Concurrency", 0,  (Fl_Callback*)cb_ShowConc, 0, 128, FL_NORMAL_LABEL, 0, 14, 0},
- {"Communication", 0,  0, 0, 129, FL_ENGRAVED_LABEL, 0, 14, 0},
- {"Show Count", 0,  (Fl_Callback*)cb_ShowComm, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {"Show Size", 0,  (Fl_Callback*)cb_ShowDsize, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {0,0,0,0,0,0,0,0,0},
- {0,0,0,0,0,0,0,0,0}
-};
-
-
-#define SSTR( x ) dynamic_cast< std::ostringstream & >( \
-                    ( std::ostringstream() << std::dec << x ) ).str()
 
 //  GridView Constructors
 
 GridView::GridView (int bx, int by, int bw, int bh, const char *label)
   : DataView (bx, by, bw, bh, 0) 
 {
-  // printf ("GridView init. h=%d, w=%d, numlocales is %d\n",bh,bw, VisData.NumLocales());
+   printf ("GridView init. h=%d, w=%d, numlocales is %d\n",bh,bw, VisData.NumLocales());
   numlocales = 0;
   theLocales = NULL;
+  comms = NULL;
   curTagData = NULL;
-  tagMenu = -1;
-  tagPopup = -1;
-  popup = NULL;  
-  useUTags = false;
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
   }
-  infoTop = show_Tasks;
 };
 
 // Private methods 
@@ -120,26 +48,55 @@ GridView::GridView (int bx, int by, int bw, int bh, const char *label)
 void GridView::allocArrays()
 {
   int ix;
+  int ix2;
 
-  printf ("allocArrays\n");
+  //printf ("allocArrays\n");
   // Dealloc anything current
   if (theLocales != NULL) {
     for (ix = 0; ix < getSize; ix++) {
+      if (theLocales[ix].win != NULL) {
+        delete theLocales[ix].win;
+        //printf ("deleting win for %d\n", ix);
+      }
+      if (theLocales[ix].ccwin != NULL) 
+        delete theLocales[ix].ccwin;
       if (theLocales[ix].b != NULL) 
         delete theLocales[ix].b;
     }
     delete [] theLocales;
   }
+  if (comms != NULL) {
+    for (ix = 0; ix < getSize; ix++)  { 
+      for (ix2 = 0; ix2 < getSize; ix2++) 
+        if (comms[ix][ix2].win != NULL)
+          delete comms[ix][ix2].win;
+      delete [] comms[ix];
+    }
+    delete [] comms;
+  }
   
   // Alloc new space
   theLocales = new localeInfo [numlocales];
-  if (theLocales == NULL) {
+  comms = new  struct commInfo* [numlocales];
+  if (theLocales == NULL || comms == NULL) {
     fprintf (stderr, "chplvis: out of memory.\n");
     exit(1);
   }
   getSize = numlocales;
+  for (ix = 0; ix < getSize; ix++) {
+    comms[ix] = new struct commInfo[numlocales];
+    if (comms[ix] == NULL) {
+      fprintf (stderr, "chplvis: out of memory.\n");
+      exit(1);
+    }
+    for (ix2 = 0; ix2 < numlocales; ix2++) {
+      comms[ix][ix2].win = NULL;
+    }
+  }
 
   for (ix = 0; ix < numlocales; ix++) {
+    theLocales[ix].win = NULL;
+    theLocales[ix].ccwin = NULL;
     theLocales[ix].b = NULL;
   }
 }
@@ -154,9 +111,26 @@ void GridView::allocArrays()
 
 void GridView::selectData(int tagNum)
 {
+  int ix1, ix2;  // For processing the arrays
+
+  // if (tagNum < TagALL || tagNum >= numTags) error of some kind
+
+  // Close all the windows
+  for (ix1 = 0; ix1 < numlocales; ix1++) {
+    if (theLocales[ix1].win != NULL) {
+      theLocales[ix1].win->hide();
+    }
+    if (theLocales[ix1].ccwin != NULL) {
+      theLocales[ix1].ccwin->hide();
+    }
+    for (ix2 = 0; ix2 < numlocales; ix2++)  {
+      if (comms[ix1][ix2].win != NULL) 
+        comms[ix1][ix2].win->hide();
+    }
+  }
 
   // Select data to use
-  if (useUTags)
+  if (Menus.usingUTags())
     curTagData = VisData.getUTagData(tagNum);
   else
     curTagData = VisData.getTagData(tagNum);
@@ -168,118 +142,6 @@ void GridView::selectData(int tagNum)
 
  }
 
-static void selTag(Fl_Widget *w, void *p)
-{
-  long ix = (long) p;
-  
-  if (ix == DataModel::TagALL) {
-    // printf ("selTag called on All\n");
-    Info->setTagName("All");
-    GrdView->selectData(ix);
-  } else if (ix == DataModel::TagStart) {
-    // printf ("selTag called on Start\n");
-    Info->setTagName("Start");
-    GrdView->selectData(ix);
-  } else {
-    // printf ("selTag called on tag %d \"%s\"\n", ptr->tagNo, ptr->tagName);
-    if (GrdView->usingUTags())
-      Info->setTagName(VisData.getUTagData(ix)->name);
-    else
-      if (VisData.hasUniqueTags())
-        Info->setTagName(VisData.getTagData(ix)->name);
-      else {
-        char tmp[2048];
-        snprintf (tmp, sizeof(tmp), "%ld (%s)", ix, VisData.getTagData(ix)->name);
-        Info->setTagName(tmp);
-      }
-    GrdView->selectData(ix);
-  }
-  MainWindow->redraw();
-}
-
-static void toggleUnique (Fl_Widget *w, void *p) {
-  GrdView->toggleUTags();
-  GrdView->makeTagsMenu();
-  selTag((Fl_Widget *)NULL, (void *)DataModel::TagALL);
-}
-
-void GridView::makeTagsMenu(void)
-{
-  // Remove the old one if it exists
-  if (tagMenu > 0) {
-    MainMenuBar->remove(tagMenu);
-    tagMenu = -1;
-  }
-  if (!popup) {
-    popup = new Fl_Menu_Button (GraphGrp->x(), GraphGrp->y(),
-                                GraphGrp->w(), GraphGrp->h());
-    popup->type(Fl_Menu_Button::POPUP3);
-    popup->box(FL_NO_BOX);
-    popup->menu(popup_Menu);
-    GraphGrp->add(popup);
-  }
-  if (tagPopup > 0) {
-    popup->remove(tagPopup);
-    tagPopup = -1;
-  }
-  if (VisData.NumTags() >= 1) {
-
-    // printf("Make tags menu, %d tags\n", VisData.NumTags());
-
-    // Build the menu
-
-    tagMenu = MainMenuBar->add("Tags", 0, 0, 0, FL_SUBMENU);
-    if (tagMenu < 1) {
-      printf ("Menu problem!\n");
-      return;
-    }
-
-    tagMenu = popup->add("Tags", 0, 0, 0, FL_SUBMENU);
-    if (tagMenu < 1) {
-      printf ("Popup menu problem!\n");
-      return;
-    }
-
-    if (!VisData.hasUniqueTags()) {
-      if (useUTags) {
-        MainMenuBar->add("Tags/Show All Tags", 0, toggleUnique, (void *)0);
-        popup->add("Tags/Show All Tags", 0, toggleUnique, (void *)0);
-      }
-      else {
-        MainMenuBar->add("Tags/Merge Tags", 0, toggleUnique, (void *)0);
-        popup->add("Tags/Merge Tags", 0, toggleUnique, (void *)0);
-      }
-    }
-    MainMenuBar->add("Tags/All", 0, selTag, (void *)DataModel::TagALL);
-    popup->add("Tags/All", 0, selTag, (void *)DataModel::TagALL);
-    MainMenuBar->add("Tags/Start", 0, selTag, (void *)DataModel::TagStart);
-    popup->add("Tags/Start", 0, selTag, (void *)DataModel::TagStart);
-
-    long ix;
-    long numTags;
-    if (useUTags)
-      numTags = VisData.NumUTags();
-    else
-      numTags = VisData.NumTags();
-    // printf ("make menu: numTags = %ld\n", numTags);
-    for (ix = 0; ix < numTags; ix++) {
-      const char *tagName;
-      std::string menuName;
-      if (useUTags)
-        tagName = VisData.getUTagData(ix)->name;
-      else
-        tagName = VisData.getTagData(ix)->name;
-      if (VisData.hasUniqueTags() || useUTags)
-        menuName = "Tags/" + std::string(tagName);
-      else
-        menuName = "Tags/tag " + SSTR(ix) + " (" + tagName + ")";
-      MainMenuBar->add(menuName.c_str(), 0, selTag, (void *)ix, 0);
-      popup->add(menuName.c_str(), 0, selTag, (void *)ix, 0);
-    }
-    MainMenuBar->redraw();
-  }
-}
-
 void GridView::setTooltip ( int ix, bool isInt, int ival, double fval)
 {
     char tmpchars[100];
@@ -287,8 +149,8 @@ void GridView::setTooltip ( int ix, bool isInt, int ival, double fval)
       localeInfo *loc = &theLocales[ix];
 
       // Sets up an invisible box under each locale that responds to tooltip requests!
-      loc->x = x() + (ix % ncols)*40;
-      loc->y = y() + (ix / nrows)*40;
+      loc->x = cx + (int) rint(rx * sin (angle * ix - start));
+      loc->y = cy - (int) rint(ry * cos (angle * ix - start));
       loc->w = 30;
       loc->h = 30;
 
@@ -302,45 +164,103 @@ void GridView::setTooltip ( int ix, bool isInt, int ival, double fval)
         loc->b->size(loc->w,loc->h);
       }
       if (isInt)
-        snprintf (tmpchars, sizeof(tmpchars), "%d->%d", ix, ival);
+        snprintf (tmpchars, sizeof(tmpchars), "%d", ival);
       else
-        snprintf (tmpchars, sizeof(tmpchars), "%d->%lf", ix, fval);
+        snprintf (tmpchars, sizeof(tmpchars), "%lf", fval);
       loc->b->copy_tooltip(tmpchars);
     }
 }
 
+
 void GridView::drawLocale ( int ix, Fl_Color col)
 {
-  // printf ("drawLocale %d\n", ix);
-  char ixchars[10];
-  if (theLocales != NULL) {
-    localeInfo *loc = &theLocales[ix];
-    
-    // Draw a locale ...
-    loc->x = x() + (ix % ncols)*40;
-    loc->y = y() + (ix / nrows)*40;
-    snprintf (ixchars, 10, "%d", ix);
-    loc->w = 30;
-    loc->h = 30;
-    
-    fl_color(col);
-    fl_rectf(loc->x-loc->w/2, loc->y-loc->h/2, loc->w, loc->h);
-    fl_color(FL_BLACK);
-    fl_rect(loc->x-loc->w/2, loc->y-loc->h/2, loc->w, loc->h);
-    fl_draw(ixchars, loc->x+3-loc->w/2, loc->y+3-loc->h/2,
-            loc->w-6, loc->h-6, FL_ALIGN_CENTER, NULL, 0);
+  //printf ("drawLocale %d\n", ix);
+    char ixchars[10];
+    if (theLocales != NULL) {
+      localeInfo *loc = &theLocales[ix];
+
+      // Draw a locale ...
+      loc->x = cx + (int) rint(rx * sin (angle * ix - start));
+      loc->y = cy - (int) rint(ry * cos (angle * ix - start));
+      snprintf (ixchars, 10, "%d", ix);
+      loc->w = 30;
+      loc->h = 30;
+
+      fl_color(col);
+      fl_rectf(loc->x-loc->w/2, loc->y-loc->h/2, loc->w, loc->h);
+      fl_color(FL_BLACK);
+      fl_rect(loc->x-loc->w/2, loc->y-loc->h/2, loc->w, loc->h);
+      fl_draw(ixchars, loc->x+3-loc->w/2, loc->y+3-loc->h/2,
+              loc->w-6, loc->h-6, FL_ALIGN_CENTER, NULL, 0);
+    }
+}
+
+void GridView::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
+{
+  int x1, x2, y1, y2, dx, dy, midx, midy;
+  if (ix1 < 0 || ix1 >= numlocales || ix2 < 0 || ix2 >= numlocales) {
+    fprintf (stderr, "DATA ERROR: drawCommLine\n");
+    return;
   }
+  localeInfo *loc1 = &theLocales[ix1], *loc2 = &theLocales[ix2];
+  double theta, cw, ch;
+  
+  dx = loc2->x - loc1->x;
+  dy = loc2->y - loc1->y;
+  if (dx == 0) {
+    theta = (dy < 0 ? pi / 2 : pi * 1.5);
+  } else {
+    if (dx < 0) 
+      theta = pi + atan((double)dy/(double)dx);
+    else
+      theta = atan((double)dy/(double)dx);
+  }
+  cw = loc1->w / sin(pi/4);
+  ch = loc1->h / sin(pi/4);
+  //printf ("dx = %d, dy = %d, Theta = %lf\n", dx, dy, theta);
+  
+  //  Need correct calculations here.
+  x1 = rint (cw/2 * cos(theta));
+  x1 = loc1->x + (abs(x1) > loc1->w/2 ? (dx < 0 ? -1 : 1)*loc1->w/2 : x1);
+  y1 = rint (ch/2 * sin(theta));
+  y1 = loc1->y + (abs(y1) > loc1->h/2 ? (dy < 0 ? -1 : 1)*loc1->h/2 : y1);
+
+  x2 = rint (cw/2 * cos(pi+theta));
+  x2 = loc2->x + (abs(x2) > loc2->w/2 ? (dx < 0 ? 1 : -1)*loc2->w/2 : x2);
+  y2 = rint (ch/2 * sin(pi+theta));
+  y2 = loc2->y + (abs(y2) > loc2->h/2 ? (dy < 0 ? 1 : -1)*loc2->h/2 : y2);
+
+  midx = loc1->x + dx/2;
+  midy = loc1->y + dy/2;
+
+  if (col1 != FL_WHITE) {
+    fl_color(col1);
+    fl_line_style(FL_SOLID, 3, NULL);
+    fl_line(x1,y1,midx,midy);
+  }
+  if (col2 != FL_WHITE) {
+    fl_color(col2);
+    fl_line_style(FL_SOLID, 3, NULL);
+    fl_line(midx,midy,x2,y2);
+  }
+  fl_line_style(FL_SOLID, 1, NULL);
 }
 
 void GridView::draw()
 {
   int ix;
+  int iy;
 
-  // printf ("GridView draw, numlocales is %d\n", numlocales);
-  // printf ("draw: x,y = %d,%d, h,w = %d,%d\n", x(), y(), w(), h());
+  //printf ("GridView draw, numlocales is %d\n", numlocales);
+  //printf ("draw: x,y = %d,%d, h,w = %d,%d\n", x(), y(), w(), h());
+
+  cx = x() + w()/2;
+  cy = y() + h()/2;
+  rx = 0.85 * w() / 2;
+  ry = 0.85 * h() / 2;
 
   for (ix = 0; ix < numlocales; ix++) {
-    switch (infoTop) {
+    switch (Info->dataToShow()) {
     case show_Tasks:
       setTooltip(ix, true, curTagData->locales[ix].numTasks, 0);
       break;
@@ -357,13 +277,38 @@ void GridView::draw()
 
   DataView::draw();
 
+  // Draw comm lines first so they go under locales
+  
+  for (ix = 0; ix < numlocales-1; ix++) {
+    for (iy = ix + 1; iy < numlocales; iy++) {
+      int  com2ix, com2iy, comMax; 
+      if (Info->commToShow()) {
+        com2ix = curTagData->comms[iy][ix].numComms;
+        com2iy = curTagData->comms[ix][iy].numComms;
+        comMax = curTagData->maxComms;
+      } else {
+        com2ix = curTagData->comms[iy][ix].commSize;
+        com2iy = curTagData->comms[ix][iy].commSize;
+        comMax = curTagData->maxSize;
+      }
+      if (com2ix || com2iy) {
+        // Draw a line ... gray if no communication
+        if (!com2ix || !com2iy) {
+          drawCommLine(ix, com2ix ? heatColor(com2ix, comMax) : FL_GRAY,
+                       iy, com2iy ? heatColor(com2iy, comMax) : FL_GRAY);
+        } else {
+          drawCommLine(ix, heatColor(com2ix, comMax),
+                       iy, heatColor(com2iy, comMax));
+        }
+      }
+    }
+  }
+
   // Draw locales next
   
   for (ix = 0; ix < numlocales; ix++) {
-    // printf ("Draw Locale %d.\n", ix);
-    switch (infoTop) {
+    switch (Info->dataToShow()) {
     case show_Tasks:
-      //drawLocale(ix,FL_RED);
       drawLocale(ix, heatColor(curTagData->locales[ix].numTasks, curTagData->maxTasks));
       break;
     case show_CPU:
@@ -376,30 +321,9 @@ void GridView::draw()
       drawLocale(ix, heatColor(curTagData->locales[ix].maxConc, curTagData->maxConc));
     }
   }
-
-  // Set up the info widget correctly
-  if (showcomms)
-    Info->showComms();
-  else 
-    Info->showSize();
-  switch (infoTop) {
-    case show_Tasks:
-      Info->showTasks();
-      break;
-    case show_CPU:
-      Info->showCpu();
-      break;
-    case show_Clock:
-      Info->showClock();
-      break;
-    case show_Concurrency:
-      Info->showConcurrency();
-      break;
-  }
     
   Info->draw();
 }
-
 
 int GridView::handle(int event)
 {
@@ -408,8 +332,6 @@ int GridView::handle(int event)
   int x = Fl::event_x();
   int y = Fl::event_y();
 
-  int i, j; // search for the comm link clicked
-  
   switch (event) {
   case FL_PUSH:
     //printf ("Push at (%d,%d) event_button() = %d\n", x, y, Fl::event_buttons());
@@ -424,7 +346,6 @@ int GridView::handle(int event)
       // printf ("middle or right release\n");
       break;
     }
-#if 0    
     // Click on a locale?
     if (numlocales > 0) {
       for (ix = 0; ix < numlocales; ix++) {
@@ -432,8 +353,8 @@ int GridView::handle(int event)
         localeInfo *loc = &theLocales[ix];
         if ( x > loc->x-loc->w/2 && x <= loc->x + loc->w/2 &&
              y > loc->y-loc->h/2 && y <= loc->y + loc->h/2) {
-          if (infoTop == show_Concurrency) {
-            if (useUTags && curTagNum != DataModel::TagALL) {
+          if (Info->dataToShow() == show_Concurrency) {
+            if (Menus.usingUTags() && curTagNum != DataModel::TagALL) {
               fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");
             } else {
               if (theLocales[ix].ccwin == NULL) {
@@ -464,8 +385,41 @@ int GridView::handle(int event)
         }
       }
     }
-    break;
+
+#if 0    
+    // Click on a comm link?
+    for (i = 0; i < numlocales; i++) {
+      localeInfo *loci, *locj;
+      loci = &theLocales[i];
+      for (j = i+1; j < numlocales; j++) {
+        locj = &theLocales[j];
+        // printf ("link: %d->%d:\n", i, j);
+        if (curTagData->comms[i][j].numComms != 0
+            || curTagData->comms[j][i].numComms != 0) {
+          int OnComm = isOnCommLink(x,y,loci,locj);
+          if (OnComm) {
+            // printf ("Link %d -> %d, nearer locale %d\n", i, j, (OnComm > 1 ? j : i ));
+            if (OnComm == 1) {
+              // j -> i, swap so both can use i->j
+              int t = j; j = i; i = t;
+            } 
+            if (comms[i][j].win == NULL) {
+              comms[i][j].win = make_comm_window(i,j,&curTagData->comms[i][j]);
+            } else {
+              comms[i][j].win->updateWin(&curTagData->comms[i][j]);
+            }
+            if (comms[i][j].win->visible())
+              comms[i][j].win->hide();
+            else
+              comms[i][j].win->show();
+            return 1;
+          }
+        }
+      }
+    }
 #endif    
+    
+    break;
   }
   return DataView::handle(event);
 }
@@ -474,4 +428,14 @@ void GridView::redrawAllWindows(void)
     {
       int ix, ix1, ix2;
       MainWindow->redraw();
+      for (ix = 0; ix < numlocales; ix++) {
+        if (theLocales[ix].win != NULL)
+          theLocales[ix].win->redraw();
+        if (theLocales[ix].ccwin != NULL)
+          theLocales[ix].ccwin->redraw();
+      }
+      for (ix1 = 0; ix1 < numlocales; ix1++)
+        for (ix2 = 0; ix2 < numlocales; ix2++)
+          if (comms[ix1][ix2].win != NULL)
+            comms[ix1][ix2].win->redraw();
     }

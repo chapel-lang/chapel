@@ -300,7 +300,8 @@ exit(0);}
         callback {DataField->selectChild(GraphGrp);
 Menus.setCurrentDataView(DbgView);
 Menus.addPopUpTo(GraphGrp);
-DbgView->selectData(Menus.currentTag());}
+Menus.setCurrentZoom(DbgScroll);
+DbgView->selectData(Menus.currentTag());} selected
         tooltip {Graph View} image {Graph-2-40x40.png} xywh {10 110 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
         code0 {o->clear_visible_focus();}
       }
@@ -308,7 +309,8 @@ DbgView->selectData(Menus.currentTag());}
         callback {DataField->selectChild(GridGrp);
 Menus.setCurrentDataView(GrdView);
 Menus.addPopUpTo(GridGrp);
-GrdView->selectData(Menus.currentTag());} selected
+Menus.setCurrentZoom(GridScroll);
+GrdView->selectData(Menus.currentTag());}
         tooltip {Grid View} image {Grid-40x40.png} xywh {10 160 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
         code0 {o->clear_visible_focus();}
       }

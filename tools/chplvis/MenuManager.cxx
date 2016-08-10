@@ -45,43 +45,31 @@ void menu_cb_Reset(Fl_Menu_*, void*) {
 }
 
 void menu_cb_ShowTasks(Fl_Menu_*, void*) {
-  if (Menus.currentDataView())
-    Menus.currentDataView()->showTasks();
   Info->showTasks();
   MainWindow->redraw();
 }
 
 void menu_cb_ShowCpu(Fl_Menu_*, void*) {
-  if (Menus.currentDataView())
-    Menus.currentDataView()->showCpu();
   Info->showCpu();
   MainWindow->redraw();
 }
 
 void menu_cb_ShowClock(Fl_Menu_*, void*) {
-  if (Menus.currentDataView())
-    Menus.currentDataView()->showClock();
   Info->showClock();
   MainWindow->redraw();
 }
 
 void menu_cb_ShowConc(Fl_Menu_*, void*) {
-  if (Menus.currentDataView())
-    Menus.currentDataView()->showConcurrency();
   Info->showConcurrency();
   MainWindow->redraw();
 }
 
 void menu_cb_ShowComm(Fl_Menu_*, void*) {
-  if (Menus.currentDataView())
-    Menus.currentDataView()->showComms();
   Info->showComms();
   MainWindow->redraw();
 }
 
 void menu_cb_ShowDsize(Fl_Menu_*, void*) {
-  if (Menus.currentDataView())
-    Menus.currentDataView()->showDsize();
   Info->showSize();
   MainWindow->redraw();
 }

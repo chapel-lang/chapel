@@ -41,8 +41,6 @@ GraphView::GraphView (int bx, int by, int bw, int bh, const char *label)
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
   }
-  infoTop = show_Tasks;
-  showcomms = true;
 };
 
 // Private methods 
@@ -262,7 +260,7 @@ void GraphView::draw()
   ry = 0.85 * h() / 2;
 
   for (ix = 0; ix < numlocales; ix++) {
-    switch (infoTop) {
+    switch (Info->dataToShow()) {
     case show_Tasks:
       setTooltip(ix, true, curTagData->locales[ix].numTasks, 0);
       break;
@@ -283,8 +281,8 @@ void GraphView::draw()
   
   for (ix = 0; ix < numlocales-1; ix++) {
     for (iy = ix + 1; iy < numlocales; iy++) {
-      int  com2ix, com2iy, comMax; 
-      if (showcomms) {
+      int  com2ix, com2iy, comMax;
+      if (Info->commToShow()) {
         com2ix = curTagData->comms[iy][ix].numComms;
         com2iy = curTagData->comms[ix][iy].numComms;
         comMax = curTagData->maxComms;
@@ -309,7 +307,7 @@ void GraphView::draw()
   // Draw locales next
   
   for (ix = 0; ix < numlocales; ix++) {
-    switch (infoTop) {
+    switch (Info->dataToShow()) {
     case show_Tasks:
       drawLocale(ix, heatColor(curTagData->locales[ix].numTasks, curTagData->maxTasks));
       break;
@@ -415,7 +413,7 @@ int GraphView::handle(int event)
         localeInfo *loc = &theLocales[ix];
         if ( x > loc->x-loc->w/2 && x <= loc->x + loc->w/2 &&
              y > loc->y-loc->h/2 && y <= loc->y + loc->h/2) {
-          if (infoTop == show_Concurrency) {
+          if (Info->dataToShow() == show_Concurrency) {
             if (Menus.usingUTags() && curTagNum != DataModel::TagALL) {
               fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");
             } else {

@@ -80,13 +80,6 @@ class GraphView : public DataView {
     localeInfo *theLocales; // Need to de/reallocate after changing numlocales
     int getSize;            // size used for doing deallocate after changeing numlocales
     commInfo **comms;       // Also need to de/reallocate after changing numlocales
-
-    // Keep track of what is being displayed
-    enum show_what {show_Tasks, show_CPU, show_Clock, show_Concurrency} infoTop;
-
-    bool showcomms;
-
-
     // Methods
 
     void allocArrays ();
@@ -122,15 +115,6 @@ class GraphView : public DataView {
 
   // Draw a comm line between loc1 and loc2, color changing in the middle
   void drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2);
-
-  // What to show!
-  void showTasks (void) { infoTop = show_Tasks; }
-  void showCpu (void  ) { infoTop = show_CPU; }
-  void showClock (void) { infoTop = show_Clock; }
-  void showConcurrency (void) { infoTop = show_Concurrency; }
-
-  void showComms (void) { showcomms = true; }
-  void showDsize (void) { showcomms = false; }
 
   // Window show/hide functions ...
   void hideAllCommWindows (void)

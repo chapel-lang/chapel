@@ -121,7 +121,7 @@ void InfoBar::draw(void)
       if (maxClock > 0)
         snprintf (mesg, 150, "max Clock: %f", maxClock);
       break;
-    case show_Concurrent:
+    case show_Concurrency:
       if (maxClock > 0)
         snprintf (mesg, 150, "max Concurrent: %ld", maxConcurrent);
       break;

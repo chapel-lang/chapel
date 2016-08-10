@@ -13,7 +13,6 @@
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -23,27 +22,39 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
-#include <FL/Fl_Menu_Button.H>
+#include "LocaleWin.h"
+#include "CommWin.h"
+#include "ConcurrencyWin.h"
 
 #include "DataModel.h"
 #include "DataView.h"
 
 #include <string>
-#include <math.h>
+
 
 class GridView : public DataView {
 
   // Information stored for each locale
-
+  
   struct localeInfo {
     // locale box location on view area
     int x; 
     int y;
     int w;
     int h;
-    int size; // size of the box. Min 4?
+    // Locale Window information.
+    LocaleWin *win;
+    // Concurrency Window information.
+    ConcurrencyWin *ccwin;
     // Locale box ... for tool tips.
     Fl_Box *b;
+  };
+  
+  // Information stored for every comm direction
+  // X -> Y and Y -> X for all X & Y.  (2d array)
+  
+  struct commInfo { // Remove this and just use CommWin*??? YYY
+    CommWin *win;
   };
   
   // Tag names may appear multiple times in the data,
@@ -53,30 +64,18 @@ class GridView : public DataView {
     int tagNo;
     char *tagName;
   };
+  
+ private:
 
-  private:
+    int cx, cy;     // center of the GridView
+    double rx, ry;  // Radius of the locales, for elliptical view
+    double angle;   // Angle between locale
+    double start;   // Angle of locale 0
 
-    int numlocales;
-    int nrows, ncols;  // Number of rows and columns
-
-    // Data arrays for the locales
+    // Data arrays for the locales (1D) and communication (2D)
     localeInfo *theLocales; // Need to de/reallocate after changing numlocales
     int getSize;            // size used for doing deallocate after changeing numlocales
-
-    bool useUTags;
-
-    // Keep track of what is being displayed
-    enum show_what {show_Tasks, show_CPU, show_Clock, show_Concurrency} infoTop;
-
-    DataModel::tagData *curTagData;
-    int curTagNum;
-    bool showcomms;
-
-    int tagMenu;
-    int tagPopup;
-    Fl_Menu_Button *popup;
-    
-
+    commInfo **comms;       // Also need to de/reallocate after changing numlocales
     // Methods
 
     void allocArrays ();
@@ -91,21 +90,14 @@ class GridView : public DataView {
 
   // Processing routines
 
-  bool usingUTags() { return useUTags; }
-
-  void toggleUTags() { useUTags = !useUTags; }
-
   void selectData (int tagNum);
-
-  void makeTagsMenu (void);
 
   void setNumLocales (int n)
     { 
-      printf("NumLocales set to %d\n", n);
-      nrows = (int) sqrt((double)n);
-      if (nrows*nrows < n) nrows++;
-      ncols = nrows;
+      //printf("NumLocalse set to %d\n", n);
       numlocales = n;
+      angle = twopi / numlocales;
+      start = ( numlocales % 2 == 0 ? angle / 2 : 0 );
       allocArrays();
     }
 
@@ -117,16 +109,51 @@ class GridView : public DataView {
   // Draw a "locale box, with ix as the label on it
   void drawLocale (int ix, Fl_Color col);
 
-  // What to show!
-  void showTasks (void) { infoTop = show_Tasks; }
-  void showCpu (void  ) { infoTop = show_CPU; }
-  void showClock (void) { infoTop = show_Clock; }
-  void showConcurrency (void) { infoTop = show_Concurrency; }
+  // Draw a comm line between loc1 and loc2, color changing in the middle
+  void drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2);
 
-  void showComms (void) { showcomms = true; }
-  void showDsize (void) { showcomms = false; }
+  // Window show/hide functions ...
+  void hideAllCommWindows (void)
+    {
+      int ix1, ix2;
+      for (ix1 = 0; ix1 < numlocales; ix1++)
+        for (ix2 = 0; ix2 < numlocales; ix2++)
+          if (comms[ix1][ix2].win != NULL)
+            comms[ix1][ix2].win->hide();
+    }
 
-  void redrawAllWindows(void);
+  void showAllCommWindows (void)
+    {
+      int ix1, ix2;
+      for (ix1 = 0; ix1 < numlocales; ix1++)
+        for (ix2 = 0; ix2 < numlocales; ix2++)
+          if (comms[ix1][ix2].win != NULL)
+            comms[ix1][ix2].win->show();
+    }
+
+  void hideAllLocaleWindows (void)
+    {
+      int ix;
+      for (ix = 0; ix < numlocales; ix++) {
+        if (theLocales[ix].win != NULL)
+          theLocales[ix].win->hide();
+        if (theLocales[ix].ccwin != NULL)
+          theLocales[ix].ccwin->hide();
+      }
+    }        
+
+  void showAllLocaleWindows (void)
+    {
+      int ix;
+      for (ix = 0; ix < numlocales; ix++) {
+        if (theLocales[ix].win != NULL)
+          theLocales[ix].win->show();
+        if (theLocales[ix].ccwin != NULL)
+          theLocales[ix].ccwin->show();
+      }
+    }
+
+  void redrawAllWindows (void);
 
 };
 
