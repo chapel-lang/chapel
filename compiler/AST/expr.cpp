@@ -5489,6 +5489,16 @@ GenRet CallExpr::codegenPrimitive() {
       Type* dst = get(1)->typeInfo();
       Type* src = get(2)->typeInfo();
 
+      // C standard promotes small ints to full int when they are involved in
+      // arithmetic operations. When we don't denormalize the AST, small integer
+      // arithemtic is always assigned to a temporary of the suitable size,
+      // which truncates the integer appropriately. OTOH, if we denormalize the
+      // AST then we have to make sure that are cast to appropriate size.
+      //
+      // TODO We use a wide brush by casting all integer operations. It should
+      // be enough to cast integers that are smaller than standard C int for
+      // target architecture. However, there was no easy way of obtaining that
+      // at the time of writing this piece. Engin
       if (dst == src && !(is_int_type(dst) || is_uint_type(dst)) ) {
         ret = get(2);
 
@@ -5824,6 +5834,9 @@ GenRet CallExpr::codegenPrimMove() {
 
   // Is the RHS a primop with special case handling?
   } else if (codegenIsSpecialPrimitive(get(1), get(2), specRet)) {
+
+    // TODO The special treatment for PRIM_GET_REAL and PRIM_GET_IMAG can be
+    // removed
     CallExpr* rhsCe = toCallExpr(get(2));
     if(rhsCe->isPrimitive(PRIM_GET_REAL) || rhsCe->isPrimitive(PRIM_GET_IMAG)) {
 

@@ -34,7 +34,7 @@
 typedef std::map<SymExpr*, std::pair<Expr*,Type*> > UseDefCastMap;
 
 //prototypes
-bool canPrimMoveCreateCommunication(CallExpr* ce);
+bool primMoveGeneratesCommCall(CallExpr* ce);
 inline bool possibleDepInBetween(Expr* e1, Expr* e2);
 inline bool requiresCast(Type* t);
 inline bool isIntegerPromotionPrimitive(PrimitiveTag tag);
@@ -50,6 +50,22 @@ void denormalize(Expr* def, SymExpr* use, Type* castTo);
 void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
     Vec<Symbol*>& deferredSyms);
 
+/*
+ * This function tries to remove temporary variables in function `fn`
+ *
+ * A local variable is removed if:
+ *
+ * - It is def'd and use'd once
+ *
+ * - Its def is a PRIM_MOVE or PRIM_ASSIGN, with no possible communication
+ * - RHS and LHS are of same type and non-extern
+ *
+ * - Its use a suitable primitive
+ * - Its use is not repeated(condition/increment statement of a loop)
+ *
+ * Denormalization uses helpers in util/exprAnalysis.cpp to decide if it's safe
+ * to move function calls and primitives.
+ */
 void denormalize(void) {
 
   UseDefCastMap candidates;
@@ -160,22 +176,6 @@ void findCandidatesInFunc(FnSymbol* fn, Vec<Symbol*> symVec,
   }
 }
 
-/*
- * This function tries to remove temporary variables in function `fn`
- *
- * A local variable is removed if:
- *
- * - It is def'd and use'd once
- *
- * - Its def is a PRIM_MOVE or PRIM_ASSIGN, with no possible communication
- * - RHS and LHS are of same type and non-extern
- *
- * - Its use a suitable primitive
- * - Its use is not repeated(condition/increment statement of a loop)
- *
- * Denormalization uses helpers in util/exprAnalysis.cpp to decide if it's safe
- * to move function calls and primitives.
- */
 void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap) {
 
   Vec<Symbol*> symSet;
@@ -217,7 +217,12 @@ bool isDenormalizable(Symbol* sym,
           Type* lhsType = ce->get(1)->typeInfo();
           Type* rhsType = ce->get(2)->typeInfo();
           if(lhsType == rhsType) {
-            if(! canPrimMoveCreateCommunication(ce)) {
+            // calls to communication functions are generated during codegen. ie
+            // at this time they are still PRIM_MOVEs. Generated communication
+            // calls return their result in a pointer argument, therefore not
+            // suitable for denormalization. See function definition for more
+            // comments
+            if(! primMoveGeneratesCommCall(ce)) {
               if(! (lhsType->symbol->hasFlag(FLAG_EXTERN))){
                 if(!lhsType->symbol->hasFlag(FLAG_ATOMIC_TYPE)){
                   //at this point we now that def is fine
@@ -369,7 +374,7 @@ inline bool isIntegerPromotionPrimitive(PrimitiveTag tag) {
 // Such temporaries that are passed as address are not denormalized in other
 // functions due to PRIM_ADDROF, since chpl_gen_comm_get is generated at codegen
 // time, such information is not readily available at AST.
-bool canPrimMoveCreateCommunication(CallExpr* ce) {
+bool primMoveGeneratesCommCall(CallExpr* ce) {
   INT_ASSERT(ce);
   INT_ASSERT(ce->isPrimitive(PRIM_MOVE) || ce->isPrimitive(PRIM_ASSIGN));
 
