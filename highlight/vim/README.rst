@@ -66,6 +66,8 @@ the ``call vundle#begin()`` and ``call vundle#end()`` lines:
 
    Plugin 'file:///path/to/chapel/highlight/vim'
 
+Where ``/path/to/chapel`` is the absolute path to the Chapel repository.
+
 .. _Vundle: https://github.com/VundleVim/Vundle.vim
 
 Manual Installation:
