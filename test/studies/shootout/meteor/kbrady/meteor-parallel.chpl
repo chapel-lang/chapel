@@ -83,10 +83,15 @@ var pieceDef: [0..#numPieces] [0..3] direction
    reduce the burden on the solve function.
  */
 var pieces, nextCell: [0..#numPieces] [0..#boardCells] [0..11] int,
-    pieceCounts:      [0..#numPieces] [0..#boardCells] int;
+    pieceCounts:      [0..#numPieces] [0..#boardCells] int,
 
-var solutionCount: atomic int,
-    maxSolutions = 2100;
+    solutionCount: atomic int,
+    maxSolutions = 2100,
+
+    solutions: [0..#maxSolutions] [0..#boardCells] int,
+
+    badEvenTriple, badOddTriple: [0..32767] bool;
+
 
 proc main(args: [] string) {
   if args.size > 1 then
@@ -332,10 +337,9 @@ proc flip(dir) {
    pre- calculated 5-bit rows will be used to find islands in a
    partially solved board in the solve function.
  */
-var badEvenRows, badOddRows: [0..31] [0..31] bool,
-    badEvenTriple, badOddTriple: [0..32767] bool;
-
 proc calcRows() {
+  var badEvenRows, badOddRows: [0..31] [0..31] bool;
+
   forall row1 in 0..31 do
     for row2 in 0..31 {
       badEvenRows[row1][row2] = rowsBad(row1, row2, true);
@@ -429,8 +433,6 @@ proc tripleIsOkay(row1, row2, row3, even) {
    bit mask must be saved at each successful piece placement.  This
    data is used to create a 50 char array if a solution is found.
  */
-var solutions: [0..#maxSolutions] [0..#boardCells] int;
-
 proc solve() {
   forall piece in 0..#numPieces do
     solveHelper(piece);
