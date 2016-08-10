@@ -300,9 +300,9 @@ proc fillContiguousSpace(board, indx) {
 proc firstEmptyCell(cell, in min) {
   while (min == cell[0] || min == cell[1] ||
          min == cell[2] || min == cell[3] ||
-         min == cell[4]) {
+         min == cell[4]) do
     min += 1;
-  }
+
   return min;
 }
 
@@ -336,14 +336,14 @@ var badEvenRows, badOddRows: [0..31] [0..31] bool,
     badEvenTriple, badOddTriple: [0..32767] bool;
 
 proc calcRows() {
-  forall row1 in 0..31 {
+  forall row1 in 0..31 do
     for row2 in 0..31 {
       badEvenRows[row1][row2] = rowsBad(row1, row2, true);
       badOddRows[row1][row2] = rowsBad(row1, row2, false);
     }
-  }
-  for row1 in 0..31 {
-    for row2 in 0..31 {
+
+  for row1 in 0..31 do
+    for row2 in 0..31 do
       for row3 in 0..31 {
         const idx = row1+(row2*32)+(row3*1024);
         var even = badEvenRows[row1][row2],
@@ -362,13 +362,11 @@ proc calcRows() {
         else
           badOddTriple[idx] = odd || even;
       }
-    }
-  }
 }
 
 proc rowsBad(row1, row2, even) {
   param ROWMASK    = 0x1F;
-    
+
   /* even is referring to row1 */
   var inZeroes, groupOkay = false;
 
@@ -378,7 +376,7 @@ proc rowsBad(row1, row2, even) {
         block = ((row1 ^ row2) & row2) & ((row1 ^ row2Shift) & row2Shift);
 
   /* Test for groups of 0's */
-  for i in 0..4 {
+  for i in 0..4 do
     if row1 & (1 << i) {
       if inZeroes {
         if !groupOkay then
@@ -392,7 +390,7 @@ proc rowsBad(row1, row2, even) {
       if !((block & (1 << i))) then
         groupOkay = true;
     }
-  }
+
   if inZeroes then
     return !groupOkay;
   else
@@ -404,7 +402,7 @@ proc rowsBad(row1, row2, even) {
    or 7 can fit.  The other scenario is when piece 2 creates a hook shape.
  */
 proc tripleIsOkay(row1, row2, row3, even) {
-  if even {
+  if even then
     /* There are four cases:
        row1: 00011  |  00001  |  11001  |  10101
        row2: 01011  |  00101  |  10001  |  10001
@@ -415,7 +413,7 @@ proc tripleIsOkay(row1, row2, row3, even) {
            ((row1 == 0b00001) && (row2 == 0b00101) && (row3 == 0b00110)) ||
            ((row1 == 0b11001) && (row2 == 0b10001)) ||
            ((row1 == 0b10101) && (row2 == 0b10001));
-  } else {
+  else
     /* There are two cases:
        row1: 10011  |  10101
        row2: 10001  |  10001
@@ -423,7 +421,6 @@ proc tripleIsOkay(row1, row2, row3, even) {
      */
     return ((row1 == 0b10011) && (row2 == 0b10001)) ||
            ((row1 == 0b10101) && (row2 == 0b10001));
-  }
 }
 
 /* The recursive solve algorithm.  Try to place each permutation in
@@ -449,7 +446,7 @@ proc solveHelper(piece) {
         maxRots = pieceCounts[piece][cell];
 
   avail ^= pieceNoMask;
-  for rotation in 0..(maxRots-1) {
+  for rotation in 0..(maxRots-1) do
     if !((board & pieces[piece][cell][rotation]):bool) {
       solNums[depth] = piece;
       solMasks[depth] = pieces[piece][cell][rotation];
@@ -460,7 +457,7 @@ proc solveHelper(piece) {
       }
       board ^= pieces[piece][cell][rotation];
     }
-  }
+
   avail ^= pieceNoMask;
 }
 
@@ -489,14 +486,14 @@ proc solveLinear(in depth, in cell, in board, in avail, solNums, solMasks) {
   for piece in 0..#numPieces {
     const pieceNoMask = 1 << piece;
 
-    if !((avail & pieceNoMask):bool) {
+    if !((avail & pieceNoMask):bool) then
       continue;
-    }
+
     avail ^= pieceNoMask;
 
     const maxRots = pieceCounts[piece][cell];
 
-    for rotation in 0..(maxRots-1) {
+    for rotation in 0..(maxRots-1) do
       if !((board & pieces[piece][cell][rotation]):bool) {
         solNums[depth] = piece;
         solMasks[depth] = pieces[piece][cell][rotation];
@@ -513,7 +510,7 @@ proc solveLinear(in depth, in cell, in board, in avail, solNums, solMasks) {
         }
         board ^= pieces[piece][cell][rotation];
       }
-    }
+
     avail ^= pieceNoMask;
   }
 }
@@ -538,13 +535,12 @@ proc recordSolution(solNums, solMasks) {
 proc printLargestSmallest() {
   var sIndx, lIndx = 0;
 
-  for i in 1..solutionCount.read()-1 {
-    if solutionLessThan(lIndx, i) {
+  for i in 1..solutionCount.read()-1 do
+    if solutionLessThan(lIndx, i) then
       lIndx = i;
-    } else if solutionLessThan(i, sIndx) {
+    else if solutionLessThan(i, sIndx) then
       sIndx = i;
-    }
-  }
+
   pretty(solutions[sIndx]);
   pretty(solutions[lIndx]);
 }
@@ -552,10 +548,11 @@ proc printLargestSmallest() {
 proc solutionLessThan(lhs, rhs) {
   if lhs == rhs then
     return false;
-  for i in 0..#boardCells {
+
+  for i in 0..#boardCells do
     if solutions[lhs][i] != solutions[rhs][i] then
       return solutions[lhs][i] < solutions[rhs][i];
-  }
+
   return false;
 }
 
