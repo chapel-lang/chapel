@@ -351,8 +351,33 @@ proc searchLinearHelper(in board, in pos, in used, in placed,
 }
 
 
-// Atomic used as mutex for recordSolution()
-var l: atomic bool;
+//
+// Exponential backoff spin-wait lock that yields every so many contested locks
+// to avoid potentially starving other tasks. This results in slightly faster
+// runtime than just using a sync var because it has lower latency.
+//
+record BackoffSpinLock {
+  var l: atomic bool,
+      lockAttempts: uint,
+      maxLockAttempts = (2**16-1): uint;
+
+  inline proc lock() {
+    while l.testAndSet() {
+      lockAttempts += 1;
+      if (lockAttempts & maxLockAttempts) == 0 {
+        maxLockAttempts >>= 1;
+        chpl_task_yield();
+      }
+    }
+  }
+
+  inline proc unlock() {
+    l.clear();
+  }
+}
+
+// Minimally contended lock that serializes calls to recordSolution()
+var recordSolutionLock: BackoffSpinLock;
 
 
 //
@@ -363,15 +388,9 @@ proc searchLinear(in board, in pos, in used, in placed, currentSolution) {
       s1, s2, s3, s4, s5, s6, s7, s8: int;
 
   if placed == numPieces {
-
-    // lock
-    while l.testAndSet() do chpl_task_yield();
-
+    recordSolutionLock.lock();
     recordSolution(currentSolution);
-
-    // unlock
-    l.clear();
-
+    recordSolutionLock.unlock();
   } else {
     evenRows = evenRowsLookup[pos];
 

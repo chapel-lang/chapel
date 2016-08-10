@@ -139,7 +139,7 @@ static int gasneti_bootstrapInit(
 #endif
 #if HAVE_PMI_SPAWNER
     if ((!strcmp(spawner, "pmi") || (spawner == not_set)) &&
-            GASNET_OK == (res = gasneti_bootstrapInit_pmi(argc, argv, nodes_p, mynode_p))) {
+            GASNET_OK == (res = gasneti_bootstrapInit_pmi(argc_p, argv_p, nodes_p, mynode_p))) {
         gasneti_bootstrapFini_p = &gasneti_bootstrapFini_pmi;
         gasneti_bootstrapAbort_p    = &gasneti_bootstrapAbort_pmi;
         gasneti_bootstrapBarrier_p  = &gasneti_bootstrapBarrier_pmi;

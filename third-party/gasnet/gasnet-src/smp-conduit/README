@@ -5,8 +5,15 @@ User Information:
 -----------------
 
 smp-conduit provides a single-node loopback GASNet implementation for 
-smp or uniprocessor systems lacking network hardware or API's.
-It should be extremely portable and run anywhere with a POSIX-like environment.
+smp or uniprocessor systems lacking network hardware, or where
+all the cores to be used coexist within a hardware-shared memory.
+
+Where this conduit runs:
+-----------------------
+
+smp-conduit is extremely portable and should run anywhere with a POSIX-like
+environment and hardware-shared memory.
+
 
 Recognized environment variables:
 ---------------------------------

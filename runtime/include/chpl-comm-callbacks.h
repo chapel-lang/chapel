@@ -66,7 +66,7 @@ extern "C" {
 //   The single argument passed to it is a pointer to information of
 //   type chpl_comm_cb_info_t, describing the communication operation.  This
 //   type is also defined below.  It contains a union of three different
-//   information sets depending only on the chpl_comm_cb_devent_kind_t
+//   information sets depending only on the chpl_comm_cb_event_kind_t
 //   value.   
 //
 //

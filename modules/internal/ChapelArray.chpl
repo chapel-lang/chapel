@@ -1029,28 +1029,28 @@ module ChapelArray {
 
     /* Add index ``i`` to this domain */
     proc add(i) {
-      _value.dsiAdd(i);
+      return _value.dsiAdd(i);
     }
 
     proc bulkAdd(inds: [] _value.idxType, isSorted=false,
         isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank==1 {
 
-      if inds.size == 0 then return;
+      if inds.size == 0 then return 0;
 
-      _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
+      return _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
     }
 
     proc bulkAdd(inds: [] _value.rank*_value.idxType, isSorted=false,
         isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank>1 {
 
-      if inds.size == 0 then return;
+      if inds.size == 0 then return 0;
 
-      _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
+      return _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
     }
 
     /* Remove index ``i`` from this domain */
     proc remove(i) {
-      _value.dsiRemove(i);
+      return _value.dsiRemove(i);
     }
 
     /* Request space for a particular number of values in an
@@ -1490,110 +1490,6 @@ module ChapelArray {
         for d in _value.dsiLocalSubdomains() do yield d;
     }
   }  // record _domain
-
-  // this is a helper function for bulkAdd functions in sparse subdomains.
-  // NOTE:it assumes that nnz array of the sparse domain has non-negative 
-  // indices. If, for some reason it changes, this function and bulkAdds have to
-  // be refactored. (I think it is a safe assumption at this point and keeps the
-  // function a bit cleaner than some other approach. -Engin)
-  proc __getActualInsertPts(d, inds, 
-      isIndsSorted, isUnique) /* where isSparseDom(d) */ {
-
-    //find individual insert points
-    //and eliminate duplicates between inds and dom
-    var indivInsertPts: [inds.domain] int;
-    var actualInsertPts: [inds.domain] int; //where to put in newdom
-
-    if !isIndsSorted then sort(inds);
-
-    //eliminate duplicates --assumes sorted
-    if !isUnique {
-      //make sure lastInd != inds[inds.domain.low]
-      var lastInd = inds[inds.domain.low] + 1; 
-      for (i, p) in zip(inds, indivInsertPts)  {
-        if i == lastInd then p = -1;
-        else lastInd = i;
-      }
-    }
-
-    //verify sorted and no duplicates if not --fast
-    if boundsChecking {
-      // TODO there seems to be a bug while resolving Sort.isSorted, therefore
-      // for this function the argument is still isIndsSorted, instead of
-      // isSorted. This should be changed when Sort.isSorted is working.
-      if !isSorted(inds) then
-        halt("bulkAdd: Data not sorted, call the function with isSorted=false");
-
-      //check duplicates assuming sorted
-      const indsStart = inds.domain.low;
-      const indsEnd = inds.domain.high;
-      var lastInd = inds[indsStart];
-      for i in indsStart+1..indsEnd {
-        if inds[i] == lastInd && indivInsertPts[i] != -1 then 
-          halt("There are duplicates, call the function with isUnique=false"); 
-      }
-
-      for i in inds do d.boundsCheck(i);
-
-    }
-
-    forall (i,p) in zip(inds, indivInsertPts) {
-      if isUnique || p != -1 { //don't do anything if it's duplicate
-        const (found, insertPt) = d.find(i);
-        p = if found then -1 else insertPt; //mark as duplicate
-      }
-    }
-
-    //shift insert points for bulk addition
-    //previous indexes that are added will cause a shift in the next indexes
-    var actualAddCnt = 0;
-
-    //NOTE: this can also be done with scan
-    for (ip, ap) in zip(indivInsertPts, actualInsertPts) {
-      if ip != -1 {
-        ap = ip + actualAddCnt;
-        actualAddCnt += 1;
-      }
-      else ap = ip;
-    }
-
-    return (actualInsertPts, actualAddCnt);
-
-  }
-
-  proc +=(ref sd: domain, inds: [] sd.idxType) 
-    where isSparseDom(sd) && sd.rank == 1 {
-    
-    if inds.size == 0 then return;
-
-    sd._value.dsiBulkAdd(inds);
-  }
-
-  proc +=(ref sd: domain, inds: [] sd.rank*sd.idxType ) 
-    where isSparseDom(sd) && sd.rank > 1 {
-
-    if inds.size == 0 then return;
-
-    sd._value.dsiBulkAdd(inds);
-  }
-
-  /*
-    Currently this is not optimized for addition of a sparse
-  */
-  proc +=(ref sd: domain, d: domain) 
-    where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
-
-    if d.size == 0 then return;
-
-    type _idxType = if sd.rank==1 then int else sd.rank*int;
-    const indCount = d.numIndices;
-    const arr: [{0..#indCount}] _idxType;
-  
-    //this could be a parallel loop. but ranks don't match -- doesn't compile
-    for (a,i) in zip(arr,d) do a=i;
-
-    sd._value.dsiBulkAdd(arr, true, true, false);
-  }
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old
      type was stridable and the new type is not stridable then assume the
@@ -3002,7 +2898,7 @@ module ChapelArray {
   }
 
   proc =(ref a: domain, b: _tuple) {
-    a._value.clearForIteratableAssign();
+    a.clear();
     for ind in 1..b.size {
       a.add(b(ind));
     }
@@ -3043,7 +2939,9 @@ module ChapelArray {
   }
 
   proc =(ref a: domain, b) {  // b is iteratable
-    a._value.clearForIteratableAssign();
+    if isRectangularDom(a) then
+      compilerError("Illegal assignment to a rectangular domain");
+    a.clear();
     for ind in b {
       a.add(ind);
     }

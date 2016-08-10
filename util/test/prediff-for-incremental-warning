@@ -17,7 +17,11 @@ incrementalTests = ["time_iterate", "timeVectorArray", "time_access", "optimizeO
                     "access2d", "access3d", "ri-4-arrdom", "ri-4-arrdom.replicated", "ri-3-stress", "ri-3-stress-coforall", "assign",
                     "assign_across_locales", "copy_to_local", "dgemm", "init", "reductions-stress-fast", "sparse-iter-performance",
                     "externMethodCallPerf", "forVersusWhilePerf", "test_cholesky_performance", "mandelbrot-error-works",
-                    "mandelbrot-error", "atomic_bool", "atomic_vars", "ontest"]
+                    "mandelbrot-error", "atomic_bool", "atomic_vars", "ontest","uts_deq", "uts_rec", "dequeue", "sudoku-simple",
+                    "sudoku-simpler", "sudoku-smart", "sudoku", "leadFollowOpt", "ra-cleanloop", "ra-atomics", "ra", "test_for2d",
+                    "test_cgapb", "test_cgapb_loop", "cg-sparse-timecomp", "fft-timecomp", "ManyThreads", "ft-serial", "cg-sparse",
+                    "cg-printa", "cg-makea1-sparse-sort", "enumerated-array2", "enumerated-array", "formalDomainChecks3",
+                    "formalDomainChecks4", "no_atomic_assign"]
 
 if(sys.argv[1] not in incrementalTests):
     sys.exit(0)
@@ -26,13 +30,13 @@ if(sys.argv[1] not in incrementalTests):
 try:
   goodFile = open(sys.argv[1]+".good", "r")
   for line in goodFile:
-      if(line == "warning: Compiling with --incremental and --fast together can lead to slower execution time than compiling with --fast only\n"):
+      if(line == "warning: Compiling with --incremental along with optimizations enabled may lead to a slower execution time compared to --fast or using -O optimizations directly.\n"):
         sys.exit(0)
 except IOError:
     print "Can't find "+sys.argv[1]+".good"
 
 # Matches the warning we are looking for
-pattern = re.compile("warning: Compiling with --incremental and --fast together can lead to slower execution time than compiling with --fast only")
+pattern = re.compile("warning: Compiling with --incremental along with optimizations enabled may lead to a slower execution time compared to --fast or using -O optimizations directly.")
 
 outfile = open(sys.argv[2], "r")
 realOut = open(sys.argv[2]+".tmp" , "w")

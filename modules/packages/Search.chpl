@@ -18,63 +18,95 @@
  */
 
 /*
-   The `Search` module is designed to support standard search routines. The
-   current interface is minimal and should be expected to grow and evolve
-   over time.
+   The `Search` module is designed to support standard search routines on 1D
+   arrays
  */
 module Search {
   use Sort;
 
+
 /*
-   General purpose searching interface for searching through a pre-sorted array.
+  A note about lo/hi arguments:
 
-   .. note:: Currently this method calls a sequential :proc:`binarySearch`, but
-             this may change the future as other algorithms are implemented.
+  These args were kept in the interface since passing sliced arrays is
+  (currently) very expensive, and many fundamental module codes depend on
+  passing sliced arrays to binarySearch. For interface consistency, other
+  search algorithms also support lo/hi arguments.
 
-   :arg Data: The array to be sorted
+  TODO -- add performance testing for Search algorithms, and compare
+          passing sliced arrays vs. unsliced arrays with lo/hi args
+*/
+
+/*
+   General purpose searching interface for searching through a 1D array.
+   For pre-sorted arrays, denoted by passing ``sorted=true`` as an argument,
+   this function wraps :proc:`binarySearch`, otherwise it wraps
+   :proc`linearSearch`.
+
+   :arg Data: The array to be searched
    :type Data: [] `eltType`
    :arg val: The value to find in the array
    :type val: `eltType`
    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
+      data is sorted, and the equality operation for the array data.
+   :arg lo: The lowest index to consider while searching
+   :type lo: `Dom.idxType`
+   :arg hi: The highest index to consider while searching
+   :type hi: `Dom.idxType`
+   :arg sorted: Indicate if the array is pre-sorted, determining which search
+      algorithm to call
+   :type sorted: `bool`
 
    :returns: A tuple indicating (1) if the value was found and (2) the location
       of the value if it was found or the location where the value should have
       been if it was not found.
-   :rtype: (`bool`, `Data.domain.type`)
+   :rtype: (`bool`, `Dom.idxType`)
  */
-proc search(Data:[?Dom], val, comparator:?rec=defaultComparator) where Dom.rank == 1 {
-  return binarySearch(Data, val, comparator);
+proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high, sorted=false) where Dom.rank == 1 {
+  if sorted then
+    return binarySearch(Data, val, comparator, lo, hi);
+  else
+    return linearSearch(Data, val, comparator, lo, hi);
 }
 
 
 /*
-   Searches through the pre-sorted array `Data` looking for the value `val` using
+   Searches through the array `Data` looking for the value `val` using
    a sequential linear search.  Returns a tuple indicating (1) whether or not
-   the value was found and (2) the location of the value if it was found, or
-   the location where the value should have been if it was not found.
+   the value was found and (2) the location of the first occurrence of the
+   value if it was found, or ``Data.domain.high+1`` if it was not found.
 
-   :arg Data: The sorted array to search
+   :arg Data: The array to search
    :type Data: [] `eltType`
    :arg val: The value to find in the array
    :type val: `eltType`
-   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
+   :arg comparator: :ref:`Comparator <comparators>` record that defines the
+       equality operation for the array data.
+   :arg lo: The lowest index to consider while searching
+   :type lo: `Dom.idxType`
+   :arg hi: The highest index to consider while searching
+   :type hi: `Dom.idxType`
 
    :returns: A tuple indicating (1) if the value was found and (2) the location
-      of the value if it was found or the location where the value should have
-      been if it was not found.
-   :rtype: (`bool`, `Data.domain.type`)
+      of the value if it was found or ``Data.domain.high+1`` if it was not
+      found.
+   :rtype: (`bool`, `Dom.idxType`)
 
  */
-proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high) where Dom.rank == 1 {
   chpl_check_comparator(comparator, Data.eltType);
-  for i in Dom {
-    if chpl_compare(Data[i], val, comparator=comparator) == 0 then
-      return (true, i);
-    else if chpl_compare(Data[i], val, comparator=comparator) > 0 then
-      return (false, i);
+
+  // Domain slicing is cheap, but avoiding it when possible helps performance
+  if lo == Dom.low && hi == Dom.high {
+    for i in Dom do
+      if chpl_compare(Data[i], val, comparator=comparator) == 0 then
+        return (true, i);
+  } else {
+    for i in Dom[lo..hi] do
+      if chpl_compare(Data[i], val, comparator=comparator) == 0 then
+        return (true, i);
   }
+
   return (false, Dom.high+1);
 }
 
@@ -93,31 +125,40 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator) where Dom
    :type val: `eltType`
    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
       data is sorted.
+   :arg lo: The lowest index to consider while searching
+   :type lo: `Dom.idxType`
+   :arg hi: The highest index to consider while searching
+   :type hi: `Dom.idxType`
 
    :returns: A tuple indicating (1) if the value was found and (2) the location
       of the value if it was found or the location where the value should have
       been if it was not found.
-   :rtype: (`bool`, `Data.domain.type`)
+   :rtype: (`bool`, `Dom.idxType`)
 
  */
-proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator) where Dom.rank == 1 {
-  var lo = Dom.low,
-      hi = Dom.high;
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) where Dom.rank == 1 {
+  chpl_check_comparator(comparator, Data.eltType);
 
   while (lo <= hi) {
     const mid = (hi - lo)/2 + lo;
     if chpl_compare(Data[mid], val, comparator=comparator) == 0 then
       return (true, mid);
     else if chpl_compare(val, Data[mid], comparator=comparator) > 0 then
-      lo = mid+1;
+      lo = mid + 1;
     else
-      hi = mid-1;
+      hi = mid - 1;
   }
   return (false, lo);
 }
 
+
+/*
+    Deprecated Functions
+    TODO -- deprecate in 1.15
+ */
+
+
 pragma "no doc"
-// TODO -- deprecate
 /*
    Searches through the pre-sorted array `Data` looking for the value `val` using
    a sequential linear search.  Returns a tuple indicating (1) whether or not
@@ -131,6 +172,7 @@ pragma "no doc"
 
  */
 proc LinearSearch(Data:[?Dom], val) {
+  compilerWarning("LinearSearch() has been deprecated.  Please use linearSearch() instead");
   for i in Dom {
     if (Data(i) == val) {
       return (true, i);
@@ -143,9 +185,6 @@ proc LinearSearch(Data:[?Dom], val) {
 
 
 pragma "no doc"
-// would really like to drop the lo/hi arguments here, but right now
-// that causes too big of a memory leak
-// TODO -- deprecate
 /*
    Searches through the pre-sorted array `Data` looking for the value `val`
    using a sequential binary search.  If provided, only the indices `lo`
@@ -165,6 +204,7 @@ pragma "no doc"
 
  */
 proc BinarySearch(Data:[?Dom], val, in lo = Dom.low, in hi = Dom.high) {
+  compilerWarning("BinarySearch() has been deprecated.  Please use binarySearch() instead");
   while (lo <= hi) {
     const mid = (hi - lo)/2 + lo;
     if (Data(mid) == val) {

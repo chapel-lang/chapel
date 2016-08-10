@@ -149,6 +149,8 @@ all:
   08/03/16:
     - text: Hardware upgrade
       config: 16 node XC, Single node XC
+  08/04/16:
+    - Updates to Search module, required array slicing (partially reverted) (#4273)
 
 AllCompTime:
   11/09/14:

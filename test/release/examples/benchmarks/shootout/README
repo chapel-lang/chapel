@@ -235,7 +235,20 @@ revcomp.chpl
 ------------
 o Shouldn't ascii() return an int(8)/uint(8) by default?
 
+o The pattern ascii(mystring[i]) seems like it ought to be very
+  optimizable compared to what we do now, and to support param
+  versions in the event that mystring and 'i' are both params.  As a
+  short-term workaround, ascii() could take an optional "index"
+  argument that would allow us to write this as ascii(mystring, i).
+  Longer-term, I wonder what could be done to reduce the overhead of
+  this pattern (and maybe, more generally, string indexing).
+
 o Should we be able to support a param loop over lo..hi by 2?
+
+o Each time I use readline() I'm sad that I have to declare a
+  'numRead' variable ahead of it.  Could this return a tuple
+  or something to avoid having to pass in this argument?
+
 
 
 spectralnorm.chpl
