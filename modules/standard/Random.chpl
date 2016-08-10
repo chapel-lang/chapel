@@ -583,11 +583,6 @@ module Random {
       }
 
       pragma "no doc"
-      proc ~RandomStream() {
-
-      }
-
-      pragma "no doc"
       proc PCGRandomStreamPrivate_getNext_noLock(type resultType=eltType) {
         PCGRandomStreamPrivate_count += 1;
         return randlc(resultType, PCGRandomStreamPrivate_rngs);
@@ -2055,11 +2050,6 @@ module Random {
         } else {
           compilerError("NPBRandomStream only supports eltType=real(64), imag(64), or complex(128)");
         }
-      }
-
-      pragma "no doc"
-      proc ~NPBRandomStream() {
-
       }
 
       pragma "no doc"
