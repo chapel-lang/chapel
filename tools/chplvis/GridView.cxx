@@ -311,7 +311,7 @@ void GridView::setTooltip ( int ix, bool isInt, int ival, double fval)
 
 void GridView::drawLocale ( int ix, Fl_Color col)
 {
-  printf ("drawLocale %d\n", ix);
+  // printf ("drawLocale %d\n", ix);
   char ixchars[10];
   if (theLocales != NULL) {
     localeInfo *loc = &theLocales[ix];
@@ -360,7 +360,7 @@ void GridView::draw()
   // Draw locales next
   
   for (ix = 0; ix < numlocales; ix++) {
-    printf ("Draw Locale %d.\n", ix);
+    // printf ("Draw Locale %d.\n", ix);
     switch (infoTop) {
     case show_Tasks:
       //drawLocale(ix,FL_RED);

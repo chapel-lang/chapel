@@ -72,7 +72,6 @@ class GraphView : public DataView {
 
   private:
 
-    int numlocales;
     int cx, cy;     // center of the GraphView
     double rx, ry;  // Radius of the locales, for elliptical view
     double angle;   // Angle between locale
@@ -83,19 +82,11 @@ class GraphView : public DataView {
     int getSize;            // size used for doing deallocate after changeing numlocales
     commInfo **comms;       // Also need to de/reallocate after changing numlocales
 
-    bool useUTags;
-
     // Keep track of what is being displayed
     enum show_what {show_Tasks, show_CPU, show_Clock, show_Concurrency} infoTop;
 
-    DataModel::tagData *curTagData;
-    int curTagNum;
     bool showcomms;
 
-    int tagMenu;
-    int tagPopup;
-    Fl_Menu_Button *popup;
-    
 
     // Methods
 
@@ -111,13 +102,7 @@ class GraphView : public DataView {
 
   // Processing routines
 
-  bool usingUTags() { return useUTags; }
-
-  void toggleUTags() { useUTags = !useUTags; }
-
   void selectData (int tagNum);
-
-  void makeTagsMenu (void);
 
   void setNumLocales (int n)
     { 

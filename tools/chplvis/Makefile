@@ -44,10 +44,10 @@ CXXFLAGS=  -Wall -I. -g
 
 SRCS=   GraphView.cxx DataModel.cxx Event.cxx InfoBar.cxx LocaleWin.cxx \
         CommWin.cxx ConcurrencyWin.cxx Settings.cxx  Fl_MultiGroup.cxx \
-        ZoomScroll.cxx GridView.cxx
+        ZoomScroll.cxx GridView.cxx MenuManager.cxx
 HFILES= GraphView.h   DataModel.h   Event.h   InfoBar.h   LocaleWin.h \
         CommWin.h   ConcurrencyWin.h   Settings.h Fl_MultiGroup.H \
-        ZoomScroll.h GridView.h
+        ZoomScroll.h GridView.h MenuManager.h
 
 GENSRCS= chplvis.cxx
 GENH= chplvis.h
@@ -92,5 +92,5 @@ Event.o: Event.h
 Settings.o: chplvis.h GraphView.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h DataView.h DataView.h
 Fl_MultiGroup.o: chplvis.h GraphView.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h DataView.h DataView.h
 ZoomScroll.o: ZoomScroll.h
-GridView.o: chplvis.h GridView.h DataModel.h DataView.h
-
+GridView.o: chplvis.h GraphView.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h DataView.h DataView.h
+MenuManager.o: chplvis.h GraphView.h DataModel.h Event.h InfoBar.h LocaleWin.h CommWin.h ConcurrencyWin.h StringCache.h DataView.h DataView.h

@@ -44,16 +44,25 @@ decl {\#include <unistd.h>} {public local
 decl {\#include "Fl_MultiGroup.H"} {public global
 } 
 
-decl {\#include "GraphView.h"} {public global
-} 
-
-decl {\#include "GridView.h"} {public global
+decl {\#include "Settings.h"} {public local
 } 
 
 decl {\#include "DataModel.h"} {public global
 } 
 
 decl {\#include "InfoBar.h"} {public local
+} 
+
+decl {\#include "MenuManager.h"} {public global
+} 
+
+decl {\#include "ZoomScroll.h"} {public global
+} 
+
+decl {\#include "GraphView.h"} {public global
+} 
+
+decl {\#include "GridView.h"} {public global
 } 
 
 decl {\#include "LocaleWin.h"} {public global
@@ -65,13 +74,13 @@ decl {\#include "CommWin.h"} {public local
 decl {\#include "ConcurrencyWin.h"} {public local
 } 
 
-decl {\#include "ZoomScroll.h"} {public global
-} 
-
-decl {\#include "Settings.h"} {public local
-} 
-
 decl {DataModel VisData;} {public local
+} 
+
+decl {MenuManager Menus;} {public local
+} 
+
+decl {SettingsData VisSettings;} {public local
 } 
 
 Function {mainWinCallback(Fl_Widget *)} {open return_type void
@@ -124,7 +133,7 @@ w->updateWin(commdata);} {}
 
 Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {ConcurrencyWin *}
 } {
-  Fl_Window {} {
+  Fl_Window {} {open
     xywh {82 110 500 600} type Double color 7 hide resizable
     class ConcurrencyWin
   } {
@@ -146,14 +155,36 @@ w->updateData(locNum, tagNum);
 return w;} {}
 } 
 
-decl {SettingsData VisSettings;} {public local
+Function {open_data_set(const char *name, bool fromArgv)} {open private return_type bool
+} {
+  code {printf("open_data_set ...\\n");
+
+if (!VisData.LoadData(name,true)) {
+       return false;
+}
+
+DataField->selectChild(GraphGrp);
+
+Menus.makeTagsMenu();
+Menus.setCurrentDataView(DbgView);
+Menus.addPopUpTo(GraphGrp);
+Menus.setCurrentZoom(DbgScroll);
+
+DbgView->setNumLocales(VisData.NumLocales());
+DbgView->selectData(DataModel::TagALL);
+ 
+GrdView->setNumLocales(VisData.NumLocales());
+GrdView->selectData(DataModel::TagALL);
+ 
+Info->setFileName(name);
+return true;} {}
 } 
 
 Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {8 147 560 600} type Double color 7 hide resizable size_range {560 590 0 0}
+    xywh {1278 490 560 600} type Double color 7 hide resizable size_range {560 590 0 0}
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55
@@ -169,15 +200,9 @@ Function {} {open
 
 if (selfile) {
    // User didn't cancel
-   if (!VisData.LoadData(selfile, false)) {
-      return;
+   if (!open_data_set(selfile, false)) {
+      fl_alert ("Could not open %s", selfile);
    }
-   DbgView->setNumLocales(VisData.NumLocales());
-   DbgView->makeTagsMenu();
-   DbgView->selectData(DataModel::TagALL);
-   Info->setFileName(selfile);
-   Info->clearTagName();
-   MainWindow->redraw();
 }}
           xywh {0 0 34 21} shortcut 0x4006f
         }
@@ -202,43 +227,18 @@ exit(0);}
       } {
         MenuItem {} {
           label {Zoom In}
-          callback {DbgScroll->zoomIn();}
+          callback {menu_cb_ZoomIn(o,v);}
           tooltip {Only choice at this time} xywh {0 0 34 21}
         }
         MenuItem {} {
           label {Zoom Out}
-          callback {DbgScroll->zoomOut();}
+          callback {menu_cb_ZoomOut(o,v);}
           xywh {0 0 100 20}
         }
         MenuItem {} {
           label {Reset Zoom}
-          callback {DbgScroll->reset();}
+          callback {menu_cb_Reset(o,v);}
           xywh {0 0 100 20}
-        }
-      }
-      Submenu {} {
-        label Windows open
-        xywh {0 0 62 20}
-      } {
-        MenuItem {} {
-          label {Show All Comm}
-          callback {DbgView->showAllCommWindows();}
-          xywh {0 0 31 20}
-        }
-        MenuItem {} {
-          label {Hide All Comm}
-          callback {DbgView->hideAllCommWindows();}
-          xywh {0 0 31 20}
-        }
-        MenuItem {} {
-          label {Show All Locale}
-          callback {DbgView->showAllLocaleWindows();}
-          xywh {0 0 31 20}
-        }
-        MenuItem {} {
-          label {Hide All Locale}
-          callback {DbgView->hideAllLocaleWindows();}
-          xywh {0 0 31 20}
         }
       }
       Submenu {} {
@@ -251,26 +251,22 @@ exit(0);}
         }
         MenuItem {} {
           label {Show Tasks}
-          callback {DbgView->showTasks();
-MainWindow->redraw();}
+          callback {menu_cb_ShowTasks(o,v);}
           xywh {0 0 36 21}
         }
         MenuItem {} {
           label {Show CPU}
-          callback {DbgView->showCpu();
-MainWindow->redraw();}
+          callback {menu_cb_ShowCpu(o,v);}
           xywh {0 0 36 21}
         }
         MenuItem {} {
           label {Show Clock}
-          callback {DbgView->showClock();
-MainWindow->redraw();}
+          callback {menu_cb_ShowClock(o,v);}
           xywh {0 0 31 20}
         }
         MenuItem {} {
           label {Show Concurrency}
-          callback {DbgView->showConcurrency();
-MainWindow->redraw();}
+          callback {menu_cb_ShowConc(o,v);}
           xywh {0 0 31 20} divider
         }
         MenuItem {} {
@@ -279,14 +275,12 @@ MainWindow->redraw();}
         }
         MenuItem {} {
           label {Show Count}
-          callback {DbgView->showComms();
-MainWindow->redraw();}
+          callback {menu_cb_ShowComm(o,v);}
           xywh {0 0 36 21}
         }
         MenuItem {} {
           label {Show Size}
-          callback {DbgView->showDsize();
-MainWindow->redraw();}
+          callback {menu_cb_ShowDsize(o,v);}
           xywh {0 0 36 21}
         }
       }
@@ -299,18 +293,22 @@ MainWindow->redraw();}
       xywh {0 99 60 501} box BORDER_FRAME color 0
     } {
       Fl_Button {} {
-        xywh {0 598 60 2} box NO_BOX
+        xywh {0 598 60 2} box NO_BOX resizable
         code0 {o->clear_visible_focus();}
       }
       Fl_Button {} {
-        callback {DataField->selectChild(0);
-DbgView->makeTagsMenu();}
+        callback {DataField->selectChild(GraphGrp);
+Menus.setCurrentDataView(DbgView);
+Menus.addPopUpTo(GraphGrp);
+DbgView->selectData(Menus.currentTag());}
         tooltip {Graph View} image {Graph-2-40x40.png} xywh {10 110 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
         code0 {o->clear_visible_focus();}
       }
       Fl_Button {} {
-        callback {DataField->selectChild(1);
-GrdView->makeTagsMenu();}
+        callback {DataField->selectChild(GridGrp);
+Menus.setCurrentDataView(GrdView);
+Menus.addPopUpTo(GridGrp);
+GrdView->selectData(Menus.currentTag());} selected
         tooltip {Grid View} image {Grid-40x40.png} xywh {10 160 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
         code0 {o->clear_visible_focus();}
       }
@@ -326,7 +324,7 @@ GrdView->makeTagsMenu();}
           xywh {60 100 500 500} color 7 resizable
           class ZoomScroll
         } {
-          Fl_Box DbgView {user_data_type {void*} selected
+          Fl_Box DbgView {user_data_type {void*}
             xywh {60 100 500 500} color 7 selection_color 48 resizable
             code0 {DbgScroll->setZoomWidget(o);}
             class GraphView
@@ -341,7 +339,8 @@ GrdView->makeTagsMenu();}
           class ZoomScroll
         } {
           Fl_Box GrdView {
-            xywh {85 125 25 25} color 7
+            xywh {85 125 25 25} color 7 resizable
+            code0 {GridScroll->setZoomWidget(o);}
             class GridView
           }
         }
@@ -401,32 +400,15 @@ DataField->popChild();}
   }
   code {if (argc > 1 && argv[1][1] != '-') {
     //printf ("argv[1] is %s\\n", argv[1]);
-    if (!VisData.LoadData(argv[1],true)) {
+    if (!open_data_set(argv[1], true)) {
        exit(1);
     }
-    DbgView->setNumLocales(VisData.NumLocales());
-    DbgView->makeTagsMenu();
-    DbgView->selectData(DataModel::TagALL);
- 
-    GrdView->setNumLocales(VisData.NumLocales());
-    GrdView->selectData(DataModel::TagALL);
- 
-    Info->setFileName(argv[1]);
     argc--;
     argv++;
 } else {
    // look for .Vdebug/.Vdebug-0
-   if (access(".Vdebug/.Vdebug-0", R_OK) == 0 &&
-       VisData.LoadData(".Vdebug/.Vdebug-0",false)) {
-      DbgView->setNumLocales(VisData.NumLocales());
-      DbgView->makeTagsMenu();
-      DbgView->selectData(DataModel::TagALL);
-
-      GrdView->setNumLocales(VisData.NumLocales());
-      DbgView->selectData(DataModel::TagALL);
-
-      Info->setFileName(".Vdebug (default)");
-   }
+   if (access(".Vdebug/.Vdebug-0", R_OK) == 0)
+      (void) open_data_set(".Vdebug/.Vdebug-0",false);
 }
 MainWindow->callback(mainWinCallback);
 if (VisSettings.save_WH) {

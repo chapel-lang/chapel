@@ -26,76 +26,7 @@
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 #include <FL/Fl_Menu_Item.H>
-#include <sstream>
 
-// Menu Callbacks
-
-static void cb_ZoomIn(Fl_Menu_*, void*) {
-  DbgScroll->zoomIn();
-}
-
-static void cb_ZoomOut(Fl_Menu_*, void*) {
-  DbgScroll->zoomOut();
-}
-
-static void cb_Reset(Fl_Menu_*, void*) {
-  DbgScroll->reset();
-}
-
-static void cb_ShowTasks(Fl_Menu_*, void*) {
-  DbgView->showTasks();
-  MainWindow->redraw();
-}
-
-static void cb_ShowCpu(Fl_Menu_*, void*) {
-  DbgView->showCpu();
-  MainWindow->redraw();
-}
-
-static void cb_ShowClock(Fl_Menu_*, void*) {
-  DbgView->showClock();
-  MainWindow->redraw();
-}
-
-static void cb_ShowConc(Fl_Menu_*, void*) {
-  DbgView->showConcurrency();
-  MainWindow->redraw();
-}
-
-static void cb_ShowComm(Fl_Menu_*, void*) {
-  DbgView->showComms();
-  MainWindow->redraw();
-}
-
-static void cb_ShowDsize(Fl_Menu_*, void*) {
-  DbgView->showDsize();
-  MainWindow->redraw();
-}
-
-static Fl_Menu_Item popup_Menu[] = {
- {"View", 0,  0, 0, 64, FL_NORMAL_LABEL, 0, 14, 0},
- {"Zoom In", 0,  (Fl_Callback*)cb_ZoomIn, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {"Zoom Out", 0,  (Fl_Callback*)cb_ZoomOut, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {"Reset Zoom", 0,  (Fl_Callback*)cb_Reset, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {0,0,0,0,0,0,0,0,0},
- {"Data", 0,  0, 0, 64, FL_NORMAL_LABEL, 0, 14, 0},
- {"Locales", 0,  0, 0, 129, FL_ENGRAVED_LABEL, 0, 14, 0},
- {"Show Tasks", 0,  (Fl_Callback*)cb_ShowTasks, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {"Show CPU", 0,  (Fl_Callback*)cb_ShowCpu, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {"Show Clock", 0,  (Fl_Callback*)cb_ShowClock, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {"Show Concurrency", 0,  (Fl_Callback*)cb_ShowConc, 0, 128, FL_NORMAL_LABEL, 0, 14, 0},
- {"Communication", 0,  0, 0, 129, FL_ENGRAVED_LABEL, 0, 14, 0},
- {"Show Count", 0,  (Fl_Callback*)cb_ShowComm, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {"Show Size", 0,  (Fl_Callback*)cb_ShowDsize, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
- {0,0,0,0,0,0,0,0,0},
- {0,0,0,0,0,0,0,0,0}
-};
-
-
-
-
-#define SSTR( x ) dynamic_cast< std::ostringstream & >( \
-                    ( std::ostringstream() << std::dec << x ) ).str()
 
 //  GraphView Constructors
 
@@ -107,20 +38,9 @@ GraphView::GraphView (int bx, int by, int bw, int bh, const char *label)
   theLocales = NULL;
   comms = NULL;
   curTagData = NULL;
-  tagMenu = -1;
-  tagPopup = -1;
-  popup = NULL;  
-  useUTags = false;
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
   }
-  /*
-  maxTasks = 1;
-  maxComms = 1;
-  maxCpu = 0.000001;
-  maxClock = 0;
-  maxDatasize = 1;
-  */
   infoTop = show_Tasks;
   showcomms = true;
 };
@@ -212,7 +132,7 @@ void GraphView::selectData(int tagNum)
   }
 
   // Select data to use
-  if (useUTags)
+  if (Menus.usingUTags())
     curTagData = VisData.getUTagData(tagNum);
   else
     curTagData = VisData.getTagData(tagNum);
@@ -223,118 +143,6 @@ void GraphView::selectData(int tagNum)
                  curTagData->maxConc, curTagData->maxCpu, curTagData->maxClock);
 
  }
-
-static void selTag(Fl_Widget *w, void *p)
-{
-  long ix = (long) p;
-  
-  if (ix == DataModel::TagALL) {
-    // printf ("selTag called on All\n");
-    Info->setTagName("All");
-    DbgView->selectData(ix);
-  } else if (ix == DataModel::TagStart) {
-    // printf ("selTag called on Start\n");
-    Info->setTagName("Start");
-    DbgView->selectData(ix);
-  } else {
-    // printf ("selTag called on tag %d \"%s\"\n", ptr->tagNo, ptr->tagName);
-    if (DbgView->usingUTags())
-      Info->setTagName(VisData.getUTagData(ix)->name);
-    else
-      if (VisData.hasUniqueTags())
-        Info->setTagName(VisData.getTagData(ix)->name);
-      else {
-        char tmp[2048];
-        snprintf (tmp, sizeof(tmp), "%ld (%s)", ix, VisData.getTagData(ix)->name);
-        Info->setTagName(tmp);
-      }
-    DbgView->selectData(ix);
-  }
-  MainWindow->redraw();
-}
-
-static void toggleUnique (Fl_Widget *w, void *p) {
-  DbgView->toggleUTags();
-  DbgView->makeTagsMenu();
-  selTag((Fl_Widget *)NULL, (void *)DataModel::TagALL);
-}
-
-void GraphView::makeTagsMenu(void)
-{
-  // Remove the old one if it exists
-  if (tagMenu > 0) {
-    MainMenuBar->remove(tagMenu);
-    tagMenu = -1;
-  }
-  if (!popup) {
-    popup = new Fl_Menu_Button (GraphGrp->x(), GraphGrp->y(),
-                                GraphGrp->w(), GraphGrp->h());
-    popup->type(Fl_Menu_Button::POPUP3);
-    popup->box(FL_NO_BOX);
-    popup->menu(popup_Menu);
-    GraphGrp->add(popup);
-  }
-  if (tagPopup > 0) {
-    popup->remove(tagPopup);
-    tagPopup = -1;
-  }
-  if (VisData.NumTags() >= 1) {
-
-    // printf("Make tags menu, %d tags\n", VisData.NumTags());
-
-    // Build the menu
-
-    tagMenu = MainMenuBar->add("Tags", 0, 0, 0, FL_SUBMENU);
-    if (tagMenu < 1) {
-      printf ("Menu problem!\n");
-      return;
-    }
-#if 1
-    tagMenu = popup->add("Tags", 0, 0, 0, FL_SUBMENU);
-    if (tagMenu < 1) {
-      printf ("Popup menu problem!\n");
-      return;
-    }
-#endif    
-    if (!VisData.hasUniqueTags()) {
-      if (useUTags) {
-        MainMenuBar->add("Tags/Show All Tags", 0, toggleUnique, (void *)0);
-        popup->add("Tags/Show All Tags", 0, toggleUnique, (void *)0);
-      }
-      else {
-        MainMenuBar->add("Tags/Merge Tags", 0, toggleUnique, (void *)0);
-        popup->add("Tags/Merge Tags", 0, toggleUnique, (void *)0);
-      }
-    }
-    MainMenuBar->add("Tags/All", 0, selTag, (void *)DataModel::TagALL);
-    popup->add("Tags/All", 0, selTag, (void *)DataModel::TagALL);
-    MainMenuBar->add("Tags/Start", 0, selTag, (void *)DataModel::TagStart);
-    popup->add("Tags/Start", 0, selTag, (void *)DataModel::TagStart);
-
-    long ix;
-    long numTags;
-    if (useUTags)
-      numTags = VisData.NumUTags();
-    else
-      numTags = VisData.NumTags();
-    // printf ("make menu: numTags = %ld\n", numTags);
-    for (ix = 0; ix < numTags; ix++) {
-      const char *tagName;
-      std::string menuName;
-      if (useUTags)
-        tagName = VisData.getUTagData(ix)->name;
-      else
-        tagName = VisData.getTagData(ix)->name;
-      if (VisData.hasUniqueTags() || useUTags)
-        menuName = "Tags/" + std::string(tagName);
-      else
-        menuName = "Tags/tag " + SSTR(ix) + " (" + tagName + ")";
-      MainMenuBar->add(menuName.c_str(), 0, selTag, (void *)ix, 0);
-      popup->add(menuName.c_str(), 0, selTag, (void *)ix, 0);
-    }
-    MainMenuBar->redraw();
-  }
-}
 
 void GraphView::setTooltip ( int ix, bool isInt, int ival, double fval)
 {
@@ -388,7 +196,6 @@ void GraphView::drawLocale ( int ix, Fl_Color col)
               loc->w-6, loc->h-6, FL_ALIGN_CENTER, NULL, 0);
     }
 }
-
 
 void GraphView::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
 {
@@ -629,7 +436,7 @@ int GraphView::handle(int event)
         if ( x > loc->x-loc->w/2 && x <= loc->x + loc->w/2 &&
              y > loc->y-loc->h/2 && y <= loc->y + loc->h/2) {
           if (infoTop == show_Concurrency) {
-            if (useUTags && curTagNum != DataModel::TagALL) {
+            if (Menus.usingUTags() && curTagNum != DataModel::TagALL) {
               fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");
             } else {
               if (theLocales[ix].ccwin == NULL) {

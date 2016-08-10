@@ -42,7 +42,6 @@ class DataView : public Fl_Box {
   protected:
 
     int numlocales;
-    bool useUTags;
 
     DataModel::tagData *curTagData;
     int curTagNum;
@@ -50,17 +49,18 @@ class DataView : public Fl_Box {
   public:
 
  DataView(int x, int y, int w, int h, const char *l=0) 
-   : Fl_Box(x, y, w, h, l) {};
+   : Fl_Box(x, y, w, h, l) 
+      {
+        numlocales = 1;
+        curTagData = 0;
+        curTagNum = 0;
+      };
 
   //  Virtual methods to override
   void draw (void) { Fl_Box::draw(); }
   int handle (int event) { return Fl_Box::handle(event); }
 
   // Processing routines and virtual methods
-
-  virtual bool usingUTags() { return useUTags; }
-
-  virtual void toggleUTags() { useUTags = !useUTags; }
 
   virtual void selectData (int tagNum) = 0;
 
