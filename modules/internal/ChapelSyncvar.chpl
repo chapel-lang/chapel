@@ -111,89 +111,110 @@ module ChapelSyncvar {
         delete syncVar;
     }
 
-    /*
-      Resets the value of this sync variable to the default value of
-      its type. This method is non-blocking and the state of the sync
-      variable is set to empty when this method completes.
-    */
-    proc reset() {
-      syncVar.reset();
-    }
-
-    /*
-       Determine if the sync variable is full without blocking.
-       Does not alter the state of the sync variable
-
-       :returns: true if the state of the sync variable is full.
-    */
-    proc isFull {
-      return syncVar.isFull;
-    }
-
-    /*
-      1) Block until the sync variable is full.
-      2) Read the value of the sync variable and set the variable to empty.
-
-      :returns: The value of the sync variable.
-    */
-    proc readFE() {
-      return syncVar.readFE();
-    }
-
-    /*
-      1) Block until the sync variable is full.
-      2) Read the value of the sync variable and leave the variable full
-
-      :returns: The value of the sync variable.
-    */
-    proc readFF() {
-      return syncVar.readFF();
-    }
-
-    /*
-      1) Read the value of the sync variable
-      2) Do not inspect or change the full/empty state
-
-      :returns: The value of the sync variable.
-    */
-    proc readXX() {
-      return syncVar.readXX();
-    }
-
-    /*
-      1) Block until the sync variable is empty.
-      2) Write the value of the sync variable and leave the variable full
-    */
-    proc writeEF(x : valType) {
-      syncVar.writeEF(x);
-    }
-
-    /*
-      1) Block until the sync variable is full.
-      2) Write the value of the sync variable and leave the variable full
-    */
-    proc writeFF(x : valType) {
-      syncVar.writeFF(x);
-    }
-
-    /*
-      1) Write the value of the sync variable and leave the variable full
-    */
-    proc writeXF(x : valType) {
-      syncVar.writeXF(x);
-    }
-
-    // Do not allow implicit reads of sync/single vars.
-    pragma "no doc"
+    // Do not allow implicit reads of sync vars.
     proc readThis(x) {
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
     }
 
-    // Do not allow implicit writes of sync/single vars.
-    pragma "no doc"
+    // Do not allow implicit writes of sync vars.
     proc writeThis(x) {
       compilerError("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
-    }
+     }
+  }
+
+  /*
+     Noakes 2016/08/10
+
+     These are defined as secondary methods so that chpldoc can render the
+     documentation
+  */
+
+  pragma "no doc"
+  proc isSyncType(type t) param where t : _syncvar {
+    return true;
+  }
+
+  /* Returns true if `t` is a sync type, false otherwise. */
+  proc isSyncType(type t) param {
+    return false;
+  }
+
+  /*
+    1) Block until the sync variable is full.
+    2) Read the value of the sync variable and set the variable to empty.
+
+    :returns: The value of the sync variable.
+  */
+  proc _syncvar.readFE() {
+    return syncVar.readFE();
+  }
+
+  /*
+    1) Block until the sync variable is full.
+    2) Read the value of the sync variable and leave the variable full
+
+    :returns: The value of the sync variable.
+  */
+  proc _syncvar.readFF() {
+    return syncVar.readFF();
+  }
+
+  /*
+    1) Read the value of the sync variable
+    2) Do not inspect or change the full/empty state
+
+    :returns: The value of the sync variable.
+  */
+  proc _syncvar.readXX() {
+    return syncVar.readXX();
+  }
+
+  /*
+    1) Block until the sync variable is empty.
+    2) Write the value of the sync variable and leave the variable full
+
+    :arg val: New value of the sync variable.
+  */
+  proc _syncvar.writeEF(x : valType) {
+    syncVar.writeEF(x);
+  }
+
+  /*
+    1) Block until the sync variable is full.
+    2) Write the value of the sync variable and leave the variable full
+
+    :arg val: New value of the sync variable.
+  */
+  proc _syncvar.writeFF(x : valType) {
+    syncVar.writeFF(x);
+  }
+
+  /*
+    1) Write the value of the sync variable and leave the variable full
+
+    :arg val: New value of the sync variable.
+  */
+  proc _syncvar.writeXF(x : valType) {
+    syncVar.writeXF(x);
+  }
+
+  /*
+    Resets the value of this sync variable to the default value of
+    its type. This method is non-blocking and the state of the sync
+    variable is set to empty when this method completes.
+  */
+  proc _syncvar.reset() {
+    syncVar.reset();
+  }
+
+  /*
+     Determine if the sync variable is full without blocking.
+     Does not alter the state of the sync variable
+
+     :returns: true if the state of the sync variable is full.
+  */
+  proc _syncvar.isFull {
+    return syncVar.isFull;
   }
 
   proc   = (ref lhs : _syncvar(?t), rhs : t) {
@@ -269,14 +290,6 @@ module ChapelSyncvar {
   pragma "no doc"
   proc chpl__readXX(x : _syncvar(?)) return x.readXX();
 
-  proc isSyncType(type t) param where t : _syncvar {
-    return true;
-  }
-
-  proc isSyncType(type t) param {
-    return false;
-  }
-
   proc <=>(lhs: _syncvar, ref rhs) {
     const tmp = lhs;
 
@@ -308,6 +321,7 @@ module ChapelSyncvar {
   ************************************* | ************************************/
 
   // Implementation is target dependent and opaque to Chapel code
+  pragma "no doc"
   extern record chpl_sync_aux_t { };
 
   extern proc   chpl_sync_initAux(ref aux : chpl_sync_aux_t);
@@ -614,16 +628,16 @@ module ChapelSyncvar {
   }
 
 
-  // Do not allow implicit reads of sync/single vars.
+  // Do not allow implicit reads of single vars.
   pragma "no doc"
   proc _singlevar.readThis(x) {
-    compilerError("single/sync variables cannot currently be read - use writeEF/writeFF instead");
+    compilerError("single variables cannot currently be read - use writeEF/writeFF instead");
   }
 
-  // Do not allow implicit writes of sync/single vars.
+  // Do not allow implicit writes of single vars.
   pragma "no doc"
   proc _singlevar.writeThis(x) {
-    compilerError("single/sync variables cannot currently be written - apply readFF/readFE() to those variables first");
+    compilerError("single variables cannot currently be written - apply readFF/readFE() to those variables first");
   }
 
   pragma "dont disable remote value forwarding"
