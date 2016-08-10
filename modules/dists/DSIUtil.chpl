@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+type ElemCount = uint;
+
 // Useful functions for implementing distributions
 
 inline proc getDataParTasksPerLocale() {
@@ -34,7 +36,7 @@ inline proc getDataParMinGranularity() {
 //
 // return a rank*t tuple initialized to val
 //
-proc createTuple(param rank, type t, val) {
+proc createTuple(param rank: int, type t, val: t) {
   var tup: rank*t;
   for param i in 1..rank do tup(i) = val;
   return tup;
@@ -44,29 +46,35 @@ proc createTuple(param rank, type t, val) {
 // helper functions for determining the number of chunks and the
 //   dimension to chunk over
 //
-proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
-                        param adjustToOneDim = true): (int,int)
+proc _computeChunkStuff(
+  maxTasks: int,
+  ignoreRunning: bool,
+  minSize: int,
+  ranges: _tuple,
+  param adjustToOneDim: bool = true): (int, int)
+//    where isHomogenousTuple(ranges) && isRange(ranges(1))
 {
-  param rank=ranges.size;
-  type EC = uint; // type for element counts
-  var numElems = 1:EC;
-  for param i in 1..rank do {
-    numElems *= ranges(i).length:EC;
+  param rank = ranges.size;
+  var rangeLengths: rank*ElemCount;
+  var numElems: ElemCount = 1;
+  for param i in 1..rank { 
+    var iLen = ranges(i).length: ElemCount;
+    rangeLengths(i) = iLen;
+    numElems *= iLen; 
   }
 
   var numChunks = _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems);
   if numChunks == 0 then
-    return (0,-1);
+    return (0, -1);
   assert(numChunks > 0);
 
   // Dimension to parallelize (eventually should "block" the space)
   var parDim = -1;
   var maxDim = -1;
-  var maxElems = min(EC);
-  // break/continue don't work with param loops (known future)
-  for /* param */ i in 1..rank do {
-    const curElems = ranges(i).length:EC;
-    if curElems >= numChunks:EC {
+  var maxElems = min(ElemCount);
+  for param i in 1..rank do {
+    const curElems = rangeLengths(i); 
+    if curElems >= numChunks {
       parDim = i;
       break;
     }
@@ -81,35 +89,41 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
 
     // In those cases where parallelization is done over a single dimension
     // (which will be parDim), ensure these are no extraneous chunks.
-    if adjustToOneDim && maxElems < numChunks:EC then
-      numChunks = maxElems:int;
+    if adjustToOneDim && maxElems < numChunks then
+      numChunks = maxElems;
   }
 
-  return (numChunks, parDim);
+  return (numChunks: int, parDim);
 }
 
 // returns 0 if no numElems <= 0
-proc _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems): int {
+proc _computeNumChunks(
+  maxTasks: int,
+  ignoreRunning: bool,
+  minSize: int,
+  numElems: ElemCount): ElemCount
+{
   if numElems <= 0 then
-    return 0;
+    return 0: ElemCount;
 
-  type EC = uint; // type for element counts
-  const unumElems = numElems:EC;
-  var numChunks = maxTasks:int;
-  if !ignoreRunning {
-    const otherTasks = here.runningTasks() - 1; // don't include self
+  var numChunks: ElemCount;
+  if ignoreRunning {
+    numChunks = maxTasks: uint;
+  } else { // don't include self
+    const otherTasks = here.runningTasks() - 1;
     numChunks = if otherTasks < maxTasks
-      then (maxTasks-otherTasks):int
+      then maxTasks - otherTasks
       else 1;
   }
 
-  if minSize > 0 then
+  if minSize > 0 { 
     // This is approximate
-    while (unumElems < (minSize*numChunks):EC) && (numChunks > 1) {
-        numChunks -= 1;
-    }
+    while (numElems < (minSize * numChunks): ElemCount && numChunks > 1) do
+      numChunks -= 1;
+  }
 
-  if numChunks:EC > unumElems then numChunks = unumElems:int;
+  if numChunks > numElems then
+    numChunks = numElems;
 
   return numChunks;
 }
