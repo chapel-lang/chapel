@@ -575,6 +575,7 @@ std::string EnumType::docsDirective() {
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL),
   aggregateTag(initTag),
+  instantiationStyle(DEFINES_NONE_USE_DEFAULT),
   fields(),
   inherits(),
   outer(NULL),
