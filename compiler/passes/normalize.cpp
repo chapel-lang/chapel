@@ -1714,9 +1714,10 @@ static void change_method_into_constructor(FnSymbol* fn) {
     INT_FATAL(fn, "'this' argument has unknown type");
 
   // Now check that the function name matches the name of the type
-  // attached to 'this'.
-  if (strcmp(fn->getFormal(2)->type->symbol->name, fn->name) &&
-      strcmp(fn->name, "init"))
+  // attached to 'this' or matches 'init'.
+  bool notCtor = strcmp(fn->getFormal(2)->type->symbol->name, fn->name);
+  bool notInit = strcmp(fn->name, "init");
+  if (notCtor && notInit)
     return;
 
   // The type must be a class type.
@@ -1724,6 +1725,25 @@ static void change_method_into_constructor(FnSymbol* fn) {
   AggregateType* ct = toAggregateType(fn->getFormal(2)->type);
   if (!ct)
     INT_FATAL(fn, "initializer on non-class type");
+
+  if (ct->instantiationStyle == DEFINES_NONE_USE_DEFAULT) {
+    // We hadn't previously seen a constructor or initializer definition.
+    // Update the field on the type appropriately.
+    if (notCtor) {
+      ct->instantiationStyle = DEFINES_INITIALIZER;
+    } else if (notInit) {
+      ct->instantiationStyle = DEFINES_CONSTRUCTOR;
+    } else {
+      // Should never reach here, but just in case...
+      INT_FATAL(fn, "Function was neither a constructor nor an initializer");
+    }
+  } else if ((ct->instantiationStyle == DEFINES_CONSTRUCTOR && notCtor) ||
+             (ct->instantiationStyle == DEFINES_INITIALIZER && notInit)) {
+    // We've previously seen a constructor but this new method is an initializer
+    // or we've previously seen an initializer but this new method is a
+    // constructor.  We don't allow both to be defined on a type.
+    USR_FATAL_CONT(fn, "Definition of both constructor '%s' and initializer 'init'.  Please choose one.", ct->symbol->name);
+  }
 
   // Call the initializer, passing in just the generic arguments.
   // This call ensures that the object is default-initialized before the user's
