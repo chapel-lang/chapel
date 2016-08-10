@@ -1393,7 +1393,8 @@ bool canCoerce(Type*     actualType,
   }
 
   if (isSyncType(actualType) || isSingleType(actualType)) {
-    Type* baseType = actualType->getField("base_type")->type;
+    Type* baseType = actualType->getField("valType")->type;
+
     return canDispatch(baseType, NULL, formalType, fn, promotes);
   }
 
@@ -2524,13 +2525,13 @@ static bool considerParamMatches(Type* actualType,
     }
 
     if (isSyncType(actualType)) {
-      return considerParamMatches(actualType->getField("base_type")->type,
+      return considerParamMatches(actualType->getField("valType")->type,
                                   arg1Type,
                                   arg2Type);
     }
 
     if (isSingleType(actualType)) {
-      return considerParamMatches(actualType->getField("base_type")->type,
+      return considerParamMatches(actualType->getField("valType")->type,
                                   arg1Type,
                                   arg2Type);
     }
@@ -4798,8 +4799,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
     if (concreteIntent(formal->intent, formalType) & INTENT_FLAG_CONST) {
       tmp->addFlag(FLAG_CONST);
 
-      if (!isSyncType(formalType)   &&
-          !isSingleType(formalType) &&
+      if (!isSingleType(formalType) &&
           !isRefCountedType(formalType))
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
     }
@@ -4888,7 +4888,6 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
        if (!getRecordWrappedFlags(ts).any()   &&
            !ts->hasFlag(FLAG_ITERATOR_CLASS)  &&
            !ts->hasFlag(FLAG_ITERATOR_RECORD) &&
-           !isSyncType(ts->type)              &&
            !isSingleType(ts->type)) {
          if (fn->hasFlag(FLAG_BEGIN)) {
            // autoCopy/autoDestroy will be added later, in parallel pass
@@ -8650,7 +8649,6 @@ static void resolveAutoCopies() {
       continue; // Skip the "dmapped" pseudo-type.
 
     if (isRecord(ts->type)   ||
-        isSyncType(ts->type) ||
         isSingleType(ts->type)) {
       resolveAutoCopy(ts->type);
       resolveAutoDestroy(ts->type);
