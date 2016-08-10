@@ -1478,9 +1478,7 @@ proc BlockArr.doiCanBulkTransferStride() param {
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiCanBulkTransferStride");
 
-  // A BlockArr is a bunch of DefaultRectangular arrays,
-  // so strided bulk transfer gotta be always possible.
-  return true;
+  return useBulkTransferDist;
 }
 
 proc BlockArr.doiBulkTransfer(B) {
