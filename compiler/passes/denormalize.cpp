@@ -31,64 +31,86 @@
 
 //helper datastructures/types
 
-typedef std::map<SymExpr*, std::pair<Expr*,Type*> > ActualUseDefCastMap;
+typedef std::map<SymExpr*, std::pair<Expr*,Type*> > UseDefCastMap;
 
 //prototypes
 bool canPrimMoveCreateCommunication(CallExpr* ce);
 inline bool possibleDepInBetween(Expr* e1, Expr* e2);
 inline bool requiresCast(Type* t);
 inline bool isIntegerPromotionPrimitive(PrimitiveTag tag);
-
 bool isDenormalizable(Symbol* sym,
     Map<Symbol*,Vec<SymExpr*>*>& defMap,
     Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr** useOut, Expr** defOut,
     Type** castTo);
-
+void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& candidates);
+void findCandidatesInFunc(FnSymbol* fn, Vec<Symbol*> symVec,
+    UseDefCastMap& udcMap);
 void denormalize(void);
-void denormalize(FnSymbol *fn);
 void denormalize(Expr* def, SymExpr* use, Type* castTo);
+void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
+    Vec<Symbol*>& deferredSyms);
 
 void denormalize(void) {
+
+  UseDefCastMap candidates;
+  Vec<Symbol*> deferredSyms;
+
   if(fDenormalize) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      denormalize(fn);
+      bool isFirstRound = true;
+      do {
+        candidates.clear();
+        deferredSyms.clear();
+
+        // if we are analyzing locals in a function for the first time, we look
+        // at all the symbols in the function. otherwise we only look at the
+        // ones deferred in the previous passes on the same function
+        if(isFirstRound) {
+          findCandidatesInFunc(fn, candidates);
+        }
+        else {
+          findCandidatesInFunc(fn, deferredSyms, candidates);
+        }
+        denormalizeOrDeferCandidates(candidates, deferredSyms);
+
+        isFirstRound = false;
+      } while(deferredSyms.count() > 0);
     }
   }
 }
 
-/*
- * This function tries to remove temporary variables in function `fn`
- *
- * A local variable is removed if:
- *
- * - It is def'd and use'd once
- *
- * - Its def is a PRIM_MOVE or PRIM_ASSIGN, with no possible communication
- * - RHS and LHS are of same type and non-extern
- *
- * - Its use a suitable primitive
- * - Its use is not repeated(condition/increment statement of a loop)
- *
- * Denormalization uses helpers in util/exprAnalysis.cpp to decide if it's safe
- * to move function calls and primitives.
- */
-void denormalize(FnSymbol *fn) {
+void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
+    Vec<Symbol*>& deferredSyms) {
 
-  Vec<Symbol*> symSet;
-  Vec<SymExpr*> symExprs;
+  for(UseDefCastMap::iterator it = candidates.begin() ;
+      it != candidates.end() ; ++it) {
+    // unpack the bundle
+    std::pair<Expr*, Type*> defCastPair = it->second;
+    SymExpr* use = it->first;
+    Expr* def = defCastPair.first;
+    Type* castTo = defCastPair.second;
+
+    // if parent of def is gone, it means it has been denormalized in the
+    // earlier passes
+    if(def->parentExpr == NULL) {
+      deferredSyms.add(use->var);
+      continue;
+    }
+    denormalize(def, use, castTo);
+  }
+}
+
+void findCandidatesInFunc(FnSymbol* fn, Vec<Symbol*> symVec,
+    UseDefCastMap& udcMap) {
+
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
 
-  collectSymbolSetSymExprVec(fn, symSet, symExprs);
-  buildDefUseMaps(symSet, symExprs, defMap, useMap);
-
-  //data structures for deferred actual handling
-  std::set<CallExpr*> deferredFns;
-  ActualUseDefCastMap actualUseDefMap;
+  buildDefUseMaps(fn, defMap, useMap);
 
   bool cachedGlobalManip = isRegisteredGlobalManip(fn);
-
-  forv_Vec(Symbol, sym, symSet) {
+  // Note the different symbol set being iterated
+  forv_Vec(Symbol, sym, symVec) {
 
     SymExpr *use = NULL;
     Expr *usePar = NULL;
@@ -126,15 +148,45 @@ void denormalize(FnSymbol *fn) {
       //between use and def
       if(exprHasNoSideEffects(def)) {
         if(!possibleDepInBetween(defPar, usePar)) {
-          denormalize(def, use, castTo);
+          std::pair<Expr*, Type*> defCastPair(def, castTo);
+          udcMap.insert(std::pair<SymExpr*, std::pair<Expr*, Type*> >
+              (use, defCastPair));
         }
       }
     }
   } // end loop for symbol
-
   if(!cachedGlobalManip) {
     registerGlobalManip(fn, false);
   }
+}
+
+/*
+ * This function tries to remove temporary variables in function `fn`
+ *
+ * A local variable is removed if:
+ *
+ * - It is def'd and use'd once
+ *
+ * - Its def is a PRIM_MOVE or PRIM_ASSIGN, with no possible communication
+ * - RHS and LHS are of same type and non-extern
+ *
+ * - Its use a suitable primitive
+ * - Its use is not repeated(condition/increment statement of a loop)
+ *
+ * Denormalization uses helpers in util/exprAnalysis.cpp to decide if it's safe
+ * to move function calls and primitives.
+ */
+void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap) {
+
+  Vec<Symbol*> symSet;
+  Vec<SymExpr*> symExprs;
+  Map<Symbol*,Vec<SymExpr*>*> defMap;
+  Map<Symbol*,Vec<SymExpr*>*> useMap;
+
+  collectSymbolSetSymExprVec(fn, symSet, symExprs);
+  buildDefUseMaps(symSet, symExprs, defMap, useMap);
+
+  findCandidatesInFunc(fn, symSet, udcMap);
 
   freeDefUseMaps(defMap, useMap);
 }
