@@ -1776,7 +1776,11 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->formals.get(1)->remove();
   update_symbols(fn, &map);
 
-  fn->name = ct->defaultInitializer->name;
+  if (!notCtor) {
+    // The constructor's name is the name of the type.  Replace it with
+    // _construct_typename
+    fn->name = ct->defaultInitializer->name;
+  }
   fn->addFlag(FLAG_CONSTRUCTOR);
 }
 

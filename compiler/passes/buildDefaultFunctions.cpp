@@ -1111,7 +1111,12 @@ static void build_record_init_function(AggregateType* ct) {
   } else {
     // To default initialize, call the type specified default constructor (by
     // name), passing in all generic arguments.
-    CallExpr* call = new CallExpr(ct->defaultInitializer->name);
+    CallExpr* call = NULL;
+    if (ct->instantiationStyle == DEFINES_INITIALIZER) {
+      call = new CallExpr("init");
+    } else {
+      call = new CallExpr(ct->defaultInitializer->name);
+    }
     // Need to insert all required arguments into this call
     for_formals(formal, ct->defaultInitializer) {
       if (formal->hasFlag(FLAG_IS_MEME))

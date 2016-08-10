@@ -4651,7 +4651,11 @@ resolveNew(CallExpr* call)
     // 1: replace the type with the constructor call name
     if (Type* ty = resolveTypeAlias(toReplace)) {
       if (AggregateType* ct = toAggregateType(ty)) {
+        if (ct->instantiationStyle == DEFINES_INITIALIZER) {
+          toReplace->replace(new UnresolvedSymExpr("init"));
+        } else {
           toReplace->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
+        }
       }
     }
 
