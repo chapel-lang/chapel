@@ -990,8 +990,12 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   BlockStmt* block = fn->body;
 
   if (maybeArrayType) {
-    // Is this part necessary?
-    // See test/arrays/deitz/part4/test_array_type_alias.chpl
+    // handle e.g.
+    //
+    //   type t = [1..3] int;
+    //
+    // as in test/arrays/deitz/part4/test_array_type_alias.chpl
+    // As of 2016-08-10, about 42 tests fail without this special case.
     INT_ASSERT(!cond);
     block = handleArrayTypeCase(fn, indices, iteratorExprArg, expr);
   }
