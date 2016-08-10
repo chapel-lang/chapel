@@ -15,7 +15,7 @@ File Descriptions:
 + **ftplugin/chpl.vim**
 
   - Useful editor settings supporting chpl, chpldoc
-    
+
 + **syntax/chpl.vim**
 
   - Syntax highlighting scheme for Chapel
@@ -27,10 +27,46 @@ File Descriptions:
 + **sample-vimrc**
 
   - Sample .vimrc configuration file
- 
+
 
 Installation Instructions:
 ==========================
+
+vim-plug Installation:
+----------------------
+
+For users of the `vim-plug`_ plugin manager, the vim Chapel support can be
+loaded as an unmanaged plugin. To do this, add the following line to the
+``.vimrc``, between the ``call plug#begin()`` and ``call plug#end()`` lines:
+
+
+    ``Plug '~/path/to/chapel/highlight/vim'``
+
+Where ``~/path/to/chapel`` is the path to the Chapel repository, starting from
+the home directory. Chapel support should work once these changes are made
+without any calls to ``:PlugInstall``, which is required for managed plugins.
+
+Note that vim-plug uses the ``~`` character to identify that a plugin is a local
+file, so the Chapel repository, or at least the ``highlight/vim/`` directory,
+must be somewhere under the home directory.
+
+
+.. _vim-plug: https://github.com/junegunn/vim-plug
+
+
+Vundle Installation:
+--------------------
+
+For users of the `Vundle`_ plugin manager, the vim Chapel support can be loaded
+as a local file. To do this, add the following line to the ``.vimrc``, between
+the ``call vundle#begin()`` and ``call vundle#end()`` lines:
+
+    ``Plugin 'file:///path/to/chapel/highlight/vim'``
+
+.. _Vundle: https://github.com/VundleVim/Vundle.vim
+
+Manual Installation:
+--------------------
 
 - Create a directory in the root of your home directory called ".vim"
 
