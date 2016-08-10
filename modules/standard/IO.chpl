@@ -4093,7 +4093,7 @@ where arg.rank == 1 && isRectangularArr(arg)
 
 /*
   Read a line into a Chapel array of bytes. Reads until a ``\n`` is reached.
-  The ``\n`` is consumed but not returned in the array.
+  The ``\n`` is returned in the array.
 
   :arg arg: A 1D DefaultRectangular array which must have at least 1 element.
   :arg numRead: The number of bytes read.
