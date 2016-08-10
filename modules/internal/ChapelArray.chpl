@@ -147,7 +147,7 @@ module ChapelArray {
   pragma "no doc"
   config param useBulkTransfer = true;
   pragma "no doc"
-  config param useBulkTransferStride = false;
+  config param useBulkTransferStride = true;
 
   // Toggles the functionality to perform strided bulk transfers involving
   // distributed arrays.

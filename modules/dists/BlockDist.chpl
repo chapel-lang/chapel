@@ -1697,6 +1697,8 @@ proc BlockArr.doiBulkTransferTo(Barg)
 
 //For assignments of the form: "Block = any" 
 //where "any" means any array that implements the bulk transfer interface
+// TODO: avoid spawning so many coforall-ons
+//   - clean up some of this range creation logic
 proc BlockArr.doiBulkTransferFrom(Barg)
 {
   if debugBlockDistBulkTransfer then
