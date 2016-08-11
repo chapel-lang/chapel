@@ -31,6 +31,7 @@
 
 #include <string>
 
+static  const int minBoxSize = 6;
 
 class GridView : public DataView {
 
@@ -67,53 +68,51 @@ class GridView : public DataView {
   
  private:
 
-    int cx, cy;     // center of the GridView
-    double rx, ry;  // Radius of the locales, for elliptical view
-    double angle;   // Angle between locale
-    double start;   // Angle of locale 0
-
     // Data arrays for the locales (1D) and communication (2D)
     localeInfo *theLocales; // Need to de/reallocate after changing numlocales
     int getSize;            // size used for doing deallocate after changeing numlocales
     commInfo **comms;       // Also need to de/reallocate after changing numlocales
+    int boxSize;            // Size of locale boxes
+
     // Methods
 
     void allocArrays ();
 
   public:
 
-  GridView (int bx, int by, int bw, int bh, const char *label = 0);
+    GridView (int bx, int by, int bw, int bh, const char *label = 0);
 
-  //  Virtual methods to override
-  void draw (void);
-  int handle (int event);
+    //  Virtual methods to override
+    void draw (void);
+    int handle (int event);
 
-  // Processing routines
+    // Processing routines
 
-  void selectData (int tagNum);
+    void selectData (int tagNum);
 
-  void setNumLocales (int n)
+    void setNumLocales (int n)
     { 
       //printf("NumLocalse set to %d\n", n);
       numlocales = n;
-      angle = twopi / numlocales;
-      start = ( numlocales % 2 == 0 ? angle / 2 : 0 );
+      if ((n+2)*minBoxSize+40 > w())
+        size((n+2)*minBoxSize+40, (n+2)*minBoxSize+40);
+      boxSize = ((w()-60)/(numlocales+2));
       allocArrays();
     }
 
-  int  getNumLocales (void) { return numlocales; }
+    int  getNumLocales (void) { return numlocales; }
 
-  // Add an invisible under the locale
-  void setTooltip ( int ix, bool isInt, int ival, double fval);
+    // Add an invisible under the locale
+    void setTooltip ( int ix, bool isInt, int ival, double fval);
 
-  // Draw a "locale box, with ix as the label on it
-  void drawLocale (int ix, Fl_Color col);
+    // Draw a "locale box, with ix as the label on it
+    void drawLocale (int ix, Fl_Color col);
 
-  // Draw a comm line between loc1 and loc2, color changing in the middle
-  void drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2);
+    // Draw a comm line between loc1 and loc2, color changing in the middle
+    void drawCommBox (int ix1, Fl_Color col1,  int ix2, Fl_Color col2);
 
-  // Window show/hide functions ...
-  void hideAllCommWindows (void)
+    // Window show/hide functions ...
+    void hideAllCommWindows (void)
     {
       int ix1, ix2;
       for (ix1 = 0; ix1 < numlocales; ix1++)
@@ -122,7 +121,7 @@ class GridView : public DataView {
             comms[ix1][ix2].win->hide();
     }
 
-  void showAllCommWindows (void)
+    void showAllCommWindows (void)
     {
       int ix1, ix2;
       for (ix1 = 0; ix1 < numlocales; ix1++)
@@ -131,7 +130,7 @@ class GridView : public DataView {
             comms[ix1][ix2].win->show();
     }
 
-  void hideAllLocaleWindows (void)
+    void hideAllLocaleWindows (void)
     {
       int ix;
       for (ix = 0; ix < numlocales; ix++) {
@@ -140,9 +139,9 @@ class GridView : public DataView {
         if (theLocales[ix].ccwin != NULL)
           theLocales[ix].ccwin->hide();
       }
-    }        
+    }
 
-  void showAllLocaleWindows (void)
+    void showAllLocaleWindows (void)
     {
       int ix;
       for (ix = 0; ix < numlocales; ix++) {
@@ -153,7 +152,9 @@ class GridView : public DataView {
       }
     }
 
-  void redrawAllWindows (void);
+    void redrawAllWindows (void);
+
+    void resize(int X, int Y, int W, int H);
 
 };
 

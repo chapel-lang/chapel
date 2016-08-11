@@ -33,14 +33,15 @@
 GridView::GridView (int bx, int by, int bw, int bh, const char *label)
   : DataView (bx, by, bw, bh, 0) 
 {
-   printf ("GridView init. h=%d, w=%d, numlocales is %d\n",bh,bw, VisData.NumLocales());
-  numlocales = 0;
+  // printf ("GridView init. h=%d, w=%d, numlocales is %d\n",bh,bw, VisData.NumLocales());
+  numlocales = 1;
   theLocales = NULL;
   comms = NULL;
   curTagData = NULL;
   if (VisData.NumLocales() > 0) {
     setNumLocales(VisData.NumLocales());
   }
+  boxSize = 10;
 };
 
 // Private methods 
@@ -144,6 +145,7 @@ void GridView::selectData(int tagNum)
 
 void GridView::setTooltip ( int ix, bool isInt, int ival, double fval)
 {
+#if 0
     char tmpchars[100];
     if (theLocales != NULL) {
       localeInfo *loc = &theLocales[ix];
@@ -169,81 +171,75 @@ void GridView::setTooltip ( int ix, bool isInt, int ival, double fval)
         snprintf (tmpchars, sizeof(tmpchars), "%lf", fval);
       loc->b->copy_tooltip(tmpchars);
     }
+#endif
 }
 
 
 void GridView::drawLocale ( int ix, Fl_Color col)
 {
   //printf ("drawLocale %d\n", ix);
-    char ixchars[10];
-    if (theLocales != NULL) {
-      localeInfo *loc = &theLocales[ix];
+  char ixchars[10];
+  if (theLocales != NULL) {
+    localeInfo *loc = &theLocales[ix];
 
-      // Draw a locale ...
-      loc->x = cx + (int) rint(rx * sin (angle * ix - start));
-      loc->y = cy - (int) rint(ry * cos (angle * ix - start));
+    // Draw a locale ...
+    loc->x = 30 + boxSize*ix;
+    loc->y = 30;
+    loc->w = boxSize;
+    loc->h = boxSize;
+
+    fl_color(col);
+    fl_rectf(x() + 10 + boxSize + loc->x, y() + loc->y, loc->w, loc->h);
+    fl_rectf(x() + loc->y, y() + 10 + boxSize + loc->x, loc->w, loc->h);
+    fl_color(FL_BLACK);
+    fl_rect(x() + 10 + boxSize + loc->x, y() + loc->y, loc->w+1, loc->h);
+    fl_rect(x() + loc->y, y() + 10 + boxSize + loc->x, loc->w, loc->h+1);
+
+    if (boxSize < 30) {
+      if (!(ix % (numlocales/4)) || ix == numlocales-1) {
+        snprintf (ixchars, 10, "%d", ix);
+        fl_draw(ixchars, x() + 10 + boxSize + loc->x, y() + 5,
+                boxSize, 20, FL_ALIGN_CENTER, NULL, 0);
+        fl_draw(ixchars, x() + 5, y() + (int)(1.5 * boxSize) + loc->x,
+                20, 20, FL_ALIGN_CENTER, NULL, 0);
+      }
+    } else {
       snprintf (ixchars, 10, "%d", ix);
-      loc->w = 30;
-      loc->h = 30;
-
-      fl_color(col);
-      fl_rectf(loc->x-loc->w/2, loc->y-loc->h/2, loc->w, loc->h);
-      fl_color(FL_BLACK);
-      fl_rect(loc->x-loc->w/2, loc->y-loc->h/2, loc->w, loc->h);
-      fl_draw(ixchars, loc->x+3-loc->w/2, loc->y+3-loc->h/2,
-              loc->w-6, loc->h-6, FL_ALIGN_CENTER, NULL, 0);
+      fl_draw(ixchars, x() + 10 + boxSize + loc->x, y() + loc->y,
+              loc->w, loc->h, FL_ALIGN_CENTER, NULL, 0);
+      fl_draw(ixchars, x() + loc->y, y() + 10 + boxSize + loc->x,
+              loc->w, loc->h, FL_ALIGN_CENTER, NULL, 0);
     }
+  }
 }
 
-void GridView::drawCommLine (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
+void GridView::drawCommBox (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
 {
-  int x1, x2, y1, y2, dx, dy, midx, midy;
+  int x1, x2, y1, y2;
+
   if (ix1 < 0 || ix1 >= numlocales || ix2 < 0 || ix2 >= numlocales) {
-    fprintf (stderr, "DATA ERROR: drawCommLine\n");
+    fprintf (stderr, "DATA ERROR: drawCommBox\n");
     return;
   }
   localeInfo *loc1 = &theLocales[ix1], *loc2 = &theLocales[ix2];
-  double theta, cw, ch;
-  
-  dx = loc2->x - loc1->x;
-  dy = loc2->y - loc1->y;
-  if (dx == 0) {
-    theta = (dy < 0 ? pi / 2 : pi * 1.5);
-  } else {
-    if (dx < 0) 
-      theta = pi + atan((double)dy/(double)dx);
-    else
-      theta = atan((double)dy/(double)dx);
-  }
-  cw = loc1->w / sin(pi/4);
-  ch = loc1->h / sin(pi/4);
-  //printf ("dx = %d, dy = %d, Theta = %lf\n", dx, dy, theta);
-  
-  //  Need correct calculations here.
-  x1 = rint (cw/2 * cos(theta));
-  x1 = loc1->x + (abs(x1) > loc1->w/2 ? (dx < 0 ? -1 : 1)*loc1->w/2 : x1);
-  y1 = rint (ch/2 * sin(theta));
-  y1 = loc1->y + (abs(y1) > loc1->h/2 ? (dy < 0 ? -1 : 1)*loc1->h/2 : y1);
 
-  x2 = rint (cw/2 * cos(pi+theta));
-  x2 = loc2->x + (abs(x2) > loc2->w/2 ? (dx < 0 ? 1 : -1)*loc2->w/2 : x2);
-  y2 = rint (ch/2 * sin(pi+theta));
-  y2 = loc2->y + (abs(y2) > loc2->h/2 ? (dy < 0 ? 1 : -1)*loc2->h/2 : y2);
+  x1 = x() + 10 + boxSize + loc1->x;
+  y1 = y() + 10 + boxSize + loc2->x;
 
-  midx = loc1->x + dx/2;
-  midy = loc1->y + dy/2;
+  x2 = x() + 10 + boxSize + loc2->x;
+  y2 = y() + 10 + boxSize + loc1->x;
 
-  if (col1 != FL_WHITE) {
-    fl_color(col1);
-    fl_line_style(FL_SOLID, 3, NULL);
-    fl_line(x1,y1,midx,midy);
-  }
-  if (col2 != FL_WHITE) {
-    fl_color(col2);
-    fl_line_style(FL_SOLID, 3, NULL);
-    fl_line(midx,midy,x2,y2);
-  }
-  fl_line_style(FL_SOLID, 1, NULL);
+  fl_color(col1);
+  fl_rectf(x1, y1, loc1->w, loc1->h);
+  fl_color(FL_BLACK);
+  fl_rect(x1, y1, loc1->w+1, loc1->h+1);
+
+  fl_color(col2);
+  fl_rectf(x2, y2, loc1->w, loc1->h);
+  fl_color(FL_BLACK);
+  fl_rect(x2, y2, loc1->w+1, loc1->h+1);
+
+  // printf ("1: (%d, %d->%d),  2: (%d, %d->%d)\n", x1, y1, (int)col1, x2, y2, (int) col2);
 }
 
 void GridView::draw()
@@ -252,13 +248,10 @@ void GridView::draw()
   int iy;
 
   //printf ("GridView draw, numlocales is %d\n", numlocales);
-  //printf ("draw: x,y = %d,%d, h,w = %d,%d\n", x(), y(), w(), h());
+  //printf ("draw: x,y = %d,%d, w,h = %d,%d\n", x(), y(), w(), h());
+  //printf ("zoom: x,y = %d,%d, w,h = %d,%d\n", GridScroll->x(), GridScroll->y(), GridScroll->w(), GridScroll->h());
 
-  cx = x() + w()/2;
-  cy = y() + h()/2;
-  rx = 0.85 * w() / 2;
-  ry = 0.85 * h() / 2;
-
+#if 0
   for (ix = 0; ix < numlocales; ix++) {
     switch (Info->dataToShow()) {
     case show_Tasks:
@@ -274,37 +267,11 @@ void GridView::draw()
       setTooltip(ix, true, curTagData->locales[ix].maxConc, 0);
     }
   }
+#endif
 
   DataView::draw();
 
-  // Draw comm lines first so they go under locales
-  
-  for (ix = 0; ix < numlocales-1; ix++) {
-    for (iy = ix + 1; iy < numlocales; iy++) {
-      int  com2ix, com2iy, comMax; 
-      if (Info->commToShow()) {
-        com2ix = curTagData->comms[iy][ix].numComms;
-        com2iy = curTagData->comms[ix][iy].numComms;
-        comMax = curTagData->maxComms;
-      } else {
-        com2ix = curTagData->comms[iy][ix].commSize;
-        com2iy = curTagData->comms[ix][iy].commSize;
-        comMax = curTagData->maxSize;
-      }
-      if (com2ix || com2iy) {
-        // Draw a line ... gray if no communication
-        if (!com2ix || !com2iy) {
-          drawCommLine(ix, com2ix ? heatColor(com2ix, comMax) : FL_GRAY,
-                       iy, com2iy ? heatColor(com2iy, comMax) : FL_GRAY);
-        } else {
-          drawCommLine(ix, heatColor(com2ix, comMax),
-                       iy, heatColor(com2iy, comMax));
-        }
-      }
-    }
-  }
-
-  // Draw locales next
+  // Draw locales first
   
   for (ix = 0; ix < numlocales; ix++) {
     switch (Info->dataToShow()) {
@@ -319,6 +286,24 @@ void GridView::draw()
       break;
     case show_Concurrency:
       drawLocale(ix, heatColor(curTagData->locales[ix].maxConc, curTagData->maxConc));
+    }
+  }
+
+  for (ix = 0; ix < numlocales-1; ix++) {
+    for (iy = ix + 1; iy < numlocales; iy++) {
+      int  com2ix, com2iy, comMax;
+      if (Info->commToShow()) {
+        com2ix = curTagData->comms[iy][ix].numComms;
+        com2iy = curTagData->comms[ix][iy].numComms;
+        comMax = curTagData->maxComms;
+      } else {
+        com2ix = curTagData->comms[iy][ix].commSize;
+        com2iy = curTagData->comms[ix][iy].commSize;
+        comMax = curTagData->maxSize;
+      }
+      // Draw white if no communications
+      drawCommBox(ix, com2ix ? heatColor(com2ix, comMax) : FL_WHITE,
+                   iy, com2iy ? heatColor(com2iy, comMax) : FL_WHITE);
     }
   }
     
@@ -386,7 +371,7 @@ int GridView::handle(int event)
       }
     }
 
-#if 0    
+#if 0
     // Click on a comm link?
     for (i = 0; i < numlocales; i++) {
       localeInfo *loci, *locj;
@@ -417,7 +402,7 @@ int GridView::handle(int event)
         }
       }
     }
-#endif    
+#endif
     
     break;
   }
@@ -439,3 +424,14 @@ void GridView::redrawAllWindows(void)
           if (comms[ix1][ix2].win != NULL)
             comms[ix1][ix2].win->redraw();
     }
+
+
+void GridView::resize(int X, int Y, int W, int H)
+{
+  //printf ("GridView::resize(%d,%d,%d,%d)\n", X, Y, W, H);
+  if (H < W) W = H;
+  if (W < (numlocales+2)*minBoxSize+40) W = (numlocales+2)*minBoxSize+40;
+  boxSize = ((W-40)/(numlocales+2));
+  //printf ("Fl_Box::resize(%d,%d,%d,%d)\n", X, Y, W, H);
+  Fl_Box::resize(X,Y,W,W);
+}

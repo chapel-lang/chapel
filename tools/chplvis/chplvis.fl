@@ -157,7 +157,7 @@ return w;} {}
 
 Function {open_data_set(const char *name, bool fromArgv)} {open private return_type bool
 } {
-  code {printf("open_data_set ...\\n");
+  code {// printf("open_data_set ...\\n");
 
 if (!VisData.LoadData(name,true)) {
        return false;
@@ -169,6 +169,7 @@ Menus.makeTagsMenu();
 Menus.setCurrentDataView(DbgView);
 Menus.addPopUpTo(GraphGrp);
 Menus.setCurrentZoom(DbgScroll);
+Menus.setCurrentTag(DataModel::TagALL);
 
 DbgView->setNumLocales(VisData.NumLocales());
 DbgView->selectData(DataModel::TagALL);
@@ -177,7 +178,10 @@ GrdView->setNumLocales(VisData.NumLocales());
 GrdView->selectData(DataModel::TagALL);
  
 Info->setFileName(name);
-return true;} {}
+Info->clearTagName();
+
+return true;} {selected
+  }
 } 
 
 Function {} {open
@@ -301,7 +305,7 @@ exit(0);}
 Menus.setCurrentDataView(DbgView);
 Menus.addPopUpTo(GraphGrp);
 Menus.setCurrentZoom(DbgScroll);
-DbgView->selectData(Menus.currentTag());} selected
+DbgView->selectData(Menus.currentTag());}
         tooltip {Graph View} image {Graph-2-40x40.png} xywh {10 110 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
         code0 {o->clear_visible_focus();}
       }
@@ -341,7 +345,7 @@ GrdView->selectData(Menus.currentTag());}
           class ZoomScroll
         } {
           Fl_Box GrdView {
-            xywh {85 125 25 25} color 7 resizable
+            xywh {60 100 500 500} color 7 resizable
             code0 {GridScroll->setZoomWidget(o);}
             class GridView
           }
