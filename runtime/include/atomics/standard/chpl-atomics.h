@@ -148,56 +148,6 @@ static inline type atomic_fetch_xor_ ## type(atomic_ ## type * obj, type operand
 
 
 ///////////////////////////////////////////////////////////////////////////////
-////                       START OF REAL ATOMICS BASE                     ////
-//////////////////////////////////////////////////////////////////////////////
-#define DECLARE_REAL_ATOMICS_BASE(type) \
-static inline chpl_bool atomic_is_lock_free_ ## type(atomic_ ## type * obj) { \
-  return atomic_is_lock_free(obj); \
-} \
-static inline void atomic_init_ ## type(atomic_ ## type * obj, type value) { \
-  atomic_init(obj, value); \
-} \
-static inline void atomic_destroy_ ## type(atomic_ ## type * obj) { \
-} \
-static inline void atomic_store_explicit_ ## type(atomic_ ## type * obj, type value, memory_order order) { \
-  atomic_store_explicit(obj, value, order); \
-} \
-static inline void atomic_store_ ## type(atomic_ ## type * obj, type value) { \
-  atomic_store(obj, value); \
-} \
-static inline type atomic_load_explicit_ ## type(atomic_ ## type * obj, memory_order order) { \
-  return atomic_load_explicit(obj, order); \
-} \
-static inline type atomic_load_ ## type(atomic_ ## type * obj) { \
-  return atomic_load(obj); \
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
-////                START OF REAL ATOMICS EXCHANGE OPS                    ////
-//////////////////////////////////////////////////////////////////////////////
-#define DECLARE_REAL_ATOMICS_EXCHANGE_OPS(type) \
-static inline type atomic_exchange_explicit_ ## type(atomic_ ## type * obj, type _value, memory_order order) { \
-  return atomic_exchange_explicit(obj, _value, order); \
-} \
-static inline type atomic_exchange_ ## type(atomic_ ## type * obj, type value) { \
-  return atomic_exchange(obj, value); \
-} \
-static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, type expected, type desired, memory_order order) { \
-  return atomic_compare_exchange_strong_explicit(obj, &expected, desired, order, order); \
-} \
-static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, type expected, type desired) { \
-  return atomic_compare_exchange_strong(obj, &expected, desired); \
-} \
-static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, type expected, type desired, memory_order order) { \
-  return atomic_compare_exchange_weak_explicit(obj, &expected, desired, order, order); \
-} \
-static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, type expected, type desired) { \
-  return atomic_compare_exchange_weak(obj, &expected, desired); \
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
 ////                   START OF REAL ATOMICS FETCH OPS                    ////
 //////////////////////////////////////////////////////////////////////////////
 #define DECLARE_REAL_ATOMICS_FETCH_OPS(type) \
@@ -244,28 +194,17 @@ DECLARE_ATOMICS(uint_least16_t);
 DECLARE_ATOMICS(uint_least32_t);
 DECLARE_ATOMICS(uint_least64_t);
 
-// On netbsd the DECLARE_ATOMICS macro doesn't work for uintptr_t. From gbt:
-// The root of the problem is the fact the on netbsd <stdint.h> (indirectly via
-// <sys.stdint.h>) #defines uintptr_t as __uintptr_t.  (__uintptr_t is in turn
-// typedef'd as unsigned long, but that doesn't matter to us.)  The C standard
-// (6.3.10.1(1) for C99) says that the actual arguments in a macro invocation
-// are themselves macro-expanded before being substituted into the replacement
-// text, unless they are preceded by a # or ## token.  In our case, the "type"
-// formal argument of DECLARE_ATOMICS_BASE has a ## before it in the
-// replacement text, so uintptr_t is not macro-expanded and the concatenation
-// produces the expected atomic_uintptr_t typedef name.  But in the case of
-// DECLARE_ATOMICS there is neither a # or ## before "type" in the replacement
-// text, so the uintptr_t actual becomes __uintptr_t via macro expansion before
-// DECLARE_ATOMICS_BASE is invoked, and we get a syntax error on the resulting
-// atomic___uintptr_t because it's not a typedef type.
+// On netbsd the DECLARE_ATOMICS macro doesn't work for uintptr_t, so we
+// call out the individual parts explicitly.  For more background, see the
+// comment in the intrinsics implementation of atomics.
 DECLARE_ATOMICS_BASE(uintptr_t, uintptr_t);
 DECLARE_ATOMICS_EXCHANGE_OPS(uintptr_t, uintptr_t);
 DECLARE_ATOMICS_FETCH_OPS(uintptr_t);
 
 
 #define DECLARE_REAL_ATOMICS(type) \
-  DECLARE_REAL_ATOMICS_BASE(type) \
-  DECLARE_REAL_ATOMICS_EXCHANGE_OPS(type) \
+  DECLARE_ATOMICS_BASE(type, type) \
+  DECLARE_ATOMICS_EXCHANGE_OPS(type, type) \
   DECLARE_REAL_ATOMICS_FETCH_OPS(type)
 
 DECLARE_REAL_ATOMICS(_real32);
@@ -275,21 +214,8 @@ DECLARE_REAL_ATOMICS(_real64);
 #undef DECLARE_ATOMICS_BASE
 #undef DECLARE_ATOMICS_EXCHANGE_OPS
 #undef DECLARE_ATOMICS_FETCH_OPS
-#undef DECLARE_REAL_ATOMICS_BASE
-#undef DECLARE_REAL_ATOMICS_EXCHANGE_OPS
 #undef DECLARE_REAL_ATOMICS_FETCH_OPS
 #undef DECLARE_ATOMICS
 #undef DECLARE_REAL_ATOMICS
 
 #endif // _chpl_atomics_h_
-
-/*
- * Some misc notes:
- *
- *  - Our interface for the atomic_compare_exchange_* functions is slightly
- *  different than the C11 interface. The C11 interface is supposed to be
- *  atomic_compare_exchange_*(volatile A* obj, C* expected, C desired), but we
- *  do not pass expected in by reference. If the compare was unsuccessful
- *  expected is supposed to be set to value of obj, but since we don't pass it
- *  by reference, we can't make that change.
- */
