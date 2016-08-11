@@ -817,8 +817,7 @@ proc CyclicArr.dsiLocalSlice(ranges) {
     low(i) = ranges(i).low;
   }
 
-  var A => locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
-  return A;
+  return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
 
 proc CyclicArr.dsiDisplayRepresentation() {
