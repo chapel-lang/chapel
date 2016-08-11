@@ -1715,9 +1715,9 @@ static void change_method_into_constructor(FnSymbol* fn) {
 
   // Now check that the function name matches the name of the type
   // attached to 'this' or matches 'init'.
-  bool notCtor = strcmp(fn->getFormal(2)->type->symbol->name, fn->name);
-  bool notInit = strcmp(fn->name, "init");
-  if (notCtor && notInit)
+  bool isCtor = (0 == strcmp(fn->getFormal(2)->type->symbol->name, fn->name));
+  bool isInit = (0 == strcmp(fn->name, "init"));
+  if (!isCtor && !isInit)
     return;
 
   // The type must be a class type.
@@ -1726,19 +1726,19 @@ static void change_method_into_constructor(FnSymbol* fn) {
   if (!ct)
     INT_FATAL(fn, "initializer on non-class type");
 
-  if (ct->instantiationStyle == DEFINES_NONE_USE_DEFAULT) {
+  if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
     // We hadn't previously seen a constructor or initializer definition.
     // Update the field on the type appropriately.
-    if (notCtor) {
-      ct->instantiationStyle = DEFINES_INITIALIZER;
-    } else if (notInit) {
-      ct->instantiationStyle = DEFINES_CONSTRUCTOR;
+    if (isInit) {
+      ct->initializerStyle = DEFINES_INITIALIZER;
+    } else if (isCtor) {
+      ct->initializerStyle = DEFINES_CONSTRUCTOR;
     } else {
       // Should never reach here, but just in case...
       INT_FATAL(fn, "Function was neither a constructor nor an initializer");
     }
-  } else if ((ct->instantiationStyle == DEFINES_CONSTRUCTOR && notCtor) ||
-             (ct->instantiationStyle == DEFINES_INITIALIZER && notInit)) {
+  } else if ((ct->initializerStyle == DEFINES_CONSTRUCTOR && !isCtor) ||
+             (ct->initializerStyle == DEFINES_INITIALIZER && !isInit)) {
     // We've previously seen a constructor but this new method is an initializer
     // or we've previously seen an initializer but this new method is a
     // constructor.  We don't allow both to be defined on a type.
@@ -1764,7 +1764,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
     }
   }
 
-  if (ct->instantiationStyle == DEFINES_INITIALIZER) {
+  if (ct->initializerStyle == DEFINES_INITIALIZER) {
     ArgSymbol* meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL,
                                     new SymExpr(gTypeDefaultToken));
     meme->addFlag(FLAG_IS_MEME);
@@ -1784,7 +1784,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
   fn->formals.get(1)->remove();
   update_symbols(fn, &map);
 
-  if (!notCtor) {
+  if (isCtor) {
     // The constructor's name is the name of the type.  Replace it with
     // _construct_typename
     fn->name = ct->defaultInitializer->name;

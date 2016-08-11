@@ -187,7 +187,7 @@ buildDefaultWrapper(FnSymbol* fn,
 
     if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME) &&
         (!isAggregateType(wrapper->_this->type) ||
-         toAggregateType(wrapper->_this->type)->instantiationStyle !=
+         toAggregateType(wrapper->_this->type)->initializerStyle !=
          DEFINES_INITIALIZER)) {
       if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
@@ -314,7 +314,7 @@ buildDefaultWrapper(FnSymbol* fn,
       formal->type = wrapper->_this->type;
 
       if (AggregateType* ct = toAggregateType(formal->type)) {
-        if (ct->instantiationStyle == DEFINES_INITIALIZER) {
+        if (ct->initializerStyle == DEFINES_INITIALIZER) {
           ArgSymbol* wrapper_formal = copyFormalForWrapper(formal);
           wrapper->insertAtHead(new CallExpr(PRIM_MOVE, wrapper->_this,
                                              wrapper_formal));

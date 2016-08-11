@@ -4653,7 +4653,7 @@ resolveNew(CallExpr* call)
     // 1: replace the type with the constructor call name
     if (Type* ty = resolveTypeAlias(toReplace)) {
       if (AggregateType* ct = toAggregateType(ty)) {
-        if (ct->instantiationStyle == DEFINES_INITIALIZER) {
+        if (ct->initializerStyle == DEFINES_INITIALIZER) {
           toReplace->replace(new UnresolvedSymExpr("init"));
           initCall = true;
         } else {
@@ -4674,7 +4674,7 @@ resolveNew(CallExpr* call)
       // 4: insert the allocation for the instance and pass that in as an
       // argument if we're making a call to an initializer
       Type* typeToNew = toReplace->var->typeInfo();
-      VarSymbol* new_temp = newTemp(typeToNew);
+      VarSymbol* new_temp = newTemp("new_temp", typeToNew);
       if (typeToNew->symbol->hasFlag(FLAG_GENERIC)) {
         USR_FATAL(call, "Sorry, new style initializers don't work with generics yet.  Stay tuned!");
       }
@@ -4687,7 +4687,7 @@ resolveNew(CallExpr* call)
       if (!isRecord(typeToNew) && !isUnion(typeToNew)) {
         BlockStmt* allocCallBlock = new BlockStmt();
 
-        CallExpr* innerCall = callChplHereAlloc((new_temp->typeInfo())->symbol);
+        CallExpr* innerCall = callChplHereAlloc(typeToNew->symbol);
         CallExpr* allocCall = new CallExpr(PRIM_MOVE, new_temp,
                                            innerCall);
         insertBeforeMe->insertBefore(allocCallBlock);
@@ -7641,7 +7641,7 @@ static void instantiate_default_constructor(FnSymbol* fn) {
     }
 
     if (AggregateType* ct = toAggregateType(fn->_this->type)) {
-      if (ct->instantiationStyle == DEFINES_INITIALIZER &&
+      if (ct->initializerStyle == DEFINES_INITIALIZER &&
           !ct->symbol->hasFlag(FLAG_REF) &&
           !isSyncType(ct) && !isSingleType(ct)) {
         call->insertAtTail(new NamedExpr("meme", new SymExpr(fn->_this)));

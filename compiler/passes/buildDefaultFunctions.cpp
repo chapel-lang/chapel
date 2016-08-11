@@ -1028,9 +1028,9 @@ static void build_record_copy_function(AggregateType* ct) {
       INT_FATAL(arg, "Extern type's constructor call didn't create expected # of actuals");
     }
   }
-  if (ct->instantiationStyle == DEFINES_INITIALIZER) {
+  if (ct->initializerStyle == DEFINES_INITIALIZER) {
     // We want the initializer to take in the memory it will initialize
-    VarSymbol* meme = newTemp(ct);
+    VarSymbol* meme = newTemp("meme_tmp", ct);
     fn->insertAtHead(new DefExpr(meme));
     call->insertAtTail(new NamedExpr("meme", new SymExpr(meme)));
   }
@@ -1118,7 +1118,7 @@ static void build_record_init_function(AggregateType* ct) {
     // To default initialize, call the type specified default constructor (by
     // name), passing in all generic arguments.
     CallExpr* call = NULL;
-    if (ct->instantiationStyle == DEFINES_INITIALIZER) {
+    if (ct->initializerStyle == DEFINES_INITIALIZER) {
       call = new CallExpr("init");
     } else {
       call = new CallExpr(ct->defaultInitializer->name);
@@ -1206,9 +1206,9 @@ static void build_record_init_function(AggregateType* ct) {
         }
       }
     }
-    if (ct->instantiationStyle == DEFINES_INITIALIZER) {
+    if (ct->initializerStyle == DEFINES_INITIALIZER) {
       // We want the initializer to take in the memory it will initialize
-      VarSymbol* meme = newTemp(ct);
+      VarSymbol* meme = newTemp("meme_tmp", ct);
       fn->insertAtHead(new DefExpr(meme));
       call->insertAtTail(new NamedExpr("meme", new SymExpr(meme)));
     }

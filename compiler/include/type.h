@@ -152,7 +152,7 @@ enum AggregateTag {
   AGGREGATE_UNION
 };
 
-enum InstantiationStyle {
+enum InitializerStyle {
   DEFINES_CONSTRUCTOR,
   DEFINES_INITIALIZER,
   DEFINES_NONE_USE_DEFAULT
@@ -161,7 +161,7 @@ enum InstantiationStyle {
 class AggregateType : public Type {
  public:
   AggregateTag aggregateTag;
-  InstantiationStyle instantiationStyle;
+  InitializerStyle initializerStyle;
   AList fields;
   AList inherits; // used from parsing, sets dispatchParents
   Symbol* outer;  // pointer to an outer class if this is an inner class
