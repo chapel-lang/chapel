@@ -21,7 +21,6 @@
 #define _chpl_atomics_h_
 
 #include "chpltypes.h"
-#include <assert.h>
 
 #if defined(__cplusplus)
   #if __cplusplus >= 201103L
