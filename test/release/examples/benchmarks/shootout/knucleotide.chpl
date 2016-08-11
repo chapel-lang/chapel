@@ -104,7 +104,7 @@ forall i in toChar.domain do
 inline proc decode(in data, param nclSize) {
   var ret: string;
 
-  for param i in 1..nclSize {
+  for i in 1..nclSize {
     ret = toChar[(data & 3)] + ret;
     data >>= 2;
   }
@@ -116,7 +116,7 @@ inline proc decode(in data, param nclSize) {
 inline proc hash(str, beg, param size) {
   var data = 0;
 
-  for param i in 0..size-1 {
+  for i in 0..size-1 {
     data <<= 2;
     data |= toNum[str[beg+i]];
   }
