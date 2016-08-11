@@ -1195,7 +1195,7 @@ module ChapelArray {
     pragma "reference to const when const this"
     proc newAlias() {
       var x = _value;
-      return _newDomain(x);
+      return _getDomain(x);
     }
 
     /* Returns true if this domain is a subset of ``super``. Otherwise
