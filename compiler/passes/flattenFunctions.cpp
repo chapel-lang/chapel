@@ -101,6 +101,7 @@ passByRef(Symbol* sym) {
     return false;
   }
 
+  /*
   if (sym->hasFlag(FLAG_DISTRIBUTION) ||
       sym->hasFlag(FLAG_DOMAIN) ||
       sym->hasFlag(FLAG_ARRAY)
@@ -112,7 +113,7 @@ passByRef(Symbol* sym) {
     // the same, and so does a pointer to it. The contents of that
     // object *can* change, however.
     return false;
-  }
+  }*/
 
   Type* type = sym->type;
 
