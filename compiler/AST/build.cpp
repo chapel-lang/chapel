@@ -862,14 +862,15 @@ CallExpr*
 buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   FnSymbol* fn = new FnSymbol(astr("_seqloopexpr", istr(loopexpr_uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+
+  // See comment in buildForallLoopExpr()
   ArgSymbol* iteratorExprArg = new ArgSymbol(INTENT_BLANK, "iterExpr", dtAny);
   fn->insertFormalAtTail(iteratorExprArg);
   BlockStmt* block = fn->body;
 
   if (maybeArrayType) {
-    // MPF: I would think this is only necessary for the
-    // [ ] syntax. This would allow something like
-    // type t = for 1..100 int
+    // MPF: I suspect this case is not necessary here since array type
+    // expressions are be handled by buildForallLoopExpr()
     INT_ASSERT(!cond);
     block = handleArrayTypeCase(fn, indices, iteratorExprArg, expr);
   }
@@ -991,12 +992,9 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   BlockStmt* block = fn->body;
 
   if (maybeArrayType) {
-    // handle e.g.
-    //
-    //   type t = [1..3] int;
-    //
+    // handle e.g. type t = [1..3] int;
     // as in test/arrays/deitz/part4/test_array_type_alias.chpl
-    // As of 2016-08-10, about 42 tests fail without this special case.
+    // where "[1..3] int" is syntactically a "forall loop expression"
     INT_ASSERT(!cond);
     block = handleArrayTypeCase(fn, indices, iteratorExprArg, expr);
   }
