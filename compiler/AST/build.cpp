@@ -1618,7 +1618,7 @@ buildReduceScanPreface2(FnSymbol* fn, Symbol* eltType, Symbol* globalOp,
 //   }
 //
 static void addElseClauseForSerialIter(BlockStmt* forall, Expr* opExpr,
-                                       VarSymbol* data,
+                                       ArgSymbol* data,
                                        VarSymbol* result, VarSymbol* globalOp,
                                        UnresolvedSymExpr* index, bool zippered)
 {
@@ -1654,7 +1654,7 @@ static void addElseClauseForSerialIter(BlockStmt* forall, Expr* opExpr,
 //
 static CallExpr*
 buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
-                     VarSymbol* data, VarSymbol* eltType, bool zippered)
+                     ArgSymbol* data, VarSymbol* eltType, bool zippered)
 {
   if (zippered) {
     // A zippered reduction - not handled yet.
@@ -1741,7 +1741,7 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
   fn->insertAtTail(new CallExpr(PRIM_RETURN, result));
 
   // Success.
-  return new CallExpr(new DefExpr(fn));
+  return new CallExpr(new DefExpr(fn), dataExpr);
 }
 
 
@@ -1755,12 +1755,8 @@ buildReduceScanPreface1(FnSymbol* fn, Symbol* data, Symbol* eltType,
       sym->unresolved = astr("MinReduceScanOp");
   }
 
-  data->addFlag(FLAG_EXPR_TEMP);
   eltType->addFlag(FLAG_MAYBE_TYPE);
-
-  fn->insertAtTail(new DefExpr(data));
   fn->insertAtTail(new DefExpr(eltType));
-  fn->insertAtTail("'move'(%S, %E)", data, dataExpr);
 
   // TODO -- consider giving this function a different name
   // By function resolution, we can know when a user variable
@@ -1795,7 +1791,11 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   fn->addFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING);
   fn->addFlag(FLAG_INLINE);
 
-  VarSymbol* data = newTemp("chpl_toReduce");
+  // data will hold the reduce-d expression as an argument
+  // we'll store dataExpr in the call to the chpl__reduce function.
+  ArgSymbol* data = new ArgSymbol(INTENT_BLANK, "chpl_toReduce", dtAny);
+  fn->insertFormalAtTail(data);
+
   VarSymbol* eltType = newTemp("chpl_eltType");
   buildReduceScanPreface1(fn, data, eltType, opExpr, dataExpr, zippered);
 
@@ -1877,7 +1877,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   fn->insertAtTail(new DefExpr(result, new CallExpr(new CallExpr(".", globalOp, new_CStringSymbol("generate")))));
   fn->insertAtTail("'delete'(%S)", globalOp);
   fn->insertAtTail("'return'(%S)", result);
-  return new CallExpr(new DefExpr(fn));
+  return new CallExpr(new DefExpr(fn), dataExpr);
 }
 
 
@@ -1887,8 +1887,12 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   FnSymbol* fn = new FnSymbol(astr("chpl__scan", istr(uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
 
-  VarSymbol* data = newTemp();
-  VarSymbol* eltType = newTemp();
+  // data will hold the reduce-d expression as an argument
+  // we'll store dataExpr in the call to the chpl__scan function.
+  ArgSymbol* data = new ArgSymbol(INTENT_BLANK, "chpl_toScan", dtAny);
+  fn->insertFormalAtTail(data);
+
+  VarSymbol* eltType = newTemp("chpl_eltType");
   VarSymbol* globalOp = newTemp();
 
   buildReduceScanPreface1(fn, data, eltType, opExpr, dataExpr, zippered);
@@ -1902,7 +1906,7 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
     fn->insertAtTail("'return'(chpl__scanIteratorZip(%S, %S))", globalOp, data);
   }
 
-  return new CallExpr(new DefExpr(fn));
+  return new CallExpr(new DefExpr(fn), dataExpr);
 }
 
 
