@@ -1,7 +1,7 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Kyle Brady, Lydia Duncan
+   contributed by Kyle Brady and Lydia Duncan
    derived from the C implementation by Christian Vosteen
  */
 
@@ -290,12 +290,12 @@ proc hasIsland(cell, piece) {
 proc fillContiguousSpace(board, indx) {
   if board[indx] == 1 then
     return;
+
   board[indx] = 1;
 
-  for dir in (E, SE, SW, W, NW, NE) {
+  for dir in (E, SE, SW, W, NW, NE) do
     if !outOfBounds(indx, dir) then
       fillContiguousSpace(board, shift(indx, dir));
-  }
 }
 
 /* Calculate the lowest possible open cell if the piece is placed on
@@ -340,24 +340,24 @@ proc flip(dir) {
 proc calcRows() {
   var badEvenRows, badOddRows: [0..31] [0..31] bool;
 
-  forall row1 in 0..31 do
+  forall row1 in 0..31 {
     for row2 in 0..31 {
       badEvenRows[row1][row2] = rowsBad(row1, row2, true);
       badOddRows[row1][row2] = rowsBad(row1, row2, false);
     }
+  }
 
-  for row1 in 0..31 do
-    for row2 in 0..31 do
+  for row1 in 0..31 {
+    for row2 in 0..31 {
       for row3 in 0..31 {
-        const idx = row1+(row2*32)+(row3*1024);
+        const idx = row1 + (row2*32) + (row3*1024);
         var even = badEvenRows[row1][row2],
             odd = badOddRows[row2][row3];
 
         if !even && odd && tripleIsOkay(row1, row2, row3, true) then
           badEvenTriple[idx] = false;
-        else {
+        else
           badEvenTriple[idx] = even || odd;
-        }
 
         odd = badOddRows[row1][row2];
         even = badEvenRows[row2][row3];
@@ -366,6 +366,8 @@ proc calcRows() {
         else
           badOddTriple[idx] = odd || even;
       }
+    }
+  }
 }
 
 proc rowsBad(row1, row2, even) {
@@ -380,7 +382,7 @@ proc rowsBad(row1, row2, even) {
         block = ((row1 ^ row2) & row2) & ((row1 ^ row2Shift) & row2Shift);
 
   /* Test for groups of 0's */
-  for i in 0..4 do
+  for i in 0..4 {
     if row1 & (1 << i) {
       if inZeroes {
         if !groupOkay then
@@ -394,6 +396,7 @@ proc rowsBad(row1, row2, even) {
       if !((block & (1 << i))) then
         groupOkay = true;
     }
+  }
 
   if inZeroes then
     return !groupOkay;
@@ -448,7 +451,7 @@ proc solveHelper(piece) {
         maxRots = pieceCounts[piece][cell];
 
   avail ^= pieceNoMask;
-  for rotation in 0..(maxRots-1) do
+  for rotation in 0..(maxRots-1) {
     if !((board & pieces[piece][cell][rotation]):bool) {
       solNums[depth] = piece;
       solMasks[depth] = pieces[piece][cell][rotation];
@@ -459,6 +462,7 @@ proc solveHelper(piece) {
       }
       board ^= pieces[piece][cell][rotation];
     }
+  }
 
   avail ^= pieceNoMask;
 }
@@ -495,7 +499,7 @@ proc solveLinear(in depth, in cell, in board, in avail, solNums, solMasks) {
 
     const maxRots = pieceCounts[piece][cell];
 
-    for rotation in 0..(maxRots-1) do
+    for rotation in 0..(maxRots-1) {
       if !((board & pieces[piece][cell][rotation]):bool) {
         solNums[depth] = piece;
         solMasks[depth] = pieces[piece][cell][rotation];
@@ -512,6 +516,7 @@ proc solveLinear(in depth, in cell, in board, in avail, solNums, solMasks) {
         }
         board ^= pieces[piece][cell][rotation];
       }
+    }
 
     avail ^= pieceNoMask;
   }
@@ -537,11 +542,12 @@ proc recordSolution(solNums, solMasks) {
 proc printLargestSmallest() {
   var sIndx, lIndx = 0;
 
-  for i in 1..solutionCount.read()-1 do
+  for i in 1..solutionCount.read()-1 {
     if solutionLessThan(lIndx, i) then
       lIndx = i;
     else if solutionLessThan(i, sIndx) then
       sIndx = i;
+  }
 
   pretty(solutions[sIndx]);
   pretty(solutions[lIndx]);
