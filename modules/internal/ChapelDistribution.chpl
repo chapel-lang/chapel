@@ -608,7 +608,7 @@ module ChapelDistribution {
   class BaseSparseArrImpl: BaseSparseArr {
 
 
-    // currently there is no support implemneted for setting IRV for
+    // currently there is no support implemented for setting IRV for
     // SparseBlockArr, therefore I moved IRV related stuff to this class, and
     // have SparseBlockArr be a child class of BaseSparseArr directly instead
     // of this one
