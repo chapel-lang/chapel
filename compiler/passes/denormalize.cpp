@@ -35,7 +35,7 @@ typedef std::map<SymExpr*, std::pair<Expr*,Type*> > UseDefCastMap;
 
 //prototypes
 bool primMoveGeneratesCommCall(CallExpr* ce);
-inline bool possibleDepInBetween(Expr* e1, Expr* e2);
+inline bool unsafeExprInBetween(Expr* e1, Expr* e2);
 inline bool requiresCast(Type* t);
 inline bool isIntegerPromotionPrimitive(PrimitiveTag tag);
 bool isDenormalizable(Symbol* sym,
@@ -163,7 +163,7 @@ void findCandidatesInFunc(FnSymbol* fn, Vec<Symbol*> symVec,
       //denormalize if the def is safe to move and there is no unsafe function
       //between use and def
       if(exprHasNoSideEffects(def)) {
-        if(!possibleDepInBetween(defPar, usePar)) {
+        if(!unsafeExprInBetween(defPar, usePar)) {
           std::pair<Expr*, Type*> defCastPair(def, castTo);
           udcMap.insert(std::pair<SymExpr*, std::pair<Expr*, Type*> >
               (use, defCastPair));
@@ -417,9 +417,39 @@ bool primMoveGeneratesCommCall(CallExpr* ce) {
 }
 
 
-inline bool possibleDepInBetween(Expr* e1, Expr* e2){
+inline bool unsafeExprInBetween(Expr* e1, Expr* e2){
+  int counter = 0;
   for(Expr* e = e1; e != e2 ; e = getNextExpr(e)) {
     if(! exprHasNoSideEffects(e)) {
+      return true;
+    }
+    
+    // implementation of this function is suboptimal as it's asymptotically
+    // O(N**2). This if is a stopgap measure to prevent it running for too long.
+    // So, currently we give up when there is more than 100 Exprs between e1 and
+    // e2.
+    //
+    // If this still causes any performance issues, a better way of implementing
+    // this is:
+    // (1) get tally of safe(0)/unsafe(1) Expr in the function
+    //
+    //  (0)  Expr1
+    //  (1)  Expr2
+    //  (0)  Expr3
+    //  (1)  Expr4
+    //  (0)  Expr5
+    //
+    // (2) run scan on the data generated
+    //
+    //  (0)  Expr1
+    //  (1)  Expr2
+    //  (1)  Expr3
+    //  (2)  Expr4
+    //  (1)  Expr5
+    //
+    // (3) there is an unsafe Expr between Expr_i and Expr_j if their "distance"
+    // are different.
+    if(++counter >= 100) {
       return true;
     }
   }
