@@ -818,7 +818,7 @@ module ChapelArray {
     }
 
     proc ~_distribution() {
-      if ! _unowned {
+      if ! _unowned && ! _instance.singleton() {
         on _value {
           // How many domains refer to this distribution?
           var cnt = _instance.destroyDist();

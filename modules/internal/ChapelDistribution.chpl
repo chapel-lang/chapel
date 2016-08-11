@@ -128,6 +128,9 @@ module ChapelDistribution {
   
     // dynamically-dispatched counterpart of linksDistribution
     proc dsiTrackDomains() return true;
+
+    proc singleton() param return false;
+    proc dsiSingleton return false;
   }
   
   //

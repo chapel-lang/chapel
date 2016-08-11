@@ -68,8 +68,10 @@ module DefaultRectangular {
     proc dsiEqualDMaps(d) param return false;
     
     proc trackDomains() param return false;
-    proc dsiTrackDomains()     return false;
- 
+    proc dsiTrackDomains()    return false;
+
+    proc singleton() param return true;
+    proc dsiSingleton()    return true;
   }
   
   //
