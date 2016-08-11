@@ -162,7 +162,8 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
   form_Map(SymbolMapElem, e, *vars) {
     if (Symbol* sym = e->key) {
       Type* type = sym->type;
-      if (passByRef(sym))
+      IntentTag intent = INTENT_BLANK;
+
         /* NOTE: This is still conservative.  This avoids passing
            coforall index vars by reference for non-var iterators.
            David came up with an example with nested functions and no
@@ -170,7 +171,13 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
            by reference.  With further analysis, we could figure out
            whether this variable is actually going to be returned as
            an LHS expr. */
+      if (passByRef(sym)) {
+        intent = concreteIntent(INTENT_REF, type);
         type = type->refType;
+      } else {
+        intent = concreteIntent(INTENT_BLANK, type);
+      }
+
       SET_LINENO(sym);
       //
       // BLC: TODO: This routine is part of the reason that we aren't
@@ -188,7 +195,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
       // inconsistencies like this and keep things more
       // uniform/simple; but we haven't made this switch yet.
       //
-      ArgSymbol* arg = new ArgSymbol(blankIntentForType(type), sym->name, type);
+      ArgSymbol* arg = new ArgSymbol(intent, sym->name, type);
       if (sym->hasFlag(FLAG_ARG_THIS))
         arg->addFlag(FLAG_ARG_THIS);
       fn->insertFormalAtTail(new DefExpr(arg));
