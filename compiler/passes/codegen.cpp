@@ -244,10 +244,12 @@ static void
 genFtable(Vec<FnSymbol*> & fSymbols, bool isHeader) {
   GenInfo* info = gGenInfo;
   const char* ftable_name = "chpl_ftable";
+  const char* finfo_name = "chpl_finfo";
   if( info->cfile ) {
     FILE* hdrfile = info->cfile;
     if(isHeader) {
       fprintf(hdrfile, "extern chpl_fn_p %s[];\n", ftable_name);
+      fprintf(hdrfile, "extern chpl_fn_info %s[];\n", finfo_name);
       return;
     }
     fprintf(hdrfile, "chpl_fn_p %s[] = {\n", ftable_name);
@@ -262,6 +264,23 @@ genFtable(Vec<FnSymbol*> & fSymbols, bool isHeader) {
     if (fSymbols.n == 0)
       fprintf(hdrfile, "(chpl_fn_p)0");
     fprintf(hdrfile, "\n};\n");
+
+    // function information (names ...) ??? some flag to dump these?
+    fprintf(hdrfile, "chpl_fn_info %s[] = {\n", finfo_name);
+    first = true;
+
+    forv_Vec(FnSymbol, fn, fSymbols) {
+      if (!first)
+        fprintf(hdrfile, ",\n");
+      fprintf(hdrfile, "{\"%s\", %d, %d}", fn->cname,
+              getFilenameLookupPosition(fn->astloc.filename),
+              fn->astloc.lineno);
+      first = false;
+    }
+    if (!first)
+      fprintf(hdrfile, ",\n");
+    fprintf(hdrfile, "{(char *)0, 0, 0}\n};\n");
+
   } else {
 #ifdef HAVE_LLVM
     if (!isHeader)
