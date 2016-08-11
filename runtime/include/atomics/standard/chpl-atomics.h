@@ -286,11 +286,6 @@ DECLARE_REAL_ATOMICS(_real64);
 /*
  * Some misc notes:
  *
- *  - According to the spec, the atomic intrinsics are technically only
- *  supported for ints, longs, long longs, and their unsigned counterparts but
- *  all the current compilers that we support have intrinsics for  1, 2, 4, and
- *  8 byte variables.
- *
  *  - Our interface for the atomic_compare_exchange_* functions is slightly
  *  different than the C11 interface. The C11 interface is supposed to be
  *  atomic_compare_exchange_*(volatile A* obj, C* expected, C desired), but we
