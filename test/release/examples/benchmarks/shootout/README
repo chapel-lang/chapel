@@ -144,11 +144,6 @@ o Should writef("%s", str) and write(str) be equivalent?  If so,
 
 k-nucleotide
 ------------
-o The current decomposition of iterations over tasks uses cyclic for
-  simplicity, but we'd probably get better performance (spatial
-  locality) using a chunking pattern using the chunking library
-  Preston's working on...
-
 o In addition, we currently combine per-task associative domains into
   the shared one an element at a time, but using the new bulk-add
   interface for irregular domains, we should be able to do this

@@ -495,7 +495,7 @@ module meteor {
           /* Board rotated 180 degrees is a solution too! */
           solutions[mySolCount+1][49-indx] = solNums[solNo];
         }
-        solMask = solMask >> 1;
+        solMask >>= 1;
       }
     }
   }
