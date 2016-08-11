@@ -374,11 +374,18 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
         VarSymbol* varLhs = toVarSymbol(symLhs->var);
         SymExpr*   symRhs = toSymExpr(callRhs->get(1));
         VarSymbol* varRhs = toVarSymbol(symRhs->var);
+        ArgSymbol* argRhs = toArgSymbol(symRhs->var);
+        Type*     rhsType = NULL;
 
-        if (varLhs != NULL && varRhs != NULL)
+        if (varRhs)
+          rhsType = varRhs->type;
+        if (argRhs)
+          rhsType = argRhs->type;
+
+        if (varLhs != NULL && rhsType != NULL)
         {
           if (isUserDefinedRecord(varLhs->type) == true &&
-              varRhs->type                      == varLhs->type->refType)
+              rhsType                           == varLhs->type->refType)
           {
 
             // HARSHBARGER 2015-12-11:
