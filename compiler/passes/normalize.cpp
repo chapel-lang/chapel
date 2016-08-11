@@ -1764,6 +1764,14 @@ static void change_method_into_constructor(FnSymbol* fn) {
     }
   }
 
+  if (ct->instantiationStyle == DEFINES_INITIALIZER) {
+    ArgSymbol* meme = new ArgSymbol(INTENT_BLANK, "meme", ct, NULL,
+                                    new SymExpr(gTypeDefaultToken));
+    meme->addFlag(FLAG_IS_MEME);
+    fn->insertFormalAtTail(meme);
+    call->insertAtTail(new NamedExpr ("meme", new SymExpr(meme)));
+  }
+
   fn->_this = new VarSymbol("this");
   fn->_this->addFlag(FLAG_ARG_THIS);
   fn->insertAtHead(new CallExpr(PRIM_MOVE, fn->_this, call));

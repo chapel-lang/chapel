@@ -185,7 +185,10 @@ buildDefaultWrapper(FnSymbol* fn,
 
     wrapper->insertAtTail(new DefExpr(wrapper->_this));
 
-    if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME)) {
+    if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME) &&
+        (!isAggregateType(wrapper->_this->type) ||
+         toAggregateType(wrapper->_this->type)->instantiationStyle !=
+         DEFINES_INITIALIZER)) {
       if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
         wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
                                            wrapper->_this,
@@ -216,8 +219,11 @@ buildDefaultWrapper(FnSymbol* fn,
       ArgSymbol* wrapper_formal = copyFormalForWrapper(formal);
       if (fn->_this == formal)
         wrapper->_this = wrapper_formal;
-      if (formal->hasFlag(FLAG_IS_MEME))
-        wrapper->_this->defPoint->insertAfter(new CallExpr(PRIM_MOVE, wrapper->_this, wrapper_formal)); // unexecuted none/gasnet on 4/25/08
+      if (formal->hasFlag(FLAG_IS_MEME)) {
+        if (wrapper->_this != NULL) {
+          wrapper->_this->defPoint->insertAfter(new CallExpr(PRIM_MOVE, wrapper->_this, wrapper_formal)); // unexecuted none/gasnet on 4/25/08
+        }
+      }
       wrapper->insertFormalAtTail(wrapper_formal);
 
       // By default, we simply pass the wrapper formal along to the wrapped function,
@@ -306,6 +312,15 @@ buildDefaultWrapper(FnSymbol* fn,
       // hack: why is the type of meme set to dtNil?
       //
       formal->type = wrapper->_this->type;
+
+      if (AggregateType* ct = toAggregateType(formal->type)) {
+        if (ct->instantiationStyle == DEFINES_INITIALIZER) {
+          ArgSymbol* wrapper_formal = copyFormalForWrapper(formal);
+          wrapper->insertAtHead(new CallExpr(PRIM_MOVE, wrapper->_this,
+                                             wrapper_formal));
+          wrapper->insertFormalAtTail(wrapper_formal);
+        }
+      }
 
       call->insertAtTail(wrapper->_this);
     } else {

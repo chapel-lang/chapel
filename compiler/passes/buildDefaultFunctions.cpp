@@ -1028,6 +1028,12 @@ static void build_record_copy_function(AggregateType* ct) {
       INT_FATAL(arg, "Extern type's constructor call didn't create expected # of actuals");
     }
   }
+  if (ct->instantiationStyle == DEFINES_INITIALIZER) {
+    // We want the initializer to take in the memory it will initialize
+    VarSymbol* meme = newTemp(ct);
+    fn->insertAtHead(new DefExpr(meme));
+    call->insertAtTail(new NamedExpr("meme", new SymExpr(meme)));
+  }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
@@ -1200,6 +1206,13 @@ static void build_record_init_function(AggregateType* ct) {
         }
       }
     }
+    if (ct->instantiationStyle == DEFINES_INITIALIZER) {
+      // We want the initializer to take in the memory it will initialize
+      VarSymbol* meme = newTemp(ct);
+      fn->insertAtHead(new DefExpr(meme));
+      call->insertAtTail(new NamedExpr("meme", new SymExpr(meme)));
+    }
+
     fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   }
 

@@ -4648,11 +4648,14 @@ resolveNew(CallExpr* call)
   if (toReplace) {
     SET_LINENO(call);
 
+    bool initCall = false;
+
     // 1: replace the type with the constructor call name
     if (Type* ty = resolveTypeAlias(toReplace)) {
       if (AggregateType* ct = toAggregateType(ty)) {
         if (ct->instantiationStyle == DEFINES_INITIALIZER) {
           toReplace->replace(new UnresolvedSymExpr("init"));
+          initCall = true;
         } else {
           toReplace->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
         }
@@ -4666,6 +4669,34 @@ resolveNew(CallExpr* call)
     call->primitive = NULL;
     call->baseExpr = arg;
     parent_insert_help(call, call->baseExpr);
+
+    if (initCall) {
+      // 4: insert the allocation for the instance and pass that in as an
+      // argument if we're making a call to an initializer
+      Type* typeToNew = toReplace->var->typeInfo();
+      VarSymbol* new_temp = newTemp(typeToNew);
+      DefExpr* def = new DefExpr(new_temp);
+      Expr* insertBeforeMe = ((!isBlockStmt(call->parentExpr)) ?
+                              call->parentExpr : call);
+      insertBeforeMe->insertBefore(def);
+      resolveExpr(def);
+
+      if (!isRecord(typeToNew) && !isUnion(typeToNew)) {
+        BlockStmt* allocCallBlock = new BlockStmt();
+
+        CallExpr* innerCall = callChplHereAlloc((new_temp->typeInfo())->symbol);
+        CallExpr* allocCall = new CallExpr(PRIM_MOVE, new_temp,
+                                           innerCall);
+        insertBeforeMe->insertBefore(allocCallBlock);
+        allocCallBlock->insertAtTail(allocCall);
+
+        CallExpr* setIdCall = new CallExpr(PRIM_SETCID, new_temp);
+        allocCallBlock->insertAtTail(setIdCall);
+        normalize(allocCallBlock);
+        resolveBlockStmt(allocCallBlock);
+      }
+      call->insertAtTail(new NamedExpr("meme", new SymExpr(new_temp)));
+    }
 
     // Now finish resolving it, since we are after all in
     // resolveNew.
@@ -7605,6 +7636,17 @@ static void instantiate_default_constructor(FnSymbol* fn) {
         }
       }
     }
+
+    if (AggregateType* ct = toAggregateType(fn->_this->type)) {
+      if (ct->instantiationStyle == DEFINES_INITIALIZER &&
+          !ct->symbol->hasFlag(FLAG_REF) &&
+          !isSyncType(ct) && !isSingleType(ct)) {
+        call->insertAtTail(new NamedExpr("meme", new SymExpr(fn->_this)));
+        // The "meme" argument isn't an argument to the type constructor, so
+        // wouldn't be inserted for major types otherwise.
+      }
+    }
+
     fn->insertBeforeReturn(call);
     resolveCall(call);
     fn->retType->defaultInitializer = call->isResolved();
