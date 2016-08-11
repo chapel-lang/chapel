@@ -1414,7 +1414,8 @@ module DefaultRectangular {
     'Proposal for Extending the UPC Memory Copy Library Functions and
     Supporting Extensions to GASNet, Version 2.0. Author: Dan Bonachea'
 
-  A.doiBulkTransferStride(B) copies B-->A, where 'B' is another DR array
+  A.doiBulkTransferStride(B) copies B-->A, where 'B' is another
+  DefaultRectangular array
 
   Assumes row-major ordering.
 
@@ -1465,7 +1466,7 @@ module DefaultRectangular {
     //
     var countDom = {1..rank+1};
     var count : [countDom] int;
-    for c in count do c = 1;
+    for c in count do c = 1; // serial to avoid task creation overhead
 
     //
     // The arrays representing the required stride at each level. Should pull
