@@ -1,0 +1,5 @@
+# Avoid some configurations for which this test can take a very long time
+
+CHPL_COMM != none
+COMPOPTS <= --baseline
+COMPOPTS <= --no-local
