@@ -64,10 +64,6 @@ module ChapelReduce {
     proc unlock() {
       lock$.readFE();
     }
-
-    proc ~ReduceScanOp() {
-      delete lock$;
-    }
   }
   
   class SumReduceScanOp: ReduceScanOp {

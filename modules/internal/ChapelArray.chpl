@@ -3183,7 +3183,12 @@ module ChapelArray {
     chpl__tupleInit(j, a.rank, b);
   }
 
-  proc _desync(type t) where t: _syncvar || t: _singlevar {
+  proc _desync(type t) where t: _syncvar {
+    var x: t;
+    return x.syncVar.value;
+  }
+
+  proc _desync(type t) where t: _singlevar {
     var x: t;
     return x.value;
   }
