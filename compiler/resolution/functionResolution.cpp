@@ -4675,6 +4675,9 @@ resolveNew(CallExpr* call)
       // argument if we're making a call to an initializer
       Type* typeToNew = toReplace->var->typeInfo();
       VarSymbol* new_temp = newTemp(typeToNew);
+      if (typeToNew->symbol->hasFlag(FLAG_GENERIC)) {
+        USR_FATAL(call, "Sorry, new style initializers don't work with generics yet.  Stay tuned!");
+      }
       DefExpr* def = new DefExpr(new_temp);
       Expr* insertBeforeMe = ((!isBlockStmt(call->parentExpr)) ?
                               call->parentExpr : call);
