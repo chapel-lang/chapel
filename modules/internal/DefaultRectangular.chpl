@@ -1465,7 +1465,7 @@ module DefaultRectangular {
     // each level. It will ultimately be an array of size `stridelevels+1`.
     //
     var countDom = {1..rank+1};
-    var count : [countDom] int;
+    var count : [countDom] size_t;
     for c in count do c = 1; // serial to avoid task creation overhead
 
     //
@@ -1501,7 +1501,7 @@ module DefaultRectangular {
     for i in 2..rank by -1 {
       // Each corresponding dimension in A and B should have the same length,
       // so it doesn't matter which we use here.
-      count[stridelevels+1] *= Adims(i).length;
+      count[stridelevels+1] *= Adims(i).length.safeCast(size_t);
 
       const bothReuse = A.canReuseStride(i, stridelevels, count, dstStride)
                      && B.canReuseStride(i, stridelevels, count, srcStride);
@@ -1512,7 +1512,7 @@ module DefaultRectangular {
         srcStride[stridelevels] = B.blk(i-1).safeCast(size_t);
       }
     }
-    count[stridelevels+1] *= Adims(1).length;
+    count[stridelevels+1] *= Adims(1).length.safeCast(size_t);
 
     assert(stridelevels <= rank, "BulkTransferStride: stride levels greater than rank.");
     if stridelevels == 0 then assert(count[1] == A.dom.dsiNumIndices, "BulkTransferStride: bulk-count incorrect for stride level of 0.");
@@ -1629,7 +1629,7 @@ module DefaultRectangular {
     // So far it seems to 'just work'.
 
     const lastCount = count[levels+1];
-    const curStride = if levels < 1 then 1 else stride[levels]:int;
+    const curStride = if levels < 1 then 1 else stride[levels];
     
     // Subtract `1` because we don't need a stride for the first element in
     // the current stride level. We could simplify the math here, but I think
