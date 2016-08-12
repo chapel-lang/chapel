@@ -970,9 +970,15 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
 
   var t: rank*range(idxType=idxType, stridable=true);
   for param i in 1..rank {
-    // NOTE: unsigned idxType with negative stride will not work
+    type strType = chpl__signedType(idxType);
     const wholestride = dom.whole.dim(i).stride:chpl__signedType(idxType);
-    t(i) = ((followThis(i).low*wholestride):idxType..(followThis(i).high*wholestride):idxType by (followThis(i).stride*wholestride)) + dom.whole.dim(i).low;
+    if wholestride < 0 && idxType != strType then
+      halt("negative stride with unsigned idxType not supported");
+    const iStride = wholestride:idxType;
+    const      lo = (followThis(i).low * iStride):idxType,
+               hi = (followThis(i).high * iStride):idxType,
+           stride = (followThis(i).stride*wholestride):strType;
+    t(i) = (lo..hi by stride) + dom.whole.dim(i).low;
   }
   const myFollowThis = {(...t)};
   if fast {
