@@ -433,7 +433,7 @@ module DefaultRectangular {
                   stride = (rSignedStride * fSignedStride):strType;
             block(i) = low..high by stride;
           } else {
-            const irStride = (-ranges(i).stride):idxType;
+            const irStride = (-rStride):idxType;
             const low = ranges(i).alignedHigh - followThis(i).high*irStride,
                   high = ranges(i).alignedHigh - followThis(i).low*irStride,
                   stride = (rSignedStride * fSignedStride):strType;
