@@ -201,6 +201,17 @@ o once we have a .size query on enums, we should replace uses of PIVOT
 
 o would using 1-based arrays rather than 0-based clean anything up?
 
+o It would be nice to write:
+    var x = min reduce for x in X do x;
+  as:
+    serial var x = min reduce X;
+  or (preferably):
+    var x = serial min reduce X;
+  this suggests either adding a serial expression or permitting
+  reductions to be prefixed by 'serial'
+
+
+
 nbody.chpl
 ----------
 o explore possibility of enabling vectorization (perhaps by applying
