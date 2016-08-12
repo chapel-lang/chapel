@@ -52,15 +52,8 @@ proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
   // sort by frequencies
-  //
-  // TODO: Shouldn't this work?
-  //
-  //  var arr = [(k,v) in zip(freqs.domain, freqs)] (v,k);
   var arr = for (k,v) in zip(freqs.domain, freqs) do (v,k);
 
-  //  var arr: [1..freqs.size] 2*int;
-  //  for (a, k, v) in zip(arr, freqs.domain, freqs) do
-  //    a = (v, k);
   QuickSort(arr, reverse=true);
 
   for (f, s) in arr do
@@ -82,11 +75,6 @@ proc calculate(data, param nclSize) {
   var freqDom: domain(int, parSafe=false),
       freqs: [freqDom] int;
 
-  //
-  // TODO: Could we combine these local hash tables with a reduce
-  // intent and use a forall intent?
-  //
-
   var lock$: sync bool = true;
   const numTasks = here.maxTaskPar;
   coforall tid in 1..numTasks {
@@ -106,22 +94,17 @@ proc calculate(data, param nclSize) {
 }
 
 
-//
-// TODO: make these static to decode and hash respectively
-//
 const toChar: [0..3] string = ["A", "C", "T", "G"];
 var toNum: [0..127] int;
 
 forall i in toChar.domain do
   toNum[ascii(toChar[i])] = i;
-//
-// Too terse (?): toNum[ascii(toChar)] = toChar.domain;
 
 
 inline proc decode(in data, param nclSize) {
   var ret: string;
 
-  for param i in 1..nclSize {
+  for i in 1..nclSize {
     ret = toChar[(data & 3)] + ret;
     data >>= 2;
   }
@@ -133,7 +116,7 @@ inline proc decode(in data, param nclSize) {
 inline proc hash(str, beg, param size) {
   var data = 0;
 
-  for param i in 0..size-1 {
+  for i in 0..size-1 {
     data <<= 2;
     data |= toNum[str[beg+i]];
   }
