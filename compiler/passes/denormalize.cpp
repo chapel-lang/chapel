@@ -217,23 +217,31 @@ bool isDenormalizable(Symbol* sym,
           Type* lhsType = ce->get(1)->typeInfo();
           Type* rhsType = ce->get(2)->typeInfo();
           if(lhsType == rhsType) {
-            // calls to communication functions are generated during codegen. ie
-            // at this time they are still PRIM_MOVEs. Generated communication
-            // calls return their result in a pointer argument, therefore not
-            // suitable for denormalization. See function definition for more
-            // comments
-            if(! primMoveGeneratesCommCall(ce)) {
-              if(! (lhsType->symbol->hasFlag(FLAG_EXTERN))){
-                if(!lhsType->symbol->hasFlag(FLAG_ATOMIC_TYPE)){
-                  //at this point we now that def is fine
-                  def = ce->get(2);
+            // records semantics required next if
+            // More: it seems records are passed by value. denormalizing record
+            // temporaries caused semantics to change. So I use a wide brush to
+            // disable record denormalization. In earlier passes of
+            // denormalization implementation this was only checking if the
+            // temporary to be removed is an actual to a function.
+            if(! isRecord(lhsType)) {
+              // calls to communication functions are generated during codegen. ie
+              // at this time they are still PRIM_MOVEs. Generated communication
+              // calls return their result in a pointer argument, therefore not
+              // suitable for denormalization. See function definition for more
+              // comments
+              if(! primMoveGeneratesCommCall(ce)) {
+                if(! (lhsType->symbol->hasFlag(FLAG_EXTERN))){
+                  if(!lhsType->symbol->hasFlag(FLAG_ATOMIC_TYPE)){
+                    //at this point we now that def is fine
+                    def = ce->get(2);
 
-                  //now check if we need to case it when we move it
-                  if(CallExpr* defCe = toCallExpr(def)) {
-                    if(defCe->isPrimitive() &&
-                        isIntegerPromotionPrimitive(defCe->primitive->tag)) {
-                      if(requiresCast(lhsType)) {
-                        *castTo = lhsType;
+                    //now check if we need to case it when we move it
+                    if(CallExpr* defCe = toCallExpr(def)) {
+                      if(defCe->isPrimitive() &&
+                          isIntegerPromotionPrimitive(defCe->primitive->tag)) {
+                        if(requiresCast(lhsType)) {
+                          *castTo = lhsType;
+                        }
                       }
                     }
                   }
