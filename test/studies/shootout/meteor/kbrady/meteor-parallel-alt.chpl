@@ -30,11 +30,11 @@ var minSolution, maxSolution: [boardDom] int,
 var evenRowsLookup, leftBorderLookup: [boardDom] int;
 
 // Predefined masks commonly used throughout program
-param maskEven   = 0xf07c1f07c1f07c1f:int,  // Even rows of board (0, 2, 4, ..)
-      maskBorder = 0x1084210842108421:int,  // Right border of board
-      maskBoard  = 0xFFFC000000000000:int,  // bits of board within 64-bit int
-      maskBottom = 0x00000000003FFFFF:int,  // Bottom 22 elements of boards
-      maskUsed   = 0x00000000FFC00000:int;  // Board + 4 additional bits
+param maskEven   = 0xf07c1f07c1f07c1f: int, // Even rows of board (0, 2, 4, ..)
+      maskBorder = 0x1084210842108421: int, // Right border of board
+      maskBoard  = 0xFFFC000000000000: int, // bits of board within 64-bit int
+      maskBottom = 0x00000000003FFFFF: int, // Bottom 22 elements of boards
+      maskUsed   = 0x00000000FFC00000: int; // Board + 4 additional bits
 
 //
 // Find and print the minimum and maximum solutions to meteor puzzle
@@ -206,11 +206,10 @@ proc initialize() {
           const mask = allMasks[pMask];
           pMask += 1;
           if (mask & bottom) == 0 {
-            if yBase == 0 || ((mask & lastRow) != 0) {
-              if !goodPiece(mask & maskBottom, pos) {
-                continue;
-              }
-            }
+            if (yBase == 0 || ((mask & lastRow) != 0)) &&
+               !goodPiece(mask & maskBottom, pos) then
+              continue;
+
             allMasks[totalCount] = mask;
             totalCount += 1;
           }
@@ -421,7 +420,7 @@ proc searchLinear(in board, in pos, used, placed, currentSolution) {
       if allMasks[currentMask] {
         const mask = allMasks[currentMask];
         currentSolution[placed] = mask;
-        searchLinear(board | (mask & maskBottom), pos, 
+        searchLinear(board | (mask & maskBottom), pos,
                      used | (mask & maskUsed), placed + 1, currentSolution);
         currentMask += 1;
       }
