@@ -93,22 +93,17 @@ exit(1);} {}
 
 Function {make_locale_window(int locnum, localeData *locInfo)} {open C
 } {
-  Fl_Window {} {
-    xywh {904 50 180 130} type Double color 7 hide resizable
-    class LocaleWin size_range {180 120 0 0}
+  Fl_Window {} {open selected
+    xywh {1082 50 200 80} type Double color 7
+    class LocaleWin size_range {200 80 200 80} visible
   } {
-    Fl_Box Locale_Title {
-      label {Locale }
-      private xywh {0 0 180 25}
-    }
-    Fl_Output cpuInfo {
-      label { }
-      private xywh {0 25 180 105} labeltype NO_LABEL resizable
-      class Fl_Multiline_Output
-    }
+    Fl_Group LC_Box {open
+      private xywh {0 0 200 80} box BORDER_FRAME color 0
+      class LocCommBox
+    } {}
   }
-  code {w->setMembers(Locale_Title,cpuInfo,locInfo,locnum);
-w->updateWin(locInfo);} {}
+  code {w->setBox(locnum, LC_Box);
+w->setAsLocale(locInfo);} {}
 } 
 
 Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {open
@@ -180,15 +175,14 @@ GrdView->selectData(DataModel::TagALL);
 Info->setFileName(name);
 Info->clearTagName();
 
-return true;} {selected
-  }
+return true;} {}
 } 
 
 Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {1278 490 560 600} type Double color 7 hide resizable size_range {560 590 0 0}
+    xywh {783 468 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55

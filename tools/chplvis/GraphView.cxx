@@ -22,7 +22,8 @@
 
 
 #include "chplvis.h"
-#include "math.h"
+#include "LocCommBox.h"
+#include <math.h>
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 #include <FL/Fl_Menu_Item.H>
@@ -401,8 +402,7 @@ int GraphView::handle(int event)
     break;
   case FL_RELEASE:
     //printf ("Release at (%d,%d)\n", x, y);
-    if (Fl::event_button() == FL_MIDDLE_MOUSE ||
-        Fl::event_button() == FL_RIGHT_MOUSE) {
+    if (Fl::event_button() == FL_RIGHT_MOUSE) {
       // printf ("middle or right release\n");
       break;
     }
@@ -430,16 +430,25 @@ int GraphView::handle(int event)
                 theLocales[ix].ccwin->show();
             }
           } else {
-            if (theLocales[ix].win == NULL) {
-              // Create the window
-              theLocales[ix].win = make_locale_window(ix, &curTagData->locales[ix]);
+            if (Fl::event_button() == FL_MIDDLE_MOUSE){
+              if (theLocales[ix].win == NULL) {
+                // Create the window
+                theLocales[ix].win = make_locale_window(ix, &curTagData->locales[ix]);
+              } else {
+                theLocales[ix].win->setAsLocale(&curTagData->locales[ix]);
+              }
+              if (theLocales[ix].win->visible()) 
+                theLocales[ix].win->hide();
+              else
+                theLocales[ix].win->show();
             } else {
-              theLocales[ix].win->updateWin(&curTagData->locales[ix]);
+              // Left mouse, place it on the info bar.
+              LocCommBox *infoBox;
+              infoBox = Info->getNewLocComm();
+              infoBox->setLocale(ix, &curTagData->locales[ix]);
+              infoBox->addXButton();
+              Info->addLocOrComm(infoBox);
             }
-            if (theLocales[ix].win->visible()) 
-              theLocales[ix].win->hide();
-            else
-              theLocales[ix].win->show();
           }
           return 1;
         }

@@ -25,29 +25,13 @@
 LocaleWin::LocaleWin (int x, int y, int W, int H, const char *l)
   :  Fl_Double_Window (W, H, l)
 {
+  box(FL_BORDER_FRAME);
 }
 
-void LocaleWin::updateWin(localeData *l)
+void LocaleWin::setAsLocale(localeData *l)
 {
-  //  Write the data to the window
-  const int msgsize = 1024;
-  char mesg[msgsize];
-  snprintf (mesg, msgsize, "Locale %d", locnum);
-  title->copy_label(mesg);
-  
-  // Create the text
-  loc = l;
-  snprintf (mesg, msgsize, "Number of Tasks: %ld\n"
-            "CPU:  User %lf\n"
-            "      Sys %lf\n"
-            "      Total %lf\n"
-            "Clock: %lf\n"
-            "Concurrency: %ld\n",
-            loc->numTasks,
-            loc->userCpu,
-            loc->sysCpu,
-            loc->Cpu,
-            loc->clockTime,
-            loc->maxConc);
-  info->value(mesg);
+  // printf ("setAsLocale ..\n");
+  loc = l; 
+  locBox->setLocale(locNum, loc);
+  redraw();
 }

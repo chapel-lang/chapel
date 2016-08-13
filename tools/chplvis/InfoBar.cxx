@@ -33,6 +33,10 @@ static const int Y_OFFSET = 0;
 
 static const int CR_Left = 25;
 
+static const int LC_Box_Left = 280;
+static const int LC_Box_W = 200;
+static const int LC_Box_H = 80;
+
 // Local utility functions
 
 // Computation of color for use in displays
@@ -152,3 +156,69 @@ void InfoBar::draw(void)
   }
 
 }
+
+void InfoBar::addLocOrComm(LocCommBox *box)
+{
+  // Move others over or remove them
+  int newW = box->w();
+
+  std::list<LocCommBox *>::iterator itr;
+
+  itr = infoBoxes.begin();
+  while (itr != infoBoxes.end()) {
+    if ((*itr)->x()+newW+(*itr)->w() < x()+w()) {
+      (*itr)->position((*itr)->x()+newW, (*itr)->y());
+      (*itr)->redraw();
+      itr++;
+    } else {
+      LocCommBox *dbox = *itr;
+      remove(*itr);
+      itr = infoBoxes.erase(itr);
+      boxCache.insert(boxCache.begin(), dbox);
+    }
+  }
+
+  box->position(x()+LC_Box_Left, y()+Y_OFFSET);
+  //printf ("infoBoxes size %ld\n", infoBoxes.size());
+  add(box);
+  //printf ("Added box 0x%lx\n", (long)box);
+  infoBoxes.insert(infoBoxes.begin(), box);
+  MainWindow->redraw();
+}
+
+void InfoBar::delLocOrComm(LocCommBox *box)
+{
+  // printf ("delLocOrComm ...\n");
+  remove(box);
+  infoBoxes.remove(box);
+  //printf ("Removed box 0x%lx\n", (long)box);
+  //printf ("infoBoxes size %ld\n", infoBoxes.size());
+  std::list<LocCommBox *>::iterator itr = infoBoxes.begin();
+  int x = LC_Box_Left;
+  while (itr != infoBoxes.end()) {
+    (*itr)->resize(x, (*itr)->y(), LC_Box_W, LC_Box_H);
+    x += (*itr)->w();
+    itr++;
+  }
+  boxCache.insert(boxCache.begin(), box);
+  MainWindow->redraw();
+}
+
+
+LocCommBox * InfoBar::getNewLocComm()
+  {
+    if (boxCache.empty()) {
+      return new LocCommBox(0, 0, LC_Box_W, LC_Box_H);
+    } else {
+      std::list<LocCommBox *>::iterator itr = boxCache.begin();
+      boxCache.erase(itr);
+      return *itr;
+    }
+        
+  }
+
+void InfoBar::resize (int X, int Y, int W, int H)
+  {
+    // Don't resize the children!
+    Fl_Widget::resize(X, Y, W, H);
+  }

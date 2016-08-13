@@ -44,10 +44,10 @@ CXXFLAGS=  -Wall -I. -g
 
 SRCS=   GraphView.cxx DataModel.cxx Event.cxx InfoBar.cxx LocaleWin.cxx \
         CommWin.cxx ConcurrencyWin.cxx Settings.cxx  Fl_MultiGroup.cxx \
-        ZoomScroll.cxx GridView.cxx MenuManager.cxx
+        ZoomScroll.cxx GridView.cxx MenuManager.cxx LocCommBox.cxx
 HFILES= GraphView.h   DataModel.h   Event.h   InfoBar.h   LocaleWin.h \
         CommWin.h   ConcurrencyWin.h   Settings.h Fl_MultiGroup.H \
-        ZoomScroll.h GridView.h MenuManager.h
+        ZoomScroll.h GridView.h MenuManager.h LocCommBox.h
 
 GENSRCS= chplvis.cxx
 GENH= chplvis.h
@@ -92,7 +92,7 @@ GridView.o:  chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
      ConcurrencyWin.h
 InfoBar.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
      MenuManager.h ZoomScroll.h GraphView.h GridView.h LocaleWin.h CommWin.h \
-     ConcurrencyWin.h
+     ConcurrencyWin.h LocCommBox.h
 Settings.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
      MenuManager.h ZoomScroll.h GraphView.h GridView.h LocaleWin.h CommWin.h \
      ConcurrencyWin.h
@@ -112,3 +112,4 @@ LocaleWin.o: LocaleWin.h GraphView.h CommWin.h ConcurrencyWin.h DataModel.h \
     DataView.h
 CommWin.o: CommWin.h  GraphView.h CommWin.h ConcurrencyWin.h DataModel.h \
     DataView.h
+LocCommBox.o: LocCommBox.h

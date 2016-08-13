@@ -359,7 +359,7 @@ int GridView::handle(int event)
               // Create the window
               theLocales[ix].win = make_locale_window(ix, &curTagData->locales[ix]);
             } else {
-              theLocales[ix].win->updateWin(&curTagData->locales[ix]);
+              theLocales[ix].win->setAsLocale(&curTagData->locales[ix]);
             }
             if (theLocales[ix].win->visible()) 
               theLocales[ix].win->hide();

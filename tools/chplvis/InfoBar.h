@@ -23,6 +23,8 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Group.H>
 #include <string.h>
+#include <list>
+#include "LocCommBox.h"
 
 // Top bar of display showing Max values and reference colors.
 
@@ -47,6 +49,9 @@ class InfoBar : public Fl_Group {
 
   char *fileName;
   char *tagName;
+
+  std::list<LocCommBox *> infoBoxes;
+  std::list<LocCommBox *> boxCache;
 
  public:
 
@@ -93,6 +98,13 @@ class InfoBar : public Fl_Group {
   showWhat dataToShow() { return infoTop; }
   bool commToShow() { return showcomms; }
 
+  void addLocOrComm(LocCommBox *box);
+  void delLocOrComm(LocCommBox *box);
+
+  LocCommBox *getNewLocComm();
+
+  void resize (int X, int Y, int W, int H);
+  
 };
 
 #endif
