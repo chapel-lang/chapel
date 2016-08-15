@@ -240,16 +240,15 @@ genClassIDs(Vec<TypeSymbol*> & typeSymbols, bool isHeader) {
     }
   }
 }
+
 static void
 genFtable(Vec<FnSymbol*> & fSymbols, bool isHeader) {
   GenInfo* info = gGenInfo;
   const char* ftable_name = "chpl_ftable";
-  const char* finfo_name = "chpl_finfo";
   if( info->cfile ) {
     FILE* hdrfile = info->cfile;
     if(isHeader) {
       fprintf(hdrfile, "extern chpl_fn_p %s[];\n", ftable_name);
-      fprintf(hdrfile, "extern chpl_fn_info %s[];\n", finfo_name);
       return;
     }
     fprintf(hdrfile, "chpl_fn_p %s[] = {\n", ftable_name);
@@ -264,30 +263,13 @@ genFtable(Vec<FnSymbol*> & fSymbols, bool isHeader) {
     if (fSymbols.n == 0)
       fprintf(hdrfile, "(chpl_fn_p)0");
     fprintf(hdrfile, "\n};\n");
-
-    // function information (names ...) ??? some flag to dump these?
-    fprintf(hdrfile, "chpl_fn_info %s[] = {\n", finfo_name);
-    first = true;
-
-    forv_Vec(FnSymbol, fn, fSymbols) {
-      if (!first)
-        fprintf(hdrfile, ",\n");
-      fprintf(hdrfile, "{\"%s\", %d, %d}", fn->cname,
-              getFilenameLookupPosition(fn->astloc.filename),
-              fn->astloc.lineno);
-      first = false;
-    }
-    if (!first)
-      fprintf(hdrfile, ",\n");
-    fprintf(hdrfile, "{(char *)0, 0, 0}\n};\n");
-
   } else {
 #ifdef HAVE_LLVM
     if (!isHeader)
       return;
 
     std::vector<llvm::Constant *> table ((fSymbols.n == 0) ? 1 : fSymbols.n);
-    
+
     llvm::Type *funcPtrType = info->lvt->getType("chpl_fn_p");
 
     int fID = 0;
@@ -299,20 +281,53 @@ genFtable(Vec<FnSymbol*> & fSymbols, bool isHeader) {
     if (fSymbols.n == 0) {
       table[0] = llvm::Constant::getNullValue(funcPtrType);
     }
-    
+
     llvm::ArrayType *funcPtrTableType =
       llvm::ArrayType::get(funcPtrType, table.size());
-    
+
     if(llvm::GlobalVariable *ftable =
         info->module->getNamedGlobal(ftable_name)) {
       ftable->eraseFromParent();
     }
-    
+
     llvm::GlobalVariable *ftable = llvm::cast<llvm::GlobalVariable>(
         info->module->getOrInsertGlobal(ftable_name, funcPtrTableType));
     ftable->setInitializer(llvm::ConstantArray::get(funcPtrTableType, table));
     ftable->setConstant(true);
     info->lvt->addGlobalValue(ftable_name, ftable, GEN_PTR, true);
+#endif
+  }
+}
+
+static void
+genFinfo(Vec<FnSymbol*> & fSymbols, bool isHeader) {
+  GenInfo* info = gGenInfo;
+  const char* finfo_name = "chpl_finfo";
+  if( info->cfile ) {
+    FILE* hdrfile = info->cfile;
+    if(isHeader) {
+      fprintf(hdrfile, "extern chpl_fn_info %s[];\n", finfo_name);
+      return;
+    }
+    // function information (names ...)
+    fprintf(hdrfile, "chpl_fn_info %s[] = {\n", finfo_name);
+    bool first = true;
+    forv_Vec(FnSymbol, fn, fSymbols) {
+      if (!first)
+        fprintf(hdrfile, ",\n");
+      fprintf(hdrfile, "{\"%s\", %d, %d}", fn->cname,
+              getFilenameLookupPosition(fn->astloc.filename),
+              fn->astloc.lineno);
+      first = false;
+    }
+    if (!first)
+      fprintf(hdrfile, ",\n");
+    fprintf(hdrfile, "{(char *)0, 0, 0}\n};\n");
+  } else {
+#ifdef HAVE_LLVM
+    if (!isHeader)
+      return;
+    // Need to add code similar to genFtable
 #endif
   }
 }
@@ -1133,6 +1148,7 @@ static void codegen_header(bool isHeader) {
     }
   }
   genFtable(ftableVec,isHeader);
+  genFinfo(ftableVec,isHeader);
 
   genComment("Virtual Method Table");
   genVirtualMethodTable(types,isHeader);
