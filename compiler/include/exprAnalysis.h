@@ -31,8 +31,12 @@ bool isNonEssentialPrimitive(CallExpr* ce);
 /*
  * Returns true if `e` has no side effects. Checked side effects are:
  *  - Read/write to a global
- *  - Is/containsessential primitive
- *  - If it's a function call has ref arguments
+ *  - Is/contains essential primitive
+ *  - If it's a call to functions with ref arguments
+ *
+ * For now, this is a very conservative analysis. A more precise analysis
+ * could distinguish between reads and writes to memory and to take into
+ * account alias analysis.
  */
 bool exprHasNoSideEffects(Expr* e);
 

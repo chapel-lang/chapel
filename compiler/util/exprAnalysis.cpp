@@ -29,8 +29,12 @@ std::map<FnSymbol*,bool> globalManipFuncCache;
 /*
  * Returns true if `e` has no side effects. Checked side effects are:
  *  - Read/write to a global
- *  - Is/containsessential primitive
- *  - If it's a function call has ref arguments
+ *  - Is/contains essential primitive
+ *  - If it's a call to functions with ref arguments
+ *
+ * For now, this is a very conservative analysis. A more precise analysis
+ * could distinguish between reads and writes to memory and to take into
+ * account alias analysis.
  */
 bool exprHasNoSideEffects(Expr* e) {
   if(safeExprCache.count(e) > 0) {
@@ -91,28 +95,6 @@ bool exprHasNoSideEffects(Expr* e) {
       if(! isSafePrimitive(ce)){
         safeExprCache[e] = false;
         return false;
-      }
-      else {
-        //here we have a non essential primitive. But consider following issue:
-        //
-        // tmp = (atomic_read() == 5);
-        //
-        // where `==` is non-essential yet one of its children has side effects
-
-        //I had implemented the following recursion to prevent the issue , but
-        //then realized that it doesn't cause any tests to fail(and I had thought
-        //this would have been a widespread case). Maybe I was wrong?. Further
-        //this has performance impact on compilation time
-
-        /*
-        Expr* e = ce->argList.first();
-        while(e) {
-          if(!isExprSafeForReorder(e)) {//is this recursion safe?
-            return false;
-          }
-          e = e->next;
-        }
-        */
       }
     }
   }

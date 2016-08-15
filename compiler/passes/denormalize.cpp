@@ -30,8 +30,8 @@
 #include "exprAnalysis.h"
 
 //helper datastructures/types
-
-typedef std::map<SymExpr*, std::pair<Expr*,Type*> > UseDefCastMap;
+typedef std::pair<Expr*, Type*> DefCastPair;
+typedef std::map<SymExpr*, DefCastPair> UseDefCastMap;
 
 //prototypes
 bool primMoveGeneratesCommCall(CallExpr* ce);
@@ -43,7 +43,7 @@ bool isDenormalizable(Symbol* sym,
     Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr** useOut, Expr** defOut,
     Type** castTo);
 void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& candidates);
-void findCandidatesInFunc(FnSymbol* fn, Vec<Symbol*> symVec,
+void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
     UseDefCastMap& udcMap);
 void denormalize(void);
 void denormalize(Expr* def, SymExpr* use, Type* castTo);
@@ -60,7 +60,7 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
  * - Its def is a PRIM_MOVE or PRIM_ASSIGN, with no possible communication
  * - RHS and LHS are of same type and non-extern
  *
- * - Its use a suitable primitive
+ * - Its use is a suitable primitive
  * - Its use is not repeated(condition/increment statement of a loop)
  *
  * Denormalization uses helpers in util/exprAnalysis.cpp to decide if it's safe
@@ -85,7 +85,7 @@ void denormalize(void) {
           findCandidatesInFunc(fn, candidates);
         }
         else {
-          findCandidatesInFunc(fn, deferredSyms, candidates);
+          findCandidatesInFuncOnlySym(fn, deferredSyms, candidates);
         }
         denormalizeOrDeferCandidates(candidates, deferredSyms);
 
@@ -101,7 +101,7 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
   for(UseDefCastMap::iterator it = candidates.begin() ;
       it != candidates.end() ; ++it) {
     // unpack the bundle
-    std::pair<Expr*, Type*> defCastPair = it->second;
+    DefCastPair defCastPair = it->second;
     SymExpr* use = it->first;
     Expr* def = defCastPair.first;
     Type* castTo = defCastPair.second;
@@ -116,7 +116,7 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
   }
 }
 
-void findCandidatesInFunc(FnSymbol* fn, Vec<Symbol*> symVec,
+void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
     UseDefCastMap& udcMap) {
 
   Map<Symbol*,Vec<SymExpr*>*> defMap;
@@ -164,8 +164,8 @@ void findCandidatesInFunc(FnSymbol* fn, Vec<Symbol*> symVec,
       //between use and def
       if(exprHasNoSideEffects(def)) {
         if(!unsafeExprInBetween(defPar, usePar)) {
-          std::pair<Expr*, Type*> defCastPair(def, castTo);
-          udcMap.insert(std::pair<SymExpr*, std::pair<Expr*, Type*> >
+          DefCastPair defCastPair(def, castTo);
+          udcMap.insert(std::pair<SymExpr*, DefCastPair>
               (use, defCastPair));
         }
       }
@@ -186,7 +186,7 @@ void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap) {
   collectSymbolSetSymExprVec(fn, symSet, symExprs);
   buildDefUseMaps(symSet, symExprs, defMap, useMap);
 
-  findCandidatesInFunc(fn, symSet, udcMap);
+  findCandidatesInFuncOnlySym(fn, symSet, udcMap);
 
   freeDefUseMaps(defMap, useMap);
 }
@@ -270,13 +270,11 @@ bool isDenormalizable(Symbol* sym,
           }
         }
       }
-      else {
-        return false;
-      }
       if(use) {
         *useOut = use;
       }
-      else {
+
+      if(!use || !def) {
         return false;
       }
 
@@ -453,7 +451,7 @@ inline bool unsafeExprInBetween(Expr* e1, Expr* e2){
     //  (1)  Expr2
     //  (1)  Expr3
     //  (2)  Expr4
-    //  (1)  Expr5
+    //  (2)  Expr5
     //
     // (3) there is an unsafe Expr between Expr_i and Expr_j if their "distance"
     // are different.
