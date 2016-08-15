@@ -20,8 +20,8 @@
 #ifndef LOCCOMMBOX_H
 #define LOCCOMMBOX_H
 
-#include <FL/Fl_Group.h>
-#include <FL/Fl_Button.h>
+#include <FL/Fl_Group.H>
+#include <FL/Fl_Button.H>
 #include "DataModel.h"
 
 class LocCommBox : public Fl_Group {
