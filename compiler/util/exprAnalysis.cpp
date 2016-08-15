@@ -23,9 +23,6 @@
 #include "stmt.h"
 #include "exprAnalysis.h"
 
-std::map<Expr*,bool> safeExprCache;
-std::map<FnSymbol*,bool> globalManipFuncCache;
-
 /*
  * Returns true if `e` has no side effects. Checked side effects are:
  *  - Read/write to a global
@@ -36,7 +33,7 @@ std::map<FnSymbol*,bool> globalManipFuncCache;
  * could distinguish between reads and writes to memory and to take into
  * account alias analysis.
  */
-bool exprHasNoSideEffects(Expr* e) {
+bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e) {
   if(safeExprCache.count(e) > 0) {
     return safeExprCache[e];
   }
@@ -130,7 +127,7 @@ bool exprHasNoSideEffects(Expr* e) {
     case PRIM_ENUM_IS_SIGNED:
     case PRIM_GET_COMPILER_VAR:k
 */
-bool isSafePrimitive(CallExpr* ce) {
+bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
   PrimitiveOp* prim = ce->primitive;
   //if (!prim) return false; // or INT_ASSERT(prim);
   INT_ASSERT(prim);
@@ -207,17 +204,17 @@ bool isSafePrimitive(CallExpr* ce) {
   return false;
 }
 
-bool isNonEssentialPrimitive(CallExpr* ce) {
+bool SafeExprAnalysis::isNonEssentialPrimitive(CallExpr* ce) {
   return ce->isPrimitive() && isSafePrimitive(ce);
 }
 
-bool isRegisteredGlobalManip(FnSymbol* fn) {
+bool SafeExprAnalysis::isRegisteredGlobalManip(FnSymbol* fn) {
   return globalManipFuncCache.count(fn) > 0;
 }
 
-bool getGlobalManip(FnSymbol* fn) {
+bool SafeExprAnalysis::getGlobalManip(FnSymbol* fn) {
   return globalManipFuncCache[fn];
 }
-void registerGlobalManip(FnSymbol* fn, bool manip) {
+void SafeExprAnalysis::registerGlobalManip(FnSymbol* fn, bool manip) {
   globalManipFuncCache[fn] = true;
 }

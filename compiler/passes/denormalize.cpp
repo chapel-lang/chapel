@@ -35,16 +35,18 @@ typedef std::map<SymExpr*, DefCastPair> UseDefCastMap;
 
 //prototypes
 bool primMoveGeneratesCommCall(CallExpr* ce);
-inline bool unsafeExprInBetween(Expr* e1, Expr* e2);
+inline bool unsafeExprInBetween(Expr* e1, Expr* e2,
+    SafeExprAnalysis& analysisData);
 inline bool requiresCast(Type* t);
 inline bool isIntegerPromotionPrimitive(PrimitiveTag tag);
 bool isDenormalizable(Symbol* sym,
     Map<Symbol*,Vec<SymExpr*>*>& defMap,
     Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr** useOut, Expr** defOut,
-    Type** castTo);
-void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& candidates);
+    Type** castTo, SafeExprAnalysis& analysisData);
+void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& candidates, 
+    SafeExprAnalysis& analysisData);
 void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
-    UseDefCastMap& udcMap);
+    UseDefCastMap& udcMap, SafeExprAnalysis& analysisData);
 void denormalize(void);
 void denormalize(Expr* def, SymExpr* use, Type* castTo);
 void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
@@ -70,6 +72,7 @@ void denormalize(void) {
 
   UseDefCastMap candidates;
   Vec<Symbol*> deferredSyms;
+  SafeExprAnalysis analysisData;
 
   if(fDenormalize) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -82,10 +85,11 @@ void denormalize(void) {
         // at all the symbols in the function. otherwise we only look at the
         // ones deferred in the previous passes on the same function
         if(isFirstRound) {
-          findCandidatesInFunc(fn, candidates);
+          findCandidatesInFunc(fn, candidates, analysisData);
         }
         else {
-          findCandidatesInFuncOnlySym(fn, deferredSyms, candidates);
+          findCandidatesInFuncOnlySym(fn, deferredSyms, candidates,
+              analysisData);
         }
         denormalizeOrDeferCandidates(candidates, deferredSyms);
 
@@ -117,14 +121,14 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
 }
 
 void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
-    UseDefCastMap& udcMap) {
+    UseDefCastMap& udcMap, SafeExprAnalysis& analysisData) {
 
   Map<Symbol*,Vec<SymExpr*>*> defMap;
   Map<Symbol*,Vec<SymExpr*>*> useMap;
 
   buildDefUseMaps(fn, defMap, useMap);
 
-  bool cachedGlobalManip = isRegisteredGlobalManip(fn);
+  bool cachedGlobalManip = analysisData.isRegisteredGlobalManip(fn);
   // Note the different symbol set being iterated
   forv_Vec(Symbol, sym, symVec) {
 
@@ -141,12 +145,13 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
       //I think there can be a const but stateful global that is manipulated by
       //the function so, play safe
       if(sym && !sym->isImmediate() && isGlobal(sym)){
-        registerGlobalManip(fn, true);
+        analysisData.registerGlobalManip(fn, true);
         cachedGlobalManip = true;
       }
     }
 
-    if(isDenormalizable(sym, defMap, useMap, &use, &def, &castTo)) {
+    if(isDenormalizable(sym, defMap, useMap, &use, &def, &castTo,
+          analysisData)) {
       usePar = use->parentExpr;
       defPar = def->parentExpr;
 
@@ -162,8 +167,8 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
 
       //denormalize if the def is safe to move and there is no unsafe function
       //between use and def
-      if(exprHasNoSideEffects(def)) {
-        if(!unsafeExprInBetween(defPar, usePar)) {
+      if(analysisData.exprHasNoSideEffects(def)) {
+        if(!unsafeExprInBetween(defPar, usePar, analysisData)) {
           DefCastPair defCastPair(def, castTo);
           udcMap.insert(std::pair<SymExpr*, DefCastPair>
               (use, defCastPair));
@@ -172,11 +177,12 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
     }
   } // end loop for symbol
   if(!cachedGlobalManip) {
-    registerGlobalManip(fn, false);
+    analysisData.registerGlobalManip(fn, false);
   }
 }
 
-void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap) {
+void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap, 
+    SafeExprAnalysis& analysisData) {
 
   Vec<Symbol*> symSet;
   Vec<SymExpr*> symExprs;
@@ -186,15 +192,16 @@ void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap) {
   collectSymbolSetSymExprVec(fn, symSet, symExprs);
   buildDefUseMaps(symSet, symExprs, defMap, useMap);
 
-  findCandidatesInFuncOnlySym(fn, symSet, udcMap);
+  findCandidatesInFuncOnlySym(fn, symSet, udcMap, analysisData);
 
   freeDefUseMaps(defMap, useMap);
 }
 
 bool isDenormalizable(Symbol* sym,
     Map<Symbol*,Vec<SymExpr*>*> & defMap,
-    Map<Symbol*,Vec<SymExpr*>*> & useMap, SymExpr** useOut, Expr** defOut,
-    Type** castTo) {
+    Map<Symbol*,Vec<SymExpr*>*> & useMap, 
+    SymExpr** useOut, Expr** defOut, Type** castTo,
+    SafeExprAnalysis& analysisData) {
 
   if(sym && !(toFnSymbol(sym) || toArgSymbol(sym) || toTypeSymbol(sym))) {
 
@@ -300,7 +307,7 @@ bool isDenormalizable(Symbol* sym,
       // we have to protect repeatedly evaluated statements of loops from
       // expensive and/or unsafe CallExprs
       if(CallExpr* defCe = toCallExpr(def)){
-        if(! isNonEssentialPrimitive(defCe)) { //nonessential primitives are safe
+        if(! analysisData.isNonEssentialPrimitive(defCe)) { //nonessential primitives are safe
           if(LoopStmt* enclLoop = LoopStmt::findEnclosingLoop(use)) {
             if(CForLoop* enclCForLoop = toCForLoop(enclLoop)) {
               if(enclCForLoop->testBlockGet()->contains(ce) ||
@@ -423,10 +430,11 @@ bool primMoveGeneratesCommCall(CallExpr* ce) {
 }
 
 
-inline bool unsafeExprInBetween(Expr* e1, Expr* e2){
+inline bool unsafeExprInBetween(Expr* e1, Expr* e2,
+    SafeExprAnalysis& analysisData){
   int counter = 0;
   for(Expr* e = e1; e != e2 ; e = getNextExpr(e)) {
-    if(! exprHasNoSideEffects(e)) {
+    if(! analysisData.exprHasNoSideEffects(e)) {
       return true;
     }
     
