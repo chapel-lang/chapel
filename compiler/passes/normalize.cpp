@@ -1726,6 +1726,10 @@ static void change_method_into_constructor(FnSymbol* fn) {
   if (!ct)
     INT_FATAL(fn, "initializer on non-class type");
 
+  if (fn->hasFlag(FLAG_NO_PARENS)) {
+    USR_FATAL(fn, "a%s cannot be declared without parentheses", isCtor ? " constructor" : "n initializer");
+  }
+
   if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
     // We hadn't previously seen a constructor or initializer definition.
     // Update the field on the type appropriately.
