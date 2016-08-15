@@ -988,7 +988,7 @@ module DefaultRectangular {
         } else { // unsigned type, signed stride
           assert((dom.dsiDim(i).stride<0 && str(i)<0) ||
                  (dom.dsiDim(i).stride>0 && str(i)>0));
-          s = dom.dsiDim(i).stride / str(i) : d.idxType;
+          s = (dom.dsiDim(i).stride / str(i)) : d.idxType;
         }
         alias.off(i) = d.dsiDim(i).low;
         alias.blk(i) = blk(i) * s;
