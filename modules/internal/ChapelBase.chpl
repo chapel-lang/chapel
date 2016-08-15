@@ -363,7 +363,7 @@ module ChapelBase {
       compilerError("unexpected case in exponentiation optimization");
   }
 
-  inline proc _expBaseHelp(param a: integral, b: int(?w)){ 
+  inline proc _expBaseHelp(param a: integral, b){ 
     var c = 0;
     var x: int = a;
     while (x > 1) // shift right to count the power
