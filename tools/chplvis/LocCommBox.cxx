@@ -80,6 +80,14 @@ void LocCommBox::draw()
 
     case I_Comm:
         // printf ("drawing a comm\n");
+        snprintf (str, 60, "Com %d->%d, Bytes %d", C_L1, C_L2, C_Bytes);
+        fl_draw(str, x()+2, y()+1, 200, 19, FL_ALIGN_LEFT, NULL, 0);
+        snprintf (str, 60, " Gets: %d", C_Gets);
+        fl_draw(str, x()+2, y()+21, 200, 19, FL_ALIGN_LEFT, NULL, 0);
+        snprintf (str, 60, " Puts: %d", C_Puts);
+        fl_draw(str, x()+2, y()+41, 200, 19, FL_ALIGN_LEFT, NULL, 0);
+        snprintf (str, 60, " OnExecs: %d", C_Forks);
+        fl_draw(str, x()+2, y()+61, 200, 19, FL_ALIGN_LEFT, NULL, 0);
         break;
 
     default:

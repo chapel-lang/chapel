@@ -65,10 +65,7 @@ decl {\#include "GraphView.h"} {public global
 decl {\#include "GridView.h"} {public global
 } 
 
-decl {\#include "LocaleWin.h"} {public global
-} 
-
-decl {\#include "CommWin.h"} {public local
+decl {\#include "LocCommWin.h"} {public global
 } 
 
 decl {\#include "ConcurrencyWin.h"} {public local
@@ -83,7 +80,7 @@ decl {MenuManager Menus;} {public local
 decl {SettingsData VisSettings;} {public local
 } 
 
-Function {mainWinCallback(Fl_Widget *)} {open return_type void
+Function {mainWinCallback(Fl_Widget *)} {return_type void
 } {
   code {if (VisSettings.save_WH) {
    VisSettings.saveToFile();
@@ -91,42 +88,36 @@ Function {mainWinCallback(Fl_Widget *)} {open return_type void
 exit(1);} {}
 } 
 
-Function {make_locale_window(int locnum, localeData *locInfo)} {open C
+Function {make_LC_window(int locnum, localeData *locInfo)} {C
 } {
-  Fl_Window {} {open selected
+  Fl_Window {} {open
     xywh {1082 50 200 80} type Double color 7
-    class LocaleWin size_range {200 80 200 80} visible
+    class LocCommWin size_range {200 80 200 80} visible
   } {
     Fl_Group LC_Box {open
       private xywh {0 0 200 80} box BORDER_FRAME color 0
       class LocCommBox
     } {}
   }
-  code {w->setBox(locnum, LC_Box);
-w->setAsLocale(locInfo);} {}
+  code {w->setBox(LC_Box);
+w->setAsLocale(locnum, locInfo);} {}
 } 
 
-Function {make_comm_window(int fromLn, int toLn, struct commData *commdata)} {open
-} {
-  Fl_Window {} {
-    xywh {1095 53 180 120} type Double color 7 hide resizable
-    class CommWin
+Function {make_LC_window(int fromLn, int toLn, struct commData *commdata)} {} {
+  Fl_Window {} {open
+    xywh {877 49 200 80} type Double color 7
+    class LocCommWin size_range {200 80 200 80} visible
   } {
-    Fl_Box Comm_Title {
-      label Comm
-      private xywh {0 0 180 25}
-    }
-    Fl_Output commInfo {
-      label { }
-      private xywh {0 25 180 95} labeltype NO_LABEL resizable
-      class Fl_Multiline_Output
-    }
+    Fl_Group LC_Box1 {open
+      private xywh {0 0 200 80} box BORDER_FRAME color 0
+      class LocCommBox
+    } {}
   }
-  code {w->setMembers(Comm_Title, commInfo, commdata, fromLn, toLn);
-w->updateWin(commdata);} {}
+  code {w->setBox(LC_Box1);
+w->setAsComm(fromLn, toLn, commdata);} {}
 } 
 
-Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {ConcurrencyWin *}
+Function {make_concurrency_window(long locNum, long tagNum)} {return_type {ConcurrencyWin *}
 } {
   Fl_Window {} {open
     xywh {82 110 500 600} type Double color 7 hide resizable
@@ -150,7 +141,7 @@ w->updateData(locNum, tagNum);
 return w;} {}
 } 
 
-Function {open_data_set(const char *name, bool fromArgv)} {open private return_type bool
+Function {open_data_set(const char *name, bool fromArgv)} {private return_type bool
 } {
   code {// printf("open_data_set ...\\n");
 
@@ -178,11 +169,10 @@ Info->clearTagName();
 return true;} {}
 } 
 
-Function {} {open
-} {
+Function {} {} {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {783 468 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
+    xywh {1172 486 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55

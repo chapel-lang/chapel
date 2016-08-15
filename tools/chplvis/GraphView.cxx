@@ -431,11 +431,12 @@ int GraphView::handle(int event)
             }
           } else {
             if (Fl::event_button() == FL_MIDDLE_MOUSE){
+              printf ("Making locale window.\n");
               if (theLocales[ix].win == NULL) {
                 // Create the window
-                theLocales[ix].win = make_locale_window(ix, &curTagData->locales[ix]);
+                theLocales[ix].win = make_LC_window(ix, &curTagData->locales[ix]);
               } else {
-                theLocales[ix].win->setAsLocale(&curTagData->locales[ix]);
+                theLocales[ix].win->setAsLocale(ix, &curTagData->locales[ix]);
               }
               if (theLocales[ix].win->visible()) 
                 theLocales[ix].win->hide();
@@ -470,16 +471,26 @@ int GraphView::handle(int event)
             if (OnComm == 1) {
               // j -> i, swap so both can use i->j
               int t = j; j = i; i = t;
-            } 
-            if (comms[i][j].win == NULL) {
-              comms[i][j].win = make_comm_window(i,j,&curTagData->comms[i][j]);
-            } else {
-              comms[i][j].win->updateWin(&curTagData->comms[i][j]);
             }
-            if (comms[i][j].win->visible())
-              comms[i][j].win->hide();
-            else
-              comms[i][j].win->show();
+            if (Fl::event_button() == FL_MIDDLE_MOUSE){
+              //printf ("Should create a comm win.\n");
+              if (comms[i][j].win == NULL) {
+                comms[i][j].win = make_LC_window(i, j, &curTagData->comms[i][j]);
+              } else {
+                comms[i][j].win->setAsComm(i, j, &curTagData->comms[i][j]);
+              }
+              if (comms[i][j].win->visible())
+                comms[i][j].win->hide();
+              else
+                comms[i][j].win->show();
+            } else {
+              // printf ("New LocCommBox for comm...\n");
+              LocCommBox *infoBox;
+              infoBox = Info->getNewLocComm();
+              infoBox->setComm(i, j, &curTagData->comms[i][j]);
+              infoBox->addXButton();
+              Info->addLocOrComm(infoBox);
+            }
             return 1;
           }
         }

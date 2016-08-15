@@ -42,11 +42,11 @@ CXXFLAGS=  -Wall -I. -g
 	$$($(FLTK_CONFIG) --cxx) -c $$($(FLTK_CONFIG) --cxxflags) $(CXXFLAGS) $<
 
 
-SRCS=   GraphView.cxx DataModel.cxx Event.cxx InfoBar.cxx LocaleWin.cxx \
-        CommWin.cxx ConcurrencyWin.cxx Settings.cxx  Fl_MultiGroup.cxx \
+SRCS=   GraphView.cxx DataModel.cxx Event.cxx InfoBar.cxx LocCommWin.cxx \
+        ConcurrencyWin.cxx Settings.cxx  Fl_MultiGroup.cxx \
         ZoomScroll.cxx GridView.cxx MenuManager.cxx LocCommBox.cxx
-HFILES= GraphView.h   DataModel.h   Event.h   InfoBar.h   LocaleWin.h \
-        CommWin.h   ConcurrencyWin.h   Settings.h Fl_MultiGroup.H \
+HFILES= GraphView.h   DataModel.h   Event.h   InfoBar.h   LocCommWin.h \
+        ConcurrencyWin.h   Settings.h Fl_MultiGroup.H \
         ZoomScroll.h GridView.h MenuManager.h LocCommBox.h
 
 GENSRCS= chplvis.cxx
@@ -82,34 +82,32 @@ install: chplvis
 
 # Dependencies
 chplvis.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
-     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocaleWin.h CommWin.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
      ConcurrencyWin.h
 GraphView.o:  chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
-     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocaleWin.h CommWin.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
      ConcurrencyWin.h
 GridView.o:  chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
-     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocaleWin.h CommWin.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
      ConcurrencyWin.h
 InfoBar.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
-     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocaleWin.h CommWin.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
      ConcurrencyWin.h LocCommBox.h
 Settings.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
-     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocaleWin.h CommWin.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
      ConcurrencyWin.h
 ZoomScroll.o:   chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
-     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocaleWin.h CommWin.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
      ConcurrencyWin.h
 MenuManager.o:  chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
-     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocaleWin.h CommWin.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
      ConcurrencyWin.h
 ConcurrencyWin.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
-     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocaleWin.h CommWin.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
      ConcurrencyWin.h
 Event.o: Event.h
 DataModel.o: DataModel.h StringCache.h
 Fl_MultiGroup.o: Fl_MultiGroup.H 
-LocaleWin.o: LocaleWin.h GraphView.h CommWin.h ConcurrencyWin.h DataModel.h \
-    DataView.h
-CommWin.o: CommWin.h  GraphView.h CommWin.h ConcurrencyWin.h DataModel.h \
+LocCommWin.o: LocCommWin.h GraphView.h  ConcurrencyWin.h DataModel.h \
     DataView.h
 LocCommBox.o: LocCommBox.h

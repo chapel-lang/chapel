@@ -17,33 +17,27 @@
  * limitations under the License.
  */
 
-#ifndef LOCALEWIN_H
-#define LOCALEWIN_H
+#include <stdio.h>
 
-#include <FL/Fl_Double_Window.H>
-#include <FL/Fl_Box.H>
-#include <FL/Fl_Multiline_Output.H>
-#include "LocCommBox.h"
+#include "LocCommWin.h"
+#include "GraphView.h"
 
-struct localeData;
+LocCommWin::LocCommWin (int x, int y, int W, int H, const char *l)
+  :  Fl_Double_Window (W, H, l)
+{
+  box(FL_BORDER_FRAME);
+}
 
-// Window for showing Locale information.
+void LocCommWin::setAsLocale(int num, localeData *l)
+{
+  LCBox->setLocale(num, l);
+  redraw();
+}
 
-class LocaleWin : public Fl_Double_Window {
 
- private:
-  localeData *loc;
-  LocCommBox *locBox;
-  int locNum;
-  
+void LocCommWin::setAsComm(int L1, int L2, commData *c)
+{
+  LCBox->setComm(L1, L2, c);
+  redraw();
+}
 
- public:
-  LocaleWin (int x, int y, int W, int H, const char *l=0);
-
-  void setBox (int ix, LocCommBox *b) { locNum = ix; locBox = b; }
-
-  void setAsLocale (localeData *l);
-    
-};
-
-#endif

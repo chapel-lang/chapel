@@ -24,8 +24,7 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
-#include "LocaleWin.h"
-#include "CommWin.h"
+#include "LocCommWin.h"
 #include "ConcurrencyWin.h"
 
 #include "DataModel.h"
@@ -42,7 +41,7 @@ struct localeInfo {
   int w;
   int h;
   // Locale Window information.
-  LocaleWin *win;
+  LocCommWin *win;
   // Concurrency Window information.
   ConcurrencyWin *ccwin;
   // Locale box ... for tool tips.
@@ -53,7 +52,7 @@ struct localeInfo {
 // X -> Y and Y -> X for all X & Y.  (2d array)
 
 struct commInfo { // Remove this and just use CommWin*??? YYY
-  CommWin *win;
+  LocCommWin *win;
 };
 
 // Tag names may appear multiple times in the data,
@@ -135,7 +134,7 @@ class GraphView : public DataView {
             comms[ix1][ix2].win->show();
     }
 
-  void hideAllLocaleWindows (void)
+  void hideAllLocCommWindows (void)
     {
       int ix;
       for (ix = 0; ix < numlocales; ix++) {
@@ -146,7 +145,7 @@ class GraphView : public DataView {
       }
     }        
 
-  void showAllLocaleWindows (void)
+  void showAllLocCommWindows (void)
     {
       int ix;
       for (ix = 0; ix < numlocales; ix++) {

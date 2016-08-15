@@ -38,6 +38,8 @@ class LocCommBox : public Fl_Group {
   double L_Clock;
 
   // Comm information
+  int C_L1;
+  int C_L2;
   int C_Total;
   int C_Bytes;
   int C_Gets;
@@ -63,13 +65,15 @@ class LocCommBox : public Fl_Group {
       what = I_Locale;
     }
 
-  void setComm ( int total, int bytes, int gets, int puts, int forks)
+  void setComm ( int L1, int L2, commData *comm )
     {
-      C_Total = total;
-      C_Bytes = bytes;
-      C_Gets = gets;
-      C_Puts = puts;
-      C_Forks = forks;
+      C_L1 = L1;
+      C_L2 = L2;
+      C_Total = comm->numComms;
+      C_Bytes = comm->commSize;
+      C_Gets = comm->numGets;
+      C_Puts = comm->numPuts;
+      C_Forks = comm->numForks;
       what = I_Comm;
     }
 

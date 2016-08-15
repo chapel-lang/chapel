@@ -17,37 +17,34 @@
  * limitations under the License.
  */
 
-#ifndef COMMWIN_H
-#define COMMWIN_H
+#ifndef LOCALEWIN_H
+#define LOCALEWIN_H
 
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Multiline_Output.H>
+#include "LocCommBox.h"
+
+struct localeData;
 struct commData;
 
-// Window for showing communication details.
+// Window for showing Locale information.
 
-class CommWin : public Fl_Double_Window {
+class LocCommWin : public Fl_Double_Window {
 
  private:
-  Fl_Box *title;
-  Fl_Multiline_Output *info;
-  commData *comm;
-  int fromLoc, toLoc;
+  LocCommBox *LCBox;
+  
 
  public:
-  CommWin (int x, int y, int W, int H, const char *l=0);
+  LocCommWin (int x, int y, int W, int H, const char *l=0);
 
-  void setMembers (Fl_Box *t, Fl_Multiline_Output *i, commData *c, int fromLn, int toLn) {
-    title = t;
-    info = i;
-    comm = c;
-    fromLoc = fromLn;
-    toLoc = toLn;
-  }
+  void setBox (LocCommBox *b) { LCBox = b; }
 
-  void updateWin (commData *c);
-    
+  void setAsLocale (int Loc, localeData *l);
+
+  void setAsComm(int L1, int L2, commData *c);
+  
 };
 
 #endif
