@@ -280,7 +280,7 @@ static void checkExternProcs() {
 
     for_formals(formal, fn) {
       if (formal->typeInfo() == dtString) {
-        if (fn->instantiatedFrom == NULL) {
+        if (!fn->hasFlag(FLAG_INSTANTIATED_GENERIC)) {
           USR_FATAL_CONT(fn, "extern procedures should not take arguments of "
                              "type string, use c_string instead");
         } else {

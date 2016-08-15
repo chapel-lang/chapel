@@ -267,6 +267,9 @@ void Expr::verify() {
 
   if (parentExpr && parentExpr->parentSymbol != parentSymbol)
     INT_FATAL(this, "Bad Expr::parentSymbol");
+
+  if (list && parentExpr && list->parent != parentExpr)
+    INT_FATAL(this, "Bad Expr::list::parent");
 }
 
 
@@ -691,6 +694,8 @@ void DefExpr::verify() {
     INT_FATAL(this, "Bad DefExpr::exprType::parentExpr");
   if (sym->defPoint != this)
     INT_FATAL(this, "Bad DefExpr::sym->defPoint");
+  verifyNotOnList(init);
+  verifyNotOnList(exprType);
 }
 
 
@@ -3707,6 +3712,8 @@ void CallExpr::verify() {
       break; // do nothing
     }
   }
+
+  verifyNotOnList(baseExpr);
 }
 
 CallExpr* CallExpr::copyInner(SymbolMap* map) {
@@ -6304,6 +6311,7 @@ ContextCallExpr::ContextCallExpr() :
   Expr(E_ContextCallExpr),
   options()
 {
+  options.parent = this;
   gContextCallExprs.add(this);
 }
 
@@ -6439,6 +6447,7 @@ void NamedExpr::verify() {
   }
   if (actual && actual->parentExpr != this)
     INT_FATAL(this, "Bad NamedExpr::actual::parentExpr");
+  verifyNotOnList(actual);
 }
 
 

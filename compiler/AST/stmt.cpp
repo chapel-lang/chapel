@@ -164,6 +164,7 @@ void UseStmt::verify() {
   if (relatedNames.size() != 0 && named.size() == 0 && renamed.size() == 0) {
     INT_FATAL(this, "Have names to avoid, but nothing was listed in the use to begin with");
   }
+  verifyNotOnList(src);
 }
 
 void UseStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
@@ -358,6 +359,10 @@ void BlockStmt::verify() {
         INT_FATAL(this, "BlockStmt::verify. Bad expression kind in byrefVars");
     }
   }
+
+  verifyNotOnList(modUses);
+  verifyNotOnList(byrefVars);
+  verifyNotOnList(blockInfo);
 }
 
 
@@ -886,6 +891,9 @@ CondStmt::verify() {
   if (elseStmt && elseStmt->parentExpr != this)
     INT_FATAL(this, "Bad CondStmt::elseStmt::parentExpr");
 
+  verifyNotOnList(condExpr);
+  verifyNotOnList(thenStmt);
+  verifyNotOnList(elseStmt);
 }
 
 CondStmt*
@@ -1145,6 +1153,8 @@ void GotoStmt::verify() {
                   "GOTO_ITER_RESUME goto's label's iterResumeGoto does not match the goto");
     }
   }
+
+  verifyNotOnList(label);
 }
 
 
@@ -1179,11 +1189,10 @@ GotoStmt::copyInner(SymbolMap* map) {
 // Ensure all remembered Gotos have been taken care of.
 // Reset copiedIterResumeGotos.
 //
-void verifyNcleanCopiedIterResumeGotos() {
+void verifyCopiedIterResumeGotos() {
   for (int i = 0; i < copiedIterResumeGotos.n; i++)
     if (GotoStmt* copy = copiedIterResumeGotos.v[i].value)
       INT_FATAL(copy, "unhandled goto in copiedIterResumeGotos");
-  copiedIterResumeGotos.clear();
 }
 
 
