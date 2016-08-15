@@ -77,6 +77,9 @@ module ChapelSyncvar {
       compilerError("sync/single types cannot be of type '", t : string, "'");
   }
 
+  pragma "no doc"
+  proc chpl__readXX(x) return x;
+
   /************************************ | *************************************
   *                                                                           *
   * The record wrapper to implement sync                                      *
@@ -490,187 +493,263 @@ module ChapelSyncvar {
 
 
 
+
+
+
+
+
   /************************************ | *************************************
   *                                                                           *
-  * Class based implementation of single                                      *
+  * The record wrapper to implement single                                    *
   *                                                                           *
   ************************************* | ************************************/
 
   pragma "single"
-  pragma "no object" // Optimize out the object base pointer.
-  pragma "no default functions"
-  pragma "ignore noinit"
-  pragma "not plain old data"
+  pragma "default intent is ref"
   pragma "no doc"
-  class _singlevar {
+  record _singlevar {
     type valType;                              // The compiler knows this name
 
-    // actual data - may need to be declared specially on some targets!
-    var  value: valType;
+    var  wrapped : _singlecls(valType) = nil;
+    var  isOwned : bool              = true;
 
-    // data structure for locking, signaling, etc.
-    pragma "omit from constructor"
-    var single_aux: _single_aux_t;
+    proc _singlevar(type valType) {
+      ensureFEType(valType);
 
-    // Ideally, the definition of this class should be target and valType
-    // dependent, since not all targets need to have a single_aux field if
-    // valType is sufficiently simple.
+      wrapped = new _singlecls(valType);
+      isOwned = true;
+    }
+
+    proc _singlevar(type valType, other : _singlevar(valType)) {
+      ensureFEType(valType);
+
+      wrapped = other.wrapped;
+      isOwned = false;
+    }
 
     proc ~_singlevar() {
-      __primitive("single_destroy", this);
+      if isOwned == true then
+        delete wrapped;
     }
 
-    proc initialize() {
-      ensureFEType(valType);
-      __primitive("single_init", this);
+    // Do not allow implicit reads of single vars.
+    proc readThis(x) {
+      compilerError("single variables cannot currently be read - use writeEF instead");
     }
+
+    // Do not allow implicit writes of single vars.
+    proc writeThis(x) {
+      compilerError("single variables cannot currently be written - apply readFF() to those variables first");
+     }
+  }
+
+  /*
+     Noakes 2016/08/12
+
+     These are defined as secondary methods so that chpldoc can render the
+     documentation
+  */
+
+  pragma "no doc"
+  proc isSingleType(type t) param where t : _singlevar {
+    return true;
   }
 
   /* Returns true if `t` is a single type, false otherwise. */
-  proc isSingleType(type t) param
-    return __primitive("is single type", t);
+  proc isSingleType(type t) param {
+    return false;
+  }
+
+  /*
+    1) Block until the single variable is full.
+    2) Read the value of the single variable and leave the variable full
+
+    :returns: The value of the single variable.
+  */
+  proc _singlevar.readFF() {
+    return wrapped.readFF();
+  }
+
+  /*
+    1) Read the value of the single variable
+    2) Do not inspect or change the full/empty state
+
+    :returns: The value of the single variable.
+  */
+  proc _singlevar.readXX() {
+    return wrapped.readXX();
+  }
+
+  /*
+    1) Block until the single variable is empty.
+    2) Write the value of the single variable and leave the variable full
+
+    :arg val: New value of the single variable.
+  */
+  proc _singlevar.writeEF(x : valType) {
+    wrapped.writeEF(x);
+  }
+
+  /*
+     Determine if the single variable is full without blocking.
+     Does not alter the state of the single variable
+
+     :returns: true if the state of the single variable is full.
+  */
+  proc _singlevar.isFull {
+    return wrapped.isFull;
+  }
+
+  proc   = (ref lhs : _singlevar(?t), rhs : t) {
+    lhs.wrapped.writeEF(rhs);
+  }
+
+  pragma "init copy fn"
+  proc chpl__initCopy(sv : _singlevar(?t)) {
+    return sv.readFF();
+  }
+
+  pragma "donor fn"
+  pragma "auto copy fn"
+  pragma "no doc"
+  proc chpl__autoCopy(const ref rhs : _singlevar(?t)) {
+    return new _singlevar(t, rhs);
+  }
+
+  // Be explicit about whether singles are auto-destroyed.
+  inline proc chpl__maybeAutoDestroyed(x : _singlevar(?t)) param return true;
+
+  // This version has to be available to take precedence
+  pragma "auto destroy fn sync"
+    inline proc chpl__autoDestroy(x : _singlevar(?)) {
+    if x.isOwned == true then
+      delete x.wrapped;
+  }
+
+  pragma "no doc"
+  proc chpl__readXX(x : _singlevar(?)) return x.readXX();
+
+  /************************************ | *************************************
+  *                                                                           *
+  * Use of a class instance establishes the required identity property.       *
+  *                                                                           *
+  * Potential future optimization: Some targets could rely on a class that    *
+  * omits the singleAux variable for sufficiently simple valType.             *
+  *                                                                           *
+  ************************************* | ************************************/
+
+  // Implementation is target dependent and opaque to Chapel code
+  pragma "no doc"
+  extern record chpl_single_aux_t { };
+
+  extern proc   chpl_single_initAux(ref aux : chpl_single_aux_t);
+  extern proc   chpl_single_destroyAux(ref aux : chpl_single_aux_t);
+
+  pragma "insert line file info"
+  extern proc   chpl_single_waitFullAndLock (ref aux : chpl_single_aux_t);
+
+  extern proc   chpl_single_lock  (ref aux : chpl_single_aux_t);
+  extern proc   chpl_single_unlock(ref aux : chpl_single_aux_t);
+
+  extern proc   chpl_single_markAndSignalFull (ref aux : chpl_single_aux_t);
+
+  extern proc   chpl_single_isFull(value   : c_void_ptr,
+				   ref aux : chpl_single_aux_t) : bool;
+
+
+  pragma "no doc"
+  class _singlecls {
+    type valType;
+
+    var  value     : valType;
+    var  singleAux : chpl_single_aux_t;      // Locking, signaling, ...
+
+    proc _singlecls(type valType) {
+      chpl_single_initAux(singleAux);
+    }
+
+    proc ~_singlecls() {
+      chpl_single_destroyAux(singleAux);
+    }
+
+    proc readFF() {
+      var ret: valType;
+
+      on this {
+        var localRet: valType;
+
+        chpl_rmem_consist_release();
+
+	if this.isFull then
+          localRet = value;
+        else {
+          chpl_single_waitFullAndLock(singleAux);   // single_wait_full
+          localRet = value;
+          chpl_single_markAndSignalFull(singleAux);
+	}
+
+        chpl_rmem_consist_acquire();
+
+        ret = localRet;
+      }
+
+      return ret;
+    }
+
+    proc readXX() {
+      var ret: valType;
+
+      on this {
+        var localRet: valType;
+
+        chpl_rmem_consist_release();
+
+        if this.isFull then
+          localRet = value;
+        else {
+          chpl_single_lock(singleAux);
+          localRet = value;
+          chpl_single_unlock(singleAux);
+	}
+
+        chpl_rmem_consist_acquire();
+        ret = localRet;
+      }
+
+      return ret;
+    }
+
+    proc writeEF(val : valType) {
+      on this {
+        chpl_rmem_consist_release();
+        chpl_single_lock(singleAux);
+
+        if this.isFull then
+          halt("single var already defined");
+
+        value = val;
+
+        chpl_single_markAndSignalFull(singleAux);
+        chpl_rmem_consist_acquire();
+      }
+    }
+
+    proc isFull {
+      var b : bool;
+
+      on this {
+        chpl_rmem_consist_release();
+        b = chpl_single_isFull(c_ptrTo(value), singleAux);
+        chpl_rmem_consist_acquire();
+      }
+
+      return b;
+    }
+  }
 
   pragma "no doc"
   proc isSingleValue(x: single) param  return true;
 
   pragma "no doc"
   proc isSingleValue(x)         param  return false;
-
-  /*
-     This method blocks until the single variable is full.
-     The state of the single variable remains full when this method completes.
-     This method implements the default read of a single variable.
-
-     :returns: The value of the single variable.
-  */
-  proc _singlevar.readFF() {
-    var ret: valType;
-    on this {
-      var localRet: valType;
-      chpl_rmem_consist_release();
-      if this.isFull then
-        localRet = value;
-      else {
-        __primitive("single_wait_full", this);
-        localRet = value;
-        // in case others are waiting
-        __primitive("single_mark_and_signal_full", this);
-      }
-      chpl_rmem_consist_acquire();
-      ret = localRet;
-    }
-    return ret;
-  }
-
-
-  /*
-     This method is non-blocking and the state of the single variable is
-     unchanged when this method completes.
-
-     :returns: The value of the single variable.
-  */
-  proc _singlevar.readXX() {
-    var ret: valType;
-    on this {
-      chpl_rmem_consist_release();
-      var localRet: valType;
-      if this.isFull then
-        localRet = value;
-      else {
-        __primitive("single_lock", this);
-        localRet = value;
-        __primitive("single_unlock", this);
-      }
-      chpl_rmem_consist_acquire();
-      ret = localRet;
-    }
-    return ret;
-  }
-
-
-  /*
-     :arg val: New value of the single variable.
-
-     This method blocks until the single variable is empty. The state of the single
-     variable is set to full when this method completes. This method implements
-     the default write of a single variable.
-  */
-  proc _singlevar.writeEF(val:valType) {
-    on this {
-      chpl_rmem_consist_release();
-      __primitive("single_lock", this);
-      if this.isFull then
-        halt("single var already defined");
-      value = val;
-      __primitive("single_mark_and_signal_full", this);
-      chpl_rmem_consist_acquire();
-    }
-  }
-
-  proc =(ref sv: single, value:sv.valType) {
-    sv.writeEF(value);
-  }
-
-  /*
-     :returns: true if the state of the single variable is full.
-
-     This method is non-blocking and the state of the single variable is
-     unchanged when this method completes.
-  */
-  proc _singlevar.isFull {
-    var b: bool;
-    on this {
-      chpl_rmem_consist_release();
-      b = __primitive("single_is_full", this);
-      chpl_rmem_consist_acquire();
-    }
-    return b;
-  }
-
-
-  // Do not allow implicit reads of single vars.
-  pragma "no doc"
-  proc _singlevar.readThis(x) {
-    compilerError("single variables cannot currently be read - use writeEF/writeFF instead");
-  }
-
-  // Do not allow implicit writes of single vars.
-  pragma "no doc"
-  proc _singlevar.writeThis(x) {
-    compilerError("single variables cannot currently be written - apply readFF/readFE() to those variables first");
-  }
-
-  pragma "dont disable remote value forwarding"
-  inline proc _createFieldDefault(type t, init: single) {
-    return init;
-  }
-
-  pragma "init copy fn"
-  inline proc chpl__initCopy(sv: single) {
-    return sv.readFF();
-  }
-
-  pragma "dont disable remote value forwarding"
-  pragma "donor fn"
-  pragma "auto copy fn"
-  inline proc chpl__autoCopy(x: single) return x;
-
-  // Be explicit about whether singles are auto-destroyed.
-  inline proc chpl__maybeAutoDestroyed(x: _singlevar) param return true;
-
-  pragma "auto destroy fn sync"
-  inline proc chpl__autoDestroy(x: _singlevar) {
-    delete x;
-  }
-
-  proc chpl__syncBaseType(s) type {
-    var x = s;
-    return x.type;
-  }
-
-  pragma "no doc"
-  inline proc chpl__readXX(x: single) return x.readXX();
-
-  pragma "no doc"
-  inline proc chpl__readXX(x) return x;
 }
