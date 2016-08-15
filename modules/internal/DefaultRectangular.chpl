@@ -223,16 +223,23 @@ module DefaultRectangular {
           if stridable {
             type strType = chpl__signedType(idxType);
             for param i in 1..rank {
-              const rStride = ranges(i).stride:strType;
-              if ranges(i).stride > 0 {
-                const low = ranges(i).alignedLow + followMe(i).low*rStride,
-                      high = ranges(i).alignedLow + followMe(i).high*rStride,
-                      stride = rStride:idxType;
+              // Note that a range.stride is signed, even if the range is not
+              const rStride = ranges(i).stride;
+              const rSignedStride = rStride:strType;
+              if rStride > 0 {
+                // Since stride is positive, the following line results
+                // in a positive number, so casting it to e.g. uint is OK
+                const riStride = rStride:idxType;
+                const low = ranges(i).alignedLow + followMe(i).low*riStride,
+                      high = ranges(i).alignedLow + followMe(i).high*riStride,
+                      stride = rSignedStride;
                 block(i) = low..high by stride;
               } else {
-                const low = ranges(i).alignedHigh + followMe(i).high*rStride,
-                      high = ranges(i).alignedHigh + followMe(i).low*rStride,
-                      stride = rStride:idxType;
+                // Stride is negative, so the following number is positive.
+                const riStride = (-rStride):idxType;
+                const low = ranges(i).alignedHigh - followMe(i).high*riStride,
+                      high = ranges(i).alignedHigh - followMe(i).low*riStride,
+                      stride = rSignedStride;
                 block(i) = low..high by stride;
               }
             }
@@ -415,17 +422,21 @@ module DefaultRectangular {
       if stridable {
         type strType = chpl__signedType(idxType);
         for param i in 1..rank {
-          const rStride = ranges(i).stride:strType,
-                fStride = followThis(i).stride:strType;
-          if ranges(i).stride > 0 {
-            const low = ranges(i).alignedLow + followThis(i).low*rStride,
-                  high = ranges(i).alignedLow + followThis(i).high*rStride,
-                  stride = (rStride * fStride):idxType;
+          // See domain follower for comments about this
+          const rStride = ranges(i).stride;
+          const rSignedStride = rStride:strType,
+                fSignedStride = followThis(i).stride:strType;
+          if rStride > 0 {
+            const riStride = rStride:idxType;
+            const low = ranges(i).alignedLow + followThis(i).low*riStride,
+                  high = ranges(i).alignedLow + followThis(i).high*riStride,
+                  stride = (rSignedStride * fSignedStride):strType;
             block(i) = low..high by stride;
           } else {
-            const low = ranges(i).alignedHigh + followThis(i).high*rStride,
-                  high = ranges(i).alignedHigh + followThis(i).low*rStride,
-                  stride = (rStride * fStride):idxType;
+            const irStride = (-rStride):idxType;
+            const low = ranges(i).alignedHigh - followThis(i).high*irStride,
+                  high = ranges(i).alignedHigh - followThis(i).low*irStride,
+                  stride = (rSignedStride * fSignedStride):strType;
             block(i) = low..high by stride;
           }
         }
