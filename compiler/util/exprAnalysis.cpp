@@ -75,6 +75,16 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
       return false;
     }
   }
+
+  const bool cachedExternManip = isRegisteredExternManip(fnSym);
+  if(cachedExternManip) {
+    if(externManipFuncCache[fnSym]) {
+      //this shouldn't happen with the current structure
+      INT_ASSERT(0);
+      return false;
+    }
+  }
+
   for_formals(formal, fnSym) {
     if(isReferenceType(formal->typeInfo())) {
       safeFnCache[fnSym] = false;
@@ -85,24 +95,35 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
   // check if fn touches any globals
   std::vector<BaseAST*> asts;
   collect_asts(fnSym->body, asts);
-  if(!cachedGlobalManip){
-    for_vector(BaseAST, ast, asts) {
-      if (SymExpr* se = toSymExpr(ast)) {
-        Symbol* var = se->var;
 
-        if(!var->isImmediate() &&  isGlobal(var)){
-          safeFnCache[fnSym] = false;
-          globalManipFuncCache[fnSym] = true;
-          return false;
+  for_vector(BaseAST, ast, asts) {
+    if(!cachedGlobalManip || !cachedExternManip) {
+      if(!cachedGlobalManip) {
+        if (SymExpr* se = toSymExpr(ast)) {
+          Symbol* var = se->var;
+
+          if(!var->isImmediate() &&  isGlobal(var)){
+            safeFnCache[fnSym] = false;
+            globalManipFuncCache[fnSym] = true;
+            return false;
+          }
+        }
+      }
+      if(!cachedExternManip) {
+        if (SymExpr* se = toSymExpr(ast)) {
+          Symbol* var = se->var;
+
+          if(var->hasFlag(FLAG_EXTERN)) {
+            safeFnCache[fnSym] = false;
+            externManipFuncCache[fnSym] = true;
+            return false;
+          }
         }
       }
     }
-  }
-
-  //this else if lazily marks a def to be immovable if the function body
-  //has a call to another user function this can be enhanced by going
-  //recursive, but it might be a bit overkill
-  for_vector(BaseAST, ast, asts) {
+    //this if lazily marks a def to be immovable if the function
+    //body has a call to another user function this can be enhanced by
+    //going recursive, but it might be a bit overkill
     if(CallExpr* ce = toCallExpr(ast)) {
       if(!isNonEssentialPrimitive(ce)) {
         safeFnCache[fnSym] = false;
@@ -110,11 +131,14 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
       }
     }
   }
-  //it shouldn't be touching any globals at this point
+
+  //it shouldn't be touching any globals/extern at this point
+  externManipFuncCache[fnSym] = false;
   globalManipFuncCache[fnSym] = false;
-  safeFnCache[fnSym] = false;
+  safeFnCache[fnSym] = true;
   return true;
 }
+
 /* List of primitives that we shouldn't be hitting at this point in compilation
 
     case PRIM_DIV:
@@ -236,5 +260,18 @@ void SafeExprAnalysis::registerGlobalManip(FnSymbol* fn, bool manip) {
   if(manip) {
     safeFnCache[fn] = false;
   }
+}
 
+bool SafeExprAnalysis::isRegisteredExternManip(FnSymbol* fn) {
+  return externManipFuncCache.count(fn) > 0;
+}
+
+bool SafeExprAnalysis::getExternManip(FnSymbol* fn) {
+  return externManipFuncCache[fn];
+}
+void SafeExprAnalysis::registerExternManip(FnSymbol* fn, bool manip) {
+  externManipFuncCache[fn] = manip;
+  if(manip) {
+    safeFnCache[fn] = false;
+  }
 }

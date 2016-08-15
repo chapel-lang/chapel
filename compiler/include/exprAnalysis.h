@@ -30,6 +30,7 @@ class SafeExprAnalysis {
     std::map<Expr*,bool> safeExprCache;
     std::map<FnSymbol*,bool> safeFnCache;
     std::map<FnSymbol*,bool> globalManipFuncCache;
+    std::map<FnSymbol*,bool> externManipFuncCache;
   public:
     bool isNonEssentialPrimitive(CallExpr* ce);
 
@@ -50,6 +51,10 @@ class SafeExprAnalysis {
     bool isRegisteredGlobalManip(FnSymbol* fn);
     bool getGlobalManip(FnSymbol* fn);
     void registerGlobalManip(FnSymbol* fn, bool manip);
+
+    bool isRegisteredExternManip(FnSymbol* fn);
+    bool getExternManip(FnSymbol* fn);
+    void registerExternManip(FnSymbol* fn, bool manip);
 };
 
 #endif

@@ -129,6 +129,7 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
   buildDefUseMaps(fn, defMap, useMap);
 
   bool cachedGlobalManip = analysisData.isRegisteredGlobalManip(fn);
+  bool cachedExternManip = analysisData.isRegisteredExternManip(fn);
   // Note the different symbol set being iterated
   forv_Vec(Symbol, sym, symVec) {
 
@@ -141,13 +142,21 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
     //if we don't already have it cached,
     //check for global symbols in function body
     if(!cachedGlobalManip) {
-      //I am not sure if there should be !isConstant and !isParam as well
-      //I think there can be a const but stateful global that is manipulated by
-      //the function so, play safe
+      //I am not sure if there should be !isConstant and !isParam as
+      //well I think there can be a const but stateful global that is
+      //manipulated by the function so, play safe
       if(sym && !sym->isImmediate() && isGlobal(sym)){
         analysisData.registerGlobalManip(fn, true);
         cachedGlobalManip = true;
       }
+    }
+
+    if(!cachedExternManip) {
+      if(sym && sym->hasFlag(FLAG_EXTERN)){
+        analysisData.registerExternManip(fn, true);
+        cachedExternManip = true;
+      }
+
     }
 
     if(isDenormalizable(sym, defMap, useMap, &use, &def, &castTo,
@@ -155,18 +164,20 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
       usePar = use->parentExpr;
       defPar = def->parentExpr;
 
-      // Initially I used to defer denormalizing actuals and have special
-      // treatment while denormalizing actuals of a function call. Main reason
-      // behind that was C standard not specifying evaluation order of actuals
-      // and I wanted to keep the call order in the IR. However, if we have
-      // strong enough safety checks on `Expr`s that we are moving, than that
-      // shouldn't necessarily matter.
+      // Initially I used to defer denormalizing actuals and have
+      // special treatment while denormalizing actuals of a function
+      // call. Main reason behind that was C standard not specifying
+      // evaluation order of actuals and I wanted to keep the call order
+      // in the IR. However, if we have strong enough safety checks on
+      // `Expr`s that we are moving, than that shouldn't necessarily
+      // matter.
       //
-      // Possible alternative for an easy-to-implement actual denormalization is
-      // to denormalize an actual only if it's the last/only one.
+      // Possible alternative for an easy-to-implement actual
+      // denormalization is to denormalize an actual only if it's the
+      // last/only one.
 
-      //denormalize if the def is safe to move and there is no unsafe function
-      //between use and def
+      //denormalize if the def is safe to move and there is no unsafe
+      //function between use and def
       if(analysisData.exprHasNoSideEffects(def)) {
         if(!unsafeExprInBetween(defPar, usePar, analysisData)) {
           DefCastPair defCastPair(def, castTo);
@@ -178,6 +189,9 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
   } // end loop for symbol
   if(!cachedGlobalManip) {
     analysisData.registerGlobalManip(fn, false);
+  }
+  if(!cachedExternManip) {
+    analysisData.registerExternManip(fn, false);
   }
 }
 
