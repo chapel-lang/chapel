@@ -50,7 +50,7 @@ for more information on LLVM debug information.
 // will have garbage from beyond full_path.
 // garbage issue could be solved with scrubbing, if it matters.
 
-extern char *current_dir;
+char current_dir[128];
 llvm::DenseMap<const Type *, llvm::MDNode *> myTypeDescriptors;
 
 static
@@ -76,7 +76,6 @@ llvm::MDNode *myGetType(const Type *type) {
 
 
 void debug_data::finalize() {
-  printf("IN FINALIZE\n");
   dibuilder.finalize();
 }
 
@@ -87,8 +86,10 @@ void debug_data::create_compile_unit(const char *file, const char *directory, bo
   char chapel_string[256];
   get_version(version);
   snprintf(chapel_string, 256, "Chapel version %s", version);
-  
-  this->dibuilder.createCompileUnit(DW_LANG_chapel, file, directory, chapel_string, is_optimized, flags,0);
+  strncpy(current_dir, directory,sizeof(current_dir)-1);
+
+  this->dibuilder.createCompileUnit(llvm::dwarf::DW_LANG_C99, file, directory,
+                                    chapel_string, is_optimized, flags,0);
 }
 
 
@@ -115,7 +116,7 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
   }
   /////////////////////////////////////////////////////
   int defLine = type->symbol->linenum();
-  
+
   if(!ty) {
 #if HAVE_LLVM_VER >= 37
     return NULL;
@@ -216,7 +217,7 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
         // dealing with classes
         AggregateType *this_class = (AggregateType *)type;
         llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE *, 8> EltTys;
-        LLVM_DITYPE derivedFrom;
+        LLVM_DITYPE derivedFrom = nullptr;
         if( type->dispatchParents.length() > 0 )
           derivedFrom = get_type(type->dispatchParents.first());
 
@@ -263,7 +264,14 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
               int fieldDefLine = field->defPoint->linenum();
               TypeSymbol* fts = field->type->symbol;
               llvm::Type* fty = fts->llvmType;
-              LLVM_DITYPE mty; 
+              LLVM_DITYPE mty;
+              LLVM_DITYPE fditype =  get_type(field->type);
+              if(fditype == NULL)
+              // if field->type is an internal type, get_type returns null
+              // which is not a good type for a MemberType). At the moment it
+              // uses a nullptr type as a stub, but we should change it
+                fditype = this->dibuilder.createNullPtrType();
+
               //use the dummy type for 'BaseArr'
               mty = this->dibuilder.createMemberType(
                 get_module_scope(defModule),
@@ -274,8 +282,8 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
                 8*layout->getABITypeAlignment(fty),
                 slayout->getElementOffsetInBits(this_class->getMemberGEP(field->cname)),
                 0,
-                get_type(field->type));    
-              
+                fditype);
+
               EltTys.push_back(mty);
             }
 
@@ -301,7 +309,7 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
   else if(ty->isStructTy() && type->astTag == E_AggregateType) {
     AggregateType *this_class = (AggregateType *)type;
     llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE *, 8> EltTys;
-    LLVM_DITYPE derivedFrom;
+    LLVM_DITYPE derivedFrom = nullptr;
     if( type->dispatchParents.length() > 0 )
       derivedFrom = get_type(type->dispatchParents.first());
 
@@ -329,6 +337,10 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
       int fieldDefLine = field->defPoint->linenum();
       TypeSymbol* fts = field->type->symbol; 
       llvm::Type* fty = fts->llvmType;
+      LLVM_DITYPE fditype =  get_type(field->type);
+      if(fditype == NULL)
+      // See line 270 for a comment about this if
+        fditype = this->dibuilder.createNullPtrType();
 
       if(!fty){
         fty = getTypeLLVM(fts->cname);
@@ -344,14 +356,13 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
         8*layout->getABITypeAlignment(fty),
         slayout->getElementOffsetInBits(this_class->getMemberGEP(field->cname)),
         0,
-        get_type(field->type));
+        fditype);
 
       EltTys.push_back(mty);
     }
 
     if(this_class->aggregateTag == AGGREGATE_RECORD) {
         ////////////////////////////////////////
-        //printf("Here: %s  %d  %s\n",name,defLine,defFile);
       N = this->dibuilder.createStructType(
         get_module_scope(defModule),
         name,
@@ -416,18 +427,21 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
     return toDITYPE(N);
   }
 
-  printf("Unhandled type: %s\n\ttype->astTag=%i\n", type->symbol->name, type->astTag);
+  // We are unable for some reasons to find a debug type. This shouldn't be a
+  // problem for a correct compilation, but it would be better to find a way to
+  // deal with this case
+  //
+  // These are some debug prints for helping find these types.
+  //
+  /*printf("Unhandled type: %s\n\ttype->astTag=%i\n", type->symbol->name, type->astTag);
   if(type->symbol->llvmType) {
     printf("\tllvmType->getTypeID() = %i\n", type->symbol->llvmType->getTypeID());
   }
   else {
     printf("\tllvmType is NULL\n");
-  }
+  }*/
 
-  LLVM_DITYPE ret;
-#if HAVE_LLVM_VER >= 37
-  ret = NULL;
-#endif
+  LLVM_DITYPE ret = NULL;
 
   return ret;
 }
@@ -499,7 +513,7 @@ LLVM_DI_SUBROUTINE_TYPE debug_data::get_function_type(FnSymbol *function)
   for_formals(arg, function)
   {
     ret_arg_types.push_back(get_type(arg->type));
-  } 
+  }
 #if HAVE_LLVM_VER >= 37
   llvm::DITypeRefArray ret_arg_arr = dibuilder.getOrCreateTypeArray(ret_arg_types);
   return this->dibuilder.createSubroutineType(file, ret_arg_arr);
@@ -527,8 +541,6 @@ LLVM_DISUBPROGRAM debug_data::construct_function(FnSymbol *function)
   LLVM_DIFILE file = get_file(file_name);
 
   LLVM_DI_SUBROUTINE_TYPE function_type = get_function_type(function);
-
-  printf("CONSTRUCTING FUNCTION DEBUG DATA on %s\n",name);
 
   LLVM_DISUBPROGRAM ret = this->dibuilder.createFunction(
     module, /* scope */
@@ -622,8 +634,8 @@ LLVM_DIVARIABLE debug_data::construct_variable(VarSymbol *varSym)
   LLVM_DISUBPROGRAM scope = get_function(funcSym);  
   LLVM_DIFILE file = get_file(file_name);
   LLVM_DITYPE varSym_type = get_type(varSym->type);
-      
-  if(varSym_type)
+
+  if(varSym_type){
     return this->dibuilder.createLocalVariable(
       llvm::dwarf::DW_TAG_auto_variable, /*Tag*/
       scope, /* Scope */
@@ -633,9 +645,9 @@ LLVM_DIVARIABLE debug_data::construct_variable(VarSymbol *varSym)
       varSym_type, /*Type*/
       true/*AlwaysPreserve, won't be removed when optimized*/
       ); //omit the  Flags and ArgNo
+  }
   else {
     //Empty dbg node if the symbol type is unresolved
-    printf("varSym_type is NULL for lv: %s\n",name);
     LLVM_DIVARIABLE ret;
 #if HAVE_LLVM_VER >= 37
     ret = NULL;

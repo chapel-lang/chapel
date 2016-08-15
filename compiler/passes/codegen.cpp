@@ -829,7 +829,9 @@ static void codegen_defn(Vec<const char*> & cnames, Vec<TypeSymbol*> & types,
   }
 
   flushStatements();
+#ifndef HAVE_LLVM
   zlineToFileIfNeeded(rootModule, info->cfile);
+#endif
   
   genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap, false);
   int globals_registry_static_size = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);

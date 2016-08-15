@@ -2618,10 +2618,8 @@ ModuleSymbol::ModuleSymbol(const char* iName,
     filename(NULL),
     doc(NULL),
     extern_info(NULL),
-    llvmDINameSpace(NULL),
-    moduleNamePrefix("")
+    llvmDINameSpace(NULL)
 {
-
   block->parentSymbol = this;
   registerModule(this);
   gModuleSymbols.add(this);

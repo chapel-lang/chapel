@@ -858,6 +858,14 @@ CREATE_AST_CONSUMER_RETURN_TYPE CCodeGenAction::CreateASTConsumer(
 #endif
 };
 
+static void finishClang(GenInfo* info){
+  if( info->cgBuilder ) {
+    info->cgBuilder->Release();
+  }
+  info->Diags.reset();
+  info->DiagID.reset();
+}
+
 static void cleanupClang(GenInfo* info)
 {
   if( info->cgBuilder ) {
@@ -996,7 +1004,7 @@ void finishCodegenLLVM() {
   info->FPM_postgen = NULL;
 
   // Now finish any Clang code generation.
-  cleanupClang(info);
+  finishClang(info);
 
   if(debug_info)debug_info->finalize();
 
