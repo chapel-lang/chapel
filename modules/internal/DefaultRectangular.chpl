@@ -978,7 +978,7 @@ module DefaultRectangular {
         } else { // unsigned type, signed stride
           assert((dom.dsiDim(i).stride<0 && str(i)<0) ||
                  (dom.dsiDim(i).stride>0 && str(i)>0));
-          s = dom.dsiDim(i).stride / str(i) : d.idxType;
+          s = (dom.dsiDim(i).stride / str(i)) : d.idxType;
         }
         alias.off(i) = d.dsiDim(i).low;
         alias.blk(i) = blk(i) * s;
@@ -1455,11 +1455,11 @@ module DefaultRectangular {
     // align'd.
     const Adims = A.dom.dsiDims();
     var AFirst : rank*idxType;
-    for i in 1..rank do AFirst(i) = Adims(i).first;
+    for i in 1..rank do AFirst(i) = if Adims(i).stride < 0 then Adims(i).last else Adims(i).first;
 
     const Bdims = B.dom.dsiDims();
     var BFirst : rank*idxType;
-    for i in 1..rank do BFirst(i) = Bdims(i).first;
+    for i in 1..rank do BFirst(i) = if Bdims(i).stride < 0 then Bdims(i).last else Bdims(i).first;
 
     if debugDefaultDistBulkTransfer {
       writeln("In DefaultRectangularArr.doiBulkTransferStride");

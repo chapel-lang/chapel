@@ -75,4 +75,9 @@ proc main() {
     const right = 1..3 by 2 align 0;
     stridedAssign(A[left], B[right]);
   }
+
+  {
+    var A, B : [2..6 by -2] int;
+    stridedAssign(A, B);
+  }
 }
