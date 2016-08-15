@@ -233,7 +233,9 @@ verify() {
      }                                            \
     }
   foreach_ast(verify_gvec);
-  rootModule->verify();  // rootModule is not isAlive()
+
+  // rootModule does not pass isAlive(), yet is "alive" - needs to be  verified
+  rootModule->verify();
 }
 
 
