@@ -1028,6 +1028,12 @@ static void build_record_copy_function(AggregateType* ct) {
       INT_FATAL(arg, "Extern type's constructor call didn't create expected # of actuals");
     }
   }
+  if (ct->initializerStyle == DEFINES_INITIALIZER) {
+    // We want the initializer to take in the memory it will initialize
+    VarSymbol* meme = newTemp("meme_tmp", ct);
+    fn->insertAtHead(new DefExpr(meme));
+    call->insertAtTail(new NamedExpr("meme", new SymExpr(meme)));
+  }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
@@ -1111,7 +1117,12 @@ static void build_record_init_function(AggregateType* ct) {
   } else {
     // To default initialize, call the type specified default constructor (by
     // name), passing in all generic arguments.
-    CallExpr* call = new CallExpr(ct->defaultInitializer->name);
+    CallExpr* call = NULL;
+    if (ct->initializerStyle == DEFINES_INITIALIZER) {
+      call = new CallExpr("init");
+    } else {
+      call = new CallExpr(ct->defaultInitializer->name);
+    }
     // Need to insert all required arguments into this call
     for_formals(formal, ct->defaultInitializer) {
       if (formal->hasFlag(FLAG_IS_MEME))
@@ -1195,6 +1206,13 @@ static void build_record_init_function(AggregateType* ct) {
         }
       }
     }
+    if (ct->initializerStyle == DEFINES_INITIALIZER) {
+      // We want the initializer to take in the memory it will initialize
+      VarSymbol* meme = newTemp("meme_tmp", ct);
+      fn->insertAtHead(new DefExpr(meme));
+      call->insertAtTail(new NamedExpr("meme", new SymExpr(meme)));
+    }
+
     fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   }
 
