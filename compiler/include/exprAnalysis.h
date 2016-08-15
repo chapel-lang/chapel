@@ -42,6 +42,7 @@ class SafeExprAnalysis {
      * to take into account alias analysis.
      */
     bool exprHasNoSideEffects(Expr* e);
+    bool fnHasNoSideEffects(FnSymbol* fn);
 
     bool isSafePrimitive(CallExpr* ce);
 

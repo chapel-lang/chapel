@@ -39,52 +39,9 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e) {
   }
   if(CallExpr* ce = toCallExpr(e)) {
     if(!ce->isPrimitive()) {
-      FnSymbol* fnSym = ce->theFnSymbol();
-
-      //const bool cachedGlobalManip = globalManipFuncCache.count(fnSym);
-      const bool cachedGlobalManip = isRegisteredGlobalManip(fnSym);
-
-      if(cachedGlobalManip) {
-        if(globalManipFuncCache[fnSym]) {
-          return false;
-        }
-      }
-      for_formals(formal, fnSym) {
-        if(isReferenceType(formal->typeInfo())) {
-          safeExprCache[e] = false;
-          return false;
-        }
-      }
-
-      std::vector<BaseAST*> asts;
-      collect_asts(fnSym->body, asts);
-      if(!cachedGlobalManip){
-        for_vector(BaseAST, ast, asts) {
-          if (SymExpr* se = toSymExpr(ast)) {
-            Symbol* var = se->var;
-
-            if(!var->isImmediate() &&  isGlobal(var)){
-              safeExprCache[e] = false;
-              globalManipFuncCache[fnSym] = true;
-              return false;
-            }
-          }
-        }
-      }
-
-      //this else if lazily marks a def to be immovable if the
-      //function body has a call to another user function
-      //this can be enhanced by going recursive, but it might be a bit overkill
-      for_vector(BaseAST, ast, asts) {
-        if(CallExpr* ce = toCallExpr(ast)) {
-          if(!isNonEssentialPrimitive(ce)) {
-            safeExprCache[e] = false;
-            return false;
-          }
-        }
-      }
-      //it shouldn't be touching any globals at this point
-      globalManipFuncCache[fnSym] = false;
+      const bool retval = fnHasNoSideEffects(ce->theFnSymbol());
+      // TODO add new cache here
+      return retval;
     }
     else {
       //primitive
@@ -99,6 +56,55 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e) {
   return true;
 }
 
+bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
+
+  const bool cachedGlobalManip = isRegisteredGlobalManip(fnSym);
+
+  if(cachedGlobalManip) {
+    if(globalManipFuncCache[fnSym]) {
+      return false;
+    }
+  }
+  for_formals(formal, fnSym) {
+    if(isReferenceType(formal->typeInfo())) {
+      // TODO add new cache here
+      return false;
+    }
+  }
+
+  // check if fn touches any globals
+  std::vector<BaseAST*> asts;
+  collect_asts(fnSym->body, asts);
+  if(!cachedGlobalManip){
+    for_vector(BaseAST, ast, asts) {
+      if (SymExpr* se = toSymExpr(ast)) {
+        Symbol* var = se->var;
+
+        if(!var->isImmediate() &&  isGlobal(var)){
+          // TODO add new cache here
+          globalManipFuncCache[fnSym] = true;
+          return false;
+        }
+      }
+    }
+  }
+
+  //this else if lazily marks a def to be immovable if the function body
+  //has a call to another user function this can be enhanced by going
+  //recursive, but it might be a bit overkill
+  for_vector(BaseAST, ast, asts) {
+    if(CallExpr* ce = toCallExpr(ast)) {
+      if(!isNonEssentialPrimitive(ce)) {
+        // TODO add new cache here
+        return false;
+      }
+    }
+  }
+  //it shouldn't be touching any globals at this point
+  globalManipFuncCache[fnSym] = false;
+  // TODO add new cache here
+  return true;
+}
 /* List of primitives that we shouldn't be hitting at this point in compilation
 
     case PRIM_DIV:
