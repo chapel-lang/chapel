@@ -289,10 +289,9 @@ static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   _this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(_this);
-  if (field->isParameter()){ //FIXME: (remove comment) When we get to here, we can handle fields that are parameters.
+  if (field->isParameter())
     fn->retTag = RET_PARAM;
-    //_this->addFlag(FLAG_TYPE_VARIABLE);// FIXME: how do I add this without breaking the old one?
-  } else if (field->hasFlag(FLAG_TYPE_VARIABLE))
+  else if (field->hasFlag(FLAG_TYPE_VARIABLE))
     fn->retTag = RET_TYPE;
   else if (field->hasFlag(FLAG_SUPER_CLASS)) {
     fn->retTag = RET_VALUE;
