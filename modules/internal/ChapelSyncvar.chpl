@@ -89,26 +89,26 @@ module ChapelSyncvar {
   record _syncvar {
     type valType;                              // The compiler knows this name
 
-    var  syncVar : _synccls(valType) = nil;
+    var  wrapped : _synccls(valType) = nil;
     var  isOwned : bool              = true;
 
     proc _syncvar(type valType) {
       ensureFEType(valType);
 
-      syncVar = new _synccls(valType);
+      wrapped = new _synccls(valType);
       isOwned = true;
     }
 
     proc _syncvar(type valType, other : _syncvar(valType)) {
       ensureFEType(valType);
 
-      syncVar = other.syncVar;
+      wrapped = other.wrapped;
       isOwned = false;
     }
 
     proc ~_syncvar() {
       if isOwned == true then
-        delete syncVar;
+        delete wrapped;
     }
 
     // Do not allow implicit reads of sync vars.
@@ -146,7 +146,7 @@ module ChapelSyncvar {
     :returns: The value of the sync variable.
   */
   proc _syncvar.readFE() {
-    return syncVar.readFE();
+    return wrapped.readFE();
   }
 
   /*
@@ -156,7 +156,7 @@ module ChapelSyncvar {
     :returns: The value of the sync variable.
   */
   proc _syncvar.readFF() {
-    return syncVar.readFF();
+    return wrapped.readFF();
   }
 
   /*
@@ -166,7 +166,7 @@ module ChapelSyncvar {
     :returns: The value of the sync variable.
   */
   proc _syncvar.readXX() {
-    return syncVar.readXX();
+    return wrapped.readXX();
   }
 
   /*
@@ -176,7 +176,7 @@ module ChapelSyncvar {
     :arg val: New value of the sync variable.
   */
   proc _syncvar.writeEF(x : valType) {
-    syncVar.writeEF(x);
+    wrapped.writeEF(x);
   }
 
   /*
@@ -186,7 +186,7 @@ module ChapelSyncvar {
     :arg val: New value of the sync variable.
   */
   proc _syncvar.writeFF(x : valType) {
-    syncVar.writeFF(x);
+    wrapped.writeFF(x);
   }
 
   /*
@@ -195,7 +195,7 @@ module ChapelSyncvar {
     :arg val: New value of the sync variable.
   */
   proc _syncvar.writeXF(x : valType) {
-    syncVar.writeXF(x);
+    wrapped.writeXF(x);
   }
 
   /*
@@ -204,7 +204,7 @@ module ChapelSyncvar {
     variable is set to empty when this method completes.
   */
   proc _syncvar.reset() {
-    syncVar.reset();
+    wrapped.reset();
   }
 
   /*
@@ -214,55 +214,55 @@ module ChapelSyncvar {
      :returns: true if the state of the sync variable is full.
   */
   proc _syncvar.isFull {
-    return syncVar.isFull;
+    return wrapped.isFull;
   }
 
   proc   = (ref lhs : _syncvar(?t), rhs : t) {
-    lhs.syncVar.writeEF(rhs);
+    lhs.wrapped.writeEF(rhs);
   }
 
   proc  += (ref lhs : _syncvar(?t), rhs : t) {
-    lhs.syncVar.writeEF(lhs.syncVar.readFE() +  rhs);
+    lhs.wrapped.writeEF(lhs.wrapped.readFE() +  rhs);
   }
 
   proc  -= (ref lhs : _syncvar(?t), rhs : t) {
-    lhs.syncVar.writeEF(lhs.syncVar.readFE() -  rhs);
+    lhs.wrapped.writeEF(lhs.wrapped.readFE() -  rhs);
   }
 
   proc  *= (ref lhs : _syncvar(?t), rhs : t) {
-    lhs.syncVar.writeEF(lhs.syncVar.readFE() *  rhs);
+    lhs.wrapped.writeEF(lhs.wrapped.readFE() *  rhs);
   }
 
   proc  /= (ref lhs : _syncvar(?t), rhs : t) {
-    lhs.syncVar.writeEF(lhs.syncVar.readFE() /  rhs);
+    lhs.wrapped.writeEF(lhs.wrapped.readFE() /  rhs);
   }
 
   proc  %= (ref lhs : _syncvar(?t), rhs : t) {
-    lhs.syncVar.writeEF(lhs.syncVar.readFE() %  rhs);
+    lhs.wrapped.writeEF(lhs.wrapped.readFE() %  rhs);
   }
 
   proc **= (ref lhs : _syncvar(?t), rhs : t) {
-    lhs.syncVar.writeEF(lhs.syncVar.readFE() ** rhs);
+    lhs.wrapped.writeEF(lhs.wrapped.readFE() ** rhs);
   }
 
   proc  &= (ref lhs : _syncvar(?t), rhs : t) {
-    lhs.syncVar.writeEF(lhs.syncVar.readFE() &  rhs);
+    lhs.wrapped.writeEF(lhs.wrapped.readFE() &  rhs);
   }
 
   proc  |= (ref lhs : _syncvar(?t), rhs : t) {
-    lhs.syncVar.writeEF(lhs.syncVar.readFE() |  rhs);
+    lhs.wrapped.writeEF(lhs.wrapped.readFE() |  rhs);
   }
 
   proc  ^= (ref lhs : _syncvar(?t), rhs : t) {
-    lhs.syncVar.writeEF(lhs.syncVar.readFE() ^  rhs);
+    lhs.wrapped.writeEF(lhs.wrapped.readFE() ^  rhs);
   }
 
   proc >>= (ref lhs : _syncvar(?t), rhs : t) {
-    lhs.syncVar.writeEF(lhs.syncVar.readFE() >> rhs);
+    lhs.wrapped.writeEF(lhs.wrapped.readFE() >> rhs);
   }
 
   proc <<= (ref lhs : _syncvar(?t), rhs : t) {
-    lhs.syncVar.writeEF(lhs.syncVar.readFE() << rhs);
+    lhs.wrapped.writeEF(lhs.wrapped.readFE() << rhs);
   }
 
   pragma "init copy fn"
@@ -284,7 +284,7 @@ module ChapelSyncvar {
   pragma "auto destroy fn sync"
     inline proc chpl__autoDestroy(x : _syncvar(?)) {
     if x.isOwned == true then
-      delete x.syncVar;
+      delete x.wrapped;
   }
 
   pragma "no doc"
