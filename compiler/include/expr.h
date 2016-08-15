@@ -379,6 +379,12 @@ static inline bool needsCapture(FnSymbol* taskFn) {
          taskFn->hasFlag(FLAG_NON_BLOCKING);
 }
 
+// E.g. NamedExpr::actual, DefExpr::init.
+static inline void verifyNotOnList(Expr* expr) {
+  if (expr && expr->list)
+    INT_FATAL(expr, "Expr is in a list incorrectly");
+}
+
 
 bool get_int(Expr* e, int64_t* i); // false is failure
 bool get_uint(Expr *e, uint64_t *i); // false is failure

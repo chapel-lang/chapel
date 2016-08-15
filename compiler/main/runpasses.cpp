@@ -209,6 +209,12 @@ static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc) {
   considerExitingEndOfPass();
 
   //
+  // An optional verify pass
+  //
+  tracker.StartPhase(info->name, PhaseTracker::kVerify);
+  (*(info->checkFunction))(); // Run per-pass check function.
+
+  //
   // Clean up the global pointers to AST.  If we're running chpldoc,
   // there's no real reason to run this step (and at the time of this
   // writing, it didn't work if we hadn't parsed all the 'use'd
@@ -216,17 +222,8 @@ static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc) {
   //
   if (!isChpldoc) {
     tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
-
     cleanAst();
   }
-
-  //
-  // An optional verify pass
-  //
-
-  tracker.StartPhase(info->name, PhaseTracker::kVerify);
-
-  (*(info->checkFunction))(); // Run per-pass check function.
 
   if (printPasses == true || printPassesFile != 0) {
     tracker.ReportPass();
