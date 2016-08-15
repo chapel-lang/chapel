@@ -1203,6 +1203,7 @@ static void insertReferenceTemps() {
   }
 }
 
+/*
 static Vec<FnSymbol*> tokQueue;
 static Map<FnSymbol*,ArgSymbol*> tokMap; // fn to tok argument
 static Map<FnSymbol*,VarSymbol*> tokToks; // fn to tok variable
@@ -1224,6 +1225,7 @@ static ArgSymbol* newCallerStackTok(FnSymbol* fn) {
   }
   return tok;
 }
+*/
 
 /*
 static void handleStackTokens() {
