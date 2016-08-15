@@ -335,10 +335,10 @@ module DefaultAssociative {
       } else {
         if (slotNum < 0) {
           halt("couldn't add ", idx, " -- ", numEntries.read(), " / ", tableSize, " taken");
-          return (-1,0);
+          return (-1, 0);
         }
         // otherwise, re-adding an index that's already in there
-        return (-1,0);
+        return (slotNum, 0);
       }
       return (slotNum, 1);
     }
