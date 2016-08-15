@@ -39,13 +39,17 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e) {
   }
   if(CallExpr* ce = toCallExpr(e)) {
     if(!ce->isPrimitive()) {
-      const bool retval = fnHasNoSideEffects(ce->theFnSymbol());
-      // TODO add new cache here
-      return retval;
+      FnSymbol* fnSym = ce->theFnSymbol();
+      const bool cachedSafeFn = safeFnCache.count(fnSym);
+      if(!cachedSafeFn) {
+        const bool retval = fnHasNoSideEffects(fnSym);
+        safeFnCache[fnSym] = retval;
+        return retval;
+      }
+      return safeFnCache[fnSym];
     }
     else {
       //primitive
-      //if(ce->primitive->isEssential){
       if(! isSafePrimitive(ce)){
         safeExprCache[e] = false;
         return false;
@@ -58,16 +62,22 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e) {
 
 bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
 
-  const bool cachedGlobalManip = isRegisteredGlobalManip(fnSym);
+  const bool cachedSafeFn = safeFnCache.count(fnSym);
+  if(cachedSafeFn) {
+    return safeFnCache[fnSym];
+  }
 
+  const bool cachedGlobalManip = isRegisteredGlobalManip(fnSym);
   if(cachedGlobalManip) {
     if(globalManipFuncCache[fnSym]) {
+      //this shouldn't happen with the current structure
+      INT_ASSERT(0);
       return false;
     }
   }
   for_formals(formal, fnSym) {
     if(isReferenceType(formal->typeInfo())) {
-      // TODO add new cache here
+      safeFnCache[fnSym] = false;
       return false;
     }
   }
@@ -81,7 +91,7 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
         Symbol* var = se->var;
 
         if(!var->isImmediate() &&  isGlobal(var)){
-          // TODO add new cache here
+          safeFnCache[fnSym] = false;
           globalManipFuncCache[fnSym] = true;
           return false;
         }
@@ -95,14 +105,14 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
   for_vector(BaseAST, ast, asts) {
     if(CallExpr* ce = toCallExpr(ast)) {
       if(!isNonEssentialPrimitive(ce)) {
-        // TODO add new cache here
+        safeFnCache[fnSym] = false;
         return false;
       }
     }
   }
   //it shouldn't be touching any globals at this point
   globalManipFuncCache[fnSym] = false;
-  // TODO add new cache here
+  safeFnCache[fnSym] = false;
   return true;
 }
 /* List of primitives that we shouldn't be hitting at this point in compilation
@@ -222,5 +232,9 @@ bool SafeExprAnalysis::getGlobalManip(FnSymbol* fn) {
   return globalManipFuncCache[fn];
 }
 void SafeExprAnalysis::registerGlobalManip(FnSymbol* fn, bool manip) {
-  globalManipFuncCache[fn] = true;
+  globalManipFuncCache[fn] = manip;
+  if(manip) {
+    safeFnCache[fn] = false;
+  }
+
 }

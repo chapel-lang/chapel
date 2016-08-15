@@ -28,6 +28,7 @@ class SafeExprAnalysis {
 
   private:
     std::map<Expr*,bool> safeExprCache;
+    std::map<FnSymbol*,bool> safeFnCache;
     std::map<FnSymbol*,bool> globalManipFuncCache;
   public:
     bool isNonEssentialPrimitive(CallExpr* ce);
