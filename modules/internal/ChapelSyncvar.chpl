@@ -654,7 +654,7 @@ module ChapelSyncvar {
   extern proc   chpl_single_markAndSignalFull (ref aux : chpl_single_aux_t);
 
   extern proc   chpl_single_isFull(value   : c_void_ptr,
-				   ref aux : chpl_single_aux_t) : bool;
+                                   ref aux : chpl_single_aux_t) : bool;
 
 
   pragma "no doc"
@@ -680,13 +680,13 @@ module ChapelSyncvar {
 
         chpl_rmem_consist_release();
 
-	if this.isFull then
+        if this.isFull then
           localRet = value;
         else {
           chpl_single_waitFullAndLock(singleAux);   // single_wait_full
           localRet = value;
           chpl_single_markAndSignalFull(singleAux);
-	}
+        }
 
         chpl_rmem_consist_acquire();
 
@@ -710,7 +710,7 @@ module ChapelSyncvar {
           chpl_single_lock(singleAux);
           localRet = value;
           chpl_single_unlock(singleAux);
-	}
+        }
 
         chpl_rmem_consist_acquire();
         ret = localRet;
