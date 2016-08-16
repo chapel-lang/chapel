@@ -157,7 +157,6 @@ void checkPrimitives()
 
      case PRIM_UNKNOWN:
      case PRIM_NOOP:
-     case PRIM_MOVE:
      case PRIM_REF_TO_STRING:
      case PRIM_RETURN:
      case PRIM_YIELD:
@@ -204,8 +203,6 @@ void checkPrimitives()
      case PRIM_GET_REAL:            // get complex real component
      case PRIM_GET_IMAG:            // get complex imag component
      case PRIM_QUERY:               // query expression primitive
-     case PRIM_ADDR_OF:             // set a reference to a value
-     case PRIM_DEREF:               // dereference a reference
      case PRIM_LOCAL_CHECK:         // assert that a wide ref is on this locale
      case PRIM_SYNC_INIT:
      case PRIM_SYNC_DESTROY:
