@@ -671,9 +671,14 @@ GenRet VarSymbol::codegen() {
           immediate &&
           ret.chplType == dtString &&
           immediate->const_kind == CONST_KIND_STRING) {
-        ret.c += " /* \"";
-        ret.c += immediate->v_string;
-        ret.c += "\" */";
+        if (strstr(immediate->v_string, "/*") ||
+            strstr(immediate->v_string, "*/")) {
+          // Don't emit comment b/c string contained comment character.
+        } else {
+          ret.c += " /* \"";
+          ret.c += immediate->v_string;
+          ret.c += "\" */";
+        }
       }
     }
     return ret;
