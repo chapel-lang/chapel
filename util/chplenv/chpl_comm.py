@@ -5,13 +5,13 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_compiler, chpl_platform, utils
+import chpl_compiler, chpl_platform, utils, defaults
 from utils import memoize
 
 
 @memoize
 def get():
-    comm_val = os.environ.get('CHPL_COMM')
+    comm_val = defaults.get('CHPL_COMM')
     if not comm_val:
         platform_val = chpl_platform.get('target')
         compiler_val = chpl_compiler.get('target')

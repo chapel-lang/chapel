@@ -5,13 +5,13 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_platform, utils
+import chpl_platform, utils, defaults
 from utils import memoize
 
 
 @memoize
 def get():
-    make_val = os.environ.get('CHPL_MAKE')
+    make_val = defaults.get('CHPL_MAKE')
     if not make_val:
         platform_val = chpl_platform.get()
         if platform_val.startswith('cygwin') or platform_val == 'darwin':

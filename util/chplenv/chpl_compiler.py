@@ -7,16 +7,16 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_platform, utils
+import chpl_platform, utils, defaults
 from utils import memoize
 
 
 @memoize
 def get(flag='host'):
     if flag == 'host':
-        compiler_val = os.environ.get('CHPL_HOST_COMPILER', '')
+        compiler_val = defaults.get('CHPL_HOST_COMPILER', '')
     elif flag == 'target':
-        compiler_val = os.environ.get('CHPL_TARGET_COMPILER', '')
+        compiler_val = defaults.get('CHPL_TARGET_COMPILER', '')
     else:
         raise ValueError("Invalid flag: '{0}'".format(flag))
 

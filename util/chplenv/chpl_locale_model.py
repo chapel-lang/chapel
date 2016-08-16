@@ -5,12 +5,12 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-from utils import memoize
+from utils import memoize, defaults
 
 
 @memoize
 def get():
-    locale_model_val = os.environ.get('CHPL_LOCALE_MODEL', 'flat')
+    locale_model_val = defaults.get('CHPL_LOCALE_MODEL', 'flat')
     return locale_model_val
 
 

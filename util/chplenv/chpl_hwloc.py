@@ -5,14 +5,14 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_tasks
+import chpl_tasks, defaults
 from utils import memoize
 
 
 
 @memoize
 def get():
-    hwloc_val = os.environ.get('CHPL_HWLOC')
+    hwloc_val = defaults.get('CHPL_HWLOC')
     if not hwloc_val:
         tasks_val = chpl_tasks.get()
         if tasks_val == 'qthreads':

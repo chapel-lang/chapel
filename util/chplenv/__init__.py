@@ -19,6 +19,7 @@ __all__ = [
     'chpl_timers',
     'chpl_unwind',
     'chpl_wide_pointers',
+    'defaults',
     'utils',
     # third-party package configuration helpers
     'chpl_3p_gmp_configs',

@@ -1,8 +1,14 @@
 import os
 import re
 import subprocess
+import sys
 from collections import namedtuple
 from distutils.spawn import find_executable
+
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import defaults
 
 
 def memoize(func):
@@ -19,7 +25,7 @@ def memoize(func):
 
 @memoize
 def get_chpl_home():
-    chpl_home = os.environ.get('CHPL_HOME', '')
+    chpl_home = defaults.get('CHPL_HOME', '')
     if not chpl_home:
         dirname = os.path.dirname
         chpl_home = dirname(dirname(dirname(os.path.realpath(__file__))))
@@ -27,7 +33,7 @@ def get_chpl_home():
 
 @memoize
 def using_chapel_module():
-    chpl_home = os.environ.get('CHPL_HOME', '')
+    chpl_home = defaults.get('CHPL_HOME', '')
     if chpl_home != '':
         return chpl_home == os.environ.get('CHPL_MODULE_HOME', '')
     return False

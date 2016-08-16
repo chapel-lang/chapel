@@ -5,13 +5,13 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_3p_gmp_configs, chpl_arch, chpl_compiler, chpl_platform, utils
+import chpl_3p_gmp_configs, chpl_arch, chpl_compiler, chpl_platform, utils, defaults
 from utils import memoize
 
 
 @memoize
 def get():
-    gmp_val = os.environ.get('CHPL_GMP')
+    gmp_val = defaults.get('CHPL_GMP')
     if not gmp_val:
         target_platform = chpl_platform.get('target')
 

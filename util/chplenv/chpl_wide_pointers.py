@@ -8,12 +8,13 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
+import defaults
 from utils import memoize
 
 
 @memoize
 def get(flag='wide'):
-    wide_val = os.environ.get('CHPL_WIDE_POINTERS', 'struct')
+    wide_val = defaults.get('CHPL_WIDE_POINTERS', 'struct')
     define = ''
 
     if wide_val == 'struct':

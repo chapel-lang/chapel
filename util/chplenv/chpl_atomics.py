@@ -6,21 +6,21 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_comm, chpl_compiler, chpl_platform, utils
+import chpl_comm, chpl_compiler, chpl_platform, utils, defaults
 from utils import CompVersion, memoize
 
 
 @memoize
 def get(flag='target'):
     if flag == 'network':
-        atomics_val = os.environ.get('CHPL_NETWORK_ATOMICS')
+        atomics_val = defaults.get('CHPL_NETWORK_ATOMICS')
         if not atomics_val:
             if chpl_comm.get() == 'ugni':
                 atomics_val = 'ugni'
             else:
                 atomics_val = 'none'
     elif flag == 'target':
-        atomics_val = os.environ.get('CHPL_ATOMICS')
+        atomics_val = defaults.get('CHPL_ATOMICS')
         if not atomics_val:
             compiler_val = chpl_compiler.get('target')
             platform_val = chpl_platform.get('target')
