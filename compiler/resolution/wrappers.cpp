@@ -544,8 +544,10 @@ static void addArgCoercion(FnSymbol*  fn,
   if (NamedExpr* namedActual = toNamedExpr(prevActual)) {
     // preserve the named portion
     Expr* newCurrActual = namedActual->actual;
+
     newCurrActual->replace(newActual);
-    newActual = prevActual;
+
+    newActual  = prevActual;
     prevActual = newCurrActual;
   } else {
     prevActual->replace(newActual);
@@ -557,41 +559,20 @@ static void addArgCoercion(FnSymbol*  fn,
   actualExpr = newActual;
   actualSym  = castTemp;
 
-  if (isSyncType(ats->type) == true || isSingleType(ats->type) == true) {
-    // Here we will often strip the type of its sync-ness.
-    // After that we may need another coercion(s), e.g.
-    //   _syncvar(int) --readFE()-> _ref(int) --(dereference)-> int --> real
-    // or
-    //   _syncvar(_syncvar(int))  -->...  _syncvar(int)  -->  [as above]
-    //
-    // We warn addArgCoercion's caller about that via checkAgain:
+  // Here we will often strip the type of its sync-ness.
+  // After that we may need another coercion(s), e.g.
+  //   _syncvar(int) --readFE()-> _ref(int) --(dereference)-> int --> real
+  // or
+  //   _syncvar(_syncvar(int))  -->...  _syncvar(int)  -->  [as above]
+  //
+  // We warn addArgCoercion's caller about that via checkAgain:
+  if (isSyncType(ats->type) == true) {
     checkAgain = true;
+    castCall   = new CallExpr("readFE", gMethodToken, prevActual);
 
-    //
-    // apply readFF or readFE to single or sync actual unless this
-    // is a member access of the sync or single actual
-    //
-    if (fn->numFormals() == 3 &&
-        !strcmp(fn->name, "free"))
-      // Don't insert a readFE or readFF when deleting a sync/single.
-      castCall = NULL;
-
-    else if (fn->numFormals() >= 2 &&
-             fn->getFormal(1)->type == dtMethodToken &&
-             formal == fn->_this)
-      // NB if this case is removed, reduce the checksLeft number below.
-      castCall = new CallExpr("value",  gMethodToken, prevActual);
-
-    else if (ats->hasFlag(FLAG_SYNC))
-      castCall = new CallExpr("readFE", gMethodToken, prevActual);
-
-    else if (ats->hasFlag(FLAG_SINGLE))
-      castCall = new CallExpr("readFF", gMethodToken, prevActual);
-
-    else {
-      INT_ASSERT(false);    // Unhandled case.
-      castCall = NULL;      // make gcc happy
-    }
+  } else if (isSingleType(ats->type) == true) {
+    checkAgain = true;
+    castCall   = new CallExpr("readFF", gMethodToken, prevActual);
 
   } else if (ats->hasFlag(FLAG_REF)) {
     //
@@ -603,11 +584,12 @@ static void addArgCoercion(FnSymbol*  fn,
     //   _ref(_syncvar(int)) --> _syncvar(int) --> _ref(int) --> int --> real
     //
     checkAgain = true;
-    castCall = new CallExpr(PRIM_DEREF, prevActual);
+    castCall   = new CallExpr(PRIM_DEREF, prevActual);
 
     if (SymExpr* prevSE = toSymExpr(prevActual))
       if (prevSE->var->hasFlag(FLAG_REF_TO_CONST)) {
         castTemp->addFlag(FLAG_CONST);
+
         if (prevSE->var->hasFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS))
           castTemp->addFlag(FLAG_REF_FOR_CONST_FIELD_OF_THIS);
       }
