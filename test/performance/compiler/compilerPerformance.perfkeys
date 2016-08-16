@@ -47,6 +47,7 @@ insertWideReferences :
 optimizeOnClauses :
 addInitCalls :
 insertLineNumbers :
+denormalize :
 codegen :
 makeBinary :
 driverCleanup :
