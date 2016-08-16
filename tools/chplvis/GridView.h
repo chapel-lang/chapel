@@ -46,15 +46,20 @@ class GridView : public DataView {
     LocCommWin *win;
     // Concurrency Window information.
     ConcurrencyWin *ccwin;
-    // Locale box ... for tool tips.
-    Fl_Box *b;
+    // boxes ... for tool tips.
+    Fl_Box *bT;  // Top row box
+    Fl_Box *bL;  // Left column box
   };
   
   // Information stored for every comm direction
   // X -> Y and Y -> X for all X & Y.  (2d array)
+  // b for the tool tip
   
-  struct commInfo { 
+  struct commInfo {
+    int x;
+    int y;
     LocCommWin *win;
+    Fl_Box *b;
   };
   
   // Tag names may appear multiple times in the data,
@@ -101,8 +106,9 @@ class GridView : public DataView {
 
     int  getNumLocales (void) { return numlocales; }
 
-    // Add an invisible under the locale
-    void setTooltip ( int ix, bool isInt, int ival, double fval);
+    // Add an invisible under the locale and comm boxes
+    void setLocTooltip ( int ix, bool isInt, int ival, double fval);
+    void setCommTooltip ( int i, int j, int val);
 
     // Draw a "locale box, with ix as the label on it
     void drawLocale (int ix, Fl_Color col);

@@ -61,8 +61,10 @@ void GridView::allocArrays()
       }
       if (theLocales[ix].ccwin != NULL) 
         delete theLocales[ix].ccwin;
-      if (theLocales[ix].b != NULL) 
-        delete theLocales[ix].b;
+      if (theLocales[ix].bT != NULL) 
+        delete theLocales[ix].bT;
+      if (theLocales[ix].bL != NULL) 
+        delete theLocales[ix].bL;
     }
     delete [] theLocales;
   }
@@ -92,13 +94,15 @@ void GridView::allocArrays()
     }
     for (ix2 = 0; ix2 < numlocales; ix2++) {
       comms[ix][ix2].win = NULL;
+      comms[ix][ix2].b = NULL;
     }
   }
 
   for (ix = 0; ix < numlocales; ix++) {
     theLocales[ix].win = NULL;
     theLocales[ix].ccwin = NULL;
-    theLocales[ix].b = NULL;
+    theLocales[ix].bT = NULL;
+    theLocales[ix].bL = NULL;
   }
 }
 
@@ -140,40 +144,58 @@ void GridView::selectData(int tagNum)
   // Set the max values in the info bar
   Info->setMaxes(curTagData->maxTasks, curTagData->maxComms, curTagData->maxSize,
                  curTagData->maxConc, curTagData->maxCpu, curTagData->maxClock);
+  Info->rmAllLocOrCom();
 
  }
 
-void GridView::setTooltip ( int ix, bool isInt, int ival, double fval)
+void GridView::setLocTooltip ( int ix, bool isInt, int ival, double fval)
 {
-#if 0
-    char tmpchars[100];
-    if (theLocales != NULL) {
-      localeInfo *loc = &theLocales[ix];
-
-      // Sets up an invisible box under each locale that responds to tooltip requests!
-      loc->x = cx + (int) rint(rx * sin (angle * ix - start));
-      loc->y = cy - (int) rint(ry * cos (angle * ix - start));
-      loc->w = 30;
-      loc->h = 30;
-
-      // Invisible button for the tooltip!
-      if (loc->b == NULL) {
-        loc->b = new Fl_Box (FL_NO_BOX, loc->x-loc->w/2, loc->y-loc->h/2, loc->w, loc->h, NULL);
-        parent()->add(loc->b);
-        loc->b->show();
-      } else {
-        loc->b->position(loc->x-loc->w/2,loc->y-loc->h/2);
-        loc->b->size(loc->w,loc->h);
-      }
-      if (isInt)
-        snprintf (tmpchars, sizeof(tmpchars), "%d", ival);
-      else
-        snprintf (tmpchars, sizeof(tmpchars), "%lf", fval);
-      loc->b->copy_tooltip(tmpchars);
+  char tmpchars[100];
+  if (theLocales != NULL) {
+    localeInfo *loc = &theLocales[ix];
+    
+    // Invisible button for the tooltip!
+    if (loc->bT == NULL) {
+      loc->bT = new Fl_Box (FL_NO_BOX, x() + 10 + boxSize + loc->x,
+                            y() + loc->y, loc->w, loc->h, NULL);
+      parent()->add(loc->bT);
+      loc->bT->show();
+      loc->bL = new Fl_Box (FL_NO_BOX, x() + loc->y,
+                            y() + 10 + boxSize + loc->x, loc->w, loc->h, NULL);
+      parent()->add(loc->bL);
+      loc->bL->show();
+    } else {
+      loc->bT->resize(x() + 10 + boxSize + loc->x,
+                      y() + loc->y, loc->w,loc->h);
+      loc->bL->resize( x() + loc->y,
+                       y() + 10 + boxSize + loc->x, loc->w, loc->h);
     }
-#endif
+    if (isInt)
+      snprintf (tmpchars, sizeof(tmpchars), "%d", ival);
+    else
+      snprintf (tmpchars, sizeof(tmpchars), "%lf", fval);
+    loc->bT->copy_tooltip(tmpchars);
+    loc->bL->copy_tooltip(tmpchars);
+  }
 }
 
+void GridView::setCommTooltip (int i, int j, int val)
+{
+  char data[30];
+  if (val) {
+    if (!comms[i][j].b) {
+      comms[i][j].b = new Fl_Box(FL_NO_BOX, comms[i][j].x, comms[i][j].y,
+                                 boxSize, boxSize, NULL);
+      parent()->add(comms[i][j].b);
+      comms[i][j].b->show();
+    }
+    snprintf (data, 30, "%d", val);
+    comms[i][j].b->copy_tooltip(data);
+  } else {
+    if (comms[i][j].b)
+      comms[i][j].b->hide();
+  }
+}
 
 void GridView::drawLocale ( int ix, Fl_Color col)
 {
@@ -223,11 +245,11 @@ void GridView::drawCommBox (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
   }
   localeInfo *loc1 = &theLocales[ix1], *loc2 = &theLocales[ix2];
 
-  x1 = x() + 10 + boxSize + loc1->x;
-  y1 = y() + 10 + boxSize + loc2->x;
+  comms[ix1][ix2].x = x1 = x() + 10 + boxSize + loc1->x;
+  comms[ix1][ix2].y = y1 = y() + 10 + boxSize + loc2->x;
 
-  x2 = x() + 10 + boxSize + loc2->x;
-  y2 = y() + 10 + boxSize + loc1->x;
+  comms[ix2][ix1].x = x2 = x() + 10 + boxSize + loc2->x;
+  comms[ix2][ix1].y = y2 = y() + 10 + boxSize + loc1->x;
 
   fl_color(col1);
   fl_rectf(x1, y1, loc1->w, loc1->h);
@@ -242,6 +264,8 @@ void GridView::drawCommBox (int ix1, Fl_Color col1,  int ix2, Fl_Color col2)
   // printf ("1: (%d, %d->%d),  2: (%d, %d->%d)\n", x1, y1, (int)col1, x2, y2, (int) col2);
 }
 
+
+
 void GridView::draw()
 {
   int ix;
@@ -251,24 +275,6 @@ void GridView::draw()
   //printf ("draw: x,y = %d,%d, w,h = %d,%d\n", x(), y(), w(), h());
   //printf ("zoom: x,y = %d,%d, w,h = %d,%d\n", GridScroll->x(), GridScroll->y(), GridScroll->w(), GridScroll->h());
 
-#if 0
-  for (ix = 0; ix < numlocales; ix++) {
-    switch (Info->dataToShow()) {
-    case show_Tasks:
-      setTooltip(ix, true, curTagData->locales[ix].numTasks, 0);
-      break;
-    case show_CPU:
-      setTooltip(ix, false, 0, curTagData->locales[ix].Cpu);
-      break;
-    case show_Clock:
-      setTooltip(ix, false, 0, curTagData->locales[ix].clockTime);
-      break;
-    case show_Concurrency:
-      setTooltip(ix, true, curTagData->locales[ix].maxConc, 0);
-    }
-  }
-#endif
-
   DataView::draw();
 
   // Draw locales first
@@ -277,15 +283,19 @@ void GridView::draw()
     switch (Info->dataToShow()) {
     case show_Tasks:
       drawLocale(ix, heatColor(curTagData->locales[ix].numTasks, curTagData->maxTasks));
+      setLocTooltip(ix, true, curTagData->locales[ix].numTasks, 0);
       break;
     case show_CPU:
       drawLocale(ix, heatColor(curTagData->locales[ix].Cpu, curTagData->maxCpu));
+      setLocTooltip(ix, false, 0, curTagData->locales[ix].Cpu);
       break;
     case show_Clock:
       drawLocale(ix, heatColor(curTagData->locales[ix].clockTime, curTagData->maxClock));
+      setLocTooltip(ix, false, 0, curTagData->locales[ix].clockTime);
       break;
     case show_Concurrency:
       drawLocale(ix, heatColor(curTagData->locales[ix].maxConc, curTagData->maxConc));
+      setLocTooltip(ix, true, curTagData->locales[ix].maxConc, 0);
     }
   }
 
@@ -304,6 +314,8 @@ void GridView::draw()
       // Draw white if no communications
       drawCommBox(ix, com2ix ? heatColor(com2ix, comMax) : FL_WHITE,
                    iy, com2iy ? heatColor(com2iy, comMax) : FL_WHITE);
+      setCommTooltip(ix, iy, com2ix);
+      setCommTooltip(iy, ix, com2iy);
     }
   }
     

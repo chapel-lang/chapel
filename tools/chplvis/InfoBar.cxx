@@ -217,6 +217,20 @@ LocCommBox * InfoBar::getNewLocComm()
         
   }
 
+void InfoBar::rmAllLocOrCom(void)
+  {
+     std::list<LocCommBox *>::iterator itr = infoBoxes.begin();
+     LocCommBox *box;
+
+     while (itr != infoBoxes.end()) {
+       box = *itr;
+       itr = infoBoxes.erase(itr);
+       remove(box);
+       boxCache.insert(boxCache.begin(), box);
+     }
+  }
+
+
 void InfoBar::resize (int X, int Y, int W, int H)
   {
     // Don't resize the children!

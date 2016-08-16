@@ -140,6 +140,7 @@ void GraphView::selectData(int tagNum)
   // Set the max values in the info bar
   Info->setMaxes(curTagData->maxTasks, curTagData->maxComms, curTagData->maxSize,
                  curTagData->maxConc, curTagData->maxCpu, curTagData->maxClock);
+  Info->rmAllLocOrCom();
 
  }
 
@@ -161,8 +162,7 @@ void GraphView::setTooltip ( int ix, bool isInt, int ival, double fval)
         parent()->add(loc->b);
         loc->b->show();
       } else {
-        loc->b->position(loc->x-loc->w/2,loc->y-loc->h/2);
-        loc->b->size(loc->w,loc->h);
+        loc->b->resize(loc->x-loc->w/2,loc->y-loc->h/2,loc->w,loc->h);
       }
       if (isInt)
         snprintf (tmpchars, sizeof(tmpchars), "%d", ival);
