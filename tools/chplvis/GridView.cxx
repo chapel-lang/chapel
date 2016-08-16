@@ -312,10 +312,10 @@ void GridView::draw()
 
 int GridView::handle(int event)
 {
-  int ix;
+  int x = Fl::event_x() - GrdView->x() - 30;
+  int y = Fl::event_y() - GrdView->y() - 30;
 
-  int x = Fl::event_x();
-  int y = Fl::event_y();
+  int loc1, loc2;
 
   switch (event) {
   case FL_PUSH:
@@ -325,86 +325,98 @@ int GridView::handle(int event)
     //}
     break;
   case FL_RELEASE:
-    //printf ("Release at (%d,%d)\n", x, y);
-    if (Fl::event_button() == FL_MIDDLE_MOUSE ||
-        Fl::event_button() == FL_RIGHT_MOUSE) {
-      // printf ("middle or right release\n");
+    //printf ("Release at (%d,%d), boxsize is %d\n", x, y, boxSize);
+    if (Fl::event_button() == FL_RIGHT_MOUSE) {
+      // printf ("right release\n");
       break;
     }
-    // Click on a locale?
-    if (numlocales > 0) {
-      for (ix = 0; ix < numlocales; ix++) {
-        // See if release is inside a locale
-        localeInfo *loc = &theLocales[ix];
-        if ( x > loc->x-loc->w/2 && x <= loc->x + loc->w/2 &&
-             y > loc->y-loc->h/2 && y <= loc->y + loc->h/2) {
-          if (Info->dataToShow() == show_Concurrency) {
-            if (Menus.usingUTags() && curTagNum != DataModel::TagALL) {
-              fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");
-            } else {
-              if (theLocales[ix].ccwin == NULL) {
-                // Create the window
-                theLocales[ix].ccwin = make_concurrency_window(ix, curTagNum);
-              } else {
-                theLocales[ix].ccwin->updateData(ix, curTagNum);
-                theLocales[ix].ccwin->showTaskBox();
-              }
-              if (theLocales[ix].ccwin->visible())
-                theLocales[ix].ccwin->hide();
-              else
-                theLocales[ix].ccwin->show();
-            }
+    // Calculate which one.
+    if (x <= boxSize && y > 12+boxSize) {
+      loc1 = (y-12-boxSize)/boxSize;
+      if (loc1 >= 0 && loc1 < numlocales) {
+        //printf ("left row of locales, %d.\n", loc1);
+        if (Fl::event_button() == FL_MIDDLE_MOUSE){
+          //printf ("Making locale window.\n");
+          if (theLocales[loc1].win == NULL) {
+            // Create the window
+            theLocales[loc1].win = make_LC_window(loc1, &curTagData->locales[loc1]);
           } else {
-            if (theLocales[ix].win == NULL) {
-              // Create the window
-              theLocales[ix].win = make_LC_window(ix, &curTagData->locales[ix]);
+            theLocales[loc1].win->setAsLocale(loc1, &curTagData->locales[loc1]);
+          }
+          if (theLocales[loc1].win->visible()) 
+            theLocales[loc1].win->hide();
+          else
+            theLocales[loc1].win->show();
+        } else {
+          // Left mouse, place it on the info bar.
+          LocCommBox *infoBox;
+          infoBox = Info->getNewLocComm();
+          infoBox->setLocale(loc1, &curTagData->locales[loc1]);
+          infoBox->addXButton();
+          Info->addLocOrComm(infoBox);
+        }
+        return 1;
+      }
+    } else if (y <= boxSize && x > 12+boxSize ) {
+      loc1 = (x-12-boxSize)/boxSize;
+      if (loc1 >= 0 && loc1 < numlocales) {
+        // printf ("top row of locales, %d.\n", loc1);
+        if (Fl::event_button() == FL_MIDDLE_MOUSE){
+          printf ("Making locale window.\n");
+          if (theLocales[loc1].win == NULL) {
+            // Create the window
+            theLocales[loc1].win = make_LC_window(loc1, &curTagData->locales[loc1]);
+          } else {
+            theLocales[loc1].win->setAsLocale(loc1, &curTagData->locales[loc1]);
+          }
+          if (theLocales[loc1].win->visible()) 
+            theLocales[loc1].win->hide();
+          else
+            theLocales[loc1].win->show();
+        } else {
+          // Left mouse, place it on the info bar.
+          LocCommBox *infoBox;
+          infoBox = Info->getNewLocComm();
+          infoBox->setLocale(loc1, &curTagData->locales[loc1]);
+          infoBox->addXButton();
+          Info->addLocOrComm(infoBox);
+        }
+        return 1;
+      }
+    } else {
+      y -= boxSize + 10;
+      x -= boxSize + 10;
+      if (x > 0 && y > 0) {
+        loc1 = y/boxSize;
+        loc2 = x/boxSize;
+        if (loc1 < numlocales && loc2 < numlocales && loc1 != loc2 ) {
+          // printf ("Comm, %d,%d\n", loc1, loc2);
+          if (Fl::event_button() == FL_MIDDLE_MOUSE){
+            //printf ("Should create a comm win.\n");
+            if (comms[loc1][loc2].win == NULL) {
+              comms[loc1][loc2].win = make_LC_window(loc1, loc2,
+                                          &curTagData->comms[loc1][loc2]);
             } else {
-              theLocales[ix].win->setAsLocale(ix, &curTagData->locales[ix]);
+              comms[loc1][loc2].win->setAsComm(loc1, loc2,
+                                          &curTagData->comms[loc1][loc2]);
             }
-            if (theLocales[ix].win->visible()) 
-              theLocales[ix].win->hide();
+            if (comms[loc1][loc2].win->visible())
+              comms[loc1][loc2].win->hide();
             else
-              theLocales[ix].win->show();
+              comms[loc1][loc2].win->show();
+          } else {
+            // printf ("New LocCommBox for comm...\n");
+            LocCommBox *infoBox;
+            infoBox = Info->getNewLocComm();
+            infoBox->setComm(loc1, loc2, &curTagData->comms[loc1][loc2]);
+            infoBox->addXButton();
+            Info->addLocOrComm(infoBox);
           }
           return 1;
         }
       }
     }
-
-#if 0
-    // Click on a comm link?
-    for (i = 0; i < numlocales; i++) {
-      localeInfo *loci, *locj;
-      loci = &theLocales[i];
-      for (j = i+1; j < numlocales; j++) {
-        locj = &theLocales[j];
-        // printf ("link: %d->%d:\n", i, j);
-        if (curTagData->comms[i][j].numComms != 0
-            || curTagData->comms[j][i].numComms != 0) {
-          int OnComm = isOnCommLink(x,y,loci,locj);
-          if (OnComm) {
-            // printf ("Link %d -> %d, nearer locale %d\n", i, j, (OnComm > 1 ? j : i ));
-            if (OnComm == 1) {
-              // j -> i, swap so both can use i->j
-              int t = j; j = i; i = t;
-            } 
-            if (comms[i][j].win == NULL) {
-              comms[i][j].win = make_LC_window(i,j,&curTagData->comms[i][j]);
-            } else {
-              comms[i][j].win->setAsComm(i,j,&curTagData->comms[i][j]);
-            }
-            if (comms[i][j].win->visible())
-              comms[i][j].win->hide();
-            else
-              comms[i][j].win->show();
-            return 1;
-          }
-        }
-      }
-    }
-#endif
-    
-    break;
+    break;      
   }
   return DataView::handle(event);
 }
