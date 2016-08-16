@@ -136,7 +136,7 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
           INT_ASSERT(innerFnSym);
 
           if(fnSym == innerFnSym) {
-            safeFnCache[fnSym] = true
+            safeFnCache[fnSym] = true;
             return true;
           }
           else {

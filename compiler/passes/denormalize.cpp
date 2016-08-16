@@ -182,7 +182,7 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
       //denormalize if the def is safe to move and there is no unsafe
       //function between use and def
       if(analysisData.exprHasNoSideEffects(def)) {
-        if(!unsafeExprInBetween(defPar, usePar, analysisData)) {
+        if(!unsafeExprInBetween(def, use, analysisData)) {
           DefCastPair defCastPair(def, castTo);
           udcMap.insert(std::pair<SymExpr*, DefCastPair>
               (use, defCastPair));
