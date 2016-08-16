@@ -19,6 +19,7 @@ studies/shootout/thread-ring/thread-ring.graph
 studies/shootout/mandelbrot/mandelbrot.graph
 studies/shootout/pidigits/pidigits.graph
 studies/shootout/meteor/kbrady/meteor.graph
+studies/shootout/meteor/fasta/fasta.graph
 # suite: Performance tracking
 release/examples/benchmarks/ssca2/total_time.graph
 release/examples/benchmarks/lulesh/lulesh.graph
