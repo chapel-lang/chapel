@@ -3198,7 +3198,7 @@ module ChapelArray {
 
   proc _desync(type t) where t: _singlevar {
     var x: t;
-    return x.value;
+    return x.wrapped.value;
   }
 
   proc _desync(type t) {
