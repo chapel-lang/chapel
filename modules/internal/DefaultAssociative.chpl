@@ -396,8 +396,11 @@ module DefaultAssociative {
           var copyDom = tableDom;
           var copyTable: [copyDom] chpl_TableEntry(idxType) = table;
 
-          tableSizeNum=primeLoc;
-          tableSize=prime;
+          // Do not preserve entries
+          tableDom = {0..-1};
+
+          tableSizeNum = primeLoc;
+          tableSize = prime;
           tableDom = {0..tableSize-1};
 
           //numEntries will be reconstructed as keys are readded
