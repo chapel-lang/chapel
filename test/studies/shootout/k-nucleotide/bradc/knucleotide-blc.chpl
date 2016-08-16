@@ -2,7 +2,7 @@
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Ben Harshbarger and Brad Chamberlain
-   derived from the GNU C++ version by Branimir Maksimovic (TODO: true?)
+   derived from the GNU C++ version by Branimir Maksimovic
 */
 
 config param tableSize = 1 << 16,
@@ -93,13 +93,10 @@ proc calculate(data, param nclSize) {
     var myDom: domain(int, parSafe=false),
         myArr: [myDom] int;
 
-    //
-    // TODO: Bad locality; want to use blocking instead, right?
-    //
     for i in tid..(data.size-nclSize) by numTasks do
       myArr[hash(data, i, nclSize)] += 1;
 
-    lock$; // acquire lock
+    lock$;        // acquire lock
     for (k,v) in zip(myDom, myArr) do
       freqs[k] += v;
     lock$ = true; // release lock
@@ -120,6 +117,7 @@ forall i in toChar.domain do
 //
 // Too terse (?): toNum[ascii(toChar)] = toChar.domain;
 
+
 inline proc decode(in data, param nclSize) {
   var ret: string;
 
@@ -131,6 +129,7 @@ inline proc decode(in data, param nclSize) {
   return ret;
 }
 
+
 inline proc hash(str, beg, param size) {
   var data = 0;
 
@@ -141,6 +140,7 @@ inline proc hash(str, beg, param size) {
 
   return data;
 }
+
 
 proc string.toBytes() {
   var bytes: [1..this.length] uint(8);

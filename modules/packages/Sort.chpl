@@ -17,12 +17,11 @@
  * limitations under the License.
  */
 
+
+// TODO -- performance test sort routines and optimize (see other TODO's)
 /*
 
-This module supports a variety of standard sorting routines on 1D arrays.
-
-The current interface is minimal and should be expected to
-grow and evolve over time.
+The Sort module is designed to support standard sort routines.
 
 .. _comparators:
 
@@ -30,22 +29,18 @@ Comparators
 -----------
 
 Comparators allow sorting data by a mechanism other than the
-default comparison of array elements. To use a comparator, define a
-record with either a ``key(a)`` or ``compare(a, b)`` method, and pass an
-instance of that record to the sort function (examples shown below).
+default comparison operations between array elements. To use a comparator,
+define a record with either a ``key(a)`` or ``compare(a, b)`` method, and pass
+an instance of that record to the sort function (examples shown below).
 
 If both methods are implemented on the record passed as the comparator, the
 ``key(a)`` method will take priority over the ``compare(a, b)`` method.
-
-Nearly all sort routines support comparators, which is denoted by their
-function signature.
 
 Key Comparator
 ~~~~~~~~~~~~~~
 
 The ``key(a)`` method accepts 1 argument, which will be an element from the
-array being sorted. The return type should support the ``<`` operator, since
-that is what the base ``compare`` method of all sort algorithms uses by default.
+array being sorted.
 
 The default key method would look like this:
 
@@ -76,17 +71,33 @@ elements, the user can define a comparator with a key method as follows:
   // This will output: -1, 2, 3, -4
   writeln(Array);
 
+The return type of ``key(a)`` must support the ``<``
+operator, which is used by the base compare method of all sort routines. If the
+``<`` operator is not defined for the return type, the user may define it
+themselves like so:
+
+.. code-block:: chapel
+
+  proc op<(a: returnType, b: returnType): bool {
+    ...
+  }
+
 
 Compare Comparator
 ~~~~~~~~~~~~~~~~~~
 
 The ``compare(a, b)`` method accepts 2 arguments, which will be 2 elements from
-the array being sorted. The return value should be an integer indicating how a
-and b compare to each other, as shown below:
+the array being sorted. The return value should be a numeric signed type
+indicating how a and b compare to each other. The conditions between ``a`` and
+``b`` should result in the following return values for ``compare(a, b)``:
 
-  * > 0 if ``a > b``
-  * 0 if ``a == b``
-  * < 0 if ``a < b``
+  ============ ==========
+  Return Value Condition
+  ============ ==========
+  ``> 0``      ``a > b``
+  ``0``        ``a == b``
+  ``< 0``      ``a < b``
+  ============ ==========
 
 The default compare method for a numeric signed type would look like this:
 
@@ -185,7 +196,23 @@ const reverseComparator: ReverseComparator(DefaultComparator);
 /* Private methods */
 
 pragma "no doc"
-/* Base compare method of all sort functions */
+/*
+   Base compare method of all sort functions.
+
+   By default, it returns the value of defaultComparator.compare(a, b).
+
+   If a comparator with a key method is passed, it will return the value of
+   defaultComparator(comparator.key(a), comparator.key(b)).
+
+   If a comparator with a compare method is passed, it will return the value of
+   comparator.compare(a, b).
+
+   Return values conventions:
+
+     a < b : returns value < 0
+     a > b : returns value > 0
+     a == b: returns 0
+*/
 inline proc chpl_compare(a, b, comparator:?rec=defaultComparator) {
   use Reflection;
 
@@ -542,34 +569,31 @@ proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparat
   //  cobegin {
     quickSort(Data[..loptr-1], minlen, comparator);  // could use unbounded ranges here
     quickSort(Data[loptr+1..], minlen, comparator);
-    //  }
+  //  }
 }
 
 
-// TODO -- support comparators by implementing a reduce intent w/ comparators
 /*
    Sort the 1D array `Data` in-place using a sequential selection sort
    algorithm.
 
-   .. warning::
-        SelectionSort will be deprecated for a comparator-supported
-        ``selectionSort`` in the future.
-
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
-   :arg doublecheck: Verify the array is correctly sorted before returning
-   :type doublecheck: `bool`
-   :arg reverse: Sort in reverse numerical order
-   :type reverse: `bool`
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
 
  */
-proc SelectionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  const lo = Dom.dim(1).low;
-  const hi = Dom.dim(1).high;
+proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) where Dom.rank == 1 {
+  const lo = Dom.dim(1).low,
+        hi = Dom.dim(1).high;
   for i in lo..hi-1 {
-    var (_, loc) = if reverse then maxloc reduce zip(Data[i..hi], {i..hi})
-      else minloc reduce zip(Data[i..hi], {i..hi});
-    Data(i) <=> Data(loc);
+    var jMin = i;
+    // TODO -- should be a minloc reduction, when they can support comparators
+    for j in i..hi {
+      if chpl_compare(Data[j], Data[jMin], comparator) < 0 then
+        jMin = j;
+    }
+    Data(i) <=> Data(jMin);
   }
 }
 
@@ -651,15 +675,11 @@ record ReverseComparator {
 
 /*
    Deprecated Functions
-   TODO - print deprecation msg and possibly remove by 1.14.0
- */
+   TODO -- deprecate in 1.15
+*/
 
 pragma "no doc"
 /*
-
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`bubbleSort`
-
    Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
 
    :arg Data: The array to be sorted
@@ -671,7 +691,7 @@ pragma "no doc"
 
  */
 proc BubbleSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  //writeln("Deprecation warning: BubbleSort replaced by bubbleSort");
+  compilerWarning("BubbleSort() has been deprecated.  Please use bubbleSort() instead");
   var comparator = if reverse then reverseComparator else defaultComparator;
   bubbleSort(Data, comparator);
   if doublecheck then
@@ -682,9 +702,6 @@ proc BubbleSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) w
 
 pragma "no doc"
 /*
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`quickSort`
-
    Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
 
    :arg Data: The array to be sorted
@@ -698,7 +715,7 @@ pragma "no doc"
 
  */
 proc QuickSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  //writeln("Deprecation warning: QuickSort replaced by quickSort");
+  compilerWarning("QuickSort() has been deprecated.  Please use quickSort() instead");
   var comparator = if reverse then reverseComparator else defaultComparator;
   quickSort(Data, minlen, comparator);
   if doublecheck then
@@ -709,9 +726,6 @@ proc QuickSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param revers
 
 pragma "no doc"
 /*
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`heapSort`
-
    Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
 
    :arg Data: The array to be sorted
@@ -723,7 +737,7 @@ pragma "no doc"
 
  */
 proc HeapSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  //writeln("Deprecation warning: HeapSort replaced by heapSort");
+  compilerWarning("HeapSort() has been deprecated.  Please use heapSort() instead");
   var comparator = if reverse then reverseComparator else defaultComparator;
   heapSort(Data, comparator);
   if doublecheck then
@@ -734,10 +748,6 @@ proc HeapSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) whe
 
 pragma "no doc"
 /*
-
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`insertionSort`
-
    Sort the 1D array `Data` in-place using a sequential insertion sort algorithm.
 
    :arg Data: The array to be sorted
@@ -749,7 +759,7 @@ pragma "no doc"
 
  */
 proc InsertionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  //writeln("Deprecation warning: InsertionSort replaced by insertionSort");
+  compilerWarning("InsertionSort() has been deprecated.  Please use insertionSort() instead");
   var comparator = if reverse then reverseComparator else defaultComparator;
   insertionSort(Data, comparator);
   if doublecheck then
@@ -760,10 +770,6 @@ proc InsertionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false
 
 pragma "no doc"
 /*
-
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`mergeSort`
-
    Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
 
    :arg Data: The array to be sorted
@@ -777,7 +783,7 @@ pragma "no doc"
 
  */
 proc MergeSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param reverse=false) where Dom.rank == 1 {
-  //writeln("Deprecation warning: MergeSort replaced by mergeSort");
+  compilerWarning("MergeSort() has been deprecated.  Please use mergeSort() instead");
   var comparator = if reverse then reverseComparator else defaultComparator;
   mergeSort(Data, minlen, comparator);
   if doublecheck then
@@ -788,10 +794,31 @@ proc MergeSort(Data: [?Dom] ?eltType, minlen=16, doublecheck=false, param revers
 
 pragma "no doc"
 /*
+   Sort the 1D array `Data` in-place using a sequential selection sort
+   algorithm.
 
-   .. warning::
-        As of release 1.14.0, replaced by :proc:`isSorted`
+   :arg Data: The array to be sorted
+   :type Data: [] `eltType`
+   :arg doublecheck: Verify the array is correctly sorted before returning
+   :type doublecheck: `bool`
+   :arg reverse: Sort in reverse numerical order
+   :type reverse: `bool`
 
+ */
+proc SelectionSort(Data: [?Dom] ?eltType, doublecheck=false, param reverse=false) where Dom.rank == 1 {
+  compilerWarning("SelectionSort() has been deprecated.  Please use selectionSort() instead");
+  const lo = Dom.dim(1).low;
+  const hi = Dom.dim(1).high;
+  for i in lo..hi-1 {
+    var (_, loc) = if reverse then maxloc reduce zip(Data[i..hi], {i..hi})
+      else minloc reduce zip(Data[i..hi], {i..hi});
+    Data(i) <=> Data(loc);
+  }
+}
+
+
+pragma "no doc"
+/*
    Verify that the array `Data` is in sorted order and halt if any element is
    out of order.
 

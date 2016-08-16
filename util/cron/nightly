@@ -523,14 +523,16 @@ if ($buildruntime == 0) {
     $mailsubject = "$subjectid $config_name";
     $mailcommand = "| $mailer -s \"$mailsubject \" $nochangerecipient";
 
-    print "Mailing to minimal group\n";
-    open(MAIL, $mailcommand);
+    if (!exists($ENV{"CHPL_TEST_NOMAIL"})) {
+        print "Mailing to minimal group\n";
+        open(MAIL, $mailcommand);
 
-    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
-    print MAIL "Built compiler but not runtime, and did not run tests\n";
-    print MAIL endMailHeader();
-    print MAIL endMailChplenv();
-    close(MAIL);
+        print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
+        print MAIL "Built compiler but not runtime, and did not run tests\n";
+        print MAIL endMailHeader();
+        print MAIL endMailChplenv();
+        close(MAIL);
+    }
     exit 0;
 }
 
@@ -703,14 +705,16 @@ if ($runtests == 0) {
     $mailsubject = "$subjectid $config_name";
     $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
-    open(MAIL, $mailcommand);
+    if (!exists($ENV{"CHPL_TEST_NOMAIL"})) {
+        open(MAIL, $mailcommand);
 
-    print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
-    print MAIL "Built compiler and runtime but did not run tests\n";
-    print MAIL endMailHeader();
-    print MAIL endMailChplenv();
+        print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
+        print MAIL "Built compiler and runtime but did not run tests\n";
+        print MAIL endMailHeader();
+        print MAIL endMailChplenv();
 
-    close(MAIL);
+        close(MAIL);
+    }
 
 } else {
 

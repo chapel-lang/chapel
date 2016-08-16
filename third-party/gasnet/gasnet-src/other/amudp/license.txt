@@ -24,7 +24,7 @@
  * ---------------------------------------------------------------------------
  *
  * For more information about AMUDP, visit our home page at:
- *  http://www.cs.berkeley.edu/~bonachea/amudp
+ *  http://gasnet.lbl.gov/amudp
  * Or send email to:
  *  Dan Bonachea <bonachea@cs.berkeley.edu>
  *

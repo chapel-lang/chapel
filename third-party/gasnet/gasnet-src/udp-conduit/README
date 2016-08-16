@@ -4,6 +4,24 @@ Dan Bonachea <bonachea@cs.berkeley.edu>
 User Information:
 -----------------
 
+udp-conduit is a portable implementation of GASNet over UDP, the User Datagram
+Protocol that is a standard component of the TCP/IP protocol suite.
+
+Where this conduit runs:
+-----------------------
+
+udp-conduit is fully portable and should work correctly on any POSIX-like
+system with a functional TCP/IP stack and a working C++98 compiler.  It is
+expected to provide competetive performance on standard Ethernet hardware.  
+It is not intended for production use on networks that expose a
+high-performance network API, where an appropriate GASNet native conduit
+implementation should be preferred. It does not explicitly exploit any
+RDMA-over-Ethernet capabilities.
+
+In rare cases, systems may require tweaks to an IP firewall to allow UDP
+communication between compute nodes on the udp-conduit worker subnet. See more
+below.
+
 Recognized environment variables:
 ---------------------------------
 
@@ -70,6 +88,11 @@ Known problems:
 
 Future work:
 ------------
+
+* Integrate ssh-spawner to remove spawning scalability issues.
+
+* Push thread-safety down into the AMUDP library, to expose more concurrency
+  in GASNET_PAR mode.
 
 Choosing the udp-conduit spawn mechanism (GASNET_SPAWNFN):
 ---------------------------------------------------------
@@ -231,7 +254,7 @@ Design Overview:
 
 The core API implementation is a very thin wrapper around the AMUDP
 implementation by Dan Bonachea. See documentation in the other/amudp directory
-or the AMUDP webpage (http://www.cs.berkeley.edu/~bonachea/amudp) for details.
+or the AMUDP webpage (http://gasnet.lbl.gov/amudp) for details.
 
 The udp-conduit directly uses the extended-ref implementation for the extended
 API - see the extended-ref directory for details.
@@ -276,16 +299,17 @@ successfully been deployed on a number of systems. There is also spawner
 support for Localhost/fork (for debugging), and a "custom
 command" option for extensibility.
 
-* AMUDP supports a maximum of 16384 nodes. However, the current 
-buffering/reliability algorithm doesn't scale well beyond a few hundred nodes,
-as the per-node memory usage is currently 4 * NumNodes * NetworkDepth * MaxMedium).
-Also, the master process currently defaults to opening at least 4 TCP
-connections to each compute process (possibly 5 depending on the spawner),
-which at large scale may exceed file descriptor limitations for the master on
-some OS's. This can be reduced on some systems by setting AMUDP_ROUTE_OUTPUT=0, 
-but this might result in stdout/stderr being lost, depending on the spawner.
-Users interested in large-scale applications are highly recommended
-to use the appropriate native GASNet conduit, which are generally better tuned
-for large scale.
+* AMUDP was overhauled in June 2016 to greatly improve the scalability of udp-conduit's
+internal buffer and metadata utilization. The worker processes now scale nicely
+beyond 1000 nodes, and theoretically up to 1M nodes.
+
+However, the master process used by the spawner still defaults to opening 3 TCP
+connections with each compute process, which at large scale may exceed file
+descriptor limitations for the master process on some OS's (see "compile-time
+settings" above). This utilization can be reduced by setting
+AMUDP_ROUTE_OUTPUT=0, but this might result in stdout/stderr problems,
+depending on the spawner.  Users interested in large-scale applications are
+highly recommended to use an appropriate native GASNet conduit, if one is
+available.
 
 

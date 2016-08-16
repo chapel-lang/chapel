@@ -29,7 +29,7 @@ module RunARawLoops {
             const eosvmax = loop_data.RealArray_scalars[3];
 
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for i in 0..#len {
                 bvc[i] = cls * (compression[i] + 1.0);
               }
@@ -70,7 +70,7 @@ module RunARawLoops {
             const q_cut = loop_data.RealArray_scalars[3];
 
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for i in 0..#len {
                 e_new[i] = e_old[i] - 0.5 * delvc[i] *
                            (p_old[i] + q_old[i]) + 0.5 * work[i];
@@ -170,7 +170,7 @@ module RunARawLoops {
 
             const vnormq = 0.083333333333333333;
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for i in dom.fpz..dom.lpz {
                 const x71 = x7[i] - x1[i],
                       x72 = x7[i] - x2[i],
@@ -260,7 +260,7 @@ module RunARawLoops {
             const ptiny = 1.0e-20;
             const half = 0.5;
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for ii in 0..#dom.n_real_zones {
                 const i  = dom.real_zones[ii];
 
@@ -311,7 +311,7 @@ module RunARawLoops {
                   c20 = c10*r_fratio;
             const ireal = 0.0 + 1.0i;
             ltimer.start();
-            for isamp in 0..#num_samples {
+            for 0..#num_samples {
               for k in kmin..kmax-1 {
                 for j in jmin..jmax-1 {
                   var it0    = (k*(jmax+1) + j) * (imax+1);

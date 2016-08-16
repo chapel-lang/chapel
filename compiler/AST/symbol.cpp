@@ -127,12 +127,17 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
 Symbol::~Symbol() {
 }
 
+static inline void verifyInTree(BaseAST* ast, const char* msg) {
+  if (ast && !ast->inTree())
+    INT_FATAL(ast, "%s is not in AST", msg);
+}
 
 void Symbol::verify() {
   if (defPoint && !defPoint->parentSymbol && !toModuleSymbol(this))
     INT_FATAL(this, "Symbol::defPoint is not in AST");
   if (defPoint && this != defPoint->sym)
     INT_FATAL(this, "Symbol::defPoint != Sym::defPoint->sym");
+  verifyInTree(type, "Symbol::type");
 }
 
 
@@ -804,6 +809,12 @@ void VarSymbol::codegenDefC(bool global, bool isHeader) {
       }
     }
   }
+
+  if (fGenIDS)
+    str = idCommentTemp(this) + str;
+  if (printCppLineno && !isHeader && !isTypeSymbol(defPoint->parentSymbol))
+    str = zlineToString(this) + str;
+
   info->cLocalDecls.push_back(str);
 }
 
@@ -1017,6 +1028,10 @@ void ArgSymbol::verify() {
       INT_FATAL(this, "Arg '%s' (%d) has blank/const intent post-resolve", this->name, this->id);
     }
   }
+  verifyNotOnList(typeExpr);
+  verifyNotOnList(defaultExpr);
+  verifyNotOnList(variableExpr);
+  verifyInTree(instantiatedFrom, "ArgSymbol::instantiatedFrom");
 }
 
 
@@ -1537,6 +1552,22 @@ void FnSymbol::verify() {
     INT_FATAL(this, "Bad FnSymbol::retExprType::parentSymbol");
   if (body && body->parentSymbol != this)
     INT_FATAL(this, "Bad FnSymbol::body::parentSymbol");
+
+  verifyInTree(retType, "FnSymbol::retType");
+  verifyNotOnList(where);
+  verifyNotOnList(retExprType);
+  verifyNotOnList(body);
+  verifyInTree(_this, "FnSymbol::_this");
+  verifyInTree(_outer, "FnSymbol::_outer");
+  verifyInTree(instantiatedFrom, "FnSymbol::instantiatedFrom");
+  verifyInTree(instantiationPoint, "FnSymbol::instantiationPoint");
+  // TODO: do we want to go over this->substitutions, basicBlocks, calledBy ?
+  // Should those even persist between passes?
+  verifyInTree(valueFunction, "FnSymbol::valueFunction");
+  verifyInTree(retSymbol, "FnSymbol::retSymbol");
+  // Used only during resolution. Ditto partialCopyMap, varargNewFormals.
+  INT_ASSERT(partialCopySource == NULL);
+  INT_ASSERT(varargOldFormal == NULL);
 }
 
 
@@ -1900,7 +1931,8 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
 void FnSymbol::codegenHeaderC(void) {
   FILE* outfile = gGenInfo->cfile;
   if (fGenIDS)
-    fprintf(outfile, "/* %7d */ ", id);
+    fprintf(outfile, "%s", idCommentTemp(this));
+
     // Prepend function header with necessary __global__ declaration
 
     //
@@ -2040,6 +2072,7 @@ void FnSymbol::codegenDef() {
   if( outfile ) {
     if (strcmp(saveCDir, "")) {
      if (const char* rawname = fname()) {
+      zlineToFileIfNeeded(this, outfile);
       const char* name = strrchr(rawname, '/');
       name = name ? name + 1 : rawname;
       fprintf(outfile, "/* %s:%d */\n", name, linenum());
@@ -2089,8 +2122,6 @@ void FnSymbol::codegenDef() {
     for_vector(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast))
         if (!toTypeSymbol(def->sym)) {
-          if (fGenIDS && isVarSymbol(def->sym))
-            genIdComment(def->sym->id);
           def->sym->codegenDef();
           flushStatements();
         }
@@ -2567,6 +2598,9 @@ void ModuleSymbol::verify() {
 
   if (initFn && !toFnSymbol(initFn))
     INT_FATAL(this, "Bad ModuleSymbol::initFn");
+
+  verifyNotOnList(block);
+  verifyInTree(initFn, "ModuleSymbol::initFn");
 }
 
 
@@ -3020,6 +3054,8 @@ void LabelSymbol::verify() {
     if (getGotoLabelSymbol(igs) != this)
       INT_FATAL(this,"label's iterResumeGoto does not point back to the label");
   }
+  // iterResumeGoto references a statement that is located somewhere in the AST
+  // and so can be on a list.
 }
 
 LabelSymbol*

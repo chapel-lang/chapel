@@ -308,11 +308,17 @@ isArrayValue
 isArrayType
 
 _syncvar(int(64))
+isRecord
+isRecordValue
+isRecordType
 isSync
 isSyncValue
 isSyncType
 
 _syncvar(real(64))
+isRecord
+isRecordValue
+isRecordType
 isSync
 isSyncValue
 isSyncType

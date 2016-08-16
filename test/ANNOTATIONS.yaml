@@ -144,6 +144,13 @@ all:
     - Disable jemalloc's stat gathering by default (#4180)
   07/20/16:
     - Generated code changes in preparation for incremental compilation (#4177)
+  08/02/16:
+    - Restore static to normal compilation generated code (#4233)
+  08/03/16:
+    - text: Hardware upgrade
+      config: 16 node XC, Single node XC
+  08/04/16:
+    - Updates to Search module, required array slicing (partially reverted) (#4273)
 
 AllCompTime:
   11/09/14:

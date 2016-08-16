@@ -580,12 +580,11 @@ void removeDeadIterResumeGotos() {
 // Make sure there are no iterResumeGotos to remove.
 // Reset removedIterResumeLabels.
 //
-void verifyNcleanRemovedIterResumeGotos() {
+void verifyRemovedIterResumeGotos() {
   forv_Vec(LabelSymbol, labsym, removedIterResumeLabels) {
     if (!isAlive(labsym) && isAlive(labsym->iterResumeGoto))
       INT_FATAL("unexpected live goto for a dead removedIterResumeLabels label - missing a call to removeDeadIterResumeGotos?");
   }
-  removedIterResumeLabels.clear();
 }
 
 // 2014/10/15

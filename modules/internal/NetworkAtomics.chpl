@@ -789,7 +789,7 @@ module NetworkAtomics {
 
   // bool, implemented with int(64)
   pragma "atomic type"
-  record ratomicflag {
+  record ratomicbool {
     var _v: int(64);
     inline proc read(order:memory_order = memory_order_seq_cst):bool {
       var ret: int(64);
@@ -850,29 +850,29 @@ inline proc compareExchangeWeak(expected:bool, desired:bool,
     }
   }
 
-  inline proc =(ref a:ratomicflag, b:ratomicflag) {
+  inline proc =(ref a:ratomicbool, b:ratomicbool) {
     a.write(b.read());
   }
-  inline proc =(ref a:ratomicflag, b) {
+  inline proc =(ref a:ratomicbool, b) {
     compilerError("Cannot directly assign network atomic variables");
   }
-  inline proc +(a:ratomicflag, b) {
+  inline proc +(a:ratomicbool, b) {
     compilerError("Cannot directly add network atomic variables");
     return a;
   }
-  inline proc -(a:ratomicflag, b) {
+  inline proc -(a:ratomicbool, b) {
     compilerError("Cannot directly subtract network atomic variables");
     return a;
   }
-  inline proc *(a:ratomicflag, b) {
+  inline proc *(a:ratomicbool, b) {
     compilerError("Cannot directly multiply network atomic variables");
     return a;
   }
-  inline proc /(a:ratomicflag, b) {
+  inline proc /(a:ratomicbool, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
   }
-  inline proc %(a:ratomicflag, b) {
+  inline proc %(a:ratomicbool, b) {
     compilerError("Cannot directly divide network atomic variables");
     return a;
   }

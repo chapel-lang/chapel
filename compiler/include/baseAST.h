@@ -74,6 +74,9 @@
 #define foreach_ast(macro)                         \
   foreach_ast_sep(macro, ;)
 
+#define for_alive_in_Vec(TYPE, VAR, VEC)           \
+  forv_Vec(TYPE, VAR, VEC) if (VAR->inTree())
+
 class AstVisitor;
 class Expr;
 class GenRet;
