@@ -136,9 +136,7 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
   forv_Vec(Symbol, sym, symVec) {
 
     SymExpr *use = NULL;
-    Expr *usePar = NULL;
     Expr *def = NULL;
-    Expr *defPar;
     Type* castTo = NULL;
 
     //if we don't already have it cached,
@@ -164,8 +162,6 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
 
     if(isDenormalizable(sym, defMap, useMap, &use, &def, &castTo,
           analysisData)) {
-      usePar = use->parentExpr;
-      defPar = def->parentExpr;
 
       // Initially I used to defer denormalizing actuals and have
       // special treatment while denormalizing actuals of a function
