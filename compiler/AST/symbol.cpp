@@ -896,7 +896,7 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
       info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type) );
 
       if(debug_info){
-	debug_info->get_global_variable(this);
+        debug_info->get_global_variable(this);
       }
     }
 #endif
@@ -2142,10 +2142,10 @@ void FnSymbol::codegenDef() {
 
         info->lvt->addValue(arg->cname, tempVar.val,
                             tempVar.isLVPtr, !is_signed(type));
-	// debug info for formal arguments
-	if(debug_info){
-	  debug_info->get_formal_arg(arg, ArgNo);
-	}
+  // debug info for formal arguments
+  if(debug_info){
+    debug_info->get_formal_arg(arg, ArgNo);
+  }
       }
       ++ai;
       ArgNo++;
