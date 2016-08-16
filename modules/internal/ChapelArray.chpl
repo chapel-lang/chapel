@@ -3193,7 +3193,7 @@ module ChapelArray {
 
   proc _desync(type t) where t: _syncvar {
     var x: t;
-    return x.syncVar.value;
+    return x.wrapped.value;
   }
 
   proc _desync(type t) where t: _singlevar {
