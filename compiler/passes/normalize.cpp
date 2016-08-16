@@ -887,13 +887,13 @@ static void applyGetterTransform(CallExpr* call) {
       if (var->immediate->const_kind == CONST_KIND_STRING) {
         call->baseExpr->replace(new UnresolvedSymExpr(var->immediate->v_string));
         if (!strcmp(var->immediate->v_string, "init")) {
-          // If we've been passed in either "super" or "this"
-
-          // Want to explicitly make the super/this value a setting to "meme"
+          // Transform:
+          //   call(call(. x "init") args)
+          // into:
+          //   call(call(init meme=x) args)
+          // because initializers are handled differently from other methods
           Expr* firstArg = call->get(1)->remove();
           call->insertAtHead(new NamedExpr("meme", firstArg));
-          // initializer calls don't include the gMethodToken as an arg, so only
-          // perform that action if we aren't making a .init call
         } else {
           call->insertAtHead(gMethodToken);
         }
