@@ -24,6 +24,29 @@
 #include "symbol.h"
 
 
+/*
+ * This class contains necessary data structures and member functions
+ * for experession analysis. At this point it is only used in
+ * denormalize pass and functionality is rather simple.
+ *
+ * Its main use in the pass is to decide if expressions are movable
+ * during denormalization. 
+ *
+ * For now, this is a very conservative analysis. A more precise
+ * analysis could distinguish between reads and writes to memory and
+ * to take into account alias analysis.
+ *
+ * Overall an expression is "unsafe" if:
+ *
+ * - It is an unsafe primitive(check implementation for a list)
+ * - It is a function CallExpr where FnSymbol:
+ *   - Has ref arguments(const ref should be fine but not implemented)
+ *   - Touches any globals
+ *   - Touches any externs
+ *   - Has unsafe primitives
+ *
+ * Function safety check is recursive
+ */
 class SafeExprAnalysis {
 
   private:
@@ -34,15 +57,6 @@ class SafeExprAnalysis {
   public:
     bool isNonEssentialPrimitive(CallExpr* ce);
 
-    /*
-     * Returns true if `e` has no side effects. Checked side effects
-     * are: - Read/write to a global - Is/contains essential primitive -
-     * If it's a call to functions with ref arguments
-     *
-     * For now, this is a very conservative analysis. A more precise
-     * analysis could distinguish between reads and writes to memory and
-     * to take into account alias analysis.
-     */
     bool exprHasNoSideEffects(Expr* e);
     bool fnHasNoSideEffects(FnSymbol* fn);
 

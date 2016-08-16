@@ -67,24 +67,27 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
     return safeFnCache[fnSym];
   }
 
+  //at this point we know that we are analyzing the function for the
+  //first time
   const bool cachedGlobalManip = isRegisteredGlobalManip(fnSym);
   if(cachedGlobalManip) {
     if(globalManipFuncCache[fnSym]) {
-      //this shouldn't happen with the current structure
+      // if we know that this function manipulates globals we must
+      // already have analyzed before. so this shouldn't happen
       INT_ASSERT(0);
-      return false;
     }
   }
 
   const bool cachedExternManip = isRegisteredExternManip(fnSym);
   if(cachedExternManip) {
     if(externManipFuncCache[fnSym]) {
-      //this shouldn't happen with the current structure
+      // if we know that this function manipulates externs we must
+      // already have analyzed before. so this shouldn't happen
       INT_ASSERT(0);
-      return false;
     }
   }
 
+  // check if fn have any ref arguments
   for_formals(formal, fnSym) {
     if(isReferenceType(formal->typeInfo())) {
       safeFnCache[fnSym] = false;
@@ -96,6 +99,9 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
   std::vector<BaseAST*> asts;
   collect_asts(fnSym->body, asts);
 
+  // there is a certain repetition with if statements in this loops.
+  // Initially there were separate loops but chose to fuse those loops
+  // for better cache utilization
   for_vector(BaseAST, ast, asts) {
     if(!cachedGlobalManip || !cachedExternManip) {
       if(!cachedGlobalManip) {
@@ -121,11 +127,24 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
         }
       }
     }
-    //this if lazily marks a def to be immovable if the function
-    //body has a call to another user function this can be enhanced by
-    //going recursive, but it might be a bit overkill
+
+    //analyze inner CallExprs
     if(CallExpr* ce = toCallExpr(ast)) {
       if(!isNonEssentialPrimitive(ce)) {
+        if(! ce->isPrimitive()) {
+          FnSymbol* innerFnSym = ce->theFnSymbol();
+          INT_ASSERT(innerFnSym);
+
+          if(fnSym == innerFnSym) {
+            safeFnCache[fnSym] = true
+            return true;
+          }
+          else {
+            const bool retval = fnHasNoSideEffects(innerFnSym);
+            safeFnCache[innerFnSym] = retval;
+            return retval;
+          }
+        }
         safeFnCache[fnSym] = false;
         return false;
       }

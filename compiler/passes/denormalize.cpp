@@ -59,14 +59,15 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
  *
  * - It is def'd and use'd once
  *
- * - Its def is a PRIM_MOVE or PRIM_ASSIGN, with no possible communication
+ * - Its def is a PRIM_MOVE or PRIM_ASSIGN, with no possible
+ *   communication
  * - RHS and LHS are of same type and non-extern
  *
  * - Its use is a suitable primitive
  * - Its use is not repeated(condition/increment statement of a loop)
  *
- * Denormalization uses helpers in util/exprAnalysis.cpp to decide if it's safe
- * to move function calls and primitives.
+ * Denormalization uses helpers in util/exprAnalysis.cpp to decide if
+ * it's safe to move function calls and primitives.
  */
 void denormalize(void) {
 
@@ -81,9 +82,10 @@ void denormalize(void) {
         candidates.clear();
         deferredSyms.clear();
 
-        // if we are analyzing locals in a function for the first time, we look
-        // at all the symbols in the function. otherwise we only look at the
-        // ones deferred in the previous passes on the same function
+        // if we are analyzing locals in a function for the first time,
+        // we look at all the symbols in the function. otherwise we only
+        // look at the ones deferred in the previous passes on the same
+        // function
         if(isFirstRound) {
           findCandidatesInFunc(fn, candidates, analysisData);
         }
@@ -110,8 +112,8 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
     Expr* def = defCastPair.first;
     Type* castTo = defCastPair.second;
 
-    // if parent of def is gone, it means it has been denormalized in the
-    // earlier passes
+    // if parent of def is gone, it means it has been denormalized in
+    // the earlier passes
     if(def->parentExpr == NULL) {
       deferredSyms.add(use->var);
       continue;
@@ -130,7 +132,7 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
 
   bool cachedGlobalManip = analysisData.isRegisteredGlobalManip(fn);
   bool cachedExternManip = analysisData.isRegisteredExternManip(fn);
-  // Note the different symbol set being iterated
+
   forv_Vec(Symbol, sym, symVec) {
 
     SymExpr *use = NULL;
@@ -142,9 +144,10 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
     //if we don't already have it cached,
     //check for global symbols in function body
     if(!cachedGlobalManip) {
-      //I am not sure if there should be !isConstant and !isParam as
-      //well I think there can be a const but stateful global that is
-      //manipulated by the function so, play safe
+      // I am not sure if we can check for const and param here.
+      // Touching a global const and param sounds safe to me, but I am
+      // not certain especailly with nonprimitive types. Playing safe
+      // for now. Engin
       if(sym && !sym->isImmediate() && isGlobal(sym)){
         analysisData.registerGlobalManip(fn, true);
         cachedGlobalManip = true;
@@ -239,16 +242,18 @@ bool isDenormalizable(Symbol* sym,
           Type* rhsType = ce->get(2)->typeInfo();
           if(lhsType == rhsType) {
             // records semantics required next if
-            // More: it seems records are passed by value. denormalizing record
-            // temporaries caused semantics to change. So I use a wide brush to
-            // disable record denormalization. In earlier passes of
-            // denormalization implementation this was only checking if the
-            // temporary to be removed is an actual to a function.
+            // More: it seems records are passed by value. denormalizing
+            // record temporaries caused semantics to change. So I use a
+            // wide brush to disable record denormalization. In earlier
+            // passes of denormalization implementation this was only
+            // checking if the temporary to be removed is an actual to a
+            // function.
             if(! isRecord(lhsType)) {
-              // calls to communication functions are generated during codegen. ie
-              // at this time they are still PRIM_MOVEs. Generated communication
-              // calls return their result in a pointer argument, therefore not
-              // suitable for denormalization. See function definition for more
+              // calls to communication functions are generated during
+              // codegen. ie at this time they are still PRIM_MOVEs.
+              // Generated communication calls return their result in a
+              // pointer argument, therefore not suitable for
+              // denormalization. See function definition for more
               // comments
               if(! primMoveGeneratesCommCall(ce)) {
                 if(! (lhsType->symbol->hasFlag(FLAG_EXTERN))){
@@ -299,9 +304,9 @@ bool isDenormalizable(Symbol* sym,
         return false;
       }
 
-      //here I have my valid use and def
-      //so far we checked specific cases for them individually, now check if
-      //there is anything wrong with them as a pair
+      //here I have my valid use and def so far we checked specific
+      //cases for them individually, now check if there is anything
+      //wrong with them as a pair
 
       //this issue feels too specific, maybe there is
       //safer/better/more general way of doing this check
@@ -321,7 +326,8 @@ bool isDenormalizable(Symbol* sym,
       // we have to protect repeatedly evaluated statements of loops from
       // expensive and/or unsafe CallExprs
       if(CallExpr* defCe = toCallExpr(def)){
-        if(! analysisData.isNonEssentialPrimitive(defCe)) { //nonessential primitives are safe
+        //nonessential primitives are safe
+        if(! analysisData.isNonEssentialPrimitive(defCe)) {
           if(LoopStmt* enclLoop = LoopStmt::findEnclosingLoop(use)) {
             if(CForLoop* enclCForLoop = toCForLoop(enclLoop)) {
               if(enclCForLoop->testBlockGet()->contains(ce) ||
@@ -393,14 +399,15 @@ inline bool isIntegerPromotionPrimitive(PrimitiveTag tag) {
 }
 
 // If RHS of a move contain access to anything wide, it can generate
-// communication. chpl_gen_comm_get "returns" the data in the first argument,
-// and the function itself is generated during codegen(see expr.cpp
-// codegenAssign). Although the value assigned is actually temporary in the AST, 
-// it cannot be denormalized due to that.
+// communication. chpl_gen_comm_get "returns" the data in the first
+// argument, and the function itself is generated during codegen(see
+// expr.cpp codegenAssign). Although the value assigned is actually
+// temporary in the AST, it cannot be denormalized due to that.
 //
-// Such temporaries that are passed as address are not denormalized in other
-// functions due to PRIM_ADDROF, since chpl_gen_comm_get is generated at codegen
-// time, such information is not readily available at AST.
+// Such temporaries that are passed as address are not denormalized in
+// other functions due to PRIM_ADDROF, since chpl_gen_comm_get is
+// generated at codegen time, such information is not readily available
+// at AST.
 bool primMoveGeneratesCommCall(CallExpr* ce) {
   INT_ASSERT(ce);
   INT_ASSERT(ce->isPrimitive(PRIM_MOVE) || ce->isPrimitive(PRIM_ASSIGN));
@@ -415,8 +422,8 @@ bool primMoveGeneratesCommCall(CallExpr* ce) {
   if(rhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
     return true; // direct get
 
-  //now it is still possible that rhs primitive has a nonwide symbol yet the
-  //primitive itself generates communication
+  //now it is still possible that rhs primitive has a nonwide symbol yet
+  //the primitive itself generates communication
   if(CallExpr* rhsCe = toCallExpr(rhs)) {
     if(rhsCe->isPrimitive()) {
       switch(rhsCe->primitive->tag) {
@@ -452,13 +459,13 @@ inline bool unsafeExprInBetween(Expr* e1, Expr* e2,
       return true;
     }
     
-    // implementation of this function is suboptimal as it's asymptotically
-    // O(N**2). This if is a stopgap measure to prevent it running for too long.
-    // So, currently we give up when there is more than 100 Exprs between e1 and
-    // e2.
+    // implementation of this function is suboptimal as it's
+    // asymptotically O(N**2). This if is a stopgap measure to prevent
+    // it running for too long.  So, currently we give up when there is
+    // more than 100 Exprs between e1 and e2.
     //
-    // If this still causes any performance issues, a better way of implementing
-    // this is:
+    // If this still causes any performance issues, a better way of
+    // implementing this is:
     // (1) get tally of safe(0)/unsafe(1) Expr in the function
     //
     //  (0)  Expr1
