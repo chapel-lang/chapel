@@ -1,0 +1,4 @@
+#! /usr/bin/env bash
+
+numCores=`./getNumPhysicalCores.sh`
+echo "--numThreads=$numCores"
