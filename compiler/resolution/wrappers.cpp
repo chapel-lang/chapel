@@ -174,7 +174,6 @@ buildDefaultWrapper(FnSymbol* fn,
 
   bool specializeDefaultConstructor =
     fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) &&
-    !isSingleType(fn->_this->type)        &&
     !fn->_this->type->symbol->hasFlag(FLAG_REF);
   if (specializeDefaultConstructor) {
     wrapper->removeFlag(FLAG_COMPILER_GENERATED);
@@ -576,12 +575,6 @@ static void addArgCoercion(FnSymbol*  fn,
         !strcmp(fn->name, "free"))
       // Don't insert a readFE or readFF when deleting a sync/single.
       castCall = NULL;
-
-    else if (fn->numFormals() >= 2 &&
-             fn->getFormal(1)->type == dtMethodToken &&
-             formal == fn->_this)
-      // NB if this case is removed, reduce the checksLeft number below.
-      castCall = new CallExpr("value",  gMethodToken, prevActual);
 
     else if (ats->hasFlag(FLAG_SYNC))
       castCall = new CallExpr("readFE", gMethodToken, prevActual);
