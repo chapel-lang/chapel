@@ -36,5 +36,6 @@ Benchmarks Games website.
 * [threadring.chpl](http://benchmarksgame.alioth.debian.org/u64q/program.php?test=threadring&lang=chapel&id=1)
     * Passes a token between a large number of threads
 
-For the latest versions of these benchmarks and their future work, see
-$CHPL_HOME/test/release/examples/benchmarks/shootout/README.
+For the latest versions of these benchmarks
+and more information on their implementations, see:
+[$CHPL_HOME/test/release/examples/benchmarks/shootout/](https://github.com/chapel-lang/chapel/tree/master/test/release/examples/benchmarks/shootout).
