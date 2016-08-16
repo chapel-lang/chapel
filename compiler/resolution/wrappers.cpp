@@ -174,7 +174,6 @@ buildDefaultWrapper(FnSymbol* fn,
 
   bool specializeDefaultConstructor =
     fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) &&
-    !isSingleType(fn->_this->type)        &&
     !fn->_this->type->symbol->hasFlag(FLAG_REF);
   if (specializeDefaultConstructor) {
     wrapper->removeFlag(FLAG_COMPILER_GENERATED);
