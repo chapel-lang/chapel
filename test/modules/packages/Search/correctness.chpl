@@ -2,18 +2,28 @@
  *  Check correctness of search functions
  */
 
+// TODO
+//  * linearSearch with unsorted array
+//  * Strided arrays
+//  * Multi-dimensional arrays
+//  * Associative arrays
+//  * Sparse Array
+//  * Enumerated array
+
 use Search;
 
 proc main() {
 
   var result: (bool, int);
 
+  const StridedDom = {10..40 by 10};
   // Sorted arrays
   const    Arr = [-4, -1, 2, 3],
         ArrAbs = [-1, 2, 3, -4],
         ArrRev = [ 3, 2, -1, -4],
      ArrAbsRev = [ -4, 3, 2, -1],
-        StrArr = ['Brad', 'anthony', 'ben', 'david'];
+        StrArr = ['Brad', 'anthony', 'ben', 'david'],
+    StridedArr: [StridedDom] int = [-4, -1, 2, 3];
 
   // Comparators
   const key = new keycomparator(),
@@ -34,6 +44,14 @@ proc main() {
   // Integers sorted as tuples
   result = search(Arr, 2, comparator=tuplekey, sorted=true);
   checkSearch(result, (true, 3), Arr, 'search', 'tuplekey');
+
+  // Strided Array
+  result = search(StridedArr, 2);
+  checkSearch(result, (true, 30), StridedArr, 'search');
+
+  // Strided Array
+  result = search(StridedArr, 2, sorted=true);
+  checkSearch(result, (true, 30), StridedArr, 'search');
 
   /* Reverse */
 

@@ -62,7 +62,7 @@ module Search {
       been if it was not found.
    :rtype: (`bool`, `Dom.idxType`)
  */
-proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high, sorted=false) where Dom.rank == 1 {
+proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.first, hi=Dom.last, sorted=false) where Dom.rank == 1 {
   if sorted then
     return binarySearch(Data, val, comparator, lo, hi);
   else
@@ -136,17 +136,23 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.lo
    :rtype: (`bool`, `Dom.idxType`)
 
  */
-proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) where Dom.rank == 1 {
+proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.first, in hi=Dom.last) where Dom.rank == 1 {
   chpl_check_comparator(comparator, Data.eltType);
 
+  // TODO -- measure performance, and possibly overload strided version
+  const stride = Dom.stride;
   while (lo <= hi) {
-    const mid = (hi - lo)/2 + lo;
+    const size = (hi - lo) / stride,
+          mid = if hi == lo then hi
+                else if size % 2 then lo + ((size - 1)/2) * stride
+                else lo + (size/2 - 1) * stride;
+
     if chpl_compare(Data[mid], val, comparator=comparator) == 0 then
       return (true, mid);
     else if chpl_compare(val, Data[mid], comparator=comparator) > 0 then
-      lo = mid + 1;
+      lo = mid + Dom.stride;
     else
-      hi = mid - 1;
+      hi = mid - Dom.stride;
   }
   return (false, lo);
 }
