@@ -8,10 +8,65 @@ var c = new BigInt(5);
 var ua : uint = 12;
 var sa : int = -13;
 
+b.set(7);
+write(b);
+// << and >> only take RHS ints or uints
+b <<= ua;
+writeln(" <<= ", ua, " : ", b);
+b >>= sa;
+writeln(" >>= ", sa, " : ", b);
+b >>= ua;
+writeln(" >>= ", ua, " : ", b);
+b <<= sa;
+writeln(" <<= ", sa, " : ", b);
+b *= c;
+writeln(" *= ", c, " : ", b);
+b *= sa;
+writeln(" *= ", sa, " : ", b);
+b *= ua;
+writeln(" *= ", ua, " : ", b);
+b /= c;
+writeln(" /= ", c, " : ", b);
+b /= sa;
+writeln(" /= ", sa, " : ", b);
+b /= ua;
+writeln(" /= ", ua, " : ", b);
+b += c;
+writeln(" += ", c, " : ", b);
+b += ua;
+writeln(" += ", ua, " : ", b);
+b += sa;
+writeln(" += ", sa, " : ", b);
+b -= c;
+writeln(" -= ", c, " : ", b);
+b -= ua;
+writeln(" -= ", ua, " : ", b);
+b -= sa;
+writeln(" -= ", sa, " : ", b);
+// **= only works with a RHS uint
+b **= ua;
+writeln(" **= ", ua, " : ", b);
+b %= c;
+writeln(" %= ", c, " : ", b);
+b.set(146);
+b %= ua;
+writeln("146 %= ", ua, " : ", b);
+b.set(46);
+b %= sa;
+writeln("46 %= ", sa, " : ", b);
+b ^= c;
+writeln(" ^= ", c, " : ", b);
+b.set(9);
+b |= c;
+writeln("9 |= ", c, " : ", b);
+b.set(7);
+b &= c;
+writeln("7 &= ", c, " : ", b);
+
+
+a.set(25);
 b = a ** 3;
 writeln(a, " ** 3 = ", b);
-
-// TODO: Bitwise negation is not supported
 
 b = a * ua;
 writeln(a, " * ", ua, " = ", b);
@@ -47,8 +102,16 @@ writeln("-(", a, ") = ", b);
 b = +a;
 writeln("+(", a, ") = ", b);
 
-// TODO: BitShift operators << and >> not supported
-
+b = ~a;
+writeln("~", a, " = ", b);
+b = a << 2;
+writeln(a, " << ", 2, " = ", b);
+b = a >> -2;
+writeln(a, " >> ", -2, " = ", b);
+b = a >> 2;
+writeln(a, " >> ", 2, " = ", b);
+b = a << -2;
+writeln(a, " << ", -2, " = ", b);
 b = a & c;
 writeln(a, " & ", c, " = ", b);
 b = c & a;

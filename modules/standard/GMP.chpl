@@ -238,6 +238,7 @@ module GMP {
   extern proc mpz_submul_ui(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
 
   extern proc mpz_mul_2exp(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
+  extern proc mpz_div_2exp(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
 
   extern proc mpz_neg(ref ROP: mpz_t, ref OP: mpz_t);
   extern proc mpz_abs(ref ROP: mpz_t, ref OP: mpz_t);
@@ -790,6 +791,17 @@ module GMP {
         mpz_mul_2exp(this.mpz, a_.mpz, b.safeCast(c_ulong));
         } else {
           mpz_mul_2exp(this.mpz, a.mpz, b.safeCast(c_ulong));
+        }
+      }
+    }
+    proc div_2exp(ref a: BigInt, b:uint) //FIXME: Test this
+    {
+      on Locales[this.locale_id]{
+        if (here.id != a.locale_id){
+        var a_ = a;
+        mpz_div_2exp(this.mpz, a_.mpz, b.safeCast(c_ulong));
+        } else {
+          mpz_div_2exp(this.mpz, a.mpz, b.safeCast(c_ulong));
         }
       }
     }
@@ -1785,13 +1797,119 @@ module GMP {
     writer.write(s);
   }
 
-  // Operator Overloads
+  // Operator Overloads 
+  // FIXME: Test the compound assignment operators
+  inline proc +=(ref a: BigInt, ref b: BigInt){
+    a.add(a, b);
+  }
+  inline proc +=(ref a: BigInt, b: int){
+    if (b > 0) {
+      a.add_ui(a, b:uint);
+    }
+    else {
+      a.sub_ui(a, abs(b):uint);
+    }
+  }
+  inline proc +=(ref a: BigInt, b: uint){
+    a.add_ui(a, b);
+  }
+  inline proc -=(ref a: BigInt, ref b: BigInt){
+    a.sub(a, b);
+  }
+  inline proc -=(ref a: BigInt, b: int){
+    if b > 0 {
+      a.sub_ui(a, abs(b):uint);
+    }
+    else {
+      a.add_ui(a, abs(b):uint);
+    }
+  }
+  inline proc -=(ref a: BigInt, b: uint){
+    a.sub_ui(a, b);
+  }
+  inline proc *=(ref a: BigInt, ref b: BigInt){
+    a.mul(a, b);
+  }
+  inline proc *=(ref a: BigInt, b: int){
+    a.mul_si(a, b);
+  }
+  inline proc *=(ref a: BigInt, b: uint){
+    a.mul_ui(a, b);
+  }
+  inline proc /=(ref a: BigInt, ref b: BigInt){
+    a.div_q(Round.DOWN, a, b);
+  }
+  //FIXME: Is this rounding right with negative numbers involved
+  inline proc /=(ref a: BigInt, b: int){
+    a.div_q_ui(Round.ZERO, a, abs(b):uint);
+    if (b < 0) {
+    a.neg(a);
+    }
+  }
+  inline proc /=(ref a: BigInt, b: uint){
+    a.div_q_ui(Round.DOWN, a, b);
+  }
+  inline proc **=(ref a: BigInt, b: uint){
+    a.pow_ui(a, b);
+  }
+  inline proc %=(ref a: BigInt, ref b: BigInt){
+   a.mod(a, b);
+  }
+  inline proc %=(ref a: BigInt, b: int){
+    a.mod_ui(a, abs(b):uint); // in C (a mod b) and (a mod -b) are the same
+  }
+  inline proc %=(ref a: BigInt, b: uint){
+    a.mod_ui(a, b);
+  }
+  // Can only use bitwise operators with pairs of BigInts
+  inline proc &=(ref a: BigInt, ref b: BigInt){ 
+    a.and(a, b);
+  }
+  inline proc |=(ref a: BigInt, ref b: BigInt) {
+    a.ior(a, b);
+  }
+  inline proc ^=(ref a: BigInt, ref b: BigInt){
+    a.xor(a, b);
+  }
+  // &&= and ||= not supported
+  inline proc <<=(ref a: BigInt, b: uint){
+    a.mul_2exp(a, b);
+  }
+  inline proc <<=(ref a: BigInt, b: int){
+    if b < 0 {
+      a.div_2exp(a, abs(b):uint);
+    }
+    else {
+      a.mul_2exp(a, b:uint);
+    }
+  }
+  inline proc >>=(ref a: BigInt, b: uint){
+    a.div_2exp(a, b);
+  }
+  inline proc >>=(ref a: BigInt, b: int){
+    if (b < 0){
+      a.mul_2exp(a, abs(b):uint);
+    }
+    else {
+      a.div_2exp(a, b:uint);
+    }
+  }
+  // TODO: Should the swap be just by value?
+  proc <=>(ref a: BigInt, ref b: BigInt){
+    var c = new BigInt(a);
+    a.set(b);
+    b.set(c);
+  }
   inline proc **(ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.pow_ui(a, b);
     return c;
   }
-  // TODO: Bitwise negation not in the GMP library
+  inline proc ~(ref a: BigInt) {
+    var c = new BigInt();
+    c.com(a); // 1s complement is the same as bitwise negation
+    return c;
+  }
   inline proc *(ref a: BigInt, ref b: BigInt){
     var c = new BigInt();
     c.mul(a, b);
@@ -1858,7 +1976,38 @@ module GMP {
     c.neg(a);
     return c;
   }
-  // TODO: Shift left, shift right (<< >>) operators not in GMP library
+  // NOTE: The >> operator is implemented in GMP via division
+    // this means it rounds towards 0, which may not be consistent with C's >>
+  inline proc <<(ref a: BigInt, b: uint){
+    var c = new BigInt();
+    c.mul_2exp(a, b);
+    return c;
+  }
+  inline proc <<(ref a: BigInt, b: int){
+    var c = new BigInt();
+    if b < 0 {
+      c.div_2exp(a, abs(b):uint); // negative << is >>
+    }
+    else {
+      c.mul_2exp(a, b:uint);
+    }
+    return c;
+  }
+  inline proc >>(ref a: BigInt, b: uint){
+    var c = new BigInt();
+    c.div_2exp(a, b);
+    return c;
+  }
+  inline proc >>(ref a: BigInt, b: int){
+    var c = new BigInt();
+    if b < 0 {
+      c.mul_2exp(a, abs(b):uint);
+    }
+    else {
+      c.div_2exp(a, b:uint);
+    }
+    return c;
+  }
   inline proc &(ref a: BigInt, ref b: BigInt){
     var c = new BigInt();
     c.and(a, b);

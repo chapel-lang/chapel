@@ -14,9 +14,8 @@ a.xor(a, b); // 6 XOR 10 = 12
 writeln(a);
 a.set(129);
 
-// TODO: what should one's complement generate?
-a.com(a); // one's complement of 129
-writeln(a); // seems to only give -(a) -1;
+a.com(a); // one's complement of 129, aka bitwise negation
+writeln(a);
 
 a.set(13);
 writeln(a, " has ", a.popcount(), " bits set");
