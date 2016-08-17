@@ -1,21 +1,22 @@
 #!/usr/bin/env python
 """
-Check .chplconfig file and environment variables for default value overrides
+Provides simple 'get()' interface for accessing default value overrides
+Checks environment variables first, then ..chplconfig file for definitions
 """
 from __future__ import print_function
-import os
-import sys
+import os, sys
 
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import utils
+from utils import chplvars, memoize
 
 
 class ChapelConfig(object):
     """ Class for parsing .chplconfig file and providing 'get' interface """
     def __init__(self):
-        """ Find .chplconfig file, parse it, and print any warnings """
+        """ Find and parse .chplconfig file, populating self.chplconfig """
+
         # Dictionary containing all of the env vars defined in .chplconfig
         self.chplconfig = {}
 
@@ -34,7 +35,7 @@ class ChapelConfig(object):
             self.printwarnings()
 
     def get(self, var):
-        """ Wrapper for chplconfig access similar to os.environ.get() """
+        """ Wrapper for chplconfig[var] intended to mirror os.environ.get() """
         if var in self.chplconfig.keys():
             return self.chplconfig[var]
 
@@ -64,7 +65,7 @@ class ChapelConfig(object):
             self.chplconfigfile = None
 
     def parse(self):
-        """ Parse .chplconfig file for acceptable env var overrides. """
+        """ Parse .chplconfig file for acceptable env var overrides """
 
         # Parse the .chplconfig file and populate the chplconfig dict
         with open(self.chplconfigfile, 'r') as ccfile:
@@ -111,7 +112,7 @@ class ChapelConfig(object):
         """ Check if entry for variable assignment is valid """
 
         # Check if var is in the list of approved special variables
-        if var not in utils.chplvars:
+        if var not in chplvars:
             self.warnings.append(
             (
                 'Warning: {0}:line {1}: '
@@ -131,16 +132,18 @@ class ChapelConfig(object):
         return False
 
     def printwarnings(self):
+        """ Print any warnings accumulated throughout constructor """
         sys.stderr.write('\n')
         for warning in self.warnings:
             stderr.write(warning)
         sys.stderr.write('\n')
 
 
-# Global dictionary that will be populated w/ .chplconfig var assignments
-# The value of 'None' tracks that .chplconfig has not yet been parsed
+# Global instance that contains parsed .chplconfig assignments
 chplconfig = ChapelConfig()
 
+
+@memoize
 def get(var, default=None):
     """ Check if variable has a default defined somewhere """
     # Check environment variable
@@ -158,7 +161,7 @@ def get(var, default=None):
 
 def _main():
     """ Print the default overrides that are currently set """
-    for var in utils.chplvars:
+    for var in chplvars:
         if get(var):
             print(var,'=',get(var))
 
