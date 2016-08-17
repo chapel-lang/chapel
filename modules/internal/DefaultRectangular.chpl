@@ -202,14 +202,15 @@ module DefaultRectangular {
     }
 
     proc dsiPartialDomain(exceptDim) where rank > 1 {
-      var ret = createTuple(rank-1, range, 0..1);
-      for i in 1..exceptDim-1 do
-        ret[i] = ranges[i];
+      /*var ret = createTuple(rank-1, range, 0..1);*/
+      /*for i in 1..exceptDim-1 do*/
+        /*ret[i] = ranges[i];*/
 
-      for i in exceptDim+1..rank do
-        ret[i-1] = ranges[i];
+      /*for i in exceptDim+1..rank do*/
+        /*ret[i-1] = ranges[i];*/
 
-      return {(...ret)};
+      return {(...ranges.strip(exceptDim))};
+
     }
 
     iter these(param tag: iterKind,

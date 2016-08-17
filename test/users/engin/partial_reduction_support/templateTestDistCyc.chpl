@@ -1,11 +1,11 @@
-use BlockDist;
+use CyclicDist;
 use CommDiagnostics;
 
 config const N = 16;
 
 /*const space = {0..#N, 0..#N, 0..#N};*/
 const space = {0..#N, 0..#N};
-const ParentDom = space dmapped Block(space);
+const ParentDom = space dmapped Cyclic(space.low);
 var arr: [ParentDom] int;
 
 for (i,j) in ParentDom {
@@ -24,7 +24,7 @@ for (i,j) in ParentDom {
 /*startCommDiagnostics();*/
 /*foo(arr, 2);*/
 writeln("Naive template result");
-writeln(dsiPartialReduce_template(arr, 1));
+/*writeln(dsiPartialReduce_template(arr, 1));*/
 /*startCommDiagnostics();*/
 /*writeln(getCommDiagnostics());*/
 

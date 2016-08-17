@@ -726,9 +726,6 @@ proc BlockArr.dsiPartialReduce_templateopt(param onlyDim) {
   return ResultArr;
 
 }
-proc foo(x, y) {
-
-}
 
 iter BlockDom.dsiPartialThese(param onlyDim, otherIdx) {
   writeln("In serial iterator");

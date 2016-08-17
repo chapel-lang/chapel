@@ -565,6 +565,36 @@ proc CyclicDom.dsiPartialDomain(param exceptDim) {
   return ret;
 }
 
+proc CyclicArr.dsiPartialReduce_templateopt(param onlyDim) {
+
+
+  const PartialDom = dom.dsiPartialDomain(exceptDim=onlyDim);
+  var ResultArr: [PartialDom] eltType;
+
+  var locResDom = dom.dist.targetLocDom dmapped new dmap(this.dom.dist);
+  var locRes: [locResDom] ResultArr._value.myLocArr.myElems.type;
+
+  coforall l2 in
+      dom.dist.targetLocDom._value.dsiPartialDomain(exceptDim=onlyDim) {
+
+    on ResultArr._value.locArr[l2].myElems {
+      var thisParticularResult => ResultArr._value.locArr[l2].myElems;
+      writeln(thisParticularResult._value.stridable);
+      // FIXME should be a coforall
+      forall l1 in dom.dist.targetLocDom.dim(onlyDim) 
+          with (+ reduce thisParticularResult) {
+
+        const l = chpl__tuplify(l2).merge(onlyDim, l1);
+        on dom.locDoms[l] {
+          thisParticularResult +=
+              dsiPartialReduce_template(locArr[l].myElems, onlyDim);
+        }
+      }
+    }
+  }
+  return ResultArr;
+
+}
 proc CyclicDom.setup() {
   if locDoms(dist.targetLocDom.low) == nil {
     coforall localeIdx in dist.targetLocDom {
