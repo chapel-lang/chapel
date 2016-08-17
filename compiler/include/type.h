@@ -60,7 +60,7 @@ public:
   // Interface for BaseAST
   virtual GenRet   codegen();
   virtual bool     inTree();
-  virtual Type*    typeInfo();
+  virtual QualifiedType qualType();
   virtual void     verify();
 
   virtual void     codegenDef();

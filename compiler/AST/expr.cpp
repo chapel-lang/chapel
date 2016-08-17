@@ -281,9 +281,9 @@ bool Expr::inTree() {
 }
 
 
-Type* Expr::typeInfo() {
-  INT_FATAL(this, "Illegal call to Expr::typeInfo()");
-  return NULL;
+QualifiedType Expr::qualType() {
+  INT_FATAL(this, "Illegal call to Expr::qualType()");
+  return QualifiedType(NULL);
 }
 
 bool Expr::isNoInitExpr() const {
@@ -500,11 +500,11 @@ SymExpr* SymExpr::copyInner(SymbolMap* map) {
   return new SymExpr(var);
 }
 
-Type* SymExpr::typeInfo(void) {
+QualifiedType SymExpr::qualType(void) {
   if (toFnSymbol(var)) {
-    return dtCFnPtr;
+    return QualifiedType(dtCFnPtr);
   } else {
-    return var->type;
+    return var->qualType();
   }
 }
 
@@ -606,8 +606,8 @@ UnresolvedSymExpr::copyInner(SymbolMap* map) {
 }
 
 
-Type* UnresolvedSymExpr::typeInfo(void) {
-  return dtUnknown;
+QualifiedType UnresolvedSymExpr::qualType(void) {
+  return QualifiedType(dtUnknown);
 }
 
 
@@ -716,9 +716,9 @@ void DefExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 
-Type* DefExpr::typeInfo(void) {
-  INT_FATAL(this, "Illegal call to DefExpr::typeInfo()");
-  return NULL;
+QualifiedType DefExpr::qualType(void) {
+  INT_FATAL(this, "Illegal call to DefExpr::qualType()");
+  return QualifiedType(NULL);
 }
 
 
@@ -3867,15 +3867,15 @@ FnSymbol* CallExpr::findFnSymbol(void) {
 }
 
 
-Type* CallExpr::typeInfo(void) {
+QualifiedType CallExpr::qualType(void) {
   if (primitive)
     return primitive->returnInfo(this);
 
   else if (isResolved())
-    return isResolved()->retType;
+    return QualifiedType(isResolved()->retType);
 
   else
-    return dtUnknown;
+    return QualifiedType(dtUnknown);
 }
 
 void CallExpr::prettyPrint(std::ostream *o) {
@@ -6364,11 +6364,11 @@ void ContextCallExpr::accept(AstVisitor* visitor) {
   }
 }
 
-Type* ContextCallExpr::typeInfo() {
+QualifiedType ContextCallExpr::qualType() {
   CallExpr* mainCall = getDesignatedCall(this);
   if (mainCall)
-    return mainCall->typeInfo();
-  return dtUnknown;
+    return mainCall->qualType();
+  return QualifiedType(dtUnknown);
 }
 
 GenRet ContextCallExpr::codegen() {
@@ -6466,8 +6466,8 @@ void NamedExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 
-Type* NamedExpr::typeInfo(void) {
-  return actual->typeInfo();
+QualifiedType NamedExpr::qualType(void) {
+  return actual->qualType();
 }
 
 

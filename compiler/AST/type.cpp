@@ -77,8 +77,8 @@ bool Type::inTree() {
 }
 
 
-Type* Type::typeInfo() {
-  return this;
+QualifiedType Type::qualType() {
+  return QualifiedType(this);
 }
 
 // Are actuals of this type passed with const intent by default?

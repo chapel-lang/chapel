@@ -111,6 +111,7 @@ Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
 
 Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   BaseAST(astTag),
+  qual(kBlank),
   type(init_type),
   flags(),
   defPoint(NULL)
@@ -151,8 +152,8 @@ bool Symbol::inTree() {
 }
 
 
-Type* Symbol::typeInfo() {
-  return type;
+QualifiedType Symbol::qualType() {
+  return QualifiedType(type, qual);
 }
 
 
@@ -213,6 +214,7 @@ void Symbol::addFlag(Flag flag) {
 
 void Symbol::copyFlags(const Symbol* other) {
   flags |= other->flags;
+  qual = other->qual;
 }
 
 
@@ -2427,6 +2429,16 @@ bool FnSymbol::isIterator() const {
 bool FnSymbol::returnsRefOrConstRef() const {
   return (retTag == RET_REF || retTag == RET_CONST_REF);
 }
+
+QualifiedType FnSymbol::getReturnQualType() const {
+  Qualifier q = kBlank;
+  if (retTag == RET_REF)
+    q = kRef;
+  else if(retTag == RET_CONST_REF)
+    q = kConstRef;
+  return QualifiedType(retType, q);
+}
+
 
 std::string FnSymbol::docsDirective() {
   if (fDocsTextOnly) {

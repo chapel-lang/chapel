@@ -98,7 +98,7 @@ public:
   // Interface for BaseAST
   virtual GenRet     codegen();
   virtual bool       inTree();
-  virtual Type*      typeInfo();
+  virtual QualifiedType qualType();
   virtual void       verify();
 
   // New interfaces
@@ -130,6 +130,9 @@ public:
   virtual bool       isVisible(BaseAST* scope)                 const;
   bool               noDocGen()                                const;
 
+  // Future: consider merging qual, type into a single
+  // field of type QualifiedType
+  Qualifier          qual;
   Type*              type;
   FlagSet            flags;
 
@@ -422,6 +425,8 @@ class FnSymbol : public Symbol {
   bool            isSecondaryMethod()                          const;
   bool            isIterator()                                 const;
   bool            returnsRefOrConstRef()                       const;
+
+  QualifiedType   getReturnQualType()                          const;
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 
