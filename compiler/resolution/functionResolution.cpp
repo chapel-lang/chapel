@@ -4828,8 +4828,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
     if (concreteIntent(formal->intent, formalType) & INTENT_FLAG_CONST) {
       tmp->addFlag(FLAG_CONST);
 
-      if (!isSingleType(formalType) &&
-          !isRefCountedType(formalType))
+      if (!isRefCountedType(formalType))
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
     }
 
@@ -4916,8 +4915,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
 
        if (!getRecordWrappedFlags(ts).any()   &&
            !ts->hasFlag(FLAG_ITERATOR_CLASS)  &&
-           !ts->hasFlag(FLAG_ITERATOR_RECORD) &&
-           !isSingleType(ts->type)) {
+           !ts->hasFlag(FLAG_ITERATOR_RECORD)) {
          if (fn->hasFlag(FLAG_BEGIN)) {
            // autoCopy/autoDestroy will be added later, in parallel pass
            // by insertAutoCopyDestroyForTaskArg()
@@ -8677,8 +8675,7 @@ static void resolveAutoCopies() {
     if (ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
       continue; // Skip the "dmapped" pseudo-type.
 
-    if (isRecord(ts->type)   ||
-        isSingleType(ts->type)) {
+    if (isRecord(ts->type)) {
       resolveAutoCopy(ts->type);
       resolveAutoDestroy(ts->type);
     }
