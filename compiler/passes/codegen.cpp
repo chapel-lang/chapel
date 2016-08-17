@@ -849,6 +849,7 @@ static void codegen_defn(Vec<const char*> & cnames, Vec<TypeSymbol*> & types,
 
   genComment("Function Pointer Table");
   genFtable(ftableVec, false);
+  genFinfo(ftableVec, false);
 
   genComment("Virtual Method Table");
   genVirtualMethodTable(types, false);
@@ -1197,8 +1198,8 @@ static void codegen_header(Vec<const char*> & cnames, Vec<TypeSymbol*> & types,
     }
   }
 
-  genFtable(ftableVec,isHeader);
-  genFinfo(ftableVec,isHeader);
+  genFtable(ftableVec,true);
+  genFinfo(ftableVec,true);
 
   genComment("Virtual Method Table");
   genVirtualMethodTable(types,true);
