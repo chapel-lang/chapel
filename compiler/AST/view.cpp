@@ -57,8 +57,8 @@ list_sym(Symbol* sym, bool type = true) {
   }
   if (toFnSymbol(sym)) {
     printf("fn ");
-  } else if (ArgSymbol* arg = toArgSymbol(sym)) {
-    printf("arg intent %s", arg->intentDescrString());
+  } else if (toArgSymbol(sym)) {
+    printf("arg ");
   } else if (toTypeSymbol(sym)) {
     printf("type ");
   }
