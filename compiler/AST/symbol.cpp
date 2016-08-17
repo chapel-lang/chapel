@@ -1949,15 +1949,9 @@ void FnSymbol::codegenHeaderC(void) {
   if (fGenIDS)
     fprintf(outfile, "%s", idCommentTemp(this));
 
-    // Prepend function header with necessary __global__ declaration
-
-    //
-    // A function prototype can be labeled static if it is neither
-    // exported nor external
-    //
-    if (!fIncrementalCompilation && !hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN)) {
-      fprintf(outfile, "static ");
-    }
+  if (!fIncrementalCompilation && !hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN)) {
+    fprintf(outfile, "static ");
+  }
   fprintf(outfile, "%s", codegenFunctionType(true).c.c_str());
 }
 
