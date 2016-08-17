@@ -113,6 +113,70 @@ private:
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
+
+// a Qualifier allows the compiler to distinguish between
+// different properties of a variable (const or ref-ness in particular)
+// without changing its type to a ref or wide ref type.
+typedef enum {
+  // The abstract qualifiers
+  kBlank,
+  kConst,
+  kRef,
+  kConstRef,
+
+  // The concrete qualifiers
+  kParam,
+
+  kVal,
+  kNarrowRef,
+  kWideRef,
+
+  kConstVal,
+  kConstNarrowRef,
+  kConstWideRef
+} Qualifier;
+
+// A QualifiedType is basically a tuple of (qualifier, type).
+class QualifiedType {
+public:
+
+  explicit QualifiedType(Type* type)
+    : type(type), qual(kBlank)
+  {
+  }
+
+  QualifiedType(Type* type, Qualifier qual)
+    : type(type), qual(qual)
+  {
+  }
+
+  bool isAbstract() {
+    return (qual == kBlank || qual == kConst ||
+            qual == kRef || qual == kConstRef);
+  }
+  bool isParam() {
+    return (qual == kParam);
+  }
+  bool isVal() {
+    return (qual == kVal || qual == kConstVal);
+  }
+  bool isRef() {
+    return (qual == kRef || qual == kConstRef ||
+            qual == kNarrowRef || qual == kConstNarrowRef);
+  }
+  bool isWideRef() {
+    return (qual == kWideRef || qual == kConstWideRef);
+  }
+
+  Type* getType() {
+    return type;
+  }
+
+private:
+  Type*      type;
+  Qualifier  qual;
+};
+
 class EnumType : public Type {
  public:
   AList constants; // EnumSymbols
