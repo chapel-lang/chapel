@@ -117,7 +117,7 @@ private:
 // a Qualifier allows the compiler to distinguish between
 // different properties of a variable (const or ref-ness in particular)
 // without changing its type to a ref or wide ref type.
-typedef enum {
+enum Qualifier {
   // The abstract qualifiers
   kBlank,
   kConst,
@@ -134,7 +134,7 @@ typedef enum {
   kConstVal,
   kConstNarrowRef,
   kConstWideRef
-} Qualifier;
+};
 
 // A QualifiedType is basically a tuple of (qualifier, type).
 class QualifiedType {
@@ -150,25 +150,25 @@ public:
   {
   }
 
-  bool isAbstract() {
+  bool isAbstract() const {
     return (qual == kBlank || qual == kConst ||
             qual == kRef || qual == kConstRef);
   }
-  bool isParam() {
+  bool isParam() const {
     return (qual == kParam);
   }
-  bool isVal() {
+  bool isVal() const {
     return (qual == kVal || qual == kConstVal);
   }
-  bool isRef() {
+  bool isRef() const {
     return (qual == kRef || qual == kConstRef ||
             qual == kNarrowRef || qual == kConstNarrowRef);
   }
-  bool isWideRef() {
+  bool isWideRef() const {
     return (qual == kWideRef || qual == kConstWideRef);
   }
 
-  Type* getType() {
+  Type* getType() const {
     return type;
   }
 
