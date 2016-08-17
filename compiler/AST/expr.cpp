@@ -4416,7 +4416,6 @@ GenRet CallExpr::codegenPrimitive() {
   case PRIM_ON_LOCALE_NUM:
   case PRIM_GET_REAL:
   case PRIM_GET_IMAG:
-  case PRIM_SET_REFERENCE:
     codegenIsSpecialPrimitive(NULL, this, ret);
     break;
 
@@ -5965,6 +5964,19 @@ GenRet CallExpr::codegenPrimMove() {
       codegenAssign(get(1), specRet);
     }
 
+  } else if (isCallExpr(get(2)) &&
+             toCallExpr(get(2))->isPrimitive(PRIM_SET_REFERENCE)) {
+      SymExpr*    lhsSe      = toSymExpr(get(1));
+      VarSymbol*  var        = toVarSymbol(lhsSe->var);
+      CallExpr*   call       = toCallExpr(get(2));
+      Expr*       from       = call->get(1);
+
+      INT_ASSERT(var->hasFlag(FLAG_REF) || var->hasFlag(FLAG_WIDE_REF));
+
+      GenRet lhs = var->codegenVarSymbol(true);
+
+      codegenAssign(lhs, from);
+
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true  &&
              get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == false) {
     codegenAssign(get(1), codegenAddrOf(codegenWideHere(get(2))));
@@ -6089,21 +6101,6 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
       } else {
         ret = codegenDeref(call->get(1));
       }
-
-      retval = true;
-      break;
-    }
-
-    case PRIM_SET_REFERENCE: {
-      SymExpr*    lhsSe      = toSymExpr(get(1));
-      VarSymbol*  var        = toVarSymbol(lhsSe->var);
-      Expr*       from       = rhs->get(1);
-
-      INT_ASSERT(var->hasFlag(FLAG_REF) || var->hasFlag(FLAG_WIDE_REF));
-
-      GenRet lhs = var->codegenVarSymbol(true);
-
-      codegenAssign(lhs, from);
 
       retval = true;
       break;
