@@ -7,5 +7,5 @@
  */
 
 writeln("\
-Warning: $CHPL_CONFIG is defined, but no $CHPL_CONFIG/.chplconfig file is found\
+Warning: No chplconfig or .chplconfig file is found in the defined $CHPL_CONFIG\
 ");

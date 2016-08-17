@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Provides simple 'get()' interface for accessing default value overrides
-Checks environment variables first, then ..chplconfig file for definitions
+Checks environment variables first, then chplconfig file for definitions
 """
 from __future__ import print_function
 import os, sys
@@ -13,11 +13,11 @@ from utils import chplvars, memoize
 
 
 class ChapelConfig(object):
-    """ Class for parsing .chplconfig file and providing 'get' interface """
+    """ Class for parsing chplconfig file and providing 'get' interface """
     def __init__(self):
-        """ Find and parse .chplconfig file, populating self.chplconfig """
+        """ Find and parse chplconfig file, populating self.chplconfig """
 
-        # Dictionary containing all of the env vars defined in .chplconfig
+        # Dictionary containing all of the env vars defined in chplconfig
         self.chplconfig = {}
 
         # List of warnings to track if a warning has occurred
@@ -40,34 +40,44 @@ class ChapelConfig(object):
             return self.chplconfig[var]
 
     def find(self):
-        """ Find .chplconfig file path"""
+        """ Find chplconfig file path"""
 
-        # Potential paths of .chplconfig file
+        # Places to look for a chplconfig file
         chplconfigpath = os.environ.get('CHPL_CONFIG')
         home = os.path.expanduser('~')
 
-        # Construct path to .chplconfig file
+        # Construct path to chplconfig file, ccpath
         if chplconfigpath:
-            self.chplconfigfile = os.path.join(chplconfigpath, '.chplconfig')
-            self.prettypath = '$CHPL_CONFIG/.chplconfig'
+            ccpath = chplconfigpath
+            self.prettypath = '$CHPL_CONFIG/'
         else:
-            self.chplconfigfile = os.path.join(home, '.chplconfig')
-            self.prettypath = '~/.chplconfig'
+            ccpath = home
+            self.prettypath = '~/'
 
-        # Confirm that .chplconfig file exists
-        if not os.path.isfile(self.chplconfigfile):
+        # Search for both visible and hidden files
+        visible = os.path.join(ccpath, 'chplconfig')
+        hidden = os.path.join(ccpath, '.chplconfig')
+
+        # Set self.chplconfigpath if it exists
+        if os.path.isfile(visible):
+            self.chplconfigfile = visible
+            self.prettypath += 'chplconfig'
+        elif os.path.isfile(hidden):
+            self.chplconfigfile = hidden
+            self.prettypath += '.chplconfig'
+        else:
+            self.chplconfigfile = None
             if chplconfigpath:
                 self.warnings.append(
                 (
-                    'Warning: $CHPL_CONFIG is defined, '
-                    'but no $CHPL_CONFIG/.chplconfig file is found\n'
+                    'Warning: No chplconfig or .chplconfig file is found in '
+                    'the defined $CHPL_CONFIG\n'
                 ))
-            self.chplconfigfile = None
 
     def parse(self):
-        """ Parse .chplconfig file for acceptable env var overrides """
+        """ Parse chplconfig file for acceptable env var overrides """
 
-        # Parse the .chplconfig file and populate the chplconfig dict
+        # Parse the chplconfig file and populate the chplconfig dict
         with open(self.chplconfigfile, 'r') as ccfile:
 
             # Split lines into fields delimited by '='
@@ -139,7 +149,7 @@ class ChapelConfig(object):
         sys.stderr.write('\n')
 
 
-# Global instance that contains parsed .chplconfig assignments
+# Global instance that contains parsed chplconfig assignments
 chplconfig = ChapelConfig()
 
 
@@ -151,7 +161,7 @@ def get(var, default=None):
     if value:
         return value
 
-    # Check .chplconfig file
+    # Check chplconfig file
     value = chplconfig.get(var)
     if value:
         return value
