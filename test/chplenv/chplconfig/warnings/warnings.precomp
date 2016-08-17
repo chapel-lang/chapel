@@ -1,6 +1,8 @@
 #! /usr/bin/env bash
 
 # This finds the .chplconfig file in this directory
+# Note that this is run in a subprocess, so it does not actually modify the
+# compilation environment for this test
 export CHPL_CONFIG=${PWD}
 
 # Note that this is the actual test:

@@ -8,16 +8,12 @@
 
  */
 
+
+
 writeln("\
- Warning: $CHPL_CONFIG/.chplconfig:line 8:\
-     Received incorrect format:\
+Warning: $CHPL_CONFIG/.chplconfig:line 8: Received incorrect format:\
          > CHPL_TASKS == fifo\
-\
-     Expected format is:\
+         Expected format is:\
          > CHPL_VAR = VALUE\
-\
- Warning: $CHPL_CONFIG/.chplconfig:line 11:\
-     \"CHPL_COMMS\" is not an acceptable variable\
-\
- Warning: $CHPL_CONFIG/.chplconfig:line 15:\
-    Duplicate entry of \"CHPL_COMM\"");
+Warning: $CHPL_CONFIG/.chplconfig:line 11: \"CHPL_COMMS\" is not an acceptable variable\
+Warning: $CHPL_CONFIG/.chplconfig:line 15: Duplicate entry of \"CHPL_COMM\"\n");

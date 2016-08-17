@@ -60,7 +60,7 @@ class ChapelConfig(object):
                 self.warnings.append(
                 (
                     'Warning: $CHPL_CONFIG is defined, '
-                    'but no $CHPL_CONFIG/.chplconfig file is found\n\n'
+                    'but no $CHPL_CONFIG/.chplconfig file is found\n'
                 ))
             self.chplconfigfile = None
 
