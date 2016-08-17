@@ -106,9 +106,57 @@ void checkPrimitives()
         INT_FATAL("Primitive should not appear after resolution is complete.");
       break;
 
+     case PRIM_ADDR_OF:             // set a reference to a value
+      if (resolved) {
+        // Check that the argument is not already a reference.
+        // references can only go 1 level
+        if (isReferenceType(call->get(1)->typeInfo()))
+          INT_FATAL("Invalid PRIM_ADDR_OF of a reference");
+      }
+      break;
+
+     case PRIM_DEREF:               // dereference a reference
+      if (resolved) {
+        // Check that the argument is a reference.
+        if (!isReferenceType(call->get(1)->typeInfo()))
+          INT_FATAL("Invalid PRIM_DEREF of a non-reference");
+      }
+      break;
+
+     case PRIM_MOVE:
+      if (resolved) {
+        // Check that the LHS has the same type as the RHS.
+        if (call->get(1)->typeInfo() != call->get(2)->typeInfo())
+          INT_FATAL("PRIM_MOVE types do not match");
+      }
+      break;
+
+     case PRIM_GET_MEMBER:
+     case PRIM_GET_MEMBER_VALUE:
+     case PRIM_SET_MEMBER:
+      if (resolved) {
+        // For expr.field, check that field is a VarSymbol
+        // in the class expr.type.
+        AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
+        SymExpr* getFieldSe = toSymExpr(call->get(2));
+        Symbol* getField = getFieldSe->var;
+        INT_ASSERT(ct);
+        INT_ASSERT(getField);
+        Symbol* name_match = NULL;
+        for_fields(field, ct) {
+          if (0 == strcmp(field->name, getField->name))
+            name_match = field;
+        }
+        if (name_match != getField) {
+          // Note: name_match contains the field that was
+          // probably meant...
+          INT_FATAL("Field access for field not in type");
+        }
+      }
+      break;
+
      case PRIM_UNKNOWN:
      case PRIM_NOOP:
-     case PRIM_MOVE:
      case PRIM_REF_TO_STRING:
      case PRIM_RETURN:
      case PRIM_YIELD:
@@ -151,15 +199,10 @@ void checkPrimitives()
      case PRIM_GETCID:
      case PRIM_SET_UNION_ID:
      case PRIM_GET_UNION_ID:
-     case PRIM_GET_MEMBER:
-     case PRIM_GET_MEMBER_VALUE:
-     case PRIM_SET_MEMBER:
      case PRIM_CHECK_NIL:
      case PRIM_GET_REAL:            // get complex real component
      case PRIM_GET_IMAG:            // get complex imag component
      case PRIM_QUERY:               // query expression primitive
-     case PRIM_ADDR_OF:             // set a reference to a value
-     case PRIM_DEREF:               // dereference a reference
      case PRIM_LOCAL_CHECK:         // assert that a wide ref is on this locale
      case PRIM_SYNC_INIT:
      case PRIM_SYNC_DESTROY:

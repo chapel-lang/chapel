@@ -1145,7 +1145,7 @@ Type* getRefTypesForWideThing(GenRet wide, Type** wideRefTypeOut)
         ret = wide.chplType->getField("addr")->typeInfo();
         wideRefType = wide.chplType;
       } else {
-        INT_ASSERT(0);
+        INT_ASSERT(0); // Not a wide thing.
       }
     }
   }
