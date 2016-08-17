@@ -2682,17 +2682,10 @@ module ChapelArray {
 
     const PartialDom = arr.domain._value.dsiPartialDomain(exceptDim=onlyDim);
     var ResultArr: [PartialDom] arr._value.eltType;
-
-    // FIXME This loop has to be a forall. However it hits a resolution bug in
-    // compiler. Vass is aware of the issue. Generally, a param arg to a
-    // function cannot be passed to another function's param formal from within
-    // a forall loop. (Obiviously this can be done from within a for loop)
     forall partialIdx in PartialDom {
       ResultArr[partialIdx] = + reduce arr.partialThese(onlyDim, 
           if isTuple(partialIdx) then partialIdx else (partialIdx, ));
-      /*write(partialIdx); writeln(" is " + ResultArr[partialIdx]);*/
     }
-
     return ResultArr;
 
   }

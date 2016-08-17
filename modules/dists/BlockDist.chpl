@@ -701,33 +701,32 @@ proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
 
 proc BlockArr.dsiPartialReduce_templateopt(param onlyDim) {
 
+
   const PartialDom = dom.dsiPartialDomain(exceptDim=onlyDim);
   var ResultArr: [PartialDom] eltType;
 
-  // RHS -> this.dom.dist
-  var locResDom = dom.dist.targetLocDom dmapped Block(dom.dist.targetLocDom,
-      targetLocales=dom.dist.targetLocales);
+  var locResDom = dom.dist.targetLocDom dmapped new dmap(this.dom.dist);
   var locRes: [locResDom] ResultArr._value.myLocArr.myElems.type;
 
-  /*coforall l in dom.dist.targetLocDom {*/
   coforall l2 in dom.dist.targetLocDom._value.dsiPartialDomain(exceptDim=onlyDim) {
-    var thisParticularResult =>
-      ResultArr._value.locArr[l2].myElems;
-    forall l1 in dom.dist.targetLocDom.dim(onlyDim) with (+ reduce thisParticularResult) {
-      const l = (l1, l2);
-      on dom.locDoms[l] {
-        /*locRes[l] = dsiPartialReduce_template(locArr[l].myElems, onlyDim);*/
-        thisParticularResult = dsiPartialReduce_template(locArr[l].myElems, onlyDim);
-        writeln("Particular result");
-        writeln(thisParticularResult);
+    on ResultArr._value.locArr[l2].myElems {
+      var thisParticularResult => ResultArr._value.locArr[l2].myElems;
+      // FIXME should be a coforall
+      forall l1 in dom.dist.targetLocDom.dim(onlyDim) 
+          with (+ reduce thisParticularResult) {
+
+        const l = chpl__tuplify(l2).merge(onlyDim, l1);
+        on dom.locDoms[l] {
+          thisParticularResult +=
+              dsiPartialReduce_template(locArr[l].myElems, onlyDim);
+        }
       }
     }
-    writeln("Inside template");
-    writeln(ResultArr);
-    /*ResultArr._value.locArr[l1.strip(onlyDim)].myElems =*/
-      /*+ reduce [i in locResDom[(...dom.__lineSliceMask(onlyDim, l1))]] locRes[i];*/
   }
   return ResultArr;
+
+}
+proc foo(x, y) {
 
 }
 
