@@ -5,115 +5,151 @@ Check .chplconfig file and environment variables for default value overrides
 from __future__ import print_function
 import os
 import sys
-from sys import stderr
 
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import utils
 
-# Global dictionary that will be populated w/ .chplconfig file contents
-# The value of 'None' track that .chplconfig has not yet been parsed
-chplconfig = None
 
+class ChapelConfig(object):
+    """ Class for parsing .chplconfig file and providing 'get' interface """
+    def __init__(self):
+        """ Find .chplconfig file, parse it, and print any warnings """
+        # Dictionary containing all of the env vars defined in .chplconfig
+        self.chplconfig = {}
 
-def _parse():
-    """ Parse .chplconfig file for acceptable env var overrides """
+        # List of warnings to track if a warning has occurred
+        self.warnings = []
 
-    # Default initialized to empty dictionary
-    chplconfig = {}
+        # Find chplconfigfile and prettypath
+        self.find()
 
-    # Potential paths of .chplconfig file
-    chplconfigpath = os.environ.get('CHPL_CONFIG')
-    home = os.path.expanduser('~')
+        # Populate chplconfig
+        if self.chplconfigfile:
+            self.parse()
 
-    # Construct path to .chplconfig file
-    if chplconfigpath:
-        chplconfigfile = os.path.join(chplconfigpath, '.chplconfig')
-        prettypath = '$CHPL_CONFIG/.chplconfig'
-    else:
-        chplconfigfile = os.path.join(home, '.chplconfig')
-        prettypath = '~/.chplconfig'
+        # Print any warnings accumulated throughout constructor
+        if self.warnings:
+            self.printwarnings()
 
-    # Confirm that .chplconfig file exists
-    if not os.path.isfile(chplconfigfile):
+    def get(self, var):
+        """ Wrapper for chplconfig access similar to os.environ.get() """
+        if var in self.chplconfig.keys():
+            return self.chplconfig[var]
+
+    def find(self):
+        """ Find .chplconfig file path"""
+
+        # Potential paths of .chplconfig file
+        chplconfigpath = os.environ.get('CHPL_CONFIG')
+        home = os.path.expanduser('~')
+
+        # Construct path to .chplconfig file
         if chplconfigpath:
-            err = ('Warning: $CHPL_CONFIG is defined, '
-                   'but no $CHPL_CONFIG/.chplconfig file is found\n')
-            stderr.write(err)
-        return chplconfig
+            self.chplconfigfile = os.path.join(chplconfigpath, '.chplconfig')
+            self.prettypath = '$CHPL_CONFIG/.chplconfig'
+        else:
+            self.chplconfigfile = os.path.join(home, '.chplconfig')
+            self.prettypath = '~/.chplconfig'
 
-    # Value of None tracks that no errors have occurred
-    err = None
+        # Confirm that .chplconfig file exists
+        if not os.path.isfile(self.chplconfigfile):
+            if chplconfigpath:
+                self.warnings.append(
+                (
+                    'Warning: $CHPL_CONFIG is defined, '
+                    'but no $CHPL_CONFIG/.chplconfig file is found\n\n'
+                ))
+            self.chplconfigfile = None
 
-    # Parse the .chplconfig file and populate the chplconfig dict
-    with open(chplconfigfile, 'r') as ccfile:
-        linefields = [l.split('=') for l in ccfile.readlines()]
-        for linenum, fields in enumerate([lf for lf in linefields]):
+    def parse(self):
+        """ Parse .chplconfig file for acceptable env var overrides. """
 
-            # Check if line is a comment (has no '=')
-            if len(fields) < 2:
-                continue
+        # Parse the .chplconfig file and populate the chplconfig dict
+        with open(self.chplconfigfile, 'r') as ccfile:
 
-            # Check if line is incorrectly formatted
-            if len(fields) > 2:
-                line = '='.join(fields).strip('\n')
-                err = ('Warning: {0}:line {1}: Received incorrect format:\n'
-                       '         > {2}\n'
-                       '         Expected format is:\n'
-                       '         > CHPL_VAR = VALUE\n'
-                      ).format(prettypath, linenum, line)
-                stderr.write(err)
-                continue
+            # Split lines into fields delimited by '='
+            linefields = [l.split('=') for l in ccfile.readlines()]
 
-            var, val = [f.strip() for f in fields]
-
-            # Check if var is in the list of approved special variables
-            if var not in utils.chplvars:
-                err = ('Warning: {0}:line {1}: '
-                       '"{2}" is not an acceptable variable\n'
-                      ).format(prettypath, linenum, var)
-                stderr.write(err)
-                continue
-
-            # Warn about duplicate entries, but don't skip, just overwrite
-            if var in chplconfig.keys():
-                err = ('Warning: {0}:line {1}: '
-                       'Duplicate entry of "{2}"\n'
-                      ).format(prettypath, linenum, var)
-                stderr.write(err)
-
-            chplconfig[var] = val
-
-    # Separate warnings output from printchplenv output, if errors occurred
-    if err is not None:
-        stderr.write('\n')
-
-    return chplconfig
+            for linenum, fields in enumerate([lf for lf in linefields]):
 
 
-def _chplconfig_get(var):
-    """ Wrapper for chplconfig access similar to os.environ.get() """
-    global chplconfig
+                if self.invalid_assignment(fields, linenum):
+                    continue
 
-    if chplconfig is None:
-        chplconfig = _parse()
+                var, val = [f.strip() for f in fields]
 
-    if var in chplconfig.keys():
-        return chplconfig[var]
+                if self.invalid_entry(fields, linenum):
+                    continue
 
-    return None
+                self.chplconfig[var] = val
 
+    def invalid_assignment(self, fields, linenum):
+        """ Check if formatting of fields is formatted like 'ENV = VAR' """
+
+        # Check if line is a comment (has no '=')
+        if len(fields) < 2:
+            return True
+
+        # Check if line is incorrectly formatted
+        elif len(fields) > 2:
+            line = '='.join(fields).strip('\n')
+            self.warnings.append(
+            (
+                'Warning: {0}:line {1}: Received incorrect format:\n'
+                '         > {2}\n'
+                '         Expected format is:\n'
+                '         > CHPL_VAR = VALUE\n'
+            ).format(_prettypath(), linenum, line))
+            return True
+
+        return False
+
+
+    def invalid_entry(self, fields, linenum):
+        """ Check if entry for variable assignment is valid """
+
+        # Check if var is in the list of approved special variables
+        if var not in utils.chplvars:
+            self.warnings.append(
+            (
+                'Warning: {0}:line {1}: '
+                '"{2}" is not an acceptable variable\n'
+            ).format(self.prettypath, linenum, var))
+            return True
+
+        # Warn about duplicate entries, but don't skip, just overwrite
+        elif var in chplconfig.keys():
+            self.warnings.append(
+            (
+                'Warning: {0}:line {1}: '
+                'Duplicate entry of "{2}"\n'
+            ).format(prettypath, linenum, var))
+            return False
+
+        return False
+
+    def printwarnings(self):
+        sys.stderr.write('\n')
+        for warning in self.warnings:
+            stderr.write(warning)
+        sys.stderr.write('\n')
+
+
+# Global dictionary that will be populated w/ .chplconfig var assignments
+# The value of 'None' tracks that .chplconfig has not yet been parsed
+chplconfig = ChapelConfig()
 
 def get(var, default=None):
     """ Check if variable has a default defined somewhere """
-    # Check env var first
+    # Check environment variable
     value = os.environ.get(var)
     if value:
         return value
 
-    # Check .chplconfig if it's not defined as an env var
-    value = _chplconfig_get(var)
+    # Check .chplconfig file
+    value = chplconfig.get(var)
     if value:
         return value
 
