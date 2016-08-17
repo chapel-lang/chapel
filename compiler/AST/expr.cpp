@@ -5395,14 +5395,12 @@ GenRet CallExpr::codegenPrimitive() {
 
     // source data array
     GenRet   remoteAddr = get(4);
-    SymExpr* sym        = toSymExpr(get(4));
+    TypeSymbol* remoteAddrType = get(4)->typeInfo()->symbol;
 
-    INT_ASSERT(sym);
-
-    if (sym->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) == true) {
+    if (remoteAddrType->hasFlag(FLAG_WIDE_REF) == true) {
       remoteAddr = codegenRaddr(remoteAddr);
-    } else if (sym->typeInfo()->symbol->hasFlag(FLAG_REF) == false) {
-        remoteAddr = codegenAddrOf(remoteAddr);
+    } else if (remoteAddrType->hasFlag(FLAG_REF) == false) {
+      remoteAddr = codegenAddrOf(remoteAddr);
     }
 
     // source strides local array
