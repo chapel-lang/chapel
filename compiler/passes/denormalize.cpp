@@ -144,7 +144,7 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
     if(!cachedGlobalManip) {
       // I am not sure if we can check for const and param here.
       // Touching a global const and param sounds safe to me, but I am
-      // not certain especailly with nonprimitive types. Playing safe
+      // not certain especially with nonprimitive types. Playing safe
       // for now. Engin
       if(sym && !sym->isImmediate() && isGlobal(sym)){
         analysisData.registerGlobalManip(fn, true);

@@ -5496,7 +5496,7 @@ GenRet CallExpr::codegenPrimitive() {
 
       // C standard promotes small ints to full int when they are involved in
       // arithmetic operations. When we don't denormalize the AST, small integer
-      // arithemtic is always assigned to a temporary of the suitable size,
+      // arithmetic is always assigned to a temporary of the suitable size,
       // which truncates the integer appropriately. OTOH, if we denormalize the
       // AST then we have to make sure that are cast to appropriate size.
       //

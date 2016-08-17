@@ -26,7 +26,7 @@
 
 /*
  * This class contains necessary data structures and member functions
- * for experession analysis. At this point it is only used in
+ * for expression analysis. At this point it is only used in
  * denormalize pass and functionality is rather simple.
  *
  * Its main use in the pass is to decide if expressions are movable
