@@ -446,9 +446,8 @@ static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
       sym->type = wide;
     }
   }
-  else if(sym->hasEitherFlag(FLAG_WIDE_REF, FLAG_REF)) {
-    sym->removeFlag(FLAG_REF);
-    sym->addFlag(FLAG_WIDE_REF);
+  else if(sym->qualType().isRefOrWideRef()) {
+    sym->qual= kWideRef;
   }
   else if (isRef(sym)) {
     if (mustBeWide) {
@@ -2483,7 +2482,7 @@ shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
                        arg->requiresCPtr();
 
   bool alreadyRef = arg->typeInfo()->symbol->hasFlag(FLAG_REF) ||
-                    arg->hasFlag(FLAG_REF);
+                    arg->qualType().isRef();
 
   // Only change argument types for functions with a ref intent
   // that don't already have an argument being passed by ref
@@ -2497,7 +2496,7 @@ shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
 static void
 changeArgumentTypeToRef(ArgSymbol* arg) {
 
-  arg->addFlag(FLAG_REF);
+  arg->qual = kRef;
 }
 
 static void

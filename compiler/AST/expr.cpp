@@ -150,7 +150,7 @@ bool isAddrOfWideRefVar(Expr* e)
   if (CallExpr* call = toCallExpr(e))
     if (call->isPrimitive(PRIM_ADDR_OF))
       if (SymExpr* se = toSymExpr(call->get(1)))
-        if (se->var->hasFlag(FLAG_WIDE_REF))
+        if (se->var->qualType().isWideRef())
           return true;
 
   return false;
@@ -5970,8 +5970,9 @@ GenRet CallExpr::codegenPrimMove() {
       VarSymbol*  var        = toVarSymbol(lhsSe->var);
       CallExpr*   call       = toCallExpr(get(2));
       Expr*       from       = call->get(1);
+      QualifiedType  q       = var->qualType();
 
-      INT_ASSERT(var->hasFlag(FLAG_REF) || var->hasFlag(FLAG_WIDE_REF));
+      INT_ASSERT(q.isRef() || q.isWideRef());
 
       GenRet lhs = var->codegenVarSymbol(true);
 

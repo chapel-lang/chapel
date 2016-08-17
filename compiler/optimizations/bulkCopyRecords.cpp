@@ -136,4 +136,6 @@ void bulkCopyRecords()
     if (isTrivialAssignment(fn))
       replaceSimpleAssignment(fn);
   }
+
+  containsRef.clear();
 }

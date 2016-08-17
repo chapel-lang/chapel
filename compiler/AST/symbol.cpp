@@ -195,13 +195,13 @@ bool Symbol::isRenameable() const {
 }
 
 bool Symbol::isRef() {
-  // TODO -- should this check ArgSymbols for their intent?
-  // FnSymbols for their retTag?
-  return (hasFlag(FLAG_REF) || type->symbol->hasFlag(FLAG_REF));
+  QualifiedType q = qualType();
+  return (q.isRef() || type->symbol->hasFlag(FLAG_REF));
 }
 
 bool Symbol::isWideRef() {
-  return (hasFlag(FLAG_WIDE_REF) || type->symbol->hasFlag(FLAG_WIDE_REF));
+  QualifiedType q = qualType();
+  return (q.isWideRef() || type->symbol->hasFlag(FLAG_WIDE_REF));
 }
 
 
@@ -693,21 +693,22 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         ret.isLVPtr = GEN_VAL;
         ret.c = cname;
       } else {
+        QualifiedType qt = qualType();
         if (lhsInSetReference) {
           ret.c = '&';
           ret.c += cname;
           ret.isLVPtr = GEN_PTR;
-          if (hasFlag(FLAG_REF))
+          if (qt.isRef() && !qt.isRefType())
             ret.chplType = getOrMakeRefTypeDuringCodegen(typeInfo());
-          else if (hasFlag(FLAG_WIDE_REF)) {
+          else if (qt.isWideRef() && !qt.isWideRefType()) {
             Type* refType = getOrMakeRefTypeDuringCodegen(typeInfo());
             ret.chplType = getOrMakeWideTypeDuringCodegen(refType);
           }
         } else {
-          if (hasFlag(FLAG_REF)) {
+          if (qt.isRef() && !qt.isRefType()) {
             ret.c = cname;
             ret.isLVPtr = GEN_PTR;
-          } else if(hasFlag(FLAG_WIDE_REF)) {
+          } else if(qt.isWideRef() && !qt.isWideRefType()) {
             ret.c = cname;
             ret.isLVPtr = GEN_WIDE_PTR;
           } else {
@@ -843,12 +844,13 @@ void VarSymbol::codegenDefC(bool global, bool isHeader) {
     return;
 
   AggregateType* ct = toAggregateType(type);
+  QualifiedType qt = qualType();
 
-  if (this->hasFlag(FLAG_REF)) {
+  if (qt.isRef() && !qt.isRefType()) {
     Type* refType = getOrMakeRefTypeDuringCodegen(type);
     ct = toAggregateType(refType);
   }
-  if (this->hasFlag(FLAG_WIDE_REF)) {
+  if (qt.isWideRef() && !qt.isWideRefType()) {
     Type* refType = getOrMakeRefTypeDuringCodegen(type);
     Type* wideType = getOrMakeWideTypeDuringCodegen(refType);
     ct = toAggregateType(wideType);
@@ -1272,11 +1274,13 @@ const char* intentDescrString(IntentTag intent) {
 
 
 static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
-  Type* useType = arg->type;
-  if (arg->hasFlag(FLAG_REF)) {
+  QualifiedType q = arg->qualType();
+  Type* useType = q.getType();
+
+  if (q.isRef() && !q.isRefType())
     useType = getOrMakeRefTypeDuringCodegen(useType);
-  }
-  if (arg->hasFlag(FLAG_WIDE_REF)) {
+
+  if (q.isWideRef() && !q.isWideRefType()) {
     Type* refType = getOrMakeRefTypeDuringCodegen(useType);
     useType = getOrMakeWideTypeDuringCodegen(refType);
   }
@@ -1307,11 +1311,13 @@ GenRet ArgSymbol::codegen() {
   FILE* outfile = info->cfile;
   GenRet ret;
 
+  QualifiedType q = qualType();
+
   if( outfile ) {
-    if (hasFlag(FLAG_REF)) {
+    if (q.isRef() && !q.isRefType()) {
       ret.c = cname;
       ret.isLVPtr = GEN_PTR;
-    } else if(hasFlag(FLAG_WIDE_REF)) {
+    } else if(q.isWideRef() && !q.isWideRefType()) {
       ret.c = cname;
       ret.isLVPtr = GEN_WIDE_PTR;
     } else {
