@@ -179,15 +179,15 @@ returnInfoRef(CallExpr* call) {
   return QualifiedType(t->refType, kRef);
 }
 
-static Type*
+static QualifiedType
 returnInfoAsRef(CallExpr* call) {
   Type* t = call->get(1)->typeInfo();
   if (isReferenceType(t))
-    return t;
+    return QualifiedType(t, kRef);
   else {
     if (!t->refType)
       INT_FATAL(call, "invalid attempt to get reference type");
-    return t->refType;
+    return QualifiedType(t->refType, kRef);
   }
 }
 
