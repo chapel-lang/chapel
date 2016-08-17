@@ -81,7 +81,7 @@ class ChapelConfig(object):
 
                 var, val = [f.strip() for f in fields]
 
-                if self.invalid_entry(fields, linenum):
+                if self.invalid_entry(var, val, linenum):
                     continue
 
                 self.chplconfig[var] = val
@@ -108,7 +108,7 @@ class ChapelConfig(object):
         return False
 
 
-    def invalid_entry(self, fields, linenum):
+    def invalid_entry(self, var, val, linenum):
         """ Check if entry for variable assignment is valid """
 
         # Check if var is in the list of approved special variables
@@ -121,7 +121,7 @@ class ChapelConfig(object):
             return True
 
         # Warn about duplicate entries, but don't skip, just overwrite
-        elif var in chplconfig.keys():
+        elif var in self.chplconfig.keys():
             self.warnings.append(
             (
                 'Warning: {0}:line {1}: '
