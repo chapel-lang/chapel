@@ -1,0 +1,5 @@
+#! /usr/bin/env bash
+
+export CHPL_CONFIG=${PWD}
+
+$CHPL_HOME/util/printchplenv --anonymize > correctness.good
