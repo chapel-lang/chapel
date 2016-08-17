@@ -167,10 +167,20 @@ public:
   bool isWideRef() const {
     return (qual == kWideRef || qual == kConstWideRef);
   }
+  bool isRefOrWideRef() const {
+    return isRef() || isWideRef();
+  }
+  bool isRefType() const;
+  bool isWideRefType() const;
+
 
   Type* getType() const {
     return type;
   }
+  Qualifier getQual() const {
+    return qual;
+  }
+
 
 private:
   Type*      type;
