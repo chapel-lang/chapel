@@ -5,7 +5,7 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_compiler, chpl_platform, utils, defaults
+import chpl_compiler, chpl_platform, defaults, utils
 from utils import memoize
 
 
