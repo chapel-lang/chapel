@@ -220,7 +220,7 @@ inline proc initFreeSurface(freeSurface) {
                                     else freeSurface.rank*freeSurface.idxType;
 
     for (a,b) in zip(sortedSurface, freeSurface) do a = b;
-    QuickSort(sortedSurface);
+    quickSort(sortedSurface);
 
     writeln(size);
     for b in sortedSurface do

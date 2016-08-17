@@ -144,6 +144,13 @@ all:
     - Disable jemalloc's stat gathering by default (#4180)
   07/20/16:
     - Generated code changes in preparation for incremental compilation (#4177)
+  08/02/16:
+    - Restore static to normal compilation generated code (#4233)
+  08/03/16:
+    - text: Hardware upgrade
+      config: 16 node XC, Single node XC
+  08/04/16:
+    - Updates to Search module, required array slicing (partially reverted) (#4273)
 
 AllCompTime:
   11/09/14:
@@ -410,6 +417,8 @@ memleaksfull:
 meteor:
   12/18/13:
     - Chapel level improvement by using implicit domains
+  08/10/16:
+    - Updated meteor's lock to yield less frequently (#4300)
 
 miniMD:
   12/21/13:
@@ -530,6 +539,10 @@ stream:
   05/13/16:
     - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
       config: Single node XC
+
+taskSpawn:
+  07/24/16:
+    - Stopped performing remote value forwarding on task functions (#4240)
 
 testSerialReductions:
   08/16/14:

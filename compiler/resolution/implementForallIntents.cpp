@@ -58,6 +58,7 @@ static bool isCorrespIndexVar(BlockStmt* block, Symbol* sym)
 //
 static bool isOuterVar(Symbol* sym, BlockStmt* block) {
   if (sym->isParameter()               || // includes isImmediate()
+      sym->hasFlag(FLAG_INSTANTIATED_PARAM)    || // also a param
       sym->hasFlag(FLAG_TEMP)          || // exclude these
 
       // Consts need no special semantics for begin/cobegin/coforall/on.
@@ -233,9 +234,7 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
         // See e.g. parallel/taskPar/figueroa/taskParallel.chpl
         pruneit = true;
 
-      } else if (isSyncType(ovar->type)   ||
-                 isSingleType(ovar->type) ||
-                 isAtomicType(ovar->type)) {
+      } else if (isAtomicType(ovar->type)) {
         // Currently we need it because sync variables do not get tupled
         // and detupled properly when threading through the leader iterator.
         // See e.g. test/distributions/dm/s7.chpl

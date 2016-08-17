@@ -197,12 +197,19 @@ removeWrapRecords() {
         // TODO: Domains don't work generally due to some case in Sparse.
         // What about dist classes?
         //
+        // TODO: When a record is bit-copied across locales, this optimization
+        // should not be applied. For now, simply do not apply the pragma to
+        // arrays inside records. Ongoing work on memory-management semantics
+        // should shed some light on whether or not we should be allowed to
+        // mark such a field with this pragma.
+        //
         if (TypeSymbol* ts = toTypeSymbol(var->defPoint->parentSymbol)) {
           if (!(ts->hasFlag(FLAG_REF) ||
                 ts->hasFlag(FLAG_RUNTIME_TYPE_VALUE) ||
                 ts->hasEitherFlag(FLAG_TUPLE, FLAG_STAR_TUPLE) ||
                 ts->hasEitherFlag(FLAG_ITERATOR_CLASS, FLAG_ITERATOR_RECORD) ||
-                ts->hasFlag(FLAG_HEAP))) {
+                ts->hasFlag(FLAG_HEAP) ||
+                isRecord(ts->type))) {
               const char* bundlePrefix = "_class_locals";
               if (strncmp(ts->name, bundlePrefix, strlen(bundlePrefix))) {
                 if (isArrayClass(type)) {

@@ -21,7 +21,7 @@ proc main() {
     for lvl in 0..F.max_level { 
         write("\n **",lvl,": ");
         var arrNodeCoord = F.sumC.node_iter(lvl).get_coords();
-        QuickSort(arrNodeCoord);
+        quickSort(arrNodeCoord);
         for (n, l) in arrNodeCoord do
             write(" [",n,", ",l,"]");
     }

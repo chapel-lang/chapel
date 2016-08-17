@@ -157,9 +157,16 @@ returnInfoCast(CallExpr* call) {
 static Type*
 returnInfoVal(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
-  if (!ct || !ct->symbol->hasFlag(FLAG_REF))
-    INT_FATAL(call, "attempt to get value type of non-reference type");
-  return ct->getField(1)->type;
+  if (ct) {
+    if(ct->symbol->hasFlag(FLAG_REF)) {
+      return ct->getField(1)->type;
+    }
+    else if(ct->symbol->hasFlag(FLAG_WIDE_REF)) {
+      return ct->getField(2)->type;
+    }
+  }
+  INT_FATAL(call, "attempt to get value type of non-reference type");
+  return NULL;
 }
 
 static Type*
@@ -200,9 +207,7 @@ returnInfoNumericUp(CallExpr* call) {
 
 static Type*
 returnInfoArrayIndexValue(CallExpr* call) {
-  SymExpr* sym = toSymExpr(call->get(1));
-  INT_ASSERT(sym);
-  Type* type = sym->var->type;
+  Type* type = call->get(1)->typeInfo();
   if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
     type = type->getField("addr")->type;
   if (!type->substitutions.n)
@@ -223,10 +228,7 @@ returnInfoArrayIndex(CallExpr* call) {
 
 static Type*
 returnInfoGetMember(CallExpr* call) {
-  SymExpr* sym1 = toSymExpr(call->get(1));
-  if (!sym1)
-    INT_FATAL(call, "bad member primitive");
-  AggregateType* ct = toAggregateType(sym1->var->type);
+  AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
   if (ct->symbol->hasFlag(FLAG_REF))
     ct = toAggregateType(ct->getValType());
   if (!ct)

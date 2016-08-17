@@ -340,7 +340,7 @@ module String {
      */
     proc this(i: int) : string {
       if boundsChecking && (i <= 0 || i > this.len)
-        then halt("index out of bounds of string");
+        then halt("index out of bounds of string: ", i);
 
       var ret: string;
       const newSize = chpl_here_good_alloc_size(2);

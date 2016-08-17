@@ -17,6 +17,7 @@
 
 UTIL_SRCS = \
 	clangUtil.cpp \
+	exprAnalysis.cpp \
 	files.cpp \
 	llvmAggregateGlobalOps.cpp \
 	llvmGlobalToWide.cpp \

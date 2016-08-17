@@ -1,0 +1,8 @@
+semantic: what should happen when calling an int method on a sync int variable?
+
+* wait for the variable to become full, then empty it?
+* ignore the variable's full/empty state?
+* compile-time error?
+
+This was discussed on the internal mailing list starting 8/01/2016
+re: Minor issue with class sync vars on Master

@@ -157,8 +157,10 @@ bool isBuiltinExternCFunction(const char* cname);
 std::string numToString(int64_t num);
 std::string int64_to_string(int64_t i);
 std::string uint64_to_string(uint64_t i);
+std::string zlineToString(BaseAST* ast);
+void zlineToFileIfNeeded(BaseAST* ast, FILE* outfile);
+const char* idCommentTemp(BaseAST* ast);
 void genComment(const char* comment, bool push=false);
-void genIdComment(int id);
 void flushStatements(void);
 
 

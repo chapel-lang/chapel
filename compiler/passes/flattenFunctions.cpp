@@ -273,6 +273,7 @@ void
 flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   compute_call_sites();
 
+  Vec<FnSymbol*> outerFunctionSet;
   Vec<FnSymbol*> nestedFunctionSet;
   forv_Vec(FnSymbol, fn, nestedFunctions)
     nestedFunctionSet.set_add(fn);
@@ -286,6 +287,8 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
 
   // iterate to get outer vars in a function based on outer vars in
   // functions it calls
+  // Also handle finding outer functions that are calling an
+  // inner function, since these will also need the new arguments.
   bool change;
   do {
     change = false;
@@ -310,6 +313,36 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
           }
         }
       }
+
+      forv_Vec(CallExpr, call, *fn->calledBy) {
+        //
+        // call not in a nested function; handle the toFollower/toLeader cases
+        // Note: outerCall=true implies the 'call' does not see defPoint
+        // of the var 'use->key' anywhere in call's enclosing scopes. With
+        // toFollower/toLeader, the 'call' does not see defPoint of 'fn' either.
+        //
+        bool outerCall = false;
+        if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {
+          if (!nestedFunctionSet.set_in(parent)) {
+            form_Map(SymbolMapElem, use, *uses) {
+              if (use->key->defPoint->parentSymbol != parent &&
+                  !isOuterVar(use->key, parent))
+                outerCall = true;
+            }
+            if (outerCall) {
+              outerFunctionSet.set_add(parent);
+              nestedFunctionSet.set_add(parent);
+              nestedFunctions.add(parent);
+              SymbolMap* usesCopy = new SymbolMap();
+              form_Map(SymbolMapElem, use, *uses) {
+                usesCopy->put(use->key, gNil);
+              }
+              args_map.put(parent, usesCopy);
+              change = true;
+            }
+          }
+        }
+      }
     }
   } while (change);
 
@@ -321,31 +354,9 @@ flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
     SymbolMap* uses = args_map.get(fn);
     forv_Vec(CallExpr, call, *fn->calledBy) {
 
-      //
-      // call not in a nested function; handle the toFollower/toLeader cases
-      // Note: outerCall=true implies the 'call' does not see defPoint
-      // of the var 'use->key' anywhere in call's enclosing scopes. With
-      // toFollower/toLeader, the 'call' does not see defPoint of 'fn' either.
-      //
       bool outerCall = false;
-      if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {
-        if (!nestedFunctionSet.set_in(parent)) {
-          form_Map(SymbolMapElem, use, *uses) {
-            if (use->key->defPoint->parentSymbol != parent &&
-                !isOuterVar(use->key, parent))
-              outerCall = true;
-          }
-          if (outerCall) {
-            nestedFunctionSet.set_add(parent);
-            nestedFunctions.add(parent);
-            SymbolMap* usesCopy = new SymbolMap();
-            form_Map(SymbolMapElem, use, *uses) {
-              usesCopy->put(use->key, gNil);
-            }
-            args_map.put(parent, usesCopy);
-          }
-        }
-      }
+      if (FnSymbol* parent = toFnSymbol(call->parentSymbol))
+        outerCall = outerFunctionSet.set_in(parent);
 
       addVarsToActuals(call, uses, outerCall);
     }

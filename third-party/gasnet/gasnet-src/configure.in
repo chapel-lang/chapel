@@ -33,7 +33,7 @@ AC_VALIDATE_CACHED_SYSTEM_TUPLE
 dnl Public release version packaging identifier:
 AC_DEFUN([GASNET_RELEASE_VERSION_MAJOR_D],[1])
 AC_DEFUN([GASNET_RELEASE_VERSION_MINOR_D],[26])
-AC_DEFUN([GASNET_RELEASE_VERSION_PATCH_D],[3])
+AC_DEFUN([GASNET_RELEASE_VERSION_PATCH_D],[4])
 dnl GASNet spec version:
 AC_DEFUN([GASNET_SPEC_VERSION_MAJOR_D],[1])
 AC_DEFUN([GASNET_SPEC_VERSION_MINOR_D],[8])
@@ -2030,25 +2030,11 @@ am__fastdepCXX_TRUE='#'
 am__fastdepCXX_FALSE=
 
 dnl GASNET_TOOLSONLY_FALSE_BEGIN
-GASNET_IF_DISABLED(auto-conduit-detect, [Enable/disable automatic detection of supported network conduits (enabled by default)], [enabled_auto_detect=no], [enabled_auto_detect=yes])
+GASNET_IF_DISABLED(auto-conduit-detect, [Enable/disable automatic detection of supported network conduits (enabled by default)], 
+                   [enabled_auto_detect=no;_conduit_auto_reason=disabled], 
+		   [enabled_auto_detect=yes;_conduit_auto_reason=auto])
 dnl GASNET_TOOLSONLY_FALSE_END
 
-CONDUITS=
-AC_SUBST(CONDUITS)
-# reporting file output at completion
-AC_DEFUN([CONDUIT_LIST_FILE], [
-  if test -n "$CONDUIT_LIST" ; then
-    CONDUIT_LIST_CLEAN=no
-  else
-    CONDUIT_LIST=.gasnet-conduit-list.tmp
-    CONDUIT_LIST_CLEAN=yes
-  fi
-])
-CONDUIT_LIST_FILE()
-echo > $CONDUIT_LIST
-echo "----------------------------------------------------------------------" >> $CONDUIT_LIST
-echo "GASNet configuration: " >> $CONDUIT_LIST
-echo " " >> $CONDUIT_LIST
 dnl CONDUIT_BEGIN(lowername, desc)
 dnl sets enabled_<lowername> to yes or no for whether conduit should be enabled
 AC_DEFUN([CONDUIT_BEGIN],[
@@ -2059,9 +2045,9 @@ AC_DEFUN([CONDUIT_BEGIN],[
  enabled_[]$1=no
 dnl GASNET_TOOLSONLY_FALSE_BEGIN
  GASNET_IF_ENABLED_WITH_AUTO($1, Enable/disable the CONDUIT_DESC (auto-detected),
-  [enabled_[]$1=yes;force_[]$1=yes],
-   enabled_[]$1=no,
-   enabled_[]$1=$enabled_auto_detect)
+  [enabled_[]$1=yes;force_[]$1=yes;  _conduit_reason_[]$1=enabled],
+  [enabled_[]$1=no;                  _conduit_reason_[]$1=disabled],
+  [enabled_[]$1=$enabled_auto_detect;_conduit_reason_[]$1=$_conduit_auto_reason])
 dnl GASNET_TOOLSONLY_FALSE_END
 ])
 dnl CONDUIT_DISALLOW_SEGMENT(segment_type)
@@ -2081,18 +2067,29 @@ dnl CONDUIT_END(test_conduit_enabled)
 AC_DEFUN([CONDUIT_END],[
   if test "$gasnet_toolsonly_mode" = "no" ; then
     if $1; then
-      _conduit_enabled_flagstr=ON
-      CONDUITS="$CONDUITS CONDUIT_NAME"
+      _conduit_enabled_[]CONDUIT_NAME=yes
+      _conduit_flagstr="ON    ($_conduit_reason_[]CONDUIT_NAME)"
     else
       if test "$force_[]CONDUIT_NAME" = yes ; then
        GASNET_MSG_ERROR([User requested --enable-CONDUIT_NAME but I don't know how to build CONDUIT_NAME programs for your system])
       fi
-      _conduit_enabled_flagstr=OFF
+      _conduit_enabled_[]CONDUIT_NAME=no
+      if test "$_conduit_reason_[]CONDUIT_NAME" = "auto" ; then
+        _conduit_reason_[]CONDUIT_NAME="not found"
+      fi
+      _conduit_flagstr="OFF   ($_conduit_reason_[]CONDUIT_NAME)"
     fi
-    echo "  CONDUIT_DESC m4_substr([                                                  ],len(CONDUIT_DESC))$_conduit_enabled_flagstr" >> $CONDUIT_LIST
+    _conduit_desc_[]CONDUIT_NAME="  CONDUIT_DESC m4_substr([                                                  ],len(CONDUIT_DESC))$_conduit_flagstr"
   fi 
   popdef([CONDUIT_NAME])
   popdef([CONDUIT_DESC])
+])
+dnl CONDUIT_OUTPUT(lowername)
+AC_DEFUN([CONDUIT_OUTPUT],[
+  if test "$_conduit_enabled_[]$1" = "yes" ; then
+    CONDUITS="$CONDUITS $1"
+  fi
+  echo "$_conduit_desc_[]$1" >> $CONDUIT_LIST
 ])
 AM_CONDITIONAL(TOOLSONLY_MODE, test "$gasnet_toolsonly_mode" = "yes")
 AM_CONDITIONAL(CONDUIT_MODE, test "$gasnet_toolsonly_mode" = "no")
@@ -2210,15 +2207,7 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_LINK],[GASNET_LINKHELPER_TRY_INNER([LINK],$@)])
 AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$@)])
 
 #---------------------------------------------------------------------------------------------------------------
-# CONDUIT CONFIGURATIONS
-#---------------------------------------------------------------------------------------------------------------
-if test "$gasnet_toolsonly_mode" = "no" ; then
-echo " Portable conduits:" >> $CONDUIT_LIST
-echo " -----------------" >> $CONDUIT_LIST
-fi
-#---------------------------------------------------------------------------------------------------------------
-
-# Do C++ configuration
+# C++ configuration
   AC_LANG_SAVE
 
   # when called by Titanium configure, target C++ compiler will be in TARGET_CXX(FLAGS)
@@ -2408,8 +2397,13 @@ if test "$have_cxx" = no; then
   GASNET_MSG_WARN([Disabling udp-conduit, which requires C++])
 fi
 
+#---------------------------------------------------------------------------------------------------------------
+# CONDUIT CONFIGURATIONS
+#---------------------------------------------------------------------------------------------------------------
+
+#---------------------------------------------------------------------------------------------------------------
 # UDP/AMUDP Configuration
-CONDUIT_BEGIN(udp,[portable UDP network conduit (udp)])
+CONDUIT_BEGIN(udp,[Portable UDP/IP conduit (udp)])
 if test $enabled_udp = yes; then
  if test "$have_cxx" = yes; then
   # detect libraries necessary for udp-* backends
@@ -2464,7 +2458,7 @@ GASNET_IF_ENABLED_WITH_AUTO(mpi-compat, Enable/disable MPI compatibility (auto-d
 dnl GASNET_TOOLSONLY_FALSE_END
 
 # --enable-mpi controls mpi-conduit
-CONDUIT_BEGIN(mpi,[portable MPI-1.1/2.x network conduit (mpi)])
+CONDUIT_BEGIN(mpi,[Portable MPI conduit (mpi)])
 
 AC_DEFUN([GASNET_CHECK_MPI_CC],[
   if test "x$MPI_CC" = 'xno' >/dev/null; then
@@ -2681,7 +2675,7 @@ AM_CONDITIONAL(USE_MPI, test "$have_mpi" = yes)
 #-----------------------------------------------------------------------------------------------
 # SMP configuration
 
-CONDUIT_BEGIN(smp,[portable SMP-loopback network conduit (smp)])
+CONDUIT_BEGIN(smp,[Portable SMP-loopback conduit (smp)])
 if test $enabled_smp = yes; then
   if test x"$with_pshm" != xno; then
     dnl TODO: factor socket related probes
@@ -2773,19 +2767,10 @@ AM_CONDITIONAL(USE_SMP_CONDUIT, test "$enabled_smp" = yes)
 CONDUIT_END([test "$enabled_smp" = yes])
 
 #--------------------------------------------------------------------------------------------------------
-
-if test "$gasnet_toolsonly_mode" = "no" ; then
-echo " " >> $CONDUIT_LIST
-echo " Native, high-performance conduits:" >> $CONDUIT_LIST
-echo " ---------------------------------" >> $CONDUIT_LIST
-fi
-dnl Please order network probes from LOW to HIGH precedence for selection
-
-#--------------------------------------------------------------------------------------------------------
 # MXM configuration
 #
 
-CONDUIT_BEGIN(mxm,[Mellanox MXM conduit (mxm)])
+CONDUIT_BEGIN(mxm,[Mellanox InfiniBand MXM conduit (mxm)])
 have_mxm=no
 if test "$have_fork" = no; then
     GASNET_MSG_WARN([mxm-conduit requires or fork() ($fork_reason) for startup - disabling mxm])
@@ -2916,8 +2901,9 @@ CONDUIT_END([test "$have_mxm" = yes])
 # PSM conduit
 #
 
-CONDUIT_BEGIN(psm,[Intel PSM conduit (psm)])
+CONDUIT_BEGIN(psm,[Intel OmniPath PSM2 conduit (psm)])
 have_psm=no
+if test "$enabled_psm" = yes; then
     #
     # Either PSM was required explicitly, or we just need to probe for its existence
     #
@@ -3032,7 +3018,7 @@ have_psm=no
   fi
   GASNET_PSM_SPAWNER_CONF=$gasnet_psm_spawner_conf
   AC_SUBST(GASNET_PSM_SPAWNER_CONF)
-
+fi
 AC_SUBST(PSM_INCLUDE)
 AC_SUBST(PSM_LIBDIR)
 AC_SUBST(PSM_LIBS)
@@ -3044,7 +3030,7 @@ CONDUIT_END([test "$have_psm" = yes])
 #--------------------------------------------------------------------------------------------------------
 # Portals4 Conduit
 
-CONDUIT_BEGIN(portals4,[Portals4 network conduit (portals4)])
+CONDUIT_BEGIN(portals4,[Portable Portals4 conduit (portals4)])
 if test "$enabled_portals4" = yes; then
   # Start by assuming we do have Portals4
   have_portals4=yes
@@ -3153,7 +3139,7 @@ CONDUIT_END([test "$have_portals4" = yes])
 #--------------------------------------------------------------------------------------------------------
 # IBV configuration
 
-CONDUIT_BEGIN(ibv,[OpenIB/OpenFabrics IB Verbs network conduit (ibv)])
+CONDUIT_BEGIN(ibv,[InfiniBand IB Verbs conduit (ibv)])
 if test "$enabled_ibv$have_mpi_compat$have_fork" = yesnono; then
   enabled_ibv=no
   GASNET_MSG_WARN([ibv-conduit requires either MPI compatibility ($mpi_compat_reason) or fork() ($fork_reason) for startup - disabling ibv])
@@ -3355,6 +3341,7 @@ CONDUIT_END([test "$have_ibv" = yes])
 #--------------------------------------------------------------------------------------------------------
 # Gemini and Aries Conduits
 
+gni_network=""
 AC_DEFUN([GASNET_CHECK_GNI],[
 pushdef([lowername],translit($1,'A-Z','a-z'))
 
@@ -3366,6 +3353,19 @@ case "$target" in
      fi
   ;;
 esac
+
+if test "$gni_network$enabled_[]lowername" = "yes" ; then
+  AC_MSG_CHECKING(for GNI network type)
+  if test "${CRAYPE_NETWORK_TARGET+set}" = set ; then
+    gni_network=${CRAYPE_NETWORK_TARGET}
+  elif test "${XTPE_NETWORK_TARGET+set}" = set ; then
+    gni_network=${XTPE_NETWORK_TARGET}
+  else
+    gni_network="unknown"
+  fi
+  AC_MSG_RESULT($gni_network)
+fi
+
 if test ${gni_network}:${enabled_[]lowername} = lowername[]:yes; then
   have_[]lowername=yes # start by assuming we have it
 
@@ -3490,17 +3490,7 @@ fi
 popdef([lowername])
 ])
 
-AC_MSG_CHECKING(for GNI network type)
-if test "${CRAYPE_NETWORK_TARGET+set}" = set ; then
-  gni_network=${CRAYPE_NETWORK_TARGET}
-elif test "${XTPE_NETWORK_TARGET+set}" = set ; then
-  gni_network=${XTPE_NETWORK_TARGET}
-else
-  gni_network="unknown"
-fi
-AC_MSG_RESULT($gni_network)
-
-CONDUIT_BEGIN(gemini,[Gemini network conduit (gemini)])
+CONDUIT_BEGIN(gemini,[Cray XE/XK Gemini conduit (gemini)])
 CONDUIT_DISALLOW_SEGMENT(everything)
 if test "$enabled_gemini" = yes; then
   GASNET_CHECK_GNI(Gemini)
@@ -3508,7 +3498,7 @@ fi
 AM_CONDITIONAL(USE_GEMINI_CONDUIT, test "$have_gemini" = yes)
 CONDUIT_END([test "$have_gemini" = yes])
 
-CONDUIT_BEGIN(aries,[Aries network conduit (aries)])
+CONDUIT_BEGIN(aries,[Cray XC Aries conduit (aries)])
 CONDUIT_DISALLOW_SEGMENT(everything)
 if test "$enabled_aries" = yes; then
   GASNET_CHECK_GNI(Aries)
@@ -3521,7 +3511,7 @@ CONDUIT_END([test "$have_aries" = yes])
 #--------------------------------------------------------------------------------------------------------
 # SHMEM configuration
 
-CONDUIT_BEGIN(shmem,[Shmem network conduit (shmem)])
+CONDUIT_BEGIN(shmem,[SGI Altix / Cray X1 Shmem conduit (shmem)])
 
 if test $enabled_shmem = yes; then
   SHMEM_FLAVOUR="unknown"
@@ -3600,7 +3590,7 @@ CONDUIT_END([test "$enabled_shmem$have_shmem" = yesyes])
 
 #--------------------------------------------------------------------------------------------------------
 # PAMI configuration
-CONDUIT_BEGIN(pami,[IBM PAMI network conduit (pami)])
+CONDUIT_BEGIN(pami,[IBM BlueGene/Q / Power775 PAMI conduit (pami)])
 if test $enabled_pami = yes; then
   have_pami=yes
 
@@ -3685,7 +3675,7 @@ AM_CONDITIONAL(USE_AMMPI, test "$have_ammpi" = yes)
 #--------------------------------------------------------------------------------------------------------
 # Libfabric Conduit
 
-CONDUIT_BEGIN(ofi,[Libfabric network conduit (ofi)])
+CONDUIT_BEGIN(ofi,[Portable OpenFabrics Interfaces conduit (ofi)])
 if test "$enabled_ofi" = yes; then
   have_ofi=yes
 
@@ -3781,7 +3771,56 @@ CONDUIT_END([test "$have_ofi" = yes])
 dnl GASNET_TOOLSONLY_TRUE_BEGIN
 dnl undefine([GASNET_ENV_DEFAULT_SUPPRESSHELP])
 dnl GASNET_TOOLSONLY_TRUE_END
+CONDUITS=
+AC_SUBST(CONDUITS)
+# reporting file output at completion
+AC_DEFUN([CONDUIT_LIST_FILE], [
+  if test -n "$CONDUIT_LIST" ; then
+    CONDUIT_LIST_CLEAN=no
+  else
+    CONDUIT_LIST=.gasnet-conduit-list.tmp
+    CONDUIT_LIST_CLEAN=yes
+  fi
+])
+CONDUIT_LIST_FILE()
+cat >$CONDUIT_LIST <<EOF
+----------------------------------------------------------------------
+GASNet configuration: 
+
+EOF
+
 dnl GASNET_TOOLSONLY_FALSE_BEGIN
+cat >>$CONDUIT_LIST <<EOF
+ Portable conduits:
+ -----------------
+EOF
+
+# Order portable conduits from LOW to HIGH precedence, clients use order to select defaults
+
+CONDUIT_OUTPUT(smp)
+CONDUIT_OUTPUT(ofi)      dnl Not currently the best choice for any hardware
+CONDUIT_OUTPUT(portals4) dnl Not currently the best choice for any hardware
+CONDUIT_OUTPUT(udp)
+CONDUIT_OUTPUT(mpi)      dnl Should be lower than udp for Ethernet, higher otherwise. How to reliably differentiate?
+
+cat >>$CONDUIT_LIST <<EOF
+
+ Native, high-performance conduits:
+ ---------------------------------
+EOF
+
+# Order native conduits from LOW to HIGH precedence, clients use order to select defaults
+
+CONDUIT_OUTPUT(pami)    dnl Ensure pami-over-ib is lower than ibv
+CONDUIT_OUTPUT(ibv)
+CONDUIT_OUTPUT(mxm)     dnl Mellanox Infiniband takes precedence over vanilla ibv
+CONDUIT_OUTPUT(psm)
+CONDUIT_OUTPUT(gemini)
+CONDUIT_OUTPUT(aries)
+CONDUIT_OUTPUT(shmem)
+
+#--------------------------------------------------------------------------------------------------------
+
 if test -z "$CONDUITS" ; then
   pushdef([COMMONMSG],[If you intend to use GASNet without network support, you must use the
 GASNet_Tools distribution instead (see http://gasnet.lbl.gov).
