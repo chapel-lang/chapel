@@ -46,37 +46,51 @@ class ChapelConfig(object):
     def find(self):
         """ Find chplconfig file path"""
 
-        # Places to look for a chplconfig file
-        chplconfigpath = os.environ.get('CHPL_CONFIG')
+        # Places to look for a chplconfig file, in order of priority
+        chpl_config = os.environ.get('CHPL_CONFIG')
         home = os.path.expanduser('~')
+        chpl_home = os.environ.get('CHPL_HOME')
 
-        # Construct path to chplconfig file, ccpath
-        if chplconfigpath:
-            ccpath = chplconfigpath
-            self.prettypath = '$CHPL_CONFIG/'
-        else:
-            ccpath = home
-            self.prettypath = '~/'
+        if self.chplconfig_found(chpl_config, 'CHPL_CONFIG'):
+            return
+        elif self.chplconfig_found(home, '~'):
+            return
+        elif self.chplconfig_found(chpl_home, 'CHPL_HOME'):
+            return
+
+        # No chplconfig file was found
+        self.chplconfigfile = None
+        return
+
+    def chplconfig_found(self, path, name):
+        """ Check path for chplconfig and set chplconfigfile & prettypath """
+
+        if not path:
+            self.chplconfigfile = None
+            return False
 
         # Search for both visible and hidden files
-        visible = os.path.join(ccpath, 'chplconfig')
-        hidden = os.path.join(ccpath, '.chplconfig')
+        visible = os.path.join(path, 'chplconfig')
+        hidden = os.path.join(path, '.chplconfig')
 
-        # Set self.chplconfigpath if it exists
+        # Set self.chplconfigfile if it exists
         if os.path.isfile(visible):
             self.chplconfigfile = visible
-            self.prettypath += 'chplconfig'
+            self.prettypath = ''.join(['$', name, '/chplconfig'])
+            return True
         elif os.path.isfile(hidden):
             self.chplconfigfile = hidden
-            self.prettypath += '.chplconfig'
+            self.prettypath = ''.join(['$', name, '/.chplconfig'])
+            return True
         else:
             self.chplconfigfile = None
-            if chplconfigpath:
+            if name == 'CHPL_CONFIG':
                 self.warnings.append(
                 (
                     'Warning: No chplconfig or .chplconfig file is found in '
                     'the defined $CHPL_CONFIG\n'
                 ))
+        return False
 
     def parse(self):
         """ Parse chplconfig file for acceptable env var overrides """
