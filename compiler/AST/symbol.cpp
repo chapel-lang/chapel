@@ -152,7 +152,28 @@ bool Symbol::inTree() {
 }
 
 
+static Qualifier qualifierForArgIntent(IntentTag intent)
+{
+  switch (intent) {
+    case INTENT_IN:        return kVal;
+    case INTENT_OUT:       return kRef;
+    case INTENT_INOUT:     return kRef;
+    case INTENT_CONST:     return kConst;
+    case INTENT_CONST_IN:  return kConstVal;
+    case INTENT_REF:       return kRef;
+    case INTENT_CONST_REF: return kConstRef;
+    case INTENT_PARAM:     return kParam;
+    case INTENT_TYPE:      return kBlank; // not sure about this one
+    case INTENT_BLANK:     return kBlank;
+  }
+  return kBlank;
+}
+
 QualifiedType Symbol::qualType() {
+  if (ArgSymbol* arg = toArgSymbol(this)) {
+    return QualifiedType(type, qualifierForArgIntent(arg->intent));
+  }
+
   return QualifiedType(type, qual);
 }
 
