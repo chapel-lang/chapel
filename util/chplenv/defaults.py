@@ -41,6 +41,7 @@ class ChapelConfig(object):
         """ Wrapper for chplconfig[var] intended to mirror os.environ.get() """
         if var in self.chplconfig.keys():
             return self.chplconfig[var]
+        return None
 
     def find(self):
         """ Find chplconfig file path"""
@@ -88,25 +89,28 @@ class ChapelConfig(object):
 
             for linenum, fields in enumerate([lf for lf in linefields]):
 
-                if self.invalid_assignment(fields, linenum):
+                if not self.valid_assignment(fields, linenum):
                     continue
 
                 var, val = [f.strip() for f in fields]
 
-                if self.invalid_entry(var, val, linenum):
+                if not self.valid_variable(var, val, linenum):
                     continue
 
                 self.chplconfig[var] = val
 
-    def invalid_assignment(self, fields, linenum):
-        """ Check if formatting of fields is formatted like 'ENV = VAR' """
+    def valid_assignment(self, fields, linenum):
+        """ Check if the assignment is correctly formatted, e.g. ENV = VAR """
+
+        valid = True
 
         # Check if line is a comment (has no '=')
         if len(fields) < 2:
-            return True
+            valid = False
 
-        # Check if line is incorrectly formatted
+        # Check if line is incorrectly formatted (more than 1 '=')
         elif len(fields) > 2:
+            valid = False
             line = '='.join(fields).strip('\n')
             self.warnings.append(
             (
@@ -115,22 +119,21 @@ class ChapelConfig(object):
                 '         Expected format is:\n'
                 '         > CHPL_VAR = VALUE\n'
             ).format(self.prettypath, linenum, line))
-            return True
 
-        return False
+        return valid
 
+    def valid_variable(self, var, val, linenum):
+        """ Check if variable is valid and not duplicated """
 
-    def invalid_entry(self, var, val, linenum):
-        """ Check if entry for variable assignment is valid """
-
+        valid = True
         # Check if var is in the list of approved special variables
         if var not in chplvars:
+            valid = False
             self.warnings.append(
             (
                 'Warning: {0}:line {1}: '
                 '"{2}" is not an acceptable variable\n'
             ).format(self.prettypath, linenum, var))
-            return True
 
         # Warn about duplicate entries, but don't skip, just overwrite
         elif var in self.chplconfig.keys():
@@ -140,7 +143,7 @@ class ChapelConfig(object):
                 'Duplicate entry of "{2}"\n'
             ).format(self.prettypath, linenum, var))
 
-        return False
+        return valid
 
     def printwarnings(self):
         """ Print any warnings accumulated throughout constructor """
