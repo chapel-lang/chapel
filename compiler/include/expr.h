@@ -248,7 +248,6 @@ public:
 private:
   GenRet          codegenPrimitive();
   GenRet          codegenPrimMove();
-  bool            codegenPrimMoveRhsIsSpecialPrimop();
 
   void            codegenInvokeOnFun();
   void            codegenInvokeTaskFun(const char* name);

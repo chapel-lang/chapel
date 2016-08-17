@@ -886,7 +886,17 @@ static void applyGetterTransform(CallExpr* call) {
     if (VarSymbol* var = toVarSymbol(symExpr->var)) {
       if (var->immediate->const_kind == CONST_KIND_STRING) {
         call->baseExpr->replace(new UnresolvedSymExpr(var->immediate->v_string));
-        call->insertAtHead(gMethodToken);
+        if (!strcmp(var->immediate->v_string, "init")) {
+          // Transform:
+          //   call(call(. x "init") args)
+          // into:
+          //   call(call(init meme=x) args)
+          // because initializers are handled differently from other methods
+          Expr* firstArg = call->get(1)->remove();
+          call->insertAtHead(new NamedExpr("meme", firstArg));
+        } else {
+          call->insertAtHead(gMethodToken);
+        }
       } else {
         INT_FATAL(call, "unexpected case");
       }

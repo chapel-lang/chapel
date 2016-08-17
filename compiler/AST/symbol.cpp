@@ -687,6 +687,22 @@ GenRet VarSymbol::codegen() {
         ret.c += cname;
         ret.isLVPtr = GEN_PTR;
       }
+      // Print string contents in a comment if developer mode
+      // and savec is set.
+      if (developer &&
+          0 != strcmp(saveCDir, "") &&
+          immediate &&
+          ret.chplType == dtString &&
+          immediate->const_kind == CONST_KIND_STRING) {
+        if (strstr(immediate->v_string, "/*") ||
+            strstr(immediate->v_string, "*/")) {
+          // Don't emit comment b/c string contained comment character.
+        } else {
+          ret.c += " /* \"";
+          ret.c += immediate->v_string;
+          ret.c += "\" */";
+        }
+      }
     }
     return ret;
   } else {
@@ -1956,15 +1972,9 @@ void FnSymbol::codegenHeaderC(void) {
   if (fGenIDS)
     fprintf(outfile, "%s", idCommentTemp(this));
 
-    // Prepend function header with necessary __global__ declaration
-
-    //
-    // A function prototype can be labeled static if it is neither
-    // exported nor external
-    //
-    if (!fIncrementalCompilation && !hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN)) {
-      fprintf(outfile, "static ");
-    }
+  if (!fIncrementalCompilation && !hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN)) {
+    fprintf(outfile, "static ");
+  }
   fprintf(outfile, "%s", codegenFunctionType(true).c.c_str());
 }
 

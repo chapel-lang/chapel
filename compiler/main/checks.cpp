@@ -362,6 +362,11 @@ void check_insertLineNumbers()
   check_afterLowerIterators();
 }
 
+void check_denormalize() {
+  //do we need to call any checks here ?
+  //or implement new checks ?
+}
+
 void check_codegen()
 {
   // This pass should not change the AST, so no checks are required.

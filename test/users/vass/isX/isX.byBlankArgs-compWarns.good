@@ -324,11 +324,17 @@ isSyncValue
 isSyncType
 
 _singlevar(int(64))
+isRecord
+isRecordValue
+isRecordType
 isSingle
 isSingleValue
 isSingleType
 
 _singlevar(real(64))
+isRecord
+isRecordValue
+isRecordType
 isSingle
 isSingleValue
 isSingleType
