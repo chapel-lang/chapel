@@ -68,7 +68,7 @@ def parse():
         if chplconfigpath:
             err = """
  Warning: $CHPL_CONFIG is defined,
- but no $CHPL_CONFIG/.chplconfig file is found"""
+ but no $CHPL_CONFIG/.chplconfig file is found\n"""
             stderr.write(err)
         return chplconfig
 
