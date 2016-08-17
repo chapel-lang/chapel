@@ -109,14 +109,16 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 //
 
 /*
-
-  .. warning::
-
-    As of 1.13 the Stencil distribution is neither heavily documented nor tested.
-    We aim to improve this situation in the future.
+  
+  The Stencil distribution attempts to reduce communication for nearby array
+  accesses by creating read-only caches for elements within a user-defined
+  distance. These caches exist for the space between locales as well as the
+  space outside of the ``boundingBox``. This approach avoid many fine-grained
+  GETs and PUTs during the computation phase, and moves the communication into
+  its own step within the ``updateFluff`` function.
 
   For information on how indices are partitioned, see the Block distribution
-  documentation. The Stencil distribution re-uses that same logic.
+  documentation. The Stencil distribution re-uses the same logic.
 
   The ``Stencil`` class constructor is defined as follows:
 
@@ -133,22 +135,32 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
         fluff: rank*idxType       = makeZero(rank),
         periodic: bool            = false)
 
-  The ``fluff`` argument indicates the requested space for ghost cells. ``fluff``
-  will be used to expand the ``boundingBox`` in each direction to increase the
-  index space that can be accessed. The default for each component of the tuple
-  is zero.
+  The ``fluff`` argument indicates the requested number of ghost cells in each
+  direction. ``fluff`` will be used to expand the ``boundingBox`` in each
+  direction to increase the index space that can be accessed. The default for
+  each component of the tuple is zero. This allows for accessing an array
+  with indices that are not within ``boundingBox`` domain.
 
-  The ``periodic`` argument indicates whether or not the stencil should treat
-  the array as a discrete chunk in a larger system. When enabled, the ghost cells
-  outside of ``boundingBox`` will contain values as if the array data were
-  replicated on all sides of the array. The ``periodic`` feature is disabled by
-  default.
+  The ``periodic`` argument indicates whether or not the stencil distribution
+  should treat the array as a discrete chunk in a larger space. When enabled,
+  the ghost cells outside of ``boundingBox`` will contain values as if the data
+  were replicated on all sides of the space. When disabled, the outermost ghost
+  cells will be initialized with the default value of the element's type. The
+  ``periodic`` functionality is disabled by default.
+
+  .. note::
+  
+     Note that this domain does not currently handle indices outside of
+     the expanded bounding box, so a user must manually wrap periodic indices
+     themselves.
+  
+  Iterating over a Stencil-distributed domain or array will only yield indices
+  within the ``boundingBox``.
 
   ** Updating the Ghost Cache **
 
   Once you have completed a series of writes to the array, you will need to
-  call the special ``updateFluff`` function to update the ghost cache for each
-  locale:
+  call the ``updateFluff`` function to update the ghost cache for each locale:
 
   .. code-block:: chapel
 
@@ -160,10 +172,14 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
     [(i,j) in Space] A[i,j] = i*10 + j;
 
+    // At this point, the ghost cell caches are out of date
+
     A.updateFluff();
 
-  After updating, any read from the array should be up-to-date. The ``updateFluff``
-  function does not currently accept any arguments.
+    // ghost caches are now up-to-date
+
+  After updating, any read from the array should be up-to-date. The
+  ``updateFluff`` function does not currently accept any arguments.
 
   ** Reading and Writing to Array Elements **
 
@@ -172,9 +188,9 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   attempt to read from the local ghost cache first. If the index is not owned by
   the ghost space, then a remote read from the owner locale occurs.
 
-  Any write to array data will be applied to the 'actual', non-ghost-cache data.
-  If you do write to the ghost cache, that value will be overwritten during the
-  next ``updateFluff`` call.
+  Any write to array data will be applied to the 'actual', non-ghost-cache
+  data. If you do write to the ghost cache, that value will be overwritten
+  during the next ``updateFluff`` call.
 
   ** Modifying Exterior Ghost Cells **
 
