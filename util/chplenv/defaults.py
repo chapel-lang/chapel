@@ -102,7 +102,7 @@ class ChapelConfig(object):
                 '         > {2}\n'
                 '         Expected format is:\n'
                 '         > CHPL_VAR = VALUE\n'
-            ).format(_prettypath(), linenum, line))
+            ).format(self.prettypath, linenum, line))
             return True
 
         return False
@@ -126,7 +126,7 @@ class ChapelConfig(object):
             (
                 'Warning: {0}:line {1}: '
                 'Duplicate entry of "{2}"\n'
-            ).format(prettypath, linenum, var))
+            ).format(self.prettypath, linenum, var))
             return False
 
         return False
@@ -135,7 +135,7 @@ class ChapelConfig(object):
         """ Print any warnings accumulated throughout constructor """
         sys.stderr.write('\n')
         for warning in self.warnings:
-            stderr.write(warning)
+            sys.stderr.write(warning)
         sys.stderr.write('\n')
 
 
