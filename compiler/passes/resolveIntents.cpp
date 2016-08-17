@@ -107,9 +107,10 @@ IntentTag concreteIntent(IntentTag existingIntent, Type* t) {
 static IntentTag blankIntentForThisArg(Type* t) {
   // todo: be honest when 't' is an array or domain
 
-  // MPF - this is surprising to me. Apparently it's INTENT_CONST_IN
-  // because this as always a class or a ref(something) ?
-  return INTENT_CONST_IN;
+  if (isRecord(t) || isUnion(t))
+    return INTENT_REF;
+  else
+    return INTENT_CONST_IN;
 }
 
 IntentTag concreteIntentForArg(ArgSymbol* arg) {
