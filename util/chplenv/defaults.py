@@ -23,7 +23,10 @@ class ChapelConfig(object):
         # List of warnings to track if a warning has occurred
         self.warnings = []
 
-        # Find chplconfigfile and prettypath
+        self.chplconfigfile = None
+        self.prettypath = None
+
+        # Find and define chplconfigfile and prettypath
         self.find()
 
         # Populate chplconfig
@@ -85,7 +88,6 @@ class ChapelConfig(object):
 
             for linenum, fields in enumerate([lf for lf in linefields]):
 
-
                 if self.invalid_assignment(fields, linenum):
                     continue
 
@@ -137,7 +139,6 @@ class ChapelConfig(object):
                 'Warning: {0}:line {1}: '
                 'Duplicate entry of "{2}"\n'
             ).format(self.prettypath, linenum, var))
-            return False
 
         return False
 

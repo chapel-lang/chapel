@@ -1,10 +1,8 @@
 /*
-   Testing the correcntess of the .chplconfig file
+   Testing the correcntess of the chplconfig file
 
    The actual testings takes place in correctness.precomp, this can be
     considered the .good file
-
-   There is a hidden .chplconfig file living in this directory
 
  */
 
