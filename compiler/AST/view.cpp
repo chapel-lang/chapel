@@ -371,6 +371,8 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
 
   if (DefExpr* def = toDefExpr(ast)) {
     printf(" ");
+    if (ArgSymbol* arg = toArgSymbol(def->sym))
+      printf("intent %s ", arg->intentDescrString());
     writeFlags(stdout, def->sym);
   }
 

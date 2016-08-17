@@ -73,6 +73,9 @@ var pieceDef: [0..#numPieces] [0..3] direction
                [ E, SE,  E,  E],
                [ E,  E,  E, SW]];
 
+// Max # solutions
+config const n = 2100;
+
 
 /* To minimize the amount of work done in the recursive solve function
    below, allocate enough space for all legal rotations of each piece
@@ -86,16 +89,12 @@ var pieces, nextCell: [0..#numPieces] [0..#boardCells] [0..11] int,
     pieceCounts:      [0..#numPieces] [0..#boardCells] int,
 
     solutionCount: atomic int,
-    maxSolutions = 2100,
 
-    solutions: [0..#maxSolutions] [0..#boardCells] int,
+    solutions: [0..#n] [0..#boardCells] int,
 
     badEvenTriple, badOddTriple: [0..32767] bool;
 
-
-proc main(args: [] string) {
-  if args.size > 1 then
-    maxSolutions = args[1]:int;
+proc main() {
   calcPieces();
   calcRows();
   solve();
@@ -483,7 +482,7 @@ proc boardHasIslands(cell, board) {
 }
 
 proc solveLinear(in depth, in cell, in board, in avail, solNums, solMasks) {
-  if solutionCount.read() >= maxSolutions then
+  if solutionCount.read() >= n then
     return;
 
   while (board & (1 << cell)) do
