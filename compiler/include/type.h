@@ -60,7 +60,7 @@ public:
   // Interface for BaseAST
   virtual GenRet   codegen();
   virtual bool     inTree();
-  virtual Type*    typeInfo();
+  virtual QualifiedType qualType();
   virtual void     verify();
 
   virtual void     codegenDef();
@@ -112,6 +112,70 @@ private:
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
+
+
+// a Qualifier allows the compiler to distinguish between
+// different properties of a variable (const or ref-ness in particular)
+// without changing its type to a ref or wide ref type.
+enum Qualifier {
+  // The abstract qualifiers
+  kBlank,
+  kConst,
+  kRef,
+  kConstRef,
+
+  // The concrete qualifiers
+  kParam,
+
+  kVal,
+  kNarrowRef,
+  kWideRef,
+
+  kConstVal,
+  kConstNarrowRef,
+  kConstWideRef
+};
+
+// A QualifiedType is basically a tuple of (qualifier, type).
+class QualifiedType {
+public:
+
+  explicit QualifiedType(Type* type)
+    : type(type), qual(kBlank)
+  {
+  }
+
+  QualifiedType(Type* type, Qualifier qual)
+    : type(type), qual(qual)
+  {
+  }
+
+  bool isAbstract() const {
+    return (qual == kBlank || qual == kConst ||
+            qual == kRef || qual == kConstRef);
+  }
+  bool isParam() const {
+    return (qual == kParam);
+  }
+  bool isVal() const {
+    return (qual == kVal || qual == kConstVal);
+  }
+  bool isRef() const {
+    return (qual == kRef || qual == kConstRef ||
+            qual == kNarrowRef || qual == kConstNarrowRef);
+  }
+  bool isWideRef() const {
+    return (qual == kWideRef || qual == kConstWideRef);
+  }
+
+  Type* getType() const {
+    return type;
+  }
+
+private:
+  Type*      type;
+  Qualifier  qual;
+};
 
 class EnumType : public Type {
  public:
