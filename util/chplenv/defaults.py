@@ -10,42 +10,14 @@ from sys import stderr
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
+import utils
+
 # Global dictionary that will be populated w/ .chplconfig file contents
-chplconfig = {}
-
-# Globally track if we've parsed already
-parsed = False
-
-# Valid options for override by .chplconfig file
-CHPLS = [
-         'CHPL_HOME',
-         'CHPL_HOST_PLATFORM',
-         'CHPL_HOST_COMPILER',
-         'CHPL_TARGET_PLATFORM',
-         'CHPL_TARGET_COMPILER',
-         'CHPL_TARGET_ARCH',
-         'CHPL_LOCALE_MODEL',
-         'CHPL_COMM',
-         'CHPL_COMM_SUBSTRATE',
-         'CHPL_GASNET_SEGMENT',
-         'CHPL_TASKS',
-         'CHPL_LAUNCHER',
-         'CHPL_TIMERS',
-         'CHPL_UNWIND',
-         'CHPL_MEM',
-         'CHPL_MAKE',
-         'CHPL_ATOMICS',
-         'CHPL_NETWORK_ATOMICS',
-         'CHPL_GMP',
-         'CHPL_HWLOC',
-         'CHPL_REGEXP',
-         'CHPL_WIDE_POINTERS',
-         'CHPL_LLVM',
-         'CHPL_AUX_FILESYS',
-         ]
+# The value of 'None' track that .chplconfig has not yet been parsed
+chplconfig = None
 
 
-def parse():
+def _parse():
     """ Parse .chplconfig file for acceptable env var overrides """
 
     # Default initialized to empty dictionary
@@ -66,11 +38,13 @@ def parse():
     # Confirm that .chplconfig file exists
     if not os.path.isfile(chplconfigfile):
         if chplconfigpath:
-            err = """
- Warning: $CHPL_CONFIG is defined,
- but no $CHPL_CONFIG/.chplconfig file is found\n"""
+            err = ('Warning: $CHPL_CONFIG is defined, '
+                   'but no $CHPL_CONFIG/.chplconfig file is found\n')
             stderr.write(err)
         return chplconfig
+
+    # Value of None tracks that no errors have occurred
+    err = None
 
     # Parse the .chplconfig file and populate the chplconfig dict
     with open(chplconfigfile, 'r') as ccfile:
@@ -83,45 +57,47 @@ def parse():
 
             # Check if line is incorrectly formatted
             if len(fields) > 2:
-                line = '='.join(fields)
-                err = """
- Warning: {0}:line {1}:
-     Received incorrect format:
-         > {2}
-     Expected format is:
-         > CHPL_VAR = VALUE\n""".format(prettypath, linenum, line)
+                line = '='.join(fields).strip('\n')
+                err = ('Warning: {0}:line {1}: Received incorrect format:\n'
+                       '         > {2}\n'
+                       '         Expected format is:\n'
+                       '         > CHPL_VAR = VALUE\n'
+                      ).format(prettypath, linenum, line)
                 stderr.write(err)
                 continue
 
             var, val = [f.strip() for f in fields]
 
             # Check if var is in the list of approved special variables
-            if var not in CHPLS:
-                err = """
- Warning: {0}:line {1}:
-     "{2}" is not an acceptable variable\n""".format(prettypath, linenum, var)
+            if var not in utils.chplvars:
+                err = ('Warning: {0}:line {1}: '
+                       '"{2}" is not an acceptable variable\n'
+                      ).format(prettypath, linenum, var)
                 stderr.write(err)
                 continue
 
             # Warn about duplicate entries, but don't skip, just overwrite
             if var in chplconfig.keys():
-                err = """
- Warning: {0}:line {1}:
-    Duplicate entry of "{2}"\n""".format(prettypath, linenum, var)
+                err = ('Warning: {0}:line {1}: '
+                       'Duplicate entry of "{2}"\n'
+                      ).format(prettypath, linenum, var)
                 stderr.write(err)
 
             chplconfig[var] = val
 
+    # Separate warnings output from printchplenv output, if errors occurred
+    if err is not None:
+        stderr.write('\n')
+
     return chplconfig
 
 
-def chplconfig_get(var):
+def _chplconfig_get(var):
     """ Wrapper for chplconfig access similar to os.environ.get() """
-    global chplconfig, parsed
+    global chplconfig
 
-    if not parsed:
-        chplconfig = parse()
-        parsed = True
+    if chplconfig is None:
+        chplconfig = _parse()
 
     if var in chplconfig.keys():
         return chplconfig[var]
@@ -137,7 +113,7 @@ def get(var, default=None):
         return value
 
     # Check .chplconfig if it's not defined as an env var
-    value = chplconfig_get(var)
+    value = _chplconfig_get(var)
     if value:
         return value
 
@@ -146,9 +122,9 @@ def get(var, default=None):
 
 def _main():
     """ Print the default overrides that are currently set """
-    for CHPL in CHPLS:
-        if get(CHPL):
-            print(CHPL,'=',get(CHPL))
+    for var in utils.chplvars:
+        if get(var):
+            print(var,'=',get(var))
 
 
 if __name__ == '__main__':
