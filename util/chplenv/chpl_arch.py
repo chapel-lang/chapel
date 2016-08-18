@@ -9,8 +9,8 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_comm, chpl_compiler, chpl_platform, overrides
-from utils import memoize, run_command
 from etc import CompVersion, compiler_is_prgenv, get_compiler_version
+from utils import memoize, run_command
 
 
 class argument_map(object):
