@@ -180,12 +180,12 @@ module DefaultRectangular {
       if chpl__testParFlag then
         chpl__testPar("default rectangular domain standalone invoked on ", ranges);
       if debugDefaultDist then
-        writeln("*** In domain standalone code:");
+        chpl_debug_writeln("*** In domain standalone code:");
 
       const numTasks = if tasksPerLocale == 0 then here.maxTaskPar
                        else tasksPerLocale;
       if debugDefaultDist {
-        writeln("    numTasks=", numTasks, " (", ignoreRunning,
+        chpl_debug_writeln("    numTasks=", numTasks, " (", ignoreRunning,
                 "), minIndicesPerTask=", minIndicesPerTask);
       }
       const (numChunks, parDim) = if __primitive("task_get_serial") then
@@ -195,12 +195,12 @@ module DefaultRectangular {
                                                      minIndicesPerTask,
                                                      ranges);
       if debugDefaultDist {
-        writeln("    numChunks=", numChunks, " parDim=", parDim,
+        chpl_debug_writeln("    numChunks=", numChunks, " parDim=", parDim,
                 " ranges(", parDim, ").length=", ranges(parDim).length);
       }
 
       if debugDataPar {
-        writeln("### numTasksPerLoc = ", numTasks, "\n" +
+        chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n" +
                 "### ignoreRunning = ", ignoreRunning, "\n" +
                 "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
                 "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n" +
@@ -217,7 +217,7 @@ module DefaultRectangular {
           locBlock(i) = offset(i)..#(ranges(i).length);
         }
         if debugDefaultDist {
-          writeln("*** DI: locBlock = ", locBlock);
+          chpl_debug_writeln("*** DI: locBlock = ", locBlock);
         }
         coforall chunk in 0..#numChunks {
           var followMe: rank*range(idxType) = locBlock;
@@ -228,7 +228,7 @@ module DefaultRectangular {
                                         locBlock(parDim).low);
           followMe(parDim) = lo..hi;
           if debugDefaultDist {
-            writeln("*** DI[", chunk, "]: followMe = ", followMe);
+            chpl_debug_writeln("*** DI[", chunk, "]: followMe = ", followMe);
           }
           var block: rank*range(idxType=idxType, stridable=stridable);
           if stridable {
@@ -289,7 +289,7 @@ module DefaultRectangular {
                                                        minIndicesPerTask,
                                                        ranges);
         if debugDataParNuma {
-          writeln("### numSublocs = ", numSublocs, "\n" +
+          chpl_debug_writeln("### numSublocs = ", numSublocs, "\n" +
                   "### numTasksPerSubloc = ", numSublocTasks, "\n" +
                   "### ignoreRunning = ", ignoreRunning, "\n" +
                   "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
@@ -311,7 +311,7 @@ module DefaultRectangular {
             local on here.getChild(chunk) {
               if debugDataParNuma {
                 if chunk!=chpl_getSubloc() then
-                  writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
+                  chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be "+chunk+
                           ", on "+chpl_getSubloc()+") ***");
               }
               // Divide the locale's tasks approximately evenly
@@ -344,7 +344,7 @@ module DefaultRectangular {
                                               high, low, low);
                 followMe2(parDim2) = lo..hi;
                 if debugDataParNuma { 
-                  writeln("### chunk = ", chunk, "  chunk2 = ", chunk2, "  " +
+                  chpl_debug_writeln("### chunk = ", chunk, "  chunk2 = ", chunk2, "  " +
                           "followMe = ", followMe, "  followMe2 = ", followMe2);
                 }
                 yield followMe2;
@@ -355,12 +355,12 @@ module DefaultRectangular {
       } else {
 
         if debugDefaultDist then
-          writeln("*** In domain/array leader code:"); // this = ", this);
+          chpl_debug_writeln("*** In domain/array leader code:"); // this = ", this);
         const numTasks = if tasksPerLocale==0 then here.maxTaskPar
                          else tasksPerLocale;
   
         if debugDefaultDist then
-          writeln("    numTasks=", numTasks, " (", ignoreRunning,
+          chpl_debug_writeln("    numTasks=", numTasks, " (", ignoreRunning,
                   "), minIndicesPerTask=", minIndicesPerTask);
 
         const (numChunks, parDim) = if __primitive("task_get_serial") then
@@ -370,11 +370,11 @@ module DefaultRectangular {
                                                        minIndicesPerTask,
                                                        ranges);
         if debugDefaultDist then
-          writeln("    numChunks=", numChunks, " parDim=", parDim,
+          chpl_debug_writeln("    numChunks=", numChunks, " parDim=", parDim,
                   " ranges(", parDim, ").length=", ranges(parDim).length);
   
         if debugDataPar { 
-          writeln("### numTasksPerLoc = ", numTasks, "\n" +
+          chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n" +
                   "### ignoreRunning = ", ignoreRunning, "\n" + 
                   "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
                   "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n" +
@@ -395,7 +395,7 @@ module DefaultRectangular {
           for param i in 1..rank do
             locBlock(i) = offset(i)..#(ranges(i).length);
           if debugDefaultDist then
-            writeln("*** DI: locBlock = ", locBlock);
+            chpl_debug_writeln("*** DI: locBlock = ", locBlock);
           coforall chunk in 0..#numChunks {
             var followMe: rank*range(idxType) = locBlock;
             const (lo,hi) = _computeBlock(locBlock(parDim).length,
@@ -405,7 +405,7 @@ module DefaultRectangular {
                                           locBlock(parDim).low);
             followMe(parDim) = lo..hi;
             if debugDefaultDist then
-              writeln("*** DI[", chunk, "]: followMe = ", followMe);
+              chpl_debug_writeln("*** DI[", chunk, "]: followMe = ", followMe);
             yield followMe;
           }
         }
@@ -426,7 +426,7 @@ module DefaultRectangular {
       if chpl__testParFlag then
         chpl__testPar("default rectangular domain follower invoked on ", followThis);
       if debugDefaultDist then
-        writeln("In domain follower code: Following ", followThis);
+        chpl_debug_writeln("In domain follower code: Following ", followThis);
 
       param stridable = this.stridable || anyStridable(followThis);
       var block: rank*range(idxType=idxType, stridable=stridable);
@@ -762,7 +762,7 @@ module DefaultRectangular {
                minIndicesPerTask = dataParMinGranularity)
       ref where tag == iterKind.standalone && !localeModelHasSublocales {
       if debugDefaultDist {
-        writeln("*** In array standalone code");
+        chpl_debug_writeln("*** In array standalone code");
       }
       for i in dom.these(tag, tasksPerLocale,
                          ignoreRunning, minIndicesPerTask) {
@@ -788,7 +788,7 @@ module DefaultRectangular {
                minIndicesPerTask = dataParMinGranularity)
       ref where tag == iterKind.follower {
       if debugDefaultDist then
-        writeln("*** In array follower code:"); // [\n", this, "]");
+        chpl_debug_writeln("*** In array follower code:"); // [\n", this, "]");
       for i in dom.these(tag=iterKind.follower, followThis,
                          tasksPerLocale,
                          ignoreRunning,
@@ -968,7 +968,7 @@ module DefaultRectangular {
                                            blk=blk);
       alias.data = data;
       //alias.numelm = numelm;
-      //writeln("DR.dsiReindex blk: ", blk, " stride: ",dom.dsiDim(1).stride," str:",str(1));
+      //chpl_debug_writeln("DR.dsiReindex blk: ", blk, " stride: ",dom.dsiDim(1).stride," str:",str(1));
       adjustBlkOffStrForNewDomain(d, alias);
       alias.origin = origin:d.idxType;
       alias.computeFactoredOffs();
@@ -1345,7 +1345,7 @@ module DefaultRectangular {
   // This is very conservative.
   proc DefaultRectangularArr.isDataContiguous() {
     if debugDefaultDistBulkTransfer then
-      writeln("isDataContiguous(): origin=", origin, " off=", off, " blk=", blk);
+      chpl_debug_writeln("isDataContiguous(): origin=", origin, " off=", off, " blk=", blk);
   
     for param dim in 1..rank do
       if off(dim)!= dom.dsiDim(dim).first then return false;
@@ -1356,7 +1356,7 @@ module DefaultRectangular {
       if blk(dim) != blk(dim+1)*dom.dsiDim(dim+1).length then return false;
   
     if debugDefaultDistBulkTransfer then
-      writeln("\tYES!");
+      chpl_debug_writeln("\tYES!");
   
     return true;
   }
@@ -1365,20 +1365,20 @@ module DefaultRectangular {
   proc DefaultRectangularArr.dsiSupportsBulkTransferInterface() param return true;
   
   proc DefaultRectangularArr.doiCanBulkTransfer() {
-    if debugDefaultDistBulkTransfer then writeln("In DefaultRectangularArr.doiCanBulkTransfer()");
+    if debugDefaultDistBulkTransfer then chpl_debug_writeln("In DefaultRectangularArr.doiCanBulkTransfer()");
     if dom.stridable then
       for param i in 1..rank do
         if dom.ranges(i).stride != 1 then return false;
     if !isDataContiguous(){ 
       if debugDefaultDistBulkTransfer then
-        writeln("isDataContiguous return False"); 
+        chpl_debug_writeln("isDataContiguous return False");
       return false;
     }
     return true;
   }
   
   proc DefaultRectangularArr.doiCanBulkTransferStride() param {
-    if debugDefaultDistBulkTransfer then writeln("In DefaultRectangularArr.doiCanBulkTransferStride()");
+    if debugDefaultDistBulkTransfer then chpl_debug_writeln("In DefaultRectangularArr.doiCanBulkTransferStride()");
     // A DefaultRectangular array is always regular, so bulk should be possible.
     return true;
   }
@@ -1402,7 +1402,7 @@ module DefaultRectangular {
       pragma "no prototype"
       extern proc sizeof(type x): int;
       const elemSize =sizeof(B._value.eltType);
-      writeln("In DefaultRectangularArr.doiBulkTransfer():",
+      chpl_debug_writeln("In DefaultRectangularArr.doiBulkTransfer():",
               " Alo=", Alo, ", Blo=", Blo,
               ", len=", len, ", elemSize=", elemSize);
     }
@@ -1417,15 +1417,15 @@ module DefaultRectangular {
     // and chpl_comm_put should be changed once that is fixed.
     if Adata.locale.id==here.id {
       if debugDefaultDistBulkTransfer then //See bug in test/optimizations/bulkcomm/alberto/rafatest2.chpl
-        writeln("\tlocal get() from ", B._value.locale.id);
+        chpl_debug_writeln("\tlocal get() from ", B._value.locale.id);
       __primitive("chpl_comm_array_get", Adata[0], Bdata.locale.id, Bdata[0], len);
     } else if Bdata.locale.id==here.id {
       if debugDefaultDistBulkTransfer then
-        writeln("\tlocal put() to ", this.locale.id);
+        chpl_debug_writeln("\tlocal put() to ", this.locale.id);
       __primitive("chpl_comm_array_put", Bdata[0], Adata.locale.id, Adata[0], len); 
     } else on Adata.locale {
       if debugDefaultDistBulkTransfer then
-        writeln("\tremote get() on ", here.id, " from ", B.locale.id);
+        chpl_debug_writeln("\tremote get() on ", here.id, " from ", B.locale.id);
       __primitive("chpl_comm_array_get", Adata[0], Bdata.locale.id, Bdata[0], len);
     }
   }
@@ -1454,7 +1454,7 @@ module DefaultRectangular {
     const A = this, B = Barg;
   
     if debugDefaultDistBulkTransfer then 
-      writeln("In DefaultRectangularArr.doiBulkTransferStride ");
+      chpl_debug_writeln("In DefaultRectangularArr.doiBulkTransferStride ");
    
     const Adims = A.dom.dsiDims();
     var Alo: rank*dom.idxType;
@@ -1467,7 +1467,7 @@ module DefaultRectangular {
       Blo(i) = Bdims(i).first;
     
     if debugDefaultDistBulkTransfer then
-      writeln("\tlocal get() from ", B.locale.id);
+      chpl_debug_writeln("\tlocal get() from ", B.locale.id);
     
     var dstWholeDim = isWholeDim(A),
         srcWholeDim = isWholeDim(B);
@@ -1476,7 +1476,7 @@ module DefaultRectangular {
     /* If the stridelevels in source and destination arrays are different, we take the larger*/
     stridelevels=max(A.computeBulkStrideLevels(dstWholeDim),B.computeBulkStrideLevels(srcWholeDim));
     if debugDefaultDistBulkTransfer then 
-      writeln("In DefaultRectangularArr.doiBulkTransferStride, stridelevels: ",stridelevels);
+      chpl_debug_writeln("In DefaultRectangularArr.doiBulkTransferStride, stridelevels: ",stridelevels);
     
     //These variables should be actually of size stridelevels+1, but stridelevels is not param...
     
@@ -1557,7 +1557,7 @@ module DefaultRectangular {
   proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels:int(32), dstStride, srcStride, count, Alo, Blo)
    {
     if debugDefaultDistBulkTransfer then
-      writeln("Locale: ", here.id, " stridelvl: ", stridelevels, " DstStride: ", dstStride," SrcStride: ",srcStride, " Count: ", count, " dst.Blk: ",blk, " src.Blk: ",B.blk);
+      chpl_debug_writeln("Locale: ", here.id, " stridelvl: ", stridelevels, " DstStride: ", dstStride," SrcStride: ",srcStride, " Count: ", count, " dst.Blk: ",blk, " src.Blk: ",B.blk);
 
     const A = this;
     //CASE 1: when the data in destination array is stored "here", it will use "chpl_comm_get_strd". 
@@ -1571,11 +1571,11 @@ module DefaultRectangular {
       const cnt=count._value.theData;
   
       if debugBulkTransfer {
-        writeln("Case 1");
-        writeln("Locale:",here.id,"stridelevel: ", stridelevels);
-        writeln("Locale:",here.id,"Count: ",count);
-        writeln("Locale:",here.id," dststrides: ",dstStride);
-        writeln("Locale:",here.id,",srcstrides: ",srcStride);
+        chpl_debug_writeln("Case 1");
+        chpl_debug_writeln("Locale:",here.id,"stridelevel: ", stridelevels);
+        chpl_debug_writeln("Locale:",here.id,"Count: ",count);
+        chpl_debug_writeln("Locale:",here.id," dststrides: ",dstStride);
+        chpl_debug_writeln("Locale:",here.id,",srcstrides: ",srcStride);
       }
       var srclocale = B.data.locale.id : int(32);
          __primitive("chpl_comm_get_strd",
@@ -1591,19 +1591,19 @@ module DefaultRectangular {
     else if B.data.locale==here
     {
       if debugDefaultDistBulkTransfer then
-        writeln("\tlocal put() to ", A.locale.id);
+        chpl_debug_writeln("\tlocal put() to ", A.locale.id);
       
       const dststr=dstStride._value.theData;
       const srcstr=srcStride._value.theData;
       const cnt=count._value.theData;
       
       if debugBulkTransfer {
-        writeln("Case 2");
-        writeln("stridelevel: ",stridelevels);
-        writeln("Count: ",count);
-        writeln("dststrides: ",dstStride);
-        writeln("srcstrides: ",srcStride);
-        writeln("Blk: ",blk);
+        chpl_debug_writeln("Case 2");
+        chpl_debug_writeln("stridelevel: ",stridelevels);
+        chpl_debug_writeln("Count: ",count);
+        chpl_debug_writeln("dststrides: ",dstStride);
+        chpl_debug_writeln("srcstrides: ",srcStride);
+        chpl_debug_writeln("Blk: ",blk);
       }
       
       const dest = A.data;
@@ -1636,11 +1636,11 @@ module DefaultRectangular {
       const cnt=count._value.theData;
 
       if debugBulkTransfer {
-        writeln("Case 3");
-        writeln("stridelevel: ", stridelevels);
-        writeln("Count: ",countAux);
-        writeln("dststrides: ",dststrides);
-        writeln("srcstrides: ",srcstrides);
+        chpl_debug_writeln("Case 3");
+        chpl_debug_writeln("stridelevel: ", stridelevels);
+        chpl_debug_writeln("Count: ",countAux);
+        chpl_debug_writeln("dststrides: ",dststrides);
+        chpl_debug_writeln("srcstrides: ",srcstrides);
       }
       
       const srclocale =B.data.locale.id : int(32);
