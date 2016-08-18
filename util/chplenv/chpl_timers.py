@@ -5,13 +5,13 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import defaults
+import overrides
 from utils import memoize
 
 
 @memoize
 def get():
-    timers_val = defaults.get('CHPL_TIMERS', 'generic')
+    timers_val = overrides.get('CHPL_TIMERS', 'generic')
     return timers_val
 
 

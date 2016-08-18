@@ -8,7 +8,7 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_comm, chpl_compiler, chpl_platform, defaults, utils
+import chpl_comm, chpl_compiler, chpl_platform, overrides, utils
 from utils import CompVersion, memoize
 
 
@@ -270,9 +270,9 @@ def get_module_lcd_arch(platform_val, arch):
 def get(location, map_to_compiler=False, get_lcd=False):
 
     if not location or location == "host":
-        arch = defaults.get('CHPL_HOST_ARCH', '')
+        arch = overrides.get('CHPL_HOST_ARCH', '')
     elif location == 'target':
-        arch = defaults.get('CHPL_TARGET_ARCH', '')
+        arch = overrides.get('CHPL_TARGET_ARCH', '')
     else:
         raise InvalidLocationError(location)
 

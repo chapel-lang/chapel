@@ -5,13 +5,13 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_comm, chpl_comm_substrate, chpl_compiler, chpl_platform, defaults, utils
+import chpl_comm, chpl_comm_substrate, chpl_compiler, chpl_platform, overrides, utils
 from utils import memoize
 
 
 @memoize
 def get():
-    launcher_val = defaults.get('CHPL_LAUNCHER')
+    launcher_val = overrides.get('CHPL_LAUNCHER')
     if not launcher_val:
         comm_val = chpl_comm.get()
         platform_val = chpl_platform.get('target')

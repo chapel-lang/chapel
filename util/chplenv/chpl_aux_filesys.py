@@ -7,12 +7,12 @@ from sys import stderr, stdout
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import defaults
+import overrides
 from utils import memoize
 
 @memoize
 def get():
-    aux_fs = defaults.get('CHPL_AUX_FILESYS', 'none')
+    aux_fs = overrides.get('CHPL_AUX_FILESYS', 'none')
 
     if aux_fs == 'hdfs':
         java_subdir = os.environ.get('JAVA_INSTALL', '')
