@@ -44,13 +44,13 @@
     using std::memory_order_seq_cst;
     using std::memory_order;
   #else
-    #error "Standard atomics need at least C++11.  Use intrinsics or locks."
+    #error "The cstdlib atomics need at least C++11.  Use intrinsics or locks."
   #endif
 #elif __STDC_VERSION__ >= 201112L && !defined(__STDC_NO_ATOMICS__)
   #include <stdatomic.h>
   #define Atomic(T) _Atomic T
 #else
-  #error "Standard atomics need at least C11.  Use intrinsics or locks."
+  #error "The cstdlib atomics need at least C11.  Use intrinsics or locks."
 #endif
 
 typedef Atomic(_real64) atomic__real64;

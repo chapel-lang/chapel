@@ -1,11 +1,11 @@
 The Chapel runtime atomics interface is modelled after the
 C11 standard. See: http://en.cppreference.com/w/c/atomic
 
-Currently we have a standard, an intrinsics, and a locks
-implementation. The standard implementation is basically a wrapper for
+Currently we have a cstdlib, an intrinsics, and a locks
+implementation. The cstdlib implementation is basically a wrapper for
 C11 atomics. The intrinsics implementation uses compiler atomic
 intrinsics to implement atomics and the locks version uses Chapel
-locks. The standard implementation is expected to have the best
+locks. The cstdlib implementation is expected to have the best
 performance (depending on the compiler's native handling of C11
 atomics), and the intrinsic version has better performance than locks,
 but neither the standard atomics nor the intrinsics are available on
