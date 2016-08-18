@@ -145,8 +145,8 @@ class E_comm : public Event {
 
      virtual int Ekind() {return Ev_comm;}
      virtual void print() { 
-       printf ("Comm: node %d time %ld.%06ld to %d size %d\n",
-               nodeid, sec, usec, dstid, elemsize * datalen); }
+       printf ("Comm(%s): node %d time %ld.%06ld to %d size %d\n",
+               isget ? "get" : "put", nodeid, sec, usec, dstid, elemsize * datalen); }
 };
 
 class E_fork : public Event {

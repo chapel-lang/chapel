@@ -103,6 +103,7 @@ class DataModel {
 
  private:
 
+  int      mainTID;
   taskData mainTask;
 
   StringCache strDB;

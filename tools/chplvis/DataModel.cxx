@@ -123,12 +123,13 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
   int oldNumTags = numTags;
   int nlocales;
   int fnum;
+  int tid;
   double seq;
   int VerMajor, VerMinor;
 
-  int ssres = sscanf(configline, "ChplVdebug: ver %d.%d nodes %d nid %d tid %*d seq %lf",
-                     &VerMajor, &VerMinor, &nlocales, &fnum, &seq);
-  if (ssres  != 5) {
+  int ssres = sscanf(configline, "ChplVdebug: ver %d.%d nodes %d nid %d tid %d seq %lf",
+                     &VerMajor, &VerMinor, &nlocales, &fnum, &tid, &seq);
+  if (ssres  != 6) {
     if (!fromArgv)
       fl_message ("\n  LoadData: incorrect data on first line of %s.",
                   fullfilename);
@@ -154,6 +155,9 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
 
   // Set the number of locales.
   numLocales = nlocales;
+
+  // Set the main task ID
+  mainTID = tid;
 
   // Debug
   std::list<Event *>::iterator itr;
@@ -582,8 +586,8 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
             theTask->commSum.numForks++;
             theTask->commSum.numComms++;
           } else 
-            printf ("per task forks, no task %ld, node %ld\n",
-                    (long)fp->inTask(), (long)fp->nodeId());
+            printf ("per task forks, no task %ld, node %ld, clock %lf\n",
+                    (long)fp->inTask(), (long)fp->nodeId(), fp->clock_time());
         }
         break;
 
@@ -600,9 +604,11 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
             else
               theTask->commSum.numPuts++;
             theTask->commSum.commSize += cp->dataLen();
-          } else 
-            printf ("per task comms, no task %ld, node %ld\n",
-                    (long)cp->inTask(), (long)cp->nodeId());
+          } else { 
+            printf ("per task comms, no task %ld ", (long)cp->inTask());
+            cp->print();
+            printf ("\n");
+          }
         }
         break;
     }
@@ -1133,8 +1139,8 @@ taskData * DataModel::getTaskData (long locale, long taskId, long tagNo)
   std::map<long,taskData>::iterator tskItr;
   long curTag;
 
-  // may not be taskId 1 ... has been so far.
-  if (locale == 0 && taskId == 1)
+  // Assume main task is the tid in the -0 file header.
+  if (locale == 0 && taskId == mainTID)
     return &mainTask;
 
   if (tagNo != TagALL) {
