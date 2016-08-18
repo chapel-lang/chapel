@@ -374,7 +374,12 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
         VarSymbol* varLhs = toVarSymbol(symLhs->var);
         SymExpr*   symRhs = toSymExpr(callRhs->get(1));
         VarSymbol* varRhs = toVarSymbol(symRhs->var);
-        ArgSymbol* argRhs = toArgSymbol(symRhs->var);
+        // Handling ArgSymbols here causes a leak in handling
+        // of out argument intents. Since I added it to support
+        // if-expr fixes, and that isn't working for other reasons,
+        // I've just disabled it for now. Presumably we could also
+        // adjust addLocalCopiesAndWritebacks...
+        ArgSymbol* argRhs = NULL; //toArgSymbol(symRhs->var);
         Type*     rhsType = NULL;
 
         if (varRhs)
