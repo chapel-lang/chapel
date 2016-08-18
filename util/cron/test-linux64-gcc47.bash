@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# Test default configuration on examples only, on linux64, with compiler gcc-4.9
+# Test default configuration on examples only, on linux64, with compiler gcc-4.7
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-gcc49.examples"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-gcc47"
 
-gcc_setup=/data/cf/chapel/setup_gcc49.bash
+gcc_setup=/data/cf/chapel/setup_gcc47.bash
 if source "${gcc_setup}"
 then
     source $CWD/common.bash

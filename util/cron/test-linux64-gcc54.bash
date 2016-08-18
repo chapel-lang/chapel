@@ -4,7 +4,7 @@
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-gcc54.examples"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-gcc54"
 
 gcc_setup=/data/cf/chapel/setup_gcc54.bash
 if source "${gcc_setup}"
