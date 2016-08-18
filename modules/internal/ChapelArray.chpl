@@ -147,7 +147,15 @@ module ChapelArray {
   pragma "no doc"
   config param useBulkTransfer = true;
   pragma "no doc"
-  config param useBulkTransferStride = false;
+  config param useBulkTransferStride = true;
+
+  // Toggles the functionality to perform strided bulk transfers involving
+  // distributed arrays.
+  //
+  // Currently disabled due to observations of higher communication counts
+  // compared to element-by-element assignment.
+  pragma "no doc"
+  config param useBulkTransferDist = false;
 
   pragma "no doc" // no doc unless we decide to expose this
   config param arrayAsVecGrowthFactor = 1.5;
@@ -3185,12 +3193,12 @@ module ChapelArray {
 
   proc _desync(type t) where t: _syncvar {
     var x: t;
-    return x.syncVar.value;
+    return x.wrapped.value;
   }
 
   proc _desync(type t) where t: _singlevar {
     var x: t;
-    return x.value;
+    return x.wrapped.value;
   }
 
   proc _desync(type t) {

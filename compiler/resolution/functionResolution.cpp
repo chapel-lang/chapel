@@ -3903,7 +3903,7 @@ FnSymbol* tryResolveCall(CallExpr* call) {
 FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
 
   if( call->id == breakOnResolveID ) {
-    printf("breaking on call:\n");
+    printf("breaking on resolve call:\n");
     print_view(call);
     gdbShouldBreakHere();
   }
@@ -4495,8 +4495,12 @@ static void resolveMove(CallExpr* call) {
     }
   }
 
-  if (lhs->type == dtUnknown || lhs->type == dtNil)
+  if (lhs->type == dtUnknown || lhs->type == dtNil) {
+    if (lhs->id == breakOnResolveID )
+      gdbShouldBreakHere();
+
     lhs->type = rhsType;
+  }
 
   Type* lhsType = lhs->type;
 
@@ -4640,10 +4644,17 @@ resolveNew(CallExpr* call)
   if (toReplace) {
     SET_LINENO(call);
 
+    bool initCall = false;
+
     // 1: replace the type with the constructor call name
     if (Type* ty = resolveTypeAlias(toReplace)) {
       if (AggregateType* ct = toAggregateType(ty)) {
+        if (ct->initializerStyle == DEFINES_INITIALIZER) {
+          toReplace->replace(new UnresolvedSymExpr("init"));
+          initCall = true;
+        } else {
           toReplace->replace(new UnresolvedSymExpr(ct->defaultInitializer->name));
+        }
       }
     }
 
@@ -4654,6 +4665,37 @@ resolveNew(CallExpr* call)
     call->primitive = NULL;
     call->baseExpr = arg;
     parent_insert_help(call, call->baseExpr);
+
+    if (initCall) {
+      // 4: insert the allocation for the instance and pass that in as an
+      // argument if we're making a call to an initializer
+      Type* typeToNew = toReplace->var->typeInfo();
+      VarSymbol* new_temp = newTemp("new_temp", typeToNew);
+      if (typeToNew->symbol->hasFlag(FLAG_GENERIC)) {
+        USR_FATAL(call, "Sorry, new style initializers don't work with generics yet.  Stay tuned!");
+      }
+      DefExpr* def = new DefExpr(new_temp);
+      Expr* insertBeforeMe = ((!isBlockStmt(call->parentExpr)) ?
+                              call->parentExpr : call);
+      insertBeforeMe->insertBefore(def);
+      resolveExpr(def);
+
+      if (!isRecord(typeToNew) && !isUnion(typeToNew)) {
+        BlockStmt* allocCallBlock = new BlockStmt();
+
+        CallExpr* innerCall = callChplHereAlloc(typeToNew->symbol);
+        CallExpr* allocCall = new CallExpr(PRIM_MOVE, new_temp,
+                                           innerCall);
+        insertBeforeMe->insertBefore(allocCallBlock);
+        allocCallBlock->insertAtTail(allocCall);
+
+        CallExpr* setIdCall = new CallExpr(PRIM_SETCID, new_temp);
+        allocCallBlock->insertAtTail(setIdCall);
+        normalize(allocCallBlock);
+        resolveBlockStmt(allocCallBlock);
+      }
+      call->insertAtTail(new NamedExpr("meme", new SymExpr(new_temp)));
+    }
 
     // Now finish resolving it, since we are after all in
     // resolveNew.
@@ -4790,8 +4832,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
     if (concreteIntent(formal->intent, formalType) & INTENT_FLAG_CONST) {
       tmp->addFlag(FLAG_CONST);
 
-      if (!isSingleType(formalType) &&
-          !isRefCountedType(formalType))
+      if (!isRefCountedType(formalType))
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
     }
 
@@ -4878,8 +4919,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol* fn, SymbolMap& formals2vars)
 
        if (!getRecordWrappedFlags(ts).any()   &&
            !ts->hasFlag(FLAG_ITERATOR_CLASS)  &&
-           !ts->hasFlag(FLAG_ITERATOR_RECORD) &&
-           !isSingleType(ts->type)) {
+           !ts->hasFlag(FLAG_ITERATOR_RECORD)) {
          if (fn->hasFlag(FLAG_BEGIN)) {
            // autoCopy/autoDestroy will be added later, in parallel pass
            // by insertAutoCopyDestroyForTaskArg()
@@ -8639,8 +8679,7 @@ static void resolveAutoCopies() {
     if (ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
       continue; // Skip the "dmapped" pseudo-type.
 
-    if (isRecord(ts->type)   ||
-        isSingleType(ts->type)) {
+    if (isRecord(ts->type)) {
       resolveAutoCopy(ts->type);
       resolveAutoDestroy(ts->type);
     }
@@ -9144,6 +9183,30 @@ static void handleRuntimeTypes()
   insertRuntimeInitTemps();
 }
 
+//
+// A few internal pointers may point to nodes not in tree.
+// Zero out such pointers whether or not their targets are live,
+// to ensure they are not looked at again.
+static void cleanupAfterRemoves() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->instantiatedFrom != NULL)
+      fn->addFlag(FLAG_INSTANTIATED_GENERIC);
+    fn->instantiatedFrom = NULL;
+    fn->instantiationPoint = NULL;
+    // How about fn->substitutions, basicBlocks, calledBy ?
+  }
+
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols)
+    // Zero the initFn pointer if the function is now dead.
+    if (mod->initFn && !isAlive(mod->initFn))
+      mod->initFn = NULL;
+  
+  forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    if (arg->instantiatedFrom != NULL)
+      arg->addFlag(FLAG_INSTANTIATED_GENERIC);
+    arg->instantiatedFrom = NULL;
+  }
+}
 
 //
 // pruneResolvedTree -- prunes and cleans the AST after all of the
@@ -9168,6 +9231,7 @@ pruneResolvedTree() {
   removeWhereClauses();
   removeMootFields();
   expandInitFieldPrims();
+  cleanupAfterRemoves();
 }
 
 static void clearDefaultInitFns(FnSymbol* unusedFn) {
