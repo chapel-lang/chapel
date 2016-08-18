@@ -1,2 +1,0 @@
-Skipping this test because the arrays cannot be assigned to each other
-when they are different types, since reindexed is a param.
