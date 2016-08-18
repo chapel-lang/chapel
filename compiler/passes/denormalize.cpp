@@ -101,6 +101,49 @@ void denormalize(void) {
   }
 }
 
+/*
+ * deferring denormalizing over some temporaries and the way it's done
+ * is as follows:
+ *
+ * Consider following snippet:
+ *
+ *   var t1, t2, t3;
+ *   t1 = f();
+ *   t2 = t1;
+ *   t3 = t2;
+ *
+ *   and corresponding pseudo-AST
+ *
+ *   (1 move (2 SymExpr t1), (3 CallExpr f))
+ *   (4 move (5 SymExpr t2), (6 SymExpr t1))
+ *   (7 move (8 SymExpr t3), (9 SymExpr t2))
+ *
+ *   In first run we will have a map as follows (use,def expr keypair)
+ *
+ *   use               def
+ *   --------------------------------
+ *   (6 SymExpr t1)    (3 CallExpr f)
+ *   (9 SymExpr t2)    (6 SymExpr t1)
+ *
+ *   Than in denormalizeOrDeferCandidates, assume we denormalize (t1,f)
+ *   pair first, which will replace node 6 with 3 and remove 1
+ *   altogether. At that point when we try to denormalize the second
+ *   pair(t2,t1) in our list, node id 6 will still be in the map but
+ *   it's parent pointer will be NULL, since it's removed by
+ *   6->replace(3) operation in the previous iteration.
+ *
+ *   [I might be leaking compiler memory in the logic I just described]
+ *
+ *   At that point, we still know that t2 is a good candidate for
+ *   removal, but its def has changed, and we need to reanalyze for
+ *   safety. So we add t2 to deferredSyms for future iterations. We can
+ *   get rid of deferredSyms, but that would mean reiterating all
+ *   symbols in the function. And I am almost certain that we can never
+ *   generate new candidates once we start denormalizing. So, we are
+ *   generating candidates once, and iterating over and over until we
+ *   don't defer anything(thus do{}while(deferredSyms.count()>0)) in
+ *   denormalize(void)
+ */
 void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
     Vec<Symbol*>& deferredSyms) {
 
@@ -112,8 +155,6 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
     Expr* def = defCastPair.first;
     Type* castTo = defCastPair.second;
 
-    // if parent of def is gone, it means it has been denormalized in
-    // the earlier passes
     if(def->parentExpr == NULL) {
       deferredSyms.add(use->var);
       continue;
