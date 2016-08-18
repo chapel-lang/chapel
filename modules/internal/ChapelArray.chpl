@@ -3125,11 +3125,7 @@ module ChapelArray {
     }
     else {
       if debugBulkTransfer {
-        // uses printf b/c this function can be called before
-        // stdout exists (order of resolution issues)
-        // note that just writeln() would clash with writeln.chpl
-        extern proc printf(fmt:c_string);
-        printf(c"proc =(a:[],b): bulk transfer did not happen");
+        chpl_debug_writeln("proc =(a:[],b): bulk transfer did not happen");
       }
       chpl__transferArray(a, b);
     }
