@@ -71,11 +71,12 @@ void localizeGlobals() {
 
             // Copy string immediates to localized strings so that
             // we can show the string value in comments next to uses.
-            if (VarSymbol* localVarSym = toVarSymbol(var))
-              if (Immediate* immediate = localVarSym->immediate)
-                if (immediate->const_kind == CONST_KIND_STRING)
-                  local_global->immediate =
-                    new Immediate(immediate->v_string, immediate->string_kind);
+            if (!llvmCodegen)
+              if (VarSymbol* localVarSym = toVarSymbol(var))
+                if (Immediate* immediate = localVarSym->immediate)
+                  if (immediate->const_kind == CONST_KIND_STRING)
+                    local_global->immediate =
+                      new Immediate(immediate->v_string, immediate->string_kind);
 
             globals.put(var, local_global);
           }
