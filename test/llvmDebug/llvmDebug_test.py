@@ -7,8 +7,8 @@ chpl_home = os.environ['CHPL_HOME']
 llvm_tool_path = chpl_home + os.sep + 'third-party/llvm/install/linux64-gnu/bin'
 build_options = '--baseline --llvm -g'
 source_path = os.getcwd() #same as target path
-source = source_path + os.sep + 'experiment.chpl'
-target = source_path + os.sep + 'experiment'
+source = source_path + os.sep + 'llvmDebug_test.chpl'
+target = source_path + os.sep + 'llvmDebug_test'
 
 # Build Chapel Test Program
 Command_build = 'chpl ' + build_options + ' ' + source + ' -o ' + target
@@ -44,28 +44,28 @@ else:
     print 'checking types --FAIL'
 
 # Verify the global variables
-if 'My_message' in output:
-    if 'My_gv_t' in output:
-        if 'My_gv_b' in output:
-            if 'My_globalActor' in output:
-                print 'checking global variables --PASS'
-else:
-    print 'checking global variables --FAIL'
+#if 'My_message' in output:
+#    if 'My_gv_t' in output:
+#        if 'My_gv_b' in output:
+#            if 'My_globalActor' in output:
+#                print 'checking global variables --PASS'
+#else:
+#    print 'checking global variables --FAIL'
 
 # Verify the local variables
-if 'My_anything' in output:
-    if 'My_localActor' in output:
-        if 'My_Number' in output:
-            print 'checking local variables --PASS'
-else:
-    print 'checking local variables --FAIL'
+#if 'My_anything' in output:
+#    if 'My_localActor' in output:
+#        if 'My_Number' in output:
+#            print 'checking local variables --PASS'
+#else:
+#    print 'checking local variables --FAIL'
 
 # Verify the formal arguments
-if 'My_level' in output:
-    if 'My_x' in output:
-        print 'checking formal arguments --PASS'
-else:
-    print 'checking formal arguments --FAIL'
-
+#if 'My_level' in output:
+#    if 'My_x' in output:
+#        print 'checking formal arguments --PASS'
+#else:
+#    print 'checking formal arguments --FAIL'
+#
 print 'DONE with debug checking'
 
