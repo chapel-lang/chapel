@@ -207,26 +207,6 @@ module ChapelIO {
     param dummy = readerDeprecated();
   }
 
-  // This routine is called in DefaultRectangular in order
-  // to report an out of bounds access for a halt. A normal
-  // call to halt with a tuple can't be made because of module
-  // order issues.
-  pragma "no doc"
-  proc _stringify_index(tup:?t) where isTuple(t)
-  {
-    var str = "(";
-
-    for param i in 1..tup.size {
-      if i != 1 then str += ", ";
-      str += tup[i]:string;
-    }
-
-   str += ")";
-
-    return str;
-
-  }
-
   use IO;
 
     private
