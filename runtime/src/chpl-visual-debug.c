@@ -177,7 +177,7 @@ void chpl_vdebug_start (const char *fileroot, double now) {
     chpl_dprintf (chpl_vdebug_fd, "FIDNsize: %d\n", numFIDnames);
     for (ix = 0; ix < numFIDnames; ix++)
       chpl_dprintf (chpl_vdebug_fd, "FIDname: %d %d %d %s\n", ix,
-                    chpl_finfo[ix].fileno, chpl_finfo[ix].lineno,
+                    chpl_finfo[ix].lineno, chpl_finfo[ix].fileno,
                     chpl_finfo[ix].name);
   }
   
