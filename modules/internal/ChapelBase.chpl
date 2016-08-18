@@ -364,6 +364,10 @@ module ChapelBase {
   }
 
   inline proc _expBaseHelp(param a: int, b) {
+    if b == 0 then 
+      return 1:a.type;
+    if b < 0 then
+        return 0; // same behavior as signed int **
     var c = 0;
     var x: int = a;
     while (x > 1) // shift right to count the power
