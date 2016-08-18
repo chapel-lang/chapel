@@ -12,6 +12,9 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # Test perf of qthreads WIP "distrib" scheduler with numa against sherwood
 export CHPL_QTHREAD_SCHEDULER=distrib
 
+# See if disabling work stealing improves performance
+export QT_STEAL_RATIO=0
+
 # hackily checkout and overlay qthreads branch that has the scheduler
 cd $CHPL_HOME/third-party/qthread/
 rm -rf qthread-1.10/
