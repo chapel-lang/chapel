@@ -117,7 +117,7 @@ Function {make_LC_window(int fromLn, int toLn, struct commData *commdata)} {} {
 w->setAsComm(fromLn, toLn, commdata);} {}
 } 
 
-Function {make_concurrency_window(long locNum, long tagNum)} {return_type {ConcurrencyWin *}
+Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {ConcurrencyWin *}
 } {
   Fl_Window {} {open
     xywh {82 110 500 600} type Double color 7 hide resizable
@@ -127,16 +127,16 @@ Function {make_concurrency_window(long locNum, long tagNum)} {return_type {Concu
       label Concurrency
       private xywh {0 0 500 30} box DOWN_FRAME
     }
-    Fl_Scroll ConcScroll {open
+    Fl_Scroll ConcWScroll {open
       private xywh {0 30 500 570} box DOWN_BOX color 7 resizable
     } {
-      Fl_Box scrollData {
+      Fl_Box scrollWData {
         private xywh {2 32 460 900} box FLAT_BOX color 7 resizable
         class ConcurrencyData
       }
     }
   }
-  code {w->setMembers(title, ConcScroll, scrollData);
+  code {w->setMembers(title, ConcWScroll, scrollWData);
 w->updateData(locNum, tagNum);
 return w;} {}
 } 
@@ -169,10 +169,11 @@ Info->clearTagName();
 return true;} {}
 } 
 
-Function {} {} {
+Function {} {open
+} {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {1172 486 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
+    xywh {729 163 560 600} type Double color 7 hide resizable size_range {560 590 0 0}
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55
@@ -302,6 +303,10 @@ GrdView->selectData(Menus.currentTag());}
         tooltip {Grid View} image {Grid-40x40.png} xywh {10 160 40 40} box NO_BOX down_box FLAT_BOX selection_color 48
         code0 {o->clear_visible_focus();}
       }
+      Fl_Button {} {selected
+        image {Concurrent-40x40.png} xywh {10 210 40 40} box NO_BOX down_box FLAT_BOX
+        code0 {o->clear_visible_focus();}
+      }
     }
     Fl_Group DataField {open
       xywh {60 100 500 500} color 0 resizable
@@ -384,6 +389,18 @@ DataField->popChild();}
         Fl_Button {} {
           xywh {550 575 10 25} box NO_BOX color 7 resizable
           code0 {o->clear_visible_focus();}
+        }
+      }
+      Fl_Group ConcGroup {open
+        xywh {60 100 500 500} hide
+      } {
+        Fl_Scroll ConcScroll {open
+          private xywh {60 100 500 500} box DOWN_BOX color 7 resizable
+        } {
+          Fl_Box scrollData {
+            private xywh {60 100 500 500} color 7 resizable
+            class ConcurrencyData
+          }
         }
       }
     }
