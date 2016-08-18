@@ -704,9 +704,9 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
 
 // Load the data in the current file
 
-int DataModel::LoadFile (const char *filename, int index, double seq)
+int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
 {
-  FILE *data = fopen(filename, "r");
+  FILE *data = fopen(fileToOpen, "r");
   char line[1024];
 
   int floc;        // Number of locales in the file
@@ -719,9 +719,9 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
 
   if (!data) return 0;
 
-  // printf ("LoadFile %s\n", filename);
+  // printf ("LoadFile %s\n", fileToOpen);
   if (fgets(line,1024,data) != line) {
-    fprintf (stderr, "Error reading file %s.\n", filename);
+    fprintf (stderr, "Error reading file %s.\n", fileToOpen);
     return 0;
   }
 
@@ -736,7 +736,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
         &u_sec, &u_usec, &s_sec, &s_usec)
       != 12) {
     fprintf (stderr, "LoadData: incorrect data on first line of %s.\n",
-             filename);
+             fileToOpen);
     fclose(data);
     return 0;
   }
@@ -744,7 +744,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
   // Verify the data
 
   if (floc != numLocales || findex != index || fabs(seq-fseq) > .01 || VerMinor != 2 ) {
-    fprintf (stderr, "Data file %s does not match other data.\n", filename);
+    fprintf (stderr, "Data file %s does not match other data.\n", fileToOpen);
     return 0;
   }
 
@@ -820,7 +820,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
             fl_alert("Data file content error");
             exit(1);
           } else {
-            fileTbl = (struct fileName *)calloc(fileTblSize, sizeof(struct fileName));
+            fileTbl = (filename *)calloc(fileTblSize, sizeof(filename));
           }
           break;
           
@@ -841,7 +841,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
             if (sscanf(linedata, ": %d", &funcTblSize) != 1)
               printf ("Bad FIDNsize record\n");
             else {
-              funcTbl = (funcname*) calloc (funcTblSize, sizeof(filename));
+              funcTbl = (funcname*) calloc (funcTblSize, sizeof(funcname));
             }
           } else {
             // FIDname record
@@ -913,7 +913,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
         if (sscanf (&linedata[nextCh], "%d %d %d %4s %d %d %d",
                     &nid, &taskid, &parentId, onstr, &nlineno, &nfileno,
                     &fid) != 7) {
-          fprintf (stderr, "Bad task line: %s\n", filename);
+          fprintf (stderr, "Bad task line: %s\n", fileToOpen);
           fprintf (stderr, "nid = %d, taskid = %d, nbstr = '%s', nlineno = %d"
                    " nfileno = '%d'\n", nid, taskid, onstr, nlineno, nfileno);
           nErrs++;
@@ -937,11 +937,11 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
       case 'g':  // regular get
       case 'p':  // regular put
         // All comm data: 
-        // s.u nodeID otherNode loc-addr rem-addr elemSize typeIndex len lineno filename
+        // s.u nodeID otherNode loc-addr rem-addr elemSize typeIndex len lineno fileToOpen
         if (sscanf (&linedata[nextCh], "%d %d %d 0x%lx 0x%lx %d %d %d %d %d",
                     &nid, &rnid, &taskid, &locAddr, &remAddr, &eSize, & typeIx, &dlen,
                     &nlineno, &nfileno) != 10) {
-          fprintf (stderr, "Bad comm line: %s\n  '%s'\n", filename, line);
+          fprintf (stderr, "Bad comm line: %s\n  '%s'\n", fileToOpen, line);
           nErrs++;
         } else {
           if (vdbTids.find(taskid) != vdbTids.end()) {
@@ -965,7 +965,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
         // s.u nodeID otherNode subloc fid arg arg_size
         if ((cvt = sscanf (&linedata[nextCh], "%d %d %d %*d 0x%*x %d %d", 
                            &nid, &rnid, &fid, &dlen, &vdbTid)) != 5) {
-          fprintf (stderr, "Bad fork line: (cvt %d) %s\n", cvt, filename);
+          fprintf (stderr, "Bad fork line: (cvt %d) %s\n", cvt, fileToOpen);
           nErrs++;
         } else {
           if (vdbTids.find(vdbTid) != vdbTids.end()) {
@@ -978,7 +978,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
       case 'P':  // Pause generating data
         if (sscanf (&linedata[nextCh], "%ld.%ld %ld.%ld %d %d %d",
                     &u_sec, &u_usec, &s_sec, &s_usec, &nid, &vdbTid, &tagId) != 7 ) {
-          fprintf (stderr, "Bad 'End' line: %s\n", filename);
+          fprintf (stderr, "Bad 'End' line: %s\n", fileToOpen);
           nErrs++;
         } else {
           newEvent = new E_pause(sec, usec, nid, u_sec, u_usec,
@@ -994,7 +994,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
         if (sscanf (&linedata[nextCh], "%ld.%ld %ld.%ld %d %d %d",
                     &u_sec, &u_usec, &s_sec, &s_usec, &nid, &vdbTid, &tagId)
             != 7) {
-          fprintf (stderr, "Bad 'Tag' line: %s\n", filename);
+          fprintf (stderr, "Bad 'Tag' line: %s\n", fileToOpen);
         } else {
           newEvent = new E_tag(sec, usec, nid, u_sec, u_usec, s_sec, s_usec, tagId, 
                                tagNames[tagId], vdbTid);
@@ -1011,7 +1011,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
           // End of file
           if (sscanf (&linedata[nextCh], "%ld.%ld %ld.%ld %d %d",
                       &u_sec, &u_usec, &s_sec, &s_usec, &nid, &vdbTid) != 6 ) {
-            fprintf (stderr, "Bad 'End' line: %s\n", filename);
+            fprintf (stderr, "Bad 'End' line: %s\n", fileToOpen);
             nErrs++;
           } else {
             newEvent = new E_end(sec, usec, nid, u_sec, u_usec, s_sec, s_usec, vdbTid);
@@ -1021,7 +1021,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
           // printf("E");
           if (sscanf (&linedata[nextCh], "%d %d",
                       &nid, &taskid ) != 2) {
-            fprintf (stderr, "Bad Etask line: %s\n", filename);
+            fprintf (stderr, "Bad Etask line: %s\n", fileToOpen);
             nErrs++;
           } else {
             if (vdbTids.find(taskid) == vdbTids.end()) {
@@ -1036,7 +1036,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
       case 'B':  // Begin of task
         if (sscanf (&linedata[nextCh], "%d %d",
                     &nid, &taskid ) != 2) {
-          fprintf (stderr, "Bad Etask line: %s\n", filename);
+          fprintf (stderr, "Bad Etask line: %s\n", fileToOpen);
           nErrs++;
         } else {
           if (vdbTids.find(taskid) == vdbTids.end()) {
@@ -1062,7 +1062,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
                  && (*itr)->Ekind() != newEvent->Ekind())
             itr++;
           if (itr == theEvents.end() || (*itr)->Ekind() != newEvent->Ekind()) {
-            fprintf (stderr, "Internal error, event mismatch. file '%s'\n", filename); \
+            fprintf (stderr, "Internal error, event mismatch. file '%s'\n", fileToOpen); \
             printf ("newEvent: "); newEvent->print();
             if (itr != theEvents.end()) {
                printf ("itr: "); (*itr)->print();
@@ -1141,11 +1141,11 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
     }
   }
 
-  if (nErrs) fprintf(stderr, "%d errors in data file '%s'.\n", nErrs, filename);
+  if (nErrs) fprintf(stderr, "%d errors in data file '%s'.\n", nErrs, fileToOpen);
 
   //  if (ignoreFork > 0 || ignoreTask > 0) {
   //    fprintf (stderr, "%s: Error in data filters: ignoreFork = %d, ignoreTask = %d\n",
-  //         filename, ignoreFork, ignoreTask);
+  //         fileToOpen, ignoreFork, ignoreTask);
   //  }
   
   if ( !feof(data) ) return 0;

@@ -86,10 +86,10 @@ struct localeData {
 };
 
 // File names, rel2Home says the names starts with $CHPL_HOME
-typedef struct fileName {
+typedef struct filename {
   char * name;
   bool rel2Home;
-} fileName;
+} filename;
 
 // Function names
 typedef struct funcname {
@@ -121,7 +121,7 @@ class DataModel {
   taskData mainTask;
 
   StringCache strDB;
-  fileName *fileTbl;
+  filename *fileTbl;
   int fileTblSize;
 
   funcname *funcTbl;
