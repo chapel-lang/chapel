@@ -64,7 +64,6 @@ class ChapelConfig(object):
 
     def chplconfig_found(self, path, name):
         """ Check path for chplconfig and set chplconfigfile & prettypath """
-
         if not path:
             self.chplconfigfile = None
             return False
@@ -97,47 +96,47 @@ class ChapelConfig(object):
 
         # Parse the chplconfig file and populate the chplconfig dict
         with open(self.chplconfigfile, 'r') as ccfile:
+            for linenum, line in enumerate(ccfile.readlines()):
 
-            # Split lines into fields delimited by '='
-            linefields = [l.split('=') for l in ccfile.readlines()]
-
-            for linenum, fields in enumerate([lf for lf in linefields]):
-
-                if not self.valid_assignment(fields, linenum):
+                if not self.valid_assignment(line, linenum):
                     continue
 
-                var, val = [f.strip() for f in fields]
-
-                if not self.valid_variable(var, val, linenum):
+                if not self.valid_variable(line, linenum):
                     continue
 
+                var, val = [f.strip() for f in line.split('=')]
                 self.chplconfig[var] = val
 
-    def valid_assignment(self, fields, linenum):
+    def valid_assignment(self, line, linenum):
         """ Check if the assignment is correctly formatted, e.g. ENV = VAR """
-
         valid = True
 
-        # Check if line is a comment (has no '=')
-        if len(fields) < 2:
+        # Check if line is a comment (blank)
+        if len(line.lstrip()) == 0:
             valid = False
-
-        # Check if line is incorrectly formatted (more than 1 '=')
-        elif len(fields) > 2:
+        # Check if line is a comment (starts with '#')
+        elif line.lstrip()[0] == '#':
             valid = False
-            line = '='.join(fields).strip('\n')
-            self.warnings.append(
-            (
-                'Warning: {0}:line {1}: Received incorrect format:\n'
-                '         > {2}\n'
-                '         Expected format is:\n'
-                '         > CHPL_VAR = VALUE\n'
-            ).format(self.prettypath, linenum, line))
+        else:
+            # Check if line is incorrectly formatted
+            try:
+                var, val = [f.strip() for f in line.split('=')]
+            except ValueError:
+                valid = False
+                self.warnings.append(
+                (
+                    'Warning: {0}:line {1}: Received incorrect format:\n'
+                    '         > {2}\n'
+                    '         Expected format is:\n'
+                    '         > CHPL_VAR = VALUE\n'
+                ).format(self.prettypath, linenum, line.strip('\n')))
 
         return valid
 
-    def valid_variable(self, var, val, linenum):
+    def valid_variable(self, line, linenum):
         """ Check if variable is valid and not duplicated """
+
+        var, val = [f.strip() for f in line.split('=')]
 
         valid = True
         # Check if var is in the list of approved special variables
