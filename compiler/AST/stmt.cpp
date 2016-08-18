@@ -54,7 +54,7 @@ void codegenStmt(Expr* stmt) {
     if (printCppLineno && stmt->linenum() > 0)
         info->cStatements.push_back(zlineToString(stmt));
     if (fGenIDS)
-      info->cStatements.push_back("/* " + numToString(stmt->id) + " */ ");
+      info->cStatements.push_back(idCommentTemp(stmt));
   } else {
 #ifdef HAVE_LLVM
     if (debug_info && stmt->linenum() > 0) {

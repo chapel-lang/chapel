@@ -1491,7 +1491,7 @@ GenRet TypeSymbol::codegen() {
       // code generated, so code generate it now. This can get called
       // when adding types partway through code generation.
       codegenDef();
-       codegenMetadata(); //TODO -- enable TBAA generation in the future.
+      // codegenMetadata(); //TODO -- enable TBAA generation in the future.
     }
     ret.type = llvmType;
 #endif
@@ -2142,10 +2142,10 @@ void FnSymbol::codegenDef() {
 
         info->lvt->addValue(arg->cname, tempVar.val,
                             tempVar.isLVPtr, !is_signed(type));
-  // debug info for formal arguments
-  if(debug_info){
-    debug_info->get_formal_arg(arg, ArgNo);
-  }
+        // debug info for formal arguments
+        if(debug_info){
+          debug_info->get_formal_arg(arg, ArgNo);
+        }
       }
       ++ai;
       ArgNo++;

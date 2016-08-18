@@ -124,7 +124,6 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
   const char* name = type->symbol->name;
   ModuleSymbol* defModule = type->symbol->getModule();
   const char* defFile = type->symbol->fname();
-  ////////////////Added by Hui/////////////////////////
   if (strstr(defFile, "/modules/")!=NULL || strcmp(defFile, "<internal>")==0) {
 #if HAVE_LLVM_VER >= 37
     return NULL;
@@ -133,7 +132,6 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
 #endif
 
   }
-  /////////////////////////////////////////////////////
   int defLine = type->symbol->linenum();
 
   if(!ty) {
@@ -381,7 +379,6 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
     }
 
     if(this_class->aggregateTag == AGGREGATE_RECORD) {
-        ////////////////////////////////////////
       N = this->dibuilder.createStructType(
         get_module_scope(defModule),
         name,
@@ -617,10 +614,6 @@ LLVM_DIGLOBALVARIABLE debug_data::construct_global_variable(VarSymbol *gVarSym)
       file, line_number, gVarSym_type, 
       !gVarSym->hasFlag(FLAG_EXPORT), /* is local to unit */
       llVal); /* must be llvm::Constant since LLVM 3.6 */
-  ///////////////////////////////////////////////
-  //else 
-    //printf("For this unsolved GV: type-name = %s astTag = %i\n",gVarSym->type->symbol->name, gVarSym->type->astTag);
-  
   else {
     LLVM_DIGLOBALVARIABLE ret;
     //return an Empty dbg node if the symbol type is unresolved
@@ -727,17 +720,4 @@ LLVM_DIVARIABLE debug_data::get_formal_arg(ArgSymbol *argSym, unsigned int ArgNo
   }
   return toDIVARIABLE(argSym->llvmDIFormal);
 }
-/*
-void debug_data::createDeclare(llvm::Value* Storage, LLVM_DIVARIABLE VarInfo)
-{
-  GenInfo* info = gGenInfo; //info is universal across whole project
-
-  if (Storage && VarInfo) 
-  //llvm::Instruction *declareCall = 
-    this->dibuilder.insertDeclare(Storage,VarInfo,info->builder->GetInsertBlock());
-  //declareCall->setDebugLoc();
-  else 
-    printf("CreateDeclare failed !\n");
-}
-*/
 #endif

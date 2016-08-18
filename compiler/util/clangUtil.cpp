@@ -866,21 +866,22 @@ static void finishClang(GenInfo* info){
   info->DiagID.reset();
 }
 
-static void cleanupClang(GenInfo* info)
-{
+static void deleteClang(GenInfo* info){
   if( info->cgBuilder ) {
-    info->cgBuilder->Release();
     delete info->cgBuilder;
     info->cgBuilder = NULL;
   }
   delete info->targetData;
-  info->targetData = NULL;
   delete info->Clang;
   info->Clang = NULL;
   delete info->cgAction;
   info->cgAction = NULL;
-  info->Diags.reset();
-  info->DiagID.reset();
+}
+
+static void cleanupClang(GenInfo* info)
+{
+  finishClang(info);
+  deleteClang(info);
 }
 
 void setupClang(GenInfo* info, std::string mainFile)
@@ -1869,6 +1870,8 @@ void makeBinaryLLVM(void) {
   output.keep();
   output.os().flush();
 
+  //finishClang is before the call to the debug finalize
+  deleteClang(info);
 
   std::string options = "";
 
