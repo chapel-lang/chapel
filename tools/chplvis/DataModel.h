@@ -92,11 +92,11 @@ typedef struct fileName {
 } fileName;
 
 // Function names
-typedef struct funcName {
+typedef struct funcname {
   char *name;
   int  fileNo;
   int  lineNo;
-} funcName;
+} funcname;
 
 
 // Primary data structure built by reading the data files dumped by using VisualDebug.chpl
@@ -124,7 +124,7 @@ class DataModel {
   fileName *fileTbl;
   int fileTblSize;
 
-  funcName *funcTbl;
+  funcname *funcTbl;
   int funcTblSize;
   
   std::vector<const char *> tagNames;

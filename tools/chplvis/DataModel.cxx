@@ -841,8 +841,7 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
             if (sscanf(linedata, ": %d", &funcTblSize) != 1)
               printf ("Bad FIDNsize record\n");
             else {
-              funcTbl = (struct funcName*) calloc (funcTblSize,
-                                                   sizeof(struct funcName));
+              funcTbl = (funcname*) calloc (funcTblSize, sizeof(filename));
             }
           } else {
             // FIDname record
