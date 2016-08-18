@@ -5,7 +5,8 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_compiler, chpl_platform, overrides, utils
+import chpl_compiler, chpl_platform, overrides
+from etc import get_chpl_home
 from utils import memoize
 
 
@@ -15,7 +16,7 @@ def get():
     if not llvm_val:
         host_platform = chpl_platform.get('host')
         host_compiler = chpl_compiler.get('host')
-        chpl_home = utils.get_chpl_home()
+        chpl_home = get_chpl_home()
         llvm_target_dir = '{0}-{1}'.format(host_platform, host_compiler)
         llvm_subdir = os.path.join(chpl_home, 'third-party', 'llvm', 'install',
                                    llvm_target_dir)

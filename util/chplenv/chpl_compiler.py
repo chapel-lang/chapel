@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 import optparse
 import os
-from sys import stderr, stdout
 import sys
+
+from distutils.spawn import find_executable
+from sys import stderr, stdout
 
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_platform, overrides, utils
+import chpl_platform, overrides
 from utils import memoize
+
 
 
 @memoize
@@ -47,7 +50,7 @@ def get(flag='host'):
         elif platform_val == 'marenostrum':
             compiler_val = 'ibm'
         elif platform_val == 'darwin':
-            if utils.find_executable('clang'):
+            if find_executable('clang'):
                 compiler_val = 'clang'
             else:
                 compiler_val = 'gnu'

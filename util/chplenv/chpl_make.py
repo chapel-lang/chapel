@@ -1,11 +1,12 @@
 #!/usr/bin/env python
+from distutils.spawn import find_executable
 import os
 import sys
 
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_platform, overrides, utils
+import chpl_platform, overrides
 from utils import memoize
 
 
@@ -17,7 +18,7 @@ def get():
         if platform_val.startswith('cygwin') or platform_val == 'darwin':
             make_val = 'make'
         elif platform_val.startswith('linux'):
-            if utils.find_executable('gmake'):
+            if find_executable('gmake'):
                 make_val = 'gmake'
             else:
                 make_val = 'make'

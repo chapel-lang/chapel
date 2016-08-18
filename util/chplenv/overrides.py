@@ -3,8 +3,8 @@
 Provides simple 'get()' interface for accessing default value overrides
 Checks environment variables first, then chplconfig file for definitions
 """
-from __future__ import print_function
-import os, sys
+import os
+import sys
 
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
@@ -186,11 +186,17 @@ def get(var, default=None):
     return default
 
 
+def allvars():
+    """ Generate overrides currently set via environment/chplconfig """
+    for var in [v for v in chplvars if get(v)]:
+        yield str(var, '=', get(var))
+
+
 def _main():
-    """ Print the default overrides that are currently set """
-    for var in chplvars:
-        if get(var):
-            print(var,'=',get(var))
+    """ Print overrides that are currently set via environment/chplconfig """
+    for var in allvars():
+        sys.stdout.write(var)
+        sys.stdout.write('\n')
 
 
 if __name__ == '__main__':

@@ -5,7 +5,8 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_3p_re2_configs, chpl_arch, chpl_compiler, chpl_platform, overrides, utils
+import chpl_3p_re2_configs, chpl_arch, chpl_compiler, chpl_platform, overrides
+from etc import get_chpl_home
 from utils import memoize
 
 
@@ -13,7 +14,7 @@ from utils import memoize
 def get():
     regexp_val = overrides.get('CHPL_REGEXP')
     if not regexp_val:
-        chpl_home = utils.get_chpl_home()
+        chpl_home = get_chpl_home()
         uniq_cfg_path = chpl_3p_re2_configs.get_uniq_cfg_path()
         regexp_subdir = os.path.join(chpl_home, 'third-party', 're2', 'install',
                                      uniq_cfg_path)

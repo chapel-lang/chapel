@@ -6,8 +6,9 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_comm, chpl_compiler, chpl_platform, overrides, utils
-from utils import CompVersion, memoize
+import chpl_comm, chpl_compiler, chpl_platform, overrides
+from utils import memoize
+from etc import CompVersion, get_compiler_version
 
 
 @memoize
@@ -32,7 +33,7 @@ def get(flag='target'):
             # will never run on a 32 bit machine. For pgi or 32 bit platforms
             # with an older gcc, we fall back to locks
             if compiler_val in ['gnu', 'cray-prgenv-gnu', 'mpi-gnu']:
-                version = utils.get_compiler_version('gnu')
+                version = get_compiler_version('gnu')
                 if version >= CompVersion('4.8'):
                     atomics_val = 'intrinsics'
                 elif version >= CompVersion('4.1') and not platform_val.endswith('32'):

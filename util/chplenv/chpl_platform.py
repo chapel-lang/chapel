@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import optparse
 import os
-import os.path
 import platform
 import re
 import sys

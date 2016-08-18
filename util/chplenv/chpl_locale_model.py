@@ -5,7 +5,8 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-from utils import memoize, overrides
+import overrides
+from utils import memoize
 
 
 @memoize

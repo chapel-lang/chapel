@@ -48,7 +48,7 @@ def print_mode(mode='list', anonymize=False):
         print_var('CHPL_TARGET_PLATFORM', target_platform, mode)
         print_var('CHPL_TARGET_COMPILER', target_compiler, mode)
 
-    get_module_lcd = ( utils.using_chapel_module() and
+    get_module_lcd = ( etc.using_chapel_module() and
                      (mode == 'runtime' or mode == 'make') )
     if m != 'compiler' and m != 'launcher':
         target_arch = chpl_arch.get('target', mode == 'make', get_module_lcd)
@@ -185,6 +185,12 @@ def print_mode(mode='list', anonymize=False):
     elif m == 'compiler' or m == 'runtime' or m == 'launcher':
         stdout.write('\n')
 
+    if mode == 'overrides':
+        for var in overrides.allvars():
+            stdout.write(var);
+            stdout.write('\n');
+
+
 
 def print_var(env_var, value, mode, short_name='', filters=None):
     if mode == 'list' or mode == 'debug':
@@ -230,6 +236,10 @@ def _main():
     parser.add_option('--simple', action='store_const', dest='mode', const='simple',
                       help="print out a listing of the environment that is "
                            "meant to be used in the compiler -- "
+                           "output is compatible with chplconfig format.")
+    parser.add_option('--overrides', action='store_const', dest='mode', const='overrides',
+                      help="print out a listing of variables that have been "
+                           "user supplied via environment or chplconfig -- "
                            "output is compatible with chplconfig format.")
     parser.add_option('--anonymize', action='store_true', dest='anonymize', default=False,
                       help="avoid printing machine specific details such as "
