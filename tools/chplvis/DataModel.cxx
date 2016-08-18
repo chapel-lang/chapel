@@ -813,7 +813,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
       if ( (findex == 0) && ( (strstr(line,"Tablesize:") == line) 
                               || (strstr(line,"fname:") == line)
                               || (strstr(line,"tname:") == line)
-                              || (strstr(line,"FIDname:") == line) )) {
+                              || (strstr(line,"FID") == line) )) {
         switch (line[0]) {
         case 'T': // filename Table size
           if (sscanf(linedata, ": %d", &fileTblSize) != 1) {
@@ -877,7 +877,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
         continue;
       } else {
         if (sscanf (linedata, ": %ld.%ld%ln", &sec, &usec, &nextCh) != 2) {
-          printf ("Can't read time from '%s'\n", linedata);
+          printf ("Can't read time from '%s'\n", line);
           nErrs++;
           continue;
         }          
