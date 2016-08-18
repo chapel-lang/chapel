@@ -780,9 +780,10 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
     // Data for tasks and comm and fork and filename
     int nid;    // Node id
     char onstr[5];  // "O" or "L" for onExecute or local
+    int ix; //
     int nlineno; // line number starting the task
-    int nfileno;  // file number, indexes strTbl.
-    char nfilename[512];  // File name for strTbl
+    int nfileno;  // file number, indexes fileTbl.
+    char tmpname[512];  // File name for fileTbl and funcTbl
 
     // comm
     int isGet;  // put (0), get (1)  currently ignoring non-block and strid
@@ -815,24 +816,45 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
                               || (strstr(line,"FIDname:") == line) )) {
         switch (line[0]) {
         case 'T': // filename Table size
-          if (sscanf(linedata, ": %d", &strTblSize) != 1) {
+          if (sscanf(linedata, ": %d", &fileTblSize) != 1) {
             fl_alert("Data file content error");
             exit(1);
           } else {
-            strTbl = (char **)calloc(strTblSize, sizeof(char*));
+            fileTbl = (struct fileName *)calloc(fileTblSize, sizeof(struct fileName));
           }
           break;
           
         case 'f':  //  file name ... should only be in file 0
-          if (sscanf(linedata, ": %d %511s", &nfileno, nfilename) != 2) {
+          if (sscanf(linedata, ": %d %511s", &nfileno, tmpname) != 2) {
             printf ("Bad filename record.\n");
           } else {
-            assert (0 <= nfileno && nfileno < strTblSize);
-            strTbl[nfileno] = strdup(nfilename);
+            assert (0 <= nfileno && nfileno < fileTblSize);
+            fileTbl[nfileno].name = strdup(tmpname);
+            fileTbl[nfileno].rel2Home = strstr(tmpname,"$CHPL_HOME/") 
+                                          == tmpname;
           }
           break;
 
         case 'F':  // Function name record, ignore at this time.
+          if (line[3] == 'N') {
+            // FIDNsize record
+            if (sscanf(linedata, ": %d", &funcTblSize) != 1)
+              printf ("Bad FIDNsize record\n");
+            else {
+              funcTbl = (struct funcName*) calloc (funcTblSize,
+                                                   sizeof(struct funcName));
+            }
+          } else {
+            // FIDname record
+            if (sscanf(linedata, ": %d %d %d %511s",
+                       &ix, &nlineno, &nfileno, tmpname) != 4) {
+              printf ("Bad FIDname data.\n");
+            } else {
+              funcTbl[ix].name = strdup(tmpname);
+              funcTbl[ix].lineNo = nlineno;
+              funcTbl[ix].fileNo = nfileno;
+            }
+          }
           break;
 
         case 't':  // tag name, enter in the name cache and add it to a vector
@@ -903,9 +925,9 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
             // new task (taskid) is also a vdbtask
             (void)vdbTids.insert(taskid);
           } else {
-            if (nfileno < 0 || nfileno >= strTblSize) nfileno = 0;
+            if (nfileno < 0 || nfileno >= fileTblSize) nfileno = 0;
             newEvent = new E_task (sec, usec, nid, taskid, fid, onstr[0] == 'O',
-                                   nlineno, strTbl[nfileno]);
+                                   nlineno, nfileno);
           }
 
         }
@@ -927,16 +949,16 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
             // Ignore this comm as being part of the xxxVdebug system
             break;
           }
-          if (nfileno < 0 || nfileno >= strTblSize) nfileno = 0;
+          if (nfileno < 0 || nfileno >= fileTblSize) nfileno = 0;
           isGet = (line[0] == 'g' ? 1 :
                    line[0] == 'p' ? 0 :
                    line[3] == 'g' ? 1 : 0);
           if (isGet)
             newEvent = new E_comm (sec, usec, rnid, nid, eSize, dlen, isGet, taskid, nlineno,
-                                   strTbl[nfileno]);
+                                   nfileno);
           else
             newEvent = new E_comm (sec, usec, nid, rnid, eSize, dlen, isGet, taskid, nlineno,
-                                   strTbl[nfileno]);
+                                   nfileno);
         }
         break;
 

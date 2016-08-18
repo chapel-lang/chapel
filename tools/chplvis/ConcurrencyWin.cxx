@@ -111,12 +111,12 @@ void ConcurrencyWin::showCommBoxFor(taskData *task)
           cp = (E_comm *) *itr;
           if (cp->isGet()) 
             snprintf (tmpText, sizeof(tmpText), "[%f] Get from %d, total size %d, file %s:%ld\n",
-                      cp->clock_time() - startTime, cp->srcId(), cp->totalLen(), cp->srcName(),
-                      cp->getLineNo());
+                      cp->clock_time() - startTime, cp->srcId(), cp->totalLen(), 
+                      VisData.fileName(cp->srcFile()), cp->srcLine());
           else
             snprintf (tmpText, sizeof(tmpText), "[%f] Put to %d, total size %d, file %s:%ld\n",
-                      cp->clock_time() - startTime, cp->dstId(), cp->totalLen(), cp->srcName(),
-                      cp->getLineNo());
+                      cp->clock_time() - startTime, cp->dstId(), cp->totalLen(),
+                      VisData.fileName(cp->srcFile()), cp->srcLine());
           commBox->insert(tmpText);
           break;
         default: // Do nothing
@@ -352,7 +352,7 @@ void ConcurrencyData::buildData(void) {
           snprintf (tmp, sizeof(tmp), "%fC %ldG %ldP %ldF\n%s:%ld",
                     theTask->taskClock, theTask->commSum.numGets,
                     theTask->commSum.numPuts, theTask->commSum.numForks,
-                    theTask->taskRec->srcName(), theTask->taskRec->srcLine());
+                    VisData.fileName(theTask->taskRec->srcFile()), theTask->taskRec->srcLine());
         } else {
           snprintf (tmp, sizeof(tmp), "%fC %ldG %ldP %ldF",
                     theTask->taskClock, theTask->commSum.numGets,
@@ -413,7 +413,7 @@ void ConcurrencyData::buildData(void) {
           snprintf (tmp, sizeof(tmp), "%fC %ldG %ldP %ldF\n%s:%ld",
                     theTask->taskClock, theTask->commSum.numGets,
                     theTask->commSum.numPuts, theTask->commSum.numForks,
-                    theTask->taskRec->srcName(), theTask->taskRec->srcLine());
+                    VisData.fileName(theTask->taskRec->srcFile()), theTask->taskRec->srcLine());
         } else {
           snprintf (tmp, sizeof(tmp), "%fC %ldG %ldP %ldF",
                     theTask->taskClock, theTask->commSum.numGets,

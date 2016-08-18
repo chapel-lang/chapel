@@ -85,6 +85,20 @@ struct localeData {
                  numTasks(0), runConc(0), maxConc(0) {};
 };
 
+// File names, rel2Home says the names starts with $CHPL_HOME
+typedef struct fileName {
+  char * name;
+  bool rel2Home;
+} fileName;
+
+// Function names
+typedef struct funcName {
+  char *name;
+  int  fileNo;
+  int  lineNo;
+} funcName;
+
+
 // Primary data structure built by reading the data files dumped by using VisualDebug.chpl
 
 class DataModel {
@@ -107,8 +121,12 @@ class DataModel {
   taskData mainTask;
 
   StringCache strDB;
-  char **strTbl;
-  int strTblSize;
+  fileName *fileTbl;
+  int fileTblSize;
+
+  funcName *funcTbl;
+  int funcTblSize;
+  
   std::vector<const char *> tagNames;
 
   typedef std::list<Event*>::iterator evItr;
@@ -210,6 +228,16 @@ class DataModel {
 
   double start_clock() {
     return (*theEvents.begin())->clock_time();
+  }
+
+  const char *fileName (long fileNo) {
+    return (fileNo >= 0 && fileNo < fileTblSize) ?
+      fileTbl[fileNo].name : "<unknown>";
+  }
+
+  bool fileIsRel2Home (long fileNo) {
+    return (fileNo >= 0 && fileNo < fileTblSize) ?
+      fileTbl[fileNo].rel2Home : false ; 
   }
   
   // Constructor for DataModel
