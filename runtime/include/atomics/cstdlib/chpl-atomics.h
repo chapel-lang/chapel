@@ -21,6 +21,13 @@
 #define _chpl_atomics_h_
 
 #include "chpltypes.h"
+#include "chpl-comp-detect-macros.h"
+
+// g++ 4.8 and 4.9 appear to support standard atomics, but have errors
+// in their <atomic> header.  Also, gcc 4.8 is missing <stdatomic.h>.
+#if RT_COMP_CC == RT_COMP_GCC && RT_COMP_GCC_VERSION_MAJOR < 5
+  #error "The cstdlib atomics need at least gcc 5.  Use intrinsics or locks."
+#endif
 
 #if defined(__cplusplus)
   #if __cplusplus >= 201103L
