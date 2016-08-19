@@ -68,11 +68,14 @@ between locales.
 */
 class Private: BaseDist {
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool) {
-    return new PrivateDom(rank=rank, idxType=idxType, stridable=stridable);
+    return new PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=this);
   }
 
   proc writeThis(x) {
     x.writeln("Private Distribution");
+  }
+  proc dsiClone() {
+    return new Private();
   }
 }
 
@@ -107,7 +110,7 @@ class PrivateDom: BaseRectangularDom {
   proc dsiLow return 0;
   proc dsiHigh return numLocales-1;
   proc dsiStride return 0;
-  proc dsiSetIndices(x: domain) { compilerError("cannot reassign private domain"); }
+  proc dsiSetIndices(x: domain) { halt("cannot reassign private domain"); }
   proc dsiGetIndices() { return {0..numLocales-1}; }
 
   proc dsiRequiresPrivatization() param return true;
@@ -124,6 +127,7 @@ class PrivateDom: BaseRectangularDom {
   proc dsiReprivatize(other, reprivatizeData) { }
 
   proc dsiMember(i) return 0 <= i && i <= numLocales-1;
+  proc dsiMyDist() return dist;
 }
 
 class PrivateArr: BaseArr {
