@@ -2025,6 +2025,7 @@ module ChapelArray {
       d._value._free_when_no_arrs = true;
       var a = _value.dsiSlice(d._value);
       a._arrAlias = _value;
+      d._value.add_arr(a);
       //pragma "dont disable remote value forwarding"
       //proc help() {
       //  d._value.incRefCount();
@@ -2049,6 +2050,7 @@ module ChapelArray {
       //  d._value.incRefCount();
       var a = _value.dsiRankChange(d._value, rank, stridable, args);
       a._arrAlias = _value;
+      d._value.add_arr(a);
       //if !noRefCount then
       //  a._arrAlias.incRefCount();
       return _newArray(a);
@@ -2207,6 +2209,7 @@ module ChapelArray {
       newDom._value._free_when_no_arrs = true;
       var x = _value.dsiReindex(newDom._value);
       x._arrAlias = _value;
+      d._value.add_arr(x);
       //pragma "dont disable remote value forwarding"
       //proc help() {
       //  newDom._value.incRefCount();
