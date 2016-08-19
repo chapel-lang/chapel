@@ -113,6 +113,14 @@ SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
 SQUASH_WARN_GEN_CFLAGS += -Wno-pointer-sign
 
 #
+# Don't warn for unsigned pointer comparisons
+#
+# uint32_t i = foo();
+# bool = i < 0; // always false
+#
+SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
+
+#
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)
