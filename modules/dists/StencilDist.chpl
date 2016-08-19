@@ -1480,7 +1480,7 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
 proc _array.noFluffView() {
   var a = _value.dsiNoFluffView();
   a._arrAlias = _value;
-  if !noRefCount then a._arrAlias.incRefCount();
+  //if !noRefCount then a._arrAlias.incRefCount();
   return _newArray(a);
 }
 
@@ -1491,7 +1491,7 @@ proc StencilArr.dsiNoFluffView() {
   var newDist = _newDistribution(tempDist);
   var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable));
   newDist._value.add_dom(tempDom._value);
-  if !noRefCount then newDist._value.incRefCount();
+  //if !noRefCount then newDist._value.incRefCount();
   tempDom.setIndices(dom.whole);
 
   var newDom = tempDom._value;
@@ -1509,7 +1509,7 @@ proc StencilArr.dsiNoFluffView() {
     }
   }
   if doRADOpt then alias.setupRADOpt();
-  if !noRefCount then tempDom._value.incRefCount();
+  //if !noRefCount then tempDom._value.incRefCount();
   return alias;
 }
 
