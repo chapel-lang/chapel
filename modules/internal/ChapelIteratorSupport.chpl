@@ -149,9 +149,9 @@ module ChapelIteratorSupport {
   }
 
   proc _checkIterator(type t) {
-    //if (!(isEnumType(t))) then
-    //  compilerError("cannot iterate over a type");
-    //else
+    if (!(isEnumType(t))) then
+      compilerError("cannot iterate over a type");
+    else
       return t;
   }
 
