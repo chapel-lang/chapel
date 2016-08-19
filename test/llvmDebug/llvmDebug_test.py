@@ -1,17 +1,23 @@
+#!/usr/bin/env python
+
 # Python test script to verify the llvm debug info
 # is generated properly during Chapel compilation
 
-import os, subprocess
+import os, subprocess, sys
 
-chpl_home = os.environ['CHPL_HOME']
-llvm_tool_path = chpl_home + os.sep + 'third-party/llvm/install/linux64-gnu/bin'
+chpl_home = sys.argv[1]
+platform = sys.argv[2]
+compiler = sys.argv[3]
+
+plat_comp = platform + '-' + compiler
+llvm_tool_path = chpl_home + '/third-party/llvm/install/' + plat_comp + '/bin'
 build_options = '--baseline --llvm -g'
 source_path = os.getcwd() #same as target path
 source = source_path + os.sep + 'llvmDebug_test.chpl'
 target = source_path + os.sep + 'llvmDebug_test'
 
 # Build Chapel Test Program
-Command_build = 'chpl ' + build_options + ' ' + source + ' -o ' + target
+Command_build = chpl_home + '/bin/' + platform + '/chpl ' + build_options + ' ' + source + ' -o ' + target
 if os.system(Command_build) == 0:
     print 'Build Succeeded'
 else:
