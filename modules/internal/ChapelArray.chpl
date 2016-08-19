@@ -2014,7 +2014,7 @@ module ChapelArray {
           halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
     }
 
-    // array slicing by a tuple of ranges
+    // array slicing by ranges
     pragma "no doc"
     pragma "reference to const when const this"
     proc this(ranges: range(?) ...rank) {
