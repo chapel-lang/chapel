@@ -134,7 +134,7 @@ class CSRDom: BaseSparseDomImpl {
         yield (this, 1, numElems);
       else
         coforall chunk in chunks(1..numElems, numChunks) do
-          yield (this, ...chunk);
+          yield (this, (...chunk));
       // TODO: to handle large numElems and numChunks faster, it would be great
       // to run the binary search in _private_findStartRow smarter, e.g.
       // pass to the tasks created in 'coforall' smaller ranges to search over.

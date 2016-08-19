@@ -88,7 +88,7 @@ module DefaultSparse {
         yield (this, 1, numElems);
       else
         coforall chunk in chunks(1..numElems, numChunks) do
-          yield (this, ...chunk);
+          yield (this, (...chunk));
     }
 
     iter these(param tag: iterKind, followThis:(?,?,?)) where tag == iterKind.follower {
