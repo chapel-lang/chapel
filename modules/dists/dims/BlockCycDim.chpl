@@ -775,15 +775,13 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
 
   // Here is the densified range for all indices on this locale.
   const hereDenseInds = 0:resultIdxType..#wholeR.length by nLocs align AL;
-  const hereNumInds   = hereDenseInds.length;
-  const hereFirstInd  = hereDenseInds.first;
 
   // This is our piece of hereNumInds
-  const (begNo,endNo) = _computeChunkStartEnd(hereNumInds, numTasks, taskid+1);
+  const (begNo,endNo) = chunk(hereDenseInds, numTasks, taskid+1);
 
   // Pick the corresponding part of hereDenseInds
-  const begIx = ( hereFirstInd + (begNo - 1) * nLocs ):resultIdxType;
-  const endIx = ( hereFirstInd + (endNo - 1) * nLocs ):resultIdxType;
+  const begIx = (begNo * nLocs):resultIdxType;
+  const endIx = (endNo * nLocs):resultIdxType;
   assert(hereDenseInds.member(begIx));
   assert(hereDenseInds.member(endIx));
 
