@@ -19,6 +19,8 @@
 
 // Useful functions for implementing distributions
 
+use RangeChunk;
+
 inline proc getDataParTasksPerLocale() {
   return dataParTasksPerLocale;
 }

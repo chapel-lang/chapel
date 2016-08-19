@@ -23,9 +23,6 @@ enum RemElems {
 }
 use RemElems;
 
-// TODO: 1..numChunks optimization?
-// iter chunks(numElems: integral, numChunks integral, remPol: RemElems = Dist)
-
 iter chunks(
   r: range,
   numChunks: integral,
@@ -54,6 +51,7 @@ iter chunksOrder(
   }
 }
 
+// Divide r into (almost) equal numChunks pieces, return the i-th piece.
 proc chunk(
   r: range,
   numChunks: integral,
@@ -66,7 +64,6 @@ proc chunk(
   return start..end by r.stride;
 }
 
-// Divide r into (almost) equal numChunks pieces, return the i-th piece.
 proc chunkOrder(
   r: range,
   numChunks: integral,
