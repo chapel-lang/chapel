@@ -2756,8 +2756,8 @@ printResolutionErrorUnresolved(
       INT_ASSERT(mod);
       str = astr(mod->name, ".", str);
     }
-    if (EnumType* typeE = toEnumType(info->actuals.v[1]->getValType())){
-      if(!strcmp("_MT", toString(info->actuals.v[0]->getValType()))) {
+    if(info->actuals.n > 1 && !strcmp("_MT", toString(info->actuals.v[0]->getValType()))) {
+      if (EnumType* typeE = toEnumType(info->actuals.v[1]->getValType())){
         entity = "enumerated type symbol or call";
       }
     }

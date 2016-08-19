@@ -142,7 +142,7 @@ static void buildFieldAccessorFunctions(AggregateType* at)
         }
       } else if (isEnumType(field->type)) {
         build_accessors(at, field);
-      }//FIXME: Look here for tuples of types not being able to make field accessors
+      }
     }
   }
 }
@@ -321,7 +321,7 @@ static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
                          new_CStringSymbol(field->name))),
           new CallExpr("halt", new_CStringSymbol("illegal union access"))));
     }
-  } //FIXME: (remove comment) below this is where we handle enums as a special case of types. Types appear to be otherwise ignored.
+  }
   if (isTypeSymbol(field) && isEnumType(field->type)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, field));
     // better flatten enumerated types now
