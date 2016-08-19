@@ -2,6 +2,7 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 include $(CHPL_MAKE_HOME)/make/Makefile.base
+include $(THIRD_PARTY_DIR)/chpl-venv/Makefile.include
 
 ifdef CHPL_DEVELOPER
 DEBUG=1

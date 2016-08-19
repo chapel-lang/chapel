@@ -28,6 +28,7 @@ __all__ = [
     'chpl_3p_qthreads_configs',
     'chpl_3p_re2_configs',
     # General purpose helpers
+    'chpl_python_version',
     'chpl_home_utils',
     'compiler_utils',
     'overrides',

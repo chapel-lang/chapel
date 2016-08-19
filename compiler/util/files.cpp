@@ -440,6 +440,15 @@ std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
   return runCommand(command);
 }
 
+std::string getChplPythonVersion() {
+  // Runs util/chplenv/chpl_python_version.py
+  std::string command = "";
+
+  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_python_version.py 2> /dev/null";
+
+  return runCommand(command);
+}
+
 std::string runCommand(std::string& command) {
   // Run arbitrary command and return result
   char buffer[256];
