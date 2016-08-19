@@ -9,7 +9,35 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-from utils import chplvars, memoize
+from utils import memoize
+
+# List of Chapel Environment Variables
+chplvars = [
+             'CHPL_HOME',
+             'CHPL_HOST_PLATFORM',
+             'CHPL_HOST_COMPILER',
+             'CHPL_TARGET_PLATFORM',
+             'CHPL_TARGET_COMPILER',
+             'CHPL_TARGET_ARCH',
+             'CHPL_LOCALE_MODEL',
+             'CHPL_COMM',
+             'CHPL_COMM_SUBSTRATE',
+             'CHPL_GASNET_SEGMENT',
+             'CHPL_TASKS',
+             'CHPL_LAUNCHER',
+             'CHPL_TIMERS',
+             'CHPL_UNWIND',
+             'CHPL_MEM',
+             'CHPL_MAKE',
+             'CHPL_ATOMICS',
+             'CHPL_NETWORK_ATOMICS',
+             'CHPL_GMP',
+             'CHPL_HWLOC',
+             'CHPL_REGEXP',
+             'CHPL_WIDE_POINTERS',
+             'CHPL_LLVM',
+             'CHPL_AUX_FILESYS',
+           ]
 
 
 class ChapelConfig(object):
@@ -189,7 +217,8 @@ def get(var, default=None):
 def allvars():
     """ Generate overrides currently set via environment/chplconfig """
     for var in [v for v in chplvars if get(v)]:
-        yield str(var, '=', get(var))
+        varstring = '{0}={1}'.format(var, get(var))
+        yield varstring
 
 
 def _main():

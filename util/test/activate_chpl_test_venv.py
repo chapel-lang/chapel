@@ -8,7 +8,7 @@ import sys
 chplenv_dir = os.path.join(os.path.dirname(__file__), '..')
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-from chplenv import etc
+from chplenv import chpl_home_utils
 from chplenv import chpl_platform
 from chplenv import chpl_make
 
@@ -56,7 +56,7 @@ def activate_venv():
 
         # check Chapel test-venv for successful installation sentinel
         else:
-            chpl_home = os.path.join(etc.get_chpl_home(), '')
+            chpl_home = os.path.join(chpl_home_utils.get_chpl_home(), '')
             third_party = os.path.join(chpl_home, 'third-party')
             host_platform = chpl_platform.get('host')
 

@@ -6,7 +6,7 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_arch, chpl_compiler, chpl_locale_model, chpl_platform
-from etc import get_chpl_home, using_chapel_module
+from chpl_home_utils import get_chpl_home, using_chapel_module
 from utils import memoize
 
 

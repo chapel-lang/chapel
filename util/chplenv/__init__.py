@@ -19,7 +19,9 @@ __all__ = [
     'chpl_timers',
     'chpl_unwind',
     'chpl_wide_pointers',
-    'etc',
+    # et cetera
+    'chpl_home_utils',
+    'compiler_utils',
     'overrides',
     'utils',
     # third-party package configuration helpers
