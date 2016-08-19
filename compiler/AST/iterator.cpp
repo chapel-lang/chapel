@@ -227,6 +227,25 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
     INT_ASSERT(tmp->type->getRefType());
     tmp->type = tmp->type->getRefType();
   }
+  if (call->isResolved()) {
+    // If se is an argument to a function that takes in
+    // that argument by a ref concrete intent, make the temporary
+    // here a ref to the iterator class field.
+    ArgSymbol* arg = NULL;
+    for_formals_actuals(formal, actual, call) {
+      if (actual == se) {
+        arg = formal;
+      }
+    }
+    INT_ASSERT(arg);
+    if (!isReferenceType(tmp->type) &&
+        (arg->intent & INTENT_FLAG_REF)) {
+      INT_ASSERT(tmp->type->getRefType());
+      tmp->type = tmp->type->getRefType();
+      if ((arg->intent & INTENT_FLAG_CONST))
+        is_def = false;
+    }
+  }
 
   // OK, insert the declaration.
   stmt->insertBefore(new DefExpr(tmp));
