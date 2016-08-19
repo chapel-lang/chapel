@@ -59,9 +59,9 @@ module ChapelDistribution {
       }
       return count;
     }
-  
+
     // Returns 0 if the distribution class should be destroyed
-    inline proc remove_dom(x): int {
+    inline proc remove_dom(x:BaseDom): int {
       var count = -1;
       on this {
         _lock_doms();
@@ -71,8 +71,8 @@ module ChapelDistribution {
       }
       return count;
     }
-  
-    inline proc add_dom(x) {
+
+    inline proc add_dom(x:BaseDom) {
       on this {
         _lock_doms();
         _doms.append(x);
@@ -143,6 +143,9 @@ module ChapelDistribution {
     // atomics are available
     //var _domCnt: atomic_refcnt; // domain reference count
     var _arrs: list(BaseArr);  // arrays declared over this domain
+    var _arrs_containing_dom: int; // number of arrays using this domain
+                                   // as var A: [D] [1..2] real
+                                   // is using {1..2}
     var _arrsLock: atomicflag; //   and lock for concurrent access
     var _free_when_no_arrs: bool;
     var pid:int = -1; // privatized ID, if privitization is supported
@@ -177,24 +180,26 @@ module ChapelDistribution {
         // Now manage the arrays
         _lock_arrs();
         arr_count = _arrs.size;
+        arr_count += _arrs_containing_dom;
         _free_when_no_arrs = true;
         _unlock_arrs();
       }
       return arr_count;
     }
-  
-    inline proc remove_arr(x): int {
+
+    inline proc remove_arr(x:BaseArr): int {
       var count = -1;
       on this {
         _lock_arrs();
         _arrs.remove(x);
         count = _arrs.size;
+        count += _arrs_containing_dom;
         _unlock_arrs();
       }
       return count;
     }
   
-    inline proc add_arr(x) {
+    inline proc add_arr(x:BaseArr) {
       on this {
         _lock_arrs();
         _arrs.append(x);
@@ -202,6 +207,26 @@ module ChapelDistribution {
       }
     }
   
+    inline proc remove_containing_arr(x:BaseArr): int {
+      var count = -1;
+      on this {
+        _lock_arrs();
+        _arrs_containing_dom -= 1;
+        count = _arrs.size;
+        count += _arrs_containing_dom;
+        _unlock_arrs();
+      }
+      return count;
+    }
+
+    inline proc add_containing_arr(x:BaseArr) {
+      on this {
+        _lock_arrs();
+        _arrs_containing_dom += 1;
+        _unlock_arrs();
+      }
+    }
+
     inline proc _lock_arrs() {
       // WARNING: If you are calling this function directly from
       // a remote locale, you should consider wrapping the call in

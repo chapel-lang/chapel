@@ -500,24 +500,46 @@ module ChapelArray {
     return D;
   }
 
-  /*
-  test/arrays/diten/distArrInRecord.chpl -suseBulkTransferStride=true
-
-    [Error matching compiler output for arrays/deitz/test_remote_block_slicing]
-   [Error matching compiler output for arrays/deitz/test_remote_cyclic_slicing]
-   [Error matching compiler output for arrays/deitz/part4/test_array_alias_field]
-   [Error matching compiler output for arrays/deitz/part6/test_block_slice_forall]
-   [Error matching compiler output for arrays/deitz/part6/test_block_slice_reduce]
-   [Error matching compiler output for arrays/diten/assignBlockSlice]
-   [Error matching compiler output for arrays/diten/strideBlock]
-  */
-
-  // TODO -- 
+  //
+  // These routines increment and decrement the reference count
+  // for a domain that is part of an array's element type.
+  // Prior to introducing these routines and calls, we would
+  // increment/decrement the reference count based on the
+  // number of indices in the outer domain instead; this could
+  // cause the domain to be deallocated prematurely in the
+  // case the the outer domain was empty.  For example:
+  //
   //   var D = {1..0};   // start empty; we'll resize later
   //   var A: [D] [1..2] real;
   //
-  // previously handled by chpl_incRefCountsForDomainsInArrayEltTypes
+  // The anonymous domain {1..2} must be kept alive as a result
+  // of being part of A's type even though D is initially empty.
+  // Thus, {1..2} should remain alive as long as A is.  By
+  // incrementing and decrementing its reference counts based
+  // on A's lifetime rather than the number of elements in domain
+  // D, we ensure that is kept alive.  See
+  // test/users/bugzilla/bug794133/ for more details and examples.
+  //
+  proc chpl_incRefCountsForDomainsInArrayEltTypes(arr:BaseArr, type eltType) {
+    compilerAssert(!noRefCount);
+    if (isArrayType(eltType)) {
+      var ev: eltType;
+      ev.domain._value.add_containing_arr(arr);
+      chpl_incRefCountsForDomainsInArrayEltTypes(arr, ev.eltType);
+    }
+  }
 
+  proc chpl_decRefCountsForDomainsInArrayEltTypes(arr:BaseArr, type eltType) {
+    compilerAssert(!noRefCount);
+    if (isArrayType(eltType)) {
+      var ev: eltType;
+      const refcount = ev.domain._value.remove_containing_arr(arr);
+      if !noRefCount then
+        if refcount == 0 then
+          delete ev.domain._value;
+      chpl_decRefCountsForDomainsInArrayEltTypes(arr, ev.eltType);
+    }
+  }
 
   //
   // Support for subdomain types
@@ -1040,6 +1062,8 @@ module ChapelArray {
         _value.add_arr(x);
       }
       help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
 
       return _newArray(x);
     }
@@ -1857,6 +1881,7 @@ module ChapelArray {
         on _value {
           var cnt = _instance.destroyArr();
           if cnt == 0 then {
+            chpl_decRefCountsForDomainsInArrayEltTypes(_value, _value.eltType);
             delete _instance;
           }
         }
