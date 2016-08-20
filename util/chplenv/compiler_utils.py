@@ -1,4 +1,4 @@
-""" Compiler utility functions for chplenv modules """
+""" Backend compiler utility functions for chplenv modules """
 import os
 import re
 import sys
@@ -8,7 +8,7 @@ from collections import namedtuple
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-from utils import memoize
+from utils import memoize, run_command
 
 
 @memoize

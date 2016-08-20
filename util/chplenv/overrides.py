@@ -200,18 +200,8 @@ chplconfig = ChapelConfig()
 
 @memoize
 def get(var, default=None):
-    """ Check if variable has a default defined somewhere """
-    # Check environment variable
-    value = os.environ.get(var)
-    if value:
-        return value
-
-    # Check chplconfig file
-    value = chplconfig.get(var)
-    if value:
-        return value
-
-    return default
+    """ Check if variable has a default defined somewhere and return value """
+    return os.environ.get(var) or chplconfig.get(var) or default
 
 
 def allvars():

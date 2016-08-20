@@ -225,12 +225,8 @@ def get_cpuinfo(platform='linux'):
     vendor_string = ''
     feature_string = ''
     if platform == "darwin":
-        vendor_string = run_command(['sysctl',
-                                           '-n',
-                                           'machdep.cpu.vendor'])
-        feature_string = run_command(['sysctl',
-                                            '-n',
-                                            'machdep.cpu.features'])
+        vendor_string = run_command(['sysctl', '-n', 'machdep.cpu.vendor'])
+        feature_string = run_command(['sysctl', '-n', 'machdep.cpu.features'])
         # osx reports AVX1.0 while linux reports it as AVX
         feature_string = feature_string.replace("AVX1.0", "AVX")
     elif os.path.isfile('/proc/cpuinfo'):

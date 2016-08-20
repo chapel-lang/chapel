@@ -9,16 +9,16 @@ from sys import stdout, stderr
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import defaults, utils
+import overrides
 from utils import memoize
 
 #TODO: @memoize causes the calls to this function to get cached
 @memoize
 def get(flag='host'):
     if flag == 'host':
-        FOOBAR_val = defaults.get('CHPL_HOST_FOOBAR', '')
+        FOOBAR_val = overrides.get('CHPL_HOST_FOOBAR', '')
     elif flag == 'target':
-        FOOBAR_val = defaults.get('CHPL_TARGET_FOOBAR', '')
+        FOOBAR_val = overrides.get('CHPL_TARGET_FOOBAR', '')
     else:
         raise ValueError("Invalid flag: '{0}'".format(flag))
 
