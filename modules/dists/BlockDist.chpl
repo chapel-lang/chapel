@@ -360,6 +360,11 @@ class LocBlockArr {
   var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
 
+  proc clone() {
+    return new LocBlockArr(eltType,rank,idxType,stridable,locDom,
+        locRAD, myElems, locRADLock);
+  }
+
   inline proc dsiGetBaseDom() { return locDom; }
   // These function will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid
@@ -702,14 +707,15 @@ proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
 
 proc BlockArr.dsiPartialReduce_templateopt(param onlyDim) {
 
-
   const PartialDom = dom.dsiPartialDomain(exceptDim=onlyDim);
   var ResultArr: [PartialDom] eltType;
 
   var locResDom = dom.dist.targetLocDom dmapped new dmap(this.dom.dist);
   var locRes: [locResDom] ResultArr._value.myLocArr.myElems.type;
 
-  coforall l2 in dom.dist.targetLocDom._value.dsiPartialDomain(exceptDim=onlyDim) {
+  coforall l2 in
+      dom.dist.targetLocDom._value.dsiPartialDomain(exceptDim=onlyDim) {
+
     on ResultArr._value.locArr[l2].myElems {
       var thisParticularResult => ResultArr._value.locArr[l2].myElems;
       // FIXME should be a coforall
@@ -718,8 +724,11 @@ proc BlockArr.dsiPartialReduce_templateopt(param onlyDim) {
 
         const l = chpl__tuplify(l2).merge(onlyDim, l1);
         on dom.locDoms[l] {
+          /*thisParticularResult +=*/
+              /*dsiPartialReduce_template(locArr[l], onlyDim);*/
+          var __target = ResultArr._value.locArr[l2].clone();
           thisParticularResult +=
-              dsiPartialReduce_template(locArr[l], onlyDim);
+              dsiPartialReduce_template(locArr[l], onlyDim, __target);
         }
       }
     }
