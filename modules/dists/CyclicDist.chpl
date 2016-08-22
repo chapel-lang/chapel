@@ -1172,7 +1172,7 @@ class LocCyclicArr {
   var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
   var locCyclicRAD: LocCyclicRADCache(rank, idxType); // see below for why
   var myElems: [locDom.myBlock] eltType;
-  var locRADLock: atomicflag; // This will only be accessed locally, so
+  var locRADLock: atomicbool; // This will only be accessed locally, so
                               // force the use of processor atomics
 
   // These function will always be called on this.locale, and so we do
@@ -1219,9 +1219,7 @@ proc CyclicArr.doiCanBulkTransferStride() param {
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiCanBulkTransferStride");
 
-  // A CyclicArr is a bunch of DefaultRectangular arrays,
-  // so strided bulk transfer gotta be always possible.
-  return true;
+  return useBulkTransferDist;
 }
 
 //For assignments of the form: "any = Cyclic"

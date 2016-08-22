@@ -40,7 +40,7 @@ Chapel compiler's ability to optimize whole array assignment. While this
 approach does reduce the number of messages, and is probably the right idea in
 a library context, it has a few drawbacks:
 
-  - the obvious solution might use to much memory (imagine than A is large and
+  - the obvious solution might use too much memory (imagine than A is large and
     distributed; we can't just copy the whole thing).
   - a tiled/blocked solution adds complexity.
   - if many such local copies are used throughout a program, we might end

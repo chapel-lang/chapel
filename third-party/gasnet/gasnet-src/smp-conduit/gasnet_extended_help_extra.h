@@ -127,7 +127,7 @@ void gasnete_memset_nbi(gasnet_node_t node, void *dest, int val, size_t nbytes G
   Synchronization for implicit-handle non-blocking operations:
   ===========================================================
 */
-GASNETI_INLINE(gasnete_syncnbi_all)
+GASNETI_INLINE(gasnete_syncnbi)
 int gasnete_syncnbi(GASNETE_THREAD_FARG_ALONE)
 {
   gasneti_sync_reads();

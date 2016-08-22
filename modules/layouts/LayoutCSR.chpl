@@ -64,20 +64,13 @@ class CSR: BaseDist {
   }
 }
 
-class CSRDom: BaseSparseDom {
-  param rank : int;
-  type idxType;
+class CSRDom: BaseSparseDomImpl {
   var dist: CSR;
-  var parentDom: domain(rank, idxType);
-  var nnz: idxType;  // intention is that user might specify this to avoid reallocs
-  //  type idxType = rank*idxType;
 
   var rowRange: range(idxType);
   var colRange: range(idxType);
 
   const rowDom: domain(1, idxType);
-  var nnzDomSize: idxType;
-  var nnzDom: domain(1, nnz.type);
 
   var rowStart: [rowDom] idxType;      // would like index(nnzDom)
   var colIdx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
@@ -89,18 +82,14 @@ class CSRDom: BaseSparseDom {
       compilerError("Only 2D sparse domains are supported by the CSR distribution");
     this.dist = dist;
     this.parentDom = parentDom;
-    nnz = 0;
     rowRange = parentDom.dim(1);
     colRange = parentDom.dim(2);
     rowDom = {rowRange.low..rowRange.high+1};
-    nnzDomSize = nnz;
-    nnzDom = {1..nnzDomSize};
+    nnzDom = {1..nnz};
     dsiClear();
   }
 
   proc dsiMyDist() return dist;
-
-  proc dsiNumIndices return nnz;
 
   proc dsiGetIndices() return 0;
   proc dsiSetIndices(x) { }
@@ -187,7 +176,7 @@ class CSRDom: BaseSparseDom {
   proc _private_findStartRow(startIx, low, high) {
     var approx = 2; // Indicates when to switch to linear search.
                     // This number could be tuned for performance.
-    // simple binary search (should be fewer comparisons than BinarySearch())
+    // simple binary search (should be fewer comparisons than binarySearch())
     var l = low, h = high;
     while h > l + approx {
       var m = (h + l) / 2;
@@ -210,21 +199,6 @@ class CSRDom: BaseSparseDom {
     return l;
   }
 
-  proc dsiDim(d : int) {
-    if (d == 1) {
-      return rowRange;
-    } else {
-      return colRange;
-    }
-  }
-
-  proc boundsCheck(ind: rank*idxType):void {
-    if boundsChecking then
-      if !(parentDom.member(ind)) then
-        halt("CSR domain/array index out of bounds: ", ind,
-             " (expected to be within ", parentDom, ")");
-  }
-
   proc rowStop(row) {
     return rowStart(row+1)-1;
   }
@@ -234,7 +208,7 @@ class CSRDom: BaseSparseDom {
 
     const (row, col) = ind;
 
-    return BinarySearch(colIdx, col, rowStart(row), rowStop(row));
+    return binarySearch(colIdx, col, lo=rowStart(row), hi=rowStop(row));
   }
 
   proc dsiMember(ind: rank*idxType) {
@@ -245,6 +219,28 @@ class CSRDom: BaseSparseDom {
     return false;
   }
 
+  proc dsiFirst {
+    if nnz == 0 then return (parentDom.low) - (1,1);
+    const _low = nnzDom.low;
+    for i in rowDom do
+      if rowStart[i] > _low then
+        return (i-1, colIdx[colIdx.domain.low]);
+
+    halt("Something went wrong in dsiFirst");
+    return (0, 0);
+  }
+
+  proc dsiLast {
+    if nnz == 0 then return (parentDom.low) - (1,1);
+    const _low = nnzDom.low;
+    var _lastRow = parentDom.low[1] - 1;
+    for i in rowDom do
+      if rowStart[i] > _low then
+        _lastRow = i;
+
+    return (_lastRow-1, colIdx[nnz]);
+  }
+
   proc dsiAdd(ind: rank*idxType) {
     boundsCheck(ind);
 
@@ -252,18 +248,14 @@ class CSRDom: BaseSparseDom {
     const (found, insertPt) = find(ind);
 
     // if the index already existed, then return
-    if (found) then return;
+    if (found) then return 0;
 
     // increment number of nonzeroes
     nnz += 1;
 
     // double nnzDom if we've outgrown it; grab current size otherwise
-    var oldNNZDomSize = nnzDomSize;
-    if (nnz > nnzDomSize) {
-      nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;
-
-      nnzDom = {1..nnzDomSize};
-    }
+    var oldNNZDomSize = nnzDom.size;
+    _grow(nnz);
 
     const (row,col) = ind;
 
@@ -287,20 +279,9 @@ class CSRDom: BaseSparseDom {
     // this second initialization of any new values in the array.
     // we could also eliminate the oldNNZDomSize variable
     for a in _arrs {
-      a.sparseShiftArray(insertPt..nnz-1, oldNNZDomSize+1..nnzDomSize);
+      a.sparseShiftArray(insertPt..nnz-1, oldNNZDomSize+1..nnzDom.size);
     }
-  }
-
-  proc dsiBulkAdd(inds: [] index(rank, idxType),
-      isSorted=false, isUnique=false, preserveInds=true){
-
-    if !isSorted && preserveInds {
-      var _inds = inds;
-      bulkAdd_help(_inds, isSorted, isUnique); 
-    }
-    else {
-      bulkAdd_help(inds, isSorted, isUnique);
-    }
+    return 1;
   }
 
   proc bulkAdd_help(inds: [?indsDom] rank*idxType, isSorted=false, 
@@ -313,11 +294,7 @@ class CSRDom: BaseSparseDom {
     nnz += actualAddCnt;
 
     //grow nnzDom if necessary
-    if (nnz > nnzDomSize) {
-      nnzDomSize = (exp2(log2(nnz)+1.0)):int;
-
-      nnzDom = {1..nnzDomSize};
-    }
+    _bulkGrow(nnz);
 
     //linearly fill the new colIdx from backwards
     var newIndIdx = indsDom.high; //index into new indices
@@ -381,6 +358,8 @@ class CSRDom: BaseSparseDom {
     }
     for a in _arrs do 
       a.sparseBulkShiftArray(arrShiftMap, oldnnz);
+
+    return actualAddCnt;
   }
 
   proc dsiRemove(ind: rank*idxType) {
@@ -388,7 +367,7 @@ class CSRDom: BaseSparseDom {
     const (found, insertPt) = find(ind);
 
     // if the index doesn't already exist, then return
-    if (!found) then return;
+    if (!found) then return 0;
 
     // increment number of nonzeroes
     nnz -= 1;
@@ -425,6 +404,8 @@ class CSRDom: BaseSparseDom {
     for a in _arrs {
       a.sparseShiftArrayBack(insertPt..nnz-1);
     }
+
+    return 1;
   }
 
   proc dsiClear() {
@@ -570,19 +551,7 @@ class CSRDom: BaseSparseDom {
 }
 
 
-class CSRArr: BaseArr {
-  type eltType;
-  param rank : int;
-  type idxType;
-
-  var dom : CSRDom(rank=rank, idxType=idxType);
-  var data: [dom.nnzDom] eltType;
-  var irv: eltType;
-
-  proc dsiGetBaseDom() return dom;
-
-  //  proc this(ind: idxType ... 1) ref where rank == 1
-  //    return this(ind);
+class CSRArr: BaseSparseArrImpl {
 
   proc dsiAccess(ind: rank*idxType) ref {
     // make sure we're in the dense bounding box
@@ -651,41 +620,6 @@ class CSRArr: BaseArr {
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     compilerError("Sparse iterators can't yet be zippered with others (CSR layout)");
     yield 0;    // Dummy.
-  }
-
-  proc IRV ref {
-    return irv;
-  }
-
-  proc sparseBulkShiftArray(shiftMap, oldnnz){
-    var newIdx: int;
-    var prevNewIdx = 1;
-    for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(1) by -1) {
-      newIdx = shiftMap[_newIdx];
-      data[newIdx] = data[i];
-
-      //fill IRV up to previously added nnz
-      for emptyIndex in newIdx+1..prevNewIdx-1 do data[emptyIndex] = irv;
-      prevNewIdx = newIdx;
-    }
-    //fill the initial added space with IRV
-    for i in 1..prevNewIdx-1 do data[i] = irv;
-  }
-
-  proc sparseShiftArray(shiftrange, initrange) {
-    for i in initrange {
-      data(i) = irv;
-    }
-    for i in shiftrange by -1 {
-      data(i+1) = data(i);
-    }
-    data(shiftrange.low) = irv;
-  }
-
-  proc sparseShiftArrayBack(shiftrange) {
-    for i in shiftrange {
-      data(i) = data(i+1);
-    }
   }
 }
 

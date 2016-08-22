@@ -253,7 +253,7 @@ proc isPODValue(e)       param  return isPODType(e.type);
 
 
 //
-// ixXxx() - the argument can be either a type or a value
+// isXxx() - the argument can be either a type or a value
 //
 
 // Set 1 - types.

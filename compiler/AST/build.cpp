@@ -767,7 +767,7 @@ destructureIndices(BlockStmt* block,
 
 
 static BlockStmt*
-handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr) {
+handleArrayTypeCase(FnSymbol* fn, Expr* indices, ArgSymbol* iteratorExprArg, Expr* expr) {
   BlockStmt* block = new BlockStmt();
   fn->addFlag(FLAG_MAYBE_TYPE);
   bool hasSpecifiedIndices = !!indices;
@@ -800,7 +800,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
   VarSymbol* iteratorSym = newTemp("_iterator");
   isArrayTypeFn->insertAtTail(new DefExpr(iteratorSym));
   isArrayTypeFn->insertAtTail(new CallExpr(PRIM_MOVE, iteratorSym,
-                                new CallExpr("_getIterator", iteratorExpr->copy())));
+                                new CallExpr("_getIterator", iteratorExprArg)));
   VarSymbol* index = newTemp("_indexOfInterest");
   index->addFlag(FLAG_INDEX_OF_INTEREST);
   isArrayTypeFn->insertAtTail(new DefExpr(index));
@@ -833,7 +833,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, Expr* iteratorExpr, Expr* expr)
   thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, domain,
                            new CallExpr("chpl__autoCopy",
                              new CallExpr("chpl__ensureDomainExpr",
-                                          iteratorExpr->copy()))));
+                                          iteratorExprArg))));
   if (hasSpecifiedIndices) {
     // we want to swap something like the below commented-out
     // statement with the compiler error statement but skyline
@@ -861,24 +861,30 @@ CallExpr*
 buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   FnSymbol* fn = new FnSymbol(astr("_seqloopexpr", istr(loopexpr_uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+
+  // See comment in buildForallLoopExpr()
+  ArgSymbol* iteratorExprArg = new ArgSymbol(INTENT_BLANK, "iterExpr", dtAny);
+  fn->insertFormalAtTail(iteratorExprArg);
   BlockStmt* block = fn->body;
 
   if (maybeArrayType) {
+    // MPF: I suspect this case is not necessary here since array type
+    // expressions are be handled by buildForallLoopExpr()
     INT_ASSERT(!cond);
-    block = handleArrayTypeCase(fn, indices, iteratorExpr, expr);
+    block = handleArrayTypeCase(fn, indices, iteratorExprArg, expr);
   }
 
   VarSymbol* iterator = newTemp("_iterator");
   iterator->addFlag(FLAG_EXPR_TEMP);
   block->insertAtTail(new DefExpr(iterator));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExpr)));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExprArg)));
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
   Expr* stmt = NULL; // Initialized by buildSerialIteratorFn
   buildSerialIteratorFn(fn, iteratorName, expr, cond, indices, zippered, stmt);
 
-  return new CallExpr(new DefExpr(fn));
+  return new CallExpr(new DefExpr(fn), iteratorExpr);
 }
 
 
@@ -973,17 +979,29 @@ CallExpr*
 buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   FnSymbol* fn = new FnSymbol(astr("_parloopexpr", istr(loopexpr_uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+
+  // MPF: We'll add the iteratorExpr to the call, so we need an
+  // argument to accept it in the new function. This way,
+  // the responsibility for managing the memory of whatever
+  // is being iterated over (e.g. a domain literal) is in the
+  // caller, where the iteration most likely occurs. That way,
+  // the iterator can capture such a domain by reference.
+  ArgSymbol* iteratorExprArg = new ArgSymbol(INTENT_BLANK, "iterExpr", dtAny);
+  fn->insertFormalAtTail(iteratorExprArg);
   BlockStmt* block = fn->body;
 
   if (maybeArrayType) {
+    // handle e.g. type t = [1..3] int;
+    // as in test/arrays/deitz/part4/test_array_type_alias.chpl
+    // where "[1..3] int" is syntactically a "forall loop expression"
     INT_ASSERT(!cond);
-    block = handleArrayTypeCase(fn, indices, iteratorExpr, expr);
+    block = handleArrayTypeCase(fn, indices, iteratorExprArg, expr);
   }
 
   VarSymbol* iterator = newTemp("_iterator");
   iterator->addFlag(FLAG_EXPR_TEMP);
   block->insertAtTail(new DefExpr(iterator));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExpr)));
+  block->insertAtTail(new CallExpr(PRIM_MOVE, iterator, new CallExpr("_checkIterator", iteratorExprArg)));
   const char* iteratorName = astr("_iterator_for_loopexpr", istr(loopexpr_uid-1));
   block->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(iteratorName, iterator)));
 
@@ -999,7 +1017,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   Expr* bodyCopy = stmt->copy(&map);
   fifn->insertAtTail(ForLoop::buildForLoop(indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy), false, zippered));
 
-  return new CallExpr(new DefExpr(fn));
+  return new CallExpr(new DefExpr(fn), iteratorExpr);
 }
 
 
@@ -1597,7 +1615,7 @@ buildReduceScanPreface2(FnSymbol* fn, Symbol* eltType, Symbol* globalOp,
 //   }
 //
 static void addElseClauseForSerialIter(BlockStmt* forall, Expr* opExpr,
-                                       VarSymbol* data,
+                                       ArgSymbol* data,
                                        VarSymbol* result, VarSymbol* globalOp,
                                        UnresolvedSymExpr* index, bool zippered)
 {
@@ -1633,7 +1651,7 @@ static void addElseClauseForSerialIter(BlockStmt* forall, Expr* opExpr,
 //
 static CallExpr*
 buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
-                     VarSymbol* data, VarSymbol* eltType, bool zippered)
+                     ArgSymbol* data, VarSymbol* eltType, bool zippered)
 {
   if (zippered) {
     // A zippered reduction - not handled yet.
@@ -1720,7 +1738,7 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
   fn->insertAtTail(new CallExpr(PRIM_RETURN, result));
 
   // Success.
-  return new CallExpr(new DefExpr(fn));
+  return new CallExpr(new DefExpr(fn), dataExpr);
 }
 
 
@@ -1734,12 +1752,8 @@ buildReduceScanPreface1(FnSymbol* fn, Symbol* data, Symbol* eltType,
       sym->unresolved = astr("MinReduceScanOp");
   }
 
-  data->addFlag(FLAG_EXPR_TEMP);
   eltType->addFlag(FLAG_MAYBE_TYPE);
-
-  fn->insertAtTail(new DefExpr(data));
   fn->insertAtTail(new DefExpr(eltType));
-  fn->insertAtTail("'move'(%S, %E)", data, dataExpr);
 
   if( !zippered ) {
     fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIterator(%S)))))}", eltType, data);
@@ -1771,7 +1785,11 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   fn->addFlag(FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING);
   fn->addFlag(FLAG_INLINE);
 
-  VarSymbol* data = newTemp("chpl_toReduce");
+  // data will hold the reduce-d expression as an argument
+  // we'll store dataExpr in the call to the chpl__reduce function.
+  ArgSymbol* data = new ArgSymbol(INTENT_BLANK, "chpl_toReduce", dtAny);
+  fn->insertFormalAtTail(data);
+
   VarSymbol* eltType = newTemp("chpl_eltType");
   buildReduceScanPreface1(fn, data, eltType, opExpr, dataExpr, zippered);
 
@@ -1853,7 +1871,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   fn->insertAtTail(new DefExpr(result, new CallExpr(new CallExpr(".", globalOp, new_CStringSymbol("generate")))));
   fn->insertAtTail("'delete'(%S)", globalOp);
   fn->insertAtTail("'return'(%S)", result);
-  return new CallExpr(new DefExpr(fn));
+  return new CallExpr(new DefExpr(fn), dataExpr);
 }
 
 
@@ -1863,8 +1881,12 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   FnSymbol* fn = new FnSymbol(astr("chpl__scan", istr(uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
 
-  VarSymbol* data = newTemp();
-  VarSymbol* eltType = newTemp();
+  // data will hold the reduce-d expression as an argument
+  // we'll store dataExpr in the call to the chpl__scan function.
+  ArgSymbol* data = new ArgSymbol(INTENT_BLANK, "chpl_toScan", dtAny);
+  fn->insertFormalAtTail(data);
+
+  VarSymbol* eltType = newTemp("chpl_eltType");
   VarSymbol* globalOp = newTemp();
 
   buildReduceScanPreface1(fn, data, eltType, opExpr, dataExpr, zippered);
@@ -1878,7 +1900,7 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
     fn->insertAtTail("'return'(chpl__scanIteratorZip(%S, %S))", globalOp, data);
   }
 
-  return new CallExpr(new DefExpr(fn));
+  return new CallExpr(new DefExpr(fn), dataExpr);
 }
 
 

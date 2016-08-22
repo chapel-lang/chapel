@@ -32,31 +32,31 @@ proc main() {
   checkSearch(result, (true, 3), StrArr, 'search');
 
   // Integers sorted as tuples
-  result = search(Arr, 2, comparator=tuplekey);
+  result = search(Arr, 2, comparator=tuplekey, sorted=true);
   checkSearch(result, (true, 3), Arr, 'search', 'tuplekey');
 
   /* Reverse */
 
   // Default reversecomparator
-  result = search(ArrRev, 2, comparator=reverseComparator);
+  result = search(ArrRev, 2, comparator=reverseComparator, sorted=true);
   checkSearch(result, (true, 2), ArrRev, 'search');
 
   /* Comparator basics */
-  result = search(ArrAbs, 2, comparator=key);
+  result = search(ArrAbs, 2, comparator=key, sorted=true);
   checkSearch(result, (true, 2), ArrAbs, 'search', 'key');
 
-  result = search(ArrAbs, 2, comparator=compare);
+  result = search(ArrAbs, 2, comparator=compare, sorted=true);
   checkSearch(result, (true, 2), ArrAbs, 'search', 'compare');
 
   /* Not Found */
 
-  result = search(Arr, 5);
+  result = search(Arr, 5, sorted=true);
   checkSearch(result, (false, Arr.domain.high+1), Arr, 'search');
 
-  result = search(Arr, -5);
+  result = search(Arr, -5, sorted=true);
   checkSearch(result, (false, Arr.domain.low), Arr, 'search');
 
-  result = search(Arr, 0);
+  result = search(Arr, 0, sorted=true);
   checkSearch(result, (false, 3), Arr, 'search');
 
   /* Test Searches */

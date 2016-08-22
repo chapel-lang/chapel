@@ -87,8 +87,6 @@ bool Type::isDefaultIntentConst() const {
 
   if (symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) == true ||
       isReferenceType(this)                       == true ||
-      isSyncType(this)                            == true ||
-      isSingleType(this)                          == true ||
       isRecordWrappedType(this)                   == true)
     retval = false;
 
@@ -575,6 +573,7 @@ std::string EnumType::docsDirective() {
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL),
   aggregateTag(initTag),
+  initializerStyle(DEFINES_NONE_USE_DEFAULT),
   fields(),
   inherits(),
   outer(NULL),

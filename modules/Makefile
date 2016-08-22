@@ -26,7 +26,7 @@ endif
 
 # Generate tags command, dependent on if Make variable, TAGS == 1
 ifeq ($(TAGS), 1)
-TAGS_COMMAND=-@($(CHPL_MAKE_HOME)/util/chpltags -r . > /dev/null 2>&1 && echo "Updating TAGS...")
+TAGS_COMMAND=-@($(CHPL_MAKE_HOME)/util/chpltags -r . > /dev/null 2>&1 && echo "Updating TAGS..." || echo "Tags utility not available.  Skipping tags generation.")
 endif
 
 CHPL_MAKE_HOST_TARGET = --target
