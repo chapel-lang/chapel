@@ -579,15 +579,17 @@ proc CyclicArr.dsiPartialReduce_templateopt(param onlyDim) {
 
     on ResultArr._value.locArr[l2].myElems {
       var thisParticularResult => ResultArr._value.locArr[l2].myElems;
-      writeln(thisParticularResult._value.stridable);
       // FIXME should be a coforall
       forall l1 in dom.dist.targetLocDom.dim(onlyDim) 
           with (+ reduce thisParticularResult) {
 
         const l = chpl__tuplify(l2).merge(onlyDim, l1);
         on dom.locDoms[l] {
+          /*thisParticularResult +=*/
+              /*dsiPartialReduce_template(locArr[l].myElems, onlyDim);*/
+          var __target = ResultArr._value.locArr[l2].clone();
           thisParticularResult +=
-              dsiPartialReduce_template(locArr[l].myElems, onlyDim);
+              dsiPartialReduce_template(locArr[l], onlyDim, __target);
         }
       }
     }
@@ -801,6 +803,41 @@ class LocCyclicDom {
 //
 proc LocCyclicDom.member(i) return myBlock.member(i);
 
+proc LocCyclicDom.dsiPartialDomain(exceptDim) {
+  return myBlock._value.dsiPartialDomain(exceptDim);
+}
+
+
+iter LocCyclicDom.dsiPartialThese(param onlyDim, otherIdx) {
+  for i in myBlock._value.dsiPartialThese(onlyDim, otherIdx) do
+    yield i;
+}
+
+iter LocCyclicDom.dsiPartialThese(param onlyDim, otherIdx, param tag)
+    where tag==iterKind.leader {
+
+  for followThis in myBlock._value.dsiPartialThese(onlyDim, otherIdx,
+      tag=iterKind.leader) do
+    yield followThis;
+}
+
+iter LocCyclicDom.dsiPartialThese(param onlyDim, otherIdx,
+    param tag, followThis) where tag==iterKind.follower {
+
+  for i in myBlock._value.dsiPartialThese(onlyDim, otherIdx, 
+      tag=iterKind.follower, followThis=followThis) {
+    yield i;
+  }
+}
+
+iter LocCyclicDom.dsiPartialThese(param onlyDim, otherIdx, param tag)
+    where tag==iterKind.standalone {
+
+  for i in myBlock._value.dsiPartialThese(onlyDim, otherIdx,
+      tag=iterKind.standalone) {
+    yield i;
+  }
+}
 
 class CyclicArr: BaseArr {
   type eltType;
@@ -1185,8 +1222,44 @@ class LocCyclicArr {
   inline proc unlockLocRAD() {
     locRADLock.clear();
   }
+
+  inline proc dsiGetBaseDom() { return locDom; }
+  proc clone() {
+    return new LocCyclicArr(eltType,rank,idxType,stridable,
+        locDom,locRAD,locCyclicRAD,myElems,locRADLock);
+  }
 }
 
+iter LocCyclicArr.dsiPartialThese(param onlyDim, otherIdx) {
+  for i in locDom.dsiPartialThese(onlyDim, otherIdx) do
+    yield this(otherIdx.merge(onlyDim,i));
+}
+
+iter LocCyclicArr.dsiPartialThese(param onlyDim, otherIdx, param tag)
+    where tag==iterKind.leader {
+
+  for followThis in locDom.dsiPartialThese(onlyDim, otherIdx,
+      tag=iterKind.leader) do
+    yield followThis;
+}
+
+iter LocCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
+    param tag, followThis) where tag==iterKind.follower {
+
+  for i in locDom.dsiPartialThese(onlyDim, otherIdx, 
+      tag=iterKind.follower, followThis=followThis) {
+    yield this(otherIdx.merge(onlyDim,i));
+  }
+}
+
+iter LocCyclicArr.dsiPartialThese(param onlyDim, otherIdx, param tag)
+    where tag==iterKind.standalone {
+
+  for i in locDom.dsiPartialThese(onlyDim, otherIdx,
+      tag=iterKind.standalone) {
+    yield this(otherIdx.merge(onlyDim,i));
+  }
+}
 proc LocCyclicArr.this(i) ref {
   return myElems(i);
 }

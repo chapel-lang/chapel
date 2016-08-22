@@ -17,8 +17,6 @@ for (i,j) in ParentDom {
 //this doesn't sync appropriately
 /*writeln(+ reduce arr.partialThese(1,(1,)));*/
 /*writeln("Reduction over domain iterator");*/
-//this works fine
-/*writeln(+ reduce [i in arr._value.dom.dsiPartialThese(1,(1,))] arr[i,1]);*/
 
 //full test
 /*startCommDiagnostics();*/
