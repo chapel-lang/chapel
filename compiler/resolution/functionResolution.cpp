@@ -697,6 +697,7 @@ const char* toString(FnSymbol* fn) {
     } else if (!strcmp("init", fn->name)) {
       str = "init";
     } else {
+      str = "";
       INT_FATAL(fn, "flagged as constructor but not named _construct_ or init");
     }
   } else if (fn->isPrimaryMethod()) {
