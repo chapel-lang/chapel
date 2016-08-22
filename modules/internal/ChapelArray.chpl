@@ -1762,6 +1762,7 @@ module ChapelArray {
     // When 'this' is 'const', so is the returned l-value.
     pragma "no doc" // ref version
     pragma "reference to const when const this"
+    pragma "removable array access"
     inline proc this(i: rank*_value.dom.idxType) ref {
       if isRectangularArr(this) || isSparseArr(this) then
         return _value.dsiAccess(i);
@@ -1791,6 +1792,7 @@ module ChapelArray {
 
     pragma "no doc" // ref version
     pragma "reference to const when const this"
+    pragma "removable array access"
     inline proc this(i: _value.dom.idxType ...rank) ref
       return this(i);
 
