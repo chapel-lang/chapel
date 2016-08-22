@@ -482,6 +482,112 @@ class BlockCyclicDom: BaseRectangularDom {
   var pid: int = -1; // privatized object id
 }
 
+proc BlockCyclicDom.__lineSliceMask(param dim, idx) {
+
+  if !isHomogeneousTuple(idx) then
+    halt("Index to get line slice must be homogeneous");
+
+  if idx[1].type != idxType then 
+    halt("Index to get line slice must match domains index type");
+
+  param numIdxPre = dim - 1;
+  param numIdxPost = rank - dim;
+
+  assert(numIdxPre + numIdxPost == rank-1);
+
+  var idxPre = createTuple(if numIdxPre>0 then numIdxPre else 1, 
+      idxType, 0:idxType);
+  for param i in 1..numIdxPre do
+    idxPre[i] = idx[i];
+
+  var idxPost = createTuple(if numIdxPost > 0 then numIdxPost else 1, 
+      idxType, 0:idxType);
+  for param i in 1..numIdxPost do
+    idxPost[i] = idx[numIdxPre+1+i];
+
+  if numIdxPre > 0 && numIdxPost > 0 {
+    return ((...idxPre),..,(...idxPost));
+  }
+  if numIdxPre > 0 && numIdxPost <= 0 {
+    return ((...idxPre),..);
+  }
+  if numIdxPre <= 0 && numIdxPost > 0 {
+    return (..,(...idxPost));
+  }
+  if numIdxPre <= 0 && numIdxPost <= 0 {
+    return (.., );
+  }
+
+}
+
+// name is creepy
+proc BlockCyclicDom.__faceSliceMask(param exceptDim) {
+  param numUbRangesPre = exceptDim - 1;
+  param numUbRangesPost = rank - exceptDim;
+
+  assert(numUbRangesPre + numUbRangesPost == rank-1);
+
+  const ubRangesPre = createTuple(if numUbRangesPre > 0 then numUbRangesPre
+      else 1, range(boundedType=BoundedRangeType.boundedNone), ..);
+  const ubRangesPost = createTuple(if numUbRangesPost > 0 then numUbRangesPost
+      else 1, range(boundedType=BoundedRangeType.boundedNone), ..);
+
+  if numUbRangesPre > 0 && numUbRangesPost > 0 {
+    return ((...ubRangesPre),0,(...ubRangesPost));
+  }
+  if numUbRangesPre > 0 && numUbRangesPost <= 0 {
+    return ((...ubRangesPre),0);
+  }
+  if numUbRangesPre <= 0 && numUbRangesPost > 0 {
+    return (0,(...ubRangesPost));
+  }
+  if numUbRangesPre <= 0 && numUbRangesPost <= 0 {
+    return (0, );
+  }
+}
+proc BlockCyclicDom.dsiPartialDomain(param exceptDim) {
+
+  var ranges = whole._value.ranges.strip(exceptDim);
+  var space = {(...ranges)};
+  var ret = space dmapped
+    BlockCyclic(startIdx=this.dist.lowIdx.strip(exceptDim),
+        blocksize=this.dist.blocksize.strip(exceptDim),
+        targetLocales=
+            dist.targetLocales[(...__faceSliceMask(exceptDim))]);
+
+  return ret;
+}
+
+proc BlockCyclicArr.dsiPartialReduce_templateopt(param onlyDim) {
+
+
+  const PartialDom = dom.dsiPartialDomain(exceptDim=onlyDim);
+  var ResultArr: [PartialDom] eltType;
+
+  var locResDom = dom.dist.targetLocDom dmapped new dmap(this.dom.dist);
+  var locRes: [locResDom] ResultArr._value.myLocArr.myElems.type;
+
+  coforall l2 in
+      dom.dist.targetLocDom._value.dsiPartialDomain(exceptDim=onlyDim) {
+
+    on ResultArr._value.locArr[l2].myElems {
+      var thisParticularResult => ResultArr._value.locArr[l2].myElems;
+      writeln(thisParticularResult._value.stridable);
+      // FIXME should be a coforall
+      forall l1 in dom.dist.targetLocDom.dim(onlyDim) 
+          with (+ reduce thisParticularResult) {
+
+        const l = chpl__tuplify(l2).merge(onlyDim, l1);
+        on dom.locDoms[l] {
+          thisParticularResult +=
+              dsiPartialReduce_template(locArr[l]/*.myElems*/, onlyDim);
+        }
+      }
+    }
+  }
+  return ResultArr;
+
+}
 proc BlockCyclicDom.dsiDims() return whole.dims();
 
 proc BlockCyclicDom.dsiDim(d: int) return whole.dim(d);

@@ -2571,23 +2571,29 @@ module ChapelArray {
   }
 
 
-  // TODO Write a wrapper for this that would do local partial reductions to
-  // provide less communicioatn
   proc dsiPartialReduce_template(arr: [], param onlyDim) {
+    return dsiPartialReduce_template(arr._value, onlyDim);
+  }
 
-    if onlyDim < 1 || onlyDim > arr.domain.rank then
+  // TODO Write a wrapper for this that would do local partial
+  // reductions to provide less communicioatn
+  proc dsiPartialReduce_template(arr, param onlyDim) {
+
+    if onlyDim < 1 || onlyDim > arr.dsiGetBaseDom().rank then
       halt("Invalid partial reduction dimension: ", onlyDim);
 
     // I am not sure if we should support this. Some algorithms might do
-    // consecutive partial reductions with some intermediate steps. This pshould
-    // prevent specialization in user code
-    if arr.domain.rank == 1 then
+    // consecutive partial reductions with some intermediate steps. This
+    // pshould prevent specialization in user code
+    /*if arr.domain.rank == 1 then*/
+    if arr.dsiGetBaseDom().rank == 1 then
       return + reduce arr;
 
-    const PartialDom = arr.domain._value.dsiPartialDomain(exceptDim=onlyDim);
-    var ResultArr: [PartialDom] arr._value.eltType;
+    const PartialDom =
+      arr.dsiGetBaseDom().dsiPartialDomain(exceptDim=onlyDim);
+    var ResultArr: [PartialDom] arr.eltType;
     forall partialIdx in PartialDom {
-      ResultArr[partialIdx] = + reduce arr.partialThese(onlyDim, 
+      ResultArr[partialIdx] = + reduce arr.dsiPartialThese(onlyDim, 
           if isTuple(partialIdx) then partialIdx else (partialIdx, ));
     }
     return ResultArr;

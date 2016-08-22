@@ -736,10 +736,13 @@ iter BlockDom.dsiPartialThese(param onlyDim, otherIdx) {
 iter BlockDom.dsiPartialThese(param onlyDim, otherIdx, param tag)
     where tag==iterKind.leader {
 
-  coforall locDom in __partialTheseLocDoms(onlyDim, otherIdx) do on locDom {
-    for followThis in locDom.myBlock._value.dsiPartialThese(onlyDim, otherIdx,
-        tag) {
+  coforall locDom in __partialTheseLocDoms(onlyDim, otherIdx) {
+    on locDom {
+    for followThis in
+        locDom.myBlock._value.dsiPartialThese(onlyDim, otherIdx, tag) {
+
       yield (followThis[1]+locDom.myBlock.dim(onlyDim).low, );
+    }
     }
   }
 }

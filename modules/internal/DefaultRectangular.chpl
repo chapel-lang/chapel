@@ -162,14 +162,15 @@ module DefaultRectangular {
 
     // dsiPartialThese implementations
 
-    // otherIdx doesn't make much sense other than conformance to sparse domain
-    // interface. When/if there is a support for ragged domains , then it would
-    // be useful
+    // otherIdx doesn't make much sense other than conformance to sparse
+    // domain interface. When/if there is a support for ragged domains ,
+    // then it would be useful
 
-    // strictly swpeaking I want createTuple calls to have rank-1. But that
-    // would require `where rank == 1` special implementations, and I kept
-    // hitting resolution issues there(may or may not be a bug). since otherIdx
-    // is not used at this point, I am moving with this implementation
+    // strictly swpeaking I want createTuple calls to have rank-1. But
+    // that would require `where rank == 1` special implementations, and
+    // I kept hitting resolution issues there(may or may not be a bug).
+    // since otherIdx is not used at this point, I am moving with this
+    // implementation
     iter dsiPartialThese(onlyDim,
         otherIdx=createTuple(rank-1, idxType, 0:idxType)) {
 
@@ -189,7 +190,8 @@ module DefaultRectangular {
         param tag: iterKind, followThis)
       where tag == iterKind.follower {
 
-      for i in ranges(onlyDim).these(tag, followThis=followThis) do yield i;
+      for i in ranges(onlyDim).these(tag, followThis=followThis) do
+        yield i;
     }
 
     // currently no support for offset
@@ -705,6 +707,46 @@ module DefaultRectangular {
     pragma "local field"
     var shiftedData : _ddata(eltType);
     var noinit_data: bool = false;
+
+    iter dsiPartialThese(onlyDim,
+        otherIdx=createTuple(rank-1, idxType, 0:idxType)) {
+
+        for i in dom.dsiPartialThese(onlyDim,otherIdx) do 
+          yield dsiAccess(otherIdx.merge(onlyDim, i));
+    }
+
+    iter dsiPartialThese(onlyDim,
+        otherIdx=createTuple(rank-1, idxType, 0:idxType),
+        param tag: iterKind)
+      where tag == iterKind.leader {
+
+      for followThis in dom.dsiPartialThese(onlyDim, otherIdx,
+          tag=tag) do
+        yield followThis;
+    }
+
+    iter dsiPartialThese(onlyDim,
+        otherIdx=createTuple(rank-1, idxType, 0:idxType),
+        param tag: iterKind, followThis)
+      where tag == iterKind.follower {
+
+      for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag,
+          followThis) do 
+        yield dsiAccess(i);
+    }
+
+    // FIXME this standaloen iterator forwarding hits a compiler bug.
+    // The assertion in astutil.cpp:622 triggers. Engin
+    /*
+    iter dsiPartialThese(onlyDim,
+        otherIdx=createTuple(rank-1, idxType, 0:idxType),
+        param tag: iterKind)
+      where tag == iterKind.standalone {
+
+      for i in dom.dsiPartialThese(onlyDim, otherIdx, tag) do
+        yield dsiAccess(i);
+    }
+    */
 
     // 'dataAllocRange' is used by the array-vector operations (e.g. push_back,
     // pop_back, insert, remove) to allow growing or shrinking the data
