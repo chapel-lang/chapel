@@ -33,6 +33,13 @@ Lines in the file:
   fname: fileno name
     On locale 0 only, name of file in the file table at fileno
 
+  FIDNsize: size
+    On locale 0 only, size of the function name table.
+
+  FIDname: fid lnum fileno name
+    On locale 0 only, fid is function id, lnum and fileno
+    are location of function creation point?
+
   tname: tnum tag_name
     On locale 0 only, name of a new tag
 
