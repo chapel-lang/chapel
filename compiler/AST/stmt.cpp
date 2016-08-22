@@ -28,6 +28,9 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 
+#include "codegen.h"
+#include "llvmDebug.h"
+
 #include "AstVisitor.h"
 
 #include <cstring>
@@ -52,6 +55,26 @@ void codegenStmt(Expr* stmt) {
         info->cStatements.push_back(zlineToString(stmt));
     if (fGenIDS)
       info->cStatements.push_back(idCommentTemp(stmt));
+  } else {
+#ifdef HAVE_LLVM
+    if (debug_info && stmt->linenum() > 0) {
+      // Adjust the current line number, but leave the scope alone.
+      llvm::MDNode* scope;
+
+      if(stmt->parentSymbol && stmt->parentSymbol->astTag == E_FnSymbol) {
+        scope = debug_info->get_function((FnSymbol *)stmt->parentSymbol);
+      } else {
+        scope = info->builder->getCurrentDebugLocation().getScope(
+#if HAVE_LLVM_VER < 37
+                                                      info->llvmContext
+#endif
+                                                      );
+      }
+
+      info->builder->SetCurrentDebugLocation(
+                  llvm::DebugLoc::get(stmt->linenum(),0 /*col*/,scope));
+    }
+#endif
   }
 
   ++gStmtCount;
@@ -930,7 +953,22 @@ CondStmt::codegen() {
   codegenStmt(this);
 
   if ( outfile ) {
-    info->cStatements.push_back("if (" + codegenValue(condExpr).c + ") ");
+    //here it's very possible that we end up with ( ) around condExpr. Extra
+    //parentheses generated warnings from the backend compiler in some cases.
+    //It didn't feel very safe to strip them at expr level as it might mess up
+    //precedence thus, following conditional -- Engin
+
+    std::string c_condExpr = codegenValue(condExpr).c;
+
+    int numExtraPar = 0;
+    //if (c_condExpr[0] == '(' && c_condExpr[c_condExpr.size()-1] == ')') {
+    if (c_condExpr[numExtraPar] == '(' && 
+        c_condExpr[c_condExpr.size()-(numExtraPar+1)] == ')') {
+      numExtraPar++;
+    }
+    c_condExpr = c_condExpr.substr(numExtraPar,
+        c_condExpr.length()-2*numExtraPar);
+    info->cStatements.push_back("if (" + c_condExpr  + ") ");
 
     thenStmt->codegen();
 

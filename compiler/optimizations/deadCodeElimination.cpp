@@ -144,6 +144,7 @@ void deadExpressionElimination(FnSymbol* fn) {
           expr->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
           expr->isPrimitive(PRIM_GET_MEMBER) ||
           expr->isPrimitive(PRIM_DEREF) ||
+          expr->isPrimitive(PRIM_ARRAY_GET) ||
           expr->isPrimitive(PRIM_ADDR_OF)) {
         if (expr->isStmtExpr())
           expr->remove();

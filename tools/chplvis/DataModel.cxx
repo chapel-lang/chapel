@@ -803,9 +803,10 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
     // Process the line
     linedata = strchr(line, ':');
     if (linedata) {
-      if ( (findex == 0) && ( ( strstr(line,"Tablesize:") == line) 
+      if ( (findex == 0) && ( (strstr(line,"Tablesize:") == line) 
                               || (strstr(line,"fname:") == line)
-                              || strstr(line,"tname:") == line) ) {
+                              || (strstr(line,"tname:") == line)
+                              || (strstr(line,"FIDname:") == line) )) {
         switch (line[0]) {
         case 'T': // filename Table size
           if (sscanf(linedata, ": %d", &strTblSize) != 1) {
@@ -823,6 +824,9 @@ int DataModel::LoadFile (const char *filename, int index, double seq)
             assert (0 <= nfileno && nfileno < strTblSize);
             strTbl[nfileno] = strdup(nfilename);
           }
+          break;
+
+        case 'F':  // Function name record, ignore at this time.
           break;
 
         case 't':  // tag name, enter in the name cache and add it to a vector

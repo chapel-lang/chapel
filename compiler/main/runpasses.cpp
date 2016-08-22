@@ -76,6 +76,7 @@ struct PassInfo {
 #define LOG_optimizeOnClauses                  'o'
 #define LOG_addInitCalls                       'M'
 #define LOG_insertLineNumbers                  'n'
+#define LOG_denormalize                        'Q'
 #define LOG_codegen                            'E'
 #define LOG_makeBinary                         NUL
 
@@ -146,6 +147,7 @@ static PassInfo sPassList[] = {
 
   // AST to C or LLVM
   RUN(insertLineNumbers),       // insert line numbers for error messages
+  RUN(denormalize),             // denormalize -- remove local temps
   RUN(codegen),                 // generate C code
   RUN(makeBinary)               // invoke underlying C compiler
 };
