@@ -3895,19 +3895,8 @@ FnSymbol* tryResolveCall(CallExpr* call) {
   return resolveNormalCall(call, true);
 }
 
-// if checkonly is provided, don't print any errors; just check
-// to see if the particular function could be resolved.
-// returns the result of resolving - or NULL if we couldn't do it.
-// If checkonly is set, NULL can be returned - otherwise that would
-// be a fatal error.
-FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
-
-  if( call->id == breakOnResolveID ) {
-    printf("breaking on resolve call:\n");
-    print_view(call);
-    gdbShouldBreakHere();
-  }
-
+static
+void temporaryInitializerFixup(CallExpr* call) {
   if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
     // Support super.init() calls (for instance) when the super type does not
     // define either an initializer or a constructor.  Also ignores errors from
@@ -3937,6 +3926,22 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
       }
     }
   }
+}
+
+// if checkonly is provided, don't print any errors; just check
+// to see if the particular function could be resolved.
+// returns the result of resolving - or NULL if we couldn't do it.
+// If checkonly is set, NULL can be returned - otherwise that would
+// be a fatal error.
+FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
+
+  if( call->id == breakOnResolveID ) {
+    printf("breaking on resolve call:\n");
+    print_view(call);
+    gdbShouldBreakHere();
+  }
+
+  temporaryInitializerFixup(call);
 
   resolveDefaultGenericType(call);
 
