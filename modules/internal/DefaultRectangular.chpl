@@ -174,6 +174,7 @@ module DefaultRectangular {
     iter dsiPartialThese(onlyDim,
         otherIdx=createTuple(rank-1, idxType, 0:idxType)) {
 
+        if !dsiPartialDomain(onlyDim).member(otherIdx) then return;
         for i in ranges(onlyDim) do yield i;
     }
 
@@ -182,6 +183,7 @@ module DefaultRectangular {
         param tag: iterKind)
       where tag == iterKind.leader {
 
+      if !dsiPartialDomain(onlyDim).member(otherIdx) then return;
       for i in ranges(onlyDim).these(tag) do yield i;
     }
 
@@ -200,6 +202,7 @@ module DefaultRectangular {
         param tag: iterKind)
       where tag == iterKind.standalone {
 
+      if !dsiPartialDomain(onlyDim).member(otherIdx) then return;
       for i in ranges(onlyDim).these(tag) do yield i;
     }
 

@@ -360,6 +360,7 @@ class LocBlockArr {
   var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
 
+  inline proc dsiGetBaseDom() { return locDom; }
   // These function will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid
   // the repeated on's from calling testAndSet()).
@@ -718,7 +719,7 @@ proc BlockArr.dsiPartialReduce_templateopt(param onlyDim) {
         const l = chpl__tuplify(l2).merge(onlyDim, l1);
         on dom.locDoms[l] {
           thisParticularResult +=
-              dsiPartialReduce_template(locArr[l].myElems, onlyDim);
+              dsiPartialReduce_template(locArr[l], onlyDim);
         }
       }
     }
@@ -1098,6 +1099,10 @@ proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
 // Added as a performance stopgap to avoid returning a domain
 //
 proc LocBlockDom.member(i) return myBlock.member(i);
+
+proc LocBlockDom.dsiPartialDomain(exceptDim) {
+  return myBlock._value.dsiPartialDomain(exceptDim);
+}
 
 proc BlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
@@ -1527,6 +1532,44 @@ proc BlockArr.setRADOpt(val=true) {
 //
 proc LocBlockArr.this(i) ref {
   return myElems(i);
+}
+
+iter LocBlockArr.dsiPartialThese(onlyDim,
+    otherIdx=createTuple(rank-1, idxType, 0:idxType)) {
+
+  for i in myElems._value.dsiPartialThese(onlyDim,otherIdx) do 
+    yield i;
+}
+
+iter LocBlockArr.dsiPartialThese(onlyDim,
+    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+    param tag: iterKind)
+  where tag == iterKind.leader {
+
+    for followThis in myElems._value.dsiPartialThese(onlyDim, otherIdx,
+        tag=tag) do
+      yield followThis;
+  }
+
+iter LocBlockArr.dsiPartialThese(onlyDim,
+    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+    param tag: iterKind, followThis)
+  where tag == iterKind.follower {
+
+    for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag,
+        followThis) do 
+      yield i;
+  }
+
+// FIXME this standaloen iterator forwarding hits a compiler bug.
+// The assertion in astutil.cpp:622 triggers. Engin
+iter LocBlockArr.dsiPartialThese(onlyDim,
+    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+    param tag: iterKind)
+  where tag == iterKind.standalone {
+
+    for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag) do
+      yield i;
 }
 
 //

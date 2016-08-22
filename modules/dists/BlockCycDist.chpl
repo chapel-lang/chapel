@@ -560,7 +560,6 @@ proc BlockCyclicDom.dsiPartialDomain(param exceptDim) {
 
 proc BlockCyclicArr.dsiPartialReduce_templateopt(param onlyDim) {
 
-
   const PartialDom = dom.dsiPartialDomain(exceptDim=onlyDim);
   var ResultArr: [PartialDom] eltType;
 
@@ -572,15 +571,16 @@ proc BlockCyclicArr.dsiPartialReduce_templateopt(param onlyDim) {
 
     on ResultArr._value.locArr[l2].myElems {
       var thisParticularResult => ResultArr._value.locArr[l2].myElems;
-      writeln(thisParticularResult._value.stridable);
       // FIXME should be a coforall
-      forall l1 in dom.dist.targetLocDom.dim(onlyDim) 
+      forall l1 in dom.dist.targetLocDom.dim(onlyDim)
           with (+ reduce thisParticularResult) {
 
         const l = chpl__tuplify(l2).merge(onlyDim, l1);
         on dom.locDoms[l] {
+
+          var __target = ResultArr._value.locArr[l2].clone();
           thisParticularResult +=
-              dsiPartialReduce_template(locArr[l]/*.myElems*/, onlyDim);
+              dsiPartialReduce_template(locArr[l], onlyDim, __target);
         }
       }
     }
@@ -804,6 +804,63 @@ class LocBlockCyclicDom {
   //
   var myStarts: domain(rank, idxType, stridable=true);
   var myFlatInds: domain(1) = {0..#computeFlatInds()};
+}
+
+
+proc LocBlockCyclicDom.dsiPartialDomain(param exceptDim) {
+
+  const parentDomain = globDom.whole._value.dsiPartialDomain(exceptDim);
+  var retDomain: sparse subdomain(parentDomain);
+
+  /*retDomain += globDom.dsiLocalSubdomains();*/
+  /*for i in */
+      /*globDom.dsiPartialDomain(exceptDim)._value.dsiLocalSubdomains() {*/
+    /*writeln(here.id, " adding ", i);*/
+    /*retDomain += i;*/
+  /*}*/
+
+
+  /*writeln(here.id, " Returning partial domain: ", retDomain);*/
+
+  on this {
+    for i in do_dsiLocalSubdomains(this) {
+      /*writeln(here.id, " adding ", i);*/
+      retDomain += i._value.dsiPartialDomain(exceptDim);
+    }
+  }
+  /*writeln(here.id, " Returning partial domain: ", retDomain);*/
+  return retDomain;
+}
+
+
+iter LocBlockCyclicDom.dsiPartialThese(onlyDim,
+    otherIdx=createTuple(rank-1, idxType, 0:idxType)) {
+
+  for i in do_dsiLocalSubdomains(this) {
+    for ii in i._value.dsiPartialThese(onlyDim, otherIdx) {
+      yield ii;
+    }
+  }
+}
+
+iter LocBlockCyclicDom.dsiPartialThese(onlyDim,
+    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+    param tag: iterKind) where tag == iterKind.leader {
+
+  coforall i in do_dsiLocalSubdomains(this) {
+    for ii in i._value.dsiPartialThese(onlyDim, otherIdx, tag) {
+      yield (i, ii);
+    }
+  }
+}
+
+iter LocBlockCyclicDom.dsiPartialThese(onlyDim,
+    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+    param tag: iterKind, followThis) where tag == iterKind.follower {
+
+    for i in followThis[1]._value.dsiPartialThese(onlyDim, otherIdx,
+        tag=tag, followThis=followThis[2]) do
+      yield i;
 }
 
 //
@@ -1119,6 +1176,58 @@ class LocBlockCyclicArr {
 
 }
 
+proc LocBlockCyclicArr.clone() {
+  return new LocBlockCyclicArr(eltType,rank,idxType,stridable,
+      allocDom,indexDom);
+}
+
+proc LocBlockCyclicArr.dsiGetBaseDom() { return indexDom; }
+
+iter LocBlockCyclicArr.dsiPartialThese(onlyDim,
+    otherIdx=createTuple(rank-1, idxType, 0:idxType)) {
+
+  for i in do_dsiLocalSubdomains(indexDom) {
+    /*writeln("Local subdomain : ", i);*/
+    /*writeln(otherIdx);*/
+    for ii in i._value.dsiPartialThese(onlyDim, otherIdx) {
+      /*writeln("partial index : ", ii);*/
+      yield this(otherIdx.merge(onlyDim, ii));
+    }
+  }
+}
+
+/*iter LocBlockCyclicArr.dsiPartialThese(onlyDim,*/
+    /*otherIdx=createTuple(rank-1, idxType, 0:idxType),*/
+    /*param tag: iterKind) where tag == iterKind.leader {*/
+
+  /*coforall i in do_dsiLocalSubdomains(indexDom) {*/
+    /*for ii in i._value.dsiPartialThese(onlyDim, otherIdx, tag) {*/
+      /*yield (i, ii);*/
+    /*}*/
+  /*}*/
+/*}*/
+
+/*iter LocBlockCyclicArr.dsiPartialThese(onlyDim,*/
+    /*otherIdx=createTuple(rank-1, idxType, 0:idxType),*/
+    /*param tag: iterKind, followThis) where tag == iterKind.follower {*/
+
+    /*for i in followThis[1]._value.dsiPartialThese(onlyDim, otherIdx,*/
+        /*tag=tag, followThis=followThis[2]) {*/
+      /*writeln("Yielding ", otherIdx.merge(onlyDim, i));*/
+      /*yield this(otherIdx.merge(onlyDim, i));*/
+    /*}*/
+/*}*/
+
+/*// FIXME this standaloen iterator forwarding hits a compiler bug.*/
+/*// The assertion in astutil.cpp:622 triggers. Engin*/
+/*iter LocBlockArr.dsiPartialThese(onlyDim,*/
+    /*otherIdx=createTuple(rank-1, idxType, 0:idxType),*/
+    /*param tag: iterKind)*/
+  /*where tag == iterKind.standalone {*/
+
+    /*for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag) do*/
+      /*yield i;*/
+/*}*/
 
 proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t, dim = 1) where t == idxType {
   //  writeln("blksize");

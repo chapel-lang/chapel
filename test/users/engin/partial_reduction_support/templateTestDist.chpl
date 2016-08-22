@@ -24,7 +24,9 @@ for (i,j) in ParentDom {
 /*startCommDiagnostics();*/
 /*foo(arr, 2);*/
 writeln("Naive template result");
-writeln(dsiPartialReduce_template(arr, 1));
+// FIXME This is not supposed to work until I have
+// BlockArr.dsiPartialThese
+/*writeln(dsiPartialReduce_template(arr, 1));*/
 /*startCommDiagnostics();*/
 /*writeln(getCommDiagnostics());*/
 
