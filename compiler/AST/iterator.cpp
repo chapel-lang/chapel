@@ -227,7 +227,7 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
     INT_ASSERT(tmp->type->getRefType());
     tmp->type = tmp->type->getRefType();
   }
-  if (call->isResolved()) {
+  if (call && call->isResolved()) {
     // If se is an argument to a function that takes in
     // that argument by a ref concrete intent, make the temporary
     // here a ref to the iterator class field.
@@ -268,7 +268,8 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
     }
   }
 
-  // If the symexpr is set here,
+  bool add_writeback = false;
+
   if (is_def ||
       // Currently buildDefUseSets() does not identify PRIM_SET_MEMBER and
       // PRIM_SVEC_SET_MEMBER as defs.
@@ -277,6 +278,21 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
         call->isPrimitive(PRIM_SET_SVEC_MEMBER)) &&
        call->get(1) == se))
   {
+    add_writeback = true;
+  }
+
+  // If the temporary is a ref to the iterator class field,
+  // there is never a need to add a writeback.
+  if (tmp->type == field->type->refType) {
+    add_writeback = false;
+
+    // The above code only initializes a reference tmp if is_use is set.
+    // This assert will help to identify the issue if that becomes
+    // no longer sufficient.
+    INT_ASSERT(is_use);
+  }
+
+  if (add_writeback) {
     ArgSymbol* arg = toArgSymbol(se->var);
 
     if (arg)
