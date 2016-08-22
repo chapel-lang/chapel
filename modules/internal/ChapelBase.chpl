@@ -363,7 +363,11 @@ module ChapelBase {
       compilerError("unexpected case in exponentiation optimization");
   }
 
-  inline proc _expBaseHelp(param a: integral, b){ 
+  inline proc _expBaseHelp(param a: int, b) {
+    if b == 0 then 
+      return 1:a.type;
+    if b < 0 then
+        return 0; // same behavior as signed int **
     var c = 0;
     var x: int = a;
     while (x > 1) // shift right to count the power
@@ -383,7 +387,7 @@ module ChapelBase {
   inline proc **(a: int(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
   inline proc **(a: uint(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
   inline proc **(a: real(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
-  inline proc **(param a: integral, b: int(?w)) where _basePowerTwo(a) return _expBaseHelp(a, b);
+  inline proc **(param a: integral, b: int) where _basePowerTwo(a) return _expBaseHelp(a, b);
 
   //
   // logical operations on primitive types
