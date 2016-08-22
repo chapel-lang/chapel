@@ -2,7 +2,7 @@ use GMP;
 
 var a = new BigInt();
 
-a.fac_ui(100);
+a.fac(100);
 
 writeln(a);
 
@@ -12,7 +12,7 @@ writeln(x);
 //a.debugprint();
 
 var b = new BigInt(a);
-b.add_ui(b, 1);
+b.add(b, 1);
 //b.debugprint();
 
 on Locales[numLocales-1] {

@@ -12,11 +12,11 @@ var r5 = new GMPRandom(r4);
 var b = new BigInt(128);
 
 r1.seed(a);
-r2.seed_ui(10);
+r2.seed(10);
 
-var x = r1.urandomb_ui(32);
+var x = r1.urandomb(32);
 if printrandom then writeln(x);
-x = r2.urandomm_ui(1024);
+x = r2.urandomm(1024);
 if printrandom then writeln(x);
 r3.urandomb(a, 32);
 if printrandom then writeln(a);

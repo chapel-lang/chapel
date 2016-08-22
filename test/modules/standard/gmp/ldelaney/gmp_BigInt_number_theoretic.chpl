@@ -26,7 +26,7 @@ writeln("gcd of a prime and an integer is ", a);
 a.set(18);
 a.gcd(a, b);
 writeln("gcd(18, 120) = ", a);
-a.gcd_ui(b, 100);
+a.gcd(b, 100);
 writeln("gcd(120, 100) = ", a);
 c.set(720);
 d.set(1000);
@@ -38,7 +38,7 @@ b.set(10);
 c.set(15);
 a.lcm(b, c);
 writeln("least common multiple of ", b, " and ", c, " is ", a);
-a.lcm_ui(b, 24);
+a.lcm(b, 24);
 writeln("least common multiple of ", b, " and 24 is ", a);
 c.set(23);
 val = a.invert(b, c);
@@ -49,24 +49,24 @@ b.set(2);
 a.remove(c, b);
 writeln(c, " without factors of ", b, " is ", a);
 
-a.fac_ui(7);
+a.fac(7);
 writeln("7! = ", a);
 b.set(10);
-a.bin_ui(b, 7);
+a.bin(b, 7);
 writeln("binomial coefficient ", b, " over 7 = ", a);
-a.bin_uiui(9, 7);
+a.bin(9, 7);
 writeln("binomial coefficient 9 over 7 = ", a);
 
 b.set(0);
-a.fib_ui(7);
+a.fib(7);
 writeln("the 7th Fibonacci number is ", a);
-//a.fib2_ui(b, 6);
-mpz_fib2_ui(a.mpz, b.mpz, 6);
+//a.fib2(b, 6);
+mpz_fib2_ui(a.mpz, b.mpz, 6); //FIXME: Why am I doing this this way?
 writeln("the 5th and 6th Fibonacci numbers are ", b, " and ", a);
 
-a.lucnum_ui(7);
+a.lucnum(7);
 writeln("the 7th Lucas number is ", a);
-a.lucnum2_ui(b, 6);
+a.lucnum2(b, 6);
 writeln("the 5th and 6th Lucas numbers are ", b, " and ", a);
 
 //use to print out the results of probab_prime_p

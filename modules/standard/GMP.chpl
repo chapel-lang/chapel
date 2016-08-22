@@ -86,7 +86,7 @@ A code example::
 
  var a = new BigInt(); // initialize a GMP value, set it to zero
 
- a.fac_ui(100); // set a to 100!
+ a.fac(100); // set a to 100!
 
  writeln(a); // output 100!
 
@@ -94,7 +94,7 @@ A code example::
 
  var b = new BigInt("48473822929893829847"); // initialize from a decimal
  string
- b.add_ui(b, 1); // add one to b
+ b.add(b, 1); // add one to b
 
 
 Calling GMP functions directly
@@ -562,24 +562,20 @@ module GMP {
         }
       }
     }
-    proc set_ui(num: uint)
+    proc set(num: uint)
     {
       on Locales[this.locale_id] do 
         mpz_set_ui(this.mpz, num.safeCast(c_ulong));
     }
-    proc set_si(num:int)
+    proc set(num:int)
     {
       on Locales[this.locale_id] do mpz_set_si(this.mpz, num.safeCast(c_long));
     }
-    proc set(num: int)
-    {
-      on Locales[this.locale_id] do set_si(num.safeCast(c_long));
-    }
-    proc set_d(num: real)
+    proc set(num: real)
     {
       on Locales[this.locale_id] do mpz_set_d(this.mpz, num: c_double);
     }
-    proc set_str(str: string, base: int=0)
+    proc set(str: string, base: int=0)
     {
       on Locales[this.locale_id] do 
         mpz_set_str(this.mpz, str.localize().c_str(), base.safeCast(c_int));
@@ -600,6 +596,7 @@ module GMP {
         }
       }
     }
+    //FIXME: should these be get(type_to_return) instead?
     proc get_ui():uint
     {
       var x:c_ulong;
@@ -612,7 +609,7 @@ module GMP {
       on Locales[this.locale_id] do x = mpz_get_si(this.mpz);
       return x.safeCast(int);
     }
-    proc get_d():real
+    proc get_d():real //FIXME: should this be get_real?
     {
       var x:c_double;
       on Locales[this.locale_id] do x = mpz_get_d(this.mpz);
@@ -658,7 +655,7 @@ module GMP {
         }
       }
     }
-    proc add_ui(ref a: BigInt, b: uint)
+    proc add(ref a: BigInt, b: uint)
     {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
@@ -681,7 +678,7 @@ module GMP {
         }
       }
     }
-    proc sub_ui(ref a: BigInt, b: uint)
+    proc sub(ref a: BigInt, b: uint)
     {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
@@ -692,7 +689,7 @@ module GMP {
         }
       }
     }
-    proc ui_sub(a: uint, ref b: BigInt)
+    proc sub(a: uint, ref b: BigInt)
     {
       on Locales[this.locale_id] {
         if (here.id != b.locale_id) {
@@ -715,7 +712,7 @@ module GMP {
         }
       }
     }
-    proc mul_si(ref a: BigInt, b: int)
+    proc mul(ref a: BigInt, b: int)
     {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
@@ -726,7 +723,7 @@ module GMP {
         }
       }
     }
-    proc mul_ui(ref a: BigInt, b: uint)
+    proc mul(ref a: BigInt, b: uint)
     {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
@@ -749,7 +746,7 @@ module GMP {
         }
       }
     }
-    proc addmul_ui(ref a: BigInt, b: uint)
+    proc addmul(ref a: BigInt, b: uint)
     {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
@@ -772,7 +769,7 @@ module GMP {
         }
       }
     }
-    proc submul_ui(ref a: BigInt, b: uint)
+    proc submul(ref a: BigInt, b: uint)
     {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
@@ -897,7 +894,7 @@ module GMP {
         }
       }
     }
-    proc div_q_ui(param rounding: Round, ref n: BigInt, d: uint):uint
+    proc div_q(param rounding: Round, ref n: BigInt, d: uint):uint
     {
       var ret:c_ulong;
       on Locales[this.locale_id] {
@@ -919,7 +916,7 @@ module GMP {
       }
       return ret.safeCast(uint);
     }
-    proc div_r_ui(param rounding: Round, ref n: BigInt, d: uint):uint
+    proc div_r(param rounding: Round, ref n: BigInt, d: uint):uint
     {
       var ret:c_ulong;
       on Locales[this.locale_id] {
@@ -942,7 +939,7 @@ module GMP {
       return ret.safeCast(uint);
     }
     // this gets quotient, r gets remainder
-    proc div_qr_ui(param rounding: Round, ref r: BigInt, ref n: BigInt, d: uint):uint
+    proc div_qr(param rounding: Round, ref r: BigInt, ref n: BigInt, d: uint):uint
     {
       var ret:c_ulong;
       const cd = d.safeCast(c_ulong);
@@ -967,7 +964,7 @@ module GMP {
       return ret.safeCast(uint);
     }
 
-    // div_ui defined elsewhere, as it returns a value (does not set a BigInt)
+    // div for uint defined elsewhere, as it returns a value (does not set a BigInt)
 
     proc div_q_2exp(param rounding: Round, ref n: BigInt, b: uint)
     {
@@ -1021,7 +1018,7 @@ module GMP {
         }
       }
     }
-    proc mod_ui(ref n: BigInt, d: uint):uint
+    proc mod(ref n: BigInt, d: uint):uint
     {
       var ret:c_ulong;
       on Locales[this.locale_id] {
@@ -1047,7 +1044,7 @@ module GMP {
         }
       }
     }
-    proc divexact_ui(ref n: BigInt, d: uint)
+    proc divexact(ref n: BigInt, d: uint)
     {
       on Locales[this.locale_id] {
         if (here.id != n.locale_id) {
@@ -1071,7 +1068,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc divisible_ui_p(d: uint):int
+    proc divisible_p(d: uint):int
     {
       var ret:c_int;
       on Locales[this.locale_id] {
@@ -1101,7 +1098,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc congruent_ui_p(c:uint, d: uint):int
+    proc congruent_p(c:uint, d: uint):int
     {
       var ret: c_int;
       on Locales[this.locale_id] {
@@ -1137,7 +1134,7 @@ module GMP {
         }
       }
     }
-    proc powm_ui(ref base: BigInt, exp:uint, ref mod: BigInt)
+    proc powm(ref base: BigInt, exp:uint, ref mod: BigInt)
     {
       on Locales[this.locale_id] {
         if (here.id != base.locale_id || here.id != mod.locale_id) {
@@ -1149,7 +1146,7 @@ module GMP {
         }
       }
     }
-    proc pow_ui(ref base: BigInt, exp: uint)
+    proc pow(ref base: BigInt, exp: uint)
     {
       on Locales[this.locale_id] {
         if (here.id != base.locale_id) {
@@ -1160,7 +1157,7 @@ module GMP {
         }
       }
     }
-    proc ui_pow_ui(base: uint, exp: uint)
+    proc pow(base: uint, exp: uint)
     {
       on Locales[this.locale_id] {
         mpz_ui_pow_ui(this.mpz, base.safeCast(c_ulong), exp.safeCast(c_ulong));
@@ -1272,7 +1269,7 @@ module GMP {
         }
       }
     }
-    proc gcd_ui(ref a: BigInt, b: uint)
+    proc gcd(ref a: BigInt, b: uint)
     {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
@@ -1313,7 +1310,7 @@ module GMP {
         }
       }
     }
-    proc lcm_ui(ref a: BigInt, b: uint)
+    proc lcm(ref a: BigInt, b: uint)
     {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
@@ -1355,7 +1352,7 @@ module GMP {
       }
       return ret.safeCast(uint);
     }
-    proc fac_ui(a: uint)
+    proc fac(a: uint)
     {
       on Locales[this.locale_id] {
         mpz_fac_ui(this.mpz, a.safeCast(c_ulong));
@@ -1364,7 +1361,7 @@ module GMP {
     // TODO: functions including mpz_2fac_ui, mpz_primorial_ui, and 
     // mpz_mfac_uiui are not included in this module. 
 
-    proc bin_ui(ref n: BigInt, k: uint)
+    proc bin(ref n: BigInt, k: uint)
     {
       on Locales[this.locale_id] {
         if (here.id != n.locale_id){
@@ -1375,19 +1372,19 @@ module GMP {
         }
       }
     }
-    proc bin_uiui(n: uint, k: uint)
+    proc bin(n: uint, k: uint)
     {
       on Locales[this.locale_id] {
         mpz_bin_uiui(this.mpz, n.safeCast(c_ulong), k.safeCast(c_ulong));
       }
     }
-    proc fib_ui(n: uint)
+    proc fib(n: uint)
     {
       on Locales[this.locale_id] {
         mpz_fib_ui(this.mpz, n.safeCast(c_ulong));
       }
     }
-    proc fib2_ui(ref fnsub1: BigInt, n: uint)
+    proc fib2(ref fnsub1: BigInt, n: uint)
     {
       on Locales[this.locale_id] {
         if (here.id != fnsub1.locale_id){
@@ -1399,13 +1396,13 @@ module GMP {
         }
       }
     }
-    proc lucnum_ui(n: uint)
+    proc lucnum(n: uint)
     {
       on Locales[this.locale_id] {
         mpz_lucnum_ui(this.mpz, n.safeCast(c_ulong));
       }
     }
-    proc lucnum2_ui(ref lnsub1: BigInt, n: uint)
+    proc lucnum2(ref lnsub1: BigInt, n: uint)
     {
       on Locales[this.locale_id] {
         if (here.id != lnsub1.locale_id) {
@@ -1432,7 +1429,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc cmp_d(b: real):int
+    proc cmp(b: real):int
     {
       var ret:c_int;
       on Locales[this.locale_id] {
@@ -1440,7 +1437,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc cmp_si(b: int):int
+    proc cmp(b: int):int
     {
       var ret:c_int;
       on Locales[this.locale_id] {
@@ -1448,7 +1445,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc cmp_ui(b: uint):int
+    proc cmp(b: uint):int
     {
       var ret:c_int;
       on Locales[this.locale_id] {
@@ -1469,7 +1466,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc cmpabs_d(b: real):int
+    proc cmpabs(b: real):int
     {
       var ret:c_int;
       on Locales[this.locale_id] {
@@ -1477,7 +1474,7 @@ module GMP {
       }
       return ret.safeCast(int);
     }
-    proc cmpabs_ui(b: uint):int
+    proc cmpabs(b: uint):int
     {
       var ret:c_int;
       on Locales[this.locale_id] {
@@ -1804,62 +1801,62 @@ module GMP {
   }
   inline proc +=(ref a: BigInt, b: int){
     if (b > 0) {
-      a.add_ui(a, b:uint);
+      a.add(a, b:uint);
     }
     else {
-      a.sub_ui(a, abs(b):uint);
+      a.sub(a, abs(b):uint);
     }
   }
   inline proc +=(ref a: BigInt, b: uint){
-    a.add_ui(a, b);
+    a.add(a, b);
   }
   inline proc -=(ref a: BigInt, ref b: BigInt){
     a.sub(a, b);
   }
   inline proc -=(ref a: BigInt, b: int){
     if b > 0 {
-      a.sub_ui(a, abs(b):uint);
+      a.sub(a, abs(b):uint);
     }
     else {
-      a.add_ui(a, abs(b):uint);
+      a.add(a, abs(b):uint);
     }
   }
   inline proc -=(ref a: BigInt, b: uint){
-    a.sub_ui(a, b);
+    a.sub(a, b);
   }
   inline proc *=(ref a: BigInt, ref b: BigInt){
     a.mul(a, b);
   }
   inline proc *=(ref a: BigInt, b: int){
-    a.mul_si(a, b);
+    a.mul(a, b);
   }
   inline proc *=(ref a: BigInt, b: uint){
-    a.mul_ui(a, b);
+    a.mul(a, b);
   }
   inline proc /=(ref a: BigInt, ref b: BigInt){
     a.div_q(Round.DOWN, a, b);
   }
   //FIXME: Is this rounding right with negative numbers involved
   inline proc /=(ref a: BigInt, b: int){
-    a.div_q_ui(Round.ZERO, a, abs(b):uint);
+    a.div_q(Round.ZERO, a, abs(b):uint);
     if (b < 0) {
     a.neg(a);
     }
   }
   inline proc /=(ref a: BigInt, b: uint){
-    a.div_q_ui(Round.DOWN, a, b);
+    a.div_q(Round.DOWN, a, b);
   }
   inline proc **=(ref a: BigInt, b: uint){
-    a.pow_ui(a, b);
+    a.pow(a, b);
   }
   inline proc %=(ref a: BigInt, ref b: BigInt){
    a.mod(a, b);
   }
   inline proc %=(ref a: BigInt, b: int){
-    a.mod_ui(a, abs(b):uint); // in C (a mod b) and (a mod -b) are the same
+    a.mod(a, abs(b):uint); // in C (a mod b) and (a mod -b) are the same
   }
   inline proc %=(ref a: BigInt, b: uint){
-    a.mod_ui(a, b);
+    a.mod(a, b);
   }
   // Can only use bitwise operators with pairs of BigInts
   inline proc &=(ref a: BigInt, ref b: BigInt){ 
@@ -1902,7 +1899,7 @@ module GMP {
   }
   inline proc **(ref a: BigInt, b: uint) {
     var c = new BigInt();
-    c.pow_ui(a, b);
+    c.pow(a, b);
     return c;
   }
   inline proc ~(ref a: BigInt) {
@@ -1917,22 +1914,22 @@ module GMP {
   }
   inline proc *(ref a: BigInt, b: int){
     var c = new BigInt();
-    c.mul_si(a, b);
+    c.mul(a, b);
     return c;
   }
   inline proc *(b: int, ref a: BigInt){
     var c = new BigInt();
-    c.mul_si(a, b);
+    c.mul(a, b);
     return c;
   }
   inline proc *(ref a: BigInt, b: uint){
     var c = new BigInt();
-    c.mul_ui(a, b);
+    c.mul(a, b);
     return c;
   }
   inline proc *(b: uint, ref a: BigInt){
     var c = new BigInt();
-    c.mul_ui(a, b);
+    c.mul(a, b);
     return c;
   }
   // TODO: should / take lhs int args?
@@ -1943,12 +1940,12 @@ module GMP {
   }
   inline proc /(ref a: BigInt, b: uint){
     var c = new BigInt();
-    c.div_q_ui(Round.DOWN, a, b);
+    c.div_q(Round.DOWN, a, b);
     return c;
   }
   inline proc /(ref a: BigInt, b: int){
     var c = new BigInt();
-    c.div_q_ui(Round.DOWN, a, abs(b):uint);
+    c.div_q(Round.DOWN, a, abs(b):uint);
     if b < 0 then c.neg(c);
     return c;
   }
@@ -1960,12 +1957,12 @@ module GMP {
   }
   inline proc %(ref a: BigInt, b: uint){
     var c = new BigInt();
-    c.mod_ui(a, b);
+    c.mod(a, b);
     return c;
   }
   inline proc %(ref a: BigInt, b: int){
     var c = new BigInt();
-    c.mod_ui(a, abs(b):uint); // in C (a mod b) and (a mod -b) are the same
+    c.mod(a, abs(b):uint); // in C (a mod b) and (a mod -b) are the same
     return c;
   }
   inline proc +(ref a: BigInt){
@@ -2045,12 +2042,12 @@ module GMP {
   }
   inline proc +(ref a: BigInt, b: uint){
     var c = new BigInt();
-    c.add_ui(a, b);
+    c.add(a, b);
     return c;
   }
   inline proc +(b: uint, ref a: BigInt){
     var c = new BigInt();
-    c.add_ui(a, b);
+    c.add(a, b);
     return c;
   }
   inline proc +(ref a: BigInt, b: int){
@@ -2076,12 +2073,12 @@ module GMP {
   }
   inline proc -(ref a: BigInt, b: uint){
     var c = new BigInt();
-    c.sub_ui(a, b);
+    c.sub(a, b);
     return c;
   }
    inline proc -(b: uint, ref a: BigInt){
     var c = new BigInt();
-    c.ui_sub(b, a);
+    c.sub(b, a);
     return c;
   }
   inline proc -(ref a: BigInt, b: int){
@@ -2107,19 +2104,19 @@ module GMP {
     return f >= 0;
   }
   inline proc >=(ref a: BigInt, b: int){
-    var f = a.cmp_si(b);
+    var f = a.cmp(b);
     return f >= 0;
   }
   inline proc >=(b: int, ref a: BigInt){
-    var f = a.cmp_si(b);
+    var f = a.cmp(b);
     return f <= 0;
   }
   inline proc >=(ref a: BigInt, b: uint){
-    var f = a.cmp_ui(b);
+    var f = a.cmp(b);
     return f >= 0;
   }
   inline proc >=(b: uint, ref a: BigInt){
-    var f = a.cmp_ui(b);
+    var f = a.cmp(b);
     return f <= 0;
   }
   inline proc <=(ref a: BigInt, ref b: BigInt){
@@ -2127,19 +2124,19 @@ module GMP {
     return f <= 0;
   }
   inline proc <=(ref a: BigInt, b: int){
-    var f = a.cmp_si(b);
+    var f = a.cmp(b);
     return f <= 0;
   }
   inline proc <=(b: int, ref a: BigInt){
-    var f = a.cmp_si(b);
+    var f = a.cmp(b);
     return f >= 0;
   }
   inline proc <=(ref a: BigInt, b: uint){
-    var f = a.cmp_ui(b);
+    var f = a.cmp(b);
     return f <= 0;
   }
   inline proc <=(b: uint, ref a: BigInt){
-    var f = a.cmp_ui(b);
+    var f = a.cmp(b);
     return f >= 0;
   }
   inline proc >(ref a: BigInt, ref b: BigInt){
@@ -2147,19 +2144,19 @@ module GMP {
     return f > 0;
   }
   inline proc >(ref a: BigInt, b: int){
-    var f = a.cmp_si(b);
+    var f = a.cmp(b);
     return f > 0;
   }
   inline proc >(b: int, ref a: BigInt){
-    var f = a.cmp_si(b);
+    var f = a.cmp(b);
     return f < 0;
   }
   inline proc >(ref a: BigInt, b: uint){
-    var f = a.cmp_ui(b);
+    var f = a.cmp(b);
     return f > 0;
   }
   inline proc >(b: uint, ref a: BigInt){
-    var f = a.cmp_ui(b);
+    var f = a.cmp(b);
     return f < 0;
   }
   inline proc <(ref a: BigInt, ref b: BigInt){
@@ -2167,19 +2164,19 @@ module GMP {
     return f < 0;
   }
   inline proc <(ref a: BigInt, b: int){
-    var f = a.cmp_si(b);
+    var f = a.cmp(b);
     return f < 0;
   }
   inline proc <(b: int, ref a: BigInt){
-    var f = a.cmp_si(b);
+    var f = a.cmp(b);
     return f > 0;
   }
   inline proc <(ref a: BigInt, b: uint){
-    var f = a.cmp_ui(b);
+    var f = a.cmp(b);
     return f < 0;
   }
   inline proc <(b: uint, ref a: BigInt){
-    var f = a.cmp_ui(b);
+    var f = a.cmp(b);
     return f > 0;
   }
   inline proc ==(ref a: BigInt, ref b: BigInt){
@@ -2187,19 +2184,19 @@ module GMP {
     return f == 0;
   }
   inline proc ==(ref a: BigInt, b: int){
-    var f = a.cmp_si(b);
+    var f = a.cmp(b);
     return f == 0;
   }
   inline proc ==(b: int, ref a: BigInt){
-    var f = a.cmp_si(b);
+    var f = a.cmp(b);
     return f == 0;
   }
   inline proc ==(ref a: BigInt, b: uint){
-    var f = a.cmp_ui(b);
+    var f = a.cmp(b);
     return f == 0;
   }
   inline proc ==(b: uint, ref a: BigInt){
-    var f = a.cmp_ui(b);
+    var f = a.cmp(b);
     return f == 0;
   }
   inline proc !=(ref a: BigInt, ref b: BigInt){
@@ -2207,24 +2204,24 @@ module GMP {
     return f != 0;
   }
   inline proc !=(ref a: BigInt, b: int){
-    var f = a.cmp_si(b);
+    var f = a.cmp(b);
     return f != 0;
   }
   inline proc !=(b: int, ref a: BigInt){
-    var f = a.cmp_si(b);
+    var f = a.cmp(b);
     return f != 0;
   }
   inline proc !=(ref a: BigInt, b: uint){
-    var f = a.cmp_ui(b);
+    var f = a.cmp(b);
     return f != 0;
   }
   inline proc !=(b: uint, ref a: BigInt){
-    var f = a.cmp_ui(b);
+    var f = a.cmp(b);
     return f != 0;
   }
 
   // The following functions return a value instead of setting a BigInt
-  proc div_ui(param rounding: Round, ref n: BigInt, d: uint):uint
+  proc div(param rounding: Round, ref n: BigInt, d: uint):uint
   {
     var ret:c_ulong;
     const cd = d.safeCast(c_ulong);
@@ -2276,7 +2273,7 @@ module GMP {
     }
     return ret.safeCast(int);
   }
-  proc kronecker_si(ref a: BigInt, b: int):int
+  proc kronecker(ref a: BigInt, b: int):int
   {
     var ret:c_int;
     on Locales[a.locale_id] {
@@ -2284,7 +2281,7 @@ module GMP {
     }
     return ret.safeCast(int);
   }
-  proc kronecker_ui(ref a: BigInt, b: uint):int
+  proc kronecker(ref a: BigInt, b: uint):int
   {
     var ret:c_int;
     on Locales[a.locale_id] {
@@ -2292,7 +2289,7 @@ module GMP {
     }
     return ret.safeCast(int);
   }
-  proc si_kronecker(a: int, ref b: BigInt):int
+  proc kronecker(a: int, ref b: BigInt):int
   {
     var ret:c_int;
     on Locales[b.locale_id] {
@@ -2300,7 +2297,7 @@ module GMP {
     }
     return ret.safeCast(int);
   }
-  proc ui_kronecker(a: uint, ref b: BigInt):int
+  proc kronecker(a: uint, ref b: BigInt):int
   {
     var ret:c_int;
     on Locales[b.locale_id] {
@@ -2356,13 +2353,13 @@ module GMP {
         }
       }
     }
-    proc seed_ui(seed: uint)
+    proc seed(seed: uint)
     {
       on this {
         gmp_randseed_ui(this.state, seed.safeCast(c_ulong));
       }
     }
-    proc urandomb_ui(nbits: uint):uint
+    proc urandomb(nbits: uint):uint
     {
       var ret: c_ulong;
       on this {
@@ -2370,7 +2367,7 @@ module GMP {
       }
       return ret.safeCast(uint);
     }
-    proc urandomm_ui(n: uint):uint
+    proc urandomm(n: uint):uint
     {
       var ret: c_ulong;
       on this {

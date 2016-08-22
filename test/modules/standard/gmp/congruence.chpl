@@ -21,7 +21,7 @@ for m in 1..10 {
 writeln(tensandthrees, " ui_p:");
 for m in 1..10:uint {
   for c in 0..9:uint {
-    write(TF(tensandthrees.congruent_ui_p(c, m)));
+    write(TF(tensandthrees.congruent_p(c, m)));
   }
   writeln();
 }

@@ -44,17 +44,17 @@ iter genDigits(numDigits) {
         const y2 = 2 * k + 1;
 
         // Compute the next term.
-        tmp1.mul_ui(numer, 2);
+        tmp1.mul(numer, 2);
         accum.add(accum, tmp1);
-        accum.mul_ui(accum, y2);
-        numer.mul_ui(numer, k);
-        denom.mul_ui(denom, y2);
+        accum.mul(accum, y2);
+        numer.mul(numer, k);
+        denom.mul(denom, y2);
 
         // Continue looping until the digit is ready.
       } while numer.cmp(accum) > 0; // numer > accum
 
       // Compute: numer * 3 + accum
-      tmp1.mul_ui(numer, 3);
+      tmp1.mul(numer, 3);
       tmp1.add(tmp1, accum);
 
       // tmp1 = tmp1 / denom; tmp2 = tmp1 % denom
@@ -71,8 +71,8 @@ iter genDigits(numDigits) {
     yield digit;
 
     // Eliminate digit.
-    accum.submul_ui(denom, digit);
-    accum.mul_ui(accum, 10);
-    numer.mul_ui(numer, 10);
+    accum.submul(denom, digit);
+    accum.mul(accum, 10);
+    numer.mul(numer, 10);
   }
 }

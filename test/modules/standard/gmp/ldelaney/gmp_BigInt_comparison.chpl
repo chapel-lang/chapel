@@ -7,19 +7,19 @@ var b = new BigInt(-6);
 
 var val = a.cmp(b);
 writeln(a, " ", cmp_parse(val), " ", b);
-val = a.cmp_d(5.0);
+val = a.cmp(5.0);
 writeln(a, " ", cmp_parse(val), " 5.0");
-val = a.cmp_si(-2);
+val = a.cmp(-2);
 writeln(a, " ", cmp_parse(val), " -2");
-val = a.cmp_ui(6);
+val = a.cmp(6);
 writeln(a, " ", cmp_parse(val), " 6");
 
 val = a.cmpabs(b);
 writeln("abs(", a, ") ", cmp_parse(val), " abs(", b, ")");
 a.neg(a);
-val = a.cmpabs_d(-4.2);
+val = a.cmpabs(-4.2);
 writeln("abs(", a, ") ", cmp_parse(val), " abs(-4.2)");
-val = a.cmpabs_ui(4);
+val = a.cmpabs(4);
 writeln("abs(", a, ") ", cmp_parse(val), " 4");
 val = a.sgn();
 if val == 1 then writeln(a, " is positive");

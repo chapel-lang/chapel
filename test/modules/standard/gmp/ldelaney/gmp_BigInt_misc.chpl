@@ -35,7 +35,7 @@ writeln(b, " is ", b.sizeinbase(2), " digits in base 2");
 
 // TODO: determine what reasonable results for num.size are
 // TODO: is size machine-dependent?
-a.mul_ui(a, 100000000000001234);
+a.mul(a, 100000000000001234);
 writeln(a, ".size is " , a.size());
 
 a.realloc2(65); // fits, so a is preserved
@@ -63,10 +63,10 @@ writeln(legendre(b, a));
 a.set(14);
 b.set(11);
 writeln(kronecker(b, a));
-writeln(kronecker_si(b, 35));
-writeln(kronecker_ui(b, 25));
-writeln(si_kronecker(29, a));
-writeln(ui_kronecker(5, a));
+writeln(kronecker(b, 35));
+writeln(kronecker(b, 25));
+writeln(kronecker(29, a));
+writeln(kronecker(5, a));
 
 // parse the fits function return value
 proc parse_fit(val){

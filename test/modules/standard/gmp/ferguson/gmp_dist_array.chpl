@@ -18,13 +18,12 @@ forall (x,i) in zip(B,D) {
 }
 forall (x,i) in zip(C,D) {
   x = i;
-  x.fac_ui((10000*i):uint(32));
+  x.fac((10000*i):uint(32));
 }
 
 forall (a,b,c) in zip(A,B,C) {
-  c.add(c,a);
-  c.add(c,b);
-  //c = a + b;
+  c += a;
+  c += b;
 }
 //writeln(C);
 

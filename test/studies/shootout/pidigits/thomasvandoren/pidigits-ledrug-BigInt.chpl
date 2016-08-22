@@ -44,10 +44,10 @@ iter genDigits(numDigits) {
         const y2 = 2 * k + 1;
 
         // Compute the next term.
-        accum.addmul_ui(numer, 2);
-        accum.mul_ui(accum, y2);
-        denom.mul_ui(denom, y2);
-        numer.mul_ui(numer, k);
+        accum.addmul(numer, 2);
+        accum.mul(accum, y2);
+        denom.mul(denom, y2);
+        numer.mul(numer, k);
 
         // Continue looping until the digit is ready.
       } while numer.cmp(accum) > 0; // numer > accum
@@ -59,14 +59,14 @@ iter genDigits(numDigits) {
     yield digit;
 
     // Eliminate digit.
-    accum.submul_ui(denom, digit);
-    accum.mul_ui(accum, 10);
-    numer.mul_ui(numer, 10);
+    accum.submul(denom, digit);
+    accum.mul(accum, 10);
+    numer.mul(numer, 10);
   }
 
   // Helper function to extract the nth digit.
   proc extractDigit(nth: uint) {
-    tmp1.mul_ui(numer, nth);
+    tmp1.mul(numer, nth);
     tmp2.add(tmp1, accum);
     tmp1.div_q(Round.ZERO, tmp2, denom);
 
