@@ -28,6 +28,9 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 
+#include "codegen.h"
+#include "llvmDebug.h"
+
 #include "AstVisitor.h"
 
 #include <cstring>
@@ -52,6 +55,26 @@ void codegenStmt(Expr* stmt) {
         info->cStatements.push_back(zlineToString(stmt));
     if (fGenIDS)
       info->cStatements.push_back(idCommentTemp(stmt));
+  } else {
+#ifdef HAVE_LLVM
+    if (debug_info && stmt->linenum() > 0) {
+      // Adjust the current line number, but leave the scope alone.
+      llvm::MDNode* scope;
+
+      if(stmt->parentSymbol && stmt->parentSymbol->astTag == E_FnSymbol) {
+        scope = debug_info->get_function((FnSymbol *)stmt->parentSymbol);
+      } else {
+        scope = info->builder->getCurrentDebugLocation().getScope(
+#if HAVE_LLVM_VER < 37
+                                                      info->llvmContext
+#endif
+                                                      );
+      }
+
+      info->builder->SetCurrentDebugLocation(
+                  llvm::DebugLoc::get(stmt->linenum(),0 /*col*/,scope));
+    }
+#endif
   }
 
   ++gStmtCount;
