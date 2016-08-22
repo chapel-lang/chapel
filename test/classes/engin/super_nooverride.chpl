@@ -19,3 +19,6 @@ var b = new B();
 a.foo();
 b.bar();
 b.super.foo();
+
+delete b;
+delete a;

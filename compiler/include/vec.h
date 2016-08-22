@@ -77,6 +77,7 @@ class Vec {
   ~Vec() { if (v && v != e) free(v); }
 
   void add(C a);
+  void push_back(C a) { add(a);}
   int add_exclusive(C a);
   C& add();
   C head() { return n>0 ? *v : 0; }
@@ -104,9 +105,11 @@ class Vec {
   void remove(int index);
   void insert(int index, C a);
   void reverse();
+  C* begin() { return v; }
   C* end() { return v + n; }
   Vec<C,S>& operator=(Vec<C,S> &v) { this->copy(v); return *this; }
   int length () { return n; }
+  int size() { return n; }
   
  private:
   void move_internal(Vec<C,S> &v);
@@ -121,8 +124,8 @@ class Vec {
 // _p -- loop variable to be declared by the macro
 // _v -- vector to be iterated over
 //
-#define forv_Vec(_c, _p, _v) if ((_v).n) for (_c *qq__##_p = (_c*)0, *_p = (_v).v[0]; \
-                    ((intptr_t)(qq__##_p) < (_v).length()) && ((_p = (_v).v[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
+#define forv_Vec(_c, _p, _v) if ((_v).size()) for (_c *qq__##_p = (_c*)0, *_p = (_v).begin()[0]; \
+                    ((intptr_t)(qq__##_p) < (int)(_v).size()) && ((_p = (_v).begin()[(intptr_t)qq__##_p]) || 1); qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
 
 template <class C, int S = VEC_INTEGRAL_SIZE> class Accum { public:
   Vec<C,S> asset;
