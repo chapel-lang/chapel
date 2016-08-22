@@ -1288,9 +1288,14 @@ static void propagateThroughYield(CallExpr* rcall,
           // is going to be compiled away, e.g. if it is
           // within a param conditional on a not-taken branch.
           svar = new VarSymbol(astrArg(ix, "shadowVarReduc"));
+          svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          VarSymbol* stemp  = newTemp("svrTmp");
           redRef1->insertBefore(new DefExpr(svar));
-          redRef1->insertBefore("'move'(%S, identity(%S,%S))", // init
-                                svar, gMethodToken, parentOp);
+          redRef1->insertBefore(new DefExpr(stemp));
+          redRef1->insertBefore("'move'(%S, identity(%S,%S))",
+                                stemp, gMethodToken, parentOp);
+          redRef1->insertBefore("'move'(%S, chpl__autoCopy(%S))",
+                                svar, stemp);
           redRef2->insertBefore("accumulate(%S,%S,%S)",
                                 gMethodToken, parentOp, svar);
           shadowVars[ix] = svar;
@@ -1387,12 +1392,17 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
       ArgSymbol* parentOp = eFormal; // the reduceParent arg
       VarSymbol* currOp   = new VarSymbol(astrArg(ix, "reduceCurr"));
       VarSymbol* svar     = new VarSymbol(astrArg(ix, "shadowVar"));
+      svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      VarSymbol* stemp    = newTemp("svTmp");
       redRef1->insertBefore(new DefExpr(currOp));
       redRef1->insertBefore("'move'(%S, clone(%S,%S))", // init
                             currOp, gMethodToken, parentOp);
       redRef1->insertBefore(new DefExpr(svar));
-      redRef1->insertBefore("'move'(%S, identity(%S,%S))", // init
-                            svar, gMethodToken, currOp);
+      redRef1->insertBefore(new DefExpr(stemp));
+      redRef1->insertBefore("'move'(%S, identity(%S,%S))",
+                            stemp, gMethodToken, currOp);
+      redRef1->insertBefore("'move'(%S, chpl__autoCopy(%S))",
+                            svar, stemp);
       redRef2->insertBefore("accumulate(%S,%S,%S)",
                             gMethodToken, currOp, svar);
       redRef2->insertBefore("chpl__reduceCombine(%S,%S)", parentOp, currOp);
