@@ -15,5 +15,9 @@ proc B.foo(x) {
 
 var a = new A();
 var b = new B();
+
 a.foo(3);
 b.foo(2);
+
+delete b;
+delete a;

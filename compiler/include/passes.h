@@ -44,6 +44,7 @@ void copyPropagation();
 void createTaskFunctions();
 void cullOverReferences();
 void deadCodeElimination();
+void denormalize();
 void docs();
 void expandExternArrayCalls();
 void flattenClasses();

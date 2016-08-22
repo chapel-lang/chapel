@@ -17,10 +17,14 @@ begin writeln( "got ", d.s.readFF());
 i = 4;
 writeln( "1: going to sleep with ", i);
 sleep( 3);
+
 writeln( "1: woke up. writing ", i);
 d.s = i;
+sleep( 1);
 
-sleep( 1);
 begin writeln( "got ", d.s.readFF());
 sleep( 1);
+
 begin writeln( "got ", d.s.readFF());
+
+delete d;

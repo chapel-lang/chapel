@@ -335,10 +335,10 @@ module DefaultAssociative {
       } else {
         if (slotNum < 0) {
           halt("couldn't add ", idx, " -- ", numEntries.read(), " / ", tableSize, " taken");
-          return (-1,0);
+          return (-1, 0);
         }
         // otherwise, re-adding an index that's already in there
-        return (-1,0);
+        return (slotNum, 0);
       }
       return (slotNum, 1);
     }
@@ -396,8 +396,11 @@ module DefaultAssociative {
           var copyDom = tableDom;
           var copyTable: [copyDom] chpl_TableEntry(idxType) = table;
 
-          tableSizeNum=primeLoc;
-          tableSize=prime;
+          // Do not preserve entries
+          tableDom = {0..-1};
+
+          tableSizeNum = primeLoc;
+          tableSize = prime;
           tableDom = {0..tableSize-1};
 
           //numEntries will be reconstructed as keys are readded

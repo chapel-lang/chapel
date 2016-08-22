@@ -17,10 +17,12 @@
 
 UTIL_SRCS = \
 	clangUtil.cpp \
+	exprAnalysis.cpp \
 	files.cpp \
 	llvmAggregateGlobalOps.cpp \
 	llvmGlobalToWide.cpp \
 	llvmUtil.cpp \
+	llvmDebug.cpp \
 	misc.cpp \
 	mysystem.cpp \
 	stringutil.cpp \
