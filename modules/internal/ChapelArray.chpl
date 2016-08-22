@@ -2575,8 +2575,31 @@ module ChapelArray {
     return dsiPartialReduce_template(arr._value, onlyDim);
   }
 
-  // TODO Write a wrapper for this that would do local partial
-  // reductions to provide less communicioatn
+  proc dsiPartialReduce_template(arr, param onlyDim) {
+
+    if onlyDim < 1 || onlyDim > arr.dsiGetBaseDom().rank then
+      halt("Invalid partial reduction dimension: ", onlyDim);
+
+    // I am not sure if we should support this. Some algorithms might do
+    // consecutive partial reductions with some intermediate steps. This
+    // pshould prevent specialization in user code
+    /*if arr.domain.rank == 1 then*/
+    if arr.dsiGetBaseDom().rank == 1 then
+      return + reduce arr;
+
+    const PartialDom =
+      arr.dsiGetBaseDom().dsiPartialDomain(exceptDim=onlyDim);
+    writeln(PartialDom);
+
+    var ResultArr: [PartialDom] arr.eltType;
+    for partialIdx in PartialDom {
+      ResultArr[partialIdx] = + reduce arr.dsiPartialThese(onlyDim, 
+          if isTuple(partialIdx) then partialIdx else (partialIdx, ));
+    }
+    return ResultArr;
+
+  }
+
   proc dsiPartialReduce_template(arr, param onlyDim, result) {
 
     if onlyDim < 1 || onlyDim > arr.dsiGetBaseDom().rank then
@@ -2593,13 +2616,6 @@ module ChapelArray {
       arr.dsiGetBaseDom().dsiPartialDomain(exceptDim=onlyDim);
     writeln(PartialDom);
 
-    /*const */
-    /*var ResultArr: [PartialDom] arr.eltType;*/
-    /*for partialIdx in PartialDom {*/
-      /*ResultArr[partialIdx] = + reduce arr.dsiPartialThese(onlyDim, */
-          /*if isTuple(partialIdx) then partialIdx else (partialIdx, ));*/
-    /*}*/
-    /*return ResultArr._value.data;*/
 
     for partialIdx in PartialDom {
       result[partialIdx] = + reduce arr.dsiPartialThese(onlyDim, 
