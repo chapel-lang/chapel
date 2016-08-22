@@ -372,7 +372,7 @@ module ChapelBase {
     var x: int = a;
     while (x > 1) // shift right to count the power
     {
-      c = c + 1;
+      c += 1;
       x = x >> 1;
     }
     var exp = c * (b-1);
