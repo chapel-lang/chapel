@@ -61,6 +61,10 @@ void replaceArrayAccessesWithRefTemps() {
         }
         if (ContextCallExpr* contextCall = toContextCallExpr(ast)) {
           CallExpr* call = toCallExpr(contextCall);
+          if (contextCall->parentSymbol != forLoop->parentSymbol ||
+              call->numActuals() != 2) {
+            continue;
+          }
           if (FnSymbol* fn = call->isResolved()) {
             if (fn->hasFlag(FLAG_REMOVABLE_ARRAY_ACCESS)) {
               if (SymExpr* arrayIdx = toSymExpr(call->get(2))) {
