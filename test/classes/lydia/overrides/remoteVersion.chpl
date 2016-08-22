@@ -27,7 +27,7 @@ on Locales(1) {
   b2.foo();
 
   delete b2;
-  deleta a2;
+  delete a2;
 }
 
 delete b;
