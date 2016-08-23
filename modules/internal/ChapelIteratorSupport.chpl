@@ -128,19 +128,19 @@ module ChapelIteratorSupport {
   }
 
   inline proc _getIteratorZip(type t: _tuple) {
-      inline proc _getIteratorZipInternal(type t: _tuple, param dim: int) {
-        var x : t; //have to make an instance of the tuple to query the size
+    inline proc _getIteratorZipInternal(type t: _tuple, param dim: int) {
+      var x : t; //have to make an instance of the tuple to query the size
 
-        if dim == x.size then // dim == t.size then
-          return (_getIterator(t(dim)),);
-        else
-          return (_getIterator(t(dim)), (..._getIteratorZipInternal(t, dim+1)));
-      }
-      if t == (t(1),) then // t.size == 1 then
-        return _getIterator(t(1));
+      if dim == x.size then // dim == t.size then
+        return (_getIterator(t(dim)),);
       else
-        return _getIteratorZipInternal(t, 1);
+        return (_getIterator(t(dim)), (..._getIteratorZipInternal(t, dim+1)));
     }
+    if t == (t(1),) then // t.size == 1 then
+      return _getIterator(t(1));
+    else
+      return _getIteratorZipInternal(t, 1);
+  }
 
   proc _checkIterator(type t) {
     if (!(isEnumType(t))) then
