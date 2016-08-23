@@ -605,6 +605,37 @@ module DefaultSparse {
     proc dsiLocalSubdomain() {
       return _newDomain(dom);
     }
+
+    // FIXME I tried to move these iterators up in class hierarchy by
+    // implementing a dummy dsiAccess in those classes. But wasn't able
+    // to compile.
+    iter dsiPartialThese(onlyDim: int, otherIdx) {
+      for i in dom.dsiPartialThese(onlyDim, otherIdx) {
+        yield dsiAccess(otherIdx.merge(onlyDim, i));
+      }
+    }
+
+    iter dsiPartialThese(onlyDim: int, otherIdx, 
+        param tag) where tag==iterKind.leader {
+      for followThis in dom.dsiPartialThese(onlyDim,otherIdx,tag=tag) {
+        yield followThis;
+      }
+    }
+
+    iter dsiPartialThese(onlyDim: int, otherIdx, 
+        param tag, followThis) where tag==iterKind.follower {
+      for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag, 
+          followThis) {
+        yield dsiAccess(otherIdx.merge(onlyDim, i));
+      }
+    }
+
+    iter dsiPartialThese(onlyDim: int, otherIdx, 
+        param tag) where tag==iterKind.standalone {
+      for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
+        yield dsiAccess(otherIdx.merge(onlyDim, i));
+      }
+    }
   }
 
 
