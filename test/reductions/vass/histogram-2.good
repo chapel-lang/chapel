@@ -1,0 +1,8 @@
+histogram-2.chpl:7: In function 'main':
+histogram-2.chpl:26: warning: whole-domain assignment has been serialized (see note in $CHPL_HOME/STATUS)
+computing the histogram over {1..99} with 3 buckets
+histogram = 33 33 33
+playing with an associative domain
+dosto is fine
+playing with a record
+rtotal = (xx = 111111111110)

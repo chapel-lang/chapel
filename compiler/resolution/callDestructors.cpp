@@ -545,7 +545,14 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               (rhsFn->hasFlag(FLAG_AUTO_COPY_FN) == true ||
                rhsFn->hasFlag(FLAG_INIT_COPY_FN) == true))
           {
-            copyExpr = rhsCall;
+            ArgSymbol* formalArg  = rhsFn->getFormal(1);
+            Type*      formalType = formalArg->type;
+
+            // Cannot reduce initCopy/autoCopy for sync variables
+            if (isSyncType(formalType) == false)
+            {
+              copyExpr = rhsCall;
+            }
           }
         }
       }

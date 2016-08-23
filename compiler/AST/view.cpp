@@ -371,6 +371,8 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
 
   if (DefExpr* def = toDefExpr(ast)) {
     printf(" ");
+    if (ArgSymbol* arg = toArgSymbol(def->sym))
+      printf("intent %s ", arg->intentDescrString());
     writeFlags(stdout, def->sym);
   }
 
@@ -805,9 +807,9 @@ void whocalls(int id) {
     }
   }
 
-  int ftMatch = 0, ftAll = ftableVec.n;
+  int ftMatch = 0, ftAll = ftableVec.size();
   for (int i = 0; i < ftAll; i++) {
-    if (ftableVec.v[i]->id == id) {
+    if (ftableVec.begin()[i]->id == id) {
       ftMatch++;
       printf("  ftableVec[%d]\n", i);
     }

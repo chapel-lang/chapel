@@ -39,9 +39,12 @@
 
 #define CHPL_WALLTIME_FLAG "--walltime"
 #define CHPL_PARTITION_FLAG "--partition"
+#define CHPL_EXCLUDE_FLAG "--exclude"
 
+static char* debug = NULL;
 static char* walltime = NULL;
 static char* partition = NULL;
+static char* exclude = NULL;
 char slurmFilename[FILENAME_MAX];
 char expectFilename[FILENAME_MAX];
 char sysFilename[FILENAME_MAX];
@@ -123,10 +126,12 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
 
   // command line partition takes precedence over env var
   if (!partition) {
-    partition = getenv("SALLOC_PARTITION");
+    partition = getenv("CHPL_LAUNCHER_PARTITION");
   }
-  if (!partition) {
-    partition = getenv("SLURM_PARTITION");
+
+  // command line exclude list takes precedence over env var
+  if (!exclude) {
+    exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
   }
 
   /*
@@ -137,6 +142,8 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
     fprintf(slurmFile, "#SBATCH --time=%s\n", walltime);
   if (partition)
     fprintf(slurmFile, "#SBATCH --partition=%s\n", partition);
+  if (exclude)
+    fprintf(slurmFile, "#SBATCH --exclude=%s\n", exclude);
   switch (sbatch) {
 /* Only slurm has been tested
   case slurmpro:
@@ -193,17 +200,19 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   // command line partition takes precedence over env var
   if (!partition) {
-    partition = getenv("SALLOC_PARTITION");
-  }
-  if (!partition) {
-    partition = getenv("SLURM_PARTITION");
+    partition = getenv("CHPL_LAUNCHER_PARTITION");
   }
 
-#ifndef DEBUG_LAUNCH
-  mypid = getpid();
-#else
-  mypid = 0;
-#endif
+  // command line exclude list takes precedence over env var
+  if (!exclude) {
+    exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
+  }
+
+  if (debug) {
+    mypid = 0;
+  } else {
+    mypid = getpid();
+  }
   sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
   sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
   sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
@@ -250,6 +259,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   fprintf(expectFile, "--time=%s ",walltime); 
   if(partition)
     fprintf(expectFile, "--partition=%s ",partition);
+  if(exclude)
+    fprintf(expectFile, "--exclude=%s ",exclude);
   if (constraint) {
     fprintf(expectFile, " -C %s", constraint);
   }
@@ -290,27 +301,28 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 }
 
 static void chpl_launch_cleanup(void) {
-#ifndef DEBUG_LAUNCH
-  char command[1024];
-
-  if (getenv("CHPL_LAUNCHER_USE_SBATCH") == NULL) {
-    sprintf(command, "rm %s", expectFilename);
-    system(command);
-  } else {
-    sprintf(command, "rm %s", slurmFilename);
-    system(command);
-    sprintf(command, "rm %s", sysFilename);
-    system(command);
+  if (!debug) {
+    char command[1024];
+    if (getenv("CHPL_LAUNCHER_USE_SBATCH") == NULL) {
+      sprintf(command, "rm %s", expectFilename);
+      system(command);
+    } else {
+      sprintf(command, "rm %s", slurmFilename);
+      system(command);
+      sprintf(command, "rm %s", sysFilename);
+      system(command);
+    }
   }
-
-#endif
 }
 
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
-  int retcode =
-    chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
-                             argv[0]);
+  int retcode;
+
+  debug = getenv("CHPL_LAUNCHER_DEBUG");
+
+  retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
+            argv[0]);
   chpl_launch_cleanup();
   return retcode;
 }
@@ -336,6 +348,15 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     partition = &(argv[argNum][strlen(CHPL_PARTITION_FLAG)+1]);
     return 1;
   }
+
+  // handle --exclude <nodes> or --exclude=<nodes>
+  if (!strcmp(argv[argNum], CHPL_EXCLUDE_FLAG)) {
+    exclude = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_EXCLUDE_FLAG"=", strlen(CHPL_EXCLUDE_FLAG))) {
+    exclude = &(argv[argNum][strlen(CHPL_EXCLUDE_FLAG)+1]);
+    return 1;
+  }
   return 0;
 }
 
@@ -346,5 +367,7 @@ void chpl_launch_print_help(void) {
   fprintf(stdout, "  %s <HH:MM:SS> : specify a wallclock time limit\n", CHPL_WALLTIME_FLAG);
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_WALLTIME)\n");
   fprintf(stdout, "  %s <partition> : specify a partition to use\n", CHPL_PARTITION_FLAG);
-  fprintf(stdout, "                           (or use $SALLOC_PARTITION)\n");
+  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_PARTITION)\n");
+  fprintf(stdout, "  %s <nodes> : specify node(s) to exclude\n", CHPL_EXCLUDE_FLAG);
+  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_EXCLUDE)\n");
 }

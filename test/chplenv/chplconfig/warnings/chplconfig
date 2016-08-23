@@ -1,0 +1,16 @@
+# .chplconfig test cases
+
+# Note: Any line starting with '#' is considered a comment
+
+# This config file is tested by setting CHPL_CONFIG to its directory
+# and calling printchplenv
+
+# Incorrect format:
+CHPL_TASKS == fifo
+
+# Unacceptable variable:
+CHPL_COMMS = none
+
+# Duplicate entries:
+CHPL_COMM = none
+CHPL_COMM = gasnet

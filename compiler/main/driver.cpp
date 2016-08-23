@@ -156,6 +156,7 @@ bool report_inlining = false;
 char fExplainCall[256] = "";
 int explainCallID = -1;
 int breakOnResolveID = -1;
+bool fDenormalize = false;
 char fExplainInstantiation[256] = "";
 bool fExplainVerbose = false;
 bool fParseOnly = false;
@@ -781,6 +782,7 @@ static ArgumentDescription arg_desc[] = {
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
  {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
+ {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
  DRIVER_ARG_DEBUGGERS,
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
@@ -1035,6 +1037,15 @@ static void checkTargetArch() {
   }
 }
 
+static void checkIncrementalAndOptimized() {
+  std::size_t optimizationsEnabled = ccflags.find("-O");
+  if(fIncrementalCompilation && ( optimizeCCode ||
+      optimizationsEnabled!=std::string::npos ))
+    USR_WARN("Compiling with --incremental along with optimizations enabled"
+              " may lead to a slower execution time compared to --fast or"
+              " using -O optimizations directly.");
+}
+
 static void postprocess_args() {
   // Processes that depend on results of passed arguments or values of CHPL_vars
 
@@ -1055,6 +1066,8 @@ static void postprocess_args() {
   checkLLVMCodeGen();
 
   checkTargetArch();
+
+  checkIncrementalAndOptimized();
 }
 
 int main(int argc, char* argv[]) {

@@ -11,3 +11,6 @@ writeln(x);
 
 var y = new getC()(10);
 writeln(y);
+
+delete y;
+delete x;

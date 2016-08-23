@@ -423,7 +423,8 @@ std::string CForLoop::codegenCForLoopHeader(BlockStmt* block)
     // will need to be updated to include all possible conditionals. (I'm
     // imagining we'll want a separate function that can check if a primitive
     // is a conditional as I think we'll need that info elsewhere.)
-    else if (call && (call->isResolved() || isRelationalOperator(call)))
+    else if (call && (call->isResolved() || isRelationalOperator(call) ||
+        call->isPrimitive(PRIM_GET_MEMBER_VALUE)))
     {
       std::string callStr = codegenValue(call).c;
 

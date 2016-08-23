@@ -1116,9 +1116,7 @@ proc CyclicArr.doiCanBulkTransferStride() param {
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiCanBulkTransferStride");
 
-  // A CyclicArr is a bunch of DefaultRectangular arrays,
-  // so strided bulk transfer gotta be always possible.
-  return true;
+  return useBulkTransferDist;
 }
 
 //For assignments of the form: "any = Cyclic"

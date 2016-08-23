@@ -89,3 +89,4 @@ reset(rc4DR1D);
 (found, foundIdx) = binarySearch(rc4DR1D, elem);
 checkSearch(found, foundIdx, rc4DR1D, "binarySearch");
 
+delete rng;

@@ -1723,9 +1723,7 @@ proc StencilArr.doiCanBulkTransferStride() param {
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiCanBulkTransferStride");
 
-  // A StencilArr is a bunch of DefaultRectangular arrays,
-  // so strided bulk transfer gotta be always possible.
-  return true;
+  return useBulkTransferDist;
 }
 
 proc StencilArr.doiBulkTransfer(B) {

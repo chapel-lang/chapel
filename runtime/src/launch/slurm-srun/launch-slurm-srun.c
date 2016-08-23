@@ -36,12 +36,14 @@
 #define CHPL_GENERATE_SBATCH_SCRIPT "--generate-sbatch-script"
 #define CHPL_NODELIST_FLAG "--nodelist"
 #define CHPL_PARTITION_FLAG "--partition"
+#define CHPL_EXCLUDE_FLAG "--exclude"
 
 static char* debug = NULL;
 static char* walltime = NULL;
 static int generate_sbatch_script = 0;
 static char* nodelist = NULL;
 static char* partition = NULL;
+static char* exclude = NULL;
 
 char slurmFilename[FILENAME_MAX];
 char sysFilename[FILENAME_MAX];
@@ -131,7 +133,8 @@ static int getCoresPerLocale(void) {
   int numCores = -1;
   const int buflen = 1024;
   char buf[buflen];
-  char* argv[7];
+  char partition_arg[128];
+  char* argv[8];
   char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
 
   if (numCoresString) {
@@ -148,7 +151,12 @@ static int getCoresPerLocale(void) {
   argv[4] = (char *)  "--noheader";   // don't show header (hide "CPU" header)
   argv[5] = (char *)  "--responding"; // only care about online nodes
   argv[6] = NULL;
-
+  // Set the partition if it was specified
+  if (partition) {
+    sprintf(partition_arg, "--partition=%s", partition);
+    argv[6] = partition_arg;
+    argv[7] = NULL;
+  }
 
   memset(buf, 0, buflen);
   if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0)
@@ -214,10 +222,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   // command line partition takes precedence over env var
   if (!partition) {
-    partition = getenv("SALLOC_PARTITION");
+    partition = getenv("CHPL_LAUNCHER_PARTITION");
   }
-  if (!partition) {
-    partition = getenv("SLURM_PARTITION");
+
+  // command line exclude takes precedence over env var
+  if (!exclude) {
+    exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
   }
 
   if (basenamePtr == NULL) {
@@ -279,6 +289,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // Set the partition if it was specified
     if (partition) {
       fprintf(slurmFile, "#SBATCH --partition=%s\n", partition);
+    }
+
+    // Set the exclude list if it was specified
+    if (exclude) {
+      fprintf(slurmFile, "#SBATCH --exclude=%s\n", exclude);
     }
 
     // If needed a constraint can be specified with the env var CHPL_LAUNCHER_CONSTRAINT
@@ -388,6 +403,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // Set the partition if it was specified
     if (partition) {
       len += sprintf(iCom+len, "--partition=%s ", partition);
+    }
+
+    // Set the exclude list if it was specified
+    if (exclude) {
+      len += sprintf(iCom+len, "--exclude=%s ", exclude);
     }
 
     // set any constraints 
@@ -507,6 +527,15 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     return 1;
   }
 
+  // handle --exclude <nodes> or --exclude=<nodes>
+  if (!strcmp(argv[argNum], CHPL_EXCLUDE_FLAG)) {
+    exclude = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_EXCLUDE_FLAG"=", strlen(CHPL_EXCLUDE_FLAG))) {
+    exclude = &(argv[argNum][strlen(CHPL_EXCLUDE_FLAG)+1]);
+    return 1;
+  }
+
   // handle --generate-sbatch-script
   if (!strcmp(argv[argNum], CHPL_GENERATE_SBATCH_SCRIPT)) {
     generate_sbatch_script = 1;
@@ -531,5 +560,7 @@ void chpl_launch_print_help(void) {
   fprintf(stdout, "  %s <nodelist> : specify a nodelist to use\n", CHPL_NODELIST_FLAG);
   fprintf(stdout, "                           (or use $CHPL_LAUNCHER_NODELIST)\n");
   fprintf(stdout, "  %s <partition> : specify a partition to use\n", CHPL_PARTITION_FLAG);
-  fprintf(stdout, "                           (or use $SALLOC_PARTITION)\n");
+  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_PARTITION)\n");
+  fprintf(stdout, "  %s <nodes> : specify node(s) to exclude\n", CHPL_EXCLUDE_FLAG);
+  fprintf(stdout, "                           (or use $CHPL_LAUNCHER_EXCLUDE)\n");
 }
