@@ -654,8 +654,8 @@ static void build_enum_size_function(EnumType* et) {
   fn->addFlag(FLAG_METHOD);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   
-  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", dtAny);//et);
-   _this->addFlag(FLAG_ARG_THIS);
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", dtAny);
+  _this->addFlag(FLAG_ARG_THIS);
   _this->addFlag(FLAG_MARKED_GENERIC);
   _this->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(_this);
