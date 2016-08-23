@@ -1922,31 +1922,16 @@ static void resolveEnumeratedTypes() {
         if (EnumType* type = toEnumType(first->var->type)) {
           if (SymExpr* second = toSymExpr(call->get(2))) {
             const char* name;
-            //bool found = false;
-            /*
-            CallExpr* parent = toCallExpr(call->parentExpr);
-            if( parent && parent->baseExpr == call ) {
-              // This is a call e.g.
-              // myenum.method( a )
-              // aka call(call(. myenum "method") a)
-              // so that call needs to go through normalize and resolve
-              continue;
-            }
-            */
 
             INT_ASSERT(get_string(second, &name));
 
             for_enums(constant, type) {
               if (!strcmp(constant->sym->name, name)) {
                 call->replace(new SymExpr(constant->sym));
-                //found = true;
               }
             }
-            
-            //The USR_FATAL error call is no longer made, and unresolved
-            //enum symbols are either resolved as functions or throw an error
-            //during the function resolution pass. The old code for recognizing
-            //calls failed to recognize methods without parentheses. 
+            // Unresolved enum symbols are now either resolved or throw an error
+            // during the function resolution pass. Permits paren-less methods.
           }
         }
       }

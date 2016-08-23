@@ -653,26 +653,27 @@ static void build_enum_size_function(EnumType* et) {
   fn->addFlag(FLAG_NO_PARENS);
   fn->addFlag(FLAG_METHOD);
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  
-  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", dtAny);
-  _this->addFlag(FLAG_ARG_THIS);
-  _this->addFlag(FLAG_MARKED_GENERIC);
-  _this->addFlag(FLAG_TYPE_VARIABLE);
-  fn->insertFormalAtTail(_this);
-  
+
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtAny);
+  fn->_this->addFlag(FLAG_ARG_THIS);
+  fn->_this->addFlag(FLAG_MARKED_GENERIC);
+  fn->_this->addFlag(FLAG_TYPE_VARIABLE);
+
+  fn->insertFormalAtTail(fn->_this);
+
   fn->retTag = RET_VALUE;
   //use this function only where the argument is an enum
-  fn->where = new BlockStmt(new CallExpr("==", _this, et->symbol));
-  
+  fn->where = new BlockStmt(new CallExpr("==", fn->_this, et->symbol));
+
   VarSymbol*  varS = new_IntSymbol(et->constants.length);
   fn->insertAtTail(new CallExpr(PRIM_RETURN, varS));
-  
+
   DefExpr* fnDef = new DefExpr(fn);
   // needs to go in the base module because when called from _defaultOf(et),
   // they are automatically inserted
   baseModule->block->insertAtTail(fnDef);
   reset_ast_loc(fnDef, et->symbol);
-  
+
   normalize(fn);
 }
 
