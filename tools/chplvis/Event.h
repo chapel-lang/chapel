@@ -109,7 +109,7 @@ class  E_task : public Event {
 
     virtual int Ekind() {return Ev_task;}
     virtual void print() {
-      printf ("Task: node %d time %ld.%06ld taskId %ld %ld %s line %ld fileNo %ld\n",
+      printf ("Task: node %d time %ld.%06ld taskId %ld funcId %ld %s line %ld fileNo %ld\n",
               nodeid, sec, usec, taskid, funcid, isOn ? "OnExe" : "local",
               lineNum, srcFileNo);
     }
@@ -145,9 +145,9 @@ class E_comm : public Event {
 
      virtual int Ekind() {return Ev_comm;}
      virtual void print() { 
-       printf ("Comm(%s): node %d time %ld.%06ld to %d size %d\n",
+       printf ("Comm(%s): node %d time %ld.%06ld to %d size %d, inTask %ld\n",
                isget ? "get" : "put", nodeid, sec, usec, dstid, 
-               elemsize * datalen);
+               elemsize * datalen, byTask);
      }
 };
 
@@ -158,17 +158,19 @@ class E_fork : public Event {
      int  argsize;
      bool isFast;
      long byTask;
+     int  fid;
 
    public:
        E_fork (long esec, long eusec, int esrcid, int edstid, int argsize,
-               bool fast, long task) : Event(esec,eusec, esrcid), dstid(edstid),
-       argsize(argsize), isFast(fast), byTask(task) {};
+               bool fast, long task, int FID) : Event(esec,eusec, esrcid), dstid(edstid),
+       argsize(argsize), isFast(fast), byTask(task), fid(FID) {};
 
      int srcId() { return nodeId(); }
      int dstId() { return dstid; }
      bool fast() { return isFast; }
      int argSize() { return argsize; }
      long inTask() { return byTask; }
+     int funcId() { return fid; }
 
      virtual int Ekind() {return Ev_fork;}
      virtual void print() {
