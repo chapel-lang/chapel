@@ -119,53 +119,61 @@ private:
 // without changing its type to a ref or wide ref type.
 enum Qualifier {
   // The abstract qualifiers
-  kBlank,
-  kConst,
-  kRef,
-  kConstRef,
+  QUAL_BLANK,
+  QUAL_CONST,
+  QUAL_REF,
+  QUAL_CONST_REF,
 
   // The concrete qualifiers
-  kParam,
 
-  kVal,
-  kNarrowRef,
-  kWideRef,
+  // We expect we will need QUAL_PARAM
+  // QUAL_TYPE has also been proposed
+  // As we add those, we expect to add methods
+  // e.g. isParam() to QualifiedType.
 
-  kConstVal,
-  kConstNarrowRef,
-  kConstWideRef
+  // QUAL_VAL applies to local or global variables
+  // as well as to compiler-introduced temporaries.
+  // Something with Qualifier QUAL_VAL is mutable, but
+  // something with Qualifier QUAL_CONST_VAL is not.
+  QUAL_VAL,
+  QUAL_NARROW_REF,
+  QUAL_WIDE_REF,
+
+  QUAL_CONST_VAL,
+  QUAL_CONST_NARROW_REF,
+  QUAL_CONST_WIDE_REF
 };
 
 // A QualifiedType is basically a tuple of (qualifier, type).
+// Shorter names, such as QualType and QualT have been proposed.
+// A QualifiedType is only expected to be meaningful during and
+// after resolution.
 class QualifiedType {
 public:
 
   explicit QualifiedType(Type* type)
-    : type(type), qual(kBlank)
+    : _type(type), _qual(QUAL_BLANK)
   {
   }
 
   QualifiedType(Type* type, Qualifier qual)
-    : type(type), qual(qual)
+    : _type(type), _qual(qual)
   {
   }
 
   bool isAbstract() const {
-    return (qual == kBlank || qual == kConst ||
-            qual == kRef || qual == kConstRef);
-  }
-  bool isParam() const {
-    return (qual == kParam);
+    return (_qual == QUAL_BLANK || _qual == QUAL_CONST ||
+            _qual == QUAL_REF || _qual == QUAL_CONST_REF);
   }
   bool isVal() const {
-    return (qual == kVal || qual == kConstVal);
+    return (_qual == QUAL_VAL || _qual == QUAL_CONST_VAL);
   }
   bool isRef() const {
-    return (qual == kRef || qual == kConstRef ||
-            qual == kNarrowRef || qual == kConstNarrowRef);
+    return (_qual == QUAL_REF || _qual == QUAL_CONST_REF ||
+            _qual == QUAL_NARROW_REF || _qual == QUAL_CONST_NARROW_REF);
   }
   bool isWideRef() const {
-    return (qual == kWideRef || qual == kConstWideRef);
+    return (_qual == QUAL_WIDE_REF || _qual == QUAL_CONST_WIDE_REF);
   }
   bool isRefOrWideRef() const {
     return isRef() || isWideRef();
@@ -174,8 +182,8 @@ public:
   bool isWideRefType() const;
 
 
-  Type* getType() const {
-    return type;
+  Type* type() const {
+    return _type;
   }
   Qualifier getQual() const {
     return qual;
@@ -183,8 +191,8 @@ public:
 
 
 private:
-  Type*      type;
-  Qualifier  qual;
+  Type*      _type;
+  Qualifier  _qual;
 };
 
 class EnumType : public Type {

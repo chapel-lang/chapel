@@ -31,62 +31,62 @@ returnInfoUnknown(CallExpr* call) {
 
 static QualifiedType
 returnInfoVoid(CallExpr* call) {
-  return QualifiedType(dtVoid, kVal);
+  return QualifiedType(dtVoid, QUAL_VAL);
 }
 
 static QualifiedType
 returnInfoCVoidPtr(CallExpr* call) {
-  return QualifiedType(dtCVoidPtr, kVal);
+  return QualifiedType(dtCVoidPtr, QUAL_VAL);
 }
 
 static QualifiedType
 returnInfoBool(CallExpr* call) {
-  return QualifiedType(dtBool, kVal);
+  return QualifiedType(dtBool, QUAL_VAL);
 }
 
 static QualifiedType
 returnInfoString(CallExpr* call) {
-  return QualifiedType(dtString, kVal);
+  return QualifiedType(dtString, QUAL_VAL);
 }
 
 static QualifiedType
 returnInfoStringC(CallExpr* call) {
-  return QualifiedType(dtStringC, kVal);
+  return QualifiedType(dtStringC, QUAL_VAL);
 }
 
 static QualifiedType
 returnInfoStringCopy(CallExpr* call) {
-  return QualifiedType(dtStringCopy, kVal);
+  return QualifiedType(dtStringCopy, QUAL_VAL);
 }
 
 static QualifiedType
 returnInfoLocaleID(CallExpr* call) {
-  return QualifiedType(dtLocaleID, kVal);
+  return QualifiedType(dtLocaleID, QUAL_VAL);
 }
 
 static QualifiedType
 returnInfoNodeID(CallExpr* call) {
-  return QualifiedType(NODE_ID_TYPE, kVal);
+  return QualifiedType(NODE_ID_TYPE, QUAL_VAL);
 }
 
 static QualifiedType
 returnInfoInt32(CallExpr* call) {
-  return QualifiedType(dtInt[INT_SIZE_32], kVal);
+  return QualifiedType(dtInt[INT_SIZE_32], QUAL_VAL);
 }
 
 static QualifiedType
 returnInfoInt64(CallExpr* call) {
-  return QualifiedType(dtInt[INT_SIZE_64], kVal);
+  return QualifiedType(dtInt[INT_SIZE_64], QUAL_VAL);
 }
 
 static QualifiedType
 returnInfoUInt64(CallExpr* call) {
-  return QualifiedType(dtUInt[INT_SIZE_64], kVal);
+  return QualifiedType(dtUInt[INT_SIZE_64], QUAL_VAL);
 }
 
 static QualifiedType
 returnInfoSizeType(CallExpr* call) {
-  return QualifiedType(SIZE_TYPE, kVal);
+  return QualifiedType(SIZE_TYPE, QUAL_VAL);
 }
 
 //
@@ -104,17 +104,17 @@ returnInfoDefaultInt(CallExpr* call) {
 /*
 static QualifiedType
 returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
-  return QualifiedType(dtUInt[INT_SIZE_32], kVal);
+  return QualifiedType(dtUInt[INT_SIZE_32], QUAL_VAL);
 }
 
 static QualifiedType
 returnInfoReal32(CallExpr* call) {
-  return QualifiedType(dtReal[FLOAT_SIZE_32], kVal);
+  return QualifiedType(dtReal[FLOAT_SIZE_32], QUAL_VAL);
 }
 
 static QualifiedType
 returnInfoReal64(CallExpr* call) {
-  return QualifiedType(dtReal[FLOAT_SIZE_64], kVal);
+  return QualifiedType(dtReal[FLOAT_SIZE_64], QUAL_VAL);
 }
 */
 
@@ -122,9 +122,9 @@ static QualifiedType
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
   Type *t = call->get(1)->getValType();
   if (t == dtComplex[COMPLEX_SIZE_64]) {
-    return QualifiedType(dtReal[FLOAT_SIZE_32]->refType, kRef);
+    return QualifiedType(dtReal[FLOAT_SIZE_32]->refType, QUAL_REF);
   } else if (t == dtComplex[COMPLEX_SIZE_128]) {
-    return QualifiedType(dtReal[FLOAT_SIZE_64]->refType, kRef);
+    return QualifiedType(dtReal[FLOAT_SIZE_64]->refType, QUAL_REF);
   } else {
     INT_FATAL( call, "unsupported complex size");
   }
@@ -139,8 +139,8 @@ returnInfoFirst(CallExpr* call) {
 static QualifiedType
 returnInfoFirstDeref(CallExpr* call) {
   QualifiedType tmp = call->get(1)->qualType();
-  Type* type = tmp.getType()->getValType();
-  return QualifiedType(type, kVal);
+  Type* type = tmp.type()->getValType();
+  return QualifiedType(type, QUAL_VAL);
 }
 
 static QualifiedType
@@ -162,15 +162,15 @@ returnInfoVal(CallExpr* call) {
   if (ct) {
     if (call->get(1)->isRef()) {
       if(ct->symbol->hasFlag(FLAG_REF)) {
-        return QualifiedType(ct->getField(1)->type, kVal);
+        return QualifiedType(ct->getField(1)->type, QUAL_VAL);
       } else {
-        return QualifiedType(ct, kVal);
+        return QualifiedType(ct, QUAL_VAL);
       }
     } else if (call->get(1)->isWideRef()) {
       if(ct->symbol->hasFlag(FLAG_WIDE_REF)) {
-        return QualifiedType(ct->getField(2)->type, kVal);
+        return QualifiedType(ct->getField(2)->type, QUAL_VAL);
       } else {
-        return QualifiedType(ct, kVal);
+        return QualifiedType(ct, QUAL_VAL);
       }
     }
   }
@@ -183,18 +183,18 @@ returnInfoRef(CallExpr* call) {
   Type* t = call->get(1)->typeInfo();
   if (!t->refType)
     INT_FATAL(call, "invalid attempt to get reference type");
-  return QualifiedType(t->refType, kRef);
+  return QualifiedType(t->refType, QUAL_REF);
 }
 
 static QualifiedType
 returnInfoAsRef(CallExpr* call) {
   Type* t = call->get(1)->typeInfo();
   if (isReferenceType(t) || t->symbol->hasFlag(FLAG_WIDE_REF))
-    return QualifiedType(t, kRef);
+    return QualifiedType(t, QUAL_REF);
   else {
     if (!t->refType)
       INT_FATAL(call, "invalid attempt to get reference type");
-    return QualifiedType(t->refType, kRef);
+    return QualifiedType(t->refType, QUAL_REF);
   }
 }
 
@@ -204,14 +204,14 @@ returnInfoNumericUp(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
   if (is_int_type(t1) && is_real_type(t2))
-    return QualifiedType(t2, kVal);
+    return QualifiedType(t2, QUAL_VAL);
   if (is_real_type(t1) && is_int_type(t2))
-    return QualifiedType(t1, kVal);
+    return QualifiedType(t1, QUAL_VAL);
   if (is_int_type(t1) && is_bool_type(t2))
-    return QualifiedType(t1, kVal);
+    return QualifiedType(t1, QUAL_VAL);
   if (is_bool_type(t1) && is_int_type(t2))
-    return QualifiedType(t2, kVal);
-  return QualifiedType(t1, kVal);
+    return QualifiedType(t2, QUAL_VAL);
+  return QualifiedType(t1, QUAL_VAL);
 }
 
 static QualifiedType
@@ -223,17 +223,17 @@ returnInfoArrayIndexValue(CallExpr* call) {
     INT_FATAL(call, "bad primitive");
   // Is this conditional necessary?  Can just assume condition is true?
   if (type->symbol->hasFlag(FLAG_DATA_CLASS)) {
-    return QualifiedType(toTypeSymbol(getDataClassType(type->symbol))->type, kVal);
+    return QualifiedType(toTypeSymbol(getDataClassType(type->symbol))->type, QUAL_VAL);
   }
   else {
-    return QualifiedType(toTypeSymbol(type->substitutions.v[0].value)->type, kVal);
+    return QualifiedType(toTypeSymbol(type->substitutions.v[0].value)->type, QUAL_VAL);
   }
 }
 
 static QualifiedType
 returnInfoArrayIndex(CallExpr* call) {
   QualifiedType tmp = returnInfoArrayIndexValue(call);
-  return QualifiedType(tmp.getType()->refType, kRef);
+  return QualifiedType(tmp.type()->refType, QUAL_REF);
 }
 
 static QualifiedType
@@ -253,10 +253,10 @@ returnInfoGetMember(CallExpr* call) {
     const char* name = var->immediate->v_string;
     for_fields(field, ct) {
       if (!strcmp(field->name, name))
-        return QualifiedType(field->type, kVal);
+        return QualifiedType(field->type, QUAL_VAL);
     }
   } else
-    return QualifiedType(var->type, kVal);
+    return QualifiedType(var->type, QUAL_VAL);
   INT_FATAL(call, "bad member primitive");
   return QualifiedType(NULL);
 }
@@ -265,17 +265,17 @@ static QualifiedType
 returnInfoGetTupleMember(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->getValType());
   INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
-  return QualifiedType(ct->getField("x1")->type, kVal);
+  return QualifiedType(ct->getField("x1")->type, QUAL_VAL);
 }
 
 static QualifiedType
 returnInfoGetTupleMemberRef(CallExpr* call) {
-  Type* type = returnInfoGetTupleMember(call).getType();
+  Type* type = returnInfoGetTupleMember(call).type();
   if (type->refType)
     type = type->refType;
-  Qualifier q = kRef;
+  Qualifier q = QUAL_REF;
   if (call->get(1)->isWideRef()) {
-    q = kWideRef;
+    q = QUAL_WIDE_REF;
     if (Type* t = wideRefMap.get(type)) {
       type = t;
     }
@@ -310,9 +310,9 @@ returnInfoGetMemberRef(CallExpr* call) {
   } else {
     retType = var->type->refType ? var->type->refType : var->type;
   }
-  Qualifier q = kRef;
+  Qualifier q = QUAL_REF;
   if (call->get(1)->isWideRef()) {
-    q = kWideRef;
+    q = QUAL_WIDE_REF;
     if (Type* t = wideRefMap.get(retType)) {
       retType = t;
     }
@@ -333,7 +333,7 @@ returnInfoEndCount(CallExpr* call) {
       }
     }
   }
-  return QualifiedType(endCountType, kVal);
+  return QualifiedType(endCountType, QUAL_VAL);
 }
 
 static QualifiedType
