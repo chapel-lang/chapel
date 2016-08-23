@@ -6,7 +6,7 @@ proc myfunction() {
 
   for i in 1..10 {
     A[i].verify();
-    A[i].init(x=i);
+    A[i].setup(x=i);
     A[i].verify();
     assert(A[i].x == i);
   }

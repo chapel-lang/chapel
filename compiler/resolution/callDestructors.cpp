@@ -50,9 +50,7 @@
 *   1) Modifies the function rather than creating a clone                     *
 *   2) Does not fold any other code in to the tail                            *
 *                                                                             *
-* This implementation should be broadly applicable to record-like types but   *
-* is only applied to the new string-as-record type during the initial         *
-* integration.                                                                *
+* This implementation should be broadly applicable to record-like types.      *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -460,10 +458,7 @@ void ReturnByRef::addCall(CallExpr* call)
 
 void ReturnByRef::transform()
 {
-  // Update the function
-  transformFunction(mFunction);
-
-  // And all of the call sites
+  // Transform all of the call sites
   for (size_t i = 0; i < mCalls.size(); i++)
   {
     CallExpr* call   = mCalls[i];
@@ -485,6 +480,9 @@ void ReturnByRef::transform()
       INT_ASSERT(false);
     }
   }
+
+  // Then update the function
+  transformFunction(mFunction);
 }
 
 //
@@ -547,7 +545,14 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               (rhsFn->hasFlag(FLAG_AUTO_COPY_FN) == true ||
                rhsFn->hasFlag(FLAG_INIT_COPY_FN) == true))
           {
-            copyExpr = rhsCall;
+            ArgSymbol* formalArg  = rhsFn->getFormal(1);
+            Type*      formalType = formalArg->type;
+
+            // Cannot reduce initCopy/autoCopy for sync variables
+            if (isSyncType(formalType) == false)
+            {
+              copyExpr = rhsCall;
+            }
           }
         }
       }

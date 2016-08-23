@@ -107,7 +107,7 @@ coforall id in R do a.add(id*id);
 //
 var expected = n*(n+1)*(2*n+1)/6; 
 if a.read() != expected then
-  halt("Error: a=", a, " (should be ", expected, ")");
+  halt("Error: a=", a.read(), " (should be ", expected, ")");
 
 // In the following example, we create n tasks to atomically increment
 // the atomic variable a with the square of the task's given id.  The

@@ -40,7 +40,6 @@
 use DSIUtil;
 use ChapelUtil;
 use BlockDist;
-
 //
 // These flags are used to output debug information and run extra
 // checks when using SparseBlock.  Should these be promoted so that they can
@@ -50,7 +49,6 @@ use BlockDist;
 //
 config param debugSparseBlockDist = false;
 config param debugSparseBlockDistBulkTransfer = false;
-
 // There is no SparseBlock distribution class. Instead, we
 // just use Block.
 
@@ -64,14 +62,13 @@ config param debugSparseBlockDistBulkTransfer = false;
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-class SparseBlockDom: BaseSparseDom {
-  param rank: int;
-  type idxType;
+class SparseBlockDom: BaseSparseDomImpl {
+  type sparseLayoutType;
   param stridable: bool = false;  // TODO: remove default value eventually
-  const dist: Block(rank, idxType);
-  var parentDom;
+  const dist: Block(rank, idxType, sparseLayoutType);
   const whole: domain(rank=rank, idxType=idxType, stridable=stridable);
-  var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable);
+  var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable,
+      sparseLayoutType);
   var pid: int = -1; // privatized object id (this should be factored out)
 
   proc initialize() {
@@ -87,7 +84,7 @@ class SparseBlockDom: BaseSparseDom {
           //                    writeln("Setting up on ", here.id);
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
          locDoms(localeIdx) = new LocSparseBlockDom(rank, idxType, stridable,
-                                                     dist.getChunk(whole, localeIdx));
+             sparseLayoutType, dist.getChunk(whole,localeIdx));
           //                    writeln("Back on ", here.id);
         }
       }
@@ -108,13 +105,74 @@ class SparseBlockDom: BaseSparseDom {
   // rather than secondary methods.  This doesn't seem right, but I couldn't boil
   // it down to a smaller test case in the time I spent on it.
   proc dsiAdd(ind: rank*idxType) {
+    var _retval = 0;
     on dist.dsiIndexToLocale(ind) {
-      locDoms[dist.targetLocsIdx(ind)].dsiAdd(ind);
+      _retval = locDoms[dist.targetLocsIdx(ind)].dsiAdd(ind);
     }
+    nnz += _retval;
+    return _retval;
   }
 
   proc dsiAdd(ind: idxType) where this.rank == 1 {
-    dsiAdd((ind,));
+    return dsiAdd((ind,));
+  }
+
+  proc dsiFirst {
+    return min reduce ([l in locDoms] l.mySparseBlock.first);
+  }
+
+  proc dsiLast {
+    return max reduce ([l in locDoms] l.mySparseBlock.last);
+  }
+
+  // Tried to put this record in the function and the if statement, but got a
+  // segfault from the compiler.
+  record TargetLocaleComparator {
+    proc key(a: index(rank, idxType)) { 
+      return (dist.targetLocsIdx(a), a);
+    }
+  }
+
+  proc bulkAdd_help(inds: [] index(rank,idxType),
+      isSorted=false, isUnique=false) {
+
+    // without _new_, record functions throw null deref
+    var comp = new TargetLocaleComparator();
+
+    if !isSorted then sort(inds, comparator=comp);
+
+    var localeRanges: [dist.targetLocDom] range;
+    on inds {
+      for l in dist.targetLocDom {
+        const _first = locDoms[l].mySparseBlock._value.parentDom.first;
+        const _last = locDoms[l].mySparseBlock._value.parentDom.last;
+
+        var (foundFirst, locFirst) = binarySearch(inds, _first, comp);
+        var (foundLast, locLast) = binarySearch(inds, _last, comp);
+
+        if !foundLast then locLast -= 1;
+
+        // two ifs are necessary to catch out of bounds in the bulkAdd call
+        // chain. otherwise this methods would cutoff indices that are smaller
+        // than parentDom.first or larger than parentDom.last, which is
+        // _probably_ not desirable.
+        if dist.targetLocDom.first == l then
+          locFirst = inds.domain.first;
+        if dist.targetLocDom.last == l then
+          locLast = inds.domain.last;
+
+        localeRanges[l] = locFirst..locLast;
+      }
+    }
+    var _totalAdded: atomic int;
+    coforall l in dist.targetLocDom do on dist.targetLocales[l] {
+      const _retval = locDoms[l].mySparseBlock.bulkAdd(inds[localeRanges[l]],
+          isSorted=true, isUnique=false);
+      _totalAdded.add(_retval);
+    }
+    const _retval = _totalAdded.read();
+    nnz += _retval;
+    return _retval;
   }
 
   //
@@ -137,20 +195,12 @@ class SparseBlockDom: BaseSparseDom {
     }
   }
 
-  proc dsiNumIndices {
-    var total:atomic int;
-    coforall locDom in locDoms do on locDom {
-      var localNum = locDom.dsiNumIndices;
-      total.add(localNum);
-    }
-    return total.read();
-  }
-
   //
   // how to allocate a new array over this domain
   //
   proc dsiBuildArray(type eltType) {
-    var arr = new SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+    var arr = new SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType,
+        stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this);
     arr.setup();
     return arr;
   }
@@ -194,11 +244,8 @@ class SparseBlockDom: BaseSparseDom {
     }
   }
 
-
-  proc dsiDims() return whole.dims();
-
   proc dsiMember(ind) {
-    on parentDom.dist.idxToLocale(ind) {
+    on whole.dist.idxToLocale(ind) {
       writeln("Need to add support for mapping locale to local domain");
     }
   }
@@ -210,8 +257,6 @@ class SparseBlockDom: BaseSparseDom {
   }
 
   proc dsiMyDist() return dist;
-
-
 }
 
 //
@@ -226,15 +271,17 @@ class LocSparseBlockDom {
   param rank: int;
   type idxType;
   param stridable: bool;
+  type sparseLayoutType;
   var parentDom: domain(rank, idxType, stridable);
-  var mySparseBlock: sparse subdomain(parentDom);
+  var sparseDist = new sparseLayoutType; //unresolved call workaround
+  var mySparseBlock: sparse subdomain(parentDom) dmapped new dmap(sparseDist);
 
   proc initialize() {
     //    writeln("On locale ", here.id, " LocSparseBlockDom = ", this);
   }
 
   proc dsiAdd(ind: rank*idxType) {
-    mySparseBlock.add(ind);
+    return mySparseBlock.add(ind);
   }
 
   proc dsiMember(ind: rank*idxType) {
@@ -267,22 +314,32 @@ class LocSparseBlockDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-class SparseBlockArr: BaseArr {
-  type eltType;
-  param rank: int;
-  type idxType;
+class SparseBlockArr: BaseSparseArr {
   param stridable: bool;
-  var dom; //: SparseBlockDom(rank, idxType, stridable);
-  var locArr: [dom.dist.targetLocDom] LocSparseBlockArr(eltType, rank, idxType, stridable);
-  var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable);
+  type sparseLayoutType = DefaultDist;
+
+  // ideally I wanted to have `var locArr: [dom.dist.targetLocDom]`. However,
+  // superclass' fields cannot be used in child class' field initializers. See
+  // the constructor for the workaround.
+  var locArrDom: domain(rank,idxType);
+  var locArr: [locArrDom] LocSparseBlockArr(eltType, rank, idxType, stridable,
+      sparseLayoutType);
+  var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable,
+      sparseLayoutType);
   var pid: int = -1; // privatized object id (this should be factored out)
+
+  proc SparseBlockArr(type eltType, param rank, type idxType, param stridable,
+      type sparseLayoutType ,dom) {
+    locArrDom = dom.dist.targetLocDom;
+  }
 
   proc setup() {
     var thisid = this.locale.id;
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocales(localeIdx) {
         const locDom = dom.getLocDom(localeIdx);
-        locArr(localeIdx) = new LocSparseBlockArr(eltType, rank, idxType, stridable, locDom);
+        locArr(localeIdx) = new LocSparseBlockArr(eltType, rank, idxType,
+            stridable, sparseLayoutType, locDom);
         if thisid == here.id then
           myLocArr = locArr(localeIdx);
       }
@@ -331,7 +388,6 @@ class SparseBlockArr: BaseArr {
         return myLocArr.dsiAccess(i);
         //      }
     }
-      //      writeln("In general case, and finding that locale is ", dom.dist.targetLocsIdx(i));
     return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
   }
   proc dsiAccess(i: rank*idxType)
@@ -386,7 +442,8 @@ class LocSparseBlockArr {
   param rank: int;
   type idxType;
   param stridable: bool;
-  const locDom: LocSparseBlockDom(rank, idxType, stridable);
+  type sparseLayoutType;
+  const locDom: LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType);
   var myElems: [locDom.mySparseBlock] eltType;
 
   proc dsiAccess(i) ref {
@@ -417,7 +474,6 @@ proc SparseBlockDom.dsiDisplayRepresentation() {
     writeln("locDoms[", tli, "].mySparseBlock = ", locDoms[tli].mySparseBlock);
 }
 
-proc SparseBlockDom.dsiDim(d: int) return whole.dim(d);
 
 
 //
@@ -761,7 +817,8 @@ proc SparseBlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc SparseBlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
-  var c = new SparseBlockDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist, parentDom=parentDom);
+  var c = new SparseBlockDom(rank=rank, idxType=idxType, stridable=stridable,
+      dist=privdist, whole=whole);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
   c.whole = {(...privatizeData(2))};
@@ -791,7 +848,7 @@ proc SparseBlockArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc SparseBlockArr.dsiSupportsBulkTransfer() param return true;
+proc SparseBlockArr.dsiSupportsBulkTransfer() param return false;
 
 proc SparseBlockArr.doiCanBulkTransfer() {
   if dom.stridable then
@@ -805,6 +862,8 @@ proc SparseBlockArr.doiCanBulkTransfer() {
   return true;
 }
 
+// TODO This function needs to be fixed. For now, explicitly returning false
+// from dsiSupportsBulkTransfer, so this function should never be compiled
 proc SparseBlockArr.doiBulkTransfer(B) {
   if debugSparseBlockDistBulkTransfer then resetCommDiagnostics();
   var sameDomain: bool;

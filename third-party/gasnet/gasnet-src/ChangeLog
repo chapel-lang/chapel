@@ -2,6 +2,46 @@ GASNet ChangeLog
 ----------------
 
 ----------------------------------------------------------------------
+08-01-2016 :  Release 1.26.4
+
+* This bug fix release addresses issues in several conduits that were
+  discovered since the 1.26.3 release.
+
+* InfiniBand Verbs (ibv-conduit)
+  - Clients written in C++ would fail to link with undefined references
+    to gasnetc_amrdma_balance.
+  - A build of ibv-conduit configured using --disable-ibv-rcv-thread
+    would produce numerous warnings due to a type mismatch.  Some C
+    compilers may have treated the type mismatch as an error.
+
+* Libfabric (ofi-conduit)
+  - Add locking to enable thread-safety in PAR builds
+  - Add diagnostics to OFI provider selection and warn about
+    providers that are expected to deliver suboptimal performance.
+  - Remove mr to ep binding for compliance with current OFI spec
+  - Fix a compilation error on some platforms
+
+* Mellanox ConnectX series HCAs (mxm-conduit)
+  - Fix a compilation error on some platforms
+
+* Intel OmniPath PSM2 (psm-conduit)
+  - Fix a compilation error on some platforms
+
+* Portable UDP (udp-conduit)
+  - Fix a data corruption issue on 64-bit OSX on PowerPC
+
+* Portable MPI (mpi-conduit)
+  - Add a GASNET_MPI_THREAD variable to control MPI-2 threading mode
+    requested by AMMPI startup, for use in mixed-mode GASNet/MPI apps.
+
+* General and Misc.
+  - Tweak the default ordering of conduits in CONDUITS configure output,
+    to reflect intended defaulting priority.
+  - Downgrade ofi and portals4 conduits to "portable" conduits in startup
+    code that checks and warns about the availability of native conduits.
+  - Many improvements to conduit documentation
+
+----------------------------------------------------------------------
 05-23-2016 :  Release 1.26.3
 
 * This release fixes three significant bugs affecting udp-conduit:

@@ -1,1 +1,1 @@
-nested-class-with-user-defined-constructor-1.chpl:4: error: constructor for class 'inner' requires a generic argument called 'outer'
+nested-class-with-user-defined-constructor-1.chpl:4: error: initializer for class 'inner' requires a generic argument called 'outer'

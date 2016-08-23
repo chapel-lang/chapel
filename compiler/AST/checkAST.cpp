@@ -39,7 +39,7 @@ void checkForDuplicateUses()
   // So, scan the list of functions, cache their arguments, and barf if a
   // duplicate is encountered.
   std::set<ArgSymbol*> args_seen;
-  forv_Vec(FnSymbol, fn, gFnSymbols)
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
   {
     for_formals(formal, fn)
     {
@@ -67,7 +67,7 @@ void checkNoUnresolveds()
 // Ensures that primitives are used only where they are expected.
 void checkPrimitives()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
   {
     // Only interested in primitives
     if (!call->primitive)
@@ -100,13 +100,63 @@ void checkPrimitives()
      case PRIM_IS_TUPLE_TYPE:
      case PRIM_IS_STAR_TUPLE_TYPE:
      case PRIM_NEW:                 // new keyword
+     case PRIM_ERROR:
+     case PRIM_WARNING:
       if (resolved)
         INT_FATAL("Primitive should not appear after resolution is complete.");
       break;
 
+     case PRIM_ADDR_OF:             // set a reference to a value
+      if (resolved) {
+        // Check that the argument is not already a reference.
+        // references can only go 1 level
+        if (isReferenceType(call->get(1)->typeInfo()))
+          INT_FATAL("Invalid PRIM_ADDR_OF of a reference");
+      }
+      break;
+
+     case PRIM_DEREF:               // dereference a reference
+      if (resolved) {
+        // Check that the argument is a reference.
+        if (!isReferenceType(call->get(1)->typeInfo()))
+          INT_FATAL("Invalid PRIM_DEREF of a non-reference");
+      }
+      break;
+
+     case PRIM_MOVE:
+      if (resolved) {
+        // Check that the LHS has the same type as the RHS.
+        if (call->get(1)->typeInfo() != call->get(2)->typeInfo())
+          INT_FATAL("PRIM_MOVE types do not match");
+      }
+      break;
+
+     case PRIM_GET_MEMBER:
+     case PRIM_GET_MEMBER_VALUE:
+     case PRIM_SET_MEMBER:
+      if (resolved) {
+        // For expr.field, check that field is a VarSymbol
+        // in the class expr.type.
+        AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
+        SymExpr* getFieldSe = toSymExpr(call->get(2));
+        Symbol* getField = getFieldSe->var;
+        INT_ASSERT(ct);
+        INT_ASSERT(getField);
+        Symbol* name_match = NULL;
+        for_fields(field, ct) {
+          if (0 == strcmp(field->name, getField->name))
+            name_match = field;
+        }
+        if (name_match != getField) {
+          // Note: name_match contains the field that was
+          // probably meant...
+          INT_FATAL("Field access for field not in type");
+        }
+      }
+      break;
+
      case PRIM_UNKNOWN:
      case PRIM_NOOP:
-     case PRIM_MOVE:
      case PRIM_REF_TO_STRING:
      case PRIM_RETURN:
      case PRIM_YIELD:
@@ -149,15 +199,10 @@ void checkPrimitives()
      case PRIM_GETCID:
      case PRIM_SET_UNION_ID:
      case PRIM_GET_UNION_ID:
-     case PRIM_GET_MEMBER:
-     case PRIM_GET_MEMBER_VALUE:
-     case PRIM_SET_MEMBER:
      case PRIM_CHECK_NIL:
      case PRIM_GET_REAL:            // get complex real component
      case PRIM_GET_IMAG:            // get complex imag component
      case PRIM_QUERY:               // query expression primitive
-     case PRIM_ADDR_OF:             // set a reference to a value
-     case PRIM_DEREF:               // dereference a reference
      case PRIM_LOCAL_CHECK:         // assert that a wide ref is on this locale
      case PRIM_SYNC_INIT:
      case PRIM_SYNC_DESTROY:
@@ -214,8 +259,6 @@ void checkPrimitives()
      case PRIM_ARRAY_SHIFT_BASE_POINTER:
      case PRIM_ARRAY_SET:
      case PRIM_ARRAY_SET_FIRST:
-     case PRIM_ERROR:
-     case PRIM_WARNING:
      case PRIM_WHEN:
      case PRIM_BLOCK_PARAM_LOOP:        // BlockStmt::blockInfo - param for loop
      case PRIM_BLOCK_WHILEDO_LOOP:      // BlockStmt::blockInfo - while do loop
@@ -268,7 +311,7 @@ void checkPrimitives()
 // and it has no corresponding ref type.
 void checkReturnTypesHaveRefTypes()
 {
-  forv_Vec(FnSymbol, fn, gFnSymbols)
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
   {
     Type* retType = fn->retType;
     

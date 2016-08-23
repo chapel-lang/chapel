@@ -62,6 +62,7 @@ extern const char* CHPL_REGEXP;
 extern const char* CHPL_WIDE_POINTERS;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
+extern const char* CHPL_UNWIND;
 extern const int CHPL_STACK_CHECKS;
 extern const int CHPL_CACHE_REMOTE;
 
@@ -70,11 +71,18 @@ extern const int CHPL_CACHE_REMOTE;
 extern c_string chpl_filenameTable[];
 extern const int32_t chpl_filenameTableSize;
 
+// Lookup tables used as a symbol table by the stack unwinder for translating
+// C symbols into Chapel symbols. Defined in chpl_compilation_config.c
+extern c_string chpl_funSymTable[];
+extern int chpl_filenumSymTable[];
+extern const int32_t chpl_sizeSymTable;
+
 /* defined in main.c */
 extern char* chpl_executionCommand;
 
 /* generated */
 extern chpl_fn_p chpl_ftable[];
+extern chpl_fn_info chpl_finfo[];
 
 extern void chpl__initStringLiterals(void);
 

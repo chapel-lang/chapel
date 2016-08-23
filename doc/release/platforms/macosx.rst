@@ -28,6 +28,6 @@ following command::
    language's rich features should clone the repository_ or
    download a release_, and :ref:`build Chapel from source <readme-building>`.
 
-.. _Homebrew: https://github.com/Homebrew/homebrew
+.. _Homebrew: https://github.com/Homebrew/brew
 .. _repository: https://github.com/chapel-lang/chapel
 .. _release: https://github.com/chapel-lang/chapel/releases

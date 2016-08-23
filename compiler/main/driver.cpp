@@ -75,6 +75,7 @@ const char* CHPL_REGEXP = NULL;
 const char* CHPL_WIDE_POINTERS = NULL;
 const char* CHPL_LLVM = NULL;
 const char* CHPL_AUX_FILESYS = NULL;
+const char* CHPL_UNWIND = NULL;
 
 bool widePointersStruct;
 
@@ -137,6 +138,7 @@ bool fNoOptimizeOnClauses = false;
 bool fNoRemoveEmptyRecords = true;
 bool fRemoveUnreachableBlocks = true;
 bool fMinimalModules = false;
+bool fIncrementalCompilation = false;
 bool fUseIPE         = false;
 
 int optimize_on_clause_limit = 20;
@@ -154,8 +156,10 @@ bool report_inlining = false;
 char fExplainCall[256] = "";
 int explainCallID = -1;
 int breakOnResolveID = -1;
+bool fDenormalize = false;
 char fExplainInstantiation[256] = "";
 bool fExplainVerbose = false;
+bool fParseOnly = false;
 bool fPrintCallStackOnError = false;
 bool fPrintIDonError = false;
 bool fPrintModuleResolution = false;
@@ -754,6 +758,7 @@ static ArgumentDescription arg_desc[] = {
  {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", NULL},
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
  {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
+ {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
  {"parser-debug", 'D', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
  {"debug-short-loc", ' ', NULL, "Display long [short] location in certain debug outputs", "N", &debugShortLoc, "CHPL_DEBUG_SHORT_LOC", NULL},
  {"print-emitted-code-size", ' ', NULL, "Print emitted code size", "F", &fPrintEmittedCodeSize, NULL, NULL},
@@ -777,6 +782,7 @@ static ArgumentDescription arg_desc[] = {
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
  {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
+ {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
  DRIVER_ARG_DEBUGGERS,
  {"heterogeneous", ' ', NULL, "Compile for heterogeneous nodes", "F", &fHeterogeneous, "", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
@@ -790,6 +796,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-id-on-error", ' ', NULL, "[Don't] print AST id in error messages", "N", &fPrintIDonError, "CHPL_PRINT_ID_ON_ERROR", NULL},
  {"remove-empty-records", ' ', NULL, "Enable [disable] empty record removal", "n", &fNoRemoveEmptyRecords, "CHPL_DISABLE_REMOVE_EMPTY_RECORDS", NULL},
  {"remove-unreachable-blocks", ' ', NULL, "[Don't] remove unreachable blocks after resolution", "N", &fRemoveUnreachableBlocks, "CHPL_REMOVE_UNREACHABLE_BLOCKS", NULL},
+ {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
  DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
@@ -946,6 +953,7 @@ static void setChapelEnvs() {
   CHPL_WIDE_POINTERS   = envMap["CHPL_WIDE_POINTERS"];
   CHPL_LLVM            = envMap["CHPL_LLVM"];
   CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
+  CHPL_UNWIND          = envMap["CHPL_UNWIND"];
 }
 
 static void setupChplGlobals(const char* argv0) {
@@ -1029,6 +1037,15 @@ static void checkTargetArch() {
   }
 }
 
+static void checkIncrementalAndOptimized() {
+  std::size_t optimizationsEnabled = ccflags.find("-O");
+  if(fIncrementalCompilation && ( optimizeCCode ||
+      optimizationsEnabled!=std::string::npos ))
+    USR_WARN("Compiling with --incremental along with optimizations enabled"
+              " may lead to a slower execution time compared to --fast or"
+              " using -O optimizations directly.");
+}
+
 static void postprocess_args() {
   // Processes that depend on results of passed arguments or values of CHPL_vars
 
@@ -1049,6 +1066,8 @@ static void postprocess_args() {
   checkLLVMCodeGen();
 
   checkTargetArch();
+
+  checkIncrementalAndOptimized();
 }
 
 int main(int argc, char* argv[]) {

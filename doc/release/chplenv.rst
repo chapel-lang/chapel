@@ -198,9 +198,9 @@ CHPL_TARGET_ARCH
         none      No specialization will be performed (will not warn)
         ========  =============================================================
 
+        **Architecture-specific values**
+
         =========== ================
-        Architecture-specific values
-        ----------------------------
         intel       amd
         =========== ================
         core2           k8
@@ -376,13 +376,11 @@ CHPL_MEM
         Value     Description
         ========= =======================================================
         cstdlib   use the standard C malloc/free commands
-        jemalloc  use Jason Evan's memory allocation package
+        jemalloc  use Jason Evan's memory allocator
         ========= =======================================================
 
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
-   If the target platform is ``cygwin*``, the target compiler is ``*pgi``,
-   or the target platform is ``darwin`` and the target compiler is ``gnu``
-   it defaults to ``cstdlib``
+   If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
 
 .. _readme-chplenv.CHPL_LAUNCHER:
@@ -604,6 +602,24 @@ CHPL_WIDE_POINTERS
    and optimize remote transfers, potentially reducing the amount of
    communication a program performs.  See :ref:`readme-llvm` for more
    information about ``CHPL_WIDE_POINTERS=nodeN``.
+
+
+.. _readme-chplenv.CHPL_UNWIND:
+
+CHPL_UNWIND
+~~~~~~~~~~~
+   Optionally, the ``CHPL_UNWIND`` environment variable can be used to select
+   an unwind library for stack tracing. Current options are:
+
+       ========= =======================================================
+       Value     Description
+       ========= =======================================================
+       libunwind use the libunwind bundled with Chapel in third-party
+       system    assume libunwind is already installed on the system
+       none      don't use an unwind library, disabling stack tracing
+       ========= =======================================================
+
+   If unset, ``CHPL_UNWIND`` defaults to ``none``
 
 Compiler Command Line Option Defaults
 -------------------------------------

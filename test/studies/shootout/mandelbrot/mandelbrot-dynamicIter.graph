@@ -1,5 +1,0 @@
-perfkeys: real, real
-files: mandelbrot-unrolled.dat, mandelbrot-unrolled-DynamicNDIter.dat
-graphkeys: mandelbrot-unrolled, mandelbrot-unrolled-DynamicNDIter
-ylabel: Time (seconds)
-graphtitle: Mandelbrot-unrolled Dynamic Iter Comparison

@@ -53,7 +53,6 @@ COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL = -wr111,193,1418,1419,2215,2259,170
 
 RUNTIME_CFLAGS = -std=gnu99 $(CFLAGS) -wr181,188
-RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
 GEN_CFLAGS = -std=gnu99 -wr592
 # NOTE: These are only supported for Linux
 GEN_STATIC_FLAG = -static-intel -static-libgcc -static
@@ -109,12 +108,13 @@ IEEE_FLOAT_GEN_CFLAGS = -fp-model precise -fp-model source
 
 WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr304,593,810,869,981,1572,1599
 WARN_CFLAGS = $(WARN_CXXFLAGS)
-WARN_GEN_CFLAGS = $(WARN_CFLAGS) -wr111,174,177
+WARN_GEN_CFLAGS = $(WARN_CFLAGS)
+SQUASH_WARN_GEN_CFLAGS = -wr111,174,177
 
 #
 # Don't warn for signed pointer issues (ex. c_ptr(c_char) )
 #
-WARN_GEN_CFLAGS += -Wno-pointer-sign
+SQUASH_WARN_GEN_CFLAGS += -Wno-pointer-sign
 
 #
 # compiler warnings settings
@@ -122,7 +122,6 @@ WARN_GEN_CFLAGS += -Wno-pointer-sign
 ifeq ($(WARNINGS), 1)
 COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS)
-RUNTIME_GEN_CFLAGS += -Wno-unused
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 
 #

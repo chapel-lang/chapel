@@ -39,6 +39,10 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
+#include "resolution.h"
+
+// LLVM debugging support
+#include "llvmDebug.h"
 
 #include "AstToText.h"
 #include "AstVisitor.h"
@@ -93,9 +97,10 @@ VarSymbol *gModuleInitIndentLevel = NULL;
 FnSymbol *gPrintModuleInitFn = NULL;
 FnSymbol* gChplHereAlloc = NULL;
 FnSymbol* gChplHereFree = NULL;
+FnSymbol* gChplDoDirectExecuteOn = NULL;
 
 std::map<FnSymbol*,int> ftableMap;
-Vec<FnSymbol*> ftableVec;
+std::vector<FnSymbol*> ftableVec;
 
 Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
 Map<FnSymbol*,int> virtualMethodMap;
@@ -125,12 +130,17 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
 Symbol::~Symbol() {
 }
 
+static inline void verifyInTree(BaseAST* ast, const char* msg) {
+  if (ast && !ast->inTree())
+    INT_FATAL(ast, "%s is not in AST", msg);
+}
 
 void Symbol::verify() {
   if (defPoint && !defPoint->parentSymbol && !toModuleSymbol(this))
     INT_FATAL(this, "Symbol::defPoint is not in AST");
   if (defPoint && this != defPoint->sym)
     INT_FATAL(this, "Symbol::defPoint != Sym::defPoint->sym");
+  verifyInTree(type, "Symbol::type");
 }
 
 
@@ -284,7 +294,9 @@ VarSymbol::VarSymbol(const char *init_name,
   LcnSymbol(E_VarSymbol, init_name, init_type),
   immediate(NULL),
   doc(NULL),
-  isField(false)
+  isField(false),
+  llvmDIGlobalVariable(NULL),
+  llvmDIVariable(NULL)
 {
   gVarSymbols.add(this);
 }
@@ -657,6 +669,22 @@ GenRet VarSymbol::codegen() {
         ret.c += cname;
         ret.isLVPtr = GEN_PTR;
       }
+      // Print string contents in a comment if developer mode
+      // and savec is set.
+      if (developer &&
+          0 != strcmp(saveCDir, "") &&
+          immediate &&
+          ret.chplType == dtString &&
+          immediate->const_kind == CONST_KIND_STRING) {
+        if (strstr(immediate->v_string, "/*") ||
+            strstr(immediate->v_string, "*/")) {
+          // Don't emit comment b/c string contained comment character.
+        } else {
+          ret.c += " /* \"";
+          ret.c += immediate->v_string;
+          ret.c += "\" */";
+        }
+      }
     }
     return ret;
   } else {
@@ -755,7 +783,7 @@ GenRet VarSymbol::codegen() {
 }
 
 
-void VarSymbol::codegenDefC(bool global) {
+void VarSymbol::codegenDefC(bool global, bool isHeader) {
   GenInfo* info = gGenInfo;
   if (this->hasFlag(FLAG_EXTERN))
     return;
@@ -772,9 +800,16 @@ void VarSymbol::codegenDefC(bool global) {
   // a variable can be codegen'd as static if it is global and neither
   // exported nor external.
   //
-  bool isStatic =  global && !hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN);
+  std::string str;
 
-  std::string str = (isStatic ? "static " : "") + typestr + " " + cname;
+  if(fIncrementalCompilation) {
+    bool addExtern =  global && isHeader;
+    str = (addExtern ? "extern " : "") + typestr + " " + cname;
+  } else {
+    bool isStatic =  global && !hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN);
+    str = (isStatic ? "static " : "") + typestr + " " + cname;
+  }
+
   if (ct) {
     if (ct->isClass()) {
       if (isFnSymbol(defPoint->parentSymbol)) {
@@ -795,10 +830,16 @@ void VarSymbol::codegenDefC(bool global) {
       }
     }
   }
+
+  if (fGenIDS)
+    str = idCommentTemp(this) + str;
+  if (printCppLineno && !isHeader && !isTypeSymbol(defPoint->parentSymbol))
+    str = zlineToString(this) + str;
+
   info->cLocalDecls.push_back(str);
 }
 
-void VarSymbol::codegenGlobalDef() {
+void VarSymbol::codegenGlobalDef(bool isHeader) {
   GenInfo* info = gGenInfo;
 
   if( id == breakOnCodegenID ||
@@ -808,10 +849,10 @@ void VarSymbol::codegenGlobalDef() {
   }
 
   if( info->cfile ) {
-    codegenDefC(/*global=*/true);
+    codegenDefC(/*global=*/true, isHeader);
   } else {
 #ifdef HAVE_LLVM
-    if(type == dtVoid) {
+    if(type == dtVoid || !isHeader) {
       return;
     }
 
@@ -852,8 +893,11 @@ void VarSymbol::codegenGlobalDef() {
                                  : llvm::GlobalVariable::InternalLinkage,
             llvm::Constant::getNullValue(llTy), /* initializer, */
             cname);
-
       info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type) );
+
+      if(debug_info){
+        debug_info->get_global_variable(this);
+      }
     }
 #endif
   }
@@ -910,7 +954,6 @@ void VarSymbol::codegenDef() {
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               codegenImmediateLLVM(immediate)));
       }
-
       info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type));
     }
     llvm::Type *varType = type->codegen().type;
@@ -926,6 +969,9 @@ void VarSymbol::codegenDef() {
               llvm::Constant::getNullValue(varType), varAlloca);
         }
       }
+    }
+    if(debug_info){
+      debug_info->get_variable(this);
     }
 #endif
   }
@@ -953,7 +999,8 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   typeExpr(NULL),
   defaultExpr(NULL),
   variableExpr(NULL),
-  instantiatedFrom(NULL)
+  instantiatedFrom(NULL),
+  llvmDIFormal(NULL)
 {
   if (intentsResolved) {
     if (iIntent == INTENT_BLANK || iIntent == INTENT_CONST) {
@@ -1008,6 +1055,10 @@ void ArgSymbol::verify() {
       INT_FATAL(this, "Arg '%s' (%d) has blank/const intent post-resolve", this->name, this->id);
     }
   }
+  verifyNotOnList(typeExpr);
+  verifyNotOnList(defaultExpr);
+  verifyNotOnList(variableExpr);
+  verifyInTree(instantiatedFrom, "ArgSymbol::instantiatedFrom");
 }
 
 
@@ -1051,13 +1102,30 @@ bool ArgSymbol::requiresCPtr(void) {
 
 
 bool ArgSymbol::isConstant() const {
-  if (intent == INTENT_CONST_IN || intent == INTENT_CONST_REF) {
-    return true;
+  bool retval = false;
+
+  switch (intent) {
+  case INTENT_BLANK:
+    retval = type->isDefaultIntentConst();
+    break;
+
+  case INTENT_CONST_IN:
+  case INTENT_CONST_REF:
+    retval = true;
+    break;
+
+  // Noakes: 2016/06/14
+  // It seems odd to me that this case depends on the type
+  case INTENT_CONST:
+    retval = type->isDefaultIntentConst();
+    break;
+
+  default:
+    retval = false;
+    break;
   }
-  return (intent == INTENT_BLANK || intent == INTENT_CONST) &&
-    !isReferenceType(type) &&
-    !isSyncType(type) &&
-    !isRecordWrappedType(type) /* array, domain, distribution */;
+
+  return retval;
 }
 
 bool ArgSymbol::isConstValWillNotChange() const {
@@ -1210,6 +1278,7 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
     llvmType(NULL),
     llvmTbaaNode(NULL), llvmConstTbaaNode(NULL),
     llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL),
+    llvmDIType(NULL),
     doc(NULL)
 {
   addFlag(FLAG_TYPE_VARIABLE);
@@ -1280,6 +1349,7 @@ void TypeSymbol::codegenDef() {
     }
 
     llvmType = type;
+    if(debug_info) debug_info->get_type(this->type);
 #endif
   }
 }
@@ -1421,7 +1491,7 @@ GenRet TypeSymbol::codegen() {
       // code generated, so code generate it now. This can get called
       // when adding types partway through code generation.
       codegenDef();
-      // codegenMetadata(); TODO -- enable TBAA generation in the future.
+      // codegenMetadata(); //TODO -- enable TBAA generation in the future.
     }
     ret.type = llvmType;
 #endif
@@ -1466,7 +1536,12 @@ FnSymbol::FnSymbol(const char* initName) :
   codegenUniqueNum(1),
   doc(NULL),
   partialCopySource(NULL),
+  varargOldFormal(NULL),
   retSymbol(NULL)
+#ifdef HAVE_LLVM
+  ,
+  llvmDISubprogram(NULL)
+#endif
 {
   substitutions.clear();
   gFnSymbols.add(this);
@@ -1475,8 +1550,14 @@ FnSymbol::FnSymbol(const char* initName) :
 
 
 FnSymbol::~FnSymbol() {
-  if (iteratorInfo)
+  if (iteratorInfo) {
+    // Also set iterator class and iterator record iteratorInfo = NULL.
+    if (iteratorInfo->iclass)
+      iteratorInfo->iclass->iteratorInfo = NULL;
+    if (iteratorInfo->irecord)
+      iteratorInfo->irecord->iteratorInfo = NULL;
     delete iteratorInfo;
+  }
   BasicBlock::clear(this);
   delete basicBlocks; basicBlocks = 0;
   if (calledBy)
@@ -1504,6 +1585,22 @@ void FnSymbol::verify() {
     INT_FATAL(this, "Bad FnSymbol::retExprType::parentSymbol");
   if (body && body->parentSymbol != this)
     INT_FATAL(this, "Bad FnSymbol::body::parentSymbol");
+
+  verifyInTree(retType, "FnSymbol::retType");
+  verifyNotOnList(where);
+  verifyNotOnList(retExprType);
+  verifyNotOnList(body);
+  verifyInTree(_this, "FnSymbol::_this");
+  verifyInTree(_outer, "FnSymbol::_outer");
+  verifyInTree(instantiatedFrom, "FnSymbol::instantiatedFrom");
+  verifyInTree(instantiationPoint, "FnSymbol::instantiationPoint");
+  // TODO: do we want to go over this->substitutions, basicBlocks, calledBy ?
+  // Should those even persist between passes?
+  verifyInTree(valueFunction, "FnSymbol::valueFunction");
+  verifyInTree(retSymbol, "FnSymbol::retSymbol");
+  // Used only during resolution. Ditto partialCopyMap, varargNewFormals.
+  INT_ASSERT(partialCopySource == NULL);
+  INT_ASSERT(varargOldFormal == NULL);
 }
 
 
@@ -1768,6 +1865,15 @@ void FnSymbol::finalizeCopy(void) {
      */
     update_symbols(this, map);
 
+    // Replace vararg formal if appropriate.
+    if (this->varargOldFormal) {
+      substituteVarargTupleRefs(this->body, this->varargNewFormals.size(),
+                                this->varargOldFormal, this->varargNewFormals);
+      // Done, clean up.
+      this->varargOldFormal = NULL;
+      this->varargNewFormals.clear();
+    }
+
     // Clean up book keeping information.
     this->partialCopyMap.clear();
     this->partialCopySource = NULL;
@@ -1858,14 +1964,9 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
 void FnSymbol::codegenHeaderC(void) {
   FILE* outfile = gGenInfo->cfile;
   if (fGenIDS)
-    fprintf(outfile, "/* %7d */ ", id);
-  // Prepend function header with necessary __global__ declaration
+    fprintf(outfile, "%s", idCommentTemp(this));
 
-  //
-  // A function prototype can be labeled static if it is neither
-  // exported nor external
-  //
-  if (!hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN)) {
+  if (!fIncrementalCompilation && !hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN)) {
     fprintf(outfile, "static ");
   }
   fprintf(outfile, "%s", codegenFunctionType(true).c.c_str());
@@ -1998,6 +2099,7 @@ void FnSymbol::codegenDef() {
   if( outfile ) {
     if (strcmp(saveCDir, "")) {
      if (const char* rawname = fname()) {
+      zlineToFileIfNeeded(this, outfile);
       const char* name = strrchr(rawname, '/');
       name = name ? name + 1 : rawname;
       fprintf(outfile, "/* %s:%d */\n", name, linenum());
@@ -2018,7 +2120,14 @@ void FnSymbol::codegenDef() {
 
     info->lvt->addLayer();
 
+    if(debug_info) {
+      LLVM_DISUBPROGRAM dbgScope = debug_info->get_function(this);
+      info->builder->SetCurrentDebugLocation(
+        llvm::DebugLoc::get(linenum(),0,dbgScope));
+    }
+
     llvm::Function::arg_iterator ai = func->arg_begin();
+    unsigned int ArgNo = 1; //start from 1 to cooperate with createLocalVariable
     for_formals(arg, this) {
       if (arg->hasFlag(FLAG_NO_CODEGEN))
         continue; // do not print locale argument, end count, dummy class
@@ -2033,8 +2142,13 @@ void FnSymbol::codegenDef() {
 
         info->lvt->addValue(arg->cname, tempVar.val,
                             tempVar.isLVPtr, !is_signed(type));
+        // debug info for formal arguments
+        if(debug_info){
+          debug_info->get_formal_arg(arg, ArgNo);
+        }
       }
       ++ai;
+      ArgNo++;
     }
 
 #endif
@@ -2047,8 +2161,6 @@ void FnSymbol::codegenDef() {
     for_vector(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast))
         if (!toTypeSymbol(def->sym)) {
-          if (fGenIDS && isVarSymbol(def->sym))
-            genIdComment(def->sym->id);
           def->sym->codegenDef();
           flushStatements();
         }
@@ -2064,9 +2176,13 @@ void FnSymbol::codegenDef() {
 #ifdef HAVE_LLVM
     info->lvt->removeLayer();
     if( developer ) {
-      bool problems;
+      bool problems = false;
 #if HAVE_LLVM_VER >= 35
-      problems = llvm::verifyFunction(*func, &llvm::errs());
+      // Debug info generation creates metadata nodes that won't be
+      // finished until the whole codegen is complete and finalize
+      // is called.
+      if( ! debug_info )
+        problems = llvm::verifyFunction(*func, &llvm::errs());
 #else
       problems = llvm::verifyFunction(*func, llvm::PrintMessageAction);
 #endif
@@ -2421,8 +2537,10 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
 
   // Print return type.
   if (this->retExprType != NULL) {
+    AstToText info;
+    info.appendExpr(this->retExprType->body.tail, true);
     *file << ": ";
-    this->retExprType->body.tail->prettyPrint(file);
+    *file << info.text();
   }
   *file << std::endl;
 
@@ -2499,9 +2617,9 @@ ModuleSymbol::ModuleSymbol(const char* iName,
     initFn(NULL),
     filename(NULL),
     doc(NULL),
-    extern_info(NULL)
+    extern_info(NULL),
+    llvmDINameSpace(NULL)
 {
-
   block->parentSymbol = this;
   registerModule(this);
   gModuleSymbols.add(this);
@@ -2523,6 +2641,9 @@ void ModuleSymbol::verify() {
 
   if (initFn && !toFnSymbol(initFn))
     INT_FATAL(this, "Bad ModuleSymbol::initFn");
+
+  verifyNotOnList(block);
+  verifyInTree(initFn, "ModuleSymbol::initFn");
 }
 
 
@@ -2565,6 +2686,12 @@ void ModuleSymbol::codegenDef() {
   }
 
   std::sort(fns.begin(), fns.end(), compareLineno);
+
+#ifdef HAVE_LLVM
+  if(debug_info && info->filename) {
+    debug_info->get_module_scope(this);
+  }
+#endif
 
   for_vector(FnSymbol, fn, fns) {
     fn->codegenDef();
@@ -2976,6 +3103,8 @@ void LabelSymbol::verify() {
     if (getGotoLabelSymbol(igs) != this)
       INT_FATAL(this,"label's iterResumeGoto does not point back to the label");
   }
+  // iterResumeGoto references a statement that is located somewhere in the AST
+  // and so can be on a list.
 }
 
 LabelSymbol*
@@ -3427,16 +3556,6 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
     mask.set(FLAG_ARRAY);
     mask.set(FLAG_DOMAIN);
     mask.set(FLAG_DISTRIBUTION);
-  }
-
-  return s->flags & mask;
-}
-
-FlagSet getSyncFlags(Symbol* s) {
-  static FlagSet mask;
-  if (mask.none()) {
-    mask.set(FLAG_SYNC);
-    mask.set(FLAG_SINGLE);
   }
 
   return s->flags & mask;

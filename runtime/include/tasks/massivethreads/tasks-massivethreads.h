@@ -24,6 +24,10 @@
 
 #include "myth.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct{
         myth_felock_t lock;
         volatile int is_full;
@@ -46,5 +50,9 @@ static inline
 int chpl_task_supportsRemoteCache(void) {
   return 0;    // not sure; return safe answer
 }
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif

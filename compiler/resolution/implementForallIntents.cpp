@@ -58,6 +58,7 @@ static bool isCorrespIndexVar(BlockStmt* block, Symbol* sym)
 //
 static bool isOuterVar(Symbol* sym, BlockStmt* block) {
   if (sym->isParameter()               || // includes isImmediate()
+      sym->hasFlag(FLAG_INSTANTIATED_PARAM)    || // also a param
       sym->hasFlag(FLAG_TEMP)          || // exclude these
 
       // Consts need no special semantics for begin/cobegin/coforall/on.
@@ -216,6 +217,7 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
       }
 
       bool isMethodToken = ovar->type == dtMethodToken;
+
       // concreteIntent() does not work for MT.
       if (!isMethodToken)
         tiIntent = concreteIntent(tiIntent, valtype);
@@ -226,18 +228,25 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
       if (tiIntent == INTENT_REF) {
         // for efficiency
         pruneit = true;
+
       } else if (isMethodToken) {
         // If MT is present, _toLeader(..., _mt...) does not get resolved.
         // See e.g. parallel/taskPar/figueroa/taskParallel.chpl
         pruneit = true;
-      } else if (isSyncType(ovar->type) || isAtomicType(ovar->type)) {
+
+      } else if (isAtomicType(ovar->type)) {
         // Currently we need it because sync variables do not get tupled
         // and detupled properly when threading through the leader iterator.
         // See e.g. test/distributions/dm/s7.chpl
         // Atomic vars might not work either.
         // And anyway, only 'ref' intent makes sense here.
         pruneit = true;
-        USR_WARN(defChplIter, "sync, single, or atomic var '%s' currently can be passed into the forall loop by 'ref' intent only - %s is ignored", ovar->name, tiMarker ? intentDescrString(tiMarker->intent) : "default intent");
+
+        USR_WARN(defChplIter,
+                 "sync, single, or atomic var '%s' currently can be passed into the forall loop by 'ref' intent only - %s is ignored",
+                 ovar->name,
+                 tiMarker ? intentDescrString(tiMarker->intent) : "default intent");
+
       } else if (isRecordWrappedType(ovar->type) &&
                  !(tiIntent & INTENT_FLAG_REF)) {
         // Threading through the leader for non-ref intents
@@ -252,8 +261,9 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
         continue; // form_Map(uses)
       }
     }  // if !isReduce
-    
+
     svar = new VarSymbol(ovar->name, valtype);
+
     if (isReduce) {
       if (ovar->hasFlag(FLAG_CONST))
         USR_FATAL_CONT(defChplIter,
@@ -264,10 +274,13 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
     } else {
       setShadowVarFlags(svar, tiIntent); // instead of arg intents
     }
+
     outerVars.push_back(ovar);
     shadowVars.push_back(svar);
     reduceGVars.push_back(globalOp);
+
     e->value = svar;
+
     numShadowVars++;
   }
 }
@@ -1275,9 +1288,14 @@ static void propagateThroughYield(CallExpr* rcall,
           // is going to be compiled away, e.g. if it is
           // within a param conditional on a not-taken branch.
           svar = new VarSymbol(astrArg(ix, "shadowVarReduc"));
+          svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          VarSymbol* stemp  = newTemp("svrTmp");
           redRef1->insertBefore(new DefExpr(svar));
-          redRef1->insertBefore("'move'(%S, identity(%S,%S))", // init
-                                svar, gMethodToken, parentOp);
+          redRef1->insertBefore(new DefExpr(stemp));
+          redRef1->insertBefore("'move'(%S, identity(%S,%S))",
+                                stemp, gMethodToken, parentOp);
+          redRef1->insertBefore("'move'(%S, chpl__autoCopy(%S))",
+                                svar, stemp);
           redRef2->insertBefore("accumulate(%S,%S,%S)",
                                 gMethodToken, parentOp, svar);
           shadowVars[ix] = svar;
@@ -1374,12 +1392,17 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
       ArgSymbol* parentOp = eFormal; // the reduceParent arg
       VarSymbol* currOp   = new VarSymbol(astrArg(ix, "reduceCurr"));
       VarSymbol* svar     = new VarSymbol(astrArg(ix, "shadowVar"));
+      svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      VarSymbol* stemp    = newTemp("svTmp");
       redRef1->insertBefore(new DefExpr(currOp));
       redRef1->insertBefore("'move'(%S, clone(%S,%S))", // init
                             currOp, gMethodToken, parentOp);
       redRef1->insertBefore(new DefExpr(svar));
-      redRef1->insertBefore("'move'(%S, identity(%S,%S))", // init
-                            svar, gMethodToken, currOp);
+      redRef1->insertBefore(new DefExpr(stemp));
+      redRef1->insertBefore("'move'(%S, identity(%S,%S))",
+                            stemp, gMethodToken, currOp);
+      redRef1->insertBefore("'move'(%S, chpl__autoCopy(%S))",
+                            svar, stemp);
       redRef2->insertBefore("accumulate(%S,%S,%S)",
                             gMethodToken, currOp, svar);
       redRef2->insertBefore("chpl__reduceCombine(%S,%S)", parentOp, currOp);

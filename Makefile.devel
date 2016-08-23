@@ -31,6 +31,11 @@ man: third-party-chpldoc-venv FORCE
 man-chpldoc: FORCE
 	cd man && $(MAKE) chpldoc
 
+man-chapel: FORCE
+	cd doc/sphinx && $(MAKE) man-chapel
+	mkdir -p man/man3
+	cp doc/sphinx/build/man/chapel.3 man/man3/chapel.3
+
 always-build-man: FORCE
 	-@if [ -n "$$CHPL_ALWAYS_BUILD_MAN" ]; then \
 	$(MAKE) man; \

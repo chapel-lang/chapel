@@ -10,19 +10,21 @@ release/examples/benchmarks/hpcc/stream-ep.graph
 release/examples/benchmarks/hpcc/ptrans.graph
 release/examples/benchmarks/hpcc/fft.graph
 release/examples/benchmarks/hpcc/hpl.graph
-studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/binary-trees/binary-trees.graph
-studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
-studies/shootout/nbody/nbody.graph
-studies/shootout/thread-ring/thread-ring.graph
+studies/shootout/fannkuch-redux/fannkuch-redux.graph
+studies/shootout/fasta/fasta.graph
 studies/shootout/mandelbrot/mandelbrot.graph
-studies/shootout/pidigits/pidigits.graph
 studies/shootout/meteor/kbrady/meteor.graph
+studies/shootout/nbody/nbody.graph
+studies/shootout/pidigits/pidigits.graph
+studies/shootout/spectral-norm/spectralnorm.graph
+studies/shootout/thread-ring/thread-ring.graph
 # suite: Performance tracking
 release/examples/benchmarks/ssca2/total_time.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/miniMD/miniMD.graph
+release/examples/benchmarks/isx/isx-release.graph
 studies/hpcc/STREAM_study.graph
 studies/hpcc/STREAM_study_fragmented.graph
 release/examples/benchmarks/hpcc/ra.graph
@@ -67,6 +69,7 @@ studies/jacobi/jacobi.graph
 performance/elliot/no-op.graph
 performance/bharshbarg/forall-dom-range.graph
 performance/bharshbarg/arr-forall.graph
+studies/prk/stencil/prk-stencil.graph
 # suite: HPC Challenge
 studies/hpcc/STREAM_study_fragmented.graph
 studies/hpcc/STREAM_study.graph
@@ -84,25 +87,36 @@ release/examples/benchmarks/ssca2/performance.graph
 studies/lulesh/bradc/lulesh-dense.graph
 release/examples/benchmarks/miniMD/miniMD.graph
 # suite: Shootout benchmarks
-studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/binary-trees/binary-trees.graph
-studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
-studies/shootout/nbody/nbody.graph
+studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/fasta/fasta.graph
-studies/shootout/thread-ring/thread-ring.graph
-studies/shootout/mandelbrot/mandelbrot.graph
-studies/shootout/pidigits/pidigits.graph
-studies/shootout/meteor/kbrady/meteor.graph
 studies/shootout/k-nucleotide/knucleotide.graph
+studies/shootout/mandelbrot/mandelbrot.graph
+studies/shootout/meteor/kbrady/meteor.graph
+studies/shootout/nbody/nbody.graph
+studies/shootout/pidigits/pidigits.graph
 studies/shootout/regex-dna/regexdna.graph
 studies/shootout/reverse-complement/revcomp.graph
+studies/shootout/spectral-norm/spectralnorm.graph
+studies/shootout/thread-ring/thread-ring.graph
+# suite: Submitted Shootout benchmarks
+studies/shootout/submitted/binarytrees-submitted.graph
+studies/shootout/submitted/chameneosredux-submitted.graph
+studies/shootout/submitted/fannkuchredux-submitted.graph
+studies/shootout/submitted/knucleotide-submitted.graph
+studies/shootout/submitted/mandelbrot-submitted.graph
+studies/shootout/submitted/nbody-submitted.graph
+studies/shootout/submitted/pidigits-submitted.graph
+studies/shootout/submitted/regexdna-submitted.graph
+studies/shootout/submitted/revcomp-submitted.graph
+studies/shootout/submitted/spectralnorm-submitted.graph
+studies/shootout/submitted/threadring-submitted.graph
 # suite: Shootout extras
 studies/shootout/binary-trees/binary-trees-extras.graph
 studies/shootout/fasta/fasta-extras.graph
-studies/shootout/spectral-norm/lydia/spectral-norm-specify-step.graph
 studies/shootout/mandelbrot/mandelbrot-extras.graph
-studies/shootout/mandelbrot/mandelbrot-dynamicIter.graph
+studies/shootout/spectral-norm/lydia/spectral-norm-specify-step.graph
 # suite: Parboil benchmarks
 studies/parboil/BFS/bfs.graph
 studies/parboil/histo/histo.graph
@@ -180,6 +194,8 @@ parallel/taskCompare/lydia/loopCompare.graph
 statements/lydia/moduleVersusFunctionBaseline.graph
 statements/lydia/moduleVersusFunctionDifAccess.graph
 statements/lydia/moduleVersusFunction.graph
+# suite: Task Spawning
+parallel/taskCompare/elliot/taskSpawn.graph
 # suite: Compiler performance
 performance/compiler/bradc/fft-timecomp.graph
 performance/compiler/bradc/compSampler-timecomp.graph

@@ -73,6 +73,8 @@ module ChapelEnv {
   /* See :ref:`readme-chplenv.CHPL_TIMERS` for more information. */
   param CHPL_TIMERS:string          = __primitive("get compiler variable", "CHPL_TIMERS");
 
+  param CHPL_UNWIND:string          = __primitive("get compiler variable", "CHPL_UNWIND");
+
   /* See :ref:`readme-chplenv.CHPL_MEM` for more information. */
   param CHPL_MEM:string             = __primitive("get compiler variable", "CHPL_MEM");
 

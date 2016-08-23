@@ -67,7 +67,7 @@ module CGMakeA {
     //  writeln("IndArr is: ", IndArr);
 
     // sort indices
-    QuickSort(IndArr);
+    quickSort(IndArr);
 
     //  writeln("After sort, IndArr is: ", IndArr);
     

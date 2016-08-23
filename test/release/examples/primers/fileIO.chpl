@@ -178,7 +178,7 @@ if example == 0 || example == 3 {
   // First, open up a file and write to it.
   {
     var f = open(testfile, iomode.cwr);
-    /* When we create the writer, suppling locking=false will do unlocked I/O.
+    /* When we create the writer, supplying locking=false will do unlocked I/O.
        That's fine as long as the channel is not shared between tasks.
       */
     var w = f.writer(kind=ionative, locking=false);
@@ -202,7 +202,7 @@ if example == 0 || example == 3 {
 
     // Note -- this could be a forall loop to do I/O in parallel!
     forall i in 0..#num by -1 {
-      /* When we create the reader, suppling locking=false will do unlocked I/O.
+      /* When we create the reader, supplying locking=false will do unlocked I/O.
          That's fine as long as the channel is not shared between tasks;
          here it's just used as a local variable, so we are O.K. 
         */
@@ -280,7 +280,7 @@ if example == 0 || example == 5 {
   unlink(testfile, error=err);
   assert(err == ENOENT);
   
-  // What happens if we try to open a non-existant file?
+  // What happens if we try to open a non-existent file?
   var f = open(testfile, iomode.r, error=err);
   assert(err == ENOENT);
 

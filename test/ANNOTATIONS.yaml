@@ -134,6 +134,23 @@ all:
     - KACE removed from systems.  Should see less noise after this day.
   05/31/16:
     - Enable jemalloc's decay-based purging (#3926)
+  06/06/16:
+    - Avoid allocating arg bundles for local on statements (#3890)
+    - Upgrade target compiler versions (#218, internal)
+  06/24/16:
+    - text: Improve optimizeOnClauses optimization (#4008)
+      config: 16 node XC
+  07/19/16:
+    - Disable jemalloc's stat gathering by default (#4180)
+  07/20/16:
+    - Generated code changes in preparation for incremental compilation (#4177)
+  08/02/16:
+    - Restore static to normal compilation generated code (#4233)
+  08/03/16:
+    - text: Hardware upgrade
+      config: 16 node XC, Single node XC
+  08/04/16:
+    - Updates to Search module, required array slicing (partially reverted) (#4273)
 
 AllCompTime:
   11/09/14:
@@ -175,6 +192,8 @@ binary-trees:
     - revert jemalloc to 4.0.4 (#3477)
   05/28/16:
     - upgrade jemalloc to 4.2.0 (#3919)
+  06/13/16:
+    - polish to binary-trees versions (#4017)
 
 chameneos-redux:
   07/08/13:
@@ -210,6 +229,8 @@ fannkuch-redux:
   10/16/15:
     - text: Plain Old Data type improvement (#2752)
       config: chap04
+  06/29/16:
+    - replacement with more elegant version (#4089)
 
 fasta:
   01/14/14:
@@ -338,6 +359,12 @@ mandelbrot:
     - maxTaskPar change delayed fifo->qthreads performance hit
   11/11/15:
     - Initial commit of C complexes
+  06/16/16:
+    - Change complex getter functions for .re and .im into "static inline" (#4033)
+  07/01/16:
+    - Start using C99 functions for operations such as abs() on complex numbers (#4098)
+  07/08/16:
+    - Added compiler option --no-ieee-float to mandelbrot-complex (#4134)
 
 mandelbrot-extras:
   01/03/14:
@@ -390,6 +417,8 @@ memleaksfull:
 meteor:
   12/18/13:
     - Chapel level improvement by using implicit domains
+  08/10/16:
+    - Updated meteor's lock to yield less frequently (#4300)
 
 miniMD:
   12/21/13:
@@ -436,7 +465,7 @@ prk-stencil:
     - Looping over range instead of domain for weight matrix (#3500)
   04/09/16:
     - blockDist for useStencilDist output matrix and more (#3705)
-  05/07/16:
+  05/06/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
 
 prk-stencil.xc-perf:
@@ -444,7 +473,7 @@ prk-stencil.xc-perf:
     - Looping over range instead of domain for weight matrix (#3500)
   04/09/16:
     - blockDist for useStencilDist output matrix and more (#3705)
-  05/07/16:
+  05/06/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
 
 ra:
@@ -510,6 +539,10 @@ stream:
   05/13/16:
     - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
       config: Single node XC
+
+taskSpawn:
+  07/24/16:
+    - Stopped performing remote value forwarding on task functions (#4240)
 
 testSerialReductions:
   08/16/14:

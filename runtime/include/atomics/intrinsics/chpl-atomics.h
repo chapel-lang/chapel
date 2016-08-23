@@ -37,7 +37,7 @@ typedef uint_least16_t atomic_uint_least16_t;
 typedef uint_least32_t atomic_uint_least32_t;
 typedef uint_least64_t atomic_uint_least64_t;
 typedef uintptr_t atomic_uintptr_t;
-typedef chpl_bool atomic_flag;
+typedef chpl_bool atomic_bool;
 typedef _real64 atomic__real64;
 typedef _real32 atomic__real32;
 
@@ -81,26 +81,12 @@ static inline void atomic_signal_thread_fence(memory_order order)
 
 
 ///////////////////////////////////////////////////////////////////////////////
-////               Test & Set and Clear for flag(boolean)                 ////
-//////////////////////////////////////////////////////////////////////////////
-static inline chpl_bool atomic_flag_test_and_set_explicit(atomic_flag *obj, memory_order order) {
-  return (chpl_bool)__sync_fetch_and_or((int_fast8_t*)obj, true); 
-}
-static inline chpl_bool atomic_flag_test_and_set(atomic_flag *obj) {
-  return atomic_flag_test_and_set_explicit(obj, memory_order_seq_cst);
-}
-
-static inline void atomic_flag_clear_explicit(atomic_flag *obj, memory_order order) {
-  __sync_fetch_and_and((int_fast8_t*)obj, false);
-}
-static inline void atomic_flag_clear(atomic_flag *obj) {
-  atomic_flag_clear_explicit(obj, memory_order_seq_cst);
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
 ////                      START OF INTEGER ATOMICS BASE                   ////
 //////////////////////////////////////////////////////////////////////////////
+
+// The obvious implementation of atomic stores is insufficient.
+// They must be implemented with atomic primitives to ensure consistent
+// visibility of the results.
 #define DECLARE_ATOMICS_BASE(type, basetype) \
 static inline chpl_bool atomic_is_lock_free_ ## type(atomic_ ## type * obj) { \
   return true; \
@@ -111,8 +97,12 @@ static inline void atomic_init_ ## type(atomic_ ## type * obj, basetype value) {
 static inline void atomic_destroy_ ## type(atomic_ ## type * obj) { \
 } \
 static inline void atomic_store_explicit_ ## type(atomic_ ## type * obj, basetype value, memory_order order) { \
-  *obj = value; \
-  full_memory_barrier(); \
+  basetype ret = *obj; \
+  basetype old_val; \
+  do { \
+    old_val = ret; \
+    ret = __sync_val_compare_and_swap(obj, old_val, value); \
+  } while (ret != old_val); \
 } \
 static inline void atomic_store_ ## type(atomic_ ## type * obj, basetype value) { \
   atomic_store_explicit_ ## type(obj, value, memory_order_seq_cst); \
@@ -195,6 +185,10 @@ static inline type atomic_fetch_xor_ ## type(atomic_ ## type * obj, type operand
 ///////////////////////////////////////////////////////////////////////////////
 ////                       START OF REAL ATOMICS BASE                     ////
 //////////////////////////////////////////////////////////////////////////////
+
+// The obvious implementation of atomic stores is insufficient.
+// They must be implemented with atomic primitives to ensure consistent
+// visibility of the results.
 #define DECLARE_REAL_ATOMICS_BASE(type, uinttype) \
 static inline chpl_bool atomic_is_lock_free_ ## type(atomic_ ## type * obj) { \
   return true; \
@@ -206,8 +200,13 @@ static inline void atomic_init_ ## type(atomic_ ## type * obj, type value) { \
 static inline void atomic_destroy_ ## type(atomic_ ## type * obj) { \
 } \
 static inline void atomic_store_explicit_ ## type(atomic_ ## type * obj, type value, memory_order order) { \
-  *obj = value; \
-  full_memory_barrier(); \
+  uinttype ret_uint = *(uinttype *)obj; \
+  uinttype val_uint = *(uinttype *)&value; \
+  uinttype old_uint; \
+  do { \
+    old_uint = ret_uint; \
+    ret_uint = __sync_val_compare_and_swap((uinttype *)obj, old_uint, val_uint); \
+  } while (ret_uint != old_uint); \
 } \
 static inline void atomic_store_ ## type(atomic_ ## type * obj, type value) { \
   atomic_store_explicit_ ## type(obj, value, memory_order_seq_cst); \
@@ -293,7 +292,7 @@ static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, typ
     desired_as_uint = *desired_as_uint_p; \
     success = my__sync_bool_compare_and_swap((uinttype *) obj, cur_as_uint, desired_as_uint); \
   } \
-  return desired; \
+  return cur; \
 } \
 static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand) { \
   return atomic_fetch_add_explicit_ ## type(obj, operand, memory_order_seq_cst); \
@@ -317,7 +316,7 @@ static inline type atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, typ
     desired_as_uint = *desired_as_uint_p; \
     success =  my__sync_bool_compare_and_swap((uinttype *) obj, cur_as_uint, desired_as_uint); \
   } \
-  return desired; \
+  return cur; \
 } \
 static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand) { \
   return atomic_fetch_sub_explicit_ ## type(obj, operand, memory_order_seq_cst); \
@@ -325,8 +324,8 @@ static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand
 
 
 // Actually declare the atomics for integer and real types using the above macros 
-DECLARE_ATOMICS_BASE(flag, chpl_bool);
-DECLARE_ATOMICS_EXCHANGE_OPS(flag, chpl_bool);
+DECLARE_ATOMICS_BASE(bool, chpl_bool);
+DECLARE_ATOMICS_EXCHANGE_OPS(bool, chpl_bool);
 
 
 #define DECLARE_ATOMICS(type) \

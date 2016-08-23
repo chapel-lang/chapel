@@ -2896,7 +2896,7 @@ proc channel.offset():int(64) {
 proc channel.advance(amount:int(64), ref error:syserr) {
   on this.home {
     this.lock();
-    error = qio_channel_advance(false, _channel_internal);
+    error = qio_channel_advance(false, _channel_internal, amount);
     this.unlock();
   }
 }
@@ -2906,7 +2906,7 @@ pragma "no doc"
 proc channel.advance(amount:int(64)) {
   on this.home {
     this.lock();
-    var err = qio_channel_advance(false, _channel_internal);
+    var err = qio_channel_advance(false, _channel_internal, amount);
     if err then this._ch_ioerror(err, "in advance");
     this.unlock();
   }
@@ -3409,7 +3409,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):sys
     // handle complex types
     var re = x.re;
     var im = x.im;
-    return qio_channel_print_complex(false, _channel_internal, re, im, numBytes(x.re.type));
+    return qio_channel_print_complex(false, _channel_internal, re, im, numBytes(re.type));
   } else if t == string {
     // handle string
     const local_x = x.localize();
@@ -3770,7 +3770,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
   // these are overridden to not be inout
   // since they don't change when read anyway
   // and it's much more convenient to be able to do e.g.
-  //   reader & new ioLiteral("=")
+  //   reader <~> new ioLiteral("=")
 
   /* Overload to support reading an :type:`IO.ioLiteral` without
      passing ioLiterals by reference, so that
@@ -3793,7 +3793,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
 
      .. code-block:: chapel
 
-       reader <~> new ioNewline("=")
+       reader <~> new ioNewline()
 
      works without requiring an explicit temporary value to store
      the ioNewline.
@@ -3927,12 +3927,11 @@ inline proc channel.read(ref args ...?k,
   */
 proc stringify(args ...?k):string {
   proc isStringOrPrimitiveTypes(type t) param : bool {
-    var x: t;
     for param i in 1..k {
-      if !(x[i].type == string ||
-          x[i].type == c_string ||
-          x[i].type == c_string_copy) {
-        if !isPrimitiveType(x[i].type) then
+      if !(t[i] == string ||
+           t[i] == c_string ||
+           t[i] == c_string_copy) {
+        if !isPrimitiveType(t[i]) then
           return false;
       }
     }
@@ -4079,7 +4078,7 @@ proc channel.read(ref args ...?k,
 
 // documented in the error= version
 pragma "no doc"
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start) : bool
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start + 1) : bool
 where arg.rank == 1 && isRectangularArr(arg)
 {
   var e:syserr = ENOERR;
@@ -4094,7 +4093,7 @@ where arg.rank == 1 && isRectangularArr(arg)
 
 /*
   Read a line into a Chapel array of bytes. Reads until a ``\n`` is reached.
-  The ``\n`` is consumed but not returned in the array.
+  The ``\n`` is returned in the array.
 
   :arg arg: A 1D DefaultRectangular array which must have at least 1 element.
   :arg numRead: The number of bytes read.
@@ -4105,20 +4104,20 @@ where arg.rank == 1 && isRectangularArr(arg)
               will halt with an error message.
   :returns: true if the bytes were read without error.
 */
-proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start, out error:syserr) : bool
+proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low, amount = arg.domain.high - start + 1, out error:syserr) : bool
 where arg.rank == 1 && isRectangularArr(arg)
 {
   error = ENOERR;
 
   // Make sure the arguments are valid
-  if arg.size == 0 || !arg.domain.member(start) || amount <= 0 || (start + amount > arg.domain.high)  then return false;
+  if arg.size == 0 || !arg.domain.member(start) || amount <= 0 || (start + amount - 1 > arg.domain.high)  then return false;
 
   on this.home {
     this.lock();
     param newLineChar = 0x0A;
     var got : int;
     var i = start;
-    const maxIdx = start + amount;
+    const maxIdx = start + amount - 1;
     while i <= maxIdx {
       got = qio_channel_read_byte(false, this._channel_internal);
       arg[i] = got:uint(8);

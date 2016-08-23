@@ -277,16 +277,10 @@ static void addOneToSymbolTable(DefExpr* def)
                     def->sym->stringLoc());
         }
 
-        if (!oldFn && (newFn && !newFn->_this)) {
+        if ((!oldFn && (newFn && !newFn->_this)) ||
+            (!newFn && (oldFn && !oldFn->_this))) {
           // A function definition is conflicting with another named symbol
           // that isn't a function (could be a variable, a module name, etc.)
-          USR_FATAL(sym,
-                    "'%s' has multiple definitions, redefined at:\n  %s",
-                    sym->name,
-                    def->sym->stringLoc());
-        } else if (!newFn && (oldFn && !oldFn->_this)) {
-          // Another named symbol that isn't a function is conflicting with
-          // a function definition name.
           USR_FATAL(sym,
                     "'%s' has multiple definitions, redefined at:\n  %s",
                     sym->name,
@@ -1003,14 +997,12 @@ static void build_type_constructor(AggregateType* ct) {
 
 
 // For the given class type, this builds the compiler-generated constructor
-// which is also called by user-defined constructors to pre-initialize all 
+// which is also called by user-defined constructors to pre-initialize all
 // fields to their declared or type-specific initial values.
 static void build_constructor(AggregateType* ct) {
-  if (isSyncType(ct))
-    ct->defaultValue = NULL;
-
   // Create the default constructor function symbol,
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
+
   fn->cname = fn->name;
 
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
@@ -1063,11 +1055,12 @@ static void build_constructor(AggregateType* ct) {
   CallExpr*  superCall = NULL;
   CallExpr*  allocCall = NULL;
 
-  if (ct->symbol->hasFlag(FLAG_REF) ||
-      isSyncType(ct)) {
+  if (ct->symbol->hasFlag(FLAG_REF)) {
     // For ref, sync and single classes, just allocate space.
     allocCall = callChplHereAlloc(fn->_this);
+
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
+
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
     // Create a meme (whatever that is).
     meme = new ArgSymbol(INTENT_BLANK,
@@ -1075,6 +1068,7 @@ static void build_constructor(AggregateType* ct) {
                          ct,
                          NULL,
                          new SymExpr(gTypeDefaultToken));
+
     meme->addFlag(FLAG_IS_MEME);
 
     // Move the meme into "this".
