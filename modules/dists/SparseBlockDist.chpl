@@ -377,6 +377,10 @@ class LocSparseBlockDom {
   proc dsiNumIndices {
     return mySparseBlock.numIndices;
   }
+
+  proc dsiPartialDomain(exceptDim) {
+    return parentDom._value.dsiPartialDomain(exceptDim);
+  }
 }
 
 //
@@ -514,7 +518,7 @@ class SparseBlockArr: BaseSparseArr {
       dom.dist.targetLocDom._value.dsiPartialDomain(exceptDim=onlyDim) {
 
         on ResultArr._value.locArr[l2].myElems {
-          var thisParticularResult => 
+          var thisParticularResult =>
             ResultArr._value.locArr[l2].myElems;
           // FIXME should be a coforall
           forall l1 in dom.dist.targetLocDom.dim(onlyDim) 
@@ -522,8 +526,6 @@ class SparseBlockArr: BaseSparseArr {
 
               const l = chpl__tuplify(l2).merge(onlyDim, l1);
               on dom.locDoms[l] {
-                /*thisParticularResult +=*/
-                /*dsiPartialReduce_template(locArr[l], onlyDim);*/
                 var __target = ResultArr._value.locArr[l2].clone();
                 dsiPartialReduce_template(locArr[l], onlyDim, __target);
                 thisParticularResult += __target.myElems;
@@ -566,6 +568,44 @@ class LocSparseBlockArr {
   where shouldReturnRvalueByConstRef(eltType) {
     return myElems[i];
   }
+  proc dsiGetBaseDom() { return locDom; }
+
+  iter dsiPartialThese(onlyDim,
+      otherIdx=createTuple(rank-1, idxType, 0:idxType)) {
+
+    for i in myElems._value.dsiPartialThese(onlyDim,otherIdx) do 
+      yield i;
+  }
+
+  iter dsiPartialThese(onlyDim,
+      otherIdx=createTuple(rank-1, idxType, 0:idxType), 
+      param tag: iterKind) where tag == iterKind.leader {
+
+      for followThis in 
+          myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) do
+
+        yield followThis;
+    }
+
+  iter dsiPartialThese(onlyDim,
+      otherIdx=createTuple(rank-1, idxType, 0:idxType),
+      param tag: iterKind, followThis) where tag == iterKind.follower {
+
+      for i in myElems._value.dsiPartialThese(onlyDim,otherIdx,tag=tag,
+          followThis) do 
+
+        yield i;
+    }
+
+  // FIXME this standaloen iterator forwarding hits a compiler bug.
+  // The assertion in astutil.cpp:622 triggers. Engin
+  iter dsiPartialThese(onlyDim,
+      otherIdx=createTuple(rank-1, idxType, 0:idxType),
+      param tag: iterKind) where tag == iterKind.standalone {
+
+      for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag) do
+        yield i;
+    }
 }
 
 /*
