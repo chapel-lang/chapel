@@ -985,9 +985,10 @@ module ChapelArray {
         r(i) = _value.dsiDim(i)(ranges(i));
       }
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType, stridable, r);
-      //if !noRefCount then
-      //  if d.linksDistribution() then
-      //    d.dist.incRefCount();
+      // Since we've created a new domain, the distribution needs to
+      // live at least as long as this new domain.
+      if d.linksDistribution() then
+        d.dist.add_dom(d);
       return _newDomain(d);
     }
 
