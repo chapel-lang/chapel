@@ -74,9 +74,14 @@ class Private: BaseDist {
   proc writeThis(x) {
     x.writeln("Private Distribution");
   }
-  proc dsiClone() {
-    return new Private();
-  }
+  // acts like a singleton
+  proc dsiClone() return this;
+
+  proc trackDomains() param return false;
+  proc dsiTrackDomains()    return false;
+
+  proc singleton() param return true;
+  proc dsiSingleton()    return true;
 }
 
 class PrivateDom: BaseRectangularDom {
