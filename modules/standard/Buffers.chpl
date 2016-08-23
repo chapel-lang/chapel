@@ -69,7 +69,11 @@ module Buffers {
   private extern proc qbuffer_prepend(buf:qbuffer_ptr_t, bytes:qbytes_ptr_t, skip_bytes:int(64), len_bytes:int(64)):syserr;
   private extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, out bytes_out):syserr;
   private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):syserr;
+  private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr, size):syserr;
+  private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_void_ptr, size):syserr;
   private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):syserr;
+  private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr, size):syserr;
+  private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_void_ptr, size):syserr;
 
   private extern proc qbuffer_begin(buf:qbuffer_ptr_t):qbuffer_iter_t;
   private extern proc qbuffer_end(buf:qbuffer_ptr_t):qbuffer_iter_t;
@@ -620,7 +624,7 @@ module Buffers {
      :returns: a buffer iterator storing the position immediately after
                the read value.
   */
-  proc buffer.copyout(it:buffer_iterator, out value, out error:syserr):buffer_iterator {
+  proc buffer.copyout(it:buffer_iterator, out value: ?T, out error:syserr):buffer_iterator where isNumericType(T) {
     var ret:buffer_iterator;
     ret.home = this.home;
     on this.home {
@@ -634,6 +638,37 @@ module Buffers {
     }
     return ret;
   }
+
+  pragma "no doc"
+  proc buffer.copyout(it:buffer_iterator, out value: string, out error:syserr):buffer_iterator {
+    var ret:buffer_iterator;
+    ret.home = this.home;
+    on this.home {
+      var start = it;
+      var end = it;
+      // Read length
+      var len: int;
+      this.advance(end, numBytes(int));
+      error = qbuffer_copyout(this._buf_internal,
+                              start._bufit_internal, end._bufit_internal,
+                              len, numBytes(int));
+      ret = end;
+      // Read character array
+      if !error {
+        this.advance(start, numBytes(int));
+        this.advance(end, len);
+        var buf = c_calloc(uint(8), (len+1):size_t);
+        error = qbuffer_copyout(this._buf_internal,
+                                start._bufit_internal, end._bufit_internal,
+                                buf, len);
+        value = new string(buff=buf, length=len, size=len+1,
+                             owned=true, needToCopy=false);
+        ret = end;
+      }
+    }
+    return ret;
+  }
+
   pragma "no doc"
   proc buffer.copyout(it:buffer_iterator, out value):buffer_iterator {
     var err:syserr = ENOERR;
@@ -652,7 +687,7 @@ module Buffers {
      :returns: a buffer iterator storing the position immediately after
                the written value.
   */
-  proc buffer.copyin( it:buffer_iterator, value, out error:syserr):buffer_iterator {
+  proc buffer.copyin( it:buffer_iterator, value: ?T, out error:syserr):buffer_iterator where isNumericType(T) {
     var ret:buffer_iterator;
     ret.home = this.home;
     on this.home {
@@ -672,6 +707,35 @@ module Buffers {
     }
     return ret;
   }
+
+  pragma "no doc"
+  proc buffer.copyin( it:buffer_iterator, value: string, out error:syserr):buffer_iterator {
+    var ret:buffer_iterator;
+    ret.home = this.home;
+    on this.home {
+      var start = it;
+      var end = it;
+      var tmp = value;
+      var len = value.length:int;
+
+      this.advance(end, numBytes(int));
+      error = qbuffer_copyin(this._buf_internal,
+                             start._bufit_internal, end._bufit_internal,
+                             len, numBytes(int));
+      ret = end;
+
+      if !error {
+        this.advance(start, numBytes(int));
+        this.advance(end, len);
+        error = qbuffer_copyin(this._buf_internal,
+                               start._bufit_internal, end._bufit_internal,
+                               tmp.c_str():c_void_ptr, len);
+        ret = end;
+      }
+    }
+    return ret;
+  }
+
   pragma "no doc"
   proc buffer.copyin( it:buffer_iterator, value):buffer_iterator {
     var err:syserr = ENOERR;
