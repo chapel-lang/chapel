@@ -96,6 +96,11 @@ typedef struct funcname {
   char *name;
   int  fileNo;
   int  lineNo;
+  std::list<Event *> func_events;
+  int  noOnTasks;
+  int  noTasks;
+  int  noGets;
+  int  noPuts;
 } funcname;
 
 

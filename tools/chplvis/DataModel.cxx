@@ -43,7 +43,6 @@
 
 void DataModel::newList()
 {
-  //printf ("newList ...\n");
   curEvent = theEvents.begin();
   while (curEvent != theEvents.end()) {
     curEvent = theEvents.erase(curEvent);
@@ -208,9 +207,14 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
 
   int cTagNo = TagStart;
   tagData *curTag = tagList[1];
+
+  // printf ("number of events %ld\n", (long)theEvents.size());
+  // int DebC = 0;
       
   itr = theEvents.begin();
   while (itr != theEvents.end()) {
+
+    // if ((DebC++ % 10) == 0 ) {printf ("\r%d", DebC); fflush(stdout); }
 
     // Data for processing events
     E_start  *sp = NULL;
@@ -370,6 +374,28 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
           // For 2nd time through loop, do the same thing for All
           curTag = tagList[0];
         }
+        
+        // function communication
+        {
+          std::map<long,taskData>::iterator it;
+          if (cp->isGet()) {
+            it = tagList[0]->locales[cp->dstId()].tasks.find(cp->inTask());
+            if (it != curTag->locales[cp->dstId()].tasks.end()) {
+              int fid = it->second.taskRec->funcId();
+              funcTbl[fid].noGets++;
+            } else {
+              printf ("get: no tid %ld on node %d...???\n", cp->inTask(), cp->dstId());
+            }
+          } else {
+            it = tagList[0]->locales[cp->srcId()].tasks.find(cp->inTask());
+            if (it != tagList[0]->locales[cp->srcId()].tasks.end()) {
+              int fid = it->second.taskRec->funcId();
+              funcTbl[fid].noPuts++;
+            } else {
+              printf ("put: no tid %ld on node %d...???\n", cp->inTask(), cp->srcId());
+            }
+          }
+        }
         break;
 
       case Ev_fork:
@@ -384,6 +410,10 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
           // For 2nd time through loop, do the same thing for All
           curTag = tagList[0];
         }
+        
+        // function event
+        funcTbl[fp->funcId()].func_events.push_back(ev);
+        funcTbl[fp->funcId()].noOnTasks++;
         break;
 
       case Ev_task:
@@ -399,7 +429,18 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
             fprintf (stderr, "Duplicate task! nodeId %d, taskId %ld\n",
                      curNodeId, tp->taskId());
           }
+          // Add to "ALL" for global lookup of tasks
+          rv = tagList[0]->locales[curNodeId].tasks.insert(insPair);
+          if (!rv.second) {
+            fprintf (stderr, "Duplicate task! nodeId %d, taskId %ld\n",
+                     curNodeId, tp->taskId());
+          }
         }
+
+        // function event
+        funcTbl[tp->funcId()].func_events.push_back(ev);
+        funcTbl[tp->funcId()].noTasks++;
+
         break;
 
       case Ev_begin_task:
@@ -468,6 +509,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
   }
 
   // Go back and update task counts
+  // printf ("Updating task counts ..\n");
   tagList[0]->locales[0].numTasks = 1;
   for (int ix_l = 1; ix_l < nlocales; ix_l++) {
     tagList[0]->locales[ix_l].numTasks = 0;
@@ -488,12 +530,15 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
   }  
 
   // Build timeline and set concurrency rates
+  // printf ("building timeline ..\n");
   itr = theEvents.begin();
   tagList[0]->maxConc = 1;
   cTagNo = TagStart;
   curTag = tagList[1];
   curTag->locales[0].maxConc = 1;
   curTag->maxConc = 1;
+
+  // DebC = 0;
   
   while (itr != theEvents.end()) {
     Event *ev = *itr;
@@ -503,7 +548,9 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
     E_end_task *etp;
     E_comm   *cp;
     E_fork   *fp;
-    
+
+    // if ((DebC++ % 10) == 0 ) {printf ("\r%d", DebC); fflush(stdout); }
+
     switch (ev->Ekind()) {
       default: // Do nothing 
         break;
@@ -585,7 +632,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
             theTask->commList.push_back(ev);
             theTask->commSum.numForks++;
             theTask->commSum.numComms++;
-          } else 
+          } else
             printf ("per task forks, no task %ld, node %ld, clock %lf\n",
                     (long)fp->inTask(), (long)fp->nodeId(), fp->clock_time());
         }
@@ -696,8 +743,16 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
     }
     tl_itr++;
   }
-#endif 
 
+  // Debug print the finished function table  (need to add comm size?)
+  for (int ix = 0 ; ix < funcTblSize; ix++) 
+    printf ("function '%s', %lu events, %d tasks, %d onCalls,"
+            " %d gets, %d puts, file %s, line %d\n",
+            funcTbl[ix].name, funcTbl[ix].func_events.size(), funcTbl[ix].noTasks,
+            funcTbl[ix].noOnTasks, funcTbl[ix].noGets, funcTbl[ix].noPuts, 
+            fileTbl[funcTbl[ix].fileNo].name, funcTbl[ix].lineNo);
+#endif
+  
   return 1;
 }
 
@@ -719,7 +774,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
 
   if (!data) return 0;
 
-  // printf ("LoadFile %s\n", fileToOpen);
+  //printf ("LoadFile %s\n", fileToOpen);
   if (fgets(line,1024,data) != line) {
     fprintf (stderr, "Error reading file %s.\n", fileToOpen);
     return 0;
@@ -820,7 +875,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
             fl_alert("Data file content error");
             exit(1);
           } else {
-            fileTbl = (filename *)calloc(fileTblSize, sizeof(filename));
+            fileTbl = new filename[fileTblSize];
           }
           break;
           
@@ -835,13 +890,13 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
           }
           break;
 
-        case 'F':  // Function name record, ignore at this time.
+        case 'F':  // Function name record
           if (line[3] == 'N') {
             // FIDNsize record
             if (sscanf(linedata, ": %d", &funcTblSize) != 1)
               printf ("Bad FIDNsize record\n");
             else {
-              funcTbl = (funcname*) calloc (funcTblSize, sizeof(funcname));
+              funcTbl = new funcname[funcTblSize];
             }
           } else {
             // FIDname record
@@ -852,6 +907,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
               funcTbl[ix].name = strdup(tmpname);
               funcTbl[ix].lineNo = nlineno;
               funcTbl[ix].fileNo = nfileno;
+              // funcTbl[ix].func_events = new std::list<Event *>;
             }
           }
           break;
@@ -909,7 +965,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
         break;
 
       case 't':  // new task line
-        //  task: s.u nodeID taskID O/L lineno filename
+        //  task: s.u nodeID taskID O/L lineno fileno funcID
         if (sscanf (&linedata[nextCh], "%d %d %d %4s %d %d %d",
                     &nid, &taskid, &parentId, onstr, &nlineno, &nfileno,
                     &fid) != 7) {
@@ -958,12 +1014,13 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
           else
             newEvent = new E_comm (sec, usec, nid, rnid, eSize, dlen, isGet, taskid, nlineno,
                                    nfileno);
+          //newEvent->print();
         }
         break;
 
       case 'f':  // All the forks:
         // s.u nodeID otherNode subloc fid arg arg_size
-        if ((cvt = sscanf (&linedata[nextCh], "%d %d %d %*d 0x%*x %d %d", 
+        if ((cvt = sscanf (&linedata[nextCh], "%d %d %*d %d 0x%*x %d %d", 
                            &nid, &rnid, &fid, &dlen, &vdbTid)) != 5) {
           fprintf (stderr, "Bad fork line: (cvt %d) %s\n", cvt, fileToOpen);
           nErrs++;
@@ -971,7 +1028,8 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
           if (vdbTids.find(vdbTid) != vdbTids.end()) {
             break;
           }
-          newEvent = new E_fork(sec, usec, nid, rnid, dlen, line[1] == '_', vdbTid);
+          newEvent = new E_fork(sec, usec, nid, rnid, dlen, line[1] == '_',
+                                vdbTid, fid);
         }
         break;
 
@@ -1147,7 +1205,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
   //    fprintf (stderr, "%s: Error in data filters: ignoreFork = %d, ignoreTask = %d\n",
   //         fileToOpen, ignoreFork, ignoreTask);
   //  }
-  
+
   if ( !feof(data) ) return 0;
   
   return 1;
