@@ -738,7 +738,6 @@ proc BlockArr.dsiPartialReduce_templateopt(param onlyDim) {
 }
 
 iter BlockDom.dsiPartialThese(param onlyDim, otherIdx) {
-  writeln("In serial iterator");
   for i in whole._value.dsiPartialThese(onlyDim, otherIdx) do
     yield i;
 }

@@ -2585,7 +2585,6 @@ module ChapelArray {
 
     const PartialDom =
       arr.dsiGetBaseDom().dsiPartialDomain(exceptDim=onlyDim);
-    writeln(PartialDom);
 
     var ResultArr: [PartialDom] arr.eltType;
     forall partialIdx in PartialDom {
@@ -2605,9 +2604,9 @@ module ChapelArray {
 
     const PartialDom =
       arr.dsiGetBaseDom().dsiPartialDomain(exceptDim=onlyDim);
-    writeln(PartialDom);
 
     forall partialIdx in PartialDom {
+      /*writeln(partialIdx);*/
       result[partialIdx] = + reduce arr.dsiPartialThese(onlyDim, 
           if isTuple(partialIdx) then partialIdx else (partialIdx, ));
     }

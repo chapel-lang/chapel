@@ -318,11 +318,11 @@ module DefaultSparse {
       var done: atomic bool;
       begin with (ref end) {
         var found: bool;
-        (found, end) = BinarySearch(indices, ((...r),endDummy));
+        (found, end) = binarySearch(indices, ((...r),endDummy));
         done.write(true);
       }
       var found: bool;
-      (found, start) = BinarySearch(indices, ((...r),startDummy));
+      (found, start) = binarySearch(indices, ((...r),startDummy));
       done.waitFor(true);
       return start..min(nnz,end-1);
     }
@@ -335,9 +335,6 @@ module DefaultSparse {
       if onlyDim<0 || onlyDim>rank then
         halt("Invalid dsiPartialThese dimension in DefaultSparse: ", onlyDim);
       const otherIdxTup = if isTuple(otherIdx) then otherIdx else (otherIdx, );
-      /*if rank>2 then*/
-        /*halt("dsiPartialThese is not supperted in more then 2 dimensional domains");*/
-
 
       if onlyDim != this.rank {
         compilerWarning("PERFORMANCE WARNING:\
@@ -363,12 +360,6 @@ module DefaultSparse {
         halt("Invalid dsiPartialThese dimension in DefaultSparse: ", onlyDim);
 
       const otherIdxTup = if isTuple(otherIdx) then otherIdx else (otherIdx, );
-      /*if rank>2 then*/
-        /*halt("dsiPartialThese is not supperted in more then 2 dimensional domains");*/
-
-      if onlyDim!=rank then
-        compilerWarning("PERFORMANCE WARNING: CSR.dsiPartialThese(1, otherIdx)\
-            is expensive");
 
       const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
         tasksPerLocale;
@@ -378,7 +369,7 @@ module DefaultSparse {
 
       const l = if onlyDim!=rank then nnzDom.low else rowRange.low;
       const h = if onlyDim!=rank then nnzDom.low+nnz else rowRange.high;
-      const numElems = h-l-1;
+      const numElems = h-l+1;
       coforall t in 0..#numTasks {
         const myChunk = _computeBlock(numElems, numTasks, t, h-l, 0, 0);
         yield (myChunk[1]..min(nnz, myChunk[2]),);
@@ -425,12 +416,10 @@ module DefaultSparse {
 
       const l = if onlyDim!=rank then indices.domain.low else rowRange.low;
       const h = if onlyDim!=rank then nnz else rowRange.high;
-      const numElems = h-l-1;
+      const numElems = h-l+1;
+      if numElems <= -2 then return;
 
       if onlyDim != rank {
-        compilerWarning("PERFORMANCE WARNING: DefaultSparse.dsiPartialThese(1, \
-          otherIdx) is expensive");
-
         coforall t in 0..#numTasks {
           const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);
           for i in myChunk[1]..min(nnz,myChunk[2]) do
@@ -441,7 +430,9 @@ module DefaultSparse {
       else {
         coforall t in 0..#numTasks {
           const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);
-          for i in myChunk[1]..myChunk[2] do yield indices[i][onlyDim];
+          for i in myChunk[1]..myChunk[2] do {
+            yield indices[i][onlyDim];
+          }
         }
       }
     }

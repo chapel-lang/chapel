@@ -171,24 +171,20 @@ module DefaultRectangular {
     // I kept hitting resolution issues there(may or may not be a bug).
     // since otherIdx is not used at this point, I am moving with this
     // implementation
-    iter dsiPartialThese(onlyDim,
-        otherIdx=createTuple(rank-1, idxType, 0:idxType)) {
+    iter dsiPartialThese(onlyDim, otherIdx) {
 
         if !dsiPartialDomain(onlyDim).member(otherIdx) then return;
         for i in ranges(onlyDim) do yield i;
     }
 
-    iter dsiPartialThese(onlyDim,
-        otherIdx=createTuple(rank-1, idxType, 0:idxType),
-        param tag: iterKind)
+    iter dsiPartialThese(onlyDim, otherIdx, param tag: iterKind)
       where tag == iterKind.leader {
 
       if !dsiPartialDomain(onlyDim).member(otherIdx) then return;
       for i in ranges(onlyDim).these(tag) do yield i;
     }
 
-    iter dsiPartialThese(onlyDim,
-        otherIdx=createTuple(rank-1, idxType, 0:idxType),
+    iter dsiPartialThese(onlyDim, otherIdx,
         param tag: iterKind, followThis)
       where tag == iterKind.follower {
 
@@ -197,9 +193,7 @@ module DefaultRectangular {
     }
 
     // currently no support for offset
-    iter dsiPartialThese(onlyDim,
-        otherIdx=createTuple(rank-1, idxType, 0:idxType),
-        param tag: iterKind)
+    iter dsiPartialThese(onlyDim, otherIdx, param tag: iterKind)
       where tag == iterKind.standalone {
 
       if !dsiPartialDomain(onlyDim).member(otherIdx) then return;
