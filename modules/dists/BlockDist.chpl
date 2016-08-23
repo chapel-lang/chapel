@@ -727,8 +727,8 @@ proc BlockArr.dsiPartialReduce_templateopt(param onlyDim) {
           /*thisParticularResult +=*/
               /*dsiPartialReduce_template(locArr[l], onlyDim);*/
           var __target = ResultArr._value.locArr[l2].clone();
-          thisParticularResult +=
-              dsiPartialReduce_template(locArr[l], onlyDim, __target);
+          dsiPartialReduce_template(locArr[l], onlyDim, __target);
+          thisParticularResult += __target.myElems;
         }
       }
     }

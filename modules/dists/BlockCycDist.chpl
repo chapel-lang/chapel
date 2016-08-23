@@ -579,8 +579,8 @@ proc BlockCyclicArr.dsiPartialReduce_templateopt(param onlyDim) {
         on dom.locDoms[l] {
 
           var __target = ResultArr._value.locArr[l2].clone();
-          thisParticularResult +=
-              dsiPartialReduce_template(locArr[l], onlyDim, __target);
+          dsiPartialReduce_template(locArr[l], onlyDim, __target);
+          thisParticularResult += __target.myElems;
         }
       }
     }
