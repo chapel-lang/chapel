@@ -128,11 +128,6 @@ module ChapelIteratorSupport {
   }
 
   inline proc _getIteratorZip(type t: _tuple) {
-    if (!(isTupleType(t))) then
-      compilerError("cannot zip over a type that is not a homogeneous tuple");
-    else if (!(isEnumType(t(1)))) then
-      compilerError("cannot zip over a tuple of types that is not of enums");
-    else {
       inline proc _getIteratorZipInternal(type t: _tuple, param dim: int) {
         var x : t; //have to make an instance of the tuple to query the size
 
@@ -146,7 +141,6 @@ module ChapelIteratorSupport {
       else
         return _getIteratorZipInternal(t, 1);
     }
-  }
 
   proc _checkIterator(type t) {
     if (!(isEnumType(t))) then
