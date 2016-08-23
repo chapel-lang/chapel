@@ -148,6 +148,14 @@ enum Qualifier {
 // Shorter names, such as QualType and QualT have been proposed.
 // A QualifiedType is only expected to be meaningful during and
 // after resolution.
+//
+// For example
+//   var aVar:int;
+//   ref aRef = aVar;
+//
+//   SymExpr(aVar) and Symbol(aVar) have QualifiedType(int, kVal)
+//   SymExpr(aRef) and Symbol(aVar) have QualifiedType(int, kRef)
+//
 class QualifiedType {
 public:
 
