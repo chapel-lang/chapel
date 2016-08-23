@@ -1222,6 +1222,7 @@ resolveFormals(FnSymbol* fn) {
       // Adjust tuples for intent.
       if (formal->type->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
           !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
+          !(formal == fn->_this) &&
           !doNotChangeTupleTypeRefLevel(fn, false)) {
 
         Type* newType = computeTupleWithIntent(formal->intent,
