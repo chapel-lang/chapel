@@ -111,7 +111,7 @@ Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
 
 Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   BaseAST(astTag),
-  qual(kBlank),
+  qual(QUAL_BLANK),
   type(init_type),
   flags(),
   defPoint(NULL)
@@ -155,18 +155,19 @@ bool Symbol::inTree() {
 static Qualifier qualifierForArgIntent(IntentTag intent)
 {
   switch (intent) {
-    case INTENT_IN:        return kVal;
-    case INTENT_OUT:       return kRef;
-    case INTENT_INOUT:     return kRef;
-    case INTENT_CONST:     return kConst;
-    case INTENT_CONST_IN:  return kConstVal;
-    case INTENT_REF:       return kRef;
-    case INTENT_CONST_REF: return kConstRef;
-    case INTENT_PARAM:     return kParam;
-    case INTENT_TYPE:      return kBlank; // not sure about this one
-    case INTENT_BLANK:     return kBlank;
+    case INTENT_IN:        return QUAL_VAL;
+    case INTENT_OUT:       return QUAL_REF;
+    case INTENT_INOUT:     return QUAL_REF;
+    case INTENT_CONST:     return QUAL_CONST;
+    case INTENT_CONST_IN:  return QUAL_CONST_VAL;
+    case INTENT_REF:       return QUAL_REF;
+    case INTENT_CONST_REF: return QUAL_CONST_REF;
+    case INTENT_PARAM:     return QUAL_BLANK; // TODO
+    case INTENT_TYPE:      return QUAL_BLANK; // TODO
+    case INTENT_BLANK:     return QUAL_BLANK;
+    // no default to get compiler warning if other intents are added
   }
-  return kBlank;
+  return QUAL_BLANK;
 }
 
 QualifiedType Symbol::qualType() {
@@ -2462,11 +2463,11 @@ bool FnSymbol::returnsRefOrConstRef() const {
 }
 
 QualifiedType FnSymbol::getReturnQualType() const {
-  Qualifier q = kBlank;
+  Qualifier q = QUAL_BLANK;
   if (retTag == RET_REF)
-    q = kRef;
+    q = QUAL_REF;
   else if(retTag == RET_CONST_REF)
-    q = kConstRef;
+    q = QUAL_CONST_REF;
   return QualifiedType(retType, q);
 }
 
