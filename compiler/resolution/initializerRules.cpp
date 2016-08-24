@@ -60,3 +60,90 @@ void temporaryInitializerFixup(CallExpr* call) {
     }
   }
 }
+
+static
+void reorganizeBody(FnSymbol* fn, BlockStmt* phase1, BlockStmt* phase2,
+                    BlockStmt* otherInit);
+
+
+void handleInitializerRules(FnSymbol* fn) {
+  if (!fn->hasFlag(FLAG_CONSTRUCTOR) || strcmp(fn->name, "init")) {
+    USR_PRINT(fn, "'%s' is not an initializer", fn->name);
+    return;
+  }
+
+  BlockStmt* phase1 = fn->body;
+  BlockStmt* phase2 = new BlockStmt();
+  BlockStmt* otherInit = new BlockStmt();
+
+  reorganizeBody(fn, phase1, phase2, otherInit);
+
+  phase1->insertAtTail(otherInit);
+  phase1->insertAtTail(phase2);
+
+  phase1->insertAtTail(phase2->body.tail->remove());
+  // Put the return statement back where we found it.  FnSymbol::getReturnSymbol
+  // expects the return statement to be at the end of the function.
+
+  resolveBlockStmt(fn->body);
+}
+
+// This function traverses the body of the initializer backwards, moving the
+// statements it finds into the phase2 block statement until it encounters the
+// super/this.init() call or the start of the body, whichever comes first.
+// It then moves the super/this.init() call and the statements it relies on
+// into the otherInit block statement.
+static
+void reorganizeBody(FnSymbol* fn, BlockStmt* phase1, BlockStmt* phase2,
+                    BlockStmt* otherInit) {
+  while (phase1->body.length > 0) {
+    // Note - to make the default for an initializer body be phase 1,
+    // reverse the traversal order and perform some swaps of which block
+    // statement is receiving the code.  Will also need to update the creation
+    // of the phase1 block at the callsite, likely.
+
+    if (CallExpr* call = toCallExpr(phase1->body.tail)) {
+      if (CallExpr* inner = toCallExpr(call->baseExpr)) {
+        if (inner->isNamed("init")) {
+          // While going backwards, we found the super/this.init() call
+          // Time to stop moving into the phase2 block statement.
+          if (NamedExpr* meme = toNamedExpr(inner->get(1))) {
+            if (!strcmp(meme->name, "meme")) {
+              if (SymExpr* sym = toSymExpr(meme->actual)) {
+                if (sym->var == fn->_this) {
+                  // Lydia NOTE: relies on the structure of "this.init()" calls
+                  // being of the form:
+                  // call( call( init meme = this ) ...)
+                  otherInit->insertAtHead(call->remove());
+                } else {
+                  // Lydia NOTE: relies on the structure of "super.init()" calls
+                  // being of the form:
+                  // def call_tmp
+                  // ...
+                  // move( call_tmp call(super _mt[195] this))
+                  // call( call( init meme = call_tmp ) ...)
+                  otherInit->insertAtHead(sym->var->defPoint->remove());
+                  otherInit->insertAtTail(call->prev->remove());
+                  otherInit->insertAtTail(call->remove());
+                }
+              }
+            }
+          }
+          if (otherInit->body.length == 0) {
+            // Internal error because I expect this to mean a difference in
+            // how the compiler has structured the init call.  Something
+            // happened that I did not expect, and so the call has not been
+            // inserted into the otherInit block statement.
+            INT_FATAL(inner, "Unexpected argument to 'init' call");
+          }
+
+          break; // Exiting the traversal.
+
+          // Behavior is not yet correct for super/this.init() calls within
+          // loops or if statements.  TODO: fix this
+        }
+      }
+    }
+    phase2->insertAtHead(phase1->body.tail->remove());
+  }
+}
