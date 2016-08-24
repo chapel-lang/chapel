@@ -1,40 +1,8 @@
 use utilities;
 use dsiMethods;
-
-iter _array.partialThese(param onlyDim, otherIdx) {
-  for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx) {
-    /*writeln("Serial Accessing ", i);*/
-    yield this._value.dsiAccess(otherIdx.merge(onlyDim, i));
-  }
-}
-
-iter _array.partialThese(param onlyDim, otherIdx, param tag) where
-tag==iterKind.leader {
-
-  for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
-    yield i;
-  }
-}
-
-iter _array.partialThese(param onlyDim, otherIdx, param tag, followThis) where
-tag==iterKind.follower {
-
-  for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx, 
-      tag=tag, followThis=followThis) {
-    writeln("Follower Accessing ", i);
-    yield this._value.dsiAccess(otherIdx.merge(onlyDim, i));
-  }
-}
-
-iter _array.partialThese(param onlyDim, otherIdx, param tag) where
-tag==iterKind.standalone {
-
-  for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
-    /*writeln("Standalone Accessing ", i);*/
-    yield this._value.dsiAccess(otherIdx.merge(onlyDim, i));
-  }
-}
-
+use BlockDist;
+use CyclicDist;
+use BlockCycDist;
 
 proc dsiPartialReduce_template(arr: [], param onlyDim) {
   return dsiPartialReduce_template(arr._value, onlyDim);
@@ -71,8 +39,126 @@ proc dsiPartialReduce_template(arr, param onlyDim, result) {
     arr.dsiGetBaseDom().dsiPartialDomain(exceptDim=onlyDim);
 
   forall partialIdx in PartialDom {
-    /*writeln(partialIdx);*/
     result[partialIdx] = + reduce arr.dsiPartialThese(onlyDim, 
         if isTuple(partialIdx) then partialIdx else (partialIdx, ));
   }
+}
+
+proc BlockArr.dsiPartialReduce_templateopt(param onlyDim) {
+
+  const PartialDom = dom.dsiPartialDomain(exceptDim=onlyDim);
+  var ResultArr: [PartialDom] eltType;
+
+  var locResDom = dom.dist.targetLocDom dmapped new dmap(this.dom.dist);
+  var locRes: [locResDom] ResultArr._value.myLocArr.myElems.type;
+
+  coforall l2 in
+      dom.dist.targetLocDom._value.dsiPartialDomain(exceptDim=onlyDim) {
+
+    on ResultArr._value.locArr[l2].myElems {
+      var thisParticularResult => ResultArr._value.locArr[l2].myElems;
+      // FIXME should be a coforall - doesn't work
+      forall l1 in dom.dist.targetLocDom.dim(onlyDim)
+          with (+ reduce thisParticularResult) {
+
+        const l = chpl__tuplify(l2).merge(onlyDim, l1);
+        on dom.locDoms[l] {
+          var __target = ResultArr._value.locArr[l2].clone();
+          dsiPartialReduce_template(locArr[l], onlyDim, __target);
+          thisParticularResult += __target.myElems;
+        }
+      }
+    }
+  }
+  return ResultArr;
+
+}
+
+proc CyclicArr.dsiPartialReduce_templateopt(param onlyDim) {
+
+  const PartialDom = dom.dsiPartialDomain(exceptDim=onlyDim);
+  var ResultArr: [PartialDom] eltType;
+
+  var locResDom = dom.dist.targetLocDom dmapped new dmap(this.dom.dist);
+  var locRes: [locResDom] ResultArr._value.myLocArr.myElems.type;
+
+  coforall l2 in
+      dom.dist.targetLocDom._value.dsiPartialDomain(exceptDim=onlyDim) {
+
+    on ResultArr._value.locArr[l2].myElems {
+      var thisParticularResult => ResultArr._value.locArr[l2].myElems;
+      // FIXME should be a coforall - doesn't work
+      forall l1 in dom.dist.targetLocDom.dim(onlyDim) 
+          with (+ reduce thisParticularResult) {
+
+        const l = chpl__tuplify(l2).merge(onlyDim, l1);
+        on dom.locDoms[l] {
+          var __target = ResultArr._value.locArr[l2].clone();
+          dsiPartialReduce_template(locArr[l], onlyDim, __target);
+          thisParticularResult += __target.myElems;
+        }
+      }
+    }
+  }
+  return ResultArr;
+}
+
+proc BlockCyclicArr.dsiPartialReduce_templateopt(param onlyDim) {
+
+  const PartialDom = dom.dsiPartialDomain(exceptDim=onlyDim);
+  var ResultArr: [PartialDom] eltType;
+
+  var locResDom = dom.dist.targetLocDom dmapped new dmap(this.dom.dist);
+  var locRes: [locResDom] ResultArr._value.myLocArr.myElems.type;
+
+  coforall l2 in
+      dom.dist.targetLocDom._value.dsiPartialDomain(exceptDim=onlyDim) {
+
+    on ResultArr._value.locArr[l2].myElems {
+      var thisParticularResult => ResultArr._value.locArr[l2].myElems;
+      // FIXME should be a coforall - doesn't work
+      forall l1 in dom.dist.targetLocDom.dim(onlyDim)
+          with (+ reduce thisParticularResult) {
+
+        const l = chpl__tuplify(l2).merge(onlyDim, l1);
+        on dom.locDoms[l] {
+          var __target = ResultArr._value.locArr[l2].clone();
+          dsiPartialReduce_template(locArr[l], onlyDim, __target);
+          thisParticularResult += __target.myElems;
+        }
+      }
+    }
+  }
+  return ResultArr;
+}
+
+proc SparseBlockArr.dsiPartialReduce_templateopt(param onlyDim) {
+
+  const PartialDom = dom.dsiPartialDomain(exceptDim=onlyDim);
+  var ResultArr: [PartialDom] eltType;
+
+  var locResDom = dom.dist.targetLocDom dmapped 
+    new dmap(this.dom.dist);
+  var locRes: [locResDom] ResultArr._value.myLocArr.myElems.type;
+
+  coforall l2 in
+    dom.dist.targetLocDom._value.dsiPartialDomain(exceptDim=onlyDim) {
+
+      on ResultArr._value.locArr[l2].myElems {
+        var thisParticularResult =>
+          ResultArr._value.locArr[l2].myElems;
+        // FIXME should be a coforall - doesn't work
+        forall l1 in dom.dist.targetLocDom.dim(onlyDim)
+            with (+ reduce thisParticularResult) {
+
+          const l = chpl__tuplify(l2).merge(onlyDim, l1);
+          on dom.locDoms[l] {
+            var __target = ResultArr._value.locArr[l2].clone();
+            dsiPartialReduce_template(locArr[l], onlyDim, __target);
+            thisParticularResult += __target.myElems;
+          }
+        }
+      }
+    }
+  return ResultArr;
 }

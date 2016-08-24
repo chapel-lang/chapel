@@ -1,3 +1,7 @@
+use utilities;
+use dsiMethods;
+use templates;
+
 use BlockDist;
 
 config const N = 10;

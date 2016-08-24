@@ -1,3 +1,7 @@
+use utilities;
+use dsiMethods;
+use templates;
+
 use CyclicDist;
 
 config const N = 10;
