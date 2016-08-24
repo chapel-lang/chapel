@@ -67,11 +67,6 @@ void reorganizeBody(FnSymbol* fn, BlockStmt* phase1, BlockStmt* phase2,
 
 
 void handleInitializerRules(FnSymbol* fn) {
-  if (!fn->hasFlag(FLAG_CONSTRUCTOR) || strcmp(fn->name, "init")) {
-    USR_PRINT(fn, "'%s' is not an initializer", fn->name);
-    return;
-  }
-
   BlockStmt* phase1 = fn->body;
   BlockStmt* phase2 = new BlockStmt();
   BlockStmt* otherInit = new BlockStmt();
