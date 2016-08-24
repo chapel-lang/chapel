@@ -76,15 +76,14 @@ iter DefaultRectangularArr.dsiPartialThese(onlyDim,
 // FIXME this standaloen iterator forwarding hits a compiler bug.
 // The assertion in astutil.cpp:622 triggers. Engin
 /*
-   iter DefaultRectangularArr.dsiPartialThese(onlyDim,
-   otherIdx=createTuple(rank-1, idxType, 0:idxType),
-   param tag: iterKind)
-   where tag == iterKind.standalone {
+iter DefaultRectangularArr.dsiPartialThese(onlyDim,
+    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+    param tag: iterKind) where tag == iterKind.standalone {
 
-   for i in dom.dsiPartialThese(onlyDim, otherIdx, tag) do
-   yield dsiAccess(i);
-   }
-   */
+  for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag) do
+    yield dsiAccess(i);
+}
+*/
 //
 // end DefaultRectangular support
 //
@@ -523,8 +522,6 @@ iter LocBlockArr.dsiPartialThese(onlyDim,
     yield i;
 }
 
-// FIXME this standaloen iterator forwarding hits a compiler bug.
-// The assertion in astutil.cpp:622 triggers. Engin
 iter LocBlockArr.dsiPartialThese(onlyDim,
     otherIdx=createTuple(rank-1, idxType, 0:idxType),
     param tag: iterKind) where tag == iterKind.standalone {
@@ -703,38 +700,38 @@ iter LocBlockCyclicArr.dsiPartialThese(onlyDim,
   }
 }
 
-/*iter LocBlockCyclicArr.dsiPartialThese(onlyDim,*/
-    /*otherIdx=createTuple(rank-1, idxType, 0:idxType),*/
-    /*param tag: iterKind) where tag == iterKind.leader {*/
+iter LocBlockCyclicArr.dsiPartialThese(onlyDim,
+    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+    param tag: iterKind) where tag == iterKind.leader {
 
-  /*coforall i in do_dsiLocalSubdomains(indexDom) {*/
-    /*for ii in i._value.dsiPartialThese(onlyDim, otherIdx, tag) {*/
-      /*yield (i, ii);*/
-    /*}*/
-  /*}*/
-/*}*/
+  coforall i in do_dsiLocalSubdomains(indexDom) {
+    for ii in i._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
+      yield (i, ii);
+    }
+  }
+}
 
-/*iter LocBlockCyclicArr.dsiPartialThese(onlyDim,*/
-    /*otherIdx=createTuple(rank-1, idxType, 0:idxType),*/
-    /*param tag: iterKind, followThis) where tag == iterKind.follower {*/
+iter LocBlockCyclicArr.dsiPartialThese(onlyDim,
+    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+    param tag: iterKind, followThis) where tag == iterKind.follower {
 
-    /*for i in followThis[1]._value.dsiPartialThese(onlyDim, otherIdx,*/
-        /*tag=tag, followThis=followThis[2]) {*/
+    for i in followThis[1]._value.dsiPartialThese(onlyDim, otherIdx,
+        tag=tag, followThis=followThis[2]) {
       /*writeln("Yielding ", otherIdx.merge(onlyDim, i));*/
-      /*yield this(otherIdx.merge(onlyDim, i));*/
-    /*}*/
-/*}*/
+      yield this(otherIdx.merge(onlyDim, i));
+    }
+}
 
-/*// FIXME this standaloen iterator forwarding hits a compiler bug.*/
-/*// The assertion in astutil.cpp:622 triggers. Engin*/
-/*iter LocBlockArr.dsiPartialThese(onlyDim,*/
-    /*otherIdx=createTuple(rank-1, idxType, 0:idxType),*/
-    /*param tag: iterKind)*/
-  /*where tag == iterKind.standalone {*/
+iter LocBlockArr.dsiPartialThese(onlyDim,
+    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+    param tag: iterKind)
+  where tag == iterKind.standalone {
 
-    /*for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag) do*/
-      /*yield i;*/
-/*}*/
+    for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag)
+        do
+
+      yield i;
+}
 //
 // end BlockCyclic distribution support
 //
@@ -786,8 +783,6 @@ iter LocSparseBlockArr.dsiPartialThese(onlyDim,
     yield i;
 }
 
-// FIXME this standaloen iterator forwarding hits a compiler bug.
-// The assertion in astutil.cpp:622 triggers. Engin
 iter LocSparseBlockArr.dsiPartialThese(onlyDim,
     otherIdx=createTuple(rank-1, idxType, 0:idxType),
     param tag: iterKind) where tag == iterKind.standalone {
