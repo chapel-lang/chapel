@@ -286,46 +286,6 @@ static void createShadowVars(DefExpr* defChplIter, SymbolMap& uses,
 }
 
 
-// Issue a warning when the outer var is a record with an array
-// or domain field. That's because when we yield such a record
-// as part of the yield tuple in the leader, we copy it, whereas
-// semantically it should be a const ref.
-static void
-checkForRecordsWithArrayFields(Expr* ref, std::vector<Symbol*>& outerVars) {
-  for_vector(Symbol, sym, outerVars)
-    if (AggregateType* at = toAggregateType(sym->type->getValType())) {
-      const char* varKind = NULL;
-      if (isRecord(at)) varKind = "record";
-      else if (isUnion(at)) varKind = "union";
-      else INT_ASSERT(isClass(at));
-      //todo: do we want this more aggressive warning?
-      // if (varKind)
-      //   USR_WARN(ref, "Achtung! var %s  type %s  decl %s\n",
-      //            sym->name, sym->type->symbol->name, sym->stringLoc());
-      if (varKind)
-        for_alist(fieldExpr, at->fields)
-          if (DefExpr* fieldDef = toDefExpr(fieldExpr))
-            //
-            // This test would result in too many warnings:
-            //   blankIntentForType(fieldDef->sym->type) != INTENT_CONST_IN
-            // We warn only about array/domain because copying them
-            // is expensive.
-            //
-            if (isRecordWrappedType(fieldDef->sym->type)) {
-              // If this assert fails: (a) should this Symbol really
-              // be subject to forall intents? If so, (b) need to modify
-              // USR_WARN below not to print its name.
-              INT_ASSERT(!sym->hasFlag(FLAG_TEMP));
-              USR_WARN(ref, "The blank forall intent for record and union variables is temporarily implemented as a copy, not 'const ref'. As a result, the %s variable '%s' is affected. Its field %s: %s inside the loop will be a copy, not alias, of its field outside the loop. Use a task-intent-clause to pass it by reference, e.g. 'with (ref %s)'.",
-                       varKind, sym->name,
-                       fieldDef->sym->name, fieldDef->sym->type->symbol->name,
-                       sym->name);
-              break; // one warning per variable is enough
-            }
-    }
-}
-
-
 // ForallLeaderArgs: add actuals to _toLeader/_toLeaderZip()/_toStandalone().
 // (The leader will be converted to accept them during resolution.)
 static void addActualsTo_toLeader(Symbol* serIterSym, int& numLeaderActuals,
@@ -774,8 +734,6 @@ void implementForallIntents1(DefExpr* defChplIter)
 
   if (numShadowVars > 0) {
     int numLeaderActuals; // set in addActualsTo_toLeader()
-
-    checkForRecordsWithArrayFields(defChplIter, outerVars);
 
     addActualsTo_toLeader(serIterSym, numLeaderActuals,
                           outerVars, shadowVars, reduceGVars);
