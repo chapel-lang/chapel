@@ -1042,36 +1042,6 @@ static void addArgsToToLeaderCallForPromotionWrapper(FnSymbol* fn,
   INT_ASSERT(toleaderCnt == 1);
 }
 
-// Is 'call' invoking a parallel iterator?
-// Since the call is not resolved, we can't use isLeaderIterator(),
-// and this implementation is a heuristic.
-static bool callingParallelIterator(CallExpr* call) {
-  // Check 'call' for an actual argument that's a parallel tag.
-  // Todo: handle the case where the actual's value is not known yet.
-  for_actuals(actual, call) {
-
-    Expr* nonameActual = actual;
-    if (NamedExpr* ne = toNamedExpr(nonameActual)) {
-      nonameActual = ne->actual;
-    }
-
-    if (SymExpr* se = toSymExpr(nonameActual)) {
-      Symbol* tag = se->var;
-      // a quick check first
-      if (tag->type == gLeaderTag->type) {
-        if (tag == gLeaderTag ||
-            tag == gStandaloneTag ||
-            paramMap.get(tag) == gLeaderTag ||
-            paramMap.get(tag) == gStandaloneTag)
-          // yep, most likely over parallel iterator
-          return true;
-      }
-    }
-  }
-
-  return false;
-}
-
 // Is 'forLoop' a loop over a parallel iterator?
 // If so, return the call to that iterator.
 static CallExpr* findCallToParallelIterator(ForLoop* forLoop) {
@@ -1117,8 +1087,20 @@ static CallExpr* findCallToParallelIterator(ForLoop* forLoop) {
   CallExpr* iterCall = toCallExpr(asgnToCallTemp->get(2));
   INT_ASSERT(iterCall);
 
-  if (callingParallelIterator(iterCall))
-    return iterCall;
+  // Check 'iterCall' for an actual argument that's a parallel tag.
+  // Todo: handle the case where the actual's value is not known yet.
+  for_actuals(actual, iterCall)
+    if (SymExpr* se = toSymExpr(actual))
+      // a quick check first
+      if (se->var->type == gLeaderTag->type) {
+        Symbol* tag = se->var;
+        if (tag == gLeaderTag ||
+            tag == gStandaloneTag ||
+            paramMap.get(tag) == gLeaderTag ||
+            paramMap.get(tag) == gStandaloneTag)
+          // yep, most likely over parallel iterator
+          return iterCall;
+      }
 
   // no signs of a parallel iterator
   return NULL;
