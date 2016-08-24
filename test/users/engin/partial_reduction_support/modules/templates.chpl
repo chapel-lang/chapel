@@ -1,11 +1,7 @@
 use utilities;
 use dsiMethods;
 
-proc dsiPartialReduce_template(arr: [], param onlyDim) {
-  return dsiPartialReduce_template(arr._value, onlyDim);
-}
-
-proc dsiPartialReduce_template(arr, param onlyDim) {
+proc partialReduce(arr, param onlyDim) {
 
   if onlyDim < 1 || onlyDim > arr.dsiGetBaseDom().rank then
     halt("Invalid partial reduction dimension: ", onlyDim);
@@ -24,7 +20,7 @@ proc dsiPartialReduce_template(arr, param onlyDim) {
   return ResultArr;
 }
 
-proc dsiPartialReduce_template(arr, param onlyDim, result) {
+proc partialReduceToTarget(arr, param onlyDim, target) {
 
   if onlyDim < 1 || onlyDim > arr.dsiGetBaseDom().rank then
     halt("Invalid partial reduction dimension: ", onlyDim);
@@ -36,7 +32,7 @@ proc dsiPartialReduce_template(arr, param onlyDim, result) {
     arr.dsiGetBaseDom().dsiPartialDomain(exceptDim=onlyDim);
 
   forall partialIdx in PartialDom {
-    result[partialIdx] = + reduce arr.dsiPartialThese(onlyDim, 
+    target[partialIdx] = + reduce arr.dsiPartialThese(onlyDim, 
         if isTuple(partialIdx) then partialIdx else (partialIdx, ));
   }
 }
@@ -64,7 +60,7 @@ proc bulkPartialReduce(arr, param onlyDim) {
         const l = chpl__tuplify(l2).merge(onlyDim, l1);
         on dom.locDoms[l] {
           var __target = ResultArr._value.locArr[l2].clone();
-          dsiPartialReduce_template(arr.locArr[l], onlyDim, __target);
+          partialReduceToTarget(arr.locArr[l], onlyDim, __target);
           partialResult += __target.myElems;
         }
       }
