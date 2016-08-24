@@ -33,6 +33,8 @@ writeln(a);
 
 a.mul_2exp(c, 3);         // a = -1600;
 writeln(a);
+a.div_2exp(a, 3);         //a = -200
+writeln(a);               
 a.neg(b);                 // a = -2
 writeln(a);
 
