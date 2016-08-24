@@ -122,7 +122,7 @@ module BigIntegers {
       }
       owned = true;
     }
-    proc BigInt(ref num: BigInt, owned: bool = true) {
+    proc BigInt(const ref num: BigInt, owned: bool = true) {
       if num.locale_id == here.id {
         mpz_init_set(this.mpz, num.mpz);
       } else {
@@ -178,7 +178,7 @@ module BigIntegers {
     }
 
     // Assignment functions
-    proc set(ref a: BigInt) {
+    proc set(const ref a: BigInt) {
       on Locales[this.locale_id] {
         if a.locale == here {
           mpz_set(this.mpz, a.mpz);
@@ -259,7 +259,7 @@ module BigIntegers {
     }
 
     // Arithmetic functions
-    proc add(ref a: BigInt, ref b: BigInt) {
+    proc add(const ref a: BigInt, const ref b: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id || here.id != b.locale_id) {
           var a_ = a;
@@ -270,7 +270,7 @@ module BigIntegers {
         }
       }
     }
-    proc add(ref a: BigInt, b: uint) {
+    proc add(const ref a: BigInt, b: uint) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
           var a_ = a;
@@ -280,7 +280,7 @@ module BigIntegers {
         }
       }
     }
-    proc sub(ref a: BigInt, ref b: BigInt) {
+    proc sub(const ref a: BigInt, const ref b: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id || here.id != b.locale_id) {
           var a_ = a;
@@ -291,7 +291,7 @@ module BigIntegers {
         }
       }
     }
-    proc sub(ref a: BigInt, b: uint) {
+    proc sub(const ref a: BigInt, b: uint) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
           var a_ = a;
@@ -301,7 +301,7 @@ module BigIntegers {
         }
       }
     }
-    proc sub(a: uint, ref b: BigInt) {
+    proc sub(a: uint, const ref b: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != b.locale_id) {
           var b_ = b;
@@ -311,7 +311,7 @@ module BigIntegers {
         }
       }
     }
-    proc mul(ref a: BigInt, ref b: BigInt) {
+    proc mul(const ref a: BigInt, const ref b: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id || here.id != b.locale_id) {
           var a_ = a;
@@ -322,7 +322,7 @@ module BigIntegers {
         }
       }
     }
-    proc mul(ref a: BigInt, b: int) {
+    proc mul(const ref a: BigInt, b: int) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
           var a_ = a;
@@ -332,7 +332,7 @@ module BigIntegers {
         }
       }
     }
-    proc mul(ref a: BigInt, b: uint) {
+    proc mul(const ref a: BigInt, b: uint) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
           var a_ = a;
@@ -342,7 +342,7 @@ module BigIntegers {
         }
       }
     }
-    proc addmul(ref a: BigInt, ref b: BigInt) {
+    proc addmul(const ref a: BigInt, const ref b: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id || here.id != b.locale_id) {
           var a_ = a;
@@ -353,7 +353,7 @@ module BigIntegers {
         }
       }
     }
-    proc addmul(ref a: BigInt, b: uint) {
+    proc addmul(const ref a: BigInt, b: uint) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
         var a_ = a;
@@ -363,7 +363,7 @@ module BigIntegers {
         }
       }
     }
-    proc submul(ref a: BigInt, ref b: BigInt) {
+    proc submul(const ref a: BigInt, const ref b: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id || here.id != b.locale_id) {
           var a_ = a;
@@ -374,7 +374,7 @@ module BigIntegers {
         }
       }
     }
-    proc submul(ref a: BigInt, b: uint) {
+    proc submul(const ref a: BigInt, b: uint) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
           var a_ = a;
@@ -384,7 +384,7 @@ module BigIntegers {
         }
       }
     }
-    proc mul_2exp(ref a: BigInt, b: uint) {
+    proc mul_2exp(const ref a: BigInt, b: uint) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
         var a_ = a;
@@ -394,7 +394,7 @@ module BigIntegers {
         }
       }
     }
-    proc div_2exp(ref a: BigInt, b:uint) {
+    proc div_2exp(const ref a: BigInt, b:uint) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
         var a_ = a;
@@ -404,7 +404,7 @@ module BigIntegers {
         }
       }
     }
-    proc neg(ref a: BigInt) {
+    proc neg(const ref a: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
           var a_ = a;
@@ -414,7 +414,7 @@ module BigIntegers {
         }
       }
     }
-    proc abs(ref a: BigInt) {
+    proc abs(const ref a: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
           var a_ = a;
@@ -427,7 +427,7 @@ module BigIntegers {
 
     // Division Functions
     // These functions take in a constant rounding mode.
-    proc div_q(param rounding: Round, ref n: BigInt, ref d: BigInt) {
+    proc div_q(param rounding: Round, const ref n: BigInt, const ref d: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != n.locale_id || here.id != d.locale_id) {
           var n_ = n;
@@ -446,7 +446,7 @@ module BigIntegers {
         }
       }
     }
-    proc div_r(param rounding: Round, ref n: BigInt, ref d: BigInt) {
+    proc div_r(param rounding: Round, const ref n: BigInt, const ref d: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != n.locale_id || here.id != d.locale_id) {
           var n_ = n;
@@ -466,7 +466,7 @@ module BigIntegers {
       }
     }
     // this gets quotient, r gets remainder
-    proc ref div_qr(param rounding: Round, ref r: BigInt, ref n: BigInt, ref d: BigInt) {
+    proc ref div_qr(param rounding: Round, ref r: BigInt, const ref n: BigInt, const ref d: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != r.locale_id || here.id != n.locale_id || here.id != d.locale_id) {
           var r_ = r;
@@ -487,7 +487,7 @@ module BigIntegers {
         }
       }
     }
-    proc div_q(param rounding: Round, ref n: BigInt, d: uint):uint {
+    proc div_q(param rounding: Round, const ref n: BigInt, d: uint):uint {
       var ret:c_ulong;
       on Locales[this.locale_id] {
         const cd = d.safeCast(c_ulong);
@@ -508,7 +508,7 @@ module BigIntegers {
       }
       return ret.safeCast(uint);
     }
-    proc div_r(param rounding: Round, ref n: BigInt, d: uint):uint {
+    proc div_r(param rounding: Round, const ref n: BigInt, d: uint):uint {
       var ret:c_ulong;
       on Locales[this.locale_id] {
       const cd = d.safeCast(c_ulong);
@@ -530,7 +530,7 @@ module BigIntegers {
       return ret.safeCast(uint);
     }
     // this gets quotient, r gets remainder
-    proc div_qr(param rounding: Round, ref r: BigInt, ref n: BigInt, d: uint):uint {
+    proc div_qr(param rounding: Round, ref r: BigInt, const ref n: BigInt, d: uint):uint {
       var ret:c_ulong;
       const cd = d.safeCast(c_ulong);
       on Locales[this.locale_id] {
@@ -557,7 +557,7 @@ module BigIntegers {
     // div for uint defined outside of record scope, as it returns a value
     // and does not set a BigInt
 
-    proc div_q_2exp(param rounding: Round, ref n: BigInt, b: uint) {
+    proc div_q_2exp(param rounding: Round, const ref n: BigInt, b: uint) {
       on Locales[this.locale_id] {
       const cb = b.safeCast(c_ulong);
         if (here.id != n.locale_id) {
@@ -576,7 +576,7 @@ module BigIntegers {
         }
       }
     }
-    proc div_r_2exp(param rounding: Round, ref n: BigInt, b: uint) {
+    proc div_r_2exp(param rounding: Round, const ref n: BigInt, b: uint) {
       on Locales[this.locale_id] {
         const cb = b.safeCast(c_ulong);
         if (here.id != n.locale_id) {
@@ -595,7 +595,7 @@ module BigIntegers {
         }
       }
     }
-    proc mod(ref n: BigInt, ref d: BigInt) {
+    proc mod(const ref n: BigInt, const ref d: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != n.locale_id || here.id != d.locale_id) {
           var n_ = n;
@@ -606,7 +606,7 @@ module BigIntegers {
         }
       }
     }
-    proc mod(ref n: BigInt, d: uint):uint {
+    proc mod(const ref n: BigInt, d: uint):uint {
       var ret:c_ulong;
       on Locales[this.locale_id] {
         if (here.id != n.locale_id) {
@@ -618,7 +618,7 @@ module BigIntegers {
       }
       return ret.safeCast(uint);
     }
-    proc divexact(ref n: BigInt, ref d: BigInt) {
+    proc divexact(const ref n: BigInt, const ref d: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != n.locale_id || here.id != d.locale_id) {
           var n_ = n;
@@ -629,7 +629,7 @@ module BigIntegers {
         }
       }
     }
-    proc divexact(ref n: BigInt, d: uint) {
+    proc divexact(const ref n: BigInt, d: uint) {
       on Locales[this.locale_id] {
         if (here.id != n.locale_id) {
           var n_ = n;
@@ -639,7 +639,7 @@ module BigIntegers {
         }
       }
     }
-    proc divisible_p(ref d: BigInt):int {
+    proc divisible_p(const ref d: BigInt):int {
       var ret:c_int;
       on Locales[this.locale_id] {
         if (here.id != d.locale_id) {
@@ -665,7 +665,7 @@ module BigIntegers {
       }
       return ret.safeCast(int);
     }
-    proc congruent_p(ref c: BigInt, ref d: BigInt):int {
+    proc congruent_p(const ref c: BigInt, const ref d: BigInt):int {
       var ret:c_int;
       on Locales[this.locale_id] {
         if (here.id != c.locale_id || here.id != d.locale_id) {
@@ -685,7 +685,7 @@ module BigIntegers {
       }
       return ret.safeCast(int);
     }
-    proc congruent_2exp_p(ref c: BigInt, b: uint):int {
+    proc congruent_2exp_p(const ref c: BigInt, b: uint):int {
       var ret: c_int;
       on Locales[this.locale_id] {
         if (here.id != c.locale_id) {
@@ -699,7 +699,7 @@ module BigIntegers {
     }
 
     // Exponentiation Functions
-    proc powm(ref base: BigInt, ref exp: BigInt, ref mod: BigInt) {
+    proc powm(const ref base: BigInt, const ref exp: BigInt, const ref mod: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != base.locale_id || here.id != exp.locale_id || here.id != mod.locale_id) {
           var b_ = base;
@@ -711,7 +711,7 @@ module BigIntegers {
         }
       }
     }
-    proc powm(ref base: BigInt, exp:uint, ref mod: BigInt) {
+    proc powm(const ref base: BigInt, exp:uint, const ref mod: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != base.locale_id || here.id != mod.locale_id) {
           var b_ = base;
@@ -722,7 +722,7 @@ module BigIntegers {
         }
       }
     }
-    proc pow(ref base: BigInt, exp: uint) {
+    proc pow(const ref base: BigInt, exp: uint) {
       on Locales[this.locale_id] {
         if (here.id != base.locale_id) {
         var b_ = base;
@@ -739,7 +739,7 @@ module BigIntegers {
     }
 
     // Root Extraction Functions
-    proc root(ref a: BigInt, n: uint):int {
+    proc root(const ref a: BigInt, n: uint):int {
       var ret:c_int;
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
@@ -752,7 +752,7 @@ module BigIntegers {
       return ret.safeCast(int);
     }
     // this gets root, rem gets remainder.
-    proc rootrem(ref rem: BigInt, ref u: BigInt, n: uint) {
+    proc rootrem(ref rem: BigInt, const ref u: BigInt, n: uint) {
       on Locales[this.locale_id] {
         if (here.id != rem.locale_id || here.id != u.locale_id) {
           var r_ = rem;
@@ -764,7 +764,7 @@ module BigIntegers {
         }
       }
     }
-    proc sqrt(ref a: BigInt) {
+    proc sqrt(const ref a: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
           var a_ = a;
@@ -775,7 +775,7 @@ module BigIntegers {
       }
     }
     // this gets root, rem gets remainder of a-root*root.
-    proc sqrtrem(ref rem: BigInt, ref a: BigInt) {
+    proc sqrtrem(ref rem: BigInt, const ref a: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != rem.locale_id || here.id != a.locale_id) {
           var r_ = rem;
@@ -806,14 +806,14 @@ module BigIntegers {
 
     // returns 2 if definitely prime, 0 if not prime, 1 if likely prime
     // reasonable number of reps is 15-50
-    proc probab_prime_p(reps: int):int {
+    proc probab_prime_p(const reps: int):int {
       var ret: c_int;
       on Locales[this.locale_id] {
         ret=mpz_probab_prime_p(this.mpz, reps.safeCast(c_int));
       }
       return ret.safeCast(int);
     }
-    proc nextprime(ref a: BigInt) {
+    proc nextprime(const ref a: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
           var a_ = a;
@@ -823,7 +823,7 @@ module BigIntegers {
         }
       }
     }
-    proc gcd(ref a: BigInt, ref b: BigInt) {
+    proc gcd(const ref a: BigInt, const ref b: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id || here.id != b.locale_id) {
           var a_ = a;
@@ -834,7 +834,7 @@ module BigIntegers {
         }
       }
     }
-    proc gcd(ref a: BigInt, b: uint) {
+    proc gcd(const ref a: BigInt, b: uint) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
           var a_ = a;
@@ -846,7 +846,7 @@ module BigIntegers {
     }
     // sets this to gcd(a,b)
     // set s and t to to coefficients satisfying a*s + b*t == g
-    proc gcdext(ref s: BigInt, ref t: BigInt, ref a: BigInt, ref b: BigInt) {
+    proc gcdext(ref s: BigInt, ref t: BigInt, const ref a: BigInt, const ref b: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id || here.id != b.locale_id || here.id != s.locale_id || here.id != t.locale_id) {
           var a_ = a;
@@ -861,7 +861,7 @@ module BigIntegers {
         }
       }
     }
-    proc lcm(ref a: BigInt, ref b: BigInt) {
+    proc lcm(const ref a: BigInt, const ref b: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id || here.id != b.locale_id) {
           var a_ = a;
@@ -872,7 +872,7 @@ module BigIntegers {
         }
       }
     }
-    proc lcm(ref a: BigInt, b: uint) {
+    proc lcm(const ref a: BigInt, b: uint) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id) {
           var a_ = a;
@@ -882,7 +882,7 @@ module BigIntegers {
         }
       }
     }
-    proc invert(ref a: BigInt, ref b: BigInt):int {
+    proc invert(const ref a: BigInt, const ref b: BigInt):int {
       var ret:c_int;
       on Locales[this.locale_id] {
         if (here.id != a.locale_id || here.id != b.locale_id) {
@@ -898,7 +898,7 @@ module BigIntegers {
 
     // jacobi, legendre, kronecker functions are defined outside this record.
 
-    proc remove(ref a: BigInt, ref f: BigInt):uint {
+    proc remove(const ref a: BigInt, const ref f: BigInt):uint {
       var ret:c_ulong;
       on Locales[this.locale_id] {
         if (here.id != a.locale_id || here.id != f.locale_id) {
@@ -919,7 +919,7 @@ module BigIntegers {
     // TODO: functions including mpz_2fac_ui, mpz_primorial_ui, and 
     // mpz_mfac_uiui are not included in this module. 
 
-    proc bin(ref n: BigInt, k: uint) {
+    proc bin(const ref n: BigInt, k: uint) {
       on Locales[this.locale_id] {
         if (here.id != n.locale_id) {
           var n_ = n;
@@ -968,7 +968,7 @@ module BigIntegers {
     }
 
     // Comparison Functions
-    proc cmp(ref b: BigInt):int {
+    proc cmp(const ref b: BigInt):int {
       var ret:c_int;
       on Locales[this.locale_id] {
         if (here.id != b.locale_id) {
@@ -1001,7 +1001,7 @@ module BigIntegers {
       }
       return ret.safeCast(int);
     }
-    proc cmpabs(ref b: BigInt):int {
+    proc cmpabs(const ref b: BigInt):int {
       var ret:c_int;
       on Locales[this.locale_id] {
         if here.id != b.locale_id {
@@ -1036,7 +1036,7 @@ module BigIntegers {
     }
 
     // Logical and Bit Manipulation Functions
-    proc and(ref a: BigInt, ref b: BigInt) {
+    proc and(const ref a: BigInt, const ref b: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id || here.id != b.locale_id) {
           var a_ = a;
@@ -1047,7 +1047,7 @@ module BigIntegers {
         }
       }
     }
-    proc ior(ref a: BigInt, ref b: BigInt) {
+    proc ior(const ref a: BigInt, const ref b: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id || here.id != b.locale_id) {
           var a_ = a;
@@ -1058,7 +1058,7 @@ module BigIntegers {
         }
       }
     }
-    proc xor(ref a: BigInt, ref b: BigInt) {
+    proc xor(const ref a: BigInt, const ref b: BigInt) {
       on Locales[this.locale_id] {
         if (here.id != a.locale_id || here.id != b.locale_id) {
           var a_ = a;
@@ -1069,7 +1069,7 @@ module BigIntegers {
         }
       }
     }
-    proc com(ref a: BigInt) {
+    proc com(const ref a: BigInt) {
       on Locales[this.locale_id] {
         if here.id != a.locale_id {
           var a_ = a;
@@ -1086,7 +1086,7 @@ module BigIntegers {
       }
       return ret.safeCast(uint);
     }
-    proc hamdist(ref b: BigInt):uint {
+    proc hamdist(const ref b: BigInt):uint {
       var ret:c_ulong;
       on Locales[this.locale_id] {
         if here.id != b.locale_id {
@@ -1232,7 +1232,7 @@ module BigIntegers {
   }
 
   // Assignment function -- deep copies `rhs` into `lhs`
-  proc =(ref lhs: BigInt, rhs: BigInt) {
+  proc =(ref lhs: BigInt, const ref rhs: BigInt) {
     inline proc helpMe(ref lhs: BigInt, rhs: BigInt) {
       if _local || rhs.locale_id == lhs.locale_id {
         lhs.reinitBigInt(rhs.mpz, needToCopy=true);
@@ -1263,7 +1263,7 @@ module BigIntegers {
   pragma "donor fn"
   pragma "auto copy fn"
   pragma "no doc"
-  proc chpl__autoCopy(ref bir: BigInt) {
+  proc chpl__autoCopy(const ref bir: BigInt) {
     // this pragma may not be needed
     pragma "no auto destroy"
     var ret : BigInt;
@@ -1285,7 +1285,7 @@ module BigIntegers {
 
   pragma "init copy fn"
   pragma "no doc"
-  proc chpl__initCopy(ref bir: BigInt) {
+  proc chpl__initCopy(const ref bir: BigInt) {
     // This pragma may be unnecessary.
     // pragma "no auto destroy"
     var ret : BigInt;
@@ -1313,7 +1313,7 @@ module BigIntegers {
   }
 
   // Operator Overloads 
-  inline proc +=(ref a: BigInt, ref b: BigInt) {
+  inline proc +=(ref a: BigInt, const ref b: BigInt) {
     a.add(a, b);
   }
   inline proc +=(ref a: BigInt, b: int) {
@@ -1326,7 +1326,7 @@ module BigIntegers {
   inline proc +=(ref a: BigInt, b: uint) {
     a.add(a, b);
   }
-  inline proc -=(ref a: BigInt, ref b: BigInt) {
+  inline proc -=(ref a: BigInt, const ref b: BigInt) {
     a.sub(a, b);
   }
   inline proc -=(ref a: BigInt, b: int) {
@@ -1339,7 +1339,7 @@ module BigIntegers {
   inline proc -=(ref a: BigInt, b: uint) {
     a.sub(a, b);
   }
-  inline proc *=(ref a: BigInt, ref b: BigInt) {
+  inline proc *=(ref a: BigInt, const ref b: BigInt) {
     a.mul(a, b);
   }
   inline proc *=(ref a: BigInt, b: int) {
@@ -1348,7 +1348,7 @@ module BigIntegers {
   inline proc *=(ref a: BigInt, b: uint) {
     a.mul(a, b);
   }
-  inline proc /=(ref a: BigInt, ref b: BigInt) {
+  inline proc /=(ref a: BigInt, const ref b: BigInt) {
     a.div_q(Round.DOWN, a, b);
   }
   // TODO: test if this rounding right with negative numbers involved
@@ -1364,7 +1364,7 @@ module BigIntegers {
   inline proc **=(ref a: BigInt, b: uint) {
     a.pow(a, b);
   }
-  inline proc %=(ref a: BigInt, ref b: BigInt) {
+  inline proc %=(ref a: BigInt, const ref b: BigInt) {
    a.mod(a, b);
   }
   inline proc %=(ref a: BigInt, b: int) {
@@ -1374,13 +1374,13 @@ module BigIntegers {
     a.mod(a, b);
   }
   // Can only use bitwise operators with pairs of BigInts
-  inline proc &=(ref a: BigInt, ref b: BigInt) {
+  inline proc &=(ref a: BigInt, const ref b: BigInt) {
     a.and(a, b);
   }
-  inline proc |=(ref a: BigInt, ref b: BigInt) {
+  inline proc |=(ref a: BigInt, const ref b: BigInt) {
     a.ior(a, b);
   }
-  inline proc ^=(ref a: BigInt, ref b: BigInt) {
+  inline proc ^=(ref a: BigInt, const ref b: BigInt) {
     a.xor(a, b);
   }
   // &&= and ||= are not supported
@@ -1409,90 +1409,90 @@ module BigIntegers {
     a.set(b);
     b.set(c);
   }
-  inline proc **(ref a: BigInt, b: uint) {
+  inline proc **(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.pow(a, b);
     return c;
   }
-  inline proc ~(ref a: BigInt) {
+  inline proc ~(const ref a: BigInt) {
     var c = new BigInt();
     c.com(a); // 1s complement is the same as bitwise negation
     return c;
   }
-  inline proc *(ref a: BigInt, ref b: BigInt) {
+  inline proc *(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.mul(a, b);
     return c;
   }
-  inline proc *(ref a: BigInt, b: int) {
+  inline proc *(const ref a: BigInt, b: int) {
     var c = new BigInt();
     c.mul(a, b);
     return c;
   }
-  inline proc *(b: int, ref a: BigInt) {
+  inline proc *(b: int, const ref a: BigInt) {
     var c = new BigInt();
     c.mul(a, b);
     return c;
   }
-  inline proc *(ref a: BigInt, b: uint) {
+  inline proc *(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.mul(a, b);
     return c;
   }
-  inline proc *(b: uint, ref a: BigInt) {
+  inline proc *(b: uint, const ref a: BigInt) {
     var c = new BigInt();
     c.mul(a, b);
     return c;
   }
   // TODO: should / take lhs int args?
-  inline proc /(ref a: BigInt, ref b: BigInt) {
+  inline proc /(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.div_q(Round.DOWN, a, b);
     return c;
   }
-  inline proc /(ref a: BigInt, b: uint) {
+  inline proc /(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.div_q(Round.DOWN, a, b);
     return c;
   }
-  inline proc /(ref a: BigInt, b: int) {
+  inline proc /(const ref a: BigInt, b: int) {
     var c = new BigInt();
     c.div_q(Round.DOWN, a, abs(b):uint);
     if b < 0 then c.neg(c);
     return c;
   }
   // TODO: should % take lhs int args?
-  inline proc %(ref a: BigInt, ref b: BigInt) {
+  inline proc %(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.mod(a, b);
     return c;
   }
-  inline proc %(ref a: BigInt, b: uint) {
+  inline proc %(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.mod(a, b);
     return c;
   }
-  inline proc %(ref a: BigInt, b: int) {
+  inline proc %(const ref a: BigInt, b: int) {
     var c = new BigInt();
     c.mod(a, abs(b):uint); // in C (a mod b) and (a mod -b) are the same
     return c;
   }
-  inline proc +(ref a: BigInt) {
+  inline proc +(const ref a: BigInt) {
     return new BigInt(a);
   }
-  inline proc -(ref a: BigInt) {
+  inline proc -(const ref a: BigInt) {
     var c = new BigInt();
     c.neg(a);
     return c;
   }
   // NOTE: The >> operator is implemented in GMP via division
   // this means it rounds towards 0, which may not be consistent with C's >>
-  inline proc <<(ref a: BigInt, b: uint) {
+  inline proc <<(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.mul_2exp(a, b);
     return c;
   }
-  inline proc <<(ref a: BigInt, b: int) {
+  inline proc <<(const ref a: BigInt, b: int) {
     var c = new BigInt();
     if b < 0 {
       c.div_2exp(a, abs(b):uint);
@@ -1501,12 +1501,12 @@ module BigIntegers {
     }
     return c;
   }
-  inline proc >>(ref a: BigInt, b: uint) {
+  inline proc >>(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.div_2exp(a, b);
     return c;
   }
-  inline proc >>(ref a: BigInt, b: int) {
+  inline proc >>(const ref a: BigInt, b: int) {
     var c = new BigInt();
     if b < 0 {
       c.mul_2exp(a, abs(b):uint);
@@ -1515,88 +1515,88 @@ module BigIntegers {
     }
     return c;
   }
-  inline proc &(ref a: BigInt, ref b: BigInt) {
+  inline proc &(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.and(a, b);
     return c;
   }
-  inline proc &(ref a: BigInt, b: uint) {
+  inline proc &(const ref a: BigInt, b: uint) {
     var c = new BigInt(b);
     c.and(a, c);
     return c;
   }
-  inline proc ^(ref a: BigInt, ref b: BigInt) {
+  inline proc ^(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.ior(a, b);
     return c;
   }
-  inline proc ^(ref a: BigInt, b: uint) {
+  inline proc ^(const ref a: BigInt, b: uint) {
     var c = new BigInt(b);
     c.ior(a, c);
     return c;
   }
-  inline proc |(ref a: BigInt, ref b: BigInt) {
+  inline proc |(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.xor(a, b);
     return c;
   }
-  inline proc |(ref a: BigInt, b: uint) {
+  inline proc |(const ref a: BigInt, b: uint) {
     var c = new BigInt(b);
     c.xor(a, c);
     return c;
   }
-  inline proc +(ref a: BigInt, ref b: BigInt) {
+  inline proc +(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.add(a, b);
     return c;
   }
-  inline proc +(ref a: BigInt, b: uint) {
+  inline proc +(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.add(a, b);
     return c;
   }
-  inline proc +(b: uint, ref a: BigInt) {
+  inline proc +(b: uint, const ref a: BigInt) {
     var c = new BigInt();
     c.add(a, b);
     return c;
   }
-  inline proc +(ref a: BigInt, b: int) {
+  inline proc +(const ref a: BigInt, b: int) {
     if b < 0 {
       return a - abs(b):uint;
     } else {
       return a + b:uint;
     }
   }
-  inline proc +(b: int, ref a: BigInt) {
+  inline proc +(b: int, const ref a: BigInt) {
     if b < 0 {
       return a - abs(b):uint;
     } else {
       return a + b:uint;
     }
   }
-  inline proc -(ref a: BigInt, ref b: BigInt) {
+  inline proc -(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.sub(a, b);
     return c;
   }
-  inline proc -(ref a: BigInt, b: uint) {
+  inline proc -(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.sub(a, b);
     return c;
   }
-   inline proc -(b: uint, ref a: BigInt) {
+   inline proc -(b: uint, const ref a: BigInt) {
     var c = new BigInt();
     c.sub(b, a);
     return c;
   }
-  inline proc -(ref a: BigInt, b: int) {
+  inline proc -(const ref a: BigInt, b: int) {
         if b < 0 {
       return a + abs(b):uint;
     } else {
       return a - b:uint;
     }
   }
-  inline proc -(b: int, ref a: BigInt) {
+  inline proc -(b: int, const ref a: BigInt) {
     if b < 0 {
       var c = new BigInt(a);
       c.neg(c);
@@ -1605,129 +1605,129 @@ module BigIntegers {
       return b:uint - a;
     }
   }
-  inline proc >=(ref a: BigInt, ref b: BigInt) {
+  inline proc >=(const ref a: BigInt, const ref b: BigInt) {
     var f = a.cmp(b);
     return f >= 0;
   }
-  inline proc >=(ref a: BigInt, b: int) {
+  inline proc >=(const ref a: BigInt, b: int) {
     var f = a.cmp(b);
     return f >= 0;
   }
-  inline proc >=(b: int, ref a: BigInt) {
+  inline proc >=(b: int, const ref a: BigInt) {
     var f = a.cmp(b);
     return f <= 0;
   }
-  inline proc >=(ref a: BigInt, b: uint) {
+  inline proc >=(const ref a: BigInt, b: uint) {
     var f = a.cmp(b);
     return f >= 0;
   }
-  inline proc >=(b: uint, ref a: BigInt) {
+  inline proc >=(b: uint, const ref a: BigInt) {
     var f = a.cmp(b);
     return f <= 0;
   }
-  inline proc <=(ref a: BigInt, ref b: BigInt) {
+  inline proc <=(const ref a: BigInt, const ref b: BigInt) {
     var f = a.cmp(b);
     return f <= 0;
   }
-  inline proc <=(ref a: BigInt, b: int) {
+  inline proc <=(const ref a: BigInt, b: int) {
     var f = a.cmp(b);
     return f <= 0;
   }
-  inline proc <=(b: int, ref a: BigInt) {
+  inline proc <=(b: int, const ref a: BigInt) {
     var f = a.cmp(b);
     return f >= 0;
   }
-  inline proc <=(ref a: BigInt, b: uint) {
+  inline proc <=(const ref a: BigInt, b: uint) {
     var f = a.cmp(b);
     return f <= 0;
   }
-  inline proc <=(b: uint, ref a: BigInt) {
+  inline proc <=(b: uint, const ref a: BigInt) {
     var f = a.cmp(b);
     return f >= 0;
   }
-  inline proc >(ref a: BigInt, ref b: BigInt) {
+  inline proc >(const ref a: BigInt, const ref b: BigInt) {
     var f = a.cmp(b);
     return f > 0;
   }
-  inline proc >(ref a: BigInt, b: int) {
+  inline proc >(const ref a: BigInt, b: int) {
     var f = a.cmp(b);
     return f > 0;
   }
-  inline proc >(b: int, ref a: BigInt) {
+  inline proc >(b: int, const ref a: BigInt) {
     var f = a.cmp(b);
     return f < 0;
   }
-  inline proc >(ref a: BigInt, b: uint) {
+  inline proc >(const ref a: BigInt, b: uint) {
     var f = a.cmp(b);
     return f > 0;
   }
-  inline proc >(b: uint, ref a: BigInt) {
+  inline proc >(b: uint, const ref a: BigInt) {
     var f = a.cmp(b);
     return f < 0;
   }
-  inline proc <(ref a: BigInt, ref b: BigInt) {
+  inline proc <(const ref a: BigInt, const ref b: BigInt) {
     var f = a.cmp(b);
     return f < 0;
   }
-  inline proc <(ref a: BigInt, b: int) {
+  inline proc <(const ref a: BigInt, b: int) {
     var f = a.cmp(b);
     return f < 0;
   }
-  inline proc <(b: int, ref a: BigInt) {
+  inline proc <(b: int, const ref a: BigInt) {
     var f = a.cmp(b);
     return f > 0;
   }
-  inline proc <(ref a: BigInt, b: uint) {
+  inline proc <(const ref a: BigInt, b: uint) {
     var f = a.cmp(b);
     return f < 0;
   }
-  inline proc <(b: uint, ref a: BigInt) {
+  inline proc <(b: uint, const ref a: BigInt) {
     var f = a.cmp(b);
     return f > 0;
   }
-  inline proc ==(ref a: BigInt, ref b: BigInt) {
+  inline proc ==(const ref a: BigInt, const ref b: BigInt) {
     var f = a.cmp(b);
     return f == 0;
   }
-  inline proc ==(ref a: BigInt, b: int) {
+  inline proc ==(const ref a: BigInt, b: int) {
     var f = a.cmp(b);
     return f == 0;
   }
-  inline proc ==(b: int, ref a: BigInt) {
+  inline proc ==(b: int, const ref a: BigInt) {
     var f = a.cmp(b);
     return f == 0;
   }
-  inline proc ==(ref a: BigInt, b: uint) {
+  inline proc ==(const ref a: BigInt, b: uint) {
     var f = a.cmp(b);
     return f == 0;
   }
-  inline proc ==(b: uint, ref a: BigInt) {
+  inline proc ==(b: uint, const ref a: BigInt) {
     var f = a.cmp(b);
     return f == 0;
   }
-  inline proc !=(ref a: BigInt, ref b: BigInt) {
+  inline proc !=(const ref a: BigInt, const ref b: BigInt) {
     var f = a.cmp(b);
     return f != 0;
   }
-  inline proc !=(ref a: BigInt, b: int) {
+  inline proc !=(const ref a: BigInt, b: int) {
     var f = a.cmp(b);
     return f != 0;
   }
-  inline proc !=(b: int, ref a: BigInt) {
+  inline proc !=(b: int, const ref a: BigInt) {
     var f = a.cmp(b);
     return f != 0;
   }
-  inline proc !=(ref a: BigInt, b: uint) {
+  inline proc !=(const ref a: BigInt, b: uint) {
     var f = a.cmp(b);
     return f != 0;
   }
-  inline proc !=(b: uint, ref a: BigInt) {
+  inline proc !=(b: uint, const ref a: BigInt) {
     var f = a.cmp(b);
     return f != 0;
   }
 
   // The following functions return a value instead of setting a BigInt
-  proc div(param rounding: Round, ref n: BigInt, d: uint):uint {
+  proc div(param rounding: Round, const ref n: BigInt, d: uint):uint {
     var ret:c_ulong;
     const cd = d.safeCast(c_ulong);
     on Locales[n.locale_id] {
@@ -1739,7 +1739,7 @@ module BigIntegers {
     }
     return ret.safeCast(uint);
   }
-  proc jacobi(ref a: BigInt, ref b: BigInt):int {
+  proc jacobi(const ref a: BigInt, const ref b: BigInt):int {
     var ret:c_int;
     on Locales[a.locale_id] {
       if here.id != b.locale_id {
@@ -1751,7 +1751,7 @@ module BigIntegers {
     }
     return ret.safeCast(int);
   }
-  proc legendre(ref a: BigInt, ref p: BigInt):int {
+  proc legendre(const ref a: BigInt, const ref p: BigInt):int {
     var ret:c_int;
     on Locales[a.locale_id] {
       if here.id != p.locale_id {
@@ -1763,7 +1763,7 @@ module BigIntegers {
     }
     return ret.safeCast(int);
   }
-  proc kronecker(ref a: BigInt, ref b: BigInt):int {
+  proc kronecker(const ref a: BigInt, const ref b: BigInt):int {
     var ret:c_int;
     on Locales[a.locale_id] {
       if here.id != b.locale_id {
@@ -1775,28 +1775,28 @@ module BigIntegers {
     }
     return ret.safeCast(int);
   }
-  proc kronecker(ref a: BigInt, b: int):int {
+  proc kronecker(const ref a: BigInt, b: int):int {
     var ret:c_int;
     on Locales[a.locale_id] {
       ret=mpz_kronecker_si(a.mpz, b.safeCast(c_long));
     }
     return ret.safeCast(int);
   }
-  proc kronecker(ref a: BigInt, b: uint):int {
+  proc kronecker(const ref a: BigInt, b: uint):int {
     var ret:c_int;
     on Locales[a.locale_id] {
       ret=mpz_kronecker_ui(a.mpz, b.safeCast(c_ulong));
     }
     return ret.safeCast(int);
   }
-  proc kronecker(a: int, ref b: BigInt):int {
+  proc kronecker(a: int, const ref b: BigInt):int {
     var ret:c_int;
     on Locales[b.locale_id] {
       ret=mpz_si_kronecker(a.safeCast(c_long), b.mpz);
     }
     return ret.safeCast(int);
   }
-  proc kronecker(a: uint, ref b: BigInt):int {
+  proc kronecker(a: uint, const ref b: BigInt):int {
     var ret:c_int;
     on Locales[b.locale_id] {
       ret=mpz_ui_kronecker(a.safeCast(c_ulong), b.mpz);
