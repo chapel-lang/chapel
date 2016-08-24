@@ -3919,6 +3919,46 @@ inline proc channel.read(ref args ...?k,
   return !error;
 }
 
+pragma "no doc"
+proc _can_stringify_direct(t) param : bool {
+  if (t.type == string ||
+      t.type == c_string ||
+      isRangeType(t.type) ||
+      isPrimitiveType(t.type)) {
+    return true;
+  } else if (isTupleType(t.type)) {
+    for param i in 1..t.size {
+      if !_can_stringify_direct(t[i]) then
+        return false;
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
+// This routine is called in DefaultRectangular in order
+// to report an out of bounds access for a halt. A normal
+// call to halt might not be possible because of module
+// order issues.
+pragma "no doc"
+proc _stringify_tuple(tup:?t) where isTuple(t)
+{
+  var str = "(";
+
+  for param i in 1..tup.size {
+    if i != 1 then str += ", ";
+    str += tup[i]:string;
+  }
+
+ str += ")";
+
+  return str;
+}
+
+// Note that stringify is called with primitive/range/tuple arguments
+// in modules that are loaded early. To avoid module ordering issues,
+// it supports such types directly.
 /*
     Creates a string representing the result of writing the arguments.
 
@@ -3926,20 +3966,7 @@ inline proc channel.read(ref args ...?k,
     to a string and returns the result.
   */
 proc stringify(args ...?k):string {
-  proc isStringOrPrimitiveTypes(type t) param : bool {
-    for param i in 1..k {
-      if !(t[i] == string ||
-           t[i] == c_string ||
-           t[i] == c_string_copy) {
-        if !isPrimitiveType(t[i]) then
-          return false;
-      }
-    }
-    return true;
-  }
-  param all_primitive = isStringOrPrimitiveTypes(args.type);
-
-  if all_primitive {
+  if _can_stringify_direct(args) {
     // As an optimization, use string concatenation for
     // all primitive type stringify...
     // This helps to work around some resolution errors
@@ -3952,8 +3979,11 @@ proc stringify(args ...?k):string {
          args[i].type == c_string ||
          args[i].type == c_string_copy {
         str += args[i];
-      } else if isPrimitiveType(args[i].type) {
+      } else if isRangeType(args[i].type) ||
+                isPrimitiveType(args[i].type) {
         str += args[i]:string;
+      } else if isTupleType(args[i].type) {
+        str += _stringify_tuple(args[i]);
       }
     }
 
