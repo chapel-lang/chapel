@@ -114,6 +114,7 @@ Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
 
 Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   BaseAST(astTag),
+  qual(QUAL_BLANK),
   type(init_type),
   flags(),
   defPoint(NULL)
@@ -154,8 +155,30 @@ bool Symbol::inTree() {
 }
 
 
-Type* Symbol::typeInfo() {
-  return type;
+static Qualifier qualifierForArgIntent(IntentTag intent)
+{
+  switch (intent) {
+    case INTENT_IN:        return QUAL_VAL;
+    case INTENT_OUT:       return QUAL_REF;
+    case INTENT_INOUT:     return QUAL_REF;
+    case INTENT_CONST:     return QUAL_CONST;
+    case INTENT_CONST_IN:  return QUAL_CONST_VAL;
+    case INTENT_REF:       return QUAL_REF;
+    case INTENT_CONST_REF: return QUAL_CONST_REF;
+    case INTENT_PARAM:     return QUAL_BLANK; // TODO
+    case INTENT_TYPE:      return QUAL_BLANK; // TODO
+    case INTENT_BLANK:     return QUAL_BLANK;
+    // no default to get compiler warning if other intents are added
+  }
+  return QUAL_BLANK;
+}
+
+QualifiedType Symbol::qualType() {
+  if (ArgSymbol* arg = toArgSymbol(this)) {
+    return QualifiedType(type, qualifierForArgIntent(arg->intent));
+  }
+
+  return QualifiedType(type, qual);
 }
 
 
@@ -216,6 +239,7 @@ void Symbol::addFlag(Flag flag) {
 
 void Symbol::copyFlags(const Symbol* other) {
   flags |= other->flags;
+  qual = other->qual;
 }
 
 
@@ -2470,6 +2494,16 @@ bool FnSymbol::isIterator() const {
 bool FnSymbol::returnsRefOrConstRef() const {
   return (retTag == RET_REF || retTag == RET_CONST_REF);
 }
+
+QualifiedType FnSymbol::getReturnQualType() const {
+  Qualifier q = QUAL_BLANK;
+  if (retTag == RET_REF)
+    q = QUAL_REF;
+  else if(retTag == RET_CONST_REF)
+    q = QUAL_CONST_REF;
+  return QualifiedType(retType, q);
+}
+
 
 std::string FnSymbol::docsDirective() {
   if (fDocsTextOnly) {

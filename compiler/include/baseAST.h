@@ -93,6 +93,8 @@ class ForLoop;
 class CForLoop;
 class ParamForLoop;
 
+class QualifiedType;
+
 #define proto_classes(type) class type
 foreach_ast(proto_classes);
 #undef proto_classes
@@ -216,7 +218,7 @@ class BaseAST {
 public:
   virtual GenRet    codegen()                                          = 0;
   virtual bool      inTree()                                           = 0;
-  virtual Type*     typeInfo()                                         = 0;
+  virtual QualifiedType qualType()                                     = 0;
   virtual void      verify()                                           = 0;
   virtual void      accept(AstVisitor* visitor)                        = 0;
 
@@ -224,6 +226,7 @@ public:
   int               linenum()                                    const;
   const char*       stringLoc()                                  const;
 
+  Type*             typeInfo(); // note: calls qualType
   FnSymbol*         getFunction();
   ModuleSymbol*     getModule();
   Type*             getValType();
