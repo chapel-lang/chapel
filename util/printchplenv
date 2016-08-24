@@ -9,6 +9,13 @@ from chplenv import *
 
 def print_mode(mode='list', anonymize=False):
     print_var.first_time = True
+
+    if mode == 'overrides':
+        for var in overrides.allvars():
+            stdout.write(var);
+            stdout.write('\n');
+        return
+
     # `m` is a 'simplified' version of `mode` that merges some cases that can
     # be treated the same by print_mode, but need to be dealt with separately
     # in print_var
@@ -21,7 +28,8 @@ def print_mode(mode='list', anonymize=False):
         # are printed
         m = 'make'
 
-    chpl_home = os.environ.get('CHPL_HOME', '')
+
+    chpl_home = overrides.get('CHPL_HOME', '')
     chpl_module_home = os.environ.get('CHPL_MODULE_HOME', '')
 
     if (m == 'list' or mode == 'debug') and not anonymize:
@@ -48,7 +56,7 @@ def print_mode(mode='list', anonymize=False):
         print_var('CHPL_TARGET_PLATFORM', target_platform, mode)
         print_var('CHPL_TARGET_COMPILER', target_compiler, mode)
 
-    get_module_lcd = ( utils.using_chapel_module() and
+    get_module_lcd = ( chpl_home_utils.using_chapel_module() and
                      (mode == 'runtime' or mode == 'make') )
     if m != 'compiler' and m != 'launcher':
         target_arch = chpl_arch.get('target', mode == 'make', get_module_lcd)
@@ -186,9 +194,10 @@ def print_mode(mode='list', anonymize=False):
         stdout.write('\n')
 
 
+
 def print_var(env_var, value, mode, short_name='', filters=None):
     if mode == 'list' or mode == 'debug':
-        user_set = os.environ.get(env_var.strip(), '')
+        user_set = overrides.get(env_var.strip(), '')
         if user_set:
           user_set = ' *'
         stdout.write("{1}: {2}{0}\n".format(user_set, env_var, value))
@@ -229,7 +238,12 @@ def _main():
                            "used in the build process")
     parser.add_option('--simple', action='store_const', dest='mode', const='simple',
                       help="print out a listing of the environment that is "
-                           "meant to be used in the compiler")
+                           "meant to be used in the compiler -- "
+                           "output is compatible with chplconfig format.")
+    parser.add_option('--overrides', action='store_const', dest='mode', const='overrides',
+                      help="print out a listing of variables that have been "
+                           "user supplied via environment or chplconfig -- "
+                           "output is compatible with chplconfig format.")
     parser.add_option('--anonymize', action='store_true', dest='anonymize', default=False,
                       help="avoid printing machine specific details such as "
                            "host name and file paths")

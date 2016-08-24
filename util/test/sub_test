@@ -1504,7 +1504,10 @@ for testname in testsrc:
             # sys.stdout.write('default goodfile=%s\n'%(goodfile))
 
             if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
-                sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, goodfile))
+                if perftest:
+                    sys.stdout.write('[Error compilation failed for %s/%s]\n'%(localdir, test_filename))
+                else:
+                    sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, goodfile))
                 sys.stdout.write('[Compiler output was as follows:]\n')
                 sys.stdout.write(origoutput)
                 cleanup(execname)

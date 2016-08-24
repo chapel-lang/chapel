@@ -46,6 +46,7 @@ static void build_record_inequality_function(AggregateType* ct);
 static void build_enum_cast_function(EnumType* et);
 static void build_enum_first_function(EnumType* et);
 static void build_enum_enumerate_function(EnumType* et);
+static void build_enum_size_function(EnumType* et);
 
 //static void buildDefaultReadFunction(AggregateType* type);
 //static void buildDefaultReadFunction(EnumType* type);
@@ -110,6 +111,7 @@ void buildDefaultFunctions() {
         build_enum_cast_function(et);
         build_enum_assignment_function(et);
         build_enum_first_function(et);
+        build_enum_size_function(et);
         build_enum_enumerate_function(et);
       }
       else
@@ -640,6 +642,42 @@ static void build_record_inequality_function(AggregateType* ct) {
   reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
+
+
+static void build_enum_size_function(EnumType* et) {
+  if (function_exists("size", 1, et))
+    return;
+  // Build a function that returns the length of the enum specified
+  FnSymbol* fn = new FnSymbol("size");
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_NO_PARENS);
+  fn->addFlag(FLAG_METHOD);
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtAny);
+  fn->_this->addFlag(FLAG_ARG_THIS);
+  fn->_this->addFlag(FLAG_MARKED_GENERIC);
+  fn->_this->addFlag(FLAG_TYPE_VARIABLE);
+
+  fn->insertFormalAtTail(fn->_this);
+
+  fn->retTag = RET_VALUE;
+  //use this function only where the argument is an enum
+  fn->where = new BlockStmt(new CallExpr("==", fn->_this, et->symbol));
+
+  VarSymbol*  varS = new_IntSymbol(et->constants.length);
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, varS));
+
+  DefExpr* fnDef = new DefExpr(fn);
+  // needs to go in the base module because when called from _defaultOf(et),
+  // they are automatically inserted
+  baseModule->block->insertAtTail(fnDef);
+  reset_ast_loc(fnDef, et->symbol);
+
+  normalize(fn);
+}
+
+
 
 static void build_enum_first_function(EnumType* et) {
   if (function_exists("chpl_enum_first", 1, et))

@@ -1,25 +1,27 @@
 #!/usr/bin/env python
+from distutils.spawn import find_executable
 import os
 import sys
 
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_comm, chpl_comm_substrate, chpl_compiler, chpl_platform, utils
+import chpl_comm, chpl_comm_substrate, chpl_compiler, chpl_platform, overrides
 from utils import memoize
+
 
 
 @memoize
 def get():
-    launcher_val = os.environ.get('CHPL_LAUNCHER')
+    launcher_val = overrides.get('CHPL_LAUNCHER')
     if not launcher_val:
         comm_val = chpl_comm.get()
         platform_val = chpl_platform.get('target')
         compiler_val = chpl_compiler.get('target')
 
         if platform_val.startswith('cray-x'):
-            has_aprun = utils.find_executable('aprun')
-            has_slurm = utils.find_executable('srun')
+            has_aprun = find_executable('aprun')
+            has_slurm = find_executable('srun')
             if has_aprun and has_slurm:
                 launcher_val = 'none'
             elif has_aprun:

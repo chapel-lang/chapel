@@ -4,8 +4,9 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_compiler, chpl_llvm, chpl_locale_model, third_party_utils, utils
-from utils import memoize, compiler_is_prgenv
+import chpl_compiler, chpl_llvm, chpl_locale_model, third_party_utils
+from compiler_utils import compiler_is_prgenv
+from utils import memoize
 
 
 @memoize
