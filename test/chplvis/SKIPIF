@@ -1,3 +1,0 @@
-# Tests in this directory will fail with LLVM
-CHPL_LLVM == llvm
-
