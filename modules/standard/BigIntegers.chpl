@@ -1313,91 +1313,91 @@ module BigIntegers {
   }
 
   // Operator Overloads 
-  inline proc +=(ref a: BigInt, const ref b: BigInt) {
+  proc +=(ref a: BigInt, const ref b: BigInt) {
     a.add(a, b);
   }
-  inline proc +=(ref a: BigInt, b: int) {
+  proc +=(ref a: BigInt, b: int) {
     if (b > 0) {
       a.add(a, b:uint);
     } else {
       a.sub(a, abs(b):uint);
     }
   }
-  inline proc +=(ref a: BigInt, b: uint) {
+  proc +=(ref a: BigInt, b: uint) {
     a.add(a, b);
   }
-  inline proc -=(ref a: BigInt, const ref b: BigInt) {
+  proc -=(ref a: BigInt, const ref b: BigInt) {
     a.sub(a, b);
   }
-  inline proc -=(ref a: BigInt, b: int) {
+  proc -=(ref a: BigInt, b: int) {
     if b > 0 {
       a.sub(a, abs(b):uint);
     } else {
       a.add(a, abs(b):uint);
     }
   }
-  inline proc -=(ref a: BigInt, b: uint) {
+  proc -=(ref a: BigInt, b: uint) {
     a.sub(a, b);
   }
-  inline proc *=(ref a: BigInt, const ref b: BigInt) {
+  proc *=(ref a: BigInt, const ref b: BigInt) {
     a.mul(a, b);
   }
-  inline proc *=(ref a: BigInt, b: int) {
+  proc *=(ref a: BigInt, b: int) {
     a.mul(a, b);
   }
-  inline proc *=(ref a: BigInt, b: uint) {
+  proc *=(ref a: BigInt, b: uint) {
     a.mul(a, b);
   }
-  inline proc /=(ref a: BigInt, const ref b: BigInt) {
+  proc /=(ref a: BigInt, const ref b: BigInt) {
     a.div_q(Round.DOWN, a, b);
   }
   // TODO: test if this rounding right with negative numbers involved
-  inline proc /=(ref a: BigInt, b: int) {
+  proc /=(ref a: BigInt, b: int) {
     a.div_q(Round.ZERO, a, abs(b):uint);
     if (b < 0) {
     a.neg(a);
     }
   }
-  inline proc /=(ref a: BigInt, b: uint) {
+  proc /=(ref a: BigInt, b: uint) {
     a.div_q(Round.DOWN, a, b);
   }
-  inline proc **=(ref a: BigInt, b: uint) {
+  proc **=(ref a: BigInt, b: uint) {
     a.pow(a, b);
   }
-  inline proc %=(ref a: BigInt, const ref b: BigInt) {
+  proc %=(ref a: BigInt, const ref b: BigInt) {
    a.mod(a, b);
   }
-  inline proc %=(ref a: BigInt, b: int) {
+  proc %=(ref a: BigInt, b: int) {
     a.mod(a, abs(b):uint); // in C (a mod b) and (a mod -b) are the same
   }
-  inline proc %=(ref a: BigInt, b: uint) {
+  proc %=(ref a: BigInt, b: uint) {
     a.mod(a, b);
   }
-  // Can only use bitwise operators with pairs of BigInts
-  inline proc &=(ref a: BigInt, const ref b: BigInt) {
+  // Only bitwise operators with pairs of BigInts are supported
+  proc &=(ref a: BigInt, const ref b: BigInt) {
     a.and(a, b);
   }
-  inline proc |=(ref a: BigInt, const ref b: BigInt) {
+  proc |=(ref a: BigInt, const ref b: BigInt) {
     a.ior(a, b);
   }
-  inline proc ^=(ref a: BigInt, const ref b: BigInt) {
+  proc ^=(ref a: BigInt, const ref b: BigInt) {
     a.xor(a, b);
   }
   // &&= and ||= are not supported
-  inline proc <<=(ref a: BigInt, b: uint) {
+  proc <<=(ref a: BigInt, b: uint) {
     a.mul_2exp(a, b);
   }
-  inline proc <<=(ref a: BigInt, b: int) {
+  proc <<=(ref a: BigInt, b: int) {
     if b < 0 {
       a.div_2exp(a, abs(b):uint);
     } else {
       a.mul_2exp(a, b:uint);
     }
   }
-  inline proc >>=(ref a: BigInt, b: uint) {
+  proc >>=(ref a: BigInt, b: uint) {
     a.div_2exp(a, b);
   }
-  inline proc >>=(ref a: BigInt, b: int) {
+  proc >>=(ref a: BigInt, b: int) {
     if (b < 0) {
       a.mul_2exp(a, abs(b):uint);
     } else {
@@ -1409,90 +1409,90 @@ module BigIntegers {
     a.set(b);
     b.set(c);
   }
-  inline proc **(const ref a: BigInt, b: uint) {
+  proc **(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.pow(a, b);
     return c;
   }
-  inline proc ~(const ref a: BigInt) {
+  proc ~(const ref a: BigInt) {
     var c = new BigInt();
     c.com(a); // 1s complement is the same as bitwise negation
     return c;
   }
-  inline proc *(const ref a: BigInt, const ref b: BigInt) {
+  proc *(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.mul(a, b);
     return c;
   }
-  inline proc *(const ref a: BigInt, b: int) {
+  proc *(const ref a: BigInt, b: int) {
     var c = new BigInt();
     c.mul(a, b);
     return c;
   }
-  inline proc *(b: int, const ref a: BigInt) {
+  proc *(b: int, const ref a: BigInt) {
     var c = new BigInt();
     c.mul(a, b);
     return c;
   }
-  inline proc *(const ref a: BigInt, b: uint) {
+  proc *(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.mul(a, b);
     return c;
   }
-  inline proc *(b: uint, const ref a: BigInt) {
+  proc *(b: uint, const ref a: BigInt) {
     var c = new BigInt();
     c.mul(a, b);
     return c;
   }
   // TODO: should / take lhs int args?
-  inline proc /(const ref a: BigInt, const ref b: BigInt) {
+  proc /(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.div_q(Round.DOWN, a, b);
     return c;
   }
-  inline proc /(const ref a: BigInt, b: uint) {
+  proc /(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.div_q(Round.DOWN, a, b);
     return c;
   }
-  inline proc /(const ref a: BigInt, b: int) {
+  proc /(const ref a: BigInt, b: int) {
     var c = new BigInt();
     c.div_q(Round.DOWN, a, abs(b):uint);
     if b < 0 then c.neg(c);
     return c;
   }
   // TODO: should % take lhs int args?
-  inline proc %(const ref a: BigInt, const ref b: BigInt) {
+  proc %(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.mod(a, b);
     return c;
   }
-  inline proc %(const ref a: BigInt, b: uint) {
+  proc %(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.mod(a, b);
     return c;
   }
-  inline proc %(const ref a: BigInt, b: int) {
+  proc %(const ref a: BigInt, b: int) {
     var c = new BigInt();
     c.mod(a, abs(b):uint); // in C (a mod b) and (a mod -b) are the same
     return c;
   }
-  inline proc +(const ref a: BigInt) {
+  proc +(const ref a: BigInt) {
     return new BigInt(a);
   }
-  inline proc -(const ref a: BigInt) {
+  proc -(const ref a: BigInt) {
     var c = new BigInt();
     c.neg(a);
     return c;
   }
   // NOTE: The >> operator is implemented in GMP via division
   // this means it rounds towards 0, which may not be consistent with C's >>
-  inline proc <<(const ref a: BigInt, b: uint) {
+  proc <<(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.mul_2exp(a, b);
     return c;
   }
-  inline proc <<(const ref a: BigInt, b: int) {
+  proc <<(const ref a: BigInt, b: int) {
     var c = new BigInt();
     if b < 0 {
       c.div_2exp(a, abs(b):uint);
@@ -1501,12 +1501,12 @@ module BigIntegers {
     }
     return c;
   }
-  inline proc >>(const ref a: BigInt, b: uint) {
+  proc >>(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.div_2exp(a, b);
     return c;
   }
-  inline proc >>(const ref a: BigInt, b: int) {
+  proc >>(const ref a: BigInt, b: int) {
     var c = new BigInt();
     if b < 0 {
       c.mul_2exp(a, abs(b):uint);
@@ -1515,88 +1515,88 @@ module BigIntegers {
     }
     return c;
   }
-  inline proc &(const ref a: BigInt, const ref b: BigInt) {
+  proc &(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.and(a, b);
     return c;
   }
-  inline proc &(const ref a: BigInt, b: uint) {
+  proc &(const ref a: BigInt, b: uint) {
     var c = new BigInt(b);
     c.and(a, c);
     return c;
   }
-  inline proc ^(const ref a: BigInt, const ref b: BigInt) {
+  proc ^(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.ior(a, b);
     return c;
   }
-  inline proc ^(const ref a: BigInt, b: uint) {
+  proc ^(const ref a: BigInt, b: uint) {
     var c = new BigInt(b);
     c.ior(a, c);
     return c;
   }
-  inline proc |(const ref a: BigInt, const ref b: BigInt) {
+  proc |(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.xor(a, b);
     return c;
   }
-  inline proc |(const ref a: BigInt, b: uint) {
+  proc |(const ref a: BigInt, b: uint) {
     var c = new BigInt(b);
     c.xor(a, c);
     return c;
   }
-  inline proc +(const ref a: BigInt, const ref b: BigInt) {
+  proc +(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.add(a, b);
     return c;
   }
-  inline proc +(const ref a: BigInt, b: uint) {
+  proc +(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.add(a, b);
     return c;
   }
-  inline proc +(b: uint, const ref a: BigInt) {
+  proc +(b: uint, const ref a: BigInt) {
     var c = new BigInt();
     c.add(a, b);
     return c;
   }
-  inline proc +(const ref a: BigInt, b: int) {
+  proc +(const ref a: BigInt, b: int) {
     if b < 0 {
       return a - abs(b):uint;
     } else {
       return a + b:uint;
     }
   }
-  inline proc +(b: int, const ref a: BigInt) {
+  proc +(b: int, const ref a: BigInt) {
     if b < 0 {
       return a - abs(b):uint;
     } else {
       return a + b:uint;
     }
   }
-  inline proc -(const ref a: BigInt, const ref b: BigInt) {
+  proc -(const ref a: BigInt, const ref b: BigInt) {
     var c = new BigInt();
     c.sub(a, b);
     return c;
   }
-  inline proc -(const ref a: BigInt, b: uint) {
+  proc -(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.sub(a, b);
     return c;
   }
-   inline proc -(b: uint, const ref a: BigInt) {
+   proc -(b: uint, const ref a: BigInt) {
     var c = new BigInt();
     c.sub(b, a);
     return c;
   }
-  inline proc -(const ref a: BigInt, b: int) {
+  proc -(const ref a: BigInt, b: int) {
         if b < 0 {
       return a + abs(b):uint;
     } else {
       return a - b:uint;
     }
   }
-  inline proc -(b: int, const ref a: BigInt) {
+  proc -(b: int, const ref a: BigInt) {
     if b < 0 {
       var c = new BigInt(a);
       c.neg(c);
@@ -1605,123 +1605,123 @@ module BigIntegers {
       return b:uint - a;
     }
   }
-  inline proc >=(const ref a: BigInt, const ref b: BigInt) {
+  proc >=(const ref a: BigInt, const ref b: BigInt) {
     var f = a.cmp(b);
     return f >= 0;
   }
-  inline proc >=(const ref a: BigInt, b: int) {
+  proc >=(const ref a: BigInt, b: int) {
     var f = a.cmp(b);
     return f >= 0;
   }
-  inline proc >=(b: int, const ref a: BigInt) {
+  proc >=(b: int, const ref a: BigInt) {
     var f = a.cmp(b);
     return f <= 0;
   }
-  inline proc >=(const ref a: BigInt, b: uint) {
+  proc >=(const ref a: BigInt, b: uint) {
     var f = a.cmp(b);
     return f >= 0;
   }
-  inline proc >=(b: uint, const ref a: BigInt) {
+  proc >=(b: uint, const ref a: BigInt) {
     var f = a.cmp(b);
     return f <= 0;
   }
-  inline proc <=(const ref a: BigInt, const ref b: BigInt) {
+  proc <=(const ref a: BigInt, const ref b: BigInt) {
     var f = a.cmp(b);
     return f <= 0;
   }
-  inline proc <=(const ref a: BigInt, b: int) {
+  proc <=(const ref a: BigInt, b: int) {
     var f = a.cmp(b);
     return f <= 0;
   }
-  inline proc <=(b: int, const ref a: BigInt) {
+  proc <=(b: int, const ref a: BigInt) {
     var f = a.cmp(b);
     return f >= 0;
   }
-  inline proc <=(const ref a: BigInt, b: uint) {
+  proc <=(const ref a: BigInt, b: uint) {
     var f = a.cmp(b);
     return f <= 0;
   }
-  inline proc <=(b: uint, const ref a: BigInt) {
+  proc <=(b: uint, const ref a: BigInt) {
     var f = a.cmp(b);
     return f >= 0;
   }
-  inline proc >(const ref a: BigInt, const ref b: BigInt) {
+  proc >(const ref a: BigInt, const ref b: BigInt) {
     var f = a.cmp(b);
     return f > 0;
   }
-  inline proc >(const ref a: BigInt, b: int) {
+  proc >(const ref a: BigInt, b: int) {
     var f = a.cmp(b);
     return f > 0;
   }
-  inline proc >(b: int, const ref a: BigInt) {
+  proc >(b: int, const ref a: BigInt) {
     var f = a.cmp(b);
     return f < 0;
   }
-  inline proc >(const ref a: BigInt, b: uint) {
+  proc >(const ref a: BigInt, b: uint) {
     var f = a.cmp(b);
     return f > 0;
   }
-  inline proc >(b: uint, const ref a: BigInt) {
+  proc >(b: uint, const ref a: BigInt) {
     var f = a.cmp(b);
     return f < 0;
   }
-  inline proc <(const ref a: BigInt, const ref b: BigInt) {
+  proc <(const ref a: BigInt, const ref b: BigInt) {
     var f = a.cmp(b);
     return f < 0;
   }
-  inline proc <(const ref a: BigInt, b: int) {
+  proc <(const ref a: BigInt, b: int) {
     var f = a.cmp(b);
     return f < 0;
   }
-  inline proc <(b: int, const ref a: BigInt) {
+  proc <(b: int, const ref a: BigInt) {
     var f = a.cmp(b);
     return f > 0;
   }
-  inline proc <(const ref a: BigInt, b: uint) {
+  proc <(const ref a: BigInt, b: uint) {
     var f = a.cmp(b);
     return f < 0;
   }
-  inline proc <(b: uint, const ref a: BigInt) {
+  proc <(b: uint, const ref a: BigInt) {
     var f = a.cmp(b);
     return f > 0;
   }
-  inline proc ==(const ref a: BigInt, const ref b: BigInt) {
+  proc ==(const ref a: BigInt, const ref b: BigInt) {
     var f = a.cmp(b);
     return f == 0;
   }
-  inline proc ==(const ref a: BigInt, b: int) {
+  proc ==(const ref a: BigInt, b: int) {
     var f = a.cmp(b);
     return f == 0;
   }
-  inline proc ==(b: int, const ref a: BigInt) {
+  proc ==(b: int, const ref a: BigInt) {
     var f = a.cmp(b);
     return f == 0;
   }
-  inline proc ==(const ref a: BigInt, b: uint) {
+  proc ==(const ref a: BigInt, b: uint) {
     var f = a.cmp(b);
     return f == 0;
   }
-  inline proc ==(b: uint, const ref a: BigInt) {
+  proc ==(b: uint, const ref a: BigInt) {
     var f = a.cmp(b);
     return f == 0;
   }
-  inline proc !=(const ref a: BigInt, const ref b: BigInt) {
+  proc !=(const ref a: BigInt, const ref b: BigInt) {
     var f = a.cmp(b);
     return f != 0;
   }
-  inline proc !=(const ref a: BigInt, b: int) {
+  proc !=(const ref a: BigInt, b: int) {
     var f = a.cmp(b);
     return f != 0;
   }
-  inline proc !=(b: int, const ref a: BigInt) {
+  proc !=(b: int, const ref a: BigInt) {
     var f = a.cmp(b);
     return f != 0;
   }
-  inline proc !=(const ref a: BigInt, b: uint) {
+  proc !=(const ref a: BigInt, b: uint) {
     var f = a.cmp(b);
     return f != 0;
   }
-  inline proc !=(b: uint, const ref a: BigInt) {
+  proc !=(b: uint, const ref a: BigInt) {
     var f = a.cmp(b);
     return f != 0;
   }
