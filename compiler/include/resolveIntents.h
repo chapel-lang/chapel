@@ -22,6 +22,7 @@
 
 #include "symbol.h"
 #include "type.h"
+#include "expr.h"
 
 IntentTag blankIntentForType(Type* t);
 IntentTag concreteIntent(IntentTag existingIntent, Type* t);

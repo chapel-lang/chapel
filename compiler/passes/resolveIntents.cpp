@@ -117,6 +117,10 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
 
   if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK)
     return blankIntentForThisArg(arg->type);
+  else if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_EXTERN) &&
+           arg->intent == INTENT_BLANK) {
+    return INTENT_CONST_IN;
+  }
   else
     return concreteIntent(arg->intent, arg->type);
 

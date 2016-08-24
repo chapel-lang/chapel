@@ -4232,6 +4232,9 @@ GenRet CallExpr::codegen() {
             arg = codegenDeref(arg);
         }
       }
+      if (arg.chplType->symbol->isRef() && !formal->isRef()) {
+        arg = codegenDeref(arg);
+      }
 
       args[i] = arg;
       i       = i + 1;
@@ -4497,7 +4500,11 @@ GenRet CallExpr::codegenPrimitive() {
 #endif
       }
     } else {
-      ret = codegenValue(get(1));
+      GenRet retExpr = get(1);
+      if (!typeInfo()->symbol->isRef() && get(1)->isRef()) {
+        retExpr = codegenDeref(retExpr);
+      }
+      ret = codegenValue(retExpr);
 
       if (gGenInfo->cfile) {
         ret.c = "return " + ret.c;
@@ -5047,7 +5054,7 @@ GenRet CallExpr::codegenPrimitive() {
     GenRet ptr = codegenFieldPtr(get(1), get(2));
     GenRet val = get(3);
 
-    if (get(3)->isRef()) {
+    if (get(3)->isRef() && !get(2)->isRef()) {
       val = codegenDeref(val);
     }
 
