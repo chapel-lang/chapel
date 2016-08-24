@@ -413,6 +413,13 @@ class CSRDom: BaseSparseDomImpl {
     rowStart = 1;
   }
 
+  iter dimIter(param d, ind) {
+    if (d != 2) {
+      compilerError("dimIter(1, ...) not supported on CSR domains");
+    }
+    for i in rowStart[ind]..rowStop[ind] do
+      yield colIdx[i];
+  }
 }
 
 
@@ -486,7 +493,6 @@ class CSRArr: BaseSparseArrImpl {
     compilerError("Sparse iterators can't yet be zippered with others (CSR layout)");
     yield 0;    // Dummy.
   }
-
 }
 
 
