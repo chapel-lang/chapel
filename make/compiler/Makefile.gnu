@@ -163,6 +163,13 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-pointer-sign
 endif
 
 #
+# Don't warn/error for tautological compares (ex. x == x)
+#
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -lt 6; echo "$$?"),1)
+SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
+endif
+
+#
 # 2016/03/28: Help to protect the Chapel compiler from a partially
 # characterized GCC optimizer regression when the compiler is being
 # compiled with gcc 5.X.  Issue will be pursued after the release

@@ -1489,7 +1489,7 @@ for testname in testsrc:
                 sys.stdout.write(p.communicate()[0])
                 sys.stdout.flush()
 
-            
+
             # find the compiler .good file to compare against. The compiler
             # .good file can be of the form testname.<configuration>.good or
             # explicitname.<configuration>.good. It's not currently setup to
@@ -1504,7 +1504,10 @@ for testname in testsrc:
             # sys.stdout.write('default goodfile=%s\n'%(goodfile))
 
             if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
-                sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, goodfile))
+                if perftest:
+                    sys.stdout.write('[Error compilation failed for %s]\n'%(test_name))
+                else:
+                    sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, goodfile))
                 sys.stdout.write('[Compiler output was as follows:]\n')
                 sys.stdout.write(origoutput)
                 cleanup(execname)

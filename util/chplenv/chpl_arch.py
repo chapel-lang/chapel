@@ -8,8 +8,9 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_comm, chpl_compiler, chpl_platform, utils
-from utils import CompVersion, memoize
+import chpl_comm, chpl_compiler, chpl_platform, overrides
+from compiler_utils import CompVersion, compiler_is_prgenv, get_compiler_version
+from utils import memoize, run_command
 
 
 class argument_map(object):
@@ -224,12 +225,8 @@ def get_cpuinfo(platform='linux'):
     vendor_string = ''
     feature_string = ''
     if platform == "darwin":
-        vendor_string = utils.run_command(['sysctl',
-                                           '-n',
-                                           'machdep.cpu.vendor'])
-        feature_string = utils.run_command(['sysctl',
-                                            '-n',
-                                            'machdep.cpu.features'])
+        vendor_string = run_command(['sysctl', '-n', 'machdep.cpu.vendor'])
+        feature_string = run_command(['sysctl', '-n', 'machdep.cpu.features'])
         # osx reports AVX1.0 while linux reports it as AVX
         feature_string = feature_string.replace("AVX1.0", "AVX")
     elif os.path.isfile('/proc/cpuinfo'):
@@ -270,9 +267,9 @@ def get_module_lcd_arch(platform_val, arch):
 def get(location, map_to_compiler=False, get_lcd=False):
 
     if not location or location == "host":
-        arch = os.environ.get('CHPL_HOST_ARCH', '')
+        arch = overrides.get('CHPL_HOST_ARCH', '')
     elif location == 'target':
-        arch = os.environ.get('CHPL_TARGET_ARCH', '')
+        arch = overrides.get('CHPL_TARGET_ARCH', '')
     else:
         raise InvalidLocationError(location)
 
@@ -284,7 +281,7 @@ def get(location, map_to_compiler=False, get_lcd=False):
     compiler_val = chpl_compiler.get(location)
     platform_val = chpl_platform.get(location)
 
-    isprgenv = utils.compiler_is_prgenv(compiler_val)
+    isprgenv = compiler_is_prgenv(compiler_val)
 
     if isprgenv:
         if arch and (arch != 'none' or arch != 'unknown'):
@@ -349,7 +346,7 @@ def get(location, map_to_compiler=False, get_lcd=False):
 
 
     if map_to_compiler:
-        version = utils.get_compiler_version(compiler_val)
+        version = get_compiler_version(compiler_val)
         arch = argument_map.find(arch, compiler_val, version)
 
     return arch or 'unknown'

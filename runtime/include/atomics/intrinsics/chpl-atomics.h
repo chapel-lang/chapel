@@ -74,7 +74,7 @@ static inline void atomic_thread_fence(memory_order order)
 {
   full_memory_barrier();
 }
-static inline void atomic_signal_thread_fence(memory_order order)
+static inline void atomic_signal_fence(memory_order order)
 {
   full_memory_barrier();
 }
