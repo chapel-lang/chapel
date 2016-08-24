@@ -1,16 +1,16 @@
 
-proc _tuple.merge(mergeIdx, mergeVal) where isHomogeneousTuple(this) {
+proc _tuple.withIdx(idx, mergeVal) where isHomogeneousTuple(this) {
 
   // FIXME this if doesn't seem to woerk as I expected
   if mergeVal.type != this[1].type then
-    halt("Value to be merged doesn't match homogenour tuple eltType");
+    halt("Value to be merged doesn't match homogeneous tuple eltType");
 
   const defVal: mergeVal.type;
   var ret = createTuple(this.size+1, mergeVal.type, defVal);
 
   var partialIndexOffset = 0;
   for i in 1..ret.size {
-    if i == mergeIdx {
+    if i == idx {
       ret[i] = mergeVal;
       partialIndexOffset = 1;
     }
@@ -22,15 +22,15 @@ proc _tuple.merge(mergeIdx, mergeVal) where isHomogeneousTuple(this) {
   return ret;
 }
 
-proc _tuple.strip(stripIdx) where isHomogeneousTuple(this) {
+proc _tuple.withoutIdx(idx) where isHomogeneousTuple(this) {
 
   const defVal: this[1].type;
   var ret = createTuple(this.size-1, this[1].type, defVal);
 
-  for i in 1..stripIdx-1 do
+  for i in 1..idx-1 do
     ret[i] = this[i];
 
-  for i in stripIdx+1..this.size do
+  for i in idx+1..this.size do
     ret[i-1] = this[i];
 
   return ret;

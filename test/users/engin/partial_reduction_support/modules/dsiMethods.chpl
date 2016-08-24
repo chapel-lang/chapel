@@ -46,13 +46,13 @@ iter DefaultRectangularDom.dsiPartialThese(onlyDim, otherIdx,
   }
 
 proc DefaultRectangularDom.dsiPartialDomain(exceptDim) where rank > 1 {
-  return {(...ranges.strip(exceptDim))};
+  return {(...ranges.withoutIdx(exceptDim))};
 }
 
 iter DefaultRectangularArr.dsiPartialThese(onlyDim, otherIdx) {
 
   for i in dom.dsiPartialThese(onlyDim,otherIdx) do
-    yield dsiAccess(otherIdx.merge(onlyDim, i));
+    yield dsiAccess(otherIdx.withIdx(onlyDim, i));
 }
 
 iter DefaultRectangularArr.dsiPartialThese(onlyDim, otherIdx,
@@ -127,7 +127,7 @@ iter DefaultSparseDom.dsiPartialThese(onlyDim: int, otherIdx,
         Partial iteration over dimension other than last is expensive");
 
     for i in nnzDom.low..#nnz do
-      if indices[i].strip(onlyDim) == otherIdxTup then 
+      if indices[i].withoutIdx(onlyDim) == otherIdxTup then 
         yield indices[i][onlyDim];
   }
   else { //here we are sure that we are looking for the last index
@@ -176,7 +176,7 @@ iter DefaultSparseDom.dsiPartialThese(onlyDim: int, otherIdx,
 
   if onlyDim!=rank then
     for i in followRange do
-      if indices[i].strip(onlyDim) == otherIdxTup then
+      if indices[i].withoutIdx(onlyDim) == otherIdxTup then
         yield indices[i][onlyDim];
       else 
         for i in followRange do
@@ -209,7 +209,7 @@ iter DefaultSparseDom.dsiPartialThese(onlyDim: int, otherIdx,
     coforall t in 0..#numTasks {
       const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);
       for i in myChunk[1]..min(nnz,myChunk[2]) do
-        if indices[i].strip(onlyDim) == otherIdxTup then
+        if indices[i].withoutIdx(onlyDim) == otherIdxTup then
           yield indices[i][onlyDim];
     }
   }
@@ -229,7 +229,7 @@ iter DefaultSparseDom.dsiPartialThese(onlyDim: int, otherIdx,
 // to compile.
 iter DefaultSparseArr.dsiPartialThese(onlyDim: int, otherIdx) {
   for i in dom.dsiPartialThese(onlyDim, otherIdx) {
-    yield dsiAccess(otherIdx.merge(onlyDim, i));
+    yield dsiAccess(otherIdx.withIdx(onlyDim, i));
   }
 }
 
@@ -244,14 +244,14 @@ iter DefaultSparseArr.dsiPartialThese(onlyDim: int, otherIdx,
     param tag, followThis) where tag==iterKind.follower {
   for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag, 
       followThis) {
-    yield dsiAccess(otherIdx.merge(onlyDim, i));
+    yield dsiAccess(otherIdx.withIdx(onlyDim, i));
   }
 }
 
 iter DefaultSparseArr.dsiPartialThese(onlyDim: int, otherIdx, 
     param tag) where tag==iterKind.standalone {
   for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
-    yield dsiAccess(otherIdx.merge(onlyDim, i));
+    yield dsiAccess(otherIdx.withIdx(onlyDim, i));
   }
 }
 //
@@ -393,7 +393,7 @@ iter CSRDom.dsiPartialThese(onlyDim: int, otherIdx,
 // to compile.
 iter CSRArr.dsiPartialThese(onlyDim: int, otherIdx) {
   for i in dom.dsiPartialThese(onlyDim, otherIdx[1]) {
-    yield dsiAccess(otherIdx.merge(onlyDim, i));
+    yield dsiAccess(otherIdx.withIdx(onlyDim, i));
   }
 }
 
@@ -408,14 +408,14 @@ iter CSRArr.dsiPartialThese(onlyDim: int, otherIdx,
     param tag, followThis) where tag==iterKind.follower {
   for i in dom.dsiPartialThese(onlyDim, otherIdx[1], tag=tag, 
       followThis) {
-    yield dsiAccess(otherIdx.merge(onlyDim, i));
+    yield dsiAccess(otherIdx.withIdx(onlyDim, i));
   }
 }
 
 iter CSRArr.dsiPartialThese(onlyDim: int, otherIdx, 
     param tag) where tag==iterKind.standalone {
   for i in dom.dsiPartialThese(onlyDim, otherIdx[1], tag=tag) {
-    yield dsiAccess(otherIdx.merge(onlyDim, i));
+    yield dsiAccess(otherIdx.withIdx(onlyDim, i));
   }
 }
 //
@@ -474,14 +474,14 @@ iter BlockDom.dsiPartialThese(param onlyDim, otherIdx, param tag)
 
 proc BlockDom.__partialTheseLocDoms(param onlyDim, otherIdx) {
   const baseLocaleIdx = dist.targetLocsIdx(
-      otherIdx.merge(onlyDim, whole.dim(onlyDim).low));
+      otherIdx.withIdx(onlyDim, whole.dim(onlyDim).low));
 
   return locDoms[(...__lineSliceMask(this, onlyDim, baseLocaleIdx))];
 }
 
 proc BlockDom.dsiPartialDomain(param exceptDim) {
 
-  var ranges = whole._value.ranges.strip(exceptDim);
+  var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
   var ret = space dmapped Block(space, targetLocales =
       dist.targetLocales[(...__faceSliceMask(this, exceptDim))]);
@@ -532,10 +532,10 @@ iter LocBlockArr.dsiPartialThese(onlyDim, otherIdx,
 
 proc CyclicDom.dsiPartialDomain(param exceptDim) {
 
-  var ranges = whole._value.ranges.strip(exceptDim);
+  var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
   var ret = space dmapped
-    Cyclic(startIdx=this.dist.startIdx.strip(exceptDim), 
+    Cyclic(startIdx=this.dist.startIdx.withoutIdx(exceptDim), 
         targetLocales=dist.targetLocs[(...__faceSliceMask(this, 
             exceptDim))]);
 
@@ -587,7 +587,7 @@ proc LocCyclicArr.clone() {
 
 iter LocCyclicArr.dsiPartialThese(param onlyDim, otherIdx) {
   for i in locDom.dsiPartialThese(onlyDim, otherIdx) do
-    yield this(otherIdx.merge(onlyDim,i));
+    yield this(otherIdx.withIdx(onlyDim,i));
 }
 
 iter LocCyclicArr.dsiPartialThese(param onlyDim, otherIdx, param tag)
@@ -603,7 +603,7 @@ iter LocCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
 
   for i in locDom.dsiPartialThese(onlyDim, otherIdx, 
       tag=iterKind.follower, followThis=followThis) {
-    yield this(otherIdx.merge(onlyDim,i));
+    yield this(otherIdx.withIdx(onlyDim,i));
   }
 }
 
@@ -612,7 +612,7 @@ iter LocCyclicArr.dsiPartialThese(param onlyDim, otherIdx, param tag)
 
   for i in locDom.dsiPartialThese(onlyDim, otherIdx,
       tag=iterKind.standalone) {
-    yield this(otherIdx.merge(onlyDim,i));
+    yield this(otherIdx.withIdx(onlyDim,i));
   }
 }
 //
@@ -624,11 +624,11 @@ iter LocCyclicArr.dsiPartialThese(param onlyDim, otherIdx, param tag)
 //
 proc BlockCyclicDom.dsiPartialDomain(param exceptDim) {
 
-  var ranges = whole._value.ranges.strip(exceptDim);
+  var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
   var ret = space dmapped
-    BlockCyclic(startIdx=this.dist.lowIdx.strip(exceptDim),
-        blocksize=this.dist.blocksize.strip(exceptDim),
+    BlockCyclic(startIdx=this.dist.lowIdx.withoutIdx(exceptDim),
+        blocksize=this.dist.blocksize.withoutIdx(exceptDim),
         targetLocales=
             dist.targetLocales[(...__faceSliceMask(this, exceptDim))]);
 
@@ -685,7 +685,7 @@ proc LocBlockCyclicArr.dsiGetBaseDom() { return indexDom; }
 iter LocBlockCyclicArr.dsiPartialThese(onlyDim, otherIdx) {
 
   for i in indexDom.dsiPartialThese(onlyDim, otherIdx) {
-      yield this(otherIdx.merge(onlyDim, i));
+      yield this(otherIdx.withIdx(onlyDim, i));
   }
 }
 
@@ -704,8 +704,7 @@ iter LocBlockCyclicArr.dsiPartialThese(onlyDim, otherIdx,
 
     for i in followThis[1]._value.dsiPartialThese(onlyDim, otherIdx,
         tag=tag, followThis=followThis[2]) {
-      /*writeln("Yielding ", otherIdx.merge(onlyDim, i));*/
-      yield this(otherIdx.merge(onlyDim, i));
+      yield this(otherIdx.withIdx(onlyDim, i));
     }
 }
 
@@ -727,7 +726,7 @@ iter LocBlockCyclicArr.dsiPartialThese(onlyDim, otherIdx,
 
 proc SparseBlockDom.dsiPartialDomain(param exceptDim) {
 
-  var ranges = whole._value.ranges.strip(exceptDim);
+  var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
   var ret = space dmapped Block(space, targetLocales =
       dist.targetLocales[(...__faceSliceMask(this, exceptDim))]);

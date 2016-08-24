@@ -57,7 +57,7 @@ proc bulkPartialReduce(arr, param onlyDim) {
       forall l1 in dist.targetLocDom.dim(onlyDim)
           with (+ reduce partialResult) {
 
-        const l = chpl__tuplify(l2).merge(onlyDim, l1);
+        const l = chpl__tuplify(l2).withIdx(onlyDim, l1);
         on dom.locDoms[l] {
           var __target = ResultArr._value.locArr[l2].clone();
           partialReduceToTarget(arr.locArr[l], onlyDim, __target);
