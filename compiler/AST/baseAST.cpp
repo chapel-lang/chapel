@@ -76,7 +76,7 @@ void printStatistics(const char* pass) {
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
     nContextCallExpr + nNamedExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
-    kContextCallExpr + kNamedExpr;
+    kContextCallExpr + kForallExpr + kNamedExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
   int nType = nPrimitiveType+nEnumType+nAggregateType;
@@ -400,6 +400,10 @@ const char* BaseAST::astTagAsString() const {
 
     case E_ContextCallExpr:
       retval = "ContextCallExpr";
+      break;
+
+    case E_ForallExpr:
+      retval = "ForallExpr";
       break;
 
     case E_NamedExpr:

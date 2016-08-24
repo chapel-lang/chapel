@@ -876,7 +876,8 @@ static void propagateExtraArgsForLoopIter(CallExpr* call,
   collectCallExprs(newIter, callsInIter);
   CallExpr* toLeaderCall = NULL;
   for_vector(CallExpr, callInIter, callsInIter) {
-    if (callInIter->isNamed("_toLeader")) {
+    if (callInIter->isNamed("_toLeader") ||
+        callInIter->isNamed("_toLeaderZip") ) {
       // There must be only one such call.
       INT_ASSERT(!toLeaderCall);
       toLeaderCall = callInIter;

@@ -6463,6 +6463,79 @@ CallExpr* ContextCallExpr::getRValueCall() {
 *                                                                           *
 ************************************* | ************************************/
 
+ForallExpr::ForallExpr(Expr* indices,
+                       Expr* iteratorExpr,
+                       Expr* expr,
+                       Expr* cond,
+                       bool maybeArrayType,
+                       bool zippered) :
+  Expr(E_ForallExpr),
+  indices(indices),
+  iteratorExpr(iteratorExpr),
+  expr(expr),
+  cond(cond),
+  maybeArrayType(maybeArrayType),
+  zippered(zippered)
+{
+  gForallExprs.add(this);
+}
+
+ForallExpr* ForallExpr::copyInner(SymbolMap* map) {
+  return new ForallExpr(
+    COPY_INT(indices),
+    COPY_INT(iteratorExpr),
+    COPY_INT(expr),
+    COPY_INT(cond),
+    maybeArrayType,
+    zippered);
+}
+
+void ForallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
+  if (old_ast == indices)
+    indices = new_ast;
+  else if (old_ast == iteratorExpr)
+    iteratorExpr = new_ast;
+  else if (old_ast == expr)
+    expr = new_ast;
+  else if (old_ast == cond)
+    cond = new_ast;
+  else
+    INT_FATAL(this, "unexpected case in ForallExpr::replaceChild");
+}
+
+void
+ForallExpr::verify() {
+  Expr::verify();
+  if (astTag != E_ForallExpr)
+    INT_FATAL(this, "bad ForallExpr::astTag");
+  INT_FATAL("ForallExprs should not persist past parser");
+}
+
+void ForallExpr::accept(AstVisitor* visitor) {
+  INT_FATAL("ForallExprs should not persist past parser");
+}
+
+GenRet ForallExpr::codegen() {
+  GenRet ret;
+  INT_FATAL(this, "ForallExpr::codegen called");
+  return ret;
+}
+
+Expr* ForallExpr::getFirstChild() {
+  INT_FATAL("ForallExprs should not persist past parser");
+  return NULL;
+}
+
+Expr* ForallExpr::getFirstExpr() {
+  INT_FATAL("ForallExprs should not persist past parser");
+  return NULL;
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
   Expr(E_NamedExpr),
   name(init_name),
