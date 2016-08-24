@@ -48,17 +48,6 @@ module DefaultSparse {
       }
     }
 
-    proc dsiPartialDomain(exceptDim) where rank > 1 {
-      var ret = createTuple(rank-1, range, 0..1);
-      for i in 1..exceptDim-1 do
-        ret[i] = parentDom.dim(i);
-
-      for i in exceptDim+1..rank do
-        ret[i-1] = parentDom.dim(i);
-
-      return {(...ret)};
-    }
-
     iter these() {
       for i in 1..nnz {
         yield indices(i);
@@ -307,136 +296,6 @@ module DefaultSparse {
       // nnzDom = {1..0};
     }
 
-    proc __private_findRowRange(r) {
-
-      //do async binary search in both directions
-      var start = parentDom.dim(rank).low-1;
-      var end = parentDom.dim(rank).low-1;
-
-      var startDummy = parentDom.dim(rank).low-1;
-      var endDummy = parentDom.dim(rank).high+1;
-      var done: atomic bool;
-      begin with (ref end) {
-        var found: bool;
-        (found, end) = binarySearch(indices, ((...r),endDummy));
-        done.write(true);
-      }
-      var found: bool;
-      (found, start) = binarySearch(indices, ((...r),startDummy));
-      done.waitFor(true);
-      return start..min(nnz,end-1);
-    }
-
-    iter dsiPartialThese(onlyDim: int, otherIdx,
-        tasksPerLocale = dataParTasksPerLocale,
-        ignoreRunning = dataParIgnoreRunningTasks,
-        minIndicesPerTask = dataParMinGranularity) {
-
-      if onlyDim<0 || onlyDim>rank then
-        halt("Invalid dsiPartialThese dimension in DefaultSparse: ", onlyDim);
-      const otherIdxTup = if isTuple(otherIdx) then otherIdx else (otherIdx, );
-
-      if onlyDim != this.rank {
-        compilerWarning("PERFORMANCE WARNING:\
-            Partial iteration over dimension other than last is expensive");
-
-        for i in nnzDom.low..#nnz do
-          if indices[i].strip(onlyDim) == otherIdxTup then 
-            yield indices[i][onlyDim];
-      }
-      else { //here we are sure that we are looking for the last index
-        for i in __private_findRowRange(otherIdxTup) do
-          yield indices[i][onlyDim];
-      }
-    }
-
-    iter dsiPartialThese(onlyDim: int, otherIdx,
-        tasksPerLocale = dataParTasksPerLocale,
-        ignoreRunning = dataParIgnoreRunningTasks,
-        minIndicesPerTask = dataParMinGranularity,
-        param tag: iterKind) where tag==iterKind.leader {
-
-      if onlyDim<0 || onlyDim>rank then
-        halt("Invalid dsiPartialThese dimension in DefaultSparse: ", onlyDim);
-
-      const otherIdxTup = if isTuple(otherIdx) then otherIdx else (otherIdx, );
-
-      const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
-        tasksPerLocale;
-
-      var rowRange: range;
-      if onlyDim==rank then rowRange = __private_findRowRange(otherIdxTup);
-
-      const l = if onlyDim!=rank then nnzDom.low else rowRange.low;
-      const h = if onlyDim!=rank then nnzDom.low+nnz else rowRange.high;
-      const numElems = h-l+1;
-      coforall t in 0..#numTasks {
-        const myChunk = _computeBlock(numElems, numTasks, t, h-l, 0, 0);
-        yield (myChunk[1]..min(nnz, myChunk[2]),);
-      }
-    }
-
-    iter dsiPartialThese(onlyDim: int, otherIdx, 
-        tasksPerLocale = dataParTasksPerLocale,
-        ignoreRunning = dataParIgnoreRunningTasks,
-        minIndicesPerTask = dataParMinGranularity,
-        param tag: iterKind, followThis) where tag==iterKind.follower {
-
-      const otherIdxTup = if isTuple(otherIdx) then otherIdx else (otherIdx, );
-
-      const l = if onlyDim!=rank then nnzDom.low else
-        __private_findRowRange(otherIdxTup).low;
-      const followRange = followThis[1].translate(l);
-
-      if onlyDim!=rank then
-        for i in followRange do
-        if indices[i].strip(onlyDim) == otherIdxTup then
-            yield indices[i][onlyDim];
-      else 
-        for i in followRange do
-          yield indices[i][onlyDim];
-    }
-
-    iter dsiPartialThese(onlyDim: int, otherIdx, 
-        tasksPerLocale = dataParTasksPerLocale,
-        ignoreRunning = dataParIgnoreRunningTasks,
-        minIndicesPerTask = dataParMinGranularity,
-        param tag: iterKind) where tag==iterKind.standalone {
-
-      if onlyDim<0 || onlyDim>rank then
-        halt("Invalid dsiPartialThese dimension in DefaultSparse: ", onlyDim);
-
-      const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
-        tasksPerLocale;
-
-      const otherIdxTup = if isTuple(otherIdx) then otherIdx else (otherIdx, );
-
-      var rowRange: range;
-      if onlyDim==rank then rowRange = __private_findRowRange(otherIdxTup);
-
-      const l = if onlyDim!=rank then indices.domain.low else rowRange.low;
-      const h = if onlyDim!=rank then nnz else rowRange.high;
-      const numElems = h-l+1;
-      if numElems <= -2 then return;
-
-      if onlyDim != rank {
-        coforall t in 0..#numTasks {
-          const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);
-          for i in myChunk[1]..min(nnz,myChunk[2]) do
-            if indices[i].strip(onlyDim) == otherIdxTup then
-              yield indices[i][onlyDim];
-        }
-      }
-      else {
-        coforall t in 0..#numTasks {
-          const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);
-          for i in myChunk[1]..myChunk[2] do {
-            yield indices[i][onlyDim];
-          }
-        }
-      }
-    }
-
     iter dimIter(param d, ind) {
       if (d != rank-1) {
         compilerError("dimIter() not supported on sparse domains for dimensions other than the last");
@@ -595,37 +454,6 @@ module DefaultSparse {
 
     proc dsiLocalSubdomain() {
       return _newDomain(dom);
-    }
-
-    // FIXME I tried to move these iterators up in class hierarchy by
-    // implementing a dummy dsiAccess in those classes. But wasn't able
-    // to compile.
-    iter dsiPartialThese(onlyDim: int, otherIdx) {
-      for i in dom.dsiPartialThese(onlyDim, otherIdx) {
-        yield dsiAccess(otherIdx.merge(onlyDim, i));
-      }
-    }
-
-    iter dsiPartialThese(onlyDim: int, otherIdx, 
-        param tag) where tag==iterKind.leader {
-      for followThis in dom.dsiPartialThese(onlyDim,otherIdx,tag=tag) {
-        yield followThis;
-      }
-    }
-
-    iter dsiPartialThese(onlyDim: int, otherIdx, 
-        param tag, followThis) where tag==iterKind.follower {
-      for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag, 
-          followThis) {
-        yield dsiAccess(otherIdx.merge(onlyDim, i));
-      }
-    }
-
-    iter dsiPartialThese(onlyDim: int, otherIdx, 
-        param tag) where tag==iterKind.standalone {
-      for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
-        yield dsiAccess(otherIdx.merge(onlyDim, i));
-      }
     }
   }
 

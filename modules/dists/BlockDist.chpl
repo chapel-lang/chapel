@@ -360,12 +360,6 @@ class LocBlockArr {
   var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
 
-  proc clone() {
-    return new LocBlockArr(eltType,rank,idxType,stridable,locDom,
-        locRAD, myElems, locRADLock);
-  }
-
-  inline proc dsiGetBaseDom() { return locDom; }
   // These function will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid
   // the repeated on's from calling testAndSet()).
@@ -705,160 +699,6 @@ proc BlockDom.dsiDim(d: int) return whole.dim(d);
 // stopgap to avoid accessing locDoms field (and returning an array)
 proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
 
-proc BlockArr.dsiPartialReduce_templateopt(param onlyDim) {
-
-  const PartialDom = dom.dsiPartialDomain(exceptDim=onlyDim);
-  var ResultArr: [PartialDom] eltType;
-
-  var locResDom = dom.dist.targetLocDom dmapped new dmap(this.dom.dist);
-  var locRes: [locResDom] ResultArr._value.myLocArr.myElems.type;
-
-  coforall l2 in
-      dom.dist.targetLocDom._value.dsiPartialDomain(exceptDim=onlyDim) {
-
-    on ResultArr._value.locArr[l2].myElems {
-      var thisParticularResult => ResultArr._value.locArr[l2].myElems;
-      // FIXME should be a coforall
-      forall l1 in dom.dist.targetLocDom.dim(onlyDim) 
-          with (+ reduce thisParticularResult) {
-
-        const l = chpl__tuplify(l2).merge(onlyDim, l1);
-        on dom.locDoms[l] {
-          /*thisParticularResult +=*/
-              /*dsiPartialReduce_template(locArr[l], onlyDim);*/
-          var __target = ResultArr._value.locArr[l2].clone();
-          dsiPartialReduce_template(locArr[l], onlyDim, __target);
-          thisParticularResult += __target.myElems;
-        }
-      }
-    }
-  }
-  return ResultArr;
-
-}
-
-iter BlockDom.dsiPartialThese(param onlyDim, otherIdx) {
-  for i in whole._value.dsiPartialThese(onlyDim, otherIdx) do
-    yield i;
-}
-
-iter BlockDom.dsiPartialThese(param onlyDim, otherIdx, param tag)
-    where tag==iterKind.leader {
-
-  coforall locDom in __partialTheseLocDoms(onlyDim, otherIdx) {
-    on locDom {
-    for followThis in
-        locDom.myBlock._value.dsiPartialThese(onlyDim, otherIdx, tag) {
-
-      yield (followThis[1]+locDom.myBlock.dim(onlyDim).low, );
-    }
-    }
-  }
-}
-
-iter BlockDom.dsiPartialThese(param onlyDim, otherIdx, param tag, followThis)
-    where tag==iterKind.follower {
-
-  for i in followThis[1] {
-    yield i;
-  }
-}
-
-iter BlockDom.dsiPartialThese(param onlyDim, otherIdx, param tag)
-    where tag==iterKind.standalone {
-
-  coforall locDom in __partialTheseLocDoms(onlyDim, otherIdx) do on locDom do
-    for i in locDom.myBlock._value.dsiPartialThese(onlyDim, otherIdx, tag) do
-      yield i;
-}
-
-proc BlockDom.__partialTheseLocDoms(param onlyDim, otherIdx) {
-  const baseLocaleIdx = dist.targetLocsIdx(
-      otherIdx.merge(onlyDim, whole.dim(onlyDim).low));
-
-  return locDoms[(...__lineSliceMask(onlyDim, baseLocaleIdx))];
-}
-proc BlockDom.__partialTheseLocales(param onlyDim, otherIdx) {
-  // index of master locale in targetLocales array
-  const baseLocaleIdx = dist.targetLocsIdx(
-      otherIdx.merge(onlyDim, whole.dim(onlyDim).low));
-
-  return dist.targetLocales[(...__lineSliceMask(onlyDim, baseLocaleIdx))];
-}
-
-proc BlockDom.dsiPartialDomain(param exceptDim) {
-
-  var ranges = whole._value.ranges.strip(exceptDim);
-  var space = {(...ranges)};
-  var ret = space dmapped Block(space, targetLocales =
-      dist.targetLocales[(...__faceSliceMask(exceptDim))]);
-
-  return ret;
-}
-
-proc BlockDom.__lineSliceMask(param dim, idx) {
-
-  if !isHomogeneousTuple(idx) then
-    halt("Index to get line slice must be homogeneous");
-
-  if idx[1].type != idxType then 
-    halt("Index to get line slice must match domains index type");
-
-  param numIdxPre = dim - 1;
-  param numIdxPost = rank - dim;
-
-  assert(numIdxPre + numIdxPost == rank-1);
-
-  var idxPre = createTuple(if numIdxPre>0 then numIdxPre else 1, 
-      idxType, 0:idxType);
-  for param i in 1..numIdxPre do
-    idxPre[i] = idx[i];
-
-  var idxPost = createTuple(if numIdxPost > 0 then numIdxPost else 1, 
-      idxType, 0:idxType);
-  for param i in 1..numIdxPost do
-    idxPost[i] = idx[numIdxPre+1+i];
-
-  if numIdxPre > 0 && numIdxPost > 0 {
-    return ((...idxPre),..,(...idxPost));
-  }
-  if numIdxPre > 0 && numIdxPost <= 0 {
-    return ((...idxPre),..);
-  }
-  if numIdxPre <= 0 && numIdxPost > 0 {
-    return (..,(...idxPost));
-  }
-  if numIdxPre <= 0 && numIdxPost <= 0 {
-    return (.., );
-  }
-
-}
-
-// name is creepy
-proc BlockDom.__faceSliceMask(param exceptDim) {
-  param numUbRangesPre = exceptDim - 1;
-  param numUbRangesPost = rank - exceptDim;
-
-  assert(numUbRangesPre + numUbRangesPost == rank-1);
-
-  const ubRangesPre = createTuple(if numUbRangesPre > 0 then numUbRangesPre
-      else 1, range(boundedType=BoundedRangeType.boundedNone), ..);
-  const ubRangesPost = createTuple(if numUbRangesPost > 0 then numUbRangesPost
-      else 1, range(boundedType=BoundedRangeType.boundedNone), ..);
-
-  if numUbRangesPre > 0 && numUbRangesPost > 0 {
-    return ((...ubRangesPre),0,(...ubRangesPost));
-  }
-  if numUbRangesPre > 0 && numUbRangesPost <= 0 {
-    return ((...ubRangesPre),0);
-  }
-  if numUbRangesPre <= 0 && numUbRangesPost > 0 {
-    return (0,(...ubRangesPost));
-  }
-  if numUbRangesPre <= 0 && numUbRangesPost <= 0 {
-    return (0, );
-  }
-}
 
 //
 // Given a tuple of scalars of type t or range(t) match the shape but
@@ -1107,10 +947,6 @@ proc BlockDom.dsiBuildRectangularDom(param rank: int, type idxType,
 // Added as a performance stopgap to avoid returning a domain
 //
 proc LocBlockDom.member(i) return myBlock.member(i);
-
-proc LocBlockDom.dsiPartialDomain(exceptDim) {
-  return myBlock._value.dsiPartialDomain(exceptDim);
-}
 
 proc BlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
@@ -1540,44 +1376,6 @@ proc BlockArr.setRADOpt(val=true) {
 //
 proc LocBlockArr.this(i) ref {
   return myElems(i);
-}
-
-iter LocBlockArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType)) {
-
-  for i in myElems._value.dsiPartialThese(onlyDim,otherIdx) do 
-    yield i;
-}
-
-iter LocBlockArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
-    param tag: iterKind)
-  where tag == iterKind.leader {
-
-    for followThis in myElems._value.dsiPartialThese(onlyDim, otherIdx,
-        tag=tag) do
-      yield followThis;
-  }
-
-iter LocBlockArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
-    param tag: iterKind, followThis)
-  where tag == iterKind.follower {
-
-    for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag,
-        followThis) do 
-      yield i;
-  }
-
-// FIXME this standaloen iterator forwarding hits a compiler bug.
-// The assertion in astutil.cpp:622 triggers. Engin
-iter LocBlockArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
-    param tag: iterKind)
-  where tag == iterKind.standalone {
-
-    for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag) do
-      yield i;
 }
 
 //

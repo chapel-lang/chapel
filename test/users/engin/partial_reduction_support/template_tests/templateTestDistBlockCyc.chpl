@@ -1,6 +1,7 @@
-use BlockDist;
+use utilities;
+use dsiMethods;
+
 use BlockCycDist;
-use CommDiagnostics;
 
 config const N = 4;
 

@@ -1,3 +1,6 @@
+use utilities;
+use dsiMethods;
+
 use BlockDist;
 
 config const N = 4;

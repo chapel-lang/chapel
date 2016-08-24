@@ -2539,7 +2539,7 @@ module ChapelArray {
   iter _array.partialThese(param onlyDim, otherIdx) {
     for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx) {
       /*writeln("Serial Accessing ", i);*/
-      yield this._value.dsiAccess(dsiMergeIdx(otherIdx, onlyDim, i));
+      yield this._value.dsiAccess(otherIdx.merge(onlyDim, i));
     }
   }
 
@@ -2557,7 +2557,7 @@ module ChapelArray {
     for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx, 
         tag=tag, followThis=followThis) {
       writeln("Follower Accessing ", i);
-      yield this._value.dsiAccess(dsiMergeIdx(otherIdx, onlyDim, i));
+      yield this._value.dsiAccess(otherIdx.merge(onlyDim, i));
     }
   }
 
@@ -2566,7 +2566,7 @@ module ChapelArray {
 
     for i in this.domain._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
       /*writeln("Standalone Accessing ", i);*/
-      yield this._value.dsiAccess(dsiMergeIdx(otherIdx, onlyDim, i));
+      yield this._value.dsiAccess(otherIdx.merge(onlyDim, i));
     }
   }
 

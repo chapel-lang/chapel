@@ -1,3 +1,6 @@
+use utilities;
+use dsiMethods;
+
 config const N = 4;
 
 const ParentDom = {0..#N, 0..#N, 0..#N};

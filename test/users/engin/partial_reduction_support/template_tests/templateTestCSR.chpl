@@ -1,3 +1,6 @@
+use utilities;
+use dsiMethods;
+
 use LayoutCSR;
 
 config const N = 4;
