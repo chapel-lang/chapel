@@ -1,4 +1,4 @@
-use GMP;
+use BigIntegers;
 
 // Tests all of the number theoretic functions contained in the record
 // the jacobi and legendre functions will be tested elsewhere

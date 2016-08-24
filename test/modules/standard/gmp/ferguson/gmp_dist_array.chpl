@@ -1,5 +1,5 @@
 use BlockDist;
-use GMP;
+use BigIntegers;
 
 config const n = 20;
 const Space = {1..n};

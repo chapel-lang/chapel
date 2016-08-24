@@ -1,4 +1,4 @@
-use GMP;
+use BigIntegers;
 
 // tests the assignment functions
 

@@ -1,4 +1,4 @@
-use GMP;
+use BigIntegers;
 
 // Tests the operator overloads
 

@@ -6,7 +6,7 @@
    derived from the GNU C version by Bonzini, Bartlett, and Mellor
 */
 
-use GMP;
+use BigIntegers;
 
 // Compute n digits of Pi, 10 000 by default to match benchmark expectation.
 config const n = 10000;

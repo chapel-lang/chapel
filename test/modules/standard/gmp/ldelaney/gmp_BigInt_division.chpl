@@ -1,4 +1,4 @@
-use GMP;
+use BigIntegers;
 use Round; // the rounding enum
 
 // Tests the division functions

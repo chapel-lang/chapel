@@ -1,4 +1,4 @@
-use GMP;
+use BigIntegers;
 
 var x = new BigInt(20);
 var y = new BigInt(0);

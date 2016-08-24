@@ -1,4 +1,4 @@
-use GMP;
+use GMPRandom;
 config const printrandom = false;
 
 // Tests/provides better code coverage of the GMP Random class

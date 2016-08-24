@@ -1,4 +1,4 @@
-use GMP;
+use BigIntegers;
 
 // test the arithmetic functions
 

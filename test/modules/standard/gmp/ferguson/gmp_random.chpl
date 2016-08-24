@@ -1,4 +1,5 @@
-use GMP;
+use GMPRandom;
+use BigIntegers;
 
 config const printrandom = false;
 

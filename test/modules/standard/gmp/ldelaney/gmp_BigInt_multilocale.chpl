@@ -1,4 +1,4 @@
-use GMP;
+use BigIntegers;
 var v1 = new BigInt(5);
 for l in Locales{
 	on l {
