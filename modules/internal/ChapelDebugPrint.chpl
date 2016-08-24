@@ -27,40 +27,15 @@
 
 module ChapelDebugPrint {
 
-  // This routine is called in DefaultRectangular in order
-  // to report an out of bounds access for a halt. A normal
-  // call to halt with a tuple can't be made because of module
-  // order issues.
-  pragma "no doc"
-  proc _stringify_index(tup:?t) where isTuple(t)
-  {
-    var str = "(";
-
-    for param i in 1..tup.size {
-      if i != 1 then str += ", ";
-      str += tup[i]:string;
-    }
-
-   str += ")";
-
-    return str;
-
-  }
-
   proc chpl_debug_stringify(args...) : string {
     var str = "";
     for param i in 1..args.size {
       var tmp = args(i);
-      if isNumericType(tmp.type) || isBoolType(tmp.type) {
-	str += tmp:string;
-      } else if isRangeType(tmp.type) {
-	str += tmp.lo:string;
-	str += "..";
-	str += tmp.hi:string;
-      } else if isTupleType(tmp.type) {
-	str += _stringify_index(tmp);
-      } else if isStringType(tmp.type) {
-	str += tmp;
+      if _can_stringify_direct(tmp) {
+        // Call stringify from IO.chpl. Note that stringify
+        // is also called on halt, and so needs to handle
+        // being resolved before IO.chpl is completely resolved.
+	str += stringify(tmp);
       } else {
 	str += "?";
       }

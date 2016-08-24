@@ -917,7 +917,7 @@ module DefaultRectangular {
           // the multiple-arguments implementation of halt cannot
           // be called at this point. So we call a special routine
           // that does the right thing here.
-          halt("array index out of bounds: " + _stringify_index(ind));
+          halt("array index out of bounds: " + _stringify_tuple(ind));
         }
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
@@ -927,7 +927,7 @@ module DefaultRectangular {
     where !shouldReturnRvalueByConstRef(eltType) {
       if boundsChecking then
         if !dom.dsiMember(ind) {
-          halt("array index out of bounds: " + _stringify_index(ind));
+          halt("array index out of bounds: " + _stringify_tuple(ind));
         }
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
@@ -937,7 +937,7 @@ module DefaultRectangular {
     where shouldReturnRvalueByConstRef(eltType) {
       if boundsChecking then
         if !dom.dsiMember(ind) {
-          halt("array index out of bounds: " + _stringify_index(ind));
+          halt("array index out of bounds: " + _stringify_tuple(ind));
         }
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
