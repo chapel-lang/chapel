@@ -49,23 +49,20 @@ proc DefaultRectangularDom.dsiPartialDomain(exceptDim) where rank > 1 {
   return {(...ranges.strip(exceptDim))};
 }
 
-iter DefaultRectangularArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType)) {
+iter DefaultRectangularArr.dsiPartialThese(onlyDim, otherIdx) {
 
   for i in dom.dsiPartialThese(onlyDim,otherIdx) do
     yield dsiAccess(otherIdx.merge(onlyDim, i));
 }
 
-iter DefaultRectangularArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+iter DefaultRectangularArr.dsiPartialThese(onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.leader {
 
     for followThis in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag) do
       yield followThis;
 }
 
-iter DefaultRectangularArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+iter DefaultRectangularArr.dsiPartialThese(onlyDim, otherIdx,
     param tag: iterKind, followThis) where tag == iterKind.follower {
 
     for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag,
@@ -496,15 +493,13 @@ proc LocBlockDom.dsiPartialDomain(exceptDim) {
   return myBlock._value.dsiPartialDomain(exceptDim);
 }
 
-iter LocBlockArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType)) {
+iter LocBlockArr.dsiPartialThese(onlyDim, otherIdx) {
 
   for i in myElems._value.dsiPartialThese(onlyDim,otherIdx) do 
     yield i;
 }
 
-iter LocBlockArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+iter LocBlockArr.dsiPartialThese(onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.leader {
 
   for followThis in myElems._value.dsiPartialThese(onlyDim, otherIdx,
@@ -513,8 +508,7 @@ iter LocBlockArr.dsiPartialThese(onlyDim,
     yield followThis;
 }
 
-iter LocBlockArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+iter LocBlockArr.dsiPartialThese(onlyDim, otherIdx,
     param tag: iterKind, followThis) where tag == iterKind.follower {
 
   for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag,
@@ -522,8 +516,7 @@ iter LocBlockArr.dsiPartialThese(onlyDim,
     yield i;
 }
 
-iter LocBlockArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+iter LocBlockArr.dsiPartialThese(onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.standalone {
 
   for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag) do
@@ -655,8 +648,7 @@ proc LocBlockCyclicDom.dsiPartialDomain(param exceptDim) {
   return retDomain;
 }
 
-iter LocBlockCyclicDom.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType)) {
+iter LocBlockCyclicDom.dsiPartialThese(onlyDim, otherIdx) {
 
   for i in globDom.dsiLocalSubdomains() {
     for ii in i._value.dsiPartialThese(onlyDim, otherIdx) {
@@ -665,8 +657,7 @@ iter LocBlockCyclicDom.dsiPartialThese(onlyDim,
   }
 }
 
-iter LocBlockCyclicDom.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+iter LocBlockCyclicDom.dsiPartialThese(onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.leader {
 
   coforall i in globDom.dsiLocalSubdomains() {
@@ -676,8 +667,7 @@ iter LocBlockCyclicDom.dsiPartialThese(onlyDim,
   }
 }
 
-iter LocBlockCyclicDom.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+iter LocBlockCyclicDom.dsiPartialThese(onlyDim, otherIdx,
     param tag: iterKind, followThis) where tag == iterKind.follower {
 
     for i in followThis[1]._value.dsiPartialThese(onlyDim, otherIdx,
@@ -692,16 +682,14 @@ proc LocBlockCyclicArr.clone() {
 
 proc LocBlockCyclicArr.dsiGetBaseDom() { return indexDom; }
 
-iter LocBlockCyclicArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType)) {
+iter LocBlockCyclicArr.dsiPartialThese(onlyDim, otherIdx) {
 
   for i in indexDom.dsiPartialThese(onlyDim, otherIdx) {
       yield this(otherIdx.merge(onlyDim, i));
   }
 }
 
-iter LocBlockCyclicArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+iter LocBlockCyclicArr.dsiPartialThese(onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.leader {
 
   coforall i in do_dsiLocalSubdomains(indexDom) {
@@ -711,8 +699,7 @@ iter LocBlockCyclicArr.dsiPartialThese(onlyDim,
   }
 }
 
-iter LocBlockCyclicArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+iter LocBlockCyclicArr.dsiPartialThese(onlyDim, otherIdx,
     param tag: iterKind, followThis) where tag == iterKind.follower {
 
     for i in followThis[1]._value.dsiPartialThese(onlyDim, otherIdx,
@@ -722,15 +709,13 @@ iter LocBlockCyclicArr.dsiPartialThese(onlyDim,
     }
 }
 
-iter LocBlockArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
-    param tag: iterKind)
-  where tag == iterKind.standalone {
+iter LocBlockCyclicArr.dsiPartialThese(onlyDim, otherIdx,
+    param tag: iterKind) where tag == iterKind.standalone {
 
-    for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag)
-        do
+  for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag)
+      do
 
-      yield i;
+    yield i;
 }
 //
 // end BlockCyclic distribution support
@@ -756,15 +741,13 @@ proc LocSparseBlockDom.dsiPartialDomain(param exceptDim) {
 
 proc LocSparseBlockArr.dsiGetBaseDom() { return locDom; }
 
-iter LocSparseBlockArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType)) {
+iter LocSparseBlockArr.dsiPartialThese(onlyDim, otherIdx) {
 
   for i in myElems._value.dsiPartialThese(onlyDim,otherIdx) do 
     yield i;
 }
 
-iter LocSparseBlockArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType), 
+iter LocSparseBlockArr.dsiPartialThese(onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.leader {
 
   for followThis in 
@@ -773,8 +756,7 @@ iter LocSparseBlockArr.dsiPartialThese(onlyDim,
     yield followThis;
 }
 
-iter LocSparseBlockArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+iter LocSparseBlockArr.dsiPartialThese(onlyDim, otherIdx,
     param tag: iterKind, followThis) where tag == iterKind.follower {
 
   for i in myElems._value.dsiPartialThese(onlyDim,otherIdx,tag=tag,
@@ -783,8 +765,7 @@ iter LocSparseBlockArr.dsiPartialThese(onlyDim,
     yield i;
 }
 
-iter LocSparseBlockArr.dsiPartialThese(onlyDim,
-    otherIdx=createTuple(rank-1, idxType, 0:idxType),
+iter LocSparseBlockArr.dsiPartialThese(onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.standalone {
 
   for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag) do
