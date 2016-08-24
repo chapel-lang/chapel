@@ -657,50 +657,5 @@ module ChapelDistribution {
         data(i) = data(i+1);
       }
     }
-
-    /*proc dsiAccess(ind: rank*idxType) ref { */
-      /*halt("Sparse Arrays must implement this method");*/
-      /*return irv;*/
-    /*}*/
-
-    /*proc dsiAccess(ind: rank*idxType)*/
-    /*where !shouldReturnRvalueByConstRef(eltType) {*/
-      /*halt("Sparse Arrays must implement this method");*/
-      /*return irv;*/
-    /*}*/
-
-    /*proc dsiAccess(ind: rank*idxType) const ref*/
-    /*where shouldReturnRvalueByConstRef(eltType) {*/
-      /*halt("Sparse Arrays must implement this method");*/
-      /*return irv;*/
-    /*}*/
-
-    /*iter dsiPartialThese(onlyDim: int, otherIdx) {*/
-      /*for i in dom.dsiPartialThese(onlyDim, otherIdx) {*/
-        /*yield dsiAccess(otherIdx.merge(onlyDim, i));*/
-      /*}*/
-    /*}*/
-
-    /*iter dsiPartialThese(onlyDim: int, otherIdx, */
-        /*param tag) where tag==iterKind.leader {*/
-      /*for followThis in dom.dsiPartialThese(onlyDim,otherIdx,tag=tag) {*/
-        /*yield followThis;*/
-      /*}*/
-    /*}*/
-
-    /*iter dsiPartialThese(onlyDim: int, otherIdx, */
-        /*param tag, followThis) where tag==iterKind.follower {*/
-      /*for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag, */
-          /*followThis) {*/
-        /*yield dsiAccess(otherIdx.merge(onlyDim, i));*/
-      /*}*/
-    /*}*/
-
-    /*iter dsiPartialThese(onlyDim: int, otherIdx, */
-        /*param tag) where tag==iterKind.standalone {*/
-      /*for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag) {*/
-        /*yield dsiAccess(otherIdx.merge(onlyDim, i));*/
-      /*}*/
-    /*}*/
   }
 }
