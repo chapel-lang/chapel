@@ -1351,7 +1351,6 @@ module BigIntegers {
   proc /=(ref a: BigInt, const ref b: BigInt) {
     a.div_q(Round.DOWN, a, b);
   }
-  // TODO: test if this rounding right with negative numbers involved
   proc /=(ref a: BigInt, b: int) {
     a.div_q(Round.ZERO, a, abs(b):uint);
     if (b < 0) {
@@ -1485,8 +1484,8 @@ module BigIntegers {
     c.neg(a);
     return c;
   }
-  // NOTE: The >> operator is implemented in GMP via division
-  // this means it rounds towards 0, which may not be consistent with C's >>
+  // NOTE: The >> operator is implemented in GMP via division so it rounds 
+  // towards 0, which may be unexpected undefined behavior. 
   proc <<(const ref a: BigInt, b: uint) {
     var c = new BigInt();
     c.mul_2exp(a, b);

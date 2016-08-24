@@ -118,7 +118,7 @@ module GMP {
   extern type __mpz_struct;
 
   /* The GMP ``mpz_t`` type */
-  extern type mpz_t = 1*__mpz_struct; // can we use a struct and not a tuple?
+  extern type mpz_t = 1*__mpz_struct;
 
   pragma "no doc"
   extern type __gmp_randstate_struct;
@@ -313,7 +313,7 @@ module GMP {
   extern proc mpz_cmpabs(const ref OP1: mpz_t, const ref OP2: mpz_t) : c_int;
   extern proc mpz_cmpabs_d(const ref OP1: mpz_t, OP2: c_double) : c_int;
   extern proc mpz_cmpabs_ui(const ref OP1: mpz_t, OP2: c_ulong) : c_int;
-  
+
   extern proc mpz_sgn(const ref OP: mpz_t): c_int;
 
   // Logical and Bit Manipulation Functions
@@ -358,7 +358,7 @@ module GMP {
   extern proc mpz_sizeinbase(const ref OP: mpz_t, BASE: c_int): size_t;
   extern proc mpz_size(const ref X: mpz_t): size_t;
   extern proc mpf_set_default_prec(PREC: mp_bitcnt_t);
-  extern proc mpz_getlimbn(const ref OP: mpz_t, n:mp_size_t): mp_limb_t; 
+  extern proc mpz_getlimbn(const ref OP: mpz_t, n:mp_size_t): mp_limb_t;
 
   // floating-point functions
   // TODO: These probably also should have const ref OPs
@@ -385,7 +385,7 @@ module GMP {
   extern proc gmp_asprintf(ref ret: c_string, fmt: c_string, arg...);
 
   // Initialize GMP to use Chapel's allocator
-  // some of these used to be private, now can't because BigInt needs them
+  // some of these used to be private, now can't be because BigInt needs them
   extern proc chpl_gmp_init();
   /* Get an MPZ value stored on another locale */
   extern proc chpl_gmp_get_mpz(ref ret:mpz_t,src_local:int,from:__mpz_struct);
