@@ -3190,7 +3190,15 @@ GenRet codegenCast(Type* t, GenRet value, bool Cparens)
   ret.isLVPtr = value.isLVPtr;
 
   // If we are casting to bool, set it to != 0.
-  if( is_bool_type(t) ) return codegenNotEquals(value, codegenZero());
+  if( is_bool_type(t) ) {
+    // NOTE: We have to limit this special treatment for bool cast to
+    // --no-llvm compilations. LLVM bool operations return single bit
+    // integers whereas bool type is 8-bits. So we still need explicit
+    // cast. Engin
+    if(info->cfile) {
+      return codegenNotEquals(value, codegenZero());
+    }
+  }
 
   // if we are casting a C99 wide pointer, parens around the value
   // will result in an error, hence the Cparens parameter
@@ -4399,6 +4407,7 @@ GenRet CallExpr::codegenPrimitive() {
         ret.c = "return " + ret.c;
       } else {
 #ifdef HAVE_LLVM
+        ret = codegenCast(ret.chplType, codegenValue(get(1)));
         ret.val = gGenInfo->builder->CreateRet(ret.val);
 #endif
       }
