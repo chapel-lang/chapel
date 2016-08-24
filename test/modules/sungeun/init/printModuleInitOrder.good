@@ -6,11 +6,12 @@ Initializing Modules:
      BaseStringType
      SysCTypes
      StringCasts
+    ChapelDebugPrint
     ChapelBase
      ChapelStringLiterals
     MemConsistency
     Atomics
-    AtomicsCommon
+    ChapelIteratorSupport
     ChapelThreads
     ChapelTuple
     ChapelRange
