@@ -63,7 +63,6 @@ b.set(7);
 b &= c;
 writeln("7 &= ", c, " : ", b);
 
-
 a.set(25);
 b = a ** 3;
 writeln(a, " ** 3 = ", b);
