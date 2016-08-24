@@ -52,17 +52,17 @@ module ChapelDebugPrint {
     for param i in 1..args.size {
       var tmp = args(i);
       if isNumericType(tmp.type) || isBoolType(tmp.type) {
-	str += tmp:string;
+        str += tmp:string;
       } else if isRangeType(tmp.type) {
-	str += tmp.lo:string;
-	str += "..";
-	str += tmp.hi:string;
+        str += tmp.lo:string;
+        str += "..";
+        str += tmp.hi:string;
       } else if isTupleType(tmp.type) {
-	str += _stringify_index(tmp);
+        str += _stringify_index(tmp);
       } else if isStringType(tmp.type) {
-	str += tmp;
+        str += tmp;
       } else {
-	str += "?";
+        str += "?";
       }
     }
     return str;
