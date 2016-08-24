@@ -344,10 +344,12 @@ proc goodPiece(mask, pos) {
 //
 proc searchLinearHelper(in board, in pos, in used, in placed,
                         in firstPiece, in mask) {
-  var currentSolution: [piecesDom] int;
-  currentSolution[0] = firstPiece;
-  currentSolution[1] = mask;
-  begin searchLinear(board, pos, used, placed, currentSolution);
+  begin {
+    var currentSolution: [piecesDom] int;
+    currentSolution[0] = firstPiece;
+    currentSolution[1] = mask;
+   searchLinear(board, pos, used, placed, currentSolution);
+  }
 }
 
 

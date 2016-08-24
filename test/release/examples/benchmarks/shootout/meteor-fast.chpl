@@ -335,10 +335,12 @@ proc searchLinear(in board: uint(32), in pos: uint(32), in used: uint(32),
 proc searchLinearHelper(in board: uint(32), in pos: uint(32),
                         in used: uint(32), in placed: uint(32),
                         in firstPiece: uint(32), in mask: uint(32)) {
-  var currentSolution: [0..9] uint(32);
-  currentSolution[0] = firstPiece;
-  currentSolution[1] = mask;
-  begin searchLinear(board, pos, used, placed, currentSolution);
+  begin {
+    var currentSolution: [0..9] uint(32);
+    currentSolution[0] = firstPiece;
+    currentSolution[1] = mask;
+    searchLinear(board, pos, used, placed, currentSolution);
+  }
 }
 
 
