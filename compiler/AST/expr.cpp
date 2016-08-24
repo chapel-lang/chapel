@@ -4463,7 +4463,11 @@ GenRet CallExpr::codegenPrimitive() {
     //if (get(1)->isRef() && !get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
     //  ret = codegenValue(get(1));
     //} else
-      ret = codegenAddrOf(get(1));
+      if (get(1)->isRef()) {
+        ret = codegenValue(get(1));
+      } else {
+        ret = codegenAddrOf(get(1));
+      }
     break;
   }
 
@@ -5004,8 +5008,12 @@ GenRet CallExpr::codegenPrimitive() {
   case PRIM_SET_SVEC_MEMBER: {
     // set tuple base=get(1) at index=get(2) to value=get(3)
     GenRet ptr = codegenElementPtr(get(1), codegenExprMinusOne(get(2)));
+    GenRet val = get(3);
+    if (get(3)->isRef()) {
+      val = codegenDeref(val);
+    }
 
-    codegenAssign(ptr, get(3));
+    codegenAssign(ptr, val);
 
     break;
   }
@@ -5038,6 +5046,10 @@ GenRet CallExpr::codegenPrimitive() {
     // base=get(1) field=get(2) value=get(3)
     GenRet ptr = codegenFieldPtr(get(1), get(2));
     GenRet val = get(3);
+
+    if (get(3)->isRef()) {
+      val = codegenDeref(val);
+    }
 
     codegenAssign(ptr, val);
 
@@ -6014,11 +6026,13 @@ GenRet CallExpr::codegenPrimMove() {
              get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true)  {
     codegenAssign(get(1), codegenRaddr(get(2)));
 
-  } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)        == true  &&
-             get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)        == false) {
-//  } else if (get(1)->isRef()        == true  &&
-//             get(2)->isRef()        == false) {
+  /*} else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)        == true  &&
+             get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)        == false) {*/
+  } else if (get(1)->isRef()        == true  &&
+             get(2)->isRef()        == false) {
     codegenAssign(codegenDeref(get(1)), get(2));
+  } else if(!get(1)->isRef() && get(2)->isRef()) {
+    codegenAssign(get(1), codegenDeref(get(2)));
   } else {
     codegenAssign(get(1), get(2));
   }

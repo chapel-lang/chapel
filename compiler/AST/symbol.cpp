@@ -832,7 +832,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
 }
 
 GenRet VarSymbol::codegen() {
-  return codegenVarSymbol();
+  return codegenVarSymbol(true);
 }
 
 void VarSymbol::codegenDefC(bool global, bool isHeader) {
@@ -1311,9 +1311,18 @@ GenRet ArgSymbol::codegen() {
   FILE* outfile = info->cfile;
   GenRet ret;
 
-  QualifiedType q = qualType();
-
   if( outfile ) {
+    QualifiedType qt = qualType();
+    ret.c = '&';
+    ret.c += cname;
+    ret.isLVPtr = GEN_PTR;
+    if (qt.isRef() && !qt.isRefType())
+      ret.chplType = getOrMakeRefTypeDuringCodegen(typeInfo());
+    else if (qt.isWideRef() && !qt.isWideRefType()) {
+      Type* refType = getOrMakeRefTypeDuringCodegen(typeInfo());
+      ret.chplType = getOrMakeWideTypeDuringCodegen(refType);
+    }
+    /*
     if (q.isRef() && !q.isRefType()) {
       ret.c = cname;
       ret.isLVPtr = GEN_PTR;
@@ -1325,6 +1334,7 @@ GenRet ArgSymbol::codegen() {
       ret.c += cname;
       ret.isLVPtr = GEN_PTR;
     }
+    */
   } else {
 #ifdef HAVE_LLVM
     ret = info->lvt->getValue(cname);
@@ -1337,7 +1347,7 @@ GenRet ArgSymbol::codegen() {
   //  ret = codegenLocalDeref(ret);
   //}
 
-  ret.chplType = this->type;
+  //ret.chplType = this->type;
 
   return ret;
 }
