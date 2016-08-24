@@ -108,8 +108,8 @@ endif
 #
 DEF_C_VER = $(shell echo __STDC_VERSION__ | $(CC) -E -x c - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__STDC_VERSION__/0/')
 DEF_CXX_VER = $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__cplusplus/0/')
-C_STD = $(shell test $(DEF_C_VER) -lt 199901 && echo -std=c99)
-CXX_STD = $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=c++11)
+C_STD = $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
+CXX_STD = $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 
 RUNTIME_CFLAGS += $(C_STD)
 RUNTIME_CXXFLAGS += $(CXX_STD)
