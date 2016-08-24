@@ -229,3 +229,5 @@ void MenuManager::addPopUpTo(Fl_Group *group)
     popup->resize(group->x(), group->y(), group->w(), group->h());
   }
 }
+
+void MenuManager::setCurrentDataView(DataView *view) { curDataView = view; }

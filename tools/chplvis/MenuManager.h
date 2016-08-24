@@ -54,6 +54,7 @@ class MenuManager {
   Fl_Menu_Button *popup;
 
   long curTag;
+  long lastLoc;
     
  public:
   MenuManager();
@@ -64,8 +65,8 @@ class MenuManager {
 
   DataView *currentDataView() { return curDataView; }
 
-  void setCurrentDataView(DataView *view) { curDataView = view; }
-
+  void setCurrentDataView(DataView *view);
+  
   ZoomScroll *currentZoom() {return curZoom;}
 
   void setCurrentZoom(ZoomScroll *view) { curZoom = view; }
@@ -77,6 +78,8 @@ class MenuManager {
   long currentTag() { return curTag; }
   void setCurrentTag(long tag) { curTag = tag; }
 
+  long currentLoc() { return lastLoc; }
+  void setCurrentLoc(long l) { lastLoc = l; }
   
 };
 

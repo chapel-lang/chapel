@@ -413,6 +413,7 @@ int GraphView::handle(int event)
         localeInfo *loc = &theLocales[ix];
         if ( x > loc->x-loc->w/2 && x <= loc->x + loc->w/2 &&
              y > loc->y-loc->h/2 && y <= loc->y + loc->h/2) {
+          Menus.setCurrentLoc(ix);
           if (Info->dataToShow() == show_Concurrency) {
             if (Menus.usingUTags() && curTagNum != DataModel::TagALL) {
               fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");

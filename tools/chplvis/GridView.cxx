@@ -347,6 +347,7 @@ int GridView::handle(int event)
       loc1 = (y-12-boxSize)/boxSize;
       if (loc1 >= 0 && loc1 < numlocales) {
         //printf ("left row of locales, %d.\n", loc1);
+        Menus.setCurrentLoc(loc1);
         if (Fl::event_button() == FL_MIDDLE_MOUSE){
           //printf ("Making locale window.\n");
           if (theLocales[loc1].win == NULL) {
@@ -373,6 +374,7 @@ int GridView::handle(int event)
       loc1 = (x-12-boxSize)/boxSize;
       if (loc1 >= 0 && loc1 < numlocales) {
         // printf ("top row of locales, %d.\n", loc1);
+        Menus.setCurrentLoc(loc1);
         if (Fl::event_button() == FL_MIDDLE_MOUSE){
           printf ("Making locale window.\n");
           if (theLocales[loc1].win == NULL) {
