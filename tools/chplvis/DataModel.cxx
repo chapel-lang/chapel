@@ -377,22 +377,26 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
         
         // function communication
         {
-          std::map<long,taskData>::iterator it;
+          taskData *task;
           if (cp->isGet()) {
-            it = tagList[0]->locales[cp->dstId()].tasks.find(cp->inTask());
-            if (it != curTag->locales[cp->dstId()].tasks.end()) {
-              int fid = it->second.taskRec->funcId();
-              funcTbl[fid].noGets++;
+            task = getTaskData (cp->dstId(), cp->inTask(), TagALL);
+            if (task) {
+              if (task->taskRec) 
+                funcTbl[task->taskRec->funcId()].noGets++;
+              else
+                funcTbl[funcTblSize].noGets++;
             } else {
-              printf ("get: no tid %ld on node %d...???\n", cp->inTask(), cp->dstId());
+              printf ("get: no tid %ld on node %d.\n", cp->inTask(), cp->dstId());
             }
           } else {
-            it = tagList[0]->locales[cp->srcId()].tasks.find(cp->inTask());
-            if (it != tagList[0]->locales[cp->srcId()].tasks.end()) {
-              int fid = it->second.taskRec->funcId();
-              funcTbl[fid].noPuts++;
+            task = getTaskData (cp->srcId(), cp->inTask(), TagALL);
+            if (task) {
+              if (task->taskRec)
+                funcTbl[task->taskRec->funcId()].noPuts++;
+              else
+                funcTbl[funcTblSize].noPuts++;
             } else {
-              printf ("put: no tid %ld on node %d...???\n", cp->inTask(), cp->srcId());
+              printf ("put: no tid %ld on node %d.\n", cp->inTask(), cp->srcId());
             }
           }
         }
@@ -896,7 +900,10 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
             if (sscanf(linedata, ": %d", &funcTblSize) != 1)
               printf ("Bad FIDNsize record\n");
             else {
-              funcTbl = new funcname[funcTblSize];
+              funcTbl = new funcname[funcTblSize+1];
+              funcTbl[funcTblSize].name = strdup("Unknown");
+              funcTbl[funcTblSize].lineNo = 0;
+              funcTbl[funcTblSize].fileNo = 0;
             }
           } else {
             // FIDname record
