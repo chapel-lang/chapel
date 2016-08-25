@@ -190,7 +190,7 @@
 //
 
 //#define PRINT_WIDEN_SUMMARY
-#define PRINT_WIDE_ANALYSIS
+//#define PRINT_WIDE_ANALYSIS
 
 #ifdef PRINT_WIDE_ANALYSIS
   #define DEBUG_PRINTF(...) printf(__VA_ARGS__)
@@ -1325,7 +1325,11 @@ static void propagateVar(Symbol* sym) {
             switch (call->primitive->tag) {
               case PRIM_ADDR_OF:
                 debug(sym, "_val of ref %s (%d) needs to be wide\n", lhs->cname, lhs->id);
-                setValWide(use, lhs);
+                if (isRef(use)) {
+                  widenRef(use, lhs);
+                } else {
+                  setValWide(use, lhs);
+                }
                 break;
 
               case PRIM_SET_REFERENCE:
@@ -2190,8 +2194,15 @@ static void insertWideTemp(Type* type, SymExpr* src) {
   Expr* rhs = src->copy();
   if (needsAddrOf)
     rhs = new CallExpr(PRIM_ADDR_OF, rhs);
-  if (needsDeref)
-    rhs = new CallExpr(PRIM_DEREF, rhs);
+  if (needsDeref) {
+    // Need to handle case of passing a _ref_T to a wide_T
+    // Easiest way seems to be having codegen handle the 'wide = narrow'
+    // temp creation, and to just create that narrow temp here.
+    VarSymbol* derefTmp = newTemp(srcType->getValType());
+    stmt->insertBefore(new DefExpr(derefTmp));
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, rhs)));
+    rhs = new SymExpr(derefTmp);
+  }
 
   DEBUG_PRINTF("Created wide temp %d\n", tmp->id);
   stmt->insertBefore(new DefExpr(tmp));

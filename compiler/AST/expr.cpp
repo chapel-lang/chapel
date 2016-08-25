@@ -4470,7 +4470,7 @@ GenRet CallExpr::codegenPrimitive() {
     //if (get(1)->isRef() && !get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
     //  ret = codegenValue(get(1));
     //} else
-      if (get(1)->isRef()) {
+      if (get(1)->isRefOrWideRef()) {
         ret = codegenValue(get(1));
       } else {
         ret = codegenAddrOf(get(1));
@@ -5020,7 +5020,8 @@ GenRet CallExpr::codegenPrimitive() {
     // set tuple base=get(1) at index=get(2) to value=get(3)
     GenRet ptr = codegenElementPtr(get(1), codegenExprMinusOne(get(2)));
     GenRet val = get(3);
-    if (get(3)->isRef()) {
+    // TODO: 'getSvecSymbol' may also be useful here...
+    if (get(3)->isRefOrWideRef() && !ptr.chplType->symbol->isRefOrWideRef()) {
       val = codegenDeref(val);
     }
 

@@ -273,7 +273,14 @@ returnInfoGetTupleMemberRef(CallExpr* call) {
   Type* type = returnInfoGetTupleMember(call).getType();
   if (type->refType)
     type = type->refType;
-  return QualifiedType(type, kRef);
+  Qualifier q = kRef;
+  if (call->get(1)->isWideRef()) {
+    q = kWideRef;
+    if (Type* t = wideRefMap.get(type)) {
+      type = t;
+    }
+  }
+  return QualifiedType(type, q);
 }
 
 static QualifiedType
@@ -284,6 +291,7 @@ returnInfoGetMemberRef(CallExpr* call) {
   INT_ASSERT(se);
   VarSymbol* var = toVarSymbol(se->var);
   INT_ASSERT(var);
+  Type* retType = NULL;
   if (Immediate* imm = var->immediate)
   {
     Symbol* field = NULL;
@@ -298,12 +306,18 @@ returnInfoGetMemberRef(CallExpr* call) {
       field = ct->getField(i);
     }
     INT_ASSERT(field);
-    Type* t = field->type->refType ? field->type->refType : field->type;
-    return QualifiedType(t, kRef);
+    retType = field->type->refType ? field->type->refType : field->type;
   } else {
-    Type* t = var->type->refType ? var->type->refType : var->type;
-    return QualifiedType(t, kRef);
+    retType = var->type->refType ? var->type->refType : var->type;
   }
+  Qualifier q = kRef;
+  if (call->get(1)->isWideRef()) {
+    q = kWideRef;
+    if (Type* t = wideRefMap.get(retType)) {
+      retType = t;
+    }
+  }
+  return QualifiedType(retType, kRef);
 }
 
 static QualifiedType
