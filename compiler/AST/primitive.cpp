@@ -147,7 +147,7 @@ static QualifiedType
 returnInfoCast(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
-  if (t2->symbol->hasFlag(FLAG_WIDE_CLASS))
+  if (t2->symbol->hasFlag(FLAG_WIDE_CLASS) && !call->get(2)->isRef())
     if (wideClassMap.get(t1))
       t1 = wideClassMap.get(t1);
   if (t2->symbol->hasFlag(FLAG_WIDE_REF))
@@ -160,11 +160,18 @@ static QualifiedType
 returnInfoVal(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
   if (ct) {
-    if(ct->symbol->hasFlag(FLAG_REF)) {
-      return QualifiedType(ct->getField(1)->type, kVal);
-    }
-    else if(ct->symbol->hasFlag(FLAG_WIDE_REF)) {
-      return QualifiedType(ct->getField(2)->type, kVal);
+    if (call->get(1)->isRef()) {
+      if(ct->symbol->hasFlag(FLAG_REF)) {
+        return QualifiedType(ct->getField(1)->type, kVal);
+      } else {
+        return QualifiedType(ct, kVal);
+      }
+    } else if (call->get(1)->isWideRef()) {
+      if(ct->symbol->hasFlag(FLAG_WIDE_REF)) {
+        return QualifiedType(ct->getField(2)->type, kVal);
+      } else {
+        return QualifiedType(ct, kVal);
+      }
     }
   }
   INT_FATAL(call, "attempt to get value type of non-reference type");
@@ -182,7 +189,7 @@ returnInfoRef(CallExpr* call) {
 static QualifiedType
 returnInfoAsRef(CallExpr* call) {
   Type* t = call->get(1)->typeInfo();
-  if (isReferenceType(t))
+  if (isReferenceType(t) || t->symbol->hasFlag(FLAG_WIDE_REF))
     return QualifiedType(t, kRef);
   else {
     if (!t->refType)

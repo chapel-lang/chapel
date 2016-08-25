@@ -170,11 +170,20 @@ static Qualifier qualifierForArgIntent(IntentTag intent)
 }
 
 QualifiedType Symbol::qualType() {
+  QualifiedType ret(dtUnknown, kBlank);
+
   if (ArgSymbol* arg = toArgSymbol(this)) {
-    return QualifiedType(type, qualifierForArgIntent(arg->intent));
+  //  return QualifiedType(type, qualifierForArgIntent(arg->intent));
+    Qualifier q = qualifierForArgIntent(arg->intent);
+    if (qual == kWideRef && (q == kRef || q == kConstRef)) {
+      q = kWideRef; // TODO: fix for kConstWideRef
+    }
+    ret = QualifiedType(type, q);
+  } else {
+    ret = QualifiedType(type, qual);
   }
 
-  return QualifiedType(type, qual);
+  return ret;
 }
 
 
@@ -202,6 +211,10 @@ bool Symbol::isRef() {
 bool Symbol::isWideRef() {
   QualifiedType q = qualType();
   return (q.isWideRef() || type->symbol->hasFlag(FLAG_WIDE_REF));
+}
+
+bool Symbol::isRefOrWideRef() {
+  return isRef() || isWideRef();
 }
 
 
@@ -3641,6 +3654,16 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
   }
 
   return s->flags & mask;
+}
+
+VarSymbol* newTemp(const char* name, QualifiedType qt) {
+  VarSymbol* vs = newTemp(name, qt.getType());
+  vs->qual = qt.getQual();
+  return vs;
+}
+
+VarSymbol* newTemp(QualifiedType qt) {
+  return newTemp((const char*)NULL, qt);
 }
 
 VarSymbol* newTemp(const char* name, Type* type) {

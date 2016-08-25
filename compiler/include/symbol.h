@@ -116,6 +116,7 @@ public:
           bool       isRenameable()                            const;
           bool       isRef();
           bool       isWideRef();
+          bool       isRefOrWideRef();
 
   virtual void       codegenDef();
 
@@ -588,6 +589,8 @@ void resetTempID();
 FlagSet getRecordWrappedFlags(Symbol* s);
 VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);
 VarSymbol* newTemp(Type* type);
+VarSymbol* newTemp(const char* name, QualifiedType qt);
+VarSymbol* newTemp(QualifiedType qt);
 
 // for use in an English sentence
 const char* retTagDescrString(RetTag retTag);

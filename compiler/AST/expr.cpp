@@ -176,6 +176,10 @@ bool Expr::isWideRef() {
   return this->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF);
 }
 
+bool Expr::isRefOrWideRef() {
+  return isRef() || isWideRef();
+}
+
 // Returns true if 'this' properly contains the given expr, false otherwise.
 bool Expr::contains(const Expr* expr) const {
   const Expr* parent = expr->parentExpr;
@@ -4793,7 +4797,7 @@ GenRet CallExpr::codegenPrimitive() {
     } else if (lhsTypeSym->hasFlag(FLAG_REF)      ||
                lhsTypeSym->hasFlag(FLAG_WIDE_REF) ||
                lhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
-      if (rhsTypeSym->hasFlag(FLAG_REF))
+      if (get(2)->isRef())
         codegenAssign(codegenDeref(lhs), codegenDeref(rhs));
       else
         codegenAssign(codegenDeref(lhs), rhs);
@@ -5054,7 +5058,7 @@ GenRet CallExpr::codegenPrimitive() {
     GenRet ptr = codegenFieldPtr(get(1), get(2));
     GenRet val = get(3);
 
-    if (get(3)->isRef() && !get(2)->isRef()) {
+    if (get(3)->isRefOrWideRef() && !get(2)->isRefOrWideRef()) {
       val = codegenDeref(val);
     }
 
@@ -5066,7 +5070,7 @@ GenRet CallExpr::codegenPrimitive() {
   case PRIM_CHECK_NIL: {
     GenRet ptr = get(1);
 
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
+    if (ptr.chplType->symbol->hasFlag(FLAG_WIDE_CLASS))
       ptr = codegenRaddr(ptr);
 
     codegenCall("chpl_check_nil",
@@ -5095,8 +5099,13 @@ GenRet CallExpr::codegenPrimitive() {
 
       GenRet filename = GenRet(get(3));
 
+      GenRet lhs = get(1);
+      if (get(1)->isRef()) {
+        lhs = codegenDeref(lhs);
+      }
+
       codegenCall("chpl_check_local",
-                  codegenRnode(get(1)),
+                  codegenRnode(lhs),
                   get(2),
                   filename,
                   error);
@@ -5728,14 +5737,22 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_CAST_TO_VOID_STAR: {
-    Type*  t = get(1)->typeInfo();
+    //Type*  t = get(1)->typeInfo();
+    GenRet act = get(1);
     GenRet ptr;
 
-    if (t->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
+    const bool refToWide = get(1)->isRef() && act.chplType->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS);
+
+    if (act.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) ||
+        refToWide) {
       // Get the local address.
       // Assume that we have already tested to ensure that this wide pointer
       // is local.  That is, caller should have called chpl_check_local.
-      ptr = codegenRaddr(get(1));
+      if (refToWide) {
+        act = codegenDeref(act);
+      }
+      ptr = codegenRaddr(act);
+    }
     else
       ptr = codegenValue(get(1));
 
@@ -5954,6 +5971,9 @@ GenRet CallExpr::codegenPrimitive() {
 GenRet CallExpr::codegenPrimMove() {
   GenRet ret;
 
+  const bool LHSRef = get(1)->isRef() || get(1)->isWideRef();
+  const bool RHSRef = get(2)->isRef() || get(2)->isWideRef();
+
   GenRet specRet;
   if (get(1)->typeInfo() == dtVoid) {
     ret = get(2)->codegen();
@@ -6038,7 +6058,7 @@ GenRet CallExpr::codegenPrimMove() {
   } else if (get(1)->isRef()        == true  &&
              get(2)->isRef()        == false) {
     codegenAssign(codegenDeref(get(1)), get(2));
-  } else if(!get(1)->isRef() && get(2)->isRef()) {
+  } else if(!LHSRef && RHSRef) {
     codegenAssign(get(1), codegenDeref(get(2)));
   } else {
     codegenAssign(get(1), get(2));
@@ -6101,8 +6121,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_DEREF: {
+      // TODO: What if get(1) for this first branch is not a ref?
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
-          call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+          (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) && !call->get(1)->isRef())) {
         Type* valueType;
 
         if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))

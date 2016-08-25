@@ -1569,6 +1569,7 @@ static void passArgsToNestedFns() {
 
 Type* getOrMakeRefTypeDuringCodegen(Type* type) {
   Type* refType;
+  if (type->symbol->hasFlag(FLAG_REF)) return type;
   refType = type->refType;
   if( ! refType ) {
     SET_LINENO(type->symbol);

@@ -190,7 +190,7 @@
 //
 
 //#define PRINT_WIDEN_SUMMARY
-//#define PRINT_WIDE_ANALYSIS
+#define PRINT_WIDE_ANALYSIS
 
 #ifdef PRINT_WIDE_ANALYSIS
   #define DEBUG_PRINTF(...) printf(__VA_ARGS__)
@@ -309,19 +309,6 @@ static bool valIsWideClass(BaseAST* bs) {
   return bs->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS);
 }
 
-static Type* getNarrowType(BaseAST* bs) {
-  //
-  // TODO: This should really return a completely narrow ref, and not
-  // a ref to a wide class.
-  //
-  if (isTypeFullyWide(bs)) {
-    return bs->typeInfo()->getField("addr")->typeInfo();
-  }
-  else {
-    return bs->typeInfo();
-  }
-}
-
 static bool hasSomeWideness(BaseAST* bs) {
   return isFullyWide(bs) || valIsWideClass(bs);
 }
@@ -373,8 +360,61 @@ static Symbol* getTupleField(CallExpr* call) {
   return field;
 }
 
+static QualifiedType getNarrowType(BaseAST* bs) {
+  //
+  // TODO: Should really return a completely narrow ref, and not a ref to a
+  // wide class?
+  //
+
+
+  Type* retType = NULL;
+  Qualifier retQ = kBlank;
+
+  if (Type* t = toType(bs)) {
+    if (t->symbol->qualType().isRefOrWideRef()) {
+      retQ = kRef;
+    } else {
+      retQ = kVal;
+    }
+
+    if (isTypeFullyWide(bs)) {
+      t = t->getField("addr")->typeInfo();
+    }
+    retType = t;
+  } else {
+    Symbol* sym = NULL;
+    if (Symbol* s = toSymbol(bs)) {
+      sym = s;
+    } else {
+      SymExpr*se = toSymExpr(bs);
+      INT_ASSERT(se);
+      sym = se->var;
+    }
+
+    if (isRef(sym)) {
+      retQ = kRef;
+
+      if (!isRefType(sym)) {
+        retType = sym->typeInfo();
+      } else {
+        INT_ASSERT(isTypeFullyWide(sym));
+        retType = sym->typeInfo()->getField("addr")->typeInfo();
+      }
+    } else {
+      retQ = sym->qual;
+      if (isTypeFullyWide(bs)) {
+        retType = sym->typeInfo()->getField("addr")->typeInfo();
+      } else {
+        retType = sym->typeInfo();
+      }
+    }
+  }
+
+  return QualifiedType(retType, retQ);
+}
+
 static Type* getElementType(BaseAST* bs) {
-  Type* arrType = getNarrowType(bs);
+  Type* arrType = getNarrowType(bs).getType();
   INT_ASSERT(arrType->symbol->hasFlag(FLAG_DATA_CLASS));
 
   return getDataClassType(arrType->symbol)->type;
@@ -446,16 +486,27 @@ static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
       sym->type = wide;
     }
   }
-  else if(sym->qualType().isRefOrWideRef()) {
-    sym->qual= kWideRef;
-  }
-  else if (isRef(sym)) {
+  else if (isRefType(sym)) {
     if (mustBeWide) {
-      if (Type* wide = wideRefMap.get(sym->type))
+      if (Type* wide = wideRefMap.get(sym->type)) {
         sym->type = wide;
+        sym->qual = kWideRef;
+      }
     } else if (wideVal) {
-      if (Type* wide = narrowToWideVal[sym->type])
+      if (Type* wide = narrowToWideVal[sym->type]) {
         sym->type = wide;
+        sym->qual = kRef;
+      }
+    }
+  }
+  else if(sym->qualType().isRefOrWideRef()) {
+    if (mustBeWide) {
+      sym->qual = kWideRef;
+    } else {
+      if (Type* wide = wideClassMap.get(sym->type->getValType())) {
+        sym->type = wide;
+        sym->qual = kRef;
+      }
     }
   }
 }
@@ -587,6 +638,8 @@ static void widenRef(BaseAST* src, Symbol* dest) {
 static void matchWide(BaseAST* src, Symbol* dest) {
   if (isRef(src) && isRef(dest)) {
     widenRef(src, dest);
+  } else if (isRef(dest) && !isRef(src)) {
+    setValWide(src, dest);
   } else {
     setWide(src, dest);
   }
@@ -1275,6 +1328,10 @@ static void propagateVar(Symbol* sym) {
                 setValWide(use, lhs);
                 break;
 
+              case PRIM_SET_REFERENCE:
+                widenRef(use, lhs);
+                break;
+
               case PRIM_ARRAY_GET:
               case PRIM_GET_MEMBER: // ??
               case PRIM_GET_MEMBER_VALUE:
@@ -1365,6 +1422,13 @@ static void propagateVar(Symbol* sym) {
           // Therefore, this clause applies only to PRIM_MOVE.
           if (call->isPrimitive(PRIM_MOVE))
             widenRef(use, lhs);
+          else {
+            // Assigning contents from one pointer to another. Need to handle
+            // the case where the valType is a wide class
+            if (isObj(use->getValType())) {
+              setValWide(use, lhs);
+            }
+          }
         }
         else if (isRef(lhs) && isObj(rhs)) {
           debug(sym, "_val of ref %s (%d) needs to be wide\n", lhs->cname, lhs->id);
@@ -1673,14 +1737,14 @@ static void narrowWideClassesThroughCalls()
 
         // Select symbols with wide types.
         if (isFullyWide(sym)) {
-          Type* narrowType = getNarrowType(sym);
+          QualifiedType narrowType = getNarrowType(sym);
 
           // Copy
           VarSymbol* var = newTemp(narrowType);
           SET_LINENO(call);
           call->getStmtExpr()->insertBefore(new DefExpr(var));
 
-          if (narrowType->symbol->hasFlag(FLAG_EXTERN)) {
+          if (narrowType.getType()->symbol->hasFlag(FLAG_EXTERN)) {
 
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
@@ -1691,7 +1755,8 @@ static void narrowWideClassesThroughCalls()
             // we must treat it like a reference (this is by definition)
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           }
-          else if (narrowType->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS)) {
+          //else if (narrowType->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS)) {
+          else if (narrowType.isRef() || narrowType.getType()->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS)) {
             // Also if the narrow type is a ref or data class type,
             // we must treat it like a (narrow) reference.
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
@@ -1928,7 +1993,9 @@ static void localizeCall(CallExpr* call) {
         insertLocalTemp(call->get(2));
         if (isFullyWide(call->get(1))) {
           Symbol* se = toSymExpr(call->get(1))->var;
-          se->type = getNarrowType(call->get(1));
+          QualifiedType qt = getNarrowType(call->get(1));
+          se->type = qt.getType();
+          se->qual = qt.getQual();
         }
       }
       break;
@@ -2088,7 +2155,7 @@ static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
   block->insertAtTail(dummy);
   forv_Vec(Symbol, sym, heapVars) {
     insertChplHereAlloc(dummy, false /*insertAfter*/, sym,
-                        getNarrowType(sym),
+                        getNarrowType(sym).getType(),
                         newMemDesc("global heap-converted data"));
   }
   dummy->remove();
@@ -2244,6 +2311,15 @@ static void fixAST() {
         }
         else if (Type* wide = wideRefMap.get(act->typeInfo())) {
           insertWideTemp(wide, act);
+        } else if (act->isRef()) {
+          Type* ty = act->typeInfo();
+          if (!ty->symbol->hasFlag(FLAG_REF))
+            ty = ty->refType;
+
+          Type* wide = wideRefMap.get(ty);
+          INT_ASSERT(wide);
+
+          insertWideTemp(wide, act);
         }
       }
     } else {
@@ -2392,7 +2468,7 @@ static void moveAddressSourcesToTemp()
     if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
       if (isRef(call->get(1)) &&
           valIsWideClass(call->get(1)) &&
-          call->get(2)->typeInfo() == getNarrowType(call->get(1)->getValType())) {
+          call->get(2)->typeInfo() == getNarrowType(call->get(1)->getValType()).getType()) {
         //
         // widen rhs class
         //
