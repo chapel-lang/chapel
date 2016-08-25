@@ -406,7 +406,7 @@ memleaks:
   03/10/16:
     - Cleanups to miniMD (#3436)
   08/11/16:
-    - Sync as record (#4309)
+    - Sync as record (#4309), Single as record (#4350)
 
 memleaksfull:
   07/08/14:
