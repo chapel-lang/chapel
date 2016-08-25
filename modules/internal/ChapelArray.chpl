@@ -3129,9 +3129,9 @@ module ChapelArray {
       chpl__bulkTransferHelper(a, b);
     }
     else {
-      if debugBulkTransfer then
-        // just writeln() clashes with writeln.chpl
-        stdout.writeln("proc =(a:[],b): bulk transfer did not happen");
+      if debugBulkTransfer {
+        chpl_debug_writeln("proc =(a:[],b): bulk transfer did not happen");
+      }
       chpl__transferArray(a, b);
     }
   }

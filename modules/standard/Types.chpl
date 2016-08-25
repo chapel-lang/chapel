@@ -310,20 +310,6 @@ pragma "no doc"
 proc isRefIter(type t)   param  return isRefIterType(t);
 pragma "no doc"
 proc isPOD(type t)       param  return isPODType(t);
-pragma "no doc"
-proc isTupleOfPrimitiveTypes(e) param
-{
-  if !isTuple(e) then return false;
-
-  // compute && reduce isPrimitiveValue over the tuple
-  proc help(x) param
-    return isPrimitiveValue(x);
-
-  proc help(x, args ...) param
-    return isPrimitiveValue(x) && help((...args));
-
-  return help((...e));
-}
 
 // Set 2 - values.
 /*
