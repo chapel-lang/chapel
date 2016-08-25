@@ -26,7 +26,7 @@ use RemElems;
 iter chunks(
   r: range,
   numChunks: integral,
-  remPol: RemElems = Dist): range
+  remPol: RemElems = Dist): range(r.idxType, r.boundedType, true)
 {
   for (startOrder, endOrder) in chunksOrder(r, numChunks, remPol) {
     var start = r.orderToIndex(startOrder);
@@ -40,14 +40,16 @@ iter chunksOrder(
   numChunks: integral,
   remPol: RemElems = Dist): 2*r.idxType
 {
-  var numElems = r.length;
-  var div = numElems / numChunks;
-  var rem = numElems % numChunks;
-  for i in 1..numChunks {
-    var order = if remPol == Dist
-      then chunkOrderDist(div, rem, numElems, numChunks, i)
-      else chunkOrderTail(div, numElems, numChunks, i);
-    yield order; 
+  type RT = r.idxType;
+  var nElems = r.length: RT;
+  var nChunks = numChunks: RT;
+
+  var div = nElems / nChunks;
+  var rem = nElems % nChunks;
+  for i in 1..nChunks {
+    yield if remPol == Dist
+      then chunkOrderDist(div, rem, nElems, nChunks, i)
+      else chunkOrderTail(div, nElems, nChunks, i);
   }
 }
 
@@ -70,32 +72,37 @@ proc chunkOrder(
   i: integral,
   remPol: RemElems = Dist): 2*r.idxType
 {
-  var numElems = r.length;
-  var div = numElems / numChunks;
-  var rem = numElems % numChunks;
-  var order = if remPol == Dist
-    then chunkOrderDist(div, rem, numElems, numChunks, i)
-    else chunkOrderTail(div, numElems, numChunks, i);
-  return order;
+  type RT = r.idxType;
+  var nElems = r.length: RT;
+  var nChunks = numChunks: RT;
+  var idx = i: RT;
+
+  var div = nElems / nChunks;
+  if remPol == Dist {
+    var rem = nElems % nChunks;
+    return chunkOrderDist(div, rem, nElems, nChunks, idx);
+  } else {
+    return chunkOrderTail(div, nElems, nChunks, idx);
+  }
 }
 
 // remainder elements distributed over chunks
 // zero-based indexing
 private proc chunkOrderDist(
-  div: uint,
-  rem: uint,
-  numElems: uint,
-  numChunks: uint,
-  i: uint): (uint, uint)
+  div: ?I,
+  rem: I,
+  nElems: I,
+  nChunks: I,
+  i: I): (I, I)
 {
-  var start, end: uint;
+  var start, end: I;
   if i <= rem {
     // (div+1) elements per chunk
     var end = i * (div + 1) - 1;
     start = end - div;
   } else {
     // (div) elements per chunk
-    start = numElems - (numChunks - i + 1) * div;
+    start = nElems - (nChunks - i + 1) * div;
     end = start + div;
   }
   return (start, end);
@@ -104,14 +111,14 @@ private proc chunkOrderDist(
 // remainder elements included in last chunk
 // zero-based indexing
 private proc chunkOrderTail(
-  div: uint,
-  numElems: uint,
-  numChunks: uint,
-  i: uint): (uint, uint)
+  div: ?I,
+  nElems: I,
+  nChunks: I,
+  i: I): (I, I)
 {
   var start = div * (i - 1);
-  var end = if i == numChunks
-    then numElems
+  var end = if i == nChunks
+    then nElems
     else start + div;
   return (start, end);
 }
