@@ -27,6 +27,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
+#include "initializerRules.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -1784,6 +1785,8 @@ static void change_method_into_constructor(FnSymbol* fn) {
     meme->addFlag(FLAG_IS_MEME);
     fn->insertFormalAtTail(meme);
     call->insertAtTail(new NamedExpr ("meme", new SymExpr(meme)));
+
+    handleInitializerRules(fn);
   }
 
   fn->_this = new VarSymbol("this");

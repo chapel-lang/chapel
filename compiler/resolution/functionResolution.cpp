@@ -7780,11 +7780,7 @@ resolveFns(FnSymbol* fn) {
 
   insertFormalTemps(fn);
 
-  if (fn->hasFlag(FLAG_CONSTRUCTOR) && !strcmp(fn->name, "init")) {
-    handleInitializerRules(fn);
-  } else {
-    resolveBlockStmt(fn->body);
-  }
+  resolveBlockStmt(fn->body);
 
   if (tryFailure) {
     fn->removeFlag(FLAG_RESOLVED);

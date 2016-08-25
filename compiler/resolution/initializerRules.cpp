@@ -21,7 +21,6 @@
 
 #include "astutil.h"
 #include "expr.h"
-#include "resolution.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -76,11 +75,6 @@ void handleInitializerRules(FnSymbol* fn) {
   phase1->insertAtTail(otherInit);
   phase1->insertAtTail(phase2);
 
-  phase1->insertAtTail(phase2->body.tail->remove());
-  // Put the return statement back where we found it.  FnSymbol::getReturnSymbol
-  // expects the return statement to be at the end of the function.
-
-  resolveBlockStmt(fn->body);
 }
 
 // This function traverses the body of the initializer backwards, moving the
@@ -99,7 +93,22 @@ void reorganizeBody(FnSymbol* fn, BlockStmt* phase1, BlockStmt* phase2,
 
     if (CallExpr* call = toCallExpr(phase1->body.tail)) {
       if (CallExpr* inner = toCallExpr(call->baseExpr)) {
-        if (inner->isNamed("init")) {
+        if (inner->isNamed(".")) {
+          if (SymExpr* sym = toSymExpr(inner->get(2))) {
+            if (VarSymbol* var = toVarSymbol(sym->var)) {
+              if (var->immediate->const_kind == CONST_KIND_STRING) {
+                if (!strcmp(var->immediate->v_string, "init")) {
+                  otherInit->insertAtHead(call->remove());
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    /*
+        if (!strcmp(inner->get(2), "init") && inner->isNamed(".")) {
           // While going backwards, we found the super/this.init() call
           // Time to stop moving into the phase2 block statement.
           if (NamedExpr* meme = toNamedExpr(inner->get(1))) {
@@ -139,6 +148,7 @@ void reorganizeBody(FnSymbol* fn, BlockStmt* phase1, BlockStmt* phase2,
         }
       }
     }
+    */
     phase2->insertAtHead(phase1->body.tail->remove());
   }
 }
