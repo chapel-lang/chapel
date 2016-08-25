@@ -188,6 +188,10 @@ class Cyclic: BaseDist {
     var tupleStartIdx: rank*idxType;
     if isTuple(startIdx) then tupleStartIdx = startIdx;
                          else tupleStartIdx(1) = startIdx;
+
+    // MPF - why isn't it:
+    //setupTargetLocalesArray(targetLocDom, targetLocs, targetLocales);
+
     if rank == 1  {
       targetLocDom = {0..#targetLocales.numElements};
       targetLocs = targetLocales;
@@ -234,6 +238,7 @@ class Cyclic: BaseDist {
       for loc in locDist do writeln(loc);
   }
 
+  /*
   proc Cyclic(param rank, type idxType, other: Cyclic(rank, idxType)) {
     targetLocDom = other.targetLocDom;
     targetLocs = other.targetLocs;
@@ -242,7 +247,7 @@ class Cyclic: BaseDist {
     dataParTasksPerLocale = other.dataParTasksPerLocale;
     dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
     dataParMinGranularity = other.dataParMinGranularity;
-  }
+  }*/
 
   proc dsiAssign(other: this.type) {
     coforall locid in targetLocDom do
@@ -268,7 +273,21 @@ class Cyclic: BaseDist {
     return false;
   }
 
-  proc dsiClone() return new Cyclic(rank=rank, idxType=idxType, other=this);
+//  proc dsiClone() return new Cyclic(rank=rank, idxType=idxType, other=this);
+  proc dsiClone() {
+    return new Cyclic(startIdx, targetLocs,
+                      dataParTasksPerLocale,
+                      dataParIgnoreRunningTasks,
+                      dataParMinGranularity);
+  }
+
+  proc dsiDestroyDist() {
+    coforall ld in locDist do {
+      on ld do
+        delete ld;
+    }
+  }
+
 }
 
 

@@ -269,6 +269,13 @@ class BlockCyclic : BaseDist {
     return new BlockCyclic(lowIdx, blocksize, targetLocales, tasksPerLocale);
   }
 
+  proc dsiDestroyDist() {
+    coforall ld in locDist do {
+      on ld do
+        delete ld;
+    }
+  }
+
   proc dsiEqualDMaps(that: BlockCyclic(?)) {
     //
     // TODO: In retrospect, I think that this equality check

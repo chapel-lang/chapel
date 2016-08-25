@@ -218,6 +218,10 @@ proc ReplicatedDist.dsiEqualDMaps(that) param {
   return false;
 }
 
+proc ReplicatedDist.dsiDestroyDist() {
+  // no action necessary here
+}
+
 // privatization
 
 proc ReplicatedDist.dsiSupportsPrivatization() param return true;
@@ -496,6 +500,12 @@ proc ReplicatedDom.dsiMember(indexx)
 proc ReplicatedDom.dsiIndexOrder(indexx)
   return redirectee().dsiIndexOrder(indexx);
 
+proc ReplicatedDom.dsiDestroyDom() {
+  coforall localeIdx in dist.targetIds {
+    on dist.targetLocales(localeIdx) do
+      delete localDoms(localeIdx);
+  }
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // arrays
@@ -597,6 +607,13 @@ proc ReplicatedArr.dsiSerialWrite(f): void {
         f.write(locArr.locale, ":\n");
       locArr.arrLocalRep._value.dsiSerialWrite(f);
 //  }
+  }
+}
+
+proc ReplicatedArr.dsiDestroyArr(isslice:bool) {
+  coforall localeIdx in dom.dist.targetIds {
+    on dom.dist.targetLocales(localeIdx) do
+      delete localArrs(localeIdx);
   }
 }
 
