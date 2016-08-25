@@ -335,9 +335,9 @@ jacobi:
   04/01/16:
     - casting bug fix (#3615)
   08/19/16:
-    - Make denormalize on-by-default (#4360)
+    - Turn denormalization on-by-default (#4360)
   08/20/16:
-    - Revert #4360 (#4367)
+    - Turn denormalization off-by-default (#4367) (revert #4360)
 
 knucleotide:
   10/16/15:
