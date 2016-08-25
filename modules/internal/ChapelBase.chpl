@@ -314,6 +314,10 @@ module ChapelBase {
     if b < 0 then
       if a == 0 then
         halt("cannot compute ", a, " ** ", b);
+      else if a == 1 then
+        return 1;
+      else if a == -1 then
+        return if b % 2 == 0 then 1 else -1;
       else
         return 0;
     var i = b, y:a.type = 1, z = a;
@@ -363,11 +367,14 @@ module ChapelBase {
       compilerError("unexpected case in exponentiation optimization");
   }
 
-  inline proc _expBaseHelp(param a: int, b) {
+  inline proc _expBaseHelp(param a: int, b) where _basePowerTwo(a) {
     if b == 0 then 
       return 1:a.type;
     if b < 0 then
-        return 0; // same behavior as signed int **
+      if a == 1 then // "where _basePowerTwo(a)" means 'a' cannot be <= 0
+        return 1
+      else
+        return 0;
     var c = 0;
     var x: int = a;
     while (x > 1) // shift right to count the power
