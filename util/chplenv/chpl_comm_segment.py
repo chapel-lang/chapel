@@ -5,7 +5,7 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_comm, chpl_comm_substrate
+import chpl_comm, chpl_comm_substrate, overrides
 from utils import memoize
 
 
@@ -13,7 +13,7 @@ from utils import memoize
 def get():
     comm_val = chpl_comm.get()
     if comm_val == 'gasnet':
-        segment_val = os.environ.get('CHPL_GASNET_SEGMENT')
+        segment_val = overrides.get('CHPL_GASNET_SEGMENT')
         if not segment_val:
             substrate_val = chpl_comm_substrate.get()
             if substrate_val == 'portals' or substrate_val == 'gemini' or substrate_val == 'aries':

@@ -1,0 +1,12 @@
+#! /usr/bin/env bash
+
+# This finds the .chplconfig file in this directory
+# Note that this is run in a subprocess, so it does not actually modify the
+# compilation environment for this test
+export CHPL_CONFIG=${PWD}
+
+# Unset any current overrides to prevent interference with test overrides
+source ../unset_overrides.sh
+
+# Note that this is the actual test:
+$CHPL_HOME/util/printchplenv --simple 1> /dev/null 2> warnings.good

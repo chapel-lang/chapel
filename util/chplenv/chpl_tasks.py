@@ -5,12 +5,13 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_compiler, chpl_platform, utils
-from utils import memoize, CompVersion
+import chpl_compiler, chpl_platform, overrides
+from compiler_utils import CompVersion, get_compiler_version
+from utils import memoize
 
 @memoize
 def get():
-    tasks_val = os.environ.get('CHPL_TASKS')
+    tasks_val = overrides.get('CHPL_TASKS')
     if not tasks_val:
         platform_val = chpl_platform.get('target')
         compiler_val = chpl_compiler.get('target')
@@ -20,7 +21,7 @@ def get():
         # use the qthreads it provides even if the user has an older CCE loaded
         using_qthreads_incompatible_cce = False
         if compiler_val == 'cray-prgenv-cray':
-            if (utils.get_compiler_version(compiler_val) < CompVersion('8.4') and
+            if (get_compiler_version(compiler_val) < CompVersion('8.4') and
                     not using_chapel_module()):
                 using_qthreads_incompatible_cce = True
 

@@ -52,7 +52,16 @@ module ChapelReduce {
   
   proc chpl__sumType(type eltType) type {
     var x: eltType;
-    return (x + x).type;
+    if isArray(x) {
+      type xET = x.eltType;
+      type xST = chpl__sumType(xET);
+      if xET == xST then
+        return eltType;
+      else
+        return [x.domain] xST;
+    } else {
+      return (x + x).type;
+    }
   }
   
   pragma "ReduceScanOp"

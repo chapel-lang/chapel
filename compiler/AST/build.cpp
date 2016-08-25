@@ -1133,8 +1133,8 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
   // reduceVar = globalOp.generate(); delete globalOp;
   parLoop->insertAfter("'delete'(%S)",
                        globalOp);
-  parLoop->insertAfter("'='(%E,.(%S, 'generate')())",
-                       reduceVar->copy(), globalOp);
+  parLoop->insertAfter(new CallExpr("=", reduceVar->copy(),
+                         new_Expr(".(%S, 'generate')()", globalOp)));
 }
 
 // Setup for forall intents

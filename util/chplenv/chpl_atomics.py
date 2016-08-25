@@ -6,21 +6,22 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_comm, chpl_compiler, chpl_platform, utils
-from utils import CompVersion, memoize
+import chpl_comm, chpl_compiler, chpl_platform, overrides
+from compiler_utils import CompVersion, get_compiler_version
+from utils import memoize
 
 
 @memoize
 def get(flag='target'):
     if flag == 'network':
-        atomics_val = os.environ.get('CHPL_NETWORK_ATOMICS')
+        atomics_val = overrides.get('CHPL_NETWORK_ATOMICS')
         if not atomics_val:
             if chpl_comm.get() == 'ugni':
                 atomics_val = 'ugni'
             else:
                 atomics_val = 'none'
     elif flag == 'target':
-        atomics_val = os.environ.get('CHPL_ATOMICS')
+        atomics_val = overrides.get('CHPL_ATOMICS')
         if not atomics_val:
             compiler_val = chpl_compiler.get('target')
             platform_val = chpl_platform.get('target')
@@ -32,7 +33,7 @@ def get(flag='target'):
             # will never run on a 32 bit machine. For pgi or 32 bit platforms
             # with an older gcc, we fall back to locks
             if compiler_val in ['gnu', 'cray-prgenv-gnu', 'mpi-gnu']:
-                version = utils.get_compiler_version('gnu')
+                version = get_compiler_version('gnu')
                 if version >= CompVersion('4.8'):
                     atomics_val = 'intrinsics'
                 elif version >= CompVersion('4.1') and not platform_val.endswith('32'):
