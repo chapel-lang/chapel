@@ -8,8 +8,7 @@ if [ -z "$CHPL_HOME" ]; then
 fi
 
 platform=$("$CHPL_HOME/util/chplenv/chpl_platform.py" --host)
-python_version_dir=py$("$CHPL_HOME/util/chplenv/chpl_python_version.py")
-venv_path="$CHPL_HOME/third-party/chpl-venv/install/$platform/$python_version_dir/chpl-virtualenv/"
+venv_path="$CHPL_HOME/third-party/chpl-venv/install/$platform/chpl-virtualenv/"
 
 if [ ! -d "$venv_path" ]; then
   echo "Error: virtualenv '$venv_path' does not exist"
