@@ -509,7 +509,8 @@ revcomp:
   10/29/15:
     - Difficult to consistently replicate
   08/12/16:
-    - Discontinued performance testing (data invalid) (#4333)
+    - text: Discontinued performance testing (data invalid) (#4333)
+      config: Single node XC
 
 sad:
   05/03/16:
