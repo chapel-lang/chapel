@@ -323,6 +323,10 @@ ModuleSymbol* BaseAST::getModule() {
   return retval;
 }
 
+Type* BaseAST::typeInfo() {
+  QualifiedType qt = this->qualType();
+  return qt.type();
+}
 
 FnSymbol* BaseAST::getFunction() {
   if (ModuleSymbol* x = toModuleSymbol(this))
