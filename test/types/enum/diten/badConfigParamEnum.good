@@ -1,1 +1,1 @@
-Command-line arg (c):1: error: unresolved enumerated type symbol "orange"
+Command-line arg (c):1: error: unresolved enumerated type symbol or call 'type color.orange'

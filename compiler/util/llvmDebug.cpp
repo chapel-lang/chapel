@@ -426,7 +426,7 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
 
   else if(ty->isArrayTy() && type->astTag == E_AggregateType) {
     AggregateType *this_class = (AggregateType *)type;
-    // Subscripts are "ranges" for each dimention of the array
+    // Subscripts are "ranges" for each dimension of the array
     llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE *, 4> Subscripts;
     int Asize = this_class->fields.length;
     // C-style language always has 1D for array, and index starts with "0"

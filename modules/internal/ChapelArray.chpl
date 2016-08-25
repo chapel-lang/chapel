@@ -149,6 +149,10 @@ module ChapelArray {
   pragma "no doc"
   config param useBulkTransferStride = true;
 
+  // Return POD values from arrays as values instead of const ref?
+  pragma "no doc"
+  config param PODValAccess = true;
+
   // Toggles the functionality to perform strided bulk transfers involving
   // distributed arrays.
   //
@@ -1703,6 +1707,7 @@ module ChapelArray {
 
   pragma "no doc"
   proc shouldReturnRvalueByConstRef(type t) param {
+    if !PODValAccess then return true;
     if isPODType(t) then return false;
     return true;
   }
@@ -3126,9 +3131,9 @@ module ChapelArray {
       chpl__bulkTransferHelper(a, b);
     }
     else {
-      if debugBulkTransfer then
-        // just writeln() clashes with writeln.chpl
-        stdout.writeln("proc =(a:[],b): bulk transfer did not happen");
+      if debugBulkTransfer {
+        chpl_debug_writeln("proc =(a:[],b): bulk transfer did not happen");
+      }
       chpl__transferArray(a, b);
     }
   }

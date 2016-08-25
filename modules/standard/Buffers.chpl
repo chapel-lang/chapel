@@ -218,6 +218,18 @@ module Buffers {
     }
   }
 
+  /*
+    .. note::
+
+       The pointer returned by this method is only valid for the lifetime of
+       the :type:`bytes` object and will be invalid if this memory is freed.
+
+    :returns: a :type:`c_void_ptr` to the internal byte array
+   */
+  proc bytes.ptr(): c_void_ptr {
+    return qbytes_data(this._bytes_internal);
+  }
+
   /* :returns: the number of bytes stored in a :record:`bytes` object */
   proc bytes.len:int(64) {
     var ret:int(64);

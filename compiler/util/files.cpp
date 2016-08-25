@@ -440,6 +440,15 @@ std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
   return runCommand(command);
 }
 
+std::string getChplPythonVersion() {
+  // Runs util/chplenv/chpl_python_version.py
+  std::string command = "";
+
+  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_python_version.py 2> /dev/null";
+
+  return runCommand(command);
+}
+
 std::string runCommand(std::string& command) {
   // Run arbitrary command and return result
   char buffer[256];
@@ -813,16 +822,10 @@ const char* modNameToFilename(const char* modName,
   return  fullfilename;
 }
 
+// Returns either a file name or NULL if no such file was found
+// (which could happen if there's a use of an enum within the library files)
 const char* stdModNameToFilename(const char* modName) {
-  const char* fullfilename = searchPath(stdModPath,
-                                        astr(modName, ".chpl"),
-                                        NULL);
-
-  if (fullfilename == NULL) {
-    USR_FATAL("Can't find standard module '%s'\n", modName);
-  }
-
-  return fullfilename;
+  return searchPath(stdModPath, astr(modName, ".chpl"), NULL);
 }
 
 const char* filenameToModulename(const char* filename) {

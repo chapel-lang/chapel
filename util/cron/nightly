@@ -532,6 +532,8 @@ if ($buildruntime == 0) {
         print MAIL endMailHeader();
         print MAIL endMailChplenv();
         close(MAIL);
+    } else {
+        print "CHPL_TEST_NOMAIL: No $mailcommand\n";
     }
     exit 0;
 }
@@ -714,6 +716,8 @@ if ($runtests == 0) {
         print MAIL endMailChplenv();
 
         close(MAIL);
+    } else {
+        print "CHPL_TEST_NOMAIL: No $mailcommand\n";
     }
 
 } else {
@@ -820,9 +824,7 @@ if ($runtests == 0) {
     }
 
 # FIXME: Pass correct args here!
-if (!exists($ENV{"CHPL_TEST_NOMAIL"})) {
     `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
-}
 
 #
 # analyze memory leaks tests
