@@ -219,7 +219,8 @@ module ChapelArray {
     proc _freePrivatizedClassHelp(pid, original) {
       var prv = chpl_getPrivatizedCopy(object, pid);
       if prv != original then
-        delete prv;
+        delete prv; // TODO: not possible to call _delete_arr here,
+                    // but would that be necessary anyway?
 
       chpl_clearPrivatizedClass(pid);
 
@@ -536,7 +537,7 @@ module ChapelArray {
       const refcount = ev.domain._value.remove_containing_arr(arr);
       if !noRefCount then
         if refcount == 0 then
-          delete ev.domain._value;
+          _delete_dom(ev.domain._value);
       chpl_decRefCountsForDomainsInArrayEltTypes(arr, ev.eltType);
     }
   }
@@ -780,18 +781,22 @@ module ChapelArray {
       }
     }
 
-    proc ~_distribution() {
+    inline proc _do_destroy() {
       if ! _unowned && ! _instance.singleton() {
         on _value {
-          // How many domains refer to this distribution?
-          var cnt = _instance.destroyDist();
-          if cnt == 0 {
-            // Free the main _instance
-            _instance.dsiDestroyDistClass();
-            delete _instance;
-          }
+          // Count the number of domains that refer to this distribution.
+          // and mark the distribution to be freed when that number reaches 0.
+          // If the number is 0, .remove() returns the distribution
+          // that should be freed.
+          var distToFree = _instance.remove();
+          if distToFree != nil then
+            _delete_dist(distToFree);
         }
       }
+    }
+
+    proc ~_distribution() {
+      _do_destroy();
     }
 
     proc clone() {
@@ -902,16 +907,27 @@ module ChapelArray {
       }
     }
 
-    pragma "no doc"
-    proc ~_domain () {
+    proc _do_destroy () {
       if ! _unowned {
         on _value {
-          // How many arrays refer to this domain?
-          var cnt = _instance.destroyDom();
-          if cnt == 0 then
-            delete _instance;
+          // Count the number of arrays that refer to this domain,
+          // and mark the domain to be freed when that number reaches 0.
+          // Additionally, if the number is 0, remove the domain from
+          // the distribution and possibly get the distribution to free.
+          var (domToFree, distToRemove) = _instance.remove();
+          var distToFree:BaseDist = nil;
+          if distToRemove != nil {
+            distToFree = distToRemove.remove();
+          }
+          if domToFree != nil then
+            _delete_dom(domToFree);
+          if distToFree != nil then
+            _delete_dist(distToFree);
         }
       }
+    }
+    proc ~_domain () {
+      _do_destroy();
     }
 
     /* Return the domain map that implements this domain */
@@ -1877,16 +1893,32 @@ module ChapelArray {
       }
     }
 
-    proc ~_array() {
+    inline proc _do_destroy() {
       if ! _unowned {
         on _value {
-          var cnt = _instance.destroyArr();
-          if cnt == 0 then {
-            chpl_decRefCountsForDomainsInArrayEltTypes(_value, _value.eltType);
-            delete _instance;
+          var (arrToFree, domToRemove) = _instance.remove();
+          var domToFree:BaseDom = nil;
+          var distToRemove:BaseDist = nil;
+          var distToFree:BaseDist = nil;
+          if domToRemove != nil {
+            // remove that domain
+            (domToFree, distToRemove) = domToRemove.remove();
           }
+          if distToRemove != nil {
+            distToFree = distToRemove.remove();
+          }
+          if arrToFree != nil then
+            _delete_arr(_instance);
+          if domToFree != nil then
+            _delete_dom(domToFree);
+          if distToFree != nil then
+            _delete_dist(distToFree);
         }
       }
+    }
+
+    proc ~_array() {
+      _do_destroy();
     }
 
     /* The type of elements contained in the array */
@@ -3487,10 +3519,7 @@ module ChapelArray {
 
     if ! a._unowned {
       // destroy the old domain now that we are replacing it
-      var cnt = a._instance.destroyDom();
-      if cnt == 0 then {
-        delete a._instance;
-      }
+      a._do_destroy();
     }
 
     a._pid = b._pid;
@@ -3555,13 +3584,7 @@ module ChapelArray {
       chpl__transferArray(b, a);
     }
 
-    if ! a._unowned {
-      // destroy the old array now that we are replacing it
-      var cnt = a._instance.destroyArr();
-      if cnt == 0 then {
-        delete a._instance;
-      }
-    }
+    a._do_destroy();
 
     a._pid = b._pid;
     a._instance = b._instance;

@@ -416,7 +416,7 @@ proc Stencil.dsiClone() {
                    dataParMinGranularity, fluff=fluff, periodic=periodic);
 }
 
-proc Stencil.dsiDestroyDistClass() {
+proc Stencil.dsiDestroyDist() {
   coforall ld in locDist do {
     on ld do
       delete ld;

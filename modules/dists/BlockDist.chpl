@@ -457,7 +457,7 @@ proc Block.dsiClone() {
                    dataParMinGranularity);
 }
 
-proc Block.dsiDestroyDistClass() {
+proc Block.dsiDestroyDist() {
   coforall ld in locDist do {
     on ld do
       delete ld;
