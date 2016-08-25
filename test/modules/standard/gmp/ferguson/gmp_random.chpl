@@ -1,4 +1,5 @@
-use GMP;
+use GMPRandom;
+use BigIntegers;
 
 config const printrandom = false;
 
@@ -8,7 +9,7 @@ var n = new BigInt(10);
 var x:uint = 0;
 
 if printrandom then writeln(x);
-x = r.urandomb_ui(10);
+x = r.urandomb(10);
 if printrandom then writeln(x);
 if printrandom then writeln(b);
 r.urandomb(b, 10);
@@ -17,5 +18,3 @@ r.urandomm(b, n);
 if printrandom then writeln(b);
 
 delete r;
-delete b;
-delete n;

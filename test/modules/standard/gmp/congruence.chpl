@@ -1,4 +1,4 @@
-use GMP;
+use BigIntegers;
 
 proc TF(b) {
   if b then return " T";
@@ -14,16 +14,14 @@ for m in 1..10 {
   for c in 0..9 {
     var cb = new BigInt(c);
     write(TF(tensandthrees.congruent_p(cb, mb)));
-    delete cb;
   }
-  delete mb;
   writeln();
 }
 
 writeln(tensandthrees, " ui_p:");
 for m in 1..10:uint {
   for c in 0..9:uint {
-    write(TF(tensandthrees.congruent_ui_p(c, m)));
+    write(TF(tensandthrees.congruent_p(c, m)));
   }
   writeln();
 }
@@ -33,9 +31,6 @@ for b in 1..10:uint {
   for c in 0..9 {
     var cb = new BigInt(c);
     write(TF(tensandthrees.congruent_2exp_p(cb, b)));
-    delete cb;
   }
   writeln();
 }
-
-delete tensandthrees;
