@@ -35,9 +35,9 @@ module ChapelDebugPrint {
         // Call stringify from IO.chpl. Note that stringify
         // is also called on halt, and so needs to handle
         // being resolved before IO.chpl is completely resolved.
-	str += stringify(tmp);
+        str += stringify(tmp);
       } else {
-	str += "?";
+        str += "?";
       }
     }
     return str;
