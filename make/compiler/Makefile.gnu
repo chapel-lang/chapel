@@ -87,6 +87,12 @@ endif
 #
 # query gcc version
 #
+ifndef GNU_GCC_MAJOR_VERSION
+export GNU_GCC_MAJOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
+endif
+ifndef GNU_GCC_MINOR_VERSION
+export GNU_GCC_MINOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
+endif
 ifndef GNU_GPP_MAJOR_VERSION
 export GNU_GPP_MAJOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
 endif
@@ -96,8 +102,8 @@ endif
 ifndef GNU_GPP_SUPPORTS_MISSING_DECLS
 export GNU_GPP_SUPPORTS_MISSING_DECLS = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
 endif
-ifndef GNU_GPP_SUPPORTS_STRICT_OVERFLOW
-export GNU_GPP_SUPPORTS_STRICT_OVERFLOW = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
+ifndef GNU_GCC_SUPPORTS_STRICT_OVERFLOW
+export GNU_GCC_SUPPORTS_STRICT_OVERFLOW = $(shell test $(GNU_GCC_MAJOR_VERSION) -lt 4 || (test $(GNU_GCC_MAJOR_VERSION) -eq 4 && test $(GNU_GCC_MINOR_VERSION) -le 2); echo "$$?")
 endif
 
 #
@@ -127,7 +133,7 @@ SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
 #
 # Don't warn for signed pointer issues (ex. c_ptr(c_char) )
 #
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4; echo "$$?"),1)
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -lt 4; echo "$$?"),1)
 SQUASH_WARN_GEN_CFLAGS += -Wno-pointer-sign
 endif
 
@@ -159,7 +165,7 @@ else
 WARN_CFLAGS += -Wmissing-declarations
 endif
 
-ifeq ($(GNU_GPP_SUPPORTS_STRICT_OVERFLOW),1)
+ifeq ($(GNU_GCC_SUPPORTS_STRICT_OVERFLOW),1)
 # -Wno-strict-overflow is needed only because the way we code range iteration
 # (ChapelRangeBase.chpl:793) generates code which can overflow.
 GEN_CFLAGS += -Wno-strict-overflow
