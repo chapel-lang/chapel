@@ -561,6 +561,12 @@ class Function {
         return result;
     }
 
+    inline proc truncate(x) {
+      const eps = 1e-8;
+      if abs(x) < eps then return 0.0;
+      if abs(x) > 1.0/eps then return trunc(x/10) * 10;
+      return x;
+    }
 
     /** Mostly for debugging, print summary of coefficients,
         optionally printing the norm of each block
@@ -577,7 +583,7 @@ class Function {
             }
             if ncoeffs != 0 then
 	        writef("   level %{##}   #boxes=%{####}  norm=%0.2er\n",
-		       n, ncoeffs, sqrt(sum));
+		       n, ncoeffs, truncate(sqrt(sum)));
         }
 
         writeln("difference coefficients:");
@@ -589,7 +595,7 @@ class Function {
             }
             if ncoeffs != 0 then
 	        writef("   level %{##}   #boxes=%{####}  norm=%0.2er\n",
-		       n, ncoeffs, sqrt(sum));
+		       n, ncoeffs, truncate(sqrt(sum)));
         }
 
         writeln("-----------------------------------------------------\n");
@@ -603,7 +609,7 @@ class Function {
         for i in 0..npt {
             var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
             writef(" -- %.2dr:  F_numeric()=% .8dr  f_analytic()=% .8dr err=% .8dr%s\n",
-		   i/npt:real, Fval, fval, Fval-fval, 
+		   i/npt:real, truncate(Fval), truncate(fval), truncate(Fval-fval),
 		   if abs(Fval-fval) > thresh then "  > thresh" else "");
         }
     }
