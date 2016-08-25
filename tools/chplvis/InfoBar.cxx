@@ -157,8 +157,44 @@ void InfoBar::draw(void)
 
 }
 
+bool InfoBar::isOnList (LocCommBox *box)
+{
+  std::list<LocCommBox *>::iterator itr;
+  itr = infoBoxes.begin();
+  while (itr != infoBoxes.end()) {
+    if ((*itr)->boxKind() == box->boxKind()) {
+      switch (box->boxKind()) {
+        case LocCommBox::I_Locale:
+          if ((*itr)->getLoc() == box->getLoc())
+            return true;
+          break;
+        case LocCommBox::I_Comm:
+          {
+            int L1, L2;
+            int B1, B2;
+            (*itr)->getCommLocs(L1, L2);
+            box->getCommLocs(B1, B2);
+            if (L1 == B1 && L2 == B2)
+              return true;
+          }
+          break;
+        default: // Nothing
+          break;
+      }
+    }
+    itr++;
+  }
+    return false;
+}
+
 void InfoBar::addLocOrComm(LocCommBox *box)
 {
+  // don't double add
+  if (isOnList(box)) {
+    boxCache.insert(boxCache.begin(), box);
+    return;
+  }
+  
   // Move others over or remove them
   int newW = box->w();
 
@@ -204,7 +240,6 @@ void InfoBar::delLocOrComm(LocCommBox *box)
   MainWindow->redraw();
 }
 
-
 LocCommBox * InfoBar::getNewLocComm()
   {
     if (boxCache.empty()) {
@@ -214,7 +249,6 @@ LocCommBox * InfoBar::getNewLocComm()
       boxCache.erase(itr);
       return *itr;
     }
-        
   }
 
 void InfoBar::rmAllLocOrCom(void)
@@ -229,7 +263,6 @@ void InfoBar::rmAllLocOrCom(void)
        boxCache.insert(boxCache.begin(), box);
      }
   }
-
 
 void InfoBar::resize (int X, int Y, int W, int H)
   {

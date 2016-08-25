@@ -179,7 +179,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {244 182 560 600} type Double color 7 hide resizable size_range {560 590 0 0}
+    xywh {719 162 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55
@@ -320,6 +320,14 @@ concView->updateData(Menus.currentLoc(),
         image {Concurrent-40x40.png} xywh {10 210 40 40} box NO_BOX down_box FLAT_BOX
         code0 {o->clear_visible_focus();}
       }
+      Fl_Button {} {
+        callback {DataField->selectChild(ProfileView);
+Menus.setCurrentTag(DataModel::TagALL);
+if (Info->getTagName() != NULL)
+   Info->setTagName("All");}
+        image {Profile-40x40.png} xywh {10 260 40 40} box NO_BOX down_box FLAT_BOX
+        code0 {o->clear_visible_focus();}
+      }
     }
     Fl_Group DataField {open
       xywh {60 100 500 500} color 0 resizable
@@ -411,16 +419,20 @@ DataField->popChild();}
       } {
         Fl_Box title2 {
           label Concurrency
-          private xywh {60 101 500 29} box BORDER_FRAME
+          private xywh {60 101 500 29}
         }
         Fl_Scroll ConcWScroll2 {open
           private xywh {60 130 500 470} color 7 resizable
         } {
           Fl_Box scrollWData2 {
-            private xywh {60 130 500 470} box FLAT_BOX color 7 resizable
+            private xywh {60 130 500 470} color 7 resizable
             class ConcurrencyData
           }
         }
+      }
+      Fl_Browser ProfileView {
+        xywh {60 100 500 500} hide
+        code0 {o->clear_visible_focus();}
       }
     }
   }

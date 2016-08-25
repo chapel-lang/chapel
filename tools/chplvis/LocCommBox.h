@@ -26,8 +26,6 @@
 
 class LocCommBox : public Fl_Group {
 
-  enum { I_None, I_Locale, I_Comm } what;
-
   // Locale information
   int L_Num;
   int L_Tasks;
@@ -50,7 +48,11 @@ class LocCommBox : public Fl_Group {
 
  public:
 
-  LocCommBox ( int X, int Y, int W, int H, char *l = 0);
+  enum LCBoxKind { I_None, I_Locale, I_Comm } what;
+  
+  LocCommBox (int X, int Y, int W, int H, char *l = 0);
+
+  enum LCBoxKind boxKind (void) { return what; }
 
   void setLocale (int num, localeData* data)
     {
@@ -65,7 +67,7 @@ class LocCommBox : public Fl_Group {
       what = I_Locale;
     }
 
-  void setComm ( int L1, int L2, commData *comm )
+  void setComm (int L1, int L2, commData *comm)
     {
       C_L1 = L1;
       C_L2 = L2;
@@ -82,6 +84,10 @@ class LocCommBox : public Fl_Group {
   void draw();
 
   void resize(int X, int Y, int W, int H);
+
+  int getLoc(void) { return L_Num; }
+
+  void getCommLocs(int &loc1, int &loc2) { loc1 = C_L1; loc2 = C_L2; }
 
 };
 

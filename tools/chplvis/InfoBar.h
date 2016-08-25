@@ -87,7 +87,8 @@ class InfoBar : public Fl_Group {
   void setFileName(const char *name);
   void setTagName(const char *name);
   void clearTagName() { if (tagName != NULL) free(tagName); tagName = NULL; }
-
+  char *getTagName() { return tagName; }
+  
   void showTasks() { infoTop = show_Tasks; }
   void showCpu() { infoTop = show_CPU; }
   void showClock() { infoTop = show_Clock; }
@@ -101,8 +102,10 @@ class InfoBar : public Fl_Group {
   void addLocOrComm(LocCommBox *box);
   void delLocOrComm(LocCommBox *box);
   void rmAllLocOrCom();
-  
+
   LocCommBox *getNewLocComm(void);
+
+  bool isOnList (LocCommBox *box);
 
   void resize (int X, int Y, int W, int H);
   
