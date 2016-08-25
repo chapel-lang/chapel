@@ -16,9 +16,3 @@ Calling return_slice():
 	0 bytes leaked
 Calling return_slice() with assignment:
 	0 bytes leaked
-Calling create_reindex():
-	0 bytes leaked
-Calling return_reindex():
-	0 bytes leaked
-Calling return_reindex() with assignment:
-	0 bytes leaked

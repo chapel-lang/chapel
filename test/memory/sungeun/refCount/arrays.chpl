@@ -23,12 +23,14 @@ proc return_slice(A: []) {
   return A[2..3];
 }
 
+/*
 proc create_reindex(A: [3..6]) {
   if dummy then writeln(A.domain);
 }
 proc return_reindex(A: [3..6]) {
   return A;
 }
+*/
 
 use Memory;
 proc main() {
@@ -115,6 +117,7 @@ proc main() {
   writeln("\t", m2-m1, " bytes leaked");
   if printMemStats then printMemAllocs();
 
+  /*
   writeln("Calling create_reindex():");
   m1 = memoryUsed();
   serial {
@@ -141,5 +144,5 @@ proc main() {
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
   if printMemStats then printMemAllocs();
-
+  */
 }
