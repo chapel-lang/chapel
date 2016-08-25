@@ -372,7 +372,7 @@ module ChapelBase {
       return 1:a.type;
     if b < 0 then
       if a == 1 then // "where _basePowerTwo(a)" means 'a' cannot be <= 0
-        return 1
+        return 1;
       else
         return 0;
     var c = 0;
