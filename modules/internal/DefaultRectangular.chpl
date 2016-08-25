@@ -79,8 +79,10 @@ module DefaultRectangular {
   // model initialization
   //
   pragma "no auto destroy" // for now, never destroy defaultDist
-  pragma "locale private" var defaultDist = new dmap(new DefaultDist());
-   proc chpl_defaultDistInitPrivate() {
+  pragma "locale private"
+  var defaultDist = new dmap(new DefaultDist());
+
+  proc chpl_defaultDistInitPrivate() {
     if defaultDist._value==nil {
       // FIXME benharsh: Here's what we want to do:
       //   defaultDist = new dmap(new DefaultDist());
