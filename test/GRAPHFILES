@@ -105,6 +105,7 @@ studies/shootout/thread-ring/thread-ring.graph
 studies/shootout/submitted/binarytrees-submitted.graph
 studies/shootout/submitted/chameneosredux-submitted.graph
 studies/shootout/submitted/fannkuchredux-submitted.graph
+studies/shootout/submitted/fasta-submitted.graph
 studies/shootout/submitted/knucleotide-submitted.graph
 studies/shootout/submitted/mandelbrot-submitted.graph
 studies/shootout/submitted/nbody-submitted.graph
