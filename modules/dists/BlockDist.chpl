@@ -917,7 +917,7 @@ proc BlockDom.setup() {
   }
 }
 
-proc BlockDom.~BlockDom() {
+proc BlockDom.dsiDestroyDom() {
   coforall localeIdx in dist.targetLocDom do {
     on locDoms(localeIdx) do
       delete locDoms(localeIdx);
@@ -1005,7 +1005,7 @@ proc BlockArr.setup() {
   if doRADOpt && disableBlockLazyRAD then setupRADOpt();
 }
 
-proc BlockArr.~BlockArr() {
+proc BlockArr.dsiDestroyArr(isslice:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       delete locArr(localeIdx);

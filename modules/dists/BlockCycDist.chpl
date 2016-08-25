@@ -626,7 +626,7 @@ proc BlockCyclicDom.setup() {
     enumerateBlocks();
 }
 
-proc BlockCyclicDom.~BlockCyclocDom() {
+proc BlockCyclicDom.dsiDestroyDom() {
   coforall localeIdx in dist.targetLocDom do
     on dist.targetLocales(localeIdx) do
       delete locDoms(localeIdx);
@@ -802,7 +802,7 @@ proc BlockCyclicArr.setup() {
   }
 }
 
-proc BlockCyclicArr.~BlockCyclicArr() {
+proc BlockCyclicArr.dsiDestroyArr(isslice:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       delete locArr(localeIdx);
