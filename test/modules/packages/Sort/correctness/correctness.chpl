@@ -1,6 +1,5 @@
 /*
  *  Check correctness of sort routines. Output nothing if correct.
- *
  */
 
 use Sort;

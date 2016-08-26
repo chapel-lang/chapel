@@ -1,3 +1,4 @@
+/* Alternative correctness testing, that explores different array sizes */
 config const debug = false;
 config const verify = true;
 config const printTiming = false;
