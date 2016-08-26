@@ -32,7 +32,7 @@ proc rec.key(a) {
 /* TODO -- unhandled errors
 
 // Key returns void - Chapel can't check if a function has a void return type
-record void { }
+record voidCmp { }
 
-proc void.key(a) { }
+proc voidCmp.key(a) { }
 */

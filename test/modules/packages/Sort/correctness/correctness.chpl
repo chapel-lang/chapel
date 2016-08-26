@@ -1,7 +1,5 @@
 /*
  *  Check correctness of sort routines. Output nothing if correct.
- *
- *  TODO -- remove deprecated testing in 1.15
  */
 
 use Sort;
@@ -115,10 +113,8 @@ proc main() {
   selectionSort(Arr, comparator=compare);
   checkSort(Arr, ArrAbsSorted, 'selectionSort', 'compare');
 
-  /* TODO -- selectionSort testing when comparator support implemented */
-
   /* Test deprecated sorts */
-  // TODO - remove these some day
+  // TODO - remove these for 1.15
 
   // BubbleSort
   BubbleSort(Arr);
