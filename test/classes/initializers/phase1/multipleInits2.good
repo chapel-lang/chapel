@@ -1,3 +1,2 @@
 multipleInits2.chpl:6: In initializer:
-multipleInits2.chpl:10: error: field initialization out of order
-multipleInits2.chpl:10: note: initialization of fields before .init() call must be in order
+multipleInits2.chpl:10: error: multiple initializations of field "f2" detected
