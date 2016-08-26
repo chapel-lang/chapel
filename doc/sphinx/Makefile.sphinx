@@ -56,8 +56,9 @@ help-sphinx:
 	@echo ""
 
 check-sphinxbuild:
-	@echo "Confirming that sphinx-build is available"
-	if [ $(SPHINXTEST) -eq 1 ]; then echo $(SPHINXERROR); fi
+	@echo
+	@echo "Confirming that sphinx-build is available..."
+	@if [ $(SPHINXTEST) -eq 1 ]; then echo $(SPHINXERROR); fi
 
 html: check-sphinxbuild source clean-build
 	@echo
@@ -186,5 +187,6 @@ pseudoxml: check-sphinxbuild source clean-build
 # Clean build
 
 clean-build:
+	@echo
 	@echo "Cleaning all build files"
 	rm -rf $(BUILDDIR)

@@ -27,17 +27,17 @@ source: symlink-docs module-docs copy-docs
 
 symlink-docs: clean-symlink-docs
 	@echo
-	@echo "Symbolically linking docs from '$$CHPL_HOME/doc/release' to $$CHPL_HOME/doc/sphinx/source"
+	@echo "Symbolically linking docs from "'$$CHPL_HOME'"/doc/release to "'$$CHPL_HOME'"/doc/sphinx/source"
 	./symlinks.py
 
 module-docs: clean-module-docs
 	@echo
-	@echo "Generating module docs from $$CHPL_HOME/modules/ into $$CHPL_HOME/doc/sphinx/source"
+	@echo "Generating module docs from "'$$CHPL_HOME'"/modules/ into "'$$CHPL_HOME'"/doc/sphinx/source"
 	(cd ../../modules && make documentation)
 
 copy-docs: clean-copy-docs
 	@echo
-	@echo "Copying files from $$CHPL_HOME/doc/release to $$CHPL_HOME/doc/sphinx/source/"
+	@echo "Copying files from "'$$CHPL_HOME'"/doc/release to "'$$CHPL_HOME'"/doc/sphinx/source/"
 	cp  ../release/quickReference.pdf     source/language/quickReference.pdf
 	cp  ../release/chapelLanguageSpec.pdf source/language/chapelLanguageSpec.pdf
 
