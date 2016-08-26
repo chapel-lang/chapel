@@ -77,8 +77,8 @@ bool Type::inTree() {
 }
 
 
-Type* Type::typeInfo() {
-  return this;
+QualifiedType Type::qualType() {
+  return QualifiedType(this);
 }
 
 // Are actuals of this type passed with const intent by default?
@@ -87,8 +87,6 @@ bool Type::isDefaultIntentConst() const {
 
   if (symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) == true ||
       isReferenceType(this)                       == true ||
-      isSyncType(this)                            == true ||
-      isSingleType(this)                          == true ||
       isRecordWrappedType(this)                   == true)
     retval = false;
 
@@ -216,6 +214,14 @@ std::string PrimitiveType::docsDirective() {
 
 void PrimitiveType::accept(AstVisitor* visitor) {
   visitor->visitPrimType(this);
+}
+
+bool QualifiedType::isRefType() const {
+  return _type->symbol->hasFlag(FLAG_REF);
+}
+
+bool QualifiedType::isWideRefType() const {
+  return _type->symbol->hasFlag(FLAG_WIDE_REF);
 }
 
 EnumType::EnumType() :
@@ -575,6 +581,7 @@ std::string EnumType::docsDirective() {
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL),
   aggregateTag(initTag),
+  initializerStyle(DEFINES_NONE_USE_DEFAULT),
   fields(),
   inherits(),
   outer(NULL),

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import optparse
 import os
-import os.path
 import platform
 import re
 import sys
@@ -9,15 +8,15 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import utils
+import overrides, utils
 from utils import memoize
 
 @memoize
 def get(flag='host'):
     if flag == 'host':
-        platform_val = os.environ.get('CHPL_HOST_PLATFORM')
+        platform_val = overrides.get('CHPL_HOST_PLATFORM')
     elif flag == 'target':
-        platform_val = os.environ.get('CHPL_TARGET_PLATFORM')
+        platform_val = overrides.get('CHPL_TARGET_PLATFORM')
         if not platform_val:
             platform_val = get('host')
     else:

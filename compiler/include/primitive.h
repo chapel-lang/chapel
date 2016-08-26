@@ -25,6 +25,7 @@
 class CallExpr;
 class Type;
 class VarSymbol;
+class QualifiedType;
 
 enum PrimitiveTag {
   PRIM_UNKNOWN = 0,    // use for any primitives not in this list
@@ -275,11 +276,11 @@ enum PrimitiveTag {
 class PrimitiveOp { public:
   PrimitiveTag tag;
   const char *name;
-  Type *(*returnInfo)(CallExpr*);
+  QualifiedType (*returnInfo)(CallExpr*);
   bool isEssential; // has effects visible outside of the function
   bool passLineno;  // pass line number and filename to this primitive
 
-  PrimitiveOp(PrimitiveTag atag, const char *aname, Type *(*areturnInfo)(CallExpr*));
+  PrimitiveOp(PrimitiveTag atag, const char *aname, QualifiedType (*areturnInfo)(CallExpr*));
 };
 
 extern HashMap<const char *, StringHashFns, PrimitiveOp *> primitives_map;

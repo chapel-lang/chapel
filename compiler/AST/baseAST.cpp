@@ -38,8 +38,6 @@
 #include "type.h"
 #include "WhileStmt.h"
 
-static void cleanModuleList();
-
 //
 // declare global vectors gSymExprs, gCallExprs, gFnSymbols, ...
 //
@@ -176,7 +174,6 @@ static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
 }
 
 void cleanAst() {
-  cleanModuleList();
   //
   // clear back pointers to dead ast instances
   //
@@ -199,9 +196,8 @@ void cleanAst() {
     }
   }
 
-  // check iterator-resume-label/goto data before nodes are free'd
-  verifyNcleanRemovedIterResumeGotos();
-  verifyNcleanCopiedIterResumeGotos();
+  removedIterResumeLabels.clear();
+  copiedIterResumeGotos.clear();
 
   // clean the other module vectors, without deleting the ast instances (they
   // will be deleted with the clean_gvec call for ModuleSymbols.) 
@@ -212,20 +208,6 @@ void cleanAst() {
   // clean global vectors and delete dead ast instances
   //
   foreach_ast(clean_gvec);
-}
-
-
-// ModuleSymbols cache a pointer to their initialization function
-// This pointer has to be zeroed out specially before the matching function
-// definition is deleted from module body.
-static void cleanModuleList()
-{
-  // Walk the module list.
-  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-    // Zero the initFn pointer if the function is now dead.
-    if (mod->initFn && !isAlive(mod->initFn))
-      mod->initFn = NULL;
-  }
 }
 
 
@@ -241,11 +223,19 @@ void destroyAst() {
 
 void
 verify() {
+  verifyRemovedIterResumeGotos();
+  verifyCopiedIterResumeGotos();
+
   #define verify_gvec(type)                       \
     forv_Vec(type, ast, g##type##s) {             \
+     if (isAlive(ast)) {                          \
       ast->verify();                              \
+     }                                            \
     }
   foreach_ast(verify_gvec);
+
+  // rootModule does not pass isAlive(), yet is "alive" - needs to be  verified
+  rootModule->verify();
 }
 
 
@@ -333,6 +323,10 @@ ModuleSymbol* BaseAST::getModule() {
   return retval;
 }
 
+Type* BaseAST::typeInfo() {
+  QualifiedType qt = this->qualType();
+  return qt.type();
+}
 
 FnSymbol* BaseAST::getFunction() {
   if (ModuleSymbol* x = toModuleSymbol(this))

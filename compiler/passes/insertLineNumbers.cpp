@@ -99,7 +99,7 @@ static ArgSymbol* newLine(FnSymbol* fn) {
 }
 
 static ArgSymbol* newFile(FnSymbol* fn) {
-  ArgSymbol* file = new ArgSymbol(INTENT_CONST_REF, "_fn", dtInt[INT_SIZE_32]);
+  ArgSymbol* file = new ArgSymbol(INTENT_IN, "_fn", dtInt[INT_SIZE_32]);
   fn->insertFormalAtTail(file);
   filenameMap.put(fn, file);
   queue.add(fn);
@@ -202,13 +202,7 @@ static bool isClassMethodCall(CallExpr* call) {
       if (fn->numFormals() > 0 &&
           fn->getFormal(1)->typeInfo() == fn->_this->typeInfo()) {
         if (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-          // TODO: When strings are records, remove this protective if.
-          // isClassMethodCall is only used in insertNilChecks() and widened
-          // strings gain FLAG_WIDE_CLASS, but it doesn't make sense to check
-          // strings against nil.
-          if (strcmp(ct->symbol->name, "__wide_chpl_string")) {
-            return true;
-          }
+          return true;
         }
       }
     }

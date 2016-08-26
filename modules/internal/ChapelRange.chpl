@@ -969,6 +969,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
    *
    * because the parser renames the routine since 'by' is a keyword.
    */
+  pragma "no doc"
   inline proc by(r, step) {
     if !isRange(r) then
       compilerError("the first argument of the 'by' operator is not a range");
@@ -985,6 +986,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
    */
   // We want to warn the user at compiler time if they had an invalid param
   // stride rather than waiting until runtime.
+  pragma "no doc"
   inline proc by(r : range(?), param step) {
     chpl_range_check_stride(step, r.idxType);
     return chpl_by_help(r, step:r.strType);

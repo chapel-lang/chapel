@@ -175,7 +175,7 @@ void check_cullOverReferences()
   check_afterResolution();
 
   // No ContextCallExprs should remain in the tree.
-  forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
+  for_alive_in_Vec(ContextCallExpr, cc, gContextCallExprs) {
     INT_FATAL("ContextCallExpr should no longer be in AST");
   }
 }
@@ -362,6 +362,11 @@ void check_insertLineNumbers()
   check_afterLowerIterators();
 }
 
+void check_denormalize() {
+  //do we need to call any checks here ?
+  //or implement new checks ?
+}
+
 void check_codegen()
 {
   // This pass should not change the AST, so no checks are required.
@@ -455,7 +460,7 @@ static void check_afterLowerIterators()
 //
 static void checkAggregateTypes()
 {
-  forv_Vec(AggregateType, at, gAggregateTypes)
+  for_alive_in_Vec(AggregateType, at, gAggregateTypes)
   {
     if (! at->defaultInitializer)
       INT_FATAL(at, "aggregate type has no initializer");
@@ -470,7 +475,7 @@ static void checkAggregateTypes()
 //
 static void
 checkResolveRemovedPrims(void) {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
     if (call->primitive) {
       switch(call->primitive->tag) {
         case PRIM_BLOCK_PARAM_LOOP:
@@ -505,7 +510,7 @@ checkResolveRemovedPrims(void) {
 static void 
 checkTaskRemovedPrims()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
     if (call->primitive)
       switch(call->primitive->tag)
       {
@@ -527,7 +532,7 @@ checkTaskRemovedPrims()
 static void 
 checkLowerIteratorsRemovedPrims()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
     if (call->primitive)
       switch(call->primitive->tag)
       {
@@ -545,7 +550,7 @@ checkLowerIteratorsRemovedPrims()
 static void
 checkFlagRelationships()
 {
-  forv_Vec(DefExpr, def, gDefExprs)
+  for_alive_in_Vec(DefExpr, def, gDefExprs)
   {
     // These tests apply to function symbols.
     if (FnSymbol* fn = toFnSymbol(def->sym))
@@ -577,7 +582,7 @@ checkAutoCopyMap()
 static void
 checkFormalActualBaseTypesMatch()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
   {
     if (! call->parentSymbol)
       // Call is not in tree
@@ -627,7 +632,7 @@ checkFormalActualBaseTypesMatch()
 static void
 checkRetTypeMatchesRetVarType()
 {
-  forv_Vec(FnSymbol, fn, gFnSymbols)
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
   {
     if (fn->isIterator())
       // Iterators break this rule.
@@ -645,7 +650,7 @@ checkRetTypeMatchesRetVarType()
 static void
 checkFormalActualTypesMatch()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
   {
     if (FnSymbol* fn = call->isResolved())
     {

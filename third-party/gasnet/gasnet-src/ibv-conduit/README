@@ -3,6 +3,8 @@ README file for ibv-conduit
 Paul H. Hargrove <PHHargrove@lbl.gov>
 
 @ TOC: @
+@ Section: Overview @
+@ Section: Where this conduit runs @
 @ Section: Job Spawning @
 @ Section: Multi-rail Support @
 @ Section: Runtime Configuration @
@@ -13,6 +15,38 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 @ Section: Graceful exits @
 @ Section: References @
 
+@ Section: Overview @
+
+  ibv-conduit implements GASNet over InfiniBand networks using the Open
+  Fabrics Verbs API (www.openfabrics.org).
+
+  The name "ibv" comes from a time when this API was known as
+  "InfiniBand Verbs" (its library is still named libibverbs).
+
+@ Section: Where this conduit runs @
+
+  ibv-conduit runs over InfiniBand networks using the Open Fabrics Verbs
+  API.  Platforms known to support this API include Linux, Solaris, AIX,
+  Windows and FreeBSD.  However, at this time only Linux and Solaris
+  have been confirmed to run GASNet's ibv-conduit.
+
+  While Open Fabrics Verbs also covers iWARP, ibv-conduit does not
+  currently support it.
+
+  Nearly all InfiniBand cards (known as Host Channel Adapters, or HCAs)
+  have support for Open Fabrics Verbs, available either from
+  www.openfabrics.org or from the HCA vendor.  However, vendor-specific
+  APIs also exist, two of which are supported to some degree by GASNet:
+   + mxm-conduit for the MXM API from Mellanox
+   + ofi-conduit for the PSM (version 1) API on Intel TrueScale HCAa
+
+  The performance of ibv-conduit relative to mxm or ofi will be
+  dependent on your applications' communications patterns, the number of
+  nodes you run on, and other parameters.  Therefore, we cannot
+  make any specific recommendation as to which to use.  We recommend
+  ibv-conduit as the most mature of the three, but encourage you to
+  benchmark your own workload if you are concerned with the very best
+  possible performance.
 
 @ Section: Job Spawning @
   

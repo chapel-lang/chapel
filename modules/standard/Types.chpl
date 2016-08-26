@@ -253,7 +253,7 @@ proc isPODValue(e)       param  return isPODType(e.type);
 
 
 //
-// ixXxx() - the argument can be either a type or a value
+// isXxx() - the argument can be either a type or a value
 //
 
 // Set 1 - types.
@@ -594,6 +594,11 @@ iter chpl_enumerate(type t: enumerated) {
   const enumTuple = chpl_enum_enumerate(t);
   for i in 1..enumTuple.size do
     yield enumTuple(i);
+}
+pragma "no doc"
+iter type enumerated.these(){
+  for i in chpl_enumerate(this) do
+    yield i;
 }
 
 // TODO add chpl_ to these functions' names - they are not intended for user.

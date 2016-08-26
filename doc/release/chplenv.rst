@@ -603,6 +603,24 @@ CHPL_WIDE_POINTERS
    communication a program performs.  See :ref:`readme-llvm` for more
    information about ``CHPL_WIDE_POINTERS=nodeN``.
 
+
+.. _readme-chplenv.CHPL_UNWIND:
+
+CHPL_UNWIND
+~~~~~~~~~~~
+   Optionally, the ``CHPL_UNWIND`` environment variable can be used to select
+   an unwind library for stack tracing. Current options are:
+
+       ========= =======================================================
+       Value     Description
+       ========= =======================================================
+       libunwind use the libunwind bundled with Chapel in third-party
+       system    assume libunwind is already installed on the system
+       none      don't use an unwind library, disabling stack tracing
+       ========= =======================================================
+
+   If unset, ``CHPL_UNWIND`` defaults to ``none``
+
 Compiler Command Line Option Defaults
 -------------------------------------
 

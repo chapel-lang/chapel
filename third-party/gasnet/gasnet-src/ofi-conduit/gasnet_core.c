@@ -74,7 +74,8 @@ static int gasnetc_init(int *argc, char ***argv)
 
   /* bootstrap the nodes for ofi conduit */
   ret = gasnetc_ofi_init(argc, argv, &gasneti_nodes, &gasneti_mynode);
-  if (GASNET_OK != ret) gasneti_fatalerror("gasnetc_ofi_init failed: %d\n", ret);
+  if (GASNET_OK != ret)
+	 return ret;
 
   #if GASNET_DEBUG_VERBOSE
     fprintf(stderr,"gasnetc_init(): spawn successful - node %i/%i starting...\n", 

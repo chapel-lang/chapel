@@ -107,11 +107,6 @@ IntentTag concreteIntent(IntentTag existingIntent, Type* t) {
 static IntentTag blankIntentForThisArg(Type* t) {
   // todo: be honest when 't' is an array or domain
 
-  // MPF - this is surprising to me. Apparently it's INTENT_CONST_IN
-  // because this as always a class or a ref(something) ?
-  // See class-tuple-member.chpl which fails if this is left here...
-  //return INTENT_CONST_IN;
-
   if (isRecord(t) || isUnion(t))
     return INTENT_REF;
   else
@@ -122,6 +117,10 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
 
   if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK)
     return blankIntentForThisArg(arg->type);
+  else if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_EXTERN) &&
+           arg->intent == INTENT_BLANK) {
+    return INTENT_CONST_IN;
+  }
   else
     return concreteIntent(arg->intent, arg->type);
 

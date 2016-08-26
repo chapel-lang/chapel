@@ -504,7 +504,7 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
   info->arg_size = arg_size;
   if (arg_size)
     chpl_memcpy(&(info->arg), arg, arg_size);
-  chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)info,
+  chpl_task_startMovedTask(FID_NONE, (chpl_fn_p)fork_nb_wrapper, (void*)info,
                            subloc, chpl_nullTaskID, false);
 }
 

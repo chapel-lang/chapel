@@ -153,10 +153,13 @@ module main {
     }
 
     writeln("\n generate reports....");
-
-    generateTimingReport(run_variants, output_dirname);
-    generateChecksumReport(run_variants, output_dirname);
-    generateFOMReport(run_variants, output_dirname);
+    if !perfTesting {
+      generateTimingReport(run_variants, output_dirname);
+      generateChecksumReport(run_variants, output_dirname);
+      generateFOMReport(run_variants, output_dirname);
+    } else {
+      generatePerfTimingReport(run_variants);
+    }
 
     checkChecksums(run_variants, run_loop, run_loop_length);
 
@@ -203,6 +206,34 @@ module main {
     }
     if do_fom {
       // FIXME: implement this
+    }
+  }
+
+  /* Print timing data in a format that is easier to automatically process
+     with our performance testing harness vs. the regular LCALS output.
+   */
+  proc generatePerfTimingReport(loop_variants: [] bool) {
+    if + reduce loop_variants == 0 then return;
+    const ver_info = buildVersionInfo();
+    var suite_run_info = getLoopSuiteRunInfo();
+    const nvariants = loop_variants.size;
+    for ilv in loop_variants.domain {
+      computeStats(ilv, suite_run_info.getLoopStats(ilv), do_fom);
+    }
+    for iloop in suite_run_info.loop_kernel_dom {
+      for variant in loop_variants.domain {
+        var stat = suite_run_info.getLoopStats(variant)[iloop];
+        if stat.loop_is_run {
+          for ilen in stat.loop_length_dom {
+            if stat.loop_run_count[ilen] > 0 {
+              var strVar = (variant:string).toLower();
+              var strKer = (iloop:string).toLower();
+              var strLen = (ilen:string).toLower();
+              writeln(strVar, "_", strKer, "_", strLen, " ", stat.mean[ilen]);
+            }
+          }
+        }
+      }
     }
   }
 

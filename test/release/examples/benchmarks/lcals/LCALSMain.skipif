@@ -1,3 +1,7 @@
 # This test takes too long if --fast is not used so only run it for
-# performance testing
+# performance testing.  It takes to long for no-local configurations,
+# so skip it for comm != none and --no-local too.
 CHPL_TEST_PERF != on
+CHPL_COMM != none
+COMPOPTS <= --no-local
+

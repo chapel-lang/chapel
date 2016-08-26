@@ -747,5 +747,4 @@ module ChapelIO {
   proc ref string.write(args ...?n) {
     compilerError("string.write deprecated: use string.format or stringify");
   }
-
 }

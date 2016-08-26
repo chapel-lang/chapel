@@ -1064,8 +1064,8 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
 
   parent->defPoint->insertBefore(new DefExpr(loopBodyFnWrapper));
 
-  ftableVec.add(loopBodyFnWrapper);
-  ftableMap[loopBodyFnWrapper] = ftableVec.n-1;
+  ftableVec.push_back(loopBodyFnWrapper);
+  ftableMap[loopBodyFnWrapper] = ftableVec.size()-1;
 
   //
   // insert a call to the iterator function (using iterator as a

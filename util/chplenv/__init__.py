@@ -19,7 +19,6 @@ __all__ = [
     'chpl_timers',
     'chpl_unwind',
     'chpl_wide_pointers',
-    'utils',
     # third-party package configuration helpers
     'chpl_3p_gmp_configs',
     'chpl_3p_hwloc_configs',
@@ -28,4 +27,9 @@ __all__ = [
     'chpl_3p_massivethreads_configs',
     'chpl_3p_qthreads_configs',
     'chpl_3p_re2_configs',
+    # General purpose helpers
+    'chpl_home_utils',
+    'compiler_utils',
+    'overrides',
+    'utils',
 ]

@@ -1,6 +1,6 @@
-perfkeys: real, real
-files: revcomp-begin.dat, revcomp-blc.dat
-graphkeys: revcomp-begin, revcomp-blc
+perfkeys: real, real, real
+files: revcomp.dat, revcomp-begin.dat, revcomp-blc.dat
+graphkeys: release version, revcomp-begin, Brad version
 graphtitle: Reverse-complement Shootout Benchmark
 ylabel: Time (seconds)
 graphname: revcomp

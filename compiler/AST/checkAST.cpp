@@ -39,7 +39,7 @@ void checkForDuplicateUses()
   // So, scan the list of functions, cache their arguments, and barf if a
   // duplicate is encountered.
   std::set<ArgSymbol*> args_seen;
-  forv_Vec(FnSymbol, fn, gFnSymbols)
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
   {
     for_formals(formal, fn)
     {
@@ -90,7 +90,7 @@ void checkNoUnresolveds()
 // Ensures that primitives are used only where they are expected.
 void checkPrimitives()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec(CallExpr, call, gCallExprs)
   {
     // Only interested in primitives
     if (!call->primitive)
@@ -335,7 +335,7 @@ void checkPrimitives()
 // and it has no corresponding ref type.
 void checkReturnTypesHaveRefTypes()
 {
-  forv_Vec(FnSymbol, fn, gFnSymbols)
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
   {
     Type* retType = fn->retType;
     

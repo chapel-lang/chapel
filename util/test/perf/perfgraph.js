@@ -184,7 +184,9 @@ function getNextDivs(afterDiv, afterLDiv) {
     logToggle: logToggle,
     annToggle: annToggle,
     screenshotToggle: screenshotToggle,
-    closeGraphToggle: closeGraphToggle
+    closeGraphToggle: closeGraphToggle,
+    gspacer: gspacer,
+    lspacer: lspacer
   }
 }
 
@@ -272,6 +274,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
   g.ready(function() {
     g.divs = graphDivs;
     g.graphInfo = graphInfo;
+    g.removed = false;
 
     setupLogToggle(g, graphInfo, graphDivs.logToggle);
     setupAnnToggle(g, graphInfo, graphDivs.annToggle);
@@ -379,7 +382,6 @@ function setupScreenshotToggle(g, graphInfo, screenshotToggle) {
   }
 }
 
-
 // Setup the close graph button
 function setupCloseGraphToggle(g, graphInfo, closeGraphToggle) {
   closeGraphToggle.style.visibility = 'visible';
@@ -387,11 +389,18 @@ function setupCloseGraphToggle(g, graphInfo, closeGraphToggle) {
   closeGraphToggle.onclick = function() {
     var checkBox = getCheckboxForGraph(g);
     checkBox.checked = false;
+    $(g.divs.div).hide();
+    $(g.divs.ldiv).hide();
+    $(g.divs.gspacer).hide();
+    $(g.divs.lspacer).hide();
+    setURLFromGraphs(normalizeForURL(findSelectedSuite()));
+    // set the dropdown box selection
+    document.getElementsByName('jumpmenu')[0].value = findSelectedSuite();
 
-    // TODO instead of completely redrawing with displaySelectedGraphs() we
-    // could just remove the divs associated with the graph being removed to
-    // speed up this operation and make it less "jittery"
-    displaySelectedGraphs();
+    // TODO: re-draw time doesn't seem to improve much even though we don't
+    // apply fns to remove graphs. Do we need to do something else?
+    // Should we set the drawCallback to an empty function?
+    g.removed = true;
   }
 }
 
@@ -1006,7 +1015,6 @@ function setGraphsFromURL() {
   }
 }
 
-
 // Update the query string based on the current set of displayed graphs
 function setURLFromGraphs(suite) {
   suite = normalizeForURL(suite);
@@ -1300,7 +1308,9 @@ function applyFnToAllGraphs(fnToApply, blockRedraw) {
   globalBlockRedraw = blockRedraw;
   var gsLength = gs.length;
   for (var i = 0; i < gsLength; i++) {
-    fnToApply(gs[i]);
+    if (!gs[i].removed) {
+      fnToApply(gs[i]);
+    }
   }
   globalBlockRedraw = oldGlobalBlockRedraw;
 }
