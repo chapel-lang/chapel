@@ -5219,12 +5219,14 @@ GenRet CallExpr::codegenPrimitive() {
     //                                  get(4)==len  for array_get/put
     const char* fn;
     TypeSymbol* dt;
+    bool isget = true;
 
     if (primitive->tag == PRIM_CHPL_COMM_GET ||
         primitive->tag == PRIM_CHPL_COMM_ARRAY_GET) {
       fn = "chpl_gen_comm_get";
     } else {
       fn = "chpl_gen_comm_put";
+      isget = false;
     }
 
     GenRet localAddr = codegenValuePtr(get(1));
@@ -5312,7 +5314,7 @@ GenRet CallExpr::codegenPrimitive() {
       if (localAddr.isLVPtr == GEN_WIDE_PTR)
         localAddr = codegenRaddr(localAddr);
 
-      if (primitive->tag == PRIM_CHPL_COMM_GET) {
+      if (isget) {
         codegenCallMemcpy(localAddr,
                           codegenAddrOf(codegenWideAddr(lc, remoteAddr)),
                           size,
