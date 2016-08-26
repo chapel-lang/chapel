@@ -60,6 +60,8 @@ check-sphinxbuild:
 	if [ $(SPHINXTEST) -eq 1 ]; then echo $(SPHINXERROR); fi
 
 html: check-sphinxbuild source clean-build
+	@echo
+	@echo "Building HTML documentation"
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@chmod -R ugo+rX $(BUILDDIR)
 	@echo
@@ -133,6 +135,8 @@ text: check-sphinxbuild source clean-build
 	@echo "Build finished. The text files are in "'$(BUILDPATH)'"/text."
 
 man: check-sphinxbuild source clean-build
+	@echo
+	@echo "Building man page documentation"
 	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man
 	echo ".if n .pl 2000v" > $(BUILDDIR)/man/chapel.3
 	cat $(BUILDDIR)/man/chapel.1 >> $(BUILDDIR)/man/chapel.3

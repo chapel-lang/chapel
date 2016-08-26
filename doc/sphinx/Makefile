@@ -16,27 +16,28 @@ help-source:
 	@echo ""
 
 
-docs: FORCE source
+docs: FORCE
 	./run-in-venv.bash $(MAKE) html
 
-man-chapel: FORCE source
+man-chapel: FORCE
 	./run-in-venv.bash $(MAKE) man
 
 
 source: symlink-docs module-docs copy-docs
-	@echo "Dynamically creating files in source/"
-
 
 symlink-docs: clean-symlink-docs
-	@echo "Symbolically linking docs from from doc/release to doc/sphinx/source"
+	@echo
+	@echo "Symbolically linking docs from '$$CHPL_HOME/doc/release' to $$CHPL_HOME/doc/sphinx/source"
 	./symlinks.py
 
 module-docs: clean-module-docs
-	@echo "Generating module docs from \$CHPL_HOME/modules/ to doc/sphinx/source"
+	@echo
+	@echo "Generating module docs from $$CHPL_HOME/modules/ into $$CHPL_HOME/doc/sphinx/source"
 	(cd ../../modules && make documentation)
 
 copy-docs: clean-copy-docs
-	@echo "Copying files from doc/release to doc/sphinx/source/"
+	@echo
+	@echo "Copying files from $$CHPL_HOME/doc/release to $$CHPL_HOME/doc/sphinx/source/"
 	cp  ../release/quickReference.pdf     source/language/quickReference.pdf
 	cp  ../release/chapelLanguageSpec.pdf source/language/chapelLanguageSpec.pdf
 
@@ -52,19 +53,21 @@ cleanall: clean-source
 clobber: clean-source clean-build
 
 clean-source: clean-symlink-docs clean-module-docs clean-copy-docs
-	@echo "Cleaning all dynamically created files in source/"
 
 
 clean-symlink-docs: FORCE
+	@echo
 	@echo "Removing all symbolic links created in source/"
 	find source -type l -delete
 
 clean-copy-docs: FORCE
+	@echo
 	@echo "Removing files that were copied into source/"
 	rm -f source/language/quickReference.pdf
 	rm -f source/language/chapelLanguageSpec.pdf
 
 clean-module-docs: FORCE
+	@echo
 	@echo "Removing module docs that were generated into source/"
 	rm -rf source/modules/dists
 	rm -rf source/modules/internal
