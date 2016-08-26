@@ -3199,6 +3199,7 @@ GenRet codegenCast(Type* t, GenRet value, bool Cparens)
   GenRet ret;
   ret.chplType = t;
   ret.isLVPtr = value.isLVPtr;
+  ret.isUnsigned = ! is_signed(t);
 
   // If we are casting to bool, set it to != 0.
   if( is_bool_type(t) ) return codegenNotEquals(value, codegenZero());
@@ -3288,6 +3289,28 @@ GenRet codegenCastToVoidStar(GenRet value)
   }
   return ret;
 }
+
+static
+GenRet codegenCastPtrToInt(Type* toType, GenRet value)
+{
+  GenInfo* info = gGenInfo;
+
+  if( info->cfile ) {
+    return codegenCast(toType, value);
+  } else {
+    GenRet ret;
+#ifdef HAVE_LLVM
+    llvm::Type* castType = toType->codegen().type;
+
+    ret.val = info->builder->CreatePtrToInt(value.val, castType);
+    ret.isLVPtr = GEN_VAL;
+    ret.chplType = toType;
+    ret.isUnsigned = ! is_signed(toType);
+#endif
+    return ret;
+  }
+}
+
 
 // Generates code to perform an "assignment" operation, given
 //  a destination pointer and a value.
@@ -4367,8 +4390,7 @@ GenRet CallExpr::codegenPrimitive() {
     }
 
     // _wide_get_addr promises to return a uint.  Hence the cast.
-    ret            = codegenCast(dtUInt[INT_SIZE_64], ret);
-    ret.isUnsigned = true;
+    ret            = codegenCastPtrToInt(dtUInt[INT_SIZE_64], ret);
 
     break;
   }
