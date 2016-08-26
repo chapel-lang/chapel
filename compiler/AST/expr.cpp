@@ -5865,7 +5865,7 @@ GenRet CallExpr::codegenPrimitive() {
     std::vector<GenRet> args;
     GenRet              arg = get(2);
 
-    if (argMustUseCPtr(get(2)->typeInfo()))
+    if (argMustUseCPtr(get(2)->typeInfo()) && !get(2)->isRef())
       arg = codegenLocalAddrOf(arg);
 
     args.push_back(arg);
@@ -6020,7 +6020,11 @@ GenRet CallExpr::codegenPrimMove() {
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true  &&
              get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == false) {
-    codegenAssign(get(1), codegenAddrOf(codegenWideHere(get(2))));
+    GenRet rhs = get(2);
+    if (get(2)->isRef()) {
+      rhs = codegenDeref(rhs);
+    }
+    codegenAssign(get(1), codegenAddrOf(codegenWideHere(rhs)));
 
   } else if (get(1)->isWideRef() == true &&
              get(2)->isRef() == true) {

@@ -2584,6 +2584,7 @@ static void
 changeArgumentTypeToRef(ArgSymbol* arg) {
 
   arg->qual = kRef;
+  arg->intent = INTENT_REF;
 }
 
 static void
@@ -2605,6 +2606,8 @@ void
 insertWideReferences(void) {
   FnSymbol* heapAllocateGlobals = heapAllocateGlobalsHead();
 
+  // TODO: Should this be in some other pass? It would be nice if once could
+  // assume this pass does nothing in --local mode
   adjustArgSymbolTypesForIntent();
 
   if (!requireWideReferences()) {
