@@ -19,7 +19,7 @@
 develall: STATUS
 	@$(MAKE) always-build-man
 
-docs:
+docs: chpldoc
 	cd doc/sphinx && $(MAKE) docs
 
 checkdocs: FORCE
