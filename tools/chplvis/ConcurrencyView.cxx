@@ -26,6 +26,8 @@
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 
+#include "LeftChevron-20x20.xpm"
+
 // Callback for this view
 
 void backCallback (Fl_Widget *w, void *p) {
@@ -71,9 +73,12 @@ void ConcurrencyView::showCommBoxFor(taskData *task)
   } else {
     scroll->hide();
 
-    backBtn = new Fl_Button (x()+10,y()+35,50,25,"back");
-    backBtn->color(FL_GREEN);
+    Fl_Pixmap *pm = new Fl_Pixmap(left_chevron20x20);
+    backBtn = new Fl_Button (x()+10,y()+30,20,20,0);
+    backBtn->box(FL_NO_BOX);
+    backBtn->image(pm);
     backBtn->callback(backCallback, (void *)0);
+    backBtn->clear_visible_focus();
     add(backBtn);
     backBtn->show();
 
