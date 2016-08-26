@@ -317,7 +317,7 @@ returnInfoGetMemberRef(CallExpr* call) {
       retType = t;
     }
   }
-  return QualifiedType(retType, kRef);
+  return QualifiedType(retType, q);
 }
 
 static QualifiedType
