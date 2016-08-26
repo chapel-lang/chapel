@@ -1786,7 +1786,7 @@ static void change_method_into_constructor(FnSymbol* fn) {
     fn->insertFormalAtTail(meme);
     call->insertAtTail(new NamedExpr ("meme", new SymExpr(meme)));
 
-    handleInitializerRules(fn);
+    handleInitializerRules(fn, ct);
   }
 
   fn->_this = new VarSymbol("this");
