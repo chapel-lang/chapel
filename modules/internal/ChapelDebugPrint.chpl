@@ -91,5 +91,16 @@ module ChapelDebugPrint {
       printf("CHPL TEST PAR (%s:%i): %s\n", file_cs, line:c_int, str.c_str());
     }
   }
+  pragma "no doc"
+  proc chpl__testParWriteln(args...) {
+    if chpl__testParFlag && chpl__testParOn {
+      const file_cs : c_string = __primitive("chpl_lookupFilename",
+                                        __primitive("_get_user_file"));
+      const file = file_cs:string;
+      const line = __primitive("_get_user_line");
+      writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
+    }
+  }
+
 }
 
