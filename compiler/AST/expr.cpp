@@ -3198,6 +3198,21 @@ GenRet codegenCast(Type* t, GenRet value, bool Cparens)
     if(info->cfile) {
       return codegenNotEquals(value, codegenZero());
     }
+    else {
+#ifdef HAVE_LLVM
+      llvm::Type* castType = t->codegen().type;
+
+      llvm::IntegerType* castTypeInt =
+        llvm::dyn_cast<llvm::IntegerType>(castType);
+
+      llvm::IntegerType* valueTypeInt =
+        llvm::dyn_cast<llvm::IntegerType>(value.val->getType());
+
+      if(castTypeInt->getBitWidth() < valueTypeInt->getBitWidth()) {
+        return codegenNotEquals(value, codegenZero());
+      }
+#endif
+    }
   }
 
   // if we are casting a C99 wide pointer, parens around the value
