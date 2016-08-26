@@ -1284,6 +1284,7 @@ GenRet codegenRaddr(GenRet wide)
 // Generates code to load the remote locale from a wide address
 static GenRet codegenRlocale(GenRet wide)
 {
+  GenInfo* info = gGenInfo;
   GenRet ret;
   Type* type = LOCALE_ID_TYPE;
 
@@ -1310,10 +1311,12 @@ static GenRet codegenRlocale(GenRet wide)
       ret = codegenCallExpr("chpl_wide_ptr_get_localeID",
                             codegenCastWideToVoid(wide));
 #ifdef HAVE_LLVM
-      assert(ret.val);
-      GenRet expectType = LOCALE_ID_TYPE;
-      ret.val = convertValueToType(ret.val, expectType.type);
-      assert(ret.val);
+      if (!info->cfile) {
+        assert(ret.val);
+        GenRet expectType = LOCALE_ID_TYPE;
+        ret.val = convertValueToType(ret.val, expectType.type);
+        assert(ret.val);
+      }
 #endif
     }
   }
