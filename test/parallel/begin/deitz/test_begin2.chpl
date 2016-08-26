@@ -4,17 +4,17 @@ proc main {
   const n = 5;
 
   var a: [1..n] int;
-  var B: [1..n] sync bool;
+  var B$: [1..n] sync bool;
 
   for i in 1..n do begin {
     a[i] = foo(i);
-    B[i] = true;
+    B$[i] = true;
   }
 
   for i in 1..n {
-    B[i];
-    while a[i] == 0 do
-      sleep(1);
+    B$[i];
+    assert(a[i] != 0);
+
     writeln(a[i]);
   }
 }
