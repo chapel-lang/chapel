@@ -16,20 +16,24 @@ help-source:
 	@echo ""
 
 
-docs: FORCE
+docs: FORCE source
 	./run-in-venv.bash $(MAKE) html
 
-man-chapel: FORCE
+man-chapel: FORCE source
 	./run-in-venv.bash $(MAKE) man
 
 
-module-docs: clean-module-docs
-	@echo "Generating module docs from \$CHPL_HOME/modules/ to doc/sphinx/source"
-	(cd ../../modules && make documentation)
+source: symlink-docs module-docs copy-docs
+	@echo "Dynamically creating files in source/"
+
 
 symlink-docs: clean-symlink-docs
 	@echo "Symbolically linking docs from from doc/release to doc/sphinx/source"
 	./symlinks.py
+
+module-docs: clean-module-docs
+	@echo "Generating module docs from \$CHPL_HOME/modules/ to doc/sphinx/source"
+	(cd ../../modules && make documentation)
 
 copy-docs: clean-copy-docs
 	@echo "Copying files from doc/release to doc/sphinx/source/"
@@ -48,7 +52,7 @@ cleanall: clean-source
 clobber: clean-source clean-build
 
 clean-source: clean-symlink-docs clean-module-docs clean-copy-docs
-	@echo "Cleaning all source files"
+	@echo "Cleaning all dynamically created files in source/"
 
 
 clean-symlink-docs: FORCE
