@@ -58,7 +58,7 @@ help-sphinx:
 check-sphinxbuild:
 	@if [ $(SPHINXTEST) -eq 1 ]; then echo $(SPHINXERROR); fi
 
-html: symlink-docs check-sphinxbuild clean-build
+html: symlink-docs module-docs copy-docs check-sphinxbuild clean-build
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	chmod -R ugo+rX $(BUILDDIR)
 	@echo
@@ -178,5 +178,8 @@ pseudoxml: symlink-docs check-sphinxbuild clean-build
 	@echo
 	@echo "Build finished. The pseudo-XML files are in "'$(BUILDPATH)'"/pseudoxml."
 
+# Clean build
+
 clean-build:
+	@echo "Cleaning all build files"
 	rm -rf $(BUILDDIR)

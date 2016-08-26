@@ -1,6 +1,6 @@
 # Makefile for Chapel documentation
 
-# Sphinx-generated Makefile with minor modification
+# Makefile.sphinx interfaces with sphinx build commands
 include Makefile.sphinx
 
 help: help-sphinx help-source
@@ -15,20 +15,31 @@ help-source:
 	@echo "  clobber        to remove all generated files in source/ and build/"
 	@echo ""
 
+
 docs: FORCE
 	./run-in-venv.bash $(MAKE) html
 
 man-chapel: FORCE
 	./run-in-venv.bash $(MAKE) man
 
+
+module-docs: clean-module-docs
+	@echo "Generating module docs from \$CHPL_HOME/modules/ to doc/sphinx/source"
+	(cd ../../modules && make documentation)
+
 symlink-docs: clean-symlink-docs
-	@echo "Setting up symlinks from /doc/release to /doc/sphinx/source"
+	@echo "Symbolically linking docs from from doc/release to doc/sphinx/source"
 	./symlinks.py
+
+copy-docs: clean-copy-docs
+	@echo "Copying files from doc/release to doc/sphinx/source/"
 	cp  ../release/quickReference.pdf     source/language/quickReference.pdf
 	cp  ../release/chapelLanguageSpec.pdf source/language/chapelLanguageSpec.pdf
 
+
 checkdocs: FORCE
 	./run-in-venv.bash $(MAKE) check
+
 
 clean: clean-source
 
@@ -36,19 +47,26 @@ cleanall: clean-source
 
 clobber: clean-source clean-build
 
-clean-source: clean-symlink-docs clean-module-docs
+clean-source: clean-symlink-docs clean-module-docs clean-copy-docs
+	@echo "Cleaning all source files"
+
 
 clean-symlink-docs: FORCE
-	@echo "Removing all symbolic links contained in source/"
+	@echo "Removing all symbolic links created in source/"
 	find source -type l -delete
-	rm -f language/quickReference.pdf
-	rm -f language/chapelLanguageSpec.pdf
+
+clean-copy-docs: FORCE
+	@echo "Removing files that were copied into source/"
+	rm -f source/language/quickReference.pdf
+	rm -f source/language/chapelLanguageSpec.pdf
 
 clean-module-docs: FORCE
+	@echo "Removing module docs that were generated into source/"
 	rm -rf source/modules/dists
 	rm -rf source/modules/internal
 	rm -rf source/modules/layouts
 	rm -rf source/modules/packages
 	rm -rf source/modules/standard
+
 
 FORCE:
