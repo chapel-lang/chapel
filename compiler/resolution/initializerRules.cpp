@@ -128,7 +128,6 @@ void phase1Analysis(AggregateType* t, BlockStmt* phase1, BlockStmt* phase2,
                     BlockStmt* otherInit) {
   DefExpr* curField = toDefExpr(t->fields.head);
   // the super field is always first
-  INT_ASSERT(curField);
 
   Expr* curExpr = phase1->body.head;
   while (curExpr != NULL && curExpr != phase2 && curExpr != otherInit) {
@@ -152,6 +151,13 @@ void phase1Analysis(AggregateType* t, BlockStmt* phase1, BlockStmt* phase2,
             SymExpr* potenThis = toSymExpr(inner->get(1));
             if (potenThis && potenThis->var->hasFlag(FLAG_ARG_THIS)) {
               // It's an access of this!
+              if (t->fields.length == 0) {
+                // If there aren't fields, then this is obviously wrong.
+                // I don't think we'll actually reach this branch, though.
+                USR_FATAL_CONT(call, "attempted method call too early during initialization");
+              }
+              INT_ASSERT(curField);
+
               SymExpr* sym = toSymExpr(inner->get(2));
               INT_ASSERT(sym);
               // Could it be . . . a field?  The anticipation is killing me!
