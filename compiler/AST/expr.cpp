@@ -99,6 +99,7 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, Gen
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5);
 
 static GenRet codegenZero();
+static GenRet codegenZero32();
 //static GenRet codegenOne();
 static GenRet codegenNullPointer();
 
@@ -1055,7 +1056,7 @@ GenRet codegenLocaleForNode(GenRet node)
   GenRet tmp = createTempVar(localeType);
   GenRet anySublocale = codegenUseGlobal("c_sublocid_any");
   codegenCall("chpl_buildLocaleID", node, anySublocale, codegenAddrOf(tmp),
-              codegenZero(), codegenNullPointer());
+              /*ln*/codegenZero(), /*fn*/ codegenZero32());
   return tmp;
 }
 
@@ -1328,7 +1329,7 @@ static GenRet codegenRnode(GenRet wide){
     ret = codegenCallExpr("chpl_nodeFromLocaleID",
                           codegenAddrOf(codegenValuePtr(
                               codegenWideThingField(wide, WIDE_GEP_LOC))),
-                          codegenZero(), codegenZero());
+                          /*ln*/codegenZero(), /*fn*/codegenZero32());
   } else {
     if( fLLVMWideOpt ) {
 #ifdef HAVE_LLVM
@@ -2980,6 +2981,13 @@ GenRet codegenZero()
 {
   return new_IntSymbol(0, INT_SIZE_64)->codegen();
 }
+
+static
+GenRet codegenZero32()
+{
+  return new_IntSymbol(0, INT_SIZE_32)->codegen();
+}
+
 
 /*
 static
