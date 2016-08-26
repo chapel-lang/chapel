@@ -189,7 +189,6 @@ public:
   bool isRefType() const;
   bool isWideRefType() const;
 
-
   Type* type() const {
     return _type;
   }

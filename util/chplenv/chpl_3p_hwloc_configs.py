@@ -4,7 +4,7 @@ import sys
 chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import third_party_utils, utils
+import third_party_utils
 from utils import memoize
 
 

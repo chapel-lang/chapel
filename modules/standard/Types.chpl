@@ -310,20 +310,6 @@ pragma "no doc"
 proc isRefIter(type t)   param  return isRefIterType(t);
 pragma "no doc"
 proc isPOD(type t)       param  return isPODType(t);
-pragma "no doc"
-proc isTupleOfPrimitiveTypes(e) param
-{
-  if !isTuple(e) then return false;
-
-  // compute && reduce isPrimitiveValue over the tuple
-  proc help(x) param
-    return isPrimitiveValue(x);
-
-  proc help(x, args ...) param
-    return isPrimitiveValue(x) && help((...args));
-
-  return help((...e));
-}
 
 // Set 2 - values.
 /*
@@ -608,6 +594,11 @@ iter chpl_enumerate(type t: enumerated) {
   const enumTuple = chpl_enum_enumerate(t);
   for i in 1..enumTuple.size do
     yield enumTuple(i);
+}
+pragma "no doc"
+iter type enumerated.these(){
+  for i in chpl_enumerate(this) do
+    yield i;
 }
 
 // TODO add chpl_ to these functions' names - they are not intended for user.

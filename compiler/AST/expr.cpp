@@ -3281,7 +3281,30 @@ GenRet codegenCast(Type* t, GenRet value, bool Cparens)
   ret.isLVPtr = value.isLVPtr;
 
   // If we are casting to bool, set it to != 0.
-  if( is_bool_type(t) ) return codegenNotEquals(value, codegenZero());
+  if( is_bool_type(t) ) {
+    // NOTE: We have to limit this special treatment for bool cast to
+    // --no-llvm compilations. LLVM bool operations return single bit
+    // integers whereas bool type is 8-bits. So we still need explicit
+    // cast. Engin
+    if(info->cfile) {
+      return codegenNotEquals(value, codegenZero());
+    }
+    else {
+#ifdef HAVE_LLVM
+      llvm::Type* castType = t->codegen().type;
+
+      llvm::IntegerType* castTypeInt =
+        llvm::dyn_cast<llvm::IntegerType>(castType);
+
+      llvm::IntegerType* valueTypeInt =
+        llvm::dyn_cast<llvm::IntegerType>(value.val->getType());
+
+      if(castTypeInt->getBitWidth() < valueTypeInt->getBitWidth()) {
+        return codegenNotEquals(value, codegenZero());
+      }
+#endif
+    }
+  }
 
   // if we are casting a C99 wide pointer, parens around the value
   // will result in an error, hence the Cparens parameter
@@ -4514,6 +4537,7 @@ GenRet CallExpr::codegenPrimitive() {
         ret.c = "return " + ret.c;
       } else {
 #ifdef HAVE_LLVM
+        ret = codegenCast(ret.chplType, codegenValue(get(1)));
         ret.val = gGenInfo->builder->CreateRet(ret.val);
 #endif
       }
@@ -5524,14 +5548,12 @@ GenRet CallExpr::codegenPrimitive() {
 
     // source data array
     GenRet   remoteAddr = get(4);
-    SymExpr* sym        = toSymExpr(get(4));
+    TypeSymbol* remoteAddrType = get(4)->typeInfo()->symbol;
 
-    INT_ASSERT(sym);
-
-    if (sym->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) == true) {
+    if (remoteAddrType->hasFlag(FLAG_WIDE_REF) == true) {
       remoteAddr = codegenRaddr(remoteAddr);
-    } else if (sym->typeInfo()->symbol->hasFlag(FLAG_REF) == false) {
-        remoteAddr = codegenAddrOf(remoteAddr);
+    } else if (remoteAddrType->hasFlag(FLAG_REF) == false) {
+      remoteAddr = codegenAddrOf(remoteAddr);
     }
 
     // source strides local array
@@ -5627,7 +5649,7 @@ GenRet CallExpr::codegenPrimitive() {
 
       // C standard promotes small ints to full int when they are involved in
       // arithmetic operations. When we don't denormalize the AST, small integer
-      // arithemtic is always assigned to a temporary of the suitable size,
+      // arithmetic is always assigned to a temporary of the suitable size,
       // which truncates the integer appropriately. OTOH, if we denormalize the
       // AST then we have to make sure that are cast to appropriate size.
       //

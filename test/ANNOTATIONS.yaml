@@ -334,6 +334,14 @@ jacobi:
     - add dead string literal elimination (#3120)
   04/01/16:
     - casting bug fix (#3615)
+  08/12/16:
+    - Improve and enable strided bulk transfer optimization as default (#4318)
+  08/13/16:
+    - Fix bulk transfer stride failure, cast to size_t for 32-bit support (#4329)
+  08/19/16:
+    - Turn denormalization on-by-default (#4360)
+  08/20/16:
+    - Turn denormalization off-by-default (#4367) (revert #4360)
 
 knucleotide:
   10/16/15:
@@ -401,6 +409,10 @@ memleaks:
     - optimize certain functions that return with ref-intent (#3101)
   03/10/16:
     - Cleanups to miniMD (#3436)
+  08/11/16:
+    - Sync as record (#4309)
+  08/17/16:
+    - Single as record (#4350)
 
 memleaksfull:
   07/08/14:
@@ -413,6 +425,10 @@ memleaksfull:
     - Fixed string memory leak resulting from redundant autoCopies (#3023)
   01/14/16:
     - optimize certain functions that return with ref-intent (#3101)
+  08/11/16:
+    - Sync as record (#4309)
+  08/23/16:
+    - Fix gasnet config for recent memory leak updates (#4375)
 
 meteor:
   12/18/13:
@@ -475,6 +491,8 @@ prk-stencil.xc-perf:
     - blockDist for useStencilDist output matrix and more (#3705)
   05/06/16:
     - Problem size increased from --order=1000 to --order=32000 (#3813)
+  08/12/16:
+    - Improve and enable strided bulk transfer optimization as default (#4318)
 
 ra:
   05/13/16:
@@ -496,6 +514,9 @@ revcomp:
     - various qio changes motivated by cygwin failures (#1943)
   10/29/15:
     - Difficult to consistently replicate
+  08/12/16:
+    - text: Discontinued performance testing (data invalid) (#4333)
+      config: Single node XC
 
 sad:
   05/03/16:

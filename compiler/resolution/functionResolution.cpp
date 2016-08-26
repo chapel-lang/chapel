@@ -700,8 +700,14 @@ const char* toString(FnSymbol* fn) {
     INT_ASSERT(!strncmp("_type_construct_", fn->name, 16));
     str = astr(fn->name+16);
   } else if (fn->hasFlag(FLAG_CONSTRUCTOR)) {
-    INT_ASSERT(!strncmp("_construct_", fn->name, 11));
-    str = astr(fn->name+11, ".init");
+    if (!strncmp("_construct_", fn->name, 11)) {
+      str = astr(fn->name+11, ".init");
+    } else if (!strcmp("init", fn->name)) {
+      str = "init";
+    } else {
+      str = "";
+      INT_FATAL(fn, "flagged as constructor but not named _construct_ or init");
+    }
   } else if (fn->isPrimaryMethod()) {
     if (!strcmp(fn->name, "this")) {
       INT_ASSERT(fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION));
@@ -3012,6 +3018,12 @@ printResolutionErrorUnresolved(
       INT_ASSERT(mod);
       str = astr(mod->name, ".", str);
     }
+    if(info->actuals.n > 1 && ((info->actuals.v[0]->getValType()) == dtMethodToken)){
+      EnumType* typeE = toEnumType(info->actuals.v[1]->getValType());
+      if (typeE != NULL) {
+        entity = "enumerated type symbol or call";
+      }
+    }
     USR_FATAL_CONT(call, "unresolved %s '%s'", entity, str);
     if (visibleFns.n > 0) {
       if (developer) {
@@ -3907,6 +3919,39 @@ FnSymbol* tryResolveCall(CallExpr* call) {
   return resolveNormalCall(call, true);
 }
 
+static
+void temporaryInitializerFixup(CallExpr* call) {
+  if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
+    // Support super.init() calls (for instance) when the super type does not
+    // define either an initializer or a constructor.  Also ignores errors from
+    // improperly inserted .init() calls (so be sure to check here if something
+    // is behaving oddly - Lydia, 08/19/16)
+    if (!strcmp(usym->unresolved, "init")) {
+      for_actuals(actual, call) {
+        if (NamedExpr* named = toNamedExpr(actual)) {
+          if (!strcmp(named->name, "meme")) {
+            if (SymExpr* sym = toSymExpr(named->actual)) {
+              if (AggregateType* ct = toAggregateType(sym->var->type)) {
+                if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
+                  // This code should be removed when the compiler generates
+                  // initializers as the default method of construction and
+                  // initialization for a type (Lydia note, 08/19/16)
+                  usym->unresolved = astr("_construct_", ct->symbol->name);
+                } else if (ct->initializerStyle == DEFINES_CONSTRUCTOR) {
+                  // This code should be removed when initializers are fully
+                  // supported and old style constructors are deprecated
+                  // (Lydia note, 08/19/16)
+                  USR_FATAL(call, "can't make init call on type with old constructor style");
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 // if checkonly is provided, don't print any errors; just check
 // to see if the particular function could be resolved.
 // returns the result of resolving - or NULL if we couldn't do it.
@@ -3919,6 +3964,8 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly) {
     print_view(call);
     gdbShouldBreakHere();
   }
+
+  temporaryInitializerFixup(call);
 
   resolveDefaultGenericType(call);
 
