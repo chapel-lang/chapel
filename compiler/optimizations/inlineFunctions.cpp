@@ -76,7 +76,7 @@ inlineCall(FnSymbol* fn, CallExpr* call, Vec<FnSymbol*>& canRemoveRefTempSet) {
         // Passing an actual that is ref(t) to a formal t with intent ref.
         Expr* point = call->getStmtExpr();
         VarSymbol* tmp = newTemp(astr("i_", formal->name), formal->type);
-        tmp->qual = kRef;
+        tmp->qual = QUAL_REF;
         DefExpr* def = new DefExpr(tmp);
         CallExpr* move;
         move = new CallExpr(PRIM_MOVE,

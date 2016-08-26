@@ -368,13 +368,13 @@ static QualifiedType getNarrowType(BaseAST* bs) {
 
 
   Type* retType = NULL;
-  Qualifier retQ = kBlank;
+  Qualifier retQ = QUAL_BLANK;
 
   if (Type* t = toType(bs)) {
     if (t->symbol->qualType().isRefOrWideRef()) {
-      retQ = kRef;
+      retQ = QUAL_REF;
     } else {
-      retQ = kVal;
+      retQ = QUAL_VAL;
     }
 
     if (isTypeFullyWide(bs)) {
@@ -392,7 +392,7 @@ static QualifiedType getNarrowType(BaseAST* bs) {
     }
 
     if (isRef(sym)) {
-      retQ = kRef;
+      retQ = QUAL_REF;
 
       if (!isRefType(sym)) {
         retType = sym->typeInfo();
@@ -414,7 +414,7 @@ static QualifiedType getNarrowType(BaseAST* bs) {
 }
 
 static Type* getElementType(BaseAST* bs) {
-  Type* arrType = getNarrowType(bs).getType();
+  Type* arrType = getNarrowType(bs).type();
   INT_ASSERT(arrType->symbol->hasFlag(FLAG_DATA_CLASS));
 
   return getDataClassType(arrType->symbol)->type;
@@ -490,22 +490,22 @@ static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
     if (mustBeWide) {
       if (Type* wide = wideRefMap.get(sym->type)) {
         sym->type = wide;
-        sym->qual = kWideRef;
+        sym->qual = QUAL_WIDE_REF;
       }
     } else if (wideVal) {
       if (Type* wide = narrowToWideVal[sym->type]) {
         sym->type = wide;
-        sym->qual = kRef;
+        sym->qual = QUAL_REF;
       }
     }
   }
   else if(sym->qualType().isRefOrWideRef()) {
     if (mustBeWide) {
-      sym->qual = kWideRef;
+      sym->qual = QUAL_WIDE_REF;
     } else {
       if (Type* wide = wideClassMap.get(sym->type->getValType())) {
         sym->type = wide;
-        sym->qual = kRef;
+        sym->qual = QUAL_REF;
       }
     }
   }
@@ -1748,7 +1748,7 @@ static void narrowWideClassesThroughCalls()
           SET_LINENO(call);
           call->getStmtExpr()->insertBefore(new DefExpr(var));
 
-          if (narrowType.getType()->symbol->hasFlag(FLAG_EXTERN)) {
+          if (narrowType.type()->symbol->hasFlag(FLAG_EXTERN)) {
 
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
@@ -1760,7 +1760,7 @@ static void narrowWideClassesThroughCalls()
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           }
           //else if (narrowType->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS)) {
-          else if (narrowType.isRef() || narrowType.getType()->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS)) {
+          else if (narrowType.isRef() || narrowType.type()->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS)) {
             // Also if the narrow type is a ref or data class type,
             // we must treat it like a (narrow) reference.
             call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
@@ -1998,7 +1998,7 @@ static void localizeCall(CallExpr* call) {
         if (isFullyWide(call->get(1))) {
           Symbol* se = toSymExpr(call->get(1))->var;
           QualifiedType qt = getNarrowType(call->get(1));
-          se->type = qt.getType();
+          se->type = qt.type();
           se->qual = qt.getQual();
         }
       }
@@ -2159,7 +2159,7 @@ static void heapAllocateGlobalsTail(FnSymbol* heapAllocateGlobals,
   block->insertAtTail(dummy);
   forv_Vec(Symbol, sym, heapVars) {
     insertChplHereAlloc(dummy, false /*insertAfter*/, sym,
-                        getNarrowType(sym).getType(),
+                        getNarrowType(sym).type(),
                         newMemDesc("global heap-converted data"));
   }
   dummy->remove();
@@ -2479,7 +2479,7 @@ static void moveAddressSourcesToTemp()
     if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
       if (isRef(call->get(1)) &&
           valIsWideClass(call->get(1)) &&
-          call->get(2)->typeInfo() == getNarrowType(call->get(1)->getValType()).getType()) {
+          call->get(2)->typeInfo() == getNarrowType(call->get(1)->getValType()).type()) {
         //
         // widen rhs class
         //
@@ -2583,7 +2583,7 @@ shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
 static void
 changeArgumentTypeToRef(ArgSymbol* arg) {
 
-  arg->qual = kRef;
+  arg->qual = QUAL_REF;
 }
 
 static void

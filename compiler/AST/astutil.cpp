@@ -412,7 +412,7 @@ int isDefAndOrUse(SymExpr* se) {
       CallExpr* rhsCall = toCallExpr(call->get(2));
       QualifiedType lhsQual = se->var->qualType();
       if ((lhsQual.isRef() || lhsQual.isWideRef()) &&
-          !isReferenceType(lhsQual.getType()) &&
+          !isReferenceType(lhsQual.type()) &&
           !(rhsCall && rhsCall->isPrimitive(PRIM_SET_REFERENCE))) {
         // Assigning to a reference variable counts as a 'use'
         // of the reference and a 'def' of its value
