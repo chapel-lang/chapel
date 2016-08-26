@@ -128,8 +128,12 @@ void phase1Analysis(AggregateType* t, BlockStmt* phase1, BlockStmt* phase2,
                     BlockStmt* otherInit) {
   DefExpr* curField = toDefExpr(t->fields.head);
   // the super field is always first
+  bool *seenField = (bool*)calloc(t->fields.length, sizeof(bool));
+  if (curField)
+    seenField[0] = true;
 
   Expr* curExpr = phase1->body.head;
+  int curIndex = 0;
   while (curExpr != NULL && curExpr != phase2 && curExpr != otherInit) {
     // Verify that:
     // - fields are initialized in declaration order
@@ -165,6 +169,7 @@ void phase1Analysis(AggregateType* t, BlockStmt* phase1, BlockStmt* phase2,
                 if (var->immediate->const_kind == CONST_KIND_STRING) {
                   DefExpr* next = toDefExpr(curField->next);
                   bool foundMatch = false;
+                  int nextIdx = curIndex + 1;
                   while (next) {
                     if (!strcmp(next->sym->name, var->immediate->v_string)) {
                       // The name matches a later field than the last we saw
@@ -173,22 +178,31 @@ void phase1Analysis(AggregateType* t, BlockStmt* phase1, BlockStmt* phase2,
                       // NOTE: will want to insert initialization of fields we
                       // passed along the way if this skipped some.
                       curField = next;
+                      curIndex = nextIdx;
+                      seenField[nextIdx] = true;
                       foundMatch = true;
                       break;
                     } else {
                       next = toDefExpr(next->next);
+                      nextIdx++;
                     }
                   }
                   if (!foundMatch) {
                     DefExpr* prev = curField;
+                    nextIdx = curIndex;
                     while (prev) {
                       if (!strcmp(prev->sym->name, var->immediate->v_string)) {
-                        USR_FATAL_CONT(call, "field initialization out of order");
-                        USR_PRINT(call, "initialization of fields before .init() call must be in order");
+                        if (seenField[nextIdx]) {
+                          USR_FATAL_CONT(call, "multiple initializations of field \"%s\" detected", prev->sym->name);
+                        } else {
+                          USR_FATAL_CONT(call, "field initialization out of order");
+                          USR_PRINT(call, "initialization of fields before .init() call must be in order");
+                        }
                         foundMatch = true;
                         break;
                       } else {
                         prev = toDefExpr(prev->prev);
+                        nextIdx--;
                       }
                     }
                     if (!foundMatch) {
@@ -207,4 +221,6 @@ void phase1Analysis(AggregateType* t, BlockStmt* phase1, BlockStmt* phase2,
 
     curExpr = curExpr->next;
   }
+
+  free (seenField);
 }
