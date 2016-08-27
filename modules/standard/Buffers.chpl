@@ -614,11 +614,15 @@ module Buffers {
 
   /* methods to read/write basic types. */
 
-  /* Read a basic type from a buffer. This method reads the value
-     by copying from memory - so it reads a binary value in native endianness.
+  /* Read a basic type (integral or floating point value) or :type:`string`
+     from a buffer.
+     For basic types, this method reads the value by copying from memory -
+     so it reads a binary value in native endianness. For strings, this method
+     reads a string encoded as the string length (as :type:`int`) followed by
+     that number of bytes (as :type:`uint(8)`).
      
      :arg it: a :record:`buffer_iterator` where reading will start
-     :arg value: a basic type (integral or floating point value)
+     :arg value: a basic type or :type:`string`
      :arg error: (optional) capture an error that was encountered instead of
                  halting on error
      :returns: a buffer iterator storing the position immediately after
@@ -646,14 +650,14 @@ module Buffers {
     on this.home {
       var start = it;
       var end = it;
-      // Read length
+      // Read string length
       var len: int;
       this.advance(end, numBytes(int));
       error = qbuffer_copyout(this._buf_internal,
                               start._bufit_internal, end._bufit_internal,
                               len, numBytes(int));
       ret = end;
-      // Read character array
+      // Read byte array
       if !error {
         this.advance(start, numBytes(int));
         this.advance(end, len);
@@ -677,11 +681,15 @@ module Buffers {
     return ret;
   }
 
-  /* Write a basic type to a buffer. This method writes the value
-     by copying to memory - so it reads a binary value in native endianness.
-     
+  /* Write a basic type (integral or floating point value) or :type:`string`
+     to a buffer.
+     For basic types, this method writes the value by copying to memory -
+     so it writes a binary value in native endianness. For strings, this method
+     writes a string encoded as the string length (as :type:`int`) followed by
+     that number of bytes (as :type:`uint(8)`).
+
      :arg it: a :record:`buffer_iterator` where reading will start
-     :arg value: a basic type (integral or floating point value)
+     :arg value: a basic type or :type:`string`
      :arg error: (optional) capture an error that was encountered instead of
                  halting on error
      :returns: a buffer iterator storing the position immediately after
@@ -717,13 +725,13 @@ module Buffers {
       var end = it;
       var tmp = value;
       var len = value.length:int;
-
+      // Write string length
       this.advance(end, numBytes(int));
       error = qbuffer_copyin(this._buf_internal,
                              start._bufit_internal, end._bufit_internal,
                              len, numBytes(int));
       ret = end;
-
+      // Write byte array
       if !error {
         this.advance(start, numBytes(int));
         this.advance(end, len);
