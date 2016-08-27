@@ -147,12 +147,14 @@ static QualifiedType
 returnInfoCast(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
-  if (t2->symbol->hasFlag(FLAG_WIDE_CLASS) && !call->get(2)->isRef())
+  if (t2->symbol->hasFlag(FLAG_WIDE_CLASS) /*&& !call->get(2)->isRef()*/) {
     if (wideClassMap.get(t1))
       t1 = wideClassMap.get(t1);
-  if (t2->symbol->hasFlag(FLAG_WIDE_REF))
+  }
+  if (t2->symbol->hasFlag(FLAG_WIDE_REF)) {
     if (wideRefMap.get(t1))
       t1 = wideRefMap.get(t1);
+  }
   return QualifiedType(t1); // what should qual be here?
 }
 

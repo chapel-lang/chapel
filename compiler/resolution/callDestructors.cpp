@@ -246,7 +246,7 @@ void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
 
   CallExpr* returnCall  = toCallExpr(returnPrim);
   Expr*     returnValue = returnCall->get(1)->remove();
-  CallExpr* moveExpr    = new CallExpr(PRIM_MOVE, formal, returnValue);
+  CallExpr* moveExpr    = new CallExpr(PRIM_ASSIGN, formal, returnValue);
 
   returnPrim->insertBefore(moveExpr);
 }

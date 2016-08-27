@@ -166,12 +166,13 @@ void AutoTrack::updateAutoCopy(CallExpr* call) {
   Type* lhsType = call->get(1)->typeInfo();
   Type* rhsType = rhs->get(1)->typeInfo();
   SET_LINENO(call);
-  if (lhsType == rhsType)
+  if (lhsType->getValType() == rhsType) {
     rhs->replace(rhs->get(1)->remove());
-  else if (lhsType->getRefType() == rhsType)
+  } else if (lhsType->getRefType() == rhsType) {
     rhs->replace(new CallExpr(PRIM_DEREF, rhs->get(1)->remove()));
-  else
+  } else {
     INT_ASSERT("Type mismatch in updateAutoCopy");
+  }
 }
 
 void AutoTrack::updateAutoDestroy(CallExpr* call) {
@@ -325,10 +326,11 @@ static void removePODinitDestroy()
 
           if (lhsType == rhsType)
             call->replace(actual->remove());
-          else if (lhsType && lhsType->getRefType() == rhsType)
+          else if (lhsType && lhsType->getRefType() == rhsType) {
             call->replace(new CallExpr(PRIM_DEREF, actual->remove()));
-          else
+          } else {
             INT_ASSERT("Type mismatch in updateAutoCopy");
+          }
 
         }
       }

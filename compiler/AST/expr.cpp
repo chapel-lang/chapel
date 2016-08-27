@@ -6329,6 +6329,10 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
       if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
           call->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
         GenRet tmp = call->get(2);
+        // TODO:  Should we check if we're casting to a ref?
+        if (call->get(2)->isRef()) {
+          tmp = codegenDeref(tmp);
+        }
 
         tmp = codegenWideAddrWithAddr(tmp,
                                       codegenCast(call->get(1)->typeInfo(),
