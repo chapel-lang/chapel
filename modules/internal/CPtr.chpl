@@ -90,12 +90,12 @@ module CPtr {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where t:uint(64) && x.type:c_void_ptr {
-    return __primitive("cast", t, x);
+  inline proc _cast(type t, x) where t:string && x.type:c_void_ptr {
+    return __primitive("ref to string", x):string;
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where t:uint(64) && x.type:c_ptr {
-    return __primitive("cast", t, x);
+  inline proc _cast(type t, x) where t:string && x.type:c_ptr {
+    return __primitive("ref to string", x):string;
   }
 
 
