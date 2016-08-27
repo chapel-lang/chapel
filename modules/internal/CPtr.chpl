@@ -199,16 +199,6 @@ module CPtr {
   pragma "no doc"
   extern proc c_pointer_return(ref x:?t):c_ptr(t);
 
-  pragma "no doc"
-  proc c_void_ptr.writeThis(x) {
-    writef("0x%016xu", this:uint(64));
-  }
-
-  pragma "no doc"
-  proc c_ptr.writeThis(x) {
-    writef("0x%016xu", this:uint(64));
-  }
-
 
   /* Returns a :type:`c_ptr` to a Chapel rectangular array.
     Note that the existence of this c_ptr has no impact on the lifetime of the
