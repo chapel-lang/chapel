@@ -1,0 +1,20 @@
+int64
+int32
+int16
+int8
+real64
+real32
+imag64
+imag32
+complex128
+complex64
+verify: int\(64\) 177777777600
+verify: int\(32\) 177776
+verify: int\(16\) 1776
+verify: int\(8\) 176
+verify: real\(64\) 1\.77778e\+07
+verify: real\(32\) 1\.77778e\+05
+verify: imag\(64\) 1\.77778e\+07i
+verify: imag\(32\) 1\.77778e\+05i
+verify: complex\(128\) 1\.77778e\+07 \+ 1\.88889e\+07i
+verify: complex\(64\) 1\.77778e\+05 \+ 1\.88889e\+05i
