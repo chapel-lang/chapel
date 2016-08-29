@@ -151,6 +151,9 @@ all:
       config: 16 node XC, Single node XC
   08/04/16:
     - Updates to Search module, required array slicing (partially reverted) (#4273)
+  08/28/16:
+    - text: Upgraded chap* (except chap03) and chapcs* machines from gcc 4.7 to gcc 6.2
+      config: chap04, chapcs
 
 AllCompTime:
   11/09/14:
