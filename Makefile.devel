@@ -20,7 +20,7 @@ PYTHON_VERSION_DIR = py$(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_versio
 develall: STATUS
 	@$(MAKE) always-build-man
 
-docs: module-docs
+docs: chpldoc
 	cd doc/sphinx && $(MAKE) docs
 
 checkdocs: FORCE

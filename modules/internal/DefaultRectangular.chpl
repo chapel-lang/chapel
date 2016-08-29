@@ -1440,7 +1440,7 @@ module DefaultRectangular {
   proc DefaultRectangularArr.doiBulkTransferStride(Barg) {
     if this.data.locale != here && Barg.data.locale != here {
       if debugDefaultDistBulkTransfer {
-        chpl_debug_writeln("BulkTransferStride: Both arrays on different locale, moving to locale of destination: ", this.data.locale);
+        chpl_debug_writeln("BulkTransferStride: Both arrays on different locale, moving to locale of destination: LOCALE", this.data.locale.id);
       }
       on this.data do stridedTransferFrom(Barg);
     } else {
@@ -1462,9 +1462,9 @@ module DefaultRectangular {
     for i in 1..rank do BFirst(i) = if Bdims(i).stride < 0 then Bdims(i).last else Bdims(i).first;
 
     if debugDefaultDistBulkTransfer {
-      chpl_debug_writeln("In DefaultRectangularArr.doiBulkTransferStride");
-      chpl_debug_writeln("Dest = ", Adims);
-      chpl_debug_writeln("Src  = ", Bdims);
+      chpl_debug_writeln("In DefaultRectangularArr.doiBulkTransferStride\n" +
+                         "Dest = " + stringify(Adims) + "\n" +
+                         "Src  = " + stringify(Bdims));
     }
 
     // The number of values needed to express the strided region.
@@ -1541,14 +1541,14 @@ module DefaultRectangular {
   //
   proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels:int(32), dstStride, srcStride, count, AFirst, BFirst) {
     if debugDefaultDistBulkTransfer {
-      chpl_debug_writeln("BulkTransferStride with values:");
-      chpl_debug_writeln("\tLocale        = ", here.id);
-      chpl_debug_writeln("\tStride levels = ", stridelevels);
-      chpl_debug_writeln("\tdstStride     = ", dstStride);
-      chpl_debug_writeln("\tsrcStride     = ", srcStride);
-      chpl_debug_writeln("\tcount         = ", count);
-      chpl_debug_writeln("\tdstBlk        = ", blk);
-      chpl_debug_writeln("\tsrcBlk        = ", B.blk);
+      chpl_debug_writeln("BulkTransferStride with values:\n" +
+                         "\tLocale        = " + stringify(here.id) + "\n" +
+                         "\tStride levels = " + stringify(stridelevels) + "\n" +
+                         "\tdstStride     = " + stringify(dstStride) + "\n" +
+                         "\tsrcStride     = " + stringify(srcStride) + "\n" +
+                         "\tcount         = " + stringify(count) + "\n" +
+                         "\tdstBlk        = " + stringify(blk) + "\n" +
+                         "\tsrcBlk        = " + stringify(B.blk));
     }
 
     const A = this;

@@ -1,3 +1,4 @@
+/* Tests of the 'sorted' iterator */
 use Sort;
 
 var A = [1.4, 6.3, 2.8, 3.7, 9.6];

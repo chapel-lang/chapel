@@ -441,12 +441,15 @@ std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
 }
 
 std::string getChplPythonVersion() {
-  // Runs util/chplenv/chpl_python_version.py
-  std::string command = "";
+  // Runs util/chplenv/chpl_python_version.py and removes the newline
 
+  std::string command = "";
   command += std::string(CHPL_HOME) + "/util/chplenv/chpl_python_version.py 2> /dev/null";
 
-  return runCommand(command);
+  std::string pyVer = runCommand(command);
+  pyVer.erase(pyVer.find_last_not_of("\n\r")+1);
+
+  return pyVer;
 }
 
 std::string runCommand(std::string& command) {
