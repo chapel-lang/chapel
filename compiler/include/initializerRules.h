@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#ifndef _INITIALIZER_RULES_H_
+#define _INITIALIZER_RULES_H_
+
 class CallExpr;
 class FnSymbol;
 class AggregateType;
@@ -24,3 +27,5 @@ class AggregateType;
 void temporaryInitializerFixup(CallExpr* call);
 
 void handleInitializerRules(FnSymbol* fn, AggregateType* t);
+
+#endif
