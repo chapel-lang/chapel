@@ -348,54 +348,104 @@ int GridView::handle(int event)
       if (loc1 >= 0 && loc1 < numlocales) {
         //printf ("left row of locales, %d.\n", loc1);
         Menus.setCurrentLoc(loc1);
-        if (Fl::event_button() == FL_MIDDLE_MOUSE){
-          //printf ("Making locale window.\n");
-          if (theLocales[loc1].win == NULL) {
-            // Create the window
-            theLocales[loc1].win = make_LC_window(loc1, &curTagData->locales[loc1]);
+        if (Info->dataToShow() == show_Concurrency) {
+          if (Menus.usingUTags() && curTagNum != DataModel::TagALL) {
+            fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");
           } else {
-            theLocales[loc1].win->setAsLocale(loc1, &curTagData->locales[loc1]);
+            if (Fl::event_button() == FL_MIDDLE_MOUSE) {
+              if (theLocales[loc1].ccwin == NULL) {
+                // Create the window
+                theLocales[loc1].ccwin = make_concurrency_window(loc1, curTagNum);
+              } else {
+                theLocales[loc1].ccwin->updateData(loc1, curTagNum);
+                theLocales[loc1].ccwin->showTaskBox();
+              }
+              if (theLocales[loc1].ccwin->visible())
+                theLocales[loc1].ccwin->hide();
+              else
+                theLocales[loc1].ccwin->show();
+              
+            } else {
+              // Show the concurrency view.
+              DataField->selectChild(concView);
+              concView->updateData(loc1, curTagNum);
+            }
           }
-          if (theLocales[loc1].win->visible()) 
-            theLocales[loc1].win->hide();
-          else
-            theLocales[loc1].win->show();
         } else {
-          // Left mouse, place it on the info bar.
-          LocCommBox *infoBox;
-          infoBox = Info->getNewLocComm();
-          infoBox->setLocale(loc1, &curTagData->locales[loc1]);
-          infoBox->addXButton();
-          Info->addLocOrComm(infoBox);
+          if (Fl::event_button() == FL_MIDDLE_MOUSE){
+            //printf ("Making locale window.\n");
+            if (theLocales[loc1].win == NULL) {
+              // Create the window
+              theLocales[loc1].win = make_LC_window(loc1, &curTagData->locales[loc1]);
+            } else {
+              theLocales[loc1].win->setAsLocale(loc1, &curTagData->locales[loc1]);
+            }
+            if (theLocales[loc1].win->visible()) 
+              theLocales[loc1].win->hide();
+            else
+              theLocales[loc1].win->show();
+          } else {
+            // Left mouse, place it on the info bar.
+            LocCommBox *infoBox;
+            infoBox = Info->getNewLocComm();
+            infoBox->setLocale(loc1, &curTagData->locales[loc1]);
+            infoBox->addXButton();
+            Info->addLocOrComm(infoBox);
+          }
+          return 1;
         }
-        return 1;
       }
     } else if (y <= boxSize && x > 12+boxSize ) {
       loc1 = (x-12-boxSize)/boxSize;
       if (loc1 >= 0 && loc1 < numlocales) {
         // printf ("top row of locales, %d.\n", loc1);
         Menus.setCurrentLoc(loc1);
-        if (Fl::event_button() == FL_MIDDLE_MOUSE){
-          printf ("Making locale window.\n");
-          if (theLocales[loc1].win == NULL) {
-            // Create the window
-            theLocales[loc1].win = make_LC_window(loc1, &curTagData->locales[loc1]);
+        if (Info->dataToShow() == show_Concurrency) {
+          if (Menus.usingUTags() && curTagNum != DataModel::TagALL) {
+            fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");
           } else {
-            theLocales[loc1].win->setAsLocale(loc1, &curTagData->locales[loc1]);
+            if (Fl::event_button() == FL_MIDDLE_MOUSE) {
+              if (theLocales[loc1].ccwin == NULL) {
+                // Create the window
+                theLocales[loc1].ccwin = make_concurrency_window(loc1, curTagNum);
+              } else {
+                theLocales[loc1].ccwin->updateData(loc1, curTagNum);
+                theLocales[loc1].ccwin->showTaskBox();
+              }
+              if (theLocales[loc1].ccwin->visible())
+                theLocales[loc1].ccwin->hide();
+              else
+                theLocales[loc1].ccwin->show();
+              
+            } else {
+              // Show the concurrency view.
+              DataField->selectChild(concView);
+              concView->updateData(loc1, curTagNum);
+            }
           }
-          if (theLocales[loc1].win->visible()) 
-            theLocales[loc1].win->hide();
-          else
-            theLocales[loc1].win->show();
         } else {
-          // Left mouse, place it on the info bar.
-          LocCommBox *infoBox;
-          infoBox = Info->getNewLocComm();
-          infoBox->setLocale(loc1, &curTagData->locales[loc1]);
-          infoBox->addXButton();
-          Info->addLocOrComm(infoBox);
+          if (Fl::event_button() == FL_MIDDLE_MOUSE){
+            printf ("Making locale window.\n");
+            if (theLocales[loc1].win == NULL) {
+              // Create the window
+              theLocales[loc1].win = make_LC_window(loc1, &curTagData->locales[loc1]);
+            } else {
+              theLocales[loc1].win->setAsLocale(loc1, &curTagData->locales[loc1]);
+            }
+            if (theLocales[loc1].win->visible()) 
+              theLocales[loc1].win->hide();
+            else
+              theLocales[loc1].win->show();
+          } else {
+            // Left mouse, place it on the info bar.
+            LocCommBox *infoBox;
+            infoBox = Info->getNewLocComm();
+            infoBox->setLocale(loc1, &curTagData->locales[loc1]);
+            infoBox->addXButton();
+            Info->addLocOrComm(infoBox);
+          }
+          return 1;
         }
-        return 1;
       }
     } else {
       y -= boxSize + 10;

@@ -314,12 +314,12 @@ GrdView->selectData(Menus.currentTag());}
       }
       Fl_Button {} {
         callback {DataField->selectChild(concView);
+Info->showConcurrency();
 //Menus.setCurrentDataView(GrdView);
 //Menus.addPopUpTo(GridGrp);
 //Menus.setCurrentZoom(GridScroll);
-//GrdView->selectData(Menus.currentTag());
 concView->updateData(Menus.currentLoc(),
-                     Menus.currentTag());}
+                     Menus.currentTag());} selected
         image {Concurrent-40x40.png} xywh {10 210 40 40} box NO_BOX down_box FLAT_BOX
         code0 {o->clear_visible_focus();}
       }
@@ -458,6 +458,5 @@ if (VisSettings.save_WH) {
    MainWindow->size(VisSettings.mainW,VisSettings.mainH);
    MainWindow->redraw();
 }
-ProfileView->loadData();} {selected
-  }
+ProfileView->loadData();} {}
 } 

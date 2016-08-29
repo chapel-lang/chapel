@@ -418,17 +418,24 @@ int GraphView::handle(int event)
             if (Menus.usingUTags() && curTagNum != DataModel::TagALL) {
               fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");
             } else {
-              if (theLocales[ix].ccwin == NULL) {
-                // Create the window
-                theLocales[ix].ccwin = make_concurrency_window(ix, curTagNum);
+              if (Fl::event_button() == FL_MIDDLE_MOUSE) {
+                if (theLocales[ix].ccwin == NULL) {
+                  // Create the window
+                  theLocales[ix].ccwin = make_concurrency_window(ix, curTagNum);
+                } else {
+                  theLocales[ix].ccwin->updateData(ix, curTagNum);
+                  theLocales[ix].ccwin->showTaskBox();
+                }
+                if (theLocales[ix].ccwin->visible())
+                  theLocales[ix].ccwin->hide();
+                else
+                  theLocales[ix].ccwin->show();
+                
               } else {
-                theLocales[ix].ccwin->updateData(ix, curTagNum);
-                theLocales[ix].ccwin->showTaskBox();
+                // Show the concurrency view.
+                DataField->selectChild(concView);
+                concView->updateData(ix, curTagNum);
               }
-              if (theLocales[ix].ccwin->visible())
-                theLocales[ix].ccwin->hide();
-              else
-                theLocales[ix].ccwin->show();
             }
           } else {
             if (Fl::event_button() == FL_MIDDLE_MOUSE){
