@@ -94,8 +94,8 @@ exit(1);} {}
 Function {make_LC_window(int locnum, localeData *locInfo)} {C
 } {
   Fl_Window {} {open
-    xywh {1082 50 200 80} type Double color 7
-    class LocCommWin size_range {200 80 200 80} visible
+    xywh {1082 50 200 80} type Double color 7 hide
+    class LocCommWin size_range {200 80 200 80}
   } {
     Fl_Group LC_Box {open
       private xywh {0 0 200 80} box BORDER_FRAME color 0
@@ -108,8 +108,8 @@ w->setAsLocale(locnum, locInfo);} {}
 
 Function {make_LC_window(int fromLn, int toLn, struct commData *commdata)} {} {
   Fl_Window {} {open
-    xywh {877 49 200 80} type Double color 7
-    class LocCommWin size_range {200 80 200 80} visible
+    xywh {877 49 200 80} type Double color 7 hide
+    class LocCommWin size_range {200 80 200 80}
   } {
     Fl_Group LC_Box1 {open
       private xywh {0 0 200 80} box BORDER_FRAME color 0
@@ -182,7 +182,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {718 162 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
+    xywh {720 476 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55
@@ -295,7 +295,8 @@ exit(0);}
         code0 {o->clear_visible_focus();}
       }
       Fl_Button {} {
-        callback {DataField->selectChild(GraphGrp);
+        callback {DataField->popAll();
+DataField->selectChild(GraphGrp);
 Menus.setCurrentDataView(DbgView);
 Menus.addPopUpTo(GraphGrp);
 Menus.setCurrentZoom(DbgScroll);
@@ -304,7 +305,8 @@ DbgView->selectData(Menus.currentTag());}
         code0 {o->clear_visible_focus();}
       }
       Fl_Button {} {
-        callback {DataField->selectChild(GridGrp);
+        callback {DataField->popAll();
+DataField->selectChild(GridGrp);
 Menus.setCurrentDataView(GrdView);
 Menus.addPopUpTo(GridGrp);
 Menus.setCurrentZoom(GridScroll);
@@ -313,22 +315,24 @@ GrdView->selectData(Menus.currentTag());}
         code0 {o->clear_visible_focus();}
       }
       Fl_Button {} {
-        callback {DataField->selectChild(concView);
+        callback {DataField->popAll();
+DataField->selectChild(concView);
 Info->showConcurrency();
 //Menus.setCurrentDataView(GrdView);
 //Menus.addPopUpTo(GridGrp);
 //Menus.setCurrentZoom(GridScroll);
 concView->updateData(Menus.currentLoc(),
-                     Menus.currentTag());} selected
+                     Menus.currentTag());}
         image {Concurrent-40x40.png} xywh {10 210 40 40} box NO_BOX down_box FLAT_BOX
         code0 {o->clear_visible_focus();}
       }
       Fl_Button {} {
-        callback {DataField->selectChild(ProfileView);
+        callback {DataField->popAll();
+DataField->selectChild(ProfileView);
 ProfileView->prepareData();
 Menus.setCurrentTag(DataModel::TagALL);
 if (Info->getTagName() != NULL)
-   Info->setTagName("All");}
+   Info->setTagName("All");} selected
         image {Profile-40x40.png} xywh {10 260 40 40} box NO_BOX down_box FLAT_BOX
         code0 {o->clear_visible_focus();}
       }

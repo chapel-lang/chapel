@@ -29,9 +29,13 @@
 
 class Fl_MultiGroup : public Fl_Group {
 
-  Fl_Widget **childStack;
-  int stackSize;
-  int top;
+  struct ll {
+    Fl_Widget *child;
+    bool removeAtPop;
+    struct ll *next;
+  } *childStack;
+  int nOnStack;
+
   int numChildren;
   int selectedChild;
 
@@ -46,10 +50,12 @@ public:
 
   bool pushChild (int which);      // Select a child to be visible and stacks current child
   bool pushChild (Fl_Widget *w);
+  bool pushNewChild (Fl_Widget *w, bool removeAtPop);
   
-  bool popChild ();                // pops a child
+  bool popChild ();                // pops a child, displays stacked child
+  void popAll();                   // pops all children, displays bottom of stack
 
-  int numOnStack() { return top+1; }
+  int numOnStack() { return nOnStack; }
 
   int currentChild ();             // returns a child
 

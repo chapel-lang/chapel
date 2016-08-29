@@ -41,6 +41,13 @@ Lines in the file:
     On locale 0 only, fid is function id, lnum and fileno
     are location of function creation point?
 
+  CHPL_HOME: string
+  DIR: string
+    names of the directories needed to use the file names
+    without having chplvis needing to be run in the
+    source code diretory and with the same CHPL_HOME environment
+    variable.
+
   tname: tnum tag_name
     On locale 0 only, name of a new tag
 

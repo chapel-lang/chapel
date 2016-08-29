@@ -24,10 +24,11 @@
 
 #include "DataModel.h"
 #include "ProfileBrowser.h"
+#include "SubView.h"
 #include "chplvis.h"
 #include <string.h>
 #include <stdlib.h>
-#include <FL/names.h> 
+#include <FL/names.h>
 
 void ProfileBrowserCB (Fl_Widget *w, void *p)
 {
@@ -87,4 +88,23 @@ void ProfileBrowser::prepareData()
 void ProfileBrowser:: showFileFor(int index)
 {
   printf ("should show file for function %s\n", funcInfo[index-1]->name);
+  SubView *show = new SubView(x(),y(),w(),h());
+  const char *fname = VisData.fileName(funcInfo[index-1]->fileNo);
+  char text[512];
+  snprintf (text, sizeof(text), "Function %s defined by file %s.",
+            funcInfo[index-1]->name, (fname[0] == '$' ? &fname[11] : fname));
+  show->headerText (text);
+  show->showBackButton();
+
+  // Make correct file name.
+  const char *home = getenv("CHPL_HOME");
+  if (fname[0] == '$')
+    snprintf (text, sizeof(text), "%s/%s", home, &fname[11]);
+  else
+    snprintf (text, sizeof(text), "%s", fname);
+  show->ShowFile(text, funcInfo[index-1]->lineNo);
+
+  // Build the file browser
+
+  DataField->pushNewChild(show,true);
 }

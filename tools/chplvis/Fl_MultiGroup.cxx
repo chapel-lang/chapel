@@ -24,14 +24,14 @@
 
 #include "Fl_MultiGroup.H"
 #include <FL/Fl_Window.H>
+#include <stdio.h>
 
 Fl_MultiGroup::Fl_MultiGroup (int x, int y, int w, int h, const char *l)
   : Fl_Group(x, y, w, h, l) 
 {
-  childStack = new Fl_Widget*[8];
-  stackSize = 8;
+  childStack = NULL;
   numChildren = 0;
-  top = -1;
+  nOnStack = 0;
   selectedChild = 0;
   begin();
 }
@@ -63,22 +63,17 @@ bool Fl_MultiGroup::pushChild (int which)
 {
   if (which < 0 || which >= children())
     return false;
-  top++;
-  if (top == stackSize) {
-    int i;
-    Fl_Widget **newStack;
-    newStack = new Fl_Widget*[2*stackSize];
-    for (i=0; i < stackSize; i++)
-      newStack[i] = childStack[i];
-    stackSize *= 2;
-    delete [] childStack;
-    childStack = newStack;
-  }
-  childStack[top] = child(selectedChild);
+
+  struct ll* newEl = new struct ll;
+  newEl->child = child(selectedChild);
+  newEl->removeAtPop = false;
+  newEl->next = childStack;
   if (selectChild(which)) {
+    childStack = newEl;
+    nOnStack++;
     return true;
   }
-  top--;
+  delete newEl;
   window()->redraw();
   return false;
 }
@@ -91,12 +86,37 @@ bool Fl_MultiGroup::pushChild (Fl_Widget *w)
   return false;
 }
 
+bool Fl_MultiGroup::pushNewChild (Fl_Widget *w, bool removeAtPop)
+{
+  add(w);
+  if (pushChild(w)) {
+    childStack->removeAtPop = removeAtPop;
+    return true;
+  }
+  if (removeAtPop)
+    remove(w);
+  return false;
+}
+
 bool Fl_MultiGroup::popChild ()
 {
-  if (top < 0) 
+  struct ll* lastChild = childStack;
+  int wasSel = selectedChild;
+  if (childStack == NULL)
     return false;
-  selectChild(childStack[top--]);
+  childStack = lastChild->next;
+  nOnStack--;
+  selectChild(lastChild->child);
+  if (lastChild->removeAtPop) {
+    remove (wasSel);
+  }
+  delete lastChild;
   return true;
+}
+
+void Fl_MultiGroup::popAll()
+{
+  while (childStack != NULL) popChild();
 }
 
 int Fl_MultiGroup::currentChild ()
