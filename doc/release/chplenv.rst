@@ -630,5 +630,9 @@ variables that support each option, run the compiler with the ``--help-env``
 flag.  For boolean flags and toggles, setting the environment variable to any
 value selects that flag.
 
+Chapel Configuration File
+-------------------------
+
+
 
 .. |trade|  unicode:: U+02122 .. TRADE MARK SIGN
