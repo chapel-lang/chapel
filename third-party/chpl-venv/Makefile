@@ -100,9 +100,11 @@ rm-test-reqs: FORCE
 rm-sphinx-build: FORCE
 	@rm -f $(CHPL_VENV_SPHINX_BUILD)
 
-
+# Fix up the chpl-venv installation in a Cray Chapel module that was built using a non-standard
+# Python installation (ie, the Python used was not installed under "/usr/...").
+# Only applicable when building a Cray Chapel module under certain conditions.
 use-system-python: FORCE
-	@./venv-use-sys-python.py $(CHPL_VENV_VIRTUALENV_BIN)
+	@./venv-use-sys-python.py $(CHPL_VENV_INSTALL_DIR)
 
 FORCE:
 
