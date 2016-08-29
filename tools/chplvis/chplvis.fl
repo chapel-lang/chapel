@@ -71,6 +71,9 @@ decl {\#include "LocCommWin.h"} {public global
 decl {\#include "ConcurrencyWin.h"} {public local
 } 
 
+decl {\#include "ProfileBrowser.h"} {public local
+} 
+
 decl {DataModel VisData;} {public local
 } 
 
@@ -117,7 +120,7 @@ Function {make_LC_window(int fromLn, int toLn, struct commData *commdata)} {} {
 w->setAsComm(fromLn, toLn, commdata);} {}
 } 
 
-Function {make_concurrency_window(long locNum, long tagNum)} {open return_type {ConcurrencyWin *}
+Function {make_concurrency_window(long locNum, long tagNum)} {return_type {ConcurrencyWin *}
 } {
   Fl_Window {} {open
     xywh {309 55 500 600} type Double color 7 hide resizable
@@ -179,7 +182,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {719 162 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
+    xywh {718 162 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55
@@ -316,12 +319,13 @@ GrdView->selectData(Menus.currentTag());}
 //Menus.setCurrentZoom(GridScroll);
 //GrdView->selectData(Menus.currentTag());
 concView->updateData(Menus.currentLoc(),
-                     Menus.currentTag());} selected
+                     Menus.currentTag());}
         image {Concurrent-40x40.png} xywh {10 210 40 40} box NO_BOX down_box FLAT_BOX
         code0 {o->clear_visible_focus();}
       }
       Fl_Button {} {
         callback {DataField->selectChild(ProfileView);
+ProfileView->prepareData();
 Menus.setCurrentTag(DataModel::TagALL);
 if (Info->getTagName() != NULL)
    Info->setTagName("All");}
@@ -433,6 +437,7 @@ DataField->popChild();}
       Fl_Browser ProfileView {
         xywh {60 100 500 500} hide
         code0 {o->clear_visible_focus();}
+        class ProfileBrowser
       }
     }
   }
@@ -452,5 +457,7 @@ MainWindow->callback(mainWinCallback);
 if (VisSettings.save_WH) {
    MainWindow->size(VisSettings.mainW,VisSettings.mainH);
    MainWindow->redraw();
-}} {}
+}
+ProfileView->loadData();} {selected
+  }
 } 

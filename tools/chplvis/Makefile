@@ -45,11 +45,11 @@ CXXFLAGS=  -Wall -I. -g
 SRCS=   GraphView.cxx DataModel.cxx Event.cxx InfoBar.cxx LocCommWin.cxx \
         ConcurrencyWin.cxx Settings.cxx  Fl_MultiGroup.cxx \
         ZoomScroll.cxx GridView.cxx MenuManager.cxx LocCommBox.cxx \
-	ConcurrencyView.cxx
+	ConcurrencyView.cxx  ProfileBrowser.cxx
 HFILES= GraphView.h   DataModel.h   Event.h   InfoBar.h   LocCommWin.h \
         ConcurrencyWin.h   Settings.h Fl_MultiGroup.H \
         ZoomScroll.h GridView.h MenuManager.h LocCommBox.h \
-	ConcurrencyView.h
+	ConcurrencyView.h ProfileBrowser.h
 
 GENSRCS= chplvis.cxx
 GENH= chplvis.h
@@ -105,6 +105,9 @@ MenuManager.o:  chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
      MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
      ConcurrencyWin.h ConcurrencyView.h
 ConcurrencyWin.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
+     MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
+     ConcurrencyWin.h ConcurrencyView.h
+ProfileBrowser.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
      MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
      ConcurrencyWin.h ConcurrencyView.h
 Event.o: Event.h

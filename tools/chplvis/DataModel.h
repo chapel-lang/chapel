@@ -235,6 +235,10 @@ class DataModel {
     return (*theEvents.begin())->clock_time();
   }
 
+  // File name access
+
+  int numFileNames (void) { return fileTblSize; }
+
   const char *fileName (long fileNo) {
     return (fileNo >= 0 && fileNo < fileTblSize) ?
       fileTbl[fileNo].name : "<unknown>";
@@ -243,6 +247,19 @@ class DataModel {
   bool fileIsRel2Home (long fileNo) {
     return (fileNo >= 0 && fileNo < fileTblSize) ?
       fileTbl[fileNo].rel2Home : false ; 
+  }
+
+  // Function name access
+
+  int numFunctionNames (void) { return funcTblSize; }
+
+  const funcname* getFunctionInfo (int funcNo) {
+    if (funcNo >= 0 && funcNo < funcTblSize) {
+      return &funcTbl[funcNo];
+    } else {
+      printf("getFunctionInfo returning NULL for %d.\n", funcNo);
+      return NULL;
+    }
   }
   
   // Constructor for DataModel
