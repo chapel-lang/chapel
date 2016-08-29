@@ -45,11 +45,11 @@ CXXFLAGS=  -Wall -I. -g
 SRCS=   GraphView.cxx DataModel.cxx Event.cxx InfoBar.cxx LocCommWin.cxx \
         ConcurrencyWin.cxx Settings.cxx  Fl_MultiGroup.cxx \
         ZoomScroll.cxx GridView.cxx MenuManager.cxx LocCommBox.cxx \
-	ConcurrencyView.cxx  ProfileBrowser.cxx
+	ConcurrencyView.cxx  ProfileBrowser.cxx SelectBrowser.cxx
 HFILES= GraphView.h   DataModel.h   Event.h   InfoBar.h   LocCommWin.h \
         ConcurrencyWin.h   Settings.h Fl_MultiGroup.H \
         ZoomScroll.h GridView.h MenuManager.h LocCommBox.h \
-	ConcurrencyView.h ProfileBrowser.h
+	ConcurrencyView.h ProfileBrowser.h SelectBrowser.cxx
 
 GENSRCS= chplvis.cxx
 GENH= chplvis.h
@@ -109,7 +109,7 @@ ConcurrencyWin.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
      ConcurrencyWin.h ConcurrencyView.h
 ProfileBrowser.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
      MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
-     ConcurrencyWin.h ConcurrencyView.h
+     ConcurrencyWin.h ConcurrencyView.h SelectBrowser.h
 Event.o: Event.h
 DataModel.o: DataModel.h StringCache.h
 Fl_MultiGroup.o: Fl_MultiGroup.H 
@@ -118,3 +118,4 @@ LocCommWin.o: LocCommWin.h GraphView.h  ConcurrencyWin.h DataModel.h \
 LocCommBox.o: LocCommBox.h
 ConcurrencyView.o: chplvis.h  Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
      MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h
+SelectBrowser.o: SelectBrowser.h

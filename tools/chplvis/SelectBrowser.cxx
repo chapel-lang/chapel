@@ -22,30 +22,41 @@
  *  that select the group to be displayed.
  */
 
-#ifndef PROFILEBROWSER_H
-#define PROFILEBROWSER_H
-
 #include "SelectBrowser.h"
-#include <vector>
+#include <string.h>
 
-class ProfileBrowser : public SelectBrowser {
-
-  bool initialized;
-  const funcname ** funcInfo;
-  int numFuncs;
-  void *lastSelected;
-
-  public:
-
-  ProfileBrowser (int x, int y, int w, int h, const char *l = 0);
-
-  void loadData();
-
-  void prepareData();
-
-  void showFileFor(int ix);
-  
+SelectBrowser::SelectBrowser (int x, int y, int w, int h, const char *l) :
+  Fl_Browser(x,y,w,h,l)
+{
+  lastSelected = NULL;
 };
 
+int SelectBrowser::handle (int event)
+{
+  int myY = Fl::event_y();
 
-#endif
+  if (event == FL_PUSH || event == FL_DRAG) {
+    void *sel = lastSelected;
+    void *itm = find_item(myY);
+    if (itm != sel) {
+      // printf ("itm is 0x%ld, sel is 0x%ld\n", (long)itm, (long)sel);
+      if (sel != NULL) {
+        item_select(sel,0);
+        redraw_line(sel);
+      }
+      item_select(itm,1);
+      redraw_line(itm);
+      lastSelected = itm;
+    } else if (event == FL_PUSH) {
+      item_select(sel,0);
+      redraw_line(sel);
+      lastSelected = NULL;
+    }
+  }
+  
+  int rv = Fl_Browser::handle(event);
+  
+  return rv;
+
+}
+

@@ -48,7 +48,7 @@ int compTask (const void *p1, const void *p2)
 }
 
 ProfileBrowser::ProfileBrowser (int x, int y, int w, int h, const char *l) :
-  Fl_Browser(x,y,w,h,l)
+  SelectBrowser(x,y,w,h,l)
 {
   static int width[] = {10, 60, 250, 0 };
   column_widths(width);
@@ -82,50 +82,6 @@ void ProfileBrowser::prepareData()
     }
     initialized = true;
   }
-}
-
-int ProfileBrowser::handle (int event)
-{
-  int myY = Fl::event_y();
-
-  if (event == FL_PUSH || event == FL_DRAG) {
-    void *sel = lastSelected;
-    void *itm = find_item(myY);
-    if (itm != sel) {
-      // printf ("itm is 0x%ld, sel is 0x%ld\n", (long)itm, (long)sel);
-      if (sel != NULL) {
-        item_select(sel,0);
-        redraw_line(sel);
-      }
-      item_select(itm,1);
-      redraw_line(itm);
-      lastSelected = itm;
-    } else if (event == FL_PUSH) {
-      printf ("Should unselect item\n");
-      item_select(sel,0);
-      redraw_line(sel);
-      lastSelected = NULL;
-    }
-  }
-  
-  int rv = Fl_Browser::handle(event);
-
-#if 0  
-  // printf ("PB::handle: ev = %s, rv = %d\n", fl_eventnames[event], rv);
-  if (rv == 1 && event == FL_RELEASE) {
-    if (lastSelected != NULL) {
-      item_select(lastSelected,1);
-      redraw_line(lastSelected);
-      printf ("release new selected.\n");
-    }
-    // select(lastSelected);
-    // redraw();
-    // printf("selected row %d\n", lastSelected);
-  }
-#endif
-  
-  return rv;
-
 }
 
 void ProfileBrowser:: showFileFor(int index)

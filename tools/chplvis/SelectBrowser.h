@@ -22,29 +22,25 @@
  *  that select the group to be displayed.
  */
 
-#ifndef PROFILEBROWSER_H
-#define PROFILEBROWSER_H
+#ifndef SELECTBROWSER_H
+#define SELECTBROWSER_H
 
-#include "SelectBrowser.h"
-#include <vector>
+#include <FL/Fl_Browser.H>
 
-class ProfileBrowser : public SelectBrowser {
+// Allow a selection to last past the "FL_RELEASE" event
 
-  bool initialized;
-  const funcname ** funcInfo;
-  int numFuncs;
+class SelectBrowser : public Fl_Browser {
+
   void *lastSelected;
 
   public:
 
-  ProfileBrowser (int x, int y, int w, int h, const char *l = 0);
+  SelectBrowser (int x, int y, int w, int h, const char *l = 0);
 
-  void loadData();
+  int handle(int event);
 
-  void prepareData();
+  void *lastSel (void) { return lastSelected; }
 
-  void showFileFor(int ix);
-  
 };
 
 
