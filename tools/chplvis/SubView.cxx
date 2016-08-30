@@ -20,7 +20,7 @@
 
 #include "SubView.h"
 #include <FL/Fl_Browser.H>
-#include <FL/Fl_ask.H>
+#include <FL/fl_ask.H>
 #include <errno.h>
 #include "chplvis.h"
 #include "LeftChevron-20x20.xpm"
@@ -55,7 +55,6 @@ SubView::~SubView()
   delete backBtn;
   delete title;
   if (body) delete body;
-  Fl_Group::~Fl_Group();
 }
 
 
