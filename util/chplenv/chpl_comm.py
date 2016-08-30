@@ -24,7 +24,7 @@ def get():
                 compiler_val in ugni_comp):
             comm_val = 'ugni'
         # automatically uses gasnet when on a cray-x* or cray-cs machine
-        elif platform_val.startswith('cray-') or platform-val.startswith('cross-'):
+        elif platform_val.startswith('cray-') or platform_val.startswith('cross-'):
             comm_val = 'gasnet'
         else:
             comm_val = 'none'
