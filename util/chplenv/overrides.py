@@ -127,16 +127,18 @@ class ChapelConfig(object):
             for linenum, line in enumerate(ccfile.readlines()):
 
                 # Strip comments and trailing white space from line
-                line = line.split('#')[0].lstrip()
+                line = line.split('#')[0].strip()
 
-                if self.skip(line, linenum):
+                if self.skip_line(line, linenum):
                     continue
 
                 var, val = [f.strip() for f in line.split('=')]
                 self.chplconfig[var] = val
 
-    def skip(self, line, linenum):
-        """ Various conditions for skipping a line """
+    def skip_line(self, line, linenum):
+        """
+        Check the various conditions for skipping a line, accumulate warnings.
+        """
 
         # Check if line is comment, by taking length of stripped line
         if len(line) == 0:
