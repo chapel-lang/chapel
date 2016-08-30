@@ -34,13 +34,15 @@ def get(flag='host'):
         if flag == 'host':
             compiler_val = 'gnu'
         else:
-            if platform_val == 'cray-x_envoy':
-                compiler_val = "aarch64-gnu"
-            else:
-                subcompiler = os.environ.get('PE_ENV', 'none')
-                if subcompiler == 'none':
-                    stderr.write("Warning: Compiling on {0} without a PrgEnv loaded\n".format(platform_val))
-                compiler_val = "cray-prgenv-{0}".format(subcompiler.lower())
+            subcompiler = os.environ.get('PE_ENV', 'none')
+            if subcompiler == 'none':
+                stderr.write("Warning: Compiling on {0} without a PrgEnv loaded\n".format(platform_val))
+            compiler_val = "cray-prgenv-{0}".format(subcompiler.lower())
+    elif platform_val.startswith('cross-'):
+        if flag == 'host':
+            compiler_val = 'gnu'
+        else:
+            compiler_val = platform_val.split('-')[1] + '-gnu'
     else:
         # Normal compilation (not "cross-compiling")
         # inherit the host compiler if the target compiler is not set and

@@ -9,12 +9,10 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 # Cray X* builds are cross-compilations.
 #
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
-  ifeq ($(CHPL_MAKE_TARGET_PLATFORM), cray-x_envoy)
-    CHPL_MASSIVETHREADS_CFG_OPTIONS += --build=x86_64-cle-linux-gnu
-    CHPL_MASSIVETHREADS_CFG_OPTIONS += --host=aarch64-cle-linux-gnu
-  else
-    CHPL_MASSIVETHREADS_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
-  endif
+CHPL_MASSIVETHREADS_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
+endif
+ifneq (, $(filter cross-%,$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_MASSIVETHREADS_CFG_OPTIONS += --host=`echo $(CHPL_MAKE_TARGET_PLATFORM) | cut -d- -f2`-unknonw-linux-gnu
 endif
 
 CHPL_MASSIVETHREADS_CFG_OPTIONS += --enable-malloc-wrapper=no \

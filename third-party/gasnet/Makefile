@@ -38,7 +38,7 @@ ifeq ($(CHPL_MAKE_TARGET_PLATFORM),pwr6)
 CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=mpcc
 endif
 
-ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xc cray-xk cray-x_envoy))
+ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xc cray-xk cross-aarch64))
 CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),gemini)
 else
@@ -53,8 +53,8 @@ endif
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xc)
 CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxc-linux
 else
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-x_envoy)
-CHPL_GASNET_CFG_SCRIPT=cross-configure-crayx_envoy-linux
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cross-aarch64)
+CHPL_GASNET_CFG_SCRIPT=cross-configure-aarch64-linux
 else
 CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxe-linux
 endif

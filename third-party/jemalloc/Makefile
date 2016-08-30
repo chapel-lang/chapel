@@ -9,12 +9,10 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 # Cray X* builds are cross-compilations.
 #
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
-  ifeq ($(CHPL_MAKE_TARGET_PLATFORM), cray-x_envoy)
-    CHPL_JEMALLOC_CFG_OPTIONS += --build=x86_64-cle-linux-gnu
-    CHPL_JEMALLOC_CFG_OPTIONS += --host=aarch64-cle-linux-gnu
-  else
-    CHPL_JEMALLOC_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
-  endif
+CHPL_JEMALLOC_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
+endif
+ifneq (, $(filter cross-%,$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_JEMALLOC_CFG_OPTIONS += --host=`echo $(CHPL_MAKE_TARGET_PLATFORM) | cut -d- -f2`-unknown-linux-gnu
 endif
 
 CHPL_JEMALLOC_CFG_OPTIONS += --prefix=$(JEMALLOC_INSTALL_DIR) \

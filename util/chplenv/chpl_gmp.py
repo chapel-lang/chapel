@@ -24,7 +24,7 @@ def get():
 
         if os.path.exists(os.path.join(gmp_subdir, 'include', 'gmp.h')):
             gmp_val = 'gmp'
-        elif target_platform.startswith('cray-x'):
+        elif target_platform.startswith('cray-x') or target_platform.startswith('cross-'):
             gmp_val = 'system'
         else:
             gmp_val = 'none'
