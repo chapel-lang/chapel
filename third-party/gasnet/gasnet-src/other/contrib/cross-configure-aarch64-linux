@@ -9,8 +9,8 @@
 # NOTE: this relies on module-established PATH setting to automatically 
 # select the GCC or PGI-based MPI compilers, based on which PrgEnv is currently loaded
 # The same PrgEnv *must* be loaded when building and using the GASNet install
-CC='cc'  # vanilla target C compiler
-CXX='CC' # vanilla target C++ compiler
+CC="${CC:-cc}"   # vanilla target C compiler
+CXX="${CXX:-CC}" # vanilla target C++ compiler
 
 # Default optimization on ICC is an irritation:
 # -wd10120 suppresses "command line warning #10120: overriding '-O0' with '-O3'"
