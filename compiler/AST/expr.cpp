@@ -1992,6 +1992,8 @@ GenRet codegenEquals(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
   ret.chplType = dtBool;
@@ -2018,6 +2020,8 @@ GenRet codegenNotEquals(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
   ret.chplType = dtBool;
@@ -2044,6 +2048,8 @@ GenRet codegenLogicalOr(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
   ret.chplType = dtBool;
@@ -2061,6 +2067,8 @@ GenRet codegenLogicalAnd(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
   ret.chplType = dtBool;
@@ -2079,6 +2087,8 @@ GenRet codegenAdd(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
   if( info->cfile ) ret.c = "(" + av.c + " + " + bv.c + ")";
@@ -2130,6 +2140,8 @@ GenRet codegenSub(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
   if( info->cfile ) ret.c = "(" + av.c + " - " + bv.c + ")";
@@ -2172,6 +2184,7 @@ GenRet codegenNeg(GenRet a)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
   GenRet av = codegenValue(a);
   if( info->cfile ) ret.c = "(-" + av.c + ")";
   else {
@@ -2198,6 +2211,8 @@ GenRet codegenMul(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
   if( info->cfile ) ret.c = "(" + av.c + " * " + bv.c + ")";
@@ -2232,6 +2247,8 @@ GenRet codegenDiv(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
   if( info->cfile ) ret.c = "(" + av.c + " / " + bv.c + ")";
@@ -2266,6 +2283,8 @@ GenRet codegenMod(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
   if( info->cfile ) ret.c = "(" + av.c + " % " + bv.c + ")";
@@ -2295,6 +2314,8 @@ GenRet codegenLsh(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
   if( info->cfile ) ret.c = "(" + av.c + " << " + bv.c + ")";
@@ -2313,6 +2334,8 @@ GenRet codegenRsh(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
   if( info->cfile ) ret.c = "(" + av.c + " >> " + bv.c + ")";
@@ -2336,6 +2359,8 @@ GenRet codegenAnd(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
   if( info->cfile ) ret.c = "(" + av.c + " & " + bv.c + ")";
@@ -2356,6 +2381,8 @@ GenRet codegenOr(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
   if( info->cfile ) ret.c = "(" + av.c + " | " + bv.c + ")";
@@ -2376,6 +2403,8 @@ GenRet codegenXor(GenRet a, GenRet b)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
   GenRet av = codegenValue(a);
   GenRet bv = codegenValue(b);
   if( info->cfile ) ret.c = "(" + av.c + " ^ " + bv.c + ")";
@@ -5799,9 +5828,11 @@ GenRet CallExpr::codegenPrimitive() {
     if (gGenInfo->cfile){
       std::string str = "((void(*)(";
 
-      str += get(2)->typeInfo()->symbol->cname;
+      GenRet arg = get(2);
 
-      if (argMustUseCPtr(get(2)->typeInfo()))
+      str += arg.chplType->symbol->cname;
+
+      if (argMustUseCPtr(arg.chplType))
         str += "*";
 
       str += ",";
@@ -5865,7 +5896,7 @@ GenRet CallExpr::codegenPrimitive() {
     std::vector<GenRet> args;
     GenRet              arg = get(2);
 
-    if (argMustUseCPtr(get(2)->typeInfo()) && !get(2)->isRef())
+    if (argMustUseCPtr(arg.chplType) && !get(2)->isRef())
       arg = codegenLocalAddrOf(arg);
 
     args.push_back(arg);

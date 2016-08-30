@@ -174,6 +174,11 @@ returnInfoVal(CallExpr* call) {
       } else {
         return QualifiedType(ct, kVal);
       }
+    } else if (ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      // insertWideReferences will sometimes insert a PRIM_DEREF to a
+      // wide class. There should probably be a better way of expressing the
+      // desired pattern...
+      return QualifiedType(ct, kVal);
     }
   }
   INT_FATAL(call, "attempt to get value type of non-reference type");

@@ -171,6 +171,16 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
            by reference.  With further analysis, we could figure out
            whether this variable is actually going to be returned as
            an LHS expr. */
+      //
+      // BHARSH: TODO: Changing the intent here to *-ref makes a difference
+      // for remoteValueForwarding later on. RVF currently only looks for
+      // INTENT_CONST_IN, arguing that const-ref doesn't ensure that the
+      // underlying data will remain unchanged.
+      //
+      // Prior to the QualifiedType changes this section would make the type
+      // something like _ref_int, but the intent would be INTENT_CONST_IN and
+      // RVF would fire.
+      //
       if (passByRef(sym)) {
         intent = concreteIntent(INTENT_REF, type);
         type = type->refType;
