@@ -649,61 +649,64 @@ Users can define variables with the following format:
 
 .. code-block:: python
 
-    CHPL_ENV = value
+    CHPL_ENV=value
 
 
 Above, the default value of ``CHPL_ENV`` will be overridden to be ``value``.
+All white space is stripped away from definitions.
 
-**White Space**
+**Ignored Lines**
 
-All white space is stripped away from definitions. Any lines containing nothing
-or only white space will be ignored.
-
-**Comments**
-
-Comments are denoted by the ``#`` character, similar to ``bash`` or ``python``.
+Any lines containing nothing or only white space will be ignored.  Comments,
+which are denoted by the ``#`` character, similar to ``bash`` or ``python``,
+are also ignored.
 
 
 Example
 ~~~~~~~
 
-An example of a Chapel configuration file with comments:
+Below is an example of a Chapel configuration file with comments:
 
 .. code-block:: python
 
     # ~/.chplconfig
 
     # Default to multi-locale
-    CHPL_COMM = gasnet
+    CHPL_COMM=gasnet
 
-    # Always use qthreads
-    CHPL_TASKS = qthreads
+    CHPL_TASKS=qthreads # Use Qthreads
 
     # System GMP is available on these machines
-    CHPL_GMP = system
+    CHPL_GMP=system
 
 
 
 Generating Configuration Files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The syntax has been chosen in such a way that a user can dump their current
-configuration into a ``chplconfig`` file with ``printchplenv --simple``:
+The format of the ``printchplenv --overrides`` and ``printchplenv --simple``
+commands is compatible with Chapel configuration files.
+
+The ``printchplenv --overrides`` flag can be used to print the variables
+currently overridden by either environment variables or Chapel
+configuration file.
+
+A user can dump their current overrides into a Chapel configuration file:
+
+.. code-block:: sh
+
+    printchplenv --overrides > ~/.chplconfig
+
+The ``printchplenv --simple`` flag can be used to print all the variables
+of the current configuration.
+
+A user can dump their current configuration into a Chapel configuration file as
+well:
 
 .. code-block:: sh
 
     printchplenv --simple > ~/.chplconfig
 
-The flag ``printchplenv --overrides`` can be used to print the variables
-currently overridden by either environment variables or Chapel
-configuration file.
-
-A user can dump their current overrides into a Chapel configuration file as
-well:
-
-.. code-block:: sh
-
-    printchplenv --overrides > ~/.chplconfig
 
 
 Search Paths and File Names
