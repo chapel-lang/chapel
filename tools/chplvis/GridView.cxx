@@ -298,8 +298,8 @@ void GridView::draw()
     }
   }
 
-  for (ix = 0; ix < numlocales-1; ix++) {
-    for (iy = ix + 1; iy < numlocales; iy++) {
+  for (ix = 0; ix < numlocales; ix++) {
+    for (iy = ix; iy < numlocales; iy++) {
       int  com2ix, com2iy, comMax;
       if (Info->commToShow()) {
         com2ix = curTagData->comms[iy][ix].numComms;
