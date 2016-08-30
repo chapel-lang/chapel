@@ -162,9 +162,7 @@ void chpl_vdebug_start (const char *fileroot, double now) {
     int ix;
     int numFIDnames;
     char dirname[512];
-    const char *chpl_home = getenv("CHPL_HOME");
-    if (chpl_home) 
-      chpl_dprintf (chpl_vdebug_fd, "CHPL_HOME: %s\n", chpl_home);
+    chpl_dprintf (chpl_vdebug_fd, "CHPL_HOME: %s\n", CHPL_HOME);
 
     if (getcwd(dirname, sizeof(dirname))) 
       chpl_dprintf (chpl_vdebug_fd, "DIR: %s\n", dirname);
