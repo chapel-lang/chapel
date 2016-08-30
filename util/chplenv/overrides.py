@@ -139,11 +139,11 @@ class ChapelConfig(object):
         """ Check if the assignment is correctly formatted, e.g. ENV = VAR """
         valid = True
 
-        # Check if line is a comment (blank)
-        if len(line.lstrip()) == 0:
-            valid = False
-        # Check if line is a comment (starts with '#')
-        elif line.lstrip()[0] == '#':
+        # Strip comments and trailing whitespace
+        newline = line.strip('#')[0].lstrip()
+
+        # Check if line is a comment or blank
+        if len(newline) == 0:
             valid = False
         else:
             # Check if line is incorrectly formatted
