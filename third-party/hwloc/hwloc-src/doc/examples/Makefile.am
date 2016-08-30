@@ -1,4 +1,4 @@
-# Copyright © 2009-2014 Inria.  All rights reserved.
+# Copyright © 2009-2016 Inria.  All rights reserved.
 # Copyright © 2009-2013 Université Bordeaux
 # Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -19,7 +19,7 @@ if HWLOC_HAVE_CXX
 TESTS += hwloc-hello-cpp
 endif HWLOC_HAVE_CXX
 
-check_PROGRAMS = $(TESTS) cpuset+bitmap+cpubind nodeset+membind+policy sharedcaches
+check_PROGRAMS = $(TESTS) cpuset+bitmap+cpubind nodeset+membind+policy sharedcaches get-knl-modes
 
 hwloc-hello-cpp.cpp: $(srcdir)/hwloc-hello.c
 	cp -f $(srcdir)/hwloc-hello.c $@

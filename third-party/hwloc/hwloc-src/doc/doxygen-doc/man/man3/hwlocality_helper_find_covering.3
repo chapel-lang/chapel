@@ -1,8 +1,8 @@
-.TH "Finding Objects covering at least CPU set" 3 "Tue Apr 26 2016" "Version 1.11.3" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_find_covering" 3 "Sun Aug 28 2016" "Version 1.11.4" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-Finding Objects covering at least CPU set \- 
+hwlocality_helper_find_covering \- Finding Objects covering at least CPU set
 .SS "Functions"
 
 .in +1c
@@ -24,7 +24,7 @@ Finding Objects covering at least CPU set \-
 
 .SH "Function Documentation"
 .PP 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_child_covering_cpuset (\fBhwloc_topology_t\fPtopology, \fBhwloc_const_cpuset_t\fPset, \fBhwloc_obj_t\fPparent)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_obj_t\fP hwloc_get_child_covering_cpuset (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set, \fBhwloc_obj_t\fP parent)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get the child covering at least CPU set \fCset\fP\&. 
@@ -40,7 +40,7 @@ This function cannot work if parent does not have a CPU set\&.
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_next_obj_covering_cpuset_by_depth (\fBhwloc_topology_t\fPtopology, \fBhwloc_const_cpuset_t\fPset, unsigneddepth, \fBhwloc_obj_t\fPprev)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_obj_t\fP hwloc_get_next_obj_covering_cpuset_by_depth (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set, unsigned depth, \fBhwloc_obj_t\fP prev)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Iterate through same-depth objects covering at least CPU set \fCset\fP\&. If object \fCprev\fP is \fCNULL\fP, return the first object at depth \fCdepth\fP covering at least part of CPU set \fCset\fP\&. The next invokation should pass the previous return value in \fCprev\fP so as to obtain the next object covering at least another part of \fCset\fP\&.
@@ -51,7 +51,7 @@ This function cannot work if objects at the given depth do not have CPU sets or 
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_next_obj_covering_cpuset_by_type (\fBhwloc_topology_t\fPtopology, \fBhwloc_const_cpuset_t\fPset, \fBhwloc_obj_type_t\fPtype, \fBhwloc_obj_t\fPprev)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_obj_t\fP hwloc_get_next_obj_covering_cpuset_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set, \fBhwloc_obj_type_t\fP type, \fBhwloc_obj_t\fP prev)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Iterate through same-type objects covering at least CPU set \fCset\fP\&. If object \fCprev\fP is \fCNULL\fP, return the first object of type \fCtype\fP covering at least part of CPU set \fCset\fP\&. The next invokation should pass the previous return value in \fCprev\fP so as to obtain the next object of type \fCtype\fP covering at least another part of \fCset\fP\&.
@@ -64,7 +64,7 @@ This function cannot work if objects of the given type do not have CPU sets or i
 .RE
 .PP
 
-.SS "static \fBhwloc_obj_t\fP hwloc_get_obj_covering_cpuset (\fBhwloc_topology_t\fPtopology, \fBhwloc_const_cpuset_t\fPset)\fC [inline]\fP, \fC [static]\fP"
+.SS "static \fBhwloc_obj_t\fP hwloc_get_obj_covering_cpuset (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Get the lowest object covering at least CPU set \fCset\fP\&. 
