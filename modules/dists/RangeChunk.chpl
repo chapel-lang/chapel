@@ -25,10 +25,10 @@ use RemElems;
 use BoundedRangeType;
 
 iter chunks(
-  r: range(?I, bounded, ?),
+  r: range(?RT, bounded, ?),
   numChunks: integral,
   // TODO: only add true if stridable, use ?S
-  remPol: RemElems = Dist): range(I, bounded, true)
+  remPol: RemElems = Dist): range(RT, bounded, true)
 {
   for (startOrder, endOrder) in chunksOrder(r, numChunks, remPol) {
     var start = r.orderToIndex(startOrder);
@@ -38,11 +38,10 @@ iter chunks(
 }
 
 iter chunksOrder(
-  r: range(?I, bounded, ?),
+  r: range(?RT, bounded, ?),
   numChunks: integral,
-  remPol: RemElems = Dist): 2*I
+  remPol: RemElems = Dist): 2*RT
 {
-  type RT = r.idxType;
   var nElems = r.length: RT;
   var nChunks = numChunks: RT;
 
@@ -57,10 +56,10 @@ iter chunksOrder(
 
 // Divide r into (almost) equal numChunks pieces, return the i-th piece.
 proc chunk(
-  r: range(?I, bounded, ?),
+  r: range(?RT, bounded, ?),
   numChunks: integral,
   i: integral,
-  remPol: RemElems = Dist): range(I, bounded, true)
+  remPol: RemElems = Dist): range(RT, bounded, true)
 {
   var (startOrder, endOrder) = chunkOrder(r, numChunks, i, remPol);
   var start = r.orderToIndex(startOrder);
@@ -69,12 +68,11 @@ proc chunk(
 }
 
 proc chunkOrder(
-  r: range(?I, bounded, ?),
+  r: range(?RT, bounded, ?),
   numChunks: integral,
   i: integral,
-  remPol: RemElems = Dist): 2*I
+  remPol: RemElems = Dist): 2*RT
 {
-  type RT = r.idxType;
   var nElems = r.length: RT;
   var nChunks = numChunks: RT;
   var idx = i: RT;
