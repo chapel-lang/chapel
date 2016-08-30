@@ -159,16 +159,16 @@ void chpl_vdebug_start (const char *fileroot, double now) {
 
   // Dump directory names, file names and function names
   if (chpl_nodeID == 0) {
+    int ix;
+    int numFIDnames;
+    char dirname[512];
     const char *chpl_home = getenv("CHPL_HOME");
     if (chpl_home) 
       chpl_dprintf (chpl_vdebug_fd, "CHPL_HOME: %s\n", chpl_home);
 
-    char dirname[512];
     if (getcwd(dirname, sizeof(dirname))) 
       chpl_dprintf (chpl_vdebug_fd, "DIR: %s\n", dirname);
 
-    int ix;
-    int numFIDnames;
     chpl_dprintf (chpl_vdebug_fd, "Tablesize: %d\n", chpl_filenameTableSize);
     for (ix = 0; ix < chpl_filenameTableSize ; ix++) {
       if (chpl_filenameTable[ix][0] == 0) {
