@@ -101,7 +101,7 @@ class InfoBar : public Fl_Group {
 
   void addLocOrComm(LocCommBox *box);
   void delLocOrComm(LocCommBox *box);
-  void rmAllLocOrCom();
+  void rmAllLocOrComm();
 
   LocCommBox *getNewLocComm(void);
 

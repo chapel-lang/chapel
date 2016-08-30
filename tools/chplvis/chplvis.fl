@@ -182,14 +182,14 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {819 293 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
+    xywh {1097 539 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55
       class Fl_Sys_Menu_Bar
     } {
       Submenu {} {
-        label File open selected
+        label File open
         xywh {0 0 70 21}
       } {
         MenuItem {} {
@@ -315,6 +315,7 @@ Info->showConcurrency();
 //Menus.setCurrentDataView(GrdView);
 //Menus.addPopUpTo(GridGrp);
 //Menus.setCurrentZoom(GridScroll);
+Info->rmAllLocOrComm();
 concView->updateData(Menus.currentLoc(),
                      Menus.currentTag());}
         image {Concurrent-40x40.png} xywh {10 210 40 40} box NO_BOX down_box FLAT_BOX
@@ -324,6 +325,7 @@ concView->updateData(Menus.currentLoc(),
         callback {DataField->popAll();
 DataField->selectChild(ProfileView);
 ProfileView->prepareData();
+Info->rmAllLocOrComm();
 Menus.setCurrentTag(DataModel::TagALL);
 if (Info->getTagName() != NULL)
    Info->setTagName("All");}
@@ -332,8 +334,9 @@ if (Info->getTagName() != NULL)
       }
       Fl_Button {} {
         callback {DataField->popAll();
+Info->rmAllLocOrComm();
 SettingsGrp->copyIn();
-DataField->pushChild(SettingsGrp);}
+DataField->pushChild(SettingsGrp);} selected
         image {Gear-40x40.png} xywh {10 310 40 40} box NO_BOX
         code0 {o->clear_visible_focus();}
       }

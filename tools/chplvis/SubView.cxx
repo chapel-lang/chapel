@@ -79,9 +79,29 @@ void SubView::headerText (const char *t)
 
 bool SubView::ShowFile (const char *filename, int lineNo)
 {
+  char FinalName[1024];
+  // Check for known 'bad' file names
+  if (filename[0] == '<' && 
+      (strcmp(filename, "<unknown>") == 0
+       || strcmp(filename, "<internal>") == 0)) {
+    fl_alert("No file to open.");
+  }
+
+  // Make correct file name.
+  if (filename[0] == '$') {
+    const char *home = VisData.CHPL_HOME();
+    //printf ("Opening file: '%s/%s'\n",  home, &filename[11]);
+    snprintf (FinalName, sizeof(FinalName), "%s/%s", home, &filename[11]);
+  } else if (filename[0] != '/') {
+    const char *dir = VisData.DIR();
+    snprintf (FinalName, sizeof(FinalName), "%s/%s", dir, filename);
+  } else {
+    strncpy (FinalName, filename, sizeof(FinalName));
+  }
+  
   Fl_Browser *fb = new Fl_Browser (x(), y()+24, w(), h()-24);
-  if (!fb->load(filename)) {
-    fl_alert("Could not open %s: %s", filename, strerror(errno));
+  if (!fb->load(FinalName)) {
+    fl_alert("Could not open %s: %s", FinalName, strerror(errno));
     return false;
   }
   fb->select(lineNo);

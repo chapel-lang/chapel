@@ -144,8 +144,7 @@ void GridView::selectData(int tagNum)
   // Set the max values in the info bar
   Info->setMaxes(curTagData->maxTasks, curTagData->maxComms, curTagData->maxSize,
                  curTagData->maxConc, curTagData->maxCpu, curTagData->maxClock);
-  Info->rmAllLocOrCom();
-
+  Info->rmAllLocOrComm();
  }
 
 void GridView::setLocTooltip ( int ix, bool isInt, int ival, double fval)

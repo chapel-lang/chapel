@@ -251,7 +251,7 @@ LocCommBox * InfoBar::getNewLocComm()
     }
   }
 
-void InfoBar::rmAllLocOrCom(void)
+void InfoBar::rmAllLocOrComm(void)
   {
      std::list<LocCommBox *>::iterator itr = infoBoxes.begin();
      LocCommBox *box;

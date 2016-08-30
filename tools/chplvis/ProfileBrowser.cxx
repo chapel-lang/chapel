@@ -29,6 +29,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <FL/names.h>
+#include <FL/fl_ask.H>
 
 void ProfileBrowserCB (Fl_Widget *w, void *p)
 {
@@ -87,28 +88,18 @@ void ProfileBrowser::prepareData()
 
 void ProfileBrowser:: showFileFor(int index)
 {
-  printf ("should show file for function %s\n", funcInfo[index-1]->name);
+  char text[512];
+  // printf ("should show file for function %s\n", funcInfo[index-1]->name);
   SubView *show = new SubView(x(),y(),w(),h());
   const char *fname = VisData.fileName(funcInfo[index-1]->fileNo);
-  char text[512];
   snprintf (text, sizeof(text), "Function %s defined by file %s.",
             funcInfo[index-1]->name, (fname[0] == '$' ? &fname[11] : fname));
   show->headerText (text);
   show->showBackButton();
-
-  // Make correct file name.
-  if (fname[0] == '$') {
-    const char *home = VisData.CHPL_HOME();
-    printf ("Opening file: '%s/%s'\n",  home, &fname[11]);
-    snprintf (text, sizeof(text), "%s/%s", home, &fname[11]);
-  } else {
-    const char *dir = VisData.DIR();
-    snprintf (text, sizeof(text), "%s/%s", dir, fname);
-  }
-  if (!show->ShowFile(text, funcInfo[index-1]->lineNo))
+  if (!show->ShowFile(fname, funcInfo[index-1]->lineNo)) {
+    delete show; 
     return;
-
-  // Build the file browser
+  }
 
   DataField->pushNewChild(show,true);
 }
