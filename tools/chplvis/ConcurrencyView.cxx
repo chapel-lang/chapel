@@ -29,8 +29,6 @@
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 
-#include "LeftChevron-20x20.xpm"
-
 // Callback for this view
 
 void backCallback (Fl_Widget *w, void *p) {
