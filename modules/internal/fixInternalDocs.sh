@@ -31,6 +31,9 @@ function removePattern() {
     echo "Bad call to removePattern."
     exit 1
   fi
+  # remove the line that contains the pattern (assumed to be part of a
+  # symbol declaration) and any documentation comments associated with
+  # it until the next symbol declaration in the file.
   awk "/$1/{flag=0;next}/\.\. .*:: /{flag=1}flag" $2 > $2.tmp
   mv $2.tmp $2
 }
