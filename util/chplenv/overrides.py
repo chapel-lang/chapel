@@ -148,7 +148,7 @@ class ChapelConfig(object):
         else:
             # Check if line is incorrectly formatted
             try:
-                var, val = [f.strip() for f in line.split('=')]
+                var, val = [f.strip() for f in newline.split('=')]
             except ValueError:
                 valid = False
                 self.warnings.append(
