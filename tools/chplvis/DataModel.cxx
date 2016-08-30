@@ -481,6 +481,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
               curTag->locales[curNodeId].maxTaskClock = taskTime;
             if (tagList[0]->locales[curNodeId].maxTaskClock < taskTime)
               tagList[0]->locales[curNodeId].maxTaskClock = taskTime;
+            funcTbl[it->second.taskRec->funcId()].clockTime += taskTime;
           } else {
             bool validEnd = false;
             int tryTagNo = cTagNo-1;
@@ -749,11 +750,13 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
   }
 
   // Debug print the finished function table  (need to add comm size?)
+  printf ("\nFunction table information.\n");
   for (int ix = 0 ; ix < funcTblSize; ix++) 
     printf ("function '%s', %lu events, %d tasks, %d onCalls,"
-            " %d gets, %d puts, file %s, line %d\n",
+            " %d gets, %d puts, clock %lf, file %s, line %d\n",
             funcTbl[ix].name, funcTbl[ix].func_events.size(), funcTbl[ix].noTasks,
-            funcTbl[ix].noOnTasks, funcTbl[ix].noGets, funcTbl[ix].noPuts, 
+            funcTbl[ix].noOnTasks, funcTbl[ix].noGets, funcTbl[ix].noPuts,
+            funcTbl[ix].clockTime,
             fileTbl[funcTbl[ix].fileNo].name, funcTbl[ix].lineNo);
 #endif
   
@@ -905,8 +908,6 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
             else {
               funcTbl = new funcname[funcTblSize+1];
               funcTbl[funcTblSize].name = strdup("Unknown");
-              funcTbl[funcTblSize].lineNo = 0;
-              funcTbl[funcTblSize].fileNo = 0;
             }
           } else {
             // FIDname record
@@ -915,9 +916,6 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
               printf ("Bad FIDname data.\n");
             } else {
               funcTbl[ix].name = strdup(tmpname);
-              funcTbl[ix].lineNo = nlineno;
-              funcTbl[ix].fileNo = nfileno;
-              // funcTbl[ix].func_events = new std::list<Event *>;
             }
           }
           break;

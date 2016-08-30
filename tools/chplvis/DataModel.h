@@ -101,6 +101,11 @@ typedef struct funcname {
   int  noTasks;
   int  noGets;
   int  noPuts;
+  double clockTime;
+
+  funcname(): name(NULL), fileNo(0), lineNo(0), noOnTasks(0), noTasks(0),
+    noGets(0), noPuts(0), clockTime() {};
+  
 } funcname;
 
 
