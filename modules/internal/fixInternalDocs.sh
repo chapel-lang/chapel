@@ -31,7 +31,7 @@ function removePattern() {
     echo "Bad call to removePattern."
     exit 1
   fi
-  sed "/$1/ { N; d; }" $2 > $2.tmp
+  awk "/$1/{flag=0;next}/\.\. .*:: /{flag=1}flag" $2 > $2.tmp
   mv $2.tmp $2
 }
 
