@@ -97,12 +97,16 @@ void ProfileBrowser:: showFileFor(int index)
   show->showBackButton();
 
   // Make correct file name.
-  const char *home = getenv("CHPL_HOME");
-  if (fname[0] == '$')
+  if (fname[0] == '$') {
+    const char *home = VisData.CHPL_HOME();
+    printf ("Opening file: '%s/%s'\n",  home, &fname[11]);
     snprintf (text, sizeof(text), "%s/%s", home, &fname[11]);
-  else
-    snprintf (text, sizeof(text), "%s", fname);
-  show->ShowFile(text, funcInfo[index-1]->lineNo);
+  } else {
+    const char *dir = VisData.DIR();
+    snprintf (text, sizeof(text), "%s/%s", dir, fname);
+  }
+  if (!show->ShowFile(text, funcInfo[index-1]->lineNo))
+    return;
 
   // Build the file browser
 

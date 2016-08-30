@@ -832,6 +832,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
   while ( fgets(line, 1024, data) == line ) {
     // Common Data
     char *linedata;
+    long linelen;
     long sec;
     long usec;
     long nextCh;
@@ -872,7 +873,9 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
       if ( (findex == 0) && ( (strstr(line,"Tablesize:") == line) 
                               || (strstr(line,"fname:") == line)
                               || (strstr(line,"tname:") == line)
-                              || (strstr(line,"FID") == line) )) {
+                              || (strstr(line,"FID") == line)
+                              || (strstr(line,"CHPL_HOME:") == line)
+                              || (strstr(line,"DIR:") == line) )) {
         switch (line[0]) {
         case 'T': // filename Table size
           if (sscanf(linedata, ": %d", &fileTblSize) != 1) {
@@ -936,6 +939,25 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
             }
             tagNames[tagId] = tag;
           }
+          break;
+          
+        case 'C': // The CHPL_HOME variable at run time
+          linedata++;
+          while (*linedata == ' ') linedata++;
+          linelen = strlen(linedata);
+          if (linedata[linelen-1] == '\n')
+            linedata[linelen-1] = 0;
+          chpl_home = strdup (linedata);
+          break;
+
+        case 'D': // The runtime directory ... 
+          linedata++;
+          while (*linedata == ' ') linedata++;
+          linelen = strlen(linedata);
+          if (linedata[linelen-1] == '\n')
+            linedata[linelen-1] = 0;
+          dir = strdup (linedata);
+          break;
         }
         continue;
       } else {

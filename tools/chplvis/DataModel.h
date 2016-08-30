@@ -126,6 +126,11 @@ class DataModel {
   taskData mainTask;
 
   StringCache strDB;
+
+  // File name help
+  const char *chpl_home;
+  const char *dir;
+
   filename *fileTbl;
   int fileTblSize;
 
@@ -248,6 +253,12 @@ class DataModel {
     return (fileNo >= 0 && fileNo < fileTblSize) ?
       fileTbl[fileNo].rel2Home : false ; 
   }
+
+  // void CHPL_HOME(const char *h) { chpl_home = h; }
+  const char * CHPL_HOME() { return chpl_home; }
+
+  // void DIR(const char *d) { dir = d; }
+  const char * DIR() { return dir; }
 
   // Function name access
 

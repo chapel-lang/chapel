@@ -51,7 +51,7 @@ class SubView : public Fl_Group {
 
   void headerText (const char *t);
 
-  void ShowFile (const char *filename, int lineNo);
+  bool ShowFile (const char *filename, int lineNo);
 
 };
 

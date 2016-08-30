@@ -17,8 +17,11 @@
  * limitations under the License.
  */
 
+
 #include "SubView.h"
-#include <FL/Fl_Browser.h>
+#include <FL/Fl_Browser.H>
+#include <FL/Fl_ask.H>
+#include <errno.h>
 #include "chplvis.h"
 #include "LeftChevron-20x20.xpm"
 
@@ -75,13 +78,17 @@ void SubView::headerText (const char *t)
 
 // Specifics for each kind ...
 
-void SubView::ShowFile (const char *filename, int lineNo)
+bool SubView::ShowFile (const char *filename, int lineNo)
 {
   Fl_Browser *fb = new Fl_Browser (x(), y()+24, w(), h()-24);
-  fb->load(filename);
+  if (!fb->load(filename)) {
+    fl_alert("Could not open %s: %s", filename, strerror(errno));
+    return false;
+  }
   fb->select(lineNo);
   fb->box(FL_NO_BOX);
   resizable(fb);
   body = fb;
   add(fb);
+  return true;
 }
