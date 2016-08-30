@@ -635,7 +635,7 @@ Chapel Configuration File
 
 The Chapel configuration file is a file named either ``chplconfig`` or
 ``.chplconfig`` that can store overrides of the inferred environment variables
-that are determined by ``printchplenv``.
+listed as a result of executing ``printchplenv``.
 
 Syntax
 ~~~~~~
@@ -711,6 +711,11 @@ well:
 
 Search Paths and File Names
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Though you can put your Chapel configuration file anywhere by setting the
+``$CHPL_CONFIG`` environment variable to its enclosing directory, you can also
+place it in your ``$HOME`` or ``$CHPL_HOME`` directory and Chapel will be able to
+find it.
+
 The search priority for Chapel configuration files is as follows:
 
 1. ``$CHPL_CONFIG``
@@ -723,8 +728,10 @@ When both a ``chplconfig`` and ``.chplconfig`` are present, the visible
 Only a single ``chplconfig`` file will be used. That is, as soon as a valid
 Chapel configuration file is found, the definitions of that file are used.
 
-Note that the ``$CHPL_CONFIG`` variable is the path to the *enclosing*
-directory - not the full path including ``chplconfig`` itself.
+.. note::
+
+    The ``$CHPL_CONFIG`` variable is the path to the *enclosing*
+    directory - not the full path including ``chplconfig`` itself.
 
 Variable Priority
 ~~~~~~~~~~~~~~~~~
