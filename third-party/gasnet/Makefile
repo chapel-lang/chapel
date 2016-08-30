@@ -115,7 +115,6 @@ post-install: FORCE
 	$(foreach mkfile, $(MKFILES), sed -i -e "s;$(GASNET_INSTALL_DIR);"'$$(GASNET_INSTALL_DIR);g' $(mkfile) &&) true
 
 gasnet: gasnet-config gasnet-build gasnet-install
-	$(CHPL_MAKE_HOME)/util/chplenv/check_huge_pages.py
 
 FORCE:
 
