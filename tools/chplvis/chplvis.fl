@@ -182,14 +182,14 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {720 476 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
+    xywh {819 293 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55
       class Fl_Sys_Menu_Bar
     } {
       Submenu {} {
-        label File open
+        label File open selected
         xywh {0 0 70 21}
       } {
         MenuItem {} {
@@ -203,12 +203,6 @@ if (selfile) {
    }
 }}
           xywh {0 0 34 21} shortcut 0x4006f
-        }
-        MenuItem {} {
-          label Settings
-          callback {SettingsGrp->copyIn();
-DataField->pushChild(SettingsGrp);}
-          xywh {0 0 100 20}
         }
         MenuItem {} {
           label Quit
@@ -332,8 +326,15 @@ DataField->selectChild(ProfileView);
 ProfileView->prepareData();
 Menus.setCurrentTag(DataModel::TagALL);
 if (Info->getTagName() != NULL)
-   Info->setTagName("All");} selected
+   Info->setTagName("All");}
         image {Profile-40x40.png} xywh {10 260 40 40} box NO_BOX down_box FLAT_BOX
+        code0 {o->clear_visible_focus();}
+      }
+      Fl_Button {} {
+        callback {DataField->popAll();
+SettingsGrp->copyIn();
+DataField->pushChild(SettingsGrp);}
+        image {Gear-40x40.png} xywh {10 310 40 40} box NO_BOX
         code0 {o->clear_visible_focus();}
       }
     }
