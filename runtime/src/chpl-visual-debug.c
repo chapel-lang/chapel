@@ -161,11 +161,9 @@ void chpl_vdebug_start (const char *fileroot, double now) {
   if (chpl_nodeID == 0) {
     int ix;
     int numFIDnames;
-    char dirname[512];
-    chpl_dprintf (chpl_vdebug_fd, "CHPL_HOME: %s\n", CHPL_HOME);
 
-    if (getcwd(dirname, sizeof(dirname))) 
-      chpl_dprintf (chpl_vdebug_fd, "DIR: %s\n", dirname);
+    chpl_dprintf (chpl_vdebug_fd, "CHPL_HOME: %s\n", CHPL_HOME);
+    chpl_dprintf (chpl_vdebug_fd, "DIR: %s\n", chpl_compileDirectory);
 
     chpl_dprintf (chpl_vdebug_fd, "Tablesize: %d\n", chpl_filenameTableSize);
     for (ix = 0; ix < chpl_filenameTableSize ; ix++) {
