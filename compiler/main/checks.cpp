@@ -154,13 +154,6 @@ void check_checkResolved()
   // The checkResolved pass should not make any changes, so skip checks.
 }
 
-void check_replaceArrayAccessesWithRefTemps()
-{
-  check_afterEveryPass();
-  check_afterNormalization();
-  check_afterResolution();
-}
-
 void check_processIteratorYields() {
   check_afterEveryPass();
   check_afterNormalization();
@@ -225,6 +218,14 @@ void check_prune()
   check_afterCallDestructors();
   check_afterLowerIterators();
   // Suggestion: Ensure no dead classes or functions.
+}
+
+void check_replaceArrayAccessesWithRefTemps()
+{
+  check_afterEveryPass();
+  check_afterNormalization();
+  check_afterCallDestructors();
+  check_afterLowerIterators();
 }
 
 void check_bulkCopyRecords()
