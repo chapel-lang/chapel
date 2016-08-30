@@ -89,7 +89,7 @@ module StringCasts {
     pragma "insert line file info"
     extern proc c_string_to_uint64_t(x:c_string) : uint(64);
 
-    const localX = x.strip().localize();
+    const localX = x.localize();
     if isIntType(t) {
       select numBits(t) {
         when 8  do return c_string_to_int8_t(localX.c_str());

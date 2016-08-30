@@ -64,7 +64,12 @@ static int illegalFirstUnsChar(char c) {
                                                           int* invalid,    \
                                                           char* invalidCh) { \
     char* endPtr;                                                       \
-    _type(base, width) val = (_type(base, width))strtol(str, &endPtr, 10);  \
+    _type(base, width) val;                                             \
+    while (*str && isspace(*str))                                       \
+      str++;                                                            \
+    val = (_type(base, width))strtol(str, &endPtr, 10);                 \
+    while (*endPtr && isspace(*endPtr))                                 \
+      endPtr++;                                                         \
     *invalid = (*str == '\0' || *endPtr != '\0');                       \
     *invalidCh = *endPtr;                                               \
     /* for negatives, strtol works, but we wouldn't want chapel to */   \
@@ -75,17 +80,27 @@ static int illegalFirstUnsChar(char c) {
     return val;                                                         \
   }
 
+/*
+ * sscanf() skips leading spaces.  But when we report *str as the
+ * invalid character, we want to report the first non-space, so skip
+ * them manually anyway.
+ */
 #define _define_string_to_bigint_precise(base, width, uns, format)      \
   _type(base, width)  c_string_to_##base##width##_t_precise(c_string str, \
                                                             int* invalid,  \
                                                             char* invalidCh) { \
     _type(base, width)  val;                                            \
     int numbytes;                                                       \
-    int numitems = sscanf(str, format"%n", &val, &numbytes);            \
+    int numitems;                                                       \
+    while (*str && isspace(*str))                                       \
+      str++;                                                            \
+    numitems = sscanf(str, format"%n", &val, &numbytes);                \
     if (scanningNCounts() && numitems == 2) {                           \
       numitems = 1;                                                     \
     }                                                                   \
     if (numitems == 1) {                                                \
+      while(str[numbytes] && isspace(str[numbytes]))                    \
+        numbytes++;                                                     \
       if (numbytes == strlen(str)) {                                    \
         /* for negatives, sscanf works, but we wouldn't want chapel to */ \
         if (uns && illegalFirstUnsChar(*str)) {                         \
