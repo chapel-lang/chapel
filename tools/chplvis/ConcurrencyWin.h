@@ -41,7 +41,7 @@ class ConcurrencyWin : public Fl_Double_Window {
 
     void updateData (long loc, long tag) { dataView->updateData(loc,tag); }
 
-    void showCommBoxFor(taskData *task) { dataView->showCommBoxFor(task); }
+    void showCommListFor(taskData *task) { dataView->showCommListFor(task); }
 
     void showTaskBox() { dataView->showTaskBox(); }
 

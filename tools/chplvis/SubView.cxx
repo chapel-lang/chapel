@@ -111,3 +111,59 @@ bool SubView::ShowFile (const char *filename, int lineNo)
   add(fb);
   return true;
 }
+
+void CommListItemClickCB (Fl_Widget *w, void *p)
+{
+  printf ("CommListItemClickCB!\n");
+}
+
+bool SubView::ShowTaskComm (taskData *task)
+{
+  char tmpText[2048];
+  
+  // Time reference
+  double startTime = VisData.start_clock();
+  if (task->beginRec) 
+    startTime = task->beginRec->clock_time();
+  
+  // Data lines
+  SelectBrowser *theList = new SelectBrowser (x(), y()+24, w(), h()-24);
+  theList->callback(CommListItemClickCB);
+  std::list<Event *>::iterator itr;
+  itr = task->commList.begin();
+  while (itr != task->commList.end()) {
+    E_fork *fp;
+    E_comm *cp;
+    switch ((*itr)->Ekind()) {
+    case Ev_fork:
+      fp = (E_fork *) *itr;
+      snprintf (tmpText, sizeof(tmpText), "[%f] %s to %d, argument size %d.\n",
+                fp->clock_time() - startTime,
+                (fp->fast() ? "Fast fork" : "Fork"),
+                fp->dstId(), fp->argSize());
+      theList->add(tmpText);
+      break;
+    case Ev_comm:
+      cp = (E_comm *) *itr;
+      if (cp->isGet()) 
+        snprintf (tmpText, sizeof(tmpText), "[%f] Get from %d, total size %d, file %s:%ld\n",
+                  cp->clock_time() - startTime, cp->srcId(), cp->totalLen(), 
+                  VisData.fileName(cp->srcFile()), cp->srcLine());
+      else
+        snprintf (tmpText, sizeof(tmpText), "[%f] Put to %d, total size %d, file %s:%ld\n",
+                  cp->clock_time() - startTime, cp->dstId(), cp->totalLen(),
+                  VisData.fileName(cp->srcFile()), cp->srcLine());
+      theList->add(tmpText);
+      break;
+    default: // Do nothing
+      break;
+    }
+    itr++;
+  }
+  theList->box(FL_NO_BOX);
+  resizable(theList);
+  body = theList;
+  add(theList);
+  return true;
+  
+}

@@ -93,8 +93,9 @@ bool Fl_MultiGroup::pushNewChild (Fl_Widget *w, bool removeAtPop)
     childStack->removeAtPop = removeAtPop;
     return true;
   }
-  if (removeAtPop)
+  if (removeAtPop) {
     remove(w);
+  }
   return false;
 }
 
@@ -108,7 +109,9 @@ bool Fl_MultiGroup::popChild ()
   nOnStack--;
   selectChild(lastChild->child);
   if (lastChild->removeAtPop) {
+    //Fl_Widget *item = child(wasSel);
     remove (wasSel);
+    //delete item;
   }
   delete lastChild;
   return true;

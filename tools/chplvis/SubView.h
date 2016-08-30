@@ -28,6 +28,8 @@
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Button.H>
 
+#include "DataModel.h"
+
 // General class that has the top row of an optional back
 // button and a view that fills the rest of the view.
 // Typically this is some line oriented browser, like  a
@@ -52,6 +54,8 @@ class SubView : public Fl_Group {
   void headerText (const char *t);
 
   bool ShowFile (const char *filename, int lineNo);
+
+  bool ShowTaskComm (taskData *task);
 
 };
 

@@ -23,6 +23,9 @@
 #include "ConcurrencyView.h"
 #include "chplvis.h"
 
+#include "SubView.h"
+#include "SelectBrowser.h"
+
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 
@@ -40,7 +43,7 @@ void backCallback (Fl_Widget *w, void *p) {
 
 void taskCallback (Fl_Widget *w, void *p) {
   ConcurrencyView *view = (ConcurrencyView *)w->parent()->parent()->parent();
-  view->showCommBoxFor((taskData *)p);
+  view->showCommListFor((taskData *)p);
   //printf ("task box clicked.\n");
   //printf ("w is 0x%lx\n", (long)w); 
   //printf ("v is 0x%lx\n", (long)view); 
@@ -66,79 +69,31 @@ void ConcurrencyView::updateData (long loc, long tag)
   redraw();
 }
 
-void ConcurrencyView::showCommBoxFor(taskData *task)
+
+void ConcurrencyView::showCommListFor(taskData *task)
 {
   if (task->commSum.numComms == 0) {
     fl_alert("Task has no communications to show.");
   } else {
-    scroll->hide();
 
-    Fl_Pixmap *pm = new Fl_Pixmap(left_chevron20x20);
-    backBtn = new Fl_Button (x()+10,y()+30,20,20,0);
-    backBtn->box(FL_NO_BOX);
-    backBtn->image(pm);
-    backBtn->callback(backCallback, (void *)0);
-    backBtn->clear_visible_focus();
-    add(backBtn);
-    backBtn->show();
-
-    Fl_Text_Buffer *buff = new Fl_Text_Buffer();
-    commBox = new Fl_Text_Display (x(),y()+65,w(),h()-65);
-    commBox->buffer(buff);
-    commBox->hide_cursor();
-    commBox->show();
-    resizable(commBox);
-
-    // Add the data to the text display:
-    // Title
+    SubView *commList = new SubView(x(),y(),w(),h());
+    commList->showBackButton();
+    
+   // Title
     char tmpText[2048];
     if (task->taskRec) 
-      snprintf (tmpText, sizeof(tmpText), "Communications for task %ld on locale %d:\n\n",
+      snprintf (tmpText, sizeof(tmpText), "Communications for task %ld on locale %d.",
                 task->taskRec->taskId(), task->taskRec->nodeId());
     else // Main should be the only one without a taskRec
-      snprintf (tmpText, sizeof(tmpText), "Communications for main task on locale 0:\n\n");
-    commBox->insert(tmpText);
+      snprintf (tmpText, sizeof(tmpText), "Communications for main task on locale 0.");
+    commList->headerText(tmpText);
 
-    // Time reference
-    double startTime = VisData.start_clock();
-    if (task->beginRec) 
-      startTime = task->beginRec->clock_time();
-
-    // Data lines
-    std::list<Event *>::iterator itr;
-    itr = task->commList.begin();
-    while (itr != task->commList.end()) {
-      E_fork *fp;
-      E_comm *cp;
-      switch ((*itr)->Ekind()) {
-        case Ev_fork:
-          fp = (E_fork *) *itr;
-          snprintf (tmpText, sizeof(tmpText), "[%f] %s to %d, argument size %d.\n",
-                    fp->clock_time() - startTime,
-                    (fp->fast() ? "Fast fork" : "Fork"),
-                     fp->dstId(), fp->argSize());
-          commBox->insert(tmpText);
-          break;
-        case Ev_comm:
-          cp = (E_comm *) *itr;
-          if (cp->isGet()) 
-            snprintf (tmpText, sizeof(tmpText), "[%f] Get from %d, total size %d, file %s:%ld\n",
-                      cp->clock_time() - startTime, cp->srcId(), cp->totalLen(), 
-                      VisData.fileName(cp->srcFile()), cp->srcLine());
-          else
-            snprintf (tmpText, sizeof(tmpText), "[%f] Put to %d, total size %d, file %s:%ld\n",
-                      cp->clock_time() - startTime, cp->dstId(), cp->totalLen(),
-                      VisData.fileName(cp->srcFile()), cp->srcLine());
-          commBox->insert(tmpText);
-          break;
-        default: // Do nothing
-          break;
-      }
-      itr++;
+    if (!commList->ShowTaskComm(task)) {
+      fl_alert("Internal error?");
+      delete commList;
     }
-
-    add(commBox);
-    redraw();
+     
+    DataField->pushNewChild(commList, true);
   }
 }
 

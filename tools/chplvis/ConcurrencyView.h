@@ -91,7 +91,7 @@ class ConcurrencyView : public Fl_Group {
 
     void updateData (long loc, long tag);
 
-    void showCommBoxFor(taskData *task);
+    void showCommListFor(taskData *task);
 
     void showTaskBox();
 
