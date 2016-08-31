@@ -41,6 +41,9 @@ class SubView : public Fl_Group {
   Fl_Button *title;
   Fl_Widget *body;
 
+  // For taskcomm
+  taskData *dispTask;
+
   public:
 
   SubView (int x, int y, int w, int h, const char *l = 0);
@@ -56,6 +59,7 @@ class SubView : public Fl_Group {
   bool ShowFile (const char *filename, int lineNo);
 
   bool ShowTaskComm (taskData *task);
+  void TaskCommCB (void);
 
 };
 

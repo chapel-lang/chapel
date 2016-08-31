@@ -31,6 +31,12 @@ class SettingsData {
   double maxR;
   double maxG;
   double maxB;
+  double file_minR;
+  double file_minG;
+  double file_minB;
+  double file_maxR;
+  double file_maxG;
+  double file_maxB;
   bool   save_WH;
   int    mainW;
   int    mainH;
@@ -50,7 +56,7 @@ class SettingsData {
     mainH = 590;
   }
 
-  void saveToFile (void);
+  void saveToFile (bool);
   void readFromFile (void);
 };
 

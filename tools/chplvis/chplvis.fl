@@ -83,10 +83,10 @@ decl {MenuManager Menus;} {public local
 decl {SettingsData VisSettings;} {public local
 } 
 
-Function {mainWinCallback(Fl_Widget *)} {return_type void
+Function {mainWinCallback(Fl_Widget *)} {open return_type void
 } {
   code {if (VisSettings.save_WH) {
-   VisSettings.saveToFile();
+   VisSettings.saveToFile(false);
 }
 exit(1);} {}
 } 
@@ -182,7 +182,7 @@ Function {} {open
 } {
   Fl_Window MainWindow {
     label chplvis open
-    xywh {1097 539 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
+    xywh {1113 369 560 600} type Double color 7 resizable size_range {560 590 0 0} visible
   } {
     Fl_Menu_Bar MainMenuBar {open
       xywh {0 0 560 20} color 55
@@ -207,7 +207,7 @@ if (selfile) {
         MenuItem {} {
           label Quit
           callback {if (VisSettings.save_WH) {
-   VisSettings.saveToFile();
+   VisSettings.saveToFile(false);
 }
 exit(0);}
           xywh {0 0 34 21} shortcut 0x40071
@@ -324,7 +324,7 @@ concView->updateData(Menus.currentLoc(),
       Fl_Button {} {
         callback {DataField->popAll();
 DataField->selectChild(ProfileView);
-ProfileView->prepareData();
+ProfileView->prepareData(ProfileBrowser::D_CLOCK); // XXX
 Info->rmAllLocOrComm();
 Menus.setCurrentTag(DataModel::TagALL);
 if (Info->getTagName() != NULL)
@@ -336,7 +336,7 @@ if (Info->getTagName() != NULL)
         callback {DataField->popAll();
 Info->rmAllLocOrComm();
 SettingsGrp->copyIn();
-DataField->pushChild(SettingsGrp);} selected
+DataField->pushChild(SettingsGrp);}
         image {Gear-40x40.png} xywh {10 310 40 40} box NO_BOX
         code0 {o->clear_visible_focus();}
       }
@@ -392,7 +392,7 @@ saveWH->value(SettingsGrp->getSaveWH());}
         Fl_Button {} {
           label Save
           callback {SettingsGrp->copyOut();
-VisSettings.saveToFile();
+VisSettings.saveToFile(true);
 DataField->popChild();}
           xywh {220 245 105 25}
         }
@@ -430,8 +430,8 @@ DataField->popChild();}
         class ConcurrencyView
       } {
         Fl_Box title2 {
-          label Concurrency
-          private xywh {60 101 500 29}
+          label Concurrency selected
+          private xywh {59 99 501 30} box BORDER_FRAME color 0
         }
         Fl_Scroll ConcWScroll2 {open
           private xywh {60 130 500 470} color 7 resizable

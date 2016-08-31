@@ -749,11 +749,12 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
     tl_itr++;
   }
 
+
   // Debug print the finished function table  (need to add comm size?)
   printf ("\nFunction table information.\n");
   for (int ix = 0 ; ix < funcTblSize; ix++) 
-    printf ("function '%s', %lu events, %d tasks, %d onCalls,"
-            " %d gets, %d puts, clock %lf, file %s, line %d\n",
+    printf ("function '%s', %lu events, %ld tasks, %ld onCalls,"
+            " %ld gets, %ld puts, clock %lf, file %s, line %ld\n",
             funcTbl[ix].name, funcTbl[ix].func_events.size(), funcTbl[ix].noTasks,
             funcTbl[ix].noOnTasks, funcTbl[ix].noGets, funcTbl[ix].noPuts,
             funcTbl[ix].clockTime,
@@ -906,7 +907,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
             if (sscanf(linedata, ": %d", &funcTblSize) != 1)
               printf ("Bad FIDNsize record\n");
             else {
-              funcTbl = new funcname[funcTblSize+1];
+              funcTbl = new funcInfo[funcTblSize+1];
               funcTbl[funcTblSize].name = strdup("Unknown");
             }
           } else {
@@ -916,6 +917,8 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
               printf ("Bad FIDname data.\n");
             } else {
               funcTbl[ix].name = strdup(tmpname);
+              funcTbl[ix].fileNo = nfileno;
+              funcTbl[ix].lineNo = nlineno;
             }
           }
           break;

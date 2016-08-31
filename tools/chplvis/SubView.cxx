@@ -114,12 +114,17 @@ bool SubView::ShowFile (const char *filename, int lineNo)
 
 void CommListItemClickCB (Fl_Widget *w, void *p)
 {
-  printf ("CommListItemClickCB!\n");
+  ((SubView *)w->parent())->TaskCommCB();
 }
 
 bool SubView::ShowTaskComm (taskData *task)
 {
   char tmpText[2048];
+  const funcInfo* fInfo;
+  const char * fName;
+
+  // Save the task
+  dispTask = task;
   
   // Time reference
   double startTime = VisData.start_clock();
@@ -137,20 +142,26 @@ bool SubView::ShowTaskComm (taskData *task)
     switch ((*itr)->Ekind()) {
     case Ev_fork:
       fp = (E_fork *) *itr;
-      snprintf (tmpText, sizeof(tmpText), "[%f] %s to %d, argument size %d.\n",
+      fInfo = VisData.getFunctionInfo(fp->funcId());
+      fName =  VisData.fileName(fInfo->fileNo);
+      snprintf (tmpText, sizeof(tmpText),
+                "[%f] %s to %d, argument size %d, function %s, file %s:%ld\n",
                 fp->clock_time() - startTime,
-                (fp->fast() ? "Fast fork" : "Fork"),
-                fp->dstId(), fp->argSize());
+                (fp->fast() ? "Fast On call" : "On call"),
+                fp->dstId(), fp->argSize(), fInfo->name,
+                (fName[0] == '$' ? &fName[11] : fName), fInfo->lineNo);
       theList->add(tmpText);
       break;
     case Ev_comm:
       cp = (E_comm *) *itr;
       if (cp->isGet()) 
-        snprintf (tmpText, sizeof(tmpText), "[%f] Get from %d, total size %d, file %s:%ld\n",
+        snprintf (tmpText, sizeof(tmpText),
+                  "[%f] Get from %d, total size %d, file %s:%ld\n",
                   cp->clock_time() - startTime, cp->srcId(), cp->totalLen(), 
                   VisData.fileName(cp->srcFile()), cp->srcLine());
       else
-        snprintf (tmpText, sizeof(tmpText), "[%f] Put to %d, total size %d, file %s:%ld\n",
+        snprintf (tmpText, sizeof(tmpText),
+                  "[%f] Put to %d, total size %d, file %s:%ld\n",
                   cp->clock_time() - startTime, cp->dstId(), cp->totalLen(),
                   VisData.fileName(cp->srcFile()), cp->srcLine());
       theList->add(tmpText);
@@ -165,5 +176,61 @@ bool SubView::ShowTaskComm (taskData *task)
   body = theList;
   add(theList);
   return true;
-  
+}
+
+void SubView::TaskCommCB (void)
+{
+  std::list<Event *>::iterator itr;
+  SelectBrowser *theList = (SelectBrowser *)body;
+
+  int ix = 1;  // Browser indexes start at 1, not 0
+  itr = dispTask->commList.begin();
+
+  while (itr != dispTask->commList.end()) {
+    E_fork *fp;
+    E_comm *cp;
+    const funcInfo *fInfo;
+    const char *fName;
+    int lineNo;
+    char text[512];
+
+    switch ((*itr)->Ekind()) {
+    case Ev_fork:
+    case Ev_comm:
+      if (theList->selected(ix)) {
+        if ((*itr)->Ekind() == Ev_fork) {
+          fp = (E_fork *) *itr;
+          fInfo = VisData.getFunctionInfo(fp->funcId());
+          fName =  VisData.fileName(fInfo->fileNo);
+          lineNo = fInfo->lineNo;
+          snprintf (text, sizeof(text),
+                    "On call to %d at %s:%d", fp->dstId(),
+                    (fName[0] == '$' ? &fName[11] : fName), lineNo);
+        } else {
+          cp = (E_comm *) *itr;
+          fName = VisData.fileName(cp->srcFile());
+          lineNo =  cp->srcLine();
+          snprintf (text, sizeof(text),
+                    "%s %d at %s:%d",
+                    (cp->isGet() ? "Get from" : "Put to"),
+                    (cp->isGet() ? cp->srcId() : cp->dstId()),
+                    (fName[0] == '$' ? &fName[11] : fName), lineNo);
+        }
+        SubView *show  = new SubView (x(), y(), w(), h());
+        show->headerText (text);
+        show->showBackButton();
+        if (!show->ShowFile (fName, lineNo)) {
+          delete show;
+          return;
+        }
+        DataField->pushNewChild (show, true);
+      }
+      ix++;
+      break;
+    default: // Do nothing
+      break;
+    }
+    itr++;
+  }
+ 
 }

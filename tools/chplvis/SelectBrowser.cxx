@@ -44,10 +44,12 @@ int SelectBrowser::handle (int event)
         item_select(sel,0);
         redraw_line(sel);
       }
-      item_select(itm,1);
-      redraw_line(itm);
+      if (itm != NULL) {
+        item_select(itm,1);
+        redraw_line(itm);
+      }
       lastSelected = itm;
-    } else if (event == FL_PUSH) {
+    } else if (event == FL_PUSH && sel != NULL) {
       item_select(sel,0);
       redraw_line(sel);
       lastSelected = NULL;

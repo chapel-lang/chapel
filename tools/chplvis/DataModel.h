@@ -92,21 +92,21 @@ typedef struct filename {
 } filename;
 
 // Function names
-typedef struct funcname {
+typedef struct funcInfo {
   char *name;
-  int  fileNo;
-  int  lineNo;
+  long  fileNo;
+  long  lineNo;
   std::list<Event *> func_events;
-  int  noOnTasks;
-  int  noTasks;
-  int  noGets;
-  int  noPuts;
+  long  noOnTasks;
+  long  noTasks;
+  long  noGets;
+  long  noPuts;
   double clockTime;
 
-  funcname(): name(NULL), fileNo(0), lineNo(0), noOnTasks(0), noTasks(0),
+  funcInfo(): name(NULL), fileNo(0), lineNo(0), noOnTasks(0), noTasks(0),
     noGets(0), noPuts(0), clockTime() {};
   
-} funcname;
+} funcInfo;
 
 
 // Primary data structure built by reading the data files dumped by using VisualDebug.chpl
@@ -139,7 +139,7 @@ class DataModel {
   filename *fileTbl;
   int fileTblSize;
 
-  funcname *funcTbl;
+  funcInfo *funcTbl;
   int funcTblSize;
   
   std::vector<const char *> tagNames;
@@ -269,7 +269,7 @@ class DataModel {
 
   int numFunctionNames (void) { return funcTblSize; }
 
-  const funcname* getFunctionInfo (int funcNo) {
+  const funcInfo* getFunctionInfo (int funcNo) {
     if (funcNo >= 0 && funcNo < funcTblSize) {
       return &funcTbl[funcNo];
     } else {

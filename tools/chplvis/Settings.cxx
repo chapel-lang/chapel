@@ -123,7 +123,7 @@ void Settings::draw(void)
 //           minR minG minB maxR maxG maxB save_WH
 //
 
-void SettingsData::saveToFile (void)
+void SettingsData::saveToFile (bool saveAll)
 {
   char *home = getenv("HOME");
   if (!home) {
@@ -148,9 +148,18 @@ void SettingsData::saveToFile (void)
 
   FILE *setF = fopen(name, "w");
   if (setF) {
+    if (saveAll) {
+      file_minG = minG;
+      file_minB = minB;
+      file_minR = minR;
+      file_maxG = maxG;
+      file_maxB = maxB;
+      file_maxR = maxR;
+    }
     // Write the data
     fprintf (setF, "%lf %lf %lf %lf %lf %lf %d %d %d\n",
-             minR, minG, minB, maxR, maxG, maxB, save_WH, mainW, mainH);
+             file_minR, file_minG, file_minB, file_maxR, file_maxG, file_maxB,
+             save_WH, mainW, mainH);
     fclose(setF);
   } else {
     fl_alert ("Could not make %s: %s.\n", name, strerror(errno));
@@ -173,13 +182,20 @@ void SettingsData::readFromFile (void)
     setF = fopen(name, "r");
     if (setF) {
       int sWH;
-      int nr = fscanf (setF, "%lf %lf %lf %lf %lf %lf %d %d %d", &minR, &minG, &minB,
-                      &maxR, &maxG, &maxB, &sWH, &mainW, &mainH);
+      int nr = fscanf (setF, "%lf %lf %lf %lf %lf %lf %d %d %d", &file_minR,
+                       &file_minG, &file_minB, &file_maxR, &file_maxG,
+                       &file_maxB, &sWH, &mainW, &mainH);
       if (nr != 9) {
         fl_alert ("Settings corrupt, reverting to default settings.");
         VisSettings.setDefaults();
       } else {
         save_WH = sWH == 1;
+        minG = file_minG;
+        minB = file_minB;
+        minR = file_minR;
+        maxG = file_maxG;
+        maxB = file_maxB;
+        maxR = file_maxR;
       }
       fclose(setF);
     }

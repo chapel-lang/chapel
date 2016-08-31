@@ -30,18 +30,19 @@
 
 class ProfileBrowser : public SelectBrowser {
 
-  bool initialized;
-  const funcname ** funcInfo;
+  const funcInfo ** funcList;
   int numFuncs;
   void *lastSelected;
 
   public:
 
+  enum whichData { D_CLOCK, D_TASKS, D_COMM, D_ONCALLS, D_GETS, D_PUTS };
+
   ProfileBrowser (int x, int y, int w, int h, const char *l = 0);
 
   void loadData();
 
-  void prepareData();
+  void prepareData(whichData what);
 
   void showFileFor(int ix);
   

@@ -62,7 +62,7 @@ chplvis: $(GENSRCS) $(OFILES)
 	$$($(FLTK_CONFIG) --cxx)  -o chplvis $(OFILES) \
 	        $$($(FLTK_CONFIG) --ldflags) $$($(FLTK_CONFIG) --libs)
 
-chplvis.cxx chplvis.h: chplvis.fl
+chplvis.h: chplvis.fl
 	$(FLTK_FLUID) -c chplvis.fl
 
 testMG.cxx: testMG.fl
@@ -83,6 +83,7 @@ install: chplvis
 	cp chplvis $(CHPL_HOME)/bin/$(CHPL_HOST_PLATFORM)
 
 # Dependencies
+chplvis.cxx: chplvis.h  # This rule to get fluid run only once
 chplvis.o: chplvis.h Fl_MultiGroup.H Settings.h DataModel.h InfoBar.h \
      MenuManager.h ZoomScroll.h GraphView.h GridView.h LocCommWin.h  \
      ConcurrencyWin.h ConcurrencyView.h
