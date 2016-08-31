@@ -52,6 +52,7 @@ struct PassInfo {
 #define LOG_resolve                            'R'
 #define LOG_resolveIntents                     'i'
 #define LOG_checkResolved                      NUL
+#define LOG_replaceArrayAccessesWithRefTemps   'T'
 #define LOG_processIteratorYields              'y'
 #define LOG_flattenFunctions                   'e'
 #define LOG_cullOverReferences                 'O'
@@ -59,7 +60,6 @@ struct PassInfo {
 #define LOG_lowerIterators                     'L'
 #define LOG_parallel                           'P'
 #define LOG_prune                              'X'
-#define LOG_replaceArrayAccessesWithRefTemps   'T'
 #define LOG_bulkCopyRecords                    'B'
 #define LOG_removeUnnecessaryAutoCopyCalls     'U'
 #define LOG_inlineFunctions                    'I'
@@ -116,6 +116,8 @@ static PassInfo sPassList[] = {
   RUN(resolveIntents),          // resolve argument intents
   RUN(checkResolved),           // checks semantics of resolved AST
 
+  RUN(replaceArrayAccessesWithRefTemps), // replace multiple array access calls with reference temps
+
   // Post-resolution cleanup
   RUN(processIteratorYields),   // adjustments to iterators
   RUN(flattenFunctions),        // denest nested functions
@@ -126,7 +128,6 @@ static PassInfo sPassList[] = {
   RUN(prune),                   // prune AST of dead functions and types
 
   // Optimizations
-  RUN(replaceArrayAccessesWithRefTemps), // replace multiple array access calls with reference temps
   RUN(bulkCopyRecords),         // replace simple assignments with PRIM_ASSIGN.
   RUN(removeUnnecessaryAutoCopyCalls),
   RUN(inlineFunctions),         // function inlining
