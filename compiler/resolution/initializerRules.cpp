@@ -62,54 +62,41 @@ void temporaryInitializerFixup(CallExpr* call) {
 }
 
 static
-void reorganizeBody(FnSymbol* fn, BlockStmt* phase1, BlockStmt* phase2,
-                    BlockStmt* otherInit);
+Expr* getInitCall(FnSymbol* fn);
+
 static
-void phase1Analysis(AggregateType* t, BlockStmt* phase1, BlockStmt* phase2,
-                    BlockStmt* otherInit);
+void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall);
 
 
 
 
 void handleInitializerRules(FnSymbol* fn, AggregateType* t) {
-  BlockStmt* phase1 = fn->body;
-  BlockStmt* phase2 = new BlockStmt();
-  BlockStmt* otherInit = new BlockStmt();
+  Expr* initCall = getInitCall(fn);
 
-  reorganizeBody(fn, phase1, phase2, otherInit);
+  if (initCall != NULL) {
+    phase1Analysis(fn->body, t, initCall);
 
-  phase1->insertAtTail(otherInit);
-  phase1->insertAtTail(phase2);
+    // Insert analysis of initCall here
+  }
 
-  phase1Analysis(t, phase1, phase2, otherInit);
+  // Insert phase 2 analysis here
 }
 
-// This function traverses the body of the initializer backwards, moving the
-// statements it finds into the phase2 block statement until it encounters the
-// super/this.init() call or the start of the body, whichever comes first.
-// It then moves the super/this.init() call and the statements it relies on
-// into the otherInit block statement.
 static
-void reorganizeBody(FnSymbol* fn, BlockStmt* phase1, BlockStmt* phase2,
-                    BlockStmt* otherInit) {
-  while (phase1->body.length > 0) {
-    // Note - to make the default for an initializer body be phase 1,
-    // reverse the traversal order and perform some swaps of which block
-    // statement is receiving the code.  Will also need to update the creation
-    // of the phase1 block at the callsite, likely.
-
-    if (CallExpr* call = toCallExpr(phase1->body.tail)) {
-      if (CallExpr* inner = toCallExpr(call->baseExpr)) {
-        if (inner->isNamed(".")) {
-          if (SymExpr* sym = toSymExpr(inner->get(2))) {
-            if (VarSymbol* var = toVarSymbol(sym->var)) {
-              if (var->immediate->const_kind == CONST_KIND_STRING) {
-                if (!strcmp(var->immediate->v_string, "init")) {
-                  // While going backwards, we found the super/this.init() call
-                  // Time to stop moving into the phase2 block statement.
-                  otherInit->insertAtHead(call->remove());
-                  break;
-                }
+bool isInitCall (Expr* expr) {
+  // The following set of nested if statements is looking for a CallExpr
+  // representing this.init(args) or super.init(args), which at this point
+  // in compilation will be represented by:
+  // call (call ("." [ super | this ] "init") args)
+  // If we match, return true.
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (CallExpr* inner = toCallExpr(call->baseExpr)) {
+      if (inner->isNamed(".")) {
+        if (SymExpr* sym = toSymExpr(inner->get(2))) {
+          if (VarSymbol* var = toVarSymbol(sym->var)) {
+            if (var->immediate->const_kind == CONST_KIND_STRING) {
+              if (!strcmp(var->immediate->v_string, "init")) {
+                return true;
               }
             }
           }
@@ -118,23 +105,35 @@ void reorganizeBody(FnSymbol* fn, BlockStmt* phase1, BlockStmt* phase2,
     }
     // Behavior is not yet correct for super/this.init() calls within
     // loops or if statements.  TODO: fix this
-
-    phase2->insertAtHead(phase1->body.tail->remove());
   }
+  return false;
+}
+
+// This function traverses the body of the initializer until it finds a
+// super.init(...) or this.init(...) call, or it reaches the end of the
+// initializer's body, whichever comes first.  It will return that call,
+// or NULL if it didn't find a call matching that description.
+static
+Expr* getInitCall(FnSymbol* fn) {
+  for (Expr* curExpr = fn->body->body.head; curExpr; curExpr = curExpr->next) {
+    if (isInitCall(curExpr)) {
+      return curExpr;
+    }
+  }
+  return NULL;
 }
 
 static
-void phase1Analysis(AggregateType* t, BlockStmt* phase1, BlockStmt* phase2,
-                    BlockStmt* otherInit) {
+void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
   DefExpr* curField = toDefExpr(t->fields.head);
   // the super field is always first
   bool *seenField = (bool*)calloc(t->fields.length, sizeof(bool));
   if (curField)
     seenField[0] = true;
 
-  Expr* curExpr = phase1->body.head;
+  Expr* curExpr = body->body.head;
   int curIndex = 0;
-  while (curExpr != NULL && curExpr != phase2 && curExpr != otherInit) {
+  while (curExpr != NULL && curExpr != initCall) {
     // Verify that:
     // - fields are initialized in declaration order
     // - The "this" instance is only used to clarify a field initialization (or
