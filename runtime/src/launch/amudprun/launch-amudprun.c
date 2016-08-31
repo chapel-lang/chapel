@@ -56,17 +56,32 @@ static void add_env_options(int* argc, char** argv[]) {
   memcpy(new_argv, (*argv), *argc * sizeof((*argv)[0]));
 
   //
-  // Add a -E option for each environment variable.
+  // Add a -E option for each environment variable.  Since GASNet's
+  // amudprun is going to use system(3) to run the target process,
+  // quote any characters that are magic to the shell.
   //
   for (i = 0; i < envc; i++) {
-    // except don't add -E for variables containing a `
-    // this is a workaround for poor quoting
-    // in amudprun (see amudp_spawn.cpp AMUDP_SPMDSshSpawn
-    // which just passes all the arguments to 'system')
-    if( ! strchr(environ[i], '`' ) ) {
-      new_argv[*argc + 2 * i + 0] = (char*) "-E";
-      new_argv[*argc + 2 * i + 1] = environ[i];
+    const char* quoteChars = "\"'`*?[]|&<>;()#$\\";
+    char* envstr;
+    if (strstr(environ[i], quoteChars) == NULL)
+      envstr = environ[i];
+    else {
+      int quoteCnt;
+      int esi, ei;
+      for (quoteCnt = 0, ei = 0; environ[i][ei] != '\0'; ei++) {
+        if (strchr(quoteChars, environ[i][ei]) != NULL)
+          quoteCnt++;
+      }
+      envstr = (char*) chpl_mem_allocMany(strlen(environ[i] + quoteCnt + 1), 1,
+                                          CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+      for (esi = ei = 0; environ[i][ei] != '\0'; esi++, ei++) {
+        if (strchr(quoteChars, environ[i][ei]) != NULL)
+          envstr[esi++] = '\\';
+        envstr[esi] = environ[i][ei];
+      }
+      envstr[esi] = '\0';
     }
+    new_argv[*argc + 2 * i + 1] = envstr;
   }
 
   //
