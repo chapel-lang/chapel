@@ -26,7 +26,7 @@ def get():
                 launcher_val = 'none'
             elif has_aprun:
                 launcher_val = 'aprun'
-            elif has_slurm or chpl_platform.is_cross_compiling():
+            elif has_slurm or platform_val == 'aarch64':
                 launcher_val = 'slurm-srun'
             else:
                 # FIXME: Need to detect aprun/srun differently. On a cray
