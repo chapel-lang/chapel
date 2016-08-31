@@ -21,8 +21,8 @@ QTHREAD_DIR = $(QTHREAD_ABS_DIR)
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_QTHREAD_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
 endif
-ifneq (, $(filter cross-%,$(CHPL_MAKE_TARGET_PLATFORM)))
-CHPL_QTHREAD_CFG_OPTIONS += --host=`echo $(CHPL_MAKE_TARGET_PLATFORM) | cut -d- -f2`-unknown-linux-gnu
+ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
+CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
 endif
 
 ifeq ($(CHPL_MAKE_HWLOC),hwloc)

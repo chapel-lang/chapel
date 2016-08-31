@@ -15,4 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include $(CHPL_MAKE_HOME)/make/platform/Makefile.cray-x-series
+ifeq ($(CHPL_MAKE_HOST_COMPILER),gnu)
+LDFLAGS += -static-libstdc++
+endif

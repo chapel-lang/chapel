@@ -258,7 +258,7 @@ def get_module_lcd_arch(platform_val, arch):
         return "sandybridge"
     elif platform_val == "cray-xe" or platform_val == "cray-xk":
         return "barcelona"
-    elif platform_val == "cross-aarch64":
+    elif platform_val == "aarch64":
         return "arm-thunderx"
     else:
         return 'none'

@@ -12,14 +12,6 @@
 CC="${CC:-cc}"   # vanilla target C compiler
 CXX="${CXX:-CC}" # vanilla target C++ compiler
 
-# Default optimization on ICC is an irritation:
-# -wd10120 suppresses "command line warning #10120: overriding '-O0' with '-O3'"
-if test x"$PE_ENV" = xINTEL &&
-    ( $CC -dM -E /dev/null | grep __OPTIMIZE__ ) >& /dev/null; then
-  CC="$CC -O0 -wd10120"
-  CXX="$CXX -O0 -wd10120"
-fi
-
 export CC
 export CXX
 

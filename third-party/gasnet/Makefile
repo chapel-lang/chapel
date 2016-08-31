@@ -38,7 +38,7 @@ ifeq ($(CHPL_MAKE_TARGET_PLATFORM),pwr6)
 CHPL_GASNET_CFG_OPTIONS += -with-mpi-cc=mpcc
 endif
 
-ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xc cray-xk cross-aarch64))
+ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xc cray-xk))
 CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
 ifeq ($(CHPL_MAKE_COMM_SUBSTRATE),gemini)
 else
@@ -53,11 +53,7 @@ endif
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cray-xc)
 CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxc-linux
 else
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),cross-aarch64)
-CHPL_GASNET_CFG_SCRIPT=cross-configure-aarch64-linux
-else
 CHPL_GASNET_CFG_SCRIPT=cross-configure-crayxe-linux
-endif
 endif
 XTRA_CONFIG_COMMAND=cp --update $(GASNET_SUBDIR)/other/contrib/$(CHPL_GASNET_CFG_SCRIPT) $(GASNET_SUBDIR)
 XTRA_POST_INSTALL_COMMAND=rm -f $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT)
@@ -72,7 +68,12 @@ else
 CHPL_GASNET_CFG_OPTIONS += --disable-portals
 endif
 else
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),aarch64)
+CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
+CHPL_GASNET_CFG_SCRIPT=cross-configure-aarch64-linux
+else
 CHPL_GASNET_CFG_SCRIPT=configure
+endif
 endif
 endif
 

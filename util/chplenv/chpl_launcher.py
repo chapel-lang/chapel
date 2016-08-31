@@ -16,17 +16,18 @@ def get():
     launcher_val = overrides.get('CHPL_LAUNCHER')
     if not launcher_val:
         comm_val = chpl_comm.get()
+        hostplat_val = chpl_platform.get('host')
         platform_val = chpl_platform.get('target')
         compiler_val = chpl_compiler.get('target')
 
-        if platform_val.startswith('cray-x') or platform_val.startswith('cross-'):
+        if platform_val.startswith('cray-x') or hostplat_val != platform_val:
             has_aprun = find_executable('aprun')
             has_slurm = find_executable('srun')
             if has_aprun and has_slurm:
                 launcher_val = 'none'
             elif has_aprun:
                 launcher_val = 'aprun'
-            elif has_slurm or platform_val.startswith('cross-'):
+            elif has_slurm or hostplat_val != platform_val:
                 launcher_val = 'slurm-srun'
             else:
                 # FIXME: Need to detect aprun/srun differently. On a cray
