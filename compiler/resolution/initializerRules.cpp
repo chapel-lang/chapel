@@ -124,6 +124,10 @@ Expr* getInitCall(FnSymbol* fn) {
 }
 
 static
+DefExpr* handleField(AggregateType* t, DefExpr* curField, const char* fieldname,
+                     bool **explicitInit, CallExpr* call);
+
+static
 void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
   DefExpr* curField = toDefExpr(t->fields.head);
   // the super field is always first
@@ -132,7 +136,6 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
     seenField[0] = true;
 
   Expr* curExpr = body->body.head;
-  int curIndex = 0;
   while (curExpr != NULL && curExpr != initCall) {
     // Verify that:
     // - fields are initialized in declaration order
@@ -166,52 +169,12 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
               // Could it be . . . a field?  The anticipation is killing me!
               if (VarSymbol* var = toVarSymbol(sym->var)) {
                 if (var->immediate->const_kind == CONST_KIND_STRING) {
-                  DefExpr* next = toDefExpr(curField->next);
-                  bool foundMatch = false;
-                  int nextIdx = curIndex + 1;
-                  while (next) {
-                    if (!strcmp(next->sym->name, var->immediate->v_string)) {
-                      // The name matches a later field than the last we saw
-                      // Moved forward
-
-                      // NOTE: will want to insert initialization of fields we
-                      // passed along the way if this skipped some.
-                      curField = next;
-                      curIndex = nextIdx;
-                      seenField[nextIdx] = true;
-                      foundMatch = true;
-                      break;
-                    } else {
-                      next = toDefExpr(next->next);
-                      nextIdx++;
-                    }
-                  }
-                  if (!foundMatch) {
-                    DefExpr* prev = curField;
-                    nextIdx = curIndex;
-                    while (prev) {
-                      if (!strcmp(prev->sym->name, var->immediate->v_string)) {
-                        if (seenField[nextIdx]) {
-                          USR_FATAL_CONT(call, "multiple initializations of field \"%s\" detected", prev->sym->name);
-                        } else {
-                          USR_FATAL_CONT(call, "field initialization out of order");
-                          USR_PRINT(call, "initialization of fields before .init() call must be in order");
-                        }
-                        foundMatch = true;
-                        break;
-                      } else {
-                        prev = toDefExpr(prev->prev);
-                        nextIdx--;
-                      }
-                    }
-                    if (!foundMatch) {
-                      USR_FATAL_CONT(call, "attempted method call too early during initialization");
-                    }
-                  }
+                  curField = handleField(t, curField, var->immediate->v_string,
+                                         &seenField, call);
                 }
               }
             }
-            // otherwise, we're accessing the field of something else.
+            // otherwise, we're accessing the field or method of something else.
             // Carry on.
           }
         }
@@ -222,4 +185,46 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
   }
 
   free (seenField);
+}
+
+// If the fieldname given is the name of a field after the last seen field in
+// the class type t, then everything is fine.  Otherwise, give an appropriate
+// error message depending on if the field is being initialized out of order,
+// if the field has already been initialized, or if what is being initialized
+// is not a field at all.
+static
+DefExpr* handleField(AggregateType* t, DefExpr* lastSeen, const char* fieldname,
+                     bool **explicitInit, CallExpr* call) {
+  bool passedLastSeen = false;
+  int index = 0;
+  for (DefExpr* fieldDef = toDefExpr(t->fields.head); fieldDef;
+       fieldDef = toDefExpr(fieldDef->next), index++) {
+    if (!passedLastSeen) {
+      if (!strcmp(fieldDef->sym->name, fieldname)) {
+        // We found a field match before the field we most recently saw
+        // initialization for.
+        if ((*explicitInit)[index]) {
+          // There was a previous initialization of this same field
+          USR_FATAL_CONT(call, "multiple initializations of field \"%s\" detected", fieldname);
+        } else {
+          USR_FATAL_CONT(call, "field initialization out of order");
+          USR_PRINT(call, "initialization of fields before .init() call must be in order");
+        }
+        return lastSeen; // exit early due to error case.
+      } else if (!strcmp(fieldDef->sym->name, lastSeen->sym->name)) {
+        // We didn't find a field matching this name yet, but we did just run
+        // into the last field we saw initialized.  If we find a match after
+        // this point, it fulfills the phase 1 order of initialization rules.
+        passedLastSeen = true;
+      }
+    } else {
+      if (!strcmp(fieldDef->sym->name, fieldname)) {
+        (*explicitInit)[index] = true;
+        return fieldDef;
+      }
+    }
+  }
+  // We didn't find the field match.  It is likely a method.
+  USR_FATAL_CONT(call, "attempted method call too early during initialization");
+  return lastSeen;
 }
