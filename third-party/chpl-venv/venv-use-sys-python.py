@@ -66,21 +66,21 @@ def rw_shebangs(root):
                     # read file abs_f and examine the first line
                     lines = fin.readlines()
                     if len(lines) > 0:
-                        line = lines[0]
-                        if re.match(r'#!/.*/bin/python', line):
+                        firstline = lines[0]
+                        if re.match(r'#!/.*/bin/python', firstline):
                             # first line is a shebang that points to python
-                            if not re.match(r'#!/usr/bin/python', line):
+                            if not re.match(r'#!/usr/bin/python', firstline):
                                 # shebang points to some non-standard location, so generate a new shebang
                                 # the new shebang should be #!/usr/bin/python, #!/usr/bin/python2, etc
-                                newline = re.sub(r'^.*/bin/python', '#!/usr/bin/python', line)
-                                lines[0] = newline
+                                new_firstline = re.sub(r'^.*/bin/python', '#!/usr/bin/python', firstline)
+                                lines[0] = new_firstline
                                 rw = True
 
                 if rw:
                     # rewrite the file
                     print('Rewriting shebang for {0}'.format(abs_f))
-                    print(' - from\t{0}'.format(line.rstrip()))
-                    print(' -   to\t{0}'.format(newline.rstrip()))
+                    print(' - from\t{0}'.format(firstline.rstrip()))
+                    print(' -   to\t{0}'.format(new_firstline.rstrip()))
 
                     with open (abs_f, 'w') as fout:
                         for line in lines:
@@ -91,11 +91,15 @@ def rw_shebangs(root):
         sys.exit(2)
 
 
-def main():
-    chpl_venv_install_dir = sys.argv[1]
+def main(argv=None):
+    chpl_venv_install_dir = argv[0]
     rm_python_bins(os.path.join(chpl_venv_install_dir, 'chpl-virtualenv', 'bin'))
     rw_shebangs(chpl_venv_install_dir)
 
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) > 1:
+        main(sys.argv[1:])
+    else:
+        print('error, no argument found')
+        sys.exit(2)
