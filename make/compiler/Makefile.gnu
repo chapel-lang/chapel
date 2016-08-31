@@ -22,8 +22,8 @@
 #
 # Tools
 #
-CXX = g++
-CC = gcc
+CXX = $(CROSS_COMPILER_PREFIX)g++
+CC = $(CROSS_COMPILER_PREFIX)gcc
 
 RANLIB = ranlib
 

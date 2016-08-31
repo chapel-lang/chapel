@@ -68,7 +68,12 @@ else
 CHPL_GASNET_CFG_OPTIONS += --disable-portals
 endif
 else
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),aarch64)
+CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
+CHPL_GASNET_CFG_SCRIPT=cross-configure-aarch64-linux
+else
 CHPL_GASNET_CFG_SCRIPT=configure
+endif
 endif
 endif
 
