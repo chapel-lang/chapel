@@ -79,7 +79,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
       snprintf (fullfilename, MAXPATHLEN, "%s/%s-0", mfilename, mfilename);
   }  else
     snprintf (fullfilename, MAXPATHLEN, "%s", filename);
-  
+
   suffix = strrchr(fullfilename, '-');
   if (!suffix) {
     if (!fromArgv)
@@ -96,7 +96,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
   newList();
   strDB.clear();
   curEvent = theEvents.begin();
-  
+
   FILE *data = fopen(fullfilename, "r");
   if (!data) {
     if (!fromArgv)
@@ -160,7 +160,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
 
   // Debug
   std::list<Event *>::iterator itr;
-    
+
   for (int i = 0; i < nlocales; i++) {
     snprintf (fname, namesize+15, "%.*s%d", namesize, fullfilename, i);
     if (!LoadFile(fname, i, seq)) {
@@ -172,7 +172,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
       return 0;
     }
     // Debug
-    /* 
+    /*
 
     printf ("\nAfter file %s\n", fname);
     itr = theEvents.begin();
@@ -182,9 +182,9 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
     }
     printf ("---------------\n");
     */
-    
+
   }
-  
+
   // Build data structures, taglist: comms/tag
 
   if (tagList != NULL) {
@@ -203,14 +203,13 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
   if (taskTimeline != NULL)
     delete [] taskTimeline;
   taskTimeline = new std::list<std::pair<Tl_Kind,long> >[numLocales];
-  
 
   int cTagNo = TagStart;
   tagData *curTag = tagList[1];
 
   // printf ("number of events %ld\n", (long)theEvents.size());
   // int DebC = 0;
-      
+
   itr = theEvents.begin();
   while (itr != theEvents.end()) {
 
@@ -236,11 +235,11 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
 
       case Ev_start:  // Update both -2 and -1 records (0 and 1)
         sp = (E_start *)ev;
-        tagList[0]->locales[curNodeId].refUserCpu = 
+        tagList[0]->locales[curNodeId].refUserCpu =
             tagList[1]->locales[curNodeId].refUserCpu = sp->user_time();
-        tagList[0]->locales[curNodeId].refSysCpu = 
+        tagList[0]->locales[curNodeId].refSysCpu =
             tagList[1]->locales[curNodeId].refSysCpu = sp->sys_time();
-        tagList[0]->locales[curNodeId].refTime = 
+        tagList[0]->locales[curNodeId].refTime =
             tagList[1]->locales[curNodeId].refTime = sp->clock_time();
         tagList[0]->name = "ALL";
         tagList[1]->name = "Start";
@@ -278,7 +277,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
              	                           curTag->locales[curNodeId].sysCpu;
           curTag->locales[curNodeId].clockTime += gp->clock_time() -
             curTag->locales[curNodeId].refTime;
-          curTag->locales[curNodeId].refTime = 0;   // Reset for 
+          curTag->locales[curNodeId].refTime = 0;   // Reset for
           // Update current tag maxes
           if (curTag->maxCpu < curTag->locales[curNodeId].Cpu) {
             curTag->maxCpu = curTag->locales[curNodeId].Cpu;
@@ -307,7 +306,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
             curTag->locales[curNodeId].sysCpu;
           curTag->locales[curNodeId].clockTime += pp->clock_time() -
             curTag->locales[curNodeId].refTime;
-          curTag->locales[curNodeId].refTime = 0;   // Reset for 
+          curTag->locales[curNodeId].refTime = 0;   // Reset for
           // Update current tag maxes
           if (curTag->maxCpu < curTag->locales[curNodeId].Cpu) {
             curTag->maxCpu = curTag->locales[curNodeId].Cpu;
@@ -339,7 +338,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
             curTag->locales[curNodeId].sysCpu;
           curTag->locales[curNodeId].clockTime += ep->clock_time() -
             curTag->locales[curNodeId].refTime;
-          curTag->locales[curNodeId].refTime = 0;   // Reset for 
+          curTag->locales[curNodeId].refTime = 0;   // Reset for
           // Update current tag maxes
           if (curTag->maxCpu < curTag->locales[curNodeId].Cpu) {
             curTag->maxCpu = curTag->locales[curNodeId].Cpu;
@@ -374,15 +373,17 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
           // For 2nd time through loop, do the same thing for All
           curTag = tagList[0];
         }
-        
+
         // function communication
         {
           taskData *task;
+          long thisId;
           if (cp->isGet()) {
             task = getTaskData (cp->dstId(), cp->inTask(), TagALL);
             if (task) {
-              if (task->taskRec) 
-                funcTbl[task->taskRec->funcId()].noGets++;
+              thisId = task->taskRec->funcId();
+              if (task->taskRec && thisId >= 0 && thisId < funcTblSize)
+                funcTbl[thisId].noGets++;
               else
                 funcTbl[funcTblSize].noGets++;
             } else {
@@ -391,8 +392,9 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
           } else {
             task = getTaskData (cp->srcId(), cp->inTask(), TagALL);
             if (task) {
-              if (task->taskRec)
-                funcTbl[task->taskRec->funcId()].noPuts++;
+              thisId = task->taskRec->funcId();
+              if (task->taskRec && thisId >= 0 && thisId < funcTblSize)
+                funcTbl[thisId].noPuts++;
               else
                 funcTbl[funcTblSize].noPuts++;
             } else {
@@ -414,16 +416,24 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
           // For 2nd time through loop, do the same thing for All
           curTag = tagList[0];
         }
-        
+
         // function event
-        funcTbl[fp->funcId()].func_events.push_back(ev);
-        funcTbl[fp->funcId()].noOnTasks++;
+        {
+          long thisId = fp->funcId();
+          if (thisId >= 0 && thisId < funcTblSize) {
+            funcTbl[thisId].func_events.push_back(ev);
+            funcTbl[thisId].noOnTasks++;
+          } else {
+            fprintf (stderr, "On Call data error, On call for function ID %ld\n.",
+                     thisId);
+          }
+        }
         break;
 
       case Ev_task:
         tp = (E_task *)ev;
         // Insert tag into task map for this locale (No work for global)
-        { 
+        {
           taskData newTask;
           newTask.taskRec = tp;
           std::pair<long,taskData> insPair(tp->taskId(), newTask);
@@ -442,9 +452,16 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
         }
 
         // function event
-        funcTbl[tp->funcId()].func_events.push_back(ev);
-        funcTbl[tp->funcId()].noTasks++;
-
+        {
+          long thisId = tp->funcId();
+          if (thisId >= 0 && thisId < funcTblSize) {
+            funcTbl[thisId].func_events.push_back(ev);
+            funcTbl[thisId].noTasks++;
+          } else {
+            fprintf (stderr, "Task data error, On call for function ID %ld.\n",
+                     thisId);
+          }
+        }
         break;
 
       case Ev_begin_task:
@@ -532,7 +549,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
       if (tagList[0]->locales[ix_l].numTasks > tagList[0]->maxTasks)
         tagList[0]->maxTasks = tagList[0]->locales[ix_l].numTasks;
     }
-  }  
+  }
 
   // Build timeline and set concurrency rates
   // printf ("building timeline ..\n");
@@ -544,7 +561,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
   curTag->maxConc = 1;
 
   // DebC = 0;
-  
+
   while (itr != theEvents.end()) {
     Event *ev = *itr;
     int curNodeId = ev->nodeId();
@@ -557,7 +574,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
     // if ((DebC++ % 10) == 0 ) {printf ("\r%d", DebC); fflush(stdout); }
 
     switch (ev->Ekind()) {
-      default: // Do nothing 
+      default: // Do nothing
         break;
 
       case Ev_tag:
@@ -587,12 +604,12 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
 
       case Ev_begin_task:
         btp = (E_begin_task *)ev;
-        if (curTag->locales[curNodeId].tasks.find(btp->taskId()) != 
+        if (curTag->locales[curNodeId].tasks.find(btp->taskId()) !=
             curTag->locales[curNodeId].tasks.end()) {
           // Found this task in the tag, it should be in the timeline
           taskTimeline[curNodeId].push_back(timelineEntry(Tl_Begin,btp->taskId()));
           curTag->locales[curNodeId].runConc++;
-          if (curTag->locales[curNodeId].runConc > 
+          if (curTag->locales[curNodeId].runConc >
               curTag->locales[curNodeId].maxConc) {
             curTag->locales[curNodeId].maxConc = curTag->locales[curNodeId].runConc;
             if (curTag->locales[curNodeId].maxConc >
@@ -656,7 +673,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
             else
               theTask->commSum.numPuts++;
             theTask->commSum.commSize += cp->dataLen();
-          } else { 
+          } else {
             printf ("per task comms, no task %ld ", (long)cp->inTask());
             cp->print();
             printf ("\n");
@@ -752,7 +769,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
 
   // Debug print the finished function table  (need to add comm size?)
   printf ("\nFunction table information.\n");
-  for (int ix = 0 ; ix < funcTblSize; ix++) 
+  for (int ix = 0 ; ix < funcTblSize; ix++)
     printf ("function '%s', %lu events, %ld tasks, %ld onCalls,"
             " %ld gets, %ld puts, clock %lf, file %s, line %ld\n",
             funcTbl[ix].name, funcTbl[ix].func_events.size(), funcTbl[ix].noTasks,
@@ -760,7 +777,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
             funcTbl[ix].clockTime,
             fileTbl[funcTbl[ix].fileNo].name, funcTbl[ix].lineNo);
 #endif
-  
+
   return 1;
 }
 
@@ -791,7 +808,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
   // Event times
   long e_sec, e_usec;
 
-  // User/System time variables 
+  // User/System time variables
   long u_sec, u_usec, s_sec, s_usec;
   if (sscanf(line,
         "ChplVdebug: ver %d.%d nodes %d nid %d tid %d seq %lf %ld.%ld %ld.%ld %ld.%ld",
@@ -811,9 +828,9 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
     return 0;
   }
 
-  // Task Ids of tasks know to be part of the VisualDebug workings.  
+  // Task Ids of tasks know to be part of the VisualDebug workings.
   int nid0vdbtask = 0;
-  std::set<int> vdbTids;  
+  std::set<int> vdbTids;
   if (findex != 0)
     (void)vdbTids.insert(vdbTid);
 
@@ -856,7 +873,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
     long remAddr;  // remote address
     int eSize;     // element size
     int typeIx;    // type Index
-    int dlen;      // data length 
+    int dlen;      // data length
 
     // fork & task
     int fid;
@@ -874,7 +891,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
     // Process the line
     linedata = strchr(line, ':');
     if (linedata) {
-      if ( (findex == 0) && ( (strstr(line,"Tablesize:") == line) 
+      if ( (findex == 0) && ( (strstr(line,"Tablesize:") == line)
                               || (strstr(line,"fname:") == line)
                               || (strstr(line,"tname:") == line)
                               || (strstr(line,"FID") == line)
@@ -889,14 +906,14 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
             fileTbl = new filename[fileTblSize];
           }
           break;
-          
+
         case 'f':  //  file name ... should only be in file 0
           if (sscanf(linedata, ": %d %511s", &nfileno, tmpname) != 2) {
             printf ("Bad filename record.\n");
           } else {
             assert (0 <= nfileno && nfileno < fileTblSize);
             fileTbl[nfileno].name = strdup(tmpname);
-            fileTbl[nfileno].rel2Home = strstr(tmpname,"$CHPL_HOME/") 
+            fileTbl[nfileno].rel2Home = strstr(tmpname,"$CHPL_HOME/")
                                           == tmpname;
           }
           break;
@@ -931,8 +948,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
             while (linedata[len] == '\n' || linedata[len] == ' ')
               linedata[len] = 0;
             const char *tag = strDB.getString(&linedata[nextCh]);
-            
-            if (tagNames.size() <= tagId) {
+             if (tagNames.size() <= tagId) {
               if (tagNames.size() == 0)
                 tagNames.resize(64);
               else
@@ -941,7 +957,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
             tagNames[tagId] = tag;
           }
           break;
-          
+
         case 'C': // The CHPL_HOME variable at run time
           linedata++;
           while (*linedata == ' ') linedata++;
@@ -951,7 +967,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
           chpl_home = strdup (linedata);
           break;
 
-        case 'D': // The runtime directory ... 
+        case 'D': // The runtime directory ...
           linedata++;
           while (*linedata == ' ') linedata++;
           linelen = strlen(linedata);
@@ -966,7 +982,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
           printf ("Can't read time from '%s'\n", line);
           nErrs++;
           continue;
-        }          
+        }
       }
     } else {
       nErrs++;
@@ -1005,7 +1021,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
           nErrs++;
         } else {
           // On tasks ('O' for the onstr) are not real children of VDebug tasks
-          if (onstr[0] != 'O' && (vdbTids.find(parentId) != vdbTids.end() 
+          if (onstr[0] != 'O' && (vdbTids.find(parentId) != vdbTids.end()
                                   || (nid == 0 && parentId == nid0vdbtask))) {
             // new task (taskid) is also a vdbtask
             (void)vdbTids.insert(taskid);
@@ -1022,7 +1038,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
       case 's':  // strid put or get
       case 'g':  // regular get
       case 'p':  // regular put
-        // All comm data: 
+        // All comm data:
         // s.u nodeID otherNode loc-addr rem-addr elemSize typeIndex len lineno fileToOpen
         if (sscanf (&linedata[nextCh], "%d %d %d 0x%lx 0x%lx %d %d %d %d %d",
                     &nid, &rnid, &taskid, &locAddr, &remAddr, &eSize, & typeIx, &dlen,
@@ -1050,7 +1066,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
 
       case 'f':  // All the forks:
         // s.u nodeID otherNode subloc fid arg arg_size
-        if ((cvt = sscanf (&linedata[nextCh], "%d %d %*d %d 0x%*x %d %d", 
+        if ((cvt = sscanf (&linedata[nextCh], "%d %d %*d %d 0x%*x %d %d",
                            &nid, &rnid, &fid, &dlen, &vdbTid)) != 5) {
           fprintf (stderr, "Bad fork line: (cvt %d) %s\n", cvt, fileToOpen);
           nErrs++;
@@ -1084,7 +1100,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
             != 7) {
           fprintf (stderr, "Bad 'Tag' line: %s\n", fileToOpen);
         } else {
-          newEvent = new E_tag(sec, usec, nid, u_sec, u_usec, s_sec, s_usec, tagId, 
+          newEvent = new E_tag(sec, usec, nid, u_sec, u_usec, s_sec, s_usec, tagId,
                                tagNames[tagId], vdbTid);
           if (tagId >= numTags)
             numTags = tagId+1;
@@ -1132,7 +1148,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
           }
         }
         break;
-      
+
       default:
         /* Do nothing */ ;
     }
@@ -1220,7 +1236,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
         default:
           break;
       }
-      if (doErase) 
+      if (doErase)
         itr = theEvents.erase(itr);
       else
         itr++;
@@ -1237,7 +1253,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
   //  }
 
   if ( !feof(data) ) return 0;
-  
+
   return 1;
 }
 
@@ -1265,6 +1281,6 @@ taskData * DataModel::getTaskData (long locale, long taskId, long tagNo)
       return &(tskItr->second);
     curTag++;
   }
-  
+
   return NULL;
 }

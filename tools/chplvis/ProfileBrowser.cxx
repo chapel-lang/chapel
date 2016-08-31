@@ -154,7 +154,7 @@ void ProfileBrowser::prepareData(whichData what)
 
   // Header line
   snprintf (line, sizeof(line),
-      "@B10\t@r@b@m@B10%s\t@b@m@B10InternalFunction Name\t@b@m@B10File:line",
+      "@B10\t@r@b@m@B10%s\t@b@m@B10Internal Function Name\t@b@m@B10File:line",
       dataName);
   add(line);
 
