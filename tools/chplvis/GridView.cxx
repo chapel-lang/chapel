@@ -352,6 +352,7 @@ int GridView::handle(int event)
             fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");
           } else {
             if (Fl::event_button() == FL_MIDDLE_MOUSE) {
+#if 0              
               if (theLocales[loc1].ccwin == NULL) {
                 // Create the window
                 theLocales[loc1].ccwin = make_concurrency_window(loc1, curTagNum);
@@ -363,7 +364,8 @@ int GridView::handle(int event)
                 theLocales[loc1].ccwin->hide();
               else
                 theLocales[loc1].ccwin->show();
-              
+#endif
+              return 1; // disable extra window mode
             } else {
               // Show the concurrency view.
               DataField->selectChild(concView);
@@ -372,6 +374,7 @@ int GridView::handle(int event)
           }
         } else {
           if (Fl::event_button() == FL_MIDDLE_MOUSE){
+#if 0            
             //printf ("Making locale window.\n");
             if (theLocales[loc1].win == NULL) {
               // Create the window
@@ -383,6 +386,8 @@ int GridView::handle(int event)
               theLocales[loc1].win->hide();
             else
               theLocales[loc1].win->show();
+#endif
+            return 0; // disable window mode
           } else {
             // Left mouse, place it on the info bar.
             LocCommBox *infoBox;
@@ -404,6 +409,7 @@ int GridView::handle(int event)
             fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");
           } else {
             if (Fl::event_button() == FL_MIDDLE_MOUSE) {
+#if 0              
               if (theLocales[loc1].ccwin == NULL) {
                 // Create the window
                 theLocales[loc1].ccwin = make_concurrency_window(loc1, curTagNum);
@@ -415,7 +421,8 @@ int GridView::handle(int event)
                 theLocales[loc1].ccwin->hide();
               else
                 theLocales[loc1].ccwin->show();
-              
+#endif
+              return 1;  // disable extra window mode
             } else {
               // Show the concurrency view.
               DataField->selectChild(concView);
@@ -424,6 +431,7 @@ int GridView::handle(int event)
           }
         } else {
           if (Fl::event_button() == FL_MIDDLE_MOUSE){
+#if 0              
             printf ("Making locale window.\n");
             if (theLocales[loc1].win == NULL) {
               // Create the window
@@ -435,6 +443,8 @@ int GridView::handle(int event)
               theLocales[loc1].win->hide();
             else
               theLocales[loc1].win->show();
+#endif
+            return 0; // Disable LC windows
           } else {
             // Left mouse, place it on the info bar.
             LocCommBox *infoBox;
@@ -454,7 +464,8 @@ int GridView::handle(int event)
         loc2 = x/boxSize;
         if (loc1 < numlocales && loc2 < numlocales && loc1 != loc2 ) {
           // printf ("Comm, %d,%d\n", loc1, loc2);
-          if (Fl::event_button() == FL_MIDDLE_MOUSE){
+          if (Fl::event_button() == FL_MIDDLE_MOUSE) {
+#if 0            
             //printf ("Should create a comm win.\n");
             if (comms[loc1][loc2].win == NULL) {
               comms[loc1][loc2].win = make_LC_window(loc1, loc2,
@@ -467,6 +478,8 @@ int GridView::handle(int event)
               comms[loc1][loc2].win->hide();
             else
               comms[loc1][loc2].win->show();
+#endif
+            return 0;  // disabled LC windows
           } else {
             // printf ("New LocCommBox for comm...\n");
             LocCommBox *infoBox;

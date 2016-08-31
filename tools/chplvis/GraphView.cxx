@@ -419,6 +419,7 @@ int GraphView::handle(int event)
               fl_alert("Concurrency view available only for tag 'ALL' in merged tag mode.");
             } else {
               if (Fl::event_button() == FL_MIDDLE_MOUSE) {
+#if 0                
                 if (theLocales[ix].ccwin == NULL) {
                   // Create the window
                   theLocales[ix].ccwin = make_concurrency_window(ix, curTagNum);
@@ -430,7 +431,8 @@ int GraphView::handle(int event)
                   theLocales[ix].ccwin->hide();
                 else
                   theLocales[ix].ccwin->show();
-                
+#endif
+                return 1; // diable extra windows
               } else {
                 // Show the concurrency view.
                 DataField->selectChild(concView);
@@ -439,7 +441,8 @@ int GraphView::handle(int event)
             }
           } else {
             if (Fl::event_button() == FL_MIDDLE_MOUSE){
-              printf ("Making locale window.\n");
+#if 0              
+              // printf ("Making locale window.\n");
               if (theLocales[ix].win == NULL) {
                 // Create the window
                 theLocales[ix].win = make_LC_window(ix, &curTagData->locales[ix]);
@@ -450,6 +453,8 @@ int GraphView::handle(int event)
                 theLocales[ix].win->hide();
               else
                 theLocales[ix].win->show();
+#endif
+              return 0; // Disable LC window stuff 
             } else {
               // Left mouse, place it on the info bar.
               LocCommBox *infoBox;
@@ -481,6 +486,7 @@ int GraphView::handle(int event)
               int t = j; j = i; i = t;
             }
             if (Fl::event_button() == FL_MIDDLE_MOUSE){
+#if 0              
               //printf ("Should create a comm win.\n");
               if (comms[i][j].win == NULL) {
                 comms[i][j].win = make_LC_window(i, j, &curTagData->comms[i][j]);
@@ -491,6 +497,8 @@ int GraphView::handle(int event)
                 comms[i][j].win->hide();
               else
                 comms[i][j].win->show();
+#endif
+              return 0;  // Disable LC windows
             } else {
               // printf ("New LocCommBox for comm...\n");
               LocCommBox *infoBox;
