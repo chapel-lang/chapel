@@ -12,7 +12,7 @@ ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_MASSIVETHREADS_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
 endif
 ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
-CHPL_MASSIVETHREADS_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknonw-linux-gnu
+CHPL_MASSIVETHREADS_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
 endif
 
 CHPL_MASSIVETHREADS_CFG_OPTIONS += --enable-malloc-wrapper=no \

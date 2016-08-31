@@ -38,7 +38,7 @@ def get(flag='host'):
             if subcompiler == 'none':
                 stderr.write("Warning: Compiling on {0} without a PrgEnv loaded\n".format(platform_val))
             compiler_val = "cray-prgenv-{0}".format(subcompiler.lower())
-    elif chpl_platform.get('host') != chpl_platform.get('target'):
+    elif chpl_platform.is_cross_compiling():
         if flag == 'host':
             compiler_val = 'gnu'
         else:
