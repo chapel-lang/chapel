@@ -3007,6 +3007,12 @@ printResolutionErrorUnresolved(
       INT_ASSERT(mod);
       str = astr(mod->name, ".", str);
     }
+    if(info->actuals.n > 1 && ((info->actuals.v[0]->getValType()) == dtMethodToken)){
+      EnumType* typeE = toEnumType(info->actuals.v[1]->getValType());
+      if (typeE != NULL) {
+        entity = "enumerated type symbol or call";
+      }
+    }
     USR_FATAL_CONT(call, "unresolved %s '%s'", entity, str);
     if (visibleFns.n > 0) {
       if (developer) {

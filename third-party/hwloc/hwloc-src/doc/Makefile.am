@@ -1,6 +1,6 @@
 # Copyright © 2009-2016 Inria.  All rights reserved.
 # Copyright © 2009-2013 Université Bordeaux
-# Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
+# Copyright © 2009-2016 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
 
 AM_CPPFLAGS = $(HWLOC_CPPFLAGS)
@@ -194,8 +194,23 @@ doc: $(DOX_TAG) $(DOX_LETTERPDF) $(DOX_A4PDF)
 
 else !HWLOC_BUILD_DOXYGEN
 
-# When we don't have doxygen, nothing to do
+# When we don't have doxygen, nothing to do for a normal build
 doc:
+
+if !HWLOC_INSTALL_DOXYGEN
+# But if the user tries to "make dist" and doesn't have all the right
+# tools, and prebuilt doc aren't available, fail with a helpful error
+$(BUILT_IMAGES) $(DOX_A4PDF) $(DOX_LETTERPDF):
+	@echo " "
+	@echo "*** ERROR: You do not have all the documentation generation tools"
+	@echo "*** that hwloc needs.  Check the output from when you ran 'configure'"
+	@echo "*** (in section \"Configuring hwloc documentation\") to see what tools"
+	@echo "*** you are missing."
+	@echo "***"
+	@echo "*** 'make' will now abort with an error."
+	@echo " "
+	@exit 1
+endif !HWLOC_INSTALL_DOXYGEN
 
 endif !HWLOC_BUILD_DOXYGEN
 # there are also a bunch of doxygen-build-dependencies later in this file

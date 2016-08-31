@@ -282,9 +282,9 @@ bool Expr::inTree() {
 }
 
 
-Type* Expr::typeInfo() {
-  INT_FATAL(this, "Illegal call to Expr::typeInfo()");
-  return NULL;
+QualifiedType Expr::qualType() {
+  INT_FATAL(this, "Illegal call to Expr::qualType()");
+  return QualifiedType(NULL);
 }
 
 bool Expr::isNoInitExpr() const {
@@ -501,11 +501,11 @@ SymExpr* SymExpr::copyInner(SymbolMap* map) {
   return new SymExpr(var);
 }
 
-Type* SymExpr::typeInfo(void) {
+QualifiedType SymExpr::qualType(void) {
   if (toFnSymbol(var)) {
-    return dtCFnPtr;
+    return QualifiedType(dtCFnPtr);
   } else {
-    return var->type;
+    return var->qualType();
   }
 }
 
@@ -607,8 +607,8 @@ UnresolvedSymExpr::copyInner(SymbolMap* map) {
 }
 
 
-Type* UnresolvedSymExpr::typeInfo(void) {
-  return dtUnknown;
+QualifiedType UnresolvedSymExpr::qualType(void) {
+  return QualifiedType(dtUnknown);
 }
 
 
@@ -717,9 +717,9 @@ void DefExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 
-Type* DefExpr::typeInfo(void) {
-  INT_FATAL(this, "Illegal call to DefExpr::typeInfo()");
-  return NULL;
+QualifiedType DefExpr::qualType(void) {
+  INT_FATAL(this, "Illegal call to DefExpr::qualType()");
+  return QualifiedType(NULL);
 }
 
 
@@ -3190,7 +3190,30 @@ GenRet codegenCast(Type* t, GenRet value, bool Cparens)
   ret.isLVPtr = value.isLVPtr;
 
   // If we are casting to bool, set it to != 0.
-  if( is_bool_type(t) ) return codegenNotEquals(value, codegenZero());
+  if( is_bool_type(t) ) {
+    // NOTE: We have to limit this special treatment for bool cast to
+    // --no-llvm compilations. LLVM bool operations return single bit
+    // integers whereas bool type is 8-bits. So we still need explicit
+    // cast. Engin
+    if(info->cfile) {
+      return codegenNotEquals(value, codegenZero());
+    }
+    else {
+#ifdef HAVE_LLVM
+      llvm::Type* castType = t->codegen().type;
+
+      llvm::IntegerType* castTypeInt =
+        llvm::dyn_cast<llvm::IntegerType>(castType);
+
+      llvm::IntegerType* valueTypeInt =
+        llvm::dyn_cast<llvm::IntegerType>(value.val->getType());
+
+      if(castTypeInt->getBitWidth() < valueTypeInt->getBitWidth()) {
+        return codegenNotEquals(value, codegenZero());
+      }
+#endif
+    }
+  }
 
   // if we are casting a C99 wide pointer, parens around the value
   // will result in an error, hence the Cparens parameter
@@ -3869,15 +3892,15 @@ FnSymbol* CallExpr::findFnSymbol(void) {
 }
 
 
-Type* CallExpr::typeInfo(void) {
+QualifiedType CallExpr::qualType(void) {
   if (primitive)
     return primitive->returnInfo(this);
 
   else if (isResolved())
-    return isResolved()->retType;
+    return QualifiedType(isResolved()->retType);
 
   else
-    return dtUnknown;
+    return QualifiedType(dtUnknown);
 }
 
 void CallExpr::prettyPrint(std::ostream *o) {
@@ -4399,6 +4422,7 @@ GenRet CallExpr::codegenPrimitive() {
         ret.c = "return " + ret.c;
       } else {
 #ifdef HAVE_LLVM
+        ret = codegenCast(ret.chplType, codegenValue(get(1)));
         ret.val = gGenInfo->builder->CreateRet(ret.val);
 #endif
       }
@@ -5496,7 +5520,7 @@ GenRet CallExpr::codegenPrimitive() {
 
       // C standard promotes small ints to full int when they are involved in
       // arithmetic operations. When we don't denormalize the AST, small integer
-      // arithemtic is always assigned to a temporary of the suitable size,
+      // arithmetic is always assigned to a temporary of the suitable size,
       // which truncates the integer appropriately. OTOH, if we denormalize the
       // AST then we have to make sure that are cast to appropriate size.
       //
@@ -6395,11 +6419,11 @@ void ContextCallExpr::accept(AstVisitor* visitor) {
   }
 }
 
-Type* ContextCallExpr::typeInfo() {
+QualifiedType ContextCallExpr::qualType() {
   CallExpr* mainCall = getDesignatedCall(this);
   if (mainCall)
-    return mainCall->typeInfo();
-  return dtUnknown;
+    return mainCall->qualType();
+  return QualifiedType(dtUnknown);
 }
 
 GenRet ContextCallExpr::codegen() {
@@ -6497,8 +6521,8 @@ void NamedExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 
-Type* NamedExpr::typeInfo(void) {
-  return actual->typeInfo();
+QualifiedType NamedExpr::qualType(void) {
+  return actual->qualType();
 }
 
 

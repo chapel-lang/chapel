@@ -329,7 +329,45 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
 #ifdef HAVE_LLVM
     if (!isHeader)
       return;
-    // Need to add code similar to genFtable
+
+    // Types neede by this code
+    llvm::StructType *structType = (llvm::StructType *)info->lvt->getType("chpl_fn_info");
+
+    llvm::Type *c_stringType =
+        llvm::IntegerType::getInt8PtrTy(info->module->getContext());
+
+    llvm::Type *int32Ty = llvm::IntegerType::getInt32Ty(info->module->getContext());
+
+    std::vector<llvm::Constant *> table ((fSymbols.size() == 0) ? 1 : fSymbols.size()+1);
+
+    int fID = 0;
+    llvm::Constant* fields[3];
+    forv_Vec(FnSymbol, fn, fSymbols) {
+      fields[0] = llvm::cast<llvm::GlobalVariable>
+        (new_CStringSymbol(fn->cname)->codegen().val)->getInitializer();
+      fields[1] = llvm::ConstantInt::get(int32Ty,
+                                         getFilenameLookupPosition(fn->astloc.filename));
+      fields[2] = llvm::ConstantInt::get(int32Ty, fn->astloc.lineno);
+      table[fID++] = llvm::ConstantStruct::get(structType, fields);
+    }
+    fields[0] = llvm::Constant::getNullValue(c_stringType);
+    fields[1] = llvm::ConstantInt::get(int32Ty, 0);
+    fields[2] = llvm::ConstantInt::get(int32Ty, 0);
+    table[fID] = llvm::ConstantStruct::get(structType, fields);
+
+    llvm::ArrayType *tableType =
+      llvm::ArrayType::get(structType, table.size());
+
+    if(llvm::GlobalVariable *ftable =
+        info->module->getNamedGlobal(finfo_name)) {
+      ftable->eraseFromParent();
+    }
+
+    llvm::GlobalVariable *ftable = llvm::cast<llvm::GlobalVariable>(
+        info->module->getOrInsertGlobal(finfo_name, tableType));
+    ftable->setInitializer(llvm::ConstantArray::get(tableType, table));
+    ftable->setConstant(true);
+    info->lvt->addGlobalValue(finfo_name, ftable, GEN_PTR, true);
 #endif
   }
 }
