@@ -357,8 +357,8 @@ proc Replicated1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTas
   : dsiMyDensifiedRangeType1d(globDD)
 {
   type IT = globDD.idxType;
-  const (startIx, endIx) = chunkOrder(locWholeR, numTasks, taskid + 1);
-  return (startIx:IT - 1) .. (endIx:IT - 1);
+  const (startIx, endIx) = chunkOrder(locWholeR, numTasks:IT, taskid:IT + 1);
+  return (startIx:IT) .. (endIx:IT);
 }
 
 // REQ the range type returned/yielded by dsiMyDensifiedRangeForSingleTask1d()

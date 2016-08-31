@@ -47,6 +47,7 @@ iter chunksOrder(
 
   var div = nElems / nChunks;
   var rem = nElems % nChunks;
+   
   for i in 1..nChunks {
     yield if remPol == Dist
       then chunkOrderDist(div, rem, nElems, nChunks, i)
@@ -103,7 +104,7 @@ private proc chunkOrderDist(
   } else {
     // (div) elements per chunk
     start = nElems - (nChunks - i + 1) * div;
-    end = start + div;
+    end = start + div - 1;
   }
   return (start, end);
 }
