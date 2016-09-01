@@ -11,6 +11,9 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_HWLOC_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
 endif
+ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_HWLOC_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
+endif
 
 #
 # Something with ffsl is broken with cce >= 8.4.0 (and older

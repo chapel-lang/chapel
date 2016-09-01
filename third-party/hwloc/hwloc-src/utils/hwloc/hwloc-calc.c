@@ -471,7 +471,15 @@ int main(int argc, char *argv[])
       /* keep reading until we get EOL */
       tmpline = line;
       while (!strchr(tmpline, '\n')) {
-	line = realloc(line, len*2);
+	char *tmp;
+	tmp = realloc(line, len*2);
+	if (!tmp) {
+	  /* failed to allocate, ignore that line */
+	  fprintf(stderr, "Failed to allocate line buffer, line ignored.\n");
+	  free(line);
+	  goto out;
+	}
+	line = tmp;
 	tmpline = line + len-1;
 	if (!fgets(tmpline, (int)(len+1), stdin))
 	  break;

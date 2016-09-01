@@ -17,6 +17,23 @@ bug fixes (and other actions) for each version of hwloc since version
 in v0.9.1).
 
 
+Version 1.11.4
+--------------
+* Add MemoryMode and ClusterMode attributes in the Machine object on KNL.
+  Add doc/examples/get-knl-modes.c for an example of retrieving them.
+  Thanks to Grzegorz Andrejczuk.
+* Fix Linux build with -m32 with respect to libudev.
+  Thanks to Paul Hargrove for reporting the issue.
+* Fix build with Visual Studio 2015, thanks to Eloi Gaudry for reporting
+  the issue and providing the patch.
+* Don't forget to display OS device children in the graphical lstopo.
+* Fix a memory leak on Solaris, thanks to Bryon Gloden for the patch.
+* Properly handle realloc() failures, thanks to Bryon Gloden for reporting
+  the issue.
+* Fix lstopo crash in ascii/fig/windows outputs when some objects have a
+  lstopoStyle info attribute.
+
+
 Version 1.11.3
 --------------
 * Bug fixes

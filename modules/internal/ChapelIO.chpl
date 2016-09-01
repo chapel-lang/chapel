@@ -207,26 +207,6 @@ module ChapelIO {
     param dummy = readerDeprecated();
   }
 
-  // This routine is called in DefaultRectangular in order
-  // to report an out of bounds access for a halt. A normal
-  // call to halt with a tuple can't be made because of module
-  // order issues.
-  pragma "no doc"
-  proc _stringify_index(tup:?t) where isTuple(t)
-  {
-    var str = "(";
-
-    for param i in 1..tup.size {
-      if i != 1 then str += ", ";
-      str += tup[i]:string;
-    }
-
-   str += ")";
-
-    return str;
-
-  }
-
   use IO;
 
     private
@@ -767,36 +747,4 @@ module ChapelIO {
   proc ref string.write(args ...?n) {
     compilerError("string.write deprecated: use string.format or stringify");
   }
-
-  //
-  // When this flag is used during compilation, calls to chpl__testPar
-  // will output a message to indicate that a portion of the code has been
-  // parallelized.
-  //
-  pragma "no doc"
-  config param chpl__testParFlag = false;
-  pragma "no doc"
-  var chpl__testParOn = false;
-  
-  pragma "no doc"
-  proc chpl__testParStart() {
-    chpl__testParOn = true;
-  }
-  
-  pragma "no doc"
-  proc chpl__testParStop() {
-    chpl__testParOn = false;
-  }
-  
-  pragma "no doc"
-  proc chpl__testPar(args...) {
-    if chpl__testParFlag && chpl__testParOn {
-      const file_cs : c_string = __primitive("chpl_lookupFilename",
-                                        __primitive("_get_user_file"));
-      const file = file_cs:string;
-      const line = __primitive("_get_user_line");
-      writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
-    }
-  }
-
 }

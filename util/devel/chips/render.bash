@@ -6,13 +6,15 @@ if [ -z "$CHPL_HOME" ] ; then
 fi
 
 PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py`
+python_version_dir=py`$CHPL_HOME/util/chplenv/chpl_python_version.py`
+
 mkdir -p tmp
 cp -r $CHPL_HOME/third-party/chpl-venv/chpldoc-sphinx-project/* tmp
 
 rm tmp/source/modules/*.rst
 cp *.rst tmp/source/modules
 
-export PATH=$CHPL_HOME/third-party/chpl-venv/install/$PLATFORM/chpl-virtualenv/bin:$PATH && export VIRTUAL_ENV=$CHPL_HOME/third-party/chpl-venv/install/$PLATFORM/chpl-virtualenv && export CHPLDOC_AUTHOR='' && $CHPL_HOME/third-party/chpl-venv/install/$PLATFORM/chpl-virtualenv/bin/sphinx-build -b html -d tmp/build/doctrees -W tmp/source ./html
+export PATH=$CHPL_HOME/third-party/chpl-venv/install/$PLATFORM/$python_version_dir/chpl-virtualenv/bin:$PATH && export VIRTUAL_ENV=$CHPL_HOME/third-party/chpl-venv/install/$PLATFORM/$python_version_dir/chpl-virtualenv && export CHPLDOC_AUTHOR='' && $CHPL_HOME/third-party/chpl-venv/install/$PLATFORM/$python_version_dir/chpl-virtualenv/bin/sphinx-build -b html -d tmp/build/doctrees -W tmp/source ./html
 
 echo point your web browser to html/index.html
 echo open html/index.html \# on a mac

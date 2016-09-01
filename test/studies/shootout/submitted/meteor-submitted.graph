@@ -1,0 +1,5 @@
+perfkeys: real, real, real, real
+graphkeys: release, submitted, fast-release, fast-submitted
+files: meteor-release.dat, meteor-submited.dat, meteor-fast-release.dat, meteor-fast-submitted.dat
+graphtitle: Submitted Meteor Shootout Benchmark
+ylabel: Time (seconds)

@@ -91,8 +91,7 @@
    0 if you don't. */
 #undef HAVE_DECL_PTHREAD_SETAFFINITY_NP
 
-/* Define to 1 if you have the declaration of `RUNNING_ON_VALGRIND', and to 0
-   if you don't. */
+/* Embedded mode; just assume we do not have Valgrind support */
 #undef HAVE_DECL_RUNNING_ON_VALGRIND
 
 /* Define to 1 if you have the declaration of `snprintf', and to 0 if you
@@ -517,6 +516,9 @@
 
 /* Define to 1 if you have a library providing the termcap interface */
 #undef HWLOC_HAVE_LIBTERMCAP
+
+/* Define to 1 if you have libudev. */
+#undef HWLOC_HAVE_LIBUDEV
 
 /* Define to 1 if you have the `libxml2' library. */
 #undef HWLOC_HAVE_LIBXML2
