@@ -161,7 +161,6 @@ chpl_bool c_string_to_chpl_bool(c_string str, int lineno, int32_t filename) {
     }                                                                   \
     if (numitems == 1) {                                                \
       if (numbytes == strlen(str)) {                                    \
-        /* for negatives, sscanf works, but we wouldn't want chapel to */ \
         *invalid = 0;                                                   \
         *invalidCh = '\0';                                              \
       } else {                                                          \
