@@ -154,16 +154,17 @@ bool SubView::ShowTaskComm (taskData *task)
       break;
     case Ev_comm:
       cp = (E_comm *) *itr;
+      fName = VisData.fileName(cp->srcFile());
       if (cp->isGet()) 
         snprintf (tmpText, sizeof(tmpText),
                   "[%f] Get from %d, total size %d, file %s:%ld\n",
                   cp->clock_time() - startTime, cp->srcId(), cp->totalLen(), 
-                  VisData.fileName(cp->srcFile()), cp->srcLine());
+                  (fName[0] == '$' ? &fName[11] : fName), cp->srcLine());
       else
         snprintf (tmpText, sizeof(tmpText),
                   "[%f] Put to %d, total size %d, file %s:%ld\n",
                   cp->clock_time() - startTime, cp->dstId(), cp->totalLen(),
-                  VisData.fileName(cp->srcFile()), cp->srcLine());
+                  (fName[0] == '$' ? &fName[11] : fName), cp->srcLine());
       theList->add(tmpText);
       break;
     default: // Do nothing
