@@ -99,10 +99,7 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, Gen
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5);
 
 static GenRet codegenZero();
-//static GenRet codegenOne();
 static GenRet codegenNullPointer();
-
-static GenRet codegenFieldPtr(GenRet base, const char* field);
 static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
@@ -1559,15 +1556,6 @@ GenRet codegenFieldPtr(GenRet base, Expr* field) {
   } else {
     INT_FATAL("Unknown field in codegenFieldPtr");
   }
-  return codegenFieldPtr(base, cname, name, field_normal);
-}
-
-static
-GenRet codegenFieldPtr(GenRet base, const char* field) {
-  const char* cname = NULL;
-  const char* name = NULL;
-  cname = field;
-  name = field;
   return codegenFieldPtr(base, cname, name, field_normal);
 }
 
