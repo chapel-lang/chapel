@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -99,14 +99,6 @@ enum PrimitiveTag {
 
   PRIM_LOCAL_CHECK,         // assert that a wide ref is on this locale
 
-  PRIM_SYNC_INIT,
-  PRIM_SYNC_DESTROY,
-  PRIM_SYNC_LOCK,
-  PRIM_SYNC_UNLOCK,
-  PRIM_SYNC_WAIT_FULL,
-  PRIM_SYNC_WAIT_EMPTY,
-  PRIM_SYNC_SIGNAL_FULL,
-  PRIM_SYNC_SIGNAL_EMPTY,
   PRIM_SINGLE_INIT,
   PRIM_SINGLE_DESTROY,
   PRIM_SINGLE_LOCK,
@@ -120,7 +112,6 @@ enum PrimitiveTag {
   PRIM_READFE,
   PRIM_READFF,
   PRIM_READXX,
-  PRIM_SYNC_IS_FULL,
   PRIM_SINGLE_WRITEEF,
   PRIM_SINGLE_READFF,
   PRIM_SINGLE_READXX,

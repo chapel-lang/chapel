@@ -5010,50 +5010,6 @@ GenRet CallExpr::codegenPrimitive() {
     break;
   }
 
-  case PRIM_SYNC_INIT:
-    codegenCall("chpl_sync_initAux",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SYNC_DESTROY:
-    codegenCall("chpl_sync_destroyAux",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SYNC_LOCK:
-    codegenCall("chpl_sync_lock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SYNC_UNLOCK:
-    codegenCall("chpl_sync_unlock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SYNC_WAIT_FULL:
-    codegenCall("chpl_sync_waitFullAndLock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")),
-                get(2),
-                get(3));
-    break;
-
-  case PRIM_SYNC_WAIT_EMPTY:
-    codegenCall("chpl_sync_waitEmptyAndLock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")),
-                get(2),
-                get(3));
-    break;
-
-  case PRIM_SYNC_SIGNAL_FULL:
-    codegenCall("chpl_sync_markAndSignalFull",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SYNC_SIGNAL_EMPTY:
-    codegenCall("chpl_sync_markAndSignalEmpty",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
   case PRIM_SINGLE_INIT:
     codegenCall("chpl_single_initAux",
                 codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
@@ -5135,17 +5091,6 @@ GenRet CallExpr::codegenPrimitive() {
       s = get(1);
 
     ret = codegenCallExpr(fn, s);
-
-    break;
-  }
-
-  case PRIM_SYNC_IS_FULL: {
-    // get(1) is sync var get(2) is isSimpleSyncBaseType( arg )
-    GenRet s      = get(1);
-    GenRet valPtr = codegenLocalAddrOf(codegenFieldPtr(s, "value"));
-    GenRet aux    = codegenLocalAddrOf(codegenFieldPtr(s, "sync_aux"));
-
-    ret = codegenCallExpr("chpl_sync_isFull", valPtr, aux);
 
     break;
   }

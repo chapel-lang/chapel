@@ -234,14 +234,6 @@ classifyPrimitive(CallExpr *call) {
     // Shouldn't this be return FAST_NOT_LOCAL ?
     return NOT_FAST_NOT_LOCAL;
 
-  case PRIM_SYNC_INIT: // Maybe fast?
-  case PRIM_SYNC_DESTROY: // Maybe fast?
-  case PRIM_SYNC_LOCK:
-  case PRIM_SYNC_UNLOCK:
-  case PRIM_SYNC_WAIT_FULL:
-  case PRIM_SYNC_WAIT_EMPTY:
-  case PRIM_SYNC_SIGNAL_FULL:
-  case PRIM_SYNC_SIGNAL_EMPTY:
   case PRIM_SINGLE_INIT: // Maybe fast?
   case PRIM_SINGLE_DESTROY: // Maybe fast?
   case PRIM_SINGLE_LOCK:
@@ -255,7 +247,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_READFE:
   case PRIM_READFF:
   case PRIM_READXX:
-  case PRIM_SYNC_IS_FULL:
   case PRIM_SINGLE_WRITEEF:
   case PRIM_SINGLE_READFF:
   case PRIM_SINGLE_READXX:

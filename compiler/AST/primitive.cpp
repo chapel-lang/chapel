@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -470,14 +470,6 @@ initPrimitive() {
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
 
   // operations on sync/single vars
-  prim_def(PRIM_SYNC_INIT, "sync_init", returnInfoVoid, true);
-  prim_def(PRIM_SYNC_DESTROY, "sync_destroy", returnInfoVoid, true);
-  prim_def(PRIM_SYNC_LOCK, "sync_lock", returnInfoVoid, true);
-  prim_def(PRIM_SYNC_UNLOCK, "sync_unlock", returnInfoVoid, true);
-  prim_def(PRIM_SYNC_WAIT_FULL, "sync_wait_full_and_lock", returnInfoVoid, true, true);
-  prim_def(PRIM_SYNC_WAIT_EMPTY, "sync_wait_empty_and_lock", returnInfoVoid, true, true);
-  prim_def(PRIM_SYNC_SIGNAL_FULL, "sync_mark_and_signal_full", returnInfoVoid, true);
-  prim_def(PRIM_SYNC_SIGNAL_EMPTY, "sync_mark_and_signal_empty", returnInfoVoid, true);
   prim_def(PRIM_SINGLE_INIT, "single_init", returnInfoVoid, true);
   prim_def(PRIM_SINGLE_DESTROY, "single_destroy", returnInfoVoid, true);
   prim_def(PRIM_SINGLE_LOCK, "single_lock", returnInfoVoid, true);
@@ -492,7 +484,6 @@ initPrimitive() {
   prim_def(PRIM_READFE, "read_FE", returnInfoFirst, true);
   prim_def(PRIM_READFF, "read_FF", returnInfoFirst, true);
   prim_def(PRIM_READXX, "read_XX", returnInfoFirst, true);
-  prim_def(PRIM_SYNC_IS_FULL, "sync_is_full", returnInfoBool, true);
   prim_def(PRIM_SINGLE_WRITEEF, "single_write_EF", returnInfoVoid, true);
   prim_def(PRIM_SINGLE_READFF, "single_read_FF", returnInfoFirst, true);
   prim_def(PRIM_SINGLE_READXX, "single_read_XX", returnInfoFirst, true);
@@ -612,7 +603,7 @@ initPrimitive() {
 
   prim_def(PRIM_NEW_PRIV_CLASS, "chpl_newPrivatizedClass", returnInfoVoid, true);
   prim_def(PRIM_GET_PRIV_CLASS, "chpl_getPrivatizedClass",  returnInfoFirst);
-  
+
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoDefaultInt, true, true);
   prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoInt32, true, true);
 
@@ -635,7 +626,7 @@ initPrimitive() {
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
   prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);
-  
+
   prim_def(PRIM_IS_POD, "is pod type", returnInfoBool);
 
   // This primitive allows normalize to request function resolution

@@ -7207,13 +7207,6 @@ postFold(Expr* expr) {
     } else if (call->isPrimitive(PRIM_RSH)) {
       FOLD_CALL2(P_prim_rsh);
     } else if (call->isPrimitive(PRIM_ARRAY_ALLOC) ||
-               call->isPrimitive(PRIM_SYNC_INIT) ||
-               call->isPrimitive(PRIM_SYNC_LOCK) ||
-               call->isPrimitive(PRIM_SYNC_UNLOCK) ||
-               call->isPrimitive(PRIM_SYNC_WAIT_FULL) ||
-               call->isPrimitive(PRIM_SYNC_WAIT_EMPTY) ||
-               call->isPrimitive(PRIM_SYNC_SIGNAL_FULL) ||
-               call->isPrimitive(PRIM_SYNC_SIGNAL_EMPTY) ||
                call->isPrimitive(PRIM_SINGLE_INIT) ||
                call->isPrimitive(PRIM_SINGLE_LOCK) ||
                call->isPrimitive(PRIM_SINGLE_UNLOCK) ||
@@ -7225,7 +7218,6 @@ postFold(Expr* expr) {
                call->isPrimitive(PRIM_READFF) ||
                call->isPrimitive(PRIM_READFE) ||
                call->isPrimitive(PRIM_READXX) ||
-               call->isPrimitive(PRIM_SYNC_IS_FULL) ||
                call->isPrimitive(PRIM_SINGLE_WRITEEF) ||
                call->isPrimitive(PRIM_SINGLE_READFF) ||
                call->isPrimitive(PRIM_SINGLE_READXX) ||
