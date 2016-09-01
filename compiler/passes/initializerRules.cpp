@@ -205,10 +205,10 @@ DefExpr* handleField(AggregateType* t, DefExpr* lastSeen, const char* fieldname,
         // initialization for.
         if ((*explicitInit)[index]) {
           // There was a previous initialization of this same field
-          USR_FATAL_CONT(call, "multiple initializations of field \"%s\" detected", fieldname);
+          USR_FATAL_CONT(call, "multiple initializations of field \"%s\"", fieldname);
         } else {
           USR_FATAL_CONT(call, "field initialization out of order");
-          USR_PRINT(call, "initialization of fields before .init() call must be in order");
+          USR_PRINT(call, "initialization of fields before .init() call must be in field declaration order");
         }
         return lastSeen; // exit early due to error case.
       } else if (!strcmp(fieldDef->sym->name, lastSeen->sym->name)) {
