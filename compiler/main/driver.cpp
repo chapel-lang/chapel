@@ -544,6 +544,7 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   fNoPrivatization = true;
   fNoOptimizeOnClauses = true;
   fIgnoreLocalClasses = true;
+  fDenormalize = false;
   fConditionalDynamicDispatchLimit = 0;
 }
 
