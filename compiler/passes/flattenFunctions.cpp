@@ -182,7 +182,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
       // RVF would fire.
       //
       if (passByRef(sym)) {
-        intent = concreteIntent(INTENT_REF, type);
+        intent = concreteIntent(INTENT_CONST_REF, type);
         type = type->refType;
       } else {
         intent = concreteIntent(INTENT_BLANK, type);
