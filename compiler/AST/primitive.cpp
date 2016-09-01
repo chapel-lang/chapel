@@ -469,14 +469,6 @@ initPrimitive() {
   // local block primitives
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
 
-  // operations on sync/single vars
-  prim_def(PRIM_SINGLE_INIT, "single_init", returnInfoVoid, true);
-  prim_def(PRIM_SINGLE_DESTROY, "single_destroy", returnInfoVoid, true);
-  prim_def(PRIM_SINGLE_LOCK, "single_lock", returnInfoVoid, true);
-  prim_def(PRIM_SINGLE_UNLOCK, "single_unlock", returnInfoVoid, true);
-  prim_def(PRIM_SINGLE_WAIT_FULL, "single_wait_full", returnInfoVoid, true, true);
-  prim_def(PRIM_SINGLE_SIGNAL_FULL, "single_mark_and_signal_full", returnInfoVoid, true);
-
   // sync/single var support
   prim_def(PRIM_WRITEEF, "write_EF", returnInfoVoid, true);
   prim_def(PRIM_WRITEFF, "write_FF", returnInfoVoid, true);
@@ -484,10 +476,6 @@ initPrimitive() {
   prim_def(PRIM_READFE, "read_FE", returnInfoFirst, true);
   prim_def(PRIM_READFF, "read_FF", returnInfoFirst, true);
   prim_def(PRIM_READXX, "read_XX", returnInfoFirst, true);
-  prim_def(PRIM_SINGLE_WRITEEF, "single_write_EF", returnInfoVoid, true);
-  prim_def(PRIM_SINGLE_READFF, "single_read_FF", returnInfoFirst, true);
-  prim_def(PRIM_SINGLE_READXX, "single_read_XX", returnInfoFirst, true);
-  prim_def(PRIM_SINGLE_IS_FULL, "single_is_full", returnInfoBool, true);
 
   prim_def(PRIM_GET_END_COUNT, "get end count", returnInfoEndCount);
   prim_def(PRIM_SET_END_COUNT, "set end count", returnInfoVoid, true);

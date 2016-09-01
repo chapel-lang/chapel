@@ -5010,39 +5010,6 @@ GenRet CallExpr::codegenPrimitive() {
     break;
   }
 
-  case PRIM_SINGLE_INIT:
-    codegenCall("chpl_single_initAux",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
-    break;
-
-  case PRIM_SINGLE_DESTROY:
-    codegenCall("chpl_single_destroyAux",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
-    break;
-
-  case PRIM_SINGLE_LOCK:
-    codegenCall("chpl_single_lock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
-    break;
-
-  case PRIM_SINGLE_UNLOCK:
-    codegenCall("chpl_single_unlock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
-    break;
-
-  case PRIM_SINGLE_WAIT_FULL:
-    // single, lineno, filename
-    codegenCall("chpl_single_waitFullAndLock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")),
-                get(2),
-                get(3));
-    break;
-
-  case PRIM_SINGLE_SIGNAL_FULL:
-    codegenCall("chpl_single_markAndSignalFull",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
-    break;
-
   case PRIM_WRITEEF: {
     // get(1) is argument (class, wide or not), get(2) is what to write.
     GenRet s;
@@ -5091,49 +5058,6 @@ GenRet CallExpr::codegenPrimitive() {
       s = get(1);
 
     ret = codegenCallExpr(fn, s);
-
-    break;
-  }
-
-  case PRIM_SINGLE_WRITEEF: {
-    // get(1) is argument (class, wide or not), get(2) is what to write.
-    GenRet s;
-
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-      s = codegenRaddr(get(1));
-    else
-      s = get(1);
-
-    codegenCall( "chpl_single_write_EF", s, get(2));
-
-    break;
-  }
-
-  case PRIM_SINGLE_READFF:
-  case PRIM_SINGLE_READXX: {
-    GenRet      s;
-    const char* fn = NULL;
-
-    if (primitive->tag == PRIM_SINGLE_READFF) fn = "chpl_single_read_FF";
-    if (primitive->tag == PRIM_SINGLE_READXX) fn = "chpl_single_read_XX";
-
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-      s = codegenRaddr(get(1));
-    else
-      s = get(1);
-
-    ret = codegenCallExpr(fn, s);
-
-    break;
-  }
-
-  case PRIM_SINGLE_IS_FULL: {
-    // get(1) is sync var get(2) is isSimpleSyncBaseType( arg )
-    GenRet s       = get(1);
-    GenRet val_ptr = codegenLocalAddrOf(codegenFieldPtr(s, "value"));
-    GenRet aux     = codegenLocalAddrOf(codegenFieldPtr(s, "single_aux"));
-
-    ret = codegenCallExpr("chpl_single_isFull", val_ptr, aux);
 
     break;
   }

@@ -7207,21 +7207,12 @@ postFold(Expr* expr) {
     } else if (call->isPrimitive(PRIM_RSH)) {
       FOLD_CALL2(P_prim_rsh);
     } else if (call->isPrimitive(PRIM_ARRAY_ALLOC) ||
-               call->isPrimitive(PRIM_SINGLE_INIT) ||
-               call->isPrimitive(PRIM_SINGLE_LOCK) ||
-               call->isPrimitive(PRIM_SINGLE_UNLOCK) ||
-               call->isPrimitive(PRIM_SINGLE_WAIT_FULL) ||
-               call->isPrimitive(PRIM_SINGLE_SIGNAL_FULL) ||
                call->isPrimitive(PRIM_WRITEEF) ||
                call->isPrimitive(PRIM_WRITEFF) ||
                call->isPrimitive(PRIM_WRITEXF) ||
                call->isPrimitive(PRIM_READFF) ||
                call->isPrimitive(PRIM_READFE) ||
                call->isPrimitive(PRIM_READXX) ||
-               call->isPrimitive(PRIM_SINGLE_WRITEEF) ||
-               call->isPrimitive(PRIM_SINGLE_READFF) ||
-               call->isPrimitive(PRIM_SINGLE_READXX) ||
-               call->isPrimitive(PRIM_SINGLE_IS_FULL) ||
                (call->primitive &&
                 (!strncmp("_fscan", call->primitive->name, 6) ||
                  !strcmp("_readToEndOfLine", call->primitive->name) ||

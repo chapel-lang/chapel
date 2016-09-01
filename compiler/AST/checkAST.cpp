@@ -204,22 +204,12 @@ void checkPrimitives()
      case PRIM_GET_IMAG:            // get complex imag component
      case PRIM_QUERY:               // query expression primitive
      case PRIM_LOCAL_CHECK:         // assert that a wide ref is on this locale
-     case PRIM_SINGLE_INIT:
-     case PRIM_SINGLE_DESTROY:
-     case PRIM_SINGLE_LOCK:
-     case PRIM_SINGLE_UNLOCK:
-     case PRIM_SINGLE_WAIT_FULL:
-     case PRIM_SINGLE_SIGNAL_FULL:
      case PRIM_WRITEEF:
      case PRIM_WRITEFF:
      case PRIM_WRITEXF:
      case PRIM_READFE:
      case PRIM_READFF:
      case PRIM_READXX:
-     case PRIM_SINGLE_WRITEEF:
-     case PRIM_SINGLE_READFF:
-     case PRIM_SINGLE_READXX:
-     case PRIM_SINGLE_IS_FULL:
      case PRIM_GET_END_COUNT:
      case PRIM_SET_END_COUNT:
      case PRIM_GET_SERIAL:              // get serial state

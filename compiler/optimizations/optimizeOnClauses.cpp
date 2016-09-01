@@ -234,23 +234,12 @@ classifyPrimitive(CallExpr *call) {
     // Shouldn't this be return FAST_NOT_LOCAL ?
     return NOT_FAST_NOT_LOCAL;
 
-  case PRIM_SINGLE_INIT: // Maybe fast?
-  case PRIM_SINGLE_DESTROY: // Maybe fast?
-  case PRIM_SINGLE_LOCK:
-  case PRIM_SINGLE_UNLOCK:
-  case PRIM_SINGLE_WAIT_FULL:
-  case PRIM_SINGLE_SIGNAL_FULL:
-
   case PRIM_WRITEEF:
   case PRIM_WRITEFF:
   case PRIM_WRITEXF:
   case PRIM_READFE:
   case PRIM_READFF:
   case PRIM_READXX:
-  case PRIM_SINGLE_WRITEEF:
-  case PRIM_SINGLE_READFF:
-  case PRIM_SINGLE_READXX:
-  case PRIM_SINGLE_IS_FULL:
    // These may block, so are deemed slow.
     // However, they are local
    return LOCAL_NOT_FAST;
