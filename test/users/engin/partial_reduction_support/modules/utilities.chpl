@@ -1,9 +1,9 @@
 
 proc _tuple.withIdx(idx, mergeVal) where isHomogeneousTuple(this) {
 
-  // FIXME this if doesn't seem to woerk as I expected
+  // FIXME this if doesn't work as expected
   if mergeVal.type != this[1].type then
-    halt("Value to be merged doesn't match homogeneous tuple eltType");
+    compilerError("Value to be merged is not of the type of tuple components");
 
   const defVal: mergeVal.type;
   var ret = createTuple(this.size+1, mergeVal.type, defVal);
@@ -38,16 +38,16 @@ proc _tuple.withoutIdx(idx) where isHomogeneousTuple(this) {
 
 proc __lineSliceMask(dom, param dim, idx) {
 
-  if !isHomogeneousTuple(idx) then
-    halt("Index to get line slice must be homogeneous");
+  if !isTuple(idx) || !isHomogeneousTuple(idx) then
+    compilerError("Index to get line slice must be a homogeneous tuple");
 
   if idx[1].type != dom.idxType then 
-    halt("Index to get line slice must match domains index type");
+    compilerError("Index to get line slice is not of the domain's index type");
 
   param numIdxPre = dim - 1;
   param numIdxPost = dom.rank - dim;
 
-  assert(numIdxPre + numIdxPost == dom.rank-1);
+  compilerAssert(numIdxPre + numIdxPost == dom.rank-1);
 
   var idxPre = createTuple(if numIdxPre>0 then numIdxPre else 1, 
       dom.idxType, 0:dom.idxType);
@@ -79,7 +79,7 @@ proc __faceSliceMask(dom, param exceptDim) {
   param numUbRangesPre = exceptDim - 1;
   param numUbRangesPost = dom.rank - exceptDim;
 
-  assert(numUbRangesPre + numUbRangesPost == dom.rank-1);
+  compilerAssert(numUbRangesPre + numUbRangesPost == dom.rank-1);
 
   const ubRangesPre = createTuple(if numUbRangesPre > 0 then numUbRangesPre
       else 1, range(boundedType=BoundedRangeType.boundedNone), ..);
