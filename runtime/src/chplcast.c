@@ -189,7 +189,10 @@ _define_string_to_float_precise(real, 64, "%lf")
     _real_type(base, width) val;                                        \
     int numbytes;                                                       \
     char i = '\0';                                                      \
-    int numitems = sscanf(str, format"%c%n", &val, &i, &numbytes);      \
+    int numitems;                                                       \
+    while (*str && isspace(*str))                                       \
+      str++;                                                            \
+    numitems = sscanf(str, format"%c%n", &val, &i, &numbytes);          \
     if (scanningNCounts() && numitems == 3) {                           \
       numitems = 2;                                                     \
     }                                                                   \
@@ -198,6 +201,8 @@ _define_string_to_float_precise(real, 64, "%lf")
       *invalid = 2;                                                     \
       *invalidCh = i;                                                   \
     } else if (numitems == 2) {                                         \
+      while (str[numbytes] && isspace(str[numbytes]))                   \
+        numbytes++;                                                     \
       if (i != 'i') {                                                   \
         *invalid = 2;                                                   \
         *invalidCh = i;                                                 \
