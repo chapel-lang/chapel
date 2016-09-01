@@ -125,18 +125,22 @@ Expr* getInitCall(FnSymbol* fn) {
 
 static
 DefExpr* handleField(AggregateType* t, DefExpr* curField, const char* fieldname,
-                     bool **explicitInit, CallExpr* call);
+                     bool seenField[], CallExpr* call);
 
 static
 void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
   DefExpr* curField = toDefExpr(t->fields.head);
-  // the super field is always first
   bool *seenField = (bool*)calloc(t->fields.length, sizeof(bool));
-  if (curField)
+  if (curField) {
+    INT_ASSERT(curField->sym->hasFlag(FLAG_SUPER_CLASS));
+    // the super field is always first
     seenField[0] = true;
+  }
 
   Expr* curExpr = body->body.head;
-  while (curExpr != NULL && curExpr != initCall) {
+  // We are guaranteed to never reach the end of the body, due to the
+  // conditional surrounding the call to this function.
+  while (curExpr != initCall) {
     // Verify that:
     // - fields are initialized in declaration order
     // - The "this" instance is only used to clarify a field initialization (or
@@ -170,7 +174,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
               if (VarSymbol* var = toVarSymbol(sym->var)) {
                 if (var->immediate->const_kind == CONST_KIND_STRING) {
                   curField = handleField(t, curField, var->immediate->v_string,
-                                         &seenField, call);
+                                         seenField, call);
                 }
               }
             }
@@ -194,7 +198,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
 // is not a field at all.
 static
 DefExpr* handleField(AggregateType* t, DefExpr* lastSeen, const char* fieldname,
-                     bool **explicitInit, CallExpr* call) {
+                     bool seenField[], CallExpr* call) {
   bool passedLastSeen = false;
   int index = 0;
   for (DefExpr* fieldDef = toDefExpr(t->fields.head); fieldDef;
@@ -203,7 +207,7 @@ DefExpr* handleField(AggregateType* t, DefExpr* lastSeen, const char* fieldname,
       if (!strcmp(fieldDef->sym->name, fieldname)) {
         // We found a field match before the field we most recently saw
         // initialization for.
-        if ((*explicitInit)[index]) {
+        if (seenField[index]) {
           // There was a previous initialization of this same field
           USR_FATAL_CONT(call, "multiple initializations of field \"%s\"", fieldname);
         } else {
@@ -219,7 +223,7 @@ DefExpr* handleField(AggregateType* t, DefExpr* lastSeen, const char* fieldname,
       }
     } else {
       if (!strcmp(fieldDef->sym->name, fieldname)) {
-        (*explicitInit)[index] = true;
+        seenField[index] = true;
         return fieldDef;
       }
     }
