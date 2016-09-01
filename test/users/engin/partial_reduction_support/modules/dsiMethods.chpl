@@ -18,51 +18,51 @@ use BlockCycDist;
 // I kept hitting resolution issues there(may or may not be a bug).
 // since otherIdx is not used at this point, I am moving with this
 // implementation
-iter DefaultRectangularDom.dsiPartialThese(onlyDim, otherIdx) {
+iter DefaultRectangularDom.dsiPartialThese(param onlyDim, otherIdx) {
 
   if !dsiPartialDomain(onlyDim).member(otherIdx) then return;
   for i in ranges(onlyDim) do yield i;
 }
 
-iter dsiPartialThese(onlyDim, otherIdx, param tag: iterKind)
+iter dsiPartialThese(param onlyDim, otherIdx, param tag: iterKind)
   where tag == iterKind.leader {
 
     if !dsiPartialDomain(onlyDim).member(otherIdx) then return;
     for i in ranges(onlyDim).these(tag) do yield i;
   }
 
-iter DefaultRectangularDom.dsiPartialThese(onlyDim, otherIdx,
+iter DefaultRectangularDom.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind, followThis) where tag == iterKind.follower {
 
     for i in ranges(onlyDim).these(tag, followThis=followThis) do
       yield i;
   }
 
-iter DefaultRectangularDom.dsiPartialThese(onlyDim, otherIdx,
+iter DefaultRectangularDom.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.standalone {
 
     if !dsiPartialDomain(onlyDim).member(otherIdx) then return;
     for i in ranges(onlyDim).these(tag) do yield i;
   }
 
-proc DefaultRectangularDom.dsiPartialDomain(exceptDim) where rank > 1 {
+proc DefaultRectangularDom.dsiPartialDomain(param exceptDim) where rank > 1 {
   return {(...ranges.withoutIdx(exceptDim))};
 }
 
-iter DefaultRectangularArr.dsiPartialThese(onlyDim, otherIdx) {
+iter DefaultRectangularArr.dsiPartialThese(param onlyDim, otherIdx) {
 
   for i in dom.dsiPartialThese(onlyDim,otherIdx) do
     yield dsiAccess(otherIdx.withIdx(onlyDim, i));
 }
 
-iter DefaultRectangularArr.dsiPartialThese(onlyDim, otherIdx,
+iter DefaultRectangularArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.leader {
 
     for followThis in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag) do
       yield followThis;
 }
 
-iter DefaultRectangularArr.dsiPartialThese(onlyDim, otherIdx,
+iter DefaultRectangularArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind, followThis) where tag == iterKind.follower {
 
     for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag,
@@ -89,7 +89,7 @@ iter DefaultRectangularArr.dsiPartialThese(onlyDim,
 // DefaultSparse support
 //
 
-proc DefaultSparseDom.dsiPartialDomain(exceptDim) where rank > 1 {
+proc DefaultSparseDom.dsiPartialDomain(param exceptDim) where rank > 1 {
   return parentDom._value.dsiPartialDomain(exceptDim);
 }
 
@@ -227,20 +227,20 @@ iter DefaultSparseDom.dsiPartialThese(onlyDim: int, otherIdx,
 // FIXME I tried to move these iterators up in class hierarchy by
 // implementing a dummy dsiAccess in those classes. But wasn't able
 // to compile.
-iter DefaultSparseArr.dsiPartialThese(onlyDim: int, otherIdx) {
+iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx) {
   for i in dom.dsiPartialThese(onlyDim, otherIdx) {
     yield dsiAccess(otherIdx.withIdx(onlyDim, i));
   }
 }
 
-iter DefaultSparseArr.dsiPartialThese(onlyDim: int, otherIdx, 
+iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx, 
     param tag) where tag==iterKind.leader {
   for followThis in dom.dsiPartialThese(onlyDim,otherIdx,tag=tag) {
     yield followThis;
   }
 }
 
-iter DefaultSparseArr.dsiPartialThese(onlyDim: int, otherIdx, 
+iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx, 
     param tag, followThis) where tag==iterKind.follower {
   for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag, 
       followThis) {
@@ -248,7 +248,7 @@ iter DefaultSparseArr.dsiPartialThese(onlyDim: int, otherIdx,
   }
 }
 
-iter DefaultSparseArr.dsiPartialThese(onlyDim: int, otherIdx, 
+iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx, 
     param tag) where tag==iterKind.standalone {
   for i in dom.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
     yield dsiAccess(otherIdx.withIdx(onlyDim, i));
@@ -262,11 +262,11 @@ iter DefaultSparseArr.dsiPartialThese(onlyDim: int, otherIdx,
 // LayoutCSR support
 //
 
-proc CSRDom.dsiPartialDomain(exceptDim) where rank > 1 {
+proc CSRDom.dsiPartialDomain(param exceptDim) where rank > 1 {
   return parentDom._value.dsiPartialDomain(exceptDim);
 }
 
-iter CSRDom.dsiPartialThese(onlyDim: int, otherIdx,
+iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
     tasksPerLocale = dataParTasksPerLocale,
     ignoreRunning = dataParIgnoreRunningTasks,
     minIndicesPerTask = dataParMinGranularity){
@@ -290,7 +290,7 @@ iter CSRDom.dsiPartialThese(onlyDim: int, otherIdx,
   }
 }
 
-iter CSRDom.dsiPartialThese(onlyDim: int, otherIdx,
+iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
     tasksPerLocale = dataParTasksPerLocale,
     ignoreRunning = dataParIgnoreRunningTasks,
     minIndicesPerTask = dataParMinGranularity,
@@ -313,7 +313,7 @@ iter CSRDom.dsiPartialThese(onlyDim: int, otherIdx,
   }
 }
 
-iter CSRDom.dsiPartialThese(onlyDim: int, otherIdx,
+iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
     tasksPerLocale = dataParTasksPerLocale,
     ignoreRunning = dataParIgnoreRunningTasks,
     minIndicesPerTask = dataParMinGranularity,
@@ -337,7 +337,7 @@ iter CSRDom.dsiPartialThese(onlyDim: int, otherIdx,
   }
 }
 
-iter CSRDom.dsiPartialThese(onlyDim: int, otherIdx,
+iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
     tasksPerLocale = dataParTasksPerLocale,
     ignoreRunning = dataParIgnoreRunningTasks,
     minIndicesPerTask = dataParMinGranularity,
@@ -356,7 +356,7 @@ iter CSRDom.dsiPartialThese(onlyDim: int, otherIdx,
 
     coforall t in 0..#numTasks {
       const myChunk = _computeBlock(numElems, numTasks, t, h-l, 0, 0);
-      for i in myChunk {
+      for i in myChunk.translate(l) {
         if colIdx[i] == otherIdx {
           const (found, loc) = BinarySearch(rowStart, i);
           yield if found then loc else loc-1;
@@ -391,20 +391,20 @@ iter CSRDom.dsiPartialThese(onlyDim: int, otherIdx,
 // FIXME I tried to move these iterators up in class hierarchy by
 // implementing a dummy dsiAccess in those classes. But wasn't able
 // to compile.
-iter CSRArr.dsiPartialThese(onlyDim: int, otherIdx) {
+iter CSRArr.dsiPartialThese(param onlyDim, otherIdx) {
   for i in dom.dsiPartialThese(onlyDim, otherIdx[1]) {
     yield dsiAccess(otherIdx.withIdx(onlyDim, i));
   }
 }
 
-iter CSRArr.dsiPartialThese(onlyDim: int, otherIdx, 
+iter CSRArr.dsiPartialThese(param onlyDim, otherIdx, 
     param tag) where tag==iterKind.leader {
   for followThis in dom.dsiPartialThese(onlyDim,otherIdx[1],tag=tag) {
     yield followThis;
   }
 }
 
-iter CSRArr.dsiPartialThese(onlyDim: int, otherIdx, 
+iter CSRArr.dsiPartialThese(param onlyDim, otherIdx, 
     param tag, followThis) where tag==iterKind.follower {
   for i in dom.dsiPartialThese(onlyDim, otherIdx[1], tag=tag, 
       followThis) {
@@ -412,7 +412,7 @@ iter CSRArr.dsiPartialThese(onlyDim: int, otherIdx,
   }
 }
 
-iter CSRArr.dsiPartialThese(onlyDim: int, otherIdx, 
+iter CSRArr.dsiPartialThese(param onlyDim, otherIdx, 
     param tag) where tag==iterKind.standalone {
   for i in dom.dsiPartialThese(onlyDim, otherIdx[1], tag=tag) {
     yield dsiAccess(otherIdx.withIdx(onlyDim, i));
@@ -489,17 +489,17 @@ proc BlockDom.dsiPartialDomain(param exceptDim) {
   return ret;
 }
 
-proc LocBlockDom.dsiPartialDomain(exceptDim) {
+proc LocBlockDom.dsiPartialDomain(param exceptDim) {
   return myBlock._value.dsiPartialDomain(exceptDim);
 }
 
-iter LocBlockArr.dsiPartialThese(onlyDim, otherIdx) {
+iter LocBlockArr.dsiPartialThese(param onlyDim, otherIdx) {
 
   for i in myElems._value.dsiPartialThese(onlyDim,otherIdx) do 
     yield i;
 }
 
-iter LocBlockArr.dsiPartialThese(onlyDim, otherIdx,
+iter LocBlockArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.leader {
 
   for followThis in myElems._value.dsiPartialThese(onlyDim, otherIdx,
@@ -508,7 +508,7 @@ iter LocBlockArr.dsiPartialThese(onlyDim, otherIdx,
     yield followThis;
 }
 
-iter LocBlockArr.dsiPartialThese(onlyDim, otherIdx,
+iter LocBlockArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind, followThis) where tag == iterKind.follower {
 
   for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag,
@@ -516,7 +516,7 @@ iter LocBlockArr.dsiPartialThese(onlyDim, otherIdx,
     yield i;
 }
 
-iter LocBlockArr.dsiPartialThese(onlyDim, otherIdx,
+iter LocBlockArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.standalone {
 
   for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag) do
@@ -542,7 +542,7 @@ proc CyclicDom.dsiPartialDomain(param exceptDim) {
   return ret;
 }
 
-proc LocCyclicDom.dsiPartialDomain(exceptDim) {
+proc LocCyclicDom.dsiPartialDomain(param exceptDim) {
   return myBlock._value.dsiPartialDomain(exceptDim);
 }
 
@@ -648,7 +648,7 @@ proc LocBlockCyclicDom.dsiPartialDomain(param exceptDim) {
   return retDomain;
 }
 
-iter LocBlockCyclicDom.dsiPartialThese(onlyDim, otherIdx) {
+iter LocBlockCyclicDom.dsiPartialThese(param onlyDim, otherIdx) {
 
   for i in globDom.dsiLocalSubdomains() {
     for ii in i._value.dsiPartialThese(onlyDim, otherIdx) {
@@ -657,7 +657,7 @@ iter LocBlockCyclicDom.dsiPartialThese(onlyDim, otherIdx) {
   }
 }
 
-iter LocBlockCyclicDom.dsiPartialThese(onlyDim, otherIdx,
+iter LocBlockCyclicDom.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.leader {
 
   coforall i in globDom.dsiLocalSubdomains() {
@@ -667,7 +667,7 @@ iter LocBlockCyclicDom.dsiPartialThese(onlyDim, otherIdx,
   }
 }
 
-iter LocBlockCyclicDom.dsiPartialThese(onlyDim, otherIdx,
+iter LocBlockCyclicDom.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind, followThis) where tag == iterKind.follower {
 
     for i in followThis[1]._value.dsiPartialThese(onlyDim, otherIdx,
@@ -682,14 +682,14 @@ proc LocBlockCyclicArr.clone() {
 
 proc LocBlockCyclicArr.dsiGetBaseDom() { return indexDom; }
 
-iter LocBlockCyclicArr.dsiPartialThese(onlyDim, otherIdx) {
+iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx) {
 
   for i in indexDom.dsiPartialThese(onlyDim, otherIdx) {
       yield this(otherIdx.withIdx(onlyDim, i));
   }
 }
 
-iter LocBlockCyclicArr.dsiPartialThese(onlyDim, otherIdx,
+iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.leader {
 
   coforall i in do_dsiLocalSubdomains(indexDom) {
@@ -699,7 +699,7 @@ iter LocBlockCyclicArr.dsiPartialThese(onlyDim, otherIdx,
   }
 }
 
-iter LocBlockCyclicArr.dsiPartialThese(onlyDim, otherIdx,
+iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind, followThis) where tag == iterKind.follower {
 
     for i in followThis[1]._value.dsiPartialThese(onlyDim, otherIdx,
@@ -708,7 +708,7 @@ iter LocBlockCyclicArr.dsiPartialThese(onlyDim, otherIdx,
     }
 }
 
-iter LocBlockCyclicArr.dsiPartialThese(onlyDim, otherIdx,
+iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.standalone {
 
   for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag)
@@ -740,13 +740,13 @@ proc LocSparseBlockDom.dsiPartialDomain(param exceptDim) {
 
 proc LocSparseBlockArr.dsiGetBaseDom() { return locDom; }
 
-iter LocSparseBlockArr.dsiPartialThese(onlyDim, otherIdx) {
+iter LocSparseBlockArr.dsiPartialThese(param onlyDim, otherIdx) {
 
   for i in myElems._value.dsiPartialThese(onlyDim,otherIdx) do 
     yield i;
 }
 
-iter LocSparseBlockArr.dsiPartialThese(onlyDim, otherIdx,
+iter LocSparseBlockArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.leader {
 
   for followThis in 
@@ -755,7 +755,7 @@ iter LocSparseBlockArr.dsiPartialThese(onlyDim, otherIdx,
     yield followThis;
 }
 
-iter LocSparseBlockArr.dsiPartialThese(onlyDim, otherIdx,
+iter LocSparseBlockArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind, followThis) where tag == iterKind.follower {
 
   for i in myElems._value.dsiPartialThese(onlyDim,otherIdx,tag=tag,
@@ -764,7 +764,7 @@ iter LocSparseBlockArr.dsiPartialThese(onlyDim, otherIdx,
     yield i;
 }
 
-iter LocSparseBlockArr.dsiPartialThese(onlyDim, otherIdx,
+iter LocSparseBlockArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.standalone {
 
   for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag) do
