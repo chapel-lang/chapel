@@ -34,7 +34,9 @@ def get(flag='target'):
             # with an older gcc, we fall back to locks
             if compiler_val in ['gnu', 'cray-prgenv-gnu', 'mpi-gnu']:
                 version = get_compiler_version('gnu')
-                if version >= CompVersion('4.8'):
+                if version >= CompVersion('5.0'):
+                    atomics_val = 'cstdlib'
+                elif version >= CompVersion('4.8'):
                     atomics_val = 'intrinsics'
                 elif version >= CompVersion('4.1') and not platform_val.endswith('32'):
                     atomics_val = 'intrinsics'
