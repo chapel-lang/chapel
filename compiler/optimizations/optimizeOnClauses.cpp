@@ -234,16 +234,6 @@ classifyPrimitive(CallExpr *call) {
     // Shouldn't this be return FAST_NOT_LOCAL ?
     return NOT_FAST_NOT_LOCAL;
 
-  case PRIM_WRITEEF:
-  case PRIM_WRITEFF:
-  case PRIM_WRITEXF:
-  case PRIM_READFE:
-  case PRIM_READFF:
-  case PRIM_READXX:
-   // These may block, so are deemed slow.
-    // However, they are local
-   return LOCAL_NOT_FAST;
-
   case PRIM_NEW:
   case PRIM_INIT:
   case PRIM_NO_INIT:
@@ -255,8 +245,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_ENUM_IS_SIGNED:
   case PRIM_IS_UNION_TYPE:
   case PRIM_IS_ATOMIC_TYPE:
-  case PRIM_IS_SYNC_TYPE:
-  case PRIM_IS_SINGLE_TYPE:
   case PRIM_IS_TUPLE_TYPE:
   case PRIM_IS_STAR_TUPLE_TYPE:
   case PRIM_IS_SUBTYPE:

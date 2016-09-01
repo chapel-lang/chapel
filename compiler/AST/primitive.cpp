@@ -469,14 +469,6 @@ initPrimitive() {
   // local block primitives
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
 
-  // sync/single var support
-  prim_def(PRIM_WRITEEF, "write_EF", returnInfoVoid, true);
-  prim_def(PRIM_WRITEFF, "write_FF", returnInfoVoid, true);
-  prim_def(PRIM_WRITEXF, "write_XF", returnInfoVoid, true);
-  prim_def(PRIM_READFE, "read_FE", returnInfoFirst, true);
-  prim_def(PRIM_READFF, "read_FF", returnInfoFirst, true);
-  prim_def(PRIM_READXX, "read_XX", returnInfoFirst, true);
-
   prim_def(PRIM_GET_END_COUNT, "get end count", returnInfoEndCount);
   prim_def(PRIM_SET_END_COUNT, "set end count", returnInfoVoid, true);
 
@@ -597,8 +589,6 @@ initPrimitive() {
 
   prim_def(PRIM_FTABLE_CALL, "call ftable function", returnInfoVoid, true);
 
-  prim_def(PRIM_IS_SYNC_TYPE, "is sync type", returnInfoBool);
-  prim_def(PRIM_IS_SINGLE_TYPE, "is single type", returnInfoBool);
   prim_def(PRIM_IS_TUPLE_TYPE, "is tuple type", returnInfoBool);
   prim_def(PRIM_IS_STAR_TUPLE_TYPE, "is star tuple type", returnInfoBool);
   prim_def(PRIM_SET_SVEC_MEMBER, "set svec member", returnInfoVoid, true, true);

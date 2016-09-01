@@ -5010,58 +5010,6 @@ GenRet CallExpr::codegenPrimitive() {
     break;
   }
 
-  case PRIM_WRITEEF: {
-    // get(1) is argument (class, wide or not), get(2) is what to write.
-    GenRet s;
-
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-      s = codegenRaddr(get(1));
-    else
-      s = get(1);
-
-    codegenCall( "chpl_write_EF", s, get(2));
-
-    break;
-  }
-
-  case PRIM_WRITEFF:
-  case PRIM_WRITEXF: {
-    const char* fn = NULL;
-    GenRet      s;
-
-    if (primitive->tag == PRIM_WRITEFF) fn = "chpl_write_FF";
-    if (primitive->tag == PRIM_WRITEXF) fn = "chpl_write_XF";
-
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-      s = codegenRaddr(get(1));
-    else
-      s = get(1);
-
-    codegenCall( fn, s, get(2));
-
-    break;
-  }
-
-  case PRIM_READFE:
-  case PRIM_READFF:
-  case PRIM_READXX: {
-    const char* fn = NULL;
-    GenRet      s;
-
-    if (primitive->tag == PRIM_READFE) fn = "chpl_read_FE";
-    if (primitive->tag == PRIM_READFF) fn = "chpl_read_FF";
-    if (primitive->tag == PRIM_READXX) fn = "chpl_read_XX";
-
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-      s = codegenRaddr(get(1));
-    else
-      s = get(1);
-
-    ret = codegenCallExpr(fn, s);
-
-    break;
-  }
-
   case PRIM_GET_SERIAL:
     ret = codegenCallExpr("chpl_task_getSerial");
     break;

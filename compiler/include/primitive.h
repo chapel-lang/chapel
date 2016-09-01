@@ -99,13 +99,6 @@ enum PrimitiveTag {
 
   PRIM_LOCAL_CHECK,         // assert that a wide ref is on this locale
 
-  PRIM_WRITEEF,
-  PRIM_WRITEFF,
-  PRIM_WRITEXF,
-  PRIM_READFE,
-  PRIM_READFF,
-  PRIM_READXX,
-
   PRIM_GET_END_COUNT,
   PRIM_SET_END_COUNT,
 
@@ -212,8 +205,6 @@ enum PrimitiveTag {
 
   PRIM_FTABLE_CALL,
 
-  PRIM_IS_SYNC_TYPE,
-  PRIM_IS_SINGLE_TYPE,
   PRIM_IS_TUPLE_TYPE,
   PRIM_IS_STAR_TUPLE_TYPE,
   PRIM_SET_SVEC_MEMBER,
