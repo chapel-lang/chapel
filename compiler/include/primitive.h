@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -98,33 +98,6 @@ enum PrimitiveTag {
   PRIM_DEREF,               // dereference a reference
 
   PRIM_LOCAL_CHECK,         // assert that a wide ref is on this locale
-
-  PRIM_SYNC_INIT,
-  PRIM_SYNC_DESTROY,
-  PRIM_SYNC_LOCK,
-  PRIM_SYNC_UNLOCK,
-  PRIM_SYNC_WAIT_FULL,
-  PRIM_SYNC_WAIT_EMPTY,
-  PRIM_SYNC_SIGNAL_FULL,
-  PRIM_SYNC_SIGNAL_EMPTY,
-  PRIM_SINGLE_INIT,
-  PRIM_SINGLE_DESTROY,
-  PRIM_SINGLE_LOCK,
-  PRIM_SINGLE_UNLOCK,
-  PRIM_SINGLE_WAIT_FULL,
-  PRIM_SINGLE_SIGNAL_FULL,
-
-  PRIM_WRITEEF,
-  PRIM_WRITEFF,
-  PRIM_WRITEXF,
-  PRIM_READFE,
-  PRIM_READFF,
-  PRIM_READXX,
-  PRIM_SYNC_IS_FULL,
-  PRIM_SINGLE_WRITEEF,
-  PRIM_SINGLE_READFF,
-  PRIM_SINGLE_READXX,
-  PRIM_SINGLE_IS_FULL,
 
   PRIM_GET_END_COUNT,
   PRIM_SET_END_COUNT,
@@ -232,8 +205,6 @@ enum PrimitiveTag {
 
   PRIM_FTABLE_CALL,
 
-  PRIM_IS_SYNC_TYPE,
-  PRIM_IS_SINGLE_TYPE,
   PRIM_IS_TUPLE_TYPE,
   PRIM_IS_STAR_TUPLE_TYPE,
   PRIM_SET_SVEC_MEMBER,
