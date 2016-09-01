@@ -155,11 +155,16 @@ chpl_bool c_string_to_chpl_bool(c_string str, int lineno, int32_t filename) {
                                                               char* invalidCh) { \
     _real_type(base, width) val;                                        \
     int numbytes;                                                       \
-    int numitems = sscanf(str, format"%n", &val, &numbytes);            \
+    int numitems;                                                       \
+    while (*str && isspace(*str))                                       \
+      str++;                                                            \
+    numitems = sscanf(str, format"%n", &val, &numbytes);                \
     if (scanningNCounts() && numitems == 2) {                           \
       numitems = 1;                                                     \
     }                                                                   \
     if (numitems == 1) {                                                \
+      while (str[numbytes] && isspace(str[numbytes]))                   \
+        numbytes++;                                                     \
       if (numbytes == strlen(str)) {                                    \
         *invalid = 0;                                                   \
         *invalidCh = '\0';                                              \

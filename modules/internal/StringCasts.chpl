@@ -145,7 +145,7 @@ module StringCasts {
     pragma "insert line file info"
     extern proc c_string_to_real64(x: c_string) : real(64);
 
-    const localX = x.strip().localize();
+    const localX = x.localize();
     select numBits(t) {
       when 32 do return c_string_to_real32(localX.c_str());
       when 64 do return c_string_to_real64(localX.c_str());
