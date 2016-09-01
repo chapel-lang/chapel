@@ -121,8 +121,8 @@ proc randomMake(desc, a, n) {
       if r < a[1](prob) {
         line_buff[i] = a[1](nucl);
       } else {
-        var lo = a.domain.low;
-        var hi = a.domain.high;
+        var lo = a.domain.low,
+            hi = a.domain.high;
         while (hi > lo+1) {
           var ai = (hi + lo) / 2;
           if (r < a[ai](prob)) then
@@ -152,6 +152,6 @@ iter getRands(n) {
 
   for 0..#n {
     lastRand = (lastRand * IA + IC) % IM;
-    yield lastRand:real / IM;
+    yield lastRand: real / IM;
   }
 }
