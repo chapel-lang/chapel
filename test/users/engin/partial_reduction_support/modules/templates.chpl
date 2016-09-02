@@ -4,7 +4,7 @@ use dsiMethods;
 proc partialReduce(arr, param onlyDim) {
 
   if onlyDim < 1 || onlyDim > arr.dsiGetBaseDom().rank then
-    halt("Invalid partial reduction dimension: ", onlyDim);
+    compilerError("Invalid partial reduction dimension: ", onlyDim);
 
   if arr.dsiGetBaseDom().rank == 1 then
     return + reduce arr;
@@ -23,7 +23,7 @@ proc partialReduce(arr, param onlyDim) {
 proc partialReduceToTarget(arr, param onlyDim, target) {
 
   if onlyDim < 1 || onlyDim > arr.dsiGetBaseDom().rank then
-    halt("Invalid partial reduction dimension: ", onlyDim);
+    compilerError("Invalid partial reduction dimension: ", onlyDim);
 
   if arr.dsiGetBaseDom().rank == 1 then
     return + reduce arr;

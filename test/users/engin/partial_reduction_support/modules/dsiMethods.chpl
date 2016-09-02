@@ -24,8 +24,8 @@ iter DefaultRectangularDom.dsiPartialThese(param onlyDim, otherIdx) {
   for i in ranges(onlyDim) do yield i;
 }
 
-iter dsiPartialThese(param onlyDim, otherIdx, param tag: iterKind)
-  where tag == iterKind.leader {
+iter DefaultRectangularDom.dsiPartialThese(param onlyDim, otherIdx,
+    param tag: iterKind) where tag == iterKind.leader {
 
     if !dsiPartialDomain(onlyDim).member(otherIdx) then return;
     for i in ranges(onlyDim).these(tag) do yield i;
@@ -70,7 +70,7 @@ iter DefaultRectangularArr.dsiPartialThese(param onlyDim, otherIdx,
       yield dsiAccess(i);
 }
 
-// FIXME this standaloen iterator forwarding hits a compiler bug.
+// FIXME this standalone iterator forwarding hits a compiler bug.
 // The assertion in astutil.cpp:622 triggers. Engin
 /*
 iter DefaultRectangularArr.dsiPartialThese(onlyDim,
@@ -113,19 +113,22 @@ proc DefaultSparseDom.__private_findRowRange(r) {
   return start..min(nnz,end-1);
 }
 
-iter DefaultSparseDom.dsiPartialThese(onlyDim: int, otherIdx,
+proc partialIterationDimCheck(param onlyDim, param rank) {
+  if onlyDim < 1 || onlyDim > rank then
+    compilerError("Cannot perform partial iteration in dimension ",
+                  onlyDim:string, ". Only dimensions between 1 and ",
+                  rank:string, " are allowed.");
+}
+
+iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
     tasksPerLocale = dataParTasksPerLocale,
     ignoreRunning = dataParIgnoreRunningTasks,
     minIndicesPerTask = dataParMinGranularity) {
 
-  if onlyDim<0 || onlyDim>rank then
-    halt("Invalid dsiPartialThese dimension in DefaultSparse: ", onlyDim);
-  const otherIdxTup = if isTuple(otherIdx) then otherIdx else (otherIdx, );
+  partialIterationDimCheck(onlyDim, rank);
+  const otherIdxTup = chpl__tuplify(otherIdx);
 
   if onlyDim != this.rank {
-    compilerWarning("PERFORMANCE WARNING:\
-        Partial iteration over dimension other than last is expensive");
-
     for i in nnzDom.low..#nnz do
       if indices[i].withoutIdx(onlyDim) == otherIdxTup then 
         yield indices[i][onlyDim];
@@ -136,16 +139,14 @@ iter DefaultSparseDom.dsiPartialThese(onlyDim: int, otherIdx,
   }
 }
 
-iter DefaultSparseDom.dsiPartialThese(onlyDim: int, otherIdx,
+iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
     tasksPerLocale = dataParTasksPerLocale,
     ignoreRunning = dataParIgnoreRunningTasks,
     minIndicesPerTask = dataParMinGranularity,
     param tag: iterKind) where tag==iterKind.leader {
 
-  if onlyDim<0 || onlyDim>rank then
-    halt("Invalid dsiPartialThese dimension in DefaultSparse: ", onlyDim);
-
-  const otherIdxTup = if isTuple(otherIdx) then otherIdx else (otherIdx, );
+  partialIterationDimCheck(onlyDim, rank);
+  const otherIdxTup = chpl__tuplify(otherIdx);
 
   const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
     tasksPerLocale;
@@ -162,13 +163,13 @@ iter DefaultSparseDom.dsiPartialThese(onlyDim: int, otherIdx,
   }
 }
 
-iter DefaultSparseDom.dsiPartialThese(onlyDim: int, otherIdx, 
+iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx, 
     tasksPerLocale = dataParTasksPerLocale,
     ignoreRunning = dataParIgnoreRunningTasks,
     minIndicesPerTask = dataParMinGranularity,
     param tag: iterKind, followThis) where tag==iterKind.follower {
 
-  const otherIdxTup = if isTuple(otherIdx) then otherIdx else (otherIdx, );
+  const otherIdxTup = chpl__tuplify(otherIdx);
 
   const l = if onlyDim!=rank then nnzDom.low else
     __private_findRowRange(otherIdxTup).low;
@@ -183,19 +184,17 @@ iter DefaultSparseDom.dsiPartialThese(onlyDim: int, otherIdx,
           yield indices[i][onlyDim];
 }
 
-iter DefaultSparseDom.dsiPartialThese(onlyDim: int, otherIdx,
+iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
     tasksPerLocale = dataParTasksPerLocale,
     ignoreRunning = dataParIgnoreRunningTasks,
     minIndicesPerTask = dataParMinGranularity,
     param tag: iterKind) where tag==iterKind.standalone {
 
-  if onlyDim<0 || onlyDim>rank then
-    halt("Invalid dsiPartialThese dimension in DefaultSparse: ", onlyDim);
-
+  partialIterationDimCheck(onlyDim, rank);
   const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
     tasksPerLocale;
 
-  const otherIdxTup = if isTuple(otherIdx) then otherIdx else (otherIdx, );
+  const otherIdxTup = chpl__tuplify(otherIdx);
 
   var rowRange: range;
   if onlyDim==rank then rowRange = __private_findRowRange(otherIdxTup);
@@ -271,9 +270,7 @@ iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
     ignoreRunning = dataParIgnoreRunningTasks,
     minIndicesPerTask = dataParMinGranularity){
 
-  if onlyDim<1 || onlyDim>2 then 
-    halt("Invalid dimension for CSR.dsiPartialThese(). Only 1 and 2 \
-        allowed.");
+  partialIterationDimCheck(onlyDim, 2);
 
   if onlyDim==1 {
     // Should we have a compiler warning about this expensive operation?
@@ -296,10 +293,7 @@ iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
     minIndicesPerTask = dataParMinGranularity,
     param tag: iterKind) where tag==iterKind.leader {
 
-  if onlyDim<1 || onlyDim>2 then 
-    halt("Invalid dimension for CSR.dsiPartialThese(). Only 1 and 2 \
-        allowed.");
-
+  partialIterationDimCheck(onlyDim, 2);
   const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
     tasksPerLocale;
 
@@ -343,10 +337,7 @@ iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
     minIndicesPerTask = dataParMinGranularity,
     param tag: iterKind)  where tag==iterKind.standalone {
 
-  if onlyDim<1 || onlyDim>2 then 
-    halt("Invalid dimension for CSR.dsiPartialThese(). Only 1 and 2 \
-        allowed.");
-
+  partialIterationDimCheck(onlyDim, 2);
   const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
     tasksPerLocale;
 
@@ -711,10 +702,9 @@ iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
 iter LocBlockCyclicArr.dsiPartialThese(param onlyDim, otherIdx,
     param tag: iterKind) where tag == iterKind.standalone {
 
-  for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag)
-      do
-
+  for i in myElems._value.dsiPartialThese(onlyDim, otherIdx, tag=tag) {
     yield i;
+  }
 }
 //
 // end BlockCyclic distribution support
