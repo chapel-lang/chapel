@@ -285,8 +285,7 @@ module ChapelSyncvar {
   inline proc chpl__maybeAutoDestroyed(x : _syncvar(?t)) param return true;
 
   // This version has to be available to take precedence
-  pragma "auto destroy fn sync"
-    inline proc chpl__autoDestroy(x : _syncvar(?)) {
+  inline proc chpl__autoDestroy(x : _syncvar(?)) {
     if x.isOwned == true then
       delete x.wrapped;
   }
@@ -594,8 +593,7 @@ module ChapelSyncvar {
   inline proc chpl__maybeAutoDestroyed(x : _singlevar(?t)) param return true;
 
   // This version has to be available to take precedence
-  pragma "auto destroy fn sync"
-    inline proc chpl__autoDestroy(x : _singlevar(?)) {
+  inline proc chpl__autoDestroy(x : _singlevar(?)) {
     if x.isOwned == true then
       delete x.wrapped;
   }
