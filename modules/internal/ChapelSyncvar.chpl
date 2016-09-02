@@ -40,6 +40,7 @@ proceed if it is a single variable.
 
 module ChapelSyncvar {
   use MemConsistency;
+  use SyncVarRuntimeSupport;
 
   /************************************ | *************************************
   *                                                                           *
@@ -323,28 +324,6 @@ module ChapelSyncvar {
   *                                                                           *
   ************************************* | ************************************/
 
-  // Implementation is target dependent and opaque to Chapel code
-  pragma "no doc"
-  extern record chpl_sync_aux_t { };
-
-  extern proc   chpl_sync_initAux(ref aux : chpl_sync_aux_t);
-  extern proc   chpl_sync_destroyAux(ref aux : chpl_sync_aux_t);
-
-  pragma "insert line file info"
-  extern proc   chpl_sync_waitEmptyAndLock(ref aux : chpl_sync_aux_t);
-
-  pragma "insert line file info"
-  extern proc   chpl_sync_waitFullAndLock (ref aux : chpl_sync_aux_t);
-
-  extern proc   chpl_sync_lock  (ref aux : chpl_sync_aux_t);
-  extern proc   chpl_sync_unlock(ref aux : chpl_sync_aux_t);
-
-  extern proc   chpl_sync_markAndSignalEmpty(ref aux : chpl_sync_aux_t);
-  extern proc   chpl_sync_markAndSignalFull (ref aux : chpl_sync_aux_t);
-
-  extern proc   chpl_sync_isFull(value : c_void_ptr,
-                                 ref aux   : chpl_sync_aux_t) : bool;
-
   pragma "no doc"
   class _synccls {
     type valType;
@@ -493,11 +472,6 @@ module ChapelSyncvar {
 
 
 
-
-
-
-
-
   /************************************ | *************************************
   *                                                                           *
   * The record wrapper to implement single                                    *
@@ -638,23 +612,6 @@ module ChapelSyncvar {
   *                                                                           *
   ************************************* | ************************************/
 
-  // Implementation is target dependent and opaque to Chapel code
-  pragma "no doc"
-  extern record chpl_single_aux_t { };
-
-  extern proc   chpl_single_initAux(ref aux : chpl_single_aux_t);
-  extern proc   chpl_single_destroyAux(ref aux : chpl_single_aux_t);
-
-  pragma "insert line file info"
-  extern proc   chpl_single_waitFullAndLock (ref aux : chpl_single_aux_t);
-
-  extern proc   chpl_single_lock  (ref aux : chpl_single_aux_t);
-  extern proc   chpl_single_unlock(ref aux : chpl_single_aux_t);
-
-  extern proc   chpl_single_markAndSignalFull (ref aux : chpl_single_aux_t);
-
-  extern proc   chpl_single_isFull(value   : c_void_ptr,
-                                   ref aux : chpl_single_aux_t) : bool;
 
 
   pragma "no doc"
@@ -752,4 +709,55 @@ module ChapelSyncvar {
 
   pragma "no doc"
   proc isSingleValue(x)         param  return false;
+}
+
+
+private module SyncVarRuntimeSupport {
+
+  //
+  // Sync var externs
+  //
+
+  // Implementation is target dependent and opaque to Chapel code
+  extern record chpl_sync_aux_t { };
+
+  extern proc   chpl_sync_initAux(ref aux : chpl_sync_aux_t);
+  extern proc   chpl_sync_destroyAux(ref aux : chpl_sync_aux_t);
+
+  pragma "insert line file info"
+  extern proc   chpl_sync_waitEmptyAndLock(ref aux : chpl_sync_aux_t);
+
+  pragma "insert line file info"
+  extern proc   chpl_sync_waitFullAndLock (ref aux : chpl_sync_aux_t);
+
+  extern proc   chpl_sync_lock  (ref aux : chpl_sync_aux_t);
+  extern proc   chpl_sync_unlock(ref aux : chpl_sync_aux_t);
+
+  extern proc   chpl_sync_markAndSignalEmpty(ref aux : chpl_sync_aux_t);
+  extern proc   chpl_sync_markAndSignalFull (ref aux : chpl_sync_aux_t);
+
+  extern proc   chpl_sync_isFull(value : c_void_ptr,
+                                 ref aux   : chpl_sync_aux_t) : bool;
+
+
+  //
+  // Single var externs
+  //
+
+  // Implementation is target dependent and opaque to Chapel code
+  extern record chpl_single_aux_t { };
+
+  extern proc   chpl_single_initAux(ref aux : chpl_single_aux_t);
+  extern proc   chpl_single_destroyAux(ref aux : chpl_single_aux_t);
+
+  pragma "insert line file info"
+  extern proc   chpl_single_waitFullAndLock (ref aux : chpl_single_aux_t);
+
+  extern proc   chpl_single_lock  (ref aux : chpl_single_aux_t);
+  extern proc   chpl_single_unlock(ref aux : chpl_single_aux_t);
+
+  extern proc   chpl_single_markAndSignalFull (ref aux : chpl_single_aux_t);
+
+  extern proc   chpl_single_isFull(value   : c_void_ptr,
+                                   ref aux : chpl_single_aux_t) : bool;
 }
