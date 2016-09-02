@@ -234,6 +234,8 @@ _define_string_to_imag_precise(imag, 64, "%lf")
     _real_type(real, halfwidth) val_re = 0.0;                           \
     _real_type(real, halfwidth) val_im = 0.0;                           \
     /* check for pure imaginary case first */                           \
+    while (*str && isspace(*str))                                       \
+      str++;                                                            \
     val_im = c_string_to_imag##halfwidth##_precise(str, invalid, invalidCh); \
     if (*invalid) {                                                     \
       int numbytes = -1;                                                \
@@ -279,15 +281,19 @@ _define_string_to_imag_precise(imag, 64, "%lf")
         } else if (i != 'i') {                                          \
           *invalid = 1;                                                 \
           *invalidCh = i;                                               \
-        } else if (numbytes == strlen(str)) {                           \
-          if (sign == '-') {                                            \
-            val_im = -val_im;                                           \
-          }                                                             \
-          *invalid = 0;                                                 \
-          *invalidCh = '\0';                                            \
         } else {                                                        \
-          *invalid = 1;                                                 \
-          *invalidCh = *(str+numbytes);                                 \
+          while(str[numbytes] && isspace(str[numbytes]))                \
+            numbytes++;                                                 \
+          if (numbytes == strlen(str)) {                                \
+            if (sign == '-') {                                          \
+              val_im = -val_im;                                         \
+            }                                                           \
+            *invalid = 0;                                               \
+            *invalidCh = '\0';                                          \
+          } else {                                                      \
+            *invalid = 1;                                               \
+            *invalidCh = *(str+numbytes);                               \
+          }                                                             \
         }                                                               \
       } else {                                                          \
         *invalid = 1;                                                   \

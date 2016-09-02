@@ -200,7 +200,7 @@ module StringCasts {
     pragma "insert line file info"
     extern proc c_string_to_complex128(x:c_string) : complex(128);
 
-    const localX = x.strip().localize();
+    const localX = x.localize();
     select numBits(t) {
       when 64 do return c_string_to_complex64(localX.c_str());
       when 128 do return c_string_to_complex128(localX.c_str());
