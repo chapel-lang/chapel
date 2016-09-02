@@ -68,10 +68,9 @@ module DefaultSparse {
           yield indices(i);
         }
       } else {
-        coforall (startIx, endIx) in chunks(1..numElems, numChunks) {
-          for i in startIx..endIx {
+        coforall chunk in chunks(1..numElems, numChunks) {
+          for i in chunk do
             yield indices(i);
-          }
         }
       }
     }
@@ -410,10 +409,9 @@ module DefaultSparse {
           yield data[i];
         }
       } else {
-        coforall (startIx, endIx) in chunks(1..numElems, numChunks) {
-          for i in startIx..endIx {
+        coforall chunk in chunks(1..numElems, numChunks) {
+          for i in chunk do
             yield data[i];
-          }
         }
       }
     }
