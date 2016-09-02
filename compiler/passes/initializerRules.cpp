@@ -128,6 +128,9 @@ DefExpr* handleField(AggregateType* t, DefExpr* curField, const char* fieldname,
                      bool seenField[], CallExpr* call);
 
 static
+bool isParentField(AggregateType* t, const char* name);
+
+static
 void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
   DefExpr* curField = toDefExpr(t->fields.head);
   bool *seenField = (bool*)calloc(t->fields.length, sizeof(bool));
@@ -228,7 +231,32 @@ DefExpr* handleField(AggregateType* t, DefExpr* lastSeen, const char* fieldname,
       }
     }
   }
-  // We didn't find the field match.  It is likely a method.
-  USR_FATAL_CONT(call, "attempted method call too early during initialization");
+  if (isParentField(t, fieldname)) {
+    USR_FATAL_CONT(call, "can't set value of field \"%s\" from parent type during phase 1", fieldname);
+  } else {
+    // We didn't find the field match, even on our parent type.  It is a method.
+    USR_FATAL_CONT(call, "attempted method call too early during initialization");
+  }
   return lastSeen;
+}
+
+static
+bool isParentField(AggregateType* t, const char *name) {
+  if (t->dispatchParents.n > 0) {
+    forv_Vec(Type, pt, t->dispatchParents) {
+      if (AggregateType* cpt = toAggregateType(pt)) {
+        for_fields(field, cpt) {
+          if (!strcmp(field->name, name)) {
+            return true;
+          }
+        }
+        if (isParentField(cpt, name)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  } else {
+    return false;
+  }
 }
