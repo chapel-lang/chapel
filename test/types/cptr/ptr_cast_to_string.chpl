@@ -5,5 +5,4 @@ if mem != c_nil then
   assert((mem:string).match(compile("0x[0-9a-f]+")).matched);
 var ptr = mem:c_void_ptr;
 assert((mem:string) == (ptr:string));
-assert((c_nil:string) == "(nil)");
 c_free(mem);
