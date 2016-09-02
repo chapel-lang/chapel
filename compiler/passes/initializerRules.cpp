@@ -124,8 +124,15 @@ Expr* getInitCall(FnSymbol* fn) {
 }
 
 static
-DefExpr* handleField(AggregateType* t, DefExpr* curField, const char* fieldname,
-                     bool seenField[], CallExpr* call);
+void errorCases(AggregateType* t, DefExpr* curField, const char* fieldname,
+                bool seenField[], Expr* call);
+
+static
+const char* getFieldName(Expr* curExpr);
+
+static
+bool isLaterFieldAccess(DefExpr* curField, const char* fieldname);
+
 
 static
 void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
@@ -136,11 +143,12 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
     // the super field is always first
     seenField[0] = true;
   }
+  int index = 0;
 
   Expr* curExpr = body->body.head;
   // We are guaranteed to never reach the end of the body, due to the
   // conditional surrounding the call to this function.
-  while (curExpr != initCall) {
+  while (curField != NULL || curExpr != initCall) {
     // Verify that:
     // - fields are initialized in declaration order
     // - The "this" instance is only used to clarify a field initialization (or
@@ -153,42 +161,85 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
 
     // Additionally, perform the following actions:
     // - add initialization for omitted fields
+    if (curField != NULL && curExpr != initCall) {
+      // still have phase 1 statements and fields left to traverse
 
-    if (CallExpr* call = toCallExpr(curExpr)) {
-      if (call->isNamed("=")) {
-        if (CallExpr* inner = toCallExpr(call->get(1))) {
-          if (inner->isNamed(".")) {
-            SymExpr* potenThis = toSymExpr(inner->get(1));
-            if (potenThis && potenThis->var->hasFlag(FLAG_ARG_THIS)) {
-              // It's an access of this!
-              if (t->fields.length == 0) {
-                // If there aren't fields, then this is obviously wrong.
-                // I don't think we'll actually reach this branch, though.
-                USR_FATAL_CONT(call, "attempted method call too early during initialization");
-              }
-              INT_ASSERT(curField);
+      if (const char* fieldname = getFieldName(curExpr)) {
+        if (!strcmp(fieldname, curField->sym->name)) {
+          // It's a match!  Advance both and move on
+          curField = toDefExpr(curField->next);
+          curExpr = curExpr->next;
+          seenField[index] = true;
+          index++;
+        } else if (isLaterFieldAccess(curField, fieldname)) {
+          // TODO: call to add omitted statement
+          index++;
+          curField = toDefExpr(curField->next);
+        } else {
+          // It's not a valid field access at all.  Error cases!
+          errorCases(t, curField, fieldname, seenField, curExpr);
+          curExpr = curExpr->next;
+        }
+      } else {
+        // Wasn't a field access, only update curExpr;
+        curExpr = curExpr->next;
+      }
+    } else if (curField != NULL) {
+      // only fields left
 
-              SymExpr* sym = toSymExpr(inner->get(2));
-              INT_ASSERT(sym);
-              // Could it be . . . a field?  The anticipation is killing me!
-              if (VarSymbol* var = toVarSymbol(sym->var)) {
-                if (var->immediate->const_kind == CONST_KIND_STRING) {
-                  curField = handleField(t, curField, var->immediate->v_string,
-                                         seenField, call);
-                }
+      // TODO: call to add omitted statement
+      curField = toDefExpr(curField->next);
+      index++;
+    } else {
+      // only phase 1 statements left.
+
+      if (const char* fieldname = getFieldName(curExpr)) {
+        errorCases(t, curField, fieldname, seenField, curExpr);
+      }
+      curExpr = curExpr->next;
+    }
+  }
+
+  free (seenField);
+}
+
+// Checks if the current expression is a call expression that sets the value
+// of a field, and if so returns that field name.
+static
+const char* getFieldName(Expr* curExpr) {
+  if (CallExpr* call = toCallExpr(curExpr)) {
+    if (call->isNamed("=")) {
+      if (CallExpr* inner = toCallExpr(call->get(1))) {
+        if (inner->isNamed(".")) {
+          SymExpr* potenThis = toSymExpr(inner->get(1));
+          if (potenThis && potenThis->var->hasFlag(FLAG_ARG_THIS)) {
+            // It's an access of this!
+            SymExpr* sym = toSymExpr(inner->get(2));
+            INT_ASSERT(sym);
+            // Could it be . . . a field?  The anticipation is killing me!
+            if (VarSymbol* var = toVarSymbol(sym->var)) {
+              if (var->immediate->const_kind == CONST_KIND_STRING) {
+                return var->immediate->v_string;
               }
             }
-            // otherwise, we're accessing the field or method of something else.
-            // Carry on.
           }
         }
       }
     }
-
-    curExpr = curExpr->next;
   }
+  return NULL;
+}
 
-  free (seenField);
+static
+bool isLaterFieldAccess(DefExpr* curField, const char* fieldname) {
+  DefExpr* next = curField;
+  while (next) {
+    if (!strcmp(next->sym->name, fieldname)) {
+      return true;
+    }
+    next = toDefExpr(next->next);
+  }
+  return false;
 }
 
 // If the fieldname given is the name of a field after the last seen field in
@@ -197,38 +248,25 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
 // if the field has already been initialized, or if what is being initialized
 // is not a field at all.
 static
-DefExpr* handleField(AggregateType* t, DefExpr* lastSeen, const char* fieldname,
-                     bool seenField[], CallExpr* call) {
-  bool passedLastSeen = false;
+void errorCases(AggregateType* t, DefExpr* curField, const char* fieldname,
+                bool seenField[], Expr* call) {
   int index = 0;
-  for (DefExpr* fieldDef = toDefExpr(t->fields.head); fieldDef;
+  for (DefExpr* fieldDef = toDefExpr(t->fields.head); fieldDef != curField;
        fieldDef = toDefExpr(fieldDef->next), index++) {
-    if (!passedLastSeen) {
-      if (!strcmp(fieldDef->sym->name, fieldname)) {
-        // We found a field match before the field we most recently saw
-        // initialization for.
-        if (seenField[index]) {
-          // There was a previous initialization of this same field
-          USR_FATAL_CONT(call, "multiple initializations of field \"%s\"", fieldname);
-        } else {
-          USR_FATAL_CONT(call, "field initialization out of order");
-          USR_PRINT(call, "initialization of fields before .init() call must be in field declaration order");
-        }
-        return lastSeen; // exit early due to error case.
-      } else if (!strcmp(fieldDef->sym->name, lastSeen->sym->name)) {
-        // We didn't find a field matching this name yet, but we did just run
-        // into the last field we saw initialized.  If we find a match after
-        // this point, it fulfills the phase 1 order of initialization rules.
-        passedLastSeen = true;
+    if (!strcmp(fieldDef->sym->name, fieldname)) {
+      // We found a field match before the field we most recently saw
+      // initialization for.
+      if (seenField[index]) {
+        // There was a previous initialization of this same field
+        USR_FATAL_CONT(call, "multiple initializations of field \"%s\"", fieldname);
+      } else {
+        USR_FATAL_CONT(call, "field initialization out of order");
+        USR_PRINT(call, "initialization of fields before .init() call must be in field declaration order");
       }
-    } else {
-      if (!strcmp(fieldDef->sym->name, fieldname)) {
-        seenField[index] = true;
-        return fieldDef;
-      }
+      return; // exit early due to error case.
     }
   }
+
   // We didn't find the field match.  It is likely a method.
   USR_FATAL_CONT(call, "attempted method call too early during initialization");
-  return lastSeen;
 }
