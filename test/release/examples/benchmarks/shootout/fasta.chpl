@@ -1,9 +1,10 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Casey Battaglino, Kyle Brady, Preston Sahabu,
-               and Brad Chamberlain
-   derived from the GNU C versions by Petr Prokhorenkov, Paul Hsieh
+   contributed by Preston Sahabu
+   derived from the Chapel fastaredux version by Casey Battaglino,
+               Kyle Brady, Preston Sahabu, and Brad Chamberlain
+   derived from the GNU C version by Paul Hsieh
 */
 
 config const n = 1000,   // controls the length of the generated strings
