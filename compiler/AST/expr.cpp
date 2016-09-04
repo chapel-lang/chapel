@@ -4826,13 +4826,17 @@ GenRet CallExpr::codegenPrimitive() {
     } else if (lhsTypeSym->hasFlag(FLAG_REF)      ||
                lhsTypeSym->hasFlag(FLAG_WIDE_REF) ||
                lhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
-      if (get(2)->isRef())
+      if (get(2)->isRefOrWideRef())
         codegenAssign(codegenDeref(lhs), codegenDeref(rhs));
       else
         codegenAssign(codegenDeref(lhs), rhs);
 
     } else {
-      codegenAssign(lhs, rhs);
+      GenRet rg = rhs;
+      if (rhs->isRefOrWideRef()) {
+        rg = codegenDeref(rg);
+      }
+      codegenAssign(lhs, rg);
     }
 
     break;
@@ -5113,11 +5117,12 @@ GenRet CallExpr::codegenPrimitive() {
 
   case PRIM_LOCAL_CHECK: {
     // arguments are (wide ptr, line, function/file, error string)
-    Symbol* lhsType = get(1)->typeInfo()->symbol;
+    GenRet lhs = get(1);
+    Symbol* lhsType = lhs.chplType->symbol;
 
     if (lhsType->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) == true) {
       const char* error = NULL;
-      Symbol*     addr  = get(1)->typeInfo()->getField("addr");
+      Symbol*     addr  = lhsType->type->getField("addr");
 
       if (lhsType->hasFlag(FLAG_WIDE_CLASS)              == true &&
           addr->typeInfo()->symbol->hasFlag(FLAG_EXTERN) == true) {
