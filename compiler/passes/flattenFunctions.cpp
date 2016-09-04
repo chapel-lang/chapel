@@ -182,10 +182,20 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
       // RVF would fire.
       //
       if (passByRef(sym)) {
-        intent = concreteIntent(INTENT_CONST_REF, type);
+        // TODO: Having this as INTENT_REF seems to worsen comm counts. why?
+        IntentTag temp = INTENT_REF;
+        if (sym->hasFlag(FLAG_CONST)) {
+          temp = INTENT_CONST_REF;
+        }
+        intent = concreteIntent(temp, type);
         type = type->refType;
       } else {
-        intent = concreteIntent(INTENT_BLANK, type);
+        IntentTag temp = INTENT_BLANK;
+        if (sym->hasFlag(FLAG_CONST) && sym->isRef()) {
+          // Allows for RVF later
+          temp = INTENT_CONST_REF;
+        }
+        intent = concreteIntent(temp, type);
       }
 
       SET_LINENO(sym);
