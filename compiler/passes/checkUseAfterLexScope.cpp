@@ -38,19 +38,6 @@ typedef Vec<Scope*> ScopeVec;
      Which stores data of sync Points and
      use of External variables.
 **/  
-/***
-    TODO: Is This model adequate ?
-    
-    changing the imlementation such that we will
-    atmax 2/3 children one is proper child due to a
-    sync event(child).
-    
-    other is the foster child : the one due to
-    a function or a begin statement(fChild)
-    
-    other is the conditional child: the one due
-    to conditional statement.
-***/
 
 
 struct SyncGraph {
@@ -63,26 +50,29 @@ struct SyncGraph {
   ScopeVec syncedScopes;    // These are the already defined sync points
                             // created due to sync statments, Cobegin, Coforall
                             // and Forall statments.
-
   std::string syncVar;
-  SyncGraph* child;
-  SyncGraph* fChild;
-  SyncGraph* cChild;
-  CallExpr* syncExpr;
+  SyncGraph* child; // same function next BB
+  SyncGraph* fChild; // internal Functions including Begin
+  SyncGraph* cChild; // conditionalNode child
+  SyncGraph* joinNode;
+  CallExpr* syncExpr; 
   GraphNodeStatus syncType;
   bool loopNode;
   bool conditionalNode;
-  bool insideSyncStmt;
+  bool isjoinNode;
   
-  SyncGraph(SyncGraph* i, FnSymbol *f, int lID) {
-    levelID = lID;
+  
+  SyncGraph(SyncGraph* i, FnSymbol *f) {
+   
     fnSymbol = f;
     contents.copy(i->contents);
-    syncedScope.append(i->syncedScope);
+    syncedScopes.append(i->syncedScopes);
     loopNode = i->loopNode;
     conditionalNode = i->conditionalNode;
     syncType = i->syncType;
     syncVar = i->syncVar;
+    joinNode = i->joinNode;
+    isjoinNode = i->isjoinNode;
   }
 
   SyncGraph() {
@@ -92,20 +82,37 @@ struct SyncGraph {
     syncType = NODE_UNKNOWN;
     loopNode = false;
     conditionalNode = false;
-    insideSyncStmt = false;
+    // insideSyncStmt = false;
+    isjoinNode = false;
+    joinNode = NULL; 
   }
   ~SyncGraph() {}
 };
 
-struct ExternVarDetails {
-  string varName;
-  Scope scope;
-  Vec<SymExpr*> usePoints;
-  Vec<GraphNode*> useNode;
-  ExternVarDetails() {}
-  ~ExternVarDetails() {}
+struct UseInfo {
+  SymExpr* usePoint;
+  SyncGraph* useNode;
 };
 
+struct ExternVarDetails {
+  std::string varName;
+  Scope* scope;
+  Vec<UseInfo*> usePoints;
+
+  void addUseInfo(SymExpr* point, SyncGraph* node) {
+    UseInfo* useInfo = new UseInfo();
+    useInfo->usePoint = point;
+    useInfo->useNode = node;
+    usePoints.add(useInfo);
+  }
+  
+  ExternVarDetails() {}
+  ~ExternVarDetails() {
+    while(usePoints.length() != 0){
+      delete(usePoints.pop());
+    }
+  }
+};
 
 typedef Vec<SyncGraph*> SyncGraphVec;
 typedef Map<FnSymbol*, SyncGraph*> FnSyncGraphMap;
@@ -119,10 +126,13 @@ static SyncGraph* syncGraphRoot;
 static SyncGraphVec analysisRoots; // We will be creating multiple root for
                                    //  analyzing recursion and loops more
                                    // efficiently.
-Vec<ExternVarDetails*> externVarDetails;
-static FnSymbolVec analsyedFnSymbol;// This will help us identify recursion;
-static FnSyncGraphMap funcGraphMap; 
-bool allCallsSynced;
+static SyncGraphVec taskStartPoint; // start of all beginStatements
+static Vec<ExternVarDetails*> externVarDetails;
+static FnSyncGraphMap funcGraphMap; // start point of each function in Sync Graph
+//static FnSymbolVec internalFnSymbols;
+
+static bool allCallsSynced;
+
 
 static void deleteSyncGraphNode(SyncGraph *node);
 static void cleanUpSyncGraph(SyncGraph *root);
@@ -138,37 +148,41 @@ static SyncGraph* handleCallExpr(CallExpr* fn, SyncGraph* cur);
 static SyncGraph* handleSyncStatement(BlockStmt* block, SyncGraph* cur);
 static SyncGraph* handleLoopStmt(BlockStmt* block,SyncGraph* cur);
 static bool isOuterVar(Symbol* sym, FnSymbol* fn);
-static void linkSyncNodes(SyncGraph *signal, SyncGraph *wait);
+//static bool isBeginFunctionNode(FnSymbol *fn);
+//static void linkSyncNodes(SyncGraph *signal, SyncGraph *wait);
 //bool argumentsContainsSyncVar(FnSymbol *fn);
 static SyncGraph* addSyncExprs(Expr *expr, SyncGraph *cur);
 static void addSymbolsToGraph(Expr* expr, SyncGraph *cur);
-static void collectFuncNodes(SyncGraph *cur, SyncGraphVec& funcNodes);
+//static void collectFuncNodes(SyncGraph *cur, SyncGraphVec& funcNodes);
 static bool containsBeginFunction(FnSymbol* fn);
 //static SyncGraph* getNextSyncNode(SyncGraph* cur, SyncGraphVec* funcNodes);
-static void addExternVarDetails(Scope s, string v,SymExpr* use, GraphNode8 node);
+static void addExternVarDetails(Scope* s, std::string v,SymExpr* use, SyncGraph* node);
 static Scope* getOriginalScope(Symbol* sym);
 static ArgSymbol*  getTheArgSymbol(std::string sym, FnSymbol* parent);
 static BlockStmt* getSyncBlockStmt(BlockStmt* def, SyncGraph *cur);
 static bool isInsideSyncStmt(Expr* expr);
-static bool shouldSync(Scope* scope);
-static void checkSyncedCalls(FnSymbol* fn,SyncGraph *cur);
+static bool shouldSync(Scope* scope, SyncGraph* cur);
+static void checkSyncedCalls(FnSymbol* fn);
 static int compareScopes(Scope* a, Scope * b);
-static bool  ASTContainsBeginFunction(BaseAST* ast);
-static bool isInBeginFunction(FnSymbol* fn);
-static bool  refersExternalSymbols(Expr* expr);
+
+static SyncGraph* nextSyncPoint(SyncGraph* start);
+
 static SyncGraph* addElseChildNode(SyncGraph *cur, FnSymbol *fn);
-//static bool inlineCFG(SyncGraph* inlineNode, SyncGraph* branch);
-//static SyncGraphVec getCopyofGraph(SyncGraph* start, FnSymbol* f, int level);
+
+
+static bool  refersExternalSymbols(Expr* expr, SyncGraph * cur);
+static bool  ASTContainsBeginFunction(BaseAST* ast);
+//static bool  ASTContainsInternalFunctionCalls(BaseAST* ast);
+//static void  collectAllInternalFunctions(BaseAST* ast);
+static void expandAllInternalFunctions(SyncGraph* root,Vec<FnSymbol*> &fnSymbols, SyncGraph* endPoint = NULL);
+static SyncGraph* inlineCFG(SyncGraph* inlineNode, SyncGraph* branch);
+static SyncGraphVec getCopyofGraph(SyncGraph* start, FnSymbol* f);
+static SyncGraph* nextSyncPoint(SyncGraph* start);
+static void provideWarning(SymExpr* expr, ExternVarDetails* var);
 /************** HEADER ENDS *******************/
 
-/***
-    TODO: Handle loops
-****/
 
-/**
-   We are ging for recursive delete.
-   We have to delete all children Nodes before deleting the Node.
-**/
+
 static void deleteSyncGraphNode(SyncGraph *node) {
   if (node != NULL) {
     deleteSyncGraphNode(node->child);
@@ -178,51 +192,76 @@ static void deleteSyncGraphNode(SyncGraph *node) {
   }
 }
 
-// static SyncGraphVec getCopyofGraph(SyncGraph* start, FnSymbol* f, int level) {
-//   /**
-//      TODO decide what to de when we have a fChild here
-//    **/
-//   SyncGraphVec copy;
-//   SyncGraph* node = start;
-//   while (node != NULL) {
-//     SyncGraph * newnode = new SyncGraph(node, f, level);
-//     if (copy.count() > 0) {
-//       newnode->parent = copy.tail();
-//       copy.tail()->child = newnode;
-//     }
-//     copy.add(node);
-//   }
-//   return copy;
-// }
-
-
-static bool isInBeginFunction(FnSymbol * fn){
+static SyncGraphVec getCopyofGraph(SyncGraph* start, FnSymbol* f) {
   /**
-     This is conditional this will return true if we are inside a abegin functionof if we 
-     are inside an internal function that can be called from the begin function.
+     TODO decide what to de when we have a fChild here
    **/
-  if(beginNestingLevel > 0 || isFnSymbol(fn->defPoint->parentSymbol))
-    return true;
-  else return false;
+  SyncGraphVec copy;
+  SyncGraph* node = start;
+  while (node != NULL) {
+    SyncGraph * newnode = new SyncGraph(node, f);
+    if (copy.length() > 0) {
+      newnode->parent = copy.tail();
+      copy.tail()->child = newnode;
+    }
+    copy.add(node);
+  }
+  return copy;
 }
 
 
-s
+static SyncGraph* inlineCFG(SyncGraph* inlineNode, SyncGraph* branch) {
+  if (inlineNode) {
+    SyncGraph *oldChild = inlineNode->child;
+    SyncGraphVec copy = getCopyofGraph(branch, inlineNode->fnSymbol);
+    if (copy.length() >0) {
+      inlineNode->child = copy.head();
+      copy.head()->parent = inlineNode;
+      copy.tail()->child = oldChild;
+      oldChild->parent = copy.tail();
+    }
+      return copy.tail();
+  }
+  return NULL;
+}
 
 
-// static bool inlineCFG(SyncGraph* inlineNode, SyncGraph* branch) {
-//   if (inlineNode) {
-//     SyncGraph *oldChild = inlineNode->child;
-//     SyncGraphVec copy = getCopyofGraph(branch, inlineNode->fnSymbol, inlineNode->levelID);
-//     if (copy.count() >0) {
-//       inlineNode->child = copy.head();
-//       copy.head()->parent = inlineNode;
-//       copy.tail()->child = oldChild;
-//       oldChild->parent = copy.tail();
-//     }
-//   }
-//   return true;
-// }
+static void expandAllInternalFunctions(SyncGraph* root, Vec<FnSymbol*> &fnSymbols, SyncGraph* endPoint) {
+  SyncGraph* cur = root;
+  SyncGraphVec endPoints;
+  while(cur != NULL) {
+    if(cur == endPoint)
+      return;
+    if(cur->intFuncCalls.count() != 0) {
+      forv_Vec(CallExpr, fnCall, cur->intFuncCalls) {
+	FnSymbol* curFun = fnCall->theFnSymbol();
+	SyncGraph* intFuncNode = funcGraphMap.get(curFun);
+	if(intFuncNode != NULL && fnSymbols.in(curFun) == NULL
+	   && fnSymbols.add_exclusive(curFun) == 1 ) {
+	  SyncGraph* endPoint = inlineCFG(cur, intFuncNode);
+	  endPoints.add(endPoint);
+	}	  
+      }
+    }
+    
+    if(cur->cChild != NULL ) {
+      expandAllInternalFunctions(cur->cChild, fnSymbols,cur->cChild->joinNode);
+    } 
+    
+    if(cur->fChild != NULL && cur->fChild->fnSymbol->hasFlag(FLAG_BEGIN)) {
+      expandAllInternalFunctions(cur->fChild, fnSymbols);
+    }
+    
+    if(endPoints.tail() == cur) {
+      fnSymbols.pop();
+      endPoints.pop();
+    }
+    cur = cur->child;
+  }
+  return;
+}
+
+
 
 
 /**
@@ -234,13 +273,17 @@ static void cleanUpSyncGraph(SyncGraph *node) {
     delete cur;
   }
   externVarDetails.clear();
+  funcGraphMap.clear();
+  analysisRoots.clear();
+  //  syncGraphRoot = NULL;
 }
 
+/*
 static void linkSyncNodes(SyncGraph *signal, SyncGraph *wait) {
   signal->syncPoints.add(wait);
   wait->syncPoints.add(signal);
 }
-
+*/
 /**
    This function will compare two scopes and return the relationship.
    Return 0  : Not compareable
@@ -269,6 +312,9 @@ static int compareScopes(Scope* a, Scope* b) {
   return 0;
 }
 
+//static bool isBeginFunctionNode(FnSymbol *fn){
+// return fn->hasFlag(FLAG_BEGIN);
+//}
 
 /**
    Adding a child node to the current node.
@@ -282,12 +328,14 @@ static SyncGraph* addChildNode(SyncGraph *cur, FnSymbol* fn) {
   SyncGraph* childNode = new SyncGraph();
   childNode->parent = cur;
   childNode->fnSymbol = fn;
-  if (fn == cur->fnSymbol)
+  if (fn == cur->fnSymbol){
     cur->child = childNode;
-  else {
+    childNode->syncedScopes.copy(cur->syncedScopes);
+  } else {
     cur->fChild = childNode;
-    funcGraphMap.put(fn,childNode);
-    childNode->levelID = cur->levelID + 1;
+    if(fn->hasFlag(FLAG_BEGIN)){
+      childNode->syncedScopes.copy(cur->syncedScopes);
+    }
   }
   return childNode;
 }
@@ -396,6 +444,92 @@ static SyncGraph* addSyncExprs(Expr *expr, SyncGraph *cur) {
   return cur;
 }
 
+//static void collectAllSyncNodes( , ){
+
+//}
+
+
+//static void expandAllInternalFunctiosn(SyncGraph* root){
+
+//}
+
+
+static SyncGraph* nextSyncPoint(SyncGraph* start) {
+  SyncGraph * cur =  start;
+  while(cur != NULL) {
+    if(cur->syncType ==  NODE_SINGLE_WAIT_FULL ||
+       cur->syncType ==  NODE_SINGLE_SIGNAL_FULL ||
+       cur->syncType ==  NODE_SYNC_SIGNAL_FULL ||
+       cur->syncType == NODE_SYNC_SIGNAL_EMPTY)
+      return cur;
+    if(cur->cChild == NULL)
+      cur = cur->child;
+    else {
+      // TODO : how to choose between
+      // else part and if part
+      cur = cur->child;
+    }
+  }
+  return NULL;	
+}
+
+static void collectAllAvailableBeginGraphs(SyncGraph* root, SyncGraphVec& endPoints, SyncGraphVec& taskPoints){
+  SyncGraph* cur  = root;
+  while (cur != NULL && endPoints.in(cur) == NULL) {
+    if (cur->fChild != NULL && cur->fChild->fnSymbol->hasFlag(FLAG_BEGIN)){
+      taskPoints.add(cur->fChild);
+    }
+    if(cur->cChild!= NULL) {
+      endPoints.add(cur->cChild->joinNode);
+      collectAllAvailableBeginGraphs(cur->cChild,endPoints,taskPoints);
+    } 
+    cur = cur->child;
+  }
+  return;
+}
+
+static void provideWarning(SymExpr* expr, ExternVarDetails* var) {
+  USR_WARN(expr,"Potential unsafe (use after free) use of variable %s here. Please make sure the variable use is prperly synced", var->varName);
+}
+
+static void checkOrphanStackVar(SyncGraph *root) {
+  // allCallsSynced = allCallsSynced;
+  //  ASTContainsInternalFunctionCalls(root->fnSymbol);
+  //collectAllInternalFunctions(root->fnSymbol);
+  // struct ExternVarDetails {
+//   std::string varName;
+//   Scope* scope;
+//   Vec<SymExpr*> usePoints;
+//   Vec<SyncGraph*> useNode;
+//   ExternVarDetails() {}
+//   ~ExternVarDetails() {}
+// };
+
+  
+  // Do the test for each external Var
+   forv_Vec (ExternVarDetails, cur, externVarDetails) {
+     SyncGraph *defFunction = funcGraphMap.get(cur->scope->getFunction());
+     // add all sync factors into 
+     //  Vec<SyncGraph*> sourceStack;
+     //     sourceStack.reverse();
+     SyncGraphVec taskPoints;
+     SyncGraphVec endPoints;
+     
+     SyncGraph* sourceSyncPoint = nextSyncPoint(defFunction);
+     //    INT_ASSERT(cur->usePoints.length() == cur->useNodes.length());
+     forv_Vec(UseInfo, curUseInfo, cur->usePoints){
+       if( nextSyncPoint(curUseInfo->useNode) == NULL || sourceSyncPoint == NULL)
+	 provideWarning(curUseInfo->usePoint,cur);
+       else {
+	 endPoints.add(defFunction);
+	 endPoints.add(curUseInfo->useNode);
+	 collectAllAvailableBeginGraphs(root,endPoints,taskPoints);
+	 
+       }
+       endPoints.clear();
+     }
+   }   
+}
 
 
 /***
@@ -421,7 +555,6 @@ static bool isOuterVar(Symbol* sym, FnSymbol* fn) {
       return true;
     }
   }
-
   Symbol* symParent = sym->defPoint->parentSymbol;
   Symbol* parent = fn->defPoint->parentSymbol;
   bool flag = false;
@@ -451,48 +584,50 @@ static ArgSymbol*  getTheArgSymbol(std::string sym,FnSymbol* parent) {
   return NULL;
 }
 
+
+// Get the scope of the symbol.
+// If its an external Varaible to the base function we return NULL.
 static Scope* getOriginalScope(Symbol* sym) {
   if(isArgSymbol(sym)) {
     while (isArgSymbol(sym)) {
       ArgSymbol* argSym = toArgSymbol(sym);
       Symbol* symParent  = sym->defPoint->parentSymbol;
       Symbol* parent = symParent->defPoint->parentSymbol;
+      FnSymbol* parentFunction = toFnSymbol(parent);
+      ArgSymbol* parentArgSymbol = NULL;
+      if(parentFunction != NULL)
+	parentArgSymbol = getTheArgSymbol(sym->name,parentFunction);
       if (argSym->intent == INTENT_REF) {
         if(isFnSymbol(parent)) {
-          FnSymbol* parentFunction = toFnSymbol(parent);
-          ArgSymbol* argSymbol = getTheArgSymbol(sym->name,parentFunction);
-          if(argSymbol != NULL) {
-            sym = argSymbol;
+	  if(parentArgSymbol != NULL) {
+	    // Go one level up.
+            sym = parentArgSymbol;
           } else {
-            // it is defined in this level
-            // TODO
-            return parentFunction->body;
-          }
-        } else if (isFnSymbol(symParent)) {
-          return toFnSymbol(symParent)->body;
-        } else {
-          break;
+	    // We reached the defining point.
+	    break;
+          }	  
+        } else if (parentArgSymbol != NULL) {
+	  /* We are at the uppermost level of heirarchy */
+	  return NULL;
+	} else {
+          return parentFunction->body;
         }
       } else {
         return sym->defPoint->getScopeBlock();
       }
     }
-
-  } else {
-    return sym->defPoint->getScopeBlock();
   }
-
-  return NULL;
+  return sym->defPoint->getScopeBlock();
 }
 
-static bool  refersExternalSymbols(Expr* expr) {
+static bool  refersExternalSymbols(Expr* expr, SyncGraph* cur) {
  std::vector<SymExpr*> symExprs;
   collectSymExprs(expr, symExprs);
   for_vector (SymExpr, se, symExprs) {
     Symbol* sym = se->var;
     if (isOuterVar(sym, expr->getFunction())) {
-      BlockStmt* block = getOriginalScope(sym);
-      if(shouldSync(block)){
+      Scope* block = getOriginalScope(sym);
+      if(shouldSync(block, cur)){
 	return true;
       }
     }
@@ -500,7 +635,7 @@ static bool  refersExternalSymbols(Expr* expr) {
   return false;
 }
 
-static void addExternVarDetails(Scope s, string v,SymExpr* use, GraphNode8 node) {
+static void addExternVarDetails(Scope* s, std::string v,SymExpr* use, SyncGraph* node) {
   ExternVarDetails * theOne = NULL;
   forv_Vec (ExternVarDetails, cur, externVarDetails) {
     if (cur->varName.compare(v)  == 0 &&  cur->scope == s) {
@@ -512,13 +647,9 @@ static void addExternVarDetails(Scope s, string v,SymExpr* use, GraphNode8 node)
     theOne = new ExternVarDetails();
     theOne->varName = v;
     theOne->scope = s;
-    synced
-    theOne->fnSymbol = s->getFnSymbol();
   }
-  theOne->usePoints
+  theOne->addUseInfo(use,node);
 }
-
-
 
 static void addSymbolsToGraph(Expr* expr, SyncGraph *cur) {
   std::vector<SymExpr*> symExprs;
@@ -527,7 +658,8 @@ static void addSymbolsToGraph(Expr* expr, SyncGraph *cur) {
     Symbol* sym = se->var;
     if (isOuterVar(sym, expr->getFunction())) {
       BlockStmt* block = getOriginalScope(sym);
-      if(shouldSync(block)){
+      if(shouldSync(block, cur)) {
+	addExternVarDetails(block, sym->name, se, cur);
         cur->contents.add_exclusive(se);
         cur->syncScope.add(block);
       }
@@ -537,9 +669,12 @@ static void addSymbolsToGraph(Expr* expr, SyncGraph *cur) {
   std::vector<CallExpr*> callExprs;
   collectCallExprs(expr, callExprs);
   for_vector (CallExpr, call, callExprs) {
-    FnSymbol* caleeFn = call->theFnSymbol();
-    
-    if (caleeFn != NULL && !(caleeFn->hasFlag(FLAG_BEGIN)) && (caleeFn->getModule()->modTag == MOD_USER)) {
+    FnSymbol* caleeFn = call->theFnSymbol();    
+    if (caleeFn != NULL && !(caleeFn->hasFlag(FLAG_BEGIN))
+	&& (caleeFn->getModule()->modTag == MOD_USER)
+	&& isFnSymbol(caleeFn->defPoint->parentSymbol)) {
+      // Non begin used mod function
+      // that is internal
       cur->intFuncCalls.add_exclusive(call);
     }
   }
@@ -548,162 +683,19 @@ static void addSymbolsToGraph(Expr* expr, SyncGraph *cur) {
 }
 
 
-static void collectFuncNodes(SyncGraph *cur, SyncGraphVec& funcNodes) {
-  if (cur->fChild != NULL) {
-    // we need not parse for embedded functions.
-    if(cur->fChild->fnSymbol->hasFlag(FLAG_BEGIN))
-      funcNodes.add(cur->fChild);
-    collectFuncNodes(cur->fChild, funcNodes);
-  }
-  if (cur->child != NULL)
-    collectFuncNodes(cur->child, funcNodes);
-}
-
-// static SyncGraph* getNextSyncNode(SyncGraph* cur, SyncGraphVec* alreadySynced) {
-//   SyncGraph* next  = cur->child;
-//   while ( next != NULL &&
-//           next->syncType != NODE_SINGLE_WAIT_FULL &&
-//           next->syncType != NODE_SINGLE_SIGNAL_FULL &&
-//           next->syncType != NODE_SYNC_SIGNAL_FULL &&
-//           next->syncType != NODE_SYNC_SIGNAL_EMPTY &&
-//           !(alreadySynced->in(next))) {
-//     next = next->child;
+// static void collectFuncNodes(SyncGraph *cur, SyncGraphVec& funcNodes) {
+//   if (cur->fChild != NULL) {
+//     // we need not parse for embedded functions.
+//     if(cur->fChild->fnSymbol->hasFlag(FLAG_BEGIN))
+//       funcNodes.add(cur->fChild);
+//     collectFuncNodes(cur->fChild, funcNodes);
 //   }
-//   return next;
+//   if (cur->child != NULL)
+//     collectFuncNodes(cur->child, funcNodes);
 // }
 
-static void checkOrphanStackVar(SyncGraph *root) {
-  /*
-    TODO:
-    We want to sync only begin functions right now.
-    So we will filter out the begin functions.
-  */
-  SyncGraphVec funcNodes;
-  funcNodes.add(root);
-  collectFuncNodes(root, funcNodes);
-  forv_Vec (SyncGraph, funcNode, funcNodes) {
-    SyncGraph * curNode = funcNode;
-    /**
-       An optimization: we will not process the thread
-       that is created before in
-    **/
-    int processTask  = 0;
-    /* Initialize sync points with each Thread */
-    FnSyncGraphMap taskSyncPoints;
-    FnSyncGraphVecMap syncedNodes;
-    forv_Vec (SyncGraph, nextFuncNode, funcNodes) {
-      if (processTask == 1) {
-        taskSyncPoints.put(nextFuncNode->fnSymbol, nextFuncNode);
-        syncedNodes.put(nextFuncNode->fnSymbol, new SyncGraphVec());
-      } else if (nextFuncNode == funcNode) {
-        processTask  = 1;
-      }
-    }
-    while (curNode != NULL) {
-      /*
-        We need to consider only about syncVars
-      */
-      if (!(curNode->syncVar.empty())) {
-        std::string syncVar = curNode->syncVar;
-        int processnextTask = 0;
-        forv_Vec (SyncGraph, nextFuncNode, funcNodes) {
-          if (processnextTask == 1) {
-            SyncGraphVec* syncedNodesinFunc =  syncedNodes.get(nextFuncNode->fnSymbol);
-	    // SyncGraph* finalCandidateSyncNode = getNextSyncNode(nextFuncNode, syncedNodesinFunc);
-            SyncGraph* endofSearch = NULL;
-	    // if (finalCandidateSyncNode != NULL)
-	    // endofSearch = finalCandidateSyncNode->child;
-            if (curNode->syncType ==  NODE_SINGLE_WAIT_FULL) {
-              /*
-                Since there is no state change in SINGLE variable after
-                being full we have to search from begining.
-              */
-              SyncGraph* candidateSyncNode = nextFuncNode;
-              while (candidateSyncNode  != endofSearch) {
-                if (syncVar.compare(candidateSyncNode->syncVar) == 0  &&
-                    candidateSyncNode->syncType == NODE_SINGLE_SIGNAL_FULL) {
-                  linkSyncNodes(candidateSyncNode, curNode);
-                  syncedNodesinFunc->add_exclusive(candidateSyncNode);
-                }
-                candidateSyncNode = candidateSyncNode->child;
-              }
-            } else if (curNode->syncType ==  NODE_SINGLE_SIGNAL_FULL) {
-              SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
-              while (candidateSyncNode  != endofSearch) {
-                if (syncVar.compare(candidateSyncNode->syncVar) == 0  &&
-                    candidateSyncNode->syncType == NODE_SINGLE_WAIT_FULL) {
-                  linkSyncNodes(curNode, candidateSyncNode);
-                  syncedNodesinFunc->add_exclusive(candidateSyncNode);
-                }
-                candidateSyncNode = candidateSyncNode->child;
-              }
-            } else  if (curNode->syncType == NODE_SYNC_SIGNAL_FULL) {
-              SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
-              while (candidateSyncNode  != endofSearch) {
-                if (syncVar.compare(candidateSyncNode->syncVar) == 0  &&
-                    candidateSyncNode->syncType == NODE_SYNC_SIGNAL_EMPTY) {
-                  linkSyncNodes(candidateSyncNode, curNode);
-                  syncedNodesinFunc->add_exclusive(candidateSyncNode);
-                }
-                candidateSyncNode = candidateSyncNode->child;
-              }
-            } else if (curNode->syncType == NODE_SYNC_SIGNAL_EMPTY) {
-              SyncGraph* candidateSyncNode = taskSyncPoints.get(nextFuncNode->fnSymbol);
-              while (candidateSyncNode  != endofSearch) {
-                if (syncVar.compare(candidateSyncNode->syncVar) == 0  &&
-                    candidateSyncNode->syncType == NODE_SYNC_SIGNAL_FULL) {
-                  linkSyncNodes(curNode, candidateSyncNode);
-                  syncedNodesinFunc->add_exclusive(candidateSyncNode);
-                }
-                candidateSyncNode = candidateSyncNode->child;
-              }
-            }
-          } else if (nextFuncNode == funcNode) {
-            processnextTask  = 1;
-          }
-        }
-        if (curNode->syncPoints.count() == 0 &&
-            curNode->syncType != NODE_SINGLE_WAIT_FULL) {
-          //          USR_WARN(curNode->syncExpr,
-          //       "No matching Syncronization Expression for this. This could result in the program entering an infinite wait.");
-        } else if (curNode->syncPoints.count() == 1) {
-          taskSyncPoints.put(curNode->syncPoints.only()->fnSymbol, curNode->syncPoints.only());
-        }
-      }
-      curNode = curNode->child;
-    }
-    //    syncedNodes;
-    form_Map(FnSyncGraphVecMapElem, nextList, syncedNodes) {
-      delete(nextList->value);
-    }
-  }
-  /**
-     TODO: We need not analyze the main thread for unsyncronized
-  **/
-  funcNodes.remove(0);
-  forv_Vec (SyncGraph, funcNode, funcNodes) {
-    SyncGraph * curNode = funcNode;
-    while (curNode != NULL) {
-      if (curNode->contents.length() > 0) {
-        if (curNode->syncType == NODE_UNKNOWN) {
-          /* No sync point
-             report error directly
-          */
-          forv_Vec (SymExpr, unsynced, curNode->contents) {
-            USR_WARN(unsynced,
-                     "Unsynchronized use of external variable(%s). This could result in incorrect/unintended program behaviour.",
-                     unsynced->var->name);
-          }
-        } else {
-          /** All syncronization statements should be
-              linked with Root Function **/
 
-        }
-      }
-      curNode = curNode->child;
-    }
-  }
-}
+
 
 // for finding if all calls to the base function is
 // through a sync statement. If yes then we need not
@@ -723,15 +715,16 @@ static bool isInsideSyncStmt(Expr* expr) {
   return false;
 }
 
-static void checkSyncedCalls(FnSymbol* fn, SyncGraph *cur){
-  bool allCallsSynced = true;
+
+// Check if all calls th the fn is synced.
+static void checkSyncedCalls(FnSymbol* fn){
+  allCallsSynced = true;
   forv_Vec(CallExpr,call,*fn->calledBy){
     if(isInsideSyncStmt(call)){
       allCallsSynced = false;
       break;
     } 
   }
-  cur->allCallsSynced = allCallsSynced;
 }
 
 
@@ -748,20 +741,19 @@ static BlockStmt* getSyncBlockStmt(BlockStmt* block, SyncGraph *cur) {
   return NULL;
 }
 
-static SyncGraph* handleSyncStatement(Scope* block,SyncGraph* cur) {
-  syncedScopes.add(block);
+static SyncGraph* handleSyncStatement(Scope* block, SyncGraph* cur) {
+  cur->syncedScopes.add(block);
   cur = handleBlockStmt(block,cur);
-  syncedScopes.pop();
+  cur->syncedScopes.pop();
   return cur;
 }
 
-static SyncGraph* handleCondStmt(CondStmt* cond,SyncGraph* cur) {
+static SyncGraph* handleCondStmt(CondStmt* cond, SyncGraph* cur) {
   BlockStmt* thenBlock = cond->thenStmt;
   BlockStmt* elseBlock = cond->elseStmt;
   cur = handleBlockStmt(thenBlock,cur);
   if( ASTContainsBeginFunction(elseBlock) ||
-      (isInBeginFunction(elseBlock->getFunction()) &&
-       refersExternalSymbols(elseBlock)) ){
+      refersExternalSymbols(elseBlock, cur) ){
     SyncGraph* elseNode = addElseChildNode(cur,elseBlock->getFunction());
     elseNode = handleBlockStmt(elseBlock,elseNode);
     cur = addChildNode(cur,cond->getFunction());
@@ -773,12 +765,8 @@ static SyncGraph* handleCondStmt(CondStmt* cond,SyncGraph* cur) {
 
 static SyncGraph* handleLoopStmt(BlockStmt* block,SyncGraph* cur) {
   // TODO
-  if(ASTContainsBeginFunction(block) == true) {
+  if(ASTContainsBeginFunction(block) == true || refersExternalSymbols(block, cur)) {
     for_alist (node, block->body) {
-      cur = handleExpr(node, cur);
-    }
-  } else if (isInBeginFunction(block->getFunction())){
-     for_alist (node, block->body) {
       cur = handleExpr(node, cur);
     }
   }
@@ -802,13 +790,17 @@ static SyncGraph* handleDefExpr(DefExpr* def, SyncGraph *cur) {
   return cur;
 }
 
-static bool shouldSync(Scope* block) {
+static bool shouldSync(Scope* block, SyncGraph *cur) {
   // TODO : this should handle all cases where the
   // scope of declaration function fn is beyond
   // a sync statement then we need not worry  about
   // syncing it.
-  if(syncedScopes.count() > 0) {
-    forv_Vec(Scope, syncedScope, syncedScopes) {
+
+  if(block == NULL &&  allCallsSynced == true){
+    return false;
+  }
+  if(cur->syncedScopes.length() > 0) {
+    forv_Vec(Scope, syncedScope, cur->syncedScopes) {
       if(compareScopes(block,syncedScope) == 1)
         return false;
     }
@@ -833,7 +825,6 @@ static SyncGraph* handleBlockStmt(BlockStmt* stmt, SyncGraph *cur) {
   } else if( stmt->isCoforallLoop() ) {
     // CO FOR ALL LOOP to go.
   }
-
   if(isDefExpr(stmt->body.first())) {
     DefExpr* def = toDefExpr(stmt->body.first());
     if(isVarSymbol(def->sym)) {
@@ -859,22 +850,10 @@ static SyncGraph* handleBlockStmt(BlockStmt* stmt, SyncGraph *cur) {
 
 static SyncGraph* handleCallExpr(CallExpr* callExpr, SyncGraph *cur) {
   if (callExpr->isNamed("begin_fn")) {
-    /**
-       Auto created call no need to add.
-    **/
+    //   Auto created call no need to add.
   } else {
     addSymbolsToGraph(callExpr, cur);
   }
-
-  //  if(!(callExpr->isEmpty()) && callExpr->theFnSymbol() != NULL &&
-  //  !(callExpr->isNamed("begin_fn"))) {
-    //    FnSymbol* fn  = callExpr->theFnSymbol();
-    // if(fn->getModule()->modTag == MOD_USER &&
-    //   isFnSymbol(fn->defPoint->parentSymbol)) {
-      // collect all internal function calls.
-    //  cur->intFuncCalls.add_exclusive(callExpr);
-    //}
-  // }
   return cur;
 }
 
@@ -897,12 +876,9 @@ static SyncGraph* handleExpr(Expr* expr, SyncGraph *cur){
 }
 
 
-
 static SyncGraph* handleBegin(FnSymbol* fn, SyncGraph* cur) {
   SyncGraph* childNode = addChildNode(cur, fn);
-  beginNestingLevel ++;
   handleBlockStmt(fn->body, childNode);
-  beginNestingLevel --;
   return cur;
 }
 
@@ -912,8 +888,10 @@ static SyncGraph* handleFunction(FnSymbol* fn, SyncGraph *cur=NULL) {
     newNode = cur  = syncGraphRoot = new SyncGraph();
     analysisRoots.add(syncGraphRoot);
   } else {
+    // Internal Function node.
     newNode = addChildNode(cur, fn);
   }
+  funcGraphMap.put(fn,newNode);
   handleBlockStmt(fn->body, newNode);
   return cur;
 }
@@ -939,6 +917,16 @@ static bool  ASTContainsBeginFunction(BaseAST* ast) {
   return false;
 }
 
+
+// // static bool  ASTContainsInternalFunctionCalls(BaseAST* ast) {
+// //   return true;
+// // }
+// static void  collectAllInternalFunctions(BaseAST* ast) {
+  
+// }
+
+
+
 static bool containsBeginFunction(FnSymbol* fn) {
   // we need not analyze any embedded Begin function
   if (!(fn->getModule()->modTag == MOD_USER) || fn->hasFlag(FLAG_BEGIN)) {
@@ -952,19 +940,33 @@ void checkUseAfterLexScope(){
   Vec<FnSymbol*> aFnSymbols;
   forv_Vec (FnSymbol, fn, gFnSymbols) {
     if (containsBeginFunction(fn) == true) {
-      aFnSymbols.add_exclusive(fn);
-      list_view(fn);
+      FnSymbol* cur = fn;
+      bool found  = false;
+      while (!(cur->defPoint->parentSymbol == NULL)) {
+	if (toFnSymbol(cur->defPoint->parentSymbol) != NULL) {
+	  FnSymbol* parent = toFnSymbol(cur->defPoint->parentSymbol);
+	  if (aFnSymbols.in(parent) != NULL) {
+	    found  = true;
+	    break;
+	  }
+	  cur = parent;  
+	}else
+	  break;
+      }
+      if(!found)
+	aFnSymbols.add_exclusive(fn);
     }
   }
-  // TODO use it properly.
+
+  
   isInsideSyncStmt(NULL);
   forv_Vec (FnSymbol, fn, aFnSymbols) {
-    syncGraphRoot =  new SyncGraph();
-    funcGraphMap.put(fn,syncGraphRoot);
-    beginNestingLevel = 0;
+    checkSyncedCalls(fn);
+    SyncGraph* syncGraphRoot = handleFunction(fn);
     analysisRoots.add(syncGraphRoot);
-    checkSyncedCalls(fn,syncGraphRoot);
-    handleFunction(fn, syncGraphRoot);
+    Vec<FnSymbol*> fnSymbols;
+    fnSymbols.add(fn);
+    expandAllInternalFunctions(syncGraphRoot, fnSymbols);
     checkOrphanStackVar(syncGraphRoot);
     cleanUpSyncGraph(syncGraphRoot);
   }
