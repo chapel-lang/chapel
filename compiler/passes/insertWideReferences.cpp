@@ -2418,6 +2418,18 @@ static void fixAST() {
               insertWideTemp(val, src);
             }
           }
+          else if (rhs->isPrimitive(PRIM_DEREF)) {
+            // removeWrapRecords can change the intent to something non-ref,
+            // so the actual in the PRIM_DEREF may not be a ref anymore. We'll
+            // catch this here to avoid a failure during codegen.
+            //
+            // Originally exposed by taking out a PRIM_DEREF in
+            // remoteValueForwarding during the updateTaskArg step.
+            SymExpr* ref = toSymExpr(rhs->get(1));
+            if (!ref->isRefOrWideRef()) {
+              rhs->replace(ref->remove());
+            }
+          }
           else if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
             SymExpr* field = toSymExpr(rhs->get(2));
             SymExpr* lhs = toSymExpr(call->get(1));
