@@ -105,13 +105,13 @@ static inline basetype atomic_exchange_ ## type(atomic_ ## type * obj, basetype 
   return atomic_exchange(obj, value); \
 } \
 static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
-  return atomic_compare_exchange_strong_explicit(obj, &expected, desired, order, order); \
+  return atomic_compare_exchange_strong_explicit(obj, &expected, desired, order, memory_order_relaxed); \
 } \
 static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
   return atomic_compare_exchange_strong(obj, &expected, desired); \
 } \
 static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
-  return atomic_compare_exchange_weak_explicit(obj, &expected, desired, order, order); \
+  return atomic_compare_exchange_weak_explicit(obj, &expected, desired, order, memory_order_relaxed); \
 } \
 static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
   return atomic_compare_exchange_weak(obj, &expected, desired); \
@@ -163,7 +163,7 @@ static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, typ
   type new_val; \
   do { \
     new_val = old_val + operand; \
-  } while (!atomic_compare_exchange_weak_explicit(obj, &old_val, new_val, order, order)); \
+  } while (!atomic_compare_exchange_weak_explicit(obj, &old_val, new_val, order, memory_order_relaxed)); \
   return old_val; \
 } \
 static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand) { \
@@ -174,7 +174,7 @@ static inline type atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, typ
   type new_val; \
   do { \
     new_val = old_val - operand; \
-  } while (!atomic_compare_exchange_weak_explicit(obj, &old_val, new_val, order, order)); \
+  } while (!atomic_compare_exchange_weak_explicit(obj, &old_val, new_val, order, memory_order_relaxed)); \
   return old_val; \
 } \
 static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand) { \
