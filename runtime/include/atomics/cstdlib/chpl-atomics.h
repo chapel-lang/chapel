@@ -69,7 +69,7 @@ static inline memory_order _defaultOfMemoryOrder(void) {
 
 
 ///////////////////////////////////////////////////////////////////////////////
-////                      START OF INTEGER ATOMICS BASE                   ////
+////                      START OF ATOMICS BASE                           ////
 //////////////////////////////////////////////////////////////////////////////
 #define DECLARE_ATOMICS_BASE(type, basetype) \
 static inline chpl_bool atomic_is_lock_free_ ## type(atomic_ ## type * obj) { \
@@ -95,7 +95,7 @@ static inline basetype atomic_load_ ## type(atomic_ ## type * obj) { \
 
 
 ///////////////////////////////////////////////////////////////////////////////
-////                 START OF INTEGER ATOMIC EXCHANGE OPS                 ////
+////                 START OF ATOMIC EXCHANGE OPS                         ////
 //////////////////////////////////////////////////////////////////////////////
 #define DECLARE_ATOMICS_EXCHANGE_OPS(type, basetype) \
 static inline basetype atomic_exchange_explicit_ ## type(atomic_ ## type * obj, basetype value, memory_order order) { \
@@ -163,7 +163,7 @@ static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, typ
   type new_val; \
   do { \
     new_val = old_val + operand; \
-  } while (!atomic_compare_exchange_weak_explicit(obj, &old_val, new_val, order, memory_order_relaxed)); \
+  } while (!atomic_compare_exchange_weak_explicit(obj, &old_val, new_val, order, order == memory_order_seq_cst ? order : memory_order_relaxed)); \
   return old_val; \
 } \
 static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand) { \
@@ -174,7 +174,7 @@ static inline type atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, typ
   type new_val; \
   do { \
     new_val = old_val - operand; \
-  } while (!atomic_compare_exchange_weak_explicit(obj, &old_val, new_val, order, memory_order_relaxed)); \
+  } while (!atomic_compare_exchange_weak_explicit(obj, &old_val, new_val, order, order == memory_order_seq_cst ? order : memory_order_relaxed)); \
   return old_val; \
 } \
 static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand) { \
