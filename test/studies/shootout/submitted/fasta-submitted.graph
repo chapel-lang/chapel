@@ -1,0 +1,5 @@
+perfkeys: real, real
+graphkeys: release, submitted
+files: fasta-release, fasta-submitted.dat
+graphtitle: Submitted Fasta Shootout Benchmark
+ylabel: Time (seconds)

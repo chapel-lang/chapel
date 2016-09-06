@@ -41,6 +41,9 @@
 #include "type.h"
 #include "resolution.h"
 
+// LLVM debugging support
+#include "llvmDebug.h"
+
 #include "AstToText.h"
 #include "AstVisitor.h"
 #include "CollapseBlocks.h"
@@ -97,7 +100,7 @@ FnSymbol* gChplHereFree = NULL;
 FnSymbol* gChplDoDirectExecuteOn = NULL;
 
 std::map<FnSymbol*,int> ftableMap;
-Vec<FnSymbol*> ftableVec;
+std::vector<FnSymbol*> ftableVec;
 
 Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
 Map<FnSymbol*,int> virtualMethodMap;
@@ -111,7 +114,7 @@ Map<FnSymbol*,Vec<FnSymbol*>*> virtualRootsMap;
 
 Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   BaseAST(astTag),
-  qual(kBlank),
+  qual(QUAL_BLANK),
   type(init_type),
   flags(),
   defPoint(NULL)
@@ -155,18 +158,19 @@ bool Symbol::inTree() {
 static Qualifier qualifierForArgIntent(IntentTag intent)
 {
   switch (intent) {
-    case INTENT_IN:        return kVal;
-    case INTENT_OUT:       return kRef;
-    case INTENT_INOUT:     return kRef;
-    case INTENT_CONST:     return kConst;
-    case INTENT_CONST_IN:  return kConstVal;
-    case INTENT_REF:       return kRef;
-    case INTENT_CONST_REF: return kConstRef;
-    case INTENT_PARAM:     return kParam;
-    case INTENT_TYPE:      return kBlank; // not sure about this one
-    case INTENT_BLANK:     return kBlank;
+    case INTENT_IN:        return QUAL_VAL;
+    case INTENT_OUT:       return QUAL_REF;
+    case INTENT_INOUT:     return QUAL_REF;
+    case INTENT_CONST:     return QUAL_CONST;
+    case INTENT_CONST_IN:  return QUAL_CONST_VAL;
+    case INTENT_REF:       return QUAL_REF;
+    case INTENT_CONST_REF: return QUAL_CONST_REF;
+    case INTENT_PARAM:     return QUAL_BLANK; // TODO
+    case INTENT_TYPE:      return QUAL_BLANK; // TODO
+    case INTENT_BLANK:     return QUAL_BLANK;
+    // no default to get compiler warning if other intents are added
   }
-  return kBlank;
+  return QUAL_BLANK;
 }
 
 QualifiedType Symbol::qualType() {
@@ -337,7 +341,9 @@ VarSymbol::VarSymbol(const char *init_name,
   LcnSymbol(E_VarSymbol, init_name, init_type),
   immediate(NULL),
   doc(NULL),
-  isField(false)
+  isField(false),
+  llvmDIGlobalVariable(NULL),
+  llvmDIVariable(NULL)
 {
   gVarSymbols.add(this);
 }
@@ -973,8 +979,11 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
                                  : llvm::GlobalVariable::InternalLinkage,
             llvm::Constant::getNullValue(llTy), /* initializer, */
             cname);
-
       info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type) );
+
+      if(debug_info){
+        debug_info->get_global_variable(this);
+      }
     }
 #endif
   }
@@ -1034,7 +1043,6 @@ void VarSymbol::codegenDef() {
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               codegenImmediateLLVM(immediate)));
       }
-
       info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type));
     }
     llvm::Type *varType = type->codegen().type;
@@ -1050,6 +1058,9 @@ void VarSymbol::codegenDef() {
               llvm::Constant::getNullValue(varType), varAlloca);
         }
       }
+    }
+    if(debug_info){
+      debug_info->get_variable(this);
     }
 #endif
   }
@@ -1077,7 +1088,8 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   typeExpr(NULL),
   defaultExpr(NULL),
   variableExpr(NULL),
-  instantiatedFrom(NULL)
+  instantiatedFrom(NULL),
+  llvmDIFormal(NULL)
 {
   if (intentsResolved) {
     if (iIntent == INTENT_BLANK || iIntent == INTENT_CONST) {
@@ -1391,6 +1403,7 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
     llvmType(NULL),
     llvmTbaaNode(NULL), llvmConstTbaaNode(NULL),
     llvmTbaaStructNode(NULL), llvmConstTbaaStructNode(NULL),
+    llvmDIType(NULL),
     doc(NULL)
 {
   addFlag(FLAG_TYPE_VARIABLE);
@@ -1461,6 +1474,7 @@ void TypeSymbol::codegenDef() {
     }
 
     llvmType = type;
+    if(debug_info) debug_info->get_type(this->type);
 #endif
   }
 }
@@ -1602,7 +1616,7 @@ GenRet TypeSymbol::codegen() {
       // code generated, so code generate it now. This can get called
       // when adding types partway through code generation.
       codegenDef();
-      // codegenMetadata(); TODO -- enable TBAA generation in the future.
+      // codegenMetadata(); //TODO -- enable TBAA generation in the future.
     }
     ret.type = llvmType;
 #endif
@@ -1649,6 +1663,10 @@ FnSymbol::FnSymbol(const char* initName) :
   partialCopySource(NULL),
   varargOldFormal(NULL),
   retSymbol(NULL)
+#ifdef HAVE_LLVM
+  ,
+  llvmDISubprogram(NULL)
+#endif
 {
   substitutions.clear();
   gFnSymbols.add(this);
@@ -2227,7 +2245,14 @@ void FnSymbol::codegenDef() {
 
     info->lvt->addLayer();
 
+    if(debug_info) {
+      LLVM_DISUBPROGRAM dbgScope = debug_info->get_function(this);
+      info->builder->SetCurrentDebugLocation(
+        llvm::DebugLoc::get(linenum(),0,dbgScope));
+    }
+
     llvm::Function::arg_iterator ai = func->arg_begin();
+    unsigned int ArgNo = 1; //start from 1 to cooperate with createLocalVariable
     for_formals(arg, this) {
       if (arg->hasFlag(FLAG_NO_CODEGEN))
         continue; // do not print locale argument, end count, dummy class
@@ -2242,8 +2267,13 @@ void FnSymbol::codegenDef() {
 
         info->lvt->addValue(arg->cname, tempVar.val,
                             tempVar.isLVPtr, !is_signed(type));
+        // debug info for formal arguments
+        if(debug_info){
+          debug_info->get_formal_arg(arg, ArgNo);
+        }
       }
       ++ai;
+      ArgNo++;
     }
 
 #endif
@@ -2271,9 +2301,13 @@ void FnSymbol::codegenDef() {
 #ifdef HAVE_LLVM
     info->lvt->removeLayer();
     if( developer ) {
-      bool problems;
+      bool problems = false;
 #if HAVE_LLVM_VER >= 35
-      problems = llvm::verifyFunction(*func, &llvm::errs());
+      // Debug info generation creates metadata nodes that won't be
+      // finished until the whole codegen is complete and finalize
+      // is called.
+      if( ! debug_info )
+        problems = llvm::verifyFunction(*func, &llvm::errs());
 #else
       problems = llvm::verifyFunction(*func, llvm::PrintMessageAction);
 #endif
@@ -2563,11 +2597,11 @@ bool FnSymbol::returnsRefOrConstRef() const {
 }
 
 QualifiedType FnSymbol::getReturnQualType() const {
-  Qualifier q = kBlank;
+  Qualifier q = QUAL_BLANK;
   if (retTag == RET_REF)
-    q = kRef;
+    q = QUAL_REF;
   else if(retTag == RET_CONST_REF)
-    q = kConstRef;
+    q = QUAL_CONST_REF;
   return QualifiedType(retType, q);
 }
 
@@ -2718,9 +2752,9 @@ ModuleSymbol::ModuleSymbol(const char* iName,
     initFn(NULL),
     filename(NULL),
     doc(NULL),
-    extern_info(NULL)
+    extern_info(NULL),
+    llvmDINameSpace(NULL)
 {
-
   block->parentSymbol = this;
   registerModule(this);
   gModuleSymbols.add(this);
@@ -2787,6 +2821,12 @@ void ModuleSymbol::codegenDef() {
   }
 
   std::sort(fns.begin(), fns.end(), compareLineno);
+
+#ifdef HAVE_LLVM
+  if(debug_info && info->filename) {
+    debug_info->get_module_scope(this);
+  }
+#endif
 
   for_vector(FnSymbol, fn, fns) {
     fn->codegenDef();

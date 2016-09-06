@@ -3,24 +3,28 @@
 #      CHPL_(HOST|TARGET)_FOOBAR, the module (file) name should be
 #      chpl_foobar.py. To put it more generally, the module name should be the
 #      lowercased environment variable, with any varying words removed.
-import os, optparse
+import os, optparse, sys
 from sys import stdout, stderr
 
-import utils
+chplenv_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import overrides
 from utils import memoize
 
 #TODO: @memoize causes the calls to this function to get cached
 @memoize
 def get(flag='host'):
     if flag == 'host':
-        FOOBAR_val = os.environ.get('CHPL_HOST_FOOBAR', '')
+        FOOBAR_val = overrides.get('CHPL_HOST_FOOBAR', '')
     elif flag == 'target':
-        FOOBAR_val = os.environ.get('CHPL_TARGET_FOOBAR', '')
+        FOOBAR_val = overrides.get('CHPL_TARGET_FOOBAR', '')
     else:
         raise ValueError("Invalid flag: '{0}'".format(flag))
 
     if not FOOBAR_val:
         #TODO: Set the default for FOOBAR_val
+        pass
 
     return FOOBAR_val
 

@@ -99,10 +99,7 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, Gen
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5);
 
 static GenRet codegenZero();
-//static GenRet codegenOne();
 static GenRet codegenNullPointer();
-
-static GenRet codegenFieldPtr(GenRet base, const char* field);
 static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
@@ -1603,15 +1600,6 @@ GenRet codegenFieldPtr(GenRet base, Expr* field) {
   } else {
     INT_FATAL("Unknown field in codegenFieldPtr");
   }
-  return codegenFieldPtr(base, cname, name, field_normal);
-}
-
-static
-GenRet codegenFieldPtr(GenRet base, const char* field) {
-  const char* cname = NULL;
-  const char* name = NULL;
-  cname = field;
-  name = field;
   return codegenFieldPtr(base, cname, name, field_normal);
 }
 
@@ -3310,7 +3298,30 @@ GenRet codegenCast(Type* t, GenRet value, bool Cparens)
   ret.isLVPtr = value.isLVPtr;
 
   // If we are casting to bool, set it to != 0.
-  if( is_bool_type(t) ) return codegenNotEquals(value, codegenZero());
+  if( is_bool_type(t) ) {
+    // NOTE: We have to limit this special treatment for bool cast to
+    // --no-llvm compilations. LLVM bool operations return single bit
+    // integers whereas bool type is 8-bits. So we still need explicit
+    // cast. Engin
+    if(info->cfile) {
+      return codegenNotEquals(value, codegenZero());
+    }
+    else {
+#ifdef HAVE_LLVM
+      llvm::Type* castType = t->codegen().type;
+
+      llvm::IntegerType* castTypeInt =
+        llvm::dyn_cast<llvm::IntegerType>(castType);
+
+      llvm::IntegerType* valueTypeInt =
+        llvm::dyn_cast<llvm::IntegerType>(value.val->getType());
+
+      if(castTypeInt->getBitWidth() < valueTypeInt->getBitWidth()) {
+        return codegenNotEquals(value, codegenZero());
+      }
+#endif
+    }
+  }
 
   // if we are casting a C99 wide pointer, parens around the value
   // will result in an error, hence the Cparens parameter
@@ -4543,6 +4554,7 @@ GenRet CallExpr::codegenPrimitive() {
         ret.c = "return " + ret.c;
       } else {
 #ifdef HAVE_LLVM
+        ret = codegenCast(ret.chplType, codegenValue(get(1)));
         ret.val = gGenInfo->builder->CreateRet(ret.val);
 #endif
       }
@@ -5149,189 +5161,6 @@ GenRet CallExpr::codegenPrimitive() {
     break;
   }
 
-  case PRIM_SYNC_INIT:
-    codegenCall("chpl_sync_initAux",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SYNC_DESTROY:
-    codegenCall("chpl_sync_destroyAux",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SYNC_LOCK:
-    codegenCall("chpl_sync_lock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SYNC_UNLOCK:
-    codegenCall("chpl_sync_unlock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SYNC_WAIT_FULL:
-    codegenCall("chpl_sync_waitFullAndLock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")),
-                get(2),
-                get(3));
-    break;
-
-  case PRIM_SYNC_WAIT_EMPTY:
-    codegenCall("chpl_sync_waitEmptyAndLock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")),
-                get(2),
-                get(3));
-    break;
-
-  case PRIM_SYNC_SIGNAL_FULL:
-    codegenCall("chpl_sync_markAndSignalFull",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SYNC_SIGNAL_EMPTY:
-    codegenCall("chpl_sync_markAndSignalEmpty",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SINGLE_INIT:
-    codegenCall("chpl_single_initAux",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
-    break;
-
-  case PRIM_SINGLE_DESTROY:
-    codegenCall("chpl_single_destroyAux",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
-    break;
-
-  case PRIM_SINGLE_LOCK:
-    codegenCall("chpl_single_lock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
-    break;
-
-  case PRIM_SINGLE_UNLOCK:
-    codegenCall("chpl_single_unlock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
-    break;
-
-  case PRIM_SINGLE_WAIT_FULL:
-    // single, lineno, filename
-    codegenCall("chpl_single_waitFullAndLock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")),
-                get(2),
-                get(3));
-    break;
-
-  case PRIM_SINGLE_SIGNAL_FULL:
-    codegenCall("chpl_single_markAndSignalFull",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
-    break;
-
-  case PRIM_WRITEEF: {
-    // get(1) is argument (class, wide or not), get(2) is what to write.
-    GenRet s;
-
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-      s = codegenRaddr(get(1));
-    else
-      s = get(1);
-
-    codegenCall( "chpl_write_EF", s, get(2));
-
-    break;
-  }
-
-  case PRIM_WRITEFF:
-  case PRIM_WRITEXF: {
-    const char* fn = NULL;
-    GenRet      s;
-
-    if (primitive->tag == PRIM_WRITEFF) fn = "chpl_write_FF";
-    if (primitive->tag == PRIM_WRITEXF) fn = "chpl_write_XF";
-
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-      s = codegenRaddr(get(1));
-    else
-      s = get(1);
-
-    codegenCall( fn, s, get(2));
-
-    break;
-  }
-
-  case PRIM_READFE:
-  case PRIM_READFF:
-  case PRIM_READXX: {
-    const char* fn = NULL;
-    GenRet      s;
-
-    if (primitive->tag == PRIM_READFE) fn = "chpl_read_FE";
-    if (primitive->tag == PRIM_READFF) fn = "chpl_read_FF";
-    if (primitive->tag == PRIM_READXX) fn = "chpl_read_XX";
-
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-      s = codegenRaddr(get(1));
-    else
-      s = get(1);
-
-    ret = codegenCallExpr(fn, s);
-
-    break;
-  }
-
-  case PRIM_SYNC_IS_FULL: {
-    // get(1) is sync var get(2) is isSimpleSyncBaseType( arg )
-    GenRet s      = get(1);
-    GenRet valPtr = codegenLocalAddrOf(codegenFieldPtr(s, "value"));
-    GenRet aux    = codegenLocalAddrOf(codegenFieldPtr(s, "sync_aux"));
-
-    ret = codegenCallExpr("chpl_sync_isFull", valPtr, aux);
-
-    break;
-  }
-
-  case PRIM_SINGLE_WRITEEF: {
-    // get(1) is argument (class, wide or not), get(2) is what to write.
-    GenRet s;
-
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-      s = codegenRaddr(get(1));
-    else
-      s = get(1);
-
-    codegenCall( "chpl_single_write_EF", s, get(2));
-
-    break;
-  }
-
-  case PRIM_SINGLE_READFF:
-  case PRIM_SINGLE_READXX: {
-    GenRet      s;
-    const char* fn = NULL;
-
-    if (primitive->tag == PRIM_SINGLE_READFF) fn = "chpl_single_read_FF";
-    if (primitive->tag == PRIM_SINGLE_READXX) fn = "chpl_single_read_XX";
-
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-      s = codegenRaddr(get(1));
-    else
-      s = get(1);
-
-    ret = codegenCallExpr(fn, s);
-
-    break;
-  }
-
-  case PRIM_SINGLE_IS_FULL: {
-    // get(1) is sync var get(2) is isSimpleSyncBaseType( arg )
-    GenRet s       = get(1);
-    GenRet val_ptr = codegenLocalAddrOf(codegenFieldPtr(s, "value"));
-    GenRet aux     = codegenLocalAddrOf(codegenFieldPtr(s, "single_aux"));
-
-    ret = codegenCallExpr("chpl_single_isFull", val_ptr, aux);
-
-    break;
-  }
-
   case PRIM_GET_SERIAL:
     ret = codegenCallExpr("chpl_task_getSerial");
     break;
@@ -5558,14 +5387,12 @@ GenRet CallExpr::codegenPrimitive() {
 
     // source data array
     GenRet   remoteAddr = get(4);
-    SymExpr* sym        = toSymExpr(get(4));
+    TypeSymbol* remoteAddrType = get(4)->typeInfo()->symbol;
 
-    INT_ASSERT(sym);
-
-    if (sym->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) == true) {
+    if (remoteAddrType->hasFlag(FLAG_WIDE_REF) == true) {
       remoteAddr = codegenRaddr(remoteAddr);
-    } else if (sym->typeInfo()->symbol->hasFlag(FLAG_REF) == false) {
-        remoteAddr = codegenAddrOf(remoteAddr);
+    } else if (remoteAddrType->hasFlag(FLAG_REF) == false) {
+      remoteAddr = codegenAddrOf(remoteAddr);
     }
 
     // source strides local array
@@ -5661,7 +5488,7 @@ GenRet CallExpr::codegenPrimitive() {
 
       // C standard promotes small ints to full int when they are involved in
       // arithmetic operations. When we don't denormalize the AST, small integer
-      // arithemtic is always assigned to a temporary of the suitable size,
+      // arithmetic is always assigned to a temporary of the suitable size,
       // which truncates the integer appropriately. OTOH, if we denormalize the
       // AST then we have to make sure that are cast to appropriate size.
       //

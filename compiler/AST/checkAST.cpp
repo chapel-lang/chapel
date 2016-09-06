@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -205,31 +205,6 @@ void checkPrimitives()
      case PRIM_GET_IMAG:            // get complex imag component
      case PRIM_QUERY:               // query expression primitive
      case PRIM_LOCAL_CHECK:         // assert that a wide ref is on this locale
-     case PRIM_SYNC_INIT:
-     case PRIM_SYNC_DESTROY:
-     case PRIM_SYNC_LOCK:
-     case PRIM_SYNC_UNLOCK:
-     case PRIM_SYNC_WAIT_FULL:
-     case PRIM_SYNC_WAIT_EMPTY:
-     case PRIM_SYNC_SIGNAL_FULL:
-     case PRIM_SYNC_SIGNAL_EMPTY:
-     case PRIM_SINGLE_INIT:
-     case PRIM_SINGLE_DESTROY:
-     case PRIM_SINGLE_LOCK:
-     case PRIM_SINGLE_UNLOCK:
-     case PRIM_SINGLE_WAIT_FULL:
-     case PRIM_SINGLE_SIGNAL_FULL:
-     case PRIM_WRITEEF:
-     case PRIM_WRITEFF:
-     case PRIM_WRITEXF:
-     case PRIM_READFE:
-     case PRIM_READFF:
-     case PRIM_READXX:
-     case PRIM_SYNC_IS_FULL:
-     case PRIM_SINGLE_WRITEEF:
-     case PRIM_SINGLE_READFF:
-     case PRIM_SINGLE_READXX:
-     case PRIM_SINGLE_IS_FULL:
      case PRIM_GET_END_COUNT:
      case PRIM_SET_END_COUNT:
      case PRIM_GET_SERIAL:              // get serial state
@@ -315,7 +290,7 @@ void checkReturnTypesHaveRefTypes()
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
   {
     Type* retType = fn->retType;
-    
+
     if (retType->symbol->hasFlag(FLAG_REF))
       continue;
 

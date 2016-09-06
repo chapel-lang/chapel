@@ -157,7 +157,7 @@ void chpl_vdebug_start (const char *fileroot, double now) {
                 (long) ru.ru_utime.tv_sec, (long) ru.ru_utime.tv_usec,
                 (long) ru.ru_stime.tv_sec, (long) ru.ru_stime.tv_usec  );
 
-  // Dump file names
+  // Dump file names and function names
   if (chpl_nodeID == 0) {
     int ix;
     chpl_dprintf (chpl_vdebug_fd, "Tablesize: %d\n", chpl_filenameTableSize);
@@ -172,6 +172,10 @@ void chpl_vdebug_start (const char *fileroot, double now) {
                       chpl_filenameTable[ix]);
       }
     }
+    for (ix = 0; chpl_finfo[ix].name != NULL; ix++)
+      chpl_dprintf (chpl_vdebug_fd, "FIDname: %d %d %d %s\n", ix,
+                    chpl_finfo[ix].fileno, chpl_finfo[ix].lineno,
+                    chpl_finfo[ix].name);
   }
   
   chpl_vdebug = 1;

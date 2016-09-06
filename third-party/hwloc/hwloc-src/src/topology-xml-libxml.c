@@ -131,10 +131,12 @@ hwloc__libxml_import_get_content(hwloc__xml_import_state_t state,
   size_t length;
 
   child = lstate->node->children;
-  if (!child)
+  if (!child || child->type != XML_TEXT_NODE) {
+    if (expected_length)
+      return -1;
+    *beginp = "";
     return 0;
-  if (child->type != XML_TEXT_NODE)
-    return 0;
+  }
 
   length = strlen((char *) child->content);
   if (length != expected_length)

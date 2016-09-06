@@ -78,7 +78,7 @@ int main(int argc, char** argv)
   assert( true == atomic_exchange_bool(&flag, true) );
 
   atomic_thread_fence(memory_order_seq_cst);
-  atomic_signal_thread_fence(memory_order_seq_cst);
+  atomic_signal_fence(memory_order_seq_cst);
 
   {
     atomic_uint_least8_t tmp;

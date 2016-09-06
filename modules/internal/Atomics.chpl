@@ -88,7 +88,7 @@ module Atomics {
   extern type atomic_bool;
 
   extern proc atomic_thread_fence(order:memory_order);
-  extern proc atomic_signal_thread_fence(order:memory_order);
+  extern proc atomic_signal_fence(order:memory_order);
 
   extern proc atomic_is_lock_free_bool(ref obj:atomic_bool):bool;
   extern proc atomic_init_bool(ref obj:atomic_bool, value:bool);
@@ -256,7 +256,7 @@ module Atomics {
 
   // these can be called just the way they are:
   //extern proc atomic_thread_fence(order:memory_order);
-  //extern proc atomic_signal_thread_fence(order:memory_order);
+  //extern proc atomic_signal_fence(order:memory_order);
   // but they only handle the local portion of a fence.
   // To include PUTs or GETs in the fence, use atomic_fence instead:
   pragma "no doc"

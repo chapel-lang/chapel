@@ -817,7 +817,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
   if chpl__testParFlag then
-    chpl__testPar("Block domain follower invoked on ", followThis);
+    chpl__testParWriteln("Block domain follower invoked on ", followThis);
 
   var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
   type strType = chpl__signedType(idxType);
@@ -1108,9 +1108,9 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
 
   if chpl__testParFlag {
     if fast then
-      chpl__testPar("Block array fast follower invoked on ", followThis);
+      chpl__testParWriteln("Block array fast follower invoked on ", followThis);
     else
-      chpl__testPar("Block array non-fast follower invoked on ", followThis);
+      chpl__testParWriteln("Block array non-fast follower invoked on ", followThis);
   }
 
   if testFastFollowerOptimization then

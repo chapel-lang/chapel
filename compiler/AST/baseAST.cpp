@@ -325,7 +325,7 @@ ModuleSymbol* BaseAST::getModule() {
 
 Type* BaseAST::typeInfo() {
   QualifiedType qt = this->qualType();
-  return qt.getType();
+  return qt.type();
 }
 
 FnSymbol* BaseAST::getFunction() {
