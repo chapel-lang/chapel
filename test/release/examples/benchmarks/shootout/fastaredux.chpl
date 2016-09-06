@@ -1,14 +1,16 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
 
-   contributed by Preston Sahabu
-   derived from the Chapel fastaredux version by Casey Battaglino,
-               Kyle Brady, Preston Sahabu, and Brad Chamberlain
-   derived from the GNU C version by Paul Hsieh
+   contributed by Casey Battaglino, Kyle Brady, Preston Sahabu,
+               and Brad Chamberlain
+   derived from the GNU C version by Petr Prokhorenkov
 */
 
 config const n = 1000,   // controls the length of the generated strings
-             lineLength = 60;
+
+             lineLength = 60,
+             lookupSize = 4096,
+             lookupScale = lookupSize - 1.0;
 
 //
 // Nucleotide definitions
@@ -64,8 +66,8 @@ const HomoSapiens = [(a, 0.3029549426680),
 
 
 proc main() {
-  sumProbs(IUB);
-  sumProbs(HomoSapiens);
+  sumAndScale(IUB);
+  sumAndScale(HomoSapiens);
   repeatMake(">ONE Homo sapiens alu\n", ALU, n * 2);
   randomMake(">TWO IUB ambiguity codes\n", IUB, n * 3);
   randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, n * 5);
@@ -74,12 +76,13 @@ proc main() {
 //
 // Scan the alphabets' probabilities to compute cut-offs
 //
-proc sumProbs(alphabet: []) {
+proc sumAndScale(alphabet: [?D]) {
   var p = 0.0;
   for letter in alphabet {
     p += letter(prob);
-    letter(prob) = p;
+    letter(prob) = p * lookupScale;
   }
+  alphabet[D.high](prob) = lookupScale;
 }
 
 //
@@ -108,31 +111,33 @@ proc repeatMake(desc, alu, n) {
 // Output a random sequence of length 'n' using distribution a
 //
 proc randomMake(desc, a, n) {
+  var lookup = initLookup();
   var line_buff: [0..lineLength] int(8);
     
   stdout.writef("%s", desc);
   for i in 1..n by lineLength do
     addLine(min(lineLength, n-i+1));
 
+  iter initLookup() {
+    var j = 1;
+    for i in 0..#lookupSize {
+      while (a[j](prob) < i) do
+        j += 1;
+      
+      yield a[j];
+    }
+  }
+
   //
   // Add a line of random sequence
   //
   proc addLine(bytes) {
     for (r, i) in zip(getRands(bytes), 0..) {
-      if r < a[1](prob) {
-        line_buff[i] = a[1](nucl);
-      } else {
-        var lo = a.domain.low,
-            hi = a.domain.high;
-        while (hi > lo+1) {
-          var ai = (hi + lo) / 2;
-          if (r < a[ai](prob)) then
-            hi = ai;
-          else
-            lo = ai;
-        }
-        line_buff[i] = a[hi](nucl);
-      }
+      var ai = r: int + 1;
+      while (lookup[ai](prob) < r) do
+        ai += 1;
+      
+      line_buff[i] = lookup[ai](nucl);
     }
     line_buff[bytes] = newline;
 
@@ -150,9 +155,10 @@ iter getRands(n) {
   param IA = 3877,
         IC = 29573,
         IM = 139968;
+  const SCALE = lookupScale / IM;
 
   for 0..#n {
     lastRand = (lastRand * IA + IC) % IM;
-    yield lastRand: real / IM;
+    yield SCALE * lastRand;
   }
 }
