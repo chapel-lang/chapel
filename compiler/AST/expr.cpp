@@ -5379,7 +5379,7 @@ GenRet CallExpr::codegenPrimitive() {
     // locale id
     GenRet locale;
 
-    if (get(3)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_REF)) {
+    if (get(3)->isRefOrWideRef()) {
       locale = codegenValue(codegenDeref(get(3)));
     } else {
       locale = codegenValue(get(3));
