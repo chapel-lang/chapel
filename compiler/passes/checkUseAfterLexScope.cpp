@@ -454,6 +454,22 @@ static SyncGraph* addSyncExprs(Expr *expr, SyncGraph *cur) {
 //}
 
 
+static void collectNextSyncPoints(SyncGraphVec& startPoints, SyncGraphVec& syncPoints) {
+  //  SyncGraphVec todelete;
+  forv_Vec(SyncGraph,start,startPoints) {
+    SyncGraph* syncPoint = nextSyncPoint(start);
+    if(syncPoint != NULL) {
+      syncPoints.add(syncPoint);
+    } //else {
+    // todelete.add(start)
+    // }
+  }
+
+  //  forv_Vec(syncGraph,del,todelete) {
+  //  startPoints.remove(del);
+  //}
+}
+
 static SyncGraph* nextSyncPoint(SyncGraph* start) {
   SyncGraph * cur =  start;
   while(cur != NULL) {
@@ -492,41 +508,72 @@ static void provideWarning(SymExpr* expr, ExternVarDetails* var) {
   USR_WARN(expr,"Potential unsafe (use after free) use of variable %s here. Please make sure the variable use is prperly synced", var->varName);
 }
 
-static void checkOrphanStackVar(SyncGraph *root) {
-  // allCallsSynced = allCallsSynced;
-  //  ASTContainsInternalFunctionCalls(root->fnSymbol);
-  //collectAllInternalFunctions(root->fnSymbol);
-  // struct ExternVarDetails {
-//   std::string varName;
-//   Scope* scope;
-//   Vec<SymExpr*> usePoints;
-//   Vec<SyncGraph*> useNode;
-//   ExternVarDetails() {}
-//   ~ExternVarDetails() {}
-// };
 
+static boolean threadeMahjong (SyncGraph* sourceSyncPoint, SyncGraph* root, SyncGraphVec& destSyncPoints, SyncGraphVec& taskPoints) {
+  bool updatedFlag = true;
+  bool foundSyncnode  = flase;
+  SyncGraphVec syncPoints;
+  endPoints.add(sourceSyncPoint);
+  endPoints.add(curUseInfo->useNode);
+  collectNextSyncPoints(taskPoints, destSyncPoints);
+  while(sourceSyncPoint != NULL && updatedFlag == true && destSyncPoints.length() != 0) {
+    updatedFlag = false;
+    // sync nodes and 
+    foundSyncNode = getSyncPoints(sourceSyncPoint, destSyncPoints, syncPoints);
+    if( foundSyncNode ) {
+      if(syncPoints.count() > 1){
+	// more than one sync nodes
+	// if single collect all
+	// else collect one and proceed.
+	sourceSyncPoint = nextSyncPoint(SourceSyncPoint);
+      }
+      
+    } else {
+      forv_Vec(SyncGraph, toSyncNode, destSyncPoints){
+	foundSyncNode = getSyncPoints(toSyncNode, destSyncPoints, syncPoints);
+	if( foundSyncNode ) {
+	  if(syncPoints.count() > 1){
+	    // more than one sync nodes	    
+	    // if single collect all
+	    // else collect one and proceed. 
+
+	    
+	  }
+	}
+      }
+    }
+  }
+}
+
+static void checkOrphanStackVar(SyncGraph *root) {
+  
   
   // Do the test for each external Var
-   forv_Vec (ExternVarDetails, cur, externVarDetails) {
-     SyncGraph *defFunction = funcGraphMap.get(cur->scope->getFunction());
+  forv_Vec (ExternVarDetails, cur, externVarDetails) {
+    SyncGraph *defFunction = funcGraphMap.get(cur->scope->getFunction());
      // add all sync factors into 
      //  Vec<SyncGraph*> sourceStack;
      //     sourceStack.reverse();
-     SyncGraphVec taskPoints;
-     SyncGraphVec endPoints;
-     
+     SyncGraphVec taskPoints; // start pointof each tasks (begin functions)
+     SyncGraphVec endPoints; // should not go searching beyond this
+     SyncGraphVec destSyncPoints; // destination snc point vertex
+    
      SyncGraph* sourceSyncPoint = nextSyncPoint(defFunction);
      //    INT_ASSERT(cur->usePoints.length() == cur->useNodes.length());
      forv_Vec(UseInfo, curUseInfo, cur->usePoints){
+       // provide warning for obvious cases.
        if( nextSyncPoint(curUseInfo->useNode) == NULL || sourceSyncPoint == NULL)
-	 provideWarning(curUseInfo->usePoint,cur);
+	 provideWarning(curUseInfo->usePoint, cur);
        else {
-	 endPoints.add(defFunction);
-	 endPoints.add(curUseInfo->useNode);
-	 collectAllAvailableBeginGraphs(root,endPoints,taskPoints);
-	 
+	 collectAllAvailableBeginGraphs(root, endPoints, taskPoints);
+	 bool sucess = threadedMahjong();
+	 if(sucess) {
+	   provideWarning(curUseInfo->usePoint,cur);
+	 }
        }
        endPoints.clear();
+       taskPoints.clear();
+       destPoints.clear();
      }
    }   
 }
