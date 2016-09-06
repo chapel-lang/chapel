@@ -99,7 +99,7 @@ private proc chunkOrderDist(
   var start, end: I;
   if i <= rem {
     // (div+1) elements per chunk
-    var end = i * (div + 1) - 1;
+    end = i * (div + 1) - 1;
     start = end - div;
   } else {
     // (div) elements per chunk
