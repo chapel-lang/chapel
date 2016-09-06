@@ -4534,7 +4534,7 @@ GenRet CallExpr::codegenPrimitive() {
       }
     } else {
       GenRet retExpr = get(1);
-      if (!typeInfo()->symbol->isRef() && get(1)->isRef()) {
+      if (!typeInfo()->symbol->isRefOrWideRef() && get(1)->isRefOrWideRef()) {
         retExpr = codegenDeref(retExpr);
       }
       ret = codegenValue(retExpr);
