@@ -467,7 +467,7 @@ proc BlockDom.__partialTheseLocDoms(param onlyDim, otherIdx) {
   const baseLocaleIdx = dist.targetLocsIdx(
       otherIdx.withIdx(onlyDim, whole.dim(onlyDim).low));
 
-  return locDoms[(...__lineSliceMask(this, onlyDim, baseLocaleIdx))];
+  return locDoms[(...lineSliceMask(this, onlyDim, baseLocaleIdx))];
 }
 
 proc BlockDom.dsiPartialDomain(param exceptDim) {
@@ -475,7 +475,7 @@ proc BlockDom.dsiPartialDomain(param exceptDim) {
   var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
   var ret = space dmapped Block(space, targetLocales =
-      dist.targetLocales[(...__faceSliceMask(this, exceptDim))]);
+      dist.targetLocales[(...faceSliceMask(this, exceptDim))]);
 
   return ret;
 }
@@ -527,7 +527,7 @@ proc CyclicDom.dsiPartialDomain(param exceptDim) {
   var space = {(...ranges)};
   var ret = space dmapped
     Cyclic(startIdx=this.dist.startIdx.withoutIdx(exceptDim), 
-        targetLocales=dist.targetLocs[(...__faceSliceMask(this, 
+        targetLocales=dist.targetLocs[(...faceSliceMask(this, 
             exceptDim))]);
 
   return ret;
@@ -621,7 +621,7 @@ proc BlockCyclicDom.dsiPartialDomain(param exceptDim) {
     BlockCyclic(startIdx=this.dist.lowIdx.withoutIdx(exceptDim),
         blocksize=this.dist.blocksize.withoutIdx(exceptDim),
         targetLocales=
-            dist.targetLocales[(...__faceSliceMask(this, exceptDim))]);
+            dist.targetLocales[(...faceSliceMask(this, exceptDim))]);
 
   return ret;
 }
@@ -719,7 +719,7 @@ proc SparseBlockDom.dsiPartialDomain(param exceptDim) {
   var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
   var ret = space dmapped Block(space, targetLocales =
-      dist.targetLocales[(...__faceSliceMask(this, exceptDim))]);
+      dist.targetLocales[(...faceSliceMask(this, exceptDim))]);
 
   return ret;
 }

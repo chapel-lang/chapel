@@ -36,7 +36,7 @@ proc _tuple.withoutIdx(idx) where isHomogeneousTuple(this) {
   return ret;
 }
 
-proc __lineSliceMask(dom, param dim, idx) {
+proc lineSliceMask(dom, param dim, idx) {
 
   if !isTuple(idx) || !isHomogeneousTuple(idx) then
     compilerError("Index to get line slice must be a homogeneous tuple");
@@ -75,7 +75,7 @@ proc __lineSliceMask(dom, param dim, idx) {
 }
 
 // name is creepy
-proc __faceSliceMask(dom, param exceptDim) {
+proc faceSliceMask(dom, param exceptDim) {
   param numUbRangesPre = exceptDim - 1;
   param numUbRangesPost = dom.rank - exceptDim;
 
