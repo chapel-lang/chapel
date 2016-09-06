@@ -164,21 +164,21 @@ returnInfoVal(CallExpr* call) {
   if (ct) {
     if (call->get(1)->isRef()) {
       if(ct->symbol->hasFlag(FLAG_REF)) {
-        return QualifiedType(ct->getField(1)->type, kVal);
+        return QualifiedType(ct->getField(1)->type, QUAL_VAL);
       } else {
-        return QualifiedType(ct, kVal);
+        return QualifiedType(ct, QUAL_VAL);
       }
     } else if (call->get(1)->isWideRef()) {
       if(ct->symbol->hasFlag(FLAG_WIDE_REF)) {
-        return QualifiedType(ct->getField(2)->type, kVal);
+        return QualifiedType(ct->getField(2)->type, QUAL_VAL);
       } else {
-        return QualifiedType(ct, kVal);
+        return QualifiedType(ct, QUAL_VAL);
       }
     } else if (ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       // insertWideReferences will sometimes insert a PRIM_DEREF to a
       // wide class. There should probably be a better way of expressing the
       // desired pattern...
-      return QualifiedType(ct, kVal);
+      return QualifiedType(ct, QUAL_VAL);
     }
   }
   INT_FATAL(call, "attempt to get value type of non-reference type");
@@ -197,11 +197,11 @@ static QualifiedType
 returnInfoAsRef(CallExpr* call) {
   Type* t = call->get(1)->typeInfo();
   if (isReferenceType(t) || t->symbol->hasFlag(FLAG_WIDE_REF))
-    return QualifiedType(t, kRef);
+    return QualifiedType(t, QUAL_REF);
   else {
     if (!t->refType)
       INT_FATAL(call, "invalid attempt to get reference type");
-    return QualifiedType(t->refType, kRef);
+    return QualifiedType(t->refType, QUAL_REF);
   }
 }
 
@@ -280,9 +280,9 @@ returnInfoGetTupleMemberRef(CallExpr* call) {
   Type* type = returnInfoGetTupleMember(call).type();
   if (type->refType)
     type = type->refType;
-  Qualifier q = kRef;
+  Qualifier q = QUAL_REF;
   if (call->get(1)->isWideRef()) {
-    q = kWideRef;
+    q = QUAL_WIDE_REF;
     if (Type* t = wideRefMap.get(type)) {
       type = t;
     }
@@ -317,9 +317,9 @@ returnInfoGetMemberRef(CallExpr* call) {
   } else {
     retType = var->type->refType ? var->type->refType : var->type;
   }
-  Qualifier q = kRef;
+  Qualifier q = QUAL_REF;
   if (call->get(1)->isWideRef()) {
-    q = kWideRef;
+    q = QUAL_WIDE_REF;
     if (Type* t = wideRefMap.get(retType)) {
       retType = t;
     }

@@ -217,11 +217,11 @@ void PrimitiveType::accept(AstVisitor* visitor) {
 }
 
 bool QualifiedType::isRefType() const {
-  return type->symbol->hasFlag(FLAG_REF);
+  return _type->symbol->hasFlag(FLAG_REF);
 }
 
 bool QualifiedType::isWideRefType() const {
-  return type->symbol->hasFlag(FLAG_WIDE_REF);
+  return _type->symbol->hasFlag(FLAG_WIDE_REF);
 }
 
 EnumType::EnumType() :

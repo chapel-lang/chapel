@@ -455,9 +455,9 @@ bool primMoveGeneratesCommCall(CallExpr* ce) {
   Type* lhsType = lhs->typeInfo();
   Type* rhsType = rhs->typeInfo();
 
-  if(lhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
+  if(lhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) || lhs->isWideRef())
     return true; // direct put
-  if(rhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
+  if(rhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) || rhs->isWideRef())
     return true; // direct get
 
   //now it is still possible that rhs primitive has a nonwide symbol yet
@@ -472,7 +472,7 @@ bool primMoveGeneratesCommCall(CallExpr* ce) {
         case PRIM_GET_SVEC_MEMBER:
         case PRIM_GET_SVEC_MEMBER_VALUE:
           if(rhsCe->get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF, 
-                FLAG_WIDE_CLASS)) {
+                FLAG_WIDE_CLASS) || rhsCe->get(1)->isWideRef()) {
             return true;
           }
           break;

@@ -194,7 +194,7 @@ public:
     return _type;
   }
   Qualifier getQual() const {
-    return qual;
+    return _qual;
   }
 
 
