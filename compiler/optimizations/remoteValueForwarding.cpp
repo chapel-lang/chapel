@@ -220,7 +220,9 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   // to convert atomic formals to ref formals.
   } else if (isAtomicType(arg->type)) {
     retval = false;
-  } else if (arg->intent == INTENT_CONST_REF) {
+  } else if (arg->intent == INTENT_CONST_REF && !isRecordWrappedType(arg->typeInfo())) {
+    // TODO: Failure for studies/hpcc/STREAMS/bradc/stream-block1dpar-arr.chpl on --no-local
+    // when RVF-ing a domain. For now, simply do not RVF record-wrapped things
     retval = true;
   } else if (arg->intent == INTENT_CONST_IN &&
       !arg->type->symbol->hasFlag(FLAG_REF)) {
