@@ -172,17 +172,16 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
            whether this variable is actually going to be returned as
            an LHS expr. */
       //
-      // BHARSH: TODO: Changing the intent here to *-ref makes a difference
-      // for remoteValueForwarding later on. RVF currently only looks for
-      // INTENT_CONST_IN, arguing that const-ref doesn't ensure that the
-      // underlying data will remain unchanged.
+      // BHARSH: TODO: The arg intent set here can have a large impact on
+      // RVF later on. For RVF to be more effective, this might be a good
+      // place to do some analysis and mark arguments as 'const in' and 
+      // 'const ref', even if the actual is not marked with FLAG_CONST.
       //
       // Prior to the QualifiedType changes this section would make the type
       // something like _ref_int, but the intent would be INTENT_CONST_IN and
-      // RVF would fire.
+      // RVF would fire in some situations.
       //
       if (passByRef(sym)) {
-        // TODO: Having this as INTENT_REF seems to worsen comm counts. why?
         IntentTag temp = INTENT_REF;
         if (sym->hasFlag(FLAG_CONST)) {
           temp = INTENT_CONST_REF;

@@ -231,7 +231,7 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
     // for += between strings.
     retval = true;
 
-  } else if (arg->type->symbol->hasFlag(FLAG_REF)  == true &&
+  } else if (arg->isRef()  == true &&
              isSafeToDerefArg(defMap, useMap, arg) == true) {
     retval = true;
 
