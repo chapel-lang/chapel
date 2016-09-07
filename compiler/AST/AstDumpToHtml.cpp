@@ -232,7 +232,7 @@ bool AstDumpToHtml::enterDefExpr(DefExpr* node) {
     fprintf(mFP, "</B><UL>\n");
 
   } else if (isTypeSymbol(node->sym)) {
-    if (toAggregateType(node->sym->type)) {
+    if (isAggregateType(node->sym->type)) {
       fprintf(mFP, "<UL CLASS =\"mktree\">\n");
       fprintf(mFP, "<LI>");
 
@@ -252,10 +252,10 @@ bool AstDumpToHtml::enterDefExpr(DefExpr* node) {
     }
 
   } else if (VarSymbol* vs = toVarSymbol(node->sym)) {
-    if (vs->type->symbol->hasFlag(FLAG_SYNC))
+    if (isSyncType(vs->type))
       fprintf(mFP, "<B>sync </B>");
 
-    if (vs->type->symbol->hasFlag(FLAG_SINGLE))
+    if (isSingleType(vs->type))
       fprintf(mFP, "<B>single </B>");
 
     fprintf(mFP, "<B>var </B> ");
