@@ -1286,9 +1286,10 @@ module ChapelArray {
         ranges(i) = dim(i).expand(off);
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      //if !noRefCount then
-      //  if (d.linksDistribution()) then
-      //    d.dist.incRefCount();
+      // Since we've created a new domain, the distribution needs to
+      // live at least as long as this new domain.
+      if d.linksDistribution() then
+        d.dist.add_dom(d);
       return _newDomain(d);
     }
 
@@ -1318,9 +1319,10 @@ module ChapelArray {
         ranges(i) = dim(i).exterior(off(i));
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      //if !noRefCount then
-      //  if (d.linksDistribution()) then
-      //    d.dist.incRefCount();
+      // Since we've created a new domain, the distribution needs to
+      // live at least as long as this new domain.
+      if d.linksDistribution() then
+        d.dist.add_dom(d);
       return _newDomain(d);
     }
 
@@ -1367,9 +1369,10 @@ module ChapelArray {
       }
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      //if !noRefCount then
-      //  if (d.linksDistribution()) then
-      //    d.dist.incRefCount();
+      // Since we've created a new domain, the distribution needs to
+      // live at least as long as this new domain.
+      if d.linksDistribution() then
+        d.dist.add_dom(d);
       return _newDomain(d);
     }
 
@@ -1417,9 +1420,10 @@ module ChapelArray {
         ranges(i) = _value.dsiDim(i).translate(off(i));
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      //if !noRefCount then
-      //  if (d.linksDistribution()) then
-      //    d.dist.incRefCount();
+      // Since we've created a new domain, the distribution needs to
+      // live at least as long as this new domain.
+      if d.linksDistribution() then
+        d.dist.add_dom(d);
       return _newDomain(d);
      }
 
@@ -1442,9 +1446,10 @@ module ChapelArray {
         ranges(i) = dim(i).chpl__unTranslate(off(i));
       var d = _value.dsiBuildRectangularDom(rank, _value.idxType,
                                            _value.stridable, ranges);
-      //if !noRefCount then
-      //  if (d.linksDistribution()) then
-      //    d.dist.incRefCount();
+      // Since we've created a new domain, the distribution needs to
+      // live at least as long as this new domain.
+      if d.linksDistribution() then
+        d.dist.add_dom(d);
       return _newDomain(d);
     }
 
@@ -3322,9 +3327,8 @@ module ChapelArray {
     for param i in 1..a.rank do
       r(i) = a.dim(i) by t(i);
     var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, true, r);
-    //if !noRefCount then
-    //  if (d.linksDistribution()) then
-    //    d.dist.incRefCount();
+    if d.linksDistribution() then
+      d.dist.add_dom(d);
     return _newDomain(d);
   }
 
@@ -3343,9 +3347,8 @@ module ChapelArray {
     for param i in 1..a.rank do
       r(i) = a.dim(i) align t(i);
     var d = a._value.dsiBuildRectangularDom(a.rank, a._value.idxType, a.stridable, r);
-    //if !noRefCount then
-    //  if (d.linksDistribution()) then
-    //    d.dist.incRefCount();
+    if d.linksDistribution() then
+      d.dist.add_dom(d);
     return _newDomain(d);
   }
 
