@@ -105,6 +105,8 @@ passByRef(Symbol* sym) {
       sym->hasFlag(FLAG_DOMAIN) ||
       sym->hasFlag(FLAG_ARRAY)
   ) {
+    printf("Surprise suppression\n");
+
     // These values *are* constant. E.g the symbol with FLAG_ARRAY
     // stores a pointer to the corresponding array descriptor.  Since
     // each Chapel variable corresponds to a single Chapel array
