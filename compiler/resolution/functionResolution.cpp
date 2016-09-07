@@ -1532,6 +1532,8 @@ computeActualFormalAlignment(FnSymbol* fn,
           match = true;
           actualIdxToFormal.v[i] = formal;
           formalIdxToActual.v[j] = info.actuals.v[i];
+          formal = next_formal(formal);
+          j++;
           break;
         }
         formal = next_formal(formal);
