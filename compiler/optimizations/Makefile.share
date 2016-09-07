@@ -30,7 +30,7 @@ OPTIMIZATIONS_SRCS = \
 	removeUnnecessaryAutoCopyCalls.cpp \
 	removeUnnecessaryGotos.cpp \
 	removeWrapRecords.cpp \
-	replaceArrayAccesesWithRefTemps.cpp \
+	replaceArrayAccessesWithRefTemps.cpp \
 	scalarReplace.cpp
 
 SVN_SRCS = $(OPTIMIZATIONS_SRCS)
