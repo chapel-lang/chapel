@@ -28,7 +28,7 @@ as follows:
   third-party/gasnet/gasnet-src/other/contrib/cross-configure-aarch64-linux
   which is the only ARM change beneath gasnet-src in the tree.
 
-* Applied an upstream path to fix a use-after-free bug in amudp_spawn
+* Applied an upstream patch to fix a use-after-free bug in amudp_spawn
   command line argument handling:
     https://bitbucket.org/berkeleylab/gasnet/commits/a6a6534
 
