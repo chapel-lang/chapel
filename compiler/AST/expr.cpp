@@ -5931,8 +5931,11 @@ GenRet CallExpr::codegenPrimMove() {
   } else if (get(1)->isRef() && get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) &&
         get(2)->isRef() && !get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
     INT_ASSERT(!isCallExpr(get(2)));
-    // Likely a PRIM_MOVE inserted in callDestructors where the LHS is a
+    // TODO: Likely a PRIM_MOVE inserted in callDestructors where the LHS is a
     // _retArg and the RHS is a ref-kind arg
+    //
+    // For example, the learnChapelInYMinutes primer fails on no-local for
+    // some reason...
     codegenAssign(codegenDeref(get(1)), codegenDeref(get(2)));
   } else {
     codegenAssign(get(1), get(2));
