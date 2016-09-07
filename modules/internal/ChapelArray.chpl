@@ -407,9 +407,8 @@ module ChapelArray {
   // Support for array types
   //
   pragma "runtime type init fn"
-  proc chpl__buildArrayRuntimeType(dom: domain, type eltType) {
+  proc chpl__buildArrayRuntimeType(dom: domain, type eltType)
     return dom.buildArray(eltType);
-  }
 
   proc _getLiteralType(type t) type {
     if t != c_string then return t;
