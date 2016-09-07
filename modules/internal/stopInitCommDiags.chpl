@@ -23,14 +23,13 @@
 // and teardown.  See that module (or its chpldocs) for details.
 //
 module stopInitCommDiags {
+  use CommDiagnostics;
 
   if printInitVerboseComm {
-    use CommDiagnostics;
     stopVerboseComm();
   }
 
   if printInitCommCounts {
-    use CommDiagnostics;
     stopCommDiagnostics();
     writeln(getCommDiagnostics());
     resetCommDiagnostics();
