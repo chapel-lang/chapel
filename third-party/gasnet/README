@@ -28,11 +28,12 @@ as follows:
   third-party/gasnet/gasnet-src/other/contrib/cross-configure-aarch64-linux
   which is the only ARM change beneath gasnet-src in the tree.
 
-* Fixed a use-after-free bug in amudp_spawn command line argument
-  handling.  We'll get this with the next GASNet release we pick up, but
-  we're applying it early because it fixes a problem reported against
-  Chapel on stackoverflow:
-    http://stackoverflow.com/questions/39195929/chapel-gasnet-unexpected-eof-while-looking-for-matching
+* Applied an upstream path to fix a use-after-free bug in amudp_spawn
+  command line argument handling:
+    https://bitbucket.org/berkeleylab/gasnet/commits/a6a6534
+
+  This fixes a problem reported against Chapel on stackoverflow:
+    https://stackoverflow.com/questions/39195929/chapel-gasnet-unexpected-eof-while-looking-for-matching
 
 Upgrading GASNet versions
 =========================
