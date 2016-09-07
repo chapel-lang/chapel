@@ -780,10 +780,8 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
   const chunkInds = chunk(hereDenseInds, numTasks, taskid+1);
 
   // Pick the corresponding part of hereDenseInds
-  const begIx = (chunkInds.first * nLocs):resultIdxType;
-  const endIx = (chunkInds.last * nLocs):resultIdxType;
-  assert(hereDenseInds.member(begIx));
-  assert(hereDenseInds.member(endIx));
+  assert(hereDenseInds.member(chunkInds.first));
+  assert(hereDenseInds.member(chunkInds.last));
 
 //writeln("MyDensifiedRangeForTaskID(", globDD.name, ") on ", locId,
 //        "  taskid ", taskid, " of ", numTasks, "  ", begIx, "...", endIx,
@@ -791,7 +789,7 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
 //        "  fullR ", hereDenseInds, " myR ", begIx .. endIx by nLocs,
 //        "");
 
-  return begIx .. endIx by nLocs;
+  return chunk;
 }
 
 proc BlockCyclic1locdom.dsiMyDensifiedRangeType1d(globDD) type
