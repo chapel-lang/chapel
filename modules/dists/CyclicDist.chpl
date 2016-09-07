@@ -190,6 +190,10 @@ class Cyclic: BaseDist {
     var tupleStartIdx: rank*idxType;
     if isTuple(startIdx) then tupleStartIdx = startIdx;
                          else tupleStartIdx(1) = startIdx;
+
+    // MPF - why isn't it:
+    //setupTargetLocalesArray(targetLocDom, targetLocs, targetLocales);
+
     if rank == 1  {
       targetLocDom = {0..#targetLocales.numElements};
       targetLocs = targetLocales;
