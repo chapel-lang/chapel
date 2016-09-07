@@ -252,11 +252,12 @@ bool AstDumpToHtml::enterDefExpr(DefExpr* node) {
     }
 
   } else if (VarSymbol* vs = toVarSymbol(node->sym)) {
-    if (isSyncType(vs->type))
+    if (isSyncType(vs->type)) {
       fprintf(mFP, "<B>sync </B>");
 
-    if (isSingleType(vs->type))
+    } else if (isSingleType(vs->type)) {
       fprintf(mFP, "<B>single </B>");
+    }
 
     fprintf(mFP, "<B>var </B> ");
     writeSymbol(node->sym, true);

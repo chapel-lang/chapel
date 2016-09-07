@@ -191,11 +191,12 @@ bool AstDump::enterDefExpr(DefExpr* node) {
       writeSymbol("type", sym, true);
 
     } else if (VarSymbol* vs = toVarSymbol(sym)) {
-      if (isSyncType(vs->type))
+      if (isSyncType(vs->type)) {
         write("sync");
 
-      if (isSingleType(vs->type))
+      } else if (isSingleType(vs->type)) {
         write("single");
+      }
 
       writeSymbol("var", sym, true);
       writeFlags(mFP, sym);
