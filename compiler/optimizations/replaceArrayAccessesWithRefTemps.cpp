@@ -72,6 +72,15 @@ void replaceArrayAccessesWithRefTemps() {
           }
         }
       }
+      if (!indexMove) {
+        // If we couldn't find an expected index move, skip the optimization
+        if (DEBUG_RAAWRT) {
+          printf("%s:%d: Couldn't find index move.  "
+                 "Not replacing accesses in loop\n",
+                 forLoop->fname(), forLoop->linenum());
+        }
+        continue;
+      }
       for_vector(BaseAST, astNode, asts) {
         if (ContextCallExpr* contextCall = toContextCallExpr(astNode)) {
           CallExpr* call = toCallExpr(contextCall);
