@@ -84,9 +84,7 @@
 
  */
 module ChapelRange {
-  
-  use Math; // for abs().
-  
+
   // Turns on range iterator debugging.
   pragma "no doc"
   config param debugChapelRange = false;

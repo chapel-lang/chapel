@@ -21,7 +21,6 @@
 //
 module DefaultSparse {
 
-  use Search;
   config param debugDefaultSparse = false;
 
   class DefaultSparseDom: BaseSparseDomImpl {
@@ -115,6 +114,7 @@ module DefaultSparse {
 
     // private
     proc find(ind) {
+      use Search;
       //
       // sjd: unfortunate specialization for rank == 1
       //
