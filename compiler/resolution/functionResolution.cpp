@@ -117,12 +117,12 @@ public:
   /** The actual arguments for the candidate, aligned so that they have the same
    *  index as their corresponding formal argument in the called function.
    */
-  Vec<Symbol*> formalIdxToActual; // alignedActuals
+  Vec<Symbol*> formalIdxToActual; // note: was alignedActuals
 
   /** The formal arguments for the candidate, aligned so that they have the same
    *  index as their corresponding actual argument in the call.
    */
-  Vec<ArgSymbol*> actualIdxToFormal; // alignedFormals
+  Vec<ArgSymbol*> actualIdxToFormal; // note: was alignedFormals
 
   /// A symbol map for substitutions that were made during the copying process.
   SymbolMap substitutions;
