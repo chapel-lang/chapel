@@ -8700,31 +8700,32 @@ static bool propagateNotPOD(Type* t) {
   // Move past any types that we've already handled
   if (t->symbol->hasFlag(FLAG_POD))
     return false;
+
   if (t->symbol->hasFlag(FLAG_NOT_POD))
     return true;
 
-  AggregateType *at = (AggregateType*) t;
-  bool notPOD = false;
+  AggregateType* at     = (AggregateType*) t;
+  bool           notPOD = false;
 
   // Some special rules for special things.
-  if (t->symbol->hasEitherFlag(FLAG_SYNC,FLAG_SINGLE))
-    // sync/single types are never POD
+  if (isSyncType(t)   ||
+      isSingleType(t) ||
+      t->symbol->hasFlag(FLAG_ATOMIC_TYPE)) {
     notPOD = true;
-  else if (t->symbol->hasFlag(FLAG_ATOMIC_TYPE))
-    // atomic types are never POD
-    notPOD = true;
+  }
 
   // Most class types are POD (user classes, _ddata, c_ptr)
   // Also, there is no need to check the fields of a class type
   // since a variable of that type is a pointer to the instance.
   if ( isClass(t) ) {
     // don't enumerate sub-fields or check for autoCopy etc
-  } else {
 
+  } else {
     // If any field in a record/tuple is not POD, the
     // aggregate is not POD.
     for_fields(field, at) {
       Type* ft = field->typeInfo();
+
       notPOD |= propagateNotPOD(ft);
     }
 
@@ -8737,30 +8738,38 @@ static bool propagateNotPOD(Type* t) {
     }
 
     // Also check for a non-compiler generated autocopy/autodestroy.
-    FnSymbol* autoCopyFn = autoCopyMap.get(t);
+    FnSymbol* autoCopyFn    = autoCopyMap.get(t);
     FnSymbol* autoDestroyFn = autoDestroyMap.get(t);
-    FnSymbol* destructor = t->destructor;
+    FnSymbol* destructor    = t->destructor;
 
     // Ignore invisible (compiler-defined) functions.
-    if (autoCopyFn && autoCopyFn->hasFlag(FLAG_COMPILER_GENERATED))
+    if (autoCopyFn && autoCopyFn->hasFlag(FLAG_COMPILER_GENERATED)) {
       autoCopyFn = NULL;
-    if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_COMPILER_GENERATED))
+    }
+
+    if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_COMPILER_GENERATED)) {
       autoDestroyFn = NULL;
-    if (destructor && destructor->hasFlag(FLAG_COMPILER_GENERATED))
+    }
+
+    if (destructor && destructor->hasFlag(FLAG_COMPILER_GENERATED)) {
       destructor = NULL;
+    }
 
     // if it has flag ignore no-init, it's not pod
     // if it has a user-specified auto copy / auto destroy, it's not pod
     // if it has a user-specified destructor, it's not pod
-    if( t->symbol->hasFlag(FLAG_IGNORE_NOINIT) ||
-        autoCopyFn || autoDestroyFn ||
-        destructor )
+    if (t->symbol->hasFlag(FLAG_IGNORE_NOINIT) ||
+        autoCopyFn                             ||
+        autoDestroyFn                          ||
+        destructor) {
       notPOD = true;
+    }
 
     // Since hasUserAssign tries to resolve =, we only
     // check it if we think we have a POD type.
-    if( !notPOD && hasUserAssign(t) )
+    if (!notPOD && hasUserAssign(t)) {
       notPOD = true;
+    }
   }
 
   if (notPOD) {
