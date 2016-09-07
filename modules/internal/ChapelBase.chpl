@@ -314,6 +314,10 @@ module ChapelBase {
     if b < 0 then
       if a == 0 then
         halt("cannot compute ", a, " ** ", b);
+      else if a == 1 then
+        return 1;
+      else if a == -1 then
+        return if b % 2 == 0 then 1 else -1;
       else
         return 0;
     var i = b, y:a.type = 1, z = a;
@@ -363,11 +367,34 @@ module ChapelBase {
       compilerError("unexpected case in exponentiation optimization");
   }
 
+  inline proc _expBaseHelp(param a: int, b) where _basePowerTwo(a) {
+    if b == 0 then 
+      return 1:a.type;
+    if b < 0 then
+      if a == 1 then // "where _basePowerTwo(a)" means 'a' cannot be <= 0
+        return 1;
+      else
+        return 0;
+    var c = 0;
+    var x: int = a;
+    while (x > 1) // shift right to count the power
+    {
+      c += 1;
+      x = x >> 1;
+    }
+    var exp = c * (b-1);
+    return a << exp;
+  }
+
   proc _canOptimizeExp(param b: integral) param return b >= 0 && b <= 8 && b != 7;
+
+  // complement and compare is an efficient way to test for a power of 2
+  proc _basePowerTwo(param a: integral) param return (a > 0 && ((a & (~a + 1)) == a));
 
   inline proc **(a: int(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
   inline proc **(a: uint(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
   inline proc **(a: real(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
+  inline proc **(param a: integral, b: int) where _basePowerTwo(a) return _expBaseHelp(a, b);
 
   //
   // logical operations on primitive types
@@ -656,22 +683,7 @@ module ChapelBase {
   pragma "no default functions"
   class _ddata {
     type eltType;
-    /*
-       If we had a way to do 'static' routines, this
-       could stay here, but since we don't at the moment,
-       we've wired the modules to call _ddata_free().
 
-    proc ~_ddata() {
-      __primitive("array_free", this);
-    }
-
-     If we had a way to do 'static' routines, this
-       could stay here, but since we don't at the moment,
-       we've wired the modules to call _ddata_allocate().
-    inline proc init(size: integral) {
-      __primitive("array_alloc", this, eltType, size);
-      init_elts(this, size, eltType);
-    }*/
     inline proc this(i: integral) ref {
       return __primitive("array_get", this, i);
     }
@@ -759,7 +771,7 @@ module ChapelBase {
 
   // This function is called once by the initiating task.  No on
   // statement needed, because the task should be running on the same
-  // locale as the sync/cofall/cobegin was initiated on and thus the
+  // locale as the sync/coforall/cobegin was initiated on and thus the
   // same locale on which the object is allocated.
   //
   // TODO: 'taskCnt' can sometimes be local even if 'i' has to be remote.
@@ -799,7 +811,7 @@ module ChapelBase {
       e.taskCnt.add(1, memory_order_release);
     } else {
       // note that this on statement does not have the usual
-      // remote memory fence becaues of pragma "no remote memory fence"
+      // remote memory fence because of pragma "no remote memory fence"
       // above. So we do an acquire fence before it.
       chpl_rmem_consist_fence(memory_order_release);
       on e {
@@ -932,13 +944,13 @@ module ChapelBase {
     return if x then 1i:t else 0i:t;
 
   inline proc _cast(type t, x: int(?w)) where isImagType(t)
-    return 0i:t;
+    return __primitive("cast", t, x);
 
   inline proc _cast(type t, x: uint(?w)) where isImagType(t)
-    return 0i:t;
+    return __primitive("cast", t, x);
 
   inline proc _cast(type t, x: real(?w)) where isImagType(t)
-    return 0i:t;
+    return __primitive("cast", t, x);
 
   inline proc _cast(type t, x: imag(?w)) where isImagType(t)
     return __primitive("cast", t, x);
@@ -959,7 +971,7 @@ module ChapelBase {
   // casts from imag
   //
   inline proc _cast(type t, x: imag(?w)) where isRealType(t) || isIntegralType(t)
-    return 0:t;
+    return __primitive("cast", t, x);
 
   inline proc _cast(type t, x: imag(?w)) where isBoolType(t)
     return if x != 0i then true else false;
@@ -1545,7 +1557,7 @@ module ChapelBase {
   inline proc _defaultOf(type t) param where t == imag return 0.0i;
   pragma "no doc"
   inline proc _defaultOf(type t) where (isImagType(t) && t != imag) return 0.0i:t;
-  // Also, complexes cannot yet be parametized
+  // Also, complexes cannot yet be parameterized
   pragma "no doc"
   inline proc _defaultOf(type t): t where (isComplexType(t)) {
     var ret:t = noinit;

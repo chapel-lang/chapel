@@ -20,6 +20,8 @@ QTHREAD_DIR = $(QTHREAD_ABS_DIR)
 #
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_QTHREAD_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
+else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
+CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
 endif
 
 ifeq ($(CHPL_MAKE_HWLOC),hwloc)
@@ -125,7 +127,7 @@ qthread-build: FORCE
 ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),lifo mtsfifo mutexfifo nemesis))
 SUPPORTS_REMOTE_CACHE = 1
 ONE_WORKER_PER_SHEPHERD = 1
-else ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),nottingham sherwood))
+else ifeq ($(SCHEDULER),$(findstring $(SCHEDULER),distrib nottingham sherwood))
 SUPPORTS_REMOTE_CACHE = 0
 ONE_WORKER_PER_SHEPHERD = 0
 else

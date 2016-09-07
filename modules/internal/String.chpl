@@ -340,7 +340,7 @@ module String {
      */
     proc this(i: int) : string {
       if boundsChecking && (i <= 0 || i > this.len)
-        then halt("index out of bounds of string");
+        then halt("index out of bounds of string: ", i);
 
       var ret: string;
       const newSize = chpl_here_good_alloc_size(2);
@@ -799,7 +799,7 @@ module String {
     }
 
     /*
-      Same as the varargs version, but with a homogenous tuple of strings.
+      Same as the varargs version, but with a homogeneous tuple of strings.
 
       .. code-block:: chapel
 
@@ -1038,7 +1038,7 @@ module String {
     /*
      Checks if all the characters in the string are digits (0-9).
 
-      :returns: * `true`  -- when the characters are ditits.
+      :returns: * `true`  -- when the characters are digits.
                 * `false` -- otherwise
      */
     proc isDigit() : bool {

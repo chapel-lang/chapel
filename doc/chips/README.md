@@ -4,8 +4,11 @@ See the first CHIP for an overview.
 
 * [Chapel Improvement Proposals](1.rst)
 * [Initializers](10.rst)
+* [Alternative Initializer Features](11.rst)
 * [Basics of Initialization](12.rst)
 * [Record Copying in Chapel](13.rst)
+* [Chapel stack traces](14.rst)
+* [Chapel Incremental Compilation](15.rst)
 * [Constrained Generics](2.rst)
 * [ZeroMQ Integration](3.rst)
 * [Constructor Syntax and Semantics](4.rst)

@@ -36,6 +36,8 @@
 #include "symbol.h"
 #include "vec.h"
 
+#include "iterator.h"
+
 #include "AstVisitor.h"
 
 static bool isDerivedType(Type* type, Flag flag);
@@ -75,10 +77,21 @@ bool Type::inTree() {
 }
 
 
-Type* Type::typeInfo() {
-  return this;
+QualifiedType Type::qualType() {
+  return QualifiedType(this);
 }
 
+// Are actuals of this type passed with const intent by default?
+bool Type::isDefaultIntentConst() const {
+  bool retval = true;
+
+  if (symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) == true ||
+      isReferenceType(this)                       == true ||
+      isRecordWrappedType(this)                   == true)
+    retval = false;
+
+  return retval;
+}
 
 GenRet Type::codegen() {
   if (this == dtUnknown) {
@@ -560,9 +573,11 @@ std::string EnumType::docsDirective() {
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL),
   aggregateTag(initTag),
+  initializerStyle(DEFINES_NONE_USE_DEFAULT),
   fields(),
   inherits(),
   outer(NULL),
+  iteratorInfo(NULL),
   doc(NULL)
 {
   if (aggregateTag == AGGREGATE_CLASS) { // set defaultValue to nil to keep it
@@ -576,7 +591,15 @@ AggregateType::AggregateType(AggregateTag initTag) :
 }
 
 
-AggregateType::~AggregateType() { }
+AggregateType::~AggregateType() {
+  // Delete references to this in iteratorInfo when destroyed.
+  if (iteratorInfo) {
+    if (iteratorInfo->iclass == this)
+      iteratorInfo->iclass = NULL;
+    if (iteratorInfo->irecord == this)
+      iteratorInfo->irecord = NULL;
+  }
+}
 
 
 void AggregateType::verify() {
@@ -1521,6 +1544,9 @@ void initPrimitiveTypes() {
   dtCVoidPtr   = createPrimitiveType("c_void_ptr", "c_void_ptr" );
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gOpaque;
+  dtCFnPtr = createPrimitiveType("c_fn_ptr", "c_fn_ptr");
+  dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
+  dtCFnPtr->defaultValue = gOpaque;
   CREATE_DEFAULT_SYMBOL(dtCVoidPtr, gCVoidPtr, "_nullVoidPtr");
   gCVoidPtr->cname = "NULL";
   gCVoidPtr->addFlag(FLAG_EXTERN);
@@ -1843,7 +1869,7 @@ bool isUnion(Type* t) {
   return false;
 }
 
-bool isReferenceType(Type* t) {
+bool isReferenceType(const Type* t) {
   return t->symbol->hasFlag(FLAG_REF);
 }
 
@@ -1857,7 +1883,7 @@ bool isRefCountedType(Type* t) {
   return getRecordWrappedFlags(t->symbol).any();
 }
 
-bool isRecordWrappedType(Type* t) {
+bool isRecordWrappedType(const Type* t) {
   return getRecordWrappedFlags(t->symbol).any();
 }
 
@@ -1901,20 +1927,26 @@ static bool isDerivedType(Type* type, Flag flag)
   return retval;
 }
 
-bool isSyncType(Type* t) {
-  return getSyncFlags(t->symbol).any();
+bool isSyncType(const Type* t) {
+  return t->symbol->hasFlag(FLAG_SYNC);
 }
 
-bool isAtomicType(Type* t) {
+bool isSingleType(const Type* t) {
+  return t->symbol->hasFlag(FLAG_SINGLE);
+}
+
+bool isAtomicType(const Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
 }
 
 bool isRefIterType(Type* t) {
   Symbol* iteratorRecord = NULL;
 
-  if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS))
-    iteratorRecord = t->defaultInitializer->getFormal(1)->type->symbol;
-  else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+  if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+    AggregateType* at = toAggregateType(t);
+    FnSymbol* getIterator = at->iteratorInfo->getIterator;
+    iteratorRecord = getIterator->getFormal(1)->type->symbol;
+  } else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     iteratorRecord = t->symbol;
 
   if (iteratorRecord)
@@ -2201,8 +2233,9 @@ bool needsCapture(Type* t) {
     return true;
   } else {
     // Ensure we have covered all types.
-    INT_ASSERT(isRecordWrappedType(t) ||  // domain, array, or distribution
-               isSyncType(t) ||
+    INT_ASSERT(isRecordWrappedType(t) ||
+               isSyncType(t)          ||
+               isSingleType(t)        ||
                isAtomicType(t));
     return false;
   }

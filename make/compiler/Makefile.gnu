@@ -22,8 +22,8 @@
 #
 # Tools
 #
-CXX = g++
-CC = gcc
+CXX = $(CROSS_COMPILER_PREFIX)g++
+CC = $(CROSS_COMPILER_PREFIX)gcc
 
 RANLIB = ranlib
 
@@ -48,11 +48,9 @@ endif
 #
 COMP_CFLAGS = $(CFLAGS)
 COMP_CFLAGS_NONCHPL = -Wno-error
-RUNTIME_CFLAGS = -std=c99 $(CFLAGS)
-RUNTIME_GEN_CFLAGS = $(RUNTIME_CFLAGS)
+RUNTIME_CFLAGS = $(CFLAGS)
 RUNTIME_CXXFLAGS = $(CFLAGS)
-RUNTIME_GEN_CXXFLAGS = $(RUNTIME_CXXFLAGS)
-GEN_CFLAGS = -std=c99
+GEN_CFLAGS =
 GEN_STATIC_FLAG = -static
 GEN_DYNAMIC_FLAG =
 LIB_STATIC_FLAG =
@@ -82,7 +80,6 @@ endif
 ifeq ($(CHPL_MAKE_PLATFORM), aix)
 GEN_CFLAGS += -maix64
 RUNTIME_CFLAGS += -maix64
-RUNTIME_GEN_CFLAGS += -maix64
 GEN_CFLAGS += -maix64
 COMP_GEN_LFLAGS += -maix64
 endif
@@ -90,6 +87,12 @@ endif
 #
 # query gcc version
 #
+ifndef GNU_GCC_MAJOR_VERSION
+export GNU_GCC_MAJOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
+endif
+ifndef GNU_GCC_MINOR_VERSION
+export GNU_GCC_MINOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
+endif
 ifndef GNU_GPP_MAJOR_VERSION
 export GNU_GPP_MAJOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
 endif
@@ -99,9 +102,24 @@ endif
 ifndef GNU_GPP_SUPPORTS_MISSING_DECLS
 export GNU_GPP_SUPPORTS_MISSING_DECLS = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
 endif
-ifndef GNU_GPP_SUPPORTS_STRICT_OVERFLOW
-export GNU_GPP_SUPPORTS_STRICT_OVERFLOW = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
+ifndef GNU_GCC_SUPPORTS_STRICT_OVERFLOW
+export GNU_GCC_SUPPORTS_STRICT_OVERFLOW = $(shell test $(GNU_GCC_MAJOR_VERSION) -lt 4 || (test $(GNU_GCC_MAJOR_VERSION) -eq 4 && test $(GNU_GCC_MINOR_VERSION) -le 2); echo "$$?")
 endif
+
+#
+# If the compiler's default C version is less than C99, force C99 mode.
+#
+# If the default C version is at least C11, force the C++ version to
+# be at least C++11 to match.
+#
+DEF_C_VER := $(shell echo __STDC_VERSION__ | $(CC) -E -x c - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__STDC_VERSION__/0/')
+DEF_CXX_VER := $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__cplusplus/0/')
+C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
+CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+
+RUNTIME_CFLAGS += $(C_STD)
+RUNTIME_CXXFLAGS += $(CXX_STD)
+GEN_CFLAGS += $(C_STD)
 
 #
 # Flags for turning on warnings for C++/C code
@@ -109,13 +127,21 @@ endif
 WARN_CXXFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing
 # decl-after-stmt for non c99 compilers. See commit message 21665
 WARN_CFLAGS = $(WARN_CXXFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs -Wdeclaration-after-statement -Wmissing-format-attribute
-WARN_GEN_CFLAGS = $(WARN_CFLAGS) -Wno-unused -Wno-uninitialized
+WARN_GEN_CFLAGS = $(WARN_CFLAGS)
+SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
 
 #
 # Don't warn for signed pointer issues (ex. c_ptr(c_char) )
 #
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4; echo "$$?"),1)
-WARN_GEN_CFLAGS += -Wno-pointer-sign
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -lt 4; echo "$$?"),1)
+SQUASH_WARN_GEN_CFLAGS += -Wno-pointer-sign
+endif
+
+#
+# Don't warn/error for tautological compares (ex. x == x)
+#
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -lt 6; echo "$$?"),1)
+SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
 endif
 
 #
@@ -139,7 +165,7 @@ else
 WARN_CFLAGS += -Wmissing-declarations
 endif
 
-ifeq ($(GNU_GPP_SUPPORTS_STRICT_OVERFLOW),1)
+ifeq ($(GNU_GCC_SUPPORTS_STRICT_OVERFLOW),1)
 # -Wno-strict-overflow is needed only because the way we code range iteration
 # (ChapelRangeBase.chpl:793) generates code which can overflow.
 GEN_CFLAGS += -Wno-strict-overflow
@@ -156,8 +182,6 @@ COMP_CFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
-RUNTIME_GEN_CFLAGS += -Wno-unused
-RUNTIME_GEN_CXXFLAGS += -Wno-unused
 #WARN_GEN_CFLAGS += -Wunreachable-code
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 

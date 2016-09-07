@@ -30,4 +30,6 @@ extern std::vector<std::string> gFilenameLookup;
 // Caches the location of filenames in gFilenameLookup
 extern std::map<std::string, int> gFilenameLookupCache;
 
+int getFilenameLookupPosition(std::string name);
+
 #endif //_INSERT_LINE_NUMBERS_H

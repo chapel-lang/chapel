@@ -1,4 +1,5 @@
 # Copyright © 2016 Inria.  All rights reserved.
+# Copyright © 2016 Université Bordeaux
 # See COPYING in top-level directory.
 
 # We can't use autoconf because we don't want $sbindir to be replaced with ${exec_prefix}/sbin
@@ -12,9 +13,8 @@ nodist_pkgdata_DATA = hwloc-dump-hwdata.service
 hwloc-dump-hwdata.service: hwloc-dump-hwdata.service.in Makefile
 	@echo Creating $@...
 	@ $(SED) \
-	  -e 's@#SBINDIR#@'$(sbindir)'@g' \
-	  -e 's@#RUNSTATEDIR#@'$(HWLOC_runstatedir)'@g' \
-	  -e 's@#RMPATH#@'$(RMPATH)'@g' \
+	  -e 's/#SBINDIR#/$(subst /,\/,$(sbindir))/g' \
+	  -e 's/#RUNSTATEDIR#/$(subst /,\/,$(HWLOC_runstatedir))/g' \
 	  > $@ < $<
 
 distclean-local:

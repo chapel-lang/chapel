@@ -409,7 +409,7 @@ base name as the test.  For example, adding a hi.future file would
 make the simple correctness test at the start of this document into a
 future test.  Marking a test as a ``.future`` causes it to be tested every
 night, but not to be counted against the compiler's success/failure
-statisics.  Like normal correctness tests, future tests still need to
+statistics.  Like normal correctness tests, future tests still need to
 have a ``.good`` file indicating their expected output so that if/when
 they start working, developers will become aware of it.
 

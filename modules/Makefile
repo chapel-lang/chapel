@@ -26,7 +26,7 @@ endif
 
 # Generate tags command, dependent on if Make variable, TAGS == 1
 ifeq ($(TAGS), 1)
-TAGS_COMMAND=-@($(CHPL_MAKE_HOME)/util/chpltags -r . > /dev/null 2>&1 && echo "Updating TAGS...")
+TAGS_COMMAND=-@($(CHPL_MAKE_HOME)/util/chpltags -r . > /dev/null 2>&1 && echo "Updating TAGS..." || echo "Tags utility not available.  Skipping tags generation.")
 endif
 
 CHPL_MAKE_HOST_TARGET = --target
@@ -93,6 +93,7 @@ MODULES_TO_DOCUMENT = \
 	$(SYS_CTYPES_MODULE_DOC)
 
 PACKAGES_TO_DOCUMENT = \
+	packages/BLAS.chpl \
 	packages/Curl.chpl \
 	packages/FFTW.chpl \
 	packages/FFTW_MT.chpl \
@@ -134,15 +135,20 @@ INTERNAL_MODULES_TO_DOCUMENT =          \
 
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
+	@echo "Generating module documentation with chpldoc"
 	export CHPLDOC_AUTHOR='Cray Inc' && \
 	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
+	@echo "Running post-processing scripts"
 	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	./dists/fixDistDocs.perl      ${MODULE_SPHINX}
+	@echo "Copying generated module documentation to \$CHPL_HOME/doc/sphinx/modules"
 	cp -rf ${MODULE_SPHINX}/source/modules/standard ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/packages ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/dists    ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/layouts  ${DOC_SPHINX}/source/modules/
 	cp -rf ${MODULE_SPHINX}/source/modules/internal ${DOC_SPHINX}/source/modules/
+	@echo "Removing generated files and directories"
+	rm -rf ./docs
 	rm -rf ${MODULE_SPHINX}
 	rm -f ${CHPL_MAKE_HOME}/modules/$(SYS_CTYPES_MODULE_DOC)
 

@@ -411,7 +411,7 @@ proc hdfsChapelConnect(path: string, port: int): hdfsChapelFileSystem {
   return ret;
 }
 
-/* Diconnect from the configured HDFS filesystem on each locale */
+/* Disconnect from the configured HDFS filesystem on each locale */
 proc hdfsChapelFileSystem.hdfsChapelDisconnect() {
   forall loc in Locales {
     on loc {
@@ -468,7 +468,7 @@ proc hdfsChapelFile.hdfsReader(param kind=iokind.dynamic, param locking=true, st
   return rcLocal(this.files).reader(kind, locking, start, end, hints);
 }
 
-// ------------- End mulitlocale ---------------
+// ------------- End multilocale ---------------
 
 pragma "no doc"
 record hdfsChapelFile_local {

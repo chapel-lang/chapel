@@ -5,7 +5,7 @@ config const verbose = false;
 iter myiter() : R {
   for i in 1..4 {
     var ret: R;
-    ret.init(x = i);
+    ret.setup(x = i);
     ret.verify();
     yield ret;
   }

@@ -61,7 +61,7 @@ master_doc = 'index'
 shortversion = 1.13
 
 # The full version, including alpha/beta/rc tags.
-release = '1.13.0'
+release = '1.13.1'
 
 # General information about the project.
 project = u'Chapel Documentation {0}'.format(shortversion)
@@ -206,7 +206,7 @@ html_show_sphinx = False
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'chpldoc'
+htmlhelp_basename = 'chapel'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -226,7 +226,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'chpldoc.tex', u'chpldoc Documentation',
+  ('index', 'chapel.tex', u'Chapel Documentation',
    author_text, 'manual'),
 ]
 
@@ -256,7 +256,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'chpldoc', u'chpldoc Documentation',
+    ('index', 'chapel', u'Chapel Documentation',
      [author_text], 1)
 ]
 
@@ -270,8 +270,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'chpldoc', u'chpldoc Documentation',
-   author_text, 'chpldoc', 'One line description of project.',
+  ('index', 'chapel', u'Chapel Documentation',
+   author_text, 'chapel',
+   'Chapel is an emerging programming language designed for productive parallel computing at scale.',
    'Miscellaneous'),
 ]
 

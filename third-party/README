@@ -26,7 +26,7 @@ gasnet/
            support for multi-locale/distributed-memory systems.
 
   License: GASNet is made available under a BSD-style license, which
-           can be found in gasnet/GASNet-<version>/license.txt
+           can be found in gasnet/gasnet-src/license.txt
 
   Website: http://gasnet.cs.berkeley.edu
 
@@ -49,11 +49,11 @@ hwloc/
            provides a portable abstraction of the hierarchical
            topology of modern architectures.
 
-  License: BSD (see hwloc/hwloc-<version>/COPYING)
+  License: BSD (see hwloc/hwloc-src/COPYING)
 
   Website: http://www.open-mpi.org/projects/hwloc
 
-  See also: hwloc/README and hwloc/hwloc-<version>/README
+  See also: hwloc/README and hwloc/hwloc-src/README
 
 
 jemalloc/
@@ -62,7 +62,7 @@ jemalloc/
            and can be used when a shared heap is required.
 
   License: jemalloc is released under a BSD-derived License (see
-           jemalloc/jemalloc-*/COPYING)
+           jemalloc/jemalloc-src/COPYING)
 
   Website: http://www.canonware.com/jemalloc/
 
@@ -149,3 +149,14 @@ libhdfs3/
   Website: https://github.com/PivotalRD/libhdfs3
 
   See also: libhdfs3/README
+
+libunwind/
+  Summary: libunwind is a portable and efficient C programming
+           interface (API) to determine the call-chain of a program
+
+  License: MIT (see libunwind/libunwind-<version>/COPYING and
+           libunwind/libunwind-<version>/LICENSE)
+
+  Website: http://www.nongnu.org/libunwind/
+
+  See also: libunwind/README and libunwind/libunwind-<version>/README

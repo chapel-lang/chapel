@@ -277,7 +277,16 @@ void openCFile(fileinfo* fi, const char* name, const char* ext) {
 
 void closeCFile(fileinfo* fi, bool beautifyIt) {
   fclose(fi->fptr);
-  if (beautifyIt && saveCDir[0])
+  //
+  // We should beautify if (1) we were asked to and (2) either (a) we
+  // were asked to save the C code or (b) we're debugging and were
+  // asked to codegen cpp #line information.
+  //
+  // TODO: With some refactoring, we could simply do the #line part of
+  // beautify without also improving indentation and such which could
+  // save some time.
+  //
+  if (beautifyIt && (saveCDir[0] || (debugCCode && printCppLineno)))
     beautify(fi);
 }
 
@@ -431,6 +440,18 @@ std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
   return runCommand(command);
 }
 
+std::string getChplPythonVersion() {
+  // Runs util/chplenv/chpl_python_version.py and removes the newline
+
+  std::string command = "";
+  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_python_version.py 2> /dev/null";
+
+  std::string pyVer = runCommand(command);
+  pyVer.erase(pyVer.find_last_not_of("\n\r")+1);
+
+  return pyVer;
+}
+
 std::string runCommand(std::string& command) {
   // Run arbitrary command and return result
   char buffer[256];
@@ -531,7 +552,7 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
 }
 
 
-void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_compile_link) {
+void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_compile_link, const std::vector<const char*>& splitFiles) {
   fileinfo makefile;
   openCFile(&makefile, "Makefile");
   const char* tmpDirName = intDirName;
@@ -623,6 +644,10 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
 
   fprintf(makefile.fptr, "CHPLSRC = \\\n");
   fprintf(makefile.fptr, "\t%s \\\n\n", mainfile->pathname);
+  fprintf(makefile.fptr, "CHPLUSEROBJ = \\\n");
+  for(int i=0; i<(int)splitFiles.size(); i++)
+    fprintf(makefile.fptr, "\t%s \\\n", splitFiles[i]);
+  fprintf(makefile.fptr, "\n");
   genCFiles(makefile.fptr);
   genObjFiles(makefile.fptr);
   fprintf(makefile.fptr, "\nLIBS =");
@@ -800,16 +825,10 @@ const char* modNameToFilename(const char* modName,
   return  fullfilename;
 }
 
+// Returns either a file name or NULL if no such file was found
+// (which could happen if there's a use of an enum within the library files)
 const char* stdModNameToFilename(const char* modName) {
-  const char* fullfilename = searchPath(stdModPath,
-                                        astr(modName, ".chpl"),
-                                        NULL);
-
-  if (fullfilename == NULL) {
-    USR_FATAL("Can't find standard module '%s'\n", modName);
-  }
-
-  return fullfilename;
+  return searchPath(stdModPath, astr(modName, ".chpl"), NULL);
 }
 
 const char* filenameToModulename(const char* filename) {

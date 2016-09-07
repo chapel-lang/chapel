@@ -277,16 +277,10 @@ static void addOneToSymbolTable(DefExpr* def)
                     def->sym->stringLoc());
         }
 
-        if (!oldFn && (newFn && !newFn->_this)) {
+        if ((!oldFn && (newFn && !newFn->_this)) ||
+            (!newFn && (oldFn && !oldFn->_this))) {
           // A function definition is conflicting with another named symbol
           // that isn't a function (could be a variable, a module name, etc.)
-          USR_FATAL(sym,
-                    "'%s' has multiple definitions, redefined at:\n  %s",
-                    sym->name,
-                    def->sym->stringLoc());
-        } else if (!newFn && (oldFn && !oldFn->_this)) {
-          // Another named symbol that isn't a function is conflicting with
-          // a function definition name.
           USR_FATAL(sym,
                     "'%s' has multiple definitions, redefined at:\n  %s",
                     sym->name,
@@ -1003,14 +997,12 @@ static void build_type_constructor(AggregateType* ct) {
 
 
 // For the given class type, this builds the compiler-generated constructor
-// which is also called by user-defined constructors to pre-initialize all 
+// which is also called by user-defined constructors to pre-initialize all
 // fields to their declared or type-specific initial values.
 static void build_constructor(AggregateType* ct) {
-  if (isSyncType(ct))
-    ct->defaultValue = NULL;
-
   // Create the default constructor function symbol,
   FnSymbol* fn = new FnSymbol(astr("_construct_", ct->symbol->name));
+
   fn->cname = fn->name;
 
   fn->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
@@ -1063,11 +1055,12 @@ static void build_constructor(AggregateType* ct) {
   CallExpr*  superCall = NULL;
   CallExpr*  allocCall = NULL;
 
-  if (ct->symbol->hasFlag(FLAG_REF) ||
-      isSyncType(ct)) {
+  if (ct->symbol->hasFlag(FLAG_REF)) {
     // For ref, sync and single classes, just allocate space.
     allocCall = callChplHereAlloc(fn->_this);
+
     fn->insertAtTail(new CallExpr(PRIM_MOVE, fn->_this, allocCall));
+
   } else if (!ct->symbol->hasFlag(FLAG_TUPLE)) {
     // Create a meme (whatever that is).
     meme = new ArgSymbol(INTENT_BLANK,
@@ -1075,6 +1068,7 @@ static void build_constructor(AggregateType* ct) {
                          ct,
                          NULL,
                          new SymExpr(gTypeDefaultToken));
+
     meme->addFlag(FLAG_IS_MEME);
 
     // Move the meme into "this".
@@ -1541,10 +1535,22 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* unresolvedSymExpr,
         CallExpr *call = toCallExpr(parent);
 
         if (((call) && (call->baseExpr != unresolvedSymExpr)) || (!call)) {
+          //
+          // If we detect that this function reference is within a
+          // c_ptrTo() call then we only need a C pointer to the
+          // function, not a full Chapel first-class function (which
+          // can capture variables).
+          //
+          // TODO: Can we avoid strcmp or ensure it's "our" fn?
+          // 
+          bool captureForC = (call && call->isNamed("c_ptrTo"));
+
           //If the function is being used as a first-class value, handle
           // this with a primitive and unwrap the primitive later in
           // functionResolution
-          CallExpr *prim_capture_fn = new CallExpr(PRIM_CAPTURE_FN);
+          CallExpr *prim_capture_fn = new CallExpr(captureForC ?
+                                                   PRIM_CAPTURE_FN_FOR_C :
+                                                   PRIM_CAPTURE_FN_FOR_CHPL);
 
           unresolvedSymExpr->replace(prim_capture_fn);
           prim_capture_fn->insertAtTail(unresolvedSymExpr);
@@ -1910,32 +1916,16 @@ static void resolveEnumeratedTypes() {
         if (EnumType* type = toEnumType(first->var->type)) {
           if (SymExpr* second = toSymExpr(call->get(2))) {
             const char* name;
-            bool found = false;
-
-            CallExpr* parent = toCallExpr(call->parentExpr);
-            if( parent && parent->baseExpr == call ) {
-              // This is a call e.g.
-              // myenum.method( a )
-              // aka call(call(. myenum "method") a)
-              // so that call needs to go through normalize and resolve
-              continue;
-            }
-
 
             INT_ASSERT(get_string(second, &name));
 
             for_enums(constant, type) {
               if (!strcmp(constant->sym->name, name)) {
                 call->replace(new SymExpr(constant->sym));
-                found = true;
               }
             }
-
-            if (!found) {
-              USR_FATAL(call, 
-                        "unresolved enumerated type symbol \"%s\"",
-                        name);
-            }
+            // Unresolved enum symbols are now either resolved or throw an error
+            // during the function resolution pass. Permits paren-less methods.
           }
         }
       }
@@ -2512,6 +2502,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
       // Handles case where inner use has an 'except' list, or is
       // just a plain use.  The use returned will have a (longer) 'except'
       // list.
+      SET_LINENO(this);
       UseStmt* newUse = copy();
       for_vector(const char, toExclude, outer->named) {
         newUse->named.push_back(toExclude);
@@ -2606,6 +2597,7 @@ UseStmt* UseStmt::applyOuterUse(UseStmt* outer) {
     } else {
       // The inner use did not specify an 'except' or 'only' list,
       // so propagate our 'only' list and/or renamed list to it.
+      SET_LINENO(this);
       UseStmt* newUse = copy();
       for_vector(const char, toInclude, outer->named) {
         newUse->named.push_back(toInclude);

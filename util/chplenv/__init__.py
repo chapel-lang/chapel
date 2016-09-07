@@ -17,13 +17,20 @@ __all__ = [
     'chpl_regexp',
     'chpl_tasks',
     'chpl_timers',
+    'chpl_unwind',
     'chpl_wide_pointers',
-    'utils',
     # third-party package configuration helpers
     'chpl_3p_gmp_configs',
     'chpl_3p_hwloc_configs',
     'chpl_3p_jemalloc_configs',
+    'chpl_3p_libunwind_configs',
     'chpl_3p_massivethreads_configs',
     'chpl_3p_qthreads_configs',
     'chpl_3p_re2_configs',
+    # General purpose helpers
+    'chpl_home_utils',
+    'chpl_python_version',
+    'compiler_utils',
+    'overrides',
+    'utils',
 ]

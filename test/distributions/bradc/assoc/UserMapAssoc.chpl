@@ -298,11 +298,11 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
 
   proc dsiAdd(i: idxType) {
-    locDoms(dist.indexToLocaleIndex(i)).add(i);
+    return locDoms(dist.indexToLocaleIndex(i)).add(i);
   }
 
   proc dsiRemove(i: idxType) {
-    locDoms(dist.indexToLocaleIndex(i)).remove(i);
+    return locDoms(dist.indexToLocaleIndex(i)).remove(i);
   }
 
   proc dsiMember(i: idxType) {
@@ -353,7 +353,7 @@ class UserMapAssocDom: BaseAssociativeDom {
       }
     }
 
-    QuickSort(tableCopy);
+    quickSort(tableCopy);
 
     for ind in tableCopy do
       yield ind;
@@ -540,10 +540,10 @@ class LocUserMapAssocDom {
   // LOCAL DOMAIN INTERFACE:
 
   proc add(i: idxType) {
-    myInds += i;
+    return myInds.add(i);
   }
   proc remove(i: idxType) {
-    myInds -= i;
+    return myInds.remove(i);
   }
 
   proc member(i: idxType) {
@@ -734,7 +734,7 @@ class UserMapAssocArr: BaseArr {
       yield i;
   }
 
-  iter these(param tag: iterKind, followThis) ref where tag == iterKind.standalone {
+  iter these(param tag: iterKind) ref where tag == iterKind.standalone {
     coforall locArr in locArrs do on locArr {
       // Forward to associative array standalone iterator
       for i in locArr.myElems._value.these(tag) {

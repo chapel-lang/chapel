@@ -24,6 +24,10 @@
 
 #include "chpl-threads.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 //
 // Because we use the task tracking table for fifo tasking, this gives
@@ -113,5 +117,9 @@ static inline
 int chpl_task_supportsRemoteCache(void) {
   return 1;
 }
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif

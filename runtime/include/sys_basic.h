@@ -53,7 +53,7 @@
 #endif
 
 #ifndef _DEFAULT_SOURCE
-// Quiets warnings about _BSD_SOURCE being deprecated in glbic >= 2.20
+// Quiets warnings about _BSD_SOURCE being deprecated in glibc >= 2.20
 // This define enables everything _BSD_SOURCE does (and more) with glibc >= 2.19
 #define _DEFAULT_SOURCE
 #endif
@@ -74,7 +74,9 @@
 //#endif
 
 // Ask a C++ compiler if it would please include e.g. INT64_MAX
+#ifndef __STDC_CONSTANT_MACROS
 #define __STDC_CONSTANT_MACROS
+#endif
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -104,7 +106,7 @@
 
 
 #ifdef __cplusplus
-// g++ supports restrict in C++ with the name __restrict. For other compliers,
+// g++ supports restrict in C++ with the name __restrict. For other compilers,
 // we just #define-out restrict.
 #if defined(__GNUC__) && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
 #define restrict __restrict

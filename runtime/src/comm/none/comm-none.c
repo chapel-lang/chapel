@@ -138,7 +138,7 @@ void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
 
 void chpl_comm_broadcast_global_vars(int numGlobals) { }
 
-void chpl_comm_broadcast_private(int id, size_t sizee, int32_t tid) { }
+void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) { }
 
 void chpl_comm_barrier(const char *msg) { }
 
@@ -181,7 +181,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides, int32_t dstlocal
 
   assert(dstlocale==0);
 
-  //Only count[0] and strides are meassured in number of bytes.
+  //Only count[0] and strides are measured in number of bytes.
   cnt[0] = count[0] * elemSize;
   if (strlvls>0) {
     srcstr[0] = srcstrides[0] * elemSize;
@@ -334,7 +334,7 @@ void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, int32_t srclocal
 
   assert(srclocale==0);
 
-  //Only count[0] and strides are meassured in number of bytes.
+  //Only count[0] and strides are measured in number of bytes.
   cnt[0] = count[0] * elemSize;
   if (strlvls>0) {
     srcstr[0] = srcstrides[0] * elemSize;
@@ -504,7 +504,7 @@ void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
   info->arg_size = arg_size;
   if (arg_size)
     chpl_memcpy(&(info->arg), arg, arg_size);
-  chpl_task_startMovedTask((chpl_fn_p)fork_nb_wrapper, (void*)info,
+  chpl_task_startMovedTask(FID_NONE, (chpl_fn_p)fork_nb_wrapper, (void*)info,
                            subloc, chpl_nullTaskID, false);
 }
 

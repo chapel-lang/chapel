@@ -62,7 +62,7 @@ explainInstantiation(FnSymbol* fn) {
     form_Map(SymbolMapElem, e, fn->substitutions) {
       ArgSymbol* arg = toArgSymbol(e->key);
       if (!strcmp(formal->name, arg->name)) {
-        if (!strcmp(arg->name, "meme")) // do not show meme argument
+        if (arg->hasFlag(FLAG_IS_MEME)) // do not show meme argument
           continue;
         if (first)
           first = false;
@@ -566,11 +566,14 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
   // mark star tuples, add star flag
   //
   if (!fn->hasFlag(FLAG_TUPLE) && newType->symbol->hasFlag(FLAG_TUPLE)) {
-    bool markStar = true;
+    bool  markStar = true;
     Type* starType = NULL;
+
     form_Map(SymbolMapElem, e, subs) {
       TypeSymbol* ts = toTypeSymbol(e->value);
+
       INT_ASSERT(ts && ts->type);
+
       if (starType == NULL) {
         starType = ts->type;
       } else if (starType != ts->type) {
@@ -578,32 +581,47 @@ instantiateTypeForTypeConstructor(FnSymbol* fn, SymbolMap& subs, CallExpr* call,
         break;
       }
     }
+
     if (markStar)
       newType->symbol->addFlag(FLAG_STAR_TUPLE);
   }
 
   renameInstantiatedType(newType->symbol, subs, fn);
+
   fn->retType->symbol->defPoint->insertBefore(new DefExpr(newType->symbol));
+
   newType->symbol->copyFlags(fn);
-  if (isSyncType(newType))
+
+  if (isSyncType(newType) || isSingleType(newType))
     newType->defaultValue = NULL;
+
   newType->substitutions.copy(fn->retType->substitutions);
+
   // Add dispatch parents, but replace parent type with
   // instantiated parent type.
   forv_Vec(Type, t, fn->retType->dispatchParents) {
     Type *useT = t;
-    if (t == oldParentTy) useT = newParentTy;
+
+    if (t == oldParentTy)
+      useT = newParentTy;
+
     newType->dispatchParents.add(useT);
   }
 
   forv_Vec(Type, t, fn->retType->dispatchParents) {
     Type *useT = t;
-    if (t == oldParentTy) useT = newParentTy;
+
+    if (t == oldParentTy)
+      useT = newParentTy;
+
     bool inserted = useT->dispatchChildren.add_exclusive(newType);
+
     INT_ASSERT(inserted);
   }
+
   if (newType->dispatchChildren.n)
     INT_FATAL(fn, "generic type has subtypes");
+
   newType->instantiatedFrom = fn->retType;
   newType->substitutions.map_union(subs);
   newType->symbol->removeFlag(FLAG_GENERIC);

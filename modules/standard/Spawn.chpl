@@ -327,7 +327,7 @@ module Spawn {
 
   /* TODO:
      stdin stdout and stderr can be PIPE, existing file descriptor,
-     existing file opject, or None. and stderr can be STDOUT which
+     existing file object, or None. and stderr can be STDOUT which
      indicates stderr -> stdout.
 
      What about a string for a file path? To support that, use

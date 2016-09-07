@@ -160,7 +160,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status);
 void chpl_comm_post_task_init(void);
 
 //
-// a final comm layer stub before barrier synching and calling into
+// a final comm layer stub before barrier syncing and calling into
 // the user code.  It is recommended that a debugging message be
 // printed here indicating that each locale has started using
 // chpl_msg() and a verbosity level of 2 (which will cause it to be

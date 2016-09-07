@@ -30,6 +30,14 @@
 #include <vector>
 #include <map>
 
+#ifdef HAVE_LLVM
+// Forward declare MDNode.
+namespace llvm
+{
+  class MDNode;
+}
+#endif
+
 //
 // The function that represents the compiler-generated entry point
 //
@@ -98,7 +106,7 @@ public:
   // Interface for BaseAST
   virtual GenRet     codegen();
   virtual bool       inTree();
-  virtual Type*      typeInfo();
+  virtual QualifiedType qualType();
   virtual void       verify();
 
   // New interfaces
@@ -130,6 +138,9 @@ public:
   virtual bool       isVisible(BaseAST* scope)                 const;
   bool               noDocGen()                                const;
 
+  // Future: consider merging qual, type into a single
+  // field of type QualifiedType
+  Qualifier          qual;
   Type*              type;
   FlagSet            flags;
 
@@ -215,10 +226,10 @@ public:
   const char* doc;
 
   GenRet codegen();
-  void codegenDefC(bool global = false);
+  void codegenDefC(bool global = false, bool isHeader = false);
   void codegenDef();
   // global vars are different ...
-  void codegenGlobalDef();
+  void codegenGlobalDef(bool isHeader);
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 
@@ -228,6 +239,16 @@ private:
 
   virtual std::string docsDirective();
   bool isField;
+
+public:
+#ifdef HAVE_LLVM
+  llvm::MDNode *llvmDIGlobalVariable;
+  llvm::MDNode *llvmDIVariable;
+#else
+  void* llvmDIGlobalVariable;
+  void* llvmDIVariable;
+#endif
+
 };
 
 /******************************** | *********************************
@@ -243,6 +264,7 @@ public:
             Expr*       iTypeExpr     = NULL,
             Expr*       iDefaultExpr  = NULL,
             Expr*       iVariableExpr = NULL);
+
 
   // Interface for BaseAST
   virtual GenRet  codegen();
@@ -278,6 +300,12 @@ public:
 
   Type*           instantiatedFrom;
 
+public:
+#ifdef HAVE_LLVM
+  llvm::MDNode *llvmDIFormal;
+#else
+  void* llvmDIFormal;
+#endif
 };
 
 /******************************** | *********************************
@@ -296,6 +324,7 @@ class TypeSymbol : public Symbol {
   llvm::MDNode* llvmConstTbaaNode;
   llvm::MDNode* llvmTbaaStructNode;
   llvm::MDNode* llvmConstTbaaStructNode;
+  llvm::MDNode* llvmDIType;
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
@@ -304,6 +333,7 @@ class TypeSymbol : public Symbol {
   void* llvmConstTbaaNode;
   void* llvmTbaaStructNode;
   void* llvmConstTbaaStructNode;
+  void* llvmDIType;
 #endif
 
   TypeSymbol(const char* init_name, Type* init_type);
@@ -328,7 +358,8 @@ class TypeSymbol : public Symbol {
 
 class FnSymbol : public Symbol {
  public:
-  AList formals; // each formal is an ArgSymbol
+  AList formals; // each formal is an ArgSymbol, but the
+                 // elements of this list are DefExprs
   Type* retType; // The return type of the function.  This field is not
                  // fully established until resolution, and could be NULL
                  // before then.  Up to that point, return type information is
@@ -353,14 +384,28 @@ class FnSymbol : public Symbol {
   int codegenUniqueNum;
   const char *doc;
 
+  // The following fields are used only when hasFlag(FLAG_PARTIAL_COPY)
+  // to pass information from partialCopy() to finalizeCopy().
   /// Used to keep track of symbol substitutions during partial copying.
   SymbolMap partialCopyMap;
   /// Source of a partially copied function.
   FnSymbol* partialCopySource;
+  /// Vararg formal to be replaced with individual formals, or NULL.
+  ArgSymbol* varargOldFormal;
+  /// Individual formals to replace varargOldFormal.
+  std::vector<ArgSymbol*> varargNewFormals;
+
   /// Used to store the return symbol during partial copying.
   Symbol* retSymbol;
   /// Number of formals before tuple type constructor formals are added.
   int numPreTupleFormals;
+
+#ifdef HAVE_LLVM
+  llvm::MDNode* llvmDISubprogram;
+#else
+  void* llvmDISubprogram;
+#endif
+
 
                   FnSymbol(const char* initName);
                  ~FnSymbol();
@@ -396,7 +441,6 @@ class FnSymbol : public Symbol {
 
   void            insertBeforeReturn(Expr* ast);
   void            insertBeforeReturnAfterLabel(Expr* ast);
-  void            insertBeforeDownEndCount(Expr* ast);
 
   void            insertFormalAtHead(BaseAST* ast);
   void            insertFormalAtTail(BaseAST* ast);
@@ -416,6 +460,8 @@ class FnSymbol : public Symbol {
   bool            isSecondaryMethod()                          const;
   bool            isIterator()                                 const;
   bool            returnsRefOrConstRef()                       const;
+
+  QualifiedType   getReturnQualType()                          const;
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 
@@ -492,12 +538,17 @@ public:
   const char*          doc;
 
   // LLVM uses this for extern C blocks.
+#ifdef HAVE_LLVM
   ExternBlockInfo*     extern_info;
+  llvm::MDNode* llvmDINameSpace;
+#else
+  void* extern_info;
+  void* llvmDINameSpace;
+#endif
 
-  void         printDocs(std::ostream *file, unsigned int tabs, std::string parentName);
-
-          void         printTableOfContents(std::ostream *file);
-          std::string  docsName();
+  void                 printDocs(std::ostream *file, unsigned int tabs, std::string parentName);
+  void                 printTableOfContents(std::ostream *file);
+  std::string          docsName();
 
 private:
   void                 getTopLevelConfigOrVariables(Vec<VarSymbol *> *contain, Expr *expr, bool config);
@@ -568,9 +619,10 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
                              IF1_complex_type size=COMPLEX_SIZE_128);
 
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
+
+void createInitStringLiterals();
 void resetTempID();
 FlagSet getRecordWrappedFlags(Symbol* s);
-FlagSet getSyncFlags(Symbol* s);
 VarSymbol* newTemp(const char* name = NULL, Type* type = dtUnknown);
 VarSymbol* newTemp(Type* type);
 
@@ -582,6 +634,9 @@ const char* intentDescrString(IntentTag intent);
 // Return true if the arg must use a C pointer whether or not
 // pass-by-reference intents are used.
 bool argMustUseCPtr(Type* t);
+
+void substituteVarargTupleRefs(BlockStmt* ast, int numArgs, ArgSymbol* formal,
+                               std::vector<ArgSymbol*>& varargFormals);
 
 extern bool localTempNames;
 
@@ -624,12 +679,13 @@ extern VarSymbol *gModuleInitIndentLevel;
 extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gChplHereAlloc;
 extern FnSymbol *gChplHereFree;
+extern FnSymbol *gChplDoDirectExecuteOn;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
 
 extern std::map<FnSymbol*,int> ftableMap;
-extern Vec<FnSymbol*> ftableVec;
+extern std::vector<FnSymbol*> ftableVec;
 
 //
 // The virtualMethodTable maps types to their arrays of methods.  The

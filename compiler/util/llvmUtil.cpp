@@ -101,11 +101,11 @@ bool isTypeEquivalent(LLVM_TARGET_DATA * targetData, llvm::Type* a, llvm::Type* 
   // Are they the same size, within alignment?
   if( sizeA < sizeB ) {
     // Try making size A bigger...
-    if( sizeA + alignA > sizeB ) return true;
+    if( sizeA + alignA >= sizeB ) return true;
   } else {
     // A >= B
     // Try making size B bigger...
-    if( sizeB + alignB > sizeA ) return true;
+    if( sizeB + alignB >= sizeA ) return true;
   }
 
   return false;

@@ -52,7 +52,16 @@ module ChapelReduce {
   
   proc chpl__sumType(type eltType) type {
     var x: eltType;
-    return (x + x).type;
+    if isArray(x) {
+      type xET = x.eltType;
+      type xST = chpl__sumType(xET);
+      if xET == xST then
+        return eltType;
+      else
+        return [x.domain] xST;
+    } else {
+      return (x + x).type;
+    }
   }
   
   pragma "ReduceScanOp"
@@ -64,10 +73,6 @@ module ChapelReduce {
     proc unlock() {
       lock$.readFE();
     }
-
-    proc ~ReduceScanOp() {
-      delete lock$;
-    }
   }
   
   class SumReduceScanOp: ReduceScanOp {
@@ -75,7 +80,7 @@ module ChapelReduce {
     var value: chpl__sumType(eltType);
 
     // Rely on the default value of the desired type.
-    // Todo: is this efficnent when that is an array?
+    // Todo: is this efficient when that is an array?
     proc identity {
       var x: chpl__sumType(eltType); return x;
     }

@@ -1,4 +1,4 @@
-assign-param-segfault.chpl:6: In constructor 'Bar':
+assign-param-segfault.chpl:6: In initializer 'Bar':
 assign-param-segfault.chpl:11: internal error: EXP0492 chpl Version 1.12.0.223383c
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),

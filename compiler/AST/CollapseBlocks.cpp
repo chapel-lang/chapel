@@ -281,6 +281,15 @@ void CollapseBlocks::exitCallExpr(CallExpr* node)
 {
 }
 
+bool CollapseBlocks::enterContextCallExpr(ContextCallExpr* node)
+{
+  return false;
+}
+
+void CollapseBlocks::exitContextCallExpr(ContextCallExpr* node)
+{
+}
+
 bool CollapseBlocks::enterDefExpr(DefExpr* node)
 {
   return false;

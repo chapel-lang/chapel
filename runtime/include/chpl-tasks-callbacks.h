@@ -22,6 +22,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // Tasking callback support.
 //
@@ -138,6 +142,7 @@ typedef struct {
 
     struct chpl_task_info_full {
                                 // chpl_task_cb_info_kind_full:
+      chpl_fn_int_t fid;        //   number of function to call
       int32_t filename;         //   source file of task definition
       int lineno;               //   source line of task definition
       uint64_t id;              //   unique ID, within locale
@@ -157,5 +162,9 @@ int chpl_task_install_callback(chpl_task_cb_event_kind_t,
                                chpl_task_cb_fn_t);
 int chpl_task_uninstall_callback(chpl_task_cb_event_kind_t,
                                  chpl_task_cb_fn_t);
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif // _chpl_tasks_callbacks_h_

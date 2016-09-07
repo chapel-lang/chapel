@@ -1,5 +1,5 @@
 /* The Computer Language Benchmarks Game
-   http://shootout.alioth.debian.org/
+   http://benchmarksgame.alioth.debian.org
 
    contributed by Tom Hildebrandt, Brad Chamberlain, Lydia Duncan
    derived from the GNU C version by Bonzini, Bartlett, and Mellor
@@ -16,7 +16,7 @@ var numer, accum, denom, tmp1, tmp2: mpz_t;
 //
 mpz_init_set_ui(numer, 1);                 // numer = 1
 mpz_init_set_ui(accum, 0);                 // accum = 0
-mpz_init_set_ui(denom, 1);                 // denum = 1
+mpz_init_set_ui(denom, 1);                 // denom = 1
 mpz_init(tmp1);                            // init tmp1
 mpz_init(tmp2);                            // init tmp2
 
@@ -26,6 +26,8 @@ proc main() {
   // This needs to be a c_ulong for portability to 32 bit systems.
   // TODO: make our GMP methods accept uints, ints, etc. of various sizes so
   // that the user doesn't need to know C types?
+
+  param digitsPerLine = 10;
 
   //
   // extract and print n digits
@@ -40,7 +42,17 @@ proc main() {
   }
 
   //
-  // Free memory associated with multi-precision valuesx
+  // Pad out any trailing digits for the final line
+  //
+  const leftover = n%digitsPerLine;
+  if (leftover) {
+    for leftover..digitsPerLine do
+      write(" ");
+    writeln("\t:", n);
+  }
+
+  //
+  // Free memory associated with multi-precision values
   //
   mpz_clear(tmp2);
   mpz_clear(tmp1);

@@ -14,15 +14,15 @@ def fixForkCounts(fn, orig):
     counts = orig.split(')')
     l4 = counts[-2].split()
     if l4[0]=='(get':
-        forks = l4[23]
-        if forks >= '4,' and forks <= '5,':
-            forks = '5,'
+        forks = l4[26]
+        if forks >= '1,' and forks <= '2,':
+            forks = '2,'
         for c in counts[0:-2]:
             fn.write(c+')')
-        for e in l4[0:23]:
+        for e in l4[0:26]:
             fn.write(' '+e)
         fn.write(' '+forks)
-        for c in l4[24:]:
+        for c in l4[27:]:
             fn.write(' '+c)
         fn.write(')\n')
     else:

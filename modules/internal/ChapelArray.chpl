@@ -147,10 +147,24 @@ module ChapelArray {
   pragma "no doc"
   config param useBulkTransfer = true;
   pragma "no doc"
-  config param useBulkTransferStride = false;
+  config param useBulkTransferStride = true;
+
+  // Return POD values from arrays as values instead of const ref?
+  pragma "no doc"
+  config param PODValAccess = true;
+
+  // Toggles the functionality to perform strided bulk transfers involving
+  // distributed arrays.
+  //
+  // Currently disabled due to observations of higher communication counts
+  // compared to element-by-element assignment.
+  pragma "no doc"
+  config param useBulkTransferDist = false;
 
   pragma "no doc" // no doc unless we decide to expose this
   config param arrayAsVecGrowthFactor = 1.5;
+  pragma "no doc"
+  config param debugArrayAsVec = false;
 
   pragma "privatized class"
   proc _isPrivatized(value) param
@@ -158,9 +172,9 @@ module ChapelArray {
 
   proc _newPrivatizedClass(value) {
 
-    var n = numPrivateObjects.fetchAdd(1);
+    const n = numPrivateObjects.fetchAdd(1);
 
-    var hereID = here.id;
+    const hereID = here.id;
     const privatizeData = value.dsiGetPrivatizeData();
     on Locales[0] do
       _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
@@ -189,8 +203,8 @@ module ChapelArray {
   }
 
   proc _reprivatize(value) {
-    var pid = value.pid;
-    var hereID = here.id;
+    const pid = value.pid;
+    const hereID = here.id;
     const reprivatizeData = value.dsiGetReprivatizeData();
     on Locales[0] do
       _reprivatizeHelp(value, value, pid, hereID, reprivatizeData);
@@ -1027,12 +1041,28 @@ module ChapelArray {
 
     /* Add index ``i`` to this domain */
     proc add(i) {
-      _value.dsiAdd(i);
+      return _value.dsiAdd(i);
+    }
+
+    proc bulkAdd(inds: [] _value.idxType, isSorted=false,
+        isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank==1 {
+
+      if inds.size == 0 then return 0;
+
+      return _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
+    }
+
+    proc bulkAdd(inds: [] _value.rank*_value.idxType, isSorted=false,
+        isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank>1 {
+
+      if inds.size == 0 then return 0;
+
+      return _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
     }
 
     /* Remove index ``i`` from this domain */
     proc remove(i) {
-      _value.dsiRemove(i);
+      return _value.dsiRemove(i);
     }
 
     /* Request space for a particular number of values in an
@@ -1401,6 +1431,20 @@ module ChapelArray {
     pragma "no doc"
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 
+    pragma "no doc"
+    proc defaultSparseDist {
+      // For now, this function just returns the same distribution
+      // as the dense one. That works for:
+      //  * sparse subdomains of defaultDist arrays (they use defaultDist)
+      //  * sparse subdomains of Block distributed arrays (they use Block)
+      // However, it is likely that DSI implementations will need to be
+      // able to further customize this behavior. In particular, we
+      // could add e.g. dsiDefaultSparseDist to the DSI interface
+      // and have this function use _value.dsiDefaultSparseDist()
+      // (or perhaps _value.dist.dsiDefaultSparseDist() ).
+      return _getDistribution(_value.dist);
+    }
+
     /* Cast a rectangular domain to another rectangular domain type.
        If the old type is stridable and the new type is not stridable,
        ensure that the stride was 1.
@@ -1663,6 +1707,7 @@ module ChapelArray {
 
   pragma "no doc"
   proc shouldReturnRvalueByConstRef(type t) param {
+    if !PODValAccess then return true;
     if isPODType(t) then return false;
     return true;
   }
@@ -2136,9 +2181,11 @@ module ChapelArray {
       return this[this.domain.high];
     }
 
-    /* Return a range that is grown or shrunk from r to accomodate 'r2' */
+    /* Return a range that is grown or shrunk from r to accommodate 'r2' */
     pragma "no doc"
-    inline proc resizeAllocRange(r: range, r2: range, factor=arrayAsVecGrowthFactor, param direction=1, param grow=1) {
+    inline proc resizeAllocRange(r: range, r2: range,
+                                 factor=arrayAsVecGrowthFactor,
+                                 param direction=1, param grow=1) {
       // This should only be called for 1-dimensional arrays
       const lo = r.low,
             hi = r.high,
@@ -2151,11 +2198,25 @@ module ChapelArray {
           return ..hi#-newSize;
         }
       } else {
-        // shrink to match the r2 bound on the side indicated by direction
+        const newSize = min(size-1, (size/factor):int);
         if direction > 0 {
-          return lo..r2.high;
+          var newRange = lo..#newSize;
+          if newRange.high < r2.high {
+            // not able to take enough spaces off the high end.  Take them
+            // off the low end instead.
+            const spaceNeeded = r2.high - newRange.high;
+            newRange = (newRange.low+spaceNeeded)..r2.high;
+          }
+          return newRange;
         } else {
-          return r2.low..hi;
+          var newRange = ..hi # -newSize;
+          if newRange.low > r2.low {
+            // not able to take enough spaces off the low end.  Take them
+            // off the high end instead.
+            const spaceNeeded = r2.low - newRange.low;
+            newRange = r2.low..(newRange.high-spaceNeeded);
+          }
+          return newRange;
         }
       }
     }
@@ -2181,7 +2242,12 @@ module ChapelArray {
              */ 
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
+          const oldRng = this._value.dataAllocRange;
           this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange);
+          if debugArrayAsVec then
+            writeln("push_back reallocate: ",
+                    oldRng, " => ", this._value.dataAllocRange,
+                    " (", newRange, ")");
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
         this.domain.setIndices((newRange,));
@@ -2209,8 +2275,13 @@ module ChapelArray {
         if this._value.dataAllocRange.length < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
+          const oldRng = this._value.dataAllocRange;
           this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
+          if debugArrayAsVec then
+            writeln("pop_back reallocate: ",
+                    oldRng, " => ", this._value.dataAllocRange,
+                    " (", newRange, ")");
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
         this.domain.setIndices((newRange,));
@@ -2234,7 +2305,12 @@ module ChapelArray {
           if this._value.dataAllocRange.length < this.domain.numIndices {
             this._value.dataAllocRange = this.domain.low..this.domain.high;
           }
+          const oldRng = this._value.dataAllocRange;
           this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1);
+          if debugArrayAsVec then
+            writeln("push_front reallocate: ",
+                    oldRng, " => ", this._value.dataAllocRange,
+                    " (", newRange, ")");
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
         this.domain.setIndices((newRange,));
@@ -2262,8 +2338,13 @@ module ChapelArray {
         if this._value.dataAllocRange.length < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
+          const oldRng = this._value.dataAllocRange;
           this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, direction=-1, grow=-1);
+          if debugArrayAsVec then
+            writeln("pop_front reallocate: ",
+                    oldRng, " => ", this._value.dataAllocRange,
+                    " (", newRange, ")");
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
         this.domain.setIndices((newRange,));
@@ -2325,7 +2406,7 @@ module ChapelArray {
         if this._value.dataAllocRange.length < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
@@ -2357,7 +2438,7 @@ module ChapelArray {
         if this._value.dataAllocRange.length < this.domain.numIndices {
           this._value.dataAllocRange = this.domain.low..this.domain.high;
         }
-        if newRange.length < (this._value.dataAllocRange.length / arrayAsVecGrowthFactor):int {
+        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
           this._value.dataAllocRange = resizeAllocRange(this._value.dataAllocRange, newRange, grow=-1);
           this._value.dsiReallocate({this._value.dataAllocRange});
         }
@@ -2459,8 +2540,6 @@ module ChapelArray {
     //
     return && reduce (this == that);
   }
-
-
 
 
   //
@@ -2832,7 +2911,7 @@ module ChapelArray {
   }
 
   proc =(ref a: domain, b: _tuple) {
-    a._value.clearForIteratableAssign();
+    a.clear();
     for ind in 1..b.size {
       a.add(b(ind));
     }
@@ -2873,7 +2952,9 @@ module ChapelArray {
   }
 
   proc =(ref a: domain, b) {  // b is iteratable
-    a._value.clearForIteratableAssign();
+    if isRectangularDom(a) then
+      compilerError("Illegal assignment to a rectangular domain");
+    a.clear();
     for ind in b {
       a.add(ind);
     }
@@ -3048,9 +3129,9 @@ module ChapelArray {
       chpl__bulkTransferHelper(a, b);
     }
     else {
-      if debugBulkTransfer then
-        // just writeln() clashes with writeln.chpl
-        stdout.writeln("proc =(a:[],b): bulk transfer did not happen");
+      if debugBulkTransfer {
+        chpl_debug_writeln("proc =(a:[],b): bulk transfer did not happen");
+      }
       chpl__transferArray(a, b);
     }
   }
@@ -3068,7 +3149,6 @@ module ChapelArray {
       forall (aa,bb) in zip(a,b) do
         aa = bb;
     } else {
-      compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
       for (aa,bb) in zip(a,b) do
         aa = bb;
     }
@@ -3116,9 +3196,14 @@ module ChapelArray {
     chpl__tupleInit(j, a.rank, b);
   }
 
-  proc _desync(type t) where t: _syncvar || t: _singlevar {
+  proc _desync(type t) where t: _syncvar {
     var x: t;
-    return x.value;
+    return x.wrapped.value;
+  }
+
+  proc _desync(type t) where t: _singlevar {
+    var x: t;
+    return x.wrapped.value;
   }
 
   proc _desync(type t) {
@@ -3127,14 +3212,8 @@ module ChapelArray {
   }
 
   proc =(ref a: [], b: _desync(a.eltType)) {
-    if isRectangularArr(a) {
-      forall e in a do
-        e = b;
-    } else {
-      compilerWarning("whole array assignment has been serialized (see note in $CHPL_HOME/STATUS)");
-      for e in a do
-        e = b;
-    }
+    forall e in a do
+      e = b;
   }
 
   /*

@@ -1,11 +1,11 @@
 /***
 
   thread-ring benchmark from The Computer Language Benchmarks Game
-  http://shootout.alioth.debian.org/
+  http://benchmarksgame.alioth.debian.org
 
   Written by: Sung-Eun Choi (sungeun@cray.com)
 
-  Each program should create and keep alive 503 threads, explicity or
+  Each program should create and keep alive 503 threads, explicitly or
   implicitly linked in a ring, and pass a token between one thread and
   the next thread at least N times.
 

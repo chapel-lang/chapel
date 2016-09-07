@@ -1,31 +1,47 @@
-use Random;
 
-var D : domain(string);
-var arr : [D] int;
+config const pow = 14;
 
-D += "foo";
-D += "bar";
+proc main() {
+  var D : domain(string);
+  var A : [D] int;
 
-arr["foo"] = 4;
-arr["bar"] = 5;
+  D += "foo";
+  D += "bar";
 
-//Pick a random initial capacity for the associative domain
-var rs       = new RandomStream();
+  A["foo"] = 4;
+  A["bar"] = 5;
 
-var min      = 5;
-var max      = 3500;
-var capacity = (rs.getNext() * (max - min) + min): int;
+  for i in 3..pow {
+    const cap = 2**i;
 
-D.requestCapacity(capacity);
+    test(cap);
 
-
-if (D._value.tableSize > 2 * (capacity + 1)) &&
-   arr["foo"] == 4 &&
-   arr["bar"] == 5
-{
-    writeln("SUCCESS");
-} else {
-    writeln("FAILURE");
+    D.requestCapacity(cap);
+    verify(A, cap);
+  }
 }
 
-delete rs;
+proc test(cap : int) {
+  var D : domain(string);
+  var A : [D] int;
+
+  D += "foo";
+  D += "bar";
+
+  A["foo"] = 4;
+  A["bar"] = 5;
+
+  D.requestCapacity(cap);
+  verify(A, cap);
+}
+
+proc verify(A : [], cap : int) {
+
+  const minSize = 2 * (cap + 1);
+  const correct = A.domain._value.tableSize > cap &&
+                  A.size == 2 &&
+                  A["foo"] == 4 &&
+                  A["bar"] == 5;
+
+  if !correct then halt("FAILURE for capacity ", cap);
+}

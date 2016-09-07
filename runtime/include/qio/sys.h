@@ -20,10 +20,6 @@
 #ifndef _SYS_H_
 #define _SYS_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "sys_basic.h"
 #include "qio_error.h"
 
@@ -38,6 +34,10 @@ extern "C" {
 #include <netdb.h>
 #include <unistd.h>
 #include <stdio.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef LUSTRE_SUPER_MAGIC
 // Magic value to be found in the statfs man page
@@ -87,7 +87,7 @@ typedef struct addrinfo* sys_addrinfo_ptr_t;
 //  struct addrinfo addr_info;
 //} sys_addrinfo_t;
 
-/* Wrap system calls to return error seperately,
+/* Wrap system calls to return error separately,
  * to run them in a pthread, and to use a fixed-length sys_sockaddr
  * to simplify programming.
  *

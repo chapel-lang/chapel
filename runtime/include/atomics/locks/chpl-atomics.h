@@ -76,10 +76,10 @@ typedef struct atomic_uintptr_s {
   uintptr_t v;
 } atomic_uintptr_t;
 
-typedef struct atomic_flag_s {
+typedef struct atomic_bool_s {
   chpl_sync_aux_t sv;
   chpl_bool v;
-} atomic_flag;
+} atomic_bool;
 
 typedef struct atomic__real32_s {
   chpl_sync_aux_t sv;
@@ -106,31 +106,9 @@ void atomic_thread_fence(memory_order order)
   // No idea!
 }
 static inline
-void atomic_signal_thread_fence(memory_order order)
+void atomic_signal_fence(memory_order order)
 {
   // No idea!
-}
-
-static MAYBE_INLINE chpl_bool
-atomic_flag_test_and_set_explicit(atomic_flag *obj, memory_order order) {
-  chpl_bool ret;
-  chpl_sync_lock(&obj->sv);
-  ret = obj->v;
-  obj->v = true;
-  chpl_sync_unlock(&obj->sv);
-  return ret;
-}
-static inline chpl_bool atomic_flag_test_and_set(atomic_flag *obj) {
-  return atomic_flag_test_and_set_explicit(obj, memory_order_seq_cst);
-}
-static MAYBE_INLINE void
-atomic_flag_clear_explicit(atomic_flag *obj, memory_order order) {
-  chpl_sync_lock(&obj->sv);
-  obj->v = false;
-  chpl_sync_unlock(&obj->sv);
-}
-static inline void atomic_flag_clear(atomic_flag *obj) {
-  atomic_flag_clear_explicit(obj, memory_order_seq_cst);
 }
 
 #define DECLARE_ATOMICS_BASE(type, basetype) \
@@ -287,7 +265,7 @@ static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand
   return atomic_fetch_sub_explicit_ ## type(obj, operand, memory_order_seq_cst); \
 }
 
-DECLARE_ATOMICS_BASE(flag, chpl_bool);
+DECLARE_ATOMICS_BASE(bool, chpl_bool);
 
 #define DECLARE_ATOMICS(type) \
   DECLARE_ATOMICS_BASE(type, type) \

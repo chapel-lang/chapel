@@ -6,6 +6,7 @@ Initializing Modules:
      BaseStringType
      SysCTypes
      StringCasts
+    ChapelDebugPrint
     ChapelBase
      ChapelStringLiterals
     MemConsistency
@@ -31,6 +32,7 @@ Initializing Modules:
       Regexp
     LocaleTree
     DefaultAssociative
+     Sort
     ChapelTaskTable
     MemTracking
     ChapelUtil

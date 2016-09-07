@@ -144,7 +144,7 @@ module ChapelLocale {
 
     /*
       :proc:`numCores` is a deprecated predecessor to :proc:`numPUs`,
-      equivalant to `numPUs(logical=true, accessible=true)`.  It will
+      equivalent to `numPUs(logical=true, accessible=true)`.  It will
       be removed after Chapel 1.13 is released.
      */
     proc numCores: int {
@@ -337,7 +337,7 @@ module ChapelLocale {
   pragma "no doc"
   class AbstractRootLocale : locale {
     // These functions are used to establish values for Locales[] and
-    // LocaleSpace -- an array of locales and its correponding domain
+    // LocaleSpace -- an array of locales and its corresponding domain
     // which are used as the default set of targetLocales in many
     // distributions.
     proc getDefaultLocaleSpace() {
@@ -358,7 +358,7 @@ module ChapelLocale {
       return this;
     }
 
-    // These iterators are to be used by RootLocale:init() to
+    // These iterators are to be used by RootLocale:setup() to
     // initialize the LocaleModel.  The calling loop body cannot
     // contain any non-local code, since the rootLocale is not yet
     // initialized.
@@ -460,7 +460,7 @@ module ChapelLocale {
   pragma "no doc"
   proc chpl_init_rootLocale() {
     origRootLocale = new RootLocale();
-    (origRootLocale:RootLocale).init();
+    (origRootLocale:RootLocale).setup();
   }
 
   // This function sets up a private copy of rootLocale by replicating

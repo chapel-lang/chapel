@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,69 +24,69 @@
 #include "stringutil.h"
 #include "type.h"
 
-static Type*
+static QualifiedType
 returnInfoUnknown(CallExpr* call) {
-  return dtUnknown;
+  return QualifiedType(dtUnknown);
 }
 
-static Type*
+static QualifiedType
 returnInfoVoid(CallExpr* call) {
-  return dtVoid;
+  return QualifiedType(dtVoid, QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoCVoidPtr(CallExpr* call) {
-  return dtCVoidPtr;
+  return QualifiedType(dtCVoidPtr, QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoBool(CallExpr* call) {
-  return dtBool;
+  return QualifiedType(dtBool, QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoString(CallExpr* call) {
-  return dtString;
+  return QualifiedType(dtString, QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoStringC(CallExpr* call) {
-  return dtStringC;
+  return QualifiedType(dtStringC, QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoStringCopy(CallExpr* call) {
-  return dtStringCopy;
+  return QualifiedType(dtStringCopy, QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoLocaleID(CallExpr* call) {
-  return dtLocaleID;
+  return QualifiedType(dtLocaleID, QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoNodeID(CallExpr* call) {
-  return NODE_ID_TYPE;
+  return QualifiedType(NODE_ID_TYPE, QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoInt32(CallExpr* call) {
-  return dtInt[INT_SIZE_32];
+  return QualifiedType(dtInt[INT_SIZE_32], QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoInt64(CallExpr* call) {
-  return dtInt[INT_SIZE_64];
+  return QualifiedType(dtInt[INT_SIZE_64], QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoUInt64(CallExpr* call) {
-  return dtUInt[INT_SIZE_64];
+  return QualifiedType(dtUInt[INT_SIZE_64], QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoSizeType(CallExpr* call) {
-  return SIZE_TYPE;
+  return QualifiedType(SIZE_TYPE, QUAL_VAL);
 }
 
 //
@@ -96,52 +96,54 @@ returnInfoSizeType(CallExpr* call) {
 // track the default 'int' size rather than being hard-coded to a
 // specific bit-width.
 //
-static Type*
+static QualifiedType
 returnInfoDefaultInt(CallExpr* call) {
   return returnInfoInt64(call);
 }
 
 /*
-static Type*
+static QualifiedType
 returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
-  return dtUInt[INT_SIZE_32];
+  return QualifiedType(dtUInt[INT_SIZE_32], QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoReal32(CallExpr* call) {
-  return dtReal[FLOAT_SIZE_32];
+  return QualifiedType(dtReal[FLOAT_SIZE_32], QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoReal64(CallExpr* call) {
-  return dtReal[FLOAT_SIZE_64];
+  return QualifiedType(dtReal[FLOAT_SIZE_64], QUAL_VAL);
 }
 */
 
-static Type*
+static QualifiedType
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
   Type *t = call->get(1)->getValType();
   if (t == dtComplex[COMPLEX_SIZE_64]) {
-    return dtReal[FLOAT_SIZE_32]->refType;
+    return QualifiedType(dtReal[FLOAT_SIZE_32]->refType, QUAL_REF);
   } else if (t == dtComplex[COMPLEX_SIZE_128]) {
-    return dtReal[FLOAT_SIZE_64]->refType;
+    return QualifiedType(dtReal[FLOAT_SIZE_64]->refType, QUAL_REF);
   } else {
     INT_FATAL( call, "unsupported complex size");
   }
-  return dtUnknown;
+  return QualifiedType(dtUnknown);
 }
 
-static Type*
+static QualifiedType
 returnInfoFirst(CallExpr* call) {
-  return call->get(1)->typeInfo();
+  return call->get(1)->qualType();
 }
 
-static Type*
+static QualifiedType
 returnInfoFirstDeref(CallExpr* call) {
-  return call->get(1)->getValType();
+  QualifiedType tmp = call->get(1)->qualType();
+  Type* type = tmp.type()->getValType();
+  return QualifiedType(type, QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoCast(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
@@ -151,70 +153,73 @@ returnInfoCast(CallExpr* call) {
   if (t2->symbol->hasFlag(FLAG_WIDE_REF))
     if (wideRefMap.get(t1))
       t1 = wideRefMap.get(t1);
-  return t1;
+  return QualifiedType(t1); // what should qual be here?
 }
 
-static Type*
+static QualifiedType
 returnInfoVal(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
-  if (!ct || !ct->symbol->hasFlag(FLAG_REF))
-    INT_FATAL(call, "attempt to get value type of non-reference type");
-  return ct->getField(1)->type;
+  if (ct) {
+    if(ct->symbol->hasFlag(FLAG_REF)) {
+      return QualifiedType(ct->getField(1)->type, QUAL_VAL);
+    }
+    else if(ct->symbol->hasFlag(FLAG_WIDE_REF)) {
+      return QualifiedType(ct->getField(2)->type, QUAL_VAL);
+    }
+  }
+  INT_FATAL(call, "attempt to get value type of non-reference type");
+  return QualifiedType(NULL);
 }
 
-static Type*
+static QualifiedType
 returnInfoRef(CallExpr* call) {
   Type* t = call->get(1)->typeInfo();
   if (!t->refType)
     INT_FATAL(call, "invalid attempt to get reference type");
-  return t->refType;
+  return QualifiedType(t->refType, QUAL_REF);
 }
 
 // NEEDS TO BE FINISHED WHEN PRIMITIVES ARE REDONE
-static Type*
+static QualifiedType
 returnInfoNumericUp(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
   if (is_int_type(t1) && is_real_type(t2))
-    return t2;
+    return QualifiedType(t2, QUAL_VAL);
   if (is_real_type(t1) && is_int_type(t2))
-    return t1;
+    return QualifiedType(t1, QUAL_VAL);
   if (is_int_type(t1) && is_bool_type(t2))
-    return t1;
+    return QualifiedType(t1, QUAL_VAL);
   if (is_bool_type(t1) && is_int_type(t2))
-    return t2;
-  return t1;
+    return QualifiedType(t2, QUAL_VAL);
+  return QualifiedType(t1, QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoArrayIndexValue(CallExpr* call) {
-  SymExpr* sym = toSymExpr(call->get(1));
-  INT_ASSERT(sym);
-  Type* type = sym->var->type;
+  Type* type = call->get(1)->typeInfo();
   if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
     type = type->getField("addr")->type;
   if (!type->substitutions.n)
     INT_FATAL(call, "bad primitive");
   // Is this conditional necessary?  Can just assume condition is true?
   if (type->symbol->hasFlag(FLAG_DATA_CLASS)) {
-    return toTypeSymbol(getDataClassType(type->symbol))->type;
+    return QualifiedType(toTypeSymbol(getDataClassType(type->symbol))->type, QUAL_VAL);
   }
   else {
-    return toTypeSymbol(type->substitutions.v[0].value)->type;
+    return QualifiedType(toTypeSymbol(type->substitutions.v[0].value)->type, QUAL_VAL);
   }
 }
 
-static Type*
+static QualifiedType
 returnInfoArrayIndex(CallExpr* call) {
-  return returnInfoArrayIndexValue(call)->refType;
+  QualifiedType tmp = returnInfoArrayIndexValue(call);
+  return QualifiedType(tmp.type()->refType, QUAL_REF);
 }
 
-static Type*
+static QualifiedType
 returnInfoGetMember(CallExpr* call) {
-  SymExpr* sym1 = toSymExpr(call->get(1));
-  if (!sym1)
-    INT_FATAL(call, "bad member primitive");
-  AggregateType* ct = toAggregateType(sym1->var->type);
+  AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
   if (ct->symbol->hasFlag(FLAG_REF))
     ct = toAggregateType(ct->getValType());
   if (!ct)
@@ -229,28 +234,30 @@ returnInfoGetMember(CallExpr* call) {
     const char* name = var->immediate->v_string;
     for_fields(field, ct) {
       if (!strcmp(field->name, name))
-        return field->type;
+        return QualifiedType(field->type, QUAL_VAL);
     }
   } else
-    return var->type;
+    return QualifiedType(var->type, QUAL_VAL);
   INT_FATAL(call, "bad member primitive");
-  return NULL;
+  return QualifiedType(NULL);
 }
 
-static Type*
+static QualifiedType
 returnInfoGetTupleMember(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->getValType());
   INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
-  return ct->getField("x1")->type;
+  return QualifiedType(ct->getField("x1")->type, QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoGetTupleMemberRef(CallExpr* call) {
-  Type* type = returnInfoGetTupleMember(call);
-  return (type->refType) ? type->refType : type;
+  Type* type = returnInfoGetTupleMember(call).type();
+  if (type->refType)
+    type = type->refType;
+  return QualifiedType(type, QUAL_REF);
 }
 
-static Type*
+static QualifiedType
 returnInfoGetMemberRef(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->getValType());
   INT_ASSERT(ct);
@@ -272,12 +279,15 @@ returnInfoGetMemberRef(CallExpr* call) {
       field = ct->getField(i);
     }
     INT_ASSERT(field);
-    return field->type->refType ? field->type->refType : field->type;
-  } else
-    return var->type->refType ? var->type->refType : var->type;
+    Type* t = field->type->refType ? field->type->refType : field->type;
+    return QualifiedType(t, QUAL_REF);
+  } else {
+    Type* t = var->type->refType ? var->type->refType : var->type;
+    return QualifiedType(t, QUAL_REF);
+  }
 }
 
-static Type*
+static QualifiedType
 returnInfoEndCount(CallExpr* call) {
   static Type* endCountType = NULL;
   if (endCountType == NULL) {
@@ -290,21 +300,21 @@ returnInfoEndCount(CallExpr* call) {
       }
     }
   }
-  return endCountType;
+  return QualifiedType(endCountType, QUAL_VAL);
 }
 
-static Type*
+static QualifiedType
 returnInfoVirtualMethodCall(CallExpr* call) {
   SymExpr* se = toSymExpr(call->get(1));
   INT_ASSERT(se);
   FnSymbol* fn = toFnSymbol(se->var);
   INT_ASSERT(fn);
-  return fn->retType;
+  return fn->getReturnQualType();
 }
 
-static Type*
+static QualifiedType
 returnInfoSecondType(CallExpr* call) {
-  Type* t = call->get(2)->typeInfo();
+  QualifiedType t = call->get(2)->qualType();
   return t;
 }
 
@@ -340,7 +350,7 @@ PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
 
 PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
                          const char *aname,
-                         Type *(*areturnInfo)(CallExpr*)) :
+                         QualifiedType (*areturnInfo)(CallExpr*)) :
   tag(atag),
   name(aname),
   returnInfo(areturnInfo),
@@ -351,7 +361,7 @@ PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
 }
 
 static void
-prim_def(PrimitiveTag tag, const char* name, Type *(*returnInfo)(CallExpr*),
+prim_def(PrimitiveTag tag, const char* name, QualifiedType (*returnInfo)(CallExpr*),
          bool isEssential = false, bool passLineno = false) {
   primitives[tag] = new PrimitiveOp(tag, name, returnInfo);
   primitives[tag]->isEssential = isEssential;
@@ -359,7 +369,7 @@ prim_def(PrimitiveTag tag, const char* name, Type *(*returnInfo)(CallExpr*),
 }
 
 static void
-prim_def(const char* name, Type *(*returnInfo)(CallExpr*),
+prim_def(const char* name, QualifiedType (*returnInfo)(CallExpr*),
          bool isEssential = false, bool passLineno = false) {
   PrimitiveOp* prim = new PrimitiveOp(PRIM_UNKNOWN, name, returnInfo);
   prim->isEssential = isEssential;
@@ -459,35 +469,6 @@ initPrimitive() {
   // local block primitives
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
 
-  // operations on sync/single vars
-  prim_def(PRIM_SYNC_INIT, "sync_init", returnInfoVoid, true);
-  prim_def(PRIM_SYNC_DESTROY, "sync_destroy", returnInfoVoid, true);
-  prim_def(PRIM_SYNC_LOCK, "sync_lock", returnInfoVoid, true);
-  prim_def(PRIM_SYNC_UNLOCK, "sync_unlock", returnInfoVoid, true);
-  prim_def(PRIM_SYNC_WAIT_FULL, "sync_wait_full_and_lock", returnInfoVoid, true, true);
-  prim_def(PRIM_SYNC_WAIT_EMPTY, "sync_wait_empty_and_lock", returnInfoVoid, true, true);
-  prim_def(PRIM_SYNC_SIGNAL_FULL, "sync_mark_and_signal_full", returnInfoVoid, true);
-  prim_def(PRIM_SYNC_SIGNAL_EMPTY, "sync_mark_and_signal_empty", returnInfoVoid, true);
-  prim_def(PRIM_SINGLE_INIT, "single_init", returnInfoVoid, true);
-  prim_def(PRIM_SINGLE_DESTROY, "single_destroy", returnInfoVoid, true);
-  prim_def(PRIM_SINGLE_LOCK, "single_lock", returnInfoVoid, true);
-  prim_def(PRIM_SINGLE_UNLOCK, "single_unlock", returnInfoVoid, true);
-  prim_def(PRIM_SINGLE_WAIT_FULL, "single_wait_full", returnInfoVoid, true, true);
-  prim_def(PRIM_SINGLE_SIGNAL_FULL, "single_mark_and_signal_full", returnInfoVoid, true);
-
-  // sync/single var support
-  prim_def(PRIM_WRITEEF, "write_EF", returnInfoVoid, true);
-  prim_def(PRIM_WRITEFF, "write_FF", returnInfoVoid, true);
-  prim_def(PRIM_WRITEXF, "write_XF", returnInfoVoid, true);
-  prim_def(PRIM_READFE, "read_FE", returnInfoFirst, true);
-  prim_def(PRIM_READFF, "read_FF", returnInfoFirst, true);
-  prim_def(PRIM_READXX, "read_XX", returnInfoFirst, true);
-  prim_def(PRIM_SYNC_IS_FULL, "sync_is_full", returnInfoBool, true);
-  prim_def(PRIM_SINGLE_WRITEEF, "single_write_EF", returnInfoVoid, true);
-  prim_def(PRIM_SINGLE_READFF, "single_read_FF", returnInfoFirst, true);
-  prim_def(PRIM_SINGLE_READXX, "single_read_XX", returnInfoFirst, true);
-  prim_def(PRIM_SINGLE_IS_FULL, "single_is_full", returnInfoBool, true);
-
   prim_def(PRIM_GET_END_COUNT, "get end count", returnInfoEndCount);
   prim_def(PRIM_SET_END_COUNT, "set end count", returnInfoVoid, true);
 
@@ -579,7 +560,8 @@ initPrimitive() {
 
   prim_def(PRIM_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
-  prim_def(PRIM_CAPTURE_FN, "capture fn", returnInfoVoid);
+  prim_def(PRIM_CAPTURE_FN_FOR_CHPL, "capture fn for chpl", returnInfoVoid);
+  prim_def(PRIM_CAPTURE_FN_FOR_C, "capture fn for C", returnInfoVoid);
   prim_def(PRIM_CREATE_FN_TYPE, "create fn type", returnInfoVoid);
 
   prim_def("string_compare", returnInfoDefaultInt, true);
@@ -601,14 +583,12 @@ initPrimitive() {
 
   prim_def(PRIM_NEW_PRIV_CLASS, "chpl_newPrivatizedClass", returnInfoVoid, true);
   prim_def(PRIM_GET_PRIV_CLASS, "chpl_getPrivatizedClass",  returnInfoFirst);
-  
+
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoDefaultInt, true, true);
   prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoInt32, true, true);
 
   prim_def(PRIM_FTABLE_CALL, "call ftable function", returnInfoVoid, true);
 
-  prim_def(PRIM_IS_SYNC_TYPE, "is sync type", returnInfoBool);
-  prim_def(PRIM_IS_SINGLE_TYPE, "is single type", returnInfoBool);
   prim_def(PRIM_IS_TUPLE_TYPE, "is tuple type", returnInfoBool);
   prim_def(PRIM_IS_STAR_TUPLE_TYPE, "is star tuple type", returnInfoBool);
   prim_def(PRIM_SET_SVEC_MEMBER, "set svec member", returnInfoVoid, true, true);
@@ -624,7 +604,7 @@ initPrimitive() {
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
   prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);
-  
+
   prim_def(PRIM_IS_POD, "is pod type", returnInfoBool);
 
   // This primitive allows normalize to request function resolution

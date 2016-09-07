@@ -35,6 +35,7 @@
 #include "WhileStmt.h"
 #include "AstDump.h"
 #include "AstDumpToNode.h"
+#include "iterator.h"
 
 #include <inttypes.h>
 
@@ -370,6 +371,8 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
 
   if (DefExpr* def = toDefExpr(ast)) {
     printf(" ");
+    if (ArgSymbol* arg = toArgSymbol(def->sym))
+      printf("intent %s ", arg->intentDescrString());
     writeFlags(stdout, def->sym);
   }
 
@@ -779,11 +782,11 @@ void whocalls(int id) {
       // check each step, just in case
       if (SymExpr* act2 = toSymExpr(call->get(2)))
         if (Symbol* ic = act2->var)
-          if (Type* ty = ic->type)
-            if (FnSymbol* init = ty->defaultInitializer)
+          if (AggregateType* ty = toAggregateType(ic->type))
+            if (FnSymbol* init = ty->iteratorInfo->getIterator)
               if (ArgSymbol* form1 = init->getFormal(1))
-                if (Type* fty = form1->type)
-                  if (FnSymbol* iterator = fty->defaultInitializer)
+                if (AggregateType* fty = toAggregateType(form1->type))
+                  if (FnSymbol* iterator = fty->iteratorInfo->iterator)
                     if (iterator->id == id)
                       printf("  for-loop blockInfo %d  %s  %s\n",
                              call->id, parentMsg(call, &forMatch,
@@ -804,9 +807,9 @@ void whocalls(int id) {
     }
   }
 
-  int ftMatch = 0, ftAll = ftableVec.n;
+  int ftMatch = 0, ftAll = ftableVec.size();
   for (int i = 0; i < ftAll; i++) {
-    if (ftableVec.v[i]->id == id) {
+    if (ftableVec.begin()[i]->id == id) {
       ftMatch++;
       printf("  ftableVec[%d]\n", i);
     }

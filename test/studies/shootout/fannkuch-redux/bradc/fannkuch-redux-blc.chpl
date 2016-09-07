@@ -1,78 +1,120 @@
 /* The Computer Language Benchmarks Game
- * http://benchmarksgame.alioth.debian.org/
- *
- * contributed by Kyle Brady and Brad Chamberlain
- * based on C implementation by Ledrug Katz
- *
- */
+   http://benchmarksgame.alioth.debian.org/
 
-config const N = 7;
+   contributed by Ben Harshbarger and Brad Chamberlain
+   derived from the Swift implementation by Ralph Ganszky
+*/
 
-assert(N >=3, "N must be in 3..");
+use DynamicIters;
 
-const D = {0..N};
-var s, t: [D] int;
+config const n = 7,           // the array size over which to compute perms
+             nchunks = 720;   // the number of chunks of parallelism to use
+
+const fact = computeFact(n);  // memoize n! (n-factorial)
+
 
 proc main() {
-  for i in D do     // TODO: Could use s = D here
-    s[i] = i;
-  const (checksum, maxFlips) = tk();
-  writeln(checksum);
-  writeln("Pfannkuchen(", N, ") = ", maxFlips);
+  var checkSum = 0,
+      maxFlips = 1;
+
+  var chunksz = (fact(n) + nchunks - 1) / nchunks;
+  chunksz += chunksz%2;
+  const work = 0..(fact(n) - chunksz) by chunksz;
+
+  forall i in dynamic(work, 1) with (+ reduce checkSum, 
+                                     max reduce maxFlips) {
+    for (j, flips) in fannkuch(i..#chunksz) {
+      maxFlips = max(maxFlips, flips);
+      checkSum += if j % 2 == 0 then flips else -flips;
+    }
+  }
+  
+  writeln(checkSum);
+  writeln("Pfannkuchen(", n, ") = ", maxFlips);
 }
 
 
-proc tk() {
-  var checksum, maxFlips = 0;
-  var odd = false;
-  var c: [D] int;
+iter fannkuch(inds) {
+  var p, pp, count: [0..#n] int;
+  for i in 0..#n do
+    p[i] = i;
 
-  var i = 0;
-  while i < N {
-    rotate(i);
-    if c[i] >= i {
-      c[i] = 0;
+  firstPerm();
+
+  for i in inds {
+    if p[0] != 0 then
+      yield (i, countFlips());
+    
+    if i != inds.high then
+      nextPerm();
+  }
+
+
+  proc firstPerm() {
+    var idx = inds.low;
+    for i in 1..n-1 by -1 {
+      const d = idx / fact(i);;
+      count[i] = d;
+      idx %= fact(i);
+
+      pp[0..i] = p[0..i];
+
+      for j in 0..i {
+        if j + d <= i then
+          p[j] = pp[j+d];
+        else
+          p[j] = pp[j+d-i-1];
+      }
+    }
+  }
+
+  proc countFlips() {
+    var locflips = 1,
+        first = p[0];
+
+    if p[first] != 0 {
+      for i in 0..#n do
+        pp[i] = p[i];
+      do {
+        locflips += 1;
+        var lo = 1, hi = first - 1;
+        while lo < hi {
+          pp[lo] <=> pp[hi];
+          lo += 1;
+          hi -= 1;
+        }
+        pp[first] <=> first;
+      } while pp[first] != 0;
+    }
+    return locflips;
+  }
+
+  proc nextPerm() {
+    var first = p[1];
+    p[1] = p[0];
+    p[0] = first;
+
+    var i = 1;
+    count[i] += 1;
+    while count[i] > i {
+      count[i] = 0;
       i += 1;
-      continue;
-    }
-
-    c[i] += 1;
-    i = 1;
-    odd = !odd;
-    if s[0] {
-      const f = if s[s[0]] then flip() else 1;
-      if f > maxFlips then maxFlips = f;
-      checksum += if odd then -f else f;
+      const next = p[1];
+      p[0] = p[1];
+      for j in 1..i-1 do 
+        p[j] = p[j+1];
+      p[i] = first;
+      first = next;
+      
+      count[i] += 1;
     }
   }
-
-  return (checksum, maxFlips);
 }
 
-
-inline proc rotate(n) {
-  const c = s[0];
+iter computeFact(n) {
+  var f = 1;
   for i in 1..n {
-    s[i-1] = s[i];
+    f *= i;
+    yield f;
   }
-  s[n] = c;
-}
-
-
-proc flip() {
-  for i in D do           // TODO: Want to use t = s here
-    t[i] = s[i];
-
-  for i in (2..) {
-    var x = 0;
-    var y = t[0];
-    while x < y {
-      t[x] <=> t[y];
-      x += 1;
-      y -= 1;
-    }
-    if t[t[0]] == 0 then return i;
-  }
-  assert(true);
-  return -1;
 }

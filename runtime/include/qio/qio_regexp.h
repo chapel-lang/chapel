@@ -26,6 +26,10 @@ struct qio_channel_s;
 #include "sys_basic.h"
 #include "qio.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct qio_regexp_s {
   void* regexp;
 } qio_regexp_t;
@@ -101,7 +105,7 @@ qio_regexp_string_piece_isnull(qio_regexp_string_piece_t* sp)
 // full match == consume and check that we stopped at end of string
 // after one incremental search
 
-// Using a compiled regular expression, match againt str
+// Using a compiled regular expression, match against str
 // if find is set, the pattern may match something after the start
 //  of str; if it is not, the pattern must match at the beginning of str
 // Returns in matches[0], if nmatches>=1, the match for the entire regexp
@@ -136,5 +140,9 @@ int64_t qio_regexp_replace(qio_regexp_t* regexp, const char* repl, int64_t repl_
 //  - if there was an error, we do not adjust the channel position afterwards
 //
 qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regexp_string_piece_t* submatch, int64_t nsubmatch);
+
+#ifdef __cplusplus
+} // end extern "C"
+#endif
 
 #endif

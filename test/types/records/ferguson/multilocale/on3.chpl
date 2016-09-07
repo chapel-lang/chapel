@@ -7,7 +7,7 @@ proc myfunction() {
   on Locales[numLocales-1] {
     var localRec: R;
     
-    localRec.init(x = 50);
+    localRec.setup(x = 50);
     localRec.verify();
 
     rec = localRec;

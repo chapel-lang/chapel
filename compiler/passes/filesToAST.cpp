@@ -36,6 +36,7 @@ bool parsed = false;
 static void countTokensInCmdLineFiles();
 static void setIteratorTags();
 static void gatherWellKnownTypes();
+static void gatherWellKnownFns();
 
 // This structure and the following array provide a list of types that must be
 // defined in module code.  At this point, they are all classes.
@@ -59,6 +60,23 @@ static WellKnownType sWellKnownTypes[] = {
   {"chpl_main_argument", &dtMainArgument, false}
 };
 
+
+struct WellKnownFn
+{
+  const char* name;
+  FnSymbol**  fn;
+  Flag        flag;
+  FnSymbol*   lastNameMatchedFn;
+};
+
+// These functions are a required part of the compiler/module interface.
+// They should generally be marked export so that they are always
+// resolved.
+static WellKnownFn sWellKnownFns[] = {
+  {"chpl_here_alloc",         &gChplHereAlloc, FLAG_LOCALE_MODEL_ALLOC},
+  {"chpl_here_free",          &gChplHereFree,  FLAG_LOCALE_MODEL_FREE},
+  {"chpl_doDirectExecuteOn",  &gChplDoDirectExecuteOn, FLAG_UNKNOWN}
+};
 
 void parse() {
   yydebug = debugParserLevel;
@@ -86,6 +104,7 @@ void parse() {
     parseDependentModules(MOD_INTERNAL);
 
     gatherWellKnownTypes();
+    gatherWellKnownFns();
   }
 
   {
@@ -208,6 +227,59 @@ static void gatherWellKnownTypes() {
 
       if (*wkt.type_ == NULL)
         USR_FATAL_CONT(wkt_reqd_message, wkt.name);
+    }
+
+    USR_STOP();
+  } else {
+    if (dtString->symbol == NULL) {
+      // This means there was no declaration of the string type.
+      gAggregateTypes.remove(gAggregateTypes.index(dtString));
+      delete dtString;
+      dtString = NULL;
+    }
+  }
+}
+
+static void gatherWellKnownFns() {
+  int nEntries = sizeof(sWellKnownFns) / sizeof(sWellKnownFns[0]);
+  static const char* mult_def_message   = "'%s' defined more than once in Chapel internal modules.";
+  static const char* flag_reqd_message = "The '%s' function is missing a required flag.";
+  static const char* wkfn_reqd_message   = "Function '%s' must be defined in the Chapel internal modules.";
+
+  // Harvest well-known functions from among the global fn definitions.
+  // We check before assigning to the associated global to ensure that it
+  // is null.  In that way we can flag duplicate definitions.
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    for (int i = 0; i < nEntries; ++i) {
+      WellKnownFn& wkfn = sWellKnownFns[i];
+
+      if (strcmp(fn->name, wkfn.name) == 0) {
+        wkfn.lastNameMatchedFn = fn;
+        if (wkfn.flag == FLAG_UNKNOWN || fn->hasFlag(wkfn.flag)) {
+          if (*wkfn.fn != NULL)
+            USR_WARN(fn, mult_def_message, wkfn.name);
+
+          *wkfn.fn = fn;
+        }
+      }
+    }
+  }
+
+  //
+  // When compiling for minimal modules, we don't require any specific
+  // well-known functions to be defined.
+  //
+  if (fMinimalModules == false) {
+    // Make sure all well-known functions are defined.
+    for (int i = 0; i < nEntries; ++i) {
+      WellKnownFn& wkfn = sWellKnownFns[i];
+      FnSymbol* lastMatched = wkfn.lastNameMatchedFn;
+      FnSymbol* fn = *wkfn.fn;
+
+      if (lastMatched == NULL)
+        USR_FATAL_CONT(wkfn_reqd_message, wkfn.name);
+      else if(! fn)
+        USR_FATAL_CONT(fn, flag_reqd_message, wkfn.name);
     }
 
     USR_STOP();

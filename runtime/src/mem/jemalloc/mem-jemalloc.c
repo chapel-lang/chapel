@@ -66,11 +66,11 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
 
   // compute our current aligned pointer into the shared heap
   //
-  //   jemalloc 4.0.4 man: "The alignment parameter is always a power of two at
+  //   jemalloc 4.2.1 man: "The alignment parameter is always a power of two at
   //   least as large as the chunk size."
   cur_chunk_base = alignHelper(heap.base, heap.cur_offset, alignment);
 
-  // jemalloc 4.0.4 man: "If chunk is not NULL, the returned pointer must be
+  // jemalloc 4.2.1 man: "If chunk is not NULL, the returned pointer must be
   // chunk on success or NULL on error"
   if (chunk && chunk != cur_chunk_base) {
     pthread_mutex_unlock(&heap.alloc_lock);
@@ -91,7 +91,7 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
   // now that cur_heap_offset is updated, we can unlock
   pthread_mutex_unlock(&heap.alloc_lock);
 
-  // jemalloc 4.0.4 man: "Zeroing is mandatory if *zero is true upon entry."
+  // jemalloc 4.2.1 man: "Zeroing is mandatory if *zero is true upon entry."
   if (*zero) {
      memset(cur_chunk_base, 0, size);
   }
@@ -147,29 +147,22 @@ DECLARE_GET_MALLCTL_VALUE(unsigned);
 
 
 // get the number of arenas
-static size_t get_num_arenas(void) {
-  return get_size_t_mallctl_value("opt.narenas");
+static unsigned get_num_arenas(void) {
+  return get_unsigned_mallctl_value("opt.narenas");
 }
 
 // initialize our arenas (this is required to be able to set the chunk hooks)
 static void initialize_arenas(void) {
-  size_t s_narenas;
   unsigned narenas;
   unsigned arena;
-
-  // "thread.arena" takes an unsigned, but num_arenas is a size_t.
-  s_narenas = get_num_arenas();
-  if (s_narenas > (size_t) UINT_MAX) {
-    chpl_internal_error("narenas too large to fit into unsigned");
-  }
-  narenas = (unsigned) s_narenas;
 
   // for each non-zero arena, set the current thread to use it (this
   // initializes each arena). arena 0 is automatically initialized.
   //
-  //   jemalloc 4.0.4 man: "If the specified arena was not initialized
+  //   jemalloc 4.2.1 man: "If the specified arena was not initialized
   //   beforehand, it will be automatically initialized as a side effect of
   //   calling this interface."
+  narenas = get_num_arenas();
   for (arena=1; arena<narenas; arena++) {
     if (je_mallctl("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
       chpl_internal_error("could not change current thread's arena");
@@ -186,8 +179,8 @@ static void initialize_arenas(void) {
 
 // replace the chunk hooks for each arena with the hooks we provided above
 static void replaceChunkHooks(void) {
-  size_t narenas;
-  size_t arena;
+  unsigned narenas;
+  unsigned arena;
 
   // set the pointers for the new_hooks to our above functions
   chunk_hooks_t new_hooks = {
@@ -204,7 +197,7 @@ static void replaceChunkHooks(void) {
   narenas = get_num_arenas();
   for (arena=0; arena<narenas; arena++) {
     char path[128];
-    snprintf(path, sizeof(path), "arena.%zu.chunk_hooks", arena);
+    snprintf(path, sizeof(path), "arena.%u.chunk_hooks", arena);
     if (je_mallctl(path, NULL, NULL, &new_hooks, sizeof(chunk_hooks_t)) != 0) {
       chpl_internal_error("could not update the chunk hooks");
     }
@@ -256,7 +249,7 @@ static bool addressNotInHeap(void* ptr) {
 // grab (and leak) whatever memory jemalloc got on it's own, that's not in
 // our shared heap
 //
-//   jemalloc 4.0.4 man: "arenas may have already created chunks prior to the
+//   jemalloc 4.2.1 man: "arenas may have already created chunks prior to the
 //   application having an opportunity to take over chunk allocation."
 //
 // jemalloc grabs "chunks" from the system in order to store metadata and some
@@ -312,9 +305,9 @@ void chpl_mem_layerInit(void) {
 
   // If we have a shared heap, initialize our shared heap. This will take care
   // of initializing jemalloc. If we're not using a shared heap, do a first
-  // allocation to allow jemaloc to set up:
+  // allocation to allow jemalloc to set up:
   //
-  //   jemalloc 4.0.4 man: "Once, when the first call is made to one of the
+  //   jemalloc 4.2.1 man: "Once, when the first call is made to one of the
   //   memory allocation routines, the allocator initializes its internals"
   if (heap_base != NULL) {
     heap.base = heap_base;

@@ -152,7 +152,7 @@ module LocaleModel {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
-      init();
+      setup();
     }
 
     proc LocaleModel(parent_loc : locale) {
@@ -160,7 +160,7 @@ module LocaleModel {
         halt("Cannot create additional LocaleModel instances");
       }
       parent = parent_loc;
-      init();
+      setup();
     }
 
     proc chpl_id() return _node_id;     // top-level locale (node) number
@@ -205,13 +205,13 @@ module LocaleModel {
     //------------------------------------------------------------------------{
     //- Implementation (private)
     //-
-    proc init() {
+    proc setup() {
       _node_id = chpl_nodeID: int;
 
       // chpl_nodeName is defined in chplsys.c.
       // It supplies a node name obtained by running uname(3) on the
       // current node.  For this reason (as well), the constructor (or
-      // at least this init method) must be run on the node it is
+      // at least this setup method) must be run on the node it is
       // intended to describe.
       var comm, spawnfn : c_string;
       extern proc chpl_nodeName() : c_string;
@@ -287,10 +287,10 @@ module LocaleModel {
       maxTaskPar = 0;
     }
 
-    // The init() function must use chpl_initOnLocales() to iterate (in
+    // The setup() function must use chpl_initOnLocales() to iterate (in
     // parallel) over the locales to set up the LocaleModel object.
     // In addition, the initial 'here' must be set.
-    proc init() {
+    proc setup() {
       forall locIdx in chpl_initOnLocales() {
         chpl_task_setSubloc(c_sublocid_any);
         const node = new LocaleModel(this);
@@ -438,6 +438,35 @@ module LocaleModel {
                                          subloc_id: int): void;
   extern proc chpl_ftable_call(fn: int, args: c_void_ptr): void;
   extern proc chpl_task_setSubloc(subloc: int(32));
+
+  //
+  // returns true if an executeOn can be handled directly
+  // by running the function in question.
+  // Applies to execute on and execute on fast.
+  // When performing a blocking on, the compiler will emit this sequence:
+  //
+  //  if (chpl_doDirectExecuteOn(targetLocale))
+  //         onStatementBodyFunction( args ... );
+  //  else
+  //         chpl_executeOn / chpl_executeOnFast
+  //
+  export
+  proc chpl_doDirectExecuteOn(loc: chpl_localeID_t // target locale
+                             ):bool {
+    const dnode =  chpl_nodeFromLocaleID(loc);
+    const dsubloc =  chpl_sublocFromLocaleID(loc);
+
+    if (dnode != chpl_nodeID) {
+      return false; // need to move to different node
+    } else {
+      var origSubloc = chpl_task_getRequestedSubloc();
+      if (dsubloc==c_sublocid_any || dsubloc==origSubloc) {
+        return true;
+      } else {
+        return false; // need to move to different sublocale
+      }
+    }
+  }
 
   //
   // regular "on"

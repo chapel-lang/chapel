@@ -1,10 +1,8 @@
 
-extern "C" {
 #include "qio.h"
 #include "qio_regexp.h"
 #include <assert.h>
 #include <stdio.h>
-}
 
 
 #include "re2/re2.h"

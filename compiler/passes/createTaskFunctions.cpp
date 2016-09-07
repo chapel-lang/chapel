@@ -172,21 +172,21 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   VarSymbol* eltType = newTemp("redEltType");
   eltType->addFlag(FLAG_MAYBE_TYPE);
 
-  Expr* headAncor = call;
-  if (isCoforall) headAncor = headAncor->parentExpr;
-  headAncor->insertBefore(new DefExpr(eltType));
-  headAncor->insertBefore("'move'(%S, 'typeof'(%S))", eltType, origSym);
-  headAncor->insertBefore(new DefExpr(globalOp));
+  Expr* headAnchor = call;
+  if (isCoforall) headAnchor = headAnchor->parentExpr;
+  headAnchor->insertBefore(new DefExpr(eltType));
+  headAnchor->insertBefore("'move'(%S, 'typeof'(%S))", eltType, origSym);
+  headAnchor->insertBefore(new DefExpr(globalOp));
   CallExpr* newOp = new CallExpr(reduceType->type->defaultInitializer->name,
                               new NamedExpr("eltType", new SymExpr(eltType)));
-  headAncor->insertBefore(new CallExpr(PRIM_MOVE, globalOp, newOp));
+  headAnchor->insertBefore(new CallExpr(PRIM_MOVE, globalOp, newOp));
 
-  Expr* tailAncor = findTailInsertionPoint(call, isCoforall);
+  Expr* tailAnchor = findTailInsertionPoint(call, isCoforall);
   // Doing insertAfter() calls in reverse order.
-  // Can't insertBefore() on tailAncor->next - that can be NULL.
-  tailAncor->insertAfter("'delete'(%S)",
+  // Can't insertBefore() on tailAnchor->next - that can be NULL.
+  tailAnchor->insertAfter("'delete'(%S)",
                          globalOp);
-  tailAncor->insertAfter("'='(%S, generate(%S,%S))",
+  tailAnchor->insertAfter("'='(%S, generate(%S,%S))",
                          origSym, gMethodToken, globalOp);
 
   ArgSymbol* parentOp = new ArgSymbol(INTENT_BLANK, "reduceParent", dtUnknown);
@@ -609,9 +609,15 @@ void createTaskFunctions(void) {
         INT_ASSERT(isTaskFun(fn));
         CallExpr* call = new CallExpr(fn);
 
-        // These variables are only used if fCacheRemote is set.
-        bool needsMemFence = true;
+        bool needsMemFence = true; // only used with fCacheRemote
         bool isBlockingOn = false;
+
+        if( block->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON) ) {
+          isBlockingOn = true;
+        }
+
+        // Add the call to the outlined task function.
+        block->insertBefore(call);
 
         if( fCacheRemote ) {
           Symbol* parent = block->parentSymbol;
@@ -638,10 +644,6 @@ void createTaskFunctions(void) {
         block->insertBefore(new DefExpr(fn));
 
         if( fCacheRemote ) {
-          if( block->blockInfoGet()->isPrimitive(PRIM_BLOCK_ON) ) {
-            isBlockingOn = true;
-          }
-
           /* We don't need to add a fence for the parent side of
              PRIM_BLOCK_BEGIN_ON
              PRIM_BLOCK_COBEGIN_ON
@@ -655,10 +657,9 @@ void createTaskFunctions(void) {
           // blocking on statement. Other statements, including cobegin,
           // coforall, begin handle this in upEndCount.
           if( needsMemFence && isBlockingOn )
-            block->insertBefore(new CallExpr("chpl_rmem_consist_release"));
+            call->insertBefore(new CallExpr("chpl_rmem_consist_release"));
         }
-        // Add the call to the outlined task function.
-        block->insertBefore(call);
+
         if( fCacheRemote ) {
           // Join barrier (acquire) is needed for a blocking on, and it
           // will make sure that writes in the on statement are available
@@ -666,7 +667,7 @@ void createTaskFunctions(void) {
           // doesn't make sense to acquire barrier after running them.
           // coforall, cobegin, and sync blocks do this in waitEndCount.
           if( needsMemFence && isBlockingOn )
-            block->insertBefore(new CallExpr("chpl_rmem_consist_acquire"));
+            call->insertAfter(new CallExpr("chpl_rmem_consist_acquire"));
         }
 
         block->blockInfoGet()->remove();
@@ -678,7 +679,12 @@ void createTaskFunctions(void) {
           // from re-using cached elements from another task. This could
           // conceivably be handled by the tasking layer, but they already
           // have enough to worry about...
-          fn->insertAtTail(new CallExpr(PRIM_START_RMEM_FENCE));
+
+          // In order to support direct calls for on statements
+          // with a target that is local, instead of adding
+          // the fence to the task function, we instruct
+          // create_block_fn_wrapper to do it on our behalf.
+          fn->addFlag(FLAG_WRAPPER_NEEDS_START_FENCE);
         }
 
         // This block becomes the body of the new function.
@@ -695,14 +701,18 @@ void createTaskFunctions(void) {
           // here for a blocking on statement. We don't add it redundantly
           // because other parts of the compiler rely on finding _downEndCount
           // at the end of certain functions.
+
+          // As with FLAG_WRAPPER_NEEDS_START_FENCE above,
+          // ask create_block_fn_wrapper to add the fence if it
+          // is needed.
           if( isBlockingOn )
-            fn->insertAtTail(new CallExpr(PRIM_FINISH_RMEM_FENCE));
+            fn->addFlag(FLAG_WRAPPER_NEEDS_FINISH_FENCE);
         }
 
         fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
         fn->retType = dtVoid;
 
-        if (needsCapture(fn)) {
+        if (needsCapture(fn)) { // note: does not apply to blocking on stmts.
           hasTaskIntentClause = true;
 
           // Convert referenced variables to explicit arguments.

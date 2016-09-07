@@ -1,6 +1,6 @@
 proc test(param expect, args ...)
 {
-  param isPrim = isTupleOfPrimitiveTypes(args);
+  param isPrim = _can_stringify_direct(args);
   writeln("expect ", expect, " for ", args.type:string, " isPrim=", isPrim);
 }
 
