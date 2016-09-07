@@ -1083,6 +1083,10 @@ module ChapelBase {
   inline proc chpl__autoDestroy(ir: _iteratorRecord) {
     // body inserted during call destructors pass
   }
+
+  // These might seem the same as the generic version
+  // but they currently necessary to prevent resolution from
+  // using promotion (for example with an array of sync variables)
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
   pragma "auto destroy fn"
