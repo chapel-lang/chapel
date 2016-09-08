@@ -1,0 +1,5 @@
+perfkeys: Array access:, Ref access:
+files: time_array_vs_ref_multidim.dat, time_array_vs_ref_multidim.dat
+ylabel: Time (seconds)
+graphname: time_array_vs_ref_multidim
+graphtitle: Serial Array Access vs. Reference Access (Multidimensional)
