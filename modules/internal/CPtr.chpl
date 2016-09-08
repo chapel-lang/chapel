@@ -126,10 +126,6 @@ module CPtr {
 
 
   pragma "no doc"
-  inline proc ==(a: c_void_ptr, b: c_void_ptr) {
-    return __primitive("ptr_eq", a, b);
-  }
-  pragma "no doc"
   inline proc ==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
     return __primitive("ptr_eq", a, b);
   }
