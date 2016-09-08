@@ -43,6 +43,8 @@ install ZeroMQ, see the
 Using ZMQ in Chapel
 -------------------
 
+.. _using-contexts:
+
 Contexts
 ++++++++
 
@@ -57,6 +59,8 @@ underlying ØMQ context. To create a context, it is sufficient to write:
 .. code-block:: chapel
 
    var context: Context;
+
+.. _using-sockets:
 
 Sockets
 +++++++
@@ -75,8 +79,7 @@ not be reclaimed while any sockets are still in use.
 
    As with ØMQ's C API, a :record:`Socket` object is not thread safe.
    That is, a :record:`Socket` object should not be accessed concurrently by
-   multiple Chapel tasks.
-   (This is not set in stone and may be revised in a future ZMQ module.)
+   multiple Chapel tasks.  (This may change in a future ZMQ module.)
 
 A :record:`Socket` may be one of the socket types in the following list of
 compatible pairs of socket types
@@ -94,11 +97,6 @@ compatible pairs of socket types
 
 Sending and Receiving Messages
 ++++++++++++++++++++++++++++++
-
-In Chapel, sending or receiving messages on a :record:`Socket` uses
-`multipart messages <http://zguide.zeromq.org/page:all#Multipart-Messages>`_
-and the :chpl:mod:`Reflection` module to serialize primitive and user-defined
-data types.
 
 Sending a message is as simple as passing the object to send as the argument
 to :proc:`Socket.send()`.  Receiving a message requires that the type to be
@@ -146,6 +144,58 @@ pair in two Chapel programs that exchange a single string message.
    var socket = context.socket(ZMQ.PULL);
    socket.connect("tcp://localhost:5555");
    writeln("Hello, ", socket.recv(string));
+
+Implementation Notes
+--------------------
+
+As noted previously, the ZMQ module is a work in progress.  The implementation
+notes below describe some of how the ZMQ module is implemented and how future
+versions may expose more features native to ZeroMQ.
+
+Serialization
++++++++++++++
+
+In Chapel, sending or receiving messages on a :record:`Socket` uses
+`multipart messages <http://zguide.zeromq.org/page:all#Multipart-Messages>`_
+and the :chpl:mod:`Reflection` module to serialize primitive and user-defined
+data types whenever possible.  Currently, the ZMQ module serializes primitive
+numeric types, strings, and records composed of these types.  Strings are
+encoded as a length (as :type:`int`) followed by the character array
+(in bytes).
+
+Tasking-Layer Interaction
++++++++++++++++++++++++++
+
+As noted previously, a :record:`Socket` object is not thread safe.  As the
+mapping of Chapel tasks to OS threads is dependent on the Chapel tasking layer
+and may be cooperatively scheduled, a :record:`Socket` object should not be
+accessed concurrently by multiple Chapel tasks.
+
+The ZMQ module is designed to "play nicely" with the Chapel tasking layer.
+While the C-level call :proc:`zmq_send()` may be a blocking call (depending on
+the socket type and flag arguments), it is desirable that a
+semantically-blocking call to :proc:`Socket.send()` allow other Chapel tasks
+to be scheduled on the OS thread as supported by the tasking layer.
+Internally, the ZMQ module uses non-blocking calls to :proc:`zmq_send()` and
+:proc:`zmq_recv()` to transfer data, and yields to the tasking layer via
+:proc:`chpl_task_yield()` when the call would otherwise block.
+
+Limitations and Future Work
++++++++++++++++++++++++++++
+
+Currently, the ZMQ module does not provide interfaces for working with
+`ZeroMQ message objects <http://zguide.zeromq.org/page:all#Working-with-Messages>`_,
+`handling errors <http://zguide.zeromq.org/page:all#Handling-Errors-and-ETERM>`_,
+or making explicitly non-blocking send/receive calls.  These are
+active-but-incomplete areas of work that are intended to be supported in
+future Chapel releases.
+
+One interaction of these features is worth noting explicitly: because multipart
+messages are used to automatically serialize non-primitive data types (e.g.,
+strings and records) and a partially-sent multi-part message cannot be
+cancelled (except by closing the socket), an explicitly non-blocking send call
+that encountered an error in the ZeroMQ library during serialization would not
+be in a recoverable state, nor would there be a matching "partial receive".
 
 References
 ----------
@@ -316,7 +366,7 @@ module ZMQ {
     indicate that the associated send or receive operation should be performed
     as a non-blocking operation.
    */
-  const DONTWAIT = ZMQ_DONTWAIT;
+  //const DONTWAIT = ZMQ_DONTWAIT;
   private extern const ZMQ_DONTWAIT: c_int;
 
   /*
@@ -324,7 +374,7 @@ module ZMQ {
     send operation is a multi-part message and that more message parts will
     subsequently be issued.
    */
-  const SNDMORE = ZMQ_SNDMORE;
+  //const SNDMORE = ZMQ_SNDMORE;
   private extern const ZMQ_SNDMORE: c_int;
 
   // -- Security Options
@@ -387,7 +437,8 @@ module ZMQ {
   } // class ContextClass
 
   /*
-    ZeroMQ context
+    A ZeroMQ context. See :ref:`more on using Contexts <using-contexts>`.
+    Note that this record contains private fields not listed below.
    */
   record Context {
     pragma "no doc"
@@ -483,7 +534,8 @@ module ZMQ {
   }
 
   /*
-    ZeroMQ socket
+    A ZeroMQ socket. See :ref:`more on using Sockets <using-sockets>`.
+    Note that this record contains private fields not listed below.
    */
   record Socket {
     pragma "no doc"
@@ -617,11 +669,14 @@ module ZMQ {
           is not serializable by the ZMQ module, a compile-time error will be
           raised.
 
-      :arg flags: An optional argument of the OR-able flags :const:`DONTWAIT`
-          and :const:`SNDMORE`.
       :type flags: `int`
      */
-    proc send(data: ?T, flags: int = 0) where !isZMQSerializable(T) {
+    proc send(data: ?T) where !isZMQSerializable(T) {
+      compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
+    }
+
+    pragma "no doc"
+    proc send(data: ?T, flags: int) where !isZMQSerializable(T) {
       compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
     }
 
@@ -629,7 +684,7 @@ module ZMQ {
     pragma "no doc"
     proc send(data: string, flags: int = 0) {
       // message part 1, length
-      send(data.length:uint, ZMQ_SNDMORE | flags);
+      send(data.length:int, ZMQ_SNDMORE | flags);
       // message part 2, string
       while (-1 == zmq_send(classRef.socket, data.c_str():c_void_ptr,
                             data.length:size_t,
@@ -681,19 +736,21 @@ module ZMQ {
       :arg T: The type of the object to be received. If :type:`T` is not
           serializable by the ZMQ module, a compile-time error will be raised.
 
-      :arg flags: An optional argument of the flag :const:`SNDMORE`.
-      :type flags: `int`
-
       :returns: An object of type :type:`T`
      */
-    proc recv(type T, flags: int = 0): T where !isZMQSerializable(T) {
+    proc recv(type T): T where !isZMQSerializable(T) {
+      compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
+    }
+
+    pragma "no doc"
+    proc recv(type T, flags: int): T where !isZMQSerializable(T) {
       compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
     }
 
     // recv, strings
     pragma "no doc"
     proc recv(type T, flags: int = 0) where isString(T) {
-      var len = recv(uint, flags):int;
+      var len = recv(int, flags);
       var buf = c_calloc(uint(8), (len+1):size_t);
       var str = new string(buff=buf, length=len, size=len+1,
                            owned=true, needToCopy=false);
