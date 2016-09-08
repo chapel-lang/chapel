@@ -101,6 +101,49 @@ void denormalize(void) {
   }
 }
 
+/*
+ * deferring denormalizing over some temporaries and the way it's done
+ * is as follows:
+ *
+ * Consider following snippet:
+ *
+ *   var t1, t2, t3;
+ *   t1 = f();
+ *   t2 = t1;
+ *   t3 = t2;
+ *
+ *   and corresponding pseudo-AST
+ *
+ *   (1 move (2 SymExpr t1), (3 CallExpr f))
+ *   (4 move (5 SymExpr t2), (6 SymExpr t1))
+ *   (7 move (8 SymExpr t3), (9 SymExpr t2))
+ *
+ *   In first run we will have a map as follows (use,def expr keypair)
+ *
+ *   use               def
+ *   --------------------------------
+ *   (6 SymExpr t1)    (3 CallExpr f)
+ *   (9 SymExpr t2)    (6 SymExpr t1)
+ *
+ *   Than in denormalizeOrDeferCandidates, assume we denormalize (t1,f)
+ *   pair first, which will replace node 6 with 3 and remove 1
+ *   altogether. At that point when we try to denormalize the second
+ *   pair(t2,t1) in our list, node id 6 will still be in the map but
+ *   it's parent pointer will be NULL, since it's removed by
+ *   6->replace(3) operation in the previous iteration.
+ *
+ *   [I might be leaking compiler memory in the logic I just described]
+ *
+ *   At that point, we still know that t2 is a good candidate for
+ *   removal, but its def has changed, and we need to reanalyze for
+ *   safety. So we add t2 to deferredSyms for future iterations. We can
+ *   get rid of deferredSyms, but that would mean reiterating all
+ *   symbols in the function. And I am almost certain that we can never
+ *   generate new candidates once we start denormalizing. So, we are
+ *   generating candidates once, and iterating over and over until we
+ *   don't defer anything(thus do{}while(deferredSyms.count()>0)) in
+ *   denormalize(void)
+ */
 void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
     Vec<Symbol*>& deferredSyms) {
 
@@ -112,8 +155,6 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
     Expr* def = defCastPair.first;
     Type* castTo = defCastPair.second;
 
-    // if parent of def is gone, it means it has been denormalized in
-    // the earlier passes
     if(def->parentExpr == NULL) {
       deferredSyms.add(use->var);
       continue;
@@ -217,52 +258,53 @@ bool isDenormalizable(Symbol* sym,
     SafeExprAnalysis& analysisData) {
 
   if(sym && !(toFnSymbol(sym) || toArgSymbol(sym) || toTypeSymbol(sym))) {
+    if(strcmp(sym->name, "this") != 0) { //avoid issue with --baseline
+      SymExpr *use = NULL;
+      Expr *usePar = NULL;
+      Expr *def = NULL;
+      Expr *defPar = NULL;
 
-    SymExpr *use = NULL;
-    Expr *usePar = NULL;
-    Expr *def = NULL;
-    Expr *defPar = NULL;
+      Vec<SymExpr*>* defs = defMap.get(sym);
+      Vec<SymExpr*>* uses = useMap.get(sym);
 
-    Vec<SymExpr*>* defs = defMap.get(sym);
-    Vec<SymExpr*>* uses = useMap.get(sym);
+      if(defs && defs->n == 1 && uses && uses->n == 1) { // check def-use counts
+        SymExpr* se = defs->first();
+        defPar = se->parentExpr;
 
-    if(defs && defs->n == 1 && uses && uses->n == 1) { // check def-use counts
-      SymExpr* se = defs->first();
-      defPar = se->parentExpr;
+        //defPar has to be a move without any coercion
+        CallExpr* ce = toCallExpr(defPar);
+        if(ce) {
+          if(ce->isPrimitive(PRIM_MOVE) || ce->isPrimitive(PRIM_ASSIGN)) {
+            Type* lhsType = ce->get(1)->typeInfo();
+            Type* rhsType = ce->get(2)->typeInfo();
+            if(lhsType == rhsType) {
+              // records semantics required next if
+              // More: it seems records are passed by value. denormalizing
+              // record temporaries caused semantics to change. So I use a
+              // wide brush to disable record denormalization. In earlier
+              // passes of denormalization implementation this was only
+              // checking if the temporary to be removed is an actual to a
+              // function.
+              if(! isRecord(lhsType)) {
+                // calls to communication functions are generated during
+                // codegen. ie at this time they are still PRIM_MOVEs.
+                // Generated communication calls return their result in a
+                // pointer argument, therefore not suitable for
+                // denormalization. See function definition for more
+                // comments
+                if(! primMoveGeneratesCommCall(ce)) {
+                  if(! (lhsType->symbol->hasFlag(FLAG_EXTERN))){
+                    if(!lhsType->symbol->hasFlag(FLAG_ATOMIC_TYPE)){
+                      //at this point we now that def is fine
+                      def = ce->get(2);
 
-      //defPar has to be a move without any coercion
-      CallExpr* ce = toCallExpr(defPar);
-      if(ce) {
-        if(ce->isPrimitive(PRIM_MOVE) || ce->isPrimitive(PRIM_ASSIGN)) {
-          Type* lhsType = ce->get(1)->typeInfo();
-          Type* rhsType = ce->get(2)->typeInfo();
-          if(lhsType == rhsType) {
-            // records semantics required next if
-            // More: it seems records are passed by value. denormalizing
-            // record temporaries caused semantics to change. So I use a
-            // wide brush to disable record denormalization. In earlier
-            // passes of denormalization implementation this was only
-            // checking if the temporary to be removed is an actual to a
-            // function.
-            if(! isRecord(lhsType)) {
-              // calls to communication functions are generated during
-              // codegen. ie at this time they are still PRIM_MOVEs.
-              // Generated communication calls return their result in a
-              // pointer argument, therefore not suitable for
-              // denormalization. See function definition for more
-              // comments
-              if(! primMoveGeneratesCommCall(ce)) {
-                if(! (lhsType->symbol->hasFlag(FLAG_EXTERN))){
-                  if(!lhsType->symbol->hasFlag(FLAG_ATOMIC_TYPE)){
-                    //at this point we now that def is fine
-                    def = ce->get(2);
-
-                    //now check if we need to case it when we move it
-                    if(CallExpr* defCe = toCallExpr(def)) {
-                      if(defCe->isPrimitive() &&
-                          isIntegerPromotionPrimitive(defCe->primitive->tag)) {
-                        if(requiresCast(lhsType)) {
-                          *castTo = lhsType;
+                      //now check if we need to case it when we move it
+                      if(CallExpr* defCe = toCallExpr(def)) {
+                        if(defCe->isPrimitive() &&
+                            isIntegerPromotionPrimitive(defCe->primitive->tag)) {
+                          if(requiresCast(lhsType)) {
+                            *castTo = lhsType;
+                          }
                         }
                       }
                     }
@@ -272,76 +314,76 @@ bool isDenormalizable(Symbol* sym,
             }
           }
         }
-      }
 
-      if(def) {
-        *defOut = def;
-        // we have def now find where the value is used
-        SymExpr* se = uses->first();
-        usePar = se->parentExpr;
-        if(CallExpr* ce = toCallExpr(usePar)) {
-          if( !(ce->isPrimitive(PRIM_ADDR_OF) ||
-                ce->isPrimitive(PRIM_ARRAY_GET) ||
-                ce->isPrimitive(PRIM_GET_MEMBER) ||
-                ce->isPrimitive(PRIM_DEREF) ||
-                ce->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                (ce->isPrimitive(PRIM_MOVE) && 
-                 ce->get(1)->typeInfo() !=
-                 ce->get(2)->typeInfo()))) {
-            use = se;
-          }
-        }
-      }
-      if(use) {
-        *useOut = use;
-      }
-
-      if(!use || !def) {
-        return false;
-      }
-
-      //here I have my valid use and def so far we checked specific
-      //cases for them individually, now check if there is anything
-      //wrong with them as a pair
-
-      //this issue feels too specific, maybe there is
-      //safer/better/more general way of doing this check
-      //
-      //for reference test that caused this was:
-      //test/modules/standard/FileSystem/bharshbarg/filer
-      //
-      //The issue seemed to be yielding string from an iterator
-      if(CallExpr* useParentCe = toCallExpr(usePar)) {
-        if(useParentCe->isPrimitive(PRIM_FTABLE_CALL)) {
-          if(argMustUseCPtr(def->typeInfo())){
-            return false;
-          }
-        }
-      }
-
-      // we have to protect repeatedly evaluated statements of loops from
-      // expensive and/or unsafe CallExprs
-      if(CallExpr* defCe = toCallExpr(def)){
-        //nonessential primitives are safe
-        if(! analysisData.isNonEssentialPrimitive(defCe)) {
-          if(LoopStmt* enclLoop = LoopStmt::findEnclosingLoop(use)) {
-            if(CForLoop* enclCForLoop = toCForLoop(enclLoop)) {
-              if(enclCForLoop->testBlockGet()->contains(ce) ||
-                  enclCForLoop->incrBlockGet()->contains(ce)) {
-                return false;
-              }
-            }
-            else if(enclLoop->isWhileStmt() || 
-                enclLoop->isDoWhileStmt() || 
-                enclLoop->isWhileDoStmt()) {
-              if(toWhileStmt(enclLoop)->condExprGet()->contains(ce)) {
-                return false;
-              }
+        if(def) {
+          *defOut = def;
+          // we have def now find where the value is used
+          SymExpr* se = uses->first();
+          usePar = se->parentExpr;
+          if(CallExpr* ce = toCallExpr(usePar)) {
+            if( !(ce->isPrimitive(PRIM_ADDR_OF) ||
+                  ce->isPrimitive(PRIM_ARRAY_GET) ||
+                  ce->isPrimitive(PRIM_GET_MEMBER) ||
+                  ce->isPrimitive(PRIM_DEREF) ||
+                  ce->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                  (ce->isPrimitive(PRIM_MOVE) && 
+                   ce->get(1)->typeInfo() !=
+                   ce->get(2)->typeInfo()))) {
+              use = se;
             }
           }
         }
+        if(use) {
+          *useOut = use;
+        }
+
+        if(!use || !def) {
+          return false;
+        }
+
+        //here I have my valid use and def so far we checked specific
+        //cases for them individually, now check if there is anything
+        //wrong with them as a pair
+
+        //this issue feels too specific, maybe there is
+        //safer/better/more general way of doing this check
+        //
+        //for reference test that caused this was:
+        //test/modules/standard/FileSystem/bharshbarg/filer
+        //
+        //The issue seemed to be yielding string from an iterator
+        if(CallExpr* useParentCe = toCallExpr(usePar)) {
+          if(useParentCe->isPrimitive(PRIM_FTABLE_CALL)) {
+            if(argMustUseCPtr(def->typeInfo())){
+              return false;
+            }
+          }
+        }
+
+        // we have to protect repeatedly evaluated statements of loops
+        // from expensive and/or unsafe CallExprs
+        if(CallExpr* defCe = toCallExpr(def)){
+          //nonessential primitives are safe
+          if(! analysisData.isNonEssentialPrimitive(defCe)) {
+            if(LoopStmt* enclLoop = LoopStmt::findEnclosingLoop(use)) {
+              if(CForLoop* enclCForLoop = toCForLoop(enclLoop)) {
+                if(enclCForLoop->testBlockGet()->contains(ce) ||
+                    enclCForLoop->incrBlockGet()->contains(ce)) {
+                  return false;
+                }
+              }
+              else if(enclLoop->isWhileStmt() || 
+                  enclLoop->isDoWhileStmt() || 
+                  enclLoop->isWhileDoStmt()) {
+                if(toWhileStmt(enclLoop)->condExprGet()->contains(ce)) {
+                  return false;
+                }
+              }
+            }
+          }
+        }
+        return true;
       }
-      return true;
     }
   }
   return false;

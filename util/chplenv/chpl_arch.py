@@ -114,7 +114,7 @@ class argument_map(object):
         if arch == 'unknown':
             return arch
 
-        if compiler in ['gnu', 'mpi-gnu']:
+        if compiler in ['gnu', 'mpi-gnu', 'aarch64-gnu']:
             if version >= CompVersion('4.9'):
                 return cls.gcc49.get(arch, '')
             elif version >= CompVersion('4.7'):
@@ -258,6 +258,8 @@ def get_module_lcd_arch(platform_val, arch):
         return "sandybridge"
     elif platform_val == "cray-xe" or platform_val == "cray-xk":
         return "barcelona"
+    elif platform_val == "aarch64":
+        return "arm-thunderx"
     else:
         return 'none'
 

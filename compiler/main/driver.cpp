@@ -157,7 +157,7 @@ bool report_inlining = false;
 char fExplainCall[256] = "";
 int explainCallID = -1;
 int breakOnResolveID = -1;
-bool fDenormalize = false;
+bool fDenormalize = true;
 char fExplainInstantiation[256] = "";
 bool fExplainVerbose = false;
 bool fParseOnly = false;
@@ -547,6 +547,7 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   fNoOptimizeOnClauses = true;
   fIgnoreLocalClasses = true;
   //fReplaceArrayAccessesWithRefTemps = false; // don't tie this to --baseline yet
+  fDenormalize = false;
   fConditionalDynamicDispatchLimit = 0;
 }
 

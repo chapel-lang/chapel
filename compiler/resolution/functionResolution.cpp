@@ -34,6 +34,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "initializerRules.h"
 #include "iterator.h"
 #include "ParamForLoop.h"
 #include "passes.h"
@@ -3907,38 +3908,6 @@ FnSymbol* tryResolveCall(CallExpr* call) {
   return resolveNormalCall(call, true);
 }
 
-static
-void temporaryInitializerFixup(CallExpr* call) {
-  if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
-    // Support super.init() calls (for instance) when the super type does not
-    // define either an initializer or a constructor.  Also ignores errors from
-    // improperly inserted .init() calls (so be sure to check here if something
-    // is behaving oddly - Lydia, 08/19/16)
-    if (!strcmp(usym->unresolved, "init")) {
-      for_actuals(actual, call) {
-        if (NamedExpr* named = toNamedExpr(actual)) {
-          if (!strcmp(named->name, "meme")) {
-            if (SymExpr* sym = toSymExpr(named->actual)) {
-              if (AggregateType* ct = toAggregateType(sym->var->type)) {
-                if (ct->initializerStyle == DEFINES_NONE_USE_DEFAULT) {
-                  // This code should be removed when the compiler generates
-                  // initializers as the default method of construction and
-                  // initialization for a type (Lydia note, 08/19/16)
-                  usym->unresolved = astr("_construct_", ct->symbol->name);
-                } else if (ct->initializerStyle == DEFINES_CONSTRUCTOR) {
-                  // This code should be removed when initializers are fully
-                  // supported and old style constructors are deprecated
-                  // (Lydia note, 08/19/16)
-                  USR_FATAL(call, "can't make init call on type with old constructor style");
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
 
 // if checkonly is provided, don't print any errors; just check
 // to see if the particular function could be resolved.
@@ -5786,7 +5755,7 @@ static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
       //
       typeConsCall->replace(call);
     }
-    
+
     //
     // If the generic was unresolved (either because its type
     // constructor couldn't be called with zero arguments or because
@@ -5795,7 +5764,7 @@ static void ensureGenericSafeForDeclarations(CallExpr* call, Type* type) {
     // constructor.
     //
     if (unsafeGeneric) {
-      USR_FATAL(call, 
+      USR_FATAL(call,
                 "Variables can't be declared using %s generic types like '%s'",
                 (typeCons ? "not-fully-instantiated" : "abstract"),
                 typeSym->name);
@@ -6687,20 +6656,6 @@ preFold(Expr* expr) {
       else
         result = new SymExpr(gFalse);
       call->replace(result);
-    } else if (call->isPrimitive(PRIM_IS_SYNC_TYPE)) {
-      Type* syncType = call->get(1)->typeInfo();
-      if (syncType->symbol->hasFlag(FLAG_SYNC))
-        result = new SymExpr(gTrue);
-      else
-        result = new SymExpr(gFalse);
-      call->replace(result);
-    } else if (call->isPrimitive(PRIM_IS_SINGLE_TYPE)) {
-      Type* singleType = call->get(1)->typeInfo();
-      if (singleType->symbol->hasFlag(FLAG_SINGLE))
-        result = new SymExpr(gTrue);
-      else
-        result = new SymExpr(gFalse);
-      call->replace(result);
     } else if (call->isPrimitive(PRIM_IS_TUPLE_TYPE)) {
       Type* tupleType = call->get(1)->typeInfo();
       if (tupleType->symbol->hasFlag(FLAG_TUPLE))
@@ -7207,29 +7162,6 @@ postFold(Expr* expr) {
     } else if (call->isPrimitive(PRIM_RSH)) {
       FOLD_CALL2(P_prim_rsh);
     } else if (call->isPrimitive(PRIM_ARRAY_ALLOC) ||
-               call->isPrimitive(PRIM_SYNC_INIT) ||
-               call->isPrimitive(PRIM_SYNC_LOCK) ||
-               call->isPrimitive(PRIM_SYNC_UNLOCK) ||
-               call->isPrimitive(PRIM_SYNC_WAIT_FULL) ||
-               call->isPrimitive(PRIM_SYNC_WAIT_EMPTY) ||
-               call->isPrimitive(PRIM_SYNC_SIGNAL_FULL) ||
-               call->isPrimitive(PRIM_SYNC_SIGNAL_EMPTY) ||
-               call->isPrimitive(PRIM_SINGLE_INIT) ||
-               call->isPrimitive(PRIM_SINGLE_LOCK) ||
-               call->isPrimitive(PRIM_SINGLE_UNLOCK) ||
-               call->isPrimitive(PRIM_SINGLE_WAIT_FULL) ||
-               call->isPrimitive(PRIM_SINGLE_SIGNAL_FULL) ||
-               call->isPrimitive(PRIM_WRITEEF) ||
-               call->isPrimitive(PRIM_WRITEFF) ||
-               call->isPrimitive(PRIM_WRITEXF) ||
-               call->isPrimitive(PRIM_READFF) ||
-               call->isPrimitive(PRIM_READFE) ||
-               call->isPrimitive(PRIM_READXX) ||
-               call->isPrimitive(PRIM_SYNC_IS_FULL) ||
-               call->isPrimitive(PRIM_SINGLE_WRITEEF) ||
-               call->isPrimitive(PRIM_SINGLE_READFF) ||
-               call->isPrimitive(PRIM_SINGLE_READXX) ||
-               call->isPrimitive(PRIM_SINGLE_IS_FULL) ||
                (call->primitive &&
                 (!strncmp("_fscan", call->primitive->name, 6) ||
                  !strcmp("_readToEndOfLine", call->primitive->name) ||
@@ -8539,6 +8471,7 @@ static void resolveEnumTypes() {
   // need to handle enumerated types better
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (EnumType* et = toEnumType(type->type)) {
+      SET_LINENO(et);
       ensureEnumTypeResolved(et);
     }
   }
@@ -8767,31 +8700,32 @@ static bool propagateNotPOD(Type* t) {
   // Move past any types that we've already handled
   if (t->symbol->hasFlag(FLAG_POD))
     return false;
+
   if (t->symbol->hasFlag(FLAG_NOT_POD))
     return true;
 
-  AggregateType *at = (AggregateType*) t;
-  bool notPOD = false;
+  AggregateType* at     = (AggregateType*) t;
+  bool           notPOD = false;
 
   // Some special rules for special things.
-  if (t->symbol->hasEitherFlag(FLAG_SYNC,FLAG_SINGLE))
-    // sync/single types are never POD
+  if (isSyncType(t)   ||
+      isSingleType(t) ||
+      t->symbol->hasFlag(FLAG_ATOMIC_TYPE)) {
     notPOD = true;
-  else if (t->symbol->hasFlag(FLAG_ATOMIC_TYPE))
-    // atomic types are never POD
-    notPOD = true;
+  }
 
   // Most class types are POD (user classes, _ddata, c_ptr)
   // Also, there is no need to check the fields of a class type
   // since a variable of that type is a pointer to the instance.
   if ( isClass(t) ) {
     // don't enumerate sub-fields or check for autoCopy etc
-  } else {
 
+  } else {
     // If any field in a record/tuple is not POD, the
     // aggregate is not POD.
     for_fields(field, at) {
       Type* ft = field->typeInfo();
+
       notPOD |= propagateNotPOD(ft);
     }
 
@@ -8804,30 +8738,38 @@ static bool propagateNotPOD(Type* t) {
     }
 
     // Also check for a non-compiler generated autocopy/autodestroy.
-    FnSymbol* autoCopyFn = autoCopyMap.get(t);
+    FnSymbol* autoCopyFn    = autoCopyMap.get(t);
     FnSymbol* autoDestroyFn = autoDestroyMap.get(t);
-    FnSymbol* destructor = t->destructor;
+    FnSymbol* destructor    = t->destructor;
 
     // Ignore invisible (compiler-defined) functions.
-    if (autoCopyFn && autoCopyFn->hasFlag(FLAG_COMPILER_GENERATED))
+    if (autoCopyFn && autoCopyFn->hasFlag(FLAG_COMPILER_GENERATED)) {
       autoCopyFn = NULL;
-    if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_COMPILER_GENERATED))
+    }
+
+    if (autoDestroyFn && autoDestroyFn->hasFlag(FLAG_COMPILER_GENERATED)) {
       autoDestroyFn = NULL;
-    if (destructor && destructor->hasFlag(FLAG_COMPILER_GENERATED))
+    }
+
+    if (destructor && destructor->hasFlag(FLAG_COMPILER_GENERATED)) {
       destructor = NULL;
+    }
 
     // if it has flag ignore no-init, it's not pod
     // if it has a user-specified auto copy / auto destroy, it's not pod
     // if it has a user-specified destructor, it's not pod
-    if( t->symbol->hasFlag(FLAG_IGNORE_NOINIT) ||
-        autoCopyFn || autoDestroyFn ||
-        destructor )
+    if (t->symbol->hasFlag(FLAG_IGNORE_NOINIT) ||
+        autoCopyFn                             ||
+        autoDestroyFn                          ||
+        destructor) {
       notPOD = true;
+    }
 
     // Since hasUserAssign tries to resolve =, we only
     // check it if we think we have a POD type.
-    if( !notPOD && hasUserAssign(t) )
+    if (!notPOD && hasUserAssign(t)) {
       notPOD = true;
+    }
   }
 
   if (notPOD) {
@@ -9247,7 +9189,7 @@ static void cleanupAfterRemoves() {
     // Zero the initFn pointer if the function is now dead.
     if (mod->initFn && !isAlive(mod->initFn))
       mod->initFn = NULL;
-  
+
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (arg->instantiatedFrom != NULL)
       arg->addFlag(FLAG_INSTANTIATED_GENERIC);

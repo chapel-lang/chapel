@@ -68,7 +68,12 @@ else
 CHPL_GASNET_CFG_OPTIONS += --disable-portals
 endif
 else
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),aarch64)
+CHPL_GASNET_CFG_OPTIONS += --enable-pthreads
+CHPL_GASNET_CFG_SCRIPT=cross-configure-aarch64-linux
+else
 CHPL_GASNET_CFG_SCRIPT=configure
+endif
 endif
 endif
 
@@ -115,7 +120,6 @@ post-install: FORCE
 	$(foreach mkfile, $(MKFILES), sed -i -e "s;$(GASNET_INSTALL_DIR);"'$$(GASNET_INSTALL_DIR);g' $(mkfile) &&) true
 
 gasnet: gasnet-config gasnet-build gasnet-install
-	$(CHPL_MAKE_HOME)/util/chplenv/check_huge_pages.py
 
 FORCE:
 
