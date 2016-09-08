@@ -236,11 +236,11 @@ module DefaultSparse {
       }
     }
 
-    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), isSorted=false, 
+    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), dataSorted=false,
         isUnique=false){
 
       const (actualInsertPts, actualAddCnt) =
-        __getActualInsertPts(this, inds, isSorted, isUnique);
+        __getActualInsertPts(this, inds, dataSorted, isUnique);
 
       const oldnnz = nnz;
       nnz += actualAddCnt;

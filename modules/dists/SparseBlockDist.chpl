@@ -134,12 +134,14 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   proc bulkAdd_help(inds: [] index(rank,idxType),
-      isSorted=false, isUnique=false) {
+      dataSorted=false, isUnique=false) {
+    use Sort;
+    use Search;
 
     // without _new_, record functions throw null deref
     var comp = new TargetLocaleComparator();
 
-    if !isSorted then sort(inds, comparator=comp);
+    if !dataSorted then sort(inds, comparator=comp);
 
     var localeRanges: [dist.targetLocDom] range;
     on inds {
@@ -167,7 +169,7 @@ class SparseBlockDom: BaseSparseDomImpl {
     var _totalAdded: atomic int;
     coforall l in dist.targetLocDom do on dist.targetLocales[l] {
       const _retval = locDoms[l].mySparseBlock.bulkAdd(inds[localeRanges[l]],
-          isSorted=true, isUnique=false);
+          dataSorted=true, isUnique=false);
       _totalAdded.add(_retval);
     }
     const _retval = _totalAdded.read();
