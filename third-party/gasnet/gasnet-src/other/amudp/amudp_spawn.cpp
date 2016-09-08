@@ -91,23 +91,19 @@ char *quote_for_local(const char *arg) {
   char *result = (char *)AMUDP_malloc(1 + new_len);
   char *end = result;
 
-  if (c) {
-    char *q, *dup = (char *)AMUDP_malloc(1 + old_len);
-    p = strcpy(dup, tmp);
-    while (NULL != (q = strpbrk((char *)p, specials))) {
-      size_t len = q-p;
-      strncpy(end, p, len);   end += len;
-      end[0] = '\\';          end += 1;
-      if (q[0] != '\\' || strchr(specials, q[1])) {
-        end[0] = q[0];        end += 1;
-      }
-      p = q + 1;
+  char *q, *dup = (char *)AMUDP_malloc(1 + old_len);
+  p = strcpy(dup, tmp);
+  while (NULL != (q = strpbrk((char *)p, specials))) {
+    size_t len = q-p;
+    strncpy(end, p, len);   end += len;
+    end[0] = '\\';          end += 1;
+    if (q[0] != '\\' || strchr(specials, q[1])) {
+      end[0] = q[0];        end += 1;
     }
-    AMUDP_free(dup);
-  } else {
-    p = tmp;
+    p = q + 1;
   }
   strcpy(end, p);
+  AMUDP_free(dup);
   AMUDP_free(tmp);
 
   AMUDP_assert(strlen(result) <= new_len);
