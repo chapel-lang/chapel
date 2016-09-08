@@ -313,7 +313,11 @@ buildDefaultWrapper(FnSymbol* fn,
               if (isArrayAliasField) {
                 wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, temp));
               } else {
-                // This is from 3788ee34fa9f42bdce19e9e3cf46ccfbb1c60ac2
+                // MPF: I believe this autoCopy is problematic
+                // adding FLAG_INSERT_AUTO_DESTROY doesn't cover it
+                // because that flag is removed in cullForDefaultConstructor
+                // The autoCopy started in commit
+                //   3788ee34fa9f42bdce19e9e3cf46ccfbb1c60ac2
                 wrapper->insertAtTail(new CallExpr(PRIM_MOVE, copyTemp, new CallExpr("chpl__autoCopy", temp)));
               }
               wrapper->insertAtTail(
