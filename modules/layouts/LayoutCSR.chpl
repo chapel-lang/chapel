@@ -18,6 +18,8 @@
  */
 
 config param debugCSR = false;
+use Sort;
+use RangeChunk;
 
 // In the following, I insist on SUBdomains because
 // I have not seen us test a non-"sub" CSR domain
@@ -64,8 +66,6 @@ class CSR: BaseDist {
 }
 
 class CSRDom: BaseSparseDomImpl {
-  use RangeChunk;
-
   var dist: CSR;
 
   var rowRange: range(idxType);
