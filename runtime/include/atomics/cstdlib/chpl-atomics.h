@@ -83,8 +83,8 @@ static inline memory_order _defaultOfMemoryOrder(void) {
 // that satisifes those requirements.
 //
 #define GET_READABLE_ORDER(order) (order != memory_order_release && \
-				   order != memory_order_acq_rel ? \
-				   order : memory_order_acquire)
+                                   order != memory_order_acq_rel ? \
+                                   order : memory_order_acquire)
 
 
 ///////////////////////////////////////////////////////////////////////////////
