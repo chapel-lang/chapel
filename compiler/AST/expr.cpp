@@ -6508,11 +6508,11 @@ ForallExpr::verify() {
   Expr::verify();
   if (astTag != E_ForallExpr)
     INT_FATAL(this, "bad ForallExpr::astTag");
-  INT_FATAL("ForallExprs should not persist past parser");
+  INT_FATAL(this, "ForallExpr::verify() is not implemented");
 }
 
 void ForallExpr::accept(AstVisitor* visitor) {
-  INT_FATAL("ForallExprs should not persist past parser");
+  INT_FATAL(this, "ForallExpr::accept() is not implemented");
 }
 
 GenRet ForallExpr::codegen() {
@@ -6522,12 +6522,12 @@ GenRet ForallExpr::codegen() {
 }
 
 Expr* ForallExpr::getFirstChild() {
-  INT_FATAL("ForallExprs should not persist past parser");
+  INT_FATAL(this, "ForallExpr::getFirstChild() is not implemented");
   return NULL;
 }
 
 Expr* ForallExpr::getFirstExpr() {
-  INT_FATAL("ForallExprs should not persist past parser");
+  INT_FATAL(this, "ForallExpr::getFirstExpr() is not implemented");
   return NULL;
 }
 

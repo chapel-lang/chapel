@@ -985,7 +985,7 @@ static Expr* removeOrNull(Expr* arg) { return arg ? arg->remove() : NULL; }
 static CallExpr* buildForallLoopExprFromForallExpr(ForallExpr* faExpr) {
   SET_LINENO(faExpr);
   INT_ASSERT(faExpr->inTree()); //otherwise no need to remove() faExpr's pieces
-  // We need the individual pieces of faExpr. We wants to keep faExpr itself
+  // We need the individual pieces of faExpr. We want to keep faExpr itself
   // in the tree - that way we know where to put the replacement.
   Expr* indices        = removeOrNull(faExpr->indices);
   Expr* iteratorExpr   = removeOrNull(faExpr->iteratorExpr);
