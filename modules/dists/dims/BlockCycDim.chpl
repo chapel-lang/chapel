@@ -789,7 +789,7 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
 //        "  fullR ", hereDenseInds, " myR ", begIx .. endIx by nLocs,
 //        "");
 
-  return chunk;
+  return chunkInds;
 }
 
 proc BlockCyclic1locdom.dsiMyDensifiedRangeType1d(globDD) type

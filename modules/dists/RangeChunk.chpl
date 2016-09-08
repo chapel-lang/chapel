@@ -25,15 +25,16 @@ use RemElems;
 use BoundedRangeType;
 
 iter chunks(
-  r: range(?RT, bounded, ?),
+  r: range(?RT, bounded, ?S),
   numChunks: integral,
-  // TODO: only add true if stridable, use ?S
-  remPol: RemElems = Dist): range(RT, bounded, true)
+  remPol: RemElems = Dist): range(RT, bounded, S)
 {
   for (startOrder, endOrder) in chunksOrder(r, numChunks, remPol) {
     var start = r.orderToIndex(startOrder);
     var end = r.orderToIndex(endOrder);
-    yield start..end by r.stride;
+    yield if S
+      then start..end by r.stride
+      else start..end;
   }
 }
 
@@ -57,15 +58,17 @@ iter chunksOrder(
 
 // Divide r into (almost) equal numChunks pieces, return the i-th piece.
 proc chunk(
-  r: range(?RT, bounded, ?),
+  r: range(?RT, bounded, ?S),
   numChunks: integral,
   i: integral,
-  remPol: RemElems = Dist): range(RT, bounded, true)
+  remPol: RemElems = Dist): range(RT, bounded, S)
 {
   var (startOrder, endOrder) = chunkOrder(r, numChunks, i, remPol);
   var start = r.orderToIndex(startOrder);
   var end = r.orderToIndex(endOrder);
-  return start..end by r.stride;
+  return if S
+    then start..end by r.stride
+    else start..end;
 }
 
 proc chunkOrder(
