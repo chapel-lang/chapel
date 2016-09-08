@@ -1233,12 +1233,17 @@ static void build_constructor(AggregateType* ct) {
     // moving all of the logic for generating the default
     // constructor into resolution and making it depend on
     // what arguments are supplied.
-    fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
+
+    // UPDATE: that was interesting idea but it causes problems
+    // with sparse arrays where the sparse array refers to
+    // the parent domain instead of a copy of it.
+
+/*    fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                   fn->_this,
                                   new_CStringSymbol(arg->name),
                                   arg));
+*/
 
-    /*
     if (arg->type == dtAny && !arg->hasFlag(FLAG_TYPE_VARIABLE) &&
         !arg->hasFlag(FLAG_PARAM) && !ct->symbol->hasFlag(FLAG_REF))
       fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, 
@@ -1256,7 +1261,6 @@ static void build_constructor(AggregateType* ct) {
                                     fn->_this, 
                                     new_CStringSymbol(arg->name),
                                     arg));
-      */
   }
 
   if (meme)
