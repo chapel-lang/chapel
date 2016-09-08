@@ -1732,6 +1732,7 @@ static void narrowWideClassesThroughCalls()
     // Find calls to functions expecting local arguments.
     if (call->isResolved() && call->isResolved()->hasFlag(FLAG_LOCAL_ARGS)) {
       SET_LINENO(call);
+      Expr* stmt = call->getStmtExpr();
 
       // Examine each argument to the call.
       for_alist(arg, call->argList) {
@@ -1741,38 +1742,46 @@ static void narrowWideClassesThroughCalls()
 
         // Select symbols with wide types.
         if (isFullyWide(sym)) {
+          if (sym->isRef()) {
+            VarSymbol* derefTmp = newTemp(sym->getValType());
+            stmt->insertBefore(new DefExpr(derefTmp));
+            stmt->insertBefore(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, sym->copy())));
+            sym = new SymExpr(derefTmp);
+          }
           QualifiedType narrowType = getNarrowType(sym);
 
           // Copy
           VarSymbol* var = newTemp(narrowType);
           SET_LINENO(call);
-          call->getStmtExpr()->insertBefore(new DefExpr(var));
+          stmt->insertBefore(new DefExpr(var));
 
           if (narrowType.type()->symbol->hasFlag(FLAG_EXTERN)) {
 
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
             if (!fNoLocalChecks)
-              call->getStmtExpr()->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy()));
+              stmt->insertBefore(new CallExpr(PRIM_LOCAL_CHECK, sym->copy()));
 
             // If we pass an extern class to an extern/export function,
             // we must treat it like a reference (this is by definition)
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
+            stmt->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           }
-          //else if (narrowType->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS)) {
           else if (narrowType.isRef() || narrowType.type()->symbol->hasEitherFlag(FLAG_REF,FLAG_DATA_CLASS)) {
             // Also if the narrow type is a ref or data class type,
             // we must treat it like a (narrow) reference.
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
+            stmt->insertBefore(new CallExpr(PRIM_MOVE, var, sym->copy()));
           }
           else {
             // Otherwise, narrow the wide class reference, and use that in the call
-            call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_DEREF, sym->copy())));
+            // Appears to intentionally use a 'deref' here, even if 'sym'
+            // is a wide class. This may have the effect of copying the
+            // remote thing to the current locale.
+            stmt->insertBefore(new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_DEREF, sym->copy())));
           }
 
           // Move the result back after the call.
-          call->getStmtExpr()->insertAfter(new CallExpr(PRIM_MOVE, sym->copy(), var));
-          sym->replace(new SymExpr(var));
+          stmt->insertAfter(new CallExpr(PRIM_MOVE, sym->copy(), var));
+          toSymExpr(arg)->replace(new SymExpr(var));
         }
       }
     }
@@ -2211,8 +2220,18 @@ static void insertWideTemp(Type* type, SymExpr* src) {
 }
 
 static void makeMatch(Symbol* dst, SymExpr* src) {
+  bool mismatch = true;
+  // TODO: Should building a qualifiedType set the .type field to the
+  // getValType()?
+  if (dst->isRef() && src->isRef() && dst->getValType() == src->getValType()) {
+    mismatch = false;
+  } else if (dst->isWideRef() && src->isWideRef() && dst->getValType() == src->getValType()) {
+    mismatch = false;
+  } else if (dst->typeInfo() == src->typeInfo()) {
+    mismatch = false;
+  }
   if (hasSomeWideness(dst) &&
-       dst->type != src->var->type) {
+       mismatch) {
     insertWideTemp(dst->type, src);
   }
 }
@@ -2331,6 +2350,25 @@ static void fixAST() {
           INT_ASSERT(wide);
 
           insertWideTemp(wide, act);
+        } else if (argMustUseCPtr(act->var->type)) {
+          // passing a non-ref thing, e.g. a record, to an arg expecting to be
+          // given something by ref. This arg actually has the 'ref' kind,
+          // which was automatically widened in this pass.
+          //
+          // We need to create a wide ref tmp to get things working.
+          //
+
+          Expr* stmt = call->getStmtExpr();
+          SET_LINENO(stmt);
+          VarSymbol* narrowRef = newTemp(act->var->type->refType);
+          stmt->insertBefore(new DefExpr(narrowRef));
+          stmt->insertBefore(new CallExpr(PRIM_MOVE, narrowRef, new CallExpr(PRIM_ADDR_OF, act->copy())));
+          SymExpr* se = new SymExpr(narrowRef);
+          act->replace(se);
+
+          Type* wide = wideRefMap.get(se->typeInfo());
+          INT_ASSERT(wide);
+          insertWideTemp(wide, se);
         }
       }
     } else {
@@ -2378,6 +2416,18 @@ static void fixAST() {
             SymExpr* src = toSymExpr(rhs->get(1));
             if (val != src->var->type) {
               insertWideTemp(val, src);
+            }
+          }
+          else if (rhs->isPrimitive(PRIM_DEREF)) {
+            // removeWrapRecords can change the intent to something non-ref,
+            // so the actual in the PRIM_DEREF may not be a ref anymore. We'll
+            // catch this here to avoid a failure during codegen.
+            //
+            // Originally exposed by taking out a PRIM_DEREF in
+            // remoteValueForwarding during the updateTaskArg step.
+            SymExpr* ref = toSymExpr(rhs->get(1));
+            if (!ref->isRefOrWideRef()) {
+              rhs->replace(ref->remove());
             }
           }
           else if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
@@ -2584,6 +2634,7 @@ static void
 changeArgumentTypeToRef(ArgSymbol* arg) {
 
   arg->qual = QUAL_REF;
+  arg->intent = INTENT_REF;
 }
 
 static void
@@ -2605,6 +2656,8 @@ void
 insertWideReferences(void) {
   FnSymbol* heapAllocateGlobals = heapAllocateGlobalsHead();
 
+  // TODO: Should this be in some other pass? It would be nice if once could
+  // assume this pass does nothing in --local mode
   adjustArgSymbolTypesForIntent();
 
   if (!requireWideReferences()) {

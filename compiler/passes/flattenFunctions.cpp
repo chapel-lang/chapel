@@ -172,11 +172,30 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
            by reference.  With further analysis, we could figure out
            whether this variable is actually going to be returned as
            an LHS expr. */
+      //
+      // BHARSH: TODO: The arg intent set here can have a large impact on
+      // RVF later on. For RVF to be more effective, this might be a good
+      // place to do some analysis and mark arguments as 'const in' and 
+      // 'const ref', even if the actual is not marked with FLAG_CONST.
+      //
+      // Prior to the QualifiedType changes this section would make the type
+      // something like _ref_int, but the intent would be INTENT_CONST_IN and
+      // RVF would fire in some situations.
+      //
       if (passByRef(sym)) {
-        intent = concreteIntent(INTENT_REF, type);
+        IntentTag temp = INTENT_REF;
+        if (sym->hasFlag(FLAG_CONST)) {
+          temp = INTENT_CONST_REF;
+        }
+        intent = concreteIntent(temp, type);
         type = type->refType;
       } else {
-        intent = concreteIntent(INTENT_BLANK, type);
+        IntentTag temp = INTENT_BLANK;
+        if (sym->hasFlag(FLAG_CONST) && sym->isRef()) {
+          // Allows for RVF later
+          temp = INTENT_CONST_REF;
+        }
+        intent = concreteIntent(temp, type);
       }
 
       SET_LINENO(sym);

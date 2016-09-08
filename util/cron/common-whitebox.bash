@@ -122,11 +122,13 @@ case $COMPILER in
         ;;
 esac
 
-#libsci_module=$(module list -t 2>&1 | grep libsci)
-#if [ -n "${libsci_module}" ] ; then
-#    log_info "Unloading cray-libsci module: ${libsci_module}"
-#    module unload $libsci_module
-#fi
+if [ "${HOSTNAME}" = "esxbld03" ] ; then
+    libsci_module=$(module list -t 2>&1 | grep libsci)
+    if [ -n "${libsci_module}" ] ; then
+        log_info "Unloading cray-libsci module: ${libsci_module}"
+        module unload $libsci_module
+    fi
+fi
 
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 
@@ -147,8 +149,13 @@ export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 # Ensure that one of the CPU modules is loaded.
 my_arch=$($CHPL_HOME/util/chplenv/chpl_arch.py 2> /dev/null)
 if [ "${my_arch}" = "none" ] ; then
-    log_info "Loading craype-shanghai module to stifle chpl_arch.py warnings."
-    module load craype-shanghai
+    if [ "${HOSTNAME}" = "esxbld03" ] ; then
+        log_info "Loading craype-sandybridge module to stifle chpl_arch.py warnings."
+        module load craype-sandybridge
+    else
+        log_info "Loading craype-shanghai module to stifle chpl_arch.py warnings."
+        module load craype-shanghai
+    fi
 fi
 
 if [ "${COMP_TYPE}" != "HOST-TARGET-no-PrgEnv" ] ; then

@@ -630,5 +630,118 @@ variables that support each option, run the compiler with the ``--help-env``
 flag.  For boolean flags and toggles, setting the environment variable to any
 value selects that flag.
 
+Chapel Configuration File
+-------------------------
+
+The Chapel configuration file is a file named either ``chplconfig`` or
+``.chplconfig`` that can store overrides of the inferred environment variables
+listed as a result of executing ``printchplenv``.
+
+Syntax
+~~~~~~
+
+Below are the valid forms of syntax for Chapel configuration files. All other
+usages will result in a syntax error.
+
+**Definitions**
+
+Users can define variables with the following format:
+
+.. code-block:: python
+
+    CHPL_ENV=value
+
+
+Above, the default value of ``CHPL_ENV`` will be overridden to be ``value``.
+All white space is stripped away from definitions.
+
+**Ignored Lines**
+
+Any lines containing nothing or only white space will be ignored.  Comments,
+which are denoted by the ``#`` character, similar to ``bash`` or ``python``,
+are also ignored.
+
+
+Example
+~~~~~~~
+
+Below is an example of a Chapel configuration file with comments:
+
+.. code-block:: python
+
+    # ~/.chplconfig
+
+    # Default to multi-locale
+    CHPL_COMM=gasnet
+
+    CHPL_TASKS=qthreads # Use Qthreads
+
+    # System GMP is available on these machines
+    CHPL_GMP=system
+
+
+
+Generating Configuration Files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The format of the ``printchplenv --overrides`` and ``printchplenv --simple``
+commands is compatible with Chapel configuration files.
+
+The ``printchplenv --overrides`` flag can be used to print the variables
+currently overridden by either environment variables or Chapel
+configuration file.
+
+A user can dump their current overrides into a Chapel configuration file:
+
+.. code-block:: sh
+
+    printchplenv --overrides > ~/.chplconfig
+
+The ``printchplenv --simple`` flag can be used to print all the variables
+of the current configuration.
+
+A user can dump their current configuration into a Chapel configuration file as
+well:
+
+.. code-block:: sh
+
+    printchplenv --simple > ~/.chplconfig
+
+
+
+Search Paths and File Names
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Though you can put your Chapel configuration file anywhere by setting the
+``$CHPL_CONFIG`` environment variable to its enclosing directory, you can also
+place it in your ``$HOME`` or ``$CHPL_HOME`` directory and Chapel will be able to
+find it.
+
+The search priority for Chapel configuration files is as follows:
+
+1. ``$CHPL_CONFIG``
+2. ``$HOME`` (``~/``)
+3. ``$CHPL_HOME``
+
+When both a ``chplconfig`` and ``.chplconfig`` are present, the visible
+``chplconfig`` will be prioritized.
+
+Only a single ``chplconfig`` file will be used. That is, as soon as a valid
+Chapel configuration file is found, the definitions of that file are used.
+
+.. note::
+
+    The ``$CHPL_CONFIG`` variable is the path to the *enclosing*
+    directory - not the full path including ``chplconfig`` itself.
+
+Variable Priority
+~~~~~~~~~~~~~~~~~
+
+Variable precedence goes in the following order:
+
+1. Explicit compiler flags: ``chpl --env=value``
+2. Environment variables: ``CHPL_ENV=value``
+3. Chapel configuration file: ``~/.chplconfig``
+4. Inferred environment variables: ``printchplenv``
+
 
 .. |trade|  unicode:: U+02122 .. TRADE MARK SIGN

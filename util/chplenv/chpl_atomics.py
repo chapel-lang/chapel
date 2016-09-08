@@ -38,6 +38,8 @@ def get(flag='target'):
                     atomics_val = 'intrinsics'
                 elif version >= CompVersion('4.1') and not platform_val.endswith('32'):
                     atomics_val = 'intrinsics'
+            elif compiler_val == 'aarch64-gnu':
+                atomics_val = 'cstdlib'
             elif compiler_val == 'intel' or compiler_val == 'cray-prgenv-intel':
                 atomics_val = 'intrinsics'
             elif compiler_val == 'cray-prgenv-cray':

@@ -485,8 +485,6 @@ checkResolveRemovedPrims(void) {
         case PRIM_LOGICAL_FOLDER:
         case PRIM_TYPEOF:
         case PRIM_TYPE_TO_STRING:
-        case PRIM_IS_SYNC_TYPE:
-        case PRIM_IS_SINGLE_TYPE:
         case PRIM_IS_TUPLE_TYPE:
         case PRIM_IS_STAR_TUPLE_TYPE:
         case PRIM_IS_SUBTYPE:
@@ -507,7 +505,7 @@ checkResolveRemovedPrims(void) {
   }
 }
 
-static void 
+static void
 checkTaskRemovedPrims()
 {
   for_alive_in_Vec(CallExpr, call, gCallExprs)

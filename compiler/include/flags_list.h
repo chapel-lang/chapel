@@ -47,7 +47,6 @@ symbolFlag( FLAG_ATOMIC_MODULE , ypr, "atomic module" , "module containing imple
 symbolFlag( FLAG_ATOMIC_TYPE , ypr, "atomic type" , "type that implements an atomic" )
 symbolFlag( FLAG_AUTO_COPY_FN,  ypr, "auto copy fn" , "auto copy function" )
 symbolFlag( FLAG_AUTO_DESTROY_FN,  ypr, "auto destroy fn" , "auto destroy function" )
-symbolFlag( FLAG_AUTO_DESTROY_FN_SYNC, ypr, "auto destroy fn sync", "auto destroy function for sync/single" )
 symbolFlag( FLAG_AUTO_II , npr, "auto ii" , ncm )
 symbolFlag( FLAG_BASE_ARRAY , ypr, "base array" , ncm )
 symbolFlag( FLAG_BASE_DOMAIN , ypr, "base domain" , ncm )

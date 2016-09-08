@@ -29,6 +29,7 @@ __all__ = [
     'chpl_3p_re2_configs',
     # General purpose helpers
     'chpl_home_utils',
+    'chpl_python_version',
     'compiler_utils',
     'overrides',
     'utils',

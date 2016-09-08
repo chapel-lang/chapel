@@ -14,7 +14,9 @@ from utils import memoize, run_command
 @memoize
 def get_compiler_version(compiler):
     version_string = '0'
-    if 'gnu' in compiler:
+    if compiler == 'aarch64-gnu':
+        version_string = run_command(['aarch64-unknown-linux-gnu-gcc', '-dumpversion'])
+    elif 'gnu' in compiler:
         # Asssuming the 'compiler' version matches the gcc version
         # e.g., `mpicc -dumpversion == gcc -dumpversion`
         version_string = run_command(['gcc', '-dumpversion'])

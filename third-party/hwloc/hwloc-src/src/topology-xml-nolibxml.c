@@ -219,8 +219,12 @@ hwloc__nolibxml_import_get_content(hwloc__xml_import_state_t state,
   char *end;
 
   /* auto-closed tags have no content */
-  if (nstate->closed)
+  if (nstate->closed) {
+    if (expected_length)
+      return -1;
+    *beginp = "";
     return 0;
+  }
 
   /* find the next tag, where the content ends */
   end = strchr(buffer, '<');
@@ -315,7 +319,7 @@ hwloc_nolibxml_read_file(const char *xmlpath, char **bufferp, size_t *buflenp)
   FILE * file;
   size_t buflen, offset, readlen;
   struct stat statbuf;
-  char *buffer;
+  char *buffer, *tmp;
   size_t ret;
 
   if (!strcmp(xmlpath, "-"))
@@ -346,9 +350,10 @@ hwloc_nolibxml_read_file(const char *xmlpath, char **bufferp, size_t *buflenp)
       break;
 
     buflen *= 2;
-    buffer = realloc(buffer, buflen+1);
-    if (!buffer)
-      goto out_with_file;
+    tmp = realloc(buffer, buflen+1);
+    if (!tmp)
+      goto out_with_buffer;
+    buffer = tmp;
     readlen = buflen/2;
   }
 
@@ -357,6 +362,8 @@ hwloc_nolibxml_read_file(const char *xmlpath, char **bufferp, size_t *buflenp)
   *buflenp = offset+1;
   return 0;
 
+ out_with_buffer:
+  free(buffer);
  out_with_file:
   fclose(file);
  out:
@@ -677,10 +684,17 @@ hwloc_nolibxml_export_buffer(hwloc_topology_t topology, char **bufferp, int *buf
 
   bufferlen = 16384; /* random guess for large enough default */
   buffer = malloc(bufferlen);
+  if (!buffer)
+    return -1;
   res = hwloc___nolibxml_prepare_export(topology, buffer, (int)bufferlen);
 
   if (res > bufferlen) {
-    buffer = realloc(buffer, res);
+    char *tmp = realloc(buffer, res);
+    if (!tmp) {
+      free(buffer);
+      return -1;
+    }
+    buffer = tmp;
     hwloc___nolibxml_prepare_export(topology, buffer, (int)res);
   }
 
@@ -769,10 +783,17 @@ hwloc_nolibxml_export_diff_buffer(hwloc_topology_diff_t diff, const char *refnam
 
   bufferlen = 16384; /* random guess for large enough default */
   buffer = malloc(bufferlen);
+  if (!buffer)
+    return -1;
   res = hwloc___nolibxml_prepare_export_diff(diff, refname, buffer, (int)bufferlen);
 
   if (res > bufferlen) {
-    buffer = realloc(buffer, res);
+    char *tmp = realloc(buffer, res);
+    if (!tmp) {
+      free(buffer);
+      return -1;
+    }
+    buffer = tmp;
     hwloc___nolibxml_prepare_export_diff(diff, refname, buffer, (int)res);
   }
 

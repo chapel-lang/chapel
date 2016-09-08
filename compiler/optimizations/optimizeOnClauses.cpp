@@ -146,8 +146,8 @@ classifyPrimitive(CallExpr *call) {
       // the callExpr will be checked in the calling function
       return FAST_AND_LOCAL;
     } else {
-      bool arg1wide = call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF);
-      bool arg2wide = call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF);
+      bool arg1wide = call->get(1)->isWideRef();
+      bool arg2wide = call->get(2)->isWideRef();
 
       // If neither argument is a wide reference, OK: no communication
       if (!arg1wide && !arg2wide) {
@@ -155,8 +155,8 @@ classifyPrimitive(CallExpr *call) {
       }
 
       if (call->isPrimitive(PRIM_MOVE)) {
-        bool arg1ref = call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF);
-        bool arg2ref = call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF);
+        bool arg1ref = call->get(1)->isRef();
+        bool arg2ref = call->get(2)->isRef();
         // Handle (move tmp:ref, other_tmp:wide_ref)
         // and    (move tmp:wide_ref, other_tmp:ref)
         // these does not require communication and merely adjust
@@ -176,7 +176,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_WIDE_GET_NODE:
   case PRIM_WIDE_GET_ADDR:
     // If this test is true, a remote get is required.
-    if (!(call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
+    if (!(call->get(1)->isWideRef() &&
           call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
       return FAST_AND_LOCAL;
     }
@@ -185,9 +185,9 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_ARRAY_SHIFT_BASE_POINTER:
     // SHIFT_BASE_POINTER is fast as long as none of the
     // arguments are wide references.
-    if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
-        call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) ||
-        call->get(3)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF))
+    if (call->get(1)->isWideRef() ||
+        call->get(2)->isWideRef() ||
+        call->get(3)->isWideRef())
       return FAST_NOT_LOCAL;
     else
       return FAST_AND_LOCAL;
@@ -196,7 +196,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GET_UNION_ID:
   case PRIM_GET_MEMBER_VALUE:
   case PRIM_GET_SVEC_MEMBER_VALUE:
-    if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+    if (!call->get(1)->isWideRef()) {
       return FAST_AND_LOCAL;
     }
     return FAST_NOT_LOCAL;
@@ -217,7 +217,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_DEREF:
   case PRIM_SET_MEMBER:
   case PRIM_SET_SVEC_MEMBER:
-    if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
+    if (!call->get(1)->isWideRef() &&
         !call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       return FAST_AND_LOCAL;
     }
@@ -235,36 +235,6 @@ classifyPrimitive(CallExpr *call) {
     // Shouldn't this be return FAST_NOT_LOCAL ?
     return NOT_FAST_NOT_LOCAL;
 
-  case PRIM_SYNC_INIT: // Maybe fast?
-  case PRIM_SYNC_DESTROY: // Maybe fast?
-  case PRIM_SYNC_LOCK:
-  case PRIM_SYNC_UNLOCK:
-  case PRIM_SYNC_WAIT_FULL:
-  case PRIM_SYNC_WAIT_EMPTY:
-  case PRIM_SYNC_SIGNAL_FULL:
-  case PRIM_SYNC_SIGNAL_EMPTY:
-  case PRIM_SINGLE_INIT: // Maybe fast?
-  case PRIM_SINGLE_DESTROY: // Maybe fast?
-  case PRIM_SINGLE_LOCK:
-  case PRIM_SINGLE_UNLOCK:
-  case PRIM_SINGLE_WAIT_FULL:
-  case PRIM_SINGLE_SIGNAL_FULL:
-
-  case PRIM_WRITEEF:
-  case PRIM_WRITEFF:
-  case PRIM_WRITEXF:
-  case PRIM_READFE:
-  case PRIM_READFF:
-  case PRIM_READXX:
-  case PRIM_SYNC_IS_FULL:
-  case PRIM_SINGLE_WRITEEF:
-  case PRIM_SINGLE_READFF:
-  case PRIM_SINGLE_READXX:
-  case PRIM_SINGLE_IS_FULL:
-   // These may block, so are deemed slow.
-    // However, they are local
-   return LOCAL_NOT_FAST;
-
   case PRIM_NEW:
   case PRIM_INIT:
   case PRIM_NO_INIT:
@@ -276,8 +246,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_ENUM_IS_SIGNED:
   case PRIM_IS_UNION_TYPE:
   case PRIM_IS_ATOMIC_TYPE:
-  case PRIM_IS_SYNC_TYPE:
-  case PRIM_IS_SINGLE_TYPE:
   case PRIM_IS_TUPLE_TYPE:
   case PRIM_IS_STAR_TUPLE_TYPE:
   case PRIM_IS_SUBTYPE:

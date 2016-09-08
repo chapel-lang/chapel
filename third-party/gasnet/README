@@ -24,6 +24,10 @@ as follows:
   developers, and has been exceedingly useful for the Chapel development
   team.
 
+* Added preliminary support for 64-bit ARM.  This adds the new file
+  third-party/gasnet/gasnet-src/other/contrib/cross-configure-aarch64-linux
+  which is the only ARM change beneath gasnet-src in the tree.
+
 Upgrading GASNet versions
 =========================
 

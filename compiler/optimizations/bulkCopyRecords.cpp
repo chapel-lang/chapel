@@ -45,19 +45,19 @@ static bool isAssignment(FnSymbol* fn)
 
 std::map<Type*, bool> containsRef;
 
-static bool typeContainsRef(Type* t)
+static bool typeContainsRef(Type* t, bool isRoot = true)
 {
   if (containsRef.count(t))
     return containsRef[t];
 
   bool hasRef = false;
 
-  if (isReferenceType(t)) {
+  if (!isRoot && isReferenceType(t)) {
     hasRef = true;
   } else if (AggregateType* at = toAggregateType(t)) {
     if (!at->isClass()) {
       for_fields(field, at) {
-        hasRef |= typeContainsRef(field->type);
+        hasRef |= typeContainsRef(field->type, false);
       }
     }
   }

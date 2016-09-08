@@ -126,55 +126,45 @@ class ChapelConfig(object):
         with open(self.chplconfigfile, 'r') as ccfile:
             for linenum, line in enumerate(ccfile.readlines()):
 
-                if not self.valid_assignment(line, linenum):
-                    continue
+                # Strip comments and trailing white space from line
+                line = line.split('#')[0].strip()
 
-                if not self.valid_variable(line, linenum):
+                if self.skip_line(line, linenum):
                     continue
 
                 var, val = [f.strip() for f in line.split('=')]
                 self.chplconfig[var] = val
 
-    def valid_assignment(self, line, linenum):
-        """ Check if the assignment is correctly formatted, e.g. ENV = VAR """
-        valid = True
+    def skip_line(self, line, linenum):
+        """
+        Check the various conditions for skipping a line, accumulate warnings.
+        """
 
-        # Check if line is a comment (blank)
-        if len(line.lstrip()) == 0:
-            valid = False
-        # Check if line is a comment (starts with '#')
-        elif line.lstrip()[0] == '#':
-            valid = False
-        else:
-            # Check if line is incorrectly formatted
-            try:
-                var, val = [f.strip() for f in line.split('=')]
-            except ValueError:
-                valid = False
-                self.warnings.append(
-                (
-                    'Warning: {0}:line {1}: Received incorrect format:\n'
-                    '         > {2}\n'
-                    '         Expected format is:\n'
-                    '         > CHPL_VAR = VALUE\n'
-                ).format(self.prettypath, linenum, line.strip('\n')))
+        # Check if line is comment, by taking length of stripped line
+        if len(line) == 0:
+            return True
 
-        return valid
+        # Check for syntax errors
+        try:
+            var, val = [f.strip() for f in line.split('=')]
+        except ValueError:
+            self.warnings.append(
+            (
+                'Syntax Error: {0}:line {1}\n'
+                '              > {2}\n'
+                '              Expected format is:\n'
+                '              > CHPL_VAR = VALUE\n'
+            ).format(self.prettypath, linenum, line.strip('\n')))
+            return True
 
-    def valid_variable(self, line, linenum):
-        """ Check if variable is valid and not duplicated """
-
-        var, val = [f.strip() for f in line.split('=')]
-
-        valid = True
         # Check if var is in the list of approved special variables
         if var not in chplvars:
-            valid = False
             self.warnings.append(
             (
                 'Warning: {0}:line {1}: '
                 '"{2}" is not an acceptable variable\n'
             ).format(self.prettypath, linenum, var))
+            return True
 
         # Warn about duplicate entries, but don't skip, just overwrite
         elif var in self.chplconfig.keys():
@@ -184,7 +174,8 @@ class ChapelConfig(object):
                 'Duplicate entry of "{2}"\n'
             ).format(self.prettypath, linenum, var))
 
-        return valid
+        # If we reach here, this is a valid assignment, so don't skip
+        return False
 
     def printwarnings(self):
         """ Print any warnings accumulated throughout constructor """

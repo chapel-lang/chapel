@@ -25,6 +25,9 @@ At present, this directory contains the following codes:
     revcomp.chpl        : Calculate the strand to bind with a given DNA strand
     spectralnorm.chpl   : Calculates the spectral norm of an infinite matrix
     threadring.chpl     : Passes a token between a large number of threads
+    fasta.chpl          : Generates DNA with different nucleotide distributions
+                          and a random number generator
+    fastaredux.chpl     : fasta with an optimized distribution lookup  
 
 Over time, we plan to create versions of all the benchmarks and to
 enter Chapel into the competition.  Draft versions of other benchmarks
@@ -131,9 +134,13 @@ o remove warning for serial whole-array assignment when RHS is serial
 o should globals be allowed to be declared below main()?  If so, move
   fact[] to the bottom of the file?
 
-
 fasta.chpl
 ----------
+o no notes to provide
+
+
+fastaredux.chpl
+---------------
 o Shouldn't ascii() return an int(8)/uint(8) by default?
 
 o We should introduce local "static" variables (using some other
