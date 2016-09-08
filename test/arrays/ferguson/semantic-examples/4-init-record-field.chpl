@@ -1,5 +1,7 @@
 use myrecord; 
-record RecordStoringArray{ var field; }
+record RecordStoringArray{
+  var field;
+}
 proc createArray() {
   var retA: [1..2] R;
   return retA;

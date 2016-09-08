@@ -1,5 +1,7 @@
 use myrecord; 
-class ClassStoringArray{ var field; }
+class ClassStoringArray {
+  var field;
+}
 proc createArray() {
   var retA: [1..2] R;
   return retA;
