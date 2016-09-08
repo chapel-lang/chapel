@@ -449,6 +449,10 @@ module ChapelDistribution {
       halt("not implemented");
     }
 
+    proc ~BaseSparseDomImpl() {
+
+    }
+
   }
 
   class BaseSparseDom : BaseDom {
@@ -710,6 +714,9 @@ module ChapelDistribution {
     var data: [dom.nnzDom] eltType;
 
     proc dsiGetBaseDom() return dom;
+
+    proc ~BaseSparseArr() {
+    }
   }
 
   /*
@@ -717,6 +724,10 @@ module ChapelDistribution {
    * go here.
    */
   class BaseSparseArrImpl: BaseSparseArr {
+
+    proc ~BaseSparseArrImpl() {
+
+    }
 
 
     // currently there is no support implemented for setting IRV for

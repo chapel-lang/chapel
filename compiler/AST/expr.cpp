@@ -4818,16 +4818,19 @@ GenRet CallExpr::codegenPrimitive() {
                rhsTypeSym->hasFlag(FLAG_WIDE_CLASS) == false) {
       codegenAssign(lhs, codegenAddrOf(codegenWideHere(rhs)));
 
-    } else if (lhsTypeSym->hasFlag(FLAG_REF)      ||
-               lhsTypeSym->hasFlag(FLAG_WIDE_REF) ||
+    } else if (get(1)->isRefOrWideRef() ||
                lhsTypeSym->hasFlag(FLAG_WIDE_CLASS)) {
-      if (get(2)->isRef())
+      if (get(2)->isRefOrWideRef())
         codegenAssign(codegenDeref(lhs), codegenDeref(rhs));
       else
         codegenAssign(codegenDeref(lhs), rhs);
 
     } else {
-      codegenAssign(lhs, rhs);
+      GenRet rg = rhs;
+      if (rhs->isRefOrWideRef()) {
+        rg = codegenDeref(rg);
+      }
+      codegenAssign(lhs, rg);
     }
 
     break;
