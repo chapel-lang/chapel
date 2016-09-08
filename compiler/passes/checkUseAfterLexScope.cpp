@@ -179,6 +179,15 @@ static SyncGraph* inlineCFG(SyncGraph* inlineNode, SyncGraph* branch);
 static SyncGraphVec getCopyofGraph(SyncGraph* start, FnSymbol* f);
 static SyncGraph* nextSyncPoint(SyncGraph* start);
 static void provideWarning(SymExpr* expr, ExternVarDetails* var);
+static bool sync(SyncGraph* source, SyncGraph* dest);
+static void collectNextSyncPoints(SyncGraphVec& startPoints, SyncGraphVec& syncPoints);
+static void getSyncPoints(SyncGraph* source, SyncGraphVec& potentialDest, SyncGraphVec& syncPoints);
+static bool threadedMahjong(SyncGraph* sourceSyncPoint, SyncGraphVec& destSyncPoints);
+static void collectNewBegins(SyncGraph* start, SyncGraph* end, SyncGraphVec& destSyncPoints);
+static void removeNewBegins(SyncGraphVec& nextSourceBegins, SyncGraphVec&  destSyncPoints);
+static SyncGraph* pullUpNextSyncNode(SyncGraph* curNode, SyncGraphVec& destSyncPoints);
+static void pullDownSyncNode(SyncGraph* curNode, SyncGraph * prevNode, SyncGraphVec& destSyncPoints);
+
 /************** HEADER ENDS *******************/
 
 
@@ -489,7 +498,7 @@ static SyncGraph* nextSyncPoint(SyncGraph* start) {
   return NULL;	
 }
 
-static void collectAllAvailableBeginGraphs(SyncGraph* root, SyncGraphVec& endPoints, SyncGraphVec& taskPoints){
+static void collectAllAvailableBeginGraphs(SyncGraph* root, SyncGraphVec& endPoints, SyncGraphVec& taskPoints) {
   SyncGraph* cur  = root;
   while (cur != NULL && endPoints.in(cur) == NULL) {
     if (cur->fChild != NULL && cur->fChild->fnSymbol->hasFlag(FLAG_BEGIN)){
@@ -508,41 +517,131 @@ static void provideWarning(SymExpr* expr, ExternVarDetails* var) {
   USR_WARN(expr,"Potential unsafe (use after free) use of variable %s here. Please make sure the variable use is prperly synced", var->varName);
 }
 
+static void collectNewBegins(SyncGraph* start, SyncGraph* end, SyncGraphVec& destSyncPoints) {
+  SyncGraph* curNode = start;
+  while (curNode  != NULL && curNode != end) {
+    if(curNode->fChild != NULL && curNode->fChild->fnSymbol->hasFlag(FLAG_BEGIN))
+      destSyncPoints.add(curNode->fChild);
+  }
+}
 
-static boolean threadeMahjong (SyncGraph* sourceSyncPoint, SyncGraph* root, SyncGraphVec& destSyncPoints, SyncGraphVec& taskPoints) {
-  bool updatedFlag = true;
-  bool foundSyncnode  = flase;
-  SyncGraphVec syncPoints;
-  endPoints.add(sourceSyncPoint);
-  endPoints.add(curUseInfo->useNode);
-  collectNextSyncPoints(taskPoints, destSyncPoints);
-  while(sourceSyncPoint != NULL && updatedFlag == true && destSyncPoints.length() != 0) {
-    updatedFlag = false;
-    // sync nodes and 
-    foundSyncNode = getSyncPoints(sourceSyncPoint, destSyncPoints, syncPoints);
-    if( foundSyncNode ) {
-      if(syncPoints.count() > 1){
-	// more than one sync nodes
-	// if single collect all
-	// else collect one and proceed.
-	sourceSyncPoint = nextSyncPoint(SourceSyncPoint);
-      }
-      
-    } else {
-      forv_Vec(SyncGraph, toSyncNode, destSyncPoints){
-	foundSyncNode = getSyncPoints(toSyncNode, destSyncPoints, syncPoints);
-	if( foundSyncNode ) {
-	  if(syncPoints.count() > 1){
-	    // more than one sync nodes	    
-	    // if single collect all
-	    // else collect one and proceed. 
+static void removeNewBegins(SyncGraphVec& nextSourceBegins, SyncGraphVec&  destSyncPoints) {
+  forv_Vec(SyncGraph, beginNode, nextSourceBegins) {
+    destSyncPoints.remove(destSyncPoints.index(beginNode));
+  }
+}
 
-	    
-	  }
-	}
-      }
+static SyncGraph* pullUpNextSyncNode(SyncGraph* curNode, SyncGraphVec& destSyncPoints) {
+  SyncGraph* nextNode = nextSyncPoint(curNode);
+  destSyncPoints.remove(destSyncPoints.index(curNode));
+  if(nextNode != NULL) destSyncPoints.add(nextNode);
+  return nextNode;
+}
+
+static void pullDownSyncNode(SyncGraph* curNode, SyncGraph* prevNode, SyncGraphVec& destSyncPoints) {
+  if(curNode != NULL) 
+    destSyncPoints.remove(destSyncPoints.index(curNode));
+  destSyncPoints.add(prevNode);
+}
+
+
+
+static bool sync(SyncGraph* source, SyncGraph* dest) {
+  bool compatible = false;
+  switch(source->syncType) {
+  case NODE_SINGLE_WAIT_FULL:
+    if(dest->syncType == NODE_SINGLE_SIGNAL_FULL)
+      compatible = true;
+    break;
+    
+  case  NODE_SINGLE_SIGNAL_FULL:
+    if(dest->syncType == NODE_SINGLE_WAIT_FULL)
+      compatible = true;
+    break;
+
+  case NODE_SYNC_SIGNAL_FULL:
+    if(dest->syncType == NODE_SYNC_SIGNAL_EMPTY)
+      compatible = true;
+    break;
+
+  case NODE_SYNC_SIGNAL_EMPTY:
+    if(dest->syncType == NODE_SYNC_SIGNAL_FULL)
+      compatible = true;
+    break;
+    
+  default:
+      return false;
+  }
+  if(compatible)
+    if(dest->syncVar.compare(source->syncVar) == 0) {
+      return true;
+    }
+    return false;
+}
+
+static void getSyncPoints(SyncGraph* source, SyncGraphVec& potentialDest, SyncGraphVec& syncPoints) {
+  forv_Vec(SyncGraph, dest, potentialDest) {
+    if(sync(source,dest)) {
+      syncPoints.add(dest);
     }
   }
+}
+
+static bool threadedMahjong(SyncGraph* sourceSyncPoint, SyncGraphVec& destSyncPoints) {
+  SyncGraphVec syncPoints;
+  SyncGraphVec newSourceBegins;
+  SyncGraphVec newDestBegins;
+  bool sucess= false;
+  if(sourceSyncPoint == NULL)   // endof recursion
+    return true;
+  if(destSyncPoints.count() == 0)
+    return false;
+  getSyncPoints(sourceSyncPoint, destSyncPoints, syncPoints);
+  SyncGraph* nextSourceNode = sourceSyncPoint;
+  collectNewBegins(sourceSyncPoint, nextSourceNode, newSourceBegins);
+  destSyncPoints.append(newSourceBegins);
+  forv_Vec(SyncGraph, toSyncNode, syncPoints) {
+    // TODO : Handle SingleNode
+    SyncGraph* next = pullUpNextSyncNode(toSyncNode, destSyncPoints);
+    collectNewBegins(toSyncNode, next, newDestBegins);
+    destSyncPoints.append(newDestBegins);
+    sucess = threadedMahjong (nextSourceNode, destSyncPoints);
+    if(sucess) return sucess;
+    removeNewBegins(newDestBegins, destSyncPoints);
+    pullDownSyncNode(next, toSyncNode, destSyncPoints);
+  }
+
+  removeNewBegins(newSourceBegins, destSyncPoints);
+  
+  // reset begins as well
+  
+  forv_Vec(SyncGraph, destSyncNode, destSyncPoints){
+    //TODO : Handle Single Node
+    syncPoints.clear();
+    newSourceBegins.clear();
+    getSyncPoints(destSyncNode, destSyncPoints, syncPoints);
+    SyncGraph* nextDestSyncNode = NULL;
+    if(syncPoints.count() > 0){
+      nextDestSyncNode = pullUpNextSyncNode(destSyncNode, destSyncPoints);
+      collectNewBegins(destSyncNode, nextDestSyncNode, newSourceBegins);
+      destSyncPoints.append(newSourceBegins);
+    }
+    forv_Vec(SyncGraph, toSyncNode, syncPoints) {
+      SyncGraph* nextToSyncNode = pullUpNextSyncNode(toSyncNode,  destSyncPoints);
+      newDestBegins.clear();
+      collectNewBegins(toSyncNode, nextToSyncNode, newDestBegins);
+      destSyncPoints.append(newDestBegins);
+      sucess = threadedMahjong (sourceSyncPoint, destSyncPoints);
+      if(sucess) return sucess;
+      removeNewBegins(newDestBegins, destSyncPoints);
+      pullDownSyncNode(nextToSyncNode, toSyncNode, destSyncPoints);
+    }
+    if(syncPoints.count() > 0) {
+      removeNewBegins(newSourceBegins, destSyncPoints);
+      pullDownSyncNode(nextDestSyncNode, destSyncNode, destSyncPoints);
+    }
+  }
+  return false;
 }
 
 static void checkOrphanStackVar(SyncGraph *root) {
@@ -562,18 +661,21 @@ static void checkOrphanStackVar(SyncGraph *root) {
      //    INT_ASSERT(cur->usePoints.length() == cur->useNodes.length());
      forv_Vec(UseInfo, curUseInfo, cur->usePoints){
        // provide warning for obvious cases.
-       if( nextSyncPoint(curUseInfo->useNode) == NULL || sourceSyncPoint == NULL)
+       if( nextSyncPoint(curUseInfo->useNode) == NULL || sourceSyncPoint == NULL) {
 	 provideWarning(curUseInfo->usePoint, cur);
-       else {
+       } else {
+	 endPoints.add(sourceSyncPoint);
+	 endPoints.add(curUseInfo->useNode);
 	 collectAllAvailableBeginGraphs(root, endPoints, taskPoints);
-	 bool sucess = threadedMahjong();
+	 collectNextSyncPoints(taskPoints, destSyncPoints);
+	 bool sucess = threadedMahjong(sourceSyncPoint, destSyncPoints);
 	 if(sucess) {
 	   provideWarning(curUseInfo->usePoint,cur);
 	 }
        }
        endPoints.clear();
        taskPoints.clear();
-       destPoints.clear();
+       destSyncPoints.clear();
      }
    }   
 }
