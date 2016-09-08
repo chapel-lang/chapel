@@ -64,6 +64,8 @@ class CSR: BaseDist {
 }
 
 class CSRDom: BaseSparseDomImpl {
+  use RangeChunk;
+
   var dist: CSR;
 
   var rowRange: range(idxType);

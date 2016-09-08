@@ -17,112 +17,204 @@
  * limitations under the License.
  */
 
+/*
+ * Enum and uses.
+ */
 enum RemElems {
-  Dist,
-  Tail
+  Thru, // 2, 3, 2, 3 
+  Pack, // 3, 3, 3, 1
+  Mod // 3, 3, 2, 2
 }
 use RemElems;
 use BoundedRangeType;
 
+
+/*
+ * Range-based interface, iterator and query.
+ * idx in query is zero based.
+ */
+
 iter chunks(
   r: range(?RT, bounded, ?S),
   numChunks: integral,
-  remPol: RemElems = Dist): range(RT, bounded, S)
+  remPol: RemElems = Thru): range(RT, bounded, S)
 {
   for (startOrder, endOrder) in chunksOrder(r, numChunks, remPol) {
-    var start = r.orderToIndex(startOrder);
-    var end = r.orderToIndex(endOrder);
+    const start = r.orderToIndex(startOrder);
+    const end = r.orderToIndex(endOrder);
     yield if S
       then start..end by r.stride
       else start..end;
   }
 }
 
-iter chunksOrder(
-  r: range(?RT, bounded, ?),
-  numChunks: integral,
-  remPol: RemElems = Dist): 2*RT
-{
-  var nElems = r.length: RT;
-  var nChunks = numChunks: RT;
-
-  var div = nElems / nChunks;
-  var rem = nElems % nChunks;
-   
-  for i in 1..nChunks {
-    yield if remPol == Dist
-      then chunkOrderDist(div, rem, nElems, nChunks, i)
-      else chunkOrderTail(div, nElems, nChunks, i);
-  }
-}
-
-// Divide r into (almost) equal numChunks pieces, return the i-th piece.
 proc chunk(
   r: range(?RT, bounded, ?S),
   numChunks: integral,
-  i: integral,
-  remPol: RemElems = Dist): range(RT, bounded, S)
+  idx: integral,
+  remPol: RemElems = Thru): range(RT, bounded, S)
 {
-  var (startOrder, endOrder) = chunkOrder(r, numChunks, i, remPol);
-  var start = r.orderToIndex(startOrder);
-  var end = r.orderToIndex(endOrder);
+  const (startOrder, endOrder) = chunkOrder(r, numChunks, idx, remPol);
+  const start = r.orderToIndex(startOrder);
+  const end = r.orderToIndex(endOrder);
   return if S
     then start..end by r.stride
     else start..end;
 }
 
-proc chunkOrder(
+
+/*
+ * Order-based interface, iterator and query.
+ * Orders are zero-based "indices" into a range. 
+ * idx in query is zero-based.
+ */
+
+iter chunksOrder(
   r: range(?RT, bounded, ?),
   numChunks: integral,
-  i: integral,
-  remPol: RemElems = Dist): 2*RT
+  remPol: RemElems = Thru): 2*RT
 {
-  var nElems = r.length: RT;
-  var nChunks = numChunks: RT;
-  var idx = i: RT;
+  if r.length == 0 || numChunks <= 0 then
+    return;
+  const nElems = r.length;
+  const nChunks = numChunks: RT;
 
-  var div = nElems / nChunks;
-  if remPol == Dist {
-    var rem = nElems % nChunks;
-    return chunkOrderDist(div, rem, nElems, nChunks, idx);
-  } else {
-    return chunkOrderTail(div, nElems, nChunks, idx);
+  var chunkSize, rem: RT;
+  if remPol == Pack {
+    chunkSize = nElems / nChunks;
+    if chunkSize * nChunks != nElems then
+      chunkSize += 1;
+  } else { // Mod
+    chunkSize = nElems / nChunks;
+    rem = nElems - chunkSize * nChunks;
+  }
+
+  for i in 0..#nChunks {
+    var chunk: 2*RT;
+    if remPol == Thru {
+      chunk = chunkOrderThru(nElems, nChunks, i);
+    } else if remPol == Pack {
+       chunk = chunkOrderPack(chunkSize, nElems, i);
+    } else { // Mod
+      chunk = chunkOrderMod(chunkSize, rem, nElems, nChunks, i);
+    }
+    yield chunk;
   }
 }
 
-// remainder elements distributed over chunks
-// zero-based indexing
-private proc chunkOrderDist(
-  div: ?I,
+proc chunkOrder(
+  r: range(?RT, bounded, ?),
+  numChunks: integral,
+  idx: integral,
+  remPol: RemElems = Thru): 2*RT
+{
+  if r.length == 0 || numChunks <= 0 || idx > numChunks then
+    return (1, 0);
+
+  const nElems = r.length;
+  const nChunks = numChunks: RT;
+  const i = idx: RT;
+
+  if remPol == Thru {
+    return chunkOrderThru(nElems, nChunks, i);
+  } else if remPol == Pack {
+    var chunkSize = nElems / nChunks;
+    if chunkSize * nChunks != nElems then
+      chunkSize += 1;
+    return chunkOrderPack(chunkSize, nElems, i);
+  } else { // Mod
+    const chunkSize = nElems / nChunks;
+    const rem = nElems - chunkSize * nChunks;
+    return chunkOrderMod(chunkSize, rem, nElems, nChunks, i);
+  }
+}
+
+proc whichChunk(
+  r: range(?RT, bounded, ?),
+  numChunks: integral,
+  val: integral,
+  remPol: RemElems = Thru): RT
+{
+  assert(r.length != 0 && numChunks > 0);
+
+  const nElems = r.length;
+  const nChunks = numChunks: RT;
+  const i = r.indexOrder(val);
+
+  assert(i: int != -1);
+
+  if remPol == Thru {
+    return i * nChunks / nElems; 
+  } else if remPol == Pack {
+    var chunkSize = nElems / nChunks;
+    if chunkSize * nChunks != nElems then
+      chunkSize += 1;
+    return i / chunkSize;
+  } else { // Mod
+    const chunkSize = nElems / nChunks;
+    const chunkSizePlus = chunkSize + 1;
+    const rem = nElems - chunkSize * nChunks;
+    const splitPoint = rem * chunkSizePlus;
+    return if i < splitPoint
+      then i / chunkSizePlus 
+      else rem + (i - splitPoint) / chunkSize; 
+  }
+}
+
+/*
+ * Private helpers for order pairs and thereby ranges.
+ * Each corresponds with a remainder policy.
+ * i is a zero-based index.
+ */
+
+// remainder elems distributed throughout 
+private proc chunkOrderThru(
+  nElems: ?I,
+  nChunks: I,
+  i: I): (I, I)
+{
+  const m = nElems * i;
+  const start = if i == 0
+    then 0
+    else ceilXDivByY(m, nChunks);
+  const end = if i == nChunks - 1
+    then nElems - 1
+    else ceilXDivByY(m + nElems, nChunks) - 1;
+  return (start, end);
+}
+
+private proc ceilXDivByY(x, y) return 1 + (x - 1)/y;
+
+// remainder elems packed into all chunks with small tail
+private proc chunkOrderPack(
+  chunkSize: ?I,
+  nElems: I,
+  i: I): (I, I)
+{
+  const start = chunkSize * i;
+  var end = start + chunkSize - 1;
+  if end > nElems then
+    end = nElems;
+  return (start, end); 
+}
+
+// remainder elems distributed over chunks before rem
+private proc chunkOrderMod(
+  chunkSize: ?I,
   rem: I,
   nElems: I,
   nChunks: I,
   i: I): (I, I)
 {
   var start, end: I;
-  if i <= rem {
-    // (div+1) elements per chunk
-    end = i * (div + 1) - 1;
-    start = end - div;
+  if i < rem {
+    // (chunkSize+1) elements per chunk
+    start = i * (chunkSize + 1);
+    end = start + chunkSize;
   } else {
-    // (div) elements per chunk
-    start = nElems - (nChunks - i + 1) * div;
-    end = start + div - 1;
+    // (chunkSize) elements per chunk
+    start = nElems - (nChunks - i) * chunkSize;
+    end = start + chunkSize - 1;
   }
-  return (start, end);
-}
-
-// remainder elements included in last chunk
-// zero-based indexing
-private proc chunkOrderTail(
-  div: ?I,
-  nElems: I,
-  nChunks: I,
-  i: I): (I, I)
-{
-  var start = div * (i - 1);
-  var end = if i == nChunks
-    then nElems
-    else start + div;
   return (start, end);
 }

@@ -20,6 +20,8 @@
 // DefaultSparse.chpl
 //
 module DefaultSparse {
+  use Search;
+  use RangeChunk;
 
   config param debugDefaultSparse = false;
 

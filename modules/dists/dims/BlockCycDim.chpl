@@ -22,7 +22,7 @@
 //
 
 use DimensionalDist2D;
-
+use RangeChunk;
 
 config const BlockCyclicDim_allowParLeader = true;
 config param BlockCyclicDim_enableArrayIterWarning = false;  // 'false' for testing
