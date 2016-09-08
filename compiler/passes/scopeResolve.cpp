@@ -28,6 +28,7 @@
 #include "clangUtil.h"
 #include "expr.h"
 #include "externCResolve.h"
+#include "initializerRules.h"
 #include "LoopStmt.h"
 #include "passes.h"
 #include "stlUtil.h"
@@ -1189,12 +1190,18 @@ static void build_constructor(AggregateType* ct) {
 
         toBlockStmt(exprType)->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
       }
-
     } else if (hadType &&
                !field->isType() &&
                !field->hasFlag(FLAG_PARAM)) {
       init = new CallExpr(PRIM_INIT, exprType->copy());
     }
+
+    // This is set up for initializers (but we don't know if this type has one
+    // just yet).  This must be done before the initCopies or
+    // _createFieldDefault information is wrapped around the init, because we
+    // likely don't need those for the initializer omitted fields
+    // TODO: verify my claim about the _createFieldDefault call
+    storeFieldInit(ct, field->name, init);
 
     if (!field->isType() && !field->hasFlag(FLAG_PARAM)) {
       if (hadType)

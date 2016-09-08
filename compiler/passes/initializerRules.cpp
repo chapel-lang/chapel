@@ -26,8 +26,14 @@
 #include "symbol.h"
 #include "type.h"
 
+#include <map>
+
 // Helper file for verifying the rules placed on initializers, and providing
 // the extra functionality associated with them.
+
+// Map storing the default initialization for fields of a type.  Will be used
+// when traversing initializer bodies if a field is omitted
+static std::map<AggregateType*, std::map<const char*, Expr*>* > defaultInits;
 
 void temporaryInitializerFixup(CallExpr* call) {
   if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
@@ -133,6 +139,10 @@ const char* getFieldName(Expr* curExpr);
 static
 bool isLaterFieldAccess(DefExpr* curField, const char* fieldname);
 
+static
+void insertOmittedField(Expr* next, const char* nextField,
+                        std::map<const char*, Expr*>* inits);
+
 
 static
 bool isParentField(AggregateType* t, const char* name);
@@ -147,6 +157,8 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
     seenField[0] = true;
   }
   int index = 0;
+
+  std::map<const char*, Expr*>* inits = defaultInits[t];
 
   Expr* curExpr = body->body.head;
   // We are guaranteed to never reach the end of the body, due to the
@@ -175,7 +187,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
           seenField[index] = true;
           index++;
         } else if (isLaterFieldAccess(curField, fieldname)) {
-          // TODO: call to add omitted statement
+          insertOmittedField(curExpr, curField->sym->name, inits);
           index++;
           curField = toDefExpr(curField->next);
         } else {
@@ -190,7 +202,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
     } else if (curField != NULL) {
       // only fields left
 
-      // TODO: call to add omitted statement
+      insertOmittedField(curExpr, curField->sym->name, inits);
       curField = toDefExpr(curField->next);
       index++;
     } else {
@@ -295,5 +307,45 @@ bool isParentField(AggregateType* t, const char *name) {
     return false;
   } else {
     return false;
+  }
+}
+
+static
+void insertOmittedField(Expr* next, const char* nextField,
+                        std::map<const char*, Expr*>* inits) {
+  SET_LINENO(next);
+  // Do something appropriate with "super"
+  if (!strcmp(nextField, "super")) {
+    return;
+  }
+  // For all other fields, insert an assignment into that field with the given
+  // initialization, if we have one.
+
+  Expr* initExpr = (*inits)[nextField];
+
+  // If that field has no initialization or type, we can't insert the omitted
+  // initialization for it, it must be explicitly initialized.
+  if (initExpr == NULL) {
+    USR_FATAL_CONT(next, "can't omit initialization of field \"%s\", no type or default value provided", nextField);
+    return;
+  }
+  CallExpr* thisAccess = new CallExpr(".",
+                                      toFnSymbol(next->parentSymbol)->_this,
+                                      new_CStringSymbol(nextField));
+  CallExpr* newInit = new CallExpr("=", thisAccess,
+                                   initExpr->copy());
+  next->insertBefore(newInit);
+}
+
+// Takes in the type, the name of the field, and the expr used to initialize it.
+// This will be stored in a Map of type to a Map of fields to init expressions,
+// which will be used to provide omitted initialization of fields when
+// traversing the body of a user-defined initializer.
+void storeFieldInit(AggregateType* t, const char* fieldname, Expr* init) {
+  if (defaultInits[t] != NULL) {
+    defaultInits[t]->insert(std::pair<const char*, Expr*>(fieldname, init));
+  } else {
+    defaultInits[t] = new std::map<const char*, Expr*>;
+    defaultInits[t]->insert(std::pair<const char*, Expr*>(fieldname, init));
   }
 }
