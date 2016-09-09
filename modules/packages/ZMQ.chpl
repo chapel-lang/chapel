@@ -360,7 +360,7 @@ module ZMQ {
   private extern const ZMQ_MORE: c_int;
 
   // -- Send/Recv Options
-  
+
   /*
     The flag value for :proc:`Socket.send()` and :proc:`Socket.recv()` to
     indicate that the associated send or receive operation should be performed
@@ -418,8 +418,10 @@ module ZMQ {
   pragma "no doc"
   class ContextClass: RefCountBase {
     var ctx: c_void_ptr;
+    var home: locale;
 
     proc ContextClass() {
+      this.home = here;
       this.ctx = zmq_ctx_new();
       if this.ctx == nil {
         var errmsg = zmq_strerror(errno):string;
@@ -428,12 +430,15 @@ module ZMQ {
     }
 
     proc ~ContextClass() {
-      var ret = zmq_ctx_term(this.ctx):int;
-      if ret == -1 {
-        var errmsg = zmq_strerror(errno):string;
-        halt("Error in ~ContextClass(): %s\n", errmsg);
+      on this.home {
+        var ret = zmq_ctx_term(this.ctx):int;
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          halt("Error in ~ContextClass(): %s\n", errmsg);
+        }
       }
     }
+
   } // class ContextClass
 
   /*
@@ -514,8 +519,10 @@ module ZMQ {
   pragma "no doc"
   class SocketClass: RefCountBase {
     var socket: c_void_ptr;
+    var home: locale;
 
     proc SocketClass(ctx: Context, sockType: int) {
+      this.home = here;
       this.socket = zmq_socket(ctx.classRef.ctx, sockType:c_int);
       if this.socket == nil {
         var errmsg = zmq_strerror(errno):string;
@@ -524,12 +531,14 @@ module ZMQ {
     }
 
     proc ~SocketClass() {
-      var ret = zmq_close(socket):int;
-      if ret == -1 {
-        var errmsg = zmq_strerror(errno):string;
-        halt("Error in ~SocketClass(): %s\n", errmsg);
+      on this.home {
+        var ret = zmq_close(socket):int;
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          halt("Error in ~SocketClass(): %s\n", errmsg);
+        }
+        socket = c_nil;
       }
-      socket = c_nil;
     }
   }
 
@@ -552,7 +561,8 @@ module ZMQ {
     pragma "no doc"
     proc Socket(ctx: Context, sockType: int) {
       context = ctx;
-      acquire(new SocketClass(ctx, sockType));
+      on ctx.classRef.home do
+        acquire(new SocketClass(ctx, sockType));
     }
 
     pragma "no doc"
@@ -590,14 +600,16 @@ module ZMQ {
       :type linger: `int`
      */
     proc close(linger: int = unset) {
-      if linger != unset then
-        setsockopt(LINGER, linger:c_int);
-      var ret = zmq_close(classRef.socket):int;
-      if ret == -1 {
-        var errmsg = zmq_strerror(errno):string;
-        writef("Error in Socket.close(): %s\n", errmsg);
+      on classRef.home {
+        if linger != unset then
+          setsockopt(LINGER, linger:c_int);
+        var ret = zmq_close(classRef.socket):int;
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          writef("Error in Socket.close(): %s\n", errmsg);
+        }
+        classRef.socket = c_nil;
       }
-      classRef.socket = c_nil;
     }
 
     /*
@@ -605,10 +617,13 @@ module ZMQ {
       connections.
      */
     proc bind(endpoint: string) {
-      var ret = zmq_bind(classRef.socket, endpoint.c_str());
-      if ret == -1 {
-        var errmsg = zmq_strerror(errno):string;
-        halt("Error in Socket.bind(): ", errmsg);
+      on classRef.home {
+        var tmp = endpoint;
+        var ret = zmq_bind(classRef.socket, tmp.c_str());
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          halt("Error in Socket.bind(): ", errmsg);
+        }
       }
     }
 
@@ -616,10 +631,13 @@ module ZMQ {
       Connect the socket to the specified `endpoint`.
      */
     proc connect(endpoint: string) {
-      var ret = zmq_connect(classRef.socket, endpoint.c_str());
-      if ret == -1 {
-        var errmsg = zmq_strerror(errno):string;
-        writef("Error in Socket.connect(): %s\n", errmsg);
+      on classRef.home {
+        var tmp = endpoint;
+        var ret = zmq_connect(classRef.socket, tmp.c_str());
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          writef("Error in Socket.connect(): %s\n", errmsg);
+        }
       }
     }
 
@@ -634,24 +652,28 @@ module ZMQ {
       :arg value: the socket option value
      */
     proc setsockopt(option: int, value: ?T) where isPODType(T) {
-      var copy: T = value;
-      var ret = zmq_setsockopt(classRef.socket, option:c_int,
-                               c_ptrTo(copy):c_void_ptr,
-                               numBytes(T)): int;
-      if ret == -1 {
-        var errmsg = zmq_strerror(errno):string;
-        halt("Error in Socket.setsockopt(): ", errmsg);
+      on classRef.home {
+        var copy: T = value;
+        var ret = zmq_setsockopt(classRef.socket, option:c_int,
+                                 c_ptrTo(copy):c_void_ptr,
+                                 numBytes(T)): int;
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          halt("Error in Socket.setsockopt(): ", errmsg);
+        }
       }
     }
 
     pragma "no doc"
     proc setsockopt(option: int, value: string) {
-      var ret = zmq_setsockopt(classRef.socket, option:c_int,
-                               value.c_str():c_void_ptr,
-                               value.length:size_t): int;
-      if ret == -1 {
-        var errmsg = zmq_strerror(errno):string;
-        halt("Error in Socket.setsockopt(): ", errmsg);
+      on classRef.home {
+        var ret = zmq_setsockopt(classRef.socket, option:c_int,
+                                 value.c_str():c_void_ptr,
+                                 value.length:size_t): int;
+        if ret == -1 {
+          var errmsg = zmq_strerror(errno):string;
+          halt("Error in Socket.setsockopt(): ", errmsg);
+        }
       }
     }
 
@@ -683,17 +705,20 @@ module ZMQ {
     // send, strings
     pragma "no doc"
     proc send(data: string, flags: int = 0) {
-      // message part 1, length
-      send(data.length:int, ZMQ_SNDMORE | flags);
-      // message part 2, string
-      while (-1 == zmq_send(classRef.socket, data.c_str():c_void_ptr,
-                            data.length:size_t,
-                            (ZMQ_DONTWAIT | flags):c_int)) {
-        if errno == EAGAIN then
-          chpl_task_yield();
-        else {
-          var errmsg = zmq_strerror(errno):string;
-          halt("Error in Socket.send(%s): %s\n".format(string:string, errmsg));
+      on classRef.home {
+        var copy = data;
+        // message part 1, length
+        send(copy.length:int, ZMQ_SNDMORE | flags);
+        // message part 2, string
+        while (-1 == zmq_send(classRef.socket, copy.c_str():c_void_ptr,
+                              copy.length:size_t,
+                              (ZMQ_DONTWAIT | flags):c_int)) {
+          if errno == EAGAIN then
+            chpl_task_yield();
+          else {
+            var errmsg = zmq_strerror(errno):string;
+            halt("Error in Socket.send(%s): %s\n".format(string:string, errmsg));
+          }
         }
       }
     }
@@ -701,15 +726,17 @@ module ZMQ {
     // send, numeric types
     pragma "no doc"
     proc send(data: ?T, flags: int = 0) where isNumericType(T) {
-      var temp = data;
-      while (-1 == zmq_send(classRef.socket, c_ptrTo(temp):c_void_ptr,
-                            numBytes(T):size_t,
-                            (ZMQ_DONTWAIT | flags):c_int)) {
-        if errno == EAGAIN then
-          chpl_task_yield();
-        else {
-          var errmsg = zmq_strerror(errno):string;
-          halt("Error in Socket.send(%s): %s\n".format(T:string, errmsg));
+      on classRef.home {
+        var copy = data;
+        while (-1 == zmq_send(classRef.socket, c_ptrTo(copy):c_void_ptr,
+                              numBytes(T):size_t,
+                              (ZMQ_DONTWAIT | flags):c_int)) {
+          if errno == EAGAIN then
+            chpl_task_yield();
+          else {
+            var errmsg = zmq_strerror(errno):string;
+            halt("Error in Socket.send(%s): %s\n".format(T:string, errmsg));
+          }
         }
       }
     }
@@ -724,10 +751,13 @@ module ZMQ {
     pragma "no doc"
     proc send(data: ?T, flags: int = 0) where (isRecordType(T) &&
                                                (!isString(T))) {
-      param N = numFields(T);
-      for param i in 1..(N-1) do
-        send(getField(data,i), ZMQ_SNDMORE | flags);
-      send(getField(data,N), flags);
+      on classRef.home {
+        var copy = data;
+        param N = numFields(T);
+        for param i in 1..(N-1) do
+          send(getField(copy,i), ZMQ_SNDMORE | flags);
+        send(getField(copy,N), flags);
+      }
     }
 
     /*
@@ -750,37 +780,45 @@ module ZMQ {
     // recv, strings
     pragma "no doc"
     proc recv(type T, flags: int = 0) where isString(T) {
-      var len = recv(int, flags);
-      var buf = c_calloc(uint(8), (len+1):size_t);
-      var str = new string(buff=buf, length=len, size=len+1,
-                           owned=true, needToCopy=false);
-      while (-1 == zmq_recv(classRef.socket, buf:c_void_ptr, len:size_t,
-                            (ZMQ_DONTWAIT | flags):c_int)) {
-        if errno == EAGAIN then
-          chpl_task_yield();
-        else {
-          var errmsg = zmq_strerror(errno):string;
-          halt("Error in Socket.recv(%s): %s\n".format(T:string, errmsg));
+      var ret: T;
+      on classRef.home {
+        var len = recv(int, flags);
+        var buf = c_calloc(uint(8), (len+1):size_t);
+        var str = new string(buff=buf, length=len, size=len+1,
+                             owned=true, needToCopy=false);
+        while (-1 == zmq_recv(classRef.socket, buf:c_void_ptr, len:size_t,
+                              (ZMQ_DONTWAIT | flags):c_int)) {
+          if errno == EAGAIN then
+            chpl_task_yield();
+          else {
+            var errmsg = zmq_strerror(errno):string;
+            halt("Error in Socket.recv(%s): %s\n".format(T:string, errmsg));
+          }
         }
+        ret = str;
       }
-      return str;
+      return ret;
     }
 
     // recv, numeric types
     pragma "no doc"
     proc recv(type T, flags: int = 0) where isNumericType(T) {
-      var data: T;
-      while (-1 == zmq_recv(classRef.socket, c_ptrTo(data):c_void_ptr,
-                            numBytes(T):size_t,
-                            (ZMQ_DONTWAIT | flags):c_int)) {
-        if errno == EAGAIN then
-          chpl_task_yield();
-        else {
-          var errmsg = zmq_strerror(errno):string;
-          halt("Error in Socket.recv(%s): %s\n".format(T:string, errmsg));
+      var ret: T;
+      on classRef.home {
+        var data: T;
+        while (-1 == zmq_recv(classRef.socket, c_ptrTo(data):c_void_ptr,
+                              numBytes(T):size_t,
+                              (ZMQ_DONTWAIT | flags):c_int)) {
+          if errno == EAGAIN then
+            chpl_task_yield();
+          else {
+            var errmsg = zmq_strerror(errno):string;
+            halt("Error in Socket.recv(%s): %s\n".format(T:string, errmsg));
+          }
         }
+        ret = data;
       }
-      return data;
+      return ret;
     }
 
     // recv, enumerated types
@@ -792,10 +830,14 @@ module ZMQ {
     // recv, records (of other supported things)
     pragma "no doc"
     proc recv(type T, flags: int = 0) where (isRecordType(T) && (!isString(T))) {
-      var data: T;
-      for param i in 1..numFields(T) do
-        getFieldRef(data,i) = recv(getField(data,i).type);
-      return data;
+      var ret: T;
+      on classRef.home {
+        var data: T;
+        for param i in 1..numFields(T) do
+          getFieldRef(data,i) = recv(getField(data,i).type);
+        ret = data;
+      }
+      return ret;
     }
 
   } // record Socket
