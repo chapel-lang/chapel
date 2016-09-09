@@ -146,7 +146,7 @@ module ChapelDistribution {
     // default distribution's list of domains
     // AKA tracks domains
     proc trackDomains() param return true;
-  
+
     // dynamically-dispatched counterpart of linksDistribution
     proc dsiTrackDomains() return true;
 
@@ -310,8 +310,8 @@ module ChapelDistribution {
   
     // dynamically-dispatched counterpart of linksDistribution
     proc dsiLinksDistribution() return true;
- 
-    // Overload to to custom domain destruction
+
+    // Overload to to customize domain destruction
     proc dsiDestroyDom() { }
 
     proc dsiDisplayRepresentation() { }
@@ -470,7 +470,7 @@ module ChapelDistribution {
     proc ~BaseSparseDom() {
       // this is a bug workaround
     }
- 
+
     proc dsiClear() {
       halt("clear not implemented for this distribution - BaseSparseDom");
     }
@@ -550,7 +550,7 @@ module ChapelDistribution {
     proc ~BaseAssociativeDom() {
       // this is a bug workaround
     }
- 
+
     proc dsiClear() {
       halt("clear not implemented for this distribution");
     }
@@ -566,7 +566,7 @@ module ChapelDistribution {
     proc ~BaseOpaqueDom() {
       // this is a bug workaround
     }
- 
+
     proc dsiClear() {
       halt("clear not implemented for this distribution");
     }
@@ -780,7 +780,7 @@ module ChapelDistribution {
       }
     }
   }
-  
+
   // delete helpers
   proc _delete_dist(dist:BaseDist) {
     dist.dsiDestroyDist();

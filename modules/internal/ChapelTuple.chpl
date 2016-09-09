@@ -61,7 +61,7 @@ module ChapelTuple {
   }
 
   // tuple type (no refs)
-  pragma "do not allow ref" 
+  pragma "do not allow ref"
   pragma "build tuple"
   pragma "build tuple type"
   inline proc _build_tuple_noref(type t...) type {
@@ -73,7 +73,7 @@ module ChapelTuple {
   pragma "build tuple"
   inline proc _build_tuple_always_allow_ref(x...)
     return x;
- 
+
   inline proc chpl__unref(type t) type {
     if isTupleType(t) then
       return _build_tuple_noref((...t));
@@ -89,7 +89,7 @@ module ChapelTuple {
     // body inserted during generic instantiation
   }
 
-  pragma "do not allow ref" 
+  pragma "do not allow ref"
   pragma "build tuple"
   pragma "build tuple type"
   pragma "star tuple"

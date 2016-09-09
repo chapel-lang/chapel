@@ -66,7 +66,7 @@ module DefaultRectangular {
 
     proc dsiEqualDMaps(d:DefaultDist) param return true;
     proc dsiEqualDMaps(d) param return false;
-    
+
     proc trackDomains() param return false;
     proc dsiTrackDomains()    return false;
 
@@ -112,7 +112,7 @@ module DefaultRectangular {
     proc dsiMyDist() {
       return dist;
     }
- 
+
     proc dsiDisplayRepresentation() {
       writeln("ranges = ", ranges);
     }
@@ -687,7 +687,7 @@ module DefaultRectangular {
 
     // can the compiler create this automatically?
     proc dsiGetBaseDom() return dom;
-  
+
     proc dsiDestroyArr(isalias:bool) {
 
       // data in an array alias will be destroyed when the original array
