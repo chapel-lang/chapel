@@ -668,12 +668,6 @@ module ChapelIO {
   proc halt(s:string) {
     halt(s.localize().c_str());
   }
-/*
-  pragma "no doc"
-  proc halt(s:c_string) {
-    __primitive("chpl_error", c"halt reached - " + s);
-  }
-  */
  
   /*
      Prints an error message to stderr giving the location of the call to
@@ -692,12 +686,6 @@ module ChapelIO {
   proc warning(s:string) {
     __primitive("chpl_warning", s.localize().c_str());
   }
-/*
-  pragma "no doc"
-  proc warning(s:c_string) {
-    __primitive("chpl_warning", s);
-  }
-  */
  
   /*
     Prints a warning to stderr giving the location of the call to ``warning``
