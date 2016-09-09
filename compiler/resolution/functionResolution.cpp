@@ -1350,9 +1350,12 @@ static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType
         if (fits_in_uint(get_width(formalType), var->immediate))
           return true;
   }
-  if (formalType == dtStringC && actualType == dtString)
+  // param strings can coerce between string and c_string
+  if ((formalType == dtString || formalType == dtStringC) &&
+      (actualType == dtString || actualType == dtStringC))
     if (actualSym && actualSym->isImmediate())
       return true;
+
   return false;
 }
 
@@ -2213,7 +2216,8 @@ filterConcreteCandidate(Vec<ResolutionCandidate*>& candidates,
         return;
       }
 
-      if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formal->hasFlag(FLAG_INSTANTIATED_PARAM))) {
+      bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) || formal->intent == INTENT_PARAM;
+      if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formalIsParam)) {
         return;
       }
     }
@@ -2266,7 +2270,8 @@ filterGenericCandidate(Vec<ResolutionCandidate*>& candidates,
 
           }
         } else {
-          if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formal->hasFlag(FLAG_INSTANTIATED_PARAM))) {
+          bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) || formal->intent == INTENT_PARAM;
+          if (!canDispatch(actual->type, actual, formal->type, currCandidate->fn, NULL, formalIsParam)) {
             return;
           }
         }
@@ -6203,7 +6208,11 @@ preFold(Expr* expr) {
                 } else if (oldType == dtString && newType == dtStringC) {
                   result = new SymExpr(new_CStringSymbol(var->immediate->v_string));
                   call->replace(result);
+                } else if (oldType == dtStringC && newType == dtString) {
+                  result = new SymExpr(new_StringSymbol(var->immediate->v_string));
+                  call->replace(result);
                 }
+
               }
             }
           } else if (EnumSymbol* enumSym = toEnumSymbol(sym->var)) {
@@ -7185,6 +7194,7 @@ postFold(Expr* expr) {
       if (sym->var->type != dtUnknown && sym->var->type != val->type) {
         CallExpr* cast = new CallExpr("_cast", sym->var, val);
         sym->replace(cast);
+        // preFold is probably going to replace the _cast call
         result = preFold(cast);
       } else {
         sym->var = val;
