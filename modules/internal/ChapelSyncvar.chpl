@@ -462,6 +462,144 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
+  class _qthreads_synccls {
+    type valType;
+
+    var  value   : valType;
+    var  syncAux : chpl_sync_aux_t;      // Locking, signaling, ...
+
+    proc _qthreads_synccls(type valType) {
+      chpl_sync_initAux(syncAux);
+    }
+
+    proc ~_qthreads_synccls() {
+      chpl_sync_destroyAux(syncAux);
+    }
+
+    proc readFE() {
+      var ret : valType;
+
+      on this {
+        var localRet : valType;
+
+        chpl_rmem_consist_release();
+        chpl_sync_waitFullAndLock(syncAux);
+
+        localRet = value;
+
+        chpl_sync_markAndSignalEmpty(syncAux);
+        chpl_rmem_consist_acquire();
+
+        ret = localRet;
+      }
+
+      return ret;
+    }
+
+    proc readFF() {
+      var ret : valType;
+
+      on this {
+        var localRet : valType;
+
+        chpl_rmem_consist_release();
+        chpl_sync_waitFullAndLock(syncAux);
+
+        localRet = value;
+
+        chpl_sync_markAndSignalFull(syncAux);
+        chpl_rmem_consist_acquire();
+
+        ret = localRet;
+      }
+
+      return ret;
+    }
+
+    proc readXX() {
+      var ret : valType;
+
+      on this {
+        var localRet : valType;
+
+        chpl_rmem_consist_release();
+        chpl_sync_lock(syncAux);
+
+        localRet = value;
+
+        chpl_sync_unlock(syncAux);
+        chpl_rmem_consist_acquire();
+
+        ret = localRet;
+      }
+
+      return ret;
+    }
+
+    proc writeEF(val : valType) {
+      on this {
+        chpl_rmem_consist_release();
+        chpl_sync_waitEmptyAndLock(syncAux);
+
+        value = val;
+
+        chpl_sync_markAndSignalFull(syncAux);
+        chpl_rmem_consist_acquire();
+      }
+    }
+
+    proc writeFF(val : valType) {
+      on this {
+        chpl_rmem_consist_release();
+        chpl_sync_waitFullAndLock(syncAux);
+
+        value = val;
+
+        chpl_sync_markAndSignalFull(syncAux);
+        chpl_rmem_consist_acquire();
+      }
+    }
+
+    proc writeXF(val : valType) {
+      on this {
+        chpl_rmem_consist_release();
+        chpl_sync_lock(syncAux);
+
+        value = val;
+
+        chpl_sync_markAndSignalFull(syncAux);
+        chpl_rmem_consist_acquire();
+      }
+    }
+
+    proc reset() {
+      on this {
+        const defaultValue : valType;
+
+        chpl_rmem_consist_release();
+        chpl_sync_lock(syncAux);
+
+        value = defaultValue;
+
+        chpl_sync_markAndSignalEmpty(syncAux);
+        chpl_rmem_consist_acquire();
+      }
+    }
+
+    proc isFull {
+      var b : bool;
+
+      on this {
+        chpl_rmem_consist_release();
+        b = chpl_sync_isFull(c_ptrTo(value), syncAux);
+        chpl_rmem_consist_acquire();
+      }
+
+      return b;
+    }
+  }
+
+  pragma "no doc"
   proc isSyncValue(x: sync) param  return true;
 
   pragma "no doc"
@@ -761,7 +899,7 @@ private module SyncVarRuntimeSupport {
 }
 
 // Support for aligned_t including the definition, casts, defaultValue, and
-// read/write routines. native qthread sync vars operate on aligned_t vars
+// read/write routines. aligned_t is the type used by native qthreads sync vars
 private module AlignedTSupport {
 
   // Implemented in qthreads tasking layer
