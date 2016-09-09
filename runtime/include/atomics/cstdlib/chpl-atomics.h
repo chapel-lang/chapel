@@ -80,7 +80,7 @@ static inline memory_order _defaultOfMemoryOrder(void) {
 // failure case not have memory_order_release or memory_order_acq_rel.
 // In addition, the compare_exchange failure case cannot have a stronger
 // order than the success case.  We choose the strongest order we can
-// that satisifes those requirements.
+// that satisfies those requirements.
 //
 #define GET_READABLE_ORDER(order) (order != memory_order_release && \
                                    order != memory_order_acq_rel ? \
