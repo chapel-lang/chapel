@@ -893,6 +893,11 @@ createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
         // First argument is the tuple size
         SymExpr* se = toSymExpr(actual);
         VarSymbol* v = toVarSymbol(se->var);
+        if (v == NULL || v->immediate == NULL) {
+          // leads to an error later in resolution.
+          return NULL;
+        }
+
         actualN = v->immediate->int_value();
       } else {
         // Subsequent arguments are tuple types.
