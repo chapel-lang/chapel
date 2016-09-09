@@ -759,3 +759,46 @@ private module SyncVarRuntimeSupport {
   extern proc   chpl_single_isFull(value   : c_void_ptr,
                                    ref aux : chpl_single_aux_t) : bool;
 }
+
+// Support for aligned_t including the definition, casts, defaultValue, and
+// read/write routines. native qthread sync vars operate on aligned_t vars
+private module AlignedTSupport {
+
+  // Implemented in qthreads tasking layer
+  extern type aligned_t;
+
+  // Support casts to/from uint/int/bool. Note that for qthreads aligned_t is
+  // an aligned uint64_t, so casting to/from int assumes 2's compliment.
+  //
+  // TODO add support for casting to/from any primitive type that's no bigger
+  // than 64-bits. This will require doing a memcpy for most of them though.
+  proc castableToAlignedT(type t) param {
+    return isIntegralType(t) || isBoolType(t);
+  }
+  inline proc _cast(type t, x : integral) where t : aligned_t {
+    return __primitive("cast", t, x);
+  }
+  inline proc _cast(type t, x : bool) where t : aligned_t {
+    return __primitive("cast", t, x);
+  }
+  inline proc _cast(type t, x : aligned_t) where castableToAlignedT(t) {
+    return __primitive("cast", t, x);
+  }
+
+  // not just _defaultOf, since the default depends on the "baseType"
+  inline proc defaultOfAlignedT(type t) {
+    const defaultValue : t;
+    return defaultValue : aligned_t;
+  }
+
+  // read/write support
+  proc aligned_t.writeThis(f) {
+    var tmp : uint(64) = this : uint(64);
+    f.write(tmp);
+  }
+  proc aligned_t.readThis(f) {
+    var tmp : uint(64);
+    f.read(tmp);
+    this = tmp : aligned_t;
+  }
+}
