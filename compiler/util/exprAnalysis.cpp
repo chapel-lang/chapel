@@ -33,7 +33,7 @@
  * could distinguish between reads and writes to memory and to take into
  * account alias analysis.
  */
-bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e) {
+bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
   if(safeExprCache.count(e) > 0) {
     return safeExprCache[e];
   }
@@ -53,6 +53,33 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e) {
       if(! isSafePrimitive(ce)){
         safeExprCache[e] = false;
         return false;
+      }
+      else if (exprToMove != NULL) {
+        //
+        // Exposed by AST pattern like this:
+        //            |------- `exprToMove`
+        // (move T (+ A B))
+        // (move A B) -------- `ce`
+        // (move B T)
+        //
+        // Without this check could turn into:
+        //
+        // (move A B)
+        // (move B (+ A B))
+        //
+        // Which is incorrect.
+        //
+        if (ce->isPrimitive(PRIM_MOVE)) {
+          INT_ASSERT(isSymExpr(ce->get(1)));
+          std::vector<SymExpr*> syms;
+          collectSymExprs(exprToMove, syms);
+          for_vector(SymExpr, s, syms) {
+            if (s->var == toSymExpr(ce->get(1))->var) {
+              safeExprCache[e] = false;
+              return false;
+            }
+          }
+        }
       }
     }
   }
