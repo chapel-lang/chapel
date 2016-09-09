@@ -49,7 +49,7 @@ CHPL_AUX_FILESYS to 'hdfs' to enable HDFS support:
 
   export CHPL_AUX_FILESYS=hdfs
 
-The HDFS C API on some platforms freezes using the default q-threads. Use fifo instead.
+The HDFS C API on some platforms freezes using the default qthreads. Use fifo instead.
 
   export CHPL_TASKS=fifo
 
@@ -182,7 +182,7 @@ First reflect your directory structure and version numbers (etc) in the
 
 2. Install Hadoop
 
-   * Download the latest version of Hadoop and unpack it
+   * Download the latest version of Hadoop (minimum version > 2.0) and unpack it
 
    * Now in the unpacked directory, open conf/hadoop-env.sh and edit:
 
@@ -318,7 +318,7 @@ Here is a sample .bashrc for using Hadoop within Chapel:
   #
   # Add Hadoop directories to the Java class path
   #
-  export CLASSPATH=$CLASSPATH:`hadoop classpath --glob`:
+  export CLASSPATH=$CLASSPATH:`hadoop classpath --glob`
 
   #
   # So we don't have to "install" these things
