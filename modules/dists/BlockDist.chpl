@@ -454,7 +454,10 @@ proc Block.dsiEqualDMaps(that) param {
 proc Block.dsiClone() {
   return new Block(boundingBox, targetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
-                   dataParMinGranularity);
+                   dataParMinGranularity,
+                   rank,
+                   idxType,
+                   sparseLayoutType);
 }
 
 proc Block.dsiDestroyDist() {
