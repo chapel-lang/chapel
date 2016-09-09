@@ -1,0 +1,4 @@
+bug: ref to array element dereferenced at declaration/initialization
+
+The reference to A[1] doesn't reflect the updated value after A[1] gets
+assigned because it gets dereferenced when it is initialized. Assigning through the reference causes it to stay a reference.
