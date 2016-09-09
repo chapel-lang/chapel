@@ -1217,6 +1217,7 @@ proc BlockArr.dsiSerialWrite(f) {
 }
 
 proc BlockArr.dsiSlice(d: BlockDom) {
+  // MPF: should this use sparseLayoutType = d.sparseLayoutType ?
   var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
       stridable=d.stridable, dom=d, sparseLayoutType=DefaultDist);
   var thisid = this.locale.id;
@@ -1481,8 +1482,18 @@ proc BlockArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc BlockArr.dsiSupportsBulkTransfer() param return true;
-proc BlockArr.dsiSupportsBulkTransferInterface() param return true;
+proc BlockArr.dsiSupportsBulkTransfer() param {
+  if sparseLayoutType != DefaultDist then
+    return false;
+  else
+    return true;
+}
+proc BlockArr.dsiSupportsBulkTransferInterface() param {
+   if sparseLayoutType != DefaultDist then
+    return false;
+  else
+    return true;
+}
 
 proc BlockArr.doiCanBulkTransfer() {
   if debugBlockDistBulkTransfer then
