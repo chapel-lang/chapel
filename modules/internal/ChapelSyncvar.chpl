@@ -293,21 +293,21 @@ module ChapelSyncvar {
   pragma "no doc"
   proc chpl__readXX(x : _syncvar(?)) return x.readXX();
 
-  proc <=>(lhs: _syncvar, ref rhs) {
+  proc <=>(lhs : _syncvar, ref rhs) {
     const tmp = lhs;
 
     lhs = rhs;
     rhs = tmp;
   }
 
-  proc <=>(ref lhs, rhs: _syncvar) {
+  proc <=>(ref lhs, rhs : _syncvar) {
     const tmp = lhs;
 
     lhs = rhs;
     rhs = tmp;
   }
 
-  proc <=>(lhs: _syncvar, rhs: _syncvar) {
+  proc <=>(lhs : _syncvar, rhs : _syncvar) {
     const tmp = lhs;
 
     lhs = rhs;
@@ -339,10 +339,10 @@ module ChapelSyncvar {
     }
 
     proc readFE() {
-      var ret: valType;
+      var ret : valType;
 
       on this {
-        var localRet: valType;
+        var localRet : valType;
 
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
@@ -352,17 +352,17 @@ module ChapelSyncvar {
         chpl_sync_markAndSignalEmpty(syncAux);
         chpl_rmem_consist_acquire();
 
-        ret      = localRet;
+        ret = localRet;
       }
 
       return ret;
     }
 
     proc readFF() {
-      var ret: valType;
+      var ret : valType;
 
       on this {
-        var localRet: valType;
+        var localRet : valType;
 
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
@@ -379,10 +379,10 @@ module ChapelSyncvar {
     }
 
     proc readXX() {
-      var ret: valType;
+      var ret : valType;
 
       on this {
-        var localRet: valType;
+        var localRet : valType;
 
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
@@ -392,7 +392,7 @@ module ChapelSyncvar {
         chpl_sync_unlock(syncAux);
         chpl_rmem_consist_acquire();
 
-        ret      = localRet;
+        ret = localRet;
       }
 
       return ret;
@@ -410,7 +410,7 @@ module ChapelSyncvar {
       }
     }
 
-    proc writeFF(val:valType) {
+    proc writeFF(val : valType) {
       on this {
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
@@ -422,7 +422,7 @@ module ChapelSyncvar {
       }
     }
 
-    proc writeXF(val:valType) {
+    proc writeXF(val : valType) {
       on this {
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
@@ -436,12 +436,12 @@ module ChapelSyncvar {
 
     proc reset() {
       on this {
-        const default_value: valType;
+        const defaultValue : valType;
 
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
 
-        value = default_value;
+        value = defaultValue;
 
         chpl_sync_markAndSignalEmpty(syncAux);
         chpl_rmem_consist_acquire();
@@ -484,7 +484,7 @@ module ChapelSyncvar {
     type valType;                              // The compiler knows this name
 
     var  wrapped : _singlecls(valType) = nil;
-    var  isOwned : bool              = true;
+    var  isOwned : bool                = true;
 
     proc _singlevar(type valType) {
       ensureFEType(valType);
@@ -628,10 +628,10 @@ module ChapelSyncvar {
     }
 
     proc readFF() {
-      var ret: valType;
+      var ret : valType;
 
       on this {
-        var localRet: valType;
+        var localRet : valType;
 
         chpl_rmem_consist_release();
 
@@ -652,10 +652,10 @@ module ChapelSyncvar {
     }
 
     proc readXX() {
-      var ret: valType;
+      var ret : valType;
 
       on this {
-        var localRet: valType;
+        var localRet : valType;
 
         chpl_rmem_consist_release();
 
@@ -703,7 +703,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc isSingleValue(x: single) param  return true;
+  proc isSingleValue(x : single) param  return true;
 
   pragma "no doc"
   proc isSingleValue(x)         param  return false;
@@ -734,8 +734,8 @@ private module SyncVarRuntimeSupport {
   extern proc   chpl_sync_markAndSignalEmpty(ref aux : chpl_sync_aux_t);
   extern proc   chpl_sync_markAndSignalFull (ref aux : chpl_sync_aux_t);
 
-  extern proc   chpl_sync_isFull(value : c_void_ptr,
-                                 ref aux   : chpl_sync_aux_t) : bool;
+  extern proc   chpl_sync_isFull(value   : c_void_ptr,
+                                 ref aux : chpl_sync_aux_t) : bool;
 
 
   //
