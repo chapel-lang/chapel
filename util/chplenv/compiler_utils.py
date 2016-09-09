@@ -13,12 +13,12 @@ from utils import memoize, run_command
 
 @memoize
 def get_compiler_name(compiler):
-    if compiler == 'aarch64-gnu':
+    if compiler_is_prgenv(compiler):
+        return 'cc'
+    elif compiler == 'aarch64-gnu':
         return 'aarch64-unknown-linux-gnu-gcc'
     elif 'gnu' in compiler:
         return 'gcc'
-    elif compiler.startswith('cray-prgenv-'):
-        return 'cc'
     elif compiler == 'clang':
         return 'clang'
     elif compiler == 'intel':
@@ -61,10 +61,15 @@ def CompVersion(version_string):
                          "a tuple".format(version_string))
 
 
+@memoize
 def compiler_is_prgenv(compiler_val):
   return (compiler_val.startswith('cray-prgenv') or
      os.environ.get('CHPL_ORIG_TARGET_COMPILER','').startswith('cray-prgenv'))
 
+
+def strip_preprocessor_lines(lines):
+    lines = [line for line in lines if len(line.split('#')[0].strip()) > 0]
+    return lines
 
 #
 # Determine whether a given compiler's default compilation mode
@@ -79,16 +84,25 @@ def compiler_is_prgenv(compiler_val):
 # Due to the command-line options required, this works for GCC,
 # Clang, and the Intel compiler, but probably not others.
 #
+@memoize
 def has_std_atomics(compiler_val):
     try:
         compiler_name = get_compiler_name(compiler_val)
         if compiler_name == 'other':
             return False
-        cmd = "echo __STDC_VERSION__ __STDC_NO_ATOMICS__ | "
-        cmd += compiler_name + " -E -x c - | sed -e '/^\#/d'"
-        out = run_command(['sh', '-c', cmd]).split()
-        version = out[0].rstrip("L")
-        atomics = out[1]
+
+        version_key='version'
+        atomics_key='atomics'
+
+        cmd_input = '{0}=__STDC_VERSION__\n{1}=__STDC_NO_ATOMICS__'.format(version_key, atomics_key)
+        cmd = [compiler_name, '-E', '-x', 'c', '-']
+        output = run_command(cmd, cmd_input=cmd_input)
+        output = strip_preprocessor_lines(output.splitlines())
+
+        output_dict = dict(line.split('=') for line in output)
+        version = output_dict[version_key].rstrip("L")
+        atomics = output_dict[atomics_key]
+
         if version == "__STDC_VERSION__" or int(version) < 201112:
             return False
         # If the atomics macro was expanded, then we do not have support.
