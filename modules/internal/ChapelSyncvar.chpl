@@ -39,6 +39,7 @@ proceed if it is a single variable.
 */
 
 module ChapelSyncvar {
+  use AlignedTSupport;
   use MemConsistency;
   use SyncVarRuntimeSupport;
 
@@ -78,6 +79,19 @@ module ChapelSyncvar {
       compilerError("sync/single types cannot be of type '", t : string, "'");
   }
 
+  // Don't use native sync vars by default since the current qthreads release
+  // is missing writeFF, purge_to, and readXX.
+  config param useNativeSyncVar = false;
+
+  // use native sync vars if they're enabled and supported for the valType
+  private proc getSyncClassType(type valType) type {
+    if useNativeSyncVar && supportsNativeSyncVar(valType) {
+      return _qthreads_synccls(valType);
+    } else {
+      return _synccls(valType);
+    }
+  }
+
   pragma "no doc"
   proc chpl__readXX(x) return x;
 
@@ -93,13 +107,13 @@ module ChapelSyncvar {
   record _syncvar {
     type valType;                              // The compiler knows this name
 
-    var  wrapped : _synccls(valType) = nil;
-    var  isOwned : bool              = true;
+    var  wrapped : getSyncClassType(valType) = nil;
+    var  isOwned : bool                      = true;
 
     proc _syncvar(type valType) {
       ensureFEType(valType);
 
-      wrapped = new _synccls(valType);
+      wrapped = new (getSyncClassType(valType))(valType);
       isOwned = true;
     }
 
@@ -465,32 +479,29 @@ module ChapelSyncvar {
   class _qthreads_synccls {
     type valType;
 
-    var  value   : valType;
-    var  syncAux : chpl_sync_aux_t;      // Locking, signaling, ...
+    var  alignedValue : aligned_t;
 
     proc _qthreads_synccls(type valType) {
-      chpl_sync_initAux(syncAux);
+      qthread_purge_to(alignedValue, defaultOfAlignedT(valType));
     }
 
     proc ~_qthreads_synccls() {
-      chpl_sync_destroyAux(syncAux);
+      // There's no explicit destroy function, but qthreads reclaims memory
+      // for full variables that have no pending operations
+      qthread_fill(alignedValue);
     }
 
     proc readFE() {
       var ret : valType;
 
       on this {
-        var localRet : valType;
+        var alignedLocalRet : aligned_t;
 
         chpl_rmem_consist_release();
-        chpl_sync_waitFullAndLock(syncAux);
-
-        localRet = value;
-
-        chpl_sync_markAndSignalEmpty(syncAux);
+        qthread_readFE(alignedLocalRet, alignedValue);
         chpl_rmem_consist_acquire();
 
-        ret = localRet;
+        ret = alignedLocalRet : valType;
       }
 
       return ret;
@@ -500,17 +511,13 @@ module ChapelSyncvar {
       var ret : valType;
 
       on this {
-        var localRet : valType;
+        var alignedLocalRet : aligned_t;
 
         chpl_rmem_consist_release();
-        chpl_sync_waitFullAndLock(syncAux);
-
-        localRet = value;
-
-        chpl_sync_markAndSignalFull(syncAux);
+        qthread_readFF(alignedLocalRet, alignedValue);
         chpl_rmem_consist_acquire();
 
-        ret = localRet;
+        ret = alignedLocalRet : valType;
       }
 
       return ret;
@@ -520,17 +527,16 @@ module ChapelSyncvar {
       var ret : valType;
 
       on this {
-        var localRet : valType;
+        var alignedLocalRet : aligned_t;
 
         chpl_rmem_consist_release();
-        chpl_sync_lock(syncAux);
-
-        localRet = value;
-
-        chpl_sync_unlock(syncAux);
+        // currently have to yield to allow readXX in a loop to make progress
+        // TODO only yield every X accesses?
+        chpl_task_yield();
+        qthread_readXX(alignedLocalRet, alignedValue);
         chpl_rmem_consist_acquire();
 
-        ret = localRet;
+        ret = alignedLocalRet : valType;
       }
 
       return ret;
@@ -539,11 +545,7 @@ module ChapelSyncvar {
     proc writeEF(val : valType) {
       on this {
         chpl_rmem_consist_release();
-        chpl_sync_waitEmptyAndLock(syncAux);
-
-        value = val;
-
-        chpl_sync_markAndSignalFull(syncAux);
+        qthread_writeEF(alignedValue, val : aligned_t);
         chpl_rmem_consist_acquire();
       }
     }
@@ -551,11 +553,7 @@ module ChapelSyncvar {
     proc writeFF(val : valType) {
       on this {
         chpl_rmem_consist_release();
-        chpl_sync_waitFullAndLock(syncAux);
-
-        value = val;
-
-        chpl_sync_markAndSignalFull(syncAux);
+        qthread_writeFF(alignedValue, val : aligned_t);
         chpl_rmem_consist_acquire();
       }
     }
@@ -563,25 +561,15 @@ module ChapelSyncvar {
     proc writeXF(val : valType) {
       on this {
         chpl_rmem_consist_release();
-        chpl_sync_lock(syncAux);
-
-        value = val;
-
-        chpl_sync_markAndSignalFull(syncAux);
+        qthread_writeF(alignedValue, val : aligned_t);
         chpl_rmem_consist_acquire();
       }
     }
 
     proc reset() {
       on this {
-        const defaultValue : valType;
-
         chpl_rmem_consist_release();
-        chpl_sync_lock(syncAux);
-
-        value = defaultValue;
-
-        chpl_sync_markAndSignalEmpty(syncAux);
+        qthread_purge_to(alignedValue, defaultOfAlignedT(valType));
         chpl_rmem_consist_acquire();
       }
     }
@@ -591,7 +579,7 @@ module ChapelSyncvar {
 
       on this {
         chpl_rmem_consist_release();
-        b = chpl_sync_isFull(c_ptrTo(value), syncAux);
+        b = qthread_feb_status(alignedValue) : bool;
         chpl_rmem_consist_acquire();
       }
 
@@ -600,7 +588,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc isSyncValue(x: sync) param  return true;
+  proc isSyncValue(x : sync) param  return true;
 
   pragma "no doc"
   proc isSyncValue(x)       param  return false;
@@ -849,6 +837,7 @@ module ChapelSyncvar {
 
 
 private module SyncVarRuntimeSupport {
+  use AlignedTSupport;
 
   //
   // Sync var externs
@@ -896,7 +885,34 @@ private module SyncVarRuntimeSupport {
 
   extern proc   chpl_single_isFull(value   : c_void_ptr,
                                    ref aux : chpl_single_aux_t) : bool;
+
+
+  //
+  // Native qthreads sync var helpers and externs
+  //
+
+  // native qthreads aligned_t sync vars only work on 64-bit platforms right
+  // now, and we only support casting between certain types and aligned_t
+  proc supportsNativeSyncVar(type t) param {
+    return CHPL_TASKS == "qthreads"    &&
+           castableToAlignedT(t) &&
+           numBits(c_uintptr) == 64;
+  }
+
+  extern proc qthread_readFE     (ref dest : aligned_t, const ref src: aligned_t) : c_int;
+  extern proc qthread_readFF     (ref dest : aligned_t, const ref src: aligned_t) : c_int;
+  extern proc qthread_readXX     (ref dest : aligned_t, const ref src: aligned_t) : c_int;
+
+  extern proc qthread_writeEF    (ref dest : aligned_t, const ref src: aligned_t) : c_int;
+  extern proc qthread_writeFF    (ref dest : aligned_t, const ref src: aligned_t) : c_int;
+  extern proc qthread_writeF     (ref dest : aligned_t, const ref src: aligned_t) : c_int;
+
+  extern proc qthread_purge_to   (ref dest : aligned_t, const ref src: aligned_t) : c_int;
+  extern proc qthread_empty      (const ref dest : aligned_t) : c_int;
+  extern proc qthread_fill       (const ref dest : aligned_t) : c_int;
+  extern proc qthread_feb_status (const ref dest : aligned_t) : c_int;
 }
+
 
 // Support for aligned_t including the definition, casts, defaultValue, and
 // read/write routines. aligned_t is the type used by native qthreads sync vars
