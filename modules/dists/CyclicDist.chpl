@@ -885,7 +885,12 @@ proc CyclicArr.dsiPrivatize(privatizeData) {
 }
 
 
-inline proc _remoteAccessData.getDataIndex(param stridable, myStr: rank*idxType, ind: rank*idxType, startIdx, dimLen) {
+inline proc _remoteAccessData.getDataIndex(
+    param stridable, myStr:
+    rank*chpl__signedType(idxType),
+    ind: rank*idxType,
+    startIdx,
+    dimLen) {
   // modified from DefaultRectangularArr
   var sum = origin;
   if stridable {
@@ -935,7 +940,8 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
       if radata(rlocIdx).data != nil {
         const startIdx = myLocArr.locCyclicRAD.startIdx;
         const dimLength = myLocArr.locCyclicRAD.targetLocDomDimLength;
-        var str: rank*idxType;
+        type strType = chpl__signedType(idxType);
+        var str: rank*strType;
         for param i in 1..rank {
           pragma "no copy" pragma "no auto destroy" var whole = dom.whole;
           str(i) = whole.dim(i).stride;
