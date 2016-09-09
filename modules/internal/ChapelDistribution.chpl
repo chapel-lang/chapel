@@ -341,6 +341,10 @@ module ChapelDistribution {
 
     var nnzDom = {1..nnz};
 
+    proc ~BaseSparseDomImpl() {
+      // this is a bug workaround
+    }
+
     proc dsiBulkAdd(inds: [] index(rank, idxType),
         isSorted=false, isUnique=false, preserveInds=true){
 
@@ -447,10 +451,6 @@ module ChapelDistribution {
 
     proc dsiClear(){
       halt("not implemented");
-    }
-
-    proc ~BaseSparseDomImpl() {
-
     }
 
   }
@@ -716,6 +716,7 @@ module ChapelDistribution {
     proc dsiGetBaseDom() return dom;
 
     proc ~BaseSparseArr() {
+      // this is a bug workaround
     }
   }
 
@@ -726,7 +727,7 @@ module ChapelDistribution {
   class BaseSparseArrImpl: BaseSparseArr {
 
     proc ~BaseSparseArrImpl() {
-
+      // this is a bug workaround
     }
 
 
