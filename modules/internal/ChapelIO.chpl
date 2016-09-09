@@ -690,7 +690,7 @@ module ChapelIO {
     in the Chapel source, followed by the argument(s) to the call.
   */
   proc warning(s:string) {
-    warning(s.localize().c_str());
+    __primitive("chpl_warning", s.localize().c_str());
   }
 /*
   pragma "no doc"
