@@ -72,10 +72,10 @@ module CString {
     return x;
   }
 
-  pragma "compiler generated" // avoids param string to c_string coercion
-  inline proc ==(param s0: c_string, param s1: c_string) param {
-    return __primitive("string_compare", s0, s1) == 0;
-  }
+//pragma "compiler generated" // avoids param string to c_string coercion
+//inline proc ==(param s0: c_string, param s1: c_string) param {
+//  return __primitive("string_compare", s0, s1) == 0;
+//}
 
   inline proc ==(s0: c_string, s1: c_string) {
     return __primitive("string_compare", s0, s1) == 0;
@@ -89,10 +89,10 @@ module CString {
 //    return __primitive("string_compare", s0, s1.c_str()) == 0;
 //  }
 
-  pragma "compiler generated" // avoids param string to c_string coercion
-  inline proc !=(param s0: c_string, param s1: c_string) param {
-    return __primitive("string_compare", s0, s1) != 0;
-  }
+//pragma "compiler generated" // avoids param string to c_string coercion
+//inline proc !=(param s0: c_string, param s1: c_string) param {
+//  return __primitive("string_compare", s0, s1) != 0;
+//}
 
   inline proc !=(s0: c_string, s1: c_string) {
     return __primitive("string_compare", s0, s1) != 0;
@@ -110,37 +110,37 @@ module CString {
     return (__primitive("string_compare", a, b) <= 0);
   }
 
-  pragma "compiler generated" // avoids param string to c_string coercion
-  inline proc <=(param a: c_string, param b: c_string) param {
-    return (__primitive("string_compare", a, b) <= 0);
-  }
+//pragma "compiler generated" // avoids param string to c_string coercion
+//inline proc <=(param a: c_string, param b: c_string) param {
+//  return (__primitive("string_compare", a, b) <= 0);
+//}
 
   inline proc >=(a: c_string, b: c_string) {
     return (__primitive("string_compare", a, b) >= 0);
   }
 
-  pragma "compiler generated" // avoids param string to c_string coercion
-  inline proc >=(param a: c_string, param b: c_string) param {
-    return (__primitive("string_compare", a, b) >= 0);
-  }
+//pragma "compiler generated" // avoids param string to c_string coercion
+//inline proc >=(param a: c_string, param b: c_string) param {
+//  return (__primitive("string_compare", a, b) >= 0);
+//}
 
   inline proc <(a: c_string, b: c_string) {
     return (__primitive("string_compare", a, b) < 0);
   }
 
-  pragma "compiler generated" // avoids param string to c_string coercion
-  inline proc <(param a: c_string, param b: c_string) param {
-    return (__primitive("string_compare", a, b) < 0);
-  }
+//pragma "compiler generated" // avoids param string to c_string coercion
+//inline proc <(param a: c_string, param b: c_string) param {
+//  return (__primitive("string_compare", a, b) < 0);
+//}
 
   inline proc >(a: c_string, b: c_string) {
     return (__primitive("string_compare", a, b) > 0);
   }
 
-  pragma "compiler generated" // avoids param string to c_string coercion
-  inline proc >(param a: c_string, param b: c_string) param {
-    return (__primitive("string_compare", a, b) > 0);
-  }
+//pragma "compiler generated" // avoids param string to c_string coercion
+//inline proc >(param a: c_string, param b: c_string) param {
+//  return (__primitive("string_compare", a, b) > 0);
+//}
 
   inline proc =(ref a: c_string, b: c_string) {
     __primitive("=", a, b);
@@ -347,39 +347,39 @@ module CString {
     return _cast(c_string_copy, x);
 
   // Only support param c_string concatenation (for now)
-  pragma "compiler generated" // avoids param string to c_string coercion
-  inline proc +(param a: c_string, param b: c_string) param
-    return __primitive("string_concat", a, b);
+//pragma "compiler generated" // avoids param string to c_string coercion
+//inline proc +(param a: c_string, param b: c_string) param
+//  return __primitive("string_concat", a, b);
 
-  pragma "compiler generated" // avoids param string to c_string coercion
-  inline proc +(param s: c_string, param x: integral) param
-    return __primitive("string_concat", s, x:c_string);
+//pragma "compiler generated" // avoids param string to c_string coercion
+//inline proc +(param s: c_string, param x: integral) param
+//  return __primitive("string_concat", s, x:c_string);
 
-  pragma "compiler generated" // avoids param string to c_string coercion
-  inline proc +(param x: integral, param s: c_string) param
-    return __primitive("string_concat", x:c_string, s);
+//pragma "compiler generated" // avoids param string to c_string coercion
+//inline proc +(param x: integral, param s: c_string) param
+//  return __primitive("string_concat", x:c_string, s);
 
-  pragma "compiler generated" // avoids param string to c_string coercion
-  inline proc +(param s: c_string, param x: enumerated) param
-    return __primitive("string_concat", s, x:c_string);
+//pragma "compiler generated" // avoids param string to c_string coercion
+//inline proc +(param s: c_string, param x: enumerated) param
+//  return __primitive("string_concat", s, x:c_string);
 
-  pragma "compiler generated" // avoids param string to c_string coercion
-  inline proc +(param x: enumerated, param s: c_string) param
-    return __primitive("string_concat", x:c_string, s);
+//pragma "compiler generated" // avoids param string to c_string coercion
+//inline proc +(param x: enumerated, param s: c_string) param
+//  return __primitive("string_concat", x:c_string, s);
 
-  pragma "compiler generated" // avoids param string to c_string coercion
-  inline proc +(param s: c_string, param x: bool) param
-    return __primitive("string_concat", s, x:c_string);
+//pragma "compiler generated" // avoids param string to c_string coercion
+//inline proc +(param s: c_string, param x: bool) param
+//  return __primitive("string_concat", s, x:c_string);
 
-  pragma "compiler generated" // avoids param string to c_string coercion
-  inline proc +(param x: bool, param s: c_string) param
-    return __primitive("string_concat", x:c_string, s);
+//pragma "compiler generated" // avoids param string to c_string coercion
+//inline proc +(param x: bool, param s: c_string) param
+//  return __primitive("string_concat", x:c_string, s);
 
   // Looks like we still need c_str + c_str unless I want to change even more
   // module code code. TODO: Change the module code.
-  inline proc +(a: c_string, b: c_string) {
-    return __primitive("string_concat", a, b);
-  }
+//  inline proc +(a: c_string, b: c_string) {
+//    return __primitive("string_concat", a, b);
+//  }
   /*
   inline proc +(a:c_string, b:c_string_copy) {
     return __primitive("string_concat", a, b);
@@ -395,8 +395,8 @@ module CString {
   //
   // primitive c_string functions and methods
   //
-  pragma "compiler generated" // avoids param string to c_string coercion
-  inline proc ascii(param a: c_string) param return __primitive("ascii", a);
+//pragma "compiler generated" // avoids param string to c_string coercion
+//inline proc ascii(param a: c_string) param return __primitive("ascii", a);
   inline proc ascii(a: c_string) return __primitive("ascii", a);
   inline proc c_string.length return __primitive("string_length", this);
   inline proc c_string.size return this.length;

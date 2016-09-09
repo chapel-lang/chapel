@@ -1,0 +1,6 @@
+param-coercions.chpl:21: warning: string
+param-coercions.chpl:21: warning: ab
+param-coercions.chpl:9: In function 'run':
+param-coercions.chpl:19: error: unresolved call 'myadd(c_string, c_string)'
+param-coercions.chpl:1: note: candidates are: myadd(param a: string, param b: string)
+param-coercions.chpl:5: note:                 myadd(a: string, b: string)
