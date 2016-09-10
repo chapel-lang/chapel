@@ -523,12 +523,20 @@ only_ls:
                                          $1->push_back(cur); }
 
 opt_only_ls:
-  /* nothing */                        { $$ = new std::vector<OnlyRename*>(); }
+  /* nothing */                        { $$ = new std::vector<OnlyRename*>();
+                                         OnlyRename* cur = new OnlyRename();
+                                         cur->tag = OnlyRename::SINGLE;
+                                         cur->elem = new UnresolvedSymExpr("");
+                                         $$->push_back(cur); }
 | only_ls
 ;
 
 except_ls:
-  TSTAR                                { $$ = new std::vector<OnlyRename*>(); }
+  TSTAR                                { $$ = new std::vector<OnlyRename*>();
+                                         OnlyRename* cur = new OnlyRename();
+                                         cur->tag = OnlyRename::SINGLE;
+                                         cur->elem = new UnresolvedSymExpr("");
+                                         $$->push_back(cur); }
 | only_ls
 ;
 
