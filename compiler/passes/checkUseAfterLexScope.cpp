@@ -31,15 +31,12 @@ enum GraphNodeStatus {
 
 typedef BlockStmt Scope;
 typedef Vec<Scope*> ScopeVec;
-
 /****
      We can say The SyncGraph nodes represents
      a striped CCFG(Concurrent Control Flow Graph)
      Which stores data of sync Points and
      use of External variables.
 **/  
-
-
 struct SyncGraph {
   FnSymbol* fnSymbol;
   SyncGraph* parent;
@@ -59,11 +56,8 @@ struct SyncGraph {
   GraphNodeStatus syncType;
   bool loopNode;
   bool conditionalNode;
-  bool isjoinNode;
-  
-  
+  bool isjoinNode;  
   SyncGraph(SyncGraph* i, FnSymbol *f) {
-   
     fnSymbol = f;
     contents.copy(i->contents);
     syncedScopes.append(i->syncedScopes);
@@ -119,9 +113,6 @@ typedef Map<FnSymbol*, SyncGraph*> FnSyncGraphMap;
 typedef Map<FnSymbol*, Vec<SyncGraph*>* > FnSyncGraphVecMap;
 typedef MapElem<FnSymbol*, Vec<SyncGraph*>* > FnSyncGraphVecMapElem;
 typedef Vec<FnSymbol*> FnSymbolVec;
-
-
-
 static SyncGraph* syncGraphRoot;
 static SyncGraphVec analysisRoots; // We will be creating multiple root for
                                    //  analyzing recursion and loops more
@@ -130,10 +121,7 @@ static SyncGraphVec taskStartPoint; // start of all beginStatements
 static Vec<ExternVarDetails*> externVarDetails;
 static FnSyncGraphMap funcGraphMap; // start point of each function in Sync Graph
 //static FnSymbolVec internalFnSymbols;
-
 static bool allCallsSynced;
-
-
 static void deleteSyncGraphNode(SyncGraph *node);
 static void cleanUpSyncGraph(SyncGraph *root);
 static void checkOrphanStackVar(SyncGraph *root);
@@ -187,7 +175,7 @@ static void collectNewBegins(SyncGraph* start, SyncGraph* end, SyncGraphVec& des
 static void removeNewBegins(SyncGraphVec& nextSourceBegins, SyncGraphVec&  destSyncPoints);
 static SyncGraph* pullUpNextSyncNode(SyncGraph* curNode, SyncGraphVec& destSyncPoints);
 static void pullDownSyncNode(SyncGraph* curNode, SyncGraph * prevNode, SyncGraphVec& destSyncPoints);
-
+static bool isStartPointAfterLastSync(SyncGraph* defFunction,SyncGraph* useNode);
 /************** HEADER ENDS *******************/
 
 
@@ -454,7 +442,6 @@ static SyncGraph* addSyncExprs(Expr *expr, SyncGraph *cur) {
 }
 
 //static void collectAllSyncNodes( , ){
-
 //}
 
 
@@ -502,11 +489,20 @@ static void collectAllAvailableBeginGraphs(SyncGraph* root, SyncGraphVec& endPoi
   SyncGraph* cur  = root;
   while (cur != NULL && endPoints.in(cur) == NULL) {
     if (cur->fChild != NULL && cur->fChild->fnSymbol->hasFlag(FLAG_BEGIN)){
-      taskPoints.add(cur->fChild);
+      SyncGraph* newBegin = cur->fChild;
+      SyncGraph* syncPoint= nextSyncPoint(newBegin);
+      if(nextSyncPoint != NULL) {
+	taskPoints.add(syncPoint);
+	endPoints.add(syncPoint);
+      }
+      collectAllAvailableBeginGraphs(newBegin, endPoints,taskPoints);
+      if(syncPoint != NULL)
+	endPoints.remove(endPoints.index(syncPoint));
     }
     if(cur->cChild!= NULL) {
       endPoints.add(cur->cChild->joinNode);
       collectAllAvailableBeginGraphs(cur->cChild,endPoints,taskPoints);
+      endPoints.remove(endPoints.index(cur->cChild->joinNode));
     } 
     cur = cur->child;
   }
@@ -577,6 +573,23 @@ static bool sync(SyncGraph* source, SyncGraph* dest) {
       return true;
     }
     return false;
+}
+
+static bool isStartPointAfterLastSync(SyncGraph* defFunction,SyncGraph* useNode) {
+  SyncGraph* syncPoint;
+  SyncGraph* fnNode = funcGraphMap.get(useNode->fnSymbol);
+  INT_ASSERT(defFunction != fnNode);
+  while(defFunction != fnNode) {
+    syncPoint = fnNode->parent;
+    if(syncPoint != NULL)
+      fnNode = funcGraphMap.get(syncPoint->fnSymbol);
+    else
+      return true;
+    INT_ASSERT(fnNode != NULL);
+  }
+  if(nextSyncPoint(syncPoint) == NULL)
+    return true;
+  return false;
 }
 
 static void getSyncPoints(SyncGraph* source, SyncGraphVec& potentialDest, SyncGraphVec& syncPoints) {
@@ -661,7 +674,8 @@ static void checkOrphanStackVar(SyncGraph *root) {
      //    INT_ASSERT(cur->usePoints.length() == cur->useNodes.length());
      forv_Vec(UseInfo, curUseInfo, cur->usePoints){
        // provide warning for obvious cases.
-       if( nextSyncPoint(curUseInfo->useNode) == NULL || sourceSyncPoint == NULL) {
+       if( nextSyncPoint(curUseInfo->useNode) == NULL || sourceSyncPoint == NULL
+	   || isStartPointAfterLastSync(defFunction, curUseInfo->useNode)) {
 	 provideWarning(curUseInfo->usePoint, cur);
        } else {
 	 endPoints.add(sourceSyncPoint);
