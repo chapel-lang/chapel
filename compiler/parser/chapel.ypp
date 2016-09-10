@@ -362,7 +362,7 @@
 %type <pblockstmt> stmt_ls
 
 %type <pblockstmt> use_stmt require_stmt
-%type <ponlylist>  only_ls
+%type <ponlylist>  only_ls opt_only_ls except_ls
 
 %type <pblockstmt> class_level_stmt_ls
 
@@ -522,10 +522,20 @@ only_ls:
                                          cur->renamed = new std::pair<Expr*, Expr*>($3, $5);
                                          $1->push_back(cur); }
 
+opt_only_ls:
+  /* nothing */                        { $$ = new std::vector<OnlyRename*>(); }
+| only_ls
+;
+
+except_ls:
+  TSTAR                                { $$ = new std::vector<OnlyRename*>(); }
+| only_ls
+;
+
 use_stmt:
   TUSE expr_ls TSEMI                   { $$ = buildUseStmt($2); }
-| TUSE expr TEXCEPT only_ls TSEMI      { $$ = buildUseStmt($2, $4, true); }
-| TUSE expr TONLY only_ls TSEMI        { $$ = buildUseStmt($2, $4, false); }
+| TUSE expr TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($2, $4, true); }
+| TUSE expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($2, $4, false); }
 ;
 
 require_stmt:

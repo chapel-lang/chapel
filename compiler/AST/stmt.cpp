@@ -142,11 +142,20 @@ UseStmt::UseStmt(BaseAST*                            source,
     INT_FATAL(this, "Bad mod in UseStmt constructor");
   }
 
-  if (args->size() > 0) {
-    // Symbols to search when going through this module's scope from an outside
-    // scope
-    for_vector(const char, str, *args) {
-      named.push_back(str);
+  //
+  // args == NULL implies that there was no 'only' or 'except' list
+  // args with size == 0 implies an 'only <nothing>' or 'except *'
+  //
+  if (args) {
+    if (args->size() > 0) {
+      // Symbols to search when going through this module's scope from an outside
+      // scope
+      for_vector(const char, str, *args) {
+        named.push_back(str);
+      }
+    } else {
+      // empty placeholder name
+      named.push_back(NULL);
     }
   }
 
