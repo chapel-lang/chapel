@@ -39,7 +39,7 @@ typedef uint_least64_t atomic_uint_least64_t;
 typedef uintptr_t atomic_uintptr_t;
 typedef chpl_bool atomic_bool;
 typedef uint64_t atomic__real64;
-typedef uint64_t atomic__real32;
+typedef uint32_t atomic__real32;
 
 typedef enum {
  memory_order_relaxed,
