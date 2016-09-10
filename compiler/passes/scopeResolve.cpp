@@ -478,15 +478,15 @@ void UseStmt::validateList() {
   const char* listName = except ? "except" : "only";
   for_vector(const char, name, named) {
     if (name[0] != '\0') {
-    Symbol* sym = lookup(scopeToUse, name);
+      Symbol* sym = lookup(scopeToUse, name);
 
-    if (!sym) {
-      USR_FATAL_CONT(this, "Bad identifier in '%s' clause, no known '%s'", listName, name);
-    } else if (!sym->isVisible(this)) {
-      USR_FATAL_CONT(this, "Bad identifier in '%s' clause, '%s' is private", listName, name);
-    }
+      if (!sym) {
+        USR_FATAL_CONT(this, "Bad identifier in '%s' clause, no known '%s'", listName, name);
+      } else if (!sym->isVisible(this)) {
+        USR_FATAL_CONT(this, "Bad identifier in '%s' clause, '%s' is private", listName, name);
+      }
 
-    createRelatedNames(sym);
+      createRelatedNames(sym);
     }
   }
 
