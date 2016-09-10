@@ -421,9 +421,15 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except)
   std::vector<const char*> namesList;
   std::map<const char*, const char*> renameMap;
 
-  // Catch the 'except *' case and turn it into 'only <nothing>'
-  if (except && names->size() == 0) {
-    except = false;
+  // Catch the 'except *' case and turn it into 'only <nothing>'.  This
+  // case will have a single UnresolvedSymExpr named "".
+  if (except && names->size() == 1) {
+    OnlyRename* listElem = (*names)[0];
+    if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
+      if (name->unresolved[0] == '\0') {
+        except = false;
+      }
+    }
   }
 
   // Iterate through the list of names to exclude when using mod
@@ -460,12 +466,7 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except)
 
   }
 
-  //
-  // Distinguish between an empty list (e.g., 'only <nothing>') and no
-  // list via an empty vector vs. a NULL pointer.
-  //
-  std::vector<const char*>* namesListPtr = (names ? &namesList : NULL);
-  UseStmt* newUse = new UseStmt(mod, namesListPtr, except, &renameMap);
+  UseStmt* newUse = new UseStmt(mod, &namesList, except, &renameMap);
   addModuleToSearchList(newUse, mod);
 
   delete names;

@@ -477,6 +477,7 @@ void UseStmt::validateList() {
 
   const char* listName = except ? "except" : "only";
   for_vector(const char, name, named) {
+    if (name[0] != '\0') {
     Symbol* sym = lookup(scopeToUse, name);
 
     if (!sym) {
@@ -486,6 +487,7 @@ void UseStmt::validateList() {
     }
 
     createRelatedNames(sym);
+    }
   }
 
   for (std::map<const char*, const char*>::iterator it = renamed.begin();
