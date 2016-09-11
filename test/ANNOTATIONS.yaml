@@ -154,6 +154,8 @@ all:
   08/28/16:
     - text: Upgraded chap* (except chap03) and chapcs* machines from gcc 4.7 to gcc 6.2
       config: chap04, chapcs
+  09/04/16:
+    - use standard atomics rather than intrinsics for gcc (reverted the next night) (#4443)
 
 AllCompTime:
   11/09/14:
@@ -342,9 +344,11 @@ jacobi:
   08/13/16:
     - Fix bulk transfer stride failure, cast to size_t for 32-bit support (#4329)
   08/19/16:
-    - Turn denormalization on-by-default (#4360)
-  08/20/16:
-    - Turn denormalization off-by-default (#4367) (revert #4360)
+    - Turn denormalization on by default (reverted the next night) (#4360)
+  09/01/16:
+    - Turn denormalization on by default (#4434)
+
+
 
 knucleotide:
   10/16/15:
