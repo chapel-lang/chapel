@@ -49,7 +49,7 @@ CHPL_AUX_FILESYS to 'hdfs' to enable HDFS support:
 
   export CHPL_AUX_FILESYS=hdfs
 
-The HDFS C API on some platforms freezes using the default qthreads. Use fifo instead.
+Hdfslib on some platforms freezes using the default qthreads. Use fifo instead.
 
   export CHPL_TASKS=fifo
 
@@ -64,8 +64,6 @@ Then, rebuild Chapel by executing 'make' from $CHPL_HOME.
   If HDFS support is not enabled (which is the default), all
   features described below will compile successfully but will result in
   an error at runtime such as: "No HDFS Support".
-  
-  Currently, the HDFS C API is NOT supported on Macintosh OS X platforms.
 
 
 Using HDFS Support in Chapel
