@@ -599,7 +599,7 @@ static Map<FnSymbol*,Vec<FnSymbol*>*> retToArgCache;
 inline static void
 replacementHelper(CallExpr* focalPt, VarSymbol* oldSym, Symbol* newSym,
                   FnSymbol* useFn) {
-  focalPt->insertAfter(new CallExpr(PRIM_MOVE, newSym,
+  focalPt->insertAfter(new CallExpr(PRIM_ASSIGN, newSym,
                                     new CallExpr(useFn, oldSym)));
 }
 
@@ -754,10 +754,10 @@ static void replaceUsesOfFnResultInCaller(CallExpr* move, CallExpr* call,
         CallExpr* useMove = toCallExpr(useCall->parentExpr);
         if (useMove)
         {
-          INT_ASSERT(useMove->isPrimitive(PRIM_MOVE));
+          INT_ASSERT(isMoveOrAssign(useMove));
 
           Symbol* useLhs = toSymExpr(useMove->get(1))->var;
-          if (!useLhs->type->symbol->hasFlag(FLAG_REF))
+          if (!useLhs->isRef())
           {
             useLhs = newTemp("ret_to_arg_ref_tmp_", useFn->retType->refType);
             move->insertBefore(new DefExpr(useLhs));

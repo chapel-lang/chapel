@@ -2266,7 +2266,10 @@ static void fixAST() {
     if (call->isResolved()) {
       for_formals_actuals(formal, actual, call) {
         if (formal->hasFlag(FLAG_RETARG)) {
-          if (formal->typeInfo() != actual->typeInfo() && hasSomeWideness(formal)) {
+          // Only looking for a mismatch where the formal is a _ref_wide_T
+          // and the actual is a _ref_T
+          if (formal->typeInfo() != actual->typeInfo() && hasSomeWideness(formal) &&
+              !(formal->isWideRef() || actual->isWideRef())) {
             SET_LINENO(call);
 
             SymExpr* act = toSymExpr(actual);

@@ -79,6 +79,8 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
 //
 bool isOpEqualPrim(CallExpr* call);
 
+bool isMoveOrAssign(CallExpr* call);
+
 //
 // Checks if a callExpr is a relational operator (<, <=, >, >=, ==, !=)
 //
