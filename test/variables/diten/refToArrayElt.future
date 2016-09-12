@@ -1,6 +1,0 @@
-bug: reference updated in another task is not reflected even when synchronized
-
-This test currently gets into an infinite loop even though the use of sync
-variables means the reference should be updated before reaching the loop.
-
-The value of A[1] is stored for refA instead of a reference to the element.

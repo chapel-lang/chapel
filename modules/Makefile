@@ -104,7 +104,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/RecordParser.chpl \
 	packages/Search.chpl \
 	packages/Sort.chpl \
-	packages/VisualDebug.chpl
+	packages/VisualDebug.chpl \
+	packages/ZMQ.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \

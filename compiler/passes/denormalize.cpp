@@ -35,7 +35,7 @@ typedef std::map<SymExpr*, DefCastPair> UseDefCastMap;
 
 //prototypes
 bool primMoveGeneratesCommCall(CallExpr* ce);
-inline bool unsafeExprInBetween(Expr* e1, Expr* e2,
+inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
     SafeExprAnalysis& analysisData);
 inline bool requiresCast(Type* t);
 inline bool isIntegerPromotionPrimitive(PrimitiveTag tag);
@@ -218,8 +218,8 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, Vec<Symbol*> symVec,
 
       //denormalize if the def is safe to move and there is no unsafe
       //function between use and def
-      if(analysisData.exprHasNoSideEffects(def)) {
-        if(!unsafeExprInBetween(def, use, analysisData)) {
+      if(analysisData.exprHasNoSideEffects(def, NULL)) {
+        if(!unsafeExprInBetween(def, use, def, analysisData)) {
           DefCastPair defCastPair(def, castTo);
           udcMap.insert(std::pair<SymExpr*, DefCastPair>
               (use, defCastPair));
@@ -489,11 +489,11 @@ bool primMoveGeneratesCommCall(CallExpr* ce) {
 }
 
 
-inline bool unsafeExprInBetween(Expr* e1, Expr* e2,
+inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
     SafeExprAnalysis& analysisData){
   int counter = 0;
   for(Expr* e = e1; e != e2 ; e = getNextExpr(e)) {
-    if(! analysisData.exprHasNoSideEffects(e)) {
+    if(! analysisData.exprHasNoSideEffects(e, exprToMove)) {
       return true;
     }
     
