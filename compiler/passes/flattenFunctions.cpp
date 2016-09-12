@@ -101,20 +101,6 @@ passByRef(Symbol* sym) {
     return false;
   }
 
-  /*
-  if (sym->hasFlag(FLAG_DISTRIBUTION) ||
-      sym->hasFlag(FLAG_DOMAIN) ||
-      sym->hasFlag(FLAG_ARRAY)
-  ) {
-    // These values *are* constant. E.g the symbol with FLAG_ARRAY
-    // stores a pointer to the corresponding array descriptor.  Since
-    // each Chapel variable corresponds to a single Chapel array
-    // throughout the variable's lifetime, the descriptor object stays
-    // the same, and so does a pointer to it. The contents of that
-    // object *can* change, however.
-    return false;
-  }*/
-
   Type* type = sym->type;
 
   if (sym->hasFlag(FLAG_ARG_THIS))

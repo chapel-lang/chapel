@@ -51,6 +51,11 @@ refNecessary(SymExpr*                      se,
              Map<Symbol*, Vec<SymExpr*>*>& useMap) {
   Vec<SymExpr*>* defs = defMap.get(se->var);
 
+  // The ref is necessary if it is for an explicit ref var
+  if (se->var->hasFlag(FLAG_REF_VAR)) {
+    return true;
+  }
+
   if (defs && defs->n > 1) {
     // If se is a reference that is written to,
     // we need to keep the ref version.

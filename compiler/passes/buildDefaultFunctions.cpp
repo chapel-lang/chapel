@@ -253,25 +253,18 @@ static void fixup_accessor(AggregateType* ct, Symbol *field,
 
 // This function builds the getter or the setter, depending on the
 // 'setter' argument.
-static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
-  const bool fieldIsConst = field->hasFlag(FLAG_CONST);
-  const bool recordLike = ct->isRecord() || ct->isUnion();
-
+static void build_accessor(AggregateType* ct, Symbol* field, bool setter) {
   // Only build a 'ref' version for records and classes.
   // Unions need a special getter and setter.
-  if (!isUnion(ct))
-    if (!setter)
-      return;
+  if (isUnion(ct) == false && setter == false)
+    return;
 
-  FnSymbol* fn = new FnSymbol(field->name);
+  const bool fieldIsConst = field->hasFlag(FLAG_CONST);
+  const bool recordLike   = ct->isRecord() || ct->isUnion();
+  FnSymbol*  fn           = new FnSymbol(field->name);
+
   fn->addFlag(FLAG_NO_IMPLICIT_COPY);
   fn->addFlag(FLAG_INLINE);
-
-  if (ct->symbol->hasFlag(FLAG_SYNC))
-    fn->addFlag(FLAG_SYNC);
-
-  if (ct->symbol->hasFlag(FLAG_SINGLE))
-    fn->addFlag(FLAG_SINGLE);
 
   if (ct->symbol->hasFlag(FLAG_ATOMIC_TYPE))
     fn->addFlag(FLAG_ATOMIC_TYPE);
@@ -287,13 +280,17 @@ static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
   fn->addFlag(FLAG_METHOD);
 
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
+
   _this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(_this);
-  if (field->isParameter())
+
+  if (field->isParameter()) {
     fn->retTag = RET_PARAM;
-  else if (field->hasFlag(FLAG_TYPE_VARIABLE))
+
+  } else if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
     fn->retTag = RET_TYPE;
-  else if (field->hasFlag(FLAG_SUPER_CLASS)) {
+
+  } else if (field->hasFlag(FLAG_SUPER_CLASS)) {
     fn->retTag = RET_VALUE;
   } else {
     if (fieldIsConst || !setter)
@@ -303,7 +300,7 @@ static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
   }
 
   if (isUnion(ct)) {
-    if (setter)  {
+    if (setter) {
       // Set the union ID in the setter.
       fn->insertAtTail(
           new CallExpr(PRIM_SET_UNION_ID,
@@ -322,26 +319,33 @@ static void build_accessor(AggregateType* ct, Symbol *field, bool setter) {
           new CallExpr("halt", new_CStringSymbol("illegal union access"))));
     }
   }
+
   if (isTypeSymbol(field) && isEnumType(field->type)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, field));
     // better flatten enumerated types now
     ct->symbol->defPoint->insertBefore(field->defPoint->remove());
-  } else if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_SUPER_CLASS))
+  } else if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_SUPER_CLASS)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN,
                                   new CallExpr(PRIM_GET_MEMBER_VALUE,
                                                new SymExpr(_this),
                                                new SymExpr(new_CStringSymbol(field->name)))));
-  else
+  } else {
     fn->insertAtTail(new CallExpr(PRIM_RETURN,
                                   new CallExpr(PRIM_GET_MEMBER,
                                                new SymExpr(_this),
                                                new SymExpr(new_CStringSymbol(field->name)))));
+  }
 
   DefExpr* def = new DefExpr(fn);
+
   ct->symbol->defPoint->insertBefore(def);
+
   reset_ast_loc(fn, field);
+
   normalize(fn);
+
   ct->methods.add(fn);
+
   fn->addFlag(FLAG_METHOD);
   fn->addFlag(FLAG_METHOD_PRIMARY);
   fn->cname = astr("chpl_get_", ct->symbol->cname, "_", fn->cname);

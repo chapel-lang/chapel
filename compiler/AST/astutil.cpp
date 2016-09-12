@@ -378,6 +378,10 @@ bool isOpEqualPrim(CallExpr* call) {
   return false;
 }
 
+bool isMoveOrAssign(CallExpr* call) {
+  return call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN);
+}
+
 
 //
 // Check if a callExpr is a relational operator primitive (==, !=, <=, >=, <, >)

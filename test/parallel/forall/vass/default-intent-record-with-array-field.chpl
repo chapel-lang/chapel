@@ -17,8 +17,21 @@ forall jjj1 in RNG do tester1(rGlob,jjj1);
 
 writeln("step 4:  ", rGlob.arrField);
 
+// another way to run a forall loop
+const redResult = + reduce [jjj2 in RNG] tester2(rGlob,jjj2);
+
+writeln("step 7:  ", rGlob.arrField);
+assert(redResult == sz);
+
 proc tester1(rArg1: MyRecord, idx1: int) {
   writeln("step 2[", idx1, "]  ", rArg1.arrField[idx1]);
   rGlob.arrField[idx1] = idx1*10;
   writeln("step 3[", idx1, "]  ", rArg1.arrField[idx1]);
+}
+
+proc tester2(rArg2: MyRecord, idx2: int) {
+  writeln("step 5[", idx2, "]  ", rArg2.arrField[idx2]);
+  rGlob.arrField[idx2] = idx2*100;
+  writeln("step 6[", idx2, "]  ", rArg2.arrField[idx2]);
+  return 1;
 }

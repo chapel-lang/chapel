@@ -1159,7 +1159,7 @@ findRefDef(Map<Symbol*,Vec<SymExpr*>*>& defMap, Symbol* var) {
   for_defs(def, defMap, var) {
     if (CallExpr* call = toCallExpr(def->parentExpr)) {
       if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
-        if (isReferenceType(call->get(2)->typeInfo())) {
+        if (call->get(2)->isRef()) {
           if (ret)
             return NULL;
           else
@@ -1199,8 +1199,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
             ++s_ref_repl_count;
             addUse(useMap, se);
           }
-          // Do we need to handle PRIM_ASSIGN as well?
-          else if (parent && parent->isPrimitive(PRIM_MOVE)) {
+          else if (parent && isMoveOrAssign(parent)) {
             CallExpr* rhsCopy = rhs->copy();
             parent->get(2)->replace(rhsCopy);
             ++s_ref_repl_count;
@@ -1215,8 +1214,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
           SET_LINENO(se);
           if (parent == move)
             continue;
-          // Do we need to handle PRIM_ASSIGN as well?
-          if (parent && parent->isPrimitive(PRIM_MOVE)) {
+          if (parent && isMoveOrAssign(parent)) {
             SymExpr* se = toSymExpr(rhs->get(1)->copy());
             INT_ASSERT(se);
             parent->get(1)->replace(se);
@@ -1255,8 +1253,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
             ++s_ref_repl_count;
             addUse(useMap, se);
           }
-          // Do we need to handle PRIM_ASSIGN as well?
-          else if (parent && parent->isPrimitive(PRIM_MOVE)) {
+          else if (parent && isMoveOrAssign(parent)) {
             CallExpr* rhsCopy = rhs->copy();
             parent->get(2)->replace(rhsCopy);
             ++s_ref_repl_count;
@@ -1271,8 +1268,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
           SET_LINENO(se);
           if (parent == move)
             continue;
-          // Do we need a case for PRIM_ASSIGN?
-          if (parent && parent->isPrimitive(PRIM_MOVE)) {
+          if (parent && isMoveOrAssign(parent)) {
             if (SymExpr* rtmp = toSymExpr(parent->get(2))) {
               SymExpr* se = toSymExpr(rhs->get(1)->copy());
               INT_ASSERT(se);

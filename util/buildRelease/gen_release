@@ -192,6 +192,9 @@ SystemOrDie("cd runtime/include && rm -r sunos_old");
 print "Removing third-party directories that are not intended for release...\n";
 SystemOrDie("cd third-party && rm *.devel*");
 
+print "Removing Git metadata files not intended for release...\n";
+SystemOrDie('find . -type f \( -name .gitignore -o -name .gitattributes \) -exec rm -f {} \; -print');
+
 chdir "$archive_dir";
 
 print "Chmodding the hierarchy\n";

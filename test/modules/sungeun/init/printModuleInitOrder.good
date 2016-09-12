@@ -39,5 +39,6 @@ Initializing Modules:
     ChapelDynDispHack
     Assert
     CommDiagnostics
+    AlignedTSupport
    printModuleInitOrder
     moduleInitTest
