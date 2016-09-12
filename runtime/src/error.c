@@ -33,9 +33,12 @@
 
 #ifndef LAUNCHER
 #include "chpl-atomics.h"
+#ifdef CHPL_DO_UNWIND
+#define CHPL_UNWIND_NOT_LAUNCHER
+#endif
 #endif
 
-#ifdef CHPL_DO_UNWIND
+#ifdef CHPL_UNWIND_NOT_LAUNCHER
 // Necessary for instruct libunwind to use only the local unwind
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
@@ -201,7 +204,7 @@ void chpl_error_explicit(const char *message, int32_t lineno,
     fprintf(stderr, "error: %s", message);
   fprintf(stderr, "\n");
 
-#ifdef CHPL_DO_UNWIND
+#ifdef CHPL_UNWIND_NOT_LAUNCHER
   chpl_stack_unwind();
 #endif
 

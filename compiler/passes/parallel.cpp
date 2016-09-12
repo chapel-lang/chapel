@@ -1062,7 +1062,6 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
            is_complex_type(def->sym->type) ||
            (isRecord(def->sym->type)             &&
             !isRecordWrappedType(def->sym->type) &&
-            // sync/single are currently classes, so this shouldn't matter
             !isSyncType(def->sym->type)          &&
             !isSingleType(def->sym->type)        &&
             // Dont try to broadcast string literals, they'll get fixed in

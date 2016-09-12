@@ -96,7 +96,7 @@ module ChapelReduce {
   
   class ProductReduceScanOp: ReduceScanOp {
     type eltType;
-    var value = identity;
+    var value = _prod_id(eltType);
   
     proc identity return _prod_id(eltType);
     proc accumulate(x) {
@@ -111,7 +111,7 @@ module ChapelReduce {
   
   class MaxReduceScanOp: ReduceScanOp {
     type eltType;
-    var value = identity;
+    var value = min(eltType);
   
     proc identity return min(eltType);
     proc accumulate(x) {
@@ -126,7 +126,7 @@ module ChapelReduce {
   
   class MinReduceScanOp: ReduceScanOp {
     type eltType;
-    var value = identity;
+    var value = max(eltType);
   
     proc identity return max(eltType);
     proc accumulate(x) {
@@ -171,7 +171,7 @@ module ChapelReduce {
   
   class BitwiseAndReduceScanOp: ReduceScanOp {
     type eltType;
-    var value = identity;
+    var value = _band_id(eltType);
   
     proc identity return _band_id(eltType);
     proc accumulate(x) {
@@ -186,7 +186,7 @@ module ChapelReduce {
   
   class BitwiseOrReduceScanOp: ReduceScanOp {
     type eltType;
-    var value = identity;
+    var value = _bor_id(eltType);
   
     proc identity return _bor_id(eltType);
     proc accumulate(x) {
@@ -201,7 +201,7 @@ module ChapelReduce {
   
   class BitwiseXorReduceScanOp: ReduceScanOp {
     type eltType;
-    var value = identity;
+    var value = _bxor_id(eltType);
   
     proc identity return _bxor_id(eltType);
     proc accumulate(x) {
@@ -216,7 +216,7 @@ module ChapelReduce {
   
   class maxloc: ReduceScanOp {
     type eltType;
-    var value = identity;
+    var value = min(eltType);
     var uninitialized = true;
   
     proc identity return min(eltType);
@@ -241,7 +241,7 @@ module ChapelReduce {
   
   class minloc: ReduceScanOp {
     type eltType;
-    var value = identity;
+    var value = max(eltType);
     var uninitialized = true;
   
     proc identity return max(eltType);

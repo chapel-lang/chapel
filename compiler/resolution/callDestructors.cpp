@@ -549,7 +549,8 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
             Type*      formalType = formalArg->type;
 
             // Cannot reduce initCopy/autoCopy for sync variables
-            if (isSyncType(formalType) == false)
+            if (isSyncType(formalType)   == false &&
+                isSingleType(formalType) == false)
             {
               copyExpr = rhsCall;
             }
