@@ -561,22 +561,6 @@ static void setHtmlUser(const ArgumentDescription* desc, const char* unused) {
   fdump_html_include_system_modules = false;
 }
 
-static void setPODValAccess(const ArgumentDescription* desc, const char* unused) {
-  /* The replace-array-accesses-with-ref-temps optimization requires
-     PODValAccess=false in order to force the references it inserts to
-     be left as references during cullOverReferences. Without this,
-     the tests:
-
-       test/parallel/begin/deitz/test_begin.chpl
-       test/parallel/begin/deitz/test_begin2.chpl
-
-     get stuck in an infinite loop because they dereference the array
-     access and never see it updated from the other task. */
-  if (fReplaceArrayAccessesWithRefTemps) {
-    parseCmdLineConfig("PODValAccess", "false");
-  }
-}
-
 static void setWarnTupleIteration(const ArgumentDescription* desc, const char* unused) {
   const char *val = fNoWarnTupleIteration ? "false" : "true";
   parseCmdLineConfig("CHPL_WARN_TUPLE_ITERATION", astr("\"", val, "\""));
@@ -670,7 +654,7 @@ static ArgumentDescription arg_desc[] = {
  {"privatization", ' ', NULL, "Enable [disable] privatization of distributed arrays and domains", "n", &fNoPrivatization, "CHPL_DISABLE_PRIVATIZATION", NULL},
  {"remote-value-forwarding", ' ', NULL, "Enable [disable] remote value forwarding", "n", &fNoRemoteValueForwarding, "CHPL_DISABLE_REMOTE_VALUE_FORWARDING", NULL},
  {"remove-copy-calls", ' ', NULL, "Enable [disable] remove copy calls", "n", &fNoRemoveCopyCalls, "CHPL_DISABLE_REMOVE_COPY_CALLS", NULL},
- {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps", "N", &fReplaceArrayAccessesWithRefTemps, NULL, setPODValAccess },
+ {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
  {"scalar-replacement", ' ', NULL, "Enable [disable] scalar replacement", "n", &fNoScalarReplacement, "CHPL_DISABLE_SCALAR_REPLACEMENT", NULL},
  {"scalar-replace-limit", ' ', "<limit>", "Limit on the size of tuples being replaced during scalar replacement", "I", &scalar_replace_limit, "CHPL_SCALAR_REPLACE_TUPLE_LIMIT", NULL},
  {"tuple-copy-opt", ' ', NULL, "Enable [disable] tuple (memcpy) optimization", "n", &fNoTupleCopyOpt, "CHPL_DISABLE_TUPLE_COPY_OPT", NULL},
