@@ -33,7 +33,7 @@
 
 // Map storing the default initialization for fields of a type.  Will be used
 // when traversing initializer bodies if a field is omitted
-static std::map<AggregateType*, std::map<const char*, Expr*>* > defaultInits;
+static std::map<AggregateType*, std::map<const char*, std::pair<Expr*, Expr*> >* > defaultInits;
 
 void temporaryInitializerFixup(CallExpr* call) {
   if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(call->baseExpr)) {
@@ -141,7 +141,7 @@ bool isLaterFieldAccess(DefExpr* curField, const char* fieldname);
 
 static
 void insertOmittedField(Expr* next, const char* nextField,
-                        std::map<const char*, Expr*>* inits);
+                        std::map<const char*, std::pair<Expr*, Expr*> >* inits);
 
 
 static
@@ -158,7 +158,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
   }
   int index = 0;
 
-  std::map<const char*, Expr*>* inits = defaultInits[t];
+  std::map<const char*, std::pair<Expr*, Expr*> >* inits = defaultInits[t];
 
   Expr* curExpr = body->body.head;
   // We are guaranteed to never reach the end of the body, due to the
@@ -312,7 +312,8 @@ bool isParentField(AggregateType* t, const char *name) {
 
 static
 void insertOmittedField(Expr* next, const char* nextField,
-                        std::map<const char*, Expr*>* inits) {
+                        std::map<const char*,
+                        std::pair<Expr*, Expr*> >* inits) {
   SET_LINENO(next);
   // Do something appropriate with "super"
   if (!strcmp(nextField, "super")) {
@@ -320,20 +321,48 @@ void insertOmittedField(Expr* next, const char* nextField,
   }
   // For all other fields, insert an assignment into that field with the given
   // initialization, if we have one.
+  if (inits->find(nextField) == inits->end()) {
+    USR_FATAL_CONT(next, "can't omit initialization of field \"%s\", no type or default value provided", nextField);
+    return;
+  }
 
-  Expr* initExpr = (*inits)[nextField];
+  std::pair<Expr*, Expr*> initExpr = (*inits)[nextField];
 
   // If that field has no initialization or type, we can't insert the omitted
   // initialization for it, it must be explicitly initialized.
-  if (initExpr == NULL) {
+  if (initExpr.first == NULL && initExpr.second == NULL) {
     USR_FATAL_CONT(next, "can't omit initialization of field \"%s\", no type or default value provided", nextField);
     return;
   }
   CallExpr* thisAccess = new CallExpr(".",
                                       toFnSymbol(next->parentSymbol)->_this,
                                       new_CStringSymbol(nextField));
-  CallExpr* newInit = new CallExpr("=", thisAccess,
-                                   initExpr->copy());
+  CallExpr* newInit = NULL;
+  if (!(isSymExpr(initExpr.first) &&
+        toSymExpr(initExpr.first)->var == gTypeDefaultToken)) {
+    newInit = new CallExpr("=", thisAccess, initExpr.first->copy());
+  } else {
+    BlockStmt* secondBody = toBlockStmt(initExpr.second);
+    INT_ASSERT(secondBody);
+    Expr* typeStart = secondBody->body.head;
+    if (SymExpr* simpleCase = toSymExpr(typeStart)) {
+      if (TypeSymbol* sym = toTypeSymbol(simpleCase->var)) {
+        newInit = new CallExpr(PRIM_SET_MEMBER,
+                               toFnSymbol(next->parentSymbol)->_this,
+                               new_CStringSymbol(nextField),
+                               sym->type->defaultValue);
+      } else {
+        INT_FATAL("Expected TypeSymbol to be stored, got other symbol");
+      }
+    } else {
+      VarSymbol* tmp = newTemp("call_tmp");
+      next->insertBefore(new DefExpr(tmp));
+      next->insertBefore(new CallExpr(PRIM_MOVE, new SymExpr(tmp),
+                                      new CallExpr(PRIM_INIT,
+                                                   typeStart->copy())));
+      newInit = new CallExpr("=", thisAccess, new SymExpr(tmp));
+    }
+  }
   next->insertBefore(newInit);
 }
 
@@ -341,11 +370,12 @@ void insertOmittedField(Expr* next, const char* nextField,
 // This will be stored in a Map of type to a Map of fields to init expressions,
 // which will be used to provide omitted initialization of fields when
 // traversing the body of a user-defined initializer.
-void storeFieldInit(AggregateType* t, const char* fieldname, Expr* init) {
+void storeFieldInit(AggregateType* t, const char* fieldname, Expr* init,
+                    Expr* type) {
   if (defaultInits[t] != NULL) {
-    defaultInits[t]->insert(std::pair<const char*, Expr*>(fieldname, init));
+    defaultInits[t]->insert(std::pair<const char*, std::pair<Expr*, Expr*> >(fieldname, std::pair<Expr*, Expr*>(init, type)));
   } else {
-    defaultInits[t] = new std::map<const char*, Expr*>;
-    defaultInits[t]->insert(std::pair<const char*, Expr*>(fieldname, init));
+    defaultInits[t] = new std::map<const char*, std::pair<Expr*, Expr*> >;
+    defaultInits[t]->insert(std::pair<const char*, std::pair<Expr*, Expr*> >(fieldname, std::pair<Expr*, Expr*>(init, type)));
   }
 }

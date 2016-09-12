@@ -29,6 +29,7 @@ void temporaryInitializerFixup(CallExpr* call);
 
 void handleInitializerRules(FnSymbol* fn, AggregateType* t);
 
-void storeFieldInit(AggregateType* t, const char* fieldname, Expr* init);
+void storeFieldInit(AggregateType* t, const char* fieldname, Expr* init,
+                    Expr* type);
 
 #endif
