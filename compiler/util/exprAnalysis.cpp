@@ -28,6 +28,7 @@
  *  - Read/write to a global
  *  - Is/contains essential primitive
  *  - If it's a call to functions with ref arguments
+ *  - If the LHS of a PRIM_MOVE appears in the exprToMove
  *
  * For now, this is a very conservative analysis. A more precise analysis
  * could distinguish between reads and writes to memory and to take into
