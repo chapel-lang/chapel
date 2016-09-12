@@ -179,7 +179,6 @@ read in the output of the default ``write`` method.
 module ChapelIO {
   use ChapelBase; // for uint().
   use SysBasic;
-  // use IO; happens below once we need it.
   
   // TODO -- this should probably be private
   pragma "no doc"
