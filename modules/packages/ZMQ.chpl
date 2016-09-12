@@ -115,6 +115,16 @@ by ZMQ, the following error shall be produced at compile time.
    class Foo { var val: int; }
    socket.recv(Foo);
 
+Multilocale Support
++++++++++++++++++++
+
+Chapel's ZMQ module supports multilocale execution of ZeroMQ programs.  The
+locale on which the :type:`Context` object is created sets the "home" locale
+for all sockets created from this context and all operations performed on the
+socket.  For example, a send call on a socket from a locale other than the
+home locale will migrate a task to the home locale that will remotely access
+the data to send it over the socket.
+
 Examples
 --------
 
