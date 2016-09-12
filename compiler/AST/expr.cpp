@@ -100,10 +100,7 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, Gen
 
 static GenRet codegenZero();
 static GenRet codegenZero32();
-//static GenRet codegenOne();
 static GenRet codegenNullPointer();
-
-static GenRet codegenFieldPtr(GenRet base, const char* field);
 static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
@@ -283,9 +280,9 @@ bool Expr::inTree() {
 }
 
 
-Type* Expr::typeInfo() {
-  INT_FATAL(this, "Illegal call to Expr::typeInfo()");
-  return NULL;
+QualifiedType Expr::qualType() {
+  INT_FATAL(this, "Illegal call to Expr::qualType()");
+  return QualifiedType(NULL);
 }
 
 bool Expr::isNoInitExpr() const {
@@ -502,11 +499,11 @@ SymExpr* SymExpr::copyInner(SymbolMap* map) {
   return new SymExpr(var);
 }
 
-Type* SymExpr::typeInfo(void) {
+QualifiedType SymExpr::qualType(void) {
   if (toFnSymbol(var)) {
-    return dtCFnPtr;
+    return QualifiedType(dtCFnPtr);
   } else {
-    return var->type;
+    return var->qualType();
   }
 }
 
@@ -608,8 +605,8 @@ UnresolvedSymExpr::copyInner(SymbolMap* map) {
 }
 
 
-Type* UnresolvedSymExpr::typeInfo(void) {
-  return dtUnknown;
+QualifiedType UnresolvedSymExpr::qualType(void) {
+  return QualifiedType(dtUnknown);
 }
 
 
@@ -718,9 +715,9 @@ void DefExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 
-Type* DefExpr::typeInfo(void) {
-  INT_FATAL(this, "Illegal call to DefExpr::typeInfo()");
-  return NULL;
+QualifiedType DefExpr::qualType(void) {
+  INT_FATAL(this, "Illegal call to DefExpr::qualType()");
+  return QualifiedType(NULL);
 }
 
 
@@ -1563,15 +1560,6 @@ GenRet codegenFieldPtr(GenRet base, Expr* field) {
   } else {
     INT_FATAL("Unknown field in codegenFieldPtr");
   }
-  return codegenFieldPtr(base, cname, name, field_normal);
-}
-
-static
-GenRet codegenFieldPtr(GenRet base, const char* field) {
-  const char* cname = NULL;
-  const char* name = NULL;
-  cname = field;
-  name = field;
   return codegenFieldPtr(base, cname, name, field_normal);
 }
 
@@ -3202,7 +3190,30 @@ GenRet codegenCast(Type* t, GenRet value, bool Cparens)
   ret.isUnsigned = ! is_signed(t);
 
   // If we are casting to bool, set it to != 0.
-  if( is_bool_type(t) ) return codegenNotEquals(value, codegenZero());
+  if( is_bool_type(t) ) {
+    // NOTE: We have to limit this special treatment for bool cast to
+    // --no-llvm compilations. LLVM bool operations return single bit
+    // integers whereas bool type is 8-bits. So we still need explicit
+    // cast. Engin
+    if(info->cfile) {
+      return codegenNotEquals(value, codegenZero());
+    }
+    else {
+#ifdef HAVE_LLVM
+      llvm::Type* castType = t->codegen().type;
+
+      llvm::IntegerType* castTypeInt =
+        llvm::dyn_cast<llvm::IntegerType>(castType);
+
+      llvm::IntegerType* valueTypeInt =
+        llvm::dyn_cast<llvm::IntegerType>(value.val->getType());
+
+      if(castTypeInt->getBitWidth() < valueTypeInt->getBitWidth()) {
+        return codegenNotEquals(value, codegenZero());
+      }
+#endif
+    }
+  }
 
   // if we are casting a C99 wide pointer, parens around the value
   // will result in an error, hence the Cparens parameter
@@ -3903,15 +3914,15 @@ FnSymbol* CallExpr::findFnSymbol(void) {
 }
 
 
-Type* CallExpr::typeInfo(void) {
+QualifiedType CallExpr::qualType(void) {
   if (primitive)
     return primitive->returnInfo(this);
 
   else if (isResolved())
-    return isResolved()->retType;
+    return QualifiedType(isResolved()->retType);
 
   else
-    return dtUnknown;
+    return QualifiedType(dtUnknown);
 }
 
 void CallExpr::prettyPrint(std::ostream *o) {
@@ -4432,6 +4443,7 @@ GenRet CallExpr::codegenPrimitive() {
         ret.c = "return " + ret.c;
       } else {
 #ifdef HAVE_LLVM
+        ret = codegenCast(ret.chplType, codegenValue(get(1)));
         ret.val = gGenInfo->builder->CreateRet(ret.val);
 #endif
       }
@@ -5019,189 +5031,6 @@ GenRet CallExpr::codegenPrimitive() {
     break;
   }
 
-  case PRIM_SYNC_INIT:
-    codegenCall("chpl_sync_initAux",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SYNC_DESTROY:
-    codegenCall("chpl_sync_destroyAux",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SYNC_LOCK:
-    codegenCall("chpl_sync_lock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SYNC_UNLOCK:
-    codegenCall("chpl_sync_unlock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SYNC_WAIT_FULL:
-    codegenCall("chpl_sync_waitFullAndLock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")),
-                get(2),
-                get(3));
-    break;
-
-  case PRIM_SYNC_WAIT_EMPTY:
-    codegenCall("chpl_sync_waitEmptyAndLock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")),
-                get(2),
-                get(3));
-    break;
-
-  case PRIM_SYNC_SIGNAL_FULL:
-    codegenCall("chpl_sync_markAndSignalFull",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SYNC_SIGNAL_EMPTY:
-    codegenCall("chpl_sync_markAndSignalEmpty",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "sync_aux")));
-    break;
-
-  case PRIM_SINGLE_INIT:
-    codegenCall("chpl_single_initAux",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
-    break;
-
-  case PRIM_SINGLE_DESTROY:
-    codegenCall("chpl_single_destroyAux",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
-    break;
-
-  case PRIM_SINGLE_LOCK:
-    codegenCall("chpl_single_lock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
-    break;
-
-  case PRIM_SINGLE_UNLOCK:
-    codegenCall("chpl_single_unlock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
-    break;
-
-  case PRIM_SINGLE_WAIT_FULL:
-    // single, lineno, filename
-    codegenCall("chpl_single_waitFullAndLock",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")),
-                get(2),
-                get(3));
-    break;
-
-  case PRIM_SINGLE_SIGNAL_FULL:
-    codegenCall("chpl_single_markAndSignalFull",
-                codegenLocalAddrOf(codegenFieldPtr(get(1), "single_aux")));
-    break;
-
-  case PRIM_WRITEEF: {
-    // get(1) is argument (class, wide or not), get(2) is what to write.
-    GenRet s;
-
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-      s = codegenRaddr(get(1));
-    else
-      s = get(1);
-
-    codegenCall( "chpl_write_EF", s, get(2));
-
-    break;
-  }
-
-  case PRIM_WRITEFF:
-  case PRIM_WRITEXF: {
-    const char* fn = NULL;
-    GenRet      s;
-
-    if (primitive->tag == PRIM_WRITEFF) fn = "chpl_write_FF";
-    if (primitive->tag == PRIM_WRITEXF) fn = "chpl_write_XF";
-
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-      s = codegenRaddr(get(1));
-    else
-      s = get(1);
-
-    codegenCall( fn, s, get(2));
-
-    break;
-  }
-
-  case PRIM_READFE:
-  case PRIM_READFF:
-  case PRIM_READXX: {
-    const char* fn = NULL;
-    GenRet      s;
-
-    if (primitive->tag == PRIM_READFE) fn = "chpl_read_FE";
-    if (primitive->tag == PRIM_READFF) fn = "chpl_read_FF";
-    if (primitive->tag == PRIM_READXX) fn = "chpl_read_XX";
-
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-      s = codegenRaddr(get(1));
-    else
-      s = get(1);
-
-    ret = codegenCallExpr(fn, s);
-
-    break;
-  }
-
-  case PRIM_SYNC_IS_FULL: {
-    // get(1) is sync var get(2) is isSimpleSyncBaseType( arg )
-    GenRet s      = get(1);
-    GenRet valPtr = codegenLocalAddrOf(codegenFieldPtr(s, "value"));
-    GenRet aux    = codegenLocalAddrOf(codegenFieldPtr(s, "sync_aux"));
-
-    ret = codegenCallExpr("chpl_sync_isFull", valPtr, aux);
-
-    break;
-  }
-
-  case PRIM_SINGLE_WRITEEF: {
-    // get(1) is argument (class, wide or not), get(2) is what to write.
-    GenRet s;
-
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-      s = codegenRaddr(get(1));
-    else
-      s = get(1);
-
-    codegenCall( "chpl_single_write_EF", s, get(2));
-
-    break;
-  }
-
-  case PRIM_SINGLE_READFF:
-  case PRIM_SINGLE_READXX: {
-    GenRet      s;
-    const char* fn = NULL;
-
-    if (primitive->tag == PRIM_SINGLE_READFF) fn = "chpl_single_read_FF";
-    if (primitive->tag == PRIM_SINGLE_READXX) fn = "chpl_single_read_XX";
-
-    if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
-      s = codegenRaddr(get(1));
-    else
-      s = get(1);
-
-    ret = codegenCallExpr(fn, s);
-
-    break;
-  }
-
-  case PRIM_SINGLE_IS_FULL: {
-    // get(1) is sync var get(2) is isSimpleSyncBaseType( arg )
-    GenRet s       = get(1);
-    GenRet val_ptr = codegenLocalAddrOf(codegenFieldPtr(s, "value"));
-    GenRet aux     = codegenLocalAddrOf(codegenFieldPtr(s, "single_aux"));
-
-    ret = codegenCallExpr("chpl_single_isFull", val_ptr, aux);
-
-    break;
-  }
-
   case PRIM_GET_SERIAL:
     ret = codegenCallExpr("chpl_task_getSerial");
     break;
@@ -5531,7 +5360,7 @@ GenRet CallExpr::codegenPrimitive() {
 
       // C standard promotes small ints to full int when they are involved in
       // arithmetic operations. When we don't denormalize the AST, small integer
-      // arithemtic is always assigned to a temporary of the suitable size,
+      // arithmetic is always assigned to a temporary of the suitable size,
       // which truncates the integer appropriately. OTOH, if we denormalize the
       // AST then we have to make sure that are cast to appropriate size.
       //
@@ -6430,11 +6259,11 @@ void ContextCallExpr::accept(AstVisitor* visitor) {
   }
 }
 
-Type* ContextCallExpr::typeInfo() {
+QualifiedType ContextCallExpr::qualType() {
   CallExpr* mainCall = getDesignatedCall(this);
   if (mainCall)
-    return mainCall->typeInfo();
-  return dtUnknown;
+    return mainCall->qualType();
+  return QualifiedType(dtUnknown);
 }
 
 GenRet ContextCallExpr::codegen() {
@@ -6489,6 +6318,79 @@ CallExpr* ContextCallExpr::getRValueCall() {
 *                                                                           *
 ************************************* | ************************************/
 
+ForallExpr::ForallExpr(Expr* indices,
+                       Expr* iteratorExpr,
+                       Expr* expr,
+                       Expr* cond,
+                       bool maybeArrayType,
+                       bool zippered) :
+  Expr(E_ForallExpr),
+  indices(indices),
+  iteratorExpr(iteratorExpr),
+  expr(expr),
+  cond(cond),
+  maybeArrayType(maybeArrayType),
+  zippered(zippered)
+{
+  gForallExprs.add(this);
+}
+
+ForallExpr* ForallExpr::copyInner(SymbolMap* map) {
+  return new ForallExpr(
+    COPY_INT(indices),
+    COPY_INT(iteratorExpr),
+    COPY_INT(expr),
+    COPY_INT(cond),
+    maybeArrayType,
+    zippered);
+}
+
+void ForallExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
+  if (old_ast == indices)
+    indices = new_ast;
+  else if (old_ast == iteratorExpr)
+    iteratorExpr = new_ast;
+  else if (old_ast == expr)
+    expr = new_ast;
+  else if (old_ast == cond)
+    cond = new_ast;
+  else
+    INT_FATAL(this, "unexpected case in ForallExpr::replaceChild");
+}
+
+void
+ForallExpr::verify() {
+  Expr::verify();
+  if (astTag != E_ForallExpr)
+    INT_FATAL(this, "bad ForallExpr::astTag");
+  INT_FATAL(this, "ForallExpr::verify() is not implemented");
+}
+
+void ForallExpr::accept(AstVisitor* visitor) {
+  INT_FATAL(this, "ForallExpr::accept() is not implemented");
+}
+
+GenRet ForallExpr::codegen() {
+  GenRet ret;
+  INT_FATAL(this, "ForallExpr::codegen called");
+  return ret;
+}
+
+Expr* ForallExpr::getFirstChild() {
+  INT_FATAL(this, "ForallExpr::getFirstChild() is not implemented");
+  return NULL;
+}
+
+Expr* ForallExpr::getFirstExpr() {
+  INT_FATAL(this, "ForallExpr::getFirstExpr() is not implemented");
+  return NULL;
+}
+
+/************************************ | *************************************
+*                                                                           *
+*                                                                           *
+************************************* | ************************************/
+
 NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
   Expr(E_NamedExpr),
   name(init_name),
@@ -6532,8 +6434,8 @@ void NamedExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 
-Type* NamedExpr::typeInfo(void) {
-  return actual->typeInfo();
+QualifiedType NamedExpr::qualType(void) {
+  return actual->qualType();
 }
 
 

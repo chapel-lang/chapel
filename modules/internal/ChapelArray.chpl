@@ -149,6 +149,10 @@ module ChapelArray {
   pragma "no doc"
   config param useBulkTransferStride = true;
 
+  // Return POD values from arrays as values instead of const ref?
+  pragma "no doc"
+  config param PODValAccess = true;
+
   // Toggles the functionality to perform strided bulk transfers involving
   // distributed arrays.
   //
@@ -1703,6 +1707,7 @@ module ChapelArray {
 
   pragma "no doc"
   proc shouldReturnRvalueByConstRef(type t) param {
+    if !PODValAccess then return true;
     if isPODType(t) then return false;
     return true;
   }
@@ -2536,6 +2541,15 @@ module ChapelArray {
     return && reduce (this == that);
   }
 
+  // The same as the built-in _cast, except accepts a param arg.
+  pragma "no doc"
+  proc _cast(type t, param arg) where t: _array {
+    var result: t;
+    // The would-be param version of proc =, inlined.
+    chpl__transferArray(result, arg);
+    return result;
+  }
+
 
   //
   // isXxxType, isXxxValue
@@ -3124,9 +3138,9 @@ module ChapelArray {
       chpl__bulkTransferHelper(a, b);
     }
     else {
-      if debugBulkTransfer then
-        // just writeln() clashes with writeln.chpl
-        stdout.writeln("proc =(a:[],b): bulk transfer did not happen");
+      if debugBulkTransfer {
+        chpl_debug_writeln("proc =(a:[],b): bulk transfer did not happen");
+      }
       chpl__transferArray(a, b);
     }
   }
@@ -3149,6 +3163,12 @@ module ChapelArray {
     }
   }
 
+  // assigning from a param
+  inline proc chpl__transferArray(a: [], param b) {
+    forall aa in a do
+      aa = b;
+  }
+
   inline proc =(ref a: [], b:domain) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
@@ -3158,6 +3178,13 @@ module ChapelArray {
   inline proc =(ref a: [], b) /* b is not an array nor a domain nor a tuple */ {
     chpl__transferArray(a, b);
   }
+
+/* Does not work: compiler expects assignments to have 2 formals,
+   whereas the below becomes a 1-argument function after resolution.
+  inline proc =(ref a: [], param b) {
+    chpl__transferArray(a, b);
+  }
+*/
 
   inline proc =(ref a: [], b: _tuple) where isEnumArr(a) {
     if b.size != a.numElements then
@@ -3191,19 +3218,13 @@ module ChapelArray {
     chpl__tupleInit(j, a.rank, b);
   }
 
-  proc _desync(type t) where t: _syncvar {
+  proc _desync(type t) type where isSyncType(t) || isSingleType(t) {
     var x: t;
-    return x.wrapped.value;
+    return x.valType;
   }
 
-  proc _desync(type t) where t: _singlevar {
-    var x: t;
-    return x.wrapped.value;
-  }
-
-  proc _desync(type t) {
-    var x: t;
-    return x;
+  proc _desync(type t) type {
+    return t;
   }
 
   proc =(ref a: [], b: _desync(a.eltType)) {

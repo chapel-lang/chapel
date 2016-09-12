@@ -314,8 +314,6 @@ EOF
     LIBS="$hwloc_old_LIBS"
     unset hwloc_old_LIBS
 
-    AC_PATH_TOOL(RMPATH, rm)
-
     _HWLOC_CHECK_DIFF_U
     _HWLOC_CHECK_DIFF_W
 
@@ -341,8 +339,10 @@ EOF
     AC_CHECK_LIB([pthread], [pthread_self], [hwloc_have_pthread=yes])
 
     # linux-libnuma.h testing requires libnuma with numa_bitmask_alloc()
-    AC_CHECK_DECL([numa_bitmask_alloc], [hwloc_have_linux_libnuma=yes], [],
+    AC_CHECK_LIB([numa], [numa_available], [
+      AC_CHECK_DECL([numa_bitmask_alloc], [hwloc_have_linux_libnuma=yes], [],
     	      [#include <numa.h>])
+    ])
 
     AC_CHECK_HEADERS([infiniband/verbs.h], [
       AC_CHECK_LIB([ibverbs], [ibv_open_device],

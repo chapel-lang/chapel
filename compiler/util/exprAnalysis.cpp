@@ -167,8 +167,6 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
     case PRIM_CAST_TO_VOID_STAR:
     case PRIM_GET_USER_LINE:
     case PRIM_GET_USER_FILE:
-    case PRIM_IS_SYNC_TYPE:
-    case PRIM_IS_SINGLE_TYPE:
     case PRIM_IS_TUPLE_TYPE:
     case PRIM_IS_STAR_TUPLE_TYPE:
     case PRIM_NUM_FIELDS:

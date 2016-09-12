@@ -255,12 +255,10 @@ proc searchParallel(in board=0, in pos=0, used=0, placed=0, firstPiece=0) {
 
   if placed == 0 {
     while allMasks[currentMask] {
-      if allMasks[currentMask] {
-        const mask = allMasks[currentMask];
-        currentMask += 1;
-        searchParallel(board | (mask & maskBottom), pos,
-                       used | (mask & maskUsed), placed + 1, mask);
-      }
+      const mask = allMasks[currentMask];
+      currentMask += 1;
+      searchParallel(board | (mask & maskBottom), pos,
+                     used | (mask & maskUsed), placed + 1, mask);
     }
   // 1 piece has been placed
   } else {
@@ -270,10 +268,16 @@ proc searchParallel(in board=0, in pos=0, used=0, placed=0, firstPiece=0) {
 
       if allMasks[currentMask] {
         const mask = allMasks[currentMask];
+
+        const currentSolution: [piecesDom] int =
+          [firstPiece, mask, 0, 0, 0, 0, 0, 0, 0, 0];
+
+        begin with (in board, in pos)
+          searchLinear(board | (mask & maskBottom), pos,
+                       used | (mask & maskUsed), placed+1,
+                       currentSolution);
+
         currentMask += 1;
-        searchLinearHelper(board | (mask & maskBottom), pos,
-                           used | (mask & maskUsed), placed+1,
-                           firstPiece, mask);
       }
     }
   }
@@ -331,17 +335,6 @@ proc goodPiece(mask, pos) {
       b ^= a;
    }
    return true;
-}
-
-
-//
-// Wrapper to set up initial call to recursive searchLinear
-//
-proc searchLinearHelper(board, pos, used, placed, firstPiece, mask) {
-  var currentSolution: [piecesDom] int;
-  currentSolution[0] = firstPiece;
-  currentSolution[1] = mask;
-  begin searchLinear(board, pos, used, placed, currentSolution);
 }
 
 

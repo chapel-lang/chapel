@@ -6,6 +6,7 @@ Initializing Modules:
      BaseStringType
      SysCTypes
      StringCasts
+    ChapelDebugPrint
     ChapelBase
      ChapelStringLiterals
     MemConsistency
@@ -38,5 +39,6 @@ Initializing Modules:
     ChapelDynDispHack
     Assert
     CommDiagnostics
+    AlignedTSupport
    printModuleInitOrder
     moduleInitTest

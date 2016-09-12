@@ -1,6 +1,6 @@
 # Comment test (followed by blank line test)
 
-CHPL_HOST_PLATFORM=darwin
+CHPL_HOST_PLATFORM=darwin       # inline comment test
 CHPL_HOST_COMPILER=clang
 CHPL_TARGET_PLATFORM=darwin
 CHPL_TARGET_COMPILER=clang

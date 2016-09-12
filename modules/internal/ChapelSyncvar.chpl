@@ -39,7 +39,9 @@ proceed if it is a single variable.
 */
 
 module ChapelSyncvar {
+  use AlignedTSupport;
   use MemConsistency;
+  use SyncVarRuntimeSupport;
 
   /************************************ | *************************************
   *                                                                           *
@@ -77,6 +79,19 @@ module ChapelSyncvar {
       compilerError("sync/single types cannot be of type '", t : string, "'");
   }
 
+  // Don't use native sync vars by default since the current qthreads release
+  // is missing writeFF, purge_to, and readXX.
+  config param useNativeSyncVar = false;
+
+  // use native sync vars if they're enabled and supported for the valType
+  private proc getSyncClassType(type valType) type {
+    if useNativeSyncVar && supportsNativeSyncVar(valType) {
+      return _qthreads_synccls(valType);
+    } else {
+      return _synccls(valType);
+    }
+  }
+
   pragma "no doc"
   proc chpl__readXX(x) return x;
 
@@ -92,13 +107,13 @@ module ChapelSyncvar {
   record _syncvar {
     type valType;                              // The compiler knows this name
 
-    var  wrapped : _synccls(valType) = nil;
-    var  isOwned : bool              = true;
+    var  wrapped : getSyncClassType(valType) = nil;
+    var  isOwned : bool                      = true;
 
     proc _syncvar(type valType) {
       ensureFEType(valType);
 
-      wrapped = new _synccls(valType);
+      wrapped = new (getSyncClassType(valType))(valType);
       isOwned = true;
     }
 
@@ -284,8 +299,7 @@ module ChapelSyncvar {
   inline proc chpl__maybeAutoDestroyed(x : _syncvar(?t)) param return true;
 
   // This version has to be available to take precedence
-  pragma "auto destroy fn sync"
-    inline proc chpl__autoDestroy(x : _syncvar(?)) {
+  inline proc chpl__autoDestroy(x : _syncvar(?)) {
     if x.isOwned == true then
       delete x.wrapped;
   }
@@ -293,21 +307,21 @@ module ChapelSyncvar {
   pragma "no doc"
   proc chpl__readXX(x : _syncvar(?)) return x.readXX();
 
-  proc <=>(lhs: _syncvar, ref rhs) {
+  proc <=>(lhs : _syncvar, ref rhs) {
     const tmp = lhs;
 
     lhs = rhs;
     rhs = tmp;
   }
 
-  proc <=>(ref lhs, rhs: _syncvar) {
+  proc <=>(ref lhs, rhs : _syncvar) {
     const tmp = lhs;
 
     lhs = rhs;
     rhs = tmp;
   }
 
-  proc <=>(lhs: _syncvar, rhs: _syncvar) {
+  proc <=>(lhs : _syncvar, rhs : _syncvar) {
     const tmp = lhs;
 
     lhs = rhs;
@@ -322,28 +336,6 @@ module ChapelSyncvar {
   * omits the syncAux variable for sufficiently simple valType.               *
   *                                                                           *
   ************************************* | ************************************/
-
-  // Implementation is target dependent and opaque to Chapel code
-  pragma "no doc"
-  extern record chpl_sync_aux_t { };
-
-  extern proc   chpl_sync_initAux(ref aux : chpl_sync_aux_t);
-  extern proc   chpl_sync_destroyAux(ref aux : chpl_sync_aux_t);
-
-  pragma "insert line file info"
-  extern proc   chpl_sync_waitEmptyAndLock(ref aux : chpl_sync_aux_t);
-
-  pragma "insert line file info"
-  extern proc   chpl_sync_waitFullAndLock (ref aux : chpl_sync_aux_t);
-
-  extern proc   chpl_sync_lock  (ref aux : chpl_sync_aux_t);
-  extern proc   chpl_sync_unlock(ref aux : chpl_sync_aux_t);
-
-  extern proc   chpl_sync_markAndSignalEmpty(ref aux : chpl_sync_aux_t);
-  extern proc   chpl_sync_markAndSignalFull (ref aux : chpl_sync_aux_t);
-
-  extern proc   chpl_sync_isFull(value : c_void_ptr,
-                                 ref aux   : chpl_sync_aux_t) : bool;
 
   pragma "no doc"
   class _synccls {
@@ -361,10 +353,10 @@ module ChapelSyncvar {
     }
 
     proc readFE() {
-      var ret: valType;
+      var ret : valType;
 
       on this {
-        var localRet: valType;
+        var localRet : valType;
 
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
@@ -374,17 +366,17 @@ module ChapelSyncvar {
         chpl_sync_markAndSignalEmpty(syncAux);
         chpl_rmem_consist_acquire();
 
-        ret      = localRet;
+        ret = localRet;
       }
 
       return ret;
     }
 
     proc readFF() {
-      var ret: valType;
+      var ret : valType;
 
       on this {
-        var localRet: valType;
+        var localRet : valType;
 
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
@@ -401,10 +393,10 @@ module ChapelSyncvar {
     }
 
     proc readXX() {
-      var ret: valType;
+      var ret : valType;
 
       on this {
-        var localRet: valType;
+        var localRet : valType;
 
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
@@ -414,7 +406,7 @@ module ChapelSyncvar {
         chpl_sync_unlock(syncAux);
         chpl_rmem_consist_acquire();
 
-        ret      = localRet;
+        ret = localRet;
       }
 
       return ret;
@@ -432,7 +424,7 @@ module ChapelSyncvar {
       }
     }
 
-    proc writeFF(val:valType) {
+    proc writeFF(val : valType) {
       on this {
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
@@ -444,7 +436,7 @@ module ChapelSyncvar {
       }
     }
 
-    proc writeXF(val:valType) {
+    proc writeXF(val : valType) {
       on this {
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
@@ -458,12 +450,12 @@ module ChapelSyncvar {
 
     proc reset() {
       on this {
-        const default_value: valType;
+        const defaultValue : valType;
 
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
 
-        value = default_value;
+        value = defaultValue;
 
         chpl_sync_markAndSignalEmpty(syncAux);
         chpl_rmem_consist_acquire();
@@ -484,15 +476,122 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc isSyncValue(x: sync) param  return true;
+  class _qthreads_synccls {
+    type valType;
+
+    var  alignedValue : aligned_t;
+
+    proc _qthreads_synccls(type valType) {
+      qthread_purge_to(alignedValue, defaultOfAlignedT(valType));
+    }
+
+    proc ~_qthreads_synccls() {
+      // There's no explicit destroy function, but qthreads reclaims memory
+      // for full variables that have no pending operations
+      qthread_fill(alignedValue);
+    }
+
+    proc readFE() {
+      var ret : valType;
+
+      on this {
+        var alignedLocalRet : aligned_t;
+
+        chpl_rmem_consist_release();
+        qthread_readFE(alignedLocalRet, alignedValue);
+        chpl_rmem_consist_acquire();
+
+        ret = alignedLocalRet : valType;
+      }
+
+      return ret;
+    }
+
+    proc readFF() {
+      var ret : valType;
+
+      on this {
+        var alignedLocalRet : aligned_t;
+
+        chpl_rmem_consist_release();
+        qthread_readFF(alignedLocalRet, alignedValue);
+        chpl_rmem_consist_acquire();
+
+        ret = alignedLocalRet : valType;
+      }
+
+      return ret;
+    }
+
+    proc readXX() {
+      var ret : valType;
+
+      on this {
+        var alignedLocalRet : aligned_t;
+
+        chpl_rmem_consist_release();
+        // currently have to yield to allow readXX in a loop to make progress
+        // TODO only yield every X accesses?
+        chpl_task_yield();
+        qthread_readXX(alignedLocalRet, alignedValue);
+        chpl_rmem_consist_acquire();
+
+        ret = alignedLocalRet : valType;
+      }
+
+      return ret;
+    }
+
+    proc writeEF(val : valType) {
+      on this {
+        chpl_rmem_consist_release();
+        qthread_writeEF(alignedValue, val : aligned_t);
+        chpl_rmem_consist_acquire();
+      }
+    }
+
+    proc writeFF(val : valType) {
+      on this {
+        chpl_rmem_consist_release();
+        qthread_writeFF(alignedValue, val : aligned_t);
+        chpl_rmem_consist_acquire();
+      }
+    }
+
+    proc writeXF(val : valType) {
+      on this {
+        chpl_rmem_consist_release();
+        qthread_writeF(alignedValue, val : aligned_t);
+        chpl_rmem_consist_acquire();
+      }
+    }
+
+    proc reset() {
+      on this {
+        chpl_rmem_consist_release();
+        qthread_purge_to(alignedValue, defaultOfAlignedT(valType));
+        chpl_rmem_consist_acquire();
+      }
+    }
+
+    proc isFull {
+      var b : bool;
+
+      on this {
+        chpl_rmem_consist_release();
+        b = qthread_feb_status(alignedValue) : bool;
+        chpl_rmem_consist_acquire();
+      }
+
+      return b;
+    }
+  }
+
+  pragma "no doc"
+  proc isSyncValue(x : sync) param  return true;
 
   pragma "no doc"
   proc isSyncValue(x)       param  return false;
-
-
-
-
-
 
 
 
@@ -511,7 +610,7 @@ module ChapelSyncvar {
     type valType;                              // The compiler knows this name
 
     var  wrapped : _singlecls(valType) = nil;
-    var  isOwned : bool              = true;
+    var  isOwned : bool                = true;
 
     proc _singlevar(type valType) {
       ensureFEType(valType);
@@ -620,8 +719,7 @@ module ChapelSyncvar {
   inline proc chpl__maybeAutoDestroyed(x : _singlevar(?t)) param return true;
 
   // This version has to be available to take precedence
-  pragma "auto destroy fn sync"
-    inline proc chpl__autoDestroy(x : _singlevar(?)) {
+  inline proc chpl__autoDestroy(x : _singlevar(?)) {
     if x.isOwned == true then
       delete x.wrapped;
   }
@@ -638,23 +736,6 @@ module ChapelSyncvar {
   *                                                                           *
   ************************************* | ************************************/
 
-  // Implementation is target dependent and opaque to Chapel code
-  pragma "no doc"
-  extern record chpl_single_aux_t { };
-
-  extern proc   chpl_single_initAux(ref aux : chpl_single_aux_t);
-  extern proc   chpl_single_destroyAux(ref aux : chpl_single_aux_t);
-
-  pragma "insert line file info"
-  extern proc   chpl_single_waitFullAndLock (ref aux : chpl_single_aux_t);
-
-  extern proc   chpl_single_lock  (ref aux : chpl_single_aux_t);
-  extern proc   chpl_single_unlock(ref aux : chpl_single_aux_t);
-
-  extern proc   chpl_single_markAndSignalFull (ref aux : chpl_single_aux_t);
-
-  extern proc   chpl_single_isFull(value   : c_void_ptr,
-                                   ref aux : chpl_single_aux_t) : bool;
 
 
   pragma "no doc"
@@ -673,10 +754,10 @@ module ChapelSyncvar {
     }
 
     proc readFF() {
-      var ret: valType;
+      var ret : valType;
 
       on this {
-        var localRet: valType;
+        var localRet : valType;
 
         chpl_rmem_consist_release();
 
@@ -697,10 +778,10 @@ module ChapelSyncvar {
     }
 
     proc readXX() {
-      var ret: valType;
+      var ret : valType;
 
       on this {
-        var localRet: valType;
+        var localRet : valType;
 
         chpl_rmem_consist_release();
 
@@ -748,8 +829,130 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc isSingleValue(x: single) param  return true;
+  proc isSingleValue(x : single) param  return true;
 
   pragma "no doc"
   proc isSingleValue(x)         param  return false;
+}
+
+
+private module SyncVarRuntimeSupport {
+  use AlignedTSupport;
+
+  //
+  // Sync var externs
+  //
+
+  // Implementation is target dependent and opaque to Chapel code
+  extern record chpl_sync_aux_t { };
+
+  extern proc   chpl_sync_initAux(ref aux : chpl_sync_aux_t);
+  extern proc   chpl_sync_destroyAux(ref aux : chpl_sync_aux_t);
+
+  pragma "insert line file info"
+  extern proc   chpl_sync_waitEmptyAndLock(ref aux : chpl_sync_aux_t);
+
+  pragma "insert line file info"
+  extern proc   chpl_sync_waitFullAndLock (ref aux : chpl_sync_aux_t);
+
+  extern proc   chpl_sync_lock  (ref aux : chpl_sync_aux_t);
+  extern proc   chpl_sync_unlock(ref aux : chpl_sync_aux_t);
+
+  extern proc   chpl_sync_markAndSignalEmpty(ref aux : chpl_sync_aux_t);
+  extern proc   chpl_sync_markAndSignalFull (ref aux : chpl_sync_aux_t);
+
+  extern proc   chpl_sync_isFull(value   : c_void_ptr,
+                                 ref aux : chpl_sync_aux_t) : bool;
+
+
+  //
+  // Single var externs
+  //
+
+  // Implementation is target dependent and opaque to Chapel code
+  extern record chpl_single_aux_t { };
+
+  extern proc   chpl_single_initAux(ref aux : chpl_single_aux_t);
+  extern proc   chpl_single_destroyAux(ref aux : chpl_single_aux_t);
+
+  pragma "insert line file info"
+  extern proc   chpl_single_waitFullAndLock (ref aux : chpl_single_aux_t);
+
+  extern proc   chpl_single_lock  (ref aux : chpl_single_aux_t);
+  extern proc   chpl_single_unlock(ref aux : chpl_single_aux_t);
+
+  extern proc   chpl_single_markAndSignalFull (ref aux : chpl_single_aux_t);
+
+  extern proc   chpl_single_isFull(value   : c_void_ptr,
+                                   ref aux : chpl_single_aux_t) : bool;
+
+
+  //
+  // Native qthreads sync var helpers and externs
+  //
+
+  // native qthreads aligned_t sync vars only work on 64-bit platforms right
+  // now, and we only support casting between certain types and aligned_t
+  proc supportsNativeSyncVar(type t) param {
+    return CHPL_TASKS == "qthreads"    &&
+           castableToAlignedT(t) &&
+           numBits(c_uintptr) == 64;
+  }
+
+  extern proc qthread_readFE     (ref dest : aligned_t, const ref src: aligned_t) : c_int;
+  extern proc qthread_readFF     (ref dest : aligned_t, const ref src: aligned_t) : c_int;
+  extern proc qthread_readXX     (ref dest : aligned_t, const ref src: aligned_t) : c_int;
+
+  extern proc qthread_writeEF    (ref dest : aligned_t, const ref src: aligned_t) : c_int;
+  extern proc qthread_writeFF    (ref dest : aligned_t, const ref src: aligned_t) : c_int;
+  extern proc qthread_writeF     (ref dest : aligned_t, const ref src: aligned_t) : c_int;
+
+  extern proc qthread_purge_to   (ref dest : aligned_t, const ref src: aligned_t) : c_int;
+  extern proc qthread_empty      (const ref dest : aligned_t) : c_int;
+  extern proc qthread_fill       (const ref dest : aligned_t) : c_int;
+  extern proc qthread_feb_status (const ref dest : aligned_t) : c_int;
+}
+
+
+// Support for aligned_t including the definition, casts, defaultValue, and
+// read/write routines. aligned_t is the type used by native qthreads sync vars
+private module AlignedTSupport {
+
+  // Implemented in qthreads tasking layer
+  extern type aligned_t;
+
+  // Support casts to/from uint/int/bool. Note that for qthreads aligned_t is
+  // an aligned uint64_t, so casting to/from int assumes 2's compliment.
+  //
+  // TODO add support for casting to/from any primitive type that's no bigger
+  // than 64-bits. This will require doing a memcpy for most of them though.
+  proc castableToAlignedT(type t) param {
+    return isIntegralType(t) || isBoolType(t);
+  }
+  inline proc _cast(type t, x : integral) where t : aligned_t {
+    return __primitive("cast", t, x);
+  }
+  inline proc _cast(type t, x : bool) where t : aligned_t {
+    return __primitive("cast", t, x);
+  }
+  inline proc _cast(type t, x : aligned_t) where castableToAlignedT(t) {
+    return __primitive("cast", t, x);
+  }
+
+  // not just _defaultOf, since the default depends on the "baseType"
+  inline proc defaultOfAlignedT(type t) {
+    const defaultValue : t;
+    return defaultValue : aligned_t;
+  }
+
+  // read/write support
+  proc aligned_t.writeThis(f) {
+    var tmp : uint(64) = this : uint(64);
+    f.write(tmp);
+  }
+  proc aligned_t.readThis(f) {
+    var tmp : uint(64);
+    f.read(tmp);
+    this = tmp : aligned_t;
+  }
 }
