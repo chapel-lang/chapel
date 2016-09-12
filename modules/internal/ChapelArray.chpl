@@ -3218,19 +3218,13 @@ module ChapelArray {
     chpl__tupleInit(j, a.rank, b);
   }
 
-  proc _desync(type t) where t: _syncvar {
+  proc _desync(type t) type where isSyncType(t) || isSingleType(t) {
     var x: t;
-    return x.wrapped.value;
+    return x.valType;
   }
 
-  proc _desync(type t) where t: _singlevar {
-    var x: t;
-    return x.wrapped.value;
-  }
-
-  proc _desync(type t) {
-    var x: t;
-    return x;
+  proc _desync(type t) type {
+    return t;
   }
 
   proc =(ref a: [], b: _desync(a.eltType)) {
