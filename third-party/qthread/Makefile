@@ -94,11 +94,12 @@ qthread-config: FORCE
 # ahead in version numbers as that which was used when packaging the
 # Qthreads release
 #
-	-cd $(QTHREAD_SUBDIR) && find . -name "*.m4" | xargs touch configure.ac
-	sleep 2
+	cd $(QTHREAD_SUBDIR) && touch -c configure.ac
+	cd $(QTHREAD_SUBDIR) && find . -name "*.m4" | xargs touch
+	cd $(QTHREAD_SUBDIR) && touch -c aclocal.m4
 	cd $(QTHREAD_SUBDIR) && touch configure
-	sleep 2
 	cd $(QTHREAD_SUBDIR) && find . -name "*.in" | xargs touch
+
 #
 # Then configure
 #
