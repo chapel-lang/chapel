@@ -461,8 +461,9 @@ static void collectAllAvailableBeginGraphs(SyncGraph* root, SyncGraphVec& endPoi
 }
 
 static void provideWarning(SymExpr* expr, ExternVarDetails* var) {
-  USR_WARN(expr,"Potential unsafe (use after free) use of variable %s here. 
-    Please make sure the variable use is properly synced", var->varName);
+  USR_WARN(expr,
+	   "Potential unsafe (use after free) use of variable %s here.Please make sure the variable use is properly synced",
+	   var->varName);
 }
 
 static void collectNewBegins(SyncGraph* start, SyncGraph* end, SyncGraphVec& destSyncPoints) {
