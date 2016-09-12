@@ -367,6 +367,7 @@ static void buildVirtualMaps();
 static void
 addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive = false);
 static void resolveTypedefedArgTypes(FnSymbol* fn);
+static void computeStandardModuleSet();
 static void unmarkDefaultedGenerics();
 static void resolveUses(ModuleSymbol* mod);
 static void resolveExports();
@@ -3211,6 +3212,11 @@ static void buildVisibleFunctionMap() {
         block = theProgram->block;
       } else {
         block = getVisibilityBlock(fn->defPoint);
+        //
+        // add all functions in standard modules to theProgram
+        //
+        if (standardModuleSet.set_in(block))
+          block = theProgram->block;
       }
       VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
       if (!vfb) {
@@ -3234,6 +3240,12 @@ getVisibleFunctions(BlockStmt* block,
                     Vec<FnSymbol*>& visibleFns,
                     Vec<BlockStmt*>& visited,
                     CallExpr* callOrigin) {
+  //
+  // all functions in standard modules are stored in a single block
+  //
+  if (standardModuleSet.set_in(block))
+    block = theProgram->block;
+
   //
   // avoid infinite recursion due to modules with mutual uses
   //
@@ -8253,9 +8265,40 @@ static void resolveTypedefedArgTypes(FnSymbol* fn)
   }
 }
 
+
+static void
+computeStandardModuleSet() {
+  standardModuleSet.set_add(rootModule->block);
+  standardModuleSet.set_add(theProgram->block);
+
+  Vec<ModuleSymbol*> stack;
+  stack.add(standardModule);
+
+  while (ModuleSymbol* mod = stack.pop()) {
+    if (mod->block->modUses) {
+      for_actuals(expr, mod->block->modUses) {
+        UseStmt* use = toUseStmt(expr);
+        INT_ASSERT(use);
+        SymExpr* se = toSymExpr(use->src);
+        INT_ASSERT(se);
+        if (ModuleSymbol* usedMod = toModuleSymbol(se->var)) {
+          INT_ASSERT(usedMod);
+          if (!standardModuleSet.set_in(usedMod->block)) {
+            stack.add(usedMod);
+            standardModuleSet.set_add(usedMod->block);
+          }
+        }
+      }
+    }
+  }
+}
+
+
 void
 resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
+
+  computeStandardModuleSet();
 
   // call _nilType nil so as to not confuse the user
   dtNil->symbol->name = gNil->name;
