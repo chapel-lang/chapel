@@ -6,7 +6,7 @@
 Auxiliary I/O Systems
 =====================
 
-This README describes Chapel support for Auxiliary I/O(AIO) systems. It also
+This document describes Chapel support for Auxiliary I/O(AIO) systems. It also
 provides instructions on how to set Chapel up to support multiple Auxiliary I/O
 systems simultaneously.
 
@@ -19,7 +19,7 @@ See:
 
  * :mod:`HDFS`
  * :mod:`Curl`
-   
+
 for specific instructions on how to install and use those features.
 
 The AIO system depends upon three environment variables:
@@ -73,7 +73,7 @@ Assuming that you have correctly defined ``CHPL_AUXIO_INCLUDES`` and ``CHPL_AUXI
 as detailed above, and have the correct libraries installed.
 
 If you only have one AIO system that you wish to use, you may simply set
-``CHPL_AUX_FILESYS=<system>``. For example, if we only wanted Apache Hadoop HDFS support, 
+``CHPL_AUX_FILESYS=<system>``. For example, if we only wanted Apache Hadoop HDFS support,
 we would set:
 
     ``CHPL_AUX_FILESYS=hdfs``
@@ -123,7 +123,7 @@ work on "standard" file systems as well).
      - On local file systems, we return all locales, since no individual
        locale is best.
 
- - Apache Hadoop provides a libhdfs implementation that uses the Java virtual 
+ - Apache Hadoop provides a libhdfs implementation that uses the Java virtual
    machine (jvm) and the Apache Hadoop HDFS jar files. When using Apache Hadoop
    libhdfs, make sure the jvm installation includes a static version of libjvm.
    Since, Apache Hadoop's libhdfs spins up a jvm, each compute node will need 
@@ -131,13 +131,13 @@ work on "standard" file systems as well).
    configurations. Set ``CHPL_AUX_FILESYS=hdfs`` to use libhdfs.
    Review ``$CHPL_HOME/modules/packages/HDFS.chpl`` for configuration.
 
- - Pivotal libhdfs3 is a pure C/C++ alternative implementation of the libhdfs. 
-   To use libhdfs3: install the libhdfs3 using source code from the PivotalHD 
-   github repository, follow the instructions for installing the Chapel support 
+ - Pivotal libhdfs3 is a pure C/C++ alternative implementation of the libhdfs.
+   To use libhdfs3: install the libhdfs3 using source code from the PivotalHD
+   github repository, follow the instructions for installing the Chapel support
    for Apache Hadoop libhdfs, and set ``CHPL_AUX_FILESYS=hdfs3``
 
  - When building Chapel HDFS support, select *one* libhdfs implementation!
 
- - To use Chapel's third-party build support (in the event you do not have or 
-   would like avoid performing a system build of libhdfs) review the ``README`` 
-   file in ``$CHPL_HOME/third-party/libhdfs3``
+ - To use Chapel's third-party build support (in the event you do not have or
+   would like avoid performing a system build of libhdfs) review the
+   :mod:`HDFS` documentation.
