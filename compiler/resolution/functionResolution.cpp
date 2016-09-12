@@ -3215,6 +3215,13 @@ static void buildVisibleFunctionMap() {
         //
         // add all functions in standard modules to theProgram
         //
+        // Lydia NOTE 09/12/16: The computation of the standardModuleSet is not
+        // tied to what is actually placed within theProgram->block.  As such
+        // there could be bugs where that implementation differs.  We have
+        // already encountered some with qualified access to default-included
+        // modules like List and Sort.  This implementation needs to be linked
+        // to the computation of the standardModuleSet.
+        //
         if (standardModuleSet.set_in(block))
           block = theProgram->block;
       }
@@ -3242,6 +3249,13 @@ getVisibleFunctions(BlockStmt* block,
                     CallExpr* callOrigin) {
   //
   // all functions in standard modules are stored in a single block
+  //
+  // Lydia NOTE 09/12/16: The computation of the standardModuleSet is not
+  // tied to what is actually placed within theProgram->block.  As such
+  // there could be bugs where that implementation differs.  We have
+  // already encountered some with qualified access to default-included
+  // modules like List and Sort.  This implementation needs to be linked
+  // to the computation of the standardModuleSet.
   //
   if (standardModuleSet.set_in(block))
     block = theProgram->block;
@@ -8268,6 +8282,16 @@ static void resolveTypedefedArgTypes(FnSymbol* fn)
 
 static void
 computeStandardModuleSet() {
+  // Lydia NOTE: 09/12/16 - this code does not follow the same code path used
+  // to add the standard module set to the root module's block, so misses some
+  // cases, causing qualified access to functions from certain modules (List,
+  // Search, Sort, at the time of this writing) to fail to resolve.  We
+  // should take the time to time this optimization to the code path it wishes
+  // to follow - however, I am not sure where that is occurring right now.
+
+  // Private uses will also help avoid the bug, but it is sweeping the bug under
+  // the rug rather than solving the problem at hand, and it is hard to say
+  // when the next time this code will bite us will be.
   standardModuleSet.set_add(rootModule->block);
   standardModuleSet.set_add(theProgram->block);
 
@@ -8298,7 +8322,9 @@ void
 resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
 
-  computeStandardModuleSet();
+  computeStandardModuleSet(); // Lydia NOTE 09/12/16: is not linked to our
+  // treatment on functions included by default, leading to bugs with qualified
+  // access to symbols included in this way.
 
   // call _nilType nil so as to not confuse the user
   dtNil->symbol->name = gNil->name;
