@@ -79,9 +79,8 @@ module ChapelSyncvar {
       compilerError("sync/single types cannot be of type '", t : string, "'");
   }
 
-  // Don't use native sync vars by default since the current qthreads release
-  // is missing writeFF, purge_to, and readXX.
-  config param useNativeSyncVar = false;
+  pragma "no doc"
+  config param useNativeSyncVar = true;
 
   // use native sync vars if they're enabled and supported for the valType
   private proc getSyncClassType(type valType) type {
