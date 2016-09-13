@@ -84,7 +84,7 @@ static inline void atomic_signal_fence(memory_order order)
 ////                      START OF INTEGER ATOMICS BASE                   ////
 //////////////////////////////////////////////////////////////////////////////
 
-// The obvious implementation of atomic stores is insufficient.
+// The obvious implementation of atomic loads and stores is insufficient.
 // They must be implemented with atomic primitives to ensure consistent
 // visibility of the results.
 #define DECLARE_ATOMICS_BASE(type, basetype) \
@@ -185,7 +185,7 @@ static inline type atomic_fetch_xor_ ## type(atomic_ ## type * obj, type operand
 ////                       START OF REAL ATOMICS BASE                     ////
 //////////////////////////////////////////////////////////////////////////////
 
-// The obvious implementation of atomic stores is insufficient.
+// The obvious implementation of atomic loads and stores is insufficient.
 // They must be implemented with atomic primitives to ensure consistent
 // visibility of the results.
 #define DECLARE_REAL_ATOMICS_BASE(type, uinttype) \
@@ -213,7 +213,7 @@ static inline void atomic_store_ ## type(atomic_ ## type * obj, type value) { \
 } \
 static inline type atomic_load_explicit_ ## type(atomic_ ## type * obj, memory_order order) { \
   type ret; \
-  uinttype ret_uint = __sync_fetch_and_or(obj, (uinttype)0); \
+  uinttype ret_uint = __sync_val_compare_and_swap(obj, (uinttype)0, (uinttype)0); \
   memcpy(&ret, &ret_uint, sizeof(ret)); \
   return ret; \
 } \
