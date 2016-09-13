@@ -1,5 +1,8 @@
+use Time;
 config const n = 1000000;
 config const showRace = false;
+
+config const performance = false;
 
 proc test(type base_type, n_max:int) {
   const mult = 10: base_type;
@@ -32,9 +35,14 @@ proc test(type base_type, n_max:int) {
 
   var aint:atomic base_type;
 
+  var t: Timer;
+  t.start();
   forall i in 1..n {
     aint.fetchAdd(one);
   }
+  t.stop();
+  if performance && n == (n_max:uint) then
+    writeln("Elapsed seconds for fetchAdd on atomic ", base_type:string, ": ", t.elapsed());
 
   assert(aint.read() == n:base_type);
   writeln("Increment OK");
