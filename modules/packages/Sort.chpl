@@ -249,18 +249,18 @@ proc chpl_check_comparator(comparator, type eltType) {
 
   if comparator.type == DefaultComparator {}
   // Check for valid comparator methods
-  else if canResolveMethod(comparator, "compare", data, data) {
-    // Check return type of compare
-    type comparetype = comparator.compare(data, data).type;
-    if !(isNumericType(comparetype)) then
-      compilerError("The compare method must return a numeric type");
-  }
   else if canResolveMethod(comparator, "key", data) {
     // Check return type of key
     const keydata = comparator.key(data);
     type keytype = keydata.type;
     if !(canResolve("<", keydata, keydata)) then
       compilerError("The key method must return an object that supports the '<' function");
+  }
+  else if canResolveMethod(comparator, "compare", data, data) {
+    // Check return type of compare
+    type comparetype = comparator.compare(data, data).type;
+    if !(isNumericType(comparetype)) then
+      compilerError("The compare method must return a numeric type");
   }
   else {
     // If we make it this far, the passed comparator was defined incorrectly

@@ -18,7 +18,6 @@
  */
 
 config param debugCSR = false;
-use Sort;
 
 // In the following, I insist on SUBdomains because
 // I have not seen us test a non-"sub" CSR domain
@@ -284,11 +283,11 @@ class CSRDom: BaseSparseDomImpl {
     return 1;
   }
 
-  proc bulkAdd_help(inds: [?indsDom] rank*idxType, isSorted=false, 
+  proc bulkAdd_help(inds: [?indsDom] rank*idxType, dataSorted=false,
       isUnique=false){
 
     const (actualInsertPts, actualAddCnt) =
-      __getActualInsertPts(this, inds, isSorted, isUnique);
+      __getActualInsertPts(this, inds, dataSorted, isUnique);
 
     const oldnnz = nnz;
     nnz += actualAddCnt;

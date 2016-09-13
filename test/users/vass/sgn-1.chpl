@@ -1,7 +1,7 @@
 config param sgnParam1 = -5, sgnParam2 = 0, sgnParam3 = 7;
-compilerWarning(sgn(sgnParam1):c_string);
-compilerWarning(sgn(sgnParam2):c_string);
-compilerWarning(sgn(sgnParam3):c_string);
+compilerWarning(sgn(sgnParam1):string);
+compilerWarning(sgn(sgnParam2):string);
+compilerWarning(sgn(sgnParam3):string);
 
 var sgnResult3: uint(8) = sgn(sgnParam3);
 writeln(sgnResult3);

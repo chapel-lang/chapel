@@ -53,6 +53,8 @@ arrays/diten/time_iterate.graph
 arrays/diten/time_array_vs_tuple.graph
 arrays/diten/time_array_vs_ddata.graph
 arrays/diten/time_array_vs_ref.graph
+arrays/diten/time_array_vs_ref_forall.graph
+arrays/diten/time_array_vs_ref_multidim.graph
 arrays/diten/timeVectorArray.graph
 arrays/lydia/time_access.graph
 performance/bradc/parOpEquals.graph
@@ -105,8 +107,10 @@ studies/shootout/thread-ring/thread-ring.graph
 studies/shootout/submitted/binarytrees-submitted.graph
 studies/shootout/submitted/chameneosredux-submitted.graph
 studies/shootout/submitted/fannkuchredux-submitted.graph
+studies/shootout/submitted/fasta-submitted.graph
 studies/shootout/submitted/knucleotide-submitted.graph
 studies/shootout/submitted/mandelbrot-submitted.graph
+studies/shootout/submitted/meteor-submitted.graph
 studies/shootout/submitted/nbody-submitted.graph
 studies/shootout/submitted/pidigits-submitted.graph
 studies/shootout/submitted/regexdna-submitted.graph
@@ -150,6 +154,8 @@ arrays/diten/time_iterate.graph
 arrays/diten/time_array_vs_tuple.graph
 arrays/diten/time_array_vs_ddata.graph
 arrays/diten/time_array_vs_ref.graph
+arrays/diten/time_array_vs_ref_forall.graph
+arrays/diten/time_array_vs_ref_multidim.graph
 performance/bharshbarg/forall-dom-range.graph
 performance/bharshbarg/arr-forall.graph
 arrays/lydia/time_access.graph
@@ -171,6 +177,8 @@ arrays/ferguson/return-array-8.graph
 arrays/ferguson/return-array-20000000.graph
 arrays/ferguson/return-array-40000000.graph
 domains/ferguson/build-associative.graph
+# suite: Atomic performance
+types/atomic/ferguson/atomictest.graph
 # suite: Dynamic iterators
 functions/iterators/angeles/dynamic.graph
 functions/iterators/angeles/distAdaptativeWSv1.graph

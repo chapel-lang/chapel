@@ -12,4 +12,4 @@ COMPOPTS <= --no-inline
 COMPOPTS <= --llvm
 
 # --no-denormalize creates slightly differnet temporary names
-COMPOPTS <= -denormalize
+COMPOPTS <= --no-denormalize

@@ -7,20 +7,8 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chap04.playground"
 
-
-# Test perf of qthreads WIP "distrib" scheduler compared to nemesis
+# Test perf of qthreads "distrib" scheduler
 export CHPL_QTHREAD_SCHEDULER=distrib
-
-# See if disabling work stealing improves performance
-export QT_STEAL_RATIO=0
-
-# hackily checkout and overlay qthreads branch that has the scheduler
-cd $CHPL_HOME/third-party/qthread/
-rm -rf qthread-1.10/
-git clone https://github.com/Qthreads/qthreads.git qthread-1.10/
-cd qthread-1.10/
-./autogen.sh
-cd $CWD
 
 SHORT_NAME=distrib
 START_DATE=08/10/16

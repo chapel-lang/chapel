@@ -31,7 +31,7 @@ proc ptest2(param y) {
 }
 
 proc ptest3(param z) {
-  compilerWarning("warning from ptest3, depth=0, z=", z:c_string, 0);
-  compilerWarning("warning from ptest3, default depth, z=", z:c_string, 0);
+  compilerWarning("warning from ptest3, depth=0, z=", z:string, 0);
+  compilerWarning("warning from ptest3, default depth, z=", z:string, 0);
   writeln("ptest3(z=", z, ")");
 }

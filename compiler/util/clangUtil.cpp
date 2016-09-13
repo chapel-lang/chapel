@@ -329,7 +329,10 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       int hex;
       int isfloat;
       if( negate ) numString.append("-");
-      numString.append(tok.getLiteralData(), tok.getLength());
+
+      if (tok.getLiteralData() && tok.getLength()) {
+        numString.append(tok.getLiteralData(), tok.getLength());
+      }
 
       if( debugPrint) printf("num = %s\n", numString.c_str());
 

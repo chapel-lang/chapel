@@ -715,15 +715,7 @@ module BLAS {
 
   */
   module C_BLAS {
-    extern type CBLAS_INDEX = size_t;
-
-    // Do a size test.
-    {
-      pragma "no doc"
-      pragma "no prototype"
-      extern proc sizeof(type t): size_t;
-      assert(sizeof(CBLAS_INDEX) == sizeof(size_t), "size of CBLAS_INDEX is not the same as size_t");
-    }
+    extern type CBLAS_INDEX;
 
     // Define the external types
     // These are C enums, so we define these as c_ints;

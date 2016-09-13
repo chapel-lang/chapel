@@ -662,6 +662,15 @@ static void setupTasklocalStorage(void) {
     }
 }
 
+static void setupWorkStealing(void) {
+    // In our experience the current work stealing implementation hurts
+    // performance, so disable it. Note that we don't override, so a user could
+    // try working stealing out by setting {QT,QTHREAD}_STEAL_RATIO. Also note
+    // that not all schedulers support work stealing, but it doesn't hurt to
+    // set this env var for those configs anyways.
+    chpl_qt_setenv("STEAL_RATIO", "0", 0);
+}
+
 void chpl_task_init(void)
 {
     int32_t   commMaxThreads;
@@ -673,11 +682,12 @@ void chpl_task_init(void)
 
     commMaxThreads = chpl_comm_getMaxThreads();
 
-    // Set up hardware parallelism, the stack size and stack guards, and
-    // tasklocal storage.
+    // Set up hardware parallelism, the stack size and stack guards,
+    // tasklocal storage, and work stealing
     hwpar = setupAvailableParallelism(commMaxThreads);
     setupCallStacks(hwpar);
     setupTasklocalStorage();
+    setupWorkStealing();
 
     if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
 
@@ -982,6 +992,7 @@ void chpl_task_sleep(double secs)
             qthread_yield();
             qtimer_stop(t);
         } while (qtimer_secs(t) < secs);
+        qtimer_destroy(t);
     }
 }
 

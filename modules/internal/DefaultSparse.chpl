@@ -21,7 +21,6 @@
 //
 module DefaultSparse {
 
-  use Search;
   config param debugDefaultSparse = false;
 
   class DefaultSparseDom: BaseSparseDomImpl {
@@ -115,6 +114,7 @@ module DefaultSparse {
 
     // private
     proc find(ind) {
+      use Search;
       //
       // sjd: unfortunate specialization for rank == 1
       //
@@ -236,11 +236,11 @@ module DefaultSparse {
       }
     }
 
-    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), isSorted=false, 
+    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), dataSorted=false,
         isUnique=false){
 
       const (actualInsertPts, actualAddCnt) =
-        __getActualInsertPts(this, inds, isSorted, isUnique);
+        __getActualInsertPts(this, inds, dataSorted, isUnique);
 
       const oldnnz = nnz;
       nnz += actualAddCnt;
