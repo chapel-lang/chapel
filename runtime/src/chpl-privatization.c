@@ -21,6 +21,7 @@
 #include "chpl-privatization.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
+extern int chpl_nodeID;
 
 static int64_t chpl_capPrivateObjects = 0;
 static chpl_sync_aux_t privatizationSync;
@@ -32,6 +33,9 @@ void chpl_privatization_init(void) {
 }
 
 void chpl_newPrivatizedClass(void* v, int64_t pid) {
+
+//  printf("%i in chpl_newPrivatizedClass(%p, %i)\n", chpl_nodeID, v, (int) pid);
+
   // We need to lock around this operation so two calls in rapid succession
   // that pass the chpl_capPrivateObjects limit don't both try to create a new
   // array. If they do, one of the calls will be leaked and an invalid pointer
@@ -43,13 +47,13 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
     chpl_capPrivateObjects = 8;
     // "private" means "node-private", so we can use the system allocator.
     chpl_privateObjects =
-        chpl_mem_allocMany(chpl_capPrivateObjects, sizeof(void *),
+        chpl_mem_allocManyZero(chpl_capPrivateObjects, sizeof(void *),
                            CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
   } else {
     if (pid > chpl_capPrivateObjects) {
       void** tmp;
       chpl_capPrivateObjects *= 2;
-      tmp = chpl_mem_allocMany(chpl_capPrivateObjects, sizeof(void *),
+      tmp = chpl_mem_allocManyZero(chpl_capPrivateObjects, sizeof(void *),
                                CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
       chpl_memcpy((void*)tmp, (void*)chpl_privateObjects, (pid-1)*sizeof(void*));
       chpl_privateObjects = tmp;
@@ -75,6 +79,16 @@ void* chpl_getPrivatizedClass(int64_t i) {
 
 
 void chpl_clearPrivatizedClass(int64_t i) {
+//  printf("%i in chpl_clearPrivatizedClass(%i)\n", chpl_nodeID, (int) i);
   chpl_privateObjects[i] = NULL;
+}
+
+int64_t chpl_numPrivatizedClasses(void) {
+  int64_t ret = 0;
+  for (int64_t i = 0; i < chpl_capPrivateObjects; i++) {
+    if (chpl_privateObjects[i])
+      ret++;
+  }
+  return ret;
 }
 
