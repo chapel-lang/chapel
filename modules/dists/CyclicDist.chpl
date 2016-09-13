@@ -886,8 +886,8 @@ proc CyclicArr.dsiPrivatize(privatizeData) {
 
 
 inline proc _remoteAccessData.getDataIndex(
-    param stridable, myStr:
-    rank*chpl__signedType(idxType),
+    param stridable,
+    myStr: rank*chpl__signedType(idxType),
     ind: rank*idxType,
     startIdx,
     dimLen) {
