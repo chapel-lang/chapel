@@ -323,8 +323,8 @@ void GridView::draw()
 
 int GridView::handle(int event)
 {
-  int x = Fl::event_x() - GrdView->x() - 30;
-  int y = Fl::event_y() - GrdView->y() - 30;
+  int x = Fl::event_x() - Grid_View->x() - 30;
+  int y = Fl::event_y() - Grid_View->y() - 30;
 
   int loc1, loc2;
 

@@ -46,6 +46,8 @@ class InfoBar : public Fl_Group {
   long maxConcurrent;
   showWhat infoTop;
   bool showcomms;
+  bool showcolorref;
+  bool showtag;
 
   char *fileName;
   char *tagName;
@@ -56,7 +58,7 @@ class InfoBar : public Fl_Group {
  public:
 
   InfoBar (int x, int y, int w, int h/*, const char *label = 0*/)
-#ifdef __APPLE__    
+#ifdef __APPLE__
     : Fl_Group(x,0,w,h+20) {
 #else
     : Fl_Group(x,y,w,h) {
@@ -68,6 +70,8 @@ class InfoBar : public Fl_Group {
     maxClock = 0;
     infoTop = show_Tasks;
     showcomms = true;
+    showtag = true;
+    showcolorref = true;
     fileName = NULL;
     tagName = NULL;
    };
@@ -88,13 +92,19 @@ class InfoBar : public Fl_Group {
   void setTagName(const char *name);
   void clearTagName() { if (tagName != NULL) free(tagName); tagName = NULL; }
   char *getTagName() { return tagName; }
-  
+
   void showTasks() { infoTop = show_Tasks; }
   void showCpu() { infoTop = show_CPU; }
   void showClock() { infoTop = show_Clock; }
   void showConcurrency() { infoTop = show_Concurrency; }
   void showComms() { showcomms = true; }
   void showSize() { showcomms = false; }
+
+  void showColorRef() { showcolorref = true; }
+  void hideColorRef() { showcolorref = false; }
+
+  void showTag() { showtag = true; }
+  void hideTag() { showtag = false; }
 
   showWhat dataToShow() { return infoTop; }
   bool commToShow() { return showcomms; }
@@ -108,7 +118,7 @@ class InfoBar : public Fl_Group {
   bool isOnList (LocCommBox *box);
 
   void resize (int X, int Y, int W, int H);
-  
+
 };
 
 #endif

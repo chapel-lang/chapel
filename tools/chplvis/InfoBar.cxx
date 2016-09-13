@@ -73,7 +73,7 @@ void InfoBar::setFileName(const char *name) {
     if (fileName != NULL) free(fileName);
     fileName = strdup(sl);
   }
-  
+
 void InfoBar::setTagName(const char *name) {
     const char *sl;
     if (tagName != NULL) free(tagName);
@@ -87,32 +87,34 @@ void InfoBar::setTagName(const char *name) {
 
 void InfoBar::draw(void)
 {
+  char mesg[150] = "";
+
   // dimensions and locations
   int cr_h = h() / 3;               // Height of color reference
   int cr_y = y() + 30 + Y_OFFSET;        // Y of color reference
 
   Fl_Group::draw();
 
-  // Color Reference
-  int ix;
-  for (ix = 0; ix <= 30; ix++) {
-    fl_color(heatColor(ix+1,31));
-    fl_line_style(FL_SOLID,3,NULL);
-    fl_line(x()+CR_Left+3*ix,cr_y,x()+CR_Left+3*ix,cr_y+cr_h);
-    if ((ix%3) == 0) {
-      fl_color(FL_BLACK);
-      fl_line_style(FL_SOLID,1,NULL);
-      fl_line(x()+CR_Left+3*ix, cr_y+cr_h+2, x()+CR_Left+3*ix, cr_y+cr_h+6);
+  if (showcolorref) {
+    // Color Reference
+    int ix;
+    for (ix = 0; ix <= 30; ix++) {
+      fl_color(heatColor(ix+1,31));
+      fl_line_style(FL_SOLID,3,NULL);
+      fl_line(x()+CR_Left+3*ix,cr_y,x()+CR_Left+3*ix,cr_y+cr_h);
+      if ((ix%3) == 0) {
+        fl_color(FL_BLACK);
+        fl_line_style(FL_SOLID,1,NULL);
+        fl_line(x()+CR_Left+3*ix, cr_y+cr_h+2, x()+CR_Left+3*ix, cr_y+cr_h+6);
+      }
     }
-  }
 
-  fl_color(FL_BLACK);
-  fl_line_style(FL_SOLID,1,NULL);
-  fl_draw("1", x()+CR_Left-20, cr_y, 15, 30, FL_ALIGN_CENTER, NULL, 0);
+    fl_color(FL_BLACK);
+    fl_line_style(FL_SOLID,1,NULL);
+    fl_draw("1", x()+CR_Left-20, cr_y, 15, 30, FL_ALIGN_CENTER, NULL, 0);
 
-  // Messages on max counts, next to the color reference
-  char mesg[150] = "";
-  switch (infoTop) {
+    // Messages on max counts, next to the color reference
+    switch (infoTop) {
     case show_Tasks:
       if (maxTasks > 0)
         snprintf (mesg, 150, "max Tasks: %d", maxTasks);
@@ -129,19 +131,19 @@ void InfoBar::draw(void)
       if (maxClock > 0)
         snprintf (mesg, 150, "max Concurrent: %ld", maxConcurrent);
       break;
-  }
-  fl_draw(mesg, x()+CR_Left+100, cr_y, 120, 20, FL_ALIGN_LEFT, NULL, 0);
-  
-  mesg[0] = 0;
-  if (showcomms) {
-    if (maxComms > 0) 
-      snprintf (mesg, 150, "max Comms: %d", maxComms);
-  } else {
-    if (maxSize > 0)
-      snprintf (mesg, 150, "max Data: %ld", maxSize);
-  }
-  fl_draw(mesg, x()+CR_Left+100, cr_y+cr_h/2, 120, 20,FL_ALIGN_LEFT, NULL, 0);
+    }
+    fl_draw(mesg, x()+CR_Left+100, cr_y, 120, 20, FL_ALIGN_LEFT, NULL, 0);
 
+    mesg[0] = 0;
+    if (showcomms) {
+      if (maxComms > 0)
+        snprintf (mesg, 150, "max Comms: %d", maxComms);
+    } else {
+      if (maxSize > 0)
+        snprintf (mesg, 150, "max Data: %ld", maxSize);
+    }
+    fl_draw(mesg, x()+CR_Left+100, cr_y+cr_h/2, 120, 20,FL_ALIGN_LEFT, NULL, 0);
+  }
 
   // Messages about file names / tags and so forth
 
@@ -150,7 +152,7 @@ void InfoBar::draw(void)
     fl_draw(mesg, x()+5, y()+5+Y_OFFSET, 120, 20, FL_ALIGN_LEFT, NULL, 0);
   }
 
-  if (tagName != NULL) {
+  if (showtag && tagName != NULL) {
     snprintf (mesg, 150, "tag: %s", tagName);
     fl_draw(mesg, x()+130, y()+5+Y_OFFSET, 120, 20, FL_ALIGN_LEFT, NULL, 0);
   }
@@ -194,7 +196,7 @@ void InfoBar::addLocOrComm(LocCommBox *box)
     boxCache.insert(boxCache.begin(), box);
     return;
   }
-  
+
   // Move others over or remove them
   int newW = box->w();
 

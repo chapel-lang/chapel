@@ -45,7 +45,7 @@ void ProfileBrowserCB (Fl_Widget *w, void *p)
   }
 }
 
-static int longWidth[] = {10, 60, 250, 0 };
+static int longWidth[] = {10, 80, 250, 0 };
 static int doubleWidth[] = {10, 100, 250, 0};
 
 int compTask (const void *p1, const void *p2)

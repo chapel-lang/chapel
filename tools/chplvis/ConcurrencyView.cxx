@@ -367,8 +367,9 @@ void ConcurrencyData::buildData(void) {
         btn = new Fl_Button(x()+10+60*curCol, y()+40+25*curLine, 70, 20, NULL);
         btn->box(FL_ROUNDED_BOX);
         btn->down_box(FL_ROUNDED_BOX);
-        snprintf (tmp, sizeof(tmp), "%c %ld", 
-                   theTask->taskRec->isLocal() ? 'L' : 'F', tl_itr->second);
+        snprintf (tmp, sizeof(tmp), "%c%s %ld",
+                  theTask->commSum.numComms > 0 ? '*' : ' ',
+                  theTask->taskRec->isLocal() ? "L" : "OC", tl_itr->second);
         btn->copy_label(tmp);
         btn->color(heatColor(theTask->taskClock,
                              VisData.getTagData(parent->tagNum)->

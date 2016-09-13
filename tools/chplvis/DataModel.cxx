@@ -377,11 +377,12 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
         // function communication
         {
           taskData *task;
-          long thisId;
+          long thisId = 0;
           if (cp->isGet()) {
             task = getTaskData (cp->dstId(), cp->inTask(), TagALL);
             if (task) {
-              thisId = task->taskRec->funcId();
+              if (task->taskRec)
+                thisId = task->taskRec->funcId();
               if (task->taskRec && thisId >= 0 && thisId < funcTblSize)
                 funcTbl[thisId].noGets++;
               else
@@ -1027,6 +1028,8 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
             (void)vdbTids.insert(taskid);
           } else {
             if (nfileno < 0 || nfileno >= fileTblSize) nfileno = 0;
+            if (fid < 0) 
+              { fid = 0; }
             newEvent = new E_task (sec, usec, nid, taskid, fid, onstr[0] == 'O',
                                    nlineno, nfileno);
           }
@@ -1074,6 +1077,7 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
           if (vdbTids.find(vdbTid) != vdbTids.end()) {
             break;
           }
+          if (fid < 0) fid = 0;
           newEvent = new E_fork(sec, usec, nid, rnid, dlen, line[1] == '_',
                                 vdbTid, fid);
         }

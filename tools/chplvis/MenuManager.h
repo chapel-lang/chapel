@@ -30,27 +30,16 @@
 #include "DataView.h"
 #include "ZoomScroll.h"
 
-// Common callbacks for view and data menus from
-// popups and main menu bar
-void menu_cb_ZoomIn(Fl_Menu_*, void*);
-void menu_cb_ZoomOut(Fl_Menu_*, void*);
-void menu_cb_Reset(Fl_Menu_*, void*);
-void menu_cb_ShowTasks(Fl_Menu_*, void*);
-void menu_cb_ShowCpu(Fl_Menu_*, void*);
-void menu_cb_ShowClock(Fl_Menu_*, void*);
-void menu_cb_ShowConc(Fl_Menu_*, void*);
-void menu_cb_ShowComm(Fl_Menu_*, void*);
-void menu_cb_ShowDsize(Fl_Menu_*, void*);
+enum ViewKind {VIEW_GRAPH, VIEW_GRID, VIEW_CONCURRENCY, VIEW_PROFILE};
 
 class MenuManager {
 
   bool useUTags;
+  ViewKind curView;
 
   DataView *curDataView;
   ZoomScroll *curZoom;
   
-  int tagMenu;
-  int tagPopup;
   Fl_Menu_Button *popup;
 
   long curTag;
@@ -63,6 +52,8 @@ class MenuManager {
 
   void toggleUTags();
 
+  ViewKind currentViewKind() { return curView; }
+  
   DataView *currentDataView() { return curDataView; }
 
   void setCurrentDataView(DataView *view);
@@ -80,6 +71,8 @@ class MenuManager {
 
   long currentLoc() { return lastLoc; }
   void setCurrentLoc(long l) { lastLoc = l; }
+
+  void makeMenusFor(ViewKind v);
   
 };
 
