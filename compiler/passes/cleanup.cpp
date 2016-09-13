@@ -97,7 +97,7 @@ insertDestructureStatements(Expr* S1, Expr* S2, CallExpr* lhs, Expr* rhs) {
                              new SymExpr(new_IntSymbol(lhs->numActuals())),
                              new CallExpr(".", rhs->copy(),
                                           new_CStringSymbol("size"))),
-                new CallExpr("compilerError", new_CStringSymbol("tuple size must match the number of grouped variables"), new_IntSymbol(0))));
+                new CallExpr("compilerError", new_StringSymbol("tuple size must match the number of grouped variables"), new_IntSymbol(0))));
 
   for_actuals(expr, lhs) {
     i++;
