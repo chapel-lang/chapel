@@ -50,7 +50,7 @@ ssize_t read(int    filedes,
              void  *buf,
              size_t nbyte)
 {
-    if ((qlib != NULL) && (qthread_internal_self() != NULL)) {
+    if (qt_blockable()) {
         return qt_read(filedes, buf, nbyte);
     } else {
         return syscall(SYS_read, filedes, buf, nbyte);

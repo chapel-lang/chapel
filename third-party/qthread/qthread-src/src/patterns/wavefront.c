@@ -80,6 +80,7 @@ struct qt_wavefront_workunit {
 
 static void qt_wavefront_worker(struct qt_wavefront_wargs *const arg)
 {
+    assert(arg);
     qt_wavefront_lattice *const L     = arg->L;
     qarray                     *local = NULL;
     char                      **R     = NULL;
@@ -91,7 +92,7 @@ static void qt_wavefront_worker(struct qt_wavefront_wargs *const arg)
         local = qarray_create_configured(vertCount * horizCount, L->unit_size,
                                          ALL_LOCAL, 1, 1);
         assert(local);
-        R = calloc(horizCount, sizeof(void *));
+        R = calloc(horizCount, sizeof(char *));
         assert(R);
         for (size_t i = 0; i < horizCount - 1; i++) {
             R[i] = qarray_elem_nomigrate(local, i * vertCount);
@@ -168,6 +169,7 @@ static void qt_wavefront_worker(struct qt_wavefront_wargs *const arg)
                 if ((wu->col == L->slats.segs - 1) &&
                     (wu->row == L->struts.segs - 1)) {
                     MACHINE_FENCE;
+                    assert(arg->no_more_work);
                     *arg->no_more_work = 1;
                 }
                 // } else {
@@ -244,6 +246,7 @@ qt_wavefront_lattice *qt_wavefront(qarray *restrict const vertical,
         for (size_t i = 0; i < L->struts.num; i++) {
             L->struts.strips[i] = calloc(L->struts.segs, sizeof(qarray *));
         }
+        assert(L->slats.segs > 0);
         for (size_t i = 0; i < L->slats.num; i++) {
             L->slats.strips[i] = calloc(L->slats.segs, sizeof(qarray *));
         }
@@ -259,10 +262,13 @@ qt_wavefront_lattice *qt_wavefront(qarray *restrict const vertical,
                                                    1);
 
             assert(tmp);
+            assert(vertical);
             /* allocated... now copy */
             memcpy(qarray_elem_nomigrate(tmp, 0),
                    qarray_elem_nomigrate(vertical, i * (L->struts.seg_len)),
                    L->unit_size * array_len);
+            assert(L->struts.strips);
+            assert(L->struts.strips[0]);
             L->struts.strips[0][i] = tmp;
         }
         for (size_t i = 0; i < L->slats.segs; i++) {

@@ -10,9 +10,13 @@ unlimited permission to copy, distribute and modify it.
 Basic Installation
 ==================
 
-These are generic installation instructions.
+If you are building from git or the "Source code" downloads from the releases
+page, you will need autotools to generate the `configure` file, by running
+`./autogen.sh`. If you would like to build qthreads without autotools, please
+download the `qthread-<version>.tar.bz2` from
+https://github.com/Qthreads/qthreads/releases.
 
-   The `configure' shell script attempts to guess correct values for
+The `configure' shell script attempts to guess correct values for
 various system-dependent variables used during compilation.  It uses
 those values to create a `Makefile' in each directory of the package.
 It may also create one or more `.h' files containing system-dependent

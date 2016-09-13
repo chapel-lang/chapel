@@ -90,13 +90,13 @@ decode(const char *inval, void *outval, int outvallen)
 int
 qthread_internal_net_driver_runtime_init(void)
 {
-    PMI_BOOL initialized;
+    int initialized;
 
     if (PMI_SUCCESS != PMI_Initialized(&initialized)) {
         return 1;
     }
 
-    if (PMI_TRUE != initialized) {
+    if (!initialized) {
         if (PMI_SUCCESS != PMI_Init(&initialized)) {
             return 2;
         }

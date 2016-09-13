@@ -24,6 +24,7 @@
 
 /* Internal Includes */
 #include <qthread/qthread-int.h>       /* for uintptr_t */
+#include "qt_envariables.h"
 #include "qt_mpool.h"
 #include "qt_atomics.h"
 #include "qt_expect.h"

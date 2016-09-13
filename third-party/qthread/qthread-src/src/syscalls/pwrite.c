@@ -53,7 +53,7 @@ ssize_t pwrite(int         filedes,
                size_t      nbyte,
                off_t       offset)
 {
-    if ((qlib != NULL) && (qthread_internal_self() != NULL)) {
+    if (qt_blockable()) {
         return qt_pwrite(filedes, buf, nbyte, offset);
     } else {
         return syscall(SYS_pwrite, filedes, buf, nbyte, offset);
