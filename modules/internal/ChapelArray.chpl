@@ -1186,9 +1186,12 @@ module ChapelArray {
 
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "new alias fn"
     proc newAlias() {
       var x = _value;
-      return _getDomain(x);
+      pragma "no copy"
+      var ret = _getDomain(x);
+      return ret;
     }
 
     /* Returns true if this domain is a subset of ``super``. Otherwise
@@ -2062,9 +2065,12 @@ module ChapelArray {
 
     pragma "no doc"
     pragma "reference to const when const this"
+    pragma "new alias fn"
     proc newAlias() {
       var x = _value;
-      return _getArray(x);
+      pragma "no copy"
+      var ret = _getArray(x);
+      return ret;
     }
 
     //

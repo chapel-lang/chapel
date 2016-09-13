@@ -523,7 +523,10 @@ void ReturnByRef::transform()
     }
     else
     {
-      INT_ASSERT(false);
+      FnSymbol * calledFn = call->isResolved();
+      if (!calledFn->hasFlag(FLAG_NEW_ALIAS_FN))
+        // fixupNewAlias removes such calls from the tree
+        INT_ASSERT(false);
     }
   }
 
@@ -1295,6 +1298,38 @@ static void handleStackTokens() {
 
 }*/
 
+// code like
+//    var x => GlobalArray[1..10]; // create a slice
+//    return x;
+// or
+//    var GlobalAlias => GlobalArray[1..10];
+//
+// poses problems because the call_tmp for the slice expression
+// (GlobalArray[1..10] in these examples) is destroyed at the end
+// of the current function. Instead, it should be used to initialize
+// the slice.
+static
+void fixupNewAlias(void) {
+
+  std::vector<CallExpr*> newAliasCalls;
+
+  forv_Vec(CallExpr, call, gCallExprs) {
+    FnSymbol* calledFn = call->isResolved();
+    if (calledFn && calledFn->hasFlag(FLAG_NEW_ALIAS_FN)) {
+        newAliasCalls.push_back(call);
+    }
+  }
+
+  for_vector(CallExpr, call, newAliasCalls) {
+    SymExpr* se = toSymExpr(call->get(1));
+    if (se->var->hasFlag(FLAG_TEMP)) {
+      // Note: these flags are added in functionResolution's postFold
+      se->var->removeFlag(FLAG_INSERT_AUTO_COPY);
+      se->var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+      call->replace(se->remove());
+    }
+  }
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -1303,6 +1338,7 @@ static void handleStackTokens() {
 ************************************** | *************************************/
 
 void callDestructors() {
+  fixupNewAlias();
   fixupDestructors();
 
   insertDestructorCalls();

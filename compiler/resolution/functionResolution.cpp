@@ -7335,6 +7335,9 @@ postFold(Expr* expr) {
               !lhs->var->hasFlag(FLAG_TYPE_VARIABLE)) {
             if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
               if (requiresImplicitDestroy(rhsCall)) {
+                // this still semes to be necessary even if
+                // isUserRecord(lhs->var->type) == true
+                // see call-expr-tmp.chpl for example
                 lhs->var->addFlag(FLAG_INSERT_AUTO_COPY);
                 lhs->var->addFlag(FLAG_INSERT_AUTO_DESTROY);
               }
