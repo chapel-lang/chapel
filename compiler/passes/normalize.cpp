@@ -45,6 +45,7 @@ bool normalized = false;
 //
 static void insertModuleInit();
 static void transformLogicalShortCircuit();
+static void lowerReduceAssign();
 static void checkUseBeforeDefs();
 static void moveGlobalDeclarationsToModuleScope();
 static void insertUseForExplicitModuleCalls(void);
@@ -74,6 +75,7 @@ static void find_printModuleInit_stuff();
 void normalize() {
   insertModuleInit();
   transformLogicalShortCircuit();
+  lowerReduceAssign();
 
   // tag iterators and replace delete statements with calls to ~chpl_destroy
   forv_Vec(CallExpr, call, gCallExprs) {
@@ -275,6 +277,82 @@ static void transformLogicalShortCircuit()
     stmt->accept(&transform);
   }
 }
+
+
+//
+// lowerReduceAssign(): lower the reduce= calls, verifying their correct use.
+//
+static Symbol* reduceIntentOp(BlockStmt* block, Symbol* reVar) {
+  // See markOuterVarsWithIntents() on how to decode byrefVars.
+  // Note that here we may have leading iter symbols, see getIterSymbols().
+  CallExpr* byrefVars = block->byrefVars;
+  bool leadingIterSymbols =
+    byrefVars->numActuals() >= 3 &&
+    toSymExpr(byrefVars->get(1))->var->hasFlag(FLAG_CHPL__ITER);
+
+  // The first actual (after the iter symbols when present); null if none.
+  Expr* markExpr = leadingIterSymbols ? byrefVars->get(3)->next :
+    byrefVars->argList.head;
+
+  while (markExpr) {
+    SymExpr* markSE = toSymExpr(markExpr);
+    SymExpr* outervarSE = toSymExpr(markSE->next);
+    markExpr = outervarSE->next;
+
+    if (isVarSymbol(markSE->var))
+      // this is a reduce intent
+      if (outervarSE->var == reVar)
+        // found reVar
+        return markSE->var;
+  }
+
+  // Did not see 'reVar' with a reduce intent.
+  return NULL;
+}
+static void lowerReduceAssign() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_REDUCE_ASSIGN)) {
+
+      // l.h.s. must be a single variable
+      if (SymExpr* lhsSE = toSymExpr(call->get(1))) {
+        Symbol* lhsVar = lhsSE->var;
+        // ... which is mentioned in a with clause with a reduce intent
+        Expr* curr = call->parentExpr;
+        BlockStmt* enclosingForall = NULL;
+        while (curr) {
+          if (BlockStmt* block = toBlockStmt(curr))
+            if (block->byrefVars) {
+              // If non-PRIM_FORALL_LOOP is legit, replace assert with if.
+              INT_ASSERT(block->byrefVars->isPrimitive(PRIM_FORALL_LOOP));
+              enclosingForall = block;
+              break;
+            }
+          curr = curr->parentExpr;
+        }
+
+        // I'd love these to be USR_FATAL_CONT, however currently
+        // the forall loop body is replicated 3 times, so we would
+        // report the same error 3 times.
+        if (!enclosingForall)
+          USR_FATAL_CONT(call, "The reduce= operator must occur within a forall loop.");
+        else if (Symbol* globalOp = reduceIntentOp(enclosingForall, lhsVar))
+          {
+            SET_LINENO(call);
+            Expr* repl = new_Expr(".(%S, 'accumulateOntoState')(%E,%E)",
+                           globalOp, lhsSE->remove(), call->get(2)->remove());
+            call->replace(repl);
+          }
+        else
+          USR_FATAL(lhsSE, "The l.h.s. of a reduce= operator, '%s', must be passed by a reduce intent into the nearest enclosing forall loop", lhsVar->name);
+
+      } else if (lhsSE) {
+        // If !lhsSE, there is an unrelated issue.
+        USR_FATAL(lhsSE, "The l.h.s. of a reduce= operator must be just a variable");
+      }
+    }
+  }
+}
+
 
 /************************************* | **************************************
 *                                                                             *
