@@ -329,7 +329,11 @@ proc Cyclic.dsiSupportsPrivatization() param return true;
 proc Cyclic.dsiGetPrivatizeData() return 0;
 
 proc Cyclic.dsiPrivatize(privatizeData) {
-  return new Cyclic(rank=rank, idxType=idxType, other=this);
+  //return new Cyclic(rank=rank, idxType=idxType, other=this);
+  return new Cyclic(startIdx, targetLocs,
+                    dataParTasksPerLocale,
+                    dataParIgnoreRunningTasks,
+                    dataParMinGranularity);
 }
 
 proc Cyclic.dsiGetReprivatizeData() return 0;
