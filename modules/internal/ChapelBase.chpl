@@ -33,7 +33,7 @@ module ChapelBase {
 
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                                             // the iterator to yield zero times.
-  proc _throwOpError(param op: c_string) {
+  proc _throwOpError(param op: string) {
       compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
   }
 
@@ -41,56 +41,42 @@ module ChapelBase {
     halt("Pure virtual function called.");
   }
 
-  proc compilerError(param x:c_string ...?n, param errorDepth:int) {
-    __primitive("error", (...x));
+
+  //
+  // compile-time diagnostics
+  //
+
+  proc compilerError(param msg: string ...?n, param errorDepth: int) {
+    __primitive("error");
   }
 
-  proc compilerError(param x:c_string ...?n) {
-    __primitive("error", (...x));
+  proc compilerError(param msg: string ...?n) {
+    __primitive("error");
   }
 
-  proc compilerWarning(param x:c_string ...?n, param errorDepth:int) {
-    __primitive("warning", (...x));
+  proc compilerWarning(param msg: string ...?n, param errorDepth: int) {
+    __primitive("warning");
   }
 
-  proc compilerWarning(param x:c_string ...?n) {
-    __primitive("warning", (...x));
+  proc compilerWarning(param msg: string ...?n) {
+    __primitive("warning");
   }
-
-  // for compilerAssert, as param tuples do not de-tuple into params yet,
-  // we handle only up to 5 message args and omit the rest
 
   proc compilerAssert(param test: bool)
   { if !test then compilerError("assert failed"); }
 
-  proc compilerAssert(param test: bool, param arg1:integral)
-  { if !test then compilerError("assert failed", arg1:int); }
+  proc compilerAssert(param test: bool, param errorDepth: int)
+  { if !test then compilerError("assert failed", errorDepth); }
 
-  proc compilerAssert(param test: bool, param arg1) where !isIntegralType(arg1.type)
-  { if !test then compilerError("assert failed - ", arg1); }
+  proc compilerAssert(param test: bool, param msg: string ...?n)
+  { if !test then compilerError("assert failed - ", (...msg)); }
 
-  proc compilerAssert(param test: bool, param arg1, param arg2)
-  { if !test then compilerError("assert failed - ", arg1, arg2); }
+  proc compilerAssert(param test: bool, param msg: string ...?n, param errorDepth: int)
+  { if !test then compilerError("assert failed - ", (...msg), errorDepth); }
 
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, param arg6: integral)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, arg6:int); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest..., param arglast: integral)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]", arglast:int); }
-
-  proc compilerAssert(param test: bool, param arg1, param arg2, param arg3, param arg4, param arg5, argrest...)
-  { if !test then compilerError("assert failed - ", arg1, arg2, arg3, arg4, arg5, " [...]"); }
 
   enum iterKind {leader, follower, standalone};
+
 
   //
   // assignment on primitive types
