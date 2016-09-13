@@ -45,6 +45,9 @@ module ChapelBase {
   //
   // compile-time diagnostics
   //
+  // Note: the message printed by "error" and "warning" primitives
+  // consists of the formals of the enclosing function, not their own args.
+  //
 
   proc compilerError(param msg: string ...?n, param errorDepth: int) {
     __primitive("error");
@@ -66,13 +69,13 @@ module ChapelBase {
   { if !test then compilerError("assert failed"); }
 
   proc compilerAssert(param test: bool, param errorDepth: int)
-  { if !test then compilerError("assert failed", errorDepth); }
+  { if !test then compilerError("assert failed", errorDepth + 1); }
 
   proc compilerAssert(param test: bool, param msg: string ...?n)
   { if !test then compilerError("assert failed - ", (...msg)); }
 
   proc compilerAssert(param test: bool, param msg: string ...?n, param errorDepth: int)
-  { if !test then compilerError("assert failed - ", (...msg), errorDepth); }
+  { if !test then compilerError("assert failed - ", (...msg), errorDepth + 1); }
 
 
   enum iterKind {leader, follower, standalone};
