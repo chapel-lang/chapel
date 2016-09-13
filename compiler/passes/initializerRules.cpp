@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "expr.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -141,7 +142,8 @@ bool isLaterFieldAccess(DefExpr* curField, const char* fieldname);
 
 static
 void insertOmittedField(Expr* next, const char* nextField,
-                        std::map<const char*, std::pair<Expr*, Expr*> >* inits);
+                        std::map<const char*, std::pair<Expr*, Expr*> >* inits,
+                        AggregateType* t);
 
 
 static
@@ -187,7 +189,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
           seenField[index] = true;
           index++;
         } else if (isLaterFieldAccess(curField, fieldname)) {
-          insertOmittedField(curExpr, curField->sym->name, inits);
+          insertOmittedField(curExpr, curField->sym->name, inits, t);
           index++;
           curField = toDefExpr(curField->next);
         } else {
@@ -202,7 +204,7 @@ void phase1Analysis(BlockStmt* body, AggregateType* t, Expr* initCall) {
     } else if (curField != NULL) {
       // only fields left
 
-      insertOmittedField(curExpr, curField->sym->name, inits);
+      insertOmittedField(curExpr, curField->sym->name, inits, t);
       curField = toDefExpr(curField->next);
       index++;
     } else {
@@ -311,9 +313,13 @@ bool isParentField(AggregateType* t, const char *name) {
 }
 
 static
+void replaceArgsWithFields(AggregateType* t, Expr* context, Symbol* _this);
+
+static
 void insertOmittedField(Expr* next, const char* nextField,
                         std::map<const char*,
-                        std::pair<Expr*, Expr*> >* inits) {
+                        std::pair<Expr*, Expr*> >* inits,
+                        AggregateType* t) {
   SET_LINENO(next);
   // Do something appropriate with "super"
   if (!strcmp(nextField, "super")) {
@@ -334,13 +340,20 @@ void insertOmittedField(Expr* next, const char* nextField,
     USR_FATAL_CONT(next, "can't omit initialization of field \"%s\", no type or default value provided", nextField);
     return;
   }
-  CallExpr* thisAccess = new CallExpr(".",
-                                      toFnSymbol(next->parentSymbol)->_this,
+  Symbol* _this = toFnSymbol(next->parentSymbol)->_this;
+  CallExpr* thisAccess = new CallExpr(".", _this,
                                       new_CStringSymbol(nextField));
   CallExpr* newInit = NULL;
   if (!(isSymExpr(initExpr.first) &&
         toSymExpr(initExpr.first)->var == gTypeDefaultToken)) {
-    newInit = new CallExpr("=", thisAccess, initExpr.first->copy());
+    Expr* init = initExpr.first->copy();
+
+    // Since the init expression we're storing utilizes the arguments
+    // corresponding to the fields instead of the fields themselves, we must
+    // replace those references to the ArgSymbols with references to the fields
+    replaceArgsWithFields(t, init, _this);
+
+    newInit = new CallExpr("=", thisAccess, init);
   } else {
     BlockStmt* secondBody = toBlockStmt(initExpr.second);
     INT_ASSERT(secondBody);
@@ -364,6 +377,29 @@ void insertOmittedField(Expr* next, const char* nextField,
     }
   }
   next->insertBefore(newInit);
+}
+
+// Should only be called over expressions that were inserted into the ArgSymbol
+// information for the default constructor on t.  Because the default
+// constructor for t has only the fields of t and "meme" as its arguments, if
+// we find an ArgSymbol mentioned in context, it should be a field (as "meme"
+// is inserted by the compiler and not utilized for the default expression of
+// anything we would encounter).
+static
+void replaceArgsWithFields(AggregateType* t, Expr* context, Symbol* _this) {
+  std::vector<SymExpr*> syms;
+  collectSymExprs(context, syms);
+  for_vector(SymExpr, se, syms) {
+    if (ArgSymbol* arg = toArgSymbol(se->var)) {
+      for_fields(field, t) {
+        if (!strcmp(field->name, arg->name)) {
+          CallExpr* fieldAccess = new CallExpr(".", _this, new_CStringSymbol(field->name));
+          se->replace(fieldAccess);
+          break;
+        }
+      }
+    }
+  }
 }
 
 // Takes in the type, the name of the field, and the expr used to initialize it.
