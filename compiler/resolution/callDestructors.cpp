@@ -1322,7 +1322,8 @@ void fixupNewAlias(void) {
 
   for_vector(CallExpr, call, newAliasCalls) {
     SymExpr* se = toSymExpr(call->get(1));
-    if (se->var->hasFlag(FLAG_TEMP)) {
+    if (se->var->hasFlag(FLAG_TEMP) &&
+        se->isRef() == false) {
       // Note: these flags are added in functionResolution's postFold
       se->var->removeFlag(FLAG_INSERT_AUTO_COPY);
       se->var->removeFlag(FLAG_INSERT_AUTO_DESTROY);
