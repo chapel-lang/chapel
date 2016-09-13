@@ -88,7 +88,6 @@ class PrivateDom: BaseRectangularDom {
   param rank: int;
   type idxType;
   param stridable: bool;
-  var pid: int = -1;
   var dist: Private;
 
   iter these() { for i in 0..numLocales-1 do yield i; }
@@ -142,7 +141,6 @@ class PrivateArr: BaseArr {
   param stridable: bool;
   var dom: PrivateDom(rank, idxType, stridable);
   var data: eltType;
-  var pid: int = -1;
 }
 
 proc PrivateArr.dsiGetBaseDom() return dom;

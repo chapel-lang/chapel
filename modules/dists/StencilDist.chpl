@@ -206,7 +206,6 @@ class Stencil : BaseDist {
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
-  var pid: int = -1; // privatized object id (this should be factored out)
   var fluff: rank*idxType;
   var periodic: bool = false;
 }
@@ -241,7 +240,6 @@ class StencilDom: BaseRectangularDom {
   const dist: Stencil(rank, idxType);
   var locDoms: [dist.targetLocDom] LocStencilDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
   var fluff: rank*idxType;
   var periodic: bool = false;
   var wholeFluff : domain(rank=rank, idxType=idxType, stridable=stridable);
@@ -285,7 +283,6 @@ class StencilArr: BaseArr {
   var dom: StencilDom(rank, idxType, stridable);
   var locArr: [dom.dist.targetLocDom] LocStencilArr(eltType, rank, idxType, stridable);
   var myLocArr: LocStencilArr(eltType, rank, idxType, stridable);
-  var pid: int = -1; // privatized object id (this should be factored out)
   const SENTINEL = max(rank*idxType);
 }
 
@@ -1488,8 +1485,8 @@ proc StencilArr.dsiNoFluffView() {
   var tempDist = new Stencil(dom.dist.boundingBox, dom.dist.targetLocales,
                              dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
                              dom.dist.dataParMinGranularity);
-  var newDist = _newDistribution(tempDist);
-  var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable));
+  pragma "no auto destroy" var newDist = _newDistribution(tempDist);
+  pragma "no auto destroy" var tempDom = _newDomain(newDist.newRectangularDom(rank, idxType, dom.stridable));
   newDist._value.add_dom(tempDom._value);
   //if !noRefCount then newDist._value.incRefCount();
   tempDom.setIndices(dom.whole);
@@ -1509,7 +1506,7 @@ proc StencilArr.dsiNoFluffView() {
     }
   }
   if doRADOpt then alias.setupRADOpt();
-  //if !noRefCount then tempDom._value.incRefCount();
+  newDom.add_arr(alias);
   return alias;
 }
 

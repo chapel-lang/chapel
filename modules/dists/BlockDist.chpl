@@ -262,7 +262,6 @@ class Block : BaseDist {
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
   type sparseLayoutType = DefaultDist;
-  //var pid: int = -1; // privatized object id (this should be factored out)
 }
 
 //
@@ -296,7 +295,6 @@ class BlockDom: BaseRectangularDom {
   const dist: Block(rank, idxType, sparseLayoutType);
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
-  //var pid: int = -1; // privatized object id (this should be factored out)
 }
 
 //
@@ -335,7 +333,6 @@ class BlockArr: BaseArr {
   var dom: BlockDom(rank, idxType, stridable, sparseLayoutType);
   var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
   var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
-  //var pid: int = -1; // privatized object id (this should be factored out)
   const SENTINEL = max(rank*idxType);
 }
 

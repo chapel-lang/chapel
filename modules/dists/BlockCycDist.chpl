@@ -485,8 +485,6 @@ class BlockCyclicDom: BaseRectangularDom {
   //
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   //  const startLoc: index(dist.targetLocDom);
-
-  var pid: int = -1; // privatized object id
 }
 
 proc BlockCyclicDom.dsiDims() return whole.dims();
@@ -793,8 +791,6 @@ class BlockCyclicArr: BaseArr {
   // optimized reference to a local LocBlockCyclicArr instance (or nil)
   //
   var myLocArr: LocBlockCyclicArr(eltType, rank, idxType, stridable);
-
-  var pid: int = -1; // privatized object id
 }
 
 proc BlockCyclicArr.dsiGetBaseDom() return dom;

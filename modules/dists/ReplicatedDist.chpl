@@ -181,9 +181,6 @@ class ReplicatedDist : BaseDist {
   const targetLocales;
   // "IDs" are indices into targetLocales
   proc targetIds return targetLocales.domain;
-
-  // privatized object id
-  var pid: int = -1;
 }
 
 
@@ -277,9 +274,6 @@ class ReplicatedDom : BaseRectangularDom {
   var localDoms: [dist.targetIds] LocReplicatedDom(rank, idxType, stridable);
 
   proc numReplicands return localDoms.numElements;
-
-  // privatized object id
-  var pid: int = -1;
 }
 
 //
@@ -523,9 +517,6 @@ class ReplicatedArr : BaseArr {
   // NOTE: 'dom' must be initialized prior to initializing 'localArrs'
   var localArrs: [dom.dist.targetIds]
               LocReplicatedArr(eltType, dom.rank, dom.idxType, dom.stridable);
-
-  // privatized object id
-  var pid: int = -1;
 }
 
 //
