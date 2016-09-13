@@ -161,7 +161,6 @@ void ProfileBrowser::prepareData(whichData what)
   for (int ix = 0; ix < numFuncs; ix++) {
     long data = 0;
     const char *fName = VisData.fileName(funcList[ix]->fileNo);
-    int loc = size();
     if (what == D_CLOCK) {
       snprintf (line, sizeof(line), "\t@r%.4lf\t%s\t%s:%ld",
                 funcList[ix]->clockTime,
@@ -194,11 +193,10 @@ void ProfileBrowser::prepareData(whichData what)
                 (fName[0] == '$' ? &fName[11] : fName),
                 funcList[ix]->lineNo);
     }
-    add(line);
     // Need to do this based on sort data
-    if ((what == D_CLOCK && funcList[ix]->clockTime == 0)
-        || (what > D_CLOCK && data == 0))
-      hide(loc);
+    if ((what == D_CLOCK && funcList[ix]->clockTime != 0)
+        || (what > D_CLOCK && data != 0))
+      add(line);
   }
 }
 
