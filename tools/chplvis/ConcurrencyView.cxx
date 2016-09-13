@@ -64,7 +64,6 @@ void ConcurrencyView::updateData (long loc, long tag)
            curTag->locales[loc].maxTaskClock);
   title->copy_label(tmp);
   dataBox->buildData();
-  redraw();
 }
 
 

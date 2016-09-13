@@ -200,6 +200,14 @@ static void cb_selTag(Fl_Widget *w, void *p)
   MainWindow->redraw();
 }
 
+static void cb_selectLocale(Fl_Widget *w, void *p)
+{
+  long ix = (long) p;
+  Menus.setCurrentLoc(ix);
+  concView->updateData (ix, Menus.currentTag());
+  MainWindow->redraw();
+}
+  
 static Fl_Menu_Item GridGraphMenu[] = {
  {"File", 0,  0, 0, FL_SUBMENU, FL_NORMAL_LABEL, 0, 14, 0},
  {"Open", 0x4006f,  (Fl_Callback*)menu_cb_Open, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
@@ -303,6 +311,15 @@ void MenuManager::toggleUTags ()
     curDataView->selectData(DataModel::TagALL);
 }
 
+void MenuManager::makeLocaleMenu (void)
+{
+  for (long ix = 0; ix < VisData.NumLocales(); ix++) {
+    std::string entryName = "Locale/" + SSTR(ix);
+    MainMenuBar->add(entryName.c_str(), 0, cb_selectLocale, (void *)ix);
+    popup->add(entryName.c_str(), 0, cb_selectLocale, (void *)ix);
+  }
+}
+
 void MenuManager::makeTagsMenu(void)
 {
   // Remove the old one if it exists
@@ -353,8 +370,10 @@ void MenuManager::makeTagsMenu(void)
         popup->add("Tags/Merge Tags", 0, cb_toggleUnique, (void *)0);
       }
     }
-    if (curView == VIEW_CONCURRENCY)
+    if (curView == VIEW_CONCURRENCY) {
       useUTags = false;
+      makeLocaleMenu();
+    }
     MainMenuBar->add("Tags/All", 0, cb_selTag, (void *)DataModel::TagALL);
     popup->add("Tags/All", 0, cb_selTag, (void *)DataModel::TagALL);
     MainMenuBar->add("Tags/Start", 0, cb_selTag, (void *)DataModel::TagStart);

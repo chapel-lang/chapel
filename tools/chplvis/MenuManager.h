@@ -62,6 +62,8 @@ class MenuManager {
 
   void setCurrentZoom(ZoomScroll *view) { curZoom = view; }
 
+  void makeLocaleMenu (void);
+
   void makeTagsMenu (void);
 
   void addPopUpTo(Fl_Group *group);
