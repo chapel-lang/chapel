@@ -601,7 +601,10 @@ resolveAutoCopyEtc(Type* type) {
   }
 
   // resolve unalias
-  {
+  // We make the 'unalias' hook available to all user records,
+  // but for now it only applies to array/domain/distribution
+  // in order to minimize the changes.
+  if (isRecordWrappedType(type)) {
     SET_LINENO(type->symbol);
     Symbol* tmp = newTemp(type);
     chpl_gen_main->insertAtHead(new DefExpr(tmp));

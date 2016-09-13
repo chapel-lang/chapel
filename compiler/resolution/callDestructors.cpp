@@ -629,8 +629,12 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
 
     // But... if we're replacing an init copy, we got to a user
     // variable, so add an unalias call if there is one
-    if (rhsFn->hasFlag(FLAG_INIT_COPY_FN))
-      callExpr->insertAfter(new CallExpr(getUnalias(useLhs->type), refVar));
+    if (rhsFn->hasFlag(FLAG_INIT_COPY_FN)) {
+      FnSymbol* unaliasFn = getUnalias(useLhs->type);
+      if (unaliasFn) {
+        callExpr->insertAfter(new CallExpr(unaliasFn, refVar));
+      }
+    }
   }
 }
 
