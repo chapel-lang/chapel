@@ -100,11 +100,41 @@ qthread_worker_id_t API_FUNC qthread_worker_unique(qthread_shepherd_id_t *shephe
     return worker ? (worker->unique_id) : NO_WORKER;
 }                      /*}}} */
 
+/* returns worker ID within the shepherd */
+qthread_worker_id_t API_FUNC qthread_worker_local(qthread_shepherd_id_t *shepherd_id)
+{                                      /*{{{ */
+    assert(qthread_library_initialized);
+
+    qthread_worker_t *worker = (qthread_worker_t *)TLS_GET(shepherd_structs);
+
+    if((shepherd_id != NULL) && (worker != NULL)) {
+        *shepherd_id = worker->shepherd->shepherd_id;
+    }
+    return worker ? (worker->worker_id) : NO_WORKER;
+}
+
 /* returns the number of workers actively scheduling work */
 qthread_worker_id_t API_FUNC qthread_num_workers(void)
 {                      /*{{{ */
     assert(qthread_library_initialized);
     return (qthread_worker_id_t)qthread_readstate(ACTIVE_WORKERS);
 }                      /*}}} */
+
+/* returns the number of workers within a shepherd */
+qthread_worker_id_t API_FUNC qthread_num_workers_local(qthread_shepherd_id_t shepherd_id)
+{                      /*{{{ */
+    assert(qthread_library_initialized);
+
+#ifdef QTHREAD_RCRTOOL
+    if(shepherd_id == NO_SHEPHERD) {
+       qthread_worker_t *worker = (qthread_worker_t *)TLS_GET(shepherd_structs);
+       if(worker != NULL) {
+          shepherd_id = worker->shepherd->shepherd_id;
+    }
+    qlib->shepherds[shepherd_id].active_workers;
+#else
+    return qlib->nworkerspershep;
+#endif
+}
 
 /* vim:set expandtab: */

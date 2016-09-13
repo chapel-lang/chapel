@@ -53,7 +53,7 @@ ssize_t pread(int    filedes,
               size_t nbyte,
               off_t  offset)
 {
-    if ((qlib != NULL) && (qthread_internal_self() != NULL)) {
+    if (qt_blockable()) {
         return qt_pread(filedes, buf, nbyte, offset);
     } else {
         return syscall(SYS_pread, filedes, buf, nbyte, offset);

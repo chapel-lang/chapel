@@ -321,6 +321,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
 
   iter dsiSorted() {
+    use Sort;
     // This function creates a local copy of an entire distributed
     // data structure, which is probably a bad idea.
     // Alternatives include:

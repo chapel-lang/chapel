@@ -49,13 +49,16 @@ mtaap08_benchmarks = \
                      time_thrcrt_bench_pthread \
                      time_cncthr_bench \
                      time_cncthr_bench_pthread
-uts_benchmarks = \
+uts_benchmarks =
+if HAVE_LIBM
+uts_benchmarks += \
                  time_uts_syncvar \
                  time_uts_aligned \
                  time_uts_sinc \
                  time_uts_donecount \
                  time_uts_donecount2 \
                  time_uts_donecount3
+endif
 mt_benchmarks = \
                 time_task_spawn \
                 time_eager_future \

@@ -17,7 +17,7 @@ static inline uint32_t QT_INT_LOG(uint32_t v)
     register uint32_t t;
     register uint32_t tt;
 
-    if (tt = v >> 16) {
+    if ((tt = (v >> 16))) {
         r = (t = tt >> 8) ? 24 + LogTable256[t] : 16 + LogTable256[tt];
     } else {
         r = (t = v >> 8) ? 8 + LogTable256[t] : LogTable256[v];

@@ -24,12 +24,21 @@ AC_DEFUN([QTHREAD_CHECK_PORTALS4],[
                               [PtlLEAppend],
 			      [],
                               [$check_portals4_dir],
-                              [$check_portals4_dir/lib],
+                              [$check_portals4_dir/src/.libs],
+                              [check_portals4_happy="yes"],
+                              [check_portals4_happy="no"])
+          OMPI_CHECK_PACKAGE([portals4_runtime],
+                              [pmi.h],
+                              [portals_runtime],
+                              [PMI_Init],
+			    [],
+                              [$check_portals4_dir/src/runtime/portals4],
+                              [$check_portals4_dir/src/runtime/.libs],
                               [check_portals4_happy="yes"],
                               [check_portals4_happy="no"])],
           [check_portals4_happy="no"])
 
-    CPPFLAGS="$check_portals4_save_CPPFLAGS"
+CPPFLAGS="$check_portals4_save_CPPFLAGS"
     LDFLAGS="$check_portals4_save_LDFLAGS"
     LIBS="$check_portals4_save_LIBS"
 

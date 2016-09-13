@@ -1067,30 +1067,41 @@ module ChapelBase {
   inline proc chpl__maybeAutoDestroyed(x) param return true;
 
   pragma "compiler generated"
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: object) { }
 
   pragma "compiler generated"
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(type t)  { }
 
   pragma "compiler generated"
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: ?t) {
     __primitive("call destructor", x);
   }
+  pragma "auto destroy fn"
   inline proc chpl__autoDestroy(ir: _iteratorRecord) {
     // body inserted during call destructors pass
   }
+
+  // These might seem the same as the generic version
+  // but they currently necessary to prevent resolution from
+  // using promotion (for example with an array of sync variables)
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
+  pragma "auto destroy fn"
   proc chpl__autoDestroy(x: _distribution) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
+  pragma "auto destroy fn"
   proc chpl__autoDestroy(x: domain) {
     __primitive("call destructor", x);
   }
   pragma "dont disable remote value forwarding"
   pragma "removable auto destroy"
+  pragma "auto destroy fn"
   proc chpl__autoDestroy(x: []) {
     __primitive("call destructor", x);
   }

@@ -32,13 +32,15 @@ the contents of
 are returned. In short, this is an atomic version of:
 .RS
 .PP
+.RI "retval = *" addr ;
+.br
 .RI "if (*" addr " == " oldval ") {"
 .RS
 .RI * addr " = " newval ;
 .RE
 }
 .br
-.RI "return *" addr ;
+.RI "return retval;"
 .RE
 .PP
 This function uses architecture-specific assembly to achieve this, or compiler built-in functions, if they exist.

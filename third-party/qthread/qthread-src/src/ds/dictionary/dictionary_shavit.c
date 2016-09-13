@@ -168,7 +168,7 @@ static int qt_lf_list_insert(marked_ptr_t        *head,
             return 0;
         }
         node->next = (hash_entry *)CONSTRUCT(0, cur);
-        if (qthread_cas(lprev, node->next, CONSTRUCT(0, node)) == CONSTRUCT(0, cur)) {
+        if (qthread_cas(lprev, (marked_ptr_t)(uintptr_t)node->next, CONSTRUCT(0, node)) == CONSTRUCT(0, cur)) {
             if (ocur) { *ocur = cur; }
             if (crt_node) { *crt_node = node; }
             return 1;
@@ -190,7 +190,7 @@ static int qt_lf_list_delete(marked_ptr_t        *head,
             qthread_debug(ALWAYS_OUTPUT, "### inside delete - return 0\n");
             return 0;
         }
-        if (qthread_cas_ptr(&PTR_OF(lcur)->next, CONSTRUCT(0, lnext), CONSTRUCT(1, lnext)) != (void *)CONSTRUCT(0, lnext)) {
+        if (qthread_cas_ptr(&PTR_OF(lcur)->next, (void*)CONSTRUCT(0, lnext), (void*)CONSTRUCT(1, lnext)) != (void *)CONSTRUCT(0, lnext)) {
             qthread_debug(ALWAYS_OUTPUT, "### inside delete - cas failed continue\n");
             continue;
         }
@@ -306,7 +306,7 @@ static inline hash_entry *qt_hash_put(qt_hash  h,
     node->hashed_key = so_regularkey(lkey);
     node->key        = key; // Also store original key!
     node->value      = value;
-    node->next       = UNINITIALIZED;
+    node->next       = (hash_entry*)UNINITIALIZED;
 
     if (h->B[bucket] == UNINITIALIZED) {
         initialize_bucket(h, bucket);
@@ -425,7 +425,7 @@ static void initialize_bucket(qt_hash h,
     dummy->hashed_key = so_dummykey(bucket);
     dummy->key        = NULL;
     dummy->value      = NULL;
-    dummy->next       = UNINITIALIZED;
+    dummy->next       = (hash_entry*)UNINITIALIZED;
     if (!qt_lf_list_insert(&(h->B[parent]), dummy, &cur, NULL, h->op_equals)) {
         qpool_free(hash_entry_pool, dummy);
         dummy = PTR_OF(cur);

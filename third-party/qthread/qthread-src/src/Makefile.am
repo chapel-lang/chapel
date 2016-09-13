@@ -61,14 +61,6 @@ include patterns/Makefile.inc
 include syscalls/Makefile.inc
 include rcrtool/Makefile.inc
 
-if COMPILE_CHAPEL_INTERFACE
-include interfaces/chapel/Makefile.inc
-endif
-
-if COMPILE_ROSE_EXTENSIONS
-include interfaces/rose/Makefile.inc
-endif
-
 if COMPILE_MULTINODE
 libqthread_la_SOURCES += spr.c
 
@@ -100,6 +92,7 @@ include fastcontext/Makefile.inc
 endif
 
 EXTRA_DIST += \
+			 threadqueues/distrib_threadqueues.c \
 			 threadqueues/lifo_threadqueues.c \
 			 threadqueues/nemesis_threadqueues.c \
 			 threadqueues/mutexfifo_threadqueues.c \
@@ -115,8 +108,9 @@ EXTRA_DIST += \
 			 barrier/sinc.c \
 			 affinity/common.c \
 			 affinity/hwloc.c \
+			 affinity/binders.c \
 			 affinity/hwloc_v2.c \
-			 affinity/no.c \
+			 affinity/sys.c \
 			 affinity/libnuma.c \
 			 affinity/libnumaV2.c \
 			 affinity/mach.c \

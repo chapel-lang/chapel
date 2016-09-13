@@ -43,7 +43,7 @@ int qt_system(const char *command)
 #if HAVE_SYSCALL && HAVE_DECL_SYS_SYSTEM
 int system(const char *command)
 {
-    if ((qlib != NULL) && (qthread_internal_self() != NULL)) {
+    if (qt_blockable()) {
         return qt_system(command);
     } else {
         return syscall(SYS_system, command);

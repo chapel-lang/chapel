@@ -20,27 +20,25 @@
 // DefaultAssociative.chpl
 //
 module DefaultAssociative {
-  
+
   use DSIUtil;
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
-  
-  use Sort; /* only sort */;
-  
+
   // TODO: make the domain parameterized by this?
   type chpl_table_index_type = int;
-  
-  
+
+
   /* These declarations could/should both be nested within
      DefaultAssociativeDom? */
   enum chpl__hash_status { empty, full, deleted };
-  
+
   record chpl_TableEntry {
     type idxType;
     var status: chpl__hash_status = chpl__hash_status.empty;
     var idx: idxType;
   }
-  
+
   proc chpl__primes return
   (23, 53, 89, 191, 383, 761, 1531, 3067, 6143, 12281, 24571, 49139, 98299,
    196597, 393209, 786431, 1572853, 3145721, 6291449, 12582893, 25165813,
@@ -429,6 +427,7 @@ module DefaultAssociative {
     }
   
     iter dsiSorted() {
+      use Sort;
       var tableCopy: [0..#numEntries.read()] idxType;
   
       for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do
@@ -699,6 +698,7 @@ module DefaultAssociative {
     //
   
     iter dsiSorted() {
+      use Sort;
       var tableCopy: [0..dom.dsiNumIndices-1] eltType;
       for (copy, slot) in zip(tableCopy.domain, dom._fullSlots()) do
         tableCopy(copy) = data(slot);

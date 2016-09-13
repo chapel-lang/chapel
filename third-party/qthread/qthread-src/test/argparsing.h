@@ -21,7 +21,7 @@
             char  *stre = NULL;                                    \
             size_t tmp  = strtoul(str, &stre, 0);                  \
             if (stre == NULL || stre == str) {                     \
-                fprintf(stderr, "unparsable "name " (%s)\n", str); \
+                fprintf(stderr, "unparsable " name " (%s)\n", str); \
             } else {                                               \
                 var = tmp;                                         \
             }                                                      \
@@ -35,7 +35,7 @@
             char  *stre = NULL;                                    \
             double tmp  = strtod(str, &stre);                      \
             if (stre == NULL || stre == str) {                     \
-                fprintf(stderr, "unparsable "name " (%s)\n", str); \
+                fprintf(stderr, "unparsable " name " (%s)\n", str); \
             } else {                                               \
                 var = tmp;                                         \
             }                                                      \
@@ -57,14 +57,14 @@
                 if (rest == str) { var[i] = val; }                               \
                 if (*rest == ',') { rest++; }                                    \
                 else if (*rest != '\0') {                                        \
-                    fprintf(stderr, "malformed "name " ending (%s)\n", rest);    \
+                    fprintf(stderr, "malformed " name " ending (%s)\n", rest);    \
                     abort();                                                     \
                 }                                                                \
                 i++;                                                             \
                 str = rest;                                                      \
             } while (*rest != '\0' && i < size);                                 \
             if (*rest != '\0') {                                                 \
-                fprintf(stderr, "extra values in "name " (%s)\n", rest); }       \
+                fprintf(stderr, "extra values in " name " (%s)\n", rest); }       \
         }                                                                        \
         while (i < size) {                                                       \
             var[i] = val;                                                        \
