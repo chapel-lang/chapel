@@ -408,6 +408,10 @@ void replaceArgsWithFields(AggregateType* t, Expr* context, Symbol* _this) {
 // traversing the body of a user-defined initializer.
 void storeFieldInit(AggregateType* t, const char* fieldname, Expr* init,
                     Expr* type) {
+  // Lydia NOTE 09/13/16: This code depends on our generation of default
+  // constructors.  It should not be used as a justification to keep the old
+  // implementation around, but should instead be regarded as a step that should
+  // eventually become unnecessary.
   if (defaultInits[t] != NULL) {
     defaultInits[t]->insert(std::pair<const char*, std::pair<Expr*, Expr*> >(fieldname, std::pair<Expr*, Expr*>(init, type)));
   } else {
