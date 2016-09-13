@@ -125,21 +125,21 @@ class CSRDom: BaseSparseDomImpl {
   iter these(param tag: iterKind) where tag == iterKind.leader {
     // same as DefaultSparseDom's leader
     const numElems = nnz;
-      const numChunks = _computeNumChunks(numElems);
-      //writeln("leader- rowRange=", rowRange, " colRange=", colRange, "\n",
-      //        "        rowStart=", rowStart, " colIdx=", colIdx);
-      if debugCSR then
-        writeln("CSRDom leader: ", numChunks, " chunks, ", numElems, " elems");
+    const numChunks = _computeNumChunks(numElems);
+    //writeln("leader- rowRange=", rowRange, " colRange=", colRange, "\n",
+    //        "        rowStart=", rowStart, " colIdx=", colIdx);
+    if debugCSR then
+      writeln("CSRDom leader: ", numChunks, " chunks, ", numElems, " elems");
 
-      // split our numElems elements over numChunks tasks
-      if numChunks == 1 then
-        yield (this, 1, numElems);
-      else
-        coforall chunk in chunks(1..numElems, numChunks) do
-          yield (this, chunk.first, chunk.last);
-      // TODO: to handle large numElems and numChunks faster, it would be great
-      // to run the binary search in _private_findStartRow smarter, e.g.
-      // pass to the tasks created in 'coforall' smaller ranges to search over.
+    // split our numElems elements over numChunks tasks
+    if numChunks == 1 then
+      yield (this, 1, numElems);
+    else
+      coforall chunk in chunks(1..numElems, numChunks) do
+        yield (this, chunk.first, chunk.last);
+    // TODO: to handle large numElems and numChunks faster, it would be great
+    // to run the binary search in _private_findStartRow smarter, e.g.
+    // pass to the tasks created in 'coforall' smaller ranges to search over.
   }
 
   iter these(param tag: iterKind, followThis: (?,?,?)) where tag == iterKind.follower {
