@@ -7,10 +7,8 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chap04.playground"
 
-
 # Test perf of qthreads "distrib" scheduler
 export CHPL_QTHREAD_SCHEDULER=distrib
-export QT_STEAL_RATIO=0
 
 SHORT_NAME=distrib
 START_DATE=08/10/16
