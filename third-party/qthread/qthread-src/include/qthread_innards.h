@@ -46,6 +46,10 @@ typedef struct qlib_s {
     struct qthread_shepherd_s *shepherds;
     qt_threadqueue_t         **threadqueues;
 
+#ifdef QTHREAD_LOCAL_PRIORITY
+    qt_threadqueue_t         **local_priority_queues;
+#endif /* ifdef QTHREAD_LOCAL_PRIORITY */
+
     unsigned                   qthread_stack_size;
     unsigned                   master_stack_size;
     unsigned                   max_stack_size;

@@ -124,7 +124,7 @@ The operation of these functions is modified by the following environment
 variables:
 .TP 4
 .B QTHREAD_STACK_SIZE
-This variable adjusts the size of the stacks that will be created for each
+This variable specifies, in bytes, the size of the stacks that will be created for each
 thread. Changes to this value during the course of the program run are ignored;
 the value is only evaluated when
 .BR qthread_initialize ()

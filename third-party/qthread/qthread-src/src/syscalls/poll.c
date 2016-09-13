@@ -50,7 +50,7 @@ int poll(struct pollfd fds[],
          nfds_t        nfds,
          int           timeout)
 {
-    if ((qlib != NULL) && (qthread_internal_self() != NULL)) {
+    if (qt_blockable()) {
         return qt_poll(fds, nfds, timeout);
     } else {
         return syscall(SYS_poll, fds, nfds, timeout);

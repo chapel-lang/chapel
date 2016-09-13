@@ -36,15 +36,7 @@ check_PROGRAMS = $(TESTS)
 
 NP = 2
 
-if WANT_PORTALS_SHMEM_RUNTIME
-TESTS_ENVIRONMENT = @yod@ -np $(NP) env QT_STACK_SIZE=65536 
-endif
-if WANT_MPI_RUNTIME
-TESTS_ENVIRONMENT = mpirun -np $(NP) env QT_STACK_SIZE=65536 
-endif
-if WANT_PMI_RUNTIME
-TESTS_ENVIRONMENT = srun -n $(NP) /usr/bin/env QT_STACK_SIZE=65536 
-endif
+TESTS_ENVIRONMENT = yod.hydra -np $(NP) /usr/bin/env QT_STACK_SIZE=65536 
 
 EXTRA_DIST = 
 

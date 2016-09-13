@@ -1,6 +1,8 @@
 #ifndef QT_ATOMICS_H
 #define QT_ATOMICS_H
 
+#include <sys/time.h>
+
 #include <qthread/common.h>
 #include <qthread/qthread.h>
 

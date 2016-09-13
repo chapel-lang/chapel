@@ -58,7 +58,7 @@ int select(int                      nfds,
            fd_set *restrict         errorfds,
            struct timeval *restrict timeout)
 {
-    if ((qlib != NULL) && (qthread_internal_self() != NULL)) {
+    if (qt_blockable()) {
         return qt_select(nfds, readfds, writefds, errorfds, timeout);
     } else {
         return syscall(SYS_select, nfds, readfds, writefds, errorfds, timeout);

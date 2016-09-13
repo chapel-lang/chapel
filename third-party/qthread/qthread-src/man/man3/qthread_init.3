@@ -52,7 +52,7 @@ same as being unset, which prevents debug messages from being printed. This is
 only applicable if debugging has been enabled when the library was built.
 .TP
 QTHREAD_STACK_SIZE
-This variable adjusts the size of the stacks that will be created for each
+This variable specifies, in bytes, the size of the stacks that will be created for each
 thread. Changes to this value during the course of the program run are ignored;
 the value is only considered when
 .BR qthread_init ()

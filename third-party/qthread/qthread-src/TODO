@@ -1,8 +1,6 @@
-# Release Candidate 1.11:
-
-Tentative release date: Mar 2014.
-
 # General things to do (in no particular order):
+
+- Rework Chapel FEB support to use new task-queue system.
 
 - Rework most qutil/qloop functions to deal with deactivated shepherds.
 

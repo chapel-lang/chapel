@@ -107,8 +107,7 @@ qthread-config: FORCE
 	cd $(QTHREAD_BUILD_DIR) \
 	&& $(QTHREAD_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' \
 	       CXX='$(CXX)'  CXXFLAGS='$(CFLAGS)' \
-	       --prefix=$(QTHREAD_INSTALL_DIR) CHPL_HOME=$(CHPL_MAKE_HOME) \
-	       $(CHPL_QTHREAD_CFG_OPTIONS) 
+	       --prefix=$(QTHREAD_INSTALL_DIR) $(CHPL_QTHREAD_CFG_OPTIONS)
 
 qthread-build: FORCE
 	cd $(QTHREAD_BUILD_DIR) && $(MAKE)

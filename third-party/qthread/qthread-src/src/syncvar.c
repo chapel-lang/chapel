@@ -279,6 +279,19 @@ int qthread_syncvar_status(syncvar_t *const v)
 #endif /* if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_TILEPRO) */
 }                                      /*}}} */
 
+static aligned_t qthread_syncvar_nonblocker_thread(void *arg)
+{                                      /*{{{ */
+    qthread_syncvar_blocker_t *const restrict a = (qthread_syncvar_blocker_t *)arg;
+
+    switch (a->type) {
+        case WRITEF: a->retval     = qthread_syncvar_writeF(a->a, a->b); break;
+        case FILL: a->retval       = qthread_syncvar_fill(a->a); break;
+        case EMPTY: a->retval      = qthread_syncvar_empty(a->a); break;
+        default: return 1;
+    }
+    return 0;
+}                                      /*}}} */
+
 static aligned_t qthread_syncvar_blocker_thread(void *arg)
 {                                      /*{{{ */
     qthread_syncvar_blocker_t *const restrict a = (qthread_syncvar_blocker_t *)arg;
@@ -298,6 +311,16 @@ static aligned_t qthread_syncvar_blocker_thread(void *arg)
     pthread_mutex_unlock(&(a->lock));
     return 0;
 }                                      /*}}} */
+
+static int qthread_syncvar_nonblocker_func(void        *dest,
+                                        void        *src,
+                                        blocker_type t)
+{   /*{{{*/
+    qthread_syncvar_blocker_t args = { PTHREAD_MUTEX_INITIALIZER, dest, src, t, QTHREAD_SUCCESS };
+
+    qthread_fork(qthread_syncvar_nonblocker_thread, &args, NULL);
+    return args.retval;
+} /*}}}*/
 
 static int qthread_syncvar_blocker_func(void        *dest,
                                         void        *src,
@@ -523,7 +546,7 @@ int API_FUNC qthread_syncvar_fill(syncvar_t *restrict addr)
     qthread_debug(SYNCVAR_BEHAVIOR, "shep(%p), addr(%p) = %x\n", shep, addr,
                   (uintptr_t)addr->u.w);
     if (!shep) {
-        return qthread_syncvar_blocker_func(addr, NULL, FILL);
+        return qthread_syncvar_nonblocker_func(addr, NULL, FILL);
     }
     ret = qthread_mwaitc(addr, SYNCFEB_ANY, INT_MAX, &e);
     qthread_debug(SYNCVAR_DETAILS, "shep(%p), addr(%p) = %x (b)\n", shep, addr,
@@ -583,7 +606,7 @@ got_m:
             assert(e.sf == 0);         /* no waiters */
             UNLOCK_THIS_MODIFIED_SYNCVAR(addr, ret, 0);
         }
-    } else { /* already empty, so just release the lock */
+    } else { /* already full, so just release the lock */
         assert(e.pf == 0);
         UNLOCK_THIS_MODIFIED_SYNCVAR(addr, ret, e.sf);
     }
@@ -601,7 +624,7 @@ int API_FUNC qthread_syncvar_empty(syncvar_t *restrict addr)
 
     qthread_debug(SYNCVAR_DETAILS, "shep(%p), addr(%p) = %x\n", shep, addr, (uintptr_t)addr->u.w);
     if (!shep) {
-        return qthread_syncvar_blocker_func(addr, NULL, EMPTY);
+        return qthread_syncvar_nonblocker_func(addr, NULL, EMPTY);
     }
     ret = qthread_mwaitc(addr, SYNCFEB_ANY, INT_MAX, &e);
     qthread_debug(SYNCVAR_DETAILS, "shep(%p), addr(%p) = %x (b)\n", shep, addr, (uintptr_t)addr->u.w);
@@ -1105,7 +1128,7 @@ int API_FUNC qthread_syncvar_writeF(syncvar_t *restrict      dest,
     qthread_debug(SYNCVAR_BEHAVIOR, "shep(%p), dest(%p) = %x, src(%p) = %x\n", shep,
                   dest, (unsigned long)dest->u.w, src, *src);
     if (!shep) {
-        return qthread_syncvar_blocker_func(dest, (void *)src, WRITEF);
+        return qthread_syncvar_nonblocker_func(dest, (void *)src, WRITEF);
     }
     QTHREAD_FEB_UNIQUERECORD2(feb, dest, shep);
     qthread_mwaitc(dest, SYNCFEB_ANY, INT_MAX, &e);
@@ -1178,7 +1201,6 @@ int API_FUNC qthread_syncvar_writeEF(syncvar_t *restrict      dest,
 {                                      /*{{{ */
     assert(qthread_library_initialized);
     eflags_t   e = { 0, 0, 0, 0, 0 };
-    uint64_t   ret;
     const int  lockbin = QTHREAD_CHOOSE_STRIPE(dest);
     qthread_t *me      = qthread_internal_self();
     QTHREAD_FEB_TIMER_DECLARATION(febblock);
@@ -1191,13 +1213,13 @@ int API_FUNC qthread_syncvar_writeEF(syncvar_t *restrict      dest,
     }
     QTHREAD_FEB_UNIQUERECORD(feb, dest, me);
     QTHREAD_FEB_TIMER_START(febblock);
-    ret = qthread_mwaitc(dest, SYNCFEB_EMPTY, INITIAL_TIMEOUT, &e);
+    (void)qthread_mwaitc(dest, SYNCFEB_EMPTY, INITIAL_TIMEOUT, &e);
     if (e.cf) {                        /* there was a timeout */
         QTHREAD_WAIT_TIMER_DECLARATION;
         qthread_addrstat_t *m;
         qthread_addrres_t  *X;
 
-        ret = qthread_mwaitc(dest, SYNCFEB_ANY, INT_MAX, &e);
+        uint64_t ret = qthread_mwaitc(dest, SYNCFEB_ANY, INT_MAX, &e);
         qassert_ret(e.cf == 0, QTHREAD_TIMEOUT); /* there better not have been a timeout */
         if (e.pf == 1) {                         /* it got empty! */
             if (e.sf == 1) {                     /* not just empty, but with waiters! */

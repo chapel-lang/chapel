@@ -22,13 +22,14 @@
 
 unsigned int sleep(unsigned int seconds)
 {
-    if ((qlib != NULL) && (qthread_internal_self() != NULL)) {
+    if (qt_blockable()) {
         qtimer_t t = qtimer_create();
         qtimer_start(t);
         do {
             qthread_yield();
             qtimer_stop(t);
         } while (qtimer_secs(t) < seconds);
+        qtimer_destroy(t);
         return 0;
     } else {
 #if HAVE_SYSCALL

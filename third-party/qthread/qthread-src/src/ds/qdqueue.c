@@ -167,6 +167,7 @@ static void qdqueue_internal_sortedsheps(qthread_shepherd_id_t shep,
 {                                      /*{{{ */
     qthread_shepherd_id_t i;
     int                   lastdist = INT_MIN, maxdist = 0;
+    assert(distances);
 
     for (i = 0; i < maxsheps; i++) {
         if (maxdist <= distances[i]) {
@@ -195,6 +196,7 @@ static void qdqueue_internal_sortedsheps(qthread_shepherd_id_t shep,
         }
         lastdist = mindist;
         /* now, create an array of all the sheps that are exactly that far away */
+        assert(count > 0);
         thisdist = MALLOC(count * sizeof(qthread_shepherd_id_t));
         assert(thisdist);
         for (j = 0, k = 0; j < maxsheps && k < count; j++) {
@@ -205,6 +207,7 @@ static void qdqueue_internal_sortedsheps(qthread_shepherd_id_t shep,
                 thisdist[k++] = j;
             }
         }
+        assert(k == count);
         /* and now randomly append them to the all array */
         for (j = 0; j < count; j++) {
             size_t randpick = random() % (count - j);
@@ -258,6 +261,10 @@ static struct qdsubqueue_s **qdqueue_internal_getneighbors(qthread_shepherd_id_t
         }
     }
     /* get a list of those neighbors */
+    if (numN == 0) {
+        *numNeighbors = 0;
+        return NULL;
+    }
     temp = MALLOC(numN * sizeof(qthread_shepherd_id_t));
     assert(temp);
     for (i = j = 0; i < maxsheps; i++) {
@@ -294,6 +301,7 @@ qdqueue_t *qdqueue_create(void)
     if (maxsheps == 0) {
         maxsheps = qthread_num_shepherds();
     }
+    assert(maxsheps > 0);
     ret = calloc(1, sizeof(struct qdqueue_s));
     qassert_goto((ret != NULL), erralloc_killq);
     ret->Qs = MALLOC(maxsheps * sizeof(struct qdsubqueue_s));
@@ -310,8 +318,12 @@ qdqueue_t *qdqueue_create(void)
         ret->Qs[curshep].last_consumed    = NULL;
         ret->Qs[curshep].last_ad_issued   = 1;
         ret->Qs[curshep].last_ad_consumed = 1;
-        ret->Qs[curshep].allsheps         =
-            calloc((maxsheps - 1), sizeof(struct qdsubqueue_s *));
+        if (maxsheps == 1) {
+            ret->Qs[curshep].allsheps     = NULL;
+        } else {
+            ret->Qs[curshep].allsheps     =
+                calloc((maxsheps - 1), sizeof(struct qdsubqueue_s *));
+        }
         /* yes, I could get this information from qthreads, but I'm adding a
          * little bit of randomnes to the list when the distances are equal */
         qdqueue_internal_sortedsheps(curshep, ret->Qs[curshep].allsheps,

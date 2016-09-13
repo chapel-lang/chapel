@@ -178,7 +178,7 @@ void API_FUNC qt_sinc_resize(qt_sinc_t   *sinc_,
     // Reset termination detection
     qt_sinc_count_t count = qthread_incr(&sinc->counter, diff);
 
-    if (sinc->counter <= 0) {
+    if (count + diff <= 0) {
         qthread_fill(&sinc->ready);
     }
 } /*}}}*/
@@ -329,8 +329,7 @@ void API_FUNC qt_sinc_wait(qt_sinc_t *restrict sinc_,
 
     // XXX: race with many waiters, few cores - first waiter to finish hits `qt_sinc_destroy()`.
     // XXX: need a count of waiters and barrier to protect access to sinc members.
-    if (target) {
-        assert(sinc->rdata->sizeof_value > 0);
+    if (target && sinc->rdata && sinc->rdata->sizeof_value && sinc->rdata->result) {
         memcpy(target, sinc->rdata->result, sinc->rdata->sizeof_value);
     }
 } /*}}}*/
