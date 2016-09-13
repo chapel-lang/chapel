@@ -191,21 +191,28 @@ module ChapelArray {
   // without communication.
   proc _newPrivatizedClass(value) : int {
 
+//    extern proc chpl_newPrivatizedClass(obj:object, pid:int);
+
     const n = numPrivateObjects.fetchAdd(1);
 
     const hereID = here.id;
     const privatizeData = value.dsiGetPrivatizeData();
-    on Locales[0] do
+    on Locales[0] {
+//      extern proc printf(fmt:c_string, x:object, i:c_int);
+//      printf("saving private : %p %i\n", value:object, n:c_int);
       _newPrivatizedClassHelp(value, value, n, hereID, privatizeData);
+    }
 
     proc _newPrivatizedClassHelp(parentValue, originalValue, n, hereID, privatizeData) {
       var newValue = originalValue;
       if hereID != here.id {
         newValue = parentValue.dsiPrivatize(privatizeData);
         __primitive("chpl_newPrivatizedClass", newValue, n);
+//        chpl_newPrivatizedClass(newValue, n);
         newValue.pid = n;
       } else {
         __primitive("chpl_newPrivatizedClass", newValue, n);
+//        chpl_newPrivatizedClass(newValue, n);
         newValue.pid = n;
       }
       cobegin {
@@ -223,10 +230,20 @@ module ChapelArray {
 
   // original is the value this method shouldn't free, because it's the
   // canonical verison. The rest are copies on other locales.
-  proc _freePrivatizedClass(pid:int, original)
+  proc _freePrivatizedClass(pid:int, original:object):void
   {
-    on Locales[0] do
+//    extern proc printf(fmt:c_string, x:object, i:c_int);
+//    printf("_freePrivatizedClass %p %i\n", original:object, pid:c_int);
+    // Do nothing for null pids.
+    if pid == nullPid then return;
+
+//    on __primitive("chpl_on_locale_num",
+//		   chpl_buildLocaleID(0, c_sublocid_any)) {
+    on Locales[0] {
+//      extern proc printf(fmt:c_string, x:object, i:c_int);
+//      printf("deleting private : %p %i\n", original:object, pid:c_int);
       _freePrivatizedClassHelp(pid, original);
+    }
 
     proc _freePrivatizedClassHelp(pid, original) {
       var prv = chpl_getPrivatizedCopy(object, pid);
@@ -234,6 +251,7 @@ module ChapelArray {
         delete prv; // TODO: not possible to call _delete_arr here,
                     // but would that be necessary anyway?
 
+      extern proc chpl_clearPrivatizedClass(pid:int);
       chpl_clearPrivatizedClass(pid);
 
       cobegin {
@@ -245,9 +263,6 @@ module ChapelArray {
             _freePrivatizedClassHelp(pid, original);
       }
     }
-
-
-    chpl_clearPrivatizedClass(pid);
   }
 
   proc _reprivatize(value) {
@@ -548,7 +563,7 @@ module ChapelArray {
       const refcount = ev.domain._value.remove_containing_arr(arr);
       if !noRefCount then
         if refcount == 0 then
-          _delete_dom(ev.domain._value);
+          _delete_dom(ev.domain._value, isPrivatized(ev.domain._value));
       chpl_decRefCountsForDomainsInArrayEltTypes(arr, ev.eltType);
     }
   }
@@ -786,6 +801,8 @@ module ChapelArray {
 
     inline proc _value {
       if _isPrivatized(_instance) {
+	  //extern proc printf(fmt:c_string);
+	  //printf("distribution _getting privatized copy " + _instance.type:string + "\n");
         return chpl_getPrivatizedCopy(_instance.type, _pid);
       } else {
         return _instance;
@@ -794,14 +811,17 @@ module ChapelArray {
 
     inline proc _do_destroy() {
       if ! _unowned && ! _instance.singleton() {
-        on _value {
+        on _instance {
           // Count the number of domains that refer to this distribution.
           // and mark the distribution to be freed when that number reaches 0.
           // If the number is 0, .remove() returns the distribution
           // that should be freed.
           var distToFree = _instance.remove();
-          if distToFree != nil then
-            _delete_dist(distToFree);
+          if distToFree != nil {
+	    //extern proc printf(fmt:c_string);
+	    //printf("in _do_destroy " + _isPrivatized(_instance):string + "\n");
+            _delete_dist(distToFree, _isPrivatized(_instance));
+	  }
         }
       }
     }
@@ -920,7 +940,7 @@ module ChapelArray {
 
     proc _do_destroy () {
       if ! _unowned {
-        on _value {
+        on _instance {
           // Count the number of arrays that refer to this domain,
           // and mark the domain to be freed when that number reaches 0.
           // Additionally, if the number is 0, remove the domain from
@@ -931,9 +951,9 @@ module ChapelArray {
             distToFree = distToRemove.remove();
           }
           if domToFree != nil then
-            _delete_dom(domToFree);
+            _delete_dom(domToFree, _isPrivatized(_instance));
           if distToFree != nil then
-            _delete_dist(distToFree);
+            _delete_dist(distToFree, _isPrivatized(_instance.dist));
         }
       }
     }
@@ -1811,7 +1831,7 @@ module ChapelArray {
 
     inline proc _do_destroy() {
       if ! _unowned {
-        on _value {
+        on _instance {
           var (arrToFree, domToRemove) = _instance.remove();
           var domToFree:BaseDom = nil;
           var distToRemove:BaseDist = nil;
@@ -1824,11 +1844,11 @@ module ChapelArray {
             distToFree = distToRemove.remove();
           }
           if arrToFree != nil then
-            _delete_arr(_instance);
+            _delete_arr(_instance, _isPrivatized(_instance));
           if domToFree != nil then
-            _delete_dom(domToFree);
+            _delete_dom(domToFree, _isPrivatized(_instance.dom));
           if distToFree != nil then
-            _delete_dist(distToFree);
+            _delete_dist(distToFree, _isPrivatized(_instance.dom.dist));
         }
       }
     }

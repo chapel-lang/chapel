@@ -39,8 +39,6 @@ module ChapelDistribution {
     var pid:int = -1; // privatized ID, if privitization is supported
   
     proc ~BaseDist() {
-      if _isPrivatized(this) && pid >= 0 then
-        _freePrivatizedClass(pid, this);
     }
 
     // Returns a distribution that should be freed or nil.
@@ -172,8 +170,6 @@ module ChapelDistribution {
     var pid:int = -1; // privatized ID, if privitization is supported
   
     proc ~BaseDom() {
-      if _isPrivatized(this) && pid >= 0 then
-        _freePrivatizedClass(pid, this);
     }
 
     proc dsiMyDist(): BaseDist {
@@ -586,8 +582,6 @@ module ChapelDistribution {
     var pid:int = -1; // privatized ID, if privitization is supported
   
     proc ~BaseArr() {
-      if _isPrivatized(this) && pid >= 0 then
-        _freePrivatizedClass(pid, this);
     }
 
     proc dsiStaticFastFollowCheck(type leadType) param return false;
@@ -783,24 +777,45 @@ module ChapelDistribution {
   }
 
   // delete helpers
-  proc _delete_dist(dist:BaseDist) {
+
+  // param privatized here is a workaround for the fact that
+  // we can't include the privatized freeing for DefaultRectangular
+  // because of resolution order issues
+  proc _delete_dist(dist:BaseDist, param privatized:bool) {
+    //extern proc printf(fmt:c_string);
+    //printf("in _delete_dist privatized=" + privatized:string + "\n");
     dist.dsiDestroyDist();
+
+    if privatized {
+      _freePrivatizedClass(dist.pid, dist);
+    }
+
     delete dist;
   }
 
-  proc _delete_dom(dom:BaseDom) {
+  proc _delete_dom(dom:BaseDom, param privatized:bool) {
     dom.dsiDestroyDom();
+
+    if privatized {
+      _freePrivatizedClass(dom.pid, dom);
+    }
+
     delete dom;
   }
   // arr is a subclass of :BaseArr but is generic so
   // that arr.eltType is meaningful.
-  proc _delete_arr(arr) {
+  proc _delete_arr(arr, param privatized:bool) {
     // unlink domain referred to by arr.eltType
     chpl_decRefCountsForDomainsInArrayEltTypes(arr, arr.eltType);
     // decide whether or not the array is an alias
     var isalias = (arr._arrAlias != nil);
     // array implementation can destroy data or other members
     arr.dsiDestroyArr(isalias);
+
+    if privatized {
+      _freePrivatizedClass(arr.pid, arr);
+    }
+
     // runs the array destructor
     delete arr;
   }
