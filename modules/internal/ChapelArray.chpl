@@ -563,7 +563,7 @@ module ChapelArray {
       const refcount = ev.domain._value.remove_containing_arr(arr);
       if !noRefCount then
         if refcount == 0 then
-          _delete_dom(ev.domain._value, isPrivatized(ev.domain._value));
+          _delete_dom(ev.domain._value, _isPrivatized(ev.domain._value));
       chpl_decRefCountsForDomainsInArrayEltTypes(arr, ev.eltType);
     }
   }
@@ -1993,6 +1993,7 @@ module ChapelArray {
       pragma "no auto destroy" var d = _dom((...ranges));
       d._value._free_when_no_arrs = true;
       var a = _value.dsiSlice(d._value);
+      chpl_incRefCountsForDomainsInArrayEltTypes(a, a.eltType);
       a._arrAlias = _value;
       d._value.add_arr(a);
       //pragma "dont disable remote value forwarding"
