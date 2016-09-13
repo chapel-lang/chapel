@@ -956,6 +956,13 @@ proc StencilDom.setup() {
   }
 }
 
+proc StencilDom.dsiDestroyDom() {
+  coforall localeIdx in dist.targetLocDom {
+    on locDoms(localeIdx) do
+      delete locDoms(localeIdx);
+  }
+}
+
 proc StencilDom.dsiMember(i) {
   return whole.member(i);
 }
@@ -1037,6 +1044,14 @@ proc StencilArr.setup() {
   }
 
   if doRADOpt && disableStencilLazyRAD then setupRADOpt();
+}
+
+proc StencilArr.dsiDestroyArr(isslice : bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      delete locArr(localeIdx);
+    }
+  }
 }
 
 // Re-use _remoteAccessData.getDataIndex from BlockDist
