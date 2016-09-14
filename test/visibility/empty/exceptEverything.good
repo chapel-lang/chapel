@@ -1,2 +1,2 @@
-exceptEverything.chpl:14: In function 'main':
-exceptEverything.chpl:15: error: unresolved call 'foo()'
+exceptEverything.chpl:12: In function 'main':
+exceptEverything.chpl:16: error: unresolved call 'foo()'

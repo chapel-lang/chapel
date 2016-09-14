@@ -1,17 +1,18 @@
+config param qualifiedAccess = false;
+
 module M {
   proc foo() {
     writeln("In foo");
   }
-
-  proc boo() {
-    writeln("In boo");
-  }
 }
 
 module M2 {
-  use M except *;
+  use M except *;  // require all symbols in M to be fully-qualified.
 
   proc main() {
-    foo();
+    if qualifiedAccess then
+      M.foo();
+    else
+      foo();
   }
 }
