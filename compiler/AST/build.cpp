@@ -1526,6 +1526,11 @@ buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
   return buildChapelStmt(new CallExpr(op, lhs, rhs));
 }
 
+BlockStmt*
+buildAssignment(Expr* lhs, Expr* rhs, PrimitiveTag op) {
+  return buildChapelStmt(new CallExpr(op, lhs, rhs));
+}
+
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = new BlockStmt();
   VarSymbol* ltmp = newTemp();

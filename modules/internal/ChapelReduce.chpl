@@ -87,6 +87,9 @@ module ChapelReduce {
     proc accumulate(x) {
       value += x;
     }
+    proc accumulateOntoState(ref state, x) {
+      state += x;
+    }
     proc combine(x) {
       value += x.value;
     }
@@ -101,6 +104,9 @@ module ChapelReduce {
     proc identity return _prod_id(eltType);
     proc accumulate(x) {
       value *= x;
+    }
+    proc accumulateOntoState(ref state, x) {
+      state *= x;
     }
     proc combine(x) {
       value *= x.value;
@@ -117,6 +123,9 @@ module ChapelReduce {
     proc accumulate(x) {
       value = max(x, value);
     }
+    proc accumulateOntoState(ref state, x) {
+      state = max(state, x);
+    }
     proc combine(x) {
       value = max(value, x.value);
     }
@@ -131,6 +140,9 @@ module ChapelReduce {
     proc identity return max(eltType);
     proc accumulate(x) {
       value = min(x, value);
+    }
+    proc accumulateOntoState(ref state, x) {
+      state = min(state, x);
     }
     proc combine(x) {
       value = min(value, x.value);
@@ -147,6 +159,9 @@ module ChapelReduce {
     proc accumulate(x) {
       value &&= x;
     }
+    proc accumulateOntoState(ref state, x) {
+      state &&= x;
+    }
     proc combine(x) {
       value &&= x.value;
     }
@@ -161,6 +176,9 @@ module ChapelReduce {
     proc identity return _lor_id(eltType);
     proc accumulate(x) {
       value ||= x;
+    }
+    proc accumulateOntoState(ref state, x) {
+      state ||= x;
     }
     proc combine(x) {
       value ||= x.value;
@@ -177,6 +195,9 @@ module ChapelReduce {
     proc accumulate(x) {
       value &= x;
     }
+    proc accumulateOntoState(ref state, x) {
+      state &= x;
+    }
     proc combine(x) {
       value &= x.value;
     }
@@ -192,6 +213,9 @@ module ChapelReduce {
     proc accumulate(x) {
       value |= x;
     }
+    proc accumulateOntoState(ref state, x) {
+      state |= x;
+    }
     proc combine(x) {
       value |= x.value;
     }
@@ -206,6 +230,9 @@ module ChapelReduce {
     proc identity return _bxor_id(eltType);
     proc accumulate(x) {
       value ^= x;
+    }
+    proc accumulateOntoState(ref state, x) {
+      state ^= x;
     }
     proc combine(x) {
       value ^= x.value;
