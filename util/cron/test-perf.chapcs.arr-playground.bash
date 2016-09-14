@@ -11,7 +11,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.arr-playground"
 
 # Test performance the array as record branch
 GITHUB_USER=mppf
-GITHUB_BRANCH=distribution-no-rc2
+GITHUB_BRANCH=distribution-no-rc3
 SHORT_NAME=arrays
 START_DATE=08/30/16
 

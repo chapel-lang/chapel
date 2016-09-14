@@ -143,16 +143,6 @@ module ChapelLocale {
              else if accessible then nPUsPhysAcc else nPUsPhysAll;
 
     /*
-      :proc:`numCores` is a deprecated predecessor to :proc:`numPUs`,
-      equivalent to `numPUs(logical=true, accessible=true)`.  It will
-      be removed after Chapel 1.13 is released.
-     */
-    proc numCores: int {
-      compilerWarning("numCores is deprecated; please use numPUs() instead");
-      return this.numPUs(logical=true, accessible=true);
-    }
-
-    /*
       This is the maximum task concurrency that one can expect to
       achieve on this locale.  The value is an estimate by the
       runtime tasking layer.  Typically it is the number of physical

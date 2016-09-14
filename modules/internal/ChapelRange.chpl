@@ -84,9 +84,9 @@
 
  */
 module ChapelRange {
-  
-  use Math; // for abs().
-  
+
+  use Math;
+
   // Turns on range iterator debugging.
   pragma "no doc"
   config param debugChapelRange = false;
@@ -2100,8 +2100,15 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     var U = (one, zero, u);
     var V = (zero, one, v);
   
-    while V(3) != 0 do
-      (U, V) = let q = U(3)/V(3) in (V, U - V * (q, q, q));
+    while V(3) != 0 {
+      // This is a workaround for a bug.
+      // The previous version was:
+      //(U, V) = let q = U(3)/V(3) in (V, U - V * (q, q, q));
+      var oldU = U;
+      var q = U(3)/V(3);
+      U = V;
+      V = oldU - V * (q, q, q);
+    }
   
     return (U(3), U(1));
   }

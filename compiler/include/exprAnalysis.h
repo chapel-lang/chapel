@@ -57,7 +57,7 @@ class SafeExprAnalysis {
   public:
     bool isNonEssentialPrimitive(CallExpr* ce);
 
-    bool exprHasNoSideEffects(Expr* e);
+    bool exprHasNoSideEffects(Expr* e, Expr* exprToMove);
     bool fnHasNoSideEffects(FnSymbol* fn);
 
     bool isSafePrimitive(CallExpr* ce);
