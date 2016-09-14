@@ -62,7 +62,6 @@ proc chunk(
     else start..end;
 }
 
-
 /*
  * Order-based interface, iterator and query.
  * Orders are zero-based "indices" into a range. 
