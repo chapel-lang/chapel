@@ -122,19 +122,17 @@ class Tree {
 
 
 /*
+  Initialize Tree instance to:
 
-Initialize Tree instance to:
+  .. code-block:: text
 
-.. code-block:: text
+      tree:
 
-  tree:
-
-       a
-      / \
-     b   c
-        / \
-       d   e
-
+           a
+          / \
+         b   c
+            / \
+           d   e
 */
 var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"),
                                                  new Tree("e")));

@@ -171,8 +171,11 @@ if example == 0 || example == 3 {
      This time we're not going to use a temporary file, because
      we want to open it twice for performance reasons.
      If you want to measure the performance difference, try:
-       time ./fielIOv2 --example=2
-       time ./fielIOv2 --example=3
+
+     ..code-block:: sh
+
+         time ./fielIOv2 --example=2
+         time ./fielIOv2 --example=3
    */
 
   // First, open up a file and write to it.

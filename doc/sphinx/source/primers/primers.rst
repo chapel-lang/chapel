@@ -14,6 +14,7 @@ Language Basics
    classes
    genericClasses
    varargs
+   modules
 
 Iterators
 ---------

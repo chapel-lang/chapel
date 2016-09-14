@@ -553,14 +553,14 @@ writeln( 1   "a" ); // Uses our   operator
 writeln( 1   2 );   // Uses the default   operator
 
 /*
-Note: You could break everything if you get careless with your overloads.
-This here will break everything. Don't do it.
+  Note: You could break everything if you get careless with your overloads.
+  This here will break everything. Don't do it.
 
-.. code-block:: chapel
+  .. code-block:: chapel
 
-  proc +( left: int, right: int ): int{
-    return left - right;
-  }
+    proc +( left: int, right: int ): int{
+      return left - right;
+    }
 
 */
 
