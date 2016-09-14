@@ -315,10 +315,12 @@ void ConcurrencyData::buildData(void) {
       theTask = VisData.getTaskData(parent->localeNum, greedy[curCol]);
       if (theTask) {
         if (theTask->taskRec && theTask->taskRec->isLocal()) {
+          const char *fname = VisData.fileName(theTask->taskRec->srcFile());
           snprintf (tmp, sizeof(tmp), "%f C %ld G %ld P %ld OC\n%s:%ld",
                     theTask->taskClock, theTask->commSum.numGets,
                     theTask->commSum.numPuts, theTask->commSum.numForks,
-                    VisData.fileName(theTask->taskRec->srcFile()), theTask->taskRec->srcLine());
+                    (fname[0] == '$' ? &fname[11] : fname),
+                    theTask->taskRec->srcLine());
         } else {
           snprintf (tmp, sizeof(tmp), "%f C %ld G %ld P %ld OC",
                     theTask->taskClock, theTask->commSum.numGets,
@@ -377,12 +379,14 @@ void ConcurrencyData::buildData(void) {
         btn->callback(taskCallback, (void *)theTask);
         add(btn);
         if (theTask->taskRec->isLocal()) {
-          snprintf (tmp, sizeof(tmp), "%fC %ldG %ldP %ldF\n%s:%ld",
+          const char *fname = VisData.fileName(theTask->taskRec->srcFile());
+          snprintf (tmp, sizeof(tmp), "%f C %ld G %ld P %ld OC\n%s:%ld",
                     theTask->taskClock, theTask->commSum.numGets,
                     theTask->commSum.numPuts, theTask->commSum.numForks,
-                    VisData.fileName(theTask->taskRec->srcFile()), theTask->taskRec->srcLine());
+                    (fname[0] == '$' ? &fname[11] : fname),
+                    theTask->taskRec->srcLine());
         } else {
-          snprintf (tmp, sizeof(tmp), "%fC %ldG %ldP %ldF",
+          snprintf (tmp, sizeof(tmp), "%f C %ld G %ld P %ld OC",
                     theTask->taskClock, theTask->commSum.numGets,
                     theTask->commSum.numPuts, theTask->commSum.numForks);
         }
