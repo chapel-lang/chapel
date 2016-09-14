@@ -135,8 +135,6 @@ tags
 /test/chplvis/overhead/OH
 /test/chplvis/overhead/OH2
 
-/test/compflags/albrecht/chplenv/chplenv.good
-
 /test/compflags/bradc/savecDirExists
 /test/compflags/bradc/copyright/declint.good
 /test/compflags/bradc/gdbddash/.gdb_history
