@@ -481,9 +481,11 @@ int GridView::handle(int event)
             else
               comms[loc1][loc2].win->show();
 #endif
-            return 0;  // disabled LC windows
+            return DataView::handle(event);  // disabled LC windows
           } else {
             // printf ("New LocCommBox for comm...\n");
+            if (curTagData->comms[loc1][loc2].numComms == 0)
+              return DataView::handle(event);
             LocCommBox *infoBox;
             infoBox = Info->getNewLocComm();
             infoBox->setComm(loc1, loc2, &curTagData->comms[loc1][loc2]);
