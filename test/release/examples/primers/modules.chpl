@@ -311,6 +311,27 @@ module MainModule {
       writeln(boop); // Outputs Conflict.bar ('5')
     }
 
+    {
+      /* You can also 'use' a module without making any symbols
+         available in an unqualified manner using an asterisk after
+         'except'...
+      */
+      use modToUse except *;
+      use Conflict except *;
+      writeln(modToUse.bar);  // Outputs modToUse.bar ('2')
+      writeln(Conflict.bar);  // Outputs Conflict.bar ('5')
+      // writeln(bar);        // this won't resolve since bar isn't available
+    }
+
+    /* ...or equivalently, an empty identifier list after 'only'. */
+    {
+      use modToUse only;
+      use Conflict only;
+      writeln(modToUse.bar);  // Outputs modToUse.bar ('2')
+      writeln(Conflict.bar);  // Outputs Conflict.bar ('5')
+      // writeln(bar);        // this won't resolve since bar isn't available
+    }
+
     writeln();
     writeln("Application to enums");
 
