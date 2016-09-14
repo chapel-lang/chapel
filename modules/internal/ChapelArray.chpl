@@ -1030,6 +1030,21 @@ module ChapelArray {
       help();
       return _newArray(x);
     }
+
+    pragma "no doc"
+    proc buildDefRectArray(type eltType, param noInnerMult=true) {
+      var x = _value.dsiBuildArray(eltType, noInnerMult);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+        if !noRefCount then
+          _value.incRefCount();
+      }
+      help();
+      return _newArray(x);
+    }
+
+    
     /* Remove all indices from this domain, leaving it empty */
     proc clear() {
       _value.dsiClear();

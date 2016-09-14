@@ -330,11 +330,12 @@ class BlockArr: BaseArr {
   param rank: int;
   type idxType;
   param stridable: bool;
+  param noInnerMult: bool; // = true, by default
   type sparseLayoutType;
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: BlockDom(rank, idxType, stridable, sparseLayoutType);
-  var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
-  var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
+  var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable, noInnerMult);
+  var myLocArr: LocBlockArr(eltType, rank, idxType, stridable, noInnerMult);
   var pid: int = -1; // privatized object id (this should be factored out)
   const SENTINEL = max(rank*idxType);
 }
@@ -354,9 +355,13 @@ class LocBlockArr {
   param rank: int;
   type idxType;
   param stridable: bool;
+  param noInnerMult: bool; // = true, by default
   const locDom: LocBlockDom(rank, idxType, stridable);
   var locRAD: LocRADCache(eltType, rank, idxType); // non-nil if doRADOpt=true
-  var myElems: [locDom.myBlock] eltType;
+  //  var myElems: [locDom.myBlock] eltType;
+  //  var myElems: chpl__buildArrayRuntimeType(locDom.myBlock, eltType);
+  //  var myElems = (locDom.myBlock).buildArray(eltType);
+  var myElems = (locDom.myBlock).buildDefRectArray(eltType, noInnerMult);
   var locRADLock: atomicbool; // This will only be accessed locally
                               // force the use of processor atomics
 
@@ -853,7 +858,7 @@ proc BlockDom.dsiSerialWrite(x) {
 //
 proc BlockDom.dsiBuildArray(type eltType) {
   var arr = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-      stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this);
+                         stridable=stridable, noInnerMult=true, sparseLayoutType=sparseLayoutType, dom=this);
   arr.setup();
   return arr;
 }
@@ -995,7 +1000,7 @@ proc BlockArr.setup() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       const locDom = dom.getLocDom(localeIdx);
-      locArr(localeIdx) = new LocBlockArr(eltType, rank, idxType, stridable, locDom);
+      locArr(localeIdx) = new LocBlockArr(eltType, rank, idxType, stridable, noInnerMult=noInnerMult, locDom=locDom);
       if thisid == here.id then
         myLocArr = locArr(localeIdx);
     }
@@ -1204,11 +1209,12 @@ proc BlockArr.dsiSerialWrite(f) {
 proc BlockArr.dsiSlice(d: BlockDom) {
   // MPF: should this use sparseLayoutType = d.sparseLayoutType ?
   var alias = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-      stridable=d.stridable, dom=d, sparseLayoutType=DefaultDist);
+                           stridable=d.stridable, noInnerMult=noInnerMult,
+                           dom=d, sparseLayoutType=DefaultDist);
   var thisid = this.locale.id;
   coforall i in d.dist.targetLocDom {
     on d.dist.targetLocales(i) {
-      alias.locArr[i] = new LocBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, locDom=d.locDoms[i], myElems=>locArr[i].myElems[d.locDoms[i].myBlock]);
+      alias.locArr[i] = new LocBlockArr(eltType=eltType, rank=rank, idxType=idxType, stridable=d.stridable, noInnerMult=noInnerMult, locDom=d.locDoms[i], myElems=>locArr[i].myElems[d.locDoms[i].myBlock]);
       if thisid == here.id then
         alias.myLocArr = alias.locArr[i];
     }
@@ -1259,7 +1265,8 @@ proc _extendTuple(type t, idx, args) {
 
 proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) {
   var alias = new BlockArr(eltType=eltType, rank=newRank, idxType=idxType,
-      stridable=stridable, dom=d, sparseLayoutType=DefaultDist);
+                           stridable=stridable, noInnerMult=false, dom=d,
+                           sparseLayoutType=DefaultDist);
   var thisid = this.locale.id;
   coforall ind in d.dist.targetLocDom {
     on d.dist.targetLocales(ind) {
@@ -1302,7 +1309,7 @@ proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) 
 
       alias.locArr[ind] =
         new LocBlockArr(eltType=eltType, rank=newRank, idxType=d.idxType,
-                        stridable=d.stridable, locDom=locDom,
+                        stridable=d.stridable, noInnerMult=false, locDom=locDom,
                         myElems=>locArr[(...locArrInd)].myElems[(...locSlice)]);
 
       if thisid == here.id then
@@ -1316,7 +1323,7 @@ proc BlockArr.dsiRankChange(d, param newRank: int, param stridable: bool, args) 
 proc BlockArr.dsiReindex(d: BlockDom) {
   // in constructor we have to pass sparseLayoutType as it has no default value
   var alias = new BlockArr(eltType=eltType, rank=d.rank, idxType=d.idxType,
-                           stridable=d.stridable, dom=d,
+                           stridable=d.stridable, noInnerMult=false, dom=d,
                            sparseLayoutType=DefaultDist);
   const sameDom = d==dom;
 
@@ -1328,6 +1335,7 @@ proc BlockArr.dsiReindex(d: BlockDom) {
       alias.locArr[i] = new LocBlockArr(eltType=eltType,
                                         rank=rank, idxType=d.idxType,
                                         stridable=d.stridable,
+                                        noInnerMult=false,
                                         locDom=locDom,
                                         myElems=>locAlias);
       if thisid == here.id then
@@ -1458,7 +1466,8 @@ proc BlockArr.dsiGetPrivatizeData() return dom.pid;
 proc BlockArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
   var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-      stridable=stridable, sparseLayoutType=sparseLayoutType, dom=privdom);
+                       stridable=stridable, noInnerMult=noInnerMult,
+                       sparseLayoutType=sparseLayoutType, dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);
     if c.locArr(localeIdx).locale.id == here.id then
