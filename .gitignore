@@ -273,7 +273,6 @@ tags
 /test/memory/shannon/jacobi.log
 /test/memory/shannon/configVarFile.log
 
-/test/modules/gbt/printchplenv.good
 /test/modules/standard/FileSystem/fsouza/chdir/destination
 /test/modules/standard/FileSystem/fsouza/chown/file.txt
 /test/modules/standard/FileSystem/fsouza/isdir/my_dir
