@@ -18,6 +18,10 @@
 # Suppress warning about variables used before defined
 CRAYPE_GEN_CFLAGS = -hnomessage=7212
 
+# Suppress warnings about unsigned ints being compared to 0
+CRAYPE_GEN_CFLAGS += -hnomessage=186
+
+
 FAST_FLOAT_GEN_CFLAGS = -hfp2
 IEEE_FLOAT_GEN_CFLAGS = -hfp0
 

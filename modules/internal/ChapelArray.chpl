@@ -371,7 +371,7 @@ module ChapelArray {
    *        possible atm due to using var args with a query type. */
   pragma "no doc"
   config param CHPL_WARN_DOMAIN_LITERAL = "unset";
-  proc chpl__buildArrayExpr( elems:?t ...?k ) {
+  proc chpl__buildArrayExpr( elems ...?k ) {
 
     if CHPL_WARN_DOMAIN_LITERAL == "true" && isRange(elems(1)) {
       compilerWarning("Encountered an array literal with range element(s).",
@@ -937,6 +937,7 @@ module ChapelArray {
 
     // see comments for the same method in _array
     //
+    // domain slicing by domain
     pragma "no doc"
     proc this(d: domain) {
       if d.rank == rank then
@@ -945,6 +946,7 @@ module ChapelArray {
         compilerError("slicing a domain with a domain of a different rank");
     }
 
+    // domain slicing by tuple of ranges
     pragma "no doc"
     proc this(ranges: range(?) ...rank) {
       param stridable = _value.stridable || chpl__anyStridable(ranges);
@@ -962,6 +964,7 @@ module ChapelArray {
       return _newDomain(d);
     }
 
+    // domain rank change
     pragma "no doc"
     proc this(args ...rank) where _validRankChangeArgs(args, _value.idxType) {
       var ranges = _getRankChangeRanges(args);
@@ -1044,20 +1047,20 @@ module ChapelArray {
       return _value.dsiAdd(i);
     }
 
-    proc bulkAdd(inds: [] _value.idxType, isSorted=false,
+    proc bulkAdd(inds: [] _value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank==1 {
 
       if inds.size == 0 then return 0;
 
-      return _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
+      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds);
     }
 
-    proc bulkAdd(inds: [] _value.rank*_value.idxType, isSorted=false,
+    proc bulkAdd(inds: [] _value.rank*_value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true) where isSparseDom(this) && _value.rank>1 {
 
       if inds.size == 0 then return 0;
 
-      return _value.dsiBulkAdd(inds, isSorted, isUnique, preserveInds);
+      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds);
     }
 
     /* Remove index ``i`` from this domain */
@@ -1764,6 +1767,7 @@ module ChapelArray {
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
 
+    // array element access
     // When 'this' is 'const', so is the returned l-value.
     pragma "no doc" // ref version
     pragma "reference to const when const this"
@@ -1856,6 +1860,7 @@ module ChapelArray {
       return localAccess(i);
 
 
+    // array slicing by a domain
     //
     // requires dense domain implementation that returns a tuple of
     // ranges via the getIndices() method; domain indexing is difficult
@@ -1880,6 +1885,7 @@ module ChapelArray {
           halt("array slice out of bounds in dimension ", i, ": ", ranges(i));
     }
 
+    // array slicing by a tuple of ranges
     pragma "no doc"
     pragma "reference to const when const this"
     proc this(ranges: range(?) ...rank) {
@@ -1898,6 +1904,7 @@ module ChapelArray {
       return _newArray(a);
     }
 
+    // array rank change
     pragma "no doc"
     pragma "reference to const when const this"
     proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
@@ -1946,8 +1953,7 @@ module ChapelArray {
       if (_value.locale != here) then
         halt("Attempting to take a local slice of an array on locale ",
              _value.locale.id, " from locale ", here.id);
-      var A => this(d);
-      return A;
+      return this(d);
     }
     pragma "no doc"
     pragma "reference to const when const this"
@@ -2539,6 +2545,15 @@ module ChapelArray {
     // true everywhere
     //
     return && reduce (this == that);
+  }
+
+  // The same as the built-in _cast, except accepts a param arg.
+  pragma "no doc"
+  proc _cast(type t, param arg) where t: _array {
+    var result: t;
+    // The would-be param version of proc =, inlined.
+    chpl__transferArray(result, arg);
+    return result;
   }
 
 
@@ -3154,6 +3169,12 @@ module ChapelArray {
     }
   }
 
+  // assigning from a param
+  inline proc chpl__transferArray(a: [], param b) {
+    forall aa in a do
+      aa = b;
+  }
+
   inline proc =(ref a: [], b:domain) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
@@ -3163,6 +3184,13 @@ module ChapelArray {
   inline proc =(ref a: [], b) /* b is not an array nor a domain nor a tuple */ {
     chpl__transferArray(a, b);
   }
+
+/* Does not work: compiler expects assignments to have 2 formals,
+   whereas the below becomes a 1-argument function after resolution.
+  inline proc =(ref a: [], param b) {
+    chpl__transferArray(a, b);
+  }
+*/
 
   inline proc =(ref a: [], b: _tuple) where isEnumArr(a) {
     if b.size != a.numElements then
@@ -3196,19 +3224,13 @@ module ChapelArray {
     chpl__tupleInit(j, a.rank, b);
   }
 
-  proc _desync(type t) where t: _syncvar {
+  proc _desync(type t) type where isSyncType(t) || isSingleType(t) {
     var x: t;
-    return x.wrapped.value;
+    return x.valType;
   }
 
-  proc _desync(type t) where t: _singlevar {
-    var x: t;
-    return x.wrapped.value;
-  }
-
-  proc _desync(type t) {
-    var x: t;
-    return x;
+  proc _desync(type t) type {
+    return t;
   }
 
   proc =(ref a: [], b: _desync(a.eltType)) {

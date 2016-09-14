@@ -24,6 +24,7 @@
 #include "passes.h"
 
 #include "bison-chapel.h"
+#include "build.h"
 #include "config.h"
 #include "countTokens.h"
 #include "docsDriver.h"
@@ -147,6 +148,7 @@ void parse() {
   }
 
   checkConfigs();
+  convertForallExpressions();
 
   finishCountingTokens();
 

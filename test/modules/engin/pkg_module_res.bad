@@ -1,1 +1,0 @@
-pkg_module_res.chpl:16: error: unresolved call 'Sort.isSorted([domain(1,int(64),false)] int(64))'

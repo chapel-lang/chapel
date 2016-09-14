@@ -9,26 +9,34 @@ source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
-# Test perf of qthreads WIP "distrib" scheduler with numa against sherwood
-export CHPL_QTHREAD_SCHEDULER=distrib
+NO_SLICE_SHORT=assertNoSlice
+OPT_BLK_SHORT=compOptBlk
+SYNC_SUFFIX=noInnerMult
+START_DATE=09/07/16
+NUM_TRIALS=3
 
-# See if disabling work stealing improves performance
-export QT_STEAL_RATIO=0
+# test the performance of -sassertNoSlicing and then my branch that attempts to
+# achieve the same array inner multiply removal through compiler optimizations
 
-# hackily checkout and overlay qthreads branch that has the scheduler
-cd $CHPL_HOME/third-party/qthread/
-rm -rf qthread-1.10/
-git clone https://github.com/Qthreads/qthreads.git qthread-1.10/
-cd qthread-1.10/
-./autogen.sh
-cd $CWD
+perf_args="-performance-description $NO_SLICE_SHORT -performance-configs default:v,$NO_SLICE_SHORT:v,$OPT_BLK_SHORT:, -sync-dir-suffix $SYNC_SUFFIX"
+perf_args="${perf_args} -performance -numtrials $NUM_TRIALS -startdate $START_DATE"
+perf_args="${perf_args} -compopts -sassertNoSlicing"
 
-SHORT_NAME=numa-distrib
-START_DATE=08/10/16
+$CWD/nightly -cron ${nightly_args} ${perf_args}
 
-source $CWD/common-numa.bash
-export CHPL_TEST_TIMEOUT=600
 
-perf_args="-performance-description $SHORT_NAME -performance-configs numa:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
-perf_args="${perf_args} -numtrials 3 -startdate $START_DATE"
+
+
+GITHUB_USER=ronawho
+GITHUB_BRANCH=optimize-away-inner-array-mult
+
+git checkout .
+git clean -fdx .
+
+git branch -D $GITHUB_USER-$GITHUB_BRANCH
+git checkout -b $GITHUB_USER-$GITHUB_BRANCH
+git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
+
+perf_args="-performance-description $OPT_BLK_SHORT -performance-configs default:v,$NO_SLICE_SHORT:v,$OPT_BLK_SHORT:v -sync-dir-suffix $SYNC_SUFFIX"
+perf_args="${perf_args} -numtrials $NUM_TRIALS -startdate $START_DATE"
 $CWD/nightly -cron ${perf_args} ${nightly_args}
