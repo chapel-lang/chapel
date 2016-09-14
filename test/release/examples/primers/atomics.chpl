@@ -95,7 +95,7 @@ flag.clear();
 // - fetchXor() and xor() (bit-wise) (integral types only)
 //
 // Each of the above atomically reads the variable, stores the result
-// of the operation (+, -, |, &, ^) using the value and the method
+// of the operation (``+``, ``-``, ``|``, ``&``, ``^``) using the value and the method
 // argument, then, for the fetchOps functions, returns the original
 // value.
 //
