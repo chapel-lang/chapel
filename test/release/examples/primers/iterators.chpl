@@ -23,15 +23,15 @@ iter fibonacci(n: int) {
 
   for 1..n {
     yield current;
-      // When this iterator runs, it proceeds this far
-      // and then yields (generates) the first value of current (== 0).
-      // current and next are saved. The control and the yielded value
-      // are passed into the loop body, and one loop iteration executes.
-      //
-      // When the iteration completes, execution resumes here
-      // and continues until another yield is reached, etc.
-      //
-      // This statement updates current and next from their saved values.
+    // When this iterator runs, it proceeds this far
+    // and then yields (generates) the first value of current (== 0).
+    // current and next are saved. The control and the yielded value
+    // are passed into the loop body, and one loop iteration executes.
+    //
+    // When the iteration completes, execution resumes here
+    // and continues until another yield is reached, etc.
+    //
+    // This statement updates current and next from their saved values.
     (current, next) = (next, current + next);
   }
 }
@@ -107,14 +107,9 @@ writeln(multiloop(3));
 writeln(); // line break
 
 //
-// define a tree class and initialize an instance to
+//define a tree class
 //
-//      a
-//     / \
-//    b   c
-//       / \
-//      d   e
-//
+
 class Tree {
   var data: string;
   var left, right: Tree;
@@ -125,6 +120,22 @@ class Tree {
   }
 }
 
+
+/*
+
+Initialize Tree instance to:
+
+.. code-block:: code
+
+  tree:
+
+       a
+      / \
+     b   c
+        / \
+       d   e
+
+*/
 var tree = new Tree("a", new Tree("b"), new Tree("c", new Tree("d"),
                                                  new Tree("e")));
 

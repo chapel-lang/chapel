@@ -22,14 +22,14 @@
    the file (minus the .chpl suffix).  The compiler can be directed to include
    modules in separate files by naming them on the command line, utilizing the
    -M flag, etc. (see the man page for exact details).
-  /
+*/
 module modToUse {
 
   /* In this case, foo is a public module-level variable that is defined within
-     the module modToUse  /
+     the module modToUse  */
   var foo = 12;
 
-  /* As is bar.  /
+  /* As is bar.  */
   var bar: int = 2;
 
   /* A symbol can be declared "private" - this means that only code defined
@@ -38,18 +38,18 @@ module modToUse {
 
      Here, hiddenFoo is a private global variable, which is only accessible by
      symbols contained in modToUse
-   /
+   */
   private var hiddenFoo = false;
 
 
-  /* baz is a public function which is defined within modToUse  /
+  /* baz is a public function which is defined within modToUse  */
   proc baz (x, y) {
     return x   (x + y);
   }
 
   /* hiddenBaz is a private function, which is also only accessible by symbols
      contained in modToUse.
-   /
+   */
   private proc hiddenBaz(a) {
     writeln(a);
     return a + 3;
@@ -72,7 +72,7 @@ module ThirdModule {
 
 
 module Conflict {
-  /* This variable shares a name with a symbol in modToUse.  /
+  /* This variable shares a name with a symbol in modToUse.  */
   var bar = 5;
 
   var other = 5.0 + 3i;
@@ -83,7 +83,7 @@ module Conflict {
 
 module DifferentArguments {
   /* This function shares a name with a function in modToUse, but takes
-     different arguments  /
+     different arguments  */
   proc baz(x) {
     return x - 2;
   }
@@ -100,7 +100,7 @@ module MainModule {
        First, a symbol can be referenced explicitly - this is done using the
        module name and a separating '.' as a prefix to the name of the symbol
        desired.
-     /
+     */
     var thriceFoo = 3   modToUse.foo; // should be 36
     writeln(thriceFoo);
 
@@ -109,7 +109,7 @@ module MainModule {
       /* If several of the module's symbols are desired, or the same symbol is
          desired multiple times, then it can be convenient to utilize what is
          known as a "use statement".
-       /
+       */
       use modToUse;
 
       /* 'use' statements can be inserted at any lexical scope that contains
@@ -121,13 +121,13 @@ module MainModule {
 
          In this case, bazBarFoo should store the result of calling modToUse.baz
          on modToUse.bar and modToUse.foo, which is in this case '28'.
-       /
+       */
       var bazBarFoo = baz(bar, foo);
       writeln(bazBarFoo);
 
       /* Since 'use' statements only affect their containing scope, when we
          leave a scope like this, we revert to requiring fully-qualified names
-       /
+       */
     }
 
 
@@ -136,7 +136,7 @@ module MainModule {
        'use' of 'modToUse', it would generate an error if uncommented.  This is
        because 'foo' cannot be directly referenced, and is not qualified with a
        module name.
-     /
+     */
     // var twiceFoo = 2   foo;
 
 
@@ -154,7 +154,7 @@ module MainModule {
          Thus, as in an earlier example, bazBarFoo should store the result of
          calling modToUse.baz on modToUse.bar and modToUse.foo, which is again
          '28'.
-       /
+       */
       use modToUse;
 
       writeln(bazBarFoo);
@@ -167,7 +167,7 @@ module MainModule {
          Thus, because another bar is defined here, the compiler will find the
          bar at this scope when resolving the access within the writeln, rather
          than modToUse.bar.
-       /
+       */
       var bar = 4.0;
 
       use modToUse;
@@ -189,7 +189,7 @@ module MainModule {
            resolving the access within the writeln, rather than the outer bar.
            The bar from modToUse is said to be "shadowing" the definition at the
            outer scope.
-         /
+         */
 
         use modToUse;
         writeln(bar);
@@ -199,7 +199,7 @@ module MainModule {
     }
 
     {
-      /* Multiple modules may be used in the same 'use' statement  /
+      /* Multiple modules may be used in the same 'use' statement  */
       use modToUse, AnotherModule, ThirdModule;
 
       if (a || b < 0) {
@@ -213,7 +213,7 @@ module MainModule {
 
 
     {
-      /* Equivalently, a scope may contain multiple 'use' statements  /
+      /* Equivalently, a scope may contain multiple 'use' statements  */
       use modToUse;
       use AnotherModule, ThirdModule;
 
@@ -231,13 +231,13 @@ module MainModule {
          This means that if two modules each define a symbol with the same name,
          and both modules are used at the same scope, attempts to access a
          symbol by that name will result in a naming conflict:
-       /
+       */
       use modToUse, Conflict;
 
       writeln(foo); // Outputs modToUse.foo ('12')
       /* The following line would fail because both modToUse and Conflict define
          a symbol named bar:
-       /
+       */
       // writeln(bar);
       writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
     }
@@ -253,7 +253,7 @@ module MainModule {
          other functions, etc. can be found in the relevant section of the
          language specification.  They will not be covered further in this
          primer.
-       /
+       */
 
       use modToUse, DifferentArguments;
 
@@ -276,7 +276,7 @@ module MainModule {
 
          Here, because of the 'only' clause in the 'use' of Conflict, Conflict's
          'bar' is not directly accessible here.
-       /
+       */
       use modToUse;
       use Conflict only other, another;
 
@@ -289,7 +289,7 @@ module MainModule {
     {
       /* Using an 'except' list will cause every symbol other than the ones
          listed to be available.
-       /
+       */
       use Conflict;
       use modToUse except bar;
 
@@ -304,7 +304,7 @@ module MainModule {
          symbols to be shadowed which are necessary, you can choose to rename a
          symbol when including it via the 'as' keyword, so long as the new name
          does not cause any conflicts with other included symbols.
-       /
+       */
       use modToUse;
       use Conflict only bar as boop;
       writeln(bar); // Outputs modToUse.bar ('2')
@@ -318,7 +318,7 @@ module MainModule {
       /* 'use' statements can also be called on enums.  Normally to access one
          of an enum's constants, you must provide a prefix of the enum name.
          With a 'use' of that enum, such a prefix is no longer necessary.
-       /
+       */
 
       enum color {red, blue, yellow};
 
@@ -349,7 +349,7 @@ module MainModule {
          top-level module.  Its name is treated like any other visible symbol in
          the outer module, so if the outer module has not been used then the
          inner module must be explicitly named.
-       /
+       */
 
       use OuterNested.Inner1;
 
@@ -377,10 +377,10 @@ module OuterNested {
      submodules can refer to symbols defined within their parent module, but
      their parent module can't directly access the contents of the nested
      module without a 'use' statement or fully qualified name.
-   /
+   */
   module Inner1 {
     /* The variable foobar references OuterNested's 'foo' and 'bar' variables.
-      /
+      */
     var foobar = foo + bar;
   }
 
@@ -389,7 +389,7 @@ module OuterNested {
        the private variable 'hiddenFoo' and the private function 'hiddenBaz'.
        However, any private symbol defined within Inner2 will not be visible
        within scopes defined outside of Inner2.
-      /
+      */
 
     private var innerOnly = -17;
     var canSeeHidden = !hiddenFoo;
