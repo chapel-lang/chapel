@@ -278,7 +278,7 @@ proc runtest(param ndim : int, fn : string) {
   /* Real <-> complex in-place transform
 
      In this case, the first argument to the planning routines is the
-     domain of the  real* array WITHOUT padding (in both r2c and c2r
+     domain of the *real* array WITHOUT padding (in both r2c and c2r
      cases). This breaks the ambiguity of whether the leading
      dimension of the real array is even or odd.
 
