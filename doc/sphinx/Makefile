@@ -45,6 +45,7 @@ primers: clean-primers
 	@echo
 	@echo "Generating primers from "'$$CHPL_HOME'"/test/release/examples to "'$$CHPL_HOME'"/doc/sphinx/source/primers"
 	./chpl2rst.py ../../test/release/examples/primers/*.chpl --output=rst --prefix=source/primers
+	./chpl2rst.py ../../test/release/examples/primers/*doc.chpl --output=rst --codeblock --prefix=source/primers
 	./chpl2rst.py ../../test/release/examples/primers/chplvis/*.chpl --output=rst --prefix=source/primers
 
 

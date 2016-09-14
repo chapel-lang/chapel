@@ -3,19 +3,10 @@
 Primers
 =======
 
-Contents:
+Language Basics
+---------------
 
 .. toctree::
-   :hidden:
-
-.. toctree::
-   :maxdepth: 1
-   :glob:
-
-   **
-
-.. toctree::
-   :caption: Language Basics
    :maxdepth: 1
 
    variables
@@ -24,29 +15,38 @@ Contents:
    genericClasses
    varargs
 
+Iterators
+---------
+
 .. toctree::
-   :caption: Iterators
    :maxdepth: 1
 
    iterators
    parIters
 
+
+Task Parallelism
+----------------
+
 .. toctree::
-   :caption: Task Parallelism
    :maxdepth: 1
 
    taskParallel
    syncsingle
    atomics
 
+Locality
+--------
+
 .. toctree::
-   :caption: Locality
    :maxdepth: 1
 
    locales
 
+Data Parallelism
+----------------
+
 .. toctree::
-   :caption: Data Parallelism
    :maxdepth: 1
 
    ranges
@@ -60,23 +60,29 @@ Contents:
    reductions
    distributions
 
+Library Utilities
+-----------------
+
 .. toctree::
-   :caption: Library Utilities
    :maxdepth: 1
 
    fileIO
    timers
 
+Numerical Libraries
+-------------------
+
 .. toctree::
-   :caption: Numerical Libraries
    :maxdepth: 1
 
    LAPACKlib
    FFTWlib
    randomNumbers
 
+Tools
+-----
+
 .. toctree::
-   :caption: Tools
    :maxdepth: 1
 
    chpldoc.doc
@@ -85,8 +91,10 @@ Contents:
    chplvis3
    chplvis4
 
+Kitchen Sink
+------------
+
 .. toctree::
-   :caption: Kitchen Sink
    :maxdepth: 1
 
    learnChapelInYMinutes

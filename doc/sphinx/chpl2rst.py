@@ -27,7 +27,9 @@ def get_arguments():
                         help='destination of output')
     parser.add_argument('--prefix', default='.',
                         help='prefix path for output')
-    parser.add_argument('--verbose', '-v', action='store_true',
+    parser.add_argument('--codeblock', '-c', action='store_true', default=False,
+                        help='convert entire document into code block')
+    parser.add_argument('--verbose', '-v', action='store_true', default=False,
                         help='verbosity')
     return parser.parse_args()
 
@@ -89,7 +91,7 @@ def chpl2rst(chapelfile):
                         rstline = rstline.replace('/*', '')
                     if commentends > 0:
                         rstline = rstline.replace('*/', '')
-                    if '.. code-block::' in rstline:
+                    if '.. code-block::' in rstline or len(rstline.strip()) == 0:
                         rstline = rstline.strip()
 
                 # Strip indentation
@@ -120,6 +122,26 @@ def chpl2rst(chapelfile):
     return '\n'.join(output)
 
 
+def chpl2codeblock(chapelfile):
+    """Convert Chapel file to giant code block rst file"""
+
+    filename = os.path.split(chapelfile)[1]
+    basename, _ = os.path.splitext(filename)
+    # Title
+    output = []
+    output.append(basename)
+    output.append('='*len(basename))
+    output.append('')
+    output.append('.. code-block:: chapel')
+    output.append('')
+
+    with open(chapelfile, 'r') as handle:
+        for line in [l.strip('\n') for l in handle.readlines()]:
+            output.append('  ' + line)
+
+    return '\n'.join(output)
+
+
 def getfname(chapelfile, output, prefix):
     """Compute filename for output"""
     if output == 'rst':
@@ -146,10 +168,15 @@ def write(rstoutput, output):
         handle.write(rstoutput)
 
 
-def main(chapelfiles, output='rst', prefix='.', verbose=False):
+def main(chapelfiles, output='rst', prefix='.', codeblock=False, verbose=False):
     """Driver function - convert each file to rst and write to output"""
     for chapelfile in chapelfiles:
-        rstoutput = chpl2rst(chapelfile)
+
+        if codeblock:
+            rstoutput = chpl2codeblock(chapelfile)
+        else:
+            rstoutput = chpl2rst(chapelfile)
+
         fname = getfname(chapelfile, output, prefix)
         if verbose:
             print('writing output of {0} to {1}'.format(chapelfile, fname))
@@ -157,4 +184,4 @@ def main(chapelfiles, output='rst', prefix='.', verbose=False):
 
 if __name__ == '__main__':
     ARGS = get_arguments()
-    main(ARGS.chapelfiles, ARGS.output, ARGS.prefix, ARGS.verbose)
+    main(ARGS.chapelfiles, ARGS.output, ARGS.prefix, ARGS.codeblock, ARGS.verbose)
