@@ -169,17 +169,9 @@ static void cb_selTag(Fl_Widget *w, void *p)
   if (ix == DataModel::TagALL) {
     // printf ("cb_selTag called on All\n");
     Info->setTagName("All");
-    if (Menus.currentViewKind() == VIEW_CONCURRENCY)
-      concView->updateData (Menus.currentLoc(), ix);
-    else
-      Menus.currentDataView()->selectData(ix);
   } else if (ix == DataModel::TagStart) {
     // printf ("cb_selTag called on Start\n");
     Info->setTagName("Start");
-    if (Menus.currentViewKind() == VIEW_CONCURRENCY)
-      concView->updateData (Menus.currentLoc(), ix);
-    else
-      Menus.currentDataView()->selectData(ix);
   } else {
     // printf ("cb_selTag called on tag %d \"%s\"\n", ptr->tagNo, ptr->tagName);
     if (Menus.usingUTags())
@@ -192,10 +184,22 @@ static void cb_selTag(Fl_Widget *w, void *p)
         snprintf (tmp, sizeof(tmp), "%ld (%s)", ix, VisData.getTagData(ix)->name);
         Info->setTagName(tmp);
       }
-    if (Menus.currentViewKind() == VIEW_CONCURRENCY)
-      concView->updateData (Menus.currentLoc(), ix);
-    else
-      Menus.currentDataView()->selectData(ix);
+  }
+  switch (Menus.currentViewKind()) {
+  case VIEW_CONCURRENCY:
+    printf ("tag in conc\n");
+    concView->updateData (Menus.currentLoc(), ix);
+    break;
+  case VIEW_GRID:
+    printf ("tag in grid\n");
+    Grid_View->selectData(ix);
+    break;
+  case VIEW_GRAPH:
+    printf ("tag in graph\n");
+    Graph_View->selectData(ix);
+    break;
+  default:
+    fprintf (stderr, "chplvis menu error!\n");
   }
   MainWindow->redraw();
 }
