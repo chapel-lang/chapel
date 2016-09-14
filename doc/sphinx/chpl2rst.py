@@ -1,18 +1,16 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-"""
-Convert Chapel file into restructured text
-
-TODO -- clean this up
+"""chpl2rst converts a chapel program to an rst file, where all comments are
+rendered rst, and all code is wrapped in code blocks.
 """
 
 from __future__ import print_function
 
 import os
 import sys
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 
 def get_arguments():
@@ -21,9 +19,7 @@ def get_arguments():
     """
     parser = ArgumentParser(prog='chpl2rst',
                             usage='%(prog)s  foo.chpl [options] ',
-                            description=''' %(prog)s converts a chapel program
-                            to an rst file, where all comments are rendered rst,
-                            and all code is wrapped in code blocks''',
+                            description=__doc__,
                             formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument('chapelfiles', nargs='+', help='Chapel files')
     parser.add_argument('--output', default='rst', choices=['stdout', 'rst'],
@@ -144,7 +140,7 @@ def write(rstoutput, output):
 
 
 def main(chapelfiles, output='rst', prefix='.'):
-    """Driver function"""
+    """Driver function - convert each file to rst and write to output"""
     for chapelfile in chapelfiles:
         rstoutput = chpl2rst(chapelfile)
         fname = getfname(chapelfile, output, prefix)
@@ -152,5 +148,5 @@ def main(chapelfiles, output='rst', prefix='.'):
 
 
 if __name__ == '__main__':
-    args = get_arguments()
-    main(args.chapelfiles, args.output, args.prefix)
+    ARGS = get_arguments()
+    main(ARGS.chapelfiles, ARGS.output, ARGS.prefix)
