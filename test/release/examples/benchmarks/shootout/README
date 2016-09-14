@@ -134,21 +134,18 @@ o remove warning for serial whole-array assignment when RHS is serial
 o should globals be allowed to be declared below main()?  If so, move
   fact[] to the bottom of the file?
 
-fasta.chpl
-----------
-o no notes to provide
 
-
-fastaredux.chpl
----------------
-o Shouldn't ascii() return an int(8)/uint(8) by default?
-
+fasta.chpl / fastaredux.chpl
+----------------------------
 o We should introduce local "static" variables (using some other
   keyword) and use it to define some of the variables that are
   currently at global or outer scopes unnecessarily
 
 o Should writef("%s", str) and write(str) be equivalent?  If so,
   it looks like we have a bug.
+
+o It seems like a param uint(8) whose value is known to fit in an
+  int(8) should be assignable without a cast, but currently it isn't.
 
 
 k-nucleotide
@@ -173,8 +170,6 @@ o Good motivation for optimizing 1D array reallocations with a common
   low bound?
 
 o Why does '(data:[] uint(8)) op= 0x20' not work?
-
-o Shouldn't ascii() return an int(8)/uint(8) by default?
 
 o Should readline() support an overload that takes an array of int(8)?
 
@@ -255,8 +250,6 @@ o promote mpz_t types to a record-based implementation with:
 
 revcomp.chpl
 ------------
-o Shouldn't ascii() return an int(8)/uint(8) by default?
-
 o The pattern ascii(mystring[i]) seems like it ought to be very
   optimizable compared to what we do now, and to support param
   versions in the event that mystring and 'i' are both params.  As a

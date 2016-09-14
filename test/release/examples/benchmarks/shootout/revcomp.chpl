@@ -69,9 +69,9 @@ proc initTable(pairs) {
   var table: [1..128] uint(8);
 
   for i in 1..pairs.length by 2 {
-    table[ascii(pairs[i])] = ascii(pairs[i+1]):uint(8);
+    table[ascii(pairs[i])] = ascii(pairs[i+1]);
     if pairs[i] != "\n" then
-      table[ascii(pairs[i].toLower())] = ascii(pairs[i+1]):uint(8);
+      table[ascii(pairs[i].toLower())] = ascii(pairs[i+1]);
   }
 
   return table;
