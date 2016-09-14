@@ -139,7 +139,6 @@ And all :type:`mpz_t` GMP routines, as well as the following routines:
   * :proc:`mpf_ui_div()`
   * :proc:`mpf_ui_sub()`
 
-
  */
 module GMP {
   use SysBasic;
@@ -192,476 +191,869 @@ module GMP {
      routines if not for ref.
    */
 
-  // Initializing random state
-  /* */
-  extern proc gmp_randinit_default(ref STATE: gmp_randstate_t);
-
-  extern proc gmp_randinit_mt(ref STATE: gmp_randstate_t);
-
-  extern proc gmp_randinit_lc_2exp(ref STATE: gmp_randstate_t,
-                                   ref A: mpz_t,
-                                   C: c_ulong,
-                                   M2EXP: c_ulong);
-
-  extern proc gmp_randinit_lc_2exp_size(ref STATE: gmp_randstate_t,
-                                        SIZE: c_ulong);
-
-  extern proc gmp_randinit_set(ref ROP: gmp_randstate_t,
-                               ref OP: gmp_randstate_t);
-
-  extern proc gmp_randclear(ref STATE: gmp_randstate_t);
 
 
   //
-  // Initializing integers
+  // The organization of the following interfaces is aligned with
   //
-  extern proc mpz_init2(ref X: mpz_t, N: c_ulong);
-
-  extern proc mpz_init(ref X: mpz_t);
-
-  extern proc mpz_clear(ref X: mpz_t);
-
-  extern proc mpz_realloc2(ref X: mpz_t, NBITS: c_ulong);
+  //      https://gmplib.org/manual/index.html
+  //
+  // for version 6.1.1
 
 
   //
-  // Assignment functions
+  // 5 Integer Functions
   //
-  extern proc mpz_set(ref ROP: mpz_t, OP: mpz_t);
 
-  extern proc mpz_set_ui(ref ROP: mpz_t, OP: c_ulong);
+  //
+  // 5.1 Initializing Functions
+  //
 
-  extern proc mpz_set_si(ref ROP: mpz_t, OP: c_long);
+  extern proc mpz_init(ref x: mpz_t);
 
-  extern proc mpz_set_d(ref ROP: mpz_t, OP: c_double);
+  extern proc mpz_init2(ref x: mpz_t, n: c_ulong);
 
+  extern proc mpz_clear(ref x: mpz_t);
 
-  // mpz_set_q once rationals are supported
-  // mpz_set_f once mpf supported
-  extern proc mpz_set_str(ref ROP: mpz_t, STR: c_string, BASE: c_int);
-
-  extern proc mpz_swap(ref ROP1: mpz_t, ref ROP2: mpz_t);
+  extern proc mpz_realloc2(ref x: mpz_t, n: mp_bitcnt_t);
 
 
   //
-  // Combined initialization and setting
+  // 5.2 Assignment Functions
   //
-  extern proc mpz_init_set(ref ROP: mpz_t, ref OP: mpz_t);
 
-  extern proc mpz_init_set_ui(ref ROP: mpz_t, OP: c_ulong);
+  extern proc mpz_set(ref rop: mpz_t, const op: mpz_t);
 
-  extern proc mpz_init_set_si(ref ROP: mpz_t, OP: c_long);
+  extern proc mpz_set_ui(ref rop: mpz_t, op: c_ulong);
 
-  extern proc mpz_init_set_d(ref ROP: mpz_t, OP: c_double);
+  extern proc mpz_set_si(ref rop: mpz_t, op: c_long);
 
-  extern proc mpz_init_set_str(ref ROP: mpz_t,
-                               STR: c_string,
-                               BASE: c_int) : c_int;
+  extern proc mpz_set_d(ref rop: mpz_t, op: c_double);
 
+  extern proc mpz_set_str(ref rop: mpz_t, str: c_string, base: c_int);
 
-  //
-  // Conversion functions
-  //
-  extern proc mpz_get_ui(ref OP: mpz_t) : c_ulong;
-
-  extern proc mpz_get_si(ref OP: mpz_t) : c_long;
-
-  extern proc mpz_get_d(ref OP: mpz_t) : c_double;
-
-  extern proc mpz_get_d_2exp(ref exp: c_long, ref OP: mpz_t) : c_double;
-
-  extern proc mpz_get_str(STR: c_string,
-                          BASE: c_int,
-                          ref OP: mpz_t) : c_string;
+  extern proc mpz_swap(ref rop1: mpz_t, ref rop2: mpz_t);
 
 
   //
-  // Arithmetic functions
+  // 5.3 Combined Initialization and Assignment Functions
   //
-  extern proc mpz_neg(ref ROP: mpz_t, ref OP: mpz_t);
 
-  extern proc mpz_abs(ref ROP: mpz_t, ref OP: mpz_t);
+  extern proc mpz_init_set(ref rop: mpz_t, const ref op: mpz_t);
 
-  extern proc mpz_add(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
+  extern proc mpz_init_set_ui(ref rop: mpz_t, op: c_ulong);
 
-  extern proc mpz_sub(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
+  extern proc mpz_init_set_si(ref rop: mpz_t, op: c_long);
 
-  extern proc mpz_mul(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
+  extern proc mpz_init_set_d(ref rop: mpz_t, op: c_double);
 
-  extern proc mpz_divexact(ref Q: mpz_t, ref N: mpz_t, ref D: mpz_t);
-
-  extern proc mpz_mod(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
-
-  extern proc mpz_addmul(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
-
-  extern proc mpz_submul(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
+  extern proc mpz_init_set_str(ref rop: mpz_t,
+                               str: c_string,
+                               base: c_int) : c_int;
 
 
   //
-  extern proc mpz_add_ui(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
+  // 5.4 Conversion Functions
+  //
 
-  extern proc mpz_sub_ui(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
+  extern proc mpz_get_ui(const ref op: mpz_t) : c_ulong;
 
-  extern proc mpz_mul_ui(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
+  extern proc mpz_get_si(const ref op: mpz_t) : c_long;
 
-  extern proc mpz_divexact_ui(ref Q: mpz_t, ref N: mpz_t, D: c_ulong);
+  extern proc mpz_get_d(const ref op: mpz_t) : c_double;
 
-  extern proc mpz_mod_ui(ref ROP: mpz_t,
-                         ref OP1: mpz_t,
-                         OP2: c_ulong) : c_ulong;
+  extern proc mpz_get_d_2exp(ref exp: c_long,
+                             const ref op: mpz_t) : c_double;
 
-  extern proc mpz_addmul_ui(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
-
-  extern proc mpz_submul_ui(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
-
-  extern proc mpz_ui_sub(ref ROP: mpz_t, OP1: c_ulong, ref OP2: mpz_t);
-
-  extern proc mpz_mul_si(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_long);
-
-  extern proc mpz_mul_2exp(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
+  extern proc mpz_get_str(str: c_string,
+                          base: c_int,
+                          const ref op: mpz_t) : c_string;
 
 
   //
-  extern proc mpz_cdiv_q(ref Q: mpz_t, ref N: mpz_t, ref D: mpz_t);
+  // 5.5 Arithmetic Functions
+  //
 
-  extern proc mpz_cdiv_r(ref R: mpz_t, ref N: mpz_t, ref D: mpz_t);
+  extern proc mpz_add(ref rop: mpz_t,
+                      const ref op1: mpz_t,
+                      const ref op2: mpz_t);
 
-  extern proc mpz_cdiv_qr(ref Q: mpz_t,
-                          ref R: mpz_t,
-                          ref N: mpz_t,
-                          ref D: mpz_t);
+  extern proc mpz_add_ui(ref rop: mpz_t,
+                         const ref op1: mpz_t,
+                         op2: c_ulong);
 
-  extern proc mpz_cdiv_q_ui(ref Q: mpz_t,
-                            ref N: mpz_t,
-                            D: c_ulong) : c_ulong;
+  extern proc mpz_sub(ref rop: mpz_t,
+                      const ref op1: mpz_t,
+                      const ref op2: mpz_t);
 
-  extern proc mpz_cdiv_r_ui(ref R: mpz_t,
-                            ref N: mpz_t,
-                            D: c_ulong) : c_ulong;
+  extern proc mpz_sub_ui(ref rop: mpz_t,
+                         const ref op1: mpz_t,
+                         op2: c_ulong);
 
-  extern proc mpz_cdiv_qr_ui(ref Q: mpz_t,
-                             ref R: mpz_t,
-                             ref N: mpz_t,
-                             D: c_ulong) : c_ulong;
+  extern proc mpz_ui_sub(ref rop: mpz_t,
+                         op1: c_ulong,
+                         const ref op2: mpz_t);
 
-  extern proc mpz_cdiv_ui(ref N: mpz_t, D: c_ulong) : c_ulong;
+  extern proc mpz_mul(ref rop: mpz_t,
+                      const ref op1: mpz_t,
+                      const ref op2: mpz_t);
 
-  extern proc mpz_cdiv_q_2exp(ref Q: mpz_t, ref N: mpz_t, B: c_ulong);
+  extern proc mpz_mul_si(ref rop: mpz_t,
+                         const ref op1: mpz_t,
+                         op2: c_long);
 
-  extern proc mpz_cdiv_r_2exp(ref R: mpz_t, ref N: mpz_t, B: c_ulong);
+  extern proc mpz_mul_ui(ref rop: mpz_t,
+                         const ref op1: mpz_t,
+                         op2: c_ulong);
+
+  extern proc mpz_addmul(ref rop: mpz_t,
+                         const ref op1: mpz_t,
+                         const ref op2: mpz_t);
+
+  extern proc mpz_addmul_ui(ref rop: mpz_t,
+                            const ref op1: mpz_t,
+                            op2: c_ulong);
+
+  extern proc mpz_submul(ref rop: mpz_t,
+                         const ref op1: mpz_t,
+                         const ref op2: mpz_t);
+
+  extern proc mpz_submul_ui(ref rop: mpz_t,
+                            const ref op1: mpz_t,
+                            op2: c_ulong);
+
+  extern proc mpz_mul_2exp(ref rop: mpz_t,
+                           const ref op1: mpz_t,
+                           op2: c_ulong);
+
+  extern proc mpz_neg(ref rop: mpz_t,
+                      const ref op: mpz_t);
+
+  extern proc mpz_abs(ref rop: mpz_t,
+                      const ref op: mpz_t);
 
 
   //
-  extern proc mpz_fdiv_ui(ref N: mpz_t, D: c_ulong) : c_ulong;
+  // 5.6 Division Functions
+  //
 
-  extern proc mpz_fdiv_q(ref Q: mpz_t, ref N: mpz_t, ref D: mpz_t);
+  extern proc mpz_cdiv_q(ref q: mpz_t,
+                         const ref n: mpz_t,
+                         const ref d: mpz_t);
 
-  extern proc mpz_fdiv_r(ref R: mpz_t, ref N: mpz_t, ref D: mpz_t);
+  extern proc mpz_cdiv_r(ref r: mpz_t,
+                         const ref n: mpz_t,
+                         const ref d: mpz_t);
 
-  extern proc mpz_fdiv_qr(ref Q: mpz_t,
-                          ref R: mpz_t,
-                          ref N: mpz_t,
-                          ref D: mpz_t);
+  extern proc mpz_cdiv_qr(ref q: mpz_t,
+                          ref r: mpz_t,
+                          const ref n: mpz_t,
+                          const ref d: mpz_t);
 
-  extern proc mpz_fdiv_q_ui(ref Q: mpz_t,
-                            ref N: mpz_t,
-                            D: c_ulong) : c_ulong;
+  extern proc mpz_cdiv_q_ui(ref q: mpz_t,
+                            const ref n: mpz_t,
+                            d: c_ulong) : c_ulong;
 
-  extern proc mpz_fdiv_r_ui(ref R: mpz_t,
-                            ref N: mpz_t,
-                            D: c_ulong) : c_ulong;
+  extern proc mpz_cdiv_r_ui(ref r: mpz_t,
+                            const ref n: mpz_t,
+                            d: c_ulong) : c_ulong;
 
-  extern proc mpz_fdiv_qr_ui(ref Q: mpz_t,
-                             ref R: mpz_t,
-                             ref N: mpz_t,
-                             D: c_ulong) : c_ulong;
+  extern proc mpz_cdiv_qr_ui(ref q: mpz_t,
+                             ref r: mpz_t,
+                             const ref n: mpz_t,
+                             d: c_ulong) : c_ulong;
 
-  extern proc mpz_fdiv_q_2exp(ref Q: mpz_t, ref N: mpz_t, B: c_ulong);
+  extern proc mpz_cdiv_ui(const ref n: mpz_t,
+                          d: c_ulong) : c_ulong;
 
-  extern proc mpz_fdiv_r_2exp(ref R: mpz_t, ref N: mpz_t, B: c_ulong);
+  extern proc mpz_cdiv_q_2exp(ref q: mpz_t,
+                              const ref n: mpz_t,
+                              b: mp_bitcnt_t);
+
+  extern proc mpz_cdiv_r_2exp(ref r: mpz_t,
+                              const ref n: mpz_t,
+                              b: mp_bitcnt_t);
 
 
   //
-  extern proc mpz_tdiv_ui(ref N: mpz_t, D: c_ulong) : c_ulong;
+  extern proc mpz_fdiv_q(ref q: mpz_t,
+                         const ref n: mpz_t,
+                         const ref d: mpz_t);
 
-  extern proc mpz_tdiv_q(ref Q: mpz_t, ref N: mpz_t, ref D: mpz_t);
+  extern proc mpz_fdiv_r(ref r: mpz_t,
+                         const ref n: mpz_t,
+                         const ref d: mpz_t);
 
-  extern proc mpz_tdiv_r(ref R: mpz_t, ref N: mpz_t, ref D: mpz_t);
+  extern proc mpz_fdiv_qr(ref q: mpz_t,
+                          ref r: mpz_t,
+                          const ref n: mpz_t,
+                          const ref d: mpz_t);
 
-  extern proc mpz_tdiv_qr(ref Q: mpz_t,
-                          ref R: mpz_t,
-                          ref N: mpz_t,
-                          ref D: mpz_t);
+  extern proc mpz_fdiv_q_ui(ref q: mpz_t,
+                            const ref n: mpz_t,
+                            d: c_ulong) : c_ulong;
 
-  extern proc mpz_tdiv_q_ui(ref Q: mpz_t,
-                            ref N: mpz_t,
-                            D: c_ulong) : c_ulong;
+  extern proc mpz_fdiv_r_ui(ref r: mpz_t,
+                            const ref n: mpz_t,
+                            d: c_ulong) : c_ulong;
 
-  extern proc mpz_tdiv_r_ui(ref R: mpz_t,
-                            ref N: mpz_t,
-                            D: c_ulong) : c_ulong;
+  extern proc mpz_fdiv_qr_ui(ref q: mpz_t,
+                             ref r: mpz_t,
+                             const ref n: mpz_t,
+                             d: c_ulong) : c_ulong;
 
-  extern proc mpz_tdiv_qr_ui(ref Q: mpz_t,
-                             ref R: mpz_t,
-                             ref N: mpz_t,
-                             D: c_ulong) : c_ulong;
+  extern proc mpz_fdiv_ui(const ref n: mpz_t,
+                          d: c_ulong) : c_ulong;
 
-  extern proc mpz_tdiv_q_2exp(ref Q: mpz_t, ref N: mpz_t, B: c_ulong);
+  extern proc mpz_fdiv_q_2exp(ref q: mpz_t,
+                              const ref n: mpz_t,
+                              b: mp_bitcnt_t);
 
-  extern proc mpz_tdiv_r_2exp(ref R: mpz_t, ref N: mpz_t, B: c_ulong);
-
-
-  //
-  extern proc mpz_divisible_p(ref N: mpz_t, ref D: mpz_t) : c_int;
-
-  extern proc mpz_divisible_ui_p(ref N: mpz_t,     D: c_ulong) : c_int;
-
-  extern proc mpz_divisible_2exp_p(ref N: mpz_t, B: c_ulong) : c_int;
-
-  extern proc mpz_congruent_2exp_p(ref N: mpz_t,
-                                   ref C: mpz_t,
-                                   B: c_ulong) : c_int;
-
-  extern proc mpz_congruent_p(ref N: mpz_t,
-                              ref C: mpz_t,
-                              ref D: mpz_t) : c_int;
-
-  extern proc mpz_congruent_ui_p(ref N: mpz_t,
-                                 C: c_ulong,
-                                 D: c_ulong) : c_int;
-
+  extern proc mpz_fdiv_r_2exp(ref r: mpz_t,
+                              const ref n: mpz_t,
+                              b: mp_bitcnt_t);
 
 
   //
-  // Exponentiation Functions
-  //
-  extern proc mpz_powm(ref ROP: mpz_t,
-                       ref BASE: mpz_t,
-                       ref EXP: mpz_t,
-                       ref MOD: mpz_t);
+  extern proc mpz_tdiv_q(ref q: mpz_t,
+                         const ref n: mpz_t,
+                         const ref d: mpz_t);
 
-  extern proc mpz_powm_ui(ref ROP: mpz_t,
-                          ref BASE: mpz_t,
-                          EXP: c_ulong,
-                          ref MOD: mpz_t);
+  extern proc mpz_tdiv_r(ref r: mpz_t,
+                         const ref n: mpz_t,
+                         const ref d: mpz_t);
 
-  extern proc mpz_pow_ui(ref ROP: mpz_t, ref BASE: mpz_t, EXP: c_ulong);
+  extern proc mpz_tdiv_qr(ref q: mpz_t,
+                          ref r: mpz_t,
+                          const ref n: mpz_t,
+                          const ref d: mpz_t);
 
-  extern proc mpz_ui_pow_ui(ref ROP: mpz_t, BASE: c_ulong, EXP: c_ulong);
+  extern proc mpz_tdiv_q_ui(ref q: mpz_t,
+                            const ref n: mpz_t,
+                            d: c_ulong) : c_ulong;
 
+  extern proc mpz_tdiv_r_ui(ref r: mpz_t,
+                            const ref n: mpz_t,
+                            d: c_ulong) : c_ulong;
 
-  //
-  // Root Extraction Functions
-  //
-  extern proc mpz_root(ref ROP: mpz_t, ref OP: mpz_t, N: c_ulong) : c_int;
+  extern proc mpz_tdiv_qr_ui(ref q: mpz_t,
+                             ref r: mpz_t,
+                             const ref n: mpz_t,
+                             d: c_ulong) : c_ulong;
 
-  extern proc mpz_rootrem(ref ROOT: mpz_t,
-                          ref REM: mpz_t,
-                          ref U: mpz_t,
-                          N: c_ulong);
+  extern proc mpz_tdiv_ui(const ref n: mpz_t,
+                          d: c_ulong) : c_ulong;
 
-  extern proc mpz_sqrt(ref ROP: mpz_t, ref OP: mpz_t);
+  extern proc mpz_tdiv_q_2exp(ref q: mpz_t,
+                              const ref n: mpz_t,
+                              b: mp_bitcnt_t);
 
-  extern proc mpz_sqrtrem(ref ROP1: mpz_t, ref ROP2: mpz_t, ref OP: mpz_t);
-
-  extern proc mpz_perfect_power_p(ref OP: mpz_t) : c_int;
-
-  extern proc mpz_perfect_square_p(ref OP: mpz_t) : c_int;
-
-
-  //
-  // Number Theoretic Functions
-  //
-  extern proc mpz_probab_prime_p(ref N: mpz_t, REPS: c_int) : c_int;
-
-  extern proc mpz_nextprime(ref ROP: mpz_t, ref OP: mpz_t);
-
-  extern proc mpz_gcd(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
-
-  extern proc mpz_lcm(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
-
-  extern proc mpz_gcd_ui(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
-
-  extern proc mpz_lcm_ui(ref ROP: mpz_t, ref OP1: mpz_t, OP2: c_ulong);
-
-  extern proc mpz_gcdext(ref G: mpz_t,
-                         ref S: mpz_t,
-                         ref T: mpz_t,
-                         ref A: mpz_t,
-                         ref B: mpz_t);
-
-  extern proc mpz_invert(ref ROP: mpz_t,
-                         ref OP1: mpz_t,
-                         ref OP2: mpz_t) : c_int;
-
-  extern proc mpz_jacobi(ref A: mpz_t, ref B: mpz_t) : c_int;
-
-  extern proc mpz_legendre(ref A: mpz_t, ref P: mpz_t) : c_int;
-
-  extern proc mpz_kronecker(ref A: mpz_t, ref B: mpz_t) : c_int;
-
-  extern proc mpz_kronecker_si(ref A: mpz_t, B: c_long) : c_int;
-
-  extern proc mpz_kronecker_ui(ref A: mpz_t, B: c_ulong) : c_int;
-
-  extern proc mpz_si_kronecker(A: c_long, ref B: mpz_t) : c_int;
-
-  extern proc mpz_ui_kronecker(A: c_ulong, ref B: mpz_t) : c_int;
-
-  extern proc mpz_remove(ref ROP: mpz_t,
-                         ref OP: mpz_t,
-                         ref F: mpz_t) : c_ulong;
-
-  extern proc mpz_fac_ui(ref ROP: mpz_t, OP: c_ulong);
-
-  extern proc mpz_bin_ui(ref ROP: mpz_t, N: mpz_t, K: c_ulong);
-
-  extern proc mpz_bin_uiui(ref ROP: mpz_t, N: c_ulong, K: c_ulong);
-
-  extern proc mpz_fib_ui(ref FN: mpz_t, N: c_ulong);
-
-  extern proc mpz_fib2_ui(ref FN: mpz_t, FNSUB1: mpz_t, N: c_ulong);
-
-  extern proc mpz_lucnum_ui(ref LN: mpz_t, N: c_ulong);
-
-  extern proc mpz_lucnum2_ui(ref LN: mpz_t, LNSUB1: mpz_t, N: c_ulong);
+  extern proc mpz_tdiv_r_2exp(ref r: mpz_t,
+                              const ref n: mpz_t,
+                              b: mp_bitcnt_t);
 
 
   //
-  // Comparison Functions
-  //
-  extern proc mpz_cmp(ref OP1: mpz_t, ref OP2: mpz_t) : c_int;
+  extern proc mpz_mod(ref rop: mpz_t,
+                      const ref n: mpz_t,
+                      const ref d: mpz_t);
 
-  extern proc mpz_cmp_d(ref OP1: mpz_t, OP2: c_double) : c_int;
+  extern proc mpz_mod_ui(ref rop: mpz_t,
+                         const ref n: mpz_t,
+                         d: c_ulong) : c_ulong;
 
-  extern proc mpz_cmp_si(ref OP1: mpz_t, OP2: c_long) : c_int;
+  extern proc mpz_divexact(ref q: mpz_t,
+                           const ref n: mpz_t,
+                           const ref d: mpz_t);
 
-  extern proc mpz_cmp_ui(ref OP1: mpz_t, OP2: c_ulong) : c_int;
+  extern proc mpz_divexact_ui(ref q: mpz_t,
+                              const ref n: mpz_t,
+                              d: c_ulong);
 
-  extern proc mpz_cmpabs(ref OP1: mpz_t, ref OP2: mpz_t) : c_int;
+  extern proc mpz_divisible_p(const ref n: mpz_t,
+                              const ref d: mpz_t) : c_int;
 
-  extern proc mpz_cmpabs_d(ref OP1: mpz_t, OP2: c_double) : c_int;
+  extern proc mpz_divisible_ui_p(const ref n: mpz_t,
+                                 d: c_ulong) : c_int;
 
-  extern proc mpz_cmpabs_ui(ref OP1: mpz_t, OP2: c_ulong) : c_int;
+  extern proc mpz_divisible_2exp_p(const ref n: mpz_t,
+                                   b: mp_bitcnt_t) : c_int;
 
-  extern proc mpz_sgn(ref OP: mpz_t) : c_int;
+  extern proc mpz_congruent_p(const ref n: mpz_t,
+                              const ref c: mpz_t,
+                              const ref d: mpz_t) : c_int;
 
+  extern proc mpz_congruent_ui_p(const ref n: mpz_t,
+                                 c: c_ulong,
+                                 d: c_ulong) : c_int;
 
-  //
-  // Logical and Bit Manipulation Functions
-  //
-  extern proc mpz_and(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
-
-  extern proc mpz_ior(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
-
-  extern proc mpz_xor(ref ROP: mpz_t, ref OP1: mpz_t, ref OP2: mpz_t);
-
-  extern proc mpz_com(ref ROP: mpz_t, ref OP: mpz_t);
-
-  extern proc mpz_popcount(ref OP: mpz_t) : c_ulong;
-
-  extern proc mpz_hamdist(ref OP1: mpz_t, ref OP2: mpz_t) : c_ulong;
-
-  extern proc mpz_scan0(ref OP: mpz_t, STARTING_BIT: c_ulong) : c_ulong;
-
-  extern proc mpz_scan1(ref OP: mpz_t, STARTING_BIT: c_ulong) : c_ulong;
-
-  extern proc mpz_setbit(ref ROP: mpz_t, BIT_INDEX: c_ulong);
-
-  extern proc mpz_clrbit(ref ROP: mpz_t, BIT_INDEX: c_ulong);
-
-  extern proc mpz_combit(ref ROP: mpz_t, BIT_INDEX: c_ulong);
-
-  extern proc mpz_tstbit(ref OP: mpz_t, BIT_INDEX: c_ulong) : c_int;
+  extern proc mpz_congruent_2exp_p(const ref n: mpz_t,
+                                   const ref c: mpz_t,
+                                   b: mp_bitcnt_t) : c_int;
 
 
   //
-  // Random Number Functions
+  // 5.7 Exponentiation Functions
   //
-  extern proc mpz_urandomb(ref ROP: mpz_t,
-                           STATE: gmp_randstate_t,
-                           N: c_ulong);
 
-  extern proc mpz_urandomm(ref ROP: mpz_t,
-                           STATE: gmp_randstate_t,
-                           N: mpz_t);
+  extern proc mpz_powm(ref rop: mpz_t,
+                       const ref base: mpz_t,
+                       const ref exp: mpz_t,
+                       const ref mod: mpz_t);
 
-  extern proc mpz_rrandomb(ref ROP: mpz_t,
-                           STATE: gmp_randstate_t,
-                           N: c_ulong);
+  extern proc mpz_powm_ui(ref rop: mpz_t,
+                          const ref base: mpz_t,
+                          exp: c_ulong,
+                          const ref mod: mpz_t);
 
-  extern proc gmp_randseed(ref STATE: gmp_randstate_t, SEED: mpz_t);
+  extern proc mpz_powm_sec(ref rop: mpz_t,
+                           const ref base: mpz_t,
+                           const ref exp: mpz_t,
+                           const ref mod:  mpz_t);
 
-  extern proc gmp_randseed_ui(ref STATE: gmp_randstate_t, SEED: c_ulong);
+  extern proc mpz_pow_ui(ref rop: mpz_t,
+                         const ref base: mpz_t,
+                         exp: c_ulong);
 
-  extern proc gmp_urandomb_ui(ref STATE: gmp_randstate_t,
-                              N: c_ulong) : c_ulong;
-
-  extern proc gmp_urandomm_ui(ref STATE: gmp_randstate_t,
-                              N: c_ulong) : c_ulong;
-
-
-  //
-  // Miscellaneous Functions
-  //
-  extern proc mpz_fits_ulong_p(ref OP: mpz_t) : c_int;
-
-  extern proc mpz_fits_slong_p(ref OP: mpz_t) : c_int;
-
-  extern proc mpz_fits_uint_p(ref OP: mpz_t) : c_int;
-
-  extern proc mpz_fits_sint_p(ref OP: mpz_t) : c_int;
-
-  extern proc mpz_fits_ushort_p(ref OP: mpz_t) : c_int;
-
-  extern proc mpz_fits_sshort_p(ref OP: mpz_t) : c_int;
-
-  extern proc mpz_odd_p (ref OP: mpz_t) : c_int;
-
-  extern proc mpz_even_p(ref OP: mpz_t) : c_int;
-
-  extern proc mpz_sizeinbase(ref OP: mpz_t, BASE: c_int) : size_t;
-
-  extern proc mpf_set_default_prec(PREC: mp_bitcnt_t);
+  extern proc mpz_ui_pow_ui(ref rop: mpz_t,
+                            base: c_ulong,
+                            exp: c_ulong);
 
 
   //
-  // floating-point functions
+  // 5.8 Root Extraction Functions
   //
-  extern proc mpf_init(ref X: mpf_t);
 
-  extern proc mpf_set_z(ref ROP: mpf_t, ref OP: mpz_t);
+  extern proc mpz_root(ref rop: mpz_t,
+                       const ref op: mpz_t,
+                       n: c_ulong) : c_int;
 
-  extern proc mpf_get_prec(ref OP: mpf_t) : mp_bitcnt_t;
+  extern proc mpz_rootrem(ref root: mpz_t,
+                          ref rem: mpz_t,
+                          const ref u: mpz_t,
+                          n: c_ulong);
 
-  extern proc mpf_get_d(ref OP: mpf_t) : c_double;
+  extern proc mpz_sqrt(ref rop: mpz_t,
+                       const ref op: mpz_t);
 
-  extern proc mpf_set_d(ref ROP: mpf_t, OP: c_double);
+  extern proc mpz_sqrtrem(ref rop1: mpz_t,
+                          ref rop2: mpz_t,
+                          const ref op: mpz_t);
 
-  extern proc mpf_set_prec_raw(ref ROP: mpf_t, PREC: mp_bitcnt_t);
+  extern proc mpz_perfect_power_p(const ref op: mpz_t) : c_int;
 
-  extern proc mpf_ui_div(ref ROP: mpf_t, OP1: c_ulong, ref OP2: mpf_t);
+  extern proc mpz_perfect_square_p(const ref op: mpz_t) : c_int;
 
-  extern proc mpf_mul(ref ROP: mpf_t, ref OP1: mpf_t, ref OP2: mpf_t);
 
-  extern proc mpf_ui_sub(ref ROP: mpf_t, OP1: c_ulong, ref OP2: mpf_t);
+  //
+  // 5.9 Number Theoretic Functions
+  //
 
-  extern proc mpf_add(ref ROP: mpf_t, ref OP1: mpf_t, ref OP2: mpf_t);
+  extern proc mpz_probab_prime_p(ref n: mpz_t,
+                                 reps: c_int) : c_int;
 
-  extern proc mpf_sub(ref ROP: mpf_t, ref OP1: mpf_t, ref OP2: mpf_t);
+  extern proc mpz_nextprime(ref rop: mpz_t,
+                            const ref op: mpz_t);
 
-  extern proc mpf_mul_ui(ref ROP: mpf_t, ref OP1: mpf_t, OP2: c_ulong);
+  extern proc mpz_gcd(ref rop: mpz_t,
+                      const ref op1: mpz_t,
+                      const ref op2: mpz_t);
 
-  extern proc mpf_div_2exp(ref ROP: mpf_t,
-                           ref OP1: mpf_t,
-                           OP2: mp_bitcnt_t);
+  extern proc mpz_gcd_ui(ref rop: mpz_t,
+                         const ref op1: mpz_t,
+                         op2: c_ulong);
 
-  extern proc mpf_out_str(STREAM: _file,
-                          BASE: c_int,
-                          N_DIGITS: size_t,
-                          ref OP: mpf_t);
+  extern proc mpz_gcdext(ref g: mpz_t,
+                         ref s: mpz_t,
+                         ref t: mpz_t,
+                         const ref a: mpz_t,
+                         const ref b: mpz_t);
 
-  extern proc mpf_clear(ref X: mpf_t);
+  extern proc mpz_lcm(ref rop: mpz_t,
+                      const ref op1: mpz_t,
+                      const ref op2: mpz_t);
+
+  extern proc mpz_lcm_ui(ref rop: mpz_t,
+                         const ref op1: mpz_t,
+                         op2: c_ulong);
+
+  extern proc mpz_invert(ref rop: mpz_t,
+                         const ref op1: mpz_t,
+                         const ref op2: mpz_t) : c_int;
+
+  extern proc mpz_jacobi(const ref a: mpz_t,
+                         const ref b: mpz_t) : c_int;
+
+  extern proc mpz_legendre(const ref a: mpz_t,
+                           const ref p: mpz_t) : c_int;
+
+  extern proc mpz_kronecker(const ref a: mpz_t,
+                            const ref b: mpz_t) : c_int;
+
+  extern proc mpz_kronecker_si(const ref a: mpz_t,
+                               b: c_long) : c_int;
+
+  extern proc mpz_kronecker_ui(const ref a: mpz_t,
+                               b: c_ulong) : c_int;
+
+  extern proc mpz_si_kronecker(a: c_long,
+                               const ref b: mpz_t) : c_int;
+
+  extern proc mpz_ui_kronecker(a: c_ulong,
+                               const ref b: mpz_t) : c_int;
+
+  extern proc mpz_remove(ref rop: mpz_t,
+                         const ref op: mpz_t,
+                         const ref f: mpz_t) : c_ulong;
+
+  extern proc mpz_fac_ui(ref rop: mpz_t,
+                         n: c_ulong);
+
+  extern proc mpz_2fac_ui(ref rop: mpz_t,
+                          n: c_ulong);
+
+  extern proc mpz_mfac_uiui(ref rop: mpz_t,
+                            n: c_ulong,
+                            m: c_ulong);
+
+  extern proc mpz_primorial_ui(ref rop: mpz_t,
+                               n: c_ulong);
+
+  extern proc mpz_bin_ui(ref rop: mpz_t,
+                         const ref n: mpz_t,
+                         k: c_ulong);
+
+  extern proc mpz_bin_uiui(ref rop: mpz_t,
+                           n: c_ulong,
+                           k: c_ulong);
+
+  extern proc mpz_fib_ui(ref fn: mpz_t,
+                         n: c_ulong);
+
+  extern proc mpz_fib2_ui(ref fn: mpz_t,
+                          ref fnsub1: mpz_t,
+                          n: c_ulong);
+
+  extern proc mpz_lucnum_ui(ref ln: mpz_t,
+                            n: c_ulong);
+
+  extern proc mpz_lucnum2_ui(ref ln: mpz_t,
+                             ref lnsub1: mpz_t,
+                             n: c_ulong);
+
+
+  //
+  // 5.10 Comparison Functions
+  //
+
+  extern proc mpz_cmp(const ref op1: mpz_t,
+                      const ref op2: mpz_t) : c_int;
+
+  extern proc mpz_cmp_d(const ref op1: mpz_t,
+                        op2: c_double) : c_int;
+
+  extern proc mpz_cmp_si(const ref op1: mpz_t,
+                         op2: c_long) : c_int;
+
+  extern proc mpz_cmp_ui(const ref op1: mpz_t,
+                         op2: c_ulong) : c_int;
+
+  extern proc mpz_cmpabs(const ref op1: mpz_t,
+                         const ref op2: mpz_t) : c_int;
+
+  extern proc mpz_cmpabs_d(const ref op1: mpz_t,
+                           op2: c_double) : c_int;
+
+  extern proc mpz_cmpabs_ui(const ref op1: mpz_t,
+                            op2: c_ulong) : c_int;
+
+  extern proc mpz_sgn(const ref op: mpz_t) : c_int;
+
+
+  //
+  // 5.11 Logical and Bit Manipulation Functions
+  //
+
+  extern proc mpz_and(ref rop: mpz_t,
+                      const ref op1: mpz_t,
+                      const ref op2: mpz_t);
+
+  extern proc mpz_ior(ref rop: mpz_t,
+                      const ref op1: mpz_t,
+                      const ref op2: mpz_t);
+
+  extern proc mpz_xor(ref rop: mpz_t,
+                      const ref op1: mpz_t,
+                      const ref op2: mpz_t);
+
+  extern proc mpz_com(ref rop: mpz_t,
+                      const ref op: mpz_t);
+
+  extern proc mpz_popcount(const ref op: mpz_t) : c_ulong;
+
+  extern proc mpz_hamdist(const ref op1: mpz_t,
+                          const ref op2: mpz_t) : c_ulong;
+
+  extern proc mpz_scan0(const ref op: mpz_t,
+                        starting_bit: mp_bitcnt_t) : c_ulong;
+
+  extern proc mpz_scan1(const ref op: mpz_t,
+                        starting_bit: mp_bitcnt_t) : c_ulong;
+
+  extern proc mpz_setbit(ref rop: mpz_t,
+                         bit_index: mp_bitcnt_t);
+
+  extern proc mpz_clrbit(ref rop: mpz_t,
+                         bit_index: mp_bitcnt_t);
+
+  extern proc mpz_combit(ref rop: mpz_t,
+                         bit_index: mp_bitcnt_t);
+
+  extern proc mpz_tstbit(const ref op: mpz_t,
+                         bit_index: mp_bitcnt_t) : c_int;
+
+
+  //
+  // 5.12 Input and Output Functions
+  //
+
+
+  //
+  // 5.13 Random Number Functions
+  //
+
+  extern proc mpz_urandomb(ref rop: mpz_t,
+                           ref state: gmp_randstate_t,
+                           n: mp_bitcnt_t);
+
+  extern proc mpz_urandomm(ref rop: mpz_t,
+                           ref state: gmp_randstate_t,
+                           const ref n: mpz_t);
+
+  extern proc mpz_rrandomb(ref rop: mpz_t,
+                           ref state: gmp_randstate_t,
+                           n: mp_bitcnt_t);
+
+  extern proc mpz_random(ref rop: mpz_t,
+                         max_size: mp_size_t);
+
+  extern proc mpz_random2(ref rop: mpz_t,
+                         max_size: mp_size_t);
+
+
+  //
+  // 5.14 Integer Import and Export
+  //
+
+
+  //
+  // 5.15 Miscellaneous Functions
+  //
+
+  extern proc mpz_fits_ulong_p(const ref op: mpz_t) : c_int;
+
+  extern proc mpz_fits_slong_p(const ref op: mpz_t) : c_int;
+
+  extern proc mpz_fits_uint_p(const ref op: mpz_t) : c_int;
+
+  extern proc mpz_fits_sint_p(const ref op: mpz_t) : c_int;
+
+  extern proc mpz_fits_ushort_p(const ref op: mpz_t) : c_int;
+
+  extern proc mpz_fits_sshort_p(const ref op: mpz_t) : c_int;
+
+  extern proc mpz_odd_p(const ref op: mpz_t) : c_int;
+
+  extern proc mpz_even_p(const ref op: mpz_t) : c_int;
+
+  extern proc mpz_sizeinbase(const ref op: mpz_t,
+                             base: c_int) : size_t;
+
+
+  //
+  // 5.16 Special Functions
+  //
+
+  extern proc mpz_getlimbn(const ref op: mpz_t,
+                           n: mp_size_t) : mp_limb_t;
+
+  extern proc mpz_size(const ref x: mpz_t): size_t;
+
+
+  //
+  // Floating-point Functions
+  //
+
+
+  //
+  // 7.1 Initialization Functions
+  //
+
+  extern proc mpf_set_default_prec(prec: mp_bitcnt_t);
+
+  extern proc mpf_get_default_prec() : mp_bitcnt_t;
+
+  extern proc mpf_init(ref x: mpf_t);
+
+  extern proc mpf_init2(ref x: mpf_t, prec: mp_bitcnt_t);
+
+  extern proc mpf_clear(ref x: mpf_t);
+
+  extern proc mpf_get_prec(const ref op: mpf_t) : mp_bitcnt_t;
+
+  extern proc mpf_set_prec(ref rop: mpf_t,
+                           prec: mp_bitcnt_t);
+
+  extern proc mpf_set_prec_raw(ref rop: mpf_t,
+                               prec: mp_bitcnt_t);
+
+
+  //
+  // 7.2 Assignment Functions
+  //
+
+  extern proc mpf_set(ref rop: mpf_t,
+                      const ref op: mpz_t);
+
+  extern proc mpf_set_ui(ref rop: mpf_t,
+                         op: c_ulong);
+
+  extern proc mpf_set_si(ref rop: mpf_t,
+                         op: c_long);
+
+  extern proc mpf_set_d(ref rop: mpf_t,
+                        op: c_double);
+
+  extern proc mpf_set_z(ref rop: mpf_t,
+                        const ref op: mpz_t);
+
+  extern proc mpf_set_q(ref rop: mpf_t,
+                        const ref op: mpz_t);
+
+  extern proc mpf_swap(ref rop1: mpf_t,
+                       ref rop2: mpz_t);
+
+
+  //
+  // 7.3 Combined Initialization and Assignment Functions
+  //
+
+  extern proc mpf_init_set(ref rop: mpf_t,
+                           const ref op: mpz_t);
+
+  extern proc mpf_init_set_ui(ref rop: mpf_t,
+                              op: c_ulong);
+
+  extern proc mpf_init_set_si(ref rop: mpf_t,
+                              op: c_long);
+
+  extern proc mpf_init_set_d(ref rop: mpf_t,
+                             op: c_double);
+
+
+  //
+  // 7.4 Conversion Functions
+  //
+
+  extern proc mpf_get_d(const ref op: mpf_t) : c_double;
+
+  extern proc mpf_get_si(const ref op: mpf_t) : c_long;
+
+  extern proc mpf_get_ui(const ref op: mpf_t) : c_ulong;
+
+
+  //
+  // 7.5 Arithmetic Functions
+  //
+
+  extern proc mpf_add(ref rop: mpf_t,
+                      const ref op1: mpf_t,
+                      const ref op2: mpf_t);
+
+  extern proc mpf_add_ui(ref rop: mpf_t,
+                         const ref op1: mpf_t,
+                         op2: c_ulong);
+
+  extern proc mpf_sub(ref rop: mpf_t,
+                      const ref op1: mpf_t,
+                      const ref op2: mpf_t);
+
+  extern proc mpf_ui_sub(ref rop: mpf_t,
+                         op1: c_ulong,
+                         const ref op2: mpf_t);
+
+  extern proc mpf_sub_ui(ref rop: mpf_t,
+                         const ref op1: mpf_t,
+                         op2: c_ulong);
+
+  extern proc mpf_mul(ref rop: mpf_t,
+                      const ref op1: mpf_t,
+                      const ref op2: mpf_t);
+
+  extern proc mpf_mul_ui(ref rop: mpf_t,
+                         const ref op1: mpf_t,
+                         op2: c_ulong);
+
+  extern proc mpf_div(ref rop: mpf_t,
+                      const ref op1: mpf_t,
+                      const ref op2: mpf_t);
+
+  extern proc mpf_ui_div(ref rop: mpf_t,
+                         op1: c_ulong,
+                         const ref op2: mpf_t);
+
+  extern proc mpf_div_ui(ref rop: mpf_t,
+                         const ref op1: mpf_t,
+                         op2: c_ulong);
+
+  extern proc mpf_sqrt(ref rop: mpf_t,
+                       const ref op: mpf_t);
+
+  extern proc mpf_sqrt_ui(ref rop: mpf_t,
+                          op: c_ulong);
+
+  extern proc mpf_pow_ui(ref rop: mpf_t,
+                         const ref op1: mpf_t,
+                         op2: c_ulong);
+
+  extern proc mpf_neg(ref rop: mpf_t,
+                      const ref op: mpf_t);
+
+  extern proc mpf_abs(ref rop: mpf_t,
+                      const ref op: mpf_t);
+
+  extern proc mpf_mul_2exp(ref rop: mpf_t,
+                           const ref op1: mpf_t,
+                           op2: mp_bitcnt_t);
+
+  extern proc mpf_div_2exp(ref rop: mpf_t,
+                           const ref op1: mpf_t,
+                           op2: mp_bitcnt_t);
+
+
+  //
+  // 7.6 Comparison Functions
+  //
+
+  extern proc mpf_cmp(const ref op1: mpf_t,
+                      const ref op2: mpf_t) : c_int;
+
+  extern proc mpf_cmp_z(const ref op1: mpf_t,
+                        const ref op2: mpf_t) : c_int;
+
+  extern proc mpf_cmp_d(const ref op1: mpf_t,
+                        op2: c_double) : c_int;
+
+  extern proc mpf_cmp_ui(const ref op1: mpf_t,
+                         op2: c_ulong) : c_int;
+
+  extern proc mpf_cmp_si(const ref op1: mpf_t,
+                         op2: c_long) : c_int;
+
+  extern proc mpf_eq(const ref op1: mpf_t,
+                     const ref op2: mpf_t,
+                     op3: mp_bitcnt_t) : c_int;
+
+  extern proc mpf_reldiff(const ref rop: mpf_t,
+                          const ref op1: mpf_t,
+                          const ref op2: mpf_t);
+
+  extern proc mpf_sgn(const ref op: mpf_t);
+
+
+  //
+  // 7.7 Input and Output Functions
+  //
+
+  extern proc mpf_out_str(stream: _file,
+                          base: c_int,
+                          n_digits: size_t,
+                          const ref op: mpf_t);
+
+  extern proc mpf_inp_str(ref rop: mpf_t,
+                          stream: _file,
+                          base: c_int);
+
+
+  //
+  // 7.8 Miscellaneous Functions
+  //
+
+  extern proc mpf_ceil(ref rop: mpf_t,
+                       const ref op: mpf_t);
+
+  extern proc mpf_floor(ref rop: mpf_t,
+                        const ref op: mpf_t);
+
+  extern proc mpf_trunc(ref rop: mpf_t,
+                        const ref op: mpf_t);
+
+  extern proc mpf_integer_p(const ref op: mpf_t) : c_int;
+
+  extern proc mpf_fits_ulong_p(const ref op: mpf_t) : c_int;
+
+  extern proc mpf_fits_slong_p(const ref op: mpf_t) : c_int;
+
+  extern proc mpf_fits_uint_p(const ref op: mpf_t) : c_int;
+
+  extern proc mpf_fits_sint_p(const ref op: mpf_t) : c_int;
+
+  extern proc mpf_fits_ushort_p(const ref op: mpf_t) : c_int;
+
+  extern proc mpf_fits_sshort_p(const ref op: mpf_t) : c_int;
+
+  extern proc mpf_urandomb(ref rop: mpf_t,
+                           ref state: gmp_randstate_t,
+                           nbits : mp_bitcnt_t);
+
+
+  //
+  // 9 Random Number Functions
+  //
+
+
+  //
+  // 9.1 Random State Initialization
+  //
+
+  extern proc gmp_randinit_default(ref state: gmp_randstate_t);
+
+  extern proc gmp_randinit_mt(ref state: gmp_randstate_t);
+
+  extern proc gmp_randinit_lc_2exp(ref state: gmp_randstate_t,
+                                   const ref a: mpz_t,
+                                   c: c_ulong,
+                                   m2exp: mp_bitcnt_t);
+
+  extern proc gmp_randinit_lc_2exp_size(ref state: gmp_randstate_t,
+                                        size: mp_bitcnt_t);
+
+  extern proc gmp_randinit_set(ref rop: gmp_randstate_t,
+                               ref op: gmp_randstate_t);
+
+  extern proc gmp_randclear(ref state: gmp_randstate_t);
+
+
+  //
+  // 9.2 Random State Seeding
+  //
+
+  extern proc gmp_randseed(ref state: gmp_randstate_t,
+                           const ref seed: mpz_t);
+
+  extern proc gmp_randseed_ui(ref state: gmp_randstate_t,
+                              seed: c_ulong);
+
+
+  //
+  // 9.3 Random State Miscellaneous
+  //
+
+  extern proc gmp_urandomb_ui(ref state: gmp_randstate_t,
+                              n: c_ulong) : c_ulong;
+
+  extern proc gmp_urandomm_ui(ref state: gmp_randstate_t,
+                              n: c_ulong) : c_ulong;
 
 
   //
@@ -682,9 +1074,9 @@ module GMP {
   private extern proc chpl_gmp_init();
 
   /* Get an MPZ value stored on another locale */
-  private extern proc chpl_gmp_get_mpz(ref ret: mpz_t,
-                                       src_local: int,
-                                       from: __mpz_struct);
+  extern proc chpl_gmp_get_mpz(ref ret: mpz_t,
+                               src_local: int,
+                               from: __mpz_struct);
 
   /* Get a randstate value stored on another locale */
   private extern
@@ -2157,7 +2549,7 @@ module GMP {
     }
 
     proc GMPRandom(size: uint) {
-      gmp_randinit_lc_2exp_esize(this.state, size.safeCast(c_ulong));
+      gmp_randinit_lc_2exp_size(this.state, size.safeCast(c_ulong));
     }
 
     proc GMPRandom(a: GMPRandom) {
