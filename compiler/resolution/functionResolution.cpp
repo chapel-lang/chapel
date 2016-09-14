@@ -7094,7 +7094,7 @@ postFold(Expr* expr) {
       if (se->var->isParameter()) {
         const char* str = get_string(se);
         const std::string unescaped = unescapeString(str, se);
-        result = new SymExpr(new_IntSymbol((int)unescaped[0], INT_SIZE_DEFAULT));
+        result = new SymExpr(new_UIntSymbol((int)unescaped[0], INT_SIZE_8));
         call->replace(result);
       }
     } else if (call->isPrimitive("string_contains")) {
