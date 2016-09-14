@@ -17,7 +17,7 @@ proc testarrays() {
   var a = [1];
   assert(a.size==1);
   var at = [1,];
-  assert(a.size==1);
+  assert(at.size==1);
   var b = [1,2];
   assert(b.size==2);
   var bt = [1,2,];
@@ -33,7 +33,7 @@ proc testassocdoms() {
   var a = {1};
   assert(a.size==1);
   var at = {1,};
-  assert(a.size==1);
+  assert(at.size==1);
   var b = {1,2};
   assert(b.size==2);
   var bt = {1,2,};
@@ -49,7 +49,7 @@ proc testassocarrays() {
   var a = [1 => "one"];
   assert(a.size==1);
   var at = [1 => "one",];
-  assert(a.size==1);
+  assert(at.size==1);
   var b = [1 => "one", 2 => "two"];
   assert(b.size==2);
   var bt = [1 => "one", 2 => "two",];
