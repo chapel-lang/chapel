@@ -23,7 +23,7 @@ man-chapel: FORCE
 	./run-in-venv.bash $(MAKE) man
 
 
-source: symlink-docs module-docs copy-docs
+source: symlink-docs module-docs copy-docs primers
 
 symlink-docs: clean-symlink-docs
 	@echo
@@ -40,6 +40,11 @@ copy-docs: clean-copy-docs
 	@echo "Copying files from "'$$CHPL_HOME'"/doc/release to "'$$CHPL_HOME'"/doc/sphinx/source/"
 	cp  ../release/quickReference.pdf     source/language/quickReference.pdf
 	cp  ../release/chapelLanguageSpec.pdf source/language/chapelLanguageSpec.pdf
+
+primers: clean-primers
+	@echo
+	@echo "Generating primers from "'$$CHPL_HOME'"/test/release/examples to "'$$CHPL_HOME'"/doc/sphinx/source/primers"
+	./chpl2rst.py ../../test/release/examples/primers/*.chpl --output=rst --prefix=source/primers
 
 
 checkdocs: FORCE
@@ -74,6 +79,11 @@ clean-module-docs: FORCE
 	rm -rf source/modules/layouts
 	rm -rf source/modules/packages
 	rm -rf source/modules/standard
+
+clean-primers: FORCE
+	@echo
+	@echo "Removing primers generated into source/primers"
+	git clean -fX source/primers
 
 
 FORCE:

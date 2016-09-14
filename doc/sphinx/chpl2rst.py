@@ -21,20 +21,25 @@ def get_arguments():
                             usage='%(prog)s  foo.chpl [options] ',
                             description=__doc__,
                             formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument('chapelfiles', nargs='+', help='Chapel files')
+    parser.add_argument('chapelfiles', nargs='+',
+                        help='Chapel files to convert to rst')
     parser.add_argument('--output', default='rst', choices=['stdout', 'rst'],
-                        help='Direct output of conversion')
-    parser.add_argument('--prefix', default='.', help='prefix path for output')
+                        help='destination of output')
+    parser.add_argument('--prefix', default='.',
+                        help='prefix path for output')
+    parser.add_argument('--verbose', '-v', action='store_true',
+                        help='verbosity')
     return parser.parse_args()
 
 
 def chpl2rst(chapelfile):
     """Convert Chapel program to restructured text"""
 
+    filename = os.path.split(chapelfile)[1]
     # Title
     output = []
-    output.append(chapelfile)
-    output.append('='*len(chapelfile))
+    output.append(filename)
+    output.append('='*len(filename))
 
     with open(chapelfile, 'r') as handle:
         commentdepth = 0
@@ -117,7 +122,8 @@ def chpl2rst(chapelfile):
 def getfname(chapelfile, output, prefix):
     """Compute filename for output"""
     if output == 'rst':
-        basename, _ = os.path.splitext(chapelfile)
+        filename = os.path.split(chapelfile)[1]
+        basename, _ = os.path.splitext(filename)
         rstname = ''.join([basename, '.rst'])
         rstfile = os.path.join(prefix, rstname)
         return rstfile
@@ -139,14 +145,15 @@ def write(rstoutput, output):
         handle.write(rstoutput)
 
 
-def main(chapelfiles, output='rst', prefix='.'):
+def main(chapelfiles, output='rst', prefix='.', verbose=False):
     """Driver function - convert each file to rst and write to output"""
     for chapelfile in chapelfiles:
         rstoutput = chpl2rst(chapelfile)
         fname = getfname(chapelfile, output, prefix)
+        if verbose:
+            print('writing output of {0} to {1}'.format(chapelfile, fname))
         write(rstoutput, fname)
-
 
 if __name__ == '__main__':
     ARGS = get_arguments()
-    main(ARGS.chapelfiles, ARGS.output, ARGS.prefix)
+    main(ARGS.chapelfiles, ARGS.output, ARGS.prefix, ARGS.verbose)
