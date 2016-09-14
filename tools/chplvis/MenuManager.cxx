@@ -347,6 +347,10 @@ void MenuManager::makeTagsMenu(void)
   else
     popup->menu(empty_popupMenu);
   
+  if (curView == VIEW_CONCURRENCY) {
+    useUTags = false;
+    makeLocaleMenu();
+  }
   
   if (curView <= VIEW_CONCURRENCY && VisData.NumTags() >= 1) {
     
@@ -373,10 +377,6 @@ void MenuManager::makeTagsMenu(void)
         MainMenuBar->add("Tags/Merge Tags", 0, cb_toggleUnique, (void *)0);
         popup->add("Tags/Merge Tags", 0, cb_toggleUnique, (void *)0);
       }
-    }
-    if (curView == VIEW_CONCURRENCY) {
-      useUTags = false;
-      makeLocaleMenu();
     }
     MainMenuBar->add("Tags/All", 0, cb_selTag, (void *)DataModel::TagALL);
     popup->add("Tags/All", 0, cb_selTag, (void *)DataModel::TagALL);
