@@ -363,7 +363,7 @@ void insertOmittedField(Expr* next, const char* nextField,
         newInit = new CallExpr(PRIM_SET_MEMBER,
                                toFnSymbol(next->parentSymbol)->_this,
                                new_CStringSymbol(nextField),
-                               sym->type->defaultValue);
+                               new CallExpr(PRIM_INIT, new SymExpr(sym)));
       } else {
         INT_FATAL("Expected TypeSymbol to be stored, got other symbol");
       }
