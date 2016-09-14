@@ -323,7 +323,7 @@ module MainModule {
       // writeln(bar);        // this won't resolve since bar isn't available
     }
 
-    /* ...or equivaelently, an empty identifier list after 'only'. */
+    /* ...or equivalently, an empty identifier list after 'only'. */
     {
       use modToUse only;
       use Conflict only;
