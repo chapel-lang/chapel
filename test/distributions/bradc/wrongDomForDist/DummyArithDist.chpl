@@ -9,6 +9,7 @@ class MyDist : BaseDist {
 class MyDom : BaseRectangularDom {
   param rank: int;
   type idxType = int(32);
+  const dist: MyDist;
 
   proc dsiGetIndices() {
     var r: range;
