@@ -10,6 +10,9 @@ help-source:
 	@echo "  docs           to invoke 'make html' in the virtualenv"
 	@echo "  checkdocs      to invoke 'make check' in the virtualenv"
 	@echo "  symlinks-docs  to symlink doc/release contents to source"
+	@echo "  module-docs    to invoke 'make documentation' in "'$$CHPL_HOME/modules'""
+	@echo "  copy-docs      to copy doc/release pdf contents to source"
+	@echo "  primers        to generate primer docs in source/primers/"
 	@echo "  clean          to remove all generated files in source/"
 	@echo "  clean-build    to remove all generated files in build/"
 	@echo "  clobber        to remove all generated files in source/ and build/"
@@ -44,9 +47,9 @@ copy-docs: clean-copy-docs
 primers: clean-primers
 	@echo
 	@echo "Generating primers from "'$$CHPL_HOME'"/test/release/examples to "'$$CHPL_HOME'"/doc/sphinx/source/primers"
-	./chpl2rst.py ../../test/release/examples/primers/*.chpl --output=rst --prefix=source/primers
-	./chpl2rst.py ../../test/release/examples/primers/*doc.chpl --output=rst --codeblock --prefix=source/primers
-	./chpl2rst.py ../../test/release/examples/primers/chplvis/*.chpl --output=rst --prefix=source/primers
+	./run-in-venv.bash ./chpl2rst.py ../../test/release/examples/primers/*.chpl --output=rst --prefix=source/primers
+	./run-in-venv.bash ./chpl2rst.py ../../test/release/examples/primers/*doc.chpl --output=rst --codeblock --prefix=source/primers
+	./run-in-venv.bash ./chpl2rst.py ../../test/release/examples/primers/chplvis/*.chpl --output=rst --prefix=source/primers
 
 
 checkdocs: FORCE
@@ -59,7 +62,7 @@ cleanall: clean-source
 
 clobber: clean-source clean-build
 
-clean-source: clean-symlink-docs clean-module-docs clean-copy-docs
+clean-source: clean-symlink-docs clean-module-docs clean-copy-docs clean-primers
 
 
 clean-symlink-docs: FORCE
