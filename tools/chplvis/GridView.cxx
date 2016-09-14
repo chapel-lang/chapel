@@ -116,10 +116,11 @@ void GridView::allocArrays()
 
 void GridView::selectData(int tagNum)
 {
-  int ix1, ix2;  // For processing the arrays
+  // int ix1, ix2;  // For processing the arrays
 
   // if (tagNum < TagALL || tagNum >= numTags) error of some kind
 
+#if 0  
   // Close all the windows
   for (ix1 = 0; ix1 < numlocales; ix1++) {
     if (theLocales[ix1].win != NULL) {
@@ -133,6 +134,7 @@ void GridView::selectData(int tagNum)
         comms[ix1][ix2].win->hide();
     }
   }
+#endif
 
   // Select data to use
   if (Menus.usingUTags())

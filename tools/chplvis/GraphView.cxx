@@ -55,10 +55,10 @@ void GraphView::allocArrays()
   // Dealloc anything current
   if (theLocales != NULL) {
     for (ix = 0; ix < getSize; ix++) {
-      if (theLocales[ix].win != NULL) {
-        delete theLocales[ix].win;
+      //      if (theLocales[ix].win != NULL) {
+      //        delete theLocales[ix].win;
         //printf ("deleting win for %d\n", ix);
-      }
+      //      }
       if (theLocales[ix].ccwin != NULL) 
         delete theLocales[ix].ccwin;
       if (theLocales[ix].b != NULL) 
@@ -69,8 +69,8 @@ void GraphView::allocArrays()
   if (comms != NULL) {
     for (ix = 0; ix < getSize; ix++)  { 
       for (ix2 = 0; ix2 < getSize; ix2++) 
-        if (comms[ix][ix2].win != NULL)
-          delete comms[ix][ix2].win;
+        //        if (comms[ix][ix2].win != NULL)
+        //          delete comms[ix][ix2].win;
       delete [] comms[ix];
     }
     delete [] comms;
@@ -112,10 +112,11 @@ void GraphView::allocArrays()
 
 void GraphView::selectData(int tagNum)
 {
-  int ix1, ix2;  // For processing the arrays
+  // int ix1, ix2;  // For processing the arrays
 
   // if (tagNum < TagALL || tagNum >= numTags) error of some kind
 
+#if 0  
   // Close all the windows
   for (ix1 = 0; ix1 < numlocales; ix1++) {
     if (theLocales[ix1].win != NULL) {
@@ -129,6 +130,7 @@ void GraphView::selectData(int tagNum)
         comms[ix1][ix2].win->hide();
     }
   }
+#endif
 
   // Select data to use
   if (Menus.usingUTags())
