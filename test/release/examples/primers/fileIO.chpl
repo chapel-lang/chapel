@@ -1,6 +1,6 @@
 /*
- * File I/O Primer
- */
+   File I/O Primer
+  /
 
 /*
    First example: Textual Array I/O
@@ -21,12 +21,12 @@ config const epsilon = 10e-13;
 use IO;
 
 /* Example 1
- * This is a simple example of using file I/O in Chapel.
- *
- * It initializes an array and writes its size and data to a file.  It
- * then opens the file, uses the size in the file to declare a new
- * domain and array, and reads in the array data.
- */
+   This is a simple example of using file I/O in Chapel.
+  
+   It initializes an array and writes its size and data to a file.  It
+   then opens the file, uses the size in the file to declare a new
+   domain and array, and reads in the array data.
+  /
 if example == 0 || example == 1 {
   const ADom = {1..n, 1..n};  // Create a domain of the specified problem size
 
@@ -124,12 +124,12 @@ if example == 0 || example == 2 {
   var f = open(testfile, iomode.cwr);
 
   /* Since the typical 'file position' design leads to race conditions
-   * all over, the Chapel I/O design separates a file from a channel.
-   * A channel is a buffer to a particular spot in a file. Channels
-   * can have a start and and end, so that if you're doing parallel I/O
-   * to different parts of a file with different channels, you can
-   * partition the file to be assured that they do not interfere.
-   */
+     all over, the Chapel I/O design separates a file from a channel.
+     A channel is a buffer to a particular spot in a file. Channels
+     can have a start and and end, so that if you're doing parallel I/O
+     to different parts of a file with different channels, you can
+     partition the file to be assured that they do not interfere.
+    /
 
   {
     var w = f.writer(kind=ionative); // get a binary writing channel for the start of the file.
@@ -173,14 +173,14 @@ if example == 0 || example == 3 {
      If you want to measure the performance difference, try:
        time ./fielIOv2 --example=2
        time ./fielIOv2 --example=3
-   */
+    /
 
   // First, open up a file and write to it.
   {
     var f = open(testfile, iomode.cwr);
     /* When we create the writer, supplying locking=false will do unlocked I/O.
        That's fine as long as the channel is not shared between tasks.
-      */
+       /
     var w = f.writer(kind=ionative, locking=false);
 
     for i in 0..#num {
@@ -195,7 +195,7 @@ if example == 0 || example == 3 {
   /* Now that we've created the file, when we open it for
      read access and hint 'random access' and 'keep data cached/assume data is cached',
      we can optimize better (using mmap, if you like details).
-   */
+    /
   {
     var f = open(testfile, iomode.r,
                  hints=IOHINT_RANDOM|IOHINT_CACHED|IOHINT_PARALLEL);
@@ -205,7 +205,7 @@ if example == 0 || example == 3 {
       /* When we create the reader, supplying locking=false will do unlocked I/O.
          That's fine as long as the channel is not shared between tasks;
          here it's just used as a local variable, so we are O.K. 
-        */
+         /
       var r = f.reader(kind=ionative, locking=false, start=8*i, end=8*i+8);
       var tmp:uint(64);
       r.read(tmp);
@@ -287,7 +287,7 @@ if example == 0 || example == 5 {
   /* Note that if an error= argument is not supplied to an
      I/O function, it will call ioerror, which will
      in turn halt with an error message.
-   */
+    /
 }
 
 /*
@@ -319,7 +319,7 @@ if example == 0 || example == 6 {
 
 /*
    In Example 7, we demonstrate bit-level I/O.
- */
+  /
 if example == 0 || example == 7 {
   writeln("Running Example 7");
 

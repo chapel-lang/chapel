@@ -1,9 +1,9 @@
 /*
- * Classes Primer
- *
- * This primer covers the declaration and use of classes.
- *
- */
+   Classes Primer
+  
+   This primer covers the declaration and use of classes.
+  
+  /
 
 //
 // A class is a type that can contain variables and constants, called

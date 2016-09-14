@@ -1,6 +1,6 @@
 /*
- * Vector Operations on 1D Arrays Primer
- */
+   Vector Operations on 1D Arrays Primer
+  /
 
 //
 // 1D rectangular arrays support several list-like or vector-like capabilities.

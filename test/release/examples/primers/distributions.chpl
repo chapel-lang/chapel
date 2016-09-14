@@ -334,16 +334,16 @@ writeln();
 // dimension will be distributed across.
 //
 // The DimensionalDist2D constructor requires:
-// * an [0..nl1-1, 0..nl2-1] array of locales, where
+//   an [0..nl1-1, 0..nl2-1] array of locales, where
 //   nl1 and nl2 are the number of locales in each dimension, and
-// * two dimension specifiers, created for nl1 and nl2 locale counts, resp.
+//   two dimension specifiers, created for nl1 and nl2 locale counts, resp.
 //
 // Presently, the following dimension specifiers are available
 // (shown here with their constructor arguments):
 //
-// * ReplicatedDim(numLocales)
-// * BlockDim(numLocales, boundingBoxLow, boundingBoxHigh)
-// * BlockCyclicDim(lowIdx, blockSize, numLocales)
+//   ReplicatedDim(numLocales)
+//   BlockDim(numLocales, boundingBoxLow, boundingBoxHigh)
+//   BlockCyclicDim(lowIdx, blockSize, numLocales)
 //
 
 //

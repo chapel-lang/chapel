@@ -1,10 +1,10 @@
 /*
- * Sparse Primer
- *
- * This primer shows off some of Chapel's support for sparse domains
- * and arrays.
- *
- */
+   Sparse Primer
+  
+   This primer shows off some of Chapel's support for sparse domains
+   and arrays.
+  
+  /
 
 
 //

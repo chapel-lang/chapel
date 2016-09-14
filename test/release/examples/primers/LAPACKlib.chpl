@@ -44,7 +44,7 @@ var B : [1..N, 1..K] real;
 for i in 1..N do
   for j in 1..K do
     for k in 1..N do
-      B[i,j] += A[i,k] * X[k,j];
+      B[i,j] += A[i,k]   X[k,j];
       
 writeln("Matrix A:\n", A, "\n");
 writeln("Matrix X:\n", X, "\n");

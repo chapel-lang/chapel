@@ -76,10 +76,10 @@ writeln( actual, " == ", refToActual ); // prints the same value
 // Math operators
 var a: int, thisInt = 1234, thatInt = 5678;
 a = thisInt + thatInt;  // Addition
-a = thisInt * thatInt;  // Multiplication
+a = thisInt   thatInt;  // Multiplication
 a = thisInt - thatInt;  // Subtraction
 a = thisInt / thatInt;  // Division
-a = thisInt ** thatInt; // Exponentiation
+a = thisInt  * thatInt; // Exponentiation
 a = thisInt % thatInt;  // Remainder (modulo)
 
 // Logical Operators
@@ -103,7 +103,7 @@ a = thisInt ^ thatInt; // Bitwise exclusive-or
 
 // Compound assignment operations
 a += thisInt;          // Addition-equals ( a = a + thisInt;)
-a *= thatInt;          // Times-equals ( a = a * thatInt; )
+a  = thatInt;          // Times-equals ( a = a   thatInt; )
 b &&= thatBool;        // Logical-and-equals ( b = b && thatBool; )
 a <<= 3;               // Left-bit-shift-equals ( a = a << 10; )
 // and many, many more.
@@ -331,7 +331,7 @@ var realArray3: [{1..5,1..7}] real; // Equivalent
 
 for i in 1..5 {
   for j in realDomain.dim(2) {   // Only use the 2nd dimension of the domain
-    realArray[i,j] = -1.61803 * i + 0.5 * j;  // Access using index list
+    realArray[i,j] = -1.61803   i + 0.5   j;  // Access using index list
     var idx: 2*int = (i,j);                   // Note: 'index' is a keyword
     realArray[idx] = - realArray[(i,j)];      // Index using tuples
   }
@@ -531,8 +531,8 @@ whereProc( -1 );
 // We can define the unary operators:
 // + - ! ~
 // and the binary operators:
-// + - * / % ** == <= >= < > << >> & | ˆ by 
-// += -= *= /= %= **= &= |= ˆ= <<= >>= <=>
+// + -   / %  * == <= >= < > << >> & | ˆ by 
+// += -=  = /= %=  *= &= |= ˆ= <<= >>= <=>
 
 // Boolean exclusive or operator
 proc ^( left : bool, right : bool ): bool {
@@ -544,13 +544,13 @@ writeln( false ^ true  );
 writeln( true  ^ false );
 writeln( false ^ false );
 
-// Define a * operator on any two types that returns a tuple of those types
-proc *( left : ?ltype, right : ?rtype): ( ltype, rtype ){
+// Define a   operator on any two types that returns a tuple of those types
+proc  ( left : ?ltype, right : ?rtype): ( ltype, rtype ){
   return (left, right );
 }
 
-writeln( 1 * "a" ); // Uses our * operator
-writeln( 1 * 2 );   // Uses the default * operator
+writeln( 1   "a" ); // Uses our   operator
+writeln( 1   2 );   // Uses the default   operator
 
 /*
 Note: You could break everything if you get careless with your overloads.
@@ -1005,7 +1005,7 @@ proc main(){
     lock$.writeXF( true ); // Set lock$ to full (signal)
   }
 
-  // we can define the operations + * & | ^ && || min max minloc maxloc
+  // we can define the operations +   & | ^ && || min max minloc maxloc
   // over an entire array using scans and reductions
   // Reductions apply the operation over the entire array and
   // result in a single value

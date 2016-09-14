@@ -1,9 +1,9 @@
 /*
- * Range Primer
- *
- * This primer illustrates Chapel ranges and range operations.
- *
- */
+   Range Primer
+  
+   This primer illustrates Chapel ranges and range operations.
+  
+  /
 
 //
 // Ranges represent sequences of integral numbers, or "indices".

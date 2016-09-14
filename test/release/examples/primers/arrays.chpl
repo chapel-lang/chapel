@@ -1,9 +1,9 @@
 /*
- * Arrays Primer
- *
- * This primer is a tutorial on Chapel rectangular arrays.
- *
- */
+  Arrays Primer
+
+  This primer is a tutorial on Chapel rectangular arrays.
+
+  /
 
 //
 // Arrays in Chapel are specified using a square-bracketed expression
@@ -24,7 +24,7 @@ var A: [1..n] real;
 // Like other variable types in Chapel, arrays are initialized so that
 // each element stores its default value.  So our array of real values
 // above will default to an array of the value 0.0.
-// 
+//
 
 writeln("Initially, A is: ", A);
 

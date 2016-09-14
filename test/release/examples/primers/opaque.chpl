@@ -2,13 +2,13 @@
 // This is a known bug: test/modules/hilde/Writer.future
 module Opaque {
 /*
- * Opaque Primer
- *
- * This primer is designed to give a brief introduction to Chapel's
- * opaque domains and arrays.  Opaque domains and arrays are those in
- * which index values are opaque/anonymous, and were designed to
- * support unstructured arrays like graphs.
- */
+   Opaque Primer
+  
+   This primer is designed to give a brief introduction to Chapel's
+   opaque domains and arrays.  Opaque domains and arrays are those in
+   which index values are opaque/anonymous, and were designed to
+   support unstructured arrays like graphs.
+  /
 
 //
 // Opaque domains are declared by specifying the keyword "opaque" in

@@ -389,13 +389,13 @@ writeln();
 //
 // Some closing notes:
 //
-// * Chapel data types like records and classes can support iteration
+//   Chapel data types like records and classes can support iteration
 //   by defining iterator methods (invoked by name) or these() iterators
 //   which support iterating over variables of that type directly.  Such
 //   iterator methods can be overloaded to support leader-follower
 //   versions as well to permit parallel iteration over the variable.
 //
-// * As mentioned at the outset, our leader-follower scheme has a number
+//   As mentioned at the outset, our leader-follower scheme has a number
 //   of changes planned for it such as interface improvements and better
 //   error checking.  We'll update this primer as we improve these features.
 //

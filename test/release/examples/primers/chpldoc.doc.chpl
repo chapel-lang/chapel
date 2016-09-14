@@ -38,7 +38,7 @@ proc commented(val: int): string {
   The function can be a stub and still output its comment
 */
 proc stub(val): bool {
-  /* Comments within the function body are ignored */
+  /* Comments within the function body are ignored  /
 }
 
 // Single line comments are also ignored.  However, this does not prevent 
@@ -46,7 +46,7 @@ proc stub(val): bool {
 proc uncommented() {
   /*
     Longer comments within the function body are also ignored
-  */
+   /
 }
 
 /*
@@ -81,16 +81,16 @@ module Defined {
 
   /*
     And classes can display their comments, too
-  */
+   /
   class Foo {
     /*
       Including the comments associated with their fields
-    */
+     /
     var a: int;
 
     /*
       And class specific methods
-    */
+     /
     proc getA(): int {
       return a;
     }
@@ -99,7 +99,7 @@ module Defined {
   /*
     If a class inherits from another class, the inheritance is shown
     in the signature.
-  */
+   /
   class Bar : Foo {
 
     proc setA(newVal: int) {
