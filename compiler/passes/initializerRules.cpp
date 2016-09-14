@@ -85,6 +85,8 @@ void handleInitializerRules(FnSymbol* fn, AggregateType* t) {
 
     // Insert analysis of initCall here
   }
+  // Insert else branch which adds default initialization of all fields and an
+  // argumentless super.init() call at the beginning of the body.
 
   // Insert phase 2 analysis here
 }
