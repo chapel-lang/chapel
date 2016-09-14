@@ -42,33 +42,45 @@ def chpl2rst(chapelfile):
 
     with open(chapelfile, 'r') as handle:
         commentdepth = 0
-        codeblock = False
+        state = ''
+        indentation = -1
+
         # Each line is rst or code-block
         for line in [l.strip('\n') for l in handle.readlines()]:
+
+            # Skip empty lines
             if len(line.strip()) == 0:
                 output.append('')
                 continue
 
-            # Detection of comment
-            # TODO -- support escaped characters (got to make mppf proud)
+            # Comment canaries
+            # TODO -- support escaped characters (to make mppf proud)
             commentstarts = line.count('/*')
             commentends = line.count('*/')
             commentdepth += commentstarts - commentends
 
-            # Identification of comment type
-            blockcomment = commentdepth > 0 or commentends > 0
-            # Comments that don't begin on the first character aren't rendered
-            linecomment = line.startswith('//')
-            comment = blockcomment or linecomment
+            # State tracking
+            laststate = state
+            state = ''
 
-            if comment:
-                codeblock = False
+            # Identification of line
+            if commentdepth > 0 or commentends > 0:
+                state = 'blockcomment'
+            elif line.startswith('//'):
+                state = 'linecomment'
+            elif 'code' in laststate:
+                state = 'code'
+            else:
+                state = 'codeblock'
+
+            if 'comment' in state:
                 rstline = line
-                if linecomment:
+                if state == 'linecomment':
                     # Strip white space for line comments
+                    if 'comment' not in laststate:
+                        output.append('')
                     rstline = rstline.replace('//', '')
                     rstline = rstline.strip()
-                    output.append('')
                 else:
                     # Preserve white space for block comments
                     if commentstarts:
@@ -78,14 +90,28 @@ def chpl2rst(chapelfile):
                     if '.. code-block::' in rstline:
                         rstline = rstline.strip()
 
+                # Strip indentation
+                if indentation == -1:
+                    lineindentation = len(rstline) - len(rstline.lstrip(' '))
+                    if lineindentation > 0:
+                        indentation = lineindentation
+                        rstline = rstline.lstrip(' ')
+                else:
+                    if rstline.startswith(' '*indentation):
+                        rstline = rstline[indentation:]
+                    else:
+                        rstline = rstline.lstrip(' ')
+
                 output.append(rstline)
             else:
+                # Reset indentation
+                indentation = -1
+
                 # Write code block
-                if not codeblock:
+                if state == 'codeblock':
                     output.append('')
                     output.append('.. code-block:: chapel')
                     output.append('')
-                    codeblock = True
                 codeline = ''.join(['    ', line])
                 output.append(codeline)
 
