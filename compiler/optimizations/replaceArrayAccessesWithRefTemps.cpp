@@ -28,6 +28,62 @@
 
 #define DEBUG_RAAWRT 0
 
+static bool anyAssignmentsToArray(std::vector<ContextCallExpr*> allContextCalls,
+                                  SymExpr* matchArray,
+                                  Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                                  Map<Symbol*, Vec<SymExpr*>*>& useMap);
+static bool isWrite(SymExpr* lhs,
+                    Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                    Map<Symbol*, Vec<SymExpr*>*>& useMap);
+
+static bool isWrite(SymExpr* lhs,
+                    Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                    Map<Symbol*, Vec<SymExpr*>*>& useMap) {
+  for_defs(def, defMap, lhs->var) {
+    if (CallExpr* call = toCallExpr(def->parentExpr)) {
+      if (!call->isPrimitive(PRIM_MOVE)) {
+        return true;
+      }
+    }
+  }
+  for_uses(use, useMap, lhs->var) {
+    if (CallExpr* call = toCallExpr(use->parentExpr)) {
+      if (call->isPrimitive(PRIM_MOVE)) {
+        if (use == call->get(2)) {
+          SymExpr* lhs = toSymExpr(call->get(1));
+          if (isWrite(lhs, defMap, useMap)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+
+static bool anyAssignmentsToArray(std::vector<ContextCallExpr*> allContextCalls,
+                                  SymExpr* matchArray,
+                                  Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                                  Map<Symbol*, Vec<SymExpr*>*>& useMap) {
+  for_vector(ContextCallExpr, contextCall, allContextCalls) {
+    CallExpr* call = toCallExpr(contextCall);
+    SymExpr* callArray = toSymExpr(call->get(1));
+    if (callArray->var == matchArray->var) {
+      // figure out if this is a write
+      if (CallExpr* parentCall = toCallExpr(contextCall->parentExpr)) {
+        if (parentCall->isPrimitive(PRIM_MOVE)) {
+          SymExpr* lhs = toSymExpr(parentCall->get(1));
+          if (isWrite(lhs, defMap, useMap)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
 // Translate multiple array accesses using an index variable in a loop into
 // a single array access stored into a 'ref' temporary, then reuse the temp.
 // The array access ('this') function can be expensive, so computing it only
@@ -65,6 +121,7 @@ void replaceArrayAccessesWithRefTemps() {
     return;
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* forLoop = toForLoop(block)) {
+      std::vector<ContextCallExpr*> allContextCalls;
       SymExpr* loopIdx = forLoop->indexGet();
       CallExpr* indexMove = NULL;
       Symbol* indexVar = NULL;
@@ -102,6 +159,7 @@ void replaceArrayAccessesWithRefTemps() {
       }
       for_vector(BaseAST, astNode, asts) {
         if (ContextCallExpr* contextCall = toContextCallExpr(astNode)) {
+          allContextCalls.push_back(contextCall);
           CallExpr* call = toCallExpr(contextCall);
           if (contextCall->parentSymbol != forLoop->parentSymbol ||
               call->numActuals() != 2) {
@@ -111,14 +169,14 @@ void replaceArrayAccessesWithRefTemps() {
           }
           if (FnSymbol* fn = call->isResolved()) {
             if (fn->hasFlag(FLAG_REMOVABLE_ARRAY_ACCESS)) {
+              assert(isSymExpr(call->get(1)));
+              Symbol* arraySym = toSymExpr(call->get(1))->var;
               if (SymExpr* arrayIdx = toSymExpr(call->get(2))) {
                 if (arrayIdx->var->defPoint->parentExpr == forLoop && /*indexVar == arrayIdx->var &&*/ arrayIdx->var->hasFlag(FLAG_INDEX_VAR)) {
                   // build map from array symbol to vector of context calls
                   // where the context calls are all of the form:
                   // ContextCallExpr(CallExpr('this', 'array', 'loopIdx'),
                   //                 CallExpr('this', 'array', 'loopIdx'))
-                  assert(isSymExpr(call->get(1)));
-                  Symbol* arraySym = toSymExpr(call->get(1))->var;
                   arrayAccessMap[arraySym].push_back(contextCall);
                   if (DEBUG_RAAWRT) {
                     CallExpr* call = toCallExpr(contextCall);
@@ -151,11 +209,21 @@ void replaceArrayAccessesWithRefTemps() {
                    idx->var->name, firstCall->id, vecSize);
           }
         } else /*if (vecSize > 2) */ { // TODO: tune this threshold
+          Map<Symbol*, Vec<SymExpr*>*> defMap;
+          Map<Symbol*, Vec<SymExpr*>*> useMap;
+          buildDefUseMaps(forLoop, defMap, useMap);
           SET_LINENO(indexMove);
+          CallExpr* accessCall = toCallExpr(firstCall);
+          SymExpr* array = toSymExpr(accessCall->get(1));
           // assign an array indexing context call in the vector to a 'ref'
           // variable at the top of the loop
           VarSymbol* ref = newTemp("arrayAccessRef", firstCall->typeInfo());
-          ref->addFlag(FLAG_REF_VAR);
+          if (anyAssignmentsToArray(allContextCalls, array, defMap, useMap)) {
+            if (DEBUG_RAAWRT) {
+              printf("found an assignment to %s, forcing refs\n", array->var->name);
+            }
+            ref->addFlag(FLAG_REF_VAR);
+          }
 
           indexMove->insertAfter(new CallExpr(PRIM_MOVE, ref, firstCall->copy()));
           indexMove->insertAfter(new DefExpr(ref));
@@ -168,13 +236,15 @@ void replaceArrayAccessesWithRefTemps() {
               CallExpr* accessCall = toCallExpr(call);
               SymExpr* array = toSymExpr(accessCall->get(1));
               SymExpr* idx = toSymExpr(accessCall->get(2));
+              const char* sayref = ref->hasFlag(FLAG_REF_VAR) ? " ref " : " ";
               printf("%s:%d: replacing array access %s[%s] (%d)"
-                     " with ref temp\n",
+                     " with%stemp\n",
                      call->fname(), call->linenum(), array->var->name,
-                     idx->var->name, call->id);
+                     idx->var->name, call->id, sayref);
             }
             call->replace(new SymExpr(ref));
           }
+          freeDefUseMaps(defMap, useMap);
         }
       }
     }
