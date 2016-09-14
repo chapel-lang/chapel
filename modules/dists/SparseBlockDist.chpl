@@ -134,12 +134,14 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   proc bulkAdd_help(inds: [] index(rank,idxType),
-      isSorted=false, isUnique=false) {
+      dataSorted=false, isUnique=false) {
+    use Sort;
+    use Search;
 
     // without _new_, record functions throw null deref
     var comp = new TargetLocaleComparator();
 
-    if !isSorted then sort(inds, comparator=comp);
+    if !dataSorted then sort(inds, comparator=comp);
 
     var localeRanges: [dist.targetLocDom] range;
     on inds {
@@ -167,7 +169,7 @@ class SparseBlockDom: BaseSparseDomImpl {
     var _totalAdded: atomic int;
     coforall l in dist.targetLocDom do on dist.targetLocales[l] {
       const _retval = locDoms[l].mySparseBlock.bulkAdd(inds[localeRanges[l]],
-          isSorted=true, isUnique=false);
+          dataSorted=true, isUnique=false);
       _totalAdded.add(_retval);
     }
     const _retval = _totalAdded.read();
@@ -645,8 +647,7 @@ proc SparseBlockArr.dsiLocalSlice(ranges) {
   for param i in 1..rank {
     low(i) = ranges(i).low;
   }
-  var A => locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
-  return A;
+  return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
 
 proc _extendTuple(type t, idx: _tuple, args) {
@@ -865,6 +866,8 @@ proc SparseBlockArr.doiCanBulkTransfer() {
 // TODO This function needs to be fixed. For now, explicitly returning false
 // from dsiSupportsBulkTransfer, so this function should never be compiled
 proc SparseBlockArr.doiBulkTransfer(B) {
+  halt("SparseBlockArr.doiBulkTransfer not yet implemented");
+/*
   if debugSparseBlockDistBulkTransfer then resetCommDiagnostics();
   var sameDomain: bool;
   // We need to do the following on the locale where 'this' was allocated,
@@ -874,9 +877,9 @@ proc SparseBlockArr.doiBulkTransfer(B) {
   // Use zippered iteration to piggyback data movement with the remote
   //  fork.  This avoids remote gets for each access to locArr[i] and
   //  B._value.locArr[i]
-  coforall (i, myLocArr, BmyLocArr) in (dom.dist.targetLocDom,
-                                        locArr,
-                                        B._value.locArr) do
+  coforall (i, myLocArr, BmyLocArr) in zip(dom.dist.targetLocDom,
+                                           locArr,
+                                           B._value.locArr) do
     on dom.dist.targetLocales(i) {
 
     if sameDomain &&
@@ -944,6 +947,7 @@ proc SparseBlockArr.doiBulkTransfer(B) {
     }
   }
   if debugSparseBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
+*/
 }
 
 iter ConsecutiveChunks(d1,d2,lid,lo) {

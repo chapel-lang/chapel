@@ -5,6 +5,8 @@
    derived from the GNU C++ version by Branimir Maksimovic
 */
 
+use Sort;
+
 config param tableSize = 1 << 16,
              columns = 61;
 
@@ -61,7 +63,7 @@ proc writeFreqs(data, param nclSize) {
   //  var arr: [1..freqs.size] 2*int;
   //  for (a, k, v) in zip(arr, freqs.domain, freqs) do
   //    a = (v, k);
-  QuickSort(arr, reverse=true);
+  quickSort(arr, comparator=reverseComparator);
 
   for (f, s) in arr do
    writef("%s %.3dr\n", decode(s, nclSize), 

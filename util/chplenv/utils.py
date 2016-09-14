@@ -20,11 +20,13 @@ class CommandError(Exception):
 
 # This could be replaced by subprocess.check_output, but that isn't available
 # until python 2.7 and we only have 2.6 on most machines :(
-def run_command(command, stdout=True, stderr=False):
+def run_command(command, stdout=True, stderr=False, cmd_input=None):
     process = subprocess.Popen(command,
                                stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
-    output = process.communicate()
+                               stderr=subprocess.PIPE,
+                               stdin=subprocess.PIPE)
+    byte_cmd_input = str.encode(cmd_input) if cmd_input else None
+    output = process.communicate(input=byte_cmd_input)
     if process.returncode != 0:
         raise CommandError(
             "command `{0}` failed - output was \n{1}".format(command,

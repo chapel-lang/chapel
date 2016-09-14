@@ -1666,9 +1666,10 @@ module DefaultRectangular {
     compilerAssert(Aarr.rank == Barr.rank);
     const b = chpl__tuplify(bArg);
     param rank = Aarr.rank;
+    type idxType = Aarr.idxType;
     const AD = Aarr.dom.dsiDims();
     const BD = Barr.dom.dsiDims();
-    var result: rank * int;
+    var result: rank * idxType;
     for param i in 1..rank {
       const ar = AD(i), br = BD(i);
       if boundsChecking then assert(br.member(b(i)));

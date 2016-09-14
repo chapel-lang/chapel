@@ -326,7 +326,7 @@ static Expr* buildLogicalAndExpr(BaseAST* left, BaseAST* right) {
                                 new CallExpr("isTrue", right),
                                 new SymExpr(gFalse));
 
-  VarSymbol* eMsg = new_CStringSymbol("cannot promote short-circuiting && operator");
+  VarSymbol* eMsg = new_StringSymbol("cannot promote short-circuiting && operator");
 
   ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
                                   new CallExpr("compilerError", eMsg)));
@@ -347,7 +347,7 @@ static Expr* buildLogicalOrExpr(BaseAST* left, BaseAST* right) {
                                new SymExpr(gTrue),
                                new CallExpr("isTrue", right));
 
-  VarSymbol* eMsg = new_CStringSymbol("cannot promote short-circuiting || operator");
+  VarSymbol* eMsg = new_StringSymbol("cannot promote short-circuiting || operator");
 
   ifFn->insertAtHead(new CondStmt(new CallExpr("_cond_invalid", lvar),
                                   new CallExpr("compilerError", eMsg)));
@@ -849,7 +849,7 @@ handleArrayTypeCase(FnSymbol* fn, Expr* indices, ArgSymbol* iteratorExprArg, Exp
     // we want to swap something like the below commented-out
     // statement with the compiler error statement but skyline
     // arrays are not yet supported...
-    thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType, new CallExpr("compilerError", new_CStringSymbol("unimplemented feature: if you are attempting to use skyline arrays, they are not yet supported; if not, remove the index expression from this array type specification"))));
+    thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType, new CallExpr("compilerError", new_StringSymbol("unimplemented feature: if you are attempting to use skyline arrays, they are not yet supported; if not, remove the index expression from this array type specification"))));
     //      thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, arrayType,
     //                                          new CallExpr("chpl__buildArrayRuntimeType",
     //                                                       domain, expr->copy(),
@@ -986,8 +986,25 @@ static FnSymbol* buildFollowerIteratorFn(FnSymbol* fn, const char* iteratorName,
 }
 
 
-CallExpr*
+ForallExpr*
 buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
+  return new ForallExpr(indices, iteratorExpr, expr, cond, maybeArrayType, zippered);
+}
+
+static Expr* removeOrNull(Expr* arg) { return arg ? arg->remove() : NULL; }
+
+static CallExpr* buildForallLoopExprFromForallExpr(ForallExpr* faExpr) {
+  SET_LINENO(faExpr);
+  INT_ASSERT(faExpr->inTree()); //otherwise no need to remove() faExpr's pieces
+  // We need the individual pieces of faExpr. We want to keep faExpr itself
+  // in the tree - that way we know where to put the replacement.
+  Expr* indices        = removeOrNull(faExpr->indices);
+  Expr* iteratorExpr   = removeOrNull(faExpr->iteratorExpr);
+  Expr* expr           = removeOrNull(faExpr->expr);
+  Expr* cond           = removeOrNull(faExpr->cond);
+  bool  maybeArrayType = faExpr->maybeArrayType;
+  bool  zippered       = faExpr->zippered;
+
   FnSymbol* fn = new FnSymbol(astr("_parloopexpr", istr(loopexpr_uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
 
@@ -1031,6 +1048,13 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
   return new CallExpr(new DefExpr(fn), iteratorExpr);
 }
 
+void convertForallExpressions() {
+  forv_Vec(ForallExpr, fe, gForallExprs)
+    if (fe->inTree())
+      // Cf. can't use insertBefore() e.g. when 'fe' is a DefExpr::init.
+      fe->replace(buildForallLoopExprFromForallExpr(fe));
+}
+
 
 //
 // This is a helper function that takes a chpl_buildArrayRuntimeType(...)
@@ -1038,7 +1062,7 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
 // commit messages of r20820 and the commit that added this comment
 // for (a few) more details.
 //
-CallExpr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
+Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
                                            bool recursiveCall) {
   // Is this a call to chpl__buildArrayRuntimeType?
   UnresolvedSymExpr* ursym = toUnresolvedSymExpr(buildArrRTTypeCall->baseExpr);
@@ -1599,6 +1623,44 @@ buildReduceScanPreface2(FnSymbol* fn, Symbol* eltType, Symbol* globalOp,
                         Expr* opExpr);
 
 //
+// Given (forall IND in ITER do EXPR), compute the type of EXPR
+// and move it to 'eltType' in place of eltType's existing initialization.
+// Here, 'fe' is a copy() so it is all ours.  fe->cond does not matter.
+//
+static void adjustEltTypeFE(FnSymbol* fn, Symbol* eltType, ForallExpr* fe)
+{
+  // Find the MOVE into eltType.
+  BlockStmt* typeBlock = toBlockStmt(eltType->defPoint->next);
+  INT_ASSERT(typeBlock && typeBlock->blockTag == BLOCK_TYPE);
+  INT_ASSERT(typeBlock->body.length == 1);
+  CallExpr* moveToET = toCallExpr(typeBlock->body.head);
+  INT_ASSERT(moveToET && moveToET->isPrimitive(PRIM_MOVE));
+  SymExpr* moveDest = toSymExpr(moveToET->get(1));
+  INT_ASSERT(moveDest && moveDest->var == eltType);
+  CallExpr* moveSrc = toCallExpr(moveToET->get(2));
+  INT_ASSERT(moveSrc && moveSrc->isPrimitive(PRIM_TYPEOF));
+
+  // This is the result of initCopy() of iteratorIndex().
+  Expr* iterIndex = moveSrc->get(1);
+  INT_ASSERT(iterIndex);
+  iterIndex->remove();
+
+  // This function will compute the type of what is reduced:
+  //   destructureIndices(fe->indices <-- iterIndex);
+  //   return typeof(fe->expr);
+  FnSymbol* typef = new FnSymbol(astr(fn->name, "_eltype"));
+  typef->retTag = RET_TYPE;
+  destructureIndices(typef->body, fe->indices, iterIndex, false);
+  typef->insertAtTail("'return'('typeof'(%E))", fe->expr);
+
+  // Do not delete the enclosing block in removeTypeBlocks().
+  typeBlock->blockTag = BLOCK_SCOPELESS;
+
+  moveToET->insertBefore(new DefExpr(typef));
+  moveSrc->replace(new CallExpr(typef));
+}
+
+//
 // Currently a forall loop requires a parallel iterator, whereas
 // a reduction does not. See e.g. test/trivial/deitz/monte.chpl
 // To allow a reduction to iterate serially when there are no parallel
@@ -1625,10 +1687,14 @@ buildReduceScanPreface2(FnSymbol* fn, Symbol* eltType, Symbol* globalOp,
 //     }
 //   }
 //
-static void addElseClauseForSerialIter(BlockStmt* forall, Expr* opExpr,
+static void addElseClauseForSerialIter(BlockStmt* forall,
+                                       Expr*      opExpr,
                                        ArgSymbol* data,
-                                       VarSymbol* result, VarSymbol* globalOp,
-                                       UnresolvedSymExpr* index, bool zippered)
+                                       VarSymbol* result,
+                                       VarSymbol* globalOp,
+                                       Expr*      index,
+                                       Expr*      toReduce,
+                                       bool       zippered)
 {
   CondStmt* if1 = toCondStmt(forall->body.head);
   INT_ASSERT(if1);
@@ -1638,10 +1704,10 @@ static void addElseClauseForSerialIter(BlockStmt* forall, Expr* opExpr,
   // construction of 'serialBlock' is copied from buildReduceExpr()
   BlockStmt* serialBlock = buildChapelStmt();
 
-  serialBlock->insertAtTail(ForLoop::buildForLoop(index->copy(),
+  serialBlock->insertAtTail(ForLoop::buildForLoop(index,
                                                   new SymExpr(data),
                                                   new BlockStmt(new CallExpr(new CallExpr(".", globalOp,
-                                                                                          new_CStringSymbol("accumulate")), index->copy())),
+                                                                                          new_CStringSymbol("accumulate")), toReduce)),
                                                   false,
                                                   zippered));
 
@@ -1667,6 +1733,12 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
   if (zippered) {
     // A zippered reduction - not handled yet.
     return NULL;
+  }
+  if (ForallExpr* dataFE = toForallExpr(dataExpr)) {
+    if (dataFE->zippered || dataFE->cond)
+      // A reduction of a forall expressions over zippered iterators
+      // or with a filtering predicate is not handled.
+      return NULL;
   }
     
   if (CallExpr* dataCall = toCallExpr(dataExpr)) {
@@ -1721,12 +1793,37 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
   Expr* resultType = new_Expr("'typeof'(.(%S, 'generate')())", globalOp);
   fn->insertAtTail(new DefExpr(result, NULL, resultType));
 
-  UnresolvedSymExpr* index  = new UnresolvedSymExpr("chpl_reduceIndexVar");
   INT_ASSERT(!opUnr->inTree()); // that way we can use it below; todo - remove
+  Expr* index;
+  Expr* elementToReduce;
 
+  if (ForallExpr* dataFE = toForallExpr(dataExpr)) {
+    // dataFE will be GC-ed; its pieces do not need to be remove()-ed.
+    INT_ASSERT(!dataFE->inTree());
+    // We should have resorted to the old implementation if dataFE->cond.
+    INT_ASSERT(!dataFE->cond);
+
+    if (!dataFE->indices)
+      dataFE->indices = new UnresolvedSymExpr("chpl_elidedIdx");
+
+    adjustEltTypeFE(fn, eltType, dataFE->copy());
+
+    // Pass only the iterator to 'fn'. Rename the formal accordingly.
+    data->name = astr("chpl_FE_iter");
+    dataExpr = dataFE->iteratorExpr;
+    index = dataFE->indices;
+    elementToReduce = dataFE->expr;
+    // NB do not look at dataFE->indices, dataFE->expr, etc. from here on.
+  } else {
+    index  = new UnresolvedSymExpr("chpl_reduceIndexVar");
+    elementToReduce = index->copy();
+  }
+
+
+  Expr* elementToReduce2 = elementToReduce->copy();
   BlockStmt* loopBody = new BlockStmt();
   loopBody->insertAtTail(new CallExpr("=", result,
-                                      new CallExpr(opFun, result, index->copy())));
+                           new CallExpr(opFun, result, elementToReduce)));
 
   // useThisGlobalOp argument lets us handle the case where the result type
   // differs from eltType, e.g. + reduce over booleans
@@ -1742,8 +1839,8 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
   );
 
   addElseClauseForSerialIter(forall, opExpr->copy(), data,
-                             result, globalOp, index->copy(), zippered);
-  // 'index' will be GC-ed
+                             result, globalOp, index->copy(),
+                             elementToReduce2, zippered);
 
   fn->insertAtTail(forall);
   fn->insertAtTail(new CallExpr(PRIM_RETURN, result));
@@ -2001,11 +2098,11 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, std::set<Flag> flags, const char* doc
       buildIfStmt(new CallExpr("!=", new CallExpr(".", tuple->remove(),
                                                   new_CStringSymbol("size")),
                                varCount->remove()),
-                  new CallExpr("compilerError", new_CStringSymbol("tuple size must match the number of grouped variables"), new_IntSymbol(0))));
+                  new CallExpr("compilerError", new_StringSymbol("tuple size must match the number of grouped variables"), new_IntSymbol(0))));
 
     tuple->var->defPoint->insertAfter(
       buildIfStmt(new CallExpr("!", new CallExpr("isTuple", tuple->copy())),
-                  new CallExpr("compilerError", new_CStringSymbol("illegal tuple variable declaration with non-tuple initializer"), new_IntSymbol(0))));
+                  new CallExpr("compilerError", new_StringSymbol("illegal tuple variable declaration with non-tuple initializer"), new_IntSymbol(0))));
     stmts->blockInfoSet(NULL);
   }
   return stmts;
