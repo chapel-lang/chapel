@@ -36,10 +36,11 @@ def chpl2rst(chapelfile):
     """Convert Chapel program to restructured text"""
 
     filename = os.path.split(chapelfile)[1]
+    basename, _ = os.path.splitext(filename)
     # Title
     output = []
-    output.append(filename)
-    output.append('='*len(filename))
+    output.append(basename)
+    output.append('='*len(basename))
 
     with open(chapelfile, 'r') as handle:
         commentdepth = 0
