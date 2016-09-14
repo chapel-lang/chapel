@@ -1,9 +1,11 @@
-//
-// Atomics primer
-//
-// This primer illustrates Chapel's atomic variables.  For more information
-// on Chapel's atomics, see the Chapel Language Specification.
-//
+/*
+  Atomics primer
+
+  This primer illustrates Chapel's atomic variables.  For more information
+  on Chapel's atomics, see the Chapel Language Specification.
+
+*/
+
 config const n = 31;
 const R = 1..n;
 

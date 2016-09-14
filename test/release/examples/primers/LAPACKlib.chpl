@@ -2,7 +2,7 @@
   Example usage of the LAPACK module in Chapel. This particular file
   demonstrates how to use the gesv procedure with Chapel's arrays. The gesv
   procedure solves A*X = B for X given both A and B, where A is a square matrix.
- 
+
   Here, we create A and X, then compute B with a matrix multiplication, and
   show that the result of the gesv procedure is the same as our synthesized
   X array (within a small margin of error for floating point).
@@ -45,7 +45,7 @@ for i in 1..N do
   for j in 1..K do
     for k in 1..N do
       B[i,j] += A[i,k]   X[k,j];
-      
+
 writeln("Matrix A:\n", A, "\n");
 writeln("Matrix X:\n", X, "\n");
 writeln("Matrix B:\n", B, "\n");

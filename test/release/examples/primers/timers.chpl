@@ -1,9 +1,9 @@
 /*
    Timers Primer
-  
+
    This primer demonstrates the use of a Timer from the Time module.
-  
-  /
+
+*/
 
 //
 // Use the Time standard module to bring its symbols into scope.
@@ -64,7 +64,7 @@ writeln("D. ", t.elapsed(), " seconds");
 // The timer can be checked while still running. This can be used to time
 // multiple events. Here, the time taken by each iteration of the loop
 // is saved into the iterationTimes array.
-// 
+//
 config const n = 5;
 var iterationTimes: [1..n] real;
 t.start();

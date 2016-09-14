@@ -1,9 +1,9 @@
 /*
    Generic Classes Primer
-  
+
    This primer covers generic class types.
-  
-  /
+
+*/
 
 //
 // A class is generic if it contains a type alias, contains a field

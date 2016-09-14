@@ -1,6 +1,6 @@
 /*
    Module Primer
-  
+
    This primer introduces the concept of modules, a concept for encapsulating
    code for use by other code.  It covers:
      how to define a module
@@ -12,7 +12,7 @@
        explicit inclusion of symbols
        renaming included symbols
      cross-file module access
-  /
+*/
 
 
 /* A module is a grouping of code - each program consists of at least one
