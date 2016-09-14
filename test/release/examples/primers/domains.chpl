@@ -4,6 +4,7 @@
    This primer showcases Chapel domains as abstract concepts, primarily
    within the context of rectangular domains.  For other uses of domains
    see the following primers:
+
     - Arrays primer (arrays.chpl)
     - Sparse arrays primer (sparse.chpl)
     - Opaque arrays primer (opaque.chpl)
@@ -126,4 +127,4 @@ writeln("SSD:", SSD); // Now contains an unordered set of indices.
 /*
    For more information on domains, see the Domains chapter of the
    Chapel Language Spec.
-  /
+*/

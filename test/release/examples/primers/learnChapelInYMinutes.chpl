@@ -529,10 +529,10 @@ whereProc( -1 );
 
 // Operator definitions are through procedures as well.
 // We can define the unary operators:
-// + - ! ~
+// ``+ - ! ~``
 // and the binary operators:
-// + -   / %  * == <= >= < > << >> & | ˆ by
-// += -=  = /= %=  *= &= |= ˆ= <<= >>= <=>
+// ``+ -   / %  * == <= >= < > << >> & | ˆ by``
+// ``+= -=  = /= %=  *= &= |= ˆ= <<= >>= <=>``
 
 // Boolean exclusive or operator
 proc ^( left : bool, right : bool ): bool {
@@ -555,9 +555,13 @@ writeln( 1   2 );   // Uses the default   operator
 /*
 Note: You could break everything if you get careless with your overloads.
 This here will break everything. Don't do it.
-proc +( left: int, right: int ): int{
-  return left - right;
-}
+
+.. code-block:: chapel
+
+  proc +( left: int, right: int ): int{
+    return left - right;
+  }
+
 */
 
 // Iterators are a sisters to the procedure, and almost

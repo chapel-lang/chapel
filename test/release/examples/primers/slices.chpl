@@ -5,7 +5,9 @@
 
     In this program, diagonal blocks (or slices) of A are initialized
     according to the row indices of the diagonal block.
-       A(i,j) = i, for all (i,j) in diagonal blocks
+
+    ``(i,j) = i``, for all ``(i,j)`` in diagonal blocks
+
     If the block has been reindexed, then each diagonal block is
     initialized with the same values.  If the block has not been
     reindexed, then the block has the same indices as the full array,

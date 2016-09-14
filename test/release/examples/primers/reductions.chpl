@@ -43,22 +43,23 @@ writeln();
 // The expression "abs(A)" creates a new matrix which contains in each of its
 // elements the absolute value of the corresponding element in A.
 // The "+ reduce" clause just sums these up.
-// 
+//
 var oneNorm = + reduce abs(A);
 writeln("The 1-norm of A is ", oneNorm);
 writeln();
 
-//
-// The Frobenius norm is the square root of the sum over all elements of their
-// respective squares.
-//
-// The expression below can be broken down thus:
-//  1) The Frobenius norm is the square root of sum quantity.
-//  2) The quantity is the sum over all elements of a matrix.
-//  3) The matrix is the promotion of A by "**2".
-//     That is, a matrix each of whose elements the square of the corresponding
-//       element in A.
-//
+/*
+The Frobenius norm is the square root of the sum over all elements of their
+respective squares.
+
+The expression below can be broken down thus:
+
+ 1) The Frobenius norm is the square root of sum quantity.
+ 2) The quantity is the sum over all elements of a matrix.
+ 3) The matrix is the promotion of A by ``**2``.
+      That is, a matrix each of whose elements the square of the corresponding
+      element in A.
+*/
 var frobNorm = sqrt(+ reduce A**2);
 writeln("The Frobenius norm of A is ", frobNorm);
 writeln();
@@ -68,7 +69,7 @@ writeln();
 // the maxVal, maxLoc, minVal, minLoc variables.
 //
 // maxloc and minloc define reductions which expect a tuple of arrays
-// that can be iterated using zippered iteration 
+// that can be iterated using zippered iteration
 // (meaning that the iterator returns one value from each array in a 2-tuple).
 //
 // The reduce operator combines each successive element with a running result
@@ -83,13 +84,13 @@ writeln("The difference is: ", maxVal - minVal);
 writeln();
 
 //
-// Compute Euclidean norms for each column using + reductions.
+// Compute Euclidean norms for each column using ``+`` reductions.
 //
 // Breaking down the statement below:
-//  1) vecNorms is a 1-D array containing size elements (indexed by 1..size).
+//  1) vecNorms is a 1-D array containing size elements (indexed by ``1..size``).
 //  2) The elements of vecNorms are the square-root of some quantity.
 //  3) The quantity is the sum over all of the elements of some vector.
-//  4) The vector consists of the promotion of the j-th column of A by  *2.
+//  4) The vector consists of the promotion of the j-th column of A by  ``*2``.
 //     (That is, each element of that column vector is squared.)
 //
 var vecNorms = [j in 1..size] sqrt(+ reduce A(1..size, j)**2);

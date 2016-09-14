@@ -3,15 +3,16 @@
 
    This primer introduces the concept of modules, a concept for encapsulating
    code for use by other code.  It covers:
-     how to define a module
-     namespace control within a module
-     external access to a module's symbols
-     namespace control when using a module, including:
-       unlimited
-       explicit exclusion of symbols
-       explicit inclusion of symbols
-       renaming included symbols
-     cross-file module access
+
+    * how to define a module
+    * namespace control within a module
+    * external access to a module's symbols
+    * namespace control when using a module, including:
+      * unlimited
+      * explicit exclusion of symbols
+      * explicit inclusion of symbols
+      * renaming included symbols
+    * cross-file module access
 */
 
 
@@ -344,13 +345,13 @@ module MainModule {
     writeln();
 
     {
-      /* A 'use' of a nested module (see the module OuterNested and its
-         submodules for an example of a nested module) is similar to that of a
-         top-level module.  Its name is treated like any other visible symbol in
-         the outer module, so if the outer module has not been used then the
-         inner module must be explicitly named.
-       */
-
+      //
+      // A 'use' of a nested module (see the module OuterNested and its
+      // submodules for an example of a nested module) is similar to that of a
+      // top-level module.  Its name is treated like any other visible symbol
+      // in the outer module, so if the outer module has not been used then
+      // the inner module must be explicitly named.
+      //
       use OuterNested.Inner1;
 
       writeln(foobar); // Will output Inner1.foobar, or '14'

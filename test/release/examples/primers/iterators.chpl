@@ -125,7 +125,7 @@ class Tree {
 
 Initialize Tree instance to:
 
-.. code-block:: code
+.. code-block:: text
 
   tree:
 
@@ -206,7 +206,7 @@ writeln();
 //
 
 // This just does something else noticeable to the tree data --
-// prefixing each string with "node_".
+// prefixing each string with ``node_``.
 proc decorate(s:string) return "node_" + s;
 
 //
