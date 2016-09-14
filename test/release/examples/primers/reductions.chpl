@@ -90,7 +90,7 @@ writeln();
 //  1) vecNorms is a 1-D array containing size elements (indexed by ``1..size``).
 //  2) The elements of vecNorms are the square-root of some quantity.
 //  3) The quantity is the sum over all of the elements of some vector.
-//  4) The vector consists of the promotion of the j-th column of A by  ``*2``.
+//  4) The vector consists of the promotion of the j-th column of A by  ``**2``.
 //     (That is, each element of that column vector is squared.)
 //
 var vecNorms = [j in 1..size] sqrt(+ reduce A(1..size, j)**2);

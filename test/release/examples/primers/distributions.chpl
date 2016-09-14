@@ -341,9 +341,9 @@ writeln();
 // Presently, the following dimension specifiers are available
 // (shown here with their constructor arguments):
 //
-//   ReplicatedDim(numLocales)
-//   BlockDim(numLocales, boundingBoxLow, boundingBoxHigh)
-//   BlockCyclicDim(lowIdx, blockSize, numLocales)
+//   * ReplicatedDim(numLocales)
+//   * BlockDim(numLocales, boundingBoxLow, boundingBoxHigh)
+//   * BlockCyclicDim(lowIdx, blockSize, numLocales)
 //
 
 //

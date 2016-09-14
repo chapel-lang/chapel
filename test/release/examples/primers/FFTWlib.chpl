@@ -77,21 +77,21 @@ proc runtest(param ndim : int, fn : string) {
 
      The domains are as follows:
 
-       D : for complex<->complex transforms. This domain is also
-           used for the real array in a real->complex out-of-place
-           transform.
+        * D : for complex<->complex transforms. This domain is also
+             used for the real array in a real->complex out-of-place
+             transform.
 
-       cD : for the complex array in a real<->complex out-of-place
-            transform.
+        * cD : for the complex array in a real<->complex out-of-place
+              transform.
 
-       rD : for the real array in a real<->complex in-place
-            transform. This includes the padding needed by the
-            in-place transform. D is a sub-domain of this, and can be
-            used to extract the real array, without padding.
+        * rD : for the real array in a real<->complex in-place
+              transform. This includes the padding needed by the
+              in-place transform. D is a sub-domain of this, and can be
+              used to extract the real array, without padding.
 
-       reD, imD : Utility domains that access the real/complex parts
-                  of the complex array in a real<->complex in-place
-                  transform.
+        * reD, imD : Utility domains that access the real/complex parts
+                    of the complex array in a real<->complex in-place
+                    transform.
    */
   var D : domain(ndim);
   var rD,cD,reD,imD : domain(ndim,int,true);
@@ -203,7 +203,7 @@ proc runtest(param ndim : int, fn : string) {
   // FFTW does not normalize inverse transforms, so just compute the
   // normalization constant.
 
-  var norm =   reduce dims;
+  var norm = * reduce dims;
 
   /* We start the FFT tests below. The structure is the same :
         Define plans for forward and reverse transforms.

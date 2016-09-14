@@ -33,7 +33,7 @@ proc factorial(x: int) : int
   if x < 0 then
     halt("factorial -- Sorry, this is not the gamma procedure!");
 
-  return if x == 0 then 1 else x   factorial(x-1);
+  return if x == 0 then 1 else x * factorial(x-1);
 }
 
 writeln("A simple procedure");
@@ -57,7 +57,7 @@ proc factorial(x: int(32)) : int(32)
 
   if x < 3 then return x;
 
-  return x   (x-1)   factorial(x-2);
+  return x * (x-1) * factorial(x-2);
 }
 
 //
@@ -252,8 +252,8 @@ proc atan(x : real, out result : real)
   var lastresult = 0.0;
   for i in 1.. by 2
   {
-    var twoIP1 = 2   count + 1;
-    var term = x  * twoIP1 / twoIP1;
+    var twoIP1 = 2 * count + 1;
+    var term = x ** twoIP1 / twoIP1;
     result += if count % 2 == 0 then term else -term;
     count += 1;
     if abs(result - lastresult) < 1.0e-3 then break;
@@ -265,7 +265,7 @@ proc atan(x : real, out result : real)
 writeln("Using the \"out\" intent");
 var theta : real;
 var n = atan(1.0, theta);
-writeln("Computed Pi as about ", 4.0   theta, " in ", n, " iterations.");
+writeln("Computed Pi as about ", 4.0 * theta, " in ", n, " iterations.");
 writeln();
 
 //

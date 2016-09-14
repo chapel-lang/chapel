@@ -45,7 +45,7 @@ module modToUse {
 
   /* baz is a public function which is defined within modToUse  */
   proc baz (x, y) {
-    return x   (x + y);
+    return x * (x + y);
   }
 
   /* hiddenBaz is a private function, which is also only accessible by symbols
@@ -102,7 +102,7 @@ module MainModule {
        module name and a separating '.' as a prefix to the name of the symbol
        desired.
      */
-    var thriceFoo = 3   modToUse.foo; // should be 36
+    var thriceFoo = 3 * modToUse.foo; // should be 36
     writeln(thriceFoo);
 
 
@@ -138,7 +138,7 @@ module MainModule {
        because 'foo' cannot be directly referenced, and is not qualified with a
        module name.
      */
-    // var twiceFoo = 2   foo;
+    // var twiceFoo = 2 * foo;
 
 
 
@@ -260,7 +260,7 @@ module MainModule {
 
       writeln(baz(2, 3));
       // Accesses the function modToUse.baz using the two arguments.  Should
-      // output 2   (2 + 3) or '10'
+      // output 2 * (2 + 3) or '10'
       writeln(baz(3));
       // Access the function DifferentArguments.baz using the single argument.
       // Should output 3 - 2, or '1'
@@ -366,7 +366,7 @@ module OuterNested {
   private var hiddenFoo = false;
 
   proc baz (x, y) {
-    return x   (x + y);
+    return x * (x + y);
   }
 
   private proc hiddenBaz(a) {
