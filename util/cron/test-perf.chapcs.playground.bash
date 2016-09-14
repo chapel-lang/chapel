@@ -28,7 +28,7 @@ $CWD/nightly -cron ${nightly_args} ${perf_args}
 
 
 GITHUB_USER=ronawho
-GITHUB_BRANCH=optimize-1dim-array-access-2
+GITHUB_BRANCH=optimize-away-inner-array-mult
 
 git checkout .
 git clean -fdx .
