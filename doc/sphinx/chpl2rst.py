@@ -78,19 +78,21 @@ def chpl2rst(chapelfile):
                 state = 'codeblock'
 
             if 'comment' in state:
+
+                if 'comment' not in laststate:
+                    output.append('')
+
                 rstline = line
                 if state == 'linecomment':
                     # Strip white space for line comments
-                    if 'comment' not in laststate:
-                        output.append('')
-                    rstline = rstline.replace('//', '')
+                    rstline = rstline.replace('//', '  ')
                     rstline = rstline.strip()
                 else:
                     # Preserve white space for block comments
                     if commentstarts:
-                        rstline = rstline.replace('/*', '')
+                        rstline = rstline.replace('/*', '  ')
                     if commentends > 0:
-                        rstline = rstline.replace('*/', '')
+                        rstline = rstline.replace('*/', '  ')
                     if '.. code-block::' in rstline or len(rstline.strip()) == 0:
                         rstline = rstline.strip()
 
