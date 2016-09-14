@@ -3,24 +3,54 @@
 
 """chpl2rst converts a chapel program to an rst file, where all comments are
 rendered rst, and all code is wrapped in code blocks.
-"""
+
+Chapel files are converted as follows:
+
+* Line comments starting at the beginning of the line are converted to text
+* Block comments starting anywhere are converted to text
+* All other lines are wrapped as code-blocks
+
+example.chpl
+============
+
+/* This is
+     an example */
+proc foo() {
+    // this comment will be in the code block
+    var bar = 1; }
+// this comment will be text
+
+example.rst
+===========
+
+This is
+  an example
+
+.. code-block:: chapel
+
+    proc foo() {
+        // this comment will be in the code block
+        var bar = 1; }
+
+this comment will be text"""
 
 from __future__ import print_function
 
 import os
 import sys
 
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-
+import argparse
 
 def get_arguments():
     """
     Get arguments from command line
     """
-    parser = ArgumentParser(prog='chpl2rst',
-                            usage='%(prog)s  foo.chpl [options] ',
-                            description=__doc__,
-                            formatter_class=ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        prog='chpl2rst',
+        usage='%(prog)s  file.chpl [options] ',
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+
     parser.add_argument('chapelfiles', nargs='+',
                         help='Chapel files to convert to rst')
     parser.add_argument('--output', default='rst', choices=['stdout', 'rst'],
