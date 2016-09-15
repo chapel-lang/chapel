@@ -934,8 +934,6 @@ static void build_type_constructor(AggregateType* ct) {
                                           fn->_this,
                                           new_CStringSymbol(field->name),
                                           new CallExpr(PRIM_TYPE_INIT, arg)));
-//  was                                     new CallExpr("chpl__initCopy",
-//                                                       new CallExpr(PRIM_TYPE_INIT, arg))));
         } else if (exprType) {
           CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, exprType->copy());
           CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER, 
@@ -1222,27 +1220,6 @@ static void build_constructor(AggregateType* ct) {
       arg->type = dtAny;
 
     fn->insertFormalAtTail(arg);
-
-    // Note: buildDefaultWrapper will add any initCopy call that is
-    // that is necessary. It happens in buildDefaultWrapper so that in
-    //   record { var D:domain(1); var A:[D]; }
-    // the relationship between D and A is preserved.
-    // One should think of buildDefaultWrapper as completing the
-    // process of creating a default constructor as it handles
-    // several of these cases. In the future, we might consider
-    // moving all of the logic for generating the default
-    // constructor into resolution and making it depend on
-    // what arguments are supplied.
-
-    // UPDATE: that was interesting idea but it causes problems
-    // with sparse arrays where the sparse array refers to
-    // the parent domain instead of a copy of it.
-
-/*    fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
-                                  fn->_this,
-                                  new_CStringSymbol(arg->name),
-                                  arg));
-*/
 
     if (arg->type == dtAny && !arg->hasFlag(FLAG_TYPE_VARIABLE) &&
         !arg->hasFlag(FLAG_PARAM) && !ct->symbol->hasFlag(FLAG_REF))
