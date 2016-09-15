@@ -970,23 +970,6 @@ determineQueriedField(CallExpr* call) {
 }
 
 
-//
-// For some types, e.g. _domain/_array records, implementing
-// Chapel's ref/out/... intents can be done simply by passing the
-// value itself, rather than address-of. This function flags such cases
-// by returning false, meaning "not OK to convert".
-//
-static bool
-okToConvertFormalToRefType(Type* type) {
-/*  if (isRecordWrappedType(type))
-    // no, don't
-    return false;
-*/
-  // otherwise, proceed with the original plan
-  return true;
-}
-
-
 // Generally speaking, tuples containing refs should be converted
 // to tuples without refs before returning.
 // This function returns true for exceptional FnSymbols
@@ -1196,11 +1179,9 @@ resolveFormals(FnSymbol* fn) {
           (formal == fn->_this &&
            (isUnion(formal->type) ||
             isRecord(formal->type)))) {
-        if (okToConvertFormalToRefType(formal->type)) {
-          makeRefType(formal->type);
-          formal->type = formal->type->refType;
-          // The type of the formal is its own ref type!
-        }
+        makeRefType(formal->type);
+        formal->type = formal->type->refType;
+        // The type of the formal is its own ref type!
       }
 
       if (isRecordWrappedType(formal->type) &&
@@ -1378,7 +1359,6 @@ isLegalConstRefActualArg(ArgSymbol* formal, Expr* actual) {
 
   if (SymExpr* se = toSymExpr(actual))
     if (se->var->isParameter()                   ==  true &&
-        okToConvertFormalToRefType(formal->type) ==  true &&
         isString(se->var)                        == false)
       retval = false;
 
